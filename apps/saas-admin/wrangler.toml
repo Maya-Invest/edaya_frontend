@@ -1,0 +1,22 @@
+name = "edaya-saas-admin"
+compatibility_date = "2024-09-23"
+
+# Static SPA output from `vite build` (adapter-static).
+# Build with PUBLIC_API_URL=https://api.edaya.softilab.dev before deploy.
+[assets]
+directory = "./build"
+not_found_handling = "single-page-application"
+
+[env.production]
+name = "edaya-saas-admin"
+
+[[env.production.routes]]
+pattern = "admin.edaya.softilab.dev"
+custom_domain = true
+
+[env.staging]
+name = "edaya-saas-admin-staging"
+
+[[env.staging.routes]]
+pattern = "admin-staging.edaya.softilab.dev"
+custom_domain = true

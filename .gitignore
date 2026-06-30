@@ -1,0 +1,48 @@
+# System Files
+.DS_Store
+Thumbs.db
+.turbo
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# SvelteKit
+.svelte-kit/
+
+# Bun
+.bun/
+package-lock.json
+
+# Vite / Build outputs
+dist/
+build/
+.vite/
+
+# TypeScript
+*.tsbuildinfo
+
+# Env Files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+.env.staging
+!.env.example
+
+# IDE / Editors
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json

@@ -1,0 +1,17 @@
+{
+	"$schema": "https://turbo.build/schema.json",
+	"tasks": {
+		"dev": {
+			"persistent": true,
+			"cache": false
+		},
+		"build": {
+			"outputs": ["dist/**", "build/**", ".svelte-kit/**"]
+		},
+		"check": {},
+		"quality": {},
+		"test": {},
+		"lint": {},
+		"lint:fix": {}
+	}
+}
