@@ -19,7 +19,11 @@ edaya_web/
 ## Prerequisites
 
 - [Bun](https://bun.sh) 1.3+ (see `packageManager` in root `package.json`)
-- [edaya](https://github.com/softilab/edaya) checked out as a sibling directory (`../edaya`) for OpenAPI export, seeding, and local API
+- [edaya](https://github.com/softilab/edaya) checked out as a sibling directory (`../edaya`) for OpenAPI **export** and local API proxy only (not required for CI)
+
+`@edaya/client-codegen` is installed from [github.com/Maya-Invest/edaya-client-codegen](https://github.com/Maya-Invest/edaya-client-codegen) (`dev` branch) at install time — no sibling checkout needed.
+
+See [docs/cross-repo-workflow.md](./docs/cross-repo-workflow.md) for pair PRs, codegen releases, and staging smoke.
 
 ## First-time setup
 
@@ -67,9 +71,12 @@ Dev servers proxy `/core`, `/auth`, `/public`, and API docs to `API_URL` (defaul
 | `bun run check` | Type-check all apps |
 | `bun run quality` | Lint + type-check |
 | `bun run test` | Run repo + app tests |
-| `bun run export-openapi` | Export OpenAPI from Edaya Core API |
+| `bun run verify` | Non-mutating release check (lint, check, tests, generated drift, build) |
+| `bun run export-openapi` | Export OpenAPI from Edaya Core API (requires sibling `edaya`) |
 | `bun run openapi:generate` | Export OpenAPI, regenerate `schema.d.ts` + client bindings |
-| `bun run generated:check` | Fail if generated API artifacts are stale |
+| `bun run generated:check` | Fail if generated API artifacts are stale (committed OpenAPI only) |
+| `bun run generated:check:export` | Same, but compare against live export from sibling `edaya` |
+| `bun run smoke:staging` | HTTP smoke against staging SPA shells |
 | `bun run deploy:webapp` | Build + deploy webapp (production) |
 | `bun run deploy:webapp:staging` | Build + deploy webapp (staging) |
 | `bun run deploy:saas-admin` | Build + deploy SaaS admin (production) |
@@ -108,3 +115,4 @@ Override the core repo location with `EDAYA_CORE_ROOT` when needed.
 
 1. **SaaS admin** — platform operator auth, tenant directory, billing, support tooling.
 2. **Shared UI** — extract common Tailwind/Bits components into `packages/ui` where it makes sense.
+3. **Production cutover** — deploy web apps from `edaya_web` and retire legacy `edaya` webapp paths.

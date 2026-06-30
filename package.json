@@ -23,11 +23,16 @@
 		"deploy:saas-admin": "bun --filter @edaya/saas-admin deploy",
 		"deploy:saas-admin:staging": "bun --filter @edaya/saas-admin deploy:staging",
 		"test:repo": "bun --filter @edaya/web-repo test",
+		"doctor": "bun --filter @edaya/web-repo doctor",
+		"verify": "bun run doctor && bun run lint && bun run check && bun run test:repo && bun run generated:check && bun run prepare:env && bun run build && turbo run test -- --dots",
+		"prepare:env": "cp apps/webapp/.env.example apps/webapp/.env && cp apps/saas-admin/.env.example apps/saas-admin/.env",
 		"export-openapi": "bun --filter @edaya/web-repo export-openapi",
 		"openapi:generate": "bun --filter @edaya/web-repo openapi:generate",
 		"generated:update": "bun --filter @edaya/web-repo generated:update",
 		"generated:check": "bun --filter @edaya/web-repo generated:check",
-		"openapi:check": "bun --filter @edaya/web-repo openapi:check"
+		"generated:check:export": "bun --filter @edaya/web-repo generated:check:export",
+		"openapi:check": "bun --filter @edaya/web-repo openapi:check",
+		"smoke:staging": "bun --filter @edaya/web-repo smoke:staging"
 	},
 	"devDependencies": {
 		"@antfu/eslint-config": "^9.0.0",

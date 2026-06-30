@@ -1,6 +1,6 @@
-import type { Transport } from './transport.ts'
-import { unwrapEntity, unwrapEntityList } from './entity-envelope.ts'
-import { schoolApiPath } from './paths.ts'
+import type { Transport } from './transport'
+import { unwrapEntity, unwrapEntityList } from './entity-envelope'
+import { schoolApiPath } from './paths'
 
 export type EntityQuery = Record<string, unknown> & {
   $orderBy?: Array<{ field: string, direction: 'asc' | 'desc' }>

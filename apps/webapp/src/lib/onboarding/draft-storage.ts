@@ -18,7 +18,7 @@ export function draftStorageKey(authUserId: string): string {
 
 function defaultTimezone(): string {
 	try {
-		return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Paris';
+		return new Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Paris';
 	}
 	catch {
 		return 'Europe/Paris';

@@ -1,6 +1,7 @@
 import type { OnboardingSchoolDraft } from '$lib/onboarding/types';
 import { academicContext } from '$lib/academic/context.svelte';
-import { configureBrowserSchoolClient, getBrowserSchoolClient } from '$lib/api/school-client';import { bootstrapSession } from '$lib/auth/bootstrap';
+import { configureBrowserSchoolClient, getBrowserSchoolClient } from '$lib/api/school-client';
+import { bootstrapSession } from '$lib/auth/bootstrap';
 import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
@@ -9,7 +10,8 @@ import { toast } from '$lib/toast.svelte';
 import { ApiError } from '@edaya/api-client';
 import { get } from 'svelte/store';
 
-export interface SubmitSchoolStepResult {	schoolId: string;
+export interface SubmitSchoolStepResult {
+	schoolId: string;
 	yearId: string;
 	periodId: string;
 }

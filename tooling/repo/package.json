@@ -1,25 +1,28 @@
 {
-	"name": "@edaya/web-repo",
-	"type": "module",
-	"version": "0.0.1",
-	"private": true,
-	"scripts": {
-		"quality": "bun run lint",
-		"test": "bun test tests --dots",
-		"lint": "eslint .",
-		"lint:fix": "eslint . --fix",
-		"export-openapi": "bun openapi/export.ts",
-		"openapi:generate": "bun openapi/update.ts",
-		"generated:update": "bun run openapi:generate",
-		"generated:check": "bun openapi/check-drift.ts",
-		"openapi:check": "bun run generated:check"
-	},
-	"dependencies": {
-		"@edaya/api-client": "workspace:*",
-		"@edaya/client-codegen": "file:../../../edaya-client-codegen"
-	},
-	"devDependencies": {
-		"@types/bun": "^1.3.14",
-		"typescript": "^6.0.2"
-	}
+  "name": "@edaya/web-repo",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "quality": "bun run lint",
+    "doctor": "bun ci/doctor.ts",
+    "test": "bun test tests --dots",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "export-openapi": "bun openapi/export.ts",
+    "openapi:generate": "bun openapi/update.ts",
+    "generated:update": "bun run openapi:generate",
+    "generated:check": "bun openapi/check-drift.ts",
+    "generated:check:export": "bun openapi/check-drift-export.ts",
+    "openapi:check": "bun run generated:check",
+    "smoke:staging": "bun ci/smoke-staging.ts"
+  },
+  "dependencies": {
+    "@edaya/api-client": "workspace:*",
+    "@edaya/client-codegen": "github:Maya-Invest/edaya-client-codegen#dev"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "typescript": "^6.0.2"
+  }
 }
