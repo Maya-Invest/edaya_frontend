@@ -1,4 +1,4 @@
-export { createSchoolClient, type SchoolClient } from './create-client.ts'
+export { createSchoolClient, type SchoolClient } from './generated/create-client.ts'
 export { unwrapEntity, unwrapEntityList } from './entity-envelope.ts'
 export {
   type BaseEntityResource,

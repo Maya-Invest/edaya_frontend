@@ -1,6 +1,6 @@
 import type { Transport, TransportRequestOptions } from './transport.ts'
 import { describe, expect, test } from 'bun:test'
-import { createSchoolClient } from './create-client.ts'
+import { createSchoolClient } from './generated/create-client.ts'
 
 interface RequestRecord {
   method: string

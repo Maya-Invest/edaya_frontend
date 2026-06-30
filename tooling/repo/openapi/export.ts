@@ -3,14 +3,10 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import process from 'node:process'
 import {
-	CLIENT_BINDINGS_OPENAPI_EXTENSION,
-} from '@edaya/api-client/openapi-bindings'
-import {
 	assertCoreRepoAvailable,
 	apiAppPath,
-	apiClientBindingsPath,
 	apiLocalEnvLoaderPath,
-	apiRuntimeIndexPath,
+	apiRuntimeRegistryPath,
 	resolveArgvPath,
 	trackedOpenApiPath,
 } from './paths.ts'
@@ -18,10 +14,9 @@ import {
 export async function exportOpenApi(outputPath = trackedOpenApiPath): Promise<void> {
 	assertCoreRepoAvailable()
 
-	const [{ default: app }, { buildClientBindings }, { resetApiRuntimesForTests }, { loadLocalProcessEnv }] = await Promise.all([
+	const [{ default: app }, { resetApiRuntimesForTests }, { loadLocalProcessEnv }] = await Promise.all([
 		import(apiAppPath),
-		import(apiClientBindingsPath),
-		import(apiRuntimeIndexPath),
+		import(apiRuntimeRegistryPath),
 		import(apiLocalEnvLoaderPath),
 	])
 
@@ -31,14 +26,7 @@ export async function exportOpenApi(outputPath = trackedOpenApiPath): Promise<vo
 		const body = await res.text()
 		throw new Error(`Failed to fetch OpenAPI doc: ${res.status}\nBody: ${body}`)
 	}
-	const schema = await res.json() as {
-		info?: Record<string, unknown>
-	}
-
-	schema.info = {
-		...schema.info,
-		[CLIENT_BINDINGS_OPENAPI_EXTENSION]: buildClientBindings(),
-	}
+	const schema = await res.json()
 
 	mkdirSync(dirname(outputPath), { recursive: true })
 	writeFileSync(outputPath, JSON.stringify(schema, null, 2))

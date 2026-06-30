@@ -1,0 +1,88 @@
+import type { components } from '$lib/api/schema';
+import type { getBrowserSchoolClient } from '$lib/api/school-client';
+import type { Activity } from '$lib/types/school';
+import { activityEnrollmentsForActivities, uniqueIds } from '$lib/api/entity-list-filters';
+
+type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
+
+type ExtracurricularActivityRaw = components['schemas']['ExtracurricularActivity'];
+type ActivityEnrollmentRaw = components['schemas']['ActivityEnrollment'];
+
+export interface ActivitySources {
+	activitiesRaw: ExtracurricularActivityRaw[];
+	activityEnrollmentsRaw: ActivityEnrollmentRaw[];
+}
+
+const CATEGORY_TO_UI: Record<string, Activity['category']> = {
+	Sport: 'Sport',
+	Arts: 'Arts',
+	Science: 'Science',
+	Language: 'Language',
+	Wellbeing: 'Wellbeing',
+};
+
+const ENROLLMENT_STATUS_TO_UI: Record<string, Activity['enrollments'][number]['status']> = {
+	approved: 'approved',
+	pending: 'pending',
+	denied: 'denied',
+};
+
+function formatDate(value: unknown): string {
+	if (!value) {
+		return '';
+	}
+	if (value instanceof Date) {
+		return value.toISOString().slice(0, 10);
+	}
+	if (typeof value === 'string') {
+		return value.slice(0, 10);
+	}
+	return String(value).slice(0, 10);
+}
+
+export async function fetchActivitySources(
+	client: SchoolClient,
+	schoolId: string,
+): Promise<ActivitySources> {
+	const activitiesRaw = (await client.entities.activities.list({ schoolId })) ?? [];
+	const activityIds = uniqueIds(activitiesRaw.map(activity => activity.id));
+	const activityEnrollmentsRaw = activityIds.length > 0
+		? await client.entities.activityEnrollments.list(activityEnrollmentsForActivities(activityIds))
+		: [];
+
+	return {
+		activitiesRaw: activitiesRaw ?? [],
+		activityEnrollmentsRaw: activityEnrollmentsRaw ?? [],
+	};
+}
+
+export function mapActivities(sources: ActivitySources): Activity[] {
+	const enrollmentsByActivity = new Map<string, ActivityEnrollmentRaw[]>();
+	for (const enrollment of sources.activityEnrollmentsRaw) {
+		const current = enrollmentsByActivity.get(enrollment.activityId) ?? [];
+		current.push(enrollment);
+		enrollmentsByActivity.set(enrollment.activityId, current);
+	}
+
+	return sources.activitiesRaw.map(activity => ({
+		id: activity.id,
+		name: activity.name,
+		category: CATEGORY_TO_UI[activity.category] ?? 'Science',
+		coach: activity.coach,
+		schedule: activity.schedule,
+		participants: activity.participants,
+		capacity: activity.capacity,
+		description: activity.description,
+		startDate: formatDate(activity.startDate),
+		endDate: formatDate(activity.endDate),
+		enrollments: (enrollmentsByActivity.get(activity.id) ?? []).map(enrollment => ({
+			studentId: enrollment.studentId,
+			status: ENROLLMENT_STATUS_TO_UI[enrollment.status] ?? 'pending',
+		})),
+	}));
+}
+
+export async function fetchActivities(client: SchoolClient, schoolId: string): Promise<Activity[]> {
+	const sources = await fetchActivitySources(client, schoolId);
+	return mapActivities(sources);
+}

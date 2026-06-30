@@ -1,4 +1,4 @@
-import type { SchoolClient } from './create-client.ts'
+import type { SchoolClient } from './generated/create-client.ts'
 
 type TestSchemas = Record<string, unknown> & {
   Payment: { id: string }

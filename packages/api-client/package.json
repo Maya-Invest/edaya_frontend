@@ -20,6 +20,9 @@
     "lint": "eslint src --ignore-pattern src/generated/**",
     "lint:fix": "eslint src --ignore-pattern src/generated/** --fix"
   },
+  "dependencies": {
+    "@edaya/client-codegen": "file:../../../edaya-client-codegen"
+  },
   "devDependencies": {
     "@types/bun": "^1.3.14",
     "typescript": "^6.0.2"

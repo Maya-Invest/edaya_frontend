@@ -1,30 +1,40 @@
 #!/usr/bin/env bun
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { generateClientArtifacts, isOpenApiUrl } from '@edaya/client-codegen'
 import {
-	extractClientBindingsFromOpenApi,
-	formatClientBindingsTypeScript,
-} from '@edaya/api-client/openapi-bindings'
-import { resolveArgvPath, trackedClientBindingsPath, trackedOpenApiPath } from './paths.ts'
+	resolveArgvPath,
+	trackedClientBindingsPath,
+	trackedCreateClientPath,
+	trackedOpenApiPath,
+} from './paths.ts'
 
-export function generateClientBindings(
-	openApiPath = trackedOpenApiPath,
+export async function generateClientArtifactsFromOpenApi(
+	openApiInput = trackedOpenApiPath,
+	options: {
+		bindingsOut?: string
+		clientOut?: string
+	} = {},
+): Promise<void> {
+	await generateClientArtifacts({
+		input: openApiInput,
+		bindingsOut: options.bindingsOut ?? trackedClientBindingsPath,
+		clientOut: options.clientOut ?? trackedCreateClientPath,
+	})
+}
+
+/** @deprecated Use generateClientArtifactsFromOpenApi */
+export async function generateClientBindings(
+	openApiInput = trackedOpenApiPath,
 	outputPath = trackedClientBindingsPath,
-): void {
-	const openApi = JSON.parse(readFileSync(openApiPath, 'utf8')) as {
-		info?: Record<string, unknown>
-	}
-	const clientBindings = extractClientBindingsFromOpenApi(openApi)
-	const source = formatClientBindingsTypeScript(clientBindings)
-
-	mkdirSync(dirname(outputPath), { recursive: true })
-	writeFileSync(outputPath, source)
+): Promise<void> {
+	await generateClientArtifactsFromOpenApi(openApiInput, { bindingsOut: outputPath })
 }
 
 if (import.meta.main) {
-	const openApiPath = resolveArgvPath('--openapi', trackedOpenApiPath)
-	const outputPath = resolveArgvPath('--output', trackedClientBindingsPath)
+	const openApiInput = resolveArgvPath('--openapi', trackedOpenApiPath)
+	const bindingsOut = resolveArgvPath('--output', trackedClientBindingsPath)
+	const clientOut = resolveArgvPath('--client-out', trackedCreateClientPath)
 
-	generateClientBindings(openApiPath, outputPath)
-	console.log(`API client bindings generated at ${outputPath}`)
+	await generateClientArtifactsFromOpenApi(openApiInput, { bindingsOut, clientOut })
+	const sourceLabel = isOpenApiUrl(openApiInput) ? openApiInput : openApiInput
+	console.log(`API client artifacts generated from ${sourceLabel}`)
 }
