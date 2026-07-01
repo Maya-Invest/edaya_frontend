@@ -209,5 +209,3 @@ export const EDUCATOR_NAV_PERMISSIONS: readonly PermissionCode[] = [
 	'QUERY_REPORT_CARD_DETAIL_READ',
 ];
 
-/** @deprecated Use `visibleNavModuleKeys`. Kept for dev HMR compatibility. */
-export const visibleNavModules = visibleNavModuleKeys;

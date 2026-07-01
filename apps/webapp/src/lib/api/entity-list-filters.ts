@@ -195,15 +195,9 @@ export function assignmentsForLessonSessions(lessonSessionIds: readonly string[]
 	return recordsForFieldIds('lessonSessionId', lessonSessionIds);
 }
 
-/** @deprecated Use assignmentsForLessonSessions */
-export const assignmentsForSessions = assignmentsForLessonSessions;
-
 export function lessonSessionsForClasses(classGroupIds: readonly string[]): EntityQuery {
 	return recordsForFieldIds('classGroupId', classGroupIds);
 }
-
-/** @deprecated Use lessonSessionsForClasses */
-export const sessionsForClasses = lessonSessionsForClasses;
 
 export function attendanceForLessonSessions(lessonSessionIds: readonly string[]): EntityQuery {
 	return {
@@ -212,8 +206,6 @@ export function attendanceForLessonSessions(lessonSessionIds: readonly string[])
 	};
 }
 
-/** @deprecated Use attendanceForLessonSessions */
-export const attendanceForSessions = attendanceForLessonSessions;
 
 export function progressForLessonSessions(lessonSessionIds: readonly string[]): EntityQuery {
 	return recordsForFieldIds('lessonSessionId', lessonSessionIds);

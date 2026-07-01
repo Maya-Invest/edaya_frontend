@@ -28,14 +28,6 @@ export async function generateClientArtifactsFromOpenApi(
   }
 }
 
-/** @deprecated Use generateClientArtifactsFromOpenApi */
-export async function generateClientBindings(
-  openApiInput = trackedOpenApiPath,
-  outputPath = trackedWebappClientDirPath,
-): Promise<void> {
-  await generateClientArtifactsFromOpenApi(openApiInput, { clientDir: outputPath })
-}
-
 if (import.meta.main) {
   const openApiInput = resolveArgvPath('--openapi', trackedOpenApiPath)
   const clientDirFlagIndex = process.argv.indexOf('--client-dir')
