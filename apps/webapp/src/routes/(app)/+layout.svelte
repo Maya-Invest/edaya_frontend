@@ -70,7 +70,11 @@
 			onboardingContext.init(authUserId);
 		}
 
-		const resumePath = onboardingResumePath(authSession.authUserId, authSession.schoolId);
+		const resumePath = onboardingResumePath(
+			authSession.authUserId,
+			authSession.schoolId,
+			authSession.serverOnboardingStatus,
+		);
 		if (resumePath) {
 			appGoto(resumePath, { replaceState: true });
 			return;

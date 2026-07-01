@@ -1,11 +1,26 @@
-import type { OnboardingDraft } from '$lib/onboarding/types';
+import type { OnboardingDraft, OnboardingStep, ServerOnboardingAccountStatus } from '$lib/onboarding/types';
 import { createEmptyDraft, loadDraft, saveDraft } from '$lib/onboarding/draft-storage';
 import { onboardingStepUrl } from '$lib/onboarding/navigation';
+
+export function mergeOnboardingDraftWithServerStatus(
+	draft: OnboardingDraft,
+	status: ServerOnboardingAccountStatus,
+	schoolId?: string | null,
+): OnboardingDraft {
+	return {
+		...draft,
+		wizardCompleted: draft.wizardCompleted || status.wizardCompleted,
+		maxReachedStep: Math.max(draft.maxReachedStep, status.maxReachedStep) as OnboardingStep,
+		schoolStepSubmitted: draft.schoolStepSubmitted || status.schoolStepSubmitted,
+		structureStepSubmitted: draft.structureStepSubmitted || status.structureStepSubmitted,
+		registeredSchoolId: draft.registeredSchoolId ?? schoolId ?? null,
+	};
+}
 
 export function resolveOnboardingDraft(
 	authUserId: string,
 	options?: { schoolId?: string | null },
-): OnboardingDraft {
+) {
 	const stored = loadDraft(authUserId);
 	const draft = stored ?? createEmptyDraft();
 
@@ -20,32 +35,70 @@ export function resolveOnboardingDraft(
 	return draft;
 }
 
+export function persistServerOnboardingStatusToDraft(
+	authUserId: string,
+	status: ServerOnboardingAccountStatus,
+	schoolId?: string | null,
+) {
+	const merged = mergeOnboardingDraftWithServerStatus(
+		resolveOnboardingDraft(authUserId, { schoolId }),
+		status,
+		schoolId,
+	);
+	saveDraft(authUserId, merged);
+	return merged;
+}
+
 export function shouldContinueOnboarding(
 	authUserId: string | null | undefined,
 	schoolId?: string | null,
+	serverStatus?: ServerOnboardingAccountStatus | null,
 ): boolean {
 	if (!authUserId) {
 		return false;
 	}
-	return !resolveOnboardingDraft(authUserId, { schoolId }).wizardCompleted;
+
+	if (serverStatus?.wizardCompleted) {
+		return false;
+	}
+
+	const draft = resolveOnboardingDraft(authUserId, { schoolId });
+	if (draft.wizardCompleted) {
+		return false;
+	}
+
+	if (serverStatus) {
+		return !serverStatus.wizardCompleted;
+	}
+
+	if (schoolId) {
+		return true;
+	}
+
+	return false;
 }
 
 export function onboardingResumePath(
 	authUserId: string | null | undefined,
 	schoolId?: string | null,
+	serverStatus?: ServerOnboardingAccountStatus | null,
 ): string | null {
-	if (!authUserId || !shouldContinueOnboarding(authUserId, schoolId)) {
+	if (!authUserId || !shouldContinueOnboarding(authUserId, schoolId, serverStatus)) {
 		return null;
 	}
 
 	const draft = resolveOnboardingDraft(authUserId, { schoolId });
-	return onboardingStepUrl(draft.maxReachedStep);
+	const maxReachedStep = serverStatus
+		? Math.max(draft.maxReachedStep, serverStatus.maxReachedStep) as OnboardingStep
+		: draft.maxReachedStep;
+
+	return onboardingStepUrl(maxReachedStep);
 }
 
 export function persistSyncedOnboardingDraft(
 	authUserId: string,
 	options?: { schoolId?: string | null },
-): OnboardingDraft {
+) {
 	const stored = loadDraft(authUserId);
 	const draft = resolveOnboardingDraft(authUserId, options);
 

@@ -14,12 +14,18 @@
 		canGoBack: boolean;
 		showSkip: boolean;
 		showContinue: boolean;
+		showFinish?: boolean;
+		canFinish?: boolean;
 		busy?: boolean;
 		onBack: () => void;
 		onContinue: () => void;
+		onFinish?: () => void;
 		onSkip?: () => void;
 		onStepSelect: (step: OnboardingStep) => void;
 		onSignOut: () => void;
+		showSkipOnboarding?: boolean;
+		canSkipOnboarding?: boolean;
+		onSkipOnboarding?: () => void;
 		children: Snippet;
 	}
 
@@ -30,12 +36,18 @@
 		canGoBack,
 		showSkip,
 		showContinue,
+		showFinish = false,
+		canFinish = true,
 		busy = false,
 		onBack,
 		onContinue,
+		onFinish,
 		onSkip,
 		onStepSelect,
 		onSignOut,
+		showSkipOnboarding = false,
+		canSkipOnboarding = false,
+		onSkipOnboarding,
 		children,
 	}: Props = $props();
 </script>
@@ -72,6 +84,12 @@
 						{$t('onboarding.continue')}
 					</Button>
 				{/if}
+
+				{#if showFinish && onFinish}
+					<Button type="button" disabled={busy || !canFinish} onclick={onFinish}>
+						{$t('onboarding.finish')}
+					</Button>
+				{/if}
 			</div>
 		</div>
 	</footer>
@@ -80,6 +98,20 @@
 		{#if authSession.loginEmail}
 			<p class="text-xs text-muted-foreground">
 				{$t('onboarding.signedInAs', { email: authSession.loginEmail })}
+			</p>
+		{/if}
+		{#if showSkipOnboarding && onSkipOnboarding}
+			<Button
+				variant="ghost"
+				size="sm"
+				type="button"
+				disabled={busy || !canSkipOnboarding}
+				onclick={onSkipOnboarding}
+			>
+				{$t('onboarding.skipWizard')}
+			</Button>
+			<p class="max-w-sm text-xs text-muted-foreground">
+				{$t('onboarding.skipWizardHint')}
 			</p>
 		{/if}
 		<Button variant="ghost" size="sm" type="button" disabled={busy} onclick={onSignOut}>

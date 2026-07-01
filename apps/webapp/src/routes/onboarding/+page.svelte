@@ -4,6 +4,8 @@
 	import { authSession } from '$lib/auth/session.svelte';
 	import OnboardingShell from '$lib/components/onboarding/OnboardingShell.svelte';
 	import OnboardingStepContent from '$lib/components/onboarding/OnboardingStepContent.svelte';
+	import { redirectPathIfAuthenticated } from '$lib/auth/resolve-post-auth';
+	import { isOnboardingSkipEnabled } from '$lib/env/app-env';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { onboardingContext } from '$lib/onboarding/context.svelte';
 	import {
@@ -14,15 +16,22 @@
 	} from '$lib/onboarding/navigation';
 	import {
 		canAdvanceFromStep,
+		canFinishOnboarding,
 		getOnboardingStepDefinition,
 		nextOnboardingStep,
 		previousOnboardingStep,
 	} from '$lib/onboarding/steps';
+	import { submitCompleteOnboardingStep } from '$lib/onboarding/submit-complete-step';
 	import { submitSchoolOnboardingStep } from '$lib/onboarding/submit-school-step';
 	import { submitStaffOnboardingStep } from '$lib/onboarding/submit-staff-step';
 	import { submitStructureOnboardingStep } from '$lib/onboarding/submit-structure-step';
+	import {
+		fetchServerOnboardingAccountStatus,
+	} from '$lib/onboarding/sync-account-status';
+	import { mergeOnboardingDraftWithServerStatus, persistServerOnboardingStatusToDraft } from '$lib/onboarding/resume-onboarding';
 
 	let busy = $state(false);
+	let syncedServerStatus = $state(false);
 
 	const currentStep = $derived(parseOnboardingStep($page.url));
 	const maxReachedStep = $derived(onboardingContext.draft.maxReachedStep);
@@ -34,8 +43,12 @@
 	));
 	const canGoBack = $derived(currentStep > 1);
 	const nextStep = $derived(nextOnboardingStep(currentStep));
-	const showContinue = $derived(nextStep !== null);
+	const showContinue = $derived(currentStep < 4 && nextStep !== null);
+	const showFinish = $derived(currentStep === 4);
+	const canFinish = $derived(canFinishOnboarding(onboardingContext.draft));
 	const showSkip = $derived(Boolean(stepDefinition.optional && nextStep !== null));
+	const showSkipOnboarding = $derived(isOnboardingSkipEnabled());
+	const canSkipOnboarding = $derived(authSession.isLoggedIn);
 
 	$effect(() => {
 		const authUserId = authSession.authUserId;
@@ -54,6 +67,47 @@
 		if (requested !== allowed) {
 			appGoto(writeOnboardingStepUrl($page.url, allowed), { replaceState: true });
 		}
+	});
+
+	$effect(() => {
+		if (!onboardingContext.initialized || !authSession.isLoggedIn || syncedServerStatus) {
+			return;
+		}
+
+		syncedServerStatus = true;
+
+		void (async () => {
+			const status = await fetchServerOnboardingAccountStatus();
+			if (!status) {
+				return;
+			}
+
+			const merged = mergeOnboardingDraftWithServerStatus(
+				onboardingContext.draft,
+				status,
+				authSession.schoolId,
+			);
+
+			if (merged.wizardCompleted) {
+				onboardingContext.markWizardCompleted();
+				onboardingContext.clearStoredDraft();
+				const target = redirectPathIfAuthenticated();
+				if (target) {
+					appGoto(target, { replaceState: true });
+				}
+				return;
+			}
+
+			if (merged.schoolStepSubmitted && !onboardingContext.draft.schoolStepSubmitted && merged.registeredSchoolId) {
+				onboardingContext.markSchoolStepSubmitted(merged.registeredSchoolId);
+			}
+			if (merged.structureStepSubmitted && !onboardingContext.draft.structureStepSubmitted) {
+				onboardingContext.markStructureStepSubmitted();
+			}
+			if (merged.maxReachedStep > onboardingContext.draft.maxReachedStep) {
+				onboardingContext.markStepReached(merged.maxReachedStep);
+			}
+		})();
 	});
 
 	function navigateToStep(step: OnboardingStep) {
@@ -151,6 +205,52 @@
 		appGoto(writeOnboardingStepUrl($page.url, nextStep));
 	}
 
+	async function completeAndExitOnboarding(options?: {
+		successMessageKey?: 'onboarding.completeStep.success' | 'onboarding.skipWizardSuccess';
+	}): Promise<boolean> {
+		const success = await submitCompleteOnboardingStep(options);
+		if (!success) {
+			return false;
+		}
+
+		onboardingContext.markWizardCompleted();
+		onboardingContext.clearStoredDraft();
+
+		const target = redirectPathIfAuthenticated();
+		if (target) {
+			appGoto(target, { replaceState: true });
+		}
+		return true;
+	}
+
+	async function finishOnboarding() {
+		if (!canFinish || busy) {
+			return;
+		}
+
+		busy = true;
+		try {
+			await completeAndExitOnboarding();
+		}
+		finally {
+			busy = false;
+		}
+	}
+
+	async function skipOnboarding() {
+		if (!canSkipOnboarding || busy) {
+			return;
+		}
+
+		busy = true;
+		try {
+			await completeAndExitOnboarding({ successMessageKey: 'onboarding.skipWizardSuccess' });
+		}
+		finally {
+			busy = false;
+		}
+	}
+
 	async function signOut() {
 		busy = true;
 		try {
@@ -172,9 +272,15 @@
 		{canGoBack}
 		{showSkip}
 		{showContinue}
+		{showFinish}
+		{canFinish}
+		{showSkipOnboarding}
+		{canSkipOnboarding}
 		{busy}
 		onBack={goBack}
 		onContinue={() => void goNext()}
+		onFinish={() => void finishOnboarding()}
+		onSkipOnboarding={() => void skipOnboarding()}
 		onSkip={skipStep}
 		onStepSelect={navigateToStep}
 		onSignOut={() => void signOut()}

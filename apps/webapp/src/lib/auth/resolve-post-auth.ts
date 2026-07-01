@@ -26,6 +26,7 @@ export function resolvePostAuthPath(options: {
 		authUserId: options.authUserId ?? authSession.authUserId,
 		role: authSession.user?.role,
 		sessionKind: authSession.sessionKind,
+		serverOnboardingStatus: authSession.serverOnboardingStatus,
 	});
 }
 
@@ -39,7 +40,11 @@ export function redirectPathIfAuthenticated(): string | null {
 	}
 
 	if (authSession.isLoggedIn) {
-		const resumePath = onboardingResumePath(authSession.authUserId, authSession.schoolId);
+		const resumePath = onboardingResumePath(
+			authSession.authUserId,
+			authSession.schoolId,
+			authSession.serverOnboardingStatus,
+		);
 		if (resumePath) {
 			return resumePath;
 		}

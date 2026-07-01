@@ -58,3 +58,10 @@ export interface OnboardingDraft {
 	structure: OnboardingStructureDraft;
 	staffInvites: OnboardingStaffInviteDraft[];
 }
+
+export interface ServerOnboardingAccountStatus {
+	wizardCompleted: boolean;
+	maxReachedStep: OnboardingStep;
+	schoolStepSubmitted: boolean;
+	structureStepSubmitted: boolean;
+}

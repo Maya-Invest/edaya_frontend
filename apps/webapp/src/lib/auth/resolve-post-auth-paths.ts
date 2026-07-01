@@ -2,6 +2,7 @@ import type { SessionKind } from '$lib/auth/account-actor';
 import type { SessionSnapshot } from '$lib/auth/types';
 import { appPath } from '$lib/navigation/app-navigation';
 import { onboardingResumePath } from '$lib/onboarding/resume-onboarding';
+import type { ServerOnboardingAccountStatus } from '$lib/onboarding/types';
 
 export const ONBOARDING_PATH = appPath('/onboarding');
 
@@ -28,6 +29,7 @@ export function resolvePostAuthPath(options: {
 	authUserId?: string | null;
 	role?: string | null;
 	sessionKind?: SessionKind | null;
+	serverOnboardingStatus?: ServerOnboardingAccountStatus | null;
 }): string {
 	if (options.pendingOnboarding) {
 		return ONBOARDING_PATH;
@@ -40,6 +42,7 @@ export function resolvePostAuthPath(options: {
 	const resumePath = onboardingResumePath(
 		options.authUserId,
 		options.session.schoolId,
+		options.serverOnboardingStatus,
 	);
 	if (resumePath) {
 		return resumePath;

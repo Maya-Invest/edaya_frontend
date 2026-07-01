@@ -3,6 +3,11 @@ import { ApiError } from '$api-client';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import { t } from '$lib/i18n';
+import {
+	isGradeLevelTemplateKey,
+	toApiGradeLevelTemplateId,
+	toApiStructureTemplateIds,
+} from '$lib/onboarding/structure-templates';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
 
@@ -31,12 +36,17 @@ export async function submitStructureOnboardingStep(
 
 	try {
 		await getBrowserSchoolClient().onboarding.applyStructureTemplate({
-			templates: structure.models,
-			levels: structure.levels.map(level => ({
-				gradeLevelId: level.gradeLevelId,
-				classCount: level.classCount,
-				capacity: level.capacity,
-			})),
+			templates: toApiStructureTemplateIds(structure.models),
+			levels: structure.levels.flatMap((level) => {
+				if (!isGradeLevelTemplateKey(level.gradeLevelId)) {
+					return [];
+				}
+				return [{
+					gradeLevelId: toApiGradeLevelTemplateId(level.gradeLevelId),
+					classCount: level.classCount,
+					capacity: level.capacity,
+				}];
+			}),
 		});
 
 		resetAppShellBootstrap();

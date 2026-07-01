@@ -46,6 +46,10 @@ export function getOnboardingStepDefinition(step: OnboardingStep): OnboardingSte
 	return ONBOARDING_STEPS[step - 1]!;
 }
 
+export function canFinishOnboarding(draft: OnboardingDraft): boolean {
+	return draft.schoolStepSubmitted && draft.structureStepSubmitted;
+}
+
 export function canAdvanceFromStep(
 	step: OnboardingStep,
 	draft: OnboardingDraft,

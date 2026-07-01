@@ -71,6 +71,28 @@ describe('resolvePostAuthPath', () => {
 		expect(target).toBe('/onboarding?step=2');
 	});
 
+	it('routes linked accounts into the app when backend onboarding is complete', () => {
+		const target = resolvePostAuthPath({
+			session: {
+				kind: 'staff',
+				actorId: 'st1',
+				schoolId: 'sch1',
+				effectiveGrants: { isElevated: true },
+			} as never,
+			pendingOnboarding: false,
+			authUserId: 'user-no-draft',
+			serverOnboardingStatus: {
+				wizardCompleted: true,
+				maxReachedStep: 4,
+				schoolStepSubmitted: true,
+				structureStepSubmitted: true,
+			},
+		});
+
+		expect(target).not.toBe('/onboarding');
+		expect(target).not.toBe('/login');
+	});
+
 	it('falls back to login when there is no session and no pending onboarding', () => {
 		expect(resolvePostAuthPath({ session: null, pendingOnboarding: false })).toBe('/login');
 	});

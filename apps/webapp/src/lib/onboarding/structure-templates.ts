@@ -30,6 +30,34 @@ export const LYCEE_GRADE_LEVEL_KEYS: readonly GradeLevelTemplateKey[] = [
 	'gl-t',
 ];
 
+/** Maps onboarding UI models to API structure template ids (`@edaya/fixtures/onboarding`). */
+export const STRUCTURE_MODEL_API_TEMPLATE_IDS = {
+	college: 'ci-college',
+	lycee: 'ci-lycee',
+} as const satisfies Record<StructureModel, string>;
+
+/**
+ * Maps simplified grade-level keys to API template grade ids.
+ * Lycée rows use one representative track per year (C / générale).
+ */
+export const GRADE_LEVEL_API_TEMPLATE_IDS = {
+	'gl-6': 'ci-college:6EME',
+	'gl-5': 'ci-college:5EME',
+	'gl-4': 'ci-college:4EME',
+	'gl-3': 'ci-college:3EME',
+	'gl-2': 'ci-lycee:2NDC',
+	'gl-1': 'ci-lycee:1ERC',
+	'gl-t': 'ci-lycee:TLEC',
+} as const satisfies Record<GradeLevelTemplateKey, string>;
+
+export function toApiStructureTemplateIds(models: readonly StructureModel[]): string[] {
+	return models.map(model => STRUCTURE_MODEL_API_TEMPLATE_IDS[model]);
+}
+
+export function toApiGradeLevelTemplateId(gradeLevelId: GradeLevelTemplateKey): string {
+	return GRADE_LEVEL_API_TEMPLATE_IDS[gradeLevelId];
+}
+
 export const GRADE_LEVEL_TEMPLATES: Record<GradeLevelTemplateKey, GradeLevelTemplate> = {
 	'gl-6': { key: 'gl-6', name: '6ème', shortLabel: '6e', model: 'college', order: 1 },
 	'gl-5': { key: 'gl-5', name: '5ème', shortLabel: '5e', model: 'college', order: 2 },

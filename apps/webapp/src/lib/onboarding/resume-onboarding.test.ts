@@ -66,4 +66,37 @@ describe('resume onboarding', () => {
 			expect(onboardingResumePath('user-no-draft', 'sch-1')).toBe('/onboarding?step=1');
 		});
 	});
+
+	it('uses backend onboarding status when local draft is missing', () => {
+		withSessionStorage(() => {
+			const serverStatus = {
+				wizardCompleted: true,
+				maxReachedStep: 4 as const,
+				schoolStepSubmitted: true,
+				structureStepSubmitted: true,
+			};
+
+			expect(shouldContinueOnboarding('user-no-draft', 'sch-1', serverStatus)).toBe(false);
+			expect(onboardingResumePath('user-no-draft', 'sch-1', serverStatus)).toBeNull();
+		});
+	});
+
+	it('resumes at the backend max step when local draft is behind', () => {
+		withSessionStorage(() => {
+			const authUserId = 'user-server-step';
+			const draft = createEmptyDraft();
+			draft.schoolStepSubmitted = true;
+			draft.maxReachedStep = 2;
+			saveDraft(authUserId, draft);
+
+			const serverStatus = {
+				wizardCompleted: false,
+				maxReachedStep: 4 as const,
+				schoolStepSubmitted: true,
+				structureStepSubmitted: true,
+			};
+
+			expect(onboardingResumePath(authUserId, 'sch-1', serverStatus)).toBe('/onboarding?step=4');
+		});
+	});
 });

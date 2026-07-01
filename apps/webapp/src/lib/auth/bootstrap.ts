@@ -5,6 +5,10 @@ import {
 } from '$lib/api/account-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { fetchSessionStaffProfile } from '$lib/api/staff-data';
+import {
+	fetchServerOnboardingAccountStatus,
+} from '$lib/onboarding/sync-account-status';
+import { persistServerOnboardingStatusToDraft } from '$lib/onboarding/resume-onboarding';
 import { authClient } from './client';
 import { authSession } from './session.svelte';
 
@@ -77,6 +81,17 @@ export async function bootstrapSession(): Promise<BootstrapSessionResult> {
 				notificationEmail: sessionStaff.notificationEmail,
 				notificationPhone: sessionStaff.notificationPhone,
 			});
+
+			const serverOnboardingStatus = await fetchServerOnboardingAccountStatus();
+			authSession.setServerOnboardingStatus(serverOnboardingStatus);
+			if (serverOnboardingStatus) {
+				persistServerOnboardingStatusToDraft(
+					auth.user.id,
+					serverOnboardingStatus,
+					session.schoolId,
+				);
+			}
+
 			return { session, staffProfile, guardianSettings, pendingOnboarding: false };
 		}
 		else if (session?.kind === 'guardian') {

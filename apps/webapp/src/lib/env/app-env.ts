@@ -9,6 +9,11 @@ export function isLocalDevApi(): boolean {
 	return dev && !PUBLIC_API_URL;
 }
 
+/** Dev/staging helper — mark onboarding complete without finishing every wizard step. */
+export function isOnboardingSkipEnabled(): boolean {
+	return dev || PUBLIC_APP_ENV === 'staging';
+}
+
 /** Mirrors API `ALLOW_PUBLIC_SCHOOL_REGISTRATION` — enabled in dev/staging by default. */
 export function isPublicSchoolRegistrationEnabled(): boolean {
 	const flag = import.meta.env.PUBLIC_ALLOW_SCHOOL_REGISTRATION;

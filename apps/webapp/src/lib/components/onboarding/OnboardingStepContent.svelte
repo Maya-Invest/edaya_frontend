@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { OnboardingStep } from '$lib/onboarding/types';
+	import OnboardingStepCompleteForm from '$lib/components/onboarding/OnboardingStepCompleteForm.svelte';
 	import OnboardingStepSchoolForm from '$lib/components/onboarding/OnboardingStepSchoolForm.svelte';
 	import OnboardingStepStaffForm from '$lib/components/onboarding/OnboardingStepStaffForm.svelte';
 	import OnboardingStepStructureForm from '$lib/components/onboarding/OnboardingStepStructureForm.svelte';
@@ -36,8 +37,6 @@
 	{:else if step === 3}
 		<OnboardingStepStaffForm disabled={busy} />
 	{:else}
-		<div class="rounded-xl border border-dashed border-border bg-secondary/30 px-4 py-6 text-sm text-muted-foreground">
-			{$t('onboarding.placeholder.complete')}
-		</div>
+		<OnboardingStepCompleteForm />
 	{/if}
 </div>

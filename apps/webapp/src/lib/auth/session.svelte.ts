@@ -2,6 +2,7 @@ import type { GuardianNotificationSettings } from '$lib/api/account-data';
 import type { AccountActor, SessionKind } from '$lib/auth/account-actor';
 import type { EffectiveGrantsSnapshot, SessionSnapshot } from '$lib/auth/types';
 import type { StaffMember } from '$lib/types/school';
+import type { ServerOnboardingAccountStatus } from '$lib/onboarding/types';
 import { browser } from '$app/environment';
 import { academicContext } from '$lib/academic/context.svelte';
 import { clearAuthGate } from '$lib/auth/auth-gate';
@@ -11,6 +12,7 @@ class AuthSession {
 	userId = $state<string | null>(null);
 	authUserId = $state<string | null>(null);
 	needsOnboarding = $state(false);
+	serverOnboardingStatus = $state<ServerOnboardingAccountStatus | null>(null);
 	schoolId = $state<string | null>(null);
 	sessionKind = $state<SessionKind | null>(null);
 	subjectId = $state<string | null>(null);
@@ -82,6 +84,7 @@ class AuthSession {
 	setPendingOnboarding(options: { authUserId: string; loginEmail: string | null }) {
 		this.authUserId = options.authUserId;
 		this.needsOnboarding = true;
+		this.serverOnboardingStatus = null;
 		this.loginEmail = options.loginEmail;
 		this.userId = null;
 		this.schoolId = null;
@@ -93,6 +96,10 @@ class AuthSession {
 		this.guardianSettings = null;
 		this.grants = null;
 		this.ready = true;
+	}
+
+	setServerOnboardingStatus(status: ServerOnboardingAccountStatus | null) {
+		this.serverOnboardingStatus = status;
 	}
 
 	setFromServer(
@@ -154,6 +161,7 @@ class AuthSession {
 		this.userId = null;
 		this.authUserId = null;
 		this.needsOnboarding = false;
+		this.serverOnboardingStatus = null;
 		this.schoolId = null;
 		this.sessionKind = null;
 		this.subjectId = null;
