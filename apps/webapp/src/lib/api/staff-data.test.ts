@@ -1,4 +1,4 @@
-import { staffMember, subject } from '$lib/test/openapi-fixtures';
+import { classSubject, staffMember, subject } from '$lib/test/openapi-fixtures';
 import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
 import {
@@ -34,9 +34,9 @@ const assignmentsRaw = [
 ];
 
 const classSubjectsRaw = [
-	{ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math', completedPercentage: 0 },
-	{ id: 'cs-6a-sci', classGroupId: '6a', subjectId: 'subj-sci', completedPercentage: 0 },
-	{ id: 'cs-6a-hist', classGroupId: '6a', subjectId: 'subj-hist', completedPercentage: 0 },
+	classSubject({ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math' }),
+	classSubject({ id: 'cs-6a-sci', classGroupId: '6a', subjectId: 'subj-sci' }),
+	classSubject({ id: 'cs-6a-hist', classGroupId: '6a', subjectId: 'subj-hist' }),
 ];
 
 const subjectsRaw = [

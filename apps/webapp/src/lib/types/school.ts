@@ -40,10 +40,13 @@ export interface Subject {
 	category: SubjectCategory;
 }
 
+export type PlanningEventKind = 'lesson' | 'homework-due' | 'assessment' | 'activity';
+
 export interface PlanningEvent {
 	id: string;
 	classId: string;
 	scheduleId?: string;
+	kind?: PlanningEventKind;
 	title: string;
 	subject: string;
 	day: 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri';

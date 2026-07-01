@@ -1,5 +1,5 @@
 import type { components } from '$lib/api/schema';
-import { reportCardDefinition, subject } from '$lib/test/openapi-fixtures';
+import { classSubject, reportCardDefinition, subject } from '$lib/test/openapi-fixtures';
 import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
 import {
@@ -173,9 +173,9 @@ const seedDefinitionSectionsRaw = [
 
 const classSubjectsSources = {
 	classSubjectsRaw: [
-		{ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math', completedPercentage: 0 },
-		{ id: 'cs-6b-math', classGroupId: '6b', subjectId: 'subj-math', completedPercentage: 0 },
-		{ id: 'cs-term-advmath', classGroupId: 'term-s', subjectId: 'subj-advmath', completedPercentage: 0 },
+		classSubject({ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math' }),
+		classSubject({ id: 'cs-6b-math', classGroupId: '6b', subjectId: 'subj-math' }),
+		classSubject({ id: 'cs-term-advmath', classGroupId: 'term-s', subjectId: 'subj-advmath' }),
 	],
 	subjectsRaw: [
 		subject({ id: 'subj-math', name: 'Mathematics', defaultCoefficient: 3 }),

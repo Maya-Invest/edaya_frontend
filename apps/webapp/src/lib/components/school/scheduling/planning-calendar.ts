@@ -211,6 +211,7 @@ export interface TimetableCalendarEvent {
 	subject: string;
 	room: string;
 	teacher: string;
+	kind?: PlanningEvent['kind'];
 	css?: string;
 }
 
@@ -236,9 +237,17 @@ export function mapPlanningToCalendarEvents(
 			subject: event.subject,
 			room: event.room,
 			teacher: event.teacher,
-			css: subjectToneClass(event.subject),
+			kind: event.kind,
+			css: calendarEventCss(event),
 		};
 	});
+}
+
+function calendarEventCss(event: PlanningEvent): string {
+	if (event.kind === 'homework-due') {
+		return 'edaya-homework-due';
+	}
+	return subjectToneClass(event.subject);
 }
 
 export function weekGenerationRange(weekStart: Date): { startDate: Date; endDate: Date } {
@@ -267,6 +276,49 @@ export function timetableHours(events: PlanningEvent[]): { startHour: number; en
 
 	return {
 		startHour: Math.max(6, minHour - 1),
-		endHour: Math.min(21, endHour + 1),
+		endHour: Math.min(21, Math.max(endHour + 1, 18)),
 	};
+}
+
+export interface PlanningOverlap {
+	left: PlanningEvent;
+	right: PlanningEvent;
+}
+
+function isTimedPlanningEvent(event: PlanningEvent): boolean {
+	return event.kind !== 'homework-due';
+}
+
+export function detectPlanningOverlaps(events: readonly PlanningEvent[]): PlanningOverlap[] {
+	const timed = events.filter(isTimedPlanningEvent);
+	const overlaps: PlanningOverlap[] = [];
+
+	for (let i = 0; i < timed.length; i++) {
+		for (let j = i + 1; j < timed.length; j++) {
+			const left = timed[i]!;
+			const right = timed[j]!;
+			if (planningEventsOverlap(left, right)) {
+				overlaps.push({ left, right });
+			}
+		}
+	}
+
+	return overlaps;
+}
+
+export function overlappingPlanningEventIds(events: readonly PlanningEvent[]): Set<string> {
+	const ids = new Set<string>();
+	for (const { left, right } of detectPlanningOverlaps(events)) {
+		ids.add(left.id);
+		ids.add(right.id);
+	}
+	return ids;
+}
+
+function planningEventsOverlap(left: PlanningEvent, right: PlanningEvent): boolean {
+	const leftStart = new Date(left.startsAt).getTime();
+	const leftEnd = new Date(left.endsAt).getTime();
+	const rightStart = new Date(right.startsAt).getTime();
+	const rightEnd = new Date(right.endsAt).getTime();
+	return leftStart < rightEnd && rightStart < leftEnd;
 }

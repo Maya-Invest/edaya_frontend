@@ -6,10 +6,9 @@ import {
   repoRoot,
   saasAdminOpenApiPath,
   saasAdminSchemaPath,
-  trackedClientBindingsPath,
-  trackedCreateClientPath,
   trackedOpenApiPath,
   trackedSchemaPath,
+  trackedWebappClientDirPath,
 } from './paths.ts'
 
 function filesMatch(leftPath: string, rightPath: string): boolean {
@@ -23,8 +22,7 @@ export async function checkTrackedClientArtifacts(
     input: openApiInput,
     openApiOut: trackedOpenApiPath,
     schemaOut: trackedSchemaPath,
-    bindingsOut: trackedClientBindingsPath,
-    clientOut: trackedCreateClientPath,
+    clientDir: trackedWebappClientDirPath,
     repoRoot,
   })
 

@@ -1,9 +1,9 @@
 import type { OnboardingStructureDraft } from '$lib/onboarding/types';
+import { ApiError } from '$api-client';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import { t } from '$lib/i18n';
 import { toast } from '$lib/toast.svelte';
-import { ApiError } from '@edaya/api-client';
 import { get } from 'svelte/store';
 
 function messageFromError(error: unknown): string {
@@ -31,7 +31,7 @@ export async function submitStructureOnboardingStep(
 
 	try {
 		await getBrowserSchoolClient().onboarding.applyStructureTemplate({
-			models: structure.models,
+			templates: structure.models,
 			levels: structure.levels.map(level => ({
 				gradeLevelId: level.gradeLevelId,
 				classCount: level.classCount,

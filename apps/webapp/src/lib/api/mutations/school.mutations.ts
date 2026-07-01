@@ -33,6 +33,7 @@ export async function updateSchoolSettingsMutation(
 			country: input.country?.trim() || null,
 			type: input.type ?? null,
 			ownerSubjectId: current?.ownerSubjectId ?? undefined,
+			enforceScheduleConflicts: current?.enforceScheduleConflicts ?? false,
 		}),
 		{ successMessage: options?.successMessage },
 	);

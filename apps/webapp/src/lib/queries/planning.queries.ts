@@ -31,7 +31,7 @@ export function queryClassTimetablePage(classId: string) {
 		load: async () => {
 			const periodId = academicContext.periodId;
 			const [planning, schedules, { students }, subjects] = await Promise.all([
-				loadClassPlanning(queryClient(), classId),
+				loadClassPlanning(queryClient(), classId, { periodId }),
 				loadClassSchedules(queryClient(), classId),
 				loadClassPeopleData(queryClient(), classId, periodId),
 				getClassSubjects(classId),

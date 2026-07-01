@@ -66,6 +66,7 @@ export async function createSubjectForClassMutation(input: {
 			id: classSubjectId,
 			classGroupId: input.classGroupId,
 			subjectId,
+			isOffered: true,
 			createdAt: new Date().toISOString(),
 		});
 	}, { successMessage: input.successMessage });

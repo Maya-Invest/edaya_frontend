@@ -1,7 +1,7 @@
 import type { components } from '$lib/api/schema';
 import type { Activity } from '$lib/types/school';
 
-type ActivityEntity = components['schemas']['ExtracurricularActivity'];
+type ActivityEntity = components['schemas']['Activity'];
 
 export const DEFAULT_ACTIVITY_SCHEDULE = '—';
 

@@ -1,6 +1,6 @@
+import type { Transport, TransportRequestOptions } from '$api-client';
 import type { components } from '$lib/api/schema';
-import type { Transport, TransportRequestOptions } from '@edaya/api-client';
-import { createSchoolClient } from '@edaya/api-client';
+import { createSchoolClient } from '$api-client';
 
 export interface RecordedRequest {
 	method: string;
@@ -36,4 +36,9 @@ export function entityListRequests(requests: readonly RecordedRequest[], publicN
 export function entityCountRequests(requests: readonly RecordedRequest[], publicName: string) {
 	return requests.filter(request =>
 		request.method === 'POST' && request.path === `/core/entities/${publicName}/count`);
+}
+
+export function queryRequests(requests: readonly RecordedRequest[], publicName: string) {
+	return requests.filter(request =>
+		request.method === 'POST' && request.path === `/core/queries/${publicName}`);
 }

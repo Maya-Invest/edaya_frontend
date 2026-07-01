@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import {
   extractClientBindingsFromOpenApi,
   X_EDAYA_KIND,
-} from '@edaya/api-client/openapi-bindings'
+} from '@edaya/client-codegen'
 import { describe, expect, it } from 'bun:test'
 
 const openApiPath = resolve(

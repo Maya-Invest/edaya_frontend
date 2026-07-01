@@ -1,15 +1,15 @@
-import { staffMember, subject } from '$lib/test/openapi-fixtures';
+import { classSubject, staffMember, subject } from '$lib/test/openapi-fixtures';
 import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
 import { mapClassSubjects } from './subjects-data';
 
 const sources = {
 	classSubjectsRaw: [
-		{ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math', completedPercentage: 0 },
-		{ id: 'cs-6a-fr', classGroupId: '6a', subjectId: 'subj-fr', completedPercentage: 0 },
-		{ id: 'cs-6a-hist', classGroupId: '6a', subjectId: 'subj-hist', completedPercentage: 0 },
-		{ id: 'cs-6a-en', classGroupId: '6a', subjectId: 'subj-en', completedPercentage: 0 },
-		{ id: 'cs-6a-eps', classGroupId: '6a', subjectId: 'subj-eps', completedPercentage: 0 },
+		classSubject({ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math' }),
+		classSubject({ id: 'cs-6a-fr', classGroupId: '6a', subjectId: 'subj-fr' }),
+		classSubject({ id: 'cs-6a-hist', classGroupId: '6a', subjectId: 'subj-hist' }),
+		classSubject({ id: 'cs-6a-en', classGroupId: '6a', subjectId: 'subj-en' }),
+		classSubject({ id: 'cs-6a-eps', classGroupId: '6a', subjectId: 'subj-eps' }),
 	],
 	subjectsRaw: [
 		subject({ id: 'subj-math', name: 'Mathematics', code: 'MATH', defaultCoefficient: 3 }),
@@ -57,8 +57,8 @@ describe('mapClassSubjects', () => {
 	it('uses the same color for a subject across class subject instances', () => {
 		const subjects = mapClassSubjects('6a', {
 			classSubjectsRaw: [
-				{ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math', completedPercentage: 0 },
-				{ id: 'cs-6b-math', classGroupId: '6b', subjectId: 'subj-math', completedPercentage: 0 },
+				classSubject({ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math' }),
+				classSubject({ id: 'cs-6b-math', classGroupId: '6b', subjectId: 'subj-math' }),
 			],
 			subjectsRaw: [
 				{ id: 'subj-math', schoolId: SEED_SCHOOL_ID, name: 'Mathematics', code: 'MATH', defaultCoefficient: 3, category: 'Scientifique', color: 'mint' },
@@ -75,7 +75,7 @@ describe('mapClassSubjects', () => {
 	it('falls back to defaults when API fields are missing', () => {
 		const subjects = mapClassSubjects('6a', {
 			classSubjectsRaw: [
-				{ id: 'cs-6a-sci', classGroupId: '6a', subjectId: 'subj-sci', completedPercentage: 0 },
+				classSubject({ id: 'cs-6a-sci', classGroupId: '6a', subjectId: 'subj-sci' }),
 			],
 			subjectsRaw: [
 				subject({ id: 'subj-sci', name: 'Natural Sciences', code: 'SCI', defaultCoefficient: 2 }),
@@ -91,7 +91,7 @@ describe('mapClassSubjects', () => {
 	it('shows a placeholder teacher when staff roster data is unavailable', () => {
 		const subjects = mapClassSubjects('6a', {
 			classSubjectsRaw: [
-				{ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math', completedPercentage: 0 },
+				classSubject({ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math' }),
 			],
 			subjectsRaw: [
 				subject({ id: 'subj-math', name: 'Mathematics', code: 'MATH', defaultCoefficient: 3 }),

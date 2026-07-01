@@ -5,11 +5,11 @@ import { activityEnrollmentsForActivities, uniqueIds } from '$lib/api/entity-lis
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
-type ExtracurricularActivityRaw = components['schemas']['ExtracurricularActivity'];
+type ActivityRaw = components['schemas']['Activity'];
 type ActivityEnrollmentRaw = components['schemas']['ActivityEnrollment'];
 
 export interface ActivitySources {
-	activitiesRaw: ExtracurricularActivityRaw[];
+	activitiesRaw: ActivityRaw[];
 	activityEnrollmentsRaw: ActivityEnrollmentRaw[];
 }
 

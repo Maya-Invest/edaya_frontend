@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { InvitationPreview } from '$lib/api/invitation-data';
+	import { ApiError } from '$api-client';
 	import { page } from '$app/stores';
 	import { acceptInvitation, fetchInvitationPreview } from '$lib/api/invitation-data';
 	import { isExistingAccountAuthError } from '$lib/auth/auth-errors';
@@ -15,7 +16,6 @@
 	import { GraduationCap, LoaderCircle } from '$lib/icons';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { toast } from '$lib/toast.svelte';
-	import { ApiError } from '@edaya/api-client';
 	import { get } from 'svelte/store';
 
 	function sessionBlocksInvitationAccept(

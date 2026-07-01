@@ -19,10 +19,10 @@
 		"quality": "bun run lint && bun run check",
 		"test": "bun test src",
 		"lint": "eslint src",
-		"lint:fix": "eslint src --fix"
+		"lint:fix": "eslint src --fix",
+		"generate:client": "edaya-codegen generate --input ${OPENAPI_INPUT:-src/lib/api/openapi.json} --client-dir src/generated/api-client --schema-out src/lib/api/schema.d.ts"
 	},
 	"dependencies": {
-		"@edaya/api-client": "workspace:*",
 		"@internationalized/date": "^3.12.2",
 		"@svar-ui/calendar-locales": "^2.6.0",
 		"@svar-ui/core-locales": "^2.6.0",
@@ -35,6 +35,7 @@
 		"tailwind-merge": "^3.6.0"
 	},
 	"devDependencies": {
+		"@edaya/client-codegen": "file:../../../edaya-client-codegen",
 		"@cloudflare/workers-types": "^4.20250617.0",
 		"@edaya/web-fixtures": "workspace:*",
 		"@sveltejs/adapter-static": "^3.0.10",

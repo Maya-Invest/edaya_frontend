@@ -1,4 +1,4 @@
-import { ApiError } from '@edaya/api-client';
+import { ApiError } from '$api-client';
 
 /** Optional enrichment reads (e.g. teacher names) that must not break page loads on 403. */
 export async function safeOptionalEntityList<T>(

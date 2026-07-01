@@ -1,12 +1,13 @@
 import type { PlanningEvent, TimetableSchedule } from '$lib/types/school';
+import { classGroupScope } from '$lib/api/entity-list-filters';
 import { createSessionMutation, updateSessionMutation } from '$lib/api/mutations/planning.mutations';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { loadClassPlanning } from '$lib/api/planning-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { authSession } from '$lib/auth/session.svelte';
 import {
 	filterPlanningEventsForWeek,
 	PLANNING_DAY_TO_SCHEDULE,
-	weekGenerationRange,
 } from '$lib/components/school/scheduling/planning-calendar';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { t } from '$lib/i18n';
@@ -87,13 +88,17 @@ export async function createScheduleMutation(input: {
 
 	const result = await runMutation(() => client.commands.createSchedule({
 		id,
+		schoolId: authSession.schoolId!,
 		classGroupId: input.classGroupId,
+		scheduleKind: 'lesson',
 		title: input.title.trim(),
 		isRecurring: true,
 		dayOfWeek: PLANNING_DAY_TO_SCHEDULE[input.day],
 		startTime: input.startTime,
 		endTime: input.endTime,
 		classSubjectId: input.classSubjectId ?? null,
+		activityId: null,
+		specificDate: null,
 		createdAt: new Date().toISOString(),
 	}), {
 		successMessage: input.successMessage,
@@ -207,13 +212,13 @@ export async function generateSessionsMutation(input: {
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const { startDate, endDate } = weekGenerationRange(input.weekStart);
+	const schedules = await client.entities.schedules.list(classGroupScope(input.classGroupId));
 
-	const result = await runMutation(() => client.commands.generateSessions({
-		classGroupId: input.classGroupId,
-		startDate: startDate.toISOString(),
-		endDate: endDate.toISOString(),
-	}), {
+	const result = await runMutation(async () => {
+		for (const schedule of schedules ?? []) {
+			await client.commands.materializeSchedule({ scheduleId: schedule.id });
+		}
+	}, {
 		successMessage: input.successMessage,
 		onSuccess: async () => {
 			const planning = await loadClassPlanning(client, input.classGroupId);

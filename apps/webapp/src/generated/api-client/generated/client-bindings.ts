@@ -88,9 +88,19 @@ export const clientBindings = {
         "schemaName": "Schedule",
         "allowDirectSave": true
       },
-      "sessions": {
-        "publicName": "sessions",
-        "schemaName": "Session",
+      "lessonSessions": {
+        "publicName": "lesson-sessions",
+        "schemaName": "LessonSession",
+        "allowDirectSave": true
+      },
+      "activitySessions": {
+        "publicName": "activity-sessions",
+        "schemaName": "ActivitySession",
+        "allowDirectSave": true
+      },
+      "attendances": {
+        "publicName": "attendances",
+        "schemaName": "AttendanceOccurrence",
         "allowDirectSave": true
       },
       "calendarEvents": {
@@ -133,6 +143,16 @@ export const clientBindings = {
         "schemaName": "SubjectMatter",
         "allowDirectSave": true
       },
+      "gradeLevelSubjects": {
+        "publicName": "grade-level-subjects",
+        "schemaName": "GradeLevelSubject",
+        "allowDirectSave": false
+      },
+      "gradeLevelSubjectMatters": {
+        "publicName": "grade-level-subject-matters",
+        "schemaName": "GradeLevelSubjectMatter",
+        "allowDirectSave": false
+      },
       "classGroups": {
         "publicName": "class-groups",
         "schemaName": "ClassGroup",
@@ -141,7 +161,7 @@ export const clientBindings = {
       "classSubjects": {
         "publicName": "class-subjects",
         "schemaName": "ClassSubject",
-        "allowDirectSave": true
+        "allowDirectSave": false
       },
       "classSubjectMatters": {
         "publicName": "class-subject-matters",
@@ -153,24 +173,9 @@ export const clientBindings = {
         "schemaName": "ClassSubjectProgress",
         "allowDirectSave": true
       },
-      "classLogbookEntries": {
-        "publicName": "class-logbook-entries",
-        "schemaName": "ClassLogbookEntry",
-        "allowDirectSave": true
-      },
-      "homeworkAssignments": {
-        "publicName": "homework-assignments",
-        "schemaName": "HomeworkAssignment",
-        "allowDirectSave": true
-      },
-      "homeworkSubmissions": {
-        "publicName": "homework-submissions",
-        "schemaName": "HomeworkSubmission",
-        "allowDirectSave": true
-      },
       "activities": {
         "publicName": "activities",
-        "schemaName": "ExtracurricularActivity",
+        "schemaName": "Activity",
         "allowDirectSave": true
       },
       "activityEnrollments": {
@@ -350,9 +355,9 @@ export const clientBindings = {
         "requestSchemaName": "AssignStaffToClassSubjectCommand",
         "responseSchemaName": "StaffAssignment"
       },
-      "assignStaffToSession": {
-        "publicName": "assign-staff-to-session",
-        "requestSchemaName": "AssignStaffToSessionCommand",
+      "assignStaffToLessonSession": {
+        "publicName": "assign-staff-to-lesson-session",
+        "requestSchemaName": "AssignStaffToLessonSessionCommand",
         "responseSchemaName": "StaffAssignment"
       },
       "assignResourceToClass": {
@@ -360,9 +365,9 @@ export const clientBindings = {
         "requestSchemaName": "AssignResourceToClassCommand",
         "responseSchemaName": "ResourceAssignment"
       },
-      "assignResourceToSession": {
-        "publicName": "assign-resource-to-session",
-        "requestSchemaName": "AssignResourceToSessionCommand",
+      "assignResourceToLessonSession": {
+        "publicName": "assign-resource-to-lesson-session",
+        "requestSchemaName": "AssignResourceToLessonSessionCommand",
         "responseSchemaName": "ResourceAssignment"
       },
       "removeResourceAssignment": {
@@ -470,9 +475,39 @@ export const clientBindings = {
         "requestSchemaName": "AssignMatterToClassSubjectCommand",
         "responseSchemaName": "ClassSubjectMatter"
       },
-      "recordSessionProgress": {
-        "publicName": "record-session-progress",
-        "requestSchemaName": "RecordSessionProgressCommand",
+      "offerSubjectToGradeLevel": {
+        "publicName": "offer-subject-to-grade-level",
+        "requestSchemaName": "OfferSubjectToGradeLevelCommand",
+        "responseSchemaName": "GradeLevelSubject"
+      },
+      "removeSubjectFromGradeLevel": {
+        "publicName": "remove-subject-from-grade-level",
+        "requestSchemaName": "RemoveSubjectFromGradeLevelCommand",
+        "responseSchemaName": "CommandMessageResponse"
+      },
+      "updateGradeLevelSubject": {
+        "publicName": "update-grade-level-subject",
+        "requestSchemaName": "UpdateGradeLevelSubjectCommand",
+        "responseSchemaName": "GradeLevelSubject"
+      },
+      "assignMatterToGradeLevelSubject": {
+        "publicName": "assign-matter-to-grade-level-subject",
+        "requestSchemaName": "AssignMatterToGradeLevelSubjectCommand",
+        "responseSchemaName": "GradeLevelSubjectMatter"
+      },
+      "addCustomClassSubject": {
+        "publicName": "add-custom-class-subject",
+        "requestSchemaName": "AddCustomClassSubjectCommand",
+        "responseSchemaName": "ClassSubject"
+      },
+      "setClassSubjectOffered": {
+        "publicName": "set-class-subject-offered",
+        "requestSchemaName": "SetClassSubjectOfferedCommand",
+        "responseSchemaName": "ClassSubject"
+      },
+      "recordLessonSessionProgress": {
+        "publicName": "record-lesson-session-progress",
+        "requestSchemaName": "RecordLessonSessionProgressCommand",
         "responseSchemaName": "ClassSubjectProgress"
       },
       "createGradeScale": {
@@ -590,20 +625,35 @@ export const clientBindings = {
         "requestSchemaName": "CreateScheduleCommand",
         "responseSchemaName": "Schedule"
       },
+      "saveSchedule": {
+        "publicName": "save-schedule",
+        "requestSchemaName": "SaveScheduleCommand",
+        "responseSchemaName": "Schedule"
+      },
+      "materializeSchedule": {
+        "publicName": "materialize-schedule",
+        "requestSchemaName": "MaterializeScheduleCommand",
+        "responseSchemaName": "MaterializedOccurrenceCommandListResponse"
+      },
       "createCalendarEvent": {
         "publicName": "create-calendar-event",
         "requestSchemaName": "CreateCalendarEventCommand",
         "responseSchemaName": "CalendarEvent"
       },
-      "createSession": {
-        "publicName": "create-session",
-        "requestSchemaName": "CreateSessionCommand",
-        "responseSchemaName": "Session"
+      "cancelLessonSession": {
+        "publicName": "cancel-lesson-session",
+        "requestSchemaName": "CancelLessonSessionCommand",
+        "responseSchemaName": "LessonSession"
       },
-      "generateSessions": {
-        "publicName": "generate-sessions",
-        "requestSchemaName": "GenerateSessionsCommand",
-        "responseSchemaName": "SessionCommandListResponse"
+      "cancelActivitySession": {
+        "publicName": "cancel-activity-session",
+        "requestSchemaName": "CancelActivitySessionCommand",
+        "responseSchemaName": "ActivitySession"
+      },
+      "rescheduleOccurrence": {
+        "publicName": "reschedule-occurrence",
+        "requestSchemaName": "RescheduleOccurrenceCommand",
+        "responseSchemaName": "MaterializedOccurrenceCommandResponse"
       },
       "recordAttendance": {
         "publicName": "record-attendance",
@@ -615,9 +665,9 @@ export const clientBindings = {
         "requestSchemaName": "RecordDailyAttendanceCommand",
         "responseSchemaName": "Attendance"
       },
-      "recordSessionAttendance": {
-        "publicName": "record-session-attendance",
-        "requestSchemaName": "RecordSessionAttendanceCommand",
+      "recordLessonSessionAttendance": {
+        "publicName": "record-lesson-session-attendance",
+        "requestSchemaName": "RecordLessonSessionAttendanceCommand",
         "responseSchemaName": "AttendanceCommandListResponse"
       },
       "recordClassDailyAttendance": {
@@ -706,6 +756,11 @@ export const clientBindings = {
         "publicName": "get-school-overview",
         "requestSchemaName": "GetSchoolOverviewQuery",
         "responseSchemaName": "SchoolOverviewResponse"
+      },
+      "getClassGroupTimetable": {
+        "publicName": "get-class-group-timetable",
+        "requestSchemaName": "GetClassGroupTimetableQuery",
+        "responseSchemaName": "ClassGroupTimetableResponse"
       }
     },
     "authorization": {
@@ -722,40 +777,33 @@ export const clientBindings = {
         "requestSchemaName": "OnboardingRegisterSchoolRequest",
         "responseSchemaName": "School"
       },
+      "listStructureTemplates": {
+        "method": "GET",
+        "path": "onboarding/structure-templates",
+        "responseSchemaName": "OnboardingListStructureTemplatesResponse"
+      },
+      "accountStatus": {
+        "method": "GET",
+        "path": "onboarding/account-status",
+        "responseSchemaName": "OnboardingAccountStatusResponse"
+      },
       "applyStructureTemplate": {
         "method": "POST",
         "path": "onboarding/apply-structure-template",
         "requestSchemaName": "OnboardingApplyStructureTemplateRequest",
         "responseSchemaName": "OnboardingApplyStructureTemplateResponse"
       },
+      "completeWizard": {
+        "method": "POST",
+        "path": "onboarding/complete-wizard",
+        "requestSchemaName": "OnboardingCompleteWizardRequest",
+        "responseSchemaName": "OnboardingAccountStatusResponse"
+      },
       "inviteStaffMembers": {
         "method": "POST",
         "path": "onboarding/invite-staff-members",
         "requestSchemaName": "OnboardingInviteStaffMembersRequest",
         "responseSchemaName": "OnboardingInviteStaffMembersResponse"
-      }
-    },
-    "files": {
-      "createUploadIntent": {
-        "method": "POST",
-        "path": "files/upload-intents",
-        "requestSchemaName": "CreateFileUploadIntentRequest",
-        "responseSchemaName": "CreateFileUploadIntentResponse"
-      },
-      "getDownloadUrl": {
-        "method": "GET",
-        "path": "files/{attachmentId}/download-url",
-        "pathParams": [
-          "attachmentId"
-        ],
-        "responseSchemaName": "FileDownloadUrlResponse"
-      },
-      "getContent": {
-        "method": "GET",
-        "path": "files/{attachmentId}/content",
-        "pathParams": [
-          "attachmentId"
-        ]
       }
     },
     "serviceAccounts": {
@@ -797,6 +845,14 @@ export const clientBindings = {
         "responseSchemaName": "RotateServiceAccountKeyResponse"
       }
     },
+    "webhooks": {
+      "notificationDelivery": {
+        "method": "POST",
+        "path": "webhooks/notification-delivery",
+        "responseSchemaName": "NotificationDeliveryWebhookResponse",
+        "basePath": "root"
+      }
+    },
     "public": {
       "previewInvitation": {
         "method": "GET",
@@ -817,12 +873,27 @@ export const clientBindings = {
         "basePath": "root"
       }
     },
-    "webhooks": {
-      "notificationDelivery": {
+    "files": {
+      "createUploadIntent": {
         "method": "POST",
-        "path": "webhooks/notification-delivery",
-        "responseSchemaName": "NotificationDeliveryWebhookResponse",
-        "basePath": "root"
+        "path": "files/upload-intents",
+        "requestSchemaName": "CreateFileUploadIntentRequest",
+        "responseSchemaName": "CreateFileUploadIntentResponse"
+      },
+      "getDownloadUrl": {
+        "method": "GET",
+        "path": "files/{attachmentId}/download-url",
+        "pathParams": [
+          "attachmentId"
+        ],
+        "responseSchemaName": "FileDownloadUrlResponse"
+      },
+      "getContent": {
+        "method": "GET",
+        "path": "files/{attachmentId}/content",
+        "pathParams": [
+          "attachmentId"
+        ]
       }
     }
   } as const

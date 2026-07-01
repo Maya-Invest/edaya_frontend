@@ -1,29 +1,25 @@
-import { subject } from '$lib/test/openapi-fixtures';
-import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
+import { classSubject, homeworkAssessment, subject } from '$lib/test/openapi-fixtures';
 import { describe, expect, it } from 'bun:test';
 import { mapDeadlines } from './homework-data';
 
 const classSources = {
-	homeworkAssignmentsRaw: [
-		{
+	homeworkAssessmentsRaw: [
+		homeworkAssessment({
 			id: 'd1',
-			schoolId: SEED_SCHOOL_ID,
 			classGroupId: '6a',
 			classSubjectId: 'cs-6a-math',
+			periodId: 'period-1',
 			title: 'Algebra exercise sheet #4',
 			description: 'Complete exercises 1 to 12.',
-			dueDate: '2026-05-18',
-			assignedDate: '2026-05-11',
-			type: 'homework' as const,
 			attachments: [{ name: 'exercises_ch4.pdf', size: '320 KB' }],
-		},
+		}),
 	],
-	homeworkSubmissionsRaw: [
-		{ id: 'hs-d1-s1', homeworkAssignmentId: 'd1', studentId: 's1', status: 'submitted' as const, submittedAt: '2026-05-15' },
-		{ id: 'hs-d1-s3', homeworkAssignmentId: 'd1', studentId: 's3', status: 'missing' as const },
+	assessmentResultsRaw: [
+		{ id: 'ar-d1-s1', assessmentId: 'd1', studentId: 's1', status: 'met' as const, createdAt: '2026-05-15' },
+		{ id: 'ar-d1-s3', assessmentId: 'd1', studentId: 's3', status: 'missed' as const },
 	],
 	classSubjectsRaw: [
-		{ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math', completedPercentage: 0 },
+		classSubject({ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math' }),
 	],
 	subjectsRaw: [
 		subject({ id: 'subj-math', name: 'Mathematics', code: 'MATH', defaultCoefficient: 3 }),
@@ -31,10 +27,10 @@ const classSources = {
 };
 
 describe('mapDeadlines', () => {
-	it('maps homework assignments with subject labels and submissions', () => {
+	it('maps homework assessments with subject labels and submissions', () => {
 		const deadlines = mapDeadlines({
-			homeworkAssignmentsRaw: [...classSources.homeworkAssignmentsRaw],
-			homeworkSubmissionsRaw: [...classSources.homeworkSubmissionsRaw],
+			homeworkAssessmentsRaw: [...classSources.homeworkAssessmentsRaw],
+			assessmentResultsRaw: [...classSources.assessmentResultsRaw],
 			classSubjectsRaw: [...classSources.classSubjectsRaw],
 			subjectsRaw: [...classSources.subjectsRaw],
 		});
@@ -55,8 +51,8 @@ describe('mapDeadlines', () => {
 
 	it('maps every deadline from class-scoped sources', () => {
 		const deadlines = mapDeadlines({
-			homeworkAssignmentsRaw: [...classSources.homeworkAssignmentsRaw],
-			homeworkSubmissionsRaw: [],
+			homeworkAssessmentsRaw: [...classSources.homeworkAssessmentsRaw],
+			assessmentResultsRaw: [],
 			classSubjectsRaw: [...classSources.classSubjectsRaw],
 			subjectsRaw: [...classSources.subjectsRaw],
 		});
@@ -66,11 +62,11 @@ describe('mapDeadlines', () => {
 
 	it('sorts deadlines by due date', () => {
 		const deadlines = mapDeadlines({
-			homeworkAssignmentsRaw: [
-				{ ...classSources.homeworkAssignmentsRaw[0], id: 'd-late', dueDate: '2026-05-25' },
-				{ ...classSources.homeworkAssignmentsRaw[0], id: 'd-early', dueDate: '2026-05-18' },
+			homeworkAssessmentsRaw: [
+				{ ...classSources.homeworkAssessmentsRaw[0], id: 'd-late', dueAt: '2026-05-25' },
+				{ ...classSources.homeworkAssessmentsRaw[0], id: 'd-early', dueAt: '2026-05-18' },
 			],
-			homeworkSubmissionsRaw: [],
+			assessmentResultsRaw: [],
 			classSubjectsRaw: [...classSources.classSubjectsRaw],
 			subjectsRaw: [...classSources.subjectsRaw],
 		});

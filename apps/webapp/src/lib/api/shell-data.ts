@@ -8,10 +8,10 @@ import type {
 	PeriodDefinition,
 	School,
 } from '$lib/types/school';
+import { ApiError } from '$api-client';
 import { buildClassHierarchy } from '$lib/academic/hierarchy';
 import { activeEnrollmentCountForClass, schoolWideEntityList } from '$lib/api/entity-list-filters';
 import { mapSchoolFromApi } from '$lib/api/school-data';
-import { ApiError } from '@edaya/api-client';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 

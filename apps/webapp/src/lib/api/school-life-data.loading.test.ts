@@ -23,18 +23,26 @@ describe('school-life data loading', () => {
 		expect(entityListRequests(requests, 'calendar-events')[0]?.body).toEqual({ academicYearId });
 	});
 
-	it('loads absences through sessions for the active class set', async () => {
+	it('loads absences through lesson sessions for the active class set', async () => {
 		const { client, requests } = createRecordingSchoolClient([
 			listEnvelope([{
-				id: 'session-1',
+				id: 'ls-1',
+				schoolId: SEED_SCHOOL_ID,
 				classGroupId,
+				scheduleId: 'sched-1',
 				classSubjectId: 'class-subject-1',
-				title: 'Math',
-				kind: 'course',
+				displayLabel: 'Math',
 				startsAt: '2026-06-01T08:00:00.000Z',
 				endsAt: '2026-06-01T09:00:00.000Z',
 			}]),
-			listEnvelope([]),
+			listEnvelope([{
+				id: 'att-1',
+				studentId: 'student-1',
+				lessonSessionId: 'ls-1',
+				status: 'absent',
+				date: '2026-06-01',
+				justificationStatus: 'none',
+			}]),
 			listEnvelope([{
 				id: 'class-subject-1',
 				schoolId: SEED_SCHOOL_ID,
@@ -46,11 +54,11 @@ describe('school-life data loading', () => {
 
 		await loadAbsences(client, [classGroupId]);
 
-		expect(entityListRequests(requests, 'sessions')[0]?.body).toEqual({
+		expect(entityListRequests(requests, 'lesson-sessions')[0]?.body).toEqual({
 			classGroupId: { $in: [classGroupId] },
 		});
 		expect(entityListRequests(requests, 'attendance')[0]?.body).toEqual({
-			sessionId: { $in: ['session-1'] },
+			lessonSessionId: { $in: ['ls-1'] },
 			status: 'absent',
 		});
 		expect(entityListRequests(requests, 'class-subjects')[0]?.body).toEqual({

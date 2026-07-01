@@ -1,3 +1,4 @@
+import { academicContext } from '$lib/academic/context.svelte';
 import { fetchDeadlines } from '$lib/api/homework-data';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
@@ -8,7 +9,7 @@ export function queryClassHomeworkPage(classId: string) {
 		empty: () => ({ classId }),
 		load: async () => {
 			const [deadlines, subjects] = await Promise.all([
-				fetchDeadlines(classId),
+				fetchDeadlines(classId, undefined, { periodId: academicContext.periodId }),
 				getClassSubjects(classId),
 			]);
 			detailDataContext.seedDeadlines(deadlines, { classId });

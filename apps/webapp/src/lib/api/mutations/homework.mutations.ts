@@ -1,5 +1,6 @@
 import type { components } from '$lib/api/schema';
 import type { Deadline } from '$lib/types/school';
+import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
@@ -8,13 +9,20 @@ import { t } from '$lib/i18n';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
 
-type ApiHomeworkAssignment = components['schemas']['HomeworkAssignment'];
+type ApiAssessment = components['schemas']['Assessment'];
 
-const UI_TO_API_TYPE: Record<Deadline['type'], ApiHomeworkAssignment['type']> = {
+const UI_TO_API_KIND: Record<Deadline['type'], ApiAssessment['kind']> = {
 	Homework: 'homework',
 	Project: 'project',
-	Reading: 'reading',
-	Lab: 'lab',
+	Reading: 'other',
+	Lab: 'other',
+};
+
+const API_TO_UI_KIND: Record<ApiAssessment['kind'], Deadline['type']> = {
+	homework: 'Homework',
+	project: 'Project',
+	quiz: 'Homework',
+	other: 'Reading',
 };
 
 function deadlineSnapshot(deadlineId: string): Deadline | undefined {
@@ -33,7 +41,8 @@ export async function createHomeworkMutation(input: {
 }): Promise<string | null> {
 	const client = getBrowserSchoolClient();
 	const schoolId = authSession.schoolId;
-	if (!schoolId) {
+	const periodId = academicContext.periodId;
+	if (!schoolId || !periodId) {
 		toast.error(get(t)('hw.noContext'));
 		return null;
 	}
@@ -56,17 +65,22 @@ export async function createHomeworkMutation(input: {
 		})),
 	};
 
-	const result = await runMutation(() => client.entities.homeworkAssignments.save({
+	const result = await runMutation(() => client.entities.assessments.save({
 		id,
-		schoolId,
 		classGroupId: input.classGroupId,
 		classSubjectId: input.classSubjectId,
+		periodId,
 		title: input.title.trim(),
+		kind: UI_TO_API_KIND[input.type],
+		maxScore: 20,
+		coefficient: 1,
 		description: input.description.trim(),
-		dueDate: input.dueDate,
-		assignedDate: input.assignedDate,
-		type: UI_TO_API_TYPE[input.type],
+		dueAt: input.dueDate,
 		attachments: [],
+		lessonSessionId: null,
+		startsAt: null,
+		endsAt: null,
+		completedAt: null,
 		createdAt: new Date().toISOString(),
 	}), {
 		successMessage: input.successMessage,
@@ -93,16 +107,15 @@ export async function updateHomeworkMutation(input: {
 	const previous = deadlineSnapshot(input.assignmentId);
 
 	const result = await runMutation(async () => {
-		const existing = await client.entities.homeworkAssignments.get(input.assignmentId);
-		const payload: ApiHomeworkAssignment = {
+		const existing = await client.entities.assessments.get(input.assignmentId);
+		const payload: ApiAssessment = {
 			...existing,
 			title: input.title.trim(),
 			description: input.description.trim(),
-			dueDate: input.dueDate,
-			assignedDate: input.assignedDate,
-			type: UI_TO_API_TYPE[input.type],
+			dueAt: input.dueDate,
+			kind: UI_TO_API_KIND[input.type],
 		};
-		return client.entities.homeworkAssignments.save(payload);
+		return client.entities.assessments.save(payload);
 	}, {
 		successMessage: input.successMessage,
 		apply: () => {
@@ -111,7 +124,7 @@ export async function updateHomeworkMutation(input: {
 				description: input.description.trim(),
 				dueDate: input.dueDate,
 				assignedDate: input.assignedDate,
-				type: input.type,
+				type: API_TO_UI_KIND[UI_TO_API_KIND[input.type]] ?? input.type,
 			});
 		},
 		rollback: () => {

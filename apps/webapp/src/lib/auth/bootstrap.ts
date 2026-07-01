@@ -1,10 +1,10 @@
 import type { SessionSnapshot } from '$lib/auth/types';
+import { ApiError } from '$api-client';
 import {
 	fetchGuardianNotificationSettings,
 } from '$lib/api/account-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { fetchSessionStaffProfile } from '$lib/api/staff-data';
-import { ApiError } from '@edaya/api-client';
 import { authClient } from './client';
 import { authSession } from './session.svelte';
 

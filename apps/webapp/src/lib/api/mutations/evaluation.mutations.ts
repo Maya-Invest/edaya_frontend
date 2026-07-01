@@ -60,6 +60,7 @@ export async function createAssessmentMutation(input: {
 		kind: input.kind ?? 'quiz',
 		maxScore: input.maxScore,
 		coefficient: input.coefficient ?? 1,
+		attachments: [],
 		dueAt: input.dueAt ?? new Date().toISOString().slice(0, 10),
 		createdAt: new Date().toISOString(),
 	}), {

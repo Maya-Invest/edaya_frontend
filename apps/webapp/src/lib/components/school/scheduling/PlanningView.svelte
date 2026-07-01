@@ -16,6 +16,7 @@
 	import AttendanceFlow from './AttendanceFlow.svelte';
 	import ClassTimetableCalendar from './ClassTimetableCalendar.svelte';
 	import {
+		detectPlanningOverlaps,
 		filterPlanningEventsForWeek,
 		formatPlanningWeekRange,
 		formatWeekAnchor,
@@ -67,6 +68,7 @@
 		}),
 	);
 	const weekEvents = $derived(filterPlanningEventsForWeek(filteredEvents, weekStart));
+	const planningOverlaps = $derived(detectPlanningOverlaps(weekEvents));
 
 	const attendanceClass = $derived(
 		attendanceSession ? classes.find(c => c.id === attendanceSession!.classId) : null,
@@ -250,6 +252,25 @@
 			</Button>
 		{/if}
 	</div>
+
+	{#if planningOverlaps.length > 0}
+		<div
+			class="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-foreground"
+			role="status"
+		>
+			<p class="font-medium">{$t('planning.overlapWarning', { count: planningOverlaps.length })}</p>
+			<ul class="mt-2 space-y-1 text-xs text-muted-foreground">
+				{#each planningOverlaps.slice(0, 3) as overlap (overlap.left.id + overlap.right.id)}
+					<li>
+						{$t('planning.overlapPair', {
+							left: `${overlap.left.subject} (${overlap.left.start}–${overlap.left.end})`,
+							right: `${overlap.right.subject} (${overlap.right.start}–${overlap.right.end})`,
+						})}
+					</li>
+				{/each}
+			</ul>
+		</div>
+	{/if}
 
 	<ScheduleFormModal {classId} {weekStart} bind:open={scheduleCreateOpen} />
 	<PlanningFormModal {classId} weekStart={weekStart} bind:open={createOpen} onCreated={handleCreated} />

@@ -84,6 +84,7 @@
 			sessionId: detail.sessionId,
 			classGroupId: detail.classGroupId,
 			classSubjectId: detail.classSubjectId,
+			classSubjectMatterId,
 			date: detail.date,
 			logbookId: detail.logbook?.id,
 			chapter: selectedMatter.name,

@@ -2,11 +2,11 @@ import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { AbsenceRecord, Incident, SchoolYearEvent, Student } from '$lib/types/school';
 import {
-	attendanceForSessions,
+	attendanceForLessonSessions,
 	enrollmentsForStudentsInYear,
 	entitiesByIds,
 	involvementsForIncidents,
-	sessionsForClasses,
+	lessonSessionsForClasses,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 import { mapPeopleData } from '$lib/api/people-data';
@@ -17,7 +17,7 @@ type CalendarEventRaw = components['schemas']['CalendarEvent'];
 type IncidentRaw = components['schemas']['Incident'];
 type InvolvementRaw = components['schemas']['StudentIncidentInvolvement'];
 type AttendanceRaw = components['schemas']['Attendance'];
-type SessionRaw = components['schemas']['Session'];
+type LessonSessionRaw = components['schemas']['LessonSession'];
 type ClassSubjectRaw = components['schemas']['ClassSubject'];
 type SubjectRaw = components['schemas']['Subject'];
 
@@ -26,7 +26,7 @@ export interface SchoolLifeSources {
 	incidentsRaw: IncidentRaw[];
 	involvementsRaw: InvolvementRaw[];
 	attendanceRaw: AttendanceRaw[];
-	sessionsRaw: SessionRaw[];
+	sessionsRaw: LessonSessionRaw[];
 	classSubjectsRaw: ClassSubjectRaw[];
 	subjectsRaw: SubjectRaw[];
 }
@@ -228,7 +228,9 @@ export function mapAbsences(sources: SchoolLifeSources): AbsenceRecord[] {
 	return sources.attendanceRaw
 		.filter(record => record.status === 'absent')
 		.map((record) => {
-			const session = sessionById.get(record.sessionId);
+			const session = record.lessonSessionId
+				? sessionById.get(record.lessonSessionId)
+				: undefined;
 			const classSubject = session?.classSubjectId
 				? classSubjectById.get(session.classSubjectId)
 				: undefined;
@@ -294,14 +296,14 @@ export async function loadAbsences(
 		return [];
 	}
 
-	const sessionsRaw = (await client.entities.sessions.list(sessionsForClasses(classGroupIds))) ?? [];
+	const sessionsRaw = (await client.entities.lessonSessions.list(lessonSessionsForClasses(classGroupIds))) ?? [];
 	const sessionIds = uniqueIds(sessionsRaw.map(session => session.id));
 	const classSubjectIds = uniqueIds(
 		sessionsRaw.map(session => session.classSubjectId).filter((id): id is string => Boolean(id)),
 	);
 	const [attendanceRaw, classSubjectsRaw] = await Promise.all([
 		sessionIds.length > 0
-			? client.entities.attendance.list(attendanceForSessions(sessionIds))
+			? client.entities.attendance.list(attendanceForLessonSessions(sessionIds))
 			: Promise.resolve([]),
 		classSubjectIds.length > 0
 			? client.entities.classSubjects.list(entitiesByIds(classSubjectIds))

@@ -83,7 +83,7 @@ export async function recordIncidentMutation(input: {
 			date: incidentDate,
 			kind: input.kind,
 			classGroupId: input.classGroupId ?? null,
-			sessionId: null,
+			lessonSessionId: null,
 			createdAt: now,
 		});
 		return client.commands.addStudentInvolvement({

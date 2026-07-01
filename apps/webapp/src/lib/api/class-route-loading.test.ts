@@ -2,10 +2,10 @@ import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
 import { fetchClassAssessmentsSources } from './assessments-data';
 import { fetchClassHomeworkSources } from './homework-data';
-import { fetchClassPlanningSources } from './planning-data';
+import { defaultPlanningDateRange, fetchClassPlanningSources } from './planning-data';
 import { fetchClassSubjectsSources } from './subjects-data';
 import { fetchClassTeachingLogSources } from './teaching-log-data';
-import { createRecordingSchoolClient, entityListRequests } from './test/recording-school-client';
+import { createRecordingSchoolClient, entityListRequests, queryRequests } from './test/recording-school-client';
 
 const classGroupId = 'class-6a';
 const periodId = 'period-1';
@@ -19,13 +19,15 @@ function emptyLists(count: number) {
 }
 
 describe('class route scoped loading', () => {
-	it('loads planning data with class and referenced-entity filters', async () => {
-		const session = {
-			id: 'session-1',
+	it('loads planning data with timetable query and referenced-entity filters', async () => {
+		const range = defaultPlanningDateRange(new Date('2026-06-02T12:00:00.000Z'));
+		const lessonSession = {
+			id: 'ls-1',
 			schoolId: SEED_SCHOOL_ID,
 			classGroupId,
+			scheduleId: 'sched-1',
 			classSubjectId: 'cs-math',
-			title: 'Math',
+			displayLabel: 'Math',
 			startsAt: '2026-06-02T08:00:00.000Z',
 			endsAt: '2026-06-02T09:00:00.000Z',
 		};
@@ -37,7 +39,22 @@ describe('class route scoped loading', () => {
 		};
 
 		const { client, requests } = createRecordingSchoolClient([
-			listEnvelope([session]),
+			{
+				classGroupId,
+				startDate: range.startDate,
+				endDate: range.endDate,
+				events: [{
+					kind: 'lesson',
+					id: 'ls-1',
+					classGroupId,
+					classSubjectId: 'cs-math',
+					title: 'Math',
+					startsAt: '2026-06-02T08:00:00.000Z',
+					endsAt: '2026-06-02T09:00:00.000Z',
+					lessonSessionId: 'ls-1',
+				}],
+			},
+			listEnvelope([lessonSession]),
 			listEnvelope([classSubject]),
 			listEnvelope([]),
 			listEnvelope([]),
@@ -47,9 +64,16 @@ describe('class route scoped loading', () => {
 			...emptyLists(2),
 		]);
 
-		await fetchClassPlanningSources(client, classGroupId);
+		await fetchClassPlanningSources(client, classGroupId, range);
 
-		expect(entityListRequests(requests, 'sessions')[0]?.body).toEqual({ classGroupId });
+		expect(queryRequests(requests, 'get-class-group-timetable')[0]?.body).toEqual({
+			classGroupId,
+			startDate: range.startDate,
+			endDate: range.endDate,
+		});
+		expect(entityListRequests(requests, 'lesson-sessions')[0]?.body).toEqual({
+			id: { $in: ['ls-1'] },
+		});
 		expect(entityListRequests(requests, 'class-subjects')[0]?.body).toEqual({ classGroupId });
 		expect(entityListRequests(requests, 'subjects')[0]?.body).toEqual({
 			id: { $in: ['subj-math'] },
@@ -85,10 +109,11 @@ describe('class route scoped loading', () => {
 		const { client, requests } = createRecordingSchoolClient([
 			listEnvelope([{
 				id: 'assessment-1',
-				schoolId: SEED_SCHOOL_ID,
 				classGroupId,
 				classSubjectId: 'cs-math',
+				periodId,
 				title: 'Quiz',
+				kind: 'quiz',
 				maxScore: 20,
 			}]),
 			listEnvelope([{
@@ -124,16 +149,17 @@ describe('class route scoped loading', () => {
 		});
 	});
 
-	it('loads class homework with scoped assignment and submission filters', async () => {
+	it('loads class homework with scoped assessment and result filters', async () => {
 		const { client, requests } = createRecordingSchoolClient([
 			listEnvelope([{
 				id: 'hw-1',
-				schoolId: SEED_SCHOOL_ID,
 				classGroupId,
 				classSubjectId: 'cs-math',
+				periodId,
 				title: 'Exercises',
-				type: 'homework',
-				dueDate: '2026-06-10',
+				kind: 'homework',
+				maxScore: 20,
+				dueAt: '2026-06-10',
 			}]),
 			listEnvelope([{
 				id: 'cs-math',
@@ -145,24 +171,30 @@ describe('class route scoped loading', () => {
 			listEnvelope([{ id: 'subj-math', schoolId: SEED_SCHOOL_ID, name: 'Mathematics' }]),
 		]);
 
-		await fetchClassHomeworkSources(client, classGroupId);
+		await fetchClassHomeworkSources(client, classGroupId, periodId);
 
-		expect(entityListRequests(requests, 'homework-assignments')[0]?.body).toEqual({ classGroupId });
-		expect(entityListRequests(requests, 'homework-submissions')[0]?.body).toEqual({
-			homeworkAssignmentId: { $in: ['hw-1'] },
+		expect(entityListRequests(requests, 'assessments')[0]?.body).toEqual({
+			classGroupId,
+			periodId,
+			kind: 'homework',
+		});
+		expect(entityListRequests(requests, 'assessment-results')[0]?.body).toEqual({
+			assessmentId: { $in: ['hw-1'] },
 		});
 	});
 
-	it('loads class teaching log entries with class-scoped logbook filters', async () => {
+	it('loads class teaching log entries with class-scoped lesson session filters', async () => {
 		const { client, requests } = createRecordingSchoolClient([
 			listEnvelope([{
-				id: 'log-1',
+				id: 'ls-1',
 				schoolId: SEED_SCHOOL_ID,
 				classGroupId,
+				scheduleId: 'sched-1',
 				classSubjectId: 'cs-math',
-				date: '2026-06-02',
-				chapter: 'Fractions',
-				content: 'Intro',
+				displayLabel: 'Fractions',
+				sessionNote: 'Intro',
+				startsAt: '2026-06-02T08:00:00.000Z',
+				endsAt: '2026-06-02T09:00:00.000Z',
 			}]),
 			listEnvelope([{
 				id: 'cs-math',
@@ -170,6 +202,8 @@ describe('class route scoped loading', () => {
 				classGroupId,
 				subjectId: 'subj-math',
 			}]),
+			listEnvelope([]),
+			listEnvelope([]),
 			listEnvelope([]),
 			listEnvelope([{ id: 'subj-math', schoolId: SEED_SCHOOL_ID, name: 'Mathematics' }]),
 			listEnvelope([]),
@@ -177,7 +211,7 @@ describe('class route scoped loading', () => {
 
 		await fetchClassTeachingLogSources(client, classGroupId);
 
-		expect(entityListRequests(requests, 'class-logbook-entries')[0]?.body).toEqual({ classGroupId });
+		expect(entityListRequests(requests, 'lesson-sessions')[0]?.body).toEqual({ classGroupId });
 		expect(entityListRequests(requests, 'class-subjects')[0]?.body).toEqual({ classGroupId });
 	});
 });

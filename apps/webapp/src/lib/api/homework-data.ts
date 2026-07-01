@@ -2,31 +2,39 @@ import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { Deadline } from '$lib/types/school';
 import {
+	assessmentResultsForAssessments,
 	classGroupScope,
 	entitiesByIds,
-	submissionsForHomeworkAssignments,
+	homeworkAssessmentsForClass,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
-type HomeworkAssignmentRaw = components['schemas']['HomeworkAssignment'];
-type HomeworkSubmissionRaw = components['schemas']['HomeworkSubmission'];
+type AssessmentRaw = components['schemas']['Assessment'];
+type AssessmentResultRaw = components['schemas']['AssessmentResult'];
 type ClassSubjectRaw = components['schemas']['ClassSubject'];
 type SubjectRaw = components['schemas']['Subject'];
 
 export interface HomeworkSources {
-	homeworkAssignmentsRaw: HomeworkAssignmentRaw[];
-	homeworkSubmissionsRaw: HomeworkSubmissionRaw[];
+	homeworkAssessmentsRaw: AssessmentRaw[];
+	assessmentResultsRaw: AssessmentResultRaw[];
 	classSubjectsRaw: ClassSubjectRaw[];
 	subjectsRaw: SubjectRaw[];
 }
 
-const TYPE_TO_UI: Record<string, Deadline['type']> = {
+const KIND_TO_UI: Record<AssessmentRaw['kind'], Deadline['type']> = {
 	homework: 'Homework',
 	project: 'Project',
-	reading: 'Reading',
-	lab: 'Lab',
+	quiz: 'Homework',
+	other: 'Reading',
+};
+
+const RESULT_STATUS_TO_UI: Record<string, Deadline['submissions'][number]['status']> = {
+	met: 'submitted',
+	late: 'late',
+	missed: 'missing',
+	excused: 'submitted',
 };
 
 function formatDate(value: unknown): string {
@@ -59,24 +67,25 @@ function subjectNameForClassSubject(
 export async function fetchClassHomeworkSources(
 	client: SchoolClient,
 	classGroupId: string,
+	periodId?: string,
 ): Promise<HomeworkSources> {
 	const [
-		homeworkAssignmentsRaw,
+		homeworkAssessmentsRaw,
 		classSubjectsRaw,
 	] = await Promise.all([
-		client.entities.homeworkAssignments.list(classGroupScope(classGroupId)),
+		client.entities.assessments.list(homeworkAssessmentsForClass(classGroupId, periodId)),
 		client.entities.classSubjects.list(classGroupScope(classGroupId)),
 	]);
 
-	const assignmentIds = uniqueIds((homeworkAssignmentsRaw ?? []).map(assignment => assignment.id));
+	const assessmentIds = uniqueIds((homeworkAssessmentsRaw ?? []).map(assessment => assessment.id));
 	const subjectIds = uniqueIds((classSubjectsRaw ?? []).map(classSubject => classSubject.subjectId));
 
 	const [
-		homeworkSubmissionsRaw,
+		assessmentResultsRaw,
 		subjectsRaw,
 	] = await Promise.all([
-		assignmentIds.length > 0
-			? client.entities.homeworkSubmissions.list(submissionsForHomeworkAssignments(assignmentIds))
+		assessmentIds.length > 0
+			? client.entities.assessmentResults.list(assessmentResultsForAssessments(assessmentIds))
 			: Promise.resolve([]),
 		subjectIds.length > 0
 			? client.entities.subjects.list(entitiesByIds(subjectIds))
@@ -84,54 +93,60 @@ export async function fetchClassHomeworkSources(
 	]);
 
 	return {
-		homeworkAssignmentsRaw: homeworkAssignmentsRaw ?? [],
-		homeworkSubmissionsRaw: homeworkSubmissionsRaw ?? [],
+		homeworkAssessmentsRaw: homeworkAssessmentsRaw ?? [],
+		assessmentResultsRaw: assessmentResultsRaw ?? [],
 		classSubjectsRaw: classSubjectsRaw ?? [],
 		subjectsRaw: subjectsRaw ?? [],
 	};
 }
 
 export function mapDeadlines(sources: HomeworkSources): Deadline[] {
-	const submissionsByAssignment = new Map<string, HomeworkSubmissionRaw[]>();
-	for (const submission of sources.homeworkSubmissionsRaw) {
-		const current = submissionsByAssignment.get(submission.homeworkAssignmentId) ?? [];
-		current.push(submission);
-		submissionsByAssignment.set(submission.homeworkAssignmentId, current);
+	const resultsByAssessment = new Map<string, AssessmentResultRaw[]>();
+	for (const result of sources.assessmentResultsRaw) {
+		const current = resultsByAssessment.get(result.assessmentId) ?? [];
+		current.push(result);
+		resultsByAssessment.set(result.assessmentId, current);
 	}
 
-	return sources.homeworkAssignmentsRaw
-		.map((assignment) => {
-			const submissions = submissionsByAssignment.get(assignment.id) ?? [];
+	return sources.homeworkAssessmentsRaw
+		.map((assessment) => {
+			const results = resultsByAssessment.get(assessment.id) ?? [];
 
 			return {
-				id: assignment.id,
-				classId: assignment.classGroupId,
-				title: assignment.title,
+				id: assessment.id,
+				classId: assessment.classGroupId,
+				title: assessment.title,
 				subject: subjectNameForClassSubject(
-					assignment.classSubjectId,
+					assessment.classSubjectId,
 					sources.classSubjectsRaw,
 					sources.subjectsRaw,
 				),
-				description: assignment.description,
-				dueDate: formatDate(assignment.dueDate),
-				assignedDate: formatDate(assignment.assignedDate),
-				type: TYPE_TO_UI[assignment.type] ?? 'Homework',
-				attachments: (assignment.attachments ?? []).map(attachment => ({
+				description: assessment.description ?? '',
+				dueDate: formatDate(assessment.dueAt),
+				assignedDate: formatDate(assessment.createdAt),
+				type: KIND_TO_UI[assessment.kind] ?? 'Homework',
+				attachments: (assessment.attachments ?? []).map(attachment => ({
 					name: attachment.name,
 					size: attachment.size,
 				})),
-				submissions: submissions.map(submission => ({
-					studentId: submission.studentId,
-					status: submission.status as Deadline['submissions'][number]['status'],
-					date: submission.submittedAt ? formatDate(submission.submittedAt) : undefined,
+				submissions: results.map(result => ({
+					studentId: result.studentId,
+					status: result.status
+						? (RESULT_STATUS_TO_UI[result.status] ?? 'missing')
+						: (typeof result.score === 'number' ? 'submitted' as const : 'missing' as const),
+					date: result.createdAt ? formatDate(result.createdAt) : undefined,
 				})),
 			} satisfies Deadline;
 		})
 		.sort((left, right) => left.dueDate.localeCompare(right.dueDate));
 }
 
-export async function fetchDeadlines(classGroupId: string, client?: SchoolClient): Promise<Deadline[]> {
+export async function fetchDeadlines(
+	classGroupId: string,
+	client?: SchoolClient,
+	options?: { periodId?: string },
+): Promise<Deadline[]> {
 	const resolvedClient = client ?? (await import('$lib/api/school-client')).getBrowserSchoolClient();
-	const sources = await fetchClassHomeworkSources(resolvedClient, classGroupId);
+	const sources = await fetchClassHomeworkSources(resolvedClient, classGroupId, options?.periodId);
 	return mapDeadlines(sources);
 }

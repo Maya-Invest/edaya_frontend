@@ -1,4 +1,4 @@
-import type { EntityQuery } from '@edaya/api-client';
+import type { EntityQuery } from '$api-client';
 
 export const DEFAULT_LIST_PAGE_SIZE = 50;
 
@@ -80,6 +80,12 @@ export const activeEnrollmentCountForClass = activeEnrollmentsForClass;
 
 export function assessmentsForClassPeriod(classGroupId: string, periodId: string): EntityQuery {
 	return { classGroupId, periodId };
+}
+
+export function homeworkAssessmentsForClass(classGroupId: string, periodId?: string): EntityQuery {
+	return periodId
+		? { classGroupId, periodId, kind: 'homework' }
+		: { classGroupId, kind: 'homework' };
 }
 
 export function recordsForFieldIds(field: string, ids: readonly string[]): EntityQuery {
@@ -185,19 +191,32 @@ export function reportCardResultsForClassPeriod(
 	return { classGroupId, periodId };
 }
 
-export function assignmentsForSessions(sessionIds: readonly string[]): EntityQuery {
-	return recordsForFieldIds('sessionId', sessionIds);
+export function assignmentsForLessonSessions(lessonSessionIds: readonly string[]): EntityQuery {
+	return recordsForFieldIds('lessonSessionId', lessonSessionIds);
 }
 
-export function sessionsForClasses(classGroupIds: readonly string[]): EntityQuery {
+/** @deprecated Use assignmentsForLessonSessions */
+export const assignmentsForSessions = assignmentsForLessonSessions;
+
+export function lessonSessionsForClasses(classGroupIds: readonly string[]): EntityQuery {
 	return recordsForFieldIds('classGroupId', classGroupIds);
 }
 
-export function attendanceForSessions(sessionIds: readonly string[]): EntityQuery {
+/** @deprecated Use lessonSessionsForClasses */
+export const sessionsForClasses = lessonSessionsForClasses;
+
+export function attendanceForLessonSessions(lessonSessionIds: readonly string[]): EntityQuery {
 	return {
-		...recordsForFieldIds('sessionId', sessionIds),
+		...recordsForFieldIds('lessonSessionId', lessonSessionIds),
 		status: 'absent',
 	};
+}
+
+/** @deprecated Use attendanceForLessonSessions */
+export const attendanceForSessions = attendanceForLessonSessions;
+
+export function progressForLessonSessions(lessonSessionIds: readonly string[]): EntityQuery {
+	return recordsForFieldIds('lessonSessionId', lessonSessionIds);
 }
 
 export function involvementsForIncidents(incidentIds: readonly string[]): EntityQuery {
@@ -222,10 +241,6 @@ export function classSubjectsForClasses(classGroupIds: readonly string[]): Entit
 
 export function assignmentsForClassSubjects(classSubjectIds: readonly string[]): EntityQuery {
 	return recordsForFieldIds('classSubjectId', classSubjectIds);
-}
-
-export function submissionsForHomeworkAssignments(assignmentIds: readonly string[]): EntityQuery {
-	return recordsForFieldIds('homeworkAssignmentId', assignmentIds);
 }
 
 export function subjectMattersForSubjects(subjectIds: readonly string[]): EntityQuery {

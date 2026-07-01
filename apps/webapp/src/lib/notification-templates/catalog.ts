@@ -5,7 +5,6 @@ export const NOTIFICATION_TEMPLATE_KEYS = [
 	'assessment.result_recorded',
 	'incident.recorded',
 	'assessment.due_soon',
-	'homework.due_soon',
 	'activity.reminder',
 	'calendar.event_reminder',
 	'account_invitation',
@@ -33,7 +32,6 @@ export const NOTIFICATION_TEMPLATE_CATEGORIES: {
 			'report_card.published',
 			'assessment.result_recorded',
 			'assessment.due_soon',
-			'homework.due_soon',
 		],
 	},
 	{
@@ -55,7 +53,6 @@ export const NOTIFICATION_TEMPLATE_VARIABLES: Record<NotificationTemplateKey, re
 	'assessment.result_recorded': ['schoolName', 'assessmentTitle'],
 	'incident.recorded': ['schoolName', 'incidentTitle', 'incidentDescription'],
 	'assessment.due_soon': ['schoolName', 'assessmentTitle', 'dueDate'],
-	'homework.due_soon': ['schoolName', 'homeworkTitle', 'dueDate'],
 	'activity.reminder': ['schoolName', 'activityName', 'startDate'],
 	'calendar.event_reminder': ['schoolName', 'eventTitle', 'startDate'],
 	'account_invitation': ['schoolName', 'inviteeName', 'inviteUrl', 'expiresAt', 'actorKind'],

@@ -37,7 +37,7 @@ export async function deleteHomeworkMutation(
 	const client = getBrowserSchoolClient();
 	const previous = snapshot(detailDataContext.deadlines, assignmentId, 'id');
 	return deleteWithStore(
-		() => client.entities.homeworkAssignments.delete({ id: assignmentId }),
+		() => client.entities.assessments.delete({ id: assignmentId }),
 		() => detailDataContext.removeDeadline(assignmentId),
 		() => {
 			if (previous)
@@ -136,7 +136,7 @@ export async function deleteSessionMutation(
 	const client = getBrowserSchoolClient();
 	const previous = snapshot(detailDataContext.planning, sessionId, 'id');
 	return deleteWithStore(
-		() => client.entities.sessions.delete({ id: sessionId }),
+		() => client.entities.lessonSessions.delete({ id: sessionId }),
 		() => detailDataContext.removePlanningEvent(sessionId),
 		() => {
 			if (previous)

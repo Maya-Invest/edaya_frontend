@@ -2,39 +2,48 @@
 import { generateClientArtifacts, isOpenApiUrl } from '@edaya/client-codegen'
 import {
   resolveArgvPath,
-  trackedClientBindingsPath,
-  trackedCreateClientPath,
+  trackedConsumerClientDirPaths,
   trackedOpenApiPath,
+  trackedSchemaPath,
+  trackedWebappClientDirPath,
 } from './paths.ts'
 
 export async function generateClientArtifactsFromOpenApi(
   openApiInput = trackedOpenApiPath,
   options: {
-    bindingsOut?: string
-    clientOut?: string
+    clientDir?: string
+    schemaOut?: string
   } = {},
 ): Promise<void> {
-  await generateClientArtifacts({
-    input: openApiInput,
-    bindingsOut: options.bindingsOut ?? trackedClientBindingsPath,
-    clientOut: options.clientOut ?? trackedCreateClientPath,
-  })
+  const clientDirs = options.clientDir
+    ? [options.clientDir]
+    : [...trackedConsumerClientDirPaths]
+
+  for (const clientDir of clientDirs) {
+    await generateClientArtifacts({
+      input: openApiInput,
+      clientDir,
+      schemaOut: options.schemaOut ?? trackedSchemaPath,
+    })
+  }
 }
 
 /** @deprecated Use generateClientArtifactsFromOpenApi */
 export async function generateClientBindings(
   openApiInput = trackedOpenApiPath,
-  outputPath = trackedClientBindingsPath,
+  outputPath = trackedWebappClientDirPath,
 ): Promise<void> {
-  await generateClientArtifactsFromOpenApi(openApiInput, { bindingsOut: outputPath })
+  await generateClientArtifactsFromOpenApi(openApiInput, { clientDir: outputPath })
 }
 
 if (import.meta.main) {
   const openApiInput = resolveArgvPath('--openapi', trackedOpenApiPath)
-  const bindingsOut = resolveArgvPath('--output', trackedClientBindingsPath)
-  const clientOut = resolveArgvPath('--client-out', trackedCreateClientPath)
+  const clientDirFlagIndex = process.argv.indexOf('--client-dir')
+  const clientDir = clientDirFlagIndex === -1
+    ? undefined
+    : resolveArgvPath('--client-dir', trackedWebappClientDirPath)
 
-  await generateClientArtifactsFromOpenApi(openApiInput, { bindingsOut, clientOut })
+  await generateClientArtifactsFromOpenApi(openApiInput, { clientDir })
   const sourceLabel = isOpenApiUrl(openApiInput) ? openApiInput : openApiInput
   console.log(`API client artifacts generated from ${sourceLabel}`)
 }

@@ -5,6 +5,7 @@ import {
 	assignmentsForClassSubjects,
 	classGroupScope,
 	entitiesByIds,
+	progressForLessonSessions,
 	staffMembersByIds,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
@@ -12,14 +13,18 @@ import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
-type ClassLogbookEntryRaw = components['schemas']['ClassLogbookEntry'];
+type LessonSessionRaw = components['schemas']['LessonSession'];
+type ClassSubjectProgressRaw = components['schemas']['ClassSubjectProgress'];
+type ClassSubjectMatterRaw = components['schemas']['ClassSubjectMatter'];
 type ClassSubjectRaw = components['schemas']['ClassSubject'];
 type SubjectRaw = components['schemas']['Subject'];
 type StaffMemberRaw = components['schemas']['StaffMember'];
 type StaffAssignmentRaw = components['schemas']['StaffAssignment'];
 
 export interface TeachingLogSources {
-	classLogbookEntriesRaw: ClassLogbookEntryRaw[];
+	lessonSessionsRaw: LessonSessionRaw[];
+	classSubjectProgressRaw: ClassSubjectProgressRaw[];
+	classSubjectMattersRaw: ClassSubjectMatterRaw[];
 	classSubjectsRaw: ClassSubjectRaw[];
 	subjectsRaw: SubjectRaw[];
 	staffMembersRaw: StaffMemberRaw[];
@@ -76,20 +81,29 @@ export async function fetchClassTeachingLogSources(
 	classGroupId: string,
 ): Promise<TeachingLogSources> {
 	const [
-		classLogbookEntriesRaw,
+		lessonSessionsRaw,
 		classSubjectsRaw,
 	] = await Promise.all([
-		client.entities.classLogbookEntries.list(classGroupScope(classGroupId)),
+		client.entities.lessonSessions.list(classGroupScope(classGroupId)),
 		client.entities.classSubjects.list(classGroupScope(classGroupId)),
 	]);
 
+	const lessonSessionIds = uniqueIds((lessonSessionsRaw ?? []).map(session => session.id));
 	const classSubjectIds = uniqueIds((classSubjectsRaw ?? []).map(classSubject => classSubject.id));
 	const subjectIds = uniqueIds((classSubjectsRaw ?? []).map(classSubject => classSubject.subjectId));
 
 	const [
+		classSubjectProgressRaw,
+		classSubjectMattersRaw,
 		staffAssignmentsRaw,
 		subjectsRaw,
 	] = await Promise.all([
+		lessonSessionIds.length > 0
+			? client.entities.classSubjectProgress.list(progressForLessonSessions(lessonSessionIds))
+			: Promise.resolve([]),
+		classSubjectIds.length > 0
+			? client.entities.classSubjectMatters.list(assignmentsForClassSubjects(classSubjectIds))
+			: Promise.resolve([]),
 		classSubjectIds.length > 0
 			? safeOptionalEntityList(() =>
 					client.entities.staffAssignments.list(assignmentsForClassSubjects(classSubjectIds)))
@@ -105,7 +119,9 @@ export async function fetchClassTeachingLogSources(
 		: [];
 
 	return {
-		classLogbookEntriesRaw: classLogbookEntriesRaw ?? [],
+		lessonSessionsRaw: lessonSessionsRaw ?? [],
+		classSubjectProgressRaw: classSubjectProgressRaw ?? [],
+		classSubjectMattersRaw: classSubjectMattersRaw ?? [],
 		classSubjectsRaw: classSubjectsRaw ?? [],
 		subjectsRaw: subjectsRaw ?? [],
 		staffMembersRaw: staffMembersRaw ?? [],
@@ -113,44 +129,74 @@ export async function fetchClassTeachingLogSources(
 	};
 }
 
+function matterNameForProgress(
+	progress: ClassSubjectProgressRaw,
+	classSubjectMattersRaw: ClassSubjectMatterRaw[],
+	subjectMattersRaw: components['schemas']['SubjectMatter'][] = [],
+): string {
+	const link = classSubjectMattersRaw.find(entry => entry.id === progress.classSubjectMatterId);
+	if (!link) {
+		return '';
+	}
+	const matter = subjectMattersRaw.find(entry => entry.id === link.subjectMatterId);
+	return matter?.name ?? '';
+}
+
 export function mapTeachingLogEntries(
 	sources: TeachingLogSources,
 	subjectName?: string,
 ): LogEntry[] {
-	return sources.classLogbookEntriesRaw
-		.filter((entry) => {
+	const progressBySession = new Map<string, ClassSubjectProgressRaw[]>();
+	for (const progress of sources.classSubjectProgressRaw) {
+		const current = progressBySession.get(progress.lessonSessionId) ?? [];
+		current.push(progress);
+		progressBySession.set(progress.lessonSessionId, current);
+	}
+
+	return sources.lessonSessionsRaw
+		.filter((session) => {
 			if (!subjectName) {
 				return true;
 			}
 			return subjectNameForClassSubject(
-				entry.classSubjectId,
+				session.classSubjectId,
 				sources.classSubjectsRaw,
 				sources.subjectsRaw,
 			) === subjectName;
 		})
-		.map((entry) => {
+		.map((session) => {
 			const subject = subjectNameForClassSubject(
-				entry.classSubjectId,
+				session.classSubjectId,
 				sources.classSubjectsRaw,
 				sources.subjectsRaw,
 			);
+			const progressRecords = progressBySession.get(session.id) ?? [];
+			const primaryProgress = progressRecords[0];
+			const averageProgress = progressRecords.length > 0
+				? Math.round(
+						progressRecords.reduce((sum, entry) => sum + entry.completedPercentage, 0)
+						/ progressRecords.length,
+					)
+				: 0;
 
 			return {
-				id: entry.id,
-				classId: entry.classGroupId,
-				date: formatDate(entry.date),
+				id: session.id,
+				classId: session.classGroupId,
+				date: formatDate(session.startsAt),
 				subject,
 				teacher: teacherNameForClassSubject(
-					entry.classSubjectId,
+					session.classSubjectId,
 					sources.staffAssignmentsRaw,
 					sources.staffMembersRaw,
 				),
-				chapter: entry.chapter,
-				content: entry.content,
-				objectives: [...(entry.objectives ?? [])],
-				homework: entry.homework ?? undefined,
-				attachments: entry.attachments?.length ? [...entry.attachments] : undefined,
-				progress: entry.progress,
+				chapter: primaryProgress
+					? matterNameForProgress(primaryProgress, sources.classSubjectMattersRaw)
+					: session.displayLabel,
+				content: session.sessionNote ?? '',
+				objectives: primaryProgress?.notes ? [primaryProgress.notes] : [],
+				homework: undefined,
+				attachments: undefined,
+				progress: primaryProgress?.completedPercentage ?? averageProgress,
 			} satisfies LogEntry;
 		})
 		.sort((left, right) => (left.date < right.date ? 1 : -1));

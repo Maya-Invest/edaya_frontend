@@ -25,14 +25,14 @@ export const saasAdminSchemaPath = resolve(
   repoRoot,
   'apps/saas-admin/src/lib/api/schema.d.ts',
 )
-export const trackedClientBindingsPath = resolve(
+export const trackedWebappClientDirPath = resolve(
   repoRoot,
-  'packages/api-client/src/generated/client-bindings.ts',
+  'apps/webapp/src/generated/api-client',
 )
-export const trackedCreateClientPath = resolve(
-  repoRoot,
-  'packages/api-client/src/generated/create-client.ts',
-)
+
+export const trackedConsumerClientDirPaths = [
+  trackedWebappClientDirPath,
+] as const
 
 export const apiAppPath = resolve(coreRepoRoot, 'apps/api/src/app.ts')
 export const apiClientBindingsPath = resolve(

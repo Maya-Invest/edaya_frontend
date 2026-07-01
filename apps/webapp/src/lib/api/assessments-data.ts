@@ -116,7 +116,9 @@ export function mapClassEvaluations(
 				classId: assessment.classGroupId,
 				title: assessment.title,
 				subject: subject?.name ?? assessment.title,
-				date: formatDate(assessment.date ?? assessment.dueAt ?? assessment.metAt),
+				date: formatDate(
+					assessment.startsAt ?? assessment.dueAt ?? assessment.completedAt ?? assessment.endsAt,
+				),
 				coefficient: assessment.coefficient ?? 1,
 				averageMark,
 				outOf: assessment.maxScore,

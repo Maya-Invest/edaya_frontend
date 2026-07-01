@@ -14,6 +14,7 @@
 		formatPlanningSlotLabel,
 		mapPlanningToCalendarEvents,
 		mondayOfWeek,
+		overlappingPlanningEventIds,
 		planningSlotSignature,
 		subjectToneClass,
 		timetableHours,
@@ -41,6 +42,7 @@
 
 	const anchorDate = $derived(mondayOfWeek(weekStart));
 	const weekEvents = $derived(filterPlanningEventsForWeek(events, anchorDate));
+	const overlapIds = $derived(overlappingPlanningEventIds(weekEvents));
 	const hours = $derived(timetableHours(weekEvents));
 	const calendarEvents = $derived(mapPlanningToCalendarEvents(weekEvents));
 	const weekView = $derived({
@@ -97,11 +99,15 @@
 	const eventCss: EventCss = ({ event }) => {
 		const subject = typeof event.subject === 'string' ? event.subject : '';
 		const active = selectedId === String(event.id);
+		const kind = typeof event.kind === 'string' ? event.kind : 'lesson';
+		const overlapping = overlapIds.has(String(event.id));
 		return [
 			'group',
-			subjectToneClass(subject),
+			typeof event.css === 'string' ? event.css : subjectToneClass(subject),
 			active ? 'edaya-timetable-event--active' : '',
-			editable ? 'edaya-timetable-event--editable' : '',
+			editable && kind !== 'homework-due' ? 'edaya-timetable-event--editable' : '',
+			overlapping ? 'edaya-timetable-event--overlap' : '',
+			kind === 'homework-due' ? 'edaya-timetable-event--homework-due' : '',
 		].filter(Boolean).join(' ');
 	};
 
@@ -129,7 +135,7 @@
 			return false;
 
 		const planningEvent = weekEvents.find(event => event.id === String(id));
-		if (!planningEvent)
+		if (!planningEvent || planningEvent.kind === 'homework-due')
 			return false;
 
 		const [baseline] = mapPlanningToCalendarEvents([planningEvent]);
@@ -290,6 +296,22 @@
 	:global(.edaya-timetable-calendar .wx-box-event.edaya-timetable-event--active) {
 		outline: 2px solid hsl(var(--primary));
 		outline-offset: 1px;
+	}
+
+	:global(.edaya-timetable-calendar .wx-box-event.edaya-timetable-event--overlap) {
+		outline: 2px solid hsl(var(--destructive) / 0.85);
+		outline-offset: 1px;
+	}
+
+	:global(.edaya-timetable-calendar .wx-box-event.edaya-homework-due) {
+		background: hsl(var(--highlight-soft));
+		border-style: dashed;
+		border-color: hsl(var(--highlight) / 0.55);
+		color: hsl(var(--foreground));
+	}
+
+	:global(.edaya-timetable-calendar .wx-box-event.edaya-timetable-event--homework-due) {
+		cursor: default;
 	}
 
 	:global(.edaya-timetable-calendar .wx-box-event.edaya-timetable-event--editable) {

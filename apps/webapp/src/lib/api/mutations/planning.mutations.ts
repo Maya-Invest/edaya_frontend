@@ -1,8 +1,10 @@
+import type { components } from '$lib/api/schema';
 import type { ScheduleDayOfWeek } from '$lib/components/school/scheduling/planning-calendar';
 import type { PlanningEvent } from '$lib/types/school';
+import { buildLessonSessionSavePayload } from '$lib/api/lesson-session-save-payload';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { buildSessionSavePayload } from '$lib/api/session-save-payload';
+import { authSession } from '$lib/auth/session.svelte';
 import {
 	mondayOfWeekUtc,
 	sessionInstantsForSlot,
@@ -51,6 +53,26 @@ function planningSnapshot(sessionId: string): PlanningEvent | undefined {
 	return detailDataContext.planning.find(event => event.id === sessionId);
 }
 
+function specificDateForWeek(weekStart: Date, day: PlanningEvent['day']): string {
+	const weekAnchor = mondayOfWeekUtc(weekStart);
+	const date = new Date(weekAnchor);
+	const offset = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4 }[day] ?? 0;
+	date.setUTCDate(date.getUTCDate() + offset);
+	return date.toISOString().slice(0, 10);
+}
+
+async function materializeLessonSession(
+	client: ReturnType<typeof getBrowserSchoolClient>,
+	scheduleId: string,
+): Promise<components['schemas']['LessonSession'] | null> {
+	const materialized = await client.commands.materializeSchedule({ scheduleId });
+	const session = materialized.find(
+		(entry): entry is components['schemas']['LessonSession'] =>
+			'scheduleId' in entry && 'classSubjectId' in entry,
+	);
+	return session ?? null;
+}
+
 export async function createSessionMutation(input: {
 	classGroupId: string;
 	title: string;
@@ -63,13 +85,19 @@ export async function createSessionMutation(input: {
 	successMessage?: string;
 }): Promise<string | null> {
 	const client = getBrowserSchoolClient();
-	const id = `sess-${Date.now().toString(36)}`;
+	const schoolId = authSession.schoolId;
+	if (!schoolId) {
+		toast.error(get(t)('dataState.errorDescription'));
+		return null;
+	}
+
 	const { startsAt, endsAt } = sessionInstantsForWeek(input.weekStart, input.day, input.start, input.end);
 	const subject = input.classSubjectId
 		? detailDataContext.subjects.find(entry => entry.id === input.classSubjectId)
 		: undefined;
+	const optimisticId = `ls-${Date.now().toString(36)}`;
 	const optimistic: PlanningEvent = {
-		id,
+		id: optimisticId,
 		classId: input.classGroupId,
 		scheduleId: input.scheduleId,
 		title: input.title.trim(),
@@ -83,26 +111,51 @@ export async function createSessionMutation(input: {
 		teacher: 'Non assigné',
 	};
 
-	const result = await runMutation(() => client.commands.createSession({
-		id,
-		classGroupId: input.classGroupId,
-		title: input.title.trim(),
-		kind: 'course',
-		startsAt,
-		endsAt,
-		classSubjectId: input.classSubjectId ?? null,
-		scheduleId: input.scheduleId ?? null,
-		createdAt: new Date().toISOString(),
-	}), {
+	const result = await runMutation(async () => {
+		const scheduleId = input.scheduleId ?? `sched-${Date.now().toString(36)}`;
+		if (!input.scheduleId) {
+			await client.commands.createSchedule({
+				id: scheduleId,
+				schoolId,
+				classGroupId: input.classGroupId,
+				scheduleKind: 'lesson',
+				title: input.title.trim(),
+				isRecurring: false,
+				specificDate: specificDateForWeek(input.weekStart, input.day),
+				startTime: input.start,
+				endTime: input.end,
+				classSubjectId: input.classSubjectId ?? null,
+				activityId: null,
+				dayOfWeek: null,
+				createdAt: new Date().toISOString(),
+			});
+		}
+
+		const session = await materializeLessonSession(client, scheduleId);
+		if (!session) {
+			throw new Error('Failed to materialize lesson session');
+		}
+		return session;
+	}, {
 		successMessage: input.successMessage,
 		apply: () => {
 			detailDataContext.appendPlanningEvent(optimistic);
 		},
 		rollback: () => {
-			detailDataContext.removePlanningEvent(id);
+			detailDataContext.removePlanningEvent(optimisticId);
+		},
+		onSuccess: (session) => {
+			detailDataContext.removePlanningEvent(optimisticId);
+			detailDataContext.appendPlanningEvent({
+				...optimistic,
+				id: session.id,
+				scheduleId: session.scheduleId,
+				startsAt: String(session.startsAt),
+				endsAt: String(session.endsAt),
+			});
 		},
 	});
-	return result ? id : null;
+	return result?.id ?? null;
 }
 
 export async function updateSessionMutation(input: {
@@ -129,7 +182,7 @@ export async function updateSessionMutation(input: {
 
 	let existing;
 	try {
-		existing = await client.entities.sessions.get(input.sessionId);
+		existing = await client.entities.lessonSessions.get(input.sessionId);
 	}
 	catch {
 		toast.error(get(t)('dataState.errorDescription'));
@@ -144,14 +197,19 @@ export async function updateSessionMutation(input: {
 	);
 	const resolvedPatch = { ...patch, startsAt, endsAt };
 
-	const result = await runMutation(() => client.entities.sessions.save(
-		buildSessionSavePayload(existing, {
-			title: input.title,
-			classSubjectId: input.classSubjectId,
+	const result = await runMutation(async () => {
+		await client.commands.rescheduleOccurrence({
+			lessonSessionId: input.sessionId,
 			startsAt,
 			endsAt,
-		}),
-	), {
+		});
+		await client.entities.lessonSessions.save(
+			buildLessonSessionSavePayload(existing, {
+				displayLabel: input.title,
+				classSubjectId: input.classSubjectId,
+			}),
+		);
+	}, {
 		successMessage: input.successMessage,
 		apply: () => {
 			detailDataContext.patchPlanningEvent(input.sessionId, resolvedPatch);
@@ -179,7 +237,7 @@ export async function reschedulePlanningSlotMutation(input: {
 	const previous = planningSnapshot(input.sessionId);
 	let session;
 	try {
-		session = await client.entities.sessions.get(input.sessionId);
+		session = await client.entities.lessonSessions.get(input.sessionId);
 	}
 	catch {
 		toast.error(get(t)('dataState.errorDescription'));
@@ -209,10 +267,11 @@ export async function reschedulePlanningSlotMutation(input: {
 				startTime: input.startTime,
 				endTime: input.endTime,
 			});
+			await client.commands.materializeSchedule({ scheduleId: input.scheduleId });
 		}
 
-		await client.entities.sessions.save({
-			...session,
+		await client.commands.rescheduleOccurrence({
+			lessonSessionId: input.sessionId,
 			startsAt: instants.startsAt.toISOString(),
 			endsAt: instants.endsAt.toISOString(),
 		});

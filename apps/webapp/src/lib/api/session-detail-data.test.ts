@@ -1,7 +1,6 @@
 import type { Student } from '$lib/types/school';
 import { buildSessionDetail, buildSessionSubjectMatters } from '$lib/api/session-detail-data';
-import { staffMember, subject } from '$lib/test/openapi-fixtures';
-import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
+import { lessonSession } from '$lib/test/openapi-fixtures';
 import { describe, expect, it } from 'bun:test';
 
 const students: Student[] = [{
@@ -18,7 +17,7 @@ const students: Student[] = [{
 }];
 
 describe('buildSessionDetail', () => {
-	it('joins session attendance and logbook for class students', () => {
+	it('joins lesson session attendance, progress, and session note', () => {
 		const classSubjectMattersRaw = [{
 			id: 'csm-cs-6a-math',
 			classSubjectId: 'cs-6a-math',
@@ -34,47 +33,35 @@ describe('buildSessionDetail', () => {
 			sequenceOrder: 1,
 			estimatedHours: 5,
 		}];
+		const progressRaw = [{
+			id: 'csp-1',
+			classSubjectMatterId: 'csm-cs-6a-math',
+			lessonSessionId: 'ls-att-today-6a',
+			completedPercentage: 40,
+			notes: 'Add fractions',
+		}];
 
 		const detail = buildSessionDetail({
-			session: {
-				id: 'sess-att-today-6a',
+			session: lessonSession({
+				id: 'ls-att-today-6a',
 				classGroupId: '6a',
 				classSubjectId: 'cs-6a-math',
-				title: 'Math',
-				kind: 'course',
-				startsAt: '2026-05-22T08:00:00.000Z',
-				endsAt: '2026-05-22T09:00:00.000Z',
-			},
+				scheduleId: 'sched-1',
+				displayLabel: 'Math',
+				sessionNote: 'Lesson content',
+			}),
 			students,
 			attendanceRaw: [{
 				id: 'att-1',
 				studentId: 'stu-1',
-				sessionId: 'sess-att-today-6a',
+				lessonSessionId: 'ls-att-today-6a',
 				status: 'present',
 				date: '2026-05-22',
 				justificationStatus: 'none',
 			}],
-			logSources: {
-				classLogbookEntriesRaw: [{
-					id: 'log-1',
-					schoolId: SEED_SCHOOL_ID,
-					classGroupId: '6a',
-					classSubjectId: 'cs-6a-math',
-					date: '2026-05-22',
-					chapter: 'Fractions',
-					content: 'Lesson content',
-					objectives: ['Add fractions'],
-					homework: 'Ex. 1-5',
-					attachments: [],
-					progress: 40,
-				}],
-				classSubjectsRaw: [{ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math', completedPercentage: 0 }],
-				subjectsRaw: [subject({ id: 'subj-math', name: 'Mathematics', code: 'MATH', defaultCoefficient: 3 })],
-				staffMembersRaw: [staffMember({ id: 'st1', firstName: 'Marie', lastName: 'Dupont', email: 'm@school.edu' })],
-				staffAssignmentsRaw: [],
-			},
 			classSubjectMattersRaw,
 			subjectMattersRaw,
+			progressRaw,
 		});
 
 		expect(detail.attendance).toHaveLength(1);
@@ -90,8 +77,8 @@ describe('buildSessionDetail', () => {
 			completedPercentage: 40,
 		}]);
 		expect(detail.logbook).toMatchObject({
-			id: 'log-1',
-			chapter: 'Fractions',
+			id: 'csp-1',
+			content: 'Lesson content',
 		});
 	});
 

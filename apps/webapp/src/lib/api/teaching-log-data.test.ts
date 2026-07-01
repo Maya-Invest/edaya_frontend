@@ -1,27 +1,39 @@
 import type { TeachingLogSources } from './teaching-log-data';
-import { staffMember, subject } from '$lib/test/openapi-fixtures';
-import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
+import { classSubject, lessonSession, staffMember, subject } from '$lib/test/openapi-fixtures';
 import { describe, expect, it } from 'bun:test';
 import { mapTeachingLogEntries } from './teaching-log-data';
 
 const classSources: TeachingLogSources = {
-	classLogbookEntriesRaw: [
-		{
-			id: 'tle-cs-6a-math-0',
-			schoolId: SEED_SCHOOL_ID,
+	lessonSessionsRaw: [
+		lessonSession({
+			id: 'ls-cs-6a-math-0',
 			classGroupId: '6a',
+			scheduleId: 'sched-1',
 			classSubjectId: 'cs-6a-math',
-			date: '2026-05-22',
-			chapter: 'Ch. 6 — Fractions',
-			content: 'Addition et soustraction de fractions.',
-			objectives: ['Mettre au même dénominateur'],
-			homework: 'Manuel p.84 ex. 12 à 18',
-			attachments: ['fiche-fractions.pdf'],
-			progress: 62,
+			displayLabel: 'Ch. 6 — Fractions',
+			sessionNote: 'Addition et soustraction de fractions.',
+		}),
+	],
+	classSubjectProgressRaw: [
+		{
+			id: 'csp-1',
+			classSubjectMatterId: 'csm-1',
+			lessonSessionId: 'ls-cs-6a-math-0',
+			completedPercentage: 62,
+			notes: 'Mettre au même dénominateur',
+		},
+	],
+	classSubjectMattersRaw: [
+		{
+			id: 'csm-1',
+			classSubjectId: 'cs-6a-math',
+			subjectMatterId: 'sm-1',
+			status: 'in_progress',
+			completedPercentage: 0,
 		},
 	],
 	classSubjectsRaw: [
-		{ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math', completedPercentage: 0 },
+		classSubject({ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math' }),
 	],
 	subjectsRaw: [
 		subject({ id: 'subj-math', name: 'Mathematics', code: 'MATH', defaultCoefficient: 3 }),
@@ -35,9 +47,11 @@ const classSources: TeachingLogSources = {
 };
 
 describe('mapTeachingLogEntries', () => {
-	it('maps logbook entries with subject and teacher labels', () => {
+	it('maps lesson sessions with subject and teacher labels', () => {
 		const entries = mapTeachingLogEntries({
-			classLogbookEntriesRaw: [...classSources.classLogbookEntriesRaw],
+			lessonSessionsRaw: [...classSources.lessonSessionsRaw],
+			classSubjectProgressRaw: [...classSources.classSubjectProgressRaw],
+			classSubjectMattersRaw: [...classSources.classSubjectMattersRaw],
 			classSubjectsRaw: [...classSources.classSubjectsRaw],
 			subjectsRaw: [...classSources.subjectsRaw],
 			staffMembersRaw: [...classSources.staffMembersRaw],
@@ -46,19 +60,20 @@ describe('mapTeachingLogEntries', () => {
 
 		expect(entries).toHaveLength(1);
 		expect(entries[0]).toMatchObject({
-			id: 'tle-cs-6a-math-0',
+			id: 'ls-cs-6a-math-0',
 			classId: '6a',
 			subject: 'Mathematics',
 			teacher: 'Marie Dupont',
-			chapter: 'Ch. 6 — Fractions',
-			homework: 'Manuel p.84 ex. 12 à 18',
+			content: 'Addition et soustraction de fractions.',
 			progress: 62,
 		});
 	});
 
 	it('filters entries by subject name', () => {
 		const entries = mapTeachingLogEntries({
-			classLogbookEntriesRaw: [...classSources.classLogbookEntriesRaw],
+			lessonSessionsRaw: [...classSources.lessonSessionsRaw],
+			classSubjectProgressRaw: [...classSources.classSubjectProgressRaw],
+			classSubjectMattersRaw: [...classSources.classSubjectMattersRaw],
 			classSubjectsRaw: [...classSources.classSubjectsRaw],
 			subjectsRaw: [...classSources.subjectsRaw],
 			staffMembersRaw: [...classSources.staffMembersRaw],
@@ -71,15 +86,12 @@ describe('mapTeachingLogEntries', () => {
 
 	it('sorts entries by date descending', () => {
 		const entries = mapTeachingLogEntries({
-			classLogbookEntriesRaw: [
-				{ ...classSources.classLogbookEntriesRaw[0], date: '2026-05-18', objectives: ['Mettre au même dénominateur'] },
-				{
-					...classSources.classLogbookEntriesRaw[0],
-					id: 'tle-cs-6a-math-1',
-					date: '2026-05-22',
-					objectives: ['Mettre au même dénominateur'],
-				},
+			lessonSessionsRaw: [
+				{ ...classSources.lessonSessionsRaw[0], id: 'ls-1', startsAt: '2026-05-18T08:00:00.000Z' },
+				{ ...classSources.lessonSessionsRaw[0], id: 'ls-2', startsAt: '2026-05-22T08:00:00.000Z' },
 			],
+			classSubjectProgressRaw: [],
+			classSubjectMattersRaw: [...classSources.classSubjectMattersRaw],
 			classSubjectsRaw: [...classSources.classSubjectsRaw],
 			subjectsRaw: [...classSources.subjectsRaw],
 			staffMembersRaw: [],

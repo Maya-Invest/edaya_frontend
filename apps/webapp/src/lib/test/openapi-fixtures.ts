@@ -5,6 +5,9 @@ type StaffMember = components['schemas']['StaffMember'];
 type Subject = components['schemas']['Subject'];
 type StudentNote = components['schemas']['StudentNote'];
 type ReportCardDefinition = components['schemas']['ReportCardDefinition'];
+type ClassSubject = components['schemas']['ClassSubject'];
+type LessonSession = components['schemas']['LessonSession'];
+type Assessment = components['schemas']['Assessment'];
 
 const HUMAN_STAFF_DEFAULTS = {
 	accountKind: 'human' as const,
@@ -63,4 +66,42 @@ export function reportCardDefinition(
 
 export function cloneMutable<T>(value: T): T {
 	return structuredClone(value);
+}
+
+export function classSubject(
+	overrides: Partial<ClassSubject> & Pick<ClassSubject, 'id' | 'classGroupId' | 'subjectId'>,
+): ClassSubject {
+	return {
+		completedPercentage: 0,
+		isOffered: true,
+		...overrides,
+	};
+}
+
+export function lessonSession(
+	overrides: Partial<LessonSession> & Pick<LessonSession, 'id' | 'classGroupId' | 'classSubjectId' | 'scheduleId'>,
+): LessonSession {
+	return {
+		schoolId: SEED_SCHOOL_ID,
+		displayLabel: 'Session',
+		status: 'pending',
+		isException: false,
+		startsAt: '2026-05-22T08:00:00.000Z',
+		endsAt: '2026-05-22T09:00:00.000Z',
+		...overrides,
+	};
+}
+
+export function homeworkAssessment(
+	overrides: Partial<Assessment> & Pick<Assessment, 'id' | 'classGroupId' | 'classSubjectId' | 'periodId' | 'title'>,
+): Assessment {
+	return {
+		kind: 'homework',
+		maxScore: 20,
+		coefficient: 1,
+		attachments: [],
+		dueAt: '2026-05-18',
+		createdAt: '2026-05-11',
+		...overrides,
+	};
 }

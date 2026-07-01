@@ -1,5 +1,5 @@
 import type { components } from '$lib/api/schema';
-import { createSchoolClient } from '@edaya/api-client';
+import { createSchoolClient } from '$api-client';
 import { createBrowserTransport } from './browser-transport';
 
 type BrowserSchoolClient = ReturnType<typeof createSchoolClient<components['schemas']>>;

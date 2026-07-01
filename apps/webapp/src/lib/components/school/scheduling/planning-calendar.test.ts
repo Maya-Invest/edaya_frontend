@@ -2,6 +2,7 @@ import type { PlanningEvent } from '$lib/types/school';
 import { describe, expect, test } from 'bun:test';
 import {
 	calendarSlotFromDates,
+	detectPlanningOverlaps,
 	filterPlanningEventsForWeek,
 	formatPlanningWeekRange,
 	formatWeekAnchor,
@@ -121,5 +122,75 @@ describe('planning-calendar', () => {
 			start: 'May 11',
 			end: 'May 15, 2026',
 		});
+	});
+
+	test('detectPlanningOverlaps finds intersecting lesson slots', () => {
+		const events: PlanningEvent[] = [
+			{
+				id: 'a',
+				classId: 'cg1',
+				kind: 'lesson',
+				title: 'Math',
+				subject: 'Math',
+				day: 'Mon',
+				start: '08:00',
+				end: '09:00',
+				startsAt: '2026-05-11T08:00:00.000Z',
+				endsAt: '2026-05-11T09:00:00.000Z',
+				room: 'A1',
+				teacher: 'Teacher',
+			},
+			{
+				id: 'b',
+				classId: 'cg1',
+				kind: 'lesson',
+				title: 'French',
+				subject: 'French',
+				day: 'Mon',
+				start: '08:30',
+				end: '09:30',
+				startsAt: '2026-05-11T08:30:00.000Z',
+				endsAt: '2026-05-11T09:30:00.000Z',
+				room: 'A2',
+				teacher: 'Teacher',
+			},
+		];
+
+		expect(detectPlanningOverlaps(events)).toHaveLength(1);
+	});
+
+	test('detectPlanningOverlaps ignores homework due markers', () => {
+		const events: PlanningEvent[] = [
+			{
+				id: 'a',
+				classId: 'cg1',
+				kind: 'lesson',
+				title: 'Math',
+				subject: 'Math',
+				day: 'Mon',
+				start: '17:00',
+				end: '18:00',
+				startsAt: '2026-05-11T17:00:00.000Z',
+				endsAt: '2026-05-11T18:00:00.000Z',
+				room: 'A1',
+				teacher: 'Teacher',
+			},
+			{
+				id: 'hw-due-1',
+				classId: 'cg1',
+				kind: 'homework-due',
+				title: 'Worksheet',
+				subject: 'Math',
+				day: 'Mon',
+				start: '17:00',
+				end: '17:30',
+				startsAt: '2026-05-11T17:00:00.000Z',
+				endsAt: '2026-05-11T17:30:00.000Z',
+				room: '—',
+				teacher: '—',
+			},
+		];
+
+		expect(detectPlanningOverlaps(events)).toHaveLength(0);
 	});
 });
