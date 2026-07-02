@@ -18,7 +18,23 @@ function scheduleSnapshot(scheduleId: string): TimetableSchedule | undefined {
 	return detailDataContext.schedules.find(schedule => schedule.id === scheduleId);
 }
 
-async function syncScheduleSessionForWeek(input: {
+async function refreshClassPlanning(classGroupId: string): Promise<void> {
+	const client = getBrowserSchoolClient();
+	const planning = await loadClassPlanning(client, classGroupId);
+	detailDataContext.seedPlanning(planning, { classId: classGroupId });
+}
+
+async function syncActivityScheduleForWeek(input: {
+	scheduleId: string;
+	classGroupId: string;
+}): Promise<boolean> {
+	const client = getBrowserSchoolClient();
+	await client.commands.materializeSchedule({ scheduleId: input.scheduleId });
+	await refreshClassPlanning(input.classGroupId);
+	return true;
+}
+
+async function syncLessonScheduleForWeek(input: {
 	scheduleId: string;
 	classGroupId: string;
 	weekStart: Date;
@@ -32,7 +48,7 @@ async function syncScheduleSessionForWeek(input: {
 		detailDataContext.planningForClass(input.classGroupId),
 		input.weekStart,
 	);
-	const existing = weekEvents.find(event => event.scheduleId === input.scheduleId);
+	const existing = weekEvents.find(event => event.scheduleId === input.scheduleId && event.kind === 'lesson');
 
 	if (existing) {
 		return updateSessionMutation({
@@ -58,10 +74,53 @@ async function syncScheduleSessionForWeek(input: {
 	return sessionId !== null;
 }
 
-export async function createScheduleMutation(input: {
+async function syncScheduleSessionForWeek(input: {
+	scheduleId: string;
+	scheduleKind: TimetableSchedule['scheduleKind'];
 	classGroupId: string;
+	weekStart: Date;
+	title: string;
+	classSubjectId?: string | null;
+	activityId?: string | null;
+	day: PlanningEvent['day'];
+	startTime: string;
+	endTime: string;
+}): Promise<boolean> {
+	if (input.scheduleKind === 'activity') {
+		return syncActivityScheduleForWeek({
+			scheduleId: input.scheduleId,
+			classGroupId: input.classGroupId,
+		});
+	}
+
+	return syncLessonScheduleForWeek(input);
+}
+
+function scheduleSubjectLabel(input: {
+	scheduleKind: TimetableSchedule['scheduleKind'];
 	title: string;
 	classSubjectId?: string;
+	activityId?: string;
+}): string {
+	if (input.scheduleKind === 'activity') {
+		const activity = input.activityId
+			? detailDataContext.activities.find(entry => entry.id === input.activityId)
+			: undefined;
+		return activity?.name ?? input.title.trim();
+	}
+
+	const subject = input.classSubjectId
+		? detailDataContext.subjects.find(entry => entry.id === input.classSubjectId)
+		: undefined;
+	return subject?.name ?? input.title.trim();
+}
+
+export async function createScheduleMutation(input: {
+	classGroupId: string;
+	scheduleKind?: TimetableSchedule['scheduleKind'];
+	title: string;
+	classSubjectId?: string;
+	activityId?: string;
 	day: PlanningEvent['day'];
 	startTime: string;
 	endTime: string;
@@ -69,35 +128,41 @@ export async function createScheduleMutation(input: {
 	successMessage?: string;
 }): Promise<string | null> {
 	const client = getBrowserSchoolClient();
+	const scheduleKind = input.scheduleKind ?? 'lesson';
 	const id = `sched-${Date.now().toString(36)}`;
-	const subject = input.classSubjectId
-		? detailDataContext.subjects.find(entry => entry.id === input.classSubjectId)
-		: undefined;
+	const subjectLabel = scheduleSubjectLabel({
+		scheduleKind,
+		title: input.title,
+		classSubjectId: input.classSubjectId,
+		activityId: input.activityId,
+	});
 	const optimistic: TimetableSchedule = {
 		id,
 		classId: input.classGroupId,
-		classSubjectId: input.classSubjectId,
+		scheduleKind,
+		classSubjectId: scheduleKind === 'lesson' ? input.classSubjectId : undefined,
+		activityId: scheduleKind === 'activity' ? input.activityId : undefined,
 		title: input.title.trim(),
 		isRecurring: true,
 		dayOfWeek: PLANNING_DAY_TO_SCHEDULE[input.day],
 		day: input.day,
 		startTime: input.startTime,
 		endTime: input.endTime,
-		subject: subject?.name ?? input.title.trim(),
+		subject: subjectLabel,
 	};
 
 	const result = await runMutation(() => client.commands.createSchedule({
 		id,
 		schoolId: authSession.schoolId!,
 		classGroupId: input.classGroupId,
-		scheduleKind: 'lesson',
+		scheduleKind,
 		title: input.title.trim(),
 		isRecurring: true,
 		dayOfWeek: PLANNING_DAY_TO_SCHEDULE[input.day],
 		startTime: input.startTime,
 		endTime: input.endTime,
-		classSubjectId: input.classSubjectId ?? null,
-		activityId: null,
+		classSubjectId: scheduleKind === 'lesson' ? (input.classSubjectId ?? null) : null,
+		activityId: scheduleKind === 'activity' ? (input.activityId ?? null) : null,
 		specificDate: null,
 		createdAt: new Date().toISOString(),
 	}), {
@@ -116,10 +181,12 @@ export async function createScheduleMutation(input: {
 
 	const synced = await syncScheduleSessionForWeek({
 		scheduleId: id,
+		scheduleKind,
 		classGroupId: input.classGroupId,
 		weekStart: input.weekStart,
 		title: input.title,
 		classSubjectId: input.classSubjectId,
+		activityId: input.activityId,
 		day: input.day,
 		startTime: input.startTime,
 		endTime: input.endTime,
@@ -134,8 +201,10 @@ export async function createScheduleMutation(input: {
 export async function updateScheduleMutation(input: {
 	scheduleId: string;
 	classGroupId: string;
+	scheduleKind: TimetableSchedule['scheduleKind'];
 	title: string;
 	classSubjectId?: string | null;
+	activityId?: string | null;
 	day: PlanningEvent['day'];
 	startTime: string;
 	endTime: string;
@@ -144,17 +213,20 @@ export async function updateScheduleMutation(input: {
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
 	const previous = scheduleSnapshot(input.scheduleId);
-	const subject = input.classSubjectId
-		? detailDataContext.subjects.find(entry => entry.id === input.classSubjectId)
-		: undefined;
 	const patch = {
 		title: input.title.trim(),
-		classSubjectId: input.classSubjectId ?? undefined,
+		classSubjectId: input.scheduleKind === 'lesson' ? (input.classSubjectId ?? undefined) : undefined,
+		activityId: input.scheduleKind === 'activity' ? (input.activityId ?? undefined) : undefined,
 		dayOfWeek: PLANNING_DAY_TO_SCHEDULE[input.day],
 		day: input.day,
 		startTime: input.startTime,
 		endTime: input.endTime,
-		subject: subject?.name ?? input.title.trim(),
+		subject: scheduleSubjectLabel({
+			scheduleKind: input.scheduleKind,
+			title: input.title,
+			classSubjectId: input.classSubjectId ?? undefined,
+			activityId: input.activityId ?? undefined,
+		}),
 	};
 
 	let existing;
@@ -172,7 +244,8 @@ export async function updateScheduleMutation(input: {
 		dayOfWeek: PLANNING_DAY_TO_SCHEDULE[input.day],
 		startTime: input.startTime,
 		endTime: input.endTime,
-		classSubjectId: input.classSubjectId ?? null,
+		classSubjectId: input.scheduleKind === 'lesson' ? (input.classSubjectId ?? null) : null,
+		activityId: input.scheduleKind === 'activity' ? (input.activityId ?? null) : null,
 	}), {
 		successMessage: input.successMessage,
 		apply: () => {
@@ -191,10 +264,12 @@ export async function updateScheduleMutation(input: {
 
 	const synced = await syncScheduleSessionForWeek({
 		scheduleId: input.scheduleId,
+		scheduleKind: input.scheduleKind,
 		classGroupId: input.classGroupId,
 		weekStart: input.weekStart,
 		title: input.title,
 		classSubjectId: input.classSubjectId,
+		activityId: input.activityId,
 		day: input.day,
 		startTime: input.startTime,
 		endTime: input.endTime,
@@ -221,8 +296,7 @@ export async function generateSessionsMutation(input: {
 	}, {
 		successMessage: input.successMessage,
 		onSuccess: async () => {
-			const planning = await loadClassPlanning(client, input.classGroupId);
-			detailDataContext.seedPlanning(planning, { classId: input.classGroupId });
+			await refreshClassPlanning(input.classGroupId);
 		},
 	});
 

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { ONBOARDING_COMPLETE_CHECKLIST } from '$lib/onboarding/complete-step-checklist';
-	import { CheckCircle2 } from '$lib/icons';
 	import { t } from '$lib/i18n';
+	import { CheckCircle2 } from '$lib/icons';
+	import { ONBOARDING_COMPLETE_CHECKLIST } from '$lib/onboarding/complete-step-checklist';
 </script>
 
 <div class="space-y-6">

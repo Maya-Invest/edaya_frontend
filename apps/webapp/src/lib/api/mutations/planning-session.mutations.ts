@@ -1,3 +1,4 @@
+import type { PlanningEventKind } from '$lib/types/school';
 import type { SessionAttendanceStatus, SessionLogbook } from '$lib/types/session-detail';
 import { buildLessonSessionSavePayload } from '$lib/api/lesson-session-save-payload';
 import { runMutation } from '$lib/api/mutations/run-mutation';
@@ -8,6 +9,7 @@ import { get } from 'svelte/store';
 
 export async function recordSessionStudentAttendanceMutation(input: {
 	sessionId: string;
+	kind?: PlanningEventKind;
 	studentId: string;
 	status: SessionAttendanceStatus;
 	attendanceId?: string;
@@ -16,11 +18,16 @@ export async function recordSessionStudentAttendanceMutation(input: {
 	const client = getBrowserSchoolClient();
 	const id = input.attendanceId ?? `${input.studentId}-${input.sessionId}`;
 	const previous = sessionDetailContext.get(input.sessionId)?.attendance.find(row => row.studentId === input.studentId);
+	const anchor = input.kind === 'activity'
+		? { activitySessionId: input.sessionId }
+		: input.kind === 'assessment'
+			? { assessmentId: input.sessionId }
+			: { lessonSessionId: input.sessionId };
 
 	const result = await runMutation(() => client.commands.recordAttendance({
 		id,
 		studentId: input.studentId,
-		lessonSessionId: input.sessionId,
+		...anchor,
 		status: input.status,
 		createdAt: new Date().toISOString(),
 	}), {

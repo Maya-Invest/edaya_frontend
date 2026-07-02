@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PlanningEvent, TimetableSchedule } from '$lib/types/school';
+	import type { PlanningEvent, TimetableSchedule, TimetableScheduleKind } from '$lib/types/school';
 	import { createScheduleMutation, updateScheduleMutation } from '$lib/api/mutations/schedule.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
@@ -11,11 +11,13 @@
 	import { get } from 'svelte/store';
 
 	const DAYS: PlanningEvent['day'][] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+	const SCHEDULE_KINDS: TimetableScheduleKind[] = ['lesson', 'activity'];
 
 	let {
 		classId,
 		weekStart,
 		schedule,
+		defaultScheduleKind = 'lesson',
 		open = $bindable(false),
 		disabled = false,
 		title,
@@ -24,6 +26,7 @@
 		classId: string;
 		weekStart: Date;
 		schedule?: TimetableSchedule;
+		defaultScheduleKind?: TimetableScheduleKind;
 		open?: boolean;
 		disabled?: boolean;
 		title?: string;
@@ -33,7 +36,9 @@
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let scheduleTitle = $state('');
+	let scheduleKind = $state<TimetableScheduleKind>('lesson');
 	let classSubjectId = $state('');
+	let activityId = $state('');
 	let day = $state<PlanningEvent['day']>('Mon');
 	let startTime = $state('08:00');
 	let endTime = $state('09:00');
@@ -42,29 +47,49 @@
 	const classSubjects = $derived(
 		detailDataContext.subjects.filter(subject => subject.classId === classId),
 	);
+	const activities = $derived(detailDataContext.activities);
 	const selectedSubjectName = $derived(
 		classSubjects.find(subject => subject.id === classSubjectId)?.name ?? '',
 	);
-	const canSubmit = $derived(
-		scheduleTitle.trim().length > 0 && startTime.length > 0 && endTime.length > 0 && startTime < endTime,
+	const selectedActivityName = $derived(
+		activities.find(activity => activity.id === activityId)?.name ?? '',
 	);
+	const canSubmit = $derived.by(() => {
+		return scheduleTitle.trim().length > 0
+			&& startTime.length > 0
+			&& endTime.length > 0
+			&& startTime < endTime
+			&& (scheduleKind === 'lesson'
+				? classSubjectId.length > 0
+				: activityId.length > 0);
+	});
 
 	function resetForm() {
 		if (schedule) {
 			scheduleTitle = schedule.title;
+			scheduleKind = schedule.scheduleKind;
 			day = schedule.day;
 			startTime = schedule.startTime;
 			endTime = schedule.endTime;
-			const match = classSubjects.find(subject => subject.id === schedule.classSubjectId);
-			classSubjectId = match?.id ?? classSubjects[0]?.id ?? '';
+			classSubjectId = schedule.classSubjectId ?? classSubjects[0]?.id ?? '';
+			activityId = schedule.activityId ?? activities[0]?.id ?? '';
 		}
 		else {
 			scheduleTitle = '';
+			scheduleKind = defaultScheduleKind;
 			day = 'Mon';
 			startTime = '08:00';
 			endTime = '09:00';
 			classSubjectId = classSubjects[0]?.id ?? '';
+			activityId = activities[0]?.id ?? '';
 		}
+	}
+
+	function handleScheduleKindChange(value: string | undefined) {
+		if (!value || (value !== 'lesson' && value !== 'activity')) {
+			return;
+		}
+		scheduleKind = value;
 	}
 
 	$effect(() => {
@@ -84,9 +109,11 @@
 			const ok = await updateScheduleMutation({
 				scheduleId: schedule.id,
 				classGroupId: classId,
+				scheduleKind,
 				weekStart,
 				title: scheduleTitle,
-				classSubjectId: classSubjectId || null,
+				classSubjectId: scheduleKind === 'lesson' ? classSubjectId : null,
+				activityId: scheduleKind === 'activity' ? activityId : null,
 				day,
 				startTime,
 				endTime,
@@ -100,9 +127,11 @@
 		else {
 			const scheduleId = await createScheduleMutation({
 				classGroupId: classId,
+				scheduleKind,
 				weekStart,
 				title: scheduleTitle,
-				classSubjectId: classSubjectId || undefined,
+				classSubjectId: scheduleKind === 'lesson' ? classSubjectId : undefined,
+				activityId: scheduleKind === 'activity' ? activityId : undefined,
 				day,
 				startTime,
 				endTime,
@@ -132,21 +161,50 @@
 
 <FormModal
 	bind:open
-	title={isEdit ? $t('planning.schedule.editTitle') : $t('planning.schedule.createTitle')}
-	description={isEdit ? schedule?.title : $t('planning.schedule.createDescription')}
+	title={isEdit
+		? $t('planning.schedule.editTitle')
+		: scheduleKind === 'activity'
+		? $t('planning.schedule.createActivityTitle')
+		: $t('planning.schedule.createTitle')}
+	description={isEdit
+		? schedule?.title
+		: scheduleKind === 'activity'
+		? $t('planning.schedule.createActivityDescription')
+		: $t('planning.schedule.createDescription')}
 	submitLabel={$t('common.save')}
 	busy={busy}
 	submitDisabled={!canSubmit}
 	onCancel={resetForm}
 	onSubmit={submit}
 >
+	{#if !isEdit}
+		<div class="space-y-1.5">
+			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				{$t('planning.schedule.kind')}
+			</Label>
+			<Select.Root type="single" value={scheduleKind} onValueChange={handleScheduleKindChange}>
+				<Select.Trigger>
+					<Select.Value placeholder={$t('planning.schedule.kind')}>
+						{$t(`planning.schedule.kind.${scheduleKind}`)}
+					</Select.Value>
+				</Select.Trigger>
+				<Select.Content class="z-[100]">
+					{#each SCHEDULE_KINDS as kind (kind)}
+						<Select.Item value={kind} label={$t(`planning.schedule.kind.${kind}`)}>
+							{$t(`planning.schedule.kind.${kind}`)}
+						</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+		</div>
+	{/if}
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('drawer.title')}
 		</Label>
 		<Input bind:value={scheduleTitle} />
 	</div>
-	{#if classSubjects.length > 0}
+	{#if scheduleKind === 'lesson' && classSubjects.length > 0}
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('drawer.subject')}
@@ -163,6 +221,28 @@
 					{/each}
 				</Select.Content>
 			</Select.Root>
+		</div>
+	{:else if scheduleKind === 'activity'}
+		<div class="space-y-1.5">
+			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				{$t('planning.schedule.activityProgram')}
+			</Label>
+			{#if activities.length === 0}
+				<p class="text-xs text-muted-foreground">{$t('planning.schedule.noActivities')}</p>
+			{:else}
+				<Select.Root type="single" value={activityId} onValueChange={v => v && (activityId = v)}>
+					<Select.Trigger>
+						<Select.Value placeholder={$t('planning.schedule.activityProgram')}>
+							{selectedActivityName}
+						</Select.Value>
+					</Select.Trigger>
+					<Select.Content class="z-[100]">
+						{#each activities as activity (activity.id)}
+							<Select.Item value={activity.id} label={activity.name}>{activity.name}</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			{/if}
 		</div>
 	{/if}
 	<div class="space-y-1.5">

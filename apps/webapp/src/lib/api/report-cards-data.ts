@@ -135,39 +135,64 @@ export function mapSectionRole(
 	return 'matieres';
 }
 
+function isSubjectSection(section: Pick<ReportCardDefinitionSectionRaw, 'kind' | 'subjectId'>): boolean {
+	return section.kind === 'subject' || Boolean(section.subjectId);
+}
+
+function mapDefinitionSection(
+	section: ReportCardDefinitionSectionRaw,
+	definitionId: string,
+	allSections: ReportCardDefinitionSectionRaw[],
+	sources: Pick<ClassSubjectsSources, 'subjectsRaw'>,
+): ReportCardSection {
+	if (isSubjectSection(section)) {
+		const subjectId = section.subjectId ?? '';
+		const subjectLabel = subjectLabelForCatalogId(subjectId, sources);
+
+		return {
+			id: section.id,
+			definitionId,
+			name: subjectLabel,
+			sectionType: 'subject',
+			order: section.order,
+			coefficient: section.coefficient ?? section.weight,
+			subjectId,
+			subjectLabel,
+		};
+	}
+
+	const childSections = allSections
+		.filter(child => child.parentSectionId === section.id)
+		.sort((left, right) => left.order - right.order);
+	const children = childSections.map(child =>
+		mapDefinitionSection(child, definitionId, allSections, sources),
+	);
+	const hasSubjectChildren = childSections.some(isSubjectSection);
+	const kind = mapSectionRole(section, hasSubjectChildren);
+
+	return {
+		id: section.id,
+		definitionId,
+		name: section.name,
+		sectionType: 'group',
+		kind,
+		order: section.order,
+		coefficient: section.coefficient ?? (kind === 'matieres' ? section.weight : undefined),
+		children: children.length > 0 ? children : undefined,
+	};
+}
+
 function mapDefinitionSections(
 	definitionId: string,
 	sectionsRaw: ReportCardDefinitionSectionRaw[],
 	sources: Pick<ClassSubjectsSources, 'subjectsRaw'>,
 ): ReportCardSection[] {
 	const definitionSections = sectionsRaw.filter(section => section.reportCardDefinitionId === definitionId);
-	const topLevelSections = definitionSections.filter(section => !section.parentSectionId);
 
-	return topLevelSections
+	return definitionSections
+		.filter(section => !section.parentSectionId)
 		.sort((left, right) => left.order - right.order)
-		.map((section) => {
-			const childSubjects = definitionSections.filter(
-				child => child.parentSectionId === section.id && child.subjectId,
-			);
-			const kind = mapSectionRole(section, childSubjects.length > 0);
-
-			const catalogSubjectIds = childSubjects
-				.map(child => child.subjectId ?? '')
-				.filter(Boolean);
-
-			return {
-				id: section.id,
-				definitionId,
-				name: section.name,
-				kind,
-				order: section.order,
-				coefficient: section.coefficient ?? (kind === 'matieres' ? section.weight : undefined),
-				subjectIds: catalogSubjectIds.length > 0 ? catalogSubjectIds : undefined,
-				subjectLabels: catalogSubjectIds.length > 0
-					? catalogSubjectIds.map(subjectId => subjectLabelForCatalogId(subjectId, sources))
-					: undefined,
-			} satisfies ReportCardSection;
-		});
+		.map(section => mapDefinitionSection(section, definitionId, definitionSections, sources));
 }
 
 export function mapDefinitionStatus(

@@ -42,11 +42,13 @@ export interface Subject {
 
 export type PlanningEventKind = 'lesson' | 'homework-due' | 'assessment' | 'activity';
 
+export type PlanningOccurrenceStatus = 'pending' | 'completed' | 'cancelled';
+
 export interface PlanningEvent {
 	id: string;
 	classId: string;
 	scheduleId?: string;
-	kind?: PlanningEventKind;
+	kind: PlanningEventKind;
 	title: string;
 	subject: string;
 	day: 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri';
@@ -56,6 +58,7 @@ export interface PlanningEvent {
 	endsAt: string;
 	room: string;
 	teacher: string;
+	status?: PlanningOccurrenceStatus;
 }
 
 export type TimetableScheduleDay
@@ -67,10 +70,14 @@ export type TimetableScheduleDay
 		| 'saturday'
 		| 'sunday';
 
+export type TimetableScheduleKind = 'lesson' | 'activity';
+
 export interface TimetableSchedule {
 	id: string;
 	classId: string;
+	scheduleKind: TimetableScheduleKind;
 	classSubjectId?: string;
+	activityId?: string;
 	title: string;
 	isRecurring: boolean;
 	dayOfWeek?: TimetableScheduleDay;

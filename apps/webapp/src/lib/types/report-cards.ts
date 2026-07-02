@@ -14,17 +14,23 @@ export type ReportCardPublishStatus = 'draft' | 'published';
 
 export type ReportCardSectionKind = 'matieres' | 'synthese' | 'appreciation';
 
+export type ReportCardSectionType = 'group' | 'subject';
+
 export interface ReportCardSection {
 	id: string;
 	definitionId: string;
 	name: string;
-	kind: ReportCardSectionKind;
+	sectionType: ReportCardSectionType;
+	/** Semantic role for group sections. */
+	kind?: ReportCardSectionKind;
 	order: number;
 	coefficient?: number;
-	/** Catalog subject ids from the report card definition. */
-	subjectIds?: string[];
-	/** Human-readable subject names aligned with `subjectIds`. */
-	subjectLabels?: string[];
+	/** Nested group or subject sections. */
+	children?: ReportCardSection[];
+	/** Catalog subject id for subject sections. */
+	subjectId?: string;
+	/** Human-readable subject name for subject sections. */
+	subjectLabel?: string;
 }
 
 export interface ReportCardDefinition {

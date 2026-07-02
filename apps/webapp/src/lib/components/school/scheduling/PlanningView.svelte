@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PlanningEvent } from '$lib/types/school';
+	import type { PlanningEvent, TimetableScheduleKind } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -53,6 +53,7 @@
 	let attendanceSession = $state<PlanningEvent | null>(null);
 	let createOpen = $state(false);
 	let scheduleCreateOpen = $state(false);
+	let scheduleCreateKind = $state<TimetableScheduleKind>('lesson');
 
 	const editable = $derived(canEditTimetable({ classId }));
 
@@ -76,6 +77,11 @@
 	const attendanceStudents = $derived(
 		attendanceSession ? students.filter(s => s.classId === attendanceSession!.classId) : [],
 	);
+
+	function openScheduleCreate(kind: TimetableScheduleKind) {
+		scheduleCreateKind = kind;
+		scheduleCreateOpen = true;
+	}
 
 	function handleCreated(sessionId: string) {
 		const path = detailHref.classPlanning(classId, sessionId);
@@ -180,10 +186,21 @@
 							class="rounded-full"
 							{disabled}
 							{title}
-							onclick={() => (scheduleCreateOpen = true)}
+							onclick={() => openScheduleCreate('lesson')}
 						>
 							<Plus class="mr-1 h-4 w-4" />
 							{$t('planning.newSchedule')}
+						</Button>
+						<Button
+							size="sm"
+							variant="outline"
+							class="rounded-full"
+							{disabled}
+							{title}
+							onclick={() => openScheduleCreate('activity')}
+						>
+							<Plus class="mr-1 h-4 w-4" />
+							{$t('planning.newActivitySchedule')}
 						</Button>
 						<Button
 							size="sm"
@@ -272,7 +289,7 @@
 		</div>
 	{/if}
 
-	<ScheduleFormModal {classId} {weekStart} bind:open={scheduleCreateOpen} />
+	<ScheduleFormModal {classId} {weekStart} defaultScheduleKind={scheduleCreateKind} bind:open={scheduleCreateOpen} />
 	<PlanningFormModal {classId} weekStart={weekStart} bind:open={createOpen} onCreated={handleCreated} />
 
 	<ClassTimetableCalendar

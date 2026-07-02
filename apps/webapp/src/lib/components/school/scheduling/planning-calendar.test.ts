@@ -67,6 +67,7 @@ describe('planning-calendar', () => {
 			{
 				id: 'sess-a',
 				classId: 'cg1',
+				kind: 'lesson',
 				title: 'Math',
 				subject: 'Math',
 				day: 'Mon',
@@ -80,6 +81,7 @@ describe('planning-calendar', () => {
 			{
 				id: 'sess-b',
 				classId: 'cg1',
+				kind: 'lesson',
 				title: 'Math',
 				subject: 'Math',
 				day: 'Mon',
@@ -100,6 +102,7 @@ describe('planning-calendar', () => {
 		const events: PlanningEvent[] = [{
 			id: 'sess-a',
 			classId: 'cg1',
+			kind: 'lesson',
 			title: 'Math',
 			subject: 'Math',
 			day: 'Wed',

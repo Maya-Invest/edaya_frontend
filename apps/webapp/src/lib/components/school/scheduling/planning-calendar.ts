@@ -212,6 +212,7 @@ export interface TimetableCalendarEvent {
 	room: string;
 	teacher: string;
 	kind?: PlanningEvent['kind'];
+	status?: PlanningEvent['status'];
 	css?: string;
 }
 
@@ -238,16 +239,30 @@ export function mapPlanningToCalendarEvents(
 			room: event.room,
 			teacher: event.teacher,
 			kind: event.kind,
+			status: event.status,
 			css: calendarEventCss(event),
 		};
 	});
 }
 
 function calendarEventCss(event: PlanningEvent): string {
+	if (event.status === 'cancelled') {
+		return 'edaya-occurrence-cancelled';
+	}
 	if (event.kind === 'homework-due') {
 		return 'edaya-homework-due';
 	}
+	if (event.kind === 'activity') {
+		return 'edaya-occurrence-activity';
+	}
+	if (event.kind === 'assessment') {
+		return 'edaya-occurrence-assessment';
+	}
 	return subjectToneClass(event.subject);
+}
+
+export function isPlanningEventReschedulable(event: PlanningEvent): boolean {
+	return event.kind === 'lesson' || event.kind === 'activity';
 }
 
 export function weekGenerationRange(weekStart: Date): { startDate: Date; endDate: Date } {

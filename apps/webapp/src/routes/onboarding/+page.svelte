@@ -1,10 +1,10 @@
 <script lang="ts">
 	import type { OnboardingStep } from '$lib/onboarding/types';
 	import { page } from '$app/stores';
+	import { redirectPathIfAuthenticated } from '$lib/auth/resolve-post-auth';
 	import { authSession } from '$lib/auth/session.svelte';
 	import OnboardingShell from '$lib/components/onboarding/OnboardingShell.svelte';
 	import OnboardingStepContent from '$lib/components/onboarding/OnboardingStepContent.svelte';
-	import { redirectPathIfAuthenticated } from '$lib/auth/resolve-post-auth';
 	import { isOnboardingSkipEnabled } from '$lib/env/app-env';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { onboardingContext } from '$lib/onboarding/context.svelte';
@@ -14,6 +14,7 @@
 		parseOnboardingStep,
 		writeOnboardingStepUrl,
 	} from '$lib/onboarding/navigation';
+	import { mergeOnboardingDraftWithServerStatus } from '$lib/onboarding/resume-onboarding';
 	import {
 		canAdvanceFromStep,
 		canFinishOnboarding,
@@ -28,7 +29,6 @@
 	import {
 		fetchServerOnboardingAccountStatus,
 	} from '$lib/onboarding/sync-account-status';
-	import { mergeOnboardingDraftWithServerStatus, persistServerOnboardingStatusToDraft } from '$lib/onboarding/resume-onboarding';
 
 	let busy = $state(false);
 	let syncedServerStatus = $state(false);
@@ -205,9 +205,11 @@
 		appGoto(writeOnboardingStepUrl($page.url, nextStep));
 	}
 
-	async function completeAndExitOnboarding(options?: {
-		successMessageKey?: 'onboarding.completeStep.success' | 'onboarding.skipWizardSuccess';
-	}): Promise<boolean> {
+	async function completeAndExitOnboarding(
+		options: {
+			successMessageKey?: 'onboarding.completeStep.success' | 'onboarding.skipWizardSuccess';
+		} = {},
+	): Promise<boolean> {
 		const success = await submitCompleteOnboardingStep(options);
 		if (!success) {
 			return false;

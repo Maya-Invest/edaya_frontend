@@ -1,8 +1,10 @@
 import type { HomeworkSources } from '$lib/api/homework-data';
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import type { PlanningEvent, PlanningEventKind, Resource } from '$lib/types/school';
+import type { PlanningEvent, Resource } from '$lib/types/school';
 import {
+	assignmentsForActivitySessions,
+	assignmentsForAssessments,
 	assignmentsForClassSubjects,
 	assignmentsForLessonSessions,
 	classGroupScope,
@@ -18,6 +20,8 @@ type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
 type TimetableEventRaw = components['schemas']['TimetableEvent'];
 type LessonSessionRaw = components['schemas']['LessonSession'];
+type ActivitySessionRaw = components['schemas']['ActivitySession'];
+type ActivityRaw = components['schemas']['Activity'];
 type ClassSubjectRaw = components['schemas']['ClassSubject'];
 type SubjectRaw = components['schemas']['Subject'];
 type StaffMemberRaw = components['schemas']['StaffMember'];
@@ -36,9 +40,13 @@ const TIMETABLE_DAY_OFFSET: Record<PlanningEvent['day'], number> = {
 	Fri: 4,
 };
 
+const TIMETABLE_EVENT_KINDS = new Set<TimetableEventRaw['kind']>(['lesson', 'activity', 'assessment']);
+
 export interface PlanningSources {
 	timetableEventsRaw: TimetableEventRaw[];
 	lessonSessionsById: Map<string, LessonSessionRaw>;
+	activitySessionsById: Map<string, ActivitySessionRaw>;
+	activitiesById: Map<string, ActivityRaw>;
 	classSubjectsRaw: ClassSubjectRaw[];
 	subjectsRaw: SubjectRaw[];
 	staffMembersRaw: StaffMemberRaw[];
@@ -87,6 +95,47 @@ function lessonSessionIdForEvent(event: TimetableEventRaw): string | undefined {
 	return event.lessonSessionId ?? event.id;
 }
 
+function activitySessionIdForEvent(event: TimetableEventRaw): string | undefined {
+	if (event.kind !== 'activity') {
+		return undefined;
+	}
+	return event.activitySessionId ?? event.id;
+}
+
+function assessmentIdForEvent(event: TimetableEventRaw): string | undefined {
+	if (event.kind !== 'assessment') {
+		return undefined;
+	}
+	return event.assessmentId ?? event.id;
+}
+
+function planningEventId(event: TimetableEventRaw): string {
+	return lessonSessionIdForEvent(event)
+		?? activitySessionIdForEvent(event)
+		?? assessmentIdForEvent(event)
+		?? event.id;
+}
+
+function staffName(
+	staffAssignments: StaffAssignmentRaw[],
+	staffById: Map<string, StaffMemberRaw>,
+	match: (assignment: StaffAssignmentRaw) => boolean,
+): string {
+	const assignment = staffAssignments.find(match);
+	const teacher = assignment ? staffById.get(assignment.staffId) : undefined;
+	return teacher ? `${teacher.firstName} ${teacher.lastName}` : 'Non assigné';
+}
+
+function roomName(
+	resourceAssignments: ResourceAssignmentRaw[],
+	resourceById: Map<string, ResourceRaw>,
+	match: (assignment: ResourceAssignmentRaw) => boolean,
+): string {
+	const assignment = resourceAssignments.find(match);
+	const resource = assignment ? resourceById.get(assignment.resourceId) : undefined;
+	return resource?.name ?? '—';
+}
+
 export async function fetchClassPlanningSources(
 	client: SchoolClient,
 	classGroupId: string,
@@ -103,15 +152,29 @@ export async function fetchClassPlanningSources(
 			.map(lessonSessionIdForEvent)
 			.filter((id): id is string => Boolean(id)),
 	);
+	const activitySessionIds = uniqueIds(
+		timetableEventsRaw
+			.map(activitySessionIdForEvent)
+			.filter((id): id is string => Boolean(id)),
+	);
+	const assessmentIds = uniqueIds(
+		timetableEventsRaw
+			.map(assessmentIdForEvent)
+			.filter((id): id is string => Boolean(id)),
+	);
 
 	const [
 		lessonSessionsRaw,
+		activitySessionsRaw,
 		classSubjectsRaw,
 		classGroupStaffAssignmentsRaw,
 		classGroupResourceAssignmentsRaw,
 	] = await Promise.all([
 		lessonSessionIds.length > 0
 			? client.entities.lessonSessions.list(entitiesByIds(lessonSessionIds))
+			: Promise.resolve([]),
+		activitySessionIds.length > 0
+			? client.entities.activitySessions.list(entitiesByIds(activitySessionIds))
 			: Promise.resolve([]),
 		client.entities.classSubjects.list(classGroupScope(classGroupId)),
 		client.entities.staffAssignments.list(classGroupScope(classGroupId)),
@@ -121,22 +184,51 @@ export async function fetchClassPlanningSources(
 	const lessonSessionsById = new Map(
 		(lessonSessionsRaw ?? []).map(session => [session.id, session]),
 	);
+	const activitySessionsById = new Map(
+		(activitySessionsRaw ?? []).map(session => [session.id, session]),
+	);
+	const activityIds = uniqueIds([
+		...timetableEventsRaw
+			.map(event => event.activityId)
+			.filter((id): id is string => Boolean(id)),
+		...(activitySessionsRaw ?? []).map(session => session.activityId),
+	]);
 	const classSubjectIds = uniqueIds((classSubjectsRaw ?? []).map(classSubject => classSubject.id));
 	const subjectIds = uniqueIds((classSubjectsRaw ?? []).map(classSubject => classSubject.subjectId));
 
 	const [
+		activitiesRaw,
 		sessionStaffAssignmentsRaw,
 		classSubjectStaffAssignmentsRaw,
+		activityStaffAssignmentsRaw,
+		assessmentStaffAssignmentsRaw,
 		sessionResourceAssignmentsRaw,
+		activityResourceAssignmentsRaw,
+		assessmentResourceAssignmentsRaw,
 	] = await Promise.all([
+		activityIds.length > 0
+			? client.entities.activities.list(entitiesByIds(activityIds))
+			: Promise.resolve([]),
 		lessonSessionIds.length > 0
 			? client.entities.staffAssignments.list(assignmentsForLessonSessions(lessonSessionIds))
 			: Promise.resolve([]),
 		classSubjectIds.length > 0
 			? client.entities.staffAssignments.list(assignmentsForClassSubjects(classSubjectIds))
 			: Promise.resolve([]),
+		activitySessionIds.length > 0
+			? client.entities.staffAssignments.list(assignmentsForActivitySessions(activitySessionIds))
+			: Promise.resolve([]),
+		assessmentIds.length > 0
+			? client.entities.staffAssignments.list(assignmentsForAssessments(assessmentIds))
+			: Promise.resolve([]),
 		lessonSessionIds.length > 0
 			? client.entities.resourceAssignments.list(assignmentsForLessonSessions(lessonSessionIds))
+			: Promise.resolve([]),
+		activitySessionIds.length > 0
+			? client.entities.resourceAssignments.list(assignmentsForActivitySessions(activitySessionIds))
+			: Promise.resolve([]),
+		assessmentIds.length > 0
+			? client.entities.resourceAssignments.list(assignmentsForAssessments(assessmentIds))
 			: Promise.resolve([]),
 	]);
 
@@ -144,10 +236,14 @@ export async function fetchClassPlanningSources(
 		...(classGroupStaffAssignmentsRaw ?? []),
 		...(sessionStaffAssignmentsRaw ?? []),
 		...(classSubjectStaffAssignmentsRaw ?? []),
+		...(activityStaffAssignmentsRaw ?? []),
+		...(assessmentStaffAssignmentsRaw ?? []),
 	]);
 	const resourceAssignmentsRaw = dedupeById([
 		...(classGroupResourceAssignmentsRaw ?? []),
 		...(sessionResourceAssignmentsRaw ?? []),
+		...(activityResourceAssignmentsRaw ?? []),
+		...(assessmentResourceAssignmentsRaw ?? []),
 	]);
 
 	const staffIds = uniqueIds(staffAssignmentsRaw.map(assignment => assignment.staffId));
@@ -172,6 +268,8 @@ export async function fetchClassPlanningSources(
 	return {
 		timetableEventsRaw,
 		lessonSessionsById,
+		activitySessionsById,
+		activitiesById: new Map((activitiesRaw ?? []).map(activity => [activity.id, activity])),
 		classSubjectsRaw: classSubjectsRaw ?? [],
 		subjectsRaw: subjectsRaw ?? [],
 		staffMembersRaw: staffMembersRaw ?? [],
@@ -181,48 +279,149 @@ export async function fetchClassPlanningSources(
 	};
 }
 
+function mapLessonPlanningEvent(
+	event: TimetableEventRaw,
+	classGroupId: string,
+	sources: PlanningSources,
+): PlanningEvent | null {
+	const lessonSessionId = lessonSessionIdForEvent(event) ?? event.id;
+	const lessonSession = sources.lessonSessionsById.get(lessonSessionId);
+	const classSubjectId = event.classSubjectId ?? lessonSession?.classSubjectId;
+	const classSubject = classSubjectId ? sources.classSubjectsRaw.find(entry => entry.id === classSubjectId) : undefined;
+	const subject = classSubject ? sources.subjectsRaw.find(entry => entry.id === classSubject.subjectId) : undefined;
+	const staffById = new Map(sources.staffMembersRaw.map(member => [member.id, member]));
+	const resourceById = new Map(sources.resourcesRaw.map(resource => [resource.id, resource]));
+
+	return {
+		id: lessonSessionId,
+		classId: classGroupId,
+		scheduleId: lessonSession?.scheduleId ?? undefined,
+		kind: 'lesson',
+		title: event.title,
+		subject: subject?.name ?? event.title,
+		day: dayLabel(event.startsAt),
+		start: formatTime(event.startsAt),
+		end: formatTime(event.endsAt),
+		startsAt: String(event.startsAt),
+		endsAt: String(event.endsAt),
+		room: roomName(
+			sources.resourceAssignmentsRaw,
+			resourceById,
+			entry => entry.lessonSessionId === lessonSessionId,
+		),
+		teacher: staffName(
+			sources.staffAssignmentsRaw,
+			staffById,
+			entry => entry.lessonSessionId === lessonSessionId
+				|| (classSubjectId ? entry.classSubjectId === classSubjectId : false),
+		),
+		status: event.status ?? lessonSession?.status,
+	};
+}
+
+function mapActivityPlanningEvent(
+	event: TimetableEventRaw,
+	classGroupId: string,
+	sources: PlanningSources,
+): PlanningEvent | null {
+	const activitySessionId = activitySessionIdForEvent(event) ?? event.id;
+	const activitySession = sources.activitySessionsById.get(activitySessionId);
+	const activityId = event.activityId ?? activitySession?.activityId;
+	const activity = activityId ? sources.activitiesById.get(activityId) : undefined;
+	const staffById = new Map(sources.staffMembersRaw.map(member => [member.id, member]));
+	const resourceById = new Map(sources.resourcesRaw.map(resource => [resource.id, resource]));
+
+	return {
+		id: activitySessionId,
+		classId: classGroupId,
+		scheduleId: activitySession?.scheduleId ?? undefined,
+		kind: 'activity',
+		title: event.title,
+		subject: activity?.name ?? event.title,
+		day: dayLabel(event.startsAt),
+		start: formatTime(event.startsAt),
+		end: formatTime(event.endsAt),
+		startsAt: String(event.startsAt),
+		endsAt: String(event.endsAt),
+		room: roomName(
+			sources.resourceAssignmentsRaw,
+			resourceById,
+			entry => entry.activitySessionId === activitySessionId,
+		),
+		teacher: staffName(
+			sources.staffAssignmentsRaw,
+			staffById,
+			entry => entry.activitySessionId === activitySessionId,
+		) === 'Non assigné' && activity?.coach
+			? activity.coach
+			: staffName(
+					sources.staffAssignmentsRaw,
+					staffById,
+					entry => entry.activitySessionId === activitySessionId,
+				),
+		status: event.status ?? activitySession?.status,
+	};
+}
+
+function mapAssessmentPlanningEvent(
+	event: TimetableEventRaw,
+	classGroupId: string,
+	sources: PlanningSources,
+): PlanningEvent | null {
+	const assessmentId = assessmentIdForEvent(event) ?? event.id;
+	const classSubject = event.classSubjectId
+		? sources.classSubjectsRaw.find(entry => entry.id === event.classSubjectId)
+		: undefined;
+	const subject = classSubject
+		? sources.subjectsRaw.find(entry => entry.id === classSubject.subjectId)
+		: undefined;
+	const staffById = new Map(sources.staffMembersRaw.map(member => [member.id, member]));
+	const resourceById = new Map(sources.resourcesRaw.map(resource => [resource.id, resource]));
+
+	return {
+		id: assessmentId,
+		classId: classGroupId,
+		kind: 'assessment',
+		title: event.title,
+		subject: subject?.name ?? event.title,
+		day: dayLabel(event.startsAt),
+		start: formatTime(event.startsAt),
+		end: formatTime(event.endsAt),
+		startsAt: String(event.startsAt),
+		endsAt: String(event.endsAt),
+		room: roomName(
+			sources.resourceAssignmentsRaw,
+			resourceById,
+			entry => entry.assessmentId === assessmentId,
+		),
+		teacher: staffName(
+			sources.staffAssignmentsRaw,
+			staffById,
+			entry => entry.assessmentId === assessmentId
+				|| (event.classSubjectId ? entry.classSubjectId === event.classSubjectId : false),
+		),
+	};
+}
+
 export function mapPlanningEvents(
 	classGroupId: string,
 	sources: PlanningSources,
 ): PlanningEvent[] {
-	const subjectById = new Map(sources.subjectsRaw.map(subject => [subject.id, subject]));
-	const classSubjectById = new Map(sources.classSubjectsRaw.map(entry => [entry.id, entry]));
-	const staffById = new Map(sources.staffMembersRaw.map(member => [member.id, member]));
-	const resourceById = new Map(sources.resourcesRaw.map(resource => [resource.id, resource]));
-
 	return sources.timetableEventsRaw
-		.filter(event => event.classGroupId === classGroupId && event.kind === 'lesson')
+		.filter(event => event.classGroupId === classGroupId && TIMETABLE_EVENT_KINDS.has(event.kind))
 		.map((event) => {
-			const lessonSessionId = lessonSessionIdForEvent(event) ?? event.id;
-			const lessonSession = sources.lessonSessionsById.get(lessonSessionId);
-			const classSubjectId = event.classSubjectId ?? lessonSession?.classSubjectId;
-			const classSubject = classSubjectId ? classSubjectById.get(classSubjectId) : undefined;
-			const subject = classSubject ? subjectById.get(classSubject.subjectId) : undefined;
-			const staffAssignment = sources.staffAssignmentsRaw.find(
-				entry => entry.lessonSessionId === lessonSessionId,
-			);
-			const teacher = staffAssignment ? staffById.get(staffAssignment.staffId) : undefined;
-			const resourceAssignment = sources.resourceAssignmentsRaw.find(
-				entry => entry.lessonSessionId === lessonSessionId,
-			);
-			const resource = resourceAssignment ? resourceById.get(resourceAssignment.resourceId) : undefined;
-
-			return {
-				id: lessonSessionId,
-				classId: event.classGroupId,
-				scheduleId: lessonSession?.scheduleId ?? undefined,
-				kind: 'lesson' satisfies PlanningEventKind,
-				title: event.title,
-				subject: subject?.name ?? event.title,
-				day: dayLabel(event.startsAt),
-				start: formatTime(event.startsAt),
-				end: formatTime(event.endsAt),
-				startsAt: String(event.startsAt),
-				endsAt: String(event.endsAt),
-				room: resource?.name ?? '—',
-				teacher: teacher ? `${teacher.firstName} ${teacher.lastName}` : 'Non assigné',
-			} satisfies PlanningEvent;
+			switch (event.kind) {
+				case 'lesson':
+					return mapLessonPlanningEvent(event, classGroupId, sources);
+				case 'activity':
+					return mapActivityPlanningEvent(event, classGroupId, sources);
+				case 'assessment':
+					return mapAssessmentPlanningEvent(event, classGroupId, sources);
+				default:
+					return null;
+			}
 		})
+		.filter((event): event is PlanningEvent => event !== null)
 		.sort((left, right) => {
 			const dayOrder = DAY_LABELS.indexOf(left.day) - DAY_LABELS.indexOf(right.day);
 			if (dayOrder !== 0) {
@@ -341,9 +540,9 @@ export async function loadClassPlanning(
 		fetchClassPlanningSources(client, classGroupId, range),
 		fetchClassHomeworkSources(client, classGroupId, options?.periodId),
 	]);
-	const lessonEvents = mapPlanningEvents(classGroupId, sources);
+	const timetableEvents = mapPlanningEvents(classGroupId, sources);
 	const homeworkEvents = mapHomeworkDuePlanningEvents(classGroupId, homeworkSources, range);
-	return [...lessonEvents, ...homeworkEvents].sort(comparePlanningEvents);
+	return [...timetableEvents, ...homeworkEvents].sort(comparePlanningEvents);
 }
 
 function comparePlanningEvents(left: PlanningEvent, right: PlanningEvent): number {
@@ -353,3 +552,12 @@ function comparePlanningEvents(left: PlanningEvent, right: PlanningEvent): numbe
 	}
 	return left.start.localeCompare(right.start);
 }
+
+export function findPlanningEventById(
+	events: PlanningEvent[],
+	id: string,
+): PlanningEvent | undefined {
+	return events.find(event => event.id === id);
+}
+
+export { planningEventId };

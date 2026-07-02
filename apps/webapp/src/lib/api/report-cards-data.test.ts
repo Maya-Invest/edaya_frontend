@@ -211,23 +211,31 @@ describe('report cards definition mapping', () => {
 		const ms6 = definitions.find(definition => definition.id === 'rcd-ms-6');
 		expect(ms6?.sections).toHaveLength(5);
 		expect(ms6?.sections.find(section => section.id === 'rcs-ms-fond')).toMatchObject({
+			sectionType: 'group',
 			kind: 'matieres',
 			coefficient: 2,
-			subjectIds: ['subj-math'],
-			subjectLabels: ['Mathematics'],
+			children: [{
+				sectionType: 'subject',
+				subjectId: 'subj-math',
+				subjectLabel: 'Mathematics',
+			}],
 		});
 		expect(ms6?.sections.find(section => section.id === 'rcs-ms-sci')).toMatchObject({
+			sectionType: 'group',
 			kind: 'matieres',
 			coefficient: 1.5,
 		});
 		expect(ms6?.sections.find(section => section.id === 'rcs-ms-sport')).toMatchObject({
+			sectionType: 'group',
 			kind: 'matieres',
 			coefficient: 1,
 		});
 		expect(ms6?.sections.find(section => section.id === 'rcs-ms-synth')).toMatchObject({
+			sectionType: 'group',
 			kind: 'synthese',
 		});
 		expect(ms6?.sections.find(section => section.id === 'rcs-ms-appr')).toMatchObject({
+			sectionType: 'group',
 			kind: 'appreciation',
 		});
 	});

@@ -27,6 +27,7 @@ function planningEvent(id: string, classId: string): PlanningEvent {
 	return {
 		id,
 		classId,
+		kind: 'lesson',
 		title: `Event ${id}`,
 		subject: 'Math',
 		day: 'Mon',

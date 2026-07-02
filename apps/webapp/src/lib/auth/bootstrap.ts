@@ -5,10 +5,10 @@ import {
 } from '$lib/api/account-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { fetchSessionStaffProfile } from '$lib/api/staff-data';
+import { persistServerOnboardingStatusToDraft } from '$lib/onboarding/resume-onboarding';
 import {
 	fetchServerOnboardingAccountStatus,
 } from '$lib/onboarding/sync-account-status';
-import { persistServerOnboardingStatusToDraft } from '$lib/onboarding/resume-onboarding';
 import { authClient } from './client';
 import { authSession } from './session.svelte';
 

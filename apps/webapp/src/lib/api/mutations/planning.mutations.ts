@@ -100,6 +100,7 @@ export async function createSessionMutation(input: {
 		id: optimisticId,
 		classId: input.classGroupId,
 		scheduleId: input.scheduleId,
+		kind: 'lesson',
 		title: input.title.trim(),
 		subject: subject?.name ?? input.title.trim(),
 		day: input.day,
@@ -149,6 +150,7 @@ export async function createSessionMutation(input: {
 			detailDataContext.appendPlanningEvent({
 				...optimistic,
 				id: session.id,
+				kind: 'lesson',
 				scheduleId: session.scheduleId,
 				startsAt: String(session.startsAt),
 				endsAt: String(session.endsAt),
@@ -225,6 +227,7 @@ export async function updateSessionMutation(input: {
 
 export async function reschedulePlanningSlotMutation(input: {
 	sessionId: string;
+	kind: PlanningEvent['kind'];
 	scheduleId?: string;
 	day: PlanningEvent['day'];
 	dayOfWeek: ScheduleDayOfWeek;
@@ -235,16 +238,25 @@ export async function reschedulePlanningSlotMutation(input: {
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
 	const previous = planningSnapshot(input.sessionId);
-	let session;
+	const isActivity = input.kind === 'activity';
+
+	let sessionStartsAt: string;
 	try {
-		session = await client.entities.lessonSessions.get(input.sessionId);
+		if (isActivity) {
+			const session = await client.entities.activitySessions.get(input.sessionId);
+			sessionStartsAt = String(session.startsAt);
+		}
+		else {
+			const session = await client.entities.lessonSessions.get(input.sessionId);
+			sessionStartsAt = String(session.startsAt);
+		}
 	}
 	catch {
 		toast.error(get(t)('dataState.errorDescription'));
 		return false;
 	}
 
-	const instants = sessionInstantsForSlot(String(session.startsAt), {
+	const instants = sessionInstantsForSlot(sessionStartsAt, {
 		day: input.day,
 		startTime: input.startTime,
 		endTime: input.endTime,
@@ -270,11 +282,19 @@ export async function reschedulePlanningSlotMutation(input: {
 			await client.commands.materializeSchedule({ scheduleId: input.scheduleId });
 		}
 
-		await client.commands.rescheduleOccurrence({
-			lessonSessionId: input.sessionId,
-			startsAt: instants.startsAt.toISOString(),
-			endsAt: instants.endsAt.toISOString(),
-		});
+		await client.commands.rescheduleOccurrence(
+			isActivity
+				? {
+						activitySessionId: input.sessionId,
+						startsAt: instants.startsAt.toISOString(),
+						endsAt: instants.endsAt.toISOString(),
+					}
+				: {
+						lessonSessionId: input.sessionId,
+						startsAt: instants.startsAt.toISOString(),
+						endsAt: instants.endsAt.toISOString(),
+					},
+		);
 	}, {
 		apply: () => detailDataContext.patchPlanningEvent(input.sessionId, patch),
 		rollback: () => {
@@ -286,5 +306,35 @@ export async function reschedulePlanningSlotMutation(input: {
 		errorMessage: input.errorMessage,
 	});
 
+	return result !== null;
+}
+
+export async function cancelPlanningEventMutation(
+	event: Pick<PlanningEvent, 'id' | 'kind' | 'title'>,
+	opts?: { successMessage?: string },
+): Promise<boolean> {
+	if (event.kind !== 'lesson' && event.kind !== 'activity') {
+		return false;
+	}
+
+	const client = getBrowserSchoolClient();
+	const previous = planningSnapshot(event.id);
+	const result = await runMutation(async () => {
+		if (event.kind === 'activity') {
+			await client.commands.cancelActivitySession({ activitySessionId: event.id });
+			return;
+		}
+		await client.commands.cancelLessonSession({ lessonSessionId: event.id });
+	}, {
+		successMessage: opts?.successMessage,
+		apply: () => {
+			detailDataContext.patchPlanningEvent(event.id, { status: 'cancelled' });
+		},
+		rollback: () => {
+			if (previous) {
+				detailDataContext.patchPlanningEvent(event.id, previous);
+			}
+		},
+	});
 	return result !== null;
 }

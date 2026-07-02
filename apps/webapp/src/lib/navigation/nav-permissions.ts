@@ -208,4 +208,3 @@ export const EDUCATOR_NAV_PERMISSIONS: readonly PermissionCode[] = [
 	'STUDENT_HEALTH_READ',
 	'QUERY_REPORT_CARD_DETAIL_READ',
 ];
-

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { PlanningEventKind } from '$lib/types/school';
 	import type { SessionAttendanceRow, SessionAttendanceStatus } from '$lib/types/session-detail';
 	import { recordSessionStudentAttendanceMutation } from '$lib/api/mutations/planning-session.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -10,11 +11,13 @@
 
 	const {
 		sessionId,
+		kind = 'lesson',
 		row,
 		disabled = false,
 		title,
 	}: {
 		sessionId: string;
+		kind?: PlanningEventKind;
 		row: SessionAttendanceRow;
 		disabled?: boolean;
 		title?: string;
@@ -44,6 +47,7 @@
 		busy = true;
 		const ok = await recordSessionStudentAttendanceMutation({
 			sessionId,
+			kind,
 			studentId: row.studentId,
 			status,
 			attendanceId: row.attendanceId,

@@ -1,8 +1,8 @@
 import type { SessionKind } from '$lib/auth/account-actor';
 import type { SessionSnapshot } from '$lib/auth/types';
+import type { ServerOnboardingAccountStatus } from '$lib/onboarding/types';
 import { appPath } from '$lib/navigation/app-navigation';
 import { onboardingResumePath } from '$lib/onboarding/resume-onboarding';
-import type { ServerOnboardingAccountStatus } from '$lib/onboarding/types';
 
 export const ONBOARDING_PATH = appPath('/onboarding');
 

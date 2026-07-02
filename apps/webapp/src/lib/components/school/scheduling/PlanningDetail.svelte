@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { PlanningEvent } from '$lib/types/school';
 	import type { SessionAttendanceStatus } from '$lib/types/session-detail';
-	import { deleteSessionMutation } from '$lib/api/mutations/delete-entity.mutations';
-	import { loadSessionDetail } from '$lib/api/session-detail-data';
+	import { cancelPlanningEventMutation } from '$lib/api/mutations/planning.mutations';
+	import { loadPlanningOccurrenceDetail } from '$lib/api/session-detail-data';
 	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
@@ -25,6 +25,12 @@
 
 	let tab = $state<PlanningTab>('details');
 
+	const isLesson = $derived(s.kind === 'lesson');
+	const isActivity = $derived(s.kind === 'activity');
+	const canCancel = $derived((isLesson || isActivity) && s.status !== 'cancelled');
+	const canEditLesson = $derived(isLesson && s.status !== 'cancelled');
+	const showLogbookTab = $derived(isLesson || isActivity);
+
 	const detail = $derived(sessionDetailContext.get(s.id));
 	const attendanceRows = $derived(detail?.attendance ?? []);
 	const recordedCount = $derived(attendanceRows.filter(row => row.status).length);
@@ -41,10 +47,15 @@
 		logbook: 'subjects.tab.logbook',
 	};
 
+	const visibleTabs = $derived(
+		showLogbookTab ? (['details', 'attendance', 'logbook'] as const) : (['details', 'attendance'] as const),
+	);
+
 	let sessionLoading = $state(false);
 
 	$effect(() => {
 		const sessionId = s.id;
+		const kind = s.kind;
 		if (sessionDetailContext.get(sessionId)) {
 			return;
 		}
@@ -52,12 +63,12 @@
 		sessionLoading = true;
 		let cancelled = false;
 
-		void loadSessionDetail(queryClient(), sessionId).then((detail) => {
+		void loadPlanningOccurrenceDetail(queryClient(), { id: sessionId, kind }).then((loaded) => {
 			if (cancelled) {
 				return;
 			}
-			if (detail) {
-				sessionDetailContext.hydrate(sessionId, detail);
+			if (loaded) {
+				sessionDetailContext.hydrate(sessionId, loaded);
 			}
 			sessionLoading = false;
 		});
@@ -65,6 +76,12 @@
 		return () => {
 			cancelled = true;
 		};
+	});
+
+	$effect(() => {
+		if (!showLogbookTab && tab === 'logbook') {
+			tab = 'details';
+		}
 	});
 </script>
 
@@ -74,11 +91,22 @@
 			{$t(`day.full.${s.day}`)} · {s.start} — {s.end}
 		</p>
 		<h3 class="mt-1 font-display text-2xl font-semibold">{s.title}</h3>
-		<p class="mt-1 text-sm text-muted-foreground">{s.subject} · {s.teacher}</p>
+		<p class="mt-1 text-sm text-muted-foreground">
+			{$t(`planning.eventKind.${s.kind}`)} · {s.subject} · {s.teacher}
+		</p>
+		{#if s.status === 'cancelled'}
+			<p class="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+				{$t('planning.occurrenceStatus.cancelled')}
+			</p>
+		{:else if s.status === 'completed'}
+			<p class="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+				{$t('planning.occurrenceStatus.completed')}
+			</p>
+		{/if}
 	</div>
 
 	<div class="flex items-center gap-1 rounded-full border border-border bg-secondary/40 p-1 text-xs">
-		{#each ['details', 'attendance', 'logbook'] as const as key (key)}
+		{#each visibleTabs as key (key)}
 			<button
 				onclick={() => (tab = key)}
 				class={cn(
@@ -117,22 +145,28 @@
 				<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{s.teacher}</div>
 			</DrawerField>
 		</div>
-		<DrawerActionBar>
-			<PlanningFormModal event={s} />
-			<PermissionGate permission="TIMETABLE_UPDATE" mode="disable" tooltip={$t('calendar.permissionUpdate')}>
-				{#snippet children({ disabled, title })}
-					<DeleteEntityButton
-						{disabled}
-						{title}
-						confirmTitle={$t('common.deleteConfirmTitle')}
-						confirmDescription={$t('planning.deleteConfirm', { title: s.title })}
-						onConfirm={() => deleteSessionMutation(s.id, {
-							successMessage: get(t)('planning.toastDeleted', { title: s.title }),
-						})}
-					/>
-				{/snippet}
-			</PermissionGate>
-		</DrawerActionBar>
+		{#if canEditLesson || canCancel}
+			<DrawerActionBar>
+				{#if canEditLesson}
+					<PlanningFormModal event={s} />
+				{/if}
+				{#if canCancel}
+					<PermissionGate permission="TIMETABLE_UPDATE" mode="disable" tooltip={$t('calendar.permissionUpdate')}>
+						{#snippet children({ disabled, title })}
+							<DeleteEntityButton
+								{disabled}
+								{title}
+								confirmTitle={$t('planning.cancelConfirmTitle')}
+								confirmDescription={$t('planning.cancelConfirm', { title: s.title })}
+								onConfirm={() => cancelPlanningEventMutation(s, {
+									successMessage: get(t)('planning.toastCancelled', { title: s.title }),
+								})}
+							/>
+						{/snippet}
+					</PermissionGate>
+				{/if}
+			</DrawerActionBar>
+		{/if}
 	{:else if tab === 'attendance'}
 		{#if sessionLoading}
 			<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
@@ -186,7 +220,13 @@
 											tooltip="Droit ATTENDANCE_RECORD requis."
 										>
 											{#snippet children({ disabled, title })}
-												<PlanningSessionAttendanceModal sessionId={s.id} {row} {disabled} {title} />
+												<PlanningSessionAttendanceModal
+													sessionId={s.id}
+													kind={s.kind}
+													{row}
+													{disabled}
+													{title}
+												/>
 											{/snippet}
 										</PermissionGate>
 									</div>
@@ -205,25 +245,29 @@
 				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 					{$t('subjects.tab.logbook')}
 				</Label>
-				<PermissionGate
-					permission={detail.logbook ? 'CLASS_LOGBOOK_UPDATE' : 'CLASS_LOGBOOK_CREATE'}
-					classId={s.classId}
-					mode="disable"
-					tooltip="Droit cahier de texte requis."
-				>
-					{#snippet children({ disabled, title })}
-						<PlanningSessionLogbookModal {detail} {disabled} {title} />
-					{/snippet}
-				</PermissionGate>
+				{#if isLesson}
+					<PermissionGate
+						permission={detail.logbook ? 'CLASS_LOGBOOK_UPDATE' : 'CLASS_LOGBOOK_CREATE'}
+						classId={s.classId}
+						mode="disable"
+						tooltip="Droit cahier de texte requis."
+					>
+						{#snippet children({ disabled, title })}
+							<PlanningSessionLogbookModal {detail} {disabled} {title} />
+						{/snippet}
+					</PermissionGate>
+				{/if}
 			</div>
 			{#if detail.logbook}
 				<article class="rounded-2xl border border-border bg-card p-4 shadow-soft">
 					<div class="flex items-start justify-between gap-2">
 						<h4 class="font-display text-sm font-semibold">{detail.logbook.chapter}</h4>
-						<span class="font-mono text-[10px] text-muted-foreground">{detail.logbook.progress}%</span>
+						{#if isLesson}
+							<span class="font-mono text-[10px] text-muted-foreground">{detail.logbook.progress}%</span>
+						{/if}
 					</div>
 					<p class="mt-2 text-xs leading-relaxed text-foreground/80">{detail.logbook.content}</p>
-					{#if detail.logbook.objectives.length > 0}
+					{#if isLesson && detail.logbook.objectives.length > 0}
 						<ul class="mt-2 space-y-1">
 							{#each detail.logbook.objectives as objective (objective)}
 								<li class="flex items-start gap-1.5 text-[11px]">
@@ -247,16 +291,18 @@
 						<FileText class="h-5 w-5 text-muted-foreground" />
 					{/snippet}
 				</DrawerEmptyState>
-				<PermissionGate
-					permission="CLASS_LOGBOOK_CREATE"
-					classId={s.classId}
-					mode="disable"
-					tooltip="Droit CLASS_LOGBOOK_CREATE requis."
-				>
-					{#snippet children({ disabled, title })}
-						<PlanningSessionLogbookModal {detail} {disabled} {title} />
-					{/snippet}
-				</PermissionGate>
+				{#if isLesson}
+					<PermissionGate
+						permission="CLASS_LOGBOOK_CREATE"
+						classId={s.classId}
+						mode="disable"
+						tooltip="Droit CLASS_LOGBOOK_CREATE requis."
+					>
+						{#snippet children({ disabled, title })}
+							<PlanningSessionLogbookModal {detail} {disabled} {title} />
+						{/snippet}
+					</PermissionGate>
+				{/if}
 			{/if}
 		</div>
 	{:else}

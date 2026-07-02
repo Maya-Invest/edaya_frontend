@@ -195,6 +195,14 @@ export function assignmentsForLessonSessions(lessonSessionIds: readonly string[]
 	return recordsForFieldIds('lessonSessionId', lessonSessionIds);
 }
 
+export function assignmentsForActivitySessions(activitySessionIds: readonly string[]): EntityQuery {
+	return recordsForFieldIds('activitySessionId', activitySessionIds);
+}
+
+export function assignmentsForAssessments(assessmentIds: readonly string[]): EntityQuery {
+	return recordsForFieldIds('assessmentId', assessmentIds);
+}
+
 export function lessonSessionsForClasses(classGroupIds: readonly string[]): EntityQuery {
 	return recordsForFieldIds('classGroupId', classGroupIds);
 }
@@ -205,7 +213,6 @@ export function attendanceForLessonSessions(lessonSessionIds: readonly string[])
 		status: 'absent',
 	};
 }
-
 
 export function progressForLessonSessions(lessonSessionIds: readonly string[]): EntityQuery {
 	return recordsForFieldIds('lessonSessionId', lessonSessionIds);

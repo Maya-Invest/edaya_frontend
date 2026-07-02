@@ -1,6 +1,6 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import type { Student } from '$lib/types/school';
+import type { PlanningEvent, Student } from '$lib/types/school';
 import type {
 	SessionAttendanceRow,
 	SessionAttendanceStatus,
@@ -18,6 +18,8 @@ import { fetchClassPeopleSources, mapStudents } from '$lib/api/people-data';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 type LessonSessionRaw = components['schemas']['LessonSession'];
+type ActivitySessionRaw = components['schemas']['ActivitySession'];
+type AssessmentRaw = components['schemas']['Assessment'];
 type ClassSubjectProgressRaw = components['schemas']['ClassSubjectProgress'];
 type ClassSubjectMatterRaw = components['schemas']['ClassSubjectMatter'];
 type SubjectMatterRaw = components['schemas']['SubjectMatter'];
@@ -167,4 +169,120 @@ export async function loadSessionDetail(
 		subjectMattersRaw: subjectMattersRaw ?? [],
 		progressRaw: progressRaw ?? [],
 	});
+}
+
+function buildOccurrenceAttendanceDetail(input: {
+	occurrenceId: string;
+	classGroupId: string;
+	classSubjectId: string;
+	startsAt: unknown;
+	students: Student[];
+	attendanceRaw: AttendanceRaw[];
+	notes?: string | null;
+	displayLabel?: string;
+}): SessionDetail {
+	const date = formatDate(input.startsAt);
+	const attendanceByStudent = new Map(
+		input.attendanceRaw.map(record => [record.studentId, record]),
+	);
+
+	return {
+		sessionId: input.occurrenceId,
+		classGroupId: input.classGroupId,
+		classSubjectId: input.classSubjectId,
+		date,
+		attendance: input.students.map((student) => {
+			const record = attendanceByStudent.get(student.id);
+			return {
+				studentId: student.id,
+				studentName: student.name,
+				studentInitials: student.initials,
+				attendanceId: record?.id,
+				status: record?.status as SessionAttendanceStatus | undefined,
+			} satisfies SessionAttendanceRow;
+		}),
+		subjectMatters: [],
+		logbook: input.notes
+			? {
+					id: input.occurrenceId,
+					chapter: input.displayLabel ?? '',
+					content: input.notes,
+					objectives: [],
+					progress: 0,
+				}
+			: undefined,
+	};
+}
+
+async function loadActivitySessionDetail(
+	client: SchoolClient,
+	activitySessionId: string,
+): Promise<SessionDetail | null> {
+	let session: ActivitySessionRaw;
+	try {
+		session = await client.entities.activitySessions.get(activitySessionId);
+	}
+	catch {
+		return null;
+	}
+
+	const classStudents = mapStudents(await fetchClassPeopleSources(client, session.classGroupId));
+	const attendanceRaw = await client.entities.attendance.list(
+		recordsForFieldIds('activitySessionId', [activitySessionId]),
+	);
+
+	return buildOccurrenceAttendanceDetail({
+		occurrenceId: session.id,
+		classGroupId: session.classGroupId,
+		classSubjectId: '',
+		startsAt: session.startsAt,
+		students: classStudents,
+		attendanceRaw: attendanceRaw ?? [],
+		notes: session.notes,
+		displayLabel: session.displayLabel,
+	});
+}
+
+async function loadAssessmentOccurrenceDetail(
+	client: SchoolClient,
+	assessmentId: string,
+): Promise<SessionDetail | null> {
+	let assessment: AssessmentRaw;
+	try {
+		assessment = await client.entities.assessments.get(assessmentId);
+	}
+	catch {
+		return null;
+	}
+
+	const classStudents = mapStudents(await fetchClassPeopleSources(client, assessment.classGroupId));
+	const attendanceRaw = await client.entities.attendance.list(
+		recordsForFieldIds('assessmentId', [assessmentId]),
+	);
+
+	return buildOccurrenceAttendanceDetail({
+		occurrenceId: assessment.id,
+		classGroupId: assessment.classGroupId,
+		classSubjectId: assessment.classSubjectId,
+		startsAt: assessment.startsAt ?? assessment.dueAt,
+		students: classStudents,
+		attendanceRaw: attendanceRaw ?? [],
+		notes: assessment.description,
+		displayLabel: assessment.title,
+	});
+}
+
+export async function loadPlanningOccurrenceDetail(
+	client: SchoolClient,
+	event: Pick<PlanningEvent, 'id' | 'kind'>,
+): Promise<SessionDetail | null> {
+	switch (event.kind) {
+		case 'activity':
+			return loadActivitySessionDetail(client, event.id);
+		case 'assessment':
+			return loadAssessmentOccurrenceDetail(client, event.id);
+		case 'lesson':
+		default:
+			return loadSessionDetail(client, event.id);
+	}
 }

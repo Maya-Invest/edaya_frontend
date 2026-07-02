@@ -1,8 +1,8 @@
 import type { GuardianNotificationSettings } from '$lib/api/account-data';
 import type { AccountActor, SessionKind } from '$lib/auth/account-actor';
 import type { EffectiveGrantsSnapshot, SessionSnapshot } from '$lib/auth/types';
-import type { StaffMember } from '$lib/types/school';
 import type { ServerOnboardingAccountStatus } from '$lib/onboarding/types';
+import type { StaffMember } from '$lib/types/school';
 import { browser } from '$app/environment';
 import { academicContext } from '$lib/academic/context.svelte';
 import { clearAuthGate } from '$lib/auth/auth-gate';

@@ -101,13 +101,16 @@
 		const active = selectedId === String(event.id);
 		const kind = typeof event.kind === 'string' ? event.kind : 'lesson';
 		const overlapping = overlapIds.has(String(event.id));
+		const reschedulable = kind === 'lesson' || kind === 'activity';
 		return [
 			'group',
 			typeof event.css === 'string' ? event.css : subjectToneClass(subject),
 			active ? 'edaya-timetable-event--active' : '',
-			editable && kind !== 'homework-due' ? 'edaya-timetable-event--editable' : '',
+			editable && reschedulable ? 'edaya-timetable-event--editable' : '',
 			overlapping ? 'edaya-timetable-event--overlap' : '',
 			kind === 'homework-due' ? 'edaya-timetable-event--homework-due' : '',
+			kind === 'activity' ? 'edaya-timetable-event--activity' : '',
+			kind === 'assessment' ? 'edaya-timetable-event--assessment' : '',
 		].filter(Boolean).join(' ');
 	};
 
@@ -135,7 +138,7 @@
 			return false;
 
 		const planningEvent = weekEvents.find(event => event.id === String(id));
-		if (!planningEvent || planningEvent.kind === 'homework-due')
+		if (!planningEvent || (planningEvent.kind !== 'lesson' && planningEvent.kind !== 'activity'))
 			return false;
 
 		const [baseline] = mapPlanningToCalendarEvents([planningEvent]);
@@ -188,6 +191,7 @@
 		const { event, slot } = pendingReschedule;
 		const ok = await reschedulePlanningSlotMutation({
 			sessionId: event.id,
+			kind: event.kind,
 			scheduleId: event.scheduleId,
 			day: slot.day,
 			dayOfWeek: slot.dayOfWeek,
@@ -310,7 +314,25 @@
 		color: hsl(var(--foreground));
 	}
 
-	:global(.edaya-timetable-calendar .wx-box-event.edaya-timetable-event--homework-due) {
+	:global(.edaya-timetable-calendar .wx-box-event.edaya-occurrence-activity) {
+		background: hsl(var(--accent-soft));
+		border-color: hsl(var(--accent) / 0.45);
+		color: hsl(var(--foreground));
+	}
+
+	:global(.edaya-timetable-calendar .wx-box-event.edaya-occurrence-assessment) {
+		background: hsl(var(--primary) / 0.14);
+		border-color: hsl(var(--primary) / 0.4);
+		color: hsl(var(--foreground));
+	}
+
+	:global(.edaya-timetable-calendar .wx-box-event.edaya-occurrence-cancelled) {
+		opacity: 0.55;
+		border-style: dashed;
+		text-decoration: line-through;
+	}
+
+	:global(.edaya-timetable-calendar .wx-box-event.edaya-timetable-event--assessment) {
 		cursor: default;
 	}
 

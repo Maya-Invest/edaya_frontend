@@ -13,6 +13,7 @@
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import DrawerActionBar from '../shared/DrawerActionBar.svelte';
+	import ReportCardSectionTree from './ReportCardSectionTree.svelte';
 
 	const { definition }: { definition: ReportCardDefinition } = $props();
 
@@ -21,12 +22,6 @@
 	);
 	const level = $derived(academicContext.gradeLevelById(live.gradeLevelId));
 	const scale = $derived(reportCardsContext.scales.find(s => s.id === live.gradeScaleId));
-
-	const sectionKindLabel: Record<string, string> = {
-		matieres: 'Matières',
-		synthese: 'Synthèse',
-		appreciation: 'Appréciations',
-	};
 
 	async function publish() {
 		const ok = await publishReportCardDefinitionMutation(live.id);
@@ -77,46 +72,31 @@
 	{/if}
 
 	<div>
-		<p class="mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-			{$t('reportCards.sections')}
-		</p>
-		<div class="overflow-hidden rounded-2xl border border-border">
-			<table class="w-full text-sm">
-				<thead class="border-b border-border bg-secondary/30 text-left">
-					<tr>
-						<th class="px-4 py-3 font-medium">{$t('reportCards.sectionName')}</th>
-						<th class="px-4 py-3 font-medium">{$t('reportCards.sectionKind')}</th>
-						<th class="px-4 py-3 font-medium">{$t('reportCards.coefficient')}</th>
-						<th class="px-4 py-3 font-medium">{$t('reportCards.subjects')}</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each [...live.sections].sort((a, b) => a.order - b.order) as section (section.id)}
-						<tr class="border-b border-border/60 last:border-0">
-							<td class="px-4 py-3 font-medium">{section.name}</td>
-							<td class="px-4 py-3 text-muted-foreground">
-								{sectionKindLabel[section.kind] ?? section.kind}
-							</td>
-							<td class="px-4 py-3 font-mono">
-								{section.coefficient ?? '—'}
-							</td>
-							<td class="px-4 py-3 text-sm text-muted-foreground">
-								{section.subjectLabels?.length
-									? section.subjectLabels.join(', ')
-									: section.subjectIds?.length
-									? section.subjectIds.join(', ')
-									: $t('reportCards.allSubjects')}
-							</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
+		<div class="mb-3 flex items-end justify-between gap-3">
+			<p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+				{$t('reportCards.sections')}
+			</p>
+			<p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+				{$t('reportCards.coefficient')}
+			</p>
+		</div>
+		<div class="overflow-hidden rounded-2xl border border-border p-3">
+			<ReportCardSectionTree sections={live.sections} />
 		</div>
 	</div>
 
 	{#if scale}
-		<p class="text-xs text-muted-foreground">
-			{$t('gradeScales.passing')} : {formatGrade(scale.passingScore, scale)} / {scale.maxScore}
-		</p>
+		<div class="rounded-2xl border border-border bg-secondary/20 px-4 py-3">
+			<p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+				{$t('reportCards.gradeScaleSummary')}
+			</p>
+			<p class="mt-1 font-display text-sm font-semibold">{scale.name}</p>
+			<p class="mt-1 text-sm text-muted-foreground">
+				{$t('gradeScales.passing')} : {formatGrade(scale.passingScore, scale)} / {scale.maxScore}
+			</p>
+			{#if scale.description}
+				<p class="mt-2 text-xs text-muted-foreground">{scale.description}</p>
+			{/if}
+		</div>
 	{/if}
 </div>
