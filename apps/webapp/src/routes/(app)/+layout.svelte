@@ -15,12 +15,11 @@
 	import LanguageSelector from '$lib/components/layout/LanguageSelector.svelte';
 	import SchoolSelector from '$lib/components/layout/SchoolSelector.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
+	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { isLikelyDetailPath, listRouteCacheKey } from '$lib/detail-route-patterns';
 	import { DrawerState } from '$lib/drawer.svelte';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, PanelLeft, PanelLeftClose } from '$lib/icons';
-	import { shellContext } from '$lib/shell/context.svelte';
-	import { cn } from '$lib/utils';
 	import { DASHBOARD_HREF } from '$lib/navigation';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { canAccessPath } from '$lib/navigation/nav-permissions';
@@ -28,8 +27,9 @@
 	import { onboardingResumePath } from '$lib/onboarding/resume-onboarding';
 	import { pageQueryStatus } from '$lib/queries/page-query-status.svelte';
 	import { hydrateStudentDetailDrawer, studentDetailIdFromUrl } from '$lib/queries/student-360.queries';
-	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { reportCardsContext } from '$lib/report-cards/context.svelte';
+	import { shellContext } from '$lib/shell/context.svelte';
+	import { cn } from '$lib/utils';
 	import { setContext } from 'svelte';
 
 	const { children }: { children: Snippet } = $props();
