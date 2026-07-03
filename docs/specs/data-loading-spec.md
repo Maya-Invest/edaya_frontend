@@ -67,7 +67,7 @@ Domain-specific stores (e.g. report cards, teaching log) may exist when a bounde
 
 ### Do not load at bootstrap
 
-- Students, guardians, staff, subjects, planning, evaluations, finance, school-life, access roles, report cards, teaching log, or any other module entity collection
+- Students, guardians, staff, subjects, planning, evaluations, finance, school-life, staff permission assignments, report cards, teaching log, or any other module entity collection
 
 ### Contract
 
@@ -137,8 +137,8 @@ export function queryClassStudentsPage(classId: string) {
 | `/classes/:id/evaluations` | Evaluations for class |
 | `/classes/:id/report-cards` | Report card results for class (+ definitions if not cached) |
 | `/school/guardians` | Guardians (+ student ids for links) |
+| `/school/staff` | Staff roster + `permission-catalog` (seeded into entity store) |
 | `/finance/billing` | Billing records |
-| `/configuration/roles` | Role permission matrix |
 | Detail URL `…/[[id]]` | Same list query as parent; drawer resolves record from store |
 
 ### Deep-link / refresh on detail URL
@@ -186,7 +186,7 @@ Implementations live in `lib/detail-data/context.svelte.ts` (or successor module
 | Students, guardians, staff | Merge by `id` | School-wide routes add records; class-scoped routes replace that class slice |
 | Planning events | Replace class slice | `seedPlanning(events, { classId })` |
 | Assessments | Replace class slice | All kinds (`homework`, `quiz`, …) on one route |
-| Role permissions | Replace all | Small, config-scoped |
+| Staff permission assignments | Merge by `id` | Seeded from `/school/staff` load; patched by permission mutations |
 | Report cards | Domain store | Same seed / patch rules |
 
 ### Store readiness
@@ -308,5 +308,6 @@ lib/
 ## Related specs
 
 - [app-shell-spec.md](./app-shell-spec.md) — list / drawer / modal interaction
+- [shared-components-spec.md](./shared-components-spec.md) — mandatory reusable components
 - [design-language-spec.md](./design-language-spec.md) — visual states
 - [data-loading-sprint.md](./data-loading-sprint.md) — codebase alignment plan

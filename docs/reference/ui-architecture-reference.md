@@ -1,7 +1,7 @@
 # UI Architecture Reference
 
 > **Applies to:** `apps/webapp` feature screens (staff webapp)  
-> **Companion specs:** [app-shell-spec.md](../specs/app-shell-spec.md) · [design-language-spec.md](../specs/design-language-spec.md) · [data-loading-spec.md](../specs/data-loading-spec.md)
+> **Companion specs:** [app-shell-spec.md](../specs/app-shell-spec.md) · [shared-components-spec.md](../specs/shared-components-spec.md) · [design-language-spec.md](../specs/design-language-spec.md) · [data-loading-spec.md](../specs/data-loading-spec.md)
 
 This document is the **target UI architecture catalog** for the EDAYA staff webapp (v1). It describes routes, entities, filters, drawer structure, complexity class, and **implementation progress** for sprint planning and gap closure.
 
@@ -286,7 +286,7 @@ Each module opens with a **quick index**, then **feature cards** with full detai
 
 **Drawer**
 - Header: Edit profile · Manage permissions
-- Body (tabs): Profile · **Permissions** (`staffPermissionAssignments` — add/edit/remove rows) · Assignments (read-only summary of `staffAssignments`)
+- Body (tabs): Profile · **Permissions** ([v1 spec §5.3.1](../specs/v1-feature-architecture-spec.md#531-staff-permission-assignment-ui) — `staffPermissionAssignments` add/edit/remove via modals) · Assignments (read-only summary of `staffAssignments`)
 
 *Today: `/configuration/roles` matrix still exists — remove; permissions belong here.*
 
@@ -1132,4 +1132,6 @@ All v1 in-scope entities are either covered at **Primary/Sub**, **Supporting**, 
 | 2026-07-03 | B2: `db:migrate:full` runs legacy staff-access cutover before migration 0038 |
 | 2026-07-03 | B4 + incident resolve: `resolve-incident-with-outcomes` backend + `IncidentResolveModal` web; §0/§6.1 all blockers ✅ |
 | 2026-07-03 | Added normative [v1-feature-architecture-spec.md](../specs/v1-feature-architecture-spec.md); reference doc = progress catalog |
+| 2026-07-03 | Added [shared-components-spec.md](../specs/shared-components-spec.md) to companion specs |
+| 2026-07-03 | Normative §5.3.1 permissions UI; reference Staff card links to spec |
 | 2026-07-03 | Added [v1-staff-webapp-implementation-plan.md](../sprints/v1-staff-webapp-implementation-plan.md) |

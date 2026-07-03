@@ -13,6 +13,7 @@ alwaysApply: false
 That spec is **what to build**. Pair it with:
 
 - [`docs/specs/app-shell-spec.md`](../../docs/specs/app-shell-spec.md) — list · drawer · modals
+- [`docs/specs/shared-components-spec.md`](../../docs/specs/shared-components-spec.md) — mandatory reusable components
 - [`docs/specs/data-loading-spec.md`](../../docs/specs/data-loading-spec.md) — PageQuery · entity store · mutations
 - [`docs/specs/design-language-spec.md`](../../docs/specs/design-language-spec.md) — visuals
 
@@ -23,7 +24,7 @@ Progress / gaps only: [`docs/reference/ui-architecture-reference.md`](../../docs
 1. **Classify the entity** — complex (URL drawer) · simple (row `···` only) · thin drawer · layout variant.
 2. **Toolbar** — `[Primary CTA] [Search] [Main filter <select>] [Filter] [More]`; no chip-bar main filters.
 3. **Locked routes** — assessments at `/evaluations` (all `kind`s); no `/homework` nav; no `/configuration/roles`; no resource UI in v1.
-4. **Staff permissions** — Staff drawer → Permissions tab (`staffPermissionAssignments`), not a roles matrix screen.
+4. **Staff permissions** — Staff drawer → Permissions tab (`staffPermissionAssignments`); see spec **§5.3.1**; not a roles matrix screen.
 5. **Class attendance** — `attendanceMode` on class config; `/attendance` nav only when `daily`; daily = list of days + drawer.
 6. **Incidents** — resolve via **`resolveIncidentWithOutcomes`** in one modal; involved students read-only in drawer.
 7. **Assessments** — one drawer; exclusive body section by `kind`; homework is `kind = homework` on evaluations.
@@ -34,5 +35,5 @@ Progress / gaps only: [`docs/reference/ui-architecture-reference.md`](../../docs
 - [ ] Route matches §6 route index in the v1 spec
 - [ ] Surface type matches entity (§3)
 - [ ] Locked UX decisions respected (§4)
-- [ ] app-shell + data-loading specs followed
+- [ ] app-shell + shared-components + data-loading specs followed
 - [ ] Update progress in `ui-architecture-reference.md` when the feature reaches target

@@ -11,7 +11,7 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { t } from '$lib/i18n';
-	import { Plus, ShieldCheck, Trash2 } from '$lib/icons';
+	import { Plus, Pencil, ShieldCheck, Trash2 } from '$lib/icons';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { ROLE_TINT } from '../shared/drawer-constants';
@@ -28,6 +28,11 @@
 
 	function openCreate() {
 		editing = null;
+		formOpen = true;
+	}
+
+	function openEdit(row: StaffPermissionAssignmentView) {
+		editing = row;
 		formOpen = true;
 	}
 
@@ -113,15 +118,28 @@
 						{#if !row.isSynced}
 							<PermissionGate permission="ACCESS_CONTROL_ASSIGN" mode="disable">
 								{#snippet children({ disabled })}
-									<Button
-										variant="ghost"
-										size="icon"
-										class="h-8 w-8 rounded-full"
-										disabled={disabled || deleteBusy === row.id}
-										onclick={() => removeRow(row)}
-									>
-										<Trash2 class="h-4 w-4" />
-									</Button>
+									<div class="flex shrink-0 items-center gap-1">
+										<Button
+											variant="ghost"
+											size="icon"
+											class="h-8 w-8 rounded-full"
+											disabled={disabled || deleteBusy === row.id}
+											aria-label={$t('roles.editPermission')}
+											onclick={() => openEdit(row)}
+										>
+											<Pencil class="h-4 w-4" />
+										</Button>
+										<Button
+											variant="ghost"
+											size="icon"
+											class="h-8 w-8 rounded-full"
+											disabled={disabled || deleteBusy === row.id}
+											aria-label={$t('common.delete')}
+											onclick={() => removeRow(row)}
+										>
+											<Trash2 class="h-4 w-4" />
+										</Button>
+									</div>
 								{/snippet}
 							</PermissionGate>
 						{/if}

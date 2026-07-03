@@ -1,7 +1,7 @@
 # App Shell Architecture Spec
 
 > **Applies to:** `apps/webapp` UI (layouts, list pages, drawers, modals)  
-> **See also:** [v1-feature-architecture-spec.md](./v1-feature-architecture-spec.md) — normative routes, entities, locked UX (what to build) · [ui-architecture-reference.md](../reference/ui-architecture-reference.md) — gap tracker & feature cards (sprint planning)
+> **See also:** [v1-feature-architecture-spec.md](./v1-feature-architecture-spec.md) — normative routes, entities, locked UX (what to build) · [shared-components-spec.md](./shared-components-spec.md) — mandatory reusable components · [ui-architecture-reference.md](../reference/ui-architecture-reference.md) — gap tracker & feature cards (sprint planning)
 
 This document defines the standard layout and interaction patterns for the EDAYA school management webapp. All new screens and refactors should conform to these rules.
 
@@ -110,10 +110,12 @@ Most routes use the **list + drawer** pattern. Non-list screens may use approved
 
 - **Dashboard** — KPIs + summary cards above or instead of a collection
 - **Calendar** — time-grid layout
-- **Matrix** — grid of toggles (e.g. role permissions)
 - **Timetable grid** — schedule cells
+- **Accordion** — hierarchical config (e.g. academic calendar by year)
 
 Variant layouts still use the same shell (sidebar + header). Only the body layout differs.
+
+> **Removed in v1:** CRUD permission matrix (`/configuration/roles`). Staff permissions use the standard drawer sub-collection + modal pattern ([v1-feature-architecture-spec §5.3.1](./v1-feature-architecture-spec.md#531-staff-permission-assignment-ui)).
 
 ---
 
@@ -198,7 +200,7 @@ The drawer has three layers: shell chrome, entity header, and body.
 | Part | Rule |
 |------|------|
 | **Shell header** | Entity type badge + close button only |
-| **Entity header** | Identity block (avatar/photo, name, 1–3 status chips, one-line summary) + up to **2 primary entity actions** (each opens a modal). Additional actions go in a `···` overflow menu. Destructive actions (delete, archive) never appear in the top 2 — overflow + confirm modal only. |
+| **Entity header** | Identity block (avatar/photo, name, 1–3 status chips, one-line summary) + up to **2 primary entity actions** (each opens a modal). Additional actions go in a `···` overflow menu. Destructive actions (delete, archive) never appear in the top 2 — overflow + confirm modal only. Prefer shared **`DrawerEntityHeader`** when available (see implementation plan Phase 0). |
 | **Body** | **Related content only** — not a repeat of list-row columns. Organized by **sections**, **tabs**, or **both** (see §3.2). |
 | **Footer** | Omit when Close lives in the shell header. If present: Close only — **no global Save**, no duplicate of entity-header actions. |
 
@@ -374,14 +376,20 @@ Every list route wraps its collection in explicit loading, empty, error, and rea
 
 ### 6.3 Permissions
 
-Actions are gated by role:
+Actions are gated by **effective permission grants** from the session (`authSession.grants`), not by a legacy roles matrix.
+
+| Mechanism | Usage |
+|-----------|--------|
+| **`PermissionGate`** | Wrap action buttons: `permission="PERMISSION_CODE"` · `mode="hide"` (default) or `mode="disable"` + tooltip |
+| **Scoped checks** | Pass `classId` / `subject` when the grant is class- or subject-scoped |
+| **Helpers** | `hasPermission` / `hasAnyPermission` in `lib/permissions.ts` |
 
 | Denied | UX |
 |--------|-----|
-| Not allowed | Hide button, or show disabled with tooltip |
-| Read-only entity | Drawer opens; edit actions hidden |
+| Not allowed | Hide button (`mode="hide"`), or show disabled with tooltip (`mode="disable"`) |
+| Read-only entity | Drawer opens; edit actions hidden or disabled |
 
-Role is shown in the header user block; permission checks should be applied per action.
+The user's **staff role label** (e.g. director, teacher) is shown in the header for identity only — it does **not** replace permission checks. Permission assignment UI lives on Staff drawer → Permissions tab ([v1-feature-architecture-spec §5.3.1](./v1-feature-architecture-spec.md#531-staff-permission-assignment-ui)); assign actions require `ACCESS_CONTROL_ASSIGN`.
 
 ### 6.4 Global context
 

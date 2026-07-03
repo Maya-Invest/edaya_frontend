@@ -9,6 +9,7 @@ alwaysApply: false
 **Read the full specs before building or refactoring webapp screens:**
 - **Product architecture (required):** [`specs/v1-feature-architecture-spec.md`](../../docs/specs/v1-feature-architecture-spec.md) — see also rule `v1-feature-architecture`
 - Interaction (how to build): [`specs/app-shell-spec.md`](../../docs/specs/app-shell-spec.md)
+- Shared components: [`specs/shared-components-spec.md`](../../docs/specs/shared-components-spec.md)
 - Progress catalog: [`docs/reference/ui-architecture-reference.md`](../../docs/reference/ui-architecture-reference.md)
 - Visual design: [`specs/design-language-spec.md`](../../docs/specs/design-language-spec.md)
 - Data loading: [`specs/data-loading-spec.md`](../../docs/specs/data-loading-spec.md)

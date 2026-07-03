@@ -4,7 +4,7 @@
 > **Created:** 2026-07-03  
 > **Scope:** Bring `apps/webapp` to the target architecture in [v1-feature-architecture-spec.md](../specs/v1-feature-architecture-spec.md)  
 > **Draft / detail catalog:** [ui-architecture-reference.md](../reference/ui-architecture-reference.md) — feature cards, entity audit, living §0 checklist  
-> **Interaction & data:** [app-shell-spec.md](../specs/app-shell-spec.md) · [data-loading-spec.md](../specs/data-loading-spec.md) · [design-language-spec.md](../specs/design-language-spec.md)  
+> **Interaction & data:** [app-shell-spec.md](../specs/app-shell-spec.md) · [shared-components-spec.md](../specs/shared-components-spec.md) · [data-loading-spec.md](../specs/data-loading-spec.md) · [design-language-spec.md](../specs/design-language-spec.md)  
 > **Backend:** All v1 UI blockers resolved (B1–B5 on dev Neon). Re-run `db:migrate:full` on staging/prod before permission work there.
 
 ---
@@ -66,6 +66,8 @@ Every in-scope screen matches the **normative** [v1-feature-architecture-spec.md
 
 ## 3. Cross-cutting patterns (apply in every phase)
 
+Registry: [shared-components-spec.md](../specs/shared-components-spec.md). Interaction rules: [app-shell-spec.md](../specs/app-shell-spec.md).
+
 ### 3.1 Drawer entity header
 
 Extract or extend a shared **`DrawerEntityHeader.svelte`** (or equivalent) used by all complex drawers:
@@ -112,14 +114,17 @@ Manual: list → drawer URL → modal mutation → toast → drawer reflects cha
 
 ### Phase 0 — Shell foundations
 
-**Goal:** Shared primitives so later phases do not reinvent drawer headers and toolbars.
+**Goal:** Shared primitives so later phases do not reinvent drawer headers and toolbars. Registry: [shared-components-spec.md §2–4](../specs/shared-components-spec.md#2-mandatory-registry-v1).
 
 | ID | Task | Key files / areas | Done when |
 |----|------|-------------------|-----------|
-| 0.1 | Add `DrawerEntityHeader` (props: identity, actions, overflow) | `apps/webapp/src/lib/components/` | Used by ≥1 pilot drawer |
-| 0.2 | Pilot entity header on **one** complex drawer (e.g. Guardian or Announcement — already Built) | `*Detail.svelte` | Matches app-shell §3.1 |
-| 0.3 | Document header migration list for remaining drawers | This plan §8 | Checklist complete |
-| 0.4 | Audit main filters: list screens still using chip bars | `apps/webapp/src/lib/components/school/**` | Inventory in PR description |
+| 0.1 | Add `DrawerEntityHeader` (props: identity, actions, overflow) | `school/shared/DrawerEntityHeader.svelte` | Used by ≥1 pilot drawer |
+| 0.2 | Add `ListSearchField` | `ui/ListSearchField.svelte` | Replaces inline search in ≥1 pilot list |
+| 0.3 | Add `FilterPanel` | `ui/FilterPanel.svelte` | Secondary facets on ≥1 pilot list |
+| 0.4 | Add `RowActionMenu` | `ui/RowActionMenu.svelte` | Used on ≥1 simple-entity list |
+| 0.5 | Pilot `DrawerEntityHeader` on one complex drawer | e.g. Guardian or Announcement | Matches app-shell §3.1 |
+| 0.6 | Document header migration list for remaining drawers | This plan §8 | Checklist complete |
+| 0.7 | Audit main filters: list screens still using chip bars | `school/**` | Inventory in PR description |
 
 **Depends on:** —  
 **Unlocks:** All complex-entity phases

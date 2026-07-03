@@ -4,6 +4,7 @@
 > **Normative:** agents and implementers **must** follow this document for *what* to build.  
 > **Companion specs (how to build):**
 > - [app-shell-spec.md](./app-shell-spec.md) — list · drawer · modal interaction patterns
+> - [shared-components-spec.md](./shared-components-spec.md) — reusable component registry
 > - [design-language-spec.md](./design-language-spec.md) — visual design
 > - [data-loading-spec.md](./data-loading-spec.md) — loading · entity store · mutations  
 > **Living catalog & progress:** [ui-architecture-reference.md](../reference/ui-architecture-reference.md) — per-feature cards, gap tracker, entity audit (not normative for agents)
@@ -155,6 +156,69 @@ These are **fixed** for v1. Do not introduce alternate flows without updating th
 - Picker labels: `GET authorization/permission-catalog` + `POST authorization/scope/render`.
 - Client builds `scopeIds`; server validates on save.
 
+#### 5.3.1 Staff permission assignment UI
+
+Permissions are managed on **Staff drawer → Permissions** tab only. There is **no** `/configuration/roles` matrix screen in v1.
+
+| Surface | Rule |
+|---------|------|
+| **Location** | Staff drawer → **Permissions** tab (`/school/staff/{id}`) |
+| **Mutation pattern** | **Modal-only** — no inline permission toggles, no CRUD matrix layout |
+| **Manage affordance** | Drawer header **Manage permissions** scrolls/focuses Permissions tab, or user switches tab manually |
+| **Gating** | Add / edit / delete require `ACCESS_CONTROL_ASSIGN` via `PermissionGate` (`hide` or `disable` + tooltip) |
+
+**Permissions tab anatomy** (sub-collection pattern — app-shell §4.1):
+
+```
+┌ Permissions ─────────────────────────────── [+ Add permission] ┐
+│  • GRADE_INPUT — 6ème A, 6ème B          [Edit] [Delete]         │
+│  • TIMETABLE_UPDATE — Whole school        [Edit] [Delete]         │
+│  • CLASS_SUBJECT_UPDATE — 5ème:* (synced)  (read-only badge)      │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+| Element | Behavior |
+|---------|----------|
+| **Header CTA** | `+ Add permission` → **StaffPermissionFormModal** (create) |
+| **Row** | Permission label (i18n `permission.{CODE}`) · **scope label** from `scope/render` |
+| **Synced rows** | `sourceStaffAssignmentId` set → read-only; show “synced from assignment” badge; **no** edit/delete |
+| **Stale scope** | When `scope/render` reports missing segments → warn badge (do not block read) |
+| **Row actions** | Edit → same modal (pre-filled); Delete → confirm → entity delete |
+| **Empty state** | Message + `+ Add permission` when user can assign |
+
+**Add / edit modal** (`StaffPermissionFormModal`):
+
+| Field | Control | Rule |
+|-------|---------|------|
+| **Permission** | `<select>` from catalog | Required; options from `GET authorization/permission-catalog` |
+| **Scope** | `ScopeBuilder` | Shown only when catalog entry has `scope` ≠ `platform`; hidden for tenant-wide permissions |
+| **Tenant-wide** | — | Empty `scopeIds`; show hint “whole school” |
+| **Submit** | Save | `staffPermissionAssignments` entity save; toast on success; refresh tab list |
+
+**ScopeBuilder** — one control set per catalog `scope` grain:
+
+| Grain | UI | `scopeIds` grammar (client composes; server validates) |
+|-------|-----|--------------------------------------------------------|
+| `class_group` | Multi-select checkboxes (classes) | Comma-separated class IDs |
+| `grade_level` | Single `<select>` | Grade level ID |
+| `class_subject` | Repeatable rows: class + subject **or** class wildcard (`classId:*`) | `classId:subjectId` paths, comma-separated |
+| `grade_level_subject` | Same as `class_subject` | Same path grammar |
+| `student` | Multi-select checkboxes (students) | Comma-separated student IDs |
+| `activity` | Activity picker + optional class link | `activityId` or `classId:activityId` |
+| `platform` | — | Not assignable in school UI (catalog only) |
+
+Scope labels in the list use `POST authorization/scope/render` with `{ permission, scopeIds }[]` — do not hand-format scope strings in the UI.
+
+**Data loading** (see [data-loading-spec.md](./data-loading-spec.md)):
+
+- `querySchoolStaffPage` loads `permission-catalog` and seeds `detailDataContext.permissionCatalog`.
+- Assignments load with staff list or on tab open; views built via `buildStaffPermissionAssignmentViews`.
+- Mutations: `saveStaffPermissionAssignmentMutation` / `deleteStaffPermissionAssignmentMutation` with optimistic patch on `staffPermissionAssignments` collection.
+
+**Staff drawer → Assignments tab** (read-only): summary list of `staffAssignments` (class-level and other targets). Editing assignments happens in **Configuration → Classes** drawer (class-level tab) — not on this tab.
+
+**Removed:** `/configuration/roles` route, roles matrix, `StaffRoleAssignment` UI, inline CRUD matrix toggles for permissions.
+
 ---
 
 ## 6. Route index
@@ -195,6 +259,8 @@ These are **fixed** for v1. Do not introduce alternate flows without updating th
 
 Each subsection: **entity** · **surface** · **list** · **drawer / row menu** · **key modals** · **API notes**.
 
+**Binding detail for Partial / Planned features:** List filters, drawer tab inventories, modal field lists, and “today vs target” notes in [ui-architecture-reference.md §3](../reference/ui-architecture-reference.md#3-feature-catalog-target-end-state) are **normative** until merged into this section. When a feature reaches **Built**, update both this spec and the reference card in the same PR.
+
 ### 7.1 Dashboard
 
 - **Surface:** Layout variant (no drawer)
@@ -217,9 +283,9 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 ### 7.4 School — Staff
 
 - **Entity:** `StaffMember` · **Complex drawer**
-- **List:** search name · main filter assigned class
+- **List:** search name · main filter assigned class · filter active/inactive
 - **Drawer header:** Edit profile · Manage permissions
-- **Drawer tabs:** Profile · **Permissions** (`staffPermissionAssignments`) · Assignments (read-only `staffAssignments` summary)
+- **Drawer tabs:** Profile · **Permissions** ([§5.3.1](#531-staff-permission-assignment-ui)) · Assignments (read-only `staffAssignments` summary)
 
 ### 7.5 School — Calendar
 
@@ -241,9 +307,10 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 - **Entity:** `Incident` · **Complex drawer**
 - **List:** search student · main filter class · filter category · severity · **resolution status**
+- **List row:** show primary involved student + count or labels when multiple (`studentIncidentInvolvements`) — not first-involvement only
 - **Drawer header:** Edit · **Resolve** (hidden when `status = resolved`)
-- **Drawer body:** Summary · **Involved students** (read-only)
-- **Resolve modal:** involved students + role + optional sanction + notes → `resolveIncidentWithOutcomes`
+- **Drawer body:** Summary · **Involved students** (read-only) · **Applied sanctions** (`studentDisciplinaryActions` read-only post-resolve)
+- **Resolve modal:** involved students + role + optional `DisciplinaryAction` per student + notes → `resolveIncidentWithOutcomes` *(shipped)*
 
 ### 7.9 Classes — Students (roster)
 
@@ -253,9 +320,14 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 - **Entities:** `LessonSession` · `ActivitySession` · timed `Assessment`
 - **Layout:** Week grid · URL-backed occurrence drawer
-- **CTA:** New session wizard (Lesson · Activity · Assessment)
+- **CTA:** **New session wizard** (modal or stepped flow):
+  1. Pick type: **Lesson** · **Activity** · **Assessment**
+  2. Pick context: class subject (lesson) · activity (+ optional `ClassActivityEnrollment`) · assessment template
+  3. Schedule fields: date/time, recurrence → `createSchedule` + `materializeSchedule` when recurring
+  4. Validate → occurrence appears on grid
+- **Alternate create:** Lessons / Activities / Assessments screens — optional **Add to timetable** inline on create/edit modal
 - **Drawer tabs:** Details · Attendance (`AttendanceRecord`) · Logbook (lessons only)
-- **Header:** Edit · Take attendance *(session mode)*
+- **Header:** Edit · Take attendance *(session-mode classes; daily mode uses `/attendance` day board)*
 
 ### 7.11 Classes — Lessons (teaching)
 
@@ -266,10 +338,14 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 ### 7.12 Classes — Assessments (evaluations)
 
 - **Entities:** `Assessment` · `AssessmentResult`
-- **List:** main filter **kind** (all / homework / quiz / project / other) · kind badge on row
+- **List:** main filter **kind** (all / homework / quiz / project / other) · kind badge on row · timed items show schedule hint when on timetable
 - **Drawer:** one body section by `kind` — homework → submissions; quiz/project/other → grades grid
-- **CTA:** New assessment (pick kind; optional timetable for non-homework)
-- **No** `/homework` route
+- **CTA — New assessment modal:**
+  1. Pick **kind** (homework · quiz · project · other)
+  2. Core fields: title, subject/class subject, dates, grading config
+  3. Optional **Add to timetable** (non-homework): schedule fields → `createSchedule` / materialize when checked
+- **Timetable link:** non-homework with `startsAt`/`endsAt` or `lessonSessionId` appear on timetable grid **and** this list
+- **No** `/homework` route or nav tab
 
 ### 7.13 Classes — Report cards
 
@@ -390,11 +466,12 @@ When building or refactoring a screen:
 2. **Match route** to §6 — do not invent parallel routes removed in §1.3.
 3. **Apply toolbar** order and `<select>` main filter (§2.3).
 4. **Follow** [app-shell-spec.md](./app-shell-spec.md) for drawer anatomy, modals, sub-collections.
-5. **Follow** [data-loading-spec.md](./data-loading-spec.md) for `PageQuery`, entity store, `runMutation`.
-6. **Follow** [design-language-spec.md](./design-language-spec.md) for visuals.
-7. **Check locked decisions** (§4) — especially homework, roles, permissions, attendance mode, incident resolve.
-8. **Do not** add resource UI, `/configuration/roles`, or `/homework` nav.
-9. **Update progress** in [ui-architecture-reference.md](../reference/ui-architecture-reference.md) when a feature reaches target — not in this spec.
+5. **Compose** from [shared-components-spec.md](./shared-components-spec.md) — use mandatory T0/T2 components before adding new shared UI.
+6. **Follow** [data-loading-spec.md](./data-loading-spec.md) for `PageQuery`, entity store, `runMutation`.
+7. **Follow** [design-language-spec.md](./design-language-spec.md) for visuals.
+8. **Check locked decisions** (§4) — especially homework, roles, permissions, attendance mode, incident resolve.
+9. **Do not** add resource UI, `/configuration/roles`, or `/homework` nav.
+10. **Update progress** in [ui-architecture-reference.md](../reference/ui-architecture-reference.md) when a feature reaches target — not in this spec.
 
 ---
 
@@ -402,4 +479,6 @@ When building or refactoring a screen:
 
 | Date | Change |
 |------|--------|
+| 2026-07-03 | Linked [shared-components-spec.md](./shared-components-spec.md) in checklist |
+| 2026-07-03 | §5.3.1 Staff permission UI; §7 binding note; expanded incidents, timetable, assessments |
 | 2026-07-03 | Initial normative spec distilled from ui-architecture-reference v1 target state |

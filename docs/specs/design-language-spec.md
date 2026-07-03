@@ -2,7 +2,7 @@
 
 > **Applies to:** `apps/webapp` visual design (colors, typography, spacing, components, motion)
 >
-> **Companion doc:** interaction and layout patterns live in [`app-shell-spec.md`](app-shell-spec.md). This spec covers *how things look*; that spec covers *how screens behave*.
+> **Companion doc:** interaction and layout patterns live in [`app-shell-spec.md`](app-shell-spec.md); reusable component registry in [`shared-components-spec.md`](shared-components-spec.md). This spec covers *how things look*; those specs cover *how screens behave* and *what to compose*.
 
 This document captures the visual design language extracted from the current webapp implementation. Use it when building new screens, components, or marketing surfaces that must feel native to EDAYA.
 
@@ -487,6 +487,7 @@ Use these mappings consistently (see `drawer-constants.ts` for full records).
 | Data states | `apps/webapp/src/lib/components/ui/DataState.svelte` |
 | Shell layout | `apps/webapp/src/routes/(app)/+layout.svelte` |
 | Interaction spec | `specs/app-shell-spec.md` |
+| Shared components | `specs/shared-components-spec.md` |
 
 ---
 
