@@ -35,7 +35,7 @@
 		"tailwind-merge": "^3.6.0"
 	},
 	"devDependencies": {
-		"@edaya/client-codegen": "file:../../../edaya-client-codegen",
+		"@edaya/client-codegen": "https://github.com/Maya-Invest/edaya-client-codegen",
 		"@cloudflare/workers-types": "^4.20250617.0",
 		"@edaya/web-fixtures": "workspace:*",
 		"@sveltejs/adapter-static": "^3.0.10",

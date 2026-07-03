@@ -13,16 +13,13 @@ import {
 	planningSlotSignature,
 	sessionInstantsForSlot,
 	shiftWeek,
+	utcWallClockDate,
 } from './planning-calendar';
 
 describe('planning-calendar', () => {
-	test('calendarSlotFromDates maps local times to weekday slot', () => {
-		const weekStart = mondayOfWeek(new Date(2026, 4, 11));
-		const start = new Date(weekStart);
-		start.setDate(start.getDate() + 2);
-		start.setHours(10, 15, 0, 0);
-		const end = new Date(start);
-		end.setHours(11, 45, 0, 0);
+	test('calendarSlotFromDates maps UTC wall-clock times to weekday slot', () => {
+		const start = utcWallClockDate('2026-05-13T10:15:00.000Z');
+		const end = utcWallClockDate('2026-05-13T11:45:00.000Z');
 
 		expect(calendarSlotFromDates(start, end)).toEqual({
 			day: 'Wed',
@@ -31,6 +28,37 @@ describe('planning-calendar', () => {
 			dayOfWeek: 'wednesday',
 			startsAt: start,
 			endsAt: end,
+		});
+	});
+
+	test('mapPlanningToCalendarEvents preserves UTC wall-clock times', () => {
+		const events: PlanningEvent[] = [{
+			id: 'sess-a',
+			classId: 'cg1',
+			kind: 'lesson',
+			title: 'Math',
+			subject: 'Math',
+			day: 'Wed',
+			start: '10:15',
+			end: '11:45',
+			startsAt: '2026-05-13T10:15:00.000Z',
+			endsAt: '2026-05-13T11:45:00.000Z',
+			room: 'A1',
+			teacher: 'Teacher',
+		}];
+
+		const [mapped] = mapPlanningToCalendarEvents(events);
+		expect(mapped?.start.getHours()).toBe(10);
+		expect(mapped?.start.getMinutes()).toBe(15);
+		expect(mapped?.end.getHours()).toBe(11);
+		expect(mapped?.end.getMinutes()).toBe(45);
+		expect(calendarSlotFromDates(mapped!.start, mapped!.end)).toEqual({
+			day: 'Wed',
+			startTime: '10:15',
+			endTime: '11:45',
+			dayOfWeek: 'wednesday',
+			startsAt: mapped!.start,
+			endsAt: mapped!.end,
 		});
 	});
 
@@ -115,8 +143,10 @@ describe('planning-calendar', () => {
 		}];
 
 		const [mapped] = mapPlanningToCalendarEvents(events);
-		expect(mapped?.start.toISOString()).toBe('2026-05-13T10:15:00.000Z');
-		expect(mapped?.end.toISOString()).toBe('2026-05-13T11:45:00.000Z');
+		expect(mapped?.start.getHours()).toBe(10);
+		expect(mapped?.start.getMinutes()).toBe(15);
+		expect(mapped?.end.getHours()).toBe(11);
+		expect(mapped?.end.getMinutes()).toBe(45);
 	});
 
 	test('formatPlanningWeekRange renders a Mon–Fri label', () => {

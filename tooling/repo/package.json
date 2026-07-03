@@ -18,7 +18,7 @@
     "smoke:staging": "bun ci/smoke-staging.ts"
   },
   "dependencies": {
-    "@edaya/client-codegen": "file:../../../edaya-client-codegen"
+    "@edaya/client-codegen": "https://github.com/Maya-Invest/edaya-client-codegen"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",

@@ -209,6 +209,8 @@ export const fr: Dict = {
 	'sidebar.schoolSetup': 'Configuration école',
 	'sidebar.featureList': 'Fonctionnalités',
 	'sidebar.searchClass': 'Rechercher une classe…',
+	'sidebar.show': 'Développer le menu',
+	'sidebar.hide': 'Réduire le menu',
 
 	'school.students': 'Liste des élèves',
 	'school.guardians': 'Liste des tuteurs',

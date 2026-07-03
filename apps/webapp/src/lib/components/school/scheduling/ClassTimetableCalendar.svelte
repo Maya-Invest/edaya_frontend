@@ -10,7 +10,6 @@
 	import { setContext } from 'svelte';
 	import {
 		calendarSlotFromDates,
-		filterPlanningEventsForWeek,
 		formatPlanningSlotLabel,
 		mapPlanningToCalendarEvents,
 		mondayOfWeek,
@@ -41,7 +40,7 @@
 	} = $props();
 
 	const anchorDate = $derived(mondayOfWeek(weekStart));
-	const weekEvents = $derived(filterPlanningEventsForWeek(events, anchorDate));
+	const weekEvents = $derived(events);
 	const overlapIds = $derived(overlappingPlanningEventIds(weekEvents));
 	const hours = $derived(timetableHours(weekEvents));
 	const calendarEvents = $derived(mapPlanningToCalendarEvents(weekEvents));
@@ -125,6 +124,17 @@
 			onSelect?.(planningEvent);
 	}
 
+	function coerceCalendarDate(value: unknown): Date | undefined {
+		if (value instanceof Date) {
+			return Number.isNaN(value.getTime()) ? undefined : value;
+		}
+		if (typeof value === 'string' || typeof value === 'number') {
+			const date = new Date(value);
+			return Number.isNaN(date.getTime()) ? undefined : date;
+		}
+		return undefined;
+	}
+
 	function handleUpdateEvent(payload: unknown) {
 		if (!editable)
 			return false;
@@ -142,20 +152,26 @@
 			return false;
 
 		const [baseline] = mapPlanningToCalendarEvents([planningEvent]);
-		const start = 'start' in update && update.start instanceof Date ? update.start : baseline.start;
-		const end = 'end' in update && update.end instanceof Date ? update.end : baseline.end;
+		const start = coerceCalendarDate('start' in update ? update.start : undefined) ?? baseline.start;
+		const end = coerceCalendarDate('end' in update ? update.end : undefined) ?? baseline.end;
 		if (!start || !end || end <= start)
 			return false;
 
 		const slot = calendarSlotFromDates(start, end);
-		const nextSignature = planningSlotSignature({
-			day: slot.day,
-			start: slot.startTime,
-			end: slot.endTime,
-		});
-		if (nextSignature === planningSlotSignature(planningEvent)) {
+		const baselineSlot = calendarSlotFromDates(baseline.start, baseline.end);
+		const moved = start.getTime() !== baseline.start.getTime()
+			|| end.getTime() !== baseline.end.getTime()
+			|| planningSlotSignature({
+				day: slot.day,
+				start: slot.startTime,
+				end: slot.endTime,
+			}) !== planningSlotSignature({
+				day: baselineSlot.day,
+				start: baselineSlot.startTime,
+				end: baselineSlot.endTime,
+			});
+		if (!moved)
 			return false;
-		}
 
 		pendingReschedule = { event: planningEvent, slot };
 		confirmOpen = true;
@@ -212,7 +228,7 @@
 
 {#if browser}
 	<div class="edaya-timetable-calendar h-[min(780px,calc(100vh-13rem))] min-h-[520px] overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-		{#key `${$lang}-${anchorDate.getTime()}`}
+		{#key `${$lang}-${anchorDate.getTime()}-${editable}`}
 			<SvarCalendarLocale lang={$lang}>
 				<Willow fonts={false}>
 					<Calendar

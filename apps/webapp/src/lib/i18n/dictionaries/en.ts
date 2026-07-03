@@ -213,6 +213,8 @@ export const en: Dict = {
 	'sidebar.schoolSetup': 'School setup',
 	'sidebar.featureList': 'Feature list',
 	'sidebar.searchClass': 'Search class…',
+	'sidebar.show': 'Expand menu',
+	'sidebar.hide': 'Collapse menu',
 
 	// School sections
 	'school.students': 'Student list',

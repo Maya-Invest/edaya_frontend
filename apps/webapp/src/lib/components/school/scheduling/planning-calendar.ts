@@ -161,13 +161,27 @@ export function sessionInstantsForSlot(
 	return { startsAt, endsAt };
 }
 
-function formatTimeOfDay(date: Date): string {
+/** Map stored UTC instants to local Date objects that preserve UTC wall-clock time. */
+export function utcWallClockDate(value: Date | string): Date {
+	const source = value instanceof Date ? value : new Date(String(value));
+	return new Date(
+		source.getUTCFullYear(),
+		source.getUTCMonth(),
+		source.getUTCDate(),
+		source.getUTCHours(),
+		source.getUTCMinutes(),
+		source.getUTCSeconds(),
+		source.getUTCMilliseconds(),
+	);
+}
+
+function formatWallClockTimeOfDay(date: Date): string {
 	const hours = `${date.getHours()}`.padStart(2, '0');
 	const minutes = `${date.getMinutes()}`.padStart(2, '0');
 	return `${hours}:${minutes}`;
 }
 
-function weekdayLabel(date: Date): PlanningEvent['day'] {
+function wallClockWeekdayLabel(date: Date): PlanningEvent['day'] {
 	const label = TIMETABLE_DAY_LABELS[date.getDay()] ?? 'Mon';
 	if (label === 'Sun' || label === 'Sat') {
 		return 'Mon';
@@ -176,11 +190,11 @@ function weekdayLabel(date: Date): PlanningEvent['day'] {
 }
 
 export function calendarSlotFromDates(start: Date, end: Date): PlanningSlotFromDates {
-	const day = weekdayLabel(start);
+	const day = wallClockWeekdayLabel(start);
 	return {
 		day,
-		startTime: formatTimeOfDay(start),
-		endTime: formatTimeOfDay(end),
+		startTime: formatWallClockTimeOfDay(start),
+		endTime: formatWallClockTimeOfDay(end),
 		dayOfWeek: DAY_LABEL_TO_SCHEDULE[day],
 		startsAt: start,
 		endsAt: end,
@@ -227,8 +241,8 @@ export function mapPlanningToCalendarEvents(
 	events: PlanningEvent[],
 ): TimetableCalendarEvent[] {
 	return events.map((event) => {
-		const start = new Date(event.startsAt);
-		const end = new Date(event.endsAt);
+		const start = utcWallClockDate(event.startsAt);
+		const end = utcWallClockDate(event.endsAt);
 
 		return {
 			id: event.id,

@@ -4,7 +4,7 @@ import { loadClassPeopleData } from '$lib/api/people-data';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { queryClient } from '$lib/queries/client';
 import { resolvePageLoad, listPageHasItems } from '$lib/queries/page-status';
-import { getStudent360Data, studentDetailIdFromUrl } from '$lib/queries/student-360.queries';
+import { seedStudent360ForStudent, studentDetailIdFromUrl } from '$lib/queries/student-360.queries';
 
 const SCHOOL_ROSTER_SCOPE
 	= 'School students administration route loads paginated school roster.';
@@ -17,8 +17,7 @@ async function seedStudent360ForUrl(url: URL) {
 		return;
 	}
 
-	const { healthRecord, pedagogicalNotes } = await getStudent360Data(studentId);
-	detailDataContext.seedStudent360Data(studentId, healthRecord, pedagogicalNotes);
+	await seedStudent360ForStudent(studentId);
 }
 
 export function querySchoolStudentsPage() {

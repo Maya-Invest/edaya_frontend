@@ -42,6 +42,8 @@ export {
 	MapPin,
 	Minus,
 	MoreHorizontal,
+	PanelLeft,
+	PanelLeftClose,
 	Palmtree,
 	Paperclip,
 	PartyPopper,

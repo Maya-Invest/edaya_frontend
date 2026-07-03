@@ -47,6 +47,7 @@
 		async (offset, limit) => {
 			const result = await loadPeopleDataPage(getBrowserSchoolClient(), { offset, limit });
 			detailDataContext.seedStudents(result.students);
+			detailDataContext.seedGuardians(result.guardians);
 			return { items: result.students, total: result.totalStudents };
 		},
 		DEFAULT_LIST_PAGE_SIZE,

@@ -272,14 +272,14 @@ export async function reschedulePlanningSlotMutation(input: {
 	const result = await runMutation(async () => {
 		if (input.scheduleId) {
 			const schedule = await client.entities.schedules.get(input.scheduleId);
-			await client.entities.schedules.save({
-				...schedule,
-				isRecurring: true,
-				dayOfWeek: input.dayOfWeek,
-				startTime: input.startTime,
-				endTime: input.endTime,
-			});
-			await client.commands.materializeSchedule({ scheduleId: input.scheduleId });
+			if (!schedule.isRecurring) {
+				await client.entities.schedules.save({
+					...schedule,
+					startTime: input.startTime,
+					endTime: input.endTime,
+					specificDate: instants.startsAt.toISOString().slice(0, 10),
+				});
+			}
 		}
 
 		await client.commands.rescheduleOccurrence(

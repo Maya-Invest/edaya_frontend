@@ -7,6 +7,14 @@ import { t } from '$lib/i18n';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
 
+function buildInClassAssessmentWindow(date: Date): { startsAt: string; endsAt: string } {
+	const startsAt = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+	startsAt.setUTCHours(9, 0, 0, 0);
+	const endsAt = new Date(startsAt);
+	endsAt.setUTCHours(10, 0, 0, 0);
+	return { startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString() };
+}
+
 function evaluationStatsFromResults(assessmentId: string): Pick<Evaluation, 'graded' | 'averageMark'> {
 	const scored = detailDataContext.assessmentResults.filter(
 		result => result.assessmentId === assessmentId && typeof result.score === 'number',
@@ -37,19 +45,24 @@ export async function createAssessmentMutation(input: {
 	}
 
 	const id = `asm-${Date.now().toString(36)}`;
+	const kind = input.kind ?? 'quiz';
+	const assessmentDate = input.dueAt ?? new Date().toISOString().slice(0, 10);
 	const subject = detailDataContext.subjects.find(entry => entry.id === input.classSubjectId);
 	const optimistic: Evaluation = {
 		id,
 		classId: input.classGroupId,
 		title: input.title.trim(),
 		subject: subject?.name ?? '—',
-		date: input.dueAt ?? new Date().toISOString().slice(0, 10),
+		date: assessmentDate,
 		coefficient: input.coefficient ?? 1,
 		averageMark: 0,
 		outOf: input.maxScore,
 		graded: 0,
 		total: detailDataContext.studentsForClass(input.classGroupId).length,
 	};
+	const timingPayload = kind === 'homework'
+		? { dueAt: assessmentDate }
+		: buildInClassAssessmentWindow(new Date(assessmentDate));
 
 	const result = await runMutation(() => client.commands.createAssessment({
 		id,
@@ -57,12 +70,12 @@ export async function createAssessmentMutation(input: {
 		classSubjectId: input.classSubjectId,
 		periodId,
 		title: input.title.trim(),
-		kind: input.kind ?? 'quiz',
+		kind,
 		maxScore: input.maxScore,
 		coefficient: input.coefficient ?? 1,
 		attachments: [],
-		dueAt: input.dueAt ?? new Date().toISOString().slice(0, 10),
 		createdAt: new Date().toISOString(),
+		...timingPayload,
 	}), {
 		successMessage: input.successMessage,
 		apply: () => {
