@@ -230,10 +230,6 @@ export function staffAssignmentsForStaff(staffIds: readonly string[]): EntityQue
 	return recordsForFieldIds('staffId', staffIds);
 }
 
-export function staffRoleAssignmentsForStaff(staffIds: readonly string[]): EntityQuery {
-	return recordsForFieldIds('staffId', staffIds);
-}
-
 export function classSubjectsForClasses(classGroupIds: readonly string[]): EntityQuery {
 	return recordsForFieldIds('classGroupId', classGroupIds);
 }

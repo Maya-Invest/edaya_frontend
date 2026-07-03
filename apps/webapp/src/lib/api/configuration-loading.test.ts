@@ -1,8 +1,8 @@
 import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
-import { loadAccessRolesData } from './access-roles-data';
 import { fetchActivitySources } from './activities-data';
 import { fetchStaffMembers } from './staff-data';
+import { loadStaffPermissionAssignments } from './staff-permission-assignments-data';
 import { createRecordingSchoolClient, entityListRequests } from './test/recording-school-client';
 
 const academicYearId = 'year-1';
@@ -12,13 +12,18 @@ function listEnvelope<T>(items: readonly T[]) {
 }
 
 describe('configuration and activity loading', () => {
-	it('keeps access roles school-scoped', async () => {
+	it('keeps staff permission assignments school- and year-scoped', async () => {
 		const { client, requests } = createRecordingSchoolClient([listEnvelope([])]);
 
-		await loadAccessRolesData(client, SEED_SCHOOL_ID);
-
-		expect(entityListRequests(requests, 'access-roles')[0]?.body).toEqual({
+		await loadStaffPermissionAssignments(client, {
 			schoolId: SEED_SCHOOL_ID,
+			academicYearId,
+		});
+
+		expect(entityListRequests(requests, 'staff-permission-assignments')[0]?.body).toEqual({
+			schoolId: SEED_SCHOOL_ID,
+			academicYearId,
+			status: 'active',
 		});
 	});
 
@@ -61,7 +66,6 @@ describe('configuration and activity loading', () => {
 			}]),
 			listEnvelope([]),
 			listEnvelope([]),
-			listEnvelope([]),
 		]);
 
 		await fetchStaffMembers(client, {
@@ -75,9 +79,6 @@ describe('configuration and activity loading', () => {
 		expect(entityListRequests(requests, 'class-groups')[0]?.body).toEqual({
 			schoolId: SEED_SCHOOL_ID,
 			academicYearId,
-		});
-		expect(entityListRequests(requests, 'staff-role-assignments')[0]?.body).toEqual({
-			staffId: { $in: ['staff-1'] },
 		});
 		expect(entityListRequests(requests, 'staff-assignments')[0]?.body).toEqual({
 			staffId: { $in: ['staff-1'] },

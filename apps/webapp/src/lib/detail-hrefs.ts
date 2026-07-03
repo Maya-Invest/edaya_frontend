@@ -27,6 +27,8 @@ export const detailHref = {
 	configStaffGuardian: (id: string): ResolvedPathname => appPath('/(app)/school/staff/[[id]]', { id }),
 	configStaffMember: (id: string): ResolvedPathname => appPath('/(app)/school/staff/[[id]]', { id }),
 	configRole: (role: StaffRole): ResolvedPathname => appPath('/(app)/configuration/roles/[[role]]', { role }),
+	configStaffPermissions: (staffId: string): ResolvedPathname =>
+		appPath('/(app)/configuration/roles/[[role]]', { role: staffId }),
 	configReportCard: (id: string): ResolvedPathname => appPath('/(app)/configuration/report-cards/[[id]]', { id }),
 	financeBilling: (id: string): ResolvedPathname => appPath('/(app)/finance/billing/[[id]]', { id }),
 	financeFee: (id: string): ResolvedPathname => appPath('/(app)/finance/fees/[[id]]', { id }),

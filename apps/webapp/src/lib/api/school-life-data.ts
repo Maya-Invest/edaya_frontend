@@ -9,13 +9,14 @@ import {
 	lessonSessionsForClasses,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
-import { mapPeopleData } from '$lib/api/people-data';
+import { loadClassPeopleData, mapPeopleData } from '$lib/api/people-data';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
 type CalendarEventRaw = components['schemas']['CalendarEvent'];
 type IncidentRaw = components['schemas']['Incident'];
 type InvolvementRaw = components['schemas']['StudentIncidentInvolvement'];
+type DisciplinaryActionRaw = components['schemas']['DisciplinaryAction'];
 type AttendanceRaw = components['schemas']['Attendance'];
 type LessonSessionRaw = components['schemas']['LessonSession'];
 type ClassSubjectRaw = components['schemas']['ClassSubject'];
@@ -214,6 +215,7 @@ export function mapIncidents(
 				category,
 				severity: mapIncidentSeverity(incident, category),
 				summary: incident.description,
+				status: incident.status ?? 'open',
 			} satisfies Incident;
 		})
 		.filter((incident): incident is Incident => incident !== null)
@@ -286,6 +288,60 @@ export async function loadIncidentRouteData(
 		incidents: mapIncidents(incidentsRaw, involvementsRaw ?? []),
 		students,
 	};
+}
+
+export interface IncidentResolveModalData {
+	incident: IncidentRaw;
+	involvements: InvolvementRaw[];
+	disciplinaryActions: DisciplinaryActionRaw[];
+	students: Student[];
+}
+
+export async function loadIncidentResolveModalData(
+	client: SchoolClient,
+	incidentId: string,
+	periodId: string,
+): Promise<IncidentResolveModalData> {
+	const incident = await client.entities.incidents.get(incidentId);
+	const [involvements, disciplinaryActions] = await Promise.all([
+		client.entities.studentIncidentInvolvements.list(involvementsForIncidents([incidentId])),
+		client.entities.disciplinaryActions.list({ schoolId: incident.schoolId }),
+	]);
+
+	let students: Student[] = [];
+	if (incident.classGroupId) {
+		const classPeople = await loadClassPeopleData(client, incident.classGroupId, periodId);
+		students = classPeople.students;
+	}
+	else {
+		const studentIds = uniqueIds((involvements ?? []).map(entry => entry.studentId));
+		if (studentIds.length > 0) {
+			const studentsRaw = await client.entities.students.list(entitiesByIds(studentIds));
+			students = mapPeopleData({
+				studentsRaw: studentsRaw ?? [],
+				enrollmentsRaw: [],
+				guardiansRaw: [],
+				linksRaw: [],
+			}).students;
+		}
+	}
+
+	return {
+		incident,
+		involvements: involvements ?? [],
+		disciplinaryActions: (disciplinaryActions ?? []).filter(action => action.kind === 'sanction'),
+		students,
+	};
+}
+
+export async function loadIncidentInvolvements(
+	client: SchoolClient,
+	incidentId: string,
+): Promise<InvolvementRaw[]> {
+	const involvements = await client.entities.studentIncidentInvolvements.list(
+		involvementsForIncidents([incidentId]),
+	);
+	return involvements ?? [];
 }
 
 export async function loadAbsences(

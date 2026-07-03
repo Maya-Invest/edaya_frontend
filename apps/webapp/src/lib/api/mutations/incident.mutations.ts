@@ -6,6 +6,15 @@ import { detailDataContext } from '$lib/detail-data/context.svelte';
 
 type IncidentKind = 'positive' | 'minor_infraction' | 'major_infraction' | 'emergency';
 type ApiIncident = components['schemas']['Incident'];
+export type IncidentInvolvementRole = 'subject' | 'witness' | 'victim';
+
+export interface ResolveIncidentStudentInput {
+	studentId: string;
+	role: IncidentInvolvementRole;
+	notes?: string;
+	involvementId?: string;
+	disciplinaryActionId?: string;
+}
 
 function incidentCategoryFromKind(kind: IncidentKind): Incident['category'] {
 	switch (kind) {
@@ -51,6 +60,7 @@ function buildStoreIncident(input: {
 		category: incidentCategoryFromKind(input.kind),
 		severity: incidentSeverityFromKind(input.kind),
 		summary: input.title.trim(),
+		status: 'open',
 	};
 }
 
@@ -148,6 +158,44 @@ export async function updateIncidentMutation(input: {
 	return result !== null;
 }
 
+export async function resolveIncidentWithOutcomesMutation(input: {
+	incidentId: string;
+	resolutionNotes?: string;
+	involvedStudents: ResolveIncidentStudentInput[];
+	successMessage?: string;
+}): Promise<boolean> {
+	const client = getBrowserSchoolClient();
+	const now = new Date().toISOString();
+	const involvedStudents = input.involvedStudents.map((entry) => ({
+		id: entry.involvementId ?? `involv-${input.incidentId}-${entry.studentId}`,
+		studentId: entry.studentId,
+		role: entry.role,
+		notes: entry.notes?.trim() || undefined,
+		createdAt: now,
+	}));
+	const sanctions = input.involvedStudents
+		.filter(entry => entry.disciplinaryActionId)
+		.map((entry, index) => ({
+			id: `sda-${input.incidentId}-${entry.studentId}-${index}`,
+			studentId: entry.studentId,
+			disciplinaryActionId: entry.disciplinaryActionId!,
+			createdAt: now,
+		}));
+
+	const result = await runMutation(() => client.commands.resolveIncidentWithOutcomes({
+		incidentId: input.incidentId,
+		resolutionNotes: input.resolutionNotes?.trim() || undefined,
+		involvedStudents,
+		sanctions: sanctions.length > 0 ? sanctions : undefined,
+	}), {
+		successMessage: input.successMessage,
+		apply: () => {
+			detailDataContext.patchIncident(input.incidentId, { status: 'resolved' });
+		},
+	});
+	return result !== null;
+}
+
 export async function resolveIncidentMutation(input: {
 	incidentId: string;
 	resolutionNotes?: string;
@@ -158,6 +206,11 @@ export async function resolveIncidentMutation(input: {
 		incidentId: input.incidentId,
 		resolutionNotes: input.resolutionNotes?.trim() || undefined,
 		resolvedAt: new Date().toISOString(),
-	}), { successMessage: input.successMessage });
+	}), {
+		successMessage: input.successMessage,
+		apply: () => {
+			detailDataContext.patchIncident(input.incidentId, { status: 'resolved' });
+		},
+	});
 	return result !== null;
 }

@@ -1,7 +1,7 @@
 # App Shell Architecture Spec
 
 > **Applies to:** `apps/webapp` UI (layouts, list pages, drawers, modals)  
-> **See also:** [ui-architecture-reference.md](../reference/ui-architecture-reference.md) — per-feature screen catalog for sprint planning
+> **See also:** [v1-feature-architecture-spec.md](./v1-feature-architecture-spec.md) — normative routes, entities, locked UX (what to build) · [ui-architecture-reference.md](../reference/ui-architecture-reference.md) — gap tracker & feature cards (sprint planning)
 
 This document defines the standard layout and interaction patterns for the EDAYA school management webapp. All new screens and refactors should conform to these rules.
 
@@ -53,7 +53,7 @@ This architecture optimizes for **clarity, safety, and consistency** over raw sp
 - Keyboard navigation on lists (arrow keys, `E` to edit selected row)
 - Bulk actions on the list toolbar, not inside the drawer
 - Expandable drawer (full width) for data-heavy tabs
-- Inline filters for common facets; advanced filters behind the filter button
+- Inline filters for common facets → **main filter `<select>`**; advanced facets behind the filter button
 
 ---
 
@@ -122,9 +122,9 @@ Variant layouts still use the same shell (sidebar + header). Only the body layou
 Every entity list route shares this anatomy:
 
 ```
-┌ Title                          [Primary CTA] [Search] [Filter] [More ▾] ┐
-│ Description / subtitle                                                   │
-├──────────────────────────────────────────────────────────────────────────┤
+┌ Title                   [Primary CTA] [Search] [Main filter ▾] [Filter ▾] [More ▾] ┐
+│ Description / subtitle                                                           │
+├──────────────────────────────────────────────────────────────────────────────────┤
 │  Collection: table OR cards                                              │
 │  - complex entity: row/card click → detail drawer (URL updates)          │
 │  - simple entity: row `···` menu → mutations (no drawer)                 │
@@ -139,8 +139,9 @@ Every entity list route shares this anatomy:
 | **Title** | Entity name; optional live count (`Students · 142`) |
 | **Description** | One line of context; do not duplicate filter labels |
 | **Primary CTA** | Exactly one main action (e.g. "Add student") → opens **create modal** |
-| **Search** | Instant text filter on primary label fields |
-| **Filter button** | Opens panel/dropdown for structured filters (class, status, date range…) |
+| **Search** | Always on list pages. Instant text filter on primary label fields. Placed **alongside** the main filter. |
+| **Main filter** | Always a **`<select>`** — one highest-frequency facet (class, status, category…). No chip bars or pill toggles. |
+| **Filter button** | Secondary / advanced facets (extra statuses, date range, scope, enrollment band…) |
 | **More menu** | Secondary actions: export, import, bulk ops, view toggle, column settings |
 
 ### 2.2 Collection

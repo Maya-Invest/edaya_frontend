@@ -15,8 +15,8 @@ export class DrawerState {
 		const d = this.item;
 		if (!d)
 return undefined;
-		if (d.kind === 'role')
-return d.data.role;
+		if (d.kind === 'staffPermissions')
+			return d.data.id;
 		if (d.kind === 'level')
 return d.data.label;
 		return d.data.id;

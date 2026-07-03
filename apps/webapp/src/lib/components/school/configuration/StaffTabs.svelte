@@ -18,6 +18,7 @@
 	import DrawerField from '../shared/DrawerField.svelte';
 	import PersonAvatar from '../shared/PersonAvatar.svelte';
 	import ProfilePhotoPicker from '../shared/ProfilePhotoPicker.svelte';
+	import StaffAssignmentsSection from './StaffAssignmentsSection.svelte';
 	import StaffPermissionsList from './StaffPermissionsList.svelte';
 	import StaffProfileEditModal from './StaffProfileEditModal.svelte';
 
@@ -142,6 +143,8 @@
 					</div>
 				</DrawerField>
 			{/if}
+
+			<StaffAssignmentsSection staff={s} />
 
 			<div class="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
 				<div>

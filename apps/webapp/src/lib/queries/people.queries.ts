@@ -1,6 +1,8 @@
 import { academicContext } from '$lib/academic/context.svelte';
 import { schoolWideEntityList } from '$lib/api/entity-list-filters';
 import { loadClassPeopleData } from '$lib/api/people-data';
+import { loadPermissionCatalog } from '$lib/api/staff-permission-assignments-data';
+import { fetchSchoolSubjectsSources, mapAllClassSubjects } from '$lib/api/subjects-data';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { queryClient } from '$lib/queries/client';
 import { resolvePageLoad, listPageHasItems } from '$lib/queries/page-status';
@@ -52,10 +54,24 @@ export function querySchoolStaffPage() {
 		empty: () => ({ totalStaff: 0 }),
 		load: async () => {
 			const schoolId = academicContext.schools[0]?.id ?? '';
-			const { count } = schoolId
-				? await queryClient().entities.staffMembers.count({ schoolId })
-				: { count: 0 };
-			return { totalStaff: count };
+			const client = queryClient();
+			const [countResult, subjectSources, catalog] = await Promise.all([
+				schoolId ? client.entities.staffMembers.count({ schoolId }) : Promise.resolve({ count: 0 }),
+				fetchSchoolSubjectsSources(client),
+				loadPermissionCatalog(client),
+			]);
+			const allSubjects = mapAllClassSubjects(subjectSources);
+			for (const classNode of academicContext.classes) {
+				detailDataContext.seedSubjects(
+					allSubjects.filter(subject => subject.classId === classNode.id),
+					{ classId: classNode.id },
+				);
+			}
+			detailDataContext.seedStaffPermissionData({
+				assignments: detailDataContext.staffPermissionAssignments,
+				catalog,
+			});
+			return { totalStaff: countResult.count };
 		},
 		hasItems: listPageHasItems,
 	});

@@ -48,6 +48,7 @@ describe('student tab selectors', () => {
 				category: 'Behavior',
 				severity: 'high',
 				summary: 'A',
+				status: 'open',
 			},
 			{
 				id: 'i2',
@@ -56,6 +57,7 @@ describe('student tab selectors', () => {
 				category: 'Tardiness',
 				severity: 'low',
 				summary: 'B',
+				status: 'open',
 			},
 			{
 				id: 'i3',
@@ -64,6 +66,7 @@ describe('student tab selectors', () => {
 				category: 'Conflict',
 				severity: 'medium',
 				summary: 'C',
+				status: 'open',
 			},
 		]);
 

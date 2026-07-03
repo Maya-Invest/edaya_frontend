@@ -11,7 +11,6 @@ import type {
 	Fee,
 	SchoolYearEvent,
 	Incident,
-	StaffRole,
 	Activity,
 	Announcement,
 } from '$lib/types/school';
@@ -28,7 +27,7 @@ export type DrawerItem
 		| { kind: 'fee'; data: Fee }
 		| { kind: 'schoolYearEvent'; data: SchoolYearEvent }
 		| { kind: 'incident'; data: Incident }
-		| { kind: 'role'; data: { role: StaffRole } }
+		| { kind: 'staffPermissions'; data: StaffMember }
 		| { kind: 'level'; data: { label: string; subtitle: string; items: Subject[] } }
 		| { kind: 'activity'; data: Activity }
 		| { kind: 'announcement'; data: Announcement }

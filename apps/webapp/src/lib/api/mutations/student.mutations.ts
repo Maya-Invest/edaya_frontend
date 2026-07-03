@@ -215,6 +215,7 @@ export async function recordStudentIncidentMutation(input: {
 		category: incidentCategoryFromKind(input.kind),
 		severity: incidentSeverityFromKind(input.kind),
 		summary: input.title.trim(),
+		status: 'open',
 	};
 
 	const result = await recordIncidentMutation({

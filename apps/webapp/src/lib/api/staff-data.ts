@@ -8,31 +8,39 @@ import {
 	paginatedList,
 	STAFF_LIST_ORDER,
 	staffAssignmentsForStaff,
-	staffRoleAssignmentsForStaff,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
 type StaffRaw = components['schemas']['StaffMember'];
-type RoleAssignmentRaw = components['schemas']['StaffRoleAssignment'];
 type ClassGroupRaw = components['schemas']['ClassGroup'];
 type AssignmentRaw = components['schemas']['StaffAssignment'];
 type ClassSubjectRaw = components['schemas']['ClassSubject'];
 type SubjectRaw = components['schemas']['Subject'];
 
-const ROLE_ID_TO_STAFF_ROLE: Record<string, StaffRole> = {
-	'role-director': 'directeur',
-	'role-coordinator': 'prof_principal',
-	'role-educator': 'educateur',
-	'role-teacher': 'professeur',
-	'directeur': 'directeur',
-	'director': 'directeur',
-	'prof_principal': 'prof_principal',
-	'principal_teacher': 'prof_principal',
-	'educateur': 'educateur',
-	'educator': 'educateur',
-};
+function inferStaffRole(
+	member: StaffRaw,
+	assignments: AssignmentRaw[],
+	classGroups: ClassGroupRaw[],
+): StaffRole {
+	if (classGroups.some(group => group.homeroomStaffId === member.id)) {
+		return 'prof_principal';
+	}
+
+	const responsibilities = assignments
+		.filter(assignment => assignment.staffId === member.id)
+		.map(assignment => assignment.responsibility.toLowerCase());
+
+	if (responsibilities.some(value => value.includes('direct') || value.includes('principal'))) {
+		return 'directeur';
+	}
+	if (responsibilities.some(value => value.includes('educat'))) {
+		return 'educateur';
+	}
+
+	return 'professeur';
+}
 
 function inferSubjectCategory(name: string, code?: string | null): SubjectCategory {
 	const label = `${name} ${code ?? ''}`.toLowerCase();
@@ -74,16 +82,10 @@ function categoryToDepartment(category: SubjectCategory): string {
 
 export function mapStaffRole(
 	member: StaffRaw,
-	roleAssignments: RoleAssignmentRaw[],
+	assignments: AssignmentRaw[],
+	classGroups: ClassGroupRaw[],
 ): StaffRole {
-	const assignment = roleAssignments.find(
-		entry => entry.staffId === member.id && entry.status !== 'inactive',
-	);
-	const roleId = assignment?.roleIds[0];
-	if (roleId && ROLE_ID_TO_STAFF_ROLE[roleId]) {
-		return ROLE_ID_TO_STAFF_ROLE[roleId];
-	}
-	return 'professeur';
+	return inferStaffRole(member, assignments, classGroups);
 }
 
 function catalogSubjectIdsForStaff(
@@ -146,14 +148,13 @@ export function mapDepartment(
 
 export function mapStaffMembers(
 	staffRaw: StaffRaw[],
-	roleAssignmentsRaw: RoleAssignmentRaw[],
 	classGroupsRaw: ClassGroupRaw[],
 	assignmentsRaw: AssignmentRaw[],
 	classSubjectsRaw: ClassSubjectRaw[] = [],
 	subjectsRaw: SubjectRaw[] = [],
 ): StaffMember[] {
 	return (staffRaw ?? []).map((member) => {
-		const role = mapStaffRole(member, roleAssignmentsRaw);
+		const role = mapStaffRole(member, assignmentsRaw ?? [], classGroupsRaw ?? []);
 
 		const classesTaught = (assignmentsRaw ?? [])
 			.filter(entry => entry.staffId === member.id && entry.classGroupId)
@@ -196,10 +197,7 @@ export function mapStaffMembers(
 }
 
 async function fetchStaffRelations(client: SchoolClient, staffIds: readonly string[]) {
-	const [roleAssignmentsRaw, assignmentsRaw] = await Promise.all([
-		client.entities.staffRoleAssignments.list(staffRoleAssignmentsForStaff(staffIds)),
-		client.entities.staffAssignments.list(staffAssignmentsForStaff(staffIds)),
-	]);
+	const assignmentsRaw = await client.entities.staffAssignments.list(staffAssignmentsForStaff(staffIds));
 	const classSubjectIds = uniqueIds(
 		(assignmentsRaw ?? [])
 			.map(assignment => assignment.classSubjectId)
@@ -214,7 +212,6 @@ async function fetchStaffRelations(client: SchoolClient, staffIds: readonly stri
 		: [];
 
 	return {
-		roleAssignmentsRaw: roleAssignmentsRaw ?? [],
 		assignmentsRaw: assignmentsRaw ?? [],
 		classSubjectsRaw: classSubjectsRaw ?? [],
 		subjectsRaw: subjectsRaw ?? [],
@@ -240,7 +237,6 @@ export async function fetchStaffMembers(
 
 	return mapStaffMembers(
 		staffRaw ?? [],
-		relations.roleAssignmentsRaw,
 		classGroupsRaw ?? [],
 		relations.assignmentsRaw,
 		relations.classSubjectsRaw,
@@ -269,7 +265,6 @@ export async function fetchStaffMemberById(
 	});
 	const members = mapStaffMembers(
 		[staff],
-		relations.roleAssignmentsRaw,
 		classGroupsRaw ?? [],
 		relations.assignmentsRaw,
 		relations.classSubjectsRaw,
@@ -291,7 +286,8 @@ export async function fetchSessionStaffProfile(
 	let role: StaffRole = 'professeur';
 	try {
 		const relations = await fetchStaffRelations(client, [staffId]);
-		role = mapStaffRole(staff, relations.roleAssignmentsRaw);
+		const classGroupsRaw = await client.entities.classGroups.list({ schoolId: staff.schoolId });
+		role = mapStaffRole(staff, relations.assignmentsRaw, classGroupsRaw ?? []);
 	}
 	catch (error) {
 		if (!(error instanceof ApiError && (error.status === 403 || error.status === 401))) {
@@ -328,6 +324,7 @@ export interface StaffPageRequest {
 export interface PaginatedStaffData {
 	staff: StaffMember[];
 	totalStaff: number;
+	assignments: AssignmentRaw[];
 }
 
 export async function fetchStaffMembersPage(
@@ -353,19 +350,19 @@ export async function fetchStaffMembersPage(
 	]);
 	const staffIds = uniqueIds((staffRaw ?? []).map(member => member.id));
 	if (staffIds.length === 0) {
-		return { staff: [], totalStaff };
+		return { staff: [], totalStaff, assignments: [] };
 	}
 	const relations = await fetchStaffRelations(client, staffIds);
 
 	return {
 		staff: mapStaffMembers(
 			staffRaw ?? [],
-			relations.roleAssignmentsRaw,
 			classGroupsRaw ?? [],
 			relations.assignmentsRaw,
 			relations.classSubjectsRaw,
 			relations.subjectsRaw,
 		),
 		totalStaff,
+		assignments: relations.assignmentsRaw,
 	};
 }

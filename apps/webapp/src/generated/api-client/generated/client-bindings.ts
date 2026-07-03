@@ -38,19 +38,14 @@ export const clientBindings = {
         "schemaName": "StaffAssignment",
         "allowDirectSave": true
       },
-      "accessRoles": {
-        "publicName": "access-roles",
-        "schemaName": "AccessRole",
-        "allowDirectSave": true
-      },
       "accountInvitations": {
         "publicName": "account-invitations",
         "schemaName": "AccountInvitation",
         "allowDirectSave": false
       },
-      "staffRoleAssignments": {
-        "publicName": "staff-role-assignments",
-        "schemaName": "StaffRoleAssignment",
+      "staffPermissionAssignments": {
+        "publicName": "staff-permission-assignments",
+        "schemaName": "StaffPermissionAssignment",
         "allowDirectSave": true
       },
       "attachments": {
@@ -181,6 +176,11 @@ export const clientBindings = {
       "activityEnrollments": {
         "publicName": "activity-enrollments",
         "schemaName": "ActivityEnrollment",
+        "allowDirectSave": true
+      },
+      "classActivityEnrollments": {
+        "publicName": "class-activity-enrollments",
+        "schemaName": "ClassActivityEnrollment",
         "allowDirectSave": true
       },
       "assessments": {
@@ -585,6 +585,11 @@ export const clientBindings = {
         "requestSchemaName": "ResolveIncidentCommand",
         "responseSchemaName": "Incident"
       },
+      "resolveIncidentWithOutcomes": {
+        "publicName": "resolve-incident-with-outcomes",
+        "requestSchemaName": "ResolveIncidentWithOutcomesCommand",
+        "responseSchemaName": "ResolveIncidentWithOutcomesResponse"
+      },
       "createFee": {
         "publicName": "create-fee",
         "requestSchemaName": "CreateFeeCommand",
@@ -768,6 +773,17 @@ export const clientBindings = {
         "method": "GET",
         "path": "authorization/effective-grants",
         "responseSchemaName": "EffectiveGrantsResponse"
+      },
+      "permissionCatalog": {
+        "method": "GET",
+        "path": "authorization/permission-catalog",
+        "responseSchemaName": "PermissionCatalogResponse"
+      },
+      "scopeRender": {
+        "method": "POST",
+        "path": "authorization/scope/render",
+        "requestSchemaName": "ScopeRenderRequest",
+        "responseSchemaName": "ScopeRenderResponse"
       }
     },
     "onboarding": {

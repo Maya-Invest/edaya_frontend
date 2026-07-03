@@ -1,7 +1,6 @@
 <script lang="ts">
-	import type { StaffRole } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import RolesMatrixView from '$lib/components/school/configuration/RolesMatrixView.svelte';
+	import StaffPermissionMatrixView from '$lib/components/school/configuration/StaffPermissionMatrixView.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
@@ -9,7 +8,7 @@
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { queryRolesPage } from '$lib/queries/access.queries';
 
-	const selectedRole = $derived($page.params.role as StaffRole | undefined);
+	const selectedStaffId = $derived($page.params.role);
 	const query = queryRolesPage();
 </script>
 
@@ -22,9 +21,9 @@
 			emptyTitle={$t('roles.title')}
 			emptyDescription={$t('dataState.emptyDescription')}
 		>
-			<RolesMatrixView
-				onSelect={role => appGoto(`${detailHref.configRole(role)}${$page.url.search}`)}
-				{selectedRole}
+			<StaffPermissionMatrixView
+				onSelect={staffId => appGoto(`${detailHref.configStaffPermissions(staffId)}${$page.url.search}`)}
+				{selectedStaffId}
 			/>
 		</DataState>
 	{/snippet}

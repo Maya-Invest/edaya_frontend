@@ -4,8 +4,10 @@
 
 When working on `apps/webapp` screens, layouts, drawers, or modals, follow:
 
-- **[specs/app-shell-spec.md](specs/app-shell-spec.md)** — interaction patterns (list, drawer, modals)
-- **[docs/reference/ui-architecture-reference.md](docs/reference/ui-architecture-reference.md)** — per-feature screen catalog (routes, entities, filters, drawer tabs, API gaps)
+- **[docs/sprints/v1-staff-webapp-implementation-plan.md](docs/sprints/v1-staff-webapp-implementation-plan.md)** — phased implementation plan (execute work)
+- **[specs/v1-feature-architecture-spec.md](specs/v1-feature-architecture-spec.md)** — **what** to build (modules, routes, entities, locked UX decisions)
+- **[specs/app-shell-spec.md](specs/app-shell-spec.md)** — **how** to build interaction patterns (list, drawer, modals)
+- **[docs/reference/ui-architecture-reference.md](docs/reference/ui-architecture-reference.md)** — per-feature catalog, gap tracker, sprint progress (not normative)
 - **[specs/design-language-spec.md](specs/design-language-spec.md)** — visual design (colors, typography, components)
 - **[specs/data-loading-spec.md](specs/data-loading-spec.md)** — route-scoped loading, entity store, optimistic mutations
 
@@ -17,4 +19,7 @@ Key rules (summary):
 - Pragmatic inline toggles only for boolean/single-value fields
 - Use `DataState` for loading/empty/error; toast on mutations
 
-Cursor rule: `.cursor/rules/app-shell.mdc` (applies when editing `apps/webapp/**`).
+Cursor rules (auto-attached when editing `apps/webapp/**`):
+
+- `.cursor/rules/v1-feature-architecture.mdc` — normative v1 routes, entities, locked UX
+- `.cursor/rules/app-shell.mdc` — list, drawer, modal interaction patterns

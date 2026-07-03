@@ -1,3 +1,8 @@
+import type { components } from '$lib/api/schema';
+import type {
+	PermissionCatalogEntry,
+	StaffPermissionAssignmentView,
+} from '$lib/api/staff-permission-assignments-data';
 import type { Crud } from '$lib/components/school/shared/drawer-constants';
 import type {
 	AbsenceRecord,
@@ -73,6 +78,9 @@ export class DetailDataContext {
 	resources = $state<Resource[]>([]);
 	roleCrudMatrix = $state<Partial<Record<StaffRole, Record<string, Record<Crud, boolean>>>>>({});
 	roleEnabledPermissions = $state<Partial<Record<StaffRole, Record<string, boolean>>>>({});
+	staffPermissionAssignments = $state<StaffPermissionAssignmentView[]>([]);
+	permissionCatalog = $state<PermissionCatalogEntry[]>([]);
+	staffAssignments = $state<components['schemas']['StaffAssignment'][]>([]);
 
 	private replaceById<T extends { id: string }>(items: readonly T[], id: string, patch: Partial<T>): T[] {
 		const index = items.findIndex(item => item.id === id);
@@ -199,6 +207,42 @@ export class DetailDataContext {
 		const next = seedRolePermissionsCollection(snapshot);
 		this.roleCrudMatrix = next.roleCrudMatrix;
 		this.roleEnabledPermissions = next.roleEnabledPermissions;
+	}
+
+	seedStaffPermissionData(snapshot: {
+		assignments: StaffPermissionAssignmentView[];
+		catalog: PermissionCatalogEntry[];
+	}) {
+		this.staffPermissionAssignments = snapshot.assignments;
+		this.permissionCatalog = snapshot.catalog;
+	}
+
+	upsertStaffPermissionAssignment(row: StaffPermissionAssignmentView) {
+		this.staffPermissionAssignments = mergeById(this.staffPermissionAssignments, [row]);
+	}
+
+	removeStaffPermissionAssignment(id: string) {
+		this.staffPermissionAssignments = this.staffPermissionAssignments.filter(row => row.id !== id);
+	}
+
+	assignmentsForStaff(staffId: string): StaffPermissionAssignmentView[] {
+		return this.staffPermissionAssignments.filter(row => row.staffId === staffId);
+	}
+
+	mergeStaffAssignments(rows: readonly components['schemas']['StaffAssignment'][]) {
+		this.staffAssignments = mergeById(this.staffAssignments, rows);
+	}
+
+	upsertStaffAssignment(row: components['schemas']['StaffAssignment']) {
+		this.staffAssignments = mergeById(this.staffAssignments, [row]);
+	}
+
+	removeStaffAssignment(id: string) {
+		this.staffAssignments = this.staffAssignments.filter(row => row.id !== id);
+	}
+
+	staffAssignmentsForStaff(staffId: string): components['schemas']['StaffAssignment'][] {
+		return this.staffAssignments.filter(row => row.staffId === staffId);
 	}
 
 	studentsForClass(classId: string): Student[] {
@@ -447,6 +491,9 @@ export class DetailDataContext {
 		this.resources = [];
 		this.roleCrudMatrix = {};
 		this.roleEnabledPermissions = {};
+		this.staffPermissionAssignments = [];
+		this.permissionCatalog = [];
+		this.staffAssignments = [];
 	}
 }
 

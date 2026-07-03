@@ -1,9 +1,9 @@
-import type { Crud, PermissionScope } from '$lib/api/access-roles-data';
 import type { Guardian, Subject, StaffRole, ActivityEnrollmentStatus, Incident } from '$lib/types/school';
 import type { DrawerItem } from './drawer-types.ts';
 import { BADGE, BADGE_DANGER, BADGE_INFO, BADGE_WARN } from '$lib/ui-tones';
 
-export type { Crud };
+export type Crud = 'C' | 'R' | 'U' | 'D';
+export type PermissionScope = 'global' | 'class' | 'subject';
 
 const drawerBadge = BADGE_INFO;
 
@@ -19,7 +19,7 @@ export const kindStyle: Record<NonNullable<DrawerItem>['kind'], string> = {
 	fee: drawerBadge,
 	schoolYearEvent: drawerBadge,
 	incident: BADGE_DANGER,
-	role: drawerBadge,
+	staffPermissions: drawerBadge,
 	level: drawerBadge,
 	activity: drawerBadge,
 	announcement: drawerBadge,
@@ -39,7 +39,7 @@ export const kindLabelKey: Record<NonNullable<DrawerItem>['kind'], string> = {
 	fee: 'drawer.fee',
 	schoolYearEvent: 'drawer.schoolYearEvent',
 	incident: 'events.schoolLife',
-	role: 'roles.title',
+	staffPermissions: 'roles.title',
 	level: 'drawer.level',
 	activity: 'drawer.activity',
 	announcement: 'drawer.announcement',

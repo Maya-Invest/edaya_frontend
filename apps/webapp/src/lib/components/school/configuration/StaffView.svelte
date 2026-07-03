@@ -46,6 +46,7 @@
 				{ offset, limit },
 			);
 			detailDataContext.seedStaff(result.staff);
+			detailDataContext.mergeStaffAssignments(result.assignments);
 			return { items: result.staff, total: result.totalStaff };
 		},
 		DEFAULT_LIST_PAGE_SIZE,

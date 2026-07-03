@@ -185,7 +185,7 @@ Implementations live in `lib/detail-data/context.svelte.ts` (or successor module
 |------------|-------------|-------|
 | Students, guardians, staff | Merge by `id` | School-wide routes add records; class-scoped routes replace that class slice |
 | Planning events | Replace class slice | `seedPlanning(events, { classId })` |
-| Evaluations, deadlines | Replace class slice | Same pattern |
+| Assessments | Replace class slice | All kinds (`homework`, `quiz`, …) on one route |
 | Role permissions | Replace all | Small, config-scoped |
 | Report cards | Domain store | Same seed / patch rules |
 

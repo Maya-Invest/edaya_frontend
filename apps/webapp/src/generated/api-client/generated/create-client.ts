@@ -38,6 +38,8 @@ type QueryClients<TSchemas extends Record<string, unknown>> = {
 
 type AuthorizationClients<TSchemas extends Record<string, unknown>> = {
   effectiveGrants: () => Promise<SchemaName<TSchemas, 'EffectiveGrantsResponse'>>
+  permissionCatalog: () => Promise<SchemaName<TSchemas, 'PermissionCatalogResponse'>>
+  scopeRender: (payload: SchemaName<TSchemas, 'ScopeRenderRequest'>) => Promise<SchemaName<TSchemas, 'ScopeRenderResponse'>>
 }
 
 type FilesClients<TSchemas extends Record<string, unknown>> = {
@@ -124,6 +126,8 @@ export function createSchoolClient<TSchemas extends Record<string, unknown>>(
     queries,
     authorization: {
     effectiveGrants: () => transport.request('GET', resolveClientRoutePath('authorization/effective-grants')),
+    permissionCatalog: () => transport.request('GET', resolveClientRoutePath('authorization/permission-catalog')),
+    scopeRender: (payload: SchemaName<TSchemas, 'ScopeRenderRequest'>) => transport.request('POST', resolveClientRoutePath('authorization/scope/render'), { body: payload }),
   } as AuthorizationClients<TSchemas>,
     files: {
     createUploadIntent: (payload: SchemaName<TSchemas, 'CreateFileUploadIntentRequest'>) => transport.request('POST', resolveClientRoutePath('files/upload-intents'), { body: payload }),

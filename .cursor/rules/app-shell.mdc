@@ -7,15 +7,16 @@ alwaysApply: false
 # App Shell UI Spec
 
 **Read the full specs before building or refactoring webapp screens:**
-- Interaction: [`specs/app-shell-spec.md`](../../docs/specs/app-shell-spec.md)
-- Feature catalog: [`docs/reference/ui-architecture-reference.md`](../../docs/reference/ui-architecture-reference.md)
+- **Product architecture (required):** [`specs/v1-feature-architecture-spec.md`](../../docs/specs/v1-feature-architecture-spec.md) — see also rule `v1-feature-architecture`
+- Interaction (how to build): [`specs/app-shell-spec.md`](../../docs/specs/app-shell-spec.md)
+- Progress catalog: [`docs/reference/ui-architecture-reference.md`](../../docs/reference/ui-architecture-reference.md)
 - Visual design: [`specs/design-language-spec.md`](../../docs/specs/design-language-spec.md)
 - Data loading: [`specs/data-loading-spec.md`](../../docs/specs/data-loading-spec.md)
 
 ## Core invariants
 
 1. **Shell:** sidebar + header (school, year/period, lang, user menu) + body + overlay drawer + modals + toasts.
-2. **List page:** title/description top-left; primary CTA + search + filter + more menu top-right; table or cards; row `···` menu on every row; URL-backed detail via `[[id]]` for **complex** entities only.
+2. **List page:** title/description top-left; `[Primary CTA] [Search] [Main filter select] [Filter] [More]` top-right; main filter always a `<select>`; table or cards; row `···` on every row; URL-backed detail via `[[id]]` for **complex** entities only.
 3. **Detail drawer (complex entities)** — read-only; **entity header** (identity + up to 2 primary actions → modals); body = related content via **sections**, **tabs**, or **both**; no global Save on the shell.
 4. **Simple entities (§3.5)** — no drawer; row `···` menu → modals. Row click must not open an empty detail surface.
 5. **All mutations use modals** — create (list CTA), edit (entity-header or row `···`), delete (confirm modal), sub-collection add/edit (tab `+ Add` / row Edit).
@@ -29,6 +30,7 @@ alwaysApply: false
 - Put Save/Cancel on the drawer shell
 - Open a drawer that only repeats list-row columns
 - Inline-edit sub-collection rows
+- Use chip bars or pill toggles for the main filter (use `<select>` + Filter button panel)
 
 ## Naming
 

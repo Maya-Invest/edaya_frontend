@@ -106,11 +106,11 @@
 				{:then { default: IncidentDetail }}
 					<IncidentDetail i={item.data} />
 				{/await}
-			{:else if item.kind === 'role'}
-				{#await import('../configuration/RoleDetail.svelte')}
+			{:else if item.kind === 'staffPermissions'}
+				{#await import('../configuration/StaffPermissionDetail.svelte')}
 					<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
-				{:then { default: RoleDetail }}
-					<RoleDetail role={item.data.role} />
+				{:then { default: StaffPermissionDetail }}
+					<StaffPermissionDetail staff={item.data} />
 				{/await}
 			{:else if item.kind === 'level'}
 				{#await import('../academics/LevelDetail.svelte')}

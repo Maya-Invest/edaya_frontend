@@ -158,6 +158,7 @@ export interface Incident {
 	category: 'Behavior' | 'Tardiness' | 'Conflict' | 'Other';
 	severity: 'low' | 'medium' | 'high';
 	summary: string;
+	status: 'open' | 'resolved' | 'cancelled';
 }
 
 export interface AbsenceRecord {

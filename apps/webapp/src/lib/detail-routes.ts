@@ -1,6 +1,6 @@
 import type { ResolvedPathname } from '$app/types';
 import type { DrawerItem } from '$lib/components/school/shared/drawer-types';
-import type { StaffRole, Subject } from '$lib/types/school';
+import type { Subject } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { appPath } from '$lib/navigation/app-navigation';
@@ -10,8 +10,6 @@ export interface ParsedDetail {
 	item: NonNullable<DrawerItem>;
 	listPath: ResolvedPathname;
 }
-
-const STAFF_ROLES = new Set<StaffRole>(['directeur', 'prof_principal', 'professeur', 'educateur']);
 
 function yearLabel(className: string): string {
 	const map: Record<string, string> = {
@@ -169,10 +167,15 @@ const matchers: Matcher[] = [
 	{
 		test: p => p.match(/^\/configuration\/roles\/([^/]+)$/) ?? null,
 		parse: (m) => {
-			const role = m[1] as StaffRole;
-			if (!STAFF_ROLES.has(role))
+			const staffId = m[1];
+			const member = detailDataContext.staff.find(entry => entry.id === staffId);
+			if (!member) {
 				return null;
-			return { item: { kind: 'role', data: { role } }, listPath: appPath('/(app)/configuration/roles/[[role]]') };
+			}
+			return {
+				item: { kind: 'staffPermissions', data: member },
+				listPath: appPath('/(app)/configuration/roles/[[role]]'),
+			};
 		},
 	},
 	{
