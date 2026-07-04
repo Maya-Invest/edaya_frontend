@@ -49,6 +49,14 @@
 	);
 
 	$effect(() => {
+		const allowed = new Set(permissionEntries.map(entry => entry.permission));
+		const pruned = permissions.filter(permission => allowed.has(permission));
+		if (pruned.length !== permissions.length) {
+			permissions = pruned;
+		}
+	});
+
+	$effect(() => {
 		if (!open) {
 			return;
 		}

@@ -13,6 +13,7 @@
 		getModuleFromPath,
 		isDashboardPath,
 		classItemHref,
+		visibleClassNavItems,
 	} from '$lib/navigation';
 	import { filterNavItems, visibleNavModuleKeys } from '$lib/navigation/nav-permissions';
 	import { shellContext } from '$lib/shell/context.svelte';
@@ -65,8 +66,11 @@
 
 	function resolveItems(key: Exclude<ModuleKey, 'dashboard'>) {
 		const ctx = { schoolId: authSession.schoolId ?? '' };
-		const items = filterNavItems(NAV_MODULE_ITEMS[key], grants, ctx);
-		return items.map(it => ({
+		const items = key === 'classes'
+			? visibleClassNavItems(classId)
+			: NAV_MODULE_ITEMS[key];
+		const filtered = filterNavItems(items, grants, ctx);
+		return filtered.map(it => ({
 			key: it.key,
 			label: $t(it.labelKey),
 			icon: it.icon,

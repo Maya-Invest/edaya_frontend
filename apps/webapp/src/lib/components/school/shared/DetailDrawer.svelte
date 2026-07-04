@@ -142,6 +142,18 @@
 				{:then { default: ReportCardResultDetail }}
 					<ReportCardResultDetail result={item.data} />
 				{/await}
+			{:else if item.kind === 'gradeLevel'}
+				{#await import('../configuration/GradeLevelDetail.svelte')}
+					<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
+				{:then { default: GradeLevelDetail }}
+					<GradeLevelDetail gradeLevel={item.data} />
+				{/await}
+			{:else if item.kind === 'classGroup'}
+				{#await import('../configuration/ClassGroupDetail.svelte')}
+					<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
+				{:then { default: ClassGroupDetail }}
+					<ClassGroupDetail classGroup={item.data} />
+				{/await}
 			{/if}
 		</div>
 

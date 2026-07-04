@@ -1,52 +1,53 @@
 {
-	"name": "@edaya/web",
-	"type": "module",
-	"private": true,
-	"packageManager": "bun@1.3.14",
-	"workspaces": [
-		"apps/*",
-		"packages/*",
-		"tooling/*"
-	],
-	"scripts": {
-		"dev": "turbo run dev --filter=@edaya/webapp --filter=@edaya/saas-admin",
-		"dev:webapp": "bun --filter @edaya/webapp dev",
-		"dev:saas-admin": "bun --filter @edaya/saas-admin dev",
-		"build": "turbo run build",
-		"check": "turbo run check",
-		"quality": "turbo run quality",
-		"lint": "turbo run lint",
-		"lint:fix": "turbo run lint:fix",
-		"test": "bun run test:repo && turbo run test",
-		"deploy:webapp": "bun --filter @edaya/webapp deploy",
-		"deploy:webapp:staging": "bun --filter @edaya/webapp deploy:staging",
-		"deploy:saas-admin": "bun --filter @edaya/saas-admin deploy",
-		"deploy:saas-admin:staging": "bun --filter @edaya/saas-admin deploy:staging",
-		"test:repo": "bun --filter @edaya/web-repo test",
-		"doctor": "bun --filter @edaya/web-repo doctor",
-		"verify": "bun run doctor && bun run lint && bun run check && bun run test:repo && bun run generated:check && bun run prepare:env && bun run build && turbo run test -- --dots",
-		"prepare:env": "cp apps/webapp/.env.example apps/webapp/.env && cp apps/saas-admin/.env.example apps/saas-admin/.env",
-		"export-openapi": "bun --filter @edaya/web-repo export-openapi",
-		"openapi:generate": "bun --filter @edaya/web-repo openapi:generate",
-		"generated:update": "bun --filter @edaya/web-repo generated:update",
-		"generated:check": "bun --filter @edaya/web-repo generated:check",
-		"generated:check:export": "bun --filter @edaya/web-repo generated:check:export",
-		"openapi:check": "bun --filter @edaya/web-repo openapi:check",
-		"smoke:staging": "bun --filter @edaya/web-repo smoke:staging"
-	},
-	"devDependencies": {
-		"@antfu/eslint-config": "^9.0.0",
-		"@types/node": "^25.9.2",
-		"eslint": "^9.39.0",
-		"eslint-plugin-format": "^0.1.2",
-		"eslint-plugin-svelte": "^3.19.0",
-		"svelte-eslint-parser": "^1.8.0",
-		"turbo": "^2.9.17",
-		"typescript": "^6.0.2"
-	},
-	"overrides": {
-		"svelte": "5.56.3",
-		"vite": "8.0.16",
-		"@sveltejs/kit": "2.64.0"
-	}
+  "name": "@edaya/web",
+  "type": "module",
+  "private": true,
+  "packageManager": "bun@1.3.14",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "tooling/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev --filter=@edaya/webapp --filter=@edaya/saas-admin",
+    "dev:webapp": "bun --filter @edaya/webapp dev",
+    "dev:saas-admin": "bun --filter @edaya/saas-admin dev",
+    "build": "turbo run build",
+    "check": "turbo run check",
+    "quality": "turbo run quality",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "fix": "bun run lint:fix",
+    "test": "bun run test:repo && turbo run test",
+    "deploy:webapp:production": "bun --filter @edaya/webapp deploy:production",
+    "deploy:webapp:staging": "bun --filter @edaya/webapp deploy:staging",
+    "deploy:saas-admin:production": "bun --filter @edaya/saas-admin deploy:production",
+    "deploy:saas-admin:staging": "bun --filter @edaya/saas-admin deploy:staging",
+    "test:repo": "bun --filter @edaya/web-repo test",
+    "doctor": "bun --filter @edaya/web-repo doctor",
+    "verify": "bun run doctor && bun run lint && bun run check && bun run test:repo && bun run generated:check && bun run prepare:env && bun run build && turbo run test -- --dots",
+    "prepare:env": "cp apps/webapp/.env.example apps/webapp/.env && cp apps/saas-admin/.env.example apps/saas-admin/.env",
+    "export-openapi": "bun --filter @edaya/web-repo export-openapi",
+    "openapi:generate": "bun --filter @edaya/web-repo openapi:generate",
+    "generated:update": "bun --filter @edaya/web-repo generated:update",
+    "generated:check": "bun --filter @edaya/web-repo generated:check",
+    "generated:check:export": "bun --filter @edaya/web-repo generated:check:export",
+    "openapi:check": "bun --filter @edaya/web-repo openapi:check",
+    "smoke:staging": "bun --filter @edaya/web-repo smoke:staging"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^9.0.0",
+    "@types/node": "^25.9.2",
+    "eslint": "^9.39.0",
+    "eslint-plugin-format": "^0.1.2",
+    "eslint-plugin-svelte": "^3.19.0",
+    "svelte-eslint-parser": "^1.8.0",
+    "turbo": "^2.9.17",
+    "typescript": "^6.0.2"
+  },
+  "overrides": {
+    "@sveltejs/kit": "2.64.0",
+    "svelte": "5.56.3",
+    "vite": "8.0.16"
+  }
 }

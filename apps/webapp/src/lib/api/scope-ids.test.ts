@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
+	catalogScopeIncludesClassGroupInPath,
 	composeClassGroupScopeIds,
 	composeClassSubjectScopeIds,
 	composeStudentScopeIds,
@@ -31,5 +32,12 @@ describe('scope-ids', () => {
 		const scopeIds = composeStudentScopeIds(['student-1', 'student-2']);
 		expect(scopeIds).toBe('student-1,student-2');
 		expect(parseStudentScopeIds(scopeIds)).toEqual(['student-1', 'student-2']);
+	});
+
+	test('detects class group segments in catalog scope paths', () => {
+		expect(catalogScopeIncludesClassGroupInPath('class_group')).toBe(true);
+		expect(catalogScopeIncludesClassGroupInPath('class_subject')).toBe(true);
+		expect(catalogScopeIncludesClassGroupInPath('grade_level')).toBe(false);
+		expect(catalogScopeIncludesClassGroupInPath('student')).toBe(false);
 	});
 });

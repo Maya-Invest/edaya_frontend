@@ -5,7 +5,7 @@ import process from 'node:process'
 export const repoRoot = resolve(import.meta.dirname, '../../..')
 
 export const coreRepoRoot = resolve(
-  process.env.EDAYA_CORE_ROOT ?? resolve(repoRoot, '../edaya'),
+  process.env.EDAYA_CORE_ROOT ?? resolve(repoRoot, '../edaya_backend'),
 )
 
 export const trackedOpenApiPath = resolve(
@@ -51,7 +51,7 @@ export const apiLocalEnvLoaderPath = resolve(
 export function assertCoreRepoAvailable(): void {
   if (!existsSync(apiAppPath)) {
     throw new Error(
-      `Edaya Core API not found at ${apiAppPath}. Set EDAYA_CORE_ROOT or clone edaya next to edaya_web.`,
+      `Edaya Core API not found at ${apiAppPath}. Set EDAYA_CORE_ROOT or clone edaya_backend next to edaya_web.`,
     )
   }
 }

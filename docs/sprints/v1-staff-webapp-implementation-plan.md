@@ -1,6 +1,6 @@
 # V1 Staff Webapp — Implementation Plan
 
-> **Status:** Ready to execute (Phase 0 next)  
+> **Status:** Phase 1 in progress (configuration P0 landed)  
 > **Created:** 2026-07-03  
 > **Scope:** Bring `apps/webapp` to the target architecture in [v1-feature-architecture-spec.md](../specs/v1-feature-architecture-spec.md)  
 > **Draft / detail catalog:** [ui-architecture-reference.md](../reference/ui-architecture-reference.md) — feature cards, entity audit, living §0 checklist  
@@ -13,8 +13,8 @@
 
 Check off when the phase is complete and merged. Update [ui-architecture-reference.md §0](../reference/ui-architecture-reference.md#v1-progress-tracker) in the same PR.
 
-- [ ] **Phase 0** — Shell foundations (entity header · toolbar · shared primitives)
-- [ ] **Phase 1** — Configuration P0 (grade levels · classes drawer · staff assignments tab)
+- [ ] **Phase 0** — Shell foundations (entity header · toolbar · shared primitives) — primitives built; pilots landed
+- [ ] **Phase 1** — Configuration P0 (grade levels · classes drawer · staff assignments tab) — implemented; pending merge
 - [ ] **Phase 2** — Permissions migration (staff drawer · remove `/configuration/roles`)
 - [ ] **Phase 3** — Class academics refactor (homework fold · evaluations · `attendanceMode` nav)
 - [ ] **Phase 4** — Attendance & timetable (daily list · session flows · class activities)
@@ -125,6 +125,25 @@ Manual: list → drawer URL → modal mutation → toast → drawer reflects cha
 | 0.5 | Pilot `DrawerEntityHeader` on one complex drawer | e.g. Guardian or Announcement | Matches app-shell §3.1 |
 | 0.6 | Document header migration list for remaining drawers | This plan §8 | Checklist complete |
 | 0.7 | Audit main filters: list screens still using chip bars | `school/**` | Inventory in PR description |
+
+**Chip-bar inventory (remaining — migrate in Phase 8 or when touching screen):**
+
+| Screen | Chip facet |
+|--------|------------|
+| `ActivitiesView` | Category |
+| `AnnouncementsView` | ~~Status~~ → `FilterSelect` ✅ |
+| `ClassReportCardsView` | Status |
+| `ConfigSubjectsView` | Scope |
+| `EducatorDashboardView` | Event type |
+| `FinanceView` | Status |
+| `HomeworkView` | Status |
+| `PaymentsView` | Method · status |
+| `PlanningView` | Session kind |
+| `ReportCardDefinitionsView` | Status |
+| `ResourcesView` | Type |
+| `SchoolCalendarView` | Event type |
+| `SchoolStudentsView` | ~~Status~~ → `FilterPanel` ✅ |
+| `StudentsView` | Status |
 
 **Depends on:** —  
 **Unlocks:** All complex-entity phases

@@ -25,6 +25,8 @@ export const kindStyle: Record<NonNullable<DrawerItem>['kind'], string> = {
 	announcement: drawerBadge,
 	reportCardDefinition: drawerBadge,
 	reportCardResult: drawerBadge,
+	gradeLevel: drawerBadge,
+	classGroup: drawerBadge,
 };
 
 export const kindLabelKey: Record<NonNullable<DrawerItem>['kind'], string> = {
@@ -45,6 +47,8 @@ export const kindLabelKey: Record<NonNullable<DrawerItem>['kind'], string> = {
 	announcement: 'drawer.announcement',
 	reportCardDefinition: 'drawer.reportCardDefinition',
 	reportCardResult: 'drawer.reportCardResult',
+	gradeLevel: 'drawer.gradeLevel',
+	classGroup: 'drawer.classGroup',
 };
 
 export const relationKey: Record<Guardian['relation'], string> = {

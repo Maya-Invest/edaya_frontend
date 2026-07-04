@@ -2,6 +2,7 @@ import type { ResolvedPathname } from '$app/types';
 import type { PermissionCode } from '$lib/auth/types';
 import type { LucideIcon } from '$lib/icons';
 import type { NavItemDefinition } from '$lib/navigation/nav-catalog';
+import { academicContext } from '$lib/academic/context.svelte';
 import {
 	Users,
 	Shield,
@@ -81,6 +82,7 @@ const CLASS_ICONS: Record<string, LucideIcon> = {
 	teaching: BookOpen,
 	homework: CalendarClock,
 	evaluations: ClipboardCheck,
+	attendance: ClipboardCheck,
 	reportCards: FileSpreadsheet,
 };
 
@@ -93,6 +95,7 @@ const FINANCE_ICONS: Record<string, LucideIcon> = {
 const CONFIG_ICONS: Record<string, LucideIcon> = {
 	school: Building2,
 	academic: CalendarRange,
+	gradeLevels: Layers,
 	classGroups: Layers,
 	subjects: BookOpen,
 	roles: ShieldCheck,
@@ -120,7 +123,8 @@ const FINANCE_ROUTES: Record<string, RouteId> = {
 const CONFIG_ROUTES: Record<string, RouteId> = {
 	school: '/(app)/configuration/school',
 	academic: '/(app)/configuration/academic',
-	classGroups: '/(app)/configuration/classes',
+	gradeLevels: '/(app)/configuration/grade-levels/[[id]]',
+	classGroups: '/(app)/configuration/classes/[[id]]',
 	subjects: '/(app)/configuration/subjects/[[id]]',
 	roles: '/(app)/configuration/roles/[[role]]',
 	gradeScales: '/(app)/configuration/grade-scales',
@@ -172,6 +176,17 @@ export const SCHOOL_ITEMS = buildSchoolItems(SCHOOL_NAV_DEFS);
 export const CLASS_ITEMS = buildClassItems(CLASS_NAV_DEFS);
 export const FINANCE_ITEMS = buildFinanceItems(FINANCE_NAV_DEFS);
 export const CONFIG_ITEMS = buildConfigItems(CONFIG_NAV_DEFS);
+
+export function visibleClassNavItems(classId: string): ContextItem[] {
+	const currentClass = academicContext.classes.find(entry => entry.id === classId);
+	const defs = CLASS_NAV_DEFS.filter((def) => {
+		if (def.key === 'attendance') {
+			return currentClass?.attendanceMode === 'daily';
+		}
+		return true;
+	});
+	return buildClassItems(defs);
+}
 
 export const NAV_MODULE_ITEMS: Record<Exclude<ModuleKey, 'dashboard'>, ContextItem[]> = {
 	school: SCHOOL_ITEMS,

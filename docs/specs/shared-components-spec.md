@@ -36,11 +36,11 @@ Status: **Built** = use as-is · **Planned** = specified here; extract or implem
 | **PageQuery** | `ui/PageQuery.svelte` | Built | Every list route — loading contract ([data-loading-spec](./data-loading-spec.md)) |
 | **DataState** | `ui/DataState.svelte` | Built | Loading · empty · error around collections |
 | **ListPageHeader** | `ui/ListPageHeader.svelte` | Built | Page title + toolbar slots ([app-shell §2](./app-shell-spec.md#2-list-page-template)) |
-| **ListSearchField** | `ui/ListSearchField.svelte` | Planned | Instant text filter pill — **do not** copy inline search markup |
+| **ListSearchField** | `ui/ListSearchField.svelte` | Built | Instant text filter pill — **do not** copy inline search markup |
 | **FilterSelect** | `ui/filter-select.svelte` | Built | **Main filter** — always `<select>` |
-| **FilterPanel** | `ui/FilterPanel.svelte` | Planned | Secondary facets (status, date range) opened from Filter button |
+| **FilterPanel** | `ui/FilterPanel.svelte` | Built | Secondary facets (status, date range) opened from Filter button |
 | **ListMoreMenu** | `ui/ListMoreMenu.svelte` | Built | Export stub · view toggle · bulk placeholders |
-| **RowActionMenu** | `ui/RowActionMenu.svelte` | Planned | Simple-entity row `···` → edit / delete modals |
+| **RowActionMenu** | `ui/RowActionMenu.svelte` · `RowActionMenuItem.svelte` | Built | Simple-entity row `···` → edit / delete modals |
 
 ### 2.2 T0 — Mutations & feedback
 
@@ -70,7 +70,7 @@ Feature routes **do not** reimplement shell chrome.
 | Component | Path | Status | Use for |
 |-----------|------|--------|---------|
 | **DetailDrawer** | `school/shared/DetailDrawer.svelte` | Built | Overlay shell — type chip, close, lazy body dispatch |
-| **DrawerEntityHeader** | `school/shared/DrawerEntityHeader.svelte` | Planned | Identity + ≤2 primary actions + overflow ([app-shell §3.1](./app-shell-spec.md#31-anatomy)) |
+| **DrawerEntityHeader** | `school/shared/DrawerEntityHeader.svelte` | Built | Identity + ≤2 primary actions + overflow ([app-shell §3.1](./app-shell-spec.md#31-anatomy)) |
 | **DrawerField** | `school/shared/DrawerField.svelte` | Built | Read-only label + value in drawer body |
 | **DrawerEmptyState** | `school/shared/DrawerEmptyState.svelte` | Built | Empty sub-collection / tab placeholder |
 | **DrawerActionBar** | `school/shared/DrawerActionBar.svelte` | Built | Section header + `+ Add …` CTA |
@@ -157,14 +157,14 @@ No drawer route required. **RowActionMenu** is the primary mutation surface ([ap
 
 ## 4. Planned extractions (Phase 0)
 
-| ID | Component | Replaces |
-|----|-----------|----------|
-| P0.1 | `DrawerEntityHeader` | Per-drawer identity heroes and footer action bars |
-| P0.2 | `ListSearchField` | ~15 inline `rounded-full pl-9` search inputs |
-| P0.3 | `FilterPanel` | Ad-hoc popover filter panels and chip bars |
-| P0.4 | `RowActionMenu` | Per-view `···` popover duplication |
+| ID | Component | Status | Pilots |
+|----|-----------|--------|--------|
+| P0.1 | `DrawerEntityHeader` | Built | `GuardianDetail` |
+| P0.2 | `ListSearchField` | Built | `GuardiansView`, `SchoolStudentsView`, `GradeScalesView`, `AnnouncementsView` |
+| P0.3 | `FilterPanel` | Built | `SchoolStudentsView` (status secondary filter) |
+| P0.4 | `RowActionMenu` | Built | `GradeScalesView` |
 
-Track in [v1-staff-webapp-implementation-plan.md](../sprints/v1-staff-webapp-implementation-plan.md) Phase 0.
+Remaining chip-bar migrations tracked in [implementation plan §Phase 0.7](../sprints/v1-staff-webapp-implementation-plan.md#phase-0--shell-foundations).
 
 ---
 

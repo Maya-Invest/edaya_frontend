@@ -2,12 +2,14 @@
 	import { page } from '$app/stores';
 	import { deleteGradeScaleMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
-	import { Plus, Search } from '$lib/icons';
+	import { Plus, Trash2 } from '$lib/icons';
 	import { readGradeScaleListFilters, writeGradeScaleListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { reportCardsContext } from '$lib/report-cards/context.svelte';
@@ -19,6 +21,10 @@
 	let q = $state('');
 	let filtersReady = $state(false);
 	let createOpen = $state(false);
+	let deleteOpen = $state(false);
+	let deleteBusy = $state(false);
+	let deleteTargetId = $state<string | null>(null);
+	let deleteTargetName = $state('');
 
 	const filteredScales = $derived(
 		reportCardsContext.scales.filter((scale) => {
@@ -48,6 +54,31 @@
 		clearTimeout(searchTimer);
 		searchTimer = setTimeout(syncFiltersToUrl, 250);
 	}
+
+	function openDelete(scaleId: string, scaleName: string) {
+		deleteTargetId = scaleId;
+		deleteTargetName = scaleName;
+		deleteOpen = true;
+	}
+
+	async function confirmDelete() {
+		if (!deleteTargetId)
+			return;
+		deleteBusy = true;
+		try {
+			const ok = await deleteGradeScaleMutation(deleteTargetId, {
+				navigate: false,
+				successMessage: get(t)('gradeScales.toastDeleted', { name: deleteTargetName }),
+			});
+			if (ok) {
+				deleteOpen = false;
+				deleteTargetId = null;
+			}
+		}
+		finally {
+			deleteBusy = false;
+		}
+	}
 </script>
 
 <div class="animate-fade-in">
@@ -56,17 +87,7 @@
 		title={$t('gradeScales.title', { n: filteredScales.length })}
 	>
 		{#snippet search()}
-			<div class="relative">
-				<Search
-					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-				/>
-				<Input
-					bind:value={q}
-					oninput={scheduleFilterSync}
-					placeholder={$t('common.search')}
-					class="h-9 w-56 rounded-full pl-9 text-sm"
-				/>
-			</div>
+			<ListSearchField bind:value={q} oninput={scheduleFilterSync} />
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate permission="REPORT_CARD_CONFIGURE">
@@ -101,22 +122,22 @@
 								<span class="rounded-full bg-accent/15 px-2 py-0.5 font-mono text-[10px] uppercase">
 									{$t('gradeScales.default')}
 								</span>
-							{/if}
-							{#if !scale.isDefault}
+							{:else}
 								<PermissionGate permission="REPORT_CARD_CONFIGURE">
 									{#snippet children({ disabled, title })}
-										<DeleteEntityButton
-											size="sm"
-											variant="ghost"
-											{disabled}
-											{title}
-											confirmTitle={$t('common.deleteConfirmTitle')}
-											confirmDescription={$t('gradeScales.deleteConfirm', { name: scale.name })}
-											onConfirm={() => deleteGradeScaleMutation(scale.id, {
-												navigate: false,
-												successMessage: get(t)('gradeScales.toastDeleted', { name: scale.name }),
-											})}
-										/>
+										<RowActionMenu>
+											{#snippet children()}
+												<RowActionMenuItem
+													destructive
+													{disabled}
+													{title}
+													onclick={() => openDelete(scale.id, scale.name)}
+												>
+													<Trash2 class="h-4 w-4" />
+													{$t('common.delete')}
+												</RowActionMenuItem>
+											{/snippet}
+										</RowActionMenu>
 									{/snippet}
 								</PermissionGate>
 							{/if}
@@ -135,3 +156,13 @@
 </div>
 
 <GradeScaleFormModal bind:open={createOpen} />
+
+<ConfirmModal
+	bind:open={deleteOpen}
+	title={$t('common.deleteConfirmTitle')}
+	description={$t('gradeScales.deleteConfirm', { name: deleteTargetName })}
+	confirmLabel={$t('common.delete')}
+	cancelLabel={$t('common.cancel')}
+	busy={deleteBusy}
+	onConfirm={confirmDelete}
+/>

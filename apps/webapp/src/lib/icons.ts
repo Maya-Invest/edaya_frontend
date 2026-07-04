@@ -35,6 +35,7 @@ export {
 	Languages,
 	Layers,
 	LayoutGrid,
+	ListFilter,
 	LoaderCircle,
 	Lock,
 	LogOut,

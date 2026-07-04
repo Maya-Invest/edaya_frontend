@@ -3,8 +3,8 @@
 	import type { Incident } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { deleteIncidentMutation } from '$lib/api/mutations/delete-entity.mutations';
-	import { loadIncidentInvolvements } from '$lib/api/school-life-data';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
+	import { loadIncidentInvolvements } from '$lib/api/school-life-data';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
@@ -27,7 +27,6 @@
 	let involvementsLoading = $state(false);
 
 	const students = $derived(detailDataContext.students);
-	const classes = $derived(academicContext.classes);
 	const isResolved = $derived(i.status === 'resolved');
 	const primaryStudent = $derived(students.find(student => student.id === i.studentId));
 	const primaryClass = $derived(academicContext.classes.find(entry => entry.id === primaryStudent?.classId));

@@ -245,6 +245,12 @@ export class DetailDataContext {
 		return this.staffAssignments.filter(row => row.staffId === staffId);
 	}
 
+	staffAssignmentsForClassGroup(classGroupId: string): components['schemas']['StaffAssignment'][] {
+		return this.staffAssignments.filter(
+			row => row.classGroupId === classGroupId && !row.classSubjectId,
+		);
+	}
+
 	studentsForClass(classId: string): Student[] {
 		return this.students.filter(student => student.classId === classId);
 	}

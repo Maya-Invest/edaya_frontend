@@ -166,7 +166,7 @@ export async function resolveIncidentWithOutcomesMutation(input: {
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
 	const now = new Date().toISOString();
-	const involvedStudents = input.involvedStudents.map((entry) => ({
+	const involvedStudents = input.involvedStudents.map(entry => ({
 		id: entry.involvementId ?? `involv-${input.incidentId}-${entry.studentId}`,
 		studentId: entry.studentId,
 		role: entry.role,

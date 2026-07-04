@@ -2,32 +2,52 @@
 	import type { ClassNode } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import ClassGroupFormModal from '$lib/components/school/academics/ClassGroupFormModal.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
+	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
+	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { Layers, Pencil, Plus, Search, Trash2 } from '$lib/icons';
+	import { Layers, Plus } from '$lib/icons';
 	import { readClassGroupListFilters, writeClassGroupListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
-	import { toast } from '$lib/toast.svelte';
-	import { get } from 'svelte/store';
-	import ClassGroupFormModal from './ClassGroupFormModal.svelte';
+	import { cn } from '$lib/utils';
+
+	const {
+		onSelect,
+		selectedId,
+	}: {
+		onSelect?: (classGroup: ClassNode) => void;
+		selectedId?: string;
+	} = $props();
 
 	const initialFilters = $derived(readClassGroupListFilters($page.url));
 
 	let q = $state('');
+	let gradeLevelFilter = $state('all');
 	let filtersReady = $state(false);
 	let createOpen = $state(false);
-	let editingClass = $state<ClassNode | undefined>(undefined);
+
+	const gradeLevelOptions = $derived([
+		{ value: 'all', label: $t('filter.all') },
+		...[...academicContext.gradeLevels]
+			.sort((a, b) => a.order - b.order)
+			.map(level => ({ value: level.id, label: level.name })),
+	]);
 
 	const filteredHierarchy = $derived.by(() => {
 		const needle = q.trim().toLowerCase();
-		if (!needle)
-			return academicContext.hierarchy;
 		return academicContext.hierarchy
 			.map(group => ({
 				...group,
 				classes: group.classes.filter((cls) => {
+					if (gradeLevelFilter !== 'all' && cls.gradeLevelId !== gradeLevelFilter) {
+						return false;
+					}
+					if (!needle) {
+						return true;
+					}
 					const level = academicContext.gradeLevelById(cls.gradeLevelId);
 					return cls.name.toLowerCase().includes(needle)
 						|| cls.id.toLowerCase().includes(needle)
@@ -42,20 +62,6 @@
 		filteredHierarchy.reduce((acc, group) => acc + group.classes.length, 0),
 	);
 
-	function openCreate() {
-		editingClass = undefined;
-		createOpen = true;
-	}
-
-	function openEdit(classId: string) {
-		editingClass = academicContext.classes.find(entry => entry.id === classId);
-		createOpen = true;
-	}
-
-	function handleDelete(_classId: string) {
-		toast.error(get(t)('classGroups.deleteUnsupported'));
-	}
-
 	function syncFiltersToUrl() {
 		const href = writeClassGroupListFilters($page.url, { q });
 		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
@@ -69,11 +75,19 @@
 
 	let searchTimer: ReturnType<typeof setTimeout> | undefined;
 	function scheduleFilterSync() {
-		if (!filtersReady)
+		if (!filtersReady) {
 			return;
+		}
 		clearTimeout(searchTimer);
 		searchTimer = setTimeout(syncFiltersToUrl, 250);
 	}
+
+	$effect(() => {
+		if (!filtersReady) {
+			return;
+		}
+		void gradeLevelFilter;
+	});
 </script>
 
 <div class="animate-fade-in">
@@ -82,23 +96,30 @@
 		title={$t('classGroups.title', { n: filteredCount })}
 	>
 		{#snippet search()}
-			<div class="relative">
-				<Search
-					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-				/>
-				<Input
-					bind:value={q}
-					oninput={scheduleFilterSync}
-					placeholder={$t('common.search')}
-					class="h-9 w-56 rounded-full pl-9 text-sm"
-				/>
-			</div>
+			<ListSearchField bind:value={q} oninput={scheduleFilterSync} />
+		{/snippet}
+		{#snippet filters()}
+			<FilterSelect
+				bind:value={gradeLevelFilter}
+				class="h-9 w-44 rounded-full text-xs"
+				options={gradeLevelOptions}
+			/>
 		{/snippet}
 		{#snippet primary()}
-			<Button size="sm" class="rounded-full" onclick={openCreate}>
-				<Plus class="mr-1 h-4 w-4" />
-				{$t('classGroups.add')}
-			</Button>
+			<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE" mode="disable">
+				{#snippet children({ disabled, title })}
+					<Button
+						size="sm"
+						class="rounded-full"
+						{disabled}
+						{title}
+						onclick={() => (createOpen = true)}
+					>
+						<Plus class="mr-1 h-4 w-4" />
+						{$t('classGroups.add')}
+					</Button>
+				{/snippet}
+			</PermissionGate>
 		{/snippet}
 	</ListPageHeader>
 
@@ -116,38 +137,28 @@
 								<th class="px-4 py-3 font-medium">{$t('classGroups.name')}</th>
 								<th class="px-4 py-3 font-medium">{$t('classGroups.gradeLevel')}</th>
 								<th class="px-4 py-3 font-medium">{$t('classGroups.studentCount')}</th>
-								<th class="px-4 py-3 text-right font-medium">{$t('classGroups.actions')}</th>
+								<th class="px-4 py-3 font-medium">{$t('classGroups.attendanceMode')}</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#each group.classes as cls (cls.id)}
 								{@const level = academicContext.gradeLevelById(cls.gradeLevelId)}
+								{@const isSelected = cls.id === selectedId}
 								<tr class="border-b border-border/60 last:border-0">
 									<td class="px-4 py-3">
-										<p class="font-medium">{cls.name}</p>
-										<p class="font-mono text-[10px] text-muted-foreground">{cls.id}</p>
+										<button
+											type="button"
+											class={cn('w-full text-left transition-colors', isSelected && 'text-primary')}
+											onclick={() => onSelect?.(cls)}
+										>
+											<p class="font-medium">{cls.name}</p>
+											<p class="font-mono text-[10px] text-muted-foreground">{cls.id}</p>
+										</button>
 									</td>
 									<td class="px-4 py-3 text-muted-foreground">{level?.name ?? '—'}</td>
 									<td class="px-4 py-3 font-mono">{cls.studentCount}</td>
-									<td class="px-4 py-3">
-										<div class="flex justify-end gap-1">
-											<button
-												type="button"
-												class="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-												title={$t('classGroups.edit')}
-												onclick={() => openEdit(cls.id)}
-											>
-												<Pencil class="h-3.5 w-3.5" />
-											</button>
-											<button
-												type="button"
-												class="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
-												title={$t('classGroups.delete')}
-												onclick={() => handleDelete(cls.id)}
-											>
-												<Trash2 class="h-3.5 w-3.5" />
-											</button>
-										</div>
+									<td class="px-4 py-3 text-muted-foreground">
+										{$t(`classGroups.attendanceMode.${cls.attendanceMode}`)}
 									</td>
 								</tr>
 							{/each}
@@ -159,4 +170,4 @@
 	</div>
 </div>
 
-<ClassGroupFormModal bind:open={createOpen} classGroup={editingClass} />
+<ClassGroupFormModal bind:open={createOpen} />

@@ -4,6 +4,20 @@ import type { PermissionCatalogEntry } from '$lib/api/staff-permission-assignmen
 
 export type ScopeGrain = Exclude<NonNullable<PermissionCatalogEntry['scope']>, 'platform'>;
 
+/**
+ * Whether a permission catalog grain resolves scope paths that include a class group
+ * segment (aligned with backend `segmentScopeAt` / `scope-request-compat`).
+ */
+export function catalogScopeIncludesClassGroupInPath(scope: ScopeGrain): boolean {
+	switch (scope) {
+		case 'class_group':
+		case 'class_subject':
+			return true;
+		default:
+			return false;
+	}
+}
+
 export interface ClassSubjectScopeSelection {
 	classGroupId: string;
 	classSubjectId?: string;

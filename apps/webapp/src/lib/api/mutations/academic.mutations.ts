@@ -1,3 +1,4 @@
+import type { ClassAttendanceMode } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -109,10 +110,22 @@ export async function publishAcademicPeriodMutation(periodId: string): Promise<b
 	return result !== null;
 }
 
+export interface ClassGroupProfilePatch {
+	name?: string;
+	capacity?: number | null;
+	attendanceMode?: ClassAttendanceMode;
+	homeroomStaffId?: string | null;
+}
+
 export async function createClassGroupMutation(
 	name: string,
 	gradeLevelId: string,
-	options?: { successMessage?: string },
+	options?: {
+		successMessage?: string;
+		attendanceMode?: ClassAttendanceMode;
+		homeroomStaffId?: string | null;
+		capacity?: number | null;
+	},
 ): Promise<boolean> {
 	const client = getBrowserSchoolClient();
 	const id = nextClassId(gradeLevelId);
@@ -122,22 +135,34 @@ export async function createClassGroupMutation(
 		academicYearId: academicContext.yearId,
 		gradeLevelId,
 		name: name.trim(),
-		attendanceMode: 'session',
-	}), { successMessage: options?.successMessage });
+		capacity: options?.capacity ?? null,
+		attendanceMode: options?.attendanceMode ?? 'session',
+		homeroomStaffId: options?.homeroomStaffId ?? null,
+	}), {
+		successMessage: options?.successMessage,
+		refresh: true,
+	});
 	return result !== null;
 }
 
 export async function updateClassGroupMutation(
 	classGroupId: string,
-	patch: { name?: string; capacity?: number | null },
+	patch: ClassGroupProfilePatch,
 	options?: { successMessage?: string },
 ): Promise<boolean> {
+	const current = academicContext.classes.find(entry => entry.id === classGroupId);
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(() => client.commands.updateClassGroupConfiguration({
 		classGroupId,
-		name: patch.name,
-		capacity: patch.capacity,
-		attendanceMode: 'session',
-	}), { successMessage: options?.successMessage });
+		name: patch.name ?? current?.name,
+		capacity: patch.capacity !== undefined ? patch.capacity : (current?.capacity ?? null),
+		attendanceMode: patch.attendanceMode ?? current?.attendanceMode ?? 'session',
+		homeroomStaffId: patch.homeroomStaffId !== undefined
+			? patch.homeroomStaffId
+			: (current?.homeroomStaffId ?? null),
+	}), {
+		successMessage: options?.successMessage,
+		refresh: true,
+	});
 	return result !== null;
 }

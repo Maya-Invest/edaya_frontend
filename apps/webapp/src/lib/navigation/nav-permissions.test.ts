@@ -19,6 +19,7 @@ function mockGrants(permissions: readonly string[], isElevated = false): Effecti
 		isElevated,
 		permissions: [...permissions],
 		scopeGrants: [],
+		scopeIdsByPermission: {},
 	};
 }
 

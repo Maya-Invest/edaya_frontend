@@ -1,10 +1,10 @@
 <script lang="ts">
+	import type { IncidentInvolvementRole } from '$lib/api/mutations/incident.mutations';
 	import type { ClassNode, Incident, Student } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import type { IncidentInvolvementRole } from '$lib/api/mutations/incident.mutations';
 	import { resolveIncidentWithOutcomesMutation } from '$lib/api/mutations/incident.mutations';
-	import { loadIncidentResolveModalData } from '$lib/api/school-life-data';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
+	import { loadIncidentResolveModalData } from '$lib/api/school-life-data';
 	import StudentPicker from '$lib/components/school/shared/pickers/StudentPicker.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
@@ -47,11 +47,7 @@
 	let students = $state<Student[]>([]);
 	let disciplinaryActions = $state<Array<{ id: string; name: string }>>([]);
 
-	const canSubmit = $derived(
-		!loading
-		&& rows.length > 0
-		&& rows.every(row => row.studentId.length > 0),
-	);
+	const canSubmit = $derived(!loading && rows.length > 0 && rows.every(row => row.studentId.length > 0));
 
 	function excludeStudentIds(currentKey: string) {
 		return rows
@@ -87,18 +83,18 @@
 			students = data.students.length > 0 ? data.students : fallbackStudents;
 			rows = data.involvements.length > 0
 				? data.involvements.map(involvement => ({
-						key: involvement.id,
-						studentId: involvement.studentId,
-						role: involvement.role,
-						involvementId: involvement.id,
-						disciplinaryActionId: NO_SANCTION,
-					}))
+					key: involvement.id,
+					studentId: involvement.studentId,
+					role: involvement.role,
+					involvementId: involvement.id,
+					disciplinaryActionId: NO_SANCTION,
+				}))
 				: [{
-						key: `row-${incident.studentId}`,
-						studentId: incident.studentId,
-						role: 'subject',
-						disciplinaryActionId: NO_SANCTION,
-					}];
+					key: `row-${incident.studentId}`,
+					studentId: incident.studentId,
+					role: 'subject',
+					disciplinaryActionId: NO_SANCTION,
+				}];
 			resolutionNotes = typeof data.incident.resolutionNotes === 'string'
 				? data.incident.resolutionNotes
 				: '';

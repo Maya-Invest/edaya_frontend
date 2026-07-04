@@ -36,7 +36,6 @@
 		role="status"
 		class="border-b border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-center text-xs text-amber-900 dark:text-amber-200"
 	>
-		Local API unreachable — run <code class="font-mono">cd apps/api && bun dev</code> or
-		<code class="font-mono">bun dev</code> from the repo root
+		Local API unreachable — run <code class="font-mono">cd ../edaya_backend && bun dev</code>
 	</div>
 {/if}

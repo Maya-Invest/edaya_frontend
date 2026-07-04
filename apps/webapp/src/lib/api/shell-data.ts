@@ -140,6 +140,9 @@ export async function fetchAppShellData(client: SchoolClient): Promise<AppShellD
 			name: cg.name,
 			level: gradeLevel?.cycle ?? '',
 			studentCount: studentCountByClass[cg.id] ?? 0,
+			capacity: cg.capacity ?? null,
+			attendanceMode: cg.attendanceMode ?? 'session',
+			homeroomStaffId: cg.homeroomStaffId ?? null,
 		};
 	});
 

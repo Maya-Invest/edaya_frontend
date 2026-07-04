@@ -1,4 +1,9 @@
 import { academicContext } from '$lib/academic/context.svelte';
+import {
+	classGroupDetailIdFromUrl,
+	hydrateClassGroupDrawer,
+	hydrateClassGroupStaffDirectory,
+} from '$lib/api/configuration-data';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 import { refreshReportCardCatalog } from '$lib/queries/report-cards.queries';
 import { reportCardsContext } from '$lib/report-cards/context.svelte';
@@ -6,7 +11,22 @@ import { reportCardsContext } from '$lib/report-cards/context.svelte';
 export function queryClassGroupsPage() {
 	return (url: URL) => resolvePageLoad(url, {
 		empty: () => ({ classCount: 0 }),
-		load: async () => ({ classCount: academicContext.classes.length }),
+		load: async () => {
+			await hydrateClassGroupStaffDirectory();
+			const classGroupId = classGroupDetailIdFromUrl(url);
+			if (classGroupId) {
+				await hydrateClassGroupDrawer(classGroupId);
+			}
+			return { classCount: academicContext.classes.length };
+		},
+		hasItems: listPageHasItems,
+	});
+}
+
+export function queryGradeLevelsPage() {
+	return (url: URL) => resolvePageLoad(url, {
+		empty: () => ({ levelCount: 0 }),
+		load: async () => ({ levelCount: academicContext.gradeLevels.length }),
 		hasItems: listPageHasItems,
 	});
 }

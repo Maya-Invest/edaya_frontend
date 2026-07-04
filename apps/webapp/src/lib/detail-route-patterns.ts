@@ -5,6 +5,8 @@ const DETAIL_PATH_PATTERNS = [
 	/^\/finance\/(billing|fees)\/[^/]+$/,
 	/^\/configuration\/subjects\/level\/[^/]+$/,
 	/^\/configuration\/subjects\/[^/]+$/,
+	/^\/configuration\/grade-levels\/[^/]+$/,
+	/^\/configuration\/classes\/[^/]+$/,
 	/^\/configuration\/roles\/[^/]+$/,
 	/^\/configuration\/report-cards\/[^/]+$/,
 ] as const;

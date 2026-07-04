@@ -202,6 +202,24 @@ const matchers: Matcher[] = [
 		},
 	},
 	{
+		test: p => p.match(/^\/configuration\/grade-levels\/([^/]+)$/) ?? null,
+		parse: (m) => {
+			const level = academicContext.gradeLevelById(m[1]);
+			return level
+				? { item: { kind: 'gradeLevel', data: level }, listPath: appPath('/(app)/configuration/grade-levels/[[id]]') }
+				: null;
+		},
+	},
+	{
+		test: p => p.match(/^\/configuration\/classes\/([^/]+)$/) ?? null,
+		parse: (m) => {
+			const classGroup = academicContext.classes.find(x => x.id === m[1]);
+			return classGroup
+				? { item: { kind: 'classGroup', data: classGroup }, listPath: appPath('/(app)/configuration/classes/[[id]]') }
+				: null;
+		},
+	},
+	{
 		test: p => p.match(/^\/classes\/([^/]+)\/report-cards\/([^/]+)$/) ?? null,
 		parse: (m) => {
 			const r = reportCardsContext.results.find(x => x.id === m[2]);

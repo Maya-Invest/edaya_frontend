@@ -1,6 +1,6 @@
 /**
  * Dev demo login picker data for the webapp `/login/demo` page.
- * Keep in sync with @edaya/fixtures (dev-auth-fixtures + dev-staff-display-names).
+ * Keep in sync with @edaya/fixtures (resolveDevSeedContext + dev-auth-fixtures-ci).
  */
 
 export const DEV_AUTH_PASSWORD = 'DevPassword1!'
@@ -15,27 +15,27 @@ export interface DevDemoLoginAccount {
   initials: string
 }
 
-const SEED_SCHOOL_OWNER_STAFF_ID = 'st8'
+const SEED_SCHOOL_OWNER_STAFF_ID = 'ci-st8'
 
 const DEV_AUTH_STAFF_ACCOUNTS = [
-  { staffId: 'st8', email: 'k.yann@school.edu', name: 'Kouassi Yann' },
-  { staffId: 'st5', email: 'c.moreau@school.edu', name: 'Jean-Baptiste Aka' },
-  { staffId: 'st1', email: 'm.dupont@school.edu', name: 'Mme Touré' },
-  { staffId: 'st2', email: 'm.garnier@school.edu', name: 'M. Diomandé' },
-  { staffId: 'st3', email: 'm.leon@school.edu', name: 'Mme Assi' },
-  { staffId: 'st7', email: 't.evrard@school.edu', name: 'M. Bamba' },
+  { staffId: 'ci-st8', email: 'a.kone@ecole-ci.edaya.dev', name: 'Aminata Koné' },
+  { staffId: 'ci-st5', email: 'j.aka@ecole-ci.edaya.dev', name: 'Jean-Baptiste Aka' },
+  { staffId: 'ci-st1', email: 'a.toure@ecole-ci.edaya.dev', name: 'Mme Touré' },
+  { staffId: 'ci-st2', email: 'k.diomande@ecole-ci.edaya.dev', name: 'M. Diomandé' },
+  { staffId: 'ci-st3', email: 'f.assi@ecole-ci.edaya.dev', name: 'Mme Assi' },
+  { staffId: 'ci-st7', email: 'm.zongo@ecole-ci.edaya.dev', name: 'Mme Zongo' },
 ] as const
 
 const DEV_AUTH_STAFF_ACCESS_ROLE_IDS: Record<
   (typeof DEV_AUTH_STAFF_ACCOUNTS)[number]['staffId'],
   string
 > = {
-  st8: 'role-director',
-  st5: 'role-director',
-  st1: 'role-teacher',
-  st2: 'role-teacher',
-  st3: 'role-coordinator',
-  st7: 'role-educator',
+  'ci-st8': 'role-director',
+  'ci-st5': 'role-director',
+  'ci-st1': 'role-teacher',
+  'ci-st2': 'role-teacher',
+  'ci-st3': 'role-coordinator',
+  'ci-st7': 'role-educator',
 }
 
 const ACCESS_ROLE_TO_DEMO_ROLE: Record<string, DevDemoLoginRole> = {

@@ -1,3 +1,5 @@
+export type ClassAttendanceMode = 'daily' | 'session';
+
 export interface ClassNode {
 	id: string;
 	schoolId: string;
@@ -7,6 +9,9 @@ export interface ClassNode {
 	/** Cycle scolaire (Middle School / High School) — aligné sur `GradeLevel.cycle`. */
 	level: string;
 	studentCount: number;
+	capacity?: number | null;
+	attendanceMode: ClassAttendanceMode;
+	homeroomStaffId?: string | null;
 }
 
 export interface HierarchyGroup { level: string; classes: ClassNode[] }

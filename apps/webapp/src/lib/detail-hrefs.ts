@@ -30,6 +30,8 @@ export const detailHref = {
 	configStaffPermissions: (staffId: string): ResolvedPathname =>
 		appPath('/(app)/configuration/roles/[[role]]', { role: staffId }),
 	configReportCard: (id: string): ResolvedPathname => appPath('/(app)/configuration/report-cards/[[id]]', { id }),
+	configGradeLevel: (id: string): ResolvedPathname => appPath('/(app)/configuration/grade-levels/[[id]]', { id }),
+	configClassGroup: (id: string): ResolvedPathname => appPath('/(app)/configuration/classes/[[id]]', { id }),
 	financeBilling: (id: string): ResolvedPathname => appPath('/(app)/finance/billing/[[id]]', { id }),
 	financeFee: (id: string): ResolvedPathname => appPath('/(app)/finance/fees/[[id]]', { id }),
 	classReportCard: (classId: string, id: string): ResolvedPathname =>

@@ -2,14 +2,15 @@
 	import type { Announcement, AnnouncementPriority, AnnouncementStatus } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import InfiniteList from '$lib/components/ui/InfiniteList.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
-	import { Mail, Plus, Search } from '$lib/icons';
+	import { Mail, Plus } from '$lib/icons';
 	import { readAnnouncementListFilters, writeAnnouncementListFilters } from '$lib/list/list-url-filters';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
@@ -103,10 +104,20 @@
 		searchTimer = setTimeout(syncFiltersToUrl, 250);
 	}
 
-	function applyStatus(next: (typeof statusKeys)[number]) {
-		status = next;
+	$effect(() => {
+		if (!filtersReady) {
+			return;
+		}
+		void status;
 		scheduleFilterSync();
-	}
+	});
+
+	const statusFilterOptions = $derived(
+		statusKeys.map(key => ({
+			value: key,
+			label: key === 'all' ? $t('filter.all') : statusLabel(key),
+		})),
+	);
 </script>
 
 <div class="animate-fade-in">
@@ -115,35 +126,14 @@
 		title={$t('announcements.count', { n: filtered.length })}
 	>
 		{#snippet search()}
-			<div class="relative">
-				<Search
-					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-				/>
-				<Input
-					bind:value={q}
-					oninput={scheduleFilterSync}
-					placeholder={$t('common.search')}
-					class="h-9 w-56 rounded-full pl-9 text-sm"
-				/>
-			</div>
+			<ListSearchField bind:value={q} oninput={scheduleFilterSync} />
 		{/snippet}
 		{#snippet filters()}
-			<div class="flex flex-wrap items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft">
-				{#each statusKeys as key (key)}
-					<button
-						type="button"
-						onclick={() => applyStatus(key)}
-						class={cn(
-							'rounded-full px-3 py-1 text-[11px] font-medium transition',
-							status === key
-								? 'bg-primary text-primary-foreground'
-								: 'text-muted-foreground hover:text-foreground',
-						)}
-					>
-						{key === 'all' ? $t('filter.all') : statusLabel(key)}
-					</button>
-				{/each}
-			</div>
+			<FilterSelect
+				bind:value={status}
+				class="h-9 w-44 rounded-full text-xs"
+				options={statusFilterOptions}
+			/>
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate

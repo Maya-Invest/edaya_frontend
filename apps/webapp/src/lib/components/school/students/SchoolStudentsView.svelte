@@ -7,15 +7,16 @@
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
+	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import InfiniteList from '$lib/components/ui/InfiniteList.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
-	import { Plus, Search } from '$lib/icons';
+	import { Plus } from '$lib/icons';
 	import { readStudentListFilters, writeStudentListFilters } from '$lib/list/list-url-filters';
 	import { useOffsetInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
@@ -113,17 +114,20 @@
 		searchTimer = setTimeout(syncFiltersToUrl, 250);
 	}
 
-	function applyStatus(next: (typeof statusKeys)[number]) {
-		status = next;
-		scheduleFilterSync();
-	}
-
 	$effect(() => {
 		if (!filtersReady)
 			return;
 		void classFilter;
+		void status;
 		scheduleFilterSync();
 	});
+	const statusFilterActive = $derived(status !== 'all' ? 1 : 0);
+	const statusFilterOptions = $derived(
+		statusKeys.map(key => ({
+			value: key,
+			label: statusLabel(key),
+		})),
+	);
 </script>
 
 <div class="animate-fade-in">
@@ -132,17 +136,11 @@
 		title={$t('students.countLabel', { n: infinite.total })}
 	>
 		{#snippet search()}
-			<div class="relative">
-				<Search
-					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-				/>
-				<Input
-					bind:value={q}
-					oninput={scheduleFilterSync}
-					placeholder={$t('common.searchStudent')}
-					class="h-9 w-56 rounded-full pl-9 text-sm"
-				/>
-			</div>
+			<ListSearchField
+				bind:value={q}
+				oninput={scheduleFilterSync}
+				placeholder={$t('common.searchStudent')}
+			/>
 		{/snippet}
 		{#snippet filters()}
 			<FilterSelect
@@ -151,22 +149,13 @@
 				options={[{ value: 'all', label: $t('common.allClasses') }]}
 				groups={classFilterGroups}
 			/>
-			<div class="flex items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft">
-				{#each statusKeys as k (k)}
-					<button
-						type="button"
-						onclick={() => applyStatus(k)}
-						class={cn(
-							'rounded-full px-3 py-1 text-[11px] font-medium transition',
-							status === k
-								? 'bg-primary text-primary-foreground'
-								: 'text-muted-foreground hover:text-foreground',
-						)}
-					>
-						{statusLabel(k)}
-					</button>
-				{/each}
-			</div>
+			<FilterPanel activeCount={statusFilterActive} title={$t('students.statusFilter')}>
+				<FilterSelect
+					bind:value={status}
+					class="h-9 w-full rounded-md text-xs"
+					options={statusFilterOptions}
+				/>
+			</FilterPanel>
 		{/snippet}
 		{#snippet more()}
 			<ListMoreMenu {view} onViewChange={v => (view = v)} />

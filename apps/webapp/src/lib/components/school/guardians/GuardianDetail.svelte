@@ -3,17 +3,18 @@
 	import { deleteGuardianMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import { updateGuardianProfilePhotoMutation } from '$lib/api/mutations/profile-photo.mutations';
 	import AccountLinkingSection from '$lib/components/account/AccountLinkingSection.svelte';
-	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { t } from '$lib/i18n';
-	import { Mail, Phone, Users } from '$lib/icons';
+	import { Mail, Phone, Trash2, Users } from '$lib/icons';
 	import { canUploadProfilePhoto } from '$lib/permissions';
 	import { get } from 'svelte/store';
 	import { relationKey } from '../shared/drawer-constants.ts';
-	import DrawerActionBar from '../shared/DrawerActionBar.svelte';
 	import DrawerEmptyState from '../shared/DrawerEmptyState.svelte';
+	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import DrawerField from '../shared/DrawerField.svelte';
 	import PersonAvatar from '../shared/PersonAvatar.svelte';
 	import ProfilePhotoPicker from '../shared/ProfilePhotoPicker.svelte';
@@ -23,6 +24,8 @@
 
 	const linked = $derived(detailDataContext.students.filter(s => g.studentIds.includes(s.id)));
 	const canChangePhoto = $derived(canUploadProfilePhoto('PARENT_UPDATE'));
+	let deleteOpen = $state(false);
+	let deleteBusy = $state(false);
 
 	async function handlePhotoChange(file: File) {
 		return updateGuardianProfilePhotoMutation({
@@ -31,31 +34,67 @@
 			successMessage: get(t)('profilePhoto.updateSuccess'),
 		});
 	}
+
+	async function confirmDelete() {
+		deleteBusy = true;
+		try {
+			const ok = await deleteGuardianMutation(g.id, {
+				successMessage: get(t)('guardian.toastDeleted', { name: g.name }),
+			});
+			if (ok) {
+				deleteOpen = false;
+			}
+		}
+		finally {
+			deleteBusy = false;
+		}
+	}
 </script>
 
 <div class="space-y-5">
-	<div class="flex items-center gap-4">
-		{#if canChangePhoto}
-			<ProfilePhotoPicker
-				name={g.name}
-				initials={g.initials}
-				photoUrl={g.photoUrl}
-				size="lg"
-				onChange={handlePhotoChange}
-			/>
-		{:else}
-			<PersonAvatar name={g.name} initials={g.initials} photoUrl={g.photoUrl} size="lg" />
-		{/if}
-		<div>
-			<h3 class="font-display text-2xl font-semibold leading-tight">{g.name}</h3>
-			<p class="text-sm text-muted-foreground">
-				{$t('guardian.prefers', {
-					rel: $t(relationKey[g.relation]),
-					contact: $t(`guardian.contact.${g.preferredContact}`),
-				})}
-			</p>
-		</div>
-	</div>
+	<DrawerEntityHeader
+		name={g.name}
+		summary={$t('guardian.prefers', {
+			rel: $t(relationKey[g.relation]),
+			contact: $t(`guardian.contact.${g.preferredContact}`),
+		})}
+	>
+		{#snippet avatar()}
+			{#if canChangePhoto}
+				<ProfilePhotoPicker
+					name={g.name}
+					initials={g.initials}
+					photoUrl={g.photoUrl}
+					size="lg"
+					onChange={handlePhotoChange}
+				/>
+			{:else}
+				<PersonAvatar name={g.name} initials={g.initials} photoUrl={g.photoUrl} size="lg" />
+			{/if}
+		{/snippet}
+		{#snippet actions()}
+			<PermissionGate permission="PARENT_UPDATE" mode="disable" tooltip={$t('guardian.permissionUpdate')}>
+				{#snippet children({ disabled, title })}
+					<GuardianEditModal {g} {disabled} {title} />
+				{/snippet}
+			</PermissionGate>
+		{/snippet}
+		{#snippet overflow()}
+			<PermissionGate permission="PARENT_UPDATE" mode="disable" tooltip={$t('guardian.permissionUpdate')}>
+				{#snippet children({ disabled, title })}
+					<RowActionMenuItem
+						destructive
+						{disabled}
+						{title}
+						onclick={() => (deleteOpen = true)}
+					>
+						<Trash2 class="h-4 w-4" />
+						{$t('common.delete')}
+					</RowActionMenuItem>
+				{/snippet}
+			</PermissionGate>
+		{/snippet}
+	</DrawerEntityHeader>
 
 	<DrawerField label={$t('guardian.fullName')}>
 		<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{g.name}</div>
@@ -82,27 +121,6 @@
 		contactEmail={g.email}
 		displayName={g.name}
 	/>
-
-	<DrawerActionBar>
-		<PermissionGate permission="PARENT_UPDATE" mode="disable" tooltip={$t('guardian.permissionUpdate')}>
-			{#snippet children({ disabled, title })}
-				<GuardianEditModal {g} {disabled} {title} />
-			{/snippet}
-		</PermissionGate>
-		<PermissionGate permission="PARENT_UPDATE" mode="disable" tooltip={$t('guardian.permissionUpdate')}>
-			{#snippet children({ disabled, title })}
-				<DeleteEntityButton
-					{disabled}
-					{title}
-					confirmTitle={$t('common.deleteConfirmTitle')}
-					confirmDescription={$t('guardian.deleteConfirm', { name: g.name })}
-					onConfirm={() => deleteGuardianMutation(g.id, {
-						successMessage: get(t)('guardian.toastDeleted', { name: g.name }),
-					})}
-				/>
-			{/snippet}
-		</PermissionGate>
-	</DrawerActionBar>
 
 	<div class="space-y-2 border-t border-border pt-4">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -132,3 +150,13 @@
 		{/if}
 	</div>
 </div>
+
+<ConfirmModal
+	bind:open={deleteOpen}
+	title={$t('common.deleteConfirmTitle')}
+	description={$t('guardian.deleteConfirm', { name: g.name })}
+	confirmLabel={$t('common.delete')}
+	cancelLabel={$t('common.cancel')}
+	busy={deleteBusy}
+	onConfirm={confirmDelete}
+/>

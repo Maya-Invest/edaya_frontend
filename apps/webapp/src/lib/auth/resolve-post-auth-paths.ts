@@ -13,7 +13,6 @@ export function resolveLinkedActorPath(
 		sessionKind?: SessionKind | null;
 	},
 ): string {
-	const role = context?.role;
 	const kind = session?.kind ?? context?.sessionKind;
 
 	if (kind === 'staff') {

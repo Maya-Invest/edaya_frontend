@@ -91,6 +91,13 @@ export const CLASS_NAV_DEFS: NavItemDefinition[] = [
 		permissions: ['GRADE_READ'],
 	},
 	{
+		key: 'attendance',
+		labelKey: 'tab.attendance',
+		href: 'attendance',
+		classSegment: true,
+		permissions: ['QUERY_ATTENDANCE_READ', 'ATTENDANCE_READ'],
+	},
+	{
 		key: 'reportCards',
 		labelKey: 'tab.reportCards',
 		href: 'report-cards',
@@ -132,6 +139,12 @@ export const CONFIG_NAV_DEFS: NavItemDefinition[] = [
 		labelKey: 'config.academic',
 		href: '/configuration/academic',
 		permissions: ['ACADEMIC_PROGRAM_READ', 'ACADEMIC_PROGRAM_UPDATE', 'SCHOOL_STRUCTURE_READ'],
+	},
+	{
+		key: 'gradeLevels',
+		labelKey: 'config.gradeLevels',
+		href: '/configuration/grade-levels',
+		permissions: ['SCHOOL_STRUCTURE_CONFIGURE', 'SCHOOL_STRUCTURE_READ'],
 	},
 	{
 		key: 'classGroups',

@@ -1,5 +1,7 @@
 import type { ReportCardDefinition, ReportCardResult } from '$lib/types/report-cards';
 import type {
+	ClassNode,
+	GradeLevel,
 	Student,
 	Subject,
 	PlanningEvent,
@@ -33,6 +35,8 @@ export type DrawerItem
 		| { kind: 'announcement'; data: Announcement }
 		| { kind: 'reportCardDefinition'; data: ReportCardDefinition }
 		| { kind: 'reportCardResult'; data: ReportCardResult }
+		| { kind: 'gradeLevel'; data: GradeLevel }
+		| { kind: 'classGroup'; data: ClassNode }
 		| null;
 
 export interface SubjectGroupItem { e: Evaluation; mark: number | null }

@@ -47,9 +47,9 @@ Every in-scope feature conforms to [app-shell-spec.md](../specs/app-shell-spec.m
 Living checklist — check items off (`[x]`) as work lands. Mirrors [§6 gaps](#6-v1-implementation-gaps) and §3 feature cards.
 
 #### Architecture & shell
-- [ ] Drawer entity header (identity + top 2 actions) on all complex entities
-- [ ] Main filter as `<select>` everywhere (chip bars → Filter panel)
-- [ ] Filter button wired with secondary facets on list pages
+- [ ] Drawer entity header (identity + top 2 actions) on all complex entities — `DrawerEntityHeader` built; pilot: `GuardianDetail`
+- [ ] Main filter as `<select>` everywhere (chip bars → Filter panel) — `FilterSelect` + `FilterPanel` built; pilots: `AnnouncementsView`, `SchoolStudentsView`
+- [ ] Filter button wired with secondary facets on list pages — `FilterPanel` built; pilot: `SchoolStudentsView`
 - [ ] More menu: per-feature export / bulk actions
 
 #### School
@@ -60,8 +60,6 @@ Living checklist — check items off (`[x]`) as work lands. Mirrors [§6 gaps](#
 #### Classes
 - [ ] Remove dedicated **Homework** nav/route; fold into Assessments (`kind` filter + row badge)
 - [ ] Assessments — unified list + drawer (exclusive body section per `kind`)
-- [ ] **`attendanceMode` on class create/edit** (Configuration → Classes)
-- [ ] **Conditional class nav** — `/attendance` tab only when `attendanceMode = daily`
 - [ ] **Daily attendance** — list of days + drawer (session-like pattern)
 - [ ] Timetable — New session flow (Lesson · Activity · Assessment) + inline schedule from source screens
 - [ ] Student drawer **Attendance** tab — aggregate daily + session records
@@ -73,8 +71,10 @@ Living checklist — check items off (`[x]`) as work lands. Mirrors [§6 gaps](#
 - [ ] Notification templates — row edit → modal pattern
 
 #### Configuration
-- [ ] Grade levels route + drawer
-- [ ] Classes config — URL-backed drawer + **class-level staff assignments** tab
+- [x] Grade levels route + drawer — `/configuration/grade-levels/[[id]]` ✅ *(2026-07-03)*
+- [x] Classes config — URL-backed drawer + **class-level staff assignments** tab ✅ *(2026-07-03)*
+- [x] **`attendanceMode` on class create/edit** (Configuration → Classes) ✅ *(2026-07-03)*
+- [x] **Conditional class nav** — `/attendance` tab only when `attendanceMode = daily` ✅ *(2026-07-03 — route stub; list UI Phase 4)*
 - [ ] Academic calendar — period definition CRUD
 - [ ] Disciplinary catalog simple list
 - [ ] **Remove** `/configuration/roles` (permissions → Staff drawer)
