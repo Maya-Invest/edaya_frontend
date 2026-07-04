@@ -66,9 +66,7 @@ function resolveDevDemoStaffRole(
   if (staffId === SEED_SCHOOL_OWNER_STAFF_ID) {
     return {
       role: 'owner',
-      accessRoleId: DEV_AUTH_STAFF_ACCESS_ROLE_IDS[
-        staffId as keyof typeof DEV_AUTH_STAFF_ACCESS_ROLE_IDS
-      ],
+      accessRoleId: DEV_AUTH_STAFF_ACCESS_ROLE_IDS[staffId],
     }
   }
 
@@ -108,9 +106,9 @@ function buildDevDemoLoginAccounts(): DevDemoLoginAccount[] {
   })
 
   return accounts.sort((left, right) => {
-    const roleOrder = DEMO_ROLE_DISPLAY_ORDER[left.role] - DEMO_ROLE_DISPLAY_ORDER[right.role]
-    if (roleOrder !== 0) {
-      return roleOrder
+    const orderDelta = DEMO_ROLE_DISPLAY_ORDER[left.role] - DEMO_ROLE_DISPLAY_ORDER[right.role]
+    if (orderDelta !== 0) {
+      return orderDelta
     }
     return left.name.localeCompare(right.name, 'fr')
   })
