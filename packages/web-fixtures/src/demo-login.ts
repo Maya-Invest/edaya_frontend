@@ -1,6 +1,6 @@
 /**
  * Dev demo login picker data for the webapp `/login/demo` page.
- * Keep in sync with edaya/tooling/fixtures (dataset.ts + dev-demo-login.ts).
+ * Keep in sync with @edaya/fixtures (dev-auth-fixtures + dev-staff-display-names).
  */
 
 export const DEV_AUTH_PASSWORD = 'DevPassword1!'
@@ -18,12 +18,12 @@ export interface DevDemoLoginAccount {
 const SEED_SCHOOL_OWNER_STAFF_ID = 'st8'
 
 const DEV_AUTH_STAFF_ACCOUNTS = [
-  { staffId: 'st8', email: 'k.yann@school.edu', name: 'Koussi Yann' },
-  { staffId: 'st5', email: 'c.moreau@school.edu', name: 'Camille Moreau' },
-  { staffId: 'st1', email: 'm.dupont@school.edu', name: 'Mme Dupont' },
-  { staffId: 'st2', email: 'm.garnier@school.edu', name: 'M. Garnier' },
-  { staffId: 'st3', email: 'm.leon@school.edu', name: 'Mme Léon' },
-  { staffId: 'st7', email: 't.evrard@school.edu', name: 'Tom Évrard' },
+  { staffId: 'st8', email: 'k.yann@school.edu', name: 'Kouassi Yann' },
+  { staffId: 'st5', email: 'c.moreau@school.edu', name: 'Jean-Baptiste Aka' },
+  { staffId: 'st1', email: 'm.dupont@school.edu', name: 'Mme Touré' },
+  { staffId: 'st2', email: 'm.garnier@school.edu', name: 'M. Diomandé' },
+  { staffId: 'st3', email: 'm.leon@school.edu', name: 'Mme Assi' },
+  { staffId: 'st7', email: 't.evrard@school.edu', name: 'M. Bamba' },
 ] as const
 
 const DEV_AUTH_STAFF_ACCESS_ROLE_IDS: Record<

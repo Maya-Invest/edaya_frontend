@@ -16,7 +16,7 @@ export function resolveLinkedActorPath(
 	const role = context?.role;
 	const kind = session?.kind ?? context?.sessionKind;
 
-	if (kind === 'staff' && role === 'directeur') {
+	if (kind === 'staff') {
 		return appPath('/(app)/dashboard');
 	}
 
