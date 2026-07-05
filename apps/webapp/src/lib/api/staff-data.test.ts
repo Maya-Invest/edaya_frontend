@@ -49,6 +49,15 @@ describe('staff role mapping', () => {
 		expect(mapStaffRole(staffRaw[2], [...assignmentsRaw], [...classGroupsRaw])).toBe('professeur');
 		expect(mapStaffRole(staffRaw[3], [...assignmentsRaw], [...classGroupsRaw])).toBe('educateur');
 	});
+
+	it('maps the school owner before assignment-based inference', () => {
+		expect(mapStaffRole(
+			staffMember({ id: 'st-owner', subjectId: 'subject-owner' }),
+			[],
+			[],
+			'subject-owner',
+		)).toBe('owner');
+	});
 });
 
 describe('staff department mapping', () => {

@@ -1,3 +1,4 @@
+import { persistPendingInviteToken } from '$lib/auth/pending-invite-token';
 import { createEmptyDraft, saveDraft } from '$lib/onboarding/draft-storage';
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { resolvePostAuthPath } from './resolve-post-auth-paths';
@@ -28,6 +29,11 @@ describe('resolvePostAuthPath', () => {
 	});
 	it('routes unlinked accounts to onboarding', () => {
 		expect(resolvePostAuthPath({ session: null, pendingOnboarding: true })).toBe('/onboarding');
+	});
+
+	it('routes unlinked accounts back to a pending invite before onboarding', () => {
+		persistPendingInviteToken('invite-token-123');
+		expect(resolvePostAuthPath({ session: null, pendingOnboarding: true })).toBe('/invite/invite-token-123');
 	});
 
 	it('routes linked accounts into the app shell', () => {

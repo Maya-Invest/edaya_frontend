@@ -120,9 +120,9 @@ export async function fetchSchoolSubjectsSources(client: SchoolClient): Promise<
 		staffMembersRaw,
 		staffAssignmentsRaw,
 	] = await Promise.all([
-		client.entities.classSubjects.list(schoolSubjectsCatalogList()),
-		client.entities.subjects.list(schoolSubjectsCatalogList()),
-		client.entities.subjectMatters.list(schoolSubjectsCatalogList()),
+		safeOptionalEntityList(() => client.entities.classSubjects.list(schoolSubjectsCatalogList())),
+		safeOptionalEntityList(() => client.entities.subjects.list(schoolSubjectsCatalogList())),
+		safeOptionalEntityList(() => client.entities.subjectMatters.list(schoolSubjectsCatalogList())),
 		safeOptionalEntityList(() => client.entities.staffMembers.list(schoolSubjectsCatalogList())),
 		safeOptionalEntityList(() => client.entities.staffAssignments.list(schoolSubjectsCatalogList())),
 	]);

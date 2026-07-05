@@ -7,14 +7,19 @@
 	import { bootstrapSession, getAuthenticatedAuthUser } from '$lib/auth/bootstrap';
 	import { resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 	import { authClient } from '$lib/auth/client';
+	import {
+		clearPendingInviteToken,
+		persistPendingInviteToken,
+	} from '$lib/auth/pending-invite-token';
+	import { resolveLinkedActorPath } from '$lib/auth/resolve-post-auth';
 	import { authSession } from '$lib/auth/session.svelte';
 	import LanguageSelector from '$lib/components/layout/LanguageSelector.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import { t } from '$lib/i18n';
-	import { GraduationCap, LoaderCircle } from '$lib/icons';
-	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import { GraduationCap, LoaderCircle, Mail } from '$lib/icons';
+	import { appGoto } from '$lib/navigation/app-navigation';
 	import { toast } from '$lib/toast.svelte';
 	import { get } from 'svelte/store';
 
@@ -36,6 +41,9 @@
 			if (payload.code === 'SUBJECT_ALREADY_LINKED') {
 				return get(t)('invitation.accept.alreadyLinkedAccount');
 			}
+			if (payload.code === 'INVITATION_ALREADY_ACCEPTED') {
+				return get(t)('invitation.accept.alreadyAcceptedOtherAccountHint');
+			}
 			if (payload.message) {
 				return payload.message;
 			}
@@ -46,14 +54,18 @@
 	const token = $derived($page.params.token ?? '');
 
 	type PageState = 'loading' | 'invalid' | 'notFound' | 'revoked' | 'expired' | 'accepted' | 'ready' | 'accepting';
+	type AcceptedIssue = 'none' | 'otherAccount' | 'stillUnlinked';
 
 	let preview = $state<InvitationPreview | null>(null);
 	let pageState = $state<PageState>('loading');
+	let acceptedIssue = $state<AcceptedIssue>('none');
+	let acceptedCompletionAttempted = $state(false);
 	let authMode = $state<'signUp' | 'signIn'>('signUp');
 	let email = $state('');
 	let password = $state('');
 	let name = $state('');
 	let busy = $state(false);
+	let verificationSent = $state(false);
 
 	const actorKindLabel = $derived.by(() => {
 		if (preview?.kind === 'staff') {
@@ -88,12 +100,75 @@
 	$effect(() => {
 		const currentToken = token;
 		if (!currentToken) {
+			return;
+		}
+		persistPendingInviteToken(currentToken);
+	});
+
+	$effect(() => {
+		const currentToken = token;
+		if (
+			pageState !== 'accepted'
+			|| !currentToken
+			|| acceptedCompletionAttempted
+			|| !authSession.ready
+		) {
+			return;
+		}
+
+		void (async () => {
+			const authUser = await getAuthenticatedAuthUser();
+			if (!authUser) {
+				return;
+			}
+
+			acceptedCompletionAttempted = true;
+			pageState = 'accepting';
+			acceptedIssue = 'none';
+
+			try {
+				await acceptInvitation(currentToken);
+				resetAppShellBootstrap();
+				const { session, pendingOnboarding } = await bootstrapSession();
+				if (!pendingOnboarding && session) {
+					clearPendingInviteToken();
+					toast.success($t('invitation.accept.success'));
+					await appGoto(resolveLinkedActorPath(session));
+					return;
+				}
+
+				acceptedIssue = 'stillUnlinked';
+				pageState = 'accepted';
+				toast.error($t('invitation.accept.alreadyAcceptedStillUnlinkedHint'));
+			}
+			catch (err) {
+				pageState = 'accepted';
+				if (err instanceof ApiError) {
+					const payload = err.body as { code?: string } | undefined;
+					if (payload?.code === 'INVITATION_ALREADY_ACCEPTED') {
+						acceptedIssue = 'otherAccount';
+						toast.error($t('invitation.accept.alreadyAcceptedOtherAccountHint'));
+						return;
+					}
+					toast.error(apiErrorMessage(err));
+					return;
+				}
+				toast.error($t('invitation.accept.failed'));
+			}
+		})();
+	});
+
+	$effect(() => {
+		const currentToken = token;
+		if (!currentToken) {
 			pageState = 'notFound';
 			return;
 		}
 
 		void (async () => {
 			pageState = 'loading';
+			acceptedIssue = 'none';
+			acceptedCompletionAttempted = false;
 			try {
 				const result = await fetchInvitationPreview(currentToken);
 				preview = result;
@@ -141,6 +216,7 @@
 	}
 
 	async function authenticate(): Promise<boolean> {
+		verificationSent = false;
 		if (!useSignIn) {
 			const { error } = await authClient.signUp.email({
 				email: email.trim(),
@@ -168,9 +244,19 @@
 
 		const authUser = await getAuthenticatedAuthUser();
 		if (!authUser) {
+			if (!useSignIn) {
+				verificationSent = true;
+				toast.success($t('auth.signUpVerificationSent'));
+				return false;
+			}
 			toast.error($t('invitation.accept.sessionFailed'));
 			return false;
 		}
+
+		authSession.setAuthAccountOnly({
+			authUserId: authUser.id,
+			loginEmail: authUser.email ?? null,
+		});
 		return true;
 	}
 
@@ -193,9 +279,15 @@
 
 			await acceptInvitation(token);
 			resetAppShellBootstrap();
-			await bootstrapSession();
+			const { session, pendingOnboarding } = await bootstrapSession();
+			if (pendingOnboarding || !session) {
+				pageState = 'ready';
+				toast.error($t('invitation.accept.alreadyAcceptedStillUnlinkedHint'));
+				return;
+			}
+			clearPendingInviteToken();
 			toast.success($t('invitation.accept.success'));
-			await appGoto(appPath('/(app)/school/students/[[id]]'));
+			await appGoto(resolveLinkedActorPath(session));
 		}
 		catch (err) {
 			pageState = 'ready';
@@ -255,11 +347,39 @@
 					</div>
 				{:else if pageState === 'accepted'}
 					<div class="space-y-4 py-4 text-center">
-						<h2 class="font-display text-lg font-semibold">{$t('invitation.accept.alreadyAcceptedTitle')}</h2>
-						<p class="text-sm text-muted-foreground">{$t('invitation.accept.alreadyAcceptedHint')}</p>
-						<Button type="button" onclick={() => appGoto('/login')}>
-							{$t('invitation.accept.goToLogin')}
-						</Button>
+						{#if acceptedIssue === 'otherAccount'}
+							<h2 class="font-display text-lg font-semibold">
+								{$t('invitation.accept.alreadyAcceptedOtherAccountTitle')}
+							</h2>
+							<p class="text-sm text-muted-foreground">
+								{$t('invitation.accept.alreadyAcceptedOtherAccountHint')}
+							</p>
+						{:else if acceptedIssue === 'stillUnlinked'}
+							<h2 class="font-display text-lg font-semibold">
+								{$t('invitation.accept.alreadyAcceptedTitle')}
+							</h2>
+							<p class="text-sm text-muted-foreground">
+								{$t('invitation.accept.alreadyAcceptedStillUnlinkedHint')}
+							</p>
+						{:else}
+							<h2 class="font-display text-lg font-semibold">
+								{$t('invitation.accept.alreadyAcceptedTitle')}
+							</h2>
+							<p class="text-sm text-muted-foreground">
+								{$t('invitation.accept.alreadyAcceptedHint')}
+							</p>
+						{/if}
+						{#if !authSession.hasAuthAccount}
+							<Button
+								type="button"
+								onclick={() => {
+									persistPendingInviteToken(token);
+									void appGoto('/login');
+								}}
+							>
+								{$t('invitation.accept.goToLogin')}
+							</Button>
+						{/if}
 					</div>
 				{:else if preview}
 					<div class="space-y-4">
@@ -299,7 +419,32 @@
 							</p>
 						</div>
 
-						{#if !authSession.isLoggedIn}
+						{#if verificationSent}
+							<div class="space-y-3 rounded-xl border border-border bg-secondary/40 px-4 py-3 text-sm">
+								<div class="flex items-start gap-3">
+									<Mail class="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+									<div class="space-y-1.5 text-left">
+										<p class="font-medium">{$t('auth.signUpVerificationTitle')}</p>
+										<p class="text-muted-foreground">
+											{$t('invitation.accept.verificationHint', { email: email.trim() })}
+										</p>
+									</div>
+								</div>
+								<Button
+									type="button"
+									variant="outline"
+									class="w-full"
+									onclick={() => {
+										verificationSent = false;
+										authMode = 'signIn';
+									}}
+								>
+									{$t('auth.switchToSignIn')}
+								</Button>
+							</div>
+						{/if}
+
+						{#if !authSession.isLoggedIn && !verificationSent}
 							{#if preview.authAccountExists}
 								<p class="rounded-lg border border-border bg-secondary/30 px-3 py-2 text-sm text-muted-foreground">
 									{$t('invitation.accept.existingAccountHint')}
@@ -353,7 +498,7 @@
 						<Button
 							type="button"
 							class="w-full"
-							disabled={busy || wrongAccount || (!authSession.isLoggedIn && (!email.trim() || !password.trim()))}
+							disabled={busy || wrongAccount || verificationSent || (!authSession.isLoggedIn && (!email.trim() || !password.trim()))}
 							onclick={handleAccept}
 						>
 							{$t('invitation.accept.cta')}

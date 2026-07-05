@@ -1,7 +1,9 @@
 import { academicContext } from '$lib/academic/context.svelte';
+import { authSession } from '$lib/auth/session.svelte';
 import { schoolWideEntityList } from '$lib/api/entity-list-filters';
 import { loadClassPeopleData } from '$lib/api/people-data';
 import { loadStaffPermissionPageData } from '$lib/api/staff-permission-assignments-data';
+import { ApiError } from '$api-client';
 import { t } from '$lib/i18n';
 import { get } from 'svelte/store';
 import { fetchSchoolSubjectsSources, mapAllClassSubjects } from '$lib/api/subjects-data';
@@ -55,14 +57,30 @@ export function querySchoolStaffPage() {
 	return (url: URL) => resolvePageLoad(url, {
 		empty: () => ({ totalStaff: 0 }),
 		load: async () => {
-			const schoolId = academicContext.schools[0]?.id ?? '';
+			const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
 			const client = queryClient();
 			const academicYearId = academicContext.yearId;
 			const [countResult, subjectSources, permissionData] = await Promise.all([
 				schoolId ? client.entities.staffMembers.count({ schoolId }) : Promise.resolve({ count: 0 }),
-				fetchSchoolSubjectsSources(client),
+				fetchSchoolSubjectsSources(client).catch((error) => {
+					if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
+						return {
+							classSubjectsRaw: [],
+							subjectsRaw: [],
+							subjectMattersRaw: [],
+							staffMembersRaw: [],
+							staffAssignmentsRaw: [],
+						};
+					}
+					throw error;
+				}),
 				schoolId && academicYearId
-					? loadStaffPermissionPageData(client, { schoolId, academicYearId }, get(t))
+					? loadStaffPermissionPageData(client, { schoolId, academicYearId }, get(t)).catch((error) => {
+						if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
+							return { catalog: [], assignments: [] };
+						}
+						throw error;
+					})
 					: Promise.resolve({ catalog: [], assignments: [] }),
 			]);
 			const allSubjects = mapAllClassSubjects(subjectSources);

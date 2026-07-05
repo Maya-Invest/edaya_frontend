@@ -58,7 +58,11 @@ class AuthSession {
 				name: this.userProfile?.name ?? 'Staff',
 				initials: this.userProfile?.initials ?? 'ST',
 				photoUrl: this.userProfile?.photoUrl ?? null,
-				subtitleKey: this.userProfile ? `staff.role.${this.userProfile.role}` : 'staff.role.professeur',
+				subtitleKey: this.grants?.isElevated
+					? 'staff.role.owner'
+					: this.userProfile
+						? `staff.role.${this.userProfile.role}`
+						: 'staff.role.professeur',
 				subjectId: this.subjectId,
 				email: this.userProfile?.email,
 			};
@@ -86,6 +90,22 @@ class AuthSession {
 		this.needsOnboarding = true;
 		this.serverOnboardingStatus = null;
 		this.loginEmail = options.loginEmail;
+		this.userId = null;
+		this.schoolId = null;
+		this.sessionKind = null;
+		this.subjectId = null;
+		this.notificationEmail = null;
+		this.notificationPhone = null;
+		this.userProfile = null;
+		this.guardianSettings = null;
+		this.grants = null;
+		this.ready = true;
+	}
+
+	setAuthAccountOnly(options: { authUserId: string; loginEmail: string | null }) {
+		this.authUserId = options.authUserId;
+		this.loginEmail = options.loginEmail;
+		this.needsOnboarding = false;
 		this.userId = null;
 		this.schoolId = null;
 		this.sessionKind = null;

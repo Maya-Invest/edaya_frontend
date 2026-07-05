@@ -1,10 +1,10 @@
 # School Onboarding — Sprint Plan
 
-> **Status:** In progress (Phases 0–7 implemented; **next: Phase 8**)  
-> **Created:** 2026-06-28  
+> **Status:** Phases 0–7 **shipped in code** (2026-06-28 → 2026-07-05 audit) · **Next: Phase 8** (dev docs) · **Phase 9** (per-grade curriculum)  
+> **Last audit:** 2026-07-05 — reconciled with `apps/webapp` + `apps/api`  
 > **Scope:** Public registration, split login/signup auth screen, school setup wizard (replaces manual seeding for new accounts)  
-> **Depends on:** Better Auth (done), `POST /core/onboarding/register-school` (done), staff invitations (Phase 5 webapp — in progress), `@edaya/dev-fixtures` (middle school / high school templates)  
-> **Related docs:** [`specs/design-language-spec.md`](../specs/design-language-spec.md), [`docs/local-dev.md`](../docs/local-dev.md), [`sprints/done/account-invitation-plan.md`](./done/account-invitation-plan.md)
+> **Depends on:** Better Auth (done), `POST /core/onboarding/register-school` (done), staff invitations (done), `@edaya/fixtures/onboarding` (CI structure templates)  
+> **Related docs:** [`specs/design-language-spec.md`](../specs/design-language-spec.md), [`edaya_backend/docs/reference/local-dev.md`](../../edaya_backend/docs/reference/local-dev.md), [`sprints/done/account-invitation-plan.md`](./done/account-invitation-plan.md)
 
 ---
 
@@ -22,6 +22,77 @@ Check off when the phase (or sub-phase) is complete and merged.
 - [x] **Phase 7** — Step 4: wizard exit + checklist
 - [ ] **Phase 8** — Dev cutover (optional seeding vs wizard)
 - [ ] **Phase 9** — Grade-level curriculum templates (subjects + chapters per grade)
+
+---
+
+## 0. Implementation audit (2026-07-05)
+
+Reconciliation of this plan against the running codebase. **Phases 0–7 are conformant** for product behavior; remaining work is documentation (Phase 8), curriculum depth (Phase 9), and a few test/doc gaps.
+
+### Conformance summary
+
+| Area | Plan | Code | Verdict |
+|------|------|------|---------|
+| Split auth `/login` | Phase 1 | `AuthSplitShell` + `SignupPanel` + `LoginPanelHost` | ✅ Conforme |
+| Unlinked → `/onboarding` | Phase 2 | `bootstrapSession` 401 → `needsOnboarding`; `(app)` guard | ✅ Conforme |
+| 4-step wizard + stepper | Phase 3 | `/onboarding?step=1..4`, `OnboardingShell`, `OnboardingStepper` | ✅ Conforme |
+| Draft persistence | Phase 3 | `sessionStorage` + `GET /core/onboarding/account-status` | ✅ Conforme (+ server progress fields) |
+| Server draft API | Phase 3 optional | — | ⏳ Non implémenté (v1.1) |
+| Step 1 school + year + period | Phase 4 | `OnboardingStepSchoolForm` + `submit-school-step.ts` | ✅ Conforme **+ multi-périodes** (trimestre/semestre) |
+| Step 2 structure batch | Phase 5 | `POST /core/onboarding/apply-structure-template` | ✅ Conforme |
+| Step 3 staff invites (skippable) | Phase 6 | `POST /core/onboarding/invite-staff-members` | ✅ Conforme |
+| Step 4 exit + checklist | Phase 7 | `POST /core/onboarding/complete-wizard` + checklist | ✅ Conforme |
+| Per-grade curriculum | Phase 9 | CI templates — même base 6 matières / grade | ❌ À faire (Phase 9) |
+| Dev cutover docs | Phase 8 | `local-dev.md` still seed-first | ❌ À faire (Phase 8) |
+| E2E wizard test | §8 | — | ⏳ Manquant (manual only) |
+
+### Shipped API surface (`apps/api/src/routes/onboarding.routes.ts`)
+
+| Method | Path | Used by wizard |
+|--------|------|----------------|
+| POST | `/core/onboarding/register-school` | Step 1 |
+| GET | `/core/onboarding/structure-templates` | *(API only — webapp uses static mapping)* |
+| POST | `/core/onboarding/apply-structure-template` | Step 2 |
+| POST | `/core/onboarding/invite-staff-members` | Step 3 |
+| GET | `/core/onboarding/account-status` | Resume / guards |
+| POST | `/core/onboarding/complete-wizard` | Step 4 |
+
+Step 1 also calls core commands client-side: `createAcademicYear`, `createAcademicPeriod` (×N), `publishAcademicPeriod` (first period).
+
+### Key webapp modules
+
+| Layer | Path |
+|-------|------|
+| Route | `apps/webapp/src/routes/onboarding/+layout.svelte`, `+page.svelte`, `+page.ts` |
+| Wizard UI | `apps/webapp/src/lib/components/onboarding/*` (7 components) |
+| Logic | `apps/webapp/src/lib/onboarding/*` (29 modules + 9 unit tests) |
+| Auth split | `apps/webapp/src/lib/components/auth/AuthSplitShell.svelte`, `signup/SignupPanel.svelte` |
+| Post-auth | `apps/webapp/src/lib/auth/bootstrap.ts`, `resolve-post-auth-paths.ts`, `complete-sign-in.ts` |
+
+### Backend lib + tests
+
+| Layer | Path |
+|-------|------|
+| Handlers | `apps/api/src/lib/onboarding/` (`register-school-with-owner`, `apply-structure-template`, `invite-staff-members`, `onboarding-account-state`, …) |
+| Templates | `@edaya/fixtures/onboarding` (e.g. `ci-college`, `ci-lycee`, per-grade ids) |
+| Route tests | `apps/api/tests/routes/test-onboarding-*-route.test.ts` (4 files) |
+| Lib tests | `apps/api/tests/lib/test-register-school-with-owner.test.ts`, `ensure-academic-periods-from-template.test.ts` |
+
+### Minor deviations (acceptable)
+
+| Item | Plan | Actual | Action |
+|------|------|--------|--------|
+| Step 1 periods | Single active period | Multi-period UI (`school-periods.ts`) | ✅ Enhancement — update plan wording (done §Phase 4) |
+| Step 2 templates | `package/onboarding-templates/` | `@edaya/fixtures/onboarding` + webapp `structure-templates.ts` maps `college`→`ci-college` | ✅ Equivalent — no UI change needed |
+| Checklist “Scheduling” | Timetables → Scheduling | Link → `/configuration/classes` | ⚠️ Intentional shortcut to class config (timetable lives under classes) |
+| Dev skip wizard | Not in plan | `isOnboardingSkipEnabled()` — dev/staging only | ✅ Dev convenience — document in Phase 8 |
+| `local-dev.md` path | `docs/local-dev.md` (web) | `edaya_backend/docs/reference/local-dev.md` | Fix doc links (Phase 8) |
+
+### Cleanup (optional, non-blocking)
+
+- [ ] Remove dead i18n key `onboarding.placeholder.structure` (step 2 is fully built)
+- [ ] Wire webapp step 2 to `GET /structure-templates` instead of hard-coded CI ids *(optional hardening)*
+- [ ] Integration test: register-school → year → periods → publish as one chain *(Phase 4 checkbox)*
 
 ---
 
@@ -83,9 +154,10 @@ flowchart TD
 | Email OTP | `emailOTP` plugin + `LoginEmailOtpPanel` | Dev mailer = console log only |
 | Register school + owner | `registerSchoolWithOwner` | Feature flag `ALLOW_PUBLIC_SCHOOL_REGISTRATION` |
 | Unlinked session | `bootstrapSession` → 401 → `session: null` | Hook for onboarding redirect |
-| School structure | `SetupServiceWorkflow` | `createAcademicYear`, `createAcademicPeriod`, `createClassGroup`, `registerStaffMember` |
-| FR grade-level templates | `SEED_GRADE_LEVELS` in `@edaya/dev-fixtures` | 6e → Terminale, middle school / high school cycles |
-| Curriculum seed | `CurriculumSeedPort` | Subjects, chapters, class subjects |
+| Onboarding progress (server) | `onboarding-account-state.ts` | `onboardingMaxReachedStep`, `onboardingWizardCompletedAt` on staff |
+| School structure | `SetupServiceWorkflow` + onboarding handlers | `createAcademicYear`, `createAcademicPeriod`, `createClassGroup`, `registerStaffMember` |
+| Structure templates | `@edaya/fixtures/onboarding` | CI templates (`ci-college`, `ci-lycee`, per-grade keys) |
+| Curriculum seed | `apply-structure-template.ts` | Subjects, chapters, class subjects — **same base per grade today (Phase 9)** |
 | Invitations | `AccountInvitationServiceWorkflow` + Novu | Staff email via `account_invitation` workflow |
 
 ---
@@ -129,7 +201,7 @@ Outside app shell (no sidebar). Minimal header: EDAYA logo + `LanguageSelector` 
 - Body: full-width form (`max-w-2xl` centered)
 - Sticky footer: `Previous` · `Skip` (if optional) · `Continue`
 
-Route: `apps/webapp/src/routes/onboarding/+layout.svelte` + sub-routes or query `?step=1..4`.
+Route: `apps/webapp/src/routes/onboarding/+layout.svelte` + `+page.svelte` + `+page.ts` (query `?step=1..4`).
 
 ---
 
@@ -221,7 +293,7 @@ Route: `apps/webapp/src/routes/onboarding/+layout.svelte` + sub-routes or query 
 - [x] Expose on webapp whether public registration is enabled (aligned with `ALLOW_PUBLIC_SCHOOL_REGISTRATION`)
 - [x] Hide signup if disabled (prod without flag)
 
-**Key files:** `complete-sign-in.ts`, `bootstrap.ts`, `routes/onboarding/+layout.ts`
+**Key files:** `complete-sign-in.ts`, `bootstrap.ts`, `routes/onboarding/+layout.svelte`, `routes/onboarding/+page.ts`, `(app)/+layout.svelte`
 
 ---
 
@@ -233,7 +305,9 @@ Route: `apps/webapp/src/routes/onboarding/+layout.svelte` + sub-routes or query 
 - [x] `OnboardingShell.svelte` + `OnboardingStepper.svelte`
 - [x] Store or URL `step` (1–4) with validation before advancing
 - [x] Local draft persistence (`sessionStorage`) — resume on refresh
+- [x] Server progress sync via `GET /core/onboarding/account-status` (`maxReachedStep`, `wizardCompleted`)
 - [ ] *(Optional v1.1)* API `GET/PATCH /core/onboarding/draft` for cross-device resume
+- [x] *(Dev only)* “Skip onboarding” when `isOnboardingSkipEnabled()` (dev/staging)
 
 **Done when:** navigation 1→4 with visual stepper; draft data survives refresh.
 
@@ -252,18 +326,18 @@ Route: `apps/webapp/src/routes/onboarding/+layout.svelte` + sub-routes or query 
 | City, country | required |
 | Timezone | IANA select, browser default |
 | Academic year | e.g. "2025–2026" + start/end dates |
-| Active period | e.g. "Term 1" + dates; type `trimester` |
+| Periods | One or more periods (trimester / semester) with labels + dates; first period published |
 
 **API actions (end of step):**
 
 1. `POST /core/onboarding/register-school` — creates school + owner staff + links `subjectId`
 2. `createAcademicYear` — core command
-3. `createAcademicPeriod` + `publishAcademicPeriod`
+3. `createAcademicPeriod` (for each period in draft) + `publishAcademicPeriod` (first only)
 
-- [x] Form UI + validation
+- [x] Form UI + validation (incl. multi-period — beyond original single-period spec)
 - [x] Sequential mutations with error toast
 - [x] After success: `bootstrapSession()` → active principal staff session
-- [ ] Integration tests: register-school + year + period
+- [ ] Integration tests: register-school + year + period chain as one E2E API test *(register-school alone is tested)*
 
 **Note:** extend `register-school` payload if needed (owner name already supported).
 
@@ -278,11 +352,11 @@ Route: `apps/webapp/src/routes/onboarding/+layout.svelte` + sub-routes or query 
 
 #### 5.1 Onboarding templates package
 
-Extract from `@edaya/dev-fixtures` into `package/onboarding-templates/` (or dedicated folder):
+Extract from `@edaya/dev-fixtures` / seed into **`@edaya/fixtures/onboarding`** (shipped):
 
-- [x] **Middle school** (6e–3e) and **High school** (2nde, 1ère, Terminale) models — API templates (`structure-templates.ts`)
+- [x] **Middle school** (6e–3e) and **High school** (2nde, 1ère, Terminale) models — API templates (`ci-college`, `ci-lycee`)
 - [x] Base subjects + placeholder chapters (`Subject` / `SubjectMatter`) — 6 identical subjects for all grades *(per-grade enrichment → Phase 9)*
-- [x] Grade level → `GradeLevel` records mapping
+- [x] Grade level → `GradeLevel` records mapping (webapp: `lib/onboarding/structure-templates.ts` → CI template ids)
 
 #### 5.2 Model selection UI
 
@@ -304,13 +378,16 @@ Option A (recommended v1): **dedicated endpoint** orchestrated on the API side
 Option B: chain existing commands from the client (more requests, more fragile).
 
 - [x] Implement Option A
-- [x] Tests: 2 classes 6e + 1 5e → expected entities in DB
+- [x] Tests: apply-structure route + lib tests in `apps/api/tests/routes/test-onboarding-apply-structure-route.test.ts`
+
+**Note:** Webapp does not call `GET /structure-templates`; it maps UI models to CI template ids in `apps/webapp/src/lib/onboarding/structure-templates.ts`.
 
 #### 5.4 Key files
 
-- `testing/dev-fixtures/src/dataset.ts` (template source)
-- `package/domain-core/.../setup.ts`, curriculum workflows
-- New onboarding route handler
+- `@edaya/fixtures/onboarding` (template definitions)
+- `apps/api/src/lib/onboarding/apply-structure-template.ts`
+- `apps/webapp/src/lib/onboarding/submit-structure-step.ts`, `structure-step-helpers.ts`
+- `apps/webapp/src/lib/components/onboarding/OnboardingStepStructureForm.svelte`
 
 ---
 
@@ -343,12 +420,12 @@ Option B: chain existing commands from the client (more requests, more fragile).
 
 - [x] Success screen: "Your school is ready"
 - [x] Deep-link checklist (non-blocking):
-  - Refine subjects / chapters → Configuration
-  - Add students → School / Students
-  - Timetables → Scheduling
-  - Billing → Finance
+  - Refine subjects / chapters → `/configuration/subjects`
+  - Add students → `/school/students`
+  - Class setup / timetables → `/configuration/classes` *(plan said “Scheduling” — classes config is the v1 entry point)*
+  - Billing → `/finance`
 - [x] Primary CTA → `/(app)/dashboard`
-- [x] Mark onboarding complete (local flag + optional API `onboardingCompletedAt` on school)
+- [x] Mark onboarding complete: `POST /core/onboarding/complete-wizard` + `onboardingWizardCompletedAt` on staff + local draft flag
 
 ---
 
@@ -359,7 +436,7 @@ Option B: chain existing commands from the client (more requests, more fragile).
 
 **Goal:** allow working **without** `bun seed:init` for your personal account.
 
-- [ ] Document "fresh `.data` + onboarding" flow in `docs/local-dev.md`
+- [ ] Document "fresh `.data` + onboarding" flow in `edaya_backend/docs/reference/local-dev.md`
 - [ ] Keep `bun seed:init` for CI demo and seed integration tests
 - [ ] `bootstrapHttpCoreSession` (seeding): no longer the default path for new devs — note in README
 - [ ] Smoke script `bun seed:smoke`: accept onboarding account (not only fixtures)
@@ -410,7 +487,7 @@ Out of scope v1: S / ES / L tracks, vocational options (AO), French Ministry of 
 
 #### 9.3 API
 
-- [ ] Extend `apps/api/src/lib/onboarding/structure-templates.ts` — per-grade templates
+- [ ] Extend `@edaya/fixtures/onboarding` + `apps/api/src/lib/onboarding/apply-structure-template.ts` — per-grade templates
 - [ ] Adapt `apply-structure-template.ts`:
   - create `Subject` catalog once (by code)
   - for each class: only offer subjects from its grade template
@@ -428,7 +505,7 @@ Out of scope v1: S / ES / L tracks, vocational options (AO), French Ministry of 
 
 #### 9.5 Key files
 
-- `apps/api/src/lib/onboarding/structure-templates.ts`
+- `@edaya/fixtures/onboarding`
 - `apps/api/src/lib/onboarding/apply-structure-template.ts`
 - `testing/dev-fixtures/src/dataset.ts`, `extended-dataset.ts` (source to unify)
 - `apps/api/tests/routes/test-onboarding-apply-structure-route.test.ts`
@@ -492,12 +569,14 @@ Phase 0 (email) ──► Phase 1 (split UI) ──► Phase 2 (redirect)
 
 ## 8. Tests
 
-| Level | Coverage |
-|-------|----------|
-| **Unit** | Structure templates, per-grade curriculum templates, class name generation, form validation |
-| **Integration** | `register-school` → year → period; batch structure; curriculum per grade; invitation send |
-| **Manual E2E** | Real email signup → full wizard → dashboard |
-| **Regression** | `bun seed:init` + demo login unchanged; existing seed tests green |
+| Level | Coverage | Status (2026-07-05) |
+|-------|----------|------------------------|
+| **Unit (webapp)** | Draft storage, navigation, resume, school/structure/staff validation, post-auth paths | ✅ 9 test files under `lib/onboarding/` + `lib/auth/resolve-post-auth.test.ts` |
+| **Unit (API)** | register-school lib, period template helper | ✅ `test-register-school-with-owner.test.ts`, `ensure-academic-periods-from-template.test.ts` |
+| **Integration (API)** | register-school; apply-structure; invite-staff; account-status | ✅ 4 route test files under `apps/api/tests/routes/test-onboarding-*` |
+| **Integration (API gap)** | register-school → year → period chain as one test | ⏳ Not yet |
+| **Manual E2E** | Real email signup → full wizard → dashboard | ⏳ Ops checklist §9 — no Playwright |
+| **Regression** | `bun seed:init` + demo login unchanged | ✅ Seed flow still primary in dev docs |
 
 ---
 
@@ -511,14 +590,20 @@ Phase 0 (email) ──► Phase 1 (split UI) ──► Phase 2 (redirect)
 
 ---
 
-## 10. Recommended next PR
+## 10. Recommended next work
 
-**Phase 8** — dev cutover docs (optional seeding vs wizard).
+**You are here:** Phases 0–7 are **done in code**. Nothing blocks starting Phase 8 or 9.
 
-Remaining order:
+| Priority | Phase | Why |
+|----------|-------|-----|
+| **P0** | **Phase 8** | Document fresh `.data` + wizard path in `edaya_backend/docs/reference/local-dev.md`; demote seed as default for new devs |
+| **P1** | **Phase 9** | Credible per-grade curriculum after wizard (logbook / subjects config) |
+| **P2** | Optional | Server draft API, E2E Playwright, dead i18n cleanup, webapp → `GET /structure-templates` |
 
-1. **Phase 8** — dev cutover docs (optional seeding)
-2. **Phase 9** — per-grade curriculum templates (credible logbook; can run in parallel with Phase 8)
+Suggested PR order:
+
+1. **Phase 8** — `chore/onboarding-dev-docs` (local-dev + README note)
+2. **Phase 9** — `feature/onboarding-grade-curriculum-templates` (can run in parallel with 8)
 
 ---
 

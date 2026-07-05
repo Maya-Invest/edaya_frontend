@@ -615,6 +615,8 @@ export const fr: Dict = {
 	'invitation.accept.signIn': 'Se connecter',
 	'invitation.accept.password': 'Mot de passe',
 	'invitation.accept.passwordHint': 'Utilisez au moins 8 caractères.',
+	'invitation.accept.verificationHint':
+		'Un e-mail de vérification a été envoyé à {email}. Confirmez votre adresse, revenez sur ce lien d\'invitation, puis connectez-vous pour finaliser.',
 	'invitation.accept.accountExistsSignIn': 'Un compte existe déjà avec cet e-mail. Connectez-vous avec votre mot de passe.',
 	'invitation.accept.existingAccountHint': 'Un compte existe déjà pour cet e-mail. Connectez-vous pour le relier à votre profil scolaire.',
 	'invitation.accept.cta': 'Accepter l\'invitation',
@@ -634,6 +636,9 @@ export const fr: Dict = {
 	'invitation.accept.expiredHint': 'Contactez le secrétariat pour obtenir un nouveau lien d\'invitation.',
 	'invitation.accept.alreadyAcceptedTitle': 'Cette invitation a déjà été utilisée',
 	'invitation.accept.alreadyAcceptedHint': 'Connectez-vous avec votre compte existant pour continuer.',
+	'invitation.accept.alreadyAcceptedOtherAccountTitle': 'Cette invitation est liée à un autre compte',
+	'invitation.accept.alreadyAcceptedOtherAccountHint': 'Connectez-vous avec l\'adresse e-mail invitée ou contactez le secrétariat.',
+	'invitation.accept.alreadyAcceptedStillUnlinkedHint': 'Votre compte est connecté mais pas encore relié à l\'établissement. Réessayez ou contactez le secrétariat.',
 	'invitation.accept.goToLogin': 'Aller à la connexion',
 	'invitation.accept.wrongAccountTitle': 'Connecté avec un autre compte',
 	'invitation.accept.wrongAccountHint': 'Cette invitation concerne une autre personne. Déconnectez-vous, puis créez un compte ou connectez-vous avec l\'adresse invitée.',

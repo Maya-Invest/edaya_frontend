@@ -36,7 +36,7 @@ export function redirectPathIfAuthenticated(): string | null {
 	}
 
 	if (authSession.needsOnboarding) {
-		return ONBOARDING_PATH;
+		return resolvePostAuthPath({ session: null, pendingOnboarding: true });
 	}
 
 	if (authSession.isLoggedIn) {

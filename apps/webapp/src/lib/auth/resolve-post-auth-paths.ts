@@ -1,4 +1,5 @@
 import type { SessionKind } from '$lib/auth/account-actor';
+import { pendingInvitePath } from '$lib/auth/pending-invite-token';
 import type { SessionSnapshot } from '$lib/auth/types';
 import type { ServerOnboardingAccountStatus } from '$lib/onboarding/types';
 import { appPath } from '$lib/navigation/app-navigation';
@@ -31,7 +32,7 @@ export function resolvePostAuthPath(options: {
 	serverOnboardingStatus?: ServerOnboardingAccountStatus | null;
 }): string {
 	if (options.pendingOnboarding) {
-		return ONBOARDING_PATH;
+		return pendingInvitePath() ?? ONBOARDING_PATH;
 	}
 
 	if (!options.session) {

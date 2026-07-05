@@ -625,6 +625,8 @@ export const en: Dict = {
 	'invitation.accept.signIn': 'Sign in',
 	'invitation.accept.password': 'Password',
 	'invitation.accept.passwordHint': 'Use at least 8 characters.',
+	'invitation.accept.verificationHint':
+		'A verification email was sent to {email}. Confirm your address, return to this invitation link, then sign in to finish.',
 	'invitation.accept.accountExistsSignIn': 'An account with this email already exists. Sign in with your password instead.',
 	'invitation.accept.existingAccountHint': 'An account already exists for this email. Sign in to link it to your school profile.',
 	'invitation.accept.cta': 'Accept invitation',
@@ -644,6 +646,9 @@ export const en: Dict = {
 	'invitation.accept.expiredHint': 'Contact your school office to request a new invitation link.',
 	'invitation.accept.alreadyAcceptedTitle': 'This invitation was already used',
 	'invitation.accept.alreadyAcceptedHint': 'Sign in with your existing account to continue.',
+	'invitation.accept.alreadyAcceptedOtherAccountTitle': 'This invitation is linked to another account',
+	'invitation.accept.alreadyAcceptedOtherAccountHint': 'Sign in with the invited email address or contact your school office.',
+	'invitation.accept.alreadyAcceptedStillUnlinkedHint': 'You are signed in but not yet linked to the school. Try again or contact your school office.',
 	'invitation.accept.goToLogin': 'Go to login',
 	'invitation.accept.wrongAccountTitle': 'Signed in with another account',
 	'invitation.accept.wrongAccountHint': 'This invitation is for someone else. Sign out, then create an account or sign in with the invited email address.',

@@ -2,6 +2,7 @@
 	import type { StaffMember } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import { authSession } from '$lib/auth/session.svelte';
 	import { DEFAULT_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { fetchStaffMembersPage } from '$lib/api/staff-data';
@@ -41,7 +42,7 @@
 			const result = await fetchStaffMembersPage(
 				getBrowserSchoolClient(),
 				{
-					schoolId: academicContext.schools[0]?.id ?? '',
+					schoolId: authSession.schoolId ?? academicContext.schools[0]?.id ?? '',
 					academicYearId: academicContext.yearId,
 				},
 				{ offset, limit },

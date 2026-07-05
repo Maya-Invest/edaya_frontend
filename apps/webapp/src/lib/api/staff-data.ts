@@ -10,6 +10,7 @@ import {
 	staffAssignmentsForStaff,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
+import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -84,7 +85,11 @@ export function mapStaffRole(
 	member: StaffRaw,
 	assignments: AssignmentRaw[],
 	classGroups: ClassGroupRaw[],
+	ownerSubjectId?: string | null,
 ): StaffRole {
+	if (ownerSubjectId && member.subjectId === ownerSubjectId) {
+		return 'owner';
+	}
 	return inferStaffRole(member, assignments, classGroups);
 }
 
@@ -119,7 +124,7 @@ export function mapDepartment(
 	catalogSubjectIds: string[],
 	subjects: SubjectRaw[],
 ): string {
-	if (role === 'directeur') {
+	if (role === 'directeur' || role === 'owner') {
 		return 'Direction';
 	}
 	if (role === 'educateur') {
@@ -152,9 +157,10 @@ export function mapStaffMembers(
 	assignmentsRaw: AssignmentRaw[],
 	classSubjectsRaw: ClassSubjectRaw[] = [],
 	subjectsRaw: SubjectRaw[] = [],
+	ownerSubjectId?: string | null,
 ): StaffMember[] {
 	return (staffRaw ?? []).map((member) => {
-		const role = mapStaffRole(member, assignmentsRaw ?? [], classGroupsRaw ?? []);
+		const role = mapStaffRole(member, assignmentsRaw ?? [], classGroupsRaw ?? [], ownerSubjectId);
 
 		const classesTaught = [...new Set(
 			(assignmentsRaw ?? [])
@@ -199,25 +205,42 @@ export function mapStaffMembers(
 }
 
 async function fetchStaffRelations(client: SchoolClient, staffIds: readonly string[]) {
-	const assignmentsRaw = await client.entities.staffAssignments.list(staffAssignmentsForStaff(staffIds));
+	const assignmentsRaw = await safeOptionalEntityList(() =>
+		client.entities.staffAssignments.list(staffAssignmentsForStaff(staffIds)));
 	const classSubjectIds = uniqueIds(
-		(assignmentsRaw ?? [])
+		assignmentsRaw
 			.map(assignment => assignment.classSubjectId)
 			.filter((id): id is string => Boolean(id)),
 	);
 	const classSubjectsRaw = classSubjectIds.length > 0
-		? await client.entities.classSubjects.list(entitiesByIds(classSubjectIds))
+		? await safeOptionalEntityList(() => client.entities.classSubjects.list(entitiesByIds(classSubjectIds)))
 		: [];
-	const subjectIds = uniqueIds((classSubjectsRaw ?? []).map(classSubject => classSubject.subjectId));
+	const subjectIds = uniqueIds(classSubjectsRaw.map(classSubject => classSubject.subjectId));
 	const subjectsRaw = subjectIds.length > 0
-		? await client.entities.subjects.list(entitiesByIds(subjectIds))
+		? await safeOptionalEntityList(() => client.entities.subjects.list(entitiesByIds(subjectIds)))
 		: [];
 
 	return {
-		assignmentsRaw: assignmentsRaw ?? [],
-		classSubjectsRaw: classSubjectsRaw ?? [],
-		subjectsRaw: subjectsRaw ?? [],
+		assignmentsRaw,
+		classSubjectsRaw,
+		subjectsRaw,
 	};
+}
+
+async function resolveSchoolOwnerSubjectId(
+	client: SchoolClient,
+	schoolId: string,
+): Promise<string | null | undefined> {
+	try {
+		const school = await client.entities.schools.get(schoolId);
+		return school.ownerSubjectId;
+	}
+	catch (error) {
+		if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
+			return undefined;
+		}
+		throw error;
+	}
 }
 
 export async function fetchStaffMembers(
@@ -235,7 +258,10 @@ export async function fetchStaffMembers(
 	if (staffIds.length === 0) {
 		return [];
 	}
-	const relations = await fetchStaffRelations(client, staffIds);
+	const [relations, ownerSubjectId] = await Promise.all([
+		fetchStaffRelations(client, staffIds),
+		resolveSchoolOwnerSubjectId(client, scope.schoolId),
+	]);
 
 	return mapStaffMembers(
 		staffRaw ?? [],
@@ -243,6 +269,7 @@ export async function fetchStaffMembers(
 		relations.assignmentsRaw,
 		relations.classSubjectsRaw,
 		relations.subjectsRaw,
+		ownerSubjectId,
 	);
 }
 
@@ -265,12 +292,14 @@ export async function fetchStaffMemberById(
 			...(assignedClassIds.length > 0 ? [entitiesByIds(assignedClassIds)] : []),
 		],
 	});
+	const ownerSubjectId = await resolveSchoolOwnerSubjectId(client, schoolId);
 	const members = mapStaffMembers(
 		[staff],
 		classGroupsRaw ?? [],
 		relations.assignmentsRaw,
 		relations.classSubjectsRaw,
 		relations.subjectsRaw,
+		ownerSubjectId,
 	);
 	return members.find(member => member.id === staffId) ?? null;
 }
@@ -279,17 +308,23 @@ export async function fetchStaffMemberById(
 export async function fetchSessionStaffProfile(
 	client: SchoolClient,
 	staffId: string,
+	options?: { isElevated?: boolean },
 ): Promise<{
 	profile: StaffMember;
 	notificationEmail: string | null;
 	notificationPhone: string | null;
 }> {
 	const staff = await client.entities.staffMembers.get(staffId);
-	let role: StaffRole = 'professeur';
+	const ownerSubjectId = options?.isElevated
+		? staff.subjectId
+		: await resolveSchoolOwnerSubjectId(client, staff.schoolId);
+	let role: StaffRole = ownerSubjectId && staff.subjectId === ownerSubjectId
+		? 'owner'
+		: 'professeur';
 	try {
 		const relations = await fetchStaffRelations(client, [staffId]);
 		const classGroupsRaw = await client.entities.classGroups.list({ schoolId: staff.schoolId });
-		role = mapStaffRole(staff, relations.assignmentsRaw, classGroupsRaw ?? []);
+		role = mapStaffRole(staff, relations.assignmentsRaw, classGroupsRaw ?? [], ownerSubjectId);
 	}
 	catch (error) {
 		if (!(error instanceof ApiError && (error.status === 403 || error.status === 401))) {
@@ -354,7 +389,10 @@ export async function fetchStaffMembersPage(
 	if (staffIds.length === 0) {
 		return { staff: [], totalStaff, assignments: [] };
 	}
-	const relations = await fetchStaffRelations(client, staffIds);
+	const [relations, ownerSubjectId] = await Promise.all([
+		fetchStaffRelations(client, staffIds),
+		resolveSchoolOwnerSubjectId(client, scope.schoolId),
+	]);
 
 	return {
 		staff: mapStaffMembers(
@@ -363,6 +401,7 @@ export async function fetchStaffMembersPage(
 			relations.assignmentsRaw,
 			relations.classSubjectsRaw,
 			relations.subjectsRaw,
+			ownerSubjectId,
 		),
 		totalStaff,
 		assignments: relations.assignmentsRaw,

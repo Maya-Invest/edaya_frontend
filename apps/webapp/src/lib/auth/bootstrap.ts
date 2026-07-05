@@ -69,7 +69,9 @@ export async function bootstrapSession(): Promise<BootstrapSessionResult> {
 		let subjectId: string | null = null;
 
 		if (session?.kind === 'staff') {
-			const sessionStaff = await fetchSessionStaffProfile(client, session.actorId);
+			const sessionStaff = await fetchSessionStaffProfile(client, session.actorId, {
+				isElevated: session.effectiveGrants.isElevated,
+			});
 			staffProfile = sessionStaff.profile;
 			subjectId = sessionStaff.profile.subjectId ?? null;
 			authSession.setFromServer(session, {
@@ -114,6 +116,26 @@ export async function bootstrapSession(): Promise<BootstrapSessionResult> {
 			return emptyResult;
 		}
 		throw error;
+	}
+	finally {
+		authSession.markReady();
+	}
+}
+
+/** Loads Better Auth session only — skips school API (for /login, /invite, /onboarding). */
+export async function bootstrapAuthOnly(): Promise<void> {
+	authSession.markLoading();
+	try {
+		const { data: auth } = await authClient.getSession();
+		if (!auth?.session || !auth.user?.id) {
+			authSession.clear();
+			return;
+		}
+
+		authSession.setAuthAccountOnly({
+			authUserId: auth.user.id,
+			loginEmail: auth.user.email ?? null,
+		});
 	}
 	finally {
 		authSession.markReady();
