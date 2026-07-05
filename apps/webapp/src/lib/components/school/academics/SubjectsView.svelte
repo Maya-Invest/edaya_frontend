@@ -2,6 +2,7 @@
 	import type { Subject, SubjectCategory } from '$lib/types/school';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
@@ -62,6 +63,9 @@
 					<Plus class="mr-1 h-4 w-4" />
 					{$t('subjects.newSubject')}
 				</Button>
+			{/snippet}
+			{#snippet more()}
+				<ListMoreMenu exportOnly />
 			{/snippet}
 		</ListPageHeader>
 

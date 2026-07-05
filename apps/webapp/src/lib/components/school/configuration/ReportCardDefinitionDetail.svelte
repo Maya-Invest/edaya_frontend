@@ -12,7 +12,7 @@
 	import { formatGrade } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
-	import DrawerActionBar from '../shared/DrawerActionBar.svelte';
+	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import ReportCardSectionTree from './ReportCardSectionTree.svelte';
 
 	const { definition }: { definition: ReportCardDefinition } = $props();
@@ -33,43 +33,43 @@
 </script>
 
 <div class="space-y-5">
-	<div>
-		<h3 class="font-display text-xl font-semibold">{live.name}</h3>
-		<p class="mt-1 text-sm text-muted-foreground">
-			{level?.name ?? '—'} · {scale?.name ?? '—'}
-		</p>
-		<span
-			class={cn(
-				'mt-2 inline-block rounded-full px-2 py-0.5 font-mono text-[10px] uppercase',
-				live.status === 'published'
-					? 'bg-accent/15 text-accent-foreground'
-					: 'bg-secondary text-muted-foreground',
-			)}
-		>
-			{live.status === 'published' ? $t('academic.published') : $t('academic.draft')}
-		</span>
-	</div>
-
-	{#if live.status === 'draft'}
-		<DrawerActionBar>
-			<Button size="sm" class="rounded-full" onclick={publish}>
-				{$t('reportCards.publishModel')}
-			</Button>
-			<PermissionGate permission="REPORT_CARD_CONFIGURE">
-				{#snippet children({ disabled, title })}
-					<DeleteEntityButton
-						{disabled}
-						{title}
-						confirmTitle={$t('common.deleteConfirmTitle')}
-						confirmDescription={$t('reportCards.deleteConfirm', { name: live.name })}
-						onConfirm={() => deleteReportCardDefinitionMutation(live.id, {
-							successMessage: get(t)('reportCards.toastModelDeleted', { name: live.name }),
-						})}
-					/>
-				{/snippet}
-			</PermissionGate>
-		</DrawerActionBar>
-	{/if}
+	<DrawerEntityHeader
+		name={live.name}
+		summary="{level?.name ?? '—'} · {scale?.name ?? '—'}"
+	>
+		{#snippet chips()}
+			<span
+				class={cn(
+					'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase',
+					live.status === 'published'
+						? 'bg-accent/15 text-accent-foreground'
+						: 'bg-secondary text-muted-foreground',
+				)}
+			>
+				{live.status === 'published' ? $t('academic.published') : $t('academic.draft')}
+			</span>
+		{/snippet}
+		{#snippet actions()}
+			{#if live.status === 'draft'}
+				<Button size="sm" class="rounded-full" onclick={publish}>
+					{$t('reportCards.publishModel')}
+				</Button>
+				<PermissionGate permission="REPORT_CARD_CONFIGURE">
+					{#snippet children({ disabled, title })}
+						<DeleteEntityButton
+							{disabled}
+							{title}
+							confirmTitle={$t('common.deleteConfirmTitle')}
+							confirmDescription={$t('reportCards.deleteConfirm', { name: live.name })}
+							onConfirm={() => deleteReportCardDefinitionMutation(live.id, {
+								successMessage: get(t)('reportCards.toastModelDeleted', { name: live.name }),
+							})}
+						/>
+					{/snippet}
+				</PermissionGate>
+			{/if}
+		{/snippet}
+	</DrawerEntityHeader>
 
 	<div>
 		<div class="mb-3 flex items-end justify-between gap-3">

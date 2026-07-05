@@ -2,9 +2,11 @@
 	import type { Announcement, AnnouncementPriority, AnnouncementStatus } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import InfiniteList from '$lib/components/ui/InfiniteList.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
@@ -40,16 +42,19 @@
 	};
 
 	const statusKeys = ['all', 'draft', 'published', 'archived'] as const;
+	const priorityKeys = ['all', 'normal', 'important', 'urgent'] as const;
 	const initialFilters = $derived(readAnnouncementListFilters($page.url));
 
 	let q = $state('');
 	let status = $state<string>('all');
+	let priority = $state<string>('all');
 	let filtersReady = $state(false);
 	let createOpen = $state(false);
 
 	const filtered = $derived(
 		announcements
 			.filter(announcement => status === 'all' || announcement.status === status)
+			.filter(announcement => priority === 'all' || announcement.priority === priority)
 			.filter((announcement) => {
 				const needle = q.toLowerCase();
 				return announcement.title.toLowerCase().includes(needle)
@@ -118,6 +123,15 @@
 			label: key === 'all' ? $t('filter.all') : statusLabel(key),
 		})),
 	);
+
+	const priorityFilterActive = $derived(priority !== 'all' ? 1 : 0);
+
+	const priorityFilterOptions = $derived(
+		priorityKeys.map(key => ({
+			value: key,
+			label: key === 'all' ? $t('filter.all') : priorityLabel(key as AnnouncementPriority),
+		})),
+	);
 </script>
 
 <div class="animate-fade-in">
@@ -134,6 +148,13 @@
 				class="h-9 w-44 rounded-full text-xs"
 				options={statusFilterOptions}
 			/>
+			<FilterPanel activeCount={priorityFilterActive} title={$t('announcements.priorityFilter')}>
+				<FilterSelect
+					bind:value={priority}
+					class="h-9 w-full rounded-md text-xs"
+					options={priorityFilterOptions}
+				/>
+			</FilterPanel>
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
@@ -154,6 +175,9 @@
 					</Button>
 				{/snippet}
 			</PermissionGate>
+		{/snippet}
+		{#snippet more()}
+			<ListMoreMenu exportOnly />
 		{/snippet}
 	</ListPageHeader>
 

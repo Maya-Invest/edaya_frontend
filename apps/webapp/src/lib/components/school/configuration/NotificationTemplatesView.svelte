@@ -5,6 +5,7 @@
 	import NotificationTemplateEditModal from '$lib/components/school/configuration/NotificationTemplateEditModal.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
@@ -92,6 +93,9 @@
 					</Button>
 				{/snippet}
 			</PermissionGate>
+		{/snippet}
+		{#snippet more()}
+			<ListMoreMenu exportOnly />
 		{/snippet}
 	</ListPageHeader>
 

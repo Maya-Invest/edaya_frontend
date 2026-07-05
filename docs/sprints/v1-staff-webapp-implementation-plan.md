@@ -1,6 +1,6 @@
 # V1 Staff Webapp — Implementation Plan
 
-> **Status:** Phases 0–7 complete (2026-07-05) · Phase 8 next  
+> **Status:** Phases 0–8 complete (2026-07-05)  
 > **Created:** 2026-07-03  
 > **Scope:** Bring `apps/webapp` to the target architecture in [v1-feature-architecture-spec.md](../specs/v1-feature-architecture-spec.md)  
 > **Draft / detail catalog:** [ui-architecture-reference.md](../reference/ui-architecture-reference.md) — feature cards, entity audit, living §0 checklist  
@@ -21,7 +21,7 @@ Check off when the phase is complete and merged. Update [ui-architecture-referen
 - [x] **Phase 5** — School people (student tabs · staff polish · incidents polish) — *(2026-07-05 — enrollments/grades/attendance tabs; staff header + RO assignments; incident filters, multi-student rows, sanctions)*
 - [x] **Phase 6** — Finance simple entities (fees · payments · grade scales · notifications) — *(2026-07-05 — fees table + row menu; payments FilterSelect + receipt link; grade scales table + edit; notification templates row menu; BillingDetail header)*
 - [x] **Phase 7** — Configuration remainder (disciplinary catalog · period definitions) — *(2026-07-05 — `/configuration/discipline` table + CRUD; period slots CRUD under academic accordion; calendar ListSearchField + status filter)*
-- [ ] **Phase 8** — Polish & cleanup (filters · more menus · post-v1 nav removal)
+- [x] **Phase 8** — Polish & cleanup (filters · more menus · post-v1 nav removal) — *(2026-07-05 — FilterPanel on payments/announcements/attendance; export-only More menu on all list pages; DrawerEntityHeader rollout; homeroom attendance nudge; resources absent from nav)*
 
 ### Already shipped (pre-plan)
 
@@ -323,18 +323,18 @@ Migrate complex drawers to `DrawerEntityHeader` (Phase 0). Track here; move rows
 | `StaffDetail` | School | 2, 5 |
 | `GuardianDetail` | School | 0 pilot or 5 |
 | `IncidentDetail` | School | 5 |
-| `ActivityDetail` | School | 5 |
-| `AnnouncementDetail` | School | 0 pilot or 5 |
-| `AssessmentDetail` | Classes | 3 |
-| `PlanningDetail` (timetable) | Classes | 4 |
+| `ActivityDetail` | School | 5 ✅ |
+| `AnnouncementDetail` | School | 0 pilot or 5 ✅ |
+| `AssessmentDetail` | Classes | 3 ✅ |
+| `PlanningDetail` (timetable) | Classes | 4 ✅ |
 | `ClassSubjectDetail` (teaching) | Classes | 4 |
 | `ReportCardDetail` | Classes | 5 |
-| `AttendanceDayDetail` (new) | Classes | 4 |
+| `AttendanceDayDetail` (new) | Classes | 4 ✅ |
 | `BillingDetail` | Finance | 6 ✅ |
 | `ClassGroupDetail` (config) | Configuration | 1 |
 | `GradeLevelDetail` (new) | Configuration | 1 |
-| `ClassSubjectCatalogDetail` | Configuration | 8 |
-| `ReportCardModelDetail` | Configuration | 8 |
+| `ClassSubjectCatalogDetail` | Configuration | 8 ✅ |
+| `ReportCardModelDetail` | Configuration | 8 ✅ |
 
 Thin drawers (calendar, inbox): lighter header — sections only per spec.
 

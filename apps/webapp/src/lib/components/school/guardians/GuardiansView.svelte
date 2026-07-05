@@ -7,6 +7,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import InfiniteList from '$lib/components/ui/InfiniteList.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
@@ -98,6 +99,9 @@
 					</Button>
 				{/snippet}
 			</PermissionGate>
+		{/snippet}
+		{#snippet more()}
+			<ListMoreMenu exportOnly />
 		{/snippet}
 	</ListPageHeader>
 	<GuardianCreateModal bind:open={createOpen} onCreated={handleCreated} />

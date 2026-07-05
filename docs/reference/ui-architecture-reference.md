@@ -47,10 +47,10 @@ Every in-scope feature conforms to [app-shell-spec.md](../specs/app-shell-spec.m
 Living checklist — check items off (`[x]`) as work lands. Mirrors [§6 gaps](#6-v1-implementation-gaps) and §3 feature cards.
 
 #### Architecture & shell
-- [ ] Drawer entity header (identity + top 2 actions) on all complex entities — `DrawerEntityHeader` built; pilot: `GuardianDetail`
-- [ ] Main filter as `<select>` everywhere (chip bars → Filter panel) — `FilterSelect` + `FilterPanel` built; pilots: `AnnouncementsView`, `SchoolStudentsView`
-- [ ] Filter button wired with secondary facets on list pages — `FilterPanel` built; pilot: `SchoolStudentsView`
-- [ ] More menu: per-feature export / bulk actions
+- [x] Drawer entity header (identity + top 2 actions) on all complex entities — `DrawerEntityHeader` on all complex drawers ✅ *(2026-07-05)*
+- [x] Main filter as `<select>` everywhere (chip bars → Filter panel) — `FilterSelect` + `FilterPanel` on list pages with secondary facets ✅ *(2026-07-05)*
+- [x] Filter button wired with secondary facets on list pages — payments status, announcement priority, attendance completion, incidents ✅ *(2026-07-05)*
+- [x] More menu: per-feature export / bulk actions — export stub on all list pages ✅ *(2026-07-05)*
 
 #### School
 - [x] Student drawer — **Enrollments** tab (history); **Grades** tab → links to assessments ✅ *(2026-07-05)*
@@ -90,7 +90,8 @@ Living checklist — check items off (`[x]`) as work lands. Mirrors [§6 gaps](#
 - [x] **B5** — Regen `edaya_web` OpenAPI client *(2026-07-03 — `classActivityEnrollments` · `resolveIncidentWithOutcomes` · auth model entities)*
 
 #### Post-v1 / cleanup
-- [ ] Resources removed from v1 nav and planning
+- [x] Resources removed from v1 nav and planning ✅ *(never routed; `ResourcesView` retained for post-v1)*
+- [x] Dashboard homeroom attendance nudge ✅ *(2026-07-05 — `HomeroomAttendanceNudge` on school dashboard)*
 
 ---
 

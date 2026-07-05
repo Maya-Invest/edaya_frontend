@@ -8,9 +8,11 @@
 	const {
 		view = 'table',
 		onViewChange,
+		exportOnly = false,
 	}: {
 		view?: 'table' | 'cards';
 		onViewChange?: (view: 'table' | 'cards') => void;
+		exportOnly?: boolean;
 	} = $props();
 
 	let open = $state(false);
@@ -49,27 +51,29 @@
 			<FileSpreadsheet class="h-4 w-4 text-muted-foreground" />
 			{$t('list.export')}
 		</button>
-		<button
-			type="button"
-			class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-secondary"
-			onclick={() => setView('table')}
-		>
-			<Layers class="h-4 w-4 text-muted-foreground" />
-			<span class="flex-1">{$t('list.viewTable')}</span>
-			{#if view === 'table'}
-				<span class="text-[10px] uppercase text-primary">{$t('list.active')}</span>
-			{/if}
-		</button>
-		<button
-			type="button"
-			class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-secondary"
-			onclick={() => setView('cards')}
-		>
-			<LayoutGrid class="h-4 w-4 text-muted-foreground" />
-			<span class="flex-1">{$t('list.viewCards')}</span>
-			{#if view === 'cards'}
-				<span class="text-[10px] uppercase text-primary">{$t('list.active')}</span>
-			{/if}
-		</button>
+		{#if !exportOnly}
+			<button
+				type="button"
+				class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-secondary"
+				onclick={() => setView('table')}
+			>
+				<Layers class="h-4 w-4 text-muted-foreground" />
+				<span class="flex-1">{$t('list.viewTable')}</span>
+				{#if view === 'table'}
+					<span class="text-[10px] uppercase text-primary">{$t('list.active')}</span>
+				{/if}
+			</button>
+			<button
+				type="button"
+				class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-secondary"
+				onclick={() => setView('cards')}
+			>
+				<LayoutGrid class="h-4 w-4 text-muted-foreground" />
+				<span class="flex-1">{$t('list.viewCards')}</span>
+				{#if view === 'cards'}
+					<span class="text-[10px] uppercase text-primary">{$t('list.active')}</span>
+				{/if}
+			</button>
+		{/if}
 	</Popover.PopoverContent>
 </Popover.Popover>

@@ -18,7 +18,7 @@
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
-	import DrawerActionBar from '../shared/DrawerActionBar.svelte';
+	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import DrawerEmptyState from '../shared/DrawerEmptyState.svelte';
 	import DrawerField from '../shared/DrawerField.svelte';
 	import PlanningFormModal from './PlanningFormModal.svelte';
@@ -125,24 +125,44 @@
 </script>
 
 <div class="space-y-5">
-	<div>
-		<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-			{$t(`day.full.${s.day}`)} · {s.start} — {s.end}
-		</p>
-		<h3 class="mt-1 font-display text-2xl font-semibold">{s.title}</h3>
-		<p class="mt-1 text-sm text-muted-foreground">
-			{$t(`planning.eventKind.${s.kind}`)} · {s.subject} · {s.teacher}
-		</p>
-		{#if s.status === 'cancelled'}
-			<p class="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-				{$t('planning.occurrenceStatus.cancelled')}
-			</p>
-		{:else if s.status === 'completed'}
-			<p class="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-				{$t('planning.occurrenceStatus.completed')}
-			</p>
-		{/if}
-	</div>
+	<DrawerEntityHeader
+		name={s.title}
+		summary="{$t(`day.full.${s.day}`)} · {s.start} — {s.end} · {$t(`planning.eventKind.${s.kind}`)} · {s.subject}"
+	>
+		{#snippet chips()}
+			{#if s.status === 'cancelled'}
+				<span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+					{$t('planning.occurrenceStatus.cancelled')}
+				</span>
+			{:else if s.status === 'completed'}
+				<span class="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-accent-foreground">
+					{$t('planning.occurrenceStatus.completed')}
+				</span>
+			{/if}
+		{/snippet}
+		{#snippet actions()}
+			{#if canEditLesson}
+				<PlanningFormModal event={s} />
+			{/if}
+			{#if canCancel}
+				<PermissionGate permission="TIMETABLE_UPDATE" mode="disable" tooltip={$t('calendar.permissionUpdate')}>
+					{#snippet children({ disabled, title })}
+						<DeleteEntityButton
+							{disabled}
+							{title}
+							confirmTitle={$t('planning.cancelConfirmTitle')}
+							confirmDescription={$t('planning.cancelConfirm', { title: s.title })}
+							onConfirm={() => cancelPlanningEventMutation(s, {
+								successMessage: get(t)('planning.toastCancelled', { title: s.title }),
+							})}
+						/>
+					{/snippet}
+				</PermissionGate>
+			{/if}
+		{/snippet}
+	</DrawerEntityHeader>
+
+	<p class="text-sm text-muted-foreground">{s.teacher}</p>
 
 	<div class="flex items-center gap-1 rounded-full border border-border bg-secondary/40 p-1 text-xs">
 		{#each visibleTabs as key (key)}
@@ -184,28 +204,6 @@
 				<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{s.teacher}</div>
 			</DrawerField>
 		</div>
-		{#if canEditLesson || canCancel}
-			<DrawerActionBar>
-				{#if canEditLesson}
-					<PlanningFormModal event={s} />
-				{/if}
-				{#if canCancel}
-					<PermissionGate permission="TIMETABLE_UPDATE" mode="disable" tooltip={$t('calendar.permissionUpdate')}>
-						{#snippet children({ disabled, title })}
-							<DeleteEntityButton
-								{disabled}
-								{title}
-								confirmTitle={$t('planning.cancelConfirmTitle')}
-								confirmDescription={$t('planning.cancelConfirm', { title: s.title })}
-								onConfirm={() => cancelPlanningEventMutation(s, {
-									successMessage: get(t)('planning.toastCancelled', { title: s.title }),
-								})}
-							/>
-						{/snippet}
-					</PermissionGate>
-				{/if}
-			</DrawerActionBar>
-		{/if}
 	{:else if tab === 'attendance'}
 		{#if sessionLoading}
 			<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>

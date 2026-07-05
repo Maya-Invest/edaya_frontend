@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Subject } from '$lib/types/school';
+	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import SubjectChaptersRow from './SubjectChaptersRow.svelte';
 
 	const { label, subtitle, items }: { label: string; subtitle: string; items: Subject[] } = $props();
@@ -8,16 +9,16 @@
 </script>
 
 <div class="space-y-5">
-	<div>
-		<p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{subtitle}</p>
-		<h3 class="font-display text-2xl font-semibold">{label}</h3>
-		<div class="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-			<span class="rounded-full bg-secondary px-2 py-0.5 font-mono tabular-nums">
+	<DrawerEntityHeader name={label} summary={subtitle}>
+		{#snippet chips()}
+			<span class="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] tabular-nums">
 				{items.length} matière{items.length > 1 ? 's' : ''}
 			</span>
-			<span class="font-mono tabular-nums">{totalHours}h / sem.</span>
-		</div>
-	</div>
+			<span class="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] tabular-nums">
+				{totalHours}h / sem.
+			</span>
+		{/snippet}
+	</DrawerEntityHeader>
 
 	<div class="overflow-hidden rounded-2xl border border-border bg-card">
 		{#each items as s, idx (s.id)}

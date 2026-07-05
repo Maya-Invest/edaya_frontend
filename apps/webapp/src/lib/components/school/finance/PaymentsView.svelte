@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
@@ -88,6 +90,8 @@
 		...classes.map(c => ({ value: c.id, label: c.name })),
 	]);
 
+	const statusFilterActive = $derived(status !== 'all' ? 1 : 0);
+
 	const statusFilterOptions = $derived(
 		statusKeys.map(k => ({
 			value: k,
@@ -143,18 +147,21 @@
 			<ListSearchField bind:value={q} oninput={scheduleFilterSync} />
 		{/snippet}
 		{#snippet filters()}
-			<div class="flex flex-wrap items-center gap-2">
-				<FilterSelect
-					bind:value={classFilter}
-					class="h-9 min-w-[10rem] rounded-full text-xs"
-					options={classFilterOptions}
-				/>
+			<FilterSelect
+				bind:value={classFilter}
+				class="h-9 min-w-[10rem] rounded-full text-xs"
+				options={classFilterOptions}
+			/>
+			<FilterPanel activeCount={statusFilterActive} title={$t('finance.paymentStatusFilter')}>
 				<FilterSelect
 					bind:value={status}
-					class="h-9 min-w-[9rem] rounded-full text-xs"
+					class="h-9 w-full rounded-md text-xs"
 					options={statusFilterOptions}
 				/>
-			</div>
+			</FilterPanel>
+		{/snippet}
+		{#snippet more()}
+			<ListMoreMenu exportOnly />
 		{/snippet}
 	</ListPageHeader>
 

@@ -6,6 +6,7 @@
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
@@ -206,6 +207,9 @@
 					</Button>
 				{/snippet}
 			</PermissionGate>
+		{/snippet}
+		{#snippet more()}
+			<ListMoreMenu exportOnly />
 		{/snippet}
 	</ListPageHeader>
 

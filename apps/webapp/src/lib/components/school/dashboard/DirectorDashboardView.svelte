@@ -3,6 +3,7 @@
 	import type { SchoolOverviewResponse } from '$lib/api/dashboard-data';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { authSession } from '$lib/auth/session.svelte';
+	import HomeroomAttendanceNudge from '$lib/components/school/dashboard/HomeroomAttendanceNudge.svelte';
 	import { t } from '$lib/i18n';
 	import {
 		AlertTriangle,
@@ -158,6 +159,8 @@
 			</div>
 		</div>
 	</section>
+
+	<HomeroomAttendanceNudge />
 
 	<!-- Top KPIs -->
 	<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">

@@ -11,7 +11,7 @@
 	import { Check, Clock, AlertCircle, FileText, Paperclip } from '$lib/icons';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
-	import DrawerActionBar from '../shared/DrawerActionBar.svelte';
+	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import DrawerField from '../shared/DrawerField.svelte';
 	import EvaluationCreateModal from './EvaluationCreateModal.svelte';
 	import EvaluationGradeEntryModal from './EvaluationGradeEntryModal.svelte';
@@ -61,18 +61,39 @@
 </script>
 
 <div class="space-y-5">
-	<div>
-		<span
-			class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
-		>
-			{$t(`eval.kind.${s.kind}`)}
-		</span>
-		<p class="mt-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{s.subject}</p>
-		<h3 class="mt-1 font-display text-2xl font-semibold">{s.title}</h3>
-		{#if s.description}
-			<p class="mt-2 text-sm text-foreground/70">{s.description}</p>
-		{/if}
-	</div>
+	<DrawerEntityHeader name={s.title} summary="{s.subject} · {formattedDate}">
+		{#snippet chips()}
+			<span
+				class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
+			>
+				{$t(`eval.kind.${s.kind}`)}
+			</span>
+		{/snippet}
+		{#snippet actions()}
+			<PermissionGate permission="GRADE_INPUT" mode="disable" tooltip={$t('eval.permissionCreate')}>
+				{#snippet children({ disabled, title })}
+					{#if isHomework}
+						<Button variant="outline" size="sm" class="rounded-full" {disabled} {title} onclick={() => (editOpen = true)}>
+							{$t('common.edit')}
+						</Button>
+					{/if}
+					<DeleteEntityButton
+						{disabled}
+						{title}
+						confirmTitle={$t('common.deleteConfirmTitle')}
+						confirmDescription={$t('eval.deleteConfirm', { title: s.title })}
+						onConfirm={() => deleteAssessmentMutation(s.id, {
+							successMessage: get(t)('eval.toastDeleted', { title: s.title }),
+						})}
+					/>
+				{/snippet}
+			</PermissionGate>
+		{/snippet}
+	</DrawerEntityHeader>
+
+	{#if s.description}
+		<p class="text-sm text-foreground/70">{s.description}</p>
+	{/if}
 
 	{#if isHomework}
 		<div class="grid grid-cols-2 gap-3">
@@ -143,27 +164,6 @@
 			</DrawerField>
 		</div>
 	{/if}
-
-	<DrawerActionBar>
-		<PermissionGate permission="GRADE_INPUT" mode="disable" tooltip={$t('eval.permissionCreate')}>
-			{#snippet children({ disabled, title })}
-				{#if isHomework}
-					<Button variant="outline" size="sm" class="rounded-full" {disabled} {title} onclick={() => (editOpen = true)}>
-						{$t('common.edit')}
-					</Button>
-				{/if}
-				<DeleteEntityButton
-					{disabled}
-					{title}
-					confirmTitle={$t('common.deleteConfirmTitle')}
-					confirmDescription={$t('eval.deleteConfirm', { title: s.title })}
-					onConfirm={() => deleteAssessmentMutation(s.id, {
-						successMessage: get(t)('eval.toastDeleted', { title: s.title }),
-					})}
-				/>
-			{/snippet}
-		</PermissionGate>
-	</DrawerActionBar>
 
 	{#if isHomework}
 		<div class="space-y-2 border-t border-border pt-4">

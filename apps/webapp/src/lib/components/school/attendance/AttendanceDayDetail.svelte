@@ -12,6 +12,7 @@
 	import { sessionDetailContext } from '$lib/session-detail/context.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
+	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import DrawerEmptyState from '../shared/DrawerEmptyState.svelte';
 	import AttendanceDayRecordModal from './AttendanceDayRecordModal.svelte';
 
@@ -76,34 +77,29 @@
 		});
 		bulkBusy = false;
 	}
+	const formattedDate = $derived(
+		new Date(day.date).toLocaleDateString($locale, {
+			weekday: 'long',
+			day: 'numeric',
+			month: 'long',
+			year: 'numeric',
+		}),
+	);
 </script>
 
 <div class="flex min-h-0 flex-col">
 	<div class="shrink-0 space-y-5">
-		<div>
-			<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-				{$t('attendanceDay.dailyRollCall')}
-			</p>
-			<h3 class="mt-1 font-display text-2xl font-semibold">{day.label}</h3>
-			<p class="mt-1 text-sm text-muted-foreground">
-				{new Date(day.date).toLocaleDateString($locale, {
-					weekday: 'long',
-					day: 'numeric',
-					month: 'long',
-					year: 'numeric',
-				})}
-			</p>
-		</div>
-
-		{#if loading}
-			<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
-		{:else}
-			<div class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-secondary/40 px-4 py-3 text-sm">
-				<span>
-					<span class="text-muted-foreground">{$t('attendanceDay.recorded')} :</span>
-					{recordedCount} / {attendanceRows.length}
+		<DrawerEntityHeader name={day.label} summary={formattedDate}>
+			{#snippet chips()}
+				<span class="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] tabular-nums text-foreground/80">
+					{$t('attendanceDay.recordedSummary', {
+						recorded: recordedCount,
+						total: attendanceRows.length || day.totalStudents,
+					})}
 				</span>
-				{#if unrecordedStudentIds.length > 0}
+			{/snippet}
+			{#snippet actions()}
+				{#if !loading && unrecordedStudentIds.length > 0}
 					<PermissionGate
 						permission="ATTENDANCE_RECORD"
 						classId={day.classId}
@@ -114,7 +110,7 @@
 							<Button
 								size="sm"
 								variant="outline"
-								class="h-8 rounded-full text-xs"
+								class="rounded-full"
 								disabled={disabled || bulkBusy}
 								{title}
 								onclick={markAllPresent}
@@ -125,7 +121,11 @@
 						{/snippet}
 					</PermissionGate>
 				{/if}
-			</div>
+			{/snippet}
+		</DrawerEntityHeader>
+
+		{#if loading}
+			<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
 		{/if}
 	</div>
 

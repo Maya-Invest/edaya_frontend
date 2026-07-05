@@ -18,7 +18,7 @@
 		ENROLL_NEXT,
 		fmtActivityDate,
 	} from '../shared/drawer-constants.ts';
-	import DrawerActionBar from '../shared/DrawerActionBar.svelte';
+	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import ActivityFormModal from './ActivityFormModal.svelte';
 
 	const { a }: { a: Activity } = $props();
@@ -67,40 +67,41 @@
 </script>
 
 <div class="space-y-5">
-	<DrawerActionBar>
-		<ActivityFormModal activity={a} />
-		<PermissionGate permission="DISCIPLINE_CREATE" mode="disable" tooltip={$t('activities.permissionCreate')}>
-			{#snippet children({ disabled, title })}
-				<DeleteEntityButton
-					{disabled}
-					{title}
-					confirmTitle={$t('common.deleteConfirmTitle')}
-					confirmDescription={$t('activities.deleteConfirm', { name: a.name })}
-					onConfirm={() => deleteActivityMutation(a.id, {
-						successMessage: get(t)('activities.toastDeleted', { name: a.name }),
-					})}
-				/>
-			{/snippet}
-		</PermissionGate>
-	</DrawerActionBar>
+	<DrawerEntityHeader
+		name={a.name}
+		summary="{fmtActivityDate(a.startDate)} → {fmtActivityDate(a.endDate)}"
+	>
+		{#snippet chips()}
+			<span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase text-foreground/80">
+				{$t(`activities.cat.${a.category}`)}
+			</span>
+			<span class="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] tabular-nums text-foreground/80">
+				{enrollments.length}/{a.capacity}
+			</span>
+		{/snippet}
+		{#snippet actions()}
+			<ActivityFormModal activity={a} />
+			<PermissionGate permission="DISCIPLINE_CREATE" mode="disable" tooltip={$t('activities.permissionCreate')}>
+				{#snippet children({ disabled, title })}
+					<DeleteEntityButton
+						{disabled}
+						{title}
+						confirmTitle={$t('common.deleteConfirmTitle')}
+						confirmDescription={$t('activities.deleteConfirm', { name: a.name })}
+						onConfirm={() => deleteActivityMutation(a.id, {
+							successMessage: get(t)('activities.toastDeleted', { name: a.name }),
+						})}
+					/>
+				{/snippet}
+			</PermissionGate>
+		{/snippet}
+	</DrawerEntityHeader>
 
-	<div>
-		<h3 class="font-display text-xl font-semibold">{a.name}</h3>
-		<p class="mt-1 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-			{fmtActivityDate(a.startDate)} → {fmtActivityDate(a.endDate)}
-		</p>
-		<p class="mt-3 text-sm text-foreground/80">{a.description}</p>
-		<div class="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
-			<span>Animateur : <span class="text-foreground/80">{a.coach}</span></span>
-			<span>·</span>
-			<span>Créneau : <span class="text-foreground/80">{a.schedule}</span></span>
-			<span>·</span>
-			<span
-			>Capacité : <span class="font-mono tabular-nums text-foreground/80"
-			>{enrollments.length}/{a.capacity}</span
-			></span
-			>
-		</div>
+	<p class="text-sm text-foreground/80">{a.description}</p>
+	<div class="flex flex-wrap gap-3 text-xs text-muted-foreground">
+		<span>{$t('activities.coach')} : <span class="text-foreground/80">{a.coach}</span></span>
+		<span>·</span>
+		<span>{$t('activities.schedule')} : <span class="text-foreground/80">{a.schedule}</span></span>
 	</div>
 
 	<div class="rounded-2xl border border-border bg-card">
