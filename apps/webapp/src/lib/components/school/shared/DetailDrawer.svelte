@@ -88,12 +88,6 @@
 				{:then { default: BillingDetail }}
 					<BillingDetail b={item.data} />
 				{/await}
-			{:else if item.kind === 'fee'}
-				{#await import('../finance/FeeDetail.svelte')}
-					<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
-				{:then { default: FeeDetail }}
-					<FeeDetail f={item.data} />
-				{/await}
 			{:else if item.kind === 'schoolYearEvent'}
 				{#await import('../school-life/SchoolYearEventDetail.svelte')}
 					<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>

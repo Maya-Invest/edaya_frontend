@@ -270,6 +270,7 @@ export const en: Dict = {
 	'payment.reference': 'Reference',
 	'payment.referencePlaceholder': 'Receipt or transaction number',
 	'payment.notes': 'Notes',
+	'payment.viewReceipt': 'View receipt',
 
 	'invoice.createTitle': 'New invoice',
 	'invoice.createDescription': 'Assign a fee from the catalog to a student.',
@@ -381,7 +382,11 @@ export const en: Dict = {
 	'gradeScales.decimals': 'Decimal places',
 	'gradeScales.description': 'Description',
 	'gradeScales.default': 'Default',
+	'gradeScales.range': 'Range',
+	'gradeScales.editTitle': 'Edit grade scale',
 	'gradeScales.toastCreated': 'Grade scale {name} created.',
+	'gradeScales.toastUpdated': 'Grade scale {name} updated.',
+	'gradeScales.invalidBounds': 'Minimum must be less than maximum and passing score must be strictly between them.',
 	'gradeScales.deleteConfirm': 'Delete grade scale “{name}”?',
 	'gradeScales.toastDeleted': 'Grade scale {name} deleted.',
 

@@ -1,3 +1,4 @@
+import { buildGradeScaleRanges } from '$lib/api/grade-scale-ranges';
 import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { loadClassReportCardResultsData } from '$lib/api/report-cards-data';
@@ -18,44 +19,6 @@ async function refreshClassPeriodResults(classId: string, periodId: string): Pro
 		reportCardsContext.definitions,
 	);
 	reportCardsContext.seedClassPeriodResults(results, { classId, periodId });
-}
-
-function buildGradeScaleRanges(minScore: number, maxScore: number, passingScore: number) {
-	const span = maxScore - minScore;
-	const mid = minScore + span * 0.35;
-	const high = minScore + span * 0.55;
-	const failingMax = Math.max(minScore, passingScore - 0.01);
-
-	return [
-		{
-			letter: 'D',
-			minScore,
-			maxScore: failingMax,
-			isPassing: false,
-			interpretation: 'Insuffisant',
-		},
-		{
-			letter: 'C',
-			minScore: passingScore,
-			maxScore: mid,
-			isPassing: true,
-			interpretation: 'Assez bien',
-		},
-		{
-			letter: 'B',
-			minScore: mid + 0.01,
-			maxScore: high,
-			isPassing: true,
-			interpretation: 'Bien',
-		},
-		{
-			letter: 'A',
-			minScore: high + 0.01,
-			maxScore,
-			isPassing: true,
-			interpretation: 'Très bien',
-		},
-	];
 }
 
 function resolveDefinitionId(studentId: string): string | undefined {
@@ -101,7 +64,43 @@ export async function createGradeScaleMutation(input: {
 		decimalPlaces: input.decimalPlaces ?? 2,
 		isDefault: false,
 		ranges: buildGradeScaleRanges(input.minScore, input.maxScore, input.passingScore),
-	}), { successMessage: input.successMessage });
+	}), {
+		successMessage: input.successMessage,
+		onSuccess: () => refreshReportCardCatalog(),
+	});
+	return result !== null;
+}
+
+export async function updateGradeScaleMutation(input: {
+	scaleId: string;
+	name: string;
+	minScore: number;
+	maxScore: number;
+	passingScore: number;
+	decimalPlaces?: number;
+	description?: string;
+	successMessage?: string;
+}): Promise<boolean> {
+	const client = getBrowserSchoolClient();
+	const existing = reportCardsContext.scales.find(scale => scale.id === input.scaleId);
+	if (!existing) {
+		return false;
+	}
+
+	const result = await runMutation(() => client.entities.gradeScales.save({
+		id: existing.id,
+		schoolId: existing.schoolId,
+		name: input.name.trim(),
+		minScore: input.minScore,
+		maxScore: input.maxScore,
+		decimalPlaces: input.decimalPlaces ?? existing.decimalPlaces,
+		description: input.description?.trim() || existing.description || null,
+		isDefault: existing.isDefault ?? false,
+		ranges: buildGradeScaleRanges(input.minScore, input.maxScore, input.passingScore),
+	}), {
+		successMessage: input.successMessage,
+		onSuccess: () => refreshReportCardCatalog(),
+	});
 	return result !== null;
 }
 

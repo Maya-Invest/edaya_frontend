@@ -22,6 +22,7 @@
 		open = $bindable(false),
 		disabled = false,
 		title,
+		showTrigger = true,
 	}: {
 		billing: StudentBilling;
 		studentName: string;
@@ -29,6 +30,7 @@
 		open?: boolean;
 		disabled?: boolean;
 		title?: string;
+		showTrigger?: boolean;
 	} = $props();
 
 	let busy = $state(false);
@@ -86,15 +88,17 @@
 	}
 </script>
 
-<Button
-	class="w-full rounded-full"
-	{disabled}
-	{title}
-	onclick={() => (open = true)}
->
-	<span class="mr-1">💳</span>
-	{$t('finance.recordPayment')}
-</Button>
+{#if showTrigger}
+	<Button
+		class="w-full rounded-full"
+		{disabled}
+		{title}
+		onclick={() => (open = true)}
+	>
+		<span class="mr-1">💳</span>
+		{$t('finance.recordPayment')}
+	</Button>
+{/if}
 
 <FormModal
 	bind:open

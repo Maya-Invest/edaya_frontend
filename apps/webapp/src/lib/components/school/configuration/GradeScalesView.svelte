@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { GradeScale } from '$lib/types/report-cards';
 	import { page } from '$app/stores';
 	import { deleteGradeScaleMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -9,7 +10,7 @@
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
-	import { Plus, Trash2 } from '$lib/icons';
+	import { Pencil, Plus, Trash2 } from '$lib/icons';
 	import { readGradeScaleListFilters, writeGradeScaleListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { reportCardsContext } from '$lib/report-cards/context.svelte';
@@ -21,6 +22,8 @@
 	let q = $state('');
 	let filtersReady = $state(false);
 	let createOpen = $state(false);
+	let editOpen = $state(false);
+	let editingScale = $state<GradeScale | null>(null);
 	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
 	let deleteTargetId = $state<string | null>(null);
@@ -29,8 +32,9 @@
 	const filteredScales = $derived(
 		reportCardsContext.scales.filter((scale) => {
 			const needle = q.trim().toLowerCase();
-			if (!needle)
+			if (!needle) {
 				return true;
+			}
 			return scale.name.toLowerCase().includes(needle)
 				|| (scale.description?.toLowerCase().includes(needle) ?? false);
 		}),
@@ -49,10 +53,16 @@
 
 	let searchTimer: ReturnType<typeof setTimeout> | undefined;
 	function scheduleFilterSync() {
-		if (!filtersReady)
+		if (!filtersReady) {
 			return;
+		}
 		clearTimeout(searchTimer);
 		searchTimer = setTimeout(syncFiltersToUrl, 250);
+	}
+
+	function openEdit(scale: GradeScale) {
+		editingScale = scale;
+		editOpen = true;
 	}
 
 	function openDelete(scaleId: string, scaleName: string) {
@@ -62,8 +72,9 @@
 	}
 
 	async function confirmDelete() {
-		if (!deleteTargetId)
+		if (!deleteTargetId) {
 			return;
+		}
 		deleteBusy = true;
 		try {
 			const ok = await deleteGradeScaleMutation(deleteTargetId, {
@@ -81,7 +92,7 @@
 	}
 </script>
 
-<div class="animate-fade-in">
+<div class="animate-fade-in space-y-6">
 	<ListPageHeader
 		eyebrow={$t('gradeScales.subtitle')}
 		title={$t('gradeScales.title', { n: filteredScales.length })}
@@ -107,26 +118,57 @@
 		{/snippet}
 	</ListPageHeader>
 
-	<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-		{#if filteredScales.length === 0}
-			<p class="col-span-full py-12 text-center text-sm text-muted-foreground">
-				{$t('dataState.emptyDescription')}
-			</p>
-		{:else}
-			{#each filteredScales as scale (scale.id)}
-				<article class="rounded-2xl border border-border bg-card p-5 shadow-soft">
-					<div class="mb-2 flex items-start justify-between gap-2">
-						<h3 class="font-display font-semibold">{scale.name}</h3>
-						<div class="flex items-center gap-2">
+	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+		<div
+			class="grid grid-cols-12 gap-4 border-b border-border bg-secondary/40 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+		>
+			<div class="col-span-4">{$t('gradeScales.name')}</div>
+			<div class="col-span-3">{$t('gradeScales.range')}</div>
+			<div class="col-span-2">{$t('gradeScales.passing')}</div>
+			<div class="col-span-2">{$t('gradeScales.default')}</div>
+			<div class="col-span-1"></div>
+		</div>
+		<ul>
+			{#if filteredScales.length === 0}
+				<li class="px-5 py-12 text-center text-sm text-muted-foreground">
+					{$t('dataState.emptyDescription')}
+				</li>
+			{:else}
+				{#each filteredScales as scale (scale.id)}
+					<li class="grid grid-cols-12 items-center gap-4 border-b border-border px-5 py-4 last:border-b-0">
+						<div class="col-span-4 min-w-0">
+							<p class="truncate text-sm font-medium">{scale.name}</p>
+							{#if scale.description}
+								<p class="truncate text-xs text-muted-foreground">{scale.description}</p>
+							{/if}
+						</div>
+						<div class="col-span-3 font-mono text-sm text-muted-foreground">
+							{scale.minScore} → {scale.maxScore}
+						</div>
+						<div class="col-span-2 text-sm tabular-nums">{scale.passingScore}</div>
+						<div class="col-span-2">
 							{#if scale.isDefault}
 								<span class="rounded-full bg-accent/15 px-2 py-0.5 font-mono text-[10px] uppercase">
 									{$t('gradeScales.default')}
 								</span>
 							{:else}
+								<span class="text-xs text-muted-foreground">—</span>
+							{/if}
+						</div>
+						<div class="col-span-1 flex justify-end">
+							{#if !scale.isDefault}
 								<PermissionGate permission="REPORT_CARD_CONFIGURE">
 									{#snippet children({ disabled, title })}
 										<RowActionMenu>
 											{#snippet children()}
+												<RowActionMenuItem
+													{disabled}
+													{title}
+													onclick={() => openEdit(scale)}
+												>
+													<Pencil class="h-4 w-4" />
+													{$t('common.edit')}
+												</RowActionMenuItem>
 												<RowActionMenuItem
 													destructive
 													{disabled}
@@ -142,20 +184,15 @@
 								</PermissionGate>
 							{/if}
 						</div>
-					</div>
-					<p class="font-mono text-sm text-muted-foreground">
-						{scale.minScore} → {scale.maxScore} · {$t('gradeScales.passing')} {scale.passingScore}
-					</p>
-					{#if scale.description}
-						<p class="mt-2 text-sm text-muted-foreground">{scale.description}</p>
-					{/if}
-				</article>
-			{/each}
-		{/if}
+					</li>
+				{/each}
+			{/if}
+		</ul>
 	</div>
 </div>
 
 <GradeScaleFormModal bind:open={createOpen} />
+<GradeScaleFormModal bind:open={editOpen} scale={editingScale} />
 
 <ConfirmModal
 	bind:open={deleteOpen}

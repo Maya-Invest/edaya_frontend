@@ -6,6 +6,8 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { confirmAction } from '$lib/confirm-action';
 	import { t } from '$lib/i18n';
 	import { Pencil, RotateCcw } from '$lib/icons';
@@ -117,16 +119,17 @@
 												{key}
 											</p>
 										</div>
-										<Button
-											size="sm"
-											variant="outline"
-											class="shrink-0 rounded-full"
+								<RowActionMenu>
+									{#snippet children()}
+										<RowActionMenuItem
 											disabled={disabled || !document}
 											onclick={() => openEdit(key)}
 										>
-											<Pencil class="mr-1 h-3.5 w-3.5" />
+											<Pencil class="h-4 w-4" />
 											{$t('common.edit')}
-										</Button>
+										</RowActionMenuItem>
+									{/snippet}
+								</RowActionMenu>
 									</div>
 									<p class="text-xs text-muted-foreground">
 										{$t('notificationTemplates.channels')}: {channelLabel(key)}

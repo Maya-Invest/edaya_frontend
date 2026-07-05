@@ -9,7 +9,6 @@ import type {
 	Guardian,
 	StaffMember,
 	StudentBilling,
-	Fee,
 	SchoolYearEvent,
 	Incident,
 	Activity,
@@ -26,7 +25,6 @@ export type DrawerItem
 		| { kind: 'guardian'; data: Guardian }
 		| { kind: 'staff'; data: StaffMember }
 		| { kind: 'billing'; data: StudentBilling }
-		| { kind: 'fee'; data: Fee }
 		| { kind: 'schoolYearEvent'; data: SchoolYearEvent }
 		| { kind: 'incident'; data: Incident }
 		| { kind: 'level'; data: { label: string; subtitle: string; items: Subject[] } }

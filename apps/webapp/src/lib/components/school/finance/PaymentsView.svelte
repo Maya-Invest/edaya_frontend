@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
+	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
+	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
+	import { detailHref } from '$lib/detail-hrefs';
 	import { locale, t } from '$lib/i18n';
-	import { Check, Clock, Search } from '$lib/icons';
+	import { Check, Clock, Receipt } from '$lib/icons';
 	import { readPaymentListFilters, writePaymentListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
@@ -17,6 +21,7 @@
 
 	type PaymentRow = {
 		id: string;
+		billingId: string;
 		studentId: string;
 		feeId: string;
 		date: string;
@@ -37,6 +42,7 @@
 			b.installments.forEach((i, idx) =>
 				out.push({
 					id: `${b.id}-${idx}`,
+					billingId: b.id,
 					studentId: b.studentId,
 					feeId: b.feeId,
 					date: i.date,
@@ -50,15 +56,19 @@
 
 	const list = $derived(
 		rows.filter((r) => {
-			if (status !== 'all' && r.status !== status)
+			if (status !== 'all' && r.status !== status) {
 				return false;
+			}
 			const st = students.find(s => s.id === r.studentId);
-			if (!st)
+			if (!st) {
 				return false;
-			if (classFilter !== 'all' && st.classId !== classFilter)
+			}
+			if (classFilter !== 'all' && st.classId !== classFilter) {
 				return false;
-			if (q && !st.name.toLowerCase().includes(q.toLowerCase()))
+			}
+			if (q && !st.name.toLowerCase().includes(q.toLowerCase())) {
 				return false;
+			}
 			return true;
 		}),
 	);
@@ -73,19 +83,21 @@
 	const statusKeys = ['all', 'paid', 'pending'] as const;
 	const classFilterKeys = $derived(['all', ...classes.map(c => c.id)] as const);
 
-	function statusLabel(k: (typeof statusKeys)[number]) {
-		return k === 'all'
-			? $t('filter.all')
-			: k === 'paid'
-			? $t('installment.paid')
-			: $t('installment.pending');
-	}
+	const classFilterOptions = $derived([
+		{ value: 'all', label: $t('common.allClasses') },
+		...classes.map(c => ({ value: c.id, label: c.name })),
+	]);
 
-	function classLabel(classId: string) {
-		if (classId === 'all')
-			return $t('common.allClasses');
-		return classes.find(c => c.id === classId)?.name ?? classId;
-	}
+	const statusFilterOptions = $derived(
+		statusKeys.map(k => ({
+			value: k,
+			label: k === 'all'
+				? $t('filter.all')
+				: k === 'paid'
+					? $t('installment.paid')
+					: $t('installment.pending'),
+		})),
+	);
 
 	function syncFiltersToUrl() {
 		const href = writePaymentListFilters($page.url, { q, status, class: classFilter });
@@ -104,75 +116,44 @@
 
 	let searchTimer: ReturnType<typeof setTimeout> | undefined;
 	function scheduleFilterSync() {
-		if (!filtersReady)
+		if (!filtersReady) {
 			return;
+		}
 		clearTimeout(searchTimer);
 		searchTimer = setTimeout(syncFiltersToUrl, 250);
 	}
 
-	function applyStatus(next: (typeof statusKeys)[number]) {
-		status = next;
+	$effect(() => {
+		if (!filtersReady) {
+			return;
+		}
+		void status;
+		void classFilter;
 		scheduleFilterSync();
-	}
+	});
 
-	function applyClass(next: string) {
-		classFilter = next;
-		scheduleFilterSync();
+	function openBillingReceipt(billingId: string) {
+		appGoto(detailHref.financeBilling(billingId));
 	}
 </script>
 
 <div class="animate-fade-in space-y-6">
-	<ListPageHeader
-		eyebrow={$t('finance.treasury')}
-		title={$t('finance.payments')}
-	>
+	<ListPageHeader eyebrow={$t('finance.treasury')} title={$t('finance.payments')}>
 		{#snippet search()}
-			<div class="relative">
-				<Search
-					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-				/>
-				<Input
-					bind:value={q}
-					oninput={scheduleFilterSync}
-					placeholder={$t('common.searchStudent')}
-					class="h-9 w-56 rounded-full pl-9 text-sm"
-				/>
-			</div>
+			<ListSearchField bind:value={q} oninput={scheduleFilterSync} />
 		{/snippet}
 		{#snippet filters()}
 			<div class="flex flex-wrap items-center gap-2">
-				<div class="flex flex-wrap items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft">
-					{#each classFilterKeys as classId (classId)}
-						<button
-							type="button"
-							onclick={() => applyClass(classId)}
-							class={cn(
-								'rounded-full px-3 py-1 text-[11px] font-medium transition',
-								classFilter === classId
-									? 'bg-primary text-primary-foreground'
-									: 'text-muted-foreground hover:text-foreground',
-							)}
-						>
-							{classLabel(classId)}
-						</button>
-					{/each}
-				</div>
-				<div class="flex flex-wrap items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft">
-					{#each statusKeys as k (k)}
-						<button
-							type="button"
-							onclick={() => applyStatus(k)}
-							class={cn(
-								'rounded-full px-3 py-1 text-[11px] font-medium transition',
-								status === k
-									? 'bg-primary text-primary-foreground'
-									: 'text-muted-foreground hover:text-foreground',
-							)}
-						>
-							{statusLabel(k)}
-						</button>
-					{/each}
-				</div>
+				<FilterSelect
+					bind:value={classFilter}
+					class="h-9 min-w-[10rem] rounded-full text-xs"
+					options={classFilterOptions}
+				/>
+				<FilterSelect
+					bind:value={status}
+					class="h-9 min-w-[9rem] rounded-full text-xs"
+					options={statusFilterOptions}
+				/>
 			</div>
 		{/snippet}
 	</ListPageHeader>
@@ -225,7 +206,7 @@
 					<div class="col-span-2 text-right font-display text-sm font-semibold tabular-nums">
 						{r.amount.toLocaleString()} FCFA
 					</div>
-					<div class="col-span-1 flex justify-end">
+					<div class="col-span-1 flex items-center justify-end gap-1">
 						{#if r.status === 'paid'}
 							<span
 								class="flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-medium text-accent-foreground"
@@ -241,6 +222,14 @@
 								{$t('installment.pending')}
 							</span>
 						{/if}
+						<RowActionMenu>
+							{#snippet children()}
+								<RowActionMenuItem onclick={() => openBillingReceipt(r.billingId)}>
+									<Receipt class="h-4 w-4" />
+									{$t('payment.viewReceipt')}
+								</RowActionMenuItem>
+							{/snippet}
+						</RowActionMenu>
 					</div>
 				</li>
 			{/each}

@@ -72,6 +72,11 @@ const gradeScaleListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
 });
 
+const feeListFiltersCodec = defineUrlFilterCodec({
+	q: { type: 'search', default: '' },
+	category: { type: 'string', default: 'all' },
+});
+
 const classGroupListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
 });
@@ -105,6 +110,7 @@ export type PaymentListFilters = ReturnType<typeof paymentListFiltersCodec.read>
 export type ReportCardDefinitionListFilters = ReturnType<typeof reportCardDefinitionListFiltersCodec.read>;
 export type RoleListFilters = ReturnType<typeof roleListFiltersCodec.read>;
 export type GradeScaleListFilters = ReturnType<typeof gradeScaleListFiltersCodec.read>;
+export type FeeListFilters = ReturnType<typeof feeListFiltersCodec.read>;
 export type ClassGroupListFilters = ReturnType<typeof classGroupListFiltersCodec.read>;
 export type AcademicAdminListFilters = ReturnType<typeof academicAdminListFiltersCodec.read>;
 export type ResourceListFilters = ReturnType<typeof resourceListFiltersCodec.read>;
@@ -231,6 +237,14 @@ export function readGradeScaleListFilters(url: URL): GradeScaleListFilters {
 
 export function writeGradeScaleListFilters(url: URL, filters: GradeScaleListFilters): string {
 	return gradeScaleListFiltersCodec.write(url, filters);
+}
+
+export function readFeeListFilters(url: URL): FeeListFilters {
+	return feeListFiltersCodec.read(url);
+}
+
+export function writeFeeListFilters(url: URL, filters: FeeListFilters): string {
+	return feeListFiltersCodec.write(url, filters);
 }
 
 export function readClassGroupListFilters(url: URL): ClassGroupListFilters {

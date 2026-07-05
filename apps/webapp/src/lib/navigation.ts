@@ -111,7 +111,7 @@ const SCHOOL_ROUTES: Record<string, RouteId> = {
 };
 
 const FINANCE_ROUTES: Record<string, RouteId> = {
-	fees: '/(app)/finance/fees/[[id]]',
+	fees: '/(app)/finance/fees',
 	billing: '/(app)/finance/billing/[[id]]',
 	payment: '/(app)/finance/payment',
 };

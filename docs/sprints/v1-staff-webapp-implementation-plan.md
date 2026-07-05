@@ -1,6 +1,6 @@
 # V1 Staff Webapp — Implementation Plan
 
-> **Status:** Phases 0–5 complete (2026-07-05) · Phase 6 next  
+> **Status:** Phases 0–6 complete (2026-07-05) · Phase 7 next  
 > **Created:** 2026-07-03  
 > **Scope:** Bring `apps/webapp` to the target architecture in [v1-feature-architecture-spec.md](../specs/v1-feature-architecture-spec.md)  
 > **Draft / detail catalog:** [ui-architecture-reference.md](../reference/ui-architecture-reference.md) — feature cards, entity audit, living §0 checklist  
@@ -19,7 +19,7 @@ Check off when the phase is complete and merged. Update [ui-architecture-referen
 - [x] **Phase 3** — Class academics refactor (homework fold · evaluations · `attendanceMode` nav) — *(2026-07-05 — unified evaluations list/drawer; homework route removed with redirect)*
 - [x] **Phase 4** — Attendance & timetable (daily list · session flows · class activities) — *(2026-07-05 — daily attendance list/drawer; New session wizard; ClassActivityEnrollment; inline schedule on subject create; session attendance bulk)*
 - [x] **Phase 5** — School people (student tabs · staff polish · incidents polish) — *(2026-07-05 — enrollments/grades/attendance tabs; staff header + RO assignments; incident filters, multi-student rows, sanctions)*
-- [ ] **Phase 6** — Finance simple entities (fees · payments · grade scales · notifications)
+- [x] **Phase 6** — Finance simple entities (fees · payments · grade scales · notifications) — *(2026-07-05 — fees table + row menu; payments FilterSelect + receipt link; grade scales table + edit; notification templates row menu; BillingDetail header)*
 - [ ] **Phase 7** — Configuration remainder (disciplinary catalog · period definitions)
 - [ ] **Phase 8** — Polish & cleanup (filters · more menus · post-v1 nav removal)
 
@@ -330,7 +330,7 @@ Migrate complex drawers to `DrawerEntityHeader` (Phase 0). Track here; move rows
 | `ClassSubjectDetail` (teaching) | Classes | 4 |
 | `ReportCardDetail` | Classes | 5 |
 | `AttendanceDayDetail` (new) | Classes | 4 |
-| `BillingDetail` | Finance | 6 |
+| `BillingDetail` | Finance | 6 ✅ |
 | `ClassGroupDetail` (config) | Configuration | 1 |
 | `GradeLevelDetail` (new) | Configuration | 1 |
 | `ClassSubjectCatalogDetail` | Configuration | 8 |
@@ -348,6 +348,7 @@ Thin drawers (calendar, inbox): lighter header — sections only per spec.
 | **Add** | `/configuration/discipline` | 7 | |
 | **Add** | `/classes/{classId}/attendance/[[id]]` (conditional nav) | 4 | nav ✅ · list UI Phase 4 |
 | **Refactor** | `/configuration/classes` → `[[id]]` drawer | 1 | ✅ |
+| **Refactor** | `/finance/fees` → simple list (no `[[id]]` drawer) | 6 | ✅ |
 | **Remove** | `/configuration/roles` | 2 | ✅ *(redirect → `/school/staff/{id}`)* |
 | **Remove** | `/classes/{classId}/homework/[[id]]` + nav tab | 3 | ✅ *(redirect → evaluations)* |
 | **Keep** | `/classes/{classId}/evaluations/[[id]]` (all kinds) | 3 | ✅ |
@@ -381,6 +382,7 @@ The v1 staff webapp implementation is **complete** when:
 
 | Date | Change |
 |------|--------|
+| 2026-07-05 | Phase 6 checked off — fees/payments simple lists, grade scales table, notification row menu, billing header |
 | 2026-07-05 | Phase 5 checked off — student drawer tabs, staff header/assignments, incidents polish |
 | 2026-07-05 | Phase 4 checked off — daily attendance, session wizard, ClassActivityEnrollment |
 | 2026-07-04 | Phases 0–2 checked off; route table updated (grade levels, classes drawer, roles removal) |

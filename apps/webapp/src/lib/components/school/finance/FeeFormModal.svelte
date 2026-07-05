@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { Fee } from '$lib/types/school';
 	import { createFeeMutation, updateFeeMutation } from '$lib/api/mutations/fee.mutations';
-	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -16,14 +15,10 @@
 		fee,
 		open = $bindable(false),
 		onCreated,
-		disabled = false,
-		title,
 	}: {
 		fee?: Fee;
 		open?: boolean;
 		onCreated?: (feeId: string) => void;
-		disabled?: boolean;
-		title?: string;
 	} = $props();
 
 	let busy = $state(false);
@@ -96,19 +91,6 @@
 		}
 	}
 </script>
-
-{#if isEdit}
-	<Button
-		variant="outline"
-		size="sm"
-		class="rounded-full"
-		{disabled}
-		{title}
-		onclick={() => (open = true)}
-	>
-		{$t('common.edit')}
-	</Button>
-{/if}
 
 <FormModal
 	bind:open

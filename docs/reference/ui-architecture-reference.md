@@ -67,10 +67,10 @@ Living checklist — check items off (`[x]`) as work lands. Mirrors [§6 gaps](#
 - [x] Student drawer **Attendance** tab — aggregate daily + session records ✅ *(2026-07-05)*
 
 #### Finance
-- [ ] Fees — row `···` menu only (remove drawer)
-- [ ] Payments — row `···` menu; receipt → billing drawer
-- [ ] Grade scales — row `···` menu (remove inline card edit)
-- [ ] Notification templates — row edit → modal pattern
+- [x] Fees — row `···` menu only (remove drawer)
+- [x] Payments — row `···` menu; receipt → billing drawer
+- [x] Grade scales — row `···` menu (remove inline card edit)
+- [x] Notification templates — row edit → modal pattern
 
 #### Configuration
 - [x] Grade levels route + drawer — `/configuration/grade-levels/[[id]]` ✅ *(2026-07-03)*
@@ -553,11 +553,11 @@ Visible in class nav **only** when `ClassGroup.attendanceMode = daily`. See [Cla
 
 | Feature | Route | Status |
 |---------|-------|--------|
-| Fees | `/finance/fees` | Partial |
+| Fees | `/finance/fees` | Built |
 | Billing | `/finance/billing/[[id]]` | Built |
-| Payments | `/finance/payment` | Partial |
+| Payments | `/finance/payment` | Built |
 
-#### Fees `Partial`
+#### Fees `Built`
 
 | | |
 |---|---|
@@ -574,7 +574,7 @@ Visible in class nav **only** when `ClassGroup.attendanceMode = daily`. See [Cla
 - More: Export catalog
 - Row `···`: Edit · Delete
 
-*Today: drawer exists — refactor to row menu only.*
+*Today: table + row `···` menu (Edit · Delete); no drawer.*
 
 #### Billing `Built`
 
@@ -596,7 +596,7 @@ Visible in class nav **only** when `ClassGroup.attendanceMode = daily`. See [Cla
 - Header: Record payment · Waive
 - Body: Summary · installments sub-list
 
-#### Payments `Partial`
+#### Payments `Built`
 
 | | |
 |---|---|
@@ -625,8 +625,8 @@ Visible in class nav **only** when `ClassGroup.attendanceMode = daily`. See [Cla
 | Classes | `/configuration/classes/[[id]]` | Partial |
 | Subjects catalog | `/configuration/subjects/[[id]]` | Built |
 | Report card models | `/configuration/report-cards/[[id]]` | Built |
-| Grade scales | `/configuration/grade-scales` | Partial |
-| Notification templates | `/configuration/notifications` | Partial |
+| Grade scales | `/configuration/grade-scales` | Built |
+| Notification templates | `/configuration/notifications` | Built |
 | Disciplinary catalog | `/configuration/discipline` | Planned |
 
 *Removed from v1 target: **Roles & permissions** (`/configuration/roles`) — permissions move to [Staff drawer](#staff-partial).*
@@ -750,7 +750,7 @@ Visible in class nav **only** when `ClassGroup.attendanceMode = daily`. See [Cla
 - Header: Edit · Publish
 - Body: Structure tree · preview
 
-#### Grade scales `Partial`
+#### Grade scales `Built`
 
 | | |
 |---|---|
@@ -765,9 +765,9 @@ Visible in class nav **only** when `ClassGroup.attendanceMode = daily`. See [Cla
 - Primary CTA: Add scale
 - Row `···`: Edit · Delete · Set default
 
-*Today: inline card edit.*
+*Today: table + row `···` menu (Edit · Delete).*
 
-#### Notification templates `Partial`
+#### Notification templates `Built`
 
 | | |
 |---|---|

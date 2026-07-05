@@ -1,5 +1,10 @@
 <script lang="ts">
-	import { createGradeScaleMutation } from '$lib/api/mutations/report-cards.mutations';
+	import type { GradeScale } from '$lib/types/report-cards';
+	import {
+		createGradeScaleMutation,
+		updateGradeScaleMutation,
+	} from '$lib/api/mutations/report-cards.mutations';
+	import { isValidGradeScaleBounds } from '$lib/api/grade-scale-ranges';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
@@ -7,8 +12,10 @@
 
 	let {
 		open = $bindable(false),
+		scale = null,
 	}: {
 		open?: boolean;
+		scale?: GradeScale | null;
 	} = $props();
 
 	let busy = $state(false);
@@ -19,9 +26,23 @@
 	let decimalPlaces = $state('2');
 	let description = $state('');
 
-	const canSubmit = $derived(name.trim().length > 0);
+	const isEdit = $derived(scale !== null && scale !== undefined);
+	const numericMin = $derived(Number(minScore));
+	const numericMax = $derived(Number(maxScore));
+	const numericPassing = $derived(Number(passingScore));
+	const boundsValid = $derived(isValidGradeScaleBounds(numericMin, numericMax, numericPassing));
+	const canSubmit = $derived(name.trim().length > 0 && boundsValid);
 
 	function resetForm() {
+		if (scale) {
+			name = scale.name;
+			minScore = String(scale.minScore);
+			maxScore = String(scale.maxScore);
+			passingScore = String(scale.passingScore);
+			decimalPlaces = String(scale.decimalPlaces);
+			description = scale.description ?? '';
+			return;
+		}
 		name = '';
 		minScore = '0';
 		maxScore = '20';
@@ -37,24 +58,38 @@
 	});
 
 	async function submit() {
-		if (!canSubmit || busy)
+		if (!canSubmit || busy) {
 			return;
+		}
 
 		busy = true;
 		try {
 			const trimmedName = name.trim();
-			const ok = await createGradeScaleMutation({
+			const payload = {
 				name: trimmedName,
 				minScore: Number(minScore),
 				maxScore: Number(maxScore),
 				passingScore: Number(passingScore),
 				decimalPlaces: Number(decimalPlaces),
 				description: description.trim() || undefined,
-				successMessage: get(t)('gradeScales.toastCreated', { name: trimmedName }),
-			});
+			};
+
+			const ok = isEdit && scale
+				? await updateGradeScaleMutation({
+					scaleId: scale.id,
+					...payload,
+					successMessage: get(t)('gradeScales.toastUpdated', { name: trimmedName }),
+				})
+				: await createGradeScaleMutation({
+					...payload,
+					successMessage: get(t)('gradeScales.toastCreated', { name: trimmedName }),
+				});
+
 			if (ok) {
 				open = false;
-				resetForm();
+				if (!isEdit) {
+					resetForm();
+				}
 			}
 		}
 		finally {
@@ -65,8 +100,8 @@
 
 <FormModal
 	bind:open
-	title={$t('gradeScales.add')}
-	description={$t('gradeScales.subtitle')}
+	title={isEdit ? $t('gradeScales.editTitle') : $t('gradeScales.add')}
+	description={isEdit ? scale?.name : $t('gradeScales.subtitle')}
 	submitLabel={$t('academic.save')}
 	cancelLabel={$t('academic.cancel')}
 	busy={busy}
@@ -91,6 +126,11 @@
 			<span class="text-muted-foreground">{$t('gradeScales.passing')}</span>
 			<Input type="number" bind:value={passingScore} class="rounded-xl" />
 		</label>
+		{#if !boundsValid}
+			<p class="col-span-full text-xs text-destructive">
+				{$t('gradeScales.invalidBounds')}
+			</p>
+		{/if}
 		<label class="space-y-1.5 text-sm">
 			<span class="text-muted-foreground">{$t('gradeScales.decimals')}</span>
 			<Input type="number" min="0" max="3" bind:value={decimalPlaces} class="rounded-xl" />

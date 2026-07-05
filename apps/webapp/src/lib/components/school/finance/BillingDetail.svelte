@@ -1,15 +1,17 @@
 <script lang="ts">
 	import type { StudentBilling } from '$lib/types/school';
 	import { deleteStudentFeeMutation } from '$lib/api/mutations/delete-entity.mutations';
-	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { locale, t } from '$lib/i18n';
-	import { Check, Clock } from '$lib/icons';
+	import { Check, Clock, Trash2 } from '$lib/icons';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
-	import DrawerActionBar from '../shared/DrawerActionBar.svelte';
+	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import PaymentFormModal from './PaymentFormModal.svelte';
 
 	const { b }: { b: StudentBilling } = $props();
@@ -19,21 +21,92 @@
 	const remaining = $derived(b.total - b.paid);
 	const pct = $derived((b.paid / b.total) * 100);
 	const canRecordPayment = $derived(remaining > 0 && b.status !== 'paid');
+
+	let paymentOpen = $state(false);
+	let deleteOpen = $state(false);
+	let deleteBusy = $state(false);
+
+	const statusStyle: Record<StudentBilling['status'], string> = {
+		paid: 'bg-secondary text-foreground/80',
+		partial: 'bg-secondary text-foreground/80',
+		due: 'bg-highlight-soft text-highlight',
+		overdue: 'bg-destructive/10 text-destructive',
+	};
+
+	async function confirmDelete() {
+		if (!student) {
+			return;
+		}
+		deleteBusy = true;
+		try {
+			const ok = await deleteStudentFeeMutation(b.id, {
+				successMessage: get(t)('finance.toastBillingDeleted'),
+			});
+			if (ok) {
+				deleteOpen = false;
+			}
+		}
+		finally {
+			deleteBusy = false;
+		}
+	}
 </script>
 
 {#if student && fee}
 	<div class="space-y-5">
-		<div class="flex items-center gap-4">
-			<div
-				class="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary font-display text-lg font-semibold text-primary-foreground"
-			>
-				{student.initials}
-			</div>
-			<div>
-				<h3 class="font-display text-xl font-semibold leading-tight">{student.name}</h3>
-				<p class="text-sm text-muted-foreground">{fee.name}</p>
-			</div>
-		</div>
+		<DrawerEntityHeader
+			name={student.name}
+			summary="{fee.name} · {remaining.toLocaleString()} FCFA {$t('finance.remaining')}"
+		>
+			{#snippet avatar()}
+				<div
+					class="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary font-display text-lg font-semibold text-primary-foreground"
+				>
+					{student.initials}
+				</div>
+			{/snippet}
+			{#snippet chips()}
+				<span class={cn('rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase', statusStyle[b.status])}>
+					{$t(`billing.status.${b.status}`)}
+				</span>
+			{/snippet}
+			{#snippet actions()}
+				{#if canRecordPayment}
+					<PermissionGate
+						permission="PAYMENT_RECORD"
+						mode="disable"
+						tooltip={$t('payment.permissionRecord')}
+					>
+						{#snippet children({ disabled, title })}
+							<Button
+								size="sm"
+								class="rounded-full"
+								{disabled}
+								{title}
+								onclick={() => (paymentOpen = true)}
+							>
+								{$t('finance.recordPayment')}
+							</Button>
+						{/snippet}
+					</PermissionGate>
+				{/if}
+			{/snippet}
+			{#snippet overflow()}
+				<PermissionGate permission="FINANCIAL_CONFIG_CONFIGURE">
+					{#snippet children({ disabled, title })}
+						<RowActionMenuItem
+							destructive
+							{disabled}
+							{title}
+							onclick={() => (deleteOpen = true)}
+						>
+							<Trash2 class="h-4 w-4" />
+							{$t('common.delete')}
+						</RowActionMenuItem>
+					{/snippet}
+				</PermissionGate>
+			{/snippet}
+		</DrawerEntityHeader>
 
 		<div class="rounded-2xl border border-border bg-secondary/40 p-4">
 			<div class="flex items-end justify-between">
@@ -107,62 +180,23 @@
 				{/each}
 			</div>
 		</div>
-
-		{#if canRecordPayment}
-			<DrawerActionBar>
-				<PermissionGate
-					permission="PAYMENT_RECORD"
-					mode="disable"
-					tooltip={$t('payment.permissionRecord')}
-				>
-					{#snippet children({ disabled, title })}
-						<PaymentFormModal
-							billing={b}
-							studentName={student.name}
-							feeName={fee.name}
-							{disabled}
-							{title}
-						/>
-					{/snippet}
-				</PermissionGate>
-				<PermissionGate
-					permission="FINANCIAL_CONFIG_CONFIGURE"
-					mode="disable"
-					tooltip={$t('fee.permissionConfigure')}
-				>
-					{#snippet children({ disabled, title })}
-						<DeleteEntityButton
-							{disabled}
-							{title}
-							confirmTitle={$t('common.deleteConfirmTitle')}
-							confirmDescription={$t('finance.deleteBillingConfirm', { name: student.name })}
-							onConfirm={() => deleteStudentFeeMutation(b.id, {
-								successMessage: get(t)('finance.toastBillingDeleted'),
-							})}
-						/>
-					{/snippet}
-				</PermissionGate>
-			</DrawerActionBar>
-		{:else}
-			<DrawerActionBar>
-				<PermissionGate
-					permission="FINANCIAL_CONFIG_CONFIGURE"
-					mode="disable"
-					tooltip={$t('fee.permissionConfigure')}
-				>
-					{#snippet children({ disabled, title })}
-						<DeleteEntityButton
-							{disabled}
-							{title}
-							confirmTitle={$t('common.deleteConfirmTitle')}
-							confirmDescription={$t('finance.deleteBillingConfirm', { name: student.name })}
-							onConfirm={() => deleteStudentFeeMutation(b.id, {
-								successMessage: get(t)('finance.toastBillingDeleted'),
-							})}
-						/>
-					{/snippet}
-				</PermissionGate>
-			</DrawerActionBar>
-		{/if}
 	</div>
+
+	<PaymentFormModal
+		bind:open={paymentOpen}
+		showTrigger={false}
+		billing={b}
+		studentName={student.name}
+		feeName={fee.name}
+	/>
+
+	<ConfirmModal
+		bind:open={deleteOpen}
+		title={$t('common.deleteConfirmTitle')}
+		description={$t('finance.deleteBillingConfirm', { name: student.name })}
+		confirmLabel={$t('common.delete')}
+		cancelLabel={$t('common.cancel')}
+		busy={deleteBusy}
+		onConfirm={confirmDelete}
+	/>
 {/if}

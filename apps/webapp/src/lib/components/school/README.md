@@ -9,7 +9,7 @@ Domain-oriented folders under `components/school/`. Route pages import views fro
 | `guardians/` | `GuardiansView`, `GuardianDetail`, guardian forms |
 | `academics/` | `HomeworkView`, `SubjectsView`, `ClassReportCardsView` |
 | `scheduling/` | `PlanningView`, `SchoolCalendarView`, `AttendanceFlow` |
-| `finance/` | `FinanceView`, `PaymentsView`, `BillingDetail` |
+| `finance/` | `FinanceView`, `FeesView`, `PaymentsView`, `BillingDetail` |
 | `configuration/` | `StaffView`, `RolesMatrixView`, report-card definitions |
 | `school-life/` | `ActivitiesView`, `SchoolEventsView`, `IncidentDetail` |
 

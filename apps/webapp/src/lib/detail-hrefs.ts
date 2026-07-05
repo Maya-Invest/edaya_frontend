@@ -31,7 +31,7 @@ export const detailHref = {
 	configGradeLevel: (id: string): ResolvedPathname => appPath('/(app)/configuration/grade-levels/[[id]]', { id }),
 	configClassGroup: (id: string): ResolvedPathname => appPath('/(app)/configuration/classes/[[id]]', { id }),
 	financeBilling: (id: string): ResolvedPathname => appPath('/(app)/finance/billing/[[id]]', { id }),
-	financeFee: (id: string): ResolvedPathname => appPath('/(app)/finance/fees/[[id]]', { id }),
+	financeFees: (): ResolvedPathname => appPath('/(app)/finance/fees'),
 	classReportCard: (classId: string, id: string): ResolvedPathname =>
 		appPath('/(app)/classes/[classId]/report-cards/[[id]]', { classId, id }),
 	accountInbox: (id?: string): ResolvedPathname =>

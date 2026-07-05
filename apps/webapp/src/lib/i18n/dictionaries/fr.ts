@@ -264,6 +264,7 @@ export const fr: Dict = {
 	'payment.reference': 'Référence',
 	'payment.referencePlaceholder': 'N° de reçu ou de transaction',
 	'payment.notes': 'Notes',
+	'payment.viewReceipt': 'Voir le reçu',
 
 	'invoice.createTitle': 'Nouvelle facture',
 	'invoice.createDescription': 'Assigner un frais du catalogue à un élève.',
@@ -374,7 +375,11 @@ export const fr: Dict = {
 	'gradeScales.decimals': 'Décimales',
 	'gradeScales.description': 'Description',
 	'gradeScales.default': 'Par défaut',
+	'gradeScales.range': 'Plage',
+	'gradeScales.editTitle': 'Modifier le barème',
 	'gradeScales.toastCreated': 'Barème {name} créé.',
+	'gradeScales.toastUpdated': 'Barème {name} mis à jour.',
+	'gradeScales.invalidBounds': 'Le minimum doit être inférieur au maximum et la note de passage doit être strictement entre les deux.',
 	'gradeScales.deleteConfirm': 'Supprimer le barème « {name} » ?',
 	'gradeScales.toastDeleted': 'Barème {name} supprimé.',
 

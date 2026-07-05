@@ -174,13 +174,6 @@ const matchers: Matcher[] = [
 		},
 	},
 	{
-		test: p => p.match(/^\/finance\/fees\/([^/]+)$/) ?? null,
-		parse: (m) => {
-			const f = detailDataContext.fees.find(x => x.id === m[1]);
-			return f ? { item: { kind: 'fee', data: f }, listPath: appPath('/(app)/finance/fees/[[id]]') } : null;
-		},
-	},
-	{
 		test: p => p.match(/^\/configuration\/report-cards\/([^/]+)$/) ?? null,
 		parse: (m) => {
 			const d = reportCardsContext.definitions.find(x => x.id === m[1]);

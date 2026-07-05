@@ -22,9 +22,7 @@
 			emptyDescription={$t('dataState.emptyDescription')}
 		>
 			<FinanceView
-				forcedTab="billing"
 				onSelectBilling={b => appGoto(detailHref.financeBilling(b.id))}
-				onSelectFee={f => appGoto(detailHref.financeFee(f.id))}
 				{selectedId}
 			/>
 		</DataState>
