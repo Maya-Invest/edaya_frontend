@@ -968,6 +968,7 @@ export const fr: Dict = {
 	'roles.scopeGrain': 'Granularité : {grain}',
 	'roles.tenantWidePermission': 'Cette permission s\'applique à tout l\'établissement (sans portée).',
 	'roles.scopeNoClasses': 'Aucune classe disponible pour cette année scolaire.',
+	'roles.scopeNoClassSubjects': 'Aucune matière disponible pour cette classe.',
 	'roles.scopeNoStudents': 'Chargez les élèves d\'une classe pour choisir un périmètre élève.',
 	'roles.selectGradeLevel': 'Sélectionner un niveau',
 	'roles.selectClassGroup': 'Sélectionner une classe',

@@ -156,26 +156,12 @@ const matchers: Matcher[] = [
 		test: p => p.match(/^\/school\/staff\/([^/]+)$/) ?? null,
 		parse: (m) => {
 			const id = m[1];
-			if (id.startsWith('st')) {
-				const s = detailDataContext.staff.find(x => x.id === id);
-				return s ? { item: { kind: 'staff', data: s }, listPath: appPath('/(app)/school/staff/[[id]]') } : null;
+			const s = detailDataContext.staff.find(x => x.id === id);
+			if (s) {
+				return { item: { kind: 'staff', data: s }, listPath: appPath('/(app)/school/staff/[[id]]') };
 			}
 			const g = detailDataContext.guardians.find(x => x.id === id);
 			return g ? { item: { kind: 'guardian', data: g }, listPath: appPath('/(app)/school/staff/[[id]]') } : null;
-		},
-	},
-	{
-		test: p => p.match(/^\/configuration\/roles\/([^/]+)$/) ?? null,
-		parse: (m) => {
-			const staffId = m[1];
-			const member = detailDataContext.staff.find(entry => entry.id === staffId);
-			if (!member) {
-				return null;
-			}
-			return {
-				item: { kind: 'staffPermissions', data: member },
-				listPath: appPath('/(app)/configuration/roles/[[role]]'),
-			};
 		},
 	},
 	{

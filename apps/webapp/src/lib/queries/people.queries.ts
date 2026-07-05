@@ -1,7 +1,9 @@
 import { academicContext } from '$lib/academic/context.svelte';
 import { schoolWideEntityList } from '$lib/api/entity-list-filters';
 import { loadClassPeopleData } from '$lib/api/people-data';
-import { loadPermissionCatalog } from '$lib/api/staff-permission-assignments-data';
+import { loadStaffPermissionPageData } from '$lib/api/staff-permission-assignments-data';
+import { t } from '$lib/i18n';
+import { get } from 'svelte/store';
 import { fetchSchoolSubjectsSources, mapAllClassSubjects } from '$lib/api/subjects-data';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { queryClient } from '$lib/queries/client';
@@ -55,10 +57,13 @@ export function querySchoolStaffPage() {
 		load: async () => {
 			const schoolId = academicContext.schools[0]?.id ?? '';
 			const client = queryClient();
-			const [countResult, subjectSources, catalog] = await Promise.all([
+			const academicYearId = academicContext.yearId;
+			const [countResult, subjectSources, permissionData] = await Promise.all([
 				schoolId ? client.entities.staffMembers.count({ schoolId }) : Promise.resolve({ count: 0 }),
 				fetchSchoolSubjectsSources(client),
-				loadPermissionCatalog(client),
+				schoolId && academicYearId
+					? loadStaffPermissionPageData(client, { schoolId, academicYearId }, get(t))
+					: Promise.resolve({ catalog: [], assignments: [] }),
 			]);
 			const allSubjects = mapAllClassSubjects(subjectSources);
 			for (const classNode of academicContext.classes) {
@@ -67,10 +72,7 @@ export function querySchoolStaffPage() {
 					{ classId: classNode.id },
 				);
 			}
-			detailDataContext.seedStaffPermissionData({
-				assignments: detailDataContext.staffPermissionAssignments,
-				catalog,
-			});
+			detailDataContext.seedStaffPermissionData(permissionData);
 			return { totalStaff: countResult.count };
 		},
 		hasItems: listPageHasItems,

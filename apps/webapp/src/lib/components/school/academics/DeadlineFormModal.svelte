@@ -42,8 +42,9 @@
 
 	const isEdit = $derived(deadline !== undefined);
 
-	const classSubjects = $derived(
-		detailDataContext.subjects.filter(subject => subject.classId === classId),
+	const classSubjects = $derived(detailDataContext.subjectsForClass(classId));
+	const selectedSubjectLabel = $derived(
+		classSubjects.find(subject => subject.id === classSubjectId)?.name ?? '',
 	);
 
 	const canSubmit = $derived(
@@ -160,7 +161,9 @@
 		</Label>
 		<Select.Root type="single" value={classSubjectId} onValueChange={v => v && (classSubjectId = v)}>
 			<Select.Trigger>
-				<Select.Value placeholder={$t('hw.selectSubject')} />
+				<Select.Value placeholder={$t('hw.selectSubject')}>
+					{selectedSubjectLabel || $t('hw.selectSubject')}
+				</Select.Value>
 			</Select.Trigger>
 			<Select.Content>
 				{#each classSubjects as subject (subject.id)}

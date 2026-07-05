@@ -54,7 +54,7 @@ Living checklist — check items off (`[x]`) as work lands. Mirrors [§6 gaps](#
 
 #### School
 - [ ] Student drawer — **Enrollments** tab (history); **Grades** tab → links to assessments
-- [ ] Staff drawer — **Permissions** tab (`staffPermissionAssignments`); remove reliance on `/configuration/roles`
+- [x] Staff drawer — **Permissions** tab (`staffPermissionAssignments`); remove reliance on `/configuration/roles` ✅ *(2026-07-04 — CRUD via modals on School → Staff drawer)*
 - [x] Incidents — **Resolve** modal (involved students + disciplinary actions) ✅ *(2026-07-03 — `resolveIncidentWithOutcomes` + `IncidentResolveModal`)*
 
 #### Classes
@@ -77,7 +77,7 @@ Living checklist — check items off (`[x]`) as work lands. Mirrors [§6 gaps](#
 - [x] **Conditional class nav** — `/attendance` tab only when `attendanceMode = daily` ✅ *(2026-07-03 — route stub; list UI Phase 4)*
 - [ ] Academic calendar — period definition CRUD
 - [ ] Disciplinary catalog simple list
-- [ ] **Remove** `/configuration/roles` (permissions → Staff drawer)
+- [x] **Remove** `/configuration/roles` (permissions → Staff drawer) ✅ *(2026-07-04 — nav removed; legacy URL redirects to `/school/staff/{id}`)*
 
 #### Backend blockers
 - [x] **B1** — `ClassActivityEnrollment` in `@edaya/core` + API ✅ *(web client: B5)*

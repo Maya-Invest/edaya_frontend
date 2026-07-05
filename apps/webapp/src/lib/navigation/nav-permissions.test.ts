@@ -51,14 +51,13 @@ describe('nav-permissions — professeur (phase 3.2)', () => {
 	});
 
 	it('shows all class tabs for the dev teacher profile', () => {
-		expect(filterNavItems(NAV_MODULE_DEFS.classes, teacherGrants, { schoolId: 'sch1' })).toHaveLength(6);
+		expect(filterNavItems(NAV_MODULE_DEFS.classes, teacherGrants, { schoolId: 'sch1' })).toHaveLength(7);
 	});
 
 	it('blocks finance URLs and allows dashboard', () => {
 		expect(canAccessPath('/dashboard', teacherGrants)).toBe(true);
 		expect(canAccessPath('/school/students', teacherGrants)).toBe(true);
 		expect(canAccessPath('/finance/billing', teacherGrants)).toBe(false);
-		expect(canAccessPath('/configuration/roles/directeur', teacherGrants)).toBe(false);
 		expect(canAccessPath('/school/announcements', teacherGrants)).toBe(false);
 	});
 });
@@ -90,9 +89,9 @@ describe('nav-permissions — prof principal (phase 3.3)', () => {
 		expect(filterNavItems(CONFIG_NAV_DEFS, coordinatorGrants).map(item => item.key)).toEqual([
 			'school',
 			'academic',
+			'gradeLevels',
 			'classGroups',
 			'subjects',
-			'roles',
 			'gradeScales',
 			'reportCards',
 			'notificationTemplates',
@@ -102,7 +101,6 @@ describe('nav-permissions — prof principal (phase 3.3)', () => {
 	it('allows staff and configuration URLs', () => {
 		expect(canAccessPath('/school/staff', coordinatorGrants)).toBe(true);
 		expect(canAccessPath('/school/announcements', coordinatorGrants)).toBe(true);
-		expect(canAccessPath('/configuration/roles/directeur', coordinatorGrants)).toBe(true);
 		expect(canAccessPath('/finance/billing', coordinatorGrants)).toBe(false);
 	});
 });

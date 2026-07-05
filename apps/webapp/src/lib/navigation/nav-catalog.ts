@@ -159,12 +159,6 @@ export const CONFIG_NAV_DEFS: NavItemDefinition[] = [
 		permissions: ['ACADEMIC_PROGRAM_READ', 'ACADEMIC_PROGRAM_UPDATE'],
 	},
 	{
-		key: 'roles',
-		labelKey: 'roles.title',
-		href: '/configuration/roles',
-		permissions: ['ACCESS_CONTROL_READ'],
-	},
-	{
 		key: 'gradeScales',
 		labelKey: 'config.gradeScales',
 		href: '/configuration/grade-scales',

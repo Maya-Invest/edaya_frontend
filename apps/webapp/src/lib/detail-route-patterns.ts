@@ -7,7 +7,6 @@ const DETAIL_PATH_PATTERNS = [
 	/^\/configuration\/subjects\/[^/]+$/,
 	/^\/configuration\/grade-levels\/[^/]+$/,
 	/^\/configuration\/classes\/[^/]+$/,
-	/^\/configuration\/roles\/[^/]+$/,
 	/^\/configuration\/report-cards\/[^/]+$/,
 ] as const;
 

@@ -1,5 +1,4 @@
 import type { ResolvedPathname } from '$app/types';
-import type { StaffRole } from '$lib/types/school';
 import { appPath } from '$lib/navigation/app-navigation';
 
 export const detailHref = {
@@ -26,9 +25,6 @@ export const detailHref = {
 		appPath('/(app)/configuration/subjects/level/[[level]]', { level: label }),
 	configStaffGuardian: (id: string): ResolvedPathname => appPath('/(app)/school/staff/[[id]]', { id }),
 	configStaffMember: (id: string): ResolvedPathname => appPath('/(app)/school/staff/[[id]]', { id }),
-	configRole: (role: StaffRole): ResolvedPathname => appPath('/(app)/configuration/roles/[[role]]', { role }),
-	configStaffPermissions: (staffId: string): ResolvedPathname =>
-		appPath('/(app)/configuration/roles/[[role]]', { role: staffId }),
 	configReportCard: (id: string): ResolvedPathname => appPath('/(app)/configuration/report-cards/[[id]]', { id }),
 	configGradeLevel: (id: string): ResolvedPathname => appPath('/(app)/configuration/grade-levels/[[id]]', { id }),
 	configClassGroup: (id: string): ResolvedPathname => appPath('/(app)/configuration/classes/[[id]]', { id }),

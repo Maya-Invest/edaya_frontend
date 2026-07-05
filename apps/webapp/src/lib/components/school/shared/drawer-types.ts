@@ -29,7 +29,6 @@ export type DrawerItem
 		| { kind: 'fee'; data: Fee }
 		| { kind: 'schoolYearEvent'; data: SchoolYearEvent }
 		| { kind: 'incident'; data: Incident }
-		| { kind: 'staffPermissions'; data: StaffMember }
 		| { kind: 'level'; data: { label: string; subtitle: string; items: Subject[] } }
 		| { kind: 'activity'; data: Activity }
 		| { kind: 'announcement'; data: Announcement }

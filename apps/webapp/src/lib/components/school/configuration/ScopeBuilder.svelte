@@ -40,13 +40,26 @@
 	const gradeOptions = $derived(academicContext.gradeLevels);
 	const studentOptions = $derived(detailDataContext.students);
 	const activityOptions = $derived(detailDataContext.activities);
+	const selectedGradeLabel = $derived(
+		gradeOptions.find(grade => grade.id === gradeLevelId)?.name ?? '',
+	);
+	const selectedActivityLabel = $derived(
+		activityOptions.find(activity => activity.id === activityId)?.name ?? '',
+	);
+	const selectedActivityClassLabel = $derived(
+		activityClassGroupId ? classLabel(activityClassGroupId) : '',
+	);
 
 	function subjectsForClass(classGroupId: string) {
-		return detailDataContext.subjects.filter(subject => subject.classId === classGroupId);
+		return detailDataContext.subjectsForClass(classGroupId);
 	}
 
 	function classLabel(classGroupId: string): string {
 		return classOptions.find(entry => entry.id === classGroupId)?.name ?? classGroupId;
+	}
+
+	function subjectLabel(classGroupId: string, classSubjectId: string): string {
+		return subjectsForClass(classGroupId).find(subject => subject.id === classSubjectId)?.name ?? '';
 	}
 
 	function hydrateFromScopeIds() {
@@ -177,11 +190,13 @@
 			}}
 		>
 			<Select.Trigger class="h-10 w-full rounded-xl">
-				<Select.Value placeholder={$t('roles.selectGradeLevel')} />
+				<Select.Value placeholder={$t('roles.selectGradeLevel')}>
+					{selectedGradeLabel || $t('roles.selectGradeLevel')}
+				</Select.Value>
 			</Select.Trigger>
 			<Select.Content>
 				{#each gradeOptions as grade (grade.id)}
-					<Select.Item value={grade.id}>{grade.name}</Select.Item>
+					<Select.Item value={grade.id} label={grade.name}>{grade.name}</Select.Item>
 				{/each}
 			</Select.Content>
 		</Select.Root>
@@ -202,11 +217,13 @@
 							}}
 						>
 							<Select.Trigger class="h-9 w-full rounded-lg">
-								<Select.Value placeholder={$t('roles.selectClassGroup')} />
+								<Select.Value placeholder={$t('roles.selectClassGroup')}>
+									{classLabel(row.classGroupId) || $t('roles.selectClassGroup')}
+								</Select.Value>
 							</Select.Trigger>
 							<Select.Content>
 								{#each classOptions as classGroup (classGroup.id)}
-									<Select.Item value={classGroup.id}>{classGroup.name}</Select.Item>
+									<Select.Item value={classGroup.id} label={classGroup.name}>{classGroup.name}</Select.Item>
 								{/each}
 							</Select.Content>
 						</Select.Root>
@@ -237,11 +254,13 @@
 								}}
 							>
 								<Select.Trigger class="h-9 w-full rounded-lg">
-									<Select.Value placeholder={$t('roles.selectClassSubject')} />
+									<Select.Value placeholder={$t('roles.selectClassSubject')}>
+										{subjectLabel(row.classGroupId, row.classSubjectId) || $t('roles.selectClassSubject')}
+									</Select.Value>
 								</Select.Trigger>
 								<Select.Content>
 									{#each subjectsForClass(row.classGroupId) as subject (subject.id)}
-										<Select.Item value={subject.id}>{subject.name}</Select.Item>
+										<Select.Item value={subject.id} label={subject.name}>{subject.name}</Select.Item>
 									{/each}
 								</Select.Content>
 							</Select.Root>
@@ -288,11 +307,13 @@
 					}}
 				>
 					<Select.Trigger class="h-9 w-full rounded-lg">
-						<Select.Value placeholder={$t('roles.selectActivity')} />
+						<Select.Value placeholder={$t('roles.selectActivity')}>
+							{selectedActivityLabel || $t('roles.selectActivity')}
+						</Select.Value>
 					</Select.Trigger>
 					<Select.Content>
 						{#each activityOptions as activity (activity.id)}
-							<Select.Item value={activity.id}>{activity.name}</Select.Item>
+							<Select.Item value={activity.id} label={activity.name}>{activity.name}</Select.Item>
 						{/each}
 					</Select.Content>
 				</Select.Root>
@@ -308,12 +329,16 @@
 					}}
 				>
 					<Select.Trigger class="h-9 w-full rounded-lg">
-						<Select.Value placeholder={$t('roles.scopeSchoolWideActivity')} />
+						<Select.Value placeholder={$t('roles.scopeSchoolWideActivity')}>
+							{selectedActivityClassLabel || $t('roles.scopeSchoolWideActivity')}
+						</Select.Value>
 					</Select.Trigger>
 					<Select.Content>
-						<Select.Item value="">{$t('roles.scopeSchoolWideActivity')}</Select.Item>
+						<Select.Item value="" label={$t('roles.scopeSchoolWideActivity')}>
+							{$t('roles.scopeSchoolWideActivity')}
+						</Select.Item>
 						{#each classOptions as classGroup (classGroup.id)}
-							<Select.Item value={classGroup.id}>{classGroup.name}</Select.Item>
+							<Select.Item value={classGroup.id} label={classGroup.name}>{classGroup.name}</Select.Item>
 						{/each}
 					</Select.Content>
 				</Select.Root>

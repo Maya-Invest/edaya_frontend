@@ -7,6 +7,7 @@
 		saveStaffAssignmentMutation,
 	} from '$lib/api/mutations/staff-assignments.mutations';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
+	import { loadClassSubjects } from '$lib/api/subjects-data';
 	import { catalogEntriesForStaffAssignmentTarget } from '$lib/api/staff-assignment-permissions';
 	import { loadPermissionCatalog } from '$lib/api/staff-permission-assignments-data';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
@@ -40,12 +41,16 @@
 	let catalogLoaded = $state(false);
 
 	const classOptions = $derived(academicContext.classes);
-	const subjectOptions = $derived(
-		detailDataContext.subjects.filter(subject => subject.classId === classGroupId),
-	);
+	const subjectOptions = $derived(detailDataContext.subjectsForClass(classGroupId));
 	const catalog = $derived(detailDataContext.permissionCatalog);
 	const permissionEntries = $derived(
 		catalogEntriesForStaffAssignmentTarget(catalog, targetKind),
+	);
+	const selectedClassLabel = $derived(
+		classOptions.find(classGroup => classGroup.id === classGroupId)?.name ?? '',
+	);
+	const selectedSubjectLabel = $derived(
+		subjectOptions.find(subject => subject.id === classSubjectId)?.name ?? '',
 	);
 
 	$effect(() => {
@@ -90,6 +95,29 @@
 			});
 			catalogLoaded = true;
 		})();
+	});
+
+	$effect(() => {
+		if (!open || !classGroupId) {
+			return;
+		}
+		if (detailDataContext.subjectsForClass(classGroupId).length > 0) {
+			return;
+		}
+		void (async () => {
+			const subjects = await loadClassSubjects(getBrowserSchoolClient(), classGroupId);
+			detailDataContext.seedSubjects(subjects, { classId: classGroupId });
+		})();
+	});
+
+	$effect(() => {
+		if (!open || targetKind !== 'class_subject' || subjectOptions.length === 0) {
+			return;
+		}
+		if (classSubjectId && subjectOptions.some(subject => subject.id === classSubjectId)) {
+			return;
+		}
+		classSubjectId = subjectOptions[0]?.id ?? '';
 	});
 
 	const canSubmit = $derived(responsibility.trim().length > 0 && classGroupId.length > 0 && (targetKind === 'class_group' || classSubjectId.length > 0));
@@ -158,11 +186,15 @@
 				}}
 			>
 				<Select.Trigger class="h-10 w-full rounded-xl">
-					<Select.Value placeholder={$t('roles.selectClassGroup')} />
+					<Select.Value placeholder={$t('roles.selectClassGroup')}>
+						{selectedClassLabel}
+					</Select.Value>
 				</Select.Trigger>
 				<Select.Content>
 					{#each classOptions as classGroup (classGroup.id)}
-						<Select.Item value={classGroup.id}>{classGroup.name}</Select.Item>
+						<Select.Item value={classGroup.id} label={classGroup.name}>
+							{classGroup.name}
+						</Select.Item>
 					{/each}
 				</Select.Content>
 			</Select.Root>
@@ -181,11 +213,18 @@
 					}}
 				>
 					<Select.Trigger class="h-10 w-full rounded-xl">
-						<Select.Value placeholder={$t('roles.selectClassSubject')} />
+						<Select.Value placeholder={$t('roles.selectClassSubject')}>
+							{selectedSubjectLabel || $t('roles.selectClassSubject')}
+						</Select.Value>
 					</Select.Trigger>
-					<Select.Content>
+					<Select.Content class="z-[100]">
+						{#if subjectOptions.length === 0}
+							<p class="px-2 py-1.5 text-xs text-muted-foreground">{$t('roles.scopeNoClassSubjects')}</p>
+						{/if}
 						{#each subjectOptions as subject (subject.id)}
-							<Select.Item value={subject.id}>{subject.name}</Select.Item>
+							<Select.Item value={subject.id} label={subject.name}>
+								{subject.name}
+							</Select.Item>
 						{/each}
 					</Select.Content>
 				</Select.Root>

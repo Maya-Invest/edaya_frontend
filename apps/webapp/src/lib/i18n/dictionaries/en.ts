@@ -992,6 +992,7 @@ export const en: Dict = {
 	'roles.scopeGrain': 'Scope grain: {grain}',
 	'roles.tenantWidePermission': 'This permission applies school-wide (no scope).',
 	'roles.scopeNoClasses': 'No classes available for this academic year.',
+	'roles.scopeNoClassSubjects': 'No class subjects available for this class.',
 	'roles.scopeNoStudents': 'Load students on a class page to pick student scope.',
 	'roles.selectGradeLevel': 'Select a grade level',
 	'roles.selectClassGroup': 'Select a class',

@@ -3,6 +3,8 @@
 	import type { HierarchyGroup } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { authSession } from '$lib/auth/session.svelte';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import { resolveActiveClassId } from '$lib/academic/class-selection';
 	import ClassSelector from '$lib/components/layout/ClassSelector.svelte';
 	import { t } from '$lib/i18n';
 	import { Crown, GraduationCap, ChevronDown } from '$lib/icons';
@@ -38,7 +40,7 @@
 	});
 
 	const activeModule = $derived(getModuleFromPath($page.url.pathname));
-	const classId = $derived($page.params.classId ?? '6a');
+	const classId = $derived(resolveActiveClassId($page.params.classId, academicContext.classes));
 	const grants = $derived(authSession.grants);
 	let hoverExpanded = $state(false);
 
@@ -77,6 +79,13 @@
 			href: key === 'classes' ? classItemHref(classId, it.href) : it.href,
 			badge: key === 'school' ? schoolBadges[it.key] : it.badge,
 		}));
+	}
+
+	function moduleHref(key: Exclude<ModuleKey, 'dashboard'>) {
+		if (key === 'classes') {
+			return classItemHref(classId, 'students');
+		}
+		return MODULES.find(mod => mod.key === key)?.href ?? DASHBOARD_HREF;
 	}
 
 	function onSidebarEnter() {
@@ -239,7 +248,7 @@
 						{/if}
 					{:else}
 						<a
-							href={mod.href}
+							href={moduleHref(mod.key)}
 							title={$t(mod.tKey)}
 							class={cn(
 								'group flex w-full items-center justify-center rounded-lg px-2 py-2 text-sm font-medium transition-colors',
