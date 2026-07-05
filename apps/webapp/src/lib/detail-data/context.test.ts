@@ -44,14 +44,19 @@ function evaluation(id: string, classId: string): Evaluation {
 	return {
 		id,
 		classId,
+		classSubjectId: `cs-${id}`,
 		title: `Eval ${id}`,
 		subject: 'Math',
+		kind: 'quiz',
 		date: '2025-01-01',
 		coefficient: 1,
 		averageMark: 12,
 		outOf: 20,
 		graded: 1,
 		total: 1,
+		attachments: [],
+		submissions: [],
+		submittedCount: 0,
 	};
 }
 

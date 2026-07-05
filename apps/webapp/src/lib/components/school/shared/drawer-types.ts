@@ -8,7 +8,6 @@ import type {
 	Evaluation,
 	Guardian,
 	StaffMember,
-	Deadline,
 	StudentBilling,
 	Fee,
 	SchoolYearEvent,
@@ -24,7 +23,6 @@ export type DrawerItem
 		| { kind: 'evaluation'; data: Evaluation }
 		| { kind: 'guardian'; data: Guardian }
 		| { kind: 'staff'; data: StaffMember }
-		| { kind: 'deadline'; data: Deadline }
 		| { kind: 'billing'; data: StudentBilling }
 		| { kind: 'fee'; data: Fee }
 		| { kind: 'schoolYearEvent'; data: SchoolYearEvent }

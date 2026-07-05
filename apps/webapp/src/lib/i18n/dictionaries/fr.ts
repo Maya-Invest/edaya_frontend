@@ -832,6 +832,8 @@ export const fr: Dict = {
 	'eval.createTitle': 'Nouvelle évaluation',
 	'eval.createDescription': 'L\'évaluation est créée pour la période académique active.',
 	'eval.createSuccess': '{title} a été planifiée.',
+	'eval.editTitle': 'Modifier l\'évaluation',
+	'eval.updateSuccess': '{title} a été mise à jour.',
 	'eval.permissionCreate': 'Droit GRADE_INPUT requis.',
 	'eval.permissionInput': 'Droit GRADE_INPUT requis.',
 	'eval.enterGrade': 'Saisir la note',
@@ -846,6 +848,8 @@ export const fr: Dict = {
 	'eval.noPeriod': 'Sélectionnez une période académique avant de créer une évaluation.',
 	'eval.deleteConfirm': 'Supprimer l\'évaluation « {title} » ?',
 	'eval.toastDeleted': 'Évaluation {title} supprimée.',
+	'eval.scheduledHint': 'Planifiée',
+	'eval.addToTimetable': 'Ajouter à l\'emploi du temps',
 
 	'hw.eyebrow': 'Devoirs & échéances',
 	'hw.active': '{n} devoirs actifs',

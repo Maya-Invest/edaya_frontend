@@ -19,7 +19,7 @@ export const detailHref = {
 	classTeachingSubject: (classId: string, id: string): ResolvedPathname =>
 		appPath('/(app)/classes/[classId]/teaching/[[id]]', { classId, id }),
 	classDeadline: (classId: string, id: string): ResolvedPathname =>
-		appPath('/(app)/classes/[classId]/homework/[[id]]', { classId, id }),
+		appPath('/(app)/classes/[classId]/evaluations/[[id]]', { classId, id }),
 	configSubject: (id: string): ResolvedPathname => appPath('/(app)/configuration/subjects/[[id]]', { id }),
 	configSubjectLevel: (label: string): ResolvedPathname =>
 		appPath('/(app)/configuration/subjects/level/[[level]]', { level: label }),

@@ -77,18 +77,11 @@ export const CLASS_NAV_DEFS: NavItemDefinition[] = [
 		permissions: ['QUERY_CLASS_CURRICULUM_READ', 'QUERY_CURRICULUM_PROGRESS_READ'],
 	},
 	{
-		key: 'homework',
-		labelKey: 'tab.homework',
-		href: 'homework',
-		classSegment: true,
-		permissions: ['GRADE_READ', 'GRADE_INPUT'],
-	},
-	{
 		key: 'evaluations',
 		labelKey: 'tab.evaluations',
 		href: 'evaluations',
 		classSegment: true,
-		permissions: ['GRADE_READ'],
+		permissions: ['GRADE_READ', 'GRADE_INPUT'],
 	},
 	{
 		key: 'attendance',

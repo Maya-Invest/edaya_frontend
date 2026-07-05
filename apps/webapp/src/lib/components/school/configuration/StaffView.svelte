@@ -181,11 +181,11 @@
 							<div class="col-span-4">
 								{#if s.classes.length > 0}
 									<div class="flex flex-wrap gap-1">
-										{#each s.classes as c (c)}
+										{#each s.classes as classId (classId)}
 											<span
 												class="rounded-md bg-secondary px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
 											>
-												{c}
+												{academicContext.classes.find(entry => entry.id === classId)?.name ?? classId}
 											</span>
 										{/each}
 									</div>

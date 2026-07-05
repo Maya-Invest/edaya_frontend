@@ -12,14 +12,19 @@ function evaluation(id: string, subject: string, graded: number, outOf = 20, coe
 	return {
 		id,
 		classId: 'class-a',
+		classSubjectId: `cs-${id}`,
 		title: id,
 		subject,
+		kind: 'quiz',
 		date: `2026-01-${id.padStart(2, '0')}`,
 		coefficient,
 		averageMark: 14,
 		outOf,
 		graded,
 		total: 24,
+		attachments: [],
+		submissions: [],
+		submittedCount: 0,
 	};
 }
 

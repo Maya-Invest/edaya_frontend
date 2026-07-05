@@ -156,9 +156,11 @@ export function mapStaffMembers(
 	return (staffRaw ?? []).map((member) => {
 		const role = mapStaffRole(member, assignmentsRaw ?? [], classGroupsRaw ?? []);
 
-		const classesTaught = (assignmentsRaw ?? [])
-			.filter(entry => entry.staffId === member.id && entry.classGroupId)
-			.map(entry => entry.classGroupId as string);
+		const classesTaught = [...new Set(
+			(assignmentsRaw ?? [])
+				.filter(entry => entry.staffId === member.id && entry.classGroupId)
+				.map(entry => entry.classGroupId as string),
+		)];
 
 		const homeroomClass = (classGroupsRaw ?? []).find(entry => entry.homeroomStaffId === member.id);
 		const mainClassId = homeroomClass?.id;

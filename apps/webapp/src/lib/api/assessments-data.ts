@@ -2,6 +2,11 @@ import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { AssessmentResultRow, Evaluation } from '$lib/types/school';
 import {
+	formatAssessmentDate,
+	mapAssessmentResultRow,
+	mapAssessmentToEvaluation,
+} from '$lib/api/assessment-mapping';
+import {
 	activeEnrollmentsForClass,
 	assessmentResultsForScope,
 	assessmentsForClassPeriod,
@@ -26,28 +31,11 @@ export interface AssessmentsSources {
 	enrollmentsRaw: EnrollmentRaw[];
 }
 
-function formatDate(value: unknown): string {
-	if (!value) {
-		return '';
-	}
-	if (value instanceof Date) {
-		return value.toISOString().slice(0, 10);
-	}
-	if (typeof value === 'string') {
-		return value.slice(0, 10);
-	}
-	return String(value).slice(0, 10);
-}
 
 export function mapAssessmentResults(
 	resultsRaw: AssessmentsSources['resultsRaw'],
 ): AssessmentResultRow[] {
-	return (resultsRaw ?? []).map(result => ({
-		id: result.id,
-		studentId: result.studentId,
-		assessmentId: result.assessmentId,
-		score: typeof result.score === 'number' ? result.score : null,
-	}));
+	return (resultsRaw ?? []).map(mapAssessmentResultRow);
 }
 
 export async function fetchClassAssessmentsSources(
@@ -106,25 +94,12 @@ export function mapClassEvaluations(
 			const classSubject = classSubjectById.get(assessment.classSubjectId);
 			const subject = classSubject ? subjectById.get(classSubject.subjectId) : undefined;
 			const assessmentResults = sources.resultsRaw.filter(result => result.assessmentId === assessment.id);
-			const scoredResults = assessmentResults.filter(result => typeof result.score === 'number');
-			const averageMark = scoredResults.length > 0
-				? scoredResults.reduce((sum, result) => sum + (result.score ?? 0), 0) / scoredResults.length
-				: 0;
 
-			return {
-				id: assessment.id,
-				classId: assessment.classGroupId,
-				title: assessment.title,
-				subject: subject?.name ?? assessment.title,
-				date: formatDate(
-					assessment.startsAt ?? assessment.dueAt ?? assessment.completedAt ?? assessment.endsAt,
-				),
-				coefficient: assessment.coefficient ?? 1,
-				averageMark,
-				outOf: assessment.maxScore,
-				graded: scoredResults.length,
-				total: classSize,
-			} satisfies Evaluation;
+			return mapAssessmentToEvaluation(assessment, {
+				subjectName: subject?.name ?? assessment.title,
+				classSize,
+				results: assessmentResults,
+			});
 		})
 		.sort((left, right) => right.date.localeCompare(left.date));
 }

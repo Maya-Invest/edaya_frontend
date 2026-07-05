@@ -76,12 +76,6 @@
 				{:then { default: StaffTabs }}
 					<StaffTabs s={item.data} />
 				{/await}
-			{:else if item.kind === 'deadline'}
-				{#await import('../academics/DeadlineDetail.svelte')}
-					<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
-				{:then { default: DeadlineDetail }}
-					<DeadlineDetail d={item.data} />
-				{/await}
 			{:else if item.kind === 'billing'}
 				{#await import('../finance/BillingDetail.svelte')}
 					<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>

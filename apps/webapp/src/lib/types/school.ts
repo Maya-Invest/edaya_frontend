@@ -98,19 +98,39 @@ export interface AssessmentResultRow {
 	studentId: string;
 	assessmentId: string;
 	score: number | null;
+	status?: 'met' | 'late' | 'missed' | 'excused' | null;
+}
+
+export type AssessmentKind = 'quiz' | 'homework' | 'project' | 'other';
+
+export interface EvaluationSubmission {
+	studentId: string;
+	status: 'submitted' | 'late' | 'missing';
+	date?: string;
 }
 
 export interface Evaluation {
 	id: string;
 	classId: string;
+	classSubjectId: string;
 	title: string;
 	subject: string;
+	kind: AssessmentKind;
 	date: string;
 	coefficient: number;
 	averageMark: number;
 	outOf: number;
 	graded: number;
 	total: number;
+	description?: string;
+	dueDate?: string;
+	assignedDate?: string;
+	startsAt?: string;
+	endsAt?: string;
+	lessonSessionId?: string | null;
+	attachments: { name: string; size: string }[];
+	submissions: EvaluationSubmission[];
+	submittedCount: number;
 }
 
 export interface Guardian {

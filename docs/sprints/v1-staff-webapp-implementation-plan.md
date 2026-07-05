@@ -1,6 +1,6 @@
 # V1 Staff Webapp — Implementation Plan
 
-> **Status:** Phases 0–2 complete (2026-07-04) · Phase 3 next  
+> **Status:** Phases 0–3 complete (2026-07-05) · Phase 4 next  
 > **Created:** 2026-07-03  
 > **Scope:** Bring `apps/webapp` to the target architecture in [v1-feature-architecture-spec.md](../specs/v1-feature-architecture-spec.md)  
 > **Draft / detail catalog:** [ui-architecture-reference.md](../reference/ui-architecture-reference.md) — feature cards, entity audit, living §0 checklist  
@@ -16,7 +16,7 @@ Check off when the phase is complete and merged. Update [ui-architecture-referen
 - [x] **Phase 0** — Shell foundations (entity header · toolbar · shared primitives) — *(2026-07-03 — primitives + pilots: Guardian, Announcements, SchoolStudents, GradeScales)*
 - [x] **Phase 1** — Configuration P0 (grade levels · classes drawer · staff assignments tab) — *(2026-07-03)*
 - [x] **Phase 2** — Permissions migration (staff drawer · remove `/configuration/roles`) — *(2026-07-04 — CRUD on Staff → Permissions tab; roles nav removed; legacy URL redirects)*
-- [ ] **Phase 3** — Class academics refactor (homework fold · evaluations · `attendanceMode` nav)
+- [x] **Phase 3** — Class academics refactor (homework fold · evaluations · `attendanceMode` nav) — *(2026-07-05 — unified evaluations list/drawer; homework route removed with redirect)*
 - [ ] **Phase 4** — Attendance & timetable (daily list · session flows · class activities)
 - [ ] **Phase 5** — School people (student tabs · staff polish · incidents polish)
 - [ ] **Phase 6** — Finance simple entities (fees · payments · grade scales · notifications)
@@ -349,8 +349,8 @@ Thin drawers (calendar, inbox): lighter header — sections only per spec.
 | **Add** | `/classes/{classId}/attendance/[[id]]` (conditional nav) | 4 | nav ✅ · list UI Phase 4 |
 | **Refactor** | `/configuration/classes` → `[[id]]` drawer | 1 | ✅ |
 | **Remove** | `/configuration/roles` | 2 | ✅ *(redirect → `/school/staff/{id}`)* |
-| **Remove** | `/classes/{classId}/homework/[[id]]` + nav tab | 3 | |
-| **Keep** | `/classes/{classId}/evaluations/[[id]]` (all kinds) | 3 | |
+| **Remove** | `/classes/{classId}/homework/[[id]]` + nav tab | 3 | ✅ *(redirect → evaluations)* |
+| **Keep** | `/classes/{classId}/evaluations/[[id]]` (all kinds) | 3 | ✅ |
 
 ---
 
@@ -381,5 +381,6 @@ The v1 staff webapp implementation is **complete** when:
 
 | Date | Change |
 |------|--------|
+| 2026-07-05 | Phase 3 checked off — evaluations unified (kind filter, drawer, homework redirect) |
 | 2026-07-04 | Phases 0–2 checked off; route table updated (grade levels, classes drawer, roles removal) |
 | 2026-07-03 | Initial plan from ui-architecture-reference + v1-feature-architecture-spec |

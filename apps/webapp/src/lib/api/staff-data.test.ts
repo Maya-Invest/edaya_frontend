@@ -104,4 +104,25 @@ describe('staff member mapping', () => {
 			department: 'Vie scolaire',
 		});
 	});
+
+	it('deduplicates class ids when a staff member has multiple assignments on the same class', () => {
+		const duplicateAssignments = [
+			...assignmentsRaw,
+			{
+				id: 'sa-st3-6a-extra',
+				staffId: 'st3',
+				academicYearId,
+				responsibility: 'Support',
+				classGroupId: '6a',
+				permissions: [],
+			},
+		];
+		const members = mapStaffMembers(
+			[staffRaw[1]!],
+			[...classGroupsRaw],
+			duplicateAssignments,
+		);
+
+		expect(members[0]?.classes).toEqual(['6a']);
+	});
 });

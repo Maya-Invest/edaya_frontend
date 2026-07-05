@@ -1,3 +1,4 @@
+import type { components } from '$lib/api/schema';
 import type { Evaluation } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
@@ -7,12 +8,55 @@ import { t } from '$lib/i18n';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
 
+type ApiAssessment = components['schemas']['Assessment'];
+
 function buildInClassAssessmentWindow(date: Date): { startsAt: string; endsAt: string } {
 	const startsAt = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 	startsAt.setUTCHours(9, 0, 0, 0);
 	const endsAt = new Date(startsAt);
 	endsAt.setUTCHours(10, 0, 0, 0);
 	return { startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString() };
+}
+
+function buildOptimisticEvaluation(input: {
+	id: string;
+	classGroupId: string;
+	classSubjectId: string;
+	title: string;
+	kind: Evaluation['kind'];
+	maxScore: number;
+	coefficient: number;
+	date: string;
+	description?: string;
+	dueDate?: string;
+	assignedDate?: string;
+}): Evaluation {
+	const students = detailDataContext.studentsForClass(input.classGroupId);
+	const subject = detailDataContext.subjects.find(entry => entry.id === input.classSubjectId);
+
+	return {
+		id: input.id,
+		classId: input.classGroupId,
+		classSubjectId: input.classSubjectId,
+		title: input.title.trim(),
+		subject: subject?.name ?? '—',
+		kind: input.kind,
+		date: input.date,
+		coefficient: input.coefficient,
+		averageMark: 0,
+		outOf: input.maxScore,
+		graded: 0,
+		total: students.length,
+		description: input.description?.trim() ?? '',
+		dueDate: input.dueDate,
+		assignedDate: input.assignedDate,
+		attachments: [],
+		submissions: students.map(student => ({
+			studentId: student.id,
+			status: 'missing' as const,
+		})),
+		submittedCount: 0,
+	};
 }
 
 function evaluationStatsFromResults(assessmentId: string): Pick<Evaluation, 'graded' | 'averageMark'> {
@@ -31,10 +75,12 @@ export async function createAssessmentMutation(input: {
 	classGroupId: string;
 	classSubjectId: string;
 	title: string;
+	description?: string;
 	maxScore: number;
 	coefficient?: number;
-	kind?: 'quiz' | 'homework' | 'project' | 'other';
+	kind?: Evaluation['kind'];
 	dueAt?: string;
+	assignedDate?: string;
 	successMessage?: string;
 }): Promise<string | null> {
 	const client = getBrowserSchoolClient();
@@ -47,22 +93,22 @@ export async function createAssessmentMutation(input: {
 	const id = `asm-${Date.now().toString(36)}`;
 	const kind = input.kind ?? 'quiz';
 	const assessmentDate = input.dueAt ?? new Date().toISOString().slice(0, 10);
-	const subject = detailDataContext.subjects.find(entry => entry.id === input.classSubjectId);
-	const optimistic: Evaluation = {
-		id,
-		classId: input.classGroupId,
-		title: input.title.trim(),
-		subject: subject?.name ?? '—',
-		date: assessmentDate,
-		coefficient: input.coefficient ?? 1,
-		averageMark: 0,
-		outOf: input.maxScore,
-		graded: 0,
-		total: detailDataContext.studentsForClass(input.classGroupId).length,
-	};
 	const timingPayload = kind === 'homework'
 		? { dueAt: assessmentDate }
 		: buildInClassAssessmentWindow(new Date(assessmentDate));
+	const optimistic = buildOptimisticEvaluation({
+		id,
+		classGroupId: input.classGroupId,
+		classSubjectId: input.classSubjectId,
+		title: input.title,
+		kind,
+		maxScore: input.maxScore,
+		coefficient: input.coefficient ?? 1,
+		date: assessmentDate,
+		description: input.description,
+		dueDate: kind === 'homework' ? assessmentDate : undefined,
+		assignedDate: kind === 'homework' ? (input.assignedDate ?? assessmentDate) : undefined,
+	});
 
 	const result = await runMutation(() => client.commands.createAssessment({
 		id,
@@ -70,6 +116,7 @@ export async function createAssessmentMutation(input: {
 		classSubjectId: input.classSubjectId,
 		periodId,
 		title: input.title.trim(),
+		description: input.description?.trim() ?? '',
 		kind,
 		maxScore: input.maxScore,
 		coefficient: input.coefficient ?? 1,
@@ -86,6 +133,55 @@ export async function createAssessmentMutation(input: {
 		},
 	});
 	return result ? id : null;
+}
+
+export async function updateAssessmentMutation(input: {
+	assessmentId: string;
+	title: string;
+	description?: string;
+	dueDate?: string;
+	assignedDate?: string;
+	maxScore?: number;
+	coefficient?: number;
+	kind?: Evaluation['kind'];
+	successMessage?: string;
+}): Promise<boolean> {
+	const client = getBrowserSchoolClient();
+	const previous = detailDataContext.evaluations.find(evaluation => evaluation.id === input.assessmentId);
+
+	const result = await runMutation(async () => {
+		const existing = await client.entities.assessments.get(input.assessmentId);
+		const payload: ApiAssessment = {
+			...existing,
+			title: input.title.trim(),
+			description: input.description?.trim() ?? existing.description ?? '',
+			kind: input.kind ?? existing.kind,
+			maxScore: input.maxScore ?? existing.maxScore,
+			coefficient: input.coefficient ?? existing.coefficient,
+			dueAt: input.dueDate ?? existing.dueAt ?? null,
+		};
+		return client.entities.assessments.save(payload);
+	}, {
+		successMessage: input.successMessage,
+		apply: () => {
+			detailDataContext.patchEvaluation(input.assessmentId, {
+				title: input.title.trim(),
+				description: input.description?.trim() ?? previous?.description ?? '',
+				kind: input.kind ?? previous?.kind ?? 'homework',
+				outOf: input.maxScore ?? previous?.outOf ?? 20,
+				coefficient: input.coefficient ?? previous?.coefficient ?? 1,
+				dueDate: input.dueDate ?? previous?.dueDate,
+				assignedDate: input.assignedDate ?? previous?.assignedDate,
+				date: input.dueDate ?? previous?.date ?? '',
+			});
+		},
+		rollback: () => {
+			if (previous) {
+				detailDataContext.patchEvaluation(input.assessmentId, previous);
+			}
+		},
+	});
+	return result !== null;
 }
 
 export async function recordAssessmentResultMutation(input: {

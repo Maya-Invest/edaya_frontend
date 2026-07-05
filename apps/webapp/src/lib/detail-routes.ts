@@ -117,13 +117,6 @@ const matchers: Matcher[] = [
 		},
 	},
 	{
-		test: p => p.match(/^\/classes\/([^/]+)\/homework\/([^/]+)$/) ?? null,
-		parse: (m) => {
-			const d = detailDataContext.deadlines.find(x => x.id === m[2] && x.classId === m[1]);
-			return d ? { item: { kind: 'deadline', data: d }, listPath: appPath('/(app)/classes/[classId]/homework/[[id]]', { classId: m[1] }) } : null;
-		},
-	},
-	{
 		test: p => p.match(/^\/classes\/([^/]+)\/evaluations\/([^/]+)$/) ?? null,
 		parse: (m) => {
 			const ev = detailDataContext.evaluations.find(x => x.id === m[2]);

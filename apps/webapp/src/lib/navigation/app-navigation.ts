@@ -32,7 +32,6 @@ const CLASS_SEGMENTS: Record<string, RouteId> = {
 	'students': '/(app)/classes/[classId]/students/[[id]]',
 	'timetable': '/(app)/classes/[classId]/timetable/[[id]]',
 	'teaching': '/(app)/classes/[classId]/teaching/[[id]]',
-	'homework': '/(app)/classes/[classId]/homework/[[id]]',
 	'evaluations': '/(app)/classes/[classId]/evaluations/[[id]]',
 	'attendance': '/(app)/classes/[classId]/attendance/[[id]]',
 	'report-cards': '/(app)/classes/[classId]/report-cards/[[id]]',

@@ -58,8 +58,8 @@ Living checklist — check items off (`[x]`) as work lands. Mirrors [§6 gaps](#
 - [x] Incidents — **Resolve** modal (involved students + disciplinary actions) ✅ *(2026-07-03 — `resolveIncidentWithOutcomes` + `IncidentResolveModal`)*
 
 #### Classes
-- [ ] Remove dedicated **Homework** nav/route; fold into Assessments (`kind` filter + row badge)
-- [ ] Assessments — unified list + drawer (exclusive body section per `kind`)
+- [x] Remove dedicated **Homework** nav/route; fold into Assessments (`kind` filter + row badge) ✅ *(2026-07-05)*
+- [x] Assessments — unified list + drawer (exclusive body section per `kind`) ✅ *(2026-07-05)*
 - [ ] **Daily attendance** — list of days + drawer (session-like pattern)
 - [ ] Timetable — New session flow (Lesson · Activity · Assessment) + inline schedule from source screens
 - [ ] Student drawer **Attendance** tab — aggregate daily + session records
