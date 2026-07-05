@@ -4,6 +4,7 @@ import type {
 	Announcement,
 	AbsenceRecord,
 	AssessmentResultRow,
+	AttendanceDay,
 	Deadline,
 	Evaluation,
 	Fee,
@@ -113,6 +114,14 @@ export function seedEvaluationsCollection(
 	scope: { classId: string },
 ): Evaluation[] {
 	return replaceSlice(existing, evaluations, evaluation => evaluation.classId === scope.classId);
+}
+
+export function seedAttendanceDaysCollection(
+	existing: readonly AttendanceDay[],
+	attendanceDays: readonly AttendanceDay[],
+	scope: { classId: string },
+): AttendanceDay[] {
+	return replaceSlice(existing, attendanceDays, day => day.classId === scope.classId);
 }
 
 export function seedDeadlinesCollection(

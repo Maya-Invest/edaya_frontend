@@ -2,7 +2,12 @@
 	import type { PlanningEvent } from '$lib/types/school';
 	import type { SessionAttendanceStatus } from '$lib/types/session-detail';
 	import { cancelPlanningEventMutation } from '$lib/api/mutations/planning.mutations';
+	import {
+		recordLessonSessionBulkAttendanceMutation,
+		recordSessionStudentAttendanceMutation,
+	} from '$lib/api/mutations/planning-session.mutations';
 	import { loadPlanningOccurrenceDetail } from '$lib/api/session-detail-data';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
@@ -10,6 +15,7 @@
 	import { Check, ClipboardCheck, FileText, MapPin } from '$lib/icons';
 	import { queryClient } from '$lib/queries/client';
 	import { sessionDetailContext } from '$lib/session-detail/context.svelte';
+	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import DrawerActionBar from '../shared/DrawerActionBar.svelte';
@@ -34,6 +40,9 @@
 	const detail = $derived(sessionDetailContext.get(s.id));
 	const attendanceRows = $derived(detail?.attendance ?? []);
 	const recordedCount = $derived(attendanceRows.filter(row => row.status).length);
+	const unrecordedRows = $derived(attendanceRows.filter(row => !row.status));
+
+	let bulkBusy = $state(false);
 
 	const statusTone: Record<SessionAttendanceStatus, string> = {
 		present: 'bg-secondary text-foreground/80',
@@ -83,6 +92,36 @@
 			tab = 'details';
 		}
 	});
+
+	async function markAllPresent() {
+		if (unrecordedRows.length === 0) {
+			return;
+		}
+
+		bulkBusy = true;
+		if (isLesson) {
+			await recordLessonSessionBulkAttendanceMutation({
+				sessionId: s.id,
+				attendanceByStudent: Object.fromEntries(
+					unrecordedRows.map(row => [row.studentId, 'present' as const]),
+				),
+				successMessage: get(t)('planning.session.bulkAttendanceSuccess'),
+			});
+		}
+		else {
+			for (const row of unrecordedRows) {
+				await recordSessionStudentAttendanceMutation({
+					sessionId: s.id,
+					kind: s.kind,
+					studentId: row.studentId,
+					status: 'present',
+					attendanceId: row.attendanceId,
+				});
+			}
+			toast.success(get(t)('planning.session.bulkAttendanceSuccess'));
+		}
+		bulkBusy = false;
+	}
 </script>
 
 <div class="space-y-5">
@@ -172,9 +211,33 @@
 			<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
 		{:else}
 			<div class="space-y-4">
-				<div class="rounded-xl bg-secondary/40 px-4 py-3 text-sm">
-					<span class="text-muted-foreground">{$t('planning.session.attendanceSummary')} :</span>
-					{recordedCount} / {attendanceRows.length}
+				<div class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-secondary/40 px-4 py-3 text-sm">
+					<span>
+						<span class="text-muted-foreground">{$t('planning.session.attendanceSummary')} :</span>
+						{recordedCount} / {attendanceRows.length}
+					</span>
+					{#if unrecordedRows.length > 0}
+						<PermissionGate
+							permission="ATTENDANCE_RECORD"
+							classId={s.classId}
+							mode="disable"
+							tooltip={$t('attendanceDay.permissionRecord')}
+						>
+							{#snippet children({ disabled, title })}
+								<Button
+									size="sm"
+									variant="outline"
+									class="h-8 rounded-full text-xs"
+									disabled={disabled || bulkBusy}
+									{title}
+									onclick={markAllPresent}
+								>
+									<Check class="mr-1 h-3.5 w-3.5" />
+									{$t('attendanceDay.markAllPresent')}
+								</Button>
+							{/snippet}
+						</PermissionGate>
+					{/if}
 				</div>
 				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 					{$t('students.student')}

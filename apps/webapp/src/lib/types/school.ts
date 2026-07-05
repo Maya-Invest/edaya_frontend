@@ -186,6 +186,15 @@ export interface Incident {
 	status: 'open' | 'resolved' | 'cancelled';
 }
 
+export interface AttendanceDay {
+	id: string;
+	classId: string;
+	date: string;
+	label: string;
+	totalStudents: number;
+	recordedCount: number;
+}
+
 export interface AbsenceRecord {
 	id: string;
 	studentId: string;

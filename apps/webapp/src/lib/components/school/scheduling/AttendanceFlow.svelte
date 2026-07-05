@@ -81,7 +81,7 @@
 		<div
 			class="relative flex h-[min(820px,92vh)] w-full max-w-md flex-col overflow-hidden rounded-[28px] border border-border bg-[hsl(220_30%_10%)] text-primary-foreground shadow-panel"
 		>
-			<div class="px-6 pb-5 pt-6">
+			<div class="shrink-0 px-6 pb-5 pt-6">
 				<div class="mb-4 flex items-center justify-between">
 					<button
 						type="button"
@@ -163,15 +163,15 @@
 				{/if}
 
 				{#if done}
-					<div class="flex flex-1 animate-fade-in flex-col">
-						<div class="text-center">
+					<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+						<div class="shrink-0 text-center">
 							<h3 class="font-display text-2xl font-semibold">{$t('attendance.complete')}</h3>
 							<p class="mt-1 text-sm text-primary-foreground/60">
 								{className} · {new Date().toLocaleDateString($locale, { weekday: 'long' })}
 							</p>
 						</div>
 
-						<div class="mt-5 grid grid-cols-3 gap-3">
+						<div class="mt-5 grid shrink-0 grid-cols-3 gap-3">
 							<div
 								class="rounded-2xl bg-secondary px-3 py-4 text-center text-primary"
 							>
@@ -204,7 +204,7 @@
 							</div>
 						</div>
 
-						<ul class="scrollbar-thin mt-5 flex-1 space-y-2 overflow-y-auto pr-1">
+						<ul class="scrollbar-thin mt-5 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
 							{#each students as s, i (s.id)}
 								{@const status = marks[s.id]}
 								{#if status}
@@ -239,7 +239,7 @@
 						<Button
 							onclick={reset}
 							variant="secondary"
-							class="mt-4 h-11 w-full rounded-full bg-white/5 text-primary-foreground hover:bg-white/10"
+							class="mt-4 h-11 w-full shrink-0 rounded-full bg-white/5 text-primary-foreground hover:bg-white/10"
 						>
 							<RotateCcw class="mr-2 h-4 w-4" />
 							{$t('attendance.startOver')}
@@ -250,7 +250,7 @@
 
 			{#if !done && current}
 				<div
-					class="grid grid-cols-3 gap-2 border-t border-white/5 bg-[hsl(220_28%_8%)] p-4"
+					class="grid shrink-0 grid-cols-3 gap-2 border-t border-white/5 bg-[hsl(220_28%_8%)] p-4"
 				>
 					{#each statusKeys as statusKey (statusKey)}
 						{@const meta = statusMeta[statusKey]}

@@ -124,6 +124,15 @@ const matchers: Matcher[] = [
 		},
 	},
 	{
+		test: p => p.match(/^\/classes\/([^/]+)\/attendance\/([^/]+)$/) ?? null,
+		parse: (m) => {
+			const day = detailDataContext.attendanceDays.find(x => x.id === m[2]);
+			return day
+				? { item: { kind: 'attendanceDay', data: day }, listPath: appPath('/(app)/classes/[classId]/attendance/[[id]]', { classId: m[1] }) }
+				: null;
+		},
+	},
+	{
 		test: p => p.match(/^\/classes\/([^/]+)\/teaching\/([^/]+)$/) ?? null,
 		parse: (m) => {
 			const s = detailDataContext.subjects.find(x => x.id === m[2]);

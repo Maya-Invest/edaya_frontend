@@ -10,6 +10,7 @@ import type {
 	Announcement,
 	AnnouncementTarget,
 	AssessmentResultRow,
+	AttendanceDay,
 	Deadline,
 	Evaluation,
 	Fee,
@@ -33,6 +34,7 @@ import {
 	seedAnnouncementsCollection,
 	seedAssessmentResultsCollection,
 	seedAssessmentResultsForAssessments,
+	seedAttendanceDaysCollection,
 	seedBillingCollection,
 	seedDeadlinesCollection,
 	seedEvaluationsCollection,
@@ -64,6 +66,7 @@ export class DetailDataContext {
 	planning = $state<PlanningEvent[]>([]);
 	schedules = $state<TimetableSchedule[]>([]);
 	evaluations = $state<Evaluation[]>([]);
+	attendanceDays = $state<AttendanceDay[]>([]);
 	assessmentResults = $state<AssessmentResultRow[]>([]);
 	activities = $state<Activity[]>([]);
 	announcements = $state<Announcement[]>([]);
@@ -146,6 +149,10 @@ export class DetailDataContext {
 	/** Replace the class slice. */
 	seedEvaluations(evaluations: Evaluation[], scope: { classId: string }) {
 		this.evaluations = seedEvaluationsCollection(this.evaluations, evaluations, scope);
+	}
+
+	seedAttendanceDays(attendanceDays: AttendanceDay[], scope: { classId: string }) {
+		this.attendanceDays = seedAttendanceDaysCollection(this.attendanceDays, attendanceDays, scope);
 	}
 
 	/** Replace results for the given assessments; merge the rest of the store. */
@@ -265,6 +272,14 @@ export class DetailDataContext {
 
 	evaluationsForClass(classId: string): Evaluation[] {
 		return this.evaluations.filter(evaluation => evaluation.classId === classId);
+	}
+
+	attendanceDaysForClass(classId: string): AttendanceDay[] {
+		return this.attendanceDays.filter(day => day.classId === classId);
+	}
+
+	patchAttendanceDay(id: string, patch: Partial<AttendanceDay>) {
+		this.attendanceDays = this.replaceById(this.attendanceDays, id, patch);
 	}
 
 	deadlinesForClass(classId: string): Deadline[] {

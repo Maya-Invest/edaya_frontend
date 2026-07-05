@@ -60,8 +60,8 @@ Living checklist — check items off (`[x]`) as work lands. Mirrors [§6 gaps](#
 #### Classes
 - [x] Remove dedicated **Homework** nav/route; fold into Assessments (`kind` filter + row badge) ✅ *(2026-07-05)*
 - [x] Assessments — unified list + drawer (exclusive body section per `kind`) ✅ *(2026-07-05)*
-- [ ] **Daily attendance** — list of days + drawer (session-like pattern)
-- [ ] Timetable — New session flow (Lesson · Activity · Assessment) + inline schedule from source screens
+- [x] **Daily attendance** — list of days + drawer (session-like pattern) ✅ *(2026-07-05)*
+- [x] Timetable — New session flow (Lesson · Activity · Assessment) + inline schedule from source screens ✅ *(2026-07-05 — wizard + subject create schedule)*
 - [ ] Student drawer **Attendance** tab — aggregate daily + session records
 
 #### Finance
@@ -398,7 +398,7 @@ Class context from sidebar **class picker**. Base path: `/classes/{classId}/…`
 | Lessons | `teaching/[[id]]` | Built |
 | Assessments | `evaluations/[[id]]` | Partial |
 | Report cards | `report-cards/[[id]]` | Built |
-| Daily attendance | `attendance/[[id]]` | Planned |
+| Daily attendance | `attendance/[[id]]` | Built |
 
 *Daily attendance nav segment visible only when the selected class has `attendanceMode = daily`.*
 
@@ -517,7 +517,7 @@ Homework is no longer a separate nav item — it is an `Assessment` **kind** (`h
 - Header: Publish · Regenerate
 - Body: Summary · section breakdown
 
-#### Daily attendance `Planned`
+#### Daily attendance `Built`
 
 Visible in class nav **only** when `ClassGroup.attendanceMode = daily`. See [Class attendance mode](#class-attendance-mode). **Same list + drawer pattern as timetable sessions** — one row per day, not a student matrix on the list page.
 

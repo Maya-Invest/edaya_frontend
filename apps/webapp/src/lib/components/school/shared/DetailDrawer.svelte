@@ -22,7 +22,7 @@
 		class="fixed inset-0 z-40 bg-primary/5 motion-safe:animate-fade-in"
 	></div>
 	<aside
-		class="fixed right-0 top-0 z-50 flex h-full w-full flex-col border-l border-border bg-card shadow-panel motion-safe:animate-slide-in-right md:w-1/2"
+		class="fixed right-0 top-0 z-50 flex h-full w-full flex-col overflow-hidden border-l border-border bg-card shadow-panel motion-safe:animate-slide-in-right md:w-1/2"
 		aria-label={$t(kindLabelKey[item.kind])}
 	>
 		<header class="flex items-center justify-between border-b border-border px-6 py-4">
@@ -39,7 +39,7 @@
 			</button>
 		</header>
 
-		<div class="scrollbar-thin flex-1 overflow-y-auto px-6 py-6">
+		<div class="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-6 py-6">
 			{#if item.kind === 'student'}
 				{#await import('../students/StudentTabs.svelte')}
 					<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
@@ -63,6 +63,12 @@
 					<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
 				{:then { default: EvaluationDetail }}
 					<EvaluationDetail s={item.data} />
+				{/await}
+			{:else if item.kind === 'attendanceDay'}
+				{#await import('../attendance/AttendanceDayDetail.svelte')}
+					<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
+				{:then { default: AttendanceDayDetail }}
+					<AttendanceDayDetail day={item.data} />
 				{/await}
 			{:else if item.kind === 'guardian'}
 				{#await import('../guardians/GuardianDetail.svelte')}

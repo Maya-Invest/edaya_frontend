@@ -166,6 +166,25 @@ export function attendanceForStudents(studentIds: readonly string[]): EntityQuer
 	return recordsForFieldIds('studentId', studentIds);
 }
 
+export function attendancesForClass(classGroupId: string): EntityQuery {
+	return { classGroupId };
+}
+
+export function attendanceRecordsForOccurrences(occurrenceIds: readonly string[]): EntityQuery {
+	return recordsForFieldIds('attendanceId', occurrenceIds);
+}
+
+export function classActivityEnrollmentsForClass(classGroupId: string): EntityQuery {
+	return { classGroupId };
+}
+
+export function classActivityEnrollmentForActivityClass(
+	activityId: string,
+	classGroupId: string,
+): EntityQuery {
+	return { activityId, classGroupId, $limit: 1 };
+}
+
 export function assessmentResultsForStudents(studentIds: readonly string[]): EntityQuery {
 	return recordsForFieldIds('studentId', studentIds);
 }

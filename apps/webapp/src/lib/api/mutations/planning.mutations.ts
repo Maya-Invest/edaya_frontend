@@ -61,16 +61,30 @@ function specificDateForWeek(weekStart: Date, day: PlanningEvent['day']): string
 	return date.toISOString().slice(0, 10);
 }
 
-async function materializeLessonSession(
+function lessonSessionIdForScheduleDate(scheduleId: string, specificDate: string): string {
+	return `${scheduleId}:${specificDate}`;
+}
+
+async function resolveMaterializedLessonSession(
 	client: ReturnType<typeof getBrowserSchoolClient>,
 	scheduleId: string,
+	specificDate: string,
+	materialized: Array<components['schemas']['LessonSession'] | components['schemas']['ActivitySession']>,
 ): Promise<components['schemas']['LessonSession'] | null> {
-	const materialized = await client.commands.materializeSchedule({ scheduleId });
-	const session = materialized.find(
+	const fromBatch = materialized.find(
 		(entry): entry is components['schemas']['LessonSession'] =>
-			'scheduleId' in entry && 'classSubjectId' in entry,
+			'classSubjectId' in entry && entry.scheduleId === scheduleId,
 	);
-	return session ?? null;
+	if (fromBatch) {
+		return fromBatch;
+	}
+
+	try {
+		return await client.entities.lessonSessions.get(lessonSessionIdForScheduleDate(scheduleId, specificDate));
+	}
+	catch {
+		return null;
+	}
 }
 
 export async function createSessionMutation(input: {
@@ -91,10 +105,14 @@ export async function createSessionMutation(input: {
 		return null;
 	}
 
+	if (!input.classSubjectId) {
+		toast.error(get(t)('planning.createSubjectRequired'));
+		return null;
+	}
+
+	const specificDate = specificDateForWeek(input.weekStart, input.day);
 	const { startsAt, endsAt } = sessionInstantsForWeek(input.weekStart, input.day, input.start, input.end);
-	const subject = input.classSubjectId
-		? detailDataContext.subjects.find(entry => entry.id === input.classSubjectId)
-		: undefined;
+	const subject = detailDataContext.subjects.find(entry => entry.id === input.classSubjectId);
 	const optimisticId = `ls-${Date.now().toString(36)}`;
 	const optimistic: PlanningEvent = {
 		id: optimisticId,
@@ -114,31 +132,48 @@ export async function createSessionMutation(input: {
 
 	const result = await runMutation(async () => {
 		const scheduleId = input.scheduleId ?? `sched-${Date.now().toString(36)}`;
-		if (!input.scheduleId) {
-			await client.commands.createSchedule({
-				id: scheduleId,
-				schoolId,
-				classGroupId: input.classGroupId,
-				scheduleKind: 'lesson',
-				title: input.title.trim(),
-				isRecurring: false,
-				specificDate: specificDateForWeek(input.weekStart, input.day),
-				startTime: input.start,
-				endTime: input.end,
-				classSubjectId: input.classSubjectId ?? null,
-				activityId: null,
-				dayOfWeek: null,
-				createdAt: new Date().toISOString(),
-			});
-		}
+		const createdSchedule = !input.scheduleId;
 
-		const session = await materializeLessonSession(client, scheduleId);
-		if (!session) {
-			throw new Error('Failed to materialize lesson session');
+		try {
+			if (createdSchedule) {
+				await client.commands.createSchedule({
+					id: scheduleId,
+					schoolId,
+					classGroupId: input.classGroupId,
+					scheduleKind: 'lesson',
+					title: input.title.trim(),
+					isRecurring: false,
+					specificDate,
+					startTime: input.start,
+					endTime: input.end,
+					classSubjectId: input.classSubjectId ?? null,
+					activityId: null,
+					dayOfWeek: null,
+					createdAt: new Date().toISOString(),
+				});
+			}
+
+			const materialized = await client.commands.materializeSchedule({ scheduleId });
+			const session = await resolveMaterializedLessonSession(client, scheduleId, specificDate, materialized);
+			if (!session) {
+				throw new Error(get(t)('planning.createMaterializeError'));
+			}
+			return session;
 		}
-		return session;
+		catch (error) {
+			if (createdSchedule) {
+				try {
+					await client.entities.schedules.delete({ id: scheduleId });
+				}
+				catch {
+					// Best-effort cleanup when materialization fails after schedule creation.
+				}
+			}
+			throw error;
+		}
 	}, {
 		successMessage: input.successMessage,
+		errorMessage: get(t)('planning.createError'),
 		apply: () => {
 			detailDataContext.appendPlanningEvent(optimistic);
 		},

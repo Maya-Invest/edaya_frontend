@@ -16,6 +16,8 @@ export const detailHref = {
 		appPath('/(app)/classes/[classId]/timetable/[[id]]', id ? { classId, id } : { classId }),
 	classEvaluation: (classId: string, id: string): ResolvedPathname =>
 		appPath('/(app)/classes/[classId]/evaluations/[[id]]', { classId, id }),
+	classAttendanceDay: (classId: string, id: string): ResolvedPathname =>
+		appPath('/(app)/classes/[classId]/attendance/[[id]]', { classId, id }),
 	classTeachingSubject: (classId: string, id: string): ResolvedPathname =>
 		appPath('/(app)/classes/[classId]/teaching/[[id]]', { classId, id }),
 	classDeadline: (classId: string, id: string): ResolvedPathname =>

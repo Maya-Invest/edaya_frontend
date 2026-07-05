@@ -318,8 +318,17 @@ function isTimedPlanningEvent(event: PlanningEvent): boolean {
 	return event.kind !== 'homework-due';
 }
 
+/** Occurrences still shown on the active timetable grid (excludes cancelled). */
+export function isActivePlanningEvent(event: PlanningEvent): boolean {
+	return event.status !== 'cancelled';
+}
+
+export function activePlanningEvents(events: readonly PlanningEvent[]): PlanningEvent[] {
+	return events.filter(isActivePlanningEvent);
+}
+
 export function detectPlanningOverlaps(events: readonly PlanningEvent[]): PlanningOverlap[] {
-	const timed = events.filter(isTimedPlanningEvent);
+	const timed = activePlanningEvents(events).filter(isTimedPlanningEvent);
 	const overlaps: PlanningOverlap[] = [];
 
 	for (let i = 0; i < timed.length; i++) {

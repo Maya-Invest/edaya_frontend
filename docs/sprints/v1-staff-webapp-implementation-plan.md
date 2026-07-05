@@ -1,6 +1,6 @@
 # V1 Staff Webapp — Implementation Plan
 
-> **Status:** Phases 0–3 complete (2026-07-05) · Phase 4 next  
+> **Status:** Phases 0–4 complete (2026-07-05) · Phase 5 next  
 > **Created:** 2026-07-03  
 > **Scope:** Bring `apps/webapp` to the target architecture in [v1-feature-architecture-spec.md](../specs/v1-feature-architecture-spec.md)  
 > **Draft / detail catalog:** [ui-architecture-reference.md](../reference/ui-architecture-reference.md) — feature cards, entity audit, living §0 checklist  
@@ -17,7 +17,7 @@ Check off when the phase is complete and merged. Update [ui-architecture-referen
 - [x] **Phase 1** — Configuration P0 (grade levels · classes drawer · staff assignments tab) — *(2026-07-03)*
 - [x] **Phase 2** — Permissions migration (staff drawer · remove `/configuration/roles`) — *(2026-07-04 — CRUD on Staff → Permissions tab; roles nav removed; legacy URL redirects)*
 - [x] **Phase 3** — Class academics refactor (homework fold · evaluations · `attendanceMode` nav) — *(2026-07-05 — unified evaluations list/drawer; homework route removed with redirect)*
-- [ ] **Phase 4** — Attendance & timetable (daily list · session flows · class activities)
+- [x] **Phase 4** — Attendance & timetable (daily list · session flows · class activities) — *(2026-07-05 — daily attendance list/drawer; New session wizard; ClassActivityEnrollment; inline schedule on subject create; session attendance bulk)*
 - [ ] **Phase 5** — School people (student tabs · staff polish · incidents polish)
 - [ ] **Phase 6** — Finance simple entities (fees · payments · grade scales · notifications)
 - [ ] **Phase 7** — Configuration remainder (disciplinary catalog · period definitions)

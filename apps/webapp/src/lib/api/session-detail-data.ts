@@ -171,7 +171,7 @@ export async function loadSessionDetail(
 	});
 }
 
-function buildOccurrenceAttendanceDetail(input: {
+export function buildOccurrenceAttendanceDetail(input: {
 	occurrenceId: string;
 	classGroupId: string;
 	classSubjectId: string;

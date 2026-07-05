@@ -44,6 +44,7 @@
 	const overlapIds = $derived(overlappingPlanningEventIds(weekEvents));
 	const hours = $derived(timetableHours(weekEvents));
 	const calendarEvents = $derived(mapPlanningToCalendarEvents(weekEvents));
+	const calendarEventsKey = $derived(weekEvents.map(event => `${event.id}:${event.status ?? 'pending'}`).join('|'));
 	const weekView = $derived({
 		id: 'week',
 		sections: {
@@ -228,7 +229,7 @@
 
 {#if browser}
 	<div class="edaya-timetable-calendar h-[min(780px,calc(100vh-13rem))] min-h-[520px] overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-		{#key `${$lang}-${anchorDate.getTime()}-${editable}`}
+		{#key `${$lang}-${anchorDate.getTime()}-${editable}-${calendarEventsKey}`}
 			<SvarCalendarLocale lang={$lang}>
 				<Willow fonts={false}>
 					<Calendar

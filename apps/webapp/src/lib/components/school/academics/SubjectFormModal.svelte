@@ -1,13 +1,17 @@
 <script lang="ts">
-	import type { Subject, SubjectCategory } from '$lib/types/school';
+	import type { PlanningEvent, Subject, SubjectCategory } from '$lib/types/school';
 	import { createSubjectForClassMutation, updateSubjectMutation } from '$lib/api/mutations/subject.mutations';
+	import { createScheduleMutation } from '$lib/api/mutations/schedule.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
+
+	const PLANNING_DAYS: PlanningEvent['day'][] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
 	const CATEGORIES: SubjectCategory[] = [
 		'Scientifique',
@@ -28,6 +32,7 @@
 	let {
 		subject,
 		classId,
+		weekStart = new Date(),
 		open = $bindable(false),
 		onCreated,
 		disabled = false,
@@ -35,6 +40,7 @@
 	}: {
 		subject?: Subject;
 		classId?: string;
+		weekStart?: Date;
 		open?: boolean;
 		onCreated?: (classSubjectId: string) => void;
 		disabled?: boolean;
@@ -46,6 +52,10 @@
 	let name = $state('');
 	let category = $state<SubjectCategory>('Scientifique');
 	let color = $state<Subject['color']>('mint');
+	let addToTimetable = $state(false);
+	let scheduleDay = $state<PlanningEvent['day']>('Mon');
+	let scheduleStart = $state('08:00');
+	let scheduleEnd = $state('09:00');
 
 	const isEdit = $derived(subject !== undefined);
 	const colorLabel = $derived(COLOR_LABELS[color]);
@@ -61,6 +71,10 @@
 			name = '';
 			category = 'Scientifique';
 			color = 'mint';
+			addToTimetable = false;
+			scheduleDay = 'Mon';
+			scheduleStart = '08:00';
+			scheduleEnd = '09:00';
 		}
 	}
 
@@ -98,6 +112,18 @@
 			});
 			busy = false;
 			if (classSubjectId) {
+				if (addToTimetable) {
+					await createScheduleMutation({
+						classGroupId: classId,
+						scheduleKind: 'lesson',
+						title: name.trim(),
+						classSubjectId,
+						day: scheduleDay,
+						startTime: scheduleStart,
+						endTime: scheduleEnd,
+						weekStart,
+					});
+				}
 				open = false;
 				resetForm();
 				onCreated?.(classSubjectId);
@@ -174,4 +200,45 @@
 			</Select.Root>
 		</div>
 	</div>
+	{#if !isEdit && classId}
+		<div class="space-y-3 rounded-xl border border-border bg-secondary/20 p-4">
+			<label class="flex items-center gap-2 text-sm">
+				<Checkbox bind:checked={addToTimetable} />
+				{$t('eval.addToTimetable')}
+			</label>
+			{#if addToTimetable}
+				<div class="space-y-1.5">
+					<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+						{$t('planning.day')}
+					</Label>
+					<Select.Root type="single" value={scheduleDay} onValueChange={v => v && (scheduleDay = v as PlanningEvent['day'])}>
+						<Select.Trigger>
+							<Select.Value placeholder={$t('planning.day')}>
+								{$t(`day.full.${scheduleDay}`)}
+							</Select.Value>
+						</Select.Trigger>
+						<Select.Content class="z-[100]">
+							{#each PLANNING_DAYS as d (d)}
+								<Select.Item value={d} label={$t(`day.full.${d}`)}>{$t(`day.full.${d}`)}</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</div>
+				<div class="grid gap-3 sm:grid-cols-2">
+					<div class="space-y-1.5">
+						<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+							{$t('drawer.start')}
+						</Label>
+						<Input type="time" bind:value={scheduleStart} />
+					</div>
+					<div class="space-y-1.5">
+						<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+							{$t('drawer.end')}
+						</Label>
+						<Input type="time" bind:value={scheduleEnd} />
+					</div>
+				</div>
+			{/if}
+		</div>
+	{/if}
 </FormModal>

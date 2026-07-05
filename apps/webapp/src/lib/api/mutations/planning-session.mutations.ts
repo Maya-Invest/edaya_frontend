@@ -105,3 +105,31 @@ export async function saveSessionLogbookMutation(input: {
 	});
 	return result !== null;
 }
+
+export async function recordLessonSessionBulkAttendanceMutation(input: {
+	sessionId: string;
+	attendanceByStudent: Record<string, SessionAttendanceStatus>;
+	successMessage?: string;
+}): Promise<boolean> {
+	const client = getBrowserSchoolClient();
+	const previousDetail = sessionDetailContext.get(input.sessionId);
+
+	const result = await runMutation(() => client.commands.recordLessonSessionAttendance({
+		lessonSessionId: input.sessionId,
+		attendanceByStudent: input.attendanceByStudent,
+		createdAt: new Date().toISOString(),
+	}), {
+		successMessage: input.successMessage ?? get(t)('planning.session.bulkAttendanceSuccess'),
+		apply: () => {
+			for (const [studentId, status] of Object.entries(input.attendanceByStudent)) {
+				sessionDetailContext.patchAttendance(input.sessionId, studentId, { status });
+			}
+		},
+		rollback: () => {
+			if (previousDetail) {
+				sessionDetailContext.hydrate(input.sessionId, previousDetail);
+			}
+		},
+	});
+	return result !== null;
+}

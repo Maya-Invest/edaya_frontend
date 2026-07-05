@@ -11,6 +11,22 @@ function messageFromApiError(error: ApiError): string | undefined {
 		if (typeof body.error === 'string') {
 			return body.error;
 		}
+		const nestedError = body.error;
+		if (nestedError && typeof nestedError === 'object') {
+			const issues = (nestedError as Record<string, unknown>).issues;
+			if (Array.isArray(issues)) {
+				const firstIssue = issues[0];
+				if (firstIssue && typeof firstIssue === 'object' && typeof (firstIssue as Record<string, unknown>).message === 'string') {
+					return (firstIssue as Record<string, string>).message;
+				}
+			}
+		}
+		if (Array.isArray(body.issues)) {
+			const firstIssue = body.issues[0];
+			if (firstIssue && typeof firstIssue === 'object' && typeof (firstIssue as Record<string, unknown>).message === 'string') {
+				return (firstIssue as Record<string, string>).message;
+			}
+		}
 	}
 	return undefined;
 }
@@ -51,7 +67,9 @@ export async function runMutation<T>(
 		options?.rollback?.();
 		const message = error instanceof ApiError
 			? messageFromApiError(error) ?? options?.errorMessage ?? 'La requête a échoué.'
-			: options?.errorMessage ?? 'La requête a échoué.';
+			: error instanceof Error && error.message.trim().length > 0
+				? error.message
+				: options?.errorMessage ?? 'La requête a échoué.';
 		toast.error(message);
 		return null;
 	}

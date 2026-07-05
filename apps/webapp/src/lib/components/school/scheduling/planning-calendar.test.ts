@@ -192,6 +192,56 @@ describe('planning-calendar', () => {
 		expect(detectPlanningOverlaps(events)).toHaveLength(1);
 	});
 
+	test('detectPlanningOverlaps ignores cancelled occurrences', () => {
+		const events: PlanningEvent[] = [
+			{
+				id: 'a',
+				classId: 'cg1',
+				kind: 'lesson',
+				title: 'EPS',
+				subject: 'EPS',
+				day: 'Mon',
+				start: '08:00',
+				end: '09:00',
+				startsAt: '2026-05-11T08:00:00.000Z',
+				endsAt: '2026-05-11T09:00:00.000Z',
+				room: 'Gym',
+				teacher: 'Coach',
+			},
+			{
+				id: 'b',
+				classId: 'cg1',
+				kind: 'lesson',
+				title: 'EPS',
+				subject: 'EPS',
+				day: 'Mon',
+				start: '08:00',
+				end: '09:00',
+				startsAt: '2026-05-11T08:00:00.000Z',
+				endsAt: '2026-05-11T09:00:00.000Z',
+				room: 'Gym',
+				teacher: 'Coach',
+				status: 'cancelled',
+			},
+			{
+				id: 'c',
+				classId: 'cg1',
+				kind: 'lesson',
+				title: 'EPS',
+				subject: 'EPS',
+				day: 'Mon',
+				start: '08:00',
+				end: '09:00',
+				startsAt: '2026-05-11T08:00:00.000Z',
+				endsAt: '2026-05-11T09:00:00.000Z',
+				room: 'Gym',
+				teacher: 'Coach',
+			},
+		];
+
+		expect(detectPlanningOverlaps(events)).toHaveLength(1);
+	});
+
 	test('detectPlanningOverlaps ignores homework due markers', () => {
 		const events: PlanningEvent[] = [
 			{

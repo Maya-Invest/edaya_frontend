@@ -14,6 +14,7 @@ import type {
 	Incident,
 	Activity,
 	Announcement,
+	AttendanceDay,
 } from '$lib/types/school';
 
 export type DrawerItem
@@ -21,6 +22,7 @@ export type DrawerItem
 		| { kind: 'subject'; data: Subject }
 		| { kind: 'planning'; data: PlanningEvent }
 		| { kind: 'evaluation'; data: Evaluation }
+		| { kind: 'attendanceDay'; data: AttendanceDay }
 		| { kind: 'guardian'; data: Guardian }
 		| { kind: 'staff'; data: StaffMember }
 		| { kind: 'billing'; data: StudentBilling }

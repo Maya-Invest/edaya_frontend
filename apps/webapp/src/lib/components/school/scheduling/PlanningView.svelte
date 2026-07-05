@@ -16,6 +16,7 @@
 	import AttendanceFlow from './AttendanceFlow.svelte';
 	import ClassTimetableCalendar from './ClassTimetableCalendar.svelte';
 	import {
+		activePlanningEvents,
 		detectPlanningOverlaps,
 		filterPlanningEventsForWeek,
 		formatPlanningWeekRange,
@@ -25,7 +26,7 @@
 		parseWeekAnchor,
 		shiftWeek,
 	} from './planning-calendar';
-	import PlanningFormModal from './PlanningFormModal.svelte';
+	import NewSessionWizard from './NewSessionWizard.svelte';
 	import ScheduleFormModal from './ScheduleFormModal.svelte';
 
 	const {
@@ -51,9 +52,9 @@
 	let weekPickerValue = $state('');
 	let filtersReady = $state(false);
 	let attendanceSession = $state<PlanningEvent | null>(null);
-	let createOpen = $state(false);
 	let scheduleCreateOpen = $state(false);
 	let scheduleCreateKind = $state<TimetableScheduleKind>('lesson');
+	let wizardOpen = $state(false);
 
 	const editable = $derived(canEditTimetable({ classId }));
 
@@ -68,7 +69,9 @@
 				|| ev.room.toLowerCase().includes(needle);
 		}),
 	);
-	const weekEvents = $derived(filterPlanningEventsForWeek(filteredEvents, weekStart));
+	const weekEvents = $derived(
+		activePlanningEvents(filterPlanningEventsForWeek(filteredEvents, weekStart)),
+	);
 	const planningOverlaps = $derived(detectPlanningOverlaps(weekEvents));
 
 	const attendanceClass = $derived(
@@ -81,15 +84,6 @@
 	function openScheduleCreate(kind: TimetableScheduleKind) {
 		scheduleCreateKind = kind;
 		scheduleCreateOpen = true;
-	}
-
-	function handleCreated(sessionId: string) {
-		const path = detailHref.classPlanning(classId, sessionId);
-		const href = `${path}${$page.url.search}`;
-		if ($page.url.pathname === path) {
-			return;
-		}
-		appGoto(href);
 	}
 
 	function syncFiltersToUrl() {
@@ -181,8 +175,17 @@
 			>
 				{#snippet children({ disabled, title })}
 					<div class="flex flex-wrap items-center gap-2">
+						<NewSessionWizard
+							{classId}
+							{weekStart}
+							bind:open={wizardOpen}
+							{disabled}
+							{title}
+							onCreated={sessionId => appGoto(detailHref.classPlanning(classId, sessionId))}
+						/>
 						<Button
 							size="sm"
+							variant="outline"
 							class="rounded-full"
 							{disabled}
 							{title}
@@ -190,28 +193,6 @@
 						>
 							<Plus class="mr-1 h-4 w-4" />
 							{$t('planning.newSchedule')}
-						</Button>
-						<Button
-							size="sm"
-							variant="outline"
-							class="rounded-full"
-							{disabled}
-							{title}
-							onclick={() => openScheduleCreate('activity')}
-						>
-							<Plus class="mr-1 h-4 w-4" />
-							{$t('planning.newActivitySchedule')}
-						</Button>
-						<Button
-							size="sm"
-							variant="outline"
-							class="rounded-full"
-							{disabled}
-							{title}
-							onclick={() => (createOpen = true)}
-						>
-							<Plus class="mr-1 h-4 w-4" />
-							{$t('planning.newSession')}
 						</Button>
 					</div>
 				{/snippet}
@@ -290,7 +271,6 @@
 	{/if}
 
 	<ScheduleFormModal {classId} {weekStart} defaultScheduleKind={scheduleCreateKind} bind:open={scheduleCreateOpen} />
-	<PlanningFormModal {classId} weekStart={weekStart} bind:open={createOpen} onCreated={handleCreated} />
 
 	<ClassTimetableCalendar
 		events={weekEvents}
