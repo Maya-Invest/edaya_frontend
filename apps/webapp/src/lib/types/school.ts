@@ -179,11 +179,54 @@ export interface HealthRecord {
 export interface Incident {
 	id: string;
 	studentId: string;
+	involvedStudentIds: string[];
+	involvedCount: number;
 	date: string;
 	category: 'Behavior' | 'Tardiness' | 'Conflict' | 'Other';
 	severity: 'low' | 'medium' | 'high';
 	summary: string;
 	status: 'open' | 'resolved' | 'cancelled';
+}
+
+export interface StudentEnrollmentHistoryItem {
+	id: string;
+	classGroupId: string;
+	className: string;
+	academicYearId: string;
+	status: 'active' | 'closed';
+	enrolledAt: string;
+	endedAt?: string;
+	endReason?: 'completed' | 'transferred' | 'withdrawn' | null;
+}
+
+export interface StudentGradeRow {
+	assessmentId: string;
+	classGroupId: string;
+	title: string;
+	subject: string;
+	date: string;
+	score: number | null;
+	outOf: number;
+	coefficient: number;
+	kind: AssessmentKind;
+}
+
+export interface StudentAttendanceHistoryItem {
+	id: string;
+	date: string;
+	time: string;
+	label: string;
+	status: 'present' | 'absent' | 'late';
+	kind: 'daily' | 'session';
+}
+
+export interface IncidentSanctionRow {
+	id: string;
+	studentId: string;
+	studentName: string;
+	actionName: string;
+	status: 'active' | 'completed' | 'cancelled';
+	notes?: string;
 }
 
 export interface AttendanceDay {

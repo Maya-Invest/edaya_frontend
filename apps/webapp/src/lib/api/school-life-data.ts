@@ -192,25 +192,29 @@ export function mapIncidents(
 	incidentsRaw: IncidentRaw[],
 	involvementsRaw: InvolvementRaw[],
 ): Incident[] {
-	const involvementByIncident = new Map<string, InvolvementRaw>();
+	const involvementsByIncident = new Map<string, InvolvementRaw[]>();
 	for (const involvement of involvementsRaw) {
-		if (!involvementByIncident.has(involvement.incidentId)) {
-			involvementByIncident.set(involvement.incidentId, involvement);
-		}
+		const bucket = involvementsByIncident.get(involvement.incidentId) ?? [];
+		bucket.push(involvement);
+		involvementsByIncident.set(involvement.incidentId, bucket);
 	}
 
 	return incidentsRaw
 		.map((incident) => {
-			const involvement = involvementByIncident.get(incident.id);
-			if (!involvement) {
+			const involvements = involvementsByIncident.get(incident.id) ?? [];
+			if (involvements.length === 0) {
 				return null;
 			}
 
+			const primary = involvements.find(entry => entry.role === 'subject') ?? involvements[0];
 			const category = mapIncidentCategory(incident);
+			const involvedStudentIds = uniqueIds(involvements.map(entry => entry.studentId));
 
 			return {
 				id: incident.id,
-				studentId: involvement.studentId,
+				studentId: primary.studentId,
+				involvedStudentIds,
+				involvedCount: involvedStudentIds.length,
 				date: formatDate(incident.date),
 				category,
 				severity: mapIncidentSeverity(incident, category),
@@ -343,6 +347,8 @@ export async function loadIncidentInvolvements(
 	);
 	return involvements ?? [];
 }
+
+export { loadIncidentSanctions } from '$lib/api/student-drawer-data';
 
 export async function loadAbsences(
 	client: SchoolClient,

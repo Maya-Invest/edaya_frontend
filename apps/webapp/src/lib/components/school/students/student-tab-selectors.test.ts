@@ -49,6 +49,8 @@ describe('student tab selectors', () => {
 			{
 				id: 'i1',
 				studentId: 's1',
+				involvedStudentIds: ['s1'],
+				involvedCount: 1,
 				date: '2026-02-01',
 				category: 'Behavior',
 				severity: 'high',
@@ -58,6 +60,8 @@ describe('student tab selectors', () => {
 			{
 				id: 'i2',
 				studentId: 's1',
+				involvedStudentIds: ['s1'],
+				involvedCount: 1,
 				date: '2026-03-01',
 				category: 'Tardiness',
 				severity: 'low',
@@ -67,6 +71,8 @@ describe('student tab selectors', () => {
 			{
 				id: 'i3',
 				studentId: 's1',
+				involvedStudentIds: ['s1'],
+				involvedCount: 1,
 				date: '2026-02-15',
 				category: 'Conflict',
 				severity: 'medium',

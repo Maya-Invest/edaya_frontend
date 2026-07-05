@@ -53,16 +53,18 @@ Living checklist — check items off (`[x]`) as work lands. Mirrors [§6 gaps](#
 - [ ] More menu: per-feature export / bulk actions
 
 #### School
-- [ ] Student drawer — **Enrollments** tab (history); **Grades** tab → links to assessments
+- [x] Student drawer — **Enrollments** tab (history); **Grades** tab → links to assessments ✅ *(2026-07-05)*
 - [x] Staff drawer — **Permissions** tab (`staffPermissionAssignments`); remove reliance on `/configuration/roles` ✅ *(2026-07-04 — CRUD via modals on School → Staff drawer)*
+- [x] Staff drawer — **Assignments** tab (read-only summary) + entity header ✅ *(2026-07-05)*
 - [x] Incidents — **Resolve** modal (involved students + disciplinary actions) ✅ *(2026-07-03 — `resolveIncidentWithOutcomes` + `IncidentResolveModal`)*
+- [x] Incidents — resolution filter · multi-student list · drawer header · sanctions ✅ *(2026-07-05)*
 
 #### Classes
 - [x] Remove dedicated **Homework** nav/route; fold into Assessments (`kind` filter + row badge) ✅ *(2026-07-05)*
 - [x] Assessments — unified list + drawer (exclusive body section per `kind`) ✅ *(2026-07-05)*
 - [x] **Daily attendance** — list of days + drawer (session-like pattern) ✅ *(2026-07-05)*
 - [x] Timetable — New session flow (Lesson · Activity · Assessment) + inline schedule from source screens ✅ *(2026-07-05 — wizard + subject create schedule)*
-- [ ] Student drawer **Attendance** tab — aggregate daily + session records
+- [x] Student drawer **Attendance** tab — aggregate daily + session records ✅ *(2026-07-05)*
 
 #### Finance
 - [ ] Fees — row `···` menu only (remove drawer)
@@ -365,11 +367,13 @@ Each module opens with a **quick index**, then **feature cards** with full detai
 - Drawer **Involved students** sub-collection (read-only; edits via Resolve modal)
 - Resolved status badge; Resolve hidden when `status = resolved`
 
+**Shipped (2026-07-05)**
+- List **resolution status** filter (+ category · severity in Filter panel)
+- Multi-student list rows (primary student + count)
+- Drawer **entity header** (Edit · Resolve · delete in overflow)
+- Applied **sanctions** read-only in drawer post-resolve
+
 **Remaining**
-- List **resolution status** filter (Filter panel)
-- List row still **single-student** (`mapIncidents` uses first involvement)
-- Drawer **entity header** pattern (§3.1 — identity + top 2 actions)
-- Applied **sanctions** not shown in drawer post-resolve
 - **`/configuration/discipline`** catalog screen (sanctions load in modal from API today)
 
 **List**

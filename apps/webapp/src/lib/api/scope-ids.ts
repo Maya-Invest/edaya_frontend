@@ -24,6 +24,59 @@ export interface ClassSubjectScopeSelection {
 	wildcard?: boolean;
 }
 
+/** Resolved scope path for a class-subject row, or null when the row is still incomplete. */
+export function classSubjectScopePathKey(row: ClassSubjectScopeSelection): string | null {
+	const classGroupId = row.classGroupId.trim();
+	if (!classGroupId) {
+		return null;
+	}
+	if (row.wildcard) {
+		return `${classGroupId}:*`;
+	}
+	const classSubjectId = row.classSubjectId?.trim();
+	if (classSubjectId) {
+		return `${classGroupId}:${classSubjectId}`;
+	}
+	return null;
+}
+
+export function findConflictingClassSubjectScopePathIndex(
+	rows: readonly ClassSubjectScopeSelection[],
+	index: number,
+	candidate: ClassSubjectScopeSelection,
+): number {
+	const candidateKey = classSubjectScopePathKey(candidate);
+	const candidateClassId = candidate.classGroupId.trim();
+
+	for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+		if (rowIndex === index) {
+			continue;
+		}
+		const row = rows[rowIndex]!;
+		const rowKey = classSubjectScopePathKey(row);
+
+		if (candidateKey !== null && rowKey === candidateKey) {
+			return rowIndex;
+		}
+
+		if (!candidateClassId || row.classGroupId.trim() !== candidateClassId) {
+			continue;
+		}
+
+		if (candidate.wildcard && rowKey !== null && !row.wildcard) {
+			return rowIndex;
+		}
+		if (!candidate.wildcard && candidateKey !== null && row.wildcard) {
+			return rowIndex;
+		}
+	}
+
+	return -1;
+}
+
+/** @deprecated Use findConflictingClassSubjectScopePathIndex */
+export const findDuplicateClassSubjectScopePathIndex = findConflictingClassSubjectScopePathIndex;
+
 export function composeClassGroupScopeIds(classGroupIds: readonly string[]): string {
 	const ids = [...new Set(classGroupIds.map(id => id.trim()).filter(Boolean))];
 	return ids.join(',');

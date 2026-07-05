@@ -237,6 +237,10 @@ export function progressForLessonSessions(lessonSessionIds: readonly string[]): 
 	return recordsForFieldIds('lessonSessionId', lessonSessionIds);
 }
 
+export function disciplinaryActionsForIncident(incidentId: string): EntityQuery {
+	return { incidentId };
+}
+
 export function involvementsForIncidents(incidentIds: readonly string[]): EntityQuery {
 	return recordsForFieldIds('incidentId', incidentIds);
 }

@@ -7,6 +7,7 @@
 		composeClassSubjectScopeIds,
 		composeGradeLevelScopeIds,
 		composeStudentScopeIds,
+		findConflictingClassSubjectScopePathIndex,
 		parseActivityScopeIds,
 		parseClassGroupScopeIds,
 		parseClassSubjectScopeIds,
@@ -35,6 +36,7 @@
 	let activityId = $state('');
 	let activityClassGroupId = $state('');
 	let hydratedKey = $state('');
+	let duplicateScopeWarning = $state(false);
 
 	const classOptions = $derived(academicContext.classes);
 	const gradeOptions = $derived(academicContext.gradeLevels);
@@ -143,17 +145,72 @@
 	}
 
 	function addClassSubjectRow() {
+		duplicateScopeWarning = false;
 		classSubjectRows = [
 			...classSubjectRows,
 			{ classGroupId: classOptions[0]?.id ?? '', classSubjectId: '', wildcard: false },
 		];
 	}
 
+	function removeClassSubjectRow(index: number) {
+		if (classSubjectRows.length <= 1) {
+			return;
+		}
+		duplicateScopeWarning = false;
+		classSubjectRows = classSubjectRows.filter((_, rowIndex) => rowIndex !== index);
+		syncScopeIds();
+	}
+
 	function updateClassSubjectRow(index: number, patch: Partial<{ classGroupId: string; classSubjectId: string; wildcard: boolean }>) {
+		const candidate = { ...classSubjectRows[index], ...patch };
+		if (findConflictingClassSubjectScopePathIndex(classSubjectRows, index, candidate) !== -1) {
+			duplicateScopeWarning = true;
+			return;
+		}
+		duplicateScopeWarning = false;
 		classSubjectRows = classSubjectRows.map((row, rowIndex) =>
-			rowIndex === index ? { ...row, ...patch } : row,
+			rowIndex === index ? candidate : row,
 		);
 		syncScopeIds();
+	}
+
+	function isClassFullyCoveredByWildcard(classGroupId: string, rowIndex: number): boolean {
+		return classSubjectRows.some(
+			(row, index) => index !== rowIndex && row.classGroupId === classGroupId && row.wildcard,
+		);
+	}
+
+	function isClassWildcardBlocked(classGroupId: string, rowIndex: number): boolean {
+		return classSubjectRows.some(
+			(row, index) =>
+				index !== rowIndex
+				&& row.classGroupId === classGroupId
+				&& (row.wildcard || Boolean(row.classSubjectId?.trim())),
+		);
+	}
+
+	function isClassGroupOptionDisabled(
+		classGroupId: string,
+		rowIndex: number,
+		row: { wildcard: boolean },
+	): boolean {
+		if (row.wildcard) {
+			return isClassWildcardBlocked(classGroupId, rowIndex);
+		}
+		return isClassFullyCoveredByWildcard(classGroupId, rowIndex);
+	}
+
+	function isSubjectScopeTaken(classGroupId: string, classSubjectId: string, rowIndex: number): boolean {
+		if (isClassFullyCoveredByWildcard(classGroupId, rowIndex)) {
+			return true;
+		}
+		return classSubjectRows.some(
+			(row, index) =>
+				index !== rowIndex
+				&& row.classGroupId === classGroupId
+				&& !row.wildcard
+				&& row.classSubjectId === classSubjectId,
+		);
 	}
 </script>
 
@@ -204,8 +261,19 @@
 		<div class="space-y-3">
 			{#each classSubjectRows as row, index (index)}
 				<div class="space-y-2 rounded-xl border border-border p-3">
-					<div class="space-y-1">
+					<div class="flex items-center justify-between gap-2">
 						<Label class="text-xs">{$t('roles.scopeClassGroup')}</Label>
+						{#if classSubjectRows.length > 1}
+							<button
+								type="button"
+								class="text-[11px] font-medium text-muted-foreground hover:text-foreground"
+								onclick={() => removeClassSubjectRow(index)}
+							>
+								{$t('roles.removeScopePath')}
+							</button>
+						{/if}
+					</div>
+					<div class="space-y-1">
 						<Select.Root
 							type="single"
 							value={row.classGroupId}
@@ -223,7 +291,14 @@
 							</Select.Trigger>
 							<Select.Content>
 								{#each classOptions as classGroup (classGroup.id)}
-									<Select.Item value={classGroup.id} label={classGroup.name}>{classGroup.name}</Select.Item>
+									{@const classDisabled = isClassGroupOptionDisabled(classGroup.id, index, row)}
+									<Select.Item
+										value={classGroup.id}
+										label={classGroup.name}
+										disabled={classDisabled}
+									>
+										{classGroup.name}
+									</Select.Item>
 								{/each}
 							</Select.Content>
 						</Select.Root>
@@ -231,6 +306,7 @@
 					<label class="flex items-center gap-2 text-xs text-muted-foreground">
 						<Checkbox
 							checked={row.wildcard ?? false}
+							disabled={!row.wildcard && isClassWildcardBlocked(row.classGroupId, index)}
 							onCheckedChange={(checked) => {
 								if (typeof checked !== 'boolean') {
 									return;
@@ -260,7 +336,14 @@
 								</Select.Trigger>
 								<Select.Content>
 									{#each subjectsForClass(row.classGroupId) as subject (subject.id)}
-										<Select.Item value={subject.id} label={subject.name}>{subject.name}</Select.Item>
+										{@const subjectTaken = isSubjectScopeTaken(row.classGroupId, subject.id, index)}
+										<Select.Item
+											value={subject.id}
+											label={subject.name}
+											disabled={subjectTaken}
+										>
+											{subject.name}
+										</Select.Item>
 									{/each}
 								</Select.Content>
 							</Select.Root>
@@ -268,6 +351,9 @@
 					{/if}
 				</div>
 			{/each}
+			{#if duplicateScopeWarning}
+				<p class="text-xs text-amber-600">{$t('roles.scopePathDuplicate')}</p>
+			{/if}
 			<button
 				type="button"
 				class={cn('text-xs font-medium text-primary hover:underline')}

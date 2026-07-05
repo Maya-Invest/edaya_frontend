@@ -6,27 +6,30 @@
 	import { updateStaffMemberStatusMutation } from '$lib/api/mutations/staff.mutations';
 	import AccountLinkingSection from '$lib/components/account/AccountLinkingSection.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
-	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
 	import { Mail } from '$lib/icons';
 	import { canUploadProfilePhoto } from '$lib/permissions';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
-	import DrawerActionBar from '../shared/DrawerActionBar.svelte';
+	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import DrawerField from '../shared/DrawerField.svelte';
 	import PersonAvatar from '../shared/PersonAvatar.svelte';
 	import ProfilePhotoPicker from '../shared/ProfilePhotoPicker.svelte';
-	import StaffAssignmentsSection from './StaffAssignmentsSection.svelte';
+	import StaffAssignmentsSummary from './StaffAssignmentsSummary.svelte';
 	import StaffPermissionsList from './StaffPermissionsList.svelte';
 	import StaffProfileEditModal from './StaffProfileEditModal.svelte';
 
 	const { s }: { s: StaffMember } = $props();
 
-	let tab = $state<'profile' | 'permissions'>('profile');
+	let tab = $state<'profile' | 'permissions' | 'assignments'>('profile');
 	let optimisticActive = $state<boolean | null>(null);
 	let statusBusy = $state(false);
+	let deleteOpen = $state(false);
+	let deleteBusy = $state(false);
 
 	const active = $derived(optimisticActive ?? s.isActive);
 	const canChangePhoto = $derived(canUploadProfilePhoto('STAFF_UPDATE'));
@@ -66,31 +69,83 @@
 			optimisticActive = previous;
 		}
 	}
+
+	function focusPermissionsTab() {
+		tab = 'permissions';
+	}
+
+	async function confirmDelete() {
+		deleteBusy = true;
+		try {
+			const ok = await deleteStaffMemberMutation(s.id, {
+				successMessage: get(t)('staff.toastDeleted', { name: s.name }),
+			});
+			if (ok) {
+				deleteOpen = false;
+			}
+		}
+		finally {
+			deleteBusy = false;
+		}
+	}
 </script>
 
 <div class="space-y-5">
-	<div class="flex items-center gap-4">
-		{#if canChangePhoto}
-			<ProfilePhotoPicker
-				name={s.name}
-				initials={s.initials}
-				photoUrl={s.photoUrl}
-				size="lg"
-				onChange={handlePhotoChange}
-			/>
-		{:else}
-			<PersonAvatar name={s.name} initials={s.initials} photoUrl={s.photoUrl} size="lg" />
-		{/if}
-		<div>
-			<h3 class="font-display text-2xl font-semibold leading-tight">{s.name}</h3>
-			<p class="text-sm text-muted-foreground">
-				{$t(`staff.role.${s.role}`)} · {s.department}
-			</p>
-		</div>
-	</div>
+	<DrawerEntityHeader
+		name={s.name}
+		summary={`${$t(`staff.role.${s.role}`)} · ${s.department}`}
+	>
+		{#snippet avatar()}
+			{#if canChangePhoto}
+				<ProfilePhotoPicker
+					name={s.name}
+					initials={s.initials}
+					photoUrl={s.photoUrl}
+					size="lg"
+					onChange={handlePhotoChange}
+				/>
+			{:else}
+				<PersonAvatar name={s.name} initials={s.initials} photoUrl={s.photoUrl} size="lg" />
+			{/if}
+		{/snippet}
+		{#snippet actions()}
+			<PermissionGate permission="STAFF_UPDATE" mode="disable" tooltip={$t('staff.permissionUpdate')}>
+				{#snippet children({ disabled, title })}
+					<StaffProfileEditModal {s} {disabled} {title} />
+				{/snippet}
+			</PermissionGate>
+			<PermissionGate permission="ACCESS_CONTROL_ASSIGN" mode="disable" tooltip={$t('staff.permissionAssign')}>
+				{#snippet children({ disabled, title })}
+					<button
+						type="button"
+						class="inline-flex h-9 items-center rounded-full border border-input bg-background px-4 text-sm font-medium transition hover:bg-secondary disabled:opacity-50"
+						{disabled}
+						{title}
+						onclick={focusPermissionsTab}
+					>
+						{$t('staff.managePermissions')}
+					</button>
+				{/snippet}
+			</PermissionGate>
+		{/snippet}
+		{#snippet overflow()}
+			<PermissionGate permission="STAFF_UPDATE" mode="disable" tooltip={$t('staff.permissionUpdate')}>
+				{#snippet children({ disabled, title })}
+					<RowActionMenuItem
+						{disabled}
+						{title}
+						destructive
+						onclick={() => (deleteOpen = true)}
+					>
+						{$t('common.delete')}
+					</RowActionMenuItem>
+				{/snippet}
+			</PermissionGate>
+		{/snippet}
+	</DrawerEntityHeader>
 
 	<div class="flex items-center gap-1 rounded-full border border-border bg-secondary/40 p-1 text-xs">
-		{#each ['profile', 'permissions'] as const as k (k)}
+		{#each ['profile', 'permissions', 'assignments'] as const as k (k)}
 			<button
 				type="button"
 				onclick={() => (tab = k)}
@@ -99,7 +154,7 @@
 					tab === k ? 'bg-card text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground',
 				)}
 			>
-				{$t(k === 'profile' ? 'drawer.tab.profile' : 'drawer.tab.permissions')}
+				{$t(k === 'profile' ? 'drawer.tab.profile' : k === 'permissions' ? 'drawer.tab.permissions' : 'drawer.tab.assignments')}
 			</button>
 		{/each}
 	</div>
@@ -144,8 +199,6 @@
 				</DrawerField>
 			{/if}
 
-			<StaffAssignmentsSection staff={s} />
-
 			<div class="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
 				<div>
 					<Label class="text-sm font-medium">{$t('staff.activeLabel')}</Label>
@@ -169,29 +222,19 @@
 				contactEmail={s.email}
 				displayName={s.name}
 			/>
-
-			<DrawerActionBar>
-				<PermissionGate permission="STAFF_UPDATE" mode="disable" tooltip={$t('staff.permissionUpdate')}>
-					{#snippet children({ disabled, title })}
-						<StaffProfileEditModal {s} {disabled} {title} />
-					{/snippet}
-				</PermissionGate>
-				<PermissionGate permission="STAFF_UPDATE" mode="disable" tooltip={$t('staff.permissionUpdate')}>
-					{#snippet children({ disabled, title })}
-						<DeleteEntityButton
-							{disabled}
-							{title}
-							confirmTitle={$t('common.deleteConfirmTitle')}
-							confirmDescription={$t('staff.deleteConfirm', { name: s.name })}
-							onConfirm={() => deleteStaffMemberMutation(s.id, {
-								successMessage: get(t)('staff.toastDeleted', { name: s.name }),
-							})}
-						/>
-					{/snippet}
-				</PermissionGate>
-			</DrawerActionBar>
 		</div>
-	{:else}
+	{:else if tab === 'permissions'}
 		<StaffPermissionsList {s} />
+	{:else}
+		<StaffAssignmentsSummary staff={s} />
 	{/if}
 </div>
+
+<ConfirmModal
+	bind:open={deleteOpen}
+	title={$t('common.deleteConfirmTitle')}
+	description={$t('staff.deleteConfirm', { name: s.name })}
+	confirmLabel={$t('common.delete')}
+	busy={deleteBusy}
+	onConfirm={confirmDelete}
+/>

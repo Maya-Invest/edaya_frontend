@@ -39,10 +39,14 @@
 	</button>
 	{#if shown}
 		<div class="divide-y divide-border">
-			{#each items as { e, mark } (e.id)}
+			{#each items as { e, mark, href } (e.id)}
 				<div class="px-3 py-2">
 					<div class="flex items-center justify-between gap-2">
-						<p class="text-sm font-medium">{e.title}</p>
+						{#if href}
+							<a href={href} class="text-sm font-medium text-primary hover:underline">{e.title}</a>
+						{:else}
+							<p class="text-sm font-medium">{e.title}</p>
+						{/if}
 						<p class="font-mono text-sm tabular-nums">
 							{mark !== null ? mark.toFixed(1) : '—'}
 							<span class="ml-0.5 text-xs text-muted-foreground">/{e.outOf}</span>

@@ -24,7 +24,10 @@ import type {
 	StaffMember,
 	StaffRole,
 	Student,
+	StudentAttendanceHistoryItem,
 	StudentBilling,
+	StudentEnrollmentHistoryItem,
+	StudentGradeRow,
 	Subject,
 	TimetableSchedule,
 } from '$lib/types/school';
@@ -84,6 +87,12 @@ export class DetailDataContext {
 	staffPermissionAssignments = $state<StaffPermissionAssignmentView[]>([]);
 	permissionCatalog = $state<PermissionCatalogEntry[]>([]);
 	staffAssignments = $state<components['schemas']['StaffAssignment'][]>([]);
+	studentDrawerCache = $state<{
+		studentId: string;
+		enrollments: StudentEnrollmentHistoryItem[];
+		grades: StudentGradeRow[];
+		attendance: StudentAttendanceHistoryItem[];
+	} | null>(null);
 
 	private replaceById<T extends { id: string }>(items: readonly T[], id: string, patch: Partial<T>): T[] {
 		const index = items.findIndex(item => item.id === id);
@@ -124,6 +133,24 @@ export class DetailDataContext {
 		);
 		this.healthRecords = next.healthRecords;
 		this.pedagogicalNotes = next.pedagogicalNotes;
+	}
+
+	seedStudentDrawerData(
+		studentId: string,
+		data: {
+			enrollments: StudentEnrollmentHistoryItem[];
+			grades: StudentGradeRow[];
+			attendance: StudentAttendanceHistoryItem[];
+		},
+	) {
+		this.studentDrawerCache = { studentId, ...data };
+	}
+
+	studentDrawerDataFor(studentId: string) {
+		if (this.studentDrawerCache?.studentId !== studentId) {
+			return null;
+		}
+		return this.studentDrawerCache;
 	}
 
 	/** Merge by id. */
@@ -515,6 +542,7 @@ export class DetailDataContext {
 		this.staffPermissionAssignments = [];
 		this.permissionCatalog = [];
 		this.staffAssignments = [];
+		this.studentDrawerCache = null;
 	}
 }
 

@@ -38,4 +38,4 @@ export type DrawerItem
 		| { kind: 'classGroup'; data: ClassNode }
 		| null;
 
-export interface SubjectGroupItem { e: Evaluation; mark: number | null }
+export interface SubjectGroupItem { e: Evaluation; mark: number | null; href?: string }

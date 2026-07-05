@@ -211,6 +211,8 @@ export async function recordStudentIncidentMutation(input: {
 	const optimisticIncident: Incident = {
 		id: incidentId,
 		studentId: input.studentId,
+		involvedStudentIds: [input.studentId],
+		involvedCount: 1,
 		date: new Date().toISOString().slice(0, 10),
 		category: incidentCategoryFromKind(input.kind),
 		severity: incidentSeverityFromKind(input.kind),

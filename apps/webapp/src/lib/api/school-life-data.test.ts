@@ -175,6 +175,8 @@ describe('school-life incident mapping', () => {
 		expect(incidents).toHaveLength(3);
 		expect(incidents.find(entry => entry.id === 'i1')).toMatchObject({
 			studentId: 's3',
+			involvedStudentIds: ['s3'],
+			involvedCount: 1,
 			category: 'Tardiness',
 			severity: 'low',
 		});

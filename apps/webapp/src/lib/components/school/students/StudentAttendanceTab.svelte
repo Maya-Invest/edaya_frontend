@@ -1,65 +1,80 @@
 <script lang="ts">
-	import type { AbsenceRecord, Student } from '$lib/types/school';
+	import type { Student, StudentAttendanceHistoryItem } from '$lib/types/school';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import { t } from '$lib/i18n';
 	import { Clock } from '$lib/icons';
+	import { cn } from '$lib/utils';
 	import { fmtDateFr } from '../shared/drawer-constants.ts';
 	import DrawerEmptyState from '../shared/DrawerEmptyState.svelte';
 	import StudentAbsenceModal from './StudentAbsenceModal.svelte';
 
 	const {
 		s,
-		absenceData,
-		absenceRate,
+		attendanceData,
 	}: {
 		s: Student;
-		absenceData: AbsenceRecord[];
-		absenceRate: number;
+		attendanceData: {
+			records: StudentAttendanceHistoryItem[];
+			present: number;
+			absent: number;
+			late: number;
+		};
 	} = $props();
+
+	const statusTone: Record<StudentAttendanceHistoryItem['status'], string> = {
+		present: 'bg-secondary text-foreground/70',
+		absent: 'bg-destructive/10 text-destructive',
+		late: 'bg-highlight-soft text-highlight',
+	};
 </script>
 
 <div class="space-y-4">
 	<div class="grid grid-cols-3 gap-3">
 		<div class="rounded-xl bg-primary/10 p-4">
-			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">Présence</p>
-			<p class="mt-1 font-display text-2xl">{s.attendance}%</p>
+			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('student.attendancePresent')}</p>
+			<p class="mt-1 font-display text-2xl">{attendanceData.present}</p>
 		</div>
 		<div class="rounded-xl bg-secondary/60 p-4">
-			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">Absence</p>
-			<p class="mt-1 font-display text-2xl">{absenceRate}%</p>
+			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('student.attendanceAbsent')}</p>
+			<p class="mt-1 font-display text-2xl">{attendanceData.absent}</p>
 		</div>
 		<div class="rounded-xl bg-secondary p-4">
-			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">Total</p>
-			<p class="mt-1 font-display text-2xl">{absenceData.length}</p>
+			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('student.attendanceLate')}</p>
+			<p class="mt-1 font-display text-2xl">{attendanceData.late}</p>
 		</div>
 	</div>
 	<div>
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			Évènements d'absence
+			{$t('student.attendanceHistory')}
 		</Label>
 		<div class="mt-2 space-y-2">
-			{#if absenceData.length === 0}
-				<DrawerEmptyState label="Aucune absence enregistrée.">
+			{#if attendanceData.records.length === 0}
+				<DrawerEmptyState label={$t('student.noAttendanceRecords')}>
 					{#snippet icon()}
 						<Clock class="h-5 w-5 text-muted-foreground" />
 					{/snippet}
 				</DrawerEmptyState>
 			{:else}
-				{#each absenceData as absence (absence.id)}
+				{#each attendanceData.records as record (record.id)}
 					<div class="rounded-xl border border-border bg-card p-3">
 						<div class="flex items-center justify-between gap-2">
+							<span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+								{$t(`student.attendanceKind.${record.kind}`)}
+							</span>
 							<span
-								class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
-							>{absence.eventType}</span
+								class={cn(
+									'rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider',
+									statusTone[record.status],
+								)}
 							>
-							<span class="font-mono text-[10px] text-muted-foreground">
-								{fmtDateFr(absence.date)} · {absence.time}
+								{$t(`student.attendanceStatus.${record.status}`)}
 							</span>
 						</div>
-						<p class="mt-1.5 text-sm font-medium">{absence.subject}</p>
-						{#if absence.reason}
-							<p class="mt-0.5 text-xs text-muted-foreground">Motif : {absence.reason}</p>
-						{/if}
+						<p class="mt-1.5 text-sm font-medium">{record.label}</p>
+						<p class="mt-0.5 font-mono text-[10px] text-muted-foreground">
+							{fmtDateFr(record.date)} · {record.time}
+						</p>
 					</div>
 				{/each}
 			{/if}
@@ -69,7 +84,7 @@
 		permission="ATTENDANCE_RECORD"
 		classId={s.classId}
 		mode="disable"
-		tooltip="Droit ATTENDANCE_RECORD requis."
+		tooltip={$t('student.attendancePermission')}
 	>
 		{#snippet children({ disabled, title })}
 			<StudentAbsenceModal {s} {disabled} {title} />

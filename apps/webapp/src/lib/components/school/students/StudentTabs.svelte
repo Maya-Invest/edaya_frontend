@@ -2,7 +2,10 @@
 	import type { Student } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { updateStudentProfilePhotoMutation } from '$lib/api/mutations/profile-photo.mutations';
+	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
+	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
+	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { canUploadProfilePhoto } from '$lib/permissions';
 	import { cn } from '$lib/utils';
@@ -11,36 +14,60 @@
 	import StudentAvatar from '../shared/StudentAvatar.svelte';
 	import ChangeClassButton from './ChangeClassButton.svelte';
 	import {
-		buildStudentGradeSummary,
+		buildStudentGradeSummaryFromRows,
 		sortPedagogicalNotes,
-		sortStudentAbsences,
+		summarizeStudentAttendanceHistory,
 		summarizeStudentFinances,
 		summarizeStudentIncidents,
 	} from './student-tab-selectors.ts';
 	import StudentAttendanceTab from './StudentAttendanceTab.svelte';
+	import StudentEnrollmentsTab from './StudentEnrollmentsTab.svelte';
 	import StudentFinanceTab from './StudentFinanceTab.svelte';
 	import StudentGradesTab from './StudentGradesTab.svelte';
 	import StudentIncidentsTab from './StudentIncidentsTab.svelte';
+	import StudentProfileEditModal from './StudentProfileEditModal.svelte';
 	import StudentProfileTab from './StudentProfileTab.svelte';
 	import StudentReportCardPanel from './StudentReportCardPanel.svelte';
 
 	const { s }: { s: Student } = $props();
 
-	type StudentTab = 'profile' | 'notes' | 'absence' | 'incidents' | 'finances' | 'bulletin';
+	type StudentTab
+		= | 'profile'
+			| 'grades'
+			| 'attendance'
+			| 'incidents'
+			| 'finances'
+			| 'reportCard'
+			| 'enrollments';
 
 	let tab = $state<StudentTab>('profile');
 
+	const drawerData = $derived(detailDataContext.studentDrawerDataFor(s.id));
 	const linkedGuardians = $derived(detailDataContext.guardians.filter(g => g.studentIds.includes(s.id)));
 	const health = $derived(detailDataContext.healthRecords[s.id]);
-	const studentIncidents = $derived(detailDataContext.incidents.filter(i => i.studentId === s.id));
-	const absenceRate = $derived(100 - s.attendance);
+	const studentIncidents = $derived(
+		detailDataContext.incidents.filter(i => i.involvedStudentIds.includes(s.id)),
+	);
 	const studentClass = $derived(academicContext.classes.find(cl => cl.id === s.classId));
 	const studentNotes = $derived(sortPedagogicalNotes(detailDataContext.pedagogicalNotes, s.id));
-	const notesData = $derived(buildStudentGradeSummary(s, detailDataContext.evaluations));
-	const absenceData = $derived(sortStudentAbsences(detailDataContext.absences, s.id));
+	const notesData = $derived(buildStudentGradeSummaryFromRows(
+		drawerData?.grades ?? [],
+		row => detailHref.classEvaluation(row.classGroupId, row.assessmentId),
+	));
+	const attendanceData = $derived(summarizeStudentAttendanceHistory(drawerData?.attendance ?? []));
 	const incidentsData = $derived(summarizeStudentIncidents(studentIncidents));
 	const financesData = $derived(summarizeStudentFinances(detailDataContext.billing, s.id));
 	const canChangePhoto = $derived(canUploadProfilePhoto('STUDENT_UPDATE'));
+
+	const tabs: StudentTab[] = [
+		'profile',
+		'grades',
+		'attendance',
+		'incidents',
+		'finances',
+		'reportCard',
+		'enrollments',
+	];
 
 	async function handlePhotoChange(file: File) {
 		return updateStudentProfilePhotoMutation({
@@ -49,25 +76,14 @@
 			successMessage: get(t)('profilePhoto.updateSuccess'),
 		});
 	}
-
-	const tabLabelKeys: Record<StudentTab, string | null> = {
-		profile: 'drawer.tab.profile',
-		notes: null,
-		absence: null,
-		incidents: 'drawer.tab.incidents',
-		finances: null,
-		bulletin: 'drawer.tab.reportCard',
-	};
-	const tabLabelFallback: Record<'notes' | 'absence' | 'finances', string> = {
-		notes: 'Notes',
-		absence: 'Absence',
-		finances: 'Finances',
-	};
 </script>
 
 <div class="space-y-5">
-	<div class="flex items-start justify-between gap-4">
-		<div class="flex items-center gap-4">
+	<DrawerEntityHeader
+		name={s.name}
+		summary={$t('drawer.studentSummary', { avg: s.average.toFixed(1), att: s.attendance })}
+	>
+		{#snippet avatar()}
 			{#if canChangePhoto}
 				<ProfilePhotoPicker
 					name={s.name}
@@ -79,36 +95,35 @@
 			{:else}
 				<StudentAvatar {s} />
 			{/if}
-			<div>
-				<h3 class="font-display text-2xl font-semibold leading-tight">{s.name}</h3>
-				<p class="text-sm text-muted-foreground">
-					{$t('drawer.studentSummary', { avg: s.average.toFixed(1), att: s.attendance })}
-				</p>
-			</div>
-		</div>
-		<div class="flex items-center gap-3">
+		{/snippet}
+		{#snippet chips()}
 			{#if studentClass}
-				<div class="text-right leading-tight">
-					<p class="text-sm font-semibold">{studentClass.name}</p>
-					<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-						{studentClass.level}
-					</p>
-				</div>
+				<span class="rounded-full bg-secondary px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-foreground/80">
+					{studentClass.name}
+				</span>
 			{/if}
+		{/snippet}
+		{#snippet actions()}
+			<PermissionGate permission="STUDENT_UPDATE" mode="disable" tooltip={$t('student.permissionUpdate')}>
+				{#snippet children({ disabled, title })}
+					<StudentProfileEditModal {s} {disabled} {title} />
+				{/snippet}
+			</PermissionGate>
 			<ChangeClassButton {s} />
-		</div>
-	</div>
+		{/snippet}
+	</DrawerEntityHeader>
 
-	<div class="flex items-center gap-1 rounded-full border border-border bg-secondary/40 p-1 text-xs">
-		{#each ['profile', 'notes', 'absence', 'incidents', 'finances', 'bulletin'] as const as key (key)}
+	<div class="flex items-center gap-1 overflow-x-auto rounded-full border border-border bg-secondary/40 p-1 text-xs">
+		{#each tabs as key (key)}
 			<button
+				type="button"
 				onclick={() => (tab = key)}
 				class={cn(
-					'flex-1 rounded-full px-2.5 py-1.5 font-medium transition',
+					'whitespace-nowrap rounded-full px-2.5 py-1.5 font-medium transition',
 					tab === key ? 'bg-card text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground',
 				)}
 			>
-				{tabLabelKeys[key] ? $t(tabLabelKeys[key]!) : tabLabelFallback[key as 'notes' | 'absence' | 'finances']}
+				{$t(`drawer.tab.${key}`)}
 			</button>
 		{/each}
 	</div>
@@ -121,15 +136,17 @@
 			{studentNotes}
 			staff={detailDataContext.staff}
 		/>
-	{:else if tab === 'notes'}
+	{:else if tab === 'grades'}
 		<StudentGradesTab {s} {notesData} />
-	{:else if tab === 'absence'}
-		<StudentAttendanceTab {s} {absenceData} {absenceRate} />
+	{:else if tab === 'attendance'}
+		<StudentAttendanceTab {s} {attendanceData} />
 	{:else if tab === 'incidents'}
 		<StudentIncidentsTab {s} {incidentsData} />
 	{:else if tab === 'finances'}
 		<StudentFinanceTab {financesData} fees={detailDataContext.fees} />
-	{:else if tab === 'bulletin'}
+	{:else if tab === 'reportCard'}
 		<StudentReportCardPanel {s} />
+	{:else}
+		<StudentEnrollmentsTab enrollments={drawerData?.enrollments ?? []} />
 	{/if}
 </div>

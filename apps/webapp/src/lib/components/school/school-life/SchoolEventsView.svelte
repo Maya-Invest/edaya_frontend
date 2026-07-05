@@ -2,6 +2,7 @@
 	import type { Incident } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
@@ -43,6 +44,9 @@
 
 	let classFilter = $state('all');
 	let searchQuery = $state('');
+	let categoryFilter = $state<'all' | Incident['category']>('all');
+	let severityFilter = $state<'all' | Incident['severity']>('all');
+	let statusFilter = $state<'all' | Incident['status']>('all');
 	let createOpen = $state(false);
 
 	$effect.pre(() => {
@@ -58,15 +62,27 @@
 			const sIds = new Set(
 				students.filter(s => s.classId === effectiveClassId).map(s => s.id),
 			);
-			filtered = filtered.filter(i => sIds.has(i.studentId));
+			filtered = filtered.filter(i => i.involvedStudentIds.some(id => sIds.has(id)));
 		}
 
 		if (searchQuery.trim()) {
 			const q = searchQuery.toLowerCase();
 			filtered = filtered.filter((i) => {
-				const st = students.find(s => s.id === i.studentId);
-				return st?.name.toLowerCase().includes(q) ?? false;
+				return i.involvedStudentIds.some((studentId) => {
+					const st = students.find(s => s.id === studentId);
+					return st?.name.toLowerCase().includes(q) ?? false;
+				}) || i.summary.toLowerCase().includes(q);
 			});
+		}
+
+		if (categoryFilter !== 'all') {
+			filtered = filtered.filter(i => i.category === categoryFilter);
+		}
+		if (severityFilter !== 'all') {
+			filtered = filtered.filter(i => i.severity === severityFilter);
+		}
+		if (statusFilter !== 'all') {
+			filtered = filtered.filter(i => i.status === statusFilter);
 		}
 
 		return filtered;
@@ -76,6 +92,50 @@
 		{ value: 'all', label: $t('common.allClasses') },
 		...classes.map(c => ({ value: c.id, label: c.name })),
 	]);
+
+	const categoryOptions = $derived([
+		{ value: 'all', label: $t('filter.all') },
+		{ value: 'Behavior', label: $t('events.cat.Behavior') },
+		{ value: 'Tardiness', label: $t('events.cat.Tardiness') },
+		{ value: 'Conflict', label: $t('events.cat.Conflict') },
+		{ value: 'Other', label: $t('events.cat.Other') },
+	] as const);
+
+	const severityOptions = $derived([
+		{ value: 'all', label: $t('filter.all') },
+		{ value: 'low', label: $t('events.severity.low') },
+		{ value: 'medium', label: $t('events.severity.medium') },
+		{ value: 'high', label: $t('events.severity.high') },
+	] as const);
+
+	const statusOptions = $derived([
+		{ value: 'all', label: $t('filter.all') },
+		{ value: 'open', label: $t('events.status.open') },
+		{ value: 'resolved', label: $t('events.status.resolved') },
+		{ value: 'cancelled', label: $t('events.status.cancelled') },
+	] as const);
+
+	const secondaryFilterCount = $derived(
+		(categoryFilter !== 'all' ? 1 : 0)
+			+ (severityFilter !== 'all' ? 1 : 0)
+			+ (statusFilter !== 'all' ? 1 : 0),
+	);
+
+	function studentSummary(incident: Incident): string {
+		const primary = students.find(student => student.id === incident.studentId);
+		if (!primary) {
+			return incident.involvedCount > 1
+				? $t('events.multiStudentCount', { count: incident.involvedCount })
+				: '—';
+		}
+		if (incident.involvedCount <= 1) {
+			return primary.name;
+		}
+		return $t('events.multiStudentSummary', {
+			name: primary.name,
+			count: incident.involvedCount - 1,
+		});
+	}
 
 	function handleCreated(incidentId: string) {
 		appGoto(detailHref.schoolIncident(incidentId));
@@ -107,6 +167,25 @@
 					options={classFilterOptions}
 				/>
 			{/if}
+			<FilterPanel activeCount={secondaryFilterCount} title={$t('events.secondaryFilters')}>
+				<div class="space-y-3">
+					<FilterSelect
+						bind:value={categoryFilter}
+						class="h-9 w-full rounded-md text-xs"
+						options={[...categoryOptions]}
+					/>
+					<FilterSelect
+						bind:value={severityFilter}
+						class="h-9 w-full rounded-md text-xs"
+						options={[...severityOptions]}
+					/>
+					<FilterSelect
+						bind:value={statusFilter}
+						class="h-9 w-full rounded-md text-xs"
+						options={[...statusOptions]}
+					/>
+				</div>
+			</FilterPanel>
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
@@ -171,11 +250,11 @@
 							<div
 								class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary font-display text-xs font-semibold text-primary-foreground"
 							>
-								{st?.initials}
+								{st?.initials ?? '?'}
 							</div>
 							<div>
-								<p class="text-sm font-medium">{st?.name}</p>
-								<p class="text-[10px] text-muted-foreground">{cls?.name}</p>
+								<p class="text-sm font-medium">{studentSummary(i)}</p>
+								<p class="text-[10px] text-muted-foreground">{cls?.name ?? '—'}</p>
 							</div>
 						</div>
 						<div class="col-span-2">
