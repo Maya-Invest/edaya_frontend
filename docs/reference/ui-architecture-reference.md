@@ -77,8 +77,9 @@ Living checklist — check items off (`[x]`) as work lands. Mirrors [§6 gaps](#
 - [x] Classes config — URL-backed drawer + **class-level staff assignments** tab ✅ *(2026-07-03)*
 - [x] **`attendanceMode` on class create/edit** (Configuration → Classes) ✅ *(2026-07-03)*
 - [x] **Conditional class nav** — `/attendance` tab only when `attendanceMode = daily` ✅ *(2026-07-03 — route stub; list UI Phase 4)*
-- [ ] Academic calendar — period definition CRUD
-- [ ] Disciplinary catalog simple list
+- [x] Academic calendar — period definition CRUD ✅ *(2026-07-05 — daily grid slots under year accordion)*
+- [x] Disciplinary catalog simple list ✅ *(2026-07-05 — `/configuration/discipline` + row menu)*
+- [x] Academic calendar toolbar — `ListSearchField` + published/draft filter ✅ *(2026-07-05)*
 - [x] **Remove** `/configuration/roles` (permissions → Staff drawer) ✅ *(2026-07-04 — nav removed; legacy URL redirects to `/school/staff/{id}`)*
 
 #### Backend blockers
@@ -1052,7 +1053,7 @@ All v1 in-scope entities are either covered at **Primary/Sub**, **Supporting**, 
 | `schools` | `School` | **Primary** | School profile |
 | `academicYears` | `AcademicYear` | **Primary** | Academic calendar |
 | `academicPeriods` | `AcademicPeriod` | **Sub** | Academic calendar accordion |
-| `periodDefinitions` | `PeriodDefinition` | **Gap** | Academic calendar admin (planned) |
+| `periodDefinitions` | `PeriodDefinition` | **Sub** | Academic calendar accordion — daily grid slots |
 | `gradeLevels` | `GradeLevel` | **Gap** | Grade levels config (planned) |
 | `staffMembers` | `StaffMember` | **Primary** | Staff directory |
 | `staffAssignments` | `StaffAssignment` | **Gap** | Class config drawer — **classGroupId only** (v1) |
@@ -1098,7 +1099,7 @@ All v1 in-scope entities are either covered at **Primary/Sub**, **Supporting**, 
 | `studentNotes` | `StudentNote` | **Sub** | Student profile |
 | `studentHealthProfiles` | `StudentHealthProfile` | **Sub** | Student profile |
 | `studentDisciplinaryActions` | `StudentDisciplinaryAction` | **Partial** | Created via Resolve modal; not yet shown in incident drawer |
-| `disciplinaryActions` | `DisciplinaryAction` | **Gap** | Disciplinary catalog screen (`/configuration/discipline`) |
+| `disciplinaryActions` | `DisciplinaryAction` | **Sub** | Configuration → Disciplinary catalog |
 | `studentIncidentInvolvements` | `StudentIncidentInvolvement` | **Partial** | Incident drawer involved-students sub-collection |
 | `incidents` | `Incident` | **Primary** | School incidents |
 

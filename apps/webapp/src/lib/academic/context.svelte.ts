@@ -73,6 +73,27 @@ class AcademicContext {
 		return this.periodDefinitions.find(p => p.id === id);
 	}
 
+	periodDefinitionsForYear(yearId: string): PeriodDefinition[] {
+		return this.periodDefinitions
+			.filter(p => p.academicYearId === yearId)
+			.sort((a, b) => a.order - b.order);
+	}
+
+	upsertPeriodDefinition(def: PeriodDefinition) {
+		const index = this.periodDefinitions.findIndex(entry => entry.id === def.id);
+		if (index === -1) {
+			this.periodDefinitions = [...this.periodDefinitions, clone(def)];
+			return;
+		}
+		const next = [...this.periodDefinitions];
+		next[index] = clone(def);
+		this.periodDefinitions = next;
+	}
+
+	removePeriodDefinition(id: string) {
+		this.periodDefinitions = this.periodDefinitions.filter(entry => entry.id !== id);
+	}
+
 	setYear(id: string) {
 		this.yearId = id;
 		this.syncPeriodToYear();

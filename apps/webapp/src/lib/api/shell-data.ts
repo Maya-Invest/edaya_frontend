@@ -103,17 +103,19 @@ export async function fetchAppShellData(client: SchoolClient): Promise<AppShellD
 	const periodDefinitions: PeriodDefinition[] = (periodDefsRaw ?? []).map(def => ({
 		id: def.id,
 		schoolId: def.schoolId,
-		name: def.label,
+		academicYearId: def.academicYearId,
+		label: def.label,
 		order: def.order,
+		startTime: def.startTime,
+		endTime: def.endTime,
+		isBreak: def.isBreak ?? false,
 	}));
 
 	const academicPeriods: AcademicPeriod[] = (periodsRaw ?? []).map((p) => {
-		const matchDef = periodDefinitions.find(def => def.name === p.name);
 		return {
 			id: p.id,
 			schoolId: p.schoolId,
 			academicYearId: p.academicYearId,
-			periodDefinitionId: matchDef?.id ?? `def-${p.id}`,
 			label: p.name,
 			range: p.name.includes('1') ? 'Sep — Dec' : p.name.includes('2') ? 'Jan — Apr' : 'May — Jul',
 			startDate: typeof p.startDate === 'string' ? p.startDate : String(p.startDate),

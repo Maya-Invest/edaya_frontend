@@ -169,6 +169,12 @@ export const CONFIG_NAV_DEFS: NavItemDefinition[] = [
 		href: '/configuration/notifications',
 		permissions: ['SCHOOL_LIFECYCLE_MANAGE'],
 	},
+	{
+		key: 'discipline',
+		labelKey: 'config.discipline',
+		href: '/configuration/discipline',
+		permissions: ['DISCIPLINE_VALIDATE'],
+	},
 ];
 
 export type NavModuleKey = 'school' | 'classes' | 'finance' | 'configuration';

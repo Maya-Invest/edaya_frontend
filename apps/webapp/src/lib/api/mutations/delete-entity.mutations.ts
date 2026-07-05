@@ -1,7 +1,9 @@
 import type { SchoolYearEvent } from '$lib/types/school';
+import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
+import { disciplineCatalogContext } from '$lib/discipline-catalog/context.svelte';
 import { navigateToListAfterEntityDelete } from '$lib/navigation/navigate-after-delete';
 import { refreshReportCardCatalog } from '$lib/queries/report-cards.queries';
 
@@ -277,4 +279,38 @@ export async function deleteSchoolYearEventMutation(
 		},
 		opts,
 	);
+}
+
+export async function deleteDisciplinaryActionMutation(
+	actionId: string,
+	opts?: DeleteOpts,
+): Promise<boolean> {
+	const client = getBrowserSchoolClient();
+	const result = await runMutation(
+		() => client.entities.disciplinaryActions.delete({ id: actionId }),
+		{
+			successMessage: opts?.successMessage,
+			onSuccess: () => {
+				disciplineCatalogContext.remove(actionId);
+			},
+		},
+	);
+	return result !== null;
+}
+
+export async function deletePeriodDefinitionMutation(
+	periodDefinitionId: string,
+	opts?: DeleteOpts,
+): Promise<boolean> {
+	const client = getBrowserSchoolClient();
+	const result = await runMutation(
+		() => client.entities.periodDefinitions.delete({ id: periodDefinitionId }),
+		{
+			successMessage: opts?.successMessage,
+			onSuccess: () => {
+				academicContext.removePeriodDefinition(periodDefinitionId);
+			},
+		},
+	);
+	return result !== null;
 }

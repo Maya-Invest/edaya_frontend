@@ -285,8 +285,12 @@ export type AcademicPublishStatus = 'draft' | 'published';
 export interface PeriodDefinition {
 	id: string;
 	schoolId: string;
-	name: string;
+	academicYearId: string;
+	label: string;
 	order: number;
+	startTime: string;
+	endTime: string;
+	isBreak: boolean;
 }
 
 export interface GradeLevel {
@@ -310,7 +314,6 @@ export interface AcademicPeriod {
 	id: string;
 	schoolId: string;
 	academicYearId: string;
-	periodDefinitionId: string;
 	label: string;
 	range: string;
 	startDate: string;

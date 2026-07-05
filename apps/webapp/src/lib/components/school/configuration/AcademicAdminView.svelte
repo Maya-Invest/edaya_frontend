@@ -1,28 +1,49 @@
 <script lang="ts">
+	import type { PeriodDefinition } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import {
 		activateAcademicYearMutation,
 		publishAcademicPeriodMutation,
 	} from '$lib/api/mutations/academic.mutations';
+	import { deletePeriodDefinitionMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
+	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
-	import { CalendarRange, ChevronDown, Plus, Search } from '$lib/icons';
+	import { CalendarRange, ChevronDown, Pencil, Plus, Trash2 } from '$lib/icons';
 	import { readAcademicAdminListFilters, writeAcademicAdminListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import AcademicYearCreateModal from './AcademicYearCreateModal.svelte';
+	import PeriodDefinitionFormModal from './PeriodDefinitionFormModal.svelte';
 
 	const initialFilters = $derived(readAcademicAdminListFilters($page.url));
 
 	let q = $state('');
+	let status = $state('all');
 	let filtersReady = $state(false);
 	let createOpen = $state(false);
 	let expandedYear = $state<string | null>(academicContext.yearId);
+	let periodDefOpen = $state(false);
+	let periodDefYearId = $state('');
+	let editingPeriodDef = $state<PeriodDefinition | null>(null);
+	let deletePeriodOpen = $state(false);
+	let deletePeriodBusy = $state(false);
+	let deletePeriodTarget = $state<PeriodDefinition | null>(null);
+
+	const statusOptions = $derived([
+		{ value: 'all', label: $t('academic.filterAllStatuses') },
+		{ value: 'published', label: $t('academic.published') },
+		{ value: 'draft', label: $t('academic.draft') },
+	]);
 
 	const sortedYears = $derived(
 		[...academicContext.years].sort((a, b) => b.startDate.localeCompare(a.startDate)),
@@ -30,9 +51,13 @@
 
 	const filteredYears = $derived(
 		sortedYears.filter((year) => {
+			if (status !== 'all' && year.status !== status) {
+				return false;
+			}
 			const needle = q.trim().toLowerCase();
-			if (!needle)
+			if (!needle) {
 				return true;
+			}
 			return year.label.toLowerCase().includes(needle)
 				|| year.startDate.includes(needle)
 				|| year.endDate.includes(needle)
@@ -44,6 +69,10 @@
 		return academicContext.periods
 			.filter(p => p.academicYearId === yearId)
 			.sort((a, b) => a.startDate.localeCompare(b.startDate));
+	}
+
+	function periodDefinitionsFor(yearId: string) {
+		return academicContext.periodDefinitionsForYear(yearId);
 	}
 
 	function handleYearCreated(yearId: string) {
@@ -72,24 +101,74 @@
 		}
 	}
 
+	function openCreatePeriodDef(yearId: string) {
+		periodDefYearId = yearId;
+		editingPeriodDef = null;
+		periodDefOpen = true;
+	}
+
+	function openEditPeriodDef(def: PeriodDefinition) {
+		periodDefYearId = def.academicYearId;
+		editingPeriodDef = def;
+		periodDefOpen = true;
+	}
+
+	function openDeletePeriodDef(def: PeriodDefinition) {
+		deletePeriodTarget = def;
+		deletePeriodOpen = true;
+	}
+
+	async function confirmDeletePeriodDef() {
+		if (!deletePeriodTarget) {
+			return;
+		}
+		deletePeriodBusy = true;
+		try {
+			const ok = await deletePeriodDefinitionMutation(deletePeriodTarget.id, {
+				successMessage: get(t)('periodDefinitions.toastDeleted', { label: deletePeriodTarget.label }),
+			});
+			if (ok) {
+				deletePeriodOpen = false;
+				deletePeriodTarget = null;
+			}
+		}
+		finally {
+			deletePeriodBusy = false;
+		}
+	}
+
 	function syncFiltersToUrl() {
-		const href = writeAcademicAdminListFilters($page.url, { q });
+		const href = writeAcademicAdminListFilters($page.url, { q, status });
+		const current = `${$page.url.pathname}${$page.url.search}`;
+		if (href === current) {
+			return;
+		}
 		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
 	}
 
 	$effect(() => {
 		const next = initialFilters;
 		q = next.q;
+		status = next.status;
 		filtersReady = true;
 	});
 
 	let searchTimer: ReturnType<typeof setTimeout> | undefined;
 	function scheduleFilterSync() {
-		if (!filtersReady)
+		if (!filtersReady) {
 			return;
+		}
 		clearTimeout(searchTimer);
 		searchTimer = setTimeout(syncFiltersToUrl, 250);
 	}
+
+	$effect(() => {
+		if (!filtersReady) {
+			return;
+		}
+		void status;
+		scheduleFilterSync();
+	});
 </script>
 
 <div class="animate-fade-in">
@@ -98,17 +177,10 @@
 		title={$t('academic.title')}
 	>
 		{#snippet search()}
-			<div class="relative">
-				<Search
-					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-				/>
-				<Input
-					bind:value={q}
-					oninput={scheduleFilterSync}
-					placeholder={$t('common.search')}
-					class="h-9 w-56 rounded-full pl-9 text-sm"
-				/>
-			</div>
+			<ListSearchField bind:value={q} oninput={scheduleFilterSync} />
+		{/snippet}
+		{#snippet filters()}
+			<FilterSelect bind:value={status} options={statusOptions} class="h-9 min-w-[10rem]" />
 		{/snippet}
 		{#snippet primary()}
 			<Button size="sm" class="rounded-full" onclick={() => (createOpen = true)}>
@@ -122,6 +194,7 @@
 		{#each filteredYears as year (year.id)}
 			{@const open = expandedYear === year.id}
 			{@const yearPeriods = periodsFor(year.id)}
+			{@const yearPeriodDefs = periodDefinitionsFor(year.id)}
 			<section class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
 				<button
 					type="button"
@@ -169,17 +242,11 @@
 						</p>
 						<ul class="space-y-2">
 							{#each yearPeriods as period (period.id)}
-								{@const def = academicContext.periodDefinitionById(period.periodDefinitionId)}
 								<li
 									class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/60 px-4 py-3"
 								>
 									<div>
-										<p class="text-sm font-medium">
-											{period.label}
-											{#if def}
-												<span class="ml-2 text-xs text-muted-foreground">({def.name})</span>
-											{/if}
-										</p>
+										<p class="text-sm font-medium">{period.label}</p>
 										<p class="font-mono text-[11px] text-muted-foreground">
 											{period.range} · {period.startDate} → {period.endDate}
 										</p>
@@ -211,6 +278,79 @@
 								</li>
 							{/each}
 						</ul>
+
+						<div class="mt-6 flex items-center justify-between gap-3">
+							<p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+								{$t('periodDefinitions.sectionTitle')}
+							</p>
+							<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE">
+								{#snippet children({ disabled, title })}
+									<Button
+										size="sm"
+										variant="outline"
+										class="rounded-full"
+										{disabled}
+										{title}
+										onclick={() => openCreatePeriodDef(year.id)}
+									>
+										<Plus class="mr-1 h-4 w-4" />
+										{$t('periodDefinitions.add')}
+									</Button>
+								{/snippet}
+							</PermissionGate>
+						</div>
+						<ul class="mt-3 space-y-2">
+							{#if yearPeriodDefs.length === 0}
+								<li class="rounded-xl border border-dashed border-border/70 px-4 py-6 text-center text-sm text-muted-foreground">
+									{$t('periodDefinitions.empty')}
+								</li>
+							{:else}
+								{#each yearPeriodDefs as def (def.id)}
+									<li
+										class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/60 px-4 py-3"
+									>
+										<div>
+											<p class="text-sm font-medium">
+												{def.label}
+												{#if def.isBreak}
+													<span class="ml-2 rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] uppercase text-muted-foreground">
+														{$t('periodDefinitions.break')}
+													</span>
+												{/if}
+											</p>
+											<p class="font-mono text-[11px] text-muted-foreground">
+												{'#'}{def.order} · {def.startTime} → {def.endTime}
+											</p>
+										</div>
+										<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE">
+											{#snippet children({ disabled, title })}
+												<RowActionMenu>
+													{#snippet children()}
+														<RowActionMenuItem
+															{disabled}
+															{title}
+															onclick={() => openEditPeriodDef(def)}
+														>
+															<Pencil class="h-4 w-4" />
+															{$t('common.edit')}
+														</RowActionMenuItem>
+														<RowActionMenuItem
+															destructive
+															{disabled}
+															{title}
+															onclick={() => openDeletePeriodDef(def)}
+														>
+															<Trash2 class="h-4 w-4" />
+															{$t('common.delete')}
+														</RowActionMenuItem>
+													{/snippet}
+												</RowActionMenu>
+											{/snippet}
+										</PermissionGate>
+									</li>
+								{/each}
+							{/if}
+						</ul>
 					</div>
 				{/if}
 			</section>
@@ -219,3 +359,21 @@
 </div>
 
 <AcademicYearCreateModal bind:open={createOpen} onCreated={handleYearCreated} />
+
+<PeriodDefinitionFormModal
+	bind:open={periodDefOpen}
+	academicYearId={periodDefYearId}
+	periodDefinition={editingPeriodDef}
+/>
+
+<ConfirmModal
+	bind:open={deletePeriodOpen}
+	title={$t('common.deleteConfirmTitle')}
+	description={deletePeriodTarget
+		? $t('periodDefinitions.deleteConfirm', { label: deletePeriodTarget.label })
+		: ''}
+	confirmLabel={$t('common.delete')}
+	cancelLabel={$t('common.cancel')}
+	busy={deletePeriodBusy}
+	onConfirm={confirmDeletePeriodDef}
+/>

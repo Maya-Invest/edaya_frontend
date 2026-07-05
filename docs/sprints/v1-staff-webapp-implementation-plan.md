@@ -1,6 +1,6 @@
 # V1 Staff Webapp — Implementation Plan
 
-> **Status:** Phases 0–6 complete (2026-07-05) · Phase 7 next  
+> **Status:** Phases 0–7 complete (2026-07-05) · Phase 8 next  
 > **Created:** 2026-07-03  
 > **Scope:** Bring `apps/webapp` to the target architecture in [v1-feature-architecture-spec.md](../specs/v1-feature-architecture-spec.md)  
 > **Draft / detail catalog:** [ui-architecture-reference.md](../reference/ui-architecture-reference.md) — feature cards, entity audit, living §0 checklist  
@@ -20,7 +20,7 @@ Check off when the phase is complete and merged. Update [ui-architecture-referen
 - [x] **Phase 4** — Attendance & timetable (daily list · session flows · class activities) — *(2026-07-05 — daily attendance list/drawer; New session wizard; ClassActivityEnrollment; inline schedule on subject create; session attendance bulk)*
 - [x] **Phase 5** — School people (student tabs · staff polish · incidents polish) — *(2026-07-05 — enrollments/grades/attendance tabs; staff header + RO assignments; incident filters, multi-student rows, sanctions)*
 - [x] **Phase 6** — Finance simple entities (fees · payments · grade scales · notifications) — *(2026-07-05 — fees table + row menu; payments FilterSelect + receipt link; grade scales table + edit; notification templates row menu; BillingDetail header)*
-- [ ] **Phase 7** — Configuration remainder (disciplinary catalog · period definitions)
+- [x] **Phase 7** — Configuration remainder (disciplinary catalog · period definitions) — *(2026-07-05 — `/configuration/discipline` table + CRUD; period slots CRUD under academic accordion; calendar ListSearchField + status filter)*
 - [ ] **Phase 8** — Polish & cleanup (filters · more menus · post-v1 nav removal)
 
 ### Already shipped (pre-plan)

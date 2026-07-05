@@ -51,7 +51,7 @@ describe('nav-permissions — professeur (phase 3.2)', () => {
 	});
 
 	it('shows all class tabs for the dev teacher profile', () => {
-		expect(filterNavItems(NAV_MODULE_DEFS.classes, teacherGrants, { schoolId: 'sch1' })).toHaveLength(7);
+		expect(filterNavItems(NAV_MODULE_DEFS.classes, teacherGrants, { schoolId: 'sch1' })).toHaveLength(6);
 	});
 
 	it('blocks finance URLs and allows dashboard', () => {
@@ -95,6 +95,7 @@ describe('nav-permissions — prof principal (phase 3.3)', () => {
 			'gradeScales',
 			'reportCards',
 			'notificationTemplates',
+			'discipline',
 		]);
 	});
 

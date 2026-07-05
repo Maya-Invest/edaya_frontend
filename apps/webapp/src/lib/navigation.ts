@@ -98,6 +98,7 @@ const CONFIG_ICONS: Record<string, LucideIcon> = {
 	gradeScales: Percent,
 	reportCards: FileSpreadsheet,
 	notificationTemplates: Mail,
+	discipline: AlertTriangle,
 };
 
 const SCHOOL_ROUTES: Record<string, RouteId> = {
@@ -125,6 +126,7 @@ const CONFIG_ROUTES: Record<string, RouteId> = {
 	gradeScales: '/(app)/configuration/grade-scales',
 	reportCards: '/(app)/configuration/report-cards/[[id]]',
 	notificationTemplates: '/(app)/configuration/notifications',
+	discipline: '/(app)/configuration/discipline',
 };
 
 function buildSchoolItems(defs: NavItemDefinition[]): ContextItem[] {

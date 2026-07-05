@@ -1,6 +1,7 @@
 import { academicContext } from '$lib/academic/context.svelte';
 import { configureBrowserSchoolClient } from '$lib/api/school-client';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
+import { disciplineCatalogContext } from '$lib/discipline-catalog/context.svelte';
 import { pageQueryStatus } from '$lib/queries/page-query-status.svelte';
 import { getAppShellData } from '$lib/queries/shell.queries';
 import { reportCardsContext } from '$lib/report-cards/context.svelte';
@@ -21,6 +22,7 @@ export function resetAppShellBootstrap() {
 	academicContext.reset();
 	detailDataContext.reset();
 	reportCardsContext.reset();
+	disciplineCatalogContext.reset();
 	teachingLogContext.reset();
 	sessionDetailContext.reset();
 	pageQueryStatus.reset();
