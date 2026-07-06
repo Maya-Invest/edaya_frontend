@@ -1,5 +1,18 @@
 import { onDestroy } from 'svelte';
 
+export function listHref(url: URL): string {
+	return `${url.pathname}${url.search}`;
+}
+
+function filtersEqual<T extends Record<string, string>>(left: T, right: T): boolean {
+	for (const key of Object.keys(left)) {
+		if (left[key as keyof T] !== right[key as keyof T]) {
+			return false;
+		}
+	}
+	return true;
+}
+
 export interface ListFiltersSyncConfig<T extends Record<string, string>> {
 	getUrl: () => URL;
 	write: (url: URL, values: T) => string;
@@ -27,6 +40,9 @@ export class ListFiltersState<T extends Record<string, string>> {
 	}
 
 	hydrate(next: T) {
+		if (this.ready && filtersEqual(this.values, next)) {
+			return;
+		}
 		this.values = { ...next };
 		this.ready = true;
 	}
@@ -54,7 +70,11 @@ export class ListFiltersState<T extends Record<string, string>> {
 			return;
 		}
 		clearTimeout(this.timer);
-		const href = this.config.write(this.config.getUrl(), this.values);
+		const currentUrl = this.config.getUrl();
+		const href = this.config.write(currentUrl, this.values);
+		if (href === listHref(currentUrl)) {
+			return;
+		}
 		this.config.goto(href);
 	}
 }

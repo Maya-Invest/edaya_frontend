@@ -13,6 +13,7 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { Mail, Plus } from '$lib/icons';
+	import { listHref } from '$lib/list/list-filters-state.svelte';
 	import { readAnnouncementListFilters, writeAnnouncementListFilters } from '$lib/list/list-url-filters';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
@@ -90,13 +91,20 @@
 
 	function syncFiltersToUrl() {
 		const href = writeAnnouncementListFilters($page.url, { q, status });
+		if (href === listHref($page.url)) {
+			return;
+		}
 		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
 	}
 
 	$effect(() => {
 		const next = initialFilters;
-		q = next.q;
-		status = next.status;
+		if (next.q !== q) {
+			q = next.q;
+		}
+		if (next.status !== status) {
+			status = next.status;
+		}
 		filtersReady = true;
 	});
 
