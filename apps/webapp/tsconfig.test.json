@@ -12,6 +12,7 @@
 		".svelte-kit/non-ambient.d.ts",
 		"tests/support/ambient.d.ts",
 		"tests/**/*.test.ts",
+		"tests/integration/**/*.ts",
 		"src/generated/api-client/create-client.typecheck.ts"
 	],
 	"exclude": []
