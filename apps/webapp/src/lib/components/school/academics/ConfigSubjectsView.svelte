@@ -9,6 +9,7 @@
 	import { t } from '$lib/i18n';
 	import { Clock, User, Layers, Tag, ChevronRight, Search } from '$lib/icons';
 	import { readConfigSubjectListFilters, writeConfigSubjectListFilters } from '$lib/list/list-url-filters';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 
@@ -29,9 +30,16 @@
 
 	const initialFilters = $derived(readConfigSubjectListFilters($page.url));
 
-	let q = $state('');
-	let mode = $state<Mode>('level');
-	let filtersReady = $state(false);
+	const listFilters = new ListFiltersState<{ q: string; mode: string }>(
+		{
+			getUrl: () => $page.url,
+			write: writeConfigSubjectListFilters,
+			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+		},
+		() => readConfigSubjectListFilters($page.url),
+	);
+
+	const mode = $derived(listFilters.values.mode === 'category' ? 'category' : 'level');
 
 	const dotColor: Record<Subject['color'], string> = {
 		mint: 'bg-accent',
@@ -79,7 +87,7 @@
 	}
 
 	const filteredSubjects = $derived(
-		subjects.filter(s => matchesSearch(s, q.trim().toLowerCase())),
+		subjects.filter(s => matchesSearch(s, listFilters.values.q.trim().toLowerCase())),
 	);
 
 	const groups = $derived.by(() => {
@@ -128,29 +136,24 @@
 			}));
 	});
 
-	function syncFiltersToUrl() {
-		const href = writeConfigSubjectListFilters($page.url, { q, mode });
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	}
-
 	$effect(() => {
-		const next = initialFilters;
-		q = next.q;
-		mode = next.mode === 'category' ? 'category' : 'level';
-		filtersReady = true;
+		listFilters.hydrate({
+			q: initialFilters.q,
+			mode: initialFilters.mode === 'category' ? 'category' : 'level',
+		});
 	});
 
-	let searchTimer: ReturnType<typeof setTimeout> | undefined;
-	function scheduleFilterSync() {
-		if (!filtersReady)
+	$effect(() => {
+		if (!listFilters.ready) {
 			return;
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(syncFiltersToUrl, 250);
-	}
+		}
+		void listFilters.values.mode;
+		listFilters.scheduleSync();
+	});
 
 	function applyMode(next: Mode) {
-		mode = next;
-		scheduleFilterSync();
+		listFilters.values.mode = next;
+		listFilters.scheduleSync();
 	}
 </script>
 
@@ -165,8 +168,8 @@
 					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
 				/>
 				<Input
-					bind:value={q}
-					oninput={scheduleFilterSync}
+					bind:value={listFilters.values.q}
+					oninput={() => listFilters.scheduleSync()}
 					placeholder={$t('common.search')}
 					class="h-9 w-56 rounded-full pl-9 text-sm"
 				/>

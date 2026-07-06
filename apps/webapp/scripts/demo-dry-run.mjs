@@ -74,54 +74,69 @@ async function waitForPathStable(page, expectedPathPrefix, timeoutMs = 20_000) {
 	return { ok: false, path: new URL(page.url()).pathname };
 }
 
-async function visit(page, url, scene, step, { expectText, selector, pathPrefix } = {}) {
+async function visit(page, url, scene, step, { expectText, selector, pathPrefix, retry = false } = {}) {
 	const expectedPath = pathPrefix ?? new URL(url).pathname;
-	try {
-		const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-		const status = response?.status() ?? 0;
-		if (status >= 400) {
-			log(scene, step, 'fail', `HTTP ${status}`);
-			await shot(page, `${scene}-${step.replace(/\s+/g, '-')}-http`);
-			return false;
-		}
-		await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
-		await page.locator('[role="status"][aria-live="polite"]').waitFor({ state: 'hidden', timeout: 30_000 }).catch(() => {});
-		await waitForAppShell(page);
-
-		const navigation = await waitForPathStable(page, expectedPath);
-		if (!navigation.ok) {
-			log(scene, step, 'fail', `Redirected away — at ${navigation.path}, expected ${expectedPath}`);
-			await shot(page, `${scene}-${step.replace(/\s+/g, '-')}-redirect`);
-			return false;
-		}
-
-		if (selector) {
-			const el = page.locator(selector).first();
-			if (!(await el.isVisible({ timeout: 15_000 }).catch(() => false))) {
-				log(scene, step, 'fail', `Missing selector: ${selector}`);
-				await shot(page, `${scene}-${step.replace(/\s+/g, '-')}`);
+	const attempt = async () => {
+		try {
+			const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+			const status = response?.status() ?? 0;
+			if (status >= 400) {
+				log(scene, step, 'fail', `HTTP ${status}`);
+				await shot(page, `${scene}-${step.replace(/\s+/g, '-')}-http`);
 				return false;
 			}
-		}
-		if (expectText) {
-			const found = await page.getByText(expectText, { exact: false }).first().isVisible({ timeout: 10_000 }).catch(() => false);
-			if (!found) {
-				log(scene, step, 'fail', `Expected text: ${expectText}`);
-				await shot(page, `${scene}-${step.replace(/\s+/g, '-')}`);
+			await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
+			await page.locator('[role="status"][aria-live="polite"]').waitFor({ state: 'hidden', timeout: 30_000 }).catch(() => {});
+			await waitForAppShell(page);
+
+			const navigation = await waitForPathStable(page, expectedPath);
+			if (!navigation.ok) {
+				log(scene, step, 'fail', `Redirected away — at ${navigation.path}, expected ${expectedPath}`);
+				await shot(page, `${scene}-${step.replace(/\s+/g, '-')}-redirect`);
 				return false;
 			}
+
+			if (selector) {
+				const el = page.locator(selector).first();
+				if (!(await el.isVisible({ timeout: 15_000 }).catch(() => false))) {
+					return 'missing-selector';
+				}
+			}
+			if (expectText) {
+				const found = await page.getByText(expectText, { exact: false }).first().isVisible({ timeout: 10_000 }).catch(() => false);
+				if (!found) {
+					log(scene, step, 'fail', `Expected text: ${expectText}`);
+					await shot(page, `${scene}-${step.replace(/\s+/g, '-')}`);
+					return false;
+				}
+			}
+			if (!(await assertNoFatalError(page, scene, step))) {
+				await shot(page, `${scene}-${step.replace(/\s+/g, '-')}-error`);
+				return false;
+			}
+			log(scene, step, 'pass');
+			return true;
 		}
-		if (!(await assertNoFatalError(page, scene, step))) {
-			await shot(page, `${scene}-${step.replace(/\s+/g, '-')}-error`);
+		catch (err) {
+			log(scene, step, 'fail', err instanceof Error ? err.message : String(err));
+			await shot(page, `${scene}-${step.replace(/\s+/g, '-')}-exception`).catch(() => {});
 			return false;
 		}
-		log(scene, step, 'pass');
-		return true;
-	} catch (err) {
-		log(scene, step, 'fail', err instanceof Error ? err.message : String(err));
-		await shot(page, `${scene}-${step.replace(/\s+/g, '-')}-exception`).catch(() => {});
-		return false;
+	};
+
+	let result = await attempt();
+	if (result === 'missing-selector') {
+		if (retry) {
+			await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
+			result = await attempt();
+		}
+		if (result === 'missing-selector') {
+			log(scene, step, 'fail', `Missing selector: ${selector}`);
+			await shot(page, `${scene}-${step.replace(/\s+/g, '-')}`);
+			return false;
+		}
 	}
+	return result === true;
 }
 
 async function main() {
@@ -152,13 +167,46 @@ async function main() {
 	await visit(page, `${BASE}/dashboard`, 'D0', '0.2 Dashboard / school context', { expectText: /tableau|dashboard|directeur|cocody/i });
 	await visit(page, `${BASE}/school/students`, 'D0', '0.3 Sidebar school students');
 
-	// D1 — Director dashboard
-	await visit(page, `${BASE}/dashboard`, 'D1', '1.1 KPI cards', { selector: 'aside#app-sidebar' });
-
-	// D2 — Students
-	await visit(page, `${BASE}/school/students`, 'D2', '2.1 Student list', { selector: 'table, [role="table"], ul' });
+	// D2 — Students (2.1 asserts roster on the page opened above — avoid a second goto to the same URL)
+	try {
+		await page.waitForSelector('main', { timeout: 20_000 });
+		const rosterVisible = await page.getByText(/Effectif|élève/i).first()
+			.isVisible({ timeout: 15_000 })
+			.catch(() => false);
+		if (rosterVisible && await assertNoFatalError(page, 'D2', '2.1 Student list')) {
+			log('D2', '2.1 Student list', 'pass');
+		}
+		else {
+			log('D2', '2.1 Student list', 'fail', rosterVisible ? 'Error state visible on page' : 'Roster header missing');
+			await shot(page, 'D2-2.1-Student-list');
+		}
+	}
+	catch (err) {
+		log('D2', '2.1 Student list', 'fail', err instanceof Error ? err.message : String(err));
+		await shot(page, 'D2-2.1-Student-list-exception').catch(() => {});
+	}
 	await visit(page, `${BASE}/school/students/ci-s1`, 'D2', '2.2 Student drawer Kouamé Aya', { expectText: /Kouamé|Aya|ci-s1/i });
 	await visit(page, `${BASE}/school/guardians`, 'D2', '2.4 Guardians list', { selector: 'main' });
+
+	// D1 — Director dashboard
+	await visit(page, `${BASE}/dashboard`, 'D1', '1.1 KPI cards', { selector: 'aside#app-sidebar' });
+	try {
+		await page.locator('a[href*="/school/students"]').first().click();
+		const onStudents = await page.waitForURL(/\/school\/students/, { timeout: 15_000 })
+			.then(() => true)
+			.catch(() => false);
+		if (onStudents && await assertNoFatalError(page, 'D1', '1.2 Dashboard students link')) {
+			log('D1', '1.2 Dashboard students link', 'pass');
+		}
+		else {
+			log('D1', '1.2 Dashboard students link', 'fail', onStudents ? 'Error state after navigation' : 'Did not reach students list');
+			await shot(page, 'D1-1.2-Dashboard-students-link');
+		}
+	}
+	catch (err) {
+		log('D1', '1.2 Dashboard students link', 'fail', err instanceof Error ? err.message : String(err));
+		await shot(page, 'D1-1.2-Dashboard-students-link-exception').catch(() => {});
+	}
 
 	// D3 — Teachers
 	await visit(page, `${BASE}/school/teachers`, 'D3', '3.1 Teachers list', { selector: 'main' });

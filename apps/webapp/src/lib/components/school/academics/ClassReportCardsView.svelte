@@ -16,6 +16,7 @@
 	import { t } from '$lib/i18n';
 	import { FileSpreadsheet, Search, Sparkles } from '$lib/icons';
 	import { readClassReportCardListFilters, writeClassReportCardListFilters } from '$lib/list/list-url-filters';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { reportCardsContext } from '$lib/report-cards/context.svelte';
 	import { toast } from '$lib/toast.svelte';
@@ -35,19 +36,31 @@
 
 	const initialFilters = $derived(readClassReportCardListFilters($page.url));
 
-	let q = $state('');
-	let status = $state<'all' | 'none' | ReportCardResult['status']>('all');
-	let filtersReady = $state(false);
+	const listFilters = new ListFiltersState<{ q: string; status: string }>(
+		{
+			getUrl: () => $page.url,
+			write: writeClassReportCardListFilters,
+			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+		},
+		() => readClassReportCardListFilters($page.url),
+	);
+
+	const statusKeys = ['all', 'none', 'draft', 'generated', 'published'] as const;
+	type StatusFilter = (typeof statusKeys)[number];
+
+	const status = $derived(
+		statusKeys.includes(listFilters.values.status as StatusFilter)
+			? listFilters.values.status as StatusFilter
+			: 'all',
+	);
 
 	const results = $derived(reportCardsContext.resultsForClass(classId));
 	const period = $derived(academicContext.period);
 	const classStudents = $derived(detailDataContext.studentsForClass(classId));
 
-	const statusKeys = ['all', 'none', 'draft', 'generated', 'published'] as const;
-
 	const filteredStudents = $derived(
 		classStudents.filter((student) => {
-			const needle = q.trim().toLowerCase();
+			const needle = listFilters.values.q.trim().toLowerCase();
 			if (needle && !student.name.toLowerCase().includes(needle))
 				return false;
 			const result = results.find(r => r.studentId === student.id);
@@ -83,31 +96,26 @@
 		return $t('reportCards.statusDraft');
 	}
 
-	function syncFiltersToUrl() {
-		const href = writeClassReportCardListFilters($page.url, { q, status });
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	}
-
 	$effect(() => {
-		const next = initialFilters;
-		q = next.q;
-		status = (statusKeys.includes(next.status as (typeof statusKeys)[number])
-			? next.status
-			: 'all') as typeof status;
-		filtersReady = true;
+		listFilters.hydrate({
+			q: initialFilters.q,
+			status: statusKeys.includes(initialFilters.status as StatusFilter)
+				? initialFilters.status
+				: 'all',
+		});
 	});
 
-	let searchTimer: ReturnType<typeof setTimeout> | undefined;
-	function scheduleFilterSync() {
-		if (!filtersReady)
+	$effect(() => {
+		if (!listFilters.ready) {
 			return;
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(syncFiltersToUrl, 250);
-	}
+		}
+		void listFilters.values.status;
+		listFilters.scheduleSync();
+	});
 
-	function applyStatus(next: (typeof statusKeys)[number]) {
-		status = next;
-		scheduleFilterSync();
+	function applyStatus(next: StatusFilter) {
+		listFilters.values.status = next;
+		listFilters.scheduleSync();
 	}
 
 	async function generateAll() {
@@ -155,8 +163,8 @@
 					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
 				/>
 				<Input
-					bind:value={q}
-					oninput={scheduleFilterSync}
+					bind:value={listFilters.values.q}
+					oninput={() => listFilters.scheduleSync()}
 					placeholder={$t('common.search')}
 					class="h-9 w-56 rounded-full pl-9 text-sm"
 				/>

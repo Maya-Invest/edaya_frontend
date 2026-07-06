@@ -2,6 +2,7 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { fetchActivities } from '$lib/api/activities-data';
 import { loadClassPeopleData } from '$lib/api/people-data';
 import { findPlanningEventById, loadClassPlanning } from '$lib/api/planning-data';
+import { safeOptionalFetch } from '$lib/api/safe-entity-access';
 import { loadClassSchedules } from '$lib/api/schedule-data';
 import { loadPlanningOccurrenceDetail } from '$lib/api/session-detail-data';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
@@ -36,16 +37,25 @@ export function queryClassTimetablePage(classId: string) {
 		load: async () => {
 			const periodId = academicContext.periodId;
 			const schoolId = academicContext.schools[0]?.id ?? '';
-			const [planning, schedules, { students }, subjects, activities] = await Promise.all([
-				loadClassPlanning(queryClient(), classId, { periodId }),
-				loadClassSchedules(queryClient(), classId),
-				loadClassPeopleData(queryClient(), classId, periodId),
-				getClassSubjects(classId),
-				schoolId ? fetchActivities(queryClient(), schoolId) : Promise.resolve([]),
+			const client = queryClient();
+			const [planning, schedules, people, subjects, activities] = await Promise.all([
+				safeOptionalFetch(
+					() => loadClassPlanning(client, classId, { periodId }),
+					[],
+				),
+				safeOptionalFetch(() => loadClassSchedules(client, classId), []),
+				safeOptionalFetch(
+					() => loadClassPeopleData(client, classId, periodId),
+					{ students: [], guardians: [] },
+				),
+				safeOptionalFetch(() => getClassSubjects(classId), []),
+				schoolId
+					? safeOptionalFetch(() => fetchActivities(client, schoolId), [])
+					: Promise.resolve([]),
 			]);
 			detailDataContext.seedPlanning(planning, { classId });
 			detailDataContext.seedSchedules(schedules, { classId });
-			detailDataContext.seedStudents(students, { classId });
+			detailDataContext.seedStudents(people.students, { classId });
 			detailDataContext.seedSubjects(subjects, { classId });
 			detailDataContext.seedActivities(activities);
 			await seedSessionDrawerForUrl(url, classId);

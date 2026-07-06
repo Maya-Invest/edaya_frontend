@@ -12,6 +12,7 @@
 	import { t } from '$lib/i18n';
 	import { Layers, Plus } from '$lib/icons';
 	import { readClassGroupListFilters, writeClassGroupListFilters } from '$lib/list/list-url-filters';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 
@@ -25,9 +26,16 @@
 
 	const initialFilters = $derived(readClassGroupListFilters($page.url));
 
-	let q = $state('');
+	const listFilters = new ListFiltersState<{ q: string }>(
+		{
+			getUrl: () => $page.url,
+			write: writeClassGroupListFilters,
+			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+		},
+		() => readClassGroupListFilters($page.url),
+	);
+
 	let gradeLevelFilter = $state('all');
-	let filtersReady = $state(false);
 	let createOpen = $state(false);
 
 	const gradeLevelOptions = $derived([
@@ -38,7 +46,7 @@
 	]);
 
 	const filteredHierarchy = $derived.by(() => {
-		const needle = q.trim().toLowerCase();
+		const needle = listFilters.values.q.trim().toLowerCase();
 		return academicContext.hierarchy
 			.map(group => ({
 				...group,
@@ -63,30 +71,19 @@
 		filteredHierarchy.reduce((acc, group) => acc + group.classes.length, 0),
 	);
 
-	function syncFiltersToUrl() {
-		const href = writeClassGroupListFilters($page.url, { q });
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	}
-
 	$effect(() => {
-		const next = initialFilters;
-		q = next.q;
-		filtersReady = true;
+		listFilters.hydrate(initialFilters);
 	});
 
-	let searchTimer: ReturnType<typeof setTimeout> | undefined;
-	function scheduleFilterSync() {
-		if (!filtersReady) {
+	$effect(() => {
+		if (!listFilters.ready) {
 			return;
 		}
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(syncFiltersToUrl, 250);
-	}
+		void listFilters.values.q;
+		listFilters.scheduleSync();
+	});
 
 	$effect(() => {
-		if (!filtersReady) {
-			return;
-		}
 		void gradeLevelFilter;
 	});
 </script>
@@ -97,7 +94,7 @@
 		title={$t('classGroups.title', { n: filteredCount })}
 	>
 		{#snippet search()}
-			<ListSearchField bind:value={q} oninput={scheduleFilterSync} />
+			<ListSearchField bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
 		{/snippet}
 		{#snippet filters()}
 			<FilterSelect

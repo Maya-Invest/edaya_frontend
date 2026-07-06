@@ -17,6 +17,7 @@
 	import { t } from '$lib/i18n';
 	import { Mail, Plus, Search } from '$lib/icons';
 	import { readStaffListFilters, writeStaffListFilters } from '$lib/list/list-url-filters';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { useOffsetInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
@@ -33,8 +34,15 @@
 
 	const initialFilters = $derived(readStaffListFilters($page.url));
 
-	let q = $state('');
-	let filtersReady = $state(false);
+	const listFilters = new ListFiltersState<{ q: string }>(
+		{
+			getUrl: () => $page.url,
+			write: writeStaffListFilters,
+			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+		},
+		() => readStaffListFilters($page.url),
+	);
+
 	let createOpen = $state(false);
 
 	const infinite = useOffsetInfiniteList(
@@ -52,37 +60,28 @@
 			return { items: result.staff, total: result.totalStaff };
 		},
 		DEFAULT_LIST_PAGE_SIZE,
-		() => q,
+		() => listFilters.values.q,
 	);
 
 	const list = $derived(
-		infinite.visible.filter(s => s.name.toLowerCase().includes(q.toLowerCase())),
+		infinite.visible.filter(s => s.name.toLowerCase().includes(listFilters.values.q.toLowerCase())),
 	);
-
-	function syncFiltersToUrl(overrides: Partial<{ q: string }> = {}) {
-		const href = writeStaffListFilters($page.url, {
-			q: overrides.q ?? q,
-		});
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	}
 
 	function handleCreated(staffId: string) {
 		appGoto(detailHref.configStaffMember(staffId));
 	}
 
 	$effect(() => {
-		const next = initialFilters;
-		q = next.q;
-		filtersReady = true;
+		listFilters.hydrate(initialFilters);
 	});
 
-	let searchTimer: ReturnType<typeof setTimeout> | undefined;
-	function scheduleFilterSync() {
-		if (!filtersReady)
+	$effect(() => {
+		if (!listFilters.ready) {
 			return;
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(syncFiltersToUrl, 250);
-	}
+		}
+		void listFilters.values.q;
+		listFilters.scheduleSync();
+	});
 </script>
 
 <div class="animate-fade-in">
@@ -96,8 +95,8 @@
 					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
 				/>
 				<Input
-					bind:value={q}
-					oninput={scheduleFilterSync}
+					bind:value={listFilters.values.q}
+					oninput={() => listFilters.scheduleSync()}
 					placeholder={$t('common.search')}
 					class="h-9 w-56 rounded-full pl-9 text-sm"
 				/>

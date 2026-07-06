@@ -18,6 +18,7 @@
 		readDisciplineCatalogListFilters,
 		writeDisciplineCatalogListFilters,
 	} from '$lib/list/list-url-filters';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { refreshDisciplineCatalog } from '$lib/queries/discipline-catalog.queries';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
@@ -26,9 +27,15 @@
 
 	const initialFilters = $derived(readDisciplineCatalogListFilters($page.url));
 
-	let q = $state('');
-	let kind = $state('all');
-	let filtersReady = $state(false);
+	const listFilters = new ListFiltersState<{ q: string; kind: string }>(
+		{
+			getUrl: () => $page.url,
+			write: writeDisciplineCatalogListFilters,
+			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+		},
+		() => readDisciplineCatalogListFilters($page.url),
+	);
+
 	let createOpen = $state(false);
 	let editOpen = $state(false);
 	let editingAction = $state<DisciplinaryActionCatalogItem | null>(null);
@@ -45,10 +52,10 @@
 
 	const filteredActions = $derived(
 		disciplineCatalogContext.actions.filter((action) => {
-			if (kind !== 'all' && action.kind !== kind) {
+			if (listFilters.values.kind !== 'all' && action.kind !== listFilters.values.kind) {
 				return false;
 			}
-			const needle = q.trim().toLowerCase();
+			const needle = listFilters.values.q.trim().toLowerCase();
 			if (!needle) {
 				return true;
 			}
@@ -57,37 +64,16 @@
 		}),
 	);
 
-	function syncFiltersToUrl() {
-		const href = writeDisciplineCatalogListFilters($page.url, { q, kind });
-		const current = `${$page.url.pathname}${$page.url.search}`;
-		if (href === current) {
-			return;
-		}
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	}
-
 	$effect(() => {
-		const next = initialFilters;
-		q = next.q;
-		kind = next.kind;
-		filtersReady = true;
+		listFilters.hydrate(initialFilters);
 	});
 
-	let searchTimer: ReturnType<typeof setTimeout> | undefined;
-	function scheduleFilterSync() {
-		if (!filtersReady) {
-			return;
-		}
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(syncFiltersToUrl, 250);
-	}
-
 	$effect(() => {
-		if (!filtersReady) {
+		if (!listFilters.ready) {
 			return;
 		}
-		void kind;
-		scheduleFilterSync();
+		void listFilters.values.kind;
+		listFilters.scheduleSync();
 	});
 
 	let catalogLoading = $state(!disciplineCatalogContext.ready);
@@ -158,10 +144,10 @@
 		title={$t('disciplinaryCatalog.title', { n: filteredActions.length })}
 	>
 		{#snippet search()}
-			<ListSearchField bind:value={q} oninput={scheduleFilterSync} />
+			<ListSearchField bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
 		{/snippet}
 		{#snippet filters()}
-			<FilterSelect bind:value={kind} options={kindOptions} class="h-9 min-w-[10rem]" />
+			<FilterSelect bind:value={listFilters.values.kind} options={kindOptions} class="h-9 min-w-[10rem]" />
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate permission="DISCIPLINE_VALIDATE">

@@ -105,6 +105,14 @@ const educatorDashboardListFiltersCodec = defineUrlFilterCodec({
 	tab: { type: 'enum', default: 'schoollife', values: ['schoollife', 'grades'] as const },
 });
 
+const classEvaluationListFiltersCodec = defineUrlFilterCodec({
+	kind: { type: 'string', default: 'all' },
+});
+
+const classAttendanceListFiltersCodec = defineUrlFilterCodec({
+	completion: { type: 'string', default: 'all' },
+});
+
 export type CalendarListFilters = ReturnType<typeof calendarListFiltersCodec.read>;
 export type ConfigSubjectListFilters = ReturnType<typeof configSubjectListFiltersCodec.read>;
 export type TeachingListFilters = ReturnType<typeof teachingListFiltersCodec.read>;
@@ -127,6 +135,8 @@ export type AcademicAdminListFilters = ReturnType<typeof academicAdminListFilter
 export type DisciplineCatalogListFilters = ReturnType<typeof disciplineCatalogListFiltersCodec.read>;
 export type ResourceListFilters = ReturnType<typeof resourceListFiltersCodec.read>;
 export type EducatorDashboardListFilters = ReturnType<typeof educatorDashboardListFiltersCodec.read>;
+export type ClassEvaluationListFilters = ReturnType<typeof classEvaluationListFiltersCodec.read>;
+export type ClassAttendanceListFilters = ReturnType<typeof classAttendanceListFiltersCodec.read>;
 
 export function readCalendarListFilters(url: URL): CalendarListFilters {
 	return calendarListFiltersCodec.read(url);
@@ -311,4 +321,26 @@ export function writeEducatorDashboardListFilters(
 	filters: EducatorDashboardListFilters,
 ): string {
 	return educatorDashboardListFiltersCodec.write(url, filters);
+}
+
+export function readClassEvaluationListFilters(url: URL): ClassEvaluationListFilters {
+	return classEvaluationListFiltersCodec.read(url);
+}
+
+export function writeClassEvaluationListFilters(
+	url: URL,
+	filters: ClassEvaluationListFilters,
+): string {
+	return classEvaluationListFiltersCodec.write(url, filters);
+}
+
+export function readClassAttendanceListFilters(url: URL): ClassAttendanceListFilters {
+	return classAttendanceListFiltersCodec.read(url);
+}
+
+export function writeClassAttendanceListFilters(
+	url: URL,
+	filters: ClassAttendanceListFilters,
+): string {
+	return classAttendanceListFiltersCodec.write(url, filters);
 }

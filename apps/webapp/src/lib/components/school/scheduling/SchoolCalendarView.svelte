@@ -20,6 +20,7 @@
 		PartyPopper,
 	} from '$lib/icons';
 	import { readCalendarListFilters, writeCalendarListFilters } from '$lib/list/list-url-filters';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 	import SchoolYearEventFormModal from '../school-life/SchoolYearEventFormModal.svelte';
@@ -63,12 +64,25 @@
 
 	const initialFilters = $derived(readCalendarListFilters($page.url));
 
-	let q = $state('');
-	let typeFilter = $state<'all' | SchoolYearEvent['type']>('all');
-	let filtersReady = $state(false);
+	const listFilters = new ListFiltersState<{ q: string; type: string }>(
+		{
+			getUrl: () => $page.url,
+			write: writeCalendarListFilters,
+			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+		},
+		() => readCalendarListFilters($page.url),
+	);
+
 	let createOpen = $state(false);
 
 	const typeFilterKeys = ['all', 'holiday', 'vacation', 'closure', 'ceremony'] as const;
+	type TypeFilter = (typeof typeFilterKeys)[number];
+
+	const typeFilter = $derived(
+		typeFilterKeys.includes(listFilters.values.type as TypeFilter)
+			? listFilters.values.type as TypeFilter
+			: 'all',
+	);
 
 	function formatMonthYear(dateStr: string, loc: string) {
 		const d = new Date(dateStr);
@@ -84,8 +98,8 @@
 		if (typeFilter !== 'all') {
 			list = list.filter(e => e.type === typeFilter);
 		}
-		if (q.trim()) {
-			const needle = q.toLowerCase();
+		if (listFilters.values.q.trim()) {
+			const needle = listFilters.values.q.toLowerCase();
 			list = list.filter(
 				e => e.title.toLowerCase().includes(needle) || e.description.toLowerCase().includes(needle),
 			);
@@ -117,31 +131,26 @@
 		appGoto(`${path}${$page.url.search}`);
 	}
 
-	function syncFiltersToUrl() {
-		const href = writeCalendarListFilters($page.url, { q, type: typeFilter });
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	}
-
 	$effect(() => {
-		const next = initialFilters;
-		q = next.q;
-		typeFilter = (typeFilterKeys.includes(next.type as (typeof typeFilterKeys)[number])
-			? next.type
-			: 'all') as typeof typeFilter;
-		filtersReady = true;
+		listFilters.hydrate({
+			q: initialFilters.q,
+			type: typeFilterKeys.includes(initialFilters.type as TypeFilter)
+				? initialFilters.type
+				: 'all',
+		});
 	});
 
-	let searchTimer: ReturnType<typeof setTimeout> | undefined;
-	function scheduleFilterSync() {
-		if (!filtersReady)
+	$effect(() => {
+		if (!listFilters.ready) {
 			return;
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(syncFiltersToUrl, 250);
-	}
+		}
+		void listFilters.values.type;
+		listFilters.scheduleSync();
+	});
 
-	function applyTypeFilter(next: (typeof typeFilterKeys)[number]) {
-		typeFilter = next;
-		scheduleFilterSync();
+	function applyTypeFilter(next: TypeFilter) {
+		listFilters.values.type = next;
+		listFilters.scheduleSync();
 	}
 </script>
 
@@ -156,8 +165,8 @@
 					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
 				/>
 				<Input
-					bind:value={q}
-					oninput={scheduleFilterSync}
+					bind:value={listFilters.values.q}
+					oninput={() => listFilters.scheduleSync()}
 					placeholder={$t('common.search')}
 					class="h-9 w-56 rounded-full pl-9 text-sm"
 				/>

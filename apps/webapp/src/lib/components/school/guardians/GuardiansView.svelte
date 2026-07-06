@@ -15,6 +15,7 @@
 	import { t } from '$lib/i18n';
 	import { Mail, Phone, Plus, Users } from '$lib/icons';
 	import { readGuardianListFilters, writeGuardianListFilters } from '$lib/list/list-url-filters';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { useOffsetInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
@@ -29,8 +30,16 @@
 	} = $props();
 	const students = $derived(detailDataContext.students);
 	const initialFilters = $derived(readGuardianListFilters($page.url));
-	let q = $state('');
-	let filtersReady = $state(false);
+
+	const listFilters = new ListFiltersState<{ q: string }>(
+		{
+			getUrl: () => $page.url,
+			write: writeGuardianListFilters,
+			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+		},
+		() => readGuardianListFilters($page.url),
+	);
+
 	let createOpen = $state(false);
 	const infinite = useOffsetInfiniteList(
 		async (offset, limit) => {
@@ -40,7 +49,7 @@
 			return { items: result.guardians, total: result.totalGuardians };
 		},
 		DEFAULT_LIST_PAGE_SIZE,
-		() => q,
+		() => listFilters.values.q,
 	);
 	const relationKey: Record<Guardian['relation'], string> = {
 		'Mother': 'guardian.relation.Mother',
@@ -48,29 +57,21 @@
 		'Legal guardian': 'guardian.relation.LegalGuardian',
 	};
 	const list = $derived(
-		infinite.visible.filter(g => g.name.toLowerCase().includes(q.toLowerCase())),
+		infinite.visible.filter(g => g.name.toLowerCase().includes(listFilters.values.q.toLowerCase())),
 	);
-	function syncFiltersToUrl(overrides: Partial<{ q: string }> = {}) {
-		const href = writeGuardianListFilters($page.url, {
-			q: overrides.q ?? q,
-		});
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	}
 	function handleCreated(guardianId: string) {
 		appGoto(detailHref.schoolGuardian(guardianId));
 	}
 	$effect(() => {
-		const next = initialFilters;
-		q = next.q;
-		filtersReady = true;
+		listFilters.hydrate(initialFilters);
 	});
-	let searchTimer: ReturnType<typeof setTimeout> | undefined;
-	function scheduleFilterSync() {
-		if (!filtersReady)
+	$effect(() => {
+		if (!listFilters.ready) {
 			return;
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(syncFiltersToUrl, 250);
-	}
+		}
+		void listFilters.values.q;
+		listFilters.scheduleSync();
+	});
 </script>
 <div class="animate-fade-in">
 	<ListPageHeader
@@ -78,7 +79,7 @@
 		title={$t('people.guardiansCount', { n: infinite.total })}
 	>
 		{#snippet search()}
-			<ListSearchField bind:value={q} oninput={scheduleFilterSync} />
+			<ListSearchField bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate

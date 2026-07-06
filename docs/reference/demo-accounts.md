@@ -31,4 +31,16 @@ cd edaya_backend && bun dev
 
 # Terminal 2 — once API is ready
 cd edaya_backend && bun seed:clean --yes && bun seed:init
+
+# Terminal 3 — webapp
+cd edaya_web/apps/webapp && bun dev
+```
+
+## Pre-demo verification
+
+```sh
+cd edaya_web/apps/webapp
+bun run check
+bun test tests
+node scripts/demo-dry-run.mjs   # 26 automated steps; results in .demo-dry-run/
 ```

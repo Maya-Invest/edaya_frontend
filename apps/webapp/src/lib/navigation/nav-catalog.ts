@@ -38,13 +38,13 @@ export const SCHOOL_NAV_DEFS: NavItemDefinition[] = [
 		key: 'calendar',
 		labelKey: 'school.calendar',
 		href: '/school/calendar',
-		permissions: ['QUERY_CALENDAR_READ'],
+		permissions: ['QUERY_CALENDAR_READ', 'ACCESS_CONTROL_READ'],
 	},
 	{
 		key: 'activities',
 		labelKey: 'school.activities',
 		href: '/school/activities',
-		permissions: ['QUERY_CALENDAR_READ'],
+		permissions: ['QUERY_CALENDAR_READ', 'ACCESS_CONTROL_READ'],
 	},
 	{
 		key: 'announcements',
@@ -122,7 +122,7 @@ export const FINANCE_NAV_DEFS: NavItemDefinition[] = [
 		key: 'payment',
 		labelKey: 'finance.payment',
 		href: '/finance/payment',
-		permissions: ['PAYMENT_READ'],
+		permissions: ['PAYMENT_READ', 'FINANCIAL_CONFIG_READ'],
 	},
 ];
 

@@ -12,6 +12,7 @@
 	import { t } from '$lib/i18n';
 	import { CalendarRange, Plus, Search, Users } from '$lib/icons';
 	import { readActivityListFilters, writeActivityListFilters } from '$lib/list/list-url-filters';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
@@ -39,16 +40,22 @@
 
 	const initialFilters = $derived(readActivityListFilters($page.url));
 
-	let q = $state('');
-	let category = $state<string>('all');
-	let filtersReady = $state(false);
+	const listFilters = new ListFiltersState<{ q: string; category: string }>(
+		{
+			getUrl: () => $page.url,
+			write: writeActivityListFilters,
+			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+		},
+		() => readActivityListFilters($page.url),
+	);
+
 	let createOpen = $state(false);
 
 	const filtered = $derived(
 		activities
-			.filter(a => category === 'all' || a.category === category)
+			.filter(a => listFilters.values.category === 'all' || a.category === listFilters.values.category)
 			.filter((a) => {
-				const needle = q.toLowerCase();
+				const needle = listFilters.values.q.toLowerCase();
 				return a.name.toLowerCase().includes(needle)
 					|| a.coach.toLowerCase().includes(needle)
 					|| a.description.toLowerCase().includes(needle);
@@ -74,29 +81,21 @@
 		appGoto(`${path}${$page.url.search}`);
 	}
 
-	function syncFiltersToUrl() {
-		const href = writeActivityListFilters($page.url, { q, category });
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	}
-
 	$effect(() => {
-		const next = initialFilters;
-		q = next.q;
-		category = next.category;
-		filtersReady = true;
+		listFilters.hydrate(initialFilters);
 	});
 
-	let searchTimer: ReturnType<typeof setTimeout> | undefined;
-	function scheduleFilterSync() {
-		if (!filtersReady)
+	$effect(() => {
+		if (!listFilters.ready) {
 			return;
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(syncFiltersToUrl, 250);
-	}
+		}
+		void listFilters.values.category;
+		listFilters.scheduleSync();
+	});
 
 	function applyCategory(next: (typeof categoryKeys)[number]) {
-		category = next;
-		scheduleFilterSync();
+		listFilters.values.category = next;
+		listFilters.scheduleSync();
 	}
 </script>
 
@@ -111,8 +110,8 @@
 					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
 				/>
 				<Input
-					bind:value={q}
-					oninput={scheduleFilterSync}
+					bind:value={listFilters.values.q}
+					oninput={() => listFilters.scheduleSync()}
 					placeholder={$t('common.search')}
 					class="h-9 w-56 rounded-full pl-9 text-sm"
 				/>
@@ -126,7 +125,7 @@
 						onclick={() => applyCategory(k)}
 						class={cn(
 							'rounded-full px-3 py-1 text-[11px] font-medium transition',
-							category === k
+							listFilters.values.category === k
 								? 'bg-primary text-primary-foreground'
 								: 'text-muted-foreground hover:text-foreground',
 						)}

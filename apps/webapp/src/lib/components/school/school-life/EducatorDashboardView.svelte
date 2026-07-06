@@ -21,6 +21,7 @@
 		Search,
 	} from '$lib/icons';
 	import { readEducatorDashboardListFilters, writeEducatorDashboardListFilters } from '$lib/list/list-url-filters';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { canEditGrades } from '$lib/permissions';
 	import { INCIDENT_SEVERITY_TONE } from '$lib/ui-tones';
@@ -38,12 +39,21 @@
 
 	const initialFilters = $derived(readEducatorDashboardListFilters($page.url));
 
-	let tab = $state<Tab>('schoollife');
-	let q = $state('');
-	let filtersReady = $state(false);
+	const listFilters = new ListFiltersState<{ q: string; tab: string }>(
+		{
+			getUrl: () => $page.url,
+			write: writeEducatorDashboardListFilters,
+			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+		},
+		() => readEducatorDashboardListFilters($page.url),
+	);
+
+	const tab = $derived(
+		listFilters.values.tab === 'grades' ? 'grades' as const : 'schoollife' as const,
+	);
 
 	const studentsBySearch = $derived.by(() => {
-		const term = q.trim().toLowerCase();
+		const term = listFilters.values.q.trim().toLowerCase();
 		if (!term)
 			return students;
 		return students.filter(s => s.name.toLowerCase().includes(term));
@@ -81,29 +91,24 @@
 
 	const editable = canEditGrades();
 
-	function syncFiltersToUrl() {
-		const href = writeEducatorDashboardListFilters($page.url, { q, tab });
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	}
-
 	$effect(() => {
-		const next = initialFilters;
-		q = next.q;
-		tab = next.tab as Tab;
-		filtersReady = true;
+		listFilters.hydrate({
+			q: initialFilters.q,
+			tab: initialFilters.tab === 'grades' ? 'grades' : 'schoollife',
+		});
 	});
 
-	let searchTimer: ReturnType<typeof setTimeout> | undefined;
-	function scheduleFilterSync() {
-		if (!filtersReady)
+	$effect(() => {
+		if (!listFilters.ready) {
 			return;
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(syncFiltersToUrl, 250);
-	}
+		}
+		void listFilters.values.tab;
+		listFilters.scheduleSync();
+	});
 
 	function applyTab(next: Tab) {
-		tab = next;
-		scheduleFilterSync();
+		listFilters.values.tab = next;
+		listFilters.scheduleSync();
 	}
 </script>
 
@@ -142,8 +147,8 @@
 						class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
 					/>
 					<Input
-						bind:value={q}
-						oninput={scheduleFilterSync}
+						bind:value={listFilters.values.q}
+						oninput={() => listFilters.scheduleSync()}
 						placeholder={$t('common.search')}
 						class="h-9 w-56 rounded-full pl-9 text-sm"
 					/>

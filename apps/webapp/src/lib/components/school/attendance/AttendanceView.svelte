@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { AttendanceDay } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
@@ -7,6 +8,9 @@
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { locale, t } from '$lib/i18n';
 	import { CalendarDays, ClipboardCheck } from '$lib/icons';
+	import { readClassAttendanceListFilters, writeClassAttendanceListFilters } from '$lib/list/list-url-filters';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
+	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 
 	const {
@@ -20,10 +24,25 @@
 	} = $props();
 
 	type CompletionFilter = 'all' | 'marked' | 'partial' | 'unmarked';
+	const completionKeys = ['all', 'marked', 'partial', 'unmarked'] as const;
 
 	const days = $derived(detailDataContext.attendanceDaysForClass(classId));
+	const initialFilters = $derived(readClassAttendanceListFilters($page.url));
 
-	let completion = $state<CompletionFilter>('all');
+	const listFilters = new ListFiltersState<{ completion: string }>(
+		{
+			getUrl: () => $page.url,
+			write: writeClassAttendanceListFilters,
+			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+		},
+		() => readClassAttendanceListFilters($page.url),
+	);
+
+	const completion = $derived(
+		completionKeys.includes(listFilters.values.completion as CompletionFilter)
+			? listFilters.values.completion as CompletionFilter
+			: 'all',
+	);
 
 	function completionOf(day: AttendanceDay): Exclude<CompletionFilter, 'all'> {
 		if (day.totalStudents === 0 || day.recordedCount === 0) {
@@ -49,6 +68,22 @@
 		{ value: 'partial', label: $t('attendanceDay.completion.partial') },
 		{ value: 'unmarked', label: $t('attendanceDay.completion.unmarked') },
 	] as const);
+
+	$effect(() => {
+		listFilters.hydrate({
+			completion: completionKeys.includes(initialFilters.completion as CompletionFilter)
+				? initialFilters.completion
+				: 'all',
+		});
+	});
+
+	$effect(() => {
+		if (!listFilters.ready) {
+			return;
+		}
+		void listFilters.values.completion;
+		listFilters.scheduleSync();
+	});
 </script>
 
 <div class="animate-fade-in">
@@ -59,7 +94,7 @@
 		{#snippet filters()}
 			<FilterPanel activeCount={completionFilterActive} title={$t('attendanceDay.completionFilter')}>
 				<FilterSelect
-					bind:value={completion}
+					bind:value={listFilters.values.completion}
 					class="h-9 w-full rounded-md text-xs"
 					options={[...completionOptions]}
 				/>

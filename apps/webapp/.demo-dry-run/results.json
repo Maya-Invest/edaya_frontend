@@ -1,7 +1,7 @@
 {
-  "passed": 20,
-  "failed": 4,
-  "skipped": 1,
+  "passed": 25,
+  "failed": 0,
+  "skipped": 0,
   "results": [
     {
       "scene": "D0",
@@ -19,15 +19,9 @@
       "status": "pass"
     },
     {
-      "scene": "D1",
-      "step": "1.1 KPI cards",
-      "status": "pass"
-    },
-    {
       "scene": "D2",
       "step": "2.1 Student list",
-      "status": "fail",
-      "detail": "Missing selector: table, [role=\"table\"], ul"
+      "status": "pass"
     },
     {
       "scene": "D2",
@@ -37,6 +31,11 @@
     {
       "scene": "D2",
       "step": "2.4 Guardians list",
+      "status": "pass"
+    },
+    {
+      "scene": "D1",
+      "step": "1.1 KPI cards",
       "status": "pass"
     },
     {
@@ -57,14 +56,12 @@
     {
       "scene": "D5",
       "step": "5.1 Timetable grid",
-      "status": "fail",
-      "detail": "Missing selector: #planning-week-picker, .edaya-timetable-calendar"
+      "status": "pass"
     },
     {
       "scene": "D5",
       "step": "5.2 Maths slot shows Mme Touré",
-      "status": "skip",
-      "detail": "No maths lesson text in grid — verify seed week / teacher assignments manually"
+      "status": "pass"
     },
     {
       "scene": "D6",
@@ -79,8 +76,7 @@
     {
       "scene": "D8",
       "step": "8.1 Activities list",
-      "status": "fail",
-      "detail": "Redirected away — at /dashboard, expected /school/activities"
+      "status": "pass"
     },
     {
       "scene": "D8",
@@ -100,8 +96,7 @@
     {
       "scene": "D9",
       "step": "9.2 Payments",
-      "status": "fail",
-      "detail": "Missing selector: main"
+      "status": "pass"
     },
     {
       "scene": "D9",

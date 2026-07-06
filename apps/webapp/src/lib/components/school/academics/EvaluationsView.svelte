@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { AssessmentKind, Evaluation } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
@@ -9,11 +10,14 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { locale, t } from '$lib/i18n';
 	import { CalendarDays, Clock, Plus } from '$lib/icons';
+	import { readClassEvaluationListFilters, writeClassEvaluationListFilters } from '$lib/list/list-url-filters';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 	import EvaluationCreateModal from './EvaluationCreateModal.svelte';
 
 	const KIND_FILTERS = ['all', 'homework', 'quiz', 'project', 'other'] as const;
+	type KindFilter = (typeof KIND_FILTERS)[number];
 
 	const {
 		classId,
@@ -26,7 +30,23 @@
 	} = $props();
 
 	const evaluations = $derived(detailDataContext.evaluationsForClass(classId));
-	let kindFilter = $state<(typeof KIND_FILTERS)[number]>('all');
+	const initialFilters = $derived(readClassEvaluationListFilters($page.url));
+
+	const listFilters = new ListFiltersState<{ kind: string }>(
+		{
+			getUrl: () => $page.url,
+			write: writeClassEvaluationListFilters,
+			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+		},
+		() => readClassEvaluationListFilters($page.url),
+	);
+
+	const kindFilter = $derived(
+		KIND_FILTERS.includes(listFilters.values.kind as KindFilter)
+			? listFilters.values.kind as KindFilter
+			: 'all',
+	);
+
 	let createOpen = $state(false);
 
 	const filtered = $derived(
@@ -66,6 +86,22 @@
 	function hasScheduleHint(ev: Evaluation): boolean {
 		return !isHomework(ev) && Boolean(ev.startsAt || ev.lessonSessionId);
 	}
+
+	$effect(() => {
+		listFilters.hydrate({
+			kind: KIND_FILTERS.includes(initialFilters.kind as KindFilter)
+				? initialFilters.kind
+				: 'all',
+		});
+	});
+
+	$effect(() => {
+		if (!listFilters.ready) {
+			return;
+		}
+		void listFilters.values.kind;
+		listFilters.scheduleSync();
+	});
 </script>
 
 <div class="animate-fade-in">
@@ -75,7 +111,7 @@
 	>
 		{#snippet filters()}
 			<FilterSelect
-				bind:value={kindFilter}
+				bind:value={listFilters.values.kind}
 				class="h-9 w-44 rounded-full text-xs"
 				options={kindFilterOptions}
 			/>

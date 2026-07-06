@@ -13,6 +13,7 @@
 	import { t } from '$lib/i18n';
 	import { Pencil, Plus, Trash2 } from '$lib/icons';
 	import { readGradeScaleListFilters, writeGradeScaleListFilters } from '$lib/list/list-url-filters';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { reportCardsContext } from '$lib/report-cards/context.svelte';
 	import { get } from 'svelte/store';
@@ -20,8 +21,15 @@
 
 	const initialFilters = $derived(readGradeScaleListFilters($page.url));
 
-	let q = $state('');
-	let filtersReady = $state(false);
+	const listFilters = new ListFiltersState<{ q: string }>(
+		{
+			getUrl: () => $page.url,
+			write: writeGradeScaleListFilters,
+			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+		},
+		() => readGradeScaleListFilters($page.url),
+	);
+
 	let createOpen = $state(false);
 	let editOpen = $state(false);
 	let editingScale = $state<GradeScale | null>(null);
@@ -32,7 +40,7 @@
 
 	const filteredScales = $derived(
 		reportCardsContext.scales.filter((scale) => {
-			const needle = q.trim().toLowerCase();
+			const needle = listFilters.values.q.trim().toLowerCase();
 			if (!needle) {
 				return true;
 			}
@@ -41,25 +49,17 @@
 		}),
 	);
 
-	function syncFiltersToUrl() {
-		const href = writeGradeScaleListFilters($page.url, { q });
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	}
-
 	$effect(() => {
-		const next = initialFilters;
-		q = next.q;
-		filtersReady = true;
+		listFilters.hydrate(initialFilters);
 	});
 
-	let searchTimer: ReturnType<typeof setTimeout> | undefined;
-	function scheduleFilterSync() {
-		if (!filtersReady) {
+	$effect(() => {
+		if (!listFilters.ready) {
 			return;
 		}
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(syncFiltersToUrl, 250);
-	}
+		void listFilters.values.q;
+		listFilters.scheduleSync();
+	});
 
 	function openEdit(scale: GradeScale) {
 		editingScale = scale;
@@ -99,7 +99,7 @@
 		title={$t('gradeScales.title', { n: filteredScales.length })}
 	>
 		{#snippet search()}
-			<ListSearchField bind:value={q} oninput={scheduleFilterSync} />
+			<ListSearchField bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate permission="REPORT_CARD_CONFIGURE">

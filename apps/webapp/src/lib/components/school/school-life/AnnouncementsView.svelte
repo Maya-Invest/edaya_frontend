@@ -14,6 +14,7 @@
 	import { t } from '$lib/i18n';
 	import { Mail, Plus } from '$lib/icons';
 	import { readAnnouncementListFilters, writeAnnouncementListFilters } from '$lib/list/list-url-filters';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
@@ -45,18 +46,24 @@
 	const priorityKeys = ['all', 'normal', 'important', 'urgent'] as const;
 	const initialFilters = $derived(readAnnouncementListFilters($page.url));
 
-	let q = $state('');
-	let status = $state<string>('all');
+	const listFilters = new ListFiltersState<{ q: string; status: string }>(
+		{
+			getUrl: () => $page.url,
+			write: writeAnnouncementListFilters,
+			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+		},
+		() => readAnnouncementListFilters($page.url),
+	);
+
 	let priority = $state<string>('all');
-	let filtersReady = $state(false);
 	let createOpen = $state(false);
 
 	const filtered = $derived(
 		announcements
-			.filter(announcement => status === 'all' || announcement.status === status)
+			.filter(announcement => listFilters.values.status === 'all' || announcement.status === listFilters.values.status)
 			.filter(announcement => priority === 'all' || announcement.priority === priority)
 			.filter((announcement) => {
-				const needle = q.toLowerCase();
+				const needle = listFilters.values.q.toLowerCase();
 				return announcement.title.toLowerCase().includes(needle)
 					|| announcement.content.toLowerCase().includes(needle);
 			}),
@@ -88,33 +95,16 @@
 		appGoto(`${path}${$page.url.search}`);
 	}
 
-	function syncFiltersToUrl() {
-		const href = writeAnnouncementListFilters($page.url, { q, status });
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	}
-
 	$effect(() => {
-		const next = initialFilters;
-		q = next.q;
-		status = next.status;
-		filtersReady = true;
+		listFilters.hydrate(initialFilters);
 	});
 
-	let searchTimer: ReturnType<typeof setTimeout> | undefined;
-	function scheduleFilterSync() {
-		if (!filtersReady) {
-			return;
-		}
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(syncFiltersToUrl, 250);
-	}
-
 	$effect(() => {
-		if (!filtersReady) {
+		if (!listFilters.ready) {
 			return;
 		}
-		void status;
-		scheduleFilterSync();
+		void listFilters.values.status;
+		listFilters.scheduleSync();
 	});
 
 	const statusFilterOptions = $derived(
@@ -140,11 +130,11 @@
 		title={$t('announcements.count', { n: filtered.length })}
 	>
 		{#snippet search()}
-			<ListSearchField bind:value={q} oninput={scheduleFilterSync} />
+			<ListSearchField bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
 		{/snippet}
 		{#snippet filters()}
 			<FilterSelect
-				bind:value={status}
+				bind:value={listFilters.values.status}
 				class="h-9 w-44 rounded-full text-xs"
 				options={statusFilterOptions}
 			/>

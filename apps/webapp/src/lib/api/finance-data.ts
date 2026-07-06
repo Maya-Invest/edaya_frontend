@@ -9,6 +9,7 @@ import {
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 import { mapPeopleData } from '$lib/api/people-data';
+import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -122,27 +123,33 @@ export async function fetchFinanceSources(
 	scope: { schoolId: string; academicYearId: string },
 ): Promise<FinanceSources> {
 	const [feesRaw, enrollmentsRaw] = await Promise.all([
-		client.entities.fees.list({ schoolId: scope.schoolId }),
-		client.entities.enrollments.list(activeEnrollmentsForYear(scope.academicYearId)),
+		safeOptionalEntityList(() => client.entities.fees.list({ schoolId: scope.schoolId })),
+		safeOptionalEntityList(() =>
+			client.entities.enrollments.list(activeEnrollmentsForYear(scope.academicYearId)),
+		),
 	]);
-	const studentIds = uniqueIds((enrollmentsRaw ?? []).map(enrollment => enrollment.studentId));
+	const studentIds = uniqueIds(enrollmentsRaw.map(enrollment => enrollment.studentId));
 	const [studentsRaw, studentFeesRaw] = studentIds.length > 0
 		? await Promise.all([
-				client.entities.students.list(entitiesByIds(studentIds)),
-				client.entities.studentFees.list(studentFeesForStudents(studentIds)),
+				safeOptionalEntityList(() => client.entities.students.list(entitiesByIds(studentIds))),
+				safeOptionalEntityList(() =>
+					client.entities.studentFees.list(studentFeesForStudents(studentIds)),
+				),
 			])
 		: [[], []];
-	const studentFeeIds = uniqueIds((studentFeesRaw ?? []).map(studentFee => studentFee.id));
+	const studentFeeIds = uniqueIds(studentFeesRaw.map(studentFee => studentFee.id));
 	const paymentsRaw = studentFeeIds.length > 0
-		? await client.entities.payments.list(paymentsForStudentFees(studentFeeIds))
+		? await safeOptionalEntityList(() =>
+				client.entities.payments.list(paymentsForStudentFees(studentFeeIds)),
+			)
 		: [];
 
 	return {
-		feesRaw: feesRaw ?? [],
-		studentFeesRaw: studentFeesRaw ?? [],
-		paymentsRaw: paymentsRaw ?? [],
-		studentsRaw: studentsRaw ?? [],
-		enrollmentsRaw: enrollmentsRaw ?? [],
+		feesRaw,
+		studentFeesRaw,
+		paymentsRaw,
+		studentsRaw,
+		enrollmentsRaw,
 	};
 }
 

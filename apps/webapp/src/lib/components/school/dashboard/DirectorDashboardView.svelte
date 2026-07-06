@@ -16,6 +16,7 @@
 		Wallet,
 	} from '$lib/icons';
 	import { appPath } from '$lib/navigation/app-navigation';
+	import { dashboardActionHref, dashboardClassStudentsHref } from '$lib/navigation/dashboard-links';
 	import { BADGE, BADGE_DANGER, BADGE_WARN } from '$lib/ui-tones';
 	import { cn } from '$lib/utils';
 
@@ -46,20 +47,7 @@
 	};
 
 	function actionHref(key: SchoolOverviewResponse['actionItems'][number]['key']): ResolvedPathname {
-		switch (key) {
-			case 'overdue_fees':
-				return appPath('/(app)/finance/billing/[[id]]');
-			case 'unpublished_report_cards':
-				return appPath('/(app)/configuration/report-cards/[[id]]');
-			case 'pending_justifications':
-				return appPath('/(app)/school/students/[[id]]');
-			case 'high_severity_incidents':
-				return appPath('/(app)/school/events/[[id]]');
-			case 'incomplete_grading':
-				return appPath('/(app)/classes/[classId]/evaluations/[[id]]', {
-					classId: academicContext.classes[0]?.id ?? '6a',
-				});
-		}
+		return dashboardActionHref(key, academicContext.classes);
 	}
 
 	const upcomingKindLabel: Record<SchoolOverviewResponse['upcoming'][number]['kind'], string> = {
@@ -125,7 +113,7 @@
 	}
 
 	function classHref(classGroupId: string): ResolvedPathname {
-		return appPath('/(app)/classes/[classId]/students/[[id]]', { classId: classGroupId });
+		return dashboardClassStudentsHref(classGroupId, academicContext.classes);
 	}
 
 	function healthMetric(value: string | number, warn = false): string {

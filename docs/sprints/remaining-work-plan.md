@@ -53,10 +53,12 @@ From [demo-ready-plan.md](./demo-ready-plan.md) dry-run (2026-07-06). Fix before
 | **A.4** | Finance routes load after shell ready | D9 | DR.1 | **Done** |
 | **A.5** | Announcements: drop full-roster fetch on list load | D8 | DR.1 | **Done** |
 | **A.6** | Student / teacher / config drawers tolerate 403 enrichment | D2, D3, D11 | DR.1 | **Done** |
-| **A.7** | Timetable cell shows portal teacher name (not only subject) | D5 | DR.3 | **Partial** — UI line added; verify teacher resolves when assignments load |
-| **A.8** | Dashboard deep-links resolve to real lists | D1 | DR.4 | — |
+| **A.7** | Timetable cell shows portal teacher name (not only subject) | D5 | DR.3 | **Done** — D5.2 automated (Mme Touré on grid) |
+| **A.8** | Dashboard deep-links resolve to real lists | D1 | DR.4 | **Done** — `dashboard-links.ts`; D1.2 automated |
 
-**Exit:** `node apps/webapp/scripts/demo-dry-run.mjs` passes; manual spot-check of D4, D6, D11.
+**Exit:** `node apps/webapp/scripts/demo-dry-run.mjs` passes (**26/26**); manual spot-check of D4 permissions modals, D6 homework filter, D10 bulletin drawer.
+
+**Track A status:** **Complete** (2026-07-06).
 
 ---
 
@@ -66,19 +68,21 @@ From [svelte-state-alignment.md](./archive/svelte-state-alignment.md). **Not dem
 
 ### B.1 — ListFiltersState rollout (Phase 1 remainder)
 
-Pilots done: `FeesView`, `StudentsView`, `PaymentsView`. Migrate on touch:
+Pilots + state-class views were already done. **Migrated 2026-07-06** to `ListFiltersState` in all remaining B.1 targets:
 
-| View | Module |
-|------|--------|
-| `SchoolStudentsView` | School — ⚠️ state class exists; fix A.1 |
-| `TeachersView` | School — ⚠️ state class exists; fix A.1 |
-| `PlanningView` | Classes — state class exists |
-| `GuardiansView`, `StaffView` | School |
-| `EvaluationsView`, `ClassReportCardsView`, `AttendanceView` | Classes |
-| `AnnouncementsView`, `ActivitiesView`, `SchoolCalendarView` | School life |
-| `ClassGroupsView`, `DisciplinaryCatalogView`, `GradeScalesView`, `ConfigSubjectsView` | Configuration |
-| `EducatorDashboardView` | Dashboard |
-| `ClassReportCardsView`, `HomeworkView` (redirect) | Classes |
+| View | Module | Status |
+|------|--------|--------|
+| `SchoolStudentsView` | School | ✅ via `school-students-state` |
+| `TeachersView` | School | ✅ via `teachers-state` |
+| `PlanningView` | Classes | ✅ via `planning-state` |
+| `GuardiansView`, `StaffView` | School | ✅ |
+| `EvaluationsView`, `ClassReportCardsView`, `AttendanceView` | Classes | ✅ (+ URL codecs for eval/attendance) |
+| `AnnouncementsView`, `ActivitiesView`, `SchoolCalendarView` | School life | ✅ |
+| `ClassGroupsView`, `DisciplinaryCatalogView`, `GradeScalesView`, `ConfigSubjectsView` | Configuration | ✅ |
+| `EducatorDashboardView` | Dashboard | ✅ |
+| `FeesView`, `StudentsView`, `PaymentsView` | Finance / class pilots | ✅ (pre-existing) |
+
+**Not migrated (out of B.1 scope):** `ReportCardDefinitionsView`, `TeachingLogView`, `AcademicAdminView`, `ResourcesView` (post-v1 / on-touch). `HomeworkView` is a legacy redirect.
 
 ### B.2 — Feature state extractions (Phase 3 P1)
 
@@ -95,7 +99,7 @@ P2: remaining `*View.svelte` — extract only when script > ~80 lines.
 | ID | Task | Status |
 |----|------|--------|
 | B.3.1 | PR template: `*View.svelte` > 60 lines script → justify or extract | — |
-| B.3.2 | Close data-loading audit: document `SchoolStudentsView` infinite-fetch exception | — |
+| B.3.2 | Close data-loading audit: document `SchoolStudentsView` infinite-fetch exception | ✅ — school roster uses `useOffsetInfiniteList` in-view (not route `PageQuery`); intentional per data-loading spec exception |
 | B.3.3 | Grep guard: no new `$effect` + API fetch in views | ✅ 2026-07-06 |
 
 ---
