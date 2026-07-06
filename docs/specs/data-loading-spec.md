@@ -2,9 +2,7 @@
 
 > **Applies to:** `apps/webapp` — route data, shared entity state, mutations, drawer sync
 
-This document defines how the webapp loads server data and keeps the UI consistent after local changes. It complements [app-shell-spec.md](./app-shell-spec.md) (interaction patterns).
-
-Alignment work is tracked separately in [data-loading-sprint.md](./data-loading-sprint.md).
+This document defines how the webapp loads server data and keeps the UI consistent after local changes.
 
 ---
 
@@ -51,7 +49,7 @@ Alignment work is tracked separately in [data-loading-sprint.md](./data-loading-
 |-------|----------------|----------|
 | **Shell context** (`academicContext`) | Global selectors: school, year, period, class tree, sidebar counts | Session; refresh on structural academic changes only |
 | **Route query** (`lib/queries/*.queries.ts`) | Declare what a route needs; call API; return `PageLoadMeta` status | Per navigation (`PageQuery` cache key) |
-| **Entity store** (`entityStore`) | Canonical in-memory records for lists, drawers, cross-route references | Grows as routes load; patched by mutations |
+| **Entity store** (`detailDataContext`, also exported as `entityStore`) | Canonical in-memory records for lists, drawers, cross-route references | Grows as routes load; patched by mutations |
 
 Domain-specific stores (e.g. report cards, teaching log) may exist when a bounded context has its own lifecycle, but the same seed / patch / read rules apply.
 
@@ -137,6 +135,7 @@ export function queryClassStudentsPage(classId: string) {
 | `/classes/:id/evaluations` | Evaluations for class |
 | `/classes/:id/report-cards` | Report card results for class (+ definitions if not cached) |
 | `/school/guardians` | Guardians (+ student ids for links) |
+| `/school/teachers` | Teachers roster |
 | `/school/staff` | Staff roster + `permission-catalog` (seeded into entity store) |
 | `/finance/billing` | Billing records |
 | Detail URL `…/[[id]]` | Same list query as parent; drawer resolves record from store |
@@ -177,7 +176,7 @@ entityStore.appendIncident(incident: Incident): void
 entityStore.removeById(collection: 'students', id: string): void
 ```
 
-Implementations live in `lib/detail-data/context.svelte.ts` (or successor modules). Call sites use the `entityStore` contract, not ad-hoc arrays.
+Implementations live in `lib/detail-data/context.svelte.ts`. Import `detailDataContext` or `entityStore` (same singleton); call sites use seed / patch / read methods — not ad-hoc arrays.
 
 ### Collection policies
 
@@ -241,7 +240,7 @@ Tier 3 — Shell refresh (rare)
 
 ### Inline toggles (permissions, status chips)
 
-Per app-shell spec: flip immediately, persist, toast. Use Tier 1 optimistic patch on the relevant store field.
+Boolean / single-value toggles (permission cells, status chips): flip immediately, persist via `runMutation`, toast on success/error. Use Tier 1 optimistic patch on the relevant store field.
 
 ---
 
@@ -305,10 +304,11 @@ lib/
 
 ---
 
-## Related specs
+## 9. Agent checklist
 
-- [app-shell-spec.md](./app-shell-spec.md) — list / drawer / modal interaction
-- [shared-components-spec.md](./shared-components-spec.md) — mandatory reusable components
-- [svelte-state-spec.md](./svelte-state-spec.md) — class-based state tiers and component boundaries
-- [design-language-spec.md](./design-language-spec.md) — visual states
-- [data-loading-sprint.md](./data-loading-sprint.md) — codebase alignment plan
+- [ ] List route has one `query*Page`; `load` seeds `detailDataContext`
+- [ ] View reads store (filtered), not raw `PageQuery` payload
+- [ ] Mutations use `runMutation` with paired `apply` / `rollback`
+- [ ] No `refresh: true` except academic-structure changes
+- [ ] Drawer opens only after route query completes and record exists in store
+- [ ] No fetch in component `$effect` — extend `query*Page` instead

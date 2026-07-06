@@ -88,7 +88,7 @@ apps/webapp/
 - [x] **1.5** — Mutations: `teacherAssignments.save` / delete; list invalidates via infinite fetch on change
 - [x] **1.6** — Nav gating: `STAFF_READ` (create/update: `STAFF_CREATE` / `STAFF_UPDATE`)
 - [x] **1.7** — i18n (FR/EN) for teacher roles, assignment kinds, empty states
-- [x] **1.8** — Update [v1-feature-architecture-spec](../specs/v1-feature-architecture-spec.md) route index + [ui-architecture-reference](../reference/ui-architecture-reference.md) entity map (`teachers`, `teacherAssignments`)
+- [x] **1.8** — Update [v1-feature-architecture-spec](../specs/feature-architecture-spec.md) route index + [ui-architecture-reference](../reference/ui-architecture-reference.md) entity map (`teachers`, `teacherAssignments`)
 - [x] **1.9** — **Tier-2 state:** `lib/school/teachers-state.svelte.ts` + `ListFiltersState` filters
 
 ### Phase 2 — Invitations & onboarding alignment *(shipped 2026-07-06)*

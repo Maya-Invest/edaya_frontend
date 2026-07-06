@@ -15,7 +15,7 @@ export interface HomeroomAttendanceClassContext {
 export function homeroomDailyClassesForStaff(
 	classes: readonly Pick<ClassNode, 'id' | 'attendanceMode' | 'homeroomStaffId'>[],
 	staffId: string,
-): Pick<ClassNode, 'id' | 'name' | 'attendanceMode' | 'homeroomStaffId'>[] {
+): Pick<ClassNode, 'id' | 'attendanceMode' | 'homeroomStaffId'>[] {
 	return classes.filter(
 		cls => cls.attendanceMode === 'daily' && cls.homeroomStaffId === staffId,
 	);

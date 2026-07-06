@@ -1,7 +1,7 @@
 {
-  "passed": 92,
+  "passed": 96,
   "failed": 0,
-  "skipped": 4,
+  "skipped": 2,
   "results": [
     {
       "scene": "D0",
@@ -74,6 +74,12 @@
       "status": "pass"
     },
     {
+      "scene": "D6",
+      "step": "6.2 Homework filter",
+      "status": "skip",
+      "detail": "No homework rows after filter"
+    },
+    {
       "scene": "setup",
       "step": "Open ci-6b config",
       "status": "pass"
@@ -132,6 +138,12 @@
       "scene": "D10",
       "step": "10.1 Report cards list",
       "status": "pass"
+    },
+    {
+      "scene": "D10",
+      "step": "10.2 Open bulletin drawer",
+      "status": "skip",
+      "detail": "No report card rows in list"
     },
     {
       "scene": "D11",
@@ -236,26 +248,22 @@
     {
       "scene": "DC9",
       "step": "Report card defs filter select",
-      "status": "skip",
-      "detail": "Director role may lack REPORT_CARD_CONFIGURE"
+      "status": "pass"
     },
     {
       "scene": "DC9",
       "step": "Report card definitions FilterSelect + More menu",
-      "status": "skip",
-      "detail": "Director role may lack REPORT_CARD_CONFIGURE"
+      "status": "pass"
     },
     {
       "scene": "DC10",
       "step": "School calendar filter select",
-      "status": "skip",
-      "detail": "Calendar query returned 403 — verify seed grants"
+      "status": "pass"
     },
     {
       "scene": "DC10",
       "step": "School calendar FilterSelect + More menu",
-      "status": "skip",
-      "detail": "Calendar query returned 403 — verify seed grants"
+      "status": "pass"
     },
     {
       "scene": "DD",

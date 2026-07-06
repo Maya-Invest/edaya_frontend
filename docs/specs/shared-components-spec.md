@@ -1,12 +1,7 @@
 # Shared Components Spec
 
 > **Applies to:** `apps/webapp` — reusable UI building blocks  
-> **Normative:** agents and implementers **must** compose screens from this registry before adding new shared UI.  
-> **Companion specs:**
-> - [v1-feature-architecture-spec.md](./v1-feature-architecture-spec.md) — *what* to build (routes, entities, locked UX)
-> - [app-shell-spec.md](./app-shell-spec.md) — list · drawer · modal *patterns*
-> - [design-language-spec.md](./design-language-spec.md) — *how components look* (tokens, typography)
-> - [data-loading-spec.md](./data-loading-spec.md) — `PageQuery` · entity store · mutations
+> **Normative:** agents and implementers **must** compose screens from this registry before adding new shared UI.
 
 This document defines **which components to reuse**, where they live, and when to extend the registry vs. keep code feature-local.
 
@@ -27,15 +22,15 @@ This document defines **which components to reuse**, where they live, and when t
 
 ## 2. Mandatory registry (v1)
 
-Status: **Built** = use as-is · **Planned** = specified here; extract or implement in Phase 0
+Status: **Built** = use as-is · **Planned** = specified here but not yet in codebase
 
 ### 2.1 T0 — List & route
 
 | Component | Path | Status | Use for |
 |-----------|------|--------|---------|
-| **PageQuery** | `ui/PageQuery.svelte` | Built | Every list route — loading contract ([data-loading-spec](./data-loading-spec.md)) |
+| **PageQuery** | `ui/PageQuery.svelte` | Built | Every list route — loading contract |
 | **DataState** | `ui/DataState.svelte` | Built | Loading · empty · error around collections |
-| **ListPageHeader** | `ui/ListPageHeader.svelte` | Built | Page title + toolbar slots ([app-shell §2](./app-shell-spec.md#2-list-page-template)) |
+| **ListPageHeader** | `ui/ListPageHeader.svelte` | Built | Page title + toolbar slots |
 | **ListSearchField** | `ui/ListSearchField.svelte` | Built | Instant text filter pill — **do not** copy inline search markup |
 | **FilterSelect** | `ui/filter-select.svelte` | Built | **Main filter** — always `<select>` |
 | **FilterPanel** | `ui/FilterPanel.svelte` | Built | Secondary facets (status, date range) opened from Filter button |
@@ -70,7 +65,7 @@ Feature routes **do not** reimplement shell chrome.
 | Component | Path | Status | Use for |
 |-----------|------|--------|---------|
 | **DetailDrawer** | `school/shared/DetailDrawer.svelte` | Built | Overlay shell — type chip, close, lazy body dispatch |
-| **DrawerEntityHeader** | `school/shared/DrawerEntityHeader.svelte` | Built | Identity + ≤2 primary actions + overflow ([app-shell §3.1](./app-shell-spec.md#31-anatomy)) |
+| **DrawerEntityHeader** | `school/shared/DrawerEntityHeader.svelte` | Built | Identity + ≤2 primary actions + overflow |
 | **DrawerField** | `school/shared/DrawerField.svelte` | Built | Read-only label + value in drawer body |
 | **DrawerEmptyState** | `school/shared/DrawerEmptyState.svelte` | Built | Empty sub-collection / tab placeholder |
 | **DrawerActionBar** | `school/shared/DrawerActionBar.svelte` | Built | Section header + `+ Add …` CTA |
@@ -95,7 +90,7 @@ Do not build ad-hoc `<select>` lists for people — use pickers or **PickerModal
 
 | Component | Path | Use for |
 |-----------|------|---------|
-| **ScopeBuilder** | `school/configuration/ScopeBuilder.svelte` | Staff permission `scopeIds` by catalog grain ([v1 §5.3.1](./v1-feature-architecture-spec.md#531-staff-permission-assignment-ui)) |
+| **ScopeBuilder** | `school/configuration/ScopeBuilder.svelte` | Staff permission `scopeIds` by catalog grain |
 | **StaffPermissionFormModal** | `school/configuration/StaffPermissionFormModal.svelte` | Add / edit `staffPermissionAssignments` |
 | **PermissionCheckboxGroup** | `school/configuration/PermissionCheckboxGroup.svelte` | Staff **assignment** form — pick permissions to sync |
 
@@ -151,20 +146,20 @@ DetailDrawer (shell)
 
 ### 3.3 Simple entity
 
-No drawer route required. **RowActionMenu** is the primary mutation surface ([app-shell §3.5](./app-shell-spec.md#35-simple-entities-no-drawer)).
+No drawer route required. **RowActionMenu** is the primary mutation surface (simple entities: row `···` only, no URL-backed drawer).
 
 ---
 
-## 4. Planned extractions (Phase 0)
+## 4. Registry completion notes
 
-| ID | Component | Status | Pilots |
-|----|-----------|--------|--------|
-| P0.1 | `DrawerEntityHeader` | Built | `GuardianDetail` |
-| P0.2 | `ListSearchField` | Built | `GuardiansView`, `SchoolStudentsView`, `GradeScalesView`, `AnnouncementsView` |
-| P0.3 | `FilterPanel` | Built | `SchoolStudentsView` (status secondary filter) |
-| P0.4 | `RowActionMenu` | Built | `GradeScalesView` |
+| ID | Component | Status | Notes |
+|----|-----------|--------|-------|
+| P0.1 | `DrawerEntityHeader` | Built | Required on all complex drawer bodies |
+| P0.2 | `ListSearchField` | Built | Replace inline search markup in views |
+| P0.3 | `FilterPanel` | Built | Secondary filters behind Filter button |
+| P0.4 | `RowActionMenu` | Built | Primary surface for simple entities |
 
-Remaining chip-bar migrations tracked in [archived v1 plan §Phase 0.7](../sprints/archive/v1-staff-webapp-implementation-plan.md#phase-0--shell-foundations) — not demo-blocking.
+Remaining chip-bar **main** filters should migrate to `FilterSelect` when touched — not blocking.
 
 ---
 
@@ -197,7 +192,7 @@ Remaining chip-bar migrations tracked in [archived v1 plan §Phase 0.7](../sprin
 When building or refactoring a screen:
 
 - [ ] List uses `ListPageHeader` + `FilterSelect` (+ `ListSearchField` / `FilterPanel` when landed)
-- [ ] Route uses `PageQuery` + `DataState` ([data-loading-spec](./data-loading-spec.md))
+- [ ] Route uses `PageQuery` + `DataState`
 - [ ] Mutations use `FormModal` / `ConfirmModal` / `PickerModal`
 - [ ] Actions wrapped in `PermissionGate` where required
 - [ ] Complex drawer uses `DetailDrawer` + `DrawerEntityHeader` + `DrawerField`
@@ -209,19 +204,9 @@ When building or refactoring a screen:
 
 ---
 
-## 8. Related specs
-
-| Topic | Spec |
-|-------|------|
-| Interaction rules | [app-shell-spec.md](./app-shell-spec.md) |
-| Visual tokens & typography | [design-language-spec.md](./design-language-spec.md) §9 (visual catalog) |
-| Routes & entities | [v1-feature-architecture-spec.md](./v1-feature-architecture-spec.md) |
-| Permission assignment UX | [v1-feature-architecture-spec.md §5.3.1](./v1-feature-architecture-spec.md#531-staff-permission-assignment-ui) |
-
----
-
 ## Document history
 
 | Date | Change |
 |------|--------|
-| 2026-07-03 | Initial registry — T0/T1/T2 tiers, v1 mandatory dozen, Phase 0 planned extractions |
+| 2026-07-06 | Self-contained registry; Phase 0 items marked Built |
+| 2026-07-03 | Initial registry — T0/T1/T2 tiers, mandatory components |

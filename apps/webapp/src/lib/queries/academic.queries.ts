@@ -59,7 +59,14 @@ export function queryGradeScalesPage() {
 		empty: () => ({}),
 		load: async () => {
 			if (!reportCardsContext.ready) {
-				await refreshReportCardCatalog();
+				try {
+					await refreshReportCardCatalog();
+				}
+				catch (error) {
+					if (!(error instanceof ApiError && (error.status === 403 || error.status === 401))) {
+						throw error;
+					}
+				}
 			}
 			return {};
 		},
@@ -72,7 +79,14 @@ export function queryReportCardDefinitionsPage() {
 		empty: () => ({}),
 		load: async () => {
 			if (!reportCardsContext.ready) {
-				await refreshReportCardCatalog();
+				try {
+					await refreshReportCardCatalog();
+				}
+				catch (error) {
+					if (!(error instanceof ApiError && (error.status === 403 || error.status === 401))) {
+						throw error;
+					}
+				}
 			}
 			return {};
 		},

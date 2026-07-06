@@ -1,8 +1,6 @@
 # EDAYA Webapp Design Language Spec
 
 > **Applies to:** `apps/webapp` visual design (colors, typography, spacing, components, motion)
->
-> **Companion doc:** interaction and layout patterns live in [`app-shell-spec.md`](app-shell-spec.md); reusable component registry in [`shared-components-spec.md`](shared-components-spec.md). This spec covers *how things look*; those specs cover *how screens behave* and *what to compose*.
 
 This document captures the visual design language extracted from the current webapp implementation. Use it when building new screens, components, or marketing surfaces that must feel native to EDAYA.
 
@@ -405,7 +403,7 @@ Use these mappings consistently (see `drawer-constants.ts` for full records).
 
 **Enrollment status:** approved → neutral, pending → warn, denied → danger.
 
-**CRUD matrix toggles:** C → primary tint, R → secondary, U → highlight, D → destructive.
+**Permission / capability chips:** assign → primary tint, read → secondary, update → highlight, delete → destructive.
 
 ---
 
@@ -414,8 +412,8 @@ Use these mappings consistently (see `drawer-constants.ts` for full records).
 - Modal body spacing: `space-y-4 py-2`
 - Footer: ghost Cancel (left) + primary Confirm (right) — `Dialog.Footer`
 - Destructive confirms: `variant="destructive"` on confirm button
-- Drawer footer: only `Close` on shell; entity actions live in `DrawerActionBar` inside tab content
-- Field errors: inline in modal (per app-shell spec)
+- Drawer footer: only `Close` on shell when needed; primary entity actions live in **`DrawerEntityHeader`**; sub-collection `+ Add` uses **`DrawerActionBar`**
+- Field errors: inline in modal — not in the read-only drawer
 - Disabled: `opacity-50 pointer-events-none` (buttons)
 
 ---
@@ -424,7 +422,7 @@ Use these mappings consistently (see `drawer-constants.ts` for full records).
 
 | Breakpoint | Visual adjustment |
 |------------|-------------------|
-| `< md` | Drawer full width; sidebar collapses (per app-shell) |
+| `< md` | Drawer full-width sheet; sidebar → hamburger menu |
 | `≥ md` | Drawer `w-1/2`; table layouts maintained |
 | Toolbar | `flex-wrap` on headers; filters wrap to next row |
 
@@ -486,8 +484,6 @@ Use these mappings consistently (see `drawer-constants.ts` for full records).
 | List header | `apps/webapp/src/lib/components/ui/ListPageHeader.svelte` |
 | Data states | `apps/webapp/src/lib/components/ui/DataState.svelte` |
 | Shell layout | `apps/webapp/src/routes/(app)/+layout.svelte` |
-| Interaction spec | `specs/app-shell-spec.md` |
-| Shared components | `specs/shared-components-spec.md` |
 
 ---
 

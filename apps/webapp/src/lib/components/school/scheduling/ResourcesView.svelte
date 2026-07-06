@@ -122,7 +122,7 @@
 					<div class="col-span-2 text-foreground/80">{resource.type}</div>
 					<div class="col-span-3 text-foreground/80">{resource.location}</div>
 					<div class="col-span-2 font-mono text-xs text-muted-foreground">
-						{$t('resources.pax', { n: resource.capacity })}
+						{$t('resources.pax', { n: resource.capacity ?? 0 })}
 					</div>
 					<div class="col-span-1 flex justify-end">
 						<span

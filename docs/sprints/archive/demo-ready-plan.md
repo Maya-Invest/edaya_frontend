@@ -6,7 +6,7 @@
 > **Backlog (non-demo carry-over):** [remaining-work-plan.md](./remaining-work-plan.md)  
 > **Archived history:** [v1](./archive/v1-staff-webapp-implementation-plan.md) · [backend-alignment](./archive/backend-alignment-plan.md) · [svelte-state](./archive/svelte-state-alignment.md)
 
-**Normative specs (unchanged):** [v1-feature-architecture-spec.md](../specs/v1-feature-architecture-spec.md) · [app-shell-spec.md](../specs/app-shell-spec.md) · [demo-accounts.md](../reference/demo-accounts.md)
+**Normative specs (unchanged):** [feature-architecture-spec.md](../specs/feature-architecture-spec.md) · [app-shell-spec.md](../specs/app-shell-spec.md) · [demo-accounts.md](../reference/demo-accounts.md)
 
 ---
 
@@ -32,10 +32,12 @@ Three sprint plans ran in parallel and overlapped:
 |------|--------|
 | Dataset | **demo-ci** (`sch-edaya-ci-cocody`, Abidjan) |
 | Password | `DevPassword1!` |
-| Staff login (primary) | `j.aka@ecole-ci.edaya.dev` — deputy director (**staff webapp only**) |
+| Staff login (primary) | `j.aka@ecole-ci.edaya.dev` — deputy director |
 | Staff login (owner) | `a.kone@ecole-ci.edaya.dev` |
-| Portal teacher (**teacher app**, not webapp) | `a.toure@ecole-ci.edaya.dev` — maths 6ème A / 5ème A |
-| Parent (mobile, optional) | `m.kone@mail.ci` |
+| Staff login (homeroom) | `f.assi@ecole-ci.edaya.dev` — homeroom coordinator (DN scene) |
+| Portal teacher (seed fixture) | `a.toure@ecole-ci.edaya.dev` (`ci-t1`) — maths 6ème A / 5ème A; appears on timetable and in School → Teachers |
+
+See [demo-accounts.md](../reference/demo-accounts.md) for the full account table.
 
 ### Bootstrap (day before demo)
 
@@ -54,8 +56,10 @@ cd edaya_web/apps/webapp && bun dev
 
 ```sh
 cd edaya_web/apps/webapp
-bun run check          # 0 svelte-check errors
-bun test tests         # 253+ tests
+bun run check                              # svelte-check + test tsconfig
+bun test tests/lib tests/generated         # unit tests (303+)
+bun run test:integration                   # Playwright dry-run (needs API + seed + :5173)
+# or: bun run demo:e2e
 ```
 
 ---
@@ -186,14 +190,30 @@ Walk through in order. Each scene has a **readiness** checkbox — check only af
 
 - [x] **D11** Scene 11 passes *(automated 11.1–11.4)*
 
-### Scene 12 — Portal teacher mobile *(optional cross-demo)*
+---
 
-| Step | Action | Expected |
-|------|--------|----------|
-| 12.1 | Teacher app login `a.toure@` | No staff webapp access |
-| 12.2 | Timetable / session | Matches webapp teacher labels |
+## Automated harness (beyond presenter script)
 
-- [ ] **D12** Scene 12 passes *(if mobile in demo scope)*
+The integration harness exercises additional scenes not in the live demo walkthrough. Entry points:
+
+| Command | Purpose |
+|---------|---------|
+| `bun run demo:e2e` | CLI shim → headless Playwright dry-run |
+| `bun run test:integration` | Same harness via `bun:test` (600s timeout) |
+
+**Layout:** `apps/webapp/tests/integration/demo-dry-run/` (scenes + support) · CLI: `apps/webapp/scripts/demo-dry-run.ts` · Artifacts: `apps/webapp/.demo-dry-run/`
+
+| Group | Purpose | Notes |
+|-------|---------|-------|
+| **D0–D11** | Core demo script | Primary presenter path |
+| **DC1–DC10** | List shell / FilterPanel polish | DC9–DC10 may skip on permission-gated pages |
+| **DD** | Drawer tab URL sync | Class, student, teacher, staff, subject drawers |
+| **DM** | Modal URL sync | Create/edit modals strip `?modal=` on close |
+| **DN** | Homeroom attendance nudge | `f.assi@` dashboard → deep-link to class attendance |
+
+**Latest run:** **98 steps** — **96 pass · 0 fail · 2 skip** (DC9/DC10 may skip when catalog loads return 403).
+
+Harness hardening: D8 asserts seeded activity text (`Club Robotique|Chorale scolaire`); uncaught `pageerror` fails steps (extension noise filtered).
 
 ---
 
@@ -212,9 +232,8 @@ Walk through in order. Each scene has a **readiness** checkbox — check only af
 | D9 | Finance | Low | Resilient finance loaders |
 | D10 | Report cards | Low | List automated; drawer manual |
 | D11 | Configuration | Low | Homeroom dual model documented |
-| D12 | Teacher mobile | **Separate repo** | `edaya_mobile/apps/teacher` |
 
-**Demo-ready** = all checked scenes in scope pass one uninterrupted dry-run.
+**Demo-ready** = scenes D0–D11 pass one uninterrupted dry-run (manual spot-checks per scene notes above).
 
 ---
 
@@ -225,8 +244,8 @@ Implementation tasks live in [remaining-work-plan.md](./remaining-work-plan.md) 
 | ID | Task | Scene | Status |
 |----|------|-------|--------|
 | **DR.1** | Full dry-run Scenes 0–11; log failures | All | **Done** (2026-07-06) |
-| **DR.2** | Fix Track A demo blockers; re-run dry-run | All | **Done** — **26/26** automated (incl. D5.2, D1.2) |
-| **DR.3** | Logbook: empty subject-matter copy OR seed | D5 | — *(manual 5.3)* |
+| **DR.2** | Fix Track A demo blockers; re-run dry-run | All | **Done** — **96/98** pass (2 skipped) |
+| **DR.3** | Logbook: empty subject-matter copy OR seed | D5 | **Done** — seed + `SubjectTabs` chapters CRUD (`configureSubjectMatter`) |
 | **DR.4** | Dashboard deep-links | D1 | **Done** — `dashboard-links.ts` + stale `6a` → `ci-6a` |
 | **DR.5** | Fresh seed procedure in [demo-accounts.md](../reference/demo-accounts.md) | Env | **Done** |
 | **DR.6** | Presenter script (5 / 15 / 30 min) | Presenter | **Done** — see below |
@@ -244,19 +263,20 @@ See [remaining-work-plan.md](./remaining-work-plan.md) Tracks B–E (ListFilters
 - [x] V1 shell Phases 0–8 ([archive](./archive/v1-staff-webapp-implementation-plan.md))
 - [x] Backend alignment Phases 0–4 + tests ([archive](./archive/backend-alignment-plan.md))
 - [x] Svelte state P0 + pilots ([archive](./archive/svelte-state-alignment.md))
-- [x] `bun run check` — 0 errors · `bun test tests` — 253 pass (2026-07-06)
+- [x] Unit tests — `bun test tests/lib tests/generated` (303+ pass)
 
 ### Demo sprint (active)
 
 - [x] **DR.1** Dry-run complete; failure log attached below
-- [x] **DR.2** All P0 failures fixed — `node scripts/demo-dry-run.mjs` **52/52 pass** (4 skipped: permission-gated pages)
+- [x] **DR.2** All P0 failures fixed — `bun run demo:e2e` **96 pass · 0 fail · 2 skip**
 - [x] Scenes **D0–D11** checked (automated core + manual notes per scene)
 - [x] **DR.5** Seed procedure documented in demo-accounts.md
 - [x] **DR.6** Presenter script below
+- [x] Harness expanded — **DC**, **DD**, **DM**, **DN** scenes (TypeScript integration suite)
 
 #### Dry-run failure log
 
-Automated run: `apps/webapp/scripts/demo-dry-run.mjs` (Playwright headless, webapp `:5173`, demo login `j.aka@`). Scenes **D0–D11** (core demo), **DC1–DC10** (list shell / Track B–C polish), **DN** (homeroom attendance nudge). Screenshots + `results.json` under `apps/webapp/.demo-dry-run/`.
+Automated run: `bun run demo:e2e` (Playwright headless, webapp `:5173`, demo login `j.aka@`). Scenes **D0–D11**, **DC1–DC10**, **DD**, **DM**, **DN**. Screenshots + `results.json` under `apps/webapp/.demo-dry-run/`.
 
 | Date | Scene | Issue | Fix PR |
 |------|-------|-------|--------|
@@ -267,7 +287,7 @@ Automated run: `apps/webapp/scripts/demo-dry-run.mjs` (Playwright headless, weba
 | 2026-07-06 | D5–D7, D10 | Class module pages — no content / timeout (empty `academicContext.classes` after shell 403; sidebar `Missing parameter classId` for nav placeholder `6a`) | DR.2 |
 | 2026-07-06 | D8 | Announcements + incidents/events — error copy on page | DR.2 — permissions or route load |
 | 2026-07-06 | D9 | Finance fees / payments / billing — error copy (403 on finance APIs for `j.aka@`?) | DR.2 |
-| 2026-07-06 | — | **Passed (26 steps):** full automated dry-run after Track A fixes — see `apps/webapp/.demo-dry-run/results.json` | DR.2 |
+| 2026-07-06 | — | **Passed:** full automated dry-run after Track A fixes — see `apps/webapp/.demo-dry-run/results.json` | DR.2 |
 
 ---
 
@@ -295,9 +315,9 @@ Add to the 5-min path:
 
 ### 30 minutes — full walkthrough
 
-All scenes D0–D11 in script order, including **D4** staff permissions tab and **D12** teacher mobile (`a.toure@` in teacher app) if mobile is in scope.
+All scenes **D0–D11** in script order, including **D4** staff permissions tab.
 
-**Pre-demo:** `bun seed:clean --yes && bun seed:init` · `node apps/webapp/scripts/demo-dry-run.mjs`
+**Pre-demo:** `bun seed:clean --yes && bun seed:init` · `bun run demo:e2e`
 
 ---
 
@@ -306,10 +326,11 @@ All scenes D0–D11 in script order, including **D4** staff permissions tab and 
 Before calling the webapp demo-ready:
 
 1. [ ] `bun seed:clean && bun seed:init` on clean DB *(day-of)*
-2. [x] `bun run check` + `bun test tests` green
-3. [x] Automated dry-run green (`node scripts/demo-dry-run.mjs`)
-4. [ ] No console errors on critical paths *(optional 403 on enrichment reads OK)*
-5. [ ] FR locale spot-check (demo language)
+2. [x] `bun run check` green
+3. [x] `bun test tests/lib tests/generated` green
+4. [x] Automated dry-run green (`bun run demo:e2e` or `bun run test:integration`)
+5. [ ] No console errors on critical paths *(optional 403 on enrichment reads OK)*
+6. [ ] FR locale spot-check (demo language)
 
 ---
 
@@ -329,4 +350,6 @@ Before calling the webapp demo-ready:
 | Date | Change |
 |------|--------|
 | 2026-07-06 | Created — consolidates v1 + backend-alignment + svelte-state into demo-focused plan; archives prior sprint docs |
-| 2026-07-06 | DR.2 complete — 26/26 automated dry-run; scenes D0–D11 checked; presenter script + dashboard deep-links |
+| 2026-07-06 | DR.2 complete — automated dry-run; scenes D0–D11 checked; presenter script + dashboard deep-links |
+| 2026-07-06 | Reassessed — TypeScript integration harness (DC/DD/DM/DN); 92/96 pass; removed mobile cross-demo; updated commands |
+| 2026-07-06 | Closed DR.3 + merge gate check/tests; harness **96/98**; D6/D10 automation added |

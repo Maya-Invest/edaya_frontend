@@ -1,17 +1,9 @@
-# V1 Feature Architecture Spec
+# Feature Architecture Spec
 
 > **Applies to:** `apps/webapp` — routes, modules, entities, domain UX rules  
-> **Normative:** agents and implementers **must** follow this document for *what* to build.  
-> **Companion specs (how to build):**
-> - [app-shell-spec.md](./app-shell-spec.md) — list · drawer · modal interaction patterns
-> - [shared-components-spec.md](./shared-components-spec.md) — reusable component registry
-> - [design-language-spec.md](./design-language-spec.md) — visual design
-> - [data-loading-spec.md](./data-loading-spec.md) — loading · entity store · mutations  
-> **Living catalog & progress:** [ui-architecture-reference.md](../reference/ui-architecture-reference.md) — per-feature cards, gap tracker, entity audit (not normative for agents)
+> **Normative:** agents and implementers **must** follow this document for *what* to build.
 
-**Implementation plan:** [demo-ready-plan.md](../sprints/demo-ready-plan.md) — demo readiness (active). V1 history: [archive](../sprints/archive/v1-staff-webapp-implementation-plan.md)
-
-This document is the **target end-state architecture** for the EDAYA staff webapp v1. It defines modules, routes, entity surfaces, and locked product decisions. It does **not** track sprint progress — use the reference doc for that.
+This document is the **target end-state architecture** for the EDAYA staff webapp v1. It defines modules, routes, entity surfaces, and locked product decisions.
 
 ---
 
@@ -19,7 +11,7 @@ This document is the **target end-state architecture** for the EDAYA staff webap
 
 ### 1.1 In scope
 
-All sidebar modules and account surfaces listed in §3, conforming to [app-shell-spec.md](./app-shell-spec.md).
+All sidebar modules and account surfaces in §2 and routes in §6, using list · drawer · modal interaction: read-only drawer for complex entities, mutation modals for all creates/edits, URL-backed detail where a drawer exists.
 
 ### 1.2 Post-v1 (do not build)
 
@@ -92,7 +84,7 @@ Order: **`[Primary CTA] [Search] [Main filter ▾] [Filter ▾] [More ▾]`**
 
 ## 3. Surface types
 
-Every feature **must** declare one surface type. Implementation **must** match [app-shell-spec.md §3.5](./app-shell-spec.md#35-simple-entities).
+Every feature **must** declare one surface type. Simple entities **must** use row `···` menus only — no drawer, no `/[id]` route unless deep links are explicitly required.
 
 | Type | Drawer | Mutations | Examples |
 |------|--------|-----------|----------|
@@ -167,7 +159,9 @@ Permissions are managed on **Staff drawer → Permissions** tab only. There is *
 | **Manage affordance** | Drawer header **Manage permissions** scrolls/focuses Permissions tab, or user switches tab manually |
 | **Gating** | Add / edit / delete require `ACCESS_CONTROL_ASSIGN` via `PermissionGate` (`hide` or `disable` + tooltip) |
 
-**Permissions tab anatomy** (sub-collection pattern — app-shell §4.1):
+**Permissions tab anatomy** (drawer sub-collection pattern):
+
+Sub-collection tabs use a read-only list with header CTA and row actions that open modals — never inline edit forms in the tab body.
 
 ```
 ┌ Permissions ─────────────────────────────── [+ Add permission] ┐
@@ -209,7 +203,7 @@ Permissions are managed on **Staff drawer → Permissions** tab only. There is *
 
 Scope labels in the list use `POST authorization/scope/render` with `{ permission, scopeIds }[]` — do not hand-format scope strings in the UI.
 
-**Data loading** (see [data-loading-spec.md](./data-loading-spec.md)):
+**Data loading:**
 
 - `querySchoolStaffPage` loads `permission-catalog` and seeds `detailDataContext.permissionCatalog`.
 - Assignments load with staff list or on tab open; views built via `buildStaffPermissionAssignmentViews`.
@@ -260,8 +254,6 @@ Scope labels in the list use `POST authorization/scope/render` with `{ permissio
 
 Each subsection: **entity** · **surface** · **list** · **drawer / row menu** · **key modals** · **API notes**.
 
-**Binding detail for Partial / Planned features:** List filters, drawer tab inventories, modal field lists, and “today vs target” notes in [ui-architecture-reference.md §3](../reference/ui-architecture-reference.md#3-feature-catalog-target-end-state) are **normative** until merged into this section. When a feature reaches **Built**, update both this spec and the reference card in the same PR.
-
 ### 7.1 Dashboard
 
 - **Surface:** Layout variant (no drawer)
@@ -286,7 +278,7 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 - **Entity:** `StaffMember` · **Complex drawer**
 - **List:** search name · main filter assigned class · filter active/inactive
 - **Drawer header:** Edit profile · Manage permissions
-- **Drawer tabs:** Profile · **Permissions** ([§5.3.1](#531-staff-permission-assignment-ui)) · Assignments (read-only `staffAssignments` summary)
+- **Drawer tabs:** Profile · **Permissions** (`staffPermissionAssignments` via modals) · Assignments (read-only `staffAssignments` summary)
 
 ### 7.4.1 School — Teachers
 
@@ -475,13 +467,12 @@ When building or refactoring a screen:
 1. **Classify** the entity — complex · simple · thin · layout (§3).
 2. **Match route** to §6 — do not invent parallel routes removed in §1.3.
 3. **Apply toolbar** order and `<select>` main filter (§2.3).
-4. **Follow** [app-shell-spec.md](./app-shell-spec.md) for drawer anatomy, modals, sub-collections.
-5. **Compose** from [shared-components-spec.md](./shared-components-spec.md) — use mandatory T0/T2 components before adding new shared UI.
-6. **Follow** [data-loading-spec.md](./data-loading-spec.md) for `PageQuery`, entity store, `runMutation`.
-7. **Follow** [design-language-spec.md](./design-language-spec.md) for visuals.
+4. **Drawer anatomy** — read-only shell; entity header with up to 2 primary actions → modals; body sections/tabs; sub-collections read-only with `+ Add` / row Edit → modal only.
+5. **Shared UI** — reuse `PageQuery`, `DataState`, `ListPageHeader`, `DetailDrawer`, `DrawerEntityHeader`, `FormModal`, and picker components from `lib/components/` before adding new shared UI.
+6. **Data loading** — one `query*Page` per list route seeds `detailDataContext`; lists and drawers read the store; writes use `runMutation` with optimistic `apply` / `rollback`.
+7. **Visuals** — HSL semantic tokens from `app.css`; `font-display` (Fraunces) titles; `rounded-2xl border bg-card shadow-soft` collections; `BADGE_*` / `ui-tones` for status chips.
 8. **Check locked decisions** (§4) — especially homework, roles, permissions, attendance mode, incident resolve.
 9. **Do not** add resource UI, `/configuration/roles`, or `/homework` nav.
-10. **Update progress** in [ui-architecture-reference.md](../reference/ui-architecture-reference.md) when a feature reaches target — not in this spec.
 
 ---
 
@@ -489,6 +480,6 @@ When building or refactoring a screen:
 
 | Date | Change |
 |------|--------|
-| 2026-07-03 | Linked [shared-components-spec.md](./shared-components-spec.md) in checklist |
-| 2026-07-03 | §5.3.1 Staff permission UI; §7 binding note; expanded incidents, timetable, assessments |
-| 2026-07-03 | Initial normative spec distilled from ui-architecture-reference v1 target state |
+| 2026-07-06 | Self-contained spec; removed cross-doc links per documentation-spec |
+| 2026-07-03 | §5.3.1 Staff permission UI; expanded incidents, timetable, assessments |
+| 2026-07-03 | Initial normative spec |

@@ -1,35 +1,37 @@
 # Agent guidance
 
-## UI architecture
+`apps/webapp` implementation is governed by **seven normative specs** in `docs/specs/`. Read `documentation-spec.md` first for how docs are organized.
 
-When working on `apps/webapp` screens, layouts, drawers, or modals, follow:
+## Spec index
 
-- **[docs/sprints/demo-ready-plan.md](docs/sprints/demo-ready-plan.md)** — **demo sprint** — script, dry-run, scene readiness
-- **[docs/sprints/remaining-work-plan.md](docs/sprints/remaining-work-plan.md)** — **active backlog** — carry-over from archived v1 / backend / state plans
-- **[specs/v1-feature-architecture-spec.md](specs/v1-feature-architecture-spec.md)** — **what** to build (modules, routes, entities, locked UX decisions)
-- **[specs/app-shell-spec.md](specs/app-shell-spec.md)** — **how** to build interaction patterns (list, drawer, modals)
-- **[specs/shared-components-spec.md](specs/shared-components-spec.md)** — **reusable components** (mandatory registry, composition)
-- **[docs/reference/ui-architecture-reference.md](docs/reference/ui-architecture-reference.md)** — per-feature catalog, gap tracker, sprint progress (not normative)
-- **[specs/design-language-spec.md](specs/design-language-spec.md)** — visual design (colors, typography, components)
-- **[specs/data-loading-spec.md](specs/data-loading-spec.md)** — route-scoped loading, entity store, optimistic mutations
-- **[specs/svelte-state-spec.md](specs/svelte-state-spec.md)** — class-based Svelte 5 state, context wiring, component boundaries
-- **[docs/sprints/archive/svelte-state-alignment.md](docs/sprints/archive/svelte-state-alignment.md)** — archived state migration tracker (history); open items → [remaining-work-plan.md](docs/sprints/remaining-work-plan.md)
+| Spec | Scope |
+|------|-------|
+| [documentation-spec.md](docs/specs/documentation-spec.md) | Doc taxonomy — specs vs reference vs plans |
+| [feature-architecture-spec.md](docs/specs/feature-architecture-spec.md) | Routes, modules, entities, domain UX |
+| [app-shell-spec.md](docs/specs/app-shell-spec.md) | List · drawer · modal interaction |
+| [shared-components-spec.md](docs/specs/shared-components-spec.md) | Mandatory reusable components |
+| [design-language-spec.md](docs/specs/design-language-spec.md) | Visual design tokens and patterns |
+| [data-loading-spec.md](docs/specs/data-loading-spec.md) | Route loading · entity store · mutations |
+| [svelte-state-spec.md](docs/specs/svelte-state-spec.md) | Svelte 5 state tiers and context wiring |
 
-Key rules (summary):
+## Cursor rules
 
-- **All webapp features in scope** — School → Teachers, Students, Guardians, assignments, invites, and related drawers/modals are first-class staff workspace features; implement and verify them fully (see [demo-ready-plan.md](docs/sprints/demo-ready-plan.md) scenes D2–D3).
-- **Portal login vs staff admin** — portal teachers, guardians, and students **sign in** via `edaya_mobile`; the webapp is where staff **manage** those actors (directory, invites, 360°, assignments). Do not conflate “no portal login in webapp” with “skip Teachers/Students/Guardians work.”
-- **Backend permission caution** — staff permission / role / scope changes in `edaya_backend` can regress **portal authorization** (teacher assignments, guardian links, student access). When touching grants, seeds, or `StaffPermissionAssignment`, verify portal actors still authorize correctly in mobile apps and that webapp enrichment reads degrade gracefully on 403.
-- List + URL-backed detail drawer + mutation modals
-- Compose from [shared-components-spec](specs/shared-components-spec.md) before adding new shared UI
-- Drawer is read-only; edits via action buttons → modals
-- Sub-collection tabs: read-only lists; add/edit always modal
-- Pragmatic inline toggles only for boolean/single-value fields
-- Use `DataState` for loading/empty/error; toast on mutations
+One rule per spec. Auto-attached by glob when relevant files are edited:
 
-Cursor rules (auto-attached when editing `apps/webapp/**`):
+| Rule | Spec | Globs |
+|------|------|-------|
+| `.cursor/rules/documentation.mdc` | `documentation-spec.md` | `docs/**`, `AGENTS.md`, `.cursor/rules/**` |
+| `.cursor/rules/feature-architecture.mdc` | `feature-architecture-spec.md` | `apps/webapp/**` |
+| `.cursor/rules/app-shell.mdc` | `app-shell-spec.md` | `apps/webapp/**` |
+| `.cursor/rules/shared-components.mdc` | `shared-components-spec.md` | `apps/webapp/**` |
+| `.cursor/rules/design-language.mdc` | `design-language-spec.md` | `apps/webapp/**` |
+| `.cursor/rules/data-loading.mdc` | `data-loading-spec.md` | `apps/webapp/**` |
+| `.cursor/rules/svelte-state.mdc` | `svelte-state-spec.md` | `apps/webapp/**` |
 
-- `.cursor/rules/v1-feature-architecture.mdc` — normative v1 routes, entities, locked UX
-- `.cursor/rules/app-shell.mdc` — list, drawer, modal interaction patterns
-- `.cursor/rules/shared-components.mdc` — mandatory reusable components
-- `.cursor/rules/svelte-state.mdc` — class-based state tiers and context wiring
+## Quick invariants
+
+- **Staff workspace scope** — School → Teachers, Students, Guardians, assignments, invites, and related drawers/modals are first-class features.
+- **Portal vs staff** — portal teachers, guardians, and students do not sign in through the staff webapp; staff **manage** those actors here.
+- **Interaction** — list + URL-backed detail drawer (complex entities) + mutation modals; simple entities use row `···` only.
+- **Mutations** — drawer is read-only; create/edit/delete via modals; pragmatic inline toggles only for boolean/single-value fields.
+- **Data** — `PageQuery` + `detailDataContext` for route load; `runMutation` with optimistic patch; `DataState` for loading/empty/error; toast on mutations.

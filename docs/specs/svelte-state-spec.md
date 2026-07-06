@@ -1,7 +1,6 @@
 # Svelte State Spec
 
-> **Applies to:** `apps/webapp`  
-> **Pairs with:** [data-loading-spec.md](./data-loading-spec.md) (entity store, queries, mutations)
+> **Applies to:** `apps/webapp`
 
 **Goal:** Components = UI wiring. Heavy logic = class-based `$state` in `.svelte.ts`.
 
@@ -82,16 +81,21 @@ export function getFeeBillingState() {
 
 ---
 
-## Data-loading split
+## Data and I/O boundaries
 
-| Concern | Owner |
-|---------|--------|
-| Entity records | `detailDataContext` / domain stores |
-| Route fetch + seed | `query*Page` |
-| Writes | `runMutation` → patch store |
-| Selection, wizard step, export in flight | Feature state class |
+| Concern | Owner | Location |
+|---------|--------|----------|
+| Entity records | `detailDataContext` (alias `entityStore`) | `lib/detail-data/context.svelte.ts` |
+| Shell selectors | `academicContext` | `lib/academic/context.svelte.ts` |
+| Route fetch + seed | `query*Page` functions | `lib/queries/*.queries.ts` |
+| Writes | `runMutation` with `apply` / `rollback` | `lib/api/mutations/run-mutation.ts` |
+| Selection, wizard step, export in flight | Feature state class (Tier 2) | `lib/<domain>/*-state.svelte.ts` |
 
-**Do not duplicate entity arrays in feature state** — read the store, coordinate around it.
+**Route load pattern:** each list route uses `PageQuery` wrapping a `query*Page` function. Inside `load`, fetch scoped API data and call `detailDataContext.seed*`. Views render from the store — not from ephemeral query results.
+
+**Mutation pattern:** snapshot affected record → `runMutation(apiCall, { apply, rollback, successMessage })` → patch store optimistically → rollback snapshot on error.
+
+**Do not duplicate entity arrays in feature state** — read `detailDataContext`, coordinate selection and UI flags around it.
 
 ---
 
@@ -117,7 +121,7 @@ export function getFeeBillingState() {
 ## Agent checklist
 
 - [ ] Tier 1/2/3 classified
-- [ ] Entities via entity store (data-loading spec)
+- [ ] Entities read/written via `detailDataContext` — `query*Page` for load, `runMutation` for writes
 - [ ] Heavy logic in `*-state.svelte.ts`
 - [ ] `set*` / `get*` context when shared in subtree
 - [ ] Mutations via `runMutation`
@@ -132,13 +136,3 @@ export function getFeeBillingState() {
 - `lib/academic/context.svelte.ts` — shell selectors (Tier 1)
 - `lib/drawer.svelte.ts` + `routes/(app)/+layout.svelte` — layout-scoped context (Tier 2)
 - `lib/components/school/students/StudentsView.svelte` — thin component (Tier 3)
-
----
-
-## Related specs
-
-- [data-loading-spec.md](./data-loading-spec.md)
-- [demo-ready-plan.md](../sprints/demo-ready-plan.md) — active sprint tracker
-- [svelte-state-alignment.md](../sprints/archive/svelte-state-alignment.md) — archived migration history
-- [app-shell-spec.md](./app-shell-spec.md)
-- [shared-components-spec.md](./shared-components-spec.md)

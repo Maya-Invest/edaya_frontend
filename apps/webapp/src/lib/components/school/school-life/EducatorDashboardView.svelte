@@ -23,6 +23,7 @@
 		EDUCATOR_DASHBOARD_TAB_ITEMS,
 		EducatorDashboardState,
 	} from '$lib/school/educator-dashboard-state.svelte';
+	import { t } from '$lib/i18n';
 	import { canEditGrades } from '$lib/permissions';
 	import { INCIDENT_SEVERITY_TONE } from '$lib/ui-tones';
 	import { cn } from '$lib/utils';

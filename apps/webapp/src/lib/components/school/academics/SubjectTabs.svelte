@@ -1,5 +1,10 @@
 <script lang="ts">
 	import type { Subject } from '$lib/types/school';
+	import type { SubjectMatterDrawerRow } from '$lib/api/mutations/subject-matter.mutations';
+	import {
+		deleteSubjectMatterMutation,
+		loadSubjectMatterDrawerRows,
+	} from '$lib/api/mutations/subject-matter.mutations';
 	import { page } from '$app/stores';
 	import { deleteClassSubjectMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -9,15 +14,16 @@
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { t } from '$lib/i18n';
-	import { Check, FileText, Paperclip } from '$lib/icons';
+	import { Check, FileText, Paperclip, Plus } from '$lib/icons';
 	import { teachingLogContext } from '$lib/teaching-log/context.svelte';
 	import { get } from 'svelte/store';
 	import DrawerActionBar from '../shared/DrawerActionBar.svelte';
 	import SubjectFormModal from './SubjectFormModal.svelte';
+	import SubjectMatterFormModal from './SubjectMatterFormModal.svelte';
 
 	const { s }: { s: Subject } = $props();
 
-	type SubjectDrawerModal = 'edit-subject';
+	type SubjectDrawerModal = 'edit-subject' | 'add-chapter' | 'edit-chapter';
 
 	type SubjectTab = 'progression' | 'logbook';
 
@@ -32,7 +38,7 @@
 	});
 
 	const modals = createUrlSyncedModals<SubjectDrawerModal>({
-		allowed: ['edit-subject'],
+		allowed: ['edit-subject', 'add-chapter', 'edit-chapter'],
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
@@ -40,6 +46,16 @@
 		modals.hydrate();
 	});
 	const editSubjectOpen = bindUrlModal(modals, 'edit-subject');
+	const addChapterOpen = bindUrlModal(modals, 'add-chapter');
+	const editChapterOpen = bindUrlModal(modals, 'edit-chapter');
+
+	let matterRows = $state<SubjectMatterDrawerRow[]>([]);
+	let matterContext = $state<{
+		catalogSubjectId: string;
+		gradeLevelSubjectId?: string;
+		classGroupId: string;
+	} | null>(null);
+	let editingMatter = $state<SubjectMatterDrawerRow | null>(null);
 
 	const tabItems = $derived([
 		{ key: 'progression', label: $t('subjects.tab.chapters') },
@@ -71,6 +87,46 @@
 			: 0;
 		return { chapters, overall };
 	});
+
+	async function refreshMatterRows() {
+		const loaded = await loadSubjectMatterDrawerRows(s.id);
+		matterContext = {
+			catalogSubjectId: loaded.catalogSubjectId,
+			gradeLevelSubjectId: loaded.gradeLevelSubjectId,
+			classGroupId: loaded.classGroupId,
+		};
+		matterRows = loaded.rows;
+	}
+
+	$effect(() => {
+		void s.id;
+		void refreshMatterRows();
+	});
+
+	function openEditChapter(row: SubjectMatterDrawerRow) {
+		editingMatter = row;
+		modals.open('edit-chapter');
+	}
+
+	function handleMatterSaved(row: SubjectMatterDrawerRow) {
+		const index = matterRows.findIndex(entry => entry.id === row.id);
+		if (index >= 0) {
+			matterRows = matterRows.map(entry => (entry.id === row.id ? row : entry));
+			return;
+		}
+		matterRows = [...matterRows, row].sort((left, right) => left.sequenceOrder - right.sequenceOrder);
+	}
+
+	async function removeChapter(row: SubjectMatterDrawerRow): Promise<boolean> {
+		const ok = await deleteSubjectMatterMutation(
+			row.id,
+			get(t)('subjects.chapters.deleteSuccess', { name: row.name }),
+		);
+		if (ok) {
+			matterRows = matterRows.filter(entry => entry.id !== row.id);
+		}
+		return ok;
+	}
 </script>
 
 <div class="space-y-5">
@@ -114,6 +170,44 @@
 
 	{#if tabs.tab === 'progression'}
 		<div class="space-y-4">
+			<section class="space-y-2">
+				<div class="flex items-center justify-between gap-3">
+					<p class="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+						{$t('subjects.chapters.configured')}
+					</p>
+					<Button size="sm" class="rounded-full" onclick={() => modals.open('add-chapter')}>
+						<Plus class="mr-1 h-3.5 w-3.5" />
+						{$t('subjects.chapters.add')}
+					</Button>
+				</div>
+				{#each matterRows as row (row.id)}
+					<div class="rounded-2xl border border-border bg-card px-4 py-3 shadow-soft">
+						<div class="flex items-start justify-between gap-3">
+							<div class="min-w-0">
+								<p class="text-sm font-semibold">{row.name}</p>
+								{#if row.description}
+									<p class="mt-1 text-xs text-muted-foreground">{row.description}</p>
+								{/if}
+							</div>
+							<div class="flex shrink-0 items-center gap-1">
+								<Button variant="ghost" size="sm" class="h-8 rounded-full" onclick={() => openEditChapter(row)}>
+									{$t('common.edit')}
+								</Button>
+								<DeleteEntityButton
+									confirmTitle={$t('common.deleteConfirmTitle')}
+									confirmDescription={$t('subjects.chapters.deleteConfirm', { name: row.name })}
+									onConfirm={() => removeChapter(row)}
+								/>
+							</div>
+						</div>
+					</div>
+				{:else}
+					<p class="rounded-2xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
+						{$t('subjects.chapters.empty')}
+					</p>
+				{/each}
+			</section>
+
 			<div class="rounded-2xl border border-border bg-secondary/40 p-4">
 				<div class="flex items-center justify-between">
 					<p class="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -137,10 +231,6 @@
 							<div class="h-full bg-primary" style="width: {p}%"></div>
 						</div>
 					</div>
-				{:else}
-					<p class="rounded-2xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
-						—
-					</p>
 				{/each}
 			</div>
 		</div>
@@ -203,3 +293,24 @@
 </div>
 
 <SubjectFormModal subject={s} bind:open={editSubjectOpen.open} showTrigger={false} />
+
+{#if matterContext}
+	<SubjectMatterFormModal
+		bind:open={addChapterOpen.open}
+		subjectId={matterContext.catalogSubjectId}
+		classSubjectId={s.id}
+		classGroupId={matterContext.classGroupId}
+		gradeLevelSubjectId={matterContext.gradeLevelSubjectId}
+		defaultSequenceOrder={matterRows.length + 1}
+		onSaved={handleMatterSaved}
+	/>
+	<SubjectMatterFormModal
+		bind:open={editChapterOpen.open}
+		matter={editingMatter}
+		subjectId={matterContext.catalogSubjectId}
+		classSubjectId={s.id}
+		classGroupId={matterContext.classGroupId}
+		gradeLevelSubjectId={matterContext.gradeLevelSubjectId}
+		onSaved={handleMatterSaved}
+	/>
+{/if}

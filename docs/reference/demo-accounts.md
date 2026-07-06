@@ -1,5 +1,8 @@
 # Demo accounts (local dev)
 
+> **Audience:** humans — local development and portal verification  
+> **Not normative for agents**
+
 Local seed defaults to the **demo-ci** dataset (`sch-edaya-ci-cocody`, Abidjan). Password for all dev accounts: `DevPassword1!`
 
 Full fixture reference: [edaya_backend/tooling/fixtures/src/datasets/demo-ci/README.md](https://github.com/Maya-Invest/edaya_backend/blob/main/tooling/fixtures/src/datasets/demo-ci/README.md)
@@ -9,19 +12,19 @@ Full fixture reference: [edaya_backend/tooling/fixtures/src/datasets/demo-ci/REA
 | Email | Role |
 |-------|------|
 | `a.kone@ecole-ci.edaya.dev` | School owner |
-| `j.aka@ecole-ci.edaya.dev` | Deputy director (staff workspace) |
-| `f.assi@ecole-ci.edaya.dev` | Staff coordinator / homeroom staff (`homeroomStaffId`) |
+| `j.aka@ecole-ci.edaya.dev` | Deputy director (staff workspace; primary dry-run login) |
+| `f.assi@ecole-ci.edaya.dev` | Staff coordinator / homeroom staff (`homeroomStaffId`; DN scene) |
 
-## Portal teachers (sign in via teacher mobile app)
+## Portal teachers (seed fixtures)
 
-These accounts are **`Teacher`** entities with `kind: teacher` invitations. Staff manage them in the webapp (School → Teachers); they **sign in** in the teacher Flutter app.
+These accounts are **`Teacher`** entities in the seed. Staff manage them in the webapp (School → Teachers). They appear on timetables and assignment tabs during demo scenes D3 and D5.
 
 | Email | Teacher ID | Notes |
 |-------|------------|-------|
 | `a.toure@ecole-ci.edaya.dev` | `ci-t1` | Maths — 6ème A, 5ème A |
 | `k.diomande@ecole-ci.edaya.dev` | `ci-t2` | Portal homeroom — 6ème B |
 
-Run `edaya_mobile/apps/teacher` to verify portal teacher authorization after backend permission or assignment changes.
+After backend permission or assignment changes, verify portal teacher labels still resolve in the staff webapp (timetable grid, teacher drawer).
 
 ## Seed commands
 
@@ -41,6 +44,8 @@ cd edaya_web/apps/webapp && bun dev
 ```sh
 cd edaya_web/apps/webapp
 bun run check
-bun test tests
-node scripts/demo-dry-run.mjs   # 52 automated steps (4 skipped); results in .demo-dry-run/
+bun test tests/lib tests/generated
+bun run demo:e2e   # 98 steps (96 pass, 2 skipped); results in .demo-dry-run/
 ```
+
+Harness source: `apps/webapp/tests/integration/demo-dry-run/` · CLI: `apps/webapp/scripts/demo-dry-run.ts`

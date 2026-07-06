@@ -10,23 +10,21 @@ alwaysApply: false
 
 [`docs/specs/shared-components-spec.md`](../../docs/specs/shared-components-spec.md)
 
-Pair with [app-shell-spec](../../docs/specs/app-shell-spec.md) (patterns) and [design-language-spec](../../docs/specs/design-language-spec.md) (visuals).
-
 ## Must use (when built)
 
 | Area | Components |
 |------|------------|
 | List route | `PageQuery` · `DataState` · `ListPageHeader` · `FilterSelect` |
-| Search / filters | `ListSearchField` · `FilterPanel` *(Phase 0 — until then, match their markup)* |
+| Search / filters | `ListSearchField` · `FilterPanel` |
 | Modals | `FormModal` · `ConfirmModal` · `PickerModal` |
 | Gating | `PermissionGate` |
-| Drawer | `DetailDrawer` · `DrawerEntityHeader` *(Phase 0)* · `DrawerField` · `DrawerEmptyState` · `DrawerActionBar` |
+| Drawer | `DetailDrawer` · `DrawerEntityHeader` · `DrawerField` · `DrawerEmptyState` · `DrawerActionBar` |
 | People | `StaffPicker` · `StudentPicker` · `GuardianPicker` |
 | Permissions | `ScopeBuilder` · `StaffPermissionFormModal` only |
 
 ## Do not
 
-- Copy inline search pill markup — use `ListSearchField` when landed
+- Copy inline search pill markup — use `ListSearchField`
 - Chip-bar main filters — `FilterSelect` + `FilterPanel`
 - Duplicate drawer identity blocks — `DrawerEntityHeader`
 - Ad-hoc person `<select>` lists — picker family

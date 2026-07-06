@@ -1,5 +1,8 @@
 # Cross-repo workflow
 
+> **Audience:** humans — CI, OpenAPI, and multi-repo development  
+> **Not normative for agents**
+
 Edaya is split across three repositories:
 
 | Repo | Role |

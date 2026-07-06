@@ -4,6 +4,10 @@
 		"types": ["@cloudflare/workers-types", "bun", "svelte"],
 		"noEmit": true,
 		"paths": {
+			"$api-client": ["./src/generated/api-client"],
+			"$api-client/*": ["./src/generated/api-client/*"],
+			"$lib": ["./src/lib"],
+			"$lib/*": ["./src/lib/*"],
 			"$tests/*": ["./tests/*"]
 		}
 	},

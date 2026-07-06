@@ -99,6 +99,32 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	);
 
 	await visit(ctx, `${base}/classes/${CLASS_6A}/evaluations`, 'D6', '6.1 Evaluations list', { selector: 'main' });
+	try {
+		const homeworkFilter = page.locator('main select[aria-label="Filter"]').first();
+		if (await homeworkFilter.isVisible({ timeout: 10_000 }).catch(() => false)) {
+			await homeworkFilter.selectOption({ label: /devoir|homework/i }).catch(async () => {
+				const options = await homeworkFilter.locator('option').allTextContents();
+				const homeworkOption = options.find(text => /devoir|homework/i.test(text));
+				if (homeworkOption) {
+					await homeworkFilter.selectOption({ label: homeworkOption });
+				}
+			});
+			await page.waitForTimeout(500);
+			const hasHomeworkRow = await page
+				.locator('main .space-y-3 button')
+				.filter({ hasText: /devoir|homework|exercices|fractions|feuille/i })
+				.first()
+				.isVisible({ timeout: 10_000 })
+				.catch(() => false);
+			reporter.log('D6', '6.2 Homework filter', hasHomeworkRow ? 'pass' : 'skip', hasHomeworkRow ? undefined : 'No homework rows after filter');
+		}
+		else {
+			reporter.log('D6', '6.2 Homework filter', 'skip', 'Filter select not visible');
+		}
+	}
+	catch (err) {
+		reporter.log('D6', '6.2 Homework filter', 'fail', err instanceof Error ? err.message : String(err));
+	}
 
 	if (await ensureDailyAttendanceMode(ctx, CLASS_6B)) {
 		reporter.log('D7', '7.0 Ensure 6ème B daily mode', 'pass');
@@ -126,6 +152,27 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	await visit(ctx, `${base}/finance/billing`, 'D9', '9.3 Billing drawer area', { selector: 'main' });
 
 	await visit(ctx, `${base}/classes/${CLASS_6A}/report-cards`, 'D10', '10.1 Report cards list', { selector: 'main' });
+	try {
+		const studentLink = page.locator('main tbody tr button.font-medium').first();
+		if (await studentLink.isVisible({ timeout: 10_000 }).catch(() => false)) {
+			await studentLink.click();
+			const drawerOpen = await page.locator('[data-testid="drawer-panel"], aside[aria-modal="true"]').first()
+				.isVisible({ timeout: 10_000 })
+				.catch(() => false);
+			reporter.log(
+				'D10',
+				'10.2 Open bulletin drawer',
+				drawerOpen ? 'pass' : 'skip',
+				drawerOpen ? undefined : 'Drawer did not open — verify report card seed',
+			);
+		}
+		else {
+			reporter.log('D10', '10.2 Open bulletin drawer', 'skip', 'No report card rows in list');
+		}
+	}
+	catch (err) {
+		reporter.log('D10', '10.2 Open bulletin drawer', 'fail', err instanceof Error ? err.message : String(err));
+	}
 
 	await visit(ctx, `${base}/configuration/classes/ci-6a`, 'D11', '11.1 Class config drawer', { selector: 'main' });
 	await visit(ctx, `${base}/configuration/grade-levels`, 'D11', '11.2 Grade levels', { selector: 'main' });

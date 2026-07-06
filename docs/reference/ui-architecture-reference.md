@@ -1,15 +1,10 @@
 # UI Architecture Reference
 
 > **Applies to:** `apps/webapp` feature screens (staff webapp)  
-> **Companion specs:** [app-shell-spec.md](../specs/app-shell-spec.md) · [shared-components-spec.md](../specs/shared-components-spec.md) · [design-language-spec.md](../specs/design-language-spec.md) · [data-loading-spec.md](../specs/data-loading-spec.md)
+> **Audience:** humans — sprint planning, gap tracking, feature cards  
+> **Not normative for agents** — use `docs/specs/` and `AGENTS.md`
 
-This document is the **target UI architecture catalog** for the EDAYA staff webapp (v1). It describes routes, entities, filters, drawer structure, complexity class, and **implementation progress** for sprint planning and gap closure.
-
-**Normative spec for agents:** [v1-feature-architecture-spec.md](../specs/v1-feature-architecture-spec.md) — use that for *what* to build; use this reference for *status* and detailed feature cards.
-
-**Implementation plan:** [demo-ready-plan.md](../sprints/demo-ready-plan.md) — demo readiness (active). Historical: [archive](../sprints/archive/).
-
-Interaction rules (drawer anatomy, modals, simple vs complex entities) are defined in [app-shell-spec.md](../specs/app-shell-spec.md).
+This document is the **target UI architecture catalog** for the EDAYA staff webapp (v1). It describes routes, entities, filters, drawer structure, complexity class, and **implementation progress**.
 
 **Status legend**
 
@@ -304,7 +299,7 @@ Each module opens with a **quick index**, then **feature cards** with full detai
 
 **Drawer**
 - Header: Edit profile · Manage permissions
-- Body (tabs): Profile · **Permissions** ([v1 spec §5.3.1](../specs/v1-feature-architecture-spec.md#531-staff-permission-assignment-ui) — `staffPermissionAssignments` add/edit/remove via modals) · Assignments (read-only summary of `staffAssignments`)
+- Body (tabs): Profile · **Permissions** (`staffPermissionAssignments` add/edit/remove via modals) · Assignments (read-only summary of `staffAssignments`)
 
 *Today: `/configuration/roles` matrix still exists — remove; permissions belong here.*
 
@@ -414,7 +409,7 @@ Class context from sidebar **class picker**. Base path: `/classes/{classId}/…`
 | Feature | Route segment | Status |
 |---------|---------------|--------|
 | Students (photo roster) | `students/[[id]]` | Partial |
-| Timetable | `timetable/[[id]]` | Partial |
+| Timetable | `timetable/[[id]]` | Built |
 | Lessons | `teaching/[[id]]` | Built |
 | Assessments | `evaluations/[[id]]` | Partial |
 | Report cards | `report-cards/[[id]]` | Built |
@@ -926,33 +921,34 @@ Resource · ResourceAssignment — no staff UI
 
 ## 6. V1 implementation gaps
 
-> **Historical snapshot.** Many rows below are **already shipped** — track current status in [§0 progress tracker](#v1-progress-tracker). §6.1 backend blockers are **all resolved** (2026-07-05). Use this table for residual UX polish only; do not treat unchecked rows as blockers without re-verifying the codebase.
+> **Reconciled 2026-07-06.** Rows below marked **✅ Shipped** are implemented in `apps/webapp` — verify in codebase before reopening. §6.1 backend blockers remain **resolved**. Residual **blocked** work: `relinkActorSubject` UI, attendance justification UI, multi-school `X-School-Id` (see archived remaining-work-plan Track D).
 
 Work remaining to reach the target architecture in §3. Track completion in [§0 progress tracker](#v1-progress-tracker). **Backend dependencies** that block UI work are in [§6.1](#61-backend-blockers). Ordered by priority.
 
 | Priority | Area | Today | Target |
 |----------|------|-------|--------|
-| **P0** | Grade levels | No route | `/configuration/grade-levels` + drawer |
-| **P0** | Staff assignments | API only | Class config drawer — **class-level** `staffAssignments` tab |
-| **P0** | Drawer entity header | Footer / body identity | Identity + top 2 actions per §3.1 (all complex entities) |
-| **P1** | Staff permissions UI | `/configuration/roles` matrix | **Staff drawer → Permissions** tab; remove roles route |
-| **P1** | Homework nav | Dedicated `/homework` tab + route | Fold into **Assessments** (`kind` filter + row badge on `/evaluations`) |
-| **P1** | Classes config | Row edit modal | URL-backed drawer + class-level staff assignments + **`attendanceMode`** |
-| **P1** | **`attendanceMode` UI** | Hardcoded `session` on create | Expose on class create/edit; drive conditional class nav |
-| **P1** | Disciplinary catalog | No screen | `/configuration/discipline` simple list |
-| **P1** | Period definitions | Shell context only | CRUD under Academic calendar |
-| **P1** | Main filter UI | Chip bars / pills on many screens | **`<select>`** for main filter; secondary facets in Filter panel |
-| **P1** | Simple entities | Drawer or inline edit | Fee, grade scale, notification templates → row `···` only |
-| **P1** | Incidents | Resolve modal shipped; list still single-student | Resolution filter · multi-student list · drawer header · sanctions in drawer |
-| **P2** | Student enrollments | Change-class only | **Enrollments** tab (history) on student drawer |
-| **P2** | Daily attendance | No screen | List of days + drawer when `attendanceMode = daily` |
-| **P2** | Session attendance UX | Partial on timetable | Timetable drawer (session-mode); same drawer pattern as daily |
-| **P2** | Timetable create flows | Partial | New session wizard + inline schedule from Lessons / Activities / Assessments |
-| **P2** | Class timetable activities | Client has `classActivityEnrollments` | Wire activity ↔ class on class timetable UI |
-| **P2** | Payments | List only | Row menu; receipt links to billing drawer |
-| **P2** | Filter button | Unused or empty on many screens | Secondary facets (status bands, date range, scope) |
-| **P2** | More menu | Export stub | Per-feature export/bulk |
-| **P2** | Dashboard attendance nudge | — | Unmarked daily classes for homeroom teacher (optional) |
+| **P0** | Grade levels | ✅ Shipped — `/configuration/grade-levels` + drawer | `/configuration/grade-levels` + drawer |
+| **P0** | Staff assignments | ✅ Shipped — class config drawer assignments tab | Class config drawer — **class-level** `staffAssignments` tab |
+| **P0** | Drawer entity header | ✅ Shipped — `DrawerEntityHeader` rollout | Identity + top 2 actions per §3.1 (all complex entities) |
+| **P1** | Staff permissions UI | ✅ Shipped — staff drawer Permissions tab | **Staff drawer → Permissions** tab; remove roles route |
+| **P1** | Homework nav | ✅ Shipped — folded into evaluations | Fold into **Assessments** (`kind` filter + row badge on `/evaluations`) |
+| **P1** | Classes config | ✅ Shipped — URL drawer + assignments + `attendanceMode` | URL-backed drawer + class-level staff assignments + **`attendanceMode`** |
+| **P1** | **`attendanceMode` UI** | ✅ Shipped — class create/edit | Expose on class create/edit; drive conditional class nav |
+| **P1** | Disciplinary catalog | ✅ Shipped — `/configuration/discipline` | `/configuration/discipline` simple list |
+| **P1** | Period definitions | ✅ Shipped — academic calendar accordion | CRUD under Academic calendar |
+| **P1** | Main filter UI | ✅ Shipped — `FilterSelect` / `FilterPanel` | **`<select>`** for main filter; secondary facets in Filter panel |
+| **P1** | Simple entities | ✅ Shipped — row menus on fees, grade scales, templates | Fee, grade scale, notification templates → row `···` only |
+| **P1** | Incidents | ✅ Shipped — resolve modal + list | Resolution filter · multi-student list · drawer header · sanctions in drawer |
+| **P2** | Student enrollments | ✅ Shipped — Enrollments tab on student drawer | **Enrollments** tab (history) on student drawer |
+| **P2** | Daily attendance | ✅ Shipped — daily list + drawer when `attendanceMode = daily` | List of days + drawer when `attendanceMode = daily` |
+| **P2** | Session attendance UX | ✅ Shipped — timetable session drawer | Timetable drawer (session-mode); same drawer pattern as daily |
+| **P2** | Timetable create flows | ✅ Shipped — `NewSessionWizard` + inline schedule | New session wizard + inline schedule from Lessons / Activities / Assessments |
+| **P2** | Class timetable activities | ✅ Shipped — demo-ci seed + wizard enrollment | Wire activity ↔ class on class timetable UI |
+| **P2** | Payments | ✅ Shipped — filters + billing drawer link | Row menu; receipt links to billing drawer |
+| **P2** | Filter button | ✅ Shipped — wired on list pages | Secondary facets (status bands, date range, scope) |
+| **P2** | More menu | ✅ Shipped — export stubs | Per-feature export/bulk |
+| **P2** | Dashboard attendance nudge | ✅ Shipped — homeroom nudge (DN scene) | Unmarked daily classes for homeroom teacher (optional) |
+| **P2** | Subject matter admin | ✅ Shipped (2026-07-06) — `SubjectTabs` chapters CRUD | `configureSubjectMatter` + link via `assignMatterToGradeLevelSubject` |
 | **—** | Resources | Component exists | **Post-v1** — remove from v1 nav and planning |
 
 ### 6.1 Backend blockers
@@ -1075,9 +1071,9 @@ All v1 in-scope entities are either covered at **Primary/Sub**, **Supporting**, 
 | `academicYears` | `AcademicYear` | **Primary** | Academic calendar |
 | `academicPeriods` | `AcademicPeriod` | **Sub** | Academic calendar accordion |
 | `periodDefinitions` | `PeriodDefinition` | **Sub** | Academic calendar accordion — daily grid slots |
-| `gradeLevels` | `GradeLevel` | **Gap** | Grade levels config (planned) |
+| `gradeLevels` | `GradeLevel` | **Primary** | Grade levels config |
 | `staffMembers` | `StaffMember` | **Primary** | Staff directory |
-| `staffAssignments` | `StaffAssignment` | **Gap** | Class config drawer — **classGroupId only** (v1) |
+| `staffAssignments` | `StaffAssignment` | **Sub** | Class config drawer — assignments tab |
 | `accountInvitations` | `AccountInvitation` | **Sub** | Account linking · onboarding |
 | `staffPermissionAssignments` | `StaffPermissionAssignment` | **Primary** | Staff drawer → Permissions tab |
 | `attachments` | `Attachment` | **Infra** | Profile photos / uploads |
@@ -1089,7 +1085,7 @@ All v1 in-scope entities are either covered at **Primary/Sub**, **Supporting**, 
 | `schedules` | `Schedule` | **Sub** | Timetable |
 | `lessonSessions` | `LessonSession` | **Primary** | Timetable drawer |
 | `activitySessions` | `ActivitySession` | **Primary** | Timetable drawer |
-| `attendances` | `Attendance` | **Gap** | Daily attendance board when `attendanceMode = daily` |
+| `attendances` | `Attendance` | **Primary** | Daily attendance board when `attendanceMode = daily` |
 | `calendarEvents` | `CalendarEvent` | **Primary** | School calendar |
 | `attendance` | `AttendanceRecord` | **Sub** | Daily board · session drawer · Student attendance tab |
 | `announcements` | `Announcement` | **Primary** | Announcements |
@@ -1097,7 +1093,7 @@ All v1 in-scope entities are either covered at **Primary/Sub**, **Supporting**, 
 | `messageDeliveries` | `MessageDelivery` | **Primary** | Account inbox |
 | `schoolNotificationTemplates` | `SchoolNotificationTemplates` | **Primary** | Notification templates |
 | `subjects` | `Subject` | **Supporting** | Inline in subjects catalog (no dedicated route) |
-| `subjectMatters` | `SubjectMatter` | **Sub** | Subject / class-subject matters |
+| `subjectMatters` | `SubjectMatter` | **Sub** | Subject drawer — chapters CRUD (`configureSubjectMatter`) |
 | `gradeLevelSubjects` | `GradeLevelSubject` | **Primary** | Subjects catalog · Grade level drawer |
 | `gradeLevelSubjectMatters` | `GradeLevelSubjectMatter` | **Sub** | Subjects catalog drawer |
 | `classGroups` | `ClassGroup` | **Primary** | Classes config (`attendanceMode`, homeroom) |
@@ -1157,7 +1153,8 @@ All v1 in-scope entities are either covered at **Primary/Sub**, **Supporting**, 
 | 2026-07-03 | §6.1 reassessed: B1/B3 resolved; B5 active (web client regen) |
 | 2026-07-03 | B2: `db:migrate:full` runs legacy staff-access cutover before migration 0038 |
 | 2026-07-03 | B4 + incident resolve: `resolve-incident-with-outcomes` backend + `IncidentResolveModal` web; §0/§6.1 all blockers ✅ |
-| 2026-07-03 | Added normative [v1-feature-architecture-spec.md](../specs/v1-feature-architecture-spec.md); reference doc = progress catalog |
+| 2026-07-06 | Human-only reference header; agent normative source is `docs/specs/feature-architecture-spec.md` |
+| 2026-07-03 | Added feature-architecture spec; reference doc = progress catalog |
 | 2026-07-03 | Added [shared-components-spec.md](../specs/shared-components-spec.md) to companion specs |
 | 2026-07-03 | Normative §5.3.1 permissions UI; reference Staff card links to spec |
 | 2026-07-03 | Added [v1-staff-webapp-implementation-plan.md](../sprints/v1-staff-webapp-implementation-plan.md) |

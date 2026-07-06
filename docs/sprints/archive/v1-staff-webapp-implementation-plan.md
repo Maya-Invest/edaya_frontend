@@ -4,7 +4,7 @@
 
 > **Status:** Phases 0–8 complete (2026-07-05)  
 > **Created:** 2026-07-03  
-> **Scope:** Bring `apps/webapp` to the target architecture in [v1-feature-architecture-spec.md](../specs/v1-feature-architecture-spec.md)  
+> **Scope:** Bring `apps/webapp` to the target architecture in [feature-architecture-spec.md](../specs/feature-architecture-spec.md)  
 > **Draft / detail catalog:** [ui-architecture-reference.md](../../reference/ui-architecture-reference.md) — feature cards, entity audit, living §0 checklist  
 > **Interaction & data:** [app-shell-spec.md](../specs/app-shell-spec.md) · [shared-components-spec.md](../specs/shared-components-spec.md) · [data-loading-spec.md](../specs/data-loading-spec.md) · [design-language-spec.md](../specs/design-language-spec.md)  
 > **Backend:** All v1 UI blockers resolved (B1–B5 on dev Neon). Re-run `db:migrate:full` on staging/prod before permission work there.
@@ -40,7 +40,7 @@ The staff webapp has working routes for most modules, but many screens predate t
 
 ### Product goal
 
-Every in-scope screen matches the **normative** [v1-feature-architecture-spec.md](../specs/v1-feature-architecture-spec.md):
+Every in-scope screen matches the **normative** [feature-architecture-spec.md](../specs/feature-architecture-spec.md):
 
 - Correct **surface type** (complex drawer · simple row menu · thin · layout)
 - **Toolbar** contract: `[Primary CTA] [Search] [Main filter <select>] [Filter] [More]`
@@ -62,7 +62,7 @@ Every in-scope screen matches the **normative** [v1-feature-architecture-spec.md
 |--------------|--------|-------------------|
 | OpenAPI client (`classActivityEnrollments`, `resolveIncidentWithOutcomes`, auth entities) | ✅ dev | `EDAYA_CORE_ROOT=… bun run openapi:generate` after API changes |
 | Permission DB cutover (staging/prod) | ✅ dev Neon | `bun run db:migrate:staging` on target env before Phase 2 in that env |
-| Cursor rules + specs | ✅ | `.cursor/rules/v1-feature-architecture.mdc` · `app-shell.mdc` |
+| Cursor rules + specs | ✅ | `.cursor/rules/feature-architecture.mdc` · `app-shell.mdc` |
 
 ---
 
@@ -362,7 +362,7 @@ Thin drawers (calendar, inbox): lighter header — sections only per spec.
 The v1 staff webapp implementation is **complete** when:
 
 1. All phases **0–8** checked off in this document and [reference §0](../reference/ui-architecture-reference.md#v1-progress-tracker).
-2. Every route in [v1 spec §6](../specs/v1-feature-architecture-spec.md#6-route-index) exists with correct surface type.
+2. Every route in [v1 spec §6](../specs/feature-architecture-spec.md#6-route-index) exists with correct surface type.
 3. No removed routes (`/configuration/roles`, `/homework`) remain in nav or routing.
 4. `bun run check` and `bun run generated:check` pass on `edaya_web`.
 5. Spot-check: Configuration → Classes → staff tab · Staff → Permissions · Evaluations with homework kind · Daily attendance on a `daily` class · Incident resolve modal.
@@ -375,7 +375,7 @@ The v1 staff webapp implementation is **complete** when:
 |------|--------|
 | Phase completes | Check box here + [reference §0](../reference/ui-architecture-reference.md#v1-progress-tracker) |
 | Feature reaches **Built** | Update status in reference §3 feature cards |
-| Architecture decision changes | [v1-feature-architecture-spec.md](../specs/v1-feature-architecture-spec.md) first, then this plan |
+| Architecture decision changes | [feature-architecture-spec.md](../specs/feature-architecture-spec.md) first, then this plan |
 | New backend blocker | Add to reference §6.1; add prerequisite row in §2 here |
 
 ---
