@@ -1,6 +1,6 @@
 {
-  "passed": 19,
-  "failed": 5,
+  "passed": 20,
+  "failed": 4,
   "skipped": 1,
   "results": [
     {
@@ -58,7 +58,7 @@
       "scene": "D5",
       "step": "5.1 Timetable grid",
       "status": "fail",
-      "detail": "Redirected away — at /dashboard, expected /classes/ci-6a/timetable"
+      "detail": "Missing selector: #planning-week-picker, .edaya-timetable-calendar"
     },
     {
       "scene": "D5",
@@ -69,14 +69,12 @@
     {
       "scene": "D6",
       "step": "6.1 Evaluations list",
-      "status": "fail",
-      "detail": "Redirected away — at /dashboard, expected /classes/ci-6a/evaluations"
+      "status": "pass"
     },
     {
       "scene": "D7",
       "step": "7.1 Daily attendance tab",
-      "status": "fail",
-      "detail": "Redirected away — at /dashboard, expected /classes/ci-6b/attendance"
+      "status": "pass"
     },
     {
       "scene": "D8",
@@ -102,7 +100,8 @@
     {
       "scene": "D9",
       "step": "9.2 Payments",
-      "status": "pass"
+      "status": "fail",
+      "detail": "Missing selector: main"
     },
     {
       "scene": "D9",
