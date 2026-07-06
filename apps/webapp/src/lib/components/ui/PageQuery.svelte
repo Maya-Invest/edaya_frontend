@@ -5,6 +5,7 @@
 	import { listRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle } from '$lib/icons';
+	import { getPageQueryCache, setPageQueryCache } from '$lib/queries/page-query-cache';
 	import { pageQueryStatus } from '$lib/queries/page-query-status.svelte';
 	import { untrack } from 'svelte';
 
@@ -34,6 +35,14 @@
 			return;
 		}
 
+		const cached = getPageQueryCache<T>(key);
+		if (cached) {
+			result = cached;
+			loadedKey = key;
+			pageQueryStatus.markReady(key);
+			return;
+		}
+
 		inFlightKey = key;
 		const version = ++loadVersion;
 		if (key !== loadedKey) {
@@ -50,6 +59,7 @@
 				result = data;
 				loadedKey = key;
 				inFlightKey = null;
+				setPageQueryCache(key, data);
 				pageQueryStatus.markReady(key);
 			})
 			.catch(() => {

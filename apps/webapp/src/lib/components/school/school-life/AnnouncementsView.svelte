@@ -13,6 +13,7 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { Mail, Plus } from '$lib/icons';
+	import { listHref } from '$lib/list/list-filters-state.svelte';
 	import { readAnnouncementListFilters, writeAnnouncementListFilters } from '$lib/list/list-url-filters';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
