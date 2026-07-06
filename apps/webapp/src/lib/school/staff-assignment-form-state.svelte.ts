@@ -4,8 +4,8 @@ import {
 	saveStaffAssignmentMutation,
 } from '$lib/api/mutations/staff-assignments.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { loadClassSubjects } from '$lib/api/subjects-data';
 import { loadPermissionCatalog } from '$lib/api/staff-permission-assignments-data';
+import { loadClassSubjects } from '$lib/api/subjects-data';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { t } from '$lib/i18n';
 import { pruneStaffAssignmentPermissions } from '$lib/school/staff-assignment-form-helpers';

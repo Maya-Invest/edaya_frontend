@@ -1,7 +1,7 @@
 {
-  "passed": 96,
+  "passed": 98,
   "failed": 0,
-  "skipped": 2,
+  "skipped": 0,
   "results": [
     {
       "scene": "D0",
@@ -76,8 +76,7 @@
     {
       "scene": "D6",
       "step": "6.2 Homework filter",
-      "status": "skip",
-      "detail": "No homework rows after filter"
+      "status": "pass"
     },
     {
       "scene": "setup",
@@ -142,8 +141,7 @@
     {
       "scene": "D10",
       "step": "10.2 Open bulletin drawer",
-      "status": "skip",
-      "detail": "No report card rows in list"
+      "status": "pass"
     },
     {
       "scene": "D11",

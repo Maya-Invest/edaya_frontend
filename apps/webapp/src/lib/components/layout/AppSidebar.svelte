@@ -2,9 +2,9 @@
 	import type { ModuleKey } from '$lib/navigation';
 	import type { HierarchyGroup } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import { authSession } from '$lib/auth/session.svelte';
-	import { academicContext } from '$lib/academic/context.svelte';
 	import { resolveActiveClassId } from '$lib/academic/class-selection';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import { authSession } from '$lib/auth/session.svelte';
 	import ClassSelector from '$lib/components/layout/ClassSelector.svelte';
 	import { t } from '$lib/i18n';
 	import { Crown, GraduationCap, ChevronDown } from '$lib/icons';

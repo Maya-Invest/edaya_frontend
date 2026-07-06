@@ -14,10 +14,10 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { createUrlSyncedDrawerTabs } from '$lib/drawer/drawer-tabs-state.svelte';
-	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { t } from '$lib/i18n';
 	import { Mail } from '$lib/icons';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { canUploadProfilePhoto } from '$lib/permissions';
 	import { get } from 'svelte/store';
 	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
@@ -25,8 +25,8 @@
 	import PersonAvatar from '../shared/PersonAvatar.svelte';
 	import ProfilePhotoPicker from '../shared/ProfilePhotoPicker.svelte';
 	import StaffAssignmentsSummary from './StaffAssignmentsSummary.svelte';
-	import StaffPermissionsList from './StaffPermissionsList.svelte';
 	import StaffPermissionFormModal from './StaffPermissionFormModal.svelte';
+	import StaffPermissionsList from './StaffPermissionsList.svelte';
 	import StaffProfileEditModal from './StaffProfileEditModal.svelte';
 
 	const { s }: { s: StaffMember } = $props();

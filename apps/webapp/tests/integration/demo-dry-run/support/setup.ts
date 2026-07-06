@@ -39,9 +39,12 @@ export async function ensureDailyAttendanceMode(
 		selector: 'main',
 	});
 
+	const dailyModePattern = /^(Appel quotidien|Daily roll call)$/i;
 	const dailyOk = await page
-		.getByText(/daily roll call|appel quotidien/i)
-		.isVisible({ timeout: 5_000 })
+		.locator('main')
+		.getByText(dailyModePattern)
+		.first()
+		.isVisible({ timeout: 8_000 })
 		.catch(() => false);
 	const coordinatorBlock = page.locator('div').filter({
 		has: page.getByText(/^Staff coordinator$|^Référent personnel$/i),
@@ -54,17 +57,20 @@ export async function ensureDailyAttendanceMode(
 	}
 
 	const editBtn = page.getByRole('button', { name: /edit|modifier/i });
-	if (!(await editBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
+	if (!(await editBtn.isVisible({ timeout: 10_000 }).catch(() => false))) {
 		return false;
 	}
 	await editBtn.click();
 	await page.locator('[role="dialog"]').waitFor({ state: 'visible', timeout: 10_000 });
 
-	if (!dailyOk) {
+	if (!dailyOk || force) {
 		const modeSelect = page.locator('[role="dialog"] select').filter({
 			has: page.locator('option[value="daily"]'),
 		}).last();
-		await modeSelect.selectOption('daily');
+		const currentMode = await modeSelect.inputValue().catch(() => 'session');
+		if (currentMode !== 'daily') {
+			await modeSelect.selectOption('daily');
+		}
 	}
 
 	if (homeroomStaffName && !homeroomOk) {
@@ -75,7 +81,14 @@ export async function ensureDailyAttendanceMode(
 	await page.locator('[role="dialog"]').waitFor({ state: 'hidden', timeout: 20_000 }).catch(() => {});
 	await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
 	await page.waitForTimeout(2_000);
-	return true;
+
+	const dailyConfigured = await page
+		.locator('main')
+		.getByText(dailyModePattern)
+		.first()
+		.isVisible({ timeout: 8_000 })
+		.catch(() => false);
+	return dailyConfigured && (homeroomStaffName ? homeroomOk || await coordinatorBlock.getByText(homeroomStaffName).isVisible({ timeout: 2_000 }).catch(() => false) : true);
 }
 
 export async function assertClassAttendanceNav(

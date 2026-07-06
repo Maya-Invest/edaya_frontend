@@ -1,7 +1,7 @@
 import type { SessionKind } from '$lib/auth/account-actor';
-import { pendingInvitePath } from '$lib/auth/pending-invite-token';
 import type { SessionSnapshot } from '$lib/auth/types';
 import type { ServerOnboardingAccountStatus } from '$lib/onboarding/types';
+import { pendingInvitePath } from '$lib/auth/pending-invite-token';
 import { appPath } from '$lib/navigation/app-navigation';
 import { onboardingResumePath } from '$lib/onboarding/resume-onboarding';
 

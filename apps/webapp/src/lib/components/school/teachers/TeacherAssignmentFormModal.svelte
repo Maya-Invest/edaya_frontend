@@ -2,16 +2,16 @@
 	import type { components } from '$lib/api/schema';
 	import type { Teacher } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { authSession } from '$lib/auth/session.svelte';
 	import { entitiesByIds, uniqueIds } from '$lib/api/entity-list-filters';
 	import {
 		createTeacherAssignmentPayload,
 		saveTeacherAssignmentMutation,
 	} from '$lib/api/mutations/teacher.mutations';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
+	import { authSession } from '$lib/auth/session.svelte';
+	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
-	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
 
@@ -43,7 +43,7 @@
 
 	const canSubmit = $derived(
 		Boolean(classGroupId)
-		&& (kind === 'homeroom' || Boolean(classSubjectId)),
+			&& (kind === 'homeroom' || Boolean(classSubjectId)),
 	);
 
 	async function loadClassSubjects(nextClassGroupId: string) {

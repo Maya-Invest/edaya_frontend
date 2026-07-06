@@ -1,5 +1,5 @@
-import type { PlanningEvent } from '$lib/types/school';
 import type { PlanningSlotFromDates } from '$lib/components/school/scheduling/planning-calendar';
+import type { PlanningEvent } from '$lib/types/school';
 import { getContext, setContext } from 'svelte';
 
 export const PLANNING_TIMETABLE_CONTEXT_KEY = Symbol('planning-timetable');
@@ -24,7 +24,7 @@ export class PlanningTimetableState {
 
 	get context(): PlanningTimetableContext {
 		return {
-			onAttendance: (eventId) => this.onAttendance?.(eventId),
+			onAttendance: eventId => this.onAttendance?.(eventId),
 		};
 	}
 

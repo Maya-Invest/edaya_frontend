@@ -3,10 +3,11 @@
 	import { page } from '$app/stores';
 	import { authSession } from '$lib/auth/session.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
-	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import Input from '$lib/components/ui/input/input.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
+	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import { t } from '$lib/i18n';
 	import {
 		Lock,
 		Eye,
@@ -19,12 +20,11 @@
 		Plus,
 		Search,
 	} from '$lib/icons';
+	import { canEditGrades } from '$lib/permissions';
 	import {
 		EDUCATOR_DASHBOARD_TAB_ITEMS,
 		EducatorDashboardState,
 	} from '$lib/school/educator-dashboard-state.svelte';
-	import { t } from '$lib/i18n';
-	import { canEditGrades } from '$lib/permissions';
 	import { INCIDENT_SEVERITY_TONE } from '$lib/ui-tones';
 	import { cn } from '$lib/utils';
 

@@ -6,15 +6,15 @@
 	import { deleteActivityMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
-	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
-	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { t } from '$lib/i18n';
 	import { Plus, ChevronRight, Search, Trash2 } from '$lib/icons';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { ENROLL_NEXT, fmtActivityDate } from '../shared/drawer-constants.ts';
@@ -48,6 +48,8 @@
 	let removeEnrollmentId = $state<string | null>(null);
 	let removeOpen = $state(false);
 	let removeBusy = $state(false);
+	let deleteOpen = $state(false);
+	let deleteBusy = $state(false);
 
 	$effect.pre(() => {
 		if (hierarchy.length > 0 && expandedLevels.length === 0) {
@@ -157,6 +159,21 @@
 		removeOpen = false;
 		removeEnrollmentId = null;
 	}
+
+	async function confirmDelete() {
+		deleteBusy = true;
+		try {
+			const ok = await deleteActivityMutation(live.id, {
+				successMessage: get(t)('activities.toastDeleted', { name: live.name }),
+			});
+			if (ok) {
+				deleteOpen = false;
+			}
+		}
+		finally {
+			deleteBusy = false;
+		}
+	}
 </script>
 
 <div class="space-y-5">
@@ -174,17 +191,18 @@
 		{/snippet}
 		{#snippet actions()}
 			<ActivityFormModal activity={live} bind:open={editOpen.open} />
+		{/snippet}
+		{#snippet overflow()}
 			<PermissionGate permission="DISCIPLINE_CREATE" mode="disable" tooltip={$t('activities.permissionCreate')}>
 				{#snippet children({ disabled, title })}
-					<DeleteEntityButton
+					<RowActionMenuItem
+						destructive
 						{disabled}
 						{title}
-						confirmTitle={$t('common.deleteConfirmTitle')}
-						confirmDescription={$t('activities.deleteConfirm', { name: live.name })}
-						onConfirm={() => deleteActivityMutation(live.id, {
-							successMessage: get(t)('activities.toastDeleted', { name: live.name }),
-						})}
-					/>
+						onclick={() => (deleteOpen = true)}
+					>
+						{$t('common.delete')}
+					</RowActionMenuItem>
 				{/snippet}
 			</PermissionGate>
 		{/snippet}
@@ -407,4 +425,14 @@
 	busy={removeBusy}
 	onCancel={closeRemoveEnrollment}
 	onConfirm={confirmRemoveEnrollment}
+/>
+
+<ConfirmModal
+	bind:open={deleteOpen}
+	title={$t('common.deleteConfirmTitle')}
+	description={$t('activities.deleteConfirm', { name: live.name })}
+	confirmLabel={$t('common.delete')}
+	cancelLabel={$t('common.cancel')}
+	busy={deleteBusy}
+	onConfirm={confirmDelete}
 />

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { getPlanningTimetableContext } from './planning-timetable-context';
 	import { t } from '$lib/i18n';
 	import { ClipboardCheck, MapPin } from '$lib/icons';
+	import { getPlanningTimetableContext } from './planning-timetable-context';
 
 	const { event }: { event: Record<string, unknown>; mode?: string } = $props();
 

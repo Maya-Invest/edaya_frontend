@@ -15,9 +15,9 @@ export type TeacherAssignmentRaw = components['schemas']['TeacherAssignment'];
 export type StaffMemberRaw = components['schemas']['StaffMember'];
 export type StaffAssignmentRaw = components['schemas']['StaffAssignment'];
 
-export type TeacherNameLookup =
-	| Pick<TeacherRaw, 'id' | 'firstName' | 'lastName'>
-	| { id: string; name: string };
+export type TeacherNameLookup
+	= | Pick<TeacherRaw, 'id' | 'firstName' | 'lastName'>
+		| { id: string; name: string };
 
 function resolveTeacherName(teacher: TeacherNameLookup): string {
 	if ('name' in teacher) {

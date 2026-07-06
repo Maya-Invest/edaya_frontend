@@ -1,8 +1,8 @@
 import type { components } from '$lib/api/schema';
 import type { Teacher } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
-import { runMutation } from '$lib/api/mutations/run-mutation';
 import { sendAccountInvitationMutation } from '$lib/api/mutations/invitation.mutations';
+import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { mapTeacher } from '$lib/api/teachers-data';
 import { authSession } from '$lib/auth/session.svelte';

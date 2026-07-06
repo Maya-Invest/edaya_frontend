@@ -2,7 +2,7 @@ import type { SchoolOverviewResponse } from '$lib/api/dashboard-data';
 import { fetchSchoolOverview } from '$lib/api/dashboard-data';
 import { hasPermission } from '$lib/permissions';
 import { queryClient } from '$lib/queries/client';
-import { resolvePageLoad } from '$lib/queries/page-status';
+import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 
 export interface DashboardPageData {
 	overview: SchoolOverviewResponse | null;
@@ -17,6 +17,6 @@ export function queryDashboardPage() {
 			}
 			return { overview: await fetchSchoolOverview(queryClient()) };
 		},
-		hasItems: data => data.overview !== null,
+		hasItems: listPageHasItems,
 	});
 }

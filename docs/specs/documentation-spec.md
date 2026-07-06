@@ -67,6 +67,22 @@ These seven documents are the **only** normative sources for agents working on `
 
 When multiple specs apply to a task, read each relevant spec independently. The root `AGENTS.md` file is an index only — not a substitute for reading the specs.
 
+### 2.1 Conflict resolution
+
+When rules appear to overlap, **precedence** is:
+
+| Priority | Spec | Wins for |
+|----------|------|----------|
+| 1 | `feature-architecture-spec.md` | Routes, entity surface type (complex/simple/thin/layout), locked product decisions |
+| 2 | Concern-specific spec | Interaction (`app-shell`), components (`shared-components`), data (`data-loading`), visuals (`design-language`), state (`svelte-state`) |
+| 3 | Heuristics in app-shell | Classifying **new** entities only — never overrides an assigned surface in feature-architecture §3 / §8 |
+
+Codebase drift does not override specs. Align code to specs in dedicated PRs.
+
+### 2.2 Multi-spec changes
+
+Architecture or UX changes that span concerns **must** update every affected spec in the same PR (e.g. new drawer pattern → `app-shell` + `shared-components`; new route → `feature-architecture` + `data-loading`).
+
 ---
 
 ## 3. Rules for agents

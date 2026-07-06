@@ -1,14 +1,14 @@
+import { ApiError } from '$api-client';
 import { academicContext } from '$lib/academic/context.svelte';
-import { authSession } from '$lib/auth/session.svelte';
 import { fetchActivities } from '$lib/api/activities-data';
 import { fetchAnnouncements } from '$lib/api/announcements-data';
 import { loadGuardiansPeopleData } from '$lib/api/people-data';
 import { safeOptionalEntityList, safeOptionalFetch } from '$lib/api/safe-entity-access';
 import { loadAbsences, loadCalendarEvents, loadIncidentRouteData } from '$lib/api/school-life-data';
 import { fetchStaffMembers } from '$lib/api/staff-data';
+import { authSession } from '$lib/auth/session.svelte';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { queryClient } from '$lib/queries/client';
-import { ApiError } from '$api-client';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 
 export function querySchoolAnnouncementsPage() {

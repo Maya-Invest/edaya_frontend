@@ -21,29 +21,6 @@ export function homeroomDailyClassesForStaff(
 	);
 }
 
-function resolveTodayAttendanceDay(
-	days: readonly AttendanceDay[],
-	classId: string,
-	todayIso: string,
-	studentCount: number,
-): AttendanceDay | null {
-	const todayDay = days.find(day => day.classId === classId && day.date === todayIso);
-	if (todayDay) {
-		return todayDay;
-	}
-	if (studentCount === 0) {
-		return null;
-	}
-	return {
-		id: '',
-		classId,
-		date: todayIso,
-		label: 'Daily attendance',
-		totalStudents: studentCount,
-		recordedCount: 0,
-	};
-}
-
 /** Staff webapp only: homeroom nudge follows homeroomStaffId, not portal teacher assignments. */
 export function resolveHomeroomAttendanceNudges(args: {
 	staffId: string;
@@ -58,20 +35,43 @@ export function resolveHomeroomAttendanceNudges(args: {
 		}
 
 		const context = args.attendanceByClass.get(cls.id);
-		const todayDay = resolveTodayAttendanceDay(
-			context?.days ?? [],
-			cls.id,
-			args.todayIso,
-			context?.studentCount || cls.studentCount || 0,
-		);
-		if (!todayDay || todayDay.totalStudents === 0 || todayDay.recordedCount >= todayDay.totalStudents) {
+		const days = context?.days ?? [];
+		const studentCount = context?.studentCount || cls.studentCount || 0;
+		const todayOccurrence = days.find(day => day.classId === cls.id && day.date === args.todayIso);
+
+		if (
+			todayOccurrence
+			&& todayOccurrence.totalStudents > 0
+			&& todayOccurrence.recordedCount >= todayOccurrence.totalStudents
+		) {
 			return [];
 		}
 
+		if (
+			todayOccurrence
+			&& todayOccurrence.totalStudents > 0
+			&& todayOccurrence.recordedCount < todayOccurrence.totalStudents
+		) {
+			return [{
+				classId: cls.id,
+				className: cls.name,
+				href: args.classAttendanceHref(cls.id, todayOccurrence.id || undefined),
+			}];
+		}
+
+		if (studentCount > 0) {
+			return [{
+				classId: cls.id,
+				className: cls.name,
+				href: args.classAttendanceHref(cls.id),
+			}];
+		}
+
+		// Enrollment count may be unavailable (403) — still nudge until roll call is provably complete.
 		return [{
 			classId: cls.id,
 			className: cls.name,
-			href: args.classAttendanceHref(cls.id, todayDay.id || undefined),
+			href: args.classAttendanceHref(cls.id),
 		}];
 	});
 }

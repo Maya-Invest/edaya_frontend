@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { ScopeGrain } from '$lib/api/scope-ids';
-	import { ScopeBuilderState } from '$lib/access/scope-builder-state.svelte';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import { ScopeBuilderState } from '$lib/access/scope-builder-state.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';

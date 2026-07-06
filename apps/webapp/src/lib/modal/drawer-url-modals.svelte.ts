@@ -1,5 +1,5 @@
-import { getContext, setContext } from 'svelte';
 import type { UrlSyncedModalsState } from '$lib/modal/modal-state.svelte';
+import { getContext, setContext } from 'svelte';
 
 const DRAWER_URL_MODALS_KEY = Symbol('drawer-url-modals');
 

@@ -3,45 +3,97 @@
 	import { page } from '$app/stores';
 	import { deleteHomeworkMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { locale, t } from '$lib/i18n';
 	import { Check, Clock, AlertCircle, FileText, Paperclip } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
-	import DrawerActionBar from '../shared/DrawerActionBar.svelte';
+	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import DrawerField from '../shared/DrawerField.svelte';
 	import DeadlineFormModal from './DeadlineFormModal.svelte';
 
 	const { d }: { d: Deadline } = $props();
 
-	const modals = createUrlSyncedModals({ allowed: ['attach'], getUrl: () => $page.url });
+	const modals = createUrlSyncedModals({ allowed: ['attach', 'edit'], getUrl: () => $page.url });
 	$effect(() => {
 		modals.hydrate();
 	});
 	const attachOpen = bindUrlModal(modals, 'attach');
+	const editOpen = bindUrlModal(modals, 'edit');
+
+	let deleteOpen = $state(false);
+	let deleteBusy = $state(false);
 
 	const subStatusStyle = {
 		submitted: { icon: Check, cls: 'text-accent' },
 		late: { icon: Clock, cls: 'text-highlight' },
 		missing: { icon: AlertCircle, cls: 'text-muted-foreground' },
 	} as const;
+
+	async function confirmDelete() {
+		deleteBusy = true;
+		try {
+			const ok = await deleteHomeworkMutation(d.id, {
+				successMessage: get(t)('hw.toastDeleted', { title: d.title }),
+			});
+			if (ok) {
+				deleteOpen = false;
+			}
+		}
+		finally {
+			deleteBusy = false;
+		}
+	}
 </script>
 
 <div class="space-y-5">
-	<div>
-		<span
-			class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
-		>
-			{$t(`deadlineType.${d.type}`)}
-		</span>
-		<p class="mt-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{d.subject}</p>
-		<h3 class="mt-1 font-display text-2xl font-semibold leading-tight">{d.title}</h3>
-		<p class="mt-2 text-sm text-foreground/70">{d.description}</p>
-	</div>
+	<DrawerEntityHeader name={d.title} summary={d.description}>
+		{#snippet chips()}
+			<span
+				class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
+			>
+				{$t(`deadlineType.${d.type}`)}
+			</span>
+			<span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground/80">
+				{d.subject}
+			</span>
+		{/snippet}
+		{#snippet actions()}
+			<PermissionGate permission="GRADE_INPUT" mode="disable" tooltip={$t('hw.permissionCreate')}>
+				{#snippet children({ disabled, title })}
+					<Button
+						variant="outline"
+						size="sm"
+						class="rounded-full"
+						{disabled}
+						{title}
+						onclick={() => modals.open('edit')}
+					>
+						{$t('common.edit')}
+					</Button>
+				{/snippet}
+			</PermissionGate>
+		{/snippet}
+		{#snippet overflow()}
+			<PermissionGate permission="GRADE_INPUT" mode="disable" tooltip={$t('hw.permissionCreate')}>
+				{#snippet children({ disabled, title })}
+					<RowActionMenuItem
+						destructive
+						{disabled}
+						{title}
+						onclick={() => (deleteOpen = true)}
+					>
+						{$t('common.delete')}
+					</RowActionMenuItem>
+				{/snippet}
+			</PermissionGate>
+		{/snippet}
+	</DrawerEntityHeader>
 
 	<div class="grid grid-cols-2 gap-3">
 		<DrawerField label={$t('drawer.assigned')}>
@@ -116,28 +168,9 @@
 			{/each}
 		</div>
 	</div>
-
-	<DrawerActionBar>
-		<PermissionGate permission="GRADE_INPUT" mode="disable" tooltip={$t('hw.permissionCreate')}>
-			{#snippet children({ disabled, title })}
-				<DeadlineFormModal deadline={d} classId={d.classId} {disabled} title={title} />
-			{/snippet}
-		</PermissionGate>
-		<PermissionGate permission="GRADE_INPUT" mode="disable" tooltip={$t('hw.permissionCreate')}>
-			{#snippet children({ disabled, title })}
-				<DeleteEntityButton
-					{disabled}
-					{title}
-					confirmTitle={$t('common.deleteConfirmTitle')}
-					confirmDescription={$t('hw.deleteConfirm', { title: d.title })}
-					onConfirm={() => deleteHomeworkMutation(d.id, {
-						successMessage: get(t)('hw.toastDeleted', { title: d.title }),
-					})}
-				/>
-			{/snippet}
-		</PermissionGate>
-	</DrawerActionBar>
 </div>
+
+<DeadlineFormModal deadline={d} classId={d.classId} bind:open={editOpen.open} showTrigger={false} />
 
 <FormModal
 	bind:open={attachOpen.open}
@@ -150,3 +183,13 @@
 >
 	<p class="text-sm text-muted-foreground">{$t('hw.attachStub')}</p>
 </FormModal>
+
+<ConfirmModal
+	bind:open={deleteOpen}
+	title={$t('common.deleteConfirmTitle')}
+	description={$t('hw.deleteConfirm', { title: d.title })}
+	confirmLabel={$t('common.delete')}
+	cancelLabel={$t('common.cancel')}
+	busy={deleteBusy}
+	onConfirm={confirmDelete}
+/>

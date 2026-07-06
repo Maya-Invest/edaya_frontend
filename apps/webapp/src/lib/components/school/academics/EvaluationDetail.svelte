@@ -3,15 +3,16 @@
 	import { page } from '$app/stores';
 	import { deleteAssessmentMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { locale, t } from '$lib/i18n';
 	import { Check, Clock, AlertCircle, FileText, Paperclip } from '$lib/icons';
-	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
@@ -79,6 +80,24 @@
 		late: { icon: Clock, cls: 'text-highlight' },
 		missing: { icon: AlertCircle, cls: 'text-muted-foreground' },
 	} as const;
+
+	let deleteOpen = $state(false);
+	let deleteBusy = $state(false);
+
+	async function confirmDelete() {
+		deleteBusy = true;
+		try {
+			const ok = await deleteAssessmentMutation(s.id, {
+				successMessage: get(t)('eval.toastDeleted', { title: s.title }),
+			});
+			if (ok) {
+				deleteOpen = false;
+			}
+		}
+		finally {
+			deleteBusy = false;
+		}
+	}
 </script>
 
 <div class="space-y-5">
@@ -98,15 +117,20 @@
 							{$t('common.edit')}
 						</Button>
 					{/if}
-					<DeleteEntityButton
+				{/snippet}
+			</PermissionGate>
+		{/snippet}
+		{#snippet overflow()}
+			<PermissionGate permission="GRADE_INPUT" mode="disable" tooltip={$t('eval.permissionCreate')}>
+				{#snippet children({ disabled, title })}
+					<RowActionMenuItem
+						destructive
 						{disabled}
 						{title}
-						confirmTitle={$t('common.deleteConfirmTitle')}
-						confirmDescription={$t('eval.deleteConfirm', { title: s.title })}
-						onConfirm={() => deleteAssessmentMutation(s.id, {
-							successMessage: get(t)('eval.toastDeleted', { title: s.title }),
-						})}
-					/>
+						onclick={() => (deleteOpen = true)}
+					>
+						{$t('common.delete')}
+					</RowActionMenuItem>
 				{/snippet}
 			</PermissionGate>
 		{/snippet}
@@ -300,3 +324,13 @@
 >
 	<p class="text-sm text-muted-foreground">{$t('hw.attachStub')}</p>
 </FormModal>
+
+<ConfirmModal
+	bind:open={deleteOpen}
+	title={$t('common.deleteConfirmTitle')}
+	description={$t('eval.deleteConfirm', { title: s.title })}
+	confirmLabel={$t('common.delete')}
+	cancelLabel={$t('common.cancel')}
+	busy={deleteBusy}
+	onConfirm={confirmDelete}
+/>

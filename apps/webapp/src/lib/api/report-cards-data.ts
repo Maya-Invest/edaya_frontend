@@ -19,6 +19,7 @@ import {
 	schoolWideEntityList,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
+import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 import { fetchClassSubjectsSources } from '$lib/api/subjects-data';
 import { teacherNameForClassSubject } from '$lib/api/teacher-display';
 
@@ -352,7 +353,7 @@ export async function loadClassReportCardResultsData(
 		id => !definitions.some(definition => definition.id === id),
 	);
 	const missingDefinitionsRaw = missingDefinitionIds.length > 0
-		? await client.entities.definitions.list(entitiesByIds(missingDefinitionIds))
+		? await safeOptionalEntityList(() => client.entities.definitions.list(entitiesByIds(missingDefinitionIds)))
 		: [];
 	const definitionReferences = [
 		...definitions,

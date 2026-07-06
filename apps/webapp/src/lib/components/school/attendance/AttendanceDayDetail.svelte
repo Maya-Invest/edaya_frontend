@@ -7,16 +7,16 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
-	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { locale, t } from '$lib/i18n';
 	import { Check, ClipboardCheck } from '$lib/icons';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { queryClient } from '$lib/queries/client';
 	import { sessionDetailContext } from '$lib/session-detail/context.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
-	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import DrawerEmptyState from '../shared/DrawerEmptyState.svelte';
+	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import AttendanceDayRecordModal from './AttendanceDayRecordModal.svelte';
 
 	const { day }: { day: AttendanceDay } = $props();

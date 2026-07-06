@@ -15,11 +15,11 @@ import {
 } from '$lib/api/scope-ids';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 
-export type ClassSubjectScopeRow = {
+export interface ClassSubjectScopeRow {
 	classGroupId: string;
 	classSubjectId: string;
 	wildcard: boolean;
-};
+}
 
 export class ScopeBuilderState {
 	grain = $state<ScopeGrain>('class_group');

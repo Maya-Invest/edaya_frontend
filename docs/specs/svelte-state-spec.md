@@ -10,7 +10,7 @@
 
 | Tier | What | Where | Lifetime |
 |------|------|-------|----------|
-| **1 — Session** | Auth, shell, entity store (`detailDataContext`) | `lib/**/context.svelte.ts` singleton | App session |
+| **1 — Session** | Auth, shell, entity store (`detailDataContext`), domain stores (`reportCardsContext`, `teachingLogContext`) | `lib/**/context.svelte.ts` singleton | App session |
 | **2 — Feature** | Selection, orchestration, shared screen logic | `lib/<domain>/<feature>-state.svelte.ts` + context | Route subtree |
 | **3 — UI** | Modal open, local draft, visual flags | Component `<script>` | Component |
 
@@ -41,7 +41,7 @@ export class FeeBillingState {
 		onDestroy(() => { /* timers / abort */ });
 	}
 
-	async load() { /* orchestration */ }
+	async orchestrateExport() { /* calls runMutation / API; no raw fetch */ }
 	select(id: string) { this.selectedId = id; }
 }
 
@@ -54,7 +54,7 @@ export function getFeeBillingState() {
 }
 ```
 
-**Class rules:** `$state` fields · getters for derived · arrow methods for handlers · cleanup in `constructor` · no `$effect` in class.
+**Class rules:** `$state` fields · getters for derived · arrow methods for handlers · cleanup in `constructor` · no `$effect` in class · **no HTTP fetch in Tier 2** — route `query*Page` seeds the store; Tier 2 orchestrates selection and UI flow only.
 
 **Parent:** `setFeeBillingState()` in layout/route. **Children:** `getFeeBillingState()`.
 
@@ -130,9 +130,18 @@ export function getFeeBillingState() {
 
 ---
 
+## Extraction threshold
+
+Extract Tier 2 `*-state.svelte.ts` when a `*View.svelte` script exceeds **~60 lines** of non-markup logic, or when two sibling components share orchestration. Keep modal open flags and form bindings in Tier 3.
+
+---
+
 ## Repo references
 
 - `lib/detail-data/context.svelte.ts` — entity store (Tier 1)
 - `lib/academic/context.svelte.ts` — shell selectors (Tier 1)
-- `lib/drawer.svelte.ts` + `routes/(app)/+layout.svelte` — layout-scoped context (Tier 2)
+- `lib/report-cards/context.svelte.ts` — report card domain store (Tier 1)
+- `lib/teaching-log/context.svelte.ts` — teaching log domain store (Tier 1)
+- `lib/drawer.svelte.ts` — legacy non-URL drawer selection for config surfaces; prefer URL-backed `[[id]]` drawers for entity routes
+- `routes/(app)/+layout.svelte` — shell layout; set feature context here when needed
 - `lib/components/school/students/StudentsView.svelte` — thin component (Tier 3)

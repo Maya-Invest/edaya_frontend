@@ -1,7 +1,7 @@
 import type { ResolvedPathname } from '$app/types';
 import type { DrawerItem } from '$lib/components/school/shared/drawer-types';
-import type { Subject } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
+import { findSubjectLevelGroup } from '$lib/academic/subject-level-groups';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { appPath } from '$lib/navigation/app-navigation';
 import { reportCardsContext } from '$lib/report-cards/context.svelte';
@@ -9,40 +9,6 @@ import { reportCardsContext } from '$lib/report-cards/context.svelte';
 export interface ParsedDetail {
 	item: NonNullable<DrawerItem>;
 	listPath: ResolvedPathname;
-}
-
-function yearLabel(className: string): string {
-	const map: Record<string, string> = {
-		'6th': '6ème',
-		'5th': '5ème',
-		'4th': '4ème',
-		'3rd': '3ème',
-		'2nd': '2nde',
-		'1st': '1ère',
-		'Terminale': 'Terminale',
-	};
-	for (const key of Object.keys(map)) {
-		if (className.startsWith(key))
-			return map[key];
-	}
-	return className;
-}
-
-function getSubjectLevelGroup(label: string): { label: string; subtitle: string; items: Subject[] } | null {
-	const classById = Object.fromEntries(academicContext.classes.map(c => [c.id, c]));
-	const byYear: Record<string, { subtitle: string; items: Subject[] }> = {};
-	for (const s of detailDataContext.subjects) {
-		const cls = classById[s.classId];
-		if (!cls)
-			continue;
-		const y = yearLabel(cls.name);
-		if (!byYear[y])
-			byYear[y] = { subtitle: cls.level, items: [] };
-		byYear[y].items.push(s);
-	}
-	if (!byYear[label])
-		return null;
-	return { label, subtitle: byYear[label].subtitle, items: byYear[label].items };
 }
 
 interface Matcher {
@@ -152,7 +118,12 @@ const matchers: Matcher[] = [
 		test: p => p.match(/^\/configuration\/subjects\/level\/([^/]+)$/) ?? null,
 		parse: (m) => {
 			const label = decodeURIComponent(m[1]);
-			const group = getSubjectLevelGroup(label);
+			const group = findSubjectLevelGroup(
+				label,
+				detailDataContext.subjects,
+				academicContext.classes,
+				academicContext.gradeLevels,
+			);
 			return group ? { item: { kind: 'level', data: group }, listPath: appPath('/(app)/configuration/subjects/[[id]]') } : null;
 		},
 	},

@@ -10,16 +10,18 @@
 	const query = queryDashboardPage();
 </script>
 
+<HomeroomAttendanceNudge />
+
 {#key `${academicContext.yearId}:${academicContext.periodId}`}
 	<PageQuery {query} loadingTitle={$t('dashboard.title')}>
 		{#snippet children(data)}
 			<DataState
+				preserveShell
 				status={data.status}
 				errorMessage={data.errorMessage}
 				emptyTitle={$t('dashboard.title')}
 				emptyDescription={$t('dataState.emptyDescription')}
 			>
-				<HomeroomAttendanceNudge />
 				{#if data.overview}
 					<DirectorDashboardView overview={data.overview} />
 				{/if}

@@ -5,8 +5,8 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
-	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
+	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
@@ -14,14 +14,14 @@
 	import { disciplineCatalogContext } from '$lib/discipline-catalog/context.svelte';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, Pencil, Plus, Trash2 } from '$lib/icons';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import {
 		readDisciplineCatalogListFilters,
 		writeDisciplineCatalogListFilters,
 	} from '$lib/list/list-url-filters';
-	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { refreshDisciplineCatalog } from '$lib/queries/discipline-catalog.queries';
 	import { appGoto } from '$lib/navigation/app-navigation';
+	import { refreshDisciplineCatalog } from '$lib/queries/discipline-catalog.queries';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import DisciplinaryActionFormModal from './DisciplinaryActionFormModal.svelte';
@@ -186,84 +186,84 @@
 			{catalogError}
 		</div>
 	{:else}
-	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-		<div
-			class="grid grid-cols-12 gap-4 border-b border-border bg-secondary/40 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
-		>
-			<div class="col-span-4">{$t('disciplinaryCatalog.name')}</div>
-			<div class="col-span-2">{$t('disciplinaryCatalog.kind')}</div>
-			<div class="col-span-2">{$t('disciplinaryCatalog.severity')}</div>
-			<div class="col-span-3">{$t('disciplinaryCatalog.description')}</div>
-			<div class="col-span-1"></div>
-		</div>
-		<ul>
-			{#if filteredActions.length === 0}
-				<li class="px-5 py-12 text-center text-sm text-muted-foreground">
-					{$t('dataState.emptyDescription')}
-				</li>
-			{:else}
-				{#each filteredActions as action (action.id)}
-					<li class="grid grid-cols-12 items-center gap-4 border-b border-border px-5 py-4 last:border-b-0">
-						<div class="col-span-4 min-w-0">
-							<p class="truncate text-sm font-medium">{action.name}</p>
-							{#if action.defaultDurationDays}
-								<p class="truncate text-xs text-muted-foreground">
-									{$t('disciplinaryCatalog.durationDays', { n: action.defaultDurationDays })}
-								</p>
-							{/if}
-						</div>
-						<div class="col-span-2">
-							<span
-								class={cn(
-									'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase',
-									action.kind === 'sanction'
-										? 'bg-destructive/10 text-destructive'
-										: 'bg-accent/15 text-accent-foreground',
-								)}
-							>
-								{action.kind === 'sanction'
-									? $t('disciplinaryCatalog.kindSanction')
-									: $t('disciplinaryCatalog.kindReward')}
-							</span>
-						</div>
-						<div class="col-span-2 text-sm tabular-nums text-muted-foreground">
-							{action.severity ?? '—'}
-						</div>
-						<div class="col-span-3 truncate text-sm text-muted-foreground">
-							{action.description ?? '—'}
-						</div>
-						<div class="col-span-1 flex justify-end">
-							<PermissionGate permission="DISCIPLINE_VALIDATE">
-								{#snippet children({ disabled, title })}
-									<RowActionMenu>
-										{#snippet children()}
-											<RowActionMenuItem
-												{disabled}
-												{title}
-												onclick={() => openEdit(action)}
-											>
-												<Pencil class="h-4 w-4" />
-												{$t('common.edit')}
-											</RowActionMenuItem>
-											<RowActionMenuItem
-												destructive
-												{disabled}
-												{title}
-												onclick={() => openDelete(action.id, action.name)}
-											>
-												<Trash2 class="h-4 w-4" />
-												{$t('common.delete')}
-											</RowActionMenuItem>
-										{/snippet}
-									</RowActionMenu>
-								{/snippet}
-							</PermissionGate>
-						</div>
+		<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+			<div
+				class="grid grid-cols-12 gap-4 border-b border-border bg-secondary/40 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+			>
+				<div class="col-span-4">{$t('disciplinaryCatalog.name')}</div>
+				<div class="col-span-2">{$t('disciplinaryCatalog.kind')}</div>
+				<div class="col-span-2">{$t('disciplinaryCatalog.severity')}</div>
+				<div class="col-span-3">{$t('disciplinaryCatalog.description')}</div>
+				<div class="col-span-1"></div>
+			</div>
+			<ul>
+				{#if filteredActions.length === 0}
+					<li class="px-5 py-12 text-center text-sm text-muted-foreground">
+						{$t('dataState.emptyDescription')}
 					</li>
-				{/each}
-			{/if}
-		</ul>
-	</div>
+				{:else}
+					{#each filteredActions as action (action.id)}
+						<li class="grid grid-cols-12 items-center gap-4 border-b border-border px-5 py-4 last:border-b-0">
+							<div class="col-span-4 min-w-0">
+								<p class="truncate text-sm font-medium">{action.name}</p>
+								{#if action.defaultDurationDays}
+									<p class="truncate text-xs text-muted-foreground">
+										{$t('disciplinaryCatalog.durationDays', { n: action.defaultDurationDays })}
+									</p>
+								{/if}
+							</div>
+							<div class="col-span-2">
+								<span
+									class={cn(
+										'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase',
+										action.kind === 'sanction'
+											? 'bg-destructive/10 text-destructive'
+											: 'bg-accent/15 text-accent-foreground',
+									)}
+								>
+									{action.kind === 'sanction'
+										? $t('disciplinaryCatalog.kindSanction')
+										: $t('disciplinaryCatalog.kindReward')}
+								</span>
+							</div>
+							<div class="col-span-2 text-sm tabular-nums text-muted-foreground">
+								{action.severity ?? '—'}
+							</div>
+							<div class="col-span-3 truncate text-sm text-muted-foreground">
+								{action.description ?? '—'}
+							</div>
+							<div class="col-span-1 flex justify-end">
+								<PermissionGate permission="DISCIPLINE_VALIDATE">
+									{#snippet children({ disabled, title })}
+										<RowActionMenu>
+											{#snippet children()}
+												<RowActionMenuItem
+													{disabled}
+													{title}
+													onclick={() => openEdit(action)}
+												>
+													<Pencil class="h-4 w-4" />
+													{$t('common.edit')}
+												</RowActionMenuItem>
+												<RowActionMenuItem
+													destructive
+													{disabled}
+													{title}
+													onclick={() => openDelete(action.id, action.name)}
+												>
+													<Trash2 class="h-4 w-4" />
+													{$t('common.delete')}
+												</RowActionMenuItem>
+											{/snippet}
+										</RowActionMenu>
+									{/snippet}
+								</PermissionGate>
+							</div>
+						</li>
+					{/each}
+				{/if}
+			</ul>
+		</div>
 	{/if}
 </div>
 

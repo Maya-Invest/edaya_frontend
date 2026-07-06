@@ -17,13 +17,13 @@
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { isLikelyDetailPath, listRouteCacheKey } from '$lib/detail-route-patterns';
-	import { DRAWER_TAB_QUERY_KEY } from '$lib/drawer/drawer-tab-url';
-	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
-	import { hydrateDetailEntitiesForPath } from '$lib/drawer/drawer-detail-hydration';
-	import { DrawerState } from '$lib/drawer.svelte';
 	import { setDrawer } from '$lib/drawer-context';
+	import { DrawerState } from '$lib/drawer.svelte';
+	import { hydrateDetailEntitiesForPath } from '$lib/drawer/drawer-detail-hydration';
+	import { DRAWER_TAB_QUERY_KEY } from '$lib/drawer/drawer-tab-url';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, PanelLeft, PanelLeftClose } from '$lib/icons';
+	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
 	import { DASHBOARD_HREF } from '$lib/navigation';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { canAccessPath } from '$lib/navigation/nav-permissions';

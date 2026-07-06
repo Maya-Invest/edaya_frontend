@@ -1,5 +1,5 @@
-import { redirect } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
+import { redirect } from '@sveltejs/kit';
 
 /** Legacy route — permissions live on School → Staff drawer (Permissions tab). */
 export const load: PageLoad = ({ params }) => {

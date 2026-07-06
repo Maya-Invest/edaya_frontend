@@ -17,8 +17,8 @@ alwaysApply: false
 3. **Detail drawer (complex entities)** — read-only; **entity header** (identity + up to 2 primary actions → modals); body = related content via **sections**, **tabs**, or **both**; no global Save on the shell.
 4. **Simple entities (§3.5)** — no drawer; row `···` menu → modals. Row click must not open an empty detail surface.
 5. **All mutations use modals** — create (list CTA), edit (entity-header or row `···`), delete (confirm modal), sub-collection add/edit (tab `+ Add` / row Edit).
-6. **Pragmatic toggles only** — boolean/single-value flips (permission cell, status chip) may toggle inline with immediate save + toast. Multi-field edits always use a modal.
-7. **Complex entities** — body tabs when justified; sub-collection tabs are mini read-only lists; their add/edit always opens a modal.
+6. **Pragmatic toggles only** — boolean/single-value flips (status chip, attendance checkbox) may toggle inline. **Not** `staffPermissionAssignments` — modal-only on Staff → Permissions tab.
+7. **Complex entities** — body tabs when justified; sub-collection `+ Add` on inline section header; row Edit → modal.
 8. **States** — wrap lists in `DataState`; toast on mutation success/error.
 
 ## Do not

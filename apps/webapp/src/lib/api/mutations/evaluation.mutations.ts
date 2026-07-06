@@ -12,7 +12,7 @@ type ApiAssessment = components['schemas']['Assessment'];
 
 function normalizedDescription(description?: string): string | undefined {
 	const trimmed = description?.trim();
-	return trimmed ? trimmed : undefined;
+	return trimmed || undefined;
 }
 
 function buildInClassAssessmentWindow(date: Date): { startsAt: string; endsAt: string } {

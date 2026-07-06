@@ -15,7 +15,7 @@ export function buildGradeScaleRanges(minScore: number, maxScore: number, passin
 	return [
 		{
 			letter: 'D',
-			minScore: minScore,
+			minScore,
 			maxScore: failMax,
 			isPassing: false,
 			interpretation: 'Insuffisant',
@@ -37,7 +37,7 @@ export function buildGradeScaleRanges(minScore: number, maxScore: number, passin
 		{
 			letter: 'A',
 			minScore: roundTo2(clampedPassing + step * 2),
-			maxScore: maxScore,
+			maxScore,
 			isPassing: true,
 			interpretation: 'Très bien',
 		},

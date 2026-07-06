@@ -7,15 +7,15 @@
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { loadIncidentInvolvements, loadIncidentSanctions } from '$lib/api/school-life-data';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
-	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { locale, t } from '$lib/i18n';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
-	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import { incidentSevTone, incidentCatTone } from '../shared/drawer-constants.ts';
 	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import DrawerField from '../shared/DrawerField.svelte';

@@ -118,7 +118,7 @@ export function queryClassStudentsPage(classId: string) {
 
 ### Rules
 
-1. **One query function per list route** — named `query<Scope><Entity>Page`.
+1. **One query function per list route** — named `query<Scope><Entity>Page` (e.g. `querySchoolStaffPage`, `queryClassEvaluationsPage`). `<Scope>` = `School`, `Class`, `Config`, or omitted for global routes.
 2. **Fetch the minimum** — filter server-side or client-side to route params (`classId`, `periodId`, etc.).
 3. **Seed the entity store inside `load`** — route fetch is the primary hydration path.
 4. **Lists read from the entity store** (filtered), not from ephemeral `PageQuery` result. `PageQuery` owns loading / error / empty status only.
@@ -126,19 +126,49 @@ export function queryClassStudentsPage(classId: string) {
 
 ### Route data matrix
 
-| Route | Loads |
-|-------|-------|
-| `/dashboard` | Dashboard aggregates only |
-| `/school/students` | All students (+ classes from shell) |
-| `/classes/:id/students` | Students for class |
-| `/classes/:id/timetable` | Planning events + students for class |
-| `/classes/:id/evaluations` | Evaluations for class |
-| `/classes/:id/report-cards` | Report card results for class (+ definitions if not cached) |
-| `/school/guardians` | Guardians (+ student ids for links) |
-| `/school/teachers` | Teachers roster |
-| `/school/staff` | Staff roster + `permission-catalog` (seeded into entity store) |
-| `/finance/billing` | Billing records |
-| Detail URL `…/[[id]]` | Same list query as parent; drawer resolves record from store |
+| Route | Query function | Loads into store |
+|-------|----------------|------------------|
+| `/dashboard` | `queryDashboardPage` | Overview aggregates only (not entity collections) |
+| `/school/students` | `querySchoolStudentsPage` | Students (merge) |
+| `/school/guardians` | `querySchoolGuardiansPage` | Guardians + student link ids (merge) |
+| `/school/teachers` | `querySchoolTeachersPage` | Teachers (merge) |
+| `/school/staff` | `querySchoolStaffPage` | Staff + `permission-catalog` (merge) |
+| `/school/calendar` | `querySchoolCalendarPage` | Calendar events (merge) |
+| `/school/activities` | `querySchoolActivitiesPage` | Activities (merge) |
+| `/school/announcements` | `querySchoolAnnouncementsPage` | Announcements (merge) |
+| `/school/events` | `querySchoolEventsPage` | Incidents (merge) |
+| `/classes/:id/students` | `queryClassStudentsPage` | Students for class (class slice) |
+| `/classes/:id/timetable` | `queryClassTimetablePage` | Planning events for class (replace slice) |
+| `/classes/:id/teaching` | `queryClassTeachingPage` | Class subjects / teaching (class slice) |
+| `/classes/:id/evaluations` | `queryClassEvaluationsPage` | Assessments for class (replace slice) |
+| `/classes/:id/report-cards` | `queryClassReportCardsPage` | Report card results + definitions if needed |
+| `/classes/:id/attendance` | `queryClassAttendancePage` | Attendance records for class |
+| `/finance/fees` | `queryFinancePage` | Fees, billing, students for links |
+| `/finance/billing` | `queryFinancePage` | Fees, billing, students for links |
+| `/finance/payment` | `queryPaymentsPage` | Payments (via finance seed) |
+| `/configuration/school` | `querySchoolSettingsPage` | School profile |
+| `/configuration/academic` | `queryAcademicAdminPage` | Academic structure (shell-backed) |
+| `/configuration/grade-levels` | `queryGradeLevelsPage` | Grade levels (shell-backed) |
+| `/configuration/classes` | `queryClassGroupsPage` | Class groups + drawer hydration on `[[id]]` |
+| `/configuration/subjects` | `queryConfigSubjectsPage` | Subject catalog |
+| `/configuration/report-cards` | `queryReportCardDefinitionsPage` | Report card definitions |
+| `/configuration/grade-scales` | `queryGradeScalesPage` | Grade scales |
+| `/configuration/notifications` | `queryNotificationTemplatesPage` | Notification templates |
+| `/configuration/discipline` | `queryDisciplineCatalogPage` | Disciplinary actions catalog |
+| `/account/inbox` | `queryInboxPage` | Message deliveries |
+| Detail URL `…/[[id]]` | Same query as parent list | Drawer resolves record from store |
+
+**Tab lazy load:** sub-collection data (e.g. staff permission assignments) may load when a drawer tab opens if not seeded by the list route — patch the same store collection; do not duplicate in component state.
+
+### Domain stores
+
+| Store | Path | When |
+|-------|------|------|
+| `detailDataContext` / `entityStore` | `lib/detail-data/context.svelte.ts` | Default — students, staff, planning, finance, incidents, etc. |
+| `reportCardsContext` | `lib/report-cards/context.svelte.ts` | Report card definitions, generation, class results |
+| `teachingLogContext` | `lib/teaching-log/context.svelte.ts` | Lesson logbook entries |
+
+Same seed / patch / optimistic rules apply. Prefer `detailDataContext` unless the bounded context already has a domain store.
 
 ### Deep-link / refresh on detail URL
 
@@ -182,7 +212,7 @@ Implementations live in `lib/detail-data/context.svelte.ts`. Import `detailDataC
 
 | Collection | Seed policy | Notes |
 |------------|-------------|-------|
-| Students, guardians, staff | Merge by `id` | School-wide routes add records; class-scoped routes replace that class slice |
+| Students, guardians, staff, teachers | Merge by `id` | School-wide routes add records; class-scoped routes replace that class slice |
 | Planning events | Replace class slice | `seedPlanning(events, { classId })` |
 | Assessments | Replace class slice | All kinds (`homework`, `quiz`, …) on one route |
 | Staff permission assignments | Merge by `id` | Seeded from `/school/staff` load; patched by permission mutations |

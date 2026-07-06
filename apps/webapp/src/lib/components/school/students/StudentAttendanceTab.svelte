@@ -1,15 +1,14 @@
 <script lang="ts">
 	import type { Student, StudentAttendanceHistoryItem } from '$lib/types/school';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { Clock } from '$lib/icons';
+	import { Clock, Plus } from '$lib/icons';
+	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { cn } from '$lib/utils';
 	import { fmtDateFr } from '../shared/drawer-constants.ts';
 	import DrawerEmptyState from '../shared/DrawerEmptyState.svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
-	import { Plus } from '$lib/icons';
 
 	const {
 		s,

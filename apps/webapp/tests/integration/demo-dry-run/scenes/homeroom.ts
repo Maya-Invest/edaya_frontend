@@ -24,7 +24,6 @@ export async function runHomeroomNudgeCheck(
 
 		const configured = await ensureDailyAttendanceMode(ctx, CLASS_6A, {
 			homeroomStaffName: /Assi/i,
-			force: true,
 		});
 		if (!configured) {
 			reporter.log(scene, 'N.2 Ensure 6ème A daily mode', 'fail', 'Could not set daily attendance mode');

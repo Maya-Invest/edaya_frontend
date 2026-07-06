@@ -4,8 +4,9 @@
 	import { deleteReportCardDefinitionMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import { publishReportCardDefinitionMutation } from '$lib/api/mutations/report-cards.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
 	import { reportCardsContext } from '$lib/report-cards/context.svelte';
 	import { toast } from '$lib/toast.svelte';
@@ -22,6 +23,24 @@
 	);
 	const level = $derived(academicContext.gradeLevelById(live.gradeLevelId));
 	const scale = $derived(reportCardsContext.scales.find(s => s.id === live.gradeScaleId));
+
+	let deleteOpen = $state(false);
+	let deleteBusy = $state(false);
+
+	async function confirmDelete() {
+		deleteBusy = true;
+		try {
+			const ok = await deleteReportCardDefinitionMutation(live.id, {
+				successMessage: get(t)('reportCards.toastModelDeleted', { name: live.name }),
+			});
+			if (ok) {
+				deleteOpen = false;
+			}
+		}
+		finally {
+			deleteBusy = false;
+		}
+	}
 
 	async function publish() {
 		const ok = await publishReportCardDefinitionMutation(live.id);
@@ -54,17 +73,20 @@
 				<Button size="sm" class="rounded-full" onclick={publish}>
 					{$t('reportCards.publishModel')}
 				</Button>
+			{/if}
+		{/snippet}
+		{#snippet overflow()}
+			{#if live.status === 'draft'}
 				<PermissionGate permission="REPORT_CARD_CONFIGURE">
 					{#snippet children({ disabled, title })}
-						<DeleteEntityButton
+						<RowActionMenuItem
+							destructive
 							{disabled}
 							{title}
-							confirmTitle={$t('common.deleteConfirmTitle')}
-							confirmDescription={$t('reportCards.deleteConfirm', { name: live.name })}
-							onConfirm={() => deleteReportCardDefinitionMutation(live.id, {
-								successMessage: get(t)('reportCards.toastModelDeleted', { name: live.name }),
-							})}
-						/>
+							onclick={() => (deleteOpen = true)}
+						>
+							{$t('common.delete')}
+						</RowActionMenuItem>
 					{/snippet}
 				</PermissionGate>
 			{/if}
@@ -100,3 +122,13 @@
 		</div>
 	{/if}
 </div>
+
+<ConfirmModal
+	bind:open={deleteOpen}
+	title={$t('common.deleteConfirmTitle')}
+	description={$t('reportCards.deleteConfirm', { name: live.name })}
+	confirmLabel={$t('common.delete')}
+	cancelLabel={$t('common.cancel')}
+	busy={deleteBusy}
+	onConfirm={confirmDelete}
+/>

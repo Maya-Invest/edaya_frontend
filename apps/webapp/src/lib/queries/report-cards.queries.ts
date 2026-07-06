@@ -2,15 +2,15 @@ import type {
 	GradeScale,
 	ReportCardDefinition,
 } from '$lib/types/report-cards';
+import { ApiError } from '$api-client';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadClassPeopleData } from '$lib/api/people-data';
 import {
 	loadClassReportCardResultsData,
 	loadReportCardCatalogData,
 } from '$lib/api/report-cards-data';
-import { ApiError } from '$api-client';
-import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
+import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { queryClient } from '$lib/queries/client';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';

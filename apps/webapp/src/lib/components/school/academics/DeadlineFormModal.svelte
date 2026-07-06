@@ -23,6 +23,7 @@
 		onCreated,
 		disabled = false,
 		title: triggerTitle,
+		showTrigger = true,
 	}: {
 		deadline?: Deadline;
 		classId: string;
@@ -30,6 +31,7 @@
 		onCreated?: (deadlineId: string) => void;
 		disabled?: boolean;
 		title?: string;
+		showTrigger?: boolean;
 	} = $props();
 
 	let busy = $state(false);
@@ -126,7 +128,7 @@
 	}
 </script>
 
-{#if isEdit}
+{#if isEdit && showTrigger}
 	<Button
 		variant="outline"
 		size="sm"

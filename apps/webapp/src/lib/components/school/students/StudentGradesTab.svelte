@@ -1,15 +1,14 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
 	import type { buildStudentGradeSummaryFromRows } from './student-tab-selectors.ts';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { FileText } from '$lib/icons';
+	import { FileText, Plus } from '$lib/icons';
+	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import SubjectGroup from '../academics/SubjectGroup.svelte';
 	import DrawerEmptyState from '../shared/DrawerEmptyState.svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
-	import { Plus } from '$lib/icons';
 
 	const {
 		s,

@@ -1,7 +1,7 @@
 import type { components } from '$lib/api/schema';
+import { recordsForFieldIds } from '$lib/api/entity-list-filters';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { recordsForFieldIds } from '$lib/api/entity-list-filters';
 
 type SubjectMatterRaw = components['schemas']['SubjectMatter'];
 type ClassSubjectRaw = components['schemas']['ClassSubject'];

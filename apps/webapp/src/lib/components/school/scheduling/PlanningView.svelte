@@ -4,8 +4,8 @@
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
-	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
+	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
@@ -16,6 +16,7 @@
 	import { PlanningState, setPlanningState } from '$lib/scheduling/planning-state.svelte';
 	import AttendanceFlow from './AttendanceFlow.svelte';
 	import ClassTimetableCalendar from './ClassTimetableCalendar.svelte';
+	import NewSessionWizard from './NewSessionWizard.svelte';
 	import {
 		activePlanningEvents,
 		detectPlanningOverlaps,
@@ -23,7 +24,6 @@
 		formatPlanningWeekRange,
 		parseWeekAnchor,
 	} from './planning-calendar';
-	import NewSessionWizard from './NewSessionWizard.svelte';
 	import ScheduleFormModal from './ScheduleFormModal.svelte';
 
 	const {

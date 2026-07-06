@@ -114,6 +114,16 @@ Most routes use the **list + drawer** pattern. Non-list screens may use approved
 
 Variant layouts still use the same shell (sidebar + header). Only the body layout differs.
 
+**Layout-variant exceptions** — these routes do **not** use the full list toolbar from §2.1:
+
+| Variant | Routes (examples) | Toolbar rule |
+|---------|-------------------|--------------|
+| **Dashboard** | `/dashboard` | No entity list toolbar; KPI cards + action queue |
+| **Calendar / timetable grid** | `/school/calendar`, `/classes/{classId}/timetable` | Grid-specific controls; search/main-filter optional |
+| **Accordion config** | `/configuration/academic` | Year accordion; CRUD via modals per row |
+
+All variants still use shell chrome, permissions, toasts, and mutation modals where applicable.
+
 > **Removed in v1:** CRUD permission matrix (`/configuration/roles`). Staff permissions use the standard drawer sub-collection + modal pattern: Staff drawer → Permissions tab (`staffPermissionAssignments` add/edit/remove via modals; `ScopeBuilder` for `scopeIds`).
 
 ---
@@ -140,7 +150,7 @@ Every entity list route shares this anatomy:
 | **Title** | Entity name; optional live count (`Students · 142`) |
 | **Description** | One line of context; do not duplicate filter labels |
 | **Primary CTA** | Exactly one main action (e.g. "Add student") → opens **create modal** |
-| **Search** | Always on list pages. Instant text filter on primary label fields. Placed **alongside** the main filter. |
+| **Search** | Always on **standard list pages** (§2). Optional on layout variants (§1.3). Instant text filter on primary label fields. Placed **alongside** the main filter when both are present. |
 | **Main filter** | Always a **`<select>`** — one highest-frequency facet (class, status, category…). No chip bars or pill toggles. |
 | **Filter button** | Secondary / advanced facets (extra statuses, date range, scope, enrollment band…) |
 | **More menu** | Secondary actions: export, import, bulk ops, view toggle, column settings |
@@ -199,7 +209,7 @@ The drawer has three layers: shell chrome, entity header, and body.
 | Part | Rule |
 |------|------|
 | **Shell header** | Entity type badge + close button only |
-| **Entity header** | Identity block (avatar/photo, name, 1–3 status chips, one-line summary) + up to **2 primary entity actions** (each opens a modal). Additional actions go in a `···` overflow menu. Destructive actions (delete, archive) never appear in the top 2 — overflow + confirm modal only. Use **`DrawerEntityHeader`** (`lib/components/school/shared/DrawerEntityHeader.svelte`). |
+| **Entity header** | Identity block (avatar/photo, name, 1–3 status chips, one-line summary) + up to **2 primary entity actions** (each opens a modal). Additional actions go in a `···` overflow menu. Destructive actions (delete, archive) never appear in the top 2 — overflow + confirm modal only. Implement with **`DrawerEntityHeader`** (`lib/components/school/shared/DrawerEntityHeader.svelte`). Primary entity actions belong here — not in tab body footers. |
 | **Body** | **Related content only** — not a repeat of list-row columns. Organized by **sections**, **tabs**, or **both** (see §3.2). |
 | **Footer** | Omit when Close lives in the shell header. If present: Close only — **no global Save**, no duplicate of entity-header actions. |
 
@@ -247,18 +257,22 @@ Use for: create/edit forms, multi-field changes, sub-entity add/edit. Primary en
 
 #### Pattern B — Pragmatic inline toggle (boolean / single-value only)
 
-For **simple boolean or single-value toggles** (status chip, permission cell, attendance checkbox):
+For **simple boolean or single-value toggles** (status chip, attendance checkbox, enrollment flag):
 
 - Toggle flips immediately
 - Persist on change (optimistic or await server)
 - Toast on success/error
 - No multi-field form in the drawer
 
+**Excluded:** `staffPermissionAssignments` on Staff → Permissions tab — **modal-only** (add/edit/delete via `StaffPermissionFormModal`). Do not use inline toggles or matrix layouts for permission grants.
+
 **Do not** use inline toggle for forms with more than one field or across multiple sections — use a modal.
 
 ### 3.5 Simple entities (no drawer)
 
 When a record has **nothing meaningful to browse** beyond what the list already shows, **do not open a drawer**.
+
+**Authoritative surface type** per entity is fixed by product routes and entity tables (complex · simple · thin · layout). Use the heuristics below only when classifying a **new** entity — they do not override an existing assignment.
 
 **Qualifies as simple** when all are true:
 
@@ -302,9 +316,11 @@ Complex entities (e.g. Student) use the body patterns in §3.2. A tab is either:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+**Sub-collection header row:** title + count on the left; **`+ Add …`** button on the right (inline section header — not `DrawerActionBar`).
+
 | Element | Behavior |
 |---------|----------|
-| **Header** | Sub-entity name + count |
+| **Header row** | Sub-entity name + count on the left; `+ Add …` on the right |
 | **Primary CTA** (`+ Add …`) | Opens **create modal** for the sub-entity |
 | **Row actions** | Edit → **edit modal**; Delete → **confirm modal** |
 | **Row click** | Expand read-only detail inline, or no-op — never inline edit form |
@@ -312,11 +328,25 @@ Complex entities (e.g. Student) use the body patterns in §3.2. A tab is either:
 
 **Hard rule:** all sub-collection **add** and **edit** operations open a modal. The tab renders read-only lists only.
 
+### 4.2 Drawer body footer (`DrawerActionBar`)
+
+Optional **footer action bar** inside a drawer tab or section — `border-t`, right-aligned secondary actions (e.g. legacy Edit/Delete clusters). **Not** the sub-collection `+ Add` header.
+
+- **Prefer** primary entity actions in **`DrawerEntityHeader`** (§3.1).
+- Use **`DrawerActionBar`** only for supplementary actions that do not fit the two header slots.
+- New screens: put entity-level Edit/Delete in the entity header overflow, not a body footer.
+
+### 4.3 Known legacy drift (align when touching)
+
+No tracked drift for drawer entity headers. When you find a screen still using a custom identity block + `DrawerActionBar` for Edit/Delete, migrate to `DrawerEntityHeader` + overflow menu in the same PR.
+
+Refactor legacy screens in the same PR when you materially edit them; no standalone migration sprint required.
+
 ---
 
 ## 5. Mutation modals
 
-All mutations use centered modal dialogs.
+All mutations use modal dialogs — **centered overlay on desktop**; **full-screen or near-full sheet on mobile** (§6.5).
 
 ### 5.1 Modal types
 
@@ -456,7 +486,7 @@ Use this template when adding or refactoring an entity screen.
 #### States & permissions
 - Loading / empty / error on list route
 - Toast on all mutations
-- Role gates: <which actions require which role>
+- Role gates: <which actions require which permission codes via PermissionGate>
 ```
 
 ### Naming conventions

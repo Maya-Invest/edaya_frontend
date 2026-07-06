@@ -5,13 +5,14 @@
 	import { publishAnnouncementMutation } from '$lib/api/mutations/announcement.mutations';
 	import { deleteAnnouncementMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
-	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { t } from '$lib/i18n';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
@@ -39,6 +40,8 @@
 	const isDraft = $derived(live.status === 'draft');
 
 	let publishOpen = $state(false);
+	let deleteOpen = $state(false);
+	let deleteBusy = $state(false);
 
 	function fmtDate(value: string | undefined) {
 		if (!value) {
@@ -67,6 +70,21 @@
 			announcementId: live.id,
 			successMessage: get(t)('announcements.publishSuccess', { title: live.title }),
 		});
+	}
+
+	async function confirmDelete() {
+		deleteBusy = true;
+		try {
+			const ok = await deleteAnnouncementMutation(live.id, {
+				successMessage: get(t)('announcements.toastDeleted', { title: live.title }),
+			});
+			if (ok) {
+				deleteOpen = false;
+			}
+		}
+		finally {
+			deleteBusy = false;
+		}
 	}
 	const dateSummary = $derived.by(() => {
 		const parts = [`${$t('announcements.createdAt')}: ${fmtDate(live.createdAt)}`];
@@ -101,23 +119,13 @@
 		{/snippet}
 		{#snippet actions()}
 			{#if isDraft}
-				<AnnouncementFormModal announcement={live} />
 				<PermissionGate
 					permission="COMMUNICATION_CREATE"
 					mode="disable"
 					tooltip={$t('announcements.permissionCreate')}
 				>
 					{#snippet children({ disabled, title })}
-						<Button
-							size="sm"
-							variant="outline"
-							class="rounded-full"
-							{disabled}
-							{title}
-							onclick={() => modals.open('add-target')}
-						>
-							{$t('announcements.addTarget')}
-						</Button>
+						<AnnouncementFormModal announcement={live} {disabled} {title} />
 					{/snippet}
 				</PermissionGate>
 				<PermissionGate
@@ -137,21 +145,31 @@
 						</Button>
 					{/snippet}
 				</PermissionGate>
+			{/if}
+		{/snippet}
+		{#snippet overflow()}
+			{#if isDraft}
 				<PermissionGate
 					permission="COMMUNICATION_CREATE"
 					mode="disable"
 					tooltip={$t('announcements.permissionCreate')}
 				>
 					{#snippet children({ disabled, title })}
-						<DeleteEntityButton
+						<RowActionMenuItem
 							{disabled}
 							{title}
-							confirmTitle={$t('common.deleteConfirmTitle')}
-							confirmDescription={$t('announcements.deleteConfirm', { title: live.title })}
-							onConfirm={() => deleteAnnouncementMutation(live.id, {
-								successMessage: get(t)('announcements.toastDeleted', { title: live.title }),
-							})}
-						/>
+							onclick={() => modals.open('add-target')}
+						>
+							{$t('announcements.addTarget')}
+						</RowActionMenuItem>
+						<RowActionMenuItem
+							destructive
+							{disabled}
+							{title}
+							onclick={() => (deleteOpen = true)}
+						>
+							{$t('common.delete')}
+						</RowActionMenuItem>
 					{/snippet}
 				</PermissionGate>
 			{/if}
@@ -211,4 +229,14 @@
 	submitLabel={$t('announcements.publish')}
 	submitDisabled={live.targets.length === 0}
 	onSubmit={confirmPublish}
+/>
+
+<ConfirmModal
+	bind:open={deleteOpen}
+	title={$t('common.deleteConfirmTitle')}
+	description={$t('announcements.deleteConfirm', { title: live.title })}
+	confirmLabel={$t('common.delete')}
+	cancelLabel={$t('common.cancel')}
+	busy={deleteBusy}
+	onConfirm={confirmDelete}
 />

@@ -5,20 +5,20 @@
 	import { resetSchoolNotificationTemplatesMutation } from '$lib/api/mutations/notification-templates.mutations';
 	import NotificationTemplateEditModal from '$lib/components/school/configuration/NotificationTemplateEditModal.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
+	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { confirmAction } from '$lib/confirm-action';
 	import { t } from '$lib/i18n';
 	import { Pencil, RotateCcw } from '$lib/icons';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import {
 		channelsForTemplateKey,
 		NOTIFICATION_TEMPLATE_CATEGORIES,
 
 	} from '$lib/notification-templates/catalog';
-	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
 
 	const { data }: {
@@ -131,17 +131,17 @@
 												{key}
 											</p>
 										</div>
-								<RowActionMenu>
-									{#snippet children()}
-										<RowActionMenuItem
-											disabled={disabled || !document}
-											onclick={() => openEdit(key)}
-										>
-											<Pencil class="h-4 w-4" />
-											{$t('common.edit')}
-										</RowActionMenuItem>
-									{/snippet}
-								</RowActionMenu>
+										<RowActionMenu>
+											{#snippet children()}
+												<RowActionMenuItem
+													disabled={disabled || !document}
+													onclick={() => openEdit(key)}
+												>
+													<Pencil class="h-4 w-4" />
+													{$t('common.edit')}
+												</RowActionMenuItem>
+											{/snippet}
+										</RowActionMenu>
 									</div>
 									<p class="text-xs text-muted-foreground">
 										{$t('notificationTemplates.channels')}: {channelLabel(key)}

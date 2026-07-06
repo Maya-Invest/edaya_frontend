@@ -6,8 +6,8 @@
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
-	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { appGoto } from '$lib/navigation/app-navigation';
+	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { queryClassTeachingPage } from '$lib/queries/subjects.queries';
 
 	const selectedSubjectId = $derived($page.params.id);

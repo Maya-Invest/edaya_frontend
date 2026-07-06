@@ -1,16 +1,16 @@
+import { ApiError } from '$api-client';
 import { academicContext } from '$lib/academic/context.svelte';
-import { authSession } from '$lib/auth/session.svelte';
 import { schoolWideEntityList } from '$lib/api/entity-list-filters';
 import { loadClassPeopleData } from '$lib/api/people-data';
 import { loadStaffPermissionPageData } from '$lib/api/staff-permission-assignments-data';
-import { ApiError } from '$api-client';
-import { t } from '$lib/i18n';
-import { get } from 'svelte/store';
 import { fetchSchoolSubjectsSources, mapAllClassSubjects } from '$lib/api/subjects-data';
+import { authSession } from '$lib/auth/session.svelte';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
+import { t } from '$lib/i18n';
 import { queryClient } from '$lib/queries/client';
 import { resolvePageLoad, listPageHasItems } from '$lib/queries/page-status';
 import { seedStudent360ForStudent, studentDetailIdFromUrl } from '$lib/queries/student-360.queries';
+import { get } from 'svelte/store';
 
 const SCHOOL_ROSTER_SCOPE
 	= 'School students administration route loads paginated school roster.';
@@ -122,11 +122,11 @@ export function querySchoolStaffPage() {
 				}),
 				schoolId && academicYearId
 					? loadStaffPermissionPageData(client, { schoolId, academicYearId }, get(t)).catch((error) => {
-						if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-							return { catalog: [], assignments: [] };
-						}
-						throw error;
-					})
+							if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
+								return { catalog: [], assignments: [] };
+							}
+							throw error;
+						})
 					: Promise.resolve({ catalog: [], assignments: [] }),
 			]);
 			const allSubjects = mapAllClassSubjects(subjectSources);

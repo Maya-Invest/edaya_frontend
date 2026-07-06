@@ -9,9 +9,9 @@
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { createUrlSyncedDrawerTabs } from '$lib/drawer/drawer-tabs-state.svelte';
-	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { t } from '$lib/i18n';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { canUploadProfilePhoto } from '$lib/permissions';
 	import { get } from 'svelte/store';
 	import ProfilePhotoPicker from '../shared/ProfilePhotoPicker.svelte';
@@ -24,19 +24,19 @@
 		summarizeStudentFinances,
 		summarizeStudentIncidents,
 	} from './student-tab-selectors.ts';
+	import StudentAbsenceModal from './StudentAbsenceModal.svelte';
 	import StudentAttendanceTab from './StudentAttendanceTab.svelte';
 	import StudentEnrollmentsTab from './StudentEnrollmentsTab.svelte';
 	import StudentFinanceTab from './StudentFinanceTab.svelte';
+	import StudentGradeEntryModal from './StudentGradeEntryModal.svelte';
 	import StudentGradesTab from './StudentGradesTab.svelte';
+	import StudentGuardianLinkModal from './StudentGuardianLinkModal.svelte';
+	import StudentIncidentModal from './StudentIncidentModal.svelte';
 	import StudentIncidentsTab from './StudentIncidentsTab.svelte';
+	import StudentNoteModal from './StudentNoteModal.svelte';
 	import StudentProfileEditModal from './StudentProfileEditModal.svelte';
 	import StudentProfileTab from './StudentProfileTab.svelte';
 	import StudentReportCardPanel from './StudentReportCardPanel.svelte';
-	import StudentAbsenceModal from './StudentAbsenceModal.svelte';
-	import StudentGradeEntryModal from './StudentGradeEntryModal.svelte';
-	import StudentGuardianLinkModal from './StudentGuardianLinkModal.svelte';
-	import StudentIncidentModal from './StudentIncidentModal.svelte';
-	import StudentNoteModal from './StudentNoteModal.svelte';
 
 	type StudentDrawerModal
 		= | 'edit-profile'

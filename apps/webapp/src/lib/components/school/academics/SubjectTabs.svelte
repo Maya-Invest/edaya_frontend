@@ -1,27 +1,32 @@
 <script lang="ts">
-	import type { Subject } from '$lib/types/school';
 	import type { SubjectMatterDrawerRow } from '$lib/api/mutations/subject-matter.mutations';
+	import type { Subject } from '$lib/types/school';
+	import { page } from '$app/stores';
+	import { deleteClassSubjectMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import {
 		deleteSubjectMatterMutation,
 		loadSubjectMatterDrawerRows,
 	} from '$lib/api/mutations/subject-matter.mutations';
-	import { page } from '$app/stores';
-	import { deleteClassSubjectMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
 	import DrawerTabBar from '$lib/components/ui/DrawerTabBar.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { createUrlSyncedDrawerTabs } from '$lib/drawer/drawer-tabs-state.svelte';
-	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { t } from '$lib/i18n';
 	import { Check, FileText, Paperclip, Plus } from '$lib/icons';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { teachingLogContext } from '$lib/teaching-log/context.svelte';
 	import { get } from 'svelte/store';
-	import DrawerActionBar from '../shared/DrawerActionBar.svelte';
+	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import SubjectFormModal from './SubjectFormModal.svelte';
 	import SubjectMatterFormModal from './SubjectMatterFormModal.svelte';
 
 	const { s }: { s: Subject } = $props();
+
+	let deleteOpen = $state(false);
+	let deleteBusy = $state(false);
 
 	type SubjectDrawerModal = 'edit-subject' | 'add-chapter' | 'edit-chapter';
 
@@ -127,44 +132,51 @@
 		}
 		return ok;
 	}
+
+	async function confirmDeleteSubject() {
+		deleteBusy = true;
+		try {
+			const ok = await deleteClassSubjectMutation(s.id, {
+				successMessage: get(t)('subjects.toastDeleted', { name: s.name }),
+			});
+			if (ok) {
+				deleteOpen = false;
+			}
+		}
+		finally {
+			deleteBusy = false;
+		}
+	}
 </script>
 
 <div class="space-y-5">
-	<div class="flex items-start justify-between gap-4">
-		<div class="min-w-0 flex-1">
-			<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+	<DrawerEntityHeader name={s.name} summary={s.description}>
+		{#snippet chips()}
+			<span class="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] tabular-nums text-foreground/80">
 				{$t('subjects.hoursPerWeek', { h: s.hoursPerWeek })}
-			</p>
-			<h3 class="mt-1 font-display text-2xl font-semibold">{s.name}</h3>
-			<p class="mt-2 text-sm text-muted-foreground">{s.description}</p>
-		</div>
-		<div class="flex shrink-0 items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2 shadow-soft">
+			</span>
+			<span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground/80">
+				{s.teacher}
+			</span>
+		{/snippet}
+		{#snippet avatar()}
 			<span
-				class="flex h-9 w-9 items-center justify-center rounded-full bg-primary font-display text-xs font-semibold text-primary-foreground"
+				class="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary font-display text-sm font-semibold text-primary-foreground"
 			>
 				{teacherInitials}
 			</span>
-			<div class="flex flex-col leading-tight">
-				<span class="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
-					{$t('subjects.teacher')}
-				</span>
-				<span class="text-xs font-semibold">{s.teacher}</span>
-			</div>
-		</div>
-	</div>
-
-	<DrawerActionBar>
-		<Button variant="outline" size="sm" class="rounded-full" onclick={() => modals.open('edit-subject')}>
-			{$t('common.edit')}
-		</Button>
-		<DeleteEntityButton
-			confirmTitle={$t('common.deleteConfirmTitle')}
-			confirmDescription={$t('subjects.deleteConfirm', { name: s.name })}
-			onConfirm={() => deleteClassSubjectMutation(s.id, {
-				successMessage: get(t)('subjects.toastDeleted', { name: s.name }),
-			})}
-		/>
-	</DrawerActionBar>
+		{/snippet}
+		{#snippet actions()}
+			<Button variant="outline" size="sm" class="rounded-full" onclick={() => modals.open('edit-subject')}>
+				{$t('common.edit')}
+			</Button>
+		{/snippet}
+		{#snippet overflow()}
+			<RowActionMenuItem destructive onclick={() => (deleteOpen = true)}>
+				{$t('common.delete')}
+			</RowActionMenuItem>
+		{/snippet}
+	</DrawerEntityHeader>
 
 	<DrawerTabBar tabs={tabItems} active={tabs.tab} onSelect={key => tabs.select(key as SubjectTab)} />
 
@@ -314,3 +326,13 @@
 		onSaved={handleMatterSaved}
 	/>
 {/if}
+
+<ConfirmModal
+	bind:open={deleteOpen}
+	title={$t('common.deleteConfirmTitle')}
+	description={$t('subjects.deleteConfirm', { name: s.name })}
+	confirmLabel={$t('common.delete')}
+	cancelLabel={$t('common.cancel')}
+	busy={deleteBusy}
+	onConfirm={confirmDeleteSubject}
+/>

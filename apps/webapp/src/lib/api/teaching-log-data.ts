@@ -1,5 +1,6 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
+import type { ClassSubjectInstructorSources } from '$lib/api/teacher-display';
 import type { LogEntry } from '$lib/types/teaching-log';
 import {
 	assignmentsForClassSubjects,
@@ -10,7 +11,7 @@ import {
 } from '$lib/api/entity-list-filters';
 import {
 	fetchClassSubjectInstructorSourcesBundle,
-	type ClassSubjectInstructorSources,
+
 	teacherNameForClassSubject,
 } from '$lib/api/teacher-display';
 

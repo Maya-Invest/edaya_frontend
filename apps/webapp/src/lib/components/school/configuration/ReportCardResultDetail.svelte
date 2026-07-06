@@ -9,6 +9,7 @@
 	import { formatGrade } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
+	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 
 	const { result }: { result: ReportCardResult } = $props();
 
@@ -37,22 +38,32 @@
 </script>
 
 <div class="space-y-5">
-	<div>
-		<h3 class="font-display text-xl font-semibold">{student?.name ?? '—'}</h3>
-		<p class="text-sm text-muted-foreground">{definition?.name ?? '—'}</p>
-		<span
-			class={cn(
-				'mt-2 inline-block rounded-full px-2 py-0.5 font-mono text-[10px] uppercase',
-				live.status === 'published'
-					? 'bg-accent/15 text-accent-foreground'
-					: live.status === 'generated'
-					? 'bg-highlight-soft text-highlight'
-					: 'bg-secondary text-muted-foreground',
-			)}
-		>
-			{statusLabel[live.status]}
-		</span>
-	</div>
+	<DrawerEntityHeader
+		name={student?.name ?? '—'}
+		summary={definition?.name ?? '—'}
+	>
+		{#snippet chips()}
+			<span
+				class={cn(
+					'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase',
+					live.status === 'published'
+						? 'bg-accent/15 text-accent-foreground'
+						: live.status === 'generated'
+						? 'bg-highlight-soft text-highlight'
+						: 'bg-secondary text-muted-foreground',
+				)}
+			>
+				{statusLabel[live.status]}
+			</span>
+		{/snippet}
+		{#snippet actions()}
+			{#if live.status === 'generated'}
+				<Button size="sm" class="rounded-full" onclick={publish}>
+					{$t('reportCards.publish')}
+				</Button>
+			{/if}
+		{/snippet}
+	</DrawerEntityHeader>
 
 	<div class="grid grid-cols-3 gap-3">
 		<div class="rounded-xl border border-border bg-secondary/30 p-3 text-center">
@@ -115,12 +126,6 @@
 		<div class="rounded-xl border border-border bg-card p-4">
 			<p class="font-mono text-[10px] uppercase text-muted-foreground">{$t('reportCards.principalComment')}</p>
 			<p class="mt-1 text-sm">{live.principalComment}</p>
-		</div>
-	{/if}
-
-	{#if live.status === 'generated'}
-		<div class="flex justify-end">
-			<Button class="rounded-full" onclick={publish}>{$t('reportCards.publish')}</Button>
 		</div>
 	{/if}
 </div>

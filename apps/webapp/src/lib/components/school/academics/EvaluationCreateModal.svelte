@@ -59,11 +59,11 @@
 	const canSubmit = $derived(
 		title.trim().length > 0
 		&& classSubjectId.length > 0
-		&& Number.isFinite(numericMax)
+			&& Number.isFinite(numericMax)
 		&& numericMax > 0
-		&& Number.isFinite(numericCoef)
+			&& Number.isFinite(numericCoef)
 		&& numericCoef > 0
-		&& (!isHomework || (dueDate.length > 0 && assignedDate.length > 0)),
+			&& (!isHomework || (dueDate.length > 0 && assignedDate.length > 0)),
 	);
 
 	function resetForm() {

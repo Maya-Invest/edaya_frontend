@@ -1,7 +1,7 @@
 import type { PlanningEvent, TimetableSchedule } from '$lib/types/school';
 import { classGroupScope } from '$lib/api/entity-list-filters';
-import { createSessionMutation, updateSessionMutation } from '$lib/api/mutations/planning.mutations';
 import { ensureClassActivityEnrollment } from '$lib/api/mutations/class-activity-enrollment.mutations';
+import { createSessionMutation, updateSessionMutation } from '$lib/api/mutations/planning.mutations';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { loadClassPlanning } from '$lib/api/planning-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';

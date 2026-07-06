@@ -2,6 +2,7 @@ import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { AttendanceDay } from '$lib/types/school';
 import type { SessionDetail } from '$lib/types/session-detail';
+import { ApiError } from '$api-client';
 import {
 	activeEnrollmentsForClass,
 	attendanceRecordsForOccurrences,
@@ -13,6 +14,21 @@ import { buildOccurrenceAttendanceDetail } from '$lib/api/session-detail-data';
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 type AttendanceOccurrenceRaw = components['schemas']['AttendanceOccurrence'];
 type AttendanceRaw = components['schemas']['Attendance'];
+
+async function safeEntityList<T>(load: () => Promise<T[] | null | undefined>): Promise<T[]> {
+	try {
+		return (await load()) ?? [];
+	}
+	catch (error) {
+		if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
+			return [];
+		}
+		if (error instanceof TypeError) {
+			return [];
+		}
+		throw error;
+	}
+}
 
 function formatDate(value: unknown): string {
 	if (!value) {
@@ -52,19 +68,19 @@ export async function fetchClassAttendanceDaysSources(
 	studentCount: number;
 }> {
 	const [occurrencesRaw, enrollmentsRaw] = await Promise.all([
-		client.entities.attendances.list(attendancesForClass(classGroupId)),
-		client.entities.enrollments.list(activeEnrollmentsForClass(classGroupId)),
+		safeEntityList(() => client.entities.attendances.list(attendancesForClass(classGroupId))),
+		safeEntityList(() => client.entities.enrollments.list(activeEnrollmentsForClass(classGroupId))),
 	]);
 
-	const occurrenceIds = (occurrencesRaw ?? []).map(occurrence => occurrence.id);
+	const occurrenceIds = occurrencesRaw.map(occurrence => occurrence.id);
 	const recordsRaw = occurrenceIds.length > 0
-		? await client.entities.attendance.list(attendanceRecordsForOccurrences(occurrenceIds))
+		? await safeEntityList(() => client.entities.attendance.list(attendanceRecordsForOccurrences(occurrenceIds)))
 		: [];
 
 	return {
-		occurrencesRaw: occurrencesRaw ?? [],
-		recordsRaw: recordsRaw ?? [],
-		studentCount: enrollmentsRaw?.length ?? 0,
+		occurrencesRaw,
+		recordsRaw,
+		studentCount: enrollmentsRaw.length,
 	};
 }
 

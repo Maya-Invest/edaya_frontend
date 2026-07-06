@@ -29,9 +29,9 @@
 	const numericOrder = $derived(Number(order));
 	const canSubmit = $derived(
 		label.trim().length > 0
-			&& Number.isFinite(numericOrder)
+		&& Number.isFinite(numericOrder)
 			&& numericOrder > 0
-			&& startTime.trim().length > 0
+		&& startTime.trim().length > 0
 			&& endTime.trim().length > 0,
 	);
 

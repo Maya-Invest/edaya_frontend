@@ -22,7 +22,7 @@ This document defines **which components to reuse**, where they live, and when t
 
 ## 2. Mandatory registry (v1)
 
-Status: **Built** = use as-is · **Planned** = specified here but not yet in codebase
+Status: **Built** = use as-is. No **Planned** registry entries at this time — propose new T0/T2 components via §6 when criteria are met.
 
 ### 2.1 T0 — List & route
 
@@ -68,7 +68,7 @@ Feature routes **do not** reimplement shell chrome.
 | **DrawerEntityHeader** | `school/shared/DrawerEntityHeader.svelte` | Built | Identity + ≤2 primary actions + overflow |
 | **DrawerField** | `school/shared/DrawerField.svelte` | Built | Read-only label + value in drawer body |
 | **DrawerEmptyState** | `school/shared/DrawerEmptyState.svelte` | Built | Empty sub-collection / tab placeholder |
-| **DrawerActionBar** | `school/shared/DrawerActionBar.svelte` | Built | Section header + `+ Add …` CTA |
+| **DrawerActionBar** | `school/shared/DrawerActionBar.svelte` | Built | Optional drawer **body footer** — `border-t`, right-aligned actions; **not** sub-collection `+ Add` header |
 
 Complex drawer bodies (`*Detail.svelte`, `*Tabs.svelte`) **must** use `DrawerEntityHeader` for identity and actions — not a duplicate hero block in tab content.
 
@@ -91,8 +91,8 @@ Do not build ad-hoc `<select>` lists for people — use pickers or **PickerModal
 | Component | Path | Use for |
 |-----------|------|---------|
 | **ScopeBuilder** | `school/configuration/ScopeBuilder.svelte` | Staff permission `scopeIds` by catalog grain |
-| **StaffPermissionFormModal** | `school/configuration/StaffPermissionFormModal.svelte` | Add / edit `staffPermissionAssignments` |
-| **PermissionCheckboxGroup** | `school/configuration/PermissionCheckboxGroup.svelte` | Staff **assignment** form — pick permissions to sync |
+| **StaffPermissionFormModal** | `school/configuration/StaffPermissionFormModal.svelte` | Add / edit `staffPermissionAssignments` on Staff → Permissions tab |
+| **PermissionCheckboxGroup** | `school/configuration/PermissionCheckboxGroup.svelte` | **Staff assignment** create/edit forms only — pick permission codes to sync with a class-level assignment; **not** the Permissions tab list |
 
 **Do not** use `ScopeBuilder` outside staff permission flows. **Do not** restore a roles CRUD matrix screen.
 
@@ -140,7 +140,8 @@ DetailDrawer (shell)
   body:
     DrawerTabs? (feature-local pill strip until extracted)
     sections: DrawerField …
-    sub-collection: DrawerActionBar + read-only list + row Edit/Delete → modals
+    sub-collection: inline section header (+ Add) + read-only list + row Edit/Delete → modals
+    optional footer: DrawerActionBar (secondary actions only)
     empty: DrawerEmptyState
 ```
 
@@ -150,7 +151,19 @@ No drawer route required. **RowActionMenu** is the primary mutation surface (sim
 
 ---
 
-## 4. Registry completion notes
+## 4. Feature-local patterns (not yet extracted)
+
+These remain in T3 until a shared component is justified (§6). Follow visual patterns from the design-language spec.
+
+| Pattern | Current location | Target |
+|---------|------------------|--------|
+| **Drawer tab strip** | `DrawerTabBar.svelte` + `createUrlSyncedDrawerTabs` | Use as-is; do not fork pill-tab markup per drawer |
+| **Entity table / card list** | Per-feature `*View.svelte` grid markup | Extract shared `EntityTable` / `EntityCardList` when ≥3 list views share the same column/grid structure |
+| **Chip-bar main filter (legacy)** | Some older views | Migrate to `FilterSelect` + `FilterPanel` when touching the file |
+
+---
+
+## 5. Registry history (completed extractions)
 
 | ID | Component | Status | Notes |
 |----|-----------|--------|-------|
@@ -163,7 +176,7 @@ Remaining chip-bar **main** filters should migrate to `FilterSelect` when touche
 
 ---
 
-## 5. Anti-patterns
+## 6. Anti-patterns
 
 | Do not | Do instead |
 |--------|------------|
@@ -178,7 +191,7 @@ Remaining chip-bar **main** filters should migrate to `FilterSelect` when touche
 
 ---
 
-## 6. When to add a new shared component
+## 7. When to add a new shared component
 
 1. Same UI pattern appears in **≥3** features or **≥2** modules.
 2. Pattern is stable (not a one-off experiment).
@@ -187,16 +200,16 @@ Remaining chip-bar **main** filters should migrate to `FilterSelect` when touche
 
 ---
 
-## 7. Agent checklist
+## 8. Agent checklist
 
 When building or refactoring a screen:
 
-- [ ] List uses `ListPageHeader` + `FilterSelect` (+ `ListSearchField` / `FilterPanel` when landed)
+- [ ] List uses `ListPageHeader` + `FilterSelect` + `ListSearchField` / `FilterPanel` as needed
 - [ ] Route uses `PageQuery` + `DataState`
 - [ ] Mutations use `FormModal` / `ConfirmModal` / `PickerModal`
 - [ ] Actions wrapped in `PermissionGate` where required
 - [ ] Complex drawer uses `DetailDrawer` + `DrawerEntityHeader` + `DrawerField`
-- [ ] Sub-collections use `DrawerActionBar` + `DrawerEmptyState`
+- [ ] Sub-collections use inline section header for `+ Add`; `DrawerEmptyState` for empty tabs
 - [ ] People selection uses `*Picker` family
 - [ ] Staff permissions use `ScopeBuilder` + `StaffPermissionFormModal` only
 - [ ] Status chips use `ui-tones` / `drawer-constants`
@@ -208,5 +221,6 @@ When building or refactoring a screen:
 
 | Date | Change |
 |------|--------|
-| 2026-07-06 | Self-contained registry; Phase 0 items marked Built |
+| 2026-07-06 | §4 feature-local patterns; DrawerTabBar / EntityTable guidance; registry cleanup |
+| 2026-07-06 | DrawerActionBar = body footer; PermissionCheckboxGroup scope |
 | 2026-07-03 | Initial registry — T0/T1/T2 tiers, mandatory components |

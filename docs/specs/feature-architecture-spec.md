@@ -58,19 +58,34 @@ Class-scoped routes live under `/classes/{classId}/…`. The sidebar **class pic
 | `daily` | Show **Attendance** tab (`/classes/{classId}/attendance`) |
 | `session` | Hide Attendance tab; session attendance only on **timetable** drawer |
 
-### 2.3 List toolbar (all list pages)
+### 2.3 List toolbar (standard list pages)
 
 Order: **`[Primary CTA] [Search] [Main filter ▾] [Filter ▾] [More ▾]`**
+
+Applies to **standard entity list routes** only. Layout variants (§2.4) may omit search, main filter, or the full toolbar.
 
 | Slot | Rule |
 |------|------|
 | **Primary CTA** | One create action → modal |
-| **Search** | Always present; instant text filter on primary labels |
+| **Search** | Present on standard lists; optional on layout variants |
 | **Main filter** | Always **`<select>`** — one high-frequency facet. **No chip bars or pill toggles.** |
 | **Filter** | Secondary facets (status bands, date range, scope) |
 | **More** | Export, bulk ops, view toggle |
 
-### 2.4 Routing
+### 2.4 Layout variants
+
+These routes use approved body layouts **without** the full §2.3 toolbar:
+
+| Variant | Routes | Notes |
+|---------|--------|-------|
+| **Dashboard** | `/dashboard` | KPI cards; no entity collection toolbar |
+| **Calendar** | `/school/calendar` | Time grid |
+| **Timetable** | `/classes/{classId}/timetable` | Week grid; occurrence drawer |
+| **Accordion** | `/configuration/academic` | Years accordion; modal CRUD |
+
+Shell chrome (sidebar, header, toasts, permissions) still applies.
+
+### 2.5 Routing
 
 ```
 /{module}/{entity}           → list
@@ -374,7 +389,7 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 ### 7.17 Finance — Payments
 
 - **Entity:** `Payment` · **Simple** (row `···` only)
-- Row menu: View receipt → navigate to billing drawer
+- Row menu: View receipt → navigate to **billing** drawer (`/finance/billing/{studentFeeId}`) — cross-entity deep link; Payment itself has no drawer
 
 ### 7.18 Configuration — School profile
 
@@ -425,6 +440,8 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 ## 8. Entity → surface quick reference
 
+Authoritative surface per entity. §7 has per-feature drawer/tab detail.
+
 | Entity | Surface | Primary route |
 |--------|---------|---------------|
 | `Student` | Complex | `/school/students`, `/classes/{id}/students` |
@@ -432,14 +449,25 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 | `Teacher` | Complex | `/school/teachers` |
 | `Guardian` | Complex | `/school/guardians` |
 | `Incident` | Complex | `/school/events` |
+| `Activity` | Complex | `/school/activities` |
+| `Announcement` | Complex | `/school/announcements` |
 | `Assessment` | Complex | `/classes/{id}/evaluations` |
+| `ClassSubject` / teaching | Complex | `/classes/{id}/teaching`, `/configuration/subjects` |
+| `ReportCardResult` | Complex | `/classes/{id}/report-cards` |
+| `ReportCardDefinition` | Complex | `/configuration/report-cards` |
+| `StudentFee` | Complex | `/finance/billing` |
 | `ClassGroup` | Complex | `/configuration/classes` |
 | `GradeLevel` | Complex | `/configuration/grade-levels` |
+| `CalendarEvent` | Thin | `/school/calendar` |
+| `MessageDelivery` | Thin | `/account/inbox` |
 | `Fee` | Simple | `/finance/fees` |
 | `Payment` | Simple | `/finance/payment` |
 | `GradeScale` | Simple | `/configuration/grade-scales` |
 | `DisciplinaryAction` | Simple | `/configuration/discipline` |
-| `CalendarEvent` | Thin | `/school/calendar` |
+| Notification templates | Simple | `/configuration/notifications` |
+| `School` | Layout | `/configuration/school` |
+| Dashboard / academic admin | Layout | `/dashboard`, `/configuration/academic` |
+| Timetable occurrences | Layout + drawer | `/classes/{id}/timetable` |
 
 Sub-entities (`studentIncidentInvolvements`, `staffPermissionAssignments`, `teacherAssignments`, `classActivityEnrollments`, etc.) appear as **drawer sub-collections** or modal payloads — never as standalone nav items.
 
@@ -466,13 +494,11 @@ When building or refactoring a screen:
 
 1. **Classify** the entity — complex · simple · thin · layout (§3).
 2. **Match route** to §6 — do not invent parallel routes removed in §1.3.
-3. **Apply toolbar** order and `<select>` main filter (§2.3).
-4. **Drawer anatomy** — read-only shell; entity header with up to 2 primary actions → modals; body sections/tabs; sub-collections read-only with `+ Add` / row Edit → modal only.
-5. **Shared UI** — reuse `PageQuery`, `DataState`, `ListPageHeader`, `DetailDrawer`, `DrawerEntityHeader`, `FormModal`, and picker components from `lib/components/` before adding new shared UI.
-6. **Data loading** — one `query*Page` per list route seeds `detailDataContext`; lists and drawers read the store; writes use `runMutation` with optimistic `apply` / `rollback`.
-7. **Visuals** — HSL semantic tokens from `app.css`; `font-display` (Fraunces) titles; `rounded-2xl border bg-card shadow-soft` collections; `BADGE_*` / `ui-tones` for status chips.
-8. **Check locked decisions** (§4) — especially homework, roles, permissions, attendance mode, incident resolve.
-9. **Do not** add resource UI, `/configuration/roles`, or `/homework` nav.
+3. **Apply toolbar** order and `<select>` main filter on standard list pages (§2.3); respect layout-variant exceptions (§2.4).
+4. **Check locked decisions** (§4) — especially homework, roles, permissions, attendance mode, incident resolve.
+5. **Do not** add resource UI, `/configuration/roles`, or `/homework` nav.
+
+For interaction patterns, shared components, data loading, visuals, and state — read the other six agent specs (same index as root `AGENTS.md`).
 
 ---
 
@@ -480,6 +506,7 @@ When building or refactoring a screen:
 
 | Date | Change |
 |------|--------|
-| 2026-07-06 | Self-contained spec; removed cross-doc links per documentation-spec |
+| 2026-07-06 | Conflict resolution §2.1–2.2; layout-variant toolbar exceptions |
+| 2026-07-06 | Self-contained spec; removed cross-doc links |
 | 2026-07-03 | §5.3.1 Staff permission UI; expanded incidents, timetable, assessments |
 | 2026-07-03 | Initial normative spec |

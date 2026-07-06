@@ -1,10 +1,10 @@
+import { ApiError } from '$api-client';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
 	classGroupDetailIdFromUrl,
 	hydrateClassGroupDrawer,
 	hydrateClassGroupStaffDirectory,
 } from '$lib/api/configuration-data';
-import { ApiError } from '$api-client';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 import { refreshReportCardCatalog } from '$lib/queries/report-cards.queries';
 import { reportCardsContext } from '$lib/report-cards/context.svelte';

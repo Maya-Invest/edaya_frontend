@@ -11,9 +11,9 @@
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
-	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { t } from '$lib/i18n';
 	import { Pencil, Plus, ShieldCheck, Trash2 } from '$lib/icons';
+	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { get } from 'svelte/store';
 
 	let {

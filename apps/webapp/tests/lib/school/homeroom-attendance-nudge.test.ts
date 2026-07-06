@@ -82,6 +82,24 @@ describe('resolveHomeroomAttendanceNudges', () => {
 		}]);
 	});
 
+	it('nudges when enrollment count is unavailable', () => {
+		const rows = resolveHomeroomAttendanceNudges({
+			staffId: 'ci-st3',
+			classes,
+			todayIso: '2026-07-06',
+			classAttendanceHref: href,
+			attendanceByClass: new Map([
+				['ci-6a', { studentCount: 0, days: [] }],
+			]),
+		});
+
+		expect(rows).toEqual([{
+			classId: 'ci-6a',
+			className: '6ème A',
+			href: '/classes/ci-6a/attendance/',
+		}]);
+	});
+
 	it('skips completed roll call and non-homeroom classes', () => {
 		const rows = resolveHomeroomAttendanceNudges({
 			staffId: 'ci-st3',

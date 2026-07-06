@@ -3,11 +3,11 @@
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
+	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
-	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
+	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
@@ -125,7 +125,7 @@
 
 	const secondaryFilterCount = $derived(
 		(categoryFilter !== 'all' ? 1 : 0)
-			+ (severityFilter !== 'all' ? 1 : 0)
+		+ (severityFilter !== 'all' ? 1 : 0)
 			+ (statusFilter !== 'all' ? 1 : 0),
 	);
 

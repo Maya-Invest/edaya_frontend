@@ -1,15 +1,15 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { Teacher } from '$lib/types/school';
+import { ApiError } from '$api-client';
 import {
 	DEFAULT_LIST_PAGE_SIZE,
 	paginatedList,
 	teacherAssignmentsForTeachers,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
-import { formatPersonName } from '$lib/api/teacher-display';
 import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
-import { ApiError } from '$api-client';
+import { formatPersonName } from '$lib/api/teacher-display';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 type TeacherRaw = components['schemas']['Teacher'];

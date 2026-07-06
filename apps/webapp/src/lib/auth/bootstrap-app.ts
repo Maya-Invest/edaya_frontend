@@ -1,6 +1,6 @@
 import { academicContext } from '$lib/academic/context.svelte';
-import { resetBootstrapSession } from '$lib/auth/bootstrap';
 import { configureBrowserSchoolClient } from '$lib/api/school-client';
+import { resetBootstrapSession } from '$lib/auth/bootstrap';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { disciplineCatalogContext } from '$lib/discipline-catalog/context.svelte';
 import { pageQueryStatus } from '$lib/queries/page-query-status.svelte';

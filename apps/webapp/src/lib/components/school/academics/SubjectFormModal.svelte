@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PlanningEvent, Subject, SubjectCategory } from '$lib/types/school';
-	import { createSubjectForClassMutation, updateSubjectMutation } from '$lib/api/mutations/subject.mutations';
 	import { createScheduleMutation } from '$lib/api/mutations/schedule.mutations';
+	import { createSubjectForClassMutation, updateSubjectMutation } from '$lib/api/mutations/subject.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';

@@ -1,8 +1,8 @@
+import type { PeriodDefinition } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
-import type { PeriodDefinition } from '$lib/types/school';
 
 function schoolId(): string {
 	return authSession.schoolId ?? academicContext.schools[0]?.id ?? '';

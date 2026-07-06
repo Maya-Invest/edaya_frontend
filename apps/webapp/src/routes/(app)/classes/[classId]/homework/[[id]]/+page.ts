@@ -1,5 +1,5 @@
-import { redirect } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
+import { redirect } from '@sveltejs/kit';
 
 /** Legacy route — homework assessments live on the evaluations screen. */
 export const load: PageLoad = ({ params }) => {

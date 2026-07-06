@@ -1,7 +1,7 @@
 import type { ResolvedPathname } from '$app/types';
 import type { SchoolOverviewResponse } from '$lib/api/dashboard-data';
-import { resolveActiveClassId } from '$lib/academic/class-selection';
 import type { ClassNode } from '$lib/types/school';
+import { resolveActiveClassId } from '$lib/academic/class-selection';
 import { appPath, classItemHref } from '$lib/navigation/app-navigation';
 
 export type DashboardActionKey = SchoolOverviewResponse['actionItems'][number]['key'];

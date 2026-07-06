@@ -1,20 +1,18 @@
 <script lang="ts">
 	import type { Guardian, HealthRecord, PedagogicalNote, StaffMember, Student } from '$lib/types/school';
 	import AccountLinkingSection from '$lib/components/account/AccountLinkingSection.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { FileText, Mail, Phone, Users } from '$lib/icons';
+	import { FileText, Mail, Phone, Users, Plus } from '$lib/icons';
+	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { cn } from '$lib/utils';
 	import { relationKey, fmtDateFr } from '../shared/drawer-constants.ts';
-	import DrawerActionBar from '../shared/DrawerActionBar.svelte';
 	import DrawerEmptyState from '../shared/DrawerEmptyState.svelte';
 	import DrawerField from '../shared/DrawerField.svelte';
 	import PersonAvatar from '../shared/PersonAvatar.svelte';
 	import { pedagogicalNoteToneByCategory } from './student-tab-selectors.ts';
-	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import { Plus } from '$lib/icons';
 
 	const {
 		s,
@@ -116,23 +114,6 @@
 		contactEmail={s.email}
 		displayName={s.name}
 	/>
-
-	<DrawerActionBar>
-		<PermissionGate permission="STUDENT_UPDATE" mode="disable" tooltip="Droit STUDENT_UPDATE requis.">
-			{#snippet children({ disabled, title })}
-				<Button
-					variant="outline"
-					size="sm"
-					class="rounded-full"
-					{disabled}
-					{title}
-					onclick={() => modals?.open('edit-profile')}
-				>
-					{$t('student.editProfile')}
-				</Button>
-			{/snippet}
-		</PermissionGate>
-	</DrawerActionBar>
 
 	<div class="space-y-2 border-t border-border pt-4">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Tuteurs</Label>

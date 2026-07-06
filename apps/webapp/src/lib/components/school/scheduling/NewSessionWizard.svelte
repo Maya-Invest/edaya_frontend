@@ -3,6 +3,9 @@
 	import { createAssessmentMutation } from '$lib/api/mutations/evaluation.mutations';
 	import { createSessionMutation } from '$lib/api/mutations/planning.mutations';
 	import { createScheduleMutation } from '$lib/api/mutations/schedule.mutations';
+	import { loadClassPlanning } from '$lib/api/planning-data';
+	import { getBrowserSchoolClient } from '$lib/api/school-client';
+	import { sessionInstantsForSlot } from '$lib/components/school/scheduling/planning-calendar';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -10,9 +13,6 @@
 	import * as Select from '$lib/components/ui/select';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { t } from '$lib/i18n';
-	import { getBrowserSchoolClient } from '$lib/api/school-client';
-	import { loadClassPlanning } from '$lib/api/planning-data';
-	import { sessionInstantsForSlot } from '$lib/components/school/scheduling/planning-calendar';
 	import { get } from 'svelte/store';
 
 	type SessionKind = 'lesson' | 'activity' | 'assessment';
@@ -78,16 +78,16 @@
 		step === 1
 			? $t('planning.wizard.title')
 			: step === 2
-				? $t('planning.wizard.contextTitle')
-				: $t('planning.wizard.scheduleTitle'),
+			? $t('planning.wizard.contextTitle')
+			: $t('planning.wizard.scheduleTitle'),
 	);
 
 	const modalDescription = $derived(
 		step === 1
 			? $t('planning.wizard.description')
 			: step === 2
-				? $t('planning.wizard.contextDescription', { kind: kindLabel })
-				: $t('planning.wizard.scheduleDescription'),
+			? $t('planning.wizard.contextDescription', { kind: kindLabel })
+			: $t('planning.wizard.scheduleDescription'),
 	);
 
 	function resetForm() {

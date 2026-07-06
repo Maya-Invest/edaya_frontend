@@ -1,6 +1,7 @@
 import { signIn } from '../support/auth';
 import { CLASS_6A, CLASS_6B, DEMO_ACTIVITY_NAME } from '../support/constants';
 import { assertClassAttendanceNav, ensureDailyAttendanceMode } from '../support/setup';
+import { waitForDrawerAside } from '../support/drawer';
 import type { DemoContext } from '../support/types';
 import { assertNoFatalError, visit } from '../support/visit';
 
@@ -153,21 +154,26 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 
 	await visit(ctx, `${base}/classes/${CLASS_6A}/report-cards`, 'D10', '10.1 Report cards list', { selector: 'main' });
 	try {
+		const viewBtn = page.getByRole('button', { name: /view|voir|consulter/i }).first();
 		const studentLink = page.locator('main tbody tr button.font-medium').first();
-		if (await studentLink.isVisible({ timeout: 10_000 }).catch(() => false)) {
+		if (await viewBtn.isVisible({ timeout: 10_000 }).catch(() => false)) {
+			await viewBtn.click();
+		}
+		else if (await studentLink.isVisible({ timeout: 5_000 }).catch(() => false)) {
 			await studentLink.click();
-			const drawerOpen = await page.locator('[data-testid="drawer-panel"], aside[aria-modal="true"]').first()
-				.isVisible({ timeout: 10_000 })
-				.catch(() => false);
-			reporter.log(
-				'D10',
-				'10.2 Open bulletin drawer',
-				drawerOpen ? 'pass' : 'skip',
-				drawerOpen ? undefined : 'Drawer did not open — verify report card seed',
-			);
 		}
 		else {
 			reporter.log('D10', '10.2 Open bulletin drawer', 'skip', 'No report card rows in list');
+			return;
+		}
+
+		const drawer = await waitForDrawerAside(ctx, 15_000);
+		if (drawer) {
+			reporter.log('D10', '10.2 Open bulletin drawer', 'pass');
+		}
+		else {
+			reporter.log('D10', '10.2 Open bulletin drawer', 'skip', 'Drawer did not open — verify report card seed');
+			await shot('D10-10.2-bulletin-drawer');
 		}
 	}
 	catch (err) {

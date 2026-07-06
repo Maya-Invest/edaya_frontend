@@ -1,5 +1,6 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
+import type { ClassSubjectInstructorSources } from '$lib/api/teacher-display';
 import type { Subject, SubjectCategory } from '$lib/types/school';
 import {
 	classGroupScope,
@@ -11,7 +12,7 @@ import {
 import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 import {
 	fetchClassSubjectInstructorSourcesBundle,
-	type ClassSubjectInstructorSources,
+
 	teacherNameForClassSubject,
 } from '$lib/api/teacher-display';
 

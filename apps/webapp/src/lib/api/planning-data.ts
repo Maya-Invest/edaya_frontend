@@ -1,6 +1,7 @@
 import type { HomeworkSources } from '$lib/api/homework-data';
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
+import type { ClassSubjectInstructorSources } from '$lib/api/teacher-display';
 import type { PlanningEvent, Resource } from '$lib/types/school';
 import {
 	assignmentsForActivitySessions,
@@ -17,7 +18,7 @@ import {
 import { fetchClassHomeworkSources } from '$lib/api/homework-data';
 import {
 	fetchClassSubjectInstructorSources,
-	type ClassSubjectInstructorSources,
+
 	instructorName,
 	instructorNameFromStaffAssignment,
 } from '$lib/api/teacher-display';

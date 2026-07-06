@@ -42,7 +42,7 @@ Every in-scope feature conforms to [app-shell-spec.md](../specs/app-shell-spec.m
 Living checklist — check items off (`[x]`) as work lands. Mirrors [§6 gaps](#6-v1-implementation-gaps) and §3 feature cards.
 
 #### Architecture & shell
-- [x] Drawer entity header (identity + top 2 actions) on all complex entities — `DrawerEntityHeader` on all complex drawers ✅ *(2026-07-05)*
+- [x] Drawer entity header (identity + top 2 actions) on all complex entities — `DrawerEntityHeader`; destructive actions in overflow menu *(2026-07-06 — P4a header migrations + delete/cancel overflow rollout)*
 - [x] Main filter as `<select>` everywhere (chip bars → Filter panel) — `FilterSelect` + `FilterPanel` on list pages with secondary facets ✅ *(2026-07-05)*
 - [x] Filter button wired with secondary facets on list pages — payments status, announcement priority, attendance completion, incidents ✅ *(2026-07-05)*
 - [x] More menu: per-feature export / bulk actions — export stub on all list pages ✅ *(2026-07-05)*

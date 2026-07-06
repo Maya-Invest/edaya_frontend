@@ -18,7 +18,7 @@ interface UploadIntentResponse {
 
 function apiHeaders(json = false): Headers {
 	const headers = new Headers({
-		Accept: 'application/json',
+		'Accept': 'application/json',
 		'X-Actor-Kind': 'staff',
 	});
 	if (json) {

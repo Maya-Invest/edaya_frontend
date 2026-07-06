@@ -31,7 +31,6 @@ export interface AssessmentsSources {
 	enrollmentsRaw: EnrollmentRaw[];
 }
 
-
 export function mapAssessmentResults(
 	resultsRaw: AssessmentsSources['resultsRaw'],
 ): AssessmentResultRow[] {

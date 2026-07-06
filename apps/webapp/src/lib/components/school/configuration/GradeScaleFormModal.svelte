@@ -1,10 +1,10 @@
 <script lang="ts">
 	import type { GradeScale } from '$lib/types/report-cards';
+	import { isValidGradeScaleBounds } from '$lib/api/grade-scale-ranges';
 	import {
 		createGradeScaleMutation,
 		updateGradeScaleMutation,
 	} from '$lib/api/mutations/report-cards.mutations';
-	import { isValidGradeScaleBounds } from '$lib/api/grade-scale-ranges';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';

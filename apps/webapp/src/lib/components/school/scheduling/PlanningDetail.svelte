@@ -2,29 +2,30 @@
 	import type { PlanningEvent } from '$lib/types/school';
 	import type { SessionAttendanceStatus } from '$lib/types/session-detail';
 	import { page } from '$app/stores';
-	import { cancelPlanningEventMutation } from '$lib/api/mutations/planning.mutations';
 	import {
 		recordLessonSessionBulkAttendanceMutation,
 		recordSessionStudentAttendanceMutation,
 	} from '$lib/api/mutations/planning-session.mutations';
+	import { cancelPlanningEventMutation } from '$lib/api/mutations/planning.mutations';
 	import { loadPlanningOccurrenceDetail } from '$lib/api/session-detail-data';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import DrawerTabBar from '$lib/components/ui/DrawerTabBar.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { createUrlSyncedDrawerTabs } from '$lib/drawer/drawer-tabs-state.svelte';
-	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { t } from '$lib/i18n';
 	import { Check, ClipboardCheck, FileText, MapPin } from '$lib/icons';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { queryClient } from '$lib/queries/client';
 	import { sessionDetailContext } from '$lib/session-detail/context.svelte';
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
-	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import DrawerEmptyState from '../shared/DrawerEmptyState.svelte';
+	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import DrawerField from '../shared/DrawerField.svelte';
 	import PlanningFormModal from './PlanningFormModal.svelte';
 	import PlanningSessionAttendanceModal from './PlanningSessionAttendanceModal.svelte';
@@ -48,6 +49,8 @@
 	const unrecordedRows = $derived(attendanceRows.filter(row => !row.status));
 
 	let bulkBusy = $state(false);
+	let cancelOpen = $state(false);
+	let cancelBusy = $state(false);
 
 	const statusTone: Record<SessionAttendanceStatus, string> = {
 		present: 'bg-secondary text-foreground/80',
@@ -158,6 +161,21 @@
 		}
 		bulkBusy = false;
 	}
+
+	async function confirmCancel() {
+		cancelBusy = true;
+		try {
+			const ok = await cancelPlanningEventMutation(s, {
+				successMessage: get(t)('planning.toastCancelled', { title: s.title }),
+			});
+			if (ok) {
+				cancelOpen = false;
+			}
+		}
+		finally {
+			cancelBusy = false;
+		}
+	}
 </script>
 
 <div class="space-y-5">
@@ -180,18 +198,19 @@
 			{#if canEditLesson}
 				<PlanningFormModal event={s} bind:open={editEventOpen.open} />
 			{/if}
+		{/snippet}
+		{#snippet overflow()}
 			{#if canCancel}
 				<PermissionGate permission="TIMETABLE_UPDATE" mode="disable" tooltip={$t('calendar.permissionUpdate')}>
 					{#snippet children({ disabled, title })}
-						<DeleteEntityButton
+						<RowActionMenuItem
+							destructive
 							{disabled}
 							{title}
-							confirmTitle={$t('planning.cancelConfirmTitle')}
-							confirmDescription={$t('planning.cancelConfirm', { title: s.title })}
-							onConfirm={() => cancelPlanningEventMutation(s, {
-								successMessage: get(t)('planning.toastCancelled', { title: s.title }),
-							})}
-						/>
+							onclick={() => (cancelOpen = true)}
+						>
+							{$t('planning.cancelConfirmTitle')}
+						</RowActionMenuItem>
 					{/snippet}
 				</PermissionGate>
 			{/if}
@@ -428,3 +447,13 @@
 {#if detail}
 	<PlanningSessionLogbookModal {detail} bind:open={sessionLogbookOpen.open} showTrigger={false} />
 {/if}
+
+<ConfirmModal
+	bind:open={cancelOpen}
+	title={$t('planning.cancelConfirmTitle')}
+	description={$t('planning.cancelConfirm', { title: s.title })}
+	confirmLabel={$t('common.delete')}
+	cancelLabel={$t('common.cancel')}
+	busy={cancelBusy}
+	onConfirm={confirmCancel}
+/>

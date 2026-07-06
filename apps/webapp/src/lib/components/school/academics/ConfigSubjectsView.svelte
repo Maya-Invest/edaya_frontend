@@ -2,15 +2,16 @@
 	import type { Subject, SubjectCategory } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import { groupSubjectsByGradeLevel } from '$lib/academic/subject-level-groups';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
-	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
+	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { t } from '$lib/i18n';
 	import { Clock, User, ChevronRight, Search } from '$lib/icons';
-	import { readConfigSubjectListFilters, writeConfigSubjectListFilters } from '$lib/list/list-url-filters';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
+	import { readConfigSubjectListFilters, writeConfigSubjectListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 
@@ -57,23 +58,6 @@
 		'Arts': 'bg-secondary text-foreground/80',
 	};
 
-	function yearLabel(className: string): string {
-		const map: Record<string, string> = {
-			'6th': '6ème',
-			'5th': '5ème',
-			'4th': '4ème',
-			'3rd': '3ème',
-			'2nd': '2nde',
-			'1st': '1ère',
-			'Terminale': 'Terminale',
-		};
-		for (const key of Object.keys(map)) {
-			if (className.startsWith(key))
-				return map[key];
-		}
-		return className;
-	}
-
 	const classById = $derived(Object.fromEntries(classes.map(c => [c.id, c])));
 
 	function matchesSearch(s: Subject, needle: string) {
@@ -93,26 +77,11 @@
 
 	const groups = $derived.by(() => {
 		if (mode === 'level') {
-			const order = ['6ème', '5ème', '4ème', '3ème', '2nde', '1ère', 'Terminale'];
-			const byYear: Record<string, { subtitle: string; items: Subject[] }> = {};
-			for (const s of filteredSubjects) {
-				const cls = classById[s.classId];
-				if (!cls)
-					continue;
-				const y = yearLabel(cls.name);
-				if (!byYear[y])
-					byYear[y] = { subtitle: cls.level, items: [] };
-				byYear[y].items.push(s);
-			}
-			return order
-				.filter(y => byYear[y]?.items.length)
-				.map(y => ({
-					key: y,
-					label: y,
-					subtitle: byYear[y].subtitle,
-					count: byYear[y].items.length,
-					items: byYear[y].items,
-				}));
+			return groupSubjectsByGradeLevel(
+				filteredSubjects,
+				classes,
+				academicContext.gradeLevels,
+			);
 		}
 		const order: SubjectCategory[] = [
 			'Scientifique',

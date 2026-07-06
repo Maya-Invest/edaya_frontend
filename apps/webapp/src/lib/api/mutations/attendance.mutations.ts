@@ -2,8 +2,8 @@ import type { SessionAttendanceStatus } from '$lib/types/session-detail';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
-import { sessionDetailContext } from '$lib/session-detail/context.svelte';
 import { t } from '$lib/i18n';
+import { sessionDetailContext } from '$lib/session-detail/context.svelte';
 import { get } from 'svelte/store';
 
 function countRecordedRows(occurrenceId: string): number {

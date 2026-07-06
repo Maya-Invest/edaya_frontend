@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { HierarchyGroup } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import { academicContext } from '$lib/academic/context.svelte';
 	import { classLabelForId, resolveActiveClassId } from '$lib/academic/class-selection';
+	import { academicContext } from '$lib/academic/context.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import { t } from '$lib/i18n';
 	import { appGoto, classItemHref } from '$lib/navigation/app-navigation';

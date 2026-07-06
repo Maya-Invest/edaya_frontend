@@ -16,14 +16,14 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { Plus } from '$lib/icons';
+	import { useOffsetInfiniteList } from '$lib/list/use-infinite-list.svelte';
+	import { bindUrlModal, closeUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { appGoto } from '$lib/navigation/app-navigation';
+	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import {
 		SchoolStudentsState,
 		setSchoolStudentsState,
 	} from '$lib/students/school-students-state.svelte';
-	import { useOffsetInfiniteList } from '$lib/list/use-infinite-list.svelte';
-	import { bindUrlModal, closeUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
-	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 	import PersonAvatar from '../shared/PersonAvatar.svelte';
 	import StudentCreateModal from './StudentCreateModal.svelte';

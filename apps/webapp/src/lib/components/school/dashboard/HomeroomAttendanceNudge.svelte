@@ -5,18 +5,24 @@
 	import { t } from '$lib/i18n';
 	import { ClipboardCheck, ChevronRight } from '$lib/icons';
 	import { appPath } from '$lib/navigation/app-navigation';
-	import { loadHomeroomAttendanceByClass } from '$lib/school/homeroom-attendance-nudge-data';
+	import { queryClient } from '$lib/queries/client';
 	import {
 		homeroomDailyClassesForStaff,
 		resolveHomeroomAttendanceNudges,
 	} from '$lib/school/homeroom-attendance-nudge';
-	import { queryClient } from '$lib/queries/client';
+	import { loadHomeroomAttendanceByClass } from '$lib/school/homeroom-attendance-nudge-data';
 
 	const staffId = $derived(authSession.user?.id ?? authSession.userId ?? '');
 	const todayIso = $derived(new Date().toISOString().slice(0, 10));
 
 	const homeroomDailyClasses = $derived(
-		staffId ? homeroomDailyClassesForStaff(academicContext.classes, staffId) : [],
+		academicContext.shellReady && staffId
+			? homeroomDailyClassesForStaff(academicContext.classes, staffId)
+			: [],
+	);
+
+	const fallbackStudentCounts = $derived(
+		Object.fromEntries(academicContext.classes.map(cls => [cls.id, cls.studentCount])),
 	);
 
 	let attendanceByClass = $state(new Map());
@@ -31,7 +37,7 @@
 		let cancelled = false;
 		const classIds = classes.map(cls => cls.id);
 
-		void loadHomeroomAttendanceByClass(queryClient(), classIds).then((loaded) => {
+		void loadHomeroomAttendanceByClass(queryClient(), classIds, fallbackStudentCounts).then((loaded) => {
 			if (cancelled) {
 				return;
 			}

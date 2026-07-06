@@ -269,7 +269,7 @@ Built on **bits-ui** + **Tailwind**, shadcn-style patterns.
 | **DetailDrawer** | Right sheet, kind badge `rounded-full uppercase text-[11px]`, close as ghost circle |
 | **DrawerField** | Read-only label + value stack |
 | **DrawerEmptyState** | Dashed `rounded-xl` centered placeholder |
-| **DrawerActionBar** | Footer actions `border-t pt-4`, right-aligned |
+| **DrawerActionBar** | Optional drawer body footer — `border-t pt-4`, right-aligned secondary actions; **not** sub-collection `+ Add` header |
 | **StudentAvatar** | `rounded-2xl bg-primary` initials; hover camera overlay |
 | **List views** (`*View.svelte`) | Compose `ListPageHeader` + card/table collection |
 
@@ -287,7 +287,9 @@ Built on **bits-ui** + **Tailwind**, shadcn-style patterns.
 
 Use `ListPageHeader` snippet slots: `search`, `filters`, `more`, `primary`.
 
-### 10.2 Segmented control (pill tabs)
+### 10.2 Segmented control (drawer tabs / in-drawer segments)
+
+Pill segment strips for **drawer tab switches** or in-panel mode toggles — **not** for list-page main filters (main filter is always a `<select>`).
 
 ```html
 <div class="flex items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft">
@@ -412,7 +414,7 @@ Use these mappings consistently (see `drawer-constants.ts` for full records).
 - Modal body spacing: `space-y-4 py-2`
 - Footer: ghost Cancel (left) + primary Confirm (right) — `Dialog.Footer`
 - Destructive confirms: `variant="destructive"` on confirm button
-- Drawer footer: only `Close` on shell when needed; primary entity actions live in **`DrawerEntityHeader`**; sub-collection `+ Add` uses **`DrawerActionBar`**
+- Drawer footer: only `Close` on shell when needed; primary entity actions live in **`DrawerEntityHeader`**; sub-collection `+ Add` uses an **inline section header** (not `DrawerActionBar`)
 - Field errors: inline in modal — not in the read-only drawer
 - Disabled: `opacity-50 pointer-events-none` (buttons)
 
@@ -479,7 +481,7 @@ Use these mappings consistently (see `drawer-constants.ts` for full records).
 | CSS variables & fonts | `apps/webapp/src/app.css` |
 | Tailwind theme | `apps/webapp/tailwind.config.ts` |
 | Tone presets | `apps/webapp/src/lib/ui-tones.ts` |
-| Status / badge maps | `apps/webapp/src/lib/components/school/drawer-constants.ts` |
+| Status / badge maps | `apps/webapp/src/lib/components/school/shared/drawer-constants.ts` |
 | Button primitive | `apps/webapp/src/lib/components/ui/button/button.svelte` |
 | List header | `apps/webapp/src/lib/components/ui/ListPageHeader.svelte` |
 | Data states | `apps/webapp/src/lib/components/ui/DataState.svelte` |

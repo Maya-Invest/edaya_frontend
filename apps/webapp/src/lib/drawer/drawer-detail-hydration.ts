@@ -1,15 +1,15 @@
+import { ApiError } from '$api-client';
 import { academicContext } from '$lib/academic/context.svelte';
-import { authSession } from '$lib/auth/session.svelte';
 import { fetchActivityById } from '$lib/api/activities-data';
 import { teacherAssignmentsForTeachers } from '$lib/api/entity-list-filters';
 import { fetchGuardianById, fetchStudentById } from '$lib/api/people-data';
 import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 import { fetchStaffMemberById } from '$lib/api/staff-data';
 import { fetchTeacherById } from '$lib/api/teachers-data';
+import { authSession } from '$lib/auth/session.svelte';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { queryClient } from '$lib/queries/client';
 import { hydrateStudentDetailDrawer } from '$lib/queries/student-360.queries';
-import { ApiError } from '$api-client';
 
 async function ensureStudent(studentId: string, classId?: string) {
 	if (detailDataContext.students.some(student => student.id === studentId)) {
