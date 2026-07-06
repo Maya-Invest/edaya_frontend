@@ -17,6 +17,7 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"quality": "bun run lint && bun run check",
 		"test": "bun test tests",
+		"demo:e2e": "node scripts/demo-dry-run.mjs",
 		"lint": "eslint src",
 		"lint:fix": "eslint src --fix",
 		"generate:client": "edaya-codegen generate --input ${OPENAPI_INPUT:-src/lib/api/openapi.json} --client-dir src/generated/api-client --schema-out src/lib/api/schema.d.ts"

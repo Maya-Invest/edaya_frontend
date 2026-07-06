@@ -4,6 +4,7 @@
 	import { academicContext } from '$lib/academic/context.svelte';
 	import ReportCardDefinitionFormModal from '$lib/components/school/configuration/ReportCardDefinitionFormModal.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -12,6 +13,7 @@
 	import { t } from '$lib/i18n';
 	import { ChevronRight, Plus, Search } from '$lib/icons';
 	import { readReportCardDefinitionListFilters, writeReportCardDefinitionListFilters } from '$lib/list/list-url-filters';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { reportCardsContext } from '$lib/report-cards/context.svelte';
 	import { cn } from '$lib/utils';
@@ -28,17 +30,23 @@
 
 	const initialFilters = $derived(readReportCardDefinitionListFilters($page.url));
 
-	let q = $state('');
-	let status = $state<'all' | ReportCardDefinition['status']>('all');
-	let filtersReady = $state(false);
+	const listFilters = new ListFiltersState<{ q: string; status: string }>(
+		{
+			getUrl: () => $page.url,
+			write: writeReportCardDefinitionListFilters,
+			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+		},
+		() => readReportCardDefinitionListFilters($page.url),
+	);
 
 	const statusKeys = ['all', 'draft', 'published'] as const;
 
 	const filteredDefinitions = $derived(
 		definitions.filter((def) => {
+			const status = listFilters.values.status;
 			if (status !== 'all' && def.status !== status)
 				return false;
-			const needle = q.trim().toLowerCase();
+			const needle = listFilters.values.q.trim().toLowerCase();
 			if (!needle)
 				return true;
 			const level = academicContext.gradeLevelById(def.gradeLevelId);
@@ -55,32 +63,31 @@
 		return k === 'published' ? $t('academic.published') : $t('academic.draft');
 	}
 
-	function syncFiltersToUrl() {
-		const href = writeReportCardDefinitionListFilters($page.url, { q, status });
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	}
-
 	$effect(() => {
 		const next = initialFilters;
-		q = next.q;
-		status = (statusKeys.includes(next.status as (typeof statusKeys)[number])
-			? next.status
-			: 'all') as typeof status;
-		filtersReady = true;
+		listFilters.hydrate({
+			q: next.q,
+			status: statusKeys.includes(next.status as (typeof statusKeys)[number])
+				? next.status
+				: 'all',
+		});
 	});
 
-	let searchTimer: ReturnType<typeof setTimeout> | undefined;
-	function scheduleFilterSync() {
-		if (!filtersReady)
+	$effect(() => {
+		if (!listFilters.ready) {
 			return;
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(syncFiltersToUrl, 250);
-	}
+		}
+		void listFilters.values.q;
+		void listFilters.values.status;
+		listFilters.scheduleSync();
+	});
 
-	function applyStatus(next: (typeof statusKeys)[number]) {
-		status = next;
-		scheduleFilterSync();
-	}
+	const statusFilterOptions = $derived(
+		statusKeys.map(key => ({
+			value: key,
+			label: statusLabel(key),
+		})),
+	);
 
 	let createOpen = $state(false);
 
@@ -100,30 +107,19 @@
 					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
 				/>
 				<Input
-					bind:value={q}
-					oninput={scheduleFilterSync}
+					bind:value={listFilters.values.q}
+					oninput={() => listFilters.scheduleSync()}
 					placeholder={$t('common.search')}
 					class="h-9 w-56 rounded-full pl-9 text-sm"
 				/>
 			</div>
 		{/snippet}
 		{#snippet filters()}
-			<div class="flex flex-wrap items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft">
-				{#each statusKeys as k (k)}
-					<button
-						type="button"
-						onclick={() => applyStatus(k)}
-						class={cn(
-							'rounded-full px-3 py-1 text-[11px] font-medium transition',
-							status === k
-								? 'bg-primary text-primary-foreground'
-								: 'text-muted-foreground hover:text-foreground',
-						)}
-					>
-						{statusLabel(k)}
-					</button>
-				{/each}
-			</div>
+			<FilterSelect
+				bind:value={listFilters.values.status}
+				class="h-9 min-w-[10rem] rounded-full text-xs"
+				options={statusFilterOptions}
+			/>
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate permission="REPORT_CARD_CONFIGURE">

@@ -8,6 +8,7 @@
 		publishReportCardResultMutation,
 	} from '$lib/api/mutations/report-cards.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -113,10 +114,12 @@
 		listFilters.scheduleSync();
 	});
 
-	function applyStatus(next: StatusFilter) {
-		listFilters.values.status = next;
-		listFilters.scheduleSync();
-	}
+	const statusFilterOptions = $derived(
+		statusKeys.map(key => ({
+			value: key,
+			label: statusLabel(key),
+		})),
+	);
 
 	async function generateAll() {
 		const n = await generateReportCardsForClassMutation(classId);
@@ -171,22 +174,11 @@
 			</div>
 		{/snippet}
 		{#snippet filters()}
-			<div class="flex flex-wrap items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft">
-				{#each statusKeys as k (k)}
-					<button
-						type="button"
-						onclick={() => applyStatus(k)}
-						class={cn(
-							'rounded-full px-3 py-1 text-[11px] font-medium transition',
-							status === k
-								? 'bg-primary text-primary-foreground'
-								: 'text-muted-foreground hover:text-foreground',
-						)}
-					>
-						{statusLabel(k)}
-					</button>
-				{/each}
-			</div>
+			<FilterSelect
+				bind:value={listFilters.values.status}
+				class="h-9 min-w-[10rem] rounded-full text-xs"
+				options={statusFilterOptions}
+			/>
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate

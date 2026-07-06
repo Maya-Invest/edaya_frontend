@@ -30,6 +30,7 @@
 				size="sm"
 				class={cn('h-9 gap-1.5 rounded-full px-3', className)}
 				aria-label={title ?? $t('list.filter')}
+				data-testid="list-filter"
 			>
 				<ListFilter class="h-4 w-4" />
 				<span>{$t('list.filter')}</span>

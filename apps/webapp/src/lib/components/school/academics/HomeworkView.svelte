@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Deadline } from '$lib/types/school';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
@@ -65,6 +66,13 @@
 
 	const filterKeys = ['all', 'open', 'overdue', 'done'] as const;
 
+	const filterOptions = $derived(
+		filterKeys.map(key => ({
+			value: key,
+			label: `${$t(`hw.filter.${key}`)} (${stats[key]})`,
+		})),
+	);
+
 	function handleCreated(deadlineId: string) {
 		appGoto(detailHref.classDeadline(classId, deadlineId));
 	}
@@ -76,32 +84,11 @@
 		title={$t('hw.active', { n: list.length })}
 	>
 		{#snippet filters()}
-			<div class="flex items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft">
-				{#each filterKeys as k (k)}
-					<button
-						type="button"
-						onclick={() => (filter = k)}
-						class={cn(
-							'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition',
-							filter === k
-								? k === 'overdue'
-									? 'bg-highlight text-highlight-foreground shadow-soft'
-									: 'bg-primary text-primary-foreground shadow-soft'
-								: 'text-muted-foreground hover:text-foreground',
-						)}
-					>
-						{$t(`hw.filter.${k}`)}
-						<span
-							class={cn(
-								'rounded-full px-1 font-mono text-[10px]',
-								filter === k ? 'bg-primary-foreground/15' : 'bg-secondary text-muted-foreground',
-							)}
-						>
-							{stats[k]}
-						</span>
-					</button>
-				{/each}
-			</div>
+			<FilterSelect
+				bind:value={filter}
+				class="h-9 min-w-[10rem] rounded-full text-xs"
+				options={filterOptions}
+			/>
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate permission="GRADE_INPUT" mode="disable" tooltip={$t('hw.permissionCreate')}>

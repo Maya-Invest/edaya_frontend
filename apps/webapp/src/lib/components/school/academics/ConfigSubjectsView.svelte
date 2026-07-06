@@ -2,12 +2,13 @@
 	import type { Subject, SubjectCategory } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { t } from '$lib/i18n';
-	import { Clock, User, Layers, Tag, ChevronRight, Search } from '$lib/icons';
+	import { Clock, User, ChevronRight, Search } from '$lib/icons';
 	import { readConfigSubjectListFilters, writeConfigSubjectListFilters } from '$lib/list/list-url-filters';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
@@ -143,6 +144,11 @@
 		});
 	});
 
+	const modeFilterOptions = $derived([
+		{ value: 'level', label: $t('subjects.viewByLevel') },
+		{ value: 'category', label: $t('subjects.viewByCategory') },
+	]);
+
 	$effect(() => {
 		if (!listFilters.ready) {
 			return;
@@ -150,11 +156,6 @@
 		void listFilters.values.mode;
 		listFilters.scheduleSync();
 	});
-
-	function applyMode(next: Mode) {
-		listFilters.values.mode = next;
-		listFilters.scheduleSync();
-	}
 </script>
 
 <div class="animate-fade-in">
@@ -176,34 +177,11 @@
 			</div>
 		{/snippet}
 		{#snippet filters()}
-			<div class="inline-flex rounded-full border border-border bg-card p-1 shadow-soft">
-				<button
-					type="button"
-					onclick={() => applyMode('level')}
-					class={cn(
-						'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition',
-						mode === 'level'
-							? 'bg-primary text-primary-foreground'
-							: 'text-muted-foreground hover:text-foreground',
-					)}
-				>
-					<Layers class="h-3.5 w-3.5" />
-					{$t('subjects.viewByLevel')}
-				</button>
-				<button
-					type="button"
-					onclick={() => applyMode('category')}
-					class={cn(
-						'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition',
-						mode === 'category'
-							? 'bg-primary text-primary-foreground'
-							: 'text-muted-foreground hover:text-foreground',
-					)}
-				>
-					<Tag class="h-3.5 w-3.5" />
-					{$t('subjects.viewByCategory')}
-				</button>
-			</div>
+			<FilterSelect
+				bind:value={listFilters.values.mode}
+				class="h-9 min-w-[10rem] rounded-full text-xs"
+				options={modeFilterOptions}
+			/>
 		{/snippet}
 		{#snippet more()}
 			<ListMoreMenu exportOnly />

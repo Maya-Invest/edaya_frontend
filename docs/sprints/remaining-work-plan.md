@@ -7,6 +7,16 @@
 **Demo execution** (script, dry-run, scene checkboxes): **[demo-ready-plan.md](./demo-ready-plan.md)**  
 **Normative specs:** [v1-feature-architecture-spec.md](../specs/v1-feature-architecture-spec.md) · [svelte-state-spec.md](../specs/svelte-state-spec.md)
 
+### Portal actors vs webapp features
+
+| Concern | Where | Guidance |
+|---------|-------|----------|
+| **Teachers / Students / Guardians UI** | `apps/webapp` | **In scope** — lists, drawers, invites, assignments must work (demo D2–D3). |
+| **Portal sign-in** | `edaya_mobile` | Teachers/guardians/students authenticate on mobile; webapp does not host portal sessions. |
+| **Permission / grant changes** | `edaya_backend` | **Regression risk** for portal authorization — assignment scopes, role presets, and seed grants can break what portal users can do in mobile apps even when staff webapp screens look fine. |
+
+When changing backend permissions or staff role scopes, cross-check portal actors (see [demo-accounts.md](../reference/demo-accounts.md)) in addition to staff dry-run scenes.
+
 ---
 
 ## Why this plan exists
@@ -81,8 +91,9 @@ Pilots + state-class views were already done. **Migrated 2026-07-06** to `ListFi
 | `ClassGroupsView`, `DisciplinaryCatalogView`, `GradeScalesView`, `ConfigSubjectsView` | Configuration | ✅ |
 | `EducatorDashboardView` | Dashboard | ✅ |
 | `FeesView`, `StudentsView`, `PaymentsView` | Finance / class pilots | ✅ (pre-existing) |
+| `ReportCardDefinitionsView`, `TeachingLogView`, `AcademicAdminView` | Configuration / teaching | ✅ 2026-07-06 |
 
-**Not migrated (out of B.1 scope):** `ReportCardDefinitionsView`, `TeachingLogView`, `AcademicAdminView`, `ResourcesView` (post-v1 / on-touch). `HomeworkView` is a legacy redirect.
+**Not migrated (out of B.1 scope):** `ResourcesView` (post-v1). `HomeworkView` is a legacy redirect.
 
 ### B.2 — Feature state extractions (Phase 3 P1)
 
@@ -98,7 +109,7 @@ P2: remaining `*View.svelte` — extract only when script > ~80 lines.
 
 | ID | Task | Status |
 |----|------|--------|
-| B.3.1 | PR template: `*View.svelte` > 60 lines script → justify or extract | — |
+| B.3.1 | PR template: `*View.svelte` > 60 lines script → justify or extract | ✅ — `.github/pull_request_template.md` |
 | B.3.2 | Close data-loading audit: document `SchoolStudentsView` infinite-fetch exception | ✅ — school roster uses `useOffsetInfiniteList` in-view (not route `PageQuery`); intentional per data-loading spec exception |
 | B.3.3 | Grep guard: no new `$effect` + API fetch in views | ✅ 2026-07-06 |
 
@@ -112,42 +123,42 @@ From [v1-staff-webapp-implementation-plan.md](./archive/v1-staff-webapp-implemen
 
 | Screen | Chip facet | Status |
 |--------|------------|--------|
-| `ActivitiesView` | Category | — |
-| `ClassReportCardsView` | Status | — |
-| `ConfigSubjectsView` | Scope | — |
-| `EducatorDashboardView` | Event type | — |
-| `FinanceView` | Status | — |
+| `ActivitiesView` | Category | ✅ `FilterSelect` |
+| `ClassReportCardsView` | Status | ✅ `FilterSelect` |
+| `ConfigSubjectsView` | Scope (level/category) | ✅ `FilterSelect` |
+| `EducatorDashboardView` | Tab switch | N/A — dashboard tabs, not list filter |
+| `FinanceView` | Subnav | N/A — `FinanceSubnav` module tabs |
 | `HomeworkView` | Status | legacy redirect |
-| `PaymentsView` | Method · status | pilot uses ListFiltersState |
-| `PlanningView` | Session kind | state class exists |
-| `ReportCardDefinitionsView` | Status | — |
+| `PaymentsView` | Method · status | ✅ `FilterSelect` + `FilterPanel` |
+| `PlanningView` | Week nav | N/A — calendar chrome, not list filter |
+| `ReportCardDefinitionsView` | Status | ✅ `FilterSelect` |
 | `ResourcesView` | Type | post-v1 |
-| `SchoolCalendarView` | Event type | — |
-| `StudentsView` | Status | pilot done |
-| `SchoolStudentsView` | Status | FilterPanel ✅ |
+| `SchoolCalendarView` | Event type | ✅ `FilterSelect` |
+| `StudentsView` | Status | ✅ `FilterPanel` |
+| `SchoolStudentsView` | Status | ✅ `FilterPanel` |
 
 ### C.2 — Drawer entity header rollout (§6)
 
 | Drawer | Status |
 |--------|--------|
-| `StudentTabs` / student detail | — |
-| `StaffDetail` | — |
-| `GuardianDetail` | — |
-| `IncidentDetail` | — |
-| `ClassSubjectDetail` (teaching) | — |
-| `ReportCardDetail` | — |
-| `ClassGroupDetail` (config) | — |
-| `GradeLevelDetail` | — |
+| `StudentTabs` / student detail | ✅ `DrawerEntityHeader` |
+| `StaffDetail` (`StaffTabs`) | ✅ |
+| `GuardianDetail` | ✅ |
+| `IncidentDetail` | ✅ |
+| `LevelDetail` (config subjects / teaching) | ✅ |
+| `ReportCardDefinitionDetail` | ✅ |
+| `ClassGroupDetail` (config) | ✅ |
+| `GradeLevelDetail` | ✅ |
 | Activity, Announcement, Assessment, Planning, Attendance, Billing, catalog drawers | ✅ per v1 plan |
 
 ### C.3 — Other v1 Phase 8
 
 | ID | Task | Status |
 |----|------|--------|
-| C.3.1 | Filter button wired on all list pages (no empty Filter buttons) | — |
-| C.3.2 | More menu stubs (export labels) | — |
-| C.3.3 | Remove resources from v1 nav (if still present) | — |
-| C.3.4 | Optional: dashboard daily attendance nudge | — |
+| C.3.1 | Filter button wired on all list pages (no empty Filter buttons) | ✅ 2026-07-06 |
+| C.3.2 | More menu stubs (export labels) | ✅ 2026-07-06 |
+| C.3.3 | Remove resources from v1 nav (if still present) | ✅ — no resources route in nav catalog |
+| C.3.4 | Optional: dashboard daily attendance nudge | ✅ 2026-07-06 |
 
 ---
 
@@ -181,9 +192,9 @@ From [backend-alignment-plan.md](./archive/backend-alignment-plan.md).
 
 | Track | Open items | Notes |
 |-------|------------|-------|
-| A | 8 | Blocks demo-ready |
-| B | ~20 views + 3 P1 states | On-touch after demo |
-| C | ~15 UI polish | On-touch |
+| A | 0 | Demo dry-run 26/26 ✅ |
+| B | B.1 ✅, B.2 ✅, B.3 mostly ✅ | `ResourcesView` deferred post-v1 |
+| C | 0 | Track C polish complete ✅ |
 | D | 6 | Blocked or optional |
 | E | 3 tracks | Post-v1 |
 

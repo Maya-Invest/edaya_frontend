@@ -1,46 +1,75 @@
 <script lang="ts">
-	import type { ResolvedPathname } from '$app/types';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { authSession } from '$lib/auth/session.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { t } from '$lib/i18n';
 	import { ClipboardCheck, ChevronRight } from '$lib/icons';
 	import { appPath } from '$lib/navigation/app-navigation';
+	import { loadHomeroomAttendanceByClass } from '$lib/school/homeroom-attendance-nudge-data';
+	import {
+		homeroomDailyClassesForStaff,
+		resolveHomeroomAttendanceNudges,
+	} from '$lib/school/homeroom-attendance-nudge';
+	import { queryClient } from '$lib/queries/client';
 
 	const me = $derived(authSession.user);
-
 	const todayIso = $derived(new Date().toISOString().slice(0, 10));
 
-	const unmarkedClasses = $derived.by(() => {
-		if (!me) {
-			return [] as { classId: string; className: string; href: ResolvedPathname }[];
+	const homeroomDailyClasses = $derived(
+		me ? homeroomDailyClassesForStaff(academicContext.classes, me.id) : [],
+	);
+
+	let attendanceByClass = $state(new Map());
+
+	$effect(() => {
+		const classes = homeroomDailyClasses;
+		if (classes.length === 0) {
+			attendanceByClass = new Map();
+			return;
 		}
 
-		// Staff webapp only: homeroom nudge follows homeroomStaffId (staff coordinator), not portal teacher assignments.
-		return academicContext.classes.flatMap((cls) => {
-			if (cls.attendanceMode !== 'daily' || cls.homeroomStaffId !== me.id) {
-				return [];
-			}
+		let cancelled = false;
+		const classIds = classes.map(cls => cls.id);
 
-			const todayDay = detailDataContext.attendanceDaysForClass(cls.id).find(day => day.date === todayIso);
-			if (!todayDay || todayDay.totalStudents === 0 || todayDay.recordedCount >= todayDay.totalStudents) {
-				return [];
+		void loadHomeroomAttendanceByClass(queryClient(), classIds).then((loaded) => {
+			if (cancelled) {
+				return;
 			}
-
-			return [{
-				classId: cls.id,
-				className: cls.name,
-				href: appPath('/(app)/classes/[classId]/attendance/[[id]]', {
-					classId: cls.id,
-					id: todayDay.id,
-				}),
-			}];
+			attendanceByClass = loaded;
+			for (const classId of classIds) {
+				const context = loaded.get(classId);
+				if (context) {
+					detailDataContext.seedAttendanceDays(context.days, { classId });
+				}
+			}
 		});
+
+		return () => {
+			cancelled = true;
+		};
 	});
+
+	const unmarkedClasses = $derived(
+		me
+			? resolveHomeroomAttendanceNudges({
+				staffId: me.id,
+				classes: academicContext.classes,
+				attendanceByClass,
+				todayIso,
+				classAttendanceHref: (classId, dayId) => appPath(
+					'/(app)/classes/[classId]/attendance/[[id]]',
+					{ classId, id: dayId },
+				),
+			})
+			: [],
+	);
 </script>
 
 {#if unmarkedClasses.length > 0}
-	<section class="rounded-2xl border border-highlight/30 bg-highlight-soft/40 p-4 shadow-soft">
+	<section
+		data-testid="homeroom-attendance-nudge"
+		class="rounded-2xl border border-highlight/30 bg-highlight-soft/40 p-4 shadow-soft"
+	>
 		<div class="flex flex-wrap items-start justify-between gap-3">
 			<div class="flex min-w-0 items-start gap-3">
 				<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-highlight-soft text-highlight">

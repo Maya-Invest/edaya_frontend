@@ -9,6 +9,7 @@
 	import { deletePeriodDefinitionMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -19,6 +20,7 @@
 	import { t } from '$lib/i18n';
 	import { CalendarRange, ChevronDown, Pencil, Plus, Trash2 } from '$lib/icons';
 	import { readAcademicAdminListFilters, writeAcademicAdminListFilters } from '$lib/list/list-url-filters';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
@@ -28,9 +30,15 @@
 
 	const initialFilters = $derived(readAcademicAdminListFilters($page.url));
 
-	let q = $state('');
-	let status = $state('all');
-	let filtersReady = $state(false);
+	const listFilters = new ListFiltersState<{ q: string; status: string }>(
+		{
+			getUrl: () => $page.url,
+			write: writeAcademicAdminListFilters,
+			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+		},
+		() => readAcademicAdminListFilters($page.url),
+	);
+
 	let createOpen = $state(false);
 	let expandedYear = $state<string | null>(academicContext.yearId);
 	let periodDefOpen = $state(false);
@@ -52,10 +60,10 @@
 
 	const filteredYears = $derived(
 		sortedYears.filter((year) => {
-			if (status !== 'all' && year.status !== status) {
+			if (listFilters.values.status !== 'all' && year.status !== listFilters.values.status) {
 				return false;
 			}
-			const needle = q.trim().toLowerCase();
+			const needle = listFilters.values.q.trim().toLowerCase();
 			if (!needle) {
 				return true;
 			}
@@ -138,37 +146,19 @@
 		}
 	}
 
-	function syncFiltersToUrl() {
-		const href = writeAcademicAdminListFilters($page.url, { q, status });
-		const current = `${$page.url.pathname}${$page.url.search}`;
-		if (href === current) {
-			return;
-		}
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	}
+	const statusFilterActive = $derived(listFilters.values.status !== 'all' ? 1 : 0);
 
 	$effect(() => {
-		const next = initialFilters;
-		q = next.q;
-		status = next.status;
-		filtersReady = true;
+		listFilters.hydrate(initialFilters);
 	});
 
-	let searchTimer: ReturnType<typeof setTimeout> | undefined;
-	function scheduleFilterSync() {
-		if (!filtersReady) {
-			return;
-		}
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(syncFiltersToUrl, 250);
-	}
-
 	$effect(() => {
-		if (!filtersReady) {
+		if (!listFilters.ready) {
 			return;
 		}
-		void status;
-		scheduleFilterSync();
+		void listFilters.values.q;
+		void listFilters.values.status;
+		listFilters.scheduleSync();
 	});
 </script>
 
@@ -178,10 +168,16 @@
 		title={$t('academic.title')}
 	>
 		{#snippet search()}
-			<ListSearchField bind:value={q} oninput={scheduleFilterSync} />
+			<ListSearchField bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
 		{/snippet}
 		{#snippet filters()}
-			<FilterSelect bind:value={status} options={statusOptions} class="h-9 min-w-[10rem]" />
+			<FilterPanel activeCount={statusFilterActive} title={$t('academic.filterAllStatuses')}>
+				<FilterSelect
+					bind:value={listFilters.values.status}
+					options={statusOptions}
+					class="h-9 w-full rounded-md text-xs"
+				/>
+			</FilterPanel>
 		{/snippet}
 		{#snippet primary()}
 			<Button size="sm" class="rounded-full" onclick={() => (createOpen = true)}>

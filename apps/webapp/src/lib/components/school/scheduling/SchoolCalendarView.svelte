@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -126,6 +127,13 @@
 		return scope.map(id => classes.find(c => c.id === id)?.name ?? id).join(', ');
 	}
 
+	const typeFilterOptions = $derived(
+		typeFilterKeys.map(key => ({
+			value: key,
+			label: typeLabel(key),
+		})),
+	);
+
 	function handleCreated(eventId: string) {
 		const path = detailHref.schoolCalendarEvent(eventId);
 		appGoto(`${path}${$page.url.search}`);
@@ -147,11 +155,6 @@
 		void listFilters.values.type;
 		listFilters.scheduleSync();
 	});
-
-	function applyTypeFilter(next: TypeFilter) {
-		listFilters.values.type = next;
-		listFilters.scheduleSync();
-	}
 </script>
 
 <div class="animate-fade-in space-y-6">
@@ -173,22 +176,11 @@
 			</div>
 		{/snippet}
 		{#snippet filters()}
-			<div class="flex flex-wrap items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft">
-				{#each typeFilterKeys as k (k)}
-					<button
-						type="button"
-						onclick={() => applyTypeFilter(k)}
-						class={cn(
-							'rounded-full px-3 py-1 text-[11px] font-medium transition',
-							typeFilter === k
-								? 'bg-primary text-primary-foreground'
-								: 'text-muted-foreground hover:text-foreground',
-						)}
-					>
-						{typeLabel(k)}
-					</button>
-				{/each}
-			</div>
+			<FilterSelect
+				bind:value={listFilters.values.type}
+				class="h-9 min-w-[10rem] rounded-full text-xs"
+				options={typeFilterOptions}
+			/>
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate

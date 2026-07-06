@@ -12,16 +12,16 @@ Full fixture reference: [edaya_backend/tooling/fixtures/src/datasets/demo-ci/REA
 | `j.aka@ecole-ci.edaya.dev` | Deputy director (staff workspace) |
 | `f.assi@ecole-ci.edaya.dev` | Staff coordinator / homeroom staff (`homeroomStaffId`) |
 
-## Portal teachers (teacher mobile app — not staff webapp)
+## Portal teachers (sign in via teacher mobile app)
 
-These accounts are **`Teacher`** entities with `kind: teacher` invitations. They do **not** use the staff web workspace.
+These accounts are **`Teacher`** entities with `kind: teacher` invitations. Staff manage them in the webapp (School → Teachers); they **sign in** in the teacher Flutter app.
 
 | Email | Teacher ID | Notes |
 |-------|------------|-------|
 | `a.toure@ecole-ci.edaya.dev` | `ci-t1` | Maths — 6ème A, 5ème A |
 | `k.diomande@ecole-ci.edaya.dev` | `ci-t2` | Portal homeroom — 6ème B |
 
-Run the **teacher** Flutter app (`edaya_mobile/apps/teacher`) to sign in as portal teachers.
+Run `edaya_mobile/apps/teacher` to verify portal teacher authorization after backend permission or assignment changes.
 
 ## Seed commands
 

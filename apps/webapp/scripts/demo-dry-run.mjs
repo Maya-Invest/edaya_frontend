@@ -1,5 +1,11 @@
 /**
- * Demo-ready plan (DR.1) — automated browser dry-run for scenes D0–D11.
+ * Demo-ready plan (DR.1) + Track B/C polish — automated browser dry-run.
+ *
+ * Scenes:
+ *   D0–D11  — core demo modules (director login)
+ *   DC1–DC8 — list shell / filter polish (Track B.1, C.1, C.3.1–C.3.2)
+ *   DN      — homeroom attendance nudge (C.3.4, coordinator login)
+ *
  * Run: node scripts/demo-dry-run.mjs
  * Requires: webapp on :5173, API seeded with demo-ci.
  */
@@ -10,6 +16,7 @@ import path from 'node:path';
 const BASE = process.env.WEBAPP_URL ?? 'http://localhost:5173';
 const PASSWORD = 'DevPassword1!';
 const STAFF_EMAIL = 'j.aka@ecole-ci.edaya.dev';
+const COORDINATOR_EMAIL = 'f.assi@ecole-ci.edaya.dev';
 const OUT_DIR = path.join(import.meta.dirname, '../.demo-dry-run');
 const CLASS_6A = 'ci-6a';
 const CLASS_6B = 'ci-6b';
@@ -33,15 +40,21 @@ async function waitForAppShell(page) {
 	);
 }
 
-async function signIn(page) {
+/**
+ * @param {import('playwright').Page} page
+ * @param {{ namePattern?: RegExp; email?: string }} account
+ */
+async function signIn(page, account = {}) {
+	const { namePattern = /Jean-Baptiste Aka|Aka/i, email = STAFF_EMAIL } = account;
 	await page.goto(`${BASE}/login/demo`, { waitUntil: 'domcontentloaded' });
-	const akaBtn = page.getByRole('button', { name: /Jean-Baptiste Aka|Aka/i });
-	const hasDemoPicker = await akaBtn.waitFor({ timeout: 20_000 }).then(() => true).catch(() => false);
+	const demoBtn = page.getByRole('button', { name: namePattern });
+	const hasDemoPicker = await demoBtn.waitFor({ timeout: 20_000 }).then(() => true).catch(() => false);
 	if (hasDemoPicker) {
-		await akaBtn.click();
-	} else {
+		await demoBtn.click();
+	}
+	else {
 		await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' });
-		await page.getByRole('textbox').first().fill(STAFF_EMAIL);
+		await page.getByRole('textbox').first().fill(email);
 		await page.locator('input[type="password"]').fill(PASSWORD);
 		await page.getByRole('button', { name: /sign in|connexion|continue|continuer/i }).click();
 	}
@@ -61,8 +74,8 @@ async function assertNoFatalError(page, scene, step) {
 async function waitForPathStable(page, expectedPathPrefix, timeoutMs = 20_000) {
 	const deadline = Date.now() + timeoutMs;
 	while (Date.now() < deadline) {
-		const path = new URL(page.url()).pathname;
-		if (path.startsWith(expectedPathPrefix)) {
+		const currentPath = new URL(page.url()).pathname;
+		if (currentPath.startsWith(expectedPathPrefix)) {
 			await page.waitForTimeout(500);
 			const again = new URL(page.url()).pathname;
 			if (again.startsWith(expectedPathPrefix)) {
@@ -139,6 +152,156 @@ async function visit(page, url, scene, step, { expectText, selector, pathPrefix,
 	return result === true;
 }
 
+/** Assert FilterPanel + ListMoreMenu on pages migrated in Track C. */
+async function assertListShell(page, scene, step, { requireFilter = true } = {}) {
+	try {
+		await page.locator('[role="status"][aria-live="polite"]').waitFor({ state: 'hidden', timeout: 30_000 }).catch(() => {});
+		const moreBtn = page.getByTestId('list-more-menu');
+		if (!(await moreBtn.isVisible({ timeout: 15_000 }).catch(() => false))) {
+			log(scene, step, 'fail', 'Missing list more menu');
+			await shot(page, `${scene}-${step.replace(/\s+/g, '-')}`);
+			return false;
+		}
+		await moreBtn.click();
+		const exportItem = page.getByRole('button', { name: /export|exporter/i });
+		if (!(await exportItem.isVisible({ timeout: 5_000 }).catch(() => false))) {
+			log(scene, step, 'fail', 'Export action missing in more menu');
+			await shot(page, `${scene}-${step.replace(/\s+/g, '-')}-export`);
+			return false;
+		}
+		await page.keyboard.press('Escape');
+
+		if (requireFilter) {
+			const filterBtn = page.getByTestId('list-filter');
+			if (!(await filterBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
+				log(scene, step, 'fail', 'Missing filter panel trigger');
+				await shot(page, `${scene}-${step.replace(/\s+/g, '-')}-filter`);
+				return false;
+			}
+			await filterBtn.click();
+			const popover = page.locator('[data-state="open"]').last();
+			if (!(await popover.isVisible({ timeout: 5_000 }).catch(() => false))) {
+				log(scene, step, 'fail', 'Filter popover did not open');
+				await shot(page, `${scene}-${step.replace(/\s+/g, '-')}-filter-open`);
+				return false;
+			}
+			await page.keyboard.press('Escape');
+		}
+
+		if (!(await assertNoFatalError(page, scene, step))) {
+			return false;
+		}
+		log(scene, step, 'pass');
+		return true;
+	}
+	catch (err) {
+		log(scene, step, 'fail', err instanceof Error ? err.message : String(err));
+		await shot(page, `${scene}-${step.replace(/\s+/g, '-')}-exception`).catch(() => {});
+		return false;
+	}
+}
+
+/** Pages with FilterSelect chip bar instead of FilterPanel. */
+async function assertFilterSelectShell(page, scene, step) {
+	try {
+		await page.locator('[role="status"][aria-live="polite"]').waitFor({ state: 'hidden', timeout: 30_000 }).catch(() => {});
+		const filterSelect = page.locator('select[aria-label="Filter"]');
+		const moreBtn = page.getByTestId('list-more-menu');
+		if (!(await filterSelect.first().isVisible({ timeout: 15_000 }).catch(() => false))) {
+			log(scene, step, 'fail', 'Missing filter select');
+			await shot(page, `${scene}-${step.replace(/\s+/g, '-')}`);
+			return false;
+		}
+		if (!(await moreBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
+			log(scene, step, 'fail', 'Missing list more menu');
+			await shot(page, `${scene}-${step.replace(/\s+/g, '-')}`);
+			return false;
+		}
+		log(scene, step, 'pass');
+		return true;
+	}
+	catch (err) {
+		log(scene, step, 'fail', err instanceof Error ? err.message : String(err));
+		return false;
+	}
+}
+
+async function assertClassAttendanceNav(page, classId, scene, step) {
+	const classPath = `/classes/${classId}`;
+	await visit(page, `${BASE}${classPath}/students`, scene, `${step} (class shell)`, {
+		pathPrefix: classPath,
+		selector: 'main',
+	});
+	const attendanceLink = page.locator('aside#app-sidebar a[href*="/attendance"]');
+	const visible = await attendanceLink.isVisible({ timeout: 10_000 }).catch(() => false);
+	if (visible) {
+		log(scene, step, 'pass');
+		return true;
+	}
+	log(scene, step, 'fail', 'Attendance nav tab not visible for daily class');
+	await shot(page, `${scene}-${step.replace(/\s+/g, '-')}`);
+	return false;
+}
+
+async function runHomeroomNudgeCheck(browser) {
+	const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+	const page = await context.newPage();
+	const scene = 'DN';
+	try {
+		await signIn(page, { namePattern: /Mme Assi|Assi/i, email: COORDINATOR_EMAIL });
+		log(scene, 'N.1 Login f.assi@', 'pass');
+		await visit(page, `${BASE}/dashboard`, scene, 'N.2 Dashboard loads', { selector: 'main' });
+
+		const nudge = page.getByTestId('homeroom-attendance-nudge');
+		const appeared = await nudge.waitFor({ timeout: 25_000 }).then(() => true).catch(() => false);
+		if (!appeared) {
+			log(scene, 'N.3 Homeroom attendance nudge', 'fail', 'Nudge not visible for homeroom coordinator');
+			await shot(page, 'DN-nudge-missing');
+			return;
+		}
+
+		const nudgeText = await nudge.textContent();
+		if (!/roll call|appel du jour/i.test(nudgeText ?? '')) {
+			log(scene, 'N.3 Homeroom attendance nudge', 'fail', 'Unexpected nudge copy');
+			await shot(page, 'DN-nudge-copy');
+			return;
+		}
+
+		const classLink = nudge.locator(`a[href*="/classes/${CLASS_6A}/attendance"]`);
+		if (!(await classLink.isVisible({ timeout: 5_000 }).catch(() => false))) {
+			log(scene, 'N.3 Homeroom attendance nudge', 'fail', `Missing link to ${CLASS_6A} attendance`);
+			await shot(page, 'DN-nudge-link');
+			return;
+		}
+
+		if (!/6ème A|6eme A/i.test(nudgeText ?? '')) {
+			log(scene, 'N.3 Homeroom attendance nudge', 'skip', '6ème A label not in nudge — verify locale');
+		}
+		else {
+			log(scene, 'N.3 Homeroom attendance nudge', 'pass');
+		}
+
+		await classLink.click();
+		const onAttendance = await page.waitForURL(new RegExp(`/classes/${CLASS_6A}/attendance`), { timeout: 15_000 })
+			.then(() => true)
+			.catch(() => false);
+		if (onAttendance && await assertNoFatalError(page, scene, 'N.4 Nudge deep-link')) {
+			log(scene, 'N.4 Nudge deep-link to attendance', 'pass');
+		}
+		else {
+			log(scene, 'N.4 Nudge deep-link to attendance', 'fail', onAttendance ? 'Error on attendance page' : 'Navigation failed');
+			await shot(page, 'DN-nudge-nav');
+		}
+	}
+	catch (err) {
+		log(scene, 'N.0 Homeroom nudge scene', 'fail', err instanceof Error ? err.message : String(err));
+		await shot(page, 'DN-scene-exception').catch(() => {});
+	}
+	finally {
+		await context.close();
+	}
+}
+
 async function main() {
 	await mkdir(OUT_DIR, { recursive: true });
 	const browser = await chromium.launch({ headless: true });
@@ -156,7 +319,8 @@ async function main() {
 		await signIn(page);
 		log('D0', '0.1 Login j.aka@', 'pass');
 		await shot(page, 'D0-login');
-	} catch (err) {
+	}
+	catch (err) {
 		log('D0', '0.1 Login j.aka@', 'fail', err instanceof Error ? err.message : String(err));
 		await shot(page, 'D0-login-fail');
 		await writeFile(path.join(OUT_DIR, 'results.json'), JSON.stringify({ results, consoleErrors }, null, 2));
@@ -167,7 +331,7 @@ async function main() {
 	await visit(page, `${BASE}/dashboard`, 'D0', '0.2 Dashboard / school context', { expectText: /tableau|dashboard|directeur|cocody/i });
 	await visit(page, `${BASE}/school/students`, 'D0', '0.3 Sidebar school students');
 
-	// D2 — Students (2.1 asserts roster on the page opened above — avoid a second goto to the same URL)
+	// D2 — Students
 	try {
 		await page.waitForSelector('main', { timeout: 20_000 });
 		const rosterVisible = await page.getByText(/Effectif|élève/i).first()
@@ -234,7 +398,8 @@ async function main() {
 	await visit(page, `${BASE}/classes/${CLASS_6A}/evaluations`, 'D6', '6.1 Evaluations list', { selector: 'main' });
 
 	// D7 — Daily attendance 6ème B
-	await visit(page, `${BASE}/classes/${CLASS_6B}/attendance`, 'D7', '7.1 Daily attendance tab', { selector: 'main' });
+	await assertClassAttendanceNav(page, CLASS_6B, 'D7', '7.1 Attendance nav on 6ème B');
+	await visit(page, `${BASE}/classes/${CLASS_6B}/attendance`, 'D7', '7.2 Daily attendance page', { selector: 'main' });
 
 	// D8 — School life
 	await visit(page, `${BASE}/school/activities`, 'D8', '8.1 Activities list', { selector: 'main' });
@@ -254,6 +419,46 @@ async function main() {
 	await visit(page, `${BASE}/configuration/grade-levels`, 'D11', '11.2 Grade levels', { selector: 'main' });
 	await visit(page, `${BASE}/configuration/academic`, 'D11', '11.3 Academic calendar', { selector: 'main' });
 	await visit(page, `${BASE}/configuration/discipline`, 'D11', '11.4 Disciplinary catalog', { selector: 'main' });
+
+	// DC — Track B/C list shell polish
+	await visit(page, `${BASE}/school/students`, 'DC1', 'Students list shell', { pathPrefix: '/school/students' });
+	await assertListShell(page, 'DC1', 'Students Filter + More menu');
+
+	await visit(page, `${BASE}/finance/payment`, 'DC2', 'Payments list shell', { pathPrefix: '/finance/payment' });
+	await assertListShell(page, 'DC2', 'Payments Filter + More menu');
+
+	await visit(page, `${BASE}/configuration/classes`, 'DC3', 'Class groups list shell', { pathPrefix: '/configuration/classes' });
+	await assertListShell(page, 'DC3', 'Class groups Filter + More menu');
+
+	await visit(page, `${BASE}/configuration/academic`, 'DC4', 'Academic admin list shell', { pathPrefix: '/configuration/academic' });
+	await assertListShell(page, 'DC4', 'Academic admin Filter + More menu');
+
+	await visit(page, `${BASE}/classes/${CLASS_6B}/attendance`, 'DC5', 'Attendance list shell', {
+		pathPrefix: `/classes/${CLASS_6B}/attendance`,
+	});
+	await assertListShell(page, 'DC5', 'Attendance Filter + More menu');
+
+	await visit(page, `${BASE}/school/announcements`, 'DC6', 'Announcements list shell', { pathPrefix: '/school/announcements' });
+	await assertListShell(page, 'DC6', 'Announcements Filter + More menu');
+
+	await visit(page, `${BASE}/classes/${CLASS_6A}/evaluations`, 'DC7', 'Evaluations filter select', {
+		pathPrefix: `/classes/${CLASS_6A}/evaluations`,
+	});
+	await assertFilterSelectShell(page, 'DC7', 'Evaluations FilterSelect + More menu');
+
+	await visit(page, `${BASE}/school/activities`, 'DC8', 'Activities filter select', { pathPrefix: '/school/activities' });
+	await assertFilterSelectShell(page, 'DC8', 'Activities FilterSelect + More menu');
+
+	await visit(page, `${BASE}/configuration/report-cards`, 'DC9', 'Report card defs filter select', {
+		pathPrefix: '/configuration/report-cards',
+	});
+	await assertFilterSelectShell(page, 'DC9', 'Report card definitions FilterSelect + More menu');
+
+	await visit(page, `${BASE}/school/calendar`, 'DC10', 'School calendar filter select', { pathPrefix: '/school/calendar' });
+	await assertFilterSelectShell(page, 'DC10', 'School calendar FilterSelect + More menu');
+
+	await context.close();
+	await runHomeroomNudgeCheck(browser);
 
 	const summary = {
 		passed: results.filter(r => r.status === 'pass').length,

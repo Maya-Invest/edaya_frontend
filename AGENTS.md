@@ -17,6 +17,9 @@ When working on `apps/webapp` screens, layouts, drawers, or modals, follow:
 
 Key rules (summary):
 
+- **All webapp features in scope** — School → Teachers, Students, Guardians, assignments, invites, and related drawers/modals are first-class staff workspace features; implement and verify them fully (see [demo-ready-plan.md](docs/sprints/demo-ready-plan.md) scenes D2–D3).
+- **Portal login vs staff admin** — portal teachers, guardians, and students **sign in** via `edaya_mobile`; the webapp is where staff **manage** those actors (directory, invites, 360°, assignments). Do not conflate “no portal login in webapp” with “skip Teachers/Students/Guardians work.”
+- **Backend permission caution** — staff permission / role / scope changes in `edaya_backend` can regress **portal authorization** (teacher assignments, guardian links, student access). When touching grants, seeds, or `StaffPermissionAssignment`, verify portal actors still authorize correctly in mobile apps and that webapp enrichment reads degrade gracefully on 403.
 - List + URL-backed detail drawer + mutation modals
 - Compose from [shared-components-spec](specs/shared-components-spec.md) before adding new shared UI
 - Drawer is read-only; edits via action buttons → modals

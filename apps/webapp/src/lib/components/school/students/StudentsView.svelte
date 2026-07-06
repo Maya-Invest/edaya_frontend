@@ -3,6 +3,8 @@
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
+	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import InfiniteList from '$lib/components/ui/InfiniteList.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -70,6 +72,14 @@
 		return k === 'all' ? $t('filter.all') : $t(`studentStatus.${k}`);
 	}
 
+	const statusFilterActive = $derived(listFilters.values.status !== 'all' ? 1 : 0);
+	const statusFilterOptions = $derived(
+		statusKeys.map(key => ({
+			value: key,
+			label: statusLabel(key),
+		})),
+	);
+
 	function handleCreated(studentId: string) {
 		const path = detailHref.classStudent(classId, studentId);
 		appGoto(`${path}${$page.url.search}`);
@@ -86,10 +96,6 @@
 		void listFilters.values.status;
 		listFilters.scheduleSync();
 	});
-
-	function applyStatus(next: (typeof statusKeys)[number]) {
-		listFilters.setField('status', next);
-	}
 </script>
 
 <div class="animate-fade-in">
@@ -112,22 +118,13 @@
 			</div>
 		{/snippet}
 		{#snippet filters()}
-			<div class="flex items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft">
-				{#each statusKeys as k (k)}
-					<button
-						type="button"
-						onclick={() => applyStatus(k)}
-						class={cn(
-							'rounded-full px-3 py-1 text-[11px] font-medium transition',
-							listFilters.values.status === k
-								? 'bg-primary text-primary-foreground'
-								: 'text-muted-foreground hover:text-foreground',
-						)}
-					>
-						{statusLabel(k)}
-					</button>
-				{/each}
-			</div>
+			<FilterPanel activeCount={statusFilterActive} title={$t('students.statusFilter')}>
+				<FilterSelect
+					bind:value={listFilters.values.status}
+					class="h-9 w-full rounded-md text-xs"
+					options={statusFilterOptions}
+				/>
+			</FilterPanel>
 		{/snippet}
 		{#snippet more()}
 			<ListMoreMenu {view} onViewChange={v => (view = v)} />

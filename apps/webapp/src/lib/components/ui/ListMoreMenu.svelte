@@ -9,13 +9,17 @@
 		view = 'table',
 		onViewChange,
 		exportOnly = false,
+		exportLabel,
 	}: {
 		view?: 'table' | 'cards';
 		onViewChange?: (view: 'table' | 'cards') => void;
 		exportOnly?: boolean;
+		exportLabel?: string;
 	} = $props();
 
 	let open = $state(false);
+
+	const resolvedExportLabel = $derived(exportLabel ?? $t('list.export'));
 
 	function exportStub() {
 		open = false;
@@ -37,6 +41,7 @@
 				size="sm"
 				class="h-9 rounded-full px-3"
 				aria-label={$t('list.moreActions')}
+				data-testid="list-more-menu"
 			>
 				<MoreHorizontal class="h-4 w-4" />
 			</Button>
@@ -49,7 +54,7 @@
 			onclick={exportStub}
 		>
 			<FileSpreadsheet class="h-4 w-4 text-muted-foreground" />
-			{$t('list.export')}
+			<span>{resolvedExportLabel}</span>
 		</button>
 		{#if !exportOnly}
 			<button

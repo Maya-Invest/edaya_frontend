@@ -1,6 +1,6 @@
 {
-  "passed": 25,
-  "failed": 0,
+  "passed": 45,
+  "failed": 6,
   "skipped": 0,
   "results": [
     {
@@ -39,6 +39,11 @@
       "status": "pass"
     },
     {
+      "scene": "D1",
+      "step": "1.2 Dashboard students link",
+      "status": "pass"
+    },
+    {
       "scene": "D3",
       "step": "3.1 Teachers list",
       "status": "pass"
@@ -70,7 +75,18 @@
     },
     {
       "scene": "D7",
-      "step": "7.1 Daily attendance tab",
+      "step": "7.1 Attendance nav on 6ème B (class shell)",
+      "status": "pass"
+    },
+    {
+      "scene": "D7",
+      "step": "7.1 Attendance nav on 6ème B",
+      "status": "fail",
+      "detail": "Attendance nav tab not visible for daily class"
+    },
+    {
+      "scene": "D7",
+      "step": "7.2 Daily attendance page",
       "status": "pass"
     },
     {
@@ -127,6 +143,126 @@
       "scene": "D11",
       "step": "11.4 Disciplinary catalog",
       "status": "pass"
+    },
+    {
+      "scene": "DC1",
+      "step": "Students list shell",
+      "status": "pass"
+    },
+    {
+      "scene": "DC1",
+      "step": "Students Filter + More menu",
+      "status": "pass"
+    },
+    {
+      "scene": "DC2",
+      "step": "Payments list shell",
+      "status": "pass"
+    },
+    {
+      "scene": "DC2",
+      "step": "Payments Filter + More menu",
+      "status": "pass"
+    },
+    {
+      "scene": "DC3",
+      "step": "Class groups list shell",
+      "status": "pass"
+    },
+    {
+      "scene": "DC3",
+      "step": "Class groups Filter + More menu",
+      "status": "pass"
+    },
+    {
+      "scene": "DC4",
+      "step": "Academic admin list shell",
+      "status": "pass"
+    },
+    {
+      "scene": "DC4",
+      "step": "Academic admin Filter + More menu",
+      "status": "pass"
+    },
+    {
+      "scene": "DC5",
+      "step": "Attendance list shell",
+      "status": "pass"
+    },
+    {
+      "scene": "DC5",
+      "step": "Attendance Filter + More menu",
+      "status": "pass"
+    },
+    {
+      "scene": "DC6",
+      "step": "Announcements list shell",
+      "status": "pass"
+    },
+    {
+      "scene": "DC6",
+      "step": "Announcements Filter + More menu",
+      "status": "pass"
+    },
+    {
+      "scene": "DC7",
+      "step": "Evaluations filter select",
+      "status": "pass"
+    },
+    {
+      "scene": "DC7",
+      "step": "Evaluations FilterSelect + More menu",
+      "status": "pass"
+    },
+    {
+      "scene": "DC8",
+      "step": "Activities filter select",
+      "status": "pass"
+    },
+    {
+      "scene": "DC8",
+      "step": "Activities FilterSelect + More menu",
+      "status": "pass"
+    },
+    {
+      "scene": "DC9",
+      "step": "Report card defs filter select",
+      "status": "fail",
+      "detail": "Error state visible on page"
+    },
+    {
+      "scene": "DC9",
+      "step": "Report card definitions FilterSelect + More menu",
+      "status": "fail",
+      "detail": "Missing filter select"
+    },
+    {
+      "scene": "DC10",
+      "step": "School calendar filter select",
+      "status": "fail",
+      "detail": "Error state visible on page"
+    },
+    {
+      "scene": "DC10",
+      "step": "School calendar FilterSelect + More menu",
+      "status": "fail",
+      "detail": "Missing filter select"
+    },
+    {
+      "scene": "DN",
+      "step": "N.1 Login f.assi@",
+      "status": "pass"
+    },
+    {
+      "scene": "DN",
+      "step": "N.2 Dashboard loads",
+      "status": "pass"
+    },
+    {
+      "scene": "DN",
+      "step": "N.3 Homeroom attendance nudge",
+      "status": "fail",
+      "detail": "Nudge not visible for homeroom coordinator"
     }
   ],
   "consoleErrors": [

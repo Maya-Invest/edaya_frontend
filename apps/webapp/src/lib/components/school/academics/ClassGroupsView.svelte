@@ -4,6 +4,7 @@
 	import { academicContext } from '$lib/academic/context.svelte';
 	import ClassGroupFormModal from '$lib/components/school/academics/ClassGroupFormModal.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -71,6 +72,8 @@
 		filteredHierarchy.reduce((acc, group) => acc + group.classes.length, 0),
 	);
 
+	const gradeLevelFilterActive = $derived(gradeLevelFilter !== 'all' ? 1 : 0);
+
 	$effect(() => {
 		listFilters.hydrate(initialFilters);
 	});
@@ -97,11 +100,13 @@
 			<ListSearchField bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
 		{/snippet}
 		{#snippet filters()}
-			<FilterSelect
-				bind:value={gradeLevelFilter}
-				class="h-9 w-44 rounded-full text-xs"
-				options={gradeLevelOptions}
-			/>
+			<FilterPanel activeCount={gradeLevelFilterActive} title={$t('gradeLevels.subtitle')}>
+				<FilterSelect
+					bind:value={gradeLevelFilter}
+					class="h-9 w-full rounded-md text-xs"
+					options={gradeLevelOptions}
+				/>
+			</FilterPanel>
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE" mode="disable">

@@ -4,8 +4,9 @@
 	import { authSession } from '$lib/auth/session.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
+	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
-	import { t } from '$lib/i18n';
+	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import {
 		Lock,
 		Eye,
@@ -120,6 +121,7 @@
 			</div>
 		{/snippet}
 		{#snippet more()}
+			<ListMoreMenu exportOnly />
 			<span
 				class="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-[11px] font-medium text-foreground/80"
 			>

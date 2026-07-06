@@ -2,6 +2,7 @@
 	import type { Activity } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import InfiniteList from '$lib/components/ui/InfiniteList.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
@@ -15,7 +16,6 @@
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
-	import { cn } from '$lib/utils';
 	import ActivityFormModal from './ActivityFormModal.svelte';
 
 	const {
@@ -76,6 +76,13 @@
 		return k === 'all' ? $t('filter.all') : $t(`activities.cat.${k}`);
 	}
 
+	const categoryFilterOptions = $derived(
+		categoryKeys.map(key => ({
+			value: key,
+			label: categoryLabel(key),
+		})),
+	);
+
 	function handleCreated(activityId: string) {
 		const path = detailHref.schoolActivity(activityId);
 		appGoto(`${path}${$page.url.search}`);
@@ -92,11 +99,6 @@
 		void listFilters.values.category;
 		listFilters.scheduleSync();
 	});
-
-	function applyCategory(next: (typeof categoryKeys)[number]) {
-		listFilters.values.category = next;
-		listFilters.scheduleSync();
-	}
 </script>
 
 <div class="animate-fade-in">
@@ -118,22 +120,11 @@
 			</div>
 		{/snippet}
 		{#snippet filters()}
-			<div class="flex flex-wrap items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft">
-				{#each categoryKeys as k (k)}
-					<button
-						type="button"
-						onclick={() => applyCategory(k)}
-						class={cn(
-							'rounded-full px-3 py-1 text-[11px] font-medium transition',
-							listFilters.values.category === k
-								? 'bg-primary text-primary-foreground'
-								: 'text-muted-foreground hover:text-foreground',
-						)}
-					>
-						{categoryLabel(k)}
-					</button>
-				{/each}
-			</div>
+			<FilterSelect
+				bind:value={listFilters.values.category}
+				class="h-9 min-w-[10rem] rounded-full text-xs"
+				options={categoryFilterOptions}
+			/>
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
