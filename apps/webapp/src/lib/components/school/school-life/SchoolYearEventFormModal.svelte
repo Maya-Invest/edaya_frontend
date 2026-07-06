@@ -23,12 +23,14 @@
 		onCreated,
 		disabled = false,
 		title,
+		showTrigger = true,
 	}: {
 		event?: SchoolYearEvent;
 		open?: boolean;
 		onCreated?: (eventId: string) => void;
 		disabled?: boolean;
 		title?: string;
+		showTrigger?: boolean;
 	} = $props();
 
 	let busy = $state(false);
@@ -131,7 +133,7 @@
 	}
 </script>
 
-{#if isEdit}
+{#if isEdit && showTrigger}
 	<Button
 		variant="outline"
 		size="sm"

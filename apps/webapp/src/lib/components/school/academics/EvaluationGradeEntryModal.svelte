@@ -9,21 +9,23 @@
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
 
-	const {
+	let {
 		evaluation,
 		student,
 		existingScore = null,
 		disabled = false,
 		title,
+		open = $bindable(false),
+		showTrigger = true,
 	}: {
 		evaluation: Evaluation;
 		student: Student;
 		existingScore?: number | null;
 		disabled?: boolean;
 		title?: string;
+		open?: boolean;
+		showTrigger?: boolean;
 	} = $props();
-
-	let open = $state(false);
 	let busy = $state(false);
 	let score = $state('');
 
@@ -62,20 +64,22 @@
 	const label = $derived(existingScore !== null ? $t('eval.editGrade') : $t('eval.enterGrade'));
 </script>
 
-<PermissionGate permission="GRADE_INPUT" mode="disable" tooltip={$t('eval.permissionInput')}>
-	{#snippet children({ disabled: gateDisabled, title: gateTitle })}
-		<Button
-			variant="outline"
-			size="sm"
-			class="rounded-full"
-			disabled={disabled || gateDisabled}
-			title={title ?? gateTitle}
-			onclick={() => (open = true)}
-		>
-			{label}
-		</Button>
-	{/snippet}
-</PermissionGate>
+{#if showTrigger}
+	<PermissionGate permission="GRADE_INPUT" mode="disable" tooltip={$t('eval.permissionInput')}>
+		{#snippet children({ disabled: gateDisabled, title: gateTitle })}
+			<Button
+				variant="outline"
+				size="sm"
+				class="rounded-full"
+				disabled={disabled || gateDisabled}
+				title={title ?? gateTitle}
+				onclick={() => (open = true)}
+			>
+				{label}
+			</Button>
+		{/snippet}
+	</PermissionGate>
+{/if}
 
 <FormModal
 	bind:open

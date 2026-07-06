@@ -47,7 +47,7 @@ function resolveTodayAttendanceDay(
 /** Staff webapp only: homeroom nudge follows homeroomStaffId, not portal teacher assignments. */
 export function resolveHomeroomAttendanceNudges(args: {
 	staffId: string;
-	classes: readonly Pick<ClassNode, 'id' | 'name' | 'attendanceMode' | 'homeroomStaffId'>[];
+	classes: readonly Pick<ClassNode, 'id' | 'name' | 'attendanceMode' | 'homeroomStaffId' | 'studentCount'>[];
 	attendanceByClass: ReadonlyMap<string, HomeroomAttendanceClassContext>;
 	todayIso: string;
 	classAttendanceHref: (classId: string, dayId?: string) => ResolvedPathname;
@@ -62,7 +62,7 @@ export function resolveHomeroomAttendanceNudges(args: {
 			context?.days ?? [],
 			cls.id,
 			args.todayIso,
-			context?.studentCount ?? 0,
+			context?.studentCount || cls.studentCount || 0,
 		);
 		if (!todayDay || todayDay.totalStudents === 0 || todayDay.recordedCount >= todayDay.totalStudents) {
 			return [];

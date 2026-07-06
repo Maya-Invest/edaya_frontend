@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { SchoolNotificationTemplatesRow } from '$lib/api/notification-templates-data';
 	import type { NotificationChannel, NotificationTemplateKey } from '$lib/notification-templates/catalog';
+	import { page } from '$app/stores';
 	import { resetSchoolNotificationTemplatesMutation } from '$lib/api/mutations/notification-templates.mutations';
 	import NotificationTemplateEditModal from '$lib/components/school/configuration/NotificationTemplateEditModal.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -17,6 +18,7 @@
 		NOTIFICATION_TEMPLATE_CATEGORIES,
 
 	} from '$lib/notification-templates/catalog';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
 
 	const { data }: {
@@ -28,13 +30,19 @@
 
 	let savedDocument = $state<SchoolNotificationTemplatesRow | null>(null);
 	const document = $derived(savedDocument ?? data.document);
-	let editOpen = $state(false);
+
+	const modals = createUrlSyncedModals({ allowed: ['edit'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const editOpen = bindUrlModal(modals, 'edit');
+
 	let editKey = $state<NotificationTemplateKey | null>(null);
 	let resetting = $state(false);
 
 	function openEdit(key: NotificationTemplateKey) {
 		editKey = key;
-		editOpen = true;
+		editOpen.open = true;
 	}
 
 	function handleSaved(next: SchoolNotificationTemplatesRow) {
@@ -149,7 +157,7 @@
 </div>
 
 <NotificationTemplateEditModal
-	bind:open={editOpen}
+	bind:open={editOpen.open}
 	templateKey={editKey}
 	{document}
 	onSaved={handleSaved}

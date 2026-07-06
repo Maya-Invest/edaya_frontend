@@ -21,6 +21,8 @@
 		setSchoolStudentsState,
 	} from '$lib/students/school-students-state.svelte';
 	import { useOffsetInfiniteList } from '$lib/list/use-infinite-list.svelte';
+	import { bindUrlModal, closeUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 	import PersonAvatar from '../shared/PersonAvatar.svelte';
@@ -41,7 +43,12 @@
 	const hierarchy = $derived(studentsState.hierarchy);
 
 	let view = $state<'table' | 'cards'>('table');
-	let createOpen = $state(false);
+
+	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const createOpen = bindUrlModal(modals, 'create');
 
 	const infinite = useOffsetInfiniteList(
 		async (offset, limit) => {
@@ -62,7 +69,7 @@
 
 	function handleCreated(studentId: string) {
 		const path = detailHref.schoolStudent(studentId);
-		appGoto(`${path}${$page.url.search}`);
+		appGoto(`${path}${detailNavigationSearch($page.url)}`);
 	}
 
 	const statusKeys = ['all', 'honor', 'active', 'warning'] as const;
@@ -147,7 +154,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen = true)}
+						onclick={() => (createOpen.open = true)}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('students.newStudent')}
@@ -157,9 +164,12 @@
 		{/snippet}
 	</ListPageHeader>
 
-	{#if createOpen}
-		<StudentCreateModal bind:open={createOpen} {hierarchy} onCreated={handleCreated} />
-	{/if}
+	<StudentCreateModal
+		bind:open={createOpen.open}
+		onOpenChange={closeUrlModal(modals)}
+		{hierarchy}
+		onCreated={handleCreated}
+	/>
 
 	{#if view === 'table'}
 		<div

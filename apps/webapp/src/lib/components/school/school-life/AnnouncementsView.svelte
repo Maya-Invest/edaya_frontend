@@ -17,6 +17,8 @@
 	import { readAnnouncementListFilters, writeAnnouncementListFilters } from '$lib/list/list-url-filters';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 	import AnnouncementFormModal from './AnnouncementFormModal.svelte';
@@ -57,7 +59,12 @@
 	);
 
 	let priority = $state<string>('all');
-	let createOpen = $state(false);
+
+	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const createOpen = bindUrlModal(modals, 'create');
 
 	const filtered = $derived(
 		announcements
@@ -93,7 +100,7 @@
 
 	function handleCreated(announcementId: string) {
 		const path = detailHref.schoolAnnouncement(announcementId);
-		appGoto(`${path}${$page.url.search}`);
+		appGoto(`${path}${detailNavigationSearch($page.url)}`);
 	}
 
 	$effect(() => {
@@ -159,7 +166,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen = true)}
+						onclick={() => (createOpen.open = true)}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('announcements.new')}
@@ -172,7 +179,7 @@
 		{/snippet}
 	</ListPageHeader>
 
-	<AnnouncementFormModal bind:open={createOpen} onCreated={handleCreated} />
+	<AnnouncementFormModal bind:open={createOpen.open} onCreated={handleCreated} />
 
 	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
 		<div

@@ -1,11 +1,14 @@
 <script lang="ts">
 	import type { AttendanceDay } from '$lib/types/school';
 	import type { SessionAttendanceStatus } from '$lib/types/session-detail';
+	import { page } from '$app/stores';
 	import { loadAttendanceDayDetail } from '$lib/api/attendance-data';
 	import { recordClassDailyAttendanceMutation } from '$lib/api/mutations/attendance.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { locale, t } from '$lib/i18n';
 	import { Check, ClipboardCheck } from '$lib/icons';
 	import { queryClient } from '$lib/queries/client';
@@ -18,6 +21,18 @@
 
 	const { day }: { day: AttendanceDay } = $props();
 
+	type AttendanceDayDrawerModal = 'record-attendance';
+
+	const modals = createUrlSyncedModals<AttendanceDayDrawerModal>({
+		allowed: ['record-attendance'],
+		getUrl: () => $page.url,
+	});
+	setDrawerUrlModals(modals);
+	$effect(() => {
+		modals.hydrate();
+	});
+	const recordAttendanceOpen = bindUrlModal(modals, 'record-attendance');
+
 	const statusTone: Record<SessionAttendanceStatus, string> = {
 		present: 'bg-secondary text-foreground/80',
 		absent: 'bg-highlight-soft text-destructive',
@@ -29,6 +44,10 @@
 	const recordedCount = $derived(attendanceRows.filter(row => row.status).length);
 	const unrecordedStudentIds = $derived(
 		attendanceRows.filter(row => !row.status).map(row => row.studentId),
+	);
+
+	const recordTargetRow = $derived(
+		modals.target ? attendanceRows.find(row => row.studentId === modals.target) : undefined,
 	);
 
 	let loading = $state(false);
@@ -178,17 +197,16 @@
 										tooltip={$t('attendanceDay.permissionRecord')}
 									>
 										{#snippet children({ disabled, title })}
-											<AttendanceDayRecordModal
-												occurrenceId={day.id}
-												classGroupId={day.classId}
-												date={day.date}
-												studentId={row.studentId}
-												studentName={row.studentName}
-												attendanceId={row.attendanceId}
-												status={row.status}
+											<Button
+												variant="ghost"
+												size="sm"
+												class="h-7 rounded-full px-2.5 text-[11px]"
 												{disabled}
 												{title}
-											/>
+												onclick={() => modals.open('record-attendance', { target: row.studentId })}
+											>
+												{row.status ? $t('common.edit') : $t('attendanceDay.record')}
+											</Button>
 										{/snippet}
 									</PermissionGate>
 								</div>
@@ -200,3 +218,17 @@
 		</div>
 	{/if}
 </div>
+
+{#if recordTargetRow}
+	<AttendanceDayRecordModal
+		occurrenceId={day.id}
+		classGroupId={day.classId}
+		date={day.date}
+		studentId={recordTargetRow.studentId}
+		studentName={recordTargetRow.studentName}
+		attendanceId={recordTargetRow.attendanceId}
+		status={recordTargetRow.status}
+		bind:open={recordAttendanceOpen.open}
+		showTrigger={false}
+	/>
+{/if}

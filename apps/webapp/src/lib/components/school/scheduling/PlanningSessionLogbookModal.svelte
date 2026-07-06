@@ -11,17 +11,19 @@
 	import { Plus } from '$lib/icons';
 	import { get } from 'svelte/store';
 
-	const {
+	let {
 		detail,
 		disabled = false,
 		title,
+		open = $bindable(false),
+		showTrigger = true,
 	}: {
 		detail: SessionDetail;
 		disabled?: boolean;
 		title?: string;
+		open?: boolean;
+		showTrigger?: boolean;
 	} = $props();
-
-	let open = $state(false);
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let classSubjectMatterId = $state('');
@@ -104,20 +106,22 @@
 	}
 </script>
 
-<Button
-	variant="ghost"
-	class={isEdit ? 'h-7 rounded-full px-2 text-[11px]' : 'w-full rounded-full border border-dashed border-border'}
-	{disabled}
-	{title}
-	onclick={() => (open = true)}
->
-	{#if isEdit}
-		{$t('common.edit')}
-	{:else}
-		<Plus class="mr-1 h-4 w-4" />
-		{$t('planning.session.addLogbook')}
-	{/if}
-</Button>
+{#if showTrigger}
+	<Button
+		variant="ghost"
+		class={isEdit ? 'h-7 rounded-full px-2 text-[11px]' : 'w-full rounded-full border border-dashed border-border'}
+		{disabled}
+		{title}
+		onclick={() => (open = true)}
+	>
+		{#if isEdit}
+			{$t('common.edit')}
+		{:else}
+			<Plus class="mr-1 h-4 w-4" />
+			{$t('planning.session.addLogbook')}
+		{/if}
+	</Button>
+{/if}
 
 <FormModal
 	bind:open

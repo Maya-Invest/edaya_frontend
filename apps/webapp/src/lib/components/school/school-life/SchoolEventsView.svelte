@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Incident } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
@@ -12,6 +13,7 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { locale, t } from '$lib/i18n';
 	import { AlertTriangle, Plus, Search } from '$lib/icons';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 	import IncidentFormModal from './IncidentFormModal.svelte';
@@ -48,7 +50,12 @@
 	let categoryFilter = $state<'all' | Incident['category']>('all');
 	let severityFilter = $state<'all' | Incident['severity']>('all');
 	let statusFilter = $state<'all' | Incident['status']>('all');
-	let createOpen = $state(false);
+
+	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const createOpen = bindUrlModal(modals, 'create');
 
 	$effect.pre(() => {
 		if (classId)
@@ -200,7 +207,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen = true)}
+						onclick={() => (createOpen.open = true)}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('events.log')}
@@ -216,7 +223,7 @@
 	<IncidentFormModal
 		{students}
 		{classes}
-		bind:open={createOpen}
+		bind:open={createOpen.open}
 		onCreated={handleCreated}
 	/>
 

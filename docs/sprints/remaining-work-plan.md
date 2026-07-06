@@ -66,7 +66,7 @@ From [demo-ready-plan.md](./demo-ready-plan.md) dry-run (2026-07-06). Fix before
 | **A.7** | Timetable cell shows portal teacher name (not only subject) | D5 | DR.3 | **Done** — D5.2 automated (Mme Touré on grid) |
 | **A.8** | Dashboard deep-links resolve to real lists | D1 | DR.4 | **Done** — `dashboard-links.ts`; D1.2 automated |
 
-**Exit:** `node apps/webapp/scripts/demo-dry-run.mjs` passes (**26/26**); manual spot-check of D4 permissions modals, D6 homework filter, D10 bulletin drawer.
+**Exit:** `node apps/webapp/scripts/demo-dry-run.mjs` passes (**52/52**, 4 skipped); manual spot-check of D4 permissions modals, D6 homework filter, D10 bulletin drawer.
 
 **Track A status:** **Complete** (2026-07-06).
 

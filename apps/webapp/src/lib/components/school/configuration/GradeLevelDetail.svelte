@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { GradeLevel } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { deleteGradeLevelMutation } from '$lib/api/mutations/grade-level.mutations';
 	import GradeLevelFormModal from '$lib/components/school/configuration/GradeLevelFormModal.svelte';
@@ -8,13 +9,21 @@
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { t } from '$lib/i18n';
 	import { Trash2 } from '$lib/icons';
 	import { get } from 'svelte/store';
 
 	const { gradeLevel }: { gradeLevel: GradeLevel } = $props();
 
-	let editOpen = $state(false);
+	const modals = createUrlSyncedModals({ allowed: ['edit'], getUrl: () => $page.url });
+	setDrawerUrlModals(modals);
+	$effect(() => {
+		modals.hydrate();
+	});
+	const editOpen = bindUrlModal(modals, 'edit');
+
 	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
 
@@ -59,7 +68,7 @@
 						class="inline-flex h-9 items-center rounded-full border border-input bg-background px-4 text-sm font-medium transition hover:bg-secondary disabled:opacity-50"
 						{disabled}
 						{title}
-						onclick={() => (editOpen = true)}
+						onclick={() => (editOpen.open = true)}
 					>
 						{$t('gradeLevels.edit')}
 					</button>
@@ -99,7 +108,7 @@
 	</div>
 </div>
 
-<GradeLevelFormModal bind:open={editOpen} gradeLevel={live} />
+<GradeLevelFormModal bind:open={editOpen.open} gradeLevel={live} />
 
 <ConfirmModal
 	bind:open={deleteOpen}

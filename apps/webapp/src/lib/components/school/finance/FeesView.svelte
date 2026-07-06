@@ -16,6 +16,7 @@
 	import { Pencil, Plus, Trash2 } from '$lib/icons';
 	import { readFeeListFilters, writeFeeListFilters } from '$lib/list/list-url-filters';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { get } from 'svelte/store';
 	import FeeFormModal from './FeeFormModal.svelte';
@@ -36,8 +37,13 @@
 		() => readFeeListFilters($page.url),
 	);
 
-	let createOpen = $state(false);
-	let editOpen = $state(false);
+	const modals = createUrlSyncedModals({ allowed: ['create', 'edit'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const createOpen = bindUrlModal(modals, 'create');
+	const editOpen = bindUrlModal(modals, 'edit');
+
 	let editingFee = $state<Fee | null>(null);
 	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
@@ -84,7 +90,7 @@
 
 	function openEdit(fee: Fee) {
 		editingFee = fee;
-		editOpen = true;
+		editOpen.open = true;
 	}
 
 	function openDelete(fee: Fee) {
@@ -140,7 +146,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen = true)}
+						onclick={() => (createOpen.open = true)}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('finance.newFee')}
@@ -221,8 +227,8 @@
 	</div>
 </div>
 
-<FeeFormModal bind:open={createOpen} />
-<FeeFormModal bind:open={editOpen} fee={editingFee ?? undefined} />
+<FeeFormModal bind:open={createOpen.open} />
+<FeeFormModal bind:open={editOpen.open} fee={editingFee ?? undefined} />
 
 <ConfirmModal
 	bind:open={deleteOpen}

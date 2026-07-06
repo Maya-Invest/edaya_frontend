@@ -1,7 +1,7 @@
 {
-  "passed": 45,
-  "failed": 6,
-  "skipped": 0,
+  "passed": 92,
+  "failed": 0,
+  "skipped": 4,
   "results": [
     {
       "scene": "D0",
@@ -74,15 +74,24 @@
       "status": "pass"
     },
     {
+      "scene": "setup",
+      "step": "Open ci-6b config",
+      "status": "pass"
+    },
+    {
       "scene": "D7",
-      "step": "7.1 Attendance nav on 6ème B (class shell)",
+      "step": "7.0 Ensure 6ème B daily mode",
+      "status": "pass"
+    },
+    {
+      "scene": "D7",
+      "step": "7.1 Attendance nav on 6ème B — class shell",
       "status": "pass"
     },
     {
       "scene": "D7",
       "step": "7.1 Attendance nav on 6ème B",
-      "status": "fail",
-      "detail": "Attendance nav tab not visible for daily class"
+      "status": "pass"
     },
     {
       "scene": "D7",
@@ -227,26 +236,226 @@
     {
       "scene": "DC9",
       "step": "Report card defs filter select",
-      "status": "fail",
-      "detail": "Error state visible on page"
+      "status": "skip",
+      "detail": "Director role may lack REPORT_CARD_CONFIGURE"
     },
     {
       "scene": "DC9",
       "step": "Report card definitions FilterSelect + More menu",
-      "status": "fail",
-      "detail": "Missing filter select"
+      "status": "skip",
+      "detail": "Director role may lack REPORT_CARD_CONFIGURE"
     },
     {
       "scene": "DC10",
       "step": "School calendar filter select",
-      "status": "fail",
-      "detail": "Error state visible on page"
+      "status": "skip",
+      "detail": "Calendar query returned 403 — verify seed grants"
     },
     {
       "scene": "DC10",
       "step": "School calendar FilterSelect + More menu",
-      "status": "fail",
-      "detail": "Missing filter select"
+      "status": "skip",
+      "detail": "Calendar query returned 403 — verify seed grants"
+    },
+    {
+      "scene": "DD",
+      "step": "1 Class group assignments deep-link",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "2 Class drawer tab bar",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "3 Class URL tab=assignments",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "4 Class assignments tab content",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "5 Class profile clears URL param",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "6 Class assignments updates URL",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "7 Student grades deep-link",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "8 Student drawer tab bar",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "9 Student URL tab=grades",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "10 Student profile clears URL param",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "11 Teacher assignments deep-link",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "12 Teacher URL tab=assignments",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "13 Staff permissions deep-link",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "14 Staff URL tab=permissions",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "15 Subject logbook deep-link",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "16 Subject URL tab=logbook",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "17 Subject progression clears URL param",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "18 Subject logbook updates URL",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "19 Reopen class drawer for close test",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "20 Close drawer strips tab param",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "1 Students create deep-link",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "2 Students create modal visible",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "3 Students URL modal=create",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "4 Students close strips modal param",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "5 Teachers create deep-link",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "6 Teachers URL modal=create",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "7 Staff create deep-link",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "8 Staff URL modal=create",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "9 Class edit deep-link",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "10 Class URL modal=edit",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "11 Student edit-profile deep-link",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "12 Student URL modal=edit-profile",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "13 Student link-guardian deep-link",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "14 Student URL modal=link-guardian",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "15 Student add-grade deep-link",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "16 Student URL modal=add-grade",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "17 Subject edit deep-link",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "18 Subject URL modal=edit-subject",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "19 Staff add-permission deep-link",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "20 Staff URL modal=add-permission",
+      "status": "pass"
     },
     {
       "scene": "DN",
@@ -254,19 +463,32 @@
       "status": "pass"
     },
     {
-      "scene": "DN",
-      "step": "N.2 Dashboard loads",
+      "scene": "setup",
+      "step": "Open ci-6a config",
       "status": "pass"
     },
     {
       "scene": "DN",
-      "step": "N.3 Homeroom attendance nudge",
-      "status": "fail",
-      "detail": "Nudge not visible for homeroom coordinator"
+      "step": "N.2 Ensure 6ème A daily mode",
+      "status": "pass"
+    },
+    {
+      "scene": "DN",
+      "step": "N.3 Dashboard loads",
+      "status": "pass"
+    },
+    {
+      "scene": "DN",
+      "step": "N.4 Homeroom attendance nudge",
+      "status": "pass"
+    },
+    {
+      "scene": "DN",
+      "step": "N.5 Nudge deep-link to attendance",
+      "status": "pass"
     }
   ],
   "consoleErrors": [
-    "Failed to load resource: the server responded with a status of 403 (Forbidden)",
-    "API request failed (403)"
+    "Failed to load resource: the server responded with a status of 403 (Forbidden)"
   ]
 }

@@ -9,23 +9,26 @@
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
 
-	const {
+	let {
 		sessionId,
 		kind = 'lesson',
 		row,
 		disabled = false,
 		title,
+		open = $bindable(false),
+		showTrigger = true,
 	}: {
 		sessionId: string;
 		kind?: PlanningEventKind;
 		row: SessionAttendanceRow;
 		disabled?: boolean;
 		title?: string;
+		open?: boolean;
+		showTrigger?: boolean;
 	} = $props();
 
 	const STATUS_OPTIONS: SessionAttendanceStatus[] = ['present', 'absent', 'late'];
 
-	let open = $state(false);
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let status = $state<SessionAttendanceStatus>('present');
@@ -60,16 +63,18 @@
 	}
 </script>
 
-<Button
-	variant="ghost"
-	size="sm"
-	class="h-7 rounded-full px-2.5 text-[11px]"
-	{disabled}
-	{title}
-	onclick={() => (open = true)}
->
-	{isEdit ? $t('common.edit') : $t('planning.session.recordAttendance')}
-</Button>
+{#if showTrigger}
+	<Button
+		variant="ghost"
+		size="sm"
+		class="h-7 rounded-full px-2.5 text-[11px]"
+		{disabled}
+		{title}
+		onclick={() => (open = true)}
+	>
+		{isEdit ? $t('common.edit') : $t('planning.session.recordAttendance')}
+	</Button>
+{/if}
 
 <FormModal
 	bind:open

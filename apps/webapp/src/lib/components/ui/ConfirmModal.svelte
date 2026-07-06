@@ -11,6 +11,7 @@
 		busy = false,
 		variant = 'destructive',
 		onCancel,
+		onOpenChange,
 		onConfirm,
 	}: {
 		open?: boolean;
@@ -21,17 +22,25 @@
 		busy?: boolean;
 		variant?: 'default' | 'destructive';
 		onCancel?: () => void;
+		onOpenChange?: (open: boolean) => void;
 		onConfirm: () => void | Promise<void>;
 	} = $props();
 
+	function handleOpenChange(next: boolean) {
+		open = next;
+		if (!next) {
+			onOpenChange?.(false);
+		}
+	}
+
 	function close() {
 		onCancel?.();
-		open = false;
+		handleOpenChange(false);
 	}
 </script>
 
-<Dialog.Root bind:open>
-	<Dialog.Content>
+<Dialog.Root {open} onOpenChange={handleOpenChange}>
+	<Dialog.Content data-testid="confirm-modal">
 		<Dialog.Header>
 			<Dialog.Title>{title}</Dialog.Title>
 			{#if description}

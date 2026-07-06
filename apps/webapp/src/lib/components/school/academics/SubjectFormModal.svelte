@@ -37,6 +37,7 @@
 		onCreated,
 		disabled = false,
 		title,
+		showTrigger = true,
 	}: {
 		subject?: Subject;
 		classId?: string;
@@ -45,6 +46,7 @@
 		onCreated?: (classSubjectId: string) => void;
 		disabled?: boolean;
 		title?: string;
+		showTrigger?: boolean;
 	} = $props();
 
 	let busy = $state(false);
@@ -135,7 +137,7 @@
 	}
 </script>
 
-{#if isEdit}
+{#if isEdit && showTrigger}
 	<Button
 		variant="outline"
 		size="sm"

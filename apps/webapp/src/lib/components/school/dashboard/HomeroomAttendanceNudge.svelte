@@ -12,11 +12,11 @@
 	} from '$lib/school/homeroom-attendance-nudge';
 	import { queryClient } from '$lib/queries/client';
 
-	const me = $derived(authSession.user);
+	const staffId = $derived(authSession.user?.id ?? authSession.userId ?? '');
 	const todayIso = $derived(new Date().toISOString().slice(0, 10));
 
 	const homeroomDailyClasses = $derived(
-		me ? homeroomDailyClassesForStaff(academicContext.classes, me.id) : [],
+		staffId ? homeroomDailyClassesForStaff(academicContext.classes, staffId) : [],
 	);
 
 	let attendanceByClass = $state(new Map());
@@ -50,9 +50,9 @@
 	});
 
 	const unmarkedClasses = $derived(
-		me
+		staffId
 			? resolveHomeroomAttendanceNudges({
-				staffId: me.id,
+				staffId,
 				classes: academicContext.classes,
 				attendanceByClass,
 				todayIso,

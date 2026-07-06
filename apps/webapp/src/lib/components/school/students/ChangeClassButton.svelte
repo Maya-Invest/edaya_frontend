@@ -9,9 +9,14 @@
 	import { Users } from '$lib/icons';
 	import { toast } from '$lib/toast.svelte';
 
-	const { s }: { s: Student } = $props();
+	let {
+		s,
+		open = $bindable(false),
+	}: {
+		s: Student;
+		open?: boolean;
+	} = $props();
 
-	let open = $state(false);
 	let target = $state('');
 	let busy = $state(false);
 	let wasOpen = $state(false);

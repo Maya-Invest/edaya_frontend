@@ -1,7 +1,8 @@
 import type { ActivitySources } from '$lib/api/activities-data';
 import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
-import { mapActivities } from '$lib/api/activities-data';
+import { fetchActivityById, mapActivities } from '$lib/api/activities-data';
+import { createRecordingSchoolClient } from '$tests/support/recording-school-client';
 
 const sources: ActivitySources = {
 	activitiesRaw: [
@@ -55,5 +56,20 @@ describe('activities-data', () => {
 			{ id: 'ae-act-robot-s1', studentId: 's1', status: 'approved' },
 			{ id: 'ae-act-robot-s2', studentId: 's2', status: 'pending' },
 		]);
+	});
+
+	it('loads a single activity with enrollments by id', async () => {
+		const { client } = createRecordingSchoolClient([
+			{ data: sources.activitiesRaw[0] },
+			[{ data: sources.activityEnrollmentsRaw[0] }],
+		]);
+
+		const activity = await fetchActivityById(client, 'act-robot');
+
+		expect(activity).toMatchObject({
+			id: 'act-robot',
+			name: 'Club Robotique',
+		});
+		expect(activity?.enrollments).toHaveLength(1);
 	});
 });

@@ -1,9 +1,13 @@
 <script lang="ts">
 	import type { SchoolYearEvent } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { deleteSchoolYearEventMutation } from '$lib/api/mutations/delete-entity.mutations';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { locale, t } from '$lib/i18n';
 	import { get } from 'svelte/store';
 	import DrawerActionBar from '../shared/DrawerActionBar.svelte';
@@ -11,6 +15,18 @@
 	import SchoolYearEventFormModal from './SchoolYearEventFormModal.svelte';
 
 	const { ev }: { ev: SchoolYearEvent } = $props();
+
+	type SchoolYearEventDrawerModal = 'edit';
+
+	const modals = createUrlSyncedModals<SchoolYearEventDrawerModal>({
+		allowed: ['edit'],
+		getUrl: () => $page.url,
+	});
+	setDrawerUrlModals(modals);
+	$effect(() => {
+		modals.hydrate();
+	});
+	const editOpen = bindUrlModal(modals, 'edit');
 
 	const calTypeKey: Record<SchoolYearEvent['type'], string> = {
 		holiday: 'calType.holiday',
@@ -82,7 +98,16 @@
 			tooltip={$t('calendar.permissionUpdate')}
 		>
 			{#snippet children({ disabled, title })}
-				<SchoolYearEventFormModal event={ev} {disabled} {title} />
+				<Button
+					variant="outline"
+					size="sm"
+					class="rounded-full"
+					{disabled}
+					{title}
+					onclick={() => modals.open('edit')}
+				>
+					{$t('common.edit')}
+				</Button>
 			{/snippet}
 		</PermissionGate>
 		<PermissionGate
@@ -104,3 +129,5 @@
 		</PermissionGate>
 	</DrawerActionBar>
 </div>
+
+<SchoolYearEventFormModal event={ev} bind:open={editOpen.open} showTrigger={false} />

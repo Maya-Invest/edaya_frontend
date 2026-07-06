@@ -9,17 +9,19 @@
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { Plus } from '$lib/icons';
 
-	const {
+	let {
 		s,
 		disabled = false,
 		title,
+		open = $bindable(false),
+		showTrigger = true,
 	}: {
 		s: Student;
 		disabled?: boolean;
 		title?: string;
+		open?: boolean;
+		showTrigger?: boolean;
 	} = $props();
-
-	let open = $state(false);
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let assessmentId = $state('');
@@ -74,15 +76,17 @@
 	}
 </script>
 
-<Button
-	variant="ghost"
-	class="w-full rounded-full border border-dashed border-border"
-	{disabled}
-	{title}
-	onclick={() => (open = true)}
->
-	<Plus class="mr-1 h-4 w-4" /> Saisir une note
-</Button>
+{#if showTrigger}
+	<Button
+		variant="ghost"
+		class="w-full rounded-full border border-dashed border-border"
+		{disabled}
+		{title}
+		onclick={() => (open = true)}
+	>
+		<Plus class="mr-1 h-4 w-4" /> Saisir une note
+	</Button>
+{/if}
 
 <FormModal
 	bind:open

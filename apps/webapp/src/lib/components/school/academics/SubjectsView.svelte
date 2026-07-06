@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Subject, SubjectCategory } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -7,6 +8,7 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { Clock, Plus, User } from '$lib/icons';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 	import SubjectFormModal from './SubjectFormModal.svelte';
@@ -30,7 +32,11 @@
 
 	const subjects = $derived(subjectsOverride ?? detailDataContext.subjectsForClass(classId));
 
-	let createOpen = $state(false);
+	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const createOpen = bindUrlModal(modals, 'create');
 
 	const dotColor: Record<Subject['color'], string> = {
 		mint: 'bg-accent',
@@ -59,7 +65,7 @@
 			title={$t('subjects.count', { n: subjects.length })}
 		>
 			{#snippet primary()}
-				<Button size="sm" class="rounded-full" onclick={() => (createOpen = true)}>
+				<Button size="sm" class="rounded-full" onclick={() => (createOpen.open = true)}>
 					<Plus class="mr-1 h-4 w-4" />
 					{$t('subjects.newSubject')}
 				</Button>
@@ -69,7 +75,7 @@
 			{/snippet}
 		</ListPageHeader>
 
-		<SubjectFormModal {classId} bind:open={createOpen} onCreated={handleCreated} />
+		<SubjectFormModal {classId} bind:open={createOpen.open} onCreated={handleCreated} />
 	{/if}
 
 	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">

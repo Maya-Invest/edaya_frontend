@@ -6,6 +6,7 @@
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
+	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { queryConfigSubjectsPage } from '$lib/queries/subjects.queries';
 
@@ -13,12 +14,12 @@
 
 	function selectSubject(subject: Subject) {
 		const path = detailHref.configSubject(subject.id);
-		appGoto(`${path}${$page.url.search}`);
+		appGoto(`${path}${detailNavigationSearch($page.url)}`);
 	}
 
 	function selectLevel(group: { label: string }) {
 		const path = detailHref.configSubjectLevel(group.label);
-		appGoto(`${path}${$page.url.search}`);
+		appGoto(`${path}${detailNavigationSearch($page.url)}`);
 	}
 </script>
 

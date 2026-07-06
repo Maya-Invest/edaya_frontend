@@ -1,6 +1,7 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { Guardian, Student } from '$lib/types/school';
+import { ApiError } from '$api-client';
 import {
 	activeEnrollmentsForClass,
 	assessmentResultsForScope,
@@ -576,4 +577,75 @@ export async function loadClassPeopleData(
 	const studentIds = uniqueIds(sources.studentsRaw.map(student => student.id));
 	const metrics = await fetchStudentMetricsSources(client, studentIds, { classGroupId, periodId });
 	return mapPeopleData(sources, metrics);
+}
+
+function isMissingEntityError(error: unknown): boolean {
+	return error instanceof ApiError && (error.status === 401 || error.status === 403 || error.status === 404);
+}
+
+export async function fetchStudentById(
+	client: SchoolClient,
+	studentId: string,
+): Promise<Student | null> {
+	try {
+		const studentsRaw = await client.entities.students.list(entitiesByIds([studentId]));
+		const studentRaw = studentsRaw?.[0];
+		if (!studentRaw) {
+			return null;
+		}
+
+		const [enrollmentsRaw, linksRaw] = await Promise.all([
+			client.entities.enrollments.list(enrollmentsForStudents([studentId])),
+			client.entities.guardianLinks.list(guardianLinksForStudents([studentId])),
+		]);
+		const guardianIds = uniqueIds((linksRaw ?? []).map(link => link.guardianId));
+		const guardiansRaw = guardianIds.length > 0
+			? await client.entities.guardians.list(guardiansByIds(guardianIds))
+			: [];
+		let metrics: StudentMetricsSources = {
+			attendanceRaw: [],
+			assessmentsRaw: [],
+			resultsRaw: [],
+		};
+		try {
+			metrics = await fetchStudentMetricsSources(client, [studentId]);
+		}
+		catch (error) {
+			if (!isMissingEntityError(error)) {
+				throw error;
+			}
+		}
+		const sources: PeopleSources = {
+			studentsRaw: [studentRaw],
+			enrollmentsRaw: enrollmentsRaw ?? [],
+			guardiansRaw: guardiansRaw ?? [],
+			linksRaw: linksRaw ?? [],
+		};
+		return mapStudents(sources, metrics)[0] ?? null;
+	}
+	catch (error) {
+		if (isMissingEntityError(error)) {
+			return null;
+		}
+		throw error;
+	}
+}
+
+export async function fetchGuardianById(
+	client: SchoolClient,
+	guardianId: string,
+): Promise<Guardian | null> {
+	try {
+		const guardianRaw = await client.entities.guardians.get(guardianId);
+		const linksRaw = await client.entities.guardianLinks.list(
+			guardianLinksForGuardians([guardianId]),
+		);
+		return mapGuardians([guardianRaw], linksRaw ?? [])[0] ?? null;
+	}
+	catch (error) {
+		if (isMissingEntityError(error)) {
+			return null;
+		}
+		throw error;
+	}
 }

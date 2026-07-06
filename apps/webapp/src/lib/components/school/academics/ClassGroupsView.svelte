@@ -14,6 +14,7 @@
 	import { Layers, Plus } from '$lib/icons';
 	import { readClassGroupListFilters, writeClassGroupListFilters } from '$lib/list/list-url-filters';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 
@@ -37,7 +38,12 @@
 	);
 
 	let gradeLevelFilter = $state('all');
-	let createOpen = $state(false);
+
+	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const createOpen = bindUrlModal(modals, 'create');
 
 	const gradeLevelOptions = $derived([
 		{ value: 'all', label: $t('filter.all') },
@@ -116,7 +122,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen = true)}
+						onclick={() => (createOpen.open = true)}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('classGroups.add')}
@@ -176,4 +182,4 @@
 	</div>
 </div>
 
-<ClassGroupFormModal bind:open={createOpen} />
+<ClassGroupFormModal bind:open={createOpen.open} />

@@ -1,15 +1,19 @@
 <script lang="ts">
 	import type { Teacher } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { deleteTeacherMutation, updateTeacherStatusMutation } from '$lib/api/mutations/teacher.mutations';
 	import AccountLinkingSection from '$lib/components/account/AccountLinkingSection.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import DrawerTabBar from '$lib/components/ui/DrawerTabBar.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
+	import { createUrlSyncedDrawerTabs } from '$lib/drawer/drawer-tabs-state.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { t } from '$lib/i18n';
 	import { Mail, Phone } from '$lib/icons';
-	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import DrawerField from '../shared/DrawerField.svelte';
@@ -19,7 +23,30 @@
 
 	const { teacher }: { teacher: Teacher } = $props();
 
-	let tab = $state<'profile' | 'assignments'>('profile');
+	type TeacherTab = 'profile' | 'assignments';
+
+	const tabs = createUrlSyncedDrawerTabs<TeacherTab>({
+		allowed: ['profile', 'assignments'],
+		defaultTab: 'profile',
+		getUrl: () => $page.url,
+	});
+
+	$effect(() => {
+		tabs.hydrate();
+	});
+
+	const tabItems = $derived([
+		{ key: 'profile', label: $t('drawer.tab.profile') },
+		{ key: 'assignments', label: $t('drawer.tab.assignments') },
+	] as const);
+
+	const modals = createUrlSyncedModals({ allowed: ['edit-profile'], getUrl: () => $page.url });
+	setDrawerUrlModals(modals);
+	$effect(() => {
+		modals.hydrate();
+	});
+	const editProfileOpen = bindUrlModal(modals, 'edit-profile');
+
 	let optimisticActive = $state<boolean | null>(null);
 	let statusBusy = $state(false);
 	let deleteOpen = $state(false);
@@ -83,7 +110,7 @@
 		{#snippet actions()}
 			<PermissionGate permission="STAFF_UPDATE" mode="disable" tooltip={$t('teacher.permissionUpdate')}>
 				{#snippet children({ disabled, title })}
-					<TeacherProfileEditModal {teacher} {disabled} {title} />
+					<TeacherProfileEditModal {teacher} {disabled} {title} bind:open={editProfileOpen.open} />
 				{/snippet}
 			</PermissionGate>
 		{/snippet}
@@ -103,22 +130,9 @@
 		{/snippet}
 	</DrawerEntityHeader>
 
-	<div class="flex items-center gap-1 rounded-full border border-border bg-secondary/40 p-1 text-xs">
-		{#each ['profile', 'assignments'] as const as k (k)}
-			<button
-				type="button"
-				onclick={() => (tab = k)}
-				class={cn(
-					'flex-1 rounded-full px-3 py-1.5 font-medium transition',
-					tab === k ? 'bg-card text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground',
-				)}
-			>
-				{$t(k === 'profile' ? 'drawer.tab.profile' : 'drawer.tab.assignments')}
-			</button>
-		{/each}
-	</div>
+	<DrawerTabBar tabs={tabItems} active={tabs.tab} onSelect={key => tabs.select(key as TeacherTab)} />
 
-	{#if tab === 'profile'}
+	{#if tabs.tab === 'profile'}
 		<div class="space-y-4">
 			<DrawerField label={$t('guardian.fullName')}>
 				<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{teacher.name}</div>

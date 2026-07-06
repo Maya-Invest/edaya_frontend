@@ -13,16 +13,20 @@
 	import { Plus } from '$lib/icons';
 	import { get } from 'svelte/store';
 
-	const {
+	let {
 		s,
 		note,
 		disabled = false,
 		title,
+		open = $bindable(false),
+		showTrigger = true,
 	}: {
 		s: Student;
 		note?: PedagogicalNote;
 		disabled?: boolean;
 		title?: string;
+		open?: boolean;
+		showTrigger?: boolean;
 	} = $props();
 
 	type Category = 'behavior' | 'work' | 'progress' | 'encouragement';
@@ -36,7 +40,6 @@
 		Encouragement: 'encouragement',
 	};
 
-	let open = $state(false);
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let category = $state<Category>('work');
@@ -81,20 +84,22 @@
 	}
 </script>
 
-<Button
-	variant="ghost"
-	class={note ? 'h-7 rounded-full px-2 text-[11px]' : 'w-full rounded-full border border-dashed border-border'}
-	{disabled}
-	{title}
-	onclick={() => (open = true)}
->
-	{#if note}
-		{$t('common.edit')}
-	{:else}
-		<Plus class="mr-1 h-4 w-4" />
-		{$t('note.add')}
-	{/if}
-</Button>
+{#if showTrigger}
+	<Button
+		variant="ghost"
+		class={note ? 'h-7 rounded-full px-2 text-[11px]' : 'w-full rounded-full border border-dashed border-border'}
+		{disabled}
+		{title}
+		onclick={() => (open = true)}
+	>
+		{#if note}
+			{$t('common.edit')}
+		{:else}
+			<Plus class="mr-1 h-4 w-4" />
+			{$t('note.add')}
+		{/if}
+	</Button>
+{/if}
 
 <FormModal
 	bind:open

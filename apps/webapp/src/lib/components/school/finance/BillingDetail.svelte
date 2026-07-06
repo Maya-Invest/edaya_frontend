@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { StudentBilling } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { deleteStudentFeeMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
@@ -10,6 +11,8 @@
 	import { locale, t } from '$lib/i18n';
 	import { Check, Clock, Trash2 } from '$lib/icons';
 	import { cn } from '$lib/utils';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { get } from 'svelte/store';
 	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import PaymentFormModal from './PaymentFormModal.svelte';
@@ -22,7 +25,13 @@
 	const pct = $derived((b.paid / b.total) * 100);
 	const canRecordPayment = $derived(remaining > 0 && b.status !== 'paid');
 
-	let paymentOpen = $state(false);
+	const modals = createUrlSyncedModals({ allowed: ['payment'], getUrl: () => $page.url });
+	setDrawerUrlModals(modals);
+	$effect(() => {
+		modals.hydrate();
+	});
+	const paymentOpen = bindUrlModal(modals, 'payment');
+
 	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
 
@@ -83,7 +92,7 @@
 								class="rounded-full"
 								{disabled}
 								{title}
-								onclick={() => (paymentOpen = true)}
+								onclick={() => (paymentOpen.open = true)}
 							>
 								{$t('finance.recordPayment')}
 							</Button>
@@ -183,7 +192,7 @@
 	</div>
 
 	<PaymentFormModal
-		bind:open={paymentOpen}
+		bind:open={paymentOpen.open}
 		showTrigger={false}
 		billing={b}
 		studentName={student.name}

@@ -1,18 +1,50 @@
 <script lang="ts">
 	import type { Subject } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { deleteClassSubjectMutation } from '$lib/api/mutations/delete-entity.mutations';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
+	import DrawerTabBar from '$lib/components/ui/DrawerTabBar.svelte';
+	import { createUrlSyncedDrawerTabs } from '$lib/drawer/drawer-tabs-state.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { t } from '$lib/i18n';
 	import { Check, FileText, Paperclip } from '$lib/icons';
 	import { teachingLogContext } from '$lib/teaching-log/context.svelte';
-	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import DrawerActionBar from '../shared/DrawerActionBar.svelte';
 	import SubjectFormModal from './SubjectFormModal.svelte';
 
 	const { s }: { s: Subject } = $props();
 
-	let tab = $state<'progression' | 'logbook'>('progression');
+	type SubjectDrawerModal = 'edit-subject';
+
+	type SubjectTab = 'progression' | 'logbook';
+
+	const tabs = createUrlSyncedDrawerTabs<SubjectTab>({
+		allowed: ['progression', 'logbook'],
+		defaultTab: 'progression',
+		getUrl: () => $page.url,
+	});
+
+	$effect(() => {
+		tabs.hydrate();
+	});
+
+	const modals = createUrlSyncedModals<SubjectDrawerModal>({
+		allowed: ['edit-subject'],
+		getUrl: () => $page.url,
+	});
+	setDrawerUrlModals(modals);
+	$effect(() => {
+		modals.hydrate();
+	});
+	const editSubjectOpen = bindUrlModal(modals, 'edit-subject');
+
+	const tabItems = $derived([
+		{ key: 'progression', label: $t('subjects.tab.chapters') },
+		{ key: 'logbook', label: $t('subjects.tab.logbook') },
+	] as const);
 
 	const entries = $derived(teachingLogContext.resolveSubjectEntries(s.name, s.classId));
 
@@ -66,7 +98,9 @@
 	</div>
 
 	<DrawerActionBar>
-		<SubjectFormModal subject={s} />
+		<Button variant="outline" size="sm" class="rounded-full" onclick={() => modals.open('edit-subject')}>
+			{$t('common.edit')}
+		</Button>
 		<DeleteEntityButton
 			confirmTitle={$t('common.deleteConfirmTitle')}
 			confirmDescription={$t('subjects.deleteConfirm', { name: s.name })}
@@ -76,21 +110,9 @@
 		/>
 	</DrawerActionBar>
 
-	<div class="flex items-center gap-1 rounded-full border border-border bg-secondary/40 p-1 text-xs">
-		{#each ['progression', 'logbook'] as const as k (k)}
-			<button
-				onclick={() => (tab = k)}
-				class={cn(
-					'flex-1 rounded-full px-2.5 py-1.5 font-medium transition',
-					tab === k ? 'bg-card text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground',
-				)}
-			>
-				{k === 'progression' ? $t('subjects.tab.chapters') : $t('subjects.tab.logbook')}
-			</button>
-		{/each}
-	</div>
+	<DrawerTabBar tabs={tabItems} active={tabs.tab} onSelect={key => tabs.select(key as SubjectTab)} />
 
-	{#if tab === 'progression'}
+	{#if tabs.tab === 'progression'}
 		<div class="space-y-4">
 			<div class="rounded-2xl border border-border bg-secondary/40 p-4">
 				<div class="flex items-center justify-between">
@@ -179,3 +201,5 @@
 		</div>
 	{/if}
 </div>
+
+<SubjectFormModal subject={s} bind:open={editSubjectOpen.open} showTrigger={false} />

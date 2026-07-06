@@ -19,6 +19,7 @@
 		writeDisciplineCatalogListFilters,
 	} from '$lib/list/list-url-filters';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { refreshDisciplineCatalog } from '$lib/queries/discipline-catalog.queries';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
@@ -36,8 +37,13 @@
 		() => readDisciplineCatalogListFilters($page.url),
 	);
 
-	let createOpen = $state(false);
-	let editOpen = $state(false);
+	const modals = createUrlSyncedModals({ allowed: ['create', 'edit'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const createOpen = bindUrlModal(modals, 'create');
+	const editOpen = bindUrlModal(modals, 'edit');
+
 	let editingAction = $state<DisciplinaryActionCatalogItem | null>(null);
 	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
@@ -109,7 +115,7 @@
 
 	function openEdit(action: DisciplinaryActionCatalogItem) {
 		editingAction = action;
-		editOpen = true;
+		editOpen.open = true;
 	}
 
 	function openDelete(actionId: string, actionName: string) {
@@ -157,7 +163,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen = true)}
+						onclick={() => (createOpen.open = true)}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('disciplinaryCatalog.add')}
@@ -261,8 +267,8 @@
 	{/if}
 </div>
 
-<DisciplinaryActionFormModal bind:open={createOpen} />
-<DisciplinaryActionFormModal bind:open={editOpen} action={editingAction} />
+<DisciplinaryActionFormModal bind:open={createOpen.open} />
+<DisciplinaryActionFormModal bind:open={editOpen.open} action={editingAction} />
 
 <ConfirmModal
 	bind:open={deleteOpen}

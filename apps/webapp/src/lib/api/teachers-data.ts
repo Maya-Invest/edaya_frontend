@@ -9,6 +9,7 @@ import {
 } from '$lib/api/entity-list-filters';
 import { formatPersonName } from '$lib/api/teacher-display';
 import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
+import { ApiError } from '$api-client';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 type TeacherRaw = components['schemas']['Teacher'];
@@ -82,4 +83,20 @@ export async function fetchTeachersPage(
 		totalTeachers,
 		assignments: assignmentsRaw,
 	};
+}
+
+export async function fetchTeacherById(
+	client: SchoolClient,
+	teacherId: string,
+): Promise<Teacher | null> {
+	try {
+		const teacherRaw = await client.entities.teachers.get(teacherId);
+		return mapTeacher(teacherRaw);
+	}
+	catch (error) {
+		if (error instanceof ApiError && (error.status === 401 || error.status === 403 || error.status === 404)) {
+			return null;
+		}
+		throw error;
+	}
 }

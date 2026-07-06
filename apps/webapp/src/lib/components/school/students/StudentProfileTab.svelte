@@ -12,9 +12,9 @@
 	import DrawerField from '../shared/DrawerField.svelte';
 	import PersonAvatar from '../shared/PersonAvatar.svelte';
 	import { pedagogicalNoteToneByCategory } from './student-tab-selectors.ts';
-	import StudentGuardianLinkModal from './StudentGuardianLinkModal.svelte';
-	import StudentNoteModal from './StudentNoteModal.svelte';
-	import StudentProfileEditModal from './StudentProfileEditModal.svelte';
+	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
+	import { Plus } from '$lib/icons';
 
 	const {
 		s,
@@ -29,6 +29,8 @@
 		studentNotes: PedagogicalNote[];
 		staff: StaffMember[];
 	} = $props();
+
+	const modals = getDrawerUrlModals();
 </script>
 
 <div class="space-y-4">
@@ -118,7 +120,16 @@
 	<DrawerActionBar>
 		<PermissionGate permission="STUDENT_UPDATE" mode="disable" tooltip="Droit STUDENT_UPDATE requis.">
 			{#snippet children({ disabled, title })}
-				<StudentProfileEditModal {s} {disabled} {title} />
+				<Button
+					variant="outline"
+					size="sm"
+					class="rounded-full"
+					{disabled}
+					{title}
+					onclick={() => modals?.open('edit-profile')}
+				>
+					{$t('student.editProfile')}
+				</Button>
 			{/snippet}
 		</PermissionGate>
 	</DrawerActionBar>
@@ -190,7 +201,15 @@
 		{/if}
 		<PermissionGate permission="STUDENT_UPDATE" mode="disable" tooltip="Droit STUDENT_UPDATE requis.">
 			{#snippet children({ disabled, title })}
-				<StudentGuardianLinkModal {s} {disabled} {title} />
+				<Button
+					variant="ghost"
+					class="w-full rounded-full border border-dashed border-border"
+					{disabled}
+					{title}
+					onclick={() => modals?.open('link-guardian')}
+				>
+					Rattacher un tuteur
+				</Button>
 			{/snippet}
 		</PermissionGate>
 	</div>
@@ -227,7 +246,15 @@
 									tooltip="Droit STUDENT_UPDATE requis."
 								>
 									{#snippet children({ disabled, title })}
-										<StudentNoteModal {s} note={note} {disabled} {title} />
+										<Button
+											variant="ghost"
+											class="h-7 rounded-full px-2 text-[11px]"
+											{disabled}
+											{title}
+											onclick={() => modals?.open('note', { target: note.id })}
+										>
+											{$t('common.edit')}
+										</Button>
 									{/snippet}
 								</PermissionGate>
 							</div>
@@ -253,7 +280,16 @@
 		{/if}
 		<PermissionGate permission="STUDENT_UPDATE" mode="disable" tooltip="Droit STUDENT_UPDATE requis.">
 			{#snippet children({ disabled, title })}
-				<StudentNoteModal {s} {disabled} {title} />
+				<Button
+					variant="ghost"
+					class="w-full rounded-full border border-dashed border-border"
+					{disabled}
+					{title}
+					onclick={() => modals?.open('note')}
+				>
+					<Plus class="mr-1 h-4 w-4" />
+					{$t('note.add')}
+				</Button>
 			{/snippet}
 		</PermissionGate>
 	</div>

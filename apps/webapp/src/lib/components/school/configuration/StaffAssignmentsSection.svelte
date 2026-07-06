@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { components } from '$lib/api/schema';
 	import type { StaffMember } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { deleteStaffAssignmentMutation } from '$lib/api/mutations/staff-assignments.mutations';
 	import { formatPermissionLabel } from '$lib/api/staff-permission-assignments-data';
@@ -9,12 +10,18 @@
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { t } from '$lib/i18n';
 	import { Plus, Trash2 } from '$lib/icons';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
 	import StaffAssignmentFormModal from './StaffAssignmentFormModal.svelte';
 
 	const { staff }: { staff: StaffMember } = $props();
 
-	let formOpen = $state(false);
+	const modals = createUrlSyncedModals({ allowed: ['form'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const formOpen = bindUrlModal(modals, 'form');
+
 	let editing = $state<components['schemas']['StaffAssignment'] | null>(null);
 	let deleteBusy = $state<string | null>(null);
 
@@ -45,7 +52,7 @@
 
 	function openCreate() {
 		editing = null;
-		formOpen = true;
+		formOpen.open = true;
 	}
 
 	async function removeRow(row: components['schemas']['StaffAssignment']) {
@@ -117,4 +124,4 @@
 	{/if}
 </div>
 
-<StaffAssignmentFormModal bind:open={formOpen} {staff} assignment={editing} />
+<StaffAssignmentFormModal bind:open={formOpen.open} {staff} assignment={editing} />

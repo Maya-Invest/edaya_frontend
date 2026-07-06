@@ -11,27 +11,33 @@
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
+	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { t } from '$lib/i18n';
 	import { Pencil, Plus, ShieldCheck, Trash2 } from '$lib/icons';
 	import { get } from 'svelte/store';
-	import StaffPermissionFormModal from './StaffPermissionFormModal.svelte';
 
-	const { s }: { s: StaffMember } = $props();
+	let {
+		s,
+		editing = $bindable(null),
+	}: {
+		s: StaffMember;
+		editing?: StaffPermissionAssignmentView | null;
+	} = $props();
 
-	let formOpen = $state(false);
-	let editing = $state<StaffPermissionAssignmentView | null>(null);
+	const modals = getDrawerUrlModals();
+
 	let deleteBusy = $state<string | null>(null);
 
 	const rows = $derived(detailDataContext.assignmentsForStaff(s.id));
 
 	function openCreate() {
 		editing = null;
-		formOpen = true;
+		modals?.open('add-permission');
 	}
 
 	function openEdit(row: StaffPermissionAssignmentView) {
 		editing = row;
-		formOpen = true;
+		modals?.open('add-permission');
 	}
 
 	async function removeRow(row: StaffPermissionAssignmentView) {
@@ -132,5 +138,3 @@
 		{/if}
 	</div>
 </div>
-
-<StaffPermissionFormModal bind:open={formOpen} staff={s} assignment={editing} />

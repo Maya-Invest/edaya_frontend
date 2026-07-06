@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Activity, ActivityEnrollmentStatus } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { enrollStudentInActivityMutation, removeActivityEnrollmentMutation } from '$lib/api/mutations/activity-enrollment.mutations';
 	import { deleteActivityMutation } from '$lib/api/mutations/delete-entity.mutations';
@@ -10,6 +11,8 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { t } from '$lib/i18n';
 	import { Plus, ChevronRight, Search, Trash2 } from '$lib/icons';
 	import { cn } from '$lib/utils';
@@ -19,6 +22,18 @@
 	import ActivityFormModal from './ActivityFormModal.svelte';
 
 	const { a }: { a: Activity } = $props();
+
+	type ActivityDrawerModal = 'edit';
+
+	const modals = createUrlSyncedModals<ActivityDrawerModal>({
+		allowed: ['edit'],
+		getUrl: () => $page.url,
+	});
+	setDrawerUrlModals(modals);
+	$effect(() => {
+		modals.hydrate();
+	});
+	const editOpen = bindUrlModal(modals, 'edit');
 
 	const live = $derived(detailDataContext.activities.find(activity => activity.id === a.id) ?? a);
 	const hierarchy = $derived(academicContext.hierarchy);
@@ -158,7 +173,7 @@
 			</span>
 		{/snippet}
 		{#snippet actions()}
-			<ActivityFormModal activity={live} />
+			<ActivityFormModal activity={live} bind:open={editOpen.open} />
 			<PermissionGate permission="DISCIPLINE_CREATE" mode="disable" tooltip={$t('activities.permissionCreate')}>
 				{#snippet children({ disabled, title })}
 					<DeleteEntityButton

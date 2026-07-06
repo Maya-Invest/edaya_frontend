@@ -6,17 +6,19 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 
-	const {
+	let {
 		g,
 		disabled = false,
 		title,
+		open = $bindable(false),
+		showTrigger = true,
 	}: {
 		g: Guardian;
 		disabled?: boolean;
 		title?: string;
+		open?: boolean;
+		showTrigger?: boolean;
 	} = $props();
-
-	let open = $state(false);
 	let busy = $state(false);
 	let firstName = $state('');
 	let lastName = $state('');
@@ -57,9 +59,11 @@
 	}
 </script>
 
-<Button variant="outline" size="sm" class="rounded-full" {disabled} {title} onclick={() => (open = true)}>
-	Modifier le contact
-</Button>
+{#if showTrigger}
+	<Button variant="outline" size="sm" class="rounded-full" {disabled} {title} onclick={() => (open = true)}>
+		Modifier le contact
+	</Button>
+{/if}
 
 <FormModal
 	bind:open

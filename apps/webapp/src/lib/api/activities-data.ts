@@ -2,6 +2,7 @@ import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { Activity } from '$lib/types/school';
 import { activityEnrollmentsForActivities, uniqueIds } from '$lib/api/entity-list-filters';
+import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -44,15 +45,19 @@ export async function fetchActivitySources(
 	client: SchoolClient,
 	schoolId: string,
 ): Promise<ActivitySources> {
-	const activitiesRaw = (await client.entities.activities.list({ schoolId })) ?? [];
+	const activitiesRaw = await safeOptionalEntityList(
+		() => client.entities.activities.list({ schoolId }),
+	);
 	const activityIds = uniqueIds(activitiesRaw.map(activity => activity.id));
 	const activityEnrollmentsRaw = activityIds.length > 0
-		? await client.entities.activityEnrollments.list(activityEnrollmentsForActivities(activityIds))
+		? await safeOptionalEntityList(
+				() => client.entities.activityEnrollments.list(activityEnrollmentsForActivities(activityIds)),
+			)
 		: [];
 
 	return {
-		activitiesRaw: activitiesRaw ?? [],
-		activityEnrollmentsRaw: activityEnrollmentsRaw ?? [],
+		activitiesRaw,
+		activityEnrollmentsRaw,
 	};
 }
 
@@ -86,4 +91,23 @@ export function mapActivities(sources: ActivitySources): Activity[] {
 export async function fetchActivities(client: SchoolClient, schoolId: string): Promise<Activity[]> {
 	const sources = await fetchActivitySources(client, schoolId);
 	return mapActivities(sources);
+}
+
+export async function fetchActivityById(
+	client: SchoolClient,
+	activityId: string,
+): Promise<Activity | null> {
+	const activitiesRaw = await safeOptionalEntityList(async () => {
+		const activity = await client.entities.activities.one({ id: activityId });
+		return activity ? [activity] : [];
+	});
+	if (activitiesRaw.length === 0) {
+		return null;
+	}
+
+	const activityEnrollmentsRaw = await safeOptionalEntityList(
+		() => client.entities.activityEnrollments.list({ activityId }),
+	);
+
+	return mapActivities({ activitiesRaw, activityEnrollmentsRaw })[0] ?? null;
 }

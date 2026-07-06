@@ -34,7 +34,7 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content>
+	<Dialog.Content data-testid="picker-modal">
 		<Dialog.Header>
 			<Dialog.Title>{title}</Dialog.Title>
 			{#if description}

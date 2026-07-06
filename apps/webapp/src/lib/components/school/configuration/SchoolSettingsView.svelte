@@ -2,6 +2,7 @@
 	import type { SchoolRaw } from '$lib/api/school-data';
 	import type { SchoolSettingsPageData } from '$lib/queries/school.queries';
 	import type { School, SchoolType } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { updateSchoolSettingsMutation } from '$lib/api/mutations/school.mutations';
 	import { DEFAULT_SCHOOL_TIMEZONE } from '$lib/api/school-data';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
@@ -15,6 +16,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { t } from '$lib/i18n';
 	import { Building2, Pencil } from '$lib/icons';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
 
 	const SCHOOL_TYPES: SchoolType[] = ['primary', 'secondary', 'k12', 'vocational', 'other'];
@@ -28,7 +30,13 @@
 	let saved = $state<{ school: School; raw: SchoolRaw } | null>(null);
 	const school = $derived(saved?.school ?? data.school);
 	const raw = $derived(saved?.raw ?? data.raw);
-	let editOpen = $state(false);
+
+	const modals = createUrlSyncedModals({ allowed: ['edit'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const editOpen = bindUrlModal(modals, 'edit');
+
 	let busy = $state(false);
 	let name = $state('');
 	let timeZone = $state('');
@@ -85,7 +93,7 @@
 		busy = false;
 		if (next) {
 			saved = next;
-			editOpen = false;
+			editOpen.open = false;
 		}
 	}
 </script>
@@ -103,7 +111,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (editOpen = true)}
+						onclick={() => (editOpen.open = true)}
 					>
 						<Pencil class="mr-1 h-4 w-4" />
 						{$t('common.edit')}
@@ -162,7 +170,7 @@
 </div>
 
 <FormModal
-	bind:open={editOpen}
+	bind:open={editOpen.open}
 	title={$t('schoolSettings.editTitle')}
 	description={$t('schoolSettings.editDescription')}
 	submitLabel={$t('common.save')}

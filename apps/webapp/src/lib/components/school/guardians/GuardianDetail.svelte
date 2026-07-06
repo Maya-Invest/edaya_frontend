@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Guardian } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { deleteGuardianMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import { updateGuardianProfilePhotoMutation } from '$lib/api/mutations/profile-photo.mutations';
 	import AccountLinkingSection from '$lib/components/account/AccountLinkingSection.svelte';
@@ -8,6 +9,8 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { t } from '$lib/i18n';
 	import { Mail, Phone, Trash2, Users } from '$lib/icons';
 	import { canUploadProfilePhoto } from '$lib/permissions';
@@ -21,6 +24,13 @@
 	import GuardianEditModal from './GuardianEditModal.svelte';
 
 	const { g }: { g: Guardian } = $props();
+
+	const modals = createUrlSyncedModals({ allowed: ['edit-profile'], getUrl: () => $page.url });
+	setDrawerUrlModals(modals);
+	$effect(() => {
+		modals.hydrate();
+	});
+	const editProfileOpen = bindUrlModal(modals, 'edit-profile');
 
 	const linked = $derived(detailDataContext.students.filter(s => g.studentIds.includes(s.id)));
 	const canChangePhoto = $derived(canUploadProfilePhoto('PARENT_UPDATE'));
@@ -75,7 +85,7 @@
 		{#snippet actions()}
 			<PermissionGate permission="PARENT_UPDATE" mode="disable" tooltip={$t('guardian.permissionUpdate')}>
 				{#snippet children({ disabled, title })}
-					<GuardianEditModal {g} {disabled} {title} />
+					<GuardianEditModal {g} {disabled} {title} bind:open={editProfileOpen.open} />
 				{/snippet}
 			</PermissionGate>
 		{/snippet}

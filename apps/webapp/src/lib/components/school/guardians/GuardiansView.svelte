@@ -17,6 +17,7 @@
 	import { readGuardianListFilters, writeGuardianListFilters } from '$lib/list/list-url-filters';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { useOffsetInfiniteList } from '$lib/list/use-infinite-list.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 	import GuardianCreateModal from './GuardianCreateModal.svelte';
@@ -40,7 +41,12 @@
 		() => readGuardianListFilters($page.url),
 	);
 
-	let createOpen = $state(false);
+	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const createOpen = bindUrlModal(modals, 'create');
+
 	const infinite = useOffsetInfiniteList(
 		async (offset, limit) => {
 			const result = await loadGuardiansPeopleDataPage(getBrowserSchoolClient(), { offset, limit });
@@ -93,7 +99,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen = true)}
+						onclick={() => (createOpen.open = true)}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('guardian.addGuardian')}
@@ -105,7 +111,7 @@
 			<ListMoreMenu exportOnly />
 		{/snippet}
 	</ListPageHeader>
-	<GuardianCreateModal bind:open={createOpen} onCreated={handleCreated} />
+	<GuardianCreateModal bind:open={createOpen.open} onCreated={handleCreated} />
 	<div
 		class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft"
 		aria-busy={infinite.loading}

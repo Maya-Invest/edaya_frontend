@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Evaluation } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { deleteAssessmentMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
@@ -9,6 +10,8 @@
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { locale, t } from '$lib/i18n';
 	import { Check, Clock, AlertCircle, FileText, Paperclip } from '$lib/icons';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
@@ -18,8 +21,19 @@
 
 	const { s }: { s: Evaluation } = $props();
 
-	let attachOpen = $state(false);
-	let editOpen = $state(false);
+	type EvaluationDrawerModal = 'attach' | 'edit' | 'grade-entry';
+
+	const modals = createUrlSyncedModals<EvaluationDrawerModal>({
+		allowed: ['attach', 'edit', 'grade-entry'],
+		getUrl: () => $page.url,
+	});
+	setDrawerUrlModals(modals);
+	$effect(() => {
+		modals.hydrate();
+	});
+	const attachOpen = bindUrlModal(modals, 'attach');
+	const editOpen = bindUrlModal(modals, 'edit');
+	const gradeEntryOpen = bindUrlModal(modals, 'grade-entry');
 
 	const isHomework = $derived(s.kind === 'homework');
 
@@ -37,6 +51,13 @@
 		}
 		return map;
 	});
+
+	const gradeEntryStudent = $derived(
+		modals.target ? classStudents.find(student => student.id === modals.target) : undefined,
+	);
+	const gradeEntryScore = $derived(
+		gradeEntryStudent ? (scoresByStudent.get(gradeEntryStudent.id) ?? null) : null,
+	);
 
 	const submissionsByStudent = $derived.by(() => {
 		const map = new Map(s.submissions.map(submission => [submission.studentId, submission]));
@@ -73,7 +94,7 @@
 			<PermissionGate permission="GRADE_INPUT" mode="disable" tooltip={$t('eval.permissionCreate')}>
 				{#snippet children({ disabled, title })}
 					{#if isHomework}
-						<Button variant="outline" size="sm" class="rounded-full" {disabled} {title} onclick={() => (editOpen = true)}>
+						<Button variant="outline" size="sm" class="rounded-full" {disabled} {title} onclick={() => (editOpen.open = true)}>
 							{$t('common.edit')}
 						</Button>
 					{/if}
@@ -129,7 +150,7 @@
 					variant="ghost"
 					size="sm"
 					class="w-full rounded-full border border-dashed border-border"
-					onclick={() => (attachOpen = true)}
+					onclick={() => (attachOpen.open = true)}
 				>
 					<Paperclip class="mr-1 h-3 w-3" />
 					{$t('drawer.attachFile')}
@@ -230,7 +251,20 @@
 								{score !== null ? score.toFixed(1) : '—'}
 								<span class="font-mono text-[10px] text-muted-foreground">/{s.outOf}</span>
 							</span>
-							<EvaluationGradeEntryModal evaluation={s} {student} existingScore={score} />
+							<PermissionGate permission="GRADE_INPUT" mode="disable" tooltip={$t('eval.permissionInput')}>
+								{#snippet children({ disabled, title })}
+									<Button
+										variant="outline"
+										size="sm"
+										class="rounded-full"
+										{disabled}
+										{title}
+										onclick={() => modals.open('grade-entry', { target: student.id })}
+									>
+										{score !== null ? $t('eval.editGrade') : $t('eval.enterGrade')}
+									</Button>
+								{/snippet}
+							</PermissionGate>
 						</div>
 					</div>
 				{:else}
@@ -243,15 +277,25 @@
 	{/if}
 </div>
 
-<EvaluationCreateModal evaluation={s} classId={s.classId} bind:open={editOpen} />
+<EvaluationCreateModal evaluation={s} classId={s.classId} bind:open={editOpen.open} />
+
+{#if gradeEntryStudent}
+	<EvaluationGradeEntryModal
+		evaluation={s}
+		student={gradeEntryStudent}
+		existingScore={gradeEntryScore}
+		bind:open={gradeEntryOpen.open}
+		showTrigger={false}
+	/>
+{/if}
 
 <FormModal
-	bind:open={attachOpen}
+	bind:open={attachOpen.open}
 	title={$t('hw.attachTitle')}
 	description={$t('hw.attachDescription')}
 	submitLabel={$t('common.close')}
 	onSubmit={() => {
-		attachOpen = false;
+		attachOpen.open = false;
 	}}
 >
 	<p class="text-sm text-muted-foreground">{$t('hw.attachStub')}</p>

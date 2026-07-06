@@ -7,7 +7,9 @@
 	import { cn } from '$lib/utils';
 	import { fmtDateFr } from '../shared/drawer-constants.ts';
 	import DrawerEmptyState from '../shared/DrawerEmptyState.svelte';
-	import StudentAbsenceModal from './StudentAbsenceModal.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
+	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { Plus } from '$lib/icons';
 
 	const {
 		s,
@@ -21,6 +23,8 @@
 			late: number;
 		};
 	} = $props();
+
+	const modals = getDrawerUrlModals();
 
 	const statusTone: Record<StudentAttendanceHistoryItem['status'], string> = {
 		present: 'bg-secondary text-foreground/70',
@@ -87,7 +91,15 @@
 		tooltip={$t('student.attendancePermission')}
 	>
 		{#snippet children({ disabled, title })}
-			<StudentAbsenceModal {s} {disabled} {title} />
+			<Button
+				variant="ghost"
+				class="w-full rounded-full border border-dashed border-border"
+				{disabled}
+				{title}
+				onclick={() => modals?.open('add-absence')}
+			>
+				<Plus class="mr-1 h-4 w-4" /> Déclarer une absence
+			</Button>
 		{/snippet}
 	</PermissionGate>
 </div>

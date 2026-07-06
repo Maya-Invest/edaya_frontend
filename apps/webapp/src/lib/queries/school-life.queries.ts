@@ -1,4 +1,5 @@
 import { academicContext } from '$lib/academic/context.svelte';
+import { authSession } from '$lib/auth/session.svelte';
 import { fetchActivities } from '$lib/api/activities-data';
 import { fetchAnnouncements } from '$lib/api/announcements-data';
 import { loadGuardiansPeopleData } from '$lib/api/people-data';
@@ -40,17 +41,21 @@ export function querySchoolActivitiesPage() {
 	return (url: URL) => resolvePageLoad(url, {
 		empty: () => ({}),
 		load: async () => {
-			const schoolId = academicContext.schools[0]?.id ?? '';
-			const activities = schoolId
-				? await safeOptionalFetch(
-						() => fetchActivities(queryClient(), schoolId),
-						[],
-					)
-				: [];
+			const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
+			if (!schoolId) {
+				detailDataContext.seedActivities([]);
+				return {};
+			}
+
+			const activities = await safeOptionalFetch(
+				() => fetchActivities(queryClient(), schoolId),
+				[],
+			);
 			detailDataContext.seedActivities(activities);
 			return {};
 		},
 		hasItems: listPageHasItems,
+		errorMessage: 'Unable to load activities.',
 	});
 }
 

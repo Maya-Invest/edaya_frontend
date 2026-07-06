@@ -7,7 +7,9 @@
 	import { FileText } from '$lib/icons';
 	import SubjectGroup from '../academics/SubjectGroup.svelte';
 	import DrawerEmptyState from '../shared/DrawerEmptyState.svelte';
-	import StudentGradeEntryModal from './StudentGradeEntryModal.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
+	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { Plus } from '$lib/icons';
 
 	const {
 		s,
@@ -16,6 +18,8 @@
 		s: Student;
 		notesData: ReturnType<typeof buildStudentGradeSummaryFromRows>;
 	} = $props();
+
+	const modals = getDrawerUrlModals();
 </script>
 
 <div class="space-y-4">
@@ -64,7 +68,15 @@
 		tooltip={$t('student.gradePermission')}
 	>
 		{#snippet children({ disabled, title })}
-			<StudentGradeEntryModal {s} {disabled} {title} />
+			<Button
+				variant="ghost"
+				class="w-full rounded-full border border-dashed border-border"
+				{disabled}
+				{title}
+				onclick={() => modals?.open('add-grade')}
+			>
+				<Plus class="mr-1 h-4 w-4" /> Saisir une note
+			</Button>
 		{/snippet}
 	</PermissionGate>
 </div>

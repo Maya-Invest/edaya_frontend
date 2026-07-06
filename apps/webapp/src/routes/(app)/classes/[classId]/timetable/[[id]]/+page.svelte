@@ -6,6 +6,7 @@
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
+	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { queryClassTimetablePage } from '$lib/queries/planning.queries';
 
@@ -15,7 +16,7 @@
 
 	function selectSession(ev: PlanningEvent) {
 		const path = detailHref.classPlanning(classId, ev.id);
-		const href = `${path}${$page.url.search}`;
+		const href = `${path}${detailNavigationSearch($page.url)}`;
 		if ($page.url.pathname === path) {
 			return;
 		}

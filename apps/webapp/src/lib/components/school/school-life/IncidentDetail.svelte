@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { components } from '$lib/api/schema';
 	import type { Incident } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { deleteIncidentMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -9,6 +10,8 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { locale, t } from '$lib/i18n';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
@@ -21,9 +24,21 @@
 
 	type Involvement = components['schemas']['StudentIncidentInvolvement'];
 
+	type IncidentDrawerModal = 'edit' | 'resolve';
+
 	const { i }: { i: Incident } = $props();
 
-	let resolveOpen = $state(false);
+	const modals = createUrlSyncedModals<IncidentDrawerModal>({
+		allowed: ['edit', 'resolve'],
+		getUrl: () => $page.url,
+	});
+	setDrawerUrlModals(modals);
+	$effect(() => {
+		modals.hydrate();
+	});
+	const editOpen = bindUrlModal(modals, 'edit');
+	const resolveOpen = bindUrlModal(modals, 'resolve');
+
 	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
 	let involvements = $state<Involvement[]>([]);
@@ -103,6 +118,7 @@
 						classes={academicContext.classes}
 						{disabled}
 						{title}
+						bind:open={editOpen.open}
 					/>
 				{/snippet}
 			</PermissionGate>
@@ -115,7 +131,7 @@
 							class="rounded-full"
 							{disabled}
 							{title}
-							onclick={() => (resolveOpen = true)}
+							onclick={() => modals.open('resolve')}
 						>
 							{$t('events.resolveAction')}
 						</Button>
@@ -214,7 +230,7 @@
 	incident={i}
 	students={detailDataContext.students}
 	classes={academicContext.classes}
-	bind:open={resolveOpen}
+	bind:open={resolveOpen.open}
 	onResolved={refreshDetail}
 />
 

@@ -10,21 +10,24 @@
 	import { Plus } from '$lib/icons';
 	import { get } from 'svelte/store';
 
-	const {
+	let {
 		s,
 		disabled = false,
 		title,
+		open = $bindable(false),
+		showTrigger = true,
 	}: {
 		s: Student;
 		disabled?: boolean;
 		title?: string;
+		open?: boolean;
+		showTrigger?: boolean;
 	} = $props();
 
 	type AttendanceStatus = 'absent' | 'late';
 
 	const STATUS_OPTIONS: AttendanceStatus[] = ['absent', 'late'];
 
-	let open = $state(false);
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let date = $state(new Date().toISOString().slice(0, 10));
@@ -65,15 +68,17 @@
 	}
 </script>
 
-<Button
-	variant="ghost"
-	class="w-full rounded-full border border-dashed border-border"
-	{disabled}
-	{title}
-	onclick={() => (open = true)}
->
-	<Plus class="mr-1 h-4 w-4" /> Déclarer une absence
-</Button>
+{#if showTrigger}
+	<Button
+		variant="ghost"
+		class="w-full rounded-full border border-dashed border-border"
+		{disabled}
+		{title}
+		onclick={() => (open = true)}
+	>
+		<Plus class="mr-1 h-4 w-4" /> Déclarer une absence
+	</Button>
+{/if}
 
 <FormModal
 	bind:open

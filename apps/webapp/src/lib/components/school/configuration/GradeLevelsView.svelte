@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { GradeLevel } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import GradeLevelFormModal from '$lib/components/school/configuration/GradeLevelFormModal.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -10,6 +11,7 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
 	import { Layers, Plus } from '$lib/icons';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { cn } from '$lib/utils';
 
 	const {
@@ -22,7 +24,12 @@
 
 	let q = $state('');
 	let cycle = $state('all');
-	let createOpen = $state(false);
+
+	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const createOpen = bindUrlModal(modals, 'create');
 
 	const cycleOptions = $derived([
 		{ value: 'all', label: $t('gradeLevels.allCycles') },
@@ -85,7 +92,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen = true)}
+						onclick={() => (createOpen.open = true)}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('gradeLevels.add')}
@@ -143,4 +150,4 @@
 	</div>
 </div>
 
-<GradeLevelFormModal bind:open={createOpen} />
+<GradeLevelFormModal bind:open={createOpen.open} />

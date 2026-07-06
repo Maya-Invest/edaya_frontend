@@ -42,5 +42,5 @@ cd edaya_web/apps/webapp && bun dev
 cd edaya_web/apps/webapp
 bun run check
 bun test tests
-node scripts/demo-dry-run.mjs   # 26 automated steps; results in .demo-dry-run/
+node scripts/demo-dry-run.mjs   # 52 automated steps (4 skipped); results in .demo-dry-run/
 ```

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Announcement } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { publishAnnouncementMutation } from '$lib/api/mutations/announcement.mutations';
 	import { deleteAnnouncementMutation } from '$lib/api/mutations/delete-entity.mutations';
@@ -8,6 +9,8 @@
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { t } from '$lib/i18n';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
@@ -18,12 +21,23 @@
 
 	const { announcement }: { announcement: Announcement } = $props();
 
+	type AnnouncementDrawerModal = 'add-target';
+
+	const modals = createUrlSyncedModals<AnnouncementDrawerModal>({
+		allowed: ['add-target'],
+		getUrl: () => $page.url,
+	});
+	setDrawerUrlModals(modals);
+	$effect(() => {
+		modals.hydrate();
+	});
+	const addTargetOpen = bindUrlModal(modals, 'add-target');
+
 	const live = $derived(
 		detailDataContext.announcements.find(entry => entry.id === announcement.id) ?? announcement,
 	);
 	const isDraft = $derived(live.status === 'draft');
 
-	let addTargetOpen = $state(false);
 	let publishOpen = $state(false);
 
 	function fmtDate(value: string | undefined) {
@@ -100,7 +114,7 @@
 							class="rounded-full"
 							{disabled}
 							{title}
-							onclick={() => (addTargetOpen = true)}
+							onclick={() => modals.open('add-target')}
 						>
 							{$t('announcements.addTarget')}
 						</Button>
@@ -164,7 +178,7 @@
 							class="h-7 rounded-full text-xs"
 							{disabled}
 							{title}
-							onclick={() => (addTargetOpen = true)}
+							onclick={() => modals.open('add-target')}
 						>
 							{$t('announcements.addTarget')}
 						</Button>
@@ -188,7 +202,7 @@
 	</div>
 </div>
 
-<AnnouncementTargetFormModal announcementId={live.id} bind:open={addTargetOpen} />
+<AnnouncementTargetFormModal announcementId={live.id} bind:open={addTargetOpen.open} />
 
 <FormModal
 	bind:open={publishOpen}

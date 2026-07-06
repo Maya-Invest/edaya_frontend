@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { components } from '$lib/api/schema';
 	import type { Teacher } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { deleteTeacherAssignmentMutation } from '$lib/api/mutations/teacher.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -8,12 +9,18 @@
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { t } from '$lib/i18n';
 	import { Plus, Trash2 } from '$lib/icons';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
 	import TeacherAssignmentFormModal from './TeacherAssignmentFormModal.svelte';
 
 	const { teacher }: { teacher: Teacher } = $props();
 
-	let formOpen = $state(false);
+	const modals = createUrlSyncedModals({ allowed: ['form'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const formOpen = bindUrlModal(modals, 'form');
+
 	let deleteBusy = $state<string | null>(null);
 
 	const rows = $derived(detailDataContext.teacherAssignmentsForTeacher(teacher.id));
@@ -62,7 +69,7 @@
 		</div>
 		<PermissionGate permission="STAFF_UPDATE" mode="disable">
 			{#snippet children({ disabled })}
-				<Button size="sm" class="rounded-full" disabled={disabled} onclick={() => (formOpen = true)}>
+				<Button size="sm" class="rounded-full" disabled={disabled} onclick={() => (formOpen.open = true)}>
 					<Plus class="mr-1.5 h-3.5 w-3.5" />
 					{$t('teacher.addAssignment')}
 				</Button>
@@ -101,4 +108,4 @@
 	{/if}
 </div>
 
-<TeacherAssignmentFormModal bind:open={formOpen} {teacher} />
+<TeacherAssignmentFormModal bind:open={formOpen.open} {teacher} />

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { StudentBilling } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -8,6 +9,7 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { locale, t } from '$lib/i18n';
 	import { Plus, TrendingUp, AlertCircle, Wallet } from '$lib/icons';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 	import AssignFeeFormModal from './AssignFeeFormModal.svelte';
@@ -32,7 +34,11 @@
 		overdue: 'bg-destructive/10 text-destructive',
 	};
 
-	let assignFeeOpen = $state(false);
+	const modals = createUrlSyncedModals({ allowed: ['assign-fee'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const assignFeeOpen = bindUrlModal(modals, 'assign-fee');
 
 	function handleBillingCreated(studentFeeId: string) {
 		appGoto(detailHref.financeBilling(studentFeeId));
@@ -69,7 +75,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (assignFeeOpen = true)}
+						onclick={() => (assignFeeOpen.open = true)}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('finance.newInvoice')}
@@ -84,7 +90,7 @@
 
 	{#if assignFeeOpen}
 		<AssignFeeFormModal
-			bind:open={assignFeeOpen}
+			bind:open={assignFeeOpen.open}
 			{students}
 			{fees}
 			{billing}

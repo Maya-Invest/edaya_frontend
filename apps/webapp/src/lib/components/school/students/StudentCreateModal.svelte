@@ -13,11 +13,13 @@
 		hierarchy,
 		defaultClassGroupId,
 		open = $bindable(false),
+		onOpenChange,
 		onCreated,
 	}: {
 		hierarchy: { level: string; classes: ClassNode[] }[];
 		defaultClassGroupId?: string;
 		open?: boolean;
+		onOpenChange?: (open: boolean) => void;
 		onCreated?: (studentId: string) => void;
 	} = $props();
 
@@ -105,6 +107,7 @@
 
 <FormModal
 	bind:open
+	{onOpenChange}
 	title={$t('student.createTitle')}
 	description={$t('student.createDescription')}
 	submitLabel={$t('students.newStudent')}

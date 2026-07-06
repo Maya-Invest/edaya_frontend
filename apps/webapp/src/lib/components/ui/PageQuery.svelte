@@ -63,9 +63,17 @@
 				pageQueryStatus.markReady(key);
 			})
 			.catch(() => {
-				if (version === loadVersion) {
-					inFlightKey = null;
+				if (version !== loadVersion) {
+					return;
 				}
+				inFlightKey = null;
+				const fallback = {
+					status: 'error',
+					errorMessage: 'Unable to load this page.',
+				} as T;
+				result = fallback;
+				loadedKey = key;
+				pageQueryStatus.markReady(key);
 			});
 	});
 </script>

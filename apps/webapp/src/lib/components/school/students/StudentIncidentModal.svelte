@@ -11,21 +11,24 @@
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
 
-	const {
+	let {
 		s,
 		disabled = false,
 		title,
+		open = $bindable(false),
+		showTrigger = true,
 	}: {
 		s: Student;
 		disabled?: boolean;
 		title?: string;
+		open?: boolean;
+		showTrigger?: boolean;
 	} = $props();
 
 	type IncidentKind = 'positive' | 'minor_infraction' | 'major_infraction' | 'emergency';
 
 	const INCIDENT_KINDS: IncidentKind[] = ['positive', 'minor_infraction', 'major_infraction', 'emergency'];
 
-	let open = $state(false);
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let incidentTitle = $state('');
@@ -77,15 +80,17 @@
 	}
 </script>
 
-<Button
-	variant="ghost"
-	class="w-full rounded-full border border-dashed border-border"
-	{disabled}
-	{title}
-	onclick={() => (open = true)}
->
-	Consigner un incident
-</Button>
+{#if showTrigger}
+	<Button
+		variant="ghost"
+		class="w-full rounded-full border border-dashed border-border"
+		{disabled}
+		{title}
+		onclick={() => (open = true)}
+	>
+		Consigner un incident
+	</Button>
+{/if}
 
 <FormModal
 	bind:open

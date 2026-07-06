@@ -6,6 +6,7 @@
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
+	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { querySchoolAnnouncementsPage } from '$lib/queries/school-life.queries';
 
@@ -14,7 +15,7 @@
 
 	function selectAnnouncement(announcement: Announcement) {
 		const path = detailHref.schoolAnnouncement(announcement.id);
-		appGoto(`${path}${$page.url.search}`);
+		appGoto(`${path}${detailNavigationSearch($page.url)}`);
 	}
 </script>
 

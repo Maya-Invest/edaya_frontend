@@ -15,7 +15,10 @@
 	import { readActivityListFilters, writeActivityListFilters } from '$lib/list/list-url-filters';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { appGoto } from '$lib/navigation/app-navigation';
+	import { cn } from '$lib/utils';
 	import ActivityFormModal from './ActivityFormModal.svelte';
 
 	const {
@@ -49,7 +52,11 @@
 		() => readActivityListFilters($page.url),
 	);
 
-	let createOpen = $state(false);
+	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const createOpen = bindUrlModal(modals, 'create');
 
 	const filtered = $derived(
 		activities
@@ -85,7 +92,7 @@
 
 	function handleCreated(activityId: string) {
 		const path = detailHref.schoolActivity(activityId);
-		appGoto(`${path}${$page.url.search}`);
+		appGoto(`${path}${detailNavigationSearch($page.url)}`);
 	}
 
 	$effect(() => {
@@ -138,7 +145,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen = true)}
+						onclick={() => (createOpen.open = true)}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('activities.newActivity')}
@@ -151,7 +158,7 @@
 		{/snippet}
 	</ListPageHeader>
 
-	<ActivityFormModal bind:open={createOpen} onCreated={handleCreated} />
+	<ActivityFormModal bind:open={createOpen.open} onCreated={handleCreated} />
 
 	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
 		<div

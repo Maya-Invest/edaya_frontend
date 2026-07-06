@@ -7,17 +7,19 @@
 	import PickerModal from '$lib/components/ui/PickerModal.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 
-	const {
+	let {
 		s,
 		disabled = false,
 		title,
+		open = $bindable(false),
+		showTrigger = true,
 	}: {
 		s: Student;
 		disabled?: boolean;
 		title?: string;
+		open?: boolean;
+		showTrigger?: boolean;
 	} = $props();
-
-	let open = $state(false);
 	let busy = $state(false);
 	let guardianId = $state('');
 
@@ -54,15 +56,17 @@
 	}
 </script>
 
-<Button
-	variant="ghost"
-	class="w-full rounded-full border border-dashed border-border"
-	{disabled}
-	{title}
-	onclick={() => (open = true)}
->
-	Rattacher un tuteur
-</Button>
+{#if showTrigger}
+	<Button
+		variant="ghost"
+		class="w-full rounded-full border border-dashed border-border"
+		{disabled}
+		{title}
+		onclick={() => (open = true)}
+	>
+		Rattacher un tuteur
+	</Button>
+{/if}
 
 <PickerModal
 	bind:open

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Deadline } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { deleteHomeworkMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
@@ -8,6 +9,7 @@
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { locale, t } from '$lib/i18n';
 	import { Check, Clock, AlertCircle, FileText, Paperclip } from '$lib/icons';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import DrawerActionBar from '../shared/DrawerActionBar.svelte';
@@ -16,7 +18,11 @@
 
 	const { d }: { d: Deadline } = $props();
 
-	let attachOpen = $state(false);
+	const modals = createUrlSyncedModals({ allowed: ['attach'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const attachOpen = bindUrlModal(modals, 'attach');
 
 	const subStatusStyle = {
 		submitted: { icon: Check, cls: 'text-accent' },
@@ -70,7 +76,7 @@
 				variant="ghost"
 				size="sm"
 				class="w-full rounded-full border border-dashed border-border"
-				onclick={() => (attachOpen = true)}
+				onclick={() => (attachOpen.open = true)}
 			>
 				<Paperclip class="mr-1 h-3 w-3" />
 				{$t('drawer.attachFile')}
@@ -134,12 +140,12 @@
 </div>
 
 <FormModal
-	bind:open={attachOpen}
+	bind:open={attachOpen.open}
 	title={$t('hw.attachTitle')}
 	description={$t('hw.attachDescription')}
 	submitLabel={$t('common.close')}
 	onSubmit={() => {
-		attachOpen = false;
+		attachOpen.open = false;
 	}}
 >
 	<p class="text-sm text-muted-foreground">{$t('hw.attachStub')}</p>

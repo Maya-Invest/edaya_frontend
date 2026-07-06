@@ -69,7 +69,7 @@
 					name: trimmedName,
 					capacity: parsedCapacity,
 					attendanceMode,
-					homeroomStaffId: homeroomStaffId || null,
+					homeroomStaffId: homeroomStaffId || classGroup.homeroomStaffId || null,
 				}, {
 					successMessage: get(t)('classGroups.toastUpdated', { name: trimmedName }),
 				});

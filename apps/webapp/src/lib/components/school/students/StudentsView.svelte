@@ -17,6 +17,8 @@
 	import { readClassStudentListFilters, writeClassStudentListFilters } from '$lib/list/list-url-filters';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 	import PersonAvatar from '../shared/PersonAvatar.svelte';
@@ -56,7 +58,12 @@
 	);
 
 	let view = $state<'table' | 'cards'>('table');
-	let createOpen = $state(false);
+
+	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const createOpen = bindUrlModal(modals, 'create');
 
 	const statusKeys = ['all', 'honor', 'active', 'warning'] as const;
 
@@ -82,7 +89,7 @@
 
 	function handleCreated(studentId: string) {
 		const path = detailHref.classStudent(classId, studentId);
-		appGoto(`${path}${$page.url.search}`);
+		appGoto(`${path}${detailNavigationSearch($page.url)}`);
 	}
 
 	$effect(() => {
@@ -141,7 +148,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen = true)}
+						onclick={() => (createOpen.open = true)}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('students.newStudent')}
@@ -151,9 +158,9 @@
 		{/snippet}
 	</ListPageHeader>
 
-	{#if createOpen}
+	{#if createOpen.open}
 		<StudentCreateModal
-			bind:open={createOpen}
+			bind:open={createOpen.open}
 			hierarchy={academicContext.hierarchy}
 			defaultClassGroupId={classId}
 			onCreated={handleCreated}

@@ -22,6 +22,8 @@
 	} from '$lib/icons';
 	import { readCalendarListFilters, writeCalendarListFilters } from '$lib/list/list-url-filters';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 	import SchoolYearEventFormModal from '../school-life/SchoolYearEventFormModal.svelte';
@@ -74,7 +76,11 @@
 		() => readCalendarListFilters($page.url),
 	);
 
-	let createOpen = $state(false);
+	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const createOpen = bindUrlModal(modals, 'create');
 
 	const typeFilterKeys = ['all', 'holiday', 'vacation', 'closure', 'ceremony'] as const;
 	type TypeFilter = (typeof typeFilterKeys)[number];
@@ -136,7 +142,7 @@
 
 	function handleCreated(eventId: string) {
 		const path = detailHref.schoolCalendarEvent(eventId);
-		appGoto(`${path}${$page.url.search}`);
+		appGoto(`${path}${detailNavigationSearch($page.url)}`);
 	}
 
 	$effect(() => {
@@ -194,7 +200,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen = true)}
+						onclick={() => (createOpen.open = true)}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('calendar.newEvent')}
@@ -207,7 +213,7 @@
 		{/snippet}
 	</ListPageHeader>
 
-	<SchoolYearEventFormModal bind:open={createOpen} onCreated={handleCreated} />
+	<SchoolYearEventFormModal bind:open={createOpen.open} onCreated={handleCreated} />
 
 	<div class="space-y-8">
 		{#each Object.entries(grouped) as [month, monthEvents] (month)}

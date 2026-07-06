@@ -14,6 +14,7 @@
 	import { Pencil, Plus, Trash2 } from '$lib/icons';
 	import { readGradeScaleListFilters, writeGradeScaleListFilters } from '$lib/list/list-url-filters';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { reportCardsContext } from '$lib/report-cards/context.svelte';
 	import { get } from 'svelte/store';
@@ -30,8 +31,13 @@
 		() => readGradeScaleListFilters($page.url),
 	);
 
-	let createOpen = $state(false);
-	let editOpen = $state(false);
+	const modals = createUrlSyncedModals({ allowed: ['create', 'edit'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const createOpen = bindUrlModal(modals, 'create');
+	const editOpen = bindUrlModal(modals, 'edit');
+
 	let editingScale = $state<GradeScale | null>(null);
 	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
@@ -63,7 +69,7 @@
 
 	function openEdit(scale: GradeScale) {
 		editingScale = scale;
-		editOpen = true;
+		editOpen.open = true;
 	}
 
 	function openDelete(scaleId: string, scaleName: string) {
@@ -109,7 +115,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen = true)}
+						onclick={() => (createOpen.open = true)}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('gradeScales.add')}
@@ -195,8 +201,8 @@
 	</div>
 </div>
 
-<GradeScaleFormModal bind:open={createOpen} />
-<GradeScaleFormModal bind:open={editOpen} scale={editingScale} />
+<GradeScaleFormModal bind:open={createOpen.open} />
+<GradeScaleFormModal bind:open={editOpen.open} scale={editingScale} />
 
 <ConfirmModal
 	bind:open={deleteOpen}

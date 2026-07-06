@@ -21,6 +21,7 @@
 	import { CalendarRange, ChevronDown, Pencil, Plus, Trash2 } from '$lib/icons';
 	import { readAcademicAdminListFilters, writeAcademicAdminListFilters } from '$lib/list/list-url-filters';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
@@ -39,9 +40,14 @@
 		() => readAcademicAdminListFilters($page.url),
 	);
 
-	let createOpen = $state(false);
+	const modals = createUrlSyncedModals({ allowed: ['create', 'period-def'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const createOpen = bindUrlModal(modals, 'create');
+	const periodDefOpen = bindUrlModal(modals, 'period-def');
+
 	let expandedYear = $state<string | null>(academicContext.yearId);
-	let periodDefOpen = $state(false);
 	let periodDefYearId = $state('');
 	let editingPeriodDef = $state<PeriodDefinition | null>(null);
 	let deletePeriodOpen = $state(false);
@@ -113,13 +119,13 @@
 	function openCreatePeriodDef(yearId: string) {
 		periodDefYearId = yearId;
 		editingPeriodDef = null;
-		periodDefOpen = true;
+		periodDefOpen.open = true;
 	}
 
 	function openEditPeriodDef(def: PeriodDefinition) {
 		periodDefYearId = def.academicYearId;
 		editingPeriodDef = def;
-		periodDefOpen = true;
+		periodDefOpen.open = true;
 	}
 
 	function openDeletePeriodDef(def: PeriodDefinition) {
@@ -180,7 +186,7 @@
 			</FilterPanel>
 		{/snippet}
 		{#snippet primary()}
-			<Button size="sm" class="rounded-full" onclick={() => (createOpen = true)}>
+			<Button size="sm" class="rounded-full" onclick={() => (createOpen.open = true)}>
 				<Plus class="mr-1 h-4 w-4" />
 				{$t('academic.createYear')}
 			</Button>
@@ -358,10 +364,10 @@
 	</div>
 </div>
 
-<AcademicYearCreateModal bind:open={createOpen} onCreated={handleYearCreated} />
+<AcademicYearCreateModal bind:open={createOpen.open} onCreated={handleYearCreated} />
 
 <PeriodDefinitionFormModal
-	bind:open={periodDefOpen}
+	bind:open={periodDefOpen.open}
 	academicYearId={periodDefYearId}
 	periodDefinition={editingPeriodDef}
 />

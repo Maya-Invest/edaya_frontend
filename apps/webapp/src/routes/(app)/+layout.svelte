@@ -17,6 +17,9 @@
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { isLikelyDetailPath, listRouteCacheKey } from '$lib/detail-route-patterns';
+	import { DRAWER_TAB_QUERY_KEY } from '$lib/drawer/drawer-tab-url';
+	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
+	import { hydrateDetailEntitiesForPath } from '$lib/drawer/drawer-detail-hydration';
 	import { DrawerState } from '$lib/drawer.svelte';
 	import { setDrawer } from '$lib/drawer-context';
 	import { t } from '$lib/i18n';
@@ -27,7 +30,6 @@
 	import { onboardingContext } from '$lib/onboarding/context.svelte';
 	import { onboardingResumePath } from '$lib/onboarding/resume-onboarding';
 	import { pageQueryStatus } from '$lib/queries/page-query-status.svelte';
-	import { hydrateStudentDetailDrawer, studentDetailIdFromUrl } from '$lib/queries/student-360.queries';
 	import { reportCardsContext } from '$lib/report-cards/context.svelte';
 	import { shellContext } from '$lib/shell/context.svelte';
 	import { cn } from '$lib/utils';
@@ -121,7 +123,6 @@
 		const pathname = $page.url.pathname;
 		const cacheKey = listRouteCacheKey($page.url);
 		const routeQueryReady = pageQueryStatus.isReady(cacheKey);
-		const studentDetailId = studentDetailIdFromUrl($page.url);
 		void reportCardsContext.ready;
 		void detailDataContext.students;
 
@@ -141,9 +142,7 @@
 		const version = ++drawerSyncVersion;
 
 		void (async () => {
-			if (studentDetailId) {
-				await hydrateStudentDetailDrawer(studentDetailId);
-			}
+			await hydrateDetailEntitiesForPath(pathname);
 			if (version !== drawerSyncVersion) {
 				return;
 			}
@@ -178,7 +177,11 @@
 		const { getListPathForDetail } = await import('$lib/detail-routes');
 		const listPath = getListPathForDetail($page.url.pathname);
 		if (listPath) {
-			const href = `${listPath}${$page.url.search}` as ResolvedPathname;
+			const next = new URL($page.url);
+			next.searchParams.delete(DRAWER_TAB_QUERY_KEY);
+			next.searchParams.delete(MODAL_QUERY_KEY);
+			next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
+			const href = `${listPath}${next.search}` as ResolvedPathname;
 			appGoto(href);
 		}
 		else {

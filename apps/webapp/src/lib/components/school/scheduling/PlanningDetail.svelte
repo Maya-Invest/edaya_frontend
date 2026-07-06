@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PlanningEvent } from '$lib/types/school';
 	import type { SessionAttendanceStatus } from '$lib/types/session-detail';
+	import { page } from '$app/stores';
 	import { cancelPlanningEventMutation } from '$lib/api/mutations/planning.mutations';
 	import {
 		recordLessonSessionBulkAttendanceMutation,
@@ -9,8 +10,12 @@
 	import { loadPlanningOccurrenceDetail } from '$lib/api/session-detail-data';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
+	import DrawerTabBar from '$lib/components/ui/DrawerTabBar.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import { createUrlSyncedDrawerTabs } from '$lib/drawer/drawer-tabs-state.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { t } from '$lib/i18n';
 	import { Check, ClipboardCheck, FileText, MapPin } from '$lib/icons';
 	import { queryClient } from '$lib/queries/client';
@@ -27,9 +32,9 @@
 
 	const { s }: { s: PlanningEvent } = $props();
 
-	type PlanningTab = 'details' | 'attendance' | 'logbook';
+	type PlanningDrawerModal = 'edit-event' | 'session-attendance' | 'session-logbook';
 
-	let tab = $state<PlanningTab>('details');
+	type PlanningTab = 'details' | 'attendance' | 'logbook';
 
 	const isLesson = $derived(s.kind === 'lesson');
 	const isActivity = $derived(s.kind === 'activity');
@@ -60,6 +65,37 @@
 		showLogbookTab ? (['details', 'attendance', 'logbook'] as const) : (['details', 'attendance'] as const),
 	);
 
+	const tabItems = $derived(visibleTabs.map(key => ({
+		key,
+		label: $t(tabLabelKeys[key]),
+	})));
+
+	const tabs = createUrlSyncedDrawerTabs<PlanningTab>({
+		allowed: () => visibleTabs,
+		defaultTab: 'details',
+		getUrl: () => $page.url,
+	});
+
+	$effect(() => {
+		tabs.hydrate();
+	});
+
+	const modals = createUrlSyncedModals<PlanningDrawerModal>({
+		allowed: ['edit-event', 'session-attendance', 'session-logbook'],
+		getUrl: () => $page.url,
+	});
+	setDrawerUrlModals(modals);
+	$effect(() => {
+		modals.hydrate();
+	});
+	const editEventOpen = bindUrlModal(modals, 'edit-event');
+	const sessionAttendanceOpen = bindUrlModal(modals, 'session-attendance');
+	const sessionLogbookOpen = bindUrlModal(modals, 'session-logbook');
+
+	const attendanceTargetRow = $derived(
+		modals.target ? attendanceRows.find(row => row.studentId === modals.target) : undefined,
+	);
+
 	let sessionLoading = $state(false);
 
 	$effect(() => {
@@ -88,8 +124,8 @@
 	});
 
 	$effect(() => {
-		if (!showLogbookTab && tab === 'logbook') {
-			tab = 'details';
+		if (!showLogbookTab && tabs.tab === 'logbook') {
+			tabs.select('details');
 		}
 	});
 
@@ -142,7 +178,7 @@
 		{/snippet}
 		{#snippet actions()}
 			{#if canEditLesson}
-				<PlanningFormModal event={s} />
+				<PlanningFormModal event={s} bind:open={editEventOpen.open} />
 			{/if}
 			{#if canCancel}
 				<PermissionGate permission="TIMETABLE_UPDATE" mode="disable" tooltip={$t('calendar.permissionUpdate')}>
@@ -164,21 +200,9 @@
 
 	<p class="text-sm text-muted-foreground">{s.teacher}</p>
 
-	<div class="flex items-center gap-1 rounded-full border border-border bg-secondary/40 p-1 text-xs">
-		{#each visibleTabs as key (key)}
-			<button
-				onclick={() => (tab = key)}
-				class={cn(
-					'flex-1 rounded-full px-2.5 py-1.5 font-medium transition',
-					tab === key ? 'bg-card text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground',
-				)}
-			>
-				{$t(tabLabelKeys[key])}
-			</button>
-		{/each}
-	</div>
+	<DrawerTabBar tabs={tabItems} active={tabs.tab} onSelect={key => tabs.select(key as PlanningTab)} />
 
-	{#if tab === 'details'}
+	{#if tabs.tab === 'details'}
 		<DrawerField label={$t('drawer.title')}>
 			<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{s.title}</div>
 		</DrawerField>
@@ -204,7 +228,7 @@
 				<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{s.teacher}</div>
 			</DrawerField>
 		</div>
-	{:else if tab === 'attendance'}
+	{:else if tabs.tab === 'attendance'}
 		{#if sessionLoading}
 			<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
 		{:else}
@@ -281,13 +305,16 @@
 											tooltip="Droit ATTENDANCE_RECORD requis."
 										>
 											{#snippet children({ disabled, title })}
-												<PlanningSessionAttendanceModal
-													sessionId={s.id}
-													kind={s.kind}
-													{row}
+												<Button
+													variant="ghost"
+													size="sm"
+													class="h-7 rounded-full px-2.5 text-[11px]"
 													{disabled}
 													{title}
-												/>
+													onclick={() => modals.open('session-attendance', { target: row.studentId })}
+												>
+													{row.status ? $t('common.edit') : $t('planning.session.recordAttendance')}
+												</Button>
 											{/snippet}
 										</PermissionGate>
 									</div>
@@ -314,7 +341,16 @@
 						tooltip="Droit cahier de texte requis."
 					>
 						{#snippet children({ disabled, title })}
-							<PlanningSessionLogbookModal {detail} {disabled} {title} />
+							<Button
+								variant="outline"
+								size="sm"
+								class="h-7 rounded-full text-xs"
+								{disabled}
+								{title}
+								onclick={() => modals.open('session-logbook')}
+							>
+								{detail.logbook ? $t('common.edit') : $t('planning.session.addLogbook')}
+							</Button>
 						{/snippet}
 					</PermissionGate>
 				{/if}
@@ -360,7 +396,16 @@
 						tooltip="Droit CLASS_LOGBOOK_CREATE requis."
 					>
 						{#snippet children({ disabled, title })}
-							<PlanningSessionLogbookModal {detail} {disabled} {title} />
+							<Button
+								variant="outline"
+								size="sm"
+								class="rounded-full"
+								{disabled}
+								{title}
+								onclick={() => modals.open('session-logbook')}
+							>
+								{$t('planning.session.addLogbook')}
+							</Button>
 						{/snippet}
 					</PermissionGate>
 				{/if}
@@ -370,3 +415,16 @@
 		<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
 	{/if}
 </div>
+
+{#if attendanceTargetRow}
+	<PlanningSessionAttendanceModal
+		sessionId={s.id}
+		kind={s.kind}
+		row={attendanceTargetRow}
+		bind:open={sessionAttendanceOpen.open}
+		showTrigger={false}
+	/>
+{/if}
+{#if detail}
+	<PlanningSessionLogbookModal {detail} bind:open={sessionLogbookOpen.open} showTrigger={false} />
+{/if}

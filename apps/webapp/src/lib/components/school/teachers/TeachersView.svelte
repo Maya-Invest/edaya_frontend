@@ -16,6 +16,7 @@
 	import { t } from '$lib/i18n';
 	import { Mail, Phone, Plus, Search } from '$lib/icons';
 	import { useOffsetInfiniteList } from '$lib/list/use-infinite-list.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { getTeachersState, setTeachersState, TeachersState } from '$lib/school/teachers-state.svelte';
 	import { cn } from '$lib/utils';
 	import PersonAvatar from '../shared/PersonAvatar.svelte';
@@ -32,7 +33,11 @@
 	const teachers = new TeachersState(() => $page.url);
 	setTeachersState(teachers);
 
-	let createOpen = $state(false);
+	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const createOpen = bindUrlModal(modals, 'create');
 
 	const infinite = useOffsetInfiniteList(
 		async (offset, limit) => {
@@ -93,7 +98,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen = true)}
+						onclick={() => (createOpen.open = true)}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('teacher.addTeacher')}
@@ -106,7 +111,7 @@
 		{/snippet}
 	</ListPageHeader>
 
-	<TeacherCreateModal bind:open={createOpen} onCreated={teachers.handleCreated} />
+	<TeacherCreateModal bind:open={createOpen.open} onCreated={teachers.handleCreated} />
 
 	<div
 		class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft"

@@ -14,6 +14,7 @@
 	import { ChevronRight, Plus, Search } from '$lib/icons';
 	import { readReportCardDefinitionListFilters, writeReportCardDefinitionListFilters } from '$lib/list/list-url-filters';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { reportCardsContext } from '$lib/report-cards/context.svelte';
 	import { cn } from '$lib/utils';
@@ -89,7 +90,11 @@
 		})),
 	);
 
-	let createOpen = $state(false);
+	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const createOpen = bindUrlModal(modals, 'create');
 
 	function handleCreated(definitionId: string) {
 		appGoto(detailHref.configReportCard(definitionId));
@@ -129,7 +134,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen = true)}
+						onclick={() => (createOpen.open = true)}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('reportCards.newModel')}
@@ -142,7 +147,7 @@
 		{/snippet}
 	</ListPageHeader>
 
-	<ReportCardDefinitionFormModal bind:open={createOpen} onCreated={handleCreated} />
+	<ReportCardDefinitionFormModal bind:open={createOpen.open} onCreated={handleCreated} />
 
 	<div class="space-y-2">
 		{#each filteredDefinitions as def (def.id)}

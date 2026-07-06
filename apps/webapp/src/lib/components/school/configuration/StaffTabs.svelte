@@ -1,5 +1,7 @@
 <script lang="ts">
+	import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 	import type { StaffMember } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { deleteStaffMemberMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import { updateStaffProfilePhotoMutation } from '$lib/api/mutations/profile-photo.mutations';
@@ -7,13 +9,16 @@
 	import AccountLinkingSection from '$lib/components/account/AccountLinkingSection.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import DrawerTabBar from '$lib/components/ui/DrawerTabBar.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
+	import { createUrlSyncedDrawerTabs } from '$lib/drawer/drawer-tabs-state.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { t } from '$lib/i18n';
 	import { Mail } from '$lib/icons';
 	import { canUploadProfilePhoto } from '$lib/permissions';
-	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import DrawerField from '../shared/DrawerField.svelte';
@@ -21,11 +26,50 @@
 	import ProfilePhotoPicker from '../shared/ProfilePhotoPicker.svelte';
 	import StaffAssignmentsSummary from './StaffAssignmentsSummary.svelte';
 	import StaffPermissionsList from './StaffPermissionsList.svelte';
+	import StaffPermissionFormModal from './StaffPermissionFormModal.svelte';
 	import StaffProfileEditModal from './StaffProfileEditModal.svelte';
 
 	const { s }: { s: StaffMember } = $props();
 
-	let tab = $state<'profile' | 'permissions' | 'assignments'>('profile');
+	type StaffDrawerModal = 'edit-profile' | 'add-permission';
+
+	type StaffTab = 'profile' | 'permissions' | 'assignments';
+
+	const tabs = createUrlSyncedDrawerTabs<StaffTab>({
+		allowed: ['profile', 'permissions', 'assignments'],
+		defaultTab: 'profile',
+		getUrl: () => $page.url,
+	});
+
+	$effect(() => {
+		tabs.hydrate();
+	});
+
+	const tabItems = $derived([
+		{ key: 'profile', label: $t('drawer.tab.profile') },
+		{ key: 'permissions', label: $t('drawer.tab.permissions') },
+		{ key: 'assignments', label: $t('drawer.tab.assignments') },
+	] as const);
+
+	const modals = createUrlSyncedModals<StaffDrawerModal>({
+		allowed: ['edit-profile', 'add-permission'],
+		getUrl: () => $page.url,
+	});
+	setDrawerUrlModals(modals);
+	$effect(() => {
+		modals.hydrate();
+	});
+	const editProfileOpen = bindUrlModal(modals, 'edit-profile');
+	const addPermissionOpen = bindUrlModal(modals, 'add-permission');
+
+	let permissionEditing = $state<StaffPermissionAssignmentView | null>(null);
+
+	$effect(() => {
+		if (!addPermissionOpen.open) {
+			permissionEditing = null;
+		}
+	});
+
 	let optimisticActive = $state<boolean | null>(null);
 	let statusBusy = $state(false);
 	let deleteOpen = $state(false);
@@ -71,7 +115,7 @@
 	}
 
 	function focusPermissionsTab() {
-		tab = 'permissions';
+		tabs.select('permissions');
 	}
 
 	async function confirmDelete() {
@@ -111,7 +155,7 @@
 		{#snippet actions()}
 			<PermissionGate permission="STAFF_UPDATE" mode="disable" tooltip={$t('staff.permissionUpdate')}>
 				{#snippet children({ disabled, title })}
-					<StaffProfileEditModal {s} {disabled} {title} />
+					<StaffProfileEditModal {s} {disabled} {title} bind:open={editProfileOpen.open} />
 				{/snippet}
 			</PermissionGate>
 			<PermissionGate permission="ACCESS_CONTROL_ASSIGN" mode="disable" tooltip={$t('staff.permissionAssign')}>
@@ -144,22 +188,9 @@
 		{/snippet}
 	</DrawerEntityHeader>
 
-	<div class="flex items-center gap-1 rounded-full border border-border bg-secondary/40 p-1 text-xs">
-		{#each ['profile', 'permissions', 'assignments'] as const as k (k)}
-			<button
-				type="button"
-				onclick={() => (tab = k)}
-				class={cn(
-					'flex-1 rounded-full px-3 py-1.5 font-medium transition',
-					tab === k ? 'bg-card text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground',
-				)}
-			>
-				{$t(k === 'profile' ? 'drawer.tab.profile' : k === 'permissions' ? 'drawer.tab.permissions' : 'drawer.tab.assignments')}
-			</button>
-		{/each}
-	</div>
+	<DrawerTabBar tabs={tabItems} active={tabs.tab} onSelect={key => tabs.select(key as StaffTab)} />
 
-	{#if tab === 'profile'}
+	{#if tabs.tab === 'profile'}
 		<div class="space-y-4">
 			<DrawerField label={$t('guardian.fullName')}>
 				<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{s.name}</div>
@@ -223,12 +254,18 @@
 				displayName={s.name}
 			/>
 		</div>
-	{:else if tab === 'permissions'}
-		<StaffPermissionsList {s} />
+	{:else if tabs.tab === 'permissions'}
+		<StaffPermissionsList {s} bind:editing={permissionEditing} />
 	{:else}
 		<StaffAssignmentsSummary staff={s} />
 	{/if}
 </div>
+
+<StaffPermissionFormModal
+	bind:open={addPermissionOpen.open}
+	staff={s}
+	assignment={permissionEditing}
+/>
 
 <ConfirmModal
 	bind:open={deleteOpen}

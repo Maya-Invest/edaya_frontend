@@ -8,17 +8,18 @@
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
 
-	const {
+	let {
 		s,
 		disabled = false,
 		title,
+		open = $bindable(false),
 	}: {
 		s: StaffMember;
 		disabled?: boolean;
 		title?: string;
+		open?: boolean;
 	} = $props();
 
-	let open = $state(false);
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let firstName = $state('');

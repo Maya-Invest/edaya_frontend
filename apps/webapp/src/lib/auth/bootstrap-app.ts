@@ -1,4 +1,5 @@
 import { academicContext } from '$lib/academic/context.svelte';
+import { resetBootstrapSession } from '$lib/auth/bootstrap';
 import { configureBrowserSchoolClient } from '$lib/api/school-client';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { disciplineCatalogContext } from '$lib/discipline-catalog/context.svelte';
@@ -19,6 +20,7 @@ export function bootstrapAppShell(): Promise<void> {
 
 export function resetAppShellBootstrap() {
 	bootstrapPromise = null;
+	resetBootstrapSession();
 	academicContext.reset();
 	detailDataContext.reset();
 	reportCardsContext.reset();

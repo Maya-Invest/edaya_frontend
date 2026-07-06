@@ -1,20 +1,45 @@
 <script lang="ts">
 	import type { ClassNode } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { portalHomeroomTeacherNameForClass } from '$lib/api/teacher-display';
 	import ClassGroupFormModal from '$lib/components/school/academics/ClassGroupFormModal.svelte';
 	import ClassGroupStaffAssignmentsSection from '$lib/components/school/configuration/ClassGroupStaffAssignmentsSection.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
+	import DrawerTabBar from '$lib/components/ui/DrawerTabBar.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
+	import { createUrlSyncedDrawerTabs } from '$lib/drawer/drawer-tabs-state.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { t } from '$lib/i18n';
-	import { cn } from '$lib/utils';
 
 	const { classGroup }: { classGroup: ClassNode } = $props();
 
-	let tab = $state<'profile' | 'assignments'>('profile');
-	let editOpen = $state(false);
+	type ClassGroupTab = 'profile' | 'assignments';
+
+	const tabs = createUrlSyncedDrawerTabs<ClassGroupTab>({
+		allowed: ['profile', 'assignments'],
+		defaultTab: 'profile',
+		getUrl: () => $page.url,
+	});
+
+	$effect(() => {
+		tabs.hydrate();
+	});
+
+	const tabItems = $derived([
+		{ key: 'profile', label: $t('classGroups.profileTab') },
+		{ key: 'assignments', label: $t('classGroups.assignmentsTab') },
+	] as const);
+
+	const modals = createUrlSyncedModals({ allowed: ['edit'], getUrl: () => $page.url });
+	setDrawerUrlModals(modals);
+	$effect(() => {
+		modals.hydrate();
+	});
+	const editOpen = bindUrlModal(modals, 'edit');
 
 	const live = $derived(
 		academicContext.classes.find(entry => entry.id === classGroup.id) ?? classGroup,
@@ -52,7 +77,7 @@
 						class="inline-flex h-9 items-center rounded-full border border-input bg-background px-4 text-sm font-medium transition hover:bg-secondary disabled:opacity-50"
 						{disabled}
 						{title}
-						onclick={() => (editOpen = true)}
+						onclick={() => (editOpen.open = true)}
 					>
 						{$t('classGroups.edit')}
 					</button>
@@ -61,22 +86,9 @@
 		{/snippet}
 	</DrawerEntityHeader>
 
-	<div class="flex items-center gap-1 rounded-full border border-border bg-secondary/40 p-1 text-xs">
-		{#each ['profile', 'assignments'] as const as key (key)}
-			<button
-				type="button"
-				onclick={() => (tab = key)}
-				class={cn(
-					'flex-1 rounded-full px-3 py-1.5 font-medium transition',
-					tab === key ? 'bg-card text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground',
-				)}
-			>
-				{$t(key === 'profile' ? 'classGroups.profileTab' : 'classGroups.assignmentsTab')}
-			</button>
-		{/each}
-	</div>
+	<DrawerTabBar tabs={tabItems} active={tabs.tab} onSelect={key => tabs.select(key as ClassGroupTab)} />
 
-	{#if tab === 'profile'}
+	{#if tabs.tab === 'profile'}
 		<div class="space-y-4">
 			<DrawerField label={$t('classGroups.name')}>
 				<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{live.name}</div>
@@ -117,4 +129,4 @@
 	{/if}
 </div>
 
-<ClassGroupFormModal bind:open={editOpen} classGroup={live} />
+<ClassGroupFormModal bind:open={editOpen.open} classGroup={live} />

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Deadline } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
@@ -9,6 +10,7 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { locale, t } from '$lib/i18n';
 	import { CalendarClock, FileText, Paperclip, Plus } from '$lib/icons';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 	import DeadlineFormModal from './DeadlineFormModal.svelte';
@@ -26,7 +28,13 @@
 	const deadlines = $derived(detailDataContext.deadlinesForClass(classId));
 
 	let filter = $state<'all' | 'open' | 'overdue' | 'done'>('all');
-	let createOpen = $state(false);
+
+	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const createOpen = bindUrlModal(modals, 'create');
+
 	const today = new Date('2026-05-22');
 
 	const list = $derived(deadlines);
@@ -98,7 +106,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen = true)}
+						onclick={() => (createOpen.open = true)}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('hw.newDeadline')}
@@ -111,7 +119,7 @@
 		{/snippet}
 	</ListPageHeader>
 
-	<DeadlineFormModal {classId} bind:open={createOpen} onCreated={handleCreated} />
+	<DeadlineFormModal {classId} bind:open={createOpen.open} onCreated={handleCreated} />
 
 	<div class="space-y-3">
 		{#each filtered as { d, submitted, late, missing, total, overdue, done, due } (d.id)}

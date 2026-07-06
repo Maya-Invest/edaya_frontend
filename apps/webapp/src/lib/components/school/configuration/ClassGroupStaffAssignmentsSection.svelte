@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { components } from '$lib/api/schema';
 	import type { ClassNode } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { deleteStaffAssignmentMutation } from '$lib/api/mutations/staff-assignments.mutations';
 	import { formatPermissionLabel } from '$lib/api/staff-permission-assignments-data';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -8,6 +9,7 @@
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { t } from '$lib/i18n';
 	import { Plus, Trash2 } from '$lib/icons';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
 	import ClassGroupStaffAssignmentFormModal from './ClassGroupStaffAssignmentFormModal.svelte';
 
@@ -15,7 +17,12 @@
 
 	const { classGroup }: { classGroup: ClassNode } = $props();
 
-	let formOpen = $state(false);
+	const modals = createUrlSyncedModals({ allowed: ['form'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const formOpen = bindUrlModal(modals, 'form');
+
 	let editing = $state<StaffAssignment | null>(null);
 	let deleteBusy = $state<string | null>(null);
 
@@ -27,12 +34,12 @@
 
 	function openCreate() {
 		editing = null;
-		formOpen = true;
+		formOpen.open = true;
 	}
 
 	function openEdit(row: StaffAssignment) {
 		editing = row;
-		formOpen = true;
+		formOpen.open = true;
 	}
 
 	async function removeRow(row: StaffAssignment) {
@@ -107,7 +114,7 @@
 </div>
 
 <ClassGroupStaffAssignmentFormModal
-	bind:open={formOpen}
+	bind:open={formOpen.open}
 	classGroupId={classGroup.id}
 	assignment={editing}
 />

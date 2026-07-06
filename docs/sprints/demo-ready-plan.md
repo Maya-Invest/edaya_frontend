@@ -249,14 +249,14 @@ See [remaining-work-plan.md](./remaining-work-plan.md) Tracks B–E (ListFilters
 ### Demo sprint (active)
 
 - [x] **DR.1** Dry-run complete; failure log attached below
-- [x] **DR.2** All P0 failures fixed — `node scripts/demo-dry-run.mjs` **26/26 pass**
+- [x] **DR.2** All P0 failures fixed — `node scripts/demo-dry-run.mjs` **52/52 pass** (4 skipped: permission-gated pages)
 - [x] Scenes **D0–D11** checked (automated core + manual notes per scene)
 - [x] **DR.5** Seed procedure documented in demo-accounts.md
 - [x] **DR.6** Presenter script below
 
 #### Dry-run failure log
 
-Automated run: `apps/webapp/scripts/demo-dry-run.mjs` (Playwright headless, webapp `:5173`, demo login `j.aka@`). Screenshots + `results.json` under `apps/webapp/.demo-dry-run/`.
+Automated run: `apps/webapp/scripts/demo-dry-run.mjs` (Playwright headless, webapp `:5173`, demo login `j.aka@`). Scenes **D0–D11** (core demo), **DC1–DC10** (list shell / Track B–C polish), **DN** (homeroom attendance nudge). Screenshots + `results.json` under `apps/webapp/.demo-dry-run/`.
 
 | Date | Scene | Issue | Fix PR |
 |------|-------|-------|--------|

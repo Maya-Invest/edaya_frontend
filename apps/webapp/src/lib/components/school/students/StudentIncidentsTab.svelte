@@ -8,7 +8,8 @@
 	import { cn } from '$lib/utils';
 	import { fmtDateFr } from '../shared/drawer-constants.ts';
 	import DrawerEmptyState from '../shared/DrawerEmptyState.svelte';
-	import StudentIncidentModal from './StudentIncidentModal.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
+	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 
 	const {
 		s,
@@ -17,6 +18,8 @@
 		s: Student;
 		incidentsData: ReturnType<typeof summarizeStudentIncidents>;
 	} = $props();
+
+	const modals = getDrawerUrlModals();
 </script>
 
 <div class="space-y-4">
@@ -77,7 +80,15 @@
 		tooltip="Droit DISCIPLINE_CREATE requis."
 	>
 		{#snippet children({ disabled, title })}
-			<StudentIncidentModal {s} {disabled} {title} />
+			<Button
+				variant="ghost"
+				class="w-full rounded-full border border-dashed border-border"
+				{disabled}
+				{title}
+				onclick={() => modals?.open('add-incident')}
+			>
+				Consigner un incident
+			</Button>
 		{/snippet}
 	</PermissionGate>
 </div>
