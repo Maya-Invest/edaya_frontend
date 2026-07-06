@@ -1,6 +1,6 @@
 const DETAIL_PATH_PATTERNS = [
 	/^\/account\/inbox\/[^/]+$/,
-	/^\/school\/(students|guardians|staff|activities|announcements|events|calendar)\/[^/]+$/,
+	/^\/school\/(students|guardians|staff|teachers|activities|announcements|events|calendar)\/[^/]+$/,
 	/^\/classes\/[^/]+\/(students|subjects|timetable|teaching|evaluations|report-cards)\/[^/]+$/,
 	/^\/finance\/(billing|fees)\/[^/]+$/,
 	/^\/configuration\/subjects\/level\/[^/]+$/,

@@ -13,6 +13,7 @@
 	import { locale, t } from '$lib/i18n';
 	import { Check, Clock, Receipt } from '$lib/icons';
 	import { readPaymentListFilters, writePaymentListFilters } from '$lib/list/list-url-filters';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 
@@ -33,10 +34,14 @@
 
 	const initialFilters = $derived(readPaymentListFilters($page.url));
 
-	let q = $state('');
-	let status = $state<'all' | 'paid' | 'pending'>('all');
-	let classFilter = $state('all');
-	let filtersReady = $state(false);
+	const listFilters = new ListFiltersState<{ q: string; status: string; class: string }>(
+		{
+			getUrl: () => $page.url,
+			write: writePaymentListFilters,
+			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+		},
+		() => readPaymentListFilters($page.url),
+	);
 
 	const rows: PaymentRow[] = $derived.by(() => {
 		const out: PaymentRow[] = [];
@@ -58,17 +63,17 @@
 
 	const list = $derived(
 		rows.filter((r) => {
-			if (status !== 'all' && r.status !== status) {
+			if (listFilters.values.status !== 'all' && r.status !== listFilters.values.status) {
 				return false;
 			}
 			const st = students.find(s => s.id === r.studentId);
 			if (!st) {
 				return false;
 			}
-			if (classFilter !== 'all' && st.classId !== classFilter) {
+			if (listFilters.values.class !== 'all' && st.classId !== listFilters.values.class) {
 				return false;
 			}
-			if (q && !st.name.toLowerCase().includes(q.toLowerCase())) {
+			if (listFilters.values.q && !st.name.toLowerCase().includes(listFilters.values.q.toLowerCase())) {
 				return false;
 			}
 			return true;
@@ -90,7 +95,7 @@
 		...classes.map(c => ({ value: c.id, label: c.name })),
 	]);
 
-	const statusFilterActive = $derived(status !== 'all' ? 1 : 0);
+	const statusFilterActive = $derived(listFilters.values.status !== 'all' ? 1 : 0);
 
 	const statusFilterOptions = $derived(
 		statusKeys.map(k => ({
@@ -103,37 +108,24 @@
 		})),
 	);
 
-	function syncFiltersToUrl() {
-		const href = writePaymentListFilters($page.url, { q, status, class: classFilter });
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	}
-
 	$effect(() => {
 		const next = initialFilters;
-		q = next.q;
-		status = (statusKeys.includes(next.status as (typeof statusKeys)[number])
-			? next.status
-			: 'all') as typeof status;
-		classFilter = next.class;
-		filtersReady = true;
+		listFilters.hydrate({
+			q: next.q,
+			status: (statusKeys.includes(next.status as (typeof statusKeys)[number])
+				? next.status
+				: 'all'),
+			class: next.class,
+		});
 	});
 
-	let searchTimer: ReturnType<typeof setTimeout> | undefined;
-	function scheduleFilterSync() {
-		if (!filtersReady) {
-			return;
-		}
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(syncFiltersToUrl, 250);
-	}
-
 	$effect(() => {
-		if (!filtersReady) {
+		if (!listFilters.ready) {
 			return;
 		}
-		void status;
-		void classFilter;
-		scheduleFilterSync();
+		void listFilters.values.status;
+		void listFilters.values.class;
+		listFilters.scheduleSync();
 	});
 
 	function openBillingReceipt(billingId: string) {
@@ -144,17 +136,17 @@
 <div class="animate-fade-in space-y-6">
 	<ListPageHeader eyebrow={$t('finance.treasury')} title={$t('finance.payments')}>
 		{#snippet search()}
-			<ListSearchField bind:value={q} oninput={scheduleFilterSync} />
+			<ListSearchField bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
 		{/snippet}
 		{#snippet filters()}
 			<FilterSelect
-				bind:value={classFilter}
+				bind:value={listFilters.values.class}
 				class="h-9 min-w-[10rem] rounded-full text-xs"
 				options={classFilterOptions}
 			/>
 			<FilterPanel activeCount={statusFilterActive} title={$t('finance.paymentStatusFilter')}>
 				<FilterSelect
-					bind:value={status}
+					bind:value={listFilters.values.status}
 					class="h-9 w-full rounded-md text-xs"
 					options={statusFilterOptions}
 				/>

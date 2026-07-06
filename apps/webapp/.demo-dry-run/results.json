@@ -1,0 +1,142 @@
+{
+  "passed": 19,
+  "failed": 5,
+  "skipped": 1,
+  "results": [
+    {
+      "scene": "D0",
+      "step": "0.1 Login j.aka@",
+      "status": "pass"
+    },
+    {
+      "scene": "D0",
+      "step": "0.2 Dashboard / school context",
+      "status": "pass"
+    },
+    {
+      "scene": "D0",
+      "step": "0.3 Sidebar school students",
+      "status": "pass"
+    },
+    {
+      "scene": "D1",
+      "step": "1.1 KPI cards",
+      "status": "pass"
+    },
+    {
+      "scene": "D2",
+      "step": "2.1 Student list",
+      "status": "fail",
+      "detail": "Missing selector: table, [role=\"table\"], ul"
+    },
+    {
+      "scene": "D2",
+      "step": "2.2 Student drawer Kouamé Aya",
+      "status": "pass"
+    },
+    {
+      "scene": "D2",
+      "step": "2.4 Guardians list",
+      "status": "pass"
+    },
+    {
+      "scene": "D3",
+      "step": "3.1 Teachers list",
+      "status": "pass"
+    },
+    {
+      "scene": "D3",
+      "step": "3.2 Mme Touré drawer",
+      "status": "pass"
+    },
+    {
+      "scene": "D4",
+      "step": "4.1 Staff list",
+      "status": "pass"
+    },
+    {
+      "scene": "D5",
+      "step": "5.1 Timetable grid",
+      "status": "fail",
+      "detail": "Redirected away — at /dashboard, expected /classes/ci-6a/timetable"
+    },
+    {
+      "scene": "D5",
+      "step": "5.2 Maths slot shows Mme Touré",
+      "status": "skip",
+      "detail": "No maths lesson text in grid — verify seed week / teacher assignments manually"
+    },
+    {
+      "scene": "D6",
+      "step": "6.1 Evaluations list",
+      "status": "fail",
+      "detail": "Redirected away — at /dashboard, expected /classes/ci-6a/evaluations"
+    },
+    {
+      "scene": "D7",
+      "step": "7.1 Daily attendance tab",
+      "status": "fail",
+      "detail": "Redirected away — at /dashboard, expected /classes/ci-6b/attendance"
+    },
+    {
+      "scene": "D8",
+      "step": "8.1 Activities list",
+      "status": "fail",
+      "detail": "Redirected away — at /dashboard, expected /school/activities"
+    },
+    {
+      "scene": "D8",
+      "step": "8.3 Announcements",
+      "status": "pass"
+    },
+    {
+      "scene": "D8",
+      "step": "8.4 Incidents/events",
+      "status": "pass"
+    },
+    {
+      "scene": "D9",
+      "step": "9.1 Fees list",
+      "status": "pass"
+    },
+    {
+      "scene": "D9",
+      "step": "9.2 Payments",
+      "status": "pass"
+    },
+    {
+      "scene": "D9",
+      "step": "9.3 Billing drawer area",
+      "status": "pass"
+    },
+    {
+      "scene": "D10",
+      "step": "10.1 Report cards list",
+      "status": "pass"
+    },
+    {
+      "scene": "D11",
+      "step": "11.1 Class config drawer",
+      "status": "pass"
+    },
+    {
+      "scene": "D11",
+      "step": "11.2 Grade levels",
+      "status": "pass"
+    },
+    {
+      "scene": "D11",
+      "step": "11.3 Academic calendar",
+      "status": "pass"
+    },
+    {
+      "scene": "D11",
+      "step": "11.4 Disciplinary catalog",
+      "status": "pass"
+    }
+  ],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+    "API request failed (403)"
+  ]
+}

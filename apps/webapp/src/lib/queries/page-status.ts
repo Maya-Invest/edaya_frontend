@@ -1,6 +1,14 @@
 import type { PageLoadMeta } from '$lib/page/load-state';
 import { finalizeStatus, maybeSimulateLoading, resolveDemoState } from '$lib/page/load-state';
 
+async function ensureAppShellReady() {
+	if (typeof window === 'undefined') {
+		return;
+	}
+	const { bootstrapAppShell } = await import('$lib/auth/bootstrap-app');
+	await bootstrapAppShell();
+}
+
 /** List routes with in-view empty state + header CTA — never use full-page DataState empty. */
 export function listPageHasItems(): boolean {
 	return true;
@@ -15,6 +23,7 @@ export async function resolvePageLoad<T>(
 		errorMessage?: string;
 	},
 ): Promise<T & PageLoadMeta> {
+	await ensureAppShellReady();
 	await maybeSimulateLoading(url);
 	const demo = resolveDemoState(url);
 	if (demo === 'error') {

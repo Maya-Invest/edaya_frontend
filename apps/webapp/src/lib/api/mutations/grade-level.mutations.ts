@@ -40,7 +40,7 @@ export async function saveGradeLevelMutation(
 	};
 
 	const result = await runMutation(
-		() => client.entities.gradeLevels.save(entity),
+		() => client.commands.configureGradeLevel(entity),
 		{
 			successMessage: options?.successMessage,
 			refresh: true,

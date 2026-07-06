@@ -20,6 +20,10 @@ export function resolveLinkedActorPath(
 		return appPath('/(app)/dashboard');
 	}
 
+	if (kind === 'teacher') {
+		return appPath('/login');
+	}
+
 	return appPath('/(app)/school/students/[[id]]');
 }
 

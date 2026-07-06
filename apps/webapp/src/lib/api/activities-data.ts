@@ -76,6 +76,7 @@ export function mapActivities(sources: ActivitySources): Activity[] {
 		startDate: formatDate(activity.startDate),
 		endDate: formatDate(activity.endDate),
 		enrollments: (enrollmentsByActivity.get(activity.id) ?? []).map(enrollment => ({
+			id: enrollment.id,
 			studentId: enrollment.studentId,
 			status: ENROLLMENT_STATUS_TO_UI[enrollment.status] ?? 'pending',
 		})),

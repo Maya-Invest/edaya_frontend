@@ -15,6 +15,12 @@ import {
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 import { fetchClassHomeworkSources } from '$lib/api/homework-data';
+import {
+	fetchClassSubjectInstructorSources,
+	type ClassSubjectInstructorSources,
+	instructorName,
+	instructorNameFromStaffAssignment,
+} from '$lib/api/teacher-display';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -42,15 +48,13 @@ const TIMETABLE_DAY_OFFSET: Record<PlanningEvent['day'], number> = {
 
 const TIMETABLE_EVENT_KINDS = new Set<TimetableEventRaw['kind']>(['lesson', 'activity', 'assessment']);
 
-export interface PlanningSources {
+export interface PlanningSources extends ClassSubjectInstructorSources {
 	timetableEventsRaw: TimetableEventRaw[];
 	lessonSessionsById: Map<string, LessonSessionRaw>;
 	activitySessionsById: Map<string, ActivitySessionRaw>;
 	activitiesById: Map<string, ActivityRaw>;
 	classSubjectsRaw: ClassSubjectRaw[];
 	subjectsRaw: SubjectRaw[];
-	staffMembersRaw: StaffMemberRaw[];
-	staffAssignmentsRaw: StaffAssignmentRaw[];
 	resourcesRaw: ResourceRaw[];
 	resourceAssignmentsRaw: ResourceAssignmentRaw[];
 }
@@ -121,9 +125,20 @@ function staffName(
 	staffById: Map<string, StaffMemberRaw>,
 	match: (assignment: StaffAssignmentRaw) => boolean,
 ): string {
-	const assignment = staffAssignments.find(match);
-	const teacher = assignment ? staffById.get(assignment.staffId) : undefined;
-	return teacher ? `${teacher.firstName} ${teacher.lastName}` : 'Non assigné';
+	return instructorNameFromStaffAssignment(staffAssignments, staffById, match);
+}
+
+function planningInstructorName(
+	sources: PlanningSources,
+	options: {
+		classSubjectId?: string;
+		staffMatch: (assignment: StaffAssignmentRaw) => boolean;
+	},
+): string {
+	return instructorName(sources, {
+		classSubjectId: options.classSubjectId,
+		staffMatch: options.staffMatch,
+	});
 }
 
 function roomName(
@@ -264,6 +279,7 @@ export async function fetchClassPlanningSources(
 			? client.entities.resources.list(resourcesByIds(resourceIds))
 			: Promise.resolve([]),
 	]);
+	const teacherInstructorSources = await fetchClassSubjectInstructorSources(client, classSubjectIds);
 
 	return {
 		timetableEventsRaw,
@@ -274,6 +290,7 @@ export async function fetchClassPlanningSources(
 		subjectsRaw: subjectsRaw ?? [],
 		staffMembersRaw: staffMembersRaw ?? [],
 		staffAssignmentsRaw,
+		...teacherInstructorSources,
 		resourcesRaw: resourcesRaw ?? [],
 		resourceAssignmentsRaw,
 	};
@@ -289,7 +306,6 @@ function mapLessonPlanningEvent(
 	const classSubjectId = event.classSubjectId ?? lessonSession?.classSubjectId;
 	const classSubject = classSubjectId ? sources.classSubjectsRaw.find(entry => entry.id === classSubjectId) : undefined;
 	const subject = classSubject ? sources.subjectsRaw.find(entry => entry.id === classSubject.subjectId) : undefined;
-	const staffById = new Map(sources.staffMembersRaw.map(member => [member.id, member]));
 	const resourceById = new Map(sources.resourcesRaw.map(resource => [resource.id, resource]));
 
 	return {
@@ -309,12 +325,11 @@ function mapLessonPlanningEvent(
 			resourceById,
 			entry => entry.lessonSessionId === lessonSessionId,
 		),
-		teacher: staffName(
-			sources.staffAssignmentsRaw,
-			staffById,
-			entry => entry.lessonSessionId === lessonSessionId
+		teacher: planningInstructorName(sources, {
+			classSubjectId,
+			staffMatch: entry => entry.lessonSessionId === lessonSessionId
 				|| (classSubjectId ? entry.classSubjectId === classSubjectId : false),
-		),
+		}),
 		status: event.status ?? lessonSession?.status,
 	};
 }
@@ -375,7 +390,6 @@ function mapAssessmentPlanningEvent(
 	const subject = classSubject
 		? sources.subjectsRaw.find(entry => entry.id === classSubject.subjectId)
 		: undefined;
-	const staffById = new Map(sources.staffMembersRaw.map(member => [member.id, member]));
 	const resourceById = new Map(sources.resourcesRaw.map(resource => [resource.id, resource]));
 
 	return {
@@ -394,12 +408,11 @@ function mapAssessmentPlanningEvent(
 			resourceById,
 			entry => entry.assessmentId === assessmentId,
 		),
-		teacher: staffName(
-			sources.staffAssignmentsRaw,
-			staffById,
-			entry => entry.assessmentId === assessmentId
+		teacher: planningInstructorName(sources, {
+			classSubjectId: event.classSubjectId ?? undefined,
+			staffMatch: entry => entry.assessmentId === assessmentId
 				|| (event.classSubjectId ? entry.classSubjectId === event.classSubjectId : false),
-		),
+		}),
 	};
 }
 

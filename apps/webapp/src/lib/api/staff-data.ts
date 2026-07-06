@@ -40,7 +40,11 @@ function inferStaffRole(
 		return 'educateur';
 	}
 
-	return 'professeur';
+	if (assignments.some(assignment => assignment.staffId === member.id && assignment.classSubjectId)) {
+		return 'professeur';
+	}
+
+	return 'educateur';
 }
 
 function inferSubjectCategory(name: string, code?: string | null): SubjectCategory {
@@ -320,7 +324,7 @@ export async function fetchSessionStaffProfile(
 		: await resolveSchoolOwnerSubjectId(client, staff.schoolId);
 	let role: StaffRole = ownerSubjectId && staff.subjectId === ownerSubjectId
 		? 'owner'
-		: 'professeur';
+		: 'educateur';
 	try {
 		const relations = await fetchStaffRelations(client, [staffId]);
 		const classGroupsRaw = await client.entities.classGroups.list({ schoolId: staff.schoolId });

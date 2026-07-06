@@ -38,6 +38,9 @@ const CLASS_SEGMENTS: Record<string, RouteId> = {
 };
 
 export function classItemHref(classId: string, segment: string): ResolvedPathname {
+	if (!classId) {
+		return appPath('/(app)/dashboard');
+	}
 	const route = CLASS_SEGMENTS[segment] ?? '/(app)/classes/[classId]/students/[[id]]';
 	return appPath(route, { classId });
 }

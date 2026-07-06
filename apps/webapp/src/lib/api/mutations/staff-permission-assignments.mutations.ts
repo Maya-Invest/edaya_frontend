@@ -1,4 +1,5 @@
 import type { components } from '$lib/api/schema';
+import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -6,6 +7,7 @@ import { authSession } from '$lib/auth/session.svelte';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 
 type StaffPermissionAssignment = components['schemas']['StaffPermissionAssignment'];
+type StaffPermissionAssignmentConfigCommand = components['schemas']['StaffPermissionAssignmentConfigCommand'];
 
 function schoolId(): string {
 	return authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
@@ -13,6 +15,34 @@ function schoolId(): string {
 
 function academicYearId(): string {
 	return academicContext.yearId;
+}
+
+function toStaffPermissionConfigCommand(
+	assignment: StaffPermissionAssignment,
+): StaffPermissionAssignmentConfigCommand {
+	return {
+		id: assignment.id,
+		staffId: assignment.staffId,
+		schoolId: assignment.schoolId,
+		academicYearId: assignment.academicYearId,
+		permission: assignment.permission,
+		scopeIds: assignment.scopeIds ?? '',
+		status: assignment.status,
+		sourceStaffAssignmentId: assignment.sourceStaffAssignmentId ?? null,
+	};
+}
+
+function applyStaffPermissionAssignment(
+	assignment: StaffPermissionAssignment,
+	previous?: StaffPermissionAssignmentView,
+) {
+	detailDataContext.upsertStaffPermissionAssignment({
+		...assignment,
+		scopeLabel: previous?.scopeLabel ?? assignment.scopeIds ?? '—',
+		tenantWide: (assignment.scopeIds ?? '') === '',
+		isSynced: Boolean(assignment.sourceStaffAssignmentId),
+		hasMissingScope: previous?.hasMissingScope ?? false,
+	});
 }
 
 export async function saveStaffPermissionAssignmentMutation(input: {
@@ -25,17 +55,13 @@ export async function saveStaffPermissionAssignmentMutation(input: {
 	);
 
 	const result = await runMutation(
-		() => client.entities.staffPermissionAssignments.save(input.assignment),
+		() => client.commands.assignStaffPermission(
+			toStaffPermissionConfigCommand(input.assignment),
+		),
 		{
 			successMessage: input.successMessage,
 			apply: () => {
-				detailDataContext.upsertStaffPermissionAssignment({
-					...input.assignment,
-					scopeLabel: previous?.scopeLabel ?? input.assignment.scopeIds ?? '—',
-					tenantWide: (input.assignment.scopeIds ?? '') === '',
-					isSynced: Boolean(input.assignment.sourceStaffAssignmentId),
-					hasMissingScope: previous?.hasMissingScope ?? false,
-				});
+				applyStaffPermissionAssignment(input.assignment, previous);
 			},
 			rollback: () => {
 				if (previous) {
@@ -47,6 +73,10 @@ export async function saveStaffPermissionAssignmentMutation(input: {
 			},
 		},
 	);
+
+	if (result) {
+		applyStaffPermissionAssignment(result, previous);
+	}
 
 	return result !== null;
 }

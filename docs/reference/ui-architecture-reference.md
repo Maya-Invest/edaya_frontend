@@ -7,7 +7,7 @@ This document is the **target UI architecture catalog** for the EDAYA staff weba
 
 **Normative spec for agents:** [v1-feature-architecture-spec.md](../specs/v1-feature-architecture-spec.md) — use that for *what* to build; use this reference for *status* and detailed feature cards.
 
-**Implementation plan:** [v1-staff-webapp-implementation-plan.md](../sprints/v1-staff-webapp-implementation-plan.md) — phased execution (Phases 0–8).
+**Implementation plan:** [demo-ready-plan.md](../sprints/demo-ready-plan.md) — demo readiness (active). Historical: [archive](../sprints/archive/).
 
 Interaction rules (drawer anatomy, modals, simple vs complex entities) are defined in [app-shell-spec.md](../specs/app-shell-spec.md).
 
@@ -52,6 +52,13 @@ Living checklist — check items off (`[x]`) as work lands. Mirrors [§6 gaps](#
 - [x] Filter button wired with secondary facets on list pages — payments status, announcement priority, attendance completion, incidents ✅ *(2026-07-05)*
 - [x] More menu: per-feature export / bulk actions — export stub on all list pages ✅ *(2026-07-05)*
 
+#### State alignment ([svelte-state-spec.md](../specs/svelte-state-spec.md))
+- [x] Tier 1 entity store unchanged — `detailDataContext` seeds via `PageQuery` / infinite list fetchers
+- [x] `ListFiltersState` shared primitive — pilots: `FeesView`, `StudentsView`, `PaymentsView` *(2026-07-06)*
+- [x] Tier-2 feature states — `teachers-state`, `school-students-state`, `planning-state`, `onboarding-wizard-state`, `planning-timetable-state` *(2026-07-06)*
+- [x] `DrawerState` Symbol context key — `drawer-context.ts` *(2026-07-06)*
+- [x] No new `$effect` + API fetch in list views — data-loading boundary audit *(2026-07-06)*
+
 #### School
 - [x] Student drawer — **Enrollments** tab (history); **Grades** tab → links to assessments ✅ *(2026-07-05)*
 - [x] Staff drawer — **Permissions** tab (`staffPermissionAssignments`); remove reliance on `/configuration/roles` ✅ *(2026-07-04 — CRUD via modals on School → Staff drawer)*
@@ -87,7 +94,14 @@ Living checklist — check items off (`[x]`) as work lands. Mirrors [§6 gaps](#
 - [x] **B2** — Run `bun run db:migrate:full` on staging/production Postgres *(dev Neon via `db:migrate:hyperdrive` — 2026-07-03)*
 - [x] **B3** — Permission catalog + `scope/render` + `resolveResourcePath` ✅
 - [x] **B4** — Atomic resolve-incident workflow ✅ (`resolve-incident-with-outcomes` · web modal wired — 2026-07-03)
-- [x] **B5** — Regen `edaya_web` OpenAPI client *(2026-07-03 — `classActivityEnrollments` · `resolveIncidentWithOutcomes` · auth model entities)*
+- [x] **B5** — Regen `edaya_web` OpenAPI client ✅ *(2026-07-05 — `teachers` · `teacherAssignments` · configure-* commands · `teacher` invitation kind)*
+- [x] **B6** — Teacher display resolution ✅ *(2026-07-05 — `teacher-display.ts`; timetable · subjects · logbook · report cards read `teacherAssignments` with staff fallback)*
+- [x] **B7** — Staff session header ✅ *(2026-07-05 — `X-Actor-Kind: staff` on browser transport)*
+
+#### Post-v1 backend follow-ups (not blockers)
+- [x] **Teachers admin module** — CRUD `teachers` / `teacherAssignments`; `kind: teacher` invitations ✅ *(2026-07-06 — `/school/teachers` shipped)*
+- [ ] **Configure-* command migration** — replace direct entity saves where backend workflows are preferred
+- [ ] **Service catalog** — finance model evolution (backend sprint plan only; no API yet)
 
 #### Post-v1 / cleanup
 - [x] Resources removed from v1 nav and planning ✅ *(never routed; `ResourcesView` retained for post-v1)*
@@ -912,6 +926,8 @@ Resource · ResourceAssignment — no staff UI
 
 ## 6. V1 implementation gaps
 
+> **Historical snapshot.** Many rows below are **already shipped** — track current status in [§0 progress tracker](#v1-progress-tracker). §6.1 backend blockers are **all resolved** (2026-07-05). Use this table for residual UX polish only; do not treat unchecked rows as blockers without re-verifying the codebase.
+
 Work remaining to reach the target architecture in §3. Track completion in [§0 progress tracker](#v1-progress-tracker). **Backend dependencies** that block UI work are in [§6.1](#61-backend-blockers). Ordered by priority.
 
 | Priority | Area | Today | Target |
@@ -943,7 +959,7 @@ Work remaining to reach the target architecture in §3. Track completion in [§0
 
 Requirements that **blocked** webapp delivery. Reassessed against `edaya_backend` + `edaya_web` as of 2026-07-03.
 
-**Verdict:** **All blockers resolved** (B1–B5). Re-run **B2** on staging/production Postgres if not yet migrated. Re-run **B5** after each backend API change.
+**Verdict:** **All blockers resolved** (B1–B7). Re-run **B2** on staging/production Postgres if not yet migrated. Re-run **B5** after each backend API change.
 
 | ID | Priority | Blocker | Blocks (UI / §3) | Status | Notes |
 |----|----------|---------|------------------|--------|-------|
@@ -951,7 +967,9 @@ Requirements that **blocked** webapp delivery. Reassessed against `edaya_backend
 | **B2** | ~~P1~~ | **Permission model DB cutover** | Staff drawer Permissions on legacy Postgres | ✅ **Done (dev Neon)** | `db:migrate:hyperdrive` 2026-07-03: 139 permission rows migrated, 0038+ applied. Re-run on staging/prod if separate branches. |
 | **B3** | ~~P1~~ | **Permission matrix UX APIs** | Staff permission picker scope labels | ✅ **Resolved** | `GET authorization/permission-catalog` · `POST authorization/scope/render` · `scope/resolve-resource-path.ts`. |
 | **B4** | ~~P2~~ | **Atomic resolve-incident workflow** | Incident Resolve modal — all-or-nothing | ✅ **Resolved** | `resolve-incident-with-outcomes` · `BehaviorServiceWorkflow.resolveIncidentWithOutcomes` · web `IncidentResolveModal` + `resolveIncidentWithOutcomesMutation`. |
-| **B5** | ~~P0~~ | **OpenAPI client regen (`edaya_web`)** | Features using new/changed API entities | ✅ **Done (2026-07-03)** | Includes `classActivityEnrollments` · `resolveIncidentWithOutcomes` · auth model entities. Re-run after backend API changes. |
+| **B5** | ~~P0~~ | **OpenAPI client regen (`edaya_web`)** | Features using new/changed API entities | ✅ **Done (2026-07-05)** | `teachers` · `teacherAssignments` · configure-* commands · `teacher` invitation kind. Re-run after backend API changes. |
+| **B6** | ~~P0~~ | **Teacher assignment display** | Timetable · subjects · logbook · report cards teacher labels | ✅ **Done (2026-07-05)** | `teacher-display.ts` reads `teacherAssignments` + `teachers`; legacy `staffAssignments` fallback retained. |
+| **B7** | ~~P1~~ | **`X-Actor-Kind: staff` header** | Multi-profile auth (staff + teacher same login) | ✅ **Done (2026-07-05)** | `browser-transport.ts` + profile upload headers. |
 
 #### Backend blockers — progress
 
@@ -959,7 +977,9 @@ Requirements that **blocked** webapp delivery. Reassessed against `edaya_backend
 - [x] **B2** — Migrations + staff-access cutover on dev Neon (2026-07-03)
 - [x] **B3** — Permission catalog + scope render + resource path helpers
 - [x] **B4** — Atomic resolve-incident workflow (backend + web — 2026-07-03)
-- [x] **B5** — Regen `edaya_web` client (2026-07-03 — `classActivityEnrollments` · `resolveIncidentWithOutcomes` · auth model)
+- [x] **B5** — Regen `edaya_web` client (2026-07-05 — teachers · configure-* commands)
+- [x] **B6** — Teacher display from `teacherAssignments` (2026-07-05)
+- [x] **B7** — `X-Actor-Kind: staff` on webapp transport (2026-07-05)
 
 #### Backend ready (not blockers)
 

@@ -5,7 +5,10 @@ import { parseApiResponse, resolveApiUrl } from './http';
 export function createBrowserTransport(getYearId: () => string | undefined): Transport {
 	return {
 		async request<T>(method: string, path: string, options?: { body?: unknown }): Promise<T> {
-			const headers = new Headers({ Accept: 'application/json' });
+			const headers = new Headers({
+				Accept: 'application/json',
+				'X-Actor-Kind': 'staff',
+			});
 			if (options?.body !== undefined) {
 				headers.set('Content-Type', 'application/json');
 			}

@@ -16,6 +16,7 @@
 			return [] as { classId: string; className: string; href: ResolvedPathname }[];
 		}
 
+		// Staff webapp only: homeroom nudge follows homeroomStaffId (staff coordinator), not portal teacher assignments.
 		return academicContext.classes.flatMap((cls) => {
 			if (cls.attendanceMode !== 'daily' || cls.homeroomStaffId !== me.id) {
 				return [];

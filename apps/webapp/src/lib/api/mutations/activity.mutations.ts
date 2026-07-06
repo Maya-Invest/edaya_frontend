@@ -1,5 +1,5 @@
 import type { Activity } from '$lib/types/school';
-import { buildActivitySavePayload, DEFAULT_ACTIVITY_SCHEDULE } from '$lib/api/activity-save-payload';
+import { buildActivityConfigCommand, DEFAULT_ACTIVITY_SCHEDULE } from '$lib/api/activity-save-payload';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
@@ -44,20 +44,21 @@ export async function createActivityMutation(input: {
 		enrollments: [],
 	};
 
-	const result = await runMutation(() => client.entities.activities.save({
-		id: activityId,
-		schoolId,
-		name: input.name.trim(),
-		category: input.category,
-		coach: input.coach.trim(),
-		schedule: DEFAULT_ACTIVITY_SCHEDULE,
-		participants: 0,
-		capacity: input.capacity,
-		description: input.description.trim(),
-		startDate: input.startDate,
-		endDate: input.endDate,
-		createdAt: new Date().toISOString(),
-	}), {
+	const result = await runMutation(() => client.commands.configureActivity(
+		buildActivityConfigCommand(null, {
+			id: activityId,
+			name: input.name,
+			category: input.category,
+			coach: input.coach,
+			capacity: input.capacity,
+			description: input.description,
+			startDate: input.startDate,
+			endDate: input.endDate,
+			participants: 0,
+			schedule: DEFAULT_ACTIVITY_SCHEDULE,
+			createdAt: new Date().toISOString(),
+		}),
+	), {
 		successMessage: input.successMessage,
 		apply: () => {
 			detailDataContext.appendActivity(optimistic);
@@ -102,8 +103,9 @@ export async function updateActivityMutation(input: {
 		endDate: input.endDate,
 	};
 
-	const result = await runMutation(() => client.entities.activities.save(
-		buildActivitySavePayload(existing, {
+	const result = await runMutation(() => client.commands.configureActivity(
+		buildActivityConfigCommand(existing, {
+			id: input.activityId,
 			name: input.name,
 			category: input.category,
 			coach: input.coach,

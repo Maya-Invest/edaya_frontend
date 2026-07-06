@@ -4,6 +4,7 @@ import { appPath } from '$lib/navigation/app-navigation';
 export const detailHref = {
 	schoolStudent: (id: string): ResolvedPathname => appPath('/(app)/school/students/[[id]]', { id }),
 	schoolGuardian: (id: string): ResolvedPathname => appPath('/(app)/school/guardians/[[id]]', { id }),
+	schoolTeacher: (id: string): ResolvedPathname => appPath('/(app)/school/teachers/[[id]]', { id }),
 	schoolActivity: (id: string): ResolvedPathname => appPath('/(app)/school/activities/[[id]]', { id }),
 	schoolAnnouncement: (id: string): ResolvedPathname => appPath('/(app)/school/announcements/[[id]]', { id }),
 	schoolIncident: (id: string): ResolvedPathname => appPath('/(app)/school/events/[[id]]', { id }),

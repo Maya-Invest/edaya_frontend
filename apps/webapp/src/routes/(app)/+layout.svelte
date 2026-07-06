@@ -18,6 +18,7 @@
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { isLikelyDetailPath, listRouteCacheKey } from '$lib/detail-route-patterns';
 	import { DrawerState } from '$lib/drawer.svelte';
+	import { setDrawer } from '$lib/drawer-context';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, PanelLeft, PanelLeftClose } from '$lib/icons';
 	import { DASHBOARD_HREF } from '$lib/navigation';
@@ -30,12 +31,11 @@
 	import { reportCardsContext } from '$lib/report-cards/context.svelte';
 	import { shellContext } from '$lib/shell/context.svelte';
 	import { cn } from '$lib/utils';
-	import { setContext } from 'svelte';
 
 	const { children }: { children: Snippet } = $props();
 
 	const drawer = new DrawerState();
-	setContext('drawer', drawer);
+	setDrawer(drawer);
 
 	const me = $derived(authSession.accountActor);
 	const needsDrawer = $derived(drawer.item !== null || isLikelyDetailPath($page.url.pathname));
@@ -194,91 +194,85 @@
 </script>
 
 {#if authSession.ready && authSession.isLoggedIn && me}
-	{#if !academicContext.shellReady}
+	<div class="flex h-screen w-full overflow-hidden bg-background text-foreground">
 		<div
-			class="flex h-screen w-full items-center justify-center bg-background text-foreground"
-			role="status"
-			aria-live="polite"
+			class={cn(
+				'relative h-full shrink-0 transition-[width] duration-200 ease-in-out',
+				shellContext.sidebarOpen ? 'w-64' : 'w-14',
+			)}
 		>
-			<LoaderCircle class="h-8 w-8 animate-spin text-primary" />
+			<AppSidebar
+				hierarchy={academicContext.hierarchy}
+				studentCount={academicContext.studentCount}
+				guardianCount={academicContext.guardianCount}
+				staffCount={academicContext.staffCount}
+			/>
 		</div>
-	{:else}
-		<div class="flex h-screen w-full overflow-hidden bg-background text-foreground">
+
+		<div class="flex min-w-0 flex-1 flex-col">
 			<div
-				class={cn(
-					'relative h-full shrink-0 transition-[width] duration-200 ease-in-out',
-					shellContext.sidebarOpen ? 'w-64' : 'w-14',
-				)}
+				class="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-6"
 			>
-				<AppSidebar
-					hierarchy={academicContext.hierarchy}
-					studentCount={academicContext.studentCount}
-					guardianCount={academicContext.guardianCount}
-					staffCount={academicContext.staffCount}
-				/>
-			</div>
-
-			<div class="flex min-w-0 flex-1 flex-col">
-				<div
-					class="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-6"
+				<button
+					type="button"
+					onclick={() => shellContext.toggleSidebar()}
+					class="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-foreground/80 transition hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					aria-label={shellContext.sidebarOpen ? $t('sidebar.hide') : $t('sidebar.show')}
+					aria-expanded={shellContext.sidebarOpen}
+					aria-controls="app-sidebar"
 				>
-					<button
-						type="button"
-						onclick={() => shellContext.toggleSidebar()}
-						class="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-foreground/80 transition hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-						aria-label={shellContext.sidebarOpen ? $t('sidebar.hide') : $t('sidebar.show')}
-						aria-expanded={shellContext.sidebarOpen}
-						aria-controls="app-sidebar"
-					>
-						{#if shellContext.sidebarOpen}
-							<PanelLeftClose class="h-4 w-4" />
-						{:else}
-							<PanelLeft class="h-4 w-4" />
-						{/if}
-					</button>
+					{#if shellContext.sidebarOpen}
+						<PanelLeftClose class="h-4 w-4" />
+					{:else}
+						<PanelLeft class="h-4 w-4" />
+					{/if}
+				</button>
 
-					<div class="flex items-center gap-3">
+				<div class="flex items-center gap-3">
+					{#if academicContext.shellReady}
 						<SchoolSelector schools={academicContext.schools} />
 						<AcademicHeader />
-						<LanguageSelector />
-						<div class="flex items-center gap-1.5">
-							<button
-								type="button"
-								onclick={() => (profileOpen = true)}
-								class="flex h-9 items-center gap-2 rounded-full border border-border bg-card pl-1 pr-3 text-xs font-medium text-foreground transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-								aria-label={$t('account.profile.openProfile')}
-								aria-haspopup="dialog"
-								aria-expanded={profileOpen}
-							>
-								<PersonAvatar
-									name={me.name}
-									initials={me.initials}
-									photoUrl={me.photoUrl}
-									size="md"
-								/>
-								<span class="flex flex-col items-start leading-tight">
-									<span class="text-[11px] font-semibold">{me.name}</span>
-									<span class="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
-										{$t(me.subtitleKey)}
-									</span>
+					{:else}
+						<LoaderCircle class="h-4 w-4 animate-spin text-muted-foreground" aria-hidden="true" />
+					{/if}
+					<LanguageSelector />
+					<div class="flex items-center gap-1.5">
+						<button
+							type="button"
+							onclick={() => (profileOpen = true)}
+							class="flex h-9 items-center gap-2 rounded-full border border-border bg-card pl-1 pr-3 text-xs font-medium text-foreground transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+							aria-label={$t('account.profile.openProfile')}
+							aria-haspopup="dialog"
+							aria-expanded={profileOpen}
+						>
+							<PersonAvatar
+								name={me.name}
+								initials={me.initials}
+								photoUrl={me.photoUrl}
+								size="md"
+							/>
+							<span class="flex flex-col items-start leading-tight">
+								<span class="text-[11px] font-semibold">{me.name}</span>
+								<span class="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+									{$t(me.subtitleKey)}
 								</span>
-							</button>
-						</div>
+							</span>
+						</button>
 					</div>
 				</div>
-
-				{@render children()}
-
-				{#if DetailDrawer}
-					<DetailDrawer item={drawer.item} onClose={closeDetail} />
-				{/if}
 			</div>
+
+			{@render children()}
+
+			{#if DetailDrawer}
+				<DetailDrawer item={drawer.item} onClose={closeDetail} />
+			{/if}
 		</div>
+	</div>
 
-		<AccountProfileModal bind:open={profileOpen} actor={me} onLogout={logout} />
+	<AccountProfileModal bind:open={profileOpen} actor={me} onLogout={logout} />
 
-		{#if ToastHost}
-			<ToastHost />
-		{/if}
+	{#if ToastHost}
+		<ToastHost />
 	{/if}
 {/if}

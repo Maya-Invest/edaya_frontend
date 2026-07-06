@@ -36,8 +36,9 @@ export async function savePeriodDefinitionMutation(input: {
 		isBreak: input.isBreak,
 	};
 
+	const { schoolId: _schoolId, ...command } = entity;
 	const result = await runMutation(
-		() => client.entities.periodDefinitions.save(entity),
+		() => client.commands.configurePeriodDefinition(command),
 		{
 			successMessage: input.successMessage,
 			onSuccess: () => {

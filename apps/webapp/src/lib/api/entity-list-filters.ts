@@ -120,7 +120,7 @@ export function guardianLinksForGuardians(guardianIds: readonly string[]): Entit
 }
 
 export function pendingAccountInvitationForTarget(
-	kind: 'staff' | 'guardian' | 'student',
+	kind: 'staff' | 'guardian' | 'student' | 'teacher',
 	targetId: string,
 ): EntityQuery {
 	return {
@@ -263,6 +263,14 @@ export function classSubjectsForClasses(classGroupIds: readonly string[]): Entit
 
 export function assignmentsForClassSubjects(classSubjectIds: readonly string[]): EntityQuery {
 	return recordsForFieldIds('classSubjectId', classSubjectIds);
+}
+
+export function teacherAssignmentsForClassSubjects(classSubjectIds: readonly string[]): EntityQuery {
+	return recordsForFieldIds('classSubjectId', classSubjectIds);
+}
+
+export function teacherAssignmentsForTeachers(teacherIds: readonly string[]): EntityQuery {
+	return recordsForFieldIds('teacherId', teacherIds);
 }
 
 export function subjectMattersForSubjects(subjectIds: readonly string[]): EntityQuery {

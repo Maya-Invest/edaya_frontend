@@ -164,7 +164,7 @@ No drawer route required. **RowActionMenu** is the primary mutation surface ([ap
 | P0.3 | `FilterPanel` | Built | `SchoolStudentsView` (status secondary filter) |
 | P0.4 | `RowActionMenu` | Built | `GradeScalesView` |
 
-Remaining chip-bar migrations tracked in [implementation plan §Phase 0.7](../sprints/v1-staff-webapp-implementation-plan.md#phase-0--shell-foundations).
+Remaining chip-bar migrations tracked in [archived v1 plan §Phase 0.7](../sprints/archive/v1-staff-webapp-implementation-plan.md#phase-0--shell-foundations) — not demo-blocking.
 
 ---
 

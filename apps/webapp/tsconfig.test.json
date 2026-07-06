@@ -2,13 +2,16 @@
 	"extends": "./tsconfig.json",
 	"compilerOptions": {
 		"types": ["@cloudflare/workers-types", "bun", "svelte"],
-		"noEmit": true
+		"noEmit": true,
+		"paths": {
+			"$tests/*": ["./tests/*"]
+		}
 	},
 	"include": [
 		".svelte-kit/ambient.d.ts",
 		".svelte-kit/non-ambient.d.ts",
-		"src/lib/test/ambient.d.ts",
-		"src/**/*.test.ts",
+		"tests/support/ambient.d.ts",
+		"tests/**/*.test.ts",
 		"src/generated/api-client/create-client.typecheck.ts"
 	],
 	"exclude": []

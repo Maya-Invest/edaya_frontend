@@ -36,7 +36,14 @@ export async function saveDisciplinaryActionMutation(input: {
 	};
 
 	const result = await runMutation(
-		() => client.entities.disciplinaryActions.save(entity),
+		() => client.commands.configureDisciplinaryAction({
+			id,
+			name: entity.name,
+			kind: entity.kind,
+			severity: entity.severity ?? null,
+			defaultDurationDays: entity.defaultDurationDays ?? null,
+			description: entity.description ?? null,
+		}),
 		{
 			successMessage: input.successMessage,
 			onSuccess: () => {

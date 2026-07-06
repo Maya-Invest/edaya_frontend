@@ -2,12 +2,14 @@
 	import type { PlanningEvent } from '$lib/types/school';
 	import type { EventCss, CalendarInstanceApi } from '@svar-ui/svelte-calendar';
 	import type { PlanningSlotFromDates } from './planning-calendar';
-	import type { PlanningTimetableContext } from './planning-timetable-context';
 	import { browser } from '$app/environment';
 	import { reschedulePlanningSlotMutation } from '$lib/api/mutations/planning.mutations';
 	import { lang, t } from '$lib/i18n';
+	import {
+		PlanningTimetableState,
+		setPlanningTimetableState,
+	} from '$lib/scheduling/planning-timetable-state.svelte';
 	import { Calendar, Willow } from '@svar-ui/svelte-calendar';
-	import { setContext } from 'svelte';
 	import {
 		calendarSlotFromDates,
 		formatPlanningSlotLabel,
@@ -18,7 +20,6 @@
 		subjectToneClass,
 		timetableHours,
 	} from './planning-calendar';
-	import { PLANNING_TIMETABLE_CONTEXT } from './planning-timetable-context';
 	import PlanningEventContent from './PlanningEventContent.svelte';
 	import PlanningRescheduleConfirmModal from './PlanningRescheduleConfirmModal.svelte';
 	import SvarCalendarLocale from './SvarCalendarLocale.svelte';
@@ -38,6 +39,15 @@
 		onSelect?: (event: PlanningEvent) => void;
 		onAttendance?: (event: PlanningEvent) => void;
 	} = $props();
+
+	const timetable = new PlanningTimetableState();
+	setPlanningTimetableState(timetable);
+	timetable.configure({ onAttendance: (eventId) => {
+		const planningEvent = weekEvents.find(event => event.id === eventId);
+		if (planningEvent) {
+			onAttendance?.(planningEvent);
+		}
+	} });
 
 	const anchorDate = $derived(mondayOfWeek(weekStart));
 	const weekEvents = $derived(events);
@@ -62,39 +72,24 @@
 		},
 	});
 
-	let confirmOpen = $state(false);
-	let confirmBusy = $state(false);
-	let pendingReschedule = $state<{
-		event: PlanningEvent;
-		slot: PlanningSlotFromDates;
-	} | null>(null);
-
 	const fromLabel = $derived(
-		pendingReschedule
-			? formatPlanningSlotLabel(pendingReschedule.event, day => $t(`day.full.${day}`))
+		timetable.pendingReschedule
+			? formatPlanningSlotLabel(timetable.pendingReschedule.event, day => $t(`day.full.${day}`))
 			: '',
 	);
 	const toLabel = $derived(
-		pendingReschedule
+		timetable.pendingReschedule
 			? formatPlanningSlotLabel(
 				{
-					title: pendingReschedule.event.title,
-					day: pendingReschedule.slot.day,
-					start: pendingReschedule.slot.startTime,
-					end: pendingReschedule.slot.endTime,
+					title: timetable.pendingReschedule.event.title,
+					day: timetable.pendingReschedule.slot.day,
+					start: timetable.pendingReschedule.slot.startTime,
+					end: timetable.pendingReschedule.slot.endTime,
 				},
 				day => $t(`day.full.${day}`),
 			)
 			: '',
 	);
-
-	setContext<PlanningTimetableContext>(PLANNING_TIMETABLE_CONTEXT, {
-		onAttendance: (eventId) => {
-			const planningEvent = weekEvents.find(event => event.id === eventId);
-			if (planningEvent)
-				onAttendance?.(planningEvent);
-		},
-	});
 
 	const eventCss: EventCss = ({ event }) => {
 		const subject = typeof event.subject === 'string' ? event.subject : '';
@@ -174,8 +169,7 @@
 		if (!moved)
 			return false;
 
-		pendingReschedule = { event: planningEvent, slot };
-		confirmOpen = true;
+		timetable.queueReschedule(planningEvent, slot);
 		return false;
 	}
 
@@ -194,36 +188,21 @@
 	}
 
 	function closeConfirm() {
-		if (confirmBusy)
-			return;
-		confirmOpen = false;
-		pendingReschedule = null;
+		timetable.closeConfirm();
 	}
 
 	async function confirmReschedule() {
-		if (!pendingReschedule)
-			return;
-
-		confirmBusy = true;
-		const { event, slot } = pendingReschedule;
-		const ok = await reschedulePlanningSlotMutation({
-			sessionId: event.id,
-			kind: event.kind,
-			scheduleId: event.scheduleId,
-			day: slot.day,
-			dayOfWeek: slot.dayOfWeek,
-			startTime: slot.startTime,
-			endTime: slot.endTime,
+		await timetable.confirmReschedule(async input => reschedulePlanningSlotMutation({
+			sessionId: input.sessionId,
+			kind: input.kind,
+			scheduleId: input.scheduleId,
+			day: input.day,
+			dayOfWeek: input.dayOfWeek,
+			startTime: input.startTime,
+			endTime: input.endTime,
 			successMessage: $t('planning.rescheduleSuccess'),
 			errorMessage: $t('planning.rescheduleError'),
-		});
-
-		confirmBusy = false;
-		if (!ok)
-			return;
-
-		confirmOpen = false;
-		pendingReschedule = null;
+		}));
 	}
 </script>
 
@@ -249,11 +228,11 @@
 	</div>
 
 	<PlanningRescheduleConfirmModal
-		bind:open={confirmOpen}
-		title={pendingReschedule?.event.title ?? ''}
+		bind:open={timetable.confirmOpen}
+		title={timetable.pendingReschedule?.event.title ?? ''}
 		{fromLabel}
 		{toLabel}
-		busy={confirmBusy}
+		busy={timetable.confirmBusy}
 		onCancel={closeConfirm}
 		onConfirm={confirmReschedule}
 	/>

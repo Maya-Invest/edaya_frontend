@@ -13,6 +13,7 @@
 	import { t } from '$lib/i18n';
 	import { Mail, Plus, Search } from '$lib/icons';
 	import { readClassStudentListFilters, writeClassStudentListFilters } from '$lib/list/list-url-filters';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
@@ -43,18 +44,24 @@
 
 	const initialFilters = $derived(readClassStudentListFilters($page.url));
 
-	let q = $state('');
-	let status = $state<'all' | Student['status']>('all');
+	const listFilters = new ListFiltersState<{ q: string; status: string }>(
+		{
+			getUrl: () => $page.url,
+			write: writeClassStudentListFilters,
+			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+		},
+		() => readClassStudentListFilters($page.url),
+	);
+
 	let view = $state<'table' | 'cards'>('table');
-	let filtersReady = $state(false);
 	let createOpen = $state(false);
 
 	const statusKeys = ['all', 'honor', 'active', 'warning'] as const;
 
 	const filtered = $derived(
 		students
-			.filter(s => status === 'all' || s.status === status)
-			.filter(s => s.name.toLowerCase().includes(q.toLowerCase())),
+			.filter(s => listFilters.values.status === 'all' || s.status === listFilters.values.status)
+			.filter(s => s.name.toLowerCase().includes(listFilters.values.q.toLowerCase())),
 	);
 
 	const infinite = useInfiniteList(() => filtered, 30);
@@ -68,29 +75,20 @@
 		appGoto(`${path}${$page.url.search}`);
 	}
 
-	function syncFiltersToUrl() {
-		const href = writeClassStudentListFilters($page.url, { q, status });
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	}
-
 	$effect(() => {
-		const next = initialFilters;
-		q = next.q;
-		status = next.status as typeof status;
-		filtersReady = true;
+		listFilters.hydrate(initialFilters);
 	});
 
-	let searchTimer: ReturnType<typeof setTimeout> | undefined;
-	function scheduleFilterSync() {
-		if (!filtersReady)
+	$effect(() => {
+		if (!listFilters.ready) {
 			return;
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(syncFiltersToUrl, 250);
-	}
+		}
+		void listFilters.values.status;
+		listFilters.scheduleSync();
+	});
 
 	function applyStatus(next: (typeof statusKeys)[number]) {
-		status = next;
-		scheduleFilterSync();
+		listFilters.setField('status', next);
 	}
 </script>
 
@@ -106,8 +104,8 @@
 					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
 				/>
 				<Input
-					bind:value={q}
-					oninput={scheduleFilterSync}
+					bind:value={listFilters.values.q}
+					oninput={() => listFilters.scheduleSync()}
 					placeholder={$t('common.searchStudent')}
 					class="h-9 w-56 rounded-full pl-9 text-sm"
 				/>
@@ -121,7 +119,7 @@
 						onclick={() => applyStatus(k)}
 						class={cn(
 							'rounded-full px-3 py-1 text-[11px] font-medium transition',
-							status === k
+							listFilters.values.status === k
 								? 'bg-primary text-primary-foreground'
 								: 'text-muted-foreground hover:text-foreground',
 						)}

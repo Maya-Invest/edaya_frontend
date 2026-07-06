@@ -309,5 +309,6 @@ lib/
 
 - [app-shell-spec.md](./app-shell-spec.md) — list / drawer / modal interaction
 - [shared-components-spec.md](./shared-components-spec.md) — mandatory reusable components
+- [svelte-state-spec.md](./svelte-state-spec.md) — class-based state tiers and component boundaries
 - [design-language-spec.md](./design-language-spec.md) — visual states
 - [data-loading-sprint.md](./data-loading-sprint.md) — codebase alignment plan

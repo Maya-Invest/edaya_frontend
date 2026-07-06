@@ -16,7 +16,7 @@ export interface NotificationSettingsPageData {
 	staffSettings: StaffNotificationSettings | null;
 	loginEmail: string | null;
 	studentNames: Record<string, string>;
-	kind: 'staff' | 'guardian' | 'student' | null;
+	kind: 'staff' | 'guardian' | 'student' | 'teacher' | null;
 }
 
 export interface InboxPageData {

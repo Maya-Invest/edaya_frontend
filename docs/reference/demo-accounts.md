@@ -1,0 +1,34 @@
+# Demo accounts (local dev)
+
+Local seed defaults to the **demo-ci** dataset (`sch-edaya-ci-cocody`, Abidjan). Password for all dev accounts: `DevPassword1!`
+
+Full fixture reference: [edaya_backend/tooling/fixtures/src/datasets/demo-ci/README.md](https://github.com/Maya-Invest/edaya_backend/blob/main/tooling/fixtures/src/datasets/demo-ci/README.md)
+
+## Staff webapp
+
+| Email | Role |
+|-------|------|
+| `a.kone@ecole-ci.edaya.dev` | School owner |
+| `j.aka@ecole-ci.edaya.dev` | Deputy director (staff workspace) |
+| `f.assi@ecole-ci.edaya.dev` | Staff coordinator / homeroom staff (`homeroomStaffId`) |
+
+## Portal teachers (teacher mobile app — not staff webapp)
+
+These accounts are **`Teacher`** entities with `kind: teacher` invitations. They do **not** use the staff web workspace.
+
+| Email | Teacher ID | Notes |
+|-------|------------|-------|
+| `a.toure@ecole-ci.edaya.dev` | `ci-t1` | Maths — 6ème A, 5ème A |
+| `k.diomande@ecole-ci.edaya.dev` | `ci-t2` | Portal homeroom — 6ème B |
+
+Run the **teacher** Flutter app (`edaya_mobile/apps/teacher`) to sign in as portal teachers.
+
+## Seed commands
+
+```sh
+# Terminal 1 — API
+cd edaya_backend && bun dev
+
+# Terminal 2 — once API is ready
+cd edaya_backend && bun seed:clean --yes && bun seed:init
+```

@@ -1,16 +1,11 @@
 <script lang="ts">
-	import type { PlanningTimetableContext } from './planning-timetable-context';
+	import { getPlanningTimetableContext } from './planning-timetable-context';
 	import { t } from '$lib/i18n';
 	import { ClipboardCheck, MapPin } from '$lib/icons';
-	import { getContext } from 'svelte';
-	import {
-		PLANNING_TIMETABLE_CONTEXT,
-
-	} from './planning-timetable-context';
 
 	const { event }: { event: Record<string, unknown>; mode?: string } = $props();
 
-	const actions = getContext<PlanningTimetableContext>(PLANNING_TIMETABLE_CONTEXT);
+	const actions = getPlanningTimetableContext();
 
 	function formatTime(value: unknown) {
 		if (!(value instanceof Date))
@@ -56,6 +51,9 @@
 	<p class="truncate text-[11px] opacity-80">
 		{kindLabel(event.kind)}
 	</p>
+	{#if event.teacher && event.kind !== 'homework-due'}
+		<p class="truncate text-[10px] opacity-75">{String(event.teacher)}</p>
+	{/if}
 	{#if event.status === 'cancelled'}
 		<p class="truncate text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
 			{$t('planning.occurrenceStatus.cancelled')}

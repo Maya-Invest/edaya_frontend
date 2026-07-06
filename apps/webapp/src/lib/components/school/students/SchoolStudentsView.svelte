@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import { academicContext } from '$lib/academic/context.svelte';
 	import { DEFAULT_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
 	import { loadPeopleDataPage } from '$lib/api/people-data';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -17,7 +16,10 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { Plus } from '$lib/icons';
-	import { readStudentListFilters, writeStudentListFilters } from '$lib/list/list-url-filters';
+	import {
+		SchoolStudentsState,
+		setSchoolStudentsState,
+	} from '$lib/students/school-students-state.svelte';
 	import { useOffsetInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
@@ -32,16 +34,13 @@
 		selectedId?: string;
 	} = $props();
 
-	const classes = $derived(academicContext.classes);
-	const hierarchy = $derived(academicContext.hierarchy);
+	const studentsState = new SchoolStudentsState(() => $page.url);
+	setSchoolStudentsState(studentsState);
 
-	const initialFilters = $derived(readStudentListFilters($page.url));
+	const classes = $derived(studentsState.classes);
+	const hierarchy = $derived(studentsState.hierarchy);
 
-	let q = $state('');
-	let classFilter = $state('all');
-	let status = $state<'all' | Student['status']>('all');
 	let view = $state<'table' | 'cards'>('table');
-	let filtersReady = $state(false);
 	let createOpen = $state(false);
 
 	const infinite = useOffsetInfiniteList(
@@ -52,7 +51,7 @@
 			return { items: result.students, total: result.totalStudents };
 		},
 		DEFAULT_LIST_PAGE_SIZE,
-		() => `${classFilter}|${status}|${q}`,
+		() => `${studentsState.filters.values.class}|${studentsState.filters.values.status}|${studentsState.filters.values.q}`,
 	);
 
 	const statusStyle: Record<Student['status'], string> = {
@@ -78,50 +77,26 @@
 		})),
 	);
 
-	const filtered = $derived(
-		infinite.visible
-			.filter(s => classFilter === 'all' || s.classId === classFilter)
-			.filter(s => status === 'all' || s.status === status)
-			.filter(s => s.name.toLowerCase().includes(q.toLowerCase())),
-	);
+	const filtered = $derived(studentsState.filterVisible(infinite.visible));
 
 	function statusLabel(k: (typeof statusKeys)[number]) {
 		return k === 'all' ? $t('filter.all') : $t(`studentStatus.${k}`);
 	}
 
-	function syncFiltersToUrl(overrides: Partial<{ q: string; class: string; status: string }> = {}) {
-		const href = writeStudentListFilters($page.url, {
-			q: overrides.q ?? q,
-			class: overrides.class ?? classFilter,
-			status: overrides.status ?? status,
-		});
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	}
-
 	$effect(() => {
-		const next = initialFilters;
-		q = next.q;
-		classFilter = next.class;
-		status = next.status as typeof status;
-		filtersReady = true;
+		studentsState.hydrateFromUrl($page.url);
 	});
 
-	let searchTimer: ReturnType<typeof setTimeout> | undefined;
-	function scheduleFilterSync() {
-		if (!filtersReady)
-			return;
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(syncFiltersToUrl, 250);
-	}
-
 	$effect(() => {
-		if (!filtersReady)
+		if (!studentsState.filters.ready) {
 			return;
-		void classFilter;
-		void status;
-		scheduleFilterSync();
+		}
+		void studentsState.filters.values.class;
+		void studentsState.filters.values.status;
+		studentsState.filters.scheduleSync();
 	});
-	const statusFilterActive = $derived(status !== 'all' ? 1 : 0);
+
+	const statusFilterActive = $derived(studentsState.filters.values.status !== 'all' ? 1 : 0);
 	const statusFilterOptions = $derived(
 		statusKeys.map(key => ({
 			value: key,
@@ -137,21 +112,21 @@
 	>
 		{#snippet search()}
 			<ListSearchField
-				bind:value={q}
-				oninput={scheduleFilterSync}
+				bind:value={studentsState.filters.values.q}
+				oninput={() => studentsState.filters.scheduleSync()}
 				placeholder={$t('common.searchStudent')}
 			/>
 		{/snippet}
 		{#snippet filters()}
 			<FilterSelect
-				bind:value={classFilter}
+				bind:value={studentsState.filters.values.class}
 				class="h-9 w-48 rounded-full text-xs"
 				options={[{ value: 'all', label: $t('common.allClasses') }]}
 				groups={classFilterGroups}
 			/>
 			<FilterPanel activeCount={statusFilterActive} title={$t('students.statusFilter')}>
 				<FilterSelect
-					bind:value={status}
+					bind:value={studentsState.filters.values.status}
 					class="h-9 w-full rounded-md text-xs"
 					options={statusFilterOptions}
 				/>

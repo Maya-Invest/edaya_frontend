@@ -8,7 +8,9 @@ import {
 	loadClassReportCardResultsData,
 	loadReportCardCatalogData,
 } from '$lib/api/report-cards-data';
+import { ApiError } from '$api-client';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { queryClient } from '$lib/queries/client';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
@@ -36,21 +38,29 @@ export function queryClassReportCardsPage(classId: string) {
 		empty: () => ({ classId }),
 		load: async () => {
 			if (!reportCardsContext.ready) {
-				await refreshReportCardCatalog();
+				try {
+					await refreshReportCardCatalog();
+				}
+				catch (error) {
+					if (!(error instanceof ApiError && (error.status === 403 || error.status === 401))) {
+						throw error;
+					}
+				}
 			}
 			const periodId = academicContext.periodId;
 			const client = queryClient();
-			const [results, { students }] = await Promise.all([
-				loadClassReportCardResultsData(
-					client,
-					classId,
-					periodId,
-					reportCardsContext.definitions,
-				),
-				loadClassPeopleData(client, classId, periodId),
+			const [results, people] = await Promise.all([
+				safeOptionalEntityList(() =>
+					loadClassReportCardResultsData(
+						client,
+						classId,
+						periodId,
+						reportCardsContext.definitions,
+					)),
+				loadClassPeopleData(client, classId, periodId).catch(() => ({ students: [] })),
 			]);
 			reportCardsContext.seedClassPeriodResults(results, { classId, periodId });
-			detailDataContext.seedStudents(students, { classId });
+			detailDataContext.seedStudents(people.students, { classId });
 			return { classId };
 		},
 		hasItems: listPageHasItems,

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PlanningEvent, TimetableScheduleKind } from '$lib/types/school';
+	import type { PlanningEvent } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -11,9 +11,9 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { locale, t } from '$lib/i18n';
 	import { ChevronLeft, ChevronRight, Plus, Search } from '$lib/icons';
-	import { readPlanningListFilters, writePlanningListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { canEditTimetable } from '$lib/permissions';
+	import { PlanningState, setPlanningState } from '$lib/scheduling/planning-state.svelte';
 	import AttendanceFlow from './AttendanceFlow.svelte';
 	import ClassTimetableCalendar from './ClassTimetableCalendar.svelte';
 	import {
@@ -21,11 +21,7 @@
 		detectPlanningOverlaps,
 		filterPlanningEventsForWeek,
 		formatPlanningWeekRange,
-		formatWeekAnchor,
-		isCurrentWeek,
-		mondayOfWeek,
 		parseWeekAnchor,
-		shiftWeek,
 	} from './planning-calendar';
 	import NewSessionWizard from './NewSessionWizard.svelte';
 	import ScheduleFormModal from './ScheduleFormModal.svelte';
@@ -44,94 +40,44 @@
 	const classes = $derived(academicContext.classes);
 	const students = $derived(detailDataContext.studentsForClass(classId));
 
-	const initialFilters = $derived(readPlanningListFilters($page.url));
-	const weekStart = $derived(parseWeekAnchor(initialFilters.week));
-	const weekRange = $derived(formatPlanningWeekRange(weekStart, $locale));
-	const viewingCurrentWeek = $derived(isCurrentWeek(weekStart));
+	const planning = new PlanningState(() => $page.url);
+	setPlanningState(planning);
 
-	let q = $state('');
-	let weekPickerValue = $state('');
-	let filtersReady = $state(false);
-	let attendanceSession = $state<PlanningEvent | null>(null);
-	let scheduleCreateOpen = $state(false);
-	let scheduleCreateKind = $state<TimetableScheduleKind>('lesson');
-	let wizardOpen = $state(false);
+	const weekStart = $derived(planning.weekStart);
+	const weekRange = $derived(formatPlanningWeekRange(weekStart, $locale));
+	const viewingCurrentWeek = $derived(planning.viewingCurrentWeek());
 
 	const editable = $derived(canEditTimetable({ classId }));
 
-	const filteredEvents = $derived(
-		events.filter((ev) => {
-			const needle = q.trim().toLowerCase();
-			if (!needle)
-				return true;
-			return ev.title.toLowerCase().includes(needle)
-				|| ev.subject.toLowerCase().includes(needle)
-				|| ev.teacher.toLowerCase().includes(needle)
-				|| ev.room.toLowerCase().includes(needle);
-		}),
-	);
+	const filteredEvents = $derived(planning.filterEvents(events));
 	const weekEvents = $derived(
 		activePlanningEvents(filterPlanningEventsForWeek(filteredEvents, weekStart)),
 	);
 	const planningOverlaps = $derived(detectPlanningOverlaps(weekEvents));
 
 	const attendanceClass = $derived(
-		attendanceSession ? classes.find(c => c.id === attendanceSession!.classId) : null,
+		planning.attendanceSession ? classes.find(c => c.id === planning.attendanceSession!.classId) : null,
 	);
 	const attendanceStudents = $derived(
-		attendanceSession ? students.filter(s => s.classId === attendanceSession!.classId) : [],
+		planning.attendanceSession
+			? students.filter(s => s.classId === planning.attendanceSession!.classId)
+			: [],
 	);
-
-	function openScheduleCreate(kind: TimetableScheduleKind) {
-		scheduleCreateKind = kind;
-		scheduleCreateOpen = true;
-	}
-
-	function syncFiltersToUrl() {
-		const href = writePlanningListFilters($page.url, {
-			q,
-			week: viewingCurrentWeek ? '' : formatWeekAnchor(weekStart),
-		});
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	}
-
-	function navigateWeek(nextWeekStart: Date) {
-		const href = writePlanningListFilters($page.url, {
-			q,
-			week: isCurrentWeek(nextWeekStart) ? '' : formatWeekAnchor(nextWeekStart),
-		});
-		appGoto(href, { keepFocus: true, noScroll: true });
-	}
-
-	function goToPreviousWeek() {
-		navigateWeek(shiftWeek(weekStart, -1));
-	}
-
-	function goToNextWeek() {
-		navigateWeek(shiftWeek(weekStart, 1));
-	}
-
-	function goToThisWeek() {
-		navigateWeek(mondayOfWeek(new Date()));
-	}
 
 	function handleWeekPickerChange(event: Event) {
 		const value = (event.currentTarget as HTMLInputElement).value;
 		if (!value) {
 			return;
 		}
-		navigateWeek(parseWeekAnchor(value));
+		planning.navigateWeek(parseWeekAnchor(value));
 	}
 
 	$effect(() => {
-		const next = initialFilters;
-		q = next.q;
-		weekPickerValue = formatWeekAnchor(parseWeekAnchor(next.week));
-		filtersReady = true;
+		planning.hydrateFromUrl($page.url);
 	});
 
 	$effect(() => {
-		if (!filtersReady || !selectedId) {
+		if (!planning.filters.ready || !selectedId) {
 			return;
 		}
 		if (weekEvents.some(event => event.id === selectedId)) {
@@ -140,14 +86,6 @@
 		const href = `${detailHref.classPlanning(classId)}${$page.url.search}`;
 		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
 	});
-
-	let searchTimer: ReturnType<typeof setTimeout> | undefined;
-	function scheduleFilterSync() {
-		if (!filtersReady)
-			return;
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(syncFiltersToUrl, 250);
-	}
 </script>
 
 <div class="animate-fade-in">
@@ -161,8 +99,8 @@
 					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
 				/>
 				<Input
-					bind:value={q}
-					oninput={scheduleFilterSync}
+					bind:value={planning.filters.values.q}
+					oninput={() => planning.filters.scheduleSync()}
 					placeholder={$t('common.search')}
 					class="h-9 w-56 rounded-full pl-9 text-sm"
 				/>
@@ -179,7 +117,7 @@
 						<NewSessionWizard
 							{classId}
 							{weekStart}
-							bind:open={wizardOpen}
+							bind:open={planning.wizardOpen}
 							{disabled}
 							{title}
 							onCreated={sessionId => appGoto(detailHref.classPlanning(classId, sessionId))}
@@ -190,7 +128,7 @@
 							class="rounded-full"
 							{disabled}
 							{title}
-							onclick={() => openScheduleCreate('lesson')}
+							onclick={() => planning.openScheduleCreate('lesson')}
 						>
 							<Plus class="mr-1 h-4 w-4" />
 							{$t('planning.newSchedule')}
@@ -214,7 +152,7 @@
 				variant="ghost"
 				size="icon"
 				class="h-8 w-8 rounded-full"
-				onclick={goToPreviousWeek}
+				onclick={() => planning.goToPreviousWeek()}
 				aria-label={$t('planning.prevWeek')}
 			>
 				<ChevronLeft class="h-4 w-4" />
@@ -227,7 +165,7 @@
 				<Input
 					id="planning-week-picker"
 					type="date"
-					value={weekPickerValue}
+					value={planning.weekPickerValue}
 					onchange={handleWeekPickerChange}
 					class="h-8 w-[10.5rem] rounded-full px-3 text-xs"
 					aria-label={$t('planning.goToWeek')}
@@ -237,7 +175,7 @@
 				variant="ghost"
 				size="icon"
 				class="h-8 w-8 rounded-full"
-				onclick={goToNextWeek}
+				onclick={() => planning.goToNextWeek()}
 				aria-label={$t('planning.nextWeek')}
 			>
 				<ChevronRight class="h-4 w-4" />
@@ -248,7 +186,7 @@
 				variant="outline"
 				size="sm"
 				class="rounded-full"
-				onclick={goToThisWeek}
+				onclick={() => planning.goToThisWeek()}
 			>
 				{$t('planning.thisWeek')}
 			</Button>
@@ -274,7 +212,7 @@
 		</div>
 	{/if}
 
-	<ScheduleFormModal {classId} {weekStart} defaultScheduleKind={scheduleCreateKind} bind:open={scheduleCreateOpen} />
+	<ScheduleFormModal {classId} {weekStart} defaultScheduleKind={planning.scheduleCreateKind} bind:open={planning.scheduleCreateOpen} />
 
 	<ClassTimetableCalendar
 		events={weekEvents}
@@ -282,16 +220,16 @@
 		{weekStart}
 		{editable}
 		{onSelect}
-		onAttendance={ev => (attendanceSession = ev)}
+		onAttendance={planning.openAttendance}
 	/>
 
-	{#if attendanceSession && attendanceClass}
+	{#if planning.attendanceSession && attendanceClass}
 		<AttendanceFlow
 			open={true}
-			onClose={() => (attendanceSession = null)}
+			onClose={() => (planning.attendanceSession = null)}
 			students={attendanceStudents}
-			className="{attendanceClass.name} · {attendanceSession.subject}"
-			classLevel="{$t(`day.${attendanceSession.day}`)} {attendanceSession.start}–{attendanceSession.end}"
+			className="{attendanceClass.name} · {planning.attendanceSession.subject}"
+			classLevel="{$t(`day.${planning.attendanceSession.day}`)} {planning.attendanceSession.start}–{planning.attendanceSession.end}"
 		/>
 	{/if}
 </div>

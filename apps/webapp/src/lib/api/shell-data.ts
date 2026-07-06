@@ -60,6 +60,24 @@ async function safeEntityCount(load: () => Promise<{ count: number }>): Promise<
 		if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
 			return 0;
 		}
+		if (error instanceof TypeError) {
+			return 0;
+		}
+		throw error;
+	}
+}
+
+async function safeEntityList<T>(load: () => Promise<T[] | null | undefined>): Promise<T[]> {
+	try {
+		return (await load()) ?? [];
+	}
+	catch (error) {
+		if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
+			return [];
+		}
+		if (error instanceof TypeError) {
+			return [];
+		}
 		throw error;
 	}
 }
@@ -73,12 +91,12 @@ export async function fetchAppShellData(client: SchoolClient): Promise<AppShellD
 		periodDefsRaw,
 		classGroupsRaw,
 	] = await Promise.all([
-		client.entities.schools.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE)),
-		client.entities.academicYears.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE)),
-		client.entities.academicPeriods.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE)),
-		client.entities.gradeLevels.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE)),
-		client.entities.periodDefinitions.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE)),
-		client.entities.classGroups.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE)),
+		safeEntityList(() => client.entities.schools.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE))),
+		safeEntityList(() => client.entities.academicYears.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE))),
+		safeEntityList(() => client.entities.academicPeriods.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE))),
+		safeEntityList(() => client.entities.gradeLevels.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE))),
+		safeEntityList(() => client.entities.periodDefinitions.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE))),
+		safeEntityList(() => client.entities.classGroups.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE))),
 	]);
 
 	const studentCountByClass = await fetchActiveEnrollmentCountsByClass(

@@ -30,7 +30,7 @@ export function resetAppShellBootstrap() {
 
 async function runBootstrapAppShell() {
 	configureBrowserSchoolClient({
-		getYearId: () => academicContext.yearId,
+		getYearId: () => (academicContext.shellReady ? academicContext.yearId : undefined),
 	});
 
 	try {

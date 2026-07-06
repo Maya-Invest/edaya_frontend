@@ -10,6 +10,7 @@ const config = {
 	kit: {
 		alias: {
 			'$api-client': 'src/generated/api-client',
+			'$tests': 'tests',
 		},
 		paths: {
 			relative: false,

@@ -8,6 +8,7 @@ import type {
 	Evaluation,
 	Guardian,
 	StaffMember,
+	Teacher,
 	StudentBilling,
 	SchoolYearEvent,
 	Incident,
@@ -24,6 +25,7 @@ export type DrawerItem
 		| { kind: 'attendanceDay'; data: AttendanceDay }
 		| { kind: 'guardian'; data: Guardian }
 		| { kind: 'staff'; data: StaffMember }
+		| { kind: 'teacher'; data: Teacher }
 		| { kind: 'billing'; data: StudentBilling }
 		| { kind: 'schoolYearEvent'; data: SchoolYearEvent }
 		| { kind: 'incident'; data: Incident }

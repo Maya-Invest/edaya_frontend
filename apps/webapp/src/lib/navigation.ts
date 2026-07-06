@@ -47,7 +47,7 @@ export const MODULES: {
 	href: ResolvedPathname;
 }[] = [
 	{ key: 'school', tKey: 'module.school', icon: Building2, href: appPath('/(app)/school/students/[[id]]') },
-	{ key: 'classes', tKey: 'module.classes', icon: LayoutGrid, href: appPath('/(app)/classes/[classId]/students/[[id]]', { classId: '6a' }) },
+	{ key: 'classes', tKey: 'module.classes', icon: LayoutGrid, href: appPath('/(app)/classes/[classId]/students/[[id]]', { classId: 'ci-6a' }) },
 	{ key: 'finance', tKey: 'module.finance', icon: WalletIcon, href: appPath('/(app)/finance/billing/[[id]]') },
 	{ key: 'configuration', tKey: 'module.configuration', icon: Settings2, href: appPath('/(app)/configuration/subjects/[[id]]') },
 ];
@@ -68,6 +68,7 @@ const SCHOOL_ICONS: Record<string, LucideIcon> = {
 	students: Users,
 	guardians: Shield,
 	staff: GraduationCap,
+	teachers: BookOpen,
 	calendar: CalendarDays,
 	activities: Sparkle,
 	announcements: Mail,
@@ -105,6 +106,7 @@ const SCHOOL_ROUTES: Record<string, RouteId> = {
 	students: '/(app)/school/students/[[id]]',
 	guardians: '/(app)/school/guardians/[[id]]',
 	staff: '/(app)/school/staff/[[id]]',
+	teachers: '/(app)/school/teachers/[[id]]',
 	calendar: '/(app)/school/calendar/[[id]]',
 	activities: '/(app)/school/activities/[[id]]',
 	announcements: '/(app)/school/announcements/[[id]]',

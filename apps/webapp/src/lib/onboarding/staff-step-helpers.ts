@@ -36,3 +36,11 @@ export function staffInvitesForSubmit(invites: OnboardingStaffInviteDraft[]) {
 			role: invite.role as Exclude<typeof invite.role, ''>,
 		}));
 }
+
+export function partitionStaffInvitesForSubmit(invites: OnboardingStaffInviteDraft[]) {
+	const payload = staffInvitesForSubmit(invites);
+	return {
+		teacherInvites: payload.filter(invite => invite.role === 'teacher'),
+		staffInvites: payload.filter(invite => invite.role !== 'teacher'),
+	};
+}

@@ -1,7 +1,8 @@
 import { academicContext } from '$lib/academic/context.svelte';
 import { fetchActivities } from '$lib/api/activities-data';
 import { fetchAnnouncements } from '$lib/api/announcements-data';
-import { loadPeopleData, loadGuardiansPeopleData } from '$lib/api/people-data';
+import { loadGuardiansPeopleData } from '$lib/api/people-data';
+import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 import { loadAbsences, loadCalendarEvents, loadIncidentRouteData } from '$lib/api/school-life-data';
 import { fetchStaffMembers } from '$lib/api/staff-data';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
@@ -13,17 +14,20 @@ export function querySchoolAnnouncementsPage() {
 		empty: () => ({}),
 		load: async () => {
 			const schoolId = academicContext.schools[0]?.id ?? '';
-			const [announcements, people, guardiansData, staff] = await Promise.all([
-				fetchAnnouncements(queryClient(), schoolId),
-				loadPeopleData(queryClient()),
-				loadGuardiansPeopleData(queryClient()),
-				fetchStaffMembers(queryClient(), {
-					schoolId,
-					academicYearId: academicContext.yearId,
-				}),
+			const client = queryClient();
+			const [announcements, guardiansData, staff] = await Promise.all([
+				schoolId
+					? safeOptionalEntityList(() => fetchAnnouncements(client, schoolId))
+					: Promise.resolve([]),
+				loadGuardiansPeopleData(client).catch(() => ({ guardians: [], students: [], totalGuardians: 0 })),
+				schoolId
+					? safeOptionalEntityList(() => fetchStaffMembers(client, {
+							schoolId,
+							academicYearId: academicContext.yearId,
+						}))
+					: Promise.resolve([]),
 			]);
 			detailDataContext.seedAnnouncements(announcements);
-			detailDataContext.seedStudents(people.students);
 			detailDataContext.seedGuardians(guardiansData.guardians);
 			detailDataContext.seedStaff(staff);
 			return {};

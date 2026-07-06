@@ -15,6 +15,7 @@
 	import { t } from '$lib/i18n';
 	import { Pencil, Plus, Trash2 } from '$lib/icons';
 	import { readFeeListFilters, writeFeeListFilters } from '$lib/list/list-url-filters';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { get } from 'svelte/store';
 	import FeeFormModal from './FeeFormModal.svelte';
@@ -26,9 +27,15 @@
 	const billing = $derived(detailDataContext.billing);
 	const initialFilters = $derived(readFeeListFilters($page.url));
 
-	let q = $state('');
-	let category = $state('all');
-	let filtersReady = $state(false);
+	const listFilters = new ListFiltersState<{ q: string; category: string }>(
+		{
+			getUrl: () => $page.url,
+			write: writeFeeListFilters,
+			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+		},
+		() => readFeeListFilters($page.url),
+	);
+
 	let createOpen = $state(false);
 	let editOpen = $state(false);
 	let editingFee = $state<Fee | null>(null);
@@ -38,10 +45,10 @@
 
 	const filteredFees = $derived(
 		fees.filter((fee) => {
-			if (category !== 'all' && fee.category !== category) {
+			if (listFilters.values.category !== 'all' && fee.category !== listFilters.values.category) {
 				return false;
 			}
-			const needle = q.trim().toLowerCase();
+			const needle = listFilters.values.q.trim().toLowerCase();
 			if (!needle) {
 				return true;
 			}
@@ -63,33 +70,16 @@
 		return lower === 'year' || lower === 'term' || lower === 'month' ? lower : 'term';
 	}
 
-	function syncFiltersToUrl() {
-		const href = writeFeeListFilters($page.url, { q, category });
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	}
-
 	$effect(() => {
-		const next = initialFilters;
-		q = next.q;
-		category = next.category;
-		filtersReady = true;
+		listFilters.hydrate(initialFilters);
 	});
 
-	let searchTimer: ReturnType<typeof setTimeout> | undefined;
-	function scheduleFilterSync() {
-		if (!filtersReady) {
-			return;
-		}
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(syncFiltersToUrl, 250);
-	}
-
 	$effect(() => {
-		if (!filtersReady) {
+		if (!listFilters.ready) {
 			return;
 		}
-		void category;
-		scheduleFilterSync();
+		void listFilters.values.category;
+		listFilters.scheduleSync();
 	});
 
 	function openEdit(fee: Fee) {
@@ -126,13 +116,13 @@
 <div class="animate-fade-in space-y-6">
 	<ListPageHeader eyebrow={$t('finance.feesCatalog')} title={$t('finance.fees')}>
 		{#snippet search()}
-			<ListSearchField bind:value={q} oninput={scheduleFilterSync} />
+			<ListSearchField bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
 		{/snippet}
 		{#snippet filters()}
 			<div class="flex flex-wrap items-center gap-2">
 				<FinanceSubnav active="fees" />
 				<FilterSelect
-					bind:value={category}
+					bind:value={listFilters.values.category}
 					options={categoryOptions}
 					class="h-9 min-w-[10rem]"
 				/>

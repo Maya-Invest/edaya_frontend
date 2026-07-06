@@ -23,7 +23,9 @@ edaya_web/
 
 `@edaya/client-codegen` is installed from [github.com/Maya-Invest/edaya-client-codegen](https://github.com/Maya-Invest/edaya-client-codegen) (`dev` branch) at install time — no sibling checkout needed.
 
-See [docs/reference/cross-repo-workflow.md](./docs/reference/cross-repo-workflow.md) for pair PRs, codegen releases, and staging smoke.
+See [docs/reference/cross-repo-workflow.md](./docs/reference/cross-repo-workflow.md) for **pair PRs** (backend API change → export OpenAPI → `bun run openapi:generate` → `bun run verify`), codegen releases, and staging smoke.
+
+See [docs/reference/demo-accounts.md](./docs/reference/demo-accounts.md) for local login accounts (staff webapp vs portal teachers).
 
 ## First-time setup
 

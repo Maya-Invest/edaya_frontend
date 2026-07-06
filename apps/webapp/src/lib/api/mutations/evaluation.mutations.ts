@@ -10,6 +10,11 @@ import { get } from 'svelte/store';
 
 type ApiAssessment = components['schemas']['Assessment'];
 
+function normalizedDescription(description?: string): string | undefined {
+	const trimmed = description?.trim();
+	return trimmed ? trimmed : undefined;
+}
+
 function buildInClassAssessmentWindow(date: Date): { startsAt: string; endsAt: string } {
 	const startsAt = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 	startsAt.setUTCHours(9, 0, 0, 0);
@@ -110,13 +115,14 @@ export async function createAssessmentMutation(input: {
 		assignedDate: kind === 'homework' ? (input.assignedDate ?? assessmentDate) : undefined,
 	});
 
+	const description = normalizedDescription(input.description);
 	const result = await runMutation(() => client.commands.createAssessment({
 		id,
 		classGroupId: input.classGroupId,
 		classSubjectId: input.classSubjectId,
 		periodId,
 		title: input.title.trim(),
-		description: input.description?.trim() ?? '',
+		...(description ? { description } : {}),
 		kind,
 		maxScore: input.maxScore,
 		coefficient: input.coefficient ?? 1,
@@ -151,10 +157,13 @@ export async function updateAssessmentMutation(input: {
 
 	const result = await runMutation(async () => {
 		const existing = await client.entities.assessments.get(input.assessmentId);
+		const description = input.description !== undefined
+			? normalizedDescription(input.description)
+			: normalizedDescription(existing.description ?? undefined);
 		const payload: ApiAssessment = {
 			...existing,
 			title: input.title.trim(),
-			description: input.description?.trim() ?? existing.description ?? '',
+			...(description ? { description } : { description: undefined }),
 			kind: input.kind ?? existing.kind,
 			maxScore: input.maxScore ?? existing.maxScore,
 			coefficient: input.coefficient ?? existing.coefficient,
@@ -166,7 +175,7 @@ export async function updateAssessmentMutation(input: {
 		apply: () => {
 			detailDataContext.patchEvaluation(input.assessmentId, {
 				title: input.title.trim(),
-				description: input.description?.trim() ?? previous?.description ?? '',
+				description: normalizedDescription(input.description) ?? previous?.description ?? '',
 				kind: input.kind ?? previous?.kind ?? 'homework',
 				outOf: input.maxScore ?? previous?.outOf ?? 20,
 				coefficient: input.coefficient ?? previous?.coefficient ?? 1,

@@ -1,7 +1,7 @@
 import type { Subject, SubjectCategory } from '$lib/types/school';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { buildSubjectSavePayload } from '$lib/api/subject-save-payload';
+import { buildSubjectConfigCommand } from '$lib/api/subject-save-payload';
 import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
 import { toast } from '$lib/toast.svelte';
@@ -26,8 +26,9 @@ export async function updateSubjectMutation(input: {
 		return false;
 	}
 
-	const result = await runMutation(() => client.entities.subjects.save(
-		buildSubjectSavePayload(subject, {
+	const result = await runMutation(() => client.commands.configureSubject(
+		buildSubjectConfigCommand(subject, {
+			id: subject.id,
 			name: input.name,
 			category: input.category,
 			color: input.color,
@@ -52,22 +53,22 @@ export async function createSubjectForClassMutation(input: {
 
 	const subjectId = `subj-${Date.now().toString(36)}`;
 	const classSubjectId = `cs-${input.classGroupId}-${subjectId.slice(-6)}`;
+	const createdAt = new Date().toISOString();
 
 	const result = await runMutation(async () => {
-		await client.entities.subjects.save({
+		await client.commands.configureSubject(buildSubjectConfigCommand(null, {
 			id: subjectId,
-			schoolId,
-			name: input.name.trim(),
+			name: input.name,
 			category: input.category,
 			color: input.color,
-			createdAt: new Date().toISOString(),
-		});
+			createdAt,
+		}));
 		return client.commands.offerSubjectToClass({
 			id: classSubjectId,
 			classGroupId: input.classGroupId,
 			subjectId,
 			isOffered: true,
-			createdAt: new Date().toISOString(),
+			createdAt,
 		});
 	}, { successMessage: input.successMessage });
 	return result ? classSubjectId : null;

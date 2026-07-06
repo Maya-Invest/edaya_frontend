@@ -6,10 +6,13 @@ import {
 	classGroupScope,
 	entitiesByIds,
 	progressForLessonSessions,
-	staffMembersByIds,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
-import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
+import {
+	fetchClassSubjectInstructorSourcesBundle,
+	type ClassSubjectInstructorSources,
+	teacherNameForClassSubject,
+} from '$lib/api/teacher-display';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -18,17 +21,13 @@ type ClassSubjectProgressRaw = components['schemas']['ClassSubjectProgress'];
 type ClassSubjectMatterRaw = components['schemas']['ClassSubjectMatter'];
 type ClassSubjectRaw = components['schemas']['ClassSubject'];
 type SubjectRaw = components['schemas']['Subject'];
-type StaffMemberRaw = components['schemas']['StaffMember'];
-type StaffAssignmentRaw = components['schemas']['StaffAssignment'];
 
-export interface TeachingLogSources {
+export interface TeachingLogSources extends ClassSubjectInstructorSources {
 	lessonSessionsRaw: LessonSessionRaw[];
 	classSubjectProgressRaw: ClassSubjectProgressRaw[];
 	classSubjectMattersRaw: ClassSubjectMatterRaw[];
 	classSubjectsRaw: ClassSubjectRaw[];
 	subjectsRaw: SubjectRaw[];
-	staffMembersRaw: StaffMemberRaw[];
-	staffAssignmentsRaw: StaffAssignmentRaw[];
 }
 
 function formatDate(value: unknown): string {
@@ -58,22 +57,11 @@ function subjectNameForClassSubject(
 	return subject?.name ?? 'Unknown subject';
 }
 
-function teacherNameForClassSubject(
+function teacherNameForClassSubjectFromSources(
 	classSubjectId: string,
-	staffAssignmentsRaw: StaffAssignmentRaw[],
-	staffMembersRaw: StaffMemberRaw[],
+	sources: TeachingLogSources,
 ): string {
-	const assignment = staffAssignmentsRaw.find(entry => entry.classSubjectId === classSubjectId);
-	if (!assignment) {
-		return 'Non assigné';
-	}
-
-	const teacher = staffMembersRaw.find(member => member.id === assignment.staffId);
-	if (!teacher) {
-		return 'Non assigné';
-	}
-
-	return `${teacher.firstName} ${teacher.lastName}`;
+	return teacherNameForClassSubject(classSubjectId, sources);
 }
 
 export async function fetchClassTeachingLogSources(
@@ -95,7 +83,6 @@ export async function fetchClassTeachingLogSources(
 	const [
 		classSubjectProgressRaw,
 		classSubjectMattersRaw,
-		staffAssignmentsRaw,
 		subjectsRaw,
 	] = await Promise.all([
 		lessonSessionIds.length > 0
@@ -104,19 +91,12 @@ export async function fetchClassTeachingLogSources(
 		classSubjectIds.length > 0
 			? client.entities.classSubjectMatters.list(assignmentsForClassSubjects(classSubjectIds))
 			: Promise.resolve([]),
-		classSubjectIds.length > 0
-			? safeOptionalEntityList(() =>
-					client.entities.staffAssignments.list(assignmentsForClassSubjects(classSubjectIds)))
-			: Promise.resolve([]),
 		subjectIds.length > 0
 			? client.entities.subjects.list(entitiesByIds(subjectIds))
 			: Promise.resolve([]),
 	]);
 
-	const staffIds = uniqueIds((staffAssignmentsRaw ?? []).map(assignment => assignment.staffId));
-	const staffMembersRaw = staffIds.length > 0
-		? await safeOptionalEntityList(() => client.entities.staffMembers.list(staffMembersByIds(staffIds)))
-		: [];
+	const instructorSources = await fetchClassSubjectInstructorSourcesBundle(client, classSubjectIds);
 
 	return {
 		lessonSessionsRaw: lessonSessionsRaw ?? [],
@@ -124,8 +104,7 @@ export async function fetchClassTeachingLogSources(
 		classSubjectMattersRaw: classSubjectMattersRaw ?? [],
 		classSubjectsRaw: classSubjectsRaw ?? [],
 		subjectsRaw: subjectsRaw ?? [],
-		staffMembersRaw: staffMembersRaw ?? [],
-		staffAssignmentsRaw: staffAssignmentsRaw ?? [],
+		...instructorSources,
 	};
 }
 
@@ -184,10 +163,9 @@ export function mapTeachingLogEntries(
 				classId: session.classGroupId,
 				date: formatDate(session.startsAt),
 				subject,
-				teacher: teacherNameForClassSubject(
+				teacher: teacherNameForClassSubjectFromSources(
 					session.classSubjectId,
-					sources.staffAssignmentsRaw,
-					sources.staffMembersRaw,
+					sources,
 				),
 				chapter: primaryProgress
 					? matterNameForProgress(primaryProgress, sources.classSubjectMattersRaw)

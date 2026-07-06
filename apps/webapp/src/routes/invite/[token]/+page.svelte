@@ -53,7 +53,7 @@
 
 	const token = $derived($page.params.token ?? '');
 
-	type PageState = 'loading' | 'invalid' | 'notFound' | 'revoked' | 'expired' | 'accepted' | 'ready' | 'accepting';
+	type PageState = 'loading' | 'invalid' | 'notFound' | 'revoked' | 'expired' | 'accepted' | 'ready' | 'accepting' | 'teacherLinked';
 	type AcceptedIssue = 'none' | 'otherAccount' | 'stillUnlinked';
 
 	let preview = $state<InvitationPreview | null>(null);
@@ -74,8 +74,26 @@
 		if (preview?.kind === 'guardian') {
 			return $t('invitation.kind.guardian');
 		}
+		if (preview?.kind === 'teacher') {
+			return $t('invitation.kind.teacher');
+		}
 		return $t('invitation.kind.student');
 	});
+
+	function isTeacherInvitation(kind?: InvitationPreview['kind'] | null): boolean {
+		return kind === 'teacher';
+	}
+
+	function completeInvitationAccept(session: NonNullable<Awaited<ReturnType<typeof bootstrapSession>>['session']>) {
+		clearPendingInviteToken();
+		if (isTeacherInvitation(session.kind)) {
+			toast.success($t('invitation.accept.teacherSuccess'));
+			pageState = 'teacherLinked';
+			return;
+		}
+		toast.success($t('invitation.accept.success'));
+		void appGoto(resolveLinkedActorPath(session));
+	}
 
 	const wrongAccount = $derived(preview ? sessionBlocksInvitationAccept(preview) : false);
 	const invitedEmail = $derived(preview?.contactEmail?.trim() ?? '');
@@ -131,9 +149,7 @@
 				resetAppShellBootstrap();
 				const { session, pendingOnboarding } = await bootstrapSession();
 				if (!pendingOnboarding && session) {
-					clearPendingInviteToken();
-					toast.success($t('invitation.accept.success'));
-					await appGoto(resolveLinkedActorPath(session));
+					completeInvitationAccept(session);
 					return;
 				}
 
@@ -285,9 +301,7 @@
 				toast.error($t('invitation.accept.alreadyAcceptedStillUnlinkedHint'));
 				return;
 			}
-			clearPendingInviteToken();
-			toast.success($t('invitation.accept.success'));
-			await appGoto(resolveLinkedActorPath(session));
+			completeInvitationAccept(session);
 		}
 		catch (err) {
 			pageState = 'ready';
@@ -344,6 +358,15 @@
 					<div class="space-y-2 py-4 text-center">
 						<h2 class="font-display text-lg font-semibold">{$t('invitation.accept.invalidTitle')}</h2>
 						<p class="text-sm text-muted-foreground">{$t('invitation.accept.invalidHint')}</p>
+					</div>
+				{:else if pageState === 'teacherLinked'}
+					<div class="space-y-4 py-4 text-center">
+						<h2 class="font-display text-lg font-semibold">
+							{$t('invitation.accept.teacherLinkedTitle')}
+						</h2>
+						<p class="text-sm text-muted-foreground">
+							{$t('invitation.accept.teacherLinkedHint')}
+						</p>
 					</div>
 				{:else if pageState === 'accepted'}
 					<div class="space-y-4 py-4 text-center">

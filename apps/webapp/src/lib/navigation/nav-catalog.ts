@@ -29,6 +29,12 @@ export const SCHOOL_NAV_DEFS: NavItemDefinition[] = [
 		permissions: ['STAFF_READ'],
 	},
 	{
+		key: 'teachers',
+		labelKey: 'school.teachers',
+		href: '/school/teachers',
+		permissions: ['STAFF_READ'],
+	},
+	{
 		key: 'calendar',
 		labelKey: 'school.calendar',
 		href: '/school/calendar',

@@ -20,6 +20,7 @@ import {
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 import { fetchClassSubjectsSources } from '$lib/api/subjects-data';
+import { teacherNameForClassSubject } from '$lib/api/teacher-display';
 
 type GradeScaleRaw = components['schemas']['GradeScale'];
 type ReportCardDefinitionRaw = components['schemas']['ReportCardDefinition'];
@@ -66,19 +67,12 @@ function formatDate(value: unknown): string | undefined {
 	return String(value).slice(0, 10);
 }
 
-function teacherNameForClassSubject(
+function teacherNameForClassSubjectFromSources(
 	classSubjectId: string,
 	sources: ClassSubjectsSources,
 ): string | undefined {
-	const assignment = sources.staffAssignmentsRaw.find(entry => entry.classSubjectId === classSubjectId);
-	if (!assignment) {
-		return undefined;
-	}
-	const teacher = sources.staffMembersRaw.find(member => member.id === assignment.staffId);
-	if (!teacher) {
-		return undefined;
-	}
-	return `${teacher.firstName} ${teacher.lastName}`;
+	const name = teacherNameForClassSubject(classSubjectId, sources, '');
+	return name || undefined;
 }
 
 export function derivePassingScore(ranges: GradeScaleRangeRaw[]): number {
@@ -254,7 +248,7 @@ export function mapSubjectMark(
 		average: subjectResult.average ?? 0,
 		coefficient: subjectResult.weight ?? 1,
 		appreciation: subjectResult.comment ?? undefined,
-		teacherName: teacherNameForClassSubject(classSubjectId, sources),
+		teacherName: teacherNameForClassSubjectFromSources(classSubjectId, sources),
 	};
 }
 

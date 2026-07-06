@@ -38,6 +38,16 @@ export const clientBindings = {
         "schemaName": "StaffAssignment",
         "allowDirectSave": true
       },
+      "teachers": {
+        "publicName": "teachers",
+        "schemaName": "Teacher",
+        "allowDirectSave": true
+      },
+      "teacherAssignments": {
+        "publicName": "teacher-assignments",
+        "schemaName": "TeacherAssignment",
+        "allowDirectSave": true
+      },
       "accountInvitations": {
         "publicName": "account-invitations",
         "schemaName": "AccountInvitation",
@@ -295,6 +305,31 @@ export const clientBindings = {
         "requestSchemaName": "PublishAcademicPeriodCommand",
         "responseSchemaName": "AcademicPeriod"
       },
+      "configureGradeLevel": {
+        "publicName": "configure-grade-level",
+        "requestSchemaName": "GradeLevelConfigCommand",
+        "responseSchemaName": "GradeLevel"
+      },
+      "configurePeriodDefinition": {
+        "publicName": "configure-period-definition",
+        "requestSchemaName": "PeriodDefinitionConfigCommand",
+        "responseSchemaName": "PeriodDefinition"
+      },
+      "configureResource": {
+        "publicName": "configure-resource",
+        "requestSchemaName": "ResourceConfigCommand",
+        "responseSchemaName": "Resource"
+      },
+      "configureActivity": {
+        "publicName": "configure-activity",
+        "requestSchemaName": "ActivityConfigCommand",
+        "responseSchemaName": "Activity"
+      },
+      "enrollStudentInActivity": {
+        "publicName": "enroll-student-in-activity",
+        "requestSchemaName": "ActivityEnrollmentConfigCommand",
+        "responseSchemaName": "ActivityEnrollment"
+      },
       "createClassGroup": {
         "publicName": "create-class-group",
         "requestSchemaName": "CreateClassGroupCommand",
@@ -324,6 +359,11 @@ export const clientBindings = {
         "publicName": "link-actor-subject",
         "requestSchemaName": "LinkActorSubjectCommand",
         "responseSchemaName": "LinkActorSubjectResponse"
+      },
+      "relinkActorSubject": {
+        "publicName": "relink-actor-subject",
+        "requestSchemaName": "RelinkActorSubjectCommand",
+        "responseSchemaName": "RelinkActorSubjectResponse"
       },
       "sendAccountInvitation": {
         "publicName": "send-account-invitation",
@@ -359,6 +399,11 @@ export const clientBindings = {
         "publicName": "assign-staff-to-lesson-session",
         "requestSchemaName": "AssignStaffToLessonSessionCommand",
         "responseSchemaName": "StaffAssignment"
+      },
+      "assignStaffPermission": {
+        "publicName": "assign-staff-permission",
+        "requestSchemaName": "StaffPermissionAssignmentConfigCommand",
+        "responseSchemaName": "StaffPermissionAssignment"
       },
       "assignResourceToClass": {
         "publicName": "assign-resource-to-class",
@@ -465,6 +510,16 @@ export const clientBindings = {
         "requestSchemaName": "UpdateGuardianStudentLinkCommand",
         "responseSchemaName": "GuardianStudentLink"
       },
+      "configureSubject": {
+        "publicName": "configure-subject",
+        "requestSchemaName": "SubjectConfigCommand",
+        "responseSchemaName": "Subject"
+      },
+      "configureSubjectMatter": {
+        "publicName": "configure-subject-matter",
+        "requestSchemaName": "SubjectMatterConfigCommand",
+        "responseSchemaName": "SubjectMatter"
+      },
       "offerSubjectToClass": {
         "publicName": "offer-subject-to-class",
         "requestSchemaName": "OfferSubjectToClassCommand",
@@ -569,6 +624,11 @@ export const clientBindings = {
         "publicName": "add-student-involvement",
         "requestSchemaName": "AddStudentInvolvementCommand",
         "responseSchemaName": "StudentIncidentInvolvement"
+      },
+      "configureDisciplinaryAction": {
+        "publicName": "configure-disciplinary-action",
+        "requestSchemaName": "DisciplinaryActionConfigCommand",
+        "responseSchemaName": "DisciplinaryAction"
       },
       "applyDisciplinaryAction": {
         "publicName": "apply-disciplinary-action",
@@ -683,6 +743,11 @@ export const clientBindings = {
       "reviewAttendanceJustification": {
         "publicName": "review-attendance-justification",
         "requestSchemaName": "ReviewAttendanceJustificationCommand",
+        "responseSchemaName": "Attendance"
+      },
+      "requestAttendanceJustification": {
+        "publicName": "request-attendance-justification",
+        "requestSchemaName": "RequestAttendanceJustificationCommand",
         "responseSchemaName": "Attendance"
       },
       "createAnnouncement": {

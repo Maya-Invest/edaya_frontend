@@ -29,6 +29,7 @@ import type {
 	StudentEnrollmentHistoryItem,
 	StudentGradeRow,
 	Subject,
+	Teacher,
 	TimetableSchedule,
 } from '$lib/types/school';
 import {
@@ -65,6 +66,7 @@ export class DetailDataContext {
 	students = $state<Student[]>([]);
 	guardians = $state<Guardian[]>([]);
 	staff = $state<StaffMember[]>([]);
+	teachers = $state<Teacher[]>([]);
 	subjects = $state<Subject[]>([]);
 	planning = $state<PlanningEvent[]>([]);
 	schedules = $state<TimetableSchedule[]>([]);
@@ -87,6 +89,7 @@ export class DetailDataContext {
 	staffPermissionAssignments = $state<StaffPermissionAssignmentView[]>([]);
 	permissionCatalog = $state<PermissionCatalogEntry[]>([]);
 	staffAssignments = $state<components['schemas']['StaffAssignment'][]>([]);
+	teacherAssignments = $state<components['schemas']['TeacherAssignment'][]>([]);
 	studentDrawerCache = $state<{
 		studentId: string;
 		enrollments: StudentEnrollmentHistoryItem[];
@@ -156,6 +159,35 @@ export class DetailDataContext {
 	/** Merge by id. */
 	seedStaff(staff: StaffMember[]) {
 		this.staff = seedStaffCollection(this.staff, staff);
+	}
+
+	/** Merge by id. */
+	seedTeachers(teachers: Teacher[]) {
+		this.teachers = mergeById(this.teachers, teachers);
+	}
+
+	upsertTeacher(row: Teacher) {
+		this.teachers = mergeById(this.teachers, [row]);
+	}
+
+	removeTeacher(id: string) {
+		this.teachers = this.teachers.filter(teacher => teacher.id !== id);
+	}
+
+	mergeTeacherAssignments(rows: readonly components['schemas']['TeacherAssignment'][]) {
+		this.teacherAssignments = mergeById(this.teacherAssignments, rows);
+	}
+
+	upsertTeacherAssignment(row: components['schemas']['TeacherAssignment']) {
+		this.teacherAssignments = mergeById(this.teacherAssignments, [row]);
+	}
+
+	removeTeacherAssignment(id: string) {
+		this.teacherAssignments = this.teacherAssignments.filter(row => row.id !== id);
+	}
+
+	teacherAssignmentsForTeacher(teacherId: string): components['schemas']['TeacherAssignment'][] {
+		return this.teacherAssignments.filter(row => row.teacherId === teacherId);
 	}
 
 	/** Replace the class slice. */
@@ -523,6 +555,7 @@ export class DetailDataContext {
 		this.students = [];
 		this.guardians = [];
 		this.staff = [];
+		this.teachers = [];
 		this.subjects = [];
 		this.planning = [];
 		this.evaluations = [];
@@ -542,6 +575,7 @@ export class DetailDataContext {
 		this.staffPermissionAssignments = [];
 		this.permissionCatalog = [];
 		this.staffAssignments = [];
+		this.teacherAssignments = [];
 		this.studentDrawerCache = null;
 	}
 }

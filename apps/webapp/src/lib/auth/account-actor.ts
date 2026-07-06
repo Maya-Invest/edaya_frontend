@@ -1,4 +1,4 @@
-export type SessionKind = 'staff' | 'guardian' | 'student';
+export type SessionKind = 'staff' | 'guardian' | 'student' | 'teacher';
 
 export interface AccountActor {
 	id: string;

@@ -9,7 +9,7 @@
 > - [data-loading-spec.md](./data-loading-spec.md) — loading · entity store · mutations  
 > **Living catalog & progress:** [ui-architecture-reference.md](../reference/ui-architecture-reference.md) — per-feature cards, gap tracker, entity audit (not normative for agents)
 
-**Implementation plan:** [v1-staff-webapp-implementation-plan.md](../sprints/v1-staff-webapp-implementation-plan.md) — phased sprints (Phases 0–8)
+**Implementation plan:** [demo-ready-plan.md](../sprints/demo-ready-plan.md) — demo readiness (active). V1 history: [archive](../sprints/archive/v1-staff-webapp-implementation-plan.md)
 
 This document is the **target end-state architecture** for the EDAYA staff webapp v1. It defines modules, routes, entity surfaces, and locked product decisions. It does **not** track sprint progress — use the reference doc for that.
 
@@ -229,6 +229,7 @@ Scope labels in the list use `POST authorization/scope/render` with `{ permissio
 | Students (school) | `/school/students` | `/school/students/{id}` |
 | Guardians | `/school/guardians` | `/school/guardians/{id}` |
 | Staff | `/school/staff` | `/school/staff/{id}` |
+| Teachers | `/school/teachers` | `/school/teachers/{id}` |
 | School calendar | `/school/calendar` | `/school/calendar/{id}` |
 | Activities | `/school/activities` | `/school/activities/{id}` |
 | Announcements | `/school/announcements` | `/school/announcements/{id}` |
@@ -286,6 +287,14 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 - **List:** search name · main filter assigned class · filter active/inactive
 - **Drawer header:** Edit profile · Manage permissions
 - **Drawer tabs:** Profile · **Permissions** ([§5.3.1](#531-staff-permission-assignment-ui)) · Assignments (read-only `staffAssignments` summary)
+
+### 7.4.1 School — Teachers
+
+- **Entity:** `Teacher` · **Complex drawer**
+- **List:** search name · filter active/inactive · CTA Add teacher
+- **Drawer header:** Edit profile
+- **Drawer tabs:** Profile · **Assignments** (`teacherAssignments`; subject + homeroom kinds) · Account linking (`kind: teacher` invitations)
+- **Modals:** Create teacher (optional portal invite) · Edit profile · Add/edit assignment
 
 ### 7.5 School — Calendar
 
@@ -428,6 +437,7 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 |--------|---------|---------------|
 | `Student` | Complex | `/school/students`, `/classes/{id}/students` |
 | `StaffMember` | Complex | `/school/staff` |
+| `Teacher` | Complex | `/school/teachers` |
 | `Guardian` | Complex | `/school/guardians` |
 | `Incident` | Complex | `/school/events` |
 | `Assessment` | Complex | `/classes/{id}/evaluations` |
@@ -439,7 +449,7 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 | `DisciplinaryAction` | Simple | `/configuration/discipline` |
 | `CalendarEvent` | Thin | `/school/calendar` |
 
-Sub-entities (`studentIncidentInvolvements`, `staffPermissionAssignments`, `classActivityEnrollments`, etc.) appear as **drawer sub-collections** or modal payloads — never as standalone nav items.
+Sub-entities (`studentIncidentInvolvements`, `staffPermissionAssignments`, `teacherAssignments`, `classActivityEnrollments`, etc.) appear as **drawer sub-collections** or modal payloads — never as standalone nav items.
 
 ---
 

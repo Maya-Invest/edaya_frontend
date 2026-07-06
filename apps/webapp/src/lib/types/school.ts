@@ -164,6 +164,17 @@ export interface StaffMember {
 	subjectId?: string | null;
 }
 
+export interface Teacher {
+	id: string;
+	name: string;
+	initials: string;
+	photoUrl?: string | null;
+	email: string;
+	phone: string;
+	isActive: boolean;
+	subjectId?: string | null;
+}
+
 export type ChronicCondition = 'Asthme' | 'Epilepsie' | 'Diabete';
 
 export interface HealthRecord {
@@ -357,6 +368,7 @@ export interface PedagogicalNote {
 export type ActivityEnrollmentStatus = 'approved' | 'pending' | 'denied';
 
 export interface ActivityEnrollment {
+	id: string;
 	studentId: string;
 	status: ActivityEnrollmentStatus;
 }

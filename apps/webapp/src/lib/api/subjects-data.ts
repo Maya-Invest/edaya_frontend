@@ -2,30 +2,29 @@ import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { Subject, SubjectCategory } from '$lib/types/school';
 import {
-	assignmentsForClassSubjects,
 	classGroupScope,
 	entitiesByIds,
 	schoolSubjectsCatalogList,
-	staffMembersByIds,
 	subjectMattersForSubjects,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
+import {
+	fetchClassSubjectInstructorSourcesBundle,
+	type ClassSubjectInstructorSources,
+	teacherNameForClassSubject,
+} from '$lib/api/teacher-display';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
 type SubjectRaw = components['schemas']['Subject'];
 type ClassSubjectRaw = components['schemas']['ClassSubject'];
 type SubjectMatterRaw = components['schemas']['SubjectMatter'];
-type StaffMemberRaw = components['schemas']['StaffMember'];
-type StaffAssignmentRaw = components['schemas']['StaffAssignment'];
 
-export interface ClassSubjectsSources {
+export interface ClassSubjectsSources extends ClassSubjectInstructorSources {
 	classSubjectsRaw: ClassSubjectRaw[];
 	subjectsRaw: SubjectRaw[];
 	subjectMattersRaw: SubjectMatterRaw[];
-	staffMembersRaw: StaffMemberRaw[];
-	staffAssignmentsRaw: StaffAssignmentRaw[];
 }
 
 const SUBJECT_CATEGORIES = new Set<SubjectCategory>([
@@ -53,22 +52,11 @@ function subjectColor(raw: SubjectRaw): Subject['color'] {
 	return 'mint';
 }
 
-function teacherNameForClassSubject(
+function teacherNameForClassSubjectFromSources(
 	classSubjectId: string,
-	staffAssignmentsRaw: StaffAssignmentRaw[],
-	staffMembersRaw: StaffMemberRaw[],
+	sources: ClassSubjectsSources,
 ): string {
-	const assignment = staffAssignmentsRaw.find(entry => entry.classSubjectId === classSubjectId);
-	if (!assignment) {
-		return 'Non assigné';
-	}
-
-	const teacher = staffMembersRaw.find(member => member.id === assignment.staffId);
-	if (!teacher) {
-		return 'Non assigné';
-	}
-
-	return `${teacher.firstName} ${teacher.lastName}`;
+	return teacherNameForClassSubject(classSubjectId, sources);
 }
 
 function hoursPerWeekForSubject(
@@ -117,22 +105,19 @@ export async function fetchSchoolSubjectsSources(client: SchoolClient): Promise<
 		classSubjectsRaw,
 		subjectsRaw,
 		subjectMattersRaw,
-		staffMembersRaw,
-		staffAssignmentsRaw,
 	] = await Promise.all([
 		safeOptionalEntityList(() => client.entities.classSubjects.list(schoolSubjectsCatalogList())),
 		safeOptionalEntityList(() => client.entities.subjects.list(schoolSubjectsCatalogList())),
 		safeOptionalEntityList(() => client.entities.subjectMatters.list(schoolSubjectsCatalogList())),
-		safeOptionalEntityList(() => client.entities.staffMembers.list(schoolSubjectsCatalogList())),
-		safeOptionalEntityList(() => client.entities.staffAssignments.list(schoolSubjectsCatalogList())),
 	]);
+	const classSubjectIds = uniqueIds((classSubjectsRaw ?? []).map(classSubject => classSubject.id));
+	const instructorSources = await fetchClassSubjectInstructorSourcesBundle(client, classSubjectIds);
 
 	return {
 		classSubjectsRaw: classSubjectsRaw ?? [],
 		subjectsRaw: subjectsRaw ?? [],
 		subjectMattersRaw: subjectMattersRaw ?? [],
-		staffMembersRaw: staffMembersRaw ?? [],
-		staffAssignmentsRaw: staffAssignmentsRaw ?? [],
+		...instructorSources,
 	};
 }
 
@@ -147,7 +132,6 @@ export async function fetchClassSubjectsSources(
 	const [
 		subjectsRaw,
 		subjectMattersRaw,
-		staffAssignmentsRaw,
 	] = await Promise.all([
 		subjectIds.length > 0
 			? client.entities.subjects.list(entitiesByIds(subjectIds))
@@ -155,23 +139,15 @@ export async function fetchClassSubjectsSources(
 		subjectIds.length > 0
 			? client.entities.subjectMatters.list(subjectMattersForSubjects(subjectIds))
 			: Promise.resolve([]),
-		classSubjectIds.length > 0
-			? safeOptionalEntityList(() =>
-					client.entities.staffAssignments.list(assignmentsForClassSubjects(classSubjectIds)))
-			: Promise.resolve([]),
 	]);
 
-	const staffIds = uniqueIds((staffAssignmentsRaw ?? []).map(assignment => assignment.staffId));
-	const staffMembersRaw = staffIds.length > 0
-		? await safeOptionalEntityList(() => client.entities.staffMembers.list(staffMembersByIds(staffIds)))
-		: [];
+	const instructorSources = await fetchClassSubjectInstructorSourcesBundle(client, classSubjectIds);
 
 	return {
 		classSubjectsRaw,
 		subjectsRaw: subjectsRaw ?? [],
 		subjectMattersRaw: subjectMattersRaw ?? [],
-		staffMembersRaw: staffMembersRaw ?? [],
-		staffAssignmentsRaw: staffAssignmentsRaw ?? [],
+		...instructorSources,
 	};
 }
 
@@ -193,10 +169,9 @@ export function mapClassSubjects(
 				id: classSubject.id,
 				classId: classSubject.classGroupId,
 				name: subject.name,
-				teacher: teacherNameForClassSubject(
+				teacher: teacherNameForClassSubjectFromSources(
 					classSubject.id,
-					sources.staffAssignmentsRaw,
-					sources.staffMembersRaw,
+					sources,
 				),
 				hoursPerWeek: hoursPerWeekForSubject(subject, classSubject, sources.subjectMattersRaw),
 				color: subjectColor(subject),

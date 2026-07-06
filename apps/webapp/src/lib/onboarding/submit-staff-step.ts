@@ -2,8 +2,10 @@ import type { OnboardingStaffInviteDraft } from '$lib/onboarding/types';
 import { ApiError } from '$api-client';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
+import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
-import { staffInvitesForSubmit } from '$lib/onboarding/staff-step-helpers';
+import { invitePortalTeachersOnboarding } from '$lib/onboarding/invite-portal-teachers';
+import { partitionStaffInvitesForSubmit } from '$lib/onboarding/staff-step-helpers';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
 
@@ -33,20 +35,35 @@ export async function submitStaffOnboardingStep(
 		return true;
 	}
 
-	const payload = staffInvitesForSubmit(invites);
-	if (payload.length === 0) {
+	const { teacherInvites, staffInvites } = partitionStaffInvitesForSubmit(invites);
+	if (teacherInvites.length === 0 && staffInvites.length === 0) {
 		return true;
 	}
 
 	try {
-		const result = await getBrowserSchoolClient().onboarding.inviteStaffMembers({
-			invites: payload,
-		});
+		let invitedCount = 0;
+
+		if (teacherInvites.length > 0) {
+			const teacherCount = await invitePortalTeachersOnboarding(teacherInvites, {
+				loginEmail: authSession.loginEmail,
+			});
+			if (teacherCount === null) {
+				return false;
+			}
+			invitedCount += teacherCount;
+		}
+
+		if (staffInvites.length > 0) {
+			const result = await getBrowserSchoolClient().onboarding.inviteStaffMembers({
+				invites: staffInvites,
+			});
+			invitedCount += result.invitedCount;
+		}
 
 		resetAppShellBootstrap();
 		await bootstrapAppShell();
 
-		toast.success(get(t)('onboarding.staffStep.success', { count: result.invitedCount }));
+		toast.success(get(t)('onboarding.staffStep.success', { count: invitedCount }));
 		return true;
 	}
 	catch (error) {

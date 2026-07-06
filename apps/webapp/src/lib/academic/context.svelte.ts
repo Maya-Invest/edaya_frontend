@@ -162,7 +162,13 @@ class AcademicContext {
 		this.studentCount = 0;
 		this.guardianCount = 0;
 		this.staffCount = 0;
+		this.yearId = '';
+		this.periodId = '';
 		this.shellReady = false;
+		if (browser) {
+			sessionStorage.removeItem(STORAGE_YEAR);
+			sessionStorage.removeItem(STORAGE_PERIOD);
+		}
 	}
 }
 

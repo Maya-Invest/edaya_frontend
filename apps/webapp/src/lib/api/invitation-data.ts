@@ -7,7 +7,7 @@ export type AccountInvitation = components['schemas']['AccountInvitation'];
 export type AcceptInvitationResult = components['schemas']['AcceptInvitationResponse'];
 
 export async function fetchPendingAccountInvitation(
-	kind: 'staff' | 'guardian' | 'student',
+	kind: 'staff' | 'guardian' | 'student' | 'teacher',
 	targetId: string,
 ): Promise<AccountInvitation | null> {
 	const client = getBrowserSchoolClient();

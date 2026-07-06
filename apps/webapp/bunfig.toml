@@ -1,2 +1,2 @@
 [test]
-preload = ["./test/sveltekit-mocks.ts"]
+preload = ["./tests/support/sveltekit-mocks.ts"]

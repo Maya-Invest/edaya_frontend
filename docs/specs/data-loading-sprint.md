@@ -1,7 +1,7 @@
 # Data Loading Sprint — Alignment Tracker
 
 > **Normative contract:** [data-loading-spec.md](./data-loading-spec.md)  
-> **Execution:** [v1-staff-webapp-implementation-plan.md](../sprints/v1-staff-webapp-implementation-plan.md)
+> **Execution:** [demo-ready-plan.md](../sprints/demo-ready-plan.md)
 
 This document tracks **codebase alignment** with the data-loading spec. It is not normative — when code and spec disagree, update code to match the spec (or amend the spec in a dedicated PR).
 

@@ -139,7 +139,7 @@
 			</select>
 		</label>
 		<div class="space-y-1.5 text-sm sm:col-span-2">
-			<span class="text-muted-foreground">{$t('classGroups.homeroomStaff')}</span>
+			<span class="text-muted-foreground">{$t('classGroups.staffCoordinator')}</span>
 			<StaffPicker bind:value={homeroomStaffId} {staff} class="w-full" />
 		</div>
 	</div>

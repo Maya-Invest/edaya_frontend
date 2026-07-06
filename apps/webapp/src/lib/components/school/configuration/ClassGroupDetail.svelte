@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ClassNode } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import { portalHomeroomTeacherNameForClass } from '$lib/api/teacher-display';
 	import ClassGroupFormModal from '$lib/components/school/academics/ClassGroupFormModal.svelte';
 	import ClassGroupStaffAssignmentsSection from '$lib/components/school/configuration/ClassGroupStaffAssignmentsSection.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
@@ -19,8 +20,14 @@
 		academicContext.classes.find(entry => entry.id === classGroup.id) ?? classGroup,
 	);
 	const gradeLevel = $derived(academicContext.gradeLevelById(live.gradeLevelId));
-	const homeroom = $derived(
+	const staffCoordinator = $derived(
 		detailDataContext.staff.find(member => member.id === live.homeroomStaffId)?.name ?? '—',
+	);
+	const portalHomeroomTeacher = $derived(
+		portalHomeroomTeacherNameForClass(live.id, {
+			teachersRaw: detailDataContext.teachers,
+			teacherAssignmentsRaw: detailDataContext.teacherAssignments,
+		}),
 	);
 	const summary = $derived(
 		`${$t('classGroups.studentCount')}: ${live.studentCount} · ${gradeLevel?.name ?? live.gradeLevelId}`,
@@ -90,8 +97,13 @@
 						{live.capacity ?? '—'}
 					</div>
 				</DrawerField>
-				<DrawerField label={$t('classGroups.homeroomStaff')}>
-					<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{homeroom}</div>
+				<DrawerField label={$t('classGroups.portalHomeroomTeacher')}>
+					<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">
+						{portalHomeroomTeacher}
+					</div>
+				</DrawerField>
+				<DrawerField label={$t('classGroups.staffCoordinator')}>
+					<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{staffCoordinator}</div>
 				</DrawerField>
 			</div>
 			<DrawerField label={$t('classGroups.attendanceMode')}>

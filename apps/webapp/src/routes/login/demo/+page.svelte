@@ -83,6 +83,9 @@
 
 	<h2 class="mb-1 font-display text-base font-semibold">{$t('auth.pickAccount')}</h2>
 	<p class="mb-4 text-xs text-muted-foreground">{$t('auth.demoHint')}</p>
+	<p class="mb-4 text-xs text-muted-foreground">
+		{$t('auth.demoStaffOnlyHint')}
+	</p>
 
 	<ul class="space-y-2">
 		{#each demoAccounts as account (account.staffId)}

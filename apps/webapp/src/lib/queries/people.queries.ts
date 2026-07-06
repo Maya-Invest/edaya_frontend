@@ -23,7 +23,15 @@ async function seedStudent360ForUrl(url: URL) {
 		return;
 	}
 
-	await seedStudent360ForStudent(studentId);
+	try {
+		await seedStudent360ForStudent(studentId);
+	}
+	catch (error) {
+		if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
+			return;
+		}
+		throw error;
+	}
 }
 
 export function querySchoolStudentsPage() {
@@ -53,6 +61,42 @@ export function querySchoolGuardiansPage() {
 	});
 }
 
+export function querySchoolTeachersPage() {
+	return (url: URL) => resolvePageLoad(url, {
+		empty: () => ({ totalTeachers: 0 }),
+		load: async () => {
+			const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
+			const client = queryClient();
+			const [countResult, subjectSources] = await Promise.all([
+				schoolId ? client.entities.teachers.count({ schoolId }) : Promise.resolve({ count: 0 }),
+				fetchSchoolSubjectsSources(client).catch((error) => {
+					if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
+						return {
+							classSubjectsRaw: [],
+							subjectsRaw: [],
+							subjectMattersRaw: [],
+							staffMembersRaw: [],
+							staffAssignmentsRaw: [],
+							teachersRaw: [],
+							teacherAssignmentsRaw: [],
+						};
+					}
+					throw error;
+				}),
+			]);
+			const subjects = mapAllClassSubjects(subjectSources);
+			for (const classId of [...new Set(subjects.map(subject => subject.classId))]) {
+				detailDataContext.seedSubjects(
+					subjects.filter(subject => subject.classId === classId),
+					{ classId },
+				);
+			}
+			return { totalTeachers: countResult.count };
+		},
+		hasItems: listPageHasItems,
+	});
+}
+
 export function querySchoolStaffPage() {
 	return (url: URL) => resolvePageLoad(url, {
 		empty: () => ({ totalStaff: 0 }),
@@ -70,6 +114,8 @@ export function querySchoolStaffPage() {
 							subjectMattersRaw: [],
 							staffMembersRaw: [],
 							staffAssignmentsRaw: [],
+							teachersRaw: [],
+							teacherAssignmentsRaw: [],
 						};
 					}
 					throw error;

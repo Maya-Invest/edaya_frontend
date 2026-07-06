@@ -4,6 +4,7 @@ import {
 	hydrateClassGroupDrawer,
 	hydrateClassGroupStaffDirectory,
 } from '$lib/api/configuration-data';
+import { ApiError } from '$api-client';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 import { refreshReportCardCatalog } from '$lib/queries/report-cards.queries';
 import { reportCardsContext } from '$lib/report-cards/context.svelte';
@@ -12,10 +13,24 @@ export function queryClassGroupsPage() {
 	return (url: URL) => resolvePageLoad(url, {
 		empty: () => ({ classCount: 0 }),
 		load: async () => {
-			await hydrateClassGroupStaffDirectory();
+			try {
+				await hydrateClassGroupStaffDirectory();
+			}
+			catch (error) {
+				if (!(error instanceof ApiError && (error.status === 403 || error.status === 401))) {
+					throw error;
+				}
+			}
 			const classGroupId = classGroupDetailIdFromUrl(url);
 			if (classGroupId) {
-				await hydrateClassGroupDrawer(classGroupId);
+				try {
+					await hydrateClassGroupDrawer(classGroupId);
+				}
+				catch (error) {
+					if (!(error instanceof ApiError && (error.status === 403 || error.status === 401))) {
+						throw error;
+					}
+				}
 			}
 			return { classCount: academicContext.classes.length };
 		},
