@@ -1,12 +1,10 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
-	import { academicContext } from '$lib/academic/context.svelte';
 	import { authSession } from '$lib/auth/session.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
-	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { t } from '$lib/i18n';
 	import {
 		Lock,
@@ -20,60 +18,17 @@
 		Plus,
 		Search,
 	} from '$lib/icons';
-	import { readEducatorDashboardListFilters, writeEducatorDashboardListFilters } from '$lib/list/list-url-filters';
-	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
-	import { appGoto } from '$lib/navigation/app-navigation';
+	import {
+		EDUCATOR_DASHBOARD_TAB_ITEMS,
+		EducatorDashboardState,
+	} from '$lib/school/educator-dashboard-state.svelte';
 	import { canEditGrades } from '$lib/permissions';
 	import { INCIDENT_SEVERITY_TONE } from '$lib/ui-tones';
 	import { cn } from '$lib/utils';
 
-	type Tab = 'schoollife' | 'grades';
-
-	const students = $derived(detailDataContext.students);
-	const absences = $derived(detailDataContext.absences);
-	const incidents = $derived(detailDataContext.incidents);
-	const evaluations = $derived(detailDataContext.evaluations);
-	const classes = $derived(academicContext.classes);
+	const dashboard = new EducatorDashboardState(() => $page.url);
 
 	const me = $derived(authSession.user);
-
-	const initialFilters = $derived(readEducatorDashboardListFilters($page.url));
-
-	const listFilters = new ListFiltersState<{ q: string; tab: string }>(
-		{
-			getUrl: () => $page.url,
-			write: writeEducatorDashboardListFilters,
-			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
-		},
-		() => readEducatorDashboardListFilters($page.url),
-	);
-
-	const tab = $derived(
-		listFilters.values.tab === 'grades' ? 'grades' as const : 'schoollife' as const,
-	);
-
-	const studentsBySearch = $derived.by(() => {
-		const term = listFilters.values.q.trim().toLowerCase();
-		if (!term)
-			return students;
-		return students.filter(s => s.name.toLowerCase().includes(term));
-	});
-
-	const recentAbsences = $derived(
-		[...absences].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 8),
-	);
-	const recentIncidents = $derived(
-		[...incidents].sort((a, b) => (a.date < b.date ? 1 : -1)),
-	);
-	const lateness = $derived(incidents.filter(i => i.category === 'Tardiness'));
-	const discipline = $derived(
-		incidents.filter(i => i.category === 'Behavior' || i.category === 'Conflict'),
-	);
-
-	const tabItems = [
-		{ k: 'schoollife' as const, labelKey: 'educator.schoolLife' },
-		{ k: 'grades' as const, labelKey: 'educator.gradesReadOnly' },
-	];
 
 	const kpiToneClass = {
 		warm: 'bg-primary text-primary-foreground',
@@ -82,34 +37,19 @@
 		destructive: 'bg-destructive/10 text-destructive',
 	} as const;
 
-	function schoolAverage() {
-		if (students.length === 0)
-			return '0';
-		const avg = students.reduce((acc, s) => acc + s.average, 0) / students.length;
-		return avg.toFixed(1);
-	}
-
 	const editable = canEditGrades();
 
 	$effect(() => {
-		listFilters.hydrate({
-			q: initialFilters.q,
-			tab: initialFilters.tab === 'grades' ? 'grades' : 'schoollife',
-		});
+		dashboard.hydrateFromUrl($page.url);
 	});
 
 	$effect(() => {
-		if (!listFilters.ready) {
+		if (!dashboard.filters.ready) {
 			return;
 		}
-		void listFilters.values.tab;
-		listFilters.scheduleSync();
+		void dashboard.filters.values.tab;
+		dashboard.filters.scheduleSync();
 	});
-
-	function applyTab(next: Tab) {
-		listFilters.values.tab = next;
-		listFilters.scheduleSync();
-	}
 </script>
 
 {#snippet panel(title: string, subtitle: string | undefined, action: Snippet | undefined, children: Snippet)}
@@ -141,14 +81,14 @@
 		description={me ? `${$t(`staff.role.${me.role}`)} · ${me.department}` : undefined}
 	>
 		{#snippet search()}
-			{#if tab === 'grades'}
+			{#if dashboard.tab === 'grades'}
 				<div class="relative">
 					<Search
 						class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
 					/>
 					<Input
-						bind:value={listFilters.values.q}
-						oninput={() => listFilters.scheduleSync()}
+						bind:value={dashboard.filters.values.q}
+						oninput={() => dashboard.filters.scheduleSync()}
 						placeholder={$t('common.search')}
 						class="h-9 w-56 rounded-full pl-9 text-sm"
 					/>
@@ -157,11 +97,11 @@
 		{/snippet}
 		{#snippet filters()}
 			<div class="flex w-fit items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft">
-				{#each tabItems as x (x.k)}
-					{@const active = tab === x.k}
+				{#each EDUCATOR_DASHBOARD_TAB_ITEMS as x (x.k)}
+					{@const active = dashboard.tab === x.k}
 					<button
 						type="button"
-						onclick={() => applyTab(x.k)}
+						onclick={() => dashboard.applyTab(x.k)}
 						class={cn(
 							'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition',
 							active
@@ -208,7 +148,7 @@
 					{$t('educator.fullAccess')}
 				</span>
 			</div>
-			<p class="mt-3 font-display text-2xl font-semibold tabular-nums">{absences.length}</p>
+			<p class="mt-3 font-display text-2xl font-semibold tabular-nums">{dashboard.absences.length}</p>
 			<p class="mt-0.5 text-xs text-muted-foreground">{$t('educator.absences')}</p>
 		</div>
 		<div class="rounded-2xl border border-border bg-card p-4 shadow-soft">
@@ -223,7 +163,7 @@
 					{$t('educator.fullAccess')}
 				</span>
 			</div>
-			<p class="mt-3 font-display text-2xl font-semibold tabular-nums">{lateness.length}</p>
+			<p class="mt-3 font-display text-2xl font-semibold tabular-nums">{dashboard.lateness.length}</p>
 			<p class="mt-0.5 text-xs text-muted-foreground">{$t('educator.lateness')}</p>
 		</div>
 		<div class="rounded-2xl border border-border bg-card p-4 shadow-soft">
@@ -240,7 +180,7 @@
 					{$t('educator.fullAccess')}
 				</span>
 			</div>
-			<p class="mt-3 font-display text-2xl font-semibold tabular-nums">{discipline.length}</p>
+			<p class="mt-3 font-display text-2xl font-semibold tabular-nums">{dashboard.discipline.length}</p>
 			<p class="mt-0.5 text-xs text-muted-foreground">{$t('educator.discipline')}</p>
 		</div>
 		<div class="rounded-2xl border border-border bg-card p-4 shadow-soft">
@@ -256,13 +196,13 @@
 				</span>
 			</div>
 			<p class="mt-3 font-display text-2xl font-semibold tabular-nums">
-				{schoolAverage()}<span class="ml-0.5 text-sm text-muted-foreground">/20</span>
+				{dashboard.schoolAverage()}<span class="ml-0.5 text-sm text-muted-foreground">/20</span>
 			</p>
 			<p class="mt-0.5 text-xs text-muted-foreground">{$t('educator.average')}</p>
 		</div>
 	</div>
 
-	{#if tab === 'schoollife'}
+	{#if dashboard.tab === 'schoollife'}
 		<div class="grid gap-4 lg:grid-cols-2">
 			{@render panel($t('educator.absences'), $t('educator.fullAccess'), absencesAction, absencesList)}
 			{@render panel(
@@ -291,9 +231,9 @@
 					<div class="col-span-3 text-right">{$t('educator.evaluations')}</div>
 				</div>
 				<ul>
-					{#each studentsBySearch as s (s.id)}
-						{@const cls = classes.find(c => c.id === s.classId)}
-						{@const evals = evaluations.filter(e => e.classId === s.classId).slice(0, 3)}
+					{#each dashboard.studentsBySearch as s (s.id)}
+						{@const cls = dashboard.classes.find(c => c.id === s.classId)}
+						{@const evals = dashboard.evaluations.filter(e => e.classId === s.classId).slice(0, 3)}
 						<li
 							class="grid grid-cols-12 items-center gap-4 border-b border-border px-5 py-4 text-sm last:border-b-0"
 						>
@@ -362,8 +302,8 @@
 
 {#snippet absencesList()}
 	<ul class="divide-y divide-border">
-		{#each recentAbsences as a (a.id)}
-			{@const s = students.find(x => x.id === a.studentId)}
+		{#each dashboard.recentAbsences as a (a.id)}
+			{@const s = dashboard.students.find(x => x.id === a.studentId)}
 			<li class="flex items-center justify-between gap-3 py-3 text-sm">
 				<div class="min-w-0">
 					<p class="truncate font-medium">{s?.name ?? a.studentId}</p>
@@ -386,8 +326,8 @@
 
 {#snippet incidentsList()}
 	<ul class="divide-y divide-border">
-		{#each recentIncidents as i (i.id)}
-			{@const s = students.find(x => x.id === i.studentId)}
+		{#each dashboard.recentIncidents as i (i.id)}
+			{@const s = dashboard.students.find(x => x.id === i.studentId)}
 			<li class="flex items-start justify-between gap-3 py-3 text-sm">
 				<div class="min-w-0">
 					<p class="truncate font-medium">{s?.name ?? i.studentId}</p>

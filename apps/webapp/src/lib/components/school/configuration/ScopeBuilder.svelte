@@ -1,19 +1,7 @@
 <script lang="ts">
 	import type { ScopeGrain } from '$lib/api/scope-ids';
+	import { ScopeBuilderState } from '$lib/access/scope-builder-state.svelte';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import {
-		composeActivityScopeIds,
-		composeClassGroupScopeIds,
-		composeClassSubjectScopeIds,
-		composeGradeLevelScopeIds,
-		composeStudentScopeIds,
-		findConflictingClassSubjectScopePathIndex,
-		parseActivityScopeIds,
-		parseClassGroupScopeIds,
-		parseClassSubjectScopeIds,
-		parseGradeLevelScopeIds,
-		parseStudentScopeIds,
-	} from '$lib/api/scope-ids';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
@@ -29,189 +17,31 @@
 		scopeIds?: string;
 	} = $props();
 
-	let selectedClassGroups = $state<string[]>([]);
-	let gradeLevelId = $state('');
-	let classSubjectRows = $state<Array<{ classGroupId: string; classSubjectId: string; wildcard: boolean }>>([]);
-	let selectedStudents = $state<string[]>([]);
-	let activityId = $state('');
-	let activityClassGroupId = $state('');
-	let hydratedKey = $state('');
-	let duplicateScopeWarning = $state(false);
+	const builder = new ScopeBuilderState();
 
 	const classOptions = $derived(academicContext.classes);
 	const gradeOptions = $derived(academicContext.gradeLevels);
 	const studentOptions = $derived(detailDataContext.students);
 	const activityOptions = $derived(detailDataContext.activities);
 	const selectedGradeLabel = $derived(
-		gradeOptions.find(grade => grade.id === gradeLevelId)?.name ?? '',
+		gradeOptions.find(grade => grade.id === builder.gradeLevelId)?.name ?? '',
 	);
 	const selectedActivityLabel = $derived(
-		activityOptions.find(activity => activity.id === activityId)?.name ?? '',
+		activityOptions.find(activity => activity.id === builder.activityId)?.name ?? '',
 	);
 	const selectedActivityClassLabel = $derived(
-		activityClassGroupId ? classLabel(activityClassGroupId) : '',
+		builder.activityClassGroupId ? builder.classLabel(builder.activityClassGroupId) : '',
 	);
 
-	function subjectsForClass(classGroupId: string) {
-		return detailDataContext.subjectsForClass(classGroupId);
-	}
-
-	function classLabel(classGroupId: string): string {
-		return classOptions.find(entry => entry.id === classGroupId)?.name ?? classGroupId;
-	}
-
-	function subjectLabel(classGroupId: string, classSubjectId: string): string {
-		return subjectsForClass(classGroupId).find(subject => subject.id === classSubjectId)?.name ?? '';
-	}
-
-	function hydrateFromScopeIds() {
-		const key = `${grain}:${scopeIds}`;
-		if (hydratedKey === key) {
-			return;
-		}
-		hydratedKey = key;
-
-		switch (grain) {
-			case 'class_group':
-				selectedClassGroups = parseClassGroupScopeIds(scopeIds);
-				break;
-			case 'grade_level':
-				gradeLevelId = parseGradeLevelScopeIds(scopeIds);
-				break;
-			case 'class_subject':
-				classSubjectRows = parseClassSubjectScopeIds(scopeIds).map(row => ({
-					classGroupId: row.classGroupId,
-					classSubjectId: row.classSubjectId ?? '',
-					wildcard: Boolean(row.wildcard),
-				}));
-				if (classSubjectRows.length === 0) {
-					classSubjectRows = [{ classGroupId: classOptions[0]?.id ?? '', classSubjectId: '', wildcard: false }];
-				}
-				break;
-			case 'student':
-				selectedStudents = parseStudentScopeIds(scopeIds);
-				break;
-			case 'activity': {
-				const parsed = parseActivityScopeIds(scopeIds);
-				activityId = parsed.activityId;
-				activityClassGroupId = parsed.classGroupId ?? '';
-				break;
-			}
-		}
-	}
-
-	function syncScopeIds() {
-		switch (grain) {
-			case 'class_group':
-				scopeIds = composeClassGroupScopeIds(selectedClassGroups);
-				break;
-			case 'grade_level':
-				scopeIds = composeGradeLevelScopeIds(gradeLevelId);
-				break;
-			case 'class_subject':
-				scopeIds = composeClassSubjectScopeIds(classSubjectRows);
-				break;
-			case 'student':
-				scopeIds = composeStudentScopeIds(selectedStudents);
-				break;
-			case 'activity':
-				scopeIds = composeActivityScopeIds(activityId, activityClassGroupId || undefined);
-				break;
-		}
-	}
-
 	$effect(() => {
-		hydrateFromScopeIds();
+		builder.syncFromParent(grain, scopeIds);
 	});
 
-	function toggleClassGroup(classGroupId: string, checked: boolean | 'indeterminate') {
-		if (checked === 'indeterminate') {
-			return;
+	$effect(() => {
+		if (builder.scopeIds !== scopeIds) {
+			scopeIds = builder.scopeIds;
 		}
-		selectedClassGroups = checked
-			? [...new Set([...selectedClassGroups, classGroupId])]
-			: selectedClassGroups.filter(id => id !== classGroupId);
-		syncScopeIds();
-	}
-
-	function toggleStudent(studentId: string, checked: boolean | 'indeterminate') {
-		if (checked === 'indeterminate') {
-			return;
-		}
-		selectedStudents = checked
-			? [...new Set([...selectedStudents, studentId])]
-			: selectedStudents.filter(id => id !== studentId);
-		syncScopeIds();
-	}
-
-	function addClassSubjectRow() {
-		duplicateScopeWarning = false;
-		classSubjectRows = [
-			...classSubjectRows,
-			{ classGroupId: classOptions[0]?.id ?? '', classSubjectId: '', wildcard: false },
-		];
-	}
-
-	function removeClassSubjectRow(index: number) {
-		if (classSubjectRows.length <= 1) {
-			return;
-		}
-		duplicateScopeWarning = false;
-		classSubjectRows = classSubjectRows.filter((_, rowIndex) => rowIndex !== index);
-		syncScopeIds();
-	}
-
-	function updateClassSubjectRow(index: number, patch: Partial<{ classGroupId: string; classSubjectId: string; wildcard: boolean }>) {
-		const candidate = { ...classSubjectRows[index], ...patch };
-		if (findConflictingClassSubjectScopePathIndex(classSubjectRows, index, candidate) !== -1) {
-			duplicateScopeWarning = true;
-			return;
-		}
-		duplicateScopeWarning = false;
-		classSubjectRows = classSubjectRows.map((row, rowIndex) =>
-			rowIndex === index ? candidate : row,
-		);
-		syncScopeIds();
-	}
-
-	function isClassFullyCoveredByWildcard(classGroupId: string, rowIndex: number): boolean {
-		return classSubjectRows.some(
-			(row, index) => index !== rowIndex && row.classGroupId === classGroupId && row.wildcard,
-		);
-	}
-
-	function isClassWildcardBlocked(classGroupId: string, rowIndex: number): boolean {
-		return classSubjectRows.some(
-			(row, index) =>
-				index !== rowIndex
-				&& row.classGroupId === classGroupId
-				&& (row.wildcard || Boolean(row.classSubjectId?.trim())),
-		);
-	}
-
-	function isClassGroupOptionDisabled(
-		classGroupId: string,
-		rowIndex: number,
-		row: { wildcard: boolean },
-	): boolean {
-		if (row.wildcard) {
-			return isClassWildcardBlocked(classGroupId, rowIndex);
-		}
-		return isClassFullyCoveredByWildcard(classGroupId, rowIndex);
-	}
-
-	function isSubjectScopeTaken(classGroupId: string, classSubjectId: string, rowIndex: number): boolean {
-		if (isClassFullyCoveredByWildcard(classGroupId, rowIndex)) {
-			return true;
-		}
-		return classSubjectRows.some(
-			(row, index) =>
-				index !== rowIndex
-				&& row.classGroupId === classGroupId
-				&& !row.wildcard
-				&& row.classSubjectId === classSubjectId,
-		);
-	}
+	});
 </script>
 
 <div class="space-y-3">
@@ -224,8 +54,8 @@
 			{#each classOptions as classGroup (classGroup.id)}
 				<label class="flex items-center gap-2 text-sm">
 					<Checkbox
-						checked={selectedClassGroups.includes(classGroup.id)}
-						onCheckedChange={checked => toggleClassGroup(classGroup.id, checked)}
+						checked={builder.selectedClassGroups.includes(classGroup.id)}
+						onCheckedChange={checked => builder.toggleClassGroup(classGroup.id, checked)}
 					/>
 					<span>{classGroup.name}</span>
 				</label>
@@ -237,13 +67,12 @@
 	{:else if grain === 'grade_level'}
 		<Select.Root
 			type="single"
-			value={gradeLevelId}
+			value={builder.gradeLevelId}
 			onValueChange={(value) => {
 				if (!value) {
 					return;
 				}
-				gradeLevelId = value;
-				syncScopeIds();
+				builder.setGradeLevelId(value);
 			}}
 		>
 			<Select.Trigger class="h-10 w-full rounded-xl">
@@ -259,15 +88,15 @@
 		</Select.Root>
 	{:else if grain === 'class_subject' || grain === 'grade_level_subject'}
 		<div class="space-y-3">
-			{#each classSubjectRows as row, index (index)}
+			{#each builder.classSubjectRows as row, index (index)}
 				<div class="space-y-2 rounded-xl border border-border p-3">
 					<div class="flex items-center justify-between gap-2">
 						<Label class="text-xs">{$t('roles.scopeClassGroup')}</Label>
-						{#if classSubjectRows.length > 1}
+						{#if builder.classSubjectRows.length > 1}
 							<button
 								type="button"
 								class="text-[11px] font-medium text-muted-foreground hover:text-foreground"
-								onclick={() => removeClassSubjectRow(index)}
+								onclick={() => builder.removeClassSubjectRow(index)}
 							>
 								{$t('roles.removeScopePath')}
 							</button>
@@ -281,17 +110,17 @@
 								if (!value) {
 									return;
 								}
-								updateClassSubjectRow(index, { classGroupId: value, classSubjectId: '' });
+								builder.updateClassSubjectRow(index, { classGroupId: value, classSubjectId: '' });
 							}}
 						>
 							<Select.Trigger class="h-9 w-full rounded-lg">
 								<Select.Value placeholder={$t('roles.selectClassGroup')}>
-									{classLabel(row.classGroupId) || $t('roles.selectClassGroup')}
+									{builder.classLabel(row.classGroupId) || $t('roles.selectClassGroup')}
 								</Select.Value>
 							</Select.Trigger>
 							<Select.Content>
 								{#each classOptions as classGroup (classGroup.id)}
-									{@const classDisabled = isClassGroupOptionDisabled(classGroup.id, index, row)}
+									{@const classDisabled = builder.isClassGroupOptionDisabled(classGroup.id, index, row)}
 									<Select.Item
 										value={classGroup.id}
 										label={classGroup.name}
@@ -306,15 +135,15 @@
 					<label class="flex items-center gap-2 text-xs text-muted-foreground">
 						<Checkbox
 							checked={row.wildcard ?? false}
-							disabled={!row.wildcard && isClassWildcardBlocked(row.classGroupId, index)}
+							disabled={!row.wildcard && builder.isClassWildcardBlocked(row.classGroupId, index)}
 							onCheckedChange={(checked) => {
 								if (typeof checked !== 'boolean') {
 									return;
 								}
-								updateClassSubjectRow(index, { wildcard: checked, classSubjectId: '' });
+								builder.updateClassSubjectRow(index, { wildcard: checked, classSubjectId: '' });
 							}}
 						/>
-						{$t('roles.scopeWildcardSubjects', { classGroup: classLabel(row.classGroupId) })}
+						{$t('roles.scopeWildcardSubjects', { classGroup: builder.classLabel(row.classGroupId) })}
 					</label>
 					{#if !row.wildcard}
 						<div class="space-y-1">
@@ -326,17 +155,17 @@
 									if (!value) {
 										return;
 									}
-									updateClassSubjectRow(index, { classSubjectId: value });
+									builder.updateClassSubjectRow(index, { classSubjectId: value });
 								}}
 							>
 								<Select.Trigger class="h-9 w-full rounded-lg">
 									<Select.Value placeholder={$t('roles.selectClassSubject')}>
-										{subjectLabel(row.classGroupId, row.classSubjectId) || $t('roles.selectClassSubject')}
+										{builder.subjectLabel(row.classGroupId, row.classSubjectId) || $t('roles.selectClassSubject')}
 									</Select.Value>
 								</Select.Trigger>
 								<Select.Content>
-									{#each subjectsForClass(row.classGroupId) as subject (subject.id)}
-										{@const subjectTaken = isSubjectScopeTaken(row.classGroupId, subject.id, index)}
+									{#each builder.subjectsForClass(row.classGroupId) as subject (subject.id)}
+										{@const subjectTaken = builder.isSubjectScopeTaken(row.classGroupId, subject.id, index)}
 										<Select.Item
 											value={subject.id}
 											label={subject.name}
@@ -351,13 +180,13 @@
 					{/if}
 				</div>
 			{/each}
-			{#if duplicateScopeWarning}
+			{#if builder.duplicateScopeWarning}
 				<p class="text-xs text-amber-600">{$t('roles.scopePathDuplicate')}</p>
 			{/if}
 			<button
 				type="button"
 				class={cn('text-xs font-medium text-primary hover:underline')}
-				onclick={addClassSubjectRow}
+				onclick={() => builder.addClassSubjectRow()}
 			>
 				{$t('roles.addScopePath')}
 			</button>
@@ -367,8 +196,8 @@
 			{#each studentOptions as student (student.id)}
 				<label class="flex items-center gap-2 text-sm">
 					<Checkbox
-						checked={selectedStudents.includes(student.id)}
-						onCheckedChange={checked => toggleStudent(student.id, checked)}
+						checked={builder.selectedStudents.includes(student.id)}
+						onCheckedChange={checked => builder.toggleStudent(student.id, checked)}
 					/>
 					<span>{student.name}</span>
 				</label>
@@ -383,13 +212,12 @@
 				<Label class="text-xs">{$t('roles.scopeActivity')}</Label>
 				<Select.Root
 					type="single"
-					value={activityId}
+					value={builder.activityId}
 					onValueChange={(value) => {
 						if (!value) {
 							return;
 						}
-						activityId = value;
-						syncScopeIds();
+						builder.setActivityId(value);
 					}}
 				>
 					<Select.Trigger class="h-9 w-full rounded-lg">
@@ -408,10 +236,9 @@
 				<Label class="text-xs">{$t('roles.scopeActivityClassOptional')}</Label>
 				<Select.Root
 					type="single"
-					value={activityClassGroupId}
+					value={builder.activityClassGroupId}
 					onValueChange={(value) => {
-						activityClassGroupId = value ?? '';
-						syncScopeIds();
+						builder.setActivityClassGroupId(value ?? '');
 					}}
 				>
 					<Select.Trigger class="h-9 w-full rounded-lg">

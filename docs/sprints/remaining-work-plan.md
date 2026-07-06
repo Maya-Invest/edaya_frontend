@@ -88,9 +88,9 @@ Pilots + state-class views were already done. **Migrated 2026-07-06** to `ListFi
 
 | Feature | Proposed module | Status |
 |---------|-----------------|--------|
-| Staff assignment modal | `staff-assignment-form-state.svelte.ts` | — |
-| Scope builder | `scope-builder-state.svelte.ts` | — |
-| Educator dashboard | `educator-dashboard-state.svelte.ts` | — |
+| Staff assignment modal | `staff-assignment-form-state.svelte.ts` | ✅ |
+| Scope builder | `scope-builder-state.svelte.ts` | ✅ |
+| Educator dashboard | `educator-dashboard-state.svelte.ts` | ✅ |
 
 P2: remaining `*View.svelte` — extract only when script > ~80 lines.
 
