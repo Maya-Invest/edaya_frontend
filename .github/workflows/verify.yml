@@ -3,10 +3,21 @@ name: CI
 on:
   pull_request:
     branches: [main, master, staging]
+  workflow_dispatch:
+    inputs:
+      pr_base_ref:
+        description: Pull request base branch (selects api-dev image channel)
+        required: false
+        default: staging
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: read
 
 jobs:
   verify:
@@ -29,29 +40,12 @@ jobs:
   integration:
     needs: [verify]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
+    env:
+      API_DEV_BASE_REF: ${{ github.event.pull_request.base.ref || github.event.inputs.pr_base_ref || 'staging' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Resolve integration target
-        id: target
-        run: |
-          REF="${{ github.base_ref }}"
-          case "$REF" in
-            main|master)
-              echo "integration_target=production" >> "$GITHUB_OUTPUT"
-              echo "api_url=https://api.edaya.softilab.dev" >> "$GITHUB_OUTPUT"
-              echo "webapp_url=https://app.edaya.softilab.dev" >> "$GITHUB_OUTPUT"
-              echo "readiness_path=/login" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "integration_target=staging" >> "$GITHUB_OUTPUT"
-              echo "api_url=https://api-staging.edaya.softilab.dev" >> "$GITHUB_OUTPUT"
-              echo "webapp_url=https://app-staging.edaya.softilab.dev" >> "$GITHUB_OUTPUT"
-              echo "readiness_path=/login/demo" >> "$GITHUB_OUTPUT"
-              ;;
-          esac
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -61,20 +55,49 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Start API dev container
+        run: bash .github/scripts/ci-api-dev-container.sh start "${{ env.API_DEV_BASE_REF }}"
+
       - name: Install Playwright Chromium
         working-directory: apps/webapp
         run: bunx playwright install --with-deps chromium
 
-      - name: Wait for deployed API
-        run: bash .github/scripts/ci-wait-for-url.sh "${{ steps.target.outputs.api_url }}/reference"
+      - name: Build webapp for integration
+        run: |
+          bun run prepare:env
+          PUBLIC_API_URL=http://127.0.0.1:9999 PUBLIC_APP_ENV=staging bun --filter @edaya/webapp build
 
-      - name: Wait for deployed webapp
-        run: bash .github/scripts/ci-wait-for-url.sh "${{ steps.target.outputs.webapp_url }}${{ steps.target.outputs.readiness_path }}"
+      - name: Start webapp preview
+        working-directory: apps/webapp
+        run: |
+          bun run preview -- --host 127.0.0.1 --port 4173 > /tmp/webapp-preview.log 2>&1 &
+          echo $! > /tmp/webapp-preview.pid
+
+      - name: Wait for webapp preview
+        run: bash .github/scripts/ci-wait-for-url.sh http://127.0.0.1:4173/login/demo
 
       - name: Integration tests
         working-directory: apps/webapp
         env:
-          INTEGRATION_TARGET: ${{ steps.target.outputs.integration_target }}
-          WEBAPP_URL: ${{ steps.target.outputs.webapp_url }}
-          WEBAPP_READINESS_PATH: ${{ steps.target.outputs.readiness_path }}
+          INTEGRATION_TARGET: staging
+          WEBAPP_URL: http://127.0.0.1:4173
+          WEBAPP_READINESS_PATH: /login/demo
         run: bun run test:integration
+
+      - name: Stop webapp preview
+        if: always()
+        run: |
+          if [ -f /tmp/webapp-preview.pid ]; then
+            kill "$(cat /tmp/webapp-preview.pid)" 2>/dev/null || true
+          fi
+
+      - name: Stop API dev container
+        if: always()
+        run: bash .github/scripts/ci-api-dev-container.sh stop
