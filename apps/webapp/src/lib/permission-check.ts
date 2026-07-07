@@ -1,4 +1,9 @@
-import type { EffectiveGrantsSnapshot, PermissionCode, ScopeGrantSnapshot } from '$lib/auth/types';
+import type { EffectiveGrantsSnapshot, PermissionCode } from '$lib/auth/types';
+import {
+	legacyScopeToResourcePath,
+	permissionScopeGrain,
+	scopePathCovers,
+} from '$lib/scope-path-covers';
 
 export interface PermissionContext {
 	classId?: string;
@@ -6,45 +11,26 @@ export interface PermissionContext {
 	schoolId?: string;
 }
 
-function scopeGrantCovers(
-	grants: readonly ScopeGrantSnapshot[],
+function scopeIdsCoverPermission(
+	grants: EffectiveGrantsSnapshot,
 	args: {
 		permission: PermissionCode;
-		schoolId: string;
-		scopeType?: ScopeGrantSnapshot['scopeType'];
-		scopeEntityId?: string;
-		isElevated: boolean;
+		scopeType: 'class_group' | 'course_assignment';
+		scopeEntityId: string;
 	},
 ): boolean {
-	if (args.isElevated) {
-		return true;
-	}
-
-	if (!args.scopeType) {
-		return true;
-	}
-
-	const hasSchoolGrant = grants.some(grant =>
-		grant.permission === args.permission
-		&& grant.scopeType === 'school'
-		&& (grant.scopeEntityIds.length === 0 || grant.scopeEntityIds.includes(args.schoolId)),
-	);
-	if (hasSchoolGrant) {
-		return true;
-	}
-
-	const matching = grants.filter(grant =>
-		grant.permission === args.permission && grant.scopeType === args.scopeType);
-
-	if (matching.length === 0) {
+	const scopeIds = grants.scopeIdsByPermission[args.permission];
+	if (scopeIds === undefined) {
 		return false;
 	}
 
+	const permissionScope = permissionScopeGrain(args.permission);
 	if (!args.scopeEntityId) {
 		return true;
 	}
 
-	return matching.some(grant => grant.scopeEntityIds.includes(args.scopeEntityId!));
+	const resourcePath = legacyScopeToResourcePath(args.scopeType, args.scopeEntityId);
+	return scopePathCovers(scopeIds, resourcePath, permissionScope);
 }
 
 export function checkPermission(
@@ -68,12 +54,10 @@ export function checkPermission(
 		return true;
 	}
 
-	return scopeGrantCovers(grants.scopeGrants, {
+	return scopeIdsCoverPermission(grants, {
 		permission,
-		schoolId: ctx.schoolId ?? '',
 		scopeType: ctx.classId ? 'class_group' : 'course_assignment',
-		scopeEntityId: ctx.classId ?? ctx.subject,
-		isElevated: grants.isElevated,
+		scopeEntityId: ctx.classId ?? ctx.subject ?? '',
 	});
 }
 

@@ -105,7 +105,7 @@ function extractClassIdFromPath(pathname: string): string | undefined {
 	return match?.[1];
 }
 
-/** Dev seed `role-teacher` permissions — used in unit tests for profile 3.2. */
+/** Staff teaching-write permissions — used in unit tests for profile 3.2. */
 export const TEACHER_NAV_PERMISSIONS: readonly PermissionCode[] = [
 	'CLASS_LOGBOOK_CREATE',
 	'ATTENDANCE_RECORD',

@@ -74,9 +74,6 @@ export function findConflictingClassSubjectScopePathIndex(
 	return -1;
 }
 
-/** @deprecated Use findConflictingClassSubjectScopePathIndex */
-export const findDuplicateClassSubjectScopePathIndex = findConflictingClassSubjectScopePathIndex;
-
 export function composeClassGroupScopeIds(classGroupIds: readonly string[]): string {
 	const ids = [...new Set(classGroupIds.map(id => id.trim()).filter(Boolean))];
 	return ids.join(',');
