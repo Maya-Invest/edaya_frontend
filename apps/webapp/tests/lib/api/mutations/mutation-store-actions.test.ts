@@ -1,4 +1,5 @@
 import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
+import type { components } from '$lib/api/schema';
 import { ApiError } from '$api-client';
 import { describe, expect, it, mock } from 'bun:test';
 import { mergeById } from '$lib/detail-data/seed-policies';
@@ -14,7 +15,9 @@ mock.module('$lib/auth/bootstrap-app', () => ({
 
 const { runMutation } = await import('$lib/api/mutations/run-mutation');
 
-function permissionRow(id: string, permission = 'students.read'): StaffPermissionAssignmentView {
+type Permission = components['schemas']['StaffPermissionAssignment']['permission'];
+
+function permissionRow(id: string, permission: Permission = 'STUDENT_READ'): StaffPermissionAssignmentView {
 	return {
 		id,
 		staffId: 'staff-1',
@@ -97,7 +100,7 @@ describe('runMutation store actions', () => {
 		let status = 'pending';
 
 		const result = await runMutation(async () => {
-			throw new ApiError(400, 'Bad request', { message: 'failed' });
+			throw new ApiError(400, { message: 'failed' });
 		}, {
 			apply: () => {
 				status = 'cancelled';
@@ -115,7 +118,7 @@ describe('runMutation store actions', () => {
 describe('staff permission mutation store actions', () => {
 	it('upserts a new assignment on successful save apply', async () => {
 		const store = createStore();
-		const assignment = permissionRow('spa-new', 'students.write');
+		const assignment = permissionRow('spa-new', 'STUDENT_UPDATE');
 
 		const result = await runMutation(async () => assignment, {
 			apply: () => {
@@ -127,18 +130,18 @@ describe('staff permission mutation store actions', () => {
 		});
 
 		expect(result?.id).toBe('spa-new');
-		expect(store.find('spa-new')?.permission).toBe('students.write');
+		expect(store.find('spa-new')?.permission).toBe('STUDENT_UPDATE');
 	});
 
 	it('restores the previous assignment when save fails after apply', async () => {
 		const store = createStore();
-		const previous = permissionRow('spa-1', 'students.read');
+		const previous = permissionRow('spa-1', 'STUDENT_READ');
 		store.upsert(previous);
 
-		const assignment = permissionRow('spa-1', 'students.write');
+		const assignment = permissionRow('spa-1', 'STUDENT_UPDATE');
 
 		const result = await runMutation(async () => {
-			throw new ApiError(400, 'Bad request', { message: 'failed' });
+			throw new ApiError(400, { message: 'failed' });
 		}, {
 			apply: () => {
 				applyStaffPermissionSave(store, assignment, previous);
@@ -149,7 +152,7 @@ describe('staff permission mutation store actions', () => {
 		});
 
 		expect(result).toBeNull();
-		expect(store.find('spa-1')?.permission).toBe('students.read');
+		expect(store.find('spa-1')?.permission).toBe('STUDENT_READ');
 	});
 
 	it('removes the assignment on delete apply and restores it on rollback', async () => {
@@ -170,7 +173,7 @@ describe('staff permission mutation store actions', () => {
 		expect(store.find('spa-1')).toBeUndefined();
 
 		const failed = await runMutation(async () => {
-			throw new ApiError(400, 'Bad request', { message: 'failed' });
+			throw new ApiError(400, { message: 'failed' });
 		}, {
 			apply: () => {
 				store.remove('spa-1');

@@ -1,4 +1,3 @@
-import type { SessionAttendanceStatus } from '$lib/types/session-detail';
 import { classActivityEnrollmentForActivityClass } from '$lib/api/entity-list-filters';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';

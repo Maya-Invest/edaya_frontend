@@ -5,6 +5,7 @@ import {
 	mondayOfWeek,
 	parseWeekAnchor,
 	shiftWeek,
+	todayDate,
 } from '$lib/components/school/scheduling/planning-calendar';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readPlanningListFilters, writePlanningListFilters } from '$lib/list/list-url-filters';
@@ -37,8 +38,8 @@ export class PlanningState {
 		return parseWeekAnchor(this.filters.values.week);
 	}
 
-	viewingCurrentWeek(now = new Date()): boolean {
-		return isCurrentWeek(this.weekStart, now);
+	viewingCurrentWeek(): boolean {
+		return isCurrentWeek(this.weekStart);
 	}
 
 	filterEvents(events: readonly PlanningEvent[]): PlanningEvent[] {
@@ -76,8 +77,8 @@ export class PlanningState {
 		this.navigateWeek(shiftWeek(this.weekStart, 1));
 	}
 
-	goToThisWeek(now = new Date()) {
-		this.navigateWeek(mondayOfWeek(now));
+	goToThisWeek() {
+		this.navigateWeek(mondayOfWeek(todayDate()));
 	}
 
 	openScheduleCreate(kind: TimetableScheduleKind) {

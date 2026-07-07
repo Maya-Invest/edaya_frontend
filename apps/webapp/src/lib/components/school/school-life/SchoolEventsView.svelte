@@ -124,9 +124,7 @@
 	] as const);
 
 	const secondaryFilterCount = $derived(
-		(categoryFilter !== 'all' ? 1 : 0)
-		+ (severityFilter !== 'all' ? 1 : 0)
-			+ (statusFilter !== 'all' ? 1 : 0),
+		(categoryFilter !== 'all' ? 1 : 0) + (severityFilter !== 'all' ? 1 : 0) + (statusFilter !== 'all' ? 1 : 0),
 	);
 
 	function studentSummary(incident: Incident): string {

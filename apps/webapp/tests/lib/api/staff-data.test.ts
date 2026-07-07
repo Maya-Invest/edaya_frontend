@@ -52,7 +52,7 @@ describe('staff role mapping', () => {
 
 	it('maps the school owner before assignment-based inference', () => {
 		expect(mapStaffRole(
-			staffMember({ id: 'st-owner', subjectId: 'subject-owner' }),
+			staffMember({ id: 'st-owner', subjectId: 'subject-owner', firstName: 'School', lastName: 'Owner' }),
 			[],
 			[],
 			'subject-owner',

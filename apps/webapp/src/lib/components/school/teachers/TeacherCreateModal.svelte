@@ -31,9 +31,7 @@
 	}
 
 	const canSubmit = $derived(
-		firstName.trim().length > 0
-		&& lastName.trim().length > 0
-			&& (!sendAccountInvitation || email.trim().length > 0),
+		firstName.trim().length > 0 && lastName.trim().length > 0 && (!sendAccountInvitation || email.trim().length > 0),
 	);
 
 	async function submit() {

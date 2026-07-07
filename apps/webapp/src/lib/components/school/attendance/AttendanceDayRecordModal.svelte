@@ -1,5 +1,4 @@
 <script lang="ts">
-	import type { AttendanceDay } from '$lib/types/school';
 	import type { SessionAttendanceStatus } from '$lib/types/session-detail';
 	import { recordDailyAttendanceForDayMutation } from '$lib/api/mutations/attendance.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';

@@ -3,7 +3,6 @@ import { recordsForFieldIds } from '$lib/api/entity-list-filters';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 
-type SubjectMatterRaw = components['schemas']['SubjectMatter'];
 type ClassSubjectRaw = components['schemas']['ClassSubject'];
 type ClassSubjectMatterRaw = components['schemas']['ClassSubjectMatter'];
 

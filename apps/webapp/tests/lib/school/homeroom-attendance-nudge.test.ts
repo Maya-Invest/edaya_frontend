@@ -1,4 +1,5 @@
 import type { ClassNode } from '$lib/types/school';
+import type { ResolvedPathname } from '$app/types';
 import { describe, expect, it } from 'bun:test';
 import {
 	homeroomDailyClassesForStaff,
@@ -33,8 +34,8 @@ describe('homeroomDailyClassesForStaff', () => {
 });
 
 describe('resolveHomeroomAttendanceNudges', () => {
-	const href = (classId: string, dayId?: string) =>
-		dayId ? `/classes/${classId}/attendance/${dayId}/` : `/classes/${classId}/attendance/`;
+	const href = (classId: string, dayId?: string): ResolvedPathname =>
+		(dayId ? `/classes/${classId}/attendance/${dayId}/` : `/classes/${classId}/attendance/`) as ResolvedPathname;
 
 	it('nudges when today attendance is incomplete', () => {
 		const rows = resolveHomeroomAttendanceNudges({

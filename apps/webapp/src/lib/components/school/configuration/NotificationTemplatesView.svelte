@@ -132,15 +132,13 @@
 											</p>
 										</div>
 										<RowActionMenu>
-											{#snippet children()}
-												<RowActionMenuItem
-													disabled={disabled || !document}
-													onclick={() => openEdit(key)}
-												>
-													<Pencil class="h-4 w-4" />
-													{$t('common.edit')}
-												</RowActionMenuItem>
-											{/snippet}
+											<RowActionMenuItem
+												disabled={disabled || !document}
+												onclick={() => openEdit(key)}
+											>
+												<Pencil class="h-4 w-4" />
+												{$t('common.edit')}
+											</RowActionMenuItem>
 										</RowActionMenu>
 									</div>
 									<p class="text-xs text-muted-foreground">

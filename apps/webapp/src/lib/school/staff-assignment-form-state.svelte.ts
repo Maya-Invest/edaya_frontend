@@ -73,7 +73,7 @@ export class StaffAssignmentFormState {
 	prunePermissions(allowedPermissions: readonly string[]) {
 		const pruned = pruneStaffAssignmentPermissions(
 			this.permissions,
-			new Set(allowedPermissions),
+			allowedPermissions,
 		);
 		if (pruned) {
 			this.permissions = pruned;
@@ -173,7 +173,7 @@ export class ClassGroupStaffAssignmentFormState {
 	prunePermissions(allowedPermissions: readonly string[]) {
 		const pruned = pruneStaffAssignmentPermissions(
 			this.permissions,
-			new Set(allowedPermissions),
+			allowedPermissions,
 		);
 		if (pruned) {
 			this.permissions = pruned;

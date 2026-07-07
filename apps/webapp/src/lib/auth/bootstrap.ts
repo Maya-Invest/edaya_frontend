@@ -28,6 +28,8 @@ export interface BootstrapSessionResult {
 	pendingOnboarding: boolean;
 }
 
+let sessionBootstrapPromise: Promise<BootstrapSessionResult> | null = null;
+
 export async function bootstrapSession(): Promise<BootstrapSessionResult> {
 	if (!sessionBootstrapPromise) {
 		sessionBootstrapPromise = runBootstrapSession();
@@ -38,8 +40,6 @@ export async function bootstrapSession(): Promise<BootstrapSessionResult> {
 export function resetBootstrapSession() {
 	sessionBootstrapPromise = null;
 }
-
-let sessionBootstrapPromise: Promise<BootstrapSessionResult> | null = null;
 
 async function runBootstrapSession(): Promise<BootstrapSessionResult> {
 	const emptyResult: BootstrapSessionResult = {

@@ -852,6 +852,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/core/commands/unlink-actor-subject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** unlink-actor-subject */
+        post: operations["commands.unlinkActorSubject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/core/commands/send-account-invitation": {
         parameters: {
             query?: never;
@@ -1679,6 +1696,23 @@ export interface paths {
         put?: never;
         /** generate-report-card-result */
         post: operations["commands.generateReportCardResult"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/commands/write-homeroom-report-comment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** write-homeroom-report-comment */
+        post: operations["commands.writeHomeroomReportComment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10454,6 +10488,29 @@ export interface components {
             studentId?: string;
             teacherId?: string;
         };
+        UnlinkActorSubjectResponse: {
+            /** @enum {string} */
+            kind: "staff";
+            entity: components["schemas"]["StaffMember"];
+        } | {
+            /** @enum {string} */
+            kind: "guardian";
+            entity: components["schemas"]["Guardian"];
+        } | {
+            /** @enum {string} */
+            kind: "student";
+            entity: components["schemas"]["Student"];
+        } | {
+            /** @enum {string} */
+            kind: "teacher";
+            entity: components["schemas"]["Teacher"];
+        };
+        UnlinkActorSubjectCommand: {
+            staffMemberId?: string;
+            guardianId?: string;
+            studentId?: string;
+            teacherId?: string;
+        };
         AccountInvitation: {
             id: string;
             schoolId: string;
@@ -11398,6 +11455,10 @@ export interface components {
                 };
             } | null;
             periodId: string;
+        };
+        WriteHomeroomReportCommentCommand: {
+            id: string;
+            teacherComment: string;
         };
         PublishReportCardResultCommand: {
             id: string;
@@ -15341,6 +15402,84 @@ export interface operations {
             };
         };
     };
+    "commands.unlinkActorSubject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description unlink-actor-subject payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["UnlinkActorSubjectCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed unlink-actor-subject */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnlinkActorSubjectResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
     "commands.sendAccountInvitation": {
         parameters: {
             query?: never;
@@ -19100,6 +19239,84 @@ export interface operations {
         };
         responses: {
             /** @description Executed generate-report-card-result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportCardResult"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "commands.writeHomeroomReportComment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description write-homeroom-report-comment payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["WriteHomeroomReportCommentCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed write-homeroom-report-comment */
             200: {
                 headers: {
                     [name: string]: unknown;

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Student, StudentEnrollmentHistoryItem } from '$lib/types/school';
+	import type { StudentEnrollmentHistoryItem } from '$lib/types/school';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import { t } from '$lib/i18n';
 	import { GraduationCap } from '$lib/icons';

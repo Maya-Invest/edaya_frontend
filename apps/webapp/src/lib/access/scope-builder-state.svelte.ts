@@ -128,7 +128,9 @@ export class ScopeBuilderState {
 			return;
 		}
 		this.selectedClassGroups = checked
-			? [...new Set([...this.selectedClassGroups, classGroupId])]
+			? this.selectedClassGroups.includes(classGroupId)
+				? this.selectedClassGroups
+				: [...this.selectedClassGroups, classGroupId]
 			: this.selectedClassGroups.filter(id => id !== classGroupId);
 		this.syncScopeIds();
 	}
@@ -138,7 +140,9 @@ export class ScopeBuilderState {
 			return;
 		}
 		this.selectedStudents = checked
-			? [...new Set([...this.selectedStudents, studentId])]
+			? this.selectedStudents.includes(studentId)
+				? this.selectedStudents
+				: [...this.selectedStudents, studentId]
 			: this.selectedStudents.filter(id => id !== studentId);
 		this.syncScopeIds();
 	}

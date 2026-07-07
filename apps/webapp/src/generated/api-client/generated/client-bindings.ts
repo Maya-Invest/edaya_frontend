@@ -365,6 +365,11 @@ export const clientBindings = {
         "requestSchemaName": "RelinkActorSubjectCommand",
         "responseSchemaName": "RelinkActorSubjectResponse"
       },
+      "unlinkActorSubject": {
+        "publicName": "unlink-actor-subject",
+        "requestSchemaName": "UnlinkActorSubjectCommand",
+        "responseSchemaName": "UnlinkActorSubjectResponse"
+      },
       "sendAccountInvitation": {
         "publicName": "send-account-invitation",
         "requestSchemaName": "SendAccountInvitationCommand",
@@ -608,6 +613,11 @@ export const clientBindings = {
       "generateReportCardResult": {
         "publicName": "generate-report-card-result",
         "requestSchemaName": "GenerateReportCardResultCommand",
+        "responseSchemaName": "ReportCardResult"
+      },
+      "writeHomeroomReportComment": {
+        "publicName": "write-homeroom-report-comment",
+        "requestSchemaName": "WriteHomeroomReportCommentCommand",
         "responseSchemaName": "ReportCardResult"
       },
       "publishReportCardResult": {

@@ -28,8 +28,6 @@
 	const subjects = $derived(detailDataContext.subjects);
 	const classes = $derived(academicContext.classes);
 
-	type Mode = 'level' | 'category';
-
 	const initialFilters = $derived(readConfigSubjectListFilters($page.url));
 
 	const listFilters = new ListFiltersState<{ q: string; mode: string }>(

@@ -17,7 +17,7 @@
 	import { Mail, Phone, Plus, Search } from '$lib/icons';
 	import { useOffsetInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { getTeachersState, setTeachersState, TeachersState } from '$lib/school/teachers-state.svelte';
+	import { setTeachersState, TeachersState } from '$lib/school/teachers-state.svelte';
 	import { cn } from '$lib/utils';
 	import PersonAvatar from '../shared/PersonAvatar.svelte';
 	import TeacherCreateModal from './TeacherCreateModal.svelte';

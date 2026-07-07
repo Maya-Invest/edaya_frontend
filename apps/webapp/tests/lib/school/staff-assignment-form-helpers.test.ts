@@ -9,7 +9,7 @@ describe('pruneStaffAssignmentPermissions', () => {
 	test('returns pruned list when permissions are outside the allowed set', () => {
 		const result = pruneStaffAssignmentPermissions(
 			['A', 'B', 'C'],
-			new Set(['A', 'C']),
+			['A', 'C'],
 		);
 		expect(result).toEqual(['A', 'C']);
 	});
@@ -17,7 +17,7 @@ describe('pruneStaffAssignmentPermissions', () => {
 	test('returns null when no pruning is needed', () => {
 		const result = pruneStaffAssignmentPermissions(
 			['A', 'B'],
-			new Set(['A', 'B', 'C']),
+			['A', 'B', 'C'],
 		);
 		expect(result).toBeNull();
 	});

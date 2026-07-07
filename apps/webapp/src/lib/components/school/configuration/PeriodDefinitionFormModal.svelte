@@ -28,11 +28,7 @@
 	const isEdit = $derived(periodDefinition !== null && periodDefinition !== undefined);
 	const numericOrder = $derived(Number(order));
 	const canSubmit = $derived(
-		label.trim().length > 0
-		&& Number.isFinite(numericOrder)
-			&& numericOrder > 0
-		&& startTime.trim().length > 0
-			&& endTime.trim().length > 0,
+		label.trim().length > 0 && Number.isFinite(numericOrder) && numericOrder > 0 && startTime.trim().length > 0 && endTime.trim().length > 0,
 	);
 
 	function resetForm() {

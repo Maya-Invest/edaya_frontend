@@ -106,6 +106,10 @@ export function isCurrentWeek(weekStart: Date, reference = new Date()): boolean 
 	return formatWeekAnchor(weekStart) === formatWeekAnchor(reference);
 }
 
+export function todayDate(): Date {
+	return new Date();
+}
+
 export function formatPlanningWeekRange(weekStart: Date, locale: string): { start: string; end: string } {
 	const friday = new Date(weekStart);
 	friday.setDate(friday.getDate() + 4);

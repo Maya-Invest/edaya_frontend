@@ -236,25 +236,23 @@
 								<PermissionGate permission="DISCIPLINE_VALIDATE">
 									{#snippet children({ disabled, title })}
 										<RowActionMenu>
-											{#snippet children()}
-												<RowActionMenuItem
-													{disabled}
-													{title}
-													onclick={() => openEdit(action)}
-												>
-													<Pencil class="h-4 w-4" />
-													{$t('common.edit')}
-												</RowActionMenuItem>
-												<RowActionMenuItem
-													destructive
-													{disabled}
-													{title}
-													onclick={() => openDelete(action.id, action.name)}
-												>
-													<Trash2 class="h-4 w-4" />
-													{$t('common.delete')}
-												</RowActionMenuItem>
-											{/snippet}
+											<RowActionMenuItem
+												{disabled}
+												{title}
+												onclick={() => openEdit(action)}
+											>
+												<Pencil class="h-4 w-4" />
+												{$t('common.edit')}
+											</RowActionMenuItem>
+											<RowActionMenuItem
+												destructive
+												{disabled}
+												{title}
+												onclick={() => openDelete(action.id, action.name)}
+											>
+												<Trash2 class="h-4 w-4" />
+												{$t('common.delete')}
+											</RowActionMenuItem>
 										</RowActionMenu>
 									{/snippet}
 								</PermissionGate>

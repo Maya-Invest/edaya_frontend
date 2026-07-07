@@ -23,7 +23,7 @@ describe('teacherNameForClassSubject', () => {
 	it('prefers portal teacher assignments over legacy staff assignments', () => {
 		const name = teacherNameForClassSubject('cs-6a-math', {
 			teachersRaw: [
-				{ id: 't1', schoolId: 'sch-1', firstName: 'Aminata', lastName: 'Touré', email: 'a@school.edu', isActive: true },
+				{ id: 't1', firstName: 'Aminata', lastName: 'Touré' },
 			],
 			teacherAssignmentsRaw: [
 				{
@@ -88,7 +88,7 @@ describe('portalHomeroomTeacherNameForClass', () => {
 	it('returns the active portal homeroom teacher for a class', () => {
 		const name = portalHomeroomTeacherNameForClass('cls-6a', {
 			teachersRaw: [
-				{ id: 't1', schoolId: 'sch-1', firstName: 'Kouadio', lastName: 'Diomande', email: 'k@school.edu', isActive: true },
+				{ id: 't1', firstName: 'Kouadio', lastName: 'Diomande' },
 			],
 			teacherAssignmentsRaw: [
 				{

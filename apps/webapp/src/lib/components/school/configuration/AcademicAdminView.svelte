@@ -331,25 +331,23 @@
 										<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE">
 											{#snippet children({ disabled, title })}
 												<RowActionMenu>
-													{#snippet children()}
-														<RowActionMenuItem
-															{disabled}
-															{title}
-															onclick={() => openEditPeriodDef(def)}
-														>
-															<Pencil class="h-4 w-4" />
-															{$t('common.edit')}
-														</RowActionMenuItem>
-														<RowActionMenuItem
-															destructive
-															{disabled}
-															{title}
-															onclick={() => openDeletePeriodDef(def)}
-														>
-															<Trash2 class="h-4 w-4" />
-															{$t('common.delete')}
-														</RowActionMenuItem>
-													{/snippet}
+													<RowActionMenuItem
+														{disabled}
+														{title}
+														onclick={() => openEditPeriodDef(def)}
+													>
+														<Pencil class="h-4 w-4" />
+														{$t('common.edit')}
+													</RowActionMenuItem>
+													<RowActionMenuItem
+														destructive
+														{disabled}
+														{title}
+														onclick={() => openDeletePeriodDef(def)}
+													>
+														<Trash2 class="h-4 w-4" />
+														{$t('common.delete')}
+													</RowActionMenuItem>
 												</RowActionMenu>
 											{/snippet}
 										</PermissionGate>

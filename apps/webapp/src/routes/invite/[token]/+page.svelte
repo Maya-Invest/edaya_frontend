@@ -80,11 +80,14 @@
 		return $t('invitation.kind.student');
 	});
 
-	function isTeacherInvitation(kind?: InvitationPreview['kind'] | null): boolean {
+	type InvitationKind = InvitationPreview['kind'];
+	type BootstrapSession = NonNullable<Awaited<ReturnType<typeof bootstrapSession>>['session']>;
+
+	function isTeacherInvitation(kind: InvitationKind | null | undefined): boolean {
 		return kind === 'teacher';
 	}
 
-	function completeInvitationAccept(session: NonNullable<Awaited<ReturnType<typeof bootstrapSession>>['session']>) {
+	function completeInvitationAccept(session: BootstrapSession) {
 		clearPendingInviteToken();
 		if (isTeacherInvitation(session.kind)) {
 			toast.success($t('invitation.accept.teacherSuccess'));

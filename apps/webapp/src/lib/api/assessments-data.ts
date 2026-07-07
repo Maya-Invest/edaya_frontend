@@ -2,7 +2,6 @@ import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { AssessmentResultRow, Evaluation } from '$lib/types/school';
 import {
-	formatAssessmentDate,
 	mapAssessmentResultRow,
 	mapAssessmentToEvaluation,
 } from '$lib/api/assessment-mapping';

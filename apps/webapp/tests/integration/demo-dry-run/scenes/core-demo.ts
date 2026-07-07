@@ -103,13 +103,11 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	try {
 		const homeworkFilter = page.locator('main select[aria-label="Filter"]').first();
 		if (await homeworkFilter.isVisible({ timeout: 10_000 }).catch(() => false)) {
-			await homeworkFilter.selectOption({ label: /devoir|homework/i }).catch(async () => {
-				const options = await homeworkFilter.locator('option').allTextContents();
-				const homeworkOption = options.find(text => /devoir|homework/i.test(text));
-				if (homeworkOption) {
-					await homeworkFilter.selectOption({ label: homeworkOption });
-				}
-			});
+			const options = await homeworkFilter.locator('option').allTextContents();
+			const homeworkOption = options.find(text => /devoir|homework/i.test(text));
+			if (homeworkOption) {
+				await homeworkFilter.selectOption({ label: homeworkOption });
+			}
 			await page.waitForTimeout(500);
 			const hasHomeworkRow = await page
 				.locator('main .space-y-3 button')

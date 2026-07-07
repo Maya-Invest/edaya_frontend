@@ -1,8 +1,8 @@
 export function pruneStaffAssignmentPermissions<T extends string>(
 	permissions: readonly T[],
-	allowed: ReadonlySet<string>,
+	allowed: readonly string[],
 ): T[] | null {
-	const pruned = permissions.filter(permission => allowed.has(permission));
+	const pruned = permissions.filter(permission => allowed.includes(permission));
 	return pruned.length !== permissions.length ? pruned : null;
 }
 

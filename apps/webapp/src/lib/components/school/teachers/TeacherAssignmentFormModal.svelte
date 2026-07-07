@@ -41,10 +41,7 @@
 		})),
 	);
 
-	const canSubmit = $derived(
-		Boolean(classGroupId)
-			&& (kind === 'homeroom' || Boolean(classSubjectId)),
-	);
+	const canSubmit = $derived(Boolean(classGroupId) && (kind === 'homeroom' || Boolean(classSubjectId)));
 
 	async function loadClassSubjects(nextClassGroupId: string) {
 		classSubjectId = '';

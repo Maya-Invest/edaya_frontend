@@ -3317,6 +3317,103 @@
           "subjectId"
         ]
       },
+      "UnlinkActorSubjectResponse": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "staff"
+                ]
+              },
+              "entity": {
+                "$ref": "#/components/schemas/StaffMember"
+              }
+            },
+            "required": [
+              "kind",
+              "entity"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "guardian"
+                ]
+              },
+              "entity": {
+                "$ref": "#/components/schemas/Guardian"
+              }
+            },
+            "required": [
+              "kind",
+              "entity"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "student"
+                ]
+              },
+              "entity": {
+                "$ref": "#/components/schemas/Student"
+              }
+            },
+            "required": [
+              "kind",
+              "entity"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "teacher"
+                ]
+              },
+              "entity": {
+                "$ref": "#/components/schemas/Teacher"
+              }
+            },
+            "required": [
+              "kind",
+              "entity"
+            ]
+          }
+        ]
+      },
+      "UnlinkActorSubjectCommand": {
+        "type": "object",
+        "properties": {
+          "staffMemberId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "guardianId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "studentId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "teacherId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
       "AccountInvitation": {
         "type": "object",
         "properties": {
@@ -7510,6 +7607,23 @@
           "id",
           "studentId",
           "periodId"
+        ]
+      },
+      "WriteHomeroomReportCommentCommand": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "teacherComment": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "teacherComment"
         ]
       },
       "PublishReportCardResultCommand": {
@@ -16857,6 +16971,136 @@
         }
       }
     },
+    "/core/commands/unlink-actor-subject": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "unlink-actor-subject",
+        "operationId": "commands.unlinkActorSubject",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "unlinkActorSubject",
+        "x-edaya-command-public-name": "unlink-actor-subject",
+        "x-edaya-request-schema": "UnlinkActorSubjectCommand",
+        "x-edaya-response-schema": "UnlinkActorSubjectResponse",
+        "requestBody": {
+          "description": "unlink-actor-subject payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnlinkActorSubjectCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed unlink-actor-subject",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnlinkActorSubjectResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/core/commands/send-account-invitation": {
       "post": {
         "tags": [
@@ -23122,6 +23366,136 @@
         "responses": {
           "200": {
             "description": "Executed generate-report-card-result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportCardResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/write-homeroom-report-comment": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "write-homeroom-report-comment",
+        "operationId": "commands.writeHomeroomReportComment",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "writeHomeroomReportComment",
+        "x-edaya-command-public-name": "write-homeroom-report-comment",
+        "x-edaya-request-schema": "WriteHomeroomReportCommentCommand",
+        "x-edaya-response-schema": "ReportCardResult",
+        "requestBody": {
+          "description": "write-homeroom-report-comment payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WriteHomeroomReportCommentCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed write-homeroom-report-comment",
             "content": {
               "application/json": {
                 "schema": {

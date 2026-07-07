@@ -15,7 +15,6 @@
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readPaymentListFilters, writePaymentListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
-	import { cn } from '$lib/utils';
 
 	const billing = $derived(detailDataContext.billing);
 	const students = $derived(detailDataContext.students);
@@ -88,7 +87,6 @@
 	);
 
 	const statusKeys = ['all', 'paid', 'pending'] as const;
-	const classFilterKeys = $derived(['all', ...classes.map(c => c.id)] as const);
 
 	const classFilterOptions = $derived([
 		{ value: 'all', label: $t('common.allClasses') },
@@ -222,12 +220,10 @@
 							</span>
 						{/if}
 						<RowActionMenu>
-							{#snippet children()}
-								<RowActionMenuItem onclick={() => openBillingReceipt(r.billingId)}>
-									<Receipt class="h-4 w-4" />
-									{$t('payment.viewReceipt')}
-								</RowActionMenuItem>
-							{/snippet}
+							<RowActionMenuItem onclick={() => openBillingReceipt(r.billingId)}>
+								<Receipt class="h-4 w-4" />
+								{$t('payment.viewReceipt')}
+							</RowActionMenuItem>
 						</RowActionMenu>
 					</div>
 				</li>

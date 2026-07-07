@@ -44,20 +44,20 @@
 	);
 
 	const scoresByStudent = $derived.by(() => {
-		const map = new Map<string, number>();
+		const scores: Record<string, number> = {};
 		for (const result of detailDataContext.assessmentResults) {
 			if (result.assessmentId === s.id && result.score !== null) {
-				map.set(result.studentId, result.score);
+				scores[result.studentId] = result.score;
 			}
 		}
-		return map;
+		return scores;
 	});
 
 	const gradeEntryStudent = $derived(
 		modals.target ? classStudents.find(student => student.id === modals.target) : undefined,
 	);
 	const gradeEntryScore = $derived(
-		gradeEntryStudent ? (scoresByStudent.get(gradeEntryStudent.id) ?? null) : null,
+		gradeEntryStudent ? (scoresByStudent[gradeEntryStudent.id] ?? null) : null,
 	);
 
 	const submissionsByStudent = $derived.by(() => {
@@ -253,7 +253,7 @@
 			</Label>
 			<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
 				{#each classStudents as student, index (student.id)}
-					{@const score = scoresByStudent.get(student.id) ?? null}
+					{@const score = scoresByStudent[student.id] ?? null}
 					<div
 						class={cn(
 							'flex items-center justify-between gap-3 px-4 py-3',

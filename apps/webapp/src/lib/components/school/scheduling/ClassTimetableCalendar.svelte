@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { PlanningEvent } from '$lib/types/school';
 	import type { EventCss, CalendarInstanceApi } from '@svar-ui/svelte-calendar';
-	import type { PlanningSlotFromDates } from './planning-calendar';
 	import { browser } from '$app/environment';
 	import { reschedulePlanningSlotMutation } from '$lib/api/mutations/planning.mutations';
 	import { lang, t } from '$lib/i18n';
@@ -42,12 +41,6 @@
 
 	const timetable = new PlanningTimetableState();
 	setPlanningTimetableState(timetable);
-	timetable.configure({ onAttendance: (eventId) => {
-		const planningEvent = weekEvents.find(event => event.id === eventId);
-		if (planningEvent) {
-			onAttendance?.(planningEvent);
-		}
-	} });
 
 	const anchorDate = $derived(mondayOfWeek(weekStart));
 	const weekEvents = $derived(events);
@@ -55,6 +48,13 @@
 	const hours = $derived(timetableHours(weekEvents));
 	const calendarEvents = $derived(mapPlanningToCalendarEvents(weekEvents));
 	const calendarEventsKey = $derived(weekEvents.map(event => `${event.id}:${event.status ?? 'pending'}`).join('|'));
+
+	timetable.configure({ onAttendance: (eventId) => {
+		const planningEvent = weekEvents.find(event => event.id === eventId);
+		if (planningEvent) {
+			onAttendance?.(planningEvent);
+		}
+	} });
 	const weekView = $derived({
 		id: 'week',
 		sections: {

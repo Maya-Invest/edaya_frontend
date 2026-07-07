@@ -54,14 +54,14 @@
 	);
 
 	const grouped = $derived.by(() => {
-		const groups = new Map<string, GradeLevel[]>();
+		const groups: Record<string, GradeLevel[]> = {};
 		for (const level of filteredLevels) {
 			const key = level.cycle || $t('gradeLevels.subtitle');
-			const bucket = groups.get(key) ?? [];
+			const bucket = groups[key] ?? [];
 			bucket.push(level);
-			groups.set(key, bucket);
+			groups[key] = bucket;
 		}
-		return [...groups.entries()];
+		return Object.entries(groups);
 	});
 
 	function classCountFor(levelId: string): number {
