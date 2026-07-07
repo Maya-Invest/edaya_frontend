@@ -27,6 +27,7 @@ jobs:
         run: bun run verify
 
   integration:
+    needs: [verify]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -40,11 +41,13 @@ jobs:
           case "$REF" in
             main|master)
               echo "integration_target=production" >> "$GITHUB_OUTPUT"
+              echo "api_url=https://api.edaya.softilab.dev" >> "$GITHUB_OUTPUT"
               echo "webapp_url=https://app.edaya.softilab.dev" >> "$GITHUB_OUTPUT"
               echo "readiness_path=/login" >> "$GITHUB_OUTPUT"
               ;;
             *)
               echo "integration_target=staging" >> "$GITHUB_OUTPUT"
+              echo "api_url=https://api-staging.edaya.softilab.dev" >> "$GITHUB_OUTPUT"
               echo "webapp_url=https://app-staging.edaya.softilab.dev" >> "$GITHUB_OUTPUT"
               echo "readiness_path=/login/demo" >> "$GITHUB_OUTPUT"
               ;;
@@ -61,6 +64,9 @@ jobs:
       - name: Install Playwright Chromium
         working-directory: apps/webapp
         run: bunx playwright install --with-deps chromium
+
+      - name: Wait for deployed API
+        run: bash .github/scripts/ci-wait-for-url.sh "${{ steps.target.outputs.api_url }}/reference"
 
       - name: Wait for deployed webapp
         run: bash .github/scripts/ci-wait-for-url.sh "${{ steps.target.outputs.webapp_url }}${{ steps.target.outputs.readiness_path }}"
