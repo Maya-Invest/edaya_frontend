@@ -79,20 +79,20 @@
         "wrangler": "^4.99.0",
       },
     },
-    "packages/web-fixtures": {
-      "name": "@edaya/web-fixtures",
-      "version": "0.0.1",
-      "devDependencies": {
-        "@types/bun": "^1.3.14",
-        "typescript": "^6.0.2",
-      },
-    },
     "tooling/repo": {
       "name": "@edaya/web-repo",
       "version": "0.0.1",
       "dependencies": {
         "@edaya/client-codegen": "https://github.com/Maya-Invest/edaya-client-codegen",
       },
+      "devDependencies": {
+        "@types/bun": "^1.3.14",
+        "typescript": "^6.0.2",
+      },
+    },
+    "tooling/web-fixtures": {
+      "name": "@edaya/web-fixtures",
+      "version": "0.0.1",
       "devDependencies": {
         "@types/bun": "^1.3.14",
         "typescript": "^6.0.2",
@@ -173,7 +173,7 @@
 
     "@edaya/saas-admin": ["@edaya/saas-admin@workspace:apps/saas-admin"],
 
-    "@edaya/web-fixtures": ["@edaya/web-fixtures@workspace:packages/web-fixtures"],
+    "@edaya/web-fixtures": ["@edaya/web-fixtures@workspace:tooling/web-fixtures"],
 
     "@edaya/web-repo": ["@edaya/web-repo@workspace:tooling/repo"],
 
