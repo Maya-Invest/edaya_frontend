@@ -178,12 +178,7 @@
 				<Wallet class="h-4 w-4" />
 			</div>
 			<p class="mt-3 font-display text-2xl font-semibold tabular-nums">{kpis.overdueFeeCount}</p>
-			<p class="mt-0.5 text-xs text-muted-foreground">
-				{$t('dashboard.kpi.overdueFeesMeta', {
-					count: kpis.overdueFeeCount,
-					amount: formatAmount(kpis.overdueFeeAmount),
-				})}
-			</p>
+			<p class="mt-0.5 text-xs text-muted-foreground">{$t('dashboard.kpi.overdueFees')}</p>
 		</a>
 
 		<a
