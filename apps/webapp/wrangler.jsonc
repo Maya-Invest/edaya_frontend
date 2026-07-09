@@ -11,7 +11,7 @@
 	},
 	"env": {
 		"prod": {
-			"name": "edaya-webapp",
+			"name": "edaya-webapp-prod",
 			"vars": {
 				"PUBLIC_API_URL": "https://api.edaya.softilab.dev",
 				"PUBLIC_APP_ENV": "production"
