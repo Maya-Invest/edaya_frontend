@@ -18,7 +18,9 @@ PACKAGE_SETTINGS_URL="https://github.com/orgs/${OWNER}/packages/container/edaya-
 case "$ACTION" in
   start)
     docker rm -f "$CONTAINER_NAME" 2>/dev/null || true
-    if ! docker pull "$IMAGE"; then
+    if docker image inspect "$IMAGE" >/dev/null 2>&1; then
+      echo "Using local image: $IMAGE"
+    elif ! docker pull "$IMAGE"; then
       echo "Failed to pull $IMAGE" >&2
       echo "One-time org setup (private package):" >&2
       echo "  1. Open $PACKAGE_SETTINGS_URL" >&2
