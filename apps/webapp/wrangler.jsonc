@@ -1,0 +1,31 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	// Static SPA output from `vite build` (adapter-static).
+	// Build with PUBLIC_API_URL=https://api.edaya.softilab.dev before deploy.
+	"name": "edaya-webapp",
+	"compatibility_date": "2024-09-23",
+	"assets": {
+		"directory": "./build",
+		"not_found_handling": "single-page-application"
+	},
+	"env": {
+		"production": {
+			"name": "edaya-webapp",
+			"routes": [
+				{
+					"pattern": "app.edaya.softilab.dev",
+					"custom_domain": true
+				}
+			]
+		},
+		"staging": {
+			"name": "edaya-webapp-staging",
+			"routes": [
+				{
+					"pattern": "app-staging.edaya.softilab.dev",
+					"custom_domain": true
+				}
+			]
+		}
+	}
+}

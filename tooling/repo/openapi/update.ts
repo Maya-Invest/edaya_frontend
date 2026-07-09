@@ -1,10 +1,20 @@
 #!/usr/bin/env bun
+import { copyFileSync } from 'node:fs'
 import { exportOpenApi } from './export.ts'
-import { generateClientBindings } from './generate-bindings.ts'
-import { generateSchema } from './generate-schema.ts'
+import { generateClientArtifactsFromOpenApi } from './generate-bindings.ts'
+import {
+  saasAdminOpenApiPath,
+  saasAdminSchemaPath,
+  trackedOpenApiPath,
+  trackedSchemaPath,
+} from './paths.ts'
 
 await exportOpenApi()
-await generateSchema()
-generateClientBindings()
+await generateClientArtifactsFromOpenApi(trackedOpenApiPath, {
+  schemaOut: trackedSchemaPath,
+})
+
+copyFileSync(trackedOpenApiPath, saasAdminOpenApiPath)
+copyFileSync(trackedSchemaPath, saasAdminSchemaPath)
 
 console.log('Generated API artifacts updated.')

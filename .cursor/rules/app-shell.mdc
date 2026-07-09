@@ -1,0 +1,36 @@
+---
+description: App shell UI architecture — list, drawer, modal patterns for the webapp
+globs: apps/webapp/**/*
+alwaysApply: false
+---
+
+# App Shell UI Spec
+
+**Read the full spec before building or refactoring webapp screens:**
+
+[`docs/specs/app-shell-spec.md`](../../docs/specs/app-shell-spec.md)
+
+## Core invariants
+
+1. **Shell:** sidebar + header (school, year/period, lang, user menu) + body + overlay drawer + modals + toasts.
+2. **List page:** title/description top-left; `[Primary CTA] [Search] [Main filter select] [Filter] [More]` top-right; main filter always a `<select>`; table or cards; row `···` on every row; URL-backed detail via `[[id]]` for **complex** entities only.
+3. **Detail drawer (complex entities)** — read-only; **entity header** (identity + up to 2 primary actions → modals); body = related content via **sections**, **tabs**, or **both**; no global Save on the shell.
+4. **Simple entities (§3.5)** — no drawer; row `···` menu → modals. Row click must not open an empty detail surface.
+5. **All mutations use modals** — create (list CTA), edit (entity-header or row `···`), delete (confirm modal), sub-collection add/edit (tab `+ Add` / row Edit).
+6. **Pragmatic toggles only** — boolean/single-value flips (status chip, attendance checkbox) may toggle inline. **Not** `staffPermissionAssignments` — modal-only on Staff → Permissions tab.
+7. **Complex entities** — body tabs when justified; sub-collection `+ Add` on inline section header; row Edit → modal.
+8. **States** — wrap lists in `DataState`; toast on mutation success/error.
+
+## Do not
+
+- Render `*Form.svelte` as the default drawer body
+- Put Save/Cancel on the drawer shell
+- Open a drawer that only repeats list-row columns
+- Inline-edit sub-collection rows
+- Use chip bars or pill toggles for the main filter (use `<select>` + Filter button panel)
+
+## Naming
+
+- `<Entity>View.svelte` — list
+- `<Entity>Detail.svelte` or `<Entity>Tabs.svelte` — read-only drawer
+- `<Entity>FormModal.svelte` — create/edit modal
