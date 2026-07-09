@@ -837,6 +837,11 @@ export const clientBindings = {
         "requestSchemaName": "GetSchoolOverviewQuery",
         "responseSchemaName": "SchoolOverviewResponse"
       },
+      "getAppShellCounts": {
+        "publicName": "get-app-shell-counts",
+        "requestSchemaName": "GetAppShellCountsQuery",
+        "responseSchemaName": "AppShellCountsResponse"
+      },
       "getClassGroupTimetable": {
         "publicName": "get-class-group-timetable",
         "requestSchemaName": "GetClassGroupTimetableQuery",

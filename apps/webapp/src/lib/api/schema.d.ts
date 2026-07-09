@@ -546,6 +546,98 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/seed/mark-email-verified": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark a Better Auth user email-verified (seed / local only) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description User to mark verified */
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** Format: email */
+                        email?: string;
+                        subjectId?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description User marked email-verified */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            ok: true;
+                        };
+                    };
+                };
+                /** @description Missing seed provision header or body */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            message: string;
+                        };
+                    };
+                };
+                /** @description Not available in production Workers */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            message: string;
+                        };
+                    };
+                };
+                /** @description User not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            message: string;
+                        };
+                    };
+                };
+                /** @description Failed to update user */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            message: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/core/commands/register-school": {
         parameters: {
             query?: never;
@@ -2444,6 +2536,23 @@ export interface paths {
         put?: never;
         /** get-school-overview */
         post: operations["queries.getSchoolOverview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/queries/get-app-shell-counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** get-app-shell-counts */
+        post: operations["queries.getAppShellCounts"];
         delete?: never;
         options?: never;
         head?: never;
@@ -12244,6 +12353,19 @@ export interface components {
             /** Format: date */
             referenceDate?: string;
         };
+        AppShellCountsResponse: {
+            schoolId: string;
+            activeEnrollmentCountsByClass: {
+                [key: string]: number;
+            };
+            studentCount: number;
+            guardianCount: number;
+            staffCount: number;
+        };
+        GetAppShellCountsQuery: {
+            schoolId: string;
+            classGroupIds?: string[];
+        };
         TimetableEvent: {
             /** @enum {string} */
             kind: "lesson" | "activity" | "assessment";
@@ -12252,6 +12374,8 @@ export interface components {
             classSubjectId?: string;
             activityId?: string;
             title: string;
+            subjectLabel?: string;
+            teacherName?: string;
             /** Format: date-time */
             startsAt: string;
             /** Format: date-time */
@@ -22677,6 +22801,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchoolOverviewResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "queries.getAppShellCounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description get-app-shell-counts payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["GetAppShellCountsQuery"];
+            };
+        };
+        responses: {
+            /** @description Resolved get-app-shell-counts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppShellCountsResponse"];
                 };
             };
             /** @description Invalid request payload */

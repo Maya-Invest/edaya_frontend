@@ -10638,6 +10638,60 @@
           "academicPeriodId"
         ]
       },
+      "AppShellCountsResponse": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "activeEnrollmentCountsByClass": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "studentCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "guardianCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "staffCount": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "schoolId",
+          "activeEnrollmentCountsByClass",
+          "studentCount",
+          "guardianCount",
+          "staffCount"
+        ]
+      },
+      "GetAppShellCountsQuery": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "classGroupIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "schoolId"
+        ]
+      },
       "TimetableEvent": {
         "type": "object",
         "properties": {
@@ -10666,6 +10720,14 @@
             "minLength": 1
           },
           "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subjectLabel": {
+            "type": "string",
+            "minLength": 1
+          },
+          "teacherName": {
             "type": "string",
             "minLength": 1
           },
@@ -14609,6 +14671,141 @@
           },
           "500": {
             "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/seed/mark-email-verified": {
+      "post": {
+        "tags": [
+          "Dev Seed"
+        ],
+        "summary": "Mark a Better Auth user email-verified (seed / local only)",
+        "requestBody": {
+          "description": "User to mark verified",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "subjectId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User marked email-verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing seed provision header or body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not available in production Workers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to update user",
             "content": {
               "application/json": {
                 "schema": {
@@ -29090,6 +29287,136 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SchoolOverviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/queries/get-app-shell-counts": {
+      "post": {
+        "tags": [
+          "Core Queries"
+        ],
+        "summary": "get-app-shell-counts",
+        "operationId": "queries.getAppShellCounts",
+        "x-edaya-kind": "query",
+        "x-edaya-query-key": "getAppShellCounts",
+        "x-edaya-query-public-name": "get-app-shell-counts",
+        "x-edaya-request-schema": "GetAppShellCountsQuery",
+        "x-edaya-response-schema": "AppShellCountsResponse",
+        "requestBody": {
+          "description": "get-app-shell-counts payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetAppShellCountsQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resolved get-app-shell-counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppShellCountsResponse"
                 }
               }
             }

@@ -3,8 +3,8 @@ import { describe, expect, it } from 'bun:test';
 import { fetchActiveEnrollmentCountsByClass, fetchAppShellData } from '$lib/api/shell-data';
 import {
 	createRecordingSchoolClient,
-	entityCountRequests,
 	entityListRequests,
+	queryRequests,
 } from '$tests/support/recording-school-client';
 
 const classA = 'class-6a';
@@ -15,7 +15,7 @@ function listEnvelope<T>(items: readonly T[]) {
 }
 
 describe('shell data loading', () => {
-	it('uses enrollment count queries per class instead of loading all enrollments', async () => {
+	it('uses one batched shell counts query instead of per-class enrollment counts', async () => {
 		const { client, requests } = createRecordingSchoolClient([
 			listEnvelope([{
 				id: SEED_SCHOOL_ID,
@@ -49,11 +49,16 @@ describe('shell data loading', () => {
 					name: '6B',
 				},
 			]),
-			{ count: 18 },
-			{ count: 21 },
-			{ count: 39 },
-			{ count: 12 },
-			{ count: 5 },
+			{
+				schoolId: SEED_SCHOOL_ID,
+				activeEnrollmentCountsByClass: {
+					[classA]: 18,
+					[classB]: 21,
+				},
+				studentCount: 39,
+				guardianCount: 12,
+				staffCount: 5,
+			},
 		]);
 
 		const shell = await fetchAppShellData(client);
@@ -64,30 +69,33 @@ describe('shell data loading', () => {
 		expect(shell.classes.find(entry => entry.id === classA)?.studentCount).toBe(18);
 		expect(shell.classes.find(entry => entry.id === classB)?.studentCount).toBe(21);
 		expect(entityListRequests(requests, 'enrollments')).toHaveLength(0);
-		expect(entityCountRequests(requests, 'enrollments')).toEqual([
+		expect(queryRequests(requests, 'get-app-shell-counts')).toEqual([
 			{
 				method: 'POST',
-				path: '/core/entities/enrollments/count',
-				body: { classGroupId: classA, status: 'active' },
-			},
-			{
-				method: 'POST',
-				path: '/core/entities/enrollments/count',
-				body: { classGroupId: classB, status: 'active' },
+				path: '/core/queries/get-app-shell-counts',
+				body: {
+					schoolId: SEED_SCHOOL_ID,
+					classGroupIds: [classA, classB],
+				},
 			},
 		]);
-		expect(entityCountRequests(requests, 'students')).toHaveLength(1);
-		expect(entityCountRequests(requests, 'guardians')).toHaveLength(1);
-		expect(entityCountRequests(requests, 'staff-members')).toHaveLength(1);
 	});
 
 	it('fetchActiveEnrollmentCountsByClass returns zeroes for classes with no active enrollments', async () => {
 		const { client } = createRecordingSchoolClient([
-			{ count: 0 },
-			{ count: 4 },
+			{
+				schoolId: SEED_SCHOOL_ID,
+				activeEnrollmentCountsByClass: {
+					[classA]: 0,
+					[classB]: 4,
+				},
+				studentCount: 4,
+				guardianCount: 0,
+				staffCount: 0,
+			},
 		]);
 
-		const counts = await fetchActiveEnrollmentCountsByClass(client, [classA, classB]);
+		const counts = await fetchActiveEnrollmentCountsByClass(client, [classA, classB], SEED_SCHOOL_ID);
 
 		expect(counts).toEqual({
 			[classA]: 0,
