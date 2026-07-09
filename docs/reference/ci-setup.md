@@ -12,7 +12,7 @@ Path: [`.github/actions/ci-bun-turbo`](../../.github/actions/ci-bun-turbo/action
 | Step | What it does |
 |------|----------------|
 | Setup Bun | `oven-sh/setup-bun@v2` — version from root `packageManager` (`bun@1.3.14`) |
-| Cache Bun deps | `actions/cache@v4` on `~/.bun/install/cache`, keyed by `bun.lock` |
+| Cache Bun deps | `actions/cache@v6` on `~/.bun/install/cache`, keyed by `bun.lock` |
 | Install | `bun install` |
 | Turbo cache | `rharkor/caching-for-turbo@v2.5.0` — restores/saves `.turbo` via GitHub Actions cache |
 
