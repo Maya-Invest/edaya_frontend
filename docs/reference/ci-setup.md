@@ -50,6 +50,10 @@ Repo hygiene runs **first** (doctor, OpenAPI drift, repo unit tests). See [repo-
 
 Playwright integration (`apps/webapp` `test:integration`) is a **separate** PR job after verify — not part of `bun run verify`.
 
+## GHCR access for api-dev image
+
+Integration pulls `ghcr.io/<org>/edaya-api-dev:staging|production` published from `edaya_backend`. Add org/repo secret **`GHCR_READ_TOKEN`**: a classic PAT (or fine-grained token) with `read:packages` for the `edaya-api-dev` container package.
+
 ## PR pipeline
 
 ```text

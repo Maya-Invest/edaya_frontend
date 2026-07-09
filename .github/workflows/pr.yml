@@ -61,4 +61,5 @@ jobs:
     uses: ./.github/workflows/_integration.yml
     with:
       api_dev_base_ref: ${{ needs.gate.outputs.api_dev_base_ref }}
-    secrets: inherit
+    secrets:
+      GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}

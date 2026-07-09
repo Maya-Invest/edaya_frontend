@@ -17,7 +17,13 @@ IMAGE="${EDAYA_API_DEV_IMAGE:-ghcr.io/${OWNER}/edaya-api-dev:${CHANNEL}}"
 case "$ACTION" in
   start)
     docker rm -f "$CONTAINER_NAME" 2>/dev/null || true
-    docker pull "$IMAGE"
+    if ! docker pull "$IMAGE"; then
+      echo "Failed to pull $IMAGE" >&2
+      echo "Cross-repo GHCR pulls require either:" >&2
+      echo "  - GHCR_READ_TOKEN secret (PAT with read:packages), or" >&2
+      echo "  - Read access for this repo under the package Manage Actions access settings." >&2
+      exit 1
+    fi
     docker run \
       --name "$CONTAINER_NAME" \
       --detach \
