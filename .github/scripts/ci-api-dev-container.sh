@@ -19,9 +19,10 @@ case "$ACTION" in
     docker rm -f "$CONTAINER_NAME" 2>/dev/null || true
     if ! docker pull "$IMAGE"; then
       echo "Failed to pull $IMAGE" >&2
-      echo "Cross-repo GHCR pulls require either:" >&2
-      echo "  - GHCR_READ_TOKEN secret (PAT with read:packages), or" >&2
-      echo "  - Read access for this repo under the package Manage Actions access settings." >&2
+      echo "Cross-repo GHCR pulls require:" >&2
+      echo "  - GHCR_READ_TOKEN secret (PAT with read:packages for Maya-Invest/edaya-api-dev)" >&2
+      echo "  - GHCR_READ_USERNAME repo/org variable set to the PAT owner's GitHub username (not the org name)" >&2
+      echo "  - Or grant this repo Read under the package Manage Actions access settings and use GITHUB_TOKEN instead." >&2
       exit 1
     fi
     docker run \

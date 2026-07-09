@@ -52,7 +52,18 @@ Playwright integration (`apps/webapp` `test:integration`) is a **separate** PR j
 
 ## GHCR access for api-dev image
 
-Integration pulls `ghcr.io/<org>/edaya-api-dev:staging|production` published from `edaya_backend`. Add org/repo secret **`GHCR_READ_TOKEN`**: a classic PAT (or fine-grained token) with `read:packages` for the `edaya-api-dev` container package.
+Integration pulls `ghcr.io/<org>/edaya-api-dev:staging|production` published from `edaya_backend`.
+
+Configure GHCR auth for consumer CI:
+
+| Setting | Where | Value |
+|---------|-------|-------|
+| `GHCR_READ_TOKEN` | Actions **secret** (org or repo) | Classic PAT with `read:packages`, or fine-grained token with read on `edaya-api-dev` |
+| `GHCR_READ_USERNAME` | Actions **variable** (org or repo) | GitHub **user** account that owns the PAT — not `Maya-Invest` |
+
+Login uses `vars.GHCR_READ_USERNAME || github.actor`. If the variable is unset, the workflow actor must be the PAT owner.
+
+**Alternative (no PAT):** package settings → **Manage Actions access** → grant **Read** to `edaya_web` / `edaya_mobile`, then switch docker login back to `GITHUB_TOKEN`.
 
 ## PR pipeline
 

@@ -36,7 +36,7 @@ jobs:
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
-          username: ${{ github.repository_owner }}
+          username: ${{ vars.GHCR_READ_USERNAME || github.actor }}
           password: ${{ secrets.GHCR_READ_TOKEN }}
 
       - name: Start API dev container
