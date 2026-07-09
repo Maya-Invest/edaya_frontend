@@ -7,10 +7,6 @@ on:
         description: Base branch used to select the api-dev image channel
         required: true
         type: string
-    secrets:
-      GHCR_READ_TOKEN:
-        description: PAT with read:packages for ghcr.io/maya-invest/edaya-api-dev
-        required: true
 
 permissions:
   contents: read
@@ -36,8 +32,8 @@ jobs:
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
-          username: ${{ vars.GHCR_READ_USERNAME || github.actor }}
-          password: ${{ secrets.GHCR_READ_TOKEN }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Start API dev container
         run: bash .github/scripts/ci-api-dev-container.sh start "${{ inputs.api_dev_base_ref }}"

@@ -52,18 +52,15 @@ Playwright integration (`apps/webapp` `test:integration`) is a **separate** PR j
 
 ## GHCR access for api-dev image
 
-Integration pulls `ghcr.io/<org>/edaya-api-dev:staging|production` published from `edaya_backend`.
+Integration pulls `ghcr.io/maya-invest/edaya-api-dev:staging|production` from `edaya_backend`.
 
-Configure GHCR auth for consumer CI:
+Consumer CI uses this repo's `GITHUB_TOKEN` (`packages: read`). Cross-repo pulls require **one-time** package access in GitHub (not a PAT):
 
-| Setting | Where | Value |
-|---------|-------|-------|
-| `GHCR_READ_TOKEN` | Actions **secret** (org or repo) | Classic PAT with `read:packages`, or fine-grained token with read on `edaya-api-dev` |
-| `GHCR_READ_USERNAME` | Actions **variable** (org or repo) | GitHub **user** account that owns the PAT — not `Maya-Invest` |
+1. Open [edaya-api-dev package settings](https://github.com/orgs/Maya-Invest/packages/container/edaya-api-dev/settings)
+2. **Manage Actions access** → **Add repository** → `edaya_web` → **Read**
+3. Repeat for `edaya_mobile`
 
-Login uses `vars.GHCR_READ_USERNAME || github.actor`. If the variable is unset, the workflow actor must be the PAT owner.
-
-**Alternative (no PAT):** package settings → **Manage Actions access** → grant **Read** to `edaya_web` / `edaya_mobile`, then switch docker login back to `GITHUB_TOKEN`.
+**Alternative:** set package visibility to **Public** (anonymous `docker pull`; fine for the dev API image).
 
 ## PR pipeline
 
