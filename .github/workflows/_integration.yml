@@ -47,7 +47,7 @@ jobs:
       - name: Resolve api-dev image digest
         id: api_dev_digest
         run: |
-          DIGEST="$(docker buildx imagetools inspect "${{ steps.api_dev_image.outputs.ref }}" --format '{{.Digest}}')"
+          DIGEST="$(docker buildx imagetools inspect "${{ steps.api_dev_image.outputs.ref }}" --format '{{json .Manifest.Digest}}' | tr -d '"')"
           echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
 
       - name: Restore api-dev Docker image cache
