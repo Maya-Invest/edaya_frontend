@@ -37,7 +37,9 @@ Path: [`.github/actions/ci-bun-turbo`](../../.github/actions/ci-bun-turbo/action
 | [`_verify.yml`](../../.github/workflows/_verify.yml) | `verify` | `bun run verify` |
 | [`_integration.yml`](../../.github/workflows/_integration.yml) | `integration` | Playwright (inline `setup-bun`; Docker/GHCR) |
 
-Integration uses inline setup because it starts api-dev containers, installs Playwright, and builds a preview server — not just the Turbo graph.
+Integration uses inline setup because it starts api-dev containers, installs Playwright, builds the webapp, and serves it with Wrangler — not just the Turbo graph.
+
+After `vite build`, CI runs `bun run preview:integration` (`wrangler dev --local`) instead of `vite preview`. Static adapter prerender creates files for list routes only; dynamic deep links (e.g. `/school/students/ci-s1`) need Wrangler’s `not_found_handling: single-page-application` — same as production deploy.
 
 ## Verify entry point
 

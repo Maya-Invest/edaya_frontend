@@ -7,6 +7,7 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
+		"preview:integration": "wrangler dev --local --port 4173 --ip 127.0.0.1",
 		"preview:production": "wrangler dev --env production",
 		"deploy:production": "bun run build && wrangler deploy --env production",
 		"deploy:production:dry-run": "bun run build && wrangler deploy --env production --dry-run",

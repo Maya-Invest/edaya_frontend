@@ -47,13 +47,13 @@ jobs:
           bun repo doctor
           PUBLIC_API_URL=http://127.0.0.1:9999 PUBLIC_APP_ENV=staging bun --filter @edaya/webapp build
 
-      - name: Start webapp preview
+      - name: Start webapp (Wrangler SPA)
         working-directory: apps/webapp
         run: |
-          bun run preview -- --host 127.0.0.1 --port 4173 > /tmp/webapp-preview.log 2>&1 &
+          bun run preview:integration > /tmp/webapp-preview.log 2>&1 &
           echo $! > /tmp/webapp-preview.pid
 
-      - name: Wait for webapp preview
+      - name: Wait for webapp
         run: bash .github/scripts/ci-wait-for-url.sh http://127.0.0.1:4173/login/demo
 
       - name: Integration tests
@@ -64,7 +64,7 @@ jobs:
           WEBAPP_READINESS_PATH: /login/demo
         run: bun run test:integration
 
-      - name: Stop webapp preview
+      - name: Stop webapp
         if: always()
         run: |
           if [ -f /tmp/webapp-preview.pid ]; then
