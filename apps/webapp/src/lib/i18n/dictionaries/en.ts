@@ -31,6 +31,7 @@ export const en: Dict = {
 	'common.noneReported': 'None reported',
 	'common.noClassAssigned': 'No class assigned',
 	'common.free': 'Free',
+	'common.status': 'Status',
 
 	// Auth (mock)
 	'auth.welcome': 'Welcome back',
@@ -1287,7 +1288,7 @@ export const en: Dict = {
 	'teacher.toastDeleted': '{name} removed.',
 	'teacher.drawerSummary': 'Portal teacher',
 	'teacher.assignmentsColumn': 'Assignments',
-	'teacher.assignmentCount': '{n, plural, one {# assignment} other {# assignments}}',
+	'teacher.assignmentCount': '{n} assignments',
 	'teacher.statusActive': 'Active',
 	'teacher.statusInactive': 'Inactive',
 	'teacher.assignmentsTitle': 'Teaching assignments',

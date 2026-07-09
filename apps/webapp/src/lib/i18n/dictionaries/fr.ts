@@ -30,6 +30,7 @@ export const fr: Dict = {
 	'common.noneReported': 'Rien à signaler',
 	'common.noClassAssigned': 'Aucune classe assignée',
 	'common.free': 'Libre',
+	'common.status': 'Statut',
 
 	'auth.welcome': 'Bon retour',
 	'auth.subtitle': 'Connectez-vous à votre compte Edaya.',
@@ -1263,7 +1264,7 @@ export const fr: Dict = {
 	'teacher.toastDeleted': '{name} a été supprimé.',
 	'teacher.drawerSummary': 'Enseignant portail',
 	'teacher.assignmentsColumn': 'Affectations',
-	'teacher.assignmentCount': '{n, plural, one {# affectation} other {# affectations}}',
+	'teacher.assignmentCount': '{n} affectations',
 	'teacher.statusActive': 'Actif',
 	'teacher.statusInactive': 'Inactif',
 	'teacher.assignmentsTitle': 'Affectations pédagogiques',
