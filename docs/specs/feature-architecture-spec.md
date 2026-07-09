@@ -484,7 +484,7 @@ Sub-entities (`studentIncidentInvolvements`, `staffPermissionAssignments`, `teac
 | Timetable materialize | `createSchedule` · `materializeSchedule` |
 | Class activity link | `classActivityEnrollments` entity CRUD |
 
-Regenerate OpenAPI client after backend API changes (`bun run openapi:generate`).
+Regenerate OpenAPI client after backend API changes (`bun repo openapi generate`).
 
 ---
 

@@ -4,7 +4,7 @@
  * committed OpenAPI snapshot and generated client artifacts match the export.
  *
  * Use locally when both `edaya` and `edaya_web` are checked out side by side.
- * CI uses `generated:check` (committed OpenAPI only).
+ * CI uses `bun repo check openapi` (committed OpenAPI only).
  */
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'

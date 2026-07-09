@@ -13,9 +13,9 @@ Edaya is split across three repositories:
 
 ## CI without sibling checkouts
 
-`edaya_web` CI runs `bun run verify`, which uses **committed** `apps/webapp/src/lib/api/openapi.json` for `generated:check`. It does **not** import `edaya_backend/apps/api` or require a sibling `edaya_backend` checkout.
+`edaya_web` CI runs `bun run verify` (`bun repo verify` first, then Turbo), which uses **committed** `apps/webapp/src/lib/api/openapi.json` for `bun repo check openapi`. It does **not** import `edaya_backend/apps/api` or require a sibling `edaya_backend` checkout.
 
-`edaya_backend` CI runs the same `verify` command and exports OpenAPI from the in-repo API.
+`edaya_backend` CI runs the same verify shape and exports OpenAPI from the in-repo API.
 
 Both repos install `@edaya/client-codegen` from GitHub at `bun install`:
 
@@ -32,14 +32,14 @@ Use a **pair PR** (or two linked PRs merged in order):
 1. **`edaya_backend`** — change routes/extensions, then:
    ```sh
    cd edaya_backend
-   bun run export-openapi          # updates tooling/repo/fixtures/openapi.json
-   bun run generated:update        # updates package/generated-api-client/src/generated/*
+   bun repo openapi export       # updates tooling/repo/fixtures/openapi.json
+   bun repo openapi generate     # updates package/generated-api-client/src/generated/*
    bun run verify
    ```
 2. **`edaya_web`** — copy or export the updated spec, then:
    ```sh
    cd edaya_web
-   bun run openapi:generate        # requires sibling edaya_backend for export; or copy openapi.json manually
+   bun repo openapi generate     # requires sibling edaya_backend for export; or copy openapi.json manually
    bun run verify
    ```
 
@@ -47,7 +47,7 @@ If both repos are checked out side by side, validate the OpenAPI snapshot matche
 
 ```sh
 cd edaya_web
-bun run generated:check:export
+bun repo check openapi-export
 ```
 
 ## OpenAPI-only regeneration (no `edaya_backend` checkout)
@@ -73,7 +73,7 @@ edaya-codegen generate \
   --client-out apps/webapp/src/generated/api-client/generated/create-client.ts
 ```
 
-Then sync SaaS admin copies (or run `bun run openapi:generate` which copies automatically).
+Then sync SaaS admin copies (or run `bun repo openapi generate` which copies automatically).
 
 ## Hand-written runtime sync
 
@@ -90,21 +90,21 @@ Generated artifacts are regen-only. These files are duplicated and must stay ali
 
 ```sh
 # API (from edaya_backend)
-cd edaya_backend && bun run deploy:api:staging && bun run smoke:staging
+cd edaya_backend && bun repo deploy api staging && bun repo smoke-test staging
 
 # Web apps (from edaya_web)
 cd edaya_web && bun run deploy:webapp:staging && bun run deploy:saas-admin:staging
-cd edaya_web && bun run smoke:staging
+cd edaya_web && bun repo smoke-test staging
 ```
 
-`smoke:staging` in `edaya_web` checks that staging SPA shells respond. Full login, navigation, and R2 upload still require manual verification after deploy.
+`bun repo smoke-test staging` in `edaya_web` checks that staging SPA shells respond. Full login, navigation, and R2 upload still require manual verification after deploy.
 
 Override origins when needed:
 
 ```sh
 STAGING_WEBAPP_ORIGIN=https://app-staging.edaya.softilab.dev \
 STAGING_SAAS_ADMIN_ORIGIN=https://admin-staging.edaya.softilab.dev \
-bun run smoke:staging
+bun repo smoke-test staging
 ```
 
 ## Local development

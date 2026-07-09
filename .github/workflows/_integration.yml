@@ -44,7 +44,7 @@ jobs:
 
       - name: Build webapp for integration
         run: |
-          bun run prepare:env
+          bun repo doctor
           PUBLIC_API_URL=http://127.0.0.1:9999 PUBLIC_APP_ENV=staging bun --filter @edaya/webapp build
 
       - name: Start webapp preview

@@ -35,3 +35,21 @@ One rule per spec. Auto-attached by glob when relevant files are edited:
 - **Interaction** — list + URL-backed detail drawer (complex entities) + mutation modals; simple entities use row `···` only.
 - **Mutations** — drawer is read-only; create/edit/delete via modals; pragmatic inline toggles only for boolean/single-value fields.
 - **Data** — `PageQuery` + `detailDataContext` for route load; `runMutation` with optimistic patch; `DataState` for loading/empty/error; toast on mutations.
+
+## Key docs
+
+| Topic | Path |
+|-------|------|
+| Repo CLI (`bun repo`) | [docs/reference/repo-cli.md](docs/reference/repo-cli.md) |
+| CI setup | [docs/reference/ci-setup.md](docs/reference/ci-setup.md) |
+| Cross-repo OpenAPI workflow | [docs/reference/cross-repo-workflow.md](docs/reference/cross-repo-workflow.md) |
+
+## Verification
+
+Before opening a PR:
+
+```sh
+bun run verify        # repo hygiene, then quality + build + unit tests
+```
+
+Ad-hoc Turbo iteration: `bun run lint`, `bun run check`, `bun run test`, etc. Repo hygiene only: `bun repo verify`.

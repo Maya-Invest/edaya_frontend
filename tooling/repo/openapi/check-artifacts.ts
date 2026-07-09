@@ -39,7 +39,7 @@ export async function checkTrackedClientArtifacts(
 
 export function reportArtifactDrift(changed: string[]): void {
   if (changed.length > 0) {
-    console.error('Generated API artifacts are out of date. Run `bun run generated:update` and commit the changes.')
+    console.error('Generated API artifacts are out of date. Run `bun repo openapi generate` and commit the changes.')
     console.error('Changed files:')
     for (const path of changed) {
       console.error(`  - ${path}`)

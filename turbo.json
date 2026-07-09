@@ -8,9 +8,15 @@
     "build": {
       "outputs": ["dist/**", "build/**", ".svelte-kit/**"]
     },
-    "check": {},
-    "quality": {},
-    "test": {},
+    "check": {
+      "dependsOn": ["^check"]
+    },
+    "quality": {
+      "dependsOn": ["^check"]
+    },
+    "test": {
+      "dependsOn": ["^check"]
+    },
     "lint": {},
     "lint:fix": {}
   }

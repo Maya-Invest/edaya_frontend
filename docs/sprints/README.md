@@ -19,5 +19,6 @@ When archiving, extract unchecked items into a new on-going plan rather than lea
 |------|------|
 | `data-loading-sprint.md` | On-going alignment tracker for data-loading spec |
 | `archive/` | Completed plans (v1 shell, backend alignment, state migration, demo-ready, etc.) |
+| `web-scripts-ci-alignment-plan.md` | On-going — align scripts & CI with edaya_backend |
 
 Human reference catalogs (feature cards, demo accounts, cross-repo workflow) live in `docs/reference/` — separate from plans and specs.
