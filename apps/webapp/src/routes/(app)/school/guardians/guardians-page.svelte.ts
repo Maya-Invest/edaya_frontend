@@ -1,12 +1,13 @@
 import type { GuardianListFilters } from '$lib/list/list-url-filters';
+import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { Guardian, Student } from '$lib/types/school';
 import { DEFAULT_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
 import { fetchGuardianById, loadGuardiansPeopleDataPage } from '$lib/api/people-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { entityVersions } from '$lib/entity-versions.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readGuardianListFilters, writeGuardianListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
+import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
 import {
 	createGuardianOnPage,
@@ -23,6 +24,8 @@ import { ensureGuardianDrawerSelection, querySchoolGuardiansPage } from './lib/g
 
 export const SCHOOL_GUARDIANS_PAGE_SIZE = DEFAULT_LIST_PAGE_SIZE;
 
+const GUARDIANS_VERSION_FAMILIES = ['guardians', 'students'] as const satisfies readonly EntityVersionKey[];
+
 const GUARDIANS_PAGE_STATE_KEY = Symbol('guardians-page-state');
 
 export class GuardiansPageState {
@@ -33,8 +36,9 @@ export class GuardiansPageState {
 	listLoadingMore = $state(false);
 	selectedResolving = $state(false);
 
-	private loadedVersion = 0;
 	private listRequestVersion = 0;
+
+	private readonly versions = new RouteVersionSnapshot(GUARDIANS_VERSION_FAMILIES);
 
 	readonly filters: ListFiltersState<GuardianListFilters>;
 
@@ -81,7 +85,7 @@ export class GuardiansPageState {
 		this.guardians = guardians;
 		this.students = students;
 		this.totalGuardians = totalGuardians;
-		this.loadedVersion = entityVersions.guardians;
+		this.versions.markLoaded();
 	}
 
 	mergeGuardians(incoming: readonly Guardian[]) {
@@ -174,7 +178,7 @@ export class GuardiansPageState {
 			this.mergeGuardians(result.guardians);
 			this.mergeStudents(result.students);
 			this.totalGuardians = result.totalGuardians;
-			this.loadedVersion = entityVersions.guardians;
+			this.versions.markLoaded();
 		}
 		finally {
 			if (version === this.listRequestVersion) {
@@ -184,7 +188,7 @@ export class GuardiansPageState {
 	}
 
 	async invalidateIfStale() {
-		if (this.loadedVersion === entityVersions.guardians) {
+		if (!this.versions.isStale()) {
 			return;
 		}
 		await this.refreshList();

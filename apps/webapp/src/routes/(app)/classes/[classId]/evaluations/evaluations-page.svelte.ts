@@ -1,20 +1,25 @@
 import type { components } from '$lib/api/schema';
 import type { AssessmentKind, Evaluation } from '$lib/types/school';
+import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { inClassAssessmentWindow, nowIso, todayDateInput } from '$lib/date/format';
+import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
 import {
 	emptyEvaluationsSlice,
 	evaluationDetailIdFromUrl,
+	evaluationsClassIdFromUrl,
 	evaluationStatsFromResults,
 	normalizedDescription,
 	type EvaluationsPageSlice,
 } from './lib/evaluation-helpers';
 import { runEvaluationRouteMutation } from './lib/evaluation-route-mutation';
-import { queryEvaluationsListPage } from './lib/evaluations-queries';
+import { loadEvaluationsSlice, queryEvaluationsListPage } from './lib/evaluations-queries';
 
 type ApiAssessment = components['schemas']['Assessment'];
+
+const EVALUATIONS_VERSION_FAMILIES = ['evaluations', 'students'] as const satisfies readonly EntityVersionKey[];
 
 const EVALUATIONS_PAGE_STATE_KEY = Symbol('evaluations-page-state');
 
@@ -23,13 +28,20 @@ export type { EvaluationsPageSlice };
 export class EvaluationsPageState {
 	slice = $state<EvaluationsPageSlice | null>(null);
 
+	private readonly versions = new RouteVersionSnapshot(EVALUATIONS_VERSION_FAMILIES);
+
 	constructor(private readonly getUrl: () => URL) {}
+
+	applySlice(classId: string, data: Partial<Omit<EvaluationsPageSlice, 'classId'>>) {
+		this.slice = { ...emptyEvaluationsSlice(classId), ...data, classId };
+		this.versions.markLoaded();
+	}
 
 	seed(classId: string, data: Partial<Omit<EvaluationsPageSlice, 'classId'>>) {
 		if (this.slice?.classId === classId) {
 			return;
 		}
-		this.slice = { ...emptyEvaluationsSlice(classId), ...data, classId };
+		this.applySlice(classId, data);
 	}
 
 	clear() {
@@ -41,7 +53,7 @@ export class EvaluationsPageState {
 	}
 
 	get selected() {
-		const classId = this.getUrl().pathname.match(/\/classes\/([^/]+)\/evaluations/)?.[1];
+		const classId = evaluationsClassIdFromUrl(this.getUrl());
 		if (!classId) {
 			return undefined;
 		}
@@ -173,6 +185,22 @@ export class EvaluationsPageState {
 
 	queryListPage(classId: string) {
 		return queryEvaluationsListPage(classId);
+	}
+
+	async refreshSlice(classId: string) {
+		const data = await loadEvaluationsSlice(classId);
+		this.applySlice(classId, data);
+	}
+
+	async invalidateIfStale() {
+		if (!this.versions.isStale()) {
+			return;
+		}
+		const classId = this.slice?.classId ?? evaluationsClassIdFromUrl(this.getUrl());
+		if (!classId) {
+			return;
+		}
+		await this.refreshSlice(classId);
 	}
 
 	async createEvaluation(input: {

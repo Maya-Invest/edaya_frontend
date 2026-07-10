@@ -39,6 +39,11 @@ export function evaluationStatsFromResults(
 }
 
 export function evaluationDetailIdFromUrl(url: URL): string | undefined {
-	const match = url.pathname.match(/\/classes\/[^/]+\/evaluations\/([^/]+)/);
+	const match = url.pathname.match(/\/classes\/([^/]+)\/evaluations\/([^/]+)/);
+	return match?.[2];
+}
+
+export function evaluationsClassIdFromUrl(url: URL): string | undefined {
+	const match = url.pathname.match(/\/classes\/([^/]+)\/evaluations/);
 	return match?.[1];
 }

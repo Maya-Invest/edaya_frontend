@@ -1,12 +1,13 @@
 import type { StudentListFilters } from '$lib/list/list-url-filters';
+import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { Student } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { fetchStudentById, loadClassPeopleData, loadPeopleData, loadPeopleDataPage } from '$lib/api/people-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { entityVersions } from '$lib/entity-versions.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readStudentListFilters, writeStudentListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
+import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
 import {
 	filterStudentList,
@@ -16,6 +17,8 @@ import { createStudentOnPage } from './lib/students-list-mutations';
 import { ensureStudentDrawerSelection, querySchoolStudentsPage } from './lib/students-queries';
 
 export const SCHOOL_STUDENTS_PAGE_SIZE = 25;
+
+const STUDENTS_VERSION_FAMILIES = ['students'] as const satisfies readonly EntityVersionKey[];
 
 const STUDENTS_PAGE_STATE_KEY = Symbol('students-page-state');
 
@@ -28,8 +31,9 @@ export class StudentsPageState {
 	loadingFullRoster = $state(false);
 	selectedResolving = $state(false);
 
-	private loadedVersion = 0;
 	private listRequestVersion = 0;
+
+	private readonly versions = new RouteVersionSnapshot(STUDENTS_VERSION_FAMILIES);
 
 	readonly filters: ListFiltersState<StudentListFilters>;
 
@@ -106,7 +110,7 @@ export class StudentsPageState {
 	seedPage(students: Student[], totalStudents: number) {
 		this.students = students;
 		this.totalStudents = totalStudents;
-		this.loadedVersion = entityVersions.students;
+		this.versions.markLoaded();
 	}
 
 	mergeStudents(incoming: readonly Student[]) {
@@ -190,7 +194,7 @@ export class StudentsPageState {
 			}
 			this.mergeStudents(result.students);
 			this.totalStudents = result.totalStudents;
-			this.loadedVersion = entityVersions.students;
+			this.versions.markLoaded();
 		}
 		finally {
 			if (version === this.listRequestVersion) {
@@ -227,7 +231,7 @@ export class StudentsPageState {
 	}
 
 	async invalidateIfStale() {
-		if (this.loadedVersion === entityVersions.students) {
+		if (!this.versions.isStale()) {
 			return;
 		}
 		await this.refreshList();

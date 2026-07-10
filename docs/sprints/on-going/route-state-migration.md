@@ -47,6 +47,7 @@ A route or smart component is ✅ when **all** apply:
 - [ ] `PageQuery` / self-fetch seeds state — no `detailDataContext.seed*`
 - [ ] Views read state — no fetch in component `$effect`
 - [ ] Mutations on state class — `runMutation` + `entityVersions.bump` on success
+- [ ] `invalidateIfStale()` tracks every entity family in the route slice via `RouteVersionSnapshot`; layout calls `registerVersionInvalidation`
 - [ ] Components colocated: `routes/.../components/` or `lib/smart-components/...`
 - [ ] Drawer tabs (if any) are nested routes under `[[id]]/` — not `?tab=`
 - [ ] Loading tests updated or added for the unit

@@ -372,6 +372,21 @@ Drawer open requires: parent route query finished **and** `selected` resolves in
 
 Coordinate cross-route freshness without a global entity store. When any route mutates students, other routes holding student data can detect drift and refetch.
 
+```ts
+// lib/navigation/route-version-snapshot.ts
+export class RouteVersionSnapshot {
+  constructor(private readonly families: readonly EntityVersionKey[]) {}
+  markLoaded() { /* snapshot entityVersions[f] for each family */ }
+  isStale() { /* true when any family drifted */ }
+}
+```
+
+Register pull-based invalidation in the route layout:
+
+```ts
+registerVersionInvalidation(pageState); // calls invalidateIfStale() after navigate
+```
+
 ### API
 
 ```ts
@@ -398,6 +413,7 @@ export const entityVersions = new EntityVersions();
 | **Bump per affected entity family** | `students`, not per-record id; cross-entity writes bump every affected family (`students` + `guardians`, etc.) |
 | **Same-route mutations** | Patch local state directly; bump for other routes |
 | **Invalidation is pull-based** | Active route states call `invalidateIfStale()` on navigate or focus — not a global push sync |
+| **Track every loaded family** | Route state keeps a `RouteVersionSnapshot` for each entity family in its slice; `markLoaded()` after fetch, `isStale()` before refetch |
 | **Start coarse** | Add per-scope versions only if profiling shows refetch cost |
 
 ---
