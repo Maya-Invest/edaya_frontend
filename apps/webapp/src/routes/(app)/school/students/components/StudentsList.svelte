@@ -15,7 +15,7 @@
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
-	import { Eye, GraduationCap, Pencil, Plus } from '$lib/icons';
+	import { Eye, ChevronDown, ChevronUp, GraduationCap, Pencil, Plus } from '$lib/icons';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, closeUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appendModal } from '$lib/modal/modal-url';
@@ -24,7 +24,7 @@
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import { SvelteMap } from 'svelte/reactivity';
-	import { studentListUsesFullRoster } from '../lib/student-list-filters';
+	import { studentListUsesFullRoster, cycleStudentListSort, type StudentSortColumn } from '../lib/student-list-filters';
 	import {
 		getStudentsPageState,
 		SCHOOL_STUDENTS_PAGE_SIZE,
@@ -45,8 +45,11 @@
 	const hierarchy = $derived(studentsPage.hierarchy);
 
 	let view = $state<'table' | 'cards'>('table');
+	let selectionMode = $state(false);
 	let selectedIds = $state<string[]>([]);
 	const selectedSet = $derived(new Set(selectedIds));
+	const currentSort = $derived(studentsPage.filters.values.sort);
+	const currentSortDir = $derived(studentsPage.filters.values.sortDir);
 
 	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
 	$effect(() => {
@@ -131,29 +134,54 @@
 			label: statusLabel(key),
 		})),
 	);
-	const sortOptions = $derived([
-		{ value: 'roster', label: $t('students.sortRoster') },
-		{ value: 'name', label: $t('students.sortName') },
-		{ value: 'average', label: $t('students.sortAverage') },
-		{ value: 'attendance', label: $t('students.sortAttendance') },
-		{ value: 'status', label: $t('students.sortStatus') },
-	]);
-
 	function applyFacetFilter(field: 'class' | 'status', value: string) {
 		studentsPage.filters.patch({ [field]: value });
 		studentsPage.filters.syncNow();
 		void studentsPage.refreshList();
 	}
 
-	function applySort(value: string) {
-		studentsPage.filters.patch({ sort: value as typeof studentsPage.filters.values.sort });
+	function cycleSort(column: StudentSortColumn) {
+		const next = cycleStudentListSort(studentsPage.filters.values, column);
+		studentsPage.filters.patch(next);
 		studentsPage.filters.syncNow();
+	}
+
+	function sortAriaValue(column: StudentSortColumn): 'ascending' | 'descending' | 'none' {
+		if (currentSort !== column) {
+			return 'none';
+		}
+		return currentSortDir === 'asc' ? 'ascending' : 'descending';
+	}
+
+	function sortButtonLabel(column: StudentSortColumn, label: string) {
+		const direction = sortAriaValue(column);
+		if (direction === 'none') {
+			return label;
+		}
+		return `${label}, ${direction === 'ascending' ? $t('list.sortAscending') : $t('list.sortDescending')}`;
+	}
+
+	function enterSelectionMode() {
+		selectionMode = true;
+	}
+
+	function exitSelectionMode() {
+		selectionMode = false;
+		clearSelection();
+	}
+
+	function handleRowClick(student: Student) {
+		if (selectionMode) {
+			toggleSelected(student.id, !selectedSet.has(student.id));
+			return;
+		}
+		onSelect?.(student);
 	}
 
 	function handleRowKeydown(event: KeyboardEvent, student: Student) {
 		if (event.key === 'Enter' || event.key === ' ') {
 			event.preventDefault();
-			onSelect?.(student);
+			handleRowClick(student);
 		}
 	}
 
@@ -256,9 +284,7 @@
 		{#snippet more()}
 			<ListMoreMenu
 				{view}
-				sort={studentsPage.filters.values.sort}
-				{sortOptions}
-				onSortChange={applySort}
+				onEnterSelectMode={selectionMode ? undefined : enterSelectionMode}
 				onViewChange={value => (view = value)}
 			/>
 		{/snippet}
@@ -291,14 +317,24 @@
 		onCreated={handleCreated}
 	/>
 
-	{#if selectedIds.length > 0}
+	{#if selectionMode}
 		<div class="mb-3 flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-2 shadow-soft">
-			<p class="text-sm font-medium">{$t('list.selectedCount', { n: selectedIds.length })}</p>
+			<p class="text-sm font-medium">
+				{selectedIds.length > 0
+					? $t('list.selectedCount', { n: selectedIds.length })
+					: $t('list.selectRowsHint')}
+			</p>
 			<div class="flex items-center gap-2">
-				<Button variant="outline" size="sm" class="rounded-full" onclick={exportSelected}>
+				<Button
+					variant="outline"
+					size="sm"
+					class="rounded-full"
+					disabled={selectedIds.length === 0}
+					onclick={exportSelected}
+				>
 					{$t('list.export')}
 				</Button>
-				<Button variant="ghost" size="sm" class="rounded-full" onclick={clearSelection}>
+				<Button variant="ghost" size="sm" class="rounded-full" onclick={exitSelectionMode}>
 					{$t('common.clear')}
 				</Button>
 			</div>
@@ -313,20 +349,118 @@
 			<div
 				class="grid grid-cols-12 gap-4 border-b border-border bg-secondary/40 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
 			>
-				<div class="col-span-1 flex items-center">
-					<div role="presentation" onclick={event => event.stopPropagation()}>
-						<Checkbox
-							checked={allVisibleSelected}
-							onCheckedChange={checked => toggleVisible(checked === true)}
-							aria-label={$t('list.selectAll')}
-						/>
+				{#if selectionMode}
+					<div class="col-span-1 flex items-center">
+						<div role="presentation" onclick={event => event.stopPropagation()}>
+							<Checkbox
+								class="rounded-[2px]"
+								checked={allVisibleSelected}
+								onCheckedChange={checked => toggleVisible(checked === true)}
+								aria-label={$t('list.selectAll')}
+							/>
+						</div>
 					</div>
+				{/if}
+				<div class="col-span-3 flex items-center">
+					<button
+						type="button"
+						class={cn(
+							'flex items-center gap-1 transition-colors hover:text-foreground',
+							currentSort === 'name' && 'text-foreground',
+						)}
+						aria-label={sortButtonLabel('name', $t('students.student'))}
+						onclick={() => cycleSort('name')}
+					>
+						{$t('students.student')}
+						{#if currentSort === 'name'}
+							{#if currentSortDir === 'asc'}
+								<ChevronUp class="h-3 w-3" />
+							{:else}
+								<ChevronDown class="h-3 w-3" />
+							{/if}
+						{/if}
+					</button>
 				</div>
-				<div class="col-span-3">{$t('students.student')}</div>
-				<div class="col-span-2">{$t('students.class')}</div>
-				<div class="col-span-2">{$t('students.average')}</div>
-				<div class="col-span-2">{$t('students.attendance')}</div>
-				<div class="col-span-1">{$t('students.status')}</div>
+				<div class="col-span-2 flex items-center">
+					<button
+						type="button"
+						class={cn(
+							'flex items-center gap-1 transition-colors hover:text-foreground',
+							currentSort === 'class' && 'text-foreground',
+						)}
+						aria-label={sortButtonLabel('class', $t('students.class'))}
+						onclick={() => cycleSort('class')}
+					>
+						{$t('students.class')}
+						{#if currentSort === 'class'}
+							{#if currentSortDir === 'asc'}
+								<ChevronUp class="h-3 w-3" />
+							{:else}
+								<ChevronDown class="h-3 w-3" />
+							{/if}
+						{/if}
+					</button>
+				</div>
+				<div class="col-span-2 flex items-center">
+					<button
+						type="button"
+						class={cn(
+							'flex items-center gap-1 transition-colors hover:text-foreground',
+							currentSort === 'average' && 'text-foreground',
+						)}
+						aria-label={sortButtonLabel('average', $t('students.average'))}
+						onclick={() => cycleSort('average')}
+					>
+						{$t('students.average')}
+						{#if currentSort === 'average'}
+							{#if currentSortDir === 'asc'}
+								<ChevronUp class="h-3 w-3" />
+							{:else}
+								<ChevronDown class="h-3 w-3" />
+							{/if}
+						{/if}
+					</button>
+				</div>
+				<div class="col-span-2 flex items-center">
+					<button
+						type="button"
+						class={cn(
+							'flex items-center gap-1 transition-colors hover:text-foreground',
+							currentSort === 'attendance' && 'text-foreground',
+						)}
+						aria-label={sortButtonLabel('attendance', $t('students.attendance'))}
+						onclick={() => cycleSort('attendance')}
+					>
+						{$t('students.attendance')}
+						{#if currentSort === 'attendance'}
+							{#if currentSortDir === 'asc'}
+								<ChevronUp class="h-3 w-3" />
+							{:else}
+								<ChevronDown class="h-3 w-3" />
+							{/if}
+						{/if}
+					</button>
+				</div>
+				<div class={cn('flex items-center', selectionMode ? 'col-span-1' : 'col-span-2')}>
+					<button
+						type="button"
+						class={cn(
+							'flex items-center gap-1 transition-colors hover:text-foreground',
+							currentSort === 'status' && 'text-foreground',
+						)}
+						aria-label={sortButtonLabel('status', $t('students.status'))}
+						onclick={() => cycleSort('status')}
+					>
+						{$t('students.status')}
+						{#if currentSort === 'status'}
+							{#if currentSortDir === 'asc'}
+								<ChevronUp class="h-3 w-3" />
+							{:else}
+								<ChevronDown class="h-3 w-3" />
+							{/if}
+						{/if}
+					</button>
+				</div>
 				<div class="col-span-1"></div>
 			</div>
 			<InfiniteList
@@ -344,20 +478,24 @@
 							<div
 								role="button"
 								tabindex="0"
-								onclick={() => onSelect?.(student)}
+								onclick={() => handleRowClick(student)}
 								onkeydown={event => handleRowKeydown(event, student)}
 								class={cn(
 									'grid w-full grid-cols-12 items-center gap-4 border-b border-border px-5 py-3.5 text-left transition-colors last:border-b-0',
 									active ? 'bg-primary/10' : 'hover:bg-secondary',
+									selectionMode && selectedSet.has(student.id) && 'bg-primary/5',
 								)}
 							>
-								<div class="col-span-1 flex items-center" role="presentation" onclick={event => event.stopPropagation()}>
-									<Checkbox
-										checked={selectedSet.has(student.id)}
-										onCheckedChange={checked => toggleSelected(student.id, checked === true)}
-										aria-label={$t('list.selectRow')}
-									/>
-								</div>
+								{#if selectionMode}
+									<div class="col-span-1 flex items-center" role="presentation" onclick={event => event.stopPropagation()}>
+										<Checkbox
+											class="rounded-[2px]"
+											checked={selectedSet.has(student.id)}
+											onCheckedChange={checked => toggleSelected(student.id, checked === true)}
+											aria-label={$t('list.selectRow')}
+										/>
+									</div>
+								{/if}
 								<div class="col-span-3 flex items-center gap-3">
 									<PersonAvatar
 										name={student.name}
@@ -375,13 +513,13 @@
 								<div class="col-span-2 font-display text-base font-semibold tabular-nums">
 									{student.average.toFixed(1)}
 								</div>
-								<div class="col-span-1">
+								<div class="col-span-2">
 									<div class="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
 										<div class="h-full rounded-full bg-accent" style:width="{student.attendance}%"></div>
 									</div>
 									<p class="mt-1 font-mono text-[10px] text-muted-foreground">{student.attendance}%</p>
 								</div>
-								<div class="col-span-2">
+								<div class={cn(selectionMode ? 'col-span-1' : 'col-span-2')}>
 									<span
 										class={cn(
 											'rounded-full px-2 py-0.5 text-[10px] font-medium',
@@ -434,21 +572,27 @@
 						<div
 							role="button"
 							tabindex="0"
-							onclick={() => onSelect?.(student)}
+							onclick={() => handleRowClick(student)}
 							onkeydown={event => handleRowKeydown(event, student)}
 							class={cn(
 								'rounded-2xl border border-border bg-card p-5 text-left shadow-soft transition hover:-translate-y-0.5 hover:shadow-panel',
 								active && 'border-primary/40 bg-primary/5',
+								selectionMode && selectedSet.has(student.id) && 'border-primary/30 bg-primary/5',
 							)}
 						>
 							<div class="mb-3 flex items-center justify-between gap-2">
-								<div role="presentation" onclick={event => event.stopPropagation()}>
-									<Checkbox
-										checked={selectedSet.has(student.id)}
-										onCheckedChange={checked => toggleSelected(student.id, checked === true)}
-										aria-label={$t('list.selectRow')}
-									/>
-								</div>
+								{#if selectionMode}
+									<div role="presentation" onclick={event => event.stopPropagation()}>
+										<Checkbox
+											class="rounded-[2px]"
+											checked={selectedSet.has(student.id)}
+											onCheckedChange={checked => toggleSelected(student.id, checked === true)}
+											aria-label={$t('list.selectRow')}
+										/>
+									</div>
+								{:else}
+									<div></div>
+								{/if}
 								<div role="presentation" onclick={event => event.stopPropagation()}>
 									<RowActionMenu>
 										<RowActionMenuItem onclick={event => openStudentAction(event, student)}>

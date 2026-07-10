@@ -14,6 +14,7 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { Mail, Phone, Plus, Users } from '$lib/icons';
+	import type { GuardianListFilters } from '$lib/list/list-url-filters';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readGuardianListFilters, writeGuardianListFilters } from '$lib/list/list-url-filters';
 	import { useOffsetInfiniteList } from '$lib/list/use-infinite-list.svelte';
@@ -32,7 +33,7 @@
 	const students = $derived(detailDataContext.students);
 	const initialFilters = $derived(readGuardianListFilters($page.url));
 
-	const listFilters = new ListFiltersState<{ q: string }>(
+	const listFilters = new ListFiltersState<GuardianListFilters>(
 		{
 			getUrl: () => $page.url,
 			write: writeGuardianListFilters,

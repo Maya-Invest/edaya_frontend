@@ -90,7 +90,8 @@ export class StudentsPageState {
 	}
 
 	filterVisible(students: readonly Student[]): Student[] {
-		return filterStudentList(students, this.filters.values);
+		const classNameById = new Map(this.classes.map(classGroup => [classGroup.id, classGroup.name]));
+		return filterStudentList(students, this.filters.values, { classNameById });
 	}
 
 	get visibleStudents() {

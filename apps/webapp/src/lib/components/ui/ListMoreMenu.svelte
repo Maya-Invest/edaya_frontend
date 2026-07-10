@@ -2,7 +2,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Popover from '$lib/components/ui/popover';
 	import { t } from '$lib/i18n';
-	import { FileSpreadsheet, Layers, LayoutGrid, MoreHorizontal } from '$lib/icons';
+	import { FileSpreadsheet, ClipboardCheck, Layers, LayoutGrid, MoreHorizontal } from '$lib/icons';
 	import { toast } from '$lib/toast.svelte';
 
 	const {
@@ -10,17 +10,13 @@
 		onViewChange,
 		exportOnly = false,
 		exportLabel,
-		sort,
-		sortOptions = [],
-		onSortChange,
+		onEnterSelectMode,
 	}: {
 		view?: 'table' | 'cards';
 		onViewChange?: (view: 'table' | 'cards') => void;
 		exportOnly?: boolean;
 		exportLabel?: string;
-		sort?: string;
-		sortOptions?: { value: string; label: string }[];
-		onSortChange?: (value: string) => void;
+		onEnterSelectMode?: () => void;
 	} = $props();
 
 	let open = $state(false);
@@ -37,8 +33,8 @@
 		open = false;
 	}
 
-	function setSort(next: string) {
-		onSortChange?.(next);
+	function enterSelectMode() {
+		onEnterSelectMode?.();
 		open = false;
 	}
 </script>
@@ -59,6 +55,17 @@
 		{/snippet}
 	</Popover.PopoverTrigger>
 	<Popover.PopoverContent class="w-48 p-1" align="end">
+		{#if onEnterSelectMode}
+			<button
+				type="button"
+				class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-secondary"
+				onclick={enterSelectMode}
+			>
+				<ClipboardCheck class="h-4 w-4 text-muted-foreground" />
+				<span>{$t('list.enterSelectMode')}</span>
+			</button>
+			<div class="my-1 border-t border-border"></div>
+		{/if}
 		<button
 			type="button"
 			class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-secondary"
@@ -68,23 +75,7 @@
 			<span>{resolvedExportLabel}</span>
 		</button>
 		{#if !exportOnly}
-			{#if sortOptions.length > 0}
-				<div class="my-1 border-t border-border"></div>
-				{#each sortOptions as option (option.value)}
-					<button
-						type="button"
-						class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-secondary"
-						onclick={() => setSort(option.value)}
-					>
-						<Layers class="h-4 w-4 text-muted-foreground" />
-						<span class="flex-1">{option.label}</span>
-						{#if sort === option.value}
-							<span class="text-[10px] uppercase text-primary">{$t('list.active')}</span>
-						{/if}
-					</button>
-				{/each}
-				<div class="my-1 border-t border-border"></div>
-			{/if}
+			<div class="my-1 border-t border-border"></div>
 			<button
 				type="button"
 				class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-secondary"

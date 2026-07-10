@@ -12,6 +12,7 @@
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
 	import GuardiansList from './components/GuardiansList.svelte';
+	import { guardianListUsesFullRoster } from './lib/guardian-list-filters';
 	import {
 		GuardiansPageState,
 		setGuardiansPageState,
@@ -27,6 +28,8 @@
 	const query = guardiansPage.queryListPage();
 	const urlFilters = $derived(readGuardianListFilters($page.url));
 
+	let wasFullRoster = false;
+
 	$effect(() => {
 		guardiansPage.filters.hydrate(urlFilters);
 	});
@@ -36,7 +39,19 @@
 			return;
 		}
 		void guardiansPage.filters.values.q;
-		guardiansPage.filters.scheduleSync();
+		void guardiansPage.filters.values.sort;
+
+		if (!guardianListUsesFullRoster(guardiansPage.filters.values)) {
+			guardiansPage.clearFullRoster();
+			if (wasFullRoster) {
+				void guardiansPage.refreshList();
+			}
+			wasFullRoster = false;
+			return;
+		}
+
+		wasFullRoster = true;
+		void guardiansPage.loadFullRoster();
 	});
 
 	function selectGuardian(guardian: Guardian) {

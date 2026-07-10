@@ -2,7 +2,7 @@ import type { GuardianListFilters } from '$lib/list/list-url-filters';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { Guardian, Student } from '$lib/types/school';
 import { DEFAULT_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
-import { fetchGuardianById, loadGuardiansPeopleDataPage } from '$lib/api/people-data';
+import { fetchGuardianById, loadGuardiansPeopleData, loadGuardiansPeopleDataPage } from '$lib/api/people-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readGuardianListFilters, writeGuardianListFilters } from '$lib/list/list-url-filters';
@@ -17,6 +17,9 @@ import {
 } from './lib/guardian-detail-mutations';
 import {
 	filterGuardianList,
+	guardianListUsesFullRoster,
+} from './lib/guardian-list-filters';
+import {
 	guardianDetailIdFromUrl,
 	linkedStudentsForGuardian,
 } from './lib/guardian-selectors';
@@ -31,9 +34,11 @@ const GUARDIANS_PAGE_STATE_KEY = Symbol('guardians-page-state');
 export class GuardiansPageState {
 	guardians = $state<Guardian[]>([]);
 	students = $state<Student[]>([]);
+	fullRosterGuardians = $state<Guardian[]>([]);
 	totalGuardians = $state(0);
 	listLoading = $state(false);
 	listLoadingMore = $state(false);
+	loadingFullRoster = $state(false);
 	selectedResolving = $state(false);
 
 	private listRequestVersion = 0;
@@ -77,8 +82,26 @@ export class GuardiansPageState {
 		return linkedStudentsForGuardian(this.students, guardian);
 	}
 
+	get usesFullRoster() {
+		return guardianListUsesFullRoster(this.filters.values);
+	}
+
+	filterVisible(guardians: readonly Guardian[]): Guardian[] {
+		return filterGuardianList(guardians, this.filters.values, { students: this.students });
+	}
+
 	get visibleGuardians() {
-		return filterGuardianList(this.guardians, this.filters.values);
+		return this.filterVisible(this.listSourceGuardians());
+	}
+
+	private listSourceGuardians(): readonly Guardian[] {
+		if (!this.usesFullRoster) {
+			return this.guardians;
+		}
+		if (this.fullRosterGuardians.length > 0) {
+			return this.fullRosterGuardians;
+		}
+		return this.guardians;
 	}
 
 	seedPage(guardians: Guardian[], students: Student[], totalGuardians: number) {
@@ -134,12 +157,21 @@ export class GuardiansPageState {
 	}
 
 	async refreshList() {
+		if (this.usesFullRoster) {
+			return;
+		}
 		await this.loadFirstPage();
+	}
+
+	clearFullRoster() {
+		this.fullRosterGuardians = [];
+		this.loadingFullRoster = false;
 	}
 
 	async loadFirstPage() {
 		const version = ++this.listRequestVersion;
 		this.listLoading = true;
+		this.fullRosterGuardians = [];
 		try {
 			const result = await loadGuardiansPeopleDataPage(getBrowserSchoolClient(), {
 				offset: 0,
@@ -158,7 +190,7 @@ export class GuardiansPageState {
 	}
 
 	async loadMore() {
-		if (this.listLoading || this.listLoadingMore) {
+		if (this.listLoading || this.listLoadingMore || this.usesFullRoster) {
 			return;
 		}
 		if (this.guardians.length >= this.totalGuardians) {
@@ -183,6 +215,27 @@ export class GuardiansPageState {
 		finally {
 			if (version === this.listRequestVersion) {
 				this.listLoadingMore = false;
+			}
+		}
+	}
+
+	async loadFullRoster() {
+		const version = ++this.listRequestVersion;
+		this.listLoading = true;
+		this.loadingFullRoster = true;
+		try {
+			const result = await loadGuardiansPeopleData(getBrowserSchoolClient());
+			if (version !== this.listRequestVersion) {
+				return;
+			}
+			this.fullRosterGuardians = result.guardians;
+			this.mergeStudents(result.students);
+			this.seedPage(result.guardians, result.students, result.guardians.length);
+		}
+		finally {
+			if (version === this.listRequestVersion) {
+				this.listLoading = false;
+				this.loadingFullRoster = false;
 			}
 		}
 	}

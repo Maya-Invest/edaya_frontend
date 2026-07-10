@@ -20,6 +20,7 @@ export {
 	ChevronDown,
 	ChevronLeft,
 	ChevronRight,
+	ChevronUp,
 	ClipboardCheck,
 	Clock,
 	Crown,
