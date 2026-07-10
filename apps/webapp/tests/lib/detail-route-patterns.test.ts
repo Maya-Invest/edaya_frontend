@@ -12,6 +12,20 @@ describe('isLikelyDetailPath', () => {
 		expect(isLikelyDetailPath('/school/students/stu-1/grades')).toBe(true);
 		expect(isLikelyDetailPath('/school/students')).toBe(false);
 	});
+
+	it('recognizes school staff drawer tabs', () => {
+		expect(isLikelyDetailPath('/school/staff/stf-1')).toBe(true);
+		expect(isLikelyDetailPath('/school/staff/stf-1/profile')).toBe(true);
+		expect(isLikelyDetailPath('/school/staff/stf-1/permissions')).toBe(true);
+		expect(isLikelyDetailPath('/school/staff')).toBe(false);
+	});
+
+	it('recognizes school teacher drawer tabs', () => {
+		expect(isLikelyDetailPath('/school/teachers/tch-1')).toBe(true);
+		expect(isLikelyDetailPath('/school/teachers/tch-1/profile')).toBe(true);
+		expect(isLikelyDetailPath('/school/teachers/tch-1/assignments')).toBe(true);
+		expect(isLikelyDetailPath('/school/teachers')).toBe(false);
+	});
 });
 
 describe('listRouteCacheKey', () => {
@@ -25,6 +39,21 @@ describe('listRouteCacheKey', () => {
 
 	it('still strips single-segment detail paths for other entities', () => {
 		expect(listRouteCacheKey(new URL('http://local/school/guardians/g-1'))).toBe('/school/guardians');
+	});
+
+	it('maps school staff drawer paths to the list route', () => {
+		expect(listRouteCacheKey(new URL('http://local/school/staff'))).toBe('/school/staff');
+		expect(listRouteCacheKey(new URL('http://local/school/staff/stf-1'))).toBe('/school/staff');
+		expect(listRouteCacheKey(new URL('http://local/school/staff/stf-1/profile'))).toBe('/school/staff');
+		expect(listRouteCacheKey(new URL('http://local/school/staff/stf-1/permissions'))).toBe('/school/staff');
+		expect(listRouteCacheKey(new URL('http://local/school/staff/stf-1/assignments'))).toBe('/school/staff');
+	});
+
+	it('maps school teacher drawer paths to the list route', () => {
+		expect(listRouteCacheKey(new URL('http://local/school/teachers'))).toBe('/school/teachers');
+		expect(listRouteCacheKey(new URL('http://local/school/teachers/tch-1'))).toBe('/school/teachers');
+		expect(listRouteCacheKey(new URL('http://local/school/teachers/tch-1/profile'))).toBe('/school/teachers');
+		expect(listRouteCacheKey(new URL('http://local/school/teachers/tch-1/assignments'))).toBe('/school/teachers');
 	});
 });
 

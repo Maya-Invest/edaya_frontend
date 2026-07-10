@@ -2,7 +2,6 @@ import { ApiError } from '$api-client';
 import { academicContext } from '$lib/academic/context.svelte';
 import { schoolWideEntityList } from '$lib/api/entity-list-filters';
 import { loadClassPeopleData } from '$lib/api/people-data';
-import { fetchSchoolSubjectsSources, mapAllClassSubjects } from '$lib/api/subjects-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { queryClient } from '$lib/queries/client';
@@ -46,33 +45,7 @@ export function querySchoolTeachersPage() {
 	return (url: URL) => resolvePageLoad(url, {
 		empty: () => ({ totalTeachers: 0 }),
 		load: async () => {
-			const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
-			const client = queryClient();
-			const [countResult, subjectSources] = await Promise.all([
-				schoolId ? client.entities.teachers.count({ schoolId }) : Promise.resolve({ count: 0 }),
-				fetchSchoolSubjectsSources(client).catch((error) => {
-					if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-						return {
-							classSubjectsRaw: [],
-							subjectsRaw: [],
-							subjectMattersRaw: [],
-							staffMembersRaw: [],
-							staffAssignmentsRaw: [],
-							teachersRaw: [],
-							teacherAssignmentsRaw: [],
-						};
-					}
-					throw error;
-				}),
-			]);
-			const subjects = mapAllClassSubjects(subjectSources);
-			for (const classId of [...new Set(subjects.map(subject => subject.classId))]) {
-				detailDataContext.seedSubjects(
-					subjects.filter(subject => subject.classId === classId),
-					{ classId },
-				);
-			}
-			return { totalTeachers: countResult.count };
+			return { totalTeachers: 0 };
 		},
 		hasItems: listPageHasItems,
 	});

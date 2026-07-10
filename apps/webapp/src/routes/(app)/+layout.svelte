@@ -122,6 +122,8 @@
 	function usesRouteLocalDrawer(pathname: string): boolean {
 		return /^\/school\/students(?:\/|$)/.test(pathname)
 			|| /^\/school\/guardians(?:\/|$)/.test(pathname)
+			|| /^\/school\/staff(?:\/|$)/.test(pathname)
+			|| /^\/school\/teachers(?:\/|$)/.test(pathname)
 			|| /^\/classes\/[^/]+\/evaluations(?:\/|$)/.test(pathname);
 	}
 

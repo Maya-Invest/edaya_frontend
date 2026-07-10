@@ -50,10 +50,14 @@ const guardianListFiltersCodec = defineUrlFilterCodec({
 
 const staffListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
+	sort: { type: 'enum', default: 'roster', values: ['roster', 'name', 'role', 'classes'] as const },
+	sortDir: { type: 'enum', default: 'asc', values: ['asc', 'desc'] as const },
 });
 
 const teacherListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
+	sort: { type: 'enum', default: 'roster', values: ['roster', 'name', 'assignments', 'status'] as const },
+	sortDir: { type: 'enum', default: 'asc', values: ['asc', 'desc'] as const },
 });
 
 const classReportCardListFiltersCodec = defineUrlFilterCodec({

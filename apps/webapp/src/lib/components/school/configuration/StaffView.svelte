@@ -16,6 +16,7 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { Mail, Plus, Search } from '$lib/icons';
+	import type { StaffListFilters } from '$lib/list/list-url-filters';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readStaffListFilters, writeStaffListFilters } from '$lib/list/list-url-filters';
 	import { useOffsetInfiniteList } from '$lib/list/use-infinite-list.svelte';
@@ -35,7 +36,7 @@
 
 	const initialFilters = $derived(readStaffListFilters($page.url));
 
-	const listFilters = new ListFiltersState<{ q: string }>(
+	const listFilters = new ListFiltersState<StaffListFilters>(
 		{
 			getUrl: () => $page.url,
 			write: writeStaffListFilters,

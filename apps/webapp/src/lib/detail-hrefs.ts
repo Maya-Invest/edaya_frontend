@@ -10,6 +10,9 @@ type SchoolStudentTabSegment
 		| 'report-card'
 		| 'enrollments';
 
+type SchoolStaffTabSegment = 'profile' | 'permissions' | 'assignments';
+type SchoolTeacherTabSegment = 'profile' | 'assignments';
+
 const STUDENT_TAB_ROUTES: Record<SchoolStudentTabSegment, RouteId> = {
 	'profile': '/(app)/school/students/[[id]]/(tabs)/profile',
 	'grades': '/(app)/school/students/[[id]]/(tabs)/grades',
@@ -20,12 +23,25 @@ const STUDENT_TAB_ROUTES: Record<SchoolStudentTabSegment, RouteId> = {
 	'enrollments': '/(app)/school/students/[[id]]/(tabs)/enrollments',
 };
 
+const STAFF_TAB_ROUTES: Record<SchoolStaffTabSegment, RouteId> = {
+	'profile': '/(app)/school/staff/[[id]]/(tabs)/profile',
+	'permissions': '/(app)/school/staff/[[id]]/(tabs)/permissions',
+	'assignments': '/(app)/school/staff/[[id]]/(tabs)/assignments',
+};
+
+const TEACHER_TAB_ROUTES: Record<SchoolTeacherTabSegment, RouteId> = {
+	'profile': '/(app)/school/teachers/[[id]]/(tabs)/profile',
+	'assignments': '/(app)/school/teachers/[[id]]/(tabs)/assignments',
+};
+
 export const detailHref = {
 	schoolStudent: (id: string): ResolvedPathname => appPath('/(app)/school/students/[[id]]/(tabs)/profile', { id }),
 	schoolStudentTab: (id: string, tab: SchoolStudentTabSegment = 'profile'): ResolvedPathname =>
 		appPath(STUDENT_TAB_ROUTES[tab], { id }),
 	schoolGuardian: (id: string): ResolvedPathname => appPath('/(app)/school/guardians/[[id]]', { id }),
-	schoolTeacher: (id: string): ResolvedPathname => appPath('/(app)/school/teachers/[[id]]', { id }),
+	schoolTeacher: (id: string): ResolvedPathname => appPath('/(app)/school/teachers/[[id]]/(tabs)/profile', { id }),
+	schoolTeacherTab: (id: string, tab: SchoolTeacherTabSegment = 'profile'): ResolvedPathname =>
+		appPath(TEACHER_TAB_ROUTES[tab], { id }),
 	schoolActivity: (id: string): ResolvedPathname => appPath('/(app)/school/activities/[[id]]', { id }),
 	schoolAnnouncement: (id: string): ResolvedPathname => appPath('/(app)/school/announcements/[[id]]', { id }),
 	schoolIncident: (id: string): ResolvedPathname => appPath('/(app)/school/events/[[id]]', { id }),
@@ -47,8 +63,10 @@ export const detailHref = {
 	configSubject: (id: string): ResolvedPathname => appPath('/(app)/configuration/subjects/[[id]]', { id }),
 	configSubjectLevel: (label: string): ResolvedPathname =>
 		appPath('/(app)/configuration/subjects/level/[[level]]', { level: label }),
-	configStaffGuardian: (id: string): ResolvedPathname => appPath('/(app)/school/staff/[[id]]', { id }),
-	configStaffMember: (id: string): ResolvedPathname => appPath('/(app)/school/staff/[[id]]', { id }),
+	configStaffGuardian: (id: string): ResolvedPathname => appPath('/(app)/school/staff/[[id]]/(tabs)/profile', { id }),
+	configStaffMember: (id: string): ResolvedPathname => appPath('/(app)/school/staff/[[id]]/(tabs)/profile', { id }),
+	schoolStaffTab: (id: string, tab: SchoolStaffTabSegment = 'profile'): ResolvedPathname =>
+		appPath(STAFF_TAB_ROUTES[tab], { id }),
 	configReportCard: (id: string): ResolvedPathname => appPath('/(app)/configuration/report-cards/[[id]]', { id }),
 	configGradeLevel: (id: string): ResolvedPathname => appPath('/(app)/configuration/grade-levels/[[id]]', { id }),
 	configClassGroup: (id: string): ResolvedPathname => appPath('/(app)/configuration/classes/[[id]]', { id }),

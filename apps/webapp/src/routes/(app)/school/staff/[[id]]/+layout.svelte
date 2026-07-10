@@ -1,0 +1,64 @@
+<script lang="ts">
+	import type { ResolvedPathname } from '$app/types';
+	import type { Snippet } from 'svelte';
+	import { page } from '$app/stores';
+	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
+	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import { getStaffPageState } from '../staff-page.svelte';
+	import StaffDrawer from './components/StaffDrawer.svelte';
+
+	const { children }: { children: Snippet } = $props();
+
+	const staffPage = getStaffPageState();
+	const staff = $derived(staffPage.selected);
+	let selectionRequestVersion = 0;
+
+	function closeDetail() {
+		const next = new URL($page.url);
+		next.searchParams.delete(MODAL_QUERY_KEY);
+		next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
+		const href = `${appPath('/(app)/school/staff/[[id]]')}${next.search}` as ResolvedPathname;
+		appGoto(href);
+	}
+
+	$effect(() => {
+		const staffId = $page.params.id;
+		if (!staffId) {
+			return;
+		}
+
+		const version = ++selectionRequestVersion;
+		staffPage.selectedResolving = true;
+
+		void staffPage.ensureDrawerSelection(staffId)
+			.then((ok) => {
+				if (version !== selectionRequestVersion) {
+					return;
+				}
+				if (!ok) {
+					closeDetail();
+				}
+			})
+			.catch(() => {
+				if (version !== selectionRequestVersion) {
+					return;
+				}
+				closeDetail();
+			})
+			.finally(() => {
+				if (version === selectionRequestVersion) {
+					staffPage.selectedResolving = false;
+				}
+			});
+	});
+</script>
+
+{#if $page.params.id}
+	<StaffDrawer
+		{staff}
+		loading={staffPage.selectedResolving || !staff}
+		onClose={closeDetail}
+	>
+		{@render children()}
+	</StaffDrawer>
+{/if}

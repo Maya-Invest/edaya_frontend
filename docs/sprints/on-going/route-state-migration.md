@@ -63,13 +63,41 @@ A route or smart component is ✅ when **all** apply:
 |-------|-------------|--------|---------------------|----------------------|--------|
 | `/school/students` | `SchoolStudentsView` | Yes | `profile` (default), `grades`, `attendance`, `incidents`, `finances`, `report-card`, `enrollments` | `students` | ✅ |
 | `/school/guardians` | `GuardiansView` | Yes | — (sections only) | `guardians` | ✅ |
-| `/school/staff` | `StaffView` | Yes | `profile`, `permissions`, `assignments` | `staff` | ⬜ |
-| `/school/teachers` | `TeachersView` | Yes | `profile`, `assignments` | `teachers` | ⬜ |
+| `/school/staff` | `StaffView` | Yes | `profile`, `permissions`, `assignments` | `staff` | ✅ |
+| `/school/teachers` | `TeachersView` | Yes | `profile`, `assignments` | `teachers` | ✅ |
 
 **Notes**
 
 - `/school/guardians` follows the students list + drawer pattern with **all TS utilities under `lib/`** and **proxied by `guardians-page.svelte.ts`** (queries, mutations, selectors).
+- `/school/staff` follows the same pattern with nested tab routes (`profile`, `permissions`, `assignments`) and list reference UX (selection mode, sortable headers).
+- `/school/teachers` follows the same pattern with nested tab routes (`profile`, `assignments`).
 - `/school/students` is the **reference slice** — see file tree below. Class route `/classes/:id/students` still uses legacy `StudentTabs` in `lib/` until that unit migrates.
+
+**Reference slice file tree (`/school/staff`)**
+
+```
+routes/(app)/school/staff/
+  +layout.svelte                 # StaffPageState, list PageQuery, StaffList
+  staff-page.svelte.ts           # sole route-root TS — proxies lib/*
+  lib/
+    staff-queries.ts
+    staff-detail-mutations.ts
+    staff-route-mutation.ts
+    staff-list-filters.ts
+    staff-selectors.ts
+    staff-detail-tabs.ts
+    staff-page-status.ts
+    index.ts
+  components/                    # list + create modal
+  [[id]]/
+    +layout.svelte               # StaffDrawer shell + ensureSelectedStaff
+    +page.ts                     # redirect bare id → profile tab
+    components/                  # drawer chrome, header, profile edit modal
+    (tabs)/
+      profile/+page.svelte
+      permissions/+page.svelte
+      assignments/+page.svelte
+```
 
 **Reference slice file tree (`/school/guardians`)**
 
@@ -316,7 +344,7 @@ Priority follows dependency and pilot value; any order is fine if §C steps are 
 
 | Area | Total | ✅ |
 |------|-------|-----|
-| Routes (§A) | 30 | 3 |
+| Routes (§A) | 30 | 5 |
 | Smart components (§B) | 6 | 0 |
 | Phase 0 | 3 | 3 |
 
@@ -328,6 +356,8 @@ Priority follows dependency and pilot value; any order is fine if §C steps are 
 
 | Date | Change |
 |------|--------|
+| 2026-07-10 | `/school/teachers` ✅ — route state + `lib/` colocation; nested tab routes (`profile`, `assignments`); local drawer |
+| 2026-07-10 | `/school/staff` ✅ — route state + `lib/` colocation; nested tab routes; list reference UX (selection mode, sortable headers) |
 | 2026-07-10 | `/school/guardians` ✅ — route state + `lib/` colocation; page state proxies queries/mutations/selectors |
 | 2026-07-10 | `/classes/:id/evaluations` ✅ — `lib/` colocation, `[[id]]/+layout` drawer shell + `EvaluationDetail` body |
 | 2026-07-10 | `/school/students` ✅ — full reference slice: nested tab routes, colocated components, route state detail slice, mutations + version bump |

@@ -368,6 +368,7 @@ export interface PaginatedStaffData {
 	staff: StaffMember[];
 	totalStaff: number;
 	assignments: AssignmentRaw[];
+	classSubjects: ClassSubjectRaw[];
 }
 
 export async function fetchStaffMembersPage(
@@ -386,14 +387,16 @@ export async function fetchStaffMembersPage(
 	const [staffRaw, totalStaff, classGroupsRaw] = await Promise.all([
 		client.entities.staffMembers.list(staffFilter),
 		client.entities.staffMembers.count({ schoolId: scope.schoolId }).then(result => result.count),
-		client.entities.classGroups.list({
-			schoolId: scope.schoolId,
-			academicYearId: scope.academicYearId,
-		}),
+		scope.academicYearId
+			? client.entities.classGroups.list({
+					schoolId: scope.schoolId,
+					academicYearId: scope.academicYearId,
+				})
+			: Promise.resolve([]),
 	]);
 	const staffIds = uniqueIds((staffRaw ?? []).map(member => member.id));
 	if (staffIds.length === 0) {
-		return { staff: [], totalStaff, assignments: [] };
+		return { staff: [], totalStaff, assignments: [], classSubjects: [] };
 	}
 	const [relations, ownerSubjectId] = await Promise.all([
 		fetchStaffRelations(client, staffIds),
@@ -411,5 +414,6 @@ export async function fetchStaffMembersPage(
 		),
 		totalStaff,
 		assignments: relations.assignmentsRaw,
+		classSubjects: relations.classSubjectsRaw,
 	};
 }

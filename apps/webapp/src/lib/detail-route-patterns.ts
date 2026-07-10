@@ -12,15 +12,25 @@ const DETAIL_PATH_PATTERNS = [
 
 /** School students drawer tabs use nested paths (`/:id/:tab`) beyond the single-segment detail pattern. */
 const SCHOOL_STUDENTS_DRAWER_PATH = /^\/school\/students\/[^/]+(?:\/[^/]+)?$/;
+const SCHOOL_STAFF_DRAWER_PATH = /^\/school\/staff\/[^/]+(?:\/[^/]+)?$/;
+const SCHOOL_TEACHERS_DRAWER_PATH = /^\/school\/teachers\/[^/]+(?:\/[^/]+)?$/;
 
 export function isLikelyDetailPath(pathname: string): boolean {
 	return DETAIL_PATH_PATTERNS.some(pattern => pattern.test(pathname))
-		|| SCHOOL_STUDENTS_DRAWER_PATH.test(pathname);
+		|| SCHOOL_STUDENTS_DRAWER_PATH.test(pathname)
+		|| SCHOOL_STAFF_DRAWER_PATH.test(pathname)
+		|| SCHOOL_TEACHERS_DRAWER_PATH.test(pathname);
 }
 
 function normalizeListPathname(pathname: string): string {
 	if (SCHOOL_STUDENTS_DRAWER_PATH.test(pathname)) {
 		return '/school/students';
+	}
+	if (SCHOOL_STAFF_DRAWER_PATH.test(pathname)) {
+		return '/school/staff';
+	}
+	if (SCHOOL_TEACHERS_DRAWER_PATH.test(pathname)) {
+		return '/school/teachers';
 	}
 	if (isLikelyDetailPath(pathname)) {
 		return pathname.replace(/\/[^/]+$/, '');
