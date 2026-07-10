@@ -1,5 +1,5 @@
-import type { Student } from '$lib/types/school';
 import type { StudentListFilters } from '$lib/list/list-url-filters';
+import type { Student } from '$lib/types/school';
 
 export function studentListUsesFullRoster(filters: Pick<StudentListFilters, 'q' | 'status'>) {
 	return filters.q.trim() !== '' || filters.status !== 'all';
@@ -13,7 +13,7 @@ export function filterStudentList(
 	return students
 		.filter(student => filters.class === 'all' || student.classId === filters.class)
 		.filter(student => filters.status === 'all' || student.status === filters.status)
-		.filter(student => {
+		.filter((student) => {
 			if (!needle) {
 				return true;
 			}

@@ -1,6 +1,6 @@
-import { onDestroy } from 'svelte';
 import { listRouteCacheKey } from '$lib/detail-route-patterns';
 import { invalidatePageQueryCache } from '$lib/queries/page-query-cache';
+import { onDestroy } from 'svelte';
 
 /**
  * Route state lives on the layout instance — clear the list PageQuery cache when

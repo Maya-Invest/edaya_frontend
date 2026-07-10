@@ -1,6 +1,10 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
 	import AccountLinkingSection from '$lib/components/account/AccountLinkingSection.svelte';
+	import { relationKey, fmtDateFr } from '$lib/components/school/shared/drawer-constants';
+	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
+	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
+	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
@@ -8,12 +12,8 @@
 	import { FileText, Mail, Phone, Users, Plus } from '$lib/icons';
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { cn } from '$lib/utils';
-	import { relationKey, fmtDateFr } from '$lib/components/school/shared/drawer-constants';
-	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
-	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
-	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
-	import { pedagogicalNoteToneByCategory } from '../student-detail-selectors';
-	import { getStudentsPageState } from '../students-page.svelte';
+	import { pedagogicalNoteToneByCategory } from '../../lib/student-detail-selectors';
+	import { getStudentsPageState } from '../../students-page.svelte';
 
 	const { s }: { s: Student } = $props();
 

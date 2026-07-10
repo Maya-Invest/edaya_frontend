@@ -1,15 +1,15 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
-	import { detailHref } from '$lib/detail-hrefs';
+	import SubjectGroup from '$lib/components/school/academics/SubjectGroup.svelte';
+	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
-	import SubjectGroup from '$lib/components/school/academics/SubjectGroup.svelte';
-	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
+	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { FileText, Plus } from '$lib/icons';
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
-	import { getStudentsPageState } from '../students-page.svelte';
+	import { getStudentsPageState } from '../../students-page.svelte';
 
 	const { s }: { s: Student } = $props();
 

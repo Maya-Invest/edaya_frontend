@@ -16,8 +16,8 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { Plus } from '$lib/icons';
-	import { useInfiniteList, useOffsetInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { readStudentListFilters } from '$lib/list/list-url-filters';
+	import { useInfiniteList, useOffsetInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, closeUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
@@ -52,8 +52,7 @@
 	let loadingFullRoster = $state(false);
 
 	const usesFullRoster = $derived(
-		studentsState.filters.values.q.trim() !== ''
-		|| studentsState.filters.values.status !== 'all',
+		studentsState.filters.values.q.trim() !== '' || studentsState.filters.values.status !== 'all',
 	);
 
 	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
@@ -158,10 +157,10 @@
 		const loader = classGroupId === 'all'
 			? loadPeopleData(getBrowserSchoolClient())
 			: loadClassPeopleData(
-					getBrowserSchoolClient(),
-					classGroupId,
-					academicContext.periodId,
-				);
+				getBrowserSchoolClient(),
+				classGroupId,
+				academicContext.periodId,
+			);
 		void loader
 			.then((result) => {
 				if (cancelled) {

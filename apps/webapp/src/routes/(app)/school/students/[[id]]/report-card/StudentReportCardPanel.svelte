@@ -1,15 +1,15 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import { t } from '$lib/i18n';
 	import { FileSpreadsheet } from '$lib/icons';
 	import { toast } from '$lib/toast.svelte';
 	import { formatGrade } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
-	import { getStudentsPageState } from '../students-page.svelte';
+	import { getStudentsPageState } from '../../students-page.svelte';
 
 	const { s }: { s: Student } = $props();
 

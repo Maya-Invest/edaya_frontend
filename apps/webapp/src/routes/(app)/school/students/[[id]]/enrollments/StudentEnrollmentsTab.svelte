@@ -1,11 +1,11 @@
 <script lang="ts">
 	import type { Student, StudentEnrollmentHistoryItem } from '$lib/types/school';
-	import Label from '$lib/components/ui/label/label.svelte';
 	import { fmtDateFr } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
+	import Label from '$lib/components/ui/label/label.svelte';
 	import { t } from '$lib/i18n';
 	import { GraduationCap } from '$lib/icons';
-	import { getStudentsPageState } from '../students-page.svelte';
+	import { getStudentsPageState } from '../../students-page.svelte';
 
 	const { s }: { s: Student } = $props();
 

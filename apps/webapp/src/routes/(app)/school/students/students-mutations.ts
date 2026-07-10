@@ -1,16 +1,16 @@
 import type { AbsenceRecord, Incident, PedagogicalNote } from '$lib/types/school';
+import type { StudentsPageState } from './students-page.svelte';
+import { academicContext } from '$lib/academic/context.svelte';
 import { recordAssessmentResultMutation } from '$lib/api/mutations/evaluation.mutations';
 import { recordIncidentMutation } from '$lib/api/mutations/incident.mutations';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { uploadProfilePhoto, withPhotoCacheBust } from '$lib/api/profile-photo-upload';
-import { academicContext } from '$lib/academic/context.svelte';
 import { loadClassReportCardResultsData, loadReportCardCatalogData } from '$lib/api/report-cards-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { mapNoteCategory } from '$lib/api/student-360-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { dateInputToIso, formatDateInput } from '$lib/date/format';
 import { entityVersions } from '$lib/entity-versions.svelte';
-import { mapNoteCategory } from '$lib/api/student-360-data';
-import type { StudentsPageState } from './students-page.svelte';
 
 type StudentNoteCategory = 'behavior' | 'work' | 'progress' | 'encouragement';
 type StudentNoteVisibility = 'staff' | 'admin_only' | 'guardian_visible';

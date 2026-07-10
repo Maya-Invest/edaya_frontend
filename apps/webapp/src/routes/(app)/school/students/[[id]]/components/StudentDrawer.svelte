@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
 	import type { Snippet } from 'svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
 	import { kindStyle, kindLabelKey } from '$lib/components/school/shared/drawer-constants';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, X } from '$lib/icons';
 	import StudentDetailHeader from './StudentDetailHeader.svelte';

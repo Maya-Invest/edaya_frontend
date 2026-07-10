@@ -3,7 +3,7 @@ import type { Student } from '$lib/types/school';
 import {
 	filterStudentList,
 	studentListUsesFullRoster,
-} from '../../../../../src/routes/(app)/school/students/student-list-filters';
+} from '../../../../../src/routes/(app)/school/students/lib/student-list-filters';
 
 function student(id: string, overrides: Partial<Student> = {}): Student {
 	return {

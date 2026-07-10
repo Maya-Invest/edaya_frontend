@@ -1,7 +1,7 @@
 import { afterNavigate } from '$app/navigation';
 
 export interface VersionInvalidatable {
-	invalidateIfStale(): void | Promise<void>;
+	invalidateIfStale: () => void | Promise<void>;
 }
 
 /** Register pull-based version invalidation for a route state instance. */

@@ -3,12 +3,11 @@
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { drawerTabRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
-	import StudentAttendanceTab from '../../components/StudentAttendanceTab.svelte';
-	import { queryStudentAttendanceTab } from '../../students-detail.queries';
 	import { getStudentsPageState } from '../../students-page.svelte';
+	import StudentAttendanceTab from './StudentAttendanceTab.svelte';
 
 	const studentsPage = getStudentsPageState();
-	const query = queryStudentAttendanceTab(studentsPage);
+	const query = studentsPage.queryAttendanceTab();
 	const student = $derived(studentsPage.selected);
 </script>
 

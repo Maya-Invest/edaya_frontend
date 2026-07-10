@@ -3,22 +3,22 @@
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
-	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import ProfilePhotoPicker from '$lib/components/school/shared/ProfilePhotoPicker.svelte';
 	import StudentAvatar from '$lib/components/school/shared/StudentAvatar.svelte';
+	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { get } from 'svelte/store';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { canUploadProfilePhoto } from '$lib/permissions';
+	import { get } from 'svelte/store';
+	import { getStudentsPageState } from '../../students-page.svelte';
+	import StudentAbsenceModal from '../attendance/StudentAbsenceModal.svelte';
+	import StudentGradeEntryModal from '../grades/StudentGradeEntryModal.svelte';
+	import StudentIncidentModal from '../incidents/StudentIncidentModal.svelte';
+	import StudentGuardianLinkModal from '../profile/StudentGuardianLinkModal.svelte';
+	import StudentNoteModal from '../profile/StudentNoteModal.svelte';
+	import StudentProfileEditModal from '../profile/StudentProfileEditModal.svelte';
 	import ChangeClassButton from './ChangeClassButton.svelte';
-	import StudentAbsenceModal from './StudentAbsenceModal.svelte';
-	import StudentGradeEntryModal from './StudentGradeEntryModal.svelte';
-	import StudentGuardianLinkModal from './StudentGuardianLinkModal.svelte';
-	import StudentIncidentModal from './StudentIncidentModal.svelte';
-	import StudentNoteModal from './StudentNoteModal.svelte';
-	import StudentProfileEditModal from './StudentProfileEditModal.svelte';
-	import { getStudentsPageState } from '../students-page.svelte';
 
 	type StudentDrawerModal
 		= | 'edit-profile'
@@ -106,7 +106,7 @@
 		</PermissionGate>
 		<ChangeClassButton s={student} bind:open={changeClassOpen.open} />
 	{/snippet}
-	</DrawerEntityHeader>
+</DrawerEntityHeader>
 
 <StudentGuardianLinkModal s={student} bind:open={linkGuardianOpen.open} showTrigger={false} />
 <StudentNoteModal s={student} note={editingNote} bind:open={noteOpen.open} showTrigger={false} />

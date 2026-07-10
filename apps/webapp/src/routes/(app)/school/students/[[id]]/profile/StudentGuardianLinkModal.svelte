@@ -4,7 +4,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PickerModal from '$lib/components/ui/PickerModal.svelte';
-	import { getStudentsPageState } from '../students-page.svelte';
+	import { getStudentsPageState } from '../../students-page.svelte';
 
 	let {
 		s,

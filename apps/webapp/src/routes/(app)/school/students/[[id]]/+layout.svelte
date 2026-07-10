@@ -4,9 +4,8 @@
 	import { page } from '$app/stores';
 	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
-	import StudentDrawer from '../components/StudentDrawer.svelte';
-	import { ensureStudentDrawerSelection } from '../students.queries';
 	import { getStudentsPageState } from '../students-page.svelte';
+	import StudentDrawer from './components/StudentDrawer.svelte';
 
 	const { children }: { children: Snippet } = $props();
 
@@ -34,7 +33,7 @@
 		const version = ++selectionRequestVersion;
 		studentsPage.selectedResolving = true;
 
-		void ensureStudentDrawerSelection(studentsPage, studentId)
+		void studentsPage.ensureDrawerSelection(studentId)
 			.then((ok) => {
 				if (version !== selectionRequestVersion) {
 					return;

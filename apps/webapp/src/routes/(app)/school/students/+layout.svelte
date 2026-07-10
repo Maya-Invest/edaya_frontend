@@ -6,14 +6,13 @@
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
-	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
-	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
+	import { readStudentListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
+	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
+	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
 	import StudentsList from './components/StudentsList.svelte';
-	import { readStudentListFilters } from '$lib/list/list-url-filters';
-	import { studentListUsesFullRoster } from './student-list-filters';
-	import { querySchoolStudentsPage } from './students.queries';
+	import { studentListUsesFullRoster } from './lib/student-list-filters';
 	import {
 		StudentsPageState,
 		setStudentsPageState,
@@ -26,7 +25,7 @@
 	registerVersionInvalidation(studentsPage);
 	releaseRoutePageQueryOnDestroy(() => $page.url);
 
-	const query = querySchoolStudentsPage(studentsPage);
+	const query = studentsPage.queryListPage();
 
 	const urlFilters = $derived(readStudentListFilters($page.url));
 
@@ -55,16 +54,7 @@
 		}
 
 		wasFullRoster = true;
-		let cancelled = false;
-		void studentsPage.loadFullRoster().finally(() => {
-			if (cancelled) {
-				return;
-			}
-		});
-
-		return () => {
-			cancelled = true;
-		};
+		void studentsPage.loadFullRoster();
 	});
 
 	$effect(() => {

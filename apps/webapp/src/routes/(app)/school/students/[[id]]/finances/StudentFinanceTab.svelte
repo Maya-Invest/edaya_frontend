@@ -1,12 +1,12 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
-	import Label from '$lib/components/ui/label/label.svelte';
 	import { fmtDateFr } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
+	import Label from '$lib/components/ui/label/label.svelte';
 	import { Check, Clock, Wallet } from '$lib/icons';
 	import { cn } from '$lib/utils';
-	import { billingStatusTone } from '../student-detail-selectors';
-	import { getStudentsPageState } from '../students-page.svelte';
+	import { billingStatusTone } from '../../lib/student-detail-selectors';
+	import { getStudentsPageState } from '../../students-page.svelte';
 
 	const { s }: { s: Student } = $props();
 

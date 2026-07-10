@@ -6,6 +6,7 @@ import type {
 	PedagogicalNote,
 	Student,
 } from '$lib/types/school';
+import type { StudentDetailSeed, StudentDetailSlice } from './lib/student-detail-types';
 import { academicContext } from '$lib/academic/context.svelte';
 import { fetchStudentById, loadClassPeopleData, loadPeopleData, loadPeopleDataPage } from '$lib/api/people-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -20,10 +21,18 @@ import {
 	summarizeStudentAttendanceHistory,
 	summarizeStudentFinances,
 	summarizeStudentIncidents,
-} from './student-detail-selectors';
-import type { StudentDetailSeed, StudentDetailSlice } from './student-detail-types';
-import { emptyStudentDetailSlice } from './student-detail-types';
-import { filterStudentList, studentListUsesFullRoster } from './student-list-filters';
+} from './lib/student-detail-selectors';
+import { emptyStudentDetailSlice } from './lib/student-detail-types';
+import { filterStudentList, studentListUsesFullRoster } from './lib/student-list-filters';
+import {
+	queryStudentAttendanceTab,
+	queryStudentEnrollmentsTab,
+	queryStudentFinancesTab,
+	queryStudentGradesTab,
+	queryStudentIncidentsTab,
+	queryStudentProfileTab,
+	queryStudentReportCardTab,
+} from './students-detail.queries';
 import {
 	createStudentOnPage,
 	createStudentNoteOnPage,
@@ -38,6 +47,7 @@ import {
 	updateStudentProfileOnPage,
 	updateStudentProfilePhotoOnPage,
 } from './students-mutations';
+import { ensureStudentDrawerSelection, querySchoolStudentsPage } from './students.queries';
 
 export const SCHOOL_STUDENTS_PAGE_SIZE = 25;
 
@@ -321,11 +331,11 @@ export class StudentsPageState {
 	}
 
 	mergeStudents(incoming: readonly Student[]) {
-		const byId = new Map(this.students.map(student => [student.id, student]));
+		const byId = Object.fromEntries(this.students.map(student => [student.id, student])) as Record<string, Student>;
 		for (const student of incoming) {
-			byId.set(student.id, student);
+			byId[student.id] = student;
 		}
-		this.students = [...byId.values()];
+		this.students = Object.values(byId);
 	}
 
 	patchStudent(id: string, patch: Partial<Student>) {
@@ -494,6 +504,42 @@ export class StudentsPageState {
 
 	async publishReportCard(...args: Parameters<typeof publishReportCardOnPage> extends [StudentsPageState, ...infer R] ? R : never) {
 		return publishReportCardOnPage(this, ...args);
+	}
+
+	queryListPage() {
+		return querySchoolStudentsPage(this);
+	}
+
+	queryProfileTab() {
+		return queryStudentProfileTab(this);
+	}
+
+	queryGradesTab() {
+		return queryStudentGradesTab(this);
+	}
+
+	queryAttendanceTab() {
+		return queryStudentAttendanceTab(this);
+	}
+
+	queryIncidentsTab() {
+		return queryStudentIncidentsTab(this);
+	}
+
+	queryFinancesTab() {
+		return queryStudentFinancesTab(this);
+	}
+
+	queryReportCardTab() {
+		return queryStudentReportCardTab(this);
+	}
+
+	queryEnrollmentsTab() {
+		return queryStudentEnrollmentsTab(this);
+	}
+
+	ensureDrawerSelection(studentId: string) {
+		return ensureStudentDrawerSelection(this, studentId);
 	}
 }
 

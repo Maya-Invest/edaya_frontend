@@ -1,13 +1,13 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { getStudentsPageState } from '../students-page.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import { Users } from '$lib/icons';
 	import { toast } from '$lib/toast.svelte';
+	import { getStudentsPageState } from '../../students-page.svelte';
 
 	let {
 		s,

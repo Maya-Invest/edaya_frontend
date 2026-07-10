@@ -6,7 +6,7 @@
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import { Plus } from '$lib/icons';
-	import { getStudentsPageState } from '../students-page.svelte';
+	import { getStudentsPageState } from '../../students-page.svelte';
 
 	let {
 		s,

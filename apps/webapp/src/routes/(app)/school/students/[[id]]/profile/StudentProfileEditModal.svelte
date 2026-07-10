@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
-	import { getStudentsPageState } from '../students-page.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -8,6 +7,7 @@
 	import { formatDateInput } from '$lib/date/format';
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
+	import { getStudentsPageState } from '../../students-page.svelte';
 
 	let {
 		s,

@@ -1,5 +1,7 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
+	import { page } from '$app/stores';
+	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
@@ -13,17 +15,15 @@
 	import { Plus } from '$lib/icons';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, closeUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { page } from '$app/stores';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { cn } from '$lib/utils';
-	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
-	import StudentCreateModal from './StudentCreateModal.svelte';
-	import { studentListUsesFullRoster } from '../student-list-filters';
+	import { studentListUsesFullRoster } from '../lib/student-list-filters';
 	import {
 		getStudentsPageState,
 		SCHOOL_STUDENTS_PAGE_SIZE,
 	} from '../students-page.svelte';
+	import StudentCreateModal from './StudentCreateModal.svelte';
 
 	const {
 		onSelect,

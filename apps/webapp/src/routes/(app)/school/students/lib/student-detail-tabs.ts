@@ -1,5 +1,5 @@
 export const STUDENT_DETAIL_TABS = [
-	{ key: 'profile', segment: '', labelKey: 'drawer.tab.profile' },
+	{ key: 'profile', segment: 'profile', labelKey: 'drawer.tab.profile' },
 	{ key: 'grades', segment: 'grades', labelKey: 'drawer.tab.grades' },
 	{ key: 'attendance', segment: 'attendance', labelKey: 'drawer.tab.attendance' },
 	{ key: 'incidents', segment: 'incidents', labelKey: 'drawer.tab.incidents' },
@@ -13,7 +13,7 @@ export type StudentDetailTabSegment = (typeof STUDENT_DETAIL_TABS)[number]['segm
 
 export function activeStudentDetailTab(pathname: string, studentId: string): StudentDetailTabKey {
 	const base = `/school/students/${studentId}`;
-	if (pathname === base || pathname === `${base}/`) {
+	if (pathname === base || pathname === `${base}/` || pathname === `${base}/profile`) {
 		return 'profile';
 	}
 	const suffix = pathname.slice(base.length + 1);

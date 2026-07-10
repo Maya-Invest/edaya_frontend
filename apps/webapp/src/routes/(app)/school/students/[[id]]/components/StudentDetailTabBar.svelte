@@ -3,9 +3,9 @@
 	import { page } from '$app/stores';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
-	import { cn } from '$lib/utils';
 	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
-	import { activeStudentDetailTab, STUDENT_DETAIL_TABS } from '../student-detail-tabs';
+	import { cn } from '$lib/utils';
+	import { activeStudentDetailTab, STUDENT_DETAIL_TABS } from '../../lib/student-detail-tabs';
 
 	const { student }: { student: Student } = $props();
 
@@ -15,12 +15,10 @@
 		const next = new URL($page.url);
 		next.searchParams.delete(MODAL_QUERY_KEY);
 		next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
-		const base = segment
-			? detailHref.schoolStudentTab(
-					student.id,
-					segment as 'grades' | 'attendance' | 'incidents' | 'finances' | 'report-card' | 'enrollments',
-				)
-			: detailHref.schoolStudent(student.id);
+		const base = detailHref.schoolStudentTab(
+			student.id,
+			segment as 'profile' | 'grades' | 'attendance' | 'incidents' | 'finances' | 'report-card' | 'enrollments',
+		);
 		return `${base}${next.search}`;
 	}
 </script>

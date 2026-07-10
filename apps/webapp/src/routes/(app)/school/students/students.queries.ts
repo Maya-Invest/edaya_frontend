@@ -1,6 +1,6 @@
+import type { StudentsPageState } from './students-page.svelte';
 import { ApiError } from '$api-client';
 import { resolvePageLoad, listPageHasItems } from '$lib/queries/page-status';
-import type { StudentsPageState } from './students-page.svelte';
 
 export function querySchoolStudentsPage(state: StudentsPageState) {
 	return (url: URL) => resolvePageLoad(url, {

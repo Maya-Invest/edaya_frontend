@@ -1,3 +1,4 @@
+import type { GradeScale, ReportCardDefinition, ReportCardResult } from '$lib/types/report-cards';
 import type {
 	AbsenceRecord,
 	AssessmentResultRow,
@@ -8,13 +9,11 @@ import type {
 	Incident,
 	PedagogicalNote,
 	StaffMember,
-	Student,
 	StudentAttendanceHistoryItem,
 	StudentBilling,
 	StudentEnrollmentHistoryItem,
 	StudentGradeRow,
 } from '$lib/types/school';
-import type { GradeScale, ReportCardDefinition, ReportCardResult } from '$lib/types/report-cards';
 
 export interface StudentDetailSlice {
 	studentId: string;

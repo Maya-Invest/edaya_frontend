@@ -1,11 +1,12 @@
+import type { StudentsPageState } from './students-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadClassEvaluationsPageData } from '$lib/api/assessments-data';
 import { loadFinanceData } from '$lib/api/finance-data';
 import { loadGuardiansPeopleData } from '$lib/api/people-data';
 import { loadClassReportCardResultsData } from '$lib/api/report-cards-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { fetchStaffMembers } from '$lib/api/staff-data';
 import { loadIncidentRouteData } from '$lib/api/school-life-data';
+import { fetchStaffMembers } from '$lib/api/staff-data';
 import { loadStudent360Data } from '$lib/api/student-360-data';
 import {
 	loadStudentAttendanceHistory,
@@ -14,9 +15,8 @@ import {
 } from '$lib/api/student-drawer-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { resolvePageLoad } from '$lib/queries/page-status';
-import type { StudentsPageState } from './students-page.svelte';
-import { schoolStudentDetailIdFromUrl } from './students-page.svelte';
 import { loadReportCardCatalogIntoDetail } from './students-mutations';
+import { schoolStudentDetailIdFromUrl } from './students-page.svelte';
 
 function studentIdFromUrl(url: URL): string | undefined {
 	return schoolStudentDetailIdFromUrl(url);

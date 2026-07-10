@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { ClassNode } from '$lib/types/school';
-	import { getStudentsPageState } from '../students-page.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -8,6 +7,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
+	import { getStudentsPageState } from '../students-page.svelte';
 
 	let {
 		hierarchy,

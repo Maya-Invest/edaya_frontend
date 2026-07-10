@@ -28,7 +28,7 @@
 		bind:value
 		class={selectClass}
 		aria-label="Filter"
-		onchange={(event) => onchange?.(event.currentTarget.value)}
+		onchange={event => onchange?.(event.currentTarget.value)}
 	>
 		{#each options as option (option.value)}
 			<option value={option.value}>{option.label}</option>
