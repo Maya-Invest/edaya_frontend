@@ -19,7 +19,7 @@ alwaysApply: false
 | Modals | `FormModal` · `ConfirmModal` · `PickerModal` |
 | Gating | `PermissionGate` |
 | Drawer | `DetailDrawer` · `DrawerEntityHeader` · `DrawerField` · `DrawerEmptyState` · `DrawerActionBar` (body footer only) |
-| People | `StaffPicker` · `StudentPicker` · `GuardianPicker` |
+| People | Smart `StaffPicker` · `StudentPicker` · `GuardianPicker` (`lib/smart-components/`) |
 | Permissions | `ScopeBuilder` · `StaffPermissionFormModal` only |
 
 ## Do not
@@ -28,7 +28,9 @@ alwaysApply: false
 - Chip-bar main filters — `FilterSelect` + `FilterPanel`
 - Duplicate drawer identity blocks — `DrawerEntityHeader`
 - Use `DrawerActionBar` for sub-collection `+ Add` — use inline section header instead
-- Ad-hoc person `<select>` lists — picker family
+- Ad-hoc person `<select>` lists — smart picker family
+- Feature views in `lib/components/school/` — colocate under `routes/.../components/`
+- `?tab=` for drawer tabs — use nested routes under `[[id]]/`
 - New shared component without updating the registry in the same PR
 
 ## New shared component rule

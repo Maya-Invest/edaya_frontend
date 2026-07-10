@@ -119,6 +119,10 @@
 		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
 	});
 
+	function usesRouteLocalDrawer(pathname: string): boolean {
+		return /^\/school\/students(\/|$)/.test(pathname);
+	}
+
 	$effect(() => {
 		const pathname = $page.url.pathname;
 		const cacheKey = listRouteCacheKey($page.url);
@@ -126,7 +130,7 @@
 		void reportCardsContext.ready;
 		void detailDataContext.students;
 
-		if (!isLikelyDetailPath(pathname)) {
+		if (!isLikelyDetailPath(pathname) || usesRouteLocalDrawer(pathname)) {
 			drawer.close();
 			return;
 		}

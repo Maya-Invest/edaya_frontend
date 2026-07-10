@@ -1,8 +1,31 @@
-import type { ResolvedPathname } from '$app/types';
+import type { ResolvedPathname, RouteId } from '$app/types';
 import { appPath } from '$lib/navigation/app-navigation';
+
+type SchoolStudentTabSegment
+	= | 'grades'
+		| 'attendance'
+		| 'incidents'
+		| 'finances'
+		| 'report-card'
+		| 'enrollments';
+
+const STUDENT_TAB_ROUTES: Record<SchoolStudentTabSegment, RouteId> = {
+	grades: '/(app)/school/students/[[id]]/grades',
+	attendance: '/(app)/school/students/[[id]]/attendance',
+	incidents: '/(app)/school/students/[[id]]/incidents',
+	finances: '/(app)/school/students/[[id]]/finances',
+	'report-card': '/(app)/school/students/[[id]]/report-card',
+	enrollments: '/(app)/school/students/[[id]]/enrollments',
+};
 
 export const detailHref = {
 	schoolStudent: (id: string): ResolvedPathname => appPath('/(app)/school/students/[[id]]', { id }),
+	schoolStudentTab: (id: string, tab?: SchoolStudentTabSegment): ResolvedPathname => {
+		if (!tab) {
+			return appPath('/(app)/school/students/[[id]]', { id });
+		}
+		return appPath(STUDENT_TAB_ROUTES[tab], { id });
+	},
 	schoolGuardian: (id: string): ResolvedPathname => appPath('/(app)/school/guardians/[[id]]', { id }),
 	schoolTeacher: (id: string): ResolvedPathname => appPath('/(app)/school/teachers/[[id]]', { id }),
 	schoolActivity: (id: string): ResolvedPathname => appPath('/(app)/school/activities/[[id]]', { id }),

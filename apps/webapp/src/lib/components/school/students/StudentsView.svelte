@@ -101,6 +101,7 @@
 			return;
 		}
 		void listFilters.values.status;
+		void listFilters.values.q;
 		listFilters.scheduleSync();
 	});
 </script>
@@ -130,6 +131,7 @@
 					bind:value={listFilters.values.status}
 					class="h-9 w-full rounded-md text-xs"
 					options={statusFilterOptions}
+					onchange={() => listFilters.scheduleSync()}
 				/>
 			</FilterPanel>
 		{/snippet}

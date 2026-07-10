@@ -17,6 +17,7 @@ import {
 	guardiansByIds,
 	paginatedList,
 	schoolWideEntityList,
+	ENROLLMENT_LIST_ORDER,
 	STUDENT_LIST_ORDER,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
@@ -72,6 +73,7 @@ interface PaginatedPeopleSourcesWithMetrics extends PeopleSources {
 export interface PeoplePageRequest {
 	offset?: number;
 	limit?: number;
+	classGroupId?: string;
 }
 
 function emptyStudentMetricsSources(): StudentMetricsSources {
@@ -218,6 +220,10 @@ async function fetchPeopleSourcesPageWithMetrics(
 	client: SchoolClient,
 	request: PeoplePageRequest = {},
 ): Promise<PaginatedPeopleSourcesWithMetrics> {
+	if (request.classGroupId) {
+		return fetchClassPeopleSourcesPageWithMetrics(client, request.classGroupId, request);
+	}
+
 	const limit = request.limit ?? DEFAULT_LIST_PAGE_SIZE;
 	const offset = request.offset ?? 0;
 	const studentFilter = paginatedList(schoolWideEntityList(SCHOOL_ROSTER_SCOPE), {
@@ -255,6 +261,63 @@ async function fetchPeopleSourcesPageWithMetrics(
 
 	const [enrollmentsRaw, linksRaw, guardiansRaw, metrics] = await Promise.all([
 		enrollmentsPromise,
+		linksPromise,
+		guardiansPromise,
+		metricsPromise,
+	]);
+
+	return {
+		studentsRaw: studentsRaw ?? [],
+		enrollmentsRaw,
+		guardiansRaw: guardiansRaw ?? [],
+		linksRaw: linksRaw ?? [],
+		totalStudents,
+		metrics,
+	};
+}
+
+async function fetchClassPeopleSourcesPageWithMetrics(
+	client: SchoolClient,
+	classGroupId: string,
+	request: PeoplePageRequest = {},
+): Promise<PaginatedPeopleSourcesWithMetrics> {
+	const limit = request.limit ?? DEFAULT_LIST_PAGE_SIZE;
+	const offset = request.offset ?? 0;
+	const enrollmentScope = activeEnrollmentsForClass(classGroupId);
+	const enrollmentFilter = paginatedList(enrollmentScope, {
+		limit,
+		offset,
+		orderBy: ENROLLMENT_LIST_ORDER,
+	});
+
+	const [enrollmentsRaw, totalStudents] = await Promise.all([
+		client.entities.enrollments.list(enrollmentFilter),
+		client.entities.enrollments.count(enrollmentScope).then(result => result.count),
+	]);
+
+	const studentIds = uniqueIds((enrollmentsRaw ?? []).map(enrollment => enrollment.studentId));
+	if (studentIds.length === 0) {
+		return {
+			studentsRaw: [],
+			enrollmentsRaw: enrollmentsRaw ?? [],
+			guardiansRaw: [],
+			linksRaw: [],
+			totalStudents,
+			metrics: emptyStudentMetricsSources(),
+		};
+	}
+
+	const linksPromise = client.entities.guardianLinks.list(guardianLinksForStudents(studentIds));
+	const guardiansPromise = linksPromise.then((linksRaw) => {
+		const guardianIds = uniqueIds((linksRaw ?? []).map(link => link.guardianId));
+		return guardianIds.length > 0
+			? client.entities.guardians.list(guardiansByIds(guardianIds))
+			: Promise.resolve([]);
+	});
+	const metricsPromise = fetchStudentMetricsSources(client, studentIds);
+
+	const [studentsRaw, linksRaw, guardiansRaw, metrics] = await Promise.all([
+		client.entities.students.list(entitiesByIds(studentIds)),
 		linksPromise,
 		guardiansPromise,
 		metricsPromise,

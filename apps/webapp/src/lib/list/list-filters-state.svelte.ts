@@ -43,6 +43,14 @@ export class ListFiltersState<T extends Record<string, string>> {
 		if (this.ready && filtersEqual(this.values, next)) {
 			return;
 		}
+		// URL search sync is debounced — keep the in-progress query when the URL lags behind.
+		if (this.ready && 'q' in next && 'q' in this.values && this.values.q !== next.q) {
+			const typedAhead = this.values.q.length > next.q.length && this.values.q.startsWith(next.q);
+			if (typedAhead) {
+				this.values = { ...next, q: this.values.q };
+				return;
+			}
+		}
 		this.values = { ...next };
 		this.ready = true;
 	}
@@ -75,6 +83,7 @@ export class ListFiltersState<T extends Record<string, string>> {
 		if (href === listHref(currentUrl)) {
 			return;
 		}
+
 		this.config.goto(href);
 	}
 }

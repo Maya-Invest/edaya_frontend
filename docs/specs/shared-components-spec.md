@@ -13,10 +13,11 @@ This document defines **which components to reuse**, where they live, and when t
 |------|------|----------------|
 | **T0** | `lib/components/ui/` | App-wide primitives and list/modal/gate patterns |
 | **T1** | `lib/components/layout/` | Authenticated shell chrome (sidebar, header, selectors) |
-| **T2** | `lib/components/school/shared/` | School-domain reusable patterns (drawer chrome, pickers, avatars) |
-| **T3** | `lib/components/school/{domain}/` | Feature screens — **compose T0–T2**; do not fork shared patterns |
+| **T2** | `lib/components/school/shared/` | School-domain reusable drawer chrome, avatars, field patterns |
+| **T3** | `routes/.../components/` | Route-local feature screens — list views, modals, drawer bodies for one route subtree |
+| **Smart** | `lib/smart-components/` | Self-contained shared features (pickers, scope builders) — not route-bound; own state class + subcomponents |
 
-**Rule:** New list pages, drawers, and modals **must** use mandatory T0/T2 components below. Add a T0/T2 component only when **three or more** features need the same pattern — justify in PR.
+**Rule:** New list pages, drawers, and modals **must** compose mandatory T0/T2 components. Route-specific views live under the route's `components/` folder (T3), not `lib/components/school/{domain}/`. Add a T0/T2/Smart component only when **three or more** features need the same pattern — justify in PR.
 
 ---
 
@@ -72,31 +73,38 @@ Feature routes **do not** reimplement shell chrome.
 
 Complex drawer bodies (`*Detail.svelte`, `*Tabs.svelte`) **must** use `DrawerEntityHeader` for identity and actions — not a duplicate hero block in tab content.
 
-### 2.5 T2 — Identity & pickers
+### 2.5 Smart components (pickers & scope UI)
+
+Smart components are shared, self-contained features with their own state class — see route-state spec §8. They live in `lib/smart-components/`, not under route folders.
+
+| Component | Path | Use for |
+|-----------|------|---------|
+| **PersonPicker** | `smart-components/person-picker/` (target) · legacy `school/shared/pickers/PersonPicker.svelte` | Base searchable person popover |
+| **StaffPicker** | `smart-components/staff-picker/` (target) · legacy `school/shared/pickers/StaffPicker.svelte` | Homeroom, staff assignment targets |
+| **StudentPicker** | `smart-components/student-picker/` (target) · legacy `school/shared/pickers/StudentPicker.svelte` | Incidents, billing, enrollments |
+| **GuardianPicker** | `smart-components/guardian-picker/` (target) · legacy `school/shared/pickers/GuardianPicker.svelte` | Guardian ↔ student linking |
+| **ScopeBuilder** | `smart-components/scope-builder/` (target) · legacy `school/configuration/ScopeBuilder.svelte` | Staff permission `scopeIds` by catalog grain |
+| **StaffPermissionFormModal** | route-local or smart — legacy `school/configuration/StaffPermissionFormModal.svelte` | Add / edit `staffPermissionAssignments` |
+
+Do not build ad-hoc `<select>` lists for people — use pickers or **PickerModal**. New smart components follow `*-state.svelte.ts` + root `.svelte` + `components/` subfolder.
+
+### 2.6 T2 — Authorization UI (legacy paths)
+
+| Component | Path | Use for |
+|-----------|------|---------|
+| **PermissionCheckboxGroup** | `school/configuration/PermissionCheckboxGroup.svelte` | **Staff assignment** create/edit forms only — pick permission codes to sync with a class-level assignment; **not** the Permissions tab list |
+
+**Do not** use `ScopeBuilder` outside staff permission flows. **Do not** restore a roles CRUD matrix screen.
+
+### 2.7 T2 — Identity
 
 | Component | Path | Use for |
 |-----------|------|---------|
 | **PersonAvatar** | `school/shared/PersonAvatar.svelte` | Staff, guardians |
 | **StudentAvatar** | `school/shared/StudentAvatar.svelte` | Students (photo overlay on edit) |
 | **ProfilePhotoPicker** | `school/shared/ProfilePhotoPicker.svelte` | Avatar upload in edit modals |
-| **PersonPicker** | `school/shared/pickers/PersonPicker.svelte` | Base searchable person popover |
-| **StaffPicker** | `school/shared/pickers/StaffPicker.svelte` | Homeroom, staff assignment targets |
-| **StudentPicker** | `school/shared/pickers/StudentPicker.svelte` | Incidents, billing, enrollments |
-| **GuardianPicker** | `school/shared/pickers/GuardianPicker.svelte` | Guardian ↔ student linking |
 
-Do not build ad-hoc `<select>` lists for people — use pickers or **PickerModal**.
-
-### 2.6 T2 — Authorization UI
-
-| Component | Path | Use for |
-|-----------|------|---------|
-| **ScopeBuilder** | `school/configuration/ScopeBuilder.svelte` | Staff permission `scopeIds` by catalog grain |
-| **StaffPermissionFormModal** | `school/configuration/StaffPermissionFormModal.svelte` | Add / edit `staffPermissionAssignments` on Staff → Permissions tab |
-| **PermissionCheckboxGroup** | `school/configuration/PermissionCheckboxGroup.svelte` | **Staff assignment** create/edit forms only — pick permission codes to sync with a class-level assignment; **not** the Permissions tab list |
-
-**Do not** use `ScopeBuilder` outside staff permission flows. **Do not** restore a roles CRUD matrix screen.
-
-### 2.7 Shared modules (not components)
+### 2.8 Shared modules (not components)
 
 | Module | Path | Use for |
 |--------|------|---------|
@@ -119,7 +127,7 @@ Do not build ad-hoc `<select>` lists for people — use pickers or **PickerModal
 </PageQuery>
 ```
 
-Inside `*View.svelte`:
+Inside route-local `*View.svelte` (T3):
 
 ```
 ListPageHeader
@@ -135,10 +143,10 @@ EntityTable | EntityCardList   ← collection wrapper (feature-local OK for now)
 ### 3.2 Complex drawer
 
 ```
-DetailDrawer (shell)
+DetailDrawer (shell — T2)
   DrawerEntityHeader — avatar, name, chips, [Action 1] [Action 2] [···]
   body:
-    DrawerTabs? (feature-local pill strip until extracted)
+    tab bar: route links under [[id]]/ (e.g. …/guardians) — not ?tab= query params
     sections: DrawerField …
     sub-collection: inline section header (+ Add) + read-only list + row Edit/Delete → modals
     optional footer: DrawerActionBar (secondary actions only)
@@ -153,13 +161,14 @@ No drawer route required. **RowActionMenu** is the primary mutation surface (sim
 
 ## 4. Feature-local patterns (not yet extracted)
 
-These remain in T3 until a shared component is justified (§6). Follow visual patterns from the design-language spec.
+These remain route-local (T3) or legacy until migrated. Follow visual patterns from the design-language spec.
 
 | Pattern | Current location | Target |
 |---------|------------------|--------|
-| **Drawer tab strip** | `DrawerTabBar.svelte` + `createUrlSyncedDrawerTabs` | Use as-is; do not fork pill-tab markup per drawer |
-| **Entity table / card list** | Per-feature `*View.svelte` grid markup | Extract shared `EntityTable` / `EntityCardList` when ≥3 list views share the same column/grid structure |
-| **Chip-bar main filter (legacy)** | Some older views | Migrate to `FilterSelect` + `FilterPanel` when touching the file |
+| **Drawer tab navigation** | Legacy `DrawerTabBar` + `createUrlSyncedDrawerTabs` (`?tab=`) | **Nested child routes** under `[[id]]/`; tab bar renders route links. Deprecate `?tab=` for new work. |
+| **Entity table / card list** | Per-route `components/*View.svelte` grid markup | Extract shared `EntityTable` / `EntityCardList` when ≥3 list views share the same column/grid structure |
+| **Chip-bar main filter (legacy)** | Some older views in `lib/components/school/` | Migrate to `FilterSelect` + `FilterPanel` when touching the file |
+| **Feature views in lib** | Legacy `lib/components/school/{domain}/` | Colocate under `routes/.../components/` per route-state spec |
 
 ---
 
@@ -185,9 +194,11 @@ Remaining chip-bar **main** filters should migrate to `FilterSelect` when touche
 | Identity block + actions only in drawer body tabs | `DrawerEntityHeader` |
 | Open `*Form.svelte` as default drawer body | Read-only body + `FormModal` |
 | Custom permission matrix / inline CRUD grid | Staff drawer + `StaffPermissionFormModal` |
-| Raw `<select>` for staff/student/guardian | `*Picker` or `PickerModal` |
+| Raw `<select>` for staff/student/guardian | Smart `*Picker` or `PickerModal` |
 | New `ScopeChipSelector` usages | `ScopeBuilder` or delete unused legacy |
 | One-off badge colors | `ui-tones` / `drawer-constants` |
+| Feature views in `lib/components/school/{domain}/` | `routes/.../components/` |
+| `?tab=` query param for drawer tabs | Nested routes under `[[id]]/` |
 
 ---
 
@@ -196,7 +207,8 @@ Remaining chip-bar **main** filters should migrate to `FilterSelect` when touche
 1. Same UI pattern appears in **≥3** features or **≥2** modules.
 2. Pattern is stable (not a one-off experiment).
 3. Add to this registry in the **same PR** as the component.
-4. If feature-only, keep in T3 (`school/{domain}/`) with no registry entry.
+4. If route-only, keep in `routes/.../components/` (T3) with no registry entry.
+5. If shared self-contained feature (picker, scope builder), add under `lib/smart-components/` per route-state spec §8.
 
 ---
 
@@ -210,7 +222,9 @@ When building or refactoring a screen:
 - [ ] Actions wrapped in `PermissionGate` where required
 - [ ] Complex drawer uses `DetailDrawer` + `DrawerEntityHeader` + `DrawerField`
 - [ ] Sub-collections use inline section header for `+ Add`; `DrawerEmptyState` for empty tabs
-- [ ] People selection uses `*Picker` family
+- [ ] Route-local views in `routes/.../components/` — not `lib/components/school/{domain}/`
+- [ ] Drawer tabs use nested child routes — not `?tab=` query params
+- [ ] People selection uses smart `*Picker` family
 - [ ] Staff permissions use `ScopeBuilder` + `StaffPermissionFormModal` only
 - [ ] Status chips use `ui-tones` / `drawer-constants`
 - [ ] No new shared component without registry update (§2)

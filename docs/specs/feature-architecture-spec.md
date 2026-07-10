@@ -88,11 +88,12 @@ Shell chrome (sidebar, header, toasts, permissions) still applies.
 ### 2.5 Routing
 
 ```
-/{module}/{entity}           → list
-/{module}/{entity}/[id]      → list + detail drawer (complex entities only)
+/{module}/{entity}              → list
+/{module}/{entity}/[id]         → list + detail drawer (default tab)
+/{module}/{entity}/[id]/{tab}   → list + drawer on named tab (child route)
 ```
 
-- Complex entities: row click → URL-backed drawer (`[[id]]` optional segment).
+- Complex entities: row click → URL-backed drawer (`[[id]]` optional segment); tabs are child routes under `[[id]]/`.
 - Simple entities: row `···` menu only — **no drawer**, **no** `/[id]` route unless deep links are explicitly required.
 
 ---
@@ -220,9 +221,9 @@ Scope labels in the list use `POST authorization/scope/render` with `{ permissio
 
 **Data loading:**
 
-- `querySchoolStaffPage` loads `permission-catalog` and seeds `detailDataContext.permissionCatalog`.
-- Assignments load with staff list or on tab open; views built via `buildStaffPermissionAssignmentViews`.
-- Mutations: `saveStaffPermissionAssignmentMutation` / `deleteStaffPermissionAssignmentMutation` with optimistic patch on `staffPermissionAssignments` collection.
+- `querySchoolStaffPage` loads `permission-catalog` into the staff route state.
+- Assignments load via the Permissions tab child route `PageQuery` (or with staff list when colocated); views built via `buildStaffPermissionAssignmentViews`.
+- Mutations: `saveStaffPermissionAssignmentMutation` / `deleteStaffPermissionAssignmentMutation` with optimistic patch on route state + `entityVersions` bump.
 
 **Staff drawer → Assignments tab** (read-only): summary list of `staffAssignments` (class-level and other targets). Editing assignments happens in **Configuration → Classes** drawer (class-level tab) — not on this tab.
 

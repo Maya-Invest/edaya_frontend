@@ -10,11 +10,13 @@
 		class: className,
 		options = [],
 		groups = [],
+		onchange,
 	}: {
 		value?: string;
 		class?: string;
 		options?: FilterSelectOption[];
 		groups?: FilterSelectGroup[];
+		onchange?: (value: string) => void;
 	} = $props();
 
 	const selectClass
@@ -22,7 +24,12 @@
 </script>
 
 <div class={cn('relative inline-flex items-center', className)}>
-	<select bind:value class={selectClass} aria-label="Filter">
+	<select
+		bind:value
+		class={selectClass}
+		aria-label="Filter"
+		onchange={(event) => onchange?.(event.currentTarget.value)}
+	>
 		{#each options as option (option.value)}
 			<option value={option.value}>{option.label}</option>
 		{/each}

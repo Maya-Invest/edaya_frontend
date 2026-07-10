@@ -10,16 +10,37 @@ const DETAIL_PATH_PATTERNS = [
 	/^\/configuration\/report-cards\/[^/]+$/,
 ] as const;
 
+/** School students drawer tabs use nested paths (`/:id/:tab`) beyond the single-segment detail pattern. */
+const SCHOOL_STUDENTS_DRAWER_PATH = /^\/school\/students\/[^/]+(?:\/[^/]+)?$/;
+
 export function isLikelyDetailPath(pathname: string): boolean {
-	return DETAIL_PATH_PATTERNS.some(pattern => pattern.test(pathname));
+	return DETAIL_PATH_PATTERNS.some(pattern => pattern.test(pathname))
+		|| SCHOOL_STUDENTS_DRAWER_PATH.test(pathname);
+}
+
+function normalizeListPathname(pathname: string): string {
+	if (SCHOOL_STUDENTS_DRAWER_PATH.test(pathname)) {
+		return '/school/students';
+	}
+	if (isLikelyDetailPath(pathname)) {
+		return pathname.replace(/\/[^/]+$/, '');
+	}
+	return pathname;
+}
+
+function cacheKeyWithDemo(pathname: string, url: URL): string {
+	const demo = url.searchParams.get('demo');
+	return demo ? `${pathname}?demo=${demo}` : pathname;
 }
 
 /** Stable key for list page data — ignores optional detail segments in the URL. */
 export function listRouteCacheKey(url: URL): string {
 	const pathname = url.pathname.replace(/\/$/, '') || '/';
-	const listPathname = isLikelyDetailPath(pathname)
-		? pathname.replace(/\/[^/]+$/, '')
-		: pathname;
-	const demo = url.searchParams.get('demo');
-	return demo ? `${listPathname}?demo=${demo}` : listPathname;
+	return cacheKeyWithDemo(normalizeListPathname(pathname), url);
+}
+
+/** Stable key for drawer tab PageQuery instances — pathname only, separate from the list cache. */
+export function drawerTabRouteCacheKey(url: URL): string {
+	const pathname = url.pathname.replace(/\/$/, '') || '/';
+	return cacheKeyWithDemo(pathname, url);
 }

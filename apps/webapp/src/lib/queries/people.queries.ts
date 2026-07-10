@@ -29,18 +29,6 @@ async function seedStudent360ForUrl(url: URL) {
 	}
 }
 
-export function querySchoolStudentsPage() {
-	return (url: URL) => resolvePageLoad(url, {
-		empty: () => ({ totalStudents: 0 }),
-		load: async () => {
-			await seedStudent360ForUrl(url);
-			return { totalStudents: 0 };
-		},
-		hasItems: listPageHasItems,
-		waitForShell: false,
-	});
-}
-
 export function querySchoolGuardiansPage() {
 	return (url: URL) => resolvePageLoad(url, {
 		empty: () => ({ totalGuardians: 0 }),

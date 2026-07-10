@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import { loadPeopleDataPage } from '$lib/api/people-data';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import { loadClassPeopleData, loadPeopleData, loadPeopleDataPage } from '$lib/api/people-data';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
@@ -15,7 +16,8 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { Plus } from '$lib/icons';
-	import { useOffsetInfiniteList } from '$lib/list/use-infinite-list.svelte';
+	import { useInfiniteList, useOffsetInfiniteList } from '$lib/list/use-infinite-list.svelte';
+	import { readStudentListFilters } from '$lib/list/list-url-filters';
 	import { bindUrlModal, closeUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
@@ -40,10 +42,19 @@
 	const studentsState = new SchoolStudentsState(() => $page.url);
 	setSchoolStudentsState(studentsState);
 
+	const initialFilters = $derived(readStudentListFilters($page.url));
+
 	const classes = $derived(studentsState.classes);
 	const hierarchy = $derived(studentsState.hierarchy);
 
 	let view = $state<'table' | 'cards'>('table');
+	let fullRosterStudents = $state<Student[]>([]);
+	let loadingFullRoster = $state(false);
+
+	const usesFullRoster = $derived(
+		studentsState.filters.values.q.trim() !== ''
+		|| studentsState.filters.values.status !== 'all',
+	);
 
 	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
 	$effect(() => {
@@ -53,14 +64,45 @@
 
 	const infinite = useOffsetInfiniteList(
 		async (offset, limit) => {
-			const result = await loadPeopleDataPage(getBrowserSchoolClient(), { offset, limit });
+			const classGroupId = studentsState.filters.values.class;
+			const result = await loadPeopleDataPage(getBrowserSchoolClient(), {
+				offset,
+				limit,
+				...(classGroupId !== 'all' ? { classGroupId } : {}),
+			});
 			detailDataContext.seedStudents(result.students);
 			detailDataContext.seedGuardians(result.guardians);
 			return { items: result.students, total: result.totalStudents };
 		},
 		SCHOOL_STUDENTS_INITIAL_PAGE_SIZE,
-		() => `${studentsState.filters.values.class}|${studentsState.filters.values.status}|${studentsState.filters.values.q}`,
+		() => studentsState.filters.values.class,
 	);
+
+	const filteredFullRoster = $derived(studentsState.filterVisible(fullRosterStudents));
+	const filteredPaged = $derived(studentsState.filterVisible(infinite.visible));
+	const filtered = $derived(usesFullRoster ? filteredFullRoster : filteredPaged);
+
+	const windowed = useInfiniteList(() => filtered, SCHOOL_STUDENTS_INITIAL_PAGE_SIZE);
+
+	const listTotal = $derived(
+		usesFullRoster
+			? filteredFullRoster.length
+			: infinite.total,
+	);
+	const listLoading = $derived(usesFullRoster ? loadingFullRoster : infinite.loading);
+	const listLoadingMore = $derived(usesFullRoster ? false : infinite.loadingMore);
+	const listHasMore = $derived(usesFullRoster ? windowed.hasMore : infinite.hasMore);
+	const listVisible = $derived(usesFullRoster ? windowed.visible : filteredPaged);
+	const listVisibleCount = $derived(
+		usesFullRoster ? windowed.visible.length : infinite.visible.length,
+	);
+	function loadMoreStudents() {
+		if (usesFullRoster) {
+			windowed.loadMore();
+			return;
+		}
+		infinite.loadMore();
+	}
 
 	const statusStyle: Record<Student['status'], string> = {
 		honor: 'bg-secondary text-foreground/80',
@@ -85,14 +127,12 @@
 		})),
 	);
 
-	const filtered = $derived(studentsState.filterVisible(infinite.visible));
-
 	function statusLabel(k: (typeof statusKeys)[number]) {
 		return k === 'all' ? $t('filter.all') : $t(`studentStatus.${k}`);
 	}
 
 	$effect(() => {
-		studentsState.hydrateFromUrl($page.url);
+		studentsState.filters.hydrate(initialFilters);
 	});
 
 	$effect(() => {
@@ -101,7 +141,45 @@
 		}
 		void studentsState.filters.values.class;
 		void studentsState.filters.values.status;
+		void studentsState.filters.values.q;
 		studentsState.filters.scheduleSync();
+	});
+
+	$effect(() => {
+		if (!usesFullRoster) {
+			fullRosterStudents = [];
+			loadingFullRoster = false;
+			return;
+		}
+
+		let cancelled = false;
+		loadingFullRoster = true;
+		const classGroupId = studentsState.filters.values.class;
+		const loader = classGroupId === 'all'
+			? loadPeopleData(getBrowserSchoolClient())
+			: loadClassPeopleData(
+					getBrowserSchoolClient(),
+					classGroupId,
+					academicContext.periodId,
+				);
+		void loader
+			.then((result) => {
+				if (cancelled) {
+					return;
+				}
+				detailDataContext.seedStudents(result.students);
+				detailDataContext.seedGuardians(result.guardians);
+				fullRosterStudents = result.students;
+			})
+			.finally(() => {
+				if (!cancelled) {
+					loadingFullRoster = false;
+				}
+			});
+
+		return () => {
+			cancelled = true;
+		};
 	});
 
 	const statusFilterActive = $derived(studentsState.filters.values.status !== 'all' ? 1 : 0);
@@ -116,7 +194,7 @@
 <div class="animate-fade-in">
 	<ListPageHeader
 		eyebrow={$t('students.schoolRoster')}
-		title={$t('students.countLabel', { n: infinite.total })}
+		title={$t('students.countLabel', { n: listTotal })}
 	>
 		{#snippet search()}
 			<ListSearchField
@@ -131,12 +209,14 @@
 				class="h-9 w-48 rounded-full text-xs"
 				options={[{ value: 'all', label: $t('common.allClasses') }]}
 				groups={classFilterGroups}
+				onchange={() => studentsState.filters.scheduleSync()}
 			/>
 			<FilterPanel activeCount={statusFilterActive} title={$t('students.statusFilter')}>
 				<FilterSelect
 					bind:value={studentsState.filters.values.status}
 					class="h-9 w-full rounded-md text-xs"
 					options={statusFilterOptions}
+					onchange={() => studentsState.filters.scheduleSync()}
 				/>
 			</FilterPanel>
 		{/snippet}
@@ -175,7 +255,7 @@
 	{#if view === 'table'}
 		<div
 			class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft"
-			aria-busy={infinite.loading}
+			aria-busy={listLoading}
 		>
 			<div
 				class="grid grid-cols-12 gap-4 border-b border-border bg-secondary/40 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
@@ -187,14 +267,14 @@
 				<div class="col-span-2">{$t('students.status')}</div>
 			</div>
 			<InfiniteList
-				hasMore={infinite.hasMore}
-				total={infinite.total}
-				visibleCount={infinite.visible.length}
-				loading={infinite.loading || infinite.loadingMore}
-				onLoadMore={infinite.loadMore}
+				hasMore={listHasMore}
+				total={listTotal}
+				visibleCount={listVisibleCount}
+				loading={listLoading || listLoadingMore}
+				onLoadMore={loadMoreStudents}
 			>
-				<ul class={cn(infinite.loading && 'opacity-60')}>
-					{#each filtered as s (s.id)}
+				<ul class={cn(listLoading && 'opacity-60')}>
+					{#each listVisible as s (s.id)}
 						{@const cls = classes.find(c => c.id === s.classId)}
 						{@const active = selectedId === s.id}
 						<li>
@@ -242,7 +322,7 @@
 							</button>
 						</li>
 					{/each}
-					{#if filtered.length === 0 && !infinite.loading}
+					{#if listVisible.length === 0 && !listLoading}
 						<li class="px-5 py-12 text-center text-sm text-muted-foreground">
 							{$t('students.noMatch')}
 						</li>
@@ -251,16 +331,16 @@
 			</InfiniteList>
 		</div>
 	{:else}
-		<div aria-busy={infinite.loading}>
+		<div aria-busy={listLoading}>
 			<InfiniteList
-				hasMore={infinite.hasMore}
-				total={infinite.total}
-				visibleCount={infinite.visible.length}
-				loading={infinite.loading || infinite.loadingMore}
-				onLoadMore={infinite.loadMore}
+				hasMore={listHasMore}
+				total={listTotal}
+				visibleCount={listVisibleCount}
+				loading={listLoading || listLoadingMore}
+				onLoadMore={loadMoreStudents}
 			>
-				<div class={cn('grid gap-3 sm:grid-cols-2 lg:grid-cols-3', infinite.loading && 'opacity-60')}>
-					{#each filtered as s (s.id)}
+				<div class={cn('grid gap-3 sm:grid-cols-2 lg:grid-cols-3', listLoading && 'opacity-60')}>
+					{#each listVisible as s (s.id)}
 						{@const cls = classes.find(c => c.id === s.classId)}
 						{@const active = selectedId === s.id}
 						<button
@@ -297,7 +377,7 @@
 						</button>
 					{/each}
 				</div>
-				{#if filtered.length === 0 && !infinite.loading}
+				{#if listVisible.length === 0 && !listLoading}
 					<p class="py-12 text-center text-sm text-muted-foreground">{$t('students.noMatch')}</p>
 				{/if}
 			</InfiniteList>

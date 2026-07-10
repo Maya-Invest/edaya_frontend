@@ -11,10 +11,12 @@
 
 	const {
 		query,
+		cacheKey = listRouteCacheKey,
 		loadingTitle,
 		children,
 	}: {
 		query: (url: URL) => Promise<T>;
+		cacheKey?: (url: URL) => string;
 		loadingTitle?: string;
 		children: Snippet<[T]>;
 	} = $props();
@@ -26,7 +28,7 @@
 
 	$effect(() => {
 		const url = $page.url;
-		const key = listRouteCacheKey(url);
+		const key = cacheKey(url);
 
 		if (key === loadedKey && result !== null) {
 			return;

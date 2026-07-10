@@ -1,0 +1,30 @@
+---
+description: URL-driven route state, loading, mutations, colocation — read before state or data work
+globs: apps/webapp/**/*
+alwaysApply: false
+---
+
+# Route state (normative)
+
+**Before adding or refactoring route loads, state classes, mutations, or feature colocation, read:**
+
+[`docs/specs/route-state-spec.md`](../../docs/specs/route-state-spec.md)
+
+## Core invariants
+
+1. **Route state owns entity data** — no global entity hydration for new work; seed route state in `PageQuery` load.
+2. **Colocation** — feature state + components under `routes/.../`; `lib/` for shared infrastructure and smart components only.
+3. **Class + context** — `*-page.svelte.ts` with `set*` / `get*`; mutations live on the state class.
+4. **Version ledger** — bump `entityVersions` on successful mutation; other routes call `invalidateIfStale()`.
+5. **Drawer tabs = nested routes** — `[[id]]/guardians/+page.svelte`, not `?tab=`.
+6. **Shell bootstrap only** — schools, years, periods, classes, nav counts, auth at layout level.
+7. **URL filters** — search/facets in URL; loaded pages on route state.
+
+## Do not
+
+- Seed `detailDataContext` in new features
+- Put feature views in `lib/components/<domain>/`
+- Fetch in component `$effect`
+- Use `refresh: true` after single-record edits
+- `apply` without `rollback`
+- Smart components reading another route's state

@@ -108,7 +108,7 @@ export class DetailDataContext {
 		return next;
 	}
 
-	// --- Seed policies (see specs/data-loading-spec.md) ---
+	// --- Seed policies (legacy — see docs/specs/route-state-spec.md §12) ---
 	// Merge by id: students (school-wide), guardians, staff, incidents, activities, billing, fees, resources
 	// Replace class slice: students (class scope), planning, evaluations, deadlines, subjects
 	// Replace all: role permissions, active-year calendar events and absences

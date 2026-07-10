@@ -23,6 +23,10 @@ export function paginatedList(
 	};
 }
 
+export const ENROLLMENT_LIST_ORDER: EntityQuery['$orderBy'] = [
+	{ field: 'studentId', direction: 'asc' },
+];
+
 export const STUDENT_LIST_ORDER: EntityQuery['$orderBy'] = [
 	{ field: 'lastName', direction: 'asc' },
 	{ field: 'firstName', direction: 'asc' },

@@ -1,37 +1,24 @@
 <script lang="ts">
-	import type { Student } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import SchoolStudentsView from '$lib/components/school/students/SchoolStudentsView.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
-	import { detailHref } from '$lib/detail-hrefs';
+	import { drawerTabRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
-	import { appGoto } from '$lib/navigation/app-navigation';
-	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
-	import { querySchoolStudentsPage } from '$lib/queries/people.queries';
+	import StudentProfileTab from '../components/StudentProfileTab.svelte';
+	import { queryStudentProfileTab } from '../students-detail.queries';
+	import { getStudentsPageState } from '../students-page.svelte';
 
-	const selectedId = $derived($page.params.id);
-	const query = querySchoolStudentsPage();
-
-	function selectStudent(student: Student) {
-		const path = detailHref.schoolStudent(student.id);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
-	}
+	const studentsPage = getStudentsPageState();
+	const query = queryStudentProfileTab(studentsPage);
+	const student = $derived(studentsPage.selected);
 </script>
 
-<PageQuery {query} loadingTitle={$t('school.students')}>
-	{#snippet children(data)}
-		<DataState
-			preserveShell
-			status={data.status}
-			errorMessage={data.errorMessage}
-			emptyTitle={$t('school.students')}
-			emptyDescription={$t('dataState.emptyDescription')}
-		>
-			<SchoolStudentsView
-				onSelect={selectStudent}
-				{selectedId}
-			/>
-		</DataState>
-	{/snippet}
-</PageQuery>
+{#if student}
+	<PageQuery {query} cacheKey={drawerTabRouteCacheKey} loadingTitle={$t('drawer.tab.profile')}>
+		{#snippet children(data)}
+			<DataState status={data.status} errorMessage={data.errorMessage}>
+				<StudentProfileTab s={student} />
+			</DataState>
+		{/snippet}
+	</PageQuery>
+{/if}
