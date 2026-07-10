@@ -36,6 +36,7 @@ Status: **Built** = use as-is. No **Planned** registry entries at this time — 
 | **FilterSelect** | `ui/filter-select.svelte` | Built | **Main filter** — always `<select>` |
 | **FilterPanel** | `ui/FilterPanel.svelte` | Built | Secondary facets (status, date range) opened from Filter button |
 | **ListEntityTable** | `ui/ListEntityTable.svelte` | Built | Sortable grid + selection checkboxes + infinite scroll shell |
+| **ListEntityCards** | `ui/ListEntityCards.svelte` · `ListEntityCard.svelte` | Built | Card grid + sort toolbar + labeled fields + column density |
 | **ListSelectionBar** | `ui/ListSelectionBar.svelte` | Built | Bulk selection bar — export + optional `actions` snippet + clear |
 | **RowActionMenu** | `ui/RowActionMenu.svelte` · `RowActionMenuItem.svelte` | Built | Simple-entity row `···` → edit / delete modals |
 
@@ -169,7 +170,7 @@ These remain route-local (T3) or legacy until migrated. Follow visual patterns f
 | Pattern | Current location | Target |
 |---------|------------------|--------|
 | **Drawer tab navigation** | Legacy `DrawerTabBar` + `createUrlSyncedDrawerTabs` (`?tab=`) | **Nested child routes** under `[[id]]/`; tab bar renders route links. Deprecate `?tab=` for new work. |
-| **Entity table / card list** | `ui/ListEntityTable.svelte` + route row snippets | Built — people lists use `ListEntityTable` |
+| **Entity table / card list** | `ui/ListEntityTable.svelte` + `ui/ListEntityCards.svelte` + route snippets | Built — students list uses both views |
 | **Chip-bar main filter (legacy)** | Some older views in `lib/components/school/` | Migrate to `FilterSelect` + `FilterPanel` when touching the file |
 | **Feature views in lib** | Legacy `lib/components/school/{domain}/` | Colocate under `routes/.../components/` per route-state spec |
 

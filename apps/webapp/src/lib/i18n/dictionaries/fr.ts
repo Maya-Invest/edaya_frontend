@@ -298,6 +298,7 @@ export const fr: Dict = {
 	'list.exportedCount': '{n} lignes exportées.',
 	'list.viewTable': 'Vue tableau',
 	'list.viewCards': 'Vue cartes',
+	'list.cardColumns': '{n} colonnes',
 	'list.active': 'Actif',
 	'list.sortAscending': 'tri croissant',
 	'list.sortDescending': 'tri décroissant',

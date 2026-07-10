@@ -4,10 +4,9 @@
 	import { page } from '$app/stores';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
-	import InfiniteList from '$lib/components/ui/InfiniteList.svelte';
+	import ListEntityCards from '$lib/components/ui/ListEntityCards.svelte';
 	import ListEntityTable from '$lib/components/ui/ListEntityTable.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
@@ -20,6 +19,7 @@
 	import { t } from '$lib/i18n';
 	import { Eye, GraduationCap, Pencil, Plus } from '$lib/icons';
 	import { downloadCsv } from '$lib/list/list-csv-export';
+	import { loadCardColumnsPreference, saveCardColumnsPreference } from '$lib/list/list-card-columns-preference';
 	import { ListSelectionState } from '$lib/list/list-selection-state.svelte';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, closeUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
@@ -49,6 +49,12 @@
 	const selection = new ListSelectionState<Student>();
 
 	let view = $state<'table' | 'cards'>('table');
+	let cardColumns = $state(loadCardColumnsPreference('school-students-card-columns', 3));
+
+	function setCardColumns(next: number) {
+		cardColumns = next;
+		saveCardColumnsPreference('school-students-card-columns', next);
+	}
 
 	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
 	$effect(() => {
@@ -84,11 +90,42 @@
 	const selectionPool = $derived([...studentsPage.students, ...studentsPage.fullRosterStudents]);
 
 	const columns = $derived<ListEntityTableColumn[]>([
-		{ key: 'name', label: $t('students.student'), span: 3, sortable: true },
-		{ key: 'class', label: $t('students.class'), span: 2, sortable: true },
-		{ key: 'average', label: $t('students.average'), span: 2, sortable: true },
-		{ key: 'attendance', label: $t('students.attendance'), span: 2, sortable: true },
-		{ key: 'status', label: $t('students.status'), span: 2, spanInSelectionMode: 1, sortable: true },
+		{
+			key: 'name',
+			label: $t('students.student'),
+			span: 3,
+			sortable: true,
+			card: { zone: 'header', showLabel: false },
+		},
+		{
+			key: 'class',
+			label: $t('students.class'),
+			span: 2,
+			sortable: true,
+			card: { zone: 'body', showLabel: true },
+		},
+		{
+			key: 'average',
+			label: $t('students.average'),
+			span: 2,
+			sortable: true,
+			card: { zone: 'footer', showLabel: true },
+		},
+		{
+			key: 'attendance',
+			label: $t('students.attendance'),
+			span: 2,
+			sortable: true,
+			card: { zone: 'footer', defaultVisible: false, showLabel: true },
+		},
+		{
+			key: 'status',
+			label: $t('students.status'),
+			span: 2,
+			spanInSelectionMode: 1,
+			sortable: true,
+			card: { zone: 'footer', showLabel: true },
+		},
 	]);
 
 	const statusStyle: Record<Student['status'], string> = {
@@ -329,89 +366,79 @@
 			{/snippet}
 		</ListEntityTable>
 	{:else}
-		<div aria-busy={listLoading}>
-			<InfiniteList
-				hasMore={listHasMore}
-				total={listTotal}
-				visibleCount={listVisibleCount}
-				loading={listLoading || listLoadingMore}
-				onLoadMore={loadMoreStudents}
-			>
-				<div class={cn('grid gap-3 sm:grid-cols-2 lg:grid-cols-3', listLoading && 'opacity-60')}>
-					{#each listVisible as student (student.id)}
-						{@const classGroup = classes.find(entry => entry.id === student.classId)}
-						{@const active = selectedId === student.id}
-						<div
-							role="button"
-							tabindex="0"
-							onclick={() => selection.handleRowClick(student, onSelect)}
-							onkeydown={event => selection.handleRowKeydown(event, student, onSelect)}
-							class={cn(
-								'rounded-2xl border border-border bg-card p-5 text-left shadow-soft transition hover:-translate-y-0.5 hover:shadow-panel',
-								active && 'border-primary/40 bg-primary/5',
-								selection.selectionMode && selection.selectedSet.has(student.id) && 'border-primary/30 bg-primary/5',
-							)}
-						>
-							<div class="mb-3 flex items-center justify-between gap-2">
-								{#if selection.selectionMode}
-									<div role="presentation" onclick={event => event.stopPropagation()}>
-										<Checkbox
-											class="rounded-[2px]"
-											checked={selection.selectedSet.has(student.id)}
-											onCheckedChange={checked => selection.toggleSelected(student.id, checked === true)}
-											aria-label={$t('list.selectRow')}
-										/>
-									</div>
-								{:else}
-									<div></div>
-								{/if}
-								<div role="presentation" onclick={event => event.stopPropagation()}>
-									<RowActionMenu>
-										<RowActionMenuItem onclick={event => openStudentAction(event, student)}>
-											<Eye class="h-4 w-4 text-muted-foreground" />
-											{$t('common.open')}
-										</RowActionMenuItem>
-										<RowActionMenuItem onclick={event => openStudentAction(event, student, 'edit-profile')}>
-											<Pencil class="h-4 w-4 text-muted-foreground" />
-											{$t('common.edit')}
-										</RowActionMenuItem>
-										<RowActionMenuItem onclick={event => openStudentAction(event, student, 'change-class')}>
-											<GraduationCap class="h-4 w-4 text-muted-foreground" />
-											{$t('student.changeClass')}
-										</RowActionMenuItem>
-									</RowActionMenu>
-								</div>
-							</div>
-							<div class="flex items-center gap-3">
-								<PersonAvatar
-									name={student.name}
-									initials={student.initials}
-									photoUrl={student.photoUrl}
-									size="list"
-								/>
-								<div class="min-w-0">
-									<p class="truncate font-medium">{student.name}</p>
-									<p class="truncate text-xs text-muted-foreground">{classGroup?.name}</p>
-								</div>
-							</div>
-							<div class="mt-4 flex items-center justify-between text-sm">
-								<span class="font-display font-semibold tabular-nums">{student.average.toFixed(1)}</span>
-								<span
-									class={cn(
-										'rounded-full px-2 py-0.5 text-[10px] font-medium',
-										statusStyle[student.status],
-									)}
-								>
-									{$t(`studentStatus.${student.status}`)}
-								</span>
-							</div>
+		<ListEntityCards
+			{columns}
+			rows={listVisible}
+			highlightId={selectedId}
+			sort={{ column: studentsPage.filters.values.sort, dir: studentsPage.filters.values.sortDir }}
+			onSort={key => cycleSort(key as StudentSortColumn)}
+			columnsPerRow={cardColumns}
+			onColumnsPerRowChange={setCardColumns}
+			selectionMode={selection.selectionMode}
+			selectedIds={selection.selectedIds}
+			onToggleSelected={(id, checked) => selection.toggleSelected(id, checked)}
+			loading={listLoading}
+			loadingMore={listLoadingMore}
+			hasMore={listHasMore}
+			total={listTotal}
+			visibleCount={listVisibleCount}
+			onLoadMore={loadMoreStudents}
+			onRowClick={student => selection.handleRowClick(student, onSelect)}
+		>
+			{#snippet field(student, columnKey)}
+				{@const classGroup = classes.find(entry => entry.id === student.classId)}
+				{#if columnKey === 'name'}
+					<div class="flex items-center gap-3">
+						<PersonAvatar
+							name={student.name}
+							initials={student.initials}
+							photoUrl={student.photoUrl}
+							size="list"
+						/>
+						<div class="min-w-0">
+							<p class="truncate font-medium">{student.name}</p>
 						</div>
-					{/each}
-				</div>
-				{#if listVisible.length === 0 && !listLoading}
-					<p class="py-12 text-center text-sm text-muted-foreground">{$t('students.noMatch')}</p>
+					</div>
+				{:else if columnKey === 'class'}
+					<p class="truncate text-sm text-muted-foreground">{classGroup?.name}</p>
+				{:else if columnKey === 'average'}
+					<span class="font-display font-semibold tabular-nums text-sm">
+						{student.average.toFixed(1)}
+					</span>
+				{:else if columnKey === 'attendance'}
+					<div class="min-w-[7rem]">
+						<div class="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+							<div class="h-full rounded-full bg-accent" style:width="{student.attendance}%"></div>
+						</div>
+						<p class="mt-1 font-mono text-[10px] text-muted-foreground">{student.attendance}%</p>
+					</div>
+				{:else if columnKey === 'status'}
+					<span
+						class={cn(
+							'rounded-full px-2 py-0.5 text-[10px] font-medium',
+							statusStyle[student.status],
+						)}
+					>
+						{$t(`studentStatus.${student.status}`)}
+					</span>
 				{/if}
-			</InfiniteList>
-		</div>
+			{/snippet}
+			{#snippet actions(student)}
+				<RowActionMenu>
+					<RowActionMenuItem onclick={event => openStudentAction(event, student)}>
+						<Eye class="h-4 w-4 text-muted-foreground" />
+						{$t('common.open')}
+					</RowActionMenuItem>
+					<RowActionMenuItem onclick={event => openStudentAction(event, student, 'edit-profile')}>
+						<Pencil class="h-4 w-4 text-muted-foreground" />
+						{$t('common.edit')}
+					</RowActionMenuItem>
+					<RowActionMenuItem onclick={event => openStudentAction(event, student, 'change-class')}>
+						<GraduationCap class="h-4 w-4 text-muted-foreground" />
+						{$t('student.changeClass')}
+					</RowActionMenuItem>
+				</RowActionMenu>
+			{/snippet}
+		</ListEntityCards>
 	{/if}
 </div>

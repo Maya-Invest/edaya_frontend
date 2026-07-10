@@ -304,6 +304,7 @@ export const en: Dict = {
 	'list.exportedCount': '{n} rows exported.',
 	'list.viewTable': 'Table view',
 	'list.viewCards': 'Card view',
+	'list.cardColumns': '{n} columns',
 	'list.active': 'Active',
 	'list.sortAscending': 'sorted ascending',
 	'list.sortDescending': 'sorted descending',
