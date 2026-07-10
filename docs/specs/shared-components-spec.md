@@ -65,13 +65,13 @@ Feature routes **do not** reimplement shell chrome.
 
 | Component | Path | Status | Use for |
 |-----------|------|--------|---------|
-| **DetailDrawer** | `school/shared/DetailDrawer.svelte` | Built | Overlay shell — type chip, close, lazy body dispatch |
+| **DetailDrawer shell contract** | Shared `school/shared/DetailDrawer.svelte` or route-local `[[id]]/+layout.svelte` shell | Built / route-local | Overlay shell — type chip, close, backdrop/Escape close, `md:w-1/2`, lazy or routed body dispatch |
 | **DrawerEntityHeader** | `school/shared/DrawerEntityHeader.svelte` | Built | Identity + ≤2 primary actions + overflow |
 | **DrawerField** | `school/shared/DrawerField.svelte` | Built | Read-only label + value in drawer body |
 | **DrawerEmptyState** | `school/shared/DrawerEmptyState.svelte` | Built | Empty sub-collection / tab placeholder |
 | **DrawerActionBar** | `school/shared/DrawerActionBar.svelte` | Built | Optional drawer **body footer** — `border-t`, right-aligned actions; **not** sub-collection `+ Add` header |
 
-Complex drawer bodies (`*Detail.svelte`, `*Tabs.svelte`) **must** use `DrawerEntityHeader` for identity and actions — not a duplicate hero block in tab content.
+Complex drawer bodies (`*Detail.svelte`, `*Tabs.svelte`, nested tab routes) **must** use `DrawerEntityHeader` for identity and actions — not a duplicate hero block in tab content. Nested-route drawers may own a route-local shell when the shared dispatcher would couple the route back to legacy feature bodies.
 
 ### 2.5 Smart components (pickers & scope UI)
 
@@ -143,7 +143,7 @@ EntityTable | EntityCardList   ← collection wrapper (feature-local OK for now)
 ### 3.2 Complex drawer
 
 ```
-DetailDrawer (shell — T2)
+DetailDrawer shell (shared or route-local)
   DrawerEntityHeader — avatar, name, chips, [Action 1] [Action 2] [···]
   body:
     tab bar: route links under [[id]]/ (e.g. …/guardians) — not ?tab= query params
@@ -152,6 +152,8 @@ DetailDrawer (shell — T2)
     optional footer: DrawerActionBar (secondary actions only)
     empty: DrawerEmptyState
 ```
+
+Route-local drawer shells must still implement the T2 shell contract: type chip + close-only shell header, backdrop click, Escape close, list-preserving overlay, full-width mobile, `md:w-1/2` desktop width, and no footer unless it contains Close only.
 
 ### 3.3 Simple entity
 
@@ -220,7 +222,7 @@ When building or refactoring a screen:
 - [ ] Route uses `PageQuery` + `DataState`
 - [ ] Mutations use `FormModal` / `ConfirmModal` / `PickerModal`
 - [ ] Actions wrapped in `PermissionGate` where required
-- [ ] Complex drawer uses `DetailDrawer` + `DrawerEntityHeader` + `DrawerField`
+- [ ] Complex drawer uses the DetailDrawer shell contract + `DrawerEntityHeader` + `DrawerField`
 - [ ] Sub-collections use inline section header for `+ Add`; `DrawerEmptyState` for empty tabs
 - [ ] Route-local views in `routes/.../components/` — not `lib/components/school/{domain}/`
 - [ ] Drawer tabs use nested child routes — not `?tab=` query params

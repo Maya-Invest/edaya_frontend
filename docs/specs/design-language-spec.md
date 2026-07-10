@@ -266,7 +266,7 @@ Built on **bits-ui** + **Tailwind**, shadcn-style patterns.
 
 | Component | Role |
 |-----------|------|
-| **DetailDrawer** | Right sheet, kind badge `rounded-full uppercase text-[11px]`, close as ghost circle |
+| **DetailDrawer shell contract** | Right sheet, kind badge `rounded-full uppercase text-[11px]`, close as ghost circle; may be shared or route-local |
 | **DrawerField** | Read-only label + value stack |
 | **DrawerEmptyState** | Dashed `rounded-xl` centered placeholder |
 | **DrawerActionBar** | Optional drawer body footer — `border-t pt-4`, right-aligned secondary actions; **not** sub-collection `+ Add` header |

@@ -11,17 +11,17 @@ type SchoolStudentTabSegment
 		| 'enrollments';
 
 const STUDENT_TAB_ROUTES: Record<SchoolStudentTabSegment, RouteId> = {
-	'profile': '/(app)/school/students/[[id]]/profile',
-	'grades': '/(app)/school/students/[[id]]/grades',
-	'attendance': '/(app)/school/students/[[id]]/attendance',
-	'incidents': '/(app)/school/students/[[id]]/incidents',
-	'finances': '/(app)/school/students/[[id]]/finances',
-	'report-card': '/(app)/school/students/[[id]]/report-card',
-	'enrollments': '/(app)/school/students/[[id]]/enrollments',
+	'profile': '/(app)/school/students/[[id]]/(tabs)/profile',
+	'grades': '/(app)/school/students/[[id]]/(tabs)/grades',
+	'attendance': '/(app)/school/students/[[id]]/(tabs)/attendance',
+	'incidents': '/(app)/school/students/[[id]]/(tabs)/incidents',
+	'finances': '/(app)/school/students/[[id]]/(tabs)/finances',
+	'report-card': '/(app)/school/students/[[id]]/(tabs)/report-card',
+	'enrollments': '/(app)/school/students/[[id]]/(tabs)/enrollments',
 };
 
 export const detailHref = {
-	schoolStudent: (id: string): ResolvedPathname => appPath('/(app)/school/students/[[id]]/profile', { id }),
+	schoolStudent: (id: string): ResolvedPathname => appPath('/(app)/school/students/[[id]]/(tabs)/profile', { id }),
 	schoolStudentTab: (id: string, tab: SchoolStudentTabSegment = 'profile'): ResolvedPathname =>
 		appPath(STUDENT_TAB_ROUTES[tab], { id }),
 	schoolGuardian: (id: string): ResolvedPathname => appPath('/(app)/school/guardians/[[id]]', { id }),

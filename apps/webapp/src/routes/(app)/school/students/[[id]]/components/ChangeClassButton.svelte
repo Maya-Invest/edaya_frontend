@@ -7,7 +7,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { Users } from '$lib/icons';
 	import { toast } from '$lib/toast.svelte';
-	import { getStudentsPageState } from '../../students-page.svelte';
+	import { getStudentEnrollmentsTabState } from '../(tabs)/enrollments/student-enrollments-tab.svelte';
 
 	let {
 		s,
@@ -37,7 +37,7 @@
 		wasOpen = open;
 	});
 
-	const studentsPage = getStudentsPageState();
+	const enrollmentsTab = getStudentEnrollmentsTabState();
 
 	async function confirmTransfer() {
 		if (target === s.classId || !s.enrollmentId) {
@@ -48,7 +48,7 @@
 		}
 
 		busy = true;
-		const ok = await studentsPage.transferClass({
+		const ok = await enrollmentsTab.transferClass({
 			enrollmentId: s.enrollmentId,
 			studentId: s.id,
 			nextClassGroupId: target,

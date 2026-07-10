@@ -11,13 +11,13 @@
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { canUploadProfilePhoto } from '$lib/permissions';
 	import { get } from 'svelte/store';
-	import { getStudentsPageState } from '../../students-page.svelte';
-	import StudentAbsenceModal from '../attendance/StudentAbsenceModal.svelte';
-	import StudentGradeEntryModal from '../grades/StudentGradeEntryModal.svelte';
-	import StudentIncidentModal from '../incidents/StudentIncidentModal.svelte';
-	import StudentGuardianLinkModal from '../profile/StudentGuardianLinkModal.svelte';
-	import StudentNoteModal from '../profile/StudentNoteModal.svelte';
-	import StudentProfileEditModal from '../profile/StudentProfileEditModal.svelte';
+	import StudentAbsenceModal from '../(tabs)/attendance/components/StudentAbsenceModal.svelte';
+	import StudentGradeEntryModal from '../(tabs)/grades/components/StudentGradeEntryModal.svelte';
+	import StudentIncidentModal from '../(tabs)/incidents/components/StudentIncidentModal.svelte';
+	import StudentGuardianLinkModal from '../(tabs)/profile/components/StudentGuardianLinkModal.svelte';
+	import StudentNoteModal from '../(tabs)/profile/components/StudentNoteModal.svelte';
+	import StudentProfileEditModal from '../(tabs)/profile/components/StudentProfileEditModal.svelte';
+	import { getStudentProfileTabState } from '../(tabs)/profile/student-profile-tab.svelte';
 	import ChangeClassButton from './ChangeClassButton.svelte';
 
 	type StudentDrawerModal
@@ -31,7 +31,7 @@
 
 	const { student }: { student: Student } = $props();
 
-	const studentsPage = getStudentsPageState();
+	const profileTab = getStudentProfileTabState();
 	const studentClass = $derived(academicContext.classes.find(cl => cl.id === student.classId));
 	const canChangePhoto = $derived(canUploadProfilePhoto('STUDENT_UPDATE'));
 
@@ -61,12 +61,12 @@
 
 	const editingNote = $derived(
 		modals.target
-			? studentsPage.notesFor(student.id).find(note => note.id === modals.target)
+			? profileTab.notesFor(student.id).find(note => note.id === modals.target)
 			: undefined,
 	);
 
 	async function handlePhotoChange(file: File) {
-		return studentsPage.updateProfilePhoto({
+		return profileTab.updateProfilePhoto({
 			studentId: student.id,
 			file,
 			successMessage: get(t)('profilePhoto.updateSuccess'),

@@ -133,7 +133,7 @@ All variants still use shell chrome, permissions, toasts, and mutation modals wh
 Every entity list route shares this anatomy:
 
 ```
-┌ Title                   [Primary CTA] [Search] [Main filter ▾] [Filter ▾] [More ▾] ┐
+┌ Title                   [Search] [Main filter ▾] [Filter ▾] [More ▾] [Primary CTA] ┐
 │ Description / subtitle                                                           │
 ├──────────────────────────────────────────────────────────────────────────────────┤
 │  Collection: table OR cards                                              │
@@ -362,7 +362,7 @@ All mutations use modal dialogs — **centered overlay on desktop**; **full-scre
 
 - Validate before submit; show field errors inline
 - Toast on success and on server error
-- On success: close modal, patch route state optimistically (and bump entity version for cross-route sync), refresh active tab query if server returns derived data
+- On success: close modal, patch route state optimistically, bump every affected entity-family version for cross-route sync, and refresh active tab query if server returns derived data
 - Do not navigate away from the current list+detail URL
 - Focus trap; Escape closes; return focus to trigger on close
 
@@ -424,7 +424,7 @@ The user's **staff role label** (e.g. director, teacher) is shown in the header 
 
 ### 6.4 Global context
 
-Changing school, academic year, or period invalidates/refetches list data for the active route. Screen logic should derive scope from the shell's global context selectors, not hard-coded values.
+Changing school, academic year, or period must invalidate/refetch list data for the active route. The app shell owns this central invalidation mechanism: selector changes clear affected `PageQuery` cache entries, notify the active route state to refresh, and preserve the current URL unless the new scope makes it inaccessible. Screen logic must derive scope from the shell's global context selectors, not hard-coded values.
 
 ### 6.5 Responsive
 

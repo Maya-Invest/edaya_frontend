@@ -60,7 +60,7 @@ Class-scoped routes live under `/classes/{classId}/…`. The sidebar **class pic
 
 ### 2.3 List toolbar (standard list pages)
 
-Order: **`[Primary CTA] [Search] [Main filter ▾] [Filter ▾] [More ▾]`**
+Order: **`[Search] [Main filter ▾] [Filter ▾] [More ▾] [Primary CTA]`**
 
 Applies to **standard entity list routes** only. Layout variants (§2.4) may omit search, main filter, or the full toolbar.
 
@@ -223,7 +223,7 @@ Scope labels in the list use `POST authorization/scope/render` with `{ permissio
 
 - `querySchoolStaffPage` loads `permission-catalog` into the staff route state.
 - Assignments load via the Permissions tab child route `PageQuery` (or with staff list when colocated); views built via `buildStaffPermissionAssignmentViews`.
-- Mutations: `saveStaffPermissionAssignmentMutation` / `deleteStaffPermissionAssignmentMutation` with optimistic patch on route state + `entityVersions` bump.
+- Mutations: `saveStaffPermissionAssignmentMutation` / `deleteStaffPermissionAssignmentMutation` with optimistic patch on route state + `entityVersions` bump for every affected entity family.
 
 **Staff drawer → Assignments tab** (read-only): summary list of `staffAssignments` (class-level and other targets). Editing assignments happens in **Configuration → Classes** drawer (class-level tab) — not on this tab.
 
