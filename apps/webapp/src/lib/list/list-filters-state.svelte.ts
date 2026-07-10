@@ -43,13 +43,13 @@ export class ListFiltersState<T extends Record<string, string>> {
 		if (this.ready && filtersEqual(this.values, next)) {
 			return;
 		}
-		// URL search sync is debounced — keep the in-progress query when the URL lags behind.
-		if (this.ready && 'q' in next && 'q' in this.values && this.values.q !== next.q) {
-			const typedAhead = this.values.q.length > next.q.length && this.values.q.startsWith(next.q);
-			if (typedAhead) {
-				this.values = { ...next, q: this.values.q };
-				return;
+		// Debounced URL sync can lag behind in-memory edits — keep local values until it flushes.
+		if (this.ready && this.timer !== undefined) {
+			const merged = { ...next, ...this.values };
+			if (!filtersEqual(this.values, merged)) {
+				this.values = merged;
 			}
+			return;
 		}
 		this.values = { ...next };
 		this.ready = true;
@@ -70,7 +70,10 @@ export class ListFiltersState<T extends Record<string, string>> {
 			return;
 		}
 		clearTimeout(this.timer);
-		this.timer = setTimeout(() => this.syncNow(), this.config.debounceMs ?? 250);
+		this.timer = setTimeout(() => {
+			this.timer = undefined;
+			this.syncNow();
+		}, this.config.debounceMs ?? 250);
 	}
 
 	syncNow() {
@@ -78,6 +81,7 @@ export class ListFiltersState<T extends Record<string, string>> {
 			return;
 		}
 		clearTimeout(this.timer);
+		this.timer = undefined;
 		const currentUrl = this.config.getUrl();
 		const href = this.config.write(currentUrl, this.values);
 		if (href === listHref(currentUrl)) {

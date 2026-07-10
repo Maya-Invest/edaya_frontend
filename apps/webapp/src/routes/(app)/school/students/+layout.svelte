@@ -41,21 +41,11 @@
 		if (!studentsPage.filters.ready) {
 			return;
 		}
-		void studentsPage.filters.values.class;
-		void studentsPage.filters.values.status;
-		void studentsPage.filters.values.q;
-		studentsPage.filters.scheduleSync();
-	});
-
-	$effect(() => {
-		if (!studentsPage.filters.ready) {
-			return;
-		}
 		void studentsPage.filters.values.q;
 		void studentsPage.filters.values.status;
 		void studentsPage.filters.values.class;
 
-		if (!studentsPage.usesFullRoster) {
+		if (!studentListUsesFullRoster(studentsPage.filters.values)) {
 			studentsPage.clearFullRoster();
 			if (wasFullRoster) {
 				void studentsPage.refreshList();

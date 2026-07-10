@@ -19,6 +19,7 @@
 	import { cn } from '$lib/utils';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import StudentCreateModal from './StudentCreateModal.svelte';
+	import { studentListUsesFullRoster } from '../student-list-filters';
 	import {
 		getStudentsPageState,
 		SCHOOL_STUDENTS_PAGE_SIZE,
@@ -44,34 +45,34 @@
 	});
 	const createOpen = bindUrlModal(modals, 'create');
 
-	const filtered = $derived.by(() => {
-		void studentsPage.filters.values.q;
-		void studentsPage.filters.values.class;
-		void studentsPage.filters.values.status;
-		void studentsPage.students.length;
-		void studentsPage.fullRosterStudents.length;
-		void studentsPage.loadingFullRoster;
-		return studentsPage.visibleStudents;
-	});
+	const usesFullRoster = $derived(studentListUsesFullRoster(studentsPage.filters.values));
+
+	const filtered = $derived(studentsPage.filterVisible(
+		usesFullRoster
+			? (studentsPage.fullRosterStudents.length > 0
+				? studentsPage.fullRosterStudents
+				: studentsPage.students)
+			: studentsPage.students,
+	));
 	const windowed = useInfiniteList(() => filtered, SCHOOL_STUDENTS_PAGE_SIZE);
 
 	const listTotal = $derived(
-		studentsPage.usesFullRoster ? filtered.length : studentsPage.totalStudents,
+		usesFullRoster ? filtered.length : studentsPage.totalStudents,
 	);
 	const listLoading = $derived(
-		studentsPage.usesFullRoster ? studentsPage.loadingFullRoster : studentsPage.listLoading,
+		usesFullRoster ? studentsPage.loadingFullRoster : studentsPage.listLoading,
 	);
-	const listLoadingMore = $derived(studentsPage.usesFullRoster ? false : studentsPage.listLoadingMore);
+	const listLoadingMore = $derived(usesFullRoster ? false : studentsPage.listLoadingMore);
 	const listHasMore = $derived(
-		studentsPage.usesFullRoster ? windowed.hasMore : studentsPage.students.length < studentsPage.totalStudents,
+		usesFullRoster ? windowed.hasMore : studentsPage.students.length < studentsPage.totalStudents,
 	);
 	const listVisible = $derived(
-		studentsPage.usesFullRoster ? windowed.visible : filtered,
+		usesFullRoster ? windowed.visible : filtered,
 	);
 	const listVisibleCount = $derived(listVisible.length);
 
 	function loadMoreStudents() {
-		if (studentsPage.usesFullRoster) {
+		if (usesFullRoster) {
 			windowed.loadMore();
 			return;
 		}
@@ -113,10 +114,6 @@
 		})),
 	);
 
-	function onSearchInput(event: Event & { currentTarget: HTMLInputElement }) {
-		studentsPage.filters.setField('q', event.currentTarget.value);
-	}
-
 	function applyFacetFilter(field: 'class' | 'status', value: string) {
 		studentsPage.filters.patch({ [field]: value });
 		studentsPage.filters.syncNow();
@@ -132,7 +129,7 @@
 		{#snippet search()}
 			<ListSearchField
 				value={studentsPage.filters.values.q}
-				oninput={onSearchInput}
+				oninput={event => studentsPage.filters.patch({ q: event.currentTarget.value })}
 				placeholder={$t('common.searchStudent')}
 			/>
 		{/snippet}
