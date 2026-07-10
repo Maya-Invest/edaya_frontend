@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import InfiniteList from '$lib/components/ui/InfiniteList.svelte';
@@ -10,19 +11,25 @@
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
-	import { Plus } from '$lib/icons';
+	import { Eye, GraduationCap, Pencil, Plus } from '$lib/icons';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, closeUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { appendModal } from '$lib/modal/modal-url';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
+	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
+	import { SvelteMap } from 'svelte/reactivity';
 	import { studentListUsesFullRoster } from '../lib/student-list-filters';
 	import {
 		getStudentsPageState,
 		SCHOOL_STUDENTS_PAGE_SIZE,
 	} from '../students-page.svelte';
+
 	import StudentCreateModal from './StudentCreateModal.svelte';
 
 	const {
@@ -38,6 +45,8 @@
 	const hierarchy = $derived(studentsPage.hierarchy);
 
 	let view = $state<'table' | 'cards'>('table');
+	let selectedIds = $state<string[]>([]);
+	const selectedSet = $derived(new Set(selectedIds));
 
 	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
 	$effect(() => {
@@ -70,6 +79,15 @@
 		usesFullRoster ? windowed.visible : filtered,
 	);
 	const listVisibleCount = $derived(listVisible.length);
+	const selectedStudents = $derived.by(() => {
+		const byId = new SvelteMap<string, Student>();
+		for (const student of [...studentsPage.students, ...studentsPage.fullRosterStudents]) {
+			byId.set(student.id, student);
+		}
+		return selectedIds
+			.map(id => byId.get(id))
+			.filter((student): student is Student => Boolean(student));
+	});
 
 	function loadMoreStudents() {
 		if (usesFullRoster) {
@@ -113,11 +131,96 @@
 			label: statusLabel(key),
 		})),
 	);
+	const sortOptions = $derived([
+		{ value: 'roster', label: $t('students.sortRoster') },
+		{ value: 'name', label: $t('students.sortName') },
+		{ value: 'average', label: $t('students.sortAverage') },
+		{ value: 'attendance', label: $t('students.sortAttendance') },
+		{ value: 'status', label: $t('students.sortStatus') },
+	]);
 
 	function applyFacetFilter(field: 'class' | 'status', value: string) {
 		studentsPage.filters.patch({ [field]: value });
 		studentsPage.filters.syncNow();
 		void studentsPage.refreshList();
+	}
+
+	function applySort(value: string) {
+		studentsPage.filters.patch({ sort: value as typeof studentsPage.filters.values.sort });
+		studentsPage.filters.syncNow();
+	}
+
+	function handleRowKeydown(event: KeyboardEvent, student: Student) {
+		if (event.key === 'Enter' || event.key === ' ') {
+			event.preventDefault();
+			onSelect?.(student);
+		}
+	}
+
+	function detailHrefFor(student: Student, modal: 'edit-profile' | 'change-class' | undefined = undefined) {
+		const href = `${detailHref.schoolStudent(student.id)}${detailNavigationSearch($page.url)}`;
+		return modal ? appendModal(href, modal) : href;
+	}
+
+	function openStudentAction(event: MouseEvent, student: Student, modal: 'edit-profile' | 'change-class' | undefined = undefined) {
+		event.stopPropagation();
+		appGoto(detailHrefFor(student, modal));
+	}
+
+	function toggleSelected(studentId: string, checked: boolean) {
+		selectedIds = checked
+			? [...new Set([...selectedIds, studentId])]
+			: selectedIds.filter(id => id !== studentId);
+	}
+
+	function clearSelection() {
+		selectedIds = [];
+	}
+
+	function csvCell(value: string | number | null | undefined) {
+		const text = String(value ?? '');
+		return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+	}
+
+	function exportSelected() {
+		if (selectedStudents.length === 0) {
+			return;
+		}
+		const rows = [
+			['name', 'email', 'class', 'status', 'average', 'attendance'],
+			...selectedStudents.map((student) => {
+				const classGroup = classes.find(entry => entry.id === student.classId);
+				return [
+					student.name,
+					student.email,
+					classGroup?.name ?? student.classId,
+					student.status,
+					student.average.toFixed(1),
+					`${student.attendance}%`,
+				];
+			}),
+		];
+		const csv = rows.map(row => row.map(csvCell).join(',')).join('\n');
+		const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+		const href = URL.createObjectURL(blob);
+		const link = document.createElement('a');
+		link.href = href;
+		link.download = 'students-selected.csv';
+		link.click();
+		URL.revokeObjectURL(href);
+		toast.success($t('list.exportedCount', { n: selectedStudents.length }));
+	}
+
+	const allVisibleSelected = $derived(
+		listVisible.length > 0 && listVisible.every(student => selectedSet.has(student.id)),
+	);
+
+	function toggleVisible(checked: boolean) {
+		if (!checked) {
+			selectedIds = selectedIds.filter(id => !listVisible.some(student => student.id === id));
+			return;
+		}
+		selectedIds = [...new Set([...selectedIds, ...listVisible.map(student => student.id)])];
 	}
 </script>
 
@@ -151,7 +254,13 @@
 			</FilterPanel>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu {view} onViewChange={value => (view = value)} />
+			<ListMoreMenu
+				{view}
+				sort={studentsPage.filters.values.sort}
+				{sortOptions}
+				onSortChange={applySort}
+				onViewChange={value => (view = value)}
+			/>
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
@@ -182,6 +291,20 @@
 		onCreated={handleCreated}
 	/>
 
+	{#if selectedIds.length > 0}
+		<div class="mb-3 flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-2 shadow-soft">
+			<p class="text-sm font-medium">{$t('list.selectedCount', { n: selectedIds.length })}</p>
+			<div class="flex items-center gap-2">
+				<Button variant="outline" size="sm" class="rounded-full" onclick={exportSelected}>
+					{$t('list.export')}
+				</Button>
+				<Button variant="ghost" size="sm" class="rounded-full" onclick={clearSelection}>
+					{$t('common.clear')}
+				</Button>
+			</div>
+		</div>
+	{/if}
+
 	{#if view === 'table'}
 		<div
 			class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft"
@@ -190,11 +313,21 @@
 			<div
 				class="grid grid-cols-12 gap-4 border-b border-border bg-secondary/40 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
 			>
-				<div class="col-span-4">{$t('students.student')}</div>
+				<div class="col-span-1 flex items-center">
+					<div role="presentation" onclick={event => event.stopPropagation()}>
+						<Checkbox
+							checked={allVisibleSelected}
+							onCheckedChange={checked => toggleVisible(checked === true)}
+							aria-label={$t('list.selectAll')}
+						/>
+					</div>
+				</div>
+				<div class="col-span-3">{$t('students.student')}</div>
 				<div class="col-span-2">{$t('students.class')}</div>
 				<div class="col-span-2">{$t('students.average')}</div>
 				<div class="col-span-2">{$t('students.attendance')}</div>
-				<div class="col-span-2">{$t('students.status')}</div>
+				<div class="col-span-1">{$t('students.status')}</div>
+				<div class="col-span-1"></div>
 			</div>
 			<InfiniteList
 				hasMore={listHasMore}
@@ -208,15 +341,24 @@
 						{@const classGroup = classes.find(entry => entry.id === student.classId)}
 						{@const active = selectedId === student.id}
 						<li>
-							<button
-								type="button"
+							<div
+								role="button"
+								tabindex="0"
 								onclick={() => onSelect?.(student)}
+								onkeydown={event => handleRowKeydown(event, student)}
 								class={cn(
 									'grid w-full grid-cols-12 items-center gap-4 border-b border-border px-5 py-3.5 text-left transition-colors last:border-b-0',
 									active ? 'bg-primary/10' : 'hover:bg-secondary',
 								)}
 							>
-								<div class="col-span-4 flex items-center gap-3">
+								<div class="col-span-1 flex items-center" role="presentation" onclick={event => event.stopPropagation()}>
+									<Checkbox
+										checked={selectedSet.has(student.id)}
+										onCheckedChange={checked => toggleSelected(student.id, checked === true)}
+										aria-label={$t('list.selectRow')}
+									/>
+								</div>
+								<div class="col-span-3 flex items-center gap-3">
 									<PersonAvatar
 										name={student.name}
 										initials={student.initials}
@@ -233,7 +375,7 @@
 								<div class="col-span-2 font-display text-base font-semibold tabular-nums">
 									{student.average.toFixed(1)}
 								</div>
-								<div class="col-span-2">
+								<div class="col-span-1">
 									<div class="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
 										<div class="h-full rounded-full bg-accent" style:width="{student.attendance}%"></div>
 									</div>
@@ -249,7 +391,23 @@
 										{$t(`studentStatus.${student.status}`)}
 									</span>
 								</div>
-							</button>
+								<div class="col-span-1 flex justify-end" role="presentation" onclick={event => event.stopPropagation()}>
+									<RowActionMenu>
+										<RowActionMenuItem onclick={event => openStudentAction(event, student)}>
+											<Eye class="h-4 w-4 text-muted-foreground" />
+											{$t('common.open')}
+										</RowActionMenuItem>
+										<RowActionMenuItem onclick={event => openStudentAction(event, student, 'edit-profile')}>
+											<Pencil class="h-4 w-4 text-muted-foreground" />
+											{$t('common.edit')}
+										</RowActionMenuItem>
+										<RowActionMenuItem onclick={event => openStudentAction(event, student, 'change-class')}>
+											<GraduationCap class="h-4 w-4 text-muted-foreground" />
+											{$t('student.changeClass')}
+										</RowActionMenuItem>
+									</RowActionMenu>
+								</div>
+							</div>
 						</li>
 					{/each}
 					{#if listVisible.length === 0 && !listLoading}
@@ -273,14 +431,41 @@
 					{#each listVisible as student (student.id)}
 						{@const classGroup = classes.find(entry => entry.id === student.classId)}
 						{@const active = selectedId === student.id}
-						<button
-							type="button"
+						<div
+							role="button"
+							tabindex="0"
 							onclick={() => onSelect?.(student)}
+							onkeydown={event => handleRowKeydown(event, student)}
 							class={cn(
 								'rounded-2xl border border-border bg-card p-5 text-left shadow-soft transition hover:-translate-y-0.5 hover:shadow-panel',
 								active && 'border-primary/40 bg-primary/5',
 							)}
 						>
+							<div class="mb-3 flex items-center justify-between gap-2">
+								<div role="presentation" onclick={event => event.stopPropagation()}>
+									<Checkbox
+										checked={selectedSet.has(student.id)}
+										onCheckedChange={checked => toggleSelected(student.id, checked === true)}
+										aria-label={$t('list.selectRow')}
+									/>
+								</div>
+								<div role="presentation" onclick={event => event.stopPropagation()}>
+									<RowActionMenu>
+										<RowActionMenuItem onclick={event => openStudentAction(event, student)}>
+											<Eye class="h-4 w-4 text-muted-foreground" />
+											{$t('common.open')}
+										</RowActionMenuItem>
+										<RowActionMenuItem onclick={event => openStudentAction(event, student, 'edit-profile')}>
+											<Pencil class="h-4 w-4 text-muted-foreground" />
+											{$t('common.edit')}
+										</RowActionMenuItem>
+										<RowActionMenuItem onclick={event => openStudentAction(event, student, 'change-class')}>
+											<GraduationCap class="h-4 w-4 text-muted-foreground" />
+											{$t('student.changeClass')}
+										</RowActionMenuItem>
+									</RowActionMenu>
+								</div>
+							</div>
 							<div class="flex items-center gap-3">
 								<PersonAvatar
 									name={student.name}
@@ -304,7 +489,7 @@
 									{$t(`studentStatus.${student.status}`)}
 								</span>
 							</div>
-						</button>
+						</div>
 					{/each}
 				</div>
 				{#if listVisible.length === 0 && !listLoading}

@@ -120,7 +120,9 @@
 	});
 
 	function usesRouteLocalDrawer(pathname: string): boolean {
-		return /^\/school\/students(?:\/|$)/.test(pathname);
+		return /^\/school\/students(?:\/|$)/.test(pathname)
+			|| /^\/school\/guardians(?:\/|$)/.test(pathname)
+			|| /^\/classes\/[^/]+\/evaluations(?:\/|$)/.test(pathname);
 	}
 
 	$effect(() => {

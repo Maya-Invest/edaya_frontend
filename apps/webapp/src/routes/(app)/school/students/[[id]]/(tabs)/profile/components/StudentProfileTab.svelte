@@ -110,7 +110,26 @@
 	/>
 
 	<div class="space-y-2 border-t border-border pt-4">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Tuteurs</Label>
+		<div class="flex items-center justify-between gap-3">
+			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				Tuteurs · {linkedGuardians.length}
+			</Label>
+			<PermissionGate permission="STUDENT_UPDATE" mode="disable" tooltip="Droit STUDENT_UPDATE requis.">
+				{#snippet children({ disabled, title })}
+					<Button
+						variant="outline"
+						size="sm"
+						class="rounded-full"
+						{disabled}
+						{title}
+						onclick={() => modals?.open('link-guardian')}
+					>
+						<Plus class="mr-1 h-4 w-4" />
+						Rattacher
+					</Button>
+				{/snippet}
+			</PermissionGate>
+		</div>
 		{#if linkedGuardians.length === 0}
 			<DrawerEmptyState label={$t('drawer.noGuardian')}>
 				{#snippet icon()}
@@ -174,25 +193,29 @@
 				</ul>
 			</div>
 		{/if}
-		<PermissionGate permission="STUDENT_UPDATE" mode="disable" tooltip="Droit STUDENT_UPDATE requis.">
-			{#snippet children({ disabled, title })}
-				<Button
-					variant="ghost"
-					class="w-full rounded-full border border-dashed border-border"
-					{disabled}
-					{title}
-					onclick={() => modals?.open('link-guardian')}
-				>
-					Rattacher un tuteur
-				</Button>
-			{/snippet}
-		</PermissionGate>
 	</div>
 
 	<div class="space-y-2 border-t border-border pt-4">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			Notes pédagogiques
-		</Label>
+		<div class="flex items-center justify-between gap-3">
+			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				Notes pédagogiques · {studentNotes.length}
+			</Label>
+			<PermissionGate permission="STUDENT_UPDATE" mode="disable" tooltip="Droit STUDENT_UPDATE requis.">
+				{#snippet children({ disabled, title })}
+					<Button
+						variant="outline"
+						size="sm"
+						class="rounded-full"
+						{disabled}
+						{title}
+						onclick={() => modals?.open('note')}
+					>
+						<Plus class="mr-1 h-4 w-4" />
+						{$t('note.add')}
+					</Button>
+				{/snippet}
+			</PermissionGate>
+		</div>
 		{#if studentNotes.length === 0}
 			<DrawerEmptyState label="Aucune note pédagogique.">
 				{#snippet icon()}
@@ -253,19 +276,5 @@
 				{/each}
 			</ul>
 		{/if}
-		<PermissionGate permission="STUDENT_UPDATE" mode="disable" tooltip="Droit STUDENT_UPDATE requis.">
-			{#snippet children({ disabled, title })}
-				<Button
-					variant="ghost"
-					class="w-full rounded-full border border-dashed border-border"
-					{disabled}
-					{title}
-					onclick={() => modals?.open('note')}
-				>
-					<Plus class="mr-1 h-4 w-4" />
-					{$t('note.add')}
-				</Button>
-			{/snippet}
-		</PermissionGate>
 	</div>
 </div>

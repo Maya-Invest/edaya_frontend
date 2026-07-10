@@ -61,13 +61,34 @@ A route or smart component is ✅ when **all** apply:
 | Route | Legacy view | Drawer | Tab routes (target) | `entityVersions` key | Status |
 |-------|-------------|--------|---------------------|----------------------|--------|
 | `/school/students` | `SchoolStudentsView` | Yes | `profile` (default), `grades`, `attendance`, `incidents`, `finances`, `report-card`, `enrollments` | `students` | ✅ |
-| `/school/guardians` | `GuardiansView` | Yes | — (sections only) | `guardians` | ⬜ |
+| `/school/guardians` | `GuardiansView` | Yes | — (sections only) | `guardians` | ✅ |
 | `/school/staff` | `StaffView` | Yes | `profile`, `permissions`, `assignments` | `staff` | ⬜ |
 | `/school/teachers` | `TeachersView` | Yes | `profile`, `assignments` | `teachers` | ⬜ |
 
 **Notes**
 
+- `/school/guardians` follows the students list + drawer pattern with **all TS utilities under `lib/`** and **proxied by `guardians-page.svelte.ts`** (queries, mutations, selectors).
 - `/school/students` is the **reference slice** — see file tree below. Class route `/classes/:id/students` still uses legacy `StudentTabs` in `lib/` until that unit migrates.
+
+**Reference slice file tree (`/school/guardians`)**
+
+```
+routes/(app)/school/guardians/
+  +layout.svelte                 # GuardiansPageState, list PageQuery, GuardiansList
+  guardians-page.svelte.ts       # sole route-root TS — proxies lib/*
+  lib/
+    guardians-queries.ts
+    guardian-detail-mutations.ts
+    guardian-route-mutation.ts
+    guardian-selectors.ts
+    guardian-page-status.ts
+    index.ts
+  components/                    # list + create modal
+  [[id]]/
+    +layout.svelte               # GuardianDrawer shell + ensureSelectedGuardian
+    +page.svelte                 # detail sections (no tabs)
+    components/                  # drawer chrome, detail, edit modal
+```
 
 **Reference slice file tree (`/school/students`)**
 
@@ -111,15 +132,37 @@ Parent layout: `routes/(app)/classes/[classId]/` — introduce `class-layout.sve
 | `/classes/:id/students` | `StudentsView` | Yes (student) | Reuse student tab routes or class-scoped drawer | `students` | ⬜ |
 | `/classes/:id/timetable` | `PlanningView` | Yes | `details`, `attendance`, `logbook` | `planning` | ⬜ |
 | `/classes/:id/teaching` | `TeachingLogView` | Yes | `progression`, `logbook` (subject drawer) | `subjects` | ⬜ |
-| `/classes/:id/evaluations` | `EvaluationsView` | Yes | — (sections by `kind`) | `evaluations` | ⬜ |
+| `/classes/:id/evaluations` | `EvaluationsView` | Yes | — (sections by `kind`) | `evaluations` | ✅ |
 | `/classes/:id/report-cards` | `ClassReportCardsView` | Yes | — | `reportCards` | ⬜ |
 | `/classes/:id/attendance` | `AttendanceView` | Yes (day) | — | `attendance` | ⬜ |
 
 **Notes**
 
+- `/classes/:id/evaluations` — class-scoped reference slice with `lib/` colocation and `[[id]]/` drawer shell + detail split (see tree below).
 - Timetable drawer: `PlanningDetail.svelte` + `?tab=` → three child routes.
 - Teaching drawer: `SubjectTabs.svelte` + `?tab=` → two child routes.
 - `teachingLogContext` / `reportCardsContext` fold into route or class layout state when these routes migrate.
+
+**Reference slice file tree (`/classes/:id/evaluations`)**
+
+```
+routes/(app)/classes/[classId]/evaluations/
+  +layout.svelte                 # EvaluationsPageState, list PageQuery, EvaluationsList
+  evaluations-page.svelte.ts     # sole route-root TS — proxies lib/*
+  lib/
+    evaluations-queries.ts
+    evaluation-route-mutation.ts
+    evaluation-helpers.ts
+    index.ts
+  components/                    # list, create modal, hydrator
+  [[id]]/
+    +layout.svelte               # EvaluationDrawer shell
+    +page.svelte                 # EvaluationDetail (sections by kind)
+    components/
+      EvaluationDrawer.svelte
+      EvaluationDetail.svelte
+      EvaluationGradeEntryModal.svelte
+```
 
 ### A.4 Finance
 
@@ -272,7 +315,7 @@ Priority follows dependency and pilot value; any order is fine if §C steps are 
 
 | Area | Total | ✅ |
 |------|-------|-----|
-| Routes (§A) | 30 | 1 |
+| Routes (§A) | 30 | 3 |
 | Smart components (§B) | 6 | 0 |
 | Phase 0 | 3 | 3 |
 
@@ -284,6 +327,8 @@ Priority follows dependency and pilot value; any order is fine if §C steps are 
 
 | Date | Change |
 |------|--------|
+| 2026-07-10 | `/school/guardians` ✅ — route state + `lib/` colocation; page state proxies queries/mutations/selectors |
+| 2026-07-10 | `/classes/:id/evaluations` ✅ — `lib/` colocation, `[[id]]/+layout` drawer shell + `EvaluationDetail` body |
 | 2026-07-10 | `/school/students` ✅ — full reference slice: nested tab routes, colocated components, route state detail slice, mutations + version bump |
 | 2026-07-10 | Students pilot started — Phase 0 + route layout, `StudentsPageState`, colocated list |
 | 2026-07-10 | Initial tracker — route + smart component inventory, migration strategy |

@@ -5,6 +5,7 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
+	import { todayDateInput } from '$lib/date/format';
 	import { t } from '$lib/i18n';
 	import { Plus } from '$lib/icons';
 	import { get } from 'svelte/store';
@@ -30,7 +31,7 @@
 
 	let busy = $state(false);
 	let wasOpen = $state(false);
-	let date = $state(new Date().toISOString().slice(0, 10));
+	let date = $state(todayDateInput());
 	let status = $state<AttendanceStatus>('absent');
 
 	const statusLabel = $derived($t(`attendance.${status}`));
@@ -38,7 +39,7 @@
 	const canSubmit = $derived(date.length > 0);
 
 	function resetForm() {
-		date = new Date().toISOString().slice(0, 10);
+		date = todayDateInput();
 		status = 'absent';
 	}
 

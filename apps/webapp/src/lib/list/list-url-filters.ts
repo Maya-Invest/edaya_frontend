@@ -38,6 +38,7 @@ const studentListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
 	class: { type: 'string', default: 'all' },
 	status: { type: 'string', default: 'all' },
+	sort: { type: 'enum', default: 'roster', values: ['roster', 'name', 'average', 'attendance', 'status'] as const },
 });
 
 const guardianListFiltersCodec = defineUrlFilterCodec({

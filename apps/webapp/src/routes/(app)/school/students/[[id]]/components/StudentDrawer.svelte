@@ -2,7 +2,6 @@
 	import type { Student } from '$lib/types/school';
 	import type { Snippet } from 'svelte';
 	import { kindStyle, kindLabelKey } from '$lib/components/school/shared/drawer-constants';
-	import Button from '$lib/components/ui/button/button.svelte';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, X } from '$lib/icons';
 	import StudentDetailHeader from './StudentDetailHeader.svelte';
@@ -67,7 +66,4 @@
 		{/if}
 	</div>
 
-	<footer class="flex items-center justify-end gap-2 border-t border-border px-6 py-4">
-		<Button variant="ghost" onclick={onClose} class="rounded-full">{$t('common.close')}</Button>
-	</footer>
 </aside>

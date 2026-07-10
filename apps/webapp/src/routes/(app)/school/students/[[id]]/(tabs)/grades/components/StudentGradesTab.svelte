@@ -1,15 +1,12 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
-	import SubjectGroup from '$lib/components/school/academics/SubjectGroup.svelte';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
-	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
-	import { FileText, Plus } from '$lib/icons';
-	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { FileText } from '$lib/icons';
 	import { getStudentGradesTabState } from '../student-grades-tab.svelte';
+	import StudentSubjectGroup from './StudentSubjectGroup.svelte';
 
 	const { s }: { s: Student } = $props();
 
@@ -18,7 +15,6 @@
 		gradesTab.gradesSummaryFor(s.id, row => detailHref.classEvaluation(row.classGroupId, row.assessmentId)),
 	);
 
-	const modals = getDrawerUrlModals();
 </script>
 
 <div class="space-y-4">
@@ -43,9 +39,11 @@
 		</div>
 	</div>
 	<div>
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			{$t('student.gradesBySubject')}
-		</Label>
+		<div class="flex items-center justify-between gap-3">
+			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				{$t('student.gradesBySubject')} · {gradesData.studentEvals.length}
+			</Label>
+		</div>
 		<div class="mt-2 space-y-2">
 			{#if gradesData.studentEvals.length === 0}
 				<DrawerEmptyState label={$t('student.noGrades')}>
@@ -55,27 +53,9 @@
 				</DrawerEmptyState>
 			{:else}
 				{#each gradesData.subjectGroups as { subject, items, subjectAvg } (subject)}
-					<SubjectGroup {subject} {items} {subjectAvg} />
+					<StudentSubjectGroup {subject} {items} {subjectAvg} />
 				{/each}
 			{/if}
 		</div>
 	</div>
-	<PermissionGate
-		permission="GRADE_INPUT"
-		classId={s.classId}
-		mode="disable"
-		tooltip={$t('student.gradePermission')}
-	>
-		{#snippet children({ disabled, title })}
-			<Button
-				variant="ghost"
-				class="w-full rounded-full border border-dashed border-border"
-				{disabled}
-				{title}
-				onclick={() => modals?.open('add-grade')}
-			>
-				<Plus class="mr-1 h-4 w-4" /> Saisir une note
-			</Button>
-		{/snippet}
-	</PermissionGate>
 </div>

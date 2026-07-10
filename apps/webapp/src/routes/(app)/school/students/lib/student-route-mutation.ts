@@ -42,33 +42,34 @@ function messageFromError(error: unknown, fallback?: string): string {
 	return fallback ?? 'La requête a échoué.';
 }
 
+export interface StudentRouteMutationOptions<T> {
+	request: () => Promise<T>;
+	apply?: () => void;
+	rollback?: () => void;
+	errorMessage?: string;
+	successMessage?: string;
+	onSuccess?: (result: T) => void | Promise<void>;
+	versionKeys?: EntityVersionKey[];
+}
+
 export async function runStudentRouteMutation<T>(
-	request: () => Promise<T>,
-	options?: {
-		apply?: () => void;
-		rollback?: () => void;
-		errorMessage?: string;
-		successMessage?: string;
-		onSuccess?: (result: T) => void | Promise<void>;
-		invalidate?: boolean;
-		versionKey?: EntityVersionKey;
-	},
+	options: StudentRouteMutationOptions<T>,
 ): Promise<T | null> {
-	options?.apply?.();
+	options.apply?.();
 	try {
-		const result = await request();
-		await options?.onSuccess?.(result);
-		if (options?.invalidate !== false) {
-			entityVersions.bump(options?.versionKey ?? 'students');
+		const result = await options.request();
+		await options.onSuccess?.(result);
+		for (const key of options.versionKeys ?? ['students']) {
+			entityVersions.bump(key);
 		}
-		if (options?.successMessage) {
+		if (options.successMessage) {
 			toast.success(options.successMessage);
 		}
 		return result;
 	}
 	catch (error) {
-		options?.rollback?.();
-		toast.error(messageFromError(error, options?.errorMessage));
+		options.rollback?.();
+		toast.error(messageFromError(error, options.errorMessage));
 		return null;
 	}
 }

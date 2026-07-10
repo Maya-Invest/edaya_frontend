@@ -43,7 +43,7 @@ export function createAndRegisterStudentDetailStates(
 ): StudentDetailTabStates {
 	const states: StudentDetailTabStates = {
 		profile: new StudentProfileTabState(getPage),
-		grades: new StudentGradesTabState(getPage),
+		grades: new StudentGradesTabState(),
 		attendance: new StudentAttendanceTabState(getPage),
 		incidents: new StudentIncidentsTabState(getPage),
 		finances: new StudentFinanceTabState(getPage),

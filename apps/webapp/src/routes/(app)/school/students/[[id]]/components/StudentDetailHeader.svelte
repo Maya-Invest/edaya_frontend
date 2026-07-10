@@ -12,7 +12,6 @@
 	import { canUploadProfilePhoto } from '$lib/permissions';
 	import { get } from 'svelte/store';
 	import StudentAbsenceModal from '../(tabs)/attendance/components/StudentAbsenceModal.svelte';
-	import StudentGradeEntryModal from '../(tabs)/grades/components/StudentGradeEntryModal.svelte';
 	import StudentIncidentModal from '../(tabs)/incidents/components/StudentIncidentModal.svelte';
 	import StudentGuardianLinkModal from '../(tabs)/profile/components/StudentGuardianLinkModal.svelte';
 	import StudentNoteModal from '../(tabs)/profile/components/StudentNoteModal.svelte';
@@ -25,7 +24,6 @@
 			| 'change-class'
 			| 'link-guardian'
 			| 'note'
-			| 'add-grade'
 			| 'add-absence'
 			| 'add-incident';
 
@@ -41,7 +39,6 @@
 			'change-class',
 			'link-guardian',
 			'note',
-			'add-grade',
 			'add-absence',
 			'add-incident',
 		],
@@ -55,7 +52,6 @@
 	const changeClassOpen = bindUrlModal(modals, 'change-class');
 	const linkGuardianOpen = bindUrlModal(modals, 'link-guardian');
 	const noteOpen = bindUrlModal(modals, 'note');
-	const addGradeOpen = bindUrlModal(modals, 'add-grade');
 	const addAbsenceOpen = bindUrlModal(modals, 'add-absence');
 	const addIncidentOpen = bindUrlModal(modals, 'add-incident');
 
@@ -110,6 +106,5 @@
 
 <StudentGuardianLinkModal s={student} bind:open={linkGuardianOpen.open} showTrigger={false} />
 <StudentNoteModal s={student} note={editingNote} bind:open={noteOpen.open} showTrigger={false} />
-<StudentGradeEntryModal s={student} bind:open={addGradeOpen.open} showTrigger={false} />
 <StudentAbsenceModal s={student} bind:open={addAbsenceOpen.open} showTrigger={false} />
 <StudentIncidentModal s={student} bind:open={addIncidentOpen.open} showTrigger={false} />

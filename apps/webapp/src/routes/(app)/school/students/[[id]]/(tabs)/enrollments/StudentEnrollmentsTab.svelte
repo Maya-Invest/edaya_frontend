@@ -29,7 +29,7 @@
 <div class="space-y-4">
 	<div>
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			{$t('drawer.tab.enrollments')}
+			{$t('drawer.tab.enrollments')} · {enrollments.length}
 		</Label>
 		<div class="mt-2 space-y-2">
 			{#if enrollments.length === 0}

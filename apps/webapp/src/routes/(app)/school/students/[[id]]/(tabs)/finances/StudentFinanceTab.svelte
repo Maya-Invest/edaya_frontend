@@ -30,7 +30,9 @@
 		</div>
 	</div>
 	<div>
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Facturation</Label>
+		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+			Facturation · {financesData.studentBilling.length}
+		</Label>
 		<div class="mt-2 space-y-2">
 			{#if financesData.studentBilling.length === 0}
 				<DrawerEmptyState label="Aucune facture.">

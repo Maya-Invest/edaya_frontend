@@ -30,13 +30,15 @@ describe('student list filters', () => {
 			student('3', { name: 'Grace Hopper', email: 'ada.king@school.test', status: 'honor', classId: 'class-b' }),
 		];
 
-		expect(filterStudentList(roster, { q: 'ada', class: 'class-a', status: 'honor' }).map(entry => entry.id)).toEqual(['1']);
-		expect(filterStudentList(roster, { q: 'ada.king@school.test', class: 'all', status: 'all' }).map(entry => entry.id)).toEqual(['3']);
+		expect(filterStudentList(roster, { q: 'ada', class: 'class-a', status: 'honor', sort: 'roster' }).map(entry => entry.id)).toEqual(['1']);
+		expect(filterStudentList(roster, { q: 'ada.king@school.test', class: 'all', status: 'all', sort: 'roster' }).map(entry => entry.id)).toEqual(['3']);
+		expect(filterStudentList(roster, { q: '', class: 'all', status: 'all', sort: 'name' }).map(entry => entry.id)).toEqual(['2', '1', '3']);
 	});
 
 	it('uses full roster mode when search or status filters are active', () => {
-		expect(studentListUsesFullRoster({ q: '', status: 'all' })).toBe(false);
-		expect(studentListUsesFullRoster({ q: 'ada', status: 'all' })).toBe(true);
-		expect(studentListUsesFullRoster({ q: '', status: 'honor' })).toBe(true);
+		expect(studentListUsesFullRoster({ q: '', status: 'all', sort: 'roster' })).toBe(false);
+		expect(studentListUsesFullRoster({ q: 'ada', status: 'all', sort: 'roster' })).toBe(true);
+		expect(studentListUsesFullRoster({ q: '', status: 'honor', sort: 'roster' })).toBe(true);
+		expect(studentListUsesFullRoster({ q: '', status: 'all', sort: 'average' })).toBe(true);
 	});
 });

@@ -28,26 +28,28 @@ export async function createStudentOnPage(state: StudentsPageState, input: {
 	const now = new Date().toISOString();
 	const birthDate = dateInputToIso(input.birthDate ?? '');
 
-	const result = await runStudentRouteMutation(async () => {
-		await client.commands.registerStudent({
-			id: studentId,
-			schoolId: resolvedSchoolId,
-			firstName: input.firstName.trim(),
-			lastName: input.lastName.trim(),
-			birthDate,
-			sendAccountInvitation: input.sendAccountInvitation ?? true,
-			...(input.inviteEmail?.trim() ? { inviteEmail: input.inviteEmail.trim() } : {}),
-			createdAt: now,
-		});
-		await client.commands.enrollStudent({
-			id: enrollmentId,
-			studentId,
-			classGroupId: input.classGroupId,
-			createdAt: now,
-		});
-		return studentId;
-	}, {
+	const result = await runStudentRouteMutation({
+		request: async () => {
+			await client.commands.registerStudent({
+				id: studentId,
+				schoolId: resolvedSchoolId,
+				firstName: input.firstName.trim(),
+				lastName: input.lastName.trim(),
+				birthDate,
+				sendAccountInvitation: input.sendAccountInvitation ?? true,
+				...(input.inviteEmail?.trim() ? { inviteEmail: input.inviteEmail.trim() } : {}),
+				createdAt: now,
+			});
+			await client.commands.enrollStudent({
+				id: enrollmentId,
+				studentId,
+				classGroupId: input.classGroupId,
+				createdAt: now,
+			});
+			return studentId;
+		},
 		successMessage: input.successMessage,
+		versionKeys: ['students', 'enrollments'],
 	});
 
 	if (result === null) {

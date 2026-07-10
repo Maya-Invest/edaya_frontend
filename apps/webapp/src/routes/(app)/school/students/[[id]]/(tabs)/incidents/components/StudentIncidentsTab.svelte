@@ -6,7 +6,7 @@
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { AlertTriangle } from '$lib/icons';
+	import { AlertTriangle, Plus } from '$lib/icons';
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { cn } from '$lib/utils';
 	import { getStudentIncidentsTabState } from '../student-incidents-tab.svelte';
@@ -35,7 +35,31 @@
 		</div>
 	</div>
 	<div>
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Évènements</Label>
+		<div class="flex items-center justify-between gap-3">
+			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				Évènements · {incidentsData.sorted.length}
+			</Label>
+			<PermissionGate
+				permission="DISCIPLINE_CREATE"
+				classId={s.classId}
+				mode="disable"
+				tooltip="Droit DISCIPLINE_CREATE requis."
+			>
+				{#snippet children({ disabled, title })}
+					<Button
+						variant="outline"
+						size="sm"
+						class="rounded-full"
+						{disabled}
+						{title}
+						onclick={() => modals?.open('add-incident')}
+					>
+						<Plus class="mr-1 h-4 w-4" />
+						Consigner
+					</Button>
+				{/snippet}
+			</PermissionGate>
+		</div>
 		<div class="mt-2 space-y-2">
 			{#if incidentsData.sorted.length === 0}
 				<DrawerEmptyState label={$t('drawer.noIncidents')}>
@@ -70,22 +94,4 @@
 			{/if}
 		</div>
 	</div>
-	<PermissionGate
-		permission="DISCIPLINE_CREATE"
-		classId={s.classId}
-		mode="disable"
-		tooltip="Droit DISCIPLINE_CREATE requis."
-	>
-		{#snippet children({ disabled, title })}
-			<Button
-				variant="ghost"
-				class="w-full rounded-full border border-dashed border-border"
-				{disabled}
-				{title}
-				onclick={() => modals?.open('add-incident')}
-			>
-				Consigner un incident
-			</Button>
-		{/snippet}
-	</PermissionGate>
 </div>

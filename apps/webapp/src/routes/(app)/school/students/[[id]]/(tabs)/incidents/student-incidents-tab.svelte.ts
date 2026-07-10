@@ -4,6 +4,7 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadIncidentRouteData } from '$lib/api/school-life-data';
 import { authSession } from '$lib/auth/session.svelte';
+import { nowIso } from '$lib/date/format';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { runStudentRouteMutation } from '../../../lib/student-route-mutation';
@@ -142,9 +143,9 @@ export class StudentIncidentsTabState {
 		successMessage?: string;
 	}): Promise<boolean> {
 		const client = getBrowserSchoolClient();
-		const now = new Date().toISOString();
+		const now = nowIso();
 		const incidentDate = now.slice(0, 10);
-		const incidentId = `inc-${input.studentId}-${Date.now().toString(36)}`;
+		const incidentId = `inc-${input.studentId}-${crypto.randomUUID()}`;
 		const involvementId = `involv-${incidentId}-${input.studentId}`;
 		const optimisticIncident: Incident = {
 			id: incidentId,
@@ -158,29 +159,31 @@ export class StudentIncidentsTabState {
 			status: 'open',
 		};
 
-		const result = await runStudentRouteMutation(async () => {
-			await client.commands.recordIncident({
-				id: incidentId,
-				schoolId: input.schoolId,
-				title: input.title.trim(),
-				description: input.description.trim(),
-				date: incidentDate,
-				kind: input.kind,
-				classGroupId: input.classGroupId ?? null,
-				lessonSessionId: null,
-				createdAt: now,
-			});
-			await client.commands.addStudentInvolvement({
-				id: involvementId,
-				incidentId,
-				studentId: input.studentId,
-				role: 'subject',
-				notes: null,
-				createdAt: now,
-			});
-			return incidentId;
-		}, {
+		const result = await runStudentRouteMutation({
+			request: async () => {
+				await client.commands.recordIncident({
+					id: incidentId,
+					schoolId: input.schoolId,
+					title: input.title.trim(),
+					description: input.description.trim(),
+					date: incidentDate,
+					kind: input.kind,
+					classGroupId: input.classGroupId ?? null,
+					lessonSessionId: null,
+					createdAt: now,
+				});
+				await client.commands.addStudentInvolvement({
+					id: involvementId,
+					incidentId,
+					studentId: input.studentId,
+					role: 'subject',
+					notes: null,
+					createdAt: now,
+				});
+				return incidentId;
+			},
 			successMessage: input.successMessage,
+			versionKeys: ['students', 'incidents'],
 			apply: () => {
 				this.appendIncident(optimisticIncident);
 			},

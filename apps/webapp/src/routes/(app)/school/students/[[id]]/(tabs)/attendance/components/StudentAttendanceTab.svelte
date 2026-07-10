@@ -41,9 +41,30 @@
 		</div>
 	</div>
 	<div>
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			{$t('student.attendanceHistory')}
-		</Label>
+		<div class="flex items-center justify-between gap-3">
+			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				{$t('student.attendanceHistory')} · {attendanceData.records.length}
+			</Label>
+			<PermissionGate
+				permission="ATTENDANCE_RECORD"
+				classId={s.classId}
+				mode="disable"
+				tooltip={$t('student.attendancePermission')}
+			>
+				{#snippet children({ disabled, title })}
+					<Button
+						variant="outline"
+						size="sm"
+						class="rounded-full"
+						{disabled}
+						{title}
+						onclick={() => modals?.open('add-absence')}
+					>
+						<Plus class="mr-1 h-4 w-4" /> Déclarer
+					</Button>
+				{/snippet}
+			</PermissionGate>
+		</div>
 		<div class="mt-2 space-y-2">
 			{#if attendanceData.records.length === 0}
 				<DrawerEmptyState label={$t('student.noAttendanceRecords')}>
@@ -76,22 +97,4 @@
 			{/if}
 		</div>
 	</div>
-	<PermissionGate
-		permission="ATTENDANCE_RECORD"
-		classId={s.classId}
-		mode="disable"
-		tooltip={$t('student.attendancePermission')}
-	>
-		{#snippet children({ disabled, title })}
-			<Button
-				variant="ghost"
-				class="w-full rounded-full border border-dashed border-border"
-				{disabled}
-				{title}
-				onclick={() => modals?.open('add-absence')}
-			>
-				<Plus class="mr-1 h-4 w-4" /> Déclarer une absence
-			</Button>
-		{/snippet}
-	</PermissionGate>
 </div>

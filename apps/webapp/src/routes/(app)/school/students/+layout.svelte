@@ -43,6 +43,7 @@
 		void studentsPage.filters.values.q;
 		void studentsPage.filters.values.status;
 		void studentsPage.filters.values.class;
+		void studentsPage.filters.values.sort;
 
 		if (!studentListUsesFullRoster(studentsPage.filters.values)) {
 			studentsPage.clearFullRoster();

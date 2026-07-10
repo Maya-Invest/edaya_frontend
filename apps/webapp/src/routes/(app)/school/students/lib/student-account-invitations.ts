@@ -22,13 +22,16 @@ export async function sendStudentAccountInvitation(input: {
 }): Promise<StudentInvitationDeliveryResult | null> {
 	const client = getBrowserSchoolClient();
 	const result = await runStudentRouteMutation(
-		() => client.commands.sendAccountInvitation({
-			kind: input.kind,
-			targetId: input.targetId,
-			contactChannel: 'email',
-			...(input.contactValue ? { contactValue: input.contactValue } : {}),
-		}),
-		{ successMessage: input.successMessage },
+		{
+			request: () => client.commands.sendAccountInvitation({
+				kind: input.kind,
+				targetId: input.targetId,
+				contactChannel: 'email',
+				...(input.contactValue ? { contactValue: input.contactValue } : {}),
+			}),
+			successMessage: input.successMessage,
+			versionKeys: ['students'],
+		},
 	);
 
 	if (!result?.invitation?.id || !result?.token) {
@@ -50,8 +53,11 @@ export async function resendStudentAccountInvitation(input: {
 }): Promise<StudentInvitationDeliveryResult | null> {
 	const client = getBrowserSchoolClient();
 	const result = await runStudentRouteMutation(
-		() => client.commands.resendAccountInvitation({ invitationId: input.invitationId }),
-		{ successMessage: input.successMessage },
+		{
+			request: () => client.commands.resendAccountInvitation({ invitationId: input.invitationId }),
+			successMessage: input.successMessage,
+			versionKeys: ['students'],
+		},
 	);
 
 	if (!result?.invitation?.id || !result?.token) {
@@ -73,8 +79,11 @@ export async function revokeStudentAccountInvitation(input: {
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
 	const result = await runStudentRouteMutation(
-		() => client.commands.revokeAccountInvitation({ invitationId: input.invitationId }),
-		{ successMessage: input.successMessage },
+		{
+			request: () => client.commands.revokeAccountInvitation({ invitationId: input.invitationId }),
+			successMessage: input.successMessage,
+			versionKeys: ['students'],
+		},
 	);
 
 	if (result !== null) {

@@ -7,7 +7,7 @@ import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { fetchStaffMembers } from '$lib/api/staff-data';
 import { mapNoteCategory, loadStudent360Data } from '$lib/api/student-360-data';
 import { authSession } from '$lib/auth/session.svelte';
-import { dateInputToIso, formatDateInput } from '$lib/date/format';
+import { dateInputToIso, formatDateInput, nowIso, todayDateInput } from '$lib/date/format';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { runStudentRouteMutation } from '../../../lib/student-route-mutation';
@@ -196,13 +196,15 @@ export class StudentProfileTabState {
 		const nextName = `${input.firstName.trim()} ${input.lastName.trim()}`;
 		const nextBirthdate = formatDateInput(dateInputToIso(input.birthDate ?? '') ?? previous?.birthdate ?? '');
 
-		const result = await runStudentRouteMutation(() => client.commands.updateStudentProfile({
-			studentId: input.studentId,
-			firstName: input.firstName.trim(),
-			lastName: input.lastName.trim(),
-			birthDate: dateInputToIso(input.birthDate ?? '') ?? null,
-		}), {
+		const result = await runStudentRouteMutation({
+			request: () => client.commands.updateStudentProfile({
+				studentId: input.studentId,
+				firstName: input.firstName.trim(),
+				lastName: input.lastName.trim(),
+				birthDate: dateInputToIso(input.birthDate ?? '') ?? null,
+			}),
 			successMessage: input.successMessage,
+			versionKeys: ['students'],
 			apply: () => {
 				page.patchStudent(input.studentId, {
 					name: nextName,
@@ -232,21 +234,23 @@ export class StudentProfileTabState {
 
 		const previous = page.findStudent(input.studentId)?.photoUrl ?? null;
 
-		const result = await runStudentRouteMutation(async () => {
-			const uploaded = await uploadProfilePhoto({
-				ownerKind: 'student',
-				ownerId: input.studentId,
-				file: input.file,
-				schoolId: resolvedSchoolId,
-			});
-			const photoUrl = withPhotoCacheBust(uploaded.photoUrl);
-			await getBrowserSchoolClient().commands.updateStudentProfile({
-				studentId: input.studentId,
-				photoUrl,
-			});
-			return photoUrl;
-		}, {
+		const result = await runStudentRouteMutation({
+			request: async () => {
+				const uploaded = await uploadProfilePhoto({
+					ownerKind: 'student',
+					ownerId: input.studentId,
+					file: input.file,
+					schoolId: resolvedSchoolId,
+				});
+				const photoUrl = withPhotoCacheBust(uploaded.photoUrl);
+				await getBrowserSchoolClient().commands.updateStudentProfile({
+					studentId: input.studentId,
+					photoUrl,
+				});
+				return photoUrl;
+			},
 			successMessage: input.successMessage,
+			versionKeys: ['students'],
 			onSuccess: (photoUrl) => {
 				page.patchStudent(input.studentId, { photoUrl });
 			},
@@ -270,23 +274,25 @@ export class StudentProfileTabState {
 		const previousGuardian = this.slice?.guardians.find(guardian => guardian.id === input.guardianId);
 		const previousStudent = page.findStudent(input.studentId);
 
-		const result = await runStudentRouteMutation(() => client.commands.linkGuardianToStudent({
-			id,
-			guardianId: input.guardianId,
-			studentId: input.studentId,
-			relationship: input.relationship ?? 'parent',
-			isPrimary: false,
-			isBillingContact: false,
-			legalGuardian: false,
-			canPickup: false,
-			emergencyContactPriority: null,
-			receivesAcademicReports: true,
-			receivesAttendanceAlerts: true,
-			contactRestrictions: null,
-			notes: null,
-			createdAt: new Date().toISOString(),
-		}), {
+		const result = await runStudentRouteMutation({
+			request: () => client.commands.linkGuardianToStudent({
+				id,
+				guardianId: input.guardianId,
+				studentId: input.studentId,
+				relationship: input.relationship ?? 'parent',
+				isPrimary: false,
+				isBillingContact: false,
+				legalGuardian: false,
+				canPickup: false,
+				emergencyContactPriority: null,
+				receivesAcademicReports: true,
+				receivesAttendanceAlerts: true,
+				contactRestrictions: null,
+				notes: null,
+				createdAt: nowIso(),
+			}),
 			successMessage: input.successMessage,
+			versionKeys: ['students', 'guardians'],
 			apply: () => {
 				if (previousGuardian && !previousGuardian.studentIds.includes(input.studentId)) {
 					this.patchGuardian(input.guardianId, {
@@ -324,8 +330,8 @@ export class StudentProfileTabState {
 		successMessage?: string;
 	}): Promise<boolean> {
 		const client = getBrowserSchoolClient();
-		const id = `note-${input.studentId}-${Date.now().toString(36)}`;
-		const now = new Date().toISOString().slice(0, 10);
+		const id = `note-${input.studentId}-${crypto.randomUUID()}`;
+		const now = todayDateInput();
 		const optimisticNote: PedagogicalNote = {
 			id,
 			studentId: input.studentId,
@@ -335,16 +341,18 @@ export class StudentProfileTabState {
 			content: input.body.trim(),
 		};
 
-		const result = await runStudentRouteMutation(() => client.commands.createStudentNote({
-			id,
-			studentId: input.studentId,
-			title: input.title ?? null,
-			category: input.category,
-			body: input.body.trim(),
-			visibility: input.visibility ?? 'staff',
-			createdAt: new Date().toISOString(),
-		}), {
+		const result = await runStudentRouteMutation({
+			request: () => client.commands.createStudentNote({
+				id,
+				studentId: input.studentId,
+				title: input.title ?? null,
+				category: input.category,
+				body: input.body.trim(),
+				visibility: input.visibility ?? 'staff',
+				createdAt: nowIso(),
+			}),
 			successMessage: input.successMessage,
+			versionKeys: ['students'],
 			apply: () => {
 				this.appendNote(optimisticNote);
 			},
@@ -366,14 +374,16 @@ export class StudentProfileTabState {
 		const client = getBrowserSchoolClient();
 		const previous = this.slice?.pedagogicalNotes.find(note => note.id === input.noteId);
 
-		const result = await runStudentRouteMutation(() => client.commands.updateStudentNote({
-			noteId: input.noteId,
-			category: input.category,
-			body: input.body.trim(),
-			visibility: input.visibility ?? 'staff',
-			updatedAt: new Date().toISOString(),
-		}), {
+		const result = await runStudentRouteMutation({
+			request: () => client.commands.updateStudentNote({
+				noteId: input.noteId,
+				category: input.category,
+				body: input.body.trim(),
+				visibility: input.visibility ?? 'staff',
+				updatedAt: nowIso(),
+			}),
 			successMessage: input.successMessage,
+			versionKeys: ['students'],
 			apply: () => {
 				this.patchNote(input.noteId, {
 					category: mapNoteCategory(input.category),

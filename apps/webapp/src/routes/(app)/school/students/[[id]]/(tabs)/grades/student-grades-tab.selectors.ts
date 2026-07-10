@@ -1,5 +1,6 @@
-import type { SubjectGroupItem } from '$lib/components/school/shared/drawer-types';
 import type { Evaluation, StudentGradeRow } from '$lib/types/school';
+
+export interface StudentSubjectGroupItem { e: Evaluation; mark: number | null; href?: string }
 
 export function buildStudentGradeSummaryFromRows(
 	rows: readonly StudentGradeRow[],
@@ -8,7 +9,7 @@ export function buildStudentGradeSummaryFromRows(
 	studentEvals: Evaluation[];
 	valid: number[];
 	overall: number;
-	subjectGroups: Array<{ subject: string; items: SubjectGroupItem[]; subjectAvg: number | null }>;
+	subjectGroups: Array<{ subject: string; items: StudentSubjectGroupItem[]; subjectAvg: number | null }>;
 } {
 	const studentEvals: Evaluation[] = rows.map(row => ({
 		id: row.assessmentId,
@@ -40,7 +41,7 @@ export function buildStudentGradeSummaryFromRows(
 	);
 	const overall = valid.length ? weightedSum / weightTotal : 0;
 
-	const groups: Record<string, SubjectGroupItem[]> = {};
+	const groups: Record<string, StudentSubjectGroupItem[]> = {};
 	rows.forEach((row, index) => {
 		const evaluation = studentEvals[index]!;
 		const items = groups[row.subject] ?? [];

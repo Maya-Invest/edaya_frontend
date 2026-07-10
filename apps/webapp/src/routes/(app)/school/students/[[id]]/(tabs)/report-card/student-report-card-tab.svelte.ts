@@ -3,6 +3,7 @@ import type { StudentsPageState } from '../../../students-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadClassReportCardResultsData, loadReportCardCatalogData } from '$lib/api/report-cards-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { nowIso } from '$lib/date/format';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { runStudentRouteMutation } from '../../../lib/student-route-mutation';
@@ -139,17 +140,19 @@ export class StudentReportCardTabState {
 		const client = getBrowserSchoolClient();
 		const id = `rcr-${studentId}-${periodId}`;
 
-		const result = await runStudentRouteMutation(async () => {
-			await client.commands.generateReportCardResult({
-				id,
-				studentId,
-				periodId,
-				reportCardDefinitionId: definitionId,
-				generatedAt: new Date().toISOString(),
-			});
-			return true;
-		}, {
+		const result = await runStudentRouteMutation({
+			request: async () => {
+				await client.commands.generateReportCardResult({
+					id,
+					studentId,
+					periodId,
+					reportCardDefinitionId: definitionId,
+					generatedAt: nowIso(),
+				});
+				return true;
+			},
 			errorMessage: 'Impossible de générer le bulletin.',
+			versionKeys: ['students', 'reportCards'],
 			onSuccess: async () => {
 				await this.refreshResults(studentId);
 			},
@@ -167,13 +170,15 @@ export class StudentReportCardTabState {
 		const existing = this.forStudent(input.studentId)?.reportCardResults.find(r => r.id === input.resultId);
 		const resolvedDefinitionId = input.definitionId ?? existing?.definitionId;
 
-		const result = await runStudentRouteMutation(() => client.commands.publishReportCardResult({
-			id: input.resultId,
-			studentId: input.studentId,
-			periodId: input.periodId,
-			reportCardDefinitionId: resolvedDefinitionId,
-			publishedAt: new Date().toISOString(),
-		}), {
+		const result = await runStudentRouteMutation({
+			request: () => client.commands.publishReportCardResult({
+				id: input.resultId,
+				studentId: input.studentId,
+				periodId: input.periodId,
+				reportCardDefinitionId: resolvedDefinitionId,
+				publishedAt: nowIso(),
+			}),
+			versionKeys: ['students', 'reportCards'],
 			onSuccess: async () => {
 				await this.refreshResults(input.studentId);
 			},

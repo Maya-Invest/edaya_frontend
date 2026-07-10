@@ -2,6 +2,7 @@ import type { StudentEnrollmentHistoryItem } from '$lib/types/school';
 import type { StudentsPageState } from '../../../students-page.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadStudentEnrollmentHistory } from '$lib/api/student-drawer-data';
+import { todayDateInput } from '$lib/date/format';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { runStudentRouteMutation } from '../../../lib/student-route-mutation';
@@ -71,15 +72,17 @@ export class StudentEnrollmentsTabState {
 		const page = this.getPage();
 		const client = getBrowserSchoolClient();
 		const previous = page.findStudent(input.studentId);
-		const nextEnrollmentId = `enr-${input.studentId}-${Date.now().toString(36)}`;
+		const nextEnrollmentId = `enr-${input.studentId}-${crypto.randomUUID()}`;
 
-		const result = await runStudentRouteMutation(() => client.commands.transferStudent({
-			enrollmentId: input.enrollmentId,
-			nextEnrollmentId,
-			nextClassGroupId: input.nextClassGroupId,
-			effectiveAt: new Date().toISOString().slice(0, 10),
-		}), {
+		const result = await runStudentRouteMutation({
+			request: () => client.commands.transferStudent({
+				enrollmentId: input.enrollmentId,
+				nextEnrollmentId,
+				nextClassGroupId: input.nextClassGroupId,
+				effectiveAt: todayDateInput(),
+			}),
 			successMessage: input.successMessage,
+			versionKeys: ['students', 'enrollments'],
 			apply: () => {
 				page.patchStudent(input.studentId, {
 					classId: input.nextClassGroupId,

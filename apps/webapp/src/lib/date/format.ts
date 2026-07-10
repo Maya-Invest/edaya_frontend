@@ -22,3 +22,26 @@ export function dateInputToIso(value: string): string | undefined {
 		return undefined;
 	return new Date(`${trimmed}T12:00:00`).toISOString();
 }
+
+export function nowIso(): string {
+	return new Date().toISOString();
+}
+
+export function todayDateInput(): string {
+	return nowIso().slice(0, 10);
+}
+
+export function inClassAssessmentWindow(dateInput: string): { startsAt: string; endsAt: string } {
+	const [year, month, day] = dateInput.slice(0, 10).split('-').map(value => Number.parseInt(value, 10));
+	const startsAt = new Date(Date.UTC(year, month - 1, day, 9, 0, 0, 0));
+	const endsAt = new Date(Date.UTC(year, month - 1, day, 10, 0, 0, 0));
+	return { startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString() };
+}
+
+export function formatLocaleDate(
+	value: string,
+	locale: string,
+	options: Intl.DateTimeFormatOptions,
+): string {
+	return new Date(value).toLocaleDateString(locale, options);
+}

@@ -1,32 +1,24 @@
 <script lang="ts">
+	import type { ResolvedPathname } from '$app/types';
 	import { page } from '$app/stores';
-	import EvaluationsView from '$lib/components/school/academics/EvaluationsView.svelte';
-	import DataState from '$lib/components/ui/DataState.svelte';
-	import PageQuery from '$lib/components/ui/PageQuery.svelte';
-	import { detailHref } from '$lib/detail-hrefs';
-	import { t } from '$lib/i18n';
-	import { appGoto } from '$lib/navigation/app-navigation';
-	import { queryClassEvaluationsPage } from '$lib/queries/assessments.queries';
+	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
+	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import { getEvaluationsPageState } from '../evaluations-page.svelte';
+	import EvaluationDetail from './components/EvaluationDetail.svelte';
 
-	const selectedId = $derived($page.params.id);
+	const evaluationsPage = getEvaluationsPageState();
 	const classId = $derived($page.params.classId ?? '6a');
-	const query = $derived(queryClassEvaluationsPage(classId));
+	const evaluation = $derived(evaluationsPage.selected);
+
+	function closeDetail() {
+		const next = new URL($page.url);
+		next.searchParams.delete(MODAL_QUERY_KEY);
+		next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
+		const href = `${appPath('/(app)/classes/[classId]/evaluations/[[id]]', { classId })}${next.search}` as ResolvedPathname;
+		appGoto(href);
+	}
 </script>
 
-<PageQuery {query} loadingTitle={$t('tab.evaluations')}>
-	{#snippet children(data)}
-		<DataState
-			preserveShell
-			status={data.status}
-			errorMessage={data.errorMessage}
-			emptyTitle={$t('tab.evaluations')}
-			emptyDescription={$t('dataState.emptyDescription')}
-		>
-			<EvaluationsView
-				classId={data.classId}
-				onSelect={ev => appGoto(detailHref.classEvaluation(data.classId, ev.id))}
-				{selectedId}
-			/>
-		</DataState>
-	{/snippet}
-</PageQuery>
+{#if evaluation}
+	<EvaluationDetail {classId} {evaluation} onDeleted={closeDetail} />
+{/if}

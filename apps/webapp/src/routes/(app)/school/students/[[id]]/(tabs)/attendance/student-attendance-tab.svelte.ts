@@ -2,6 +2,7 @@ import type { AbsenceRecord, StudentAttendanceHistoryItem } from '$lib/types/sch
 import type { StudentsPageState } from '../../../students-page.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadStudentAttendanceHistory } from '$lib/api/student-drawer-data';
+import { nowIso } from '$lib/date/format';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { runStudentRouteMutation } from '../../../lib/student-route-mutation';
@@ -127,15 +128,17 @@ export class StudentAttendanceTabState {
 			reason: input.status === 'late' ? 'Retard' : 'Absence',
 		};
 
-		const result = await runStudentRouteMutation(() => client.commands.recordDailyAttendance({
-			id,
-			studentId: input.studentId,
-			classGroupId: input.classGroupId,
-			date: input.date,
-			status: input.status,
-			createdAt: new Date().toISOString(),
-		}), {
+		const result = await runStudentRouteMutation({
+			request: () => client.commands.recordDailyAttendance({
+				id,
+				studentId: input.studentId,
+				classGroupId: input.classGroupId,
+				date: input.date,
+				status: input.status,
+				createdAt: nowIso(),
+			}),
 			successMessage: input.successMessage,
+			versionKeys: ['students', 'attendance'],
 			apply: () => {
 				this.appendAbsence(optimisticAbsence);
 				if (previous) {

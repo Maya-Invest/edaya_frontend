@@ -10,11 +10,17 @@
 		onViewChange,
 		exportOnly = false,
 		exportLabel,
+		sort,
+		sortOptions = [],
+		onSortChange,
 	}: {
 		view?: 'table' | 'cards';
 		onViewChange?: (view: 'table' | 'cards') => void;
 		exportOnly?: boolean;
 		exportLabel?: string;
+		sort?: string;
+		sortOptions?: { value: string; label: string }[];
+		onSortChange?: (value: string) => void;
 	} = $props();
 
 	let open = $state(false);
@@ -28,6 +34,11 @@
 
 	function setView(next: 'table' | 'cards') {
 		onViewChange?.(next);
+		open = false;
+	}
+
+	function setSort(next: string) {
+		onSortChange?.(next);
 		open = false;
 	}
 </script>
@@ -57,6 +68,23 @@
 			<span>{resolvedExportLabel}</span>
 		</button>
 		{#if !exportOnly}
+			{#if sortOptions.length > 0}
+				<div class="my-1 border-t border-border"></div>
+				{#each sortOptions as option (option.value)}
+					<button
+						type="button"
+						class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-secondary"
+						onclick={() => setSort(option.value)}
+					>
+						<Layers class="h-4 w-4 text-muted-foreground" />
+						<span class="flex-1">{option.label}</span>
+						{#if sort === option.value}
+							<span class="text-[10px] uppercase text-primary">{$t('list.active')}</span>
+						{/if}
+					</button>
+				{/each}
+				<div class="my-1 border-t border-border"></div>
+			{/if}
 			<button
 				type="button"
 				class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-secondary"

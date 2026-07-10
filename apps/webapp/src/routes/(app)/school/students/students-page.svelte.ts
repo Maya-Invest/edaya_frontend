@@ -1,3 +1,4 @@
+import type { StudentListFilters } from '$lib/list/list-url-filters';
 import type { Student } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { fetchStudentById, loadClassPeopleData, loadPeopleData, loadPeopleDataPage } from '$lib/api/people-data';
@@ -30,7 +31,7 @@ export class StudentsPageState {
 	private loadedVersion = 0;
 	private listRequestVersion = 0;
 
-	readonly filters: ListFiltersState<{ q: string; class: string; status: string }>;
+	readonly filters: ListFiltersState<StudentListFilters>;
 
 	constructor(private readonly getUrl: () => URL) {
 		this.filters = new ListFiltersState(
