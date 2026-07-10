@@ -2,18 +2,13 @@ import { ApiError } from '$api-client';
 import { academicContext } from '$lib/academic/context.svelte';
 import { schoolWideEntityList } from '$lib/api/entity-list-filters';
 import { loadClassPeopleData } from '$lib/api/people-data';
-import { loadStaffPermissionPageData } from '$lib/api/staff-permission-assignments-data';
 import { fetchSchoolSubjectsSources, mapAllClassSubjects } from '$lib/api/subjects-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
-import { t } from '$lib/i18n';
 import { queryClient } from '$lib/queries/client';
 import { resolvePageLoad, listPageHasItems } from '$lib/queries/page-status';
 import { seedStudent360ForStudent, studentDetailIdFromUrl } from '$lib/queries/student-360.queries';
-import { get } from 'svelte/store';
 
-const SCHOOL_ROSTER_SCOPE
-	= 'School students administration route loads paginated school roster.';
 const SCHOOL_GUARDIANS_SCOPE
 	= 'School guardians administration lists guardians with paginated fetch.';
 
@@ -38,13 +33,11 @@ export function querySchoolStudentsPage() {
 	return (url: URL) => resolvePageLoad(url, {
 		empty: () => ({ totalStudents: 0 }),
 		load: async () => {
-			const { count } = await queryClient().entities.students.count(
-				schoolWideEntityList(SCHOOL_ROSTER_SCOPE),
-			);
 			await seedStudent360ForUrl(url);
-			return { totalStudents: count };
+			return { totalStudents: 0 };
 		},
 		hasItems: listPageHasItems,
+		waitForShell: false,
 	});
 }
 
@@ -101,43 +94,7 @@ export function querySchoolStaffPage() {
 	return (url: URL) => resolvePageLoad(url, {
 		empty: () => ({ totalStaff: 0 }),
 		load: async () => {
-			const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
-			const client = queryClient();
-			const academicYearId = academicContext.yearId;
-			const [countResult, subjectSources, permissionData] = await Promise.all([
-				schoolId ? client.entities.staffMembers.count({ schoolId }) : Promise.resolve({ count: 0 }),
-				fetchSchoolSubjectsSources(client).catch((error) => {
-					if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-						return {
-							classSubjectsRaw: [],
-							subjectsRaw: [],
-							subjectMattersRaw: [],
-							staffMembersRaw: [],
-							staffAssignmentsRaw: [],
-							teachersRaw: [],
-							teacherAssignmentsRaw: [],
-						};
-					}
-					throw error;
-				}),
-				schoolId && academicYearId
-					? loadStaffPermissionPageData(client, { schoolId, academicYearId }, get(t)).catch((error) => {
-							if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-								return { catalog: [], assignments: [] };
-							}
-							throw error;
-						})
-					: Promise.resolve({ catalog: [], assignments: [] }),
-			]);
-			const allSubjects = mapAllClassSubjects(subjectSources);
-			for (const classNode of academicContext.classes) {
-				detailDataContext.seedSubjects(
-					allSubjects.filter(subject => subject.classId === classNode.id),
-					{ classId: classNode.id },
-				);
-			}
-			detailDataContext.seedStaffPermissionData(permissionData);
-			return { totalStaff: countResult.count };
+			return { totalStaff: 0 };
 		},
 		hasItems: listPageHasItems,
 	});

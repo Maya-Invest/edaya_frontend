@@ -25,7 +25,7 @@ import { formatDateInput } from '$lib/date/format';
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
 const SCHOOL_ROSTER_SCOPE
-	= 'School students administration route loads the full school roster intentionally until pagination is added.';
+	= 'School students administration route loads paginated school roster data.';
 
 const SCHOOL_GUARDIANS_SCOPE
 	= 'School guardians administration lists all guardians; only guardian-linked students and enrollments are fetched by id.';
@@ -64,9 +64,22 @@ export interface PaginatedGuardiansData extends PeopleData {
 	totalGuardians: number;
 }
 
+interface PaginatedPeopleSourcesWithMetrics extends PeopleSources {
+	totalStudents: number;
+	metrics: StudentMetricsSources;
+}
+
 export interface PeoplePageRequest {
 	offset?: number;
 	limit?: number;
+}
+
+function emptyStudentMetricsSources(): StudentMetricsSources {
+	return {
+		attendanceRaw: [],
+		assessmentsRaw: [],
+		resultsRaw: [],
+	};
 }
 
 function initialsFor(firstName: string, lastName: string): string {
@@ -201,10 +214,10 @@ export async function fetchPeopleSources(client: SchoolClient): Promise<PeopleSo
 	};
 }
 
-export async function fetchPeopleSourcesPage(
+async function fetchPeopleSourcesPageWithMetrics(
 	client: SchoolClient,
 	request: PeoplePageRequest = {},
-): Promise<PeopleSources & { totalStudents: number }> {
+): Promise<PaginatedPeopleSourcesWithMetrics> {
 	const limit = request.limit ?? DEFAULT_LIST_PAGE_SIZE;
 	const offset = request.offset ?? 0;
 	const studentFilter = paginatedList(schoolWideEntityList(SCHOOL_ROSTER_SCOPE), {
@@ -226,17 +239,26 @@ export async function fetchPeopleSourcesPage(
 			guardiansRaw: [],
 			linksRaw: [],
 			totalStudents,
+			metrics: emptyStudentMetricsSources(),
 		};
 	}
 
-	const [enrollmentsRaw, linksRaw] = await Promise.all([
-		client.entities.enrollments.list(enrollmentsForStudents(studentIds)),
-		client.entities.guardianLinks.list(guardianLinksForStudents(studentIds)),
+	const enrollmentsPromise = client.entities.enrollments.list(enrollmentsForStudents(studentIds));
+	const linksPromise = client.entities.guardianLinks.list(guardianLinksForStudents(studentIds));
+	const guardiansPromise = linksPromise.then((linksRaw) => {
+		const guardianIds = uniqueIds((linksRaw ?? []).map(link => link.guardianId));
+		return guardianIds.length > 0
+			? client.entities.guardians.list(guardiansByIds(guardianIds))
+			: Promise.resolve([]);
+	});
+	const metricsPromise = fetchStudentMetricsSources(client, studentIds);
+
+	const [enrollmentsRaw, linksRaw, guardiansRaw, metrics] = await Promise.all([
+		enrollmentsPromise,
+		linksPromise,
+		guardiansPromise,
+		metricsPromise,
 	]);
-	const guardianIds = uniqueIds((linksRaw ?? []).map(link => link.guardianId));
-	const guardiansRaw = guardianIds.length > 0
-		? await client.entities.guardians.list(guardiansByIds(guardianIds))
-		: [];
 
 	return {
 		studentsRaw: studentsRaw ?? [],
@@ -244,6 +266,21 @@ export async function fetchPeopleSourcesPage(
 		guardiansRaw: guardiansRaw ?? [],
 		linksRaw: linksRaw ?? [],
 		totalStudents,
+		metrics,
+	};
+}
+
+export async function fetchPeopleSourcesPage(
+	client: SchoolClient,
+	request: PeoplePageRequest = {},
+): Promise<PeopleSources & { totalStudents: number }> {
+	const sources = await fetchPeopleSourcesPageWithMetrics(client, request);
+	return {
+		studentsRaw: sources.studentsRaw,
+		enrollmentsRaw: sources.enrollmentsRaw,
+		guardiansRaw: sources.guardiansRaw,
+		linksRaw: sources.linksRaw,
+		totalStudents: sources.totalStudents,
 	};
 }
 
@@ -439,11 +476,7 @@ async function fetchStudentMetricsSources(
 	classScope?: { classGroupId: string; periodId: string },
 ): Promise<StudentMetricsSources> {
 	if (studentIds.length === 0) {
-		return {
-			attendanceRaw: [],
-			assessmentsRaw: [],
-			resultsRaw: [],
-		};
+		return emptyStudentMetricsSources();
 	}
 
 	if (classScope) {
@@ -547,9 +580,8 @@ export async function loadPeopleDataPage(
 	client: SchoolClient,
 	request: PeoplePageRequest = {},
 ): Promise<PaginatedPeopleData> {
-	const sources = await fetchPeopleSourcesPage(client, request);
-	const studentIds = uniqueIds(sources.studentsRaw.map(student => student.id));
-	const metrics = await fetchStudentMetricsSources(client, studentIds);
+	const sources = await fetchPeopleSourcesPageWithMetrics(client, request);
+	const { metrics } = sources;
 	const data = mapPeopleData(sources, metrics);
 	return { ...data, totalStudents: sources.totalStudents };
 }

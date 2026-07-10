@@ -35,7 +35,13 @@
 	aria-label={photoUrl ? undefined : name}
 >
 	{#if photoUrl}
-		<img src={photoUrl} alt={name} class="h-full w-full object-cover" />
+		<img
+			src={photoUrl}
+			alt={name}
+			loading="lazy"
+			decoding="async"
+			class="h-full w-full object-cover"
+		/>
 	{:else}
 		<span>{initials}</span>
 	{/if}

@@ -88,6 +88,7 @@ export class DetailDataContext {
 	roleEnabledPermissions = $state<Partial<Record<StaffRole, Record<string, boolean>>>>({});
 	staffPermissionAssignments = $state<StaffPermissionAssignmentView[]>([]);
 	permissionCatalog = $state<PermissionCatalogEntry[]>([]);
+	staffPermissionDataKey = $state<string | null>(null);
 	staffAssignments = $state<components['schemas']['StaffAssignment'][]>([]);
 	teacherAssignments = $state<components['schemas']['TeacherAssignment'][]>([]);
 	studentDrawerCache = $state<{
@@ -278,9 +279,16 @@ export class DetailDataContext {
 	seedStaffPermissionData(snapshot: {
 		assignments: StaffPermissionAssignmentView[];
 		catalog: PermissionCatalogEntry[];
-	}) {
+	}, key?: string) {
 		this.staffPermissionAssignments = snapshot.assignments;
 		this.permissionCatalog = snapshot.catalog;
+		if (key) {
+			this.staffPermissionDataKey = key;
+		}
+	}
+
+	hasStaffPermissionData(key: string): boolean {
+		return this.staffPermissionDataKey === key;
 	}
 
 	upsertStaffPermissionAssignment(row: StaffPermissionAssignmentView) {
@@ -574,6 +582,7 @@ export class DetailDataContext {
 		this.roleEnabledPermissions = {};
 		this.staffPermissionAssignments = [];
 		this.permissionCatalog = [];
+		this.staffPermissionDataKey = null;
 		this.staffAssignments = [];
 		this.teacherAssignments = [];
 		this.studentDrawerCache = null;

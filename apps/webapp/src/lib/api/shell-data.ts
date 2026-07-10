@@ -31,6 +31,22 @@ export interface AppShellData {
 	staffCount: number;
 }
 
+interface AppShellCounts {
+	activeEnrollmentCountsByClass: Record<string, number>;
+	studentCount: number;
+	guardianCount: number;
+	staffCount: number;
+}
+
+function emptyAppShellCounts(): AppShellCounts {
+	return {
+		activeEnrollmentCountsByClass: {},
+		studentCount: 0,
+		guardianCount: 0,
+		staffCount: 0,
+	};
+}
+
 export async function fetchActiveEnrollmentCountsByClass(
 	client: SchoolClient,
 	classGroupIds: readonly string[],
@@ -62,29 +78,19 @@ async function safeAppShellCounts(
 	client: SchoolClient,
 	schoolId: string,
 	classGroupIds: readonly string[],
-) {
+): Promise<AppShellCounts> {
 	try {
 		return await client.queries.getAppShellCounts({
 			schoolId,
 			classGroupIds: [...classGroupIds],
-		});
+		}) as AppShellCounts;
 	}
 	catch (error) {
 		if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-			return {
-				activeEnrollmentCountsByClass: {},
-				studentCount: 0,
-				guardianCount: 0,
-				staffCount: 0,
-			};
+			return emptyAppShellCounts();
 		}
 		if (error instanceof TypeError) {
-			return {
-				activeEnrollmentCountsByClass: {},
-				studentCount: 0,
-				guardianCount: 0,
-				staffCount: 0,
-			};
+			return emptyAppShellCounts();
 		}
 		throw error;
 	}
@@ -126,12 +132,7 @@ export async function fetchAppShellData(client: SchoolClient): Promise<AppShellD
 	const schoolId = (schoolsRaw ?? []).find(school => school?.id)?.id ?? '';
 	const shellCounts = schoolId
 		? await safeAppShellCounts(client, schoolId, classGroupIds)
-		: {
-			activeEnrollmentCountsByClass: {},
-			studentCount: 0,
-			guardianCount: 0,
-			staffCount: 0,
-		};
+		: emptyAppShellCounts();
 	const studentCountByClass = shellCounts.activeEnrollmentCountsByClass;
 
 	const schools: School[] = (schoolsRaw ?? [])

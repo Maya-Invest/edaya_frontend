@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import { DEFAULT_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
 	import { loadPeopleDataPage } from '$lib/api/people-data';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -27,6 +26,8 @@
 	import { cn } from '$lib/utils';
 	import PersonAvatar from '../shared/PersonAvatar.svelte';
 	import StudentCreateModal from './StudentCreateModal.svelte';
+
+	const SCHOOL_STUDENTS_INITIAL_PAGE_SIZE = 25;
 
 	const {
 		onSelect,
@@ -57,7 +58,7 @@
 			detailDataContext.seedGuardians(result.guardians);
 			return { items: result.students, total: result.totalStudents };
 		},
-		DEFAULT_LIST_PAGE_SIZE,
+		SCHOOL_STUDENTS_INITIAL_PAGE_SIZE,
 		() => `${studentsState.filters.values.class}|${studentsState.filters.values.status}|${studentsState.filters.values.q}`,
 	);
 

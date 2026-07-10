@@ -82,9 +82,12 @@ async function runBootstrapSession(): Promise<BootstrapSessionResult> {
 		let subjectId: string | null = null;
 
 		if (session?.kind === 'staff') {
-			const sessionStaff = await fetchSessionStaffProfile(client, session.actorId, {
-				isElevated: session.effectiveGrants.isElevated,
-			});
+			const [sessionStaff, serverOnboardingStatus] = await Promise.all([
+				fetchSessionStaffProfile(client, session.actorId, {
+					isElevated: session.effectiveGrants.isElevated,
+				}),
+				fetchServerOnboardingAccountStatus(),
+			]);
 			staffProfile = sessionStaff.profile;
 			subjectId = sessionStaff.profile.subjectId ?? null;
 			authSession.setFromServer(session, {
@@ -97,7 +100,6 @@ async function runBootstrapSession(): Promise<BootstrapSessionResult> {
 				notificationPhone: sessionStaff.notificationPhone,
 			});
 
-			const serverOnboardingStatus = await fetchServerOnboardingAccountStatus();
 			authSession.setServerOnboardingStatus(serverOnboardingStatus);
 			if (serverOnboardingStatus) {
 				persistServerOnboardingStatusToDraft(

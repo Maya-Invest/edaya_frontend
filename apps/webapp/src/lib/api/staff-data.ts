@@ -326,8 +326,10 @@ export async function fetchSessionStaffProfile(
 		? 'owner'
 		: 'educateur';
 	try {
-		const relations = await fetchStaffRelations(client, [staffId]);
-		const classGroupsRaw = await client.entities.classGroups.list({ schoolId: staff.schoolId });
+		const [relations, classGroupsRaw] = await Promise.all([
+			fetchStaffRelations(client, [staffId]),
+			client.entities.classGroups.list({ schoolId: staff.schoolId }),
+		]);
 		role = mapStaffRole(staff, relations.assignmentsRaw, classGroupsRaw ?? [], ownerSubjectId);
 	}
 	catch (error) {
