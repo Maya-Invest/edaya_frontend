@@ -14,12 +14,14 @@ const DETAIL_PATH_PATTERNS = [
 const SCHOOL_STUDENTS_DRAWER_PATH = /^\/school\/students\/[^/]+(?:\/[^/]+)?$/;
 const SCHOOL_STAFF_DRAWER_PATH = /^\/school\/staff\/[^/]+(?:\/[^/]+)?$/;
 const SCHOOL_TEACHERS_DRAWER_PATH = /^\/school\/teachers\/[^/]+(?:\/[^/]+)?$/;
+const SCHOOL_ACTIVITIES_DRAWER_PATH = /^\/school\/activities\/[^/]+(?:\/[^/]+)?$/;
 
 export function isLikelyDetailPath(pathname: string): boolean {
 	return DETAIL_PATH_PATTERNS.some(pattern => pattern.test(pathname))
 		|| SCHOOL_STUDENTS_DRAWER_PATH.test(pathname)
 		|| SCHOOL_STAFF_DRAWER_PATH.test(pathname)
-		|| SCHOOL_TEACHERS_DRAWER_PATH.test(pathname);
+		|| SCHOOL_TEACHERS_DRAWER_PATH.test(pathname)
+		|| SCHOOL_ACTIVITIES_DRAWER_PATH.test(pathname);
 }
 
 function normalizeListPathname(pathname: string): string {
@@ -31,6 +33,9 @@ function normalizeListPathname(pathname: string): string {
 	}
 	if (SCHOOL_TEACHERS_DRAWER_PATH.test(pathname)) {
 		return '/school/teachers';
+	}
+	if (SCHOOL_ACTIVITIES_DRAWER_PATH.test(pathname)) {
+		return '/school/activities';
 	}
 	if (isLikelyDetailPath(pathname)) {
 		return pathname.replace(/\/[^/]+$/, '');

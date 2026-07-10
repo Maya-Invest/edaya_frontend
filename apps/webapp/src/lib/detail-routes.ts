@@ -50,24 +50,10 @@ const matchers: Matcher[] = [
 		},
 	},
 	{
-		test: p => p.match(/^\/school\/activities\/([^/]+)$/) ?? null,
-		parse: (m) => {
-			const a = detailDataContext.activities.find(x => x.id === m[1]);
-			return a ? { item: { kind: 'activity', data: a }, listPath: appPath('/(app)/school/activities/[[id]]') } : null;
-		},
-	},
-	{
 		test: p => p.match(/^\/school\/events\/([^/]+)$/) ?? null,
 		parse: (m) => {
 			const i = detailDataContext.incidents.find(x => x.id === m[1]);
 			return i ? { item: { kind: 'incident', data: i }, listPath: appPath('/(app)/school/events/[[id]]') } : null;
-		},
-	},
-	{
-		test: p => p.match(/^\/school\/calendar\/([^/]+)$/) ?? null,
-		parse: (m) => {
-			const ev = detailDataContext.schoolYearEvents.find(x => x.id === m[1]);
-			return ev ? { item: { kind: 'schoolYearEvent', data: ev }, listPath: appPath('/(app)/school/calendar/[[id]]') } : null;
 		},
 	},
 	{

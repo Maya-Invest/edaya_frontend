@@ -34,6 +34,14 @@ const TEACHER_TAB_ROUTES: Record<SchoolTeacherTabSegment, RouteId> = {
 	'assignments': '/(app)/school/teachers/[[id]]/(tabs)/assignments',
 };
 
+type SchoolActivityTabSegment = 'profile' | 'students' | 'classes';
+
+const ACTIVITY_TAB_ROUTES: Record<SchoolActivityTabSegment, RouteId> = {
+	'profile': '/(app)/school/activities/[[id]]/(tabs)/profile',
+	'students': '/(app)/school/activities/[[id]]/(tabs)/students',
+	'classes': '/(app)/school/activities/[[id]]/(tabs)/classes',
+};
+
 export const detailHref = {
 	schoolStudent: (id: string): ResolvedPathname => appPath('/(app)/school/students/[[id]]/(tabs)/profile', { id }),
 	schoolStudentTab: (id: string, tab: SchoolStudentTabSegment = 'profile'): ResolvedPathname =>
@@ -42,10 +50,11 @@ export const detailHref = {
 	schoolTeacher: (id: string): ResolvedPathname => appPath('/(app)/school/teachers/[[id]]/(tabs)/profile', { id }),
 	schoolTeacherTab: (id: string, tab: SchoolTeacherTabSegment = 'profile'): ResolvedPathname =>
 		appPath(TEACHER_TAB_ROUTES[tab], { id }),
-	schoolActivity: (id: string): ResolvedPathname => appPath('/(app)/school/activities/[[id]]', { id }),
+	schoolActivity: (id: string): ResolvedPathname => appPath('/(app)/school/activities/[[id]]/(tabs)/profile', { id }),
+	schoolActivityTab: (id: string, tab: SchoolActivityTabSegment = 'profile'): ResolvedPathname =>
+		appPath(ACTIVITY_TAB_ROUTES[tab], { id }),
 	schoolAnnouncement: (id: string): ResolvedPathname => appPath('/(app)/school/announcements/[[id]]', { id }),
 	schoolIncident: (id: string): ResolvedPathname => appPath('/(app)/school/events/[[id]]', { id }),
-	schoolCalendarEvent: (id: string): ResolvedPathname => appPath('/(app)/school/calendar/[[id]]', { id }),
 	classStudent: (classId: string, id: string): ResolvedPathname =>
 		appPath('/(app)/classes/[classId]/students/[[id]]', { classId, id }),
 	classSubject: (classId: string, id: string): ResolvedPathname =>

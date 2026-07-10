@@ -5,7 +5,6 @@
 		createCalendarEventMutation,
 		updateCalendarEventMutation,
 	} from '$lib/api/mutations/calendar.mutations';
-	import Button from '$lib/components/ui/button/button.svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -20,17 +19,11 @@
 	let {
 		event,
 		open = $bindable(false),
-		onCreated,
-		disabled = false,
-		title,
-		showTrigger = true,
+		onOpenChange,
 	}: {
 		event?: SchoolYearEvent;
 		open?: boolean;
-		onCreated?: (eventId: string) => void;
-		disabled?: boolean;
-		title?: string;
-		showTrigger?: boolean;
+		onOpenChange?: (open: boolean) => void;
 	} = $props();
 
 	let busy = $state(false);
@@ -108,6 +101,7 @@
 				});
 				if (ok) {
 					open = false;
+					onOpenChange?.(false);
 				}
 			}
 			else {
@@ -122,8 +116,8 @@
 				});
 				if (eventId) {
 					open = false;
+					onOpenChange?.(false);
 					resetForm();
-					onCreated?.(eventId);
 				}
 			}
 		}
@@ -133,21 +127,9 @@
 	}
 </script>
 
-{#if isEdit && showTrigger}
-	<Button
-		variant="outline"
-		size="sm"
-		class="rounded-full"
-		{disabled}
-		{title}
-		onclick={() => (open = true)}
-	>
-		{$t('common.edit')}
-	</Button>
-{/if}
-
 <FormModal
 	bind:open
+	{onOpenChange}
 	title={isEdit ? $t('calendar.editTitle') : $t('calendar.createTitle')}
 	description={isEdit ? event?.title : $t('calendar.createDescription')}
 	submitLabel={$t('common.save')}

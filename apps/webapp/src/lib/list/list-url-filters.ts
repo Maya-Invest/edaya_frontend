@@ -27,6 +27,8 @@ const classStudentListFiltersCodec = defineUrlFilterCodec({
 const activityListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
 	category: { type: 'string', default: 'all' },
+	sort: { type: 'enum', default: 'roster', values: ['roster', 'name', 'category', 'coach', 'period', 'enrolled'] as const },
+	sortDir: { type: 'enum', default: 'asc', values: ['asc', 'desc'] as const },
 });
 
 const announcementListFiltersCodec = defineUrlFilterCodec({

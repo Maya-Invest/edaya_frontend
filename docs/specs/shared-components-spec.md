@@ -84,6 +84,7 @@ Smart components are shared, self-contained features with their own state class 
 | **PersonPicker** | `smart-components/person-picker/` (target) · legacy `school/shared/pickers/PersonPicker.svelte` | Base searchable person popover |
 | **StaffPicker** | `smart-components/staff-picker/` (target) · legacy `school/shared/pickers/StaffPicker.svelte` | Homeroom, staff assignment targets |
 | **StudentPicker** | `smart-components/student-picker/` (target) · legacy `school/shared/pickers/StudentPicker.svelte` | Incidents, billing, enrollments |
+| **ClassGroupPicker** | `smart-components/class-group-picker/` | Activity class timetable links, class multi-select on create |
 | **GuardianPicker** | `smart-components/guardian-picker/` (target) · legacy `school/shared/pickers/GuardianPicker.svelte` | Guardian ↔ student linking |
 | **ScopeBuilder** | `smart-components/scope-builder/` (target) · legacy `school/configuration/ScopeBuilder.svelte` | Staff permission `scopeIds` by catalog grain |
 | **StaffPermissionFormModal** | route-local or smart — legacy `school/configuration/StaffPermissionFormModal.svelte` | Add / edit `staffPermissionAssignments` |

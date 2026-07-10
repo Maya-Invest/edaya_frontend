@@ -26,6 +26,14 @@ describe('isLikelyDetailPath', () => {
 		expect(isLikelyDetailPath('/school/teachers/tch-1/assignments')).toBe(true);
 		expect(isLikelyDetailPath('/school/teachers')).toBe(false);
 	});
+
+	it('recognizes school activity drawer tabs', () => {
+		expect(isLikelyDetailPath('/school/activities/act-1')).toBe(true);
+		expect(isLikelyDetailPath('/school/activities/act-1/profile')).toBe(true);
+		expect(isLikelyDetailPath('/school/activities/act-1/students')).toBe(true);
+		expect(isLikelyDetailPath('/school/activities/act-1/classes')).toBe(true);
+		expect(isLikelyDetailPath('/school/activities')).toBe(false);
+	});
 });
 
 describe('listRouteCacheKey', () => {
@@ -54,6 +62,14 @@ describe('listRouteCacheKey', () => {
 		expect(listRouteCacheKey(new URL('http://local/school/teachers/tch-1'))).toBe('/school/teachers');
 		expect(listRouteCacheKey(new URL('http://local/school/teachers/tch-1/profile'))).toBe('/school/teachers');
 		expect(listRouteCacheKey(new URL('http://local/school/teachers/tch-1/assignments'))).toBe('/school/teachers');
+	});
+
+	it('maps school activity drawer paths to the list route', () => {
+		expect(listRouteCacheKey(new URL('http://local/school/activities'))).toBe('/school/activities');
+		expect(listRouteCacheKey(new URL('http://local/school/activities/act-1'))).toBe('/school/activities');
+		expect(listRouteCacheKey(new URL('http://local/school/activities/act-1/profile'))).toBe('/school/activities');
+		expect(listRouteCacheKey(new URL('http://local/school/activities/act-1/students'))).toBe('/school/activities');
+		expect(listRouteCacheKey(new URL('http://local/school/activities/act-1/classes'))).toBe('/school/activities');
 	});
 });
 

@@ -240,7 +240,7 @@ Scope labels in the list use `POST authorization/scope/render` with `{ permissio
 | Guardians | `/school/guardians` | `/school/guardians/{id}` |
 | Staff | `/school/staff` | `/school/staff/{id}` |
 | Teachers | `/school/teachers` | `/school/teachers/{id}` |
-| School calendar | `/school/calendar` | `/school/calendar/{id}` |
+| School calendar | `/school/calendar` | — (simple — row `···` only) |
 | Activities | `/school/activities` | `/school/activities/{id}` |
 | Announcements | `/school/announcements` | `/school/announcements/{id}` |
 | Incidents | `/school/events` | `/school/events/{id}` |

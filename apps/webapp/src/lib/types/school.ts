@@ -373,6 +373,11 @@ export interface ActivityEnrollment {
 	status: ActivityEnrollmentStatus;
 }
 
+export interface ClassActivityEnrollment {
+	id: string;
+	classGroupId: string;
+}
+
 export interface Activity {
 	id: string;
 	name: string;
@@ -385,6 +390,7 @@ export interface Activity {
 	startDate: string;
 	endDate: string;
 	enrollments: ActivityEnrollment[];
+	classEnrollments: ClassActivityEnrollment[];
 }
 
 export interface Resource {

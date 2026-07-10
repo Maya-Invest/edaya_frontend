@@ -94,12 +94,6 @@
 				{:then { default: BillingDetail }}
 					<BillingDetail b={item.data} />
 				{/await}
-			{:else if item.kind === 'schoolYearEvent'}
-				{#await import('../school-life/SchoolYearEventDetail.svelte')}
-					<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
-				{:then { default: SchoolYearEventDetail }}
-					<SchoolYearEventDetail ev={item.data} />
-				{/await}
 			{:else if item.kind === 'incident'}
 				{#await import('../school-life/IncidentDetail.svelte')}
 					<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
@@ -117,12 +111,6 @@
 					<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
 				{:then { default: AnnouncementDetail }}
 					<AnnouncementDetail announcement={item.data} />
-				{/await}
-			{:else if item.kind === 'activity'}
-				{#await import('../school-life/ActivityDetail.svelte')}
-					<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
-				{:then { default: ActivityDetail }}
-					<ActivityDetail a={item.data} />
 				{/await}
 			{:else if item.kind === 'reportCardDefinition'}
 				{#await import('../configuration/ReportCardDefinitionDetail.svelte')}

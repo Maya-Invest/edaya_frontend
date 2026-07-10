@@ -1,14 +1,16 @@
 <script lang="ts">
 	import type { Activity } from '$lib/types/school';
-	import { createActivityMutation, updateActivityMutation } from '$lib/api/mutations/activity.mutations';
+	import { DEFAULT_ACTIVITY_SCHEDULE } from '$lib/api/activity-save-payload';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
+	import ClassGroupPicker from '$lib/smart-components/class-group-picker/ClassGroupPicker.svelte';
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
+	import { getActivitiesPageState } from '../activities-page.svelte';
 
 	const CATEGORIES: Activity['category'][] = ['Sport', 'Arts', 'Science', 'Language', 'Wellbeing'];
 
@@ -26,6 +28,8 @@
 		title?: string;
 	} = $props();
 
+	const activitiesPage = getActivitiesPageState();
+
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let name = $state('');
@@ -33,8 +37,10 @@
 	let coach = $state('');
 	let capacity = $state('20');
 	let description = $state('');
+	let schedule = $state(DEFAULT_ACTIVITY_SCHEDULE);
 	let startDate = $state('');
 	let endDate = $state('');
+	let linkedClassGroupIds = $state<string[]>([]);
 
 	const isEdit = $derived(activity !== undefined);
 	const categoryLabel = $derived($t(`activities.cat.${category}`));
@@ -45,7 +51,14 @@
 			: 1,
 	);
 	const canSubmit = $derived(
-		name.trim().length > 0 && coach.trim().length > 0 && description.trim().length > 0 && startDate.length > 0 && endDate.length > 0 && Number.isFinite(numericCapacity) && numericCapacity >= minCapacity && startDate <= endDate,
+		name.trim().length > 0
+		&& coach.trim().length > 0
+		&& description.trim().length > 0
+		&& startDate.length > 0
+		&& endDate.length > 0
+		&& Number.isFinite(numericCapacity)
+		&& numericCapacity >= minCapacity
+		&& startDate <= endDate,
 	);
 
 	function resetForm() {
@@ -55,8 +68,10 @@
 			coach = activity.coach;
 			capacity = String(activity.capacity);
 			description = activity.description;
+			schedule = activity.schedule || DEFAULT_ACTIVITY_SCHEDULE;
 			startDate = activity.startDate.slice(0, 10);
 			endDate = activity.endDate.slice(0, 10);
+			linkedClassGroupIds = [];
 		}
 		else {
 			name = '';
@@ -64,25 +79,29 @@
 			coach = '';
 			capacity = '20';
 			description = '';
+			schedule = DEFAULT_ACTIVITY_SCHEDULE;
 			const today = new Date().toISOString().slice(0, 10);
 			startDate = today;
 			endDate = today;
+			linkedClassGroupIds = [];
 		}
 	}
 
 	$effect(() => {
-		if (open && !wasOpen)
+		if (open && !wasOpen) {
 			resetForm();
+		}
 		wasOpen = open;
 	});
 
 	async function submit() {
-		if (!canSubmit)
+		if (!canSubmit) {
 			return;
+		}
 
 		busy = true;
 		if (activity) {
-			const ok = await updateActivityMutation({
+			const ok = await activitiesPage.updateActivity({
 				activityId: activity.id,
 				name,
 				category,
@@ -91,30 +110,42 @@
 				description,
 				startDate,
 				endDate,
+				schedule,
 				successMessage: get(t)('activities.updateSuccess', { name: name.trim() }),
 			});
 			busy = false;
 			if (ok) {
 				open = false;
 			}
+			return;
 		}
-		else {
-			const activityId = await createActivityMutation({
-				name,
-				category,
-				coach,
-				capacity: numericCapacity,
-				description,
-				startDate,
-				endDate,
-				successMessage: get(t)('activities.createSuccess', { name: name.trim() }),
-			});
-			busy = false;
-			if (activityId) {
-				open = false;
-				resetForm();
-				onCreated?.(activityId);
+
+		const activityId = await activitiesPage.createActivity({
+			name,
+			category,
+			coach,
+			capacity: numericCapacity,
+			description,
+			startDate,
+			endDate,
+			schedule,
+			successMessage: get(t)('activities.createSuccess', { name: name.trim() }),
+		});
+
+		if (activityId && linkedClassGroupIds.length > 0) {
+			for (const classGroupId of linkedClassGroupIds) {
+				await activitiesPage.ensureClassEnrollment({
+					activityId,
+					classGroupId,
+				});
 			}
+		}
+
+		busy = false;
+		if (activityId) {
+			open = false;
+			resetForm();
+			onCreated?.(activityId);
 		}
 	}
 </script>
@@ -175,11 +206,19 @@
 			<Input type="number" min={minCapacity} step="1" bind:value={capacity} />
 		</div>
 	</div>
-	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			{$t('activities.coach')}
-		</Label>
-		<Input bind:value={coach} />
+	<div class="grid gap-3 sm:grid-cols-2">
+		<div class="space-y-1.5">
+			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				{$t('activities.coach')}
+			</Label>
+			<Input bind:value={coach} />
+		</div>
+		<div class="space-y-1.5">
+			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				{$t('activities.schedule')}
+			</Label>
+			<Input bind:value={schedule} placeholder={DEFAULT_ACTIVITY_SCHEDULE} />
+		</div>
 	</div>
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div class="space-y-1.5">
@@ -201,4 +240,13 @@
 		</Label>
 		<Textarea bind:value={description} rows={4} />
 	</div>
+	{#if !isEdit}
+		<div class="space-y-2">
+			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				{$t('activities.linkClasses')}
+			</Label>
+			<p class="text-xs text-muted-foreground">{$t('activities.linkClassesHint')}</p>
+			<ClassGroupPicker bind:values={linkedClassGroupIds} mode="multi" variant="embedded" active={open} />
+		</div>
+	{/if}
 </FormModal>

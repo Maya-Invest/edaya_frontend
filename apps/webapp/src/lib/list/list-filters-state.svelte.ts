@@ -65,6 +65,17 @@ export class ListFiltersState<T extends Record<string, string>> {
 		this.scheduleSync();
 	}
 
+	/** Apply filter edits and flush to the URL immediately (sort, facet selects). */
+	patchImmediate(partial: Partial<T>) {
+		if (!this.ready) {
+			return;
+		}
+		this.values = { ...this.values, ...partial };
+		clearTimeout(this.timer);
+		this.timer = undefined;
+		this.syncNow();
+	}
+
 	scheduleSync() {
 		if (!this.ready) {
 			return;

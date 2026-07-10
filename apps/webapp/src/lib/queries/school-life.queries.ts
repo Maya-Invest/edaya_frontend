@@ -1,10 +1,9 @@
-import { ApiError } from '$api-client';
 import { academicContext } from '$lib/academic/context.svelte';
 import { fetchActivities } from '$lib/api/activities-data';
 import { fetchAnnouncements } from '$lib/api/announcements-data';
 import { loadGuardiansPeopleData } from '$lib/api/people-data';
 import { safeOptionalEntityList, safeOptionalFetch } from '$lib/api/safe-entity-access';
-import { loadAbsences, loadCalendarEvents, loadIncidentRouteData } from '$lib/api/school-life-data';
+import { loadIncidentRouteData } from '$lib/api/school-life-data';
 import { fetchStaffMembers } from '$lib/api/staff-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
@@ -57,34 +56,6 @@ export function querySchoolActivitiesPage() {
 		},
 		hasItems: listPageHasItems,
 		errorMessage: 'Unable to load activities.',
-	});
-}
-
-export function querySchoolCalendarPage() {
-	return (url: URL) => resolvePageLoad(url, {
-		empty: () => ({}),
-		load: async () => {
-			const client = queryClient();
-			const classIds = academicContext.classes.map(entry => entry.id);
-			const [events, absences] = await Promise.all([
-				loadCalendarEvents(client, academicContext.yearId).catch((error) => {
-					if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-						return [];
-					}
-					throw error;
-				}),
-				loadAbsences(client, classIds).catch((error) => {
-					if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-						return [];
-					}
-					throw error;
-				}),
-			]);
-			detailDataContext.seedSchoolYearEvents(events);
-			detailDataContext.seedAbsences(absences);
-			return {};
-		},
-		hasItems: listPageHasItems,
 	});
 }
 

@@ -24,6 +24,7 @@ describe('activity enrollment store actions', () => {
 			startDate: '2025-09-01',
 			endDate: '2026-06-01',
 			enrollments: [],
+			classEnrollments: [],
 		}, {
 			id: 'act-2',
 			name: 'Theatre',
@@ -36,6 +37,7 @@ describe('activity enrollment store actions', () => {
 			startDate: '2025-09-01',
 			endDate: '2026-06-01',
 			enrollments: [{ id: 'ae-2', studentId: 's2', status: 'approved' }],
+			classEnrollments: [],
 		}];
 
 		const next = patchActivityEnrollments(activities, 'act-1', [
@@ -62,6 +64,7 @@ describe('activity enrollment store actions', () => {
 				{ id: 'ae-1', studentId: 's1', status: 'pending' },
 				{ id: 'ae-2', studentId: 's2', status: 'approved' },
 			],
+			classEnrollments: [],
 		}];
 
 		const next = patchActivityEnrollments(activities, 'act-1', [

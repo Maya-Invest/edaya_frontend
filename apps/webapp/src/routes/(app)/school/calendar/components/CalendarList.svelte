@@ -1,42 +1,36 @@
 <script lang="ts">
 	import type { SchoolYearEvent } from '$lib/types/school';
-	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import { deleteSchoolYearEventMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
-	import { detailDataContext } from '$lib/detail-data/context.svelte';
-	import { detailHref } from '$lib/detail-hrefs';
+	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { locale, t } from '$lib/i18n';
 	import {
+		AlertCircle,
 		CalendarDays,
-		Plus,
-		Search,
 		Flag,
 		Palmtree,
-		AlertCircle,
 		PartyPopper,
+		Pencil,
+		Plus,
+		Trash2,
 	} from '$lib/icons';
-	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
-	import { readCalendarListFilters, writeCalendarListFilters } from '$lib/list/list-url-filters';
-	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { appGoto } from '$lib/navigation/app-navigation';
-	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
+	import { bindUrlModal, closeUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { cn } from '$lib/utils';
-	import SchoolYearEventFormModal from '../school-life/SchoolYearEventFormModal.svelte';
+	import { page } from '$app/stores';
+	import { get } from 'svelte/store';
+	import { getCalendarPageState } from '../calendar-page.svelte';
+	import CalendarEventFormModal from './CalendarEventFormModal.svelte';
 
-	const {
-		onSelect,
-		selectedId,
-	}: {
-		onSelect?: (e: SchoolYearEvent) => void;
-		selectedId?: string;
-	} = $props();
-
-	const events = $derived(detailDataContext.schoolYearEvents);
+	const calendarPage = getCalendarPageState();
+	const events = $derived(calendarPage.events);
 	const classes = $derived(academicContext.classes);
 
 	const typeConfig: Record<
@@ -65,35 +59,38 @@
 		},
 	};
 
-	const initialFilters = $derived(readCalendarListFilters($page.url));
-
-	const listFilters = new ListFiltersState<{ q: string; type: string }>(
-		{
-			getUrl: () => $page.url,
-			write: writeCalendarListFilters,
-			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
-		},
-		() => readCalendarListFilters($page.url),
-	);
-
-	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
+	const modals = createUrlSyncedModals({ allowed: ['create', 'edit'], getUrl: () => $page.url });
 	$effect(() => {
 		modals.hydrate();
 	});
 	const createOpen = bindUrlModal(modals, 'create');
+	const editOpen = bindUrlModal(modals, 'edit');
+
+	let editingEvent = $state<SchoolYearEvent | null>(null);
+	let deleteOpen = $state(false);
+	let deleteBusy = $state(false);
+	let deleteTarget = $state<SchoolYearEvent | null>(null);
 
 	const typeFilterKeys = ['all', 'holiday', 'vacation', 'closure', 'ceremony'] as const;
 	type TypeFilter = (typeof typeFilterKeys)[number];
 
 	const typeFilter = $derived(
-		typeFilterKeys.includes(listFilters.values.type as TypeFilter)
-			? listFilters.values.type as TypeFilter
+		typeFilterKeys.includes(calendarPage.filters.values.type as TypeFilter)
+			? calendarPage.filters.values.type as TypeFilter
 			: 'all',
 	);
 
 	function formatMonthYear(dateStr: string, loc: string) {
 		const d = new Date(dateStr);
 		return d.toLocaleDateString(loc, { month: 'long', year: 'numeric' });
+	}
+
+	function eventEndDate(ev: SchoolYearEvent) {
+		return ev.endDate ?? ev.date;
+	}
+
+	function isMultiDayEvent(ev: SchoolYearEvent) {
+		return eventEndDate(ev) !== ev.date;
 	}
 
 	function typeLabel(k: (typeof typeFilterKeys)[number]) {
@@ -105,8 +102,8 @@
 		if (typeFilter !== 'all') {
 			list = list.filter(e => e.type === typeFilter);
 		}
-		if (listFilters.values.q.trim()) {
-			const needle = listFilters.values.q.toLowerCase();
+		if (calendarPage.filters.values.q.trim()) {
+			const needle = calendarPage.filters.values.q.toLowerCase();
 			list = list.filter(
 				e => e.title.toLowerCase().includes(needle) || e.description.toLowerCase().includes(needle),
 			);
@@ -140,26 +137,41 @@
 		})),
 	);
 
-	function handleCreated(eventId: string) {
-		const path = detailHref.schoolCalendarEvent(eventId);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+	function openEdit(event: SchoolYearEvent) {
+		editingEvent = event;
+		editOpen.open = true;
+	}
+
+	function openDelete(event: SchoolYearEvent) {
+		deleteTarget = event;
+		deleteOpen = true;
+	}
+
+	async function confirmDelete() {
+		if (!deleteTarget) {
+			return;
+		}
+		deleteBusy = true;
+		try {
+			const ok = await deleteSchoolYearEventMutation(deleteTarget, {
+				successMessage: get(t)('cal.toastDeleted', { title: deleteTarget.title }),
+			});
+			if (ok) {
+				deleteOpen = false;
+				deleteTarget = null;
+			}
+		}
+		finally {
+			deleteBusy = false;
+		}
 	}
 
 	$effect(() => {
-		listFilters.hydrate({
-			q: initialFilters.q,
-			type: typeFilterKeys.includes(initialFilters.type as TypeFilter)
-				? initialFilters.type
-				: 'all',
-		});
-	});
-
-	$effect(() => {
-		if (!listFilters.ready) {
+		if (!calendarPage.filters.ready) {
 			return;
 		}
-		void listFilters.values.type;
-		listFilters.scheduleSync();
+		void calendarPage.filters.values.type;
+		calendarPage.filters.scheduleSync();
 	});
 </script>
 
@@ -169,21 +181,18 @@
 		title={$t('calendar.eventCount', { n: filtered.length })}
 	>
 		{#snippet search()}
-			<div class="relative">
-				<Search
-					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-				/>
-				<Input
-					bind:value={listFilters.values.q}
-					oninput={() => listFilters.scheduleSync()}
-					placeholder={$t('common.search')}
-					class="h-9 w-56 rounded-full pl-9 text-sm"
-				/>
-			</div>
+			<ListSearchField
+				value={calendarPage.filters.values.q}
+				oninput={event => {
+					calendarPage.filters.patch({ q: event.currentTarget.value });
+					calendarPage.filters.scheduleSync();
+				}}
+				placeholder={$t('common.search')}
+			/>
 		{/snippet}
 		{#snippet filters()}
 			<FilterSelect
-				bind:value={listFilters.values.type}
+				bind:value={calendarPage.filters.values.type}
 				class="h-9 min-w-[10rem] rounded-full text-xs"
 				options={typeFilterOptions}
 			/>
@@ -213,7 +222,22 @@
 		{/snippet}
 	</ListPageHeader>
 
-	<SchoolYearEventFormModal bind:open={createOpen.open} onCreated={handleCreated} />
+	<CalendarEventFormModal bind:open={createOpen.open} onOpenChange={closeUrlModal(modals)} />
+	<CalendarEventFormModal
+		event={editingEvent ?? undefined}
+		bind:open={editOpen.open}
+		onOpenChange={closeUrlModal(modals)}
+	/>
+
+	<ConfirmModal
+		bind:open={deleteOpen}
+		title={$t('common.deleteConfirmTitle')}
+		description={$t('cal.deleteConfirm', { title: deleteTarget?.title ?? '' })}
+		confirmLabel={$t('common.delete')}
+		cancelLabel={$t('common.cancel')}
+		busy={deleteBusy}
+		onConfirm={confirmDelete}
+	/>
 
 	<div class="space-y-8">
 		{#each Object.entries(grouped) as [month, monthEvents] (month)}
@@ -226,30 +250,24 @@
 				<div class="space-y-2.5">
 					{#each monthEvents as ev (ev.id)}
 						{@const cfg = typeConfig[ev.type]}
-						{@const active = selectedId === ev.id}
-						<button
-							type="button"
-							onclick={() => onSelect?.(ev)}
-							class={cn(
-								'group flex w-full items-start gap-4 rounded-2xl border border-border bg-card p-4 text-left shadow-soft transition hover:border-accent/40 hover:shadow-md',
-								active && 'border-primary/40 bg-primary/5',
-							)}
+						{@const multiDay = isMultiDayEvent(ev)}
+						<div
+							class="group flex w-full items-start gap-4 rounded-2xl border border-border bg-card p-4 text-left shadow-soft"
 						>
 							<div
-								class="flex w-28 shrink-0 flex-col items-center justify-center rounded-xl bg-secondary/50 py-2"
+								class="flex w-28 shrink-0 flex-col items-center justify-center rounded-xl bg-secondary/50 py-2 text-center"
 							>
+								{#if multiDay}
+									<span class="mb-1 font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+										{$t('drawer.start')}
+									</span>
+								{/if}
 								<span class="font-display text-lg font-semibold leading-tight">
 									{new Date(ev.date).getDate()}
 								</span>
 								<span class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
 									{new Date(ev.date).toLocaleDateString($locale, { month: 'short' })}
 								</span>
-								{#if ev.endDate}
-									<span class="mt-0.5 font-mono text-[9px] text-muted-foreground">
-										→ {new Date(ev.endDate).getDate()}
-										{new Date(ev.endDate).toLocaleDateString($locale, { month: 'short' })}
-									</span>
-								{/if}
 							</div>
 
 							<div class="min-w-0 flex-1 space-y-1">
@@ -279,10 +297,54 @@
 								<p class="text-xs text-muted-foreground">{ev.description}</p>
 							</div>
 
-							<div class="mt-1 text-muted-foreground opacity-0 transition group-hover:opacity-100">
-								<CalendarDays class="h-4 w-4" />
+							<div class="flex shrink-0 items-start gap-2 self-start">
+								{#if multiDay}
+									{@const endDate = eventEndDate(ev)}
+									<div
+										class="flex w-28 flex-col items-center justify-center rounded-xl bg-secondary/50 py-2 text-center"
+									>
+										<span class="mb-1 font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+											{$t('drawer.end')}
+										</span>
+										<span class="font-display text-lg font-semibold leading-tight">
+											{new Date(endDate).getDate()}
+										</span>
+										<span class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+											{new Date(endDate).toLocaleDateString($locale, { month: 'short' })}
+										</span>
+									</div>
+								{/if}
+								<div class="mt-1">
+								<PermissionGate
+									permission="TIMETABLE_UPDATE"
+									mode="disable"
+									tooltip={$t('calendar.permissionUpdate')}
+								>
+									{#snippet children({ disabled, title })}
+										<RowActionMenu>
+											<RowActionMenuItem
+												{disabled}
+												{title}
+												onclick={() => openEdit(ev)}
+											>
+												<Pencil class="h-4 w-4 text-muted-foreground" />
+												{$t('common.edit')}
+											</RowActionMenuItem>
+											<RowActionMenuItem
+												destructive
+												{disabled}
+												{title}
+												onclick={() => openDelete(ev)}
+											>
+												<Trash2 class="h-4 w-4" />
+												{$t('common.delete')}
+											</RowActionMenuItem>
+										</RowActionMenu>
+									{/snippet}
+								</PermissionGate>
+								</div>
 							</div>
-						</button>
+						</div>
 					{/each}
 				</div>
 			</div>

@@ -124,6 +124,7 @@
 			|| /^\/school\/guardians(?:\/|$)/.test(pathname)
 			|| /^\/school\/staff(?:\/|$)/.test(pathname)
 			|| /^\/school\/teachers(?:\/|$)/.test(pathname)
+			|| /^\/school\/activities(?:\/|$)/.test(pathname)
 			|| /^\/classes\/[^/]+\/evaluations(?:\/|$)/.test(pathname);
 	}
 

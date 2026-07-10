@@ -253,6 +253,10 @@ export function activityEnrollmentsForActivities(activityIds: readonly string[])
 	return recordsForFieldIds('activityId', activityIds);
 }
 
+export function classActivityEnrollmentsForActivities(activityIds: readonly string[]): EntityQuery {
+	return recordsForFieldIds('activityId', activityIds);
+}
+
 export function staffAssignmentsForClassGroup(classGroupId: string): EntityQuery {
 	return { classGroupId };
 }

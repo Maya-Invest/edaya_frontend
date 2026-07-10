@@ -147,8 +147,8 @@ routes/(app)/school/students/
 
 | Route | Legacy view | Drawer | Tab routes | `entityVersions` key | Status |
 |-------|-------------|--------|------------|----------------------|--------|
-| `/school/calendar` | `SchoolCalendarView` | Thin | — | `schoolYearEvents` | ⬜ |
-| `/school/activities` | `ActivitiesView` | Yes | — | `activities` | ⬜ |
+| `/school/calendar` | `SchoolCalendarView` | No (simple) | — | `schoolYearEvents` | ✅ |
+| `/school/activities` | `ActivitiesView` | Yes | `profile`, `students`, `classes` | `activities` | ✅ |
 | `/school/announcements` | `AnnouncementsView` | Yes | — | `announcements` | ⬜ |
 | `/school/events` | `SchoolEventsView` | Yes | — | `incidents` | ⬜ |
 

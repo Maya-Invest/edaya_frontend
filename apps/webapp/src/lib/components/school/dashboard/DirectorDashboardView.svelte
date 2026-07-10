@@ -245,7 +245,7 @@
 			<header class="mb-4 flex items-center justify-between gap-3">
 				<h2 class="font-display text-base font-semibold">{$t('dashboard.upcoming.title')}</h2>
 				<a
-					href={appPath('/(app)/school/calendar/[[id]]')}
+					href={appPath('/(app)/school/calendar')}
 					class="text-xs font-medium text-primary hover:underline"
 				>
 					{$t('dashboard.upcoming.viewCalendar')}

@@ -107,7 +107,7 @@ const SCHOOL_ROUTES: Record<string, RouteId> = {
 	guardians: '/(app)/school/guardians/[[id]]',
 	staff: '/(app)/school/staff/[[id]]',
 	teachers: '/(app)/school/teachers/[[id]]',
-	calendar: '/(app)/school/calendar/[[id]]',
+	calendar: '/(app)/school/calendar',
 	activities: '/(app)/school/activities/[[id]]',
 	announcements: '/(app)/school/announcements/[[id]]',
 	events: '/(app)/school/events/[[id]]',
