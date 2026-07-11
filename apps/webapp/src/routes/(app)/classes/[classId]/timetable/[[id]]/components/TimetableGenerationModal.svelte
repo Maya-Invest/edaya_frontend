@@ -1,10 +1,17 @@
 <script lang="ts">
-	import type { TimetableGenerationOptions, TimetablePageState } from '../timetable-page.svelte';
+	import type { GenerateClassResult, RepublishResult, TimetableGenerationOptions, TimetablePageState } from '../../timetable-page.svelte';
+	import type { TimetableGenerationError } from '$lib/components/school/scheduling/timetable-generation-errors';
+	import TimetableGenerationResultPanel from '$lib/components/school/scheduling/TimetableGenerationResultPanel.svelte';
+	import TimetableGenerationErrorPanel from '$lib/components/school/scheduling/TimetableGenerationErrorPanel.svelte';
+	import TimetableGenerationSetupTabs, { type TimetableSetupTab } from '$lib/components/school/scheduling/TimetableGenerationSetupTabs.svelte';
+	import TimetableRangeSelector from '$lib/components/school/scheduling/TimetableRangeSelector.svelte';
+	import TimetablePreferredPeriodsPanel from '$lib/components/school/scheduling/TimetablePreferredPeriodsPanel.svelte';
+	import TimetableSolverOptionsPanel from '$lib/components/school/scheduling/TimetableSolverOptionsPanel.svelte';
+	import TimetableWorkloadConfigPanel from '$lib/components/school/scheduling/TimetableWorkloadConfigPanel.svelte';
+	import { buildTimetableRangePresets } from '$lib/components/school/scheduling/timetable-generation-ui';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
 	import { formatDateInput } from '$lib/date/format';
 	import { t } from '$lib/i18n';
 
@@ -18,140 +25,255 @@
 		mode?: 'generate' | 'republish';
 	} = $props();
 
+	type Phase = 'setup' | 'success' | 'error';
+
+	let phase = $state<Phase>('setup');
 	let startDate = $state('');
 	let endDate = $state('');
-	let advanced = $state(false);
 	let enforceWorkloadFulfillment = $state<boolean | undefined>();
+	let generationMode = $state<'weekly' | 'free' | undefined>();
 	let excludeBreakSlots = $state<boolean | undefined>();
 	let allowUnassignedTeacherPlacements = $state<boolean | undefined>();
 	let useHomeroomTeacherFallback = $state<boolean | undefined>();
-	let minPeriodGapSameSubject = $state('');
+	let minDayGapSameSubject = $state('');
 	let preferredIds = $state<string[]>([]);
 	let policy = $state<'fail' | 'skip'>('fail');
 	let overrides = $state<Record<string, number>>({});
+	let classResult = $state<GenerateClassResult | null>(null);
+	let republishResult = $state<RepublishResult | null>(null);
+	let generationError = $state<TimetableGenerationError | null>(null);
+	let setupTab = $state<TimetableSetupTab>('subjects');
 
 	const periods = $derived(academicContext.periodDefinitionsForYear(academicContext.yearId));
 	const yearStart = $derived(formatDateInput(academicContext.year?.startDate));
 	const yearEnd = $derived(formatDateInput(academicContext.year?.endDate));
+	const rangePresets = $derived(buildTimetableRangePresets({
+		periods: academicContext.periodsForYear,
+		yearStart,
+		yearEnd,
+	}));
 	const validRange = $derived(Boolean(startDate && endDate && startDate <= endDate
 		&& (!yearStart || startDate >= yearStart)
 		&& (!yearEnd || endDate <= yearEnd)));
+	const classSubjectLabels = $derived(Object.fromEntries(
+		timetablePage.classSubjects.map(subject => [
+			subject.id,
+			timetablePage.subjectLabels[subject.subjectId] ?? subject.subjectId,
+		]),
+	));
+	const workloadClasses = $derived.by(() => {
+		const classId = timetablePage.classId;
+		const match = academicContext.classes.find(row => row.id === classId);
+		if (match) {
+			return [{ id: match.id, name: match.name }];
+		}
+		return classId ? [{ id: classId, name: classId }] : [];
+	});
+	const workloadLoading = $derived(timetablePage.teacherConstraintsLoading);
+	const rangeLabel = $derived(`${startDate} – ${endDate}`);
+	const modalTitle = $derived(
+		phase === 'error'
+			? (mode === 'republish' ? $t('timetable.republishErrorTitle') : $t('timetable.generateErrorTitle'))
+			: phase === 'success'
+				? (mode === 'republish' ? $t('timetable.republishResultTitle') : $t('timetable.generateResultTitle'))
+				: (mode === 'republish' ? $t('timetable.republishTitle') : $t('timetable.generateTitle')),
+	);
+	const modalDescription = $derived(
+		phase === 'error'
+			? $t('timetable.errorReviewHint')
+			: phase === 'success'
+				? $t('timetable.resultReviewHint')
+				: (mode === 'republish' ? $t('timetable.republishHint') : $t('timetable.generateHint')),
+	);
 
-	$effect(() => {
-		if (!open)
-			return;
+	function initializeForm() {
 		const range = timetablePage.periodRange;
 		startDate = range.startDate;
 		endDate = range.endDate;
 		policy = 'fail';
-		advanced = false;
 		overrides = {};
+		classResult = null;
+		republishResult = null;
+		generationError = null;
+		setupTab = 'subjects';
 		const school = academicContext.schools[0];
 		enforceWorkloadFulfillment = school?.timetableEnforceWorkloadFulfillment;
+		generationMode = school?.timetableGenerationMode ?? 'weekly';
 		excludeBreakSlots = school?.timetableExcludeBreakSlots;
 		allowUnassignedTeacherPlacements = school?.timetableAllowUnassignedTeacherPlacements;
 		useHomeroomTeacherFallback = school?.timetableUseHomeroomTeacherFallback;
-		minPeriodGapSameSubject = school ? String(school.timetableMinPeriodGapSameSubject) : '';
-		preferredIds = school?.timetablePreferredPeriodDefinitionIds ?? [];
+		minDayGapSameSubject = school ? String(school.timetableMinDayGapSameSubject) : '';
+		preferredIds = [...(school?.timetablePreferredPeriodDefinitionIds ?? [])];
 		void timetablePage.resolveSpace(startDate, endDate);
+	}
+
+	function handleModalOpenChange(isOpen: boolean) {
+		if (isOpen) {
+			return;
+		}
+		phase = 'setup';
+		classResult = null;
+		republishResult = null;
+		generationError = null;
+	}
+
+	$effect(() => {
+		if (!open) {
+			return;
+		}
+		phase = 'setup';
+		initializeForm();
+		void timetablePage.loadTeacherConstraints();
 	});
 
-	function togglePreferred(id: string, checked: boolean) {
-		preferredIds = checked ? [...preferredIds, id] : preferredIds.filter(value => value !== id);
-	}
-
-	function options(): TimetableGenerationOptions | undefined {
-		if (!advanced)
-			return undefined;
+	function buildOptions(): TimetableGenerationOptions | undefined {
 		const value: TimetableGenerationOptions = {};
-		if (enforceWorkloadFulfillment !== undefined)
+		if (generationMode) {
+			value.generationMode = generationMode;
+		}
+		if (enforceWorkloadFulfillment !== undefined) {
 			value.enforceWorkloadFulfillment = enforceWorkloadFulfillment;
-		if (excludeBreakSlots !== undefined)
+		}
+		if (excludeBreakSlots !== undefined) {
 			value.excludeBreakSlots = excludeBreakSlots;
-		if (allowUnassignedTeacherPlacements !== undefined)
+		}
+		if (allowUnassignedTeacherPlacements !== undefined) {
 			value.allowUnassignedTeacherPlacements = allowUnassignedTeacherPlacements;
-		if (useHomeroomTeacherFallback !== undefined)
+		}
+		if (useHomeroomTeacherFallback !== undefined) {
 			value.useHomeroomTeacherFallback = useHomeroomTeacherFallback;
-		if (minPeriodGapSameSubject)
-			value.minPeriodGapSameSubject = Number(minPeriodGapSameSubject);
-		if (preferredIds.length)
+		}
+		if (minDayGapSameSubject) {
+			value.minDayGapSameSubject = Number(minDayGapSameSubject);
+		}
+		if (preferredIds.length) {
 			value.preferredPeriodDefinitionIds = preferredIds;
-		return value;
-	}
-
-	function setOverride(id: string, value: string) {
-		const next = { ...overrides };
-		if (value === '')
-			delete next[id];
-		else next[id] = Number(value);
-		overrides = next;
+		}
+		return Object.keys(value).length ? value : undefined;
 	}
 
 	async function submit() {
-		if (!validRange)
+		if (!validRange) {
 			return;
-		const result = mode === 'republish'
-			? await timetablePage.republish({ startDate, endDate, policy, options: options(), periodsPerWeekByClassSubjectId: overrides })
-			: await timetablePage.generate({ startDate, endDate, options: options(), periodsPerWeekByClassSubjectId: overrides });
-		if (result)
-			open = false;
+		}
+		if (mode === 'republish') {
+			const outcome = await timetablePage.republish({
+				startDate,
+				endDate,
+				policy,
+				options: buildOptions(),
+				periodsPerWeekByClassSubjectId: overrides,
+			});
+			if (outcome.ok) {
+				republishResult = outcome.value;
+				phase = 'success';
+			}
+			else {
+				generationError = outcome.error;
+				phase = 'error';
+			}
+			return;
+		}
+
+		const outcome = await timetablePage.generate({
+			startDate,
+			endDate,
+			options: buildOptions(),
+			periodsPerWeekByClassSubjectId: overrides,
+		});
+		if (outcome.ok) {
+			classResult = outcome.value;
+			phase = 'success';
+		}
+		else {
+			generationError = outcome.error;
+			phase = 'error';
+		}
+	}
+
+	function runAgain() {
+		phase = 'setup';
+		classResult = null;
+		republishResult = null;
+		generationError = null;
 	}
 </script>
 
 <FormModal
 	bind:open
-	title={mode === 'republish' ? $t('timetable.republishTitle') : $t('timetable.generateTitle')}
-	description={mode === 'republish' ? $t('timetable.republishHint') : $t('timetable.generateHint')}
-	submitLabel={mode === 'republish' ? $t('timetable.republish') : $t('timetable.generateDraft')}
+	title={modalTitle}
+	description={modalDescription}
+	contentClass={phase === 'setup' ? 'max-w-3xl' : 'max-w-2xl'}
 	busy={timetablePage.busy}
 	submitDisabled={!validRange}
 	onSubmit={submit}
+	onOpenChange={handleModalOpenChange}
 >
-	<div class="grid grid-cols-2 gap-3">
-		<label class="space-y-1.5 text-sm"><span>{$t('common.startDate')}</span><Input type="date" bind:value={startDate} onchange={() => timetablePage.resolveSpace(startDate, endDate)} /></label>
-		<label class="space-y-1.5 text-sm"><span>{$t('common.endDate')}</span><Input type="date" bind:value={endDate} onchange={() => timetablePage.resolveSpace(startDate, endDate)} /></label>
-	</div>
-	<p class="text-xs text-muted-foreground">{$t('timetable.teachingCells', { count: timetablePage.spaceCellCount })}</p>
+	{#snippet children()}
+		{#if phase === 'error' && generationError}
+			<TimetableGenerationErrorPanel
+				error={generationError}
+				{rangeLabel}
+				titleKey={mode === 'republish' ? 'timetable.republishErrorTitle' : 'timetable.generateErrorTitle'}
+			/>
+		{:else if phase === 'success'}
+			<TimetableGenerationResultPanel
+				{mode}
+				{classResult}
+				{republishResult}
+				subjectLabels={classSubjectLabels}
+				{rangeLabel}
+			/>
+		{:else}
+			<div class="space-y-4">
+				<TimetableRangeSelector
+					bind:startDate
+					bind:endDate
+					presets={rangePresets}
+					spaceCellCount={timetablePage.spaceCellCount}
+					{validRange}
+					onRangeChange={(nextStart, nextEnd) => timetablePage.resolveSpace(nextStart, nextEnd)}
+				/>
 
-	{#if mode === 'republish'}
-		<label class="space-y-1.5 text-sm">
-			<span>{$t('timetable.conflictPolicy')}</span>
-			<select bind:value={policy} class="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-				<option value="fail">{$t('timetable.policyFail')}</option>
-				<option value="skip">{$t('timetable.policySkip')}</option>
-			</select>
-		</label>
-	{/if}
+				<TimetableGenerationSetupTabs bind:activeTab={setupTab} />
 
-	<Button type="button" variant="ghost" size="sm" class="px-0" onclick={() => (advanced = !advanced)}>
-		{$t('timetable.advancedOptions')}
-	</Button>
-	{#if advanced}
-		<div class="space-y-3 border-t border-border pt-3">
-			<label class="flex items-center gap-2 text-sm"><Checkbox checked={enforceWorkloadFulfillment === true} onCheckedChange={value => (enforceWorkloadFulfillment = Boolean(value))} />{$t('timetable.enforceWorkload')}</label>
-			<label class="flex items-center gap-2 text-sm"><Checkbox checked={excludeBreakSlots === true} onCheckedChange={value => (excludeBreakSlots = Boolean(value))} />{$t('timetable.excludeBreaks')}</label>
-			<label class="flex items-start gap-2 text-sm"><Checkbox class="mt-0.5" checked={allowUnassignedTeacherPlacements === true} onCheckedChange={value => (allowUnassignedTeacherPlacements = Boolean(value))} /><span><span class="block">{$t('timetable.allowUnassignedTeachers')}</span><span class="block text-xs text-muted-foreground">{$t('timetable.allowUnassignedTeachersHint')}</span></span></label>
-			<label class="flex items-start gap-2 text-sm"><Checkbox class="mt-0.5" checked={useHomeroomTeacherFallback === true} onCheckedChange={value => (useHomeroomTeacherFallback = Boolean(value))} /><span><span class="block">{$t('timetable.homeroomTeacherFallback')}</span><span class="block text-xs text-muted-foreground">{$t('timetable.homeroomTeacherFallbackHint')}</span></span></label>
-			<label class="space-y-1.5 text-sm"><span>{$t('timetable.sameSubjectGap')}</span><Input type="number" min="0" bind:value={minPeriodGapSameSubject} /></label>
-			<div>
-				<p class="mb-2 text-sm">{$t('timetable.preferredPeriods')}</p>
-				<div class="grid max-h-36 grid-cols-2 gap-2 overflow-y-auto">
-					{#each periods as period (period.id)}
-						<label class="flex items-center gap-2 text-xs"><Checkbox checked={preferredIds.includes(period.id)} onCheckedChange={value => togglePreferred(period.id, Boolean(value))} />{period.label}</label>
-					{/each}
-				</div>
+				{#if setupTab === 'subjects'}
+					<TimetableWorkloadConfigPanel
+						classes={workloadClasses}
+						activeClassId={timetablePage.classId}
+						classSubjects={timetablePage.classSubjects}
+						subjectLabels={timetablePage.subjectLabels}
+						teacherLabelsByClassSubjectId={timetablePage.teacherLabelsByClassSubjectId}
+						loading={workloadLoading}
+						bind:overrides
+					/>
+				{:else if setupTab === 'periods'}
+					<TimetablePreferredPeriodsPanel {periods} bind:preferredIds />
+				{:else}
+					<TimetableSolverOptionsPanel
+						bind:generationMode
+						bind:enforceWorkloadFulfillment
+						bind:excludeBreakSlots
+						bind:allowUnassignedTeacherPlacements
+						bind:useHomeroomTeacherFallback
+						bind:minDayGapSameSubject
+						bind:policy
+						showRepublishPolicy={mode === 'republish'}
+					/>
+				{/if}
 			</div>
-			<div>
-				<p class="mb-2 text-sm">{$t('timetable.workloadOverrides')}</p>
-				<div class="max-h-40 overflow-y-auto border-y border-border/70">
-					{#each timetablePage.classSubjects as subject (subject.id)}
-						<label class="grid grid-cols-[1fr_5rem] items-center gap-2 border-b border-border/50 py-2 text-xs last:border-0">
-							<span>{timetablePage.subjectLabels[subject.subjectId] ?? subject.subjectId}</span>
-							<Input type="number" min="0" value={String(overrides[subject.id] ?? '')} placeholder={String(subject.periodsPerWeek ?? '')} oninput={event => setOverride(subject.id, event.currentTarget.value)} />
-						</label>
-					{/each}
-				</div>
-			</div>
-		</div>
-	{/if}
+		{/if}
+	{/snippet}
+
+	{#snippet footer({ close, submit, busy, submitDisabled })}
+		{#if phase === 'success' || phase === 'error'}
+			<Button variant="ghost" onclick={runAgain} disabled={busy}>{$t('timetable.runAgain')}</Button>
+			<Button onclick={close} disabled={busy}>{$t('common.close')}</Button>
+		{:else}
+			<Button variant="ghost" onclick={close} disabled={busy}>{$t('common.cancel')}</Button>
+			<Button onclick={submit} disabled={busy || submitDisabled}>
+				{mode === 'republish' ? $t('timetable.republish') : $t('timetable.generateDraft')}
+			</Button>
+		{/if}
+	{/snippet}
 </FormModal>

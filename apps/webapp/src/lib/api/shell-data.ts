@@ -154,10 +154,12 @@ export async function fetchAppShellData(client: SchoolClient): Promise<AppShellD
 		schoolId: def.schoolId,
 		academicYearId: def.academicYearId,
 		label: def.label,
+		dayOfWeek: def.dayOfWeek,
 		order: def.order,
 		startTime: def.startTime,
 		endTime: def.endTime,
 		isBreak: def.isBreak ?? false,
+		isTeachingSlot: def.isTeachingSlot ?? !def.isBreak,
 	}));
 
 	const academicPeriods: AcademicPeriod[] = (periodsRaw ?? []).map((p) => {

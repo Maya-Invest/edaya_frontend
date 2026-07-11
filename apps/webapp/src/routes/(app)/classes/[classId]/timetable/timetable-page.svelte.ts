@@ -9,28 +9,32 @@ import {
   republishClassTimetable,
   resolveClassTimetableSpace,
 } from '$lib/api/mutations/timetable-generation.mutations';
-import { loadClassPlanning } from '$lib/api/planning-data';
+import { academicYearPlanningRange, loadClassPlanning } from '$lib/api/planning-data';
+import { teacherNameForClassSubject } from '$lib/api/teacher-display';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { formatDateInput } from '$lib/date/format';
 import { entityVersions } from '$lib/entity-versions.svelte';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { toast } from '$lib/toast.svelte';
-import { ApiError } from '@maya-invest/edaya-api-client';
 import { getContext, setContext } from 'svelte';
+import { get } from 'svelte/store';
+import { t } from '$lib/i18n';
+import {
+  parseTimetableGenerationError,
+  timetableErrorMessage,
+  type TimetableMutationResult,
+} from '$lib/components/school/scheduling/timetable-generation-errors';
+
+function translateTimetable(key: string) {
+  return get(t)(key);
+}
 
 export type TimetableGenerationOptions = components['schemas']['TimetableGenerationOptions'];
+export type { GenerateClassResult, PublishResult, RepublishResult } from '$lib/api/mutations/timetable-generation.mutations';
+export type { TimetableGenerationError, TimetableMutationResult } from '$lib/components/school/scheduling/timetable-generation-errors';
 
 const TIMETABLE_VERSION_FAMILIES = ['planning', 'teacherUnavailabilities'] as const satisfies readonly EntityVersionKey[];
 const KEY = Symbol('timetable-page-state');
-
-function apiMessage(error: unknown): string {
-  if (error instanceof ApiError && error.body && typeof error.body === 'object') {
-    const message = (error.body as { message?: unknown }).message;
-    if (typeof message === 'string')
-      return message;
-  }
-  return error instanceof Error ? error.message : 'Timetable operation failed.';
-}
 
 export class TimetablePageState {
 	events = $state<PlanningEvent[]>([]);
@@ -42,14 +46,29 @@ export class TimetablePageState {
 	teacherUnavailabilities = $state<components['schemas']['TeacherUnavailability'][]>([]);
 	classSubjects = $state<components['schemas']['ClassSubject'][]>([]);
 	subjectLabels = $state<Record<string, string>>({});
+	teacherLabelsByClassSubjectId = $state<Record<string, string>>({});
+  teacherConstraintsLoading = $state(false);
   busy = $state(false);
 	spaceCellCount = $state(0);
 	focusDate = $state('');
 	activeRange = $state<{ startDate: string; endDate: string } | null>(null);
+  private constraintsClassId = '';
 
   private readonly versions = new RouteVersionSnapshot(TIMETABLE_VERSION_FAMILIES);
 
-  constructor(readonly classId: string) {}
+  constructor(private readonly getClassId: () => string) {}
+
+  get classId() {
+    return this.getClassId();
+  }
+
+  private canLoad(): boolean {
+    return Boolean(this.classId && academicContext.shellReady);
+  }
+
+	get academicYearRange() {
+		return academicYearPlanningRange(academicContext.year);
+	}
 
 	get periodRange() {
 		if (this.activeRange) {
@@ -83,19 +102,44 @@ export class TimetablePageState {
 	}
 
   async invalidateIfStale() {
-    if (!this.versions.isStale()) {
+    if (!this.versions.hasLoaded() || !this.versions.isStale() || !this.canLoad()) {
       return;
     }
-    await Promise.all([this.refresh(), this.loadTeacherConstraints()]);
+    try {
+      await Promise.all([this.refresh({ silent: true }), this.loadTeacherConstraints({ silent: true })]);
+    }
+    catch {
+      // PageQuery remains the source of truth on first paint; ignore background invalidation errors.
+    }
   }
 
-  async refresh() {
-    this.seedEvents(await loadClassPlanning(getBrowserSchoolClient(), this.classId, {
-      periodId: academicContext.periodId,
-    }));
+  async refresh(options?: { silent?: boolean }) {
+    if (!this.canLoad()) {
+      return;
+    }
+    try {
+      this.seedEvents(await loadClassPlanning(getBrowserSchoolClient(), this.classId, {
+        periodId: academicContext.periodId,
+        range: this.academicYearRange,
+      }));
+      this.versions.markLoaded();
+    }
+    catch (error) {
+      if (!options?.silent) {
+        throw error;
+      }
+    }
   }
 
-  async loadTeacherConstraints() {
+  async loadTeacherConstraints(options?: { silent?: boolean; force?: boolean }) {
+    if (!this.canLoad() || !academicContext.yearId) {
+      return;
+    }
+    if (!options?.force && this.constraintsClassId === this.classId) {
+      return;
+    }
+    this.teacherConstraintsLoading = true;
+    try {
 		const client = getBrowserSchoolClient();
 		const classSubjects = await client.entities.classSubjects.list({ classGroupId: this.classId });
 		this.classSubjects = classSubjects;
@@ -114,6 +158,21 @@ export class TimetablePageState {
     const teacherIds = assignments
       .map(row => row.teacherId)
       .filter((teacherId, index, values) => values.indexOf(teacherId) === index);
+    const teachers = teacherIds.length
+      ? await client.entities.teachers.list({ id: { $in: teacherIds } })
+      : [];
+    const instructorSources = {
+      teachersRaw: teachers,
+      teacherAssignmentsRaw: assignments,
+      staffMembersRaw: [],
+      staffAssignmentsRaw: [],
+    };
+    this.teacherLabelsByClassSubjectId = Object.fromEntries(
+      classSubjects.map(subject => [
+        subject.id,
+        teacherNameForClassSubject(subject.id, instructorSources, ''),
+      ]),
+    );
     this.teacherUnavailabilities = teacherIds.length
       ? await client.entities.teacherUnavailabilities.list({
           teacherId: { $in: teacherIds },
@@ -121,6 +180,16 @@ export class TimetablePageState {
           isActive: true,
         })
       : [];
+    this.constraintsClassId = this.classId;
+    }
+    catch (error) {
+      if (!options?.silent) {
+        throw error;
+      }
+    }
+    finally {
+      this.teacherConstraintsLoading = false;
+    }
   }
 
   async resolveSpace(startDate: string, endDate: string) {
@@ -141,7 +210,7 @@ export class TimetablePageState {
 		}
 		catch (error) {
 			this.spaceCellCount = 0;
-			toast.error(apiMessage(error));
+			toast.error(timetableErrorMessage(error, translateTimetable));
 		}
 	}
 
@@ -156,21 +225,32 @@ export class TimetablePageState {
     };
   }
 
-  private async run<T>(request: () => Promise<T>): Promise<T | null> {
+  private async runMutation<T>(
+    request: () => Promise<T>,
+    options?: { reportInModal?: boolean },
+  ): Promise<TimetableMutationResult<T>> {
     this.busy = true;
     try {
       const result = await request();
       entityVersions.bump('planning');
       await this.refresh();
-      return result;
+      return { ok: true, value: result };
     }
     catch (error) {
-      toast.error(apiMessage(error));
-      return null;
+      const parsed = parseTimetableGenerationError(error, translateTimetable);
+      if (!options?.reportInModal) {
+        toast.error(parsed.summary);
+      }
+      return { ok: false, error: parsed };
     }
     finally {
       this.busy = false;
     }
+  }
+
+  private async run<T>(request: () => Promise<T>): Promise<T | null> {
+    const outcome = await this.runMutation(request);
+    return outcome.ok ? outcome.value : null;
   }
 
   async generate(input: {
@@ -178,23 +258,23 @@ export class TimetablePageState {
     endDate: string;
     options?: TimetableGenerationOptions;
     periodsPerWeekByClassSubjectId?: Record<string, number>;
-  }) {
-    const result = await this.run(() => generateClassTimetable({
+  }): Promise<TimetableMutationResult<GenerateClassResult>> {
+    const outcome = await this.runMutation(() => generateClassTimetable({
       classGroupId: this.classId,
       academicYearId: academicContext.yearId,
       startDate: input.startDate,
       endDate: input.endDate,
       options: input.options,
-      placementParameters: input.periodsPerWeekByClassSubjectId
+      placementParameters: input.periodsPerWeekByClassSubjectId && Object.keys(input.periodsPerWeekByClassSubjectId).length > 0
         ? { periodsPerWeekByClassSubjectId: input.periodsPerWeekByClassSubjectId }
         : undefined,
-    }));
-		if (result) {
-			this.generationResult = result;
+    }), { reportInModal: true });
+		if (outcome.ok) {
+			this.generationResult = outcome.value;
 			this.activeRange = { startDate: input.startDate, endDate: input.endDate };
-      this.focusDate = result.placements[0]?.cell.date ?? input.startDate;
+      this.focusDate = outcome.value.placements[0]?.cell.date ?? input.startDate;
     }
-    return result;
+    return outcome;
   }
 
   async publish(startDate: string, endDate: string, policy: 'fail' | 'skip') {
@@ -213,7 +293,7 @@ export class TimetablePageState {
 		options?: TimetableGenerationOptions;
 		periodsPerWeekByClassSubjectId?: Record<string, number>;
 	}) {
-    const result = await this.run(() => republishClassTimetable({
+    const outcome = await this.runMutation(() => republishClassTimetable({
       classGroupId: this.classId,
       academicYearId: academicContext.yearId,
       startDate: input.startDate,
@@ -223,13 +303,13 @@ export class TimetablePageState {
 				? { periodsPerWeekByClassSubjectId: input.periodsPerWeekByClassSubjectId }
 				: undefined,
       sessionConflictPolicy: input.policy,
-    }));
-		if (result) {
-			this.generationResult = result.generation;
+    }), { reportInModal: true });
+		if (outcome.ok) {
+			this.generationResult = outcome.value.generation;
 			this.activeRange = { startDate: input.startDate, endDate: input.endDate };
-      this.focusDate = result.generation.placements[0]?.cell.date ?? input.startDate;
+      this.focusDate = outcome.value.generation.placements[0]?.cell.date ?? input.startDate;
     }
-    return result;
+    return outcome;
   }
 }
 

@@ -1,7 +1,7 @@
 import type { components } from '$lib/api/schema';
 import type { PlanningSources } from '$lib/api/planning-data';
+import { academicYearPlanningRange, mapPlanningEvents } from '$lib/api/planning-data';
 import { describe, expect, test } from 'bun:test';
-import { mapPlanningEvents } from '$lib/api/planning-data';
 
 type ActivityRaw = components['schemas']['Activity'];
 type ClassSubjectRaw = components['schemas']['ClassSubject'];
@@ -121,5 +121,24 @@ describe('mapPlanningEvents', () => {
 		expect(events[0]?.id).toBe('ls-1');
 		expect(events[1]?.teacher).toBe('Coach Dupont');
 		expect(events[2]?.subject).toBe('Mathematics');
+	});
+});
+
+describe('academicYearPlanningRange', () => {
+	test('uses academic year boundaries when available', () => {
+		expect(academicYearPlanningRange({
+			startDate: '2025-09-01',
+			endDate: '2026-06-30',
+		})).toEqual({
+			startDate: '2025-09-01',
+			endDate: '2026-06-30',
+		});
+	});
+
+	test('falls back to default planning range when year dates are missing', () => {
+		const range = academicYearPlanningRange(null);
+		expect(range.startDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+		expect(range.endDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+		expect(range.startDate <= range.endDate).toBe(true);
 	});
 });

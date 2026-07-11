@@ -18,4 +18,8 @@ export class RouteVersionSnapshot {
 			family => (this.snapshots.get(family) ?? -1) !== entityVersions[family],
 		);
 	}
+
+	hasLoaded(): boolean {
+		return this.families.every(family => this.snapshots.has(family));
+	}
 }

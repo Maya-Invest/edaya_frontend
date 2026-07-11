@@ -36,10 +36,11 @@ export function mapSchoolFromApi(raw: SchoolRaw): School {
 		type: (raw.type ?? null) as SchoolType | null,
 		timetableEnforceWorkloadFulfillment: raw.timetableEnforceWorkloadFulfillment,
 		timetableExcludeBreakSlots: raw.timetableExcludeBreakSlots,
-		timetableMinPeriodGapSameSubject: raw.timetableMinPeriodGapSameSubject,
+		timetableMinDayGapSameSubject: raw.timetableMinDayGapSameSubject,
 		timetablePreferredPeriodDefinitionIds: raw.timetablePreferredPeriodDefinitionIds,
 		timetableAllowUnassignedTeacherPlacements: raw.timetableAllowUnassignedTeacherPlacements,
 		timetableUseHomeroomTeacherFallback: raw.timetableUseHomeroomTeacherFallback,
+		timetableGenerationMode: raw.timetableGenerationMode,
 	};
 }
 

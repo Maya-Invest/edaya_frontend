@@ -770,10 +770,10 @@
             "type": "boolean",
             "default": true
           },
-          "timetableMinPeriodGapSameSubject": {
+          "timetableMinDayGapSameSubject": {
             "type": "integer",
             "minimum": 0,
-            "default": 2
+            "default": 1
           },
           "timetablePreferredPeriodDefinitionIds": {
             "type": "array",
@@ -790,6 +790,14 @@
           "timetableUseHomeroomTeacherFallback": {
             "type": "boolean",
             "default": false
+          },
+          "timetableGenerationMode": {
+            "type": "string",
+            "enum": [
+              "weekly",
+              "free"
+            ],
+            "default": "weekly"
           },
           "createdAt": {}
         },
@@ -1877,10 +1885,10 @@
             "type": "boolean",
             "default": true
           },
-          "timetableMinPeriodGapSameSubject": {
+          "timetableMinDayGapSameSubject": {
             "type": "integer",
             "minimum": 0,
-            "default": 2
+            "default": 1
           },
           "timetablePreferredPeriodDefinitionIds": {
             "type": "array",
@@ -1897,6 +1905,14 @@
           "timetableUseHomeroomTeacherFallback": {
             "type": "boolean",
             "default": false
+          },
+          "timetableGenerationMode": {
+            "type": "string",
+            "enum": [
+              "weekly",
+              "free"
+            ],
+            "default": "weekly"
           },
           "createdAt": {}
         },
@@ -1953,10 +1969,10 @@
             "type": "boolean",
             "default": true
           },
-          "timetableMinPeriodGapSameSubject": {
+          "timetableMinDayGapSameSubject": {
             "type": "integer",
             "minimum": 0,
-            "default": 2
+            "default": 1
           },
           "timetablePreferredPeriodDefinitionIds": {
             "type": "array",
@@ -1973,6 +1989,14 @@
           "timetableUseHomeroomTeacherFallback": {
             "type": "boolean",
             "default": false
+          },
+          "timetableGenerationMode": {
+            "type": "string",
+            "enum": [
+              "weekly",
+              "free"
+            ],
+            "default": "weekly"
           },
           "schoolId": {
             "type": "string",
@@ -9956,13 +9980,20 @@
       "TimetableGenerationOptions": {
         "type": "object",
         "properties": {
+          "generationMode": {
+            "type": "string",
+            "enum": [
+              "weekly",
+              "free"
+            ]
+          },
           "enforceWorkloadFulfillment": {
             "type": "boolean"
           },
           "excludeBreakSlots": {
             "type": "boolean"
           },
-          "minPeriodGapSameSubject": {
+          "minDayGapSameSubject": {
             "type": "integer",
             "minimum": 0
           },
@@ -10026,11 +10057,19 @@
             "items": {
               "$ref": "#/components/schemas/GenerateClassGroupTimetableResponse"
             }
+          },
+          "skippedClassGroupIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
           }
         },
         "required": [
           "academicYearId",
-          "classGroups"
+          "classGroups",
+          "skippedClassGroupIds"
         ]
       },
       "GenerateSchoolTimetableCommand": {

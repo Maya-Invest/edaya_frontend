@@ -36,7 +36,7 @@ export async function updateSchoolSettingsMutation(
 			enforceScheduleConflicts: current?.enforceScheduleConflicts ?? false,
 			timetableEnforceWorkloadFulfillment: current?.timetableEnforceWorkloadFulfillment ?? true,
 			timetableExcludeBreakSlots: current?.timetableExcludeBreakSlots ?? true,
-			timetableMinPeriodGapSameSubject: current?.timetableMinPeriodGapSameSubject ?? 2,
+			timetableMinDayGapSameSubject: current?.timetableMinDayGapSameSubject ?? 1,
 			timetablePreferredPeriodDefinitionIds: current?.timetablePreferredPeriodDefinitionIds ?? [],
 			timetableAllowUnassignedTeacherPlacements: current?.timetableAllowUnassignedTeacherPlacements ?? false,
 			timetableUseHomeroomTeacherFallback: current?.timetableUseHomeroomTeacherFallback ?? false,

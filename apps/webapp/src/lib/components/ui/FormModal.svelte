@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import { cn } from '$lib/utils';
 
 	let {
 		open = $bindable(false),
@@ -11,7 +12,9 @@
 		cancelLabel = 'Annuler',
 		busy = false,
 		submitDisabled = false,
+		contentClass,
 		children,
+		footer,
 		onCancel,
 		onOpenChange,
 		onSubmit,
@@ -23,7 +26,14 @@
 		cancelLabel?: string;
 		busy?: boolean;
 		submitDisabled?: boolean;
+		contentClass?: string;
 		children?: Snippet;
+		footer?: Snippet<[{
+			close: () => void;
+			submit: () => void | Promise<void>;
+			busy: boolean;
+			submitDisabled: boolean;
+		}]>;
 		onCancel?: () => void;
 		onOpenChange?: (open: boolean) => void;
 		onSubmit: () => void | Promise<void>;
@@ -31,9 +41,7 @@
 
 	function handleOpenChange(next: boolean) {
 		open = next;
-		if (!next) {
-			onOpenChange?.(false);
-		}
+		onOpenChange?.(next);
 	}
 
 	function close() {
@@ -43,7 +51,7 @@
 </script>
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
-	<Dialog.Content data-testid="form-modal">
+	<Dialog.Content data-testid="form-modal" class={cn('max-w-lg', contentClass)}>
 		<Dialog.Header>
 			<Dialog.Title>{title}</Dialog.Title>
 			{#if description}
@@ -54,8 +62,12 @@
 			{@render children?.()}
 		</div>
 		<Dialog.Footer>
-			<Button variant="ghost" onclick={close} disabled={busy}>{cancelLabel}</Button>
-			<Button onclick={onSubmit} disabled={busy || submitDisabled}>{submitLabel}</Button>
+			{#if footer}
+				{@render footer({ close, submit: onSubmit, busy, submitDisabled })}
+			{:else}
+				<Button variant="ghost" onclick={close} disabled={busy}>{cancelLabel}</Button>
+				<Button onclick={onSubmit} disabled={busy || submitDisabled}>{submitLabel}</Button>
+			{/if}
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

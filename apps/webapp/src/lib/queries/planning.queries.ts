@@ -1,7 +1,7 @@
 import { academicContext } from '$lib/academic/context.svelte';
 import { fetchActivities } from '$lib/api/activities-data';
 import { loadClassPeopleData } from '$lib/api/people-data';
-import { findPlanningEventById, loadClassPlanning } from '$lib/api/planning-data';
+import { academicYearPlanningRange, findPlanningEventById, loadClassPlanning } from '$lib/api/planning-data';
 import { safeOptionalFetch } from '$lib/api/safe-entity-access';
 import { loadClassSchedules } from '$lib/api/schedule-data';
 import { loadPlanningOccurrenceDetail } from '$lib/api/session-detail-data';
@@ -48,12 +48,18 @@ export function queryClassTimetablePage(classId: string, hooks: ClassTimetablePa
 	return (url: URL) => resolvePageLoad(url, {
 		empty: () => ({ classId }),
 		load: async () => {
+			if (!classId) {
+				return { classId };
+			}
 			const periodId = academicContext.periodId;
 			const schoolId = academicContext.schools[0]?.id ?? '';
 			const client = queryClient();
 			const [planning, schedules, people, subjects, activities] = await Promise.all([
 				safeOptionalFetch(
-					() => loadClassPlanning(client, classId, { periodId }),
+					() => loadClassPlanning(client, classId, {
+						periodId,
+						range: academicYearPlanningRange(academicContext.year),
+					}),
 					[],
 				),
 				safeOptionalFetch(() => loadClassSchedules(client, classId), []),
