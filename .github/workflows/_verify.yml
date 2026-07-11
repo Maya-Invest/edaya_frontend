@@ -10,6 +10,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Checkout API client
+        uses: actions/checkout@v5
+        with:
+          repository: Maya-Invest/edaya-client-codegen
+          ref: ${{ github.head_ref || github.ref_name }}
+          path: edaya-client-codegen
+
       - name: Setup Bun and Turbo cache
         uses: ./.github/actions/ci-bun-turbo
 

@@ -1,6 +1,6 @@
 import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 import type { components } from '$lib/api/schema';
-import { ApiError } from '$api-client';
+import { ApiError } from '@edaya/api-client';
 import { describe, expect, it, mock } from 'bun:test';
 import { mergeById } from '$lib/detail-data/seed-policies';
 

@@ -1,6 +1,6 @@
-import type { Transport, TransportRequestOptions } from '$api-client';
+import type { Transport, TransportRequestOptions } from '@edaya/api-client';
 import type { components } from '$lib/api/schema';
-import { createSchoolClient } from '$api-client';
+import { createSchoolClient } from '@edaya/api-client';
 
 export interface RecordedRequest {
 	method: string;

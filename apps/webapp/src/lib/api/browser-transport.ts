@@ -1,4 +1,4 @@
-import type { Transport } from '$api-client';
+import type { Transport } from '@edaya/api-client';
 import { PUBLIC_API_URL } from '$env/static/public';
 import { authSession } from '$lib/auth/session.svelte';
 import { parseApiResponse, resolveApiUrl } from './http';

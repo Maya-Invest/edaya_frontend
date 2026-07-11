@@ -1,5 +1,5 @@
 import type { ActivitiesPageState } from '../activities-page.svelte';
-import { ApiError } from '$api-client';
+import { ApiError } from '@edaya/api-client';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 import { fetchActivityById } from '$lib/api/activities-data';
 

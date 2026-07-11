@@ -1,4 +1,4 @@
-import { ApiError } from '$api-client';
+import { ApiError } from '@edaya/api-client';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
 	classGroupDetailIdFromUrl,

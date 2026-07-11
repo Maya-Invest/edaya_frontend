@@ -1,3 +1,4 @@
+import type { components } from '$lib/api/schema';
 import type { PeriodDefinition } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
@@ -12,10 +13,12 @@ export async function savePeriodDefinitionMutation(input: {
 	id?: string;
 	academicYearId: string;
 	label: string;
+	dayOfWeek?: components['schemas']['PeriodDefinition']['dayOfWeek'];
 	order: number;
 	startTime: string;
 	endTime: string;
 	isBreak: boolean;
+	isTeachingSlot?: boolean;
 	successMessage?: string;
 }): Promise<boolean> {
 	const sid = schoolId();
@@ -38,7 +41,11 @@ export async function savePeriodDefinitionMutation(input: {
 
 	const { schoolId: _schoolId, ...command } = entity;
 	const result = await runMutation(
-		() => client.commands.configurePeriodDefinition(command),
+		() => client.commands.configurePeriodDefinition({
+			...command,
+			dayOfWeek: input.dayOfWeek ?? 'monday',
+			isTeachingSlot: input.isTeachingSlot ?? !input.isBreak,
+		}),
 		{
 			successMessage: input.successMessage,
 			onSuccess: () => {

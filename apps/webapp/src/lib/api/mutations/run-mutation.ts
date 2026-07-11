@@ -1,4 +1,4 @@
-import { ApiError } from '$api-client';
+import { ApiError } from '@edaya/api-client';
 import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import { toast } from '$lib/toast.svelte';
 

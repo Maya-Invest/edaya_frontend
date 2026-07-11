@@ -1,5 +1,5 @@
 import type { SessionSnapshot } from '$lib/auth/types';
-import { ApiError } from '$api-client';
+import { ApiError } from '@edaya/api-client';
 import {
 	fetchGuardianNotificationSettings,
 } from '$lib/api/account-data';

@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { relative } from 'node:path'
+import { relative, resolve } from 'node:path'
 import process from 'node:process'
 import { checkClientArtifacts } from '@edaya/client-codegen'
 import {
@@ -8,8 +8,9 @@ import {
   saasAdminSchemaPath,
   trackedOpenApiPath,
   trackedSchemaPath,
-  trackedWebappClientDirPath,
 } from './paths.ts'
+
+const trackedWebappSchemaPath = resolve(repoRoot, 'apps/webapp/src/lib/api/schema.ts')
 
 function filesMatch(leftPath: string, rightPath: string): boolean {
   return readFileSync(leftPath).equals(readFileSync(rightPath))
@@ -22,7 +23,6 @@ export async function checkTrackedClientArtifacts(
     input: openApiInput,
     openApiOut: trackedOpenApiPath,
     schemaOut: trackedSchemaPath,
-    clientDir: trackedWebappClientDirPath,
     repoRoot,
   })
 
@@ -30,7 +30,7 @@ export async function checkTrackedClientArtifacts(
     changed.push(relative(repoRoot, saasAdminOpenApiPath))
   }
 
-  if (!filesMatch(trackedSchemaPath, saasAdminSchemaPath)) {
+  if (!filesMatch(trackedWebappSchemaPath, saasAdminSchemaPath)) {
     changed.push(relative(repoRoot, saasAdminSchemaPath))
   }
 

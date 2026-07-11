@@ -2,7 +2,7 @@ import type {
 	GradeScale,
 	ReportCardDefinition,
 } from '$lib/types/report-cards';
-import { ApiError } from '$api-client';
+import { ApiError } from '@edaya/api-client';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadClassPeopleData } from '$lib/api/people-data';
 import {

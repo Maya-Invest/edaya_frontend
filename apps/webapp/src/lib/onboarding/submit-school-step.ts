@@ -1,5 +1,5 @@
 import type { OnboardingSchoolDraft } from '$lib/onboarding/types';
-import { ApiError } from '$api-client';
+import { ApiError } from '@edaya/api-client';
 import { academicContext } from '$lib/academic/context.svelte';
 import { configureBrowserSchoolClient, getBrowserSchoolClient } from '$lib/api/school-client';
 import { bootstrapSession } from '$lib/auth/bootstrap';

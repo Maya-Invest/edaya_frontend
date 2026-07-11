@@ -34,6 +34,10 @@ export async function updateSchoolSettingsMutation(
 			type: input.type ?? null,
 			ownerSubjectId: current?.ownerSubjectId ?? undefined,
 			enforceScheduleConflicts: current?.enforceScheduleConflicts ?? false,
+			timetableEnforceWorkloadFulfillment: current?.timetableEnforceWorkloadFulfillment ?? true,
+			timetableExcludeBreakSlots: current?.timetableExcludeBreakSlots ?? true,
+			timetableMinPeriodGapSameSubject: current?.timetableMinPeriodGapSameSubject ?? 2,
+			timetablePreferredPeriodDefinitionIds: current?.timetablePreferredPeriodDefinitionIds ?? [],
 		}),
 		{ successMessage: options?.successMessage },
 	);

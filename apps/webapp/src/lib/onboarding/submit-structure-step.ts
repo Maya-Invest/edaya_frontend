@@ -1,5 +1,5 @@
 import type { OnboardingStructureDraft } from '$lib/onboarding/types';
-import { ApiError } from '$api-client';
+import { ApiError } from '@edaya/api-client';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import { t } from '$lib/i18n';

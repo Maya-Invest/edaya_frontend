@@ -1,4 +1,4 @@
-import { ApiError } from '$api-client';
+import { ApiError } from '@edaya/api-client';
 import { createTeacherMutation } from '$lib/api/mutations/teacher.mutations';
 import { t } from '$lib/i18n';
 import { namesFromInviteEmail } from '$lib/onboarding/names-from-email';
