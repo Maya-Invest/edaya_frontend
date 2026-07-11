@@ -9,6 +9,7 @@ import { readStudentListFilters, writeStudentListFilters } from '$lib/list/list-
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
+import { SvelteMap } from 'svelte/reactivity';
 import {
 	filterStudentList,
 	studentListUsesFullRoster,
@@ -90,7 +91,7 @@ export class StudentsPageState {
 	}
 
 	filterVisible(students: readonly Student[]): Student[] {
-		const classNameById = new Map(this.classes.map(classGroup => [classGroup.id, classGroup.name]));
+		const classNameById = new SvelteMap(this.classes.map(classGroup => [classGroup.id, classGroup.name]));
 		return filterStudentList(students, this.filters.values, { classNameById });
 	}
 

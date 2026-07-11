@@ -16,7 +16,6 @@
 		disabled = false,
 		placeholder,
 		variant = 'panel',
-		active = false,
 		class: className,
 		onValueChange,
 	}: {

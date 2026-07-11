@@ -20,6 +20,7 @@ import { readStaffListFilters, writeStaffListFilters } from '$lib/list/list-url-
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
+import { SvelteMap } from 'svelte/reactivity';
 import {
 	createStaffOnPage,
 	deleteStaffOnPage,
@@ -102,7 +103,7 @@ export class StaffPageState {
 	}
 
 	filterVisible(members: readonly StaffMember[]): StaffMember[] {
-		const classNameById = new Map(this.classes.map(classGroup => [classGroup.id, classGroup.name]));
+		const classNameById = new SvelteMap(this.classes.map(classGroup => [classGroup.id, classGroup.name]));
 		return filterStaffList(members, this.filters.values, { classNameById });
 	}
 

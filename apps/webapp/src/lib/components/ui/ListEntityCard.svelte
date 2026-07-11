@@ -1,4 +1,4 @@
-<script lang="ts" generics="TRow extends { id: string }">
+<script lang="ts">
 	import type { ListEntityCardLayout } from '$lib/list/list-entity-card-layout';
 	import type { ListEntityTableRowContext } from '$lib/list/list-entity-table-types';
 	import type { Snippet } from 'svelte';

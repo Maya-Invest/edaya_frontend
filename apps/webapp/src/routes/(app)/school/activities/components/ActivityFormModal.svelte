@@ -50,16 +50,16 @@
 			? Math.max(activity.enrollments.length, activity.participants)
 			: 1,
 	);
-	const canSubmit = $derived(
-		name.trim().length > 0
+	const canSubmit = $derived.by(() => {
+		return name.trim().length > 0
 			&& coach.trim().length > 0
-		&& description.trim().length > 0
+			&& description.trim().length > 0
 			&& startDate.length > 0
-		&& endDate.length > 0
+			&& endDate.length > 0
 			&& Number.isFinite(numericCapacity)
-		&& numericCapacity >= minCapacity
-			&& startDate <= endDate,
-	);
+			&& numericCapacity >= minCapacity
+			&& startDate <= endDate;
+	});
 
 	function resetForm() {
 		if (activity) {
