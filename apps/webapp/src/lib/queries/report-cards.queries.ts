@@ -2,7 +2,6 @@ import type {
 	GradeScale,
 	ReportCardDefinition,
 } from '$lib/types/report-cards';
-import { ApiError } from '$api-client';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadClassPeopleData } from '$lib/api/people-data';
 import {
@@ -15,6 +14,7 @@ import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { queryClient } from '$lib/queries/client';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 import { reportCardsContext } from '$lib/report-cards/context.svelte';
+import { ApiError } from '@maya-invest/edaya-api-client';
 
 export async function refreshReportCardCatalog(): Promise<void> {
 	const data = await getReportCardCatalogData();

@@ -1,5 +1,4 @@
 import type { SessionSnapshot } from '$lib/auth/types';
-import { ApiError } from '$api-client';
 import {
 	fetchGuardianNotificationSettings,
 } from '$lib/api/account-data';
@@ -9,6 +8,7 @@ import { persistServerOnboardingStatusToDraft } from '$lib/onboarding/resume-onb
 import {
 	fetchServerOnboardingAccountStatus,
 } from '$lib/onboarding/sync-account-status';
+import { ApiError } from '@maya-invest/edaya-api-client';
 import { authClient } from './client';
 import { authSession } from './session.svelte';
 

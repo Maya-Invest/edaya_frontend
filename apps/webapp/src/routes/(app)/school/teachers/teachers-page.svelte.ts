@@ -2,7 +2,6 @@ import type { components } from '$lib/api/schema';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { TeacherListFilters } from '$lib/list/list-url-filters';
 import type { Subject, Teacher } from '$lib/types/school';
-import { ApiError } from '$api-client';
 import { academicContext } from '$lib/academic/context.svelte';
 import { DEFAULT_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -14,6 +13,7 @@ import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readTeacherListFilters, writeTeacherListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { ApiError } from '@maya-invest/edaya-api-client';
 import { getContext, setContext } from 'svelte';
 import {
 	createTeacherOnPage,

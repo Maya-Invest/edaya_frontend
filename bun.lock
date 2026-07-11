@@ -19,6 +19,7 @@
       "name": "@edaya/saas-admin",
       "version": "0.0.1",
       "dependencies": {
+        "@maya-invest/edaya-api-client": "file:../../edaya-client-codegen/clients/school-api",
         "clsx": "^2.1.1",
         "lucide-svelte": "^1.0.1",
         "tailwind-merge": "^3.6.0",
@@ -47,6 +48,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@internationalized/date": "^3.12.2",
+        "@maya-invest/edaya-api-client": "file:../../edaya-client-codegen/clients/school-api",
         "@svar-ui/calendar-locales": "^2.6.0",
         "@svar-ui/core-locales": "^2.6.0",
         "@svar-ui/lib-dom": "^0.13.1",
@@ -59,7 +61,6 @@
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^4.20250617.0",
-        "@edaya/client-codegen": "https://github.com/Maya-Invest/edaya-client-codegen",
         "@edaya/web-fixtures": "workspace:*",
         "@sveltejs/adapter-static": "^3.0.10",
         "@sveltejs/kit": "^2.57.0",
@@ -100,6 +101,7 @@
     },
   },
   "overrides": {
+    "@maya-invest/edaya-api-client": "file:edaya-client-codegen/clients/school-api",
     "@sveltejs/kit": "2.64.0",
     "svelte": "5.56.3",
     "vite": "8.0.16",

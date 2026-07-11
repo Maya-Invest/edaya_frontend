@@ -1,4 +1,4 @@
-import type { EntityQuery } from '$api-client';
+import type { EntityQuery } from '@maya-invest/edaya-api-client';
 
 export const DEFAULT_LIST_PAGE_SIZE = 50;
 

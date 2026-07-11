@@ -17,12 +17,11 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && tsc --project tsconfig.test.json --noEmit",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"quality": "bun run lint && bun run check",
-		"test": "bun test tests/lib tests/generated",
+		"test": "bun test tests/lib tests/integration",
 		"test:integration": "bun test tests/integration --timeout 600000",
 		"demo:e2e": "bun scripts/demo-dry-run.ts",
 		"lint": "eslint src",
-		"lint:fix": "eslint src --fix",
-		"generate:client": "edaya-codegen generate --input ${OPENAPI_INPUT:-src/lib/api/openapi.json} --client-dir src/generated/api-client --schema-out src/lib/api/schema.d.ts"
+		"lint:fix": "eslint src --fix"
 	},
 	"dependencies": {
 		"@internationalized/date": "^3.12.2",
@@ -34,11 +33,11 @@
 		"bits-ui": "^2.18.1",
 		"clsx": "^2.1.1",
 		"lucide-svelte": "^1.0.1",
-		"tailwind-merge": "^3.6.0"
+		"tailwind-merge": "^3.6.0",
+		"@maya-invest/edaya-api-client": "file:../../edaya-client-codegen/clients/school-api"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^4.20250617.0",
-		"@edaya/client-codegen": "https://github.com/Maya-Invest/edaya-client-codegen",
 		"@edaya/web-fixtures": "workspace:*",
 		"@sveltejs/adapter-static": "^3.0.10",
 		"@sveltejs/kit": "^2.57.0",

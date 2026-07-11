@@ -8,8 +8,8 @@ Edaya is split across three repositories:
 | Repo | Role |
 |------|------|
 | `edaya_backend` | API, cron, domain packages, seeding |
-| `edaya_web` | SvelteKit webapp + saas-admin, `@edaya/api-client` (web copy) |
-| `edaya-client-codegen` | OpenAPI-only client artifact generator (`@edaya/client-codegen`), consumed via GitHub git dependency |
+| `edaya_web` | SvelteKit webapp + saas-admin, `@maya-invest/edaya-api-client` (web copy) |
+| `edaya-client-codegen` | Publishes `@maya-invest/edaya-api-client`; `@edaya/client-codegen` remains for OpenAPI tooling only |
 
 ## CI without sibling checkouts
 
@@ -17,13 +17,19 @@ Edaya is split across three repositories:
 
 `edaya_backend` CI runs the same verify shape and exports OpenAPI from the in-repo API.
 
-Both repos install `@edaya/client-codegen` from GitHub at `bun install`:
+Consumers install the generated client directly:
 
 ```json
-"@edaya/client-codegen": "github:Maya-Invest/edaya-client-codegen#dev"
+"@maya-invest/edaya-api-client": "file:../../edaya-client-codegen/clients/school-api"
 ```
 
-Pin a semver tag (e.g. `#v0.0.1`) instead of `#dev` when you want reproducible releases.
+Symlink or CI-checkout `edaya-client-codegen` at the repo root (`edaya_web/edaya-client-codegen`). After npm publish:
+
+```sh
+npm install @maya-invest/edaya-api-client@staging
+```
+
+`@edaya/client-codegen` stays a devDependency on `tooling/repo` only (OpenAPI export/drift).
 
 ## When API routes change
 
@@ -75,12 +81,9 @@ edaya-codegen generate \
 
 Then sync SaaS admin copies (or run `bun repo openapi generate` which copies automatically).
 
-## Hand-written runtime sync
+## Shared API client
 
-Generated artifacts are regen-only. These files are duplicated and must stay aligned manually until Phase 3 (shared `@edaya/api-client`) ships:
-
-- `edaya_backend/package/generated-api-client/src/` (runtime: `Transport`, `EntityResource`, `paths.ts`, …)
-- `edaya_web/apps/webapp/src/generated/api-client/` (runtime: `Transport`, `EntityResource`, `paths.ts`, …)
+Runtime and generated bindings live in `edaya-client-codegen/clients/school-api/` (`@maya-invest/edaya-api-client`). Webapp and backend tooling import the package — no per-repo `src/generated/api-client/` copies.
 
 ## Dev fixtures sync
 

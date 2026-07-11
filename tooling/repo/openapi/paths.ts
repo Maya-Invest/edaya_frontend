@@ -14,7 +14,7 @@ export const trackedOpenApiPath = resolve(
 )
 export const trackedSchemaPath = resolve(
   repoRoot,
-  'apps/webapp/src/lib/api/schema.d.ts',
+  'edaya-client-codegen/clients/school-api/src/schema.d.ts',
 )
 /** SaaS admin uses the same OpenAPI document as the school webapp. */
 export const saasAdminOpenApiPath = resolve(
@@ -23,17 +23,8 @@ export const saasAdminOpenApiPath = resolve(
 )
 export const saasAdminSchemaPath = resolve(
   repoRoot,
-  'apps/saas-admin/src/lib/api/schema.d.ts',
+  'apps/saas-admin/src/lib/api/schema.ts',
 )
-export const trackedWebappClientDirPath = resolve(
-  repoRoot,
-  'apps/webapp/src/generated/api-client',
-)
-
-export const trackedConsumerClientDirPaths = [
-  trackedWebappClientDirPath,
-] as const
-
 export const apiAppPath = resolve(coreRepoRoot, 'apps/api/src/app.ts')
 export const apiClientBindingsPath = resolve(
   coreRepoRoot,

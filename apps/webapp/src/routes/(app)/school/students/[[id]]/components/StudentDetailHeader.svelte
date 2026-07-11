@@ -5,6 +5,7 @@
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import ProfilePhotoPicker from '$lib/components/school/shared/ProfilePhotoPicker.svelte';
 	import StudentAvatar from '$lib/components/school/shared/StudentAvatar.svelte';
+	import StudentGradeEntryModal from '$lib/components/school/students/StudentGradeEntryModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
@@ -25,7 +26,8 @@
 			| 'link-guardian'
 			| 'note'
 			| 'add-absence'
-			| 'add-incident';
+			| 'add-incident'
+			| 'add-grade';
 
 	const { student }: { student: Student } = $props();
 
@@ -41,6 +43,7 @@
 			'note',
 			'add-absence',
 			'add-incident',
+			'add-grade',
 		],
 		getUrl: () => $page.url,
 	});
@@ -54,6 +57,7 @@
 	const noteOpen = bindUrlModal(modals, 'note');
 	const addAbsenceOpen = bindUrlModal(modals, 'add-absence');
 	const addIncidentOpen = bindUrlModal(modals, 'add-incident');
+	const addGradeOpen = bindUrlModal(modals, 'add-grade');
 
 	const editingNote = $derived(
 		modals.target
@@ -108,3 +112,4 @@
 <StudentNoteModal s={student} note={editingNote} bind:open={noteOpen.open} showTrigger={false} />
 <StudentAbsenceModal s={student} bind:open={addAbsenceOpen.open} showTrigger={false} />
 <StudentIncidentModal s={student} bind:open={addIncidentOpen.open} showTrigger={false} />
+<StudentGradeEntryModal s={student} bind:open={addGradeOpen.open} showTrigger={false} />

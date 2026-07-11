@@ -1,8 +1,8 @@
-import { ApiError } from '$api-client';
 import { createTeacherMutation } from '$lib/api/mutations/teacher.mutations';
 import { t } from '$lib/i18n';
 import { namesFromInviteEmail } from '$lib/onboarding/names-from-email';
 import { toast } from '$lib/toast.svelte';
+import { ApiError } from '@maya-invest/edaya-api-client';
 import { get } from 'svelte/store';
 
 export interface PortalTeacherInviteInput {

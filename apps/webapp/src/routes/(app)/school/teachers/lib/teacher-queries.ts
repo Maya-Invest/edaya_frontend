@@ -1,5 +1,5 @@
 import type { TeachersPageState } from '../teachers-page.svelte';
-import { ApiError } from '$api-client';
+import { ApiError } from '@maya-invest/edaya-api-client';
 import { listPageHasItems, resolveTeacherPageLoad } from './teacher-page-status';
 
 export function querySchoolTeachersPage(state: TeachersPageState) {

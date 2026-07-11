@@ -762,6 +762,27 @@
             "type": "boolean",
             "default": false
           },
+          "timetableEnforceWorkloadFulfillment": {
+            "type": "boolean",
+            "default": true
+          },
+          "timetableExcludeBreakSlots": {
+            "type": "boolean",
+            "default": true
+          },
+          "timetableMinPeriodGapSameSubject": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 2
+          },
+          "timetablePreferredPeriodDefinitionIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "default": []
+          },
           "createdAt": {}
         },
         "required": [
@@ -1840,6 +1861,27 @@
             "type": "boolean",
             "default": false
           },
+          "timetableEnforceWorkloadFulfillment": {
+            "type": "boolean",
+            "default": true
+          },
+          "timetableExcludeBreakSlots": {
+            "type": "boolean",
+            "default": true
+          },
+          "timetableMinPeriodGapSameSubject": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 2
+          },
+          "timetablePreferredPeriodDefinitionIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "default": []
+          },
           "createdAt": {}
         },
         "required": [
@@ -1886,6 +1928,27 @@
           "enforceScheduleConflicts": {
             "type": "boolean",
             "default": false
+          },
+          "timetableEnforceWorkloadFulfillment": {
+            "type": "boolean",
+            "default": true
+          },
+          "timetableExcludeBreakSlots": {
+            "type": "boolean",
+            "default": true
+          },
+          "timetableMinPeriodGapSameSubject": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 2
+          },
+          "timetablePreferredPeriodDefinitionIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "default": []
           },
           "schoolId": {
             "type": "string",
@@ -2156,6 +2219,18 @@
             "type": "string",
             "minLength": 1
           },
+          "dayOfWeek": {
+            "type": "string",
+            "enum": [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday"
+            ]
+          },
           "order": {
             "type": "integer",
             "minimum": 0,
@@ -2173,6 +2248,10 @@
             "type": "boolean",
             "default": false
           },
+          "isTeachingSlot": {
+            "type": "boolean",
+            "default": true
+          },
           "createdAt": {}
         },
         "required": [
@@ -2180,6 +2259,7 @@
           "schoolId",
           "academicYearId",
           "label",
+          "dayOfWeek",
           "order",
           "startTime",
           "endTime"
@@ -2200,6 +2280,18 @@
             "type": "string",
             "minLength": 1
           },
+          "dayOfWeek": {
+            "type": "string",
+            "enum": [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday"
+            ]
+          },
           "order": {
             "type": "integer",
             "minimum": 0,
@@ -2217,12 +2309,17 @@
             "type": "boolean",
             "default": false
           },
+          "isTeachingSlot": {
+            "type": "boolean",
+            "default": true
+          },
           "createdAt": {}
         },
         "required": [
           "id",
           "academicYearId",
           "label",
+          "dayOfWeek",
           "order",
           "startTime",
           "endTime"
@@ -6168,6 +6265,12 @@
             "minimum": 0,
             "exclusiveMinimum": true
           },
+          "periodsPerWeek": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
           "completedPercentage": {
             "type": "number",
             "nullable": true,
@@ -6209,6 +6312,12 @@
           },
           "coefficient": {
             "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "periodsPerWeek": {
+            "type": "integer",
             "nullable": true,
             "minimum": 0,
             "exclusiveMinimum": true
@@ -6332,6 +6441,12 @@
             "minimum": 0,
             "exclusiveMinimum": true
           },
+          "periodsPerWeek": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
           "isOptional": {
             "type": "boolean",
             "default": false
@@ -6366,6 +6481,12 @@
           },
           "coefficient": {
             "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "periodsPerWeek": {
+            "type": "integer",
             "nullable": true,
             "minimum": 0,
             "exclusiveMinimum": true
@@ -6499,6 +6620,12 @@
           },
           "coefficient": {
             "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "periodsPerWeek": {
+            "type": "integer",
             "nullable": true,
             "minimum": 0,
             "exclusiveMinimum": true
@@ -9029,7 +9156,16 @@
           },
           "scheduleId": {
             "type": "string",
+            "nullable": true,
             "minLength": 1
+          },
+          "timetableGenerated": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "draft",
+              "published"
+            ]
           },
           "classSubjectId": {
             "type": "string",
@@ -9065,7 +9201,6 @@
           "id",
           "schoolId",
           "classGroupId",
-          "scheduleId",
           "classSubjectId",
           "startsAt",
           "endsAt",
@@ -9647,6 +9782,336 @@
           "studentId",
           "attendanceId",
           "reason"
+        ]
+      },
+      "TimetablePlacement": {
+        "type": "object",
+        "properties": {
+          "classSubjectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "displayLabel": {
+            "type": "string",
+            "minLength": 1
+          },
+          "teacherIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "cell": {
+            "type": "object",
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "weekKey": {
+                "type": "string",
+                "format": "date"
+              },
+              "weeklyIndex": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "periodDefinitionId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "startsAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "endsAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "date",
+              "weekKey",
+              "weeklyIndex",
+              "periodDefinitionId",
+              "startsAt",
+              "endsAt"
+            ]
+          }
+        },
+        "required": [
+          "classSubjectId",
+          "displayLabel",
+          "teacherIds",
+          "cell"
+        ]
+      },
+      "UnmetTimetableWorkload": {
+        "type": "object",
+        "properties": {
+          "classSubjectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "weekKey": {
+            "type": "string",
+            "format": "date"
+          },
+          "required": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "placed": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "classSubjectId",
+          "weekKey",
+          "required",
+          "placed"
+        ]
+      },
+      "GenerateClassGroupTimetableResponse": {
+        "type": "object",
+        "properties": {
+          "classGroupId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LessonSession"
+            }
+          },
+          "placements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimetablePlacement"
+            }
+          },
+          "unmetWorkloads": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnmetTimetableWorkload"
+            }
+          }
+        },
+        "required": [
+          "classGroupId",
+          "sessions",
+          "placements",
+          "unmetWorkloads"
+        ]
+      },
+      "TimetablePlacementParameters": {
+        "type": "object",
+        "properties": {
+          "periodsPerWeekByClassSubjectId": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0,
+              "exclusiveMinimum": true
+            }
+          }
+        }
+      },
+      "TimetableGenerationOptions": {
+        "type": "object",
+        "properties": {
+          "enforceWorkloadFulfillment": {
+            "type": "boolean"
+          },
+          "excludeBreakSlots": {
+            "type": "boolean"
+          },
+          "minPeriodGapSameSubject": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "preferredPeriodDefinitionIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "GenerateClassGroupTimetableCommand": {
+        "type": "object",
+        "properties": {
+          "classGroupId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "academicYearId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "startDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "endDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "placementParameters": {
+            "$ref": "#/components/schemas/TimetablePlacementParameters"
+          },
+          "options": {
+            "$ref": "#/components/schemas/TimetableGenerationOptions"
+          }
+        },
+        "required": [
+          "classGroupId",
+          "academicYearId",
+          "startDate",
+          "endDate"
+        ]
+      },
+      "GenerateSchoolTimetableResponse": {
+        "type": "object",
+        "properties": {
+          "academicYearId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "classGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GenerateClassGroupTimetableResponse"
+            }
+          }
+        },
+        "required": [
+          "academicYearId",
+          "classGroups"
+        ]
+      },
+      "GenerateSchoolTimetableCommand": {
+        "type": "object",
+        "properties": {
+          "academicYearId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "startDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "endDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "placementParameters": {
+            "$ref": "#/components/schemas/TimetablePlacementParameters"
+          },
+          "options": {
+            "$ref": "#/components/schemas/TimetableGenerationOptions"
+          }
+        },
+        "required": [
+          "academicYearId",
+          "startDate",
+          "endDate"
+        ]
+      },
+      "PublishClassGroupTimetableResponse": {
+        "type": "object",
+        "properties": {
+          "classGroupId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "publishedSessionIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "skippedSessionIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "classGroupId",
+          "publishedSessionIds",
+          "skippedSessionIds"
+        ]
+      },
+      "PublishClassGroupTimetableCommand": {
+        "type": "object",
+        "properties": {
+          "classGroupId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "startDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "endDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "sessionConflictPolicy": {
+            "type": "string",
+            "enum": [
+              "fail",
+              "skip"
+            ]
+          }
+        },
+        "required": [
+          "classGroupId",
+          "startDate",
+          "endDate"
+        ]
+      },
+      "RepublishClassGroupTimetableResponse": {
+        "type": "object",
+        "properties": {
+          "generation": {
+            "$ref": "#/components/schemas/GenerateClassGroupTimetableResponse"
+          },
+          "publication": {
+            "$ref": "#/components/schemas/PublishClassGroupTimetableResponse"
+          }
+        },
+        "required": [
+          "generation",
+          "publication"
+        ]
+      },
+      "RepublishClassGroupTimetableCommand": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/GenerateClassGroupTimetableCommand"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "sessionConflictPolicy": {
+                "type": "string",
+                "enum": [
+                  "fail",
+                  "skip"
+                ]
+              }
+            }
+          }
         ]
       },
       "Announcement": {
@@ -10816,6 +11281,76 @@
         },
         "required": [
           "classGroupId",
+          "startDate",
+          "endDate"
+        ]
+      },
+      "ResolvedTimetableCell": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "weekKey": {
+            "type": "string",
+            "format": "date"
+          },
+          "weeklyIndex": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "periodDefinitionId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "date",
+          "weekKey",
+          "weeklyIndex",
+          "periodDefinitionId",
+          "startsAt",
+          "endsAt"
+        ]
+      },
+      "ResolvedTimetableSpaceResponse": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ResolvedTimetableCell"
+        }
+      },
+      "ResolveTimetableSpaceQuery": {
+        "type": "object",
+        "properties": {
+          "classGroupId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "academicYearId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "classGroupId",
+          "academicYearId",
           "startDate",
           "endDate"
         ]
@@ -27438,6 +27973,526 @@
         }
       }
     },
+    "/core/commands/generate-class-group-timetable": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "generate-class-group-timetable",
+        "operationId": "commands.generateClassGroupTimetable",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "generateClassGroupTimetable",
+        "x-edaya-command-public-name": "generate-class-group-timetable",
+        "x-edaya-request-schema": "GenerateClassGroupTimetableCommand",
+        "x-edaya-response-schema": "GenerateClassGroupTimetableResponse",
+        "requestBody": {
+          "description": "generate-class-group-timetable payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateClassGroupTimetableCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed generate-class-group-timetable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateClassGroupTimetableResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/generate-school-timetable": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "generate-school-timetable",
+        "operationId": "commands.generateSchoolTimetable",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "generateSchoolTimetable",
+        "x-edaya-command-public-name": "generate-school-timetable",
+        "x-edaya-request-schema": "GenerateSchoolTimetableCommand",
+        "x-edaya-response-schema": "GenerateSchoolTimetableResponse",
+        "requestBody": {
+          "description": "generate-school-timetable payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateSchoolTimetableCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed generate-school-timetable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateSchoolTimetableResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/publish-class-group-timetable": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "publish-class-group-timetable",
+        "operationId": "commands.publishClassGroupTimetable",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "publishClassGroupTimetable",
+        "x-edaya-command-public-name": "publish-class-group-timetable",
+        "x-edaya-request-schema": "PublishClassGroupTimetableCommand",
+        "x-edaya-response-schema": "PublishClassGroupTimetableResponse",
+        "requestBody": {
+          "description": "publish-class-group-timetable payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishClassGroupTimetableCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed publish-class-group-timetable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishClassGroupTimetableResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/republish-class-group-timetable": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "republish-class-group-timetable",
+        "operationId": "commands.republishClassGroupTimetable",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "republishClassGroupTimetable",
+        "x-edaya-command-public-name": "republish-class-group-timetable",
+        "x-edaya-request-schema": "RepublishClassGroupTimetableCommand",
+        "x-edaya-response-schema": "RepublishClassGroupTimetableResponse",
+        "requestBody": {
+          "description": "republish-class-group-timetable payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepublishClassGroupTimetableCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed republish-class-group-timetable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepublishClassGroupTimetableResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/core/commands/create-announcement": {
       "post": {
         "tags": [
@@ -29547,6 +30602,136 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ClassGroupTimetableResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/queries/resolve-timetable-space": {
+      "post": {
+        "tags": [
+          "Core Queries"
+        ],
+        "summary": "resolve-timetable-space",
+        "operationId": "queries.resolveTimetableSpace",
+        "x-edaya-kind": "query",
+        "x-edaya-query-key": "resolveTimetableSpace",
+        "x-edaya-query-public-name": "resolve-timetable-space",
+        "x-edaya-request-schema": "ResolveTimetableSpaceQuery",
+        "x-edaya-response-schema": "ResolvedTimetableSpaceResponse",
+        "requestBody": {
+          "description": "resolve-timetable-space payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveTimetableSpaceQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resolved resolve-timetable-space",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolvedTimetableSpaceResponse"
                 }
               }
             }

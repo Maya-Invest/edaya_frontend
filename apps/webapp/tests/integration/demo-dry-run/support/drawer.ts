@@ -1,8 +1,14 @@
 import type { DemoContext } from './types';
 import { DRAWER_TAB_LABELS, type DrawerTabKey } from './constants';
+import { drawerTabFromPathname } from './paths';
 
 export function urlTabParam(ctx: DemoContext): string | null {
 	return new URL(ctx.page.url()).searchParams.get('tab');
+}
+
+/** Active drawer tab from `?tab=` (legacy drawers) or the URL path segment (school drawers). */
+export function urlTabSegment(ctx: DemoContext): string | null {
+	return urlTabParam(ctx) ?? drawerTabFromPathname(new URL(ctx.page.url()).pathname);
 }
 
 export async function waitForUrlTab(
@@ -12,7 +18,7 @@ export async function waitForUrlTab(
 ): Promise<boolean> {
 	const deadline = Date.now() + timeoutMs;
 	while (Date.now() < deadline) {
-		const tab = urlTabParam(ctx);
+		const tab = urlTabSegment(ctx);
 		if (absent ? tab === null : tab === expected) {
 			return true;
 		}
@@ -39,7 +45,7 @@ export async function waitForDrawerTabBar(ctx: DemoContext, timeoutMs = 30_000) 
 	if (await bar.waitFor({ state: 'visible', timeout: timeoutMs }).then(() => true).catch(() => false)) {
 		return bar;
 	}
-	const fallback = drawer.locator('button.rounded-full').first();
+	const fallback = drawer.locator('a.rounded-full, button.rounded-full').first();
 	if (await fallback.isVisible({ timeout: 5_000 }).catch(() => false)) {
 		return drawer;
 	}
@@ -58,13 +64,19 @@ export async function clickDrawerTab(ctx: DemoContext, tabKey: DrawerTabKey): Pr
 	const root = (await testBar.isVisible().catch(() => false))
 		? testBar
 		: ctx.page.locator('aside.fixed.right-0');
-	const btn = root.getByRole('button', { name: label });
-	if (!(await btn.isVisible({ timeout: 5_000 }).catch(() => false))) {
-		return false;
+	const link = root.getByRole('link', { name: label });
+	if (await link.isVisible({ timeout: 5_000 }).catch(() => false)) {
+		await link.click();
+		await ctx.page.waitForTimeout(350);
+		return true;
 	}
-	await btn.click();
-	await ctx.page.waitForTimeout(350);
-	return true;
+	const btn = root.getByRole('button', { name: label });
+	if (await btn.isVisible({ timeout: 5_000 }).catch(() => false)) {
+		await btn.click();
+		await ctx.page.waitForTimeout(350);
+		return true;
+	}
+	return false;
 }
 
 export async function closeDrawer(ctx: DemoContext): Promise<boolean> {

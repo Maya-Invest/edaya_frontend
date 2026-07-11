@@ -1,7 +1,7 @@
 {
-  "passed": 98,
+  "passed": 97,
   "failed": 0,
-  "skipped": 0,
+  "skipped": 1,
   "results": [
     {
       "scene": "D0",
@@ -76,7 +76,8 @@
     {
       "scene": "D6",
       "step": "6.2 Homework filter",
-      "status": "pass"
+      "status": "skip",
+      "detail": "No homework rows after filter"
     },
     {
       "scene": "setup",
