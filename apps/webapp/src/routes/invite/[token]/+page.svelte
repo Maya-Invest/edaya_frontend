@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { InvitationPreview } from '$lib/api/invitation-data';
-	import { ApiError } from '@edaya/api-client';
+	import { ApiError } from '@maya-invest/edaya-api-client';
 	import { page } from '$app/stores';
 	import { acceptInvitation, fetchInvitationPreview } from '$lib/api/invitation-data';
 	import { isExistingAccountAuthError } from '$lib/auth/auth-errors';

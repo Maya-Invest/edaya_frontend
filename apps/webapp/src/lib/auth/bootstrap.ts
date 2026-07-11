@@ -1,5 +1,5 @@
 import type { SessionSnapshot } from '$lib/auth/types';
-import { ApiError } from '@edaya/api-client';
+import { ApiError } from '@maya-invest/edaya-api-client';
 import {
 	fetchGuardianNotificationSettings,
 } from '$lib/api/account-data';

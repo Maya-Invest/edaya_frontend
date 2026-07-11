@@ -8,8 +8,8 @@ Edaya is split across three repositories:
 | Repo | Role |
 |------|------|
 | `edaya_backend` | API, cron, domain packages, seeding |
-| `edaya_web` | SvelteKit webapp + saas-admin, `@edaya/api-client` (web copy) |
-| `edaya-client-codegen` | Publishes `@edaya/api-client`; `@edaya/client-codegen` remains for OpenAPI tooling only |
+| `edaya_web` | SvelteKit webapp + saas-admin, `@maya-invest/edaya-api-client` (web copy) |
+| `edaya-client-codegen` | Publishes `@maya-invest/edaya-api-client`; `@edaya/client-codegen` remains for OpenAPI tooling only |
 
 ## CI without sibling checkouts
 
@@ -20,13 +20,13 @@ Edaya is split across three repositories:
 Consumers install the generated client directly:
 
 ```json
-"@edaya/api-client": "file:../../edaya-client-codegen/clients/school-api"
+"@maya-invest/edaya-api-client": "file:../../edaya-client-codegen/clients/school-api"
 ```
 
 Symlink or CI-checkout `edaya-client-codegen` at the repo root (`edaya_web/edaya-client-codegen`). After npm publish:
 
 ```sh
-npm install @edaya/api-client@staging
+npm install @maya-invest/edaya-api-client@staging
 ```
 
 `@edaya/client-codegen` stays a devDependency on `tooling/repo` only (OpenAPI export/drift).
@@ -83,7 +83,7 @@ Then sync SaaS admin copies (or run `bun repo openapi generate` which copies aut
 
 ## Shared API client
 
-Runtime and generated bindings live in `edaya-client-codegen/clients/school-api/` (`@edaya/api-client`). Webapp and backend tooling import the package — no per-repo `src/generated/api-client/` copies.
+Runtime and generated bindings live in `edaya-client-codegen/clients/school-api/` (`@maya-invest/edaya-api-client`). Webapp and backend tooling import the package — no per-repo `src/generated/api-client/` copies.
 
 ## Dev fixtures sync
 

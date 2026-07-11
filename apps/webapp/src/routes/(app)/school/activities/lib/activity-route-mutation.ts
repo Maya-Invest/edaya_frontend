@@ -1,5 +1,5 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
-import { ApiError } from '@edaya/api-client';
+import { ApiError } from '@maya-invest/edaya-api-client';
 import { entityVersions } from '$lib/entity-versions.svelte';
 import { toast } from '$lib/toast.svelte';
 

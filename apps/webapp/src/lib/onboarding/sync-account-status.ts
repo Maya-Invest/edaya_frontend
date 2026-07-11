@@ -1,5 +1,5 @@
 import type { ServerOnboardingAccountStatus } from '$lib/onboarding/types';
-import { ApiError } from '@edaya/api-client';
+import { ApiError } from '@maya-invest/edaya-api-client';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 
 export async function fetchServerOnboardingAccountStatus(): Promise<ServerOnboardingAccountStatus | null> {

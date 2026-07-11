@@ -1,5 +1,5 @@
 import type { StaffPageState } from '../staff-page.svelte';
-import { ApiError } from '@edaya/api-client';
+import { ApiError } from '@maya-invest/edaya-api-client';
 import { listPageHasItems, resolveStaffPageLoad } from './staff-page-status';
 
 export function querySchoolStaffPage(state: StaffPageState) {

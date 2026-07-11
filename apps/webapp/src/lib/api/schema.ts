@@ -1,1 +1,1 @@
-export type { components, operations, paths } from '@edaya/api-client/schema';
+export type { components, operations, paths } from '@maya-invest/edaya-api-client/schema';

@@ -1,5 +1,5 @@
 import type { GuardiansPageState } from '../guardians-page.svelte';
-import { ApiError } from '@edaya/api-client';
+import { ApiError } from '@maya-invest/edaya-api-client';
 import { listPageHasItems, resolveGuardianPageLoad } from './guardian-page-status';
 
 export function querySchoolGuardiansPage(state: GuardiansPageState) {

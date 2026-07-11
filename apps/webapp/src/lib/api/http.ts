@@ -1,4 +1,4 @@
-import { ApiError, unwrapEntity, unwrapEntityList } from '@edaya/api-client';
+import { ApiError, unwrapEntity, unwrapEntityList } from '@maya-invest/edaya-api-client';
 
 export { ApiError };
 

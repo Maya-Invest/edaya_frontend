@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 	import type { StaffMember } from '$lib/types/school';
-	import { ApiError } from '@edaya/api-client';
+	import { ApiError } from '@maya-invest/edaya-api-client';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import {
 		deleteStaffPermissionAssignmentMutation,

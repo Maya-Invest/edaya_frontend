@@ -1,4 +1,4 @@
-import { ApiError } from '@edaya/api-client';
+import { ApiError } from '@maya-invest/edaya-api-client';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadAbsences, loadCalendarEvents } from '$lib/api/school-life-data';
 import { detailDataContext } from '$lib/detail-data/context.svelte';

@@ -2,7 +2,7 @@ import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { AttendanceDay } from '$lib/types/school';
 import type { SessionDetail } from '$lib/types/session-detail';
-import { ApiError } from '@edaya/api-client';
+import { ApiError } from '@maya-invest/edaya-api-client';
 import {
 	activeEnrollmentsForClass,
 	attendanceRecordsForOccurrences,
