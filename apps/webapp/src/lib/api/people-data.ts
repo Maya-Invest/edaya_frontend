@@ -1,7 +1,6 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { Guardian, Student } from '$lib/types/school';
-import { ApiError } from '@maya-invest/edaya-api-client';
 import {
 	activeEnrollmentsForClass,
 	assessmentResultsForScope,
@@ -22,6 +21,7 @@ import {
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 import { formatDateInput } from '$lib/date/format';
+import { ApiError } from '@maya-invest/edaya-api-client';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 

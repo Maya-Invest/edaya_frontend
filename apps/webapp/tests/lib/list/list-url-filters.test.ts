@@ -90,8 +90,8 @@ const cases: FilterCase[] = [
 		name: 'activities',
 		read: readActivityListFilters,
 		write: writeWith(writeActivityListFilters),
-		defaults: { q: '', category: 'all' },
-		nonDefault: { q: 'sport', category: 'arts' },
+		defaults: { q: '', category: 'all', sort: 'roster', sortDir: 'asc' },
+		nonDefault: { q: 'sport', category: 'Arts', sort: 'name', sortDir: 'desc' },
 	},
 	{
 		name: 'school students',

@@ -1,9 +1,9 @@
-import type { GuardiansPageState } from '../guardians-page.svelte';
 import type { Guardian } from '$lib/types/school';
+import type { GuardiansPageState } from '../guardians-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
+import { uploadProfilePhoto, withPhotoCacheBust } from '$lib/api/profile-photo-upload';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
-import { uploadProfilePhoto, withPhotoCacheBust } from '$lib/api/profile-photo-upload';
 import { runGuardianRouteMutation } from './guardian-route-mutation';
 
 function schoolId(): string {
@@ -220,7 +220,7 @@ export async function updateGuardianProfilePhotoOnPage(
 		rollback: () => {
 			state.patchGuardian(input.guardianId, { photoUrl: previous });
 		},
-		onSuccess: photoUrl => {
+		onSuccess: (photoUrl) => {
 			state.patchGuardian(input.guardianId, { photoUrl });
 		},
 		successMessage: input.successMessage,

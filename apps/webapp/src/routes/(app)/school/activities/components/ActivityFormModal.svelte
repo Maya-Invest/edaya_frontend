@@ -7,8 +7,8 @@
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
-	import ClassGroupPicker from '$lib/smart-components/class-group-picker/ClassGroupPicker.svelte';
 	import { t } from '$lib/i18n';
+	import ClassGroupPicker from '$lib/smart-components/class-group-picker/ClassGroupPicker.svelte';
 	import { get } from 'svelte/store';
 	import { getActivitiesPageState } from '../activities-page.svelte';
 
@@ -51,14 +51,7 @@
 			: 1,
 	);
 	const canSubmit = $derived(
-		name.trim().length > 0
-		&& coach.trim().length > 0
-		&& description.trim().length > 0
-		&& startDate.length > 0
-		&& endDate.length > 0
-		&& Number.isFinite(numericCapacity)
-		&& numericCapacity >= minCapacity
-		&& startDate <= endDate,
+		name.trim().length > 0 && coach.trim().length > 0 && description.trim().length > 0 && startDate.length > 0 && endDate.length > 0 && Number.isFinite(numericCapacity) && numericCapacity >= minCapacity && startDate <= endDate,
 	);
 
 	function resetForm() {

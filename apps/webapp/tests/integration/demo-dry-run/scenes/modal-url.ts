@@ -1,4 +1,5 @@
 import { CLASS_6A, CLASS_SUBJECT_ID, STAFF_ID, STUDENT_ID } from '../support/constants';
+import { schoolStaffPath, schoolStudentPath } from '../support/paths';
 import { waitForDrawerAside } from '../support/drawer';
 import {
 	closeFormModal,
@@ -76,8 +77,8 @@ export async function runModalUrlChecks(ctx: DemoContext): Promise<void> {
 		}
 	}
 
-	if (await visit(ctx, `${base}/school/students/${STUDENT_ID}?modal=edit-profile`, scene, '11 Student edit-profile deep-link', {
-		pathPrefix: `/school/students/${STUDENT_ID}`,
+	if (await visit(ctx, `${base}${schoolStudentPath(STUDENT_ID)}?modal=edit-profile`, scene, '11 Student edit-profile deep-link', {
+		pathPrefix: schoolStudentPath(STUDENT_ID),
 	})) {
 		if (await waitForDrawerAside(ctx) && await waitForFormModal(ctx) && await waitForUrlModal(ctx, 'edit-profile')) {
 			reporter.log(scene, '12 Student URL modal=edit-profile', 'pass');
@@ -88,8 +89,8 @@ export async function runModalUrlChecks(ctx: DemoContext): Promise<void> {
 		}
 	}
 
-	if (await visit(ctx, `${base}/school/students/${STUDENT_ID}?tab=profile&modal=link-guardian`, scene, '13 Student link-guardian deep-link', {
-		pathPrefix: `/school/students/${STUDENT_ID}`,
+	if (await visit(ctx, `${base}${schoolStudentPath(STUDENT_ID)}?modal=link-guardian`, scene, '13 Student link-guardian deep-link', {
+		pathPrefix: schoolStudentPath(STUDENT_ID),
 	})) {
 		const picker = await waitForPickerModal(ctx);
 		if (picker && await waitForUrlModal(ctx, 'link-guardian')) {
@@ -101,8 +102,8 @@ export async function runModalUrlChecks(ctx: DemoContext): Promise<void> {
 		}
 	}
 
-	if (await visit(ctx, `${base}/school/students/${STUDENT_ID}?tab=grades&modal=add-grade`, scene, '15 Student add-grade deep-link', {
-		pathPrefix: `/school/students/${STUDENT_ID}`,
+	if (await visit(ctx, `${base}${schoolStudentPath(STUDENT_ID, 'grades')}?modal=add-grade`, scene, '15 Student add-grade deep-link', {
+		pathPrefix: schoolStudentPath(STUDENT_ID, 'grades'),
 	})) {
 		if (await waitForDrawerAside(ctx) && await waitForFormModal(ctx) && await waitForUrlModal(ctx, 'add-grade')) {
 			reporter.log(scene, '16 Student URL modal=add-grade', 'pass');
@@ -123,8 +124,8 @@ export async function runModalUrlChecks(ctx: DemoContext): Promise<void> {
 		}
 	}
 
-	if (await visit(ctx, `${base}/school/staff/${STAFF_ID}?tab=permissions&modal=add-permission`, scene, '19 Staff add-permission deep-link', {
-		pathPrefix: `/school/staff/${STAFF_ID}`,
+	if (await visit(ctx, `${base}${schoolStaffPath(STAFF_ID, 'permissions')}?modal=add-permission`, scene, '19 Staff add-permission deep-link', {
+		pathPrefix: schoolStaffPath(STAFF_ID, 'permissions'),
 	})) {
 		if (await waitForDrawerAside(ctx) && await waitForFormModal(ctx) && await waitForUrlModal(ctx, 'add-permission')) {
 			reporter.log(scene, '20 Staff URL modal=add-permission', 'pass');

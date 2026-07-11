@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { StaffMember } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import AccountLinkingSection from '$lib/components/account/AccountLinkingSection.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import ProfilePhotoPicker from '$lib/components/school/shared/ProfilePhotoPicker.svelte';

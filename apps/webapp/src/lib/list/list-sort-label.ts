@@ -1,5 +1,5 @@
-import { get } from 'svelte/store';
 import { t } from '$lib/i18n';
+import { get } from 'svelte/store';
 
 export function listSortAriaValue(
 	currentSort: string,

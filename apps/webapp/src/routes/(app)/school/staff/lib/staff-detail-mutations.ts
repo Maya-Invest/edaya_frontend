@@ -1,7 +1,7 @@
 import type { components } from '$lib/api/schema';
 import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
-import type { StaffPageState } from '../staff-page.svelte';
 import type { StaffMember } from '$lib/types/school';
+import type { StaffPageState } from '../staff-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
 	createStaffPermissionAssignmentPayload,
@@ -228,7 +228,7 @@ export async function updateStaffProfilePhotoOnPage(
 				authSession.userProfile = { ...authSession.userProfile, photoUrl: previous };
 			}
 		},
-		onSuccess: photoUrl => {
+		onSuccess: (photoUrl) => {
 			state.patchStaff(input.staffId, { photoUrl });
 			if (authSession.userProfile?.id === input.staffId) {
 				authSession.userProfile = { ...authSession.userProfile, photoUrl };
@@ -273,7 +273,7 @@ export async function saveStaffPermissionOnPage(
 				state.removePermissionAssignment(input.assignment.id);
 			}
 		},
-		onSuccess: assignment => {
+		onSuccess: (assignment) => {
 			const existing = state.permissionAssignmentsForStaff(assignment.staffId)
 				.find(row => row.id === assignment.id);
 			state.upsertPermissionAssignment({

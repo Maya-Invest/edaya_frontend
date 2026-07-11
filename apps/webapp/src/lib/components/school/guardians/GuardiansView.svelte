@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { GuardianListFilters } from '$lib/list/list-url-filters';
 	import type { Guardian } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { DEFAULT_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
@@ -14,7 +15,6 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { Mail, Phone, Plus, Users } from '$lib/icons';
-	import type { GuardianListFilters } from '$lib/list/list-url-filters';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readGuardianListFilters, writeGuardianListFilters } from '$lib/list/list-url-filters';
 	import { useOffsetInfiniteList } from '$lib/list/use-infinite-list.svelte';

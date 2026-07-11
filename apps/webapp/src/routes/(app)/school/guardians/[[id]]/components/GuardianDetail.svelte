@@ -2,12 +2,12 @@
 	import type { Guardian } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import AccountLinkingSection from '$lib/components/account/AccountLinkingSection.svelte';
+	import { relationKey } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import ProfilePhotoPicker from '$lib/components/school/shared/ProfilePhotoPicker.svelte';
-	import { relationKey } from '$lib/components/school/shared/drawer-constants';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';

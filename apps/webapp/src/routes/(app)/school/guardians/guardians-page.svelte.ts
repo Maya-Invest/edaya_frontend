@@ -1,5 +1,5 @@
-import type { GuardianListFilters } from '$lib/list/list-url-filters';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
+import type { GuardianListFilters } from '$lib/list/list-url-filters';
 import type { Guardian, Student } from '$lib/types/school';
 import { DEFAULT_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
 import { fetchGuardianById, loadGuardiansPeopleData, loadGuardiansPeopleDataPage } from '$lib/api/people-data';

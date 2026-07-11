@@ -1,6 +1,7 @@
 import type { components } from '$lib/api/schema';
-import type { AssessmentKind, Evaluation } from '$lib/types/school';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
+import type { AssessmentKind, Evaluation } from '$lib/types/school';
+import type { EvaluationsPageSlice } from './lib/evaluation-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { inClassAssessmentWindow, nowIso, todayDateInput } from '$lib/date/format';
@@ -12,7 +13,7 @@ import {
 	evaluationsClassIdFromUrl,
 	evaluationStatsFromResults,
 	normalizedDescription,
-	type EvaluationsPageSlice,
+
 } from './lib/evaluation-helpers';
 import { runEvaluationRouteMutation } from './lib/evaluation-route-mutation';
 import { loadEvaluationsSlice, queryEvaluationsListPage } from './lib/evaluations-queries';

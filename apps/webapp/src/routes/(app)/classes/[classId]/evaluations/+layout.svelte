@@ -5,8 +5,8 @@
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { listRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
-	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
+	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
 	import EvaluationsList from './components/EvaluationsList.svelte';
 	import EvaluationsPageHydrator from './components/EvaluationsPageHydrator.svelte';
 	import {

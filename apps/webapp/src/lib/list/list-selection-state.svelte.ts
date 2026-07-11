@@ -1,9 +1,11 @@
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+
 export class ListSelectionState<T extends { id: string }> {
 	selectionMode = $state(false);
 	selectedIds = $state<string[]>([]);
 
 	get selectedSet() {
-		return new Set(this.selectedIds);
+		return new SvelteSet(this.selectedIds);
 	}
 
 	enterSelectionMode() {
@@ -17,7 +19,7 @@ export class ListSelectionState<T extends { id: string }> {
 
 	toggleSelected(id: string, checked: boolean) {
 		this.selectedIds = checked
-			? [...new Set([...this.selectedIds, id])]
+			? [...new SvelteSet([...this.selectedIds, id])]
 			: this.selectedIds.filter(entry => entry !== id);
 	}
 
@@ -34,11 +36,11 @@ export class ListSelectionState<T extends { id: string }> {
 			this.selectedIds = this.selectedIds.filter(id => !rows.some(row => row.id === id));
 			return;
 		}
-		this.selectedIds = [...new Set([...this.selectedIds, ...rows.map(row => row.id)])];
+		this.selectedIds = [...new SvelteSet([...this.selectedIds, ...rows.map(row => row.id)])];
 	}
 
 	resolveSelected(pool: readonly T[]): T[] {
-		const byId = new Map(pool.map(row => [row.id, row]));
+		const byId = new SvelteMap(pool.map(row => [row.id, row]));
 		return this.selectedIds
 			.map(id => byId.get(id))
 			.filter((row): row is T => Boolean(row));

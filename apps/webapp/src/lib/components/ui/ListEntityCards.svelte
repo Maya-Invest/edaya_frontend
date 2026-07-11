@@ -1,4 +1,5 @@
 <script lang="ts" generics="TRow extends { id: string }">
+	import type { ListEntityTableColumn, ListEntityTableRowContext } from '$lib/list/list-entity-table-types';
 	import type { Snippet } from 'svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import InfiniteList from '$lib/components/ui/InfiniteList.svelte';
@@ -11,7 +12,6 @@
 		listEntityCardGridClass,
 		listEntityCardLayout,
 	} from '$lib/list/list-entity-card-layout';
-	import type { ListEntityTableColumn, ListEntityTableRowContext } from '$lib/list/list-entity-table-types';
 	import { listSortButtonLabel } from '$lib/list/list-sort-label';
 	import { cn } from '$lib/utils';
 

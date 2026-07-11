@@ -1,16 +1,20 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
+	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
-	import { FileText } from '$lib/icons';
+	import { FileText, Plus } from '$lib/icons';
+	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { getStudentGradesTabState } from '../student-grades-tab.svelte';
 	import StudentSubjectGroup from './StudentSubjectGroup.svelte';
 
 	const { s }: { s: Student } = $props();
 
 	const gradesTab = getStudentGradesTabState();
+	const modals = getDrawerUrlModals();
 	const gradesData = $derived(
 		gradesTab.gradesSummaryFor(s.id, row => detailHref.classEvaluation(row.classGroupId, row.assessmentId)),
 	);
@@ -58,4 +62,22 @@
 			{/if}
 		</div>
 	</div>
+	<PermissionGate
+		permission="GRADE_INPUT"
+		classId={s.classId}
+		mode="disable"
+		tooltip={$t('student.gradePermission')}
+	>
+		{#snippet children({ disabled, title })}
+			<Button
+				variant="ghost"
+				class="w-full rounded-full border border-dashed border-border"
+				{disabled}
+				{title}
+				onclick={() => modals?.open('add-grade')}
+			>
+				<Plus class="mr-1 h-4 w-4" /> Saisir une note
+			</Button>
+		{/snippet}
+	</PermissionGate>
 </div>

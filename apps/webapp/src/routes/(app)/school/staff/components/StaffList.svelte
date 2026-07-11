@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ListEntityTableColumn } from '$lib/list/list-entity-table-types';
 	import type { StaffMember } from '$lib/types/school';
+	import type { StaffSortColumn } from '../lib/staff-list-filters';
 	import { page } from '$app/stores';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -21,7 +22,7 @@
 	import {
 		cycleStaffListSort,
 		staffListUsesFullRoster,
-		type StaffSortColumn,
+
 	} from '../lib/staff-list-filters';
 	import { getStaffPageState, SCHOOL_STAFF_PAGE_SIZE } from '../staff-page.svelte';
 	import StaffCreateModal from './StaffCreateModal.svelte';

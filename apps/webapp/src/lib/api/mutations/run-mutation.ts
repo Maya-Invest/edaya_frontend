@@ -1,6 +1,6 @@
-import { ApiError } from '@maya-invest/edaya-api-client';
 import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import { toast } from '$lib/toast.svelte';
+import { ApiError } from '@maya-invest/edaya-api-client';
 
 function messageFromApiError(error: ApiError): string | undefined {
 	if (error.body && typeof error.body === 'object') {

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 	import type { StaffMember } from '$lib/types/school';
-	import { ApiError } from '@maya-invest/edaya-api-client';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import {
 		deleteStaffPermissionAssignmentMutation,
@@ -19,6 +18,7 @@
 	import { t } from '$lib/i18n';
 	import { Pencil, Plus, ShieldCheck, Trash2 } from '$lib/icons';
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { ApiError } from '@maya-invest/edaya-api-client';
 	import { get } from 'svelte/store';
 
 	let {

@@ -1,4 +1,3 @@
-import { ApiError } from '@maya-invest/edaya-api-client';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
 	classGroupDetailIdFromUrl,
@@ -8,6 +7,7 @@ import {
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 import { refreshReportCardCatalog } from '$lib/queries/report-cards.queries';
 import { reportCardsContext } from '$lib/report-cards/context.svelte';
+import { ApiError } from '@maya-invest/edaya-api-client';
 
 export function queryClassGroupsPage() {
 	return (url: URL) => resolvePageLoad(url, {

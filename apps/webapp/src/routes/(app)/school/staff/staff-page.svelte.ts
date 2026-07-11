@@ -1,25 +1,26 @@
 import type { components } from '$lib/api/schema';
-import type { StaffListFilters } from '$lib/list/list-url-filters';
-import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type {
 	PermissionCatalogEntry,
 	StaffPermissionAssignmentView,
 } from '$lib/api/staff-permission-assignments-data';
+import type { EntityVersionKey } from '$lib/entity-versions.svelte';
+import type { StaffListFilters } from '$lib/list/list-url-filters';
 import type { StaffMember } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { DEFAULT_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
+import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { fetchStaffMemberById, fetchStaffMembersPage } from '$lib/api/staff-data';
 import {
 	loadStaffPermissionPageData,
 } from '$lib/api/staff-permission-assignments-data';
-import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
+import { mergeById } from '$lib/detail-data/seed-policies';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readStaffListFilters, writeStaffListFilters } from '$lib/list/list-url-filters';
-import { mergeById } from '$lib/detail-data/seed-policies';
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
+import { SvelteMap } from 'svelte/reactivity';
 import {
 	createStaffOnPage,
 	deleteStaffOnPage,
@@ -33,8 +34,8 @@ import {
 	filterStaffList,
 	staffListUsesFullRoster,
 } from './lib/staff-list-filters';
-import { staffDetailIdFromUrl } from './lib/staff-selectors';
 import { ensureStaffDrawerSelection, querySchoolStaffPage } from './lib/staff-queries';
+import { staffDetailIdFromUrl } from './lib/staff-selectors';
 
 export const SCHOOL_STAFF_PAGE_SIZE = DEFAULT_LIST_PAGE_SIZE;
 
@@ -102,7 +103,7 @@ export class StaffPageState {
 	}
 
 	filterVisible(members: readonly StaffMember[]): StaffMember[] {
-		const classNameById = new Map(this.classes.map(classGroup => [classGroup.id, classGroup.name]));
+		const classNameById = new SvelteMap(this.classes.map(classGroup => [classGroup.id, classGroup.name]));
 		return filterStaffList(members, this.filters.values, { classNameById });
 	}
 

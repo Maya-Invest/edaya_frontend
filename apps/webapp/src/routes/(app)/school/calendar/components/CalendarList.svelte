@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { SchoolYearEvent } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { deleteSchoolYearEventMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -24,7 +25,6 @@
 	} from '$lib/icons';
 	import { bindUrlModal, closeUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { cn } from '$lib/utils';
-	import { page } from '$app/stores';
 	import { get } from 'svelte/store';
 	import { getCalendarPageState } from '../calendar-page.svelte';
 	import CalendarEventFormModal from './CalendarEventFormModal.svelte';
@@ -183,7 +183,7 @@
 		{#snippet search()}
 			<ListSearchField
 				value={calendarPage.filters.values.q}
-				oninput={event => {
+				oninput={(event) => {
 					calendarPage.filters.patch({ q: event.currentTarget.value });
 					calendarPage.filters.scheduleSync();
 				}}
@@ -315,33 +315,33 @@
 									</div>
 								{/if}
 								<div class="mt-1">
-								<PermissionGate
-									permission="TIMETABLE_UPDATE"
-									mode="disable"
-									tooltip={$t('calendar.permissionUpdate')}
-								>
-									{#snippet children({ disabled, title })}
-										<RowActionMenu>
-											<RowActionMenuItem
-												{disabled}
-												{title}
-												onclick={() => openEdit(ev)}
-											>
-												<Pencil class="h-4 w-4 text-muted-foreground" />
-												{$t('common.edit')}
-											</RowActionMenuItem>
-											<RowActionMenuItem
-												destructive
-												{disabled}
-												{title}
-												onclick={() => openDelete(ev)}
-											>
-												<Trash2 class="h-4 w-4" />
-												{$t('common.delete')}
-											</RowActionMenuItem>
-										</RowActionMenu>
-									{/snippet}
-								</PermissionGate>
+									<PermissionGate
+										permission="TIMETABLE_UPDATE"
+										mode="disable"
+										tooltip={$t('calendar.permissionUpdate')}
+									>
+										{#snippet children({ disabled, title })}
+											<RowActionMenu>
+												<RowActionMenuItem
+													{disabled}
+													{title}
+													onclick={() => openEdit(ev)}
+												>
+													<Pencil class="h-4 w-4 text-muted-foreground" />
+													{$t('common.edit')}
+												</RowActionMenuItem>
+												<RowActionMenuItem
+													destructive
+													{disabled}
+													{title}
+													onclick={() => openDelete(ev)}
+												>
+													<Trash2 class="h-4 w-4" />
+													{$t('common.delete')}
+												</RowActionMenuItem>
+											</RowActionMenu>
+										{/snippet}
+									</PermissionGate>
 								</div>
 							</div>
 						</div>

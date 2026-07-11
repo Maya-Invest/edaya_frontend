@@ -2,7 +2,6 @@ import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { AttendanceDay } from '$lib/types/school';
 import type { SessionDetail } from '$lib/types/session-detail';
-import { ApiError } from '@maya-invest/edaya-api-client';
 import {
 	activeEnrollmentsForClass,
 	attendanceRecordsForOccurrences,
@@ -10,6 +9,7 @@ import {
 } from '$lib/api/entity-list-filters';
 import { mapStudents, fetchClassPeopleSources } from '$lib/api/people-data';
 import { buildOccurrenceAttendanceDetail } from '$lib/api/session-detail-data';
+import { ApiError } from '@maya-invest/edaya-api-client';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 type AttendanceOccurrenceRaw = components['schemas']['AttendanceOccurrence'];

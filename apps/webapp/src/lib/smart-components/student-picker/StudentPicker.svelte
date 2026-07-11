@@ -1,11 +1,11 @@
 <script lang="ts">
 	import type { PersonPickerItem } from '$lib/components/school/shared/pickers/person-picker-types';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
+	import { filterPersonPickerItems } from '$lib/components/school/shared/pickers/filter-person-picker-items';
 	import PersonPicker from '$lib/components/school/shared/pickers/PersonPicker.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
-	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
-	import { filterPersonPickerItems } from '$lib/components/school/shared/pickers/filter-person-picker-items';
 	import { t } from '$lib/i18n';
 	import { Check, LoaderCircle, Search } from '$lib/icons';
 	import { cn } from '$lib/utils';

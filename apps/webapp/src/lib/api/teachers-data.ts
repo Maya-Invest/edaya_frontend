@@ -1,7 +1,6 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { Teacher } from '$lib/types/school';
-import { ApiError } from '@maya-invest/edaya-api-client';
 import {
 	DEFAULT_LIST_PAGE_SIZE,
 	paginatedList,
@@ -10,6 +9,7 @@ import {
 } from '$lib/api/entity-list-filters';
 import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 import { formatPersonName } from '$lib/api/teacher-display';
+import { ApiError } from '@maya-invest/edaya-api-client';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 type TeacherRaw = components['schemas']['Teacher'];

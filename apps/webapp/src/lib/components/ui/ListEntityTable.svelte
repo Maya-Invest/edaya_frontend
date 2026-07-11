@@ -1,10 +1,10 @@
 <script lang="ts" generics="TRow extends { id: string }">
+	import type { ListEntityTableColumn, ListEntityTableRowContext } from '$lib/list/list-entity-table-types';
 	import type { Snippet } from 'svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import InfiniteList from '$lib/components/ui/InfiniteList.svelte';
 	import { t } from '$lib/i18n';
 	import { ChevronDown, ChevronUp } from '$lib/icons';
-	import type { ListEntityTableColumn, ListEntityTableRowContext } from '$lib/list/list-entity-table-types';
 	import { listSortButtonLabel } from '$lib/list/list-sort-label';
 	import { cn } from '$lib/utils';
 

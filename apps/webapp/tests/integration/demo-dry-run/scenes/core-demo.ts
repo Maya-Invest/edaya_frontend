@@ -1,5 +1,6 @@
 import { signIn } from '../support/auth';
 import { CLASS_6A, CLASS_6B, DEMO_ACTIVITY_NAME } from '../support/constants';
+import { schoolStudentPath, schoolTeacherPath } from '../support/paths';
 import { assertClassAttendanceNav, ensureDailyAttendanceMode } from '../support/setup';
 import { waitForDrawerAside } from '../support/drawer';
 import type { DemoContext } from '../support/types';
@@ -48,7 +49,8 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 		reporter.log('D2', '2.1 Student list', 'fail', err instanceof Error ? err.message : String(err));
 		await shot('D2-2.1-Student-list-exception').catch(() => {});
 	}
-	await visit(ctx, `${base}/school/students/ci-s1`, 'D2', '2.2 Student drawer Kouamé Aya', {
+	await visit(ctx, `${base}${schoolStudentPath('ci-s1')}`, 'D2', '2.2 Student drawer Kouamé Aya', {
+		pathPrefix: schoolStudentPath('ci-s1'),
 		expectText: /Kouamé|Aya|ci-s1/i,
 	});
 	await visit(ctx, `${base}/school/guardians`, 'D2', '2.4 Guardians list', { selector: 'main' });
@@ -79,7 +81,8 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	}
 
 	await visit(ctx, `${base}/school/teachers`, 'D3', '3.1 Teachers list', { selector: 'main' });
-	await visit(ctx, `${base}/school/teachers/ci-t1`, 'D3', '3.2 Mme Touré drawer', {
+	await visit(ctx, `${base}${schoolTeacherPath('ci-t1')}`, 'D3', '3.2 Mme Touré drawer', {
+		pathPrefix: schoolTeacherPath('ci-t1'),
 		expectText: /Touré|ci-t1/i,
 	});
 
