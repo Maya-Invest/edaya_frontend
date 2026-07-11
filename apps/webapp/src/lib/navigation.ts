@@ -15,6 +15,7 @@ import {
 	ClipboardCheck,
 	FileSpreadsheet,
 	Percent,
+	Upload,
 	BadgeDollarSign,
 	Receipt,
 	Wallet,
@@ -101,6 +102,7 @@ const CONFIG_ICONS: Record<string, LucideIcon> = {
 	reportCards: FileSpreadsheet,
 	notificationTemplates: Mail,
 	discipline: AlertTriangle,
+	import: Upload,
 };
 
 const SCHOOL_ROUTES: Record<string, RouteId> = {
@@ -131,6 +133,7 @@ const CONFIG_ROUTES: Record<string, RouteId> = {
 	reportCards: '/(app)/configuration/report-cards/[[id]]',
 	notificationTemplates: '/(app)/configuration/notifications',
 	discipline: '/(app)/configuration/discipline',
+	import: '/(app)/configuration/import',
 };
 
 function buildSchoolItems(defs: NavItemDefinition[]): ContextItem[] {

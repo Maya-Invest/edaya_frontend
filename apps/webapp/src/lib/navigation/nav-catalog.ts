@@ -187,6 +187,12 @@ export const CONFIG_NAV_DEFS: NavItemDefinition[] = [
 		href: '/configuration/discipline',
 		permissions: ['DISCIPLINE_VALIDATE'],
 	},
+	{
+		key: 'import',
+		labelKey: 'config.import',
+		href: '/configuration/import',
+		permissions: ['STUDENT_CREATE', 'SCHOOL_STRUCTURE_READ'],
+	},
 ];
 
 export type NavModuleKey = 'school' | 'classes' | 'finance' | 'configuration';
