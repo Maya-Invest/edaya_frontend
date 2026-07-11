@@ -1,14 +1,14 @@
-export { querySchoolActivitiesPage, ensureActivityDrawerSelection } from './activities-queries';
+export { ensureActivityDrawerSelection, querySchoolActivitiesPage } from './activities-queries';
+export { activeActivityDetailTab, ACTIVITY_DETAIL_TABS } from './activity-detail-tabs';
+export { type ActivitySortColumn, cycleActivityListSort, filterActivityList } from './activity-list-filters';
 export {
 	createActivityOnPage,
-	updateActivityOnPage,
 	deleteActivityOnPage,
 	enrollStudentInActivityOnPage,
-	removeActivityEnrollmentOnPage,
 	ensureClassActivityEnrollmentOnPage,
+	removeActivityEnrollmentOnPage,
 	removeClassActivityEnrollmentOnPage,
+	updateActivityOnPage,
 } from './activity-mutations';
-export { activityDetailIdFromUrl, studentDisplayFallback } from './activity-selectors';
-export { cycleActivityListSort, filterActivityList, type ActivitySortColumn } from './activity-list-filters';
-export { ACTIVITY_DETAIL_TABS, activeActivityDetailTab } from './activity-detail-tabs';
 export { runActivityRouteMutation } from './activity-route-mutation';
+export { activityDetailIdFromUrl, studentDisplayFallback } from './activity-selectors';

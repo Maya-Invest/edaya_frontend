@@ -24,22 +24,22 @@ const STUDENT_TAB_ROUTES: Record<SchoolStudentTabSegment, RouteId> = {
 };
 
 const STAFF_TAB_ROUTES: Record<SchoolStaffTabSegment, RouteId> = {
-	'profile': '/(app)/school/staff/[[id]]/(tabs)/profile',
-	'permissions': '/(app)/school/staff/[[id]]/(tabs)/permissions',
-	'assignments': '/(app)/school/staff/[[id]]/(tabs)/assignments',
+	profile: '/(app)/school/staff/[[id]]/(tabs)/profile',
+	permissions: '/(app)/school/staff/[[id]]/(tabs)/permissions',
+	assignments: '/(app)/school/staff/[[id]]/(tabs)/assignments',
 };
 
 const TEACHER_TAB_ROUTES: Record<SchoolTeacherTabSegment, RouteId> = {
-	'profile': '/(app)/school/teachers/[[id]]/(tabs)/profile',
-	'assignments': '/(app)/school/teachers/[[id]]/(tabs)/assignments',
+	profile: '/(app)/school/teachers/[[id]]/(tabs)/profile',
+	assignments: '/(app)/school/teachers/[[id]]/(tabs)/assignments',
 };
 
 type SchoolActivityTabSegment = 'profile' | 'students' | 'classes';
 
 const ACTIVITY_TAB_ROUTES: Record<SchoolActivityTabSegment, RouteId> = {
-	'profile': '/(app)/school/activities/[[id]]/(tabs)/profile',
-	'students': '/(app)/school/activities/[[id]]/(tabs)/students',
-	'classes': '/(app)/school/activities/[[id]]/(tabs)/classes',
+	profile: '/(app)/school/activities/[[id]]/(tabs)/profile',
+	students: '/(app)/school/activities/[[id]]/(tabs)/students',
+	classes: '/(app)/school/activities/[[id]]/(tabs)/classes',
 };
 
 export const detailHref = {

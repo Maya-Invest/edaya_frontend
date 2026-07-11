@@ -1,7 +1,7 @@
 import type { ActivitiesPageState } from '../activities-page.svelte';
 import { ApiError } from '$api-client';
-import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 import { fetchActivityById } from '$lib/api/activities-data';
+import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 
 export function querySchoolActivitiesPage(state: ActivitiesPageState) {
 	return (url: URL) => resolvePageLoad(url, {

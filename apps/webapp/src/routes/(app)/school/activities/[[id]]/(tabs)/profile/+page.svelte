@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import { fmtActivityDate } from '$lib/components/school/shared/drawer-constants';
+	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import { t } from '$lib/i18n';
 	import { CalendarRange, Users } from '$lib/icons';
 	import { cn } from '$lib/utils';

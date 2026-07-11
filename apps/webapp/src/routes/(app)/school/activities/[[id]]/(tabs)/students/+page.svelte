@@ -2,17 +2,17 @@
 	import type { ActivityEnrollmentStatus } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import { ENROLL_NEXT } from '$lib/components/school/shared/drawer-constants';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import PickerModal from '$lib/components/ui/PickerModal.svelte';
-	import StudentPicker from '$lib/smart-components/student-picker/StudentPicker.svelte';
-	import { ENROLL_NEXT } from '$lib/components/school/shared/drawer-constants';
 	import { t } from '$lib/i18n';
 	import { Plus, Trash2 } from '$lib/icons';
+	import StudentPicker from '$lib/smart-components/student-picker/StudentPicker.svelte';
+	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
-	import { toast } from '$lib/toast.svelte';
 	import { getActivitiesPageState } from '../../../activities-page.svelte';
 	import { studentDisplayFallback } from '../../../lib/activity-selectors';
 

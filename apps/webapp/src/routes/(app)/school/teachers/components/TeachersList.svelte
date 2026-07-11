@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ListEntityTableColumn } from '$lib/list/list-entity-table-types';
 	import type { Teacher } from '$lib/types/school';
+	import type { TeacherSortColumn } from '../lib/teacher-list-filters';
 	import { page } from '$app/stores';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -21,7 +22,7 @@
 	import {
 		cycleTeacherListSort,
 		teacherListUsesFullRoster,
-		type TeacherSortColumn,
+
 	} from '../lib/teacher-list-filters';
 	import { getTeachersPageState, SCHOOL_TEACHERS_PAGE_SIZE } from '../teachers-page.svelte';
 	import TeacherCreateModal from './TeacherCreateModal.svelte';

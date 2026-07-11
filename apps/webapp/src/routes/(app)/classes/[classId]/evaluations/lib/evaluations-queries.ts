@@ -1,10 +1,11 @@
+import type { EvaluationsPageSlice } from './evaluation-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadClassEvaluationsPageData } from '$lib/api/assessments-data';
 import { loadClassPeopleData } from '$lib/api/people-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadClassSubjects } from '$lib/api/subjects-data';
 import { resolvePageLoad } from '$lib/queries/page-status';
-import { emptyEvaluationsSlice, type EvaluationsPageSlice } from './evaluation-helpers';
+import { emptyEvaluationsSlice } from './evaluation-helpers';
 
 export async function loadEvaluationsSlice(classId: string): Promise<EvaluationsPageSlice> {
 	const periodId = academicContext.periodId;

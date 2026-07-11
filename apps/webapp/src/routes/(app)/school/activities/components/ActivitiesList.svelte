@@ -1,7 +1,9 @@
 <script lang="ts">
 	import type { ListEntityTableColumn } from '$lib/list/list-entity-table-types';
 	import type { Activity } from '$lib/types/school';
+	import type { ActivitySortColumn } from '../lib/activity-list-filters';
 	import { page } from '$app/stores';
+	import { fmtActivityDate } from '$lib/components/school/shared/drawer-constants';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListEntityCards from '$lib/components/ui/ListEntityCards.svelte';
@@ -10,7 +12,6 @@
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
-	import { fmtActivityDate } from '$lib/components/school/shared/drawer-constants';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { CalendarRange, Plus, Users } from '$lib/icons';
@@ -20,8 +21,8 @@
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { cn } from '$lib/utils';
-	import { cycleActivityListSort, filterActivityList, type ActivitySortColumn } from '../lib/activity-list-filters';
 	import { getActivitiesPageState } from '../activities-page.svelte';
+	import { cycleActivityListSort, filterActivityList } from '../lib/activity-list-filters';
 	import ActivityFormModal from './ActivityFormModal.svelte';
 
 	const {

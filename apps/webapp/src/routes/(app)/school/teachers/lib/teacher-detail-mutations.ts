@@ -1,10 +1,10 @@
 import type { components } from '$lib/api/schema';
-import type { TeachersPageState } from '../teachers-page.svelte';
 import type { Teacher } from '$lib/types/school';
+import type { TeachersPageState } from '../teachers-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { sendAccountInvitationMutation } from '$lib/api/mutations/invitation.mutations';
-import { mapTeacher } from '$lib/api/teachers-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { mapTeacher } from '$lib/api/teachers-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { runTeacherRouteMutation } from './teacher-route-mutation';
 

@@ -1,9 +1,9 @@
 <script lang="ts" generics="TRow extends { id: string }">
+	import type { ListEntityCardLayout } from '$lib/list/list-entity-card-layout';
+	import type { ListEntityTableRowContext } from '$lib/list/list-entity-table-types';
 	import type { Snippet } from 'svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import { t } from '$lib/i18n';
-	import type { ListEntityCardLayout } from '$lib/list/list-entity-card-layout';
-	import type { ListEntityTableRowContext } from '$lib/list/list-entity-table-types';
 	import { cn } from '$lib/utils';
 
 	const {

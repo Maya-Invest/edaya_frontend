@@ -1,5 +1,5 @@
-import type { ActivitiesPageState } from '../activities-page.svelte';
 import type { Activity, ActivityEnrollment, ActivityEnrollmentStatus, ClassActivityEnrollment } from '$lib/types/school';
+import type { ActivitiesPageState } from '../activities-page.svelte';
 import { buildActivityConfigCommand, DEFAULT_ACTIVITY_SCHEDULE } from '$lib/api/activity-save-payload';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';

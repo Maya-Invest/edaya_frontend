@@ -2,7 +2,6 @@ import { ApiError } from '$api-client';
 import { academicContext } from '$lib/academic/context.svelte';
 import { schoolWideEntityList } from '$lib/api/entity-list-filters';
 import { loadClassPeopleData } from '$lib/api/people-data';
-import { authSession } from '$lib/auth/session.svelte';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { queryClient } from '$lib/queries/client';
 import { resolvePageLoad, listPageHasItems } from '$lib/queries/page-status';

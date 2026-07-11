@@ -1325,7 +1325,7 @@
 
     "@cspotcode/source-map-support/@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.9", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.0.3", "@jridgewell/sourcemap-codec": "^1.4.10" } }, "sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ=="],
 
-    "@edaya/webapp/@edaya/client-codegen": ["@edaya/client-codegen@github:Maya-Invest/edaya-client-codegen#b8c0d72", { "dependencies": { "openapi-typescript": "^7.13.0" }, "bin": { "edaya-codegen": "./bin/edaya-codegen.ts" } }, "Maya-Invest-edaya-client-codegen-b8c0d72", "sha512-wI6aD2otzngJx2dGz+iKgQXzP8tsZQQb4HJGyf/Nmcl2pPbkTjBkgFaPJrEHYp/VC3IGGQOyWW64rf2KFPDdFA=="],
+    "@edaya/webapp/@edaya/client-codegen": ["@edaya/client-codegen@github:Maya-Invest/edaya-client-codegen#44ddb0d", { "dependencies": { "openapi-typescript": "^7.13.0" }, "bin": { "edaya-codegen": "./bin/edaya-codegen.ts" } }, "Maya-Invest-edaya-client-codegen-44ddb0d", "sha512-KdBfjA7ZOnF1pH5otntN5VIve2zBWFWFEyiJ8EpjdRiuXvv1K5/QH++ovlmg3+Sswz3E4XS0MRTIW7/In2KD1Q=="],
 
     "@es-joy/jsdoccomment/comment-parser": ["comment-parser@1.4.5", "", {}, "sha512-aRDkn3uyIlCFfk5NUA+VdwMmMsh8JGhc4hapfV4yxymHGQ3BVskMQfoXGpCo5IoBuQ9tS5iiVKhCpTcB4pW4qw=="],
 

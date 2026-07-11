@@ -1,7 +1,9 @@
 <script lang="ts">
 	import type { ListEntityTableColumn } from '$lib/list/list-entity-table-types';
 	import type { Guardian } from '$lib/types/school';
+	import type { GuardianSortColumn } from '../lib/guardian-list-filters';
 	import { page } from '$app/stores';
+	import { relationKey } from '$lib/components/school/shared/drawer-constants';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ListEntityTable from '$lib/components/ui/ListEntityTable.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -9,7 +11,6 @@
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import ListSelectionBar from '$lib/components/ui/ListSelectionBar.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
-	import { relationKey } from '$lib/components/school/shared/drawer-constants';
 	import { t } from '$lib/i18n';
 	import { Mail, Phone, Plus, Users } from '$lib/icons';
 	import { downloadCsv } from '$lib/list/list-csv-export';
@@ -18,12 +19,12 @@
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
+	import { getGuardiansPageState, SCHOOL_GUARDIANS_PAGE_SIZE } from '../guardians-page.svelte';
 	import {
 		cycleGuardianListSort,
 		guardianListUsesFullRoster,
-		type GuardianSortColumn,
+
 	} from '../lib/guardian-list-filters';
-	import { getGuardiansPageState, SCHOOL_GUARDIANS_PAGE_SIZE } from '../guardians-page.svelte';
 	import GuardianCreateModal from './GuardianCreateModal.svelte';
 
 	const {

@@ -5,11 +5,11 @@
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import PickerModal from '$lib/components/ui/PickerModal.svelte';
-	import ClassGroupPicker from '$lib/smart-components/class-group-picker/ClassGroupPicker.svelte';
 	import { t } from '$lib/i18n';
 	import { Plus, Trash2 } from '$lib/icons';
-	import { get } from 'svelte/store';
+	import ClassGroupPicker from '$lib/smart-components/class-group-picker/ClassGroupPicker.svelte';
 	import { toast } from '$lib/toast.svelte';
+	import { get } from 'svelte/store';
 	import { getActivitiesPageState } from '../../../activities-page.svelte';
 
 	const activitiesPage = getActivitiesPageState();

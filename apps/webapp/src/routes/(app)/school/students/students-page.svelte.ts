@@ -1,5 +1,5 @@
-import type { StudentListFilters } from '$lib/list/list-url-filters';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
+import type { StudentListFilters } from '$lib/list/list-url-filters';
 import type { Student } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { fetchStudentById, loadClassPeopleData, loadPeopleData, loadPeopleDataPage } from '$lib/api/people-data';

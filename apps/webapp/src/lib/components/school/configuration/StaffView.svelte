@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { StaffListFilters } from '$lib/list/list-url-filters';
 	import type { StaffMember } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
@@ -16,7 +17,6 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { Mail, Plus, Search } from '$lib/icons';
-	import type { StaffListFilters } from '$lib/list/list-url-filters';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readStaffListFilters, writeStaffListFilters } from '$lib/list/list-url-filters';
 	import { useOffsetInfiniteList } from '$lib/list/use-infinite-list.svelte';

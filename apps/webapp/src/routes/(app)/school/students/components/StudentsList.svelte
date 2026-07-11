@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ListEntityTableColumn } from '$lib/list/list-entity-table-types';
 	import type { Student } from '$lib/types/school';
+	import type { StudentSortColumn } from '../lib/student-list-filters';
 	import { page } from '$app/stores';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -18,8 +19,8 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { Eye, GraduationCap, Pencil, Plus } from '$lib/icons';
-	import { downloadCsv } from '$lib/list/list-csv-export';
 	import { loadCardColumnsPreference, saveCardColumnsPreference } from '$lib/list/list-card-columns-preference';
+	import { downloadCsv } from '$lib/list/list-csv-export';
 	import { ListSelectionState } from '$lib/list/list-selection-state.svelte';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, closeUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
@@ -28,7 +29,7 @@
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
-	import { studentListUsesFullRoster, cycleStudentListSort, type StudentSortColumn } from '../lib/student-list-filters';
+	import { studentListUsesFullRoster, cycleStudentListSort } from '../lib/student-list-filters';
 	import {
 		getStudentsPageState,
 		SCHOOL_STUDENTS_PAGE_SIZE,

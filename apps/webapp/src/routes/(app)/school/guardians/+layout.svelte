@@ -12,11 +12,11 @@
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
 	import GuardiansList from './components/GuardiansList.svelte';
-	import { guardianListUsesFullRoster } from './lib/guardian-list-filters';
 	import {
 		GuardiansPageState,
 		setGuardiansPageState,
 	} from './guardians-page.svelte';
+	import { guardianListUsesFullRoster } from './lib/guardian-list-filters';
 
 	const { children: pageChildren }: { children: Snippet } = $props();
 

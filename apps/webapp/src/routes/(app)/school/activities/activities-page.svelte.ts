@@ -1,5 +1,5 @@
-import type { ActivityListFilters } from '$lib/list/list-url-filters';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
+import type { ActivityListFilters } from '$lib/list/list-url-filters';
 import type { Activity, Student } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { fetchActivities } from '$lib/api/activities-data';
