@@ -1,16 +1,33 @@
 <script lang="ts">
 	import { academicContext } from '$lib/academic/context.svelte';
+	import { authSession } from '$lib/auth/session.svelte';
+	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import ImportFileDropzone from '$lib/components/school/configuration/ImportFileDropzone.svelte';
+	import ImportProgressBar from '$lib/components/school/configuration/ImportProgressBar.svelte';
+	import ImportValidationTable from '$lib/components/school/configuration/ImportValidationTable.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import { loadExistingStudentMatricules } from '$lib/import/students/load-existing-matricules';
 	import { parseStudentImportFile } from '$lib/import/students/parser';
+	import { runStudentImport, type StudentImportRunResult } from '$lib/import/students/runner';
 	import {
 		downloadStudentImportCsvTemplate,
 		downloadStudentImportExcelTemplate,
 	} from '$lib/import/students/template';
-	import { STUDENT_IMPORT_COLUMNS, type StudentImportColumnKey, type StudentImportRow } from '$lib/import/students/types';
+	import {
+		STUDENT_IMPORT_COLUMNS,
+		type StudentImportColumnKey,
+		type StudentImportRow,
+		type StudentImportValidationResult,
+	} from '$lib/import/students/types';
+	import {
+		canImportValidatedStudents,
+		validateStudentImportRows,
+	} from '$lib/import/students/validator';
 	import { t } from '$lib/i18n';
 	import { Download, FileSpreadsheet, LoaderCircle } from '$lib/icons';
+	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import { notifyStudentsListChanged } from '$lib/students/notify-students-list-changed';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 
@@ -51,10 +68,25 @@
 	let parsedRows = $state<StudentImportRow[]>([]);
 	let parseErrorMessage = $state('');
 	let parsing = $state(false);
+	let validationResult = $state<StudentImportValidationResult | null>(null);
+	let existingMatricules = $state<Set<string>>(new Set());
+	let loadingMatricules = $state(false);
+	let importing = $state(false);
+	let importProgress = $state({ current: 0, total: 0 });
+	let importResult = $state<StudentImportRunResult | null>(null);
+	let importFatalError = $state('');
+
+	const studentsHref = appPath('/(app)/school/students/[[id]]');
 
 	const hasClasses = $derived(academicContext.classes.length > 0);
 	const previewRows = $derived(parsedRows.slice(0, 3));
 	const canGoToUpload = $derived(hasClasses);
+	const canGoToValidate = $derived(parsedRows.length > 0 && !parseErrorMessage && !parsing);
+	const canStartImport = $derived(canImportValidatedStudents(validationResult));
+	const validationIssues = $derived([
+		...(validationResult?.errors ?? []),
+		...(validationResult?.warnings ?? []),
+	]);
 
 	function resetWizard() {
 		step = 'download';
@@ -62,6 +94,11 @@
 		parsedRows = [];
 		parseErrorMessage = '';
 		parsing = false;
+		validationResult = null;
+		importing = false;
+		importProgress = { current: 0, total: 0 };
+		importResult = null;
+		importFatalError = '';
 	}
 
 	function handleOpenChange(next: boolean) {
@@ -83,6 +120,86 @@
 	function clearParsedState() {
 		parsedRows = [];
 		parseErrorMessage = '';
+		validationResult = null;
+	}
+
+	async function loadMatriculesIfNeeded() {
+		if (loadingMatricules || existingMatricules.size > 0) {
+			return;
+		}
+		loadingMatricules = true;
+		try {
+			existingMatricules = await loadExistingStudentMatricules();
+		}
+		catch {
+			existingMatricules = new Set();
+		}
+		finally {
+			loadingMatricules = false;
+		}
+	}
+
+	function runValidation() {
+		validationResult = validateStudentImportRows(parsedRows, {
+			classes: academicContext.classes.map(classGroup => ({
+				id: classGroup.id,
+				name: classGroup.name,
+			})),
+			existingMatricules,
+		});
+	}
+
+	async function goToValidateStep() {
+		await loadMatriculesIfNeeded();
+		runValidation();
+		step = 'validate';
+	}
+
+	$effect(() => {
+		if (open) {
+			void loadMatriculesIfNeeded();
+		}
+	});
+
+	async function startImport() {
+		if (!validationResult || !canStartImport || importing) {
+			return;
+		}
+
+		const schoolId = authSession.schoolId;
+		if (!schoolId) {
+			return;
+		}
+
+		importing = true;
+		importResult = null;
+		importFatalError = '';
+		importProgress = { current: 0, total: validationResult.validRows.length };
+		step = 'execute';
+
+		try {
+			importResult = await runStudentImport({
+				schoolId,
+				client: getBrowserSchoolClient(),
+				rows: validationResult.validRows,
+				onProgress: (current, total) => {
+					importProgress = { current, total };
+				},
+			});
+		}
+		catch (error) {
+			importFatalError = error instanceof Error && error.message.trim().length > 0
+				? error.message
+				: get(t)('import.students.importFailed');
+			importResult = {
+				created: 0,
+				failed: [],
+				studentIds: [],
+			};
+		}
+		finally {
+			importing = false;
+		}
 	}
 
 	async function handleFileSelected(file: File) {
@@ -111,29 +228,35 @@
 </script>
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
-	<Dialog.Content class="max-w-xl" data-testid="student-import-modal">
-		<Dialog.Header>
-			<Dialog.Title>{$t('import.students.modalTitle')}</Dialog.Title>
-			<Dialog.Description>{$t('import.students.modalDescription')}</Dialog.Description>
-		</Dialog.Header>
+	<Dialog.Content
+		class="flex max-h-[min(90vh,52rem)] max-w-2xl flex-col gap-0 overflow-hidden p-0"
+		data-testid="student-import-modal"
+	>
+		<div class="shrink-0 space-y-5 border-b border-border px-6 pb-4 pt-6">
+			<Dialog.Header>
+				<Dialog.Title>{$t('import.students.modalTitle')}</Dialog.Title>
+				<Dialog.Description>{$t('import.students.modalDescription')}</Dialog.Description>
+			</Dialog.Header>
 
-		<ol class="mb-5 flex flex-wrap gap-2" aria-label={$t('import.students.modalTitle')}>
-			{#each STEPS as wizardStep, index (wizardStep)}
-				<li
-					class={cn(
-						'rounded-full border px-3 py-1 text-xs font-medium',
-						stepIndex(step) === index
-							? 'border-primary bg-primary/10 text-primary'
-							: stepIndex(step) > index
-								? 'border-border text-muted-foreground'
-								: 'border-border bg-secondary/40 text-muted-foreground',
-					)}
-				>
-					{$t(STEP_LABEL_KEYS[wizardStep])}
-				</li>
-			{/each}
-		</ol>
+			<ol class="flex flex-wrap gap-2" aria-label={$t('import.students.modalTitle')}>
+				{#each STEPS as wizardStep, index (wizardStep)}
+					<li
+						class={cn(
+							'rounded-full border px-3 py-1 text-xs font-medium',
+							stepIndex(step) === index
+								? 'border-primary bg-primary/10 text-primary'
+								: stepIndex(step) > index
+									? 'border-border text-muted-foreground'
+									: 'border-border bg-secondary/40 text-muted-foreground',
+						)}
+					>
+						{$t(STEP_LABEL_KEYS[wizardStep])}
+					</li>
+				{/each}
+			</ol>
+		</div>
 
+		<div class="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-6 py-4">
 		{#if step === 'download'}
 			<section class="space-y-4" data-testid="student-import-step-download">
 				{#if !hasClasses}
@@ -234,18 +357,106 @@
 					</div>
 				{/if}
 			</section>
-		{/if}
+		{:else if step === 'validate' && validationResult}
+			<section class="space-y-4" data-testid="student-import-step-validate">
+				<div class="grid gap-2 sm:grid-cols-3">
+					<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
+						{$t('import.students.validation.summaryReady', { n: validationResult.validRows.length })}
+					</p>
+					<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+						{$t('import.students.validation.summaryErrors', { n: validationResult.errors.length })}
+					</p>
+					<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
+						{$t('import.students.validation.summaryWarnings', { n: validationResult.warnings.length })}
+					</p>
+				</div>
 
-		<Dialog.Footer class="gap-2 sm:justify-between">
+				<ImportValidationTable issues={validationIssues} />
+			</section>
+		{:else if step === 'execute'}
+			<section class="space-y-4" data-testid="student-import-step-execute">
+				{#if importing}
+					<p class="text-sm text-muted-foreground">{$t('import.students.executing')}</p>
+					<ImportProgressBar
+						current={importProgress.current}
+						total={importProgress.total}
+						label={$t('import.students.executeProgress', {
+							current: importProgress.current,
+							total: importProgress.total,
+						})}
+					/>
+				{:else if importResult}
+					<div class="space-y-3">
+						<h3 class="text-sm font-semibold">{$t('import.students.resultTitle')}</h3>
+						{#if importFatalError}
+							<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+								{importFatalError}
+							</p>
+						{/if}
+						<div class="grid gap-2 sm:grid-cols-2">
+							<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
+								{$t('import.students.resultCreated', { n: importResult.created })}
+							</p>
+							<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+								{$t('import.students.resultFailed', { n: importResult.failed.length })}
+							</p>
+						</div>
+
+						{#if importResult.created === 0 && importResult.failed.length === 0 && !importFatalError}
+							<p class="text-sm text-muted-foreground">{$t('import.students.resultNothing')}</p>
+						{/if}
+
+						{#if importResult.failed.length > 0}
+							<div class="rounded-xl border border-border bg-secondary/20 p-4">
+								<p class="mb-2 text-sm font-semibold">{$t('import.students.resultFailures')}</p>
+								<ul class="space-y-2 text-sm">
+									{#each importResult.failed as failure (failure.rowIndex + failure.studentName)}
+										<li>
+											<span class="font-mono text-xs text-muted-foreground">L{failure.rowIndex}</span>
+											<span class="mx-2">·</span>
+											{failure.studentName}
+											<span class="mx-2 text-muted-foreground">—</span>
+											{failure.message}
+										</li>
+									{/each}
+								</ul>
+							</div>
+						{/if}
+					</div>
+				{:else}
+					<p class="text-sm text-muted-foreground">{$t('import.students.resultUnexpected')}</p>
+				{/if}
+			</section>
+		{/if}
+		</div>
+
+		<Dialog.Footer class="shrink-0 gap-2 border-t border-border px-6 py-4 sm:justify-between">
 			<div class="flex gap-2">
-				{#if step === 'upload'}
-					<Button variant="outline" onclick={() => (step = 'download')} data-testid="student-import-back">
+				{#if step === 'upload' || step === 'validate'}
+					<Button
+						variant="outline"
+						disabled={importing}
+						onclick={() => (step = step === 'validate' ? 'upload' : 'download')}
+						data-testid="student-import-back"
+					>
 						{$t('common.back')}
 					</Button>
 				{/if}
 			</div>
-			<div class="flex gap-2">
-				<Button variant="outline" onclick={() => handleOpenChange(false)}>
+			<div class="flex flex-wrap gap-2">
+				{#if step === 'execute' && importResult}
+					<Button
+						onclick={() => {
+							notifyStudentsListChanged();
+							handleOpenChange(false);
+							void appGoto(studentsHref, { invalidateAll: true });
+						}}
+						data-testid="student-import-view-students"
+					>
+						{$t('import.students.viewStudents')}
+					</Button>
+				{/if}
+				<Button variant="outline" disabled={importing} onclick={() => handleOpenChange(false)}>
 					{$t('common.close')}
 				</Button>
 				{#if step === 'download'}
@@ -255,6 +466,25 @@
 						data-testid="student-import-next"
 					>
 						{$t('common.next')}
+					</Button>
+				{:else if step === 'upload'}
+					<Button
+						disabled={!canGoToValidate}
+						onclick={() => void goToValidateStep()}
+						data-testid="student-import-next"
+					>
+						{$t('common.next')}
+					</Button>
+				{:else if step === 'validate' && validationResult}
+					<Button
+						disabled={!canStartImport || importing}
+						onclick={() => void startImport()}
+						data-testid="student-import-start"
+					>
+						{#if importing}
+							<LoaderCircle class="mr-2 size-4 animate-spin" aria-hidden="true" />
+						{/if}
+						{$t('import.students.importReady', { n: validationResult.validRows.length })}
 					</Button>
 				{/if}
 			</div>

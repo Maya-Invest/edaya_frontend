@@ -50,6 +50,17 @@ describe('student import parser', () => {
 		expect(xlsxResult.rows[1]?.nom).toBe('Kouassi');
 	});
 
+	it('parses xlsx dates stored as Excel serial numbers', () => {
+		const xlsxBuffer = buildStudentImportXlsxBufferFromRows([
+			['prenom', 'nom', 'classe', 'date_naissance', 'genre', 'matricule'],
+			['Awa', 'Koffi', '6ème B', 41112, 'F', 'MAT-2026-002'],
+		]);
+		const result = parseStudentImportXlsxBuffer(xlsxBuffer);
+
+		expect(result.errors).toEqual([]);
+		expect(result.rows[0]?.date_naissance).toBe('2012-07-22');
+	});
+
 	it('returns an empty_file error for blank csv', () => {
 		const result = parseStudentImportCsvText('   \n');
 

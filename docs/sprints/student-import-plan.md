@@ -162,7 +162,7 @@ tests/lib/import/students/
 | 0.2 | Add nav item `config.import` → `/configuration/import` | `nav-catalog.ts`, `navigation.ts` | ✅ |
 | 0.3 | Add i18n keys (fr + en) | `fr.ts`, `en.ts` | ✅ |
 | 0.4 | Create route stub + `ImportDataView` with single "Students" card | `+page.svelte`, `ImportDataView.svelte` | ✅ |
-| 0.5 | Gate with `PermissionGate` — `STUDENT_CREATE` | `ImportDataView.svelte` | ✅ |
+| 0.5 | Gate with `PermissionGate` — `STUDENT_UPDATE` + `ENROLLMENT_CREATE` | `ImportDataView.svelte` | ✅ |
 
 **Exit criteria:** `/configuration/import` renders; nav link visible for authorized users.
 
@@ -197,35 +197,35 @@ tests/lib/import/students/
 
 ---
 
-### Phase 3 — Validation (1 day)
+### Phase 3 — Validation (1 day) ✅
 
-| ID | Task | Files |
-|----|------|-------|
-| 3.1 | Required field checks (`prenom`, `nom`, `classe`) | `students/validator.ts` |
-| 3.2 | Date format validation (`YYYY-MM-DD`) | `students/validator.ts` |
-| 3.3 | Class resolution against `academicContext.classes` | `students/validator.ts` |
-| 3.4 | Duplicate matricule within file | `students/validator.ts` |
-| 3.5 | Duplicate matricule against existing students (optional: fetch roster ids/matricules on modal open) | `students/validator.ts` |
-| 3.6 | Return `{ validRows, errors[], warnings[] }` | `students/validator.ts` |
-| 3.7 | `ImportValidationTable` — display errors by row/column | `ImportValidationTable.svelte` |
-| 3.8 | Unit tests for all validation rules | `validator.test.ts` |
+| ID | Task | Files | Status |
+|----|------|-------|--------|
+| 3.1 | Required field checks (`prenom`, `nom`, `classe`) | `students/validator.ts` | ✅ |
+| 3.2 | Date format validation (`YYYY-MM-DD`) | `students/validator.ts` | ✅ |
+| 3.3 | Class resolution against `academicContext.classes` | `students/validator.ts` | ✅ |
+| 3.4 | Duplicate matricule within file | `students/validator.ts` | ✅ |
+| 3.5 | Duplicate matricule against existing students | `load-existing-matricules.ts` | ✅ |
+| 3.6 | Return `{ validRows, errors[], warnings[] }` | `students/validator.ts` | ✅ |
+| 3.7 | `ImportValidationTable` — display errors by row/column | `ImportValidationTable.svelte` | ✅ |
+| 3.8 | Unit tests for all validation rules | `validator.test.ts` | ✅ |
 
 **Exit criteria:** Invalid files show blocking errors; valid files show preview count and enable import button.
 
 ---
 
-### Phase 4 — Import execution (1 day)
+### Phase 4 — Import execution (1 day) ✅
 
-| ID | Task | Files |
-|----|------|-------|
-| 4.1 | Extract shared `registerAndEnrollStudent()` from `createStudentOnPage` logic | `students/runner.ts` or refactor `students-list-mutations.ts` |
-| 4.2 | Sequential loop with unique IDs: `stu-${Date.now().toString(36)}-${i}` | `students/runner.ts` |
-| 4.3 | Per-row try/catch — collect successes and failures, continue on error | `students/runner.ts` |
-| 4.4 | `entityVersions.bump(['students', 'enrollments'])` after batch | `students/runner.ts` |
-| 4.5 | `ImportProgressBar` — `current / total` during execution | `ImportProgressBar.svelte` |
-| 4.6 | Result summary: created / failed / skipped | modal step 4 |
-| 4.7 | Link "Voir les élèves" → `/school/students` | modal step 4 |
-| 4.8 | Unit test runner with mocked client | `runner.test.ts` |
+| ID | Task | Files | Status |
+|----|------|-------|--------|
+| 4.1 | Extract shared `registerAndEnrollStudent()` from `createStudentOnPage` logic | `register-and-enroll-student.ts`, `students-list-mutations.ts` | ✅ |
+| 4.2 | Sequential loop with unique IDs: `stu-${Date.now().toString(36)}-${i}` | `students/runner.ts` | ✅ |
+| 4.3 | Per-row try/catch — collect successes and failures, continue on error | `students/runner.ts` | ✅ |
+| 4.4 | `entityVersions.bump(['students', 'enrollments'])` after batch | `students/runner.ts` | ✅ |
+| 4.5 | `ImportProgressBar` — `current / total` during execution | `ImportProgressBar.svelte` | ✅ |
+| 4.6 | Result summary: created / failed / skipped | `StudentImportModal.svelte` step 4 | ✅ |
+| 4.7 | Link "Voir les élèves" → `/school/students` | `StudentImportModal.svelte` step 4 | ✅ |
+| 4.8 | Unit test runner with mocked client | `runner.test.ts` | ✅ |
 
 **Exit criteria:** 10-row test file creates 10 students enrolled in correct classes; partial failure report is accurate.
 

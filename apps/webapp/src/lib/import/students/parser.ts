@@ -16,12 +16,31 @@ export interface StudentImportParseResult {
 	errors: StudentImportParseError[];
 }
 
+function excelSerialToIsoDate(serial: number): string | null {
+	if (!Number.isFinite(serial) || serial < 1) {
+		return null;
+	}
+	const parsed = XLSX.SSF.parse_date_code(serial);
+	if (!parsed) {
+		return null;
+	}
+	const month = String(parsed.m).padStart(2, '0');
+	const day = String(parsed.d).padStart(2, '0');
+	return `${parsed.y}-${month}-${day}`;
+}
+
 function cellToString(value: unknown): string {
 	if (value == null) {
 		return '';
 	}
 	if (value instanceof Date) {
 		return value.toISOString().slice(0, 10);
+	}
+	if (typeof value === 'number' && value >= 20_000 && value <= 60_000) {
+		const isoDate = excelSerialToIsoDate(value);
+		if (isoDate) {
+			return isoDate;
+		}
 	}
 	return String(value).trim();
 }
@@ -142,7 +161,7 @@ export function parseStudentImportXlsxBuffer(buffer: ArrayBuffer): StudentImport
 			if (!header) {
 				continue;
 			}
-			record[header] = Array.isArray(row) ? row[index] : '';
+			record[header] = Array.isArray(row) ? cellToString(row[index]) : '';
 		}
 		return record;
 	});
