@@ -46,5 +46,5 @@ build/
 !.vscode/settings.json
 !.vscode/extensions.json
 !.vscode/launch.json
-# CI / local symlink checkout for @edaya/api-client
-edaya-client-codegen/
+# CI sibling checkout for edaya_backend (see _verify.yml)
+edaya_backend/

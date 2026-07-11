@@ -17,6 +17,7 @@ describe('school drawer path helpers', () => {
 		expect(drawerTabFromPathname('/school/students/ci-s1/profile')).toBe('profile');
 		expect(drawerTabFromPathname('/school/students/ci-s1/grades')).toBe('grades');
 		expect(drawerTabFromPathname('/school/teachers/ci-t1/assignments')).toBe('assignments');
+		expect(drawerTabFromPathname('/school/teachers/ci-t1/availability')).toBe('availability');
 		expect(drawerTabFromPathname('/school/staff/ci-st3/permissions')).toBe('permissions');
 		expect(drawerTabFromPathname('/configuration/classes/ci-6a')).toBeNull();
 	});

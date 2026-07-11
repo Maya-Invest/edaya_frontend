@@ -41,6 +41,12 @@ export const SCHOOL_NAV_DEFS: NavItemDefinition[] = [
 		permissions: ['QUERY_CALENDAR_READ', 'ACCESS_CONTROL_READ'],
 	},
 	{
+		key: 'timetablePlanning',
+		labelKey: 'school.timetablePlanning',
+		href: '/school/timetable-planning',
+		permissions: ['QUERY_TIMETABLE_READ'],
+	},
+	{
 		key: 'activities',
 		labelKey: 'school.activities',
 		href: '/school/activities',

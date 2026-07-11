@@ -38,6 +38,8 @@ export async function updateSchoolSettingsMutation(
 			timetableExcludeBreakSlots: current?.timetableExcludeBreakSlots ?? true,
 			timetableMinPeriodGapSameSubject: current?.timetableMinPeriodGapSameSubject ?? 2,
 			timetablePreferredPeriodDefinitionIds: current?.timetablePreferredPeriodDefinitionIds ?? [],
+			timetableAllowUnassignedTeacherPlacements: current?.timetableAllowUnassignedTeacherPlacements ?? false,
+			timetableUseHomeroomTeacherFallback: current?.timetableUseHomeroomTeacherFallback ?? false,
 		}),
 		{ successMessage: options?.successMessage },
 	);

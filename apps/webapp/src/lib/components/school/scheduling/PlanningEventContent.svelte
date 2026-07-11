@@ -51,6 +51,11 @@
 	<p class="truncate text-[11px] opacity-80">
 		{kindLabel(event.kind)}
 	</p>
+	{#if event.timetableGenerated === 'draft'}
+		<p class="truncate text-[10px] font-medium uppercase text-muted-foreground">
+			{$t('timetable.draft')}
+		</p>
+	{/if}
 	{#if event.teacher && event.kind !== 'homework-due'}
 		<p class="truncate text-[10px] opacity-75">{String(event.teacher)}</p>
 	{/if}

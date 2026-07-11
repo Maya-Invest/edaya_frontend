@@ -17,9 +17,11 @@ import { ApiError } from '@maya-invest/edaya-api-client';
 import { getContext, setContext } from 'svelte';
 import {
 	createTeacherOnPage,
+	deleteTeacherUnavailabilityOnPage,
 	deleteTeacherAssignmentOnPage,
 	deleteTeacherOnPage,
 	saveTeacherAssignmentOnPage,
+	saveTeacherUnavailabilityOnPage,
 	updateTeacherProfileOnPage,
 	updateTeacherStatusOnPage,
 } from './lib/teacher-detail-mutations';
@@ -33,8 +35,9 @@ import { teacherDetailIdFromUrl } from './lib/teacher-selectors';
 export const SCHOOL_TEACHERS_PAGE_SIZE = DEFAULT_LIST_PAGE_SIZE;
 
 type TeacherAssignment = components['schemas']['TeacherAssignment'];
+export type TeacherUnavailability = components['schemas']['TeacherUnavailability'];
 
-const TEACHERS_VERSION_FAMILIES = ['teachers'] as const satisfies readonly EntityVersionKey[];
+const TEACHERS_VERSION_FAMILIES = ['teachers', 'teacherUnavailabilities'] as const satisfies readonly EntityVersionKey[];
 
 const TEACHERS_PAGE_STATE_KEY = Symbol('teachers-page-state');
 
@@ -42,6 +45,7 @@ export class TeachersPageState {
 	teachers = $state<Teacher[]>([]);
 	fullRosterTeachers = $state<Teacher[]>([]);
 	teacherAssignments = $state<TeacherAssignment[]>([]);
+	teacherUnavailabilities = $state<TeacherUnavailability[]>([]);
 	subjects = $state<Subject[]>([]);
 	totalTeachers = $state(0);
 	listLoading = $state(false);
@@ -114,6 +118,40 @@ export class TeachersPageState {
 
 	teacherAssignmentsForTeacher(teacherId: string): TeacherAssignment[] {
 		return this.teacherAssignments.filter(row => row.teacherId === teacherId);
+	}
+
+	teacherUnavailabilitiesForTeacher(teacherId: string): TeacherUnavailability[] {
+		return this.teacherUnavailabilities.filter(row => row.teacherId === teacherId);
+	}
+
+	seedTeacherUnavailabilities(teacherId: string, rows: TeacherUnavailability[]) {
+		this.teacherUnavailabilities = [
+			...this.teacherUnavailabilities.filter(row => row.teacherId !== teacherId),
+			...rows,
+		];
+		this.versions.markLoaded();
+	}
+
+	upsertTeacherUnavailability(row: TeacherUnavailability) {
+		this.teacherUnavailabilities = mergeById(this.teacherUnavailabilities, [row]);
+	}
+
+	removeTeacherUnavailability(id: string) {
+		this.teacherUnavailabilities = this.teacherUnavailabilities.filter(row => row.id !== id);
+	}
+
+	async loadTeacherUnavailabilities(teacherId: string) {
+		const academicYearId = this.teacherScope().academicYearId;
+		if (!academicYearId) {
+			this.seedTeacherUnavailabilities(teacherId, []);
+			return;
+		}
+		const rows = await getBrowserSchoolClient().entities.teacherUnavailabilities.list({
+			teacherId,
+			academicYearId,
+			$orderBy: [{ field: 'effectiveFrom', direction: 'asc' }],
+		});
+		this.seedTeacherUnavailabilities(teacherId, rows);
 	}
 
 	subjectLabel(classSubjectId: string | null | undefined): string {
@@ -364,6 +402,14 @@ export class TeachersPageState {
 
 	deleteAssignment(...args: Parameters<typeof deleteTeacherAssignmentOnPage> extends [TeachersPageState, ...infer R] ? R : never) {
 		return deleteTeacherAssignmentOnPage(this, ...args);
+	}
+
+	saveUnavailability(...args: Parameters<typeof saveTeacherUnavailabilityOnPage> extends [TeachersPageState, ...infer R] ? R : never) {
+		return saveTeacherUnavailabilityOnPage(this, ...args);
+	}
+
+	deleteUnavailability(...args: Parameters<typeof deleteTeacherUnavailabilityOnPage> extends [TeachersPageState, ...infer R] ? R : never) {
+		return deleteTeacherUnavailabilityOnPage(this, ...args);
 	}
 }
 

@@ -1,12 +1,13 @@
 import type { components } from '$lib/api/schema';
 import type { Teacher } from '$lib/types/school';
-import type { TeachersPageState } from '../teachers-page.svelte';
+import type { TeachersPageState, TeacherUnavailability } from '../teachers-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { sendAccountInvitationMutation } from '$lib/api/mutations/invitation.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { mapTeacher } from '$lib/api/teachers-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { runTeacherRouteMutation } from './teacher-route-mutation';
+import { buildTeacherUnavailabilityPayload } from './teacher-unavailability';
 
 type TeacherAssignment = components['schemas']['TeacherAssignment'];
 
@@ -290,5 +291,58 @@ export async function deleteTeacherAssignmentOnPage(
 		versionKeys: ['teachers'],
 	});
 
+	return result !== null;
+}
+
+export function createTeacherUnavailabilityPayload(input: {
+	id?: string;
+	teacherId: string;
+	recurrence: TeacherUnavailability['recurrence'];
+	dayOfWeek?: TeacherUnavailability['dayOfWeek'];
+	startTime?: string;
+	endTime?: string;
+	effectiveFrom?: string;
+	effectiveUntil?: string;
+	startsAt?: string;
+	endsAt?: string;
+	reason?: string;
+	isActive?: boolean;
+}): TeacherUnavailability {
+	return buildTeacherUnavailabilityPayload({ ...input, academicYearId: academicYearId() });
+}
+
+export async function saveTeacherUnavailabilityOnPage(
+	state: TeachersPageState,
+	input: { rule: TeacherUnavailability; successMessage?: string },
+): Promise<boolean> {
+	const previous = state.teacherUnavailabilities.find(row => row.id === input.rule.id);
+	const result = await runTeacherRouteMutation({
+		request: () => getBrowserSchoolClient().entities.teacherUnavailabilities.save(input.rule),
+		apply: () => state.upsertTeacherUnavailability(input.rule),
+		rollback: () => previous
+			? state.upsertTeacherUnavailability(previous)
+			: state.removeTeacherUnavailability(input.rule.id),
+		onSuccess: saved => state.upsertTeacherUnavailability(saved),
+		successMessage: input.successMessage,
+		versionKeys: ['teacherUnavailabilities', 'planning'],
+	});
+	return result !== null;
+}
+
+export async function deleteTeacherUnavailabilityOnPage(
+	state: TeachersPageState,
+	input: { id: string; successMessage?: string },
+): Promise<boolean> {
+	const previous = state.teacherUnavailabilities.find(row => row.id === input.id);
+	const result = await runTeacherRouteMutation({
+		request: () => getBrowserSchoolClient().entities.teacherUnavailabilities.delete({ id: input.id }),
+		apply: () => state.removeTeacherUnavailability(input.id),
+		rollback: () => {
+			if (previous)
+				state.upsertTeacherUnavailability(previous);
+		},
+		successMessage: input.successMessage,
+		versionKeys: ['teacherUnavailabilities', 'planning'],
+	});
 	return result !== null;
 }

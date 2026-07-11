@@ -11,7 +11,7 @@ type SchoolStudentTabSegment
 		| 'enrollments';
 
 type SchoolStaffTabSegment = 'profile' | 'permissions' | 'assignments';
-type SchoolTeacherTabSegment = 'profile' | 'assignments';
+type SchoolTeacherTabSegment = 'profile' | 'assignments' | 'availability';
 
 const STUDENT_TAB_ROUTES: Record<SchoolStudentTabSegment, RouteId> = {
 	'profile': '/(app)/school/students/[[id]]/(tabs)/profile',
@@ -32,6 +32,7 @@ const STAFF_TAB_ROUTES: Record<SchoolStaffTabSegment, RouteId> = {
 const TEACHER_TAB_ROUTES: Record<SchoolTeacherTabSegment, RouteId> = {
 	profile: '/(app)/school/teachers/[[id]]/(tabs)/profile',
 	assignments: '/(app)/school/teachers/[[id]]/(tabs)/assignments',
+	availability: '/(app)/school/teachers/[[id]]/(tabs)/availability',
 };
 
 type SchoolActivityTabSegment = 'profile' | 'students' | 'classes';

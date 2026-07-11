@@ -30,6 +30,7 @@
 		editable = false,
 		onSelect,
 		onAttendance,
+		onChanged,
 	}: {
 		events: PlanningEvent[];
 		selectedId?: string;
@@ -37,6 +38,7 @@
 		editable?: boolean;
 		onSelect?: (event: PlanningEvent) => void;
 		onAttendance?: (event: PlanningEvent) => void;
+		onChanged?: () => Promise<void>;
 	} = $props();
 
 	const timetable = new PlanningTimetableState();
@@ -47,7 +49,7 @@
 	const overlapIds = $derived(overlappingPlanningEventIds(weekEvents));
 	const hours = $derived(timetableHours(weekEvents));
 	const calendarEvents = $derived(mapPlanningToCalendarEvents(weekEvents));
-	const calendarEventsKey = $derived(weekEvents.map(event => `${event.id}:${event.status ?? 'pending'}`).join('|'));
+	const calendarEventsKey = $derived(weekEvents.map(event => `${event.id}:${event.status ?? 'pending'}:${event.timetableGenerated ?? ''}`).join('|'));
 
 	timetable.configure({ onAttendance: (eventId) => {
 		const planningEvent = weekEvents.find(event => event.id === eventId);
@@ -106,6 +108,7 @@
 			kind === 'homework-due' ? 'edaya-timetable-event--homework-due' : '',
 			kind === 'activity' ? 'edaya-timetable-event--activity' : '',
 			kind === 'assessment' ? 'edaya-timetable-event--assessment' : '',
+			event.timetableGenerated === 'draft' ? 'edaya-timetable-event--draft' : '',
 		].filter(Boolean).join(' ');
 	};
 
@@ -203,6 +206,7 @@
 			successMessage: $t('planning.rescheduleSuccess'),
 			errorMessage: $t('planning.rescheduleError'),
 		}));
+		await onChanged?.();
 	}
 </script>
 
@@ -267,6 +271,12 @@
 	:global(.edaya-timetable-calendar .wx-box-event) {
 		border: 1px solid transparent;
 		box-shadow: var(--shadow-soft);
+	}
+
+	:global(.edaya-timetable-calendar .wx-box-event.edaya-timetable-event--draft) {
+		border-style: dashed;
+		border-width: 2px;
+		opacity: 0.82;
 	}
 
 	:global(.edaya-timetable-calendar .wx-box-event.edaya-subject-tone-a) {

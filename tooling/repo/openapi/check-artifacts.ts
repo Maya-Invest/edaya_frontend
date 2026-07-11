@@ -7,7 +7,7 @@ import {
   saasAdminOpenApiPath,
   saasAdminSchemaPath,
   trackedOpenApiPath,
-  trackedSchemaPath,
+  // trackedSchemaPath,
 } from './paths.ts'
 
 const trackedWebappSchemaPath = resolve(repoRoot, 'apps/webapp/src/lib/api/schema.ts')
@@ -22,7 +22,6 @@ export async function checkTrackedClientArtifacts(
   const changed = await checkClientArtifacts({
     input: openApiInput,
     openApiOut: trackedOpenApiPath,
-    schemaOut: trackedSchemaPath,
     repoRoot,
   })
 

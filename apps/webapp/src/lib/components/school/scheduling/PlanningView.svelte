@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PlanningEvent } from '$lib/types/school';
+	import type { Activity, PlanningEvent, Student, Subject } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -7,7 +7,6 @@
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
-	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { locale, t } from '$lib/i18n';
 	import { ChevronLeft, ChevronRight, Plus, Search } from '$lib/icons';
@@ -28,17 +27,29 @@
 
 	const {
 		classId,
+		events: routeEvents,
+		students: routeStudents,
+		subjects,
+		activities,
+		focusDate,
+		onRefresh,
 		onSelect,
 		selectedId,
 	}: {
 		classId: string;
+		events: PlanningEvent[];
+		students: Student[];
+		subjects: Subject[];
+		activities: Activity[];
+		focusDate?: string;
+		onRefresh?: () => Promise<void>;
 		onSelect?: (e: PlanningEvent) => void;
 		selectedId?: string;
 	} = $props();
 
-	const events = $derived(detailDataContext.planningForClass(classId));
+	const events = $derived(routeEvents);
 	const classes = $derived(academicContext.classes);
-	const students = $derived(detailDataContext.studentsForClass(classId));
+	const students = $derived(routeStudents);
 
 	const planning = new PlanningState(() => $page.url);
 	setPlanningState(planning);
@@ -74,6 +85,16 @@
 
 	$effect(() => {
 		planning.hydrateFromUrl($page.url);
+	});
+
+	let lastAppliedFocusDate = $state('');
+
+	$effect(() => {
+		if (!focusDate || focusDate === lastAppliedFocusDate) {
+			return;
+		}
+		lastAppliedFocusDate = focusDate;
+		planning.navigateWeek(new Date(`${focusDate}T12:00:00`));
 	});
 
 	$effect(() => {
@@ -120,7 +141,10 @@
 							bind:open={planning.wizardOpen}
 							{disabled}
 							{title}
-							onCreated={sessionId => appGoto(detailHref.classPlanning(classId, sessionId))}
+							onCreated={async (sessionId) => {
+								await onRefresh?.();
+								appGoto(detailHref.classPlanning(classId, sessionId));
+							}}
 						/>
 						<Button
 							size="sm"
@@ -212,7 +236,7 @@
 		</div>
 	{/if}
 
-	<ScheduleFormModal {classId} {weekStart} defaultScheduleKind={planning.scheduleCreateKind} bind:open={planning.scheduleCreateOpen} />
+	<ScheduleFormModal {classId} {weekStart} {subjects} {activities} defaultScheduleKind={planning.scheduleCreateKind} bind:open={planning.scheduleCreateOpen} onSaved={onRefresh} />
 
 	<ClassTimetableCalendar
 		events={weekEvents}
@@ -221,6 +245,7 @@
 		{editable}
 		{onSelect}
 		onAttendance={planning.openAttendance}
+		onChanged={onRefresh}
 	/>
 
 	{#if planning.attendanceSession && attendanceClass}

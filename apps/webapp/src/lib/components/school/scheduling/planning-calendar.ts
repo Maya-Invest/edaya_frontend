@@ -231,6 +231,7 @@ export interface TimetableCalendarEvent {
 	teacher: string;
 	kind?: PlanningEvent['kind'];
 	status?: PlanningEvent['status'];
+	timetableGenerated?: PlanningEvent['timetableGenerated'];
 	css?: string;
 }
 
@@ -258,6 +259,7 @@ export function mapPlanningToCalendarEvents(
 			teacher: event.teacher,
 			kind: event.kind,
 			status: event.status,
+			timetableGenerated: event.timetableGenerated,
 			css: calendarEventCss(event),
 		};
 	});

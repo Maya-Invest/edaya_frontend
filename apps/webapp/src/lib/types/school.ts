@@ -64,6 +64,7 @@ export interface PlanningEvent {
 	room: string;
 	teacher: string;
 	status?: PlanningOccurrenceStatus;
+	timetableGenerated?: 'draft' | 'published' | null;
 }
 
 export type TimetableScheduleDay
@@ -342,6 +343,12 @@ export interface School {
 	country?: string;
 	timeZone: string;
 	type?: SchoolType | null;
+	timetableEnforceWorkloadFulfillment: boolean;
+	timetableExcludeBreakSlots: boolean;
+	timetableMinPeriodGapSameSubject: number;
+	timetablePreferredPeriodDefinitionIds: string[];
+	timetableAllowUnassignedTeacherPlacements: boolean;
+	timetableUseHomeroomTeacherFallback: boolean;
 }
 
 export interface SchoolYearEvent {

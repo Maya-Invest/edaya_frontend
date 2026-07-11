@@ -7,15 +7,15 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout web
         uses: actions/checkout@v5
 
-      - name: Checkout API client
+      - name: Checkout backend
         uses: actions/checkout@v5
         with:
-          repository: Maya-Invest/edaya-client-codegen
+          repository: Maya-Invest/edaya_backend
           ref: ${{ github.head_ref || github.ref_name }}
-          path: edaya-client-codegen
+          path: edaya_backend
 
       - name: Setup Bun and Turbo cache
         uses: ./.github/actions/ci-bun-turbo

@@ -34,6 +34,12 @@ export function mapSchoolFromApi(raw: SchoolRaw): School {
 		country: raw.country ?? undefined,
 		timeZone: raw.timeZone,
 		type: (raw.type ?? null) as SchoolType | null,
+		timetableEnforceWorkloadFulfillment: raw.timetableEnforceWorkloadFulfillment,
+		timetableExcludeBreakSlots: raw.timetableExcludeBreakSlots,
+		timetableMinPeriodGapSameSubject: raw.timetableMinPeriodGapSameSubject,
+		timetablePreferredPeriodDefinitionIds: raw.timetablePreferredPeriodDefinitionIds,
+		timetableAllowUnassignedTeacherPlacements: raw.timetableAllowUnassignedTeacherPlacements,
+		timetableUseHomeroomTeacherFallback: raw.timetableUseHomeroomTeacherFallback,
 	};
 }
 

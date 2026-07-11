@@ -1,6 +1,7 @@
 export const TEACHER_DETAIL_TABS = [
 	{ key: 'profile', segment: 'profile', labelKey: 'drawer.tab.profile' },
 	{ key: 'assignments', segment: 'assignments', labelKey: 'drawer.tab.assignments' },
+	{ key: 'availability', segment: 'availability', labelKey: 'drawer.tab.availability' },
 ] as const;
 
 export type TeacherDetailTabKey = (typeof TEACHER_DETAIL_TABS)[number]['key'];

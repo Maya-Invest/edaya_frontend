@@ -62,6 +62,26 @@ describe('planning-calendar', () => {
 		});
 	});
 
+	test('mapPlanningToCalendarEvents preserves generated draft status', () => {
+		const [mapped] = mapPlanningToCalendarEvents([{
+			id: 'draft-session',
+			classId: 'cg1',
+			kind: 'lesson',
+			title: 'Math',
+			subject: 'Math',
+			day: 'Mon',
+			start: '08:00',
+			end: '09:00',
+			startsAt: '2026-05-11T08:00:00.000Z',
+			endsAt: '2026-05-11T09:00:00.000Z',
+			room: '',
+			teacher: 'Teacher',
+			timetableGenerated: 'draft',
+		}]);
+
+		expect(mapped?.timetableGenerated).toBe('draft');
+	});
+
 	test('sessionInstantsForSlot keeps reference week and uses UTC wall-clock', () => {
 		const referenceStartsAt = '2026-05-11T08:30:00.000Z';
 		const { startsAt, endsAt } = sessionInstantsForSlot(referenceStartsAt, {

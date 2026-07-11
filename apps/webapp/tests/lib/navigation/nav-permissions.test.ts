@@ -40,6 +40,7 @@ describe('nav-permissions — professeur (phase 3.2)', () => {
 			'students',
 			'guardians',
 			'calendar',
+			'timetablePlanning',
 			'activities',
 			'events',
 		]);
@@ -79,6 +80,7 @@ describe('nav-permissions — prof principal (phase 3.3)', () => {
 			'staff',
 			'teachers',
 			'calendar',
+			'timetablePlanning',
 			'activities',
 			'announcements',
 			'events',

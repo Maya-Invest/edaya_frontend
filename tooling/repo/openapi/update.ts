@@ -2,19 +2,14 @@
 import { copyFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { exportOpenApi } from './export.ts'
-import { generateClientArtifactsFromOpenApi } from './generate-bindings.ts'
 import {
   repoRoot,
   saasAdminOpenApiPath,
   saasAdminSchemaPath,
   trackedOpenApiPath,
-  trackedSchemaPath,
 } from './paths.ts'
 
 await exportOpenApi()
-await generateClientArtifactsFromOpenApi(trackedOpenApiPath, {
-  schemaOut: trackedSchemaPath,
-})
 
 copyFileSync(trackedOpenApiPath, saasAdminOpenApiPath)
 copyFileSync(

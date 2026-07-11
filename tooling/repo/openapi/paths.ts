@@ -5,7 +5,7 @@ import process from 'node:process'
 export const repoRoot = resolve(import.meta.dirname, '../../..')
 
 export const coreRepoRoot = resolve(
-  process.env.EDAYA_CORE_ROOT ?? resolve(repoRoot, '../edaya_backend'),
+  process.env.EDAYA_CORE_ROOT ?? resolve(repoRoot, 'edaya_backend'),
 )
 
 export const trackedOpenApiPath = resolve(
@@ -13,8 +13,8 @@ export const trackedOpenApiPath = resolve(
   'apps/webapp/src/lib/api/openapi.json',
 )
 export const trackedSchemaPath = resolve(
-  repoRoot,
-  'edaya-client-codegen/clients/school-api/src/schema.d.ts',
+  coreRepoRoot,
+  'package/api-client/src/schema.d.ts',
 )
 /** SaaS admin uses the same OpenAPI document as the school webapp. */
 export const saasAdminOpenApiPath = resolve(
