@@ -1,7 +1,7 @@
 import type { GenerateClassResult } from '$lib/api/mutations/timetable-generation.mutations';
 import type { components } from '$lib/api/schema';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
-import type { Activity, PlanningEvent, Student, Subject, TimetableSchedule } from '$lib/types/school';
+import type { Activity, PlanningEvent, SchoolYearEvent, Student, Subject, TimetableSchedule } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
   generateClassTimetable,
@@ -42,6 +42,7 @@ export class TimetablePageState {
 	students = $state<Student[]>([]);
 	subjects = $state<Subject[]>([]);
 	activities = $state<Activity[]>([]);
+	schoolYearEvents = $state<SchoolYearEvent[]>([]);
   generationResult = $state<GenerateClassResult | null>(null);
 	teacherUnavailabilities = $state<components['schemas']['TeacherUnavailability'][]>([]);
 	classSubjects = $state<components['schemas']['ClassSubject'][]>([]);
@@ -92,12 +93,14 @@ export class TimetablePageState {
 		people: { students: Student[] };
 		subjects: Subject[];
 		activities: Activity[];
+		schoolYearEvents: SchoolYearEvent[];
 	}) {
 		this.events = data.planning;
 		this.schedules = data.schedules;
 		this.students = data.people.students;
 		this.subjects = data.subjects;
 		this.activities = data.activities;
+		this.schoolYearEvents = data.schoolYearEvents;
     this.versions.markLoaded();
 	}
 
@@ -118,10 +121,18 @@ export class TimetablePageState {
       return;
     }
     try {
-      this.seedEvents(await loadClassPlanning(getBrowserSchoolClient(), this.classId, {
-        periodId: academicContext.periodId,
-        range: this.academicYearRange,
-      }));
+      const yearId = academicContext.yearId;
+      const [planning, schoolYearEvents] = await Promise.all([
+        loadClassPlanning(getBrowserSchoolClient(), this.classId, {
+          periodId: academicContext.periodId,
+          range: this.academicYearRange,
+        }),
+        yearId
+          ? loadCalendarEvents(getBrowserSchoolClient(), yearId)
+          : Promise.resolve(this.schoolYearEvents),
+      ]);
+      this.seedEvents(planning);
+      this.schoolYearEvents = schoolYearEvents;
       this.versions.markLoaded();
     }
     catch (error) {

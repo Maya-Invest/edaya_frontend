@@ -1,3 +1,8 @@
+/** Parse an API or form `YYYY-MM-DD` value as local noon to avoid UTC midnight day shifts. */
+export function parseCivilDate(value: string): Date {
+	return new Date(`${value.trim().slice(0, 10)}T12:00:00`);
+}
+
 export function formatDateInput(value: unknown): string {
 	if (!value)
 		return '';
@@ -43,5 +48,5 @@ export function formatLocaleDate(
 	locale: string,
 	options: Intl.DateTimeFormatOptions,
 ): string {
-	return new Date(value).toLocaleDateString(locale, options);
+	return parseCivilDate(value).toLocaleDateString(locale, options);
 }

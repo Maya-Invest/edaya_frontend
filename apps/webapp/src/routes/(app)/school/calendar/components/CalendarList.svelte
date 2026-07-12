@@ -12,6 +12,7 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
+	import { parseCivilDate } from '$lib/date/format';
 	import { locale, t } from '$lib/i18n';
 	import {
 		AlertCircle,
@@ -44,8 +45,8 @@
 		},
 		vacation: {
 			labelKey: 'calType.vacation',
-			style: 'bg-secondary text-foreground/80',
-			dot: 'bg-accent/60',
+			style: 'bg-sky-soft text-sky',
+			dot: 'bg-sky',
 		},
 		closure: {
 			labelKey: 'calType.closure',
@@ -54,8 +55,8 @@
 		},
 		ceremony: {
 			labelKey: 'calType.ceremony',
-			style: 'bg-secondary text-foreground/80',
-			dot: 'bg-accent',
+			style: 'bg-primary/10 text-primary',
+			dot: 'bg-primary',
 		},
 	};
 
@@ -81,8 +82,7 @@
 	);
 
 	function formatMonthYear(dateStr: string, loc: string) {
-		const d = new Date(dateStr);
-		return d.toLocaleDateString(loc, { month: 'long', year: 'numeric' });
+		return parseCivilDate(dateStr).toLocaleDateString(loc, { month: 'long', year: 'numeric' });
 	}
 
 	function eventEndDate(ev: SchoolYearEvent) {
@@ -263,10 +263,10 @@
 									</span>
 								{/if}
 								<span class="font-display text-lg font-semibold leading-tight">
-									{new Date(ev.date).getDate()}
+									{parseCivilDate(ev.date).getDate()}
 								</span>
 								<span class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-									{new Date(ev.date).toLocaleDateString($locale, { month: 'short' })}
+									{parseCivilDate(ev.date).toLocaleDateString($locale, { month: 'short' })}
 								</span>
 							</div>
 
@@ -307,10 +307,10 @@
 											{$t('drawer.end')}
 										</span>
 										<span class="font-display text-lg font-semibold leading-tight">
-											{new Date(endDate).getDate()}
+											{parseCivilDate(endDate).getDate()}
 										</span>
 										<span class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-											{new Date(endDate).toLocaleDateString($locale, { month: 'short' })}
+											{parseCivilDate(endDate).toLocaleDateString($locale, { month: 'short' })}
 										</span>
 									</div>
 								{/if}

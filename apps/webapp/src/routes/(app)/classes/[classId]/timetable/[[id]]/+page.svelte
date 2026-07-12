@@ -28,6 +28,7 @@
 	students={timetablePage.students}
 	subjects={timetablePage.subjects}
 	activities={timetablePage.activities}
+	schoolYearEvents={timetablePage.schoolYearEvents}
 	focusDate={timetablePage.focusDate}
 	onRefresh={() => timetablePage.refresh()}
 	onSelect={selectSession}

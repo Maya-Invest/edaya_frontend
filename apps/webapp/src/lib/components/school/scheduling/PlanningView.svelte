@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Activity, PlanningEvent, Student, Subject } from '$lib/types/school';
+	import type { Activity, PlanningEvent, SchoolYearEvent, Student, Subject } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -31,6 +31,7 @@
 		students: routeStudents,
 		subjects,
 		activities,
+		schoolYearEvents = [],
 		focusDate,
 		onRefresh,
 		onSelect,
@@ -41,6 +42,7 @@
 		students: Student[];
 		subjects: Subject[];
 		activities: Activity[];
+		schoolYearEvents?: SchoolYearEvent[];
 		focusDate?: string;
 		onRefresh?: () => Promise<void>;
 		onSelect?: (e: PlanningEvent) => void;
@@ -240,6 +242,8 @@
 
 	<ClassTimetableCalendar
 		events={weekEvents}
+		{schoolYearEvents}
+		{classId}
 		{selectedId}
 		{weekStart}
 		{editable}

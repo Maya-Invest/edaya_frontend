@@ -366,6 +366,8 @@ export interface SchoolYearEvent {
 	type: 'holiday' | 'vacation' | 'closure' | 'ceremony';
 	description: string;
 	scope: 'all' | string[];
+	/** When true, timetable generation skips these dates for the scoped class(es). */
+	blocksTimetable?: boolean;
 }
 
 export interface PedagogicalNote {

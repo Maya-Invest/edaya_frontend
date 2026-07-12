@@ -3,6 +3,7 @@ import { fetchActivities } from '$lib/api/activities-data';
 import { loadClassPeopleData } from '$lib/api/people-data';
 import { academicYearPlanningRange, findPlanningEventById, loadClassPlanning } from '$lib/api/planning-data';
 import { safeOptionalFetch } from '$lib/api/safe-entity-access';
+import { loadCalendarEvents } from '$lib/api/school-life-data';
 import { loadClassSchedules } from '$lib/api/schedule-data';
 import { loadPlanningOccurrenceDetail } from '$lib/api/session-detail-data';
 import { queryClient } from '$lib/queries/client';
@@ -40,6 +41,7 @@ export interface ClassTimetablePageHooks {
 		people: Awaited<ReturnType<typeof loadClassPeopleData>>;
 		subjects: Awaited<ReturnType<typeof getClassSubjects>>;
 		activities: Awaited<ReturnType<typeof fetchActivities>>;
+		schoolYearEvents: Awaited<ReturnType<typeof loadCalendarEvents>>;
 	}) => void;
 	loadTeacherConstraints?: () => Promise<void>;
 }
@@ -54,7 +56,8 @@ export function queryClassTimetablePage(classId: string, hooks: ClassTimetablePa
 			const periodId = academicContext.periodId;
 			const schoolId = academicContext.schools[0]?.id ?? '';
 			const client = queryClient();
-			const [planning, schedules, people, subjects, activities] = await Promise.all([
+			const yearId = academicContext.yearId;
+			const [planning, schedules, people, subjects, activities, schoolYearEvents] = await Promise.all([
 				safeOptionalFetch(
 					() => loadClassPlanning(client, classId, {
 						periodId,
@@ -71,8 +74,11 @@ export function queryClassTimetablePage(classId: string, hooks: ClassTimetablePa
 				schoolId
 					? safeOptionalFetch(() => fetchActivities(client, schoolId), [])
 					: Promise.resolve([]),
+				yearId
+					? safeOptionalFetch(() => loadCalendarEvents(client, yearId), [])
+					: Promise.resolve([]),
 			]);
-			hooks.seedData?.({ planning, schedules, people, subjects, activities });
+			hooks.seedData?.({ planning, schedules, people, subjects, activities, schoolYearEvents });
 			await hooks.loadTeacherConstraints?.();
 			await seedSessionDrawerForUrl(url, planning);
 			return { classId };

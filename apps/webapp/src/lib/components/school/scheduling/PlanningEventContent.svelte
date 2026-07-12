@@ -3,7 +3,13 @@
 	import { ClipboardCheck, MapPin } from '$lib/icons';
 	import { getPlanningTimetableContext } from './planning-timetable-context';
 
-	const { event }: { event: Record<string, unknown>; mode?: string } = $props();
+	const {
+		event,
+		mode = 'boxes',
+	}: {
+		event: Record<string, unknown>;
+		mode?: string;
+	} = $props();
 
 	const actions = getPlanningTimetableContext();
 
@@ -15,6 +21,10 @@
 
 	function kindLabel(kind: unknown): string {
 		switch (kind) {
+			case 'school-calendar': {
+				const calendarType = String(event.calendarType ?? 'ceremony');
+				return $t(`calType.${calendarType}`);
+			}
 			case 'homework-due':
 				return $t('planning.homeworkDueLane');
 			case 'activity':
@@ -39,14 +49,30 @@
 	}
 
 	const showAttendance = $derived.by(
-		() => event.kind !== 'homework-due' && event.status !== 'cancelled',
+		() => event.kind !== 'homework-due'
+			&& event.kind !== 'school-calendar'
+			&& event.allDay !== true
+			&& event.status !== 'cancelled',
 	);
+	const showTimes = $derived.by(
+		() => mode !== 'bars'
+			&& event.kind !== 'school-calendar'
+			&& event.allDay !== true,
+	);
+	const compactBar = $derived(mode === 'bars');
 </script>
 
+{#if compactBar}
+	<div class="flex h-full min-h-0 items-center px-1">
+		<p class="truncate text-[11px] font-semibold leading-none">{String(event.text ?? '')}</p>
+	</div>
+{:else}
 <div class="flex h-full min-h-0 flex-col gap-0.5 pr-6">
-	<p class="font-mono text-[10px] leading-tight tracking-wide opacity-80">
-		{formatTime(event.start)} – {formatTime(event.end)}
-	</p>
+	{#if showTimes}
+		<p class="font-mono text-[10px] leading-tight tracking-wide opacity-80">
+			{formatTime(event.start)} – {formatTime(event.end)}
+		</p>
+	{/if}
 	<p class="truncate text-xs font-semibold leading-tight">{String(event.text ?? '')}</p>
 	<p class="truncate text-[11px] opacity-80">
 		{kindLabel(event.kind)}
@@ -86,3 +112,4 @@
 		</button>
 	{/if}
 </div>
+{/if}
