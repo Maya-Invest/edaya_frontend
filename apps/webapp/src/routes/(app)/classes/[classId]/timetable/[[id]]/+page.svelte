@@ -4,8 +4,8 @@
 	import PlanningView from '$lib/components/school/scheduling/PlanningView.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
-	import { listRouteCacheKey } from '$lib/detail-route-patterns';
 	import { detailHref } from '$lib/detail-hrefs';
+	import { listRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';

@@ -46,10 +46,10 @@ describe('student import runner', () => {
 		expect(result.studentIds).toEqual(['stu-testseed-0', 'stu-testseed-1']);
 		expect(registerStudent).toHaveBeenCalledTimes(2);
 		expect(enrollStudent).toHaveBeenCalledTimes(2);
-		expect(enrollStudent.mock.calls[1]?.[0]).toMatchObject({
+		expect(enrollStudent).toHaveBeenNthCalledWith(2, expect.objectContaining({
 			studentId: 'stu-testseed-1',
 			classGroupId: 'class-6b',
-		});
+		}));
 		expect(progress.at(-1)).toEqual({ current: 2, total: 2 });
 	});
 

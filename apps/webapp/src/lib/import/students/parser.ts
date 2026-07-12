@@ -1,8 +1,9 @@
+import type { StudentImportColumnKey, StudentImportRow } from './types';
+import { isStudentImportFile, isStudentImportFileWithinSizeLimit } from '$lib/import/shared/file-accept';
+import { normalizeHeader } from '$lib/import/shared/normalize-header';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
-import { isStudentImportFile, isStudentImportFileExtension, isStudentImportFileWithinSizeLimit } from '$lib/import/shared/file-accept';
-import { normalizeHeader } from '$lib/import/shared/normalize-header';
-import { STUDENT_IMPORT_COLUMNS, type StudentImportColumnKey, type StudentImportRow } from './types';
+import { STUDENT_IMPORT_COLUMNS } from './types';
 
 export type StudentImportFileFormat = 'csv' | 'xlsx';
 
@@ -206,7 +207,7 @@ export async function parseStudentImportFile(file: File): Promise<StudentImportP
 }
 
 /** Test helper to build an in-memory workbook buffer. */
-export function buildStudentImportXlsxBufferFromRows(rows: string[][]): ArrayBuffer {
+export function buildStudentImportXlsxBufferFromRows(rows: (string | number)[][]): ArrayBuffer {
 	const workbook = XLSX.utils.book_new();
 	const sheet = XLSX.utils.aoa_to_sheet(rows);
 	XLSX.utils.book_append_sheet(workbook, sheet, 'Eleves');

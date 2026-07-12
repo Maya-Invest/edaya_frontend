@@ -59,45 +59,45 @@
 		status={planningPage.loadStatus === 'error'
 			? 'error'
 			: planningPage.loadStatus === 'ready' && planningPage.rows.length === 0
-				? 'empty'
-				: 'ready'}
+			? 'empty'
+			: 'ready'}
 		errorMessage={planningPage.loadError || $t('dataState.errorDefault')}
 		emptyTitle={$t('school.timetablePlanning')}
 		emptyDescription={$t('dataState.emptyDescription')}
 		preserveShell
 	>
-	{#if planningPage.loadStatus === 'idle' || planningPage.loadStatus === 'loading'}
-		<p class="py-8 text-center text-sm text-muted-foreground">{$t('dataState.loading')}</p>
-	{:else}
-	<div class="overflow-x-auto border-y border-border">
-		<table class="w-full min-w-[760px] text-sm">
-			<thead class="bg-muted/40 text-left text-xs text-muted-foreground">
-				<tr><th class="px-3 py-2 font-medium">{$t('common.class')}</th><th class="px-3 py-2 font-medium">{$t('timetable.drafts')}</th><th class="px-3 py-2 font-medium">{$t('timetable.published')}</th><th class="px-3 py-2 font-medium">{$t('timetable.lastResult')}</th><th class="px-3 py-2 font-medium">{$t('timetable.unmetWorkload')}</th><th class="px-3 py-2 text-right font-medium">{$t('common.actions')}</th></tr>
-			</thead>
-			<tbody class="divide-y divide-border/60">
-				{#each planningPage.rows as row (row.classGroup.id)}
-					<tr>
-						<td class="px-3 py-2.5 font-medium">{row.classGroup.name}</td>
-						<td class="px-3 py-2.5">{row.draftCount}</td>
-						<td class="px-3 py-2.5">{row.publishedCount}</td>
-						<td class="px-3 py-2.5">{row.placementCount ?? '—'}</td>
-						<td class="px-3 py-2.5">{row.unmetWorkloadCount ?? '—'}</td>
-						<td class="px-3 py-2.5">
-							<div class="flex justify-end gap-2">
-								<Button size="sm" variant="ghost" onclick={() => review(row.classGroup.id)}><Eye class="mr-1 h-4 w-4" />{$t('timetable.review')}</Button>
-								<PermissionGate permission="TIMETABLE_UPDATE" mode="disable">
-									{#snippet children({ disabled })}
-										<Button size="sm" variant="outline" {disabled} onclick={() => openPublish(row.classGroup.id, row.classGroup.name)}>{$t('timetable.publish')}</Button>
-									{/snippet}
-								</PermissionGate>
-							</div>
-						</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-	</div>
-	{/if}
+		{#if planningPage.loadStatus === 'idle' || planningPage.loadStatus === 'loading'}
+			<p class="py-8 text-center text-sm text-muted-foreground">{$t('dataState.loading')}</p>
+		{:else}
+			<div class="overflow-x-auto border-y border-border">
+				<table class="w-full min-w-[760px] text-sm">
+					<thead class="bg-muted/40 text-left text-xs text-muted-foreground">
+						<tr><th class="px-3 py-2 font-medium">{$t('common.class')}</th><th class="px-3 py-2 font-medium">{$t('timetable.drafts')}</th><th class="px-3 py-2 font-medium">{$t('timetable.published')}</th><th class="px-3 py-2 font-medium">{$t('timetable.lastResult')}</th><th class="px-3 py-2 font-medium">{$t('timetable.unmetWorkload')}</th><th class="px-3 py-2 text-right font-medium">{$t('common.actions')}</th></tr>
+					</thead>
+					<tbody class="divide-y divide-border/60">
+						{#each planningPage.rows as row (row.classGroup.id)}
+							<tr>
+								<td class="px-3 py-2.5 font-medium">{row.classGroup.name}</td>
+								<td class="px-3 py-2.5">{row.draftCount}</td>
+								<td class="px-3 py-2.5">{row.publishedCount}</td>
+								<td class="px-3 py-2.5">{row.placementCount ?? '—'}</td>
+								<td class="px-3 py-2.5">{row.unmetWorkloadCount ?? '—'}</td>
+								<td class="px-3 py-2.5">
+									<div class="flex justify-end gap-2">
+										<Button size="sm" variant="ghost" onclick={() => review(row.classGroup.id)}><Eye class="mr-1 h-4 w-4" />{$t('timetable.review')}</Button>
+										<PermissionGate permission="TIMETABLE_UPDATE" mode="disable">
+											{#snippet children({ disabled })}
+												<Button size="sm" variant="outline" {disabled} onclick={() => openPublish(row.classGroup.id, row.classGroup.name)}>{$t('timetable.publish')}</Button>
+											{/snippet}
+										</PermissionGate>
+									</div>
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+		{/if}
 	</DataState>
 </div>
 

@@ -1,6 +1,7 @@
+import type { StudentImportColumnKey } from './types';
 import { downloadCsv } from '$lib/list/list-csv-export';
 import * as XLSX from 'xlsx';
-import { STUDENT_IMPORT_COLUMNS, type StudentImportColumnKey } from './types';
+import { STUDENT_IMPORT_COLUMNS } from './types';
 
 export const STUDENT_IMPORT_CSV_TEMPLATE_FILENAME = 'eleves-template.csv';
 export const STUDENT_IMPORT_EXCEL_TEMPLATE_FILENAME = 'eleves-template.xlsx';

@@ -12,7 +12,7 @@
 		matricule: 'import.students.columns.matricule',
 	};
 
-	let {
+	const {
 		issues,
 	}: {
 		issues: readonly StudentImportValidationIssue[];

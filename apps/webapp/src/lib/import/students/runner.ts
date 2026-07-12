@@ -1,7 +1,7 @@
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
+import type { ValidatedStudentImportRow } from './types';
 import { notifyStudentsListChanged } from '$lib/students/notify-students-list-changed';
 import { createStudentImportIds, registerAndEnrollStudent } from '$lib/students/register-and-enroll-student';
-import type { ValidatedStudentImportRow } from './types';
 import { ApiError } from '@maya-invest/edaya-api-client';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;

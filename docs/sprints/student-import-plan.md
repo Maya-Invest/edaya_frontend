@@ -1,21 +1,41 @@
-# Student Import — Client-Side Implementation Plan
+# Data Import — Client-Side Implementation Plan
 
-> **Status:** Active  
+> **Status:** Students MVP ✅ · Generic shell ✅ · Lint/check ✅ · Other packs planned  
 > **Created:** 2026-07-11  
+> **Updated:** 2026-07-11 (lint/check fixes)  
 > **Scope:** Frontend only — no new backend endpoints  
-> **Location:** Configuration → Import de données  
-> **MVP pack:** Students (`.csv` + `.xlsx`)
+> **Location:** Configuration → **Outils** (`/configuration/import`)  
+> **Active pack:** Students (`.csv` + `.xlsx`)  
+> **Template-only packs:** Classes, Guardians, Staff, Teachers, Subjects, Chapters
 
 ---
 
 ## Goal
 
-Allow school admins to bulk-import students from a spreadsheet without backend changes. The browser:
+Allow school admins to bulk-import school data from spreadsheets without backend changes. The browser:
 
-1. Offers a downloadable template
-2. Accepts a filled `.csv` or `.xlsx` file
+1. Offers downloadable templates per data type (CSV + Excel)
+2. Accepts filled `.csv` or `.xlsx` files
 3. Parses and validates rows locally
-4. Creates students via existing API commands (`registerStudent` + `enrollStudent`)
+4. Creates entities via **existing API commands** (one pack at a time)
+
+**Recommended import order:** Classes → Élèves → Responsables → (Personnel / Enseignants) → Matières → Chapitres
+
+---
+
+## Current state (2026-07-11)
+
+| Area | Status |
+|------|--------|
+| Nav + route `/configuration/import` | ✅ |
+| Page **Outils** with single generic import card | ✅ |
+| `DataImportModal` — 4-step wizard + type dropdown | ✅ |
+| Import type catalog (7 types, ordered) | ✅ |
+| Generic CSV/Excel template download | ✅ |
+| **Students** — parse / validate / run | ✅ |
+| **All other types** — template download only (`template_only`) | ✅ |
+| Unit tests (`tests/lib/import/students/*`) | ✅ 19 tests |
+| `bun run lint && bun run check` (monorepo) | ✅ |
 
 ---
 
@@ -23,11 +43,12 @@ Allow school admins to bulk-import students from a spreadsheet without backend c
 
 | Constraint | Decision |
 |------------|----------|
-| Backend changes | **None** — reuse `client.commands.registerStudent` and `client.commands.enrollStudent` |
-| UI location | **Configuration tab** — new nav item `/configuration/import` |
+| Backend changes | **None** — reuse existing `client.commands.*` per entity |
+| UI location | **Configuration → Outils** |
 | File formats | **`.csv`** and **`.xlsx`** |
-| Volume target | 20–100 students (acceptable latency; sequential API calls) |
-| Idempotency | Skip rows with duplicate matricule (if provided); no update in MVP |
+| Volume target | 20–100 rows per batch (sequential API calls) |
+| Idempotency | Per-pack rules (e.g. skip duplicate matricule for students) |
+| Partial import | Import valid rows even when other rows have blocking errors (students) |
 
 ---
 
@@ -35,78 +56,73 @@ Allow school admins to bulk-import students from a spreadsheet without backend c
 
 ```mermaid
 flowchart TD
-    subgraph UI["Configuration / Import"]
-        A[ImportDataView] --> B[StudentImportModal]
+    subgraph UI["Configuration / Outils"]
+        A[ImportDataView] --> B[DataImportModal]
+        B --> SEL[Type dropdown]
         B --> S1[Step: Download template]
         B --> S2[Step: Upload file]
         B --> S3[Step: Validate preview]
         B --> S4[Step: Execute import]
     end
 
-    subgraph Lib["lib/import/students/"]
-        T[template.ts] --> DL[downloadCsv]
-        P[parser.ts] --> PP[PapaParse CSV]
-        P --> XLS[XLSX Excel]
-        V[validator.ts]
-        R[runner.ts] --> API[registerStudent + enrollStudent]
+    subgraph Catalog["lib/import/catalog/"]
+        CAT[import-types.ts] --> TDL[shared/template-download.ts]
     end
 
-    S1 --> T
+    subgraph Students["lib/import/students/ ✅"]
+        T[template.ts] --> DL[downloadCsv / XLSX]
+        P[parser.ts] --> PP[PapaParse CSV]
+        P --> XLS[SheetJS Excel]
+        V[validator.ts]
+        R[runner.ts] --> API1[registerStudent + enrollStudent]
+    end
+
+    subgraph Future["lib/import/{pack}/ 🔜"]
+        FP[parser.ts]
+        FV[validator.ts]
+        FR[runner.ts] --> API2[existing commands]
+    end
+
+    SEL --> CAT
+    S1 --> TDL
     S2 --> P
+    S2 --> FP
     P --> V
+    FP --> FV
     S3 --> V
+    S3 --> FV
     S4 --> R
-    R --> API
+    S4 --> FR
 ```
 
 ### Reuse existing code
 
 | Existing | Reuse for |
 |----------|-----------|
-| `lib/list/list-csv-export.ts` → `downloadCsv` | Template download |
-| `routes/.../students-list-mutations.ts` → `createStudentOnPage` | Mutation pattern (IDs, payloads) |
-| `lib/academic/context.svelte` → `academicContext.classes` | Class name → `classGroupId` resolution |
-| `lib/components/ui/FormModal.svelte` + Dialog | Modal shell (or custom multi-step dialog) |
-| `runStudentRouteMutation` pattern | Error handling + `entityVersions.bump` |
+| `lib/list/list-csv-export.ts` → `downloadCsv` | All template downloads |
+| `lib/import/shared/template-download.ts` | Generic CSV/XLSX from catalog |
+| `lib/import/catalog/import-types.ts` | Type definitions + column specs |
+| `register-and-enroll-student.ts` | Student import runner |
+| `lib/academic/context.svelte` | Class / year / grade-level resolution |
+| `ImportFileDropzone`, `ImportValidationTable`, `ImportProgressBar` | All packs (shared UI) |
 
 ---
 
-## CSV template spec (MVP)
+## Import type catalog
 
-**Filename:** `eleves-template.csv`
+Dropdown order (as implemented):
 
-| Column | Required | Maps to | Notes |
-|--------|----------|---------|-------|
-| `prenom` | yes | `registerStudent.firstName` | trimmed |
-| `nom` | yes | `registerStudent.lastName` | trimmed |
-| `classe` | yes | resolved → `enrollStudent.classGroupId` | match by class display name |
-| `date_naissance` | no | `registerStudent.birthDate` | `YYYY-MM-DD` |
-| `genre` | no | deferred (phase 2: `updateStudentProfile`) | M/F or free text |
-| `matricule` | no | deferred (phase 2) | uniqueness check against loaded roster |
+| # | Key | Label (FR) | Status | Template files | Permission |
+|---|-----|------------|--------|----------------|------------|
+| 1 | `students` | Élèves | **active** | `eleves-template.csv/xlsx` | `STUDENT_CREATE` |
+| 2 | `guardians` | Responsables | template_only | `responsables-template.csv/xlsx` | `STUDENT_CREATE` |
+| 3 | `staff` | Personnel | template_only | `personnel-template.csv/xlsx` | `STAFF_CREATE` |
+| 4 | `teachers` | Enseignants | template_only | `enseignants-template.csv/xlsx` | `STAFF_CREATE` |
+| 5 | `classes` | Classes | template_only | `classes-template.csv/xlsx` | `SCHOOL_STRUCTURE_READ` |
+| 6 | `subjects` | Matières | template_only | `matieres-template.csv/xlsx` | `SCHOOL_STRUCTURE_READ` |
+| 7 | `chapters` | Chapitres | template_only | `chapitres-template.csv/xlsx` | `SCHOOL_STRUCTURE_READ` |
 
-**Example row (included in template):**
-
-```csv
-prenom,nom,classe,date_naissance,genre,matricule
-Jean,Dupont,6ème A,2012-03-15,M,MAT-2024-001
-```
-
-**Class resolution:** case-insensitive trim match on `ClassNode.name` from `academicContext.classes`. On ambiguity, report error with suggestions.
-
----
-
-## Dependencies to add
-
-```bash
-cd edaya_web/apps/webapp
-bun add papaparse xlsx
-bun add -D @types/papaparse
-```
-
-| Package | Role | Size note |
-|---------|------|-----------|
-| `papaparse` | Parse `.csv` in browser | ~45 KB gzip |
-| `xlsx` (SheetJS) | Parse `.xlsx` → JSON rows | ~300 KB — acceptable for admin-only config screen |
+To activate a pack: implement `lib/import/{pack}/` (parser, validator, runner), set `status: 'active'` in catalog, wire `DataImportModal` steps 2–4 for that type.
 
 ---
 
@@ -115,221 +131,435 @@ bun add -D @types/papaparse
 ```
 edaya_web/apps/webapp/src/
   lib/import/
+    catalog/
+      types.ts                    # ImportTypeKey, ImportTypeDefinition
+      import-types.ts             # IMPORT_TYPE_DEFINITIONS (7 types)
     shared/
-      file-accept.ts              # accept=".csv,.xlsx"
-      normalize-header.ts         # trim + lowercase column names
-      types.ts                    # ImportRowError, ImportValidationResult
-    students/
-      template.ts                 # columns + downloadStudentImportTemplate()
-      parser.ts                   # parseStudentImportFile(file) → StudentImportRow[]
-      validator.ts                # validateStudentImportRows(rows, classes, existingMatricules)
-      runner.ts                   # runStudentImport(rows) → ImportRunResult
-      types.ts                    # StudentImportRow
+      file-accept.ts
+      normalize-header.ts
+      template-download.ts        # generic CSV/XLSX from catalog
+    students/                     # ✅ complete
+      template.ts, parser.ts, validator.ts, runner.ts, types.ts
+      load-existing-matricules.ts
+    classes/                      # 🔜 planned
+    guardians/                    # 🔜 planned
+    staff/                        # 🔜 planned
+    teachers/                     # 🔜 planned
+    subjects/                     # 🔜 planned
+    chapters/                     # 🔜 planned
 
   lib/components/school/configuration/
-    ImportDataView.svelte           # page: pack cards (students first)
-    StudentImportModal.svelte       # 4-step wizard modal
-    ImportFileDropzone.svelte       # drag-and-drop + file input
-    ImportValidationTable.svelte    # row/column errors table
-    ImportProgressBar.svelte        # execute step progress
+    ImportDataView.svelte         # single generic card → opens modal
+    DataImportModal.svelte        # type dropdown + 4-step wizard
+    ImportFileDropzone.svelte
+    ImportValidationTable.svelte
+    ImportProgressBar.svelte
 
-  routes/(app)/configuration/import/
-    +page.svelte
+  lib/students/
+    register-and-enroll-student.ts
 
-  lib/navigation/
-    nav-catalog.ts                  # + import nav item
-    navigation.ts                   # + CONFIG_ITEMS entry
+  routes/(app)/configuration/import/+page.svelte
 
-  lib/i18n/dictionaries/
-    fr.ts                           # import.* keys
-    en.ts
-
-tests/lib/import/students/
-  parser.test.ts
-  validator.test.ts
-  runner.test.ts                    # mock API client
+tests/lib/import/
+  students/                       # ✅ 19 tests
+  classes/                        # 🔜
+  guardians/                      # 🔜
+  ...
 ```
 
 ---
 
-## Implementation phases
+## Completed phases — Students MVP (Phases 0–6) ✅
 
-### Phase 0 — Scaffolding (0.5 day) ✅
+### Phase 0 — Scaffolding ✅
+
+| ID | Task | Status |
+|----|------|--------|
+| 0.1 | Dependencies (`papaparse`, `xlsx`) | ✅ |
+| 0.2 | Nav `config.import` → `/configuration/import` | ✅ |
+| 0.3 | i18n keys (fr + en) | ✅ |
+| 0.4 | Route + `ImportDataView` | ✅ |
+| 0.5 | Permission gate (`STUDENT_CREATE` + `SCHOOL_STRUCTURE_READ` on nav) | ✅ |
+
+### Phase 1 — Template download ✅
+
+| ID | Task | Status |
+|----|------|--------|
+| 1.1 | `STUDENT_IMPORT_COLUMNS` | ✅ |
+| 1.2 | `downloadStudentImportTemplate()` CSV + Excel | ✅ |
+| 1.3 | Download buttons in modal step 1 | ✅ |
+| 1.4 | Column legend + class prerequisite hint | ✅ |
+
+### Phase 2 — File parsing ✅
+
+| ID | Task | Status |
+|----|------|--------|
+| 2.1 | `normalizeHeader()` | ✅ |
+| 2.2 | CSV parser (PapaParse) | ✅ |
+| 2.3 | XLSX parser (SheetJS + Excel date serials) | ✅ |
+| 2.4 | `parseStudentImportFile(file)` | ✅ |
+| 2.5 | `StudentImportRow` with `rowIndex` | ✅ |
+| 2.6 | `ImportFileDropzone` | ✅ |
+| 2.7 | Parser unit tests | ✅ |
+
+### Phase 3 — Validation ✅
+
+| ID | Task | Status |
+|----|------|--------|
+| 3.1 | Required fields (`prenom`, `nom`, `classe`) | ✅ |
+| 3.2 | Date `YYYY-MM-DD` | ✅ |
+| 3.3 | Class resolution + suggestions | ✅ |
+| 3.4 | Duplicate matricule in file | ✅ |
+| 3.5 | Duplicate matricule vs existing | ✅ |
+| 3.6 | `{ validRows, errors[], warnings[] }` | ✅ |
+| 3.7 | `ImportValidationTable` | ✅ |
+| 3.8 | Validator unit tests | ✅ |
+
+### Phase 4 — Import execution ✅
+
+| ID | Task | Status |
+|----|------|--------|
+| 4.1 | `registerAndEnrollStudent()` for runner | ✅ |
+| 4.2 | Sequential loop with unique IDs | ✅ |
+| 4.3 | Per-row try/catch, partial success | ✅ |
+| 4.4 | `notifyStudentsListChanged()` after import | ✅ |
+| 4.5 | `ImportProgressBar` | ✅ |
+| 4.6 | Result summary step 4 | ✅ |
+| 4.7 | Link "Voir les élèves" | ✅ |
+| 4.8 | Runner unit tests | ✅ |
+
+### Phase 5 — Modal wizard UX ✅
+
+| ID | Task | Status |
+|----|------|--------|
+| 5.1 | 4 steps: download → upload → validate → execute | ✅ |
+| 5.2 | Step indicator | ✅ |
+| 5.3 | Import when `validRows.length > 0` (partial import) | ✅ |
+| 5.4 | Prerequisite banner (classes) in modal | ✅ |
+| 5.5 | Reset state on close / type change | ✅ |
+| 5.6 | `data-testid` hooks | ✅ |
+
+### Phase 6 — Tests & polish ✅
+
+| ID | Task | Status |
+|----|------|--------|
+| 6.1 | `bun test tests/lib/import/students/*` | ✅ (19 tests) |
+| 6.2 | Manual test matrix (students) | 🟡 8/10 |
+| 6.3 | `bun run lint && bun run check` | ✅ |
+| 6.4 | Update `remaining-work-plan.md` | ⬜ |
+
+**Lint/check fixes (2026-07-11):** `eslint --fix` (indent, import order) ; clé i18n `import.comingSoon` dupliquée supprimée ; `StudentImportColumnKey` en union explicite (plus de référence circulaire) ; `prefer-const` sur `$props()` ; tests `parser`/`runner` typés.
+
+---
+
+## Phase 7 — Generic import shell ✅
 
 | ID | Task | Files | Status |
 |----|------|-------|--------|
-| 0.1 | Add dependencies (`papaparse`, `xlsx`) | `package.json` | ✅ |
-| 0.2 | Add nav item `config.import` → `/configuration/import` | `nav-catalog.ts`, `navigation.ts` | ✅ |
-| 0.3 | Add i18n keys (fr + en) | `fr.ts`, `en.ts` | ✅ |
-| 0.4 | Create route stub + `ImportDataView` with single "Students" card | `+page.svelte`, `ImportDataView.svelte` | ✅ |
-| 0.5 | Gate with `PermissionGate` — `STUDENT_UPDATE` + `ENROLLMENT_CREATE` | `ImportDataView.svelte` | ✅ |
+| 7.1 | `ImportTypeDefinition` + catalog | `catalog/types.ts`, `catalog/import-types.ts` | ✅ |
+| 7.2 | Generic `template-download.ts` | `shared/template-download.ts` | ✅ |
+| 7.3 | Rename `StudentImportModal` → `DataImportModal` | `DataImportModal.svelte` | ✅ |
+| 7.4 | Type dropdown in step 1 (ordered list) | `DataImportModal.svelte` | ✅ |
+| 7.5 | Dynamic columns + template per type | modal + catalog | ✅ |
+| 7.6 | Single generic card on `ImportDataView` | `ImportDataView.svelte` | ✅ |
+| 7.7 | Nav label **Outils** (was "Import de données") | `fr.ts`, `en.ts` | ✅ |
+| 7.8 | `comingSoon` UX for `template_only` types | modal | ✅ |
+| 7.9 | Teachers type + dropdown order finalized | `import-types.ts`, i18n | ✅ |
 
-**Exit criteria:** `/configuration/import` renders; nav link visible for authorized users.
-
----
-
-### Phase 1 — Template download (0.5 day) ✅
-
-| ID | Task | Files | Status |
-|----|------|-------|--------|
-| 1.1 | Define `STUDENT_IMPORT_COLUMNS` constant | `students/types.ts` | ✅ |
-| 1.2 | Implement `downloadStudentImportTemplate()` using `downloadCsv` | `students/template.ts` | ✅ |
-| 1.3 | Wire download button in modal step 1 | `StudentImportModal.svelte` | ✅ |
-| 1.4 | Show column legend + prerequisite hint ("classes must exist") | modal UI | ✅ |
-
-**Exit criteria:** Clicking download produces `eleves-template.csv` with header + example row.
+**Exit criteria:** One import entry point; all 7 types downloadable; students full flow unchanged. ✅
 
 ---
 
-### Phase 2 — File parsing (1 day) ✅
+## Future phases — Per-pack implementation
 
-| ID | Task | Files | Status |
-|----|------|-------|--------|
-| 2.1 | `normalizeHeader()` — trim, lowercase, strip BOM | `shared/normalize-header.ts` | ✅ |
-| 2.2 | CSV parser via PapaParse | `students/parser.ts` | ✅ |
-| 2.3 | XLSX parser via SheetJS | `students/parser.ts` | ✅ |
-| 2.4 | `parseStudentImportFile(file)` — detect format by extension/MIME | `students/parser.ts` | ✅ |
-| 2.5 | Map raw rows → `StudentImportRow` with `rowIndex` | `students/parser.ts` | ✅ |
-| 2.6 | `ImportFileDropzone` — accept `.csv,.xlsx`, max 5 MB | `ImportFileDropzone.svelte` | ✅ |
-| 2.7 | Unit tests: CSV parsing, XLSX parsing, header normalization | `parser.test.ts` | ✅ |
+Each pack follows the same pattern as students:
 
-**Exit criteria:** Uploading sample `.csv` and `.xlsx` yields identical parsed row objects.
+```
+lib/import/{pack}/
+  types.ts       # columns, row types, validation issues
+  template.ts    # optional if custom; else catalog exampleRow
+  parser.ts      # parse{Pack}ImportFile → rows
+  validator.ts   # validate{Pack}ImportRows(context) → validRows + errors
+  runner.ts      # run{Pack}Import → { created, failed[] }
+```
 
----
+Then in `DataImportModal.svelte`:
 
-### Phase 3 — Validation (1 day) ✅
+- Branch steps 2–4 on `selectedImportType === '{pack}'`
+- Or extract pack-specific step content into `{Pack}ImportSteps.svelte`
 
-| ID | Task | Files | Status |
-|----|------|-------|--------|
-| 3.1 | Required field checks (`prenom`, `nom`, `classe`) | `students/validator.ts` | ✅ |
-| 3.2 | Date format validation (`YYYY-MM-DD`) | `students/validator.ts` | ✅ |
-| 3.3 | Class resolution against `academicContext.classes` | `students/validator.ts` | ✅ |
-| 3.4 | Duplicate matricule within file | `students/validator.ts` | ✅ |
-| 3.5 | Duplicate matricule against existing students | `load-existing-matricules.ts` | ✅ |
-| 3.6 | Return `{ validRows, errors[], warnings[] }` | `students/validator.ts` | ✅ |
-| 3.7 | `ImportValidationTable` — display errors by row/column | `ImportValidationTable.svelte` | ✅ |
-| 3.8 | Unit tests for all validation rules | `validator.test.ts` | ✅ |
+### Phase 8 — Classes import (est. 1.5 d)
 
-**Exit criteria:** Invalid files show blocking errors; valid files show preview count and enable import button.
+**Prerequisite:** None (classes are often imported first).
 
----
+| Column | Required | Maps to | Notes |
+|--------|----------|---------|-------|
+| `nom` | yes | `createClassGroup.name` | e.g. `6ème A` |
+| `niveau` | yes | resolved → `gradeLevelId` | match grade level name |
+| `capacite` | no | `createClassGroup.capacity` | integer |
 
-### Phase 4 — Import execution (1 day) ✅
+**API (existing):**
 
-| ID | Task | Files | Status |
-|----|------|-------|--------|
-| 4.1 | Extract shared `registerAndEnrollStudent()` from `createStudentOnPage` logic | `register-and-enroll-student.ts`, `students-list-mutations.ts` | ✅ |
-| 4.2 | Sequential loop with unique IDs: `stu-${Date.now().toString(36)}-${i}` | `students/runner.ts` | ✅ |
-| 4.3 | Per-row try/catch — collect successes and failures, continue on error | `students/runner.ts` | ✅ |
-| 4.4 | `entityVersions.bump(['students', 'enrollments'])` after batch | `students/runner.ts` | ✅ |
-| 4.5 | `ImportProgressBar` — `current / total` during execution | `ImportProgressBar.svelte` | ✅ |
-| 4.6 | Result summary: created / failed / skipped | `StudentImportModal.svelte` step 4 | ✅ |
-| 4.7 | Link "Voir les élèves" → `/school/students` | `StudentImportModal.svelte` step 4 | ✅ |
-| 4.8 | Unit test runner with mocked client | `runner.test.ts` | ✅ |
+```ts
+await client.commands.createClassGroup({
+  id, schoolId, academicYearId, gradeLevelId,
+  name, capacity?, attendanceMode: 'session', homeroomStaffId: null,
+});
+```
 
-**Exit criteria:** 10-row test file creates 10 students enrolled in correct classes; partial failure report is accurate.
+| ID | Task | Status |
+|----|------|--------|
+| 8.1 | `lib/import/classes/` parser + validator | ⬜ |
+| 8.2 | Resolve `niveau` → `gradeLevelId` from `academicContext` | ⬜ |
+| 8.3 | Runner via `createClassGroupMutation` pattern | ⬜ |
+| 8.4 | Wire modal steps; set `status: 'active'` | ⬜ |
+| 8.5 | Unit tests | ⬜ |
 
 ---
 
-### Phase 5 — Modal wizard UX (1 day)
+### Phase 9 — Guardians import (est. 2 d)
 
-| ID | Task | Files |
-|----|------|-------|
-| 5.1 | `StudentImportModal` — 4 steps: download → upload → validate → execute | `StudentImportModal.svelte` |
-| 5.2 | Step indicator (dots or breadcrumb) | modal |
-| 5.3 | Disable "Import" when blocking errors > 0 | modal |
-| 5.4 | Prerequisite banner on `ImportDataView` when `academicContext.classes.length === 0` | `ImportDataView.svelte` |
-| 5.5 | Card disabled + link to `/configuration/classes` when no classes | `ImportDataView.svelte` |
-| 5.6 | Reset state on modal close | modal |
-| 5.7 | `data-testid` hooks for integration tests | modal, dropzone |
+**Prerequisite:** Students must exist (link by matricule).
 
-**Exit criteria:** Full happy path works end-to-end from Configuration tab.
+| Column | Required | Maps to | Notes |
+|--------|----------|---------|-------|
+| `prenom` | yes | `registerGuardian.firstName` | |
+| `nom` | yes | `registerGuardian.lastName` | |
+| `email` | no | `registerGuardian.email` | |
+| `telephone` | no | `registerGuardian.phone` | |
+| `eleve_matricule` | yes | resolved → `studentId` | then `linkGuardianToStudent` |
+
+**API (existing):**
+
+```ts
+await client.commands.registerGuardian({ id, schoolId, firstName, lastName, email, phone, ... });
+await client.commands.linkGuardianToStudent({ guardianId, studentId, ... });
+```
+
+| ID | Task | Status |
+|----|------|--------|
+| 9.1 | `lib/import/guardians/` parser + validator | ⬜ |
+| 9.2 | Resolve `eleve_matricule` → `studentId` (load existing matricules) | ⬜ |
+| 9.3 | Runner: register + link per row | ⬜ |
+| 9.4 | `sendAccountInvitation: false` on bulk import | ⬜ |
+| 9.5 | Wire modal; unit tests | ⬜ |
 
 ---
 
-### Phase 6 — Tests & polish (0.5 day)
+### Phase 10 — Staff import (est. 1.5 d)
 
-| ID | Task |
-|----|------|
-| 6.1 | `bun test tests/lib/import/students/*` |
-| 6.2 | Manual test matrix (see below) |
-| 6.3 | `bun run lint && bun run check` |
-| 6.4 | Update `remaining-work-plan.md` with completed track entry |
+| Column | Required | Maps to | Notes |
+|--------|----------|---------|-------|
+| `prenom` | yes | `registerStaffMember.firstName` | |
+| `nom` | yes | `registerStaffMember.lastName` | |
+| `email` | no | `registerStaffMember.email` | |
+| `role` | yes | deferred → permission assignment phase 2 | validate role exists or warn |
+| `telephone` | no | profile update phase 2 | not on register command |
+
+**API (existing):**
+
+```ts
+await client.commands.registerStaffMember({
+  id, schoolId, firstName, lastName, email,
+  accountKind: 'human', isActive: true, sendAccountInvitation: false,
+});
+// Phase 2: assignStaffPermission for role column
+```
+
+| ID | Task | Status |
+|----|------|--------|
+| 10.1 | `lib/import/staff/` parser + validator | ⬜ |
+| 10.2 | Runner via `createStaffOnPage` pattern | ⬜ |
+| 10.3 | Role column: validate or map to permission codes | ⬜ |
+| 10.4 | Wire modal; unit tests | ⬜ |
 
 ---
 
-## UI spec — Configuration → Import
+### Phase 11 — Teachers import (est. 2 d)
+
+| Column | Required | Maps to | Notes |
+|--------|----------|---------|-------|
+| `prenom` | yes | `teachers.save.firstName` | |
+| `nom` | yes | `teachers.save.lastName` | |
+| `email` | no | `teachers.save.email` | |
+| `matieres` | no | teacher assignments phase 2 | comma-separated subject names |
+| `telephone` | no | `teachers.save.phone` | |
+
+**API (existing):**
+
+```ts
+await client.entities.teachers.save({
+  id, schoolId, firstName, lastName, email, phone, isActive: true,
+});
+// Phase 2: saveTeacherAssignment per subject in `matieres`
+```
+
+| ID | Task | Status |
+|----|------|--------|
+| 11.1 | `lib/import/teachers/` parser + validator | ⬜ |
+| 11.2 | Runner via `createTeacherOnPage` pattern | ⬜ |
+| 11.3 | Resolve `matieres` → subject IDs + assignments | ⬜ |
+| 11.4 | Wire modal; unit tests | ⬜ |
+
+---
+
+### Phase 12 — Subjects import (est. 2 d)
+
+**Prerequisite:** Classes exist (subjects are per-class via `classSubject`).
+
+| Column | Required | Maps to | Notes |
+|--------|----------|---------|-------|
+| `nom` | yes | `configureSubject.name` | |
+| `code` | no | deferred | catalog metadata |
+| `coefficient` | no | deferred | grading config |
+
+**Open design question:** Template is school-wide catalog vs per-class. Current template is catalog-style; runner may need `classe` column added or import to all classes.
+
+**API (existing):**
+
+```ts
+await client.commands.configureSubject(...);
+await client.commands.configureClassSubject(...);
+```
+
+| ID | Task | Status |
+|----|------|--------|
+| 12.1 | Decide template shape (add `classe` column?) | ⬜ |
+| 12.2 | `lib/import/subjects/` parser + validator | ⬜ |
+| 12.3 | Runner via `createSubjectForClassMutation` | ⬜ |
+| 12.4 | Wire modal; unit tests | ⬜ |
+
+---
+
+### Phase 13 — Chapters import (est. 2 d)
+
+**Prerequisite:** Subjects / class subjects exist.
+
+| Column | Required | Maps to | Notes |
+|--------|----------|---------|-------|
+| `matiere` | yes | resolved → `classSubjectId` | match subject name |
+| `titre` | yes | `saveSubjectMatterMutation.name` | |
+| `ordre` | no | `sequenceOrder` | default 1 |
+| `description` | no | `description` | |
+
+**API (existing):**
+
+```ts
+await saveSubjectMatterMutation({
+  subjectId, classSubjectId, classGroupId, name, description, sequenceOrder,
+});
+```
+
+| ID | Task | Status |
+|----|------|--------|
+| 13.1 | `lib/import/chapters/` parser + validator | ⬜ |
+| 13.2 | Resolve `matiere` → class subject (per class or school catalog) | ⬜ |
+| 13.3 | Runner via `saveSubjectMatterMutation` | ⬜ |
+| 13.4 | Wire modal; unit tests | ⬜ |
+
+---
+
+### Phase 14 — Cross-pack polish (est. 1 d)
+
+| ID | Task | Status |
+|----|------|--------|
+| 14.1 | Extract shared wizard logic from `DataImportModal` (optional) | ⬜ |
+| 14.2 | Per-type permission gates in modal (not just nav) | ⬜ |
+| 14.3 | Per-type "Voir les …" links on result step | ⬜ |
+| 14.4 | Shared `canImportValidatedRows(validRows.length > 0)` helper | ⬜ |
+| 14.5 | E2E test: open modal, switch types, download each template | ⬜ |
+| 14.6 | `bun run lint && bun run check` green | ✅ (see Phase 6.3) |
+
+---
+
+## UI spec — Configuration → Outils
 
 ### Page: `/configuration/import`
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ Import de données                                           │
+│ Outils                                                      │
 │ Importez vos données en masse à partir de fichiers CSV      │
 │ ou Excel.                                                   │
 │                                                             │
 │ Ordre recommandé : Classes → Élèves → Responsables          │
 │                                                             │
 │ ┌─────────────────────────────────────────────────────┐     │
-│ │ 👥 Élèves                                           │     │
-│ │ Inscrire des élèves dans l'année scolaire active.   │     │
-│ │ Prérequis : classes configurées                     │     │
+│ │ ⬆ Import de données                                 │     │
+│ │ Choisissez le type, téléchargez le modèle, puis     │     │
+│ │ importez votre fichier.                             │     │
 │ │ Formats : .csv, .xlsx                               │     │
 │ │                              [Importer]             │     │
 │ └─────────────────────────────────────────────────────┘     │
-│                                                             │
-│ (future packs: Responsables, Personnel — disabled cards)    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Modal: Student import (4 steps)
+### Modal: Data import (4 steps)
 
-| Step | Title | Primary action | Secondary |
-|------|-------|----------------|-----------|
-| 1 | Télécharger le modèle | Suivant | Annuler |
-| 2 | Déposer le fichier | Vérifier | Retour |
-| 3 | Vérification | Importer N élèves | Retour |
-| 4 | Résultat | Voir les élèves | Fermer |
+| Step | Title | Content |
+|------|-------|---------|
+| 1 | Télécharger | **Type dropdown** + template CSV/Excel + column legend |
+| 2 | Déposer | File dropzone (active packs only) |
+| 3 | Vérifier | Validation table |
+| 4 | Résultat | Progress + summary + entity link |
+
+**Dropdown order:** Élèves → Responsables → Personnel → Enseignants → Classes → Matières → Chapitres
 
 ---
 
-## API calls per row (no new endpoints)
+## Students — CSV template spec (reference)
+
+**Filename:** `eleves-template.csv`
+
+| Column | Required | Maps to | Notes |
+|--------|----------|---------|-------|
+| `prenom` | yes | `registerStudent.firstName` | trimmed |
+| `nom` | yes | `registerStudent.lastName` | trimmed |
+| `classe` | yes | resolved → `enrollStudent.classGroupId` | match class display name |
+| `date_naissance` | no | `registerStudent.birthDate` | `YYYY-MM-DD` |
+| `genre` | no | deferred | not sent in MVP |
+| `matricule` | no | validated only | not sent in MVP |
+
+**API per row:**
 
 ```ts
-// Same as createStudentOnPage — 2 commands per student
 await client.commands.registerStudent({
-  id: studentId,
-  schoolId,
-  firstName,
-  lastName,
-  birthDate?,          // optional
-  sendAccountInvitation: false,  // MVP: no invites on bulk import
-  createdAt: now,
+  id, schoolId, firstName, lastName, birthDate?,
+  sendAccountInvitation: false, createdAt: now,
 });
 await client.commands.enrollStudent({
-  id: enrollmentId,
-  studentId,
-  classGroupId,
-  createdAt: now,
+  id: enrollmentId, studentId, classGroupId, createdAt: now,
 });
 ```
 
 ---
 
-## Manual test matrix
+## Manual test matrix — Students
 
-| # | Scenario | Expected |
-|---|----------|----------|
-| T1 | Download template | Valid CSV with 6 columns + example |
-| T2 | Upload valid `.csv` (5 rows) | 5 students created, enrolled |
-| T3 | Upload same data as `.xlsx` | Same result as T2 |
-| T4 | Unknown class name | Blocking error on row, import disabled |
-| T5 | Missing `prenom` | Blocking error |
-| T6 | Invalid date `32/13/2020` | Blocking error |
-| T7 | Empty file | Parse error message |
-| T8 | 50 rows | Progress bar; completes < 2 min on staging |
-| T9 | Row 3 fails (duplicate matricule) | Rows 1–2 created, 3+ reported in summary |
-| T10 | No classes in school | Card disabled, link to classes config |
+> **Dernière QA manuelle :** 2026-07-11 — branche `feature/import-data`, compte Aminata Koné (propriétaire).
+
+| # | Scenario | Expected | Status | Result (observed) |
+|---|----------|----------|--------|-------------------|
+| T1 | Download template | Valid CSV/Excel with 6 columns + example row | ✅ | Modèles CSV et Excel OK |
+| T2 | Upload valid `.csv` (5 rows) | 5 students created, enrolled | ⬜ | Non testé explicitement |
+| T3 | Upload valid `.xlsx` | Students created and enrolled | ✅ | 36 lignes → 36 créés ; liste 30 → 66 |
+| T4 | Unknown class name | Blocking error; partial import OK | ✅ | Suggestions affichées |
+| T5 | Missing required fields | Blocking error per column | ✅ | L18/L20/L22/L24/L30 |
+| T6 | Invalid date | Blocking error | ✅ | `2012-14-14` rejeté |
+| T7 | Empty file | Parse error message | ⬜ | Non testé |
+| T8 | Large file (~36 rows) | Progress bar; reasonable time | ✅ | OK en local |
+| T9 | Duplicate `matricule` | Dupes blocked; partial import | ✅ | L2 OK, L3–L7 bloqués |
+| T10 | No classes in school | Prerequisite in modal step 1 | ⬜ | Non testé |
+
+### Manual test matrix — Generic shell (new)
+
+| # | Scenario | Expected | Status |
+|---|----------|----------|--------|
+| G1 | Open modal from generic card | Modal opens on step 1 | ⬜ |
+| G2 | Switch type in dropdown | Columns + hint update; wizard resets | ⬜ |
+| G3 | Download template for each type | 7 distinct CSV/Excel files | ⬜ |
+| G4 | Non-active type | "Coming soon" + Next disabled | ⬜ |
+| G5 | Students flow unchanged | Full 4-step import still works | ⬜ |
 
 ---
 
@@ -337,47 +567,83 @@ await client.commands.enrollStudent({
 
 | Risk | Mitigation |
 |------|------------|
-| Slow for large files | Show progress; document ~100 row soft limit in UI |
-| Partial import (no transaction) | Clear summary; recommend small batches |
-| Class name ambiguity | Exact match first; fuzzy suggestions in error message |
-| XLSX bundle size | Import only on config route; Vite code-split modal |
-| Colleague backend conflicts | Zero backend PRs; only `edaya_web` changes |
+| Slow for large files | Progress bar; ~100 row soft limit in UI |
+| Partial import (no transaction) | Clear summary per pack |
+| Cross-entity prerequisites | Document order; validate in each pack's validator |
+| Subject/chapter resolution ambiguity | Exact match + suggestions (same pattern as classes) |
+| `DataImportModal` complexity | Extract per-pack step components in Phase 14 |
+| XLSX bundle size | Code-split on config route |
 
 ---
 
-## Out of scope (MVP)
+## Out of scope (entire track)
 
-- Backend `/core/import/*` endpoints
-- Guardian / staff import packs
+- Backend `/core/import/*` bulk endpoints
 - `updateStudentProfile` for genre/matricule post-create
 - Excel export of error report
 - Rollback / undo import
 - Account invitations on bulk import
+- Real-time duplicate detection across concurrent imports
 
 ---
 
 ## Suggested PR breakdown
 
+### Done
+
+| PR | Content | Status |
+|----|---------|--------|
+| PR1 | Phases 0–1 — nav, page, student template | ✅ |
+| PR2 | Phases 2–3 — student parser + validator | ✅ |
+| PR3 | Phases 4–5 — student runner + modal | ✅ |
+| PR4 | Phase 7 — generic shell + catalog + teachers type | ✅ |
+| PR4b | Phase 6.3 — lint/check fixes | ✅ |
+
+### Upcoming
+
 | PR | Content | Est. |
 |----|---------|------|
-| PR1 | Phase 0 + 1 — nav, page, template download | 0.5 d |
-| PR2 | Phase 2 + 3 — parser + validator + tests | 1.5 d |
-| PR3 | Phase 4 + 5 — runner + modal wizard | 2 d |
-| PR4 | Phase 6 — polish, manual QA, docs | 0.5 d |
+| PR5 | Phase 8 — Classes import | 1.5 d |
+| PR6 | Phase 9 — Guardians import | 2 d |
+| PR7 | Phase 10 — Staff import | 1.5 d |
+| PR8 | Phase 11 — Teachers import | 2 d |
+| PR9 | Phase 12 — Subjects import | 2 d |
+| PR10 | Phase 13 — Chapters import | 2 d |
+| PR11 | Phase 14 — polish + docs (lint done) | 0.5 d |
 
-**Total estimate:** ~4.5 days
+**Remaining estimate:** ~11.5 days (6 packs + polish)
 
 ---
 
-## Acceptance criteria (MVP done)
+## Acceptance criteria
 
-- [ ] `/configuration/import` accessible from Configuration nav
-- [ ] Student card opens import modal
-- [ ] Template downloads as `.csv`
-- [ ] Upload accepts `.csv` and `.xlsx`
-- [ ] Validation shows row-level errors before import
-- [ ] Import creates students via existing API commands
-- [ ] Progress and result summary displayed
-- [ ] Unit tests pass for parser, validator, runner
-- [ ] `bun run lint && bun run check` green
-- [ ] No backend changes
+### Students MVP ✅
+
+- [x] `/configuration/import` accessible (nav: **Outils**)
+- [x] Generic card opens `DataImportModal`
+- [x] Student template downloads as `.csv` and `.xlsx`
+- [x] Upload accepts `.csv` and `.xlsx`
+- [x] Row-level validation before import
+- [x] Import via `registerStudent` + `enrollStudent`
+- [x] Progress and result summary
+- [x] Unit tests (19 pass)
+- [x] `bun run lint && bun run check` green
+- [x] No backend changes
+
+### Generic shell ✅
+
+- [x] Type dropdown with 7 ordered types
+- [x] Template download for all types
+- [x] `template_only` types show coming-soon UX
+- [x] Single import card on page (no per-type cards)
+
+### Full track (remaining)
+
+- [ ] Classes import active
+- [ ] Guardians import active (+ student link)
+- [ ] Staff import active
+- [ ] Teachers import active (+ subject assignments)
+- [ ] Subjects import active
+- [ ] Chapters import active
+- [ ] Manual QA matrix G1–G5 + per-pack matrices
+- [ ] `remaining-work-plan.md` updated

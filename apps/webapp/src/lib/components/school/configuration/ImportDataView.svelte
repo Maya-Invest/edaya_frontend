@@ -1,18 +1,11 @@
 <script lang="ts">
-	import { academicContext } from '$lib/academic/context.svelte';
+	import DataImportModal from '$lib/components/school/configuration/DataImportModal.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
-	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { Users } from '$lib/icons';
-	import { appPath } from '$lib/navigation/app-navigation';
-	import { cn } from '$lib/utils';
-	import StudentImportModal from './StudentImportModal.svelte';
+	import { Upload } from '$lib/icons';
 
-	let studentImportOpen = $state(false);
-
-	const hasClasses = $derived(academicContext.classes.length > 0);
-	const classesHref = appPath('/(app)/configuration/classes/[[id]]');
+	let importModalOpen = $state(false);
 </script>
 
 <ListPageHeader
@@ -25,66 +18,31 @@
 	{$t('import.recommendedOrder')}
 </div>
 
-<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-	<article
-		class={cn(
-			'flex flex-col rounded-xl border border-border bg-card p-5 shadow-sm',
-			!hasClasses && 'opacity-80',
-		)}
-		data-testid="import-pack-students"
-	>
-		<div class="mb-4 flex items-start gap-3">
-			<div class="rounded-lg bg-primary/10 p-2 text-primary">
-				<Users class="size-5" aria-hidden="true" />
-			</div>
-			<div class="min-w-0 flex-1">
-				<h3 class="font-display text-lg font-semibold">{$t('import.students.title')}</h3>
-				<p class="mt-1 text-sm text-muted-foreground">{$t('import.students.description')}</p>
-			</div>
+<article
+	class="flex max-w-xl flex-col rounded-xl border border-border bg-card p-5 shadow-sm"
+	data-testid="import-pack-generic"
+>
+	<div class="mb-4 flex items-start gap-3">
+		<div class="rounded-lg bg-primary/10 p-2 text-primary">
+			<Upload class="size-5" aria-hidden="true" />
 		</div>
-
-		<dl class="mb-5 space-y-2 text-sm">
-			<div>
-				<dt class="font-medium text-foreground">{$t('import.students.prerequisite')}</dt>
-				<dd class="text-muted-foreground">
-					{#if hasClasses}
-						<span class="text-emerald-600 dark:text-emerald-400">✓</span>
-						{$t('import.students.classCount', { n: academicContext.classes.length })}
-					{:else}
-						{$t('import.students.prerequisiteMissing')}
-					{/if}
-				</dd>
-			</div>
-			<div>
-				<dt class="font-medium text-foreground">{$t('import.formats')}</dt>
-			</div>
-		</dl>
-
-		<div class="mt-auto flex flex-wrap items-center gap-2">
-			{#if !hasClasses}
-				<Button variant="outline" href={classesHref}>
-					{$t('import.students.configureClasses')}
-				</Button>
-			{/if}
-
-			<PermissionGate
-				permission="STUDENT_CREATE"
-				mode="disable"
-				tooltip={$t('import.students.permission')}
-			>
-				{#snippet children({ disabled, title })}
-					<Button
-						disabled={disabled || !hasClasses}
-						title={title}
-						onclick={() => (studentImportOpen = true)}
-						data-testid="import-students-action"
-					>
-						{$t('import.students.action')}
-					</Button>
-				{/snippet}
-			</PermissionGate>
+		<div class="min-w-0 flex-1">
+			<h3 class="font-display text-lg font-semibold">{$t('import.card.title')}</h3>
+			<p class="mt-1 text-sm text-muted-foreground">{$t('import.card.description')}</p>
 		</div>
-	</article>
-</div>
+	</div>
 
-<StudentImportModal bind:open={studentImportOpen} />
+	<dl class="mb-5 space-y-2 text-sm">
+		<div>
+			<dt class="font-medium text-foreground">{$t('import.formats')}</dt>
+		</div>
+	</dl>
+
+	<div class="mt-auto">
+		<Button onclick={() => (importModalOpen = true)} data-testid="import-action">
+			{$t('import.card.action')}
+		</Button>
+	</div>
+</article>
+
+<DataImportModal bind:open={importModalOpen} />

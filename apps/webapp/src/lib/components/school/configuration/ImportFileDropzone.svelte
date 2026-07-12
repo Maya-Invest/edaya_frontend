@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { STUDENT_IMPORT_ACCEPT, STUDENT_IMPORT_MAX_FILE_BYTES } from '$lib/import/shared/file-accept';
 	import { t } from '$lib/i18n';
+	import { STUDENT_IMPORT_ACCEPT, STUDENT_IMPORT_MAX_FILE_BYTES } from '$lib/import/shared/file-accept';
 	import { cn } from '$lib/utils';
 
-	let {
+	const {
 		disabled = false,
 		errorMessage = '',
 		selectedFileName = '',

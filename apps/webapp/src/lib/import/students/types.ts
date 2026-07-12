@@ -1,3 +1,5 @@
+export type StudentImportColumnKey = 'prenom' | 'nom' | 'classe' | 'date_naissance' | 'genre' | 'matricule';
+
 export interface StudentImportColumnDefinition {
 	key: StudentImportColumnKey;
 	required: boolean;
@@ -11,8 +13,6 @@ export const STUDENT_IMPORT_COLUMNS = [
 	{ key: 'genre', required: false },
 	{ key: 'matricule', required: false },
 ] as const satisfies readonly StudentImportColumnDefinition[];
-
-export type StudentImportColumnKey = (typeof STUDENT_IMPORT_COLUMNS)[number]['key'];
 
 export interface StudentImportRow {
 	rowIndex: number;
