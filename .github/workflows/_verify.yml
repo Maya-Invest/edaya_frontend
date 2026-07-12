@@ -10,6 +10,9 @@ jobs:
       - name: Checkout web
         uses: actions/checkout@v5
 
+      - name: Prepare backend checkout path
+        run: rm -rf edaya_backend
+
       - name: Checkout backend
         uses: actions/checkout@v5
         with:
