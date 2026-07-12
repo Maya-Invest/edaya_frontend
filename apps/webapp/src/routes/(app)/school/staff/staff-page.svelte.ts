@@ -204,7 +204,7 @@ export class StaffPageState {
 		this.totalStaff = Math.max(0, this.totalStaff - 1);
 	}
 
-	private staffScope() {
+	staffScope() {
 		const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
 		const academicYearId = academicContext.yearId
 			|| academicContext.year?.id
@@ -263,7 +263,7 @@ export class StaffPageState {
 			if (version !== this.listRequestVersion) {
 				return;
 			}
-			this.seedPage(result.staff, result.totalStaff, result.assignments, result.classSubjects);
+			this.seedPage(result.staff, result.totalStaff, [], result.classSubjects);
 		}
 		finally {
 			if (version === this.listRequestVersion) {
@@ -292,7 +292,6 @@ export class StaffPageState {
 				return;
 			}
 			this.mergeStaff(result.staff);
-			this.mergeStaffAssignments(result.assignments);
 			this.mergeClassSubjects(result.classSubjects);
 			this.totalStaff = result.totalStaff;
 			this.versions.markLoaded();
@@ -312,7 +311,6 @@ export class StaffPageState {
 			let offset = 0;
 			let total = 0;
 			let members: StaffMember[] = [];
-			let assignments: StaffAssignment[] = [];
 			let classSubjects: ClassSubject[] = [];
 
 			while (true) {
@@ -326,7 +324,6 @@ export class StaffPageState {
 				}
 				total = result.totalStaff;
 				members = mergeById(members, result.staff);
-				assignments = mergeById(assignments, result.assignments);
 				classSubjects = mergeById(classSubjects, result.classSubjects);
 				if (members.length >= total) {
 					break;
@@ -335,7 +332,7 @@ export class StaffPageState {
 			}
 
 			this.fullRosterStaff = members;
-			this.seedPage(members, total, assignments, classSubjects);
+			this.seedPage(members, total, [], classSubjects);
 		}
 		finally {
 			if (version === this.listRequestVersion) {

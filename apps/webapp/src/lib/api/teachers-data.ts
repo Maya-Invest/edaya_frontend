@@ -41,6 +41,8 @@ export function mapTeachers(members: readonly TeacherRaw[]): Teacher[] {
 export interface TeachersPageRequest {
 	offset?: number;
 	limit?: number;
+	/** When false, list loads teachers only — assignment counts come from the assignments tab. */
+	includeAssignments?: boolean;
 }
 
 export interface PaginatedTeachersData {
@@ -66,6 +68,15 @@ export async function fetchTeachersPage(
 		client.entities.teachers.list(teacherFilter),
 		client.entities.teachers.count({ schoolId: scope.schoolId }).then(result => result.count),
 	]);
+	const includeAssignments = request.includeAssignments ?? false;
+	if (!includeAssignments) {
+		return {
+			teachers: mapTeachers(teachersRaw ?? []),
+			totalTeachers,
+			assignments: [],
+		};
+	}
+
 	const teacherIds = uniqueIds((teachersRaw ?? []).map(member => member.id));
 	if (teacherIds.length === 0) {
 		return { teachers: [], totalTeachers, assignments: [] };

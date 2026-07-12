@@ -7,8 +7,9 @@
 	import { listRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
-	import { queryClassTimetablePage } from '$lib/queries/planning.queries';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
+	import TimetableList from './components/TimetableList.svelte';
+	import TimetablePageHydrator from './components/TimetablePageHydrator.svelte';
 	import {
 		TimetablePageState,
 		setTimetablePageState,
@@ -16,16 +17,14 @@
 
 	const { children: pageChildren }: { children: Snippet } = $props();
 
-	const timetablePage = new TimetablePageState(() => $page.params.classId ?? '');
+	const timetablePage = new TimetablePageState(() => $page.url, () => $page.params.classId ?? '');
 	setTimetablePageState(timetablePage);
 	registerVersionInvalidation(timetablePage);
 	releaseRoutePageQueryOnDestroy(() => $page.url);
 
 	const classId = $derived($page.params.classId ?? '');
-	const query = $derived(queryClassTimetablePage(classId, {
-		seedData: data => timetablePage.seedData(data),
-		loadTeacherConstraints: () => timetablePage.loadTeacherConstraints(),
-	}));
+	const selectedId = $derived(timetablePage.selectedId);
+	const query = $derived(timetablePage.queryListPage(classId));
 
 	$effect(() => {
 		if (!classId || !academicContext.shellReady) {
@@ -37,6 +36,7 @@
 
 <PageQuery {query} cacheKey={listRouteCacheKey} loadingTitle={$t('tab.timetable')}>
 	{#snippet children(data)}
+		<TimetablePageHydrator {data} />
 		<DataState
 			preserveShell
 			status={data.status}
@@ -44,6 +44,7 @@
 			emptyTitle={$t('tab.timetable')}
 			emptyDescription={$t('dataState.emptyDescription')}
 		>
+			<TimetableList {classId} {selectedId} />
 			{@render pageChildren()}
 		</DataState>
 	{/snippet}

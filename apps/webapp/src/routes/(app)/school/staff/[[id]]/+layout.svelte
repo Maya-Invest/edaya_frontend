@@ -6,14 +6,20 @@
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { getStaffPageState } from '../staff-page.svelte';
 	import StaffDrawer from './components/StaffDrawer.svelte';
+	import {
+		clearStaffDetailTabStates,
+		createAndRegisterStaffDetailStates,
+	} from './staff-detail-states.svelte';
 
 	const { children }: { children: Snippet } = $props();
 
 	const staffPage = getStaffPageState();
+	const detailTabs = createAndRegisterStaffDetailStates(() => staffPage);
 	const staff = $derived(staffPage.selected);
 	let selectionRequestVersion = 0;
 
 	function closeDetail() {
+		clearStaffDetailTabStates(detailTabs);
 		const next = new URL($page.url);
 		next.searchParams.delete(MODAL_QUERY_KEY);
 		next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
@@ -24,6 +30,7 @@
 	$effect(() => {
 		const staffId = $page.params.id;
 		if (!staffId) {
+			clearStaffDetailTabStates(detailTabs);
 			return;
 		}
 

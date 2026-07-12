@@ -14,6 +14,7 @@ import {
 	mondayOfWeek,
 	mondayOfWeekUtc,
 	parseWeekAnchor,
+	planningEventCellContent,
 	planningSlotSignature,
 	schoolCalendarCeremonyAllDayInstants,
 	schoolCalendarDayInstants,
@@ -69,6 +70,46 @@ describe('planning-calendar', () => {
 			dayOfWeek: 'wednesday',
 			startsAt: mapped!.start,
 			endsAt: mapped!.end,
+		});
+	});
+
+	test('planningEventCellContent keeps lesson, activity, and assessment cells focused', () => {
+		expect(planningEventCellContent({
+			kind: 'lesson',
+			subject: 'Français',
+			text: 'Français',
+			teacher: 'Mme N\'Guessan',
+		})).toEqual({
+			primary: 'Français',
+			secondary: 'Mme N\'Guessan',
+		});
+
+		expect(planningEventCellContent({
+			kind: 'activity',
+			subject: 'Club lecture',
+			text: 'Groupe A',
+		})).toEqual({
+			primary: 'Club lecture',
+			secondary: 'Groupe A',
+		});
+
+		expect(planningEventCellContent({
+			kind: 'assessment',
+			subject: 'Mathématiques',
+			text: 'Contrôle n°2',
+		})).toEqual({
+			primary: 'Mathématiques',
+			secondary: 'Contrôle n°2',
+		});
+
+		expect(planningEventCellContent({
+			kind: 'lesson',
+			subject: 'Mathématiques',
+			text: 'Mathématiques',
+			teacher: 'Mme Touré',
+		})).toEqual({
+			primary: 'Mathématiques',
+			secondary: 'Mme Touré',
 		});
 	});
 

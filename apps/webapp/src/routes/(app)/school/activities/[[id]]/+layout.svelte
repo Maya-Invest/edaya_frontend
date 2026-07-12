@@ -6,14 +6,20 @@
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { getActivitiesPageState } from '../activities-page.svelte';
 	import ActivityDrawer from './components/ActivityDrawer.svelte';
+	import {
+		clearActivityDetailTabStates,
+		createAndRegisterActivityDetailStates,
+	} from './activity-detail-states.svelte';
 
 	const { children }: { children: Snippet } = $props();
 
 	const activitiesPage = getActivitiesPageState();
+	const detailTabs = createAndRegisterActivityDetailStates(() => activitiesPage);
 	const activity = $derived(activitiesPage.selected);
 	let selectionRequestVersion = 0;
 
 	function closeDetail() {
+		clearActivityDetailTabStates(detailTabs);
 		const next = new URL($page.url);
 		next.searchParams.delete(MODAL_QUERY_KEY);
 		next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
@@ -24,6 +30,7 @@
 	$effect(() => {
 		const activityId = $page.params.id;
 		if (!activityId) {
+			clearActivityDetailTabStates(detailTabs);
 			return;
 		}
 

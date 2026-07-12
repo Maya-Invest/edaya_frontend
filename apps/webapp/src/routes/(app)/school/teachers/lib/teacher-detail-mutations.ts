@@ -194,21 +194,16 @@ export async function deleteTeacherOnPage(
 ): Promise<boolean> {
 	const client = getBrowserSchoolClient();
 	const previous = state.findTeacher(teacherId);
-	const previousAssignments = state.teacherAssignmentsForTeacher(teacherId);
 
 	const result = await runTeacherRouteMutation({
 		request: () => client.entities.teachers.delete({ id: teacherId }),
 		apply: () => {
 			state.removeTeacher(teacherId);
-			for (const row of previousAssignments) {
-				state.removeTeacherAssignment(row.id);
-			}
 		},
 		rollback: () => {
 			if (previous) {
 				state.mergeTeachers([previous]);
 			}
-			state.mergeTeacherAssignments(previousAssignments);
 		},
 		successMessage: options?.successMessage,
 		versionKeys: ['teachers'],
@@ -244,21 +239,9 @@ export async function saveTeacherAssignmentOnPage(
 	},
 ): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = state.teacherAssignments.find(row => row.id === input.assignment.id);
 
 	const result = await runTeacherRouteMutation({
 		request: () => client.entities.teacherAssignments.save(input.assignment),
-		apply: () => {
-			state.upsertTeacherAssignment(input.assignment);
-		},
-		rollback: () => {
-			if (previous) {
-				state.upsertTeacherAssignment(previous);
-			}
-			else {
-				state.removeTeacherAssignment(input.assignment.id);
-			}
-		},
 		successMessage: input.successMessage,
 		versionKeys: ['teachers'],
 	});
@@ -270,23 +253,14 @@ export async function deleteTeacherAssignmentOnPage(
 	state: TeachersPageState,
 	input: {
 		id: string;
+		teacherId: string;
 		successMessage?: string;
 	},
 ): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = state.teacherAssignments.find(row => row.id === input.id);
-	if (!previous) {
-		return false;
-	}
 
 	const result = await runTeacherRouteMutation({
 		request: () => client.entities.teacherAssignments.delete({ id: input.id }),
-		apply: () => {
-			state.removeTeacherAssignment(input.id);
-		},
-		rollback: () => {
-			state.upsertTeacherAssignment(previous);
-		},
 		successMessage: input.successMessage,
 		versionKeys: ['teachers'],
 	});

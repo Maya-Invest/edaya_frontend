@@ -1003,6 +1003,8 @@ export const fr: Dict = {
 	'eval.noPeriod': 'Sélectionnez une période académique avant de créer une évaluation.',
 	'eval.deleteConfirm': 'Supprimer l\'évaluation « {title} » ?',
 	'eval.toastDeleted': 'Évaluation {title} supprimée.',
+	'eval.tab.details': 'Détails',
+	'eval.tab.grading': 'Notation',
 	'eval.scheduledHint': 'Planifiée',
 	'eval.addToTimetable': 'Ajouter à l\'emploi du temps',
 

@@ -35,6 +35,21 @@ describe('isLikelyDetailPath', () => {
 		expect(isLikelyDetailPath('/school/activities/act-1/classes')).toBe(true);
 		expect(isLikelyDetailPath('/school/activities')).toBe(false);
 	});
+
+	it('recognizes class evaluations drawer tabs', () => {
+		expect(isLikelyDetailPath('/classes/6a/evaluations/e-1')).toBe(true);
+		expect(isLikelyDetailPath('/classes/6a/evaluations/e-1/details')).toBe(true);
+		expect(isLikelyDetailPath('/classes/6a/evaluations/e-1/grading')).toBe(true);
+		expect(isLikelyDetailPath('/classes/6a/evaluations')).toBe(false);
+	});
+
+	it('recognizes class timetable drawer tabs', () => {
+		expect(isLikelyDetailPath('/classes/6a/timetable/s-1')).toBe(true);
+		expect(isLikelyDetailPath('/classes/6a/timetable/s-1/details')).toBe(true);
+		expect(isLikelyDetailPath('/classes/6a/timetable/s-1/attendance')).toBe(true);
+		expect(isLikelyDetailPath('/classes/6a/timetable/s-1/logbook')).toBe(true);
+		expect(isLikelyDetailPath('/classes/6a/timetable')).toBe(false);
+	});
 });
 
 describe('listRouteCacheKey', () => {
@@ -72,6 +87,20 @@ describe('listRouteCacheKey', () => {
 		expect(listRouteCacheKey(new URL('http://local/school/activities/act-1/profile'))).toBe('/school/activities');
 		expect(listRouteCacheKey(new URL('http://local/school/activities/act-1/students'))).toBe('/school/activities');
 		expect(listRouteCacheKey(new URL('http://local/school/activities/act-1/classes'))).toBe('/school/activities');
+	});
+
+	it('maps class evaluations drawer paths to the list route', () => {
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/evaluations'))).toBe('/classes/6a/evaluations');
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/evaluations/e-1'))).toBe('/classes/6a/evaluations');
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/evaluations/e-1/details'))).toBe('/classes/6a/evaluations');
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/evaluations/e-1/grading'))).toBe('/classes/6a/evaluations');
+	});
+
+	it('maps class timetable drawer paths to the list route', () => {
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/timetable'))).toBe('/classes/6a/timetable');
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/timetable/s-1'))).toBe('/classes/6a/timetable');
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/timetable/s-1/details'))).toBe('/classes/6a/timetable');
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/timetable/s-1/attendance'))).toBe('/classes/6a/timetable');
 	});
 });
 

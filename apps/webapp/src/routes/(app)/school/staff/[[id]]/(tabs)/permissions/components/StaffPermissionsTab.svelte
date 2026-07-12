@@ -1,9 +1,7 @@
 <script lang="ts">
 	import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 	import type { StaffMember } from '$lib/types/school';
-	import { academicContext } from '$lib/academic/context.svelte';
 	import { formatPermissionLabel } from '$lib/api/staff-permission-assignments-data';
-	import { authSession } from '$lib/auth/session.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
@@ -23,37 +21,8 @@
 	} = $props();
 
 	const staffPage = getStaffPageState();
-
 	let deleteBusy = $state<string | null>(null);
-	let loadingKey = $state<string | null>(null);
-	let loadError = $state(false);
-
-	const schoolId = $derived(authSession.schoolId ?? academicContext.schools[0]?.id ?? '');
-	const academicYearId = $derived(academicContext.yearId);
-	const permissionDataKey = $derived(schoolId && academicYearId ? `${schoolId}:${academicYearId}` : '');
-	const loading = $derived(Boolean(permissionDataKey && loadingKey === permissionDataKey));
-
 	const rows = $derived(staffPage.permissionAssignmentsForStaff(s.id));
-
-	$effect(() => {
-		const key = permissionDataKey;
-		if (!key || staffPage.hasStaffPermissionData(key) || loadingKey === key) {
-			return;
-		}
-		loadingKey = key;
-		loadError = false;
-		void staffPage.loadPermissionData()
-			.catch(() => {
-				if (permissionDataKey === key) {
-					loadError = true;
-				}
-			})
-			.finally(() => {
-				if (loadingKey === key) {
-					loadingKey = null;
-				}
-			});
-	});
 
 	function openCreate() {
 		editing = null;
@@ -107,16 +76,8 @@
 		{$t('staff.permissionsHint')}
 	</p>
 
-	<div class="overflow-hidden rounded-xl border border-border bg-card" aria-busy={loading}>
-		{#if loading}
-			<p class="px-4 py-8 text-center text-sm text-muted-foreground">
-				{$t('dataState.loading')}
-			</p>
-		{:else if loadError}
-			<p class="px-4 py-8 text-center text-sm text-muted-foreground">
-				{$t('dataState.errorDefault')}
-			</p>
-		{:else if rows.length === 0}
+	<div class="overflow-hidden rounded-xl border border-border bg-card">
+		{#if rows.length === 0}
 			<p class="px-4 py-8 text-center text-sm text-muted-foreground">
 				{$t('roles.noPermissionsForStaff')}
 			</p>

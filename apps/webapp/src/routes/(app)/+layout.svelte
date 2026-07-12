@@ -125,7 +125,10 @@
 			|| /^\/school\/staff(?:\/|$)/.test(pathname)
 			|| /^\/school\/teachers(?:\/|$)/.test(pathname)
 			|| /^\/school\/activities(?:\/|$)/.test(pathname)
-			|| /^\/classes\/[^/]+\/evaluations(?:\/|$)/.test(pathname);
+			|| /^\/school\/announcements(?:\/|$)/.test(pathname)
+			|| /^\/school\/events(?:\/|$)/.test(pathname)
+			|| /^\/classes\/[^/]+\/evaluations(?:\/|$)/.test(pathname)
+			|| /^\/classes\/[^/]+\/timetable(?:\/|$)/.test(pathname);
 	}
 
 	$effect(() => {
@@ -134,7 +137,6 @@
 		const routeQueryReady = pageQueryStatus.isReady(cacheKey);
 		void reportCardsContext.ready;
 		void detailDataContext.students;
-		void detailDataContext.planning;
 
 		if (!isLikelyDetailPath(pathname) || usesRouteLocalDrawer(pathname)) {
 			drawer.close();

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
-	import { ClipboardCheck, MapPin } from '$lib/icons';
+	import { ClipboardCheck } from '$lib/icons';
+	import { planningEventCellContent } from './planning-calendar';
 	import { getPlanningTimetableContext } from './planning-timetable-context';
 
 	const {
@@ -19,23 +20,6 @@
 		return value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 	}
 
-	function kindLabel(kind: unknown): string {
-		switch (kind) {
-			case 'school-calendar': {
-				const calendarType = String(event.calendarType ?? 'ceremony');
-				return $t(`calType.${calendarType}`);
-			}
-			case 'homework-due':
-				return $t('planning.homeworkDueLane');
-			case 'activity':
-				return $t('planning.eventKind.activity');
-			case 'assessment':
-				return $t('planning.eventKind.assessment');
-			default:
-				return String(event.subject ?? '');
-		}
-	}
-
 	function handleAttendance(clickEvent: MouseEvent) {
 		clickEvent.stopPropagation();
 		if (typeof actions?.onAttendance !== 'function')
@@ -47,6 +31,13 @@
 		if (id)
 			actions.onAttendance(id);
 	}
+
+	const cellContent = $derived(planningEventCellContent({
+		kind: event.kind as Parameters<typeof planningEventCellContent>[0]['kind'],
+		subject: String(event.subject ?? ''),
+		text: String(event.text ?? ''),
+		teacher: String(event.teacher ?? ''),
+	}));
 
 	const showAttendance = $derived.by(
 		() => event.kind !== 'homework-due'
@@ -60,45 +51,26 @@
 			&& event.allDay !== true,
 	);
 	const compactBar = $derived(mode === 'bars');
+	const isDraft = $derived(event.timetableGenerated === 'draft');
 </script>
 
 {#if compactBar}
 	<div class="flex h-full min-h-0 items-center px-1">
-		<p class="truncate text-[11px] font-semibold leading-none">{String(event.text ?? '')}</p>
+		<p class="truncate text-[11px] font-semibold leading-none">{cellContent.primary}</p>
 	</div>
 {:else}
-	<div class="flex h-full min-h-0 flex-col gap-0.5 pr-6">
+	<div class="flex h-full min-h-0 flex-col justify-center gap-px pr-6">
 		{#if showTimes}
-			<p class="font-mono text-[10px] leading-tight tracking-wide opacity-80">
-				{formatTime(event.start)} – {formatTime(event.end)}
+			<p class="font-mono text-[9px] leading-none tracking-tight text-muted-foreground/90">
+				{formatTime(event.start)}–{formatTime(event.end)}
+				{#if isDraft}
+					<span class="ml-1 uppercase">· {$t('timetable.draft')}</span>
+				{/if}
 			</p>
 		{/if}
-		<p class="truncate text-xs font-semibold leading-tight">{String(event.text ?? '')}</p>
-		<p class="truncate text-[11px] opacity-80">
-			{kindLabel(event.kind)}
-		</p>
-		{#if event.timetableGenerated === 'draft'}
-			<p class="truncate text-[10px] font-medium uppercase text-muted-foreground">
-				{$t('timetable.draft')}
-			</p>
-		{/if}
-		{#if event.teacher && event.kind !== 'homework-due'}
-			<p class="truncate text-[10px] opacity-75">{String(event.teacher)}</p>
-		{/if}
-		{#if event.status === 'cancelled'}
-			<p class="truncate text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-				{$t('planning.occurrenceStatus.cancelled')}
-			</p>
-		{:else if event.status === 'completed'}
-			<p class="truncate text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-				{$t('planning.occurrenceStatus.completed')}
-			</p>
-		{/if}
-		{#if event.room && event.kind !== 'homework-due'}
-			<div class="mt-auto flex items-center gap-1 truncate text-[10px] opacity-75">
-				<MapPin class="h-3 w-3 shrink-0" />
-				<span class="truncate">{String(event.room)}</span>
-			</div>
+		<p class="truncate text-xs font-semibold leading-tight">{cellContent.primary}</p>
+		{#if cellContent.secondary}
+			<p class="truncate text-[10px] leading-tight text-muted-foreground">{cellContent.secondary}</p>
 		{/if}
 		{#if showAttendance}
 			<button

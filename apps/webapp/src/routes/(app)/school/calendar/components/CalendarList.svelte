@@ -2,7 +2,7 @@
 	import type { SchoolYearEvent } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { deleteSchoolYearEventMutation } from '$lib/api/mutations/delete-entity.mutations';
+	import { deleteCalendarEventOnPage } from '../lib/calendar-mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
@@ -153,7 +153,7 @@
 		}
 		deleteBusy = true;
 		try {
-			const ok = await deleteSchoolYearEventMutation(deleteTarget, {
+			const ok = await deleteCalendarEventOnPage(calendarPage, deleteTarget, {
 				successMessage: get(t)('cal.toastDeleted', { title: deleteTarget.title }),
 			});
 			if (ok) {

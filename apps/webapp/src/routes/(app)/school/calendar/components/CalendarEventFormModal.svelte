@@ -2,9 +2,10 @@
 	import type { SchoolYearEvent } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import {
-		createCalendarEventMutation,
-		updateCalendarEventMutation,
-	} from '$lib/api/mutations/calendar.mutations';
+		createCalendarEventOnPage,
+		updateCalendarEventOnPage,
+	} from '../lib/calendar-mutations';
+	import { getCalendarPageState } from '../calendar-page.svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -13,6 +14,8 @@
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
+
+	const calendarPage = getCalendarPageState();
 
 	const EVENT_TYPES: SchoolYearEvent['type'][] = ['holiday', 'vacation', 'closure', 'ceremony'];
 
@@ -97,7 +100,7 @@
 		busy = true;
 		try {
 			if (event) {
-				const ok = await updateCalendarEventMutation({
+				const ok = await updateCalendarEventOnPage(calendarPage, {
 					eventId: event.id,
 					linkedIds: event.linkedIds,
 					title: eventTitle,
@@ -115,7 +118,7 @@
 				}
 			}
 			else {
-				const eventId = await createCalendarEventMutation({
+				const eventId = await createCalendarEventOnPage(calendarPage, {
 					title: eventTitle,
 					description,
 					date,

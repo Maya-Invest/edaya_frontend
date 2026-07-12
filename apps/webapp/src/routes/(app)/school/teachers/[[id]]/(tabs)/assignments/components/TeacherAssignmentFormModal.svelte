@@ -12,6 +12,7 @@
 	import { get } from 'svelte/store';
 	import { createTeacherAssignmentPayload } from '../../../../lib/teacher-detail-mutations';
 	import { getTeachersPageState } from '../../../../teachers-page.svelte';
+	import { getTeacherAssignmentsTabState } from '../teacher-assignments-tab.svelte';
 
 	let {
 		open = $bindable(false),
@@ -22,6 +23,7 @@
 	} = $props();
 
 	const teachersPage = getTeachersPageState();
+	const assignmentsTab = getTeacherAssignmentsTabState();
 
 	let busy = $state(false);
 	let kind = $state<components['schemas']['TeacherAssignment']['kind']>('subject');
@@ -106,6 +108,8 @@
 		});
 		busy = false;
 		if (ok) {
+			assignmentsTab.upsertAssignment(assignment);
+			teachersPage.setAssignmentCount(teacher.id, assignmentsTab.assignmentsFor(teacher.id).length);
 			open = false;
 		}
 	}

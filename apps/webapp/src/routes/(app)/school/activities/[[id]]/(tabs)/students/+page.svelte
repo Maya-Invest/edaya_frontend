@@ -5,8 +5,11 @@
 	import { ENROLL_NEXT } from '$lib/components/school/shared/drawer-constants';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import DataState from '$lib/components/ui/DataState.svelte';
+	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import PickerModal from '$lib/components/ui/PickerModal.svelte';
+	import { drawerTabRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
 	import { Plus, Trash2 } from '$lib/icons';
 	import StudentPicker from '$lib/smart-components/student-picker/StudentPicker.svelte';
@@ -15,11 +18,14 @@
 	import { get } from 'svelte/store';
 	import { getActivitiesPageState } from '../../../activities-page.svelte';
 	import { studentDisplayFallback } from '../../../lib/activity-selectors';
+	import { getActivityStudentsTabState } from './activity-students-tab.svelte';
 
 	const activitiesPage = getActivitiesPageState();
+	const studentsTab = getActivityStudentsTabState();
+	const query = studentsTab.query();
 	const activityId = $derived($page.params.id ?? '');
 	const activity = $derived(activityId ? activitiesPage.findActivity(activityId) : undefined);
-	const enrollments = $derived(activity?.enrollments ?? []);
+	const enrollments = $derived(studentsTab.enrollmentsFor(activityId));
 
 	let addOpen = $state(false);
 	let studentIds = $state<string[]>([]);
@@ -80,6 +86,7 @@
 			enrollmentId: enrollment.id,
 			successMessage: get(t)('activities.enrollStatusSuccess'),
 		});
+		studentsTab.syncFromPage(activity.id);
 		busy = false;
 	}
 
@@ -103,6 +110,7 @@
 		busy = false;
 		if (added > 0) {
 			toast.success(get(t)('activities.enrollStudentsSuccess', { n: added }));
+			studentsTab.syncFromPage(activity.id);
 			addOpen = false;
 			studentIds = [];
 		}
@@ -121,6 +129,7 @@
 		});
 		removeBusy = false;
 		if (ok) {
+			studentsTab.syncFromPage(activity.id);
 			removeOpen = false;
 			removeEnrollmentId = null;
 		}
@@ -128,7 +137,10 @@
 </script>
 
 {#if activity}
-	<div class="rounded-2xl border border-border bg-card">
+	<PageQuery {query} cacheKey={drawerTabRouteCacheKey} loadingTitle={$t('activities.enrolledStudents')}>
+		{#snippet children(data)}
+			<DataState status={data.status} errorMessage={data.errorMessage}>
+				<div class="rounded-2xl border border-border bg-card">
 		<div class="flex items-center justify-between border-b border-border px-4 py-2.5">
 			<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
 				{$t('activities.enrolledStudents')}
@@ -203,6 +215,9 @@
 			</ul>
 		{/if}
 	</div>
+			</DataState>
+		{/snippet}
+	</PageQuery>
 {/if}
 
 <PickerModal

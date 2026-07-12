@@ -12,6 +12,8 @@ type SchoolStudentTabSegment
 
 type SchoolStaffTabSegment = 'profile' | 'permissions' | 'assignments';
 type SchoolTeacherTabSegment = 'profile' | 'assignments' | 'availability';
+type ClassPlanningTabSegment = 'details' | 'attendance' | 'logbook';
+type ClassEvaluationTabSegment = 'details' | 'grading';
 
 const STUDENT_TAB_ROUTES: Record<SchoolStudentTabSegment, RouteId> = {
 	'profile': '/(app)/school/students/[[id]]/(tabs)/profile',
@@ -33,6 +35,17 @@ const TEACHER_TAB_ROUTES: Record<SchoolTeacherTabSegment, RouteId> = {
 	profile: '/(app)/school/teachers/[[id]]/(tabs)/profile',
 	assignments: '/(app)/school/teachers/[[id]]/(tabs)/assignments',
 	availability: '/(app)/school/teachers/[[id]]/(tabs)/availability',
+};
+
+const PLANNING_TAB_ROUTES: Record<ClassPlanningTabSegment, RouteId> = {
+	details: '/(app)/classes/[classId]/timetable/[id]/(tabs)/details',
+	attendance: '/(app)/classes/[classId]/timetable/[id]/(tabs)/attendance',
+	logbook: '/(app)/classes/[classId]/timetable/[id]/(tabs)/logbook',
+};
+
+const EVALUATION_TAB_ROUTES: Record<ClassEvaluationTabSegment, RouteId> = {
+	details: '/(app)/classes/[classId]/evaluations/[[id]]/(tabs)/details',
+	grading: '/(app)/classes/[classId]/evaluations/[[id]]/(tabs)/grading',
 };
 
 type SchoolActivityTabSegment = 'profile' | 'students' | 'classes';
@@ -61,15 +74,27 @@ export const detailHref = {
 	classSubject: (classId: string, id: string): ResolvedPathname =>
 		appPath('/(app)/classes/[classId]/teaching/[[id]]', { classId, id }),
 	classPlanning: (classId: string, id?: string): ResolvedPathname =>
-		appPath('/(app)/classes/[classId]/timetable/[[id]]', id ? { classId, id } : { classId }),
+		id
+			? appPath(PLANNING_TAB_ROUTES.details, { classId, id })
+			: appPath('/(app)/classes/[classId]/timetable', { classId }),
+	classPlanningTab: (
+		classId: string,
+		id: string,
+		tab: ClassPlanningTabSegment = 'details',
+	): ResolvedPathname => appPath(PLANNING_TAB_ROUTES[tab], { classId, id }),
 	classEvaluation: (classId: string, id: string): ResolvedPathname =>
-		appPath('/(app)/classes/[classId]/evaluations/[[id]]', { classId, id }),
+		appPath(EVALUATION_TAB_ROUTES.details, { classId, id }),
+	classEvaluationTab: (
+		classId: string,
+		id: string,
+		tab: ClassEvaluationTabSegment = 'details',
+	): ResolvedPathname => appPath(EVALUATION_TAB_ROUTES[tab], { classId, id }),
 	classAttendanceDay: (classId: string, id: string): ResolvedPathname =>
 		appPath('/(app)/classes/[classId]/attendance/[[id]]', { classId, id }),
 	classTeachingSubject: (classId: string, id: string): ResolvedPathname =>
 		appPath('/(app)/classes/[classId]/teaching/[[id]]', { classId, id }),
 	classDeadline: (classId: string, id: string): ResolvedPathname =>
-		appPath('/(app)/classes/[classId]/evaluations/[[id]]', { classId, id }),
+		appPath(EVALUATION_TAB_ROUTES.details, { classId, id }),
 	configSubject: (id: string): ResolvedPathname => appPath('/(app)/configuration/subjects/[[id]]', { id }),
 	configSubjectLevel: (label: string): ResolvedPathname =>
 		appPath('/(app)/configuration/subjects/level/[[level]]', { level: label }),

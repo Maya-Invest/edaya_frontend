@@ -224,6 +224,46 @@ export function formatPlanningSlotLabel(
 	return `${event.title} · ${dayLabel(event.day)} ${event.start}–${event.end}`;
 }
 
+export interface PlanningEventCellContent {
+	primary: string;
+	secondary: string;
+}
+
+/** Primary/secondary lines for timetable grid cells — keep cells scannable by session kind. */
+export function planningEventCellContent(event: {
+	kind?: PlanningEvent['kind'] | 'school-calendar';
+	subject?: string;
+	title?: string;
+	text?: string;
+	teacher?: string;
+}): PlanningEventCellContent {
+	const title = String(event.text ?? event.title ?? '');
+	const subject = String(event.subject ?? '');
+
+	switch (event.kind) {
+		case 'lesson':
+			return {
+				primary: subject || title,
+				secondary: String(event.teacher ?? ''),
+			};
+		case 'activity':
+			return {
+				primary: subject || title,
+				secondary: title && title !== subject ? title : '',
+			};
+		case 'assessment':
+			return {
+				primary: subject || title,
+				secondary: title && title !== subject ? title : '',
+			};
+		default:
+			return {
+				primary: title || subject,
+				secondary: '',
+			};
+	}
+}
+
 function parseTimeOfDay(time: string): { hours: number; minutes: number } {
 	const [hours = 0, minutes = 0] = time.split(':').map(part => Number.parseInt(part, 10));
 	return { hours, minutes };

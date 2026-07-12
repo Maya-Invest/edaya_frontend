@@ -1023,6 +1023,8 @@ export const en: Dict = {
 	'eval.noPeriod': 'Select an academic period before creating an evaluation.',
 	'eval.deleteConfirm': 'Delete evaluation “{title}”?',
 	'eval.toastDeleted': 'Evaluation {title} deleted.',
+	'eval.tab.details': 'Details',
+	'eval.tab.grading': 'Grading',
 
 	// Homework
 	'hw.eyebrow': 'Homework & deadlines',

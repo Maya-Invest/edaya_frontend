@@ -3,19 +3,25 @@
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import DataState from '$lib/components/ui/DataState.svelte';
+	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import PickerModal from '$lib/components/ui/PickerModal.svelte';
+	import { drawerTabRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
 	import { Plus, Trash2 } from '$lib/icons';
 	import ClassGroupPicker from '$lib/smart-components/class-group-picker/ClassGroupPicker.svelte';
 	import { toast } from '$lib/toast.svelte';
 	import { get } from 'svelte/store';
 	import { getActivitiesPageState } from '../../../activities-page.svelte';
+	import { getActivityClassesTabState } from './activity-classes-tab.svelte';
 
 	const activitiesPage = getActivitiesPageState();
+	const classesTab = getActivityClassesTabState();
+	const query = classesTab.query();
 	const activityId = $derived($page.params.id ?? '');
 	const activity = $derived(activityId ? activitiesPage.findActivity(activityId) : undefined);
-	const classEnrollments = $derived(activity?.classEnrollments ?? []);
+	const classEnrollments = $derived(classesTab.classEnrollmentsFor(activityId));
 
 	let addOpen = $state(false);
 	let classGroupIds = $state<string[]>([]);
@@ -55,6 +61,7 @@
 		busy = false;
 		if (linked > 0) {
 			toast.success(get(t)('activities.linkClassesSuccess', { n: linked }));
+			classesTab.syncFromPage(activity.id);
 			addOpen = false;
 			classGroupIds = [];
 		}
@@ -73,6 +80,7 @@
 		});
 		removeBusy = false;
 		if (ok) {
+			classesTab.syncFromPage(activity.id);
 			removeOpen = false;
 			removeEnrollmentId = null;
 		}
@@ -80,7 +88,10 @@
 </script>
 
 {#if activity}
-	<p class="text-sm text-muted-foreground">{$t('activities.classesTabHint')}</p>
+	<PageQuery {query} cacheKey={drawerTabRouteCacheKey} loadingTitle={$t('activities.linkedClasses')}>
+		{#snippet children(data)}
+			<DataState status={data.status} errorMessage={data.errorMessage}>
+				<p class="text-sm text-muted-foreground">{$t('activities.classesTabHint')}</p>
 
 	<div class="rounded-2xl border border-border bg-card">
 		<div class="flex items-center justify-between border-b border-border px-4 py-2.5">
@@ -141,6 +152,9 @@
 			</ul>
 		{/if}
 	</div>
+			</DataState>
+		{/snippet}
+	</PageQuery>
 {/if}
 
 <PickerModal
