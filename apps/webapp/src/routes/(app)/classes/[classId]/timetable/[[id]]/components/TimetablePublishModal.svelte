@@ -1,10 +1,10 @@
 <script lang="ts">
 	import type { PublishResult } from '$lib/api/mutations/timetable-generation.mutations';
 	import type { TimetablePageState } from '../../timetable-page.svelte';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import { buildTimetableRangePresets } from '$lib/components/school/scheduling/timetable-generation-ui';
 	import TimetablePublishResultPanel from '$lib/components/school/scheduling/TimetablePublishResultPanel.svelte';
 	import TimetableRangeSelector from '$lib/components/school/scheduling/TimetableRangeSelector.svelte';
-	import { buildTimetableRangePresets } from '$lib/components/school/scheduling/timetable-generation-ui';
-	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import { formatDateInput } from '$lib/date/format';
@@ -76,23 +76,21 @@
 	onSubmit={submit}
 	onOpenChange={handleModalOpenChange}
 >
-	{#snippet children()}
-		{#if phase === 'result' && publishResult}
-			<TimetablePublishResultPanel result={publishResult} {rangeLabel} />
-		{:else}
-			<div class="space-y-4">
-				<TimetableRangeSelector bind:startDate bind:endDate presets={rangePresets} {validRange} />
-				<label class="space-y-1.5 text-sm">
-					<span>{$t('timetable.conflictPolicy')}</span>
-					<select bind:value={policy} class="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-						<option value="fail">{$t('timetable.policyFail')}</option>
-						<option value="skip">{$t('timetable.policySkip')}</option>
-					</select>
-				</label>
-				<p class="text-xs text-muted-foreground">{policy === 'skip' ? $t('timetable.skipHint') : $t('timetable.failHint')}</p>
-			</div>
-		{/if}
-	{/snippet}
+	{#if phase === 'result' && publishResult}
+		<TimetablePublishResultPanel result={publishResult} {rangeLabel} />
+	{:else}
+		<div class="space-y-4">
+			<TimetableRangeSelector bind:startDate bind:endDate presets={rangePresets} {validRange} />
+			<label class="space-y-1.5 text-sm">
+				<span>{$t('timetable.conflictPolicy')}</span>
+				<select bind:value={policy} class="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+					<option value="fail">{$t('timetable.policyFail')}</option>
+					<option value="skip">{$t('timetable.policySkip')}</option>
+				</select>
+			</label>
+			<p class="text-xs text-muted-foreground">{policy === 'skip' ? $t('timetable.skipHint') : $t('timetable.failHint')}</p>
+		</div>
+	{/if}
 
 	{#snippet footer({ close, submit, busy, submitDisabled })}
 		{#if phase === 'result'}

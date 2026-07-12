@@ -14,7 +14,7 @@ bun run verify
 ```
 
 - **Turbo** — quality graph (`lint`, `check`, `quality`, `test`, `build`) from root only
-- **`bun repo`** — repo hygiene, OpenAPI drift, smoke tests (no Turbo)
+- **`bun repo`** — repo hygiene, smoke tests (no Turbo)
 - **CI verify job** — `bun run verify` via `ci-bun-turbo`
 - **Integration** — separate PR job (Playwright + api-dev image); not part of verify
 
@@ -32,11 +32,7 @@ bun run verify
 ```text
 bun repo
 ├── doctor                       # env hygiene + materialize .env from examples
-├── verify                       # doctor + check openapi + repo unit tests
-├── check
-│   ├── openapi                  # generated drift (committed openapi.json)
-│   └── openapi-export           # drift vs live sibling backend export
-├── openapi <export|generate>
+├── verify                       # doctor + repo unit tests
 └── smoke-test staging
 ```
 
@@ -59,7 +55,7 @@ Optional thin aliases were removed; use `bun repo` directly.
 ### Phase 1 — `bun repo` CLI
 
 - [x] `tooling/repo/cli/` — thin dispatch (mirror backend)
-- [x] `verify`, `check`, `openapi`, `smoke-test`, `doctor`
+- [x] `verify`, `smoke-test`, `doctor`
 - [x] Extend `doctor` to copy `.env` from examples when missing
 
 ### Phase 2 — Root scripts

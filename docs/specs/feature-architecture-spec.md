@@ -485,7 +485,7 @@ Sub-entities (`studentIncidentInvolvements`, `staffPermissionAssignments`, `teac
 | Timetable materialize | `createSchedule` · `materializeSchedule` |
 | Class activity link | `classActivityEnrollments` entity CRUD |
 
-Regenerate OpenAPI client after backend API changes (`bun repo openapi generate`).
+Regenerate the API client in **edaya_backend** after API changes (`bun repo openapi generate`), then refresh the web dependency.
 
 ---
 

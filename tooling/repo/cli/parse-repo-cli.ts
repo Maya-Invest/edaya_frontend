@@ -1,10 +1,8 @@
 export type RepoBunSpawnCommand = 'doctor'
 
 export type CompoundRepoCommand
-  = | 'check'
-    | 'smoke-test'
+  = | 'smoke-test'
     | 'verify'
-    | 'openapi'
 
 export type RepoCliCommand = RepoBunSpawnCommand | CompoundRepoCommand
 
@@ -14,17 +12,13 @@ export type ParsedRepoCli
 
 const COMMANDS = new Set<RepoCliCommand>([
   'doctor',
-  'check',
   'smoke-test',
   'verify',
-  'openapi',
 ])
 
 export const COMPOUND_COMMANDS = new Set<CompoundRepoCommand>([
-  'check',
   'smoke-test',
   'verify',
-  'openapi',
 ])
 
 export function isCompoundRepoCommand(command: RepoCliCommand): command is CompoundRepoCommand {

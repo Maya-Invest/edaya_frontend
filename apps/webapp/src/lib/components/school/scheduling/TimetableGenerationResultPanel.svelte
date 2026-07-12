@@ -4,17 +4,17 @@
 		GenerateSchoolResult,
 		RepublishResult,
 	} from '$lib/api/mutations/timetable-generation.mutations';
+	import { t } from '$lib/i18n';
+	import { AlertTriangle, CheckCircle2 } from '$lib/icons';
+	import { BADGE_INFO, BADGE_WARN, SURFACE_INFO, SURFACE_WARN } from '$lib/ui-tones';
+	import { cn } from '$lib/utils';
 	import {
 		summarizeClassGeneration,
 		summarizeRepublish,
 		summarizeSchoolGeneration,
 	} from './timetable-generation-ui';
-	import { AlertTriangle, CheckCircle2 } from '$lib/icons';
-	import { BADGE_INFO, BADGE_WARN, SURFACE_INFO, SURFACE_WARN } from '$lib/ui-tones';
-	import { cn } from '$lib/utils';
-	import { t } from '$lib/i18n';
 
-	let {
+	const {
 		mode = 'generate',
 		classResult = null,
 		schoolResult = null,
@@ -39,15 +39,15 @@
 		mode === 'school'
 			? schoolSummary?.isComplete
 			: mode === 'republish'
-				? republishSummary?.generation.isComplete && republishSummary.publication.isComplete
-				: classSummary?.isComplete,
+			? republishSummary?.generation.isComplete && republishSummary.publication.isComplete
+			: classSummary?.isComplete,
 	);
 	const warningUnmetCount = $derived(
 		mode === 'school'
 			? schoolSummary?.unmetCount ?? 0
 			: mode === 'republish'
-				? republishSummary?.generation.unmetCount ?? 0
-				: classSummary?.unmetCount ?? 0,
+			? republishSummary?.generation.unmetCount ?? 0
+			: classSummary?.unmetCount ?? 0,
 	);
 	const warningSkippedCount = $derived(
 		mode === 'republish' ? republishSummary?.publication.skippedCount ?? 0 : 0,
@@ -74,14 +74,14 @@
 							sessions: schoolSummary?.sessionCount ?? 0,
 						})
 						: mode === 'republish'
-							? $t('timetable.resultRepublishDescription', {
-								published: republishSummary?.publication.publishedCount ?? 0,
-								skipped: republishSummary?.publication.skippedCount ?? 0,
-							})
-							: $t('timetable.resultClassDescription', {
-								sessions: classSummary?.sessionCount ?? 0,
-								unmet: classSummary?.unmetCount ?? 0,
-							})}
+						? $t('timetable.resultRepublishDescription', {
+							published: republishSummary?.publication.publishedCount ?? 0,
+							skipped: republishSummary?.publication.skippedCount ?? 0,
+						})
+						: $t('timetable.resultClassDescription', {
+							sessions: classSummary?.sessionCount ?? 0,
+							unmet: classSummary?.unmetCount ?? 0,
+						})}
 				</p>
 				{#if rangeLabel}
 					<p class="text-xs text-muted-foreground">{rangeLabel}</p>

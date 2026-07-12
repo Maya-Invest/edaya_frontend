@@ -40,6 +40,9 @@ export async function updateSchoolSettingsMutation(
 			timetablePreferredPeriodDefinitionIds: current?.timetablePreferredPeriodDefinitionIds ?? [],
 			timetableAllowUnassignedTeacherPlacements: current?.timetableAllowUnassignedTeacherPlacements ?? false,
 			timetableUseHomeroomTeacherFallback: current?.timetableUseHomeroomTeacherFallback ?? false,
+			timetableGenerationMode: current?.timetableGenerationMode ?? 'weekly',
+			timetableMinPeriodSpan: current?.timetableMinPeriodSpan ?? 1,
+			timetableMaxPeriodSpan: current?.timetableMaxPeriodSpan ?? 1,
 		}),
 		{ successMessage: options?.successMessage },
 	);

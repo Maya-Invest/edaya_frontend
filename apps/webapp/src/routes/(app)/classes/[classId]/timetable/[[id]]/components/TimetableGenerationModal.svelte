@@ -1,15 +1,19 @@
 <script lang="ts">
-	import type { GenerateClassResult, RepublishResult, TimetableGenerationOptions, TimetablePageState } from '../../timetable-page.svelte';
+	import type { SchoolRaw } from '$lib/api/school-data';
 	import type { TimetableGenerationError } from '$lib/components/school/scheduling/timetable-generation-errors';
-	import TimetableGenerationResultPanel from '$lib/components/school/scheduling/TimetableGenerationResultPanel.svelte';
+	import type { TimetableSetupTab } from '$lib/components/school/scheduling/TimetableGenerationSetupTabs.svelte';
+	import type { GenerateClassResult, RepublishResult, TimetableGenerationOptions, TimetablePageState } from '../../timetable-page.svelte';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import { getBrowserSchoolClient } from '$lib/api/school-client';
+	import { fetchSchoolById } from '$lib/api/school-data';
+	import { buildTimetableRangePresets } from '$lib/components/school/scheduling/timetable-generation-ui';
 	import TimetableGenerationErrorPanel from '$lib/components/school/scheduling/TimetableGenerationErrorPanel.svelte';
-	import TimetableGenerationSetupTabs, { type TimetableSetupTab } from '$lib/components/school/scheduling/TimetableGenerationSetupTabs.svelte';
-	import TimetableRangeSelector from '$lib/components/school/scheduling/TimetableRangeSelector.svelte';
+	import TimetableGenerationResultPanel from '$lib/components/school/scheduling/TimetableGenerationResultPanel.svelte';
+	import TimetableGenerationSetupTabs from '$lib/components/school/scheduling/TimetableGenerationSetupTabs.svelte';
 	import TimetablePreferredPeriodsPanel from '$lib/components/school/scheduling/TimetablePreferredPeriodsPanel.svelte';
+	import TimetableRangeSelector from '$lib/components/school/scheduling/TimetableRangeSelector.svelte';
 	import TimetableSolverOptionsPanel from '$lib/components/school/scheduling/TimetableSolverOptionsPanel.svelte';
 	import TimetableWorkloadConfigPanel from '$lib/components/school/scheduling/TimetableWorkloadConfigPanel.svelte';
-	import { buildTimetableRangePresets } from '$lib/components/school/scheduling/timetable-generation-ui';
-	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import { formatDateInput } from '$lib/date/format';
@@ -36,9 +40,14 @@
 	let allowUnassignedTeacherPlacements = $state<boolean | undefined>();
 	let useHomeroomTeacherFallback = $state<boolean | undefined>();
 	let minDayGapSameSubject = $state('');
+	let timetableMinPeriodSpan = $state('');
+	let timetableMaxPeriodSpan = $state('');
+	let schoolRaw = $state<SchoolRaw | null>(null);
 	let preferredIds = $state<string[]>([]);
 	let policy = $state<'fail' | 'skip'>('fail');
 	let overrides = $state<Record<string, number>>({});
+	let minSpanOverrides = $state<Record<string, number>>({});
+	let maxSpanOverrides = $state<Record<string, number>>({});
 	let classResult = $state<GenerateClassResult | null>(null);
 	let republishResult = $state<RepublishResult | null>(null);
 	let generationError = $state<TimetableGenerationError | null>(null);
@@ -75,15 +84,15 @@
 		phase === 'error'
 			? (mode === 'republish' ? $t('timetable.republishErrorTitle') : $t('timetable.generateErrorTitle'))
 			: phase === 'success'
-				? (mode === 'republish' ? $t('timetable.republishResultTitle') : $t('timetable.generateResultTitle'))
-				: (mode === 'republish' ? $t('timetable.republishTitle') : $t('timetable.generateTitle')),
+			? (mode === 'republish' ? $t('timetable.republishResultTitle') : $t('timetable.generateResultTitle'))
+			: (mode === 'republish' ? $t('timetable.republishTitle') : $t('timetable.generateTitle')),
 	);
 	const modalDescription = $derived(
 		phase === 'error'
 			? $t('timetable.errorReviewHint')
 			: phase === 'success'
-				? $t('timetable.resultReviewHint')
-				: (mode === 'republish' ? $t('timetable.republishHint') : $t('timetable.generateHint')),
+			? $t('timetable.resultReviewHint')
+			: (mode === 'republish' ? $t('timetable.republishHint') : $t('timetable.generateHint')),
 	);
 
 	function initializeForm() {
@@ -92,6 +101,8 @@
 		endDate = range.endDate;
 		policy = 'fail';
 		overrides = {};
+		minSpanOverrides = {};
+		maxSpanOverrides = {};
 		classResult = null;
 		republishResult = null;
 		generationError = null;
@@ -103,7 +114,15 @@
 		allowUnassignedTeacherPlacements = school?.timetableAllowUnassignedTeacherPlacements;
 		useHomeroomTeacherFallback = school?.timetableUseHomeroomTeacherFallback;
 		minDayGapSameSubject = school ? String(school.timetableMinDayGapSameSubject) : '';
+		timetableMinPeriodSpan = school ? String(school.timetableMinPeriodSpan) : '1';
+		timetableMaxPeriodSpan = school ? String(school.timetableMaxPeriodSpan) : '1';
 		preferredIds = [...(school?.timetablePreferredPeriodDefinitionIds ?? [])];
+		schoolRaw = null;
+		if (school) {
+			void fetchSchoolById(getBrowserSchoolClient(), school.id).then((raw) => {
+				schoolRaw = raw;
+			});
+		}
 		void timetablePage.resolveSpace(startDate, endDate);
 	}
 
@@ -163,6 +182,8 @@
 				policy,
 				options: buildOptions(),
 				periodsPerWeekByClassSubjectId: overrides,
+				minPeriodSpanByClassSubjectId: minSpanOverrides,
+				maxPeriodSpanByClassSubjectId: maxSpanOverrides,
 			});
 			if (outcome.ok) {
 				republishResult = outcome.value;
@@ -180,6 +201,8 @@
 			endDate,
 			options: buildOptions(),
 			periodsPerWeekByClassSubjectId: overrides,
+			minPeriodSpanByClassSubjectId: minSpanOverrides,
+			maxPeriodSpanByClassSubjectId: maxSpanOverrides,
 		});
 		if (outcome.ok) {
 			classResult = outcome.value;
@@ -209,61 +232,67 @@
 	onSubmit={submit}
 	onOpenChange={handleModalOpenChange}
 >
-	{#snippet children()}
-		{#if phase === 'error' && generationError}
-			<TimetableGenerationErrorPanel
-				error={generationError}
-				{rangeLabel}
-				titleKey={mode === 'republish' ? 'timetable.republishErrorTitle' : 'timetable.generateErrorTitle'}
+	{#if phase === 'error' && generationError}
+		<TimetableGenerationErrorPanel
+			error={generationError}
+			{rangeLabel}
+			titleKey={mode === 'republish' ? 'timetable.republishErrorTitle' : 'timetable.generateErrorTitle'}
+		/>
+	{:else if phase === 'success'}
+		<TimetableGenerationResultPanel
+			{mode}
+			{classResult}
+			{republishResult}
+			subjectLabels={classSubjectLabels}
+			{rangeLabel}
+		/>
+	{:else}
+		<div class="space-y-4">
+			<TimetableRangeSelector
+				bind:startDate
+				bind:endDate
+				presets={rangePresets}
+				spaceCellCount={timetablePage.spaceCellCount}
+				{validRange}
+				onRangeChange={(nextStart, nextEnd) => timetablePage.resolveSpace(nextStart, nextEnd)}
 			/>
-		{:else if phase === 'success'}
-			<TimetableGenerationResultPanel
-				{mode}
-				{classResult}
-				{republishResult}
-				subjectLabels={classSubjectLabels}
-				{rangeLabel}
-			/>
-		{:else}
-			<div class="space-y-4">
-				<TimetableRangeSelector
-					bind:startDate
-					bind:endDate
-					presets={rangePresets}
-					spaceCellCount={timetablePage.spaceCellCount}
-					{validRange}
-					onRangeChange={(nextStart, nextEnd) => timetablePage.resolveSpace(nextStart, nextEnd)}
+
+			<TimetableGenerationSetupTabs bind:activeTab={setupTab} />
+
+			{#if setupTab === 'subjects'}
+				<TimetableWorkloadConfigPanel
+					classes={workloadClasses}
+					activeClassId={timetablePage.classId}
+					classSubjects={timetablePage.classSubjects}
+					subjectLabels={timetablePage.subjectLabels}
+					teacherLabelsByClassSubjectId={timetablePage.teacherLabelsByClassSubjectId}
+					school={academicContext.schools[0]}
+					loading={workloadLoading}
+					bind:overrides
+					bind:minSpanOverrides
+					bind:maxSpanOverrides
 				/>
-
-				<TimetableGenerationSetupTabs bind:activeTab={setupTab} />
-
-				{#if setupTab === 'subjects'}
-					<TimetableWorkloadConfigPanel
-						classes={workloadClasses}
-						activeClassId={timetablePage.classId}
-						classSubjects={timetablePage.classSubjects}
-						subjectLabels={timetablePage.subjectLabels}
-						teacherLabelsByClassSubjectId={timetablePage.teacherLabelsByClassSubjectId}
-						loading={workloadLoading}
-						bind:overrides
-					/>
-				{:else if setupTab === 'periods'}
-					<TimetablePreferredPeriodsPanel {periods} bind:preferredIds />
-				{:else}
-					<TimetableSolverOptionsPanel
-						bind:generationMode
-						bind:enforceWorkloadFulfillment
-						bind:excludeBreakSlots
-						bind:allowUnassignedTeacherPlacements
-						bind:useHomeroomTeacherFallback
-						bind:minDayGapSameSubject
-						bind:policy
-						showRepublishPolicy={mode === 'republish'}
-					/>
-				{/if}
-			</div>
-		{/if}
-	{/snippet}
+			{:else if setupTab === 'periods'}
+				<TimetablePreferredPeriodsPanel {periods} bind:preferredIds />
+			{:else}
+				<TimetableSolverOptionsPanel
+					bind:generationMode
+					bind:enforceWorkloadFulfillment
+					bind:excludeBreakSlots
+					bind:allowUnassignedTeacherPlacements
+					bind:useHomeroomTeacherFallback
+					bind:minDayGapSameSubject
+					bind:timetableMinPeriodSpan
+					bind:timetableMaxPeriodSpan
+					schoolId={academicContext.schools[0]?.id ?? ''}
+					{schoolRaw}
+					showSchoolSpanDefaults
+					bind:policy
+					showRepublishPolicy={mode === 'republish'}
+				/>
+			{/if}
+		</div>
+	{/if}
 
 	{#snippet footer({ close, submit, busy, submitDisabled })}
 		{#if phase === 'success' || phase === 'error'}

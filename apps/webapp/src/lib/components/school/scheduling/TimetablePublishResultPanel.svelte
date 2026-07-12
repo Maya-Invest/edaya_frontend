@@ -1,12 +1,12 @@
 <script lang="ts">
 	import type { PublishResult } from '$lib/api/mutations/timetable-generation.mutations';
-	import { summarizePublish } from './timetable-generation-ui';
+	import { t } from '$lib/i18n';
 	import { CheckCircle2 } from '$lib/icons';
 	import { SURFACE_INFO, SURFACE_WARN } from '$lib/ui-tones';
 	import { cn } from '$lib/utils';
-	import { t } from '$lib/i18n';
+	import { summarizePublish } from './timetable-generation-ui';
 
-	let {
+	const {
 		result,
 		className = '',
 		rangeLabel = '',

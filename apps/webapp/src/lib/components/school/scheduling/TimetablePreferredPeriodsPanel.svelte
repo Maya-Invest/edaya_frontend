@@ -1,11 +1,11 @@
 <script lang="ts">
 	import type { PeriodDefinition } from '$lib/types/school';
+	import { t } from '$lib/i18n';
+	import { cn } from '$lib/utils';
 	import {
 		buildPreferredPeriodWeekGrid,
 		preferredPeriodDayLabelKey,
 	} from './timetable-generation-ui';
-	import { cn } from '$lib/utils';
-	import { t } from '$lib/i18n';
 
 	let {
 		periods,

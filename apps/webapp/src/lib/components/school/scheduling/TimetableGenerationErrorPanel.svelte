@@ -1,11 +1,11 @@
 <script lang="ts">
 	import type { TimetableGenerationError } from './timetable-generation-errors';
+	import { t } from '$lib/i18n';
 	import { AlertCircle } from '$lib/icons';
 	import { SURFACE_WARN } from '$lib/ui-tones';
 	import { cn } from '$lib/utils';
-	import { t } from '$lib/i18n';
 
-	let {
+	const {
 		error,
 		rangeLabel = '',
 		titleKey = 'timetable.generateErrorTitle',

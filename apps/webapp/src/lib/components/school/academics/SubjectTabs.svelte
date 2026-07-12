@@ -2,6 +2,7 @@
 	import type { SubjectMatterDrawerRow } from '$lib/api/mutations/subject-matter.mutations';
 	import type { Subject } from '$lib/types/school';
 	import { page } from '$app/stores';
+	import { academicContext } from '$lib/academic/context.svelte';
 	import { deleteClassSubjectMutation } from '$lib/api/mutations/delete-entity.mutations';
 	import {
 		deleteSubjectMatterMutation,
@@ -20,6 +21,7 @@
 	import { teachingLogContext } from '$lib/teaching-log/context.svelte';
 	import { get } from 'svelte/store';
 	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
+	import ClassSubjectTimetableSection from './ClassSubjectTimetableSection.svelte';
 	import SubjectFormModal from './SubjectFormModal.svelte';
 	import SubjectMatterFormModal from './SubjectMatterFormModal.svelte';
 
@@ -181,6 +183,7 @@
 	<DrawerTabBar tabs={tabItems} active={tabs.tab} onSelect={key => tabs.select(key as SubjectTab)} />
 
 	{#if tabs.tab === 'progression'}
+		<ClassSubjectTimetableSection classSubjectId={s.id} school={academicContext.schools[0]} />
 		<div class="space-y-4">
 			<section class="space-y-2">
 				<div class="flex items-center justify-between gap-3">

@@ -1,24 +1,31 @@
 import type { GenerateSchoolResult } from '$lib/api/mutations/timetable-generation.mutations';
 import type { components } from '$lib/api/schema';
+import type { TimetableMutationResult } from '$lib/components/school/scheduling/timetable-generation-errors';
+import type { TimetablePlacementOverrides } from '$lib/components/school/scheduling/timetable-placement-parameters';
 import type { ClassNode } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
   generateSchoolTimetable,
   publishClassTimetable,
 } from '$lib/api/mutations/timetable-generation.mutations';
-import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { academicYearPlanningRange } from '$lib/api/planning-data';
+import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { teacherNameForClassSubject } from '$lib/api/teacher-display';
-import { formatDateInput } from '$lib/date/format';
-import { entityVersions } from '$lib/entity-versions.svelte';
-import { toast } from '$lib/toast.svelte';
-import { get } from 'svelte/store';
-import { t } from '$lib/i18n';
 import {
   parseTimetableGenerationError,
   timetableErrorMessage,
-  type TimetableMutationResult,
+
 } from '$lib/components/school/scheduling/timetable-generation-errors';
+import {
+  buildTimetablePlacementParameters,
+
+} from '$lib/components/school/scheduling/timetable-placement-parameters';
+import { formatDateInput } from '$lib/date/format';
+import { entityVersions } from '$lib/entity-versions.svelte';
+import { t } from '$lib/i18n';
+import { toast } from '$lib/toast.svelte';
+import { SvelteSet } from 'svelte/reactivity';
+import { get } from 'svelte/store';
 import { sortTimetableClasses } from './timetable-planning';
 
 function translateTimetable(key: string) {
@@ -132,7 +139,7 @@ export class TimetablePlanningPageState {
           : Promise.resolve([]),
       ]);
       this.subjectLabels = Object.fromEntries(subjects.map(subject => [subject.id, subject.name]));
-      const teacherIds = [...new Set(teacherAssignments.map(row => row.teacherId))];
+      const teacherIds = [...new SvelteSet(teacherAssignments.map(row => row.teacherId))];
       const teachers = teacherIds.length
         ? await client.entities.teachers.list({ id: { $in: teacherIds } })
         : [];
@@ -189,16 +196,13 @@ export class TimetablePlanningPageState {
     startDate: string;
     endDate: string;
     options?: TimetableGenerationOptions;
-    periodsPerWeekByClassSubjectId?: Record<string, number>;
-  }): Promise<TimetableMutationResult<GenerateSchoolResult>> {
+  } & TimetablePlacementOverrides): Promise<TimetableMutationResult<GenerateSchoolResult>> {
     const outcome = await this.runMutation(() => generateSchoolTimetable({
       academicYearId: academicContext.yearId,
       startDate: input.startDate,
       endDate: input.endDate,
       options: input.options,
-      placementParameters: input.periodsPerWeekByClassSubjectId
-        ? { periodsPerWeekByClassSubjectId: input.periodsPerWeekByClassSubjectId }
-        : undefined,
+      placementParameters: buildTimetablePlacementParameters(input),
     }), { reportInModal: true });
 		if (outcome.ok) {
 			this.generationResult = outcome.value;

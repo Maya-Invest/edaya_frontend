@@ -5,8 +5,8 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
-	import TimetableGenerationToolbar from './components/TimetableGenerationToolbar.svelte';
 	import { getTimetablePageState } from '../timetable-page.svelte';
+	import TimetableGenerationToolbar from './components/TimetableGenerationToolbar.svelte';
 
 	const selectedId = $derived($page.params.id);
 	const timetablePage = getTimetablePageState();

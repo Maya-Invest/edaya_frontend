@@ -1,16 +1,20 @@
 <script lang="ts">
-	import type { TimetableGenerationOptions, TimetablePlanningPageState } from '../timetable-planning-page.svelte';
 	import type { GenerateSchoolResult } from '$lib/api/mutations/timetable-generation.mutations';
+	import type { SchoolRaw } from '$lib/api/school-data';
 	import type { TimetableGenerationError } from '$lib/components/school/scheduling/timetable-generation-errors';
-	import TimetableGenerationResultPanel from '$lib/components/school/scheduling/TimetableGenerationResultPanel.svelte';
+	import type { TimetableSetupTab } from '$lib/components/school/scheduling/TimetableGenerationSetupTabs.svelte';
+	import type { TimetableGenerationOptions, TimetablePlanningPageState } from '../timetable-planning-page.svelte';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import { getBrowserSchoolClient } from '$lib/api/school-client';
+	import { fetchSchoolById } from '$lib/api/school-data';
+	import { buildTimetableRangePresets } from '$lib/components/school/scheduling/timetable-generation-ui';
 	import TimetableGenerationErrorPanel from '$lib/components/school/scheduling/TimetableGenerationErrorPanel.svelte';
-	import TimetableGenerationSetupTabs, { type TimetableSetupTab } from '$lib/components/school/scheduling/TimetableGenerationSetupTabs.svelte';
-	import TimetableRangeSelector from '$lib/components/school/scheduling/TimetableRangeSelector.svelte';
+	import TimetableGenerationResultPanel from '$lib/components/school/scheduling/TimetableGenerationResultPanel.svelte';
+	import TimetableGenerationSetupTabs from '$lib/components/school/scheduling/TimetableGenerationSetupTabs.svelte';
 	import TimetablePreferredPeriodsPanel from '$lib/components/school/scheduling/TimetablePreferredPeriodsPanel.svelte';
+	import TimetableRangeSelector from '$lib/components/school/scheduling/TimetableRangeSelector.svelte';
 	import TimetableSolverOptionsPanel from '$lib/components/school/scheduling/TimetableSolverOptionsPanel.svelte';
 	import TimetableWorkloadConfigPanel from '$lib/components/school/scheduling/TimetableWorkloadConfigPanel.svelte';
-	import { buildTimetableRangePresets } from '$lib/components/school/scheduling/timetable-generation-ui';
-	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import { formatDateInput } from '$lib/date/format';
@@ -30,8 +34,13 @@
 	let allowUnassignedTeacherPlacements = $state<boolean | undefined>();
 	let useHomeroomTeacherFallback = $state<boolean | undefined>();
 	let minDayGapSameSubject = $state('');
+	let timetableMinPeriodSpan = $state('');
+	let timetableMaxPeriodSpan = $state('');
+	let schoolRaw = $state<SchoolRaw | null>(null);
 	let preferredIds = $state<string[]>([]);
 	let overrides = $state<Record<string, number>>({});
+	let minSpanOverrides = $state<Record<string, number>>({});
+	let maxSpanOverrides = $state<Record<string, number>>({});
 	let schoolResult = $state<GenerateSchoolResult | null>(null);
 	let generationError = $state<TimetableGenerationError | null>(null);
 	let setupTab = $state<TimetableSetupTab>('subjects');
@@ -54,21 +63,23 @@
 		phase === 'error'
 			? $t('timetable.schoolGenerateErrorTitle')
 			: phase === 'success'
-				? $t('timetable.schoolGenerateResultTitle')
-				: $t('timetable.schoolGenerateTitle'),
+			? $t('timetable.schoolGenerateResultTitle')
+			: $t('timetable.schoolGenerateTitle'),
 	);
 	const modalDescription = $derived(
 		phase === 'error'
 			? $t('timetable.errorReviewHint')
 			: phase === 'success'
-				? $t('timetable.resultReviewHint')
-				: $t('timetable.schoolGenerateHint'),
+			? $t('timetable.resultReviewHint')
+			: $t('timetable.schoolGenerateHint'),
 	);
 
 	function initializeForm() {
 		({ startDate, endDate } = planningPage.range);
 		selectedClassId = planningPage.classes[0]?.id ?? '';
 		overrides = {};
+		minSpanOverrides = {};
+		maxSpanOverrides = {};
 		schoolResult = null;
 		generationError = null;
 		setupTab = 'subjects';
@@ -79,7 +90,15 @@
 		allowUnassignedTeacherPlacements = school?.timetableAllowUnassignedTeacherPlacements;
 		useHomeroomTeacherFallback = school?.timetableUseHomeroomTeacherFallback;
 		minDayGapSameSubject = school ? String(school.timetableMinDayGapSameSubject) : '';
+		timetableMinPeriodSpan = school ? String(school.timetableMinPeriodSpan) : '1';
+		timetableMaxPeriodSpan = school ? String(school.timetableMaxPeriodSpan) : '1';
 		preferredIds = [...(school?.timetablePreferredPeriodDefinitionIds ?? [])];
+		schoolRaw = null;
+		if (school) {
+			void fetchSchoolById(getBrowserSchoolClient(), school.id).then((raw) => {
+				schoolRaw = raw;
+			});
+		}
 	}
 
 	function handleModalOpenChange(isOpen: boolean) {
@@ -127,7 +146,9 @@
 			startDate,
 			endDate,
 			options: buildOptions(),
-			periodsPerWeekByClassSubjectId: Object.keys(overrides).length ? overrides : undefined,
+			periodsPerWeekByClassSubjectId: overrides,
+			minPeriodSpanByClassSubjectId: minSpanOverrides,
+			maxPeriodSpanByClassSubjectId: maxSpanOverrides,
 		});
 		if (outcome.ok) {
 			schoolResult = outcome.value;
@@ -156,45 +177,51 @@
 	onSubmit={submit}
 	onOpenChange={handleModalOpenChange}
 >
-	{#snippet children()}
-		{#if phase === 'error' && generationError}
-			<TimetableGenerationErrorPanel
-				error={generationError}
-				{rangeLabel}
-				titleKey="timetable.schoolGenerateErrorTitle"
-			/>
-		{:else if phase === 'success' && schoolResult}
-			<TimetableGenerationResultPanel mode="school" {schoolResult} {classLabels} {rangeLabel} />
-		{:else}
-			<div class="space-y-4">
-				<TimetableRangeSelector bind:startDate bind:endDate presets={rangePresets} {validRange} />
+	{#if phase === 'error' && generationError}
+		<TimetableGenerationErrorPanel
+			error={generationError}
+			{rangeLabel}
+			titleKey="timetable.schoolGenerateErrorTitle"
+		/>
+	{:else if phase === 'success' && schoolResult}
+		<TimetableGenerationResultPanel mode="school" {schoolResult} {classLabels} {rangeLabel} />
+	{:else}
+		<div class="space-y-4">
+			<TimetableRangeSelector bind:startDate bind:endDate presets={rangePresets} {validRange} />
 
-				<TimetableGenerationSetupTabs bind:activeTab={setupTab} />
+			<TimetableGenerationSetupTabs bind:activeTab={setupTab} />
 
-				{#if setupTab === 'subjects'}
-					<TimetableWorkloadConfigPanel
-						classes={workloadClasses}
-						classSubjects={planningPage.classSubjects}
-						subjectLabels={planningPage.subjectLabels}
-						teacherLabelsByClassSubjectId={planningPage.teacherLabelsByClassSubjectId}
-						bind:selectedClassId
-						bind:overrides
-					/>
-				{:else if setupTab === 'periods'}
-					<TimetablePreferredPeriodsPanel {periods} bind:preferredIds />
-				{:else}
-					<TimetableSolverOptionsPanel
-						bind:generationMode
-						bind:enforceWorkloadFulfillment
-						bind:excludeBreakSlots
-						bind:allowUnassignedTeacherPlacements
-						bind:useHomeroomTeacherFallback
-						bind:minDayGapSameSubject
-					/>
-				{/if}
-			</div>
-		{/if}
-	{/snippet}
+			{#if setupTab === 'subjects'}
+				<TimetableWorkloadConfigPanel
+					classes={workloadClasses}
+					classSubjects={planningPage.classSubjects}
+					subjectLabels={planningPage.subjectLabels}
+					teacherLabelsByClassSubjectId={planningPage.teacherLabelsByClassSubjectId}
+					school={academicContext.schools[0]}
+					bind:selectedClassId
+					bind:overrides
+					bind:minSpanOverrides
+					bind:maxSpanOverrides
+				/>
+			{:else if setupTab === 'periods'}
+				<TimetablePreferredPeriodsPanel {periods} bind:preferredIds />
+			{:else}
+				<TimetableSolverOptionsPanel
+					bind:generationMode
+					bind:enforceWorkloadFulfillment
+					bind:excludeBreakSlots
+					bind:allowUnassignedTeacherPlacements
+					bind:useHomeroomTeacherFallback
+					bind:minDayGapSameSubject
+					bind:timetableMinPeriodSpan
+					bind:timetableMaxPeriodSpan
+					schoolId={academicContext.schools[0]?.id ?? ''}
+					{schoolRaw}
+					showSchoolSpanDefaults
+				/>
+			{/if}
+		</div>
+	{/if}
 
 	{#snippet footer({ close, submit, busy, submitDisabled })}
 		{#if phase === 'success' || phase === 'error'}

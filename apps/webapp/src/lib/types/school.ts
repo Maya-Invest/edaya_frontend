@@ -354,6 +354,8 @@ export interface School {
 	timetableAllowUnassignedTeacherPlacements: boolean;
 	timetableUseHomeroomTeacherFallback: boolean;
 	timetableGenerationMode: TimetableGenerationMode;
+	timetableMinPeriodSpan: number;
+	timetableMaxPeriodSpan: number;
 }
 
 export interface SchoolYearEvent {

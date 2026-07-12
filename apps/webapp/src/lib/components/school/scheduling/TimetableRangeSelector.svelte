@@ -1,11 +1,11 @@
 <script lang="ts">
 	import type { TimetableRangePreset } from './timetable-generation-ui';
-	import { activeRangePresetId } from './timetable-generation-ui';
 	import Input from '$lib/components/ui/input/input.svelte';
-	import { SURFACE_INFO } from '$lib/ui-tones';
-	import { CalendarRange } from '$lib/icons';
 	import { t } from '$lib/i18n';
+	import { CalendarRange } from '$lib/icons';
+	import { SURFACE_INFO } from '$lib/ui-tones';
 	import { cn } from '$lib/utils';
+	import { activeRangePresetId } from './timetable-generation-ui';
 
 	let {
 		startDate = $bindable(''),

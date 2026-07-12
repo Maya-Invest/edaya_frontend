@@ -41,6 +41,8 @@ export function mapSchoolFromApi(raw: SchoolRaw): School {
 		timetableAllowUnassignedTeacherPlacements: raw.timetableAllowUnassignedTeacherPlacements,
 		timetableUseHomeroomTeacherFallback: raw.timetableUseHomeroomTeacherFallback,
 		timetableGenerationMode: raw.timetableGenerationMode,
+		timetableMinPeriodSpan: raw.timetableMinPeriodSpan,
+		timetableMaxPeriodSpan: raw.timetableMaxPeriodSpan,
 	};
 }
 

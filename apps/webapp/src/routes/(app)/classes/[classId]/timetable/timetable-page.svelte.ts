@@ -1,5 +1,7 @@
 import type { GenerateClassResult } from '$lib/api/mutations/timetable-generation.mutations';
 import type { components } from '$lib/api/schema';
+import type { TimetableMutationResult } from '$lib/components/school/scheduling/timetable-generation-errors';
+import type { TimetablePlacementOverrides } from '$lib/components/school/scheduling/timetable-placement-parameters';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { Activity, PlanningEvent, SchoolYearEvent, Student, Subject, TimetableSchedule } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
@@ -10,20 +12,25 @@ import {
   resolveClassTimetableSpace,
 } from '$lib/api/mutations/timetable-generation.mutations';
 import { academicYearPlanningRange, loadClassPlanning } from '$lib/api/planning-data';
-import { teacherNameForClassSubject } from '$lib/api/teacher-display';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { loadCalendarEvents } from '$lib/api/school-life-data';
+import { teacherNameForClassSubject } from '$lib/api/teacher-display';
+import {
+  parseTimetableGenerationError,
+  timetableErrorMessage,
+
+} from '$lib/components/school/scheduling/timetable-generation-errors';
+import {
+  buildTimetablePlacementParameters,
+
+} from '$lib/components/school/scheduling/timetable-placement-parameters';
 import { formatDateInput } from '$lib/date/format';
 import { entityVersions } from '$lib/entity-versions.svelte';
+import { t } from '$lib/i18n';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { toast } from '$lib/toast.svelte';
 import { getContext, setContext } from 'svelte';
 import { get } from 'svelte/store';
-import { t } from '$lib/i18n';
-import {
-  parseTimetableGenerationError,
-  timetableErrorMessage,
-  type TimetableMutationResult,
-} from '$lib/components/school/scheduling/timetable-generation-errors';
 
 function translateTimetable(key: string) {
   return get(t)(key);
@@ -268,17 +275,14 @@ export class TimetablePageState {
     startDate: string;
     endDate: string;
     options?: TimetableGenerationOptions;
-    periodsPerWeekByClassSubjectId?: Record<string, number>;
-  }): Promise<TimetableMutationResult<GenerateClassResult>> {
+  } & TimetablePlacementOverrides): Promise<TimetableMutationResult<GenerateClassResult>> {
     const outcome = await this.runMutation(() => generateClassTimetable({
       classGroupId: this.classId,
       academicYearId: academicContext.yearId,
       startDate: input.startDate,
       endDate: input.endDate,
       options: input.options,
-      placementParameters: input.periodsPerWeekByClassSubjectId && Object.keys(input.periodsPerWeekByClassSubjectId).length > 0
-        ? { periodsPerWeekByClassSubjectId: input.periodsPerWeekByClassSubjectId }
-        : undefined,
+      placementParameters: buildTimetablePlacementParameters(input),
     }), { reportInModal: true });
 		if (outcome.ok) {
 			this.generationResult = outcome.value;
@@ -302,17 +306,14 @@ export class TimetablePageState {
 		endDate: string;
 		policy: 'fail' | 'skip';
 		options?: TimetableGenerationOptions;
-		periodsPerWeekByClassSubjectId?: Record<string, number>;
-	}) {
+	} & TimetablePlacementOverrides) {
     const outcome = await this.runMutation(() => republishClassTimetable({
       classGroupId: this.classId,
       academicYearId: academicContext.yearId,
       startDate: input.startDate,
       endDate: input.endDate,
 			options: input.options,
-			placementParameters: input.periodsPerWeekByClassSubjectId
-				? { periodsPerWeekByClassSubjectId: input.periodsPerWeekByClassSubjectId }
-				: undefined,
+			placementParameters: buildTimetablePlacementParameters(input),
       sessionConflictPolicy: input.policy,
     }), { reportInModal: true });
 		if (outcome.ok) {

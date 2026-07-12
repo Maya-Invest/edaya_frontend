@@ -1,15 +1,16 @@
-import type { components } from '$lib/api/schema';
-import type { PeriodDefinition } from '$lib/types/school';
-import type { ScheduleDayOfWeek } from './planning-calendar';
-import { SCHEDULE_DAY_TO_PLANNING } from './planning-calendar';
 import type {
 	GenerateClassResult,
 	GenerateSchoolResult,
 	PublishResult,
 	RepublishResult,
 } from '$lib/api/mutations/timetable-generation.mutations';
-import { type ClassSubjectInstructorSources, teacherNameForClassSubject } from '$lib/api/teacher-display';
+import type { components } from '$lib/api/schema';
+import type { ClassSubjectInstructorSources } from '$lib/api/teacher-display';
+import type { PeriodDefinition } from '$lib/types/school';
+import type { ScheduleDayOfWeek } from './planning-calendar';
+import { teacherNameForClassSubject } from '$lib/api/teacher-display';
 import { formatDateInput } from '$lib/date/format';
+import { SCHEDULE_DAY_TO_PLANNING } from './planning-calendar';
 
 export type ClassSubject = components['schemas']['ClassSubject'];
 
