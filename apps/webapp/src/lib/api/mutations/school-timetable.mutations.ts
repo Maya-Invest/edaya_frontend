@@ -8,20 +8,35 @@ import { t } from '$lib/i18n';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
 
-export async function updateSchoolTimetableSpanDefaultsMutation(input: {
+export interface SchoolTimetableDefaultsInput {
 	schoolId: string;
+	timetableEnforceWorkloadFulfillment: boolean;
+	timetableExcludeBreakSlots: boolean;
+	timetableAllowUnassignedTeacherPlacements: boolean;
+	timetableUseHomeroomTeacherFallback: boolean;
+	timetableMinDayGapSameSubject: number;
 	timetableMinPeriodSpan: number;
 	timetableMaxPeriodSpan: number;
+}
+
+export async function updateSchoolTimetableDefaultsMutation(input: {
+	schoolId: string;
+	defaults: SchoolTimetableDefaultsInput;
 	current?: SchoolRaw | null;
 	successMessage?: string;
 }): Promise<{ school: School; raw: SchoolRaw } | null> {
-	if (!Number.isInteger(input.timetableMinPeriodSpan) || input.timetableMinPeriodSpan <= 0
-		|| !Number.isInteger(input.timetableMaxPeriodSpan) || input.timetableMaxPeriodSpan <= 0) {
+	const { defaults } = input;
+	if (!Number.isInteger(defaults.timetableMinPeriodSpan) || defaults.timetableMinPeriodSpan <= 0
+		|| !Number.isInteger(defaults.timetableMaxPeriodSpan) || defaults.timetableMaxPeriodSpan <= 0) {
 		toast.error(get(t)('timetable.periodSpanInvalid'));
 		return null;
 	}
-	if (input.timetableMaxPeriodSpan < input.timetableMinPeriodSpan) {
+	if (defaults.timetableMaxPeriodSpan < defaults.timetableMinPeriodSpan) {
 		toast.error(get(t)('timetable.periodSpanRangeInvalid'));
+		return null;
+	}
+	if (!Number.isInteger(defaults.timetableMinDayGapSameSubject) || defaults.timetableMinDayGapSameSubject < 0) {
+		toast.error(get(t)('timetable.sameSubjectDayGapInvalid'));
 		return null;
 	}
 
@@ -42,15 +57,15 @@ export async function updateSchoolTimetableSpanDefaultsMutation(input: {
 			type: current.type,
 			ownerSubjectId: current.ownerSubjectId,
 			enforceScheduleConflicts: current.enforceScheduleConflicts,
-			timetableEnforceWorkloadFulfillment: current.timetableEnforceWorkloadFulfillment,
-			timetableExcludeBreakSlots: current.timetableExcludeBreakSlots,
-			timetableMinDayGapSameSubject: current.timetableMinDayGapSameSubject,
+			timetableEnforceWorkloadFulfillment: defaults.timetableEnforceWorkloadFulfillment,
+			timetableExcludeBreakSlots: defaults.timetableExcludeBreakSlots,
+			timetableMinDayGapSameSubject: defaults.timetableMinDayGapSameSubject,
 			timetablePreferredPeriodDefinitionIds: current.timetablePreferredPeriodDefinitionIds,
-			timetableAllowUnassignedTeacherPlacements: current.timetableAllowUnassignedTeacherPlacements,
-			timetableUseHomeroomTeacherFallback: current.timetableUseHomeroomTeacherFallback,
+			timetableAllowUnassignedTeacherPlacements: defaults.timetableAllowUnassignedTeacherPlacements,
+			timetableUseHomeroomTeacherFallback: defaults.timetableUseHomeroomTeacherFallback,
 			timetableGenerationMode: current.timetableGenerationMode,
-			timetableMinPeriodSpan: input.timetableMinPeriodSpan,
-			timetableMaxPeriodSpan: input.timetableMaxPeriodSpan,
+			timetableMinPeriodSpan: defaults.timetableMinPeriodSpan,
+			timetableMaxPeriodSpan: defaults.timetableMaxPeriodSpan,
 		}),
 		{ successMessage: input.successMessage },
 	);

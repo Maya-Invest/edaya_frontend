@@ -10,7 +10,25 @@ import type { PeriodDefinition } from '$lib/types/school';
 import type { ScheduleDayOfWeek } from './planning-calendar';
 import { teacherNameForClassSubject } from '$lib/api/teacher-display';
 import { formatDateInput } from '$lib/date/format';
+import { cn } from '$lib/utils';
 import { SCHEDULE_DAY_TO_PLANNING } from './planning-calendar';
+
+export function timetableGenerationModalContentClass(phase: 'setup' | 'success' | 'error'): string {
+	return cn(
+		phase === 'setup'
+			? 'h-[min(90dvh,52.8rem)] max-h-[min(90dvh,52.8rem)] max-w-3xl'
+			: 'max-w-2xl',
+	);
+}
+
+export const TIMETABLE_GENERATION_MODAL_SETUP_BODY_CLASS
+	= 'flex min-h-0 flex-1 flex-col overflow-hidden space-y-0';
+
+export const TIMETABLE_GENERATION_MODAL_SETUP_LAYOUT_CLASS
+	= 'flex min-h-0 flex-1 flex-col gap-4';
+
+export const TIMETABLE_GENERATION_MODAL_TAB_PANEL_CLASS
+	= 'min-h-0 flex-1 overflow-hidden';
 
 export type ClassSubject = components['schemas']['ClassSubject'];
 

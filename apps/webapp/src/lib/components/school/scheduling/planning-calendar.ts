@@ -331,6 +331,35 @@ export function timetableHours(events: PlanningEvent[]): { startHour: number; en
 	};
 }
 
+export const TIMETABLE_CALENDAR_HEADER_HEIGHT = 48;
+export const TIMETABLE_CALENDAR_MIN_UNIT_HEIGHT = 40;
+
+export function timetableTimeSlotCount(
+	startHour: number,
+	endHour: number,
+	stepMinutes = 30,
+): number {
+	return Math.max(1, Math.round(((endHour - startHour) * 60) / stepMinutes));
+}
+
+export function timetableExpandedUnitHeight(
+	containerHeight: number,
+	startHour: number,
+	endHour: number,
+	options?: {
+		stepMinutes?: number;
+		headerHeight?: number;
+		minUnitHeight?: number;
+	},
+): number {
+	const stepMinutes = options?.stepMinutes ?? 30;
+	const headerHeight = options?.headerHeight ?? TIMETABLE_CALENDAR_HEADER_HEIGHT;
+	const minUnitHeight = options?.minUnitHeight ?? TIMETABLE_CALENDAR_MIN_UNIT_HEIGHT;
+	const slots = timetableTimeSlotCount(startHour, endHour, stepMinutes);
+	const available = Math.max(0, containerHeight - headerHeight);
+	return Math.max(minUnitHeight, Math.floor(available / slots));
+}
+
 export interface PlanningOverlap {
 	left: PlanningEvent;
 	right: PlanningEvent;

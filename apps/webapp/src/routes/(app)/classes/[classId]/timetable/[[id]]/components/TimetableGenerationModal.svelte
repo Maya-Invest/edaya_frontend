@@ -6,7 +6,7 @@
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { fetchSchoolById } from '$lib/api/school-data';
-	import { buildTimetableRangePresets } from '$lib/components/school/scheduling/timetable-generation-ui';
+	import { buildTimetableRangePresets, timetableGenerationModalContentClass, TIMETABLE_GENERATION_MODAL_SETUP_BODY_CLASS, TIMETABLE_GENERATION_MODAL_SETUP_LAYOUT_CLASS, TIMETABLE_GENERATION_MODAL_TAB_PANEL_CLASS } from '$lib/components/school/scheduling/timetable-generation-ui';
 	import TimetableGenerationErrorPanel from '$lib/components/school/scheduling/TimetableGenerationErrorPanel.svelte';
 	import TimetableGenerationResultPanel from '$lib/components/school/scheduling/TimetableGenerationResultPanel.svelte';
 	import TimetableGenerationSetupTabs from '$lib/components/school/scheduling/TimetableGenerationSetupTabs.svelte';
@@ -35,7 +35,7 @@
 	let startDate = $state('');
 	let endDate = $state('');
 	let enforceWorkloadFulfillment = $state<boolean | undefined>();
-	let generationMode = $state<'weekly' | 'free' | undefined>();
+	let generationMode = $state<'weekly' | 'free'>('weekly');
 	let excludeBreakSlots = $state<boolean | undefined>();
 	let allowUnassignedTeacherPlacements = $state<boolean | undefined>();
 	let useHomeroomTeacherFallback = $state<boolean | undefined>();
@@ -123,7 +123,6 @@
 				schoolRaw = raw;
 			});
 		}
-		void timetablePage.resolveSpace(startDate, endDate);
 	}
 
 	function handleModalOpenChange(isOpen: boolean) {
@@ -146,10 +145,7 @@
 	});
 
 	function buildOptions(): TimetableGenerationOptions | undefined {
-		const value: TimetableGenerationOptions = {};
-		if (generationMode) {
-			value.generationMode = generationMode;
-		}
+		const value: TimetableGenerationOptions = { generationMode };
 		if (enforceWorkloadFulfillment !== undefined) {
 			value.enforceWorkloadFulfillment = enforceWorkloadFulfillment;
 		}
@@ -226,7 +222,8 @@
 	bind:open
 	title={modalTitle}
 	description={modalDescription}
-	contentClass={phase === 'setup' ? 'max-w-3xl' : 'max-w-2xl'}
+	contentClass={timetableGenerationModalContentClass(phase)}
+	bodyClass={phase === 'setup' ? TIMETABLE_GENERATION_MODAL_SETUP_BODY_CLASS : undefined}
 	busy={timetablePage.busy}
 	submitDisabled={!validRange}
 	onSubmit={submit}
@@ -247,50 +244,53 @@
 			{rangeLabel}
 		/>
 	{:else}
-		<div class="space-y-4">
-			<TimetableRangeSelector
-				bind:startDate
-				bind:endDate
-				presets={rangePresets}
-				spaceCellCount={timetablePage.spaceCellCount}
-				{validRange}
-				onRangeChange={(nextStart, nextEnd) => timetablePage.resolveSpace(nextStart, nextEnd)}
-			/>
-
-			<TimetableGenerationSetupTabs bind:activeTab={setupTab} />
-
-			{#if setupTab === 'subjects'}
-				<TimetableWorkloadConfigPanel
-					classes={workloadClasses}
-					activeClassId={timetablePage.classId}
-					classSubjects={timetablePage.classSubjects}
-					subjectLabels={timetablePage.subjectLabels}
-					teacherLabelsByClassSubjectId={timetablePage.teacherLabelsByClassSubjectId}
-					school={academicContext.schools[0]}
-					loading={workloadLoading}
-					bind:overrides
-					bind:minSpanOverrides
-					bind:maxSpanOverrides
-				/>
-			{:else if setupTab === 'periods'}
-				<TimetablePreferredPeriodsPanel {periods} bind:preferredIds />
-			{:else}
-				<TimetableSolverOptionsPanel
+		<div class={TIMETABLE_GENERATION_MODAL_SETUP_LAYOUT_CLASS}>
+			<div class="shrink-0 space-y-4">
+				<TimetableRangeSelector
+					bind:startDate
+					bind:endDate
 					bind:generationMode
-					bind:enforceWorkloadFulfillment
-					bind:excludeBreakSlots
-					bind:allowUnassignedTeacherPlacements
-					bind:useHomeroomTeacherFallback
-					bind:minDayGapSameSubject
-					bind:timetableMinPeriodSpan
-					bind:timetableMaxPeriodSpan
-					schoolId={academicContext.schools[0]?.id ?? ''}
-					{schoolRaw}
-					showSchoolSpanDefaults
-					bind:policy
-					showRepublishPolicy={mode === 'republish'}
+					showGenerationMode
+					presets={rangePresets}
+					{validRange}
 				/>
-			{/if}
+
+				<TimetableGenerationSetupTabs bind:activeTab={setupTab} />
+			</div>
+
+			<div class={TIMETABLE_GENERATION_MODAL_TAB_PANEL_CLASS}>
+				{#if setupTab === 'subjects'}
+					<TimetableWorkloadConfigPanel
+						classes={workloadClasses}
+						activeClassId={timetablePage.classId}
+						classSubjects={timetablePage.classSubjects}
+						subjectLabels={timetablePage.subjectLabels}
+						teacherLabelsByClassSubjectId={timetablePage.teacherLabelsByClassSubjectId}
+						school={academicContext.schools[0]}
+						loading={workloadLoading}
+						bind:overrides
+						bind:minSpanOverrides
+						bind:maxSpanOverrides
+					/>
+				{:else if setupTab === 'periods'}
+					<TimetablePreferredPeriodsPanel {periods} bind:preferredIds />
+				{:else}
+					<TimetableSolverOptionsPanel
+						bind:enforceWorkloadFulfillment
+						bind:excludeBreakSlots
+						bind:allowUnassignedTeacherPlacements
+						bind:useHomeroomTeacherFallback
+						bind:minDayGapSameSubject
+						bind:timetableMinPeriodSpan
+						bind:timetableMaxPeriodSpan
+						schoolId={academicContext.schools[0]?.id ?? ''}
+						bind:schoolRaw
+						showSchoolDefaults
+						bind:policy
+						showRepublishPolicy={mode === 'republish'}
+					/>
+				{/if}
+			</div>
 		</div>
 	{/if}
 

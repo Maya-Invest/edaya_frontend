@@ -23,6 +23,7 @@
 
 <TimetableGenerationToolbar state={timetablePage} />
 <PlanningView
+	expandCalendar
 	classId={timetablePage.classId}
 	events={timetablePage.events}
 	students={timetablePage.students}

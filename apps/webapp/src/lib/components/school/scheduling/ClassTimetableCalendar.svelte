@@ -8,6 +8,7 @@
 		PlanningTimetableState,
 		setPlanningTimetableState,
 	} from '$lib/scheduling/planning-timetable-state.svelte';
+	import { cn } from '$lib/utils';
 	import { Calendar, Willow } from '@svar-ui/svelte-calendar';
 	import {
 		calendarSlotFromDates,
@@ -19,6 +20,7 @@
 		overlappingPlanningEventIds,
 		planningSlotSignature,
 		subjectToneClass,
+		timetableExpandedUnitHeight,
 		timetableHours,
 	} from './planning-calendar';
 	import PlanningEventContent from './PlanningEventContent.svelte';
@@ -31,6 +33,7 @@
 		classId,
 		selectedId,
 		weekStart = mondayOfWeek(new Date()),
+		expandCalendar = false,
 		editable = false,
 		onSelect,
 		onAttendance,
@@ -41,6 +44,7 @@
 		classId: string;
 		selectedId?: string;
 		weekStart?: Date;
+		expandCalendar?: boolean;
 		editable?: boolean;
 		onSelect?: (event: PlanningEvent) => void;
 		onAttendance?: (event: PlanningEvent) => void;
@@ -54,6 +58,36 @@
 	const weekEvents = $derived(events);
 	const overlapIds = $derived(overlappingPlanningEventIds(weekEvents));
 	const hours = $derived(timetableHours(weekEvents));
+	let calendarContainer = $state<HTMLDivElement | null>(null);
+	let expandedLayoutHeight = $state<number | null>(null);
+
+	$effect(() => {
+		if (!browser || !expandCalendar || !calendarContainer) {
+			expandedLayoutHeight = null;
+			return;
+		}
+
+		const updateLayout = () => {
+			const top = calendarContainer?.getBoundingClientRect().top ?? 0;
+			expandedLayoutHeight = Math.max(520, Math.round(window.innerHeight - top - 24));
+		};
+
+		updateLayout();
+		const observer = new ResizeObserver(updateLayout);
+		observer.observe(calendarContainer);
+		window.addEventListener('resize', updateLayout);
+
+		return () => {
+			observer.disconnect();
+			window.removeEventListener('resize', updateLayout);
+		};
+	});
+
+	const gridUnitHeight = $derived(
+		expandCalendar && expandedLayoutHeight
+			? timetableExpandedUnitHeight(expandedLayoutHeight, hours.startHour, hours.endHour)
+			: 52,
+	);
 	const calendarEvents = $derived([
 		...mapSchoolYearEventsToCalendarEvents(schoolYearEvents, anchorDate, classId),
 		...mapPlanningToCalendarEvents(weekEvents),
@@ -79,7 +113,7 @@
 					endHour: hours.endHour,
 					step: 30,
 					snapStep: 15,
-					ui: { minUnitHeight: 52 },
+					ui: { minUnitHeight: gridUnitHeight },
 					format: 'timeScaleFormat',
 				},
 			},
@@ -231,8 +265,15 @@
 </script>
 
 {#if browser}
-	<div class="edaya-timetable-calendar h-[min(780px,calc(100vh-13rem))] min-h-[520px] overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-		{#key `${$lang}-${anchorDate.getTime()}-${editable}-${calendarEventsKey}`}
+	<div
+		bind:this={calendarContainer}
+		class={cn(
+			'edaya-timetable-calendar overflow-hidden rounded-2xl border border-border bg-card shadow-soft',
+			expandCalendar ? 'min-h-[520px]' : 'h-[min(780px,calc(100vh-13rem))] min-h-[520px]',
+		)}
+		style:height={expandCalendar && expandedLayoutHeight ? `${expandedLayoutHeight}px` : undefined}
+	>
+		{#key `${$lang}-${anchorDate.getTime()}-${editable}-${calendarEventsKey}-${expandCalendar ? `${expandedLayoutHeight}-${gridUnitHeight}` : ''}`}
 			<SvarCalendarLocale lang={$lang}>
 				<Willow fonts={false}>
 					<Calendar
@@ -262,7 +303,11 @@
 	/>
 {:else}
 	<div
-		class="flex h-[min(780px,calc(100vh-13rem))] min-h-[520px] items-center justify-center rounded-2xl border border-border bg-card/50"
+		class={cn(
+			'flex items-center justify-center rounded-2xl border border-border bg-card/50',
+			expandCalendar ? 'min-h-[520px]' : 'h-[min(780px,calc(100vh-13rem))] min-h-[520px]',
+		)}
+		style:height={expandCalendar && expandedLayoutHeight ? `${expandedLayoutHeight}px` : undefined}
 		aria-hidden="true"
 	></div>
 {/if}

@@ -4,8 +4,8 @@ on:
   push:
     branches-ignore:
       - main
-      - master
       - staging
+      - dev
   workflow_dispatch:
 
 concurrency:

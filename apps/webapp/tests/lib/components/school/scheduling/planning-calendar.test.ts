@@ -21,6 +21,8 @@ import {
 	schoolYearEventDatesInWeek,
 	sessionInstantsForSlot,
 	shiftWeek,
+	timetableExpandedUnitHeight,
+	timetableTimeSlotCount,
 	utcWallClockDate,
 } from '$lib/components/school/scheduling/planning-calendar';
 
@@ -456,5 +458,13 @@ describe('planning-calendar', () => {
 			'school-cal-weekend-break:2026-05-16',
 			'school-cal-weekend-break:2026-05-17',
 		]);
+	});
+
+	test('timetableTimeSlotCount counts 30-minute slots between hours', () => {
+		expect(timetableTimeSlotCount(6, 14, 30)).toBe(16);
+	});
+
+	test('timetableExpandedUnitHeight stretches rows to fill the container', () => {
+		expect(timetableExpandedUnitHeight(720, 6, 14, { headerHeight: 48 })).toBe(42);
 	});
 });

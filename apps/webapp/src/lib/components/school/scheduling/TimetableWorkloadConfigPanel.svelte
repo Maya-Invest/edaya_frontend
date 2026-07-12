@@ -91,7 +91,7 @@
 	}
 </script>
 
-<div class={cn('flex max-h-[min(22rem,48vh)] min-h-0 gap-3', showClassPicker && 'lg:flex-row')}>
+<div class={cn('flex h-full min-h-0 gap-3', showClassPicker && 'lg:flex-row')}>
 	{#if showClassPicker}
 		<aside class="flex w-full shrink-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-muted/20 lg:w-48">
 			<div class="shrink-0 border-b border-border/60 p-2.5">

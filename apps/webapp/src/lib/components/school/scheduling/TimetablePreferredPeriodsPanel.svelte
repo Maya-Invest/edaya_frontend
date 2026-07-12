@@ -29,7 +29,7 @@
 	}
 </script>
 
-<section class="flex max-h-[min(28rem,52vh)] min-h-0 flex-col overflow-hidden rounded-xl border border-border/70">
+<section class="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border/70">
 	<div class="shrink-0 border-b border-border/60 px-3 py-2">
 		<p class="text-sm font-medium">{$t('timetable.preferredPeriods')}</p>
 		<p class="text-xs text-muted-foreground">{$t('timetable.preferredPeriodsHint')}</p>

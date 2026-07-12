@@ -134,6 +134,7 @@
 		const routeQueryReady = pageQueryStatus.isReady(cacheKey);
 		void reportCardsContext.ready;
 		void detailDataContext.students;
+		void detailDataContext.planning;
 
 		if (!isLikelyDetailPath(pathname) || usesRouteLocalDrawer(pathname)) {
 			drawer.close();

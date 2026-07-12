@@ -13,6 +13,7 @@
 		busy = false,
 		submitDisabled = false,
 		contentClass,
+		bodyClass,
 		children,
 		footer,
 		onCancel,
@@ -27,6 +28,7 @@
 		busy?: boolean;
 		submitDisabled?: boolean;
 		contentClass?: string;
+		bodyClass?: string;
 		children?: Snippet;
 		footer?: Snippet<[{
 			close: () => void;
@@ -51,17 +53,20 @@
 </script>
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
-	<Dialog.Content data-testid="form-modal" class={cn('max-w-lg', contentClass)}>
-		<Dialog.Header>
+	<Dialog.Content
+		data-testid="form-modal"
+		class={cn('flex max-h-[min(90dvh,44rem)] w-full max-w-lg flex-col gap-4', contentClass)}
+	>
+		<Dialog.Header class="shrink-0">
 			<Dialog.Title>{title}</Dialog.Title>
 			{#if description}
 				<Dialog.Description>{description}</Dialog.Description>
 			{/if}
 		</Dialog.Header>
-		<div class="space-y-4 py-2">
+		<div class={cn('scrollbar-thin min-h-0 flex-1 space-y-4 overflow-y-auto py-2', bodyClass)}>
 			{@render children?.()}
 		</div>
-		<Dialog.Footer>
+		<Dialog.Footer class="shrink-0">
 			{#if footer}
 				{@render footer({ close, submit: onSubmit, busy, submitDisabled })}
 			{:else}

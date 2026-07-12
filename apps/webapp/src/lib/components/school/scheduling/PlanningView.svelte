@@ -13,6 +13,7 @@
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { canEditTimetable } from '$lib/permissions';
 	import { PlanningState, setPlanningState } from '$lib/scheduling/planning-state.svelte';
+	import { cn } from '$lib/utils';
 	import AttendanceFlow from './AttendanceFlow.svelte';
 	import ClassTimetableCalendar from './ClassTimetableCalendar.svelte';
 	import NewSessionWizard from './NewSessionWizard.svelte';
@@ -33,6 +34,7 @@
 		activities,
 		schoolYearEvents = [],
 		focusDate,
+		expandCalendar = false,
 		onRefresh,
 		onSelect,
 		selectedId,
@@ -44,6 +46,7 @@
 		activities: Activity[];
 		schoolYearEvents?: SchoolYearEvent[];
 		focusDate?: string;
+		expandCalendar?: boolean;
 		onRefresh?: () => Promise<void>;
 		onSelect?: (e: PlanningEvent) => void;
 		selectedId?: string;
@@ -111,7 +114,7 @@
 	});
 </script>
 
-<div class="animate-fade-in">
+<div class={cn('animate-fade-in', expandCalendar && 'flex min-h-0 flex-1 flex-col')}>
 	<ListPageHeader
 		eyebrow={$t('planning.weeklyBoard')}
 		title={$t('planning.title')}
@@ -240,17 +243,20 @@
 
 	<ScheduleFormModal {classId} {weekStart} {subjects} {activities} defaultScheduleKind={planning.scheduleCreateKind} bind:open={planning.scheduleCreateOpen} onSaved={onRefresh} />
 
-	<ClassTimetableCalendar
-		events={weekEvents}
-		{schoolYearEvents}
-		{classId}
-		{selectedId}
-		{weekStart}
-		{editable}
-		{onSelect}
-		onAttendance={planning.openAttendance}
-		onChanged={onRefresh}
-	/>
+	<div class={cn(expandCalendar && 'min-h-0 flex-1')}>
+		<ClassTimetableCalendar
+			{expandCalendar}
+			events={weekEvents}
+			{schoolYearEvents}
+			{classId}
+			{selectedId}
+			{weekStart}
+			{editable}
+			{onSelect}
+			onAttendance={planning.openAttendance}
+			onChanged={onRefresh}
+		/>
+	</div>
 
 	{#if planning.attendanceSession && attendanceClass}
 		<AttendanceFlow

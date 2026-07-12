@@ -9,7 +9,6 @@ import {
   generateClassTimetable,
   publishClassTimetable,
   republishClassTimetable,
-  resolveClassTimetableSpace,
 } from '$lib/api/mutations/timetable-generation.mutations';
 import { academicYearPlanningRange, loadClassPlanning } from '$lib/api/planning-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -17,13 +16,13 @@ import { loadCalendarEvents } from '$lib/api/school-life-data';
 import { teacherNameForClassSubject } from '$lib/api/teacher-display';
 import {
   parseTimetableGenerationError,
-  timetableErrorMessage,
 
 } from '$lib/components/school/scheduling/timetable-generation-errors';
 import {
   buildTimetablePlacementParameters,
 
 } from '$lib/components/school/scheduling/timetable-placement-parameters';
+import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { formatDateInput } from '$lib/date/format';
 import { entityVersions } from '$lib/entity-versions.svelte';
 import { t } from '$lib/i18n';
@@ -57,7 +56,6 @@ export class TimetablePageState {
 	teacherLabelsByClassSubjectId = $state<Record<string, string>>({});
   teacherConstraintsLoading = $state(false);
   busy = $state(false);
-	spaceCellCount = $state(0);
 	focusDate = $state('');
 	activeRange = $state<{ startDate: string; endDate: string } | null>(null);
   private constraintsClassId = '';
@@ -92,6 +90,7 @@ export class TimetablePageState {
 
 	seedEvents(events: PlanningEvent[]) {
 		this.events = events;
+		this.syncDetailPlanning(events);
 	}
 
 	seedData(data: {
@@ -108,7 +107,16 @@ export class TimetablePageState {
 		this.subjects = data.subjects;
 		this.activities = data.activities;
 		this.schoolYearEvents = data.schoolYearEvents;
+		this.syncDetailPlanning(data.planning);
+		detailDataContext.seedSchedules(data.schedules, { classId: this.classId });
     this.versions.markLoaded();
+	}
+
+	private syncDetailPlanning(events: PlanningEvent[]) {
+		if (!this.classId) {
+			return;
+		}
+		detailDataContext.seedPlanning(events, { classId: this.classId });
 	}
 
   async invalidateIfStale() {
@@ -209,28 +217,6 @@ export class TimetablePageState {
       this.teacherConstraintsLoading = false;
     }
   }
-
-  async resolveSpace(startDate: string, endDate: string) {
-		const normalizedStart = formatDateInput(startDate);
-		const normalizedEnd = formatDateInput(endDate);
-		if (!academicContext.yearId || !normalizedStart || !normalizedEnd) {
-			this.spaceCellCount = 0;
-			return;
-		}
-		try {
-			const cells = await resolveClassTimetableSpace({
-				classGroupId: this.classId,
-				academicYearId: academicContext.yearId,
-				startDate: normalizedStart,
-				endDate: normalizedEnd,
-			});
-			this.spaceCellCount = cells.length;
-		}
-		catch (error) {
-			this.spaceCellCount = 0;
-			toast.error(timetableErrorMessage(error, translateTimetable));
-		}
-	}
 
   generatedCounts(startDate: string, endDate: string) {
     const inRange = this.events.filter((event) => {
