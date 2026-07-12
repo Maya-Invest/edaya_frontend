@@ -1,8 +1,10 @@
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { ValidatedStudentImportRow } from './types';
+import { t } from '$lib/i18n';
+import { formatImportRunErrorMessage } from '$lib/import/shared/format-import-run-error';
 import { notifyStudentsListChanged } from '$lib/students/notify-students-list-changed';
 import { createStudentImportIds, registerAndEnrollStudent } from '$lib/students/register-and-enroll-student';
-import { ApiError } from '@maya-invest/edaya-api-client';
+import { get } from 'svelte/store';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -24,33 +26,11 @@ export interface StudentImportRunOptions {
 	rows: readonly ValidatedStudentImportRow[];
 	onProgress?: (current: number, total: number) => void;
 	seed?: string;
-}
-
-function messageFromApiError(error: ApiError): string | undefined {
-	if (error.body && typeof error.body === 'object') {
-		const body = error.body as Record<string, unknown>;
-		if (typeof body.message === 'string') {
-			return body.message;
-		}
-		if (typeof body.error === 'string') {
-			return body.error;
-		}
-	}
-	return undefined;
-}
-
-function messageFromError(error: unknown): string {
-	if (error instanceof ApiError) {
-		return messageFromApiError(error) ?? 'La requête a échoué.';
-	}
-	if (error instanceof Error && error.message.trim().length > 0) {
-		return error.message;
-	}
-	return 'La requête a échoué.';
+	classNameById?: ReadonlyMap<string, string>;
 }
 
 export async function runStudentImport(options: StudentImportRunOptions): Promise<StudentImportRunResult> {
-	const { schoolId, client, rows, onProgress, seed = Date.now().toString(36) } = options;
+	const { schoolId, client, rows, onProgress, seed = Date.now().toString(36), classNameById } = options;
 	const failed: StudentImportRunFailure[] = [];
 	const studentIds: string[] = [];
 	const createdAt = new Date().toISOString();
@@ -78,7 +58,11 @@ export async function runStudentImport(options: StudentImportRunOptions): Promis
 			failed.push({
 				rowIndex: row.rowIndex,
 				studentName: `${row.prenom} ${row.nom}`.trim(),
-				message: messageFromError(error),
+				message: formatImportRunErrorMessage(error, {
+					entityLabel: row.classe,
+					classGroupId: row.classGroupId,
+					classNameById,
+				}, (key, params) => get(t)(key, params ?? {})),
 			});
 		}
 	}

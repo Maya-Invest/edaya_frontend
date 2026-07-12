@@ -94,11 +94,20 @@ describe('student import validator', () => {
 		expect(isValidStudentImportBirthDate('2012-03-32')).toBe(false);
 	});
 
-	it('enables import only when there are valid rows and no blocking errors', () => {
-		const valid = validateStudentImportRows([row({ rowIndex: 2 })], { classes: CLASSES });
-		const invalid = validateStudentImportRows([row({ rowIndex: 2, nom: '' })], { classes: CLASSES });
+	it('enables import when there are valid rows, even with blocking errors on other rows', () => {
+		const allValid = validateStudentImportRows([row({ rowIndex: 2 })], { classes: CLASSES });
+		const partial = validateStudentImportRows(
+			[
+				row({ rowIndex: 2 }),
+				row({ rowIndex: 3, nom: '' }),
+			],
+			{ classes: CLASSES },
+		);
+		const noneValid = validateStudentImportRows([row({ rowIndex: 2, nom: '' })], { classes: CLASSES });
 
-		expect(canImportValidatedStudents(valid)).toBe(true);
-		expect(canImportValidatedStudents(invalid)).toBe(false);
+		expect(canImportValidatedStudents(allValid)).toBe(true);
+		expect(canImportValidatedStudents(partial)).toBe(true);
+		expect(partial.errors.length).toBeGreaterThan(0);
+		expect(canImportValidatedStudents(noneValid)).toBe(false);
 	});
 });

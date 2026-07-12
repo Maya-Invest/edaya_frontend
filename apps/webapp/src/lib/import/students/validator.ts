@@ -7,6 +7,7 @@ import type {
 	StudentImportValidationResult,
 	ValidatedStudentImportRow,
 } from './types';
+import { canImportValidatedRows } from '$lib/import/shared/can-import-validated-rows';
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -189,5 +190,5 @@ export function countBlockingValidationErrors(result: StudentImportValidationRes
 }
 
 export function canImportValidatedStudents(result: StudentImportValidationResult | null): boolean {
-	return result != null && result.validRows.length > 0 && result.errors.length === 0;
+	return canImportValidatedRows(result);
 }

@@ -1,4 +1,5 @@
 import type { ImportTypeDefinition } from '$lib/import/catalog/types';
+import { sortImportColumnsRequiredFirst } from '$lib/import/shared/sort-import-columns';
 import { downloadCsv } from '$lib/list/list-csv-export';
 import * as XLSX from 'xlsx';
 
@@ -12,8 +13,9 @@ function downloadBlob(filename: string, blob: Blob): void {
 }
 
 export function buildImportTemplateRows(definition: ImportTypeDefinition): string[][] {
-	const headers = definition.columns.map(column => column.key);
-	const example = definition.columns.map(column => definition.exampleRow[column.key] ?? '');
+	const columns = sortImportColumnsRequiredFirst(definition.columns);
+	const headers = columns.map(column => column.key);
+	const example = columns.map(column => definition.exampleRow[column.key] ?? '');
 	return [headers, example];
 }
 

@@ -1,4 +1,5 @@
-import type { ImportTypeDefinition, ImportTypeKey } from './types';
+import type { ImportTypeDefinition, ImportTypeColumnDefinition, ImportTypeKey } from './types';
+import { sortImportColumnsRequiredFirst } from '$lib/import/shared/sort-import-columns';
 import {
 	BookOpen,
 	FileText,
@@ -25,6 +26,12 @@ const STUDENT_COLUMN_LABEL_KEYS: Record<string, string> = {
 	matricule: 'import.students.columns.matricule',
 };
 
+function catalogColumns(
+	columns: readonly ImportTypeColumnDefinition[],
+): readonly ImportTypeColumnDefinition[] {
+	return sortImportColumnsRequiredFirst(columns);
+}
+
 export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 	{
 		key: 'students',
@@ -36,11 +43,11 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 		csvFilename: STUDENT_IMPORT_CSV_TEMPLATE_FILENAME,
 		xlsxFilename: STUDENT_IMPORT_EXCEL_TEMPLATE_FILENAME,
 		xlsxSheetName: 'Eleves',
-		columns: STUDENT_IMPORT_COLUMNS.map(column => ({
+		columns: catalogColumns(STUDENT_IMPORT_COLUMNS.map(column => ({
 			key: column.key,
 			required: column.required,
 			labelKey: STUDENT_COLUMN_LABEL_KEYS[column.key] ?? column.key,
-		})),
+		}))),
 		exampleRow: {
 			prenom: 'Jean',
 			nom: 'Dupont',
@@ -58,18 +65,18 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 		labelKey: 'import.types.guardians.label',
 		descriptionKey: 'import.types.guardians.description',
 		hintKey: 'import.types.guardians.hint',
-		status: 'template_only',
+		status: 'active',
 		icon: HeartHandshake,
-		csvFilename: 'responsables-template.csv',
-		xlsxFilename: 'responsables-template.xlsx',
-		xlsxSheetName: 'Responsables',
-		columns: [
+		csvFilename: 'tuteurs-template.csv',
+		xlsxFilename: 'tuteurs-template.xlsx',
+		xlsxSheetName: 'Tuteurs',
+		columns: catalogColumns([
 			{ key: 'prenom', required: true, labelKey: 'import.types.guardians.columns.prenom' },
 			{ key: 'nom', required: true, labelKey: 'import.types.guardians.columns.nom' },
+			{ key: 'eleve_matricule', required: true, labelKey: 'import.types.guardians.columns.eleve_matricule' },
 			{ key: 'email', required: false, labelKey: 'import.types.guardians.columns.email' },
 			{ key: 'telephone', required: false, labelKey: 'import.types.guardians.columns.telephone' },
-			{ key: 'eleve_matricule', required: true, labelKey: 'import.types.guardians.columns.eleve_matricule' },
-		],
+		]),
 		exampleRow: {
 			prenom: 'Aminata',
 			nom: 'Koné',
@@ -89,13 +96,13 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 		csvFilename: 'personnel-template.csv',
 		xlsxFilename: 'personnel-template.xlsx',
 		xlsxSheetName: 'Personnel',
-		columns: [
+		columns: catalogColumns([
 			{ key: 'prenom', required: true, labelKey: 'import.types.staff.columns.prenom' },
 			{ key: 'nom', required: true, labelKey: 'import.types.staff.columns.nom' },
-			{ key: 'email', required: false, labelKey: 'import.types.staff.columns.email' },
 			{ key: 'role', required: true, labelKey: 'import.types.staff.columns.role' },
+			{ key: 'email', required: false, labelKey: 'import.types.staff.columns.email' },
 			{ key: 'telephone', required: false, labelKey: 'import.types.staff.columns.telephone' },
-		],
+		]),
 		exampleRow: {
 			prenom: 'Fatou',
 			nom: 'Diallo',
@@ -115,13 +122,13 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 		csvFilename: 'enseignants-template.csv',
 		xlsxFilename: 'enseignants-template.xlsx',
 		xlsxSheetName: 'Enseignants',
-		columns: [
+		columns: catalogColumns([
 			{ key: 'prenom', required: true, labelKey: 'import.types.teachers.columns.prenom' },
 			{ key: 'nom', required: true, labelKey: 'import.types.teachers.columns.nom' },
 			{ key: 'email', required: false, labelKey: 'import.types.teachers.columns.email' },
 			{ key: 'matieres', required: false, labelKey: 'import.types.teachers.columns.matieres' },
 			{ key: 'telephone', required: false, labelKey: 'import.types.teachers.columns.telephone' },
-		],
+		]),
 		exampleRow: {
 			prenom: 'Kofi',
 			nom: 'Mensah',
@@ -136,16 +143,16 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 		labelKey: 'import.types.classes.label',
 		descriptionKey: 'import.types.classes.description',
 		hintKey: 'import.types.classes.hint',
-		status: 'template_only',
+		status: 'active',
 		icon: Layers,
 		csvFilename: 'classes-template.csv',
 		xlsxFilename: 'classes-template.xlsx',
 		xlsxSheetName: 'Classes',
-		columns: [
+		columns: catalogColumns([
 			{ key: 'nom', required: true, labelKey: 'import.types.classes.columns.nom' },
 			{ key: 'niveau', required: true, labelKey: 'import.types.classes.columns.niveau' },
 			{ key: 'capacite', required: false, labelKey: 'import.types.classes.columns.capacite' },
-		],
+		]),
 		exampleRow: {
 			nom: '6ème A',
 			niveau: '6ème',
@@ -163,11 +170,11 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 		csvFilename: 'matieres-template.csv',
 		xlsxFilename: 'matieres-template.xlsx',
 		xlsxSheetName: 'Matieres',
-		columns: [
+		columns: catalogColumns([
 			{ key: 'nom', required: true, labelKey: 'import.types.subjects.columns.nom' },
 			{ key: 'code', required: false, labelKey: 'import.types.subjects.columns.code' },
 			{ key: 'coefficient', required: false, labelKey: 'import.types.subjects.columns.coefficient' },
-		],
+		]),
 		exampleRow: {
 			nom: 'Mathématiques',
 			code: 'MATH',
@@ -185,12 +192,12 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 		csvFilename: 'chapitres-template.csv',
 		xlsxFilename: 'chapitres-template.xlsx',
 		xlsxSheetName: 'Chapitres',
-		columns: [
+		columns: catalogColumns([
 			{ key: 'matiere', required: true, labelKey: 'import.types.chapters.columns.matiere' },
 			{ key: 'titre', required: true, labelKey: 'import.types.chapters.columns.titre' },
 			{ key: 'ordre', required: false, labelKey: 'import.types.chapters.columns.ordre' },
 			{ key: 'description', required: false, labelKey: 'import.types.chapters.columns.description' },
-		],
+		]),
 		exampleRow: {
 			matiere: 'Mathématiques',
 			titre: 'Les fractions',

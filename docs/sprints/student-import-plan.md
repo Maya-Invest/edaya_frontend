@@ -1,12 +1,12 @@
 # Data Import — Client-Side Implementation Plan
 
-> **Status:** Students MVP ✅ · Generic shell ✅ · Lint/check ✅ · Other packs planned  
+> **Status:** Students MVP ✅ · Generic shell ✅ · Classes ✅ · Other packs planned  
 > **Created:** 2026-07-11  
-> **Updated:** 2026-07-11 (lint/check fixes)  
+> **Updated:** 2026-07-12 (politique vérification : lint/eslint en fin de track)  
 > **Scope:** Frontend only — no new backend endpoints  
 > **Location:** Configuration → **Outils** (`/configuration/import`)  
-> **Active pack:** Students (`.csv` + `.xlsx`)  
-> **Template-only packs:** Classes, Guardians, Staff, Teachers, Subjects, Chapters
+> **Active packs:** Students, Classes, Guardians (`.csv` + `.xlsx`)  
+> **Template-only packs:** Staff, Teachers, Subjects, Chapters
 
 ---
 
@@ -19,7 +19,7 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 3. Parses and validates rows locally
 4. Creates entities via **existing API commands** (one pack at a time)
 
-**Recommended import order:** Classes → Élèves → Responsables → (Personnel / Enseignants) → Matières → Chapitres
+**Recommended import order:** Classes → Élèves → Tuteurs → (Personnel / Enseignants) → Matières → Chapitres
 
 ---
 
@@ -33,9 +33,118 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 | Import type catalog (7 types, ordered) | ✅ |
 | Generic CSV/Excel template download | ✅ |
 | **Students** — parse / validate / run | ✅ |
-| **All other types** — template download only (`template_only`) | ✅ |
-| Unit tests (`tests/lib/import/students/*`) | ✅ 19 tests |
-| `bun run lint && bun run check` (monorepo) | ✅ |
+| **Classes** — parse / validate / run | ✅ |
+| **Other types** — template download only (`template_only`) | ✅ |
+| Unit tests (`tests/lib/import/*`) | ✅ 35 tests |
+
+---
+
+## Remaining work
+
+### Vérification — pendant les phases vs fin de track
+
+> **Pendant les phases 8–14 (implémentation) :** ne pas lancer `eslint --fix`, `bun run lint` ni `bun run check` après chaque sous-tâche ni après chaque phase.  
+> Lancer uniquement les **tests unitaires du pack** concerné :
+>
+> ```bash
+> cd edaya_web/apps/webapp
+> bun test tests/lib/import/{pack}/
+> ```
+>
+> **Quand toutes les phases sont cochées** (8 → 14 + polish), **une seule passe globale** avant merge / handoff :
+>
+> ```bash
+> cd edaya_web
+> bun test tests/lib/import/
+> cd apps/webapp && bun run lint -- --fix
+> cd ../.. && bun run lint && bun run check
+> ```
+
+| Phase / PR | Tests unitaires | `eslint --fix` + `lint` + `check` | Date |
+|------------|-----------------|-----------------------------------|------|
+| Phases 0–7 (students + shell) | `tests/lib/import/students/` | ✅ (fait avant politique) | 2026-07-11 |
+| PR5 — Phase 8 (classes) | `tests/lib/import/classes/` | — (reporté fin de track) | 2026-07-11 |
+| PR6 — Phase 9 (guardians) | `tests/lib/import/guardians/` | — (reporté fin de track) | 2026-07-12 |
+| PR7 — Phase 10 (staff) | `tests/lib/import/staff/` | — | |
+| PR8 — Phase 11 (teachers) | `tests/lib/import/teachers/` | — | |
+| PR9 — Phase 12 (subjects) | `tests/lib/import/subjects/` | — | |
+| PR10 — Phase 13 (chapters) | `tests/lib/import/chapters/` | — | |
+| PR11 — Phase 14 (polish) | tous les packs import | — | |
+| **Fin de track (toutes phases ✅)** | `tests/lib/import/` | [ ] | |
+
+### Docs & QA
+
+- [ ] T2 — Upload valid `.csv` (5 rows)
+- [ ] T7 — Empty file parse error
+- [ ] T10 — No classes prerequisite in modal
+- [ ] G1 — Open modal from generic card
+- [ ] G2 — Switch type in dropdown (columns + hint update)
+- [ ] G3 — Download template for each of 7 types
+- [ ] G4 — Non-active type shows coming-soon + Next disabled
+- [ ] G5 — Students 4-step flow unchanged
+- [ ] Update `remaining-work-plan.md` (Phase 6.4)
+
+### Phase 8 — Classes import
+
+- [x] 8.1 — `lib/import/classes/` parser + validator
+- [x] 8.2 — Resolve `niveau` → `gradeLevelId`
+- [x] 8.3 — Runner (`createClassGroupMutation` pattern)
+- [x] 8.4 — Wire modal steps; `status: 'active'`
+- [x] 8.5 — Unit tests
+
+### Phase 9 — Guardians import
+
+- [x] 9.1 — `lib/import/guardians/` parser + validator
+- [x] 9.2 — Resolve `eleve_matricule` → `studentId`
+- [x] 9.3 — Runner: register + link per row
+- [x] 9.4 — `sendAccountInvitation: false` on bulk import
+- [x] 9.5 — Wire modal; unit tests
+
+### Phase 10 — Staff import
+
+- [ ] 10.1 — `lib/import/staff/` parser + validator
+- [ ] 10.2 — Runner (`createStaffOnPage` pattern)
+- [ ] 10.3 — Role column validation / permission mapping
+- [ ] 10.4 — Wire modal; unit tests
+
+### Phase 11 — Teachers import
+
+- [ ] 11.1 — `lib/import/teachers/` parser + validator
+- [ ] 11.2 — Runner (`createTeacherOnPage` pattern)
+- [ ] 11.3 — Resolve `matieres` → subject assignments
+- [ ] 11.4 — Wire modal; unit tests
+
+### Phase 12 — Subjects import
+
+- [ ] 12.1 — Decide template shape (add `classe` column?)
+- [ ] 12.2 — `lib/import/subjects/` parser + validator
+- [ ] 12.3 — Runner (`createSubjectForClassMutation`)
+- [ ] 12.4 — Wire modal; unit tests
+
+### Phase 13 — Chapters import
+
+- [ ] 13.1 — `lib/import/chapters/` parser + validator
+- [ ] 13.2 — Resolve `matiere` → class subject
+- [ ] 13.3 — Runner (`saveSubjectMatterMutation`)
+- [ ] 13.4 — Wire modal; unit tests
+
+### Phase 14 — Cross-pack polish
+
+- [ ] 14.1 — Extract shared wizard logic from `DataImportModal` (optional)
+- [ ] 14.2 — Per-type permission gates in modal
+- [ ] 14.3 — Per-type "Voir les …" links on result step
+- [x] 14.4 — Shared `canImportValidatedRows` helper (`validRows.length > 0`, errors excluded)
+- [ ] 14.5 — E2E: modal, type switch, download each template
+
+### Upcoming PRs
+
+- [x] PR5 — Phase 8 — Classes import
+- [x] PR6 — Phase 9 — Guardians import
+- [ ] PR7 — Phase 10 — Staff import
+- [ ] PR8 — Phase 11 — Teachers import
+- [ ] PR9 — Phase 12 — Subjects import
+- [ ] PR10 — Phase 13 — Chapters import
+- [ ] PR11 — Phase 14 — polish + docs
 
 ---
 
@@ -115,7 +224,7 @@ Dropdown order (as implemented):
 | # | Key | Label (FR) | Status | Template files | Permission |
 |---|-----|------------|--------|----------------|------------|
 | 1 | `students` | Élèves | **active** | `eleves-template.csv/xlsx` | `STUDENT_CREATE` |
-| 2 | `guardians` | Responsables | template_only | `responsables-template.csv/xlsx` | `STUDENT_CREATE` |
+| 2 | `guardians` | Tuteurs | template_only | `tuteurs-template.csv/xlsx` | `STUDENT_CREATE` |
 | 3 | `staff` | Personnel | template_only | `personnel-template.csv/xlsx` | `STAFF_CREATE` |
 | 4 | `teachers` | Enseignants | template_only | `enseignants-template.csv/xlsx` | `STAFF_CREATE` |
 | 5 | `classes` | Classes | template_only | `classes-template.csv/xlsx` | `SCHOOL_STRUCTURE_READ` |
@@ -244,11 +353,10 @@ tests/lib/import/
 | ID | Task | Status |
 |----|------|--------|
 | 6.1 | `bun test tests/lib/import/students/*` | ✅ (19 tests) |
-| 6.2 | Manual test matrix (students) | 🟡 8/10 |
-| 6.3 | `bun run lint && bun run check` | ✅ |
-| 6.4 | Update `remaining-work-plan.md` | ⬜ |
+| 6.2 | Manual test matrix (students) | 🟡 8/10 — see [Remaining work](#remaining-work) |
+| 6.4 | Update `remaining-work-plan.md` | [ ] |
 
-**Lint/check fixes (2026-07-11):** `eslint --fix` (indent, import order) ; clé i18n `import.comingSoon` dupliquée supprimée ; `StudentImportColumnKey` en union explicite (plus de référence circulaire) ; `prefer-const` sur `$props()` ; tests `parser`/`runner` typés.
+**Lint/check :** voir [Vérification](#vérification--pendant-les-phases-vs-fin-de-track) (fait pour 0–7 ; reporté en fin de track pour 8+).
 
 ---
 
@@ -288,6 +396,8 @@ Then in `DataImportModal.svelte`:
 - Branch steps 2–4 on `selectedImportType === '{pack}'`
 - Or extract pack-specific step content into `{Pack}ImportSteps.svelte`
 
+**Fin de phase :** tests unitaires du pack seulement — voir [Vérification](#vérification--pendant-les-phases-vs-fin-de-track).
+
 ### Phase 8 — Classes import (est. 1.5 d)
 
 **Prerequisite:** None (classes are often imported first).
@@ -309,11 +419,11 @@ await client.commands.createClassGroup({
 
 | ID | Task | Status |
 |----|------|--------|
-| 8.1 | `lib/import/classes/` parser + validator | ⬜ |
-| 8.2 | Resolve `niveau` → `gradeLevelId` from `academicContext` | ⬜ |
-| 8.3 | Runner via `createClassGroupMutation` pattern | ⬜ |
-| 8.4 | Wire modal steps; set `status: 'active'` | ⬜ |
-| 8.5 | Unit tests | ⬜ |
+| 8.1 | `lib/import/classes/` parser + validator | [x] |
+| 8.2 | Resolve `niveau` → `gradeLevelId` from `academicContext` | [x] |
+| 8.3 | Runner via `createClassGroupMutation` pattern | [x] |
+| 8.4 | Wire modal steps; set `status: 'active'` | [x] |
+| 8.5 | Unit tests | [x] |
 
 ---
 
@@ -338,11 +448,11 @@ await client.commands.linkGuardianToStudent({ guardianId, studentId, ... });
 
 | ID | Task | Status |
 |----|------|--------|
-| 9.1 | `lib/import/guardians/` parser + validator | ⬜ |
-| 9.2 | Resolve `eleve_matricule` → `studentId` (load existing matricules) | ⬜ |
-| 9.3 | Runner: register + link per row | ⬜ |
-| 9.4 | `sendAccountInvitation: false` on bulk import | ⬜ |
-| 9.5 | Wire modal; unit tests | ⬜ |
+| 9.1 | `lib/import/guardians/` parser + validator | [x] |
+| 9.2 | Resolve `eleve_matricule` → `studentId` (load existing matricules) | [x] |
+| 9.3 | Runner: register + link per row | [x] |
+| 9.4 | `sendAccountInvitation: false` on bulk import | [x] |
+| 9.5 | Wire modal; unit tests | [x] |
 
 ---
 
@@ -368,10 +478,10 @@ await client.commands.registerStaffMember({
 
 | ID | Task | Status |
 |----|------|--------|
-| 10.1 | `lib/import/staff/` parser + validator | ⬜ |
-| 10.2 | Runner via `createStaffOnPage` pattern | ⬜ |
-| 10.3 | Role column: validate or map to permission codes | ⬜ |
-| 10.4 | Wire modal; unit tests | ⬜ |
+| 10.1 | `lib/import/staff/` parser + validator | [ ] |
+| 10.2 | Runner via `createStaffOnPage` pattern | [ ] |
+| 10.3 | Role column: validate or map to permission codes | [ ] |
+| 10.4 | Wire modal; unit tests | [ ] |
 
 ---
 
@@ -396,10 +506,10 @@ await client.entities.teachers.save({
 
 | ID | Task | Status |
 |----|------|--------|
-| 11.1 | `lib/import/teachers/` parser + validator | ⬜ |
-| 11.2 | Runner via `createTeacherOnPage` pattern | ⬜ |
-| 11.3 | Resolve `matieres` → subject IDs + assignments | ⬜ |
-| 11.4 | Wire modal; unit tests | ⬜ |
+| 11.1 | `lib/import/teachers/` parser + validator | [ ] |
+| 11.2 | Runner via `createTeacherOnPage` pattern | [ ] |
+| 11.3 | Resolve `matieres` → subject IDs + assignments | [ ] |
+| 11.4 | Wire modal; unit tests | [ ] |
 
 ---
 
@@ -424,10 +534,10 @@ await client.commands.configureClassSubject(...);
 
 | ID | Task | Status |
 |----|------|--------|
-| 12.1 | Decide template shape (add `classe` column?) | ⬜ |
-| 12.2 | `lib/import/subjects/` parser + validator | ⬜ |
-| 12.3 | Runner via `createSubjectForClassMutation` | ⬜ |
-| 12.4 | Wire modal; unit tests | ⬜ |
+| 12.1 | Decide template shape (add `classe` column?) | [ ] |
+| 12.2 | `lib/import/subjects/` parser + validator | [ ] |
+| 12.3 | Runner via `createSubjectForClassMutation` | [ ] |
+| 12.4 | Wire modal; unit tests | [ ] |
 
 ---
 
@@ -452,10 +562,10 @@ await saveSubjectMatterMutation({
 
 | ID | Task | Status |
 |----|------|--------|
-| 13.1 | `lib/import/chapters/` parser + validator | ⬜ |
-| 13.2 | Resolve `matiere` → class subject (per class or school catalog) | ⬜ |
-| 13.3 | Runner via `saveSubjectMatterMutation` | ⬜ |
-| 13.4 | Wire modal; unit tests | ⬜ |
+| 13.1 | `lib/import/chapters/` parser + validator | [ ] |
+| 13.2 | Resolve `matiere` → class subject (per class or school catalog) | [ ] |
+| 13.3 | Runner via `saveSubjectMatterMutation` | [ ] |
+| 13.4 | Wire modal; unit tests | [ ] |
 
 ---
 
@@ -463,12 +573,13 @@ await saveSubjectMatterMutation({
 
 | ID | Task | Status |
 |----|------|--------|
-| 14.1 | Extract shared wizard logic from `DataImportModal` (optional) | ⬜ |
-| 14.2 | Per-type permission gates in modal (not just nav) | ⬜ |
-| 14.3 | Per-type "Voir les …" links on result step | ⬜ |
-| 14.4 | Shared `canImportValidatedRows(validRows.length > 0)` helper | ⬜ |
-| 14.5 | E2E test: open modal, switch types, download each template | ⬜ |
-| 14.6 | `bun run lint && bun run check` green | ✅ (see Phase 6.3) |
+| 14.1 | Extract shared wizard logic from `DataImportModal` (optional) | [ ] |
+| 14.2 | Per-type permission gates in modal (not just nav) | [ ] |
+| 14.3 | Per-type "Voir les …" links on result step | [ ] |
+| 14.4 | Shared `canImportValidatedRows(validRows.length > 0)` helper | [x] |
+| 14.5 | E2E test: open modal, switch types, download each template | [ ] |
+
+**Lint/eslint/check :** une passe globale quand **toutes** les phases 8–14 sont cochées — voir [Vérification](#vérification--pendant-les-phases-vs-fin-de-track).
 
 ---
 
@@ -482,7 +593,7 @@ await saveSubjectMatterMutation({
 │ Importez vos données en masse à partir de fichiers CSV      │
 │ ou Excel.                                                   │
 │                                                             │
-│ Ordre recommandé : Classes → Élèves → Responsables          │
+│ Ordre recommandé : Classes → Élèves → Tuteurs              │
 │                                                             │
 │ ┌─────────────────────────────────────────────────────┐     │
 │ │ ⬆ Import de données                                 │     │
@@ -503,7 +614,7 @@ await saveSubjectMatterMutation({
 | 3 | Vérifier | Validation table |
 | 4 | Résultat | Progress + summary + entity link |
 
-**Dropdown order:** Élèves → Responsables → Personnel → Enseignants → Classes → Matières → Chapitres
+**Dropdown order:** Élèves → Tuteurs → Personnel → Enseignants → Classes → Matières → Chapitres
 
 ---
 
@@ -540,26 +651,26 @@ await client.commands.enrollStudent({
 
 | # | Scenario | Expected | Status | Result (observed) |
 |---|----------|----------|--------|-------------------|
-| T1 | Download template | Valid CSV/Excel with 6 columns + example row | ✅ | Modèles CSV et Excel OK |
-| T2 | Upload valid `.csv` (5 rows) | 5 students created, enrolled | ⬜ | Non testé explicitement |
-| T3 | Upload valid `.xlsx` | Students created and enrolled | ✅ | 36 lignes → 36 créés ; liste 30 → 66 |
-| T4 | Unknown class name | Blocking error; partial import OK | ✅ | Suggestions affichées |
-| T5 | Missing required fields | Blocking error per column | ✅ | L18/L20/L22/L24/L30 |
-| T6 | Invalid date | Blocking error | ✅ | `2012-14-14` rejeté |
-| T7 | Empty file | Parse error message | ⬜ | Non testé |
-| T8 | Large file (~36 rows) | Progress bar; reasonable time | ✅ | OK en local |
-| T9 | Duplicate `matricule` | Dupes blocked; partial import | ✅ | L2 OK, L3–L7 bloqués |
-| T10 | No classes in school | Prerequisite in modal step 1 | ⬜ | Non testé |
+| T1 | Download template | Valid CSV/Excel with 6 columns + example row | [x] | Modèles CSV et Excel OK |
+| T2 | Upload valid `.csv` (5 rows) | 5 students created, enrolled | [ ] | Non testé explicitement |
+| T3 | Upload valid `.xlsx` | Students created and enrolled | [x] | 36 lignes → 36 créés ; liste 30 → 66 |
+| T4 | Unknown class name | Blocking error; partial import OK | [x] | Suggestions affichées |
+| T5 | Missing required fields | Blocking error per column | [x] | L18/L20/L22/L24/L30 |
+| T6 | Invalid date | Blocking error | [x] | `2012-14-14` rejeté |
+| T7 | Empty file | Parse error message | [ ] | Non testé |
+| T8 | Large file (~36 rows) | Progress bar; reasonable time | [x] | OK en local |
+| T9 | Duplicate `matricule` | Dupes blocked; partial import | [x] | L2 OK, L3–L7 bloqués |
+| T10 | No classes in school | Prerequisite in modal step 1 | [ ] | Non testé |
 
 ### Manual test matrix — Generic shell (new)
 
 | # | Scenario | Expected | Status |
 |---|----------|----------|--------|
-| G1 | Open modal from generic card | Modal opens on step 1 | ⬜ |
-| G2 | Switch type in dropdown | Columns + hint update; wizard resets | ⬜ |
-| G3 | Download template for each type | 7 distinct CSV/Excel files | ⬜ |
-| G4 | Non-active type | "Coming soon" + Next disabled | ⬜ |
-| G5 | Students flow unchanged | Full 4-step import still works | ⬜ |
+| G1 | Open modal from generic card | Modal opens on step 1 | [ ] |
+| G2 | Switch type in dropdown | Columns + hint update; wizard resets | [ ] |
+| G3 | Download template for each type | 7 distinct CSV/Excel files | [ ] |
+| G4 | Non-active type | "Coming soon" + Next disabled | [ ] |
+| G5 | Students flow unchanged | Full 4-step import still works | [ ] |
 
 ---
 
@@ -597,19 +708,19 @@ await client.commands.enrollStudent({
 | PR2 | Phases 2–3 — student parser + validator | ✅ |
 | PR3 | Phases 4–5 — student runner + modal | ✅ |
 | PR4 | Phase 7 — generic shell + catalog + teachers type | ✅ |
-| PR4b | Phase 6.3 — lint/check fixes | ✅ |
+| PR4b | Phase 6 — lint/check (fin de phase 0–7) | ✅ |
 
 ### Upcoming
 
-| PR | Content | Est. |
-|----|---------|------|
-| PR5 | Phase 8 — Classes import | 1.5 d |
-| PR6 | Phase 9 — Guardians import | 2 d |
-| PR7 | Phase 10 — Staff import | 1.5 d |
-| PR8 | Phase 11 — Teachers import | 2 d |
-| PR9 | Phase 12 — Subjects import | 2 d |
-| PR10 | Phase 13 — Chapters import | 2 d |
-| PR11 | Phase 14 — polish + docs (lint done) | 0.5 d |
+| PR | Content | Est. | Status |
+|----|---------|------|--------|
+| PR5 | Phase 8 — Classes import | 1.5 d | ✅ |
+| PR6 | Phase 9 — Guardians import | 2 d | ✅ |
+| PR7 | Phase 10 — Staff import | 1.5 d | [ ] |
+| PR8 | Phase 11 — Teachers import | 2 d | [ ] |
+| PR9 | Phase 12 — Subjects import | 2 d | [ ] |
+| PR10 | Phase 13 — Chapters import | 2 d | [ ] |
+| PR11 | Phase 14 — polish + docs | 0.5 d | [ ] |
 
 **Remaining estimate:** ~11.5 days (6 packs + polish)
 
@@ -626,8 +737,8 @@ await client.commands.enrollStudent({
 - [x] Row-level validation before import
 - [x] Import via `registerStudent` + `enrollStudent`
 - [x] Progress and result summary
-- [x] Unit tests (19 pass)
-- [x] `bun run lint && bun run check` green
+- [x] Unit tests (students: 19 · classes: 16 · total import: 35)
+- [x] Lint/check vert en fin de phase 0–7 (phases 8+ : voir fin de track)
 - [x] No backend changes
 
 ### Generic shell ✅
@@ -639,8 +750,8 @@ await client.commands.enrollStudent({
 
 ### Full track (remaining)
 
-- [ ] Classes import active
-- [ ] Guardians import active (+ student link)
+- [x] Classes import active
+- [x] Guardians import active (+ student link)
 - [ ] Staff import active
 - [ ] Teachers import active (+ subject assignments)
 - [ ] Subjects import active

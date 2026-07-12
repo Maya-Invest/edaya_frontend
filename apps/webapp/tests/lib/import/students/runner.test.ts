@@ -53,6 +53,30 @@ describe('student import runner', () => {
 		expect(progress.at(-1)).toEqual({ current: 2, total: 2 });
 	});
 
+	it('formats class capacity failures with the row class label', async () => {
+		const registerStudent = mock(async () => {});
+		const enrollStudent = mock(async () => {
+			throw new Error('Class group ci-6a has reached capacity');
+		});
+
+		const result = await runStudentImport({
+			schoolId: 'school-1',
+			seed: 'capacity',
+			client: {
+				commands: {
+					registerStudent,
+					enrollStudent,
+				},
+			} as never,
+			rows: [row({ rowIndex: 8, prenom: 'Fatim', nom: 'Cissé', classe: '6ème A', classGroupId: 'ci-6a' })],
+			classNameById: new Map([['ci-6a', '6ème A']]),
+		});
+
+		expect(result.created).toBe(0);
+		expect(result.failed[0]?.message).toContain('6ème A');
+		expect(result.failed[0]?.message).not.toContain('ci-6a');
+	});
+
 	it('continues after a row failure and reports partial success', async () => {
 		const registerStudent = mock(async (_payload: { firstName: string }) => {
 			if (_payload.firstName === 'Marie') {

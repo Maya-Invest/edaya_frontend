@@ -1,27 +1,30 @@
 <script lang="ts">
-	import type { StudentImportColumnKey, StudentImportValidationIssue } from '$lib/import/students/types';
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
 
-	const COLUMN_LABEL_KEYS: Record<StudentImportColumnKey, string> = {
-		prenom: 'import.students.columns.prenom',
-		nom: 'import.students.columns.nom',
-		classe: 'import.students.columns.classe',
-		date_naissance: 'import.students.columns.date_naissance',
-		genre: 'import.students.columns.genre',
-		matricule: 'import.students.columns.matricule',
-	};
+	export interface ImportValidationIssueView {
+		rowIndex: number;
+		column?: string;
+		value?: string;
+		messageKey: string;
+		messageParams?: Record<string, string | number>;
+		suggestions?: string[];
+	}
 
 	const {
 		issues,
+		columnLabelKeys,
+		suggestionsKey = 'import.students.validation.suggestions',
 	}: {
-		issues: readonly StudentImportValidationIssue[];
+		issues: readonly ImportValidationIssueView[];
+		columnLabelKeys: Record<string, string>;
+		suggestionsKey?: string;
 	} = $props();
 
-	function formatIssueMessage(issue: StudentImportValidationIssue): string {
+	function formatIssueMessage(issue: ImportValidationIssueView): string {
 		let message = get(t)(issue.messageKey, issue.messageParams ?? {});
 		if (issue.suggestions?.length) {
-			message = `${message} ${get(t)('import.students.validation.suggestions', { values: issue.suggestions.join(', ') })}`;
+			message = `${message} ${get(t)(suggestionsKey, { values: issue.suggestions.join(', ') })}`;
 		}
 		return message;
 	}
@@ -44,7 +47,9 @@
 						<tr class="border-t border-border align-top">
 							<td class="px-3 py-2 font-mono text-xs">{issue.rowIndex}</td>
 							<td class="px-3 py-2">
-								{issue.column ? $t(COLUMN_LABEL_KEYS[issue.column]) : '—'}
+								{issue.column && columnLabelKeys[issue.column]
+									? $t(columnLabelKeys[issue.column])
+									: '—'}
 							</td>
 							<td class="px-3 py-2 text-muted-foreground">{issue.value ?? '—'}</td>
 							<td class="px-3 py-2">{formatIssueMessage(issue)}</td>

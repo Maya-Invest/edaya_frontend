@@ -1,4 +1,5 @@
 import type { StudentImportColumnKey } from './types';
+import { sortImportColumnsRequiredFirst } from '$lib/import/shared/sort-import-columns';
 import { downloadCsv } from '$lib/list/list-csv-export';
 import * as XLSX from 'xlsx';
 import { STUDENT_IMPORT_COLUMNS } from './types';
@@ -19,8 +20,9 @@ export const STUDENT_IMPORT_EXAMPLE_ROW: Record<StudentImportColumnKey, string> 
 };
 
 export function buildStudentImportTemplateRows(): string[][] {
-	const headers = STUDENT_IMPORT_COLUMNS.map(column => column.key);
-	const example = STUDENT_IMPORT_COLUMNS.map(column => STUDENT_IMPORT_EXAMPLE_ROW[column.key]);
+	const columns = sortImportColumnsRequiredFirst(STUDENT_IMPORT_COLUMNS);
+	const headers = columns.map(column => column.key);
+	const example = columns.map(column => STUDENT_IMPORT_EXAMPLE_ROW[column.key]);
 	return [headers, example];
 }
 
