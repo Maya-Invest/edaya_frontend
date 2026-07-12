@@ -14,7 +14,9 @@ OpenAPI export and client generation live **only** in `edaya_backend`. Web consu
 
 ## CI
 
-`edaya_web` CI checks out **edaya_backend** as a sibling (`edaya_backend/`) for the `file:` dependency on `@maya-invest/edaya-api-client`, then runs `bun run verify`.
+`edaya_web` CI installs `@maya-invest/edaya-api-client` from **GitHub Packages** (`staging` / `production` dist-tags). It does not check out `edaya_backend` — the default `GITHUB_TOKEN` cannot read that private repo.
+
+One-time org setup: grant `edaya_web` **Read** on the `@maya-invest/edaya-api-client` package (same as [edaya-api-dev in ci-setup.md](./ci-setup.md#ghcr-access-for-api-dev-image)).
 
 `edaya_backend` CI exports OpenAPI and drift-checks `package/api-client/src/` in-repo.
 

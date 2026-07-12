@@ -69,6 +69,10 @@ Consumer CI uses this repo's `GITHUB_TOKEN` (`packages: read`). Cross-repo pulls
 
 **Alternative:** set package visibility to **Public** (anonymous `docker pull`; fine for the dev API image).
 
+## GitHub Packages access for API client
+
+Verify installs `@maya-invest/edaya-api-client` from GitHub Packages (see [cross-repo-workflow.md](./cross-repo-workflow.md#ci)). Grant `edaya_web` **Read** on the [api-client package](https://github.com/orgs/Maya-Invest/packages/npm/edaya-api-client/settings) under **Manage Actions access**, or publish the package as **Public**.
+
 ## PR pipeline
 
 ```text
