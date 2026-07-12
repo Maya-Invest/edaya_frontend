@@ -25,6 +25,7 @@
 	},
 	"dependencies": {
 		"@internationalized/date": "^3.12.2",
+		"@maya-invest/edaya-api-client": "file:../../edaya_backend/package/api-client",
 		"@svar-ui/calendar-locales": "^2.6.0",
 		"@svar-ui/core-locales": "^2.6.0",
 		"@svar-ui/lib-dom": "^0.13.1",
@@ -33,8 +34,7 @@
 		"bits-ui": "^2.18.1",
 		"clsx": "^2.1.1",
 		"lucide-svelte": "^1.0.1",
-		"tailwind-merge": "^3.6.0",
-    "@maya-invest/edaya-api-client": "file:../../edaya_backend/package/api-client"
+		"tailwind-merge": "^3.6.0"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^4.20250617.0",
