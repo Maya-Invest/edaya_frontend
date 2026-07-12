@@ -10,11 +10,13 @@ Edaya is split across repositories:
 | `edaya_backend` | API, cron, domain packages, `@maya-invest/edaya-api-client`, client codegen |
 | `edaya_web` | SvelteKit webapp + saas-admin |
 
-The standalone `edaya-client-codegen` repo is **deprecated** — generation lives in `edaya_backend/tooling/client-codegen`, output in `edaya_backend/package/api-client`.
+OpenAPI export and client generation live **only** in `edaya_backend`. Web consumes `@maya-invest/edaya-api-client` — no local OpenAPI copies or codegen.
 
 ## CI
 
-`edaya_web` CI checks out **edaya_backend** as a sibling (`edaya_backend/`) for the shared api-client and codegen tooling, then runs `bun run verify`.
+`edaya_web` CI installs `@maya-invest/edaya-api-client` from **GitHub Packages** (`staging` / `production` dist-tags). It does not check out `edaya_backend` — the default `GITHUB_TOKEN` cannot read that private repo.
+
+One-time org setup: grant `edaya_web` **Read** on the `@maya-invest/edaya-api-client` package (same as [edaya-api-dev in ci-setup.md](./ci-setup.md#ghcr-access-for-api-dev-image)).
 
 `edaya_backend` CI exports OpenAPI and drift-checks `package/api-client/src/` in-repo.
 
@@ -41,8 +43,6 @@ bun add @maya-invest/edaya-api-client@staging
 
 ## When API routes change
 
-Use a **pair PR** (or two linked PRs merged in order):
-
 1. **`edaya_backend`** — change routes/extensions, then:
    ```sh
    cd edaya_backend
@@ -50,34 +50,23 @@ Use a **pair PR** (or two linked PRs merged in order):
    bun repo openapi generate     # updates package/api-client/src/
    bun run verify
    ```
-2. **`edaya_web`** — copy or export the updated spec, then:
+2. **`edaya_web`** — refresh the linked client (or bump the published package version), then:
    ```sh
    cd edaya_web
-   bun repo openapi generate     # updates schema + saas-admin copies
+   bun install                   # picks up file: link or new package version
    bun run verify
    ```
 
-If both repos are checked out side by side, validate the OpenAPI snapshot matches the live export:
-
-```sh
-cd edaya_web
-bun repo check openapi-export
-```
-
-## OpenAPI-only regeneration (no live API)
-
-When the committed `openapi.json` is already up to date:
-
-```sh
-cd edaya_web
-bun repo openapi generate
-```
-
-Or export schema only from the committed spec (drift check uses `edaya_backend/package/api-client/src/schema.d.ts` as reference when backend is checked out).
+No OpenAPI JSON or schema generation in the web repo.
 
 ## Shared API client
 
-Runtime and generated bindings live in `edaya_backend/package/api-client/` (`@maya-invest/edaya-api-client`). Webapp imports the package — no per-repo `src/generated/api-client/` copies.
+Runtime and generated bindings live in `edaya_backend/package/api-client/` (`@maya-invest/edaya-api-client`).
+
+Web apps import:
+
+- Runtime: `createSchoolClient`, `ApiError`, … from `@maya-invest/edaya-api-client`
+- Types: `components`, `operations`, `paths` via `$lib/api/schema` (re-export of `@maya-invest/edaya-api-client/schema`)
 
 ## Dev fixtures sync
 

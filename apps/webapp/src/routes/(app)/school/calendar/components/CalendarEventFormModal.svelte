@@ -2,9 +2,10 @@
 	import type { SchoolYearEvent } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import {
-		createCalendarEventMutation,
-		updateCalendarEventMutation,
-	} from '$lib/api/mutations/calendar.mutations';
+		createCalendarEventOnPage,
+		updateCalendarEventOnPage,
+	} from '../lib/calendar-mutations';
+	import { getCalendarPageState } from '../calendar-page.svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -13,6 +14,8 @@
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
+
+	const calendarPage = getCalendarPageState();
 
 	const EVENT_TYPES: SchoolYearEvent['type'][] = ['holiday', 'vacation', 'closure', 'ceremony'];
 
@@ -32,8 +35,15 @@
 	let date = $state('');
 	let endDate = $state('');
 	let type = $state<SchoolYearEvent['type']>('holiday');
+	let blocksTimetable = $state(true);
 	let scoped = $state(false);
 	let selectedClasses = $state<string[]>([]);
+
+	const showBlocksTimetable = $derived(type !== 'ceremony');
+
+	function defaultBlocksTimetable(eventType: SchoolYearEvent['type']): boolean {
+		return eventType !== 'ceremony';
+	}
 
 	const isEdit = $derived(event !== undefined);
 	const canSubmit = $derived(
@@ -47,6 +57,7 @@
 			date = event.date;
 			endDate = event.endDate ?? event.date;
 			type = event.type;
+			blocksTimetable = event.blocksTimetable ?? defaultBlocksTimetable(event.type);
 			scoped = event.scope !== 'all';
 			selectedClasses = event.scope === 'all' ? [] : [...event.scope];
 		}
@@ -56,6 +67,7 @@
 			date = '';
 			endDate = '';
 			type = 'holiday';
+			blocksTimetable = true;
 			scoped = false;
 			selectedClasses = [];
 		}
@@ -88,7 +100,7 @@
 		busy = true;
 		try {
 			if (event) {
-				const ok = await updateCalendarEventMutation({
+				const ok = await updateCalendarEventOnPage(calendarPage, {
 					eventId: event.id,
 					linkedIds: event.linkedIds,
 					title: eventTitle,
@@ -96,6 +108,7 @@
 					date,
 					endDate: endDate || date,
 					type,
+					blocksTimetable,
 					scope: scopeValue(),
 					successMessage: get(t)('calendar.updateSuccess', { title: eventTitle.trim() }),
 				});
@@ -105,12 +118,13 @@
 				}
 			}
 			else {
-				const eventId = await createCalendarEventMutation({
+				const eventId = await createCalendarEventOnPage(calendarPage, {
 					title: eventTitle,
 					description,
 					date,
 					endDate: endDate || date,
 					type,
+					blocksTimetable,
 					scope: scopeValue(),
 					successMessage: get(t)('calendar.createSuccess', { title: eventTitle.trim() }),
 				});
@@ -162,7 +176,20 @@
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('cal.typeLabel')}
 		</Label>
-		<Select.Root type="single" value={type} onValueChange={v => v && (type = v as SchoolYearEvent['type'])}>
+		<Select.Root
+			type="single"
+			value={type}
+			onValueChange={(v) => {
+				if (!v) {
+					return;
+				}
+				const nextType = v as SchoolYearEvent['type'];
+				type = nextType;
+				if (nextType === 'ceremony') {
+					blocksTimetable = false;
+				}
+			}}
+		>
 			<Select.Trigger>
 				<Select.Value>
 					{$t(`calType.${type}`)}
@@ -177,6 +204,25 @@
 			</Select.Content>
 		</Select.Root>
 	</div>
+
+	{#if showBlocksTimetable}
+		<div class="space-y-3 rounded-xl border border-border bg-secondary/30 p-3">
+			<label class="flex cursor-pointer items-center gap-2 text-sm font-medium">
+				<Checkbox
+					checked={blocksTimetable}
+					onCheckedChange={v => (blocksTimetable = v === true)}
+				/>
+				{$t('calendar.blocksTimetableLabel')}
+			</label>
+			<p class="text-xs text-muted-foreground">
+				{$t('calendar.blocksTimetableHint')}
+			</p>
+		</div>
+	{:else}
+		<p class="text-xs text-muted-foreground">
+			{$t('calendar.blocksTimetableCeremonyHint')}
+		</p>
+	{/if}
 
 	<div class="space-y-3 rounded-xl border border-border bg-secondary/30 p-3">
 		<label class="flex cursor-pointer items-center gap-2 text-sm font-medium">

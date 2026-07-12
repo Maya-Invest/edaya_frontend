@@ -17,12 +17,27 @@
 		title,
 		open = $bindable(false),
 		showTrigger = true,
+		onSave,
 	}: {
 		detail: SessionDetail;
 		disabled?: boolean;
 		title?: string;
 		open?: boolean;
 		showTrigger?: boolean;
+		onSave?: (input: {
+			sessionId: string;
+			classGroupId: string;
+			classSubjectId: string;
+			date: string;
+			logbookId?: string;
+			classSubjectMatterId: string;
+			chapter: string;
+			content: string;
+			objectives: string[];
+			homework?: string;
+			progress: number;
+			successMessage?: string;
+		}) => Promise<boolean>;
 	} = $props();
 	let busy = $state(false);
 	let wasOpen = $state(false);
@@ -82,7 +97,7 @@
 			return;
 
 		busy = true;
-		const ok = await saveSessionLogbookMutation({
+		const input = {
 			sessionId: detail.sessionId,
 			classGroupId: detail.classGroupId,
 			classSubjectId: detail.classSubjectId,
@@ -98,7 +113,10 @@
 			homework: homework.trim() || undefined,
 			progress: Math.max(0, Math.min(100, Number.parseInt(progress, 10) || 0)),
 			successMessage: get(t)('planning.session.logbookSuccess'),
-		});
+		};
+		const ok = onSave
+			? await onSave(input)
+			: await saveSessionLogbookMutation(input);
 		busy = false;
 		if (ok) {
 			open = false;

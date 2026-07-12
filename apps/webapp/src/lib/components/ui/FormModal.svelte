@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import { cn } from '$lib/utils';
 
 	let {
 		open = $bindable(false),
@@ -11,7 +12,10 @@
 		cancelLabel = 'Annuler',
 		busy = false,
 		submitDisabled = false,
+		contentClass,
+		bodyClass,
 		children,
+		footer,
 		onCancel,
 		onOpenChange,
 		onSubmit,
@@ -23,7 +27,15 @@
 		cancelLabel?: string;
 		busy?: boolean;
 		submitDisabled?: boolean;
+		contentClass?: string;
+		bodyClass?: string;
 		children?: Snippet;
+		footer?: Snippet<[{
+			close: () => void;
+			submit: () => void | Promise<void>;
+			busy: boolean;
+			submitDisabled: boolean;
+		}]>;
 		onCancel?: () => void;
 		onOpenChange?: (open: boolean) => void;
 		onSubmit: () => void | Promise<void>;
@@ -31,9 +43,7 @@
 
 	function handleOpenChange(next: boolean) {
 		open = next;
-		if (!next) {
-			onOpenChange?.(false);
-		}
+		onOpenChange?.(next);
 	}
 
 	function close() {
@@ -43,19 +53,26 @@
 </script>
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
-	<Dialog.Content data-testid="form-modal">
-		<Dialog.Header>
+	<Dialog.Content
+		data-testid="form-modal"
+		class={cn('flex max-h-[min(90dvh,44rem)] w-full max-w-lg flex-col gap-4', contentClass)}
+	>
+		<Dialog.Header class="shrink-0">
 			<Dialog.Title>{title}</Dialog.Title>
 			{#if description}
 				<Dialog.Description>{description}</Dialog.Description>
 			{/if}
 		</Dialog.Header>
-		<div class="space-y-4 py-2">
+		<div class={cn('scrollbar-thin min-h-0 flex-1 space-y-4 overflow-y-auto py-2', bodyClass)}>
 			{@render children?.()}
 		</div>
-		<Dialog.Footer>
-			<Button variant="ghost" onclick={close} disabled={busy}>{cancelLabel}</Button>
-			<Button onclick={onSubmit} disabled={busy || submitDisabled}>{submitLabel}</Button>
+		<Dialog.Footer class="shrink-0">
+			{#if footer}
+				{@render footer({ close, submit: onSubmit, busy, submitDisabled })}
+			{:else}
+				<Button variant="ghost" onclick={close} disabled={busy}>{cancelLabel}</Button>
+				<Button onclick={onSubmit} disabled={busy || submitDisabled}>{submitLabel}</Button>
+			{/if}
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

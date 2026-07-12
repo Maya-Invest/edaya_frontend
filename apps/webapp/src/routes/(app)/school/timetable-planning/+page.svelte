@@ -17,6 +17,7 @@
 	let publishClassName = $state('');
 	let publishOpen = $state(false);
 	const academicSelectionKey = $derived(`${academicContext.yearId}|${academicContext.periodId}`);
+	const schoolGenerateDisabled = $derived(!planningPage.canGenerateSchoolInitial);
 
 	function loadAcademicSelection(_key: string) {
 		planningPage.generationResult = null;
@@ -46,11 +47,11 @@
 		<div>
 			<p class="text-xs font-medium uppercase text-muted-foreground">{$t('school.planning')}</p>
 			<h1 class="text-2xl font-semibold">{$t('school.timetablePlanning')}</h1>
-			<p class="mt-1 text-sm text-muted-foreground">{planningPage.range.startDate} – {planningPage.range.endDate}</p>
+			<p class="mt-1 text-sm text-muted-foreground">{$t('timetable.countsForAcademicYear', { start: planningPage.academicYearRange.startDate, end: planningPage.academicYearRange.endDate })}</p>
 		</div>
 		<PermissionGate permission="TIMETABLE_UPDATE" mode="disable">
 			{#snippet children({ disabled })}
-				<Button {disabled} onclick={() => (generationOpen = true)}><CalendarDays class="mr-1.5 h-4 w-4" />{$t('timetable.generateSchool')}</Button>
+				<Button disabled={disabled || schoolGenerateDisabled} onclick={() => (generationOpen = true)}><CalendarDays class="mr-1.5 h-4 w-4" />{$t('timetable.generateSchool')}</Button>
 			{/snippet}
 		</PermissionGate>
 	</header>

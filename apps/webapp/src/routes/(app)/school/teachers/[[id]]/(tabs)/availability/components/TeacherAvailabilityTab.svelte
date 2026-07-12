@@ -8,16 +8,18 @@
 	import { Pencil, Plus, Trash2 } from '$lib/icons';
 	import { get } from 'svelte/store';
 	import { getTeachersPageState } from '../../../../teachers-page.svelte';
+	import { getTeacherAvailabilityTabState } from '../teacher-availability-tab.svelte';
 	import TeacherUnavailabilityFormModal from './TeacherUnavailabilityFormModal.svelte';
 
 	const { teacher }: { teacher: Teacher } = $props();
 	const teachersPage = getTeachersPageState();
+	const availabilityTab = getTeacherAvailabilityTabState();
 	let formOpen = $state(false);
 	let editing = $state<TeacherUnavailability | undefined>();
 	let deleting = $state<TeacherUnavailability | undefined>();
 	let busyId = $state<string | null>(null);
 
-	const rows = $derived(teachersPage.teacherUnavailabilitiesForTeacher(teacher.id));
+	const rows = $derived(availabilityTab.unavailabilitiesFor(teacher.id));
 	const weekly = $derived(rows.filter(row => row.recurrence === 'weekly').sort((a, b) =>
 		`${a.dayOfWeek}-${a.startTime}`.localeCompare(`${b.dayOfWeek}-${b.startTime}`)));
 	const oneOff = $derived(rows.filter(row => row.recurrence === 'one_off').sort((a, b) =>
@@ -34,7 +36,10 @@
 
 	async function toggle(rule: TeacherUnavailability) {
 		busyId = rule.id;
-		await teachersPage.saveUnavailability({ rule: { ...rule, isActive: !rule.isActive } });
+		const ok = await teachersPage.saveUnavailability({ rule: { ...rule, isActive: !rule.isActive } });
+		if (ok) {
+			availabilityTab.replaceForTeacher(teacher.id, teachersPage.teacherUnavailabilitiesForTeacher(teacher.id));
+		}
 		busyId = null;
 	}
 
@@ -47,8 +52,10 @@
 			successMessage: get(t)('teacher.availabilityDeleted'),
 		});
 		busyId = null;
-		if (ok)
+		if (ok) {
+			availabilityTab.replaceForTeacher(teacher.id, teachersPage.teacherUnavailabilitiesForTeacher(teacher.id));
 			deleting = undefined;
+		}
 	}
 </script>
 

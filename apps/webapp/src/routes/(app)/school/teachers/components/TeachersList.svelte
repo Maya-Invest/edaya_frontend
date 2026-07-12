@@ -102,7 +102,7 @@
 				teacher.name,
 				teacher.email,
 				teacher.phone,
-				teachersPage.assignmentCount(teacher.id),
+				teachersPage.assignmentCount(teacher.id) ?? '',
 				teacher.isActive ? 'active' : 'inactive',
 			]),
 		]);
@@ -198,7 +198,11 @@
 				</div>
 			</div>
 			<div class="col-span-3 text-sm text-muted-foreground">
-				{$t('teacher.assignmentCount', { n: teachersPage.assignmentCount(teacher.id) })}
+				{#if teachersPage.assignmentCount(teacher.id) === null}
+					—
+				{:else}
+					{$t('teacher.assignmentCount', { n: teachersPage.assignmentCount(teacher.id) ?? 0 })}
+				{/if}
 			</div>
 			<div class="col-span-4">
 				{#if teacher.phone}

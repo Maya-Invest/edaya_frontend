@@ -1,11 +1,11 @@
+import type { CalendarPageState } from '../calendar-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadAbsences, loadCalendarEvents } from '$lib/api/school-life-data';
-import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { queryClient } from '$lib/queries/client';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 import { ApiError } from '@maya-invest/edaya-api-client';
 
-export function querySchoolCalendarPage() {
+export function querySchoolCalendarPage(state: CalendarPageState) {
 	return (url: URL) => resolvePageLoad(url, {
 		empty: () => ({}),
 		load: async () => {
@@ -25,8 +25,7 @@ export function querySchoolCalendarPage() {
 					throw error;
 				}),
 			]);
-			detailDataContext.seedSchoolYearEvents(events);
-			detailDataContext.seedAbsences(absences);
+			state.seed(events, absences);
 			return {};
 		},
 		hasItems: listPageHasItems,

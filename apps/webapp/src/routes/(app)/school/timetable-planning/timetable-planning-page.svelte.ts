@@ -1,20 +1,40 @@
 import type { GenerateSchoolResult } from '$lib/api/mutations/timetable-generation.mutations';
 import type { components } from '$lib/api/schema';
+import type { TimetableMutationResult } from '$lib/components/school/scheduling/timetable-generation-errors';
+import type { TimetablePlacementOverrides } from '$lib/components/school/scheduling/timetable-placement-parameters';
 import type { ClassNode } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
   generateSchoolTimetable,
   publishClassTimetable,
 } from '$lib/api/mutations/timetable-generation.mutations';
+import { academicYearPlanningRange } from '$lib/api/planning-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { teacherNameForClassSubject } from '$lib/api/teacher-display';
+import {
+  parseTimetableGenerationError,
+  timetableErrorMessage,
+
+} from '$lib/components/school/scheduling/timetable-generation-errors';
+import {
+  buildTimetablePlacementParameters,
+
+} from '$lib/components/school/scheduling/timetable-placement-parameters';
 import { formatDateInput } from '$lib/date/format';
 import { entityVersions } from '$lib/entity-versions.svelte';
+import { t } from '$lib/i18n';
 import { toast } from '$lib/toast.svelte';
-import { ApiError } from '@maya-invest/edaya-api-client';
+import { SvelteSet } from 'svelte/reactivity';
+import { get } from 'svelte/store';
 import { sortTimetableClasses } from './timetable-planning';
+
+function translateTimetable(key: string) {
+  return get(t)(key);
+}
 
 export type TimetableGenerationOptions = components['schemas']['TimetableGenerationOptions'];
 export type ClassSubject = components['schemas']['ClassSubject'];
+export type { TimetableGenerationError, TimetableMutationResult } from '$lib/components/school/scheduling/timetable-generation-errors';
 
 export interface TimetablePlanningRow {
   classGroup: ClassNode;
@@ -24,25 +44,20 @@ export interface TimetablePlanningRow {
   unmetWorkloadCount: number | null;
 }
 
-function apiMessage(error: unknown): string {
-  if (error instanceof ApiError && error.body && typeof error.body === 'object') {
-    const message = (error.body as { message?: unknown }).message;
-    if (typeof message === 'string') {
-      return message;
-    }
-  }
-  return error instanceof Error ? error.message : 'Timetable operation failed.';
-}
-
 export class TimetablePlanningPageState {
   sessions = $state<components['schemas']['LessonSession'][]>([]);
 	classSubjects = $state<ClassSubject[]>([]);
 	subjectLabels = $state<Record<string, string>>({});
+	teacherLabelsByClassSubjectId = $state<Record<string, string>>({});
 	generationResult = $state<GenerateSchoolResult | null>(null);
 	busy = $state(false);
 	loadStatus = $state<'idle' | 'loading' | 'ready' | 'error'>('idle');
 	loadError = $state('');
 	activeRange = $state<{ startDate: string; endDate: string } | null>(null);
+
+	get academicYearRange() {
+		return academicYearPlanningRange(academicContext.year);
+	}
 
 	get range() {
 		if (this.activeRange) {
@@ -68,7 +83,7 @@ export class TimetablePlanningPageState {
   }
 
   get rows(): TimetablePlanningRow[] {
-    const range = this.range;
+    const range = this.academicYearRange;
     return this.classes.map((classGroup) => {
       const sessions = this.sessions.filter((session) => {
         const date = String(session.startsAt).slice(0, 10);
@@ -83,6 +98,14 @@ export class TimetablePlanningPageState {
         unmetWorkloadCount: diagnostics?.unmetWorkloads.length ?? null,
       };
     });
+  }
+
+  get eligibleClassCount() {
+    return this.rows.length;
+  }
+
+  get canGenerateSchoolInitial() {
+    return this.eligibleClassCount > 0;
   }
 
   async load() {
@@ -102,56 +125,90 @@ export class TimetablePlanningPageState {
       this.sessions = sessions;
       this.classSubjects = classSubjects;
       const subjectIds = classSubjects.map(row => row.subjectId);
-      const subjects = subjectIds.length
-        ? await client.entities.subjects.list({ id: { $in: subjectIds } })
-        : [];
+      const classSubjectIds = classSubjects.map(row => row.id);
+      const [subjects, teacherAssignments] = await Promise.all([
+        subjectIds.length
+          ? client.entities.subjects.list({ id: { $in: subjectIds } })
+          : Promise.resolve([]),
+        classSubjectIds.length
+          ? client.entities.teacherAssignments.list({
+              classSubjectId: { $in: classSubjectIds },
+              academicYearId: academicContext.yearId,
+              status: 'active',
+            })
+          : Promise.resolve([]),
+      ]);
       this.subjectLabels = Object.fromEntries(subjects.map(subject => [subject.id, subject.name]));
+      const teacherIds = [...new SvelteSet(teacherAssignments.map(row => row.teacherId))];
+      const teachers = teacherIds.length
+        ? await client.entities.teachers.list({ id: { $in: teacherIds } })
+        : [];
+      const instructorSources = {
+        teachersRaw: teachers,
+        teacherAssignmentsRaw: teacherAssignments,
+        staffMembersRaw: [],
+        staffAssignmentsRaw: [],
+      };
+      this.teacherLabelsByClassSubjectId = Object.fromEntries(
+        classSubjectIds.map(classSubjectId => [
+          classSubjectId,
+          teacherNameForClassSubject(classSubjectId, instructorSources, ''),
+        ]),
+      );
       this.loadStatus = 'ready';
     }
     catch (error) {
       this.loadStatus = 'error';
-      this.loadError = apiMessage(error);
+      this.loadError = timetableErrorMessage(error, translateTimetable);
       throw error;
     }
   }
 
-  private async run<T>(request: () => Promise<T>): Promise<T | null> {
+  private async runMutation<T>(
+    request: () => Promise<T>,
+    options?: { reportInModal?: boolean },
+  ): Promise<TimetableMutationResult<T>> {
     this.busy = true;
     try {
       const result = await request();
       entityVersions.bump('planning');
       await this.load();
-      return result;
+      return { ok: true, value: result };
     }
     catch (error) {
-      toast.error(apiMessage(error));
-      return null;
+      const parsed = parseTimetableGenerationError(error, translateTimetable);
+      if (!options?.reportInModal) {
+        toast.error(parsed.summary);
+      }
+      return { ok: false, error: parsed };
     }
     finally {
       this.busy = false;
     }
   }
 
+  private async run<T>(request: () => Promise<T>): Promise<T | null> {
+    const outcome = await this.runMutation(request);
+    return outcome.ok ? outcome.value : null;
+  }
+
   async generate(input: {
     startDate: string;
     endDate: string;
     options?: TimetableGenerationOptions;
-    periodsPerWeekByClassSubjectId?: Record<string, number>;
-  }) {
-    const result = await this.run(() => generateSchoolTimetable({
+  } & TimetablePlacementOverrides): Promise<TimetableMutationResult<GenerateSchoolResult>> {
+    const outcome = await this.runMutation(() => generateSchoolTimetable({
       academicYearId: academicContext.yearId,
       startDate: input.startDate,
       endDate: input.endDate,
       options: input.options,
-      placementParameters: input.periodsPerWeekByClassSubjectId
-        ? { periodsPerWeekByClassSubjectId: input.periodsPerWeekByClassSubjectId }
-        : undefined,
-    }));
-		if (result) {
-			this.generationResult = result;
+      placementParameters: buildTimetablePlacementParameters(input),
+    }), { reportInModal: true });
+		if (outcome.ok) {
+			this.generationResult = outcome.value;
 			this.activeRange = { startDate: input.startDate, endDate: input.endDate };
     }
-    return result;
+    return outcome;
   }
 
   publish(classGroupId: string, startDate: string, endDate: string, policy: 'fail' | 'skip') {

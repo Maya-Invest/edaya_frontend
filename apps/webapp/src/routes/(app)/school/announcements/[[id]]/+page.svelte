@@ -1,34 +1,23 @@
 <script lang="ts">
-	import type { Announcement } from '$lib/types/school';
+	import type { ResolvedPathname } from '$app/types';
 	import { page } from '$app/stores';
-	import AnnouncementsView from '$lib/components/school/school-life/AnnouncementsView.svelte';
-	import DataState from '$lib/components/ui/DataState.svelte';
-	import PageQuery from '$lib/components/ui/PageQuery.svelte';
-	import { detailHref } from '$lib/detail-hrefs';
-	import { t } from '$lib/i18n';
-	import { appGoto } from '$lib/navigation/app-navigation';
-	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
-	import { querySchoolAnnouncementsPage } from '$lib/queries/school-life.queries';
+	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
+	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import { getAnnouncementsPageState } from '../announcements-page.svelte';
+	import AnnouncementDetail from './components/AnnouncementDetail.svelte';
 
-	const selectedId = $derived($page.params.id);
-	const query = querySchoolAnnouncementsPage();
+	const announcementsPage = getAnnouncementsPageState();
+	const announcement = $derived(announcementsPage.selected);
 
-	function selectAnnouncement(announcement: Announcement) {
-		const path = detailHref.schoolAnnouncement(announcement.id);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+	function closeDetail() {
+		const next = new URL($page.url);
+		next.searchParams.delete(MODAL_QUERY_KEY);
+		next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
+		const href = `${appPath('/(app)/school/announcements/[[id]]')}${next.search}` as ResolvedPathname;
+		appGoto(href);
 	}
 </script>
 
-<PageQuery {query} loadingTitle={$t('school.announcements')}>
-	{#snippet children(data)}
-		<DataState
-			preserveShell
-			status={data.status}
-			errorMessage={data.errorMessage}
-			emptyTitle={$t('school.announcements')}
-			emptyDescription={$t('dataState.emptyDescription')}
-		>
-			<AnnouncementsView onSelect={selectAnnouncement} {selectedId} />
-		</DataState>
-	{/snippet}
-</PageQuery>
+{#if announcement}
+	<AnnouncementDetail {announcement} onDeleted={closeDetail} />
+{/if}

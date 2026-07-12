@@ -1,354 +1,252 @@
 # Route State Migration
 
 > **Lifecycle:** on-going  
-> **Normative target:** `docs/specs/route-state-spec.md`  
-> **Strategy:** Migrate **routes** (page + tab child routes) and **smart components** (pickers, scope UI) one unit at a time until each matches the spec. Then delete all legacy implementation.
-
-This plan defines **how** we get to the route-state architecture. The spec defines **what** the end state looks like.
+> **Normative spec:** [`docs/specs/route-state-spec.md`](../../specs/route-state-spec.md)  
+> **Reference route:** `/school/students`
 
 ---
 
-## Approach
+## 1. Goal
 
-1. **List** every route surface and smart component (below).
-2. **Migrate** each unit to match `route-state-spec.md` — route state class, colocated components, `PageQuery` seeds state, mutations on state + version bump.
-3. **Gate** legacy deletion until **every** route and smart component is ✅.
-4. **Delete** global entity store, central drawer routing, `?tab=` machinery, and `lib/components/school/{domain}/` feature views.
+Replace the legacy **global entity store + central drawer** with **route-scoped state**:
 
-**New shared primitive (only major addition):** `lib/entity-versions.svelte.ts` + `invalidateIfStale()` wiring on route state. Everything else reuses existing `PageQuery`, `DataState`, `runMutation`, T0/T2 UI.
+| Legacy (remove) | Target (keep / add) |
+|-----------------|---------------------|
+| `detailDataContext` seeds | `*-page.svelte.ts` owns list + selection |
+| `sessionDetailContext`, `teachingLogContext`, … | Tab-local `*-tab.svelte.ts` slices |
+| Global `DetailDrawer` + `?tab=` | Local drawer + nested tab **routes** |
+| Fetch in component `$effect` | `PageQuery` on route / tab `+page.svelte` |
+| Mutations patch global store | Mutations on route / tab state + `entityVersions.bump` |
 
----
+**Gate:** legacy deletion (§6) opens only when **every route** and **smart component** in the inventory is **✅ Full** on all applicable pattern checks.
 
-## Status legend
-
-| Tag | Meaning |
-|-----|---------|
-| ⬜ | Not started |
-| 🔄 | In progress |
-| ✅ | Matches `route-state-spec.md` |
-| — | N/A (no entity state / thin surface) |
+**Foundation (done):** `lib/entity-versions.svelte.ts`, `lib/navigation/invalidate-on-navigate.ts`.
 
 ---
 
-## Phase 0 — Foundation (blocking)
+## 2. Pattern checks
 
-- [x] `lib/entity-versions.svelte.ts` — `EntityVersionKey` union, `bump()`, session singleton
-- [x] `lib/navigation/invalidate-on-navigate.ts` — call `state.invalidateIfStale()` on `afterNavigate`
-- [x] Document **reference slice** in sprint notes once first route is ✅ (expected: `/school/students`)
+Each migrated unit is scored against these columns. Use **—** when the column does not apply (e.g. no drawer, no tabs).
+
+| Col | Check | Pass criteria |
+|-----|-------|----------------|
+| **RS** | Route state | `*-page.svelte.ts`, `set*` / `get*` from layout, list via `PageQuery` |
+| **NC** | No global context | Zero `detailDataContext` / `sessionDetailContext` / domain globals in route subtree |
+| **TR** | Tab routes | Each drawer tab is a child route under `[id]/` or `[[id]]/` — not `?tab=` |
+| **TL** | Lazy tabs | Non-profile tabs: `*-tab.svelte.ts` + `PageQuery` on tab `+page.svelte`; data loads on tab visit |
+| **LD** | Local drawer | Route-owned drawer layout; listed in `usesRouteLocalDrawer()` |
+| **VI** | Version invalidation | `RouteVersionSnapshot` + `invalidateIfStale()` for entity families in the slice |
+| **CO** | Colocated | Queries, mutations, helpers under `routes/.../lib/`; UI under `routes/.../components/` |
+
+### Status values
+
+| Status | Meaning |
+|--------|---------|
+| **✅ Full** | All **applicable** checks pass |
+| **⚠️ Partial** | Route works on new architecture but one or more checks still open (see Notes) |
+| **🔄** | Migration in progress |
+| **⬜** | Not started |
 
 ---
 
-## Per-unit definition of done
+## 3. Progress dashboard
 
-A route or smart component is ✅ when **all** apply:
+| Area | Total | ✅ Full | ⚠️ Partial | ⬜ |
+|------|-------|---------|------------|-----|
+| Routes | 30 | 10 | 0 | 20 |
+| Smart components | 6 | 0 | 0 | 6 |
+| Foundation | 3 | 3 | — | — |
 
-- [ ] `*-page.svelte.ts` (or `*-picker-state.svelte.ts`) owns data / orchestration
-- [ ] `set*` / `get*` context wired from layout or root component
-- [ ] `PageQuery` / self-fetch seeds state — no `detailDataContext.seed*`
-- [ ] Views read state — no fetch in component `$effect`
-- [ ] Mutations on state class — `runMutation` + `entityVersions.bump` on success
-- [ ] `invalidateIfStale()` tracks every entity family in the route slice via `RouteVersionSnapshot`; layout calls `registerVersionInvalidation`
-- [ ] Components colocated: `routes/.../components/` or `lib/smart-components/...`
-- [ ] Drawer tabs (if any) are nested routes under `[[id]]/` — not `?tab=`
-- [ ] Loading tests updated or added for the unit
-- [ ] No new imports of `detailDataContext` in the migrated subtree
+**Next legacy-deletion blocker:** 20 routes + 6 smart components still ⬜.
 
 ---
 
-## A — Routes
+## 4. Route inventory
 
-### A.1 School — people
+### 4.1 Migrated routes — pattern matrix
 
-| Route | Legacy view | Drawer | Tab routes (target) | `entityVersions` key | Status |
-|-------|-------------|--------|---------------------|----------------------|--------|
-| `/school/students` | `SchoolStudentsView` | Yes | `profile` (default), `grades`, `attendance`, `incidents`, `finances`, `report-card`, `enrollments` | `students` | ✅ |
-| `/school/guardians` | `GuardiansView` | Yes | — (sections only) | `guardians` | ✅ |
-| `/school/staff` | `StaffView` | Yes | `profile`, `permissions`, `assignments` | `staff` | ✅ |
-| `/school/teachers` | `TeachersView` | Yes | `profile`, `assignments` | `teachers` | ✅ |
+Primary tracker. **Notes** hold the remaining gap for ⚠️ rows.
 
-**Notes**
+| Route | RS | NC | TR | TL | LD | VI | CO | Status | Notes |
+|-------|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:------:|-------|
+| `/school/students` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | **✅ Full** | Reference implementation |
+| `/school/guardians` | ✅ | ✅ | — | — | ✅ | ✅ | ✅ | **✅ Full** | No tabs (sections on one page) |
+| `/school/staff` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | **✅ Full** | Profile = main entity; permissions + assignments lazy |
+| `/school/teachers` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | **✅ Full** | Assignment counts sync from assignments tab visit |
+| `/school/calendar` | ✅ | ✅ | — | — | — | ✅ | ✅ | **✅ Full** | No drawer; `schoolYearEvents` version + route mutations |
+| `/school/activities` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | **✅ Full** | Profile = main entity; students + classes tabs lazy |
+| `/school/announcements` | ✅ | ✅ | — | — | ✅ | ✅ | ✅ | **✅ Full** | Profile = main entity on list row; local drawer |
+| `/school/events` | ✅ | ✅ | — | — | ✅ | ✅ | ✅ | **✅ Full** | Local drawer; detail loads involvements/sanctions on open |
+| `/classes/:id/timetable` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | **✅ Full** | `TimetablePlanningView` colocated under route components |
+| `/classes/:id/evaluations` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | **✅ Full** | `details` + `grading` tab routes; grading lazy-loads students/results |
+| `/classes/:id/students` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | **⬜** | |
+| `/classes/:id/teaching` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | **⬜** | `?tab=` today |
+| `/classes/:id/report-cards` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | **⬜** | |
+| `/classes/:id/attendance` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | **⬜** | |
+| `/finance/*` (3) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | **⬜** | fees, billing, payment |
+| `/configuration/*` (10) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | **⬜** | class/subject drawers use `?tab=` |
+| `/dashboard`, `/account/*` (3) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | **⬜** | |
 
-- `/school/guardians` follows the students list + drawer pattern with **all TS utilities under `lib/`** and **proxied by `guardians-page.svelte.ts`** (queries, mutations, selectors).
-- `/school/staff` follows the same pattern with nested tab routes (`profile`, `permissions`, `assignments`) and list reference UX (selection mode, sortable headers).
-- `/school/teachers` follows the same pattern with nested tab routes (`profile`, `assignments`).
-- `/school/students` is the **reference slice** — see file tree below. Class route `/classes/:id/students` still uses legacy `StudentTabs` in `lib/` until that unit migrates.
+<details>
+<summary><strong>Tab routes target</strong> (drawer routes only)</summary>
 
-**Reference slice file tree (`/school/staff`)**
+| Route | Tab segments |
+|-------|----------------|
+| `/school/students` | `profile`, `grades`, `attendance`, `incidents`, `finances`, `report-card`, `enrollments` |
+| `/school/staff` | `profile`, `permissions`, `assignments` |
+| `/school/teachers` | `profile`, `assignments`, `availability` |
+| `/school/activities` | `profile`, `students`, `classes` |
+| `/classes/:id/timetable` | `details`, `attendance`, `logbook` |
+| `/classes/:id/evaluations` | `details`, `grading` |
+| `/configuration/classes` | `profile`, `assignments` (not migrated) |
+| `/configuration/subjects` | `progression`, `logbook` (not migrated) |
+| `/classes/:id/teaching` | `progression`, `logbook` (not migrated) |
 
-```
-routes/(app)/school/staff/
-  +layout.svelte                 # StaffPageState, list PageQuery, StaffList
-  staff-page.svelte.ts           # sole route-root TS — proxies lib/*
-  lib/
-    staff-queries.ts
-    staff-detail-mutations.ts
-    staff-route-mutation.ts
-    staff-list-filters.ts
-    staff-selectors.ts
-    staff-detail-tabs.ts
-    staff-page-status.ts
-    index.ts
-  components/                    # list + create modal
-  [[id]]/
-    +layout.svelte               # StaffDrawer shell + ensureSelectedStaff
-    +page.ts                     # redirect bare id → profile tab
-    components/                  # drawer chrome, header, profile edit modal
-    (tabs)/
-      profile/+page.svelte
-      permissions/+page.svelte
-      assignments/+page.svelte
-```
+</details>
 
-**Reference slice file tree (`/school/guardians`)**
+<details>
+<summary><strong>Entity version keys</strong> (for VI column)</summary>
 
-```
-routes/(app)/school/guardians/
-  +layout.svelte                 # GuardiansPageState, list PageQuery, GuardiansList
-  guardians-page.svelte.ts       # sole route-root TS — proxies lib/*
-  lib/
-    guardians-queries.ts
-    guardian-detail-mutations.ts
-    guardian-route-mutation.ts
-    guardian-selectors.ts
-    guardian-page-status.ts
-    index.ts
-  components/                    # list + create modal
-  [[id]]/
-    +layout.svelte               # GuardianDrawer shell + ensureSelectedGuardian
-    +page.svelte                 # detail sections (no tabs)
-    components/                  # drawer chrome, detail, edit modal
-```
+| Route | `entityVersions` families |
+|-------|-------------------------|
+| students, guardians, staff, teachers | `students` / `guardians` / `staff` / `teachers` |
+| activities | `activities` |
+| announcements | `announcements` |
+| timetable | `planning`, `teacherUnavailabilities` |
+| evaluations | `evaluations` |
+| calendar | `schoolYearEvents` |
 
-**Reference slice file tree (`/school/students`)**
+</details>
+
+### 4.2 Smart components
+
+| Component | RS | NC | Own fetch | Status |
+|-----------|:--:|:--:|:---------:|:------:|
+| PersonPicker | ⬜ | ⬜ | ⬜ | **⬜** |
+| StudentPicker | ⬜ | ⬜ | ⬜ | **⬜** |
+| StaffPicker | ⬜ | ⬜ | ⬜ | **⬜** |
+| GuardianPicker | ⬜ | ⬜ | ⬜ | **⬜** |
+| ScopeBuilder | ⬜ | ⬜ | ⬜ | **⬜** |
+| StaffPermissionFormModal | ⬜ | ⬜ | ⬜ | **⬜** |
+
+Target: `lib/smart-components/{name}/` with `*-state.svelte.ts`. Pickers must not read `detailDataContext`.
+
+---
+
+## 5. Reference implementation
+
+**Canonical route:** `routes/(app)/school/students/`  
+Copy this shape for every list + drawer feature.
+
+### 5.1 File layout
 
 ```
 routes/(app)/school/students/
-  +layout.svelte                 # StudentsPageState, list PageQuery, StudentsList
-  students-page.svelte.ts        # list + detail slice + mutations
-  students.queries.ts            # list query
-  students-detail.queries.ts     # one PageQuery per drawer tab
-  students-mutations.ts          # runMutation apply/rollback on route state
-  student-detail-tabs.ts         # tab keys + active segment helper
-  student-detail-types.ts        # StudentDetailSlice
-  student-detail-selectors.ts    # tab derived data helpers
-  components/                    # colocated list, drawer, tabs, modals
+  +layout.svelte                    # setStudentsPageState, list PageQuery, StudentsList
+  students-page.svelte.ts           # list state, selection, mutations, invalidateIfStale
+  lib/                              # queries, mutations, filters, tab helpers
+  components/                       # list, modals
   [[id]]/
-    +layout.svelte               # drawer shell + ensureSelectedStudent
-    +page.svelte                 # profile tab
-    grades/+page.svelte
-    attendance/+page.svelte
-    incidents/+page.svelte
-    finances/+page.svelte
-    report-card/+page.svelte
-    enrollments/+page.svelte
+    +layout.svelte                  # local drawer, register + clear tab states
+    +page.ts                        # redirect bare id → default tab
+    student-detail-states.svelte.ts # wires tab state instances
+    components/                     # drawer chrome, tab bar, header
+    (tabs)/
+      profile/
+        +page.svelte                # PageQuery (supplementary data beyond list row)
+        student-profile-tab.svelte.ts
+        components/StudentProfileTab.svelte
+      grades/
+        +page.svelte                # PageQuery + DataState
+        student-grades-tab.svelte.ts
+        components/StudentGradesTab.svelte
+      …                             # one folder per tab
 ```
 
-### A.2 School — school life
+**Class timetable** uses `[id]/` (required segment) instead of `[[id]]/` because list URL is `/timetable` sibling — see §5.3.
 
-| Route | Legacy view | Drawer | Tab routes | `entityVersions` key | Status |
-|-------|-------------|--------|------------|----------------------|--------|
-| `/school/calendar` | `SchoolCalendarView` | No (simple) | — | `schoolYearEvents` | ✅ |
-| `/school/activities` | `ActivitiesView` | Yes | `profile`, `students`, `classes` | `activities` | ✅ |
-| `/school/announcements` | `AnnouncementsView` | Yes | — | `announcements` | ⬜ |
-| `/school/events` | `SchoolEventsView` | Yes | — | `incidents` | ⬜ |
+### 5.2 Tab lazy-load contract
 
-### A.3 Classes (class layout state)
-
-Parent layout: `routes/(app)/classes/[classId]/` — introduce `class-layout.svelte.ts` shared by child routes.
-
-| Route | Legacy view | Drawer | Tab routes | `entityVersions` key | Status |
-|-------|-------------|--------|------------|----------------------|--------|
-| `/classes/:id/students` | `StudentsView` | Yes (student) | Reuse student tab routes or class-scoped drawer | `students` | ⬜ |
-| `/classes/:id/timetable` | `PlanningView` | Yes | `details`, `attendance`, `logbook` | `planning` | ⬜ |
-| `/classes/:id/teaching` | `TeachingLogView` | Yes | `progression`, `logbook` (subject drawer) | `subjects` | ⬜ |
-| `/classes/:id/evaluations` | `EvaluationsView` | Yes | — (sections by `kind`) | `evaluations` | ✅ |
-| `/classes/:id/report-cards` | `ClassReportCardsView` | Yes | — | `reportCards` | ⬜ |
-| `/classes/:id/attendance` | `AttendanceView` | Yes (day) | — | `attendance` | ⬜ |
-
-**Notes**
-
-- `/classes/:id/evaluations` — class-scoped reference slice with `lib/` colocation and `[[id]]/` drawer shell + detail split (see tree below).
-- Timetable drawer: `PlanningDetail.svelte` + `?tab=` → three child routes.
-- Teaching drawer: `SubjectTabs.svelte` + `?tab=` → two child routes.
-- `teachingLogContext` / `reportCardsContext` fold into route or class layout state when these routes migrate.
-
-**Reference slice file tree (`/classes/:id/evaluations`)**
+Applies to every drawer tab that needs more than the **main entity** already on the list row.
 
 ```
-routes/(app)/classes/[classId]/evaluations/
-  +layout.svelte                 # EvaluationsPageState, list PageQuery, EvaluationsList
-  evaluations-page.svelte.ts     # sole route-root TS — proxies lib/*
-  lib/
-    evaluations-queries.ts
-    evaluation-route-mutation.ts
-    evaluation-helpers.ts
-    index.ts
-  components/                    # list, create modal, hydrator
-  [[id]]/
-    +layout.svelte               # EvaluationDrawer shell
-    +page.svelte                 # EvaluationDetail (sections by kind)
-    components/
-      EvaluationDrawer.svelte
-      EvaluationDetail.svelte
-      EvaluationGradeEntryModal.svelte
+[id]/+layout.svelte
+  └─ createAndRegister*DetailStates()   # register tab states; clear on drawer close
+
+(tabs)/<tab>/+page.svelte
+  └─ PageQuery(tabState.query())
+       └─ DataState
+            └─ <TabComponent />        # reads tab state only — no $effect fetch
+
+(tabs)/<tab>/*-tab.svelte.ts
+  └─ slice = $state(...)
+  └─ query() → load on tab navigation
+  └─ mutation helpers with apply / rollback
 ```
 
-### A.4 Finance
+**Profile tab rule:** if the tab only shows fields from the list entity, no tab state / `PageQuery` required. If it loads extra data (student 360, health, notes), use tab state + `PageQuery` like other tabs.
 
-| Route | Legacy view | Drawer | Tab routes | `entityVersions` key | Status |
-|-------|-------------|--------|------------|----------------------|--------|
-| `/finance/fees` | `FeesView` | No (simple) | — | `fees` | ⬜ |
-| `/finance/billing` | `FinanceView` | Yes | — | `billing` | ⬜ |
-| `/finance/payment` | `PaymentsView` | No (simple) | — | `payments` | ⬜ |
+### 5.3 Drawer segment: `[id]` vs `[[id]]`
 
-### A.5 Configuration
+| Pattern | When | Example |
+|---------|------|---------|
+| `[[id]]/` | Drawer id is optional segment; bare `/entity/:id` redirects to default tab | `/school/students/abc` → `…/profile` |
+| `[id]/` | List URL is sibling without id; drawer always has id | `/classes/x/timetable` + `/classes/x/timetable/session-1/details` |
 
-| Route | Legacy view | Drawer | Tab routes | `entityVersions` key | Status |
-|-------|-------------|--------|------------|----------------------|--------|
-| `/configuration/school` | `SchoolSettingsView` | Layout variant | — | — (shell refresh) | ⬜ |
-| `/configuration/academic` | `AcademicAdminView` | Accordion | — | — (shell) | ⬜ |
-| `/configuration/grade-levels` | `GradeLevelsView` | Yes | — | — (shell-backed) | ⬜ |
-| `/configuration/classes` | `ClassGroupsView` | Yes | `profile`, `assignments` | — (shell-backed) | ⬜ |
-| `/configuration/subjects` | `ConfigSubjectsView` | Yes | `progression`, `logbook` | `subjects` | ⬜ |
-| `/configuration/subjects/level/:level` | `ConfigSubjectsView` | Level group | — | `subjects` | ⬜ |
-| `/configuration/report-cards` | `ReportCardDefinitionsView` | Yes | — | `reportCardDefinitions` | ⬜ |
-| `/configuration/grade-scales` | `GradeScalesView` | No (simple) | — | `gradeScales` | ⬜ |
-| `/configuration/notifications` | `NotificationTemplatesView` | No (simple) | — | `notificationTemplates` | ⬜ |
-| `/configuration/discipline` | `DisciplinaryCatalogView` | No (simple) | — | `disciplinaryActions` | ⬜ |
+Optional `[[id]]` before fixed tab paths can break `appPath` (timetable once resolved to `/timetable//attendance`).
 
-**Notes**
+### 5.4 Local drawer registration
 
-- Class group drawer: `ClassGroupDetail.svelte` + `?tab=` → two child routes.
-- Config subject drawer: `SubjectTabs.svelte` + `?tab=` → two child routes.
+Add pathname regex to `usesRouteLocalDrawer()` in `(app)/+layout.svelte` so the global `DetailDrawer` does not open.
 
-### A.6 Account & dashboard
-
-| Route | Legacy view | Drawer | Tab routes | `entityVersions` key | Status |
-|-------|-------------|--------|------------|----------------------|--------|
-| `/dashboard` | `DirectorDashboardView` | Layout variant | — | — | ⬜ |
-| `/account/inbox` | `NotificationsInboxView` | Thin | — | `inbox` | ⬜ |
-| `/account/notifications` | (settings) | — | — | — | ⬜ |
+Currently registered: students, guardians, staff, teachers, activities, announcements, events, class evaluations, class timetable.
 
 ---
 
-## B — Smart components
+## 6. Migration playbook
 
-Self-contained shared features — not route-bound. Target: `lib/smart-components/{name}/` with `*-state.svelte.ts` + root `.svelte` + `components/`.
+Per route (repeat until **✅ Full**):
 
-| Component | Legacy path | Own fetch | `entityVersions` | Status |
-|-----------|-------------|-----------|------------------|--------|
-| **PersonPicker** | `school/shared/pickers/PersonPicker.svelte` | Yes (items from props or API) | — | ⬜ |
-| **StudentPicker** | `school/shared/pickers/StudentPicker.svelte` | Yes | `students` (optional invalidate) | ⬜ |
-| **StaffPicker** | `school/shared/pickers/StaffPicker.svelte` | Yes | `staff` | ⬜ |
-| **GuardianPicker** | `school/shared/pickers/GuardianPicker.svelte` | Yes | `guardians` | ⬜ |
-| **ScopeBuilder** | `school/configuration/ScopeBuilder.svelte` + `scope-builder-state.svelte.ts` | Uses catalog API | — | ⬜ |
-| **StaffPermissionFormModal** | `school/configuration/StaffPermissionFormModal.svelte` | Modal + ScopeBuilder | `staffPermissionAssignments` | ⬜ |
+1. Add `*-page.svelte.ts` + `set*` / `get*` from list `+layout.svelte`.
+2. Colocate `lib/*.ts` and `components/`; remove `detailDataContext.seed*` from queries.
+3. Add `[[id]]/` or `[id]/` with local drawer `+layout.svelte` and tab bar linking to tab routes.
+4. For each data tab: `*-tab.svelte.ts`, tab `+page.svelte` with `PageQuery` + `drawerTabRouteCacheKey`.
+5. Register tab states in drawer `+layout.svelte`; `clear*` on close.
+6. Move mutations into page / tab state; `entityVersions.bump` on success.
+7. Wire `RouteVersionSnapshot` + `registerVersionInvalidation` for slice families.
+8. Update route tests; set matrix row to **✅ Full** or document **⚠️** gap in Notes.
 
-**Notes**
-
-- Pickers today read `detailDataContext` for items — migrate to self-fetch on open/search.
-- `ScopeBuilder` / `scope-builder-state.svelte.ts` already partial smart-component shape; move under `lib/smart-components/`.
-- T0 modals (`FormModal`, `ConfirmModal`, `PickerModal`) stay in `lib/components/ui/` — not migration units.
+Tab URL: `?tab=grades` → `/grades` (no compatibility redirect required for v1).
 
 ---
 
-## C — Per-route migration steps (repeatable)
+## 7. Legacy deletion gate
 
-Use this checklist for each route in §A:
+**Do not delete until every §4 row is ✅ Full.**
 
-1. Create `routes/.../<feature>-page.svelte.ts` + `set*` / `get*`.
-2. Move `*.queries.ts` next to the route; change `load` to `state.seed()` (remove `detailDataContext` seeds).
-3. Restructure files:
-   - `+layout.svelte` — list shell + `setPageState` when list persists across drawer.
-   - `+page.svelte` — list only.
-   - `[[id]]/+layout.svelte` — `DetailDrawer` chrome + tab bar (route links).
-   - `[[id]]/+page.svelte` — default tab.
-   - `[[id]]/{tab}/+page.svelte` — one per tab with own `PageQuery`.
-   - `components/` — move views/modals from `lib/components/school/...`.
-4. Move mutation calls into state methods; add `entityVersions.bump`.
-5. Update `*.loading.test.ts` if present.
-6. Mark route ✅ in the table above.
-
-**Tab URL migration:** `?tab=grades` → `/grades`. No redirect layer required for v1 migration; update integration tests (`drawer-tab-url.test.ts` → route-based tests).
-
----
-
-## D — Legacy deletion gate
-
-**Do not delete until every row in §A and §B is ✅.**
-
-### D.1 Remove — global state & routing
-
-| Path | Reason |
-|------|--------|
+| Remove | Why |
+|--------|-----|
 | `lib/detail-data/context.svelte.ts` | Global entity store |
-| `lib/detail-routes.ts` | Central drawer resolution from store |
-| `lib/drawer/drawer-detail-hydration.ts` | Store-based drawer hydration |
-| `lib/drawer/drawer-tabs-state.svelte.ts` | `?tab=` sync |
-| `lib/drawer/drawer-tab-url.ts` | `?tab=` URL helpers |
-| `lib/report-cards/context.svelte.ts` | Folded into route/layout state |
-| `lib/teaching-log/context.svelte.ts` | Folded into route/layout state |
-| `lib/session-detail/context.svelte.ts` | Folded into timetable tab route state (if unused elsewhere) |
+| `lib/detail-routes.ts`, `lib/drawer/drawer-detail-hydration.ts` | Central drawer resolution |
+| `lib/drawer/drawer-tabs-state.svelte.ts`, `drawer-tab-url.ts` | `?tab=` machinery |
+| `lib/session-detail/context.svelte.ts` | Replaced by timetable tab states (when `PlanningDetail` gone) |
+| `lib/teaching-log/context.svelte.ts`, `lib/report-cards/context.svelte.ts` | Folded into route state |
+| `lib/components/school/{domain}/` feature views | Colocated under routes |
+| Global `DetailDrawer` dispatch in `(app)/+layout.svelte` | Each route owns drawer |
 
-### D.2 Remove — feature code in lib
-
-| Path | Reason |
-|------|--------|
-| `lib/components/school/students/` | Colocated under students route |
-| `lib/components/school/guardians/` | Colocated |
-| `lib/components/school/teachers/` | Colocated |
-| `lib/components/school/configuration/` (feature views) | Colocated — keep only if shared T2 extract remains |
-| `lib/components/school/academics/` | Colocated |
-| `lib/components/school/finance/` | Colocated |
-| `lib/components/school/school-life/` | Colocated |
-| `lib/components/school/scheduling/` | Colocated |
-| `lib/components/school/attendance/` | Colocated |
-| `lib/components/school/dashboard/` | Colocated |
-| `lib/students/`, `lib/school/*-state.svelte.ts` | Route state colocation |
-| `lib/scheduling/planning-*.svelte.ts` | Route state colocation |
-| `lib/queries/*.queries.ts` | Colocated per route (delete central folder) |
-
-### D.3 Refactor — keep but slim down
-
-| Path | Action |
-|------|--------|
-| `lib/components/school/shared/` | **Keep** — T2 drawer chrome, avatars (per `shared-components-spec`) |
-| `lib/api/mutations/*.ts` | Keep files; remove `detailDataContext` patches — callers use state methods only |
-| `lib/components/school/shared/DetailDrawer.svelte` | Remove central kind-dispatch once each route owns drawer layout |
-| `(app)/+layout.svelte` | Remove global drawer + `parseDetailPath` wiring |
-
-### D.4 Tests to update on deletion
-
-- `tests/lib/drawer/drawer-tab-url.test.ts` — replace with tab route navigation tests
-- `tests/integration/demo-dry-run/scenes/drawer-tabs.ts` — use path segments
-- `*.loading.test.ts` — assert route-colocated queries
-- Grep CI: zero `detailDataContext` imports outside deleted paths
+Keep: `lib/components/school/shared/` (T2 chrome), `lib/api/mutations/` (slimmed — no global patches).
 
 ---
 
-## E — Suggested order (not blocking)
+## 8. Suggested order
 
-Priority follows dependency and pilot value; any order is fine if §C steps are complete per unit.
-
-1. Phase 0 foundation
-2. `/school/students` (pilot — list + all tabs)
-3. `/school/guardians`, `/school/staff`, `/school/teachers`
-4. Smart pickers (unblock cross-route forms)
-5. Class module routes (`class-layout` first)
-6. Finance → Configuration → Account/Dashboard
-7. Legacy deletion (§D)
-
----
-
-## F — Progress summary
-
-| Area | Total | ✅ |
-|------|-------|-----|
-| Routes (§A) | 30 | 5 |
-| Smart components (§B) | 6 | 0 |
-| Phase 0 | 3 | 3 |
-
-**Gate:** §D legacy deletion opens when Routes = 30/30 and Smart components = 6/6.
+1. ~~Foundation~~ ✅  
+2. ~~School people + school life (partial)~~ — finish events (done); remaining school-life routes TBD  
+3. ~~Class timetable, evaluations (partial)~~ — finish tab routes on evaluations; colocate timetable calendar  
+4. Smart pickers (unblock forms)  
+5. Remaining class routes + `class-layout.svelte.ts`  
+6. Finance → configuration → account  
+7. Legacy deletion (§7)
 
 ---
 
@@ -356,10 +254,10 @@ Priority follows dependency and pilot value; any order is fine if §C steps are 
 
 | Date | Change |
 |------|--------|
-| 2026-07-10 | `/school/teachers` ✅ — route state + `lib/` colocation; nested tab routes (`profile`, `assignments`); local drawer |
-| 2026-07-10 | `/school/staff` ✅ — route state + `lib/` colocation; nested tab routes; list reference UX (selection mode, sortable headers) |
-| 2026-07-10 | `/school/guardians` ✅ — route state + `lib/` colocation; page state proxies queries/mutations/selectors |
-| 2026-07-10 | `/classes/:id/evaluations` ✅ — `lib/` colocation, `[[id]]/+layout` drawer shell + `EvaluationDetail` body |
-| 2026-07-10 | `/school/students` ✅ — full reference slice: nested tab routes, colocated components, route state detail slice, mutations + version bump |
-| 2026-07-10 | Students pilot started — Phase 0 + route layout, `StudentsPageState`, colocated list |
-| 2026-07-10 | Initial tracker — route + smart component inventory, migration strategy |
+| 2026-07-12 | `/school/events` migrated — local drawer, route state, colocated components |
+| 2026-07-12 | `/school/announcements` migrated — local drawer, route state, colocated components |
+| 2026-07-12 | Restructured doc: goal, pattern matrix, reference §5, progress dashboard; scored migrated routes against RS/NC/TR/TL/LD/VI/CO |
+| 2026-07-12 | Tab lazy-load alignment: timetable, calendar, staff, teachers, activities |
+| 2026-07-12 | `/classes/:id/timetable` migrated — local drawer, `[id]/(tabs)/` |
+| 2026-07-10 | `/school/students` reference slice; staff, guardians, teachers, evaluations |
+| 2026-07-10 | Initial tracker |

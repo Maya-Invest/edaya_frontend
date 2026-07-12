@@ -299,10 +299,12 @@ export interface PeriodDefinition {
 	schoolId: string;
 	academicYearId: string;
 	label: string;
+	dayOfWeek?: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 	order: number;
 	startTime: string;
 	endTime: string;
 	isBreak: boolean;
+	isTeachingSlot?: boolean;
 }
 
 export interface GradeLevel {
@@ -335,6 +337,8 @@ export interface AcademicPeriod {
 
 export type SchoolType = 'primary' | 'secondary' | 'k12' | 'vocational' | 'other';
 
+export type TimetableGenerationMode = 'weekly' | 'free';
+
 export interface School {
 	id: string;
 	name: string;
@@ -345,10 +349,13 @@ export interface School {
 	type?: SchoolType | null;
 	timetableEnforceWorkloadFulfillment: boolean;
 	timetableExcludeBreakSlots: boolean;
-	timetableMinPeriodGapSameSubject: number;
+	timetableMinDayGapSameSubject: number;
 	timetablePreferredPeriodDefinitionIds: string[];
 	timetableAllowUnassignedTeacherPlacements: boolean;
 	timetableUseHomeroomTeacherFallback: boolean;
+	timetableGenerationMode: TimetableGenerationMode;
+	timetableMinPeriodSpan: number;
+	timetableMaxPeriodSpan: number;
 }
 
 export interface SchoolYearEvent {
@@ -361,6 +368,8 @@ export interface SchoolYearEvent {
 	type: 'holiday' | 'vacation' | 'closure' | 'ceremony';
 	description: string;
 	scope: 'all' | string[];
+	/** When true, timetable generation skips these dates for the scoped class(es). */
+	blocksTimetable?: boolean;
 }
 
 export interface PedagogicalNote {

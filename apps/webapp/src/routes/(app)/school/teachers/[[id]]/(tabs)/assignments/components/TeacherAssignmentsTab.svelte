@@ -10,11 +10,13 @@
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
 	import { getTeachersPageState } from '../../../../teachers-page.svelte';
+	import { getTeacherAssignmentsTabState } from '../teacher-assignments-tab.svelte';
 	import TeacherAssignmentFormModal from './TeacherAssignmentFormModal.svelte';
 
 	const { teacher }: { teacher: Teacher } = $props();
 
 	const teachersPage = getTeachersPageState();
+	const assignmentsTab = getTeacherAssignmentsTabState();
 
 	const modals = createUrlSyncedModals({ allowed: ['form'], getUrl: () => $page.url });
 	$effect(() => {
@@ -24,7 +26,7 @@
 
 	let deleteBusy = $state<string | null>(null);
 
-	const rows = $derived(teachersPage.teacherAssignmentsForTeacher(teacher.id));
+	const rows = $derived(assignmentsTab.assignmentsFor(teacher.id));
 
 	function classLabel(classGroupId: string | null | undefined): string {
 		if (!classGroupId) {
@@ -47,10 +49,15 @@
 			return;
 		}
 		deleteBusy = row.id;
-		await teachersPage.deleteAssignment({
+		const ok = await teachersPage.deleteAssignment({
 			id: row.id,
+			teacherId: teacher.id,
 			successMessage: get(t)('teacher.assignmentDeleted'),
 		});
+		if (ok) {
+			assignmentsTab.removeAssignment(row.id);
+			teachersPage.setAssignmentCount(teacher.id, rows.length - 1);
+		}
 		deleteBusy = null;
 	}
 </script>
