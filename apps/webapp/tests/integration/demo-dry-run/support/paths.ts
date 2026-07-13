@@ -40,6 +40,34 @@ export function schoolActivityPath(id: string, tab = 'profile'): string {
 	return `/school/activities/${id}/${tab}`;
 }
 
+export function classTeachingDrawerPath(classId: string, subjectId: string): string {
+	return `/classes/${classId}/teaching/${subjectId}`;
+}
+
+export function classTeachingPath(
+	classId: string,
+	subjectId: string,
+	tab: 'progression' | 'logbook' = 'progression',
+): string {
+	return `${classTeachingDrawerPath(classId, subjectId)}/${tab}`;
+}
+
+export function classEvaluationsDrawerPath(classId: string, evaluationId: string): string {
+	return `/classes/${classId}/evaluations/${evaluationId}`;
+}
+
+export function classEvaluationsPath(
+	classId: string,
+	evaluationId: string,
+	tab: 'details' | 'grading' = 'details',
+): string {
+	return `${classEvaluationsDrawerPath(classId, evaluationId)}/${tab}`;
+}
+
+export function classTimetableDrawerPath(classId: string, sessionId: string): string {
+	return `/classes/${classId}/timetable/${sessionId}`;
+}
+
 export function drawerTabFromPathname(pathname: string): string | null {
 	for (const prefix of PATH_TAB_ROUTE_PREFIXES) {
 		if (!pathname.startsWith(prefix)) {
@@ -51,5 +79,13 @@ export function drawerTabFromPathname(pathname: string): string | null {
 		}
 		return segments[1] ?? 'profile';
 	}
+
+	const classDrawerMatch = pathname.match(
+		/^\/classes\/[^/]+\/(?:teaching|evaluations|timetable)\/[^/]+\/([^/]+)/,
+	);
+	if (classDrawerMatch) {
+		return classDrawerMatch[1] ?? null;
+	}
+
 	return null;
 }

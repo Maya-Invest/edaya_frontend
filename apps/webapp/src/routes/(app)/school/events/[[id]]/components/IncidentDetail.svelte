@@ -5,20 +5,20 @@
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { loadIncidentInvolvements, loadIncidentSanctions } from '$lib/api/school-life-data';
+	import { incidentSevTone, incidentCatTone } from '$lib/components/school/shared/drawer-constants';
+	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
+	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
-	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
-	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
-	import { incidentSevTone, incidentCatTone } from '$lib/components/school/shared/drawer-constants';
 	import { locale, t } from '$lib/i18n';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
-	import { getEventsPageState } from '../../events-page.svelte';
 	import IncidentFormModal from '../../components/IncidentFormModal.svelte';
+	import { getEventsPageState } from '../../events-page.svelte';
 	import IncidentResolveModal from './IncidentResolveModal.svelte';
 
 	type Involvement = components['schemas']['StudentIncidentInvolvement'];

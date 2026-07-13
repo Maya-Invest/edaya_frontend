@@ -1,16 +1,15 @@
 <script lang="ts">
 	import type { PlanningEvent } from '$lib/types/school';
-	import type { SessionDetail } from '$lib/types/session-detail';
 	import { page } from '$app/stores';
+	import PlanningSessionLogbookModal from '$lib/components/school/scheduling/PlanningSessionLogbookModal.svelte';
+	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
-	import PlanningSessionLogbookModal from '$lib/components/school/scheduling/PlanningSessionLogbookModal.svelte';
-	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
-	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
-	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { t } from '$lib/i18n';
 	import { Check, FileText } from '$lib/icons';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { getSessionLogbookTabState } from '../session-logbook-tab.svelte';
 
 	const { s }: { s: PlanningEvent } = $props();

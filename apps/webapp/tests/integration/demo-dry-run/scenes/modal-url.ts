@@ -1,5 +1,10 @@
 import { CLASS_6A, CLASS_SUBJECT_ID, STAFF_ID, STUDENT_ID } from '../support/constants';
-import { schoolStaffPath, schoolStudentPath } from '../support/paths';
+import {
+	classTeachingDrawerPath,
+	classTeachingPath,
+	schoolStaffPath,
+	schoolStudentPath,
+} from '../support/paths';
 import { waitForDrawerAside } from '../support/drawer';
 import {
 	closeFormModal,
@@ -113,8 +118,8 @@ export async function runModalUrlChecks(ctx: DemoContext): Promise<void> {
 		}
 	}
 
-	if (await visit(ctx, `${base}/classes/${CLASS_6A}/teaching/${CLASS_SUBJECT_ID}?modal=edit-subject`, scene, '17 Subject edit deep-link', {
-		pathPrefix: `/classes/${CLASS_6A}/teaching/${CLASS_SUBJECT_ID}`,
+	if (await visit(ctx, `${base}${classTeachingPath(CLASS_6A, CLASS_SUBJECT_ID)}?modal=edit-subject`, scene, '17 Subject edit deep-link', {
+		pathPrefix: classTeachingDrawerPath(CLASS_6A, CLASS_SUBJECT_ID),
 	})) {
 		if (await waitForDrawerAside(ctx) && await waitForFormModal(ctx) && await waitForUrlModal(ctx, 'edit-subject')) {
 			reporter.log(scene, '18 Subject URL modal=edit-subject', 'pass');

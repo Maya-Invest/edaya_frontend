@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ClassNode, Incident, Student } from '$lib/types/school';
+	import type { IncidentInvolvementRole } from '../../lib/incident-detail-mutations';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { loadIncidentResolveModalData } from '$lib/api/school-life-data';
@@ -12,7 +13,6 @@
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, Plus, Trash2 } from '$lib/icons';
 	import { get } from 'svelte/store';
-	import type { IncidentInvolvementRole } from '../../lib/incident-detail-mutations';
 	import { getEventsPageState } from '../../events-page.svelte';
 
 	const INVOLVEMENT_ROLES: IncidentInvolvementRole[] = ['subject', 'witness', 'victim'];

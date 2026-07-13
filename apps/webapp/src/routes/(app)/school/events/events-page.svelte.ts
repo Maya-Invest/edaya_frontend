@@ -2,18 +2,18 @@ import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { Incident, Student } from '$lib/types/school';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
-import {
-	createIncidentOnPage,
-	deleteIncidentOnPage,
-	resolveIncidentWithOutcomesOnPage,
-	updateIncidentOnPage,
-} from './lib/incident-detail-mutations';
 import { incidentDetailIdFromUrl } from './lib/event-selectors';
 import {
 	ensureIncidentDrawerSelection,
 	loadEventsSlice,
 	querySchoolEventsPage,
 } from './lib/events-queries';
+import {
+	createIncidentOnPage,
+	deleteIncidentOnPage,
+	resolveIncidentWithOutcomesOnPage,
+	updateIncidentOnPage,
+} from './lib/incident-detail-mutations';
 
 const EVENTS_VERSION_FAMILIES = ['incidents'] as const satisfies readonly EntityVersionKey[];
 

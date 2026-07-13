@@ -4,6 +4,7 @@ import type { TimetableMutationResult } from '$lib/components/school/scheduling/
 import type { TimetablePlacementOverrides } from '$lib/components/school/scheduling/timetable-placement-parameters';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { PlanningEvent } from '$lib/types/school';
+import type { TimetablePageSlice } from './lib';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
 	generateClassTimetable,
@@ -33,7 +34,7 @@ import {
 	queryTimetableListPage,
 	sessionDetailIdFromUrl,
 	timetableClassIdFromUrl,
-	type TimetablePageSlice,
+
 } from './lib';
 
 function translateTimetable(key: string) {

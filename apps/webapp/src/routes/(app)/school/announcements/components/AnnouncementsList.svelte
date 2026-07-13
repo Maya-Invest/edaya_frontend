@@ -12,11 +12,11 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { Mail, Plus } from '$lib/icons';
+	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { cn } from '$lib/utils';
-	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { getAnnouncementsPageState } from '../announcements-page.svelte';
 	import AnnouncementFormModal from './AnnouncementFormModal.svelte';
 

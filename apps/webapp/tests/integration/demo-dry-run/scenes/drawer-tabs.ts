@@ -6,6 +6,8 @@ import {
 	TEACHER_ID,
 } from '../support/constants';
 import {
+	classTeachingDrawerPath,
+	classTeachingPath,
 	schoolStaffPath,
 	schoolStudentPath,
 	schoolTeacherPath,
@@ -143,9 +145,9 @@ export async function runDrawerTabChecks(ctx: DemoContext): Promise<void> {
 		}
 	}
 
-	const subjectLogbookUrl = `${base}/classes/${CLASS_6A}/teaching/${CLASS_SUBJECT_ID}?tab=logbook`;
+	const subjectLogbookUrl = `${base}${classTeachingPath(CLASS_6A, CLASS_SUBJECT_ID, 'logbook')}`;
 	if (await visit(ctx, subjectLogbookUrl, scene, '15 Subject logbook deep-link', {
-		pathPrefix: `/classes/${CLASS_6A}/teaching/${CLASS_SUBJECT_ID}`,
+		pathPrefix: classTeachingDrawerPath(CLASS_6A, CLASS_SUBJECT_ID),
 	})) {
 		if (await waitForDrawerTabBar(ctx) && await waitForUrlTab(ctx, 'logbook')) {
 			reporter.log(scene, '16 Subject URL tab=logbook', 'pass');
@@ -156,7 +158,7 @@ export async function runDrawerTabChecks(ctx: DemoContext): Promise<void> {
 		}
 
 		if (await clickDrawerTab(ctx, 'progression')) {
-			if (await waitForUrlTab(ctx, null, { absent: true })) {
+			if (await waitForUrlTab(ctx, 'progression')) {
 				reporter.log(scene, '17 Subject progression clears URL param', 'pass');
 			}
 			else {

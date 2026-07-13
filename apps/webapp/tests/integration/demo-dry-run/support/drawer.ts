@@ -80,11 +80,18 @@ export async function clickDrawerTab(ctx: DemoContext, tabKey: DrawerTabKey): Pr
 }
 
 export async function closeDrawer(ctx: DemoContext): Promise<boolean> {
-	const closeBtn = ctx.page
-		.locator('aside.fixed.right-0 footer')
+	const drawer = ctx.page.locator('aside.fixed.right-0');
+	const footerClose = drawer
+		.locator('footer')
 		.getByRole('button', { name: /close|fermer/i });
-	if (await closeBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-		await closeBtn.click();
+	if (await footerClose.isVisible({ timeout: 2_000 }).catch(() => false)) {
+		await footerClose.click();
+		await ctx.page.waitForTimeout(500);
+		return true;
+	}
+	const headerClose = drawer.locator('header button').first();
+	if (await headerClose.isVisible({ timeout: 2_000 }).catch(() => false)) {
+		await headerClose.click();
 		await ctx.page.waitForTimeout(500);
 		return true;
 	}

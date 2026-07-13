@@ -1,10 +1,11 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
-import type { Student } from '$lib/types/school';
 import type { GradeScale, ReportCardDefinition, ReportCardResult } from '$lib/types/report-cards';
+import type { Student } from '$lib/types/school';
 import type { ReportCardsPageSlice } from './lib/report-cards-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadClassReportCardResultsData } from '$lib/api/report-cards-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { nowIso } from '$lib/date/format';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
 import {
@@ -180,7 +181,7 @@ export class ReportCardsPageState {
 			studentId,
 			periodId,
 			reportCardDefinitionId: definitionId,
-			generatedAt: new Date().toISOString(),
+			generatedAt: nowIso(),
 		});
 		return true;
 	}
@@ -261,7 +262,7 @@ export class ReportCardsPageState {
 				studentId: existing.studentId,
 				periodId,
 				reportCardDefinitionId: existing.definitionId,
-				publishedAt: new Date().toISOString(),
+				publishedAt: nowIso(),
 			}),
 			successMessage: input.successMessage,
 			versionKeys: ['reportCards'],

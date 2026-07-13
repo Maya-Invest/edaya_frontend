@@ -1,19 +1,20 @@
 import type { SessionDetail, SessionLogbook, SessionSubjectMatterOption } from '$lib/types/session-detail';
+import type { TimetablePageState } from '../../../timetable-page.svelte';
 import { buildLessonSessionSavePayload } from '$lib/api/lesson-session-save-payload';
+import { findPlanningEventById } from '$lib/api/planning-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadPlanningOccurrenceDetail } from '$lib/api/session-detail-data';
+import { nowIso } from '$lib/date/format';
 import { t } from '$lib/i18n';
 import { queryClient } from '$lib/queries/client';
 import { getContext, setContext } from 'svelte';
 import { get } from 'svelte/store';
-import { findPlanningEventById } from '$lib/api/planning-data';
-import { runTimetableRouteMutation } from '../../../lib/timetable-route-mutation';
-import { resolveTimetablePageLoad } from '../../../lib/timetable-page-status';
 import {
 	sessionDetailIdFromUrl,
 	timetableClassIdFromUrl,
 } from '../../../lib/timetable-helpers';
-import type { TimetablePageState } from '../../../timetable-page.svelte';
+import { resolveTimetablePageLoad } from '../../../lib/timetable-page-status';
+import { runTimetableRouteMutation } from '../../../lib/timetable-route-mutation';
 
 const SESSION_LOGBOOK_TAB_KEY = Symbol('session-logbook-tab');
 
@@ -154,7 +155,7 @@ export class SessionLogbookTabState {
 					lessonSessionId: input.sessionId,
 					completedPercentage: input.progress,
 					notes: input.objectives.join('\n').trim() || null,
-					recordedAt: new Date().toISOString(),
+					recordedAt: nowIso(),
 				});
 			},
 			successMessage: input.successMessage ?? get(t)('planning.session.logbookSuccess'),

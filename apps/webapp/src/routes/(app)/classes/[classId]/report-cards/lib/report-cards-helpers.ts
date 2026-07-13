@@ -1,5 +1,5 @@
-import type { Student } from '$lib/types/school';
 import type { GradeScale, ReportCardDefinition, ReportCardResult } from '$lib/types/report-cards';
+import type { Student } from '$lib/types/school';
 
 export interface ReportCardsPageSlice {
 	classId: string;

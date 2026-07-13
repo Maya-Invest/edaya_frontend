@@ -5,8 +5,8 @@
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { t } from '$lib/i18n';
 	import { readCalendarListFilters } from '$lib/list/list-url-filters';
-	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
+	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
 	import {
 		CalendarPageState,
 		setCalendarPageState,

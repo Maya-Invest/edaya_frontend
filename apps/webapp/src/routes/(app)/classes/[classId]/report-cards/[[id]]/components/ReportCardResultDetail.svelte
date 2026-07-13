@@ -1,11 +1,11 @@
 <script lang="ts">
 	import type { ReportCardResult } from '$lib/types/report-cards';
-	import Button from '$lib/components/ui/button/button.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import { t } from '$lib/i18n';
-	import { get } from 'svelte/store';
 	import { formatGrade } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
+	import { get } from 'svelte/store';
 	import { getReportCardsPageState } from '../../report-cards-page.svelte';
 
 	const { result }: { result: ReportCardResult } = $props();
