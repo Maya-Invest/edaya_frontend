@@ -53,11 +53,11 @@ Each migrated unit is scored against these columns. Use **—** when the column 
 
 | Area | Total | ✅ Full | ⚠️ Partial | ⬜ |
 |------|-------|---------|------------|-----|
-| Routes | 30 | 10 | 0 | 20 |
+| Routes | 30 | 12 | 0 | 18 |
 | Smart components | 6 | 0 | 0 | 6 |
 | Foundation | 3 | 3 | — | — |
 
-**Next legacy-deletion blocker:** 20 routes + 6 smart components still ⬜.
+**Next legacy-deletion blocker:** 18 routes + 6 smart components still ⬜.
 
 ---
 
@@ -80,8 +80,8 @@ Primary tracker. **Notes** hold the remaining gap for ⚠️ rows.
 | `/classes/:id/timetable` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | **✅ Full** | `TimetablePlanningView` colocated under route components |
 | `/classes/:id/evaluations` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | **✅ Full** | `details` + `grading` tab routes; grading lazy-loads students/results |
 | `/classes/:id/students` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | **⬜** | |
-| `/classes/:id/teaching` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | **⬜** | `?tab=` today |
-| `/classes/:id/report-cards` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | **⬜** | |
+| `/classes/:id/teaching` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | **✅ Full** | `progression` + `logbook` tab routes; progression lazy-loads matter rows |
+| `/classes/:id/report-cards` | ✅ | ✅ | — | — | ✅ | ✅ | ✅ | **✅ Full** | Thin drawer; generate/publish on route state |
 | `/classes/:id/attendance` | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | **⬜** | |
 | `/finance/*` (3) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | **⬜** | fees, billing, payment |
 | `/configuration/*` (10) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | **⬜** | class/subject drawers use `?tab=` |
@@ -100,7 +100,7 @@ Primary tracker. **Notes** hold the remaining gap for ⚠️ rows.
 | `/classes/:id/evaluations` | `details`, `grading` |
 | `/configuration/classes` | `profile`, `assignments` (not migrated) |
 | `/configuration/subjects` | `progression`, `logbook` (not migrated) |
-| `/classes/:id/teaching` | `progression`, `logbook` (not migrated) |
+| `/classes/:id/teaching` | `progression`, `logbook` |
 
 </details>
 
@@ -114,6 +114,8 @@ Primary tracker. **Notes** hold the remaining gap for ⚠️ rows.
 | announcements | `announcements` |
 | timetable | `planning`, `teacherUnavailabilities` |
 | evaluations | `evaluations` |
+| teaching | `subjects`, `planning` |
+| report-cards | `reportCards`, `students` |
 | calendar | `schoolYearEvents` |
 
 </details>
@@ -199,7 +201,7 @@ Optional `[[id]]` before fixed tab paths can break `appPath` (timetable once res
 
 Add pathname regex to `usesRouteLocalDrawer()` in `(app)/+layout.svelte` so the global `DetailDrawer` does not open.
 
-Currently registered: students, guardians, staff, teachers, activities, announcements, events, class evaluations, class timetable.
+Currently registered: students, guardians, staff, teachers, activities, announcements, events, class evaluations, class timetable, class teaching, class report-cards.
 
 ---
 
@@ -254,6 +256,8 @@ Keep: `lib/components/school/shared/` (T2 chrome), `lib/api/mutations/` (slimmed
 
 | Date | Change |
 |------|--------|
+| 2026-07-12 | `/classes/:id/report-cards` migrated — local drawer, route state, colocated list + detail |
+| 2026-07-12 | `/classes/:id/teaching` migrated — local drawer, `progression` + `logbook` tab routes |
 | 2026-07-12 | `/school/events` migrated — local drawer, route state, colocated components |
 | 2026-07-12 | `/school/announcements` migrated — local drawer, route state, colocated components |
 | 2026-07-12 | Restructured doc: goal, pattern matrix, reference §5, progress dashboard; scored migrated routes against RS/NC/TR/TL/LD/VI/CO |

@@ -128,7 +128,9 @@
 			|| /^\/school\/announcements(?:\/|$)/.test(pathname)
 			|| /^\/school\/events(?:\/|$)/.test(pathname)
 			|| /^\/classes\/[^/]+\/evaluations(?:\/|$)/.test(pathname)
-			|| /^\/classes\/[^/]+\/timetable(?:\/|$)/.test(pathname);
+			|| /^\/classes\/[^/]+\/timetable(?:\/|$)/.test(pathname)
+			|| /^\/classes\/[^/]+\/teaching(?:\/|$)/.test(pathname)
+			|| /^\/classes\/[^/]+\/report-cards(?:\/|$)/.test(pathname);
 	}
 
 	$effect(() => {
