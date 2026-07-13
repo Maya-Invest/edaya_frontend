@@ -1,12 +1,12 @@
 # Data Import — Client-Side Implementation Plan
 
-> **Status:** Students MVP ✅ · Generic shell ✅ · Classes ✅ · Other packs planned  
+> **Status:** Students ✅ · Classes ✅ · Guardians ✅ · Staff ✅ · Teachers ✅ · Subjects/Chapters planned  
 > **Created:** 2026-07-11  
-> **Updated:** 2026-07-12 (politique vérification : lint/eslint en fin de track)  
+> **Updated:** 2026-07-12 (phases 8–11 livrées ; `subjectId` + préremplissage affectation enseignants)  
 > **Scope:** Frontend only — no new backend endpoints  
 > **Location:** Configuration → **Outils** (`/configuration/import`)  
-> **Active packs:** Students, Classes, Guardians (`.csv` + `.xlsx`)  
-> **Template-only packs:** Staff, Teachers, Subjects, Chapters
+> **Active packs:** Students, Guardians, Staff, Teachers, Classes (`.csv` + `.xlsx`)  
+> **Template-only packs:** Subjects, Chapters
 
 ---
 
@@ -23,7 +23,7 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 
 ---
 
-## Current state (2026-07-11)
+## Current state (2026-07-12)
 
 | Area | Status |
 |------|--------|
@@ -32,10 +32,14 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 | `DataImportModal` — 4-step wizard + type dropdown | ✅ |
 | Import type catalog (7 types, ordered) | ✅ |
 | Generic CSV/Excel template download | ✅ |
-| **Students** — parse / validate / run | ✅ |
+| **Students** — parse / validate / run (+ matricule persist) | ✅ |
 | **Classes** — parse / validate / run | ✅ |
-| **Other types** — template download only (`template_only`) | ✅ |
-| Unit tests (`tests/lib/import/*`) | ✅ 35 tests |
+| **Guardians** — parse / validate / run (+ `eleve_matricule` link) | ✅ |
+| **Staff** — parse / validate / run | ✅ |
+| **Teachers** — parse / validate / run (+ `subjectId` hint) | ✅ |
+| **Subjects / Chapters** — template download only (`template_only`) | ✅ |
+| Unit tests (`tests/lib/import/*`) | ✅ 74 tests |
+| `eslint --fix` + `lint` + `check` (phases 8–14) | ⏳ fin de track |
 
 ---
 
@@ -65,8 +69,8 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 | Phases 0–7 (students + shell) | `tests/lib/import/students/` | ✅ (fait avant politique) | 2026-07-11 |
 | PR5 — Phase 8 (classes) | `tests/lib/import/classes/` | — (reporté fin de track) | 2026-07-11 |
 | PR6 — Phase 9 (guardians) | `tests/lib/import/guardians/` | — (reporté fin de track) | 2026-07-12 |
-| PR7 — Phase 10 (staff) | `tests/lib/import/staff/` | — | |
-| PR8 — Phase 11 (teachers) | `tests/lib/import/teachers/` | — | |
+| PR7 — Phase 10 (staff) | `tests/lib/import/staff/` | — (reporté fin de track) | 2026-07-12 |
+| PR8 — Phase 11 (teachers) | `tests/lib/import/teachers/` (+ `tests/lib/teachers/pick-class-subject-for-teacher.test.ts`) | — (reporté fin de track) | 2026-07-12 |
 | PR9 — Phase 12 (subjects) | `tests/lib/import/subjects/` | — | |
 | PR10 — Phase 13 (chapters) | `tests/lib/import/chapters/` | — | |
 | PR11 — Phase 14 (polish) | tous les packs import | — | |
@@ -102,17 +106,19 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 
 ### Phase 10 — Staff import
 
-- [ ] 10.1 — `lib/import/staff/` parser + validator
-- [ ] 10.2 — Runner (`createStaffOnPage` pattern)
-- [ ] 10.3 — Role column validation / permission mapping
-- [ ] 10.4 — Wire modal; unit tests
+- [x] 10.1 — `lib/import/staff/` parser + validator
+- [x] 10.2 — Runner (`registerStaffMember`, no invitation)
+- [x] 10.3 — Role column: required + warning if unknown (assignment deferred)
+- [x] 10.4 — Wire modal; unit tests
 
 ### Phase 11 — Teachers import
 
-- [ ] 11.1 — `lib/import/teachers/` parser + validator
-- [ ] 11.2 — Runner (`createTeacherOnPage` pattern)
-- [ ] 11.3 — Resolve `matieres` → subject assignments
-- [ ] 11.4 — Wire modal; unit tests
+- [x] 11.1 — `lib/import/teachers/` parser + validator
+- [x] 11.2 — Runner (`saveTeacher`, no invitation)
+- [x] 11.3 — `matieres` → catalogue : warning si inconnu ; première matière → `teachers.save.subjectId`
+- [x] 11.4 — Wire modal; unit tests (14 tests pack teachers)
+- [x] 11.5 — Préremplissage affectation manuelle : `TeacherAssignmentFormModal` sélectionne la matière de classe via `teacher.subjectId`
+- [ ] 11.6 — Affectation auto complète (`teacherAssignments.save` + colonne `classe`) — reporté
 
 ### Phase 12 — Subjects import
 
@@ -132,7 +138,7 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 
 - [ ] 14.1 — Extract shared wizard logic from `DataImportModal` (optional)
 - [ ] 14.2 — Per-type permission gates in modal
-- [ ] 14.3 — Per-type "Voir les …" links on result step
+- [x] 14.3 — Per-type "Voir les …" links on result step (students, classes, guardians, staff, teachers)
 - [x] 14.4 — Shared `canImportValidatedRows` helper (`validRows.length > 0`, errors excluded)
 - [ ] 14.5 — E2E: modal, type switch, download each template
 
@@ -140,8 +146,8 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 
 - [x] PR5 — Phase 8 — Classes import
 - [x] PR6 — Phase 9 — Guardians import
-- [ ] PR7 — Phase 10 — Staff import
-- [ ] PR8 — Phase 11 — Teachers import
+- [x] PR7 — Phase 10 — Staff import
+- [x] PR8 — Phase 11 — Teachers import
 - [ ] PR9 — Phase 12 — Subjects import
 - [ ] PR10 — Phase 13 — Chapters import
 - [ ] PR11 — Phase 14 — polish + docs
@@ -224,10 +230,10 @@ Dropdown order (as implemented):
 | # | Key | Label (FR) | Status | Template files | Permission |
 |---|-----|------------|--------|----------------|------------|
 | 1 | `students` | Élèves | **active** | `eleves-template.csv/xlsx` | `STUDENT_CREATE` |
-| 2 | `guardians` | Tuteurs | template_only | `tuteurs-template.csv/xlsx` | `STUDENT_CREATE` |
-| 3 | `staff` | Personnel | template_only | `personnel-template.csv/xlsx` | `STAFF_CREATE` |
-| 4 | `teachers` | Enseignants | template_only | `enseignants-template.csv/xlsx` | `STAFF_CREATE` |
-| 5 | `classes` | Classes | template_only | `classes-template.csv/xlsx` | `SCHOOL_STRUCTURE_READ` |
+| 2 | `guardians` | Tuteurs | **active** | `tuteurs-template.csv/xlsx` | `STUDENT_CREATE` |
+| 3 | `staff` | Personnel | **active** | `personnel-template.csv/xlsx` | `STAFF_CREATE` |
+| 4 | `teachers` | Enseignants | **active** | `enseignants-template.csv/xlsx` | `STAFF_CREATE` |
+| 5 | `classes` | Classes | **active** | `classes-template.csv/xlsx` | `SCHOOL_STRUCTURE_READ` |
 | 6 | `subjects` | Matières | template_only | `matieres-template.csv/xlsx` | `SCHOOL_STRUCTURE_READ` |
 | 7 | `chapters` | Chapitres | template_only | `chapitres-template.csv/xlsx` | `SCHOOL_STRUCTURE_READ` |
 
@@ -248,12 +254,10 @@ edaya_web/apps/webapp/src/
       normalize-header.ts
       template-download.ts        # generic CSV/XLSX from catalog
     students/                     # ✅ complete
-      template.ts, parser.ts, validator.ts, runner.ts, types.ts
-      load-existing-matricules.ts
-    classes/                      # 🔜 planned
-    guardians/                    # 🔜 planned
-    staff/                        # 🔜 planned
-    teachers/                     # 🔜 planned
+    classes/                      # ✅ complete
+    guardians/                    # ✅ complete
+    staff/                        # ✅ complete
+    teachers/                     # ✅ complete (subjectId hint; class assignment manual)
     subjects/                     # 🔜 planned
     chapters/                     # 🔜 planned
 
@@ -267,13 +271,21 @@ edaya_web/apps/webapp/src/
   lib/students/
     register-and-enroll-student.ts
 
+  lib/teachers/
+    save-teacher.ts
+    pick-class-subject-for-teacher.ts   # préremplissage affectation manuelle
+
   routes/(app)/configuration/import/+page.svelte
 
 tests/lib/import/
-  students/                       # ✅ 19 tests
-  classes/                        # 🔜
-  guardians/                      # 🔜
-  ...
+  students/                       # ✅
+  classes/                        # ✅
+  guardians/                      # ✅
+  staff/                          # ✅
+  teachers/                       # ✅
+  shared/                         # ✅
+tests/lib/teachers/
+  pick-class-subject-for-teacher.test.ts  # ✅ (prefill affectation)
 ```
 
 ---
@@ -478,10 +490,10 @@ await client.commands.registerStaffMember({
 
 | ID | Task | Status |
 |----|------|--------|
-| 10.1 | `lib/import/staff/` parser + validator | [ ] |
-| 10.2 | Runner via `createStaffOnPage` pattern | [ ] |
-| 10.3 | Role column: validate or map to permission codes | [ ] |
-| 10.4 | Wire modal; unit tests | [ ] |
+| 10.1 | `lib/import/staff/` parser + validator | [x] |
+| 10.2 | Runner via `registerStaffMember` (no invitation) | [x] |
+| 10.3 | Role column: required + warning if unknown | [x] |
+| 10.4 | Wire modal; unit tests | [x] |
 
 ---
 
@@ -492,24 +504,28 @@ await client.commands.registerStaffMember({
 | `prenom` | yes | `teachers.save.firstName` | |
 | `nom` | yes | `teachers.save.lastName` | |
 | `email` | no | `teachers.save.email` | |
-| `matieres` | no | teacher assignments phase 2 | comma-separated subject names |
+| `matieres` | no | `teachers.save.subjectId` (1ère matière catalogue) | comma-separated ; affectation classe = manuelle |
 | `telephone` | no | `teachers.save.phone` | |
 
 **API (existing):**
 
 ```ts
 await client.entities.teachers.save({
-  id, schoolId, firstName, lastName, email, phone, isActive: true,
+  id, schoolId, firstName, lastName, email, phone, subjectId, isActive: true,
 });
-// Phase 2: saveTeacherAssignment per subject in `matieres`
+// subjectId = première matière reconnue dans `matieres` (hint pour affectation manuelle)
+// TeacherAssignmentFormModal pré-sélectionne classSubjectId quand la classe est choisie
+// Phase 2 (11.6): saveTeacherAssignment automatique si colonne `classe` ajoutée
 ```
 
 | ID | Task | Status |
 |----|------|--------|
-| 11.1 | `lib/import/teachers/` parser + validator | [ ] |
-| 11.2 | Runner via `createTeacherOnPage` pattern | [ ] |
-| 11.3 | Resolve `matieres` → subject IDs + assignments | [ ] |
-| 11.4 | Wire modal; unit tests | [ ] |
+| 11.1 | `lib/import/teachers/` parser + validator | [x] |
+| 11.2 | Runner via `saveTeacher` (no invitation) | [x] |
+| 11.3 | `matieres` → catalogue ; warning si inconnu ; `subjectId` persisté | [x] |
+| 11.4 | Wire modal; unit tests | [x] |
+| 11.5 | Préremplissage affectation manuelle via `teacher.subjectId` | [x] |
+| 11.6 | Affectation auto (`teacherAssignments.save` + `classe`) | [ ] |
 
 ---
 
@@ -575,7 +591,7 @@ await saveSubjectMatterMutation({
 |----|------|--------|
 | 14.1 | Extract shared wizard logic from `DataImportModal` (optional) | [ ] |
 | 14.2 | Per-type permission gates in modal (not just nav) | [ ] |
-| 14.3 | Per-type "Voir les …" links on result step | [ ] |
+| 14.3 | Per-type "Voir les …" links on result step | [x] |
 | 14.4 | Shared `canImportValidatedRows(validRows.length > 0)` helper | [x] |
 | 14.5 | E2E test: open modal, switch types, download each template | [ ] |
 
@@ -629,7 +645,7 @@ await saveSubjectMatterMutation({
 | `classe` | yes | resolved → `enrollStudent.classGroupId` | match class display name |
 | `date_naissance` | no | `registerStudent.birthDate` | `YYYY-MM-DD` |
 | `genre` | no | deferred | not sent in MVP |
-| `matricule` | no | validated only | not sent in MVP |
+| `matricule` | no | `updateStudentProfile.matricule` | after `registerStudent` + `enrollStudent` |
 
 **API per row:**
 
@@ -640,6 +656,10 @@ await client.commands.registerStudent({
 });
 await client.commands.enrollStudent({
   id: enrollmentId, studentId, classGroupId, createdAt: now,
+});
+// when matricule is present in the row:
+await client.commands.updateStudentProfile({
+  studentId, firstName, lastName, birthDate?, matricule,
 });
 ```
 
@@ -690,7 +710,7 @@ await client.commands.enrollStudent({
 ## Out of scope (entire track)
 
 - Backend `/core/import/*` bulk endpoints
-- `updateStudentProfile` for genre/matricule post-create
+- `updateStudentProfile` for genre post-create
 - Excel export of error report
 - Rollback / undo import
 - Account invitations on bulk import
@@ -716,13 +736,25 @@ await client.commands.enrollStudent({
 |----|---------|------|--------|
 | PR5 | Phase 8 — Classes import | 1.5 d | ✅ |
 | PR6 | Phase 9 — Guardians import | 2 d | ✅ |
-| PR7 | Phase 10 — Staff import | 1.5 d | [ ] |
-| PR8 | Phase 11 — Teachers import | 2 d | [ ] |
+| PR7 | Phase 10 — Staff import | 1.5 d | ✅ |
+| PR8 | Phase 11 — Teachers import | 2 d | ✅ |
 | PR9 | Phase 12 — Subjects import | 2 d | [ ] |
 | PR10 | Phase 13 — Chapters import | 2 d | [ ] |
 | PR11 | Phase 14 — polish + docs | 0.5 d | [ ] |
 
-**Remaining estimate:** ~11.5 days (6 packs + polish)
+**Remaining estimate:** ~4.5 days (subjects + chapters + polish)
+
+### Progression track (phases 8–14)
+
+| Phase | Pack | Statut |
+|-------|------|--------|
+| 8 | Classes | ✅ |
+| 9 | Guardians (Tuteurs) | ✅ |
+| 10 | Staff | ✅ |
+| 11 | Teachers (+ `subjectId` hint) | ✅ |
+| 12 | Subjects | ⏳ |
+| 13 | Chapters | ⏳ |
+| 14 | Polish + lint/check global | ⏳ |
 
 ---
 
@@ -737,7 +769,7 @@ await client.commands.enrollStudent({
 - [x] Row-level validation before import
 - [x] Import via `registerStudent` + `enrollStudent`
 - [x] Progress and result summary
-- [x] Unit tests (students: 19 · classes: 16 · total import: 35)
+- [x] Unit tests (import: **74** across 21 files · students matricule · teachers `subjectId` · pick-class-subject)
 - [x] Lint/check vert en fin de phase 0–7 (phases 8+ : voir fin de track)
 - [x] No backend changes
 
@@ -752,9 +784,11 @@ await client.commands.enrollStudent({
 
 - [x] Classes import active
 - [x] Guardians import active (+ student link)
-- [ ] Staff import active
-- [ ] Teachers import active (+ subject assignments)
+- [x] Staff import active
+- [x] Teachers import active (+ `subjectId` hint ; affectation classe manuelle)
 - [ ] Subjects import active
 - [ ] Chapters import active
+- [ ] Affectation enseignant auto à l'import (phase 11.6 — optionnel)
 - [ ] Manual QA matrix G1–G5 + per-pack matrices
+- [ ] `eslint --fix` + `lint` + `check` globaux (fin de track)
 - [ ] `remaining-work-plan.md` updated

@@ -49,6 +49,7 @@ export async function runStudentImport(options: StudentImportRunOptions): Promis
 				lastName: row.nom,
 				classGroupId: row.classGroupId,
 				birthDate: row.date_naissance,
+				matricule: row.matricule,
 				sendAccountInvitation: false,
 				createdAt,
 			});

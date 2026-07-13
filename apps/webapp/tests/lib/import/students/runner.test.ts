@@ -21,6 +21,7 @@ describe('student import runner', () => {
 	it('registers and enrolls each valid row sequentially', async () => {
 		const registerStudent = mock(async () => {});
 		const enrollStudent = mock(async () => {});
+		const updateStudentProfile = mock(async () => {});
 		const progress: Array<{ current: number; total: number }> = [];
 
 		const result = await runStudentImport({
@@ -30,6 +31,7 @@ describe('student import runner', () => {
 				commands: {
 					registerStudent,
 					enrollStudent,
+					updateStudentProfile,
 				},
 			} as never,
 			rows: [
@@ -46,6 +48,7 @@ describe('student import runner', () => {
 		expect(result.studentIds).toEqual(['stu-testseed-0', 'stu-testseed-1']);
 		expect(registerStudent).toHaveBeenCalledTimes(2);
 		expect(enrollStudent).toHaveBeenCalledTimes(2);
+		expect(updateStudentProfile).not.toHaveBeenCalled();
 		expect(enrollStudent).toHaveBeenNthCalledWith(2, expect.objectContaining({
 			studentId: 'stu-testseed-1',
 			classGroupId: 'class-6b',
@@ -58,6 +61,7 @@ describe('student import runner', () => {
 		const enrollStudent = mock(async () => {
 			throw new Error('Class group ci-6a has reached capacity');
 		});
+		const updateStudentProfile = mock(async () => {});
 
 		const result = await runStudentImport({
 			schoolId: 'school-1',
@@ -66,6 +70,7 @@ describe('student import runner', () => {
 				commands: {
 					registerStudent,
 					enrollStudent,
+					updateStudentProfile,
 				},
 			} as never,
 			rows: [row({ rowIndex: 8, prenom: 'Fatim', nom: 'Cissé', classe: '6ème A', classGroupId: 'ci-6a' })],
@@ -84,6 +89,7 @@ describe('student import runner', () => {
 			}
 		});
 		const enrollStudent = mock(async () => {});
+		const updateStudentProfile = mock(async () => {});
 
 		const result = await runStudentImport({
 			schoolId: 'school-1',
@@ -92,6 +98,7 @@ describe('student import runner', () => {
 				commands: {
 					registerStudent,
 					enrollStudent,
+					updateStudentProfile,
 				},
 			} as never,
 			rows: [
@@ -104,5 +111,37 @@ describe('student import runner', () => {
 		expect(result.failed).toHaveLength(1);
 		expect(result.failed[0]?.rowIndex).toBe(3);
 		expect(result.failed[0]?.message).toContain('Enrollment conflict');
+	});
+
+	it('persists matricule via updateStudentProfile when provided', async () => {
+		const registerStudent = mock(async () => {});
+		const enrollStudent = mock(async () => {});
+		const updateStudentProfile = mock(async () => {});
+
+		const result = await runStudentImport({
+			schoolId: 'school-1',
+			seed: 'matricule',
+			client: {
+				commands: {
+					registerStudent,
+					enrollStudent,
+					updateStudentProfile,
+				},
+			} as never,
+			rows: [
+				row({ rowIndex: 2, matricule: 'MAT-2024-001' }),
+				row({ rowIndex: 3, prenom: 'Marie', nom: 'Kouassi' }),
+			],
+		});
+
+		expect(result.created).toBe(2);
+		expect(updateStudentProfile).toHaveBeenCalledTimes(1);
+		expect(updateStudentProfile).toHaveBeenCalledWith({
+			studentId: 'stu-matricule-0',
+			firstName: 'Jean',
+			lastName: 'Dupont',
+			birthDate: null,
+			matricule: 'MAT-2024-001',
+		});
 	});
 });

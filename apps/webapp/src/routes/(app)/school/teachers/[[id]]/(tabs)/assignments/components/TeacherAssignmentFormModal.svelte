@@ -8,6 +8,7 @@
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
+	import { pickClassSubjectIdForTeacherSubject } from '$lib/teachers/pick-class-subject-for-teacher';
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
 	import { createTeacherAssignmentPayload } from '../../../../lib/teacher-detail-mutations';
@@ -68,6 +69,7 @@
 			const name = subjects.find(subject => subject.id === entry.subjectId)?.name ?? entry.id;
 			return [entry.id, name];
 		}));
+		classSubjectId = pickClassSubjectIdForTeacherSubject(nextClassSubjects, teacher.subjectId);
 	}
 
 	$effect(() => {

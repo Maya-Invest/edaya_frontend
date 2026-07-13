@@ -43,7 +43,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each issues as issue (issue.rowIndex + (issue.column ?? '') + issue.messageKey)}
+					{#each issues as issue (issue.rowIndex + (issue.column ?? '') + issue.messageKey + (issue.value ?? ''))}
 						<tr class="border-t border-border align-top">
 							<td class="px-3 py-2 font-mono text-xs">{issue.rowIndex}</td>
 							<td class="px-3 py-2">

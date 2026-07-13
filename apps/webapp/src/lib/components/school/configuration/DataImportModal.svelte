@@ -4,6 +4,10 @@
 	import type { ClassImportRow, ClassImportValidationResult } from '$lib/import/classes/types';
 	import type { GuardianImportRunResult } from '$lib/import/guardians/runner';
 	import type { GuardianImportRow, GuardianImportValidationResult } from '$lib/import/guardians/types';
+	import type { StaffImportRunResult } from '$lib/import/staff/runner';
+	import type { StaffImportRow, StaffImportValidationResult } from '$lib/import/staff/types';
+	import type { TeacherImportRunResult } from '$lib/import/teachers/runner';
+	import type { TeacherImportRow, TeacherImportValidationResult } from '$lib/import/teachers/types';
 	import type { StudentMatriculeEntry } from '$lib/import/shared/load-student-matricule-index';
 	import type { StudentImportRunResult } from '$lib/import/students/runner';
 	import type { StudentImportRow, StudentImportValidationResult } from '$lib/import/students/types';
@@ -18,6 +22,8 @@
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import { notifyGuardiansListChanged } from '$lib/guardians/notify-guardians-list-changed';
+	import { notifyStaffListChanged } from '$lib/staff/notify-staff-list-changed';
+	import { notifyTeachersListChanged } from '$lib/teachers/notify-teachers-list-changed';
 	import { t } from '$lib/i18n';
 	import { Download, FileSpreadsheet, LoaderCircle } from '$lib/icons';
 	import {
@@ -36,9 +42,23 @@
 		canImportValidatedGuardians,
 		validateGuardianImportRows,
 	} from '$lib/import/guardians/validator';
+	import { parseStaffImportFile } from '$lib/import/staff/parser';
+	import { runStaffImport } from '$lib/import/staff/runner';
+	import {
+		canImportValidatedStaff,
+		validateStaffImportRows,
+	} from '$lib/import/staff/validator';
+	import { parseTeacherImportFile } from '$lib/import/teachers/parser';
+	import { runTeacherImport } from '$lib/import/teachers/runner';
+	import {
+		canImportValidatedTeachers,
+		validateTeacherImportRows,
+	} from '$lib/import/teachers/validator';
 	import {
 		loadStudentMatriculeIndex,
 	} from '$lib/import/shared/load-student-matricule-index';
+	import { loadSchoolSubjectCatalog } from '$lib/import/shared/load-school-subject-names';
+	import type { SchoolSubjectCatalogEntry } from '$lib/import/shared/load-school-subject-names';
 	import {
 		downloadImportCsvTemplate,
 		downloadImportExcelTemplate,
@@ -83,6 +103,18 @@
 		empty_file: 'import.guardians.emptyFile',
 	};
 
+	const STAFF_PARSE_ERROR_KEYS: Record<string, string> = {
+		unsupported_format: 'import.staff.unsupportedFormat',
+		file_too_large: 'import.staff.fileTooLarge',
+		empty_file: 'import.staff.emptyFile',
+	};
+
+	const TEACHER_PARSE_ERROR_KEYS: Record<string, string> = {
+		unsupported_format: 'import.teachers.unsupportedFormat',
+		file_too_large: 'import.teachers.fileTooLarge',
+		empty_file: 'import.teachers.emptyFile',
+	};
+
 	const STUDENT_COLUMN_LABEL_KEYS: Record<string, string> = {
 		prenom: 'import.students.columns.prenom',
 		nom: 'import.students.columns.nom',
@@ -106,6 +138,22 @@
 		eleve_matricule: 'import.types.guardians.columns.eleve_matricule',
 	};
 
+	const STAFF_COLUMN_LABEL_KEYS: Record<string, string> = {
+		prenom: 'import.types.staff.columns.prenom',
+		nom: 'import.types.staff.columns.nom',
+		email: 'import.types.staff.columns.email',
+		role: 'import.types.staff.columns.role',
+		telephone: 'import.types.staff.columns.telephone',
+	};
+
+	const TEACHER_COLUMN_LABEL_KEYS: Record<string, string> = {
+		prenom: 'import.types.teachers.columns.prenom',
+		nom: 'import.types.teachers.columns.nom',
+		email: 'import.types.teachers.columns.email',
+		matieres: 'import.types.teachers.columns.matieres',
+		telephone: 'import.types.teachers.columns.telephone',
+	};
+
 	let {
 		open = $bindable(false),
 		initialImportType = 'students',
@@ -120,29 +168,43 @@
 	let studentParsedRows = $state<StudentImportRow[]>([]);
 	let classParsedRows = $state<ClassImportRow[]>([]);
 	let guardianParsedRows = $state<GuardianImportRow[]>([]);
+	let staffParsedRows = $state<StaffImportRow[]>([]);
+	let teacherParsedRows = $state<TeacherImportRow[]>([]);
 	let parseErrorMessage = $state('');
 	let parsing = $state(false);
 	let studentValidationResult = $state<StudentImportValidationResult | null>(null);
 	let classValidationResult = $state<ClassImportValidationResult | null>(null);
 	let guardianValidationResult = $state<GuardianImportValidationResult | null>(null);
+	let staffValidationResult = $state<StaffImportValidationResult | null>(null);
+	let teacherValidationResult = $state<TeacherImportValidationResult | null>(null);
 	let studentMatriculeIndex = $state<Map<string, StudentMatriculeEntry>>(new Map());
 	let existingMatricules = $state<Set<string>>(new Set());
 	let loadingMatricules = $state(false);
+	let subjectCatalog = $state<SchoolSubjectCatalogEntry[]>([]);
+	let loadingSubjectNames = $state(false);
 	let importing = $state(false);
 	let importProgress = $state({ current: 0, total: 0 });
 	let studentImportResult = $state<StudentImportRunResult | null>(null);
 	let classImportResult = $state<ClassImportRunResult | null>(null);
 	let guardianImportResult = $state<GuardianImportRunResult | null>(null);
+	let staffImportResult = $state<StaffImportRunResult | null>(null);
+	let teacherImportResult = $state<TeacherImportRunResult | null>(null);
 	let importFatalError = $state('');
 
 	const studentsHref = appPath('/(app)/school/students/[[id]]');
 	const classesHref = appPath('/(app)/configuration/classes/[[id]]');
 	const guardiansHref = appPath('/(app)/school/guardians/[[id]]');
+	const staffHref = appPath('/(app)/school/staff/[[id]]');
+	const teachersHref = appPath('/(app)/school/teachers/[[id]]');
 	const selectedDefinition = $derived(getImportTypeDefinition(selectedImportType));
 	const isStudentsImport = $derived(selectedImportType === 'students');
 	const isClassesImport = $derived(selectedImportType === 'classes');
 	const isGuardiansImport = $derived(selectedImportType === 'guardians');
-	const isWiredImport = $derived(isStudentsImport || isClassesImport || isGuardiansImport);
+	const isStaffImport = $derived(selectedImportType === 'staff');
+	const isTeachersImport = $derived(selectedImportType === 'teachers');
+	const isWiredImport = $derived(
+		isStudentsImport || isClassesImport || isGuardiansImport || isStaffImport || isTeachersImport,
+	);
 	const isActiveImport = $derived(selectedDefinition.status === 'active');
 	const selectedImportTypeLabel = $derived($t(selectedDefinition.labelKey));
 
@@ -151,6 +213,8 @@
 	const studentPreviewRows = $derived(studentParsedRows.slice(0, 3));
 	const classPreviewRows = $derived(classParsedRows.slice(0, 3));
 	const guardianPreviewRows = $derived(guardianParsedRows.slice(0, 3));
+	const staffPreviewRows = $derived(staffParsedRows.slice(0, 3));
+	const teacherPreviewRows = $derived(teacherParsedRows.slice(0, 3));
 	const parsedRowCount = $derived.by(() => {
 		if (isStudentsImport) {
 			return studentParsedRows.length;
@@ -158,7 +222,13 @@
 		if (isClassesImport) {
 			return classParsedRows.length;
 		}
-		return guardianParsedRows.length;
+		if (isGuardiansImport) {
+			return guardianParsedRows.length;
+		}
+		if (isStaffImport) {
+			return staffParsedRows.length;
+		}
+		return teacherParsedRows.length;
 	});
 	const canGoToUpload = $derived.by(() => {
 		if (!isActiveImport) {
@@ -178,6 +248,8 @@
 	const canStartStudentImport = $derived(canImportValidatedStudents(studentValidationResult));
 	const canStartClassImport = $derived(canImportValidatedClasses(classValidationResult));
 	const canStartGuardianImport = $derived(canImportValidatedGuardians(guardianValidationResult));
+	const canStartStaffImport = $derived(canImportValidatedStaff(staffValidationResult));
+	const canStartTeacherImport = $derived(canImportValidatedTeachers(teacherValidationResult));
 	const canStartImport = $derived.by(() => {
 		if (isStudentsImport) {
 			return canStartStudentImport;
@@ -188,6 +260,12 @@
 		if (isGuardiansImport) {
 			return canStartGuardianImport;
 		}
+		if (isStaffImport) {
+			return canStartStaffImport;
+		}
+		if (isTeachersImport) {
+			return canStartTeacherImport;
+		}
 		return false;
 	});
 	const activeValidationResult = $derived.by(() => {
@@ -197,7 +275,13 @@
 		if (isClassesImport) {
 			return classValidationResult;
 		}
-		return guardianValidationResult;
+		if (isGuardiansImport) {
+			return guardianValidationResult;
+		}
+		if (isStaffImport) {
+			return staffValidationResult;
+		}
+		return teacherValidationResult;
 	});
 	const activeValidRowCount = $derived(activeValidationResult?.validRows.length ?? 0);
 	const studentValidationIssues = $derived([
@@ -212,6 +296,29 @@
 		...(guardianValidationResult?.errors ?? []),
 		...(guardianValidationResult?.warnings ?? []),
 	]);
+	const staffValidationIssues = $derived([
+		...(staffValidationResult?.errors ?? []),
+		...(staffValidationResult?.warnings ?? []),
+	]);
+	const teacherValidationIssues = $derived([
+		...(teacherValidationResult?.errors ?? []),
+		...(teacherValidationResult?.warnings ?? []),
+	]);
+	const importReadyLabel = $derived.by(() => {
+		if (isStudentsImport) {
+			return $t('import.students.importReady', { n: activeValidRowCount });
+		}
+		if (isClassesImport) {
+			return $t('import.classes.importReady', { n: activeValidRowCount });
+		}
+		if (isGuardiansImport) {
+			return $t('import.guardians.importReady', { n: activeValidRowCount });
+		}
+		if (isStaffImport) {
+			return $t('import.staff.importReady', { n: activeValidRowCount });
+		}
+		return $t('import.teachers.importReady', { n: activeValidRowCount });
+	});
 	const showStudentsPrerequisite = $derived(
 		isStudentsImport && step === 'download' && !hasClasses,
 	);
@@ -225,19 +332,26 @@
 		studentParsedRows = [];
 		classParsedRows = [];
 		guardianParsedRows = [];
+		staffParsedRows = [];
+		teacherParsedRows = [];
 		parseErrorMessage = '';
 		parsing = false;
 		studentValidationResult = null;
 		classValidationResult = null;
 		guardianValidationResult = null;
+		staffValidationResult = null;
+		teacherValidationResult = null;
 		importing = false;
 		importProgress = { current: 0, total: 0 };
 		studentImportResult = null;
 		classImportResult = null;
 		guardianImportResult = null;
+		staffImportResult = null;
+		teacherImportResult = null;
 		importFatalError = '';
 		studentMatriculeIndex = new Map();
 		existingMatricules = new Set();
+		subjectCatalog = [];
 	}
 
 	function handleOpenChange(next: boolean) {
@@ -246,6 +360,7 @@
 			selectedImportType = initialImportType;
 			resetWizard();
 			void loadStudentMatriculeDataIfNeeded();
+			void loadSubjectNamesIfNeeded();
 			return;
 		}
 		resetWizard();
@@ -259,6 +374,7 @@
 		selectedImportType = importType;
 		resetWizard();
 		void loadStudentMatriculeDataIfNeeded();
+		void loadSubjectNamesIfNeeded();
 	}
 
 	function stepIndex(value: ImportStep): number {
@@ -267,7 +383,13 @@
 
 	function formatParseError(message: string): string {
 		let keyMap = STUDENT_PARSE_ERROR_KEYS;
-		if (isGuardiansImport) {
+		if (isTeachersImport) {
+			keyMap = TEACHER_PARSE_ERROR_KEYS;
+		}
+		else if (isStaffImport) {
+			keyMap = STAFF_PARSE_ERROR_KEYS;
+		}
+		else if (isGuardiansImport) {
 			keyMap = GUARDIAN_PARSE_ERROR_KEYS;
 		}
 		else if (isClassesImport) {
@@ -281,10 +403,14 @@
 		studentParsedRows = [];
 		classParsedRows = [];
 		guardianParsedRows = [];
+		staffParsedRows = [];
+		teacherParsedRows = [];
 		parseErrorMessage = '';
 		studentValidationResult = null;
 		classValidationResult = null;
 		guardianValidationResult = null;
+		staffValidationResult = null;
+		teacherValidationResult = null;
 	}
 
 	async function loadStudentMatriculeDataIfNeeded() {
@@ -305,6 +431,25 @@
 		}
 		finally {
 			loadingMatricules = false;
+		}
+	}
+
+	async function loadSubjectNamesIfNeeded() {
+		if (!isTeachersImport) {
+			return;
+		}
+		if (loadingSubjectNames || subjectCatalog.length > 0) {
+			return;
+		}
+		loadingSubjectNames = true;
+		try {
+			subjectCatalog = await loadSchoolSubjectCatalog();
+		}
+		catch {
+			subjectCatalog = [];
+		}
+		finally {
+			loadingSubjectNames = false;
 		}
 	}
 
@@ -339,11 +484,24 @@
 			guardianValidationResult = validateGuardianImportRows(guardianParsedRows, {
 				studentMatricules: studentMatriculeIndex,
 			});
+			return;
+		}
+
+		if (isStaffImport) {
+			staffValidationResult = validateStaffImportRows(staffParsedRows);
+			return;
+		}
+
+		if (isTeachersImport) {
+			teacherValidationResult = validateTeacherImportRows(teacherParsedRows, {
+				subjectCatalog,
+			});
 		}
 	}
 
 	async function goToValidateStep() {
 		await loadStudentMatriculeDataIfNeeded();
+		await loadSubjectNamesIfNeeded();
 		runValidation();
 		step = 'validate';
 	}
@@ -488,6 +646,88 @@
 		}
 	}
 
+	async function startStaffImport() {
+		if (!staffValidationResult || !canStartStaffImport || importing) {
+			return;
+		}
+
+		const schoolId = authSession.schoolId;
+		if (!schoolId) {
+			return;
+		}
+
+		importing = true;
+		staffImportResult = null;
+		importFatalError = '';
+		importProgress = { current: 0, total: staffValidationResult.validRows.length };
+		step = 'execute';
+
+		try {
+			staffImportResult = await runStaffImport({
+				schoolId,
+				client: getBrowserSchoolClient(),
+				rows: staffValidationResult.validRows,
+				onProgress: (current, total) => {
+					importProgress = { current, total };
+				},
+			});
+		}
+		catch (error) {
+			importFatalError = error instanceof Error && error.message.trim().length > 0
+				? error.message
+				: get(t)('import.staff.importFailed');
+			staffImportResult = {
+				created: 0,
+				failed: [],
+				staffIds: [],
+			};
+		}
+		finally {
+			importing = false;
+		}
+	}
+
+	async function startTeacherImport() {
+		if (!teacherValidationResult || !canStartTeacherImport || importing) {
+			return;
+		}
+
+		const schoolId = authSession.schoolId;
+		if (!schoolId) {
+			return;
+		}
+
+		importing = true;
+		teacherImportResult = null;
+		importFatalError = '';
+		importProgress = { current: 0, total: teacherValidationResult.validRows.length };
+		step = 'execute';
+
+		try {
+			teacherImportResult = await runTeacherImport({
+				schoolId,
+				client: getBrowserSchoolClient(),
+				rows: teacherValidationResult.validRows,
+				onProgress: (current, total) => {
+					importProgress = { current, total };
+				},
+			});
+		}
+		catch (error) {
+			importFatalError = error instanceof Error && error.message.trim().length > 0
+				? error.message
+				: get(t)('import.teachers.importFailed');
+			teacherImportResult = {
+				created: 0,
+				failed: [],
+				teacherIds: [],
+			};
+		}
+		finally {
+			importing = false;
+		}
+	}
+
 	async function startImport() {
 		if (isStudentsImport) {
 			await startStudentImport();
@@ -499,6 +739,14 @@
 		}
 		if (isGuardiansImport) {
 			await startGuardianImport();
+			return;
+		}
+		if (isStaffImport) {
+			await startStaffImport();
+			return;
+		}
+		if (isTeachersImport) {
+			await startTeacherImport();
 		}
 	}
 
@@ -545,10 +793,38 @@
 					parseErrorMessage = get(t)('import.guardians.emptyFile');
 				}
 			}
+			else if (isStaffImport) {
+				const result = await parseStaffImportFile(file);
+				staffParsedRows = result.rows;
+
+				if (result.errors.length > 0) {
+					parseErrorMessage = formatParseError(result.errors[0]?.message ?? 'parse_error');
+				}
+				else if (result.rows.length === 0) {
+					parseErrorMessage = get(t)('import.staff.emptyFile');
+				}
+			}
+			else if (isTeachersImport) {
+				const result = await parseTeacherImportFile(file);
+				teacherParsedRows = result.rows;
+
+				if (result.errors.length > 0) {
+					parseErrorMessage = formatParseError(result.errors[0]?.message ?? 'parse_error');
+				}
+				else if (result.rows.length === 0) {
+					parseErrorMessage = get(t)('import.teachers.emptyFile');
+				}
+			}
 		}
 		catch {
 			let unsupportedFormatKey = 'import.students.unsupportedFormat';
-			if (isGuardiansImport) {
+			if (isTeachersImport) {
+				unsupportedFormatKey = 'import.teachers.unsupportedFormat';
+			}
+			else if (isStaffImport) {
+				unsupportedFormatKey = 'import.staff.unsupportedFormat';
+			}
+			else if (isGuardiansImport) {
 				unsupportedFormatKey = 'import.guardians.unsupportedFormat';
 			}
 			else if (isClassesImport) {
@@ -817,6 +1093,90 @@
 						</div>
 					{/if}
 				</section>
+			{:else if isStaffImport && step === 'upload'}
+				<section class="space-y-4" data-testid="staff-import-step-upload">
+					<p class="text-sm text-muted-foreground">{$t('import.staff.uploadHint')}</p>
+
+					<ImportFileDropzone
+						disabled={parsing}
+						errorMessage={parseErrorMessage}
+						{selectedFileName}
+						onFileSelected={handleFileSelected}
+					/>
+
+					{#if parsing}
+						<div class="flex items-center gap-2 text-sm text-muted-foreground" data-testid="staff-import-parsing">
+							<LoaderCircle class="size-4 animate-spin" aria-hidden="true" />
+							{$t('import.staff.parsing')}
+						</div>
+					{:else if staffParsedRows.length > 0}
+						<div class="rounded-xl border border-border bg-secondary/20 p-4" data-testid="staff-import-parse-success">
+							<p class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+								{$t('import.staff.parseSuccess', { n: staffParsedRows.length })}
+							</p>
+
+							{#if staffPreviewRows.length > 0}
+								<p class="mt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+									{$t('import.staff.parseRowPreview')}
+								</p>
+								<ul class="mt-2 space-y-1 text-sm">
+									{#each staffPreviewRows as row (row.rowIndex)}
+										<li>
+											<span class="font-mono text-xs text-muted-foreground">L{row.rowIndex}</span>
+											<span class="mx-2">·</span>
+											{row.prenom} {row.nom}
+											<span class="mx-2 text-muted-foreground">·</span>
+											{row.role}
+										</li>
+									{/each}
+								</ul>
+							{/if}
+						</div>
+					{/if}
+				</section>
+			{:else if isTeachersImport && step === 'upload'}
+				<section class="space-y-4" data-testid="teacher-import-step-upload">
+					<p class="text-sm text-muted-foreground">{$t('import.teachers.uploadHint')}</p>
+
+					<ImportFileDropzone
+						disabled={parsing}
+						errorMessage={parseErrorMessage}
+						{selectedFileName}
+						onFileSelected={handleFileSelected}
+					/>
+
+					{#if parsing}
+						<div class="flex items-center gap-2 text-sm text-muted-foreground" data-testid="teacher-import-parsing">
+							<LoaderCircle class="size-4 animate-spin" aria-hidden="true" />
+							{$t('import.teachers.parsing')}
+						</div>
+					{:else if teacherParsedRows.length > 0}
+						<div class="rounded-xl border border-border bg-secondary/20 p-4" data-testid="teacher-import-parse-success">
+							<p class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+								{$t('import.teachers.parseSuccess', { n: teacherParsedRows.length })}
+							</p>
+
+							{#if teacherPreviewRows.length > 0}
+								<p class="mt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+									{$t('import.teachers.parseRowPreview')}
+								</p>
+								<ul class="mt-2 space-y-1 text-sm">
+									{#each teacherPreviewRows as row (row.rowIndex)}
+										<li>
+											<span class="font-mono text-xs text-muted-foreground">L{row.rowIndex}</span>
+											<span class="mx-2">·</span>
+											{row.prenom} {row.nom}
+											{#if row.matieres?.trim()}
+												<span class="mx-2 text-muted-foreground">·</span>
+												{row.matieres}
+											{/if}
+										</li>
+									{/each}
+								</ul>
+							{/if}
+						</div>
+					{/if}
+				</section>
 			{:else if isStudentsImport && step === 'validate' && studentValidationResult}
 				<section class="space-y-4" data-testid="student-import-step-validate">
 					<div class="grid gap-2 sm:grid-cols-3">
@@ -874,6 +1234,46 @@
 						issues={guardianValidationIssues}
 						columnLabelKeys={GUARDIAN_COLUMN_LABEL_KEYS}
 						suggestionsKey="import.guardians.validation.suggestions"
+					/>
+				</section>
+			{:else if isStaffImport && step === 'validate' && staffValidationResult}
+				<section class="space-y-4" data-testid="staff-import-step-validate">
+					<div class="grid gap-2 sm:grid-cols-3">
+						<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
+							{$t('import.staff.validation.summaryReady', { n: staffValidationResult.validRows.length })}
+						</p>
+						<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+							{$t('import.staff.validation.summaryErrors', { n: staffValidationResult.errors.length })}
+						</p>
+						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
+							{$t('import.staff.validation.summaryWarnings', { n: staffValidationResult.warnings.length })}
+						</p>
+					</div>
+
+					<ImportValidationTable
+						issues={staffValidationIssues}
+						columnLabelKeys={STAFF_COLUMN_LABEL_KEYS}
+						suggestionsKey="import.staff.validation.suggestions"
+					/>
+				</section>
+			{:else if isTeachersImport && step === 'validate' && teacherValidationResult}
+				<section class="space-y-4" data-testid="teacher-import-step-validate">
+					<div class="grid gap-2 sm:grid-cols-3">
+						<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
+							{$t('import.teachers.validation.summaryReady', { n: teacherValidationResult.validRows.length })}
+						</p>
+						<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+							{$t('import.teachers.validation.summaryErrors', { n: teacherValidationResult.errors.length })}
+						</p>
+						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
+							{$t('import.teachers.validation.summaryWarnings', { n: teacherValidationResult.warnings.length })}
+						</p>
+					</div>
+
+					<ImportValidationTable
+						issues={teacherValidationIssues}
+						columnLabelKeys={TEACHER_COLUMN_LABEL_KEYS}
+						suggestionsKey="import.teachers.validation.suggestions"
 					/>
 				</section>
 			{:else if isStudentsImport && step === 'execute'}
@@ -1038,6 +1438,114 @@
 						<p class="text-sm text-muted-foreground">{$t('import.guardians.resultUnexpected')}</p>
 					{/if}
 				</section>
+			{:else if isStaffImport && step === 'execute'}
+				<section class="space-y-4" data-testid="staff-import-step-execute">
+					{#if importing}
+						<p class="text-sm text-muted-foreground">{$t('import.staff.executing')}</p>
+						<ImportProgressBar
+							current={importProgress.current}
+							total={importProgress.total}
+							label={$t('import.staff.executeProgress', {
+								current: importProgress.current,
+								total: importProgress.total,
+							})}
+						/>
+					{:else if staffImportResult}
+						<div class="space-y-3">
+							<h3 class="text-sm font-semibold">{$t('import.staff.resultTitle')}</h3>
+							{#if importFatalError}
+								<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+									{importFatalError}
+								</p>
+							{/if}
+							<div class="grid gap-2 sm:grid-cols-2">
+								<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
+									{$t('import.staff.resultCreated', { n: staffImportResult.created })}
+								</p>
+								<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+									{$t('import.staff.resultFailed', { n: staffImportResult.failed.length })}
+								</p>
+							</div>
+
+							{#if staffImportResult.created === 0 && staffImportResult.failed.length === 0 && !importFatalError}
+								<p class="text-sm text-muted-foreground">{$t('import.staff.resultNothing')}</p>
+							{/if}
+
+							{#if staffImportResult.failed.length > 0}
+								<div class="rounded-xl border border-border bg-secondary/20 p-4">
+									<p class="mb-2 text-sm font-semibold">{$t('import.staff.resultFailures')}</p>
+									<ul class="space-y-2 text-sm">
+										{#each staffImportResult.failed as failure (failure.rowIndex + failure.staffName)}
+											<li>
+												<span class="font-mono text-xs text-muted-foreground">L{failure.rowIndex}</span>
+												<span class="mx-2">·</span>
+												{failure.staffName}
+												<span class="mx-2 text-muted-foreground">—</span>
+												{failure.message}
+											</li>
+										{/each}
+									</ul>
+								</div>
+							{/if}
+						</div>
+					{:else}
+						<p class="text-sm text-muted-foreground">{$t('import.staff.resultUnexpected')}</p>
+					{/if}
+				</section>
+			{:else if isTeachersImport && step === 'execute'}
+				<section class="space-y-4" data-testid="teacher-import-step-execute">
+					{#if importing}
+						<p class="text-sm text-muted-foreground">{$t('import.teachers.executing')}</p>
+						<ImportProgressBar
+							current={importProgress.current}
+							total={importProgress.total}
+							label={$t('import.teachers.executeProgress', {
+								current: importProgress.current,
+								total: importProgress.total,
+							})}
+						/>
+					{:else if teacherImportResult}
+						<div class="space-y-3">
+							<h3 class="text-sm font-semibold">{$t('import.teachers.resultTitle')}</h3>
+							{#if importFatalError}
+								<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+									{importFatalError}
+								</p>
+							{/if}
+							<div class="grid gap-2 sm:grid-cols-2">
+								<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
+									{$t('import.teachers.resultCreated', { n: teacherImportResult.created })}
+								</p>
+								<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+									{$t('import.teachers.resultFailed', { n: teacherImportResult.failed.length })}
+								</p>
+							</div>
+
+							{#if teacherImportResult.created === 0 && teacherImportResult.failed.length === 0 && !importFatalError}
+								<p class="text-sm text-muted-foreground">{$t('import.teachers.resultNothing')}</p>
+							{/if}
+
+							{#if teacherImportResult.failed.length > 0}
+								<div class="rounded-xl border border-border bg-secondary/20 p-4">
+									<p class="mb-2 text-sm font-semibold">{$t('import.teachers.resultFailures')}</p>
+									<ul class="space-y-2 text-sm">
+										{#each teacherImportResult.failed as failure (failure.rowIndex + failure.teacherName)}
+											<li>
+												<span class="font-mono text-xs text-muted-foreground">L{failure.rowIndex}</span>
+												<span class="mx-2">·</span>
+												{failure.teacherName}
+												<span class="mx-2 text-muted-foreground">—</span>
+												{failure.message}
+											</li>
+										{/each}
+									</ul>
+								</div>
+							{/if}
+						</div>
+					{:else}
+						<p class="text-sm text-muted-foreground">{$t('import.teachers.resultUnexpected')}</p>
+					{/if}
+				</section>
 			{:else}
 				<section class="space-y-4" data-testid="data-import-coming-soon">
 					<p class="rounded-lg border border-border bg-secondary/30 px-3 py-2 text-sm text-muted-foreground">
@@ -1096,6 +1604,30 @@
 						{$t('import.guardians.viewGuardians')}
 					</Button>
 				{/if}
+				{#if isStaffImport && step === 'execute' && staffImportResult}
+					<Button
+						onclick={() => {
+							notifyStaffListChanged();
+							handleOpenChange(false);
+							void appGoto(staffHref, { invalidateAll: true });
+						}}
+						data-testid="staff-import-view-staff"
+					>
+						{$t('import.staff.viewStaff')}
+					</Button>
+				{/if}
+				{#if isTeachersImport && step === 'execute' && teacherImportResult}
+					<Button
+						onclick={() => {
+							notifyTeachersListChanged();
+							handleOpenChange(false);
+							void appGoto(teachersHref, { invalidateAll: true });
+						}}
+						data-testid="teacher-import-view-teachers"
+					>
+						{$t('import.teachers.viewTeachers')}
+					</Button>
+				{/if}
 				<Button variant="outline" disabled={importing} onclick={() => handleOpenChange(false)}>
 					{$t('common.close')}
 				</Button>
@@ -1125,13 +1657,7 @@
 						{#if importing}
 							<LoaderCircle class="mr-2 size-4 animate-spin" aria-hidden="true" />
 						{/if}
-						{#if isStudentsImport}
-							{$t('import.students.importReady', { n: activeValidRowCount })}
-						{:else if isClassesImport}
-							{$t('import.classes.importReady', { n: activeValidRowCount })}
-						{:else}
-							{$t('import.guardians.importReady', { n: activeValidRowCount })}
-						{/if}
+						{importReadyLabel}
 					</Button>
 				{/if}
 			</div>

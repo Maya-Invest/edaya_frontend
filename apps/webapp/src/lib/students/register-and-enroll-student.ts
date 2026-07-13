@@ -12,6 +12,7 @@ export interface RegisterAndEnrollStudentInput {
 	lastName: string;
 	classGroupId: string;
 	birthDate?: string;
+	matricule?: string;
 	sendAccountInvitation?: boolean;
 	inviteEmail?: string;
 	createdAt?: string;
@@ -41,6 +42,17 @@ export async function registerAndEnrollStudent(
 		classGroupId: input.classGroupId,
 		createdAt: now,
 	} satisfies components['schemas']['EnrollStudentCommand']);
+
+	const matricule = input.matricule?.trim();
+	if (matricule) {
+		await client.commands.updateStudentProfile({
+			studentId: input.studentId,
+			firstName: input.firstName.trim(),
+			lastName: input.lastName.trim(),
+			birthDate: birthDate ?? null,
+			matricule,
+		} satisfies components['schemas']['UpdateStudentProfileCommand']);
+	}
 }
 
 export function createStudentImportIds(index: number, seed = Date.now().toString(36)): {
