@@ -94,8 +94,8 @@ Both apps are static SvelteKit SPAs on Cloudflare Workers (assets):
 
 | App | Production | Staging |
 |-----|------------|---------|
-| Webapp | `app.edaya.softilab.dev` | `app-staging.edaya.softilab.dev` |
-| SaaS Admin | `admin.edaya.softilab.dev` | `admin-staging.edaya.softilab.dev` |
+| Webapp | `app.edayaplus.com` | `staging.app.edayaplus.com` |
+| SaaS Admin | `admin.edayaplus.com` | `staging.admin.edayaplus.com` |
 
 Set `PUBLIC_API_URL` at build time when the API is not same-origin.
 
