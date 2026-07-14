@@ -80,3 +80,14 @@ jobs:
       channel: ${{ needs.gate.outputs.channel }}
     secrets:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+  smoke-test:
+    needs: [gate, deploy-webapp, deploy-saas-admin]
+    if: >-
+      needs.gate.outputs.channel == 'staging' &&
+      needs.deploy-webapp.result != 'failure' &&
+      needs.deploy-saas-admin.result != 'failure' &&
+      (needs.deploy-webapp.result == 'success' || needs.deploy-saas-admin.result == 'success')
+    uses: ./.github/workflows/_smoke-test.yml
+    with:
+      channel: ${{ needs.gate.outputs.channel }}

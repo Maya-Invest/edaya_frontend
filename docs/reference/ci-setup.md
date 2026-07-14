@@ -37,6 +37,7 @@ Path: [`.github/actions/ci-bun-turbo`](../../.github/actions/ci-bun-turbo/action
 | [`_verify.yml`](../../.github/workflows/_verify.yml) | `verify` | `bun run verify` |
 | [`_integration.yml`](../../.github/workflows/_integration.yml) | `integration` | Playwright (inline `setup-bun`; Docker/GHCR) |
 | [`deploy_push.yml`](../../.github/workflows/deploy_push.yml) | `deploy-*` | Verify, then `wrangler deploy` via [Cloudflare deploy](ci-setup.md#deploy-to-cloudflare-github-actions) |
+| [`_smoke-test.yml`](../../.github/workflows/_smoke-test.yml) | `smoke` | `bun repo smoke-test staging` after deploy |
 
 Integration uses inline setup because it starts api-dev containers, installs Playwright, builds the webapp, and serves it with Wrangler — not just the Turbo graph.
 
@@ -85,6 +86,7 @@ Deploy runs from GitHub Actions — not Cloudflare Workers Builds. See [`deploy_
 | `verify` | `bun run verify` (same as PR CI) |
 | `deploy-webapp` | Published API client → build → `wrangler deploy` |
 | `deploy-saas-admin` | Same for saas-admin |
+| `smoke-test` | `bun repo smoke-test staging` (staging only, after deploy jobs) |
 
 **One-time repo secret:** `CLOUDFLARE_API_TOKEN` with Workers Scripts edit (+ routes if using custom domains). Wrangler reads it from the environment.
 
@@ -157,6 +159,7 @@ Configured in [`pr.yml`](../../.github/workflows/pr.yml).
 ```text
 gate → verify (bun run verify)
      → deploy-webapp + deploy-saas-admin (wrangler deploy, parallel)
+     → smoke-test (staging only, after deploy)
 ```
 
 Configured in [`deploy_push.yml`](../../.github/workflows/deploy_push.yml). Requires repo secret `CLOUDFLARE_API_TOKEN`.
