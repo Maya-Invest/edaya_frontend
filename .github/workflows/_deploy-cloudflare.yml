@@ -3,8 +3,8 @@ name: Deploy to Cloudflare
 on:
   workflow_call:
     inputs:
-      app:
-        description: App package to deploy (webapp or saas-admin)
+      package:
+        description: Bun workspace package to deploy (e.g. @edaya/webapp)
         required: true
         type: string
       channel:
@@ -35,22 +35,12 @@ jobs:
       - name: Setup Bun and Turbo cache
         uses: ./.github/actions/ci-bun-turbo
 
-      - name: Deploy webapp
-        if: inputs.app == 'webapp'
+      - name: Deploy ${{ inputs.package }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           case "${{ inputs.channel }}" in
-            production) bun --filter @edaya/webapp deploy:production ;;
-            *) bun --filter @edaya/webapp deploy:staging ;;
+            production) DEPLOY_SCRIPT=deploy:production ;;
+            *) DEPLOY_SCRIPT=deploy:staging ;;
           esac
-
-      - name: Deploy saas-admin
-        if: inputs.app == 'saas-admin'
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          case "${{ inputs.channel }}" in
-            production) bun --filter @edaya/saas-admin deploy:production ;;
-            *) bun --filter @edaya/saas-admin deploy:staging ;;
-          esac
+          bun --filter "${{ inputs.package }}" "$DEPLOY_SCRIPT"

@@ -64,7 +64,7 @@ jobs:
       needs.verify.result == 'success'
     uses: ./.github/workflows/_deploy-cloudflare.yml
     with:
-      app: webapp
+      package: "@edaya/webapp"
       channel: ${{ needs.gate.outputs.channel }}
     secrets:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -76,7 +76,7 @@ jobs:
       needs.verify.result == 'success'
     uses: ./.github/workflows/_deploy-cloudflare.yml
     with:
-      app: saas-admin
+      package: "@edaya/saas-admin"
       channel: ${{ needs.gate.outputs.channel }}
     secrets:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
