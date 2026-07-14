@@ -8,7 +8,8 @@ Monorepo for Edaya web frontends: **Bun** workspaces and **Turborepo** orchestra
 edaya_web/
 ├── apps/
 │   ├── webapp/              @edaya/webapp — school staff UI (Cloudflare Workers)
-│   └── saas-admin/          @edaya/saas-admin — platform operator UI (Cloudflare Workers)
+│   ├── saas-admin/          @edaya/saas-admin — platform operator UI (Cloudflare Workers)
+│   └── website/             @edaya/website — marketing / coming soon (Astro, Cloudflare Workers)
 ├── packages/
 │   └── web-fixtures/        @edaya/web-fixtures — dev test constants + demo login data
 └── tooling/
@@ -47,12 +48,14 @@ bun dev
 |---------|-----|
 | Webapp | http://localhost:5173 |
 | SaaS Admin | http://localhost:5174 |
+| Website | http://localhost:4321 |
 
 Or run a single app:
 
 ```sh
 bun run dev:webapp
 bun run dev:saas-admin
+bun run dev:website
 ```
 
 Dev servers proxy `/core`, `/auth`, `/public`, and API docs to `API_URL` (default `http://localhost:9999`).
@@ -78,6 +81,8 @@ Dev servers proxy `/core`, `/auth`, `/public`, and API docs to `API_URL` (defaul
 | `bun repo smoke-test staging` | HTTP smoke against staging SPA shells |
 | `bun run deploy:webapp:staging` | Build + deploy webapp (staging) |
 | `bun run deploy:saas-admin:staging` | Build + deploy SaaS admin (staging) |
+| `bun run dev:website` | Astro coming-soon site only |
+| `bun run deploy:website:staging` | Build + deploy website (staging) |
 
 ### Pre-PR verification
 
@@ -90,10 +95,11 @@ Full command tree: **[docs/reference/repo-cli.md](./docs/reference/repo-cli.md)*
 
 ## Deployment
 
-Both apps are static SvelteKit SPAs on Cloudflare Workers (assets):
+Apps are static sites on Cloudflare Workers (assets):
 
 | App | Production | Staging |
 |-----|------------|---------|
+| Website | `edayaplus.com`, `www.edayaplus.com` | `staging.edayaplus.com` |
 | Webapp | `app.edayaplus.com` | `staging.app.edayaplus.com` |
 | SaaS Admin | `admin.edayaplus.com` | `staging.admin.edayaplus.com` |
 

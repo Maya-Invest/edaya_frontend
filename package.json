@@ -23,7 +23,14 @@
     "deploy:webapp:production": "bun --filter @edaya/webapp deploy:production",
     "deploy:webapp:staging": "bun --filter @edaya/webapp deploy:staging",
     "deploy:saas-admin:production": "bun --filter @edaya/saas-admin deploy:production",
-    "deploy:saas-admin:staging": "bun --filter @edaya/saas-admin deploy:staging"
+    "deploy:saas-admin:staging": "bun --filter @edaya/saas-admin deploy:staging",
+    "deploy:website:production": "bun --filter @edaya/website deploy:production",
+    "deploy:website:staging": "bun --filter @edaya/website deploy:staging",
+    "cloudflare:prepare": "node scripts/cloudflare-build-prepare.mjs",
+    "cloudflare:install": "bun run cloudflare:prepare && bun install",
+    "cloudflare:build:webapp": "bun run cloudflare:install && bun --filter @edaya/webapp run build",
+    "cloudflare:build:saas-admin": "bun run cloudflare:install && bun --filter @edaya/saas-admin run build",
+    "cloudflare:build:website": "bun install && bun --filter @edaya/website build"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^9.0.0",

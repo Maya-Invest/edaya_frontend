@@ -41,6 +41,8 @@ After GitHub Packages publish:
 bun add @maya-invest/edaya-api-client@staging
 ```
 
+**Cloudflare deploy** runs from GitHub Actions ([`deploy_push.yml`](../../.github/workflows/deploy_push.yml)) — see [ci-setup.md](./ci-setup.md#deploy-to-cloudflare-github-actions). Cloudflare Workers Builds is optional for ad-hoc use via `bun run cloudflare:build:webapp`.
+
 ## When API routes change
 
 1. **`edaya_backend`** — change routes/extensions, then:
