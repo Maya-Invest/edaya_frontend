@@ -124,11 +124,11 @@ Set **Root directory** to the repository root (not `apps/webapp`) so Bun workspa
 | Step | Command |
 |------|---------|
 | Build | `bun run cloudflare:build:webapp` |
-| Deploy | `bun --filter @edaya/webapp exec wrangler deploy --env staging` |
+| Deploy | `bun --filter @edaya/webapp deploy:staging` |
 
 Add build variables for Vite public env (same as `deploy:staging` in `apps/webapp/package.json`), e.g. `PUBLIC_API_URL=https://staging.api.edayaplus.com`, `PUBLIC_APP_ENV=staging`.
 
-**Saas-admin:** use `bun run cloudflare:build:saas-admin` and `bun --filter @edaya/saas-admin exec wrangler deploy --env staging`.
+**Saas-admin:** use `bun run cloudflare:build:saas-admin` and `bun --filter @edaya/saas-admin deploy:staging`.
 
 **Website (Astro, no API client):**
 

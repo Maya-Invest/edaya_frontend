@@ -28,8 +28,8 @@
     "deploy:website:staging": "bun --filter @edaya/website deploy:staging",
     "cloudflare:prepare": "node scripts/cloudflare-build-prepare.mjs",
     "cloudflare:install": "bun run cloudflare:prepare && bun install",
-    "cloudflare:build:webapp": "bun run cloudflare:install && bun --filter @edaya/webapp run build",
-    "cloudflare:build:saas-admin": "bun run cloudflare:install && bun --filter @edaya/saas-admin run build",
+    "cloudflare:build:webapp": "bun run cloudflare:install && bun --filter @edaya/webapp build",
+    "cloudflare:build:saas-admin": "bun run cloudflare:install && bun --filter @edaya/saas-admin build",
     "cloudflare:build:website": "bun install && bun --filter @edaya/website build"
   },
   "devDependencies": {

@@ -41,8 +41,8 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           case "${{ inputs.channel }}" in
-            production) bun --filter @edaya/webapp run deploy:production ;;
-            *) bun --filter @edaya/webapp run deploy:staging ;;
+            production) bun --filter @edaya/webapp deploy:production ;;
+            *) bun --filter @edaya/webapp deploy:staging ;;
           esac
 
       - name: Deploy saas-admin
@@ -51,6 +51,6 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           case "${{ inputs.channel }}" in
-            production) bun --filter @edaya/saas-admin run deploy:production ;;
-            *) bun --filter @edaya/saas-admin run deploy:staging ;;
+            production) bun --filter @edaya/saas-admin deploy:production ;;
+            *) bun --filter @edaya/saas-admin deploy:staging ;;
           esac
