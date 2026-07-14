@@ -36,6 +36,34 @@ jobs:
       deploy_webapp: ${{ steps.plan.outputs.deploy_webapp }}
       deploy_saas_admin: ${{ steps.plan.outputs.deploy_saas_admin }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Detect app changes
+        uses: dorny/paths-filter@v4
+        id: filter
+        if: github.event_name == 'push'
+        with:
+          filters: |
+            webapp:
+              - apps/webapp/**
+              - packages/**
+              - package.json
+              - bun.lock
+              - turbo.json
+              - .github/workflows/**
+              - .github/actions/**
+              - .github/scripts/**
+            saas_admin:
+              - apps/saas-admin/**
+              - packages/**
+              - package.json
+              - bun.lock
+              - turbo.json
+              - .github/workflows/**
+              - .github/actions/**
+              - .github/scripts/**
+
       - name: Plan deploy
         id: plan
         run: |
@@ -48,8 +76,8 @@ jobs:
               main|master) CHANNEL=production ;;
               *) CHANNEL=staging ;;
             esac
-            echo "deploy_webapp=true" >> "$GITHUB_OUTPUT"
-            echo "deploy_saas_admin=true" >> "$GITHUB_OUTPUT"
+            echo "deploy_webapp=${{ steps.filter.outputs.webapp == 'true' }}" >> "$GITHUB_OUTPUT"
+            echo "deploy_saas_admin=${{ steps.filter.outputs.saas_admin == 'true' }}" >> "$GITHUB_OUTPUT"
           fi
           echo "channel=${CHANNEL}" >> "$GITHUB_OUTPUT"
 

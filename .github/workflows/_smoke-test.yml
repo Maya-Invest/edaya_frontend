@@ -20,8 +20,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup Bun and Turbo cache
-        uses: ./.github/actions/ci-bun-turbo
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
 
       - name: Smoke test staging SPAs
-        run: bun repo smoke-test staging
+        run: bun tooling/repo/ci/smoke-staging.ts
