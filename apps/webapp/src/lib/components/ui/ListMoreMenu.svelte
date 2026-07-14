@@ -2,7 +2,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Popover from '$lib/components/ui/popover';
 	import { t } from '$lib/i18n';
-	import { FileSpreadsheet, Layers, LayoutGrid, MoreHorizontal } from '$lib/icons';
+	import { FileSpreadsheet, ClipboardCheck, Layers, LayoutGrid, MoreHorizontal } from '$lib/icons';
 	import { toast } from '$lib/toast.svelte';
 
 	const {
@@ -10,11 +10,13 @@
 		onViewChange,
 		exportOnly = false,
 		exportLabel,
+		onEnterSelectMode,
 	}: {
 		view?: 'table' | 'cards';
 		onViewChange?: (view: 'table' | 'cards') => void;
 		exportOnly?: boolean;
 		exportLabel?: string;
+		onEnterSelectMode?: () => void;
 	} = $props();
 
 	let open = $state(false);
@@ -28,6 +30,11 @@
 
 	function setView(next: 'table' | 'cards') {
 		onViewChange?.(next);
+		open = false;
+	}
+
+	function enterSelectMode() {
+		onEnterSelectMode?.();
 		open = false;
 	}
 </script>
@@ -48,6 +55,17 @@
 		{/snippet}
 	</Popover.PopoverTrigger>
 	<Popover.PopoverContent class="w-48 p-1" align="end">
+		{#if onEnterSelectMode}
+			<button
+				type="button"
+				class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-secondary"
+				onclick={enterSelectMode}
+			>
+				<ClipboardCheck class="h-4 w-4 text-muted-foreground" />
+				<span>{$t('list.enterSelectMode')}</span>
+			</button>
+			<div class="my-1 border-t border-border"></div>
+		{/if}
 		<button
 			type="button"
 			class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-secondary"
@@ -57,6 +75,7 @@
 			<span>{resolvedExportLabel}</span>
 		</button>
 		{#if !exportOnly}
+			<div class="my-1 border-t border-border"></div>
 			<button
 				type="button"
 				class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-secondary"

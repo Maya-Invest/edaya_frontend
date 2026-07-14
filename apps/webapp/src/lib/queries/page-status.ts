@@ -21,9 +21,12 @@ export async function resolvePageLoad<T>(
 		empty: () => T;
 		hasItems: (data: T) => boolean;
 		errorMessage?: string;
+		waitForShell?: boolean;
 	},
 ): Promise<T & PageLoadMeta> {
-	await ensureAppShellReady();
+	if (options.waitForShell !== false) {
+		await ensureAppShellReady();
+	}
 	await maybeSimulateLoading(url);
 	const demo = resolveDemoState(url);
 	if (demo === 'error') {

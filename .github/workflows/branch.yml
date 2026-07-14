@@ -4,13 +4,18 @@ on:
   push:
     branches-ignore:
       - main
-      - master
       - staging
+      - dev
   workflow_dispatch:
 
 concurrency:
   group: branch-${{ github.ref_name }}
   cancel-in-progress: true
+
+permissions:
+  actions: write
+  contents: read
+  packages: read
 
 jobs:
   verify:

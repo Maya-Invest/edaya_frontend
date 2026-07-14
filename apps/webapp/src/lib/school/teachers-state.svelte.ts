@@ -1,3 +1,4 @@
+import type { TeacherListFilters } from '$lib/list/list-url-filters';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { detailHref } from '$lib/detail-hrefs';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
@@ -8,7 +9,7 @@ import { getContext, setContext } from 'svelte';
 const TEACHERS_STATE_KEY = Symbol('teachers-state');
 
 export class TeachersState {
-	readonly filters: ListFiltersState<{ q: string }>;
+	readonly filters: ListFiltersState<TeacherListFilters>;
 
 	constructor(getUrl: () => URL) {
 		this.filters = new ListFiltersState(

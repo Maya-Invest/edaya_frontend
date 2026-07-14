@@ -1,0 +1,82 @@
+name: Push / Merge deploy
+
+on:
+  push:
+    branches: [main, staging]
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: Deploy channel
+        type: choice
+        options: [staging, production]
+        default: staging
+      deploy_webapp:
+        description: Deploy webapp
+        type: boolean
+        default: true
+      deploy_saas_admin:
+        description: Deploy saas-admin
+        type: boolean
+        default: true
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  actions: write
+  contents: read
+  packages: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      channel: ${{ steps.plan.outputs.channel }}
+      deploy_webapp: ${{ steps.plan.outputs.deploy_webapp }}
+      deploy_saas_admin: ${{ steps.plan.outputs.deploy_saas_admin }}
+    steps:
+      - name: Plan deploy
+        id: plan
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            CHANNEL="${{ inputs.channel }}"
+            echo "deploy_webapp=${{ inputs.deploy_webapp }}" >> "$GITHUB_OUTPUT"
+            echo "deploy_saas_admin=${{ inputs.deploy_saas_admin }}" >> "$GITHUB_OUTPUT"
+          else
+            case "${{ github.ref_name }}" in
+              main|master) CHANNEL=production ;;
+              *) CHANNEL=staging ;;
+            esac
+            echo "deploy_webapp=true" >> "$GITHUB_OUTPUT"
+            echo "deploy_saas_admin=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "channel=${CHANNEL}" >> "$GITHUB_OUTPUT"
+
+  verify:
+    needs: gate
+    uses: ./.github/workflows/_verify.yml
+
+  deploy-webapp:
+    needs: [gate, verify]
+    if: >-
+      needs.gate.outputs.deploy_webapp == 'true' &&
+      needs.verify.result == 'success'
+    uses: ./.github/workflows/_deploy-cloudflare.yml
+    with:
+      app: webapp
+      channel: ${{ needs.gate.outputs.channel }}
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+  deploy-saas-admin:
+    needs: [gate, verify]
+    if: >-
+      needs.gate.outputs.deploy_saas_admin == 'true' &&
+      needs.verify.result == 'success'
+    uses: ./.github/workflows/_deploy-cloudflare.yml
+    with:
+      app: saas-admin
+      channel: ${{ needs.gate.outputs.channel }}
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

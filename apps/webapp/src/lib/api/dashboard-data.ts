@@ -1,8 +1,8 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import { ApiError } from '$api-client';
 import { academicContext } from '$lib/academic/context.svelte';
 import { authSession } from '$lib/auth/session.svelte';
+import { ApiError } from '@maya-invest/edaya-api-client';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 export type SchoolOverviewResponse = components['schemas']['SchoolOverviewResponse'];

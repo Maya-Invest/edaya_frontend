@@ -3,12 +3,31 @@ name: Verify
 on:
   workflow_call:
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout web
         uses: actions/checkout@v5
+
+      - name: Resolve API client channel
+        id: api_client
+        run: |
+          case "${{ github.head_ref || github.ref_name }}" in
+            main|master) CHANNEL=production ;;
+            *) CHANNEL=staging ;;
+          esac
+          echo "channel=${CHANNEL}" >> "$GITHUB_OUTPUT"
+
+      - name: Configure GitHub Packages auth
+        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
+
+      - name: Use published API client
+        run: node .github/scripts/ci-use-published-api-client.mjs "${{ steps.api_client.outputs.channel }}"
 
       - name: Setup Bun and Turbo cache
         uses: ./.github/actions/ci-bun-turbo

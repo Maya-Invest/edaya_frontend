@@ -37,6 +37,14 @@ const sources: ActivitySources = {
 			createdAt: '2025-09-01',
 		},
 	],
+	classActivityEnrollmentsRaw: [
+		{
+			id: 'cae-act-robot-c1',
+			activityId: 'act-robot',
+			classGroupId: 'c1',
+			createdAt: '2025-09-01',
+		},
+	],
 };
 
 describe('activities-data', () => {
@@ -56,12 +64,16 @@ describe('activities-data', () => {
 			{ id: 'ae-act-robot-s1', studentId: 's1', status: 'approved' },
 			{ id: 'ae-act-robot-s2', studentId: 's2', status: 'pending' },
 		]);
+		expect(activities[0]?.classEnrollments).toEqual([
+			{ id: 'cae-act-robot-c1', classGroupId: 'c1' },
+		]);
 	});
 
 	it('loads a single activity with enrollments by id', async () => {
 		const { client } = createRecordingSchoolClient([
 			{ data: sources.activitiesRaw[0] },
 			[{ data: sources.activityEnrollmentsRaw[0] }],
+			[],
 		]);
 
 		const activity = await fetchActivityById(client, 'act-robot');

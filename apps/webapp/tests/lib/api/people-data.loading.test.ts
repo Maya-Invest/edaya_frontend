@@ -1,7 +1,7 @@
 import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
-import { loadClassPeopleData, loadGuardiansPeopleData, loadPeopleData } from '$lib/api/people-data';
-import { createRecordingSchoolClient, entityListRequests } from '$tests/support/recording-school-client';
+import { loadClassPeopleData, loadGuardiansPeopleData, loadPeopleData, loadPeopleDataPage } from '$lib/api/people-data';
+import { createRecordingSchoolClient, entityCountRequests, entityListRequests } from '$tests/support/recording-school-client';
 
 const classGroupId = 'class-7a';
 const periodId = 'period-1';
@@ -191,6 +191,42 @@ describe('people data loading', () => {
 		});
 		expect(entityListRequests(requests, 'attendance')).toHaveLength(0);
 		expect(entityListRequests(requests, 'assessments')).toHaveLength(0);
+	});
+
+	it('paginates school students by class enrollment instead of the full roster', async () => {
+		const { client, requests } = createRecordingSchoolClient([
+			listEnvelope([enrollment]),
+			{ count: 1 },
+			{ count: 1 },
+			listEnvelope([enrollment]),
+			listEnvelope([student]),
+			listEnvelope([student]),
+			listEnvelope([student]),
+			listEnvelope([student]),
+		]);
+
+		const result = await loadPeopleDataPage(client, {
+			classGroupId,
+			offset: 0,
+			limit: 25,
+		});
+
+		expect(result.students).toHaveLength(1);
+		expect(result.totalStudents).toBe(1);
+		expect(entityListRequests(requests, 'enrollments')[0]?.body).toEqual({
+			classGroupId,
+			status: 'active',
+			$limit: 25,
+			$offset: 0,
+			$orderBy: [{ field: 'studentId', direction: 'asc' }],
+		});
+		expect(entityListRequests(requests, 'students')[0]?.body).toEqual({
+			id: { $in: ['student-1'] },
+		});
+		expect(entityCountRequests(requests, 'enrollments')[0]?.body).toEqual({
+			classGroupId,
+			status: 'active',
+		});
 	});
 
 	it('requests fewer entity list calls for a class roster than a school roster', async () => {

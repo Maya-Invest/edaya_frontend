@@ -1,4 +1,3 @@
-import { ApiError } from '$api-client';
 import { academicContext } from '$lib/academic/context.svelte';
 import { fetchActivityById } from '$lib/api/activities-data';
 import { teacherAssignmentsForTeachers } from '$lib/api/entity-list-filters';
@@ -10,6 +9,7 @@ import { authSession } from '$lib/auth/session.svelte';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { queryClient } from '$lib/queries/client';
 import { hydrateStudentDetailDrawer } from '$lib/queries/student-360.queries';
+import { ApiError } from '@maya-invest/edaya-api-client';
 
 async function ensureStudent(studentId: string, classId?: string) {
 	if (detailDataContext.students.some(student => student.id === studentId)) {

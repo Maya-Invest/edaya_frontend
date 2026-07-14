@@ -8,22 +8,20 @@ Monorepo for Edaya web frontends: **Bun** workspaces and **Turborepo** orchestra
 edaya_web/
 ├── apps/
 │   ├── webapp/              @edaya/webapp — school staff UI (Cloudflare Workers)
-│   └── saas-admin/          @edaya/saas-admin — platform operator UI (Cloudflare Workers)
+│   ├── saas-admin/          @edaya/saas-admin — platform operator UI (Cloudflare Workers)
+│   └── website/             @edaya/website — marketing / coming soon (Astro, Cloudflare Workers)
 ├── packages/
-│   ├── api-client/          (in-app) `apps/webapp/src/generated/api-client` — typed API SDK
 │   └── web-fixtures/        @edaya/web-fixtures — dev test constants + demo login data
 └── tooling/
-    └── repo/                @edaya/web-repo — OpenAPI export + client codegen
+    └── repo/                @edaya/web-repo — repo hygiene + smoke tests
 ```
 
 ## Prerequisites
 
 - [Bun](https://bun.sh) 1.3+ (see `packageManager` in root `package.json`)
-- [edaya_backend](https://github.com/Maya-Invest/edaya_backend) checked out as a sibling directory (`../edaya_backend`) for OpenAPI **export** and local API proxy only (not required for CI)
+- [edaya_backend](https://github.com/Maya-Invest/edaya_backend) checked out as a sibling directory (`../edaya_backend`) for `@maya-invest/edaya-api-client` (file link) and local API proxy
 
-`@edaya/client-codegen` is installed from [github.com/Maya-Invest/edaya-client-codegen](https://github.com/Maya-Invest/edaya-client-codegen) (`dev` branch) at install time — no sibling checkout needed.
-
-See [docs/reference/cross-repo-workflow.md](./docs/reference/cross-repo-workflow.md) for **pair PRs** (backend API change → `bun repo openapi export` → `bun repo openapi generate` → `bun run verify`), codegen releases, and staging smoke.
+See [docs/reference/cross-repo-workflow.md](./docs/reference/cross-repo-workflow.md) for API client updates, codegen in backend, and staging smoke.
 
 See [docs/reference/demo-accounts.md](./docs/reference/demo-accounts.md) for local login accounts (staff webapp vs portal teachers).
 
@@ -50,19 +48,21 @@ bun dev
 |---------|-----|
 | Webapp | http://localhost:5173 |
 | SaaS Admin | http://localhost:5174 |
+| Website | http://localhost:4321 |
 
 Or run a single app:
 
 ```sh
 bun run dev:webapp
 bun run dev:saas-admin
+bun run dev:website
 ```
 
 Dev servers proxy `/core`, `/auth`, `/public`, and API docs to `API_URL` (default `http://localhost:9999`).
 
 ## Commands
 
-**Development and ops:** [`bun repo`](./docs/reference/repo-cli.md) — OpenAPI checks, smoke tests, repo hygiene. **No Turbo in `bun repo`** — use root scripts below.
+**Development and ops:** [`bun repo`](./docs/reference/repo-cli.md) — smoke tests, repo hygiene. **No Turbo in `bun repo`** — use root scripts below.
 
 **Turbo quality** (root `package.json`):
 
@@ -78,11 +78,11 @@ Dev servers proxy `/core`, `/auth`, `/public`, and API docs to `API_URL` (defaul
 | `bun run test` | Unit tests (Turbo) |
 | `bun run build` | Build all apps |
 | `bun run quality` | Lint + type-check per package |
-| `bun repo check openapi` | OpenAPI / generated client drift |
-| `bun repo openapi generate` | Regenerate client from committed or exported spec |
 | `bun repo smoke-test staging` | HTTP smoke against staging SPA shells |
 | `bun run deploy:webapp:staging` | Build + deploy webapp (staging) |
 | `bun run deploy:saas-admin:staging` | Build + deploy SaaS admin (staging) |
+| `bun run dev:website` | Astro coming-soon site only |
+| `bun run deploy:website:staging` | Build + deploy website (staging) |
 
 ### Pre-PR verification
 
@@ -95,32 +95,23 @@ Full command tree: **[docs/reference/repo-cli.md](./docs/reference/repo-cli.md)*
 
 ## Deployment
 
-Both apps are static SvelteKit SPAs on Cloudflare Workers (assets):
+Apps are static sites on Cloudflare Workers (assets):
 
 | App | Production | Staging |
 |-----|------------|---------|
-| Webapp | `app.edaya.softilab.dev` | `app-staging.edaya.softilab.dev` |
-| SaaS Admin | `admin.edaya.softilab.dev` | `admin-staging.edaya.softilab.dev` |
+| Website | `edayaplus.com`, `www.edayaplus.com` | `staging.edayaplus.com` |
+| Webapp | `app.edayaplus.com` | `staging.app.edayaplus.com` |
+| SaaS Admin | `admin.edayaplus.com` | `staging.admin.edayaplus.com` |
 
 Set `PUBLIC_API_URL` at build time when the API is not same-origin.
 
-## API client generation
+## API client
 
-The `@edaya/web-repo` tooling exports the OpenAPI document from the sibling **Edaya Core** API, then regenerates:
+Typed API runtime and schema types come from **`@maya-invest/edaya-api-client`** (generated in `edaya_backend/package/api-client/`).
 
-| Output | Path |
-|--------|------|
-| OpenAPI JSON (canonical) | `apps/webapp/src/lib/api/openapi.json` |
-| TypeScript schemas | `apps/webapp/src/lib/api/schema.d.ts` |
-| SaaS admin copy | `apps/saas-admin/src/lib/api/openapi.json` + `schema.d.ts` (synced on generate) |
-| Client bindings | `apps/webapp/src/generated/api-client/generated/client-bindings.ts` |
+Web apps re-export schema types at `$lib/api/schema` for convenience. After backend API changes, regenerate the client in **edaya_backend** (`bun repo openapi generate`), then run `bun install` here to pick up the updated file link.
 
-```sh
-# from edaya_web root — requires ../edaya_backend with dependencies installed
-bun repo openapi generate
-```
-
-Override the core repo location with `EDAYA_CORE_ROOT` when needed.
+See [docs/reference/cross-repo-workflow.md](./docs/reference/cross-repo-workflow.md).
 
 ## Roadmap
 

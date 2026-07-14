@@ -41,6 +41,12 @@ export const SCHOOL_NAV_DEFS: NavItemDefinition[] = [
 		permissions: ['QUERY_CALENDAR_READ', 'ACCESS_CONTROL_READ'],
 	},
 	{
+		key: 'timetablePlanning',
+		labelKey: 'school.timetablePlanning',
+		href: '/school/timetable-planning',
+		permissions: ['QUERY_TIMETABLE_READ'],
+	},
+	{
 		key: 'activities',
 		labelKey: 'school.activities',
 		href: '/school/activities',
@@ -180,6 +186,12 @@ export const CONFIG_NAV_DEFS: NavItemDefinition[] = [
 		labelKey: 'config.discipline',
 		href: '/configuration/discipline',
 		permissions: ['DISCIPLINE_VALIDATE'],
+	},
+	{
+		key: 'import',
+		labelKey: 'config.import',
+		href: '/configuration/import',
+		permissions: ['STUDENT_CREATE', 'SCHOOL_STRUCTURE_READ'],
 	},
 ];
 

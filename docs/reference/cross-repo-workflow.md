@@ -3,84 +3,72 @@
 > **Audience:** humans — CI, OpenAPI, and multi-repo development  
 > **Not normative for agents**
 
-Edaya is split across three repositories:
+Edaya is split across repositories:
 
 | Repo | Role |
 |------|------|
-| `edaya_backend` | API, cron, domain packages, seeding |
-| `edaya_web` | SvelteKit webapp + saas-admin, `@edaya/api-client` (web copy) |
-| `edaya-client-codegen` | OpenAPI-only client artifact generator (`@edaya/client-codegen`), consumed via GitHub git dependency |
+| `edaya_backend` | API, cron, domain packages, `@maya-invest/edaya-api-client`, client codegen |
+| `edaya_web` | SvelteKit webapp + saas-admin |
 
-## CI without sibling checkouts
+OpenAPI export and client generation live **only** in `edaya_backend`. Web consumes `@maya-invest/edaya-api-client` — no local OpenAPI copies or codegen.
 
-`edaya_web` CI runs `bun run verify` (`bun repo verify` first, then Turbo), which uses **committed** `apps/webapp/src/lib/api/openapi.json` for `bun repo check openapi`. It does **not** import `edaya_backend/apps/api` or require a sibling `edaya_backend` checkout.
+## CI
 
-`edaya_backend` CI runs the same verify shape and exports OpenAPI from the in-repo API.
+`edaya_web` CI installs `@maya-invest/edaya-api-client` from **GitHub Packages** (`staging` / `production` dist-tags). It does not check out `edaya_backend` — the default `GITHUB_TOKEN` cannot read that private repo.
 
-Both repos install `@edaya/client-codegen` from GitHub at `bun install`:
+One-time org setup: grant `edaya_web` **Read** on the `@maya-invest/edaya-api-client` package (same as [edaya-api-dev in ci-setup.md](./ci-setup.md#ghcr-access-for-api-dev-image)).
 
-```json
-"@edaya/client-codegen": "github:Maya-Invest/edaya-client-codegen#dev"
+`edaya_backend` CI exports OpenAPI and drift-checks `package/api-client/src/` in-repo.
+
+## Local install
+
+Clone both repos side by side, then symlink the backend into the web repo (CI uses the same layout):
+
+```sh
+ln -s ../edaya_backend edaya_web/edaya_backend
 ```
 
-Pin a semver tag (e.g. `#v0.0.1`) instead of `#dev` when you want reproducible releases.
+```
+edaya_web/
+  edaya_backend/   # symlink → ../edaya_backend
+  apps/
+  tooling/
+```
+
+After GitHub Packages publish:
+
+```sh
+bun add @maya-invest/edaya-api-client@staging
+```
+
+**Cloudflare deploy** runs from GitHub Actions ([`deploy_push.yml`](../../.github/workflows/deploy_push.yml)) — see [ci-setup.md](./ci-setup.md#deploy-to-cloudflare-github-actions). Cloudflare Workers Builds is optional for ad-hoc use via `bun run cloudflare:build:webapp`.
 
 ## When API routes change
-
-Use a **pair PR** (or two linked PRs merged in order):
 
 1. **`edaya_backend`** — change routes/extensions, then:
    ```sh
    cd edaya_backend
-   bun repo openapi export       # updates tooling/repo/fixtures/openapi.json
-   bun repo openapi generate     # updates package/generated-api-client/src/generated/*
+   bun repo openapi export
+   bun repo openapi generate     # updates package/api-client/src/
    bun run verify
    ```
-2. **`edaya_web`** — copy or export the updated spec, then:
+2. **`edaya_web`** — refresh the linked client (or bump the published package version), then:
    ```sh
    cd edaya_web
-   bun repo openapi generate     # requires sibling edaya_backend for export; or copy openapi.json manually
+   bun install                   # picks up file: link or new package version
    bun run verify
    ```
 
-If both repos are checked out side by side, validate the OpenAPI snapshot matches the live export:
+No OpenAPI JSON or schema generation in the web repo.
 
-```sh
-cd edaya_web
-bun repo check openapi-export
-```
+## Shared API client
 
-## OpenAPI-only regeneration (no `edaya_backend` checkout)
+Runtime and generated bindings live in `edaya_backend/package/api-client/` (`@maya-invest/edaya-api-client`).
 
-When the committed `openapi.json` is already up to date:
+Web apps import:
 
-```sh
-cd edaya_web
-edaya-codegen generate \
-  --input apps/webapp/src/lib/api/openapi.json \
-  --bindings-out apps/webapp/src/generated/api-client/generated/client-bindings.ts \
-  --schema-out apps/webapp/src/lib/api/schema.d.ts \
-  --client-out apps/webapp/src/generated/api-client/generated/create-client.ts
-```
-
-Or from a remote URL:
-
-```sh
-edaya-codegen generate \
-  --input https://api-staging.edaya.softilab.dev/doc \
-  --bindings-out apps/webapp/src/generated/api-client/generated/client-bindings.ts \
-  --schema-out apps/webapp/src/lib/api/schema.d.ts \
-  --client-out apps/webapp/src/generated/api-client/generated/create-client.ts
-```
-
-Then sync SaaS admin copies (or run `bun repo openapi generate` which copies automatically).
-
-## Hand-written runtime sync
-
-Generated artifacts are regen-only. These files are duplicated and must stay aligned manually until Phase 3 (shared `@edaya/api-client`) ships:
-
-- `edaya_backend/package/generated-api-client/src/` (runtime: `Transport`, `EntityResource`, `paths.ts`, …)
-- `edaya_web/apps/webapp/src/generated/api-client/` (runtime: `Transport`, `EntityResource`, `paths.ts`, …)
+- Runtime: `createSchoolClient`, `ApiError`, … from `@maya-invest/edaya-api-client`
+- Types: `components`, `operations`, `paths` via `$lib/api/schema` (re-export of `@maya-invest/edaya-api-client/schema`)
 
 ## Dev fixtures sync
 
@@ -96,25 +84,3 @@ cd edaya_backend && bun repo deploy api staging && bun repo smoke-test staging
 cd edaya_web && bun run deploy:webapp:staging && bun run deploy:saas-admin:staging
 cd edaya_web && bun repo smoke-test staging
 ```
-
-`bun repo smoke-test staging` in `edaya_web` checks that staging SPA shells respond. Full login, navigation, and R2 upload still require manual verification after deploy.
-
-Override origins when needed:
-
-```sh
-STAGING_WEBAPP_ORIGIN=https://app-staging.edaya.softilab.dev \
-STAGING_SAAS_ADMIN_ORIGIN=https://admin-staging.edaya.softilab.dev \
-bun repo smoke-test staging
-```
-
-## Local development
-
-```sh
-# Terminal 1
-cd edaya_backend && bun dev
-
-# Terminal 2
-cd edaya_web && bun run dev:webapp
-```
-
-Set `EDAYA_CORE_ROOT` when `edaya_backend` is not at `../edaya_backend` relative to `edaya_web`.

@@ -43,6 +43,14 @@ export class ListFiltersState<T extends Record<string, string>> {
 		if (this.ready && filtersEqual(this.values, next)) {
 			return;
 		}
+		// Debounced URL sync can lag behind in-memory edits — keep local values until it flushes.
+		if (this.ready && this.timer !== undefined) {
+			const merged = { ...next, ...this.values };
+			if (!filtersEqual(this.values, merged)) {
+				this.values = merged;
+			}
+			return;
+		}
 		this.values = { ...next };
 		this.ready = true;
 	}
@@ -57,12 +65,26 @@ export class ListFiltersState<T extends Record<string, string>> {
 		this.scheduleSync();
 	}
 
+	/** Apply filter edits and flush to the URL immediately (sort, facet selects). */
+	patchImmediate(partial: Partial<T>) {
+		if (!this.ready) {
+			return;
+		}
+		this.values = { ...this.values, ...partial };
+		clearTimeout(this.timer);
+		this.timer = undefined;
+		this.syncNow();
+	}
+
 	scheduleSync() {
 		if (!this.ready) {
 			return;
 		}
 		clearTimeout(this.timer);
-		this.timer = setTimeout(() => this.syncNow(), this.config.debounceMs ?? 250);
+		this.timer = setTimeout(() => {
+			this.timer = undefined;
+			this.syncNow();
+		}, this.config.debounceMs ?? 250);
 	}
 
 	syncNow() {
@@ -70,11 +92,13 @@ export class ListFiltersState<T extends Record<string, string>> {
 			return;
 		}
 		clearTimeout(this.timer);
+		this.timer = undefined;
 		const currentUrl = this.config.getUrl();
 		const href = this.config.write(currentUrl, this.values);
 		if (href === listHref(currentUrl)) {
 			return;
 		}
+
 		this.config.goto(href);
 	}
 }

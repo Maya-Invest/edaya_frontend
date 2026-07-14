@@ -42,7 +42,7 @@ This architecture optimizes for **clarity, safety, and consistency** over raw sp
 ### UX risks if implementation drifts
 
 1. **Mixed patterns on one screen** — forms in some drawers and modals in others destroys trust in the pattern. Complex entities use read-only drawer + modal mutations; simple entities use row `···` menus (§3.5).
-2. **Stale drawer after save** — modal success must refresh drawer/tab data; otherwise users doubt whether the action worked.
+2. **Stale drawer after save** — modal success must patch route state (or re-run the active tab `PageQuery`); otherwise users doubt whether the action worked.
 3. **Silent permission denial** — hide or disable edit actions by role, but disabled actions need a tooltip (e.g. "Requires director role").
 4. **Dead empty tabs** — sub-collection tabs with no items must show an empty state **and** a `+ Add` CTA when the user can create.
 5. **Empty drawer** — opening a drawer that only repeats what the list row already shows wastes a click. Use a row `···` action menu for simple entities (see §3.5).
@@ -133,7 +133,7 @@ All variants still use shell chrome, permissions, toasts, and mutation modals wh
 Every entity list route shares this anatomy:
 
 ```
-┌ Title                   [Primary CTA] [Search] [Main filter ▾] [Filter ▾] [More ▾] ┐
+┌ Title                   [Search] [Main filter ▾] [Filter ▾] [More ▾] [Primary CTA] ┐
 │ Description / subtitle                                                           │
 ├──────────────────────────────────────────────────────────────────────────────────┤
 │  Collection: table OR cards                                              │
@@ -175,11 +175,12 @@ Every entity list route shares this anatomy:
 ### 2.4 Routing convention
 
 ```
-/{module}/{entity}           → list
-/{module}/{entity}/[id]      → list + detail drawer (complex entities only)
+/{module}/{entity}              → list
+/{module}/{entity}/[id]         → list + detail drawer (complex entities — default tab)
+/{module}/{entity}/[id]/{tab}   → list + drawer on named tab (lazy-loaded tab route)
 ```
 
-Detail selection must be URL-backed for deep linking and browser back/forward when a drawer is used. Simple entities (§3.5) may omit the `[id]` segment; use a detail modal with URL only when deep links are explicitly required.
+Detail selection must be URL-backed for deep linking and browser back/forward when a drawer is used. Drawer **tabs are nested child routes** under `[id]/` — not `?tab=` query params. Simple entities (§3.5) may omit the `[id]` segment; use a detail modal with URL only when deep links are explicitly required.
 
 ---
 
@@ -235,8 +236,9 @@ Canonical example: **Student 360** — entity header (photo, class, Change class
 
 ### 3.3 Opening and closing
 
-- Open: click row/card in list → navigate to `…/[id]` → drawer syncs from URL (complex entities only)
-- Close: Close button or backdrop → navigate back to list URL
+- Open: click row/card in list → navigate to `…/[id]` (or `…/[id]/{tab}`) → drawer syncs from URL (complex entities only)
+- Tab switch: navigate to child route under `…/[id]/{tab}` — each tab route loads its own data via `PageQuery`
+- Close: Close button or backdrop → navigate back to list URL (strip `[id]` and tab segments)
 - Drawer overlays the list; list remains visible underneath (desktop)
 
 ### 3.4 Edit affordances in the drawer
@@ -302,7 +304,7 @@ Examples: grade scale (edit bands in modal), notification template (edit body in
 
 ## 4. Complex entities: tabs and sub-collections
 
-Complex entities (e.g. Student) use the body patterns in §3.2. A tab is either:
+Complex entities (e.g. Student) use the body patterns in §3.2. **Tabs are nested routes** under `[[id]]/` (e.g. `/school/students/{id}/guardians`). Each tab route owns its own `PageQuery` and writes into the parent route state. A tab is either:
 
 1. **Read-only profile** — labeled field sections, no inputs
 2. **Sub-collection** — a mini list page scoped to the parent entity
@@ -360,7 +362,7 @@ All mutations use modal dialogs — **centered overlay on desktop**; **full-scre
 
 - Validate before submit; show field errors inline
 - Toast on success and on server error
-- On success: close modal, refresh parent list and/or drawer tab data
+- On success: close modal, patch route state optimistically, bump every affected entity-family version for cross-route sync, and refresh active tab query if server returns derived data
 - Do not navigate away from the current list+detail URL
 - Focus trap; Escape closes; return focus to trigger on close
 
@@ -422,7 +424,7 @@ The user's **staff role label** (e.g. director, teacher) is shown in the header 
 
 ### 6.4 Global context
 
-Changing school, academic year, or period invalidates/refetches list data for the active route. Screen logic should derive scope from the shell's global context selectors, not hard-coded values.
+Changing school, academic year, or period must invalidate/refetch list data for the active route. The app shell owns this central invalidation mechanism: selector changes clear affected `PageQuery` cache entries, notify the active route state to refresh, and preserve the current URL unless the new scope makes it inaccessible. Screen logic must derive scope from the shell's global context selectors, not hard-coded values.
 
 ### 6.5 Responsive
 
@@ -455,7 +457,7 @@ Use this template when adding or refactoring an entity screen.
 
 #### Routes
 - List: `/<module>/<entity>`
-- Detail (complex only): `/<module>/<entity>/[id]`
+- Detail (complex only): `/<module>/<entity>/[id]` (+ optional `/[id]/{tab}` child routes)
 
 #### List page
 - Title:
@@ -491,11 +493,11 @@ Use this template when adding or refactoring an entity screen.
 
 ### Naming conventions
 
-| Artifact | Pattern |
-|----------|---------|
-| List view | `<Entity>View` |
-| Read-only drawer body | `<Entity>Detail` or `<Entity>Tabs` |
-| Sub-collection list (in tab) | `<Entity><Sub>List` |
-| Create / edit modal | `<Entity>FormModal` |
-| Confirm modal | `<Entity>DeleteModal` |
-| Route | optional `[[id]]` segment for URL-backed drawer |
+| Artifact | Pattern | Location |
+|----------|---------|----------|
+| List view | `<Entity>View` | `routes/.../components/` |
+| Read-only drawer body | `<Entity>Detail` or tab `+page.svelte` | `routes/.../components/` or `[[id]]/{tab}/` |
+| Sub-collection list (in tab) | `<Entity><Sub>List` | Tab route `components/` |
+| Create / edit modal | `<Entity>FormModal` | `routes/.../components/` |
+| Confirm modal | `<Entity>DeleteModal` | `routes/.../components/` |
+| Route | optional `[[id]]` segment + `[[id]]/{tab}` child routes for URL-backed drawer |

@@ -60,7 +60,7 @@ Class-scoped routes live under `/classes/{classId}/…`. The sidebar **class pic
 
 ### 2.3 List toolbar (standard list pages)
 
-Order: **`[Primary CTA] [Search] [Main filter ▾] [Filter ▾] [More ▾]`**
+Order: **`[Search] [Main filter ▾] [Filter ▾] [More ▾] [Primary CTA]`**
 
 Applies to **standard entity list routes** only. Layout variants (§2.4) may omit search, main filter, or the full toolbar.
 
@@ -88,11 +88,12 @@ Shell chrome (sidebar, header, toasts, permissions) still applies.
 ### 2.5 Routing
 
 ```
-/{module}/{entity}           → list
-/{module}/{entity}/[id]      → list + detail drawer (complex entities only)
+/{module}/{entity}              → list
+/{module}/{entity}/[id]         → list + detail drawer (default tab)
+/{module}/{entity}/[id]/{tab}   → list + drawer on named tab (child route)
 ```
 
-- Complex entities: row click → URL-backed drawer (`[[id]]` optional segment).
+- Complex entities: row click → URL-backed drawer (`[[id]]` optional segment); tabs are child routes under `[[id]]/`.
 - Simple entities: row `···` menu only — **no drawer**, **no** `/[id]` route unless deep links are explicitly required.
 
 ---
@@ -220,9 +221,9 @@ Scope labels in the list use `POST authorization/scope/render` with `{ permissio
 
 **Data loading:**
 
-- `querySchoolStaffPage` loads `permission-catalog` and seeds `detailDataContext.permissionCatalog`.
-- Assignments load with staff list or on tab open; views built via `buildStaffPermissionAssignmentViews`.
-- Mutations: `saveStaffPermissionAssignmentMutation` / `deleteStaffPermissionAssignmentMutation` with optimistic patch on `staffPermissionAssignments` collection.
+- `querySchoolStaffPage` loads `permission-catalog` into the staff route state.
+- Assignments load via the Permissions tab child route `PageQuery` (or with staff list when colocated); views built via `buildStaffPermissionAssignmentViews`.
+- Mutations: `saveStaffPermissionAssignmentMutation` / `deleteStaffPermissionAssignmentMutation` with optimistic patch on route state + `entityVersions` bump for every affected entity family.
 
 **Staff drawer → Assignments tab** (read-only): summary list of `staffAssignments` (class-level and other targets). Editing assignments happens in **Configuration → Classes** drawer (class-level tab) — not on this tab.
 
@@ -239,7 +240,7 @@ Scope labels in the list use `POST authorization/scope/render` with `{ permissio
 | Guardians | `/school/guardians` | `/school/guardians/{id}` |
 | Staff | `/school/staff` | `/school/staff/{id}` |
 | Teachers | `/school/teachers` | `/school/teachers/{id}` |
-| School calendar | `/school/calendar` | `/school/calendar/{id}` |
+| School calendar | `/school/calendar` | — (simple — row `···` only) |
 | Activities | `/school/activities` | `/school/activities/{id}` |
 | Announcements | `/school/announcements` | `/school/announcements/{id}` |
 | Incidents | `/school/events` | `/school/events/{id}` |
@@ -484,7 +485,7 @@ Sub-entities (`studentIncidentInvolvements`, `staffPermissionAssignments`, `teac
 | Timetable materialize | `createSchedule` · `materializeSchedule` |
 | Class activity link | `classActivityEnrollments` entity CRUD |
 
-Regenerate OpenAPI client after backend API changes (`bun repo openapi generate`).
+Regenerate the API client in **edaya_backend** after API changes (`bun repo openapi generate`), then refresh the web dependency.
 
 ---
 

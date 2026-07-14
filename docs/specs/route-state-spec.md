@@ -1,0 +1,622 @@
+# Route State Spec
+
+> **Applies to:** `apps/webapp` — URL-driven loading, route-scoped state, mutations, colocation, smart components
+
+This document defines how the webapp loads server data, holds state, mutates records, and organizes code. **Route state owns entity data.** There is no session-wide entity hydration.
+
+---
+
+## Goals
+
+1. **URL-driven loading** — fetch only what the current route needs; URL params and search params are the navigation contract.
+2. **Route-scoped data** — loaded records live on the route (or layout) state class, not a global entity cache.
+3. **Colocation** — route-specific UI and state live under the route directory; `lib/` holds shared infrastructure only.
+4. **Optimistic mutations** — local UI updates immediately; rollback on failure.
+5. **Cross-route consistency** — a lightweight version ledger signals when other routes should invalidate stale data.
+
+---
+
+## Architecture overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Shell (session) — lib/academic/context.svelte.ts               │
+│  schools, years, periods, classes, nav counts, auth             │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Version ledger (session) — lib/entity-versions.svelte.ts       │
+│  { students: 0, guardians: 1, … } — bumped on successful writes │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Route / layout state — routes/.../*-page.svelte.ts             │
+│  PageQuery(url) → fetch → seed route state · views read state   │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+              ┌───────────────┴───────────────┐
+              ▼                               ▼
+┌──────────────────────────┐    ┌──────────────────────────────┐
+│  Route components        │    │  Nested tab routes           │
+│  routes/.../components/  │    │  [[id]]/guardians/+page.svelte│
+└──────────────────────────┘    └──────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Mutations — page state methods via a route mutation runner     │
+│  apply → request → onSuccess → bump versions → toast / rollback │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Four tiers
+
+| Tier | What | Where | Lifetime |
+|------|------|-------|----------|
+| **1 — Shell** | Auth, academic selectors, nav counts | `lib/academic/context.svelte.ts` | Session |
+| **2 — Version ledger** | Per-entity-family version counters | `lib/entity-versions.svelte.ts` | Session |
+| **3 — Route / layout state** | Entity collections, filters, selection, mutations | `routes/.../*-page.svelte.ts` | Route subtree |
+| **4 — UI** | Modal open, form binding, visual flags | Component `<script>` | Component |
+
+**Smart components** (pickers, scope builders) are a parallel pattern: not route-bound, but use the same class + context structure as Tier 3. See §8.
+
+**Rule:** I/O, multi-component orchestration, or testable business logic → **not** Tier 4.
+
+---
+
+## 1. Shell bootstrap
+
+### Load at bootstrap (always)
+
+- Schools, academic years, periods, grade levels, class groups
+- Sidebar student count
+- Auth/session
+
+### Do not load at bootstrap
+
+- Students, guardians, staff, subjects, planning, evaluations, finance, school-life, staff permission assignments, report cards, teaching log, or any other module entity collection
+
+### Contract
+
+```ts
+const shell = await getAppShellData();
+academicContext.initFromShell(shell);
+```
+
+### When to refresh shell
+
+Use a full shell refresh **only** when the mutation changes shell-shaped data:
+
+- Create/activate academic year or period
+- Create/update class group
+- School switch
+
+Never use full shell refresh for record-level edits (student name, timetable slot, guardian phone, etc.).
+
+---
+
+## 2. File colocation
+
+### Route features
+
+```
+routes/(app)/school/students/
+  +layout.svelte                 # sets StudentsPageState, renders list shell
+  students-page.svelte.ts        # route state class + set/get context
+  students.queries.ts            # querySchoolStudentsPage(url)
+  +page.svelte                   # list — /school/students
+  [[id]]/
+    +layout.svelte               # route-local drawer shell
+    +page.svelte                 # default tab — /school/students/:id
+    guardians/
+      +page.svelte               # /school/students/:id/guardians
+    components/
+      StudentDetailHeader.svelte
+      GuardianTab.svelte
+  components/
+    StudentsList.svelte
+    StudentCreateModal.svelte
+```
+
+### `lib/` — shared only
+
+| In `lib/` | Not in `lib/` |
+|-----------|----------------|
+| `PageQuery`, `DataState`, shared mutation runner contracts | `StudentsList.svelte`, one-route mutation runners |
+| API clients, types, i18n, URL filter helpers | `students-page.svelte.ts` |
+| Dumb UI (`lib/components/ui/`) | Route-specific modals |
+| Smart components (`lib/smart-components/`) | Feature orchestration state |
+| Shell + version ledger | |
+
+**Litmus test:** used by more than one route, or generic infrastructure? → `lib/`. Otherwise → colocate under the route.
+
+### Layout state
+
+Layouts that need their own data follow the same pattern as pages:
+
+```
+routes/(app)/classes/[classId]/
+  +layout.svelte
+  class-layout.svelte.ts         # class-scoped shared state for child routes
+  class-layout.queries.ts
+```
+
+Set layout state in `+layout.svelte`; child routes and components access it via `set*` / `get*` context.
+
+---
+
+## 3. Route state class
+
+### Pattern
+
+```ts
+// routes/(app)/school/students/students-page.svelte.ts
+import { getContext, setContext } from 'svelte';
+import { entityVersions } from '$lib/entity-versions.svelte';
+
+const KEY = Symbol('StudentsPageState');
+
+export class StudentsPageState {
+  students = $state<Student[]>([]);
+  private loadedVersion = 0;
+
+  readonly filters: ListFiltersState<{ q: string; class: string; status: string }>;
+
+  constructor(getUrl: () => URL) {
+    this.filters = new ListFiltersState({ getUrl, write: writeStudentListFilters, … });
+  }
+
+  seed(students: Student[]) {
+    this.students = students;
+    this.loadedVersion = entityVersions.students;
+  }
+
+  get visibleStudents() {
+    return this.filterVisible(this.students);
+  }
+
+  get selected() {
+    return this.students.find(s => s.id === this.selectedId);
+  }
+
+  patchStudent(id: string, patch: Partial<Student>) {
+    const i = this.students.findIndex(s => s.id === id);
+    if (i >= 0) this.students[i] = { ...this.students[i], ...patch };
+  }
+
+  async updateStudent(input: UpdateStudentInput) {
+    const previous = this.students.find(s => s.id === input.id);
+    await runStudentRouteMutation({
+      request: () => api.updateStudent(input),
+      apply: () => {
+        this.patchStudent(input.id, input.patch);
+      },
+      rollback: () => {
+        if (previous) this.patchStudent(input.id, previous);
+      },
+      successMessage: input.successMessage,
+      errorMessage: input.errorMessage,
+      versionKeys: ['students'],
+    });
+  }
+
+  async invalidateIfStale() {
+    if (this.loadedVersion === entityVersions.students) return;
+    await this.refetch();
+    this.loadedVersion = entityVersions.students;
+  }
+}
+
+export function setStudentsPageState(state: StudentsPageState) {
+  setContext(KEY, state);
+}
+
+export function getStudentsPageState() {
+  return getContext<StudentsPageState>(KEY);
+}
+```
+
+### Class rules
+
+- `$state` fields for mutable data
+- Getters for derived values
+- Arrow methods for handlers passed to DOM events
+- Cleanup via `onDestroy` in constructor when needed
+- **No `$effect` in state classes**
+- **Route `PageQuery` performs fetch** — state class receives `seed()`; tab routes may call `seedTab()` on the same instance
+- **Mutations live on the state class** — components call `state.updateStudent(…)`, not a raw API client or mutation runner
+
+### Context wiring
+
+- **Parent** (`+layout.svelte` or `+page.svelte`): `setStudentsPageState(new StudentsPageState(() => $page.url))`
+- **Children** (`routes/.../components/*`, nested tab pages): `getStudentsPageState()`
+
+### Do not
+
+- Copy entity arrays into component-local `$state` when the route state already holds them
+- Fetch in component `$effect` — extend the route query or call a state method triggered by URL change
+
+---
+
+## 4. URL-driven loading
+
+### Standard list route
+
+```svelte
+<!-- +page.svelte -->
+<script lang="ts">
+  import { page } from '$app/stores';
+  import { setStudentsPageState, StudentsPageState } from './students-page.svelte';
+  import { querySchoolStudentsPage } from './students.queries';
+
+  const state = new StudentsPageState(() => $page.url);
+  setStudentsPageState(state);
+  const query = querySchoolStudentsPage(state);
+</script>
+
+<PageQuery {query} loadingTitle={$t('school.students')}>
+  {#snippet children(data)}
+    <DataState status={data.status} …>
+      <StudentsList />
+    </DataState>
+  {/snippet}
+</PageQuery>
+```
+
+```ts
+// students.queries.ts
+import type { PageLoadMeta } from '$lib/page/load-state';
+
+export function querySchoolStudentsPage(state: StudentsPageState) {
+  return async (url: URL): Promise<PageLoadMeta> => {
+    try {
+      const students = await getSchoolStudents(url);
+      state.seed(students);
+      return { status: state.students.length > 0 ? 'ready' : 'empty' };
+    }
+    catch {
+      return { status: 'error', errorMessage: 'Unable to load this page.' };
+    }
+  };
+}
+```
+
+Route query functions may use a shared or route-local page-load resolver, but the resolver must return `PageLoadMeta` (`ready` / `empty` / `error`), keep entity payloads on route state, expose an `errorMessage` on failure, and leave rendering to `PageQuery` + `DataState`.
+
+### Rules
+
+1. **One query function per route** — named `query<Scope><Entity>Page` (e.g. `querySchoolStaffPage`, `queryClassEvaluationsPage`). Colocate with the route as `<feature>.queries.ts`.
+2. **Fetch the minimum** — filter server-side or client-side to route params (`classId`, `periodId`, etc.).
+3. **Seed route state inside `load`** — not a global store.
+4. **Views read route state** — `PageQuery` owns loading / error / empty status only.
+5. **`+page.svelte` orchestrates** — query + `DataState` + thin wiring; no entity rendering logic.
+
+### URL filters and pagination
+
+- **URL** → search, facet filters, page/offset keys (`q`, `class`, `status`, …)
+- **Route state** → loaded pages, `total`, `loadedVersion`
+- **List view** → reads state; never fetches
+
+Filter state uses `ListFiltersState` with `read*ListFilters` / `write*ListFilters` helpers from `lib/list/`.
+
+### `PageQuery` contract
+
+`PageQuery` caches by URL-derived key. **Entity payloads are not in the cache** — only `PageLoadMeta` status. When a route layout unmounts, call `releaseRoutePageQueryOnDestroy(getUrl)` so the next visit re-runs `load` and seeds a new state instance.
+
+The app shell must own academic-context invalidation. When school, academic year, or period changes, the central shell mechanism shall:
+
+1. Clear affected `PageQuery` cache entries.
+2. Invalidate the active route state (`invalidateIfStale()` or a route-scoped refresh callback).
+3. Preserve the current route URL unless the selected scope makes the route inaccessible.
+
+---
+
+## 5. Drawer detail and tab routes
+
+### List + drawer
+
+Complex entities use optional `[[id]]` segment. The list layout persists; the drawer opens when `id` is present.
+
+```
+/school/students           → list only
+/school/students/stu-1     → list + drawer (default tab)
+/school/students/stu-1/guardians → list + drawer (guardians tab)
+```
+
+### Tabs are nested routes — not `?tab=` query params
+
+Each drawer tab is a child route with its own `PageQuery`:
+
+```
+[[id]]/
+  +layout.svelte           # route-local drawer shell, tab bar (route links)
+  +page.svelte             # default tab content
+  guardians/+page.svelte   # lazy-loaded tab data
+  attendance/+page.svelte
+```
+
+**Ownership:**
+
+- Parent layout state holds the list collection and `selected` record (resolved from `id` param).
+- `[[id]]/+layout.svelte` renders drawer chrome and tab navigation. It may use a shared drawer shell or a route-local shell.
+- Each tab `+page.svelte` runs its own query and writes into a tab slice on the parent state (e.g. `state.tabData.guardians`) or a nested `StudentDetailState` set on the `[[id]]` layout.
+
+**Route-local drawer shell contract:**
+
+- Shell header: entity type chip + close button only.
+- Entity header: `DrawerEntityHeader` for identity, chips, and up to two primary actions.
+- Body: route-link tab bar plus read-only tab content; no open form fields on initial render.
+- Close behavior: header close, backdrop click, and `Escape` navigate back to the list URL and remove modal query params.
+- Layout: full-width mobile, `md:w-1/2` desktop overlay, `shadow-panel`, list remains behind the drawer.
+- Footer: omit when the shell header has Close; if present, Close only.
+
+**Default tab:** `[[id]]/+page.svelte` — URL ends at the entity id with no extra segment.
+
+### Deep-link / not-found
+
+1. Parent list query runs.
+2. Route state resolves `selected` by `id` from its collection.
+3. If record missing after list load → **not found** (close drawer, optional toast).
+4. Optional future enhancement: `fetchRecordById` fallback for records outside list scope.
+
+### Drawer sync
+
+Drawer open requires: parent route query finished **and** `selected` resolves in route state (or explicit not-found handling). Do not block on unrelated routes or collections.
+
+---
+
+## 6. Version ledger
+
+### Purpose
+
+Coordinate cross-route freshness without a global entity store. When any route mutates students, other routes holding student data can detect drift and refetch.
+
+```ts
+// lib/navigation/route-version-snapshot.ts
+export class RouteVersionSnapshot {
+  constructor(private readonly families: readonly EntityVersionKey[]) {}
+  markLoaded() { /* snapshot entityVersions[f] for each family */ }
+  isStale() { /* true when any family drifted */ }
+}
+```
+
+Register pull-based invalidation in the route layout:
+
+```ts
+registerVersionInvalidation(pageState); // calls invalidateIfStale() after navigate
+```
+
+### API
+
+```ts
+// lib/entity-versions.svelte.ts
+export class EntityVersions {
+  students = $state(0);
+  guardians = $state(0);
+  staff = $state(0);
+  // …
+
+  bump(key: EntityVersionKey) {
+    this[key]++;
+  }
+}
+
+export const entityVersions = new EntityVersions();
+```
+
+### Rules
+
+| Rule | Detail |
+|------|--------|
+| **Bump after server success** | Apply optimistic state before the request, but bump versions only after the request succeeds and any `onSuccess` completes |
+| **Bump per affected entity family** | `students`, not per-record id; cross-entity writes bump every affected family (`students` + `guardians`, etc.) |
+| **Same-route mutations** | Patch local state directly; bump for other routes |
+| **Invalidation is pull-based** | Active route states call `invalidateIfStale()` on navigate or focus — not a global push sync |
+| **Track every loaded family** | Route state keeps a `RouteVersionSnapshot` for each entity family in its slice; `markLoaded()` after fetch, `isStale()` before refetch |
+| **Start coarse** | Add per-scope versions only if profiling shows refetch cost |
+
+---
+
+## 7. Mutations
+
+All writes go through a route state method. The method must call the API client through a mutation runner that satisfies the contract below. The runner may be shared infrastructure or route-local when decoupling a route from legacy primitives.
+
+### Mutation runner contract
+
+```ts
+type RouteMutationOptions<T> = {
+  request: () => Promise<T>;
+  apply?: () => void;
+  rollback?: () => void;
+  onSuccess?: (result: T) => void | Promise<void>;
+  successMessage?: string;
+  errorMessage?: string;
+  versionKeys?: EntityVersionKey[];
+};
+```
+
+Execution order is mandatory:
+
+1. Run `apply` before `request`.
+2. Run `rollback` only if `request` or `onSuccess` fails.
+3. Run `onSuccess` after server success.
+4. Bump every `versionKeys` entry after `onSuccess` completes.
+5. Show `successMessage` after version bumps.
+6. Show `errorMessage` or the parsed server error after rollback.
+
+### Standard shape
+
+```ts
+async updateStudent(input: UpdateStudentInput) {
+  const previous = this.students.find(s => s.id === input.id);
+  await runStudentRouteMutation({
+    request: () => api.updateStudent(input),
+    apply: () => {
+      this.patchStudent(input.id, input.patch);
+    },
+    rollback: () => {
+      if (previous) this.patchStudent(input.id, previous);
+    },
+    successMessage: input.successMessage,
+    errorMessage: input.errorMessage,
+    versionKeys: ['students'],
+  });
+}
+```
+
+### Rules
+
+| Rule | Detail |
+|------|--------|
+| **Default: optimistic** | Paired `apply` + `rollback` for any mutation that changes visible data |
+| **Rollback required for visible changes** | If `apply` changes route-visible data, `rollback` must restore the previous snapshot or remove the optimistic record |
+| **No full shell refresh** | Do not refresh the app shell for record edits |
+| **Targeted refetch** | When the server generates derived data, refresh only that tab/query domain in `onSuccess` |
+| **Creates** | `apply` appends optimistic record; reconcile id on success if server assigns one |
+| **Deletes** | `apply` removes from collection; `rollback` restores snapshot |
+| **Toasts** | Success/error feedback is mandatory; no silent failures |
+| **Version keys** | `versionKeys` defaults to the primary entity family only when the write affects exactly one family; cross-entity writes must pass every affected family explicitly |
+
+### Mutation tiers
+
+```
+Tier 1 — Optimistic patch (preferred)
+  apply / rollback on route state + versionKeys bump after success
+
+Tier 2 — Targeted domain refresh
+  onSuccess: re-run the affected tab query or state.refetch()
+
+Tier 3 — Shell refresh (rare)
+  full shell refresh — academic structure only
+```
+
+### Inline toggles
+
+Boolean / single-value toggles (status chips, attendance checkboxes): flip immediately, persist via state mutation method, toast on success/error.
+
+---
+
+## 8. Smart components
+
+Smart components are shared, self-contained features that are **not** route-bound but large enough to warrant the same structure as a route feature.
+
+**Examples:** `StudentPicker`, `StaffPicker`, `GuardianPicker`, `ScopeBuilder`.
+
+```
+lib/smart-components/
+  student-picker/
+    student-picker-state.svelte.ts
+    StudentPicker.svelte
+    components/
+      StudentPickerRow.svelte
+```
+
+| Property | Route feature | Smart component |
+|----------|---------------|-----------------|
+| Bound to URL | Yes | No — props in, events out |
+| Own fetch | Via route `PageQuery` | Self-contained API on open/search |
+| State class + context | Yes | Yes |
+| Version ledger | `invalidateIfStale` on navigate | Optional — refetch open results when version drifts |
+| Location | `routes/.../` | `lib/smart-components/` |
+
+Smart components **do not** read route state from another feature. They fetch what they need independently.
+
+---
+
+## 9. Component script (Tier 4)
+
+```svelte
+<script lang="ts">
+  import { getStudentsPageState } from '../students-page.svelte';
+  import StudentsCreateModal from './StudentCreateModal.svelte';
+
+  const state = getStudentsPageState();
+  let createOpen = $state(false);
+  const rows = $derived(state.visibleStudents);
+</script>
+```
+
+**Keep in component:** modal open flags, form binding inside modals, CSS/focus.
+
+**Move out:** fetch, business rules, shared selection, debounce/pagination, mutations.
+
+**Extraction threshold:** extract route state methods when a view script exceeds **~60 lines** of non-markup logic, or when two sibling components share orchestration.
+
+---
+
+## 10. Loading and empty states
+
+| State | Owner | UI |
+|-------|-------|-----|
+| Shell not ready | `academicContext.shellReady` | Full-screen spinner in app layout |
+| Route loading | `PageQuery` (`result === null`) | In-content spinner |
+| Empty / error | Route page-load resolver → `PageLoadMeta.status` | `DataState` |
+| Drawer waiting | Route query finished + `selected` resolves | Open drawer; otherwise close |
+| Tab loading | Tab route `PageQuery` | In-drawer `DataState` or section skeleton |
+
+---
+
+## 11. SSR
+
+- No user-specific mutable module `$state` during SSR.
+- Guard `localStorage` with `browser`.
+- Route state is created per navigation on the client; layouts recreate state when scope params change.
+
+---
+
+## 12. Legacy `detailDataContext`
+
+The session-wide entity store (`lib/detail-data/context.svelte.ts`) is **deprecated for new work**. Existing screens may still use it during migration.
+
+**New features must:**
+
+- Own entity data on route state
+- Bump `entityVersions` via mutation `versionKeys`
+- Colocate state and components under `routes/`
+
+Migrate existing routes incrementally; do not extend `detailDataContext` seed methods for new entity types.
+
+---
+
+## 13. Anti-patterns
+
+| Do not | Do instead |
+|--------|------------|
+| Load module entities at app bootstrap | Shell + current route only |
+| Seed a global entity store on route load | `state.seed()` on route state |
+| Put feature views in `lib/components/school/…` | `routes/.../components/` |
+| Put feature state in `lib/<domain>/…` | `routes/.../*-page.svelte.ts` |
+| Fetch in component `$effect` | Route `PageQuery` or smart component state |
+| Full shell refresh after saving a record | Optimistic patch on route state |
+| `?tab=` for drawer tabs | Nested child routes under `[[id]]/` |
+| `apply` without `rollback` | Always pair them |
+| Smart component reads another route's state | Self-fetch via smart component state |
+| `onclick={state.reset}` | `() => state.reset()` or arrow method |
+
+---
+
+## 14. Testing
+
+- **Route state classes** — unit-test `seed`, `patch*`, `filterVisible`, mutation apply/rollback with Vitest (`new StudentsPageState()`, mock API). No Svelte mount required.
+- **Route queries** — unit-test `load`, `hasItems`, and state seeding with mocked API.
+- **Loading contracts** — `*.loading.test.ts` with `createRecordingSchoolClient` to assert payloads and request counts per route.
+- **Version ledger** — test that mutation bumps every affected version key and `invalidateIfStale` triggers refetch.
+- **Detail routing** — test `selected` resolution and missing-id handling from route state.
+- **Smart components** — unit-test picker state search and selection independently of routes.
+
+---
+
+## 15. Agent checklist
+
+- [ ] Route state class colocated under `routes/.../*-page.svelte.ts`
+- [ ] Route components under `routes/.../components/` — not `lib/components/<domain>/`
+- [ ] One `query*Page` per route; `load` seeds route state
+- [ ] Views read route state — `PageQuery` supplies status only
+- [ ] Mutations on state class via a mutation runner with `request`, paired `apply` / `rollback`, toasts, and `versionKeys`
+- [ ] Successful mutation bumps `entityVersions` for every affected entity family
+- [ ] No full shell refresh except academic-structure changes
+- [ ] Drawer tabs are nested routes under `[[id]]/`
+- [ ] No fetch in component `$effect`
+- [ ] Smart components in `lib/smart-components/` with own state — no route state reads
+- [ ] No new `detailDataContext` seeding

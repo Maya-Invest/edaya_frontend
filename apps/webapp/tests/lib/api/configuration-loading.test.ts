@@ -43,6 +43,7 @@ describe('configuration and activity loading', () => {
 				endDate: '2026-06-01',
 			}]),
 			listEnvelope([]),
+			listEnvelope([]),
 		]);
 
 		await fetchActivitySources(client, SEED_SCHOOL_ID);
@@ -51,6 +52,9 @@ describe('configuration and activity loading', () => {
 			schoolId: SEED_SCHOOL_ID,
 		});
 		expect(entityListRequests(requests, 'activity-enrollments')[0]?.body).toEqual({
+			activityId: { $in: ['activity-1'] },
+		});
+		expect(entityListRequests(requests, 'class-activity-enrollments')[0]?.body).toEqual({
 			activityId: { $in: ['activity-1'] },
 		});
 	});

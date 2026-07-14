@@ -1,5 +1,6 @@
-import type { Transport } from '$api-client';
+import type { Transport } from '@maya-invest/edaya-api-client';
 import { PUBLIC_API_URL } from '$env/static/public';
+import { authSession } from '$lib/auth/session.svelte';
 import { parseApiResponse, resolveApiUrl } from './http';
 
 export function createBrowserTransport(getYearId: () => string | undefined): Transport {
@@ -7,7 +8,7 @@ export function createBrowserTransport(getYearId: () => string | undefined): Tra
 		async request<T>(method: string, path: string, options?: { body?: unknown }): Promise<T> {
 			const headers = new Headers({
 				'Accept': 'application/json',
-				'X-Actor-Kind': 'staff',
+				'X-Actor-Kind': authSession.sessionKind ?? 'staff',
 			});
 			if (options?.body !== undefined) {
 				headers.set('Content-Type', 'application/json');
@@ -16,6 +17,13 @@ export function createBrowserTransport(getYearId: () => string | undefined): Tra
 			const yearId = getYearId();
 			if (yearId) {
 				headers.set('X-Academic-Year-Id', yearId);
+			}
+
+			if (authSession.userId) {
+				headers.set('X-Actor-Id', authSession.userId);
+			}
+			if (authSession.schoolId) {
+				headers.set('X-School-Id', authSession.schoolId);
 			}
 
 			const base = PUBLIC_API_URL || '';

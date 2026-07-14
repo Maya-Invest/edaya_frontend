@@ -13,8 +13,6 @@ export default antfu(
 			'**/.svelte-kit/**',
 			'**/node_modules/**',
 			'**/build/**',
-			'src/lib/api/openapi.json',
-			'src/lib/api/schema.d.ts',
 		],
 		rules: {
 			'no-new': 'off',

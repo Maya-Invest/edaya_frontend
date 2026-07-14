@@ -1,3 +1,4 @@
+import type { StudentListFilters } from '$lib/list/list-url-filters';
 import type { Student } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
@@ -8,7 +9,7 @@ import { getContext, setContext } from 'svelte';
 const SCHOOL_STUDENTS_STATE_KEY = Symbol('school-students-state');
 
 export class SchoolStudentsState {
-	readonly filters: ListFiltersState<{ q: string; class: string; status: string }>;
+	readonly filters: ListFiltersState<StudentListFilters>;
 
 	constructor(getUrl: () => URL) {
 		this.filters = new ListFiltersState(
@@ -30,12 +31,24 @@ export class SchoolStudentsState {
 	}
 
 	filterVisible(students: readonly Student[]): Student[] {
-		const { q, class: classFilter, status } = this.filters.values;
+		const { q, class: classFilter, status, sort } = this.filters.values;
 		const needle = q.toLowerCase();
-		return students
+		const filtered = students
 			.filter(s => classFilter === 'all' || s.classId === classFilter)
 			.filter(s => status === 'all' || s.status === status)
 			.filter(s => s.name.toLowerCase().includes(needle));
+		switch (sort) {
+			case 'name':
+				return [...filtered].sort((left, right) => left.name.localeCompare(right.name, 'fr'));
+			case 'average':
+				return [...filtered].sort((left, right) => right.average - left.average || left.name.localeCompare(right.name, 'fr'));
+			case 'attendance':
+				return [...filtered].sort((left, right) => right.attendance - left.attendance || left.name.localeCompare(right.name, 'fr'));
+			case 'status':
+				return [...filtered].sort((left, right) => left.status.localeCompare(right.status, 'fr') || left.name.localeCompare(right.name, 'fr'));
+			default:
+				return filtered;
+		}
 	}
 
 	hydrateFromUrl(url: URL) {

@@ -186,7 +186,7 @@ export async function createSessionMutation(input: {
 				...optimistic,
 				id: session.id,
 				kind: 'lesson',
-				scheduleId: session.scheduleId,
+				scheduleId: session.scheduleId ?? undefined,
 				startsAt: String(session.startsAt),
 				endsAt: String(session.endsAt),
 			});

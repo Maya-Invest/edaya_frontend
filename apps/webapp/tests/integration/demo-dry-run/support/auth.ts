@@ -48,8 +48,8 @@ export async function assertStackReady(base: string): Promise<void> {
 	catch (err) {
 		const detail = err instanceof Error ? err.message : String(err);
 		const hint = integrationUsesDemoLogin()
-			? 'Use WEBAPP_URL=https://app-staging.edaya.softilab.dev for remote staging, or start bun dev locally.'
-			: 'Use WEBAPP_URL=https://app.edaya.softilab.dev for remote production.';
+			? 'Use WEBAPP_URL=https://staging.app.edayaplus.com for remote staging, or start bun dev locally.'
+			: 'Use WEBAPP_URL=https://app.edayaplus.com for remote production.';
 		throw new Error(`Webapp not ready at ${base}${readinessPath} (${detail}). ${hint}`);
 	}
 }

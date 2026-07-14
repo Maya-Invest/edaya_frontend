@@ -22,6 +22,7 @@ import {
 	instructorName,
 	instructorNameFromStaffAssignment,
 } from '$lib/api/teacher-display';
+import { formatDateInput } from '$lib/date/format';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -75,6 +76,18 @@ export function defaultPlanningDateRange(reference = new Date()): PlanningDateRa
 	const end = new Date(reference);
 	end.setUTCMonth(end.getUTCMonth() + 6);
 	return { startDate: toDateKey(start), endDate: toDateKey(end) };
+}
+
+export function academicYearPlanningRange(year?: {
+	startDate?: string | null;
+	endDate?: string | null;
+} | null): PlanningDateRange {
+	const startDate = formatDateInput(year?.startDate);
+	const endDate = formatDateInput(year?.endDate);
+	if (startDate && endDate) {
+		return { startDate, endDate };
+	}
+	return defaultPlanningDateRange();
 }
 
 function formatTime(value: unknown): string {
@@ -332,6 +345,7 @@ function mapLessonPlanningEvent(
 				|| (classSubjectId ? entry.classSubjectId === classSubjectId : false),
 		}),
 		status: event.status ?? lessonSession?.status,
+		timetableGenerated: lessonSession?.timetableGenerated ?? null,
 	};
 }
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { GuardianListFilters } from '$lib/list/list-url-filters';
 	import type { Guardian } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { DEFAULT_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
@@ -32,7 +33,7 @@
 	const students = $derived(detailDataContext.students);
 	const initialFilters = $derived(readGuardianListFilters($page.url));
 
-	const listFilters = new ListFiltersState<{ q: string }>(
+	const listFilters = new ListFiltersState<GuardianListFilters>(
 		{
 			getUrl: () => $page.url,
 			write: writeGuardianListFilters,

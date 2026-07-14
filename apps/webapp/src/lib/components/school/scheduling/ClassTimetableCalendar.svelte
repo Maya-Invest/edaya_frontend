@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PlanningEvent } from '$lib/types/school';
+	import type { PlanningEvent, SchoolYearEvent } from '$lib/types/school';
 	import type { EventCss, CalendarInstanceApi } from '@svar-ui/svelte-calendar';
 	import { browser } from '$app/environment';
 	import { reschedulePlanningSlotMutation } from '$lib/api/mutations/planning.mutations';
@@ -8,15 +8,19 @@
 		PlanningTimetableState,
 		setPlanningTimetableState,
 	} from '$lib/scheduling/planning-timetable-state.svelte';
+	import { cn } from '$lib/utils';
 	import { Calendar, Willow } from '@svar-ui/svelte-calendar';
 	import {
 		calendarSlotFromDates,
 		formatPlanningSlotLabel,
+		isSchoolCalendarEventId,
 		mapPlanningToCalendarEvents,
+		mapSchoolYearEventsToCalendarEvents,
 		mondayOfWeek,
 		overlappingPlanningEventIds,
 		planningSlotSignature,
 		subjectToneClass,
+		timetableExpandedUnitHeight,
 		timetableHours,
 	} from './planning-calendar';
 	import PlanningEventContent from './PlanningEventContent.svelte';
@@ -25,18 +29,26 @@
 
 	const {
 		events,
+		schoolYearEvents = [],
+		classId,
 		selectedId,
 		weekStart = mondayOfWeek(new Date()),
+		expandCalendar = false,
 		editable = false,
 		onSelect,
 		onAttendance,
+		onChanged,
 	}: {
 		events: PlanningEvent[];
+		schoolYearEvents?: SchoolYearEvent[];
+		classId: string;
 		selectedId?: string;
 		weekStart?: Date;
+		expandCalendar?: boolean;
 		editable?: boolean;
 		onSelect?: (event: PlanningEvent) => void;
 		onAttendance?: (event: PlanningEvent) => void;
+		onChanged?: () => Promise<void>;
 	} = $props();
 
 	const timetable = new PlanningTimetableState();
@@ -46,8 +58,44 @@
 	const weekEvents = $derived(events);
 	const overlapIds = $derived(overlappingPlanningEventIds(weekEvents));
 	const hours = $derived(timetableHours(weekEvents));
-	const calendarEvents = $derived(mapPlanningToCalendarEvents(weekEvents));
-	const calendarEventsKey = $derived(weekEvents.map(event => `${event.id}:${event.status ?? 'pending'}`).join('|'));
+	let calendarContainer = $state<HTMLDivElement | null>(null);
+	let expandedLayoutHeight = $state<number | null>(null);
+
+	$effect(() => {
+		if (!browser || !expandCalendar || !calendarContainer) {
+			expandedLayoutHeight = null;
+			return;
+		}
+
+		const updateLayout = () => {
+			const top = calendarContainer?.getBoundingClientRect().top ?? 0;
+			expandedLayoutHeight = Math.max(520, Math.round(window.innerHeight - top - 24));
+		};
+
+		updateLayout();
+		const observer = new ResizeObserver(updateLayout);
+		observer.observe(calendarContainer);
+		window.addEventListener('resize', updateLayout);
+
+		return () => {
+			observer.disconnect();
+			window.removeEventListener('resize', updateLayout);
+		};
+	});
+
+	const gridUnitHeight = $derived(
+		expandCalendar && expandedLayoutHeight
+			? timetableExpandedUnitHeight(expandedLayoutHeight, hours.startHour, hours.endHour)
+			: 52,
+	);
+	const calendarEvents = $derived([
+		...mapSchoolYearEventsToCalendarEvents(schoolYearEvents, anchorDate, classId),
+		...mapPlanningToCalendarEvents(weekEvents),
+	]);
+	const calendarEventsKey = $derived([
+		...weekEvents.map(event => `${event.id}:${event.status ?? 'pending'}:${event.timetableGenerated ?? ''}`),
+		...schoolYearEvents.map(event => `${event.id}:${event.date}:${event.endDate ?? ''}`),
+	].join('|'));
 
 	timetable.configure({ onAttendance: (eventId) => {
 		const planningEvent = weekEvents.find(event => event.id === eventId);
@@ -65,7 +113,7 @@
 					endHour: hours.endHour,
 					step: 30,
 					snapStep: 15,
-					ui: { minUnitHeight: 52 },
+					ui: { minUnitHeight: gridUnitHeight },
 					format: 'timeScaleFormat',
 				},
 			},
@@ -97,15 +145,20 @@
 		const kind = typeof event.kind === 'string' ? event.kind : 'lesson';
 		const overlapping = overlapIds.has(String(event.id));
 		const reschedulable = kind === 'lesson' || kind === 'activity';
+		const calendarType = typeof event.calendarType === 'string' ? event.calendarType : '';
 		return [
 			'group',
-			typeof event.css === 'string' ? event.css : subjectToneClass(subject),
+			kind === 'school-calendar'
+				? (typeof event.css === 'string' ? event.css : `edaya-school-cal-${calendarType}`)
+				: (typeof event.css === 'string' ? event.css : subjectToneClass(subject)),
+			kind === 'school-calendar' ? 'edaya-timetable-event--school-calendar' : '',
 			active ? 'edaya-timetable-event--active' : '',
 			editable && reschedulable ? 'edaya-timetable-event--editable' : '',
 			overlapping ? 'edaya-timetable-event--overlap' : '',
 			kind === 'homework-due' ? 'edaya-timetable-event--homework-due' : '',
 			kind === 'activity' ? 'edaya-timetable-event--activity' : '',
 			kind === 'assessment' ? 'edaya-timetable-event--assessment' : '',
+			event.timetableGenerated === 'draft' ? 'edaya-timetable-event--draft' : '',
 		].filter(Boolean).join(' ');
 	};
 
@@ -114,6 +167,8 @@
 			return;
 		const id = payload.id;
 		if (id == null)
+			return;
+		if (isSchoolCalendarEventId(String(id)))
 			return;
 		const planningEvent = weekEvents.find(event => event.id === String(id));
 		if (planningEvent)
@@ -141,6 +196,8 @@
 		const id = payload.id;
 		const update = payload.event;
 		if (id == null || !update || typeof update !== 'object')
+			return false;
+		if (isSchoolCalendarEventId(String(id)))
 			return false;
 
 		const planningEvent = weekEvents.find(event => event.id === String(id));
@@ -203,12 +260,20 @@
 			successMessage: $t('planning.rescheduleSuccess'),
 			errorMessage: $t('planning.rescheduleError'),
 		}));
+		await onChanged?.();
 	}
 </script>
 
 {#if browser}
-	<div class="edaya-timetable-calendar h-[min(780px,calc(100vh-13rem))] min-h-[520px] overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-		{#key `${$lang}-${anchorDate.getTime()}-${editable}-${calendarEventsKey}`}
+	<div
+		bind:this={calendarContainer}
+		class={cn(
+			'edaya-timetable-calendar overflow-hidden rounded-2xl border border-border bg-card shadow-soft',
+			expandCalendar ? 'min-h-[520px]' : 'h-[min(780px,calc(100vh-13rem))] min-h-[520px]',
+		)}
+		style:height={expandCalendar && expandedLayoutHeight ? `${expandedLayoutHeight}px` : undefined}
+	>
+		{#key `${$lang}-${anchorDate.getTime()}-${editable}-${calendarEventsKey}-${expandCalendar ? `${expandedLayoutHeight}-${gridUnitHeight}` : ''}`}
 			<SvarCalendarLocale lang={$lang}>
 				<Willow fonts={false}>
 					<Calendar
@@ -238,7 +303,11 @@
 	/>
 {:else}
 	<div
-		class="flex h-[min(780px,calc(100vh-13rem))] min-h-[520px] items-center justify-center rounded-2xl border border-border bg-card/50"
+		class={cn(
+			'flex items-center justify-center rounded-2xl border border-border bg-card/50',
+			expandCalendar ? 'min-h-[520px]' : 'h-[min(780px,calc(100vh-13rem))] min-h-[520px]',
+		)}
+		style:height={expandCalendar && expandedLayoutHeight ? `${expandedLayoutHeight}px` : undefined}
 		aria-hidden="true"
 	></div>
 {/if}
@@ -267,6 +336,12 @@
 	:global(.edaya-timetable-calendar .wx-box-event) {
 		border: 1px solid transparent;
 		box-shadow: var(--shadow-soft);
+	}
+
+	:global(.edaya-timetable-calendar .wx-box-event.edaya-timetable-event--draft) {
+		border-style: dashed;
+		border-width: 2px;
+		opacity: 0.82;
 	}
 
 	:global(.edaya-timetable-calendar .wx-box-event.edaya-subject-tone-a) {
@@ -330,6 +405,54 @@
 
 	:global(.edaya-timetable-calendar .wx-box-event.edaya-timetable-event--assessment) {
 		cursor: default;
+	}
+
+	:global(.edaya-timetable-calendar .wx-box-event.edaya-timetable-event--school-calendar) {
+		cursor: default;
+		box-shadow: none;
+		opacity: 0.72;
+		border-style: dashed;
+		border-width: 2px;
+	}
+
+	:global(.edaya-timetable-calendar .wx-box-event.edaya-school-cal-holiday) {
+		background: hsl(var(--destructive) / 0.12);
+		border-color: hsl(var(--destructive) / 0.35);
+		color: hsl(var(--destructive));
+	}
+
+	:global(.edaya-timetable-calendar .wx-box-event.edaya-school-cal-vacation) {
+		background: hsl(var(--sky-soft));
+		border-color: hsl(var(--sky) / 0.35);
+		color: hsl(var(--sky));
+	}
+
+	:global(.edaya-timetable-calendar .wx-box-event.edaya-school-cal-closure) {
+		background: hsl(var(--highlight-soft));
+		border-color: hsl(var(--highlight) / 0.35);
+		color: hsl(var(--foreground));
+	}
+
+	:global(.edaya-timetable-calendar .wx-box-event.edaya-school-cal-ceremony) {
+		background: hsl(var(--primary) / 0.12);
+		border-color: hsl(var(--primary) / 0.3);
+		color: hsl(var(--foreground));
+	}
+
+	:global(.edaya-timetable-calendar .wx-bar-event) {
+		border: 1px solid transparent;
+		border-radius: 0.375rem;
+	}
+
+	:global(.edaya-timetable-calendar .wx-bar-event.edaya-timetable-event--school-calendar) {
+		cursor: default;
+		box-shadow: none;
+	}
+
+	:global(.edaya-timetable-calendar .wx-bar-event.edaya-school-cal-ceremony) {
+		background: hsl(var(--primary) / 0.12);
+		border-color: hsl(var(--primary) / 0.3);
+		color: hsl(var(--foreground));
 	}
 
 	:global(.edaya-timetable-calendar .wx-box-event.edaya-timetable-event--editable) {

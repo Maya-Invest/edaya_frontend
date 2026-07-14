@@ -1,4 +1,3 @@
-import { ApiError } from '$api-client';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { bootstrapSession } from '$lib/auth/bootstrap';
 import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
@@ -6,6 +5,7 @@ import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
 import { persistServerOnboardingStatusToDraft } from '$lib/onboarding/resume-onboarding';
 import { toast } from '$lib/toast.svelte';
+import { ApiError } from '@maya-invest/edaya-api-client';
 import { get } from 'svelte/store';
 
 function messageFromError(error: unknown): string {

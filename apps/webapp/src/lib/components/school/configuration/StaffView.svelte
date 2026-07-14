@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { StaffListFilters } from '$lib/list/list-url-filters';
 	import type { StaffMember } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
@@ -35,7 +36,7 @@
 
 	const initialFilters = $derived(readStaffListFilters($page.url));
 
-	const listFilters = new ListFiltersState<{ q: string }>(
+	const listFilters = new ListFiltersState<StaffListFilters>(
 		{
 			getUrl: () => $page.url,
 			write: writeStaffListFilters,

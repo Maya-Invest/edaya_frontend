@@ -178,12 +178,7 @@
 				<Wallet class="h-4 w-4" />
 			</div>
 			<p class="mt-3 font-display text-2xl font-semibold tabular-nums">{kpis.overdueFeeCount}</p>
-			<p class="mt-0.5 text-xs text-muted-foreground">
-				{$t('dashboard.kpi.overdueFeesMeta', {
-					count: kpis.overdueFeeCount,
-					amount: formatAmount(kpis.overdueFeeAmount),
-				})}
-			</p>
+			<p class="mt-0.5 text-xs text-muted-foreground">{$t('dashboard.kpi.overdueFees')}</p>
 		</a>
 
 		<a
@@ -250,7 +245,7 @@
 			<header class="mb-4 flex items-center justify-between gap-3">
 				<h2 class="font-display text-base font-semibold">{$t('dashboard.upcoming.title')}</h2>
 				<a
-					href={appPath('/(app)/school/calendar/[[id]]')}
+					href={appPath('/(app)/school/calendar')}
 					class="text-xs font-medium text-primary hover:underline"
 				>
 					{$t('dashboard.upcoming.viewCalendar')}

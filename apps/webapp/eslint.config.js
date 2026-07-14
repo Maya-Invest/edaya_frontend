@@ -14,8 +14,6 @@ export default antfu(
       '**/node_modules/**',
       '**/build/**',
       'src/generated/**',
-      'src/lib/api/openapi.json',
-      'src/lib/api/schema.d.ts',
     ],
     rules: {
       'no-new': 'off',

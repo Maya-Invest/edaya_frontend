@@ -86,6 +86,7 @@ export function lessonSession(
 		displayLabel: 'Session',
 		status: 'pending',
 		isException: false,
+		timetableTeacherIds: [],
 		startsAt: '2026-05-22T08:00:00.000Z',
 		endsAt: '2026-05-22T09:00:00.000Z',
 		...overrides,

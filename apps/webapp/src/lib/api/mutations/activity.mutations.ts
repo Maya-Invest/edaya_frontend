@@ -42,6 +42,7 @@ export async function createActivityMutation(input: {
 		startDate: input.startDate,
 		endDate: input.endDate,
 		enrollments: [],
+		classEnrollments: [],
 	};
 
 	const result = await runMutation(() => client.commands.configureActivity(

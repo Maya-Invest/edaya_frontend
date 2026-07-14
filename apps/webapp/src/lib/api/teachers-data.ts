@@ -1,7 +1,6 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { Teacher } from '$lib/types/school';
-import { ApiError } from '$api-client';
 import {
 	DEFAULT_LIST_PAGE_SIZE,
 	paginatedList,
@@ -10,6 +9,7 @@ import {
 } from '$lib/api/entity-list-filters';
 import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 import { formatPersonName } from '$lib/api/teacher-display';
+import { ApiError } from '@maya-invest/edaya-api-client';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 type TeacherRaw = components['schemas']['Teacher'];
@@ -41,6 +41,8 @@ export function mapTeachers(members: readonly TeacherRaw[]): Teacher[] {
 export interface TeachersPageRequest {
 	offset?: number;
 	limit?: number;
+	/** When false, list loads teachers only — assignment counts come from the assignments tab. */
+	includeAssignments?: boolean;
 }
 
 export interface PaginatedTeachersData {
@@ -66,6 +68,15 @@ export async function fetchTeachersPage(
 		client.entities.teachers.list(teacherFilter),
 		client.entities.teachers.count({ schoolId: scope.schoolId }).then(result => result.count),
 	]);
+	const includeAssignments = request.includeAssignments ?? false;
+	if (!includeAssignments) {
+		return {
+			teachers: mapTeachers(teachersRaw ?? []),
+			totalTeachers,
+			assignments: [],
+		};
+	}
+
 	const teacherIds = uniqueIds((teachersRaw ?? []).map(member => member.id));
 	if (teacherIds.length === 0) {
 		return { teachers: [], totalTeachers, assignments: [] };

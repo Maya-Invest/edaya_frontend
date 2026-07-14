@@ -1,12 +1,16 @@
 <script lang="ts">
 	import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 	import type { StaffMember } from '$lib/types/school';
+	import { academicContext } from '$lib/academic/context.svelte';
 	import {
 		deleteStaffPermissionAssignmentMutation,
 	} from '$lib/api/mutations/staff-permission-assignments.mutations';
+	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import {
 		formatPermissionLabel,
+		loadStaffPermissionPageData,
 	} from '$lib/api/staff-permission-assignments-data';
+	import { authSession } from '$lib/auth/session.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
@@ -14,6 +18,7 @@
 	import { t } from '$lib/i18n';
 	import { Pencil, Plus, ShieldCheck, Trash2 } from '$lib/icons';
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { ApiError } from '@maya-invest/edaya-api-client';
 	import { get } from 'svelte/store';
 
 	let {
@@ -27,8 +32,50 @@
 	const modals = getDrawerUrlModals();
 
 	let deleteBusy = $state<string | null>(null);
+	let loadingKey = $state<string | null>(null);
+	let loadError = $state(false);
 
+	const schoolId = $derived(authSession.schoolId ?? academicContext.schools[0]?.id ?? '');
+	const academicYearId = $derived(academicContext.yearId);
+	const permissionDataKey = $derived(schoolId && academicYearId ? `${schoolId}:${academicYearId}` : '');
+	const loading = $derived(Boolean(permissionDataKey && loadingKey === permissionDataKey));
 	const rows = $derived(detailDataContext.assignmentsForStaff(s.id));
+
+	async function loadPermissionData(key: string, targetSchoolId: string, targetAcademicYearId: string) {
+		loadingKey = key;
+		loadError = false;
+		try {
+			const data = await loadStaffPermissionPageData(
+				getBrowserSchoolClient(),
+				{ schoolId: targetSchoolId, academicYearId: targetAcademicYearId },
+				get(t),
+			);
+			if (permissionDataKey === key) {
+				detailDataContext.seedStaffPermissionData(data, key);
+			}
+		}
+		catch (error) {
+			if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
+				detailDataContext.seedStaffPermissionData({ assignments: [], catalog: [] }, key);
+			}
+			else if (permissionDataKey === key) {
+				loadError = true;
+			}
+		}
+		finally {
+			if (loadingKey === key) {
+				loadingKey = null;
+			}
+		}
+	}
+
+	$effect(() => {
+		const key = permissionDataKey;
+		if (!key || detailDataContext.hasStaffPermissionData(key) || loadingKey === key) {
+			return;
+		}
+		void loadPermissionData(key, schoolId, academicYearId);
+	});
 
 	function openCreate() {
 		editing = null;
@@ -81,8 +128,16 @@
 		{$t('staff.permissionsHint')}
 	</p>
 
-	<div class="overflow-hidden rounded-xl border border-border bg-card">
-		{#if rows.length === 0}
+	<div class="overflow-hidden rounded-xl border border-border bg-card" aria-busy={loading}>
+		{#if loading}
+			<p class="px-4 py-8 text-center text-sm text-muted-foreground">
+				{$t('dataState.loading')}
+			</p>
+		{:else if loadError}
+			<p class="px-4 py-8 text-center text-sm text-muted-foreground">
+				{$t('dataState.errorDefault')}
+			</p>
+		{:else if rows.length === 0}
 			<p class="px-4 py-8 text-center text-sm text-muted-foreground">
 				{$t('roles.noPermissionsForStaff')}
 			</p>

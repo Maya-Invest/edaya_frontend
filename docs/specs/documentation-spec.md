@@ -53,7 +53,7 @@ Plan docs **must not** be linked from specs, reference docs, or agent configurat
 
 ## 2. Agent spec set
 
-These seven documents are the **only** normative sources for agents working on `apps/webapp`:
+These six documents are the **only** normative sources for agents working on `apps/webapp`:
 
 | Spec | Scope |
 |------|-------|
@@ -61,8 +61,7 @@ These seven documents are the **only** normative sources for agents working on `
 | `app-shell-spec.md` | List, drawer, modal interaction patterns |
 | `shared-components-spec.md` | Mandatory reusable component registry |
 | `design-language-spec.md` | Visual design tokens and patterns |
-| `data-loading-spec.md` | Route loading, entity store, mutations |
-| `svelte-state-spec.md` | Svelte 5 state tiers and context wiring |
+| `route-state-spec.md` | URL-driven loading, route state, mutations, colocation, smart components |
 | `documentation-spec.md` | This taxonomy and doc hygiene rules |
 
 When multiple specs apply to a task, read each relevant spec independently. The root `AGENTS.md` file is an index only — not a substitute for reading the specs.
@@ -74,14 +73,15 @@ When rules appear to overlap, **precedence** is:
 | Priority | Spec | Wins for |
 |----------|------|----------|
 | 1 | `feature-architecture-spec.md` | Routes, entity surface type (complex/simple/thin/layout), locked product decisions |
-| 2 | Concern-specific spec | Interaction (`app-shell`), components (`shared-components`), data (`data-loading`), visuals (`design-language`), state (`svelte-state`) |
-| 3 | Heuristics in app-shell | Classifying **new** entities only — never overrides an assigned surface in feature-architecture §3 / §8 |
+| 2 | Concern-specific spec | Interaction (`app-shell`), components (`shared-components`), visuals (`design-language`) |
+| 3 | `route-state-spec.md` | Data loading, route state ownership, mutations, colocation — wins over legacy patterns in code |
+| 4 | Heuristics in app-shell | Classifying **new** entities only — never overrides an assigned surface in feature-architecture §3 / §8 |
 
 Codebase drift does not override specs. Align code to specs in dedicated PRs.
 
 ### 2.2 Multi-spec changes
 
-Architecture or UX changes that span concerns **must** update every affected spec in the same PR (e.g. new drawer pattern → `app-shell` + `shared-components`; new route → `feature-architecture` + `data-loading`).
+Architecture or UX changes that span concerns **must** update every affected spec in the same PR (e.g. new drawer pattern → `app-shell` + `shared-components`; new route → `feature-architecture` + `route-state`).
 
 ---
 

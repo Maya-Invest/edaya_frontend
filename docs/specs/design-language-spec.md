@@ -262,16 +262,17 @@ Built on **bits-ui** + **Tailwind**, shadcn-style patterns.
 | **LanguageSelector** | Same pill family |
 | **User block** | Avatar circle `bg-primary font-display`; role in mono caps |
 
-### 9.3 Domain components (`src/lib/components/school/`)
+### 9.3 Shared drawer chrome (`src/lib/components/school/shared/`)
 
 | Component | Role |
 |-----------|------|
-| **DetailDrawer** | Right sheet, kind badge `rounded-full uppercase text-[11px]`, close as ghost circle |
+| **DetailDrawer shell contract** | Right sheet, kind badge `rounded-full uppercase text-[11px]`, close as ghost circle; may be shared or route-local |
 | **DrawerField** | Read-only label + value stack |
 | **DrawerEmptyState** | Dashed `rounded-xl` centered placeholder |
 | **DrawerActionBar** | Optional drawer body footer — `border-t pt-4`, right-aligned secondary actions; **not** sub-collection `+ Add` header |
 | **StudentAvatar** | `rounded-2xl bg-primary` initials; hover camera overlay |
-| **List views** (`*View.svelte`) | Compose `ListPageHeader` + card/table collection |
+
+Route-local list and drawer bodies (`*View.svelte`, tab `+page.svelte`) live under `routes/.../components/` and compose T0/T2 primitives — not under `lib/components/school/{domain}/`.
 
 ---
 
@@ -287,9 +288,9 @@ Built on **bits-ui** + **Tailwind**, shadcn-style patterns.
 
 Use `ListPageHeader` snippet slots: `search`, `filters`, `more`, `primary`.
 
-### 10.2 Segmented control (drawer tabs / in-drawer segments)
+### 10.2 Segmented control (drawer tab bar / in-drawer segments)
 
-Pill segment strips for **drawer tab switches** or in-panel mode toggles — **not** for list-page main filters (main filter is always a `<select>`).
+Pill segment strips for **drawer tab navigation** (route links under `[[id]]/{tab}`) or in-panel mode toggles — **not** for list-page main filters (main filter is always a `<select>`). Tab bar items navigate to child routes; do not use `?tab=` query params for new work.
 
 ```html
 <div class="flex items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft">

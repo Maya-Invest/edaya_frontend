@@ -1,39 +1,45 @@
-import type { Evaluation, StudentBilling } from '$lib/types/school';
+import type { StudentBilling } from '$lib/types/school';
 import { describe, expect, it } from 'bun:test';
-import {
-	buildStudentGradeSummary,
-	summarizeStudentFinances,
-	summarizeStudentIncidents,
-} from '$lib/components/school/students/student-tab-selectors';
-
-const student = { id: 's1', classId: 'class-a', average: 16 };
-
-function evaluation(id: string, subject: string, graded: number, outOf = 20, coefficient = 1): Evaluation {
-	return {
-		id,
-		classId: 'class-a',
-		classSubjectId: `cs-${id}`,
-		title: id,
-		subject,
-		kind: 'quiz',
-		date: `2026-01-${id.padStart(2, '0')}`,
-		coefficient,
-		averageMark: 14,
-		outOf,
-		graded,
-		total: 24,
-		attachments: [],
-		submissions: [],
-		submittedCount: 0,
-	};
-}
+import { buildStudentGradeSummaryFromRows } from '../../../../../src/routes/(app)/school/students/[[id]]/(tabs)/grades/student-grades-tab.selectors';
+import { summarizeStudentFinances } from '../../../../../src/routes/(app)/school/students/[[id]]/(tabs)/finances/student-finance-tab.selectors';
+import { summarizeStudentIncidents } from '../../../../../src/routes/(app)/school/students/[[id]]/(tabs)/incidents/student-incidents-tab.selectors';
 
 describe('student tab selectors', () => {
 	it('groups grades by subject and computes the weighted overall average', () => {
-		const summary = buildStudentGradeSummary(student, [
-			evaluation('1', 'Math', 20, 20, 2),
-			evaluation('2', 'Math', 10, 20, 1),
-			evaluation('3', 'French', 0, 20, 1),
+		const summary = buildStudentGradeSummaryFromRows([
+			{
+				assessmentId: '1',
+				classGroupId: 'class-a',
+				title: 'Quiz 1',
+				subject: 'Math',
+				kind: 'quiz',
+				date: '2026-01-01',
+				coefficient: 2,
+				score: 20,
+				outOf: 20,
+			},
+			{
+				assessmentId: '2',
+				classGroupId: 'class-a',
+				title: 'Quiz 2',
+				subject: 'Math',
+				kind: 'quiz',
+				date: '2026-01-02',
+				coefficient: 1,
+				score: 10,
+				outOf: 20,
+			},
+			{
+				assessmentId: '3',
+				classGroupId: 'class-a',
+				title: 'Quiz 3',
+				subject: 'French',
+				kind: 'quiz',
+				date: '2026-01-03',
+				coefficient: 1,
+				score: null,
+				outOf: 20,
+			},
 		]);
 
 		expect(summary.studentEvals).toHaveLength(3);

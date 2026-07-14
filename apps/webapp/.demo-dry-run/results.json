@@ -1,7 +1,7 @@
 {
-  "passed": 98,
+  "passed": 96,
   "failed": 0,
-  "skipped": 0,
+  "skipped": 2,
   "results": [
     {
       "scene": "D0",
@@ -66,7 +66,8 @@
     {
       "scene": "D5",
       "step": "5.2 Maths slot shows Mme Touré",
-      "status": "pass"
+      "status": "skip",
+      "detail": "No maths lesson text in grid — verify seed week / teacher assignments manually"
     },
     {
       "scene": "D6",
@@ -76,7 +77,8 @@
     {
       "scene": "D6",
       "step": "6.2 Homework filter",
-      "status": "pass"
+      "status": "skip",
+      "detail": "No homework rows after filter"
     },
     {
       "scene": "setup",

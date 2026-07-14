@@ -88,6 +88,7 @@ export class DetailDataContext {
 	roleEnabledPermissions = $state<Partial<Record<StaffRole, Record<string, boolean>>>>({});
 	staffPermissionAssignments = $state<StaffPermissionAssignmentView[]>([]);
 	permissionCatalog = $state<PermissionCatalogEntry[]>([]);
+	staffPermissionDataKey = $state<string | null>(null);
 	staffAssignments = $state<components['schemas']['StaffAssignment'][]>([]);
 	teacherAssignments = $state<components['schemas']['TeacherAssignment'][]>([]);
 	studentDrawerCache = $state<{
@@ -107,7 +108,7 @@ export class DetailDataContext {
 		return next;
 	}
 
-	// --- Seed policies (see specs/data-loading-spec.md) ---
+	// --- Seed policies (legacy — see docs/specs/route-state-spec.md §12) ---
 	// Merge by id: students (school-wide), guardians, staff, incidents, activities, billing, fees, resources
 	// Replace class slice: students (class scope), planning, evaluations, deadlines, subjects
 	// Replace all: role permissions, active-year calendar events and absences
@@ -278,9 +279,16 @@ export class DetailDataContext {
 	seedStaffPermissionData(snapshot: {
 		assignments: StaffPermissionAssignmentView[];
 		catalog: PermissionCatalogEntry[];
-	}) {
+	}, key?: string) {
 		this.staffPermissionAssignments = snapshot.assignments;
 		this.permissionCatalog = snapshot.catalog;
+		if (key) {
+			this.staffPermissionDataKey = key;
+		}
+	}
+
+	hasStaffPermissionData(key: string): boolean {
+		return this.staffPermissionDataKey === key;
 	}
 
 	upsertStaffPermissionAssignment(row: StaffPermissionAssignmentView) {
@@ -574,6 +582,7 @@ export class DetailDataContext {
 		this.roleEnabledPermissions = {};
 		this.staffPermissionAssignments = [];
 		this.permissionCatalog = [];
+		this.staffPermissionDataKey = null;
 		this.staffAssignments = [];
 		this.teacherAssignments = [];
 		this.studentDrawerCache = null;

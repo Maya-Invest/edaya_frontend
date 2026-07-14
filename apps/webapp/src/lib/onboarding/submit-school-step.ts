@@ -1,5 +1,4 @@
 import type { OnboardingSchoolDraft } from '$lib/onboarding/types';
-import { ApiError } from '$api-client';
 import { academicContext } from '$lib/academic/context.svelte';
 import { configureBrowserSchoolClient, getBrowserSchoolClient } from '$lib/api/school-client';
 import { bootstrapSession } from '$lib/auth/bootstrap';
@@ -8,6 +7,7 @@ import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
 import { periodFitsInAcademicYear } from '$lib/onboarding/school-step-validation';
 import { toast } from '$lib/toast.svelte';
+import { ApiError } from '@maya-invest/edaya-api-client';
 import { get } from 'svelte/store';
 
 export interface SubmitSchoolStepResult {

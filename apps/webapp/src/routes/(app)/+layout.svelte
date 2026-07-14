@@ -119,6 +119,20 @@
 		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
 	});
 
+	function usesRouteLocalDrawer(pathname: string): boolean {
+		return /^\/school\/students(?:\/|$)/.test(pathname)
+			|| /^\/school\/guardians(?:\/|$)/.test(pathname)
+			|| /^\/school\/staff(?:\/|$)/.test(pathname)
+			|| /^\/school\/teachers(?:\/|$)/.test(pathname)
+			|| /^\/school\/activities(?:\/|$)/.test(pathname)
+			|| /^\/school\/announcements(?:\/|$)/.test(pathname)
+			|| /^\/school\/events(?:\/|$)/.test(pathname)
+			|| /^\/classes\/[^/]+\/evaluations(?:\/|$)/.test(pathname)
+			|| /^\/classes\/[^/]+\/timetable(?:\/|$)/.test(pathname)
+			|| /^\/classes\/[^/]+\/teaching(?:\/|$)/.test(pathname)
+			|| /^\/classes\/[^/]+\/report-cards(?:\/|$)/.test(pathname);
+	}
+
 	$effect(() => {
 		const pathname = $page.url.pathname;
 		const cacheKey = listRouteCacheKey($page.url);
@@ -126,7 +140,7 @@
 		void reportCardsContext.ready;
 		void detailDataContext.students;
 
-		if (!isLikelyDetailPath(pathname)) {
+		if (!isLikelyDetailPath(pathname) || usesRouteLocalDrawer(pathname)) {
 			drawer.close();
 			return;
 		}

@@ -6,6 +6,13 @@ import {
 	TEACHER_ID,
 } from '../support/constants';
 import {
+	classTeachingDrawerPath,
+	classTeachingPath,
+	schoolStaffPath,
+	schoolStudentPath,
+	schoolTeacherPath,
+} from '../support/paths';
+import {
 	clickDrawerTab,
 	closeDrawer,
 	urlTabParam,
@@ -83,8 +90,8 @@ export async function runDrawerTabChecks(ctx: DemoContext): Promise<void> {
 		reporter.log(scene, '6 Class assignments updates URL', 'fail', 'Could not click assignments tab');
 	}
 
-	if (await visit(ctx, `${base}/school/students/${STUDENT_ID}?tab=grades`, scene, '7 Student grades deep-link', {
-		pathPrefix: `/school/students/${STUDENT_ID}`,
+	if (await visit(ctx, `${base}${schoolStudentPath(STUDENT_ID, 'grades')}`, scene, '7 Student grades deep-link', {
+		pathPrefix: schoolStudentPath(STUDENT_ID, 'grades'),
 	})) {
 		if (await waitForDrawerTabBar(ctx)) {
 			reporter.log(scene, '8 Student drawer tab bar', 'pass');
@@ -102,7 +109,7 @@ export async function runDrawerTabChecks(ctx: DemoContext): Promise<void> {
 			await shot('DD-9-student-url');
 		}
 
-		if (await clickDrawerTab(ctx, 'profile') && await waitForUrlTab(ctx, null, { absent: true })) {
+		if (await clickDrawerTab(ctx, 'profile') && await waitForUrlTab(ctx, 'profile')) {
 			reporter.log(scene, '10 Student profile clears URL param', 'pass');
 		}
 		else {
@@ -110,8 +117,8 @@ export async function runDrawerTabChecks(ctx: DemoContext): Promise<void> {
 		}
 	}
 
-	if (await visit(ctx, `${base}/school/teachers/${TEACHER_ID}?tab=assignments`, scene, '11 Teacher assignments deep-link', {
-		pathPrefix: `/school/teachers/${TEACHER_ID}`,
+	if (await visit(ctx, `${base}${schoolTeacherPath(TEACHER_ID, 'assignments')}`, scene, '11 Teacher assignments deep-link', {
+		pathPrefix: schoolTeacherPath(TEACHER_ID, 'assignments'),
 	})) {
 		if (await waitForDrawerTabBar(ctx) && await waitForUrlTab(ctx, 'assignments')) {
 			reporter.log(scene, '12 Teacher URL tab=assignments', 'pass');
@@ -122,8 +129,8 @@ export async function runDrawerTabChecks(ctx: DemoContext): Promise<void> {
 		}
 	}
 
-	if (await visit(ctx, `${base}/school/staff/${STAFF_ID}?tab=permissions`, scene, '13 Staff permissions deep-link', {
-		pathPrefix: `/school/staff/${STAFF_ID}`,
+	if (await visit(ctx, `${base}${schoolStaffPath(STAFF_ID, 'permissions')}`, scene, '13 Staff permissions deep-link', {
+		pathPrefix: schoolStaffPath(STAFF_ID, 'permissions'),
 	})) {
 		if (await waitForDrawerTabBar(ctx) && await waitForUrlTab(ctx, 'permissions')) {
 			reporter.log(scene, '14 Staff URL tab=permissions', 'pass');
@@ -138,9 +145,9 @@ export async function runDrawerTabChecks(ctx: DemoContext): Promise<void> {
 		}
 	}
 
-	const subjectLogbookUrl = `${base}/classes/${CLASS_6A}/teaching/${CLASS_SUBJECT_ID}?tab=logbook`;
+	const subjectLogbookUrl = `${base}${classTeachingPath(CLASS_6A, CLASS_SUBJECT_ID, 'logbook')}`;
 	if (await visit(ctx, subjectLogbookUrl, scene, '15 Subject logbook deep-link', {
-		pathPrefix: `/classes/${CLASS_6A}/teaching/${CLASS_SUBJECT_ID}`,
+		pathPrefix: classTeachingDrawerPath(CLASS_6A, CLASS_SUBJECT_ID),
 	})) {
 		if (await waitForDrawerTabBar(ctx) && await waitForUrlTab(ctx, 'logbook')) {
 			reporter.log(scene, '16 Subject URL tab=logbook', 'pass');
@@ -151,7 +158,7 @@ export async function runDrawerTabChecks(ctx: DemoContext): Promise<void> {
 		}
 
 		if (await clickDrawerTab(ctx, 'progression')) {
-			if (await waitForUrlTab(ctx, null, { absent: true })) {
+			if (await waitForUrlTab(ctx, 'progression')) {
 				reporter.log(scene, '17 Subject progression clears URL param', 'pass');
 			}
 			else {

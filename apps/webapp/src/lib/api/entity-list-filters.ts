@@ -1,4 +1,4 @@
-import type { EntityQuery } from '$api-client';
+import type { EntityQuery } from '@maya-invest/edaya-api-client';
 
 export const DEFAULT_LIST_PAGE_SIZE = 50;
 
@@ -22,6 +22,10 @@ export function paginatedList(
 		...(options?.orderBy ? { $orderBy: options.orderBy } : {}),
 	};
 }
+
+export const ENROLLMENT_LIST_ORDER: EntityQuery['$orderBy'] = [
+	{ field: 'studentId', direction: 'asc' },
+];
 
 export const STUDENT_LIST_ORDER: EntityQuery['$orderBy'] = [
 	{ field: 'lastName', direction: 'asc' },
@@ -246,6 +250,10 @@ export function involvementsForIncidents(incidentIds: readonly string[]): Entity
 }
 
 export function activityEnrollmentsForActivities(activityIds: readonly string[]): EntityQuery {
+	return recordsForFieldIds('activityId', activityIds);
+}
+
+export function classActivityEnrollmentsForActivities(activityIds: readonly string[]): EntityQuery {
 	return recordsForFieldIds('activityId', activityIds);
 }
 

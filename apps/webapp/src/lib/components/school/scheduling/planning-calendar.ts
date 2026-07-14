@@ -1,4 +1,5 @@
-import type { PlanningEvent } from '$lib/types/school';
+import type { PlanningEvent, SchoolYearEvent } from '$lib/types/school';
+import { parseCivilDate } from '$lib/date/format';
 
 export const TIMETABLE_DAY_OFFSET: Record<PlanningEvent['day'], number> = {
 	Mon: 0,
@@ -67,6 +68,13 @@ export function formatWeekAnchor(date: Date): string {
 	const year = monday.getFullYear();
 	const month = `${monday.getMonth() + 1}`.padStart(2, '0');
 	const day = `${monday.getDate()}`.padStart(2, '0');
+	return `${year}-${month}-${day}`;
+}
+
+export function formatCalendarDate(date: Date): string {
+	const year = date.getFullYear();
+	const month = `${date.getMonth() + 1}`.padStart(2, '0');
+	const day = `${date.getDate()}`.padStart(2, '0');
 	return `${year}-${month}-${day}`;
 }
 
@@ -216,6 +224,46 @@ export function formatPlanningSlotLabel(
 	return `${event.title} · ${dayLabel(event.day)} ${event.start}–${event.end}`;
 }
 
+export interface PlanningEventCellContent {
+	primary: string;
+	secondary: string;
+}
+
+/** Primary/secondary lines for timetable grid cells — keep cells scannable by session kind. */
+export function planningEventCellContent(event: {
+	kind?: PlanningEvent['kind'] | 'school-calendar';
+	subject?: string;
+	title?: string;
+	text?: string;
+	teacher?: string;
+}): PlanningEventCellContent {
+	const title = String(event.text ?? event.title ?? '');
+	const subject = String(event.subject ?? '');
+
+	switch (event.kind) {
+		case 'lesson':
+			return {
+				primary: subject || title,
+				secondary: String(event.teacher ?? ''),
+			};
+		case 'activity':
+			return {
+				primary: subject || title,
+				secondary: title && title !== subject ? title : '',
+			};
+		case 'assessment':
+			return {
+				primary: subject || title,
+				secondary: title && title !== subject ? title : '',
+			};
+		default:
+			return {
+				primary: title || subject,
+				secondary: '',
+			};
+	}
+}
+
 function parseTimeOfDay(time: string): { hours: number; minutes: number } {
 	const [hours = 0, minutes = 0] = time.split(':').map(part => Number.parseInt(part, 10));
 	return { hours, minutes };
@@ -225,13 +273,22 @@ export interface TimetableCalendarEvent {
 	id: string;
 	start: Date;
 	end: Date;
+	allDay?: boolean;
 	text: string;
 	subject: string;
 	room: string;
 	teacher: string;
-	kind?: PlanningEvent['kind'];
+	kind?: PlanningEvent['kind'] | 'school-calendar';
+	calendarType?: SchoolYearEvent['type'];
 	status?: PlanningEvent['status'];
+	timetableGenerated?: PlanningEvent['timetableGenerated'];
 	css?: string;
+}
+
+export const SCHOOL_CALENDAR_EVENT_ID_PREFIX = 'school-cal-';
+
+export function isSchoolCalendarEventId(id: string): boolean {
+	return id.startsWith(SCHOOL_CALENDAR_EVENT_ID_PREFIX);
 }
 
 export function subjectToneClass(subject: string): string {
@@ -258,6 +315,7 @@ export function mapPlanningToCalendarEvents(
 			teacher: event.teacher,
 			kind: event.kind,
 			status: event.status,
+			timetableGenerated: event.timetableGenerated,
 			css: calendarEventCss(event),
 		};
 	});
@@ -313,6 +371,35 @@ export function timetableHours(events: PlanningEvent[]): { startHour: number; en
 	};
 }
 
+export const TIMETABLE_CALENDAR_HEADER_HEIGHT = 48;
+export const TIMETABLE_CALENDAR_MIN_UNIT_HEIGHT = 40;
+
+export function timetableTimeSlotCount(
+	startHour: number,
+	endHour: number,
+	stepMinutes = 30,
+): number {
+	return Math.max(1, Math.round(((endHour - startHour) * 60) / stepMinutes));
+}
+
+export function timetableExpandedUnitHeight(
+	containerHeight: number,
+	startHour: number,
+	endHour: number,
+	options?: {
+		stepMinutes?: number;
+		headerHeight?: number;
+		minUnitHeight?: number;
+	},
+): number {
+	const stepMinutes = options?.stepMinutes ?? 30;
+	const headerHeight = options?.headerHeight ?? TIMETABLE_CALENDAR_HEADER_HEIGHT;
+	const minUnitHeight = options?.minUnitHeight ?? TIMETABLE_CALENDAR_MIN_UNIT_HEIGHT;
+	const slots = timetableTimeSlotCount(startHour, endHour, stepMinutes);
+	const available = Math.max(0, containerHeight - headerHeight);
+	return Math.max(minUnitHeight, Math.floor(available / slots));
+}
+
 export interface PlanningOverlap {
 	left: PlanningEvent;
 	right: PlanningEvent;
@@ -363,4 +450,218 @@ function planningEventsOverlap(left: PlanningEvent, right: PlanningEvent): boole
 	const rightStart = new Date(right.startsAt).getTime();
 	const rightEnd = new Date(right.endsAt).getTime();
 	return leftStart < rightEnd && rightStart < leftEnd;
+}
+
+const WEEKDAY_LABELS: PlanningEvent['day'][] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
+export function schoolYearEventEndDate(event: SchoolYearEvent): string {
+	return event.endDate ?? event.date;
+}
+
+export function schoolYearEventAppliesToClass(event: SchoolYearEvent, classId: string): boolean {
+	if (event.scope === 'all') {
+		return true;
+	}
+	return Array.isArray(event.scope) && event.scope.includes(classId);
+}
+
+export function weekDateRange(weekStart: Date): { start: string; end: string } {
+	const start = formatCalendarDate(weekStart);
+	const sunday = new Date(weekStart);
+	sunday.setDate(sunday.getDate() + 6);
+	return { start, end: formatCalendarDate(sunday) };
+}
+
+export function dateRangeIntersectsWeek(
+	startDate: string,
+	endDate: string,
+	weekStart: Date,
+): boolean {
+	const { start, end } = weekDateRange(weekStart);
+	return startDate <= end && endDate >= start;
+}
+
+export function filterSchoolYearEventsForWeek(
+	events: SchoolYearEvent[],
+	weekStart: Date,
+	classId: string,
+): SchoolYearEvent[] {
+	return events.filter((event) => {
+		if (!schoolYearEventAppliesToClass(event, classId)) {
+			return false;
+		}
+		return dateRangeIntersectsWeek(event.date, schoolYearEventEndDate(event), weekStart);
+	});
+}
+
+export function schoolYearEventDaysInWeek(
+	event: SchoolYearEvent,
+	weekStart: Date,
+): PlanningEvent['day'][] {
+	const eventStart = event.date;
+	const eventEnd = schoolYearEventEndDate(event);
+	const days: PlanningEvent['day'][] = [];
+
+	for (let index = 0; index < WEEKDAY_LABELS.length; index++) {
+		const dayDate = new Date(weekStart);
+		dayDate.setDate(dayDate.getDate() + index);
+		const anchor = formatCalendarDate(dayDate);
+		if (anchor >= eventStart && anchor <= eventEnd) {
+			days.push(WEEKDAY_LABELS[index]!);
+		}
+	}
+
+	return days;
+}
+
+export function isNonSchoolDayEventType(type: SchoolYearEvent['type']): boolean {
+	return type === 'holiday' || type === 'vacation' || type === 'closure';
+}
+
+export function schoolYearEventBlocksTimetable(event: SchoolYearEvent): boolean {
+	if (event.type === 'ceremony') {
+		return false;
+	}
+	return event.blocksTimetable ?? true;
+}
+
+export interface SchoolCalendarDayMarker {
+	day: PlanningEvent['day'];
+	date: string;
+	events: SchoolYearEvent[];
+}
+
+export function schoolCalendarMarkersForWeek(
+	events: SchoolYearEvent[],
+	weekStart: Date,
+	classId: string,
+): SchoolCalendarDayMarker[] {
+	const weekEvents = filterSchoolYearEventsForWeek(events, weekStart, classId);
+	const markers: SchoolCalendarDayMarker[] = [];
+
+	for (let index = 0; index < WEEKDAY_LABELS.length; index++) {
+		const day = WEEKDAY_LABELS[index]!;
+		const dayDate = new Date(weekStart);
+		dayDate.setDate(dayDate.getDate() + index);
+		const date = formatCalendarDate(dayDate);
+		const dayEvents = weekEvents.filter(event =>
+			schoolYearEventDaysInWeek(event, weekStart).includes(day),
+		);
+		markers.push({ day, date, events: dayEvents });
+	}
+
+	return markers;
+}
+
+/** Wall-clock hours used when rendering school calendar events on the class timetable grid. */
+export const SCHOOL_CALENDAR_DAY_START = '06:00';
+export const SCHOOL_CALENDAR_DAY_END = '18:00';
+
+export function schoolCalendarDayInstants(date: string): { start: Date; end: Date } {
+	const noon = parseCivilDate(date);
+	const start = new Date(noon);
+	start.setHours(6, 0, 0, 0);
+	const end = new Date(noon);
+	end.setHours(18, 0, 0, 0);
+	return { start, end };
+}
+
+/** Exclusive end instant for SVAR all-day ceremony bars spanning civil dates. */
+export function schoolCalendarCeremonyAllDayInstants(
+	startDate: string,
+	endDate: string,
+): { start: Date; end: Date } {
+	const start = parseCivilDate(startDate);
+	start.setHours(0, 0, 0, 0);
+	const end = parseCivilDate(endDate);
+	end.setDate(end.getDate() + 1);
+	end.setHours(0, 0, 0, 0);
+	return { start, end };
+}
+
+export function schoolYearEventDatesInWeek(event: SchoolYearEvent, weekStart: Date): string[] {
+	const { start: weekStartDate, end: weekEndDate } = weekDateRange(weekStart);
+	const rangeStart = event.date > weekStartDate ? event.date : weekStartDate;
+	const rangeEnd = schoolYearEventEndDate(event) < weekEndDate
+		? schoolYearEventEndDate(event)
+		: weekEndDate;
+	if (rangeStart > rangeEnd) {
+		return [];
+	}
+
+	const dates: string[] = [];
+	const cursor = parseCivilDate(rangeStart);
+	const end = parseCivilDate(rangeEnd);
+	while (cursor.getTime() <= end.getTime()) {
+		dates.push(formatCalendarDate(cursor));
+		cursor.setDate(cursor.getDate() + 1);
+	}
+	return dates;
+}
+
+function schoolYearEventCss(type: SchoolYearEvent['type']): string {
+	switch (type) {
+		case 'holiday':
+			return 'edaya-school-cal-holiday';
+		case 'vacation':
+			return 'edaya-school-cal-vacation';
+		case 'closure':
+			return 'edaya-school-cal-closure';
+		default:
+			return 'edaya-school-cal-ceremony';
+	}
+}
+
+export function mapSchoolYearEventsToCalendarEvents(
+	events: SchoolYearEvent[],
+	weekStart: Date,
+	classId: string,
+): TimetableCalendarEvent[] {
+	const mapped: TimetableCalendarEvent[] = [];
+
+	for (const event of filterSchoolYearEventsForWeek(events, weekStart, classId)) {
+		if (event.type === 'ceremony') {
+			const dates = schoolYearEventDatesInWeek(event, weekStart);
+			if (dates.length === 0) {
+				continue;
+			}
+
+			const { start, end } = schoolCalendarCeremonyAllDayInstants(
+				dates[0]!,
+				dates[dates.length - 1]!,
+			);
+			mapped.push({
+				id: `${SCHOOL_CALENDAR_EVENT_ID_PREFIX}${event.id}`,
+				start,
+				end,
+				allDay: true,
+				text: event.title,
+				subject: '',
+				room: '',
+				teacher: '',
+				kind: 'school-calendar',
+				calendarType: event.type,
+				css: schoolYearEventCss(event.type),
+			});
+			continue;
+		}
+
+		for (const date of schoolYearEventDatesInWeek(event, weekStart)) {
+			const { start, end } = schoolCalendarDayInstants(date);
+			mapped.push({
+				id: `${SCHOOL_CALENDAR_EVENT_ID_PREFIX}${event.id}:${date}`,
+				start,
+				end,
+				text: event.title,
+				subject: '',
+				room: '',
+				teacher: '',
+				kind: 'school-calendar',
+				calendarType: event.type,
+				css: schoolYearEventCss(event.type),
+			});
+		}
+	}
+
+	return mapped;
 }

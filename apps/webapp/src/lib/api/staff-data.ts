@@ -1,7 +1,6 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { StaffMember, StaffRole, SubjectCategory } from '$lib/types/school';
-import { ApiError } from '$api-client';
 import {
 	DEFAULT_LIST_PAGE_SIZE,
 	entitiesByIds,
@@ -11,6 +10,7 @@ import {
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
+import { ApiError } from '@maya-invest/edaya-api-client';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -326,8 +326,10 @@ export async function fetchSessionStaffProfile(
 		? 'owner'
 		: 'educateur';
 	try {
-		const relations = await fetchStaffRelations(client, [staffId]);
-		const classGroupsRaw = await client.entities.classGroups.list({ schoolId: staff.schoolId });
+		const [relations, classGroupsRaw] = await Promise.all([
+			fetchStaffRelations(client, [staffId]),
+			client.entities.classGroups.list({ schoolId: staff.schoolId }),
+		]);
 		role = mapStaffRole(staff, relations.assignmentsRaw, classGroupsRaw ?? [], ownerSubjectId);
 	}
 	catch (error) {
@@ -366,6 +368,7 @@ export interface PaginatedStaffData {
 	staff: StaffMember[];
 	totalStaff: number;
 	assignments: AssignmentRaw[];
+	classSubjects: ClassSubjectRaw[];
 }
 
 export async function fetchStaffMembersPage(
@@ -384,14 +387,16 @@ export async function fetchStaffMembersPage(
 	const [staffRaw, totalStaff, classGroupsRaw] = await Promise.all([
 		client.entities.staffMembers.list(staffFilter),
 		client.entities.staffMembers.count({ schoolId: scope.schoolId }).then(result => result.count),
-		client.entities.classGroups.list({
-			schoolId: scope.schoolId,
-			academicYearId: scope.academicYearId,
-		}),
+		scope.academicYearId
+			? client.entities.classGroups.list({
+					schoolId: scope.schoolId,
+					academicYearId: scope.academicYearId,
+				})
+			: Promise.resolve([]),
 	]);
 	const staffIds = uniqueIds((staffRaw ?? []).map(member => member.id));
 	if (staffIds.length === 0) {
-		return { staff: [], totalStaff, assignments: [] };
+		return { staff: [], totalStaff, assignments: [], classSubjects: [] };
 	}
 	const [relations, ownerSubjectId] = await Promise.all([
 		fetchStaffRelations(client, staffIds),
@@ -409,5 +414,6 @@ export async function fetchStaffMembersPage(
 		),
 		totalStaff,
 		assignments: relations.assignmentsRaw,
+		classSubjects: relations.classSubjectsRaw,
 	};
 }

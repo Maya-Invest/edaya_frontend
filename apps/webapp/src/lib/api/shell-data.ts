@@ -8,18 +8,15 @@ import type {
 	PeriodDefinition,
 	School,
 } from '$lib/types/school';
-import { ApiError } from '$api-client';
 import { buildClassHierarchy } from '$lib/academic/hierarchy';
-import { activeEnrollmentCountForClass, schoolWideEntityList } from '$lib/api/entity-list-filters';
+import { schoolWideEntityList } from '$lib/api/entity-list-filters';
 import { mapSchoolFromApi } from '$lib/api/school-data';
+import { ApiError } from '@maya-invest/edaya-api-client';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
 const SHELL_ACADEMIC_STRUCTURE_SCOPE
 	= 'Shell bootstrap loads school-wide academic structure selectors (school, years, periods, grade levels, classes).';
-
-const SHELL_SIDEBAR_COUNTS_SCOPE
-	= 'Shell bootstrap loads school-wide people counts for sidebar navigation badges.';
 
 export interface AppShellData {
 	schools: School[];
@@ -34,34 +31,66 @@ export interface AppShellData {
 	staffCount: number;
 }
 
+interface AppShellCounts {
+	activeEnrollmentCountsByClass: Record<string, number>;
+	studentCount: number;
+	guardianCount: number;
+	staffCount: number;
+}
+
+function emptyAppShellCounts(): AppShellCounts {
+	return {
+		activeEnrollmentCountsByClass: {},
+		studentCount: 0,
+		guardianCount: 0,
+		staffCount: 0,
+	};
+}
+
 export async function fetchActiveEnrollmentCountsByClass(
 	client: SchoolClient,
 	classGroupIds: readonly string[],
+	schoolId?: string,
 ): Promise<Record<string, number>> {
 	if (classGroupIds.length === 0) {
 		return {};
 	}
 
-	const entries = await Promise.all(classGroupIds.map(async (classGroupId) => {
-		const count = await safeEntityCount(() =>
-			client.entities.enrollments.count(activeEnrollmentCountForClass(classGroupId)),
-		);
-		return [classGroupId, count] as const;
-	}));
-
-	return Object.fromEntries(entries);
-}
-
-async function safeEntityCount(load: () => Promise<{ count: number }>): Promise<number> {
 	try {
-		return (await load()).count;
+		const counts = await client.queries.getAppShellCounts({
+			schoolId: schoolId ?? '',
+			classGroupIds: [...classGroupIds],
+		});
+		return counts.activeEnrollmentCountsByClass;
 	}
 	catch (error) {
 		if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-			return 0;
+			return {};
 		}
 		if (error instanceof TypeError) {
-			return 0;
+			return {};
+		}
+		throw error;
+	}
+}
+
+async function safeAppShellCounts(
+	client: SchoolClient,
+	schoolId: string,
+	classGroupIds: readonly string[],
+): Promise<AppShellCounts> {
+	try {
+		return await client.queries.getAppShellCounts({
+			schoolId,
+			classGroupIds: [...classGroupIds],
+		}) as AppShellCounts;
+	}
+	catch (error) {
+		if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
+			return emptyAppShellCounts();
+		}
+		if (error instanceof TypeError) {
+			return emptyAppShellCounts();
 		}
 		throw error;
 	}
@@ -99,10 +128,12 @@ export async function fetchAppShellData(client: SchoolClient): Promise<AppShellD
 		safeEntityList(() => client.entities.classGroups.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE))),
 	]);
 
-	const studentCountByClass = await fetchActiveEnrollmentCountsByClass(
-		client,
-		(classGroupsRaw ?? []).map(classGroup => classGroup.id),
-	);
+	const classGroupIds = (classGroupsRaw ?? []).map(classGroup => classGroup.id);
+	const schoolId = (schoolsRaw ?? []).find(school => school?.id)?.id ?? '';
+	const shellCounts = schoolId
+		? await safeAppShellCounts(client, schoolId, classGroupIds)
+		: emptyAppShellCounts();
+	const studentCountByClass = shellCounts.activeEnrollmentCountsByClass;
 
 	const schools: School[] = (schoolsRaw ?? [])
 		.filter((school): school is NonNullable<typeof schoolsRaw[number]> & { id: string; name: string } =>
@@ -123,10 +154,12 @@ export async function fetchAppShellData(client: SchoolClient): Promise<AppShellD
 		schoolId: def.schoolId,
 		academicYearId: def.academicYearId,
 		label: def.label,
+		dayOfWeek: def.dayOfWeek,
 		order: def.order,
 		startTime: def.startTime,
 		endTime: def.endTime,
 		isBreak: def.isBreak ?? false,
+		isTeachingSlot: def.isTeachingSlot ?? !def.isBreak,
 	}));
 
 	const academicPeriods: AcademicPeriod[] = (periodsRaw ?? []).map((p) => {
@@ -169,15 +202,6 @@ export async function fetchAppShellData(client: SchoolClient): Promise<AppShellD
 	const hierarchy = buildClassHierarchy(classesList, gradeLevels);
 	const activeStudentCount = Object.values(studentCountByClass).reduce((total, count) => total + count, 0);
 
-	const schoolId = schools[0]?.id ?? '';
-	const [rosterStudentCount, guardianCount, staffCount] = await Promise.all([
-		safeEntityCount(() => client.entities.students.count(schoolWideEntityList(SHELL_SIDEBAR_COUNTS_SCOPE))),
-		safeEntityCount(() => client.entities.guardians.count(schoolWideEntityList(SHELL_SIDEBAR_COUNTS_SCOPE))),
-		schoolId
-			? safeEntityCount(() => client.entities.staffMembers.count({ schoolId }))
-			: Promise.resolve(0),
-	]);
-
 	return {
 		schools,
 		academicYears,
@@ -186,8 +210,8 @@ export async function fetchAppShellData(client: SchoolClient): Promise<AppShellD
 		periodDefinitions,
 		classes: classesList,
 		hierarchy,
-		studentCount: rosterStudentCount || activeStudentCount,
-		guardianCount,
-		staffCount,
+		studentCount: shellCounts.studentCount || activeStudentCount,
+		guardianCount: shellCounts.guardianCount,
+		staffCount: shellCounts.staffCount,
 	};
 }
