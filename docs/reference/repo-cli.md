@@ -25,7 +25,7 @@ bun repo
 └── smoke-test staging
 ```
 
-Deploy commands (`deploy:webapp:*`, `deploy:saas-admin:*`) remain on the root `package.json` for now.
+Deploy commands (`deploy:webapp:*`, `deploy:webadmin:*`) remain on the root `package.json` for now.
 
 ## Validation
 

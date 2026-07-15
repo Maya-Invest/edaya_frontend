@@ -7,7 +7,7 @@
 		<h2 class="font-display text-3xl font-semibold tracking-tight">Overview</h2>
 		<p class="max-w-2xl text-sm text-muted-foreground">
 			Internal console for Edaya platform operators. Tenant management, billing, and support workflows
-			will land here as the SaaS control plane grows.
+			will land here as the webadmin control plane grows.
 		</p>
 	</div>
 

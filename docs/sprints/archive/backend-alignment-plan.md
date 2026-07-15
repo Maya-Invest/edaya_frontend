@@ -6,7 +6,7 @@
 > **Created:** 2026-07-05  
 > **Last updated:** 2026-07-06  
 > **Scope:** Close the gap between **edaya_backend** (relationship-native auth, teacher model, configure-* commands, teacher authorization) and **apps/webapp** after v1 shell delivery (Phases 0–8); align state architecture with [svelte-state-spec.md](../specs/svelte-state-spec.md)  
-> **Out of scope:** Service catalog finance rewrite, platform limits / `saas-admin`, resource management UI, teacher mobile app  
+> **Out of scope:** Service catalog finance rewrite, platform limits / `webadmin`, resource management UI, teacher mobile app  
 > **Related backend:** [relationship-native-auth-plan.md](../../../edaya_backend/docs/sprints/relationship-native-auth-plan.md) · [service-catalog-plan.md](../../../edaya_backend/docs/sprints/service-catalog-plan.md)  
 > **Related web:** [v1-staff-webapp-implementation-plan.md](./v1-staff-webapp-implementation-plan.md) · [svelte-state-alignment.md](./svelte-state-alignment.md) · [ui-architecture-reference.md](../../reference/ui-architecture-reference.md) §6.1
 
@@ -16,7 +16,7 @@ This plan follows the **v1 staff webapp** (interaction shell complete) and addre
 
 ## Sprint status (2026-07-06)
 
-**On track.** All work shipped in this sprint stays within the original scope: close backend ↔ webapp drift for the **staff webapp**, not mobile apps, not service catalog, not saas-admin.
+**On track.** All work shipped in this sprint stays within the original scope: close backend ↔ webapp drift for the **staff webapp**, not mobile apps, not service catalog, not webadmin.
 
 | Area | Verdict |
 |------|---------|
@@ -200,10 +200,10 @@ Check when backend sprints land — do not start web work until API entities exi
 - [ ] Web: replace Fees / Billing UX with catalog → enrollment → charges → account → payments
 - [ ] Mobile guardian: opt-in catalog + approval flows
 
-### Platform limits (`saas-admin`)
+### Platform limits (`webadmin`)
 
 - [ ] Backend: plan / entitlement model ([platform-limits-and-plans-plan](../../../edaya_backend/docs/sprints/platform-limits-and-plans-plan.md))
-- [ ] Web: `apps/saas-admin` plan management (out of `webapp` scope)
+- [ ] Web: `apps/webadmin` plan management (out of `webapp` scope)
 
 ### Resources
 

@@ -2,7 +2,7 @@
 	"$schema": "./node_modules/wrangler/config-schema.json",
 	// Static SPA output from `vite build` (adapter-static).
 	// Build with PUBLIC_API_URL=https://api.edayaplus.com before deploy.
-	"name": "edaya-saas-admin",
+	"name": "edaya-webadmin",
 	"compatibility_date": "2024-09-23",
 	"assets": {
 		"directory": "./build",
@@ -10,7 +10,7 @@
 	},
 	"env": {
 		"prod": {
-			"name": "edaya-saas-admin",
+			"name": "edaya-webadmin",
 			"routes": [
 				{
 					"pattern": "admin.edayaplus.com",
@@ -19,7 +19,7 @@
 			]
 		},
 		"staging": {
-			"name": "edaya-saas-admin-staging",
+			"name": "edaya-webadmin-staging",
 			"routes": [
 				{
 					"pattern": "staging.admin.edayaplus.com",

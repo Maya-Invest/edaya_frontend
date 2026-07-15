@@ -1,11 +1,11 @@
-# SaaS Admin
+# Webadmin
 
 SvelteKit platform operator UI for Edaya.
 
 ## Local development
 
 ```sh
-cp .env.example .env   # from apps/saas-admin
+cp .env.example .env   # from apps/webadmin
 bun dev                # http://localhost:5174
 ```
 
@@ -22,5 +22,5 @@ bun run quality
 App-only:
 
 ```sh
-bun run --cwd apps/saas-admin quality
+bun run --cwd apps/webadmin quality
 ```

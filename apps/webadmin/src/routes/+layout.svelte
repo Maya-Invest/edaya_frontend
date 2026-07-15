@@ -22,7 +22,7 @@
 			</div>
 			<div>
 				<p class="font-display text-lg font-semibold leading-tight">Edaya</p>
-				<p class="text-xs text-muted-foreground">SaaS Admin</p>
+				<p class="text-xs text-muted-foreground">Webadmin</p>
 			</div>
 		</div>
 
@@ -59,7 +59,7 @@
 				</div>
 				<div>
 					<p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Platform</p>
-					<h1 class="font-display text-xl font-semibold">SaaS Administration</h1>
+					<h1 class="font-display text-xl font-semibold">Platform administration</h1>
 				</div>
 			</div>
 			<span class="rounded-full bg-accent-soft px-3 py-1 text-xs font-medium text-muted-foreground">

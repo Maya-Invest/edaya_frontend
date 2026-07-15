@@ -1,5 +1,5 @@
 {
-	"name": "@edaya/saas-admin",
+	"name": "@edaya/webadmin",
 	"type": "module",
 	"version": "0.0.1",
 	"private": true,

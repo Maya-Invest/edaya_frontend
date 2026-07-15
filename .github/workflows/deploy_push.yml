@@ -14,8 +14,8 @@ on:
         description: Deploy webapp
         type: boolean
         default: true
-      deploy_saas_admin:
-        description: Deploy saas-admin
+      deploy_webadmin:
+        description: Deploy webadmin
         type: boolean
         default: true
 
@@ -34,7 +34,7 @@ jobs:
     outputs:
       channel: ${{ steps.plan.outputs.channel }}
       deploy_webapp: ${{ steps.plan.outputs.deploy_webapp }}
-      deploy_saas_admin: ${{ steps.plan.outputs.deploy_saas_admin }}
+      deploy_webadmin: ${{ steps.plan.outputs.deploy_webadmin }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -54,8 +54,8 @@ jobs:
               - .github/workflows/**
               - .github/actions/**
               - .github/scripts/**
-            saas_admin:
-              - apps/saas-admin/**
+            webadmin:
+              - apps/webadmin/**
               - packages/**
               - package.json
               - bun.lock
@@ -70,14 +70,14 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             CHANNEL="${{ inputs.channel }}"
             echo "deploy_webapp=${{ inputs.deploy_webapp }}" >> "$GITHUB_OUTPUT"
-            echo "deploy_saas_admin=${{ inputs.deploy_saas_admin }}" >> "$GITHUB_OUTPUT"
+            echo "deploy_webadmin=${{ inputs.deploy_webadmin }}" >> "$GITHUB_OUTPUT"
           else
             case "${{ github.ref_name }}" in
               main|master) CHANNEL=production ;;
               *) CHANNEL=staging ;;
             esac
             echo "deploy_webapp=${{ steps.filter.outputs.webapp == 'true' }}" >> "$GITHUB_OUTPUT"
-            echo "deploy_saas_admin=${{ steps.filter.outputs.saas_admin == 'true' }}" >> "$GITHUB_OUTPUT"
+            echo "deploy_webadmin=${{ steps.filter.outputs.webadmin == 'true' }}" >> "$GITHUB_OUTPUT"
           fi
           echo "channel=${CHANNEL}" >> "$GITHUB_OUTPUT"
 
@@ -97,25 +97,25 @@ jobs:
     secrets:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
-  deploy-saas-admin:
+  deploy-webadmin:
     needs: [gate, verify]
     if: >-
-      needs.gate.outputs.deploy_saas_admin == 'true' &&
+      needs.gate.outputs.deploy_webadmin == 'true' &&
       needs.verify.result == 'success'
     uses: ./.github/workflows/_deploy-cloudflare.yml
     with:
-      package: "@edaya/saas-admin"
+      package: "@edaya/webadmin"
       channel: ${{ needs.gate.outputs.channel }}
     secrets:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
   smoke-test:
-    needs: [gate, deploy-webapp, deploy-saas-admin]
+    needs: [gate, deploy-webapp, deploy-webadmin]
     if: >-
       needs.gate.outputs.channel == 'staging' &&
       needs.deploy-webapp.result != 'failure' &&
-      needs.deploy-saas-admin.result != 'failure' &&
-      (needs.deploy-webapp.result == 'success' || needs.deploy-saas-admin.result == 'success')
+      needs.deploy-webadmin.result != 'failure' &&
+      (needs.deploy-webapp.result == 'success' || needs.deploy-webadmin.result == 'success')
     uses: ./.github/workflows/_smoke-test.yml
     with:
       channel: ${{ needs.gate.outputs.channel }}

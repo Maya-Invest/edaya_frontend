@@ -7,7 +7,7 @@ import { $ } from 'bun'
 const repoRoot = resolve(import.meta.dirname, '../../..')
 const expectedEnvExamples = [
   'apps/webapp/.env.example',
-  'apps/saas-admin/.env.example',
+  'apps/webadmin/.env.example',
 ]
 
 function materializeEnvFromExample(examplePath: string): void {

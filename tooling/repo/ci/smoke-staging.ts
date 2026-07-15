@@ -2,7 +2,7 @@
 import process from 'node:process'
 
 const DEFAULT_WEBAPP_ORIGIN = 'https://staging.app.edayaplus.com'
-const DEFAULT_SAAS_ADMIN_ORIGIN = 'https://staging.admin.edayaplus.com'
+const DEFAULT_WEBADMIN_ORIGIN = 'https://staging.admin.edayaplus.com'
 
 interface SmokeCheckResult {
   id: string
@@ -11,9 +11,9 @@ interface SmokeCheckResult {
   detail?: string
 }
 
-function resolveOrigin(name: 'WEBAPP' | 'SAAS_ADMIN'): string {
-  const envKey = name === 'WEBAPP' ? 'STAGING_WEBAPP_ORIGIN' : 'STAGING_SAAS_ADMIN_ORIGIN'
-  const fallback = name === 'WEBAPP' ? DEFAULT_WEBAPP_ORIGIN : DEFAULT_SAAS_ADMIN_ORIGIN
+function resolveOrigin(name: 'WEBAPP' | 'WEBADMIN'): string {
+  const envKey = name === 'WEBAPP' ? 'STAGING_WEBAPP_ORIGIN' : 'STAGING_WEBADMIN_ORIGIN'
+  const fallback = name === 'WEBAPP' ? DEFAULT_WEBAPP_ORIGIN : DEFAULT_WEBADMIN_ORIGIN
   return (process.env[envKey] ?? fallback).replace(/\/+$/, '')
 }
 
@@ -47,10 +47,10 @@ async function checkSpaShell(origin: string, id: string, label: string): Promise
 
 export async function runWebStagingSmoke(): Promise<{ checks: SmokeCheckResult[], passed: boolean }> {
   const webappOrigin = resolveOrigin('WEBAPP')
-  const saasAdminOrigin = resolveOrigin('SAAS_ADMIN')
+  const webadminOrigin = resolveOrigin('WEBADMIN')
   const checks = [
     await checkSpaShell(webappOrigin, 'W1', 'Webapp staging shell'),
-    await checkSpaShell(saasAdminOrigin, 'W2', 'SaaS admin staging shell'),
+    await checkSpaShell(webadminOrigin, 'W2', 'Webadmin staging shell'),
   ]
 
   return {
@@ -61,8 +61,8 @@ export async function runWebStagingSmoke(): Promise<{ checks: SmokeCheckResult[]
 
 if (import.meta.main) {
   const webappOrigin = resolveOrigin('WEBAPP')
-  const saasAdminOrigin = resolveOrigin('SAAS_ADMIN')
-  console.log(`Running web staging smoke against ${webappOrigin} and ${saasAdminOrigin}`)
+  const webadminOrigin = resolveOrigin('WEBADMIN')
+  console.log(`Running web staging smoke against ${webappOrigin} and ${webadminOrigin}`)
 
   const result = await runWebStagingSmoke()
   for (const check of result.checks) {

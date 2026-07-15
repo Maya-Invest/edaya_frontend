@@ -11,7 +11,7 @@ const specifier = `npm:@maya-invest/edaya-api-client@${channel}`;
 const files = [
   "package.json",
   "apps/webapp/package.json",
-  "apps/saas-admin/package.json",
+  "apps/webadmin/package.json",
 ];
 
 for (const file of files) {

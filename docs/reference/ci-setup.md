@@ -85,7 +85,7 @@ Deploy runs from GitHub Actions — not Cloudflare Workers Builds. See [`deploy_
 |------|----------------|
 | `verify` | `bun run verify` (same as PR CI) |
 | `deploy-webapp` | Published API client → build → `wrangler deploy` |
-| `deploy-saas-admin` | Same for saas-admin |
+| `deploy-webadmin` | Same for webadmin |
 | `smoke-test` | `bun repo smoke-test staging` (staging only, after deploy jobs) |
 
 **One-time repo secret:** `CLOUDFLARE_API_TOKEN` with Workers Scripts edit (+ routes if using custom domains). Wrangler reads it from the environment.
@@ -130,7 +130,7 @@ Set **Root directory** to the repository root (not `apps/webapp`) so Bun workspa
 
 Add build variables for Vite public env (same as `deploy:staging` in `apps/webapp/package.json`), e.g. `PUBLIC_API_URL=https://staging.api.edayaplus.com`, `PUBLIC_APP_ENV=staging`.
 
-**Saas-admin:** use `bun run cloudflare:build:saas-admin` and `bun --filter @edaya/saas-admin deploy:staging`.
+**Webadmin:** use `bun run cloudflare:build:webadmin` and `bun --filter @edaya/webadmin deploy:staging`.
 
 **Website (Astro, no API client):**
 
@@ -141,7 +141,7 @@ Add build variables for Vite public env (same as `deploy:staging` in `apps/webap
 
 No `GITHUB_PACKAGES_TOKEN` or `cloudflare-build-prepare` needed for the website — it has no private npm dependencies.
 
-`cloudflare:build:webapp` and `cloudflare:build:saas-admin` run `scripts/cloudflare-build-prepare.mjs` (patches root `overrides` and app `dependencies` to GitHub Packages) then `bun install`. Auth is read from `.npmrc.cloudflare` via `GITHUB_PACKAGES_TOKEN`.
+`cloudflare:build:webapp` and `cloudflare:build:webadmin` run `scripts/cloudflare-build-prepare.mjs` (patches root `overrides` and app `dependencies` to GitHub Packages) then `bun install`. Auth is read from `.npmrc.cloudflare` via `GITHUB_PACKAGES_TOKEN`.
 
 Local dev is unchanged: keep root `.npmrc` (scope only) and the root `overrides` `file:` link for sibling `edaya_backend`.
 
@@ -158,11 +158,11 @@ Configured in [`pr.yml`](../../.github/workflows/pr.yml).
 
 ```text
 gate (path filter) → verify (bun run verify)
-                  → deploy-webapp / deploy-saas-admin when app paths changed
+                  → deploy-webapp / deploy-webadmin when app paths changed
                   → smoke-test (staging only, after a deploy job succeeds)
 ```
 
-On push, `dorny/paths-filter` sets `deploy_webapp` / `deploy_saas_admin` from changed paths. Manual **Run workflow** keeps explicit toggles. Deploy jobs patch `@maya-invest/edaya-api-client` to GitHub Packages before `bun install` (see `_deploy-cloudflare.yml`).
+On push, `dorny/paths-filter` sets `deploy_webapp` / `deploy_webadmin` from changed paths. Manual **Run workflow** keeps explicit toggles. Deploy jobs patch `@maya-invest/edaya-api-client` to GitHub Packages before `bun install` (see `_deploy-cloudflare.yml`).
 
 Configured in [`deploy_push.yml`](../../.github/workflows/deploy_push.yml). Requires repo secret `CLOUDFLARE_API_TOKEN`.
 

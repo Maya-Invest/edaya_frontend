@@ -47,7 +47,7 @@ flowchart LR
 | **B** Svelte state carry-over | After A, on-touch | svelte-state-alignment Phases 1, 3–4 |
 | **C** V1 polish | After demo or parallel | v1 Phase 8, §6 drawer rollout |
 | **D** Backend optional / blocked | When unblocked | backend-alignment Phase 3.5–3.6, 5.x |
-| **E** Post-v1 | Not demo | service catalog, saas-admin, resources |
+| **E** Post-v1 | Not demo | service catalog, webadmin, resources |
 
 ---
 
@@ -183,7 +183,7 @@ From [backend-alignment-plan.md](./archive/backend-alignment-plan.md).
 | Item | Backend doc |
 |------|-------------|
 | Service catalog → Fees/Billing UX | [service-catalog-plan](../../../edaya_backend/docs/sprints/service-catalog-plan.md) |
-| SaaS admin plan management | [platform-limits-and-plans-plan](../../../edaya_backend/docs/sprints/platform-limits-and-plans-plan.md) |
+| Webadmin plan management | [platform-limits-and-plans-plan](../../../edaya_backend/docs/sprints/platform-limits-and-plans-plan.md) |
 | Resources / resourceAssignments staff UI | v1 spec deferred |
 | `relinkActorSubject`, justification UI, multi-school | See Track D |
 
