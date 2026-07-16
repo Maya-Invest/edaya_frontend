@@ -17,6 +17,7 @@ permissions:
   contents: read
   packages: read
 
+  
 jobs:
   verify:
     uses: ./.github/workflows/_verify.yml
