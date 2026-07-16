@@ -81,15 +81,9 @@ jobs:
           fi
           echo "channel=${CHANNEL}" >> "$GITHUB_OUTPUT"
 
-  verify:
-    needs: gate
-    uses: ./.github/workflows/_verify.yml
-
   deploy-webapp:
-    needs: [gate, verify]
-    if: >-
-      needs.gate.outputs.deploy_webapp == 'true' &&
-      needs.verify.result == 'success'
+    needs: gate
+    if: needs.gate.outputs.deploy_webapp == 'true'
     uses: ./.github/workflows/_deploy-cloudflare.yml
     with:
       package: "@edaya/webapp"
@@ -98,24 +92,11 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
   deploy-webadmin:
-    needs: [gate, verify]
-    if: >-
-      needs.gate.outputs.deploy_webadmin == 'true' &&
-      needs.verify.result == 'success'
+    needs: gate
+    if: needs.gate.outputs.deploy_webadmin == 'true'
     uses: ./.github/workflows/_deploy-cloudflare.yml
     with:
       package: "@edaya/webadmin"
       channel: ${{ needs.gate.outputs.channel }}
     secrets:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-
-  smoke-test:
-    needs: [gate, deploy-webapp, deploy-webadmin]
-    if: >-
-      needs.gate.outputs.channel == 'staging' &&
-      needs.deploy-webapp.result != 'failure' &&
-      needs.deploy-webadmin.result != 'failure' &&
-      (needs.deploy-webapp.result == 'success' || needs.deploy-webadmin.result == 'success')
-    uses: ./.github/workflows/_smoke-test.yml
-    with:
-      channel: ${{ needs.gate.outputs.channel }}

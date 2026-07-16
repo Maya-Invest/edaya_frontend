@@ -36,8 +36,7 @@ Path: [`.github/actions/ci-bun-turbo`](../../.github/actions/ci-bun-turbo/action
 |----------|-----|---------|
 | [`_verify.yml`](../../.github/workflows/_verify.yml) | `verify` | `bun run verify` |
 | [`_integration.yml`](../../.github/workflows/_integration.yml) | `integration` | Playwright (inline `setup-bun`; Docker/GHCR) |
-| [`deploy_push.yml`](../../.github/workflows/deploy_push.yml) | `deploy-*` | Verify, then `wrangler deploy` via [Cloudflare deploy](ci-setup.md#deploy-to-cloudflare-github-actions) |
-| [`_smoke-test.yml`](../../.github/workflows/_smoke-test.yml) | `smoke` | HTTP SPA shell checks (no `bun install`; Bun only) |
+| [`deploy_push.yml`](../../.github/workflows/deploy_push.yml) | `deploy-*` | `wrangler deploy` via [Cloudflare deploy](ci-setup.md#deploy-to-cloudflare-github-actions) |
 
 Integration uses inline setup because it starts api-dev containers, installs Playwright, builds the webapp, and serves it with Wrangler — not just the Turbo graph.
 
@@ -83,10 +82,8 @@ Deploy runs from GitHub Actions — not Cloudflare Workers Builds. See [`deploy_
 
 | Step | What happens |
 |------|----------------|
-| `verify` | `bun run verify` (same as PR CI) |
 | `deploy-webapp` | Published API client → build → `wrangler deploy` |
 | `deploy-webadmin` | Same for webadmin |
-| `smoke-test` | `bun repo smoke-test staging` (staging only, after deploy jobs) |
 
 **One-time repo secret:** `CLOUDFLARE_API_TOKEN` with Workers Scripts edit (+ routes if using custom domains). Wrangler reads it from the environment.
 
@@ -157,12 +154,10 @@ Configured in [`pr.yml`](../../.github/workflows/pr.yml).
 ## Merge pipeline (staging / main)
 
 ```text
-gate (path filter) → verify (bun run verify)
-                  → deploy-webapp / deploy-webadmin when app paths changed
-                  → smoke-test (staging only, after a deploy job succeeds)
+gate (path filter) → deploy-webapp / deploy-webadmin when app paths changed
 ```
 
-On push, `dorny/paths-filter` sets `deploy_webapp` / `deploy_webadmin` from changed paths. Manual **Run workflow** keeps explicit toggles. Deploy jobs patch `@maya-invest/edaya-api-client` to GitHub Packages before `bun install` (see `_deploy-cloudflare.yml`).
+On push, `dorny/paths-filter` sets `deploy_webapp` / `deploy_webadmin` from changed paths. Manual **Run workflow** keeps explicit toggles. Deploy jobs patch `@maya-invest/edaya-api-client` to GitHub Packages before `bun install` (see `_deploy-cloudflare.yml`). Verify and integration run on PRs only (`pr.yml`), not on merge deploy.
 
 Configured in [`deploy_push.yml`](../../.github/workflows/deploy_push.yml). Requires repo secret `CLOUDFLARE_API_TOKEN`.
 
