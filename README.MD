@@ -99,9 +99,9 @@ Apps are static sites on Cloudflare Workers (assets):
 
 | App | Production | Staging |
 |-----|------------|---------|
-| Website | `edayaplus.com`, `www.edayaplus.com` | `staging.edayaplus.com` |
-| Webapp | `app.edayaplus.com` | `staging.app.edayaplus.com` |
-| Webadmin | `admin.edayaplus.com` | `staging.admin.edayaplus.com` |
+| Website | `edaya.app`, `www.edaya.app` | `staging.edaya.app` |
+| Webapp | `staff.edaya.app` | `staging.staff.edaya.app` |
+| Webadmin | `admin.edaya.app` | `staging.admin.edaya.app` |
 
 Set `PUBLIC_API_URL` at build time when the API is not same-origin.
 
