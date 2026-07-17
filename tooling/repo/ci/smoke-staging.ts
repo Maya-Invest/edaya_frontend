@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 import process from 'node:process'
 
-const DEFAULT_WEBAPP_ORIGIN = 'https://staging.staff.edaya.app'
-const DEFAULT_WEBADMIN_ORIGIN = 'https://staging.admin.edaya.app'
+const DEFAULT_WEBAPP_ORIGIN = 'https://staging.app.edayaplus.com'
+const DEFAULT_WEBADMIN_ORIGIN = 'https://staging.admin.edayaplus.com'
 
 interface SmokeCheckResult {
   id: string
