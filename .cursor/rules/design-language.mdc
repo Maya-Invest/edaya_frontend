@@ -1,0 +1,28 @@
+---
+description: Visual design tokens and patterns — read before styling webapp UI
+globs: apps/webapp/**/*
+alwaysApply: false
+---
+
+# Design language (normative)
+
+**Before styling screens or shared components, read:**
+
+[`docs/specs/design-language-spec.md`](../../docs/specs/design-language-spec.md)
+
+## Core invariants
+
+1. **Semantic tokens only** — HSL CSS variables from `app.css`; no hard-coded hex in components.
+2. **Typography** — `font-display` (Fraunces) titles; Inter body; `font-mono` for metadata and counts.
+3. **Collections** — `rounded-2xl border bg-card shadow-soft` around list/table/card groups.
+4. **Toolbar controls** — pill-shaped inputs and buttons on list headers.
+5. **Status chips** — `BADGE_*` / `ui-tones` / `drawer-constants`; no one-off badge colors.
+6. **Selected row** — `bg-primary/10`.
+7. **States** — loading / empty / error via `DataState`; mutations toast success/error.
+8. **Motion** — `animate-fade-in` or `motion-safe:` drawer animations; respect `prefers-reduced-motion`.
+
+## Do not
+
+- Add `dark:` variants until a full dark palette is specified
+- Hard-code French strings (use i18n)
+- Invent parallel color systems per screen

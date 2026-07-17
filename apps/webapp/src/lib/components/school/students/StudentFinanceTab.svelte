@@ -1,0 +1,106 @@
+<script lang="ts">
+	import type { Fee } from '$lib/types/school';
+	import type { summarizeStudentFinances } from './student-tab-selectors.ts';
+	import Label from '$lib/components/ui/label/label.svelte';
+	import { Check, Clock, Wallet } from '$lib/icons';
+	import { cn } from '$lib/utils';
+	import { fmtDateFr } from '../shared/drawer-constants.ts';
+	import DrawerEmptyState from '../shared/DrawerEmptyState.svelte';
+	import { billingStatusTone } from './student-tab-selectors.ts';
+
+	const {
+		financesData,
+		fees,
+	}: {
+		financesData: ReturnType<typeof summarizeStudentFinances>;
+		fees: Fee[];
+	} = $props();
+</script>
+
+<div class="space-y-4">
+	<div class="grid grid-cols-3 gap-3">
+		<div class="rounded-xl bg-secondary p-4">
+			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">Total</p>
+			<p class="mt-1 font-display text-2xl">{financesData.total.toLocaleString('fr-FR')} €</p>
+		</div>
+		<div class="rounded-xl bg-primary/10 p-4">
+			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">Payé</p>
+			<p class="mt-1 font-display text-2xl">{financesData.paid.toLocaleString('fr-FR')} €</p>
+		</div>
+		<div class="rounded-xl bg-secondary/60 p-4">
+			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">Solde</p>
+			<p class="mt-1 font-display text-2xl">{financesData.balance.toLocaleString('fr-FR')} €</p>
+		</div>
+	</div>
+	<div>
+		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Facturation</Label>
+		<div class="mt-2 space-y-2">
+			{#if financesData.studentBilling.length === 0}
+				<DrawerEmptyState label="Aucune facture.">
+					{#snippet icon()}
+						<Wallet class="h-5 w-5 text-muted-foreground" />
+					{/snippet}
+				</DrawerEmptyState>
+			{:else}
+				{#each financesData.studentBilling as billing (billing.id)}
+					{@const fee = fees.find(item => item.id === billing.feeId)}
+					<div class="rounded-xl border border-border bg-card p-4">
+						<div class="flex items-center justify-between">
+							<span
+								class={cn(
+									'rounded-full px-2 py-0.5 text-[10px] font-medium uppercase',
+									billingStatusTone[billing.status],
+								)}
+							>
+								{billing.status}
+							</span>
+							<span class="font-mono text-[10px] text-muted-foreground">{fmtDateFr(billing.dueDate)}</span>
+						</div>
+						<p class="mt-2 text-sm font-medium">{fee?.name ?? 'Frais'}</p>
+						<p class="mt-1 text-xs text-muted-foreground">
+							{billing.paid.toLocaleString('fr-FR')} € / {billing.total.toLocaleString('fr-FR')} €
+						</p>
+						{#if billing.installments.length > 0}
+							<div class="mt-3 space-y-1.5 border-t border-border pt-3">
+								<p class="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+									Détail des paiements
+								</p>
+								{#each billing.installments as installment, index (index)}
+									<div class="flex items-center justify-between gap-2 text-xs">
+										<div class="flex items-center gap-2">
+											<span
+												class={cn(
+													'flex h-5 w-5 items-center justify-center rounded-full',
+													installment.status === 'paid'
+														? 'bg-secondary text-foreground/80'
+														: 'bg-secondary text-muted-foreground',
+												)}
+											>
+												{#if installment.status === 'paid'}
+													<Check class="h-3 w-3" />
+												{:else}
+													<Clock class="h-3 w-3" />
+												{/if}
+											</span>
+											<span class="font-mono text-[10px] text-muted-foreground">
+												{fmtDateFr(installment.date)}
+											</span>
+										</div>
+										<span
+											class={cn(
+												'font-mono tabular-nums',
+												installment.status === 'paid' ? 'text-foreground' : 'text-muted-foreground',
+											)}
+										>
+											{installment.amount.toLocaleString('fr-FR')} €
+										</span>
+									</div>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				{/each}
+			{/if}
+		</div>
+	</div>
+</div>

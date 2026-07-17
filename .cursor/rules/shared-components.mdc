@@ -1,0 +1,38 @@
+---
+description: Mandatory reusable webapp components — compose before creating new shared UI
+globs: apps/webapp/**/*
+alwaysApply: false
+---
+
+# Shared components (normative)
+
+**Before adding or refactoring shared UI under `apps/webapp`, read:**
+
+[`docs/specs/shared-components-spec.md`](../../docs/specs/shared-components-spec.md)
+
+## Must use (when built)
+
+| Area | Components |
+|------|------------|
+| List route | `PageQuery` · `DataState` · `ListPageHeader` · `FilterSelect` |
+| Search / filters | `ListSearchField` · `FilterPanel` |
+| Modals | `FormModal` · `ConfirmModal` · `PickerModal` |
+| Gating | `PermissionGate` |
+| Drawer | `DetailDrawer` · `DrawerEntityHeader` · `DrawerField` · `DrawerEmptyState` · `DrawerActionBar` (body footer only) |
+| People | Smart `StaffPicker` · `StudentPicker` · `GuardianPicker` (`lib/smart-components/`) |
+| Permissions | `ScopeBuilder` · `StaffPermissionFormModal` only |
+
+## Do not
+
+- Copy inline search pill markup — use `ListSearchField`
+- Chip-bar main filters — `FilterSelect` + `FilterPanel`
+- Duplicate drawer identity blocks — `DrawerEntityHeader`
+- Use `DrawerActionBar` for sub-collection `+ Add` — use inline section header instead
+- Ad-hoc person `<select>` lists — smart picker family
+- Feature views in `lib/components/school/` — colocate under `routes/.../components/`
+- `?tab=` for drawer tabs — use nested routes under `[[id]]/`
+- New shared component without updating the registry in the same PR
+
+## New shared component rule
+
+Add to registry only when **≥3 features** need the same pattern.

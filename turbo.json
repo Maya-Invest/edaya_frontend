@@ -1,17 +1,23 @@
 {
-	"$schema": "https://turbo.build/schema.json",
-	"tasks": {
-		"dev": {
-			"persistent": true,
-			"cache": false
-		},
-		"build": {
-			"outputs": ["dist/**", "build/**", ".svelte-kit/**"]
-		},
-		"check": {},
-		"quality": {},
-		"test": {},
-		"lint": {},
-		"lint:fix": {}
-	}
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "dev": {
+      "persistent": true,
+      "cache": false
+    },
+    "build": {
+      "outputs": ["dist/**", "build/**", ".svelte-kit/**"]
+    },
+    "check": {
+      "dependsOn": ["^check"]
+    },
+    "quality": {
+      "dependsOn": ["^check"]
+    },
+    "test": {
+      "dependsOn": ["^check"]
+    },
+    "lint": {},
+    "lint:fix": {}
+  }
 }

@@ -1,0 +1,217 @@
+import type { getBrowserSchoolClient } from '$lib/api/school-client';
+import type {
+	AcademicPeriod,
+	AcademicYear,
+	ClassNode,
+	GradeLevel,
+	HierarchyGroup,
+	PeriodDefinition,
+	School,
+} from '$lib/types/school';
+import { buildClassHierarchy } from '$lib/academic/hierarchy';
+import { schoolWideEntityList } from '$lib/api/entity-list-filters';
+import { mapSchoolFromApi } from '$lib/api/school-data';
+import { ApiError } from '@maya-invest/edaya-api-client';
+
+type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
+
+const SHELL_ACADEMIC_STRUCTURE_SCOPE
+	= 'Shell bootstrap loads school-wide academic structure selectors (school, years, periods, grade levels, classes).';
+
+export interface AppShellData {
+	schools: School[];
+	academicYears: AcademicYear[];
+	academicPeriods: AcademicPeriod[];
+	gradeLevels: GradeLevel[];
+	periodDefinitions: PeriodDefinition[];
+	classes: ClassNode[];
+	hierarchy: HierarchyGroup[];
+	studentCount: number;
+	guardianCount: number;
+	staffCount: number;
+}
+
+interface AppShellCounts {
+	activeEnrollmentCountsByClass: Record<string, number>;
+	studentCount: number;
+	guardianCount: number;
+	staffCount: number;
+}
+
+function emptyAppShellCounts(): AppShellCounts {
+	return {
+		activeEnrollmentCountsByClass: {},
+		studentCount: 0,
+		guardianCount: 0,
+		staffCount: 0,
+	};
+}
+
+export async function fetchActiveEnrollmentCountsByClass(
+	client: SchoolClient,
+	classGroupIds: readonly string[],
+	schoolId?: string,
+): Promise<Record<string, number>> {
+	if (classGroupIds.length === 0) {
+		return {};
+	}
+
+	try {
+		const counts = await client.queries.getAppShellCounts({
+			schoolId: schoolId ?? '',
+			classGroupIds: [...classGroupIds],
+		});
+		return counts.activeEnrollmentCountsByClass;
+	}
+	catch (error) {
+		if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
+			return {};
+		}
+		if (error instanceof TypeError) {
+			return {};
+		}
+		throw error;
+	}
+}
+
+async function safeAppShellCounts(
+	client: SchoolClient,
+	schoolId: string,
+	classGroupIds: readonly string[],
+): Promise<AppShellCounts> {
+	try {
+		return await client.queries.getAppShellCounts({
+			schoolId,
+			classGroupIds: [...classGroupIds],
+		}) as AppShellCounts;
+	}
+	catch (error) {
+		if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
+			return emptyAppShellCounts();
+		}
+		if (error instanceof TypeError) {
+			return emptyAppShellCounts();
+		}
+		throw error;
+	}
+}
+
+async function safeEntityList<T>(load: () => Promise<T[] | null | undefined>): Promise<T[]> {
+	try {
+		return (await load()) ?? [];
+	}
+	catch (error) {
+		if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
+			return [];
+		}
+		if (error instanceof TypeError) {
+			return [];
+		}
+		throw error;
+	}
+}
+
+export async function fetchAppShellData(client: SchoolClient): Promise<AppShellData> {
+	const [
+		schoolsRaw,
+		yearsRaw,
+		periodsRaw,
+		gradeLevelsRaw,
+		periodDefsRaw,
+		classGroupsRaw,
+	] = await Promise.all([
+		safeEntityList(() => client.entities.schools.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE))),
+		safeEntityList(() => client.entities.academicYears.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE))),
+		safeEntityList(() => client.entities.academicPeriods.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE))),
+		safeEntityList(() => client.entities.gradeLevels.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE))),
+		safeEntityList(() => client.entities.periodDefinitions.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE))),
+		safeEntityList(() => client.entities.classGroups.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE))),
+	]);
+
+	const classGroupIds = (classGroupsRaw ?? []).map(classGroup => classGroup.id);
+	const schoolId = (schoolsRaw ?? []).find(school => school?.id)?.id ?? '';
+	const shellCounts = schoolId
+		? await safeAppShellCounts(client, schoolId, classGroupIds)
+		: emptyAppShellCounts();
+	const studentCountByClass = shellCounts.activeEnrollmentCountsByClass;
+
+	const schools: School[] = (schoolsRaw ?? [])
+		.filter((school): school is NonNullable<typeof schoolsRaw[number]> & { id: string; name: string } =>
+			Boolean(school?.id && school?.name))
+		.map(s => mapSchoolFromApi(s));
+
+	const academicYears: AcademicYear[] = (yearsRaw ?? []).map(y => ({
+		id: y.id,
+		schoolId: y.schoolId,
+		label: y.name,
+		startDate: typeof y.startDate === 'string' ? y.startDate : String(y.startDate),
+		endDate: typeof y.endDate === 'string' ? y.endDate : String(y.endDate),
+		status: y.isActive ? 'published' as const : 'draft' as const,
+	}));
+
+	const periodDefinitions: PeriodDefinition[] = (periodDefsRaw ?? []).map(def => ({
+		id: def.id,
+		schoolId: def.schoolId,
+		academicYearId: def.academicYearId,
+		label: def.label,
+		dayOfWeek: def.dayOfWeek,
+		order: def.order,
+		startTime: def.startTime,
+		endTime: def.endTime,
+		isBreak: def.isBreak ?? false,
+		isTeachingSlot: def.isTeachingSlot ?? !def.isBreak,
+	}));
+
+	const academicPeriods: AcademicPeriod[] = (periodsRaw ?? []).map((p) => {
+		return {
+			id: p.id,
+			schoolId: p.schoolId,
+			academicYearId: p.academicYearId,
+			label: p.name,
+			range: p.name.includes('1') ? 'Sep — Dec' : p.name.includes('2') ? 'Jan — Apr' : 'May — Jul',
+			startDate: typeof p.startDate === 'string' ? p.startDate : String(p.startDate),
+			endDate: typeof p.endDate === 'string' ? p.endDate : String(p.endDate),
+			status: p.isPublished ? 'published' as const : 'draft' as const,
+		};
+	});
+
+	const gradeLevels: GradeLevel[] = (gradeLevelsRaw ?? []).map(gl => ({
+		id: gl.id,
+		schoolId: gl.schoolId,
+		name: gl.name,
+		cycle: gl.cycle ?? '',
+		order: gl.order,
+	}));
+
+	const classesList: ClassNode[] = (classGroupsRaw ?? []).map((cg) => {
+		const gradeLevel = gradeLevels.find(gl => gl.id === cg.gradeLevelId);
+		return {
+			id: cg.id,
+			schoolId: cg.schoolId,
+			academicYearId: cg.academicYearId,
+			gradeLevelId: cg.gradeLevelId,
+			name: cg.name,
+			level: gradeLevel?.cycle ?? '',
+			studentCount: studentCountByClass[cg.id] ?? 0,
+			capacity: cg.capacity ?? null,
+			attendanceMode: cg.attendanceMode ?? 'session',
+			homeroomStaffId: cg.homeroomStaffId ?? null,
+		};
+	});
+
+	const hierarchy = buildClassHierarchy(classesList, gradeLevels);
+	const activeStudentCount = Object.values(studentCountByClass).reduce((total, count) => total + count, 0);
+
+	return {
+		schools,
+		academicYears,
+		academicPeriods,
+		gradeLevels,
+		periodDefinitions,
+		classes: classesList,
+		hierarchy,
+		studentCount: shellCounts.studentCount || activeStudentCount,
+		guardianCount: shellCounts.guardianCount,
+		staffCount: shellCounts.staffCount,
+	};
+}
