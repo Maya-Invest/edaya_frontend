@@ -1,20 +1,10 @@
-import type { StaffMember } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
-import { detailDataContext } from '$lib/detail-data/context.svelte';
 
 function schoolId(): string {
 	return authSession.schoolId ?? academicContext.schools[0]?.id ?? 'sch-edaya-central';
-}
-
-function staffInitials(firstName: string, lastName: string): string {
-	return `${firstName.trim()[0] ?? ''}${lastName.trim()[0] ?? ''}`;
-}
-
-function staffSnapshot(staffId: string): StaffMember | undefined {
-	return detailDataContext.staff.find(member => member.id === staffId);
 }
 
 export async function registerStaffMemberMutation(input: {
@@ -27,16 +17,6 @@ export async function registerStaffMemberMutation(input: {
 	const client = getBrowserSchoolClient();
 	const id = `stf-${Date.now().toString(36)}`;
 	const email = input.email?.trim() ?? '';
-	const optimistic: StaffMember = {
-		id,
-		name: `${input.firstName.trim()} ${input.lastName.trim()}`,
-		initials: staffInitials(input.firstName, input.lastName),
-		role: 'professeur',
-		department: '—',
-		email,
-		classes: [],
-		isActive: true,
-	};
 
 	const result = await runMutation(() => client.commands.registerStaffMember({
 		id,
@@ -51,12 +31,7 @@ export async function registerStaffMemberMutation(input: {
 		createdAt: new Date().toISOString(),
 	}), {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.seedStaff([optimistic]);
-		},
-		rollback: () => {
-			detailDataContext.removeStaff(id);
-		},
+		versionKeys: ['staff'],
 	});
 	return result ? id : null;
 }
@@ -67,21 +42,13 @@ export async function updateStaffMemberStatusMutation(input: {
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = staffSnapshot(input.staffId);
 
 	const result = await runMutation(() => client.commands.updateStaffMemberStatus({
 		staffId: input.staffId,
 		isActive: input.isActive,
 	}), {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.patchStaff(input.staffId, { isActive: input.isActive });
-		},
-		rollback: () => {
-			if (previous) {
-				detailDataContext.patchStaff(input.staffId, { isActive: previous.isActive });
-			}
-		},
+		versionKeys: ['staff'],
 	});
 	return result !== null;
 }
@@ -94,9 +61,7 @@ export async function updateStaffMemberProfileMutation(input: {
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = staffSnapshot(input.staffId);
 	const email = input.email?.trim() ?? '';
-	const nextName = `${input.firstName.trim()} ${input.lastName.trim()}`;
 
 	const result = await runMutation(() => client.commands.updateStaffMemberProfile({
 		staffId: input.staffId,
@@ -105,18 +70,7 @@ export async function updateStaffMemberProfileMutation(input: {
 		email: email || null,
 	}), {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.patchStaff(input.staffId, {
-				name: nextName,
-				initials: staffInitials(input.firstName, input.lastName),
-				email,
-			});
-		},
-		rollback: () => {
-			if (previous) {
-				detailDataContext.patchStaff(input.staffId, previous);
-			}
-		},
+		versionKeys: ['staff'],
 	});
 	return result !== null;
 }

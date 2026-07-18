@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { ResolvedPathname } from '$app/types';
-	import type { DrawerItem } from '$lib/components/school/shared/drawer-types';
-	import type { Component, Snippet } from 'svelte';
+	import type { Snippet } from 'svelte';
 	import { browser } from '$app/environment';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
@@ -15,46 +14,24 @@
 	import LanguageSelector from '$lib/components/layout/LanguageSelector.svelte';
 	import SchoolSelector from '$lib/components/layout/SchoolSelector.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
-	import { detailDataContext } from '$lib/detail-data/context.svelte';
-	import { isLikelyDetailPath, listRouteCacheKey } from '$lib/detail-route-patterns';
-	import { setDrawer } from '$lib/drawer-context';
-	import { DrawerState } from '$lib/drawer.svelte';
-	import { hydrateDetailEntitiesForPath } from '$lib/drawer/drawer-detail-hydration';
-	import { DRAWER_TAB_QUERY_KEY } from '$lib/drawer/drawer-tab-url';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, PanelLeft, PanelLeftClose } from '$lib/icons';
-	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
 	import { DASHBOARD_HREF } from '$lib/navigation';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { canAccessPath } from '$lib/navigation/nav-permissions';
 	import { onboardingContext } from '$lib/onboarding/context.svelte';
 	import { onboardingResumePath } from '$lib/onboarding/resume-onboarding';
-	import { pageQueryStatus } from '$lib/queries/page-query-status.svelte';
-	import { reportCardsContext } from '$lib/report-cards/context.svelte';
 	import { shellContext } from '$lib/shell/context.svelte';
 	import { cn } from '$lib/utils';
 
 	const { children }: { children: Snippet } = $props();
 
-	const drawer = new DrawerState();
-	setDrawer(drawer);
-
 	const me = $derived(authSession.accountActor);
-	const needsDrawer = $derived(drawer.item !== null || isLikelyDetailPath($page.url.pathname));
 
-	type DetailDrawerComponent = Component<{ item: DrawerItem | null; onClose: () => void }>;
-	type ToastHostComponent = Component;
+	type ToastHostComponent = import('svelte').Component;
 
-	let DetailDrawer = $state<DetailDrawerComponent | null>(null);
 	let ToastHost = $state<ToastHostComponent | null>(null);
-
-	let drawerSyncVersion = 0;
 	let profileOpen = $state(false);
-
-	function isReportCardDetailPath(pathname: string): boolean {
-		return /^\/configuration\/report-cards\/[^/]+$/.test(pathname)
-			|| /^\/classes\/[^/]+\/report-cards\/[^/]+$/.test(pathname);
-	}
 
 	$effect(() => {
 		if (!authSession.ready) {
@@ -119,89 +96,14 @@
 		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
 	});
 
-	function usesRouteLocalDrawer(pathname: string): boolean {
-		return /^\/school\/students(?:\/|$)/.test(pathname)
-			|| /^\/school\/guardians(?:\/|$)/.test(pathname)
-			|| /^\/school\/staff(?:\/|$)/.test(pathname)
-			|| /^\/school\/teachers(?:\/|$)/.test(pathname)
-			|| /^\/school\/activities(?:\/|$)/.test(pathname)
-			|| /^\/school\/announcements(?:\/|$)/.test(pathname)
-			|| /^\/school\/events(?:\/|$)/.test(pathname)
-			|| /^\/classes\/[^/]+\/evaluations(?:\/|$)/.test(pathname)
-			|| /^\/classes\/[^/]+\/timetable(?:\/|$)/.test(pathname)
-			|| /^\/classes\/[^/]+\/teaching(?:\/|$)/.test(pathname)
-			|| /^\/classes\/[^/]+\/report-cards(?:\/|$)/.test(pathname);
-	}
-
 	$effect(() => {
-		const pathname = $page.url.pathname;
-		const cacheKey = listRouteCacheKey($page.url);
-		const routeQueryReady = pageQueryStatus.isReady(cacheKey);
-		void reportCardsContext.ready;
-		void detailDataContext.students;
-
-		if (!isLikelyDetailPath(pathname) || usesRouteLocalDrawer(pathname)) {
-			drawer.close();
+		if (!browser || ToastHost) {
 			return;
 		}
-
-		if (!routeQueryReady) {
-			return;
-		}
-
-		if (isReportCardDetailPath(pathname) && !reportCardsContext.ready) {
-			return;
-		}
-
-		const version = ++drawerSyncVersion;
-
-		void (async () => {
-			await hydrateDetailEntitiesForPath(pathname);
-			if (version !== drawerSyncVersion) {
-				return;
-			}
-			const { parseDetailPath } = await import('$lib/detail-routes');
-			const parsed = parseDetailPath(pathname);
-			if (parsed) {
-				drawer.open(parsed.item);
-			}
-			else {
-				drawer.close();
-			}
-		})();
-	});
-
-	$effect(() => {
-		if (!needsDrawer || DetailDrawer)
-			return;
-		void import('$lib/components/school/shared/DetailDrawer.svelte').then((module) => {
-			DetailDrawer = module.default;
-		});
-	});
-
-	$effect(() => {
-		if (!browser || ToastHost)
-			return;
 		void import('$lib/components/ui/ToastHost.svelte').then((module) => {
 			ToastHost = module.default;
 		});
 	});
-
-	async function closeDetail() {
-		const { getListPathForDetail } = await import('$lib/detail-routes');
-		const listPath = getListPathForDetail($page.url.pathname);
-		if (listPath) {
-			const next = new URL($page.url);
-			next.searchParams.delete(DRAWER_TAB_QUERY_KEY);
-			next.searchParams.delete(MODAL_QUERY_KEY);
-			next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
-			const href = `${listPath}${next.search}` as ResolvedPathname;
-			appGoto(href);
-		}
-		else {
-			drawer.close();
-		}
-	}
 
 	function logout() {
 		resetAppShellBootstrap();
@@ -280,10 +182,6 @@
 			</div>
 
 			{@render children()}
-
-			{#if DetailDrawer}
-				<DetailDrawer item={drawer.item} onClose={closeDetail} />
-			{/if}
 		</div>
 	</div>
 

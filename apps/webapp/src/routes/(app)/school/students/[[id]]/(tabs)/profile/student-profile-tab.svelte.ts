@@ -7,12 +7,12 @@ import { safeOptionalEntityList, safeOptionalFetch } from '$lib/api/safe-entity-
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { fetchStaffMembers } from '$lib/api/staff-data';
 import { mapNoteCategory, loadStudent360Data } from '$lib/api/student-360-data';
+import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { authSession } from '$lib/auth/session.svelte';
 import { dateInputToIso, formatDateInput, nowIso, todayDateInput } from '$lib/date/format';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { runStudentRouteMutation } from '../../../lib/student-route-mutation';
-import { schoolStudentDetailIdFromUrl } from '../../../students-page.svelte';
 
 export function sortPedagogicalNotes(
 	notes: readonly PedagogicalNote[],
@@ -154,7 +154,7 @@ export class StudentProfileTabState {
 		return (url: URL) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
 			load: async () => {
-				const studentId = schoolStudentDetailIdFromUrl(url);
+				const studentId = studentDetailIdFromPathname(url.pathname);
 				if (!studentId) {
 					return {};
 				}

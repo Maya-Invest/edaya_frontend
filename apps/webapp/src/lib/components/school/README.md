@@ -1,16 +1,14 @@
 # School UI components
 
-Domain-oriented folders under `components/school/`. Route pages import views from the matching domain.
+Domain-oriented folders under `components/school/`. Migrated routes colocate feature UI under `routes/(app)/…/components/`.
 
-| Folder | Examples |
-|--------|----------|
-| `shared/` | Drawer shell, drawer field helpers, `drawer-types`, `drawer-constants` |
-| `students/` | `SchoolStudentsView`, `StudentTabs`, student modals |
-| `guardians/` | `GuardiansView`, `GuardianDetail`, guardian forms |
-| `academics/` | `HomeworkView`, `SubjectsView`, `ClassReportCardsView` |
-| `scheduling/` | `PlanningView`, `AttendanceFlow` |
-| `finance/` | `FinanceView`, `FeesView`, `PaymentsView`, `BillingDetail` |
-| `configuration/` | `StaffView`, `RolesMatrixView`, report-card definitions |
-| `school-life/` | `ActivitiesView`, `EducatorDashboardView` |
+| Folder | Scope |
+|--------|--------|
+| `shared/` | Drawer chrome, `drawer-types`, `drawer-constants`, person pickers (re-exports → `lib/smart-components/`) |
+| `scheduling/` | Timetable planning, session modals, generation UI (shared by class + school routes) |
+| `dashboard/` | `DirectorDashboardView` |
+| `academics/` | Shared subject modals/sections still used by teaching + config subject tabs |
+| `configuration/` | Import modal stack, permission checkbox group, report-card section tree |
+| `students/` | `StudentGradeEntryModal` |
 
 Cross-domain imports should stay rare. Prefer lifting shared pieces into `shared/` when two domains need the same UI primitive.

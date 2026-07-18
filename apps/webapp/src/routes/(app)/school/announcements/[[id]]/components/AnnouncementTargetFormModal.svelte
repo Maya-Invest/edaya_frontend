@@ -1,13 +1,13 @@
 <script lang="ts">
 	import type { AnnouncementTargetKind, Guardian, StaffMember, Student } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import GuardianPicker from '$lib/components/school/shared/pickers/GuardianPicker.svelte';
-	import StaffPicker from '$lib/components/school/shared/pickers/StaffPicker.svelte';
-	import StudentPicker from '$lib/components/school/shared/pickers/StudentPicker.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import { t } from '$lib/i18n';
+	import GuardianPicker from '$lib/smart-components/guardian-picker/GuardianPicker.svelte';
+	import StaffPicker from '$lib/smart-components/staff-picker/StaffPicker.svelte';
+	import StudentPicker from '$lib/smart-components/student-picker/StudentPicker.svelte';
 	import { get } from 'svelte/store';
 	import { getAnnouncementsPageState } from '../../announcements-page.svelte';
 	import { announcementTargetNeedsEntity } from '../../lib/announcement-target-label';
@@ -159,11 +159,11 @@
 				{$t('announcements.targetEntityLabel')}
 			</Label>
 			{#if targetKind === 'student'}
-				<StudentPicker bind:value={targetId} students={announcementsPage.students} />
+				<StudentPicker bind:value={targetId} active={open} />
 			{:else if targetKind === 'guardian'}
-				<GuardianPicker bind:value={targetId} guardians={announcementsPage.guardians} />
+				<GuardianPicker bind:value={targetId} active={open} />
 			{:else if targetKind === 'staff_member'}
-				<StaffPicker bind:value={targetId} staff={announcementsPage.staff} />
+				<StaffPicker bind:value={targetId} active={open} />
 			{:else}
 				<Select.Root type="single" value={targetId} onValueChange={v => v && (targetId = v)}>
 					<Select.Trigger>

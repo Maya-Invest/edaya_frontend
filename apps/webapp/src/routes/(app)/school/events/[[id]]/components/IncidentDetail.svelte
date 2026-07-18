@@ -2,7 +2,6 @@
 	import type { components } from '$lib/api/schema';
 	import type { Incident } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import { academicContext } from '$lib/academic/context.svelte';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { loadIncidentInvolvements, loadIncidentSanctions } from '$lib/api/school-life-data';
 	import { incidentSevTone, incidentCatTone } from '$lib/components/school/shared/drawer-constants';
@@ -34,7 +33,6 @@
 
 	const eventsPage = getEventsPageState();
 	const students = $derived(eventsPage.students);
-	const classes = $derived(academicContext.classes);
 
 	const modals = createUrlSyncedModals<IncidentDrawerModal>({
 		allowed: ['edit', 'resolve'],
@@ -124,8 +122,6 @@
 				{#snippet children({ disabled, title })}
 					<IncidentFormModal
 						incident={live}
-						{students}
-						{classes}
 						{disabled}
 						{title}
 						bind:open={editOpen.open}
@@ -238,8 +234,6 @@
 
 <IncidentResolveModal
 	incident={live}
-	{students}
-	{classes}
 	bind:open={resolveOpen.open}
 	onResolved={refreshDetail}
 />

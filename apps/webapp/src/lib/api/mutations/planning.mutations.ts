@@ -9,28 +9,9 @@ import {
 	mondayOfWeekUtc,
 	sessionInstantsForSlot,
 } from '$lib/components/school/scheduling/planning-calendar';
-import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { t } from '$lib/i18n';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
-
-function sessionInstantsForWeek(
-	weekStart: Date,
-	day: PlanningEvent['day'],
-	start: string,
-	end: string,
-): { startsAt: string; endsAt: string } {
-	const weekAnchor = mondayOfWeekUtc(weekStart).toISOString();
-	const instants = sessionInstantsForSlot(weekAnchor, {
-		day,
-		startTime: start,
-		endTime: end,
-	});
-	return {
-		startsAt: instants.startsAt.toISOString(),
-		endsAt: instants.endsAt.toISOString(),
-	};
-}
 
 function sessionInstantsForExistingWeek(
 	referenceStartsAt: string,
@@ -47,10 +28,6 @@ function sessionInstantsForExistingWeek(
 		startsAt: instants.startsAt.toISOString(),
 		endsAt: instants.endsAt.toISOString(),
 	};
-}
-
-function planningSnapshot(sessionId: string): PlanningEvent | undefined {
-	return detailDataContext.planning.find(event => event.id === sessionId);
 }
 
 function specificDateForWeek(weekStart: Date, day: PlanningEvent['day']): string {
@@ -111,24 +88,6 @@ export async function createSessionMutation(input: {
 	}
 
 	const specificDate = specificDateForWeek(input.weekStart, input.day);
-	const { startsAt, endsAt } = sessionInstantsForWeek(input.weekStart, input.day, input.start, input.end);
-	const subject = detailDataContext.subjects.find(entry => entry.id === input.classSubjectId);
-	const optimisticId = `ls-${Date.now().toString(36)}`;
-	const optimistic: PlanningEvent = {
-		id: optimisticId,
-		classId: input.classGroupId,
-		scheduleId: input.scheduleId,
-		kind: 'lesson',
-		title: input.title.trim(),
-		subject: subject?.name ?? input.title.trim(),
-		day: input.day,
-		start: input.start,
-		end: input.end,
-		startsAt,
-		endsAt,
-		room: '—',
-		teacher: 'Non assigné',
-	};
 
 	const result = await runMutation(async () => {
 		const scheduleId = input.scheduleId ?? `sched-${Date.now().toString(36)}`;
@@ -174,23 +133,7 @@ export async function createSessionMutation(input: {
 	}, {
 		successMessage: input.successMessage,
 		errorMessage: get(t)('planning.createError'),
-		apply: () => {
-			detailDataContext.appendPlanningEvent(optimistic);
-		},
-		rollback: () => {
-			detailDataContext.removePlanningEvent(optimisticId);
-		},
-		onSuccess: (session) => {
-			detailDataContext.removePlanningEvent(optimisticId);
-			detailDataContext.appendPlanningEvent({
-				...optimistic,
-				id: session.id,
-				kind: 'lesson',
-				scheduleId: session.scheduleId ?? undefined,
-				startsAt: String(session.startsAt),
-				endsAt: String(session.endsAt),
-			});
-		},
+		versionKeys: ['planning'],
 	});
 	return result?.id ?? null;
 }
@@ -205,17 +148,6 @@ export async function updateSessionMutation(input: {
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = planningSnapshot(input.sessionId);
-	const subject = input.classSubjectId
-		? detailDataContext.subjects.find(entry => entry.id === input.classSubjectId)
-		: undefined;
-	const patch = {
-		title: input.title.trim(),
-		subject: subject?.name ?? input.title.trim(),
-		day: input.day,
-		start: input.start,
-		end: input.end,
-	};
 
 	let existing;
 	try {
@@ -232,7 +164,6 @@ export async function updateSessionMutation(input: {
 		input.start,
 		input.end,
 	);
-	const resolvedPatch = { ...patch, startsAt, endsAt };
 
 	const result = await runMutation(async () => {
 		await client.commands.rescheduleOccurrence({
@@ -248,14 +179,7 @@ export async function updateSessionMutation(input: {
 		);
 	}, {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.patchPlanningEvent(input.sessionId, resolvedPatch);
-		},
-		rollback: () => {
-			if (previous) {
-				detailDataContext.patchPlanningEvent(input.sessionId, previous);
-			}
-		},
+		versionKeys: ['planning'],
 	});
 	return result !== null;
 }
@@ -272,7 +196,6 @@ export async function reschedulePlanningSlotMutation(input: {
 	errorMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = planningSnapshot(input.sessionId);
 	const isActivity = input.kind === 'activity';
 
 	let sessionStartsAt: string;
@@ -296,13 +219,6 @@ export async function reschedulePlanningSlotMutation(input: {
 		startTime: input.startTime,
 		endTime: input.endTime,
 	});
-	const patch = {
-		day: input.day,
-		start: input.startTime,
-		end: input.endTime,
-		startsAt: instants.startsAt.toISOString(),
-		endsAt: instants.endsAt.toISOString(),
-	};
 
 	const result = await runMutation(async () => {
 		if (input.scheduleId) {
@@ -331,14 +247,9 @@ export async function reschedulePlanningSlotMutation(input: {
 					},
 		);
 	}, {
-		apply: () => detailDataContext.patchPlanningEvent(input.sessionId, patch),
-		rollback: () => {
-			if (previous) {
-				detailDataContext.patchPlanningEvent(input.sessionId, previous);
-			}
-		},
 		successMessage: input.successMessage,
 		errorMessage: input.errorMessage,
+		versionKeys: ['planning'],
 	});
 
 	return result !== null;
@@ -353,7 +264,6 @@ export async function cancelPlanningEventMutation(
 	}
 
 	const client = getBrowserSchoolClient();
-	const previous = planningSnapshot(event.id);
 	const result = await runMutation(async () => {
 		if (event.kind === 'activity') {
 			await client.commands.cancelActivitySession({ activitySessionId: event.id });
@@ -362,14 +272,7 @@ export async function cancelPlanningEventMutation(
 		await client.commands.cancelLessonSession({ lessonSessionId: event.id });
 	}, {
 		successMessage: opts?.successMessage,
-		apply: () => {
-			detailDataContext.patchPlanningEvent(event.id, { status: 'cancelled' });
-		},
-		rollback: () => {
-			if (previous) {
-				detailDataContext.patchPlanningEvent(event.id, previous);
-			}
-		},
+		versionKeys: ['planning'],
 	});
 	return result !== null;
 }

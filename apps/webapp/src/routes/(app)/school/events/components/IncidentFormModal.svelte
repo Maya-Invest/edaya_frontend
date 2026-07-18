@@ -1,7 +1,6 @@
 <script lang="ts">
-	import type { ClassNode, Incident, Student } from '$lib/types/school';
+	import type { Incident } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import StudentPicker from '$lib/components/school/shared/pickers/StudentPicker.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -9,6 +8,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
+	import StudentPicker from '$lib/smart-components/student-picker/StudentPicker.svelte';
 	import { get } from 'svelte/store';
 	import { getEventsPageState } from '../events-page.svelte';
 
@@ -23,16 +23,12 @@
 
 	let {
 		incident,
-		students = [],
-		classes = [],
 		open = $bindable(false),
 		onCreated,
 		disabled = false,
 		title: triggerTitle,
 	}: {
 		incident?: Incident;
-		students?: Student[];
-		classes?: ClassNode[];
 		open?: boolean;
 		onCreated?: (incidentId: string) => void;
 		disabled?: boolean;
@@ -52,11 +48,11 @@
 	const isEdit = $derived(incident !== undefined);
 	const schoolId = $derived(academicContext.schools[0]?.id ?? '');
 
-	const selectedStudent = $derived(students.find(entry => entry.id === studentId));
+	const selectedStudent = $derived(eventsPage.students.find(entry => entry.id === studentId));
 	const kindLabel = $derived($t(`events.kind.${kind}`));
 	const studentClass = $derived(
 		selectedStudent
-			? classes.find(entry => entry.id === selectedStudent.classId)
+			? academicContext.classes.find(entry => entry.id === selectedStudent.classId)
 			: undefined,
 	);
 
@@ -73,7 +69,7 @@
 			date = incident.date;
 		}
 		else {
-			studentId = students[0]?.id ?? '';
+			studentId = eventsPage.students[0]?.id ?? '';
 			incidentTitle = '';
 			description = '';
 			kind = 'minor_infraction';
@@ -162,7 +158,7 @@
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('events.student')}
 			</Label>
-			<StudentPicker bind:value={studentId} {students} {classes} />
+			<StudentPicker bind:value={studentId} active={open} />
 			{#if studentClass}
 				<p class="text-xs text-muted-foreground">{studentClass.name}</p>
 			{/if}

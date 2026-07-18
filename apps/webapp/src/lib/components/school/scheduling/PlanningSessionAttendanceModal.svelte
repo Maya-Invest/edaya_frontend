@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { PlanningEventKind } from '$lib/types/school';
 	import type { SessionAttendanceRow, SessionAttendanceStatus } from '$lib/types/session-detail';
-	import { recordSessionStudentAttendanceMutation } from '$lib/api/mutations/planning-session.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -26,7 +25,7 @@
 		title?: string;
 		open?: boolean;
 		showTrigger?: boolean;
-		onRecord?: (input: {
+		onRecord: (input: {
 			sessionId: string;
 			kind?: PlanningEventKind;
 			studentId: string;
@@ -65,9 +64,7 @@
 			attendanceId: row.attendanceId,
 			successMessage: get(t)('planning.session.attendanceSuccess', { name: row.studentName }),
 		};
-		const ok = onRecord
-			? await onRecord(input)
-			: await recordSessionStudentAttendanceMutation(input);
+		const ok = await onRecord(input);
 		busy = false;
 		if (ok) {
 			open = false;

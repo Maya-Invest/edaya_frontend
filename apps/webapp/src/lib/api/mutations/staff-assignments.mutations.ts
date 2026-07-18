@@ -2,7 +2,6 @@ import type { components } from '$lib/api/schema';
 import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { detailDataContext } from '$lib/detail-data/context.svelte';
 
 type StaffAssignment = components['schemas']['StaffAssignment'];
 
@@ -11,23 +10,12 @@ export async function saveStaffAssignmentMutation(input: {
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = detailDataContext.staffAssignments.find(row => row.id === input.assignment.id);
 
 	const result = await runMutation(
 		() => client.entities.staffAssignments.save(input.assignment),
 		{
 			successMessage: input.successMessage,
-			apply: () => {
-				detailDataContext.upsertStaffAssignment(input.assignment);
-			},
-			rollback: () => {
-				if (previous) {
-					detailDataContext.upsertStaffAssignment(previous);
-				}
-				else {
-					detailDataContext.removeStaffAssignment(input.assignment.id);
-				}
-			},
+			versionKeys: ['staff'],
 		},
 	);
 
@@ -39,21 +27,12 @@ export async function deleteStaffAssignmentMutation(input: {
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = detailDataContext.staffAssignments.find(row => row.id === input.id);
-	if (!previous) {
-		return false;
-	}
 
 	const result = await runMutation(
 		() => client.entities.staffAssignments.delete({ id: input.id }),
 		{
 			successMessage: input.successMessage,
-			apply: () => {
-				detailDataContext.removeStaffAssignment(input.id);
-			},
-			rollback: () => {
-				detailDataContext.upsertStaffAssignment(previous);
-			},
+			versionKeys: ['staff'],
 		},
 	);
 

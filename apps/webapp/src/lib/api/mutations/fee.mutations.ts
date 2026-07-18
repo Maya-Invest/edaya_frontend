@@ -4,7 +4,6 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
-import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { t } from '$lib/i18n';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
@@ -65,10 +64,6 @@ function feeSavePayload(
 	};
 }
 
-function feeSnapshot(feeId: string): Fee | undefined {
-	return detailDataContext.fees.find(fee => fee.id === feeId);
-}
-
 export async function createFeeMutation(input: {
 	name: string;
 	category: Fee['category'];
@@ -85,13 +80,6 @@ export async function createFeeMutation(input: {
 	}
 
 	const id = `fee-${Date.now().toString(36)}`;
-	const optimistic: Fee = {
-		id,
-		name: input.name.trim(),
-		category: input.category,
-		amount: input.amount,
-		period: input.period,
-	};
 
 	const result = await runMutation(() => client.commands.createFee({
 		id,
@@ -105,12 +93,7 @@ export async function createFeeMutation(input: {
 		createdAt: new Date().toISOString(),
 	}), {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.appendFee(optimistic);
-		},
-		rollback: () => {
-			detailDataContext.removeFee(id);
-		},
+		versionKeys: ['fees'],
 	});
 	return result ? id : null;
 }
@@ -123,12 +106,6 @@ export async function updateFeeMutation(input: {
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = feeSnapshot(input.feeId);
-	const patch = {
-		name: input.name.trim(),
-		category: input.category,
-		amount: input.amount,
-	};
 
 	const result = await runMutation(async () => {
 		const existing = await client.entities.fees.get(input.feeId);
@@ -139,14 +116,7 @@ export async function updateFeeMutation(input: {
 		}));
 	}, {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.patchFee(input.feeId, patch);
-		},
-		rollback: () => {
-			if (previous) {
-				detailDataContext.patchFee(input.feeId, previous);
-			}
-		},
+		versionKeys: ['fees'],
 	});
 	return result !== null;
 }

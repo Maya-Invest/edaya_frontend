@@ -1,9 +1,8 @@
 <script lang="ts">
-	import type { PlanningEvent } from '$lib/types/school';
+	import type { Activity, PlanningEvent, Subject } from '$lib/types/school';
 	import { createAssessmentMutation } from '$lib/api/mutations/evaluation.mutations';
 	import { createSessionMutation } from '$lib/api/mutations/planning.mutations';
 	import { createScheduleMutation } from '$lib/api/mutations/schedule.mutations';
-	import { loadClassPlanning } from '$lib/api/planning-data';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { sessionInstantsForSlot } from '$lib/components/school/scheduling/planning-calendar';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -11,7 +10,6 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
-	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
 
@@ -24,6 +22,8 @@
 	let {
 		classId,
 		weekStart,
+		subjects,
+		activities,
 		open = $bindable(false),
 		onCreated,
 		disabled = false,
@@ -31,6 +31,8 @@
 	}: {
 		classId: string;
 		weekStart: Date;
+		subjects: Subject[];
+		activities: Activity[];
 		open?: boolean;
 		onCreated?: (sessionId: string) => void;
 		disabled?: boolean;
@@ -50,8 +52,7 @@
 	let start = $state('08:00');
 	let end = $state('09:00');
 
-	const classSubjects = $derived(detailDataContext.subjectsForClass(classId));
-	const activities = $derived(detailDataContext.activities);
+	const classSubjects = $derived(subjects);
 	const selectedSubjectName = $derived(
 		classSubjects.find(subject => subject.id === classSubjectId)?.name ?? '',
 	);
@@ -135,12 +136,6 @@
 		}
 	}
 
-	async function refreshPlanning() {
-		const client = getBrowserSchoolClient();
-		const planning = await loadClassPlanning(client, classId);
-		detailDataContext.seedPlanning(planning, { classId });
-	}
-
 	async function submit() {
 		if (!canSubmit) {
 			return;
@@ -177,7 +172,6 @@
 						title: activity?.name ?? $t('planning.wizard.activityFallback'),
 					}),
 				});
-				await refreshPlanning();
 			}
 			else {
 				const numericMax = Number.parseFloat(maxScore);
@@ -213,7 +207,6 @@
 						startsAt,
 						endsAt,
 					});
-					await refreshPlanning();
 					createdId = assessmentId;
 				}
 			}

@@ -2,13 +2,9 @@ import type { DemoContext } from './types';
 import { DRAWER_TAB_LABELS, type DrawerTabKey } from './constants';
 import { drawerTabFromPathname } from './paths';
 
-export function urlTabParam(ctx: DemoContext): string | null {
-	return new URL(ctx.page.url()).searchParams.get('tab');
-}
-
-/** Active drawer tab from `?tab=` (legacy drawers) or the URL path segment (school drawers). */
+/** Active drawer tab from the URL path segment. */
 export function urlTabSegment(ctx: DemoContext): string | null {
-	return urlTabParam(ctx) ?? drawerTabFromPathname(new URL(ctx.page.url()).pathname);
+	return drawerTabFromPathname(new URL(ctx.page.url()).pathname);
 }
 
 export async function waitForUrlTab(

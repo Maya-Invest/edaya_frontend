@@ -1,3 +1,4 @@
+import { configClassGroupPath } from './paths';
 import type { DemoContext, EnsureDailyAttendanceOptions } from './types';
 import { visit } from './visit';
 
@@ -34,9 +35,9 @@ export async function ensureDailyAttendanceMode(
 	const { homeroomStaffName, force = false } = options;
 	const { page, base } = ctx;
 
-	await visit(ctx, `${base}/configuration/classes/${classId}`, 'setup', `Open ${classId} config`, {
+	await visit(ctx, `${base}${configClassGroupPath(classId, 'profile')}`, 'setup', `Open ${classId} config`, {
 		pathPrefix: `/configuration/classes/${classId}`,
-		selector: 'main',
+		selector: 'aside#app-sidebar',
 	});
 
 	const dailyModePattern = /^(Appel quotidien|Daily roll call)$/i;

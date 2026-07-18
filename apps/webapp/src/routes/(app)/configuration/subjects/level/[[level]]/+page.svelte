@@ -1,41 +1,25 @@
 <script lang="ts">
-	import type { Subject } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import ConfigSubjectsView from '$lib/components/school/academics/ConfigSubjectsView.svelte';
-	import DataState from '$lib/components/ui/DataState.svelte';
-	import PageQuery from '$lib/components/ui/PageQuery.svelte';
-	import { detailHref } from '$lib/detail-hrefs';
-	import { t } from '$lib/i18n';
-	import { appGoto } from '$lib/navigation/app-navigation';
-	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
-	import { queryConfigSubjectsPage } from '$lib/queries/subjects.queries';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import { findSubjectLevelGroup } from '$lib/academic/subject-level-groups';
+	import { getSubjectsPageState } from '../../subjects-page.svelte';
+	import LevelDetail from './components/LevelDetail.svelte';
 
-	const query = queryConfigSubjectsPage();
-
-	function selectSubject(subject: Subject) {
-		const path = detailHref.configSubject(subject.id);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
-	}
-
-	function selectLevel(group: { label: string }) {
-		const path = detailHref.configSubjectLevel(group.label);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
-	}
+	const subjectsPage = getSubjectsPageState();
+	const levelLabel = $derived($page.params.level ? decodeURIComponent($page.params.level) : undefined);
+	const levelGroup = $derived.by(() => {
+		if (!levelLabel || !subjectsPage.slice) {
+			return undefined;
+		}
+		return findSubjectLevelGroup(
+			levelLabel,
+			subjectsPage.slice.subjects,
+			academicContext.classes,
+			academicContext.gradeLevels,
+		);
+	});
 </script>
 
-<PageQuery {query} loadingTitle={$t('config.subjects')}>
-	{#snippet children(data)}
-		<DataState
-			preserveShell
-			status={data.status}
-			errorMessage={data.errorMessage}
-			emptyTitle={$t('config.subjects')}
-			emptyDescription={$t('dataState.emptyDescription')}
-		>
-			<ConfigSubjectsView
-				onSelect={selectSubject}
-				onSelectLevel={selectLevel}
-			/>
-		</DataState>
-	{/snippet}
-</PageQuery>
+{#if levelGroup}
+	<LevelDetail label={levelGroup.label} subtitle={levelGroup.subtitle} items={levelGroup.items} />
+{/if}

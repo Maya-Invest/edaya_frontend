@@ -221,8 +221,6 @@
 	</ListPageHeader>
 
 	<IncidentFormModal
-		{students}
-		{classes}
 		bind:open={createOpen.open}
 		onCreated={handleCreated}
 	/>

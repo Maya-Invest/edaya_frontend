@@ -15,12 +15,22 @@
 		open = $bindable(false),
 		onOpenChange,
 		onCreated,
+		createStudent,
 	}: {
 		hierarchy: { level: string; classes: ClassNode[] }[];
 		defaultClassGroupId?: string;
 		open?: boolean;
 		onOpenChange?: (open: boolean) => void;
 		onCreated?: (studentId: string) => void;
+		createStudent?: (input: {
+			firstName: string;
+			lastName: string;
+			classGroupId: string;
+			birthDate?: string;
+			sendAccountInvitation?: boolean;
+			inviteEmail?: string;
+			successMessage?: string;
+		}) => Promise<string | null>;
 	} = $props();
 
 	let busy = $state(false);
@@ -78,8 +88,6 @@
 		wasOpen = open;
 	});
 
-	const studentsPage = getStudentsPageState();
-
 	async function submit() {
 		if (!canSubmit)
 			return;
@@ -87,7 +95,8 @@
 		busy = true;
 		try {
 			const fullName = `${firstName.trim()} ${lastName.trim()}`;
-			const studentId = await studentsPage.createStudent({
+			const resolvedCreateStudent = createStudent ?? (input => getStudentsPageState().createStudent(input));
+			const studentId = await resolvedCreateStudent({
 				firstName,
 				lastName,
 				classGroupId,

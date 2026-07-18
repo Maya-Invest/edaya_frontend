@@ -1,16 +1,12 @@
-import type { Announcement, AnnouncementPriority, AnnouncementTarget, AnnouncementTargetKind } from '$lib/types/school';
+import type { AnnouncementPriority, AnnouncementTargetKind } from '$lib/types/school';
 import { announcementExpiresAtIso } from '$lib/api/announcement-expires-at';
+import { recordsForFieldIds } from '$lib/api/entity-list-filters';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
-import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { t } from '$lib/i18n';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
-
-function announcementSnapshot(announcementId: string): Announcement | undefined {
-	return detailDataContext.announcements.find(announcement => announcement.id === announcementId);
-}
 
 export async function createAnnouncementMutation(input: {
 	title: string;
@@ -27,17 +23,6 @@ export async function createAnnouncementMutation(input: {
 	}
 
 	const announcementId = `ann-${Date.now().toString(36)}`;
-	const optimistic: Announcement = {
-		id: announcementId,
-		title: input.title.trim(),
-		content: input.content.trim(),
-		status: 'draft',
-		priority: input.priority,
-		createdAt: new Date().toISOString(),
-		expiresAt: announcementExpiresAtIso(input.expiresAt),
-		createdBy: authSession.userId ?? undefined,
-		targets: [],
-	};
 
 	const result = await runMutation(() => client.commands.createAnnouncement({
 		id: announcementId,
@@ -50,12 +35,7 @@ export async function createAnnouncementMutation(input: {
 		createdAt: new Date().toISOString(),
 	}), {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.appendAnnouncement(optimistic);
-		},
-		rollback: () => {
-			detailDataContext.removeAnnouncement(announcementId);
-		},
+		versionKeys: ['announcements'],
 	});
 
 	return result ? announcementId : null;
@@ -71,8 +51,7 @@ export async function updateAnnouncementMutation(input: {
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
 	const schoolId = authSession.schoolId;
-	const previous = announcementSnapshot(input.announcementId);
-	if (!schoolId || !previous || previous.status !== 'draft') {
+	if (!schoolId) {
 		toast.error(get(t)('dataState.errorDescription'));
 		return false;
 	}
@@ -82,6 +61,11 @@ export async function updateAnnouncementMutation(input: {
 		existing = await client.entities.announcements.get(input.announcementId);
 	}
 	catch {
+		toast.error(get(t)('dataState.errorDescription'));
+		return false;
+	}
+
+	if (existing.status !== 'draft') {
 		toast.error(get(t)('dataState.errorDescription'));
 		return false;
 	}
@@ -98,14 +82,7 @@ export async function updateAnnouncementMutation(input: {
 		...patch,
 	}), {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.patchAnnouncement(input.announcementId, patch);
-		},
-		rollback: () => {
-			if (previous) {
-				detailDataContext.patchAnnouncement(input.announcementId, previous);
-			}
-		},
+		versionKeys: ['announcements'],
 	});
 
 	return result !== null;
@@ -118,19 +95,22 @@ export async function addAnnouncementTargetMutation(input: {
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = announcementSnapshot(input.announcementId);
-	if (!previous || previous.status !== 'draft') {
+
+	let existing;
+	try {
+		existing = await client.entities.announcements.get(input.announcementId);
+	}
+	catch {
+		toast.error(get(t)('dataState.errorDescription'));
+		return false;
+	}
+
+	if (existing.status !== 'draft') {
 		toast.error(get(t)('dataState.errorDescription'));
 		return false;
 	}
 
 	const targetId = `tgt-${Date.now().toString(36)}`;
-	const optimistic: AnnouncementTarget = {
-		id: targetId,
-		announcementId: input.announcementId,
-		targetKind: input.targetKind,
-		targetId: input.targetId,
-	};
 
 	const result = await runMutation(() => client.commands.addTarget({
 		id: targetId,
@@ -140,12 +120,7 @@ export async function addAnnouncementTargetMutation(input: {
 		createdAt: new Date().toISOString(),
 	}), {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.appendAnnouncementTarget(input.announcementId, optimistic);
-		},
-		rollback: () => {
-			detailDataContext.removeAnnouncementTarget(input.announcementId, targetId);
-		},
+		versionKeys: ['announcements'],
 	});
 
 	return result !== null;
@@ -156,8 +131,20 @@ export async function publishAnnouncementMutation(input: {
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = announcementSnapshot(input.announcementId);
-	if (!previous || previous.status !== 'draft' || previous.targets.length === 0) {
+
+	let existing;
+	try {
+		existing = await client.entities.announcements.get(input.announcementId);
+	}
+	catch {
+		toast.error(get(t)('dataState.errorDescription'));
+		return false;
+	}
+
+	const targets = await client.entities.announcementTargets.list(
+		recordsForFieldIds('announcementId', [input.announcementId]),
+	);
+	if (existing.status !== 'draft' || (targets ?? []).length === 0) {
 		toast.error(get(t)('announcements.publishNeedsTargets'));
 		return false;
 	}
@@ -166,20 +153,7 @@ export async function publishAnnouncementMutation(input: {
 		announcementId: input.announcementId,
 	}), {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.patchAnnouncement(input.announcementId, {
-				status: 'published',
-				publishedAt: new Date().toISOString(),
-			});
-		},
-		rollback: () => {
-			if (previous) {
-				detailDataContext.patchAnnouncement(input.announcementId, {
-					status: previous.status,
-					publishedAt: previous.publishedAt,
-				});
-			}
-		},
+		versionKeys: ['announcements'],
 	});
 
 	return result !== null;

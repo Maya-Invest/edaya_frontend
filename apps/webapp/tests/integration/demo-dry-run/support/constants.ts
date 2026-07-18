@@ -15,8 +15,12 @@ export const CLASS_SUBJECT_ID = 'ci-cs-6a-math';
 export const STUDENT_ID = 'ci-s1';
 export const TEACHER_ID = 'ci-t1';
 export const STAFF_ID = 'ci-st3';
+export const ACTIVITY_ID = 'ci-act-robot';
 
-/** Bilingual drawer tab button labels (en + fr). */
+/** Routes without a `<main>` shell — finance uses layout + DataState only. */
+export const APP_SHELL_SELECTOR = 'aside#app-sidebar';
+
+/** Bilingual drawer tab button labels keyed by URL segment. */
 export const DRAWER_TAB_LABELS = {
 	profile: /^(Profile|Profil)$/i,
 	grades: /^(Grades|Notes)$/i,
@@ -26,9 +30,14 @@ export const DRAWER_TAB_LABELS = {
 	enrollments: /^(Enrollments|Inscriptions)$/i,
 	assignments: /^(Assignments|Affectations|Staff assignments)$/i,
 	permissions: /^(Permissions)$/i,
+	availability: /^(Availability|Disponibilités)$/i,
 	progression: /^(Chapters|Chapitres)$/i,
 	logbook: /^(Lessons|Leçons)$/i,
 	details: /^(Details|Détails)$/i,
+	grading: /^(Grading|Saisie des notes|Correction)$/i,
+	students: /^(Students|Élèves|Participants)$/i,
+	classes: /^(Classes)$/i,
+	'report-card': /^(Report card|Bulletin|Bulletin scolaire)$/i,
 } as const satisfies Record<string, RegExp>;
 
 export type DrawerTabKey = keyof typeof DRAWER_TAB_LABELS;
