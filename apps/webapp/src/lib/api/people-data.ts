@@ -594,6 +594,8 @@ export function mapStudents(
 			photoUrl: student.photoUrl ?? null,
 			email: `${student.firstName.toLowerCase()}.${student.lastName.toLowerCase()}@school.edu`,
 			birthdate: formatDateInput(student.birthDate),
+			matricule: student.matricule ?? null,
+			gender: student.gender ?? null,
 			guardian: guardianDisplayName(guardian),
 			attendance: computeAttendancePercent(student.id, metrics.attendanceRaw),
 			average,

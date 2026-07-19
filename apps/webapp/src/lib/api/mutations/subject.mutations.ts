@@ -2,6 +2,7 @@ import type { Subject, SubjectCategory } from '$lib/types/school';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { buildSubjectConfigCommand } from '$lib/api/subject-save-payload';
+import { createSubjectForClass } from '$lib/subjects/create-subject-for-class';
 import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
 import { toast } from '$lib/toast.svelte';
@@ -56,20 +57,17 @@ export async function createSubjectForClassMutation(input: {
 	const createdAt = new Date().toISOString();
 
 	const result = await runMutation(async () => {
-		await client.commands.configureSubject(buildSubjectConfigCommand(null, {
-			id: subjectId,
+		await createSubjectForClass(client, {
+			schoolId,
+			classGroupId: input.classGroupId,
+			subjectId,
+			classSubjectId,
 			name: input.name,
 			category: input.category,
 			color: input.color,
 			createdAt,
-		}));
-		return client.commands.offerSubjectToClass({
-			id: classSubjectId,
-			classGroupId: input.classGroupId,
-			subjectId,
-			isOffered: true,
-			createdAt,
 		});
+		return classSubjectId;
 	}, { successMessage: input.successMessage });
 	return result ? classSubjectId : null;
 }

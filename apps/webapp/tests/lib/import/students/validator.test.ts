@@ -15,6 +15,7 @@ function row(overrides: Partial<StudentImportRow> & Pick<StudentImportRow, 'rowI
 	return {
 		prenom: 'Jean',
 		nom: 'Dupont',
+		matricule: 'MAT-2024-001',
 		classe: '6ème A',
 		...overrides,
 	};
@@ -23,7 +24,10 @@ function row(overrides: Partial<StudentImportRow> & Pick<StudentImportRow, 'rowI
 describe('student import validator', () => {
 	it('accepts valid rows and resolves class ids', () => {
 		const result = validateStudentImportRows(
-			[row({ rowIndex: 2 }), row({ rowIndex: 3, prenom: 'Marie', nom: 'Kouassi' })],
+			[
+				row({ rowIndex: 2 }),
+				row({ rowIndex: 3, prenom: 'Marie', nom: 'Kouassi', matricule: 'MAT-2024-002' }),
+			],
 			{ classes: CLASSES },
 		);
 

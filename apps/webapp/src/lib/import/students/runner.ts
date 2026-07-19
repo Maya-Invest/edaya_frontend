@@ -47,9 +47,10 @@ export async function runStudentImport(options: StudentImportRunOptions): Promis
 				enrollmentId,
 				firstName: row.prenom,
 				lastName: row.nom,
-				classGroupId: row.classGroupId,
+				...(row.classGroupId ? { classGroupId: row.classGroupId } : {}),
 				birthDate: row.date_naissance,
 				matricule: row.matricule,
+				...(row.genre?.trim() ? { gender: row.genre.trim() } : {}),
 				sendAccountInvitation: false,
 				createdAt,
 			});

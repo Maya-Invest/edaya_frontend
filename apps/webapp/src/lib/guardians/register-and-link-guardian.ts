@@ -25,11 +25,9 @@ function buildContactMethods(email: string, phone: string) {
 	].filter((method): method is NonNullable<typeof method> => method !== null);
 }
 
-export interface RegisterAndLinkGuardianInput {
+export interface RegisterGuardianInput {
 	schoolId: string;
 	guardianId: string;
-	linkId: string;
-	studentId: string;
 	firstName: string;
 	lastName: string;
 	email?: string;
@@ -38,9 +36,18 @@ export interface RegisterAndLinkGuardianInput {
 	createdAt?: string;
 }
 
-export async function registerAndLinkGuardian(
+export interface LinkGuardianToStudentInput {
+	linkId: string;
+	guardianId: string;
+	studentId: string;
+	createdAt?: string;
+}
+
+export interface RegisterAndLinkGuardianInput extends RegisterGuardianInput, LinkGuardianToStudentInput {}
+
+export async function registerGuardian(
 	client: SchoolClient,
-	input: RegisterAndLinkGuardianInput,
+	input: RegisterGuardianInput,
 ): Promise<void> {
 	const now = input.createdAt ?? new Date().toISOString();
 	const email = input.email?.trim() ?? '';
@@ -58,6 +65,13 @@ export async function registerAndLinkGuardian(
 		sendAccountInvitation: input.sendAccountInvitation ?? false,
 		createdAt: now,
 	});
+}
+
+export async function linkGuardianToStudent(
+	client: SchoolClient,
+	input: LinkGuardianToStudentInput,
+): Promise<void> {
+	const now = input.createdAt ?? new Date().toISOString();
 
 	await client.commands.linkGuardianToStudent({
 		id: input.linkId,
@@ -77,6 +91,14 @@ export async function registerAndLinkGuardian(
 	});
 }
 
+export async function registerAndLinkGuardian(
+	client: SchoolClient,
+	input: RegisterAndLinkGuardianInput,
+): Promise<void> {
+	await registerGuardian(client, input);
+	await linkGuardianToStudent(client, input);
+}
+
 export function createGuardianImportIds(
 	index: number,
 	studentId: string,
@@ -90,4 +112,8 @@ export function createGuardianImportIds(
 		guardianId,
 		linkId: `gl-${guardianId}-${studentId}`,
 	};
+}
+
+export function createGuardianStudentLinkId(guardianId: string, studentId: string): string {
+	return `gl-${guardianId}-${studentId}`;
 }

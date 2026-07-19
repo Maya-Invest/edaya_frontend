@@ -8,6 +8,7 @@ import type {
 } from './types';
 import { canImportValidatedRows } from '$lib/import/shared/can-import-validated-rows';
 import { normalizeStudentMatricule } from '$lib/import/shared/normalize-student-matricule';
+import { parseSemicolonList } from '$lib/import/shared/parse-semicolon-list';
 
 function normalizeLookupValue(value: string): string {
 	return value.trim().toLowerCase();
@@ -75,43 +76,67 @@ export function validateGuardianImportRows(
 
 		const hasPrenom = validateRequiredField(row, 'prenom', row.prenom, rowIssues);
 		const hasNom = validateRequiredField(row, 'nom', row.nom, rowIssues);
-		const hasMatricule = validateRequiredField(row, 'eleve_matricule', row.eleve_matricule, rowIssues);
+		const hasMatriculeField = validateRequiredField(row, 'eleve_matricule', row.eleve_matricule, rowIssues);
 
-		let studentId: string | undefined;
-		if (hasMatricule) {
-			const normalizedMatricule = normalizeStudentMatricule(row.eleve_matricule);
+		const matricules = hasMatriculeField ? parseSemicolonList(row.eleve_matricule) : [];
+		const resolvedMatricules = matricules.map((matricule) => {
+			const normalizedMatricule = normalizeStudentMatricule(matricule);
 			const match = context.studentMatricules.get(normalizedMatricule);
-			if (match) {
-				studentId = match.studentId;
+			return {
+				matricule,
+				studentId: match?.studentId,
+			};
+		});
+		const studentIds = [
+			...new Set(
+				resolvedMatricules
+					.map(entry => entry.studentId)
+					.filter((studentId): studentId is string => Boolean(studentId)),
+			),
+		];
+		const hasValidMatricule = studentIds.length > 0;
+
+		for (const entry of resolvedMatricules) {
+			if (entry.studentId) {
+				continue;
 			}
-			else {
-				rowIssues.push(issue({
-					rowIndex: row.rowIndex,
-					column: 'eleve_matricule',
-					value: row.eleve_matricule,
-					messageKey: 'import.guardians.validation.studentNotFound',
-					suggestions: matriculeSuggestions(context, row.eleve_matricule),
-				}));
-			}
+			rowIssues.push(issue({
+				rowIndex: row.rowIndex,
+				column: 'eleve_matricule',
+				value: entry.matricule,
+				messageKey: 'import.guardians.validation.studentNotFound',
+				severity: hasValidMatricule ? 'warning' : 'error',
+				suggestions: matriculeSuggestions(context, entry.matricule),
+			}));
 		}
 
-		if (hasPrenom && hasNom && studentId) {
-			const duplicateKey = [
-				studentId,
-				normalizeLookupValue(row.prenom),
-				normalizeLookupValue(row.nom),
-			].join('::');
-			const previousRow = linksInFile.get(duplicateKey);
-			if (previousRow != null) {
-				rowIssues.push(issue({
-					rowIndex: row.rowIndex,
-					column: 'eleve_matricule',
-					value: row.eleve_matricule,
-					messageKey: 'import.guardians.validation.duplicateInFile',
-					messageParams: { row: previousRow },
-				}));
-			}
-			else {
+		if (hasMatriculeField && matricules.length === 0) {
+			rowIssues.push(issue({
+				rowIndex: row.rowIndex,
+				column: 'eleve_matricule',
+				value: row.eleve_matricule,
+				messageKey: 'import.guardians.validation.required',
+			}));
+		}
+
+		if (hasPrenom && hasNom && studentIds.length > 0) {
+			for (const studentId of studentIds) {
+				const duplicateKey = [
+					studentId,
+					normalizeLookupValue(row.prenom),
+					normalizeLookupValue(row.nom),
+				].join('::');
+				const previousRow = linksInFile.get(duplicateKey);
+				if (previousRow != null) {
+					rowIssues.push(issue({
+						rowIndex: row.rowIndex,
+						column: 'eleve_matricule',
+						value: row.eleve_matricule,
+						messageKey: 'import.guardians.validation.duplicateInFile',
+						messageParams: { row: previousRow },
+					}));
+					break;
+				}
 				linksInFile.set(duplicateKey, row.rowIndex);
 			}
 		}
@@ -126,10 +151,10 @@ export function validateGuardianImportRows(
 			}
 		}
 
-		if (blockingIssues.length === 0 && studentId && hasPrenom && hasNom) {
+		if (blockingIssues.length === 0 && studentIds.length > 0 && hasPrenom && hasNom) {
 			validRows.push({
 				...row,
-				studentId,
+				studentIds,
 			});
 		}
 	}

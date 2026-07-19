@@ -3,6 +3,10 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
+import { navigateToListAfterEntityDelete } from '$lib/navigation/navigate-after-delete';
+import {
+	cleanupClassGroupDependencies,
+} from '$lib/school/delete-class-group-cleanup';
 
 const GRADE_CLASS_PREFIX: Record<string, string> = {
 	'gl-6': '6',
@@ -164,5 +168,26 @@ export async function updateClassGroupMutation(
 		successMessage: options?.successMessage,
 		refresh: true,
 	});
+	return result !== null;
+}
+
+export async function deleteClassGroupMutation(
+	classGroupId: string,
+	options?: { successMessage?: string; errorMessage?: string },
+): Promise<boolean> {
+	const client = getBrowserSchoolClient();
+	const result = await runMutation(
+		async () => {
+			await cleanupClassGroupDependencies(client, classGroupId);
+			await client.entities.classGroups.delete({ id: classGroupId });
+		},
+		{
+			successMessage: options?.successMessage,
+			errorMessage: options?.errorMessage,
+			refresh: false,
+			onSuccess: navigateToListAfterEntityDelete,
+		},
+	);
+
 	return result !== null;
 }

@@ -1,7 +1,12 @@
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { ValidatedGuardianImportRow } from './types';
 import { notifyGuardiansListChanged } from '$lib/guardians/notify-guardians-list-changed';
-import { createGuardianImportIds, registerAndLinkGuardian } from '$lib/guardians/register-and-link-guardian';
+import {
+	createGuardianImportIds,
+	createGuardianStudentLinkId,
+	linkGuardianToStudent,
+	registerGuardian,
+} from '$lib/guardians/register-and-link-guardian';
 import { t } from '$lib/i18n';
 import { formatImportRunErrorMessage } from '$lib/import/shared/format-import-run-error';
 import { get } from 'svelte/store';
@@ -16,6 +21,7 @@ export interface GuardianImportRunFailure {
 
 export interface GuardianImportRunResult {
 	created: number;
+	linksCreated: number;
 	failed: GuardianImportRunFailure[];
 	guardianIds: string[];
 }
@@ -34,17 +40,19 @@ export async function runGuardianImport(options: GuardianImportRunOptions): Prom
 	const guardianIds: string[] = [];
 	const createdAt = new Date().toISOString();
 	const total = rows.length;
+	let linksCreated = 0;
 
 	for (const [index, row] of rows.entries()) {
 		onProgress?.(index, total);
-		const { guardianId, linkId } = createGuardianImportIds(index, row.studentId, seed);
+		const firstStudentId = row.studentIds[0] ?? '';
+		const { guardianId } = createGuardianImportIds(index, firstStudentId, seed);
+		let guardianRegistered = false;
+		let rowLinksCreated = 0;
 
 		try {
-			await registerAndLinkGuardian(client, {
+			await registerGuardian(client, {
 				schoolId,
 				guardianId,
-				linkId,
-				studentId: row.studentId,
 				firstName: row.prenom,
 				lastName: row.nom,
 				email: row.email,
@@ -52,7 +60,7 @@ export async function runGuardianImport(options: GuardianImportRunOptions): Prom
 				sendAccountInvitation: false,
 				createdAt,
 			});
-			guardianIds.push(guardianId);
+			guardianRegistered = true;
 		}
 		catch (error) {
 			failed.push({
@@ -62,6 +70,33 @@ export async function runGuardianImport(options: GuardianImportRunOptions): Prom
 					entityLabel: row.eleve_matricule,
 				}, (key, params) => get(t)(key, params ?? {})),
 			});
+			continue;
+		}
+
+		for (const studentId of row.studentIds) {
+			try {
+				await linkGuardianToStudent(client, {
+					linkId: createGuardianStudentLinkId(guardianId, studentId),
+					guardianId,
+					studentId,
+					createdAt,
+				});
+				rowLinksCreated += 1;
+				linksCreated += 1;
+			}
+			catch (error) {
+				failed.push({
+					rowIndex: row.rowIndex,
+					guardianName: `${row.prenom} ${row.nom}`.trim(),
+					message: formatImportRunErrorMessage(error, {
+						entityLabel: row.eleve_matricule,
+					}, (key, params) => get(t)(key, params ?? {})),
+				});
+			}
+		}
+
+		if (guardianRegistered && rowLinksCreated > 0) {
+			guardianIds.push(guardianId);
 		}
 	}
 
@@ -69,6 +104,7 @@ export async function runGuardianImport(options: GuardianImportRunOptions): Prom
 
 	const result = {
 		created: guardianIds.length,
+		linksCreated,
 		failed,
 		guardianIds,
 	};

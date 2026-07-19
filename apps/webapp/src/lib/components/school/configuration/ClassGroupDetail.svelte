@@ -3,10 +3,12 @@
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { portalHomeroomTeacherNameForClass } from '$lib/api/teacher-display';
+	import { deleteClassGroupMutation } from '$lib/api/mutations/academic.mutations';
 	import ClassGroupFormModal from '$lib/components/school/academics/ClassGroupFormModal.svelte';
 	import ClassGroupStaffAssignmentsSection from '$lib/components/school/configuration/ClassGroupStaffAssignmentsSection.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import DrawerTabBar from '$lib/components/ui/DrawerTabBar.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
@@ -14,6 +16,7 @@
 	import { t } from '$lib/i18n';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { get } from 'svelte/store';
 
 	const { classGroup }: { classGroup: ClassNode } = $props();
 
@@ -41,6 +44,9 @@
 	});
 	const editOpen = bindUrlModal(modals, 'edit');
 
+	let deleteOpen = $state(false);
+	let deleteBusy = $state(false);
+
 	const live = $derived(
 		academicContext.classes.find(entry => entry.id === classGroup.id) ?? classGroup,
 	);
@@ -57,6 +63,23 @@
 	const summary = $derived(
 		`${$t('classGroups.studentCount')}: ${live.studentCount} · ${gradeLevel?.name ?? live.gradeLevelId}`,
 	);
+	const canDelete = $derived(live.studentCount === 0);
+
+	async function confirmDelete() {
+		deleteBusy = true;
+		try {
+			const ok = await deleteClassGroupMutation(live.id, {
+				successMessage: get(t)('classGroups.toastDeleted', { name: live.name }),
+				errorMessage: get(t)('classGroups.deleteFailed'),
+			});
+			if (ok) {
+				deleteOpen = false;
+			}
+		}
+		finally {
+			deleteBusy = false;
+		}
+	}
 </script>
 
 <div class="space-y-5">
@@ -80,6 +103,15 @@
 						onclick={() => (editOpen.open = true)}
 					>
 						{$t('classGroups.edit')}
+					</button>
+					<button
+						type="button"
+						class="inline-flex h-9 items-center rounded-full border border-destructive/30 bg-background px-4 text-sm font-medium text-destructive transition hover:bg-destructive/10 disabled:opacity-50"
+						disabled={disabled || !canDelete}
+						title={canDelete ? title : $t('classGroups.deleteBlockedStudents')}
+						onclick={() => (deleteOpen = true)}
+					>
+						{$t('common.delete')}
 					</button>
 				{/snippet}
 			</PermissionGate>
@@ -130,3 +162,13 @@
 </div>
 
 <ClassGroupFormModal bind:open={editOpen.open} classGroup={live} />
+
+<ConfirmModal
+	bind:open={deleteOpen}
+	title={$t('common.deleteConfirmTitle')}
+	description={$t('classGroups.deleteConfirm', { name: live.name })}
+	confirmLabel={$t('common.delete')}
+	cancelLabel={$t('common.cancel')}
+	busy={deleteBusy}
+	onConfirm={confirmDelete}
+/>

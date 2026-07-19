@@ -68,6 +68,7 @@ export class DetailDataContext {
 	staff = $state<StaffMember[]>([]);
 	teachers = $state<Teacher[]>([]);
 	subjects = $state<Subject[]>([]);
+	catalogSubjects = $state<Subject[]>([]);
 	planning = $state<PlanningEvent[]>([]);
 	schedules = $state<TimetableSchedule[]>([]);
 	evaluations = $state<Evaluation[]>([]);
@@ -194,6 +195,19 @@ export class DetailDataContext {
 	/** Replace the class slice. */
 	seedSubjects(subjects: Subject[], scope: { classId: string }) {
 		this.subjects = seedSubjectsCollection(this.subjects, subjects, scope);
+	}
+
+	/** Replace the school-wide subject catalog (distinct matières par niveau). */
+	seedCatalogSubjects(subjects: Subject[]) {
+		this.catalogSubjects = [...subjects];
+	}
+
+	patchCatalogSubject(id: string, patch: Partial<Subject>) {
+		this.catalogSubjects = this.replaceById(this.catalogSubjects, id, patch);
+	}
+
+	removeCatalogSubject(id: string) {
+		this.catalogSubjects = this.catalogSubjects.filter(subject => subject.id !== id);
 	}
 
 	/** Replace the class slice. */

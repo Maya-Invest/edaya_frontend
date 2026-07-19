@@ -15,12 +15,21 @@ import {
 
 	teacherNameForClassSubject,
 } from '$lib/api/teacher-display';
+import { buildSubjectChapterSummary } from '$lib/subjects/chapter-summary';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
 type SubjectRaw = components['schemas']['Subject'];
 type ClassSubjectRaw = components['schemas']['ClassSubject'];
 type SubjectMatterRaw = components['schemas']['SubjectMatter'];
+type GradeLevelSubjectRaw = components['schemas']['GradeLevelSubject'];
+
+export interface CatalogSubjectsSources {
+	gradeLevelSubjectsRaw: GradeLevelSubjectRaw[];
+	classSubjectsRaw: ClassSubjectRaw[];
+	subjectsRaw: SubjectRaw[];
+	subjectMattersRaw: SubjectMatterRaw[];
+}
 
 export interface ClassSubjectsSources extends ClassSubjectInstructorSources {
 	classSubjectsRaw: ClassSubjectRaw[];
@@ -60,6 +69,150 @@ function teacherNameForClassSubjectFromSources(
 	return teacherNameForClassSubject(classSubjectId, sources);
 }
 
+function hoursPerWeekForGradeLevelSubject(
+	subject: SubjectRaw,
+	gradeLevelSubject: GradeLevelSubjectRaw,
+	subjectMattersRaw: SubjectMatterRaw[],
+): number {
+	if (typeof gradeLevelSubject.periodsPerWeek === 'number' && gradeLevelSubject.periodsPerWeek > 0) {
+		return gradeLevelSubject.periodsPerWeek;
+	}
+
+	const estimatedHours = subjectMattersRaw
+		.filter(matter => matter.subjectId === subject.id)
+		.reduce((total, matter) => total + (matter.estimatedHours ?? 0), 0);
+
+	if (estimatedHours > 0) {
+		return estimatedHours;
+	}
+
+	const coefficient = gradeLevelSubject.coefficient ?? subject.defaultCoefficient;
+	if (typeof coefficient === 'number' && coefficient > 0) {
+		return Math.max(1, Math.round(coefficient * 2));
+	}
+
+	return 3;
+}
+
+function catalogSubjectKey(gradeLevelId: string, subjectName: string): string {
+	return `${gradeLevelId}:${subjectName.trim().toLowerCase()}`;
+}
+
+function mapCatalogSubjectEntry(input: {
+	id: string;
+	gradeLevelId: string;
+	subject: SubjectRaw;
+	hoursPerWeek: number;
+	subjectMattersRaw: SubjectMatterRaw[];
+}): Subject {
+	return {
+		id: input.id,
+		classId: input.gradeLevelId,
+		gradeLevelId: input.gradeLevelId,
+		name: input.subject.name,
+		teacher: '',
+		hoursPerWeek: input.hoursPerWeek,
+		color: subjectColor(input.subject),
+		description: descriptionForSubject(input.subject, input.subjectMattersRaw),
+		category: subjectCategory(input.subject),
+	};
+}
+
+export async function fetchCatalogSubjectsSources(client: SchoolClient): Promise<CatalogSubjectsSources> {
+	const [
+		gradeLevelSubjectsRaw,
+		classSubjectsRaw,
+		subjectsRaw,
+		subjectMattersRaw,
+	] = await Promise.all([
+		safeOptionalEntityList(() => client.entities.gradeLevelSubjects.list(schoolSubjectsCatalogList())),
+		safeOptionalEntityList(() => client.entities.classSubjects.list(schoolSubjectsCatalogList())),
+		safeOptionalEntityList(() => client.entities.subjects.list(schoolSubjectsCatalogList())),
+		safeOptionalEntityList(() => client.entities.subjectMatters.list(schoolSubjectsCatalogList())),
+	]);
+
+	return {
+		gradeLevelSubjectsRaw: gradeLevelSubjectsRaw ?? [],
+		classSubjectsRaw: classSubjectsRaw ?? [],
+		subjectsRaw: subjectsRaw ?? [],
+		subjectMattersRaw: subjectMattersRaw ?? [],
+	};
+}
+
+export function mapCatalogSubjects(
+	sources: CatalogSubjectsSources,
+	classGradeLevelById: Readonly<Record<string, string>>,
+): Subject[] {
+	const subjectById = new Map(sources.subjectsRaw.map(subject => [subject.id, subject]));
+	const classSubjectsLinkedToGradeLevelCatalog = sources.classSubjectsRaw.some(
+		classSubject => typeof classSubject.gradeLevelSubjectId === 'string'
+			&& classSubject.gradeLevelSubjectId.length > 0,
+	);
+
+	if (sources.gradeLevelSubjectsRaw.length > 0) {
+		const seen = new Set<string>();
+		const entries: Subject[] = [];
+		for (const gradeLevelSubject of sources.gradeLevelSubjectsRaw) {
+			const subject = subjectById.get(gradeLevelSubject.subjectId);
+			if (!subject) {
+				continue;
+			}
+			const key = catalogSubjectKey(gradeLevelSubject.gradeLevelId, subject.name);
+			if (seen.has(key)) {
+				continue;
+			}
+			seen.add(key);
+			entries.push(mapCatalogSubjectEntry({
+				id: gradeLevelSubject.id,
+				gradeLevelId: gradeLevelSubject.gradeLevelId,
+				subject,
+				hoursPerWeek: hoursPerWeekForGradeLevelSubject(subject, gradeLevelSubject, sources.subjectMattersRaw),
+				subjectMattersRaw: sources.subjectMattersRaw,
+			}));
+		}
+		return entries.sort((left, right) => left.name.localeCompare(right.name, 'fr'));
+	}
+
+	// Legacy schools without grade-level catalog rows. When class subjects already
+	// reference gradeLevelSubjectId, an empty GLS list means an empty catalog — do
+	// not rebuild deleted entries from class subjects.
+	if (classSubjectsLinkedToGradeLevelCatalog) {
+		return [];
+	}
+
+	const seen = new Set<string>();
+	const entries: Subject[] = [];
+	for (const classSubject of sources.classSubjectsRaw) {
+		const gradeLevelId = classGradeLevelById[classSubject.classGroupId];
+		const subject = subjectById.get(classSubject.subjectId);
+		if (!gradeLevelId || !subject) {
+			continue;
+		}
+		const key = catalogSubjectKey(gradeLevelId, subject.name);
+		if (seen.has(key)) {
+			continue;
+		}
+		seen.add(key);
+		entries.push(mapCatalogSubjectEntry({
+			id: classSubject.gradeLevelSubjectId ?? `catalog-${gradeLevelId}-${classSubject.subjectId}`,
+			gradeLevelId,
+			subject,
+			hoursPerWeek: hoursPerWeekForSubject(subject, classSubject, sources.subjectMattersRaw),
+			subjectMattersRaw: sources.subjectMattersRaw,
+		}));
+	}
+
+	return entries.sort((left, right) => left.name.localeCompare(right.name, 'fr'));
+}
+
+export async function loadCatalogSubjects(
+	client: SchoolClient,
+	classGradeLevelById: Readonly<Record<string, string>>,
+): Promise<Subject[]> {
+	const sources = await fetchCatalogSubjectsSources(client);
+	return mapCatalogSubjects(sources, classGradeLevelById);
+}
+
 function hoursPerWeekForSubject(
 	subject: SubjectRaw,
 	classSubject: ClassSubjectRaw,
@@ -85,13 +238,13 @@ function descriptionForSubject(
 	subject: SubjectRaw,
 	subjectMattersRaw: SubjectMatterRaw[],
 ): string {
-	const descriptions = subjectMattersRaw
-		.filter(matter => matter.subjectId === subject.id && matter.description)
-		.sort((left, right) => left.sequenceOrder - right.sequenceOrder)
-		.map(matter => matter.description as string);
+	const matters = subjectMattersRaw
+		.filter(matter => matter.subjectId === subject.id)
+		.sort((left, right) => left.sequenceOrder - right.sequenceOrder);
+	const summary = buildSubjectChapterSummary(matters.map(matter => matter.name));
 
-	if (descriptions.length > 0) {
-		return descriptions.join(' ');
+	if (summary.length > 0) {
+		return summary;
 	}
 
 	if (subject.code) {

@@ -10,9 +10,10 @@ export interface RegisterAndEnrollStudentInput {
 	enrollmentId: string;
 	firstName: string;
 	lastName: string;
-	classGroupId: string;
+	classGroupId?: string;
 	birthDate?: string;
 	matricule?: string;
+	gender?: string;
 	sendAccountInvitation?: boolean;
 	inviteEmail?: string;
 	createdAt?: string;
@@ -36,21 +37,25 @@ export async function registerAndEnrollStudent(
 		createdAt: now,
 	} satisfies components['schemas']['RegisterStudentCommand']);
 
-	await client.commands.enrollStudent({
-		id: input.enrollmentId,
-		studentId: input.studentId,
-		classGroupId: input.classGroupId,
-		createdAt: now,
-	} satisfies components['schemas']['EnrollStudentCommand']);
+	if (input.classGroupId) {
+		await client.commands.enrollStudent({
+			id: input.enrollmentId,
+			studentId: input.studentId,
+			classGroupId: input.classGroupId,
+			createdAt: now,
+		} satisfies components['schemas']['EnrollStudentCommand']);
+	}
 
 	const matricule = input.matricule?.trim();
-	if (matricule) {
+	const gender = input.gender?.trim();
+	if (matricule || gender) {
 		await client.commands.updateStudentProfile({
 			studentId: input.studentId,
 			firstName: input.firstName.trim(),
 			lastName: input.lastName.trim(),
 			birthDate: birthDate ?? null,
-			matricule,
+			...(matricule ? { matricule } : {}),
+			...(gender ? { gender } : {}),
 		} satisfies components['schemas']['UpdateStudentProfileCommand']);
 	}
 }

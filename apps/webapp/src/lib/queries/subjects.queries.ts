@@ -1,5 +1,6 @@
-import { fetchSchoolSubjectsSources, loadClassSubjects, mapAllClassSubjects } from '$lib/api/subjects-data';
+import { fetchSchoolSubjectsSources, loadCatalogSubjects, loadClassSubjects, mapAllClassSubjects } from '$lib/api/subjects-data';
 import { fetchTeachingLogEntries } from '$lib/api/teaching-log-data';
+import { academicContext } from '$lib/academic/context.svelte';
 import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { queryClient } from '$lib/queries/client';
 import { resolvePageLoad, listPageHasItems } from '$lib/queries/page-status';
@@ -7,6 +8,16 @@ import { teachingLogContext } from '$lib/teaching-log/context.svelte';
 
 export async function getClassSubjects(classId: string) {
 	return loadClassSubjects(queryClient(), classId);
+}
+
+function classGradeLevelById(): Record<string, string> {
+	return Object.fromEntries(academicContext.classes.map(cls => [cls.id, cls.gradeLevelId]));
+}
+
+export async function getCatalogSubjects() {
+	const subjects = await loadCatalogSubjects(queryClient(), classGradeLevelById());
+	detailDataContext.seedCatalogSubjects(subjects);
+	return subjects;
 }
 
 export async function getAllSubjects() {
@@ -57,7 +68,7 @@ export function queryConfigSubjectsPage() {
 	return (url: URL) => resolvePageLoad(url, {
 		empty: () => ({}),
 		load: async () => {
-			await getAllSubjects();
+			await getCatalogSubjects();
 			return {};
 		},
 		hasItems: listPageHasItems,

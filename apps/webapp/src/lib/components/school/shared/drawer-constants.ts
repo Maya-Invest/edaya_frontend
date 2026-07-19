@@ -9,6 +9,7 @@ const drawerBadge = BADGE_INFO;
 
 export const kindStyle: Record<NonNullable<DrawerItem>['kind'], string> = {
 	student: drawerBadge,
+	catalogSubject: drawerBadge,
 	subject: drawerBadge,
 	planning: drawerBadge,
 	evaluation: drawerBadge,
@@ -30,6 +31,7 @@ export const kindStyle: Record<NonNullable<DrawerItem>['kind'], string> = {
 
 export const kindLabelKey: Record<NonNullable<DrawerItem>['kind'], string> = {
 	student: 'drawer.student',
+	catalogSubject: 'drawer.catalogSubject',
 	subject: 'drawer.subject',
 	planning: 'drawer.planning',
 	evaluation: 'drawer.evaluation',

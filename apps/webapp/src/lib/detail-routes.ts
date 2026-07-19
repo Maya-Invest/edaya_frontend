@@ -106,7 +106,7 @@ const matchers: Matcher[] = [
 			const label = decodeURIComponent(m[1]);
 			const group = findSubjectLevelGroup(
 				label,
-				detailDataContext.subjects,
+				detailDataContext.catalogSubjects,
 				academicContext.classes,
 				academicContext.gradeLevels,
 			);
@@ -116,8 +116,8 @@ const matchers: Matcher[] = [
 	{
 		test: p => p.match(/^\/configuration\/subjects\/([^/]+)$/) ?? null,
 		parse: (m) => {
-			const s = detailDataContext.subjects.find(x => x.id === m[1]);
-			return s ? { item: { kind: 'subject', data: s }, listPath: appPath('/(app)/configuration/subjects/[[id]]') } : null;
+			const s = detailDataContext.catalogSubjects.find(x => x.id === m[1]);
+			return s ? { item: { kind: 'catalogSubject', data: s }, listPath: appPath('/(app)/configuration/subjects/[[id]]') } : null;
 		},
 	},
 	{
@@ -190,5 +190,32 @@ export function parseDetailPath(pathname: string): ParsedDetail | null {
 }
 
 export function getListPathForDetail(pathname: string): ResolvedPathname | null {
-	return parseDetailPath(pathname)?.listPath ?? null;
+	const parsed = parseDetailPath(pathname);
+	if (parsed) {
+		return parsed.listPath;
+	}
+	return listPathFromDetailPathname(pathname);
+}
+
+/** List path when the detail entity was already removed (e.g. after delete + shell refresh). */
+function listPathFromDetailPathname(pathname: string): ResolvedPathname | null {
+	const rules: { test: RegExp; listPath: ResolvedPathname }[] = [
+		{ test: /^\/configuration\/classes\/[^/]+$/, listPath: appPath('/(app)/configuration/classes/[[id]]') },
+		{ test: /^\/configuration\/grade-levels\/[^/]+$/, listPath: appPath('/(app)/configuration/grade-levels/[[id]]') },
+		{ test: /^\/configuration\/subjects\/[^/]+$/, listPath: appPath('/(app)/configuration/subjects/[[id]]') },
+		{ test: /^\/configuration\/report-cards\/[^/]+$/, listPath: appPath('/(app)/configuration/report-cards/[[id]]') },
+		{ test: /^\/school\/students\/[^/]+$/, listPath: appPath('/(app)/school/students/[[id]]') },
+		{ test: /^\/school\/guardians\/[^/]+$/, listPath: appPath('/(app)/school/guardians/[[id]]') },
+		{ test: /^\/school\/teachers\/[^/]+$/, listPath: appPath('/(app)/school/teachers/[[id]]') },
+		{ test: /^\/school\/staff\/[^/]+$/, listPath: appPath('/(app)/school/staff/[[id]]') },
+		{ test: /^\/school\/announcements\/[^/]+$/, listPath: appPath('/(app)/school/announcements/[[id]]') },
+		{ test: /^\/school\/events\/[^/]+$/, listPath: appPath('/(app)/school/events/[[id]]') },
+		{ test: /^\/finance\/billing\/[^/]+$/, listPath: appPath('/(app)/finance/billing/[[id]]') },
+	];
+	for (const rule of rules) {
+		if (rule.test.test(pathname)) {
+			return rule.listPath;
+		}
+	}
+	return null;
 }

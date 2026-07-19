@@ -9,6 +9,7 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
 	import { FileText, Mail, Phone, Users, Plus } from '$lib/icons';
+	import { studentGenderLabelKey } from '$lib/students/format-student-gender';
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { cn } from '$lib/utils';
 	import { pedagogicalNoteToneByCategory, getStudentProfileTabState } from '../student-profile-tab.svelte';
@@ -23,6 +24,7 @@
 	const staff = $derived(profileTab.staffFor(s.id));
 
 	const modals = getDrawerUrlModals();
+	const genderLabelKey = $derived(studentGenderLabelKey(s.gender));
 </script>
 
 <div class="space-y-4">
@@ -94,6 +96,18 @@
 		<DrawerField label={$t('drawer.guardianLabel')}>
 			<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">
 				{s.guardian}
+			</div>
+		</DrawerField>
+	</div>
+	<div class="grid grid-cols-2 gap-3">
+		<DrawerField label={$t('student.matricule')}>
+			<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 font-mono text-sm">
+				{s.matricule?.trim() || '—'}
+			</div>
+		</DrawerField>
+		<DrawerField label={$t('student.gender')}>
+			<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">
+				{genderLabelKey ? $t(genderLabelKey) : '—'}
 			</div>
 		</DrawerField>
 	</div>

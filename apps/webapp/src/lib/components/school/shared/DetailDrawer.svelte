@@ -46,6 +46,12 @@
 				{:then { default: StudentTabs }}
 					<StudentTabs s={item.data} />
 				{/await}
+			{:else if item.kind === 'catalogSubject'}
+				{#await import('../configuration/CatalogSubjectDetail.svelte')}
+					<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
+				{:then { default: CatalogSubjectDetail }}
+					<CatalogSubjectDetail subject={item.data} />
+				{/await}
 			{:else if item.kind === 'subject'}
 				{#await import('../academics/SubjectTabs.svelte')}
 					<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>

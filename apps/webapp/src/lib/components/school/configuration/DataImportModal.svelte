@@ -6,11 +6,20 @@
 	import type { GuardianImportRow, GuardianImportValidationResult } from '$lib/import/guardians/types';
 	import type { StaffImportRunResult } from '$lib/import/staff/runner';
 	import type { StaffImportRow, StaffImportValidationResult } from '$lib/import/staff/types';
-	import type { TeacherImportRunResult } from '$lib/import/teachers/runner';
+	import type { ChapterImportRunResult } from '$lib/import/chapters/runner';
+	import type { ChapterImportRow, ChapterImportValidationResult } from '$lib/import/chapters/types';
+	import type { SubjectImportRunResult } from '$lib/import/subjects/runner';
+	import type { SubjectImportRow, SubjectImportValidationResult } from '$lib/import/subjects/types';
 	import type { TeacherImportRow, TeacherImportValidationResult } from '$lib/import/teachers/types';
 	import type { StudentMatriculeEntry } from '$lib/import/shared/load-student-matricule-index';
 	import type { StudentImportRunResult } from '$lib/import/students/runner';
 	import type { StudentImportRow, StudentImportValidationResult } from '$lib/import/students/types';
+	import type { PaymentImportRunResult } from '$lib/import/payments/runner';
+	import type {
+		PaymentImportRow,
+		PaymentImportValidationContext,
+		PaymentImportValidationResult,
+	} from '$lib/import/payments/types';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { authSession } from '$lib/auth/session.svelte';
@@ -23,6 +32,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { notifyGuardiansListChanged } from '$lib/guardians/notify-guardians-list-changed';
 	import { notifyStaffListChanged } from '$lib/staff/notify-staff-list-changed';
+	import { notifySubjectsListChanged } from '$lib/subjects/notify-subjects-list-changed';
 	import { notifyTeachersListChanged } from '$lib/teachers/notify-teachers-list-changed';
 	import { t } from '$lib/i18n';
 	import { Download, FileSpreadsheet, LoaderCircle } from '$lib/icons';
@@ -54,11 +64,29 @@
 		canImportValidatedTeachers,
 		validateTeacherImportRows,
 	} from '$lib/import/teachers/validator';
+	import { parseChapterImportFile } from '$lib/import/chapters/parser';
+	import { runChapterImport } from '$lib/import/chapters/runner';
+	import {
+		canImportValidatedChapters,
+		countChapterImportOperations,
+		validateChapterImportRows,
+	} from '$lib/import/chapters/validator';
+	import { parseSubjectImportFile } from '$lib/import/subjects/parser';
+	import { runSubjectImport } from '$lib/import/subjects/runner';
+	import {
+		canImportValidatedSubjects,
+		validateSubjectImportRows,
+	} from '$lib/import/subjects/validator';
 	import {
 		loadStudentMatriculeIndex,
 	} from '$lib/import/shared/load-student-matricule-index';
 	import { loadSchoolSubjectCatalog } from '$lib/import/shared/load-school-subject-names';
 	import type { SchoolSubjectCatalogEntry } from '$lib/import/shared/load-school-subject-names';
+	import { loadExistingSubjectImportKeys } from '$lib/import/shared/load-subject-import-context';
+	import {
+		loadChapterImportContext,
+	} from '$lib/import/shared/load-chapter-import-context';
+	import type { ChapterImportClassSubjectTarget } from '$lib/import/chapters/types';
 	import {
 		downloadImportCsvTemplate,
 		downloadImportExcelTemplate,
@@ -69,6 +97,13 @@
 		canImportValidatedStudents,
 		validateStudentImportRows,
 	} from '$lib/import/students/validator';
+	import { parsePaymentImportFile } from '$lib/import/payments/parser';
+	import { runPaymentImport } from '$lib/import/payments/runner';
+	import {
+		canImportValidatedPayments,
+		validatePaymentImportRows,
+	} from '$lib/import/payments/validator';
+	import { loadPaymentImportContext } from '$lib/import/payments/load-payment-import-context';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { notifyStudentsListChanged } from '$lib/students/notify-students-list-changed';
 	import { cn } from '$lib/utils';
@@ -115,6 +150,24 @@
 		empty_file: 'import.teachers.emptyFile',
 	};
 
+	const SUBJECT_PARSE_ERROR_KEYS: Record<string, string> = {
+		unsupported_format: 'import.subjects.unsupportedFormat',
+		file_too_large: 'import.subjects.fileTooLarge',
+		empty_file: 'import.subjects.emptyFile',
+	};
+
+	const CHAPTER_PARSE_ERROR_KEYS: Record<string, string> = {
+		unsupported_format: 'import.chapters.unsupportedFormat',
+		file_too_large: 'import.chapters.fileTooLarge',
+		empty_file: 'import.chapters.emptyFile',
+	};
+
+	const PAYMENT_PARSE_ERROR_KEYS: Record<string, string> = {
+		unsupported_format: 'import.payments.unsupportedFormat',
+		file_too_large: 'import.payments.fileTooLarge',
+		empty_file: 'import.payments.emptyFile',
+	};
+
 	const STUDENT_COLUMN_LABEL_KEYS: Record<string, string> = {
 		prenom: 'import.students.columns.prenom',
 		nom: 'import.students.columns.nom',
@@ -154,6 +207,31 @@
 		telephone: 'import.types.teachers.columns.telephone',
 	};
 
+	const SUBJECT_COLUMN_LABEL_KEYS: Record<string, string> = {
+		nom: 'import.types.subjects.columns.nom',
+		niveau: 'import.types.subjects.columns.niveau',
+		code: 'import.types.subjects.columns.code',
+		coefficient: 'import.types.subjects.columns.coefficient',
+	};
+
+	const CHAPTER_COLUMN_LABEL_KEYS: Record<string, string> = {
+		niveau: 'import.types.chapters.columns.niveau',
+		matiere: 'import.types.chapters.columns.matiere',
+		titre: 'import.types.chapters.columns.titre',
+		ordre: 'import.types.chapters.columns.ordre',
+		description: 'import.types.chapters.columns.description',
+	};
+
+	const PAYMENT_COLUMN_LABEL_KEYS: Record<string, string> = {
+		matricule: 'import.payments.columns.matricule',
+		type_frais: 'import.payments.columns.type_frais',
+		reference: 'import.payments.columns.reference',
+		montant: 'import.payments.columns.montant',
+		date: 'import.payments.columns.date',
+		mode: 'import.payments.columns.mode',
+		notes: 'import.payments.columns.notes',
+	};
+
 	let {
 		open = $bindable(false),
 		initialImportType = 'students',
@@ -170,6 +248,9 @@
 	let guardianParsedRows = $state<GuardianImportRow[]>([]);
 	let staffParsedRows = $state<StaffImportRow[]>([]);
 	let teacherParsedRows = $state<TeacherImportRow[]>([]);
+	let subjectParsedRows = $state<SubjectImportRow[]>([]);
+	let chapterParsedRows = $state<ChapterImportRow[]>([]);
+	let paymentParsedRows = $state<PaymentImportRow[]>([]);
 	let parseErrorMessage = $state('');
 	let parsing = $state(false);
 	let studentValidationResult = $state<StudentImportValidationResult | null>(null);
@@ -177,11 +258,20 @@
 	let guardianValidationResult = $state<GuardianImportValidationResult | null>(null);
 	let staffValidationResult = $state<StaffImportValidationResult | null>(null);
 	let teacherValidationResult = $state<TeacherImportValidationResult | null>(null);
+	let subjectValidationResult = $state<SubjectImportValidationResult | null>(null);
+	let chapterValidationResult = $state<ChapterImportValidationResult | null>(null);
+	let paymentValidationResult = $state<PaymentImportValidationResult | null>(null);
 	let studentMatriculeIndex = $state<Map<string, StudentMatriculeEntry>>(new Map());
 	let existingMatricules = $state<Set<string>>(new Set());
 	let loadingMatricules = $state(false);
 	let subjectCatalog = $state<SchoolSubjectCatalogEntry[]>([]);
 	let loadingSubjectNames = $state(false);
+	let subjectImportExistingKeys = $state<Set<string>>(new Set());
+	let loadingSubjectImportContext = $state(false);
+	let chapterImportContext = $state<ChapterImportClassSubjectTarget[]>([]);
+	let loadingChapterContext = $state(false);
+	let paymentImportContext = $state<PaymentImportValidationContext | null>(null);
+	let loadingPaymentContext = $state(false);
 	let importing = $state(false);
 	let importProgress = $state({ current: 0, total: 0 });
 	let studentImportResult = $state<StudentImportRunResult | null>(null);
@@ -189,6 +279,9 @@
 	let guardianImportResult = $state<GuardianImportRunResult | null>(null);
 	let staffImportResult = $state<StaffImportRunResult | null>(null);
 	let teacherImportResult = $state<TeacherImportRunResult | null>(null);
+	let subjectImportResult = $state<SubjectImportRunResult | null>(null);
+	let chapterImportResult = $state<ChapterImportRunResult | null>(null);
+	let paymentImportResult = $state<PaymentImportRunResult | null>(null);
 	let importFatalError = $state('');
 
 	const studentsHref = appPath('/(app)/school/students/[[id]]');
@@ -196,14 +289,19 @@
 	const guardiansHref = appPath('/(app)/school/guardians/[[id]]');
 	const staffHref = appPath('/(app)/school/staff/[[id]]');
 	const teachersHref = appPath('/(app)/school/teachers/[[id]]');
+	const subjectsHref = appPath('/(app)/configuration/subjects/[[id]]');
+	const billingHref = appPath('/(app)/finance/billing/[[id]]');
 	const selectedDefinition = $derived(getImportTypeDefinition(selectedImportType));
 	const isStudentsImport = $derived(selectedImportType === 'students');
 	const isClassesImport = $derived(selectedImportType === 'classes');
 	const isGuardiansImport = $derived(selectedImportType === 'guardians');
 	const isStaffImport = $derived(selectedImportType === 'staff');
 	const isTeachersImport = $derived(selectedImportType === 'teachers');
+	const isSubjectsImport = $derived(selectedImportType === 'subjects');
+	const isChaptersImport = $derived(selectedImportType === 'chapters');
+	const isPaymentsImport = $derived(selectedImportType === 'payments');
 	const isWiredImport = $derived(
-		isStudentsImport || isClassesImport || isGuardiansImport || isStaffImport || isTeachersImport,
+		isStudentsImport || isClassesImport || isGuardiansImport || isStaffImport || isTeachersImport || isSubjectsImport || isChaptersImport || isPaymentsImport,
 	);
 	const isActiveImport = $derived(selectedDefinition.status === 'active');
 	const selectedImportTypeLabel = $derived($t(selectedDefinition.labelKey));
@@ -215,6 +313,10 @@
 	const guardianPreviewRows = $derived(guardianParsedRows.slice(0, 3));
 	const staffPreviewRows = $derived(staffParsedRows.slice(0, 3));
 	const teacherPreviewRows = $derived(teacherParsedRows.slice(0, 3));
+	const subjectPreviewRows = $derived(subjectParsedRows.slice(0, 3));
+	const chapterPreviewRows = $derived(chapterParsedRows.slice(0, 3));
+	const paymentPreviewRows = $derived(paymentParsedRows.slice(0, 3));
+	const hasClassSubjects = $derived(chapterImportContext.length > 0);
 	const parsedRowCount = $derived.by(() => {
 		if (isStudentsImport) {
 			return studentParsedRows.length;
@@ -228,16 +330,31 @@
 		if (isStaffImport) {
 			return staffParsedRows.length;
 		}
-		return teacherParsedRows.length;
+		if (isTeachersImport) {
+			return teacherParsedRows.length;
+		}
+		if (isSubjectsImport) {
+			return subjectParsedRows.length;
+		}
+		if (isPaymentsImport) {
+			return paymentParsedRows.length;
+		}
+		return chapterParsedRows.length;
 	});
 	const canGoToUpload = $derived.by(() => {
 		if (!isActiveImport) {
 			return false;
 		}
-		if (isStudentsImport && !hasClasses) {
+		if (isSubjectsImport && !hasClasses) {
+			return false;
+		}
+		if (isPaymentsImport && !hasStudents) {
 			return false;
 		}
 		if (isGuardiansImport && !hasStudents) {
+			return false;
+		}
+		if (isChaptersImport && !hasClassSubjects) {
 			return false;
 		}
 		return true;
@@ -250,6 +367,14 @@
 	const canStartGuardianImport = $derived(canImportValidatedGuardians(guardianValidationResult));
 	const canStartStaffImport = $derived(canImportValidatedStaff(staffValidationResult));
 	const canStartTeacherImport = $derived(canImportValidatedTeachers(teacherValidationResult));
+	const canStartSubjectImport = $derived(canImportValidatedSubjects(subjectValidationResult));
+	const canStartChapterImport = $derived(canImportValidatedChapters(chapterValidationResult));
+	const canStartPaymentImport = $derived(canImportValidatedPayments(paymentValidationResult));
+	const chapterImportOperationCount = $derived(
+		chapterValidationResult
+			? countChapterImportOperations(chapterValidationResult.validRows)
+			: 0,
+	);
 	const canStartImport = $derived.by(() => {
 		if (isStudentsImport) {
 			return canStartStudentImport;
@@ -266,6 +391,15 @@
 		if (isTeachersImport) {
 			return canStartTeacherImport;
 		}
+		if (isSubjectsImport) {
+			return canStartSubjectImport;
+		}
+		if (isChaptersImport) {
+			return canStartChapterImport;
+		}
+		if (isPaymentsImport) {
+			return canStartPaymentImport;
+		}
 		return false;
 	});
 	const activeValidationResult = $derived.by(() => {
@@ -281,7 +415,16 @@
 		if (isStaffImport) {
 			return staffValidationResult;
 		}
-		return teacherValidationResult;
+		if (isTeachersImport) {
+			return teacherValidationResult;
+		}
+		if (isSubjectsImport) {
+			return subjectValidationResult;
+		}
+		if (isPaymentsImport) {
+			return paymentValidationResult;
+		}
+		return chapterValidationResult;
 	});
 	const activeValidRowCount = $derived(activeValidationResult?.validRows.length ?? 0);
 	const studentValidationIssues = $derived([
@@ -304,6 +447,18 @@
 		...(teacherValidationResult?.errors ?? []),
 		...(teacherValidationResult?.warnings ?? []),
 	]);
+	const subjectValidationIssues = $derived([
+		...(subjectValidationResult?.errors ?? []),
+		...(subjectValidationResult?.warnings ?? []),
+	]);
+	const chapterValidationIssues = $derived([
+		...(chapterValidationResult?.errors ?? []),
+		...(chapterValidationResult?.warnings ?? []),
+	]);
+	const paymentValidationIssues = $derived([
+		...(paymentValidationResult?.errors ?? []),
+		...(paymentValidationResult?.warnings ?? []),
+	]);
 	const importReadyLabel = $derived.by(() => {
 		if (isStudentsImport) {
 			return $t('import.students.importReady', { n: activeValidRowCount });
@@ -317,10 +472,25 @@
 		if (isStaffImport) {
 			return $t('import.staff.importReady', { n: activeValidRowCount });
 		}
-		return $t('import.teachers.importReady', { n: activeValidRowCount });
+		if (isTeachersImport) {
+			return $t('import.teachers.importReady', { n: activeValidRowCount });
+		}
+		if (isSubjectsImport) {
+			return $t('import.subjects.importReady', { n: activeValidRowCount });
+		}
+		if (isPaymentsImport) {
+			return $t('import.payments.importReady', { n: activeValidRowCount });
+		}
+		return $t('import.chapters.importReady', { n: chapterImportOperationCount });
 	});
-	const showStudentsPrerequisite = $derived(
-		isStudentsImport && step === 'download' && !hasClasses,
+	const showSubjectsPrerequisite = $derived(
+		isSubjectsImport && step === 'download' && !hasClasses,
+	);
+	const showPaymentsPrerequisite = $derived(
+		isPaymentsImport && step === 'download' && !hasStudents,
+	);
+	const showChaptersPrerequisite = $derived(
+		isChaptersImport && step === 'download' && !hasClassSubjects,
 	);
 	const showGuardiansPrerequisite = $derived(
 		isGuardiansImport && step === 'download' && !hasStudents,
@@ -334,6 +504,9 @@
 		guardianParsedRows = [];
 		staffParsedRows = [];
 		teacherParsedRows = [];
+		subjectParsedRows = [];
+		chapterParsedRows = [];
+		paymentParsedRows = [];
 		parseErrorMessage = '';
 		parsing = false;
 		studentValidationResult = null;
@@ -341,6 +514,9 @@
 		guardianValidationResult = null;
 		staffValidationResult = null;
 		teacherValidationResult = null;
+		subjectValidationResult = null;
+		chapterValidationResult = null;
+		paymentValidationResult = null;
 		importing = false;
 		importProgress = { current: 0, total: 0 };
 		studentImportResult = null;
@@ -348,10 +524,16 @@
 		guardianImportResult = null;
 		staffImportResult = null;
 		teacherImportResult = null;
+		subjectImportResult = null;
+		chapterImportResult = null;
+		paymentImportResult = null;
 		importFatalError = '';
 		studentMatriculeIndex = new Map();
 		existingMatricules = new Set();
 		subjectCatalog = [];
+		subjectImportExistingKeys = new Set();
+		chapterImportContext = [];
+		paymentImportContext = null;
 	}
 
 	function handleOpenChange(next: boolean) {
@@ -361,6 +543,8 @@
 			resetWizard();
 			void loadStudentMatriculeDataIfNeeded();
 			void loadSubjectNamesIfNeeded();
+			void loadChapterImportContextIfNeeded();
+			void loadPaymentImportContextIfNeeded();
 			return;
 		}
 		resetWizard();
@@ -375,6 +559,8 @@
 		resetWizard();
 		void loadStudentMatriculeDataIfNeeded();
 		void loadSubjectNamesIfNeeded();
+		void loadChapterImportContextIfNeeded();
+		void loadPaymentImportContextIfNeeded();
 	}
 
 	function stepIndex(value: ImportStep): number {
@@ -383,7 +569,16 @@
 
 	function formatParseError(message: string): string {
 		let keyMap = STUDENT_PARSE_ERROR_KEYS;
-		if (isTeachersImport) {
+		if (isPaymentsImport) {
+			keyMap = PAYMENT_PARSE_ERROR_KEYS;
+		}
+		else if (isChaptersImport) {
+			keyMap = CHAPTER_PARSE_ERROR_KEYS;
+		}
+		else if (isSubjectsImport) {
+			keyMap = SUBJECT_PARSE_ERROR_KEYS;
+		}
+		else if (isTeachersImport) {
 			keyMap = TEACHER_PARSE_ERROR_KEYS;
 		}
 		else if (isStaffImport) {
@@ -405,16 +600,80 @@
 		guardianParsedRows = [];
 		staffParsedRows = [];
 		teacherParsedRows = [];
+		subjectParsedRows = [];
+		chapterParsedRows = [];
+		paymentParsedRows = [];
 		parseErrorMessage = '';
 		studentValidationResult = null;
 		classValidationResult = null;
 		guardianValidationResult = null;
 		staffValidationResult = null;
 		teacherValidationResult = null;
+		subjectValidationResult = null;
+		chapterValidationResult = null;
+		paymentValidationResult = null;
+	}
+
+	async function loadPaymentImportContextIfNeeded() {
+		if (!isPaymentsImport) {
+			return;
+		}
+		if (loadingPaymentContext || paymentImportContext) {
+			return;
+		}
+		const schoolId = authSession.schoolId;
+		const academicYearId = academicContext.yearId;
+		if (!schoolId || !academicYearId) {
+			paymentImportContext = null;
+			return;
+		}
+		loadingPaymentContext = true;
+		try {
+			paymentImportContext = await loadPaymentImportContext(getBrowserSchoolClient(), {
+				schoolId,
+				academicYearId,
+			});
+		}
+		catch {
+			paymentImportContext = null;
+		}
+		finally {
+			loadingPaymentContext = false;
+		}
+	}
+
+	async function loadChapterImportContextIfNeeded() {
+		if (!isChaptersImport) {
+			return;
+		}
+		if (loadingChapterContext) {
+			return;
+		}
+		loadingChapterContext = true;
+		try {
+			chapterImportContext = await loadChapterImportContext(
+				getBrowserSchoolClient(),
+				academicContext.classes.map(classGroup => ({
+					id: classGroup.id,
+					name: classGroup.name,
+					gradeLevelId: classGroup.gradeLevelId,
+				})),
+				academicContext.gradeLevels.map(gradeLevel => ({
+					id: gradeLevel.id,
+					name: gradeLevel.name,
+				})),
+			);
+		}
+		catch {
+			chapterImportContext = [];
+		}
+		finally {
+			loadingChapterContext = false;
+		}
 	}
 
 	async function loadStudentMatriculeDataIfNeeded() {
-		if (!isStudentsImport && !isGuardiansImport) {
+		if (!isStudentsImport && !isGuardiansImport && !isPaymentsImport) {
 			return;
 		}
 		if (loadingMatricules || studentMatriculeIndex.size > 0) {
@@ -431,6 +690,28 @@
 		}
 		finally {
 			loadingMatricules = false;
+		}
+	}
+
+	async function loadSubjectImportContextIfNeeded() {
+		if (!isSubjectsImport) {
+			return;
+		}
+		if (loadingSubjectImportContext) {
+			return;
+		}
+		loadingSubjectImportContext = true;
+		try {
+			const classGradeLevelById = Object.fromEntries(
+				academicContext.classes.map(classGroup => [classGroup.id, classGroup.gradeLevelId]),
+			);
+			subjectImportExistingKeys = await loadExistingSubjectImportKeys(classGradeLevelById);
+		}
+		catch {
+			subjectImportExistingKeys = new Set();
+		}
+		finally {
+			loadingSubjectImportContext = false;
 		}
 	}
 
@@ -459,6 +740,8 @@
 				classes: academicContext.classes.map(classGroup => ({
 					id: classGroup.id,
 					name: classGroup.name,
+					studentCount: classGroup.studentCount,
+					capacity: classGroup.capacity,
 				})),
 				existingMatricules,
 			});
@@ -496,12 +779,42 @@
 			teacherValidationResult = validateTeacherImportRows(teacherParsedRows, {
 				subjectCatalog,
 			});
+			return;
+		}
+
+		if (isSubjectsImport) {
+			subjectValidationResult = validateSubjectImportRows(subjectParsedRows, {
+				gradeLevels: academicContext.gradeLevels.map(gradeLevel => ({
+					id: gradeLevel.id,
+					name: gradeLevel.name,
+				})),
+				classGroups: academicContext.classes.map(classGroup => ({
+					id: classGroup.id,
+					gradeLevelId: classGroup.gradeLevelId,
+				})),
+				existingSubjectKeys: subjectImportExistingKeys,
+			});
+			return;
+		}
+
+		if (isPaymentsImport && paymentImportContext) {
+			paymentValidationResult = validatePaymentImportRows(paymentParsedRows, paymentImportContext);
+			return;
+		}
+
+		if (isChaptersImport) {
+			chapterValidationResult = validateChapterImportRows(chapterParsedRows, {
+				classSubjects: chapterImportContext,
+			});
 		}
 	}
 
 	async function goToValidateStep() {
 		await loadStudentMatriculeDataIfNeeded();
 		await loadSubjectNamesIfNeeded();
+		await loadSubjectImportContextIfNeeded();
+		await loadChapterImportContextIfNeeded();
+		await loadPaymentImportContextIfNeeded();
 		runValidation();
 		step = 'validate';
 	}
@@ -728,6 +1041,83 @@
 		}
 	}
 
+	async function startSubjectImport() {
+		if (!subjectValidationResult || !canStartSubjectImport || importing) {
+			return;
+		}
+
+		const schoolId = authSession.schoolId;
+		if (!schoolId) {
+			return;
+		}
+
+		importing = true;
+		subjectImportResult = null;
+		importFatalError = '';
+		importProgress = { current: 0, total: subjectValidationResult.validRows.length };
+		step = 'execute';
+
+		try {
+			subjectImportResult = await runSubjectImport({
+				schoolId,
+				academicYearId: academicContext.yearId ?? academicContext.year?.id ?? '',
+				client: getBrowserSchoolClient(),
+				rows: subjectValidationResult.validRows,
+				onProgress: (current, total) => {
+					importProgress = { current, total };
+				},
+			});
+		}
+		catch (error) {
+			importFatalError = error instanceof Error && error.message.trim().length > 0
+				? error.message
+				: get(t)('import.subjects.importFailed');
+			subjectImportResult = {
+				created: 0,
+				failed: [],
+				classSubjectIds: [],
+			};
+		}
+		finally {
+			importing = false;
+		}
+	}
+
+	async function startPaymentImport() {
+		if (!paymentValidationResult || !canStartPaymentImport || importing) {
+			return;
+		}
+
+		importing = true;
+		paymentImportResult = null;
+		importFatalError = '';
+		importProgress = { current: 0, total: paymentValidationResult.validRows.length };
+		step = 'execute';
+
+		try {
+			paymentImportResult = await runPaymentImport({
+				client: getBrowserSchoolClient(),
+				rows: paymentValidationResult.validRows,
+				onProgress: (current, total) => {
+					importProgress = { current, total };
+				},
+			});
+		}
+		catch (error) {
+			importFatalError = error instanceof Error && error.message.trim().length > 0
+				? error.message
+				: get(t)('import.payments.importFailed');
+			paymentImportResult = {
+				created: 0,
+				failed: [],
+				paymentIds: [],
+			};
+		}
+		finally {
+			importing = false;
+		}
+	}
+
 	async function startImport() {
 		if (isStudentsImport) {
 			await startStudentImport();
@@ -747,6 +1137,56 @@
 		}
 		if (isTeachersImport) {
 			await startTeacherImport();
+			return;
+		}
+		if (isSubjectsImport) {
+			await startSubjectImport();
+			return;
+		}
+		if (isChaptersImport) {
+			await startChapterImport();
+			return;
+		}
+		if (isPaymentsImport) {
+			await startPaymentImport();
+		}
+	}
+
+	async function startChapterImport() {
+		if (!chapterValidationResult || !canStartChapterImport || importing) {
+			return;
+		}
+
+		importing = true;
+		chapterImportResult = null;
+		importFatalError = '';
+		importProgress = {
+			current: 0,
+			total: countChapterImportOperations(chapterValidationResult.validRows),
+		};
+		step = 'execute';
+
+		try {
+			chapterImportResult = await runChapterImport({
+				client: getBrowserSchoolClient(),
+				rows: chapterValidationResult.validRows,
+				onProgress: (current, total) => {
+					importProgress = { current, total };
+				},
+			});
+		}
+		catch (error) {
+			importFatalError = error instanceof Error && error.message.trim().length > 0
+				? error.message
+				: get(t)('import.chapters.importFailed');
+			chapterImportResult = {
+				created: 0,
+				failed: [],
+				matterIds: [],
+			};
+		}
+		finally {
+			importing = false;
 		}
 	}
 
@@ -815,10 +1255,52 @@
 					parseErrorMessage = get(t)('import.teachers.emptyFile');
 				}
 			}
+			else if (isSubjectsImport) {
+				const result = await parseSubjectImportFile(file);
+				subjectParsedRows = result.rows;
+
+				if (result.errors.length > 0) {
+					parseErrorMessage = formatParseError(result.errors[0]?.message ?? 'parse_error');
+				}
+				else if (result.rows.length === 0) {
+					parseErrorMessage = get(t)('import.subjects.emptyFile');
+				}
+			}
+			else if (isChaptersImport) {
+				const result = await parseChapterImportFile(file);
+				chapterParsedRows = result.rows;
+
+				if (result.errors.length > 0) {
+					parseErrorMessage = formatParseError(result.errors[0]?.message ?? 'parse_error');
+				}
+				else if (result.rows.length === 0) {
+					parseErrorMessage = get(t)('import.chapters.emptyFile');
+				}
+			}
+			else if (isPaymentsImport) {
+				const result = await parsePaymentImportFile(file);
+				paymentParsedRows = result.rows;
+
+				if (result.errors.length > 0) {
+					parseErrorMessage = formatParseError(result.errors[0]?.message ?? 'parse_error');
+				}
+				else if (result.rows.length === 0) {
+					parseErrorMessage = get(t)('import.payments.emptyFile');
+				}
+			}
 		}
 		catch {
 			let unsupportedFormatKey = 'import.students.unsupportedFormat';
-			if (isTeachersImport) {
+			if (isPaymentsImport) {
+				unsupportedFormatKey = 'import.payments.unsupportedFormat';
+			}
+			else if (isChaptersImport) {
+				unsupportedFormatKey = 'import.chapters.unsupportedFormat';
+			}
+			else if (isSubjectsImport) {
+				unsupportedFormatKey = 'import.subjects.unsupportedFormat';
+			}
+			else if (isTeachersImport) {
 				unsupportedFormatKey = 'import.teachers.unsupportedFormat';
 			}
 			else if (isStaffImport) {
@@ -903,9 +1385,17 @@
 						</Select.Root>
 					</div>
 
-					{#if showStudentsPrerequisite}
+					{#if showSubjectsPrerequisite}
 						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
-							{$t('import.students.prerequisiteMissing')}
+							{$t('import.subjects.prerequisiteMissing')}
+						</p>
+					{:else if showPaymentsPrerequisite}
+						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
+							{$t('import.payments.prerequisiteMissing')}
+						</p>
+					{:else if showChaptersPrerequisite}
+						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
+							{$t('import.chapters.prerequisiteMissing')}
 						</p>
 					{:else if showGuardiansPrerequisite}
 						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
@@ -1177,6 +1667,131 @@
 						</div>
 					{/if}
 				</section>
+			{:else if isSubjectsImport && step === 'upload'}
+				<section class="space-y-4" data-testid="subject-import-step-upload">
+					<p class="text-sm text-muted-foreground">{$t('import.subjects.uploadHint')}</p>
+
+					<ImportFileDropzone
+						disabled={parsing}
+						errorMessage={parseErrorMessage}
+						{selectedFileName}
+						onFileSelected={handleFileSelected}
+					/>
+
+					{#if parsing}
+						<div class="flex items-center gap-2 text-sm text-muted-foreground" data-testid="subject-import-parsing">
+							<LoaderCircle class="size-4 animate-spin" aria-hidden="true" />
+							{$t('import.subjects.parsing')}
+						</div>
+					{:else if subjectParsedRows.length > 0}
+						<div class="rounded-xl border border-border bg-secondary/20 p-4" data-testid="subject-import-parse-success">
+							<p class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+								{$t('import.subjects.parseSuccess', { n: subjectParsedRows.length })}
+							</p>
+
+							{#if subjectPreviewRows.length > 0}
+								<p class="mt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+									{$t('import.subjects.parseRowPreview')}
+								</p>
+								<ul class="mt-2 space-y-1 text-sm">
+									{#each subjectPreviewRows as row (row.rowIndex)}
+										<li>
+											<span class="font-mono text-xs text-muted-foreground">L{row.rowIndex}</span>
+											<span class="mx-2">·</span>
+											{row.nom}
+											<span class="mx-2 text-muted-foreground">·</span>
+											{row.niveau}
+										</li>
+									{/each}
+								</ul>
+							{/if}
+						</div>
+					{/if}
+				</section>
+			{:else if isChaptersImport && step === 'upload'}
+				<section class="space-y-4" data-testid="chapter-import-step-upload">
+					<p class="text-sm text-muted-foreground">{$t('import.chapters.uploadHint')}</p>
+
+					<ImportFileDropzone
+						disabled={parsing}
+						errorMessage={parseErrorMessage}
+						{selectedFileName}
+						onFileSelected={handleFileSelected}
+					/>
+
+					{#if parsing}
+						<div class="flex items-center gap-2 text-sm text-muted-foreground" data-testid="chapter-import-parsing">
+							<LoaderCircle class="size-4 animate-spin" aria-hidden="true" />
+							{$t('import.chapters.parsing')}
+						</div>
+					{:else if chapterParsedRows.length > 0}
+						<div class="rounded-xl border border-border bg-secondary/20 p-4" data-testid="chapter-import-parse-success">
+							<p class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+								{$t('import.chapters.parseSuccess', { n: chapterParsedRows.length })}
+							</p>
+
+							{#if chapterPreviewRows.length > 0}
+								<p class="mt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+									{$t('import.chapters.parseRowPreview')}
+								</p>
+								<ul class="mt-2 space-y-1 text-sm">
+									{#each chapterPreviewRows as row (row.rowIndex)}
+										<li>
+											<span class="font-mono text-xs text-muted-foreground">L{row.rowIndex}</span>
+											<span class="mx-2">·</span>
+											{row.niveau}
+											<span class="mx-2 text-muted-foreground">·</span>
+											{row.matiere}
+											<span class="mx-2 text-muted-foreground">·</span>
+											{row.titre}
+										</li>
+									{/each}
+								</ul>
+							{/if}
+						</div>
+					{/if}
+				</section>
+			{:else if isPaymentsImport && step === 'upload'}
+				<section class="space-y-4" data-testid="payment-import-step-upload">
+					<p class="text-sm text-muted-foreground">{$t('import.payments.uploadHint')}</p>
+
+					<ImportFileDropzone
+						disabled={parsing}
+						errorMessage={parseErrorMessage}
+						{selectedFileName}
+						onFileSelected={handleFileSelected}
+					/>
+
+					{#if parsing}
+						<div class="flex items-center gap-2 text-sm text-muted-foreground" data-testid="payment-import-parsing">
+							<LoaderCircle class="size-4 animate-spin" aria-hidden="true" />
+							{$t('import.payments.parsing')}
+						</div>
+					{:else if paymentParsedRows.length > 0}
+						<div class="rounded-xl border border-border bg-secondary/20 p-4" data-testid="payment-import-parse-success">
+							<p class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+								{$t('import.payments.parseSuccess', { n: paymentParsedRows.length })}
+							</p>
+
+							{#if paymentPreviewRows.length > 0}
+								<p class="mt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+									{$t('import.payments.parseRowPreview')}
+								</p>
+								<ul class="mt-2 space-y-1 text-sm">
+									{#each paymentPreviewRows as row (row.rowIndex)}
+										<li>
+											<span class="font-mono text-xs text-muted-foreground">L{row.rowIndex}</span>
+											<span class="mx-2">·</span>
+											{row.matricule}
+											<span class="mx-2 text-muted-foreground">·</span>
+											{row.type_frais}
+										</li>
+									{/each}
+								</ul>
+							{/if}
+						</div>
+					{/if}
+				</section>
 			{:else if isStudentsImport && step === 'validate' && studentValidationResult}
 				<section class="space-y-4" data-testid="student-import-step-validate">
 					<div class="grid gap-2 sm:grid-cols-3">
@@ -1274,6 +1889,66 @@
 						issues={teacherValidationIssues}
 						columnLabelKeys={TEACHER_COLUMN_LABEL_KEYS}
 						suggestionsKey="import.teachers.validation.suggestions"
+					/>
+				</section>
+			{:else if isSubjectsImport && step === 'validate' && subjectValidationResult}
+				<section class="space-y-4" data-testid="subject-import-step-validate">
+					<div class="grid gap-2 sm:grid-cols-3">
+						<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
+							{$t('import.subjects.validation.summaryReady', { n: subjectValidationResult.validRows.length })}
+						</p>
+						<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+							{$t('import.subjects.validation.summaryErrors', { n: subjectValidationResult.errors.length })}
+						</p>
+						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
+							{$t('import.subjects.validation.summaryWarnings', { n: subjectValidationResult.warnings.length })}
+						</p>
+					</div>
+
+					<ImportValidationTable
+						issues={subjectValidationIssues}
+						columnLabelKeys={SUBJECT_COLUMN_LABEL_KEYS}
+						suggestionsKey="import.subjects.validation.suggestions"
+					/>
+				</section>
+			{:else if isChaptersImport && step === 'validate' && chapterValidationResult}
+				<section class="space-y-4" data-testid="chapter-import-step-validate">
+					<div class="grid gap-2 sm:grid-cols-3">
+						<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
+							{$t('import.chapters.validation.summaryReady', { n: chapterValidationResult.validRows.length })}
+						</p>
+						<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+							{$t('import.chapters.validation.summaryErrors', { n: chapterValidationResult.errors.length })}
+						</p>
+						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
+							{$t('import.chapters.validation.summaryWarnings', { n: chapterValidationResult.warnings.length })}
+						</p>
+					</div>
+
+					<ImportValidationTable
+						issues={chapterValidationIssues}
+						columnLabelKeys={CHAPTER_COLUMN_LABEL_KEYS}
+						suggestionsKey="import.chapters.validation.suggestions"
+					/>
+				</section>
+			{:else if isPaymentsImport && step === 'validate' && paymentValidationResult}
+				<section class="space-y-4" data-testid="payment-import-step-validate">
+					<div class="grid gap-2 sm:grid-cols-3">
+						<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
+							{$t('import.payments.validation.summaryReady', { n: paymentValidationResult.validRows.length })}
+						</p>
+						<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+							{$t('import.payments.validation.summaryErrors', { n: paymentValidationResult.errors.length })}
+						</p>
+						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
+							{$t('import.payments.validation.summaryWarnings', { n: paymentValidationResult.warnings.length })}
+						</p>
+					</div>
+
+					<ImportValidationTable
+						issues={paymentValidationIssues}
+						columnLabelKeys={PAYMENT_COLUMN_LABEL_KEYS}
+						suggestionsKey="import.payments.validation.suggestions"
 					/>
 				</section>
 			{:else if isStudentsImport && step === 'execute'}
@@ -1546,6 +2221,168 @@
 						<p class="text-sm text-muted-foreground">{$t('import.teachers.resultUnexpected')}</p>
 					{/if}
 				</section>
+			{:else if isSubjectsImport && step === 'execute'}
+				<section class="space-y-4" data-testid="subject-import-step-execute">
+					{#if importing}
+						<p class="text-sm text-muted-foreground">{$t('import.subjects.executing')}</p>
+						<ImportProgressBar
+							current={importProgress.current}
+							total={importProgress.total}
+							label={$t('import.subjects.executeProgress', {
+								current: importProgress.current,
+								total: importProgress.total,
+							})}
+						/>
+					{:else if subjectImportResult}
+						<div class="space-y-3">
+							<h3 class="text-sm font-semibold">{$t('import.subjects.resultTitle')}</h3>
+							{#if importFatalError}
+								<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+									{importFatalError}
+								</p>
+							{/if}
+							<div class="grid gap-2 sm:grid-cols-2">
+								<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
+									{$t('import.subjects.resultCreated', { n: subjectImportResult.created })}
+								</p>
+								<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+									{$t('import.subjects.resultFailed', { n: subjectImportResult.failed.length })}
+								</p>
+							</div>
+
+							{#if subjectImportResult.created === 0 && subjectImportResult.failed.length === 0 && !importFatalError}
+								<p class="text-sm text-muted-foreground">{$t('import.subjects.resultNothing')}</p>
+							{/if}
+
+							{#if subjectImportResult.failed.length > 0}
+								<div class="rounded-xl border border-border bg-secondary/20 p-4">
+									<p class="mb-2 text-sm font-semibold">{$t('import.subjects.resultFailures')}</p>
+									<ul class="space-y-2 text-sm">
+										{#each subjectImportResult.failed as failure (failure.rowIndex + failure.subjectName)}
+											<li>
+												<span class="font-mono text-xs text-muted-foreground">L{failure.rowIndex}</span>
+												<span class="mx-2">·</span>
+												{failure.subjectName}
+												<span class="mx-2 text-muted-foreground">—</span>
+												{failure.message}
+											</li>
+										{/each}
+									</ul>
+								</div>
+							{/if}
+						</div>
+					{:else}
+						<p class="text-sm text-muted-foreground">{$t('import.subjects.resultUnexpected')}</p>
+					{/if}
+				</section>
+			{:else if isChaptersImport && step === 'execute'}
+				<section class="space-y-4" data-testid="chapter-import-step-execute">
+					{#if importing}
+						<p class="text-sm text-muted-foreground">{$t('import.chapters.executing')}</p>
+						<ImportProgressBar
+							current={importProgress.current}
+							total={importProgress.total}
+							label={$t('import.chapters.executeProgress', {
+								current: importProgress.current,
+								total: importProgress.total,
+							})}
+						/>
+					{:else if chapterImportResult}
+						<div class="space-y-3">
+							<h3 class="text-sm font-semibold">{$t('import.chapters.resultTitle')}</h3>
+							{#if importFatalError}
+								<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+									{importFatalError}
+								</p>
+							{/if}
+							<div class="grid gap-2 sm:grid-cols-2">
+								<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
+									{$t('import.chapters.resultCreated', { n: chapterImportResult.created })}
+								</p>
+								<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+									{$t('import.chapters.resultFailed', { n: chapterImportResult.failed.length })}
+								</p>
+							</div>
+
+							{#if chapterImportResult.created === 0 && chapterImportResult.failed.length === 0 && !importFatalError}
+								<p class="text-sm text-muted-foreground">{$t('import.chapters.resultNothing')}</p>
+							{/if}
+
+							{#if chapterImportResult.failed.length > 0}
+								<div class="rounded-xl border border-border bg-secondary/20 p-4">
+									<p class="mb-2 text-sm font-semibold">{$t('import.chapters.resultFailures')}</p>
+									<ul class="space-y-2 text-sm">
+										{#each chapterImportResult.failed as failure (failure.rowIndex + failure.chapterLabel)}
+											<li>
+												<span class="font-mono text-xs text-muted-foreground">L{failure.rowIndex}</span>
+												<span class="mx-2">·</span>
+												{failure.chapterLabel}
+												<span class="mx-2 text-muted-foreground">—</span>
+												{failure.message}
+											</li>
+										{/each}
+									</ul>
+								</div>
+							{/if}
+						</div>
+					{:else}
+						<p class="text-sm text-muted-foreground">{$t('import.chapters.resultUnexpected')}</p>
+					{/if}
+				</section>
+			{:else if isPaymentsImport && step === 'execute'}
+				<section class="space-y-4" data-testid="payment-import-step-execute">
+					{#if importing}
+						<p class="text-sm text-muted-foreground">{$t('import.payments.executing')}</p>
+						<ImportProgressBar
+							current={importProgress.current}
+							total={importProgress.total}
+							label={$t('import.payments.executeProgress', {
+								current: importProgress.current,
+								total: importProgress.total,
+							})}
+						/>
+					{:else if paymentImportResult}
+						<div class="space-y-3">
+							<h3 class="text-sm font-semibold">{$t('import.payments.resultTitle')}</h3>
+							{#if importFatalError}
+								<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+									{importFatalError}
+								</p>
+							{/if}
+							<div class="grid gap-2 sm:grid-cols-2">
+								<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
+									{$t('import.payments.resultCreated', { n: paymentImportResult.created })}
+								</p>
+								<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+									{$t('import.payments.resultFailed', { n: paymentImportResult.failed.length })}
+								</p>
+							</div>
+
+							{#if paymentImportResult.created === 0 && paymentImportResult.failed.length === 0 && !importFatalError}
+								<p class="text-sm text-muted-foreground">{$t('import.payments.resultNothing')}</p>
+							{/if}
+
+							{#if paymentImportResult.failed.length > 0}
+								<div class="rounded-xl border border-border bg-secondary/20 p-4">
+									<p class="mb-2 text-sm font-semibold">{$t('import.payments.resultFailures')}</p>
+									<ul class="space-y-2 text-sm">
+										{#each paymentImportResult.failed as failure (failure.rowIndex + failure.label)}
+											<li>
+												<span class="font-mono text-xs text-muted-foreground">L{failure.rowIndex}</span>
+												<span class="mx-2">·</span>
+												{failure.label}
+												<span class="mx-2 text-muted-foreground">—</span>
+												{failure.message}
+											</li>
+										{/each}
+									</ul>
+								</div>
+							{/if}
+						</div>
+					{:else}
+						<p class="text-sm text-muted-foreground">{$t('import.payments.resultUnexpected')}</p>
+					{/if}
+				</section>
 			{:else}
 				<section class="space-y-4" data-testid="data-import-coming-soon">
 					<p class="rounded-lg border border-border bg-secondary/30 px-3 py-2 text-sm text-muted-foreground">
@@ -1626,6 +2463,41 @@
 						data-testid="teacher-import-view-teachers"
 					>
 						{$t('import.teachers.viewTeachers')}
+					</Button>
+				{/if}
+				{#if isSubjectsImport && step === 'execute' && subjectImportResult}
+					<Button
+						onclick={() => {
+							notifySubjectsListChanged();
+							handleOpenChange(false);
+							void appGoto(subjectsHref, { invalidateAll: true });
+						}}
+						data-testid="subject-import-view-subjects"
+					>
+						{$t('import.subjects.viewSubjects')}
+					</Button>
+				{/if}
+				{#if isChaptersImport && step === 'execute' && chapterImportResult}
+					<Button
+						onclick={() => {
+							notifySubjectsListChanged();
+							handleOpenChange(false);
+							void appGoto(subjectsHref, { invalidateAll: true });
+						}}
+						data-testid="chapter-import-view-subjects"
+					>
+						{$t('import.chapters.viewSubjects')}
+					</Button>
+				{/if}
+				{#if isPaymentsImport && step === 'execute' && paymentImportResult}
+					<Button
+						onclick={() => {
+							handleOpenChange(false);
+							void appGoto(billingHref, { invalidateAll: true });
+						}}
+						data-testid="payment-import-view-billing"
+					>
+						{$t('import.payments.viewBilling')}
 					</Button>
 				{/if}
 				<Button variant="outline" disabled={importing} onclick={() => handleOpenChange(false)}>

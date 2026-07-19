@@ -25,6 +25,8 @@ export interface Student {
 	photoUrl?: string | null;
 	email: string;
 	birthdate: string;
+	matricule?: string | null;
+	gender?: string | null;
 	guardian: string;
 	attendance: number;
 	average: number;
@@ -37,6 +39,8 @@ export type SubjectCategory = 'Scientifique' | 'Littéraire' | 'Langues' | 'Scie
 export interface Subject {
 	id: string;
 	classId: string;
+	/** Catalogue matières : regroupement par niveau (distinct des matières de classe). */
+	gradeLevelId?: string;
 	name: string;
 	teacher: string;
 	hoursPerWeek: number;

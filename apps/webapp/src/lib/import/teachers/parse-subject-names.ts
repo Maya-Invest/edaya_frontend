@@ -1,10 +1,5 @@
-export function parseTeacherSubjectNames(value?: string): string[] {
-	if (!value?.trim()) {
-		return [];
-	}
+import { parseSemicolonList } from '$lib/import/shared/parse-semicolon-list';
 
-	return value
-		.split(',')
-		.map(part => part.trim())
-		.filter(part => part.length > 0);
+export function parseTeacherSubjectNames(value?: string): string[] {
+	return parseSemicolonList(value);
 }

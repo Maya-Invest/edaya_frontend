@@ -22,6 +22,7 @@
 	import DrawerEntityHeader from '../shared/DrawerEntityHeader.svelte';
 	import SubjectFormModal from './SubjectFormModal.svelte';
 	import SubjectMatterFormModal from './SubjectMatterFormModal.svelte';
+	import { buildSubjectChapterSummary } from '$lib/subjects/chapter-summary';
 
 	const { s }: { s: Subject } = $props();
 
@@ -61,6 +62,12 @@
 		classGroupId: string;
 	} | null>(null);
 	let editingMatter = $state<SubjectMatterDrawerRow | null>(null);
+
+	const headerSummary = $derived(
+		matterRows.length > 0
+			? buildSubjectChapterSummary(matterRows.map(row => row.name))
+			: s.description,
+	);
 
 	const tabItems = $derived([
 		{ key: 'progression', label: $t('subjects.tab.chapters') },
@@ -150,7 +157,7 @@
 </script>
 
 <div class="space-y-5">
-	<DrawerEntityHeader name={s.name} summary={s.description}>
+	<DrawerEntityHeader name={s.name} summary={headerSummary}>
 		{#snippet chips()}
 			<span class="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] tabular-nums text-foreground/80">
 				{$t('subjects.hoursPerWeek', { h: s.hoursPerWeek })}

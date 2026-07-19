@@ -65,8 +65,18 @@ export async function runMutation<T>(
 	}
 	catch (error) {
 		options?.rollback?.();
+		if (error instanceof Error && error.message === 'ACTIVE_ENROLLMENTS' && options?.errorMessage) {
+			toast.error(options.errorMessage);
+			return null;
+		}
 		const message = error instanceof ApiError
-			? messageFromApiError(error) ?? options?.errorMessage ?? 'La requête a échoué.'
+			? (() => {
+				const apiMessage = messageFromApiError(error);
+				if (apiMessage && /dependent records still exist/i.test(apiMessage) && options?.errorMessage) {
+					return options.errorMessage;
+				}
+				return apiMessage ?? options?.errorMessage ?? 'La requête a échoué.';
+			})()
 			: error instanceof Error && error.message.trim().length > 0
 				? error.message
 				: options?.errorMessage ?? 'La requête a échoué.';

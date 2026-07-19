@@ -28,7 +28,7 @@ describe('guardian import validator', () => {
 
 		expect(result.errors).toEqual([]);
 		expect(result.validRows).toHaveLength(2);
-		expect(result.validRows[0]?.studentId).toBe('stu-1');
+		expect(result.validRows[0]?.studentIds).toEqual(['stu-1']);
 	});
 
 	it('flags unknown student matricules with suggestions', () => {

@@ -27,8 +27,8 @@ const CATALOG = [
 ];
 
 describe('parseTeacherSubjectNames', () => {
-	it('splits comma-separated subject names', () => {
-		expect(parseTeacherSubjectNames('Mathématiques, Physique')).toEqual(['Mathématiques', 'Physique']);
+	it('splits semicolon-separated subject names', () => {
+		expect(parseTeacherSubjectNames('Mathématiques; Physique')).toEqual(['Mathématiques', 'Physique']);
 	});
 });
 
@@ -51,7 +51,7 @@ describe('subjectNameLookup', () => {
 describe('teacher import validator', () => {
 	it('accepts valid rows and parses subject names', () => {
 		const result = validateTeacherImportRows([
-			row({ rowIndex: 2, matieres: 'Mathématiques, Physique' }),
+			row({ rowIndex: 2, matieres: 'Mathématiques; Physique' }),
 		], { subjectCatalog: CATALOG });
 
 		expect(result.errors).toEqual([]);

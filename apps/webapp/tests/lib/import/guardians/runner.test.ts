@@ -12,7 +12,7 @@ function row(overrides: Partial<ValidatedGuardianImportRow> & Pick<ValidatedGuar
 		prenom: 'Aminata',
 		nom: 'Koné',
 		eleve_matricule: 'MAT-2024-001',
-		studentId: 'stu-1',
+		studentIds: ['stu-1'],
 		...overrides,
 	};
 }
@@ -33,7 +33,7 @@ describe('guardian import runner', () => {
 			} as never,
 			rows: [
 				row({ rowIndex: 2 }),
-				row({ rowIndex: 3, prenom: 'Moussa', nom: 'Traoré', studentId: 'stu-2', eleve_matricule: 'MAT-2024-002' }),
+				row({ rowIndex: 3, prenom: 'Moussa', nom: 'Traoré', studentIds: ['stu-2'], eleve_matricule: 'MAT-2024-002' }),
 			],
 		});
 

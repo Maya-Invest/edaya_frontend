@@ -9,7 +9,7 @@
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { t } from '$lib/i18n';
-	import { Clock, User, ChevronRight, Search } from '$lib/icons';
+	import { Clock, ChevronRight, Search } from '$lib/icons';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readConfigSubjectListFilters, writeConfigSubjectListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
@@ -25,7 +25,7 @@
 		onSelectLevel?: (group: { label: string; subtitle: string; items: Subject[] }) => void;
 	} = $props();
 
-	const subjects = $derived(detailDataContext.subjects);
+	const subjects = $derived(detailDataContext.catalogSubjects);
 	const classes = $derived(academicContext.classes);
 
 	const initialFilters = $derived(readConfigSubjectListFilters($page.url));
@@ -56,17 +56,12 @@
 		'Arts': 'bg-secondary text-foreground/80',
 	};
 
-	const classById = $derived(Object.fromEntries(classes.map(c => [c.id, c])));
-
 	function matchesSearch(s: Subject, needle: string) {
 		if (!needle)
 			return true;
-		const cls = classById[s.classId];
 		return s.name.toLowerCase().includes(needle)
-			|| s.teacher.toLowerCase().includes(needle)
 			|| s.category.toLowerCase().includes(needle)
-			|| s.description.toLowerCase().includes(needle)
-			|| (cls?.name.toLowerCase().includes(needle) ?? false);
+			|| s.description.toLowerCase().includes(needle);
 	}
 
 	const filteredSubjects = $derived(
@@ -216,7 +211,6 @@
 					<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
 						{#each g.items as s, idx (s.id)}
 							{@const active = selectedId === s.id}
-							{@const cls = classById[s.classId]}
 							<button
 								type="button"
 								onclick={() => onSelect?.(s)}
@@ -243,18 +237,9 @@
 								</div>
 								<div class="flex shrink-0 items-center gap-5 text-xs text-muted-foreground">
 									<span class="flex items-center gap-1.5">
-										<User class="h-3.5 w-3.5" />
-										{s.teacher}
-									</span>
-									<span class="flex items-center gap-1.5">
 										<Clock class="h-3.5 w-3.5" />
 										{s.hoursPerWeek}h
 									</span>
-									{#if cls}
-										<span class="flex items-center gap-1.5">
-											<span class="font-mono text-[10px]">{cls.name}</span>
-										</span>
-									{/if}
 								</div>
 							</button>
 						{/each}

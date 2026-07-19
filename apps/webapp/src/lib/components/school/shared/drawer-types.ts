@@ -19,6 +19,7 @@ import type {
 
 export type DrawerItem
 	= | { kind: 'student'; data: Student }
+		| { kind: 'catalogSubject'; data: Subject }
 		| { kind: 'subject'; data: Subject }
 		| { kind: 'planning'; data: PlanningEvent }
 		| { kind: 'evaluation'; data: Evaluation }

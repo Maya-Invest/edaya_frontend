@@ -23,7 +23,7 @@ export interface GuardianImportRow {
 }
 
 export interface ValidatedGuardianImportRow extends GuardianImportRow {
-	studentId: string;
+	studentIds: readonly string[];
 }
 
 export type GuardianImportValidationSeverity = 'error' | 'warning';

@@ -45,6 +45,8 @@ export function buildSubjectConfigCommand(
 		category: SubjectCategory;
 		color: Subject['color'];
 		createdAt?: string;
+		code?: string | null;
+		defaultCoefficient?: number | null;
 	},
 ): SubjectConfigCommand {
 	const payload: SubjectConfigCommand = {
@@ -54,7 +56,7 @@ export function buildSubjectConfigCommand(
 		color: updates.color,
 	};
 
-	const code = typeof existing?.code === 'string' ? existing.code.trim() : '';
+	const code = (updates.code ?? existing?.code)?.trim() ?? '';
 	if (code.length > 0) {
 		payload.code = code;
 	}
@@ -64,12 +66,13 @@ export function buildSubjectConfigCommand(
 		payload.shortName = shortName;
 	}
 
+	const defaultCoefficient = updates.defaultCoefficient ?? existing?.defaultCoefficient;
 	if (
-		typeof existing?.defaultCoefficient === 'number'
-		&& Number.isFinite(existing.defaultCoefficient)
-		&& existing.defaultCoefficient > 0
+		typeof defaultCoefficient === 'number'
+		&& Number.isFinite(defaultCoefficient)
+		&& defaultCoefficient > 0
 	) {
-		payload.defaultCoefficient = existing.defaultCoefficient;
+		payload.defaultCoefficient = defaultCoefficient;
 	}
 
 	const createdAt = updates.createdAt ?? existing?.createdAt;

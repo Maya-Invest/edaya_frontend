@@ -8,9 +8,7 @@
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
-	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
-	import { Trash2 } from '$lib/icons';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
@@ -33,6 +31,7 @@
 	const classCount = $derived(
 		academicContext.classes.filter(entry => entry.gradeLevelId === live.id).length,
 	);
+	const canDelete = $derived(classCount === 0);
 
 	async function confirmDelete() {
 		deleteBusy = true;
@@ -72,21 +71,15 @@
 					>
 						{$t('gradeLevels.edit')}
 					</button>
-				{/snippet}
-			</PermissionGate>
-		{/snippet}
-		{#snippet overflow()}
-			<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE" mode="disable">
-				{#snippet children({ disabled, title })}
-					<RowActionMenuItem
-						destructive
-						{disabled}
-						{title}
+					<button
+						type="button"
+						class="inline-flex h-9 items-center rounded-full border border-destructive/30 bg-background px-4 text-sm font-medium text-destructive transition hover:bg-destructive/10 disabled:opacity-50"
+						disabled={disabled || !canDelete}
+						title={canDelete ? title : $t('gradeLevels.deleteBlockedClasses')}
 						onclick={() => (deleteOpen = true)}
 					>
-						<Trash2 class="h-4 w-4" />
 						{$t('common.delete')}
-					</RowActionMenuItem>
+					</button>
 				{/snippet}
 			</PermissionGate>
 		{/snippet}

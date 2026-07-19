@@ -8,14 +8,11 @@ import type {
 	ValidatedStudentImportRow,
 } from './types';
 import { canImportValidatedRows } from '$lib/import/shared/can-import-validated-rows';
+import { normalizeStudentMatricule } from '$lib/import/shared/normalize-student-matricule';
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function normalizeLookupValue(value: string): string {
-	return value.trim().toLowerCase();
-}
-
-function normalizeMatricule(value: string): string {
 	return value.trim().toLowerCase();
 }
 
@@ -95,6 +92,48 @@ function validateRequiredField(
 	return false;
 }
 
+function appendCapacityWarnings(
+	validRows: readonly ValidatedStudentImportRow[],
+	classes: readonly StudentImportClassOption[],
+	warnings: StudentImportValidationIssue[],
+) {
+	const classById = new Map(classes.map(entry => [entry.id, entry]));
+	const pendingByClass = new Map<string, number>();
+
+	for (const row of validRows) {
+		if (!row.classGroupId) {
+			continue;
+		}
+		pendingByClass.set(row.classGroupId, (pendingByClass.get(row.classGroupId) ?? 0) + 1);
+	}
+
+	for (const [classGroupId, pendingCount] of pendingByClass) {
+		const classInfo = classById.get(classGroupId);
+		if (!classInfo?.capacity || classInfo.capacity <= 0) {
+			continue;
+		}
+
+		const overflow = classInfo.studentCount + pendingCount - classInfo.capacity;
+		if (overflow <= 0) {
+			continue;
+		}
+
+		for (let index = 0; index < overflow; index += 1) {
+			warnings.push(issue({
+				rowIndex: validRows.find(row => row.classGroupId === classGroupId)?.rowIndex ?? 0,
+				column: 'classe',
+				value: classInfo.name,
+				messageKey: 'import.students.validation.capacityExceeded',
+				messageParams: {
+					class: classInfo.name,
+					capacity: classInfo.capacity,
+				},
+				severity: 'warning',
+			}));
+		}
+	}
+}
+
 export function validateStudentImportRows(
 	rows: readonly StudentImportRow[],
 	context: StudentImportValidationContext,
@@ -110,7 +149,7 @@ export function validateStudentImportRows(
 
 		const hasPrenom = validateRequiredField(row, 'prenom', row.prenom, rowIssues);
 		const hasNom = validateRequiredField(row, 'nom', row.nom, rowIssues);
-		const hasClasse = validateRequiredField(row, 'classe', row.classe, rowIssues);
+		const hasMatricule = validateRequiredField(row, 'matricule', row.matricule, rowIssues);
 
 		if (row.date_naissance && !isValidStudentImportBirthDate(row.date_naissance)) {
 			rowIssues.push(issue({
@@ -122,7 +161,7 @@ export function validateStudentImportRows(
 		}
 
 		let classGroupId: string | undefined;
-		if (hasClasse) {
+		if (row.classe?.trim()) {
 			const resolution = resolveClassGroup(row.classe, classLookup, context.classes);
 			if (resolution.classGroupId) {
 				classGroupId = resolution.classGroupId;
@@ -138,8 +177,8 @@ export function validateStudentImportRows(
 			}
 		}
 
-		if (row.matricule?.trim()) {
-			const normalizedMatricule = normalizeMatricule(row.matricule);
+		if (hasMatricule) {
+			const normalizedMatricule = normalizeStudentMatricule(row.matricule);
 			const previousRow = matriculesInFile.get(normalizedMatricule);
 			if (previousRow != null) {
 				rowIssues.push(issue({
@@ -174,13 +213,15 @@ export function validateStudentImportRows(
 			}
 		}
 
-		if (blockingIssues.length === 0 && classGroupId && hasPrenom && hasNom) {
+		if (blockingIssues.length === 0 && hasPrenom && hasNom && hasMatricule) {
 			validRows.push({
 				...row,
-				classGroupId,
+				...(classGroupId ? { classGroupId } : {}),
 			});
 		}
 	}
+
+	appendCapacityWarnings(validRows, context.classes, warnings);
 
 	return { validRows, errors, warnings };
 }
