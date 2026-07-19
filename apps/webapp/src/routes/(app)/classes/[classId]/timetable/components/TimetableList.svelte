@@ -5,7 +5,6 @@
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { getTimetablePageState } from '../timetable-page.svelte';
-	import TimetableGenerationToolbar from './TimetableGenerationToolbar.svelte';
 	import TimetablePlanningView from './TimetablePlanningView.svelte';
 
 	const {
@@ -28,7 +27,6 @@
 	}
 </script>
 
-<TimetableGenerationToolbar state={timetablePage} />
 <TimetablePlanningView
 	expandCalendar
 	{classId}

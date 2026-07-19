@@ -1,8 +1,8 @@
-import type { ImportPageState } from '../import-page.svelte';
+import type { ToolsPageState } from '../tools-page.svelte';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 import { emptyImportSlice } from './import-helpers';
 
-export function queryImportListPage(state: ImportPageState) {
+export function queryToolsListPage(state: ToolsPageState) {
 	return (url: URL) => resolvePageLoad(url, {
 		empty: () => emptyImportSlice(),
 		load: async () => {

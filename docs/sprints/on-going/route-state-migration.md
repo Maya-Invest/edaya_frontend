@@ -91,7 +91,7 @@ Primary tracker. **Notes** hold the remaining gap for ⚠️ rows.
 | `/configuration/grade-levels` | ✅ | ✅ | — | — | ✅ | ✅ | ✅ | **✅ Full** | Local drawer; shell refresh on CRUD |
 | `/configuration/classes` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | **✅ Full** | Local drawer; `profile` + `assignments` tab routes |
 | `/configuration/subjects` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | **✅ Full** | Local drawer; progression/logbook tab routes; level drawer |
-| `/configuration/import` | ✅ | ✅ | — | — | — | — | ✅ | **✅ Full** | Import wizard on route state |
+| `/configuration/tools` | ✅ | ✅ | — | — | — | — | ✅ | **✅ Full** | Import wizard on route state |
 | `/configuration/report-cards` | ✅ | ✅ | — | — | ✅ | ✅ | ✅ | **✅ Full** | Local drawer; thin definition detail |
 | `/configuration/grade-scales` | ✅ | ✅ | — | — | — | ✅ | ✅ | **✅ Full** | Row `···` only; route-owned catalog slice |
 | `/configuration/notifications` | ✅ | ✅ | — | — | — | ✅ | ✅ | **✅ Full** | Template catalog + edit modal on route state |
@@ -146,7 +146,7 @@ Primary tracker. **Notes** hold the remaining gap for ⚠️ rows.
 
 **Redirect-only routes** (excluded from matrix): `/configuration/roles` → `/school/staff`; `/configuration/staff` → `/school/staff`; `/classes/:id/homework` → `/classes/:id/evaluations`; `/classes/:id/subjects` → `/classes/:id/teaching`.
 
-**Gap to track:** `/school/timetable-planning` has partial route state (`timetable-planning-page.svelte.ts`) but is not yet in the matrix.
+**Done:** school-wide timetable planning moved to `/configuration/tools` (modal assistant on tools hub).
 
 ### 4.2 Smart components
 
@@ -278,7 +278,7 @@ Keep: `lib/components/school/shared/` (T2 chrome), `lib/api/mutations/` shared l
 1. ~~Foundation~~ ✅  
 2. ~~Route migration (30 routes + 6 smart components)~~ ✅  
 3. ~~Legacy deletion (§7)~~ ✅  
-4. **`/school/timetable-planning`** — partial route state; not in matrix. Wire `+layout.svelte` + `PageQuery` + version invalidation if desired.  
+4. **`/configuration/tools`** — timetable planning assistant colocated with import on tools hub.  
 5. **Shared mutation colocation** — scheduling modals still call `lib/api/mutations/`; optional future cleanup, not blocking.
 
 ---

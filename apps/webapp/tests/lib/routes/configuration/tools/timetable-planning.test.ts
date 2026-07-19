@@ -1,6 +1,6 @@
 import type { ClassNode, GradeLevel } from '$lib/types/school';
 import { describe, expect, test } from 'bun:test';
-import { sortTimetableClasses } from '../../../../src/routes/(app)/school/timetable-planning/timetable-planning';
+import { sortTimetableClasses } from '../../../../../src/routes/(app)/configuration/tools/timetable-planning';
 
 function classNode(id: string, name: string, gradeLevelId: string): ClassNode {
 	return {
@@ -15,7 +15,7 @@ function classNode(id: string, name: string, gradeLevelId: string): ClassNode {
 	};
 }
 
-describe('school timetable planning', () => {
+describe('tools timetable planning', () => {
 	test('orders classes by grade-level order and then class name', () => {
 		const levels = [
 			{ id: 'g2', order: 2 },

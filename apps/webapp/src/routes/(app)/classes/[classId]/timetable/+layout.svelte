@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
-	import { academicContext } from '$lib/academic/context.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { listRouteCacheKey } from '$lib/detail-route-patterns';
@@ -25,13 +24,6 @@
 	const classId = $derived($page.params.classId ?? '');
 	const selectedId = $derived(timetablePage.selectedId);
 	const query = $derived(timetablePage.queryListPage(classId));
-
-	$effect(() => {
-		if (!classId || !academicContext.shellReady) {
-			return;
-		}
-		void timetablePage.loadTeacherConstraints();
-	});
 </script>
 
 <PageQuery {query} cacheKey={listRouteCacheKey} loadingTitle={$t('tab.timetable')}>

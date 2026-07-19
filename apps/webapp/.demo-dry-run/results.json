@@ -1,5 +1,5 @@
 {
-  "passed": 194,
+  "passed": 193,
   "failed": 0,
   "skipped": 4,
   "results": [
@@ -212,122 +212,117 @@
     },
     {
       "scene": "DR",
-      "step": "10 School timetable planning",
+      "step": "10 Class timetable grid",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "11 Class timetable grid",
+      "step": "11 Class evaluations list",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "12 Class evaluations list",
+      "step": "12 Class students roster",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "13 Class students roster",
+      "step": "13 Class teaching list",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "14 Class teaching list",
+      "step": "14 Class report cards list",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "15 Class report cards list",
+      "step": "15 Class attendance list",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "16 Class attendance list",
+      "step": "16 Finance fees list",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "17 Finance fees list",
+      "step": "17 Finance billing list",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "18 Finance billing list",
+      "step": "18 Finance payments list",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "19 Finance payments list",
+      "step": "19 Configuration school profile",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "20 Configuration school profile",
+      "step": "20 Configuration academic admin",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "21 Configuration academic admin",
+      "step": "21 Configuration grade levels",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "22 Configuration grade levels",
+      "step": "22 Configuration class groups list",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "23 Configuration class groups list",
+      "step": "23 Configuration subjects list",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "24 Configuration subjects list",
+      "step": "24 Configuration tools hub",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "25 Configuration import wizard",
+      "step": "25 Configuration report card definitions",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "26 Configuration report card definitions",
+      "step": "26 Configuration grade scales",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "27 Configuration grade scales",
+      "step": "27 Configuration notification templates",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "28 Configuration notification templates",
+      "step": "28 Configuration discipline catalog",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "29 Configuration discipline catalog",
+      "step": "29 Account inbox",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "30 Account inbox",
+      "step": "30 Account notification settings",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "31 Account notification settings",
+      "step": "31 School student drawer profile tab",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "32 School student drawer profile tab",
-      "status": "pass"
-    },
-    {
-      "scene": "DR",
-      "step": "33 Configuration class group drawer profile tab",
+      "step": "32 Configuration class group drawer profile tab",
       "status": "pass"
     },
     {
