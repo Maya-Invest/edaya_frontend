@@ -6,14 +6,20 @@
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { getTeachersPageState } from '../teachers-page.svelte';
 	import TeacherDrawer from './components/TeacherDrawer.svelte';
+	import {
+		clearTeacherDetailTabStates,
+		createAndRegisterTeacherDetailStates,
+	} from './teacher-detail-states.svelte';
 
 	const { children }: { children: Snippet } = $props();
 
 	const teachersPage = getTeachersPageState();
+	const detailTabs = createAndRegisterTeacherDetailStates(() => teachersPage);
 	const teacher = $derived(teachersPage.selected);
 	let selectionRequestVersion = 0;
 
 	function closeDetail() {
+		clearTeacherDetailTabStates(detailTabs);
 		const next = new URL($page.url);
 		next.searchParams.delete(MODAL_QUERY_KEY);
 		next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
@@ -24,6 +30,7 @@
 	$effect(() => {
 		const teacherId = $page.params.id;
 		if (!teacherId) {
+			clearTeacherDetailTabStates(detailTabs);
 			return;
 		}
 

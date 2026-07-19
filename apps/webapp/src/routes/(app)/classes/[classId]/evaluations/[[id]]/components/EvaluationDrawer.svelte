@@ -4,16 +4,22 @@
 	import { kindLabelKey, kindStyle } from '$lib/components/school/shared/drawer-constants';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, X } from '$lib/icons';
+	import EvaluationDetailHeader from './EvaluationDetailHeader.svelte';
+	import EvaluationDetailTabBar from './EvaluationDetailTabBar.svelte';
 
 	const {
 		evaluation,
+		classId,
 		loading = false,
 		onClose,
+		onDeleted,
 		children,
 	}: {
 		evaluation?: Evaluation;
+		classId: string;
 		loading?: boolean;
 		onClose: () => void;
+		onDeleted?: () => void;
 		children: Snippet;
 	} = $props();
 
@@ -56,7 +62,11 @@
 				<LoaderCircle class="h-6 w-6 animate-spin text-primary" />
 			</div>
 		{:else}
-			{@render children()}
+			<div class="space-y-5">
+				<EvaluationDetailHeader {classId} {evaluation} {onDeleted} />
+				<EvaluationDetailTabBar {evaluation} {classId} />
+				{@render children()}
+			</div>
 		{/if}
 	</div>
 </aside>

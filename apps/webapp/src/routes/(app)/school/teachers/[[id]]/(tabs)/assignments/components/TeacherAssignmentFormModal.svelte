@@ -14,6 +14,7 @@
 	import { get } from 'svelte/store';
 	import { createTeacherAssignmentPayload } from '../../../../lib/teacher-detail-mutations';
 	import { getTeachersPageState } from '../../../../teachers-page.svelte';
+	import { getTeacherAssignmentsTabState } from '../teacher-assignments-tab.svelte';
 
 	let {
 		open = $bindable(false),
@@ -24,6 +25,7 @@
 	} = $props();
 
 	const teachersPage = getTeachersPageState();
+	const assignmentsTab = getTeacherAssignmentsTabState();
 
 	let busy = $state(false);
 	let kind = $state<components['schemas']['TeacherAssignment']['kind']>('subject');
@@ -109,6 +111,7 @@
 		}
 
 		busy = true;
+<<<<<<< HEAD
 		try {
 			if (kind === 'homeroom') {
 				const id = `ta-${Date.now().toString(36)}`;
@@ -154,6 +157,25 @@
 		}
 		finally {
 			busy = false;
+=======
+		const id = `ta-${Date.now().toString(36)}`;
+		const assignment = createTeacherAssignmentPayload({
+			id,
+			teacherId: teacher.id,
+			kind,
+			classGroupId,
+			classSubjectId: kind === 'subject' ? classSubjectId : null,
+		});
+		const ok = await teachersPage.saveAssignment({
+			assignment,
+			successMessage: get(t)('teacher.assignmentCreated'),
+		});
+		busy = false;
+		if (ok) {
+			assignmentsTab.upsertAssignment(assignment);
+			teachersPage.setAssignmentCount(teacher.id, assignmentsTab.assignmentsFor(teacher.id).length);
+			open = false;
+>>>>>>> 0e6132c7fe9feb3d2ad6ea7e72855b85296833d3
 		}
 	}
 </script>

@@ -1,26 +1,40 @@
 import type { EvaluationsPageSlice } from './evaluation-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
-import { loadClassEvaluationsPageData } from '$lib/api/assessments-data';
+import {
+	fetchClassAssessmentsSources,
+	loadClassEvaluationsPageData,
+	mapAssessmentResults,
+} from '$lib/api/assessments-data';
 import { loadClassPeopleData } from '$lib/api/people-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadClassSubjects } from '$lib/api/subjects-data';
 import { resolvePageLoad } from '$lib/queries/page-status';
 import { emptyEvaluationsSlice } from './evaluation-helpers';
 
+type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
+
+export async function loadEvaluationGradingData(
+	client: SchoolClient,
+	classId: string,
+	periodId: string,
+) {
+	const sources = await fetchClassAssessmentsSources(client, classId, periodId);
+	return mapAssessmentResults(sources.resultsRaw);
+}
+
 export async function loadEvaluationsSlice(classId: string): Promise<EvaluationsPageSlice> {
 	const periodId = academicContext.periodId;
 	const client = getBrowserSchoolClient();
-	const [{ evaluations, assessmentResults }, subjects, { students }] = await Promise.all([
-		loadClassEvaluationsPageData(client, classId, periodId),
+	const [{ evaluations }, subjects] = await Promise.all([
+		loadClassEvaluationsPageData(client, classId, periodId).then(({ evaluations }) => ({ evaluations })),
 		loadClassSubjects(client, classId),
-		loadClassPeopleData(client, classId, periodId),
 	]);
 	return {
 		classId,
 		evaluations,
-		assessmentResults,
+		assessmentResults: [],
 		subjects,
-		students,
+		students: [],
 	};
 }
 

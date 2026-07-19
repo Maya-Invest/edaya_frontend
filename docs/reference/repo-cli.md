@@ -14,8 +14,6 @@ Implementation: `tooling/repo/cli/` — thin subprocess dispatch, no app imports
 |------|---------|
 | Pre-PR check | `bun run verify` |
 | Repo hygiene only | `bun repo verify` |
-| OpenAPI drift | `bun repo check openapi` |
-| Regenerate client | `bun repo openapi generate` |
 | Staging smoke | `bun repo smoke-test staging` |
 
 ## Command tree
@@ -24,23 +22,12 @@ Implementation: `tooling/repo/cli/` — thin subprocess dispatch, no app imports
 bun repo
 ├── doctor
 ├── verify
-├── check
-│   ├── openapi
-│   └── openapi-export
-├── openapi <export|generate>
 └── smoke-test staging
 ```
 
 Deploy commands (`deploy:webapp:*`, `deploy:saas-admin:*`) remain on the root `package.json` for now.
 
 ## Validation
-
-### `bun repo check`
-
-| Target | What it checks |
-|--------|----------------|
-| `openapi` | Generated API artifacts vs committed `openapi.json` |
-| `openapi-export` | Same, but compares against live export from sibling `edaya_backend` |
 
 ### `bun repo doctor`
 
@@ -51,8 +38,7 @@ Repo hygiene: tracked env files, required `.env.example` files. Materializes `.e
 Repo hygiene only — **no Turbo**. Runs:
 
 1. `repo doctor`
-2. `repo check openapi`
-3. `@edaya/web-repo` unit tests
+2. `@edaya/web-repo` unit tests
 
 **Not included:** `lint`, `check`, `build`, `test`, `quality` (root Turbo scripts), Playwright integration.
 
@@ -67,21 +53,16 @@ bun run verify
 
 CI uses `bun run verify`. Playwright integration runs in a separate PR job — see [ci-setup.md](./ci-setup.md).
 
-## OpenAPI
+## API client
 
-```sh
-bun repo openapi export     # requires sibling edaya_backend (or EDAYA_CORE_ROOT)
-bun repo openapi generate   # regen schema.d.ts + client bindings
-bun repo check openapi      # non-mutating drift check
-```
-
-Root aliases removed — use `bun repo` commands directly (see command tree above).
+OpenAPI export and client generation live in **edaya_backend** (`bun repo openapi export` / `generate`). Web consumes `@maya-invest/edaya-api-client` — see [cross-repo-workflow.md](./cross-repo-workflow.md).
 
 ## Operations
 
 ```sh
 bun repo smoke-test staging
 ```
+
 ## Per-package iteration
 
 ```sh

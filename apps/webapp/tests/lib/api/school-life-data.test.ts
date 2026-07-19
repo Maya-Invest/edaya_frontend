@@ -115,6 +115,18 @@ describe('school-life calendar mapping', () => {
 		});
 	});
 
+	it('preserves civil dates when API values are UTC midnight Date objects', () => {
+		const events = mapCalendarEvents([
+			{
+				...seedCalendarEvents[1],
+				startDate: new Date('2026-05-18T00:00:00.000Z'),
+				endDate: new Date('2026-05-18T00:00:00.000Z'),
+			},
+		]);
+
+		expect(events[0]?.date).toBe('2026-05-18');
+	});
+
 	it('groups class-scoped events with the same schedule into one UI entry', () => {
 		const events = mapCalendarEvents([
 			{

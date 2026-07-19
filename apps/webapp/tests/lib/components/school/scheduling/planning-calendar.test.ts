@@ -1,18 +1,29 @@
 import type { PlanningEvent } from '$lib/types/school';
+import type { SchoolYearEvent } from '$lib/types/school';
 import { describe, expect, test } from 'bun:test';
 import {
 	calendarSlotFromDates,
 	detectPlanningOverlaps,
 	filterPlanningEventsForWeek,
+	filterSchoolYearEventsForWeek,
+	formatCalendarDate,
 	formatPlanningWeekRange,
 	formatWeekAnchor,
 	mapPlanningToCalendarEvents,
+	mapSchoolYearEventsToCalendarEvents,
 	mondayOfWeek,
 	mondayOfWeekUtc,
 	parseWeekAnchor,
+	planningEventCellContent,
 	planningSlotSignature,
+	schoolCalendarCeremonyAllDayInstants,
+	schoolCalendarDayInstants,
+	schoolYearEventAppliesToClass,
+	schoolYearEventDatesInWeek,
 	sessionInstantsForSlot,
 	shiftWeek,
+	timetableExpandedUnitHeight,
+	timetableTimeSlotCount,
 	utcWallClockDate,
 } from '$lib/components/school/scheduling/planning-calendar';
 
@@ -59,6 +70,46 @@ describe('planning-calendar', () => {
 			dayOfWeek: 'wednesday',
 			startsAt: mapped!.start,
 			endsAt: mapped!.end,
+		});
+	});
+
+	test('planningEventCellContent keeps lesson, activity, and assessment cells focused', () => {
+		expect(planningEventCellContent({
+			kind: 'lesson',
+			subject: 'Français',
+			text: 'Français',
+			teacher: 'Mme N\'Guessan',
+		})).toEqual({
+			primary: 'Français',
+			secondary: 'Mme N\'Guessan',
+		});
+
+		expect(planningEventCellContent({
+			kind: 'activity',
+			subject: 'Club lecture',
+			text: 'Groupe A',
+		})).toEqual({
+			primary: 'Club lecture',
+			secondary: 'Groupe A',
+		});
+
+		expect(planningEventCellContent({
+			kind: 'assessment',
+			subject: 'Mathématiques',
+			text: 'Contrôle n°2',
+		})).toEqual({
+			primary: 'Mathématiques',
+			secondary: 'Contrôle n°2',
+		});
+
+		expect(planningEventCellContent({
+			kind: 'lesson',
+			subject: 'Mathématiques',
+			text: 'Mathématiques',
+			teacher: 'Mme Touré',
+		})).toEqual({
+			primary: 'Mathématiques',
+			secondary: 'Mme Touré',
 		});
 	});
 
@@ -295,5 +346,166 @@ describe('planning-calendar', () => {
 		];
 
 		expect(detectPlanningOverlaps(events)).toHaveLength(0);
+	});
+
+	test('filterSchoolYearEventsForWeek keeps school-wide and class-scoped events in range', () => {
+		const weekStart = mondayOfWeek(new Date(2026, 4, 11));
+		const events: SchoolYearEvent[] = [
+			{
+				id: 'holiday',
+				title: 'Ascension',
+				date: '2026-05-14',
+				type: 'holiday',
+				description: 'Public holiday',
+				scope: 'all',
+			},
+			{
+				id: 'class-trip',
+				title: 'Museum visit',
+				date: '2026-05-12',
+				type: 'ceremony',
+				description: 'Class outing',
+				scope: ['cg-other'],
+			},
+			{
+				id: 'vacation',
+				title: 'Summer break',
+				date: '2026-05-20',
+				endDate: '2026-08-31',
+				type: 'vacation',
+				description: 'Vacation',
+				scope: 'all',
+			},
+		];
+
+		expect(filterSchoolYearEventsForWeek(events, weekStart, 'cg1').map(event => event.id))
+			.toEqual(['holiday']);
+		expect(schoolYearEventAppliesToClass(events[1]!, 'cg-other')).toBe(true);
+		expect(schoolYearEventAppliesToClass(events[1]!, 'cg1')).toBe(false);
+	});
+
+	test('mapSchoolYearEventsToCalendarEvents renders all-day bars for ceremonies', () => {
+		const weekStart = mondayOfWeek(new Date(2026, 4, 11));
+		const [mapped] = mapSchoolYearEventsToCalendarEvents([
+			{
+				id: 'class-trip',
+				title: 'Museum visit',
+				date: '2026-05-12',
+				type: 'ceremony',
+				description: 'Class outing',
+				scope: ['cg1'],
+			},
+		], weekStart, 'cg1');
+
+		expect(mapped?.allDay).toBe(true);
+		expect(mapped?.kind).toBe('school-calendar');
+		expect(mapped?.calendarType).toBe('ceremony');
+		expect(mapped?.id).toBe('school-cal-class-trip');
+		expect(mapped?.start.getHours()).toBe(0);
+		expect(mapped?.end.getHours()).toBe(0);
+		expect(mapped?.end.getDate()).toBe(13);
+		expect(schoolCalendarCeremonyAllDayInstants('2026-05-12', '2026-05-12').end.getDate()).toBe(13);
+	});
+
+	test('mapSchoolYearEventsToCalendarEvents renders 06:00-18:00 blocks per day', () => {
+		const weekStart = mondayOfWeek(new Date(2026, 4, 11));
+		const [mapped] = mapSchoolYearEventsToCalendarEvents([
+			{
+				id: 'holiday',
+				title: 'Ascension',
+				date: '2026-05-14',
+				type: 'holiday',
+				description: 'Public holiday',
+				scope: 'all',
+			},
+		], weekStart, 'cg1');
+
+		expect(mapped?.allDay).toBeUndefined();
+		expect(mapped?.kind).toBe('school-calendar');
+		expect(mapped?.id).toBe('school-cal-holiday:2026-05-14');
+		expect(mapped?.start.getHours()).toBe(6);
+		expect(mapped?.end.getHours()).toBe(18);
+		expect(schoolCalendarDayInstants('2026-05-14').start.getHours()).toBe(6);
+	});
+
+	test('school calendar instants preserve civil date in negative UTC offsets', () => {
+		const { start } = schoolCalendarDayInstants('2026-05-18');
+		expect(formatCalendarDate(start)).toBe('2026-05-18');
+		expect(start.getDate()).toBe(18);
+	});
+
+	test('mapSchoolYearEventsToCalendarEvents expands multi-day vacations per weekday', () => {
+		const weekStart = mondayOfWeek(new Date(2026, 4, 11));
+		const mapped = mapSchoolYearEventsToCalendarEvents([
+			{
+				id: 'vacation',
+				title: 'Summer break',
+				date: '2026-05-11',
+				endDate: '2026-05-15',
+				type: 'vacation',
+				description: 'Vacation',
+				scope: 'all',
+			},
+		], weekStart, 'cg1');
+
+		expect(schoolYearEventDatesInWeek({
+			id: 'vacation',
+			title: 'Summer break',
+			date: '2026-05-11',
+			endDate: '2026-05-15',
+			type: 'vacation',
+			description: 'Vacation',
+			scope: 'all',
+		}, weekStart)).toEqual([
+			'2026-05-11',
+			'2026-05-12',
+			'2026-05-13',
+			'2026-05-14',
+			'2026-05-15',
+		]);
+		expect(mapped).toHaveLength(5);
+		expect(mapped.every(event => event.kind === 'school-calendar')).toBe(true);
+	});
+
+	test('mapSchoolYearEventsToCalendarEvents includes weekend days for multi-day events', () => {
+		const weekStart = mondayOfWeek(new Date(2026, 4, 11));
+		const mapped = mapSchoolYearEventsToCalendarEvents([
+			{
+				id: 'weekend-break',
+				title: 'Long weekend',
+				date: '2026-05-15',
+				endDate: '2026-05-17',
+				type: 'vacation',
+				description: 'Vacation',
+				scope: 'all',
+			},
+		], weekStart, 'cg1');
+
+		expect(schoolYearEventDatesInWeek({
+			id: 'weekend-break',
+			title: 'Long weekend',
+			date: '2026-05-15',
+			endDate: '2026-05-17',
+			type: 'vacation',
+			description: 'Vacation',
+			scope: 'all',
+		}, weekStart)).toEqual([
+			'2026-05-15',
+			'2026-05-16',
+			'2026-05-17',
+		]);
+		expect(mapped.map(event => event.id)).toEqual([
+			'school-cal-weekend-break:2026-05-15',
+			'school-cal-weekend-break:2026-05-16',
+			'school-cal-weekend-break:2026-05-17',
+		]);
+	});
+
+	test('timetableTimeSlotCount counts 30-minute slots between hours', () => {
+		expect(timetableTimeSlotCount(6, 14, 30)).toBe(16);
+	});
+
+	test('timetableExpandedUnitHeight stretches rows to fill the container', () => {
+		expect(timetableExpandedUnitHeight(720, 6, 14, { headerHeight: 48 })).toBe(42);
 	});
 });

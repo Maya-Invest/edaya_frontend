@@ -9,16 +9,7 @@
     "test": "bun test tests --dots",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "export-openapi": "bun openapi/export.ts",
-    "openapi:generate": "bun openapi/update.ts",
-    "generated:update": "bun run openapi:generate",
-    "generated:check": "bun openapi/check-drift.ts",
-    "generated:check:export": "bun openapi/check-drift-export.ts",
-    "openapi:check": "bun run generated:check",
     "smoke:staging": "bun ci/smoke-staging.ts"
-  },
-  "dependencies": {
-    "@edaya/client-codegen": "file:../../edaya_backend/tooling/client-codegen"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",

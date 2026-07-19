@@ -100,23 +100,11 @@
 				{:then { default: BillingDetail }}
 					<BillingDetail b={item.data} />
 				{/await}
-			{:else if item.kind === 'incident'}
-				{#await import('../school-life/IncidentDetail.svelte')}
-					<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
-				{:then { default: IncidentDetail }}
-					<IncidentDetail i={item.data} />
-				{/await}
 			{:else if item.kind === 'level'}
 				{#await import('../academics/LevelDetail.svelte')}
 					<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
 				{:then { default: LevelDetail }}
 					<LevelDetail label={item.data.label} subtitle={item.data.subtitle} items={item.data.items} />
-				{/await}
-			{:else if item.kind === 'announcement'}
-				{#await import('../school-life/AnnouncementDetail.svelte')}
-					<p class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>
-				{:then { default: AnnouncementDetail }}
-					<AnnouncementDetail announcement={item.data} />
 				{/await}
 			{:else if item.kind === 'reportCardDefinition'}
 				{#await import('../configuration/ReportCardDefinitionDetail.svelte')}

@@ -17,6 +17,7 @@
 		title,
 		open = $bindable(false),
 		showTrigger = true,
+		onRecord,
 	}: {
 		sessionId: string;
 		kind?: PlanningEventKind;
@@ -25,6 +26,14 @@
 		title?: string;
 		open?: boolean;
 		showTrigger?: boolean;
+		onRecord?: (input: {
+			sessionId: string;
+			kind?: PlanningEventKind;
+			studentId: string;
+			status: SessionAttendanceStatus;
+			attendanceId?: string;
+			successMessage?: string;
+		}) => Promise<boolean>;
 	} = $props();
 
 	const STATUS_OPTIONS: SessionAttendanceStatus[] = ['present', 'absent', 'late'];
@@ -48,14 +57,17 @@
 
 	async function submit() {
 		busy = true;
-		const ok = await recordSessionStudentAttendanceMutation({
+		const input = {
 			sessionId,
 			kind,
 			studentId: row.studentId,
 			status,
 			attendanceId: row.attendanceId,
 			successMessage: get(t)('planning.session.attendanceSuccess', { name: row.studentName }),
-		});
+		};
+		const ok = onRecord
+			? await onRecord(input)
+			: await recordSessionStudentAttendanceMutation(input);
 		busy = false;
 		if (ok) {
 			open = false;

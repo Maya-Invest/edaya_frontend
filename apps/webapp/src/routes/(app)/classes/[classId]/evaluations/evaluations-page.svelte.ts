@@ -17,6 +17,7 @@ import {
 } from './lib/evaluation-helpers';
 import { runEvaluationRouteMutation } from './lib/evaluation-route-mutation';
 import { loadEvaluationsSlice, queryEvaluationsListPage } from './lib/evaluations-queries';
+import { tryGetEvaluationGradingTabState } from './[[id]]/(tabs)/grading/evaluation-grading-tab.svelte';
 
 type ApiAssessment = components['schemas']['Assessment'];
 
@@ -77,16 +78,11 @@ export class EvaluationsPageState {
 	}
 
 	studentsFor(classId: string) {
-		return this.slice?.classId === classId
-			? [...this.slice.students].sort((left, right) => left.name.localeCompare(right.name, 'fr'))
-			: [];
+		return tryGetEvaluationGradingTabState()?.studentsFor(classId) ?? [];
 	}
 
 	scoreFor(assessmentId: string, studentId: string): number | null {
-		const result = this.slice?.assessmentResults.find(
-			entry => entry.assessmentId === assessmentId && entry.studentId === studentId,
-		);
-		return typeof result?.score === 'number' ? result.score : null;
+		return tryGetEvaluationGradingTabState()?.scoreFor(assessmentId, studentId) ?? null;
 	}
 
 	appendEvaluation(evaluation: Evaluation) {
@@ -118,31 +114,16 @@ export class EvaluationsPageState {
 		this.slice = {
 			...this.slice,
 			evaluations: this.slice.evaluations.filter(evaluation => evaluation.id !== id),
-			assessmentResults: this.slice.assessmentResults.filter(result => result.assessmentId !== id),
 		};
+		tryGetEvaluationGradingTabState()?.removeResultsForAssessment(id);
 	}
 
 	upsertAssessmentResult(result: import('$lib/types/school').AssessmentResultRow) {
-		if (!this.slice) {
-			return;
-		}
-		this.slice = {
-			...this.slice,
-			assessmentResults: [
-				...this.slice.assessmentResults.filter(entry => entry.id !== result.id),
-				result,
-			],
-		};
+		tryGetEvaluationGradingTabState()?.upsertAssessmentResult(result);
 	}
 
 	removeAssessmentResult(id: string) {
-		if (!this.slice) {
-			return;
-		}
-		this.slice = {
-			...this.slice,
-			assessmentResults: this.slice.assessmentResults.filter(result => result.id !== id),
-		};
+		tryGetEvaluationGradingTabState()?.removeAssessmentResult(id);
 	}
 
 	private buildOptimisticEvaluation(input: {
@@ -333,7 +314,8 @@ export class EvaluationsPageState {
 	}): Promise<boolean> {
 		const client = getBrowserSchoolClient();
 		const previous = this.slice?.evaluations.find(evaluation => evaluation.id === input.assessmentId);
-		const previousResults = this.slice?.assessmentResults.filter(result => result.assessmentId === input.assessmentId) ?? [];
+		const previousResults = tryGetEvaluationGradingTabState()?.slice?.assessmentResults
+			.filter(result => result.assessmentId === input.assessmentId) ?? [];
 		const result = await runEvaluationRouteMutation({
 			request: () => client.entities.assessments.delete({ id: input.assessmentId }),
 			successMessage: input.successMessage,
@@ -361,7 +343,8 @@ export class EvaluationsPageState {
 	}): Promise<boolean> {
 		const client = getBrowserSchoolClient();
 		const resultId = `ar-${input.assessmentId}-${input.studentId}`;
-		const previousResult = this.slice?.assessmentResults.find(result => result.id === resultId);
+		const previousResult = tryGetEvaluationGradingTabState()?.slice?.assessmentResults
+			.find(result => result.id === resultId);
 		const previousEvaluation = this.slice?.evaluations.find(evaluation => evaluation.id === input.assessmentId);
 		const previousStats = previousEvaluation
 			? { graded: previousEvaluation.graded, averageMark: previousEvaluation.averageMark }
@@ -384,9 +367,10 @@ export class EvaluationsPageState {
 					assessmentId: input.assessmentId,
 					score: input.score,
 				});
+				const results = tryGetEvaluationGradingTabState()?.slice?.assessmentResults ?? [];
 				this.patchEvaluation(
 					input.assessmentId,
-					evaluationStatsFromResults(input.assessmentId, this.slice?.assessmentResults ?? []),
+					evaluationStatsFromResults(input.assessmentId, results),
 				);
 			},
 			rollback: () => {

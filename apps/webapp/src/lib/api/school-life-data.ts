@@ -62,11 +62,14 @@ function formatDate(value: unknown): string {
 	if (!value) {
 		return '';
 	}
-	if (value instanceof Date) {
-		return value.toISOString().slice(0, 10);
-	}
 	if (typeof value === 'string') {
 		return value.slice(0, 10);
+	}
+	if (value instanceof Date) {
+		const year = value.getUTCFullYear();
+		const month = `${value.getUTCMonth() + 1}`.padStart(2, '0');
+		const day = `${value.getUTCDate()}`.padStart(2, '0');
+		return `${year}-${month}-${day}`;
 	}
 	return String(value).slice(0, 10);
 }
@@ -100,6 +103,7 @@ export function mapCalendarEvents(eventsRaw: CalendarEventRaw[]): SchoolYearEven
 				type,
 				description: mapCalendarEventDescription(event),
 				scope: 'all',
+				blocksTimetable: event.isNonSchoolDay,
 			});
 			continue;
 		}
@@ -141,6 +145,7 @@ export function mapCalendarEvents(eventsRaw: CalendarEventRaw[]): SchoolYearEven
 			type: mapCalendarEventType(primary.kind),
 			description: mapCalendarEventDescription(primary),
 			scope: classIds.sort(),
+			blocksTimetable: primary.isNonSchoolDay,
 		} satisfies SchoolYearEvent;
 	});
 

@@ -19,8 +19,15 @@ const UI_TO_API_KIND: Record<SchoolYearEvent['type'], ApiKind> = {
 	closure: 'other',
 	ceremony: 'event',
 };
-function isNonSchoolDay(type: SchoolYearEvent['type']): boolean {
+function defaultBlocksTimetable(type: SchoolYearEvent['type']): boolean {
 	return type !== 'ceremony';
+}
+
+function resolveIsNonSchoolDay(type: SchoolYearEvent['type'], blocksTimetable: boolean): boolean {
+	if (type === 'ceremony') {
+		return false;
+	}
+	return blocksTimetable;
 }
 function scopeFromUi(scope: SchoolYearEvent['scope']): { scopeKind: ApiScopeKind; scopeId?: string | null } {
 	if (scope === 'all') {
@@ -44,6 +51,7 @@ async function createClassGroupCalendarEvents(
 		startDate: string;
 		endDate: string;
 		type: SchoolYearEvent['type'];
+		blocksTimetable: boolean;
 		createdAt: string;
 	},
 ): Promise<void> {
@@ -57,7 +65,7 @@ async function createClassGroupCalendarEvents(
 			startDate: input.startDate,
 			endDate: input.endDate,
 			kind: UI_TO_API_KIND[input.type],
-			isNonSchoolDay: isNonSchoolDay(input.type),
+			isNonSchoolDay: resolveIsNonSchoolDay(input.type, input.blocksTimetable),
 			scopeKind: 'class_group',
 			scopeId: classGroupId,
 			createdAt: input.createdAt,
@@ -73,6 +81,7 @@ function calendarSavePayload(
 		endDate: string;
 		type: SchoolYearEvent['type'];
 		scope: SchoolYearEvent['scope'];
+		blocksTimetable: boolean;
 	},
 ): ApiCalendarEvent {
 	const { scopeKind, scopeId } = scopeFromUi(updates.scope);
@@ -85,7 +94,7 @@ function calendarSavePayload(
 		startDate: updates.startDate,
 		endDate: updates.endDate,
 		kind: UI_TO_API_KIND[updates.type],
-		isNonSchoolDay: isNonSchoolDay(updates.type),
+		isNonSchoolDay: resolveIsNonSchoolDay(updates.type, updates.blocksTimetable),
 		scopeKind,
 		scopeId: scopeKind === 'school' ? null : scopeId,
 		createdAt: existing.createdAt,
@@ -101,6 +110,7 @@ async function syncScopedCalendarEvents(
 		startDate: string;
 		endDate: string;
 		type: SchoolYearEvent['type'];
+		blocksTimetable: boolean;
 		classGroupIds: string[];
 	},
 ): Promise<ApiCalendarEvent> {
@@ -113,6 +123,7 @@ async function syncScopedCalendarEvents(
 		startDate: input.startDate,
 		endDate: input.endDate,
 		type: input.type,
+		blocksTimetable: input.blocksTimetable,
 	};
 	if (primary.scopeKind === 'school') {
 		const [firstClassId, ...additionalClassIds] = input.classGroupIds;
@@ -131,6 +142,7 @@ async function syncScopedCalendarEvents(
 				startDate: input.startDate,
 				endDate: input.endDate,
 				type: input.type,
+				blocksTimetable: input.blocksTimetable,
 				createdAt: createdAtIso(primary.createdAt),
 			});
 		}
@@ -164,6 +176,7 @@ async function syncScopedCalendarEvents(
 			startDate: input.startDate,
 			endDate: input.endDate,
 			type: input.type,
+			blocksTimetable: input.blocksTimetable,
 			createdAt: createdAtIso(ref.createdAt),
 		});
 	}
@@ -187,6 +200,7 @@ export async function createCalendarEventMutation(input: {
 	endDate?: string;
 	type: SchoolYearEvent['type'];
 	scope: SchoolYearEvent['scope'];
+	blocksTimetable?: boolean;
 	successMessage?: string;
 }): Promise<string | null> {
 	const client = getBrowserSchoolClient();
@@ -198,6 +212,10 @@ export async function createCalendarEventMutation(input: {
 	}
 	const endDate = input.endDate?.trim() || input.date;
 	const description = input.description.trim() || input.title.trim();
+	const blocksTimetable = resolveIsNonSchoolDay(
+		input.type,
+		input.blocksTimetable ?? defaultBlocksTimetable(input.type),
+	);
 	const baseId = `cal-${Date.now().toString(36)}`;
 	const createdAt = new Date().toISOString();
 	const optimisticId = input.scope === 'all' ? baseId : `${baseId}-${input.scope[0]}`;
@@ -209,6 +227,7 @@ export async function createCalendarEventMutation(input: {
 		type: input.type,
 		description,
 		scope: input.scope,
+		blocksTimetable,
 	};
 	const result = await runMutation(async () => {
 		if (input.scope === 'all') {
@@ -221,7 +240,7 @@ export async function createCalendarEventMutation(input: {
 				startDate: input.date,
 				endDate,
 				kind: UI_TO_API_KIND[input.type],
-				isNonSchoolDay: isNonSchoolDay(input.type),
+				isNonSchoolDay: blocksTimetable,
 				scopeKind: 'school',
 				createdAt,
 			});
@@ -237,6 +256,7 @@ export async function createCalendarEventMutation(input: {
 			startDate: input.date,
 			endDate,
 			type: input.type,
+			blocksTimetable,
 			createdAt,
 		});
 		return `${baseId}-${input.scope[0]}`;
@@ -260,6 +280,7 @@ export async function updateCalendarEventMutation(input: {
 	endDate?: string;
 	type: SchoolYearEvent['type'];
 	scope: SchoolYearEvent['scope'];
+	blocksTimetable?: boolean;
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
@@ -267,6 +288,10 @@ export async function updateCalendarEventMutation(input: {
 	const description = input.description.trim() || input.title.trim();
 	const title = input.title.trim();
 	const previous = schoolYearEventSnapshot(input.eventId);
+	const blocksTimetable = resolveIsNonSchoolDay(
+		input.type,
+		input.blocksTimetable ?? previous?.blocksTimetable ?? defaultBlocksTimetable(input.type),
+	);
 	const patch = {
 		title,
 		description,
@@ -274,6 +299,7 @@ export async function updateCalendarEventMutation(input: {
 		endDate,
 		type: input.type,
 		scope: input.scope,
+		blocksTimetable,
 		linkedIds: input.linkedIds ?? previous?.linkedIds,
 	};
 	const result = await runMutation(async () => {
@@ -287,6 +313,7 @@ export async function updateCalendarEventMutation(input: {
 				endDate,
 				type: input.type,
 				scope: 'all',
+				blocksTimetable,
 			}));
 			const toDelete = knownIds.filter(id => id !== input.eventId);
 			if (toDelete.length > 0) {
@@ -302,6 +329,7 @@ export async function updateCalendarEventMutation(input: {
 			startDate: input.date,
 			endDate,
 			type: input.type,
+			blocksTimetable,
 			classGroupIds: [...input.scope],
 		});
 	}, {

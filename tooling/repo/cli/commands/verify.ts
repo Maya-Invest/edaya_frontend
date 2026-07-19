@@ -8,7 +8,6 @@ interface VerifyStep {
 
 const VERIFY_STEPS: VerifyStep[] = [
   { label: 'repo doctor', run: () => runBunScript(paths.doctor) },
-  // { label: 'repo check openapi', run: () => runBunScript(paths.openapiCheck) },
   {
     label: 'repo tests',
     run: () => runRepoCommand(['bun', 'test', 'tests', '--dots'], { cwd: paths.repoPackageRoot }),

@@ -74,7 +74,7 @@ const matchers: Matcher[] = [
 		test: p => p.match(/^\/classes\/([^/]+)\/timetable\/([^/]+)$/) ?? null,
 		parse: (m) => {
 			const ev = detailDataContext.planning.find(x => x.id === m[2]);
-			return ev ? { item: { kind: 'planning', data: ev }, listPath: appPath('/(app)/classes/[classId]/timetable/[[id]]', { classId: m[1] }) } : null;
+			return ev ? { item: { kind: 'planning', data: ev }, listPath: appPath('/(app)/classes/[classId]/timetable', { classId: m[1] }) } : null;
 		},
 	},
 	{

@@ -125,7 +125,10 @@
 			|| /^\/school\/staff(?:\/|$)/.test(pathname)
 			|| /^\/school\/teachers(?:\/|$)/.test(pathname)
 			|| /^\/school\/activities(?:\/|$)/.test(pathname)
-			|| /^\/classes\/[^/]+\/evaluations(?:\/|$)/.test(pathname);
+			|| /^\/school\/announcements(?:\/|$)/.test(pathname)
+			|| /^\/school\/events(?:\/|$)/.test(pathname)
+			|| /^\/classes\/[^/]+\/evaluations(?:\/|$)/.test(pathname)
+			|| /^\/classes\/[^/]+\/timetable(?:\/|$)/.test(pathname);
 	}
 
 	$effect(() => {

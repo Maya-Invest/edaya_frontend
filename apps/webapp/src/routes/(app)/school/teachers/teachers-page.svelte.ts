@@ -34,7 +34,6 @@ import { teacherDetailIdFromUrl } from './lib/teacher-selectors';
 
 export const SCHOOL_TEACHERS_PAGE_SIZE = DEFAULT_LIST_PAGE_SIZE;
 
-type TeacherAssignment = components['schemas']['TeacherAssignment'];
 export type TeacherUnavailability = components['schemas']['TeacherUnavailability'];
 
 const TEACHERS_VERSION_FAMILIES = ['teachers', 'teacherUnavailabilities'] as const satisfies readonly EntityVersionKey[];
@@ -44,7 +43,7 @@ const TEACHERS_PAGE_STATE_KEY = Symbol('teachers-page-state');
 export class TeachersPageState {
 	teachers = $state<Teacher[]>([]);
 	fullRosterTeachers = $state<Teacher[]>([]);
-	teacherAssignments = $state<TeacherAssignment[]>([]);
+	assignmentCounts = $state<Record<string, number>>({});
 	teacherUnavailabilities = $state<TeacherUnavailability[]>([]);
 	subjects = $state<Subject[]>([]);
 	totalTeachers = $state(0);
@@ -94,7 +93,7 @@ export class TeachersPageState {
 
 	filterVisible(teachers: readonly Teacher[]): Teacher[] {
 		return filterTeacherList(teachers, this.filters.values, {
-			assignmentCount: teacherId => this.assignmentCount(teacherId),
+			assignmentCount: teacherId => this.assignmentCount(teacherId) ?? -1,
 		});
 	}
 
@@ -112,12 +111,25 @@ export class TeachersPageState {
 		return this.teachers;
 	}
 
-	assignmentCount(teacherId: string): number {
-		return this.teacherAssignmentsForTeacher(teacherId).length;
+	assignmentCount(teacherId: string): number | null {
+		return this.assignmentCounts[teacherId] ?? null;
 	}
 
-	teacherAssignmentsForTeacher(teacherId: string): TeacherAssignment[] {
-		return this.teacherAssignments.filter(row => row.teacherId === teacherId);
+	setAssignmentCount(teacherId: string, count: number) {
+		this.assignmentCounts = { ...this.assignmentCounts, [teacherId]: count };
+	}
+
+	clearAssignmentCount(teacherId: string) {
+		const { [teacherId]: _removed, ...rest } = this.assignmentCounts;
+		this.assignmentCounts = rest;
+	}
+
+	adjustAssignmentCount(teacherId: string, delta: number) {
+		const current = this.assignmentCounts[teacherId];
+		if (current === undefined) {
+			return;
+		}
+		this.setAssignmentCount(teacherId, Math.max(0, current + delta));
 	}
 
 	teacherUnavailabilitiesForTeacher(teacherId: string): TeacherUnavailability[] {
@@ -164,11 +176,9 @@ export class TeachersPageState {
 	seedPage(
 		teachers: Teacher[],
 		totalTeachers: number,
-		assignments: TeacherAssignment[] = [],
 	) {
 		this.teachers = teachers;
 		this.totalTeachers = totalTeachers;
-		this.mergeTeacherAssignments(assignments);
 		this.versions.markLoaded();
 	}
 
@@ -178,18 +188,6 @@ export class TeachersPageState {
 			byId[teacher.id] = teacher;
 		}
 		this.teachers = Object.values(byId);
-	}
-
-	mergeTeacherAssignments(rows: readonly TeacherAssignment[]) {
-		this.teacherAssignments = mergeById(this.teacherAssignments, rows);
-	}
-
-	upsertTeacherAssignment(row: TeacherAssignment) {
-		this.teacherAssignments = mergeById(this.teacherAssignments, [row]);
-	}
-
-	removeTeacherAssignment(id: string) {
-		this.teacherAssignments = this.teacherAssignments.filter(row => row.id !== id);
 	}
 
 	patchTeacher(id: string, patch: Partial<Teacher>) {
@@ -211,10 +209,11 @@ export class TeachersPageState {
 	removeTeacher(id: string) {
 		this.teachers = this.teachers.filter(teacher => teacher.id !== id);
 		this.fullRosterTeachers = this.fullRosterTeachers.filter(teacher => teacher.id !== id);
+		this.clearAssignmentCount(id);
 		this.totalTeachers = Math.max(0, this.totalTeachers - 1);
 	}
 
-	private teacherScope() {
+	teacherScope() {
 		const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
 		const academicYearId = academicContext.yearId
 			|| academicContext.year?.id
@@ -281,7 +280,7 @@ export class TeachersPageState {
 			if (version !== this.listRequestVersion) {
 				return;
 			}
-			this.seedPage(result.teachers, result.totalTeachers, result.assignments);
+			this.seedPage(result.teachers, result.totalTeachers);
 		}
 		finally {
 			if (version === this.listRequestVersion) {
@@ -310,7 +309,6 @@ export class TeachersPageState {
 				return;
 			}
 			this.mergeTeachers(result.teachers);
-			this.mergeTeacherAssignments(result.assignments);
 			this.totalTeachers = result.totalTeachers;
 			this.versions.markLoaded();
 		}
@@ -330,7 +328,6 @@ export class TeachersPageState {
 			let offset = 0;
 			let total = 0;
 			let teachers: Teacher[] = [];
-			let assignments: TeacherAssignment[] = [];
 
 			while (true) {
 				const result = await fetchTeachersPage(
@@ -343,7 +340,6 @@ export class TeachersPageState {
 				}
 				total = result.totalTeachers;
 				teachers = mergeById(teachers, result.teachers);
-				assignments = mergeById(assignments, result.assignments);
 				if (teachers.length >= total) {
 					break;
 				}
@@ -351,7 +347,7 @@ export class TeachersPageState {
 			}
 
 			this.fullRosterTeachers = teachers;
-			this.seedPage(teachers, total, assignments);
+			this.seedPage(teachers, total);
 		}
 		finally {
 			if (version === this.listRequestVersion) {

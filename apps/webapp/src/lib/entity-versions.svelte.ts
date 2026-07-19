@@ -7,6 +7,7 @@ export const ENTITY_VERSION_KEYS = [
 	'incidents',
 	'activities',
 	'announcements',
+	'schoolYearEvents',
 	'evaluations',
 	'attendance',
 	'enrollments',
@@ -30,6 +31,7 @@ export class EntityVersions {
 	incidents = $state(0);
 	activities = $state(0);
 	announcements = $state(0);
+	schoolYearEvents = $state(0);
 	evaluations = $state(0);
 	attendance = $state(0);
 	enrollments = $state(0);
