@@ -51,8 +51,8 @@ describe('mapClassSubjects', () => {
 
 		const byName = Object.fromEntries(subjects.map(subject => [subject.name, subject]));
 
-		expect(byName.Mathematics).toMatchObject({ category: 'Scientifique', color: 'mint', description: 'Core programme' });
-		expect(byName['French Literature']).toMatchObject({ category: 'Littéraire', color: 'warm', description: 'Core programme' });
+		expect(byName.Mathematics).toMatchObject({ category: 'Scientifique', color: 'mint', description: 'Marie Dupont' });
+		expect(byName['French Literature']).toMatchObject({ category: 'Littéraire', color: 'warm', description: 'Non assigné' });
 		expect(byName['History & Geography']).toMatchObject({ category: 'Sciences humaines', color: 'sky' });
 		expect(byName.English).toMatchObject({ category: 'Langues', color: 'sky' });
 		expect(byName['Physical Education']).toMatchObject({ category: 'Sport', color: 'mint' });
@@ -164,7 +164,10 @@ describe('mapCatalogSubjects', () => {
 			subjectsRaw: [
 				subject({ id: 'subj-math', name: 'Mathématiques', code: 'MATH', defaultCoefficient: 3 }),
 			],
-			subjectMattersRaw: [],
+			subjectMattersRaw: [
+				{ id: 'sm-1', subjectId: 'subj-math', name: 'Fractions', sequenceOrder: 1 },
+				{ id: 'sm-2', subjectId: 'subj-math', name: 'Décimaux', sequenceOrder: 2 },
+			],
 		}, classGradeLevelById);
 
 		expect(catalog).toHaveLength(1);
@@ -174,6 +177,7 @@ describe('mapCatalogSubjects', () => {
 			hoursPerWeek: 6,
 			gradeLevelId: 'ci-gl-6',
 			teacher: '',
+			catalogChapters: ['Fractions', 'Décimaux'],
 		});
 	});
 

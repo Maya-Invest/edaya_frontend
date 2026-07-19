@@ -98,6 +98,16 @@ function catalogSubjectKey(gradeLevelId: string, subjectName: string): string {
 	return `${gradeLevelId}:${subjectName.trim().toLowerCase()}`;
 }
 
+function catalogChapterNamesForSubject(
+	subject: SubjectRaw,
+	subjectMattersRaw: SubjectMatterRaw[],
+): string[] {
+	return subjectMattersRaw
+		.filter(matter => matter.subjectId === subject.id)
+		.sort((left, right) => left.sequenceOrder - right.sequenceOrder)
+		.map(matter => matter.name);
+}
+
 function mapCatalogSubjectEntry(input: {
 	id: string;
 	gradeLevelId: string;
@@ -105,6 +115,7 @@ function mapCatalogSubjectEntry(input: {
 	hoursPerWeek: number;
 	subjectMattersRaw: SubjectMatterRaw[];
 }): Subject {
+	const catalogChapters = catalogChapterNamesForSubject(input.subject, input.subjectMattersRaw);
 	return {
 		id: input.id,
 		classId: input.gradeLevelId,
@@ -113,8 +124,9 @@ function mapCatalogSubjectEntry(input: {
 		teacher: '',
 		hoursPerWeek: input.hoursPerWeek,
 		color: subjectColor(input.subject),
-		description: descriptionForSubject(input.subject, input.subjectMattersRaw),
+		description: buildSubjectChapterSummary(catalogChapters) || descriptionForSubject(input.subject, input.subjectMattersRaw),
 		category: subjectCategory(input.subject),
+		catalogChapters,
 	};
 }
 
@@ -319,17 +331,18 @@ export function mapClassSubjects(
 				return null;
 			}
 
+			const teacher = teacherNameForClassSubjectFromSources(
+				classSubject.id,
+				sources,
+			);
 			return {
 				id: classSubject.id,
 				classId: classSubject.classGroupId,
 				name: subject.name,
-				teacher: teacherNameForClassSubjectFromSources(
-					classSubject.id,
-					sources,
-				),
+				teacher,
 				hoursPerWeek: hoursPerWeekForSubject(subject, classSubject, sources.subjectMattersRaw),
 				color: subjectColor(subject),
-				description: descriptionForSubject(subject, sources.subjectMattersRaw),
+				description: teacher,
 				category: subjectCategory(subject),
 			} satisfies Subject;
 		})

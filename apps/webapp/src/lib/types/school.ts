@@ -47,6 +47,8 @@ export interface Subject {
 	color: 'mint' | 'sky' | 'warm';
 	description: string;
 	category: SubjectCategory;
+	/** Chapitres programme (catalogue par niveau uniquement). */
+	catalogChapters?: string[];
 }
 
 export type PlanningEventKind = 'lesson' | 'homework-due' | 'assessment' | 'activity';

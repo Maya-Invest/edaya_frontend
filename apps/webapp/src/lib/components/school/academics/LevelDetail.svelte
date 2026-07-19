@@ -65,15 +65,11 @@
 		{#each items as s, idx (s.id)}
 
 			<SubjectChaptersRow
-
 				{s}
-
 				isLast={idx === items.length - 1}
-
 				showTeacher={false}
-
+				catalogChapters={s.catalogChapters}
 				onOpenDetail={() => openSubject(s)}
-
 			/>
 
 		{/each}
