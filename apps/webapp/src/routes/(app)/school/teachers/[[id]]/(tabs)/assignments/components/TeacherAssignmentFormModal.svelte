@@ -31,6 +31,7 @@
 	let classSubjectIds = $state<string[]>(['']);
 	let classSubjects = $state<components['schemas']['ClassSubject'][]>([]);
 	let subjectLabels = $state<Record<string, string>>({});
+	let classSubjectsLoadId = 0;
 
 	const classOptions = $derived(
 		academicContext.classes.map(entry => ({ value: entry.id, label: entry.name })),
@@ -51,6 +52,7 @@
 	);
 
 	async function loadClassSubjects(nextClassGroupId: string) {
+		const loadId = ++classSubjectsLoadId;
 		classSubjectIds = [''];
 		classSubjects = [];
 		subjectLabels = {};
@@ -66,15 +68,26 @@
 			schoolId,
 			classGroupId: nextClassGroupId,
 		});
+		if (loadId !== classSubjectsLoadId) {
+			return;
+		}
 		classSubjects = nextClassSubjects;
 		const subjectIds = uniqueIds(nextClassSubjects.map(entry => entry.subjectId));
 		const subjects = subjectIds.length > 0
 			? await client.entities.subjects.list(entitiesByIds(subjectIds))
 			: [];
+		if (loadId !== classSubjectsLoadId) {
+			return;
+		}
 		subjectLabels = Object.fromEntries(nextClassSubjects.map((entry) => {
 			const name = subjects.find(subject => subject.id === entry.subjectId)?.name ?? entry.id;
 			return [entry.id, name];
 		}));
+		const hasManualSelections = classSubjectIds.some(entry => entry.trim().length > 0)
+			|| classSubjectIds.length > 1;
+		if (hasManualSelections) {
+			return;
+		}
 		const defaultSubjectId = pickClassSubjectIdForTeacherSubject(nextClassSubjects, teacher.subjectId);
 		classSubjectIds = defaultSubjectId ? [defaultSubjectId] : [''];
 	}
@@ -130,7 +143,7 @@
 			}
 
 			let saved = 0;
-			for (const classSubjectId of selectedSubjectIds) {
+			for (const classSubjectId of [...new Set(selectedSubjectIds)]) {
 				const id = `ta-${Date.now().toString(36)}-${saved}`;
 				const assignment = createTeacherAssignmentPayload({
 					id,
@@ -199,7 +212,7 @@
 							</Label>
 							<FilterSelect
 								value={classSubjectId}
-								onValueChange={value => value && updateSubjectSelection(index, value)}
+								onchange={value => updateSubjectSelection(index, value)}
 								options={[{ value: '', label: $t('teacher.selectClassSubject') }, ...subjectOptions]}
 							/>
 						</div>

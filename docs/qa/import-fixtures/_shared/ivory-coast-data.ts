@@ -87,7 +87,7 @@ export const PHONES = {
 
 export const STAFF_HEADERS = ['prenom', 'nom', 'role', 'email', 'telephone'] as const;
 
-export const TEACHER_HEADERS = ['prenom', 'nom', 'email', 'matieres', 'telephone'] as const;
+export const TEACHER_HEADERS = ['prenom', 'nom', 'email', 'matieres', 'telephone', 'classe'] as const;
 
 /** Libellés matières utilisés dans les fixtures enseignants (alignés SU01). */
 export const TEACHER_SUBJECT_NAMES = {

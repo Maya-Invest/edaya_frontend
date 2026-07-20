@@ -129,6 +129,7 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 			{ key: 'email', required: false, labelKey: 'import.types.teachers.columns.email' },
 			{ key: 'matieres', required: false, labelKey: 'import.types.teachers.columns.matieres' },
 			{ key: 'telephone', required: false, labelKey: 'import.types.teachers.columns.telephone' },
+			{ key: 'classe', required: false, labelKey: 'import.types.teachers.columns.classe' },
 		]),
 		exampleRow: {
 			prenom: 'Kofi',
@@ -136,6 +137,7 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 			email: 'kofi.mensah@example.com',
 			matieres: 'Mathématiques; Physique',
 			telephone: '+225 01 00 00 00 00',
+			classe: '6ème A',
 		},
 		permission: 'STAFF_CREATE',
 	},

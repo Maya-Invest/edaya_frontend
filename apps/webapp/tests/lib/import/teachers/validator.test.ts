@@ -26,6 +26,15 @@ const CATALOG = [
 	{ id: 'subj-physique', name: 'Physique' },
 ];
 
+const CLASSES = [
+	{ id: 'class-6a', name: '6ème A' },
+];
+
+const CLASS_SUBJECTS = [
+	{ id: 'cs-maths-6a', classGroupId: 'class-6a', subjectId: 'subj-maths' },
+	{ id: 'cs-anglais-6a', classGroupId: 'class-6a', subjectId: 'subj-anglais' },
+];
+
 describe('parseTeacherSubjectNames', () => {
 	it('splits semicolon-separated subject names', () => {
 		expect(parseTeacherSubjectNames('Mathématiques; Physique')).toEqual(['Mathématiques', 'Physique']);
@@ -51,12 +60,12 @@ describe('subjectNameLookup', () => {
 describe('teacher import validator', () => {
 	it('accepts valid rows and parses subject names', () => {
 		const result = validateTeacherImportRows([
-			row({ rowIndex: 2, matieres: 'Mathématiques; Physique' }),
-		], { subjectCatalog: CATALOG });
+			row({ rowIndex: 2, matieres: 'Mathématiques; Anglais', classe: '6ème A' }),
+		], { subjectCatalog: CATALOG, classes: CLASSES, classSubjects: CLASS_SUBJECTS });
 
 		expect(result.errors).toEqual([]);
 		expect(result.warnings).toEqual([]);
-		expect(result.validRows[0]?.subjectNames).toEqual(['Mathématiques', 'Physique']);
+		expect(result.validRows[0]?.subjectNames).toEqual(['Mathématiques', 'Anglais']);
 		expect(result.validRows[0]?.primarySubjectId).toBe('subj-maths');
 		expect(canImportValidatedTeachers(result)).toBe(true);
 	});
@@ -88,5 +97,45 @@ describe('teacher import validator', () => {
 
 		expect(result.validRows).toHaveLength(0);
 		expect(result.errors[0]?.messageKey).toBe('import.teachers.validation.required');
+	});
+
+	it('resolves class assignments for known subjects in a class', () => {
+		const result = validateTeacherImportRows([
+			row({ rowIndex: 2, matieres: 'Mathématiques; Physique', classe: '6ème A' }),
+		], {
+			subjectCatalog: CATALOG,
+			classes: CLASSES,
+			classSubjects: CLASS_SUBJECTS,
+		});
+
+		expect(result.errors).toEqual([]);
+		expect(result.validRows[0]?.classGroupId).toBe('class-6a');
+		expect(result.validRows[0]?.assignmentClassSubjectIds).toEqual(['cs-maths-6a']);
+		expect(result.warnings.some(warning => warning.messageKey === 'import.teachers.validation.subjectNotInClass')).toBe(true);
+	});
+
+	it('flags unknown classes', () => {
+		const result = validateTeacherImportRows([
+			row({ rowIndex: 2, matieres: 'Mathématiques', classe: '6ème Z' }),
+		], {
+			subjectCatalog: CATALOG,
+			classes: CLASSES,
+			classSubjects: CLASS_SUBJECTS,
+		});
+
+		expect(result.validRows).toHaveLength(0);
+		expect(result.errors[0]?.messageKey).toBe('import.teachers.validation.classNotFound');
+	});
+
+	it('warns when multiple subjects are provided without a class', () => {
+		const result = validateTeacherImportRows([
+			row({ rowIndex: 2, matieres: 'Mathématiques; Physique-Chimie' }),
+		], { subjectCatalog: CATALOG });
+
+		expect(result.errors).toEqual([]);
+		expect(result.validRows).toHaveLength(1);
+		expect(result.warnings.some(
+			warning => warning.messageKey === 'import.teachers.validation.multiSubjectsNeedClass',
+		)).toBe(true);
 	});
 });

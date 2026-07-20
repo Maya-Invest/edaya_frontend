@@ -1,4 +1,7 @@
-export type TeacherImportColumnKey = 'prenom' | 'nom' | 'email' | 'matieres' | 'telephone';
+import type { SchoolSubjectCatalogEntry } from '$lib/import/shared/load-school-subject-names';
+import type { ImportClassOption } from '$lib/import/shared/resolve-import-class-group';
+
+export type TeacherImportColumnKey = 'prenom' | 'nom' | 'email' | 'matieres' | 'telephone' | 'classe';
 
 export interface TeacherImportColumnDefinition {
 	key: TeacherImportColumnKey;
@@ -11,6 +14,7 @@ export const TEACHER_IMPORT_COLUMNS = [
 	{ key: 'email', required: false },
 	{ key: 'matieres', required: false },
 	{ key: 'telephone', required: false },
+	{ key: 'classe', required: false },
 ] as const satisfies readonly TeacherImportColumnDefinition[];
 
 export interface TeacherImportRow {
@@ -20,12 +24,21 @@ export interface TeacherImportRow {
 	email?: string;
 	matieres?: string;
 	telephone?: string;
+	classe?: string;
+}
+
+export interface TeacherImportClassSubjectOption {
+	id: string;
+	classGroupId: string;
+	subjectId: string;
 }
 
 export interface ValidatedTeacherImportRow extends TeacherImportRow {
 	subjectNames: string[];
 	/** First catalog subject resolved from `matieres`; used to prefill manual assignments. */
 	primarySubjectId?: string;
+	classGroupId?: string;
+	assignmentClassSubjectIds?: string[];
 }
 
 export type TeacherImportValidationSeverity = 'error' | 'warning';
@@ -46,8 +59,8 @@ export interface TeacherImportValidationResult {
 	warnings: TeacherImportValidationIssue[];
 }
 
-import type { SchoolSubjectCatalogEntry } from '$lib/import/shared/load-school-subject-names';
-
 export interface TeacherImportValidationContext {
 	subjectCatalog: readonly SchoolSubjectCatalogEntry[];
+	classes?: readonly ImportClassOption[];
+	classSubjects?: readonly TeacherImportClassSubjectOption[];
 }

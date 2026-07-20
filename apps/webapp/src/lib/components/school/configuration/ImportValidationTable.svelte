@@ -43,7 +43,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each issues as issue (issue.rowIndex + (issue.column ?? '') + issue.messageKey + (issue.value ?? ''))}
+					{#each issues as issue, index (`import-validation-issue-${index}`)}
 						<tr class="border-t border-border align-top">
 							<td class="px-3 py-2 font-mono text-xs">{issue.rowIndex}</td>
 							<td class="px-3 py-2">

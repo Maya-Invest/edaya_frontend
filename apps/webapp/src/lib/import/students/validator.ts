@@ -118,9 +118,13 @@ function appendCapacityWarnings(
 			continue;
 		}
 
-		for (let index = 0; index < overflow; index += 1) {
+		const overflowRows = validRows
+			.filter(row => row.classGroupId === classGroupId)
+			.slice(-overflow);
+
+		for (const row of overflowRows) {
 			warnings.push(issue({
-				rowIndex: validRows.find(row => row.classGroupId === classGroupId)?.rowIndex ?? 0,
+				rowIndex: row.rowIndex,
 				column: 'classe',
 				value: classInfo.name,
 				messageKey: 'import.students.validation.capacityExceeded',

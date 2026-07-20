@@ -26,6 +26,16 @@
 
 	const rows = $derived(teachersPage.teacherAssignmentsForTeacher(teacher.id));
 
+	$effect(() => {
+		const classSubjectIds = rows
+			.map(row => row.classSubjectId)
+			.filter((id): id is string => Boolean(id));
+		if (classSubjectIds.length === 0) {
+			return;
+		}
+		void teachersPage.ensureClassSubjectsCached(classSubjectIds);
+	});
+
 	function classLabel(classGroupId: string | null | undefined): string {
 		if (!classGroupId) {
 			return '—';

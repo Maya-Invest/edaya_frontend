@@ -22,6 +22,7 @@ describe('teacher import runner', () => {
 
 		const result = await runTeacherImport({
 			schoolId: 'school-1',
+			academicYearId: 'year-1',
 			seed: 'testseed',
 			client: {
 				entities: {
@@ -51,6 +52,7 @@ describe('teacher import runner', () => {
 
 		await runTeacherImport({
 			schoolId: 'school-1',
+			academicYearId: 'year-1',
 			seed: 'testseed',
 			client: {
 				entities: {
@@ -70,5 +72,46 @@ describe('teacher import runner', () => {
 		expect(save).toHaveBeenCalledWith(expect.objectContaining({
 			subjectId: 'subj-maths',
 		}));
+	});
+
+	it('creates subject assignments when class and subjects are resolved', async () => {
+		const saveTeacher = mock(async () => ({}));
+		const saveAssignment = mock(async () => ({}));
+
+		const result = await runTeacherImport({
+			schoolId: 'school-1',
+			academicYearId: 'year-1',
+			seed: 'testseed',
+			client: {
+				entities: {
+					teachers: { save: saveTeacher },
+					teacherAssignments: { save: saveAssignment },
+				},
+			} as never,
+			rows: [
+				row({
+					rowIndex: 2,
+					classe: '6ème A',
+					matieres: 'Mathématiques; Physique',
+					subjectNames: ['Mathématiques', 'Physique'],
+					primarySubjectId: 'subj-maths',
+					classGroupId: 'class-6a',
+					assignmentClassSubjectIds: ['cs-maths-6a', 'cs-physique-6a'],
+				}),
+			],
+		});
+
+		expect(result.created).toBe(1);
+		expect(saveAssignment).toHaveBeenCalledTimes(2);
+		expect(saveAssignment).toHaveBeenNthCalledWith(1, {
+			id: 'ta-testseed-2-0',
+			teacherId: 'tch-testseed-0',
+			academicYearId: 'year-1',
+			kind: 'subject',
+			classSubjectId: 'cs-maths-6a',
+			classGroupId: 'class-6a',
+			responsibility: null,
+			status: 'active',
+		});
 	});
 });

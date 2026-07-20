@@ -43,6 +43,6 @@ Fichier [`_shared/ivory-coast-data.ts`](./_shared/ivory-coast-data.ts) :
 | Matières | SU01–SU09 | [subjects/README.md](./subjects/README.md) |
 | Tuteurs | TU01–TU08 | [guardians/README.md](./guardians/README.md) |
 | Personnel | PE01–PE08 | [staff/README.md](./staff/README.md) |
-| Enseignants | EN01–EN08 | [teachers/README.md](./teachers/README.md) |
+| Enseignants | EN01–EN09 | [teachers/README.md](./teachers/README.md) |
 | Chapitres | CH01–CH09 | [chapters/README.md](./chapters/README.md) |
 | Paiements | PA01–PA10 | [payments/README.md](./payments/README.md) |

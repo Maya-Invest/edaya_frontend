@@ -42,7 +42,7 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 | **Teachers** — parse / validate / run (+ `subjectId` hint)        | ✅                   |
 | **Subjects** — parse / validate / run (**par niveau** — Phase 19) | ✅                   |
 | **Chapters** — parse / validate / run (`niveau` + `matiere`)      | ✅                   |
-| **Payments** — parse / validate / run (`recordPayment`)           | ✅ (tests 15.6 ⏳)    |
+| **Payments** — parse / validate / run (`recordPayment`)           | ✅                   |
 | **Evolution 15–20** — règles métier + catalogue UI                | ⏳ Phase 20 + polish |
 | Unit tests (`tests/lib/import/*`)                                 | ✅ 90 tests          |
 | `eslint --fix` + `lint` + `check` (phases 8–14)                   | ⏳ fin de track      |
@@ -88,7 +88,7 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 | PR11 — Phase 14 (polish)                            | tous les packs import                                                                        | —                                 |            |
 | PR12 — Phase 19 (subjects/niveau)                   | `tests/lib/import/subjects/` · `chapters/`                                                   | —                                 | 2026-07-18 |
 | PR13 — Phases 16–18 (students, guardians, teachers) | `tests/lib/import/students/` · `guardians/` · `teachers/`                                    | —                                 | 2026-07-18 |
-| PR14 — Phase 15 (payments)                          | `tests/lib/import/payments/`                                                                 | —                                 |            |
+| PR14 — Phase 15 (payments)                          | `tests/lib/import/payments/`                                                                 | —                                 | 2026-07-20 |
 | PR15 — Phase 20 (catalogue UI)                      | —                                                                                            | —                                 |            |
 | **Fin evolution (phases 15–20 ✅)**                  | `tests/lib/import/`                                                                          | [ ]                               |            |
 | **Fin de track (phases 8–14 ✅)**                    | `tests/lib/import/`                                                                          | [ ]                               |            |
@@ -146,7 +146,7 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 - [x] 11.3 — `matieres` → catalogue : warning si inconnu ; première matière → `teachers.save.subjectId`
 - [x] 11.4 — Wire modal; unit tests (14 tests pack teachers)
 - [x] 11.5 — Préremplissage affectation manuelle : `TeacherAssignmentFormModal` sélectionne la matière de classe via `teacher.subjectId`
-- [ ] 11.6 — Affectation auto complète (`teacherAssignments.save` + colonne `classe`) — reporté
+- [x] 11.6 — Affectation auto complète (`teacherAssignments.save` + colonne `classe`) — voir 18.3
 
 
 
@@ -185,7 +185,7 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 - [x] 15.3 — Runner : matricule + type_frais → `studentFeeId` → `recordPayment` (montant = solde restant)
 - [x] 15.4 — Catalogue type `payments` + wire modal (upload / validate / execute)
 - [x] 15.5 — i18n FR/EN + permission finance
-- [ ] 15.6 — Unit tests (`tests/lib/import/payments/`)
+- [x] 15.6 — Unit tests (`tests/lib/import/payments/`)
 
 
 
@@ -213,7 +213,7 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 
 - [x] 18.1 — Import : `matieres` avec séparateur `;` (`matiere1;matiere2`)
 - [x] 18.2 — UI : bouton **« Ajouter une matière »** (`TeacherAssignmentFormModal` lib + route)
-- [ ] 18.3 — Affectation auto import : colonne `classe` + `teacherAssignments.save` par matière
+- [x] 18.3 — Affectation auto import : colonne `classe` + `teacherAssignments.save` par matière
 - [x] 18.4 — Tests parse/validate (`parseTeacherSubjectNames` avec `;`)
 
 
@@ -281,7 +281,7 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 6. Phase 15 (paiements batch — Outils)
 ```
 
-**Statut 2026-07-18 :** phases 15–19 largement implémentées en code ; reste 15.6, 16.6, 18.3, 19.4, Phase 20 complète.
+**Statut 2026-07-20 :** phases 15–19 largement implémentées en code ; reste 16.6, 19.4, Phase 20 complète.
 
 **Remaining estimate (ouvert) :** ~3–4 j (Phase 20 + polish + tests payments)
 
@@ -751,7 +751,7 @@ await client.entities.teachers.save({
 | 11.3 | `matieres` → catalogue ; warning si inconnu ; `subjectId` persisté | [x]    |
 | 11.4 | Wire modal; unit tests                                             | [x]    |
 | 11.5 | Préremplissage affectation manuelle via `teacher.subjectId`        | [x]    |
-| 11.6 | Affectation auto (`teacherAssignments.save` + `classe`)            | [ ]    |
+| 11.6 | Affectation auto (`teacherAssignments.save` + `classe`)            | [x]    |
 
 
 ---
@@ -1002,7 +1002,7 @@ for (const studentId of studentIds) {
 | `email`     | no       | `teachers.save.email`                     |                                |
 | `matieres`  | no       | `teachers.save.subjectId` (1ère reconnue) | `matiere1;matiere2`            |
 | `telephone` | no       | `teachers.save.phone`                     |                                |
-| `classe`    | no       | `teacherAssignments` (18.3)               | **reporté** — affectation auto |
+| `classe`    | no       | `teacherAssignments` (18.3)               | affectation auto par matière |
 
 
 **UI (manuel) :**
@@ -1013,8 +1013,8 @@ for (const studentId of studentIds) {
 
 ```ts
 await client.entities.teachers.save({ ..., subjectId: primarySubjectId });
-// 18.3 (à faire) :
-await saveTeacherAssignmentMutation({ classGroupId, classSubjectId, ... });
+// 18.3 :
+await client.entities.teacherAssignments.save({ classGroupId, classSubjectId, ... });
 ```
 
 
@@ -1022,7 +1022,7 @@ await saveTeacherAssignmentMutation({ classGroupId, classSubjectId, ... });
 | ---- | -------------------------------------------------------- | ------ |
 | 18.1 | Import : séparateur `;` sur `matieres`                   | [x]    |
 | 18.2 | UI multi-matières (`TeacherAssignmentFormModal`)         | [x]    |
-| 18.3 | Import : colonne `classe` + affectation auto par matière | [ ]    |
+| 18.3 | Import : colonne `classe` + affectation auto par matière | [x]    |
 | 18.4 | Unit tests parse/validate                                | [x]    |
 
 
@@ -1308,7 +1308,7 @@ await client.commands.updateStudentProfile({
 | 15    | Paiements batch                                   | ⏳ (code ✅ ; tests 15.6)       |
 | 16    | Élèves révisés (matricule, classe opt., capacité) | ✅ (sans 16.6)                 |
 | 17    | Tuteurs multi-matricules `;`                      | ✅                             |
-| 18    | Enseignants multi-matières                        | ⏳ (UI ✅ ; 18.3 ouvert)        |
+| 18    | Enseignants multi-matières                        | ✅                               |
 | 19    | Matières par niveau                               | ⏳ (import ✅ ; 19.4 catalogue) |
 | 20    | Catalogue matières & UI leçons                    | [ ]                           |
 
@@ -1366,11 +1366,11 @@ await client.commands.updateStudentProfile({
 - [x] Phase 16 — Élèves : matricule obligatoire, classe facultative, warnings capacité
 - [x] Phase 17 — Tuteurs : matricules multiples `;`, succès partiel
 - [x] Phase 18.1–18.2 — Enseignants : import `;` + UI multi-matières
-- [x] Phase 15 — Paiements batch actif (sans tests unitaires 15.6)
-- [ ] Phase 18.3 — Affectation enseignant auto à l'import (`classe` + matières)
+- [x] Phase 15 — Paiements batch actif (tests unitaires 15.6 ✅)
+- [x] Phase 18.3 — Affectation enseignant auto à l'import (`classe` + matières)
 - [ ] Phase 16.6 — Rafraîchir shell classes avant validation élèves
 - [ ] Phase 19.4 — Sync chapitres catalogue (`assignMatterToGradeLevelSubject`)
 - [ ] Phase 20 — Catalogue matières UI (boutons ajout, miroir Leçons)
-- [ ] Tests `tests/lib/import/payments/`
+- [x] Tests `tests/lib/import/payments/`
 - [ ] Manual QA matrices evolution
 - [ ] `eslint --fix` + `lint` + `check` globaux (fin evolution + track 8–14)

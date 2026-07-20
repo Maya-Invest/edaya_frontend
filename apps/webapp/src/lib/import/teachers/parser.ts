@@ -47,6 +47,7 @@ function mapRecordToTeacherImportRow(
 		...(values.email ? { email: values.email } : {}),
 		...(values.matieres ? { matieres: values.matieres } : {}),
 		...(values.telephone ? { telephone: values.telephone } : {}),
+		...(values.classe ? { classe: values.classe } : {}),
 	};
 }
 

@@ -10,7 +10,7 @@
 	import type { ChapterImportRow, ChapterImportValidationResult } from '$lib/import/chapters/types';
 	import type { SubjectImportRunResult } from '$lib/import/subjects/runner';
 	import type { SubjectImportRow, SubjectImportValidationResult } from '$lib/import/subjects/types';
-	import type { TeacherImportRow, TeacherImportValidationResult } from '$lib/import/teachers/types';
+	import type { TeacherImportRow, TeacherImportValidationResult, TeacherImportClassSubjectOption } from '$lib/import/teachers/types';
 	import type { StudentMatriculeEntry } from '$lib/import/shared/load-student-matricule-index';
 	import type { StudentImportRunResult } from '$lib/import/students/runner';
 	import type { StudentImportRow, StudentImportValidationResult } from '$lib/import/students/types';
@@ -86,6 +86,7 @@
 	import {
 		loadChapterImportContext,
 	} from '$lib/import/shared/load-chapter-import-context';
+	import { loadTeacherImportClassSubjects } from '$lib/import/shared/load-teacher-import-context';
 	import type { ChapterImportClassSubjectTarget } from '$lib/import/chapters/types';
 	import {
 		downloadImportCsvTemplate,
@@ -205,6 +206,7 @@
 		email: 'import.types.teachers.columns.email',
 		matieres: 'import.types.teachers.columns.matieres',
 		telephone: 'import.types.teachers.columns.telephone',
+		classe: 'import.types.teachers.columns.classe',
 	};
 
 	const SUBJECT_COLUMN_LABEL_KEYS: Record<string, string> = {
@@ -270,6 +272,8 @@
 	let loadingSubjectImportContext = $state(false);
 	let chapterImportContext = $state<ChapterImportClassSubjectTarget[]>([]);
 	let loadingChapterContext = $state(false);
+	let teacherImportClassSubjects = $state<TeacherImportClassSubjectOption[]>([]);
+	let loadingTeacherImportContext = $state(false);
 	let paymentImportContext = $state<PaymentImportValidationContext | null>(null);
 	let loadingPaymentContext = $state(false);
 	let importing = $state(false);
@@ -533,6 +537,7 @@
 		subjectCatalog = [];
 		subjectImportExistingKeys = new Set();
 		chapterImportContext = [];
+		teacherImportClassSubjects = [];
 		paymentImportContext = null;
 	}
 
@@ -543,6 +548,7 @@
 			resetWizard();
 			void loadStudentMatriculeDataIfNeeded();
 			void loadSubjectNamesIfNeeded();
+			void loadTeacherImportContextIfNeeded();
 			void loadChapterImportContextIfNeeded();
 			void loadPaymentImportContextIfNeeded();
 			return;
@@ -559,6 +565,7 @@
 		resetWizard();
 		void loadStudentMatriculeDataIfNeeded();
 		void loadSubjectNamesIfNeeded();
+		void loadTeacherImportContextIfNeeded();
 		void loadChapterImportContextIfNeeded();
 		void loadPaymentImportContextIfNeeded();
 	}
@@ -715,6 +722,25 @@
 		}
 	}
 
+	async function loadTeacherImportContextIfNeeded() {
+		if (!isTeachersImport) {
+			return;
+		}
+		if (loadingTeacherImportContext) {
+			return;
+		}
+		loadingTeacherImportContext = true;
+		try {
+			teacherImportClassSubjects = await loadTeacherImportClassSubjects(getBrowserSchoolClient());
+		}
+		catch {
+			teacherImportClassSubjects = [];
+		}
+		finally {
+			loadingTeacherImportContext = false;
+		}
+	}
+
 	async function loadSubjectNamesIfNeeded() {
 		if (!isTeachersImport) {
 			return;
@@ -778,6 +804,11 @@
 		if (isTeachersImport) {
 			teacherValidationResult = validateTeacherImportRows(teacherParsedRows, {
 				subjectCatalog,
+				classes: academicContext.classes.map(classGroup => ({
+					id: classGroup.id,
+					name: classGroup.name,
+				})),
+				classSubjects: teacherImportClassSubjects,
 			});
 			return;
 		}
@@ -812,6 +843,7 @@
 	async function goToValidateStep() {
 		await loadStudentMatriculeDataIfNeeded();
 		await loadSubjectNamesIfNeeded();
+		await loadTeacherImportContextIfNeeded();
 		await loadSubjectImportContextIfNeeded();
 		await loadChapterImportContextIfNeeded();
 		await loadPaymentImportContextIfNeeded();
@@ -1006,7 +1038,8 @@
 		}
 
 		const schoolId = authSession.schoolId;
-		if (!schoolId) {
+		const academicYearId = academicContext.yearId;
+		if (!schoolId || !academicYearId) {
 			return;
 		}
 
@@ -1019,6 +1052,7 @@
 		try {
 			teacherImportResult = await runTeacherImport({
 				schoolId,
+				academicYearId,
 				client: getBrowserSchoolClient(),
 				rows: teacherValidationResult.validRows,
 				onProgress: (current, total) => {

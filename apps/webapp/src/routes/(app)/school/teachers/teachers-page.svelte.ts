@@ -3,9 +3,9 @@ import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { TeacherListFilters } from '$lib/list/list-url-filters';
 import type { Subject, Teacher } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
-import { DEFAULT_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
+import { DEFAULT_LIST_PAGE_SIZE, uniqueIds } from '$lib/api/entity-list-filters';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { fetchSchoolSubjectsSources, mapAllClassSubjects } from '$lib/api/subjects-data';
+import { fetchSchoolSubjectsSources, loadClassSubjectsByIds, mapAllClassSubjects } from '$lib/api/subjects-data';
 import { fetchTeacherById, fetchTeachersPage } from '$lib/api/teachers-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { mergeById } from '$lib/detail-data/seed-policies';
@@ -161,6 +161,29 @@ export class TeachersPageState {
 		return this.subjects.find(subject => subject.id === classSubjectId)?.name ?? classSubjectId;
 	}
 
+	mergeSubjects(incoming: readonly Subject[]) {
+		this.subjects = mergeById(this.subjects, incoming);
+	}
+
+	async ensureClassSubjectsCached(classSubjectIds: readonly string[]) {
+		await this.loadSubjectsIfNeeded();
+		const missing = uniqueIds(
+			classSubjectIds.filter(id => id && !this.subjects.some(subject => subject.id === id)),
+		);
+		if (missing.length === 0) {
+			return;
+		}
+
+		const mapped = await loadClassSubjectsByIds(getBrowserSchoolClient(), missing);
+		if (mapped.length > 0) {
+			this.mergeSubjects(mapped);
+			return;
+		}
+
+		this.subjectsLoaded = false;
+		await this.loadSubjectsIfNeeded();
+	}
+
 	seedPage(
 		teachers: Teacher[],
 		totalTeachers: number,
@@ -186,6 +209,9 @@ export class TeachersPageState {
 
 	upsertTeacherAssignment(row: TeacherAssignment) {
 		this.teacherAssignments = mergeById(this.teacherAssignments, [row]);
+		if (row.classSubjectId) {
+			void this.ensureClassSubjectsCached([row.classSubjectId]);
+		}
 	}
 
 	removeTeacherAssignment(id: string) {
