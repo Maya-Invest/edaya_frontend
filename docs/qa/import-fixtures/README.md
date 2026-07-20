@@ -20,8 +20,10 @@ Les packs sont **chaînés** : chaque étape suppose les données créées par l
 | 2 | Matières | [`subjects/`](./subjects/) | Classes importées (CL01) |
 | 3 | Élèves | [`students/`](./students/) | Classes existantes |
 | 4 | Tuteurs | [`guardians/`](./guardians/) | Élèves importés (EL01) |
-| 5 | Chapitres | [`chapters/`](./chapters/) | Matières importées (SU01) |
-| 6 | Paiements | [`payments/`](./payments/) | Élèves + frais assignés |
+| 5 | Personnel | [`staff/`](./staff/) | Aucun |
+| 6 | Enseignants | [`teachers/`](./teachers/) | Matières importées (SU01) |
+| 7 | Chapitres | [`chapters/`](./chapters/) | Matières importées (SU01) |
+| 8 | Paiements | [`payments/`](./payments/) | Élèves + frais assignés |
 
 ## Données partagées
 
@@ -30,7 +32,7 @@ Fichier [`_shared/ivory-coast-data.ts`](./_shared/ivory-coast-data.ts) :
 - **12 élèves** avec matricules `CI-2025-001` → `CI-2025-012`
 - **Classes** : `6ème A/B/C`, `5ème A/B`, `4ème B`, `3ème A`
 - **Matières** : programme collège CI (Anglais, Français, Mathématiques, SVT, EDHC, EPS, HG…)
-- **Frais** : libellé `Frais de scolarité` (à adapter au catalogue de votre école)
+- **Frais** : libellé `Scolarité — Collège` (catalogue demo-ci ; voir `FEE_CATALOG_NAMES` dans `_shared/ivory-coast-data.ts`)
 
 ## Packs disponibles
 
@@ -40,5 +42,7 @@ Fichier [`_shared/ivory-coast-data.ts`](./_shared/ivory-coast-data.ts) :
 | Élèves | EL01–EL10 | [students/README.md](./students/README.md) |
 | Matières | SU01–SU09 | [subjects/README.md](./subjects/README.md) |
 | Tuteurs | TU01–TU08 | [guardians/README.md](./guardians/README.md) |
+| Personnel | PE01–PE08 | [staff/README.md](./staff/README.md) |
+| Enseignants | EN01–EN08 | [teachers/README.md](./teachers/README.md) |
 | Chapitres | CH01–CH09 | [chapters/README.md](./chapters/README.md) |
 | Paiements | PA01–PA10 | [payments/README.md](./payments/README.md) |

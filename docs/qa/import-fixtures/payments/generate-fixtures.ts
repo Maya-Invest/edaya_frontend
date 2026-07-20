@@ -21,8 +21,8 @@ write('PA03-error-student-not-found.xlsx', HEADERS, [
 ]);
 
 write('PA04-error-fee-not-found.xlsx', HEADERS, [
-	[MATRICULES.kouadioYao, 'Frais de cantine', 'CANT-001', '25000', '2025-09-10', 'espèces', 'Frais non configuré'],
-	[MATRICULES.aminataKone, 'Inscription sport', 'SPORT-001', '10000', '2025-09-11', 'espèces', ''],
+	[MATRICULES.kouadioYao, 'Frais de cantine', 'CANT-001', '25000', '2025-09-10', 'espèces', 'Libellé invalide (attendu : Cantine)'],
+	[MATRICULES.aminataKone, 'Inscription sport', 'SPORT-001', '10000', '2025-09-11', 'espèces', 'Frais non configuré'],
 ]);
 
 write('PA05-error-missing-required.xlsx', HEADERS, [

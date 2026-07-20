@@ -8,6 +8,7 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
 	import { Check, LoaderCircle, Search } from '$lib/icons';
+	import { studentPickerSearchText, studentPickerSubtitle } from '$lib/students/format-student-picker-subtitle';
 	import { cn } from '$lib/utils';
 	import { StudentPickerState } from './student-picker-state.svelte';
 
@@ -95,8 +96,17 @@
 				name: student.name,
 				initials: student.initials,
 				photoUrl: student.photoUrl,
-				subtitle: className ?? student.classId,
-				searchText: [student.email, className, student.classId].filter(Boolean).join(' '),
+				subtitle: studentPickerSubtitle({
+					classLabel: className,
+					classId: student.classId,
+					matricule: student.matricule,
+				}),
+				searchText: studentPickerSearchText({
+					email: student.email,
+					classLabel: className,
+					classId: student.classId,
+					matricule: student.matricule,
+				}),
 			};
 		}),
 	);

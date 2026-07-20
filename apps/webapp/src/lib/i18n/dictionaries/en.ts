@@ -21,7 +21,7 @@ export const en: Dict = {
 	'common.deleteConfirmDescription': 'This action cannot be undone.',
 	'common.date': 'Date',
 	'common.search': 'Search…',
-	'common.searchStudent': 'Search student…',
+	'common.searchStudent': 'Search by name or student ID…',
 	'common.allClasses': 'All classes',
 	'common.add': 'Add',
 	'common.email': 'Email',

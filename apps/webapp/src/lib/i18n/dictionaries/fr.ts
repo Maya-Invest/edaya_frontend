@@ -20,7 +20,7 @@ export const fr: Dict = {
 	'common.deleteConfirmDescription': 'Cette action est irréversible.',
 	'common.date': 'Date',
 	'common.search': 'Rechercher…',
-	'common.searchStudent': 'Rechercher un élève…',
+	'common.searchStudent': 'Rechercher par nom ou matricule…',
 	'common.allClasses': 'Toutes les classes',
 	'common.add': 'Ajouter',
 	'common.email': 'E-mail',

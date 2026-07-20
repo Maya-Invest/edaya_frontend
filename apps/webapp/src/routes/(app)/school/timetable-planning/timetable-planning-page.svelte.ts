@@ -7,6 +7,7 @@ import {
   publishClassTimetable,
 } from '$lib/api/mutations/timetable-generation.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { buildTimetablePlacementParameters } from '$lib/components/school/scheduling/timetable-placement-parameters';
 import { formatDateInput } from '$lib/date/format';
 import { entityVersions } from '$lib/entity-versions.svelte';
 import { toast } from '$lib/toast.svelte';
@@ -143,9 +144,10 @@ export class TimetablePlanningPageState {
       startDate: input.startDate,
       endDate: input.endDate,
       options: input.options,
-      placementParameters: input.periodsPerWeekByClassSubjectId
-        ? { periodsPerWeekByClassSubjectId: input.periodsPerWeekByClassSubjectId }
-        : undefined,
+      placementParameters: buildTimetablePlacementParameters(
+        { periodsPerWeekByClassSubjectId: input.periodsPerWeekByClassSubjectId },
+        this.classSubjects,
+      ),
     }));
 		if (result) {
 			this.generationResult = result;

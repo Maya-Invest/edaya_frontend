@@ -5,6 +5,7 @@
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
+	import { resolvedPeriodsPerWeekPlaceholder, setPeriodsPerWeekOverride } from '$lib/components/school/scheduling/timetable-placement-parameters';
 	import { formatDateInput } from '$lib/date/format';
 	import { t } from '$lib/i18n';
 
@@ -53,6 +54,7 @@
 		useHomeroomTeacherFallback = school?.timetableUseHomeroomTeacherFallback;
 		minPeriodGapSameSubject = school ? String(school.timetableMinPeriodGapSameSubject) : '';
 		preferredIds = school?.timetablePreferredPeriodDefinitionIds ?? [];
+		void timetablePage.loadTeacherConstraints();
 		void timetablePage.resolveSpace(startDate, endDate);
 	});
 
@@ -80,11 +82,7 @@
 	}
 
 	function setOverride(id: string, value: string) {
-		const next = { ...overrides };
-		if (value === '')
-			delete next[id];
-		else next[id] = Number(value);
-		overrides = next;
+		overrides = setPeriodsPerWeekOverride(overrides, id, value);
 	}
 
 	async function submit() {
@@ -147,7 +145,7 @@
 					{#each timetablePage.classSubjects as subject (subject.id)}
 						<label class="grid grid-cols-[1fr_5rem] items-center gap-2 border-b border-border/50 py-2 text-xs last:border-0">
 							<span>{timetablePage.subjectLabels[subject.subjectId] ?? subject.subjectId}</span>
-							<Input type="number" min="0" value={String(overrides[subject.id] ?? '')} placeholder={String(subject.periodsPerWeek ?? '')} oninput={event => setOverride(subject.id, event.currentTarget.value)} />
+							<Input type="number" min="0" value={String(overrides[subject.id] ?? '')} placeholder={String(resolvedPeriodsPerWeekPlaceholder(subject))} oninput={event => setOverride(subject.id, event.currentTarget.value)} />
 						</label>
 					{/each}
 				</div>

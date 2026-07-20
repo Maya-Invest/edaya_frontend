@@ -1,5 +1,6 @@
 import type { StudentListFilters } from '$lib/list/list-url-filters';
 import type { Student } from '$lib/types/school';
+import { studentMatchesSearchQuery } from '$lib/students/matches-student-search-query';
 
 export type StudentSortColumn = Exclude<StudentListFilters['sort'], 'roster'>;
 
@@ -66,16 +67,9 @@ export function filterStudentList(
 	filters: StudentListFilters,
 	options?: { classNameById?: ReadonlyMap<string, string> },
 ): Student[] {
-	const needle = filters.q.trim().toLowerCase();
 	const filtered = students
 		.filter(student => filters.class === 'all' || student.classId === filters.class)
 		.filter(student => filters.status === 'all' || student.status === filters.status)
-		.filter((student) => {
-			if (!needle) {
-				return true;
-			}
-			const haystack = `${student.name} ${student.email}`.toLowerCase();
-			return haystack.includes(needle);
-		});
+		.filter(student => studentMatchesSearchQuery(student, filters.q));
 	return sortStudentList(filtered, filters.sort, filters.sortDir, options?.classNameById);
 }

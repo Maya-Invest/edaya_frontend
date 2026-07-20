@@ -4,6 +4,7 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readStudentListFilters, writeStudentListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
+import { studentMatchesSearchQuery } from '$lib/students/matches-student-search-query';
 import { getContext, setContext } from 'svelte';
 
 const SCHOOL_STUDENTS_STATE_KEY = Symbol('school-students-state');
@@ -32,11 +33,10 @@ export class SchoolStudentsState {
 
 	filterVisible(students: readonly Student[]): Student[] {
 		const { q, class: classFilter, status, sort } = this.filters.values;
-		const needle = q.toLowerCase();
 		const filtered = students
 			.filter(s => classFilter === 'all' || s.classId === classFilter)
 			.filter(s => status === 'all' || s.status === status)
-			.filter(s => s.name.toLowerCase().includes(needle));
+			.filter(s => studentMatchesSearchQuery(s, q));
 		switch (sort) {
 			case 'name':
 				return [...filtered].sort((left, right) => left.name.localeCompare(right.name, 'fr'));

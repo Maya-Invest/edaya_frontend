@@ -9,8 +9,9 @@ bun edaya_web/docs/qa/import-fixtures/payments/generate-fixtures.ts
 **Prérequis :**
 
 1. Élèves importés ([EL01](../students/xlsx/EL01-happy-all-valid.xlsx))
-2. Type de frais **`Frais de scolarité`** configuré et **assigné** aux élèves concernés
-3. Si le libellé diffère dans votre école, éditez la colonne `type_frais` ou `_shared/ivory-coast-data.ts`
+2. Type de frais **`Scolarité — Collège`** configuré et **assigné** aux élèves concernés (seed demo-ci)
+3. Autres libellés du catalogue demo-ci : Cantine, Club sportif, Fournitures scolaires, Transport scolaire
+4. Si le libellé diffère dans votre école, éditez la colonne `type_frais` ou `_shared/ivory-coast-data.ts`
 
 | Fichier | Scénario | Résultat attendu |
 |---------|----------|------------------|

@@ -232,7 +232,7 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 		]),
 		exampleRow: {
 			matricule: 'MAT-2024-001',
-			type_frais: 'Frais de scolarité',
+			type_frais: 'Scolarité — Collège',
 			reference: 'VIR-2024-001',
 			montant: '150000',
 			date: '2024-09-15',

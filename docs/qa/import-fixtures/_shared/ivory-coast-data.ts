@@ -81,10 +81,35 @@ export const PHONES = {
 	aminata: '+225 07 08 12 34 56',
 	kouadio: '+225 05 44 22 11 00',
 	traore: '+225 01 02 03 04 05',
+	secretariat: '+225 07 20 30 40 50',
+	cpe: '+225 05 30 40 50 60',
 } as const;
 
-/** Type de frais — doit correspondre au catalogue de l'école (voir README). */
-export const FEE_SCHOOL = 'Frais de scolarité';
+export const STAFF_HEADERS = ['prenom', 'nom', 'role', 'email', 'telephone'] as const;
+
+export const TEACHER_HEADERS = ['prenom', 'nom', 'email', 'matieres', 'telephone'] as const;
+
+/** Libellés matières utilisés dans les fixtures enseignants (alignés SU01). */
+export const TEACHER_SUBJECT_NAMES = {
+	francais: 'Français',
+	maths: 'Mathématiques',
+	anglais: 'Anglais',
+	svt: 'Sciences de la Vie et de la Terre',
+	hg: 'Histoire-Géographie',
+	physique: 'Physique-Chimie',
+} as const;
+
+/** Types de frais — alignés sur le seed demo-ci (`edaya_backend/.../demo-ci/domains/finance.ts`). */
+export const FEE_CATALOG_NAMES = [
+	'Scolarité — Collège',
+	'Transport scolaire',
+	'Cantine',
+	'Club sportif',
+	'Fournitures scolaires',
+] as const;
+
+/** Frais principal utilisé dans les fixtures PA (scolarité collège). */
+export const FEE_SCHOOL = FEE_CATALOG_NAMES[0];
 
 export function studentToRow(student: StudentFixture): (string | number)[] {
 	return [student.prenom, student.nom, student.matricule, student.classe, student.date_naissance, student.genre];

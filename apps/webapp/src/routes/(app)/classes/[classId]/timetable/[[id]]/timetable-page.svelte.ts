@@ -11,6 +11,7 @@ import {
 } from '$lib/api/mutations/timetable-generation.mutations';
 import { loadClassPlanning } from '$lib/api/planning-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { buildTimetablePlacementParameters } from '$lib/components/school/scheduling/timetable-placement-parameters';
 import { formatDateInput } from '$lib/date/format';
 import { entityVersions } from '$lib/entity-versions.svelte';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
@@ -185,9 +186,10 @@ export class TimetablePageState {
       startDate: input.startDate,
       endDate: input.endDate,
       options: input.options,
-      placementParameters: input.periodsPerWeekByClassSubjectId
-        ? { periodsPerWeekByClassSubjectId: input.periodsPerWeekByClassSubjectId }
-        : undefined,
+      placementParameters: buildTimetablePlacementParameters(
+        { periodsPerWeekByClassSubjectId: input.periodsPerWeekByClassSubjectId },
+        this.classSubjects,
+      ),
     }));
 		if (result) {
 			this.generationResult = result;
@@ -219,9 +221,10 @@ export class TimetablePageState {
       startDate: input.startDate,
       endDate: input.endDate,
 			options: input.options,
-			placementParameters: input.periodsPerWeekByClassSubjectId
-				? { periodsPerWeekByClassSubjectId: input.periodsPerWeekByClassSubjectId }
-				: undefined,
+			placementParameters: buildTimetablePlacementParameters(
+				{ periodsPerWeekByClassSubjectId: input.periodsPerWeekByClassSubjectId },
+				this.classSubjects,
+			),
       sessionConflictPolicy: input.policy,
     }));
 		if (result) {
