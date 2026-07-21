@@ -7,7 +7,9 @@ import {
 	configClassGroupPath,
 	configSubjectPath,
 	drawerTabFromPathname,
+	financeBillingPath,
 	schoolActivityPath,
+	schoolGuardianPath,
 	schoolStaffPath,
 	schoolStudentPath,
 	schoolTeacherPath,
@@ -19,6 +21,8 @@ describe('drawer path helpers', () => {
 		expect(schoolTeacherPath('ci-t1')).toBe('/school/teachers/ci-t1/profile');
 		expect(schoolStaffPath('ci-st3')).toBe('/school/staff/ci-st3/profile');
 		expect(schoolActivityPath('ci-act-robot')).toBe('/school/activities/ci-act-robot/profile');
+		expect(schoolGuardianPath('ci-g1')).toBe('/school/guardians/ci-g1');
+		expect(financeBillingPath('ci-b1')).toBe('/finance/billing/ci-b1');
 		expect(configClassGroupPath('ci-6a')).toBe('/configuration/classes/ci-6a/profile');
 		expect(configSubjectPath('ci-cs-6a-math')).toBe('/configuration/subjects/ci-cs-6a-math/progression');
 	});

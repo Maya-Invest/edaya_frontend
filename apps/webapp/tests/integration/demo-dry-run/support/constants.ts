@@ -8,6 +8,7 @@ export const IGNORED_BROWSER_ERROR =
 export const DEMO_PASSWORD = 'DevPassword1!';
 export const STAFF_EMAIL = 'j.aka@ecole-ci.edaya.dev';
 export const COORDINATOR_EMAIL = 'f.assi@ecole-ci.edaya.dev';
+export const OWNER_EMAIL = 'a.kone@ecole-ci.edaya.dev';
 
 export const CLASS_6A = 'ci-6a';
 export const CLASS_6B = 'ci-6b';
@@ -15,6 +16,8 @@ export const CLASS_SUBJECT_ID = 'ci-cs-6a-math';
 export const STUDENT_ID = 'ci-s1';
 export const TEACHER_ID = 'ci-t1';
 export const STAFF_ID = 'ci-st3';
+export const GUARDIAN_ID = 'ci-g1';
+export const BILLING_ID = 'ci-b1';
 export const ACTIVITY_ID = 'ci-act-robot';
 
 /** Routes without a `<main>` shell — finance uses layout + DataState only. */

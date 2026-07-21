@@ -45,6 +45,14 @@ export function schoolActivityPath(id: string, tab = 'profile'): string {
 	return `/school/activities/${id}/${tab}`;
 }
 
+export function schoolGuardianPath(id: string): string {
+	return `/school/guardians/${id}`;
+}
+
+export function financeBillingPath(id: string): string {
+	return `/finance/billing/${id}`;
+}
+
 export function configClassGroupPath(id: string, tab: 'profile' | 'assignments' = 'profile'): string {
 	return `/configuration/classes/${id}/${tab}`;
 }
