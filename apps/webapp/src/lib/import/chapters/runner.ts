@@ -1,14 +1,14 @@
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { ValidatedChapterImportRow } from './types';
-import { countChapterImportOperations } from './validator';
-import { t } from '$lib/i18n';
-import { formatImportRunErrorMessage } from '$lib/import/shared/format-import-run-error';
 import {
 	createChapterImportMatterId,
 	saveChapterForClassSubject,
 } from '$lib/chapters/save-chapter-for-class-subject';
+import { t } from '$lib/i18n';
+import { formatImportRunErrorMessage } from '$lib/import/shared/format-import-run-error';
 import { notifySubjectsListChanged } from '$lib/subjects/notify-subjects-list-changed';
 import { get } from 'svelte/store';
+import { countChapterImportOperations } from './validator';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 

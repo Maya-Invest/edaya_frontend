@@ -3,14 +3,9 @@ import { buildActivityConfigCommand, DEFAULT_ACTIVITY_SCHEDULE } from '$lib/api/
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
-import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { t } from '$lib/i18n';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
-
-function activitySnapshot(activityId: string): Activity | undefined {
-	return detailDataContext.activities.find(activity => activity.id === activityId);
-}
 
 export async function createActivityMutation(input: {
 	name: string;
@@ -30,20 +25,6 @@ export async function createActivityMutation(input: {
 	}
 
 	const activityId = `act-${Date.now().toString(36)}`;
-	const optimistic: Activity = {
-		id: activityId,
-		name: input.name.trim(),
-		category: input.category,
-		coach: input.coach.trim(),
-		schedule: DEFAULT_ACTIVITY_SCHEDULE,
-		participants: 0,
-		capacity: input.capacity,
-		description: input.description.trim(),
-		startDate: input.startDate,
-		endDate: input.endDate,
-		enrollments: [],
-		classEnrollments: [],
-	};
 
 	const result = await runMutation(() => client.commands.configureActivity(
 		buildActivityConfigCommand(null, {
@@ -61,12 +42,7 @@ export async function createActivityMutation(input: {
 		}),
 	), {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.appendActivity(optimistic);
-		},
-		rollback: () => {
-			detailDataContext.removeActivity(activityId);
-		},
+		versionKeys: ['activities'],
 	});
 
 	return result ? activityId : null;
@@ -84,7 +60,6 @@ export async function updateActivityMutation(input: {
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = activitySnapshot(input.activityId);
 	let existing;
 	try {
 		existing = await client.entities.activities.get(input.activityId);
@@ -93,16 +68,6 @@ export async function updateActivityMutation(input: {
 		toast.error(get(t)('dataState.errorDescription'));
 		return false;
 	}
-
-	const patch = {
-		name: input.name.trim(),
-		category: input.category,
-		coach: input.coach.trim(),
-		capacity: input.capacity,
-		description: input.description.trim(),
-		startDate: input.startDate,
-		endDate: input.endDate,
-	};
 
 	const result = await runMutation(() => client.commands.configureActivity(
 		buildActivityConfigCommand(existing, {
@@ -117,14 +82,7 @@ export async function updateActivityMutation(input: {
 		}),
 	), {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.patchActivity(input.activityId, patch);
-		},
-		rollback: () => {
-			if (previous) {
-				detailDataContext.patchActivity(input.activityId, previous);
-			}
-		},
+		versionKeys: ['activities'],
 	});
 	return result !== null;
 }

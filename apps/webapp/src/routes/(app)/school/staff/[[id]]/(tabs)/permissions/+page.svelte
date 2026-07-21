@@ -1,10 +1,10 @@
 <script lang="ts">
 	import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
+	import { page } from '$app/stores';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { drawerTabRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
-	import { page } from '$app/stores';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { getStaffPageState } from '../../../staff-page.svelte';

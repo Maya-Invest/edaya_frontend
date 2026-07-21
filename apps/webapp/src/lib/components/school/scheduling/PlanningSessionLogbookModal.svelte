@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { SessionDetail } from '$lib/types/session-detail';
-	import { saveSessionLogbookMutation } from '$lib/api/mutations/planning-session.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -24,7 +23,7 @@
 		title?: string;
 		open?: boolean;
 		showTrigger?: boolean;
-		onSave?: (input: {
+		onSave: (input: {
 			sessionId: string;
 			classGroupId: string;
 			classSubjectId: string;
@@ -114,9 +113,7 @@
 			progress: Math.max(0, Math.min(100, Number.parseInt(progress, 10) || 0)),
 			successMessage: get(t)('planning.session.logbookSuccess'),
 		};
-		const ok = onSave
-			? await onSave(input)
-			: await saveSessionLogbookMutation(input);
+		const ok = await onSave(input);
 		busy = false;
 		if (ok) {
 			open = false;

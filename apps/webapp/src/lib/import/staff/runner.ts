@@ -2,8 +2,8 @@ import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { ValidatedStaffImportRow } from './types';
 import { t } from '$lib/i18n';
 import { formatImportRunErrorMessage } from '$lib/import/shared/format-import-run-error';
-import { createStaffImportIds, registerStaffMember } from '$lib/staff/register-staff-member';
 import { notifyStaffListChanged } from '$lib/staff/notify-staff-list-changed';
+import { createStaffImportIds, registerStaffMember } from '$lib/staff/register-staff-member';
 import { get } from 'svelte/store';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;

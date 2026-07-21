@@ -5,11 +5,11 @@
 	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { getActivitiesPageState } from '../activities-page.svelte';
-	import ActivityDrawer from './components/ActivityDrawer.svelte';
 	import {
 		clearActivityDetailTabStates,
 		createAndRegisterActivityDetailStates,
 	} from './activity-detail-states.svelte';
+	import ActivityDrawer from './components/ActivityDrawer.svelte';
 
 	const { children }: { children: Snippet } = $props();
 

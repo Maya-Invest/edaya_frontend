@@ -1,6 +1,6 @@
 import { signIn } from '../support/auth';
-import { CLASS_6A, CLASS_6B, DEMO_ACTIVITY_NAME } from '../support/constants';
-import { schoolStudentPath, schoolTeacherPath } from '../support/paths';
+import { APP_SHELL_SELECTOR, CLASS_6A, CLASS_6B, DEMO_ACTIVITY_NAME } from '../support/constants';
+import { configClassGroupPath, schoolStudentPath, schoolTeacherPath } from '../support/paths';
 import { assertClassAttendanceNav, ensureDailyAttendanceMode } from '../support/setup';
 import { waitForDrawerAside } from '../support/drawer';
 import type { DemoContext } from '../support/types';
@@ -149,9 +149,9 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	await visit(ctx, `${base}/school/announcements`, 'D8', '8.3 Announcements', { selector: 'main' });
 	await visit(ctx, `${base}/school/events`, 'D8', '8.4 Incidents/events', { selector: 'main' });
 
-	await visit(ctx, `${base}/finance/fees`, 'D9', '9.1 Fees list', { selector: 'main' });
-	await visit(ctx, `${base}/finance/payment`, 'D9', '9.2 Payments', { selector: 'main' });
-	await visit(ctx, `${base}/finance/billing`, 'D9', '9.3 Billing drawer area', { selector: 'main' });
+	await visit(ctx, `${base}/finance/fees`, 'D9', '9.1 Fees list', { pathPrefix: '/finance/fees', selector: APP_SHELL_SELECTOR });
+	await visit(ctx, `${base}/finance/payment`, 'D9', '9.2 Payments', { pathPrefix: '/finance/payment', selector: APP_SHELL_SELECTOR });
+	await visit(ctx, `${base}/finance/billing`, 'D9', '9.3 Billing drawer area', { pathPrefix: '/finance/billing', selector: APP_SHELL_SELECTOR });
 
 	await visit(ctx, `${base}/classes/${CLASS_6A}/report-cards`, 'D10', '10.1 Report cards list', { selector: 'main' });
 	try {
@@ -181,7 +181,10 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 		reporter.log('D10', '10.2 Open bulletin drawer', 'fail', err instanceof Error ? err.message : String(err));
 	}
 
-	await visit(ctx, `${base}/configuration/classes/ci-6a`, 'D11', '11.1 Class config drawer', { selector: 'main' });
+	await visit(ctx, `${base}${configClassGroupPath(CLASS_6A, 'profile')}`, 'D11', '11.1 Class config drawer', {
+		pathPrefix: `/configuration/classes/${CLASS_6A}`,
+		selector: 'main',
+	});
 	await visit(ctx, `${base}/configuration/grade-levels`, 'D11', '11.2 Grade levels', { selector: 'main' });
 	await visit(ctx, `${base}/configuration/academic`, 'D11', '11.3 Academic calendar', { selector: 'main' });
 	await visit(ctx, `${base}/configuration/discipline`, 'D11', '11.4 Disciplinary catalog', { selector: 'main' });

@@ -3,15 +3,16 @@ import type { StudentsPageState } from '../../../students-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadGuardiansPeopleData } from '$lib/api/people-data';
 import { uploadProfilePhoto, withPhotoCacheBust } from '$lib/api/profile-photo-upload';
+import { safeOptionalEntityList, safeOptionalFetch } from '$lib/api/safe-entity-access';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { fetchStaffMembers } from '$lib/api/staff-data';
 import { mapNoteCategory, loadStudent360Data } from '$lib/api/student-360-data';
+import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { authSession } from '$lib/auth/session.svelte';
 import { dateInputToIso, formatDateInput, nowIso, todayDateInput } from '$lib/date/format';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { runStudentRouteMutation } from '../../../lib/student-route-mutation';
-import { schoolStudentDetailIdFromUrl } from '../../../students-page.svelte';
 
 export function sortPedagogicalNotes(
 	notes: readonly PedagogicalNote[],
@@ -153,7 +154,7 @@ export class StudentProfileTabState {
 		return (url: URL) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
 			load: async () => {
-				const studentId = schoolStudentDetailIdFromUrl(url);
+				const studentId = studentDetailIdFromPathname(url.pathname);
 				if (!studentId) {
 					return {};
 				}
@@ -163,18 +164,25 @@ export class StudentProfileTabState {
 					schoolId: schoolId(),
 					academicYearId: academicContext.yearId,
 				};
-				const [{ healthRecord, pedagogicalNotes }, { guardians }, staff] = await Promise.all([
-					loadStudent360Data(client, studentId),
-					loadGuardiansPeopleData(client),
-					scope.schoolId
-						? fetchStaffMembers(client, scope)
+				const [{ healthRecord, pedagogicalNotes }, guardiansData, staff] = await Promise.all([
+					safeOptionalFetch(
+						() => loadStudent360Data(client, studentId),
+						{ healthRecord: undefined, pedagogicalNotes: [] },
+					),
+					loadGuardiansPeopleData(client).catch(() => ({
+						guardians: [],
+						students: [],
+						totalGuardians: 0,
+					})),
+					scope.schoolId && scope.academicYearId
+						? safeOptionalEntityList(() => fetchStaffMembers(client, scope))
 						: Promise.resolve([]),
 				]);
 
 				this.seed(studentId, {
 					health: healthRecord,
 					pedagogicalNotes,
-					guardians,
+					guardians: guardiansData.guardians,
 					staff,
 				});
 				return {};

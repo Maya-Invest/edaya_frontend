@@ -1,9 +1,9 @@
 import type { StudentGradeRow } from '$lib/types/school';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { loadStudentGradeRows } from '$lib/api/student-drawer-data';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
-import { schoolStudentDetailIdFromUrl } from '../../../students-page.svelte';
 import { buildStudentGradeSummaryFromRows } from './student-grades-tab.selectors';
 
 export { buildStudentGradeSummaryFromRows };
@@ -55,7 +55,7 @@ export class StudentGradesTabState {
 		return (url: URL) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
 			load: async () => {
-				const studentId = schoolStudentDetailIdFromUrl(url);
+				const studentId = studentDetailIdFromPathname(url.pathname);
 				if (!studentId) {
 					return {};
 				}

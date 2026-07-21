@@ -8,7 +8,7 @@ Edaya is split across repositories:
 | Repo | Role |
 |------|------|
 | `edaya_backend` | API, cron, domain packages, `@maya-invest/edaya-api-client`, client codegen |
-| `edaya_web` | SvelteKit webapp + saas-admin |
+| `edaya_web` | SvelteKit webapp + webadmin |
 
 OpenAPI export and client generation live **only** in `edaya_backend`. Web consumes `@maya-invest/edaya-api-client` — no local OpenAPI copies or codegen.
 
@@ -40,6 +40,8 @@ After GitHub Packages publish:
 ```sh
 bun add @maya-invest/edaya-api-client@staging
 ```
+
+**Cloudflare deploy** runs from GitHub Actions ([`deploy_push.yml`](../../.github/workflows/deploy_push.yml)) — see [ci-setup.md](./ci-setup.md#deploy-to-cloudflare-github-actions). Cloudflare Workers Builds is optional for ad-hoc use via `bun run cloudflare:build:webapp`.
 
 ## When API routes change
 
@@ -79,6 +81,6 @@ Web apps import:
 cd edaya_backend && bun repo deploy api staging && bun repo smoke-test staging
 
 # Web apps (from edaya_web)
-cd edaya_web && bun run deploy:webapp:staging && bun run deploy:saas-admin:staging
+cd edaya_web && bun run deploy:webapp:staging && bun run deploy:webadmin:staging
 cd edaya_web && bun repo smoke-test staging
 ```

@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
-	import GuardianPicker from '$lib/components/school/shared/pickers/GuardianPicker.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PickerModal from '$lib/components/ui/PickerModal.svelte';
+	import GuardianPicker from '$lib/smart-components/guardian-picker/GuardianPicker.svelte';
 	import { getStudentProfileTabState } from '../student-profile-tab.svelte';
 
 	let {
@@ -86,7 +86,7 @@
 	{:else}
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Tuteur</Label>
-			<GuardianPicker bind:value={guardianId} guardians={available} />
+			<GuardianPicker bind:value={guardianId} guardians={available} active={open} />
 		</div>
 	{/if}
 </PickerModal>

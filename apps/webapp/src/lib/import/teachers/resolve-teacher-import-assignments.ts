@@ -1,6 +1,6 @@
 import type { SchoolSubjectCatalogEntry } from '$lib/import/shared/load-school-subject-names';
-import { resolveSubjectCatalogId } from './subject-name-lookup';
 import type { TeacherImportClassSubjectOption } from './types';
+import { resolveSubjectCatalogId } from './subject-name-lookup';
 
 export function resolveTeacherImportClassSubjectIds(
 	classGroupId: string,

@@ -1,17 +1,19 @@
 import { describe, expect, test } from 'bun:test';
 import {
 	buildTimetablePlacementParameters,
-	resolvePeriodsPerWeek,
-	resolvedPeriodsPerWeekPlaceholder,
-	setPeriodsPerWeekOverride,
+	resolvedPeriodSpanPlaceholder,
 } from '$lib/components/school/scheduling/timetable-placement-parameters';
 
 describe('timetable placement parameters', () => {
-	test('builds placement parameters from explicit overrides', () => {
+	test('builds placement parameters from non-empty override maps', () => {
 		expect(buildTimetablePlacementParameters({
 			periodsPerWeekByClassSubjectId: { 'cs-math': 4 },
+			minPeriodSpanByClassSubjectId: { 'cs-math': 1 },
+			maxPeriodSpanByClassSubjectId: { 'cs-math': 2 },
 		})).toEqual({
 			periodsPerWeekByClassSubjectId: { 'cs-math': 4 },
+			minPeriodSpanByClassSubjectId: { 'cs-math': 1 },
+			maxPeriodSpanByClassSubjectId: { 'cs-math': 2 },
 		});
 	});
 
@@ -19,29 +21,15 @@ describe('timetable placement parameters', () => {
 		expect(buildTimetablePlacementParameters({})).toBeUndefined();
 	});
 
-	test('fills default periods per week for all offered class subjects', () => {
-		expect(buildTimetablePlacementParameters(
-			{ periodsPerWeekByClassSubjectId: { 'cs-math': 4 } },
-			[
-				{ id: 'cs-math', periodsPerWeek: 3 },
-				{ id: 'cs-fr' },
-				{ id: 'cs-opt', isOffered: false },
-			],
-		)).toEqual({
-			periodsPerWeekByClassSubjectId: { 'cs-math': 4, 'cs-fr': 1 },
-		});
-	});
+	test('resolves span placeholders from class subject then school defaults', () => {
+		expect(resolvedPeriodSpanPlaceholder(
+			{ minPeriodSpan: 2, maxPeriodSpan: 3 },
+			{ timetableMinPeriodSpan: 1, timetableMaxPeriodSpan: 1 },
+		)).toEqual({ min: 2, max: 3 });
 
-	test('resolves periods per week placeholder from class subject or defaults to 1', () => {
-		expect(resolvedPeriodsPerWeekPlaceholder({ periodsPerWeek: 4 })).toBe(4);
-		expect(resolvedPeriodsPerWeekPlaceholder({})).toBe(1);
-		expect(resolvedPeriodsPerWeekPlaceholder({ periodsPerWeek: null })).toBe(1);
-		expect(resolvePeriodsPerWeek(0, { periodsPerWeek: 0 })).toBe(1);
-	});
-
-	test('ignores invalid override values', () => {
-		expect(setPeriodsPerWeekOverride({ 'cs-math': 2 }, 'cs-math', '')).toEqual({});
-		expect(setPeriodsPerWeekOverride({}, 'cs-math', '0')).toEqual({});
-		expect(setPeriodsPerWeekOverride({}, 'cs-math', '3')).toEqual({ 'cs-math': 3 });
+		expect(resolvedPeriodSpanPlaceholder(
+			{},
+			{ timetableMinPeriodSpan: 1, timetableMaxPeriodSpan: 2 },
+		)).toEqual({ min: 1, max: 2 });
 	});
 });

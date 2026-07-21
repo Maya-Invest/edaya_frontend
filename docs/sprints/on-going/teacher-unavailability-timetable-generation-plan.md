@@ -8,7 +8,7 @@
 
 - Add an Availability tab under `/school/teachers/:teacherId` for staff-admin management of weekly and one-off unavailability.
 - Add generation, review, publication, and republishing to `/classes/:classId/timetable`.
-- Add a school orchestration workspace at `/school/timetable-planning`.
+- Add a school orchestration workspace at `/configuration/tools`.
 - Default generation to the selected academic period while allowing a custom range inside the academic year.
 - Keep school publication class-by-class and follow `route-state-spec.md` without new `detailDataContext` dependencies.
 
@@ -31,7 +31,7 @@
 
 ## School Workspace
 
-- Add a School navigation item and route-owned state for `/school/timetable-planning`.
+- Add a Configuration Tools hub card and route-owned state for `/configuration/tools`.
 - Show classes ordered by grade level then name with draft/published counts, transient generation diagnostics, review, and individual publish actions.
 - Generate all classes with one command and refetch persisted sessions afterward.
 - Do not add bulk publication; review and publish each class independently.

@@ -1,12 +1,11 @@
 <script lang="ts">
 	import type { PlanningEvent } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import TimetablePlanningView from './TimetablePlanningView.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { getTimetablePageState } from '../timetable-page.svelte';
-	import TimetableGenerationToolbar from './TimetableGenerationToolbar.svelte';
+	import TimetablePlanningView from './TimetablePlanningView.svelte';
 
 	const {
 		classId,
@@ -28,7 +27,6 @@
 	}
 </script>
 
-<TimetableGenerationToolbar state={timetablePage} />
 <TimetablePlanningView
 	expandCalendar
 	{classId}

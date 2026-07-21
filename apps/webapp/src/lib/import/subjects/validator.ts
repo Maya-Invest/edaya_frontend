@@ -14,7 +14,7 @@ import type {
 
 } from './types';
 
-import { parseSubjectCoefficient } from './parse-coefficient';
+import { canImportValidatedRows } from '$lib/import/shared/can-import-validated-rows';
 
 import {
 
@@ -26,16 +26,13 @@ import {
 
 import { subjectImportDuplicateKey } from '$lib/import/shared/subject-import-duplicate-key';
 
-import { canImportValidatedRows } from '$lib/import/shared/can-import-validated-rows';
-
-
+import { parseSubjectCoefficient } from './parse-coefficient';
 
 function issue(
 
 	input: Omit<SubjectImportValidationIssue, 'severity'> & { severity?: SubjectImportValidationIssue['severity'] },
 
 ): SubjectImportValidationIssue {
-
 	return {
 
 		...input,
@@ -43,10 +40,7 @@ function issue(
 		severity: input.severity ?? 'error',
 
 	};
-
 }
-
-
 
 function validateRequiredField(
 
@@ -59,11 +53,8 @@ function validateRequiredField(
 	issues: SubjectImportValidationIssue[],
 
 ): boolean {
-
 	if (value.trim().length > 0) {
-
 		return true;
-
 	}
 
 	issues.push(issue({
@@ -77,10 +68,7 @@ function validateRequiredField(
 	}));
 
 	return false;
-
 }
-
-
 
 export function validateSubjectImportRows(
 
@@ -89,7 +77,6 @@ export function validateSubjectImportRows(
 	context: SubjectImportValidationContext,
 
 ): SubjectImportValidationResult {
-
 	const errors: SubjectImportValidationIssue[] = [];
 
 	const warnings: SubjectImportValidationIssue[] = [];
@@ -100,34 +87,23 @@ export function validateSubjectImportRows(
 
 	const gradeLevelLookup = buildImportGradeLevelLookup(context.gradeLevels);
 
-
-
 	for (const row of rows) {
-
 		const rowIssues: SubjectImportValidationIssue[] = [];
-
-
 
 		const hasNom = validateRequiredField(row, 'nom', row.nom, rowIssues);
 
 		const hasNiveau = validateRequiredField(row, 'niveau', row.niveau, rowIssues);
 
-
-
 		let gradeLevelId: string | undefined;
 
 		if (hasNiveau) {
-
 			const resolution = resolveImportGradeLevel(row.niveau, gradeLevelLookup, context.gradeLevels);
 
 			if (resolution.gradeLevelId) {
-
 				gradeLevelId = resolution.gradeLevelId;
-
 			}
 
 			else {
-
 				rowIssues.push(issue({
 
 					rowIndex: row.rowIndex,
@@ -141,12 +117,8 @@ export function validateSubjectImportRows(
 					suggestions: resolution.suggestions,
 
 				}));
-
 			}
-
 		}
-
-
 
 		const classGroupIds = gradeLevelId
 
@@ -154,10 +126,7 @@ export function validateSubjectImportRows(
 
 			: [];
 
-
-
 		if (gradeLevelId && classGroupIds.length === 0) {
-
 			rowIssues.push(issue({
 
 				rowIndex: row.rowIndex,
@@ -169,19 +138,14 @@ export function validateSubjectImportRows(
 				messageKey: 'import.subjects.validation.noClassesForLevel',
 
 			}));
-
 		}
-
-
 
 		let coefficientValue: number | undefined;
 
 		if (row.coefficient?.trim()) {
-
 			const parsed = parseSubjectCoefficient(row.coefficient);
 
 			if (parsed == null) {
-
 				rowIssues.push(issue({
 
 					rowIndex: row.rowIndex,
@@ -193,27 +157,19 @@ export function validateSubjectImportRows(
 					messageKey: 'import.subjects.validation.invalidCoefficient',
 
 				}));
-
 			}
 
 			else {
-
 				coefficientValue = parsed;
-
 			}
-
 		}
 
-
-
 		if (hasNom && gradeLevelId) {
-
 			const duplicateKey = subjectImportDuplicateKey(gradeLevelId, row.nom);
 
 			const previousRow = subjectsInFile.get(duplicateKey);
 
 			if (previousRow != null) {
-
 				rowIssues.push(issue({
 
 					rowIndex: row.rowIndex,
@@ -227,17 +183,13 @@ export function validateSubjectImportRows(
 					messageParams: { row: previousRow },
 
 				}));
-
 			}
 
 			else {
-
 				subjectsInFile.set(duplicateKey, row.rowIndex);
-
 			}
 
 			if (context.existingSubjectKeys?.has(duplicateKey)) {
-
 				rowIssues.push(issue({
 
 					rowIndex: row.rowIndex,
@@ -249,35 +201,22 @@ export function validateSubjectImportRows(
 					messageKey: 'import.subjects.validation.duplicateExisting',
 
 				}));
-
 			}
-
 		}
-
-
 
 		const blockingIssues = rowIssues.filter(entry => entry.severity === 'error');
 
 		for (const rowIssue of rowIssues) {
-
 			if (rowIssue.severity === 'warning') {
-
 				warnings.push(rowIssue);
-
 			}
 
 			else {
-
 				errors.push(rowIssue);
-
 			}
-
 		}
 
-
-
 		if (blockingIssues.length === 0 && hasNom && gradeLevelId && classGroupIds.length > 0) {
-
 			validRows.push({
 
 				...row,
@@ -289,22 +228,12 @@ export function validateSubjectImportRows(
 				...(coefficientValue != null ? { coefficientValue } : {}),
 
 			});
-
 		}
-
 	}
 
-
-
 	return { validRows, errors, warnings };
-
 }
-
-
 
 export function canImportValidatedSubjects(result: SubjectImportValidationResult | null): boolean {
-
 	return canImportValidatedRows(result);
-
 }
-

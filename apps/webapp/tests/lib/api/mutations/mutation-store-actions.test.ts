@@ -13,6 +13,10 @@ mock.module('$lib/auth/bootstrap-app', () => ({
 	resetAppShellBootstrap: () => {},
 }));
 
+mock.module('$lib/entity-versions.svelte', () => ({
+	entityVersions: { bump: () => {} },
+}));
+
 const { runMutation } = await import('$lib/api/mutations/run-mutation');
 
 type Permission = components['schemas']['StaffPermissionAssignment']['permission'];

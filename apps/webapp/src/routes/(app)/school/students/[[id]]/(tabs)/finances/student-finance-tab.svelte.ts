@@ -3,10 +3,10 @@ import type { StudentsPageState } from '../../../students-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadFinanceData } from '$lib/api/finance-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { authSession } from '$lib/auth/session.svelte';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
-import { schoolStudentDetailIdFromUrl } from '../../../students-page.svelte';
 import { billingStatusTone, summarizeStudentFinances } from './student-finance-tab.selectors';
 
 export { billingStatusTone, summarizeStudentFinances };
@@ -63,7 +63,7 @@ export class StudentFinanceTabState {
 		return (url: URL) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
 			load: async () => {
-				const studentId = schoolStudentDetailIdFromUrl(url);
+				const studentId = studentDetailIdFromPathname(url.pathname);
 				if (!studentId) {
 					return {};
 				}

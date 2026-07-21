@@ -26,7 +26,7 @@ export interface PaymentImportRunOptions {
 }
 
 export async function runPaymentImport(options: PaymentImportRunOptions): Promise<PaymentImportRunResult> {
-	const { client, rows, onProgress } = options;
+	const { rows, onProgress } = options;
 	const failed: PaymentImportRunFailure[] = [];
 	const paymentIds: string[] = [];
 	const total = rows.length;

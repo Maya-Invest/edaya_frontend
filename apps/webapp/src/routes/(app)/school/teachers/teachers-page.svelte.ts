@@ -213,21 +213,6 @@ export class TeachersPageState {
 		this.teachers = Object.values(byId);
 	}
 
-	mergeTeacherAssignments(rows: readonly TeacherAssignment[]) {
-		this.teacherAssignments = mergeById(this.teacherAssignments, rows);
-	}
-
-	upsertTeacherAssignment(row: TeacherAssignment) {
-		this.teacherAssignments = mergeById(this.teacherAssignments, [row]);
-		if (row.classSubjectId) {
-			void this.ensureClassSubjectsCached([row.classSubjectId]);
-		}
-	}
-
-	removeTeacherAssignment(id: string) {
-		this.teacherAssignments = this.teacherAssignments.filter(row => row.id !== id);
-	}
-
 	patchTeacher(id: string, patch: Partial<Teacher>) {
 		const apply = (list: Teacher[]) => {
 			const index = list.findIndex(teacher => teacher.id === id);

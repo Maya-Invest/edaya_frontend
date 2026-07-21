@@ -36,7 +36,7 @@ bun repo
 └── smoke-test staging
 ```
 
-Deploy (`deploy:webapp:*`, `deploy:saas-admin:*`) stays at root for now.
+Deploy (`deploy:webapp:*`, `deploy:webadmin:*`) stays at root for now.
 
 ## Target root scripts
 

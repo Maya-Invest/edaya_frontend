@@ -1,6 +1,6 @@
 import type { components } from '$lib/api/schema';
 import type { StaffPageState } from '../../../staff-page.svelte';
-import { staffAssignmentsForStaff } from '$lib/api/entity-list-filters';
+import { staffAssignmentsForStaff, uniqueIds } from '$lib/api/entity-list-filters';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { getContext, setContext } from 'svelte';
 import { resolveStaffPageLoad } from '../../../lib/staff-page-status';
@@ -15,10 +15,6 @@ export interface StaffAssignmentsTabSlice {
 	staffId: string;
 	assignments: StaffAssignment[];
 	classSubjects: ClassSubject[];
-}
-
-function emptySlice(staffId: string): StaffAssignmentsTabSlice {
-	return { staffId, assignments: [], classSubjects: [] };
 }
 
 export class StaffAssignmentsTabState {
@@ -51,7 +47,9 @@ export class StaffAssignmentsTabState {
 				const assignments = await client.entities.staffAssignments.list(
 					staffAssignmentsForStaff([staffId]),
 				);
-				const classSubjectIds = [...new Set((assignments ?? []).map(row => row.classSubjectId).filter(Boolean))] as string[];
+				const classSubjectIds = uniqueIds(
+					(assignments ?? []).map(row => row.classSubjectId).filter((id): id is string => Boolean(id)),
+				);
 				const classSubjects = classSubjectIds.length
 					? await client.entities.classSubjects.list({ id: { $in: classSubjectIds } })
 					: [];

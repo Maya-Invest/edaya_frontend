@@ -1,7 +1,5 @@
 export type SubjectImportColumnKey = 'nom' | 'niveau' | 'code' | 'coefficient';
 
-
-
 export interface SubjectImportColumnDefinition {
 
 	key: SubjectImportColumnKey;
@@ -9,8 +7,6 @@ export interface SubjectImportColumnDefinition {
 	required: boolean;
 
 }
-
-
 
 export const SUBJECT_IMPORT_COLUMNS = [
 
@@ -23,8 +19,6 @@ export const SUBJECT_IMPORT_COLUMNS = [
 	{ key: 'coefficient', required: false },
 
 ] as const satisfies readonly SubjectImportColumnDefinition[];
-
-
 
 export interface SubjectImportRow {
 
@@ -40,8 +34,6 @@ export interface SubjectImportRow {
 
 }
 
-
-
 export interface ValidatedSubjectImportRow extends SubjectImportRow {
 
 	gradeLevelId: string;
@@ -52,11 +44,7 @@ export interface ValidatedSubjectImportRow extends SubjectImportRow {
 
 }
 
-
-
 export type SubjectImportValidationSeverity = 'error' | 'warning';
-
-
 
 export interface SubjectImportValidationIssue {
 
@@ -76,8 +64,6 @@ export interface SubjectImportValidationIssue {
 
 }
 
-
-
 export interface SubjectImportValidationResult {
 
 	validRows: ValidatedSubjectImportRow[];
@@ -88,8 +74,6 @@ export interface SubjectImportValidationResult {
 
 }
 
-
-
 export interface SubjectImportGradeLevelOption {
 
 	id: string;
@@ -98,8 +82,6 @@ export interface SubjectImportGradeLevelOption {
 
 }
 
-
-
 export interface SubjectImportClassGroupOption {
 
 	id: string;
@@ -107,8 +89,6 @@ export interface SubjectImportClassGroupOption {
 	gradeLevelId: string;
 
 }
-
-
 
 export interface SubjectImportValidationContext {
 
@@ -119,4 +99,3 @@ export interface SubjectImportValidationContext {
 	existingSubjectKeys?: ReadonlySet<string>;
 
 }
-

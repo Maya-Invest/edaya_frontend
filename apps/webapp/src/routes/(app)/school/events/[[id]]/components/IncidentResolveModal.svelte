@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { ClassNode, Incident, Student } from '$lib/types/school';
+	import type { Incident } from '$lib/types/school';
+	import type { IncidentInvolvementRole } from '../../lib/incident-detail-mutations';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { loadIncidentResolveModalData } from '$lib/api/school-life-data';
-	import StudentPicker from '$lib/components/school/shared/pickers/StudentPicker.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -11,8 +11,8 @@
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, Plus, Trash2 } from '$lib/icons';
+	import StudentPicker from '$lib/smart-components/student-picker/StudentPicker.svelte';
 	import { get } from 'svelte/store';
-	import type { IncidentInvolvementRole } from '../../lib/incident-detail-mutations';
 	import { getEventsPageState } from '../../events-page.svelte';
 
 	const INVOLVEMENT_ROLES: IncidentInvolvementRole[] = ['subject', 'witness', 'victim'];
@@ -28,14 +28,10 @@
 
 	let {
 		incident,
-		students: fallbackStudents = [],
-		classes = [],
 		open = $bindable(false),
 		onResolved,
 	}: {
 		incident: Incident;
-		students?: Student[];
-		classes?: ClassNode[];
 		open?: boolean;
 		onResolved?: () => void;
 	} = $props();
@@ -46,7 +42,6 @@
 	let loading = $state(false);
 	let rows = $state<ResolveRow[]>([]);
 	let resolutionNotes = $state('');
-	let students = $state<Student[]>([]);
 	let disciplinaryActions = $state<Array<{ id: string; name: string }>>([]);
 
 	const canSubmit = $derived(!loading && rows.length > 0 && rows.every(row => row.studentId.length > 0));
@@ -67,7 +62,6 @@
 		}];
 		resolutionNotes = '';
 		disciplinaryActions = [];
-		students = fallbackStudents;
 	}
 
 	async function loadModalData() {
@@ -82,7 +76,6 @@
 				id: action.id,
 				name: action.name,
 			}));
-			students = data.students.length > 0 ? data.students : fallbackStudents;
 			rows = data.involvements.length > 0
 				? data.involvements.map(involvement => ({
 					key: involvement.id,
@@ -218,8 +211,7 @@
 								</Label>
 								<StudentPicker
 									value={row.studentId}
-									{students}
-									{classes}
+									active={open}
 									excludeIds={excludeStudentIds(row.key)}
 									onValueChange={studentId => updateRow(row.key, { studentId })}
 								/>

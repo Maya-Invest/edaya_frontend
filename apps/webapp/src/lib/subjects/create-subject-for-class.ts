@@ -1,5 +1,5 @@
-import type { Subject, SubjectCategory } from '$lib/types/school';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
+import type { Subject, SubjectCategory } from '$lib/types/school';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 

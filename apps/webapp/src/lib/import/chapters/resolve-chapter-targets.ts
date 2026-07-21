@@ -6,8 +6,6 @@ import type {
 
 } from './types';
 
-import { normalizeSubjectLookupName } from '$lib/import/teachers/subject-name-lookup';
-
 import {
 
 	buildImportGradeLevelLookup,
@@ -16,15 +14,7 @@ import {
 
 } from '$lib/import/shared/resolve-import-grade-level';
 
-
-
-function normalizeLookupValue(value: string): string {
-
-	return value.trim().toLowerCase();
-
-}
-
-
+import { normalizeSubjectLookupName } from '$lib/import/teachers/subject-name-lookup';
 
 export function resolveChapterImportTargets(
 
@@ -43,7 +33,6 @@ export function resolveChapterImportTargets(
 	levelSuggestions?: string[];
 
 } {
-
 	const gradeLevelLookup = buildImportGradeLevelLookup(
 
 		[...new Map(context.classSubjects.map(entry => [entry.gradeLevelId, {
@@ -61,7 +50,6 @@ export function resolveChapterImportTargets(
 	const levelResolution = resolveImportGradeLevel(niveau, gradeLevelLookup, gradeLevels);
 
 	if (!levelResolution.gradeLevelId) {
-
 		return {
 
 			targets: [],
@@ -71,10 +59,7 @@ export function resolveChapterImportTargets(
 			levelSuggestions: levelResolution.suggestions,
 
 		};
-
 	}
-
-
 
 	const normalizedSubject = normalizeSubjectLookupName(matiere);
 
@@ -86,15 +71,9 @@ export function resolveChapterImportTargets(
 
 	);
 
-
-
 	if (matches.length > 0) {
-
 		return { targets: matches, suggestions: [] };
-
 	}
-
-
 
 	const uniqueNames = [...new Set(
 
@@ -109,18 +88,14 @@ export function resolveChapterImportTargets(
 	const suggestions = uniqueNames
 
 		.filter((name) => {
-
 			const normalizedName = normalizeSubjectLookupName(name);
 
 			return normalizedName.includes(normalizedSubject)
 
 				|| normalizedSubject.includes(normalizedName);
-
 		})
 
 		.slice(0, 5);
-
-
 
 	return {
 
@@ -129,38 +104,28 @@ export function resolveChapterImportTargets(
 		suggestions: suggestions.length > 0 ? suggestions : uniqueNames.slice(0, 5),
 
 	};
-
 }
-
-
 
 export function uniqueChapterSubjectNames(
 
 	targets: readonly ChapterImportClassSubjectTarget[],
 
 ): string[] {
-
 	return [...new Set(targets.map(entry => entry.subjectName))].sort((left, right) =>
 
 		left.localeCompare(right, 'fr'),
 
 	);
-
 }
-
-
 
 export function uniqueChapterGradeLevelNames(
 
 	targets: readonly ChapterImportClassSubjectTarget[],
 
 ): string[] {
-
 	return [...new Set(targets.map(entry => entry.gradeLevelName))].sort((left, right) =>
 
 		left.localeCompare(right, 'fr'),
 
 	);
-
 }
-

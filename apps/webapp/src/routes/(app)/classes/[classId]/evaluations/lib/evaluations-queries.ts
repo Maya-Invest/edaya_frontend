@@ -5,7 +5,6 @@ import {
 	loadClassEvaluationsPageData,
 	mapAssessmentResults,
 } from '$lib/api/assessments-data';
-import { loadClassPeopleData } from '$lib/api/people-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadClassSubjects } from '$lib/api/subjects-data';
 import { resolvePageLoad } from '$lib/queries/page-status';

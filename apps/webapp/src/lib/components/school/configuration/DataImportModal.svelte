@@ -1,25 +1,27 @@
 <script lang="ts">
 	import type { ImportTypeKey } from '$lib/import/catalog/types';
+	import type { ChapterImportRunResult } from '$lib/import/chapters/runner';
+	import type { ChapterImportRow, ChapterImportValidationResult, ChapterImportClassSubjectTarget } from '$lib/import/chapters/types';
 	import type { ClassImportRunResult } from '$lib/import/classes/runner';
 	import type { ClassImportRow, ClassImportValidationResult } from '$lib/import/classes/types';
 	import type { GuardianImportRunResult } from '$lib/import/guardians/runner';
 	import type { GuardianImportRow, GuardianImportValidationResult } from '$lib/import/guardians/types';
-	import type { StaffImportRunResult } from '$lib/import/staff/runner';
-	import type { StaffImportRow, StaffImportValidationResult } from '$lib/import/staff/types';
-	import type { ChapterImportRunResult } from '$lib/import/chapters/runner';
-	import type { ChapterImportRow, ChapterImportValidationResult } from '$lib/import/chapters/types';
-	import type { SubjectImportRunResult } from '$lib/import/subjects/runner';
-	import type { SubjectImportRow, SubjectImportValidationResult } from '$lib/import/subjects/types';
-	import type { TeacherImportRow, TeacherImportValidationResult, TeacherImportClassSubjectOption } from '$lib/import/teachers/types';
-	import type { StudentMatriculeEntry } from '$lib/import/shared/load-student-matricule-index';
-	import type { StudentImportRunResult } from '$lib/import/students/runner';
-	import type { StudentImportRow, StudentImportValidationResult } from '$lib/import/students/types';
 	import type { PaymentImportRunResult } from '$lib/import/payments/runner';
 	import type {
 		PaymentImportRow,
 		PaymentImportValidationContext,
 		PaymentImportValidationResult,
 	} from '$lib/import/payments/types';
+	import type { SchoolSubjectCatalogEntry } from '$lib/import/shared/load-school-subject-names';
+	import type { StudentMatriculeEntry } from '$lib/import/shared/load-student-matricule-index';
+	import type { StaffImportRunResult } from '$lib/import/staff/runner';
+	import type { StaffImportRow, StaffImportValidationResult } from '$lib/import/staff/types';
+	import type { StudentImportRunResult } from '$lib/import/students/runner';
+	import type { StudentImportRow, StudentImportValidationResult } from '$lib/import/students/types';
+	import type { SubjectImportRunResult } from '$lib/import/subjects/runner';
+	import type { SubjectImportRow, SubjectImportValidationResult } from '$lib/import/subjects/types';
+	import type { TeacherImportRunResult } from '$lib/import/teachers/runner';
+	import type { TeacherImportRow, TeacherImportValidationResult, TeacherImportClassSubjectOption } from '$lib/import/teachers/types';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { authSession } from '$lib/auth/session.svelte';
@@ -31,15 +33,19 @@
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import { notifyGuardiansListChanged } from '$lib/guardians/notify-guardians-list-changed';
-	import { notifyStaffListChanged } from '$lib/staff/notify-staff-list-changed';
-	import { notifySubjectsListChanged } from '$lib/subjects/notify-subjects-list-changed';
-	import { notifyTeachersListChanged } from '$lib/teachers/notify-teachers-list-changed';
 	import { t } from '$lib/i18n';
 	import { Download, FileSpreadsheet, LoaderCircle } from '$lib/icons';
 	import {
 		IMPORT_TYPE_DEFINITIONS,
 		getImportTypeDefinition,
 	} from '$lib/import/catalog/import-types';
+	import { parseChapterImportFile } from '$lib/import/chapters/parser';
+	import { runChapterImport } from '$lib/import/chapters/runner';
+	import {
+		canImportValidatedChapters,
+		countChapterImportOperations,
+		validateChapterImportRows,
+	} from '$lib/import/chapters/validator';
 	import { parseClassImportFile } from '$lib/import/classes/parser';
 	import { runClassImport } from '$lib/import/classes/runner';
 	import {
@@ -52,61 +58,55 @@
 		canImportValidatedGuardians,
 		validateGuardianImportRows,
 	} from '$lib/import/guardians/validator';
-	import { parseStaffImportFile } from '$lib/import/staff/parser';
-	import { runStaffImport } from '$lib/import/staff/runner';
-	import {
-		canImportValidatedStaff,
-		validateStaffImportRows,
-	} from '$lib/import/staff/validator';
-	import { parseTeacherImportFile } from '$lib/import/teachers/parser';
-	import { runTeacherImport } from '$lib/import/teachers/runner';
-	import {
-		canImportValidatedTeachers,
-		validateTeacherImportRows,
-	} from '$lib/import/teachers/validator';
-	import { parseChapterImportFile } from '$lib/import/chapters/parser';
-	import { runChapterImport } from '$lib/import/chapters/runner';
-	import {
-		canImportValidatedChapters,
-		countChapterImportOperations,
-		validateChapterImportRows,
-	} from '$lib/import/chapters/validator';
-	import { parseSubjectImportFile } from '$lib/import/subjects/parser';
-	import { runSubjectImport } from '$lib/import/subjects/runner';
-	import {
-		canImportValidatedSubjects,
-		validateSubjectImportRows,
-	} from '$lib/import/subjects/validator';
-	import {
-		loadStudentMatriculeIndex,
-	} from '$lib/import/shared/load-student-matricule-index';
-	import { loadSchoolSubjectCatalog } from '$lib/import/shared/load-school-subject-names';
-	import type { SchoolSubjectCatalogEntry } from '$lib/import/shared/load-school-subject-names';
-	import { loadExistingSubjectImportKeys } from '$lib/import/shared/load-subject-import-context';
-	import {
-		loadChapterImportContext,
-	} from '$lib/import/shared/load-chapter-import-context';
-	import { loadTeacherImportClassSubjects } from '$lib/import/shared/load-teacher-import-context';
-	import type { ChapterImportClassSubjectTarget } from '$lib/import/chapters/types';
-	import {
-		downloadImportCsvTemplate,
-		downloadImportExcelTemplate,
-	} from '$lib/import/shared/template-download';
-	import { parseStudentImportFile } from '$lib/import/students/parser';
-	import { runStudentImport } from '$lib/import/students/runner';
-	import {
-		canImportValidatedStudents,
-		validateStudentImportRows,
-	} from '$lib/import/students/validator';
+	import { loadPaymentImportContext } from '$lib/import/payments/load-payment-import-context';
 	import { parsePaymentImportFile } from '$lib/import/payments/parser';
 	import { runPaymentImport } from '$lib/import/payments/runner';
 	import {
 		canImportValidatedPayments,
 		validatePaymentImportRows,
 	} from '$lib/import/payments/validator';
-	import { loadPaymentImportContext } from '$lib/import/payments/load-payment-import-context';
+	import {
+		loadChapterImportContext,
+	} from '$lib/import/shared/load-chapter-import-context';
+	import { loadSchoolSubjectCatalog } from '$lib/import/shared/load-school-subject-names';
+	import {
+		loadStudentMatriculeIndex,
+	} from '$lib/import/shared/load-student-matricule-index';
+	import { loadExistingSubjectImportKeys } from '$lib/import/shared/load-subject-import-context';
+	import { loadTeacherImportClassSubjects } from '$lib/import/shared/load-teacher-import-context';
+	import {
+		downloadImportCsvTemplate,
+		downloadImportExcelTemplate,
+	} from '$lib/import/shared/template-download';
+	import { parseStaffImportFile } from '$lib/import/staff/parser';
+	import { runStaffImport } from '$lib/import/staff/runner';
+	import {
+		canImportValidatedStaff,
+		validateStaffImportRows,
+	} from '$lib/import/staff/validator';
+	import { parseStudentImportFile } from '$lib/import/students/parser';
+	import { runStudentImport } from '$lib/import/students/runner';
+	import {
+		canImportValidatedStudents,
+		validateStudentImportRows,
+	} from '$lib/import/students/validator';
+	import { parseSubjectImportFile } from '$lib/import/subjects/parser';
+	import { runSubjectImport } from '$lib/import/subjects/runner';
+	import {
+		canImportValidatedSubjects,
+		validateSubjectImportRows,
+	} from '$lib/import/subjects/validator';
+	import { parseTeacherImportFile } from '$lib/import/teachers/parser';
+	import { runTeacherImport } from '$lib/import/teachers/runner';
+	import {
+		canImportValidatedTeachers,
+		validateTeacherImportRows,
+	} from '$lib/import/teachers/validator';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import { notifyStaffListChanged } from '$lib/staff/notify-staff-list-changed';
 	import { notifyStudentsListChanged } from '$lib/students/notify-students-list-changed';
+	import { notifySubjectsListChanged } from '$lib/subjects/notify-subjects-list-changed';
+	import { notifyTeachersListChanged } from '$lib/teachers/notify-teachers-list-changed';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 
@@ -982,6 +982,7 @@
 				: get(t)('import.guardians.importFailed');
 			guardianImportResult = {
 				created: 0,
+				linksCreated: 0,
 				failed: [],
 				guardianIds: [],
 			};
@@ -1109,7 +1110,7 @@
 			subjectImportResult = {
 				created: 0,
 				failed: [],
-				classSubjectIds: [],
+				gradeLevelSubjectIds: [],
 			};
 		}
 		finally {

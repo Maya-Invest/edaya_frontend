@@ -75,7 +75,7 @@ function resolveFeeId(
 
 	const suggestions = context.fees
 		.map(fee => fee.name)
-		.filter(name => {
+		.filter((name) => {
 			const normalized = normalizeLookupValue(name);
 			return normalized.includes(key) || key.includes(normalized);
 		})

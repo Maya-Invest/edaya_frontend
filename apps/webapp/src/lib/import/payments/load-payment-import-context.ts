@@ -1,7 +1,7 @@
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
+import type { PaymentImportValidationContext } from './types';
 import { loadFinanceData } from '$lib/api/finance-data';
 import { loadStudentMatriculeIndex } from '$lib/import/shared/load-student-matricule-index';
-import type { PaymentImportValidationContext } from './types';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 

@@ -1,7 +1,7 @@
 {
-  "passed": 97,
+  "passed": 193,
   "failed": 0,
-  "skipped": 1,
+  "skipped": 4,
   "results": [
     {
       "scene": "D0",
@@ -66,7 +66,8 @@
     {
       "scene": "D5",
       "step": "5.2 Maths slot shows Mme Touré",
-      "status": "pass"
+      "status": "skip",
+      "detail": "No maths lesson text in grid — verify seed week / teacher assignments manually"
     },
     {
       "scene": "D6",
@@ -165,6 +166,166 @@
       "status": "pass"
     },
     {
+      "scene": "DR",
+      "step": "1 Dashboard overview",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "2 School students list",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "3 School guardians list",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "4 School staff list",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "5 School teachers list",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "6 School calendar",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "7 School activities list",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "8 School announcements list",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "9 School incidents/events list",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "10 Class timetable grid",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "11 Class evaluations list",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "12 Class students roster",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "13 Class teaching list",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "14 Class report cards list",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "15 Class attendance list",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "16 Finance fees list",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "17 Finance billing list",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "18 Finance payments list",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "19 Configuration school profile",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "20 Configuration academic admin",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "21 Configuration grade levels",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "22 Configuration class groups list",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "23 Configuration subjects list",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "24 Configuration tools hub",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "25 Configuration report card definitions",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "26 Configuration grade scales",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "27 Configuration notification templates",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "28 Configuration discipline catalog",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "29 Account inbox",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "30 Account notification settings",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "31 School student drawer profile tab",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "32 Configuration class group drawer profile tab",
+      "status": "pass"
+    },
+    {
       "scene": "DC1",
       "step": "Students list shell",
       "status": "pass"
@@ -255,6 +416,41 @@
       "status": "pass"
     },
     {
+      "scene": "DC11",
+      "step": "Subjects list shell",
+      "status": "pass"
+    },
+    {
+      "scene": "DC11",
+      "step": "Subjects FilterSelect + More menu",
+      "status": "pass"
+    },
+    {
+      "scene": "DC12",
+      "step": "Grade scales list shell",
+      "status": "pass"
+    },
+    {
+      "scene": "DC12",
+      "step": "Grade scales list more menu",
+      "status": "pass"
+    },
+    {
+      "scene": "DC13",
+      "step": "Notification templates list shell",
+      "status": "pass"
+    },
+    {
+      "scene": "DC13",
+      "step": "Notification templates list more menu",
+      "status": "pass"
+    },
+    {
+      "scene": "DC14",
+      "step": "Account inbox shell",
+      "status": "pass"
+    },
+    {
       "scene": "DC10",
       "step": "School calendar filter select",
       "status": "pass"
@@ -266,102 +462,404 @@
     },
     {
       "scene": "DD",
-      "step": "1 Class group assignments deep-link",
+      "step": "school-students deep-link profile",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "2 Class drawer tab bar",
+      "step": "school-students URL segment profile",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "3 Class URL tab=assignments",
+      "step": "school-students deep-link grades",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "4 Class assignments tab content",
+      "step": "school-students URL segment grades",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "5 Class profile clears URL param",
+      "step": "school-students deep-link attendance",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "6 Class assignments updates URL",
+      "step": "school-students URL segment attendance",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "7 Student grades deep-link",
+      "step": "school-students deep-link incidents",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "8 Student drawer tab bar",
+      "step": "school-students URL segment incidents",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "9 Student URL tab=grades",
+      "step": "school-students deep-link finances",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "10 Student profile clears URL param",
+      "step": "school-students URL segment finances",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "11 Teacher assignments deep-link",
+      "step": "school-students deep-link report-card",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "12 Teacher URL tab=assignments",
+      "step": "school-students URL segment report-card",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "13 Staff permissions deep-link",
+      "step": "school-students deep-link enrollments",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "14 Staff URL tab=permissions",
+      "step": "school-students URL segment enrollments",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "15 Subject logbook deep-link",
+      "step": "school-students click navigation setup",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "16 Subject URL tab=logbook",
+      "step": "school-students click to profile",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "17 Subject progression clears URL param",
+      "step": "school-staff deep-link profile",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "18 Subject logbook updates URL",
+      "step": "school-staff URL segment profile",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "19 Reopen class drawer for close test",
+      "step": "school-staff deep-link permissions",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "20 Close drawer strips tab param",
+      "step": "school-staff URL segment permissions",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-staff deep-link assignments",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-staff URL segment assignments",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-staff click navigation setup",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-staff click to profile",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-teachers deep-link profile",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-teachers URL segment profile",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-teachers deep-link assignments",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-teachers URL segment assignments",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-teachers deep-link availability",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-teachers URL segment availability",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-teachers click navigation setup",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-teachers click to profile",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-activities deep-link profile",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-activities URL segment profile",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-activities deep-link students",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-activities URL segment students",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-activities deep-link classes",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-activities URL segment classes",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-activities click navigation setup",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "school-activities click to profile",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "configuration-classes deep-link profile",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "configuration-classes URL segment profile",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "configuration-classes deep-link assignments",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "configuration-classes URL segment assignments",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "configuration-classes click navigation setup",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "configuration-classes click to profile",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "configuration-subjects deep-link progression",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "configuration-subjects URL segment progression",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "configuration-subjects deep-link logbook",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "configuration-subjects URL segment logbook",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "configuration-subjects click navigation setup",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "configuration-subjects click to progression",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-teaching deep-link progression",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-teaching URL segment progression",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-teaching deep-link logbook",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-teaching URL segment logbook",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-teaching click navigation setup",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-teaching click to progression",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-students deep-link profile",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-students URL segment profile",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-students deep-link grades",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-students URL segment grades",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-students deep-link attendance",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-students URL segment attendance",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-students deep-link incidents",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-students URL segment incidents",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-students deep-link finances",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-students URL segment finances",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-students deep-link report-card",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-students URL segment report-card",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-students deep-link enrollments",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-students URL segment enrollments",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-students click navigation setup",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-students click to profile",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "evaluation id resolve",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class evaluations tabs",
+      "status": "skip",
+      "detail": "No evaluation rows in list for current academic period"
+    },
+    {
+      "scene": "DD",
+      "step": "timetable session resolve",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "timetable session tabs",
+      "status": "skip",
+      "detail": "No timetable session link found in grid — verify seed week"
+    },
+    {
+      "scene": "DD",
+      "step": "configuration-classes reopen for close test",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "configuration-classes close returns to list",
       "status": "pass"
     },
     {
@@ -496,6 +994,8 @@
     }
   ],
   "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)",
+    "API request failed (422)",
     "Failed to load resource: the server responded with a status of 403 (Forbidden)"
   ]
 }

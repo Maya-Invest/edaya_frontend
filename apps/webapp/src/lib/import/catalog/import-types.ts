@@ -1,5 +1,4 @@
 import type { ImportTypeDefinition, ImportTypeColumnDefinition, ImportTypeKey } from './types';
-import { sortImportColumnsRequiredFirst } from '$lib/import/shared/sort-import-columns';
 import {
 	BookOpen,
 	FileText,
@@ -10,6 +9,7 @@ import {
 	Users,
 	Wallet,
 } from '$lib/icons';
+import { sortImportColumnsRequiredFirst } from '$lib/import/shared/sort-import-columns';
 import {
 	downloadStudentImportCsvTemplate,
 	downloadStudentImportExcelTemplate,

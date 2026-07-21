@@ -3,11 +3,11 @@ import type { StudentsPageState } from '../../../students-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadClassReportCardResultsData, loadReportCardCatalogData } from '$lib/api/report-cards-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { nowIso } from '$lib/date/format';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { runStudentRouteMutation } from '../../../lib/student-route-mutation';
-import { schoolStudentDetailIdFromUrl } from '../../../students-page.svelte';
 
 const STUDENT_REPORT_CARD_TAB_KEY = Symbol('student-report-card-tab');
 
@@ -110,7 +110,7 @@ export class StudentReportCardTabState {
 		return (url: URL) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
 			load: async () => {
-				const studentId = schoolStudentDetailIdFromUrl(url);
+				const studentId = studentDetailIdFromPathname(url.pathname);
 				const page = this.getPage();
 				const student = studentId ? page.findStudent(studentId) : undefined;
 				if (!studentId || !student) {

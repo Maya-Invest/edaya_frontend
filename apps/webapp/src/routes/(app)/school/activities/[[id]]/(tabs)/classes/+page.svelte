@@ -93,65 +93,65 @@
 			<DataState status={data.status} errorMessage={data.errorMessage}>
 				<p class="text-sm text-muted-foreground">{$t('activities.classesTabHint')}</p>
 
-	<div class="rounded-2xl border border-border bg-card">
-		<div class="flex items-center justify-between border-b border-border px-4 py-2.5">
-			<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-				{$t('activities.linkedClasses')}
-			</p>
-			<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
-				{#snippet children({ disabled, title })}
-					<Button
-						size="sm"
-						variant="outline"
-						class="h-7 rounded-full text-xs"
-						disabled={disabled || busy}
-						title={title}
-						onclick={() => (addOpen = true)}
-					>
-						<Plus class="mr-1 h-3.5 w-3.5" /> {$t('activities.linkClasses')}
-					</Button>
-				{/snippet}
-			</PermissionGate>
-		</div>
-		{#if classEnrollments.length === 0}
-			<p class="px-4 py-6 text-center text-sm text-muted-foreground">{$t('activities.noLinkedClasses')}</p>
-		{:else}
-			<ul class="divide-y divide-border">
-				{#each classEnrollments as enrollment (enrollment.id)}
-					{@const classGroup = academicContext.classes.find(entry => entry.id === enrollment.classGroupId)}
-					<li class="flex items-center justify-between gap-3 px-4 py-2.5">
-						<div class="min-w-0">
-							<p class="truncate text-sm font-medium">{classGroup?.name ?? enrollment.classGroupId}</p>
-							<p class="truncate text-[11px] text-muted-foreground">
-								{classGroup?.level ?? '—'}
-								{#if classGroup}
-									· {classGroup.studentCount} {$t('activities.studentsShort')}
-								{/if}
-							</p>
-						</div>
+				<div class="rounded-2xl border border-border bg-card">
+					<div class="flex items-center justify-between border-b border-border px-4 py-2.5">
+						<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+							{$t('activities.linkedClasses')}
+						</p>
 						<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
 							{#snippet children({ disabled, title })}
 								<Button
-									type="button"
-									variant="ghost"
-									size="icon"
-									class="h-8 w-8 text-muted-foreground hover:text-destructive"
+									size="sm"
+									variant="outline"
+									class="h-7 rounded-full text-xs"
 									disabled={disabled || busy}
-									title={title ?? $t('activities.unlinkClass')}
-									onclick={() => {
-										removeEnrollmentId = enrollment.id;
-										removeOpen = true;
-									}}
+									title={title}
+									onclick={() => (addOpen = true)}
 								>
-									<Trash2 class="h-4 w-4" />
+									<Plus class="mr-1 h-3.5 w-3.5" /> {$t('activities.linkClasses')}
 								</Button>
 							{/snippet}
 						</PermissionGate>
-					</li>
-				{/each}
-			</ul>
-		{/if}
-	</div>
+					</div>
+					{#if classEnrollments.length === 0}
+						<p class="px-4 py-6 text-center text-sm text-muted-foreground">{$t('activities.noLinkedClasses')}</p>
+					{:else}
+						<ul class="divide-y divide-border">
+							{#each classEnrollments as enrollment (enrollment.id)}
+								{@const classGroup = academicContext.classes.find(entry => entry.id === enrollment.classGroupId)}
+								<li class="flex items-center justify-between gap-3 px-4 py-2.5">
+									<div class="min-w-0">
+										<p class="truncate text-sm font-medium">{classGroup?.name ?? enrollment.classGroupId}</p>
+										<p class="truncate text-[11px] text-muted-foreground">
+											{classGroup?.level ?? '—'}
+											{#if classGroup}
+												· {classGroup.studentCount} {$t('activities.studentsShort')}
+											{/if}
+										</p>
+									</div>
+									<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
+										{#snippet children({ disabled, title })}
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon"
+												class="h-8 w-8 text-muted-foreground hover:text-destructive"
+												disabled={disabled || busy}
+												title={title ?? $t('activities.unlinkClass')}
+												onclick={() => {
+													removeEnrollmentId = enrollment.id;
+													removeOpen = true;
+												}}
+											>
+												<Trash2 class="h-4 w-4" />
+											</Button>
+										{/snippet}
+									</PermissionGate>
+								</li>
+							{/each}
+						</ul>
+					{/if}
+				</div>
 			</DataState>
 		{/snippet}
 	</PageQuery>

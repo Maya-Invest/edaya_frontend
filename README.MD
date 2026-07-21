@@ -8,7 +8,8 @@ Monorepo for Edaya web frontends: **Bun** workspaces and **Turborepo** orchestra
 edaya_web/
 ├── apps/
 │   ├── webapp/              @edaya/webapp — school staff UI (Cloudflare Workers)
-│   └── saas-admin/          @edaya/saas-admin — platform operator UI (Cloudflare Workers)
+│   ├── webadmin/            @edaya/webadmin — platform operator UI (Cloudflare Workers)
+│   └── website/             @edaya/website — marketing / coming soon (Astro, Cloudflare Workers)
 ├── packages/
 │   └── web-fixtures/        @edaya/web-fixtures — dev test constants + demo login data
 └── tooling/
@@ -46,13 +47,15 @@ bun dev
 | Service | URL |
 |---------|-----|
 | Webapp | http://localhost:5173 |
-| SaaS Admin | http://localhost:5174 |
+| Webadmin | http://localhost:5174 |
+| Website | http://localhost:4321 |
 
 Or run a single app:
 
 ```sh
 bun run dev:webapp
-bun run dev:saas-admin
+bun run dev:webadmin
+bun run dev:website
 ```
 
 Dev servers proxy `/core`, `/auth`, `/public`, and API docs to `API_URL` (default `http://localhost:9999`).
@@ -65,9 +68,9 @@ Dev servers proxy `/core`, `/auth`, `/public`, and API docs to `API_URL` (defaul
 
 | Command | Description |
 |---------|-------------|
-| `bun dev` | Start webapp + saas-admin in watch mode |
+| `bun dev` | Start webapp + webadmin in watch mode |
 | `bun run dev:webapp` | School staff UI only |
-| `bun run dev:saas-admin` | SaaS admin only |
+| `bun run dev:webadmin` | Webadmin only |
 | `bun run verify` | Pre-PR gate: `bun repo verify` + quality + build + test |
 | `bun run lint` | ESLint across workspaces |
 | `bun run lint:fix` | ESLint with auto-fix |
@@ -77,7 +80,9 @@ Dev servers proxy `/core`, `/auth`, `/public`, and API docs to `API_URL` (defaul
 | `bun run quality` | Lint + type-check per package |
 | `bun repo smoke-test staging` | HTTP smoke against staging SPA shells |
 | `bun run deploy:webapp:staging` | Build + deploy webapp (staging) |
-| `bun run deploy:saas-admin:staging` | Build + deploy SaaS admin (staging) |
+| `bun run deploy:webadmin:staging` | Build + deploy webadmin (staging) |
+| `bun run dev:website` | Astro coming-soon site only |
+| `bun run deploy:website:staging` | Build + deploy website (staging) |
 
 ### Pre-PR verification
 
@@ -90,12 +95,13 @@ Full command tree: **[docs/reference/repo-cli.md](./docs/reference/repo-cli.md)*
 
 ## Deployment
 
-Both apps are static SvelteKit SPAs on Cloudflare Workers (assets):
+Apps are static sites on Cloudflare Workers (assets):
 
 | App | Production | Staging |
 |-----|------------|---------|
-| Webapp | `app.edaya.softilab.dev` | `app-staging.edaya.softilab.dev` |
-| SaaS Admin | `admin.edaya.softilab.dev` | `admin-staging.edaya.softilab.dev` |
+| Website | `edayaplus.com`, `www.edayaplus.com` | `staging.edayaplus.com` |
+| Webapp | `app.edayaplus.com` | `staging.app.edayaplus.com` |
+| Webadmin | `admin.edayaplus.com` | `staging.admin.edayaplus.com` |
 
 Set `PUBLIC_API_URL` at build time when the API is not same-origin.
 
@@ -109,6 +115,6 @@ See [docs/reference/cross-repo-workflow.md](./docs/reference/cross-repo-workflow
 
 ## Roadmap
 
-1. **SaaS admin** — platform operator auth, tenant directory, billing, support tooling.
+1. **Webadmin** — platform operator auth, tenant directory, billing, support tooling.
 2. **Shared UI** — extract common Tailwind/Bits components into `packages/ui` where it makes sense.
 3. **Production cutover** — deploy web apps from `edaya_web` and retire legacy `edaya` webapp paths.

@@ -7,6 +7,7 @@ import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { inClassAssessmentWindow, nowIso, todayDateInput } from '$lib/date/format';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
+import { tryGetEvaluationGradingTabState } from './[[id]]/(tabs)/grading/evaluation-grading-tab.svelte';
 import {
 	emptyEvaluationsSlice,
 	evaluationDetailIdFromUrl,
@@ -17,7 +18,6 @@ import {
 } from './lib/evaluation-helpers';
 import { runEvaluationRouteMutation } from './lib/evaluation-route-mutation';
 import { loadEvaluationsSlice, queryEvaluationsListPage } from './lib/evaluations-queries';
-import { tryGetEvaluationGradingTabState } from './[[id]]/(tabs)/grading/evaluation-grading-tab.svelte';
 
 type ApiAssessment = components['schemas']['Assessment'];
 
@@ -314,8 +314,7 @@ export class EvaluationsPageState {
 	}): Promise<boolean> {
 		const client = getBrowserSchoolClient();
 		const previous = this.slice?.evaluations.find(evaluation => evaluation.id === input.assessmentId);
-		const previousResults = tryGetEvaluationGradingTabState()?.slice?.assessmentResults
-			.filter(result => result.assessmentId === input.assessmentId) ?? [];
+		const previousResults = tryGetEvaluationGradingTabState()?.slice?.assessmentResults.filter(result => result.assessmentId === input.assessmentId) ?? [];
 		const result = await runEvaluationRouteMutation({
 			request: () => client.entities.assessments.delete({ id: input.assessmentId }),
 			successMessage: input.successMessage,
@@ -343,8 +342,7 @@ export class EvaluationsPageState {
 	}): Promise<boolean> {
 		const client = getBrowserSchoolClient();
 		const resultId = `ar-${input.assessmentId}-${input.studentId}`;
-		const previousResult = tryGetEvaluationGradingTabState()?.slice?.assessmentResults
-			.find(result => result.id === resultId);
+		const previousResult = tryGetEvaluationGradingTabState()?.slice?.assessmentResults.find(result => result.id === resultId);
 		const previousEvaluation = this.slice?.evaluations.find(evaluation => evaluation.id === input.assessmentId);
 		const previousStats = previousEvaluation
 			? { graded: previousEvaluation.graded, averageMark: previousEvaluation.averageMark }

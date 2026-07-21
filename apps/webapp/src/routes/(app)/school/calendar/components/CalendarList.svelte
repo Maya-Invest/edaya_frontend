@@ -2,7 +2,6 @@
 	import type { SchoolYearEvent } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { deleteCalendarEventOnPage } from '../lib/calendar-mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
@@ -28,6 +27,7 @@
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getCalendarPageState } from '../calendar-page.svelte';
+	import { deleteCalendarEventOnPage } from '../lib/calendar-mutations';
 	import CalendarEventFormModal from './CalendarEventFormModal.svelte';
 
 	const calendarPage = getCalendarPageState();

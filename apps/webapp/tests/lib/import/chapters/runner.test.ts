@@ -9,6 +9,7 @@ const { runChapterImport } = await import('$lib/import/chapters/runner');
 
 function row(overrides: Partial<ValidatedChapterImportRow> & Pick<ValidatedChapterImportRow, 'rowIndex'>): ValidatedChapterImportRow {
 	return {
+		niveau: '6ème',
 		matiere: 'Mathématiques',
 		titre: 'Les fractions',
 		sequenceOrder: 1,
@@ -16,6 +17,8 @@ function row(overrides: Partial<ValidatedChapterImportRow> & Pick<ValidatedChapt
 			classSubjectId: 'cs-6a-math',
 			subjectId: 'subj-math-6a',
 			classGroupId: 'class-6a',
+			gradeLevelId: 'gl-6',
+			gradeLevelName: '6ème',
 			subjectName: 'Mathématiques',
 			className: '6ème A',
 		}],

@@ -1,32 +1,24 @@
 <script lang="ts">
-	import { page } from '$app/stores';
-	import AttendanceView from '$lib/components/school/attendance/AttendanceView.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
-	import { detailHref } from '$lib/detail-hrefs';
+	import { drawerTabRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
-	import { appGoto } from '$lib/navigation/app-navigation';
-	import { queryClassAttendancePage } from '$lib/queries/attendance.queries';
+	import { getAttendancePageState } from '../attendance-page.svelte';
+	import { getAttendanceDayDetailState } from './attendance-day-detail.svelte';
+	import AttendanceDayDetail from './components/AttendanceDayDetail.svelte';
 
-	const selectedId = $derived($page.params.id);
-	const classId = $derived($page.params.classId ?? '6a');
-	const query = $derived(queryClassAttendancePage(classId));
+	const attendancePage = getAttendancePageState();
+	const detailState = getAttendanceDayDetailState();
+	const query = detailState.query();
+	const day = $derived(attendancePage.selected);
 </script>
 
-<PageQuery {query} loadingTitle={$t('tab.attendance')}>
-	{#snippet children(data)}
-		<DataState
-			preserveShell
-			status={data.status}
-			errorMessage={data.errorMessage}
-			emptyTitle={$t('tab.attendance')}
-			emptyDescription={$t('dataState.emptyDescription')}
-		>
-			<AttendanceView
-				classId={data.classId}
-				onSelect={day => appGoto(detailHref.classAttendanceDay(data.classId, day.id))}
-				{selectedId}
-			/>
-		</DataState>
-	{/snippet}
-</PageQuery>
+{#if day}
+	<PageQuery {query} cacheKey={drawerTabRouteCacheKey} loadingTitle={$t('attendanceDay.drawerLabel')}>
+		{#snippet children(data)}
+			<DataState status={data.status} errorMessage={data.errorMessage}>
+				<AttendanceDayDetail {day} />
+			</DataState>
+		{/snippet}
+	</PageQuery>
+{/if}

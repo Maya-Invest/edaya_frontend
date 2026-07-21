@@ -14,28 +14,21 @@ import type {
 
 } from './types';
 
+import { canImportValidatedRows } from '$lib/import/shared/can-import-validated-rows';
+
 import { parseChapterSequenceOrder } from './parse-sequence-order';
 
 import { resolveChapterImportTargets } from './resolve-chapter-targets';
 
-import { canImportValidatedRows } from '$lib/import/shared/can-import-validated-rows';
-
-
-
 function normalizeLookupValue(value: string): string {
-
 	return value.trim().toLowerCase();
-
 }
-
-
 
 function issue(
 
 	input: Omit<ChapterImportValidationIssue, 'severity'> & { severity?: ChapterImportValidationIssue['severity'] },
 
 ): ChapterImportValidationIssue {
-
 	return {
 
 		...input,
@@ -43,10 +36,7 @@ function issue(
 		severity: input.severity ?? 'error',
 
 	};
-
 }
-
-
 
 function validateRequiredField(
 
@@ -59,11 +49,8 @@ function validateRequiredField(
 	issues: ChapterImportValidationIssue[],
 
 ): boolean {
-
 	if (value.trim().length > 0) {
-
 		return true;
-
 	}
 
 	issues.push(issue({
@@ -77,10 +64,7 @@ function validateRequiredField(
 	}));
 
 	return false;
-
 }
-
-
 
 export function validateChapterImportRows(
 
@@ -89,7 +73,6 @@ export function validateChapterImportRows(
 	context: ChapterImportValidationContext,
 
 ): ChapterImportValidationResult {
-
 	const errors: ChapterImportValidationIssue[] = [];
 
 	const warnings: ChapterImportValidationIssue[] = [];
@@ -98,13 +81,8 @@ export function validateChapterImportRows(
 
 	const chaptersInFile = new Map<string, number>();
 
-
-
 	for (const row of rows) {
-
 		const rowIssues: ChapterImportValidationIssue[] = [];
-
-
 
 		const hasNiveau = validateRequiredField(row, 'niveau', row.niveau, rowIssues);
 
@@ -112,16 +90,12 @@ export function validateChapterImportRows(
 
 		const hasTitre = validateRequiredField(row, 'titre', row.titre, rowIssues);
 
-
-
 		let sequenceOrder = 1;
 
 		if (row.ordre?.trim()) {
-
 			const parsed = parseChapterSequenceOrder(row.ordre);
 
 			if (parsed == null) {
-
 				rowIssues.push(issue({
 
 					rowIndex: row.rowIndex,
@@ -133,33 +107,23 @@ export function validateChapterImportRows(
 					messageKey: 'import.chapters.validation.invalidOrder',
 
 				}));
-
 			}
 
 			else {
-
 				sequenceOrder = parsed;
-
 			}
-
 		}
-
-
 
 		let targets = [] as ValidatedChapterImportRow['targets'];
 
 		if (hasNiveau && hasMatiere) {
-
 			const resolution = resolveChapterImportTargets(row.niveau, row.matiere, context);
 
 			if (resolution.targets.length > 0) {
-
 				targets = resolution.targets;
-
 			}
 
 			else if (resolution.levelSuggestions?.length) {
-
 				rowIssues.push(issue({
 
 					rowIndex: row.rowIndex,
@@ -173,11 +137,9 @@ export function validateChapterImportRows(
 					suggestions: resolution.levelSuggestions,
 
 				}));
-
 			}
 
 			else {
-
 				rowIssues.push(issue({
 
 					rowIndex: row.rowIndex,
@@ -191,23 +153,16 @@ export function validateChapterImportRows(
 					suggestions: resolution.suggestions,
 
 				}));
-
 			}
-
 		}
 
-
-
 		if (hasTitre && targets.length > 0) {
-
 			for (const target of targets) {
-
 				const duplicateKey = `${target.classSubjectId}::${normalizeLookupValue(row.titre)}`;
 
 				const previousRow = chaptersInFile.get(duplicateKey);
 
 				if (previousRow != null) {
-
 					rowIssues.push(issue({
 
 						rowIndex: row.rowIndex,
@@ -223,17 +178,11 @@ export function validateChapterImportRows(
 					}));
 
 					break;
-
 				}
-
 			}
 
-
-
 			if (!rowIssues.some(entry => entry.messageKey === 'import.chapters.validation.duplicateInFile')) {
-
 				for (const target of targets) {
-
 					chaptersInFile.set(
 
 						`${target.classSubjectId}::${normalizeLookupValue(row.titre)}`,
@@ -241,17 +190,11 @@ export function validateChapterImportRows(
 						row.rowIndex,
 
 					);
-
 				}
-
 			}
-
 		}
 
-
-
 		if (targets.length > 1) {
-
 			warnings.push(issue({
 
 				rowIndex: row.rowIndex,
@@ -267,33 +210,21 @@ export function validateChapterImportRows(
 				severity: 'warning',
 
 			}));
-
 		}
-
-
 
 		const blockingIssues = rowIssues.filter(entry => entry.severity === 'error');
 
 		for (const rowIssue of rowIssues) {
-
 			if (rowIssue.severity === 'warning') {
-
 				warnings.push(rowIssue);
-
 			}
 
 			else {
-
 				errors.push(rowIssue);
-
 			}
-
 		}
 
-
-
 		if (blockingIssues.length === 0 && hasNiveau && hasMatiere && hasTitre && targets.length > 0) {
-
 			validRows.push({
 
 				...row,
@@ -303,30 +234,16 @@ export function validateChapterImportRows(
 				targets,
 
 			});
-
 		}
-
 	}
 
-
-
 	return { validRows, errors, warnings };
-
 }
-
-
 
 export function canImportValidatedChapters(result: ChapterImportValidationResult | null): boolean {
-
 	return canImportValidatedRows(result);
-
 }
-
-
 
 export function countChapterImportOperations(rows: readonly ValidatedChapterImportRow[]): number {
-
 	return rows.reduce((total, row) => total + row.targets.length, 0);
-
 }
-

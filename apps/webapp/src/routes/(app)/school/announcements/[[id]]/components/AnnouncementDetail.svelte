@@ -2,20 +2,20 @@
 	import type { Announcement } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
-	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import { t } from '$lib/i18n';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getAnnouncementsPageState } from '../../announcements-page.svelte';
-	import { resolveAnnouncementTargetLabel } from '../../lib/announcement-target-label';
 	import AnnouncementFormModal from '../../components/AnnouncementFormModal.svelte';
+	import { resolveAnnouncementTargetLabel } from '../../lib/announcement-target-label';
 	import AnnouncementTargetFormModal from './AnnouncementTargetFormModal.svelte';
 
 	const {

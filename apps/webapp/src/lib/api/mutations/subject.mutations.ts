@@ -2,9 +2,9 @@ import type { Subject, SubjectCategory } from '$lib/types/school';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { buildSubjectConfigCommand } from '$lib/api/subject-save-payload';
-import { createSubjectForClass } from '$lib/subjects/create-subject-for-class';
 import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
+import { createSubjectForClass } from '$lib/subjects/create-subject-for-class';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
 

@@ -17,11 +17,16 @@ export function webappReadinessPath(): string {
 		?? (integrationUsesDemoLogin() ? '/login/demo' : '/login');
 }
 
-const PATH_TAB_ROUTE_PREFIXES = [
+const SCHOOL_DRAWER_PREFIXES = [
 	'/school/students/',
 	'/school/teachers/',
 	'/school/staff/',
 	'/school/activities/',
+] as const;
+
+const CONFIG_DRAWER_PREFIXES = [
+	'/configuration/classes/',
+	'/configuration/subjects/',
 ] as const;
 
 export function schoolStudentPath(id: string, tab = 'profile'): string {
@@ -40,16 +45,91 @@ export function schoolActivityPath(id: string, tab = 'profile'): string {
 	return `/school/activities/${id}/${tab}`;
 }
 
-export function drawerTabFromPathname(pathname: string): string | null {
-	for (const prefix of PATH_TAB_ROUTE_PREFIXES) {
-		if (!pathname.startsWith(prefix)) {
-			continue;
-		}
-		const segments = pathname.slice(prefix.length).split('/').filter(Boolean);
-		if (segments.length === 0) {
-			return null;
-		}
-		return segments[1] ?? 'profile';
+export function configClassGroupPath(id: string, tab: 'profile' | 'assignments' = 'profile'): string {
+	return `/configuration/classes/${id}/${tab}`;
+}
+
+export function configSubjectPath(id: string, tab: 'progression' | 'logbook' = 'progression'): string {
+	return `/configuration/subjects/${id}/${tab}`;
+}
+
+export function classStudentsPath(classId: string, studentId: string, tab = 'profile'): string {
+	return `/classes/${classId}/students/${studentId}/${tab}`;
+}
+
+export function classTeachingDrawerPath(classId: string, subjectId: string): string {
+	return `/classes/${classId}/teaching/${subjectId}`;
+}
+
+export function classTeachingPath(
+	classId: string,
+	subjectId: string,
+	tab: 'progression' | 'logbook' = 'progression',
+): string {
+	return `${classTeachingDrawerPath(classId, subjectId)}/${tab}`;
+}
+
+export function classEvaluationsDrawerPath(classId: string, evaluationId: string): string {
+	return `/classes/${classId}/evaluations/${evaluationId}`;
+}
+
+export function classEvaluationsPath(
+	classId: string,
+	evaluationId: string,
+	tab: 'details' | 'grading' = 'details',
+): string {
+	return `${classEvaluationsDrawerPath(classId, evaluationId)}/${tab}`;
+}
+
+export function classTimetableDrawerPath(classId: string, sessionId: string): string {
+	return `/classes/${classId}/timetable/${sessionId}`;
+}
+
+export function classTimetablePath(
+	classId: string,
+	sessionId: string,
+	tab: 'details' | 'attendance' | 'logbook' = 'details',
+): string {
+	return `${classTimetableDrawerPath(classId, sessionId)}/${tab}`;
+}
+
+function tabFromSchoolDrawerPath(pathname: string, prefix: string): string | null {
+	if (!pathname.startsWith(prefix)) {
+		return null;
 	}
+	const segments = pathname.slice(prefix.length).split('/').filter(Boolean);
+	if (segments.length === 0) {
+		return null;
+	}
+	return segments[1] ?? 'profile';
+}
+
+export function drawerTabFromPathname(pathname: string): string | null {
+	for (const prefix of SCHOOL_DRAWER_PREFIXES) {
+		const tab = tabFromSchoolDrawerPath(pathname, prefix);
+		if (tab !== null) {
+			return tab;
+		}
+	}
+
+	for (const prefix of CONFIG_DRAWER_PREFIXES) {
+		const tab = tabFromSchoolDrawerPath(pathname, prefix);
+		if (tab !== null) {
+			return tab;
+		}
+	}
+
+	const classStudentMatch = pathname.match(/^\/classes\/[^/]+\/students\/[^/]+\/([^/]+)/);
+	if (classStudentMatch) {
+		return classStudentMatch[1] ?? null;
+	}
+
+	const classDrawerMatch = pathname.match(
+		/^\/classes\/[^/]+\/(?:teaching|evaluations|timetable)\/[^/]+\/([^/]+)/,
+	);
+	if (classDrawerMatch) {
+		return classDrawerMatch[1] ?? null;
+	}
+
 	return null;
 }

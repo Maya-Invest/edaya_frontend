@@ -18,11 +18,7 @@ import { notifySubjectsListChanged } from '$lib/subjects/notify-subjects-list-ch
 
 import { get } from 'svelte/store';
 
-
-
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
-
-
 
 export interface SubjectImportRunFailure {
 
@@ -34,8 +30,6 @@ export interface SubjectImportRunFailure {
 
 }
 
-
-
 export interface SubjectImportRunResult {
 
 	created: number;
@@ -45,8 +39,6 @@ export interface SubjectImportRunResult {
 	gradeLevelSubjectIds: string[];
 
 }
-
-
 
 export interface SubjectImportRunOptions {
 
@@ -64,10 +56,7 @@ export interface SubjectImportRunOptions {
 
 }
 
-
-
 export async function runSubjectImport(options: SubjectImportRunOptions): Promise<SubjectImportRunResult> {
-
 	const { schoolId, academicYearId, client, rows, onProgress, seed = Date.now().toString(36) } = options;
 
 	const failed: SubjectImportRunFailure[] = [];
@@ -78,10 +67,7 @@ export async function runSubjectImport(options: SubjectImportRunOptions): Promis
 
 	const total = rows.length;
 
-
-
 	for (const [index, row] of rows.entries()) {
-
 		onProgress?.(index, total);
 
 		const { subjectId, gradeLevelSubjectId, classSubjectIdsByClassGroupId } = createSubjectImportIdsForGradeLevel(
@@ -96,10 +82,7 @@ export async function runSubjectImport(options: SubjectImportRunOptions): Promis
 
 		);
 
-
-
 		try {
-
 			const result = await createSubjectForGradeLevel(client, {
 
 				schoolId,
@@ -125,11 +108,9 @@ export async function runSubjectImport(options: SubjectImportRunOptions): Promis
 			});
 
 			gradeLevelSubjectIds.push(result.gradeLevelSubjectId);
-
 		}
 
 		catch (error) {
-
 			failed.push({
 
 				rowIndex: row.rowIndex,
@@ -143,16 +124,10 @@ export async function runSubjectImport(options: SubjectImportRunOptions): Promis
 				}, (key, params) => get(t)(key, params ?? {})),
 
 			});
-
 		}
-
 	}
 
-
-
 	onProgress?.(total, total);
-
-
 
 	const result = {
 
@@ -164,14 +139,9 @@ export async function runSubjectImport(options: SubjectImportRunOptions): Promis
 
 	};
 
-
-
 	if (gradeLevelSubjectIds.length > 0) {
-
 		try {
-
 			notifySubjectsListChanged();
-
 		}
 
 		catch {
@@ -179,12 +149,7 @@ export async function runSubjectImport(options: SubjectImportRunOptions): Promis
 			// Import succeeded; roster notification is best-effort.
 
 		}
-
 	}
 
-
-
 	return result;
-
 }
-

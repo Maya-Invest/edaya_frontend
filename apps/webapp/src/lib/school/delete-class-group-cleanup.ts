@@ -69,8 +69,8 @@ export async function cleanupClassGroupDependencies(
 		listOrEmpty(() => client.entities.teacherAssignments.list(classGroupScope(classGroupId))),
 		classSubjectIds.length > 0
 			? listOrEmpty(() => client.entities.teacherAssignments.list(
-				teacherAssignmentsForClassSubjects(classSubjectIds),
-			))
+					teacherAssignmentsForClassSubjects(classSubjectIds),
+				))
 			: Promise.resolve([]),
 		listOrEmpty(() => client.entities.staffAssignments.list(classGroupScope(classGroupId))),
 		listOrEmpty(() => client.entities.resourceAssignments.list(classGroupScope(classGroupId))),
@@ -81,8 +81,8 @@ export async function cleanupClassGroupDependencies(
 		listOrEmpty(() => client.entities.enrollments.list(classGroupScope(classGroupId))),
 		classSubjectIds.length > 0
 			? listOrEmpty(() => client.entities.classSubjectMatters.list(
-				recordsForFieldIds('classSubjectId', classSubjectIds),
-			))
+					recordsForFieldIds('classSubjectId', classSubjectIds),
+				))
 			: Promise.resolve([]),
 		listOrEmpty(() => client.entities.attendances.list(classGroupScope(classGroupId))),
 	]);

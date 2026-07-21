@@ -6,6 +6,11 @@ import type {
 	TeacherImportValidationResult,
 	ValidatedTeacherImportRow,
 } from './types';
+import { canImportValidatedRows } from '$lib/import/shared/can-import-validated-rows';
+import {
+	buildImportClassLookup,
+	resolveImportClassGroup,
+} from '$lib/import/shared/resolve-import-class-group';
 import { parseTeacherSubjectNames } from './parse-subject-names';
 import { resolveTeacherImportClassSubjectIds } from './resolve-teacher-import-assignments';
 import {
@@ -13,13 +18,8 @@ import {
 	resolvePrimarySubjectId,
 	subjectNameSuggestions,
 } from './subject-name-lookup';
-import { canImportValidatedRows } from '$lib/import/shared/can-import-validated-rows';
-import {
-	buildImportClassLookup,
-	resolveImportClassGroup,
-} from '$lib/import/shared/resolve-import-class-group';
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/;
 
 function normalizeLookupValue(value: string): string {
 	return value.trim().toLowerCase();

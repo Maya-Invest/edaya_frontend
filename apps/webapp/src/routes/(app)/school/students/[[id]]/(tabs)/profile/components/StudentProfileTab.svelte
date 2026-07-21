@@ -9,8 +9,8 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
 	import { FileText, Mail, Phone, Users, Plus } from '$lib/icons';
-	import { studentGenderLabelKey } from '$lib/students/format-student-gender';
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { studentGenderLabelKey } from '$lib/students/format-student-gender';
 	import { cn } from '$lib/utils';
 	import { pedagogicalNoteToneByCategory, getStudentProfileTabState } from '../student-profile-tab.svelte';
 	import AccountLinkingSection from './StudentAccountLinkingSection.svelte';

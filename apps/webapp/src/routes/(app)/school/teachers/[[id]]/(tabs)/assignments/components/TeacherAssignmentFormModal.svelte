@@ -5,12 +5,12 @@
 	import { entitiesByIds, uniqueIds } from '$lib/api/entity-list-filters';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { authSession } from '$lib/auth/session.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import { pickClassSubjectIdForTeacherSubject } from '$lib/teachers/pick-class-subject-for-teacher';
 	import { t } from '$lib/i18n';
+	import { pickClassSubjectIdForTeacherSubject } from '$lib/teachers/pick-class-subject-for-teacher';
 	import { get } from 'svelte/store';
 	import { createTeacherAssignmentPayload } from '../../../../lib/teacher-detail-mutations';
 	import { getTeachersPageState } from '../../../../teachers-page.svelte';
@@ -48,10 +48,7 @@
 
 	const selectedSubjectIds = $derived(classSubjectIds.filter(entry => entry.trim().length > 0));
 
-	const canSubmit = $derived(
-		Boolean(classGroupId)
-		&& (kind === 'homeroom' || selectedSubjectIds.length > 0),
-	);
+	const canSubmit = $derived(Boolean(classGroupId) && (kind === 'homeroom' || selectedSubjectIds.length > 0));
 
 	async function loadClassSubjects(nextClassGroupId: string) {
 		const loadId = ++classSubjectsLoadId;
@@ -124,7 +121,6 @@
 		}
 
 		busy = true;
-<<<<<<< HEAD
 		try {
 			if (kind === 'homeroom') {
 				const id = `ta-${Date.now().toString(36)}`;
@@ -140,6 +136,8 @@
 					successMessage: get(t)('teacher.assignmentCreated'),
 				});
 				if (ok) {
+					assignmentsTab.upsertAssignment(assignment);
+					teachersPage.setAssignmentCount(teacher.id, assignmentsTab.assignmentsFor(teacher.id).length);
 					open = false;
 				}
 				return;
@@ -160,35 +158,18 @@
 					successMessage: saved === 0 ? get(t)('teacher.assignmentCreated') : undefined,
 				});
 				if (ok) {
+					assignmentsTab.upsertAssignment(assignment);
 					saved += 1;
 				}
 			}
 
 			if (saved > 0) {
+				teachersPage.setAssignmentCount(teacher.id, assignmentsTab.assignmentsFor(teacher.id).length);
 				open = false;
 			}
 		}
 		finally {
 			busy = false;
-=======
-		const id = `ta-${Date.now().toString(36)}`;
-		const assignment = createTeacherAssignmentPayload({
-			id,
-			teacherId: teacher.id,
-			kind,
-			classGroupId,
-			classSubjectId: kind === 'subject' ? classSubjectId : null,
-		});
-		const ok = await teachersPage.saveAssignment({
-			assignment,
-			successMessage: get(t)('teacher.assignmentCreated'),
-		});
-		busy = false;
-		if (ok) {
-			assignmentsTab.upsertAssignment(assignment);
-			teachersPage.setAssignmentCount(teacher.id, assignmentsTab.assignmentsFor(teacher.id).length);
-			open = false;
->>>>>>> 0e6132c7fe9feb3d2ad6ea7e72855b85296833d3
 		}
 	}
 </script>

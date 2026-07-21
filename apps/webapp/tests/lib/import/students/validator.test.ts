@@ -7,8 +7,8 @@ import {
 } from '$lib/import/students/validator';
 
 const CLASSES = [
-	{ id: 'class-6a', name: '6ème A' },
-	{ id: 'class-6b', name: '6ème B' },
+	{ id: 'class-6a', name: '6ème A', studentCount: 0 },
+	{ id: 'class-6b', name: '6ème B', studentCount: 0 },
 ] as const;
 
 function row(overrides: Partial<StudentImportRow> & Pick<StudentImportRow, 'rowIndex'>): StudentImportRow {

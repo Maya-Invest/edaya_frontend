@@ -1,5 +1,5 @@
-import { fetchCatalogSubjectsSources, mapCatalogSubjects } from '$lib/api/subjects-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { fetchCatalogSubjectsSources, mapCatalogSubjects } from '$lib/api/subjects-data';
 import { subjectImportDuplicateKey } from '$lib/import/shared/subject-import-duplicate-key';
 
 export { subjectImportDuplicateKey } from '$lib/import/shared/subject-import-duplicate-key';

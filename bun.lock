@@ -15,8 +15,8 @@
         "typescript": "^6.0.2",
       },
     },
-    "apps/saas-admin": {
-      "name": "@edaya/saas-admin",
+    "apps/webadmin": {
+      "name": "@edaya/webadmin",
       "version": "0.0.1",
       "dependencies": {
         "@maya-invest/edaya-api-client": "file:../../edaya_backend/package/api-client",
@@ -169,11 +169,11 @@
 
     "@e18e/eslint-plugin": ["@e18e/eslint-plugin@0.5.1", "", { "dependencies": { "empathic": "^2.0.1", "module-replacements": "^3.0.0-beta.8", "semver": "^7.8.2" }, "peerDependencies": { "eslint": "^9.0.0 || ^10.0.0", "oxlint": "^1.68.0" }, "optionalPeers": ["eslint", "oxlint"] }, "sha512-mqUozeyNI9xvJbjrOO7y765dT7Kud3bwCm/DHwctxdEngPdJWQaS9BNGgpM1wCCzZfOtlKQh4ZRhm3VRomT9KA=="],
 
-    "@edaya/saas-admin": ["@edaya/saas-admin@workspace:apps/saas-admin"],
-
     "@edaya/web-fixtures": ["@edaya/web-fixtures@workspace:tooling/web-fixtures"],
 
     "@edaya/web-repo": ["@edaya/web-repo@workspace:tooling/repo"],
+
+    "@edaya/webadmin": ["@edaya/webadmin@workspace:apps/webadmin"],
 
     "@edaya/webapp": ["@edaya/webapp@workspace:apps/webapp"],
 
@@ -1311,7 +1311,7 @@
 
     "@cspotcode/source-map-support/@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.9", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.0.3", "@jridgewell/sourcemap-codec": "^1.4.10" } }, "sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ=="],
 
-    "@edaya/saas-admin/@maya-invest/edaya-api-client": ["@maya-invest/edaya-api-client@file:../edaya_backend/package/api-client", {}],
+    "@edaya/webadmin/@maya-invest/edaya-api-client": ["@maya-invest/edaya-api-client@file:../edaya_backend/package/api-client", {}],
 
     "@edaya/webapp/@maya-invest/edaya-api-client": ["@maya-invest/edaya-api-client@file:../edaya_backend/package/api-client", {}],
 

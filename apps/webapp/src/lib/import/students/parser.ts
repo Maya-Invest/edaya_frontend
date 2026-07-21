@@ -66,10 +66,10 @@ function mapRecordToStudentImportRow(
 		rowIndex,
 		prenom: values.prenom,
 		nom: values.nom,
+		matricule: values.matricule ?? '',
 		classe: values.classe,
 		...(values.date_naissance ? { date_naissance: values.date_naissance } : {}),
 		...(values.genre ? { genre: values.genre } : {}),
-		...(values.matricule ? { matricule: values.matricule } : {}),
 	};
 }
 

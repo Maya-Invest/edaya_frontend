@@ -10,8 +10,8 @@
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
-	import { EventsPageState, setEventsPageState } from './events-page.svelte';
 	import EventsList from './components/EventsList.svelte';
+	import { EventsPageState, setEventsPageState } from './events-page.svelte';
 
 	const { children: pageChildren }: { children: Snippet } = $props();
 

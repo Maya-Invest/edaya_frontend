@@ -141,80 +141,80 @@
 		{#snippet children(data)}
 			<DataState status={data.status} errorMessage={data.errorMessage}>
 				<div class="rounded-2xl border border-border bg-card">
-		<div class="flex items-center justify-between border-b border-border px-4 py-2.5">
-			<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-				{$t('activities.enrolledStudents')}
-			</p>
-			<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
-				{#snippet children({ disabled, title })}
-					<Button
-						size="sm"
-						variant="outline"
-						class="h-7 rounded-full text-xs"
-						disabled={disabled || busy || !canAddStudents}
-						title={!canAddStudents ? $t('activities.addStudentsRequiresLinkedClasses') : title}
-						onclick={() => (addOpen = true)}
-					>
-						<Plus class="mr-1 h-3.5 w-3.5" /> {$t('activities.addStudent')}
-					</Button>
-				{/snippet}
-			</PermissionGate>
-		</div>
-		{#if enrollments.length === 0}
-			<p class="px-4 py-6 text-center text-sm text-muted-foreground">{$t('activities.noEnrollments')}</p>
-		{:else}
-			<ul class="divide-y divide-border">
-				{#each enrollments as enrollment (enrollment.id)}
-					{@const student = activitiesPage.findStudent(enrollment.studentId)}
-					{@const classGroup = student ? academicContext.classes.find(entry => entry.id === student.classId) : undefined}
-					<li class="flex items-center justify-between gap-3 px-4 py-2.5">
-						<div class="flex min-w-0 items-center gap-2">
-							<span
-								class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary font-display text-[10px] font-semibold"
-							>
-								{student?.initials ?? enrollment.studentId.slice(-2).toUpperCase()}
-							</span>
-							<div class="min-w-0">
-								<p class="truncate text-sm font-medium">
-									{student?.name ?? studentDisplayFallback(enrollment.studentId)}
-								</p>
-								<p class="truncate text-[11px] text-muted-foreground">{classGroup?.name ?? '—'}</p>
-							</div>
-						</div>
+					<div class="flex items-center justify-between border-b border-border px-4 py-2.5">
+						<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+							{$t('activities.enrolledStudents')}
+						</p>
 						<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
 							{#snippet children({ disabled, title })}
-								<div class="flex items-center gap-2">
-									<button
-										type="button"
-										onclick={() => toggleStatus(enrollment)}
-										disabled={disabled || busy}
-										title={title ?? $t('activities.enrollStatusToggleHint')}
-										class={cn('transition-colors disabled:opacity-50', enrollStatusStyle(enrollment.status))}
-									>
-										{enrollStatusLabel(enrollment.status)}
-									</button>
-									<Button
-										type="button"
-										variant="ghost"
-										size="icon"
-										class="h-8 w-8 text-muted-foreground hover:text-destructive"
-										disabled={disabled || busy}
-										title={$t('activities.removeEnrollment')}
-										onclick={() => {
-											removeEnrollmentId = enrollment.id;
-											removeOpen = true;
-										}}
-									>
-										<Trash2 class="h-4 w-4" />
-									</Button>
-								</div>
+								<Button
+									size="sm"
+									variant="outline"
+									class="h-7 rounded-full text-xs"
+									disabled={disabled || busy || !canAddStudents}
+									title={!canAddStudents ? $t('activities.addStudentsRequiresLinkedClasses') : title}
+									onclick={() => (addOpen = true)}
+								>
+									<Plus class="mr-1 h-3.5 w-3.5" /> {$t('activities.addStudent')}
+								</Button>
 							{/snippet}
 						</PermissionGate>
-					</li>
-				{/each}
-			</ul>
-		{/if}
-	</div>
+					</div>
+					{#if enrollments.length === 0}
+						<p class="px-4 py-6 text-center text-sm text-muted-foreground">{$t('activities.noEnrollments')}</p>
+					{:else}
+						<ul class="divide-y divide-border">
+							{#each enrollments as enrollment (enrollment.id)}
+								{@const student = activitiesPage.findStudent(enrollment.studentId)}
+								{@const classGroup = student ? academicContext.classes.find(entry => entry.id === student.classId) : undefined}
+								<li class="flex items-center justify-between gap-3 px-4 py-2.5">
+									<div class="flex min-w-0 items-center gap-2">
+										<span
+											class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary font-display text-[10px] font-semibold"
+										>
+											{student?.initials ?? enrollment.studentId.slice(-2).toUpperCase()}
+										</span>
+										<div class="min-w-0">
+											<p class="truncate text-sm font-medium">
+												{student?.name ?? studentDisplayFallback(enrollment.studentId)}
+											</p>
+											<p class="truncate text-[11px] text-muted-foreground">{classGroup?.name ?? '—'}</p>
+										</div>
+									</div>
+									<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
+										{#snippet children({ disabled, title })}
+											<div class="flex items-center gap-2">
+												<button
+													type="button"
+													onclick={() => toggleStatus(enrollment)}
+													disabled={disabled || busy}
+													title={title ?? $t('activities.enrollStatusToggleHint')}
+													class={cn('transition-colors disabled:opacity-50', enrollStatusStyle(enrollment.status))}
+												>
+													{enrollStatusLabel(enrollment.status)}
+												</button>
+												<Button
+													type="button"
+													variant="ghost"
+													size="icon"
+													class="h-8 w-8 text-muted-foreground hover:text-destructive"
+													disabled={disabled || busy}
+													title={$t('activities.removeEnrollment')}
+													onclick={() => {
+														removeEnrollmentId = enrollment.id;
+														removeOpen = true;
+													}}
+												>
+													<Trash2 class="h-4 w-4" />
+												</Button>
+											</div>
+										{/snippet}
+									</PermissionGate>
+								</li>
+							{/each}
+						</ul>
+					{/if}
+				</div>
 			</DataState>
 		{/snippet}
 	</PageQuery>

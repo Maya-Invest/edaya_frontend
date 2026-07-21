@@ -11,6 +11,7 @@ function row(overrides: Partial<ValidatedStudentImportRow> & Pick<ValidatedStude
 	return {
 		prenom: 'Jean',
 		nom: 'Dupont',
+		matricule: '',
 		classe: '6ème A',
 		classGroupId: 'class-6a',
 		...overrides,
@@ -130,7 +131,7 @@ describe('student import runner', () => {
 			} as never,
 			rows: [
 				row({ rowIndex: 2, matricule: 'MAT-2024-001' }),
-				row({ rowIndex: 3, prenom: 'Marie', nom: 'Kouassi' }),
+				row({ rowIndex: 3, prenom: 'Marie', nom: 'Kouassi', matricule: '' }),
 			],
 		});
 

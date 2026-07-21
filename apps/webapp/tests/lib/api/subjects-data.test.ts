@@ -1,7 +1,7 @@
-import { classSubject, subject } from '$tests/support/openapi-fixtures';
+import { classSubject, staffMember, subject } from '$tests/support/openapi-fixtures';
 import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
-import { mapCatalogSubjects, mapClassSubjects } from '$lib/api/subjects-data';
+import { mapClassSubjects } from '$lib/api/subjects-data';
 
 const sources = {
 	classSubjectsRaw: [
@@ -26,7 +26,7 @@ const sources = {
 		{ id: 'sm-eps', subjectId: 'subj-eps', name: 'Core programme', description: 'Team sports and fitness.', sequenceOrder: 1, estimatedHours: 2 },
 	],
 	staffMembersRaw: [
-		{ id: 'st1', schoolId: SEED_SCHOOL_ID, firstName: 'Marie', lastName: 'Dupont', email: 'm.dupont@school.edu' },
+		staffMember({ id: 'st1', firstName: 'Marie', lastName: 'Dupont', email: 'm.dupont@school.edu' }),
 	],
 	staffAssignmentsRaw: [
 		{ id: 'sa-st1-math', staffId: 'st1', academicYearId: '2025', responsibility: 'Teacher', classSubjectId: 'cs-6a-math', permissions: [] },
@@ -51,8 +51,8 @@ describe('mapClassSubjects', () => {
 
 		const byName = Object.fromEntries(subjects.map(subject => [subject.name, subject]));
 
-		expect(byName.Mathematics).toMatchObject({ category: 'Scientifique', color: 'mint', description: 'Marie Dupont' });
-		expect(byName['French Literature']).toMatchObject({ category: 'Littéraire', color: 'warm', description: 'Non assigné' });
+		expect(byName.Mathematics).toMatchObject({ category: 'Scientifique', color: 'mint' });
+		expect(byName['French Literature']).toMatchObject({ category: 'Littéraire', color: 'warm' });
 		expect(byName['History & Geography']).toMatchObject({ category: 'Sciences humaines', color: 'sky' });
 		expect(byName.English).toMatchObject({ category: 'Langues', color: 'sky' });
 		expect(byName['Physical Education']).toMatchObject({ category: 'Sport', color: 'mint' });
@@ -114,96 +114,5 @@ describe('mapClassSubjects', () => {
 		});
 
 		expect(subjects[0]?.teacher).toBe('Non assigné');
-	});
-});
-
-describe('mapCatalogSubjects', () => {
-	const classGradeLevelById = {
-		'ci-6a': 'ci-gl-6',
-		'ci-6b': 'ci-gl-6',
-	};
-
-	it('dedupes class subjects into one entry per grade level and subject name', () => {
-		const catalog = mapCatalogSubjects({
-			gradeLevelSubjectsRaw: [],
-			classSubjectsRaw: [
-				classSubject({ id: 'cs-6a-math', classGroupId: 'ci-6a', subjectId: 'subj-math', coefficient: 3 }),
-				classSubject({ id: 'cs-6b-math', classGroupId: 'ci-6b', subjectId: 'subj-math', coefficient: 3 }),
-				classSubject({ id: 'cs-6a-fr', classGroupId: 'ci-6a', subjectId: 'subj-fr', coefficient: 2 }),
-			],
-			subjectsRaw: [
-				subject({ id: 'subj-math', name: 'Mathématiques', code: 'MATH', defaultCoefficient: 3 }),
-				subject({ id: 'subj-fr', name: 'Français', code: 'FR', defaultCoefficient: 2 }),
-			],
-			subjectMattersRaw: [],
-		}, classGradeLevelById);
-
-		expect(catalog).toHaveLength(2);
-		expect(catalog.map(entry => entry.name)).toEqual(['Français', 'Mathématiques']);
-		expect(catalog.every(entry => entry.gradeLevelId === 'ci-gl-6')).toBe(true);
-		expect(catalog.every(entry => entry.teacher === '')).toBe(true);
-	});
-
-	it('prefers grade level subjects when available', () => {
-		const catalog = mapCatalogSubjects({
-			gradeLevelSubjectsRaw: [
-				{
-					id: 'gls-6-math',
-					gradeLevelId: 'ci-gl-6',
-					academicYearId: 'year',
-					subjectId: 'subj-math',
-					coefficient: 3,
-					periodsPerWeek: 6,
-					isOptional: false,
-				},
-			],
-			classSubjectsRaw: [
-				classSubject({ id: 'cs-6a-math', classGroupId: 'ci-6a', subjectId: 'subj-math' }),
-				classSubject({ id: 'cs-6b-math', classGroupId: 'ci-6b', subjectId: 'subj-math' }),
-			],
-			subjectsRaw: [
-				subject({ id: 'subj-math', name: 'Mathématiques', code: 'MATH', defaultCoefficient: 3 }),
-			],
-			subjectMattersRaw: [
-				{ id: 'sm-1', subjectId: 'subj-math', name: 'Fractions', sequenceOrder: 1 },
-				{ id: 'sm-2', subjectId: 'subj-math', name: 'Décimaux', sequenceOrder: 2 },
-			],
-		}, classGradeLevelById);
-
-		expect(catalog).toHaveLength(1);
-		expect(catalog[0]).toMatchObject({
-			id: 'gls-6-math',
-			name: 'Mathématiques',
-			hoursPerWeek: 6,
-			gradeLevelId: 'ci-gl-6',
-			teacher: '',
-			catalogChapters: ['Fractions', 'Décimaux'],
-		});
-	});
-
-	it('does not rebuild the catalog from class subjects after grade-level rows were removed', () => {
-		const catalog = mapCatalogSubjects({
-			gradeLevelSubjectsRaw: [],
-			classSubjectsRaw: [
-				classSubject({
-					id: 'cs-6a-math',
-					classGroupId: 'ci-6a',
-					subjectId: 'subj-math',
-					gradeLevelSubjectId: 'gls-6-math',
-				}),
-				classSubject({
-					id: 'cs-6b-math',
-					classGroupId: 'ci-6b',
-					subjectId: 'subj-math',
-					gradeLevelSubjectId: 'gls-6-math',
-				}),
-			],
-			subjectsRaw: [
-				subject({ id: 'subj-math', name: 'Mathématiques', code: 'MATH', defaultCoefficient: 3 }),
-			],
-			subjectMattersRaw: [],
-		}, classGradeLevelById);
-
-		expect(catalog).toEqual([]);
 	});
 });

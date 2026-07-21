@@ -10,8 +10,8 @@
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { cn } from '$lib/utils';
 	import { getEvaluationsPageState } from '../../../../evaluations-page.svelte';
-	import { getEvaluationGradingTabState } from '../evaluation-grading-tab.svelte';
 	import EvaluationGradeEntryModal from '../../../components/EvaluationGradeEntryModal.svelte';
+	import { getEvaluationGradingTabState } from '../evaluation-grading-tab.svelte';
 
 	const { evaluation, classId }: { evaluation: Evaluation; classId: string } = $props();
 

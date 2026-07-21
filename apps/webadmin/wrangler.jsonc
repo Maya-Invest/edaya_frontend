@@ -1,0 +1,40 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	// Static SPA from `vite build` (adapter-static). SvelteKit bakes `$env/static/public`
+	// at build time — set the same PUBLIC_* values when running `bun run build` before deploy
+	// (see package.json deploy:* scripts). Vars below mirror those builds for wrangler dev / docs.
+	"name": "edaya-webadmin",
+	"compatibility_date": "2024-09-23",
+	"assets": {
+		"directory": "./build",
+		"not_found_handling": "single-page-application"
+	},
+	"env": {
+		"prod": {
+			"name": "edaya-webadmin",
+			"vars": {
+				"PUBLIC_API_URL": "https://api.edayaplus.com",
+				"PUBLIC_APP_ENV": "production"
+			},
+			"routes": [
+				{
+					"pattern": "admin.edayaplus.com",
+					"custom_domain": true
+				}
+			]
+		},
+		"staging": {
+			"name": "edaya-webadmin-staging",
+			"vars": {
+				"PUBLIC_API_URL": "https://staging.api.edayaplus.com",
+				"PUBLIC_APP_ENV": "staging"
+			},
+			"routes": [
+				{
+					"pattern": "staging.admin.edayaplus.com",
+					"custom_domain": true
+				}
+			]
+		}
+	}
+}

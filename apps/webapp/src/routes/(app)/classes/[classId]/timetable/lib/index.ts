@@ -1,9 +1,9 @@
 export {
 	activeSessionDetailTab,
 	SESSION_DETAIL_TABS,
-	sessionDetailTabsForKind,
 	type SessionDetailTabKey,
 	type SessionDetailTabSegment,
+	sessionDetailTabsForKind,
 } from './timetable-detail-tabs';
 export {
 	emptyTimetableSlice,

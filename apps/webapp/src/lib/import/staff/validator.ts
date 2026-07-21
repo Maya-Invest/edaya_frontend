@@ -5,10 +5,10 @@ import type {
 	StaffImportValidationResult,
 	ValidatedStaffImportRow,
 } from './types';
-import { isKnownStaffImportRole, staffRoleSuggestions } from './staff-role-labels';
 import { canImportValidatedRows } from '$lib/import/shared/can-import-validated-rows';
+import { isKnownStaffImportRole, staffRoleSuggestions } from './staff-role-labels';
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/;
 
 function normalizeLookupValue(value: string): string {
 	return value.trim().toLowerCase();

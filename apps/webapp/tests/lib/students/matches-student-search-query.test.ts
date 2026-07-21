@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, test } from 'bun:test';
 import type { Student } from '$lib/types/school';
 import { studentMatchesSearchQuery } from '$lib/students/matches-student-search-query';
 
@@ -20,17 +20,17 @@ function student(overrides: Partial<Student> = {}): Student {
 }
 
 describe('studentMatchesSearchQuery', () => {
-	it('matches name and email', () => {
+	test('matches name and email', () => {
 		expect(studentMatchesSearchQuery(student(), 'kouadio')).toBe(true);
 		expect(studentMatchesSearchQuery(student(), 'school.test')).toBe(true);
 	});
 
-	it('matches matricule case-insensitively', () => {
+	test('matches matricule case-insensitively', () => {
 		expect(studentMatchesSearchQuery(student({ matricule: 'CI-2025-001' }), 'ci-2025-001')).toBe(true);
 		expect(studentMatchesSearchQuery(student({ matricule: 'CI-2025-001' }), 'CI-2025')).toBe(true);
 	});
 
-	it('returns true for empty query', () => {
+	test('returns true for empty query', () => {
 		expect(studentMatchesSearchQuery(student(), '')).toBe(true);
 	});
 });

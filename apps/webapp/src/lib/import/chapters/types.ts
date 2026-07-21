@@ -1,7 +1,5 @@
 export type ChapterImportColumnKey = 'niveau' | 'matiere' | 'titre' | 'ordre' | 'description';
 
-
-
 export interface ChapterImportColumnDefinition {
 
 	key: ChapterImportColumnKey;
@@ -9,8 +7,6 @@ export interface ChapterImportColumnDefinition {
 	required: boolean;
 
 }
-
-
 
 export const CHAPTER_IMPORT_COLUMNS = [
 
@@ -25,8 +21,6 @@ export const CHAPTER_IMPORT_COLUMNS = [
 	{ key: 'description', required: false },
 
 ] as const satisfies readonly ChapterImportColumnDefinition[];
-
-
 
 export interface ChapterImportRow {
 
@@ -43,8 +37,6 @@ export interface ChapterImportRow {
 	description?: string;
 
 }
-
-
 
 export interface ChapterImportClassSubjectTarget {
 
@@ -66,8 +58,6 @@ export interface ChapterImportClassSubjectTarget {
 
 }
 
-
-
 export interface ValidatedChapterImportRow extends ChapterImportRow {
 
 	sequenceOrder: number;
@@ -76,11 +66,7 @@ export interface ValidatedChapterImportRow extends ChapterImportRow {
 
 }
 
-
-
 export type ChapterImportValidationSeverity = 'error' | 'warning';
-
-
 
 export interface ChapterImportValidationIssue {
 
@@ -100,8 +86,6 @@ export interface ChapterImportValidationIssue {
 
 }
 
-
-
 export interface ChapterImportValidationResult {
 
 	validRows: ValidatedChapterImportRow[];
@@ -112,11 +96,8 @@ export interface ChapterImportValidationResult {
 
 }
 
-
-
 export interface ChapterImportValidationContext {
 
 	classSubjects: readonly ChapterImportClassSubjectTarget[];
 
 }
-

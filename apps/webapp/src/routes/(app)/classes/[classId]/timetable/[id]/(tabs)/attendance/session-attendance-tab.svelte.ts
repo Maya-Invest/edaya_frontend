@@ -1,18 +1,18 @@
 import type { PlanningEventKind } from '$lib/types/school';
 import type { SessionAttendanceRow, SessionAttendanceStatus } from '$lib/types/session-detail';
-import { buildLessonSessionSavePayload } from '$lib/api/lesson-session-save-payload';
+import type { TimetablePageState } from '../../../timetable-page.svelte';
+import { findPlanningEventById } from '$lib/api/planning-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadPlanningOccurrenceDetail } from '$lib/api/session-detail-data';
+import { nowIso } from '$lib/date/format';
 import { queryClient } from '$lib/queries/client';
 import { getContext, setContext } from 'svelte';
-import { findPlanningEventById } from '$lib/api/planning-data';
-import { runTimetableRouteMutation } from '../../../lib/timetable-route-mutation';
-import { resolveTimetablePageLoad } from '../../../lib/timetable-page-status';
 import {
 	sessionDetailIdFromUrl,
 	timetableClassIdFromUrl,
 } from '../../../lib/timetable-helpers';
-import type { TimetablePageState } from '../../../timetable-page.svelte';
+import { resolveTimetablePageLoad } from '../../../lib/timetable-page-status';
+import { runTimetableRouteMutation } from '../../../lib/timetable-route-mutation';
 
 const SESSION_ATTENDANCE_TAB_KEY = Symbol('session-attendance-tab');
 
@@ -119,7 +119,7 @@ export class SessionAttendanceTabState {
 				studentId: input.studentId,
 				...anchor,
 				status: input.status,
-				createdAt: new Date().toISOString(),
+				createdAt: nowIso(),
 			}),
 			successMessage: input.successMessage,
 			apply: () => {
@@ -149,7 +149,7 @@ export class SessionAttendanceTabState {
 			request: () => client.commands.recordLessonSessionAttendance({
 				lessonSessionId: input.sessionId,
 				attendanceByStudent: input.attendanceByStudent,
-				createdAt: new Date().toISOString(),
+				createdAt: nowIso(),
 			}),
 			successMessage: input.successMessage,
 			apply: () => {

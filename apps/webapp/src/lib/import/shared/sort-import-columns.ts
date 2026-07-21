@@ -7,7 +7,8 @@ export function sortImportColumnsRequiredFirst<T extends { required: boolean }>(
 	for (const column of columns) {
 		if (column.required) {
 			required.push(column);
-		} else {
+		}
+		else {
 			optional.push(column);
 		}
 	}
