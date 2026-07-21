@@ -32,10 +32,6 @@
 		appGoto(`${path}${detailNavigationSearch($page.url)}`);
 	}
 
-	function selectLevel(group: { label: string }) {
-		const path = detailHref.configSubjectLevel(group.label);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
-	}
 </script>
 
 <PageQuery {query} cacheKey={listRouteCacheKey} loadingTitle={$t('config.subjects')}>
@@ -48,7 +44,7 @@
 			emptyTitle={$t('config.subjects')}
 			emptyDescription={$t('dataState.emptyDescription')}
 		>
-			<SubjectsList {selectedId} onSelect={selectSubject} onSelectLevel={selectLevel} />
+			<SubjectsList {selectedId} onSelect={selectSubject} />
 			{@render pageChildren()}
 		</DataState>
 	{/snippet}

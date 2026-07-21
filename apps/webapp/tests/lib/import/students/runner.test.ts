@@ -78,9 +78,11 @@ describe('student import runner', () => {
 			classNameById: new Map([['ci-6a', '6ème A']]),
 		});
 
-		expect(result.created).toBe(0);
-		expect(result.failed[0]?.message).toContain('6ème A');
-		expect(result.failed[0]?.message).not.toContain('ci-6a');
+		expect(result.created).toBe(1);
+		expect(result.failed).toEqual([]);
+		expect(result.warnings).toHaveLength(1);
+		expect(result.warnings[0]?.message).toContain('6ème A');
+		expect(result.warnings[0]?.message).not.toContain('ci-6a');
 	});
 
 	it('continues after a row failure and reports partial success', async () => {

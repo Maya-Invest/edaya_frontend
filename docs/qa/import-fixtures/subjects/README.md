@@ -2,7 +2,7 @@
 
 Programme collège ivoirien — libellés alignés sur le catalogue école :
 
-| Matière | Code |
+| Matière | Abréviation |
 |---------|------|
 | Anglais | ANG |
 | Éducation aux Droits de l'Homme et à la Citoyenneté | EDHC |

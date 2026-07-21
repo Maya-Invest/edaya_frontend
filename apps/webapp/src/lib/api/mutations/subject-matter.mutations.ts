@@ -5,6 +5,8 @@ import { getBrowserSchoolClient } from '$lib/api/school-client';
 
 type ClassSubjectRaw = components['schemas']['ClassSubject'];
 type ClassSubjectMatterRaw = components['schemas']['ClassSubjectMatter'];
+type GradeLevelSubjectRaw = components['schemas']['GradeLevelSubject'];
+type SubjectMatterRaw = components['schemas']['SubjectMatter'];
 
 export interface SubjectMatterDrawerRow {
 	id: string;
@@ -36,7 +38,21 @@ export async function loadSubjectMatterDrawerRows(classSubjectId: string): Promi
 		classSubjectMattersRaw.map(link => [link.subjectMatterId, link]),
 	);
 
-	const rows = [...subjectMattersRaw]
+	const rows = mapSubjectMatterRows(subjectMattersRaw, linkByMatterId);
+
+	return {
+		catalogSubjectId: classSubject.subjectId,
+		gradeLevelSubjectId: classSubject.gradeLevelSubjectId ?? undefined,
+		classGroupId: classSubject.classGroupId,
+		rows,
+	};
+}
+
+function mapSubjectMatterRows(
+	subjectMattersRaw: SubjectMatterRaw[],
+	linkByMatterId: Map<string, ClassSubjectMatterRaw>,
+): SubjectMatterDrawerRow[] {
+	return [...subjectMattersRaw]
 		.sort((left, right) => left.sequenceOrder - right.sequenceOrder)
 		.map((matter) => {
 			const link = linkByMatterId.get(matter.id);
@@ -51,11 +67,78 @@ export async function loadSubjectMatterDrawerRows(classSubjectId: string): Promi
 				completedPercentage: link?.completedPercentage ?? undefined,
 			} satisfies SubjectMatterDrawerRow;
 		});
+}
+
+/** Classes → Leçons : chapitres catalogue (niveau) en lecture seule quand la matière de classe est liée au catalogue. */
+export async function loadTeachingSubjectProgressionRows(classSubjectId: string): Promise<{
+	catalogSubjectId: string;
+	gradeLevelSubjectId?: string;
+	classGroupId: string;
+	rows: SubjectMatterDrawerRow[];
+	chaptersReadOnly: boolean;
+}> {
+	const client = getBrowserSchoolClient();
+	const classSubject = await client.entities.classSubjects.get(classSubjectId) as ClassSubjectRaw;
+	const gradeLevelSubjectId = classSubject.gradeLevelSubjectId ?? undefined;
+
+	if (!gradeLevelSubjectId) {
+		const loaded = await loadSubjectMatterDrawerRows(classSubjectId);
+		return { ...loaded, chaptersReadOnly: false };
+	}
+
+	const gradeLevelSubject = await client.entities.gradeLevelSubjects.get(gradeLevelSubjectId) as GradeLevelSubjectRaw;
+	const subjectMattersRaw = (await client.entities.subjectMatters.list({
+		subjectId: gradeLevelSubject.subjectId,
+	})) ?? [];
+	const classSubjectMattersRaw = (await client.entities.classSubjectMatters.list(
+		recordsForFieldIds('classSubjectId', [classSubjectId]),
+	)) ?? [];
+
+	const linkByMatterId = new Map(
+		classSubjectMattersRaw.map(link => [link.subjectMatterId, link]),
+	);
 
 	return {
-		catalogSubjectId: classSubject.subjectId,
-		gradeLevelSubjectId: classSubject.gradeLevelSubjectId ?? undefined,
+		catalogSubjectId: gradeLevelSubject.subjectId,
+		gradeLevelSubjectId,
 		classGroupId: classSubject.classGroupId,
+		rows: mapSubjectMatterRows(subjectMattersRaw, linkByMatterId),
+		chaptersReadOnly: true,
+	};
+}
+
+export async function loadCatalogSubjectMatterRows(gradeLevelSubjectId: string): Promise<{
+	catalogSubjectId: string;
+	gradeLevelSubjectId: string;
+	classSubjectId: string;
+	classGroupId: string;
+	rows: SubjectMatterDrawerRow[];
+}> {
+	const client = getBrowserSchoolClient();
+	const gradeLevelSubject = await client.entities.gradeLevelSubjects.get(gradeLevelSubjectId) as GradeLevelSubjectRaw;
+	const subjectMattersRaw = (await client.entities.subjectMatters.list({
+		subjectId: gradeLevelSubject.subjectId,
+	})) ?? [];
+	const classSubjects = (await client.entities.classSubjects.list({
+		gradeLevelSubjectId,
+	})) ?? [];
+	const representative = classSubjects[0] as ClassSubjectRaw | undefined;
+
+	const rows = [...subjectMattersRaw]
+		.sort((left, right) => left.sequenceOrder - right.sequenceOrder)
+		.map(matter => ({
+			id: matter.id,
+			name: matter.name,
+			description: matter.description ?? undefined,
+			sequenceOrder: matter.sequenceOrder,
+			estimatedHours: matter.estimatedHours ?? undefined,
+		} satisfies SubjectMatterDrawerRow));
+
+	return {
+		catalogSubjectId: gradeLevelSubject.subjectId,
+		gradeLevelSubjectId,
+		classSubjectId: representative?.id ?? gradeLevelSubjectId,
+		classGroupId: representative?.classGroupId ?? '',
 		rows,
 	};
 }
@@ -101,6 +184,19 @@ export async function saveSubjectMatterMutation(input: {
 				classSubjectMatterIdsByClassGroupId: {
 					[input.classGroupId]: classSubjectMatterId,
 				},
+			}),
+			{},
+		);
+		if (!linked) {
+			return null;
+		}
+	}
+	else {
+		const linked = await runMutation(
+			() => client.commands.assignMatterToClassSubject({
+				id: classSubjectMatterId,
+				classSubjectId: input.classSubjectId,
+				subjectMatterId: matterId,
 			}),
 			{},
 		);

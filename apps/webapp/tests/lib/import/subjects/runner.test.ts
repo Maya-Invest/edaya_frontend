@@ -72,7 +72,7 @@ describe('subject import runner', () => {
 
 			rows: [
 
-				row({ rowIndex: 2, code: 'MATH', coefficientValue: 3 }),
+				row({ rowIndex: 2, abbreviation: 'MATH', coefficientValue: 3 }),
 
 			],
 

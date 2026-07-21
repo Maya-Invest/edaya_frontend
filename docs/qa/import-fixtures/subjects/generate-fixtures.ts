@@ -6,7 +6,7 @@ import { SUBJECTS_CINQUIEME, SUBJECTS_SIXIEME } from '../_shared/ivory-coast-dat
 const here = dirname(fileURLToPath(import.meta.url));
 const write = createXlsxWriter(join(here, 'xlsx'), 'Matieres');
 
-const HEADERS = ['nom', 'niveau', 'code', 'coefficient'] as const;
+const HEADERS = ['nom', 'niveau', 'abbreviation', 'coefficient'] as const;
 
 const subjectRow = (s: { nom: string; niveau: string; code: string; coefficient: number }) =>
 	[s.nom, s.niveau, s.code, s.coefficient] as const;

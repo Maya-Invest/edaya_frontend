@@ -5,7 +5,7 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
-	import SubjectChaptersRow from './SubjectChaptersRow.svelte';
+	import SubjectCatalogRow from '../../../components/SubjectCatalogRow.svelte';
 
 	const { label, subtitle, items }: { label: string; subtitle: string; items: Subject[] } = $props();
 
@@ -31,12 +31,10 @@
 
 	<div class="overflow-hidden rounded-2xl border border-border bg-card">
 		{#each items as subject, idx (subject.id)}
-			<SubjectChaptersRow
-				s={subject}
+			<SubjectCatalogRow
+				{subject}
 				isLast={idx === items.length - 1}
-				showTeacher={false}
-				catalogChapters={subject.catalogChapters}
-				onOpenDetail={() => openSubject(subject)}
+				onSelect={() => openSubject(subject)}
 			/>
 		{/each}
 	</div>

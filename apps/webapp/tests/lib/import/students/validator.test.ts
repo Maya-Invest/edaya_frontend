@@ -119,6 +119,22 @@ describe('student import validator', () => {
 
 		expect(capacityWarnings).toHaveLength(2);
 		expect(capacityWarnings.map(warning => warning.rowIndex)).toEqual([3, 4]);
+		expect(result.validRows.find(entry => entry.rowIndex === 3)?.classGroupId).toBeUndefined();
+		expect(result.validRows.find(entry => entry.rowIndex === 4)?.classGroupId).toBeUndefined();
+		expect(result.validRows.find(entry => entry.rowIndex === 2)?.classGroupId).toBe('class-6a');
+	});
+
+	it('warns when class is omitted but still imports the row', () => {
+		const result = validateStudentImportRows(
+			[row({ rowIndex: 2, classe: '' })],
+			{ classes: CLASSES },
+		);
+
+		expect(result.errors).toEqual([]);
+		expect(result.validRows).toHaveLength(1);
+		expect(result.validRows[0]?.classGroupId).toBeUndefined();
+		expect(result.warnings).toHaveLength(1);
+		expect(result.warnings[0]?.messageKey).toBe('import.students.validation.noClassAssigned');
 	});
 
 	it('enables import when there are valid rows, even with blocking errors on other rows', () => {

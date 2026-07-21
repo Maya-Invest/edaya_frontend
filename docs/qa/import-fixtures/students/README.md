@@ -17,7 +17,7 @@ bun edaya_web/docs/qa/import-fixtures/students/generate-fixtures.ts
 | `EL05-error-class-not-found.xlsx` | `6ème Z`, `Terminale A` | 0 créé + suggestions |
 | `EL06-error-duplicate-in-file.xlsx` | Matricule `CI-2025-003` en double | 1 créé |
 | `EL07-error-duplicate-existing.xlsx` | `CI-2025-001` déjà en base | 1 créé (`CI-2025-140`) |
-| `EL08-no-class-optional.xlsx` | Classe vide (inscription sans affectation) | 2 créés sans classe |
+| `EL08-no-class-optional.xlsx` | Classe vide (inscription sans affectation) | 2 créés sans classe · 2 avertissements |
 | `EL09-headers-only.xlsx` | En-têtes seuls | Fichier vide |
 | `EL10-trim-and-case.xlsx` | Espaces + casse matricule/classe | 2 créés |
 

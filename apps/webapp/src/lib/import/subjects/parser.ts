@@ -44,7 +44,7 @@ function mapRecordToSubjectImportRow(
 		rowIndex,
 		nom: values.nom,
 		niveau: values.niveau,
-		...(values.code ? { code: values.code } : {}),
+		...(values.abbreviation ? { abbreviation: values.abbreviation } : {}),
 		...(values.coefficient ? { coefficient: values.coefficient } : {}),
 	};
 }

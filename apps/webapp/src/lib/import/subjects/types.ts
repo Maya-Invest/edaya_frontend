@@ -1,4 +1,4 @@
-export type SubjectImportColumnKey = 'nom' | 'niveau' | 'code' | 'coefficient';
+export type SubjectImportColumnKey = 'nom' | 'niveau' | 'abbreviation' | 'coefficient';
 
 export interface SubjectImportColumnDefinition {
 
@@ -14,7 +14,7 @@ export const SUBJECT_IMPORT_COLUMNS = [
 
 	{ key: 'niveau', required: true },
 
-	{ key: 'code', required: false },
+	{ key: 'abbreviation', required: false },
 
 	{ key: 'coefficient', required: false },
 
@@ -28,7 +28,7 @@ export interface SubjectImportRow {
 
 	niveau: string;
 
-	code?: string;
+	abbreviation?: string;
 
 	coefficient?: string;
 

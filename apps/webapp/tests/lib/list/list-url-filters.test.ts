@@ -61,9 +61,8 @@ const cases: FilterCase[] = [
 		name: 'config subjects',
 		read: readConfigSubjectListFilters,
 		write: writeWith(writeConfigSubjectListFilters),
-		defaults: { q: '', mode: 'level' },
-		nonDefault: { q: 'bio', mode: 'category' },
-		normalize: { input: '?mode=invalid', expected: { q: '', mode: 'level' } },
+		defaults: { q: '', gradeLevel: 'all' },
+		nonDefault: { q: 'bio', gradeLevel: 'gl-6' },
 	},
 	{
 		name: 'teaching log',

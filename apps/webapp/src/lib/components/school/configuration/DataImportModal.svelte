@@ -28,6 +28,8 @@
 	import ImportFileDropzone from '$lib/components/school/configuration/ImportFileDropzone.svelte';
 	import ImportProgressBar from '$lib/components/school/configuration/ImportProgressBar.svelte';
 	import ImportValidationTable from '$lib/components/school/configuration/ImportValidationTable.svelte';
+	import ImportValidationSummary from '$lib/components/school/configuration/ImportValidationSummary.svelte';
+	import ImportReportDownload from '$lib/components/school/configuration/ImportReportDownload.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -85,6 +87,7 @@
 		validateStaffImportRows,
 	} from '$lib/import/staff/validator';
 	import { parseStudentImportFile } from '$lib/import/students/parser';
+	import { refreshStudentImportShellContext } from '$lib/import/students/refresh-student-import-shell-context';
 	import { runStudentImport } from '$lib/import/students/runner';
 	import {
 		canImportValidatedStudents,
@@ -212,7 +215,7 @@
 	const SUBJECT_COLUMN_LABEL_KEYS: Record<string, string> = {
 		nom: 'import.types.subjects.columns.nom',
 		niveau: 'import.types.subjects.columns.niveau',
-		code: 'import.types.subjects.columns.code',
+		abbreviation: 'import.types.subjects.columns.abbreviation',
 		coefficient: 'import.types.subjects.columns.coefficient',
 	};
 
@@ -276,6 +279,7 @@
 	let loadingTeacherImportContext = $state(false);
 	let paymentImportContext = $state<PaymentImportValidationContext | null>(null);
 	let loadingPaymentContext = $state(false);
+	let preparingValidation = $state(false);
 	let importing = $state(false);
 	let importProgress = $state({ current: 0, total: 0 });
 	let studentImportResult = $state<StudentImportRunResult | null>(null);
@@ -309,6 +313,10 @@
 	);
 	const isActiveImport = $derived(selectedDefinition.status === 'active');
 	const selectedImportTypeLabel = $derived($t(selectedDefinition.labelKey));
+
+	function importReportFilenameBase(csvFilename: string): string {
+		return csvFilename.replace(/\.csv$/i, '');
+	}
 
 	const hasClasses = $derived(academicContext.classes.length > 0);
 	const hasStudents = $derived(academicContext.studentCount > 0);
@@ -364,7 +372,7 @@
 		return true;
 	});
 	const canGoToValidate = $derived(
-		isWiredImport && parsedRowCount > 0 && !parseErrorMessage && !parsing,
+		isWiredImport && parsedRowCount > 0 && !parseErrorMessage && !parsing && !preparingValidation,
 	);
 	const canStartStudentImport = $derived(canImportValidatedStudents(studentValidationResult));
 	const canStartClassImport = $derived(canImportValidatedClasses(classValidationResult));
@@ -840,15 +848,29 @@
 		}
 	}
 
+	async function refreshStudentImportShellIfNeeded() {
+		if (!isStudentsImport) {
+			return;
+		}
+		await refreshStudentImportShellContext();
+	}
+
 	async function goToValidateStep() {
-		await loadStudentMatriculeDataIfNeeded();
-		await loadSubjectNamesIfNeeded();
-		await loadTeacherImportContextIfNeeded();
-		await loadSubjectImportContextIfNeeded();
-		await loadChapterImportContextIfNeeded();
-		await loadPaymentImportContextIfNeeded();
-		runValidation();
-		step = 'validate';
+		preparingValidation = true;
+		try {
+			await refreshStudentImportShellIfNeeded();
+			await loadStudentMatriculeDataIfNeeded();
+			await loadSubjectNamesIfNeeded();
+			await loadTeacherImportContextIfNeeded();
+			await loadSubjectImportContextIfNeeded();
+			await loadChapterImportContextIfNeeded();
+			await loadPaymentImportContextIfNeeded();
+			runValidation();
+			step = 'validate';
+		}
+		finally {
+			preparingValidation = false;
+		}
 	}
 
 	function buildClassSiblingCounts(): Record<string, number> {
@@ -897,6 +919,7 @@
 			studentImportResult = {
 				created: 0,
 				failed: [],
+				warnings: [],
 				studentIds: [],
 			};
 		}
@@ -1473,11 +1496,7 @@
 						<ul class="space-y-2 text-sm">
 							{#each selectedDefinition.columns as column (column.key)}
 								<li class="flex items-start justify-between gap-3">
-									<span>
-										<span class="font-mono text-xs text-muted-foreground">{column.key}</span>
-										<span class="mx-2 text-muted-foreground">·</span>
-										<span>{$t(column.labelKey)}</span>
-									</span>
+									<span>{$t(column.labelKey)}</span>
 									<span
 										class={cn(
 											'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
@@ -1829,161 +1848,224 @@
 				</section>
 			{:else if isStudentsImport && step === 'validate' && studentValidationResult}
 				<section class="space-y-4" data-testid="student-import-step-validate">
-					<div class="grid gap-2 sm:grid-cols-3">
-						<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
-							{$t('import.students.validation.summaryReady', { n: studentValidationResult.validRows.length })}
-						</p>
-						<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-							{$t('import.students.validation.summaryErrors', { n: studentValidationResult.errors.length })}
-						</p>
-						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
-							{$t('import.students.validation.summaryWarnings', { n: studentValidationResult.warnings.length })}
-						</p>
-					</div>
+					<ImportValidationSummary
+						readyCount={studentValidationResult.validRows.length}
+						errorCount={studentValidationResult.errors.length}
+						warningCount={studentValidationResult.warnings.length}
+						readyLabelKey="import.students.validation.summaryReady"
+						errorLabelKey="import.students.validation.summaryErrors"
+						warningLabelKey="import.students.validation.summaryWarnings"
+					/>
 
 					<ImportValidationTable
 						issues={studentValidationIssues}
 						columnLabelKeys={STUDENT_COLUMN_LABEL_KEYS}
 					/>
+
+					<ImportReportDownload
+						definition={selectedDefinition}
+						rows={studentParsedRows}
+						errors={studentValidationResult.errors}
+						warnings={studentValidationResult.warnings}
+						validRowIndexes={new Set(studentValidationResult.validRows.map(row => row.rowIndex))}
+						phase="validate"
+						filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
+					/>
 				</section>
 			{:else if isClassesImport && step === 'validate' && classValidationResult}
 				<section class="space-y-4" data-testid="class-import-step-validate">
-					<div class="grid gap-2 sm:grid-cols-3">
-						<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
-							{$t('import.classes.validation.summaryReady', { n: classValidationResult.validRows.length })}
-						</p>
-						<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-							{$t('import.classes.validation.summaryErrors', { n: classValidationResult.errors.length })}
-						</p>
-						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
-							{$t('import.classes.validation.summaryWarnings', { n: classValidationResult.warnings.length })}
-						</p>
-					</div>
+					<ImportValidationSummary
+						readyCount={classValidationResult.validRows.length}
+						errorCount={classValidationResult.errors.length}
+						warningCount={classValidationResult.warnings.length}
+						readyLabelKey="import.classes.validation.summaryReady"
+						errorLabelKey="import.classes.validation.summaryErrors"
+						warningLabelKey="import.classes.validation.summaryWarnings"
+					/>
 
 					<ImportValidationTable
 						issues={classValidationIssues}
 						columnLabelKeys={CLASS_COLUMN_LABEL_KEYS}
 						suggestionsKey="import.classes.validation.suggestions"
 					/>
+
+					<ImportReportDownload
+						definition={selectedDefinition}
+						rows={classParsedRows}
+						errors={classValidationResult.errors}
+						warnings={classValidationResult.warnings}
+						validRowIndexes={new Set(classValidationResult.validRows.map(row => row.rowIndex))}
+						phase="validate"
+						suggestionsKey="import.classes.validation.suggestions"
+						filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
+					/>
 				</section>
 			{:else if isGuardiansImport && step === 'validate' && guardianValidationResult}
 				<section class="space-y-4" data-testid="guardian-import-step-validate">
-					<div class="grid gap-2 sm:grid-cols-3">
-						<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
-							{$t('import.guardians.validation.summaryReady', { n: guardianValidationResult.validRows.length })}
-						</p>
-						<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-							{$t('import.guardians.validation.summaryErrors', { n: guardianValidationResult.errors.length })}
-						</p>
-						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
-							{$t('import.guardians.validation.summaryWarnings', { n: guardianValidationResult.warnings.length })}
-						</p>
-					</div>
+					<ImportValidationSummary
+						readyCount={guardianValidationResult.validRows.length}
+						errorCount={guardianValidationResult.errors.length}
+						warningCount={guardianValidationResult.warnings.length}
+						readyLabelKey="import.guardians.validation.summaryReady"
+						errorLabelKey="import.guardians.validation.summaryErrors"
+						warningLabelKey="import.guardians.validation.summaryWarnings"
+					/>
 
 					<ImportValidationTable
 						issues={guardianValidationIssues}
 						columnLabelKeys={GUARDIAN_COLUMN_LABEL_KEYS}
 						suggestionsKey="import.guardians.validation.suggestions"
 					/>
+
+					<ImportReportDownload
+						definition={selectedDefinition}
+						rows={guardianParsedRows}
+						errors={guardianValidationResult.errors}
+						warnings={guardianValidationResult.warnings}
+						validRowIndexes={new Set(guardianValidationResult.validRows.map(row => row.rowIndex))}
+						phase="validate"
+						suggestionsKey="import.guardians.validation.suggestions"
+						filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
+					/>
 				</section>
 			{:else if isStaffImport && step === 'validate' && staffValidationResult}
 				<section class="space-y-4" data-testid="staff-import-step-validate">
-					<div class="grid gap-2 sm:grid-cols-3">
-						<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
-							{$t('import.staff.validation.summaryReady', { n: staffValidationResult.validRows.length })}
-						</p>
-						<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-							{$t('import.staff.validation.summaryErrors', { n: staffValidationResult.errors.length })}
-						</p>
-						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
-							{$t('import.staff.validation.summaryWarnings', { n: staffValidationResult.warnings.length })}
-						</p>
-					</div>
+					<ImportValidationSummary
+						readyCount={staffValidationResult.validRows.length}
+						errorCount={staffValidationResult.errors.length}
+						warningCount={staffValidationResult.warnings.length}
+						readyLabelKey="import.staff.validation.summaryReady"
+						errorLabelKey="import.staff.validation.summaryErrors"
+						warningLabelKey="import.staff.validation.summaryWarnings"
+					/>
 
 					<ImportValidationTable
 						issues={staffValidationIssues}
 						columnLabelKeys={STAFF_COLUMN_LABEL_KEYS}
 						suggestionsKey="import.staff.validation.suggestions"
 					/>
+
+					<ImportReportDownload
+						definition={selectedDefinition}
+						rows={staffParsedRows}
+						errors={staffValidationResult.errors}
+						warnings={staffValidationResult.warnings}
+						validRowIndexes={new Set(staffValidationResult.validRows.map(row => row.rowIndex))}
+						phase="validate"
+						suggestionsKey="import.staff.validation.suggestions"
+						filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
+					/>
 				</section>
 			{:else if isTeachersImport && step === 'validate' && teacherValidationResult}
 				<section class="space-y-4" data-testid="teacher-import-step-validate">
-					<div class="grid gap-2 sm:grid-cols-3">
-						<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
-							{$t('import.teachers.validation.summaryReady', { n: teacherValidationResult.validRows.length })}
-						</p>
-						<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-							{$t('import.teachers.validation.summaryErrors', { n: teacherValidationResult.errors.length })}
-						</p>
-						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
-							{$t('import.teachers.validation.summaryWarnings', { n: teacherValidationResult.warnings.length })}
-						</p>
-					</div>
+					<ImportValidationSummary
+						readyCount={teacherValidationResult.validRows.length}
+						errorCount={teacherValidationResult.errors.length}
+						warningCount={teacherValidationResult.warnings.length}
+						readyLabelKey="import.teachers.validation.summaryReady"
+						errorLabelKey="import.teachers.validation.summaryErrors"
+						warningLabelKey="import.teachers.validation.summaryWarnings"
+					/>
 
 					<ImportValidationTable
 						issues={teacherValidationIssues}
 						columnLabelKeys={TEACHER_COLUMN_LABEL_KEYS}
 						suggestionsKey="import.teachers.validation.suggestions"
 					/>
+
+					<ImportReportDownload
+						definition={selectedDefinition}
+						rows={teacherParsedRows}
+						errors={teacherValidationResult.errors}
+						warnings={teacherValidationResult.warnings}
+						validRowIndexes={new Set(teacherValidationResult.validRows.map(row => row.rowIndex))}
+						phase="validate"
+						suggestionsKey="import.teachers.validation.suggestions"
+						filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
+					/>
 				</section>
 			{:else if isSubjectsImport && step === 'validate' && subjectValidationResult}
 				<section class="space-y-4" data-testid="subject-import-step-validate">
-					<div class="grid gap-2 sm:grid-cols-3">
-						<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
-							{$t('import.subjects.validation.summaryReady', { n: subjectValidationResult.validRows.length })}
-						</p>
-						<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-							{$t('import.subjects.validation.summaryErrors', { n: subjectValidationResult.errors.length })}
-						</p>
-						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
-							{$t('import.subjects.validation.summaryWarnings', { n: subjectValidationResult.warnings.length })}
-						</p>
-					</div>
+					<ImportValidationSummary
+						readyCount={subjectValidationResult.validRows.length}
+						errorCount={subjectValidationResult.errors.length}
+						warningCount={subjectValidationResult.warnings.length}
+						readyLabelKey="import.subjects.validation.summaryReady"
+						errorLabelKey="import.subjects.validation.summaryErrors"
+						warningLabelKey="import.subjects.validation.summaryWarnings"
+					/>
 
 					<ImportValidationTable
 						issues={subjectValidationIssues}
 						columnLabelKeys={SUBJECT_COLUMN_LABEL_KEYS}
 						suggestionsKey="import.subjects.validation.suggestions"
 					/>
+
+					<ImportReportDownload
+						definition={selectedDefinition}
+						rows={subjectParsedRows}
+						errors={subjectValidationResult.errors}
+						warnings={subjectValidationResult.warnings}
+						validRowIndexes={new Set(subjectValidationResult.validRows.map(row => row.rowIndex))}
+						phase="validate"
+						suggestionsKey="import.subjects.validation.suggestions"
+						filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
+					/>
 				</section>
 			{:else if isChaptersImport && step === 'validate' && chapterValidationResult}
 				<section class="space-y-4" data-testid="chapter-import-step-validate">
-					<div class="grid gap-2 sm:grid-cols-3">
-						<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
-							{$t('import.chapters.validation.summaryReady', { n: chapterValidationResult.validRows.length })}
-						</p>
-						<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-							{$t('import.chapters.validation.summaryErrors', { n: chapterValidationResult.errors.length })}
-						</p>
-						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
-							{$t('import.chapters.validation.summaryWarnings', { n: chapterValidationResult.warnings.length })}
-						</p>
-					</div>
+					<ImportValidationSummary
+						readyCount={chapterValidationResult.validRows.length}
+						errorCount={chapterValidationResult.errors.length}
+						warningCount={chapterValidationResult.warnings.length}
+						readyLabelKey="import.chapters.validation.summaryReady"
+						errorLabelKey="import.chapters.validation.summaryErrors"
+						warningLabelKey="import.chapters.validation.summaryWarnings"
+					/>
 
 					<ImportValidationTable
 						issues={chapterValidationIssues}
 						columnLabelKeys={CHAPTER_COLUMN_LABEL_KEYS}
 						suggestionsKey="import.chapters.validation.suggestions"
 					/>
+
+					<ImportReportDownload
+						definition={selectedDefinition}
+						rows={chapterParsedRows}
+						errors={chapterValidationResult.errors}
+						warnings={chapterValidationResult.warnings}
+						validRowIndexes={new Set(chapterValidationResult.validRows.map(row => row.rowIndex))}
+						phase="validate"
+						suggestionsKey="import.chapters.validation.suggestions"
+						filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
+					/>
 				</section>
 			{:else if isPaymentsImport && step === 'validate' && paymentValidationResult}
 				<section class="space-y-4" data-testid="payment-import-step-validate">
-					<div class="grid gap-2 sm:grid-cols-3">
-						<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
-							{$t('import.payments.validation.summaryReady', { n: paymentValidationResult.validRows.length })}
-						</p>
-						<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-							{$t('import.payments.validation.summaryErrors', { n: paymentValidationResult.errors.length })}
-						</p>
-						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
-							{$t('import.payments.validation.summaryWarnings', { n: paymentValidationResult.warnings.length })}
-						</p>
-					</div>
+					<ImportValidationSummary
+						readyCount={paymentValidationResult.validRows.length}
+						errorCount={paymentValidationResult.errors.length}
+						warningCount={paymentValidationResult.warnings.length}
+						readyLabelKey="import.payments.validation.summaryReady"
+						errorLabelKey="import.payments.validation.summaryErrors"
+						warningLabelKey="import.payments.validation.summaryWarnings"
+					/>
 
 					<ImportValidationTable
 						issues={paymentValidationIssues}
 						columnLabelKeys={PAYMENT_COLUMN_LABEL_KEYS}
 						suggestionsKey="import.payments.validation.suggestions"
+					/>
+
+					<ImportReportDownload
+						definition={selectedDefinition}
+						rows={paymentParsedRows}
+						errors={paymentValidationResult.errors}
+						warnings={paymentValidationResult.warnings}
+						validRowIndexes={new Set(paymentValidationResult.validRows.map(row => row.rowIndex))}
+						phase="validate"
+						suggestionsKey="import.payments.validation.suggestions"
+						filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
 					/>
 				</section>
 			{:else if isStudentsImport && step === 'execute'}
@@ -2006,17 +2088,49 @@
 									{importFatalError}
 								</p>
 							{/if}
-							<div class="grid gap-2 sm:grid-cols-2">
+							<div class="grid gap-2 sm:grid-cols-3">
 								<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
 									{$t('import.students.resultCreated', { n: studentImportResult.created })}
 								</p>
-								<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+								<p
+									class={cn(
+										'rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100',
+										studentImportResult.warnings.length === 0 && 'opacity-60',
+									)}
+								>
+									{$t('import.students.resultWarnings', { n: studentImportResult.warnings.length })}
+								</p>
+								<p
+									class={cn(
+										'rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive',
+										studentImportResult.failed.length === 0 && 'opacity-60',
+									)}
+								>
 									{$t('import.students.resultFailed', { n: studentImportResult.failed.length })}
 								</p>
 							</div>
 
 							{#if studentImportResult.created === 0 && studentImportResult.failed.length === 0 && !importFatalError}
 								<p class="text-sm text-muted-foreground">{$t('import.students.resultNothing')}</p>
+							{/if}
+
+							{#if studentImportResult.warnings.length > 0}
+								<div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+									<p class="mb-2 text-sm font-semibold text-amber-950 dark:text-amber-50">
+										{$t('import.students.resultWarningsList')}
+									</p>
+									<ul class="space-y-2 text-sm text-amber-950 dark:text-amber-50">
+										{#each studentImportResult.warnings as warning (warning.rowIndex + warning.studentName)}
+											<li>
+												<span class="font-mono text-xs opacity-80">L{warning.rowIndex}</span>
+												<span class="mx-2">·</span>
+												{warning.studentName}
+												<span class="mx-2 opacity-80">—</span>
+												{warning.message}
+											</li>
+										{/each}
+									</ul>
+								</div>
 							{/if}
 
 							{#if studentImportResult.failed.length > 0}
@@ -2034,6 +2148,26 @@
 										{/each}
 									</ul>
 								</div>
+							{/if}
+
+							{#if studentValidationResult}
+								<ImportReportDownload
+									definition={selectedDefinition}
+									rows={studentParsedRows}
+									errors={studentValidationResult.errors}
+									warnings={studentValidationResult.warnings}
+									validRowIndexes={new Set(studentValidationResult.validRows.map(row => row.rowIndex))}
+									importFailures={studentImportResult.failed.map(failure => ({
+										rowIndex: failure.rowIndex,
+										message: failure.message,
+									}))}
+									importWarnings={studentImportResult.warnings.map(warning => ({
+										rowIndex: warning.rowIndex,
+										message: warning.message,
+									}))}
+									phase="execute"
+									filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
+								/>
 							{/if}
 						</div>
 					{:else}
@@ -2089,6 +2223,23 @@
 									</ul>
 								</div>
 							{/if}
+
+							{#if classValidationResult}
+								<ImportReportDownload
+									definition={selectedDefinition}
+									rows={classParsedRows}
+									errors={classValidationResult.errors}
+									warnings={classValidationResult.warnings}
+									validRowIndexes={new Set(classValidationResult.validRows.map(row => row.rowIndex))}
+									importFailures={classImportResult.failed.map(failure => ({
+										rowIndex: failure.rowIndex,
+										message: failure.message,
+									}))}
+									phase="execute"
+									suggestionsKey="import.classes.validation.suggestions"
+									filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
+								/>
+							{/if}
 						</div>
 					{:else}
 						<p class="text-sm text-muted-foreground">{$t('import.classes.resultUnexpected')}</p>
@@ -2142,6 +2293,23 @@
 										{/each}
 									</ul>
 								</div>
+							{/if}
+
+							{#if guardianValidationResult}
+								<ImportReportDownload
+									definition={selectedDefinition}
+									rows={guardianParsedRows}
+									errors={guardianValidationResult.errors}
+									warnings={guardianValidationResult.warnings}
+									validRowIndexes={new Set(guardianValidationResult.validRows.map(row => row.rowIndex))}
+									importFailures={guardianImportResult.failed.map(failure => ({
+										rowIndex: failure.rowIndex,
+										message: failure.message,
+									}))}
+									phase="execute"
+									suggestionsKey="import.guardians.validation.suggestions"
+									filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
+								/>
 							{/if}
 						</div>
 					{:else}
@@ -2197,6 +2365,23 @@
 									</ul>
 								</div>
 							{/if}
+
+							{#if staffValidationResult}
+								<ImportReportDownload
+									definition={selectedDefinition}
+									rows={staffParsedRows}
+									errors={staffValidationResult.errors}
+									warnings={staffValidationResult.warnings}
+									validRowIndexes={new Set(staffValidationResult.validRows.map(row => row.rowIndex))}
+									importFailures={staffImportResult.failed.map(failure => ({
+										rowIndex: failure.rowIndex,
+										message: failure.message,
+									}))}
+									phase="execute"
+									suggestionsKey="import.staff.validation.suggestions"
+									filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
+								/>
+							{/if}
 						</div>
 					{:else}
 						<p class="text-sm text-muted-foreground">{$t('import.staff.resultUnexpected')}</p>
@@ -2250,6 +2435,23 @@
 										{/each}
 									</ul>
 								</div>
+							{/if}
+
+							{#if teacherValidationResult}
+								<ImportReportDownload
+									definition={selectedDefinition}
+									rows={teacherParsedRows}
+									errors={teacherValidationResult.errors}
+									warnings={teacherValidationResult.warnings}
+									validRowIndexes={new Set(teacherValidationResult.validRows.map(row => row.rowIndex))}
+									importFailures={teacherImportResult.failed.map(failure => ({
+										rowIndex: failure.rowIndex,
+										message: failure.message,
+									}))}
+									phase="execute"
+									suggestionsKey="import.teachers.validation.suggestions"
+									filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
+								/>
 							{/if}
 						</div>
 					{:else}
@@ -2305,6 +2507,23 @@
 									</ul>
 								</div>
 							{/if}
+
+							{#if subjectValidationResult}
+								<ImportReportDownload
+									definition={selectedDefinition}
+									rows={subjectParsedRows}
+									errors={subjectValidationResult.errors}
+									warnings={subjectValidationResult.warnings}
+									validRowIndexes={new Set(subjectValidationResult.validRows.map(row => row.rowIndex))}
+									importFailures={subjectImportResult.failed.map(failure => ({
+										rowIndex: failure.rowIndex,
+										message: failure.message,
+									}))}
+									phase="execute"
+									suggestionsKey="import.subjects.validation.suggestions"
+									filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
+								/>
+							{/if}
 						</div>
 					{:else}
 						<p class="text-sm text-muted-foreground">{$t('import.subjects.resultUnexpected')}</p>
@@ -2359,6 +2578,23 @@
 									</ul>
 								</div>
 							{/if}
+
+							{#if chapterValidationResult}
+								<ImportReportDownload
+									definition={selectedDefinition}
+									rows={chapterParsedRows}
+									errors={chapterValidationResult.errors}
+									warnings={chapterValidationResult.warnings}
+									validRowIndexes={new Set(chapterValidationResult.validRows.map(row => row.rowIndex))}
+									importFailures={chapterImportResult.failed.map(failure => ({
+										rowIndex: failure.rowIndex,
+										message: failure.message,
+									}))}
+									phase="execute"
+									suggestionsKey="import.chapters.validation.suggestions"
+									filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
+								/>
+							{/if}
 						</div>
 					{:else}
 						<p class="text-sm text-muted-foreground">{$t('import.chapters.resultUnexpected')}</p>
@@ -2412,6 +2648,23 @@
 										{/each}
 									</ul>
 								</div>
+							{/if}
+
+							{#if paymentValidationResult}
+								<ImportReportDownload
+									definition={selectedDefinition}
+									rows={paymentParsedRows}
+									errors={paymentValidationResult.errors}
+									warnings={paymentValidationResult.warnings}
+									validRowIndexes={new Set(paymentValidationResult.validRows.map(row => row.rowIndex))}
+									importFailures={paymentImportResult.failed.map(failure => ({
+										rowIndex: failure.rowIndex,
+										message: failure.message,
+									}))}
+									phase="execute"
+									suggestionsKey="import.payments.validation.suggestions"
+									filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
+								/>
 							{/if}
 						</div>
 					{:else}
@@ -2553,6 +2806,9 @@
 						onclick={() => void goToValidateStep()}
 						data-testid="data-import-next"
 					>
+						{#if preparingValidation}
+							<LoaderCircle class="mr-2 size-4 animate-spin" aria-hidden="true" />
+						{/if}
 						{$t('common.next')}
 					</Button>
 				{:else if isWiredImport && step === 'validate' && activeValidationResult}

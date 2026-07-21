@@ -10,7 +10,7 @@
 	const subjectsPage = getSubjectsPageState();
 	const progressionTab = getSubjectProgressionTabState();
 	const subject = $derived(subjectsPage.selected);
-	const query = $derived(subject ? progressionTab.query(subject.id) : null);
+	const query = $derived(subject ? progressionTab.query(subject) : null);
 </script>
 
 {#if subject && query}

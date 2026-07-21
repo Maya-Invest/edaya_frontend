@@ -68,8 +68,13 @@
 			{$t('subjects.hoursPerWeek', { h: subject.hoursPerWeek })}
 		</span>
 		<span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground/80">
-			{subject.teacher}
+			{subject.category}
 		</span>
+		{#if subject.teacher}
+			<span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground/80">
+				{subject.teacher}
+			</span>
+		{/if}
 	{/snippet}
 	{#snippet avatar()}
 		<span
@@ -84,9 +89,11 @@
 		</Button>
 	{/snippet}
 	{#snippet overflow()}
-		<RowActionMenuItem destructive onclick={() => (deleteOpen = true)}>
-			{$t('common.delete')}
-		</RowActionMenuItem>
+		{#if !subject.gradeLevelId}
+			<RowActionMenuItem destructive onclick={() => (deleteOpen = true)}>
+				{$t('common.delete')}
+			</RowActionMenuItem>
+		{/if}
 	{/snippet}
 </DrawerEntityHeader>
 

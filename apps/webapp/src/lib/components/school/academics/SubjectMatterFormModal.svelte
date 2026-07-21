@@ -35,6 +35,13 @@
 	const isEdit = $derived(matter !== null && matter !== undefined);
 	const canSubmit = $derived(name.trim().length > 0 && Number(sequenceOrder) > 0);
 
+	function fieldText(value: string | number | null | undefined): string {
+		if (value === null || value === undefined) {
+			return '';
+		}
+		return String(value).trim();
+	}
+
 	function resetForm() {
 		if (matter) {
 			name = matter.name;
@@ -63,6 +70,7 @@
 		busy = true;
 		try {
 			const trimmedName = name.trim();
+			const estimatedHoursText = fieldText(estimatedHours);
 			const saved = await saveSubjectMatterMutation({
 				id: matter?.id,
 				subjectId,
@@ -70,9 +78,9 @@
 				classGroupId,
 				gradeLevelSubjectId,
 				name: trimmedName,
-				description: description.trim() || undefined,
+				description: fieldText(description) || undefined,
 				sequenceOrder: Number(sequenceOrder),
-				estimatedHours: estimatedHours.trim() ? Number(estimatedHours) : undefined,
+				estimatedHours: estimatedHoursText ? Number(estimatedHoursText) : undefined,
 				successMessage: isEdit
 					? get(t)('subjects.chapters.updateSuccess', { name: trimmedName })
 					: get(t)('subjects.chapters.createSuccess', { name: trimmedName }),

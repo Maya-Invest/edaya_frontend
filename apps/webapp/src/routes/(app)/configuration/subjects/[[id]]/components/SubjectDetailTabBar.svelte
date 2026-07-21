@@ -7,11 +7,12 @@
 	import { cn } from '$lib/utils';
 	import {
 		activeSubjectsDetailTab,
-		SUBJECTS_DETAIL_TABS,
+		subjectsDetailTabsFor,
 	} from '../../lib/subjects-detail-tabs';
 
 	const { subject }: { subject: Subject } = $props();
 
+	const tabs = $derived(subjectsDetailTabsFor(subject));
 	const activeTab = $derived(activeSubjectsDetailTab($page.url.pathname, subject.id));
 
 	function tabHref(segment: string) {
@@ -30,7 +31,7 @@
 	data-testid="drawer-tab-bar"
 	class="flex items-center gap-1 overflow-x-auto rounded-full border border-border bg-secondary/40 p-1 text-xs"
 >
-	{#each SUBJECTS_DETAIL_TABS as tab (tab.key)}
+	{#each tabs as tab (tab.key)}
 		<a
 			href={tabHref(tab.segment)}
 			class={cn(

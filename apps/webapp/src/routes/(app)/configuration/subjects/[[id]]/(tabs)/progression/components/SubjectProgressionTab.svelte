@@ -25,7 +25,8 @@
 	const progressionTab = getSubjectProgressionTabState();
 	const matterRows = $derived(progressionTab.rowsFor(subject.id));
 	const matterContext = $derived(progressionTab.matterContextFor(subject.id));
-	const entries = $derived(subjectsPage.logEntriesForSubject(subject));
+	const isCatalogSubject = $derived(Boolean(subject.gradeLevelId));
+	const entries = $derived(isCatalogSubject ? [] : subjectsPage.logEntriesForSubject(subject));
 	const chaptersData = $derived(chapterProgressFromEntries(entries));
 
 	const modals = createUrlSyncedModals<SubjectDrawerModal>({
@@ -62,7 +63,9 @@
 	}
 </script>
 
-<ClassSubjectTimetableSection classSubjectId={subject.id} school={academicContext.schools[0]} />
+{#if !isCatalogSubject}
+	<ClassSubjectTimetableSection classSubjectId={subject.id} school={academicContext.schools[0]} />
+{/if}
 
 <div class="space-y-4">
 	<section class="space-y-2">
@@ -103,38 +106,42 @@
 		{/each}
 	</section>
 
-	<div class="rounded-2xl border border-border bg-secondary/40 p-4">
-		<div class="flex items-center justify-between">
-			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">
-				{$t('teaching.overallProgress')}
-			</p>
-			<span class="font-mono text-xs">{chaptersData.overall}%</span>
-		</div>
-		<div class="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary">
-			<div class="h-full bg-primary" style="width: {chaptersData.overall}%"></div>
-		</div>
-	</div>
-
-	<div class="space-y-2">
-		{#each chaptersData.chapters as [chapter, progress] (chapter)}
-			<div class="rounded-2xl border border-border bg-card px-4 py-3 shadow-soft">
-				<div class="flex items-center justify-between gap-3">
-					<p class="text-sm font-semibold">{chapter}</p>
-					<span class="font-mono text-xs text-muted-foreground">{progress}%</span>
+	{#if !isCatalogSubject}
+		<div class="space-y-4">
+			<div class="rounded-2xl border border-border bg-secondary/40 p-4">
+				<div class="flex items-center justify-between">
+					<p class="text-[10px] uppercase tracking-wider text-muted-foreground">
+						{$t('teaching.overallProgress')}
+					</p>
+					<span class="font-mono text-xs">{chaptersData.overall}%</span>
 				</div>
-				<div class="mt-2 h-1 overflow-hidden rounded-full bg-secondary">
-					<div class="h-full bg-primary" style="width: {progress}%"></div>
+				<div class="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary">
+					<div class="h-full bg-primary" style="width: {chaptersData.overall}%"></div>
 				</div>
 			</div>
-		{/each}
-	</div>
+
+			<div class="space-y-2">
+				{#each chaptersData.chapters as [chapter, progress] (chapter)}
+					<div class="rounded-2xl border border-border bg-card px-4 py-3 shadow-soft">
+						<div class="flex items-center justify-between gap-3">
+							<p class="text-sm font-semibold">{chapter}</p>
+							<span class="font-mono text-xs text-muted-foreground">{progress}%</span>
+						</div>
+						<div class="mt-2 h-1 overflow-hidden rounded-full bg-secondary">
+							<div class="h-full bg-primary" style="width: {progress}%"></div>
+						</div>
+					</div>
+				{/each}
+			</div>
+		</div>
+	{/if}
 </div>
 
 {#if matterContext}
 	<SubjectMatterFormModal
 		bind:open={addChapterOpen.open}
 		subjectId={matterContext.catalogSubjectId}
-		classSubjectId={subject.id}
+		classSubjectId={matterContext.classSubjectId}
 		classGroupId={matterContext.classGroupId}
 		gradeLevelSubjectId={matterContext.gradeLevelSubjectId}
 		defaultSequenceOrder={matterRows.length + 1}
@@ -144,7 +151,7 @@
 		bind:open={editChapterOpen.open}
 		matter={editingMatter}
 		subjectId={matterContext.catalogSubjectId}
-		classSubjectId={subject.id}
+		classSubjectId={matterContext.classSubjectId}
 		classGroupId={matterContext.classGroupId}
 		gradeLevelSubjectId={matterContext.gradeLevelSubjectId}
 		onSaved={handleMatterSaved}

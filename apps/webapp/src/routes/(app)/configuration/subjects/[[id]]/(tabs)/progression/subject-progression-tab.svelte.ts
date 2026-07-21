@@ -1,16 +1,22 @@
+import type { Subject } from '$lib/types/school';
 import type { SubjectMatterDrawerRow } from '$lib/api/mutations/subject-matter.mutations';
-import { loadSubjectMatterDrawerRows } from '$lib/api/mutations/subject-matter.mutations';
+import {
+	loadCatalogSubjectMatterRows,
+	loadSubjectMatterDrawerRows,
+} from '$lib/api/mutations/subject-matter.mutations';
 import { resolvePageLoad } from '$lib/queries/page-status';
 import { getContext, setContext } from 'svelte';
 
 const SUBJECT_PROGRESSION_TAB_KEY = Symbol('config-subject-progression-tab');
 
 export interface SubjectProgressionTabSlice {
+	subjectKey: string;
 	classSubjectId: string;
 	catalogSubjectId: string;
 	gradeLevelSubjectId?: string;
 	classGroupId: string;
 	rows: SubjectMatterDrawerRow[];
+	isCatalogSubject: boolean;
 }
 
 export class SubjectProgressionTabState {
@@ -20,21 +26,22 @@ export class SubjectProgressionTabState {
 		this.slice = null;
 	}
 
-	rowsFor(classSubjectId: string): SubjectMatterDrawerRow[] {
-		if (this.slice?.classSubjectId !== classSubjectId) {
+	rowsFor(subjectKey: string): SubjectMatterDrawerRow[] {
+		if (this.slice?.subjectKey !== subjectKey) {
 			return [];
 		}
 		return this.slice.rows;
 	}
 
-	matterContextFor(classSubjectId: string) {
-		if (this.slice?.classSubjectId !== classSubjectId) {
+	matterContextFor(subjectKey: string) {
+		if (this.slice?.subjectKey !== subjectKey) {
 			return null;
 		}
 		return {
 			catalogSubjectId: this.slice.catalogSubjectId,
 			gradeLevelSubjectId: this.slice.gradeLevelSubjectId,
 			classGroupId: this.slice.classGroupId,
+			classSubjectId: this.slice.classSubjectId,
 		};
 	}
 
@@ -61,17 +68,36 @@ export class SubjectProgressionTabState {
 		};
 	}
 
-	query(classSubjectId: string) {
+	query(subject: Subject) {
+		const subjectKey = subject.id;
+		const isCatalogSubject = Boolean(subject.gradeLevelId);
+
 		return (url: URL) => resolvePageLoad(url, {
 			empty: () => ({}),
 			load: async () => {
-				const loaded = await loadSubjectMatterDrawerRows(classSubjectId);
+				if (isCatalogSubject) {
+					const loaded = await loadCatalogSubjectMatterRows(subjectKey);
+					this.slice = {
+						subjectKey,
+						classSubjectId: loaded.classSubjectId,
+						catalogSubjectId: loaded.catalogSubjectId,
+						gradeLevelSubjectId: loaded.gradeLevelSubjectId,
+						classGroupId: loaded.classGroupId,
+						rows: loaded.rows,
+						isCatalogSubject: true,
+					};
+					return {};
+				}
+
+				const loaded = await loadSubjectMatterDrawerRows(subjectKey);
 				this.slice = {
-					classSubjectId,
+					subjectKey,
+					classSubjectId: subjectKey,
 					catalogSubjectId: loaded.catalogSubjectId,
 					gradeLevelSubjectId: loaded.gradeLevelSubjectId,
 					classGroupId: loaded.classGroupId,
 					rows: loaded.rows,
+					isCatalogSubject: false,
 				};
 				return {};
 			},

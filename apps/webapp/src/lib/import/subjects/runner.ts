@@ -99,7 +99,7 @@ export async function runSubjectImport(options: SubjectImportRunOptions): Promis
 
 				name: row.nom,
 
-				code: row.code,
+				code: row.abbreviation,
 
 				coefficient: row.coefficientValue,
 

@@ -196,7 +196,7 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 - [x] 16.3 — Runner : `registerStudent` ; `enrollStudent` seulement si classe résolue
 - [x] 16.4 — Rejet matricule existant (fichier ou base) — message « élève existe déjà »
 - [x] 16.5 — Warnings capacité : effectif + lignes fichier ; 1 warning / place manquante
-- [ ] 16.6 — Rafraîchir shell classes avant validation (éviter contexte stale)
+- [x] 16.6 — Rafraîchir shell classes avant validation (éviter contexte stale)
 - [x] 16.7 — Tests validator/runner mis à jour
 
 
@@ -281,7 +281,7 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 6. Phase 15 (paiements batch — Outils)
 ```
 
-**Statut 2026-07-20 :** phases 15–19 largement implémentées en code ; reste 16.6, 19.4, Phase 20 complète.
+**Statut 2026-07-20 :** phases 15–19 largement implémentées en code ; reste 19.4, Phase 20 complète.
 
 **Remaining estimate (ouvert) :** ~3–4 j (Phase 20 + polish + tests payments)
 
@@ -937,7 +937,7 @@ await client.commands.updateStudentProfile({ studentId, matricule, ... });
 | 16.3 | Runner : inscription conditionnelle               | [x]    |
 | 16.4 | Rejet matricule existant                          | [x]    |
 | 16.5 | Warnings capacité (N warnings si dépassement)     | [x]    |
-| 16.6 | Rafraîchir shell classes avant validation         | [ ]    |
+| 16.6 | Rafraîchir shell classes avant validation         | [x]    |
 | 16.7 | Unit tests mis à jour                             | [x]    |
 
 
@@ -1306,7 +1306,7 @@ await client.commands.updateStudentProfile({
 | 13    | Chapters (legacy fan-out)                         | ✅ → refonte Phase 19.5        |
 | 14    | Polish + lint/check global                        | ⏳                             |
 | 15    | Paiements batch                                   | ⏳ (code ✅ ; tests 15.6)       |
-| 16    | Élèves révisés (matricule, classe opt., capacité) | ✅ (sans 16.6)                 |
+| 16    | Élèves révisés (matricule, classe opt., capacité) | ✅                             |
 | 17    | Tuteurs multi-matricules `;`                      | ✅                             |
 | 18    | Enseignants multi-matières                        | ✅                               |
 | 19    | Matières par niveau                               | ⏳ (import ✅ ; 19.4 catalogue) |
@@ -1368,7 +1368,7 @@ await client.commands.updateStudentProfile({
 - [x] Phase 18.1–18.2 — Enseignants : import `;` + UI multi-matières
 - [x] Phase 15 — Paiements batch actif (tests unitaires 15.6 ✅)
 - [x] Phase 18.3 — Affectation enseignant auto à l'import (`classe` + matières)
-- [ ] Phase 16.6 — Rafraîchir shell classes avant validation élèves
+- [x] Phase 16.6 — Rafraîchir shell classes avant validation élèves
 - [ ] Phase 19.4 — Sync chapitres catalogue (`assignMatterToGradeLevelSubject`)
 - [ ] Phase 20 — Catalogue matières UI (boutons ajout, miroir Leçons)
 - [x] Tests `tests/lib/import/payments/`

@@ -5,6 +5,7 @@
 	import { LoaderCircle, X } from '$lib/icons';
 	import SubjectDetailHeader from './SubjectDetailHeader.svelte';
 	import SubjectDetailTabBar from './SubjectDetailTabBar.svelte';
+	import { subjectsDetailTabsFor } from '../../lib/subjects-detail-tabs';
 
 	const {
 		subject,
@@ -59,7 +60,9 @@
 		{:else}
 			<div class="space-y-5">
 				<SubjectDetailHeader {subject} {onDeleted} />
-				<SubjectDetailTabBar {subject} />
+				{#if subjectsDetailTabsFor(subject).length > 1}
+					<SubjectDetailTabBar {subject} />
+				{/if}
 				{@render children()}
 			</div>
 		{/if}

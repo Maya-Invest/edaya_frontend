@@ -123,6 +123,7 @@ function appendCapacityWarnings(
 			.slice(-overflow);
 
 		for (const row of overflowRows) {
+			delete row.classGroupId;
 			warnings.push(issue({
 				rowIndex: row.rowIndex,
 				column: 'classe',
@@ -218,10 +219,20 @@ export function validateStudentImportRows(
 		}
 
 		if (blockingIssues.length === 0 && hasPrenom && hasNom && hasMatricule) {
-			validRows.push({
+			const validatedRow: ValidatedStudentImportRow = {
 				...row,
 				...(classGroupId ? { classGroupId } : {}),
-			});
+			};
+			validRows.push(validatedRow);
+
+			if (!row.classe?.trim()) {
+				warnings.push(issue({
+					rowIndex: row.rowIndex,
+					column: 'classe',
+					messageKey: 'import.students.validation.noClassAssigned',
+					severity: 'warning',
+				}));
+			}
 		}
 	}
 

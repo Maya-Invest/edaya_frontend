@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Subject, SubjectCategory } from '$lib/types/school';
+	import type { Subject } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { groupSubjectsByGradeLevel } from '$lib/academic/subject-level-groups';
@@ -8,30 +8,27 @@
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import { t } from '$lib/i18n';
-	import { Clock, ChevronRight, Search } from '$lib/icons';
+	import { Search } from '$lib/icons';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readConfigSubjectListFilters, writeConfigSubjectListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
+	import SubjectCatalogRow from './SubjectCatalogRow.svelte';
 	import { getSubjectsPageState } from '../subjects-page.svelte';
 
 	const {
 		onSelect,
 		selectedId,
-		onSelectLevel,
 	}: {
 		onSelect?: (s: Subject) => void;
 		selectedId?: string;
-		onSelectLevel?: (group: { label: string; subtitle: string; items: Subject[] }) => void;
 	} = $props();
 
 	const subjectsPage = getSubjectsPageState();
 	const subjects = $derived(subjectsPage.subjects());
 	const classes = $derived(academicContext.classes);
 
-	const initialFilters = $derived(readConfigSubjectListFilters($page.url));
-
-	const listFilters = new ListFiltersState<{ q: string; mode: string }>(
+	const listFilters = new ListFiltersState<{ q: string; gradeLevel: string }>(
 		{
 			getUrl: () => $page.url,
 			write: writeConfigSubjectListFilters,
@@ -39,23 +36,6 @@
 		},
 		() => readConfigSubjectListFilters($page.url),
 	);
-
-	const mode = $derived(listFilters.values.mode === 'category' ? 'category' : 'level');
-
-	const dotColor: Record<Subject['color'], string> = {
-		mint: 'bg-accent',
-		sky: 'bg-accent/60',
-		warm: 'bg-muted-foreground/40',
-	};
-
-	const categoryTone: Record<SubjectCategory, string> = {
-		'Scientifique': 'bg-secondary text-foreground/80',
-		'Littéraire': 'bg-secondary text-foreground/80',
-		'Langues': 'bg-secondary text-foreground/80',
-		'Sciences humaines': 'bg-secondary text-foreground/80',
-		'Sport': 'bg-secondary text-foreground/80',
-		'Arts': 'bg-secondary text-foreground/80',
-	};
 
 	function matchesSearch(s: Subject, needle: string) {
 		if (!needle)
@@ -69,55 +49,70 @@
 		subjects.filter(s => matchesSearch(s, listFilters.values.q.trim().toLowerCase())),
 	);
 
-	const groups = $derived.by(() => {
-		if (mode === 'level') {
-			return groupSubjectsByGradeLevel(
-				filteredSubjects,
-				classes,
-				academicContext.gradeLevels,
-			);
+	const groups = $derived(
+		groupSubjectsByGradeLevel(
+			filteredSubjects,
+			classes,
+			academicContext.gradeLevels,
+		),
+	);
+
+	const selectedGradeLevelId = $derived(listFilters.values.gradeLevel);
+
+	const validGradeLevelIds = $derived(
+		new Set(academicContext.gradeLevels.map(level => level.id)),
+	);
+
+	function normalizeGradeLevelFilter(value: string): string {
+		if (value === 'all') {
+			return 'all';
 		}
-		const order: SubjectCategory[] = [
-			'Scientifique',
-			'Littéraire',
-			'Langues',
-			'Sciences humaines',
-			'Sport',
-			'Arts',
-		];
-		const byCat: Record<string, Subject[]> = {};
-		for (const s of filteredSubjects) {
-			(byCat[s.category] ||= []).push(s);
+		if (validGradeLevelIds.size === 0) {
+			return value;
 		}
-		return order
-			.filter(c => byCat[c]?.length)
-			.map(c => ({
-				key: c,
-				label: c,
-				subtitle: '',
-				count: byCat[c].length,
-				items: byCat[c],
-			}));
-	});
+		return validGradeLevelIds.has(value) ? value : 'all';
+	}
+
+	function gradeLevelFromUrl(url: URL): string {
+		const raw = url.searchParams.get('gradeLevel');
+		if (!raw) {
+			return 'all';
+		}
+		return normalizeGradeLevelFilter(raw);
+	}
+
+	const gradeLevelFilterOptions = $derived([
+		{ value: 'all', label: $t('subjects.allGradeLevels') },
+		...academicContext.gradeLevels
+			.slice()
+			.sort((left, right) => left.order - right.order)
+			.map(level => ({ value: level.id, label: level.name })),
+	]);
+
+	const visibleGroups = $derived(
+		selectedGradeLevelId === 'all'
+			? groups
+			: groups.filter(group => group.key === selectedGradeLevelId),
+	);
+
+	function handleGradeLevelFilterChange(value: string) {
+		listFilters.patchImmediate({ gradeLevel: value });
+	}
 
 	$effect(() => {
+		const url = $page.url;
 		listFilters.hydrate({
-			q: initialFilters.q,
-			mode: initialFilters.mode === 'category' ? 'category' : 'level',
+			q: readConfigSubjectListFilters(url).q,
+			gradeLevel: gradeLevelFromUrl(url),
 		});
 	});
 
-	const modeFilterOptions = $derived([
-		{ value: 'level', label: $t('subjects.viewByLevel') },
-		{ value: 'category', label: $t('subjects.viewByCategory') },
-	]);
-
 	$effect(() => {
-		if (!listFilters.ready) {
+		if (!listFilters.ready || selectedGradeLevelId === 'all') {
 			return;
 		}
-		void listFilters.values.mode;
-		listFilters.scheduleSync();
+		const section = document.getElementById(`subject-level-${selectedGradeLevelId}`);
+		section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	});
 </script>
 
@@ -141,9 +136,10 @@
 		{/snippet}
 		{#snippet filters()}
 			<FilterSelect
-				bind:value={listFilters.values.mode}
+				value={listFilters.values.gradeLevel}
 				class="h-9 min-w-[10rem] rounded-full text-xs"
-				options={modeFilterOptions}
+				options={gradeLevelFilterOptions}
+				onchange={handleGradeLevelFilterChange}
 			/>
 		{/snippet}
 		{#snippet more()}
@@ -151,104 +147,56 @@
 		{/snippet}
 	</ListPageHeader>
 
-	{#if mode === 'level'}
-		<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-			{#each groups as g, idx (g.key)}
-				{@const totalHours = g.items.reduce((sum, s) => sum + s.hoursPerWeek, 0)}
-				<button
-					type="button"
-					onclick={() => onSelectLevel?.({ label: g.label, subtitle: g.subtitle, items: g.items })}
-					class={cn(
-						'group flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-secondary',
-						idx !== groups.length - 1 && 'border-b border-border',
-					)}
-				>
-					<div class="h-8 w-1.5 shrink-0 rounded-full bg-accent"></div>
-					<div class="min-w-0 flex-1">
-						<div class="flex items-center gap-2">
-							<span class="font-display text-sm font-semibold">{g.label}</span>
+	<div class="space-y-8">
+		{#each visibleGroups as g (g.key)}
+			{@const totalHours = g.items.reduce((sum, s) => sum + s.hoursPerWeek, 0)}
+			{@const emphasize = selectedGradeLevelId !== 'all'}
+			<section
+				id={`subject-level-${g.key}`}
+				class={cn(
+					'scroll-mt-6',
+					emphasize && 'rounded-2xl ring-2 ring-accent/45 ring-offset-2 ring-offset-background',
+				)}
+			>
+				<div class="mb-3 flex items-end justify-between border-b border-border pb-2">
+					<div class="flex items-baseline gap-3">
+						<h3 class={cn(
+							'font-display font-semibold',
+							emphasize ? 'text-lg text-foreground' : 'text-base',
+						)}>
+							{g.label}
+						</h3>
+						{#if g.subtitle}
 							<span class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
 								{g.subtitle}
 							</span>
-						</div>
-						<p class="mt-0.5 truncate text-xs text-muted-foreground">
-							{g.items
-								.slice(0, 4)
-								.map(s => s.name)
-								.join(' · ')}{g.items.length > 4 ? ' …' : ''}
-						</p>
-					</div>
-					<div class="flex shrink-0 items-center gap-4 text-xs text-muted-foreground">
-						<span class="rounded-full bg-secondary px-2 py-0.5 font-mono tabular-nums">
-							{$t('subjects.count', { n: g.items.length })}
+						{/if}
+						<span class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+							{$t('subjects.count', { n: g.count })}
 						</span>
+					</div>
+					<div class="text-xs text-muted-foreground">
 						<span class="font-mono tabular-nums">{$t('subjects.hoursPerWeek', { h: totalHours })}</span>
-						<ChevronRight
-							class="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-accent"
-						/>
 					</div>
-				</button>
-			{:else}
-				<p class="px-5 py-10 text-center text-sm text-muted-foreground">{$t('subjects.none')}</p>
-			{/each}
-		</div>
-	{:else}
-		<div class="space-y-8">
-			{#each groups as g (g.key)}
-				{@const totalHours = g.items.reduce((sum, s) => sum + s.hoursPerWeek, 0)}
-				<section>
-					<div class="mb-3 flex items-end justify-between border-b border-border pb-2">
-						<div class="flex items-baseline gap-3">
-							<h3 class="font-display text-lg font-semibold">{g.label}</h3>
-							<span class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-								{$t('subjects.count', { n: g.count })}
-							</span>
-						</div>
-						<div class="flex items-center gap-3 text-xs text-muted-foreground">
-							<span class="font-mono tabular-nums">{$t('subjects.hoursPerWeek', { h: totalHours })}</span>
-						</div>
-					</div>
+				</div>
 
-					<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-						{#each g.items as s, idx (s.id)}
-							{@const active = selectedId === s.id}
-							<button
-								type="button"
-								onclick={() => onSelect?.(s)}
-								class={cn(
-									'flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-secondary',
-									idx !== g.items.length - 1 && 'border-b border-border',
-									active && 'bg-primary/10',
-								)}
-							>
-								<div class={cn('h-8 w-1.5 shrink-0 rounded-full', dotColor[s.color])}></div>
-								<div class="min-w-0 flex-1">
-									<div class="flex items-center gap-2">
-										<span class="font-display text-sm font-semibold">{s.name}</span>
-										<span
-											class={cn(
-												'rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider',
-												categoryTone[s.category],
-											)}
-										>
-											{s.category}
-										</span>
-									</div>
-									<p class="mt-0.5 truncate text-xs text-muted-foreground">{s.description}</p>
-								</div>
-								<div class="flex shrink-0 items-center gap-5 text-xs text-muted-foreground">
-									<span class="flex items-center gap-1.5">
-										<Clock class="h-3.5 w-3.5" />
-										{s.hoursPerWeek}h
-									</span>
-								</div>
-							</button>
-						{/each}
-					</div>
-				</section>
-			{:else}
-				<p class="py-10 text-center text-sm text-muted-foreground">{$t('subjects.none')}</p>
-			{/each}
-		</div>
-	{/if}
+				<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+					{#each g.items as subject, idx (subject.id)}
+						<SubjectCatalogRow
+							{subject}
+							isLast={idx === g.items.length - 1}
+							active={selectedId === subject.id}
+							onSelect={() => onSelect?.(subject)}
+						/>
+					{/each}
+				</div>
+			</section>
+		{:else}
+			<p class="py-10 text-center text-sm text-muted-foreground">
+				{selectedGradeLevelId === 'all'
+					? $t('subjects.none')
+					: $t('subjects.noneForGradeLevel')}
+			</p>
+		{/each}
+	</div>
 </div>

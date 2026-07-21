@@ -1,5 +1,5 @@
 import type { SubjectMatterDrawerRow } from '$lib/api/mutations/subject-matter.mutations';
-import { loadSubjectMatterDrawerRows } from '$lib/api/mutations/subject-matter.mutations';
+import { loadTeachingSubjectProgressionRows } from '$lib/api/mutations/subject-matter.mutations';
 import { resolvePageLoad } from '$lib/queries/page-status';
 import { getContext, setContext } from 'svelte';
 import { teachingClassIdFromUrl } from '../../../lib/teaching-helpers';
@@ -12,6 +12,9 @@ export interface SubjectProgressionTabSlice {
 	gradeLevelSubjectId?: string;
 	classGroupId: string;
 	rows: SubjectMatterDrawerRow[];
+	chaptersReadOnly: boolean;
+	/** Chapitres issus du catalogue (non modifiables en classe). */
+	catalogMatterIds: string[];
 }
 
 export class SubjectProgressionTabState {
@@ -26,6 +29,20 @@ export class SubjectProgressionTabState {
 			return [];
 		}
 		return this.slice.rows;
+	}
+
+	chaptersReadOnlyFor(classSubjectId: string): boolean {
+		if (this.slice?.classSubjectId !== classSubjectId) {
+			return false;
+		}
+		return this.slice.chaptersReadOnly;
+	}
+
+	isCatalogChapter(classSubjectId: string, matterId: string): boolean {
+		if (this.slice?.classSubjectId !== classSubjectId || !this.slice.chaptersReadOnly) {
+			return false;
+		}
+		return this.slice.catalogMatterIds.includes(matterId);
 	}
 
 	matterContextFor(classSubjectId: string) {
@@ -71,13 +88,17 @@ export class SubjectProgressionTabState {
 					this.slice = null;
 					return {};
 				}
-				const loaded = await loadSubjectMatterDrawerRows(classSubjectId);
+				const loaded = await loadTeachingSubjectProgressionRows(classSubjectId);
 				this.slice = {
 					classSubjectId,
 					catalogSubjectId: loaded.catalogSubjectId,
 					gradeLevelSubjectId: loaded.gradeLevelSubjectId,
 					classGroupId: loaded.classGroupId,
 					rows: loaded.rows,
+					chaptersReadOnly: loaded.chaptersReadOnly,
+					catalogMatterIds: loaded.chaptersReadOnly
+						? loaded.rows.map(row => row.id)
+						: [],
 				};
 				return {};
 			},

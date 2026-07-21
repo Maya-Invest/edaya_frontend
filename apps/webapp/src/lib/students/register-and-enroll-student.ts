@@ -19,6 +19,16 @@ export interface RegisterAndEnrollStudentInput {
 	createdAt?: string;
 }
 
+/** Thrown when the student was registered but class enrollment failed (import treats this as a warning). */
+export class StudentEnrollAfterRegisterFailedError extends Error {
+	readonly studentRegistered = true;
+
+	constructor(readonly cause: unknown) {
+		super('StudentEnrollAfterRegisterFailedError');
+		this.name = 'StudentEnrollAfterRegisterFailedError';
+	}
+}
+
 export async function registerAndEnrollStudent(
 	client: SchoolClient,
 	input: RegisterAndEnrollStudentInput,
@@ -38,12 +48,29 @@ export async function registerAndEnrollStudent(
 	} satisfies components['schemas']['RegisterStudentCommand']);
 
 	if (input.classGroupId) {
-		await client.commands.enrollStudent({
-			id: input.enrollmentId,
-			studentId: input.studentId,
-			classGroupId: input.classGroupId,
-			createdAt: now,
-		} satisfies components['schemas']['EnrollStudentCommand']);
+		try {
+			await client.commands.enrollStudent({
+				id: input.enrollmentId,
+				studentId: input.studentId,
+				classGroupId: input.classGroupId,
+				createdAt: now,
+			} satisfies components['schemas']['EnrollStudentCommand']);
+		}
+		catch (error) {
+			const matricule = input.matricule?.trim();
+			const gender = input.gender?.trim();
+			if (matricule || gender) {
+				await client.commands.updateStudentProfile({
+					studentId: input.studentId,
+					firstName: input.firstName.trim(),
+					lastName: input.lastName.trim(),
+					birthDate: birthDate ?? null,
+					...(matricule ? { matricule } : {}),
+					...(gender ? { gender } : {}),
+				} satisfies components['schemas']['UpdateStudentProfileCommand']);
+			}
+			throw new StudentEnrollAfterRegisterFailedError(error);
+		}
 	}
 
 	const matricule = input.matricule?.trim();

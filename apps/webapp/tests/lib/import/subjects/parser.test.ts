@@ -8,7 +8,7 @@ import {
 describe('subject import parser', () => {
 	it('parses csv rows with normalized headers and row indexes', () => {
 		const result = parseSubjectImportCsvText([
-			'nom,niveau,code,coefficient',
+			'nom,niveau,abbreviation,coefficient',
 			'Mathématiques,6ème,MATH,3',
 			'Anglais,6ème B,ANG,2',
 		].join('\n'));
@@ -19,14 +19,14 @@ describe('subject import parser', () => {
 			rowIndex: 2,
 			nom: 'Mathématiques',
 			niveau: '6ème',
-			code: 'MATH',
+			abbreviation: 'MATH',
 			coefficient: '3',
 		});
 	});
 
 	it('parses xlsx buffer with the same row shape as csv', () => {
 		const buffer = buildSubjectImportXlsxBufferFromRows([
-			['nom', 'niveau', 'code', 'coefficient'],
+			['nom', 'niveau', 'abbreviation', 'coefficient'],
 			['Physique', '5ème', 'PHY', '2'],
 		]);
 		const result = parseSubjectImportXlsxBuffer(buffer);

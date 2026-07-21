@@ -176,13 +176,13 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 		columns: catalogColumns([
 			{ key: 'nom', required: true, labelKey: 'import.types.subjects.columns.nom' },
 			{ key: 'niveau', required: true, labelKey: 'import.types.subjects.columns.niveau' },
-			{ key: 'code', required: false, labelKey: 'import.types.subjects.columns.code' },
+			{ key: 'abbreviation', required: false, labelKey: 'import.types.subjects.columns.abbreviation' },
 			{ key: 'coefficient', required: false, labelKey: 'import.types.subjects.columns.coefficient' },
 		]),
 		exampleRow: {
 			nom: 'Mathématiques',
 			niveau: '6ème',
-			code: 'MATH',
+			abbreviation: 'MATH',
 			coefficient: '3',
 		},
 		permission: 'SCHOOL_STRUCTURE_READ',
