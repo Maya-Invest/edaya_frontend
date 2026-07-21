@@ -1,8 +1,8 @@
-import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 import type { components } from '$lib/api/schema';
+import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
+import { mergeById } from '$lib/detail-data/seed-policies';
 import { ApiError } from '@maya-invest/edaya-api-client';
 import { describe, expect, it, mock } from 'bun:test';
-import { mergeById } from '$lib/detail-data/seed-policies';
 
 mock.module('$lib/toast.svelte', () => ({
 	toast: { success: () => {}, error: () => {} },
@@ -11,6 +11,12 @@ mock.module('$lib/toast.svelte', () => ({
 mock.module('$lib/auth/bootstrap-app', () => ({
 	bootstrapAppShell: async () => {},
 	resetAppShellBootstrap: () => {},
+}));
+
+mock.module('$lib/entity-versions.svelte', () => ({
+	entityVersions: {
+		bump: () => {},
+	},
 }));
 
 const { runMutation } = await import('$lib/api/mutations/run-mutation');

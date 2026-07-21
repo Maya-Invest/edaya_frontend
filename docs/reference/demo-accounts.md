@@ -11,7 +11,7 @@ Full fixture reference: [edaya_backend/tooling/fixtures/src/datasets/demo-ci/REA
 
 | Email | Role |
 |-------|------|
-| `a.kone@ecole-ci.edaya.dev` | School owner |
+| `a.kone@ecole-ci.edaya.dev` | School owner (DO scene — permission-gated routes) |
 | `j.aka@ecole-ci.edaya.dev` | Deputy director (staff workspace; primary dry-run login) |
 | `f.assi@ecole-ci.edaya.dev` | Staff coordinator / homeroom staff (`homeroomStaffId`; DN scene) |
 
@@ -45,7 +45,9 @@ cd edaya_web/apps/webapp && bun dev
 cd edaya_web/apps/webapp
 bun run check
 bun test tests/lib tests/generated
-bun run demo:e2e   # 98 steps (96 pass, 2 skipped); results in .demo-dry-run/
+bun run demo:e2e   # ~120 steps; results in .demo-dry-run/
 ```
+
+**Playwright scenes:** D0–D11 (core), DR (route coverage), DC (list shell), DD (drawer tabs), DM (modal URL), **DI** (import upload/validate), **DT** (timetable generation modal), **DG** (guardian drawer), **DF** (finance billing drawer), DN (homeroom nudge), **DO** (owner permissions).
 
 Harness source: `apps/webapp/tests/integration/demo-dry-run/` · CLI: `apps/webapp/scripts/demo-dry-run.ts`
