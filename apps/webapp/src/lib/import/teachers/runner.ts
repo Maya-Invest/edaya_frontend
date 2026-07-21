@@ -3,6 +3,10 @@ import type { ValidatedTeacherImportRow } from './types';
 import { t } from '$lib/i18n';
 import { formatImportRunErrorMessage } from '$lib/import/shared/format-import-run-error';
 import { createTeacherImportIds, saveTeacher } from '$lib/teachers/save-teacher';
+import {
+	createTeacherAssignmentImportId,
+	saveTeacherAssignment,
+} from '$lib/teachers/save-teacher-assignment';
 import { notifyTeachersListChanged } from '$lib/teachers/notify-teachers-list-changed';
 import { get } from 'svelte/store';
 
@@ -22,6 +26,7 @@ export interface TeacherImportRunResult {
 
 export interface TeacherImportRunOptions {
 	schoolId: string;
+	academicYearId: string;
 	client: SchoolClient;
 	rows: readonly ValidatedTeacherImportRow[];
 	onProgress?: (current: number, total: number) => void;
@@ -29,7 +34,7 @@ export interface TeacherImportRunOptions {
 }
 
 export async function runTeacherImport(options: TeacherImportRunOptions): Promise<TeacherImportRunResult> {
-	const { schoolId, client, rows, onProgress, seed = Date.now().toString(36) } = options;
+	const { schoolId, academicYearId, client, rows, onProgress, seed = Date.now().toString(36) } = options;
 	const failed: TeacherImportRunFailure[] = [];
 	const teacherIds: string[] = [];
 	const total = rows.length;
@@ -48,7 +53,37 @@ export async function runTeacherImport(options: TeacherImportRunOptions): Promis
 				phone: row.telephone,
 				subjectId: row.primarySubjectId ?? null,
 			});
+
+			const assignmentFailures: string[] = [];
+			if (row.classGroupId && row.assignmentClassSubjectIds?.length) {
+				for (const [assignmentIndex, classSubjectId] of row.assignmentClassSubjectIds.entries()) {
+					try {
+						await saveTeacherAssignment(client, {
+							assignmentId: createTeacherAssignmentImportId(row.rowIndex, assignmentIndex, seed),
+							teacherId,
+							academicYearId,
+							classGroupId: row.classGroupId,
+							classSubjectId,
+						});
+					}
+					catch (assignmentError) {
+						assignmentFailures.push(
+							formatImportRunErrorMessage(assignmentError, {
+								entityLabel: row.matieres,
+							}, (key, params) => get(t)(key, params ?? {})),
+						);
+					}
+				}
+			}
+
 			teacherIds.push(teacherId);
+			if (assignmentFailures.length > 0) {
+				failed.push({
+					rowIndex: row.rowIndex,
+					teacherName: `${row.prenom} ${row.nom}`.trim(),
+					message: assignmentFailures.join('; '),
+				});
+			}
 		}
 		catch (error) {
 			failed.push({

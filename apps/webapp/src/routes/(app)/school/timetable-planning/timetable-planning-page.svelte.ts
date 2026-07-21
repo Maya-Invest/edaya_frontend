@@ -46,34 +46,34 @@ export interface TimetablePlanningRow {
 
 export class TimetablePlanningPageState {
   sessions = $state<components['schemas']['LessonSession'][]>([]);
-	classSubjects = $state<ClassSubject[]>([]);
-	subjectLabels = $state<Record<string, string>>({});
-	teacherLabelsByClassSubjectId = $state<Record<string, string>>({});
-	generationResult = $state<GenerateSchoolResult | null>(null);
-	busy = $state(false);
-	loadStatus = $state<'idle' | 'loading' | 'ready' | 'error'>('idle');
-	loadError = $state('');
-	activeRange = $state<{ startDate: string; endDate: string } | null>(null);
+  classSubjects = $state<ClassSubject[]>([]);
+  subjectLabels = $state<Record<string, string>>({});
+  teacherLabelsByClassSubjectId = $state<Record<string, string>>({});
+  generationResult = $state<GenerateSchoolResult | null>(null);
+  busy = $state(false);
+  loadStatus = $state<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  loadError = $state('');
+  activeRange = $state<{ startDate: string; endDate: string } | null>(null);
 
-	get academicYearRange() {
-		return academicYearPlanningRange(academicContext.year);
-	}
+  get academicYearRange() {
+    return academicYearPlanningRange(academicContext.year);
+  }
 
-	get range() {
-		if (this.activeRange) {
-			return this.activeRange;
-		}
-		const period = academicContext.period;
-		const year = academicContext.year;
-		return {
-			startDate: formatDateInput(period?.startDate ?? year?.startDate),
-			endDate: formatDateInput(period?.endDate ?? year?.endDate),
-		};
-	}
+  get range() {
+    if (this.activeRange) {
+      return this.activeRange;
+    }
+    const period = academicContext.period;
+    const year = academicContext.year;
+    return {
+      startDate: formatDateInput(period?.startDate ?? year?.startDate),
+      endDate: formatDateInput(period?.endDate ?? year?.endDate),
+    };
+  }
 
-	resetRange() {
-		this.activeRange = null;
-	}
+  resetRange() {
+    this.activeRange = null;
+  }
 
   get classes() {
     return sortTimetableClasses(
@@ -132,10 +132,10 @@ export class TimetablePlanningPageState {
           : Promise.resolve([]),
         classSubjectIds.length
           ? client.entities.teacherAssignments.list({
-              classSubjectId: { $in: classSubjectIds },
-              academicYearId: academicContext.yearId,
-              status: 'active',
-            })
+            classSubjectId: { $in: classSubjectIds },
+            academicYearId: academicContext.yearId,
+            status: 'active',
+          })
           : Promise.resolve([]),
       ]);
       this.subjectLabels = Object.fromEntries(subjects.map(subject => [subject.id, subject.name]));
@@ -202,11 +202,14 @@ export class TimetablePlanningPageState {
       startDate: input.startDate,
       endDate: input.endDate,
       options: input.options,
-      placementParameters: buildTimetablePlacementParameters(input),
-    }), { reportInModal: true });
-		if (outcome.ok) {
-			this.generationResult = outcome.value;
-			this.activeRange = { startDate: input.startDate, endDate: input.endDate };
+      placementParameters: buildTimetablePlacementParameters(
+        { periodsPerWeekByClassSubjectId: input.periodsPerWeekByClassSubjectId },
+        this.classSubjects,
+      ),
+    }));
+    if (result) {
+      this.generationResult = result;
+      this.activeRange = { startDate: input.startDate, endDate: input.endDate };
     }
     return outcome;
   }

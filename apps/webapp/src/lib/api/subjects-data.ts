@@ -359,3 +359,41 @@ export async function loadClassSubjects(client: SchoolClient, classGroupId: stri
 	const sources = await fetchClassSubjectsSources(client, classGroupId);
 	return mapClassSubjects(classGroupId, sources);
 }
+
+export async function loadClassSubjectsByIds(
+	client: SchoolClient,
+	classSubjectIds: readonly string[],
+): Promise<Subject[]> {
+	const ids = uniqueIds(classSubjectIds.filter(Boolean));
+	if (ids.length === 0) {
+		return [];
+	}
+
+	const classSubjectsRaw = await client.entities.classSubjects.list(entitiesByIds(ids));
+	if (classSubjectsRaw.length === 0) {
+		return [];
+	}
+
+	const subjectIds = uniqueIds(classSubjectsRaw.map(entry => entry.subjectId));
+	const [subjectsRaw, subjectMattersRaw] = await Promise.all([
+		subjectIds.length > 0
+			? client.entities.subjects.list(entitiesByIds(subjectIds))
+			: Promise.resolve([]),
+		subjectIds.length > 0
+			? safeOptionalEntityList(() => client.entities.subjectMatters.list(subjectMattersForSubjects(subjectIds)))
+			: Promise.resolve([]),
+	]);
+	const fetchedClassSubjectIds = uniqueIds(classSubjectsRaw.map(entry => entry.id));
+	const instructorSources = await fetchClassSubjectInstructorSourcesBundle(client, fetchedClassSubjectIds);
+	const sources: ClassSubjectsSources = {
+		classSubjectsRaw,
+		subjectsRaw: subjectsRaw ?? [],
+		subjectMattersRaw: subjectMattersRaw ?? [],
+		...instructorSources,
+	};
+	const classIds = uniqueIds(classSubjectsRaw.map(entry => entry.classGroupId));
+	const idSet = new Set(ids);
+	return classIds
+		.flatMap(classId => mapClassSubjects(classId, sources))
+		.filter(subject => idSet.has(subject.id));
+}

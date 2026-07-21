@@ -98,6 +98,29 @@ describe('student import validator', () => {
 		expect(isValidStudentImportBirthDate('2012-03-32')).toBe(false);
 	});
 
+	it('emits one capacity warning per overflow seat on distinct rows', () => {
+		const result = validateStudentImportRows(
+			[
+				row({ rowIndex: 2, matricule: 'MAT-001' }),
+				row({ rowIndex: 3, prenom: 'Marie', matricule: 'MAT-002' }),
+				row({ rowIndex: 4, prenom: 'Paul', matricule: 'MAT-003' }),
+			],
+			{
+				classes: [
+					{ id: 'class-6a', name: '6ème A', studentCount: 0, capacity: 1 },
+					{ id: 'class-6b', name: '6ème B', studentCount: 0, capacity: 10 },
+				],
+			},
+		);
+
+		const capacityWarnings = result.warnings.filter(
+			warning => warning.messageKey === 'import.students.validation.capacityExceeded',
+		);
+
+		expect(capacityWarnings).toHaveLength(2);
+		expect(capacityWarnings.map(warning => warning.rowIndex)).toEqual([3, 4]);
+	});
+
 	it('enables import when there are valid rows, even with blocking errors on other rows', () => {
 		const allValid = validateStudentImportRows([row({ rowIndex: 2 })], { classes: CLASSES });
 		const partial = validateStudentImportRows(

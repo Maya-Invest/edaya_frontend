@@ -17,6 +17,8 @@
 	import TimetableWorkloadConfigPanel from '$lib/components/school/scheduling/TimetableWorkloadConfigPanel.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
+	import Input from '$lib/components/ui/input/input.svelte';
+	import { resolvedPeriodsPerWeekPlaceholder, setPeriodsPerWeekOverride } from '$lib/components/school/scheduling/timetable-placement-parameters';
 	import { formatDateInput } from '$lib/date/format';
 	import { t } from '$lib/i18n';
 
@@ -129,10 +131,11 @@
 		if (minDayGapSameSubject) {
 			value.minDayGapSameSubject = Number(minDayGapSameSubject);
 		}
-		if (preferredIds.length) {
-			value.preferredPeriodDefinitionIds = preferredIds;
-		}
-		return Object.keys(value).length ? value : undefined;
+		return value;
+	}
+
+	function setOverride(id: string, value: string) {
+		overrides = setPeriodsPerWeekOverride(overrides, id, value);
 	}
 
 	async function submit() {
@@ -142,10 +145,8 @@
 		const outcome = await planningPage.generate({
 			startDate,
 			endDate,
-			options: buildOptions(),
+			options: options(),
 			periodsPerWeekByClassSubjectId: overrides,
-			minPeriodSpanByClassSubjectId: minSpanOverrides,
-			maxPeriodSpanByClassSubjectId: maxSpanOverrides,
 		});
 		if (outcome.ok) {
 			schoolResult = outcome.value;

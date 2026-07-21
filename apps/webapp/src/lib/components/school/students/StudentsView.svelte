@@ -20,6 +20,7 @@
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
+	import { studentMatchesSearchQuery } from '$lib/students/matches-student-search-query';
 	import { cn } from '$lib/utils';
 	import PersonAvatar from '../shared/PersonAvatar.svelte';
 	import StudentCreateModal from './StudentCreateModal.svelte';
@@ -70,7 +71,7 @@
 	const filtered = $derived(
 		students
 			.filter(s => listFilters.values.status === 'all' || s.status === listFilters.values.status)
-			.filter(s => s.name.toLowerCase().includes(listFilters.values.q.toLowerCase())),
+			.filter(s => studentMatchesSearchQuery(s, listFilters.values.q)),
 	);
 
 	const infinite = useInfiniteList(() => filtered, 30);

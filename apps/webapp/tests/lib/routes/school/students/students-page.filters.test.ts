@@ -33,6 +33,14 @@ describe('student list filters', () => {
 
 		expect(filterStudentList(roster, { q: 'ada', class: 'class-a', status: 'honor', sort: 'roster', sortDir: 'asc' }).map(entry => entry.id)).toEqual(['1']);
 		expect(filterStudentList(roster, { q: 'ada.king@school.test', class: 'all', status: 'all', sort: 'roster', sortDir: 'asc' }).map(entry => entry.id)).toEqual(['3']);
+		expect(filterStudentList(
+			[student('4', { name: 'Kouadio Yao', matricule: 'CI-2025-001' })],
+			{ q: 'ci-2025-004', class: 'all', status: 'all', sort: 'roster', sortDir: 'asc' },
+		)).toEqual([]);
+		expect(filterStudentList(
+			[student('4', { name: 'Kouadio Yao', matricule: 'CI-2025-001' })],
+			{ q: 'CI-2025-001', class: 'all', status: 'all', sort: 'roster', sortDir: 'asc' },
+		).map(entry => entry.id)).toEqual(['4']);
 		expect(filterStudentList(roster, { q: '', class: 'all', status: 'all', sort: 'name', sortDir: 'asc' }).map(entry => entry.id)).toEqual(['2', '1', '3']);
 	});
 
