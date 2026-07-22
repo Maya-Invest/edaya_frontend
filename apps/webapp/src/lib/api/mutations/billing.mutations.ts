@@ -5,6 +5,7 @@ import { getBrowserSchoolClient } from '$lib/api/school-client';
 type PaymentMethod = components['schemas']['RecordPaymentCommand']['method'];
 
 export async function assignFeeToStudentMutation(input: {
+	id?: string;
 	studentId: string;
 	feeId: string;
 	expectedAmount?: number;
@@ -13,7 +14,7 @@ export async function assignFeeToStudentMutation(input: {
 }): Promise<string | null> {
 	const client = getBrowserSchoolClient();
 	const now = new Date().toISOString();
-	const id = `sf-${Date.now().toString(36)}`;
+	const id = input.id ?? `sf-${Date.now().toString(36)}`;
 
 	const result = await runMutation(() => client.commands.assignFeeToStudent({
 		id,

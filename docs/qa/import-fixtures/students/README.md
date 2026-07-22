@@ -23,4 +23,4 @@ bun edaya_web/docs/qa/import-fixtures/students/generate-fixtures.ts
 
 **Ordre suggéré :** EL09 → EL03 → EL04 → EL05 → EL06 → EL07 → EL02 → EL08 → EL10 → **EL01** (en dernier).
 
-Matricules EL01 réutilisés par [tuteurs](../guardians/) et [paiements](../payments/).
+Matricules EL01 réutilisés par [tuteurs](../guardians/), [facturation](../billing/) et [paiements](../payments/).

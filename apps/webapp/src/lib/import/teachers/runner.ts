@@ -4,10 +4,6 @@ import { t } from '$lib/i18n';
 import { formatImportRunErrorMessage } from '$lib/import/shared/format-import-run-error';
 import { notifyTeachersListChanged } from '$lib/teachers/notify-teachers-list-changed';
 import { createTeacherImportIds, saveTeacher } from '$lib/teachers/save-teacher';
-import {
-	createTeacherAssignmentImportId,
-	saveTeacherAssignment,
-} from '$lib/teachers/save-teacher-assignment';
 import { get } from 'svelte/store';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
@@ -34,7 +30,7 @@ export interface TeacherImportRunOptions {
 }
 
 export async function runTeacherImport(options: TeacherImportRunOptions): Promise<TeacherImportRunResult> {
-	const { schoolId, academicYearId, client, rows, onProgress, seed = Date.now().toString(36) } = options;
+	const { schoolId, client, rows, onProgress, seed = Date.now().toString(36) } = options;
 	const failed: TeacherImportRunFailure[] = [];
 	const teacherIds: string[] = [];
 	const total = rows.length;
@@ -51,46 +47,16 @@ export async function runTeacherImport(options: TeacherImportRunOptions): Promis
 				lastName: row.nom,
 				email: row.email,
 				phone: row.telephone,
-				subjectId: row.primarySubjectId ?? null,
+				subjectId: null,
 			});
-
-			const assignmentFailures: string[] = [];
-			if (row.classGroupId && row.assignmentClassSubjectIds?.length) {
-				for (const [assignmentIndex, classSubjectId] of row.assignmentClassSubjectIds.entries()) {
-					try {
-						await saveTeacherAssignment(client, {
-							assignmentId: createTeacherAssignmentImportId(row.rowIndex, assignmentIndex, seed),
-							teacherId,
-							academicYearId,
-							classGroupId: row.classGroupId,
-							classSubjectId,
-						});
-					}
-					catch (assignmentError) {
-						assignmentFailures.push(
-							formatImportRunErrorMessage(assignmentError, {
-								entityLabel: row.matieres,
-							}, (key, params) => get(t)(key, params ?? {})),
-						);
-					}
-				}
-			}
-
 			teacherIds.push(teacherId);
-			if (assignmentFailures.length > 0) {
-				failed.push({
-					rowIndex: row.rowIndex,
-					teacherName: `${row.prenom} ${row.nom}`.trim(),
-					message: assignmentFailures.join('; '),
-				});
-			}
 		}
 		catch (error) {
 			failed.push({
 				rowIndex: row.rowIndex,
 				teacherName: `${row.prenom} ${row.nom}`.trim(),
 				message: formatImportRunErrorMessage(error, {
-					entityLabel: row.matieres,
+					entityLabel: `${row.prenom} ${row.nom}`.trim(),
 				}, (key, params) => get(t)(key, params ?? {})),
 			});
 		}

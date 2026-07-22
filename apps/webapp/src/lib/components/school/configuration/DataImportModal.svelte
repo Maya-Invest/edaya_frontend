@@ -12,7 +12,12 @@
 		PaymentImportValidationContext,
 		PaymentImportValidationResult,
 	} from '$lib/import/payments/types';
-	import type { SchoolSubjectCatalogEntry } from '$lib/import/shared/load-school-subject-names';
+	import type { BillingImportRunResult } from '$lib/import/billing/runner';
+	import type {
+		BillingImportRow,
+		BillingImportValidationContext,
+		BillingImportValidationResult,
+	} from '$lib/import/billing/types';
 	import type { StudentMatriculeEntry } from '$lib/import/shared/load-student-matricule-index';
 	import type { StaffImportRunResult } from '$lib/import/staff/runner';
 	import type { StaffImportRow, StaffImportValidationResult } from '$lib/import/staff/types';
@@ -21,7 +26,7 @@
 	import type { SubjectImportRunResult } from '$lib/import/subjects/runner';
 	import type { SubjectImportRow, SubjectImportValidationResult } from '$lib/import/subjects/types';
 	import type { TeacherImportRunResult } from '$lib/import/teachers/runner';
-	import type { TeacherImportRow, TeacherImportValidationResult, TeacherImportClassSubjectOption } from '$lib/import/teachers/types';
+	import type { TeacherImportRow, TeacherImportValidationResult } from '$lib/import/teachers/types';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { authSession } from '$lib/auth/session.svelte';
@@ -67,15 +72,20 @@
 		canImportValidatedPayments,
 		validatePaymentImportRows,
 	} from '$lib/import/payments/validator';
+	import { loadBillingImportContext } from '$lib/import/billing/load-billing-import-context';
+	import { parseBillingImportFile } from '$lib/import/billing/parser';
+	import { runBillingImport } from '$lib/import/billing/runner';
+	import {
+		canImportValidatedBilling,
+		validateBillingImportRows,
+	} from '$lib/import/billing/validator';
 	import {
 		loadChapterImportContext,
 	} from '$lib/import/shared/load-chapter-import-context';
-	import { loadSchoolSubjectCatalog } from '$lib/import/shared/load-school-subject-names';
 	import {
 		loadStudentMatriculeIndex,
 	} from '$lib/import/shared/load-student-matricule-index';
 	import { loadExistingSubjectImportKeys } from '$lib/import/shared/load-subject-import-context';
-	import { loadTeacherImportClassSubjects } from '$lib/import/shared/load-teacher-import-context';
 	import {
 		downloadImportCsvTemplate,
 		downloadImportExcelTemplate,
@@ -172,6 +182,12 @@
 		empty_file: 'import.payments.emptyFile',
 	};
 
+	const BILLING_PARSE_ERROR_KEYS: Record<string, string> = {
+		unsupported_format: 'import.billing.unsupportedFormat',
+		file_too_large: 'import.billing.fileTooLarge',
+		empty_file: 'import.billing.emptyFile',
+	};
+
 	const STUDENT_COLUMN_LABEL_KEYS: Record<string, string> = {
 		prenom: 'import.students.columns.prenom',
 		nom: 'import.students.columns.nom',
@@ -207,9 +223,7 @@
 		prenom: 'import.types.teachers.columns.prenom',
 		nom: 'import.types.teachers.columns.nom',
 		email: 'import.types.teachers.columns.email',
-		matieres: 'import.types.teachers.columns.matieres',
 		telephone: 'import.types.teachers.columns.telephone',
-		classe: 'import.types.teachers.columns.classe',
 	};
 
 	const SUBJECT_COLUMN_LABEL_KEYS: Record<string, string> = {
@@ -235,6 +249,13 @@
 		date: 'import.payments.columns.date',
 		mode: 'import.payments.columns.mode',
 		notes: 'import.payments.columns.notes',
+	};
+
+	const BILLING_COLUMN_LABEL_KEYS: Record<string, string> = {
+		matricule: 'import.billing.columns.matricule',
+		type_frais: 'import.billing.columns.type_frais',
+		montant: 'import.billing.columns.montant',
+		date_echeance: 'import.billing.columns.date_echeance',
 	};
 
 	let {
@@ -266,19 +287,19 @@
 	let subjectValidationResult = $state<SubjectImportValidationResult | null>(null);
 	let chapterValidationResult = $state<ChapterImportValidationResult | null>(null);
 	let paymentValidationResult = $state<PaymentImportValidationResult | null>(null);
+	let billingParsedRows = $state<BillingImportRow[]>([]);
+	let billingValidationResult = $state<BillingImportValidationResult | null>(null);
 	let studentMatriculeIndex = $state<Map<string, StudentMatriculeEntry>>(new Map());
 	let existingMatricules = $state<Set<string>>(new Set());
 	let loadingMatricules = $state(false);
-	let subjectCatalog = $state<SchoolSubjectCatalogEntry[]>([]);
-	let loadingSubjectNames = $state(false);
 	let subjectImportExistingKeys = $state<Set<string>>(new Set());
 	let loadingSubjectImportContext = $state(false);
 	let chapterImportContext = $state<ChapterImportCatalogTarget[]>([]);
 	let loadingChapterContext = $state(false);
-	let teacherImportClassSubjects = $state<TeacherImportClassSubjectOption[]>([]);
-	let loadingTeacherImportContext = $state(false);
 	let paymentImportContext = $state<PaymentImportValidationContext | null>(null);
 	let loadingPaymentContext = $state(false);
+	let billingImportContext = $state<BillingImportValidationContext | null>(null);
+	let loadingBillingContext = $state(false);
 	let preparingValidation = $state(false);
 	let importing = $state(false);
 	let importProgress = $state({ current: 0, total: 0 });
@@ -290,6 +311,7 @@
 	let subjectImportResult = $state<SubjectImportRunResult | null>(null);
 	let chapterImportResult = $state<ChapterImportRunResult | null>(null);
 	let paymentImportResult = $state<PaymentImportRunResult | null>(null);
+	let billingImportResult = $state<BillingImportRunResult | null>(null);
 	let importFatalError = $state('');
 
 	const studentsHref = appPath('/(app)/school/students/[[id]]');
@@ -297,6 +319,7 @@
 	const guardiansHref = appPath('/(app)/school/guardians/[[id]]');
 	const staffHref = appPath('/(app)/school/staff/[[id]]');
 	const teachersHref = appPath('/(app)/school/teachers/[[id]]');
+	const teacherAssignmentsHref = appPath('/(app)/configuration/tools/teacher-assignments');
 	const subjectsHref = appPath('/(app)/configuration/subjects/[[id]]');
 	const billingHref = appPath('/(app)/finance/billing/[[id]]');
 	const selectedDefinition = $derived(getImportTypeDefinition(selectedImportType));
@@ -307,9 +330,10 @@
 	const isTeachersImport = $derived(selectedImportType === 'teachers');
 	const isSubjectsImport = $derived(selectedImportType === 'subjects');
 	const isChaptersImport = $derived(selectedImportType === 'chapters');
+	const isBillingImport = $derived(selectedImportType === 'billing');
 	const isPaymentsImport = $derived(selectedImportType === 'payments');
 	const isWiredImport = $derived(
-		isStudentsImport || isClassesImport || isGuardiansImport || isStaffImport || isTeachersImport || isSubjectsImport || isChaptersImport || isPaymentsImport,
+		isStudentsImport || isClassesImport || isGuardiansImport || isStaffImport || isTeachersImport || isSubjectsImport || isChaptersImport || isBillingImport || isPaymentsImport,
 	);
 	const isActiveImport = $derived(selectedDefinition.status === 'active');
 	const selectedImportTypeLabel = $derived($t(selectedDefinition.labelKey));
@@ -328,6 +352,8 @@
 	const subjectPreviewRows = $derived(subjectParsedRows.slice(0, 3));
 	const chapterPreviewRows = $derived(chapterParsedRows.slice(0, 3));
 	const paymentPreviewRows = $derived(paymentParsedRows.slice(0, 3));
+	const billingPreviewRows = $derived(billingParsedRows.slice(0, 3));
+	const hasFeeTypes = $derived((billingImportContext?.fees.length ?? 0) > 0);
 	const hasClassSubjects = $derived(chapterImportContext.length > 0);
 	const parsedRowCount = $derived.by(() => {
 		if (isStudentsImport) {
@@ -348,10 +374,16 @@
 		if (isSubjectsImport) {
 			return subjectParsedRows.length;
 		}
+		if (isChaptersImport) {
+			return chapterParsedRows.length;
+		}
+		if (isBillingImport) {
+			return billingParsedRows.length;
+		}
 		if (isPaymentsImport) {
 			return paymentParsedRows.length;
 		}
-		return chapterParsedRows.length;
+		return 0;
 	});
 	const showUploadDropzone = $derived(parsing || parsedRowCount === 0);
 	const canGoToUpload = $derived.by(() => {
@@ -362,6 +394,12 @@
 			return false;
 		}
 		if (isPaymentsImport && !hasStudents) {
+			return false;
+		}
+		if (isBillingImport && !hasStudents) {
+			return false;
+		}
+		if (isBillingImport && billingImportContext && !hasFeeTypes) {
 			return false;
 		}
 		if (isGuardiansImport && !hasStudents) {
@@ -383,6 +421,7 @@
 	const canStartSubjectImport = $derived(canImportValidatedSubjects(subjectValidationResult));
 	const canStartChapterImport = $derived(canImportValidatedChapters(chapterValidationResult));
 	const canStartPaymentImport = $derived(canImportValidatedPayments(paymentValidationResult));
+	const canStartBillingImport = $derived(canImportValidatedBilling(billingValidationResult));
 	const chapterImportOperationCount = $derived(
 		chapterValidationResult
 			? countChapterImportOperations(chapterValidationResult.validRows)
@@ -410,6 +449,9 @@
 		if (isChaptersImport) {
 			return canStartChapterImport;
 		}
+		if (isBillingImport) {
+			return canStartBillingImport;
+		}
 		if (isPaymentsImport) {
 			return canStartPaymentImport;
 		}
@@ -434,10 +476,16 @@
 		if (isSubjectsImport) {
 			return subjectValidationResult;
 		}
+		if (isChaptersImport) {
+			return chapterValidationResult;
+		}
+		if (isBillingImport) {
+			return billingValidationResult;
+		}
 		if (isPaymentsImport) {
 			return paymentValidationResult;
 		}
-		return chapterValidationResult;
+		return null;
 	});
 	const activeValidRowCount = $derived(activeValidationResult?.validRows.length ?? 0);
 	const studentValidationIssues = $derived([
@@ -472,6 +520,10 @@
 		...(paymentValidationResult?.errors ?? []),
 		...(paymentValidationResult?.warnings ?? []),
 	]);
+	const billingValidationIssues = $derived([
+		...(billingValidationResult?.errors ?? []),
+		...(billingValidationResult?.warnings ?? []),
+	]);
 	const importReadyLabel = $derived.by(() => {
 		if (isStudentsImport) {
 			return $t('import.students.importReady', { n: activeValidRowCount });
@@ -494,6 +546,9 @@
 		if (isPaymentsImport) {
 			return $t('import.payments.importReady', { n: activeValidRowCount });
 		}
+		if (isBillingImport) {
+			return $t('import.billing.importReady', { n: activeValidRowCount });
+		}
 		return $t('import.chapters.importReady', { n: chapterImportOperationCount });
 	});
 	const showSubjectsPrerequisite = $derived(
@@ -501,6 +556,12 @@
 	);
 	const showPaymentsPrerequisite = $derived(
 		isPaymentsImport && step === 'download' && !hasStudents,
+	);
+	const showBillingStudentsPrerequisite = $derived(
+		isBillingImport && step === 'download' && !hasStudents,
+	);
+	const showBillingFeesPrerequisite = $derived(
+		isBillingImport && step === 'download' && hasStudents && billingImportContext !== null && !hasFeeTypes,
 	);
 	const showChaptersPrerequisite = $derived(
 		isChaptersImport && step === 'download' && !hasClassSubjects,
@@ -520,6 +581,7 @@
 		subjectParsedRows = [];
 		chapterParsedRows = [];
 		paymentParsedRows = [];
+		billingParsedRows = [];
 		parseErrorMessage = '';
 		parsing = false;
 		studentValidationResult = null;
@@ -530,6 +592,7 @@
 		subjectValidationResult = null;
 		chapterValidationResult = null;
 		paymentValidationResult = null;
+		billingValidationResult = null;
 		importing = false;
 		importProgress = { current: 0, total: 0 };
 		studentImportResult = null;
@@ -540,14 +603,14 @@
 		subjectImportResult = null;
 		chapterImportResult = null;
 		paymentImportResult = null;
+		billingImportResult = null;
 		importFatalError = '';
 		studentMatriculeIndex = new Map();
 		existingMatricules = new Set();
-		subjectCatalog = [];
 		subjectImportExistingKeys = new Set();
 		chapterImportContext = [];
-		teacherImportClassSubjects = [];
 		paymentImportContext = null;
+		billingImportContext = null;
 	}
 
 	function handleOpenChange(next: boolean) {
@@ -556,10 +619,9 @@
 			selectedImportType = initialImportType;
 			resetWizard();
 			void loadStudentMatriculeDataIfNeeded();
-			void loadSubjectNamesIfNeeded();
-			void loadTeacherImportContextIfNeeded();
 			void loadChapterImportContextIfNeeded();
 			void loadPaymentImportContextIfNeeded();
+			void loadBillingImportContextIfNeeded();
 			return;
 		}
 		resetWizard();
@@ -573,10 +635,9 @@
 		selectedImportType = importType;
 		resetWizard();
 		void loadStudentMatriculeDataIfNeeded();
-		void loadSubjectNamesIfNeeded();
-		void loadTeacherImportContextIfNeeded();
 		void loadChapterImportContextIfNeeded();
 		void loadPaymentImportContextIfNeeded();
+		void loadBillingImportContextIfNeeded();
 	}
 
 	function stepIndex(value: ImportStep): number {
@@ -587,6 +648,9 @@
 		let keyMap = STUDENT_PARSE_ERROR_KEYS;
 		if (isPaymentsImport) {
 			keyMap = PAYMENT_PARSE_ERROR_KEYS;
+		}
+		else if (isBillingImport) {
+			keyMap = BILLING_PARSE_ERROR_KEYS;
 		}
 		else if (isChaptersImport) {
 			keyMap = CHAPTER_PARSE_ERROR_KEYS;
@@ -619,6 +683,7 @@
 		subjectParsedRows = [];
 		chapterParsedRows = [];
 		paymentParsedRows = [];
+		billingParsedRows = [];
 		parseErrorMessage = '';
 		studentValidationResult = null;
 		classValidationResult = null;
@@ -628,6 +693,7 @@
 		subjectValidationResult = null;
 		chapterValidationResult = null;
 		paymentValidationResult = null;
+		billingValidationResult = null;
 	}
 
 	async function loadPaymentImportContextIfNeeded() {
@@ -655,6 +721,34 @@
 		}
 		finally {
 			loadingPaymentContext = false;
+		}
+	}
+
+	async function loadBillingImportContextIfNeeded() {
+		if (!isBillingImport) {
+			return;
+		}
+		if (loadingBillingContext || billingImportContext) {
+			return;
+		}
+		const schoolId = authSession.schoolId;
+		const academicYearId = academicContext.yearId;
+		if (!schoolId || !academicYearId) {
+			billingImportContext = null;
+			return;
+		}
+		loadingBillingContext = true;
+		try {
+			billingImportContext = await loadBillingImportContext(getBrowserSchoolClient(), {
+				schoolId,
+				academicYearId,
+			});
+		}
+		catch {
+			billingImportContext = null;
+		}
+		finally {
+			loadingBillingContext = false;
 		}
 	}
 
@@ -689,7 +783,7 @@
 	}
 
 	async function loadStudentMatriculeDataIfNeeded() {
-		if (!isStudentsImport && !isGuardiansImport && !isPaymentsImport) {
+		if (!isStudentsImport && !isGuardiansImport && !isPaymentsImport && !isBillingImport) {
 			return;
 		}
 		if (loadingMatricules || studentMatriculeIndex.size > 0) {
@@ -728,44 +822,6 @@
 		}
 		finally {
 			loadingSubjectImportContext = false;
-		}
-	}
-
-	async function loadTeacherImportContextIfNeeded() {
-		if (!isTeachersImport) {
-			return;
-		}
-		if (loadingTeacherImportContext) {
-			return;
-		}
-		loadingTeacherImportContext = true;
-		try {
-			teacherImportClassSubjects = await loadTeacherImportClassSubjects(getBrowserSchoolClient());
-		}
-		catch {
-			teacherImportClassSubjects = [];
-		}
-		finally {
-			loadingTeacherImportContext = false;
-		}
-	}
-
-	async function loadSubjectNamesIfNeeded() {
-		if (!isTeachersImport) {
-			return;
-		}
-		if (loadingSubjectNames || subjectCatalog.length > 0) {
-			return;
-		}
-		loadingSubjectNames = true;
-		try {
-			subjectCatalog = await loadSchoolSubjectCatalog();
-		}
-		catch {
-			subjectCatalog = [];
-		}
-		finally {
-			loadingSubjectNames = false;
 		}
 	}
 
@@ -811,14 +867,7 @@
 		}
 
 		if (isTeachersImport) {
-			teacherValidationResult = validateTeacherImportRows(teacherParsedRows, {
-				subjectCatalog,
-				classes: academicContext.classes.map(classGroup => ({
-					id: classGroup.id,
-					name: classGroup.name,
-				})),
-				classSubjects: teacherImportClassSubjects,
-			});
+			teacherValidationResult = validateTeacherImportRows(teacherParsedRows);
 			return;
 		}
 
@@ -842,6 +891,11 @@
 			return;
 		}
 
+		if (isBillingImport && billingImportContext) {
+			billingValidationResult = validateBillingImportRows(billingParsedRows, billingImportContext);
+			return;
+		}
+
 		if (isChaptersImport) {
 			chapterValidationResult = validateChapterImportRows(chapterParsedRows, {
 				catalogTargets: chapterImportContext,
@@ -861,11 +915,10 @@
 		try {
 			await refreshStudentImportShellIfNeeded();
 			await loadStudentMatriculeDataIfNeeded();
-			await loadSubjectNamesIfNeeded();
-			await loadTeacherImportContextIfNeeded();
 			await loadSubjectImportContextIfNeeded();
 			await loadChapterImportContextIfNeeded();
 			await loadPaymentImportContextIfNeeded();
+			await loadBillingImportContextIfNeeded();
 			runValidation();
 			step = 'validate';
 		}
@@ -1142,6 +1195,41 @@
 		}
 	}
 
+	async function startBillingImport() {
+		if (!billingValidationResult || !canStartBillingImport || importing) {
+			return;
+		}
+
+		importing = true;
+		billingImportResult = null;
+		importFatalError = '';
+		importProgress = { current: 0, total: billingValidationResult.validRows.length };
+		step = 'execute';
+
+		try {
+			billingImportResult = await runBillingImport({
+				client: getBrowserSchoolClient(),
+				rows: billingValidationResult.validRows,
+				onProgress: (current, total) => {
+					importProgress = { current, total };
+				},
+			});
+		}
+		catch (error) {
+			importFatalError = error instanceof Error && error.message.trim().length > 0
+				? error.message
+				: get(t)('import.billing.importFailed');
+			billingImportResult = {
+				created: 0,
+				failed: [],
+				studentFeeIds: [],
+			};
+		}
+		finally {
+			importing = false;
+		}
+	}
+
 	async function startPaymentImport() {
 		if (!paymentValidationResult || !canStartPaymentImport || importing) {
 			return;
@@ -1204,6 +1292,10 @@
 		}
 		if (isChaptersImport) {
 			await startChapterImport();
+			return;
+		}
+		if (isBillingImport) {
+			await startBillingImport();
 			return;
 		}
 		if (isPaymentsImport) {
@@ -1336,6 +1428,17 @@
 					parseErrorMessage = get(t)('import.chapters.emptyFile');
 				}
 			}
+			else if (isBillingImport) {
+				const result = await parseBillingImportFile(file);
+				billingParsedRows = result.rows;
+
+				if (result.errors.length > 0) {
+					parseErrorMessage = formatParseError(result.errors[0]?.message ?? 'parse_error');
+				}
+				else if (result.rows.length === 0) {
+					parseErrorMessage = get(t)('import.billing.emptyFile');
+				}
+			}
 			else if (isPaymentsImport) {
 				const result = await parsePaymentImportFile(file);
 				paymentParsedRows = result.rows;
@@ -1352,6 +1455,9 @@
 			let unsupportedFormatKey = 'import.students.unsupportedFormat';
 			if (isPaymentsImport) {
 				unsupportedFormatKey = 'import.payments.unsupportedFormat';
+			}
+			else if (isBillingImport) {
+				unsupportedFormatKey = 'import.billing.unsupportedFormat';
 			}
 			else if (isChaptersImport) {
 				unsupportedFormatKey = 'import.chapters.unsupportedFormat';
@@ -1451,6 +1557,14 @@
 					{:else if showPaymentsPrerequisite}
 						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
 							{$t('import.payments.prerequisiteMissing')}
+						</p>
+					{:else if showBillingStudentsPrerequisite}
+						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
+							{$t('import.billing.prerequisiteMissingStudents')}
+						</p>
+					{:else if showBillingFeesPrerequisite}
+						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
+							{$t('import.billing.prerequisiteMissingFees')}
 						</p>
 					{:else if showChaptersPrerequisite}
 						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
@@ -1721,9 +1835,12 @@
 											<span class="font-mono text-xs text-muted-foreground">L{row.rowIndex}</span>
 											<span class="mx-2">·</span>
 											{row.prenom} {row.nom}
-											{#if row.matieres?.trim()}
+											{#if row.email?.trim()}
 												<span class="mx-2 text-muted-foreground">·</span>
-												{row.matieres}
+												{row.email}
+											{:else if row.telephone?.trim()}
+												<span class="mx-2 text-muted-foreground">·</span>
+												{row.telephone}
 											{/if}
 										</li>
 									{/each}
@@ -1813,6 +1930,49 @@
 											{row.matiere}
 											<span class="mx-2 text-muted-foreground">·</span>
 											{row.titre}
+										</li>
+									{/each}
+								</ul>
+							{/if}
+						</div>
+					{/if}
+				</section>
+			{:else if isBillingImport && step === 'upload'}
+				<section class="space-y-4" data-testid="billing-import-step-upload">
+					{#if showUploadDropzone}
+						<p class="text-sm text-muted-foreground">{$t('import.billing.uploadHint')}</p>
+
+						<ImportFileDropzone
+							disabled={parsing}
+							errorMessage={parseErrorMessage}
+							{selectedFileName}
+							onFileSelected={handleFileSelected}
+						/>
+					{/if}
+
+					{#if parsing}
+						<div class="flex items-center gap-2 text-sm text-muted-foreground" data-testid="billing-import-parsing">
+							<LoaderCircle class="size-4 animate-spin" aria-hidden="true" />
+							{$t('import.billing.parsing')}
+						</div>
+					{:else if billingParsedRows.length > 0}
+						<div class="rounded-xl border border-border bg-secondary/20 p-4" data-testid="billing-import-parse-success">
+							<p class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+								{$t('import.billing.parseSuccess', { n: billingParsedRows.length })}
+							</p>
+
+							{#if billingPreviewRows.length > 0}
+								<p class="mt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+									{$t('import.billing.parseRowPreview')}
+								</p>
+								<ul class="mt-2 space-y-1 text-sm">
+									{#each billingPreviewRows as row (row.rowIndex)}
+										<li>
+											<span class="font-mono text-xs text-muted-foreground">L{row.rowIndex}</span>
+											<span class="mx-2">·</span>
+											{row.matricule}
+											<span class="mx-2 text-muted-foreground">·</span>
+											{row.type_frais}
 										</li>
 									{/each}
 								</ul>
@@ -2054,6 +2214,34 @@
 						validRowIndexes={new Set(chapterValidationResult.validRows.map(row => row.rowIndex))}
 						phase="validate"
 						suggestionsKey="import.chapters.validation.suggestions"
+						filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
+					/>
+				</section>
+			{:else if isBillingImport && step === 'validate' && billingValidationResult}
+				<section class="space-y-4" data-testid="billing-import-step-validate">
+					<ImportValidationSummary
+						readyCount={billingValidationResult.validRows.length}
+						errorCount={billingValidationResult.errors.length}
+						warningCount={billingValidationResult.warnings.length}
+						readyLabelKey="import.billing.validation.summaryReady"
+						errorLabelKey="import.billing.validation.summaryErrors"
+						warningLabelKey="import.billing.validation.summaryWarnings"
+					/>
+
+					<ImportValidationTable
+						issues={billingValidationIssues}
+						columnLabelKeys={BILLING_COLUMN_LABEL_KEYS}
+						suggestionsKey="import.billing.validation.suggestions"
+					/>
+
+					<ImportReportDownload
+						definition={selectedDefinition}
+						rows={billingParsedRows}
+						errors={billingValidationResult.errors}
+						warnings={billingValidationResult.warnings}
+						validRowIndexes={new Set(billingValidationResult.validRows.map(row => row.rowIndex))}
+						phase="validate"
+						suggestionsKey="import.billing.validation.suggestions"
 						filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
 					/>
 				</section>
@@ -2617,6 +2805,77 @@
 						<p class="text-sm text-muted-foreground">{$t('import.chapters.resultUnexpected')}</p>
 					{/if}
 				</section>
+			{:else if isBillingImport && step === 'execute'}
+				<section class="space-y-4" data-testid="billing-import-step-execute">
+					{#if importing}
+						<p class="text-sm text-muted-foreground">{$t('import.billing.executing')}</p>
+						<ImportProgressBar
+							current={importProgress.current}
+							total={importProgress.total}
+							label={$t('import.billing.executeProgress', {
+								current: importProgress.current,
+								total: importProgress.total,
+							})}
+						/>
+					{:else if billingImportResult}
+						<div class="space-y-3">
+							<h3 class="text-sm font-semibold">{$t('import.billing.resultTitle')}</h3>
+							{#if importFatalError}
+								<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+									{importFatalError}
+								</p>
+							{/if}
+							<div class="grid gap-2 sm:grid-cols-2">
+								<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
+									{$t('import.billing.resultCreated', { n: billingImportResult.created })}
+								</p>
+								<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+									{$t('import.billing.resultFailed', { n: billingImportResult.failed.length })}
+								</p>
+							</div>
+
+							{#if billingImportResult.created === 0 && billingImportResult.failed.length === 0 && !importFatalError}
+								<p class="text-sm text-muted-foreground">{$t('import.billing.resultNothing')}</p>
+							{/if}
+
+							{#if billingImportResult.failed.length > 0}
+								<div class="rounded-xl border border-border bg-secondary/20 p-4">
+									<p class="mb-2 text-sm font-semibold">{$t('import.billing.resultFailures')}</p>
+									<ul class="space-y-2 text-sm">
+										{#each billingImportResult.failed as failure (failure.rowIndex + failure.label)}
+											<li>
+												<span class="font-mono text-xs text-muted-foreground">L{failure.rowIndex}</span>
+												<span class="mx-2">·</span>
+												{failure.label}
+												<span class="mx-2 text-muted-foreground">—</span>
+												{failure.message}
+											</li>
+										{/each}
+									</ul>
+								</div>
+							{/if}
+
+							{#if billingValidationResult}
+								<ImportReportDownload
+									definition={selectedDefinition}
+									rows={billingParsedRows}
+									errors={billingValidationResult.errors}
+									warnings={billingValidationResult.warnings}
+									validRowIndexes={new Set(billingValidationResult.validRows.map(row => row.rowIndex))}
+									importFailures={billingImportResult.failed.map(failure => ({
+										rowIndex: failure.rowIndex,
+										message: failure.message,
+									}))}
+									phase="execute"
+									suggestionsKey="import.billing.validation.suggestions"
+									filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
+								/>
+							{/if}
+						</div>
+					{:else}
+						<p class="text-sm text-muted-foreground">{$t('import.billing.resultUnexpected')}</p>
+					{/if}
+				</section>
 			{:else if isPaymentsImport && step === 'execute'}
 				<section class="space-y-4" data-testid="payment-import-step-execute">
 					{#if importing}
@@ -2763,6 +3022,17 @@
 						onclick={() => {
 							notifyTeachersListChanged();
 							handleOpenChange(false);
+							void appGoto(teacherAssignmentsHref, { invalidateAll: true });
+						}}
+						data-testid="teacher-import-view-assignments"
+					>
+						{$t('import.teachers.viewAssignments')}
+					</Button>
+					<Button
+						variant="outline"
+						onclick={() => {
+							notifyTeachersListChanged();
+							handleOpenChange(false);
 							void appGoto(teachersHref, { invalidateAll: true });
 						}}
 						data-testid="teacher-import-view-teachers"
@@ -2792,6 +3062,17 @@
 						data-testid="chapter-import-view-subjects"
 					>
 						{$t('import.chapters.viewSubjects')}
+					</Button>
+				{/if}
+				{#if isBillingImport && step === 'execute' && billingImportResult}
+					<Button
+						onclick={() => {
+							handleOpenChange(false);
+							void appGoto(billingHref, { invalidateAll: true });
+						}}
+						data-testid="billing-import-view-billing"
+					>
+						{$t('import.billing.viewBilling')}
 					</Button>
 				{/if}
 				{#if isPaymentsImport && step === 'execute' && paymentImportResult}

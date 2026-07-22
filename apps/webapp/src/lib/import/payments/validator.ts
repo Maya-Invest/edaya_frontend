@@ -9,6 +9,7 @@ import type {
 } from './types';
 import { canImportValidatedRows } from '$lib/import/shared/can-import-validated-rows';
 import { normalizeStudentMatricule } from '$lib/import/shared/normalize-student-matricule';
+import { resolveFeeIdByName } from '$lib/import/shared/resolve-fee-by-name';
 import { isValidStudentImportBirthDate } from '$lib/import/students/validator';
 
 const PAYMENT_METHODS = new Set<PaymentImportMethod>([
@@ -32,10 +33,6 @@ const METHOD_ALIASES: Record<string, PaymentImportMethod> = {
 	other: 'other',
 	autre: 'other',
 };
-
-function normalizeLookupValue(value: string): string {
-	return value.trim().toLowerCase();
-}
 
 function issue(
 	input: Omit<PaymentImportValidationIssue, 'severity'> & { severity?: PaymentImportValidationIssue['severity'] },
@@ -63,34 +60,11 @@ function validateRequiredField(
 	return false;
 }
 
-function resolveFeeId(
-	feeName: string,
-	context: PaymentImportValidationContext,
-): { feeId?: string; suggestions?: string[] } {
-	const key = normalizeLookupValue(feeName);
-	const matches = context.fees.filter(fee => normalizeLookupValue(fee.name) === key);
-	if (matches.length === 1) {
-		return { feeId: matches[0]?.id };
-	}
-
-	const suggestions = context.fees
-		.map(fee => fee.name)
-		.filter((name) => {
-			const normalized = normalizeLookupValue(name);
-			return normalized.includes(key) || key.includes(normalized);
-		})
-		.slice(0, 5);
-
-	return {
-		suggestions: suggestions.length > 0 ? suggestions : context.fees.slice(0, 5).map(fee => fee.name),
-	};
-}
-
 function parsePaymentMethod(value?: string): PaymentImportMethod {
 	if (!value?.trim()) {
 		return 'cash';
 	}
-	const normalized = normalizeLookupValue(value).replace(/\s+/g, '_');
+	const normalized = value.trim().toLowerCase().replace(/\s+/g, '_');
 	return METHOD_ALIASES[normalized] ?? (PAYMENT_METHODS.has(normalized as PaymentImportMethod)
 		? normalized as PaymentImportMethod
 		: 'cash');
@@ -133,7 +107,7 @@ export function validatePaymentImportRows(
 
 		let feeId: string | undefined;
 		if (hasFeeType) {
-			const resolution = resolveFeeId(row.type_frais, context);
+			const resolution = resolveFeeIdByName(row.type_frais, context.fees);
 			if (resolution.feeId) {
 				feeId = resolution.feeId;
 			}

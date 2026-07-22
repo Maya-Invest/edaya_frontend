@@ -1,23 +1,11 @@
 import type {
 	TeacherImportColumnKey,
 	TeacherImportRow,
-	TeacherImportValidationContext,
 	TeacherImportValidationIssue,
 	TeacherImportValidationResult,
 	ValidatedTeacherImportRow,
 } from './types';
 import { canImportValidatedRows } from '$lib/import/shared/can-import-validated-rows';
-import {
-	buildImportClassLookup,
-	resolveImportClassGroup,
-} from '$lib/import/shared/resolve-import-class-group';
-import { parseTeacherSubjectNames } from './parse-subject-names';
-import { resolveTeacherImportClassSubjectIds } from './resolve-teacher-import-assignments';
-import {
-	isKnownSubjectName,
-	resolvePrimarySubjectId,
-	subjectNameSuggestions,
-} from './subject-name-lookup';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/;
 
@@ -53,48 +41,18 @@ function validateRequiredField(
 
 export function validateTeacherImportRows(
 	rows: readonly TeacherImportRow[],
-	context: TeacherImportValidationContext = { subjectCatalog: [] },
 ): TeacherImportValidationResult {
 	const errors: TeacherImportValidationIssue[] = [];
 	const warnings: TeacherImportValidationIssue[] = [];
 	const validRows: ValidatedTeacherImportRow[] = [];
 	const teachersInFile = new Map<string, number>();
 	const emailsInFile = new Map<string, number>();
-	const { subjectCatalog, classes = [], classSubjects = [] } = context;
-	const knownSubjectNames = subjectCatalog.map(entry => entry.name);
-	const classLookup = buildImportClassLookup(classes);
 
 	for (const row of rows) {
 		const rowIssues: TeacherImportValidationIssue[] = [];
 
 		const hasPrenom = validateRequiredField(row, 'prenom', row.prenom, rowIssues);
 		const hasNom = validateRequiredField(row, 'nom', row.nom, rowIssues);
-		const subjectNames = parseTeacherSubjectNames(row.matieres);
-
-		if (knownSubjectNames.length > 0) {
-			for (const subjectName of subjectNames) {
-				if (!isKnownSubjectName(subjectName, knownSubjectNames)) {
-					rowIssues.push(issue({
-						rowIndex: row.rowIndex,
-						column: 'matieres',
-						value: subjectName,
-						messageKey: 'import.teachers.validation.unknownSubject',
-						severity: 'warning',
-						suggestions: subjectNameSuggestions(subjectName, knownSubjectNames),
-					}));
-				}
-			}
-		}
-
-		if (subjectNames.length > 1 && !row.classe?.trim()) {
-			rowIssues.push(issue({
-				rowIndex: row.rowIndex,
-				column: 'matieres',
-				value: row.matieres,
-				messageKey: 'import.teachers.validation.multiSubjectsNeedClass',
-				severity: 'warning',
-			}));
-		}
 
 		if (row.email?.trim()) {
 			if (!EMAIL_PATTERN.test(row.email.trim())) {
@@ -146,58 +104,6 @@ export function validateTeacherImportRows(
 		}
 
 		const blockingIssues = rowIssues.filter(entry => entry.severity === 'error');
-		let classGroupId: string | undefined;
-		let assignmentClassSubjectIds: string[] | undefined;
-
-		if (blockingIssues.length === 0 && hasPrenom && hasNom && row.classe?.trim()) {
-			const resolution = resolveImportClassGroup(row.classe, classLookup, classes);
-			if (resolution.classGroupId) {
-				classGroupId = resolution.classGroupId;
-				const className = classes.find(entry => entry.id === classGroupId)?.name ?? row.classe;
-
-				if (subjectNames.length === 0) {
-					rowIssues.push(issue({
-						rowIndex: row.rowIndex,
-						column: 'classe',
-						value: row.classe,
-						messageKey: 'import.teachers.validation.classWithoutSubjects',
-						severity: 'warning',
-					}));
-				}
-				else if (classSubjects.length > 0) {
-					const assignmentResolution = resolveTeacherImportClassSubjectIds(
-						classGroupId,
-						subjectNames,
-						subjectCatalog,
-						classSubjects,
-					);
-					for (const subjectName of assignmentResolution.missingInClass) {
-						rowIssues.push(issue({
-							rowIndex: row.rowIndex,
-							column: 'matieres',
-							value: subjectName,
-							messageKey: 'import.teachers.validation.subjectNotInClass',
-							messageParams: { subject: subjectName, class: className },
-							severity: 'warning',
-						}));
-					}
-					if (assignmentResolution.classSubjectIds.length > 0) {
-						assignmentClassSubjectIds = assignmentResolution.classSubjectIds;
-					}
-				}
-			}
-			else {
-				rowIssues.push(issue({
-					rowIndex: row.rowIndex,
-					column: 'classe',
-					value: row.classe,
-					messageKey: 'import.teachers.validation.classNotFound',
-					suggestions: resolution.suggestions,
-				}));
-			}
-		}
-
-		const hasBlockingIssues = rowIssues.some(entry => entry.severity === 'error');
 		for (const rowIssue of rowIssues) {
 			if (rowIssue.severity === 'warning') {
 				warnings.push(rowIssue);
@@ -207,15 +113,8 @@ export function validateTeacherImportRows(
 			}
 		}
 
-		if (!hasBlockingIssues && hasPrenom && hasNom) {
-			const primarySubjectId = resolvePrimarySubjectId(subjectNames, subjectCatalog);
-			validRows.push({
-				...row,
-				subjectNames,
-				...(primarySubjectId ? { primarySubjectId } : {}),
-				...(classGroupId ? { classGroupId } : {}),
-				...(assignmentClassSubjectIds ? { assignmentClassSubjectIds } : {}),
-			});
+		if (blockingIssues.length === 0 && hasPrenom && hasNom) {
+			validRows.push({ ...row });
 		}
 	}
 

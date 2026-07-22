@@ -21,9 +21,10 @@ Les packs sont **chaînés** : chaque étape suppose les données créées par l
 | 3 | Élèves | [`students/`](./students/) | Classes existantes |
 | 4 | Tuteurs | [`guardians/`](./guardians/) | Élèves importés (EL01) |
 | 5 | Personnel | [`staff/`](./staff/) | Aucun |
-| 6 | Enseignants | [`teachers/`](./teachers/) | Matières importées (SU01) |
+| 6 | Enseignants | [`teachers/`](./teachers/) | Aucun |
 | 7 | Chapitres | [`chapters/`](./chapters/) | Matières importées (SU01) |
-| 8 | Paiements | [`payments/`](./payments/) | Élèves + frais assignés |
+| 8 | Facturation | [`billing/`](./billing/) | Élèves (EL01) + types de frais Finances |
+| 9 | Paiements | [`payments/`](./payments/) | Élèves + facturation importée (BI01) |
 
 ## Données partagées
 
@@ -43,6 +44,7 @@ Fichier [`_shared/ivory-coast-data.ts`](./_shared/ivory-coast-data.ts) :
 | Matières | SU01–SU09 | [subjects/README.md](./subjects/README.md) |
 | Tuteurs | TU01–TU08 | [guardians/README.md](./guardians/README.md) |
 | Personnel | PE01–PE08 | [staff/README.md](./staff/README.md) |
-| Enseignants | EN01–EN09 | [teachers/README.md](./teachers/README.md) |
+| Enseignants | EN01–EN07 | [teachers/README.md](./teachers/README.md) |
 | Chapitres | CH01–CH09 | [chapters/README.md](./chapters/README.md) |
+| Facturation | BI01–BI10 | [billing/README.md](./billing/README.md) |
 | Paiements | PA01–PA10 | [payments/README.md](./payments/README.md) |

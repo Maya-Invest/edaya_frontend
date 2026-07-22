@@ -8,7 +8,6 @@
 	import { t } from '$lib/i18n';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
-	import ToolsHubView from './components/ToolsHubView.svelte';
 	import {
 		ToolsPageState,
 		setToolsPageState,
@@ -46,7 +45,6 @@
 			emptyTitle={$t('tools.title')}
 			emptyDescription={$t('dataState.emptyDescription')}
 		>
-			<ToolsHubView />
 			{@render pageChildren()}
 		</DataState>
 	{/snippet}
