@@ -46,4 +46,5 @@ export interface GuardianImportValidationResult {
 
 export interface GuardianImportValidationContext {
 	studentMatricules: ReadonlyMap<string, { studentId: string; matricule: string }>;
+	multiValueSeparator: ';' | '&';
 }

@@ -75,7 +75,7 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 		columns: catalogColumns([
 			{ key: 'prenom', required: true, labelKey: 'import.types.guardians.columns.prenom' },
 			{ key: 'nom', required: true, labelKey: 'import.types.guardians.columns.nom' },
-			{ key: 'eleve_matricule', required: true, labelKey: 'import.types.guardians.columns.eleve_matricule' },
+			{ key: 'eleve_matricule', required: true, labelKey: 'import.types.guardians.columns.eleve_matricule', multiValue: true },
 			{ key: 'email', required: false, labelKey: 'import.types.guardians.columns.email' },
 			{ key: 'telephone', required: false, labelKey: 'import.types.guardians.columns.telephone' },
 		]),
@@ -84,7 +84,7 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 			nom: 'Koné',
 			email: 'aminata.kone@example.com',
 			telephone: '+225 07 00 00 00 00',
-			eleve_matricule: 'MAT-2024-001',
+			eleve_matricule: 'MAT-2024-001;MAT-2024-002',
 		},
 		permission: 'STUDENT_CREATE',
 	},

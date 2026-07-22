@@ -9,6 +9,8 @@ export interface ImportTypeColumnDefinition {
 	key: string;
 	required: boolean;
 	labelKey: string;
+	/** Cell may contain several values separated by the user-chosen import separator. */
+	multiValue?: boolean;
 }
 
 export interface ImportTypeDefinition {

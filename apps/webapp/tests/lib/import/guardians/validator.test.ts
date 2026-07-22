@@ -10,6 +10,11 @@ const STUDENT_MATRICULES = new Map([
 	['mat-2024-002', { studentId: 'stu-2', matricule: 'MAT-2024-002' }],
 ]);
 
+const VALIDATION_CONTEXT = {
+	studentMatricules: STUDENT_MATRICULES,
+	multiValueSeparator: ';' as const,
+};
+
 function row(overrides: Partial<GuardianImportRow> & Pick<GuardianImportRow, 'rowIndex'>): GuardianImportRow {
 	return {
 		prenom: 'Aminata',
@@ -23,7 +28,7 @@ describe('guardian import validator', () => {
 	it('accepts valid rows and resolves student ids', () => {
 		const result = validateGuardianImportRows(
 			[row({ rowIndex: 2 }), row({ rowIndex: 3, prenom: 'Moussa', nom: 'Traoré', eleve_matricule: 'MAT-2024-002' })],
-			{ studentMatricules: STUDENT_MATRICULES },
+			VALIDATION_CONTEXT,
 		);
 
 		expect(result.errors).toEqual([]);
@@ -34,7 +39,7 @@ describe('guardian import validator', () => {
 	it('flags unknown student matricules with suggestions', () => {
 		const result = validateGuardianImportRows(
 			[row({ rowIndex: 2, eleve_matricule: 'MAT-999' })],
-			{ studentMatricules: STUDENT_MATRICULES },
+			VALIDATION_CONTEXT,
 		);
 
 		expect(result.validRows).toEqual([]);
@@ -45,7 +50,7 @@ describe('guardian import validator', () => {
 	it('flags duplicate guardian links within the file', () => {
 		const result = validateGuardianImportRows(
 			[row({ rowIndex: 2 }), row({ rowIndex: 3 })],
-			{ studentMatricules: STUDENT_MATRICULES },
+			VALIDATION_CONTEXT,
 		);
 
 		expect(result.validRows).toHaveLength(1);
@@ -55,10 +60,20 @@ describe('guardian import validator', () => {
 	it('enables import when there are valid rows, even with blocking errors on other rows', () => {
 		const partial = validateGuardianImportRows(
 			[row({ rowIndex: 2 }), row({ rowIndex: 3, prenom: '' })],
-			{ studentMatricules: STUDENT_MATRICULES },
+			VALIDATION_CONTEXT,
 		);
 
 		expect(canImportValidatedGuardians(partial)).toBe(true);
 		expect(partial.errors.length).toBeGreaterThan(0);
+	});
+
+	it('splits multiple matricules with ampersand when configured', () => {
+		const result = validateGuardianImportRows(
+			[row({ rowIndex: 2, eleve_matricule: 'MAT-2024-001&MAT-2024-002' })],
+			{ ...VALIDATION_CONTEXT, multiValueSeparator: '&' },
+		);
+
+		expect(result.errors).toEqual([]);
+		expect(result.validRows[0]?.studentIds).toEqual(['stu-1', 'stu-2']);
 	});
 });

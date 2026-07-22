@@ -41,6 +41,10 @@ write('TU08-trim-and-case.xlsx', HEADERS, [
 	['  Aminata  ', '  Koné  ', `  ${MATRICULES.mariamOuattara}  `, '  aminata@example.ci  ', `  ${PHONES.aminata}  `],
 ]);
 
+write('TU09-multi-matricule-ampersand.xlsx', HEADERS, [
+	['Affoué', 'Yéo', `${MATRICULES.kouadioYao}&${MATRICULES.aminataKone}`, 'affoue.yeo@example.ci', '+225 07 90 12 34 56'],
+]);
+
 write('TU01-happy-all-valid.xlsx', HEADERS, [
 	['Aminata', 'Koné', MATRICULES.kouadioYao, 'aminata.kone.tuteur@example.ci', PHONES.aminata],
 	['Kouadio', 'Yao', MATRICULES.aminataKone, 'kouadio.yao.tuteur@example.ci', PHONES.kouadio],

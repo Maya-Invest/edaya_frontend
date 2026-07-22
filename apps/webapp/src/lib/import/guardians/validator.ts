@@ -8,7 +8,7 @@ import type {
 } from './types';
 import { canImportValidatedRows } from '$lib/import/shared/can-import-validated-rows';
 import { normalizeStudentMatricule } from '$lib/import/shared/normalize-student-matricule';
-import { parseSemicolonList } from '$lib/import/shared/parse-semicolon-list';
+import { parseMultiValueList } from '$lib/import/shared/parse-multi-value-list';
 
 function normalizeLookupValue(value: string): string {
 	return value.trim().toLowerCase();
@@ -78,7 +78,9 @@ export function validateGuardianImportRows(
 		const hasNom = validateRequiredField(row, 'nom', row.nom, rowIssues);
 		const hasMatriculeField = validateRequiredField(row, 'eleve_matricule', row.eleve_matricule, rowIssues);
 
-		const matricules = hasMatriculeField ? parseSemicolonList(row.eleve_matricule) : [];
+		const matricules = hasMatriculeField
+			? parseMultiValueList(row.eleve_matricule, context.multiValueSeparator)
+			: [];
 		const resolvedMatricules = matricules.map((matricule) => {
 			const normalizedMatricule = normalizeStudentMatricule(matricule);
 			const match = context.studentMatricules.get(normalizedMatricule);

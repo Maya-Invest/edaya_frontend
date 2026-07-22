@@ -35,6 +35,7 @@
 	import ImportValidationTable from '$lib/components/school/configuration/ImportValidationTable.svelte';
 	import ImportValidationSummary from '$lib/components/school/configuration/ImportValidationSummary.svelte';
 	import ImportReportDownload from '$lib/components/school/configuration/ImportReportDownload.svelte';
+	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -46,6 +47,7 @@
 		IMPORT_TYPE_DEFINITIONS,
 		getImportTypeDefinition,
 	} from '$lib/import/catalog/import-types';
+	import { importTypeHasMultiValueColumns } from '$lib/import/catalog/import-multi-value';
 	import { parseChapterImportFile } from '$lib/import/chapters/parser';
 	import { runChapterImport } from '$lib/import/chapters/runner';
 	import {
@@ -86,6 +88,7 @@
 		loadStudentMatriculeIndex,
 	} from '$lib/import/shared/load-student-matricule-index';
 	import { loadExistingSubjectImportKeys } from '$lib/import/shared/load-subject-import-context';
+	import { importPreferences } from '$lib/import/preferences/import-preferences.svelte';
 	import {
 		downloadImportCsvTemplate,
 		downloadImportExcelTemplate,
@@ -336,7 +339,19 @@
 		isStudentsImport || isClassesImport || isGuardiansImport || isStaffImport || isTeachersImport || isSubjectsImport || isChaptersImport || isBillingImport || isPaymentsImport,
 	);
 	const isActiveImport = $derived(selectedDefinition.status === 'active');
+	const showsMultiValueSeparator = $derived(importTypeHasMultiValueColumns(selectedDefinition));
 	const selectedImportTypeLabel = $derived($t(selectedDefinition.labelKey));
+
+	function importTemplateDownloadOptions() {
+		return { multiValueSeparator: importPreferences.multiValueSeparator };
+	}
+
+	function guardianImportValidationContext() {
+		return {
+			studentMatricules: studentMatriculeIndex,
+			multiValueSeparator: importPreferences.multiValueSeparator,
+		};
+	}
 
 	function importReportFilenameBase(csvFilename: string): string {
 		return csvFilename.replace(/\.csv$/i, '');
@@ -855,9 +870,7 @@
 		}
 
 		if (isGuardiansImport) {
-			guardianValidationResult = validateGuardianImportRows(guardianParsedRows, {
-				studentMatricules: studentMatriculeIndex,
-			});
+			guardianValidationResult = validateGuardianImportRows(guardianParsedRows, guardianImportValidationContext());
 			return;
 		}
 
@@ -1576,7 +1589,9 @@
 						</p>
 					{:else}
 						<p class="text-sm text-muted-foreground">
-							{$t(selectedDefinition.hintKey)}
+							{showsMultiValueSeparator
+								? $t(selectedDefinition.hintKey, { separator: importPreferences.multiValueSeparator })
+								: $t(selectedDefinition.hintKey)}
 						</p>
 					{/if}
 
@@ -1586,24 +1601,45 @@
 						</p>
 					{/if}
 
-					<div class="flex flex-wrap gap-2">
-						<Button
-							variant="outline"
-							class="justify-center"
-							onclick={() => downloadImportCsvTemplate(selectedDefinition)}
-							data-testid="data-import-download-csv-template"
-						>
-							<Download class="mr-2 size-4" aria-hidden="true" />
-							{$t('import.students.downloadCsvTemplate')}
-						</Button>
-						<Button
-							class="justify-center"
-							onclick={() => downloadImportExcelTemplate(selectedDefinition)}
-							data-testid="data-import-download-excel-template"
-						>
-							<FileSpreadsheet class="mr-2 size-4" aria-hidden="true" />
-							{$t('import.students.downloadExcelTemplate')}
-						</Button>
+					<div class="flex flex-wrap items-end gap-3">
+						<div class="flex flex-wrap gap-2">
+							<Button
+								variant="outline"
+								class="justify-center"
+								onclick={() => downloadImportCsvTemplate(selectedDefinition, importTemplateDownloadOptions())}
+								data-testid="data-import-download-csv-template"
+							>
+								<Download class="mr-2 size-4" aria-hidden="true" />
+								{$t('import.students.downloadCsvTemplate')}
+							</Button>
+							<Button
+								class="justify-center"
+								onclick={() => downloadImportExcelTemplate(selectedDefinition, importTemplateDownloadOptions())}
+								data-testid="data-import-download-excel-template"
+							>
+								<FileSpreadsheet class="mr-2 size-4" aria-hidden="true" />
+								{$t('import.students.downloadExcelTemplate')}
+							</Button>
+						</div>
+						{#if showsMultiValueSeparator}
+							<div class="min-w-[11rem] space-y-1.5" data-testid="data-import-multi-value-separator">
+								<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+									{$t('import.multiValueSeparator.label')}
+								</Label>
+								<FilterSelect
+									value={importPreferences.multiValueSeparator}
+									onchange={(value) => {
+										if (value === ';' || value === '&') {
+											importPreferences.setMultiValueSeparator(value);
+										}
+									}}
+									options={[
+										{ value: ';', label: $t('import.multiValueSeparator.optionSemicolon') },
+										{ value: '&', label: $t('import.multiValueSeparator.optionAmpersand') },
+									]}
+								/>
+							</div>
+						{/if}
 					</div>
 
 					<div class="rounded-xl border border-border bg-secondary/20 p-4">
