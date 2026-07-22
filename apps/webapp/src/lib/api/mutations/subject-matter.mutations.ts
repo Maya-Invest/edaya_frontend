@@ -2,10 +2,12 @@ import type { components } from '$lib/api/schema';
 import { recordsForFieldIds } from '$lib/api/entity-list-filters';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { subjectMattersLinkedToGradeLevelSubject } from '$lib/api/subjects-data';
 
 type ClassSubjectRaw = components['schemas']['ClassSubject'];
 type ClassSubjectMatterRaw = components['schemas']['ClassSubjectMatter'];
 type GradeLevelSubjectRaw = components['schemas']['GradeLevelSubject'];
+type GradeLevelSubjectMatterRaw = components['schemas']['GradeLevelSubjectMatter'];
 type SubjectMatterRaw = components['schemas']['SubjectMatter'];
 
 export interface SubjectMatterDrawerRow {
@@ -87,6 +89,9 @@ export async function loadTeachingSubjectProgressionRows(classSubjectId: string)
 	}
 
 	const gradeLevelSubject = await client.entities.gradeLevelSubjects.get(gradeLevelSubjectId) as GradeLevelSubjectRaw;
+	const gradeLevelSubjectMattersRaw = (await client.entities.gradeLevelSubjectMatters.list({
+		gradeLevelSubjectId,
+	})) ?? [];
 	const subjectMattersRaw = (await client.entities.subjectMatters.list({
 		subjectId: gradeLevelSubject.subjectId,
 	})) ?? [];
@@ -98,11 +103,17 @@ export async function loadTeachingSubjectProgressionRows(classSubjectId: string)
 		classSubjectMattersRaw.map(link => [link.subjectMatterId, link]),
 	);
 
+	const linkedMatters = subjectMattersLinkedToGradeLevelSubject(
+		gradeLevelSubjectId,
+		subjectMattersRaw,
+		gradeLevelSubjectMattersRaw,
+	);
+
 	return {
 		catalogSubjectId: gradeLevelSubject.subjectId,
 		gradeLevelSubjectId,
 		classGroupId: classSubject.classGroupId,
-		rows: mapSubjectMatterRows(subjectMattersRaw, linkByMatterId),
+		rows: mapSubjectMatterRows(linkedMatters, linkByMatterId),
 		chaptersReadOnly: true,
 	};
 }
@@ -116,23 +127,29 @@ export async function loadCatalogSubjectMatterRows(gradeLevelSubjectId: string):
 }> {
 	const client = getBrowserSchoolClient();
 	const gradeLevelSubject = await client.entities.gradeLevelSubjects.get(gradeLevelSubjectId) as GradeLevelSubjectRaw;
+	const gradeLevelSubjectMattersRaw = (await client.entities.gradeLevelSubjectMatters.list({
+		gradeLevelSubjectId,
+	})) ?? [];
 	const subjectMattersRaw = (await client.entities.subjectMatters.list({
 		subjectId: gradeLevelSubject.subjectId,
 	})) ?? [];
+	const linkedMatters = subjectMattersLinkedToGradeLevelSubject(
+		gradeLevelSubjectId,
+		subjectMattersRaw,
+		gradeLevelSubjectMattersRaw,
+	);
 	const classSubjects = (await client.entities.classSubjects.list({
 		gradeLevelSubjectId,
 	})) ?? [];
 	const representative = classSubjects[0] as ClassSubjectRaw | undefined;
 
-	const rows = [...subjectMattersRaw]
-		.sort((left, right) => left.sequenceOrder - right.sequenceOrder)
-		.map(matter => ({
-			id: matter.id,
-			name: matter.name,
-			description: matter.description ?? undefined,
-			sequenceOrder: matter.sequenceOrder,
-			estimatedHours: matter.estimatedHours ?? undefined,
-		} satisfies SubjectMatterDrawerRow));
+	const rows = linkedMatters.map(matter => ({
+		id: matter.id,
+		name: matter.name,
+		description: matter.description ?? undefined,
+		sequenceOrder: matter.sequenceOrder,
+		estimatedHours: matter.estimatedHours ?? undefined,
+	} satisfies SubjectMatterDrawerRow));
 
 	return {
 		catalogSubjectId: gradeLevelSubject.subjectId,

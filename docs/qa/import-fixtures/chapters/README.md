@@ -10,7 +10,7 @@ bun edaya_web/docs/qa/import-fixtures/chapters/generate-fixtures.ts
 
 | Fichier | Scénario | Résultat attendu |
 |---------|----------|------------------|
-| `CH01-happy-all-valid.xlsx` | 9 chapitres (Maths, Français, HG, PC…) | 9+ opérations (multi-classes possible) |
+| `CH01-happy-all-valid.xlsx` | 9 chapitres (Maths, Français, HG, PC…) | 9 chapitres créés (catalogue niveau + matière) |
 | `CH02-partial-import.xlsx` | 2 OK + erreurs mixtes | Import partiel |
 | `CH03-error-unknown-niveau.xlsx` | Niveaux inconnus | 0 créé |
 | `CH04-error-subject-not-found.xlsx` | Latin, Philosophie (absentes du collège) | 0 créé + suggestions |

@@ -23,12 +23,14 @@ type SubjectRaw = components['schemas']['Subject'];
 type ClassSubjectRaw = components['schemas']['ClassSubject'];
 type SubjectMatterRaw = components['schemas']['SubjectMatter'];
 type GradeLevelSubjectRaw = components['schemas']['GradeLevelSubject'];
+type GradeLevelSubjectMatterRaw = components['schemas']['GradeLevelSubjectMatter'];
 
 export interface CatalogSubjectsSources {
 	gradeLevelSubjectsRaw: GradeLevelSubjectRaw[];
 	classSubjectsRaw: ClassSubjectRaw[];
 	subjectsRaw: SubjectRaw[];
 	subjectMattersRaw: SubjectMatterRaw[];
+	gradeLevelSubjectMattersRaw: GradeLevelSubjectMatterRaw[];
 }
 
 export interface ClassSubjectsSources extends ClassSubjectInstructorSources {
@@ -98,14 +100,32 @@ function catalogSubjectKey(gradeLevelId: string, subjectName: string): string {
 	return `${gradeLevelId}:${subjectName.trim().toLowerCase()}`;
 }
 
-function catalogChapterNamesForSubject(
-	subject: SubjectRaw,
+export function subjectMattersLinkedToGradeLevelSubject(
+	gradeLevelSubjectId: string,
+	subjectMattersRaw: readonly SubjectMatterRaw[],
+	gradeLevelSubjectMattersRaw: readonly GradeLevelSubjectMatterRaw[],
+): SubjectMatterRaw[] {
+	const linkedMatterIds = new Set(
+		gradeLevelSubjectMattersRaw
+			.filter(link => link.gradeLevelSubjectId === gradeLevelSubjectId)
+			.map(link => link.subjectMatterId),
+	);
+
+	return [...subjectMattersRaw]
+		.filter(matter => linkedMatterIds.has(matter.id))
+		.sort((left, right) => left.sequenceOrder - right.sequenceOrder);
+}
+
+function catalogChapterNamesForGradeLevelSubject(
+	gradeLevelSubjectId: string,
 	subjectMattersRaw: SubjectMatterRaw[],
+	gradeLevelSubjectMattersRaw: readonly GradeLevelSubjectMatterRaw[],
 ): string[] {
-	return subjectMattersRaw
-		.filter(matter => matter.subjectId === subject.id)
-		.sort((left, right) => left.sequenceOrder - right.sequenceOrder)
-		.map(matter => matter.name);
+	return subjectMattersLinkedToGradeLevelSubject(
+		gradeLevelSubjectId,
+		subjectMattersRaw,
+		gradeLevelSubjectMattersRaw,
+	).map(matter => matter.name);
 }
 
 function mapCatalogSubjectEntry(input: {
@@ -114,8 +134,18 @@ function mapCatalogSubjectEntry(input: {
 	subject: SubjectRaw;
 	hoursPerWeek: number;
 	subjectMattersRaw: SubjectMatterRaw[];
+	gradeLevelSubjectMattersRaw: readonly GradeLevelSubjectMatterRaw[];
 }): Subject {
-	const catalogChapters = catalogChapterNamesForSubject(input.subject, input.subjectMattersRaw);
+	const catalogChapters = catalogChapterNamesForGradeLevelSubject(
+		input.id,
+		input.subjectMattersRaw,
+		input.gradeLevelSubjectMattersRaw,
+	);
+	const linkedMatters = subjectMattersLinkedToGradeLevelSubject(
+		input.id,
+		input.subjectMattersRaw,
+		input.gradeLevelSubjectMattersRaw,
+	);
 	return {
 		id: input.id,
 		classId: input.gradeLevelId,
@@ -124,7 +154,7 @@ function mapCatalogSubjectEntry(input: {
 		teacher: '',
 		hoursPerWeek: input.hoursPerWeek,
 		color: subjectColor(input.subject),
-		description: buildSubjectChapterSummary(catalogChapters) || descriptionForSubject(input.subject, input.subjectMattersRaw),
+		description: buildSubjectChapterSummary(catalogChapters) || descriptionForSubject(input.subject, linkedMatters),
 		category: subjectCategory(input.subject),
 		catalogChapters,
 	};
@@ -136,11 +166,13 @@ export async function fetchCatalogSubjectsSources(client: SchoolClient): Promise
 		classSubjectsRaw,
 		subjectsRaw,
 		subjectMattersRaw,
+		gradeLevelSubjectMattersRaw,
 	] = await Promise.all([
 		safeOptionalEntityList(() => client.entities.gradeLevelSubjects.list(schoolSubjectsCatalogList())),
 		safeOptionalEntityList(() => client.entities.classSubjects.list(schoolSubjectsCatalogList())),
 		safeOptionalEntityList(() => client.entities.subjects.list(schoolSubjectsCatalogList())),
 		safeOptionalEntityList(() => client.entities.subjectMatters.list(schoolSubjectsCatalogList())),
+		safeOptionalEntityList(() => client.entities.gradeLevelSubjectMatters.list(schoolSubjectsCatalogList())),
 	]);
 
 	return {
@@ -148,6 +180,7 @@ export async function fetchCatalogSubjectsSources(client: SchoolClient): Promise
 		classSubjectsRaw: classSubjectsRaw ?? [],
 		subjectsRaw: subjectsRaw ?? [],
 		subjectMattersRaw: subjectMattersRaw ?? [],
+		gradeLevelSubjectMattersRaw: gradeLevelSubjectMattersRaw ?? [],
 	};
 }
 
@@ -180,6 +213,7 @@ export function mapCatalogSubjects(
 				subject,
 				hoursPerWeek: hoursPerWeekForGradeLevelSubject(subject, gradeLevelSubject, sources.subjectMattersRaw),
 				subjectMattersRaw: sources.subjectMattersRaw,
+				gradeLevelSubjectMattersRaw: sources.gradeLevelSubjectMattersRaw,
 			}));
 		}
 		return entries.sort((left, right) => left.name.localeCompare(right.name, 'fr'));
@@ -211,6 +245,7 @@ export function mapCatalogSubjects(
 			subject,
 			hoursPerWeek: hoursPerWeekForSubject(subject, classSubject, sources.subjectMattersRaw),
 			subjectMattersRaw: sources.subjectMattersRaw,
+			gradeLevelSubjectMattersRaw: sources.gradeLevelSubjectMattersRaw,
 		}));
 	}
 

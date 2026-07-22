@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import type { ChapterImportRow } from '$lib/import/chapters/types';
+import type { ChapterImportRow, ChapterImportCatalogTarget } from '$lib/import/chapters/types';
 import {
 	canImportValidatedChapters,
 	countChapterImportOperations,
@@ -15,39 +15,33 @@ function row(overrides: Partial<ChapterImportRow> & Pick<ChapterImportRow, 'rowI
 	};
 }
 
-const CONTEXT = {
-	classSubjects: [
-		{
-			classSubjectId: 'cs-6a-math',
-			subjectId: 'subj-math-6a',
-			classGroupId: 'class-6a',
-			gradeLevelId: 'gl-6',
-			subjectName: 'Mathématiques',
-			className: '6ème A',
-			gradeLevelName: '6ème',
-		},
-		{
-			classSubjectId: 'cs-6b-math',
-			subjectId: 'subj-math-6b',
-			classGroupId: 'class-6b',
-			gradeLevelId: 'gl-6',
-			subjectName: 'Mathématiques',
-			className: '6ème B',
-			gradeLevelName: '6ème',
-		},
+const CATALOG_TARGET: ChapterImportCatalogTarget = {
+	gradeLevelSubjectId: 'gls-6-math',
+	subjectId: 'subj-math',
+	gradeLevelId: 'gl-6',
+	gradeLevelName: '6ème',
+	subjectName: 'Mathématiques',
+	classAssignments: [
+		{ classGroupId: 'class-6a', classSubjectId: 'cs-6a-math' },
+		{ classGroupId: 'class-6b', classSubjectId: 'cs-6b-math' },
 	],
 };
 
+const CONTEXT = {
+	catalogTargets: [CATALOG_TARGET],
+};
+
 describe('chapter import validator', () => {
-	it('accepts valid rows and resolves all matching class subjects', () => {
+	it('accepts valid rows and resolves one catalog target per ligne', () => {
 		const result = validateChapterImportRows([
 			row({ rowIndex: 2, ordre: '3' }),
 		], CONTEXT);
 
 		expect(result.errors).toEqual([]);
+		expect(result.warnings).toEqual([]);
 		expect(result.validRows[0]?.sequenceOrder).toBe(3);
-		expect(result.validRows[0]?.targets).toHaveLength(2);
-		expect(countChapterImportOperations(result.validRows)).toBe(2);
+		expect(result.validRows[0]?.target).toEqual(CATALOG_TARGET);
+		expect(countChapterImportOperations(result.validRows)).toBe(1);
 		expect(canImportValidatedChapters(result)).toBe(true);
 	});
 
@@ -79,7 +73,7 @@ describe('chapter import validator', () => {
 		expect(result.errors[0]?.messageKey).toBe('import.chapters.validation.invalidOrder');
 	});
 
-	it('flags duplicate chapters for the same class subject in the file', () => {
+	it('flags duplicate chapters for the same grade-level subject in the file', () => {
 		const result = validateChapterImportRows([
 			row({ rowIndex: 2 }),
 			row({ rowIndex: 3 }),
@@ -87,5 +81,19 @@ describe('chapter import validator', () => {
 
 		expect(result.errors[0]?.messageKey).toBe('import.chapters.validation.duplicateInFile');
 		expect(result.validRows).toHaveLength(1);
+	});
+
+	it('flags catalog entries with no class assignments', () => {
+		const result = validateChapterImportRows([
+			row({ rowIndex: 2 }),
+		], {
+			catalogTargets: [{
+				...CATALOG_TARGET,
+				classAssignments: [],
+			}],
+		});
+
+		expect(result.validRows).toHaveLength(0);
+		expect(result.errors[0]?.messageKey).toBe('import.chapters.validation.noClassesForLevel');
 	});
 });

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { ImportTypeKey } from '$lib/import/catalog/types';
 	import type { ChapterImportRunResult } from '$lib/import/chapters/runner';
-	import type { ChapterImportRow, ChapterImportValidationResult, ChapterImportClassSubjectTarget } from '$lib/import/chapters/types';
+	import type { ChapterImportRow, ChapterImportValidationResult, ChapterImportCatalogTarget } from '$lib/import/chapters/types';
 	import type { ClassImportRunResult } from '$lib/import/classes/runner';
 	import type { ClassImportRow, ClassImportValidationResult } from '$lib/import/classes/types';
 	import type { GuardianImportRunResult } from '$lib/import/guardians/runner';
@@ -273,7 +273,7 @@
 	let loadingSubjectNames = $state(false);
 	let subjectImportExistingKeys = $state<Set<string>>(new Set());
 	let loadingSubjectImportContext = $state(false);
-	let chapterImportContext = $state<ChapterImportClassSubjectTarget[]>([]);
+	let chapterImportContext = $state<ChapterImportCatalogTarget[]>([]);
 	let loadingChapterContext = $state(false);
 	let teacherImportClassSubjects = $state<TeacherImportClassSubjectOption[]>([]);
 	let loadingTeacherImportContext = $state(false);
@@ -353,6 +353,7 @@
 		}
 		return chapterParsedRows.length;
 	});
+	const showUploadDropzone = $derived(parsing || parsedRowCount === 0);
 	const canGoToUpload = $derived.by(() => {
 		if (!isActiveImport) {
 			return false;
@@ -843,7 +844,7 @@
 
 		if (isChaptersImport) {
 			chapterValidationResult = validateChapterImportRows(chapterParsedRows, {
-				classSubjects: chapterImportContext,
+				catalogTargets: chapterImportContext,
 			});
 		}
 	}
@@ -1516,14 +1517,16 @@
 				</section>
 			{:else if isStudentsImport && step === 'upload'}
 				<section class="space-y-4" data-testid="student-import-step-upload">
-					<p class="text-sm text-muted-foreground">{$t('import.students.uploadHint')}</p>
+					{#if showUploadDropzone}
+						<p class="text-sm text-muted-foreground">{$t('import.students.uploadHint')}</p>
 
-					<ImportFileDropzone
-						disabled={parsing}
-						errorMessage={parseErrorMessage}
-						{selectedFileName}
-						onFileSelected={handleFileSelected}
-					/>
+						<ImportFileDropzone
+							disabled={parsing}
+							errorMessage={parseErrorMessage}
+							{selectedFileName}
+							onFileSelected={handleFileSelected}
+						/>
+					{/if}
 
 					{#if parsing}
 						<div class="flex items-center gap-2 text-sm text-muted-foreground" data-testid="student-import-parsing">
@@ -1557,14 +1560,16 @@
 				</section>
 			{:else if isClassesImport && step === 'upload'}
 				<section class="space-y-4" data-testid="class-import-step-upload">
-					<p class="text-sm text-muted-foreground">{$t('import.classes.uploadHint')}</p>
+					{#if showUploadDropzone}
+						<p class="text-sm text-muted-foreground">{$t('import.classes.uploadHint')}</p>
 
-					<ImportFileDropzone
-						disabled={parsing}
-						errorMessage={parseErrorMessage}
-						{selectedFileName}
-						onFileSelected={handleFileSelected}
-					/>
+						<ImportFileDropzone
+							disabled={parsing}
+							errorMessage={parseErrorMessage}
+							{selectedFileName}
+							onFileSelected={handleFileSelected}
+						/>
+					{/if}
 
 					{#if parsing}
 						<div class="flex items-center gap-2 text-sm text-muted-foreground" data-testid="class-import-parsing">
@@ -1598,14 +1603,16 @@
 				</section>
 			{:else if isGuardiansImport && step === 'upload'}
 				<section class="space-y-4" data-testid="guardian-import-step-upload">
-					<p class="text-sm text-muted-foreground">{$t('import.guardians.uploadHint')}</p>
+					{#if showUploadDropzone}
+						<p class="text-sm text-muted-foreground">{$t('import.guardians.uploadHint')}</p>
 
-					<ImportFileDropzone
-						disabled={parsing}
-						errorMessage={parseErrorMessage}
-						{selectedFileName}
-						onFileSelected={handleFileSelected}
-					/>
+						<ImportFileDropzone
+							disabled={parsing}
+							errorMessage={parseErrorMessage}
+							{selectedFileName}
+							onFileSelected={handleFileSelected}
+						/>
+					{/if}
 
 					{#if parsing}
 						<div class="flex items-center gap-2 text-sm text-muted-foreground" data-testid="guardian-import-parsing">
@@ -1639,14 +1646,16 @@
 				</section>
 			{:else if isStaffImport && step === 'upload'}
 				<section class="space-y-4" data-testid="staff-import-step-upload">
-					<p class="text-sm text-muted-foreground">{$t('import.staff.uploadHint')}</p>
+					{#if showUploadDropzone}
+						<p class="text-sm text-muted-foreground">{$t('import.staff.uploadHint')}</p>
 
-					<ImportFileDropzone
-						disabled={parsing}
-						errorMessage={parseErrorMessage}
-						{selectedFileName}
-						onFileSelected={handleFileSelected}
-					/>
+						<ImportFileDropzone
+							disabled={parsing}
+							errorMessage={parseErrorMessage}
+							{selectedFileName}
+							onFileSelected={handleFileSelected}
+						/>
+					{/if}
 
 					{#if parsing}
 						<div class="flex items-center gap-2 text-sm text-muted-foreground" data-testid="staff-import-parsing">
@@ -1680,14 +1689,16 @@
 				</section>
 			{:else if isTeachersImport && step === 'upload'}
 				<section class="space-y-4" data-testid="teacher-import-step-upload">
-					<p class="text-sm text-muted-foreground">{$t('import.teachers.uploadHint')}</p>
+					{#if showUploadDropzone}
+						<p class="text-sm text-muted-foreground">{$t('import.teachers.uploadHint')}</p>
 
-					<ImportFileDropzone
-						disabled={parsing}
-						errorMessage={parseErrorMessage}
-						{selectedFileName}
-						onFileSelected={handleFileSelected}
-					/>
+						<ImportFileDropzone
+							disabled={parsing}
+							errorMessage={parseErrorMessage}
+							{selectedFileName}
+							onFileSelected={handleFileSelected}
+						/>
+					{/if}
 
 					{#if parsing}
 						<div class="flex items-center gap-2 text-sm text-muted-foreground" data-testid="teacher-import-parsing">
@@ -1723,14 +1734,16 @@
 				</section>
 			{:else if isSubjectsImport && step === 'upload'}
 				<section class="space-y-4" data-testid="subject-import-step-upload">
-					<p class="text-sm text-muted-foreground">{$t('import.subjects.uploadHint')}</p>
+					{#if showUploadDropzone}
+						<p class="text-sm text-muted-foreground">{$t('import.subjects.uploadHint')}</p>
 
-					<ImportFileDropzone
-						disabled={parsing}
-						errorMessage={parseErrorMessage}
-						{selectedFileName}
-						onFileSelected={handleFileSelected}
-					/>
+						<ImportFileDropzone
+							disabled={parsing}
+							errorMessage={parseErrorMessage}
+							{selectedFileName}
+							onFileSelected={handleFileSelected}
+						/>
+					{/if}
 
 					{#if parsing}
 						<div class="flex items-center gap-2 text-sm text-muted-foreground" data-testid="subject-import-parsing">
@@ -1764,14 +1777,16 @@
 				</section>
 			{:else if isChaptersImport && step === 'upload'}
 				<section class="space-y-4" data-testid="chapter-import-step-upload">
-					<p class="text-sm text-muted-foreground">{$t('import.chapters.uploadHint')}</p>
+					{#if showUploadDropzone}
+						<p class="text-sm text-muted-foreground">{$t('import.chapters.uploadHint')}</p>
 
-					<ImportFileDropzone
-						disabled={parsing}
-						errorMessage={parseErrorMessage}
-						{selectedFileName}
-						onFileSelected={handleFileSelected}
-					/>
+						<ImportFileDropzone
+							disabled={parsing}
+							errorMessage={parseErrorMessage}
+							{selectedFileName}
+							onFileSelected={handleFileSelected}
+						/>
+					{/if}
 
 					{#if parsing}
 						<div class="flex items-center gap-2 text-sm text-muted-foreground" data-testid="chapter-import-parsing">
@@ -1807,14 +1822,16 @@
 				</section>
 			{:else if isPaymentsImport && step === 'upload'}
 				<section class="space-y-4" data-testid="payment-import-step-upload">
-					<p class="text-sm text-muted-foreground">{$t('import.payments.uploadHint')}</p>
+					{#if showUploadDropzone}
+						<p class="text-sm text-muted-foreground">{$t('import.payments.uploadHint')}</p>
 
-					<ImportFileDropzone
-						disabled={parsing}
-						errorMessage={parseErrorMessage}
-						{selectedFileName}
-						onFileSelected={handleFileSelected}
-					/>
+						<ImportFileDropzone
+							disabled={parsing}
+							errorMessage={parseErrorMessage}
+							{selectedFileName}
+							onFileSelected={handleFileSelected}
+						/>
+					{/if}
 
 					{#if parsing}
 						<div class="flex items-center gap-2 text-sm text-muted-foreground" data-testid="payment-import-parsing">

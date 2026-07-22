@@ -1,7 +1,7 @@
 import { classSubject, staffMember, subject } from '$tests/support/openapi-fixtures';
 import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
-import { mapClassSubjects } from '$lib/api/subjects-data';
+import { mapCatalogSubjects, mapClassSubjects } from '$lib/api/subjects-data';
 
 const sources = {
 	classSubjectsRaw: [
@@ -34,6 +34,37 @@ const sources = {
 	teachersRaw: [],
 	teacherAssignmentsRaw: [],
 };
+
+describe('mapCatalogSubjects', () => {
+	it('lists chapters only for the matching grade-level subject when subjectId is shared', () => {
+		const sources = {
+			gradeLevelSubjectsRaw: [
+				{ id: 'gls-6-en', gradeLevelId: 'gl-6', subjectId: 'subj-en', academicYearId: 'ay-1' },
+				{ id: 'gls-3-en', gradeLevelId: 'gl-3', subjectId: 'subj-en', academicYearId: 'ay-1' },
+			],
+			classSubjectsRaw: [],
+			subjectsRaw: [
+				subject({ id: 'subj-en', name: 'Anglais', code: 'ANG' }),
+			],
+			subjectMattersRaw: [
+				{ id: 'sm-6-1', subjectId: 'subj-en', name: 'Unit 6ème A', sequenceOrder: 1 },
+				{ id: 'sm-3-1', subjectId: 'subj-en', name: 'Unit 3ème A', sequenceOrder: 1 },
+			],
+			gradeLevelSubjectMattersRaw: [
+				{ id: 'glsm-6', gradeLevelSubjectId: 'gls-6-en', subjectMatterId: 'sm-6-1' },
+				{ id: 'glsm-3', gradeLevelSubjectId: 'gls-3-en', subjectMatterId: 'sm-3-1' },
+			],
+		};
+
+		const entries = mapCatalogSubjects(sources, {});
+
+		const sixieme = entries.find(entry => entry.id === 'gls-6-en');
+		const troisieme = entries.find(entry => entry.id === 'gls-3-en');
+
+		expect(sixieme?.catalogChapters).toEqual(['Unit 6ème A']);
+		expect(troisieme?.catalogChapters).toEqual(['Unit 3ème A']);
+	});
+});
 
 describe('mapClassSubjects', () => {
 	it('maps category and color from API subject fields', () => {

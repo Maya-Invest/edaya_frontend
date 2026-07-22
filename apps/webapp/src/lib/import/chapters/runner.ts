@@ -2,13 +2,12 @@ import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { ValidatedChapterImportRow } from './types';
 import {
 	createChapterImportMatterId,
-	saveChapterForClassSubject,
+	saveChapterForGradeLevelSubject,
 } from '$lib/chapters/save-chapter-for-class-subject';
 import { t } from '$lib/i18n';
 import { formatImportRunErrorMessage } from '$lib/import/shared/format-import-run-error';
 import { notifySubjectsListChanged } from '$lib/subjects/notify-subjects-list-changed';
 import { get } from 'svelte/store';
-import { countChapterImportOperations } from './validator';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -36,43 +35,33 @@ export async function runChapterImport(options: ChapterImportRunOptions): Promis
 	const failed: ChapterImportRunFailure[] = [];
 	const matterIds: string[] = [];
 	const createdAt = new Date().toISOString();
-	const total = countChapterImportOperations(rows);
-	let progress = 0;
+	const total = rows.length;
 
-	for (const [rowIndex, row] of rows.entries()) {
-		for (const [targetIndex, target] of row.targets.entries()) {
-			onProgress?.(progress, total);
-			const matterId = createChapterImportMatterId(
-				rowIndex * 100 + targetIndex,
-				target.classSubjectId,
-				seed,
-			);
+	for (const [index, row] of rows.entries()) {
+		onProgress?.(index, total);
+		const matterId = createChapterImportMatterId(index, seed);
 
-			try {
-				await saveChapterForClassSubject(client, {
-					matterId,
-					subjectId: target.subjectId,
-					classSubjectId: target.classSubjectId,
-					classGroupId: target.classGroupId,
-					gradeLevelSubjectId: target.gradeLevelSubjectId,
-					name: row.titre,
-					description: row.description,
-					sequenceOrder: row.sequenceOrder,
-					createdAt,
-				});
-				matterIds.push(matterId);
-			}
-			catch (error) {
-				failed.push({
-					rowIndex: row.rowIndex,
-					chapterLabel: `${row.titre} (${target.className} · ${row.matiere})`.trim(),
-					message: formatImportRunErrorMessage(error, {
-						entityLabel: row.titre,
-					}, (key, params) => get(t)(key, params ?? {})),
-				});
-			}
-
-			progress += 1;
+		try {
+			await saveChapterForGradeLevelSubject(client, {
+				matterId,
+				subjectId: row.target.subjectId,
+				gradeLevelSubjectId: row.target.gradeLevelSubjectId,
+				name: row.titre,
+				description: row.description,
+				sequenceOrder: row.sequenceOrder,
+				classAssignments: row.target.classAssignments,
+				createdAt,
+			});
+			matterIds.push(matterId);
+		}
+		catch (error) {
+			failed.push({
+				rowIndex: row.rowIndex,
+				chapterLabel: `${row.titre} (${row.target.gradeLevelName} · ${row.matiere})`.trim(),
+				message: formatImportRunErrorMessage(error, {
+					entityLabel: row.titre,
+				}, (key, params) => get(t)(key, params ?? {})),
+			});
 		}
 	}
 
