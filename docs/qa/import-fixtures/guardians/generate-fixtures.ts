@@ -1,23 +1,28 @@
 ﻿import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createXlsxWriter } from '../_shared/xlsx-writer.ts';
-import { GUARDIAN_HEADERS, MATRICULES, PHONES } from '../_shared/ivory-coast-data.ts';
+import { GUARDIAN_HEADERS, PHONES } from '../_shared/ivory-coast-data.ts';
+import { resolveStudentMatricules } from '../_shared/fixture-pool.ts';
+import { loadSchoolImportSnapshot } from '../_shared/school-db.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const write = createXlsxWriter(join(here, 'xlsx'), 'Tuteurs');
-
 const HEADERS = GUARDIAN_HEADERS;
 
+const snapshot = await loadSchoolImportSnapshot();
+const matricules = resolveStudentMatricules(snapshot, 12);
+const m = (index: number) => matricules[index % matricules.length]!;
+
 write('TU02-partial-import.xlsx', HEADERS, [
-	['TUT-001', 'Aminata', 'Koné', MATRICULES.aminataKone, 'aminata.kone@example.ci', PHONES.aminata],
-	['TUT-002', 'Kouadio', 'Yao', `${MATRICULES.kouadioYao};CI-2025-999`, 'kouadio.yao@example.ci', PHONES.kouadio],
-	['TUT-003', '', 'Traoré', MATRICULES.ibrahimTraore, 'traore@example.ci', PHONES.traore],
+	['TUT-001', 'Aminata', 'Koné', m(0), 'aminata.kone@example.ci', PHONES.aminata],
+	['TUT-002', 'Kouadio', 'Yao', `${m(1)};CI-2025-999`, 'kouadio.yao@example.ci', PHONES.kouadio],
+	['TUT-003', '', 'Traoré', m(2), 'traore@example.ci', PHONES.traore],
 ]);
 
 write('TU03-error-missing-required.xlsx', HEADERS, [
-	['', 'Aminata', 'Koné', MATRICULES.aminataKone, 'aminata@example.ci', PHONES.aminata],
-	['TUT-010', '', 'Koné', MATRICULES.aminataKone, 'aminata2@example.ci', PHONES.aminata],
-	['TUT-011', 'Kouadio', '', MATRICULES.kouadioYao, 'yao@example.ci', PHONES.kouadio],
+	['', 'Aminata', 'Koné', m(0), 'aminata@example.ci', PHONES.aminata],
+	['TUT-010', '', 'Koné', m(0), 'aminata2@example.ci', PHONES.aminata],
+	['TUT-011', 'Kouadio', '', m(1), 'yao@example.ci', PHONES.kouadio],
 	['TUT-012', 'Ibrahim', 'Traoré', '', 'traore@example.ci', PHONES.traore],
 ]);
 
@@ -27,34 +32,44 @@ write('TU04-error-student-not-found.xlsx', HEADERS, [
 ]);
 
 write('TU05-multi-matricule-siblings.xlsx', HEADERS, [
-	['TUT-030', 'Affoué', 'Yéo', `${MATRICULES.kouadioYao};${MATRICULES.aminataKone}`, 'affoue.yeo@example.ci', '+225 07 90 12 34 56'],
+	['TUT-030', 'Affoué', 'Yéo', `${m(0)};${m(1)}`, 'affoue.yeo@example.ci', '+225 07 90 12 34 56'],
 ]);
 
 write('TU06-error-duplicate-in-file.xlsx', HEADERS, [
-	['TUT-040', 'Aminata', 'Koné', MATRICULES.adjouaBamba, 'aminata.tuteur@example.ci', PHONES.aminata],
-	['tut-040', 'Aminata', 'Koné', MATRICULES.adjouaBamba, 'aminata.tuteur2@example.ci', PHONES.aminata],
-	['TUT-041', 'Kouadio', 'Yao', MATRICULES.nguessanKouassi, 'yao@example.ci', PHONES.kouadio],
+	['TUT-040', 'Aminata', 'Koné', m(3), 'aminata.tuteur@example.ci', PHONES.aminata],
+	['tut-040', 'Aminata', 'Koné', m(3), 'aminata.tuteur2@example.ci', PHONES.aminata],
+	['TUT-041', 'Kouadio', 'Yao', m(4), 'yao@example.ci', PHONES.kouadio],
 ]);
 
 write('TU07-headers-only.xlsx', HEADERS, []);
 
 write('TU08-trim-and-case.xlsx', HEADERS, [
-	['  TUT-050  ', '  Aminata  ', '  Koné  ', `  ${MATRICULES.mariamOuattara}  `, '  aminata@example.ci  ', `  ${PHONES.aminata}  `],
+	['  TUT-050  ', '  Aminata  ', '  Koné  ', `  ${m(5)}  `, '  aminata@example.ci  ', `  ${PHONES.aminata}  `],
 ]);
 
 write('TU09-multi-matricule-ampersand.xlsx', HEADERS, [
-	['TUT-060', 'Affoué', 'Yéo', `${MATRICULES.kouadioYao}&${MATRICULES.aminataKone}`, 'affoue.yeo@example.ci', '+225 07 90 12 34 56'],
+	['TUT-060', 'Affoué', 'Yéo', `${m(0)}&${m(1)}`, 'affoue.yeo@example.ci', '+225 07 90 12 34 56'],
 ]);
 
-write('TU01-happy-all-valid.xlsx', HEADERS, [
-	['TUT-001', 'Aminata', 'Koné', MATRICULES.kouadioYao, 'aminata.kone.tuteur@example.ci', PHONES.aminata],
-	['TUT-002', 'Kouadio', 'Yao', MATRICULES.aminataKone, 'kouadio.yao.tuteur@example.ci', PHONES.kouadio],
-	['TUT-003', 'N\'Guessan', 'Kouassi', MATRICULES.nguessanKouassi, 'nguessan.kouassi@example.ci', '+225 05 12 34 56 78'],
-	['TUT-004', 'Adjoua', 'Bamba', MATRICULES.adjouaBamba, 'adjoua.bamba@example.ci', '+225 07 23 45 67 89'],
-	['TUT-005', 'Ibrahim', 'Traoré', MATRICULES.ibrahimTraore, 'ibrahim.traore@example.ci', PHONES.traore],
-	['TUT-006', 'Mariam', 'Ouattara', MATRICULES.mariamOuattara, 'mariam.ouattara@example.ci', '+225 01 34 56 78 90'],
-	['TUT-007', 'Seydou', 'Diabaté', MATRICULES.seydouDiabate, 'seydou.diabate@example.ci', '+225 07 45 67 89 01'],
-	['TUT-008', 'Akissi', 'Assouan', MATRICULES.akissiAssouan, 'akissi.assouan@example.ci', '+225 05 56 78 90 12'],
-]);
+const guardianNames = [
+	['Aminata', 'Koné'],
+	['Kouadio', 'Yao'],
+	["N'Guessan", 'Kouassi'],
+	['Adjoua', 'Bamba'],
+	['Ibrahim', 'Traoré'],
+	['Mariam', 'Ouattara'],
+	['Seydou', 'Diabaté'],
+	['Akissi', 'Assouan'],
+] as const;
+
+write('TU01-happy-all-valid.xlsx', HEADERS, guardianNames.map((names, index) => [
+	`TUT-${String(index + 1).padStart(3, '0')}`,
+	names[0],
+	names[1],
+	m(index),
+	`${names[0].toLowerCase().replace(/[^a-z]/g, '')}.${names[1].toLowerCase().replace(/[^a-z]/g, '')}.tuteur@example.ci`,
+	index % 2 === 0 ? PHONES.aminata : PHONES.kouadio,
+]));
 
 console.log(`Generated guardian import fixtures in ${join(here, 'xlsx')}`);
+console.log(`TU01: ${guardianNames.length} tuteurs liés aux matricules ${matricules.slice(0, 8).join(', ')}`);

@@ -400,6 +400,7 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 - **Entities:** `AcademicYear` · `AcademicPeriod` · `PeriodDefinition`
 - Accordion by year; period + **period definition** CRUD via modals
+- `PeriodDefinition` rows are **weekly slots** (`dayOfWeek` + times); single-row form and optional **quick-setup wizard** (preset → tweak template/weekdays → batch create)
 
 ### 7.20 Configuration — Grade levels
 

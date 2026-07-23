@@ -59,8 +59,8 @@ class AcademicContext {
 
 	period = $derived(
 		this.periods.find(p => p.id === this.periodId)
-			?? this.periodsForYear.at(-1)
-			?? this.periods[0],
+		?? this.periodsForYear.at(-1)
+		?? this.periods[0],
 	);
 
 	periodsForYear = $derived(this.periods.filter(p => p.academicYearId === this.yearId));
@@ -78,9 +78,21 @@ class AcademicContext {
 	}
 
 	periodDefinitionsForYear(yearId: string): PeriodDefinition[] {
+		const dayOrder: Record<PeriodDefinition['dayOfWeek'], number> = {
+			monday: 0,
+			tuesday: 1,
+			wednesday: 2,
+			thursday: 3,
+			friday: 4,
+			saturday: 5,
+			sunday: 6,
+		};
 		return this.periodDefinitions
 			.filter(p => p.academicYearId === yearId)
-			.sort((a, b) => a.order - b.order);
+			.sort((a, b) => {
+				const byDay = dayOrder[a.dayOfWeek] - dayOrder[b.dayOfWeek];
+				return byDay !== 0 ? byDay : a.order - b.order;
+			});
 	}
 
 	upsertPeriodDefinition(def: PeriodDefinition) {

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PeriodDefinition } from '$lib/types/school';
+	import type { PeriodDefinition, PeriodDefinitionDayOfWeek } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -10,17 +10,18 @@
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
-	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
-	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
-	import { CalendarRange, ChevronDown, Pencil, Plus, Trash2 } from '$lib/icons';
+	import { CalendarRange, ChevronDown, Plus, Sparkles } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getAcademicPageState } from '../academic-page.svelte';
+	import { PERIOD_DEFINITION_WEEKDAYS } from '../lib/period-definition-presets';
 	import AcademicYearCreateModal from './AcademicYearCreateModal.svelte';
+	import PeriodDefinitionBoard from './PeriodDefinitionBoard.svelte';
 	import PeriodDefinitionFormModal from './PeriodDefinitionFormModal.svelte';
+	import PeriodDefinitionWizardModal from './PeriodDefinitionWizardModal.svelte';
 
 	const academicPage = getAcademicPageState();
 
@@ -33,6 +34,8 @@
 
 	let periodDefYearId = $state('');
 	let editingPeriodDef = $state<PeriodDefinition | null>(null);
+	let wizardOpen = $state(false);
+	let wizardYearId = $state('');
 	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
 	let deleteTarget = $state<PeriodDefinition | null>(null);
@@ -73,6 +76,17 @@
 		return academicContext.periodDefinitionsForYear(yearId);
 	}
 
+	function periodDefinitionGroups(yearId: string): Array<{
+		dayOfWeek: PeriodDefinitionDayOfWeek;
+		defs: PeriodDefinition[];
+	}> {
+		const defs = periodDefinitionsFor(yearId);
+		return PERIOD_DEFINITION_WEEKDAYS.map(dayOfWeek => ({
+			dayOfWeek,
+			defs: defs.filter(def => def.dayOfWeek === dayOfWeek),
+		}));
+	}
+
 	function handleYearCreated(yearId: string) {
 		academicPage.expandedYear = yearId;
 	}
@@ -103,6 +117,11 @@
 		periodDefYearId = yearId;
 		editingPeriodDef = null;
 		periodDefOpen.open = true;
+	}
+
+	function openPeriodDefWizard(yearId: string) {
+		wizardYearId = yearId;
+		wizardOpen = true;
 	}
 
 	function openEditPeriodDef(def: PeriodDefinition) {
@@ -265,76 +284,52 @@
 							{/each}
 						</ul>
 
-						<div class="mt-6 flex items-center justify-between gap-3">
+						<div class="mt-6 flex flex-wrap items-center justify-between gap-3">
 							<p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
 								{$t('periodDefinitions.sectionTitle')}
 							</p>
 							<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE">
 								{#snippet children({ disabled, title })}
-									<Button
-										size="sm"
-										variant="outline"
-										class="rounded-full"
-										{disabled}
-										{title}
-										onclick={() => openCreatePeriodDef(year.id)}
-									>
-										<Plus class="mr-1 h-4 w-4" />
-										{$t('periodDefinitions.add')}
-									</Button>
+									<div class="flex flex-wrap items-center gap-2">
+										<Button
+											size="sm"
+											variant="outline"
+											class="rounded-full"
+											{disabled}
+											{title}
+											onclick={() => openPeriodDefWizard(year.id)}
+										>
+											<Sparkles class="mr-1 h-4 w-4" />
+											{$t('periodDefinitions.quickSetup')}
+										</Button>
+										<Button
+											size="sm"
+											variant="outline"
+											class="rounded-full"
+											{disabled}
+											{title}
+											onclick={() => openCreatePeriodDef(year.id)}
+										>
+											<Plus class="mr-1 h-4 w-4" />
+											{$t('periodDefinitions.add')}
+										</Button>
+									</div>
 								{/snippet}
 							</PermissionGate>
 						</div>
-						<ul class="mt-3 space-y-2">
-							{#if yearPeriodDefs.length === 0}
+						{#if yearPeriodDefs.length === 0}
+							<ul class="mt-3 space-y-2">
 								<li class="rounded-xl border border-dashed border-border/70 px-4 py-6 text-center text-sm text-muted-foreground">
 									{$t('periodDefinitions.empty')}
 								</li>
-							{:else}
-								{#each yearPeriodDefs as def (def.id)}
-									<li
-										class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/60 px-4 py-3"
-									>
-										<div>
-											<p class="text-sm font-medium">
-												{def.label}
-												{#if def.isBreak}
-													<span class="ml-2 rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] uppercase text-muted-foreground">
-														{$t('periodDefinitions.break')}
-													</span>
-												{/if}
-											</p>
-											<p class="font-mono text-[11px] text-muted-foreground">
-												#{def.order} · {def.startTime} → {def.endTime}
-											</p>
-										</div>
-										<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE">
-											{#snippet children({ disabled, title })}
-												<RowActionMenu>
-													<RowActionMenuItem
-														{disabled}
-														{title}
-														onclick={() => openEditPeriodDef(def)}
-													>
-														<Pencil class="h-4 w-4" />
-														{$t('common.edit')}
-													</RowActionMenuItem>
-													<RowActionMenuItem
-														destructive
-														{disabled}
-														{title}
-														onclick={() => openDeletePeriodDef(def)}
-													>
-														<Trash2 class="h-4 w-4" />
-														{$t('common.delete')}
-													</RowActionMenuItem>
-												</RowActionMenu>
-											{/snippet}
-										</PermissionGate>
-									</li>
-								{/each}
-							{/if}
-						</ul>
+							</ul>
+						{:else}
+							<PeriodDefinitionBoard
+								groups={periodDefinitionGroups(year.id)}
+								onEdit={openEditPeriodDef}
+								onDelete={openDeletePeriodDef}
+							/>
+						{/if}
 					</div>
 				{/if}
 			</section>
@@ -348,6 +343,11 @@
 	bind:open={periodDefOpen.open}
 	academicYearId={periodDefYearId}
 	periodDefinition={editingPeriodDef}
+/>
+
+<PeriodDefinitionWizardModal
+	bind:open={wizardOpen}
+	academicYearId={wizardYearId}
 />
 
 <ConfirmModal

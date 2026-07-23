@@ -2,39 +2,43 @@
 
 Fixtures Excel pour la QA manuelle (**Configuration → Outils → Importer**).
 
-Contexte **collège ivoirien** (Afrique de l'Ouest) : noms (`Koné`, `Kouassi`, `Traoré`…), matricules `CI-2025-xxx`, téléphones `+225`, paiements Mobile Money / espèces / virement en **FCFA**.
+Les générateurs lisent la **PGlite locale** (`edaya_backend/.data/school`) via [`_shared/school-db.ts`](./_shared/school-db.ts) : classes, niveaux, matières, offres `class_subjects`, élèves, enseignants, frais, chapitres. Les libellés des fichiers matchent donc l’école courante.
+
+Contexte nominal : noms ivoiriens, matricules `CI-2025-xxx`, téléphones `+225`, paiements Mobile Money / espèces / virement en **FCFA**.
 
 ## Regénérer tout
 
+Prérequis : API locale déjà démarrée au moins une fois (data dir présent). `bun repo dev` peut rester allumé — le loader copie le data dir.
+
 ```bash
-bun edaya_web/docs/qa/import-fixtures/generate-all-fixtures.ts
+# depuis edaya_web
+bun docs/qa/import-fixtures/generate-all-fixtures.ts
 ```
 
 ## Ordre de test recommandé
 
-Les packs sont **chaînés** : chaque étape suppose les données créées par la précédente.
+Les packs sont **chaînés** : chaque étape suppose les données créées par la précédente (ou déjà présentes via onboarding).
 
 | Étape | Pack | Dossier | Prérequis |
 |-------|------|---------|-----------|
-| 1 | Classes | [`classes/`](./classes/) | Niveaux `6eme`–`3eme` configurés |
-| 2 | Matières | [`subjects/`](./subjects/) | Classes importées (CL01) |
+| 1 | Classes | [`classes/`](./classes/) | Niveaux configurés (CL01 = nouvelles sections) |
+| 2 | Matières | [`subjects/`](./subjects/) | Catalogue `grade_level_subjects` (SU01 = export DB) |
 | 3 | Élèves | [`students/`](./students/) | Classes existantes |
 | 4 | Tuteurs | [`guardians/`](./guardians/) | Élèves importés (EL01) |
 | 5 | Personnel | [`staff/`](./staff/) | Aucun |
-| 6 | Enseignants | [`teachers/`](./teachers/) | Aucun |
-| 7 | Affectations | [`teacher-assignments/`](./teacher-assignments/) | Enseignants (EN01) + classes + matières |
-| 8 | Chapitres | [`chapters/`](./chapters/) | Matières importées (SU01) |
+| 6 | Enseignants | [`teachers/`](./teachers/) | Aucun (ou export DB si déjà présents) |
+| 7 | Affectations | [`teacher-assignments/`](./teacher-assignments/) | Enseignants + offres `class_subjects` |
+| 8 | Chapitres | [`chapters/`](./chapters/) | Paires niveau×matière en base |
 | 9 | Facturation | [`billing/`](./billing/) | Élèves (EL01) + types de frais Finances |
 | 10 | Paiements | [`payments/`](./payments/) | Élèves + facturation importée (BI01) |
 
 ## Données partagées
 
-Fichier [`_shared/ivory-coast-data.ts`](./_shared/ivory-coast-data.ts) :
-
-- **12 élèves** avec matricules `CI-2025-001` → `CI-2025-012`
-- **Classes** : `6eme A/B/C`, `5eme A/B`, `4eme B`, `3eme A`
-- **Matières** : programme collège CI (Anglais, Français, Mathématiques, SVT, EDHC, EPS, HG…)
-- **Frais** : libellé `Scolarité — Collège` (catalogue demo-ci ; voir `FEE_CATALOG_NAMES` dans `_shared/ivory-coast-data.ts`)
+| Source | Contenu |
+|--------|---------|
+| [`_shared/school-db.ts`](./_shared/school-db.ts) | Snapshot live PGlite |
+| [`_shared/fixture-pool.ts`](./_shared/fixture-pool.ts) | Élèves synthétiques `CI-2025-*` répartis sur les classes DB |
+| [`_shared/ivory-coast-data.ts`](./_shared/ivory-coast-data.ts) | Pool enseignants EN01 (50), codes staff, fallback frais, téléphones |
 
 ## Identifiants uniques (C12)
 

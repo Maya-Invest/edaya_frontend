@@ -300,17 +300,26 @@ export interface StudentBilling {
 
 export type AcademicPublishStatus = 'draft' | 'published';
 
+export type PeriodDefinitionDayOfWeek
+	= | 'monday'
+		| 'tuesday'
+		| 'wednesday'
+		| 'thursday'
+		| 'friday'
+		| 'saturday'
+		| 'sunday';
+
 export interface PeriodDefinition {
 	id: string;
 	schoolId: string;
 	academicYearId: string;
 	label: string;
-	dayOfWeek?: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+	dayOfWeek: PeriodDefinitionDayOfWeek;
 	order: number;
 	startTime: string;
 	endTime: string;
 	isBreak: boolean;
-	isTeachingSlot?: boolean;
+	isTeachingSlot: boolean;
 }
 
 export interface GradeLevel {

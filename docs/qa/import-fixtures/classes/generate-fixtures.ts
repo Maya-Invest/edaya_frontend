@@ -1,113 +1,99 @@
 ﻿/**
  * Generates Excel fixtures for manual class import QA.
- * Run: bun edaya_web/docs/qa/import-fixtures/classes/generate-fixtures.ts
+ * Run: bun docs/qa/import-fixtures/classes/generate-fixtures.ts
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createXlsxWriter } from '../_shared/xlsx-writer.ts';
+import {
+	loadSchoolImportSnapshot,
+	primaryClass,
+	primaryNiveau,
+	requireClasses,
+	requireGradeLevels,
+	unknownClassName,
+} from '../_shared/school-db.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const require = createRequire(join(here, '../../../../apps/webapp/package.json'));
-const XLSX = require('xlsx') as typeof import('xlsx');
-
-const outDir = join(here, 'xlsx');
-
+const write = createXlsxWriter(join(here, 'xlsx'), 'Classes');
 const HEADERS = ['nom', 'niveau', 'capacite'] as const;
 
-type Row = [string, string, string | number];
+const snapshot = await loadSchoolImportSnapshot();
+const levels = requireGradeLevels(snapshot);
+const classes = requireClasses(snapshot);
+const niveau = primaryNiveau(snapshot);
+const existing = primaryClass(snapshot);
+const unknownNiveau = 'Niveau Inconnu QA';
 
-function writeFixture(filename: string, rows: Row[]) {
-	const workbook = XLSX.utils.book_new();
-	const sheet = XLSX.utils.aoa_to_sheet([HEADERS, ...rows]);
-	XLSX.utils.book_append_sheet(workbook, sheet, 'Classes');
-	const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' }) as Buffer;
-	const target = join(outDir, filename);
-	try {
-		writeFileSync(target, buffer);
-	} catch (error) {
-		const code = (error as NodeJS.ErrnoException).code;
-		if (code === 'EBUSY' || code === 'EPERM') {
-			console.warn(`Skipped ${filename} (file open elsewhere — close it and re-run)`);
-			return;
+/** Nouvelles classes (sections absentes) — une par niveau, pour import nominal sans collision. */
+const newClassRows = levels.map((level, index) => {
+	const existingNames = new Set(
+		classes.filter(entry => entry.niveau === level.name).map(entry => entry.name.toLowerCase()),
+	);
+	const letters = 'BCDEFGHIJKLMNOPQRSTUVWXYZ';
+	let nom = `${level.name} B`;
+	for (const letter of letters) {
+		const candidate = `${level.name.replace(/ème$/i, 'e').replace(/ê/g, 'e')} ${letter}`;
+		// Prefer school naming style from an existing class on this level when available.
+		const sibling = classes.find(entry => entry.niveau === level.name);
+		const styled = sibling
+			? sibling.name.replace(/\s+[A-Za-zÀ-ÿ]+$/u, ` ${letter}`)
+			: candidate;
+		if (!existingNames.has(styled.toLowerCase())) {
+			nom = styled;
+			break;
 		}
-		throw error;
 	}
-}
+	return [nom, level.name, 30 + (index % 6)] as [string, string, number];
+});
 
-mkdirSync(outDir, { recursive: true });
-
-// CL01 en dernier : souvent ouvert dans Excel pendant la QA
-writeFixture('CL02-partial-import.xlsx', [
-	['6eme J', '6eme', 25],
-	['5eme F', '5eme', 25],
-	['4eme D', '4eme', 25],
-	['', '6eme', 25],
-	['6eme K', '7eme Z', 25],
+write('CL02-partial-import.xlsx', HEADERS, [
+	newClassRows[0] ?? [`${niveau} J`, niveau, 25],
+	newClassRows[1] ?? [`${levels[1]?.name ?? niveau} F`, levels[1]?.name ?? niveau, 25],
+	['', niveau, 25],
+	[unknownClassName(snapshot), unknownNiveau, 25],
 ]);
 
-// CL03 — Toutes lignes invalides (niveau inconnu)
-writeFixture('CL03-error-unknown-niveau.xlsx', [
-	['6eme J', '7eme Z', 30],
-	['5eme F', 'Terminale X', 30],
+write('CL03-error-unknown-niveau.xlsx', HEADERS, [
+	[`${niveau} J`, unknownNiveau, 30],
+	[`${niveau} K`, 'Terminale X', 30],
 ]);
 
-// CL04 — Champs obligatoires manquants
-writeFixture('CL04-error-missing-required.xlsx', [
-	['', '6eme', 30],
-	['6eme J', '', 30],
+write('CL04-error-missing-required.xlsx', HEADERS, [
+	['', niveau, 30],
+	[`${niveau} J`, '', 30],
 	['', '', ''],
 ]);
 
-// CL05 — Capacité invalide
-writeFixture('CL05-error-invalid-capacity.xlsx', [
-	['6eme J', '6eme', 'abc'],
-	['5eme F', '5eme', -5],
-	['4eme D', '4eme', 0],
+write('CL05-error-invalid-capacity.xlsx', HEADERS, [
+	[`${niveau} J`, niveau, 'abc'],
+	[`${niveau} K`, niveau, -5],
+	[`${niveau} L`, niveau, 0],
 ]);
 
-// CL06 — Doublon dans le fichier (même nom + même niveau)
-writeFixture('CL06-error-duplicate-in-file.xlsx', [
-	['6eme J', '6eme', 30],
-	['6eme J', '6eme', 35],
-	['5eme F', '5eme', 30],
+write('CL06-error-duplicate-in-file.xlsx', HEADERS, [
+	newClassRows[0] ?? [`${niveau} J`, niveau, 30],
+	[
+		(newClassRows[0] ?? [`${niveau} J`, niveau, 30])[0],
+		(newClassRows[0] ?? [`${niveau} J`, niveau, 30])[1],
+		35,
+	],
+	newClassRows[1] ?? [`${levels[1]?.name ?? niveau} F`, levels[1]?.name ?? niveau, 30],
 ]);
 
-// CL07 — Doublon avec classe déjà en base (6eme A) + une nouvelle classe
-writeFixture('CL07-error-duplicate-existing.xlsx', [
-	['6eme A', '6eme', 30],
-	['6eme J', '6eme', 30],
+write('CL07-error-duplicate-existing.xlsx', HEADERS, [
+	[existing.name, existing.niveau, existing.capacity ?? 30],
+	newClassRows[0] ?? [`${niveau} J`, niveau, 30],
 ]);
 
-// CL08 — Feuille vide (en-têtes seulement)
-writeFixture('CL08-headers-only.xlsx', []);
+write('CL08-headers-only.xlsx', HEADERS, []);
 
-// CL09 — Espaces autour des valeurs (trim)
-writeFixture('CL09-trim-and-case.xlsx', [
-	['  6eme K  ', '  6eme  ', '  40  '],
-	['6eme L', '6eme', 35],
+write('CL09-trim-and-case.xlsx', HEADERS, [
+	[`  ${(newClassRows[0] ?? [`${niveau} K`, niveau, 40])[0]}  `, `  ${niveau}  `, '  40  '],
+	newClassRows[1] ?? [`${niveau} L`, niveau, 35],
 ]);
 
-// CL01 — Import nominal : jeu représentatif type collège (18 classes)
-writeFixture('CL01-happy-all-valid.xlsx', [
-	['6eme A', '6eme', 35],
-	['6eme B', '6eme', 35],
-	['6eme C', '6eme', 35],
-	['6eme D', '6eme', 35],
-	['6eme E', '6eme', 35],
-	['6eme F', '6eme', 35],
-	['6eme G', '6eme', 35],
-	['6eme H', '6eme', 35],
-	['6eme I', '6eme', 35],
-	['5eme B', '5eme', 32],
-	['5eme A', '5eme', 32],
-	['5eme C', '5eme', 32],
-	['5eme D', '5eme', 32],
-	['5eme E', '5eme', 32],
-	['4eme B', '4eme', 30],
-	['3eme A', '3eme', 28],
-	['4eme C', '4eme', 30],
-	['3eme B', '3eme', 28],
-]);
+write('CL01-happy-all-valid.xlsx', HEADERS, newClassRows);
 
-console.log(`Generated class import fixtures in ${outDir}`);
+console.log(`Generated class import fixtures in ${join(here, 'xlsx')}`);
+console.log(`CL01: ${newClassRows.length} nouvelles classes (niveaux DB: ${levels.map(l => l.name).join(', ')})`);

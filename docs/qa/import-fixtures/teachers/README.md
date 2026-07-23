@@ -10,7 +10,7 @@ bun edaya_web/docs/qa/import-fixtures/teachers/generate-fixtures.ts
 
 | Fichier | Scénario | Résultat attendu |
 |---------|----------|------------------|
-| `EN01-happy-all-valid.xlsx` | 6 enseignants avec codes `ENS-*-001` | 6 enregistrés |
+| `EN01-happy-all-valid.xlsx` | Enseignants DB (sinon pool QA 50 codes `ENS-*`) | N enregistrés / export |
 | `EN02-partial-import.xlsx` | 2 OK + prénom manquant | Import partiel (2 créés) |
 | `EN03-error-missing-required.xlsx` | `code` / prénom / nom manquants | 0 enregistré |
 | `EN04-invalid-email-warning.xlsx` | E-mail invalide sur une ligne | 2 enregistrés + 1 warning |

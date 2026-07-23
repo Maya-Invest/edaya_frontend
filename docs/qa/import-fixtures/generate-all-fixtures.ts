@@ -1,12 +1,24 @@
 ﻿/**
- * Regénère tous les jeux de données Excel QA (classes, élèves, matières, tuteurs, personnel, enseignants, chapitres, facturation, paiements).
- * Run: bun edaya_web/docs/qa/import-fixtures/generate-all-fixtures.ts
+ * Regénère tous les jeux de données Excel QA à partir de la PGlite locale.
+ * Run: bun docs/qa/import-fixtures/generate-all-fixtures.ts
  */
 import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadSchoolImportSnapshot } from './_shared/school-db.ts';
 
 const root = dirname(fileURLToPath(import.meta.url));
+
+const snapshot = await loadSchoolImportSnapshot();
+console.log('School DB snapshot:');
+console.log(`  gradeLevels=${snapshot.gradeLevels.length}`);
+console.log(`  classes=${snapshot.classes.length}`);
+console.log(`  subjectsAtLevel=${snapshot.subjectsAtLevel.length}`);
+console.log(`  classSubjectOfferings=${snapshot.classSubjectOfferings.length}`);
+console.log(`  students=${snapshot.students.length}`);
+console.log(`  teachers=${snapshot.teachers.length}`);
+console.log(`  fees=${snapshot.fees.length}`);
+console.log(`  chapters=${snapshot.chapters.length}`);
 
 const packs = [
 	'classes/generate-fixtures.ts',
@@ -30,4 +42,4 @@ for (const script of packs) {
 	}
 }
 
-console.log('\nAll import QA fixtures generated.');
+console.log('\nAll import QA fixtures generated from local school DB.');

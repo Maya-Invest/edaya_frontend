@@ -2,12 +2,16 @@
 import { fileURLToPath } from 'node:url';
 import { createXlsxWriter } from '../_shared/xlsx-writer.ts';
 import { PHONES, STAFF_CODES, STAFF_HEADERS } from '../_shared/ivory-coast-data.ts';
+import { loadSchoolImportSnapshot } from '../_shared/school-db.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const write = createXlsxWriter(join(here, 'xlsx'), 'Personnel');
 
 const HEADERS = STAFF_HEADERS;
 const C = STAFF_CODES;
+
+const snapshot = await loadSchoolImportSnapshot();
+console.log(`School snapshot loaded (${snapshot.gradeLevels.length} niveaux, ${snapshot.classes.length} classes) — PE01 reste un jeu de création personnel.`);
 
 write('PE02-partial-import.xlsx', HEADERS, [
 	[C.kone, 'Aminata', 'Koné', 'Secrétaire', 'aminata.kone@ecole-ci.edaya.dev', PHONES.secretariat],
