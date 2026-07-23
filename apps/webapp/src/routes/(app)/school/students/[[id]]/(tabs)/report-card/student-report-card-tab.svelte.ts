@@ -1,6 +1,7 @@
 import type { GradeScale, ReportCardDefinition, ReportCardResult } from '$lib/types/report-cards';
 import type { StudentsPageState } from '../../../students-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
+import { openReportCardPdf } from '$lib/api/report-card-pdf';
 import { loadClassReportCardResultsData, loadReportCardCatalogData } from '$lib/api/report-cards-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
@@ -184,6 +185,16 @@ export class StudentReportCardTabState {
 			},
 		});
 		return result !== null;
+	}
+
+	async downloadPdf(resultId: string): Promise<'ready' | 'pending' | 'missing' | 'error'> {
+		try {
+			const lookup = await openReportCardPdf(resultId);
+			return lookup.status === 'ready' ? 'ready' : lookup.status;
+		}
+		catch {
+			return 'error';
+		}
 	}
 }
 

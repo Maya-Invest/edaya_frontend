@@ -4,7 +4,7 @@
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { t } from '$lib/i18n';
-	import { FileSpreadsheet } from '$lib/icons';
+	import { Download, FileSpreadsheet } from '$lib/icons';
 	import { toast } from '$lib/toast.svelte';
 	import { formatGrade } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
@@ -24,6 +24,7 @@
 	const period = $derived(
 		latest ? academicContext.periods.find(p => p.id === latest.academicPeriodId) : null,
 	);
+	let downloading = $state(false);
 
 	async function generate() {
 		const ok = await reportCardTab.generateReportCard(s.id);
@@ -44,6 +45,32 @@
 		});
 		if (ok) {
 			toast.success(get(t)('reportCards.toastPublished', { name: s.name }));
+		}
+	}
+
+	async function downloadPdf() {
+		if (!latest || downloading) {
+			return;
+		}
+		downloading = true;
+		try {
+			const status = await reportCardTab.downloadPdf(latest.id);
+			if (status === 'ready') {
+				toast.info(get(t)('reportCards.toastPdfReady'));
+				return;
+			}
+			if (status === 'pending') {
+				toast.info(get(t)('reportCards.toastPdfPending'));
+				return;
+			}
+			if (status === 'missing') {
+				toast.info(get(t)('reportCards.toastPdfMissing'));
+				return;
+			}
+			toast.error(get(t)('reportCards.toastPdfError'));
+		}
+		finally {
+			downloading = false;
 		}
 	}
 </script>
@@ -152,6 +179,17 @@
 		{/if}
 
 		<div class="flex justify-end gap-2">
+			{#if latest.status === 'published'}
+				<Button
+					variant="outline"
+					class="rounded-full"
+					disabled={downloading}
+					onclick={downloadPdf}
+				>
+					<Download class="h-4 w-4" />
+					{$t('reportCards.downloadPdf')}
+				</Button>
+			{/if}
 			{#if latest.status === 'generated'}
 				<Button class="rounded-full" onclick={publish}>{$t('reportCards.publish')}</Button>
 			{/if}

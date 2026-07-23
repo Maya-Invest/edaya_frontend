@@ -3,6 +3,8 @@
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { t } from '$lib/i18n';
+	import { Download } from '$lib/icons';
+	import { toast } from '$lib/toast.svelte';
 	import { formatGrade } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
@@ -19,6 +21,7 @@
 	const scale = $derived(
 		reportCardsPage.scalesFor(live.classId).find(entry => entry.id === live.gradeScaleId),
 	);
+	let downloading = $state(false);
 
 	function resultStatusLabel(status: ReportCardResult['status']) {
 		if (status === 'published') {
@@ -35,6 +38,32 @@
 			resultId: live.id,
 			successMessage: get(t)('reportCards.toastPublished', { name: student?.name ?? '' }),
 		});
+	}
+
+	async function downloadPdf() {
+		if (downloading) {
+			return;
+		}
+		downloading = true;
+		try {
+			const status = await reportCardsPage.downloadPdf(live.id);
+			if (status === 'ready') {
+				toast.info(get(t)('reportCards.toastPdfReady'));
+				return;
+			}
+			if (status === 'pending') {
+				toast.info(get(t)('reportCards.toastPdfPending'));
+				return;
+			}
+			if (status === 'missing') {
+				toast.info(get(t)('reportCards.toastPdfMissing'));
+				return;
+			}
+			toast.error(get(t)('reportCards.toastPdfError'));
+		}
+		finally {
+			downloading = false;
+		}
 	}
 </script>
 
@@ -58,6 +87,18 @@
 			</span>
 		{/snippet}
 		{#snippet actions()}
+			{#if live.status === 'published'}
+				<Button
+					size="sm"
+					variant="outline"
+					class="rounded-full"
+					disabled={downloading}
+					onclick={downloadPdf}
+				>
+					<Download class="h-4 w-4" />
+					{$t('reportCards.downloadPdf')}
+				</Button>
+			{/if}
 			{#if live.status === 'generated'}
 				<Button size="sm" class="rounded-full" onclick={publish}>
 					{$t('reportCards.publish')}

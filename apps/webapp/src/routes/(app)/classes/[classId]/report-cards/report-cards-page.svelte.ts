@@ -3,6 +3,7 @@ import type { GradeScale, ReportCardDefinition, ReportCardResult } from '$lib/ty
 import type { Student } from '$lib/types/school';
 import type { ReportCardsPageSlice } from './lib/report-cards-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
+import { openReportCardPdf } from '$lib/api/report-card-pdf';
 import { loadClassReportCardResultsData } from '$lib/api/report-cards-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { nowIso } from '$lib/date/format';
@@ -269,6 +270,16 @@ export class ReportCardsPageState {
 			onSuccess: () => this.refreshResults(this.slice!.classId),
 		});
 		return result !== null;
+	}
+
+	async downloadPdf(resultId: string): Promise<'ready' | 'pending' | 'missing' | 'error'> {
+		try {
+			const lookup = await openReportCardPdf(resultId);
+			return lookup.status === 'ready' ? 'ready' : lookup.status;
+		}
+		catch {
+			return 'error';
+		}
 	}
 }
 

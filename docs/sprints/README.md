@@ -17,8 +17,11 @@ When archiving, extract unchecked items into a new on-going plan rather than lea
 
 | Path | Role |
 |------|------|
-| `data-loading-sprint.md` | On-going alignment tracker for data-loading spec |
+| `on-going/webapp-api-drift-plan.md` | On-going — close webapp ↔ core API/domain command & UI gaps |
+| `on-going/route-state-migration.md` | Route-state migration matrix (complete) |
+| `on-going/teacher-unavailability-timetable-generation-plan.md` | Timetable generation / tools |
 | `archive/` | Completed plans (v1 shell, backend alignment, state migration, demo-ready, etc.) |
 | `web-scripts-ci-alignment-plan.md` | On-going — align scripts & CI with edaya_backend |
+| `student-import-plan.md` | Student import |
 
 Human reference catalogs (feature cards, demo accounts, cross-repo workflow) live in `docs/reference/` — separate from plans and specs.
