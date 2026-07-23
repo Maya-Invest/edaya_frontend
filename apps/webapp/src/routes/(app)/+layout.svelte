@@ -5,7 +5,7 @@
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { ACCOUNT_OPEN_PROFILE_PARAM } from '$lib/account/profile-navigation';
-	import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
+	import { bootstrapAppShell, invalidateAppShellBootstrapCache, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 	import { shouldEnforceLoginGate } from '$lib/auth/enforce-login-gate';
 	import { authSession } from '$lib/auth/session.svelte';
 	import AccountProfileModal from '$lib/components/account/AccountProfileModal.svelte';
@@ -19,7 +19,6 @@
 	import { DASHBOARD_HREF } from '$lib/navigation';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { canAccessPath } from '$lib/navigation/nav-permissions';
-	import { onboardingContext } from '$lib/onboarding/context.svelte';
 	import { onboardingResumePath } from '$lib/onboarding/resume-onboarding';
 	import { shellContext } from '$lib/shell/context.svelte';
 	import { cn } from '$lib/utils';
@@ -49,9 +48,6 @@
 		}
 
 		const authUserId = authSession.authUserId;
-		if (authUserId) {
-			onboardingContext.init(authUserId);
-		}
 
 		const resumePath = onboardingResumePath(
 			authSession.authUserId,
@@ -82,7 +78,18 @@
 		if (!browser || !authSession.ready || !authSession.isLoggedIn) {
 			return;
 		}
-		void bootstrapAppShell();
+		if (!authSession.sessionKind) {
+			return;
+		}
+		// Re-run when the linked school or actor changes (invalidates shell bootstrap cache).
+		const _shellIdentity = `${authSession.sessionKind}:${authSession.schoolId ?? ''}:${authSession.userId ?? ''}`;
+		void (async () => {
+			await bootstrapAppShell();
+			if (authSession.schoolId && academicContext.schools.length === 0) {
+				invalidateAppShellBootstrapCache();
+				await bootstrapAppShell();
+			}
+		})();
 	});
 
 	$effect(() => {

@@ -4,6 +4,7 @@ import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-a
 import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
 import { persistServerOnboardingStatusToDraft } from '$lib/onboarding/resume-onboarding';
+import { markWizardCompletedInSession } from '$lib/onboarding/wizard-completion-flag';
 import { toast } from '$lib/toast.svelte';
 import { ApiError } from '@maya-invest/edaya-api-client';
 import { get } from 'svelte/store';
@@ -26,8 +27,13 @@ export async function submitCompleteOnboardingStep(options?: {
 	try {
 		const status = await getBrowserSchoolClient().onboarding.completeWizard({});
 
+		authSession.setServerOnboardingStatus(status);
+		if (authSession.authUserId) {
+			markWizardCompletedInSession(authSession.authUserId);
+		}
+
 		resetAppShellBootstrap();
-		await bootstrapSession();
+		await bootstrapSession({ silent: true });
 		authSession.setServerOnboardingStatus(status);
 		if (authSession.authUserId) {
 			persistServerOnboardingStatusToDraft(

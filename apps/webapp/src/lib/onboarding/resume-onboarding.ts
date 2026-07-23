@@ -1,6 +1,7 @@
 import type { OnboardingDraft, OnboardingStep, ServerOnboardingAccountStatus } from '$lib/onboarding/types';
 import { createEmptyDraft, loadDraft, saveDraft } from '$lib/onboarding/draft-storage';
 import { onboardingStepUrl } from '$lib/onboarding/navigation';
+import { isWizardCompletedInSession } from '$lib/onboarding/wizard-completion-flag';
 
 export function mergeOnboardingDraftWithServerStatus(
 	draft: OnboardingDraft,
@@ -58,6 +59,10 @@ export function shouldContinueOnboarding(
 		return false;
 	}
 
+	if (isWizardCompletedInSession(authUserId)) {
+		return false;
+	}
+
 	if (serverStatus?.wizardCompleted) {
 		return false;
 	}
@@ -71,11 +76,12 @@ export function shouldContinueOnboarding(
 		return !serverStatus.wizardCompleted;
 	}
 
-	if (schoolId) {
-		return true;
+	// No server status (e.g. account-status 403) and no local draft: do not send owners back to step 1.
+	if (!loadDraft(authUserId)) {
+		return false;
 	}
 
-	return false;
+	return draft.maxReachedStep > 1;
 }
 
 export function onboardingResumePath(
@@ -102,8 +108,9 @@ export function persistSyncedOnboardingDraft(
 	const stored = loadDraft(authUserId);
 	const draft = resolveOnboardingDraft(authUserId, options);
 
-	const needsPersist = !stored
-		|| (Boolean(options?.schoolId) && !stored.schoolStepSubmitted && draft.schoolStepSubmitted);
+	const needsPersist = Boolean(stored)
+		|| draft.wizardCompleted
+		|| draft.maxReachedStep > 1;
 
 	if (needsPersist) {
 		saveDraft(authUserId, draft);

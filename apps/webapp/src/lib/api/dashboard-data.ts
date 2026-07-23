@@ -15,15 +15,20 @@ export async function fetchSchoolOverview(
 		throw new Error('Missing school context for dashboard overview');
 	}
 
+	const scope = academicContext.resolveSelectionForApi();
+	if (!scope) {
+		return null;
+	}
+
 	try {
 		return await client.queries.getSchoolOverview({
 			schoolId,
-			academicYearId: academicContext.yearId,
-			academicPeriodId: academicContext.periodId,
+			academicYearId: scope.academicYearId,
+			academicPeriodId: scope.academicPeriodId,
 		});
 	}
 	catch (error) {
-		if (error instanceof ApiError && error.status === 403) {
+		if (error instanceof ApiError && (error.status === 403 || error.status === 422)) {
 			return null;
 		}
 		throw error;

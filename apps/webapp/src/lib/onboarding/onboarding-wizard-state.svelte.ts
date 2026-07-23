@@ -1,5 +1,6 @@
 import type { OnboardingStep } from '$lib/onboarding/types';
 import { redirectPathIfAuthenticated } from '$lib/auth/resolve-post-auth';
+import { academicContext } from '$lib/academic/context.svelte';
 import { authSession } from '$lib/auth/session.svelte';
 import { isOnboardingSkipEnabled } from '$lib/env/app-env';
 import { appGoto, appPath } from '$lib/navigation/app-navigation';
@@ -19,7 +20,11 @@ import {
 	previousOnboardingStep,
 } from '$lib/onboarding/steps';
 import { submitCompleteOnboardingStep } from '$lib/onboarding/submit-complete-step';
-import { submitSchoolOnboardingStep } from '$lib/onboarding/submit-school-step';
+import {
+	persistOnboardingFinalizeDebugSnapshot,
+	shouldClearOnboardingDraftAfterFinalize,
+} from '$lib/onboarding/debug-storage';
+import { submitSchoolOnboardingStep, scheduleAppShellBootstrapAfterSchoolStep } from '$lib/onboarding/submit-school-step';
 import { submitStaffOnboardingStep } from '$lib/onboarding/submit-staff-step';
 import { submitStructureOnboardingStep } from '$lib/onboarding/submit-structure-step';
 import { fetchServerOnboardingAccountStatus } from '$lib/onboarding/sync-account-status';
@@ -123,7 +128,12 @@ export class OnboardingWizardState {
 
 		if (merged.wizardCompleted) {
 			onboardingContext.markWizardCompleted();
-			onboardingContext.clearStoredDraft();
+			if (shouldClearOnboardingDraftAfterFinalize()) {
+				onboardingContext.clearStoredDraft();
+			}
+			else {
+				onboardingContext.persist();
+			}
 			const target = redirectPathIfAuthenticated();
 			if (target) {
 				appGoto(target, { replaceState: true });
@@ -174,8 +184,10 @@ export class OnboardingWizardState {
 				if (!onboardingContext.draft.schoolStepSubmitted) {
 					onboardingContext.markSchoolStepSubmitted(result.schoolId);
 				}
+				academicContext.applyOnboardingSelection(result.yearId, result.periodId);
 				onboardingContext.markStepReached(this.nextStep);
 				appGoto(writeOnboardingStepUrl(this.getUrl(), this.nextStep));
+				scheduleAppShellBootstrapAfterSchoolStep();
 			}
 			finally {
 				this.busy = false;
@@ -248,9 +260,21 @@ export class OnboardingWizardState {
 		}
 
 		onboardingContext.markWizardCompleted();
-		onboardingContext.clearStoredDraft();
+		if (shouldClearOnboardingDraftAfterFinalize()) {
+			onboardingContext.clearStoredDraft();
+		}
+		else {
+			onboardingContext.persist();
+		}
 
 		const target = redirectPathIfAuthenticated();
+		persistOnboardingFinalizeDebugSnapshot({
+			authUserId: authSession.authUserId,
+			schoolId: authSession.schoolId,
+			serverStatus: authSession.serverOnboardingStatus,
+			draft: onboardingContext.draft,
+			redirectTarget: target,
+		});
 		if (target) {
 			appGoto(target, { replaceState: true });
 		}

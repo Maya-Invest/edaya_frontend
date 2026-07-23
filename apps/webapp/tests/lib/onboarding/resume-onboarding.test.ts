@@ -60,10 +60,23 @@ describe('resume onboarding', () => {
 		});
 	});
 
-	it('resumes at step 1 for linked users without a stored draft', () => {
+	it('does not resume for school-step stub at step 1 (app shell init artifact)', () => {
 		withSessionStorage(() => {
-			expect(shouldContinueOnboarding('user-no-draft', 'sch-1')).toBe(true);
-			expect(onboardingResumePath('user-no-draft', 'sch-1')).toBe('/onboarding?step=1');
+			const authUserId = 'user-stub';
+			const draft = createEmptyDraft();
+			draft.schoolStepSubmitted = true;
+			draft.registeredSchoolId = 'sch-1';
+			saveDraft(authUserId, draft);
+
+			expect(shouldContinueOnboarding(authUserId, 'sch-1')).toBe(false);
+			expect(onboardingResumePath(authUserId, 'sch-1')).toBeNull();
+		});
+	});
+
+	it('does not resume linked users without draft or server status (post-wizard cleanup)', () => {
+		withSessionStorage(() => {
+			expect(shouldContinueOnboarding('user-no-draft', 'sch-1')).toBe(false);
+			expect(onboardingResumePath('user-no-draft', 'sch-1')).toBeNull();
 		});
 	});
 

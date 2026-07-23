@@ -891,6 +891,7 @@ export const fr: Dict = {
 	'academic.cancel': 'Annuler',
 	'academic.save': 'Enregistrer',
 	'academic.noPublishedPeriods': 'Aucune période publiée pour cette année.',
+	'academic.noPeriodsForYear': 'Aucune période pour cette année scolaire.',
 	'academic.toastYearCreated': 'Année scolaire {label} créée (brouillon).',
 	'academic.toastYearPublished': 'Année scolaire {label} publiée.',
 	'academic.toastPeriodPublished': 'Période {label} publiée.',

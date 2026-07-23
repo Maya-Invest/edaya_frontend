@@ -898,6 +898,7 @@ export const en: Dict = {
 	'academic.cancel': 'Cancel',
 	'academic.save': 'Save',
 	'academic.noPublishedPeriods': 'No published periods for this year.',
+	'academic.noPeriodsForYear': 'No periods for this school year.',
 	'academic.toastYearCreated': 'Academic year {label} created (draft).',
 	'academic.toastYearPublished': 'Academic year {label} published.',
 	'academic.toastPeriodPublished': 'Period {label} published.',
