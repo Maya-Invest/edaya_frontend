@@ -4,9 +4,11 @@ import {
 	canImportValidatedTeachers,
 	validateTeacherImportRows,
 } from '$lib/import/teachers/validator';
+import { normalizeImportCode } from '$lib/import/shared/normalize-import-code';
 
 function row(overrides: Partial<TeacherImportRow> & Pick<TeacherImportRow, 'rowIndex'>): TeacherImportRow {
 	return {
+		code: 'ENS-001',
 		prenom: 'Jean',
 		nom: 'Dupont',
 		email: 'jean@example.com',
@@ -18,7 +20,7 @@ describe('validateTeacherImportRows', () => {
 	it('accepts valid rows', () => {
 		const result = validateTeacherImportRows([
 			row({ rowIndex: 2 }),
-			row({ rowIndex: 3, prenom: 'Marie', nom: 'Martin', email: 'marie@example.com' }),
+			row({ rowIndex: 3, code: 'ENS-002', prenom: 'Marie', nom: 'Martin', email: 'marie@example.com' }),
 		]);
 		expect(result.validRows).toHaveLength(2);
 		expect(canImportValidatedTeachers(result)).toBe(true);
@@ -26,11 +28,13 @@ describe('validateTeacherImportRows', () => {
 
 	it('rejects missing required fields', () => {
 		const result = validateTeacherImportRows([
-			row({ rowIndex: 2, prenom: '' }),
-			row({ rowIndex: 3, nom: '' }),
+			row({ rowIndex: 2, code: '' }),
+			row({ rowIndex: 3, code: 'ENS-003', prenom: '' }),
+			row({ rowIndex: 4, code: 'ENS-004', nom: '' }),
 		]);
 		expect(result.validRows).toHaveLength(0);
-		expect(result.errors.length).toBeGreaterThanOrEqual(2);
+		expect(result.errors.length).toBeGreaterThanOrEqual(3);
+		expect(result.errors.some(issue => issue.column === 'code')).toBe(true);
 	});
 
 	it('warns on invalid email but still imports', () => {
@@ -41,12 +45,22 @@ describe('validateTeacherImportRows', () => {
 		expect(result.warnings[0]?.messageKey).toBe('import.teachers.validation.invalidEmail');
 	});
 
-	it('rejects duplicate teacher in file', () => {
+	it('rejects duplicate code in file', () => {
 		const result = validateTeacherImportRows([
-			{ rowIndex: 2, prenom: 'Jean', nom: 'Dupont' },
-			{ rowIndex: 3, prenom: 'Jean', nom: 'Dupont' },
+			row({ rowIndex: 2, code: 'ENS-001' }),
+			row({ rowIndex: 3, code: 'ens-001', prenom: 'Marie', nom: 'Martin', email: 'marie@example.com' }),
 		]);
 		expect(result.validRows).toHaveLength(1);
-		expect(result.errors[0]?.messageKey).toBe('import.teachers.validation.duplicateInFile');
+		expect(result.errors[0]?.messageKey).toBe('import.teachers.validation.duplicateCodeInFile');
+		expect(result.errors[0]?.messageParams).toEqual({ row: 2 });
+	});
+
+	it('rejects duplicate code vs existingCodes', () => {
+		const result = validateTeacherImportRows(
+			[row({ rowIndex: 2, code: 'ENS-010' })],
+			{ existingCodes: new Set([normalizeImportCode('ENS-010')]) },
+		);
+		expect(result.validRows).toHaveLength(0);
+		expect(result.errors[0]?.messageKey).toBe('import.teachers.validation.duplicateCodeExisting');
 	});
 });

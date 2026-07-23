@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Regénère tous les jeux de données Excel QA (classes, élèves, matières, tuteurs, personnel, enseignants, chapitres, facturation, paiements).
  * Run: bun edaya_web/docs/qa/import-fixtures/generate-all-fixtures.ts
  */
@@ -15,6 +15,7 @@ const packs = [
 	'guardians/generate-fixtures.ts',
 	'staff/generate-fixtures.ts',
 	'teachers/generate-fixtures.ts',
+	'teacher-assignments/generate-fixtures.ts',
 	'chapters/generate-fixtures.ts',
 	'billing/generate-fixtures.ts',
 	'payments/generate-fixtures.ts',

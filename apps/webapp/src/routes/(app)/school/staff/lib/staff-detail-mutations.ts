@@ -63,6 +63,7 @@ export async function createStaffOnPage(
 	input: {
 		firstName: string;
 		lastName: string;
+		code?: string;
 		email?: string;
 		sendAccountInvitation?: boolean;
 		successMessage?: string;
@@ -71,6 +72,7 @@ export async function createStaffOnPage(
 	const client = getBrowserSchoolClient();
 	const id = `stf-${Date.now().toString(36)}`;
 	const email = input.email?.trim() ?? '';
+	const code = input.code?.trim() ?? '';
 	const optimistic = buildOptimisticStaff({ id, ...input });
 
 	const result = await runStaffRouteMutation({
@@ -79,6 +81,7 @@ export async function createStaffOnPage(
 			schoolId: schoolId(),
 			firstName: input.firstName.trim(),
 			lastName: input.lastName.trim(),
+			code: code || null,
 			email: email || null,
 			accountKind: 'human',
 			isActive: true,

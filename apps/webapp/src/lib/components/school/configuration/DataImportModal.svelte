@@ -27,9 +27,18 @@
 	import type { SubjectImportRow, SubjectImportValidationResult } from '$lib/import/subjects/types';
 	import type { TeacherImportRunResult } from '$lib/import/teachers/runner';
 	import type { TeacherImportRow, TeacherImportValidationResult } from '$lib/import/teachers/types';
+	import type { TeacherAssignmentImportRunResult } from '$lib/import/teacher-assignments/runner';
+	import type {
+		TeacherAssignmentImportClassSubjectOption,
+		TeacherAssignmentImportRow,
+		TeacherAssignmentImportTeacherOption,
+		TeacherAssignmentImportValidationResult,
+	} from '$lib/import/teacher-assignments/types';
+	import type { SchoolSubjectCatalogEntry } from '$lib/import/shared/load-school-subject-names';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { authSession } from '$lib/auth/session.svelte';
+	import { resolveGradeLevelKeyForClassId } from '$lib/school/next-class-group-id';
 	import ImportFileDropzone from '$lib/components/school/configuration/ImportFileDropzone.svelte';
 	import ImportProgressBar from '$lib/components/school/configuration/ImportProgressBar.svelte';
 	import ImportValidationTable from '$lib/components/school/configuration/ImportValidationTable.svelte';
@@ -85,6 +94,12 @@
 		loadChapterImportContext,
 	} from '$lib/import/shared/load-chapter-import-context';
 	import {
+		loadGuardianCodeIndex,
+		loadPaymentReferenceIndex,
+		loadStaffCodeIndex,
+		loadTeacherCodeIndex,
+	} from '$lib/import/shared/load-person-code-index';
+	import {
 		loadStudentMatriculeIndex,
 	} from '$lib/import/shared/load-student-matricule-index';
 	import { loadExistingSubjectImportKeys } from '$lib/import/shared/load-subject-import-context';
@@ -118,6 +133,17 @@
 		canImportValidatedTeachers,
 		validateTeacherImportRows,
 	} from '$lib/import/teachers/validator';
+	import { parseTeacherAssignmentImportFile } from '$lib/import/teacher-assignments/parser';
+	import { runTeacherAssignmentImport } from '$lib/import/teacher-assignments/runner';
+	import {
+		canImportValidatedTeacherAssignments,
+		validateTeacherAssignmentImportRows,
+	} from '$lib/import/teacher-assignments/validator';
+	import {
+		loadTeacherAssignmentImportClassSubjects,
+		loadTeacherAssignmentImportTeachers,
+	} from '$lib/import/shared/load-teacher-assignment-import-context';
+	import { loadSchoolSubjectCatalog } from '$lib/import/shared/load-school-subject-names';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { notifyStaffListChanged } from '$lib/staff/notify-staff-list-changed';
 	import { notifyStudentsListChanged } from '$lib/students/notify-students-list-changed';
@@ -167,6 +193,12 @@
 		empty_file: 'import.teachers.emptyFile',
 	};
 
+	const TEACHER_ASSIGNMENT_PARSE_ERROR_KEYS: Record<string, string> = {
+		unsupported_format: 'import.teacherAssignments.unsupportedFormat',
+		file_too_large: 'import.teacherAssignments.fileTooLarge',
+		empty_file: 'import.teacherAssignments.emptyFile',
+	};
+
 	const SUBJECT_PARSE_ERROR_KEYS: Record<string, string> = {
 		unsupported_format: 'import.subjects.unsupportedFormat',
 		file_too_large: 'import.subjects.fileTooLarge',
@@ -207,6 +239,7 @@
 	};
 
 	const GUARDIAN_COLUMN_LABEL_KEYS: Record<string, string> = {
+		code: 'import.types.guardians.columns.code',
 		prenom: 'import.types.guardians.columns.prenom',
 		nom: 'import.types.guardians.columns.nom',
 		email: 'import.types.guardians.columns.email',
@@ -215,6 +248,7 @@
 	};
 
 	const STAFF_COLUMN_LABEL_KEYS: Record<string, string> = {
+		code: 'import.types.staff.columns.code',
 		prenom: 'import.types.staff.columns.prenom',
 		nom: 'import.types.staff.columns.nom',
 		email: 'import.types.staff.columns.email',
@@ -223,10 +257,17 @@
 	};
 
 	const TEACHER_COLUMN_LABEL_KEYS: Record<string, string> = {
+		code: 'import.types.teachers.columns.code',
 		prenom: 'import.types.teachers.columns.prenom',
 		nom: 'import.types.teachers.columns.nom',
 		email: 'import.types.teachers.columns.email',
 		telephone: 'import.types.teachers.columns.telephone',
+	};
+
+	const TEACHER_ASSIGNMENT_COLUMN_LABEL_KEYS: Record<string, string> = {
+		code: 'import.types.teacherAssignments.columns.code',
+		classe: 'import.types.teacherAssignments.columns.classe',
+		matiere: 'import.types.teacherAssignments.columns.matiere',
 	};
 
 	const SUBJECT_COLUMN_LABEL_KEYS: Record<string, string> = {
@@ -277,6 +318,7 @@
 	let guardianParsedRows = $state<GuardianImportRow[]>([]);
 	let staffParsedRows = $state<StaffImportRow[]>([]);
 	let teacherParsedRows = $state<TeacherImportRow[]>([]);
+	let teacherAssignmentParsedRows = $state<TeacherAssignmentImportRow[]>([]);
 	let subjectParsedRows = $state<SubjectImportRow[]>([]);
 	let chapterParsedRows = $state<ChapterImportRow[]>([]);
 	let paymentParsedRows = $state<PaymentImportRow[]>([]);
@@ -287,6 +329,7 @@
 	let guardianValidationResult = $state<GuardianImportValidationResult | null>(null);
 	let staffValidationResult = $state<StaffImportValidationResult | null>(null);
 	let teacherValidationResult = $state<TeacherImportValidationResult | null>(null);
+	let teacherAssignmentValidationResult = $state<TeacherAssignmentImportValidationResult | null>(null);
 	let subjectValidationResult = $state<SubjectImportValidationResult | null>(null);
 	let chapterValidationResult = $state<ChapterImportValidationResult | null>(null);
 	let paymentValidationResult = $state<PaymentImportValidationResult | null>(null);
@@ -295,14 +338,27 @@
 	let studentMatriculeIndex = $state<Map<string, StudentMatriculeEntry>>(new Map());
 	let existingMatricules = $state<Set<string>>(new Set());
 	let loadingMatricules = $state(false);
+	let existingTeacherCodes = $state<Set<string>>(new Set());
+	let existingStaffCodes = $state<Set<string>>(new Set());
+	let existingGuardianCodes = $state<Set<string>>(new Set());
+	let existingPaymentReferences = $state<Set<string>>(new Set());
+	let loadingTeacherCodes = $state(false);
+	let loadingStaffCodes = $state(false);
+	let loadingGuardianCodes = $state(false);
+	let loadingPaymentReferences = $state(false);
 	let subjectImportExistingKeys = $state<Set<string>>(new Set());
 	let loadingSubjectImportContext = $state(false);
 	let chapterImportContext = $state<ChapterImportCatalogTarget[]>([]);
+	let existingChapterKeys = $state<Set<string>>(new Set());
 	let loadingChapterContext = $state(false);
 	let paymentImportContext = $state<PaymentImportValidationContext | null>(null);
 	let loadingPaymentContext = $state(false);
 	let billingImportContext = $state<BillingImportValidationContext | null>(null);
 	let loadingBillingContext = $state(false);
+	let teacherAssignmentTeachers = $state<TeacherAssignmentImportTeacherOption[]>([]);
+	let teacherAssignmentClassSubjects = $state<TeacherAssignmentImportClassSubjectOption[]>([]);
+	let teacherAssignmentSubjectCatalog = $state<SchoolSubjectCatalogEntry[]>([]);
+	let loadingTeacherAssignmentContext = $state(false);
 	let preparingValidation = $state(false);
 	let importing = $state(false);
 	let importProgress = $state({ current: 0, total: 0 });
@@ -311,6 +367,7 @@
 	let guardianImportResult = $state<GuardianImportRunResult | null>(null);
 	let staffImportResult = $state<StaffImportRunResult | null>(null);
 	let teacherImportResult = $state<TeacherImportRunResult | null>(null);
+	let teacherAssignmentImportResult = $state<TeacherAssignmentImportRunResult | null>(null);
 	let subjectImportResult = $state<SubjectImportRunResult | null>(null);
 	let chapterImportResult = $state<ChapterImportRunResult | null>(null);
 	let paymentImportResult = $state<PaymentImportRunResult | null>(null);
@@ -322,7 +379,6 @@
 	const guardiansHref = appPath('/(app)/school/guardians/[[id]]');
 	const staffHref = appPath('/(app)/school/staff/[[id]]');
 	const teachersHref = appPath('/(app)/school/teachers/[[id]]');
-	const teacherAssignmentsHref = appPath('/(app)/configuration/tools/teacher-assignments');
 	const subjectsHref = appPath('/(app)/configuration/subjects/[[id]]');
 	const billingHref = appPath('/(app)/finance/billing/[[id]]');
 	const selectedDefinition = $derived(getImportTypeDefinition(selectedImportType));
@@ -331,12 +387,13 @@
 	const isGuardiansImport = $derived(selectedImportType === 'guardians');
 	const isStaffImport = $derived(selectedImportType === 'staff');
 	const isTeachersImport = $derived(selectedImportType === 'teachers');
+	const isTeacherAssignmentsImport = $derived(selectedImportType === 'teacher_assignments');
 	const isSubjectsImport = $derived(selectedImportType === 'subjects');
 	const isChaptersImport = $derived(selectedImportType === 'chapters');
 	const isBillingImport = $derived(selectedImportType === 'billing');
 	const isPaymentsImport = $derived(selectedImportType === 'payments');
 	const isWiredImport = $derived(
-		isStudentsImport || isClassesImport || isGuardiansImport || isStaffImport || isTeachersImport || isSubjectsImport || isChaptersImport || isBillingImport || isPaymentsImport,
+		isStudentsImport || isClassesImport || isGuardiansImport || isStaffImport || isTeachersImport || isTeacherAssignmentsImport || isSubjectsImport || isChaptersImport || isBillingImport || isPaymentsImport,
 	);
 	const isActiveImport = $derived(selectedDefinition.status === 'active');
 	const showsMultiValueSeparator = $derived(importTypeHasMultiValueColumns(selectedDefinition));
@@ -350,6 +407,7 @@
 		return {
 			studentMatricules: studentMatriculeIndex,
 			multiValueSeparator: importPreferences.multiValueSeparator,
+			existingCodes: existingGuardianCodes,
 		};
 	}
 
@@ -364,6 +422,7 @@
 	const guardianPreviewRows = $derived(guardianParsedRows.slice(0, 3));
 	const staffPreviewRows = $derived(staffParsedRows.slice(0, 3));
 	const teacherPreviewRows = $derived(teacherParsedRows.slice(0, 3));
+	const teacherAssignmentPreviewRows = $derived(teacherAssignmentParsedRows.slice(0, 3));
 	const subjectPreviewRows = $derived(subjectParsedRows.slice(0, 3));
 	const chapterPreviewRows = $derived(chapterParsedRows.slice(0, 3));
 	const paymentPreviewRows = $derived(paymentParsedRows.slice(0, 3));
@@ -386,6 +445,9 @@
 		if (isTeachersImport) {
 			return teacherParsedRows.length;
 		}
+		if (isTeacherAssignmentsImport) {
+			return teacherAssignmentParsedRows.length;
+		}
 		if (isSubjectsImport) {
 			return subjectParsedRows.length;
 		}
@@ -406,6 +468,9 @@
 			return false;
 		}
 		if (isSubjectsImport && !hasClasses) {
+			return false;
+		}
+		if (isTeacherAssignmentsImport && (!hasClasses || teacherAssignmentTeachers.length === 0 || teacherAssignmentClassSubjects.length === 0)) {
 			return false;
 		}
 		if (isPaymentsImport && !hasStudents) {
@@ -433,6 +498,9 @@
 	const canStartGuardianImport = $derived(canImportValidatedGuardians(guardianValidationResult));
 	const canStartStaffImport = $derived(canImportValidatedStaff(staffValidationResult));
 	const canStartTeacherImport = $derived(canImportValidatedTeachers(teacherValidationResult));
+	const canStartTeacherAssignmentImport = $derived(
+		canImportValidatedTeacherAssignments(teacherAssignmentValidationResult),
+	);
 	const canStartSubjectImport = $derived(canImportValidatedSubjects(subjectValidationResult));
 	const canStartChapterImport = $derived(canImportValidatedChapters(chapterValidationResult));
 	const canStartPaymentImport = $derived(canImportValidatedPayments(paymentValidationResult));
@@ -457,6 +525,9 @@
 		}
 		if (isTeachersImport) {
 			return canStartTeacherImport;
+		}
+		if (isTeacherAssignmentsImport) {
+			return canStartTeacherAssignmentImport;
 		}
 		if (isSubjectsImport) {
 			return canStartSubjectImport;
@@ -488,6 +559,9 @@
 		if (isTeachersImport) {
 			return teacherValidationResult;
 		}
+		if (isTeacherAssignmentsImport) {
+			return teacherAssignmentValidationResult;
+		}
 		if (isSubjectsImport) {
 			return subjectValidationResult;
 		}
@@ -507,6 +581,7 @@
 		...(studentValidationResult?.errors ?? []),
 		...(studentValidationResult?.warnings ?? []),
 	]);
+	const studentBlockedValidationCount = $derived(studentValidationResult?.errors.length ?? 0);
 	const classValidationIssues = $derived([
 		...(classValidationResult?.errors ?? []),
 		...(classValidationResult?.warnings ?? []),
@@ -522,6 +597,10 @@
 	const teacherValidationIssues = $derived([
 		...(teacherValidationResult?.errors ?? []),
 		...(teacherValidationResult?.warnings ?? []),
+	]);
+	const teacherAssignmentValidationIssues = $derived([
+		...(teacherAssignmentValidationResult?.errors ?? []),
+		...(teacherAssignmentValidationResult?.warnings ?? []),
 	]);
 	const subjectValidationIssues = $derived([
 		...(subjectValidationResult?.errors ?? []),
@@ -555,6 +634,9 @@
 		if (isTeachersImport) {
 			return $t('import.teachers.importReady', { n: activeValidRowCount });
 		}
+		if (isTeacherAssignmentsImport) {
+			return $t('import.teacherAssignments.importReady', { n: activeValidRowCount });
+		}
 		if (isSubjectsImport) {
 			return $t('import.subjects.importReady', { n: activeValidRowCount });
 		}
@@ -568,6 +650,15 @@
 	});
 	const showSubjectsPrerequisite = $derived(
 		isSubjectsImport && step === 'download' && !hasClasses,
+	);
+	const showTeacherAssignmentsPrerequisite = $derived(
+		isTeacherAssignmentsImport
+		&& step === 'download'
+		&& (
+			!hasClasses
+			|| (teacherAssignmentTeachers.length === 0 && !loadingTeacherAssignmentContext)
+			|| (teacherAssignmentClassSubjects.length === 0 && !loadingTeacherAssignmentContext)
+		),
 	);
 	const showPaymentsPrerequisite = $derived(
 		isPaymentsImport && step === 'download' && !hasStudents,
@@ -593,6 +684,7 @@
 		guardianParsedRows = [];
 		staffParsedRows = [];
 		teacherParsedRows = [];
+		teacherAssignmentParsedRows = [];
 		subjectParsedRows = [];
 		chapterParsedRows = [];
 		paymentParsedRows = [];
@@ -604,6 +696,7 @@
 		guardianValidationResult = null;
 		staffValidationResult = null;
 		teacherValidationResult = null;
+		teacherAssignmentValidationResult = null;
 		subjectValidationResult = null;
 		chapterValidationResult = null;
 		paymentValidationResult = null;
@@ -615,6 +708,7 @@
 		guardianImportResult = null;
 		staffImportResult = null;
 		teacherImportResult = null;
+		teacherAssignmentImportResult = null;
 		subjectImportResult = null;
 		chapterImportResult = null;
 		paymentImportResult = null;
@@ -622,10 +716,18 @@
 		importFatalError = '';
 		studentMatriculeIndex = new Map();
 		existingMatricules = new Set();
+		existingTeacherCodes = new Set();
+		existingStaffCodes = new Set();
+		existingGuardianCodes = new Set();
+		existingPaymentReferences = new Set();
 		subjectImportExistingKeys = new Set();
 		chapterImportContext = [];
+		existingChapterKeys = new Set();
 		paymentImportContext = null;
 		billingImportContext = null;
+		teacherAssignmentTeachers = [];
+		teacherAssignmentClassSubjects = [];
+		teacherAssignmentSubjectCatalog = [];
 	}
 
 	function handleOpenChange(next: boolean) {
@@ -634,9 +736,14 @@
 			selectedImportType = initialImportType;
 			resetWizard();
 			void loadStudentMatriculeDataIfNeeded();
+			void loadTeacherCodeIndexIfNeeded();
+			void loadStaffCodeIndexIfNeeded();
+			void loadGuardianCodeIndexIfNeeded();
+			void loadPaymentReferenceIndexIfNeeded();
 			void loadChapterImportContextIfNeeded();
 			void loadPaymentImportContextIfNeeded();
 			void loadBillingImportContextIfNeeded();
+			void loadTeacherAssignmentImportContextIfNeeded();
 			return;
 		}
 		resetWizard();
@@ -650,9 +757,14 @@
 		selectedImportType = importType;
 		resetWizard();
 		void loadStudentMatriculeDataIfNeeded();
+		void loadTeacherCodeIndexIfNeeded();
+		void loadStaffCodeIndexIfNeeded();
+		void loadGuardianCodeIndexIfNeeded();
+		void loadPaymentReferenceIndexIfNeeded();
 		void loadChapterImportContextIfNeeded();
 		void loadPaymentImportContextIfNeeded();
 		void loadBillingImportContextIfNeeded();
+		void loadTeacherAssignmentImportContextIfNeeded();
 	}
 
 	function stepIndex(value: ImportStep): number {
@@ -676,6 +788,9 @@
 		else if (isTeachersImport) {
 			keyMap = TEACHER_PARSE_ERROR_KEYS;
 		}
+		else if (isTeacherAssignmentsImport) {
+			keyMap = TEACHER_ASSIGNMENT_PARSE_ERROR_KEYS;
+		}
 		else if (isStaffImport) {
 			keyMap = STAFF_PARSE_ERROR_KEYS;
 		}
@@ -695,6 +810,7 @@
 		guardianParsedRows = [];
 		staffParsedRows = [];
 		teacherParsedRows = [];
+		teacherAssignmentParsedRows = [];
 		subjectParsedRows = [];
 		chapterParsedRows = [];
 		paymentParsedRows = [];
@@ -705,6 +821,7 @@
 		guardianValidationResult = null;
 		staffValidationResult = null;
 		teacherValidationResult = null;
+		teacherAssignmentValidationResult = null;
 		subjectValidationResult = null;
 		chapterValidationResult = null;
 		paymentValidationResult = null;
@@ -776,7 +893,7 @@
 		}
 		loadingChapterContext = true;
 		try {
-			chapterImportContext = await loadChapterImportContext(
+			const loaded = await loadChapterImportContext(
 				getBrowserSchoolClient(),
 				academicContext.classes.map(classGroup => ({
 					id: classGroup.id,
@@ -788,9 +905,12 @@
 					name: gradeLevel.name,
 				})),
 			);
+			chapterImportContext = loaded.targets;
+			existingChapterKeys = loaded.existingChapterKeys;
 		}
 		catch {
 			chapterImportContext = [];
+			existingChapterKeys = new Set();
 		}
 		finally {
 			loadingChapterContext = false;
@@ -818,6 +938,85 @@
 		}
 	}
 
+	async function loadTeacherCodeIndexIfNeeded() {
+		if (!isTeachersImport) {
+			return;
+		}
+		if (loadingTeacherCodes || existingTeacherCodes.size > 0) {
+			return;
+		}
+		loadingTeacherCodes = true;
+		try {
+			const index = await loadTeacherCodeIndex();
+			existingTeacherCodes = new Set(index.keys());
+		}
+		catch {
+			existingTeacherCodes = new Set();
+		}
+		finally {
+			loadingTeacherCodes = false;
+		}
+	}
+
+	async function loadStaffCodeIndexIfNeeded() {
+		if (!isStaffImport) {
+			return;
+		}
+		if (loadingStaffCodes || existingStaffCodes.size > 0) {
+			return;
+		}
+		loadingStaffCodes = true;
+		try {
+			const index = await loadStaffCodeIndex();
+			existingStaffCodes = new Set(index.keys());
+		}
+		catch {
+			existingStaffCodes = new Set();
+		}
+		finally {
+			loadingStaffCodes = false;
+		}
+	}
+
+	async function loadGuardianCodeIndexIfNeeded() {
+		if (!isGuardiansImport) {
+			return;
+		}
+		if (loadingGuardianCodes || existingGuardianCodes.size > 0) {
+			return;
+		}
+		loadingGuardianCodes = true;
+		try {
+			const index = await loadGuardianCodeIndex();
+			existingGuardianCodes = new Set(index.keys());
+		}
+		catch {
+			existingGuardianCodes = new Set();
+		}
+		finally {
+			loadingGuardianCodes = false;
+		}
+	}
+
+	async function loadPaymentReferenceIndexIfNeeded() {
+		if (!isPaymentsImport) {
+			return;
+		}
+		if (loadingPaymentReferences || existingPaymentReferences.size > 0) {
+			return;
+		}
+		loadingPaymentReferences = true;
+		try {
+			existingPaymentReferences = new Set(await loadPaymentReferenceIndex());
+		}
+		catch {
+			existingPaymentReferences = new Set();
+		}
+		finally {
+			loadingPaymentReferences = false;
+		}
+	}
+
 	async function loadSubjectImportContextIfNeeded() {
 		if (!isSubjectsImport) {
 			return;
@@ -837,6 +1036,42 @@
 		}
 		finally {
 			loadingSubjectImportContext = false;
+		}
+	}
+
+	async function loadTeacherAssignmentImportContextIfNeeded() {
+		if (!isTeacherAssignmentsImport) {
+			return;
+		}
+		if (loadingTeacherAssignmentContext) {
+			return;
+		}
+		const schoolId = authSession.schoolId;
+		if (!schoolId) {
+			teacherAssignmentTeachers = [];
+			teacherAssignmentClassSubjects = [];
+			teacherAssignmentSubjectCatalog = [];
+			return;
+		}
+		loadingTeacherAssignmentContext = true;
+		try {
+			const client = getBrowserSchoolClient();
+			const [teachers, classSubjects, subjectCatalog] = await Promise.all([
+				loadTeacherAssignmentImportTeachers(client, schoolId),
+				loadTeacherAssignmentImportClassSubjects(client),
+				loadSchoolSubjectCatalog(),
+			]);
+			teacherAssignmentTeachers = teachers;
+			teacherAssignmentClassSubjects = classSubjects;
+			teacherAssignmentSubjectCatalog = subjectCatalog;
+		}
+		catch {
+			teacherAssignmentTeachers = [];
+			teacherAssignmentClassSubjects = [];
+			teacherAssignmentSubjectCatalog = [];
+		}
+		finally {
+			loadingTeacherAssignmentContext = false;
 		}
 	}
 
@@ -875,12 +1110,25 @@
 		}
 
 		if (isStaffImport) {
-			staffValidationResult = validateStaffImportRows(staffParsedRows);
+			staffValidationResult = validateStaffImportRows(staffParsedRows, { existingCodes: existingStaffCodes });
 			return;
 		}
 
 		if (isTeachersImport) {
-			teacherValidationResult = validateTeacherImportRows(teacherParsedRows);
+			teacherValidationResult = validateTeacherImportRows(teacherParsedRows, { existingCodes: existingTeacherCodes });
+			return;
+		}
+
+		if (isTeacherAssignmentsImport) {
+			teacherAssignmentValidationResult = validateTeacherAssignmentImportRows(teacherAssignmentParsedRows, {
+				teachers: teacherAssignmentTeachers,
+				classes: academicContext.classes.map(classGroup => ({
+					id: classGroup.id,
+					name: classGroup.name,
+				})),
+				subjectCatalog: teacherAssignmentSubjectCatalog,
+				classSubjects: teacherAssignmentClassSubjects,
+			});
 			return;
 		}
 
@@ -900,7 +1148,10 @@
 		}
 
 		if (isPaymentsImport && paymentImportContext) {
-			paymentValidationResult = validatePaymentImportRows(paymentParsedRows, paymentImportContext);
+			paymentValidationResult = validatePaymentImportRows(paymentParsedRows, {
+				...paymentImportContext,
+				existingReferences: existingPaymentReferences,
+			});
 			return;
 		}
 
@@ -912,6 +1163,7 @@
 		if (isChaptersImport) {
 			chapterValidationResult = validateChapterImportRows(chapterParsedRows, {
 				catalogTargets: chapterImportContext,
+				existingChapterKeys,
 			});
 		}
 	}
@@ -928,7 +1180,12 @@
 		try {
 			await refreshStudentImportShellIfNeeded();
 			await loadStudentMatriculeDataIfNeeded();
+			await loadTeacherCodeIndexIfNeeded();
+			await loadStaffCodeIndexIfNeeded();
+			await loadGuardianCodeIndexIfNeeded();
+			await loadPaymentReferenceIndexIfNeeded();
 			await loadSubjectImportContextIfNeeded();
+			await loadTeacherAssignmentImportContextIfNeeded();
 			await loadChapterImportContextIfNeeded();
 			await loadPaymentImportContextIfNeeded();
 			await loadBillingImportContextIfNeeded();
@@ -943,7 +1200,11 @@
 	function buildClassSiblingCounts(): Record<string, number> {
 		const counts: Record<string, number> = {};
 		for (const classGroup of academicContext.classes) {
-			counts[classGroup.gradeLevelId] = (counts[classGroup.gradeLevelId] ?? 0) + 1;
+			const key = resolveGradeLevelKeyForClassId(
+				classGroup.gradeLevelId,
+				academicContext.gradeLevelById(classGroup.gradeLevelId)?.name,
+			);
+			counts[key] = (counts[key] ?? 0) + 1;
 		}
 		return counts;
 	}
@@ -1020,6 +1281,9 @@
 				rows: classValidationResult.validRows,
 				existingClassIds: academicContext.classes.map(classGroup => classGroup.id),
 				siblingCountByGrade: buildClassSiblingCounts(),
+				gradeLevelNameById: new Map(
+					academicContext.gradeLevels.map(level => [level.id, level.name]),
+				),
 				onProgress: (current, total) => {
 					importProgress = { current, total };
 				},
@@ -1166,6 +1430,47 @@
 		}
 	}
 
+	async function startTeacherAssignmentImport() {
+		if (!teacherAssignmentValidationResult || !canStartTeacherAssignmentImport || importing) {
+			return;
+		}
+
+		const academicYearId = academicContext.yearId;
+		if (!academicYearId) {
+			return;
+		}
+
+		importing = true;
+		teacherAssignmentImportResult = null;
+		importFatalError = '';
+		importProgress = { current: 0, total: teacherAssignmentValidationResult.validRows.length };
+		step = 'execute';
+
+		try {
+			teacherAssignmentImportResult = await runTeacherAssignmentImport({
+				academicYearId,
+				client: getBrowserSchoolClient(),
+				rows: teacherAssignmentValidationResult.validRows,
+				onProgress: (current, total) => {
+					importProgress = { current, total };
+				},
+			});
+		}
+		catch (error) {
+			importFatalError = error instanceof Error && error.message.trim().length > 0
+				? error.message
+				: get(t)('import.teacherAssignments.importFailed');
+			teacherAssignmentImportResult = {
+				created: 0,
+				failed: [],
+				assignmentIds: [],
+			};
+		}
+		finally {
+			importing = false;
+		}
+	}
+
 	async function startSubjectImport() {
 		if (!subjectValidationResult || !canStartSubjectImport || importing) {
 			return;
@@ -1299,6 +1604,10 @@
 			await startTeacherImport();
 			return;
 		}
+		if (isTeacherAssignmentsImport) {
+			await startTeacherAssignmentImport();
+			return;
+		}
 		if (isSubjectsImport) {
 			await startSubjectImport();
 			return;
@@ -1419,6 +1728,17 @@
 					parseErrorMessage = get(t)('import.teachers.emptyFile');
 				}
 			}
+			else if (isTeacherAssignmentsImport) {
+				const result = await parseTeacherAssignmentImportFile(file);
+				teacherAssignmentParsedRows = result.rows;
+
+				if (result.errors.length > 0) {
+					parseErrorMessage = formatParseError(result.errors[0]?.message ?? 'parse_error');
+				}
+				else if (result.rows.length === 0) {
+					parseErrorMessage = get(t)('import.teacherAssignments.emptyFile');
+				}
+			}
 			else if (isSubjectsImport) {
 				const result = await parseSubjectImportFile(file);
 				subjectParsedRows = result.rows;
@@ -1481,6 +1801,9 @@
 			else if (isTeachersImport) {
 				unsupportedFormatKey = 'import.teachers.unsupportedFormat';
 			}
+			else if (isTeacherAssignmentsImport) {
+				unsupportedFormatKey = 'import.teacherAssignments.unsupportedFormat';
+			}
 			else if (isStaffImport) {
 				unsupportedFormatKey = 'import.staff.unsupportedFormat';
 			}
@@ -1532,6 +1855,10 @@
 		<div class="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-6 py-4">
 			{#if step === 'download'}
 				<section class="space-y-4" data-testid="data-import-step-download">
+					<p class="rounded-lg border border-border bg-secondary/20 px-3 py-2 text-sm text-muted-foreground">
+						{$t('import.recommendedOrder')}
+					</p>
+
 					<div class="space-y-2">
 						<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 							{$t('import.typeSelectLabel')}
@@ -1566,6 +1893,10 @@
 					{#if showSubjectsPrerequisite}
 						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
 							{$t('import.subjects.prerequisiteMissing')}
+						</p>
+					{:else if showTeacherAssignmentsPrerequisite}
+						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
+							{$t('import.teacherAssignments.prerequisiteMissing')}
 						</p>
 					{:else if showPaymentsPrerequisite}
 						<p class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
@@ -1885,6 +2216,51 @@
 						</div>
 					{/if}
 				</section>
+			{:else if isTeacherAssignmentsImport && step === 'upload'}
+				<section class="space-y-4" data-testid="teacher-assignment-import-step-upload">
+					{#if showUploadDropzone}
+						<p class="text-sm text-muted-foreground">{$t('import.teacherAssignments.uploadHint')}</p>
+
+						<ImportFileDropzone
+							disabled={parsing}
+							errorMessage={parseErrorMessage}
+							{selectedFileName}
+							onFileSelected={handleFileSelected}
+						/>
+					{/if}
+
+					{#if parsing}
+						<div class="flex items-center gap-2 text-sm text-muted-foreground" data-testid="teacher-assignment-import-parsing">
+							<LoaderCircle class="size-4 animate-spin" aria-hidden="true" />
+							{$t('import.teacherAssignments.parsing')}
+						</div>
+					{:else if teacherAssignmentParsedRows.length > 0}
+						<div class="rounded-xl border border-border bg-secondary/20 p-4" data-testid="teacher-assignment-import-parse-success">
+							<p class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+								{$t('import.teacherAssignments.parseSuccess', { n: teacherAssignmentParsedRows.length })}
+							</p>
+
+							{#if teacherAssignmentPreviewRows.length > 0}
+								<p class="mt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+									{$t('import.teacherAssignments.parseRowPreview')}
+								</p>
+								<ul class="mt-2 space-y-1 text-sm">
+									{#each teacherAssignmentPreviewRows as row (row.rowIndex)}
+										<li>
+											<span class="font-mono text-xs text-muted-foreground">L{row.rowIndex}</span>
+											<span class="mx-2">·</span>
+											{row.code}
+											<span class="mx-2 text-muted-foreground">·</span>
+											{row.classe}
+											<span class="mx-2 text-muted-foreground">·</span>
+											{row.matiere}
+										</li>
+									{/each}
+								</ul>
+							{/if}
+						</div>
+					{/if}
+				</section>
 			{:else if isSubjectsImport && step === 'upload'}
 				<section class="space-y-4" data-testid="subject-import-step-upload">
 					{#if showUploadDropzone}
@@ -2197,6 +2573,34 @@
 						filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
 					/>
 				</section>
+			{:else if isTeacherAssignmentsImport && step === 'validate' && teacherAssignmentValidationResult}
+				<section class="space-y-4" data-testid="teacher-assignment-import-step-validate">
+					<ImportValidationSummary
+						readyCount={teacherAssignmentValidationResult.validRows.length}
+						errorCount={teacherAssignmentValidationResult.errors.length}
+						warningCount={teacherAssignmentValidationResult.warnings.length}
+						readyLabelKey="import.teacherAssignments.validation.summaryReady"
+						errorLabelKey="import.teacherAssignments.validation.summaryErrors"
+						warningLabelKey="import.teacherAssignments.validation.summaryWarnings"
+					/>
+
+					<ImportValidationTable
+						issues={teacherAssignmentValidationIssues}
+						columnLabelKeys={TEACHER_ASSIGNMENT_COLUMN_LABEL_KEYS}
+						suggestionsKey="import.teacherAssignments.validation.suggestions"
+					/>
+
+					<ImportReportDownload
+						definition={selectedDefinition}
+						rows={teacherAssignmentParsedRows}
+						errors={teacherAssignmentValidationResult.errors}
+						warnings={teacherAssignmentValidationResult.warnings}
+						validRowIndexes={new Set(teacherAssignmentValidationResult.validRows.map(row => row.rowIndex))}
+						phase="validate"
+						suggestionsKey="import.teacherAssignments.validation.suggestions"
+						filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
+					/>
+				</section>
 			{:else if isSubjectsImport && step === 'validate' && subjectValidationResult}
 				<section class="space-y-4" data-testid="subject-import-step-validate">
 					<ImportValidationSummary
@@ -2329,9 +2733,17 @@
 									{importFatalError}
 								</p>
 							{/if}
-							<div class="grid gap-2 sm:grid-cols-3">
+							<div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
 								<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
 									{$t('import.students.resultCreated', { n: studentImportResult.created })}
+								</p>
+								<p
+									class={cn(
+										'rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive',
+										studentBlockedValidationCount === 0 && 'opacity-60',
+									)}
+								>
+									{$t('import.students.resultBlocked', { n: studentBlockedValidationCount })}
 								</p>
 								<p
 									class={cn(
@@ -2351,8 +2763,20 @@
 								</p>
 							</div>
 
-							{#if studentImportResult.created === 0 && studentImportResult.failed.length === 0 && !importFatalError}
+							{#if studentImportResult.created === 0 && studentBlockedValidationCount === 0 && studentImportResult.failed.length === 0 && !importFatalError}
 								<p class="text-sm text-muted-foreground">{$t('import.students.resultNothing')}</p>
+							{/if}
+
+							{#if studentBlockedValidationCount > 0 && studentValidationResult}
+								<div class="space-y-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+									<p class="text-sm font-semibold text-destructive">
+										{$t('import.students.resultBlockedList')}
+									</p>
+									<ImportValidationTable
+										issues={studentValidationResult.errors}
+										columnLabelKeys={STUDENT_COLUMN_LABEL_KEYS}
+									/>
+								</div>
 							{/if}
 
 							{#if studentImportResult.warnings.length > 0}
@@ -2697,6 +3121,77 @@
 						</div>
 					{:else}
 						<p class="text-sm text-muted-foreground">{$t('import.teachers.resultUnexpected')}</p>
+					{/if}
+				</section>
+			{:else if isTeacherAssignmentsImport && step === 'execute'}
+				<section class="space-y-4" data-testid="teacher-assignment-import-step-execute">
+					{#if importing}
+						<p class="text-sm text-muted-foreground">{$t('import.teacherAssignments.executing')}</p>
+						<ImportProgressBar
+							current={importProgress.current}
+							total={importProgress.total}
+							label={$t('import.teacherAssignments.executeProgress', {
+								current: importProgress.current,
+								total: importProgress.total,
+							})}
+						/>
+					{:else if teacherAssignmentImportResult}
+						<div class="space-y-3">
+							<h3 class="text-sm font-semibold">{$t('import.teacherAssignments.resultTitle')}</h3>
+							{#if importFatalError}
+								<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+									{importFatalError}
+								</p>
+							{/if}
+							<div class="grid gap-2 sm:grid-cols-2">
+								<p class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900 dark:text-emerald-100">
+									{$t('import.teacherAssignments.resultCreated', { n: teacherAssignmentImportResult.created })}
+								</p>
+								<p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+									{$t('import.teacherAssignments.resultFailed', { n: teacherAssignmentImportResult.failed.length })}
+								</p>
+							</div>
+
+							{#if teacherAssignmentImportResult.created === 0 && teacherAssignmentImportResult.failed.length === 0 && !importFatalError}
+								<p class="text-sm text-muted-foreground">{$t('import.teacherAssignments.resultNothing')}</p>
+							{/if}
+
+							{#if teacherAssignmentImportResult.failed.length > 0}
+								<div class="rounded-xl border border-border bg-secondary/20 p-4">
+									<p class="mb-2 text-sm font-semibold">{$t('import.teacherAssignments.resultFailures')}</p>
+									<ul class="space-y-2 text-sm">
+										{#each teacherAssignmentImportResult.failed as failure (failure.rowIndex + failure.label)}
+											<li>
+												<span class="font-mono text-xs text-muted-foreground">L{failure.rowIndex}</span>
+												<span class="mx-2">·</span>
+												{failure.label}
+												<span class="mx-2 text-muted-foreground">—</span>
+												{failure.message}
+											</li>
+										{/each}
+									</ul>
+								</div>
+							{/if}
+
+							{#if teacherAssignmentValidationResult}
+								<ImportReportDownload
+									definition={selectedDefinition}
+									rows={teacherAssignmentParsedRows}
+									errors={teacherAssignmentValidationResult.errors}
+									warnings={teacherAssignmentValidationResult.warnings}
+									validRowIndexes={new Set(teacherAssignmentValidationResult.validRows.map(row => row.rowIndex))}
+									importFailures={teacherAssignmentImportResult.failed.map(failure => ({
+										rowIndex: failure.rowIndex,
+										message: failure.message,
+									}))}
+									phase="execute"
+									suggestionsKey="import.teacherAssignments.validation.suggestions"
+									filenameBase={importReportFilenameBase(selectedDefinition.csvFilename)}
+								/>
+							{/if}
+						</div>
+					{:else}
+						<p class="text-sm text-muted-foreground">{$t('import.teacherAssignments.resultUnexpected')}</p>
 					{/if}
 				</section>
 			{:else if isSubjectsImport && step === 'execute'}
@@ -3058,22 +3553,23 @@
 						onclick={() => {
 							notifyTeachersListChanged();
 							handleOpenChange(false);
-							void appGoto(teacherAssignmentsHref, { invalidateAll: true });
-						}}
-						data-testid="teacher-import-view-assignments"
-					>
-						{$t('import.teachers.viewAssignments')}
-					</Button>
-					<Button
-						variant="outline"
-						onclick={() => {
-							notifyTeachersListChanged();
-							handleOpenChange(false);
 							void appGoto(teachersHref, { invalidateAll: true });
 						}}
 						data-testid="teacher-import-view-teachers"
 					>
 						{$t('import.teachers.viewTeachers')}
+					</Button>
+				{/if}
+				{#if isTeacherAssignmentsImport && step === 'execute' && teacherAssignmentImportResult}
+					<Button
+						onclick={() => {
+							notifyTeachersListChanged();
+							handleOpenChange(false);
+							void appGoto(teachersHref, { invalidateAll: true });
+						}}
+						data-testid="teacher-assignment-import-view-teachers"
+					>
+						{$t('import.teacherAssignments.viewTeachers')}
 					</Button>
 				{/if}
 				{#if isSubjectsImport && step === 'execute' && subjectImportResult}

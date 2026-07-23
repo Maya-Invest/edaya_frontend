@@ -1,7 +1,7 @@
 import type { PermissionCode } from '$lib/auth/types';
 import type { LucideIcon } from '$lib/icons';
 
-export type ImportTypeKey = 'students' | 'guardians' | 'staff' | 'teachers' | 'classes' | 'subjects' | 'chapters' | 'billing' | 'payments';
+export type ImportTypeKey = 'students' | 'guardians' | 'staff' | 'teachers' | 'teacher_assignments' | 'classes' | 'subjects' | 'chapters' | 'billing' | 'payments';
 
 export type ImportTypeStatus = 'active' | 'template_only';
 

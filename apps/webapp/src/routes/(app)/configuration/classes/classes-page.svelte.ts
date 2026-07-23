@@ -25,22 +25,13 @@ import {
 	queryClassesListPage,
 } from './lib/classes-queries';
 import { runClassesRouteMutation } from './lib/classes-route-mutation';
+import { nextClassGroupIdFromExistingClasses } from '$lib/school/next-class-group-id';
 
 type StaffAssignment = components['schemas']['StaffAssignment'];
 
 const CLASSES_VERSION_FAMILIES = [] as const;
 
 const CLASSES_PAGE_STATE_KEY = Symbol('classes-page-state');
-
-const GRADE_CLASS_PREFIX: Record<string, string> = {
-	'gl-6': '6',
-	'gl-5': '5',
-	'gl-4': '4',
-	'gl-3': '3',
-	'gl-2': '2',
-	'gl-1': '1st',
-	'gl-t': 'term',
-};
 
 export type { ClassesPageSlice };
 
@@ -49,15 +40,11 @@ function schoolId(): string {
 }
 
 function nextClassId(gradeLevelId: string): string {
-	const prefix = GRADE_CLASS_PREFIX[gradeLevelId] ?? 'cls';
-	const siblings = academicContext.classes.filter(entry => entry.gradeLevelId === gradeLevelId);
-	let index = siblings.length;
-	let id = index === 0 && prefix === '2' ? '2nd' : `${prefix}${String.fromCharCode(97 + index)}`;
-	while (academicContext.classes.some(entry => entry.id === id)) {
-		index += 1;
-		id = `${prefix}${String.fromCharCode(97 + index)}`;
-	}
-	return id;
+	return nextClassGroupIdFromExistingClasses(
+		gradeLevelId,
+		academicContext.classes.map(entry => entry.id),
+		{ gradeLevelName: academicContext.gradeLevelById(gradeLevelId)?.name },
+	);
 }
 
 export class ClassesPageState {

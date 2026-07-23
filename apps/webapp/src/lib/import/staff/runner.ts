@@ -45,6 +45,7 @@ export async function runStaffImport(options: StaffImportRunOptions): Promise<St
 				staffId,
 				firstName: row.prenom,
 				lastName: row.nom,
+				code: row.code,
 				email: row.email,
 				sendAccountInvitation: false,
 				createdAt,

@@ -9,6 +9,7 @@ const { runGuardianImport } = await import('$lib/import/guardians/runner');
 
 function row(overrides: Partial<ValidatedGuardianImportRow> & Pick<ValidatedGuardianImportRow, 'rowIndex'>): ValidatedGuardianImportRow {
 	return {
+		code: 'TUT-001',
 		prenom: 'Aminata',
 		nom: 'Koné',
 		eleve_matricule: 'MAT-2024-001',
@@ -33,7 +34,14 @@ describe('guardian import runner', () => {
 			} as never,
 			rows: [
 				row({ rowIndex: 2 }),
-				row({ rowIndex: 3, prenom: 'Moussa', nom: 'Traoré', studentIds: ['stu-2'], eleve_matricule: 'MAT-2024-002' }),
+				row({
+					rowIndex: 3,
+					code: 'TUT-002',
+					prenom: 'Moussa',
+					nom: 'Traoré',
+					studentIds: ['stu-2'],
+					eleve_matricule: 'MAT-2024-002',
+				}),
 			],
 		});
 
@@ -43,6 +51,7 @@ describe('guardian import runner', () => {
 		expect(registerGuardian).toHaveBeenCalledTimes(2);
 		expect(linkGuardianToStudent).toHaveBeenCalledTimes(2);
 		expect(registerGuardian).toHaveBeenNthCalledWith(1, expect.objectContaining({
+			code: 'TUT-001',
 			sendAccountInvitation: false,
 		}));
 		expect(linkGuardianToStudent).toHaveBeenNthCalledWith(2, expect.objectContaining({

@@ -1,12 +1,17 @@
 import type { SchoolSubjectCatalogEntry } from '$lib/import/shared/load-school-subject-names';
-import type { TeacherImportClassSubjectOption } from './types';
 import { resolveSubjectCatalogId } from './subject-name-lookup';
+
+interface ClassSubjectOption {
+	id: string;
+	classGroupId: string;
+	subjectId: string;
+}
 
 export function resolveTeacherImportClassSubjectIds(
 	classGroupId: string,
 	subjectNames: readonly string[],
 	catalog: readonly SchoolSubjectCatalogEntry[],
-	classSubjects: readonly TeacherImportClassSubjectOption[],
+	classSubjects: readonly ClassSubjectOption[],
 ): { classSubjectIds: string[]; missingInClass: string[] } {
 	const classSubjectIds: string[] = [];
 	const missingInClass: string[] = [];

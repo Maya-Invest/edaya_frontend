@@ -62,4 +62,9 @@ export interface ChapterImportValidationResult {
 
 export interface ChapterImportValidationContext {
 	catalogTargets: readonly ChapterImportCatalogTarget[];
+	existingChapterKeys?: ReadonlySet<string>;
+}
+
+export function chapterImportDuplicateKey(gradeLevelSubjectId: string, titre: string): string {
+	return `${gradeLevelSubjectId}::${titre.trim().toLowerCase()}`;
 }

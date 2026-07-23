@@ -1,4 +1,4 @@
-export type TeacherImportColumnKey = 'prenom' | 'nom' | 'email' | 'telephone';
+export type TeacherImportColumnKey = 'code' | 'prenom' | 'nom' | 'email' | 'telephone';
 
 export interface TeacherImportColumnDefinition {
 	key: TeacherImportColumnKey;
@@ -6,6 +6,7 @@ export interface TeacherImportColumnDefinition {
 }
 
 export const TEACHER_IMPORT_COLUMNS = [
+	{ key: 'code', required: true },
 	{ key: 'prenom', required: true },
 	{ key: 'nom', required: true },
 	{ key: 'email', required: false },
@@ -14,6 +15,7 @@ export const TEACHER_IMPORT_COLUMNS = [
 
 export interface TeacherImportRow {
 	rowIndex: number;
+	code: string;
 	prenom: string;
 	nom: string;
 	email?: string;
@@ -32,6 +34,10 @@ export interface TeacherImportValidationIssue {
 	messageParams?: Record<string, string | number>;
 	severity: TeacherImportValidationSeverity;
 	suggestions?: string[];
+}
+
+export interface TeacherImportValidationContext {
+	existingCodes?: ReadonlySet<string>;
 }
 
 export interface TeacherImportValidationResult {

@@ -1,15 +1,15 @@
-/** Données cohérentes pour la QA import — contexte collège ivoirien (Afrique de l'Ouest). */
+﻿/** Données cohérentes pour la QA import — contexte collège ivoirien (Afrique de l'Ouest). */
 
-export const GRADE_LEVELS = ['6ème', '5ème', '4ème', '3ème'] as const;
+export const GRADE_LEVELS = ['6eme', '5eme', '4eme', '3eme'] as const;
 
 export const CLASSES = {
-	sixA: '6ème A',
-	sixB: '6ème B',
-	sixC: '6ème C',
-	fiveA: '5ème A',
-	fiveB: '5ème B',
-	fourB: '4ème B',
-	threeA: '3ème A',
+	sixA: '6eme A',
+	sixB: '6eme B',
+	sixC: '6eme C',
+	fiveA: '5eme A',
+	fiveB: '5eme B',
+	fourB: '4eme B',
+	threeA: '3eme A',
 } as const;
 
 /** Matricules partagés entre élèves, tuteurs, facturation et paiements (préfixe CI = Côte d'Ivoire). */
@@ -64,16 +64,16 @@ export const SUBJECT_CATALOG = [
 	{ nom: 'Sciences de la Vie et de la Terre', code: 'SVT', coefficient: 2 },
 ] as const;
 
-/** Jeu nominal 6ème — 7 matières du programme collège. */
+/** Jeu nominal 6eme — 7 matières du programme collège. */
 export const SUBJECTS_SIXIEME = SUBJECT_CATALOG.map(subject => ({
 	...subject,
-	niveau: '6ème',
+	niveau: '6eme',
 }));
 
-/** Jeu 5ème — matières communes + Physique-Chimie (à partir de la 5ème). */
+/** Jeu 5eme — matières communes + Physique-Chimie (à partir de la 5eme). */
 export const SUBJECTS_CINQUIEME = [
-	...SUBJECT_CATALOG.map(subject => ({ ...subject, niveau: '5ème' })),
-	{ nom: 'Physique-Chimie', niveau: '5ème', code: 'PC', coefficient: 2 },
+	...SUBJECT_CATALOG.map(subject => ({ ...subject, niveau: '5eme' })),
+	{ nom: 'Physique-Chimie', niveau: '5eme', code: 'PC', coefficient: 2 },
 ];
 
 /** Numéros mobiles Côte d'Ivoire (+225 07 Orange, 05 MTN, 01 Moov). */
@@ -85,9 +85,32 @@ export const PHONES = {
 	cpe: '+225 05 30 40 50 60',
 } as const;
 
-export const STAFF_HEADERS = ['prenom', 'nom', 'role', 'email', 'telephone'] as const;
+/** Codes métier — identité unique école (C12) ; partagés enseignants ↔ affectations. */
+export const TEACHER_CODES = {
+	aka: 'ENS-AKA-001',
+	assi: 'ENS-ASSI-001',
+	gbe: 'ENS-GBE-001',
+	zongo: 'ENS-ZONGO-001',
+	kone: 'ENS-KONE-001',
+	yao: 'ENS-YAO-001',
+} as const;
 
-export const TEACHER_HEADERS = ['prenom', 'nom', 'email', 'telephone'] as const;
+export const STAFF_CODES = {
+	kone: 'PER-KONE-001',
+	yao: 'PER-YAO-001',
+	kouassi: 'PER-KOUASSI-001',
+	bamba: 'PER-BAMBA-001',
+	traore: 'PER-TRAORE-001',
+	ouattara: 'PER-OUATTARA-001',
+} as const;
+
+export const GUARDIAN_HEADERS = ['code', 'prenom', 'nom', 'eleve_matricule', 'email', 'telephone'] as const;
+
+export const STAFF_HEADERS = ['code', 'prenom', 'nom', 'role', 'email', 'telephone'] as const;
+
+export const TEACHER_HEADERS = ['code', 'prenom', 'nom', 'email', 'telephone'] as const;
+
+export const TEACHER_ASSIGNMENT_HEADERS = ['code', 'classe', 'matiere'] as const;
 
 /** Libellés matières utilisés dans les fixtures enseignants (alignés SU01). */
 export const TEACHER_SUBJECT_NAMES = {

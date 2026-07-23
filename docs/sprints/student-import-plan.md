@@ -103,9 +103,10 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 - [ ] T10 — No classes prerequisite in modal
 - [ ] G1 — Open modal from generic card
 - [ ] G2 — Switch type in dropdown (columns + hint update)
-- [x] G3 — Download template for each of 7 types
-- [x] G4 — Non-active type shows coming-soon + Next disabled
+- [x] G3 — Download template for each **active** type (10 packs)
+- [x] G4 — Non-active type shows coming-soon + Next disabled (N/A si tous `active`)
 - [ ] G5 — Students 4-step flow unchanged
+- [ ] **C12** — QA identifiants : matrices Staff / Teachers / Guardians / Assignments / Payments / Chapters (voir [Manual test matrix — Identity codes C12](#manual-test-matrix--identity-codes-c12) + fixtures [`docs/qa/import-fixtures/`](../qa/import-fixtures/README.md))
 - [ ] Update `remaining-work-plan.md` (Phase 6.4)
 
 
@@ -257,7 +258,30 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 | **C9**  | **Catalogue ↔ Leçons**  | Chapitres Leçons = miroir du catalogue. Ajout chapitre au catalogue → sync auto vers classes du niveau.                                                                                                                                                                                                                                                                                                                                   |
 | **C10** | **Catalogue UI**        | Config pure (pas d’affectation prof). Bouton « Ajouter une matière » à ajouter. UI à uniformiser.                                                                                                                                                                                                                                                                                                                                         |
 | **C11** | **Import chapitres**    | **Reste valide** en batch (complément du catalogue UI). Après Phase 19 : colonnes `niveau` **+** `matiere`.                                                                                                                                                                                                                                                                                                                               |
+| **C12** | **Identifiants uniques** | Chaque pack a une clé métier adaptée. **Personnes** (enseignants, personnel, tuteurs) : colonne **`code`** obligatoire à l’import (email reste optionnel). Persisté en base + unicité école (fichier + DB). Affectations : résolution par `code` (plus par email). Paiements : `reference` unique (fichier + DB). Chapitres : rejet si `titre+matiere+niveau` existe déjà. |
 
+
+---
+
+
+
+## Matrice des clés d’identité (C12)
+
+
+| Pack | Clé d’identité | Colonne template | Scope |
+|------|----------------|------------------|-------|
+| Élèves | Matricule | `matricule` | école |
+| Paiements | Référence comptable | `reference` | école |
+| Facturation | Composite | `matricule` + `type_frais` | école |
+| Classes | Composite | `nom` + `niveau` | école / année |
+| Matières | Composite | `nom` + `niveau` | école |
+| Chapitres | Composite | `titre` + `matiere` + `niveau` | école |
+| Enseignants | Code métier | `code` | école |
+| Personnel | Code métier | `code` | école |
+| Tuteurs | Code métier | `code` | école |
+| Affectations | Lien | `code` + `classe` + `matiere` | école |
+
+Normalisation : `trim()` + comparaison insensible à la casse. Conflit → ligne rejetée (create-only, pas d’upsert).
 
 ---
 
@@ -312,12 +336,12 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 
 | Constraint      | Decision                                                               |
 | --------------- | ---------------------------------------------------------------------- |
-| Backend changes | **None** — reuse existing `client.commands.`* per entity               |
+| Backend changes | **None for packs** — reuse existing `client.commands.`* ; exception **C12** (`code` on Teacher/Staff/Guardian) |
 | UI location     | **Configuration → Outils**                                             |
 | File formats    | `.csv` and `.xlsx`                                                     |
 | Volume target   | 20–100 rows per batch (sequential API calls)                           |
-| Idempotency     | Per-pack rules (e.g. skip duplicate matricule for students)            |
-| Partial import  | Import valid rows even when other rows have blocking errors (students) |
+| Idempotency     | Per-pack identity key (matricule / code / reference / composites) — create-only reject |
+| Partial import  | Import valid rows even when other rows have blocking errors            |
 
 
 ---
@@ -657,9 +681,10 @@ await client.commands.createClassGroup({
 
 | Column            | Required | Maps to                      | Notes                        |
 | ----------------- | -------- | ---------------------------- | ---------------------------- |
+| `code`            | yes      | `registerGuardian.code`      | **C12** — identité unique école |
 | `prenom`          | yes      | `registerGuardian.firstName` |                              |
 | `nom`             | yes      | `registerGuardian.lastName`  |                              |
-| `email`           | no       | `registerGuardian.email`     |                              |
+| `email`           | no       | `registerGuardian.email`     | contact uniquement           |
 | `telephone`       | no       | `registerGuardian.phone`     |                              |
 | `eleve_matricule` | yes      | resolved → `studentId`       | then `linkGuardianToStudent` |
 
@@ -688,13 +713,14 @@ await client.commands.linkGuardianToStudent({ guardianId, studentId, ... });
 ### Phase 10 — Staff import (est. 1.5 d)
 
 
-| Column      | Required | Maps to                                  | Notes                        |
-| ----------- | -------- | ---------------------------------------- | ---------------------------- |
-| `prenom`    | yes      | `registerStaffMember.firstName`          |                              |
-| `nom`       | yes      | `registerStaffMember.lastName`           |                              |
-| `email`     | no       | `registerStaffMember.email`              |                              |
-| `role`      | yes      | deferred → permission assignment phase 2 | validate role exists or warn |
-| `telephone` | no       | profile update phase 2                   | not on register command      |
+| Column      | Required | Maps to                                  | Notes                           |
+| ----------- | -------- | ---------------------------------------- | ------------------------------- |
+| `code`      | yes      | `registerStaffMember.code`               | **C12** — identité unique école |
+| `prenom`    | yes      | `registerStaffMember.firstName`          |                                 |
+| `nom`       | yes      | `registerStaffMember.lastName`           |                                 |
+| `email`     | no       | `registerStaffMember.email`              | contact uniquement              |
+| `role`      | yes      | deferred → permission assignment phase 2 | validate role exists or warn    |
+| `telephone` | no       | profile update phase 2                   | not on register command         |
 
 
 **API (existing):**
@@ -723,24 +749,22 @@ await client.commands.registerStaffMember({
 ### Phase 11 — Teachers import (est. 2 d)
 
 
-| Column      | Required | Maps to                                            | Notes                                           |
-| ----------- | -------- | -------------------------------------------------- | ----------------------------------------------- |
-| `prenom`    | yes      | `teachers.save.firstName`                          |                                                 |
-| `nom`       | yes      | `teachers.save.lastName`                           |                                                 |
-| `email`     | no       | `teachers.save.email`                              |                                                 |
-| `matieres`  | no       | `teachers.save.subjectId` (1ère matière catalogue) | comma-separated ; affectation classe = manuelle |
-| `telephone` | no       | `teachers.save.phone`                              |                                                 |
+| Column      | Required | Maps to                   | Notes                                           |
+| ----------- | -------- | ------------------------- | ----------------------------------------------- |
+| `code`      | yes      | `teachers.save.code`      | **C12** — identité unique école                 |
+| `prenom`    | yes      | `teachers.save.firstName` |                                                 |
+| `nom`       | yes      | `teachers.save.lastName`  |                                                 |
+| `email`     | no       | `teachers.save.email`     | contact uniquement ; **pas** clé d’affectation  |
+| `telephone` | no       | `teachers.save.phone`     |                                                 |
 
 
 **API (existing):**
 
 ```ts
 await client.entities.teachers.save({
-  id, schoolId, firstName, lastName, email, phone, subjectId, isActive: true,
+  id, schoolId, firstName, lastName, code, email, phone, subjectId: null, isActive: true,
 });
-// subjectId = première matière reconnue dans `matieres` (hint pour affectation manuelle)
-// TeacherAssignmentFormModal pré-sélectionne classSubjectId quand la classe est choisie
-// Phase 2 (11.6): saveTeacherAssignment automatique si colonne `classe` ajoutée
+// Affectations : pack séparé `teacher_assignments` (colonne `code` + classe + matière)
 ```
 
 
@@ -863,7 +887,7 @@ await client.commands.configureSubjectMatter({
 | ------------ | -------- | ----------------------------------- | ------------------------------------------- |
 | `matricule`  | yes      | resolved → `studentId`              | via index matricules                        |
 | `type_frais` | yes      | resolved → `feeId` → `studentFeeId` | nom frais catalogue                         |
-| `reference`  | yes      | `recordPayment.reference`           |                                             |
+| `reference`  | yes      | `recordPayment.reference`           | **C12** — unique école (fichier + base)         |
 | `montant`    | no       | `recordPayment.amount`              | **défaut = solde restant** (`total − paid`) |
 | `date`       | no       | `recordPayment.paymentDate`         | défaut : aujourd'hui (`AAAA-MM-JJ`)         |
 | `mode`       | no       | `recordPayment.method`              | défaut : `cash`                             |
@@ -888,7 +912,7 @@ await client.commands.recordPayment({
 | 15.3 | Runner via `recordPaymentMutation`                     | [x]    |
 | 15.4 | Catalogue type `payments` ; wire modal 4 steps         | [x]    |
 | 15.5 | i18n FR/EN ; permission finance                        | [x]    |
-| 15.6 | Unit tests                                             | [ ]    |
+| 15.6 | Unit tests                                             | [x]    |
 
 
 ---
@@ -952,10 +976,11 @@ await client.commands.updateStudentProfile({ studentId, matricule, ... });
 
 | Column            | Required | Maps to                      | Notes                              |
 | ----------------- | -------- | ---------------------------- | ---------------------------------- |
+| `code`            | yes      | `registerGuardian.code`      | **C12** — identité unique école    |
 | `prenom`          | yes      | `registerGuardian.firstName` |                                    |
 | `nom`             | yes      | `registerGuardian.lastName`  |                                    |
 | `eleve_matricule` | yes      | resolved → `studentId`(s)    | **multi-valeurs** séparées par `;` |
-| `email`           | no       | `registerGuardian.email`     |                                    |
+| `email`           | no       | `registerGuardian.email`     | contact uniquement                 |
 | `telephone`       | no       | `registerGuardian.phone`     |                                    |
 
 
@@ -995,14 +1020,23 @@ for (const studentId of studentIds) {
 **Prerequisite:** Catalogue matières / class subjects existants pour affectation manuelle.
 
 
-| Column      | Required | Maps to                                   | Notes                          |
-| ----------- | -------- | ----------------------------------------- | ------------------------------ |
-| `prenom`    | yes      | `teachers.save.firstName`                 |                                |
-| `nom`       | yes      | `teachers.save.lastName`                  |                                |
-| `email`     | no       | `teachers.save.email`                     |                                |
-| `matieres`  | no       | `teachers.save.subjectId` (1ère reconnue) | `matiere1;matiere2`            |
-| `telephone` | no       | `teachers.save.phone`                     |                                |
-| `classe`    | no       | `teacherAssignments` (18.3)               | affectation auto par matière |
+| Column      | Required | Maps to                   | Notes                          |
+| ----------- | -------- | ------------------------- | ------------------------------ |
+| `code`      | yes      | `teachers.save.code`      | **C12** — identité unique école |
+| `prenom`    | yes      | `teachers.save.firstName` |                                |
+| `nom`       | yes      | `teachers.save.lastName`  |                                |
+| `email`     | no       | `teachers.save.email`     | contact uniquement             |
+| `telephone` | no       | `teachers.save.phone`     |                                |
+
+
+**Pack séparé — Affectations (`teacher_assignments`) :**
+
+
+| Column    | Required | Maps to                         | Notes                                      |
+| --------- | -------- | ------------------------------- | ------------------------------------------ |
+| `code`    | yes      | resolved → `teacherId`          | **C12** — remplace l’ancien lookup `email` |
+| `classe`  | yes      | resolved → `classGroupId`       |                                            |
+| `matiere` | yes      | resolved → `classSubjectId`     |                                            |
 
 
 **UI (manuel) :**
@@ -1195,7 +1229,7 @@ await client.commands.updateStudentProfile({
 
 | #   | Scenario                     | Expected                                     | Status | Result (observed)                    |
 | --- | ---------------------------- | -------------------------------------------- | ------ | ------------------------------------ |
-| T1  | Download template            | Valid CSV/Excel with 6 columns + example row | [x]    | Modèles CSV et Excel OK              |
+| T1  | Download template            | Valid CSV/Excel with columns + example row (incl. `matricule`) | [x]    | Modèles CSV et Excel OK              |
 | T2  | Upload valid `.csv` (5 rows) | 5 students created, enrolled                 | [ ]    | Non testé explicitement              |
 | T3  | Upload valid `.xlsx`         | Students created and enrolled                | [x]    | 36 lignes → 36 créés ; liste 30 → 66 |
 | T4  | Unknown class name           | Blocking error; partial import OK            | [x]    | Suggestions affichées                |
@@ -1212,13 +1246,98 @@ await client.commands.updateStudentProfile({
 ### Manual test matrix — Generic shell (new)
 
 
-| #   | Scenario                        | Expected                             | Status |
-| --- | ------------------------------- | ------------------------------------ | ------ |
-| G1  | Open modal from generic card    | Modal opens on step 1                | [ ]    |
-| G2  | Switch type in dropdown         | Columns + hint update; wizard resets | [ ]    |
-| G3  | Download template for each type | 7 distinct CSV/Excel files           | [ ]    |
-| G4  | Non-active type                 | "Coming soon" + Next disabled        | [ ]    |
-| G5  | Students flow unchanged         | Full 4-step import still works       | [ ]    |
+| #   | Scenario                        | Expected                                      | Status |
+| --- | ------------------------------- | --------------------------------------------- | ------ |
+| G1  | Open modal from generic card    | Modal opens on step 1                         | [ ]    |
+| G2  | Switch type in dropdown         | Columns + hint update; wizard resets          | [ ]    |
+| G3  | Download template for each type | **10** distinct CSV/Excel files (tous packs)  | [ ]    |
+| G4  | Non-active type                 | "Coming soon" + Next disabled (si applicable) | [ ]    |
+| G5  | Students flow unchanged         | Full 4-step import still works                | [ ]    |
+| G6  | Switch to Teachers / Staff / Guardians | Hint + colonnes affichent `code` requis | [ ]    |
+| G7  | Switch to Teacher assignments   | Colonnes `code`, `classe`, `matiere` (plus d’`email`) | [ ]    |
+
+
+
+
+### Manual test matrix — Identity codes (C12)
+
+
+#### Teachers
+
+
+| #   | Scenario                              | Expected                                                         | Status |
+| --- | ------------------------------------- | ---------------------------------------------------------------- | ------ |
+| TE1 | Download template                     | Colonnes `code`, `prenom`, `nom`, `email?`, `telephone?`         | [ ]    |
+| TE2 | Import sans `code`                    | Erreur bloquante « champ obligatoire »                           | [ ]    |
+| TE3 | Import valide avec `code` (sans email)| Enseignant créé ; code visible / réutilisable pour affectations  | [ ]    |
+| TE4 | Doublon `code` dans le fichier        | 2ᵉ ligne rejetée ; 1ʳᵉ importée (partial)                        | [ ]    |
+| TE5 | `code` déjà en base                   | Ligne rejetée « code existe déjà »                               | [ ]    |
+| TE6 | Même `code` casse différente (`ENS-1` / `ens-1`) | Traité comme doublon                                  | [ ]    |
+
+
+#### Staff
+
+
+| #   | Scenario                       | Expected                                              | Status |
+| --- | ------------------------------ | ----------------------------------------------------- | ------ |
+| ST1 | Download template              | Colonnes `code`, `prenom`, `nom`, `role`, contacts?   | [ ]    |
+| ST2 | Import sans `code`             | Erreur bloquante                                      | [ ]    |
+| ST3 | Import valide avec `code`      | Personnel créé                                        | [ ]    |
+| ST4 | Doublon `code` fichier / base  | Rejet + partial import                                | [ ]    |
+
+
+#### Guardians
+
+
+| #   | Scenario                              | Expected                                                         | Status |
+| --- | ------------------------------------- | ---------------------------------------------------------------- | ------ |
+| GU1 | Download template                     | Colonnes `code`, `prenom`, `nom`, `eleve_matricule`, contacts?    | [ ]    |
+| GU2 | Import sans `code`                    | Erreur bloquante                                                 | [ ]    |
+| GU3 | Import valide `code` + matricule(s)   | Tuteur créé + liens                                              | [ ]    |
+| GU4 | Doublon `code` fichier / base         | Rejet + partial import                                           | [ ]    |
+| GU5 | Multi-matricules `;` (inchangé)        | Succès partiel si ≥1 matricule valide                            | [ ]    |
+
+
+#### Teacher assignments
+
+
+| #   | Scenario                         | Expected                                                              | Status |
+| --- | -------------------------------- | --------------------------------------------------------------------- | ------ |
+| TA1 | Download template                | Colonnes `code`, `classe`, `matiere` (**pas** `email`)                | [ ]    |
+| TA2 | Résolution par `code` enseignant | Affectation créée si classe + matière OK                              | [ ]    |
+| TA3 | `code` inconnu                   | Erreur « enseignant introuvable » + suggestions de codes              | [ ]    |
+| TA4 | Enseignant sans email            | Import affectation OK tant que `code` existe                          | [ ]    |
+| TA5 | Doublon même `code`+classe+matière | Rejet doublon in-file                                               | [ ]    |
+
+
+#### Payments
+
+
+| #   | Scenario                          | Expected                                              | Status |
+| --- | --------------------------------- | ----------------------------------------------------- | ------ |
+| PA1 | `reference` manquante             | Erreur bloquante                                      | [ ]    |
+| PA2 | Doublon `reference` dans fichier  | 2ᵉ ligne rejetée                                      | [ ]    |
+| PA3 | `reference` déjà en base          | Ligne rejetée « référence existe déjà »               | [ ]    |
+| PA4 | Import valide unique              | Paiement enregistré                                   | [ ]    |
+
+
+#### Chapters
+
+
+| #   | Scenario                                      | Expected                                           | Status |
+| --- | --------------------------------------------- | -------------------------------------------------- | ------ |
+| CH1 | Doublon `titre` même `niveau`+`matiere` (fichier) | Rejet in-file                                   | [ ]    |
+| CH2 | Chapitre déjà existant (catalogue)            | Rejet « chapitre existe déjà »                     | [ ]    |
+| CH3 | Nouveau titre sur matière/niveau existants    | Chapitre créé + sync classes                       | [ ]    |
+
+
+#### Create modals (UI)
+
+| #   | Scenario                         | Expected                                              | Status |
+| --- | -------------------------------- | ----------------------------------------------------- | ------ |
+| UI1 | Teacher / Staff / Guardian create | Champ `code` optionnel affiché                      | [ ]    |
+| UI2 | Créer enseignant avec `code`     | Persiste ; réutilisable dans import affectations      | [ ]    |
+| UI3 | Créer sans `code`                | Autorisé (manuel) ; affectation import par code impossible jusqu’à renseignement | [ ]    |
 
 
 ---
@@ -1287,8 +1406,9 @@ await client.commands.updateStudentProfile({
 | PR11 | Phase 14 — polish + docs                    | 0.5 d | [ ]           |
 | PR12 | Phase 19 — matières/niveau + chapitres      | 3 d   | ✅             |
 | PR13 | Phases 16–18 — élèves, tuteurs, enseignants | 2.5 d | ✅             |
-| PR14 | Phase 15 — paiements batch                  | 2 d   | ⏳ (sans 15.6) |
+| PR14 | Phase 15 — paiements batch                  | 2 d   | ✅             |
 | PR15 | Phase 20 — catalogue UI                     | 2–3 d | [ ]           |
+| PR16 | C12 — identifiants uniques (`code` / `reference`) | 2 d | ✅             |
 
 
 
@@ -1305,7 +1425,7 @@ await client.commands.updateStudentProfile({
 | 12    | Subjects (legacy par classe)                      | ✅ → refonte Phase 19          |
 | 13    | Chapters (legacy fan-out)                         | ✅ → refonte Phase 19.5        |
 | 14    | Polish + lint/check global                        | ⏳                             |
-| 15    | Paiements batch                                   | ⏳ (code ✅ ; tests 15.6)       |
+| 15    | Paiements batch                                   | ✅                             |
 | 16    | Élèves révisés (matricule, classe opt., capacité) | ✅                             |
 | 17    | Tuteurs multi-matricules `;`                      | ✅                             |
 | 18    | Enseignants multi-matières                        | ✅                               |
@@ -1338,10 +1458,22 @@ await client.commands.updateStudentProfile({
 
 ### Generic shell ✅
 
-- [x] Type dropdown with **8** ordered types (incl. **Paiements**)
+- [x] Type dropdown with **10** ordered types (students → … → payments / billing / assignments)
 - [x] Template download for all types
 - [x] `template_only` types show coming-soon UX
 - [x] Single import card on page (no per-type cards)
+
+
+
+### Identity codes (C12) ✅
+
+- [x] `code` sur Teacher / Staff / Guardian (domaine + DB + OpenAPI)
+- [x] Import teachers / staff / guardians : `code` requis ; doublons fichier + base
+- [x] Teacher assignments : résolution par `code` (plus par email)
+- [x] Payments : unicité `reference` (fichier + base)
+- [x] Chapters : rejet si `titre`+`matiere`+`niveau` existe déjà
+- [x] Unit tests packs concernés (teachers / staff / guardians / assignments / payments / chapters)
+- [ ] Manual QA matrix C12 (TE / ST / GU / TA / PA / CH / UI) — voir section dédiée
 
 
 
@@ -1353,7 +1485,8 @@ await client.commands.updateStudentProfile({
 - [x] Teachers import active (+ `subjectId` hint ; affectation classe manuelle)
 - [x] Subjects import active (par **niveau** — Phase 19)
 - [x] Chapters import active (`niveau` + `matiere` — Phase 19.5)
-- [ ] Manual QA matrix G1–G5 + per-pack matrices
+- [ ] Manual QA matrix G1–G7 + per-pack matrices
+- [ ] Manual QA matrix C12 (identity codes)
 - [ ] `eslint --fix` + `lint` + `check` globaux (fin track 8–14)
 - [ ] `remaining-work-plan.md` updated
 
@@ -1372,5 +1505,6 @@ await client.commands.updateStudentProfile({
 - [ ] Phase 19.4 — Sync chapitres catalogue (`assignMatterToGradeLevelSubject`)
 - [ ] Phase 20 — Catalogue matières UI (boutons ajout, miroir Leçons)
 - [x] Tests `tests/lib/import/payments/`
-- [ ] Manual QA matrices evolution
+- [x] C12 — codes identité (impl + unit tests)
+- [ ] Manual QA matrices evolution + C12
 - [ ] `eslint --fix` + `lint` + `check` globaux (fin evolution + track 8–14)

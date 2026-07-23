@@ -8,6 +8,7 @@ import type {
 	ValidatedPaymentImportRow,
 } from './types';
 import { canImportValidatedRows } from '$lib/import/shared/can-import-validated-rows';
+import { normalizeImportCode } from '$lib/import/shared/normalize-import-code';
 import { normalizeStudentMatricule } from '$lib/import/shared/normalize-student-matricule';
 import { resolveFeeIdByName } from '$lib/import/shared/resolve-fee-by-name';
 import { isValidStudentImportBirthDate } from '$lib/import/students/validator';
@@ -81,6 +82,7 @@ export function validatePaymentImportRows(
 	const errors: PaymentImportValidationIssue[] = [];
 	const warnings: PaymentImportValidationIssue[] = [];
 	const validRows: ValidatedPaymentImportRow[] = [];
+	const referencesInFile = new Map<string, number>();
 
 	for (const row of rows) {
 		const rowIssues: PaymentImportValidationIssue[] = [];
@@ -88,6 +90,32 @@ export function validatePaymentImportRows(
 		const hasMatricule = validateRequiredField(row, 'matricule', row.matricule, rowIssues);
 		const hasFeeType = validateRequiredField(row, 'type_frais', row.type_frais, rowIssues);
 		const hasReference = validateRequiredField(row, 'reference', row.reference, rowIssues);
+
+		if (hasReference) {
+			const normalizedReference = normalizeImportCode(row.reference);
+			const previousRow = referencesInFile.get(normalizedReference);
+			if (previousRow != null) {
+				rowIssues.push(issue({
+					rowIndex: row.rowIndex,
+					column: 'reference',
+					value: row.reference,
+					messageKey: 'import.payments.validation.duplicateReferenceInFile',
+					messageParams: { row: previousRow },
+				}));
+			}
+			else {
+				referencesInFile.set(normalizedReference, row.rowIndex);
+			}
+
+			if (context.existingReferences?.has(normalizedReference)) {
+				rowIssues.push(issue({
+					rowIndex: row.rowIndex,
+					column: 'reference',
+					value: row.reference,
+					messageKey: 'import.payments.validation.duplicateReferenceExisting',
+				}));
+			}
+		}
 
 		let studentId: string | undefined;
 		if (hasMatricule) {

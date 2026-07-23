@@ -9,10 +9,7 @@ import type {
 import { canImportValidatedRows } from '$lib/import/shared/can-import-validated-rows';
 import { parseChapterSequenceOrder } from './parse-sequence-order';
 import { resolveChapterImportTarget } from './resolve-chapter-targets';
-
-function normalizeLookupValue(value: string): string {
-	return value.trim().toLowerCase();
-}
+import { chapterImportDuplicateKey } from './types';
 
 function issue(
 	input: Omit<ChapterImportValidationIssue, 'severity'> & { severity?: ChapterImportValidationIssue['severity'] },
@@ -109,7 +106,7 @@ export function validateChapterImportRows(
 		}
 
 		if (hasTitre && target) {
-			const duplicateKey = `${target.gradeLevelSubjectId}::${normalizeLookupValue(row.titre)}`;
+			const duplicateKey = chapterImportDuplicateKey(target.gradeLevelSubjectId, row.titre);
 			const previousRow = chaptersInFile.get(duplicateKey);
 			if (previousRow != null) {
 				rowIssues.push(issue({
@@ -122,6 +119,15 @@ export function validateChapterImportRows(
 			}
 			else {
 				chaptersInFile.set(duplicateKey, row.rowIndex);
+			}
+
+			if (context.existingChapterKeys?.has(duplicateKey)) {
+				rowIssues.push(issue({
+					rowIndex: row.rowIndex,
+					column: 'titre',
+					value: row.titre,
+					messageKey: 'import.chapters.validation.duplicateExisting',
+				}));
 			}
 		}
 

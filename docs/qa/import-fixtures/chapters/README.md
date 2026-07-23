@@ -1,6 +1,6 @@
-# Fixtures — Import **Chapitres**
+﻿# Fixtures — Import **Chapitres**
 
-Contenus pédagogiques en français, contextualisés Afrique de l'Ouest / Côte d'Ivoire.
+Contenus pédagogiques en français, contextualisés Afrique de l'Ouest / Côte d'Ivoire. Clé d’unicité : **`titre` + `matiere` + `niveau`**.
 
 ```bash
 bun edaya_web/docs/qa/import-fixtures/chapters/generate-fixtures.ts
@@ -10,7 +10,7 @@ bun edaya_web/docs/qa/import-fixtures/chapters/generate-fixtures.ts
 
 | Fichier | Scénario | Résultat attendu |
 |---------|----------|------------------|
-| `CH01-happy-all-valid.xlsx` | 9 chapitres (Maths, Français, HG, PC…) | 9 chapitres créés (catalogue niveau + matière) |
+| `CH01-happy-all-valid.xlsx` | 10 chapitres (Maths, Français, HG, PC…) | 10 chapitres créés (catalogue niveau + matière) |
 | `CH02-partial-import.xlsx` | 2 OK + erreurs mixtes | Import partiel |
 | `CH03-error-unknown-niveau.xlsx` | Niveaux inconnus | 0 créé |
 | `CH04-error-subject-not-found.xlsx` | Latin, Philosophie (absentes du collège) | 0 créé + suggestions |
@@ -19,7 +19,8 @@ bun edaya_web/docs/qa/import-fixtures/chapters/generate-fixtures.ts
 | `CH07-error-duplicate-in-file.xlsx` | « Les proportions » en double | 1 créé |
 | `CH08-headers-only.xlsx` | En-têtes seuls | Fichier vide |
 | `CH09-trim-and-case.xlsx` | Espaces autour des valeurs | 1 créé |
+| `CH10-error-existing-chapter.xlsx` | Même titre+matière+niveau que CH01 (après CH01) | 0 créé — « chapitre existe déjà » |
 
-**Ordre suggéré :** CH08 → CH05 → CH06 → CH03 → CH04 → CH07 → CH02 → CH09 → **CH01**.
+**Ordre suggéré :** CH08 → CH05 → CH06 → CH03 → CH04 → CH07 → CH02 → CH09 → **CH01** → CH10.
 
 Chapitres HG : « L'Afrique de l'Ouest », « La Côte d'Ivoire indépendante ».

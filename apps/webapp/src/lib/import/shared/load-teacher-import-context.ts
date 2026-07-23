@@ -1,9 +1,15 @@
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import type { TeacherImportClassSubjectOption } from '$lib/import/teachers/types';
 import { fetchSchoolSubjectsSources } from '$lib/api/subjects-data';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
+export interface TeacherImportClassSubjectOption {
+	id: string;
+	classGroupId: string;
+	subjectId: string;
+}
+
+/** @deprecated Prefer loadTeacherAssignmentImportClassSubjects for the assignments import pack. */
 export async function loadTeacherImportClassSubjects(
 	client: SchoolClient,
 ): Promise<TeacherImportClassSubjectOption[]> {

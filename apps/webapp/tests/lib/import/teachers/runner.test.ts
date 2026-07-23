@@ -18,6 +18,7 @@ const { runTeacherImport } = await import('$lib/import/teachers/runner');
 
 function row(overrides: Partial<ValidatedTeacherImportRow> & Pick<ValidatedTeacherImportRow, 'rowIndex'>): ValidatedTeacherImportRow {
 	return {
+		code: 'ENS-001',
 		prenom: 'Jean',
 		nom: 'Dupont',
 		email: 'jean@example.com',
@@ -33,7 +34,10 @@ describe('teacher import runner', () => {
 			schoolId: 'school-1',
 			academicYearId: 'year-1',
 			client: {} as never,
-			rows: [row({ rowIndex: 2 }), row({ rowIndex: 3, prenom: 'Marie', nom: 'Martin' })],
+			rows: [
+				row({ rowIndex: 2 }),
+				row({ rowIndex: 3, code: 'ENS-002', prenom: 'Marie', nom: 'Martin' }),
+			],
 		});
 
 		expect(result.created).toBe(2);
@@ -44,6 +48,7 @@ describe('teacher import runner', () => {
 			teacherId: 'teacher-0',
 			firstName: 'Jean',
 			lastName: 'Dupont',
+			code: 'ENS-001',
 			email: 'jean@example.com',
 			phone: undefined,
 			subjectId: null,

@@ -7,6 +7,7 @@ import type {
 	ValidatedGuardianImportRow,
 } from './types';
 import { canImportValidatedRows } from '$lib/import/shared/can-import-validated-rows';
+import { normalizeImportCode } from '$lib/import/shared/normalize-import-code';
 import { normalizeStudentMatricule } from '$lib/import/shared/normalize-student-matricule';
 import { parseMultiValueList } from '$lib/import/shared/parse-multi-value-list';
 
@@ -69,14 +70,42 @@ export function validateGuardianImportRows(
 	const errors: GuardianImportValidationIssue[] = [];
 	const warnings: GuardianImportValidationIssue[] = [];
 	const validRows: ValidatedGuardianImportRow[] = [];
+	const codesInFile = new Map<string, number>();
 	const linksInFile = new Map<string, number>();
 
 	for (const row of rows) {
 		const rowIssues: GuardianImportValidationIssue[] = [];
 
+		const hasCode = validateRequiredField(row, 'code', row.code, rowIssues);
 		const hasPrenom = validateRequiredField(row, 'prenom', row.prenom, rowIssues);
 		const hasNom = validateRequiredField(row, 'nom', row.nom, rowIssues);
 		const hasMatriculeField = validateRequiredField(row, 'eleve_matricule', row.eleve_matricule, rowIssues);
+
+		if (hasCode) {
+			const normalizedCode = normalizeImportCode(row.code);
+			const previousRow = codesInFile.get(normalizedCode);
+			if (previousRow != null) {
+				rowIssues.push(issue({
+					rowIndex: row.rowIndex,
+					column: 'code',
+					value: row.code,
+					messageKey: 'import.guardians.validation.duplicateCodeInFile',
+					messageParams: { row: previousRow },
+				}));
+			}
+			else {
+				codesInFile.set(normalizedCode, row.rowIndex);
+			}
+
+			if (context.existingCodes?.has(normalizedCode)) {
+				rowIssues.push(issue({
+					rowIndex: row.rowIndex,
+					column: 'code',
+					value: row.code,
+					messageKey: 'import.guardians.validation.duplicateCodeExisting',
+				}));
+			}
+		}
 
 		const matricules = hasMatriculeField
 			? parseMultiValueList(row.eleve_matricule, context.multiValueSeparator)
@@ -153,7 +182,7 @@ export function validateGuardianImportRows(
 			}
 		}
 
-		if (blockingIssues.length === 0 && studentIds.length > 0 && hasPrenom && hasNom) {
+		if (blockingIssues.length === 0 && studentIds.length > 0 && hasCode && hasPrenom && hasNom) {
 			validRows.push({
 				...row,
 				studentIds,

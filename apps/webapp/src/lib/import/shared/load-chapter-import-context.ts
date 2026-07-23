@@ -1,10 +1,14 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import { fetchCatalogSubjectsSources } from '$lib/api/subjects-data';
+import {
+	fetchCatalogSubjectsSources,
+	subjectMattersLinkedToGradeLevelSubject,
+} from '$lib/api/subjects-data';
 import type {
 	ChapterImportCatalogTarget,
 	ChapterImportClassAssignment,
 } from '$lib/import/chapters/types';
+import { chapterImportDuplicateKey } from '$lib/import/chapters/types';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 type ClassSubjectRaw = components['schemas']['ClassSubject'];
@@ -19,6 +23,30 @@ export interface ChapterImportClassOption {
 export interface ChapterImportGradeLevelOption {
 	id: string;
 	name: string;
+}
+
+export interface ChapterImportLoadedContext {
+	targets: ChapterImportCatalogTarget[];
+	existingChapterKeys: Set<string>;
+}
+
+export function buildExistingChapterImportKeys(
+	targets: readonly ChapterImportCatalogTarget[],
+	subjectMattersRaw: readonly { id: string; name: string }[],
+	gradeLevelSubjectMattersRaw: readonly { gradeLevelSubjectId: string; subjectMatterId: string }[],
+): Set<string> {
+	const keys = new Set<string>();
+	for (const target of targets) {
+		const matters = subjectMattersLinkedToGradeLevelSubject(
+			target.gradeLevelSubjectId,
+			subjectMattersRaw,
+			gradeLevelSubjectMattersRaw,
+		);
+		for (const matter of matters) {
+			keys.add(chapterImportDuplicateKey(target.gradeLevelSubjectId, matter.name));
+		}
+	}
+	return keys;
 }
 
 function catalogSubjectKey(gradeLevelId: string, subjectName: string): string {
@@ -132,7 +160,7 @@ export async function loadChapterImportContext(
 	client: SchoolClient,
 	classes: readonly ChapterImportClassOption[],
 	gradeLevels: readonly ChapterImportGradeLevelOption[],
-): Promise<ChapterImportCatalogTarget[]> {
+): Promise<ChapterImportLoadedContext> {
 	const sources = await fetchCatalogSubjectsSources(client);
 
 	const classGradeLevelById = new Map(classes.map(entry => [entry.id, entry.gradeLevelId]));
@@ -167,13 +195,22 @@ export async function loadChapterImportContext(
 		);
 	}
 
-	return targets.sort((left, right) => {
+	targets = targets.sort((left, right) => {
 		const byLevel = left.gradeLevelName.localeCompare(right.gradeLevelName, 'fr');
 		if (byLevel !== 0) {
 			return byLevel;
 		}
 		return left.subjectName.localeCompare(right.subjectName, 'fr');
 	});
+
+	return {
+		targets,
+		existingChapterKeys: buildExistingChapterImportKeys(
+			targets,
+			sources.subjectMattersRaw,
+			sources.gradeLevelSubjectMattersRaw,
+		),
+	};
 }
 
 export function uniqueChapterSubjectNames(

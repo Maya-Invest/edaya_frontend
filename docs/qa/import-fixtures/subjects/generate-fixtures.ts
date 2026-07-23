@@ -1,4 +1,4 @@
-import { dirname, join } from 'node:path';
+﻿import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createXlsxWriter } from '../_shared/xlsx-writer.ts';
 import { SUBJECTS_CINQUIEME, SUBJECTS_SIXIEME } from '../_shared/ivory-coast-data.ts';
@@ -14,25 +14,25 @@ const subjectRow = (s: { nom: string; niveau: string; code: string; coefficient:
 write('SU02-partial-import.xlsx', HEADERS, [
 	subjectRow(SUBJECTS_SIXIEME[0]!),
 	subjectRow(SUBJECTS_SIXIEME[1]!),
-	['', '6ème', 'VIDE', 1],
-	['Latin', '7ème Z', 'LAT', 1],
-	['Français', '6ème', 'FR', 'abc'],
+	['', '6eme', 'VIDE', 1],
+	['Latin', '7eme Z', 'LAT', 1],
+	['Français', '6eme', 'FR', 'abc'],
 ]);
 
 write('SU03-error-unknown-niveau.xlsx', HEADERS, [
-	['Mathématiques', '7ème Z', 'MATH', 3],
+	['Mathématiques', '7eme Z', 'MATH', 3],
 	['Français', 'Terminale X', 'FR', 3],
 ]);
 
 write('SU04-error-missing-required.xlsx', HEADERS, [
-	['', '6ème', 'MATH', 3],
+	['', '6eme', 'MATH', 3],
 	['Français', '', 'FR', 3],
 ]);
 
 write('SU05-error-invalid-coefficient.xlsx', HEADERS, [
-	['Mathématiques', '6ème', 'MATH', 'trois'],
-	['Français', '6ème', 'FR', -1],
-	['Anglais', '6ème', 'ANG', 0],
+	['Mathématiques', '6eme', 'MATH', 'trois'],
+	['Français', '6eme', 'FR', -1],
+	['Anglais', '6eme', 'ANG', 0],
 ]);
 
 write('SU06-error-duplicate-in-file.xlsx', HEADERS, [
@@ -48,8 +48,8 @@ write('SU07-error-no-classes-for-level.xlsx', HEADERS, [
 write('SU08-headers-only.xlsx', HEADERS, []);
 
 write('SU09-trim-and-case.xlsx', HEADERS, [
-	['  Mathématiques  ', '  6ème  ', '  MATH  ', '  3  '],
-	['français', '6ème', 'fr', 3],
+	['  Mathématiques  ', '  6eme  ', '  MATH  ', '  3  '],
+	['français', '6eme', 'fr', 3],
 ]);
 
 write('SU01-happy-all-valid.xlsx', HEADERS, [

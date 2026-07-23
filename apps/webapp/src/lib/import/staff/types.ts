@@ -1,4 +1,4 @@
-export type StaffImportColumnKey = 'prenom' | 'nom' | 'role' | 'email' | 'telephone';
+export type StaffImportColumnKey = 'code' | 'prenom' | 'nom' | 'role' | 'email' | 'telephone';
 
 export interface StaffImportColumnDefinition {
 	key: StaffImportColumnKey;
@@ -6,6 +6,7 @@ export interface StaffImportColumnDefinition {
 }
 
 export const STAFF_IMPORT_COLUMNS = [
+	{ key: 'code', required: true },
 	{ key: 'prenom', required: true },
 	{ key: 'nom', required: true },
 	{ key: 'role', required: true },
@@ -15,6 +16,7 @@ export const STAFF_IMPORT_COLUMNS = [
 
 export interface StaffImportRow {
 	rowIndex: number;
+	code: string;
 	prenom: string;
 	nom: string;
 	role: string;
@@ -34,6 +36,10 @@ export interface StaffImportValidationIssue {
 	messageParams?: Record<string, string | number>;
 	severity: StaffImportValidationSeverity;
 	suggestions?: string[];
+}
+
+export interface StaffImportValidationContext {
+	existingCodes?: ReadonlySet<string>;
 }
 
 export interface StaffImportValidationResult {

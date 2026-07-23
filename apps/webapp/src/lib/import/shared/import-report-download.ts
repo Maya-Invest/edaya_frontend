@@ -57,6 +57,14 @@ function statusLabel(status: ImportReportRowStatus, labels: ImportReportDownload
 	return labels.success;
 }
 
+/** Keep only blocking error rows for the downloadable error report. */
+export function filterImportReportErrorRows<T extends { rowIndex: number }>(
+	rows: readonly T[],
+	statusByRowIndex: ReadonlyMap<number, ImportReportRowOutcome>,
+): T[] {
+	return rows.filter(row => statusByRowIndex.get(row.rowIndex)?.status === 'error');
+}
+
 function buildReportMatrix(input: ImportReportDownloadInput): string[][] {
 	const header = [
 		...input.columnKeys,
@@ -78,13 +86,13 @@ function buildReportMatrix(input: ImportReportDownloadInput): string[][] {
 }
 
 export function downloadImportReportCsv(input: ImportReportDownloadInput): void {
-	downloadCsv(`${input.filenameBase}-rapport.csv`, buildReportMatrix(input));
+	downloadCsv(`${input.filenameBase}-erreurs.csv`, buildReportMatrix(input));
 }
 
 export async function downloadImportReportExcel(input: ImportReportDownloadInput): Promise<void> {
 	const ExcelJS = (await import('exceljs')).default;
 	const workbook = new ExcelJS.Workbook();
-	const sheet = workbook.addWorksheet('Rapport');
+	const sheet = workbook.addWorksheet('Erreurs');
 	const matrix = buildReportMatrix(input);
 	const statusColumnIndex = input.columnKeys.length + 1;
 	const messageColumnIndex = input.columnKeys.length + 2;
@@ -116,5 +124,5 @@ export async function downloadImportReportExcel(input: ImportReportDownloadInput
 		[buffer],
 		{ type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
 	);
-	downloadBlob(`${input.filenameBase}-rapport.xlsx`, blob);
+	downloadBlob(`${input.filenameBase}-erreurs.xlsx`, blob);
 }

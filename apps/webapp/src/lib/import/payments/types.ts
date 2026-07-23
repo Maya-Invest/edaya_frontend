@@ -70,4 +70,5 @@ export interface PaymentImportValidationContext {
 	fees: readonly PaymentImportFeeOption[];
 	studentFees: readonly PaymentImportStudentFeeOption[];
 	studentMatricules: ReadonlyMap<string, { studentId: string; matricule: string }>;
+	existingReferences?: ReadonlySet<string>;
 }

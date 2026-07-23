@@ -1,11 +1,13 @@
 import type {
 	TeacherImportColumnKey,
 	TeacherImportRow,
+	TeacherImportValidationContext,
 	TeacherImportValidationIssue,
 	TeacherImportValidationResult,
 	ValidatedTeacherImportRow,
 } from './types';
 import { canImportValidatedRows } from '$lib/import/shared/can-import-validated-rows';
+import { normalizeImportCode } from '$lib/import/shared/normalize-import-code';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/;
 
@@ -41,18 +43,46 @@ function validateRequiredField(
 
 export function validateTeacherImportRows(
 	rows: readonly TeacherImportRow[],
+	context: TeacherImportValidationContext = {},
 ): TeacherImportValidationResult {
 	const errors: TeacherImportValidationIssue[] = [];
 	const warnings: TeacherImportValidationIssue[] = [];
 	const validRows: ValidatedTeacherImportRow[] = [];
-	const teachersInFile = new Map<string, number>();
+	const codesInFile = new Map<string, number>();
 	const emailsInFile = new Map<string, number>();
 
 	for (const row of rows) {
 		const rowIssues: TeacherImportValidationIssue[] = [];
 
+		const hasCode = validateRequiredField(row, 'code', row.code, rowIssues);
 		const hasPrenom = validateRequiredField(row, 'prenom', row.prenom, rowIssues);
 		const hasNom = validateRequiredField(row, 'nom', row.nom, rowIssues);
+
+		if (hasCode) {
+			const normalizedCode = normalizeImportCode(row.code);
+			const previousRow = codesInFile.get(normalizedCode);
+			if (previousRow != null) {
+				rowIssues.push(issue({
+					rowIndex: row.rowIndex,
+					column: 'code',
+					value: row.code,
+					messageKey: 'import.teachers.validation.duplicateCodeInFile',
+					messageParams: { row: previousRow },
+				}));
+			}
+			else {
+				codesInFile.set(normalizedCode, row.rowIndex);
+			}
+
+			if (context.existingCodes?.has(normalizedCode)) {
+				rowIssues.push(issue({
+					rowIndex: row.rowIndex,
+					column: 'code',
+					value: row.code,
+					messageKey: 'import.teachers.validation.duplicateCodeExisting',
+				}));
+			}
+		}
 
 		if (row.email?.trim()) {
 			if (!EMAIL_PATTERN.test(row.email.trim())) {
@@ -82,27 +112,6 @@ export function validateTeacherImportRows(
 			}
 		}
 
-		if (hasPrenom && hasNom) {
-			const duplicateKey = [
-				normalizeLookupValue(row.prenom),
-				normalizeLookupValue(row.nom),
-				normalizeLookupValue(row.email ?? ''),
-			].join('::');
-			const previousRow = teachersInFile.get(duplicateKey);
-			if (previousRow != null) {
-				rowIssues.push(issue({
-					rowIndex: row.rowIndex,
-					column: 'nom',
-					value: row.nom,
-					messageKey: 'import.teachers.validation.duplicateInFile',
-					messageParams: { row: previousRow },
-				}));
-			}
-			else {
-				teachersInFile.set(duplicateKey, row.rowIndex);
-			}
-		}
-
 		const blockingIssues = rowIssues.filter(entry => entry.severity === 'error');
 		for (const rowIssue of rowIssues) {
 			if (rowIssue.severity === 'warning') {
@@ -113,7 +122,7 @@ export function validateTeacherImportRows(
 			}
 		}
 
-		if (blockingIssues.length === 0 && hasPrenom && hasNom) {
+		if (blockingIssues.length === 0 && hasCode && hasPrenom && hasNom) {
 			validRows.push({ ...row });
 		}
 	}

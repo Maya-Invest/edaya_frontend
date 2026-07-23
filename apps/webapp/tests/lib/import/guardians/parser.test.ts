@@ -5,9 +5,9 @@ import {
 	parseGuardianImportXlsxBuffer,
 } from '$lib/import/guardians/parser';
 
-const SAMPLE_CSV = `prenom,nom,email,telephone,eleve_matricule
-Aminata,Koné,aminata.kone@example.com,+225 07 00 00 00 00,MAT-2024-001
-Moussa,Traoré,,,MAT-2024-002
+const SAMPLE_CSV = `code,prenom,nom,email,telephone,eleve_matricule
+TUT-001,Aminata,Koné,aminata.kone@example.com,+225 07 00 00 00 00,MAT-2024-001
+TUT-002,Moussa,Traoré,,,MAT-2024-002
 `;
 
 describe('guardian import parser', () => {
@@ -18,6 +18,7 @@ describe('guardian import parser', () => {
 		expect(result.rows).toHaveLength(2);
 		expect(result.rows[0]).toEqual({
 			rowIndex: 2,
+			code: 'TUT-001',
 			prenom: 'Aminata',
 			nom: 'Koné',
 			email: 'aminata.kone@example.com',
@@ -29,9 +30,9 @@ describe('guardian import parser', () => {
 	it('parses xlsx buffer with the same row shape as csv', () => {
 		const csvResult = parseGuardianImportCsvText(SAMPLE_CSV);
 		const xlsxBuffer = buildGuardianImportXlsxBufferFromRows([
-			['prenom', 'nom', 'email', 'telephone', 'eleve_matricule'],
-			['Aminata', 'Koné', 'aminata.kone@example.com', '+225 07 00 00 00 00', 'MAT-2024-001'],
-			['Moussa', 'Traoré', '', '', 'MAT-2024-002'],
+			['code', 'prenom', 'nom', 'email', 'telephone', 'eleve_matricule'],
+			['TUT-001', 'Aminata', 'Koné', 'aminata.kone@example.com', '+225 07 00 00 00 00', 'MAT-2024-001'],
+			['TUT-002', 'Moussa', 'Traoré', '', '', 'MAT-2024-002'],
 		]);
 		const xlsxResult = parseGuardianImportXlsxBuffer(xlsxBuffer);
 

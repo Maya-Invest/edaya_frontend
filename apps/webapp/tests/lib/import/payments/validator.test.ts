@@ -4,6 +4,7 @@ import {
 	canImportValidatedPayments,
 	validatePaymentImportRows,
 } from '$lib/import/payments/validator';
+import { normalizeImportCode } from '$lib/import/shared/normalize-import-code';
 
 const CONTEXT: PaymentImportValidationContext = {
 	fees: [
@@ -62,8 +63,8 @@ describe('payment import validator', () => {
 
 	it('flags missing required fields', () => {
 		const result = validatePaymentImportRows([
-			row({ rowIndex: 2, matricule: '' }),
-			row({ rowIndex: 3, type_frais: '' }),
+			row({ rowIndex: 2, matricule: '', reference: 'REF-A' }),
+			row({ rowIndex: 3, type_frais: '', reference: 'REF-B' }),
 			row({ rowIndex: 4, reference: '' }),
 		], CONTEXT);
 
@@ -105,13 +106,13 @@ describe('payment import validator', () => {
 
 	it('flags invalid amounts and amounts exceeding the remaining balance', () => {
 		const invalidAmount = validatePaymentImportRows([
-			row({ rowIndex: 2, montant: 'abc' }),
+			row({ rowIndex: 2, montant: 'abc', reference: 'REF-INVALID' }),
 		], CONTEXT);
 		expect(invalidAmount.validRows).toEqual([]);
 		expect(invalidAmount.errors[0]?.messageKey).toBe('import.payments.validation.invalidAmount');
 
 		const exceedsRemaining = validatePaymentImportRows([
-			row({ rowIndex: 3, montant: '999999' }),
+			row({ rowIndex: 3, montant: '999999', reference: 'REF-EXCEED' }),
 		], CONTEXT);
 		expect(exceedsRemaining.validRows).toEqual([]);
 		expect(exceedsRemaining.errors[0]?.messageKey).toBe('import.payments.validation.amountExceedsRemaining');
@@ -127,10 +128,34 @@ describe('payment import validator', () => {
 		expect(result.errors[0]?.messageKey).toBe('import.payments.validation.invalidDate');
 	});
 
+	it('rejects duplicate reference in file', () => {
+		const result = validatePaymentImportRows([
+			row({ rowIndex: 2, reference: 'MM-CI-2025-100', matricule: 'CI-2025-001' }),
+			row({ rowIndex: 3, reference: 'mm-ci-2025-100', matricule: 'CI-2025-002' }),
+		], CONTEXT);
+
+		expect(result.validRows).toHaveLength(1);
+		expect(result.errors[0]?.messageKey).toBe('import.payments.validation.duplicateReferenceInFile');
+		expect(result.errors[0]?.messageParams).toEqual({ row: 2 });
+	});
+
+	it('rejects duplicate reference vs existingReferences', () => {
+		const result = validatePaymentImportRows(
+			[row({ rowIndex: 2, reference: 'MM-EXISTING' })],
+			{
+				...CONTEXT,
+				existingReferences: new Set([normalizeImportCode('MM-EXISTING')]),
+			},
+		);
+
+		expect(result.validRows).toHaveLength(0);
+		expect(result.errors[0]?.messageKey).toBe('import.payments.validation.duplicateReferenceExisting');
+	});
+
 	it('enables import when there are valid rows, even with blocking errors on other rows', () => {
 		const partial = validatePaymentImportRows([
-			row({ rowIndex: 2 }),
-			row({ rowIndex: 3, matricule: '' }),
+			row({ rowIndex: 2, reference: 'REF-OK' }),
+			row({ rowIndex: 3, matricule: '', reference: 'REF-BAD' }),
 		], CONTEXT);
 
 		expect(canImportValidatedPayments(partial)).toBe(true);

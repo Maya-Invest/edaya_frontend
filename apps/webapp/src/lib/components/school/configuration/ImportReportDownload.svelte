@@ -7,6 +7,7 @@
 	import {
 		downloadImportReportCsv,
 		downloadImportReportExcel,
+		filterImportReportErrorRows,
 		type ImportReportDownloadLabels,
 	} from '$lib/import/shared/import-report-download';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -72,10 +73,11 @@
 			formatIssueMessage,
 			issuesWithMessages: [...errors, ...warnings],
 		});
+		const errorRows = filterImportReportErrorRows(rows, statusByRowIndex);
 
 		return {
 			columnKeys,
-			rows,
+			rows: errorRows,
 			getColumnValue: (row: { rowIndex: number }, key: string) => {
 				const record = row as Record<string, unknown>;
 				const value = record[key];
@@ -93,6 +95,8 @@
 		};
 	}
 
+	const errorRowCount = $derived.by(() => reportInput().rows.length);
+
 	function downloadCsvReport() {
 		downloadImportReportCsv(reportInput());
 	}
@@ -102,7 +106,7 @@
 	}
 </script>
 
-{#if rows.length > 0}
+{#if errorRowCount > 0}
 	<div class="flex flex-wrap gap-2 border-t border-border pt-4">
 		<Button variant="outline" size="sm" class="justify-center" onclick={downloadCsvReport} data-testid="import-report-download-csv">
 			<Download class="mr-2 size-4" aria-hidden="true" />

@@ -9,6 +9,7 @@ const { runStaffImport } = await import('$lib/import/staff/runner');
 
 function row(overrides: Partial<ValidatedStaffImportRow> & Pick<ValidatedStaffImportRow, 'rowIndex'>): ValidatedStaffImportRow {
 	return {
+		code: 'PER-001',
 		prenom: 'Fatou',
 		nom: 'Diallo',
 		role: 'Secrétaire',
@@ -31,7 +32,7 @@ describe('staff import runner', () => {
 			} as never,
 			rows: [
 				row({ rowIndex: 2, email: 'fatou@example.com' }),
-				row({ rowIndex: 3, prenom: 'Kofi', nom: 'Mensah', role: 'Directeur adjoint' }),
+				row({ rowIndex: 3, code: 'PER-002', prenom: 'Kofi', nom: 'Mensah', role: 'Directeur adjoint' }),
 			],
 			onProgress: (current, total) => {
 				progress.push({ current, total });
@@ -46,6 +47,7 @@ describe('staff import runner', () => {
 			id: 'stf-testseed-0',
 			firstName: 'Fatou',
 			lastName: 'Diallo',
+			code: 'PER-001',
 			email: 'fatou@example.com',
 			sendAccountInvitation: false,
 		}));

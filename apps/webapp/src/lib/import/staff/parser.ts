@@ -42,6 +42,7 @@ function mapRecordToStaffImportRow(
 
 	return {
 		rowIndex,
+		code: values.code,
 		prenom: values.prenom,
 		nom: values.nom,
 		role: values.role,

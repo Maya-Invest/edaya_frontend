@@ -55,6 +55,7 @@ export async function runGuardianImport(options: GuardianImportRunOptions): Prom
 				guardianId,
 				firstName: row.prenom,
 				lastName: row.nom,
+				code: row.code,
 				email: row.email,
 				phone: row.telephone,
 				sendAccountInvitation: false,

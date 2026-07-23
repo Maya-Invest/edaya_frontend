@@ -1,4 +1,4 @@
-import { dirname, join } from 'node:path';
+﻿import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createXlsxWriter } from '../_shared/xlsx-writer.ts';
 import { FEE_SCHOOL, MATRICULES } from '../_shared/ivory-coast-data.ts';
@@ -53,6 +53,12 @@ write('PA09-mobile-money-modes.xlsx', HEADERS, [
 ]);
 
 write('PA10-headers-only.xlsx', HEADERS, []);
+
+write('PA11-error-duplicate-reference.xlsx', HEADERS, [
+	[MATRICULES.kouadioYao, FEE_SCHOOL, 'MM-CI-DUP-001', '50000', '2025-09-25', 'mobile_money', 'Première référence'],
+	[MATRICULES.aminataKone, FEE_SCHOOL, 'mm-ci-dup-001', '50000', '2025-09-26', 'mobile_money', 'Doublon casse insensible'],
+	[MATRICULES.nguessanKouassi, FEE_SCHOOL, 'MM-CI-DUP-002', '50000', '2025-09-27', 'espèces', 'Référence unique OK'],
+]);
 
 write('PA01-happy-all-valid.xlsx', HEADERS, [
 	[MATRICULES.kouadioYao, FEE_SCHOOL, 'MM-CI-2025-100', '75000', '2025-09-01', 'mobile_money', '1er versement trimestre 1'],

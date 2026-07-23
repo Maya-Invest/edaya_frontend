@@ -4,9 +4,11 @@ import {
 	canImportValidatedStaff,
 	validateStaffImportRows,
 } from '$lib/import/staff/validator';
+import { normalizeImportCode } from '$lib/import/shared/normalize-import-code';
 
 function row(overrides: Partial<StaffImportRow> & Pick<StaffImportRow, 'rowIndex'>): StaffImportRow {
 	return {
+		code: 'PER-001',
 		prenom: 'Fatou',
 		nom: 'Diallo',
 		role: 'Secrétaire',
@@ -18,7 +20,7 @@ describe('staff import validator', () => {
 	it('accepts valid rows with known roles', () => {
 		const result = validateStaffImportRows([
 			row({ rowIndex: 2 }),
-			row({ rowIndex: 3, prenom: 'Kofi', nom: 'Mensah', role: 'Directeur adjoint' }),
+			row({ rowIndex: 3, code: 'PER-002', prenom: 'Kofi', nom: 'Mensah', role: 'Directeur adjoint' }),
 		]);
 
 		expect(result.errors).toEqual([]);
@@ -28,11 +30,13 @@ describe('staff import validator', () => {
 
 	it('flags missing required fields', () => {
 		const result = validateStaffImportRows([
-			row({ rowIndex: 2, role: '' }),
+			row({ rowIndex: 2, code: '' }),
+			row({ rowIndex: 3, code: 'PER-003', role: '' }),
 		]);
 
 		expect(result.validRows).toHaveLength(0);
-		expect(result.errors[0]?.messageKey).toBe('import.staff.validation.required');
+		expect(result.errors.some(issue => issue.column === 'code')).toBe(true);
+		expect(result.errors.some(issue => issue.messageKey === 'import.staff.validation.required')).toBe(true);
 	});
 
 	it('warns on unknown roles without blocking import', () => {
@@ -45,13 +49,23 @@ describe('staff import validator', () => {
 		expect(canImportValidatedStaff(result)).toBe(true);
 	});
 
-	it('flags duplicate members within the file', () => {
+	it('rejects duplicate code in file', () => {
 		const result = validateStaffImportRows([
-			row({ rowIndex: 2 }),
-			row({ rowIndex: 3 }),
+			row({ rowIndex: 2, code: 'PER-001' }),
+			row({ rowIndex: 3, code: 'per-001', prenom: 'Kofi', nom: 'Mensah', role: 'Directeur adjoint' }),
 		]);
 
-		expect(result.errors[0]?.messageKey).toBe('import.staff.validation.duplicateInFile');
+		expect(result.errors[0]?.messageKey).toBe('import.staff.validation.duplicateCodeInFile');
 		expect(result.validRows).toHaveLength(1);
+	});
+
+	it('rejects duplicate code vs existingCodes', () => {
+		const result = validateStaffImportRows(
+			[row({ rowIndex: 2, code: 'PER-010' })],
+			{ existingCodes: new Set([normalizeImportCode('PER-010')]) },
+		);
+
+		expect(result.validRows).toHaveLength(0);
+		expect(result.errors[0]?.messageKey).toBe('import.staff.validation.duplicateCodeExisting');
 	});
 });

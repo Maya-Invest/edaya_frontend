@@ -45,6 +45,7 @@ export async function runTeacherImport(options: TeacherImportRunOptions): Promis
 				teacherId,
 				firstName: row.prenom,
 				lastName: row.nom,
+				code: row.code,
 				email: row.email,
 				phone: row.telephone,
 				subjectId: null,

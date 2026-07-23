@@ -1,6 +1,7 @@
 import type { ImportTypeDefinition, ImportTypeColumnDefinition, ImportTypeKey } from './types';
 import {
 	BookOpen,
+	ClipboardCheck,
 	FileText,
 	GraduationCap,
 	HeartHandshake,
@@ -73,6 +74,7 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 		xlsxFilename: 'tuteurs-template.xlsx',
 		xlsxSheetName: 'Tuteurs',
 		columns: catalogColumns([
+			{ key: 'code', required: true, labelKey: 'import.types.guardians.columns.code' },
 			{ key: 'prenom', required: true, labelKey: 'import.types.guardians.columns.prenom' },
 			{ key: 'nom', required: true, labelKey: 'import.types.guardians.columns.nom' },
 			{ key: 'eleve_matricule', required: true, labelKey: 'import.types.guardians.columns.eleve_matricule', multiValue: true },
@@ -80,6 +82,7 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 			{ key: 'telephone', required: false, labelKey: 'import.types.guardians.columns.telephone' },
 		]),
 		exampleRow: {
+			code: 'TUT-001',
 			prenom: 'Aminata',
 			nom: 'Koné',
 			email: 'aminata.kone@example.com',
@@ -99,6 +102,7 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 		xlsxFilename: 'personnel-template.xlsx',
 		xlsxSheetName: 'Personnel',
 		columns: catalogColumns([
+			{ key: 'code', required: true, labelKey: 'import.types.staff.columns.code' },
 			{ key: 'prenom', required: true, labelKey: 'import.types.staff.columns.prenom' },
 			{ key: 'nom', required: true, labelKey: 'import.types.staff.columns.nom' },
 			{ key: 'role', required: true, labelKey: 'import.types.staff.columns.role' },
@@ -106,6 +110,7 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 			{ key: 'telephone', required: false, labelKey: 'import.types.staff.columns.telephone' },
 		]),
 		exampleRow: {
+			code: 'PER-001',
 			prenom: 'Fatou',
 			nom: 'Diallo',
 			email: 'fatou.diallo@example.com',
@@ -125,12 +130,14 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 		xlsxFilename: 'enseignants-template.xlsx',
 		xlsxSheetName: 'Enseignants',
 		columns: catalogColumns([
+			{ key: 'code', required: true, labelKey: 'import.types.teachers.columns.code' },
 			{ key: 'prenom', required: true, labelKey: 'import.types.teachers.columns.prenom' },
 			{ key: 'nom', required: true, labelKey: 'import.types.teachers.columns.nom' },
 			{ key: 'email', required: false, labelKey: 'import.types.teachers.columns.email' },
 			{ key: 'telephone', required: false, labelKey: 'import.types.teachers.columns.telephone' },
 		]),
 		exampleRow: {
+			code: 'ENS-001',
 			prenom: 'Kofi',
 			nom: 'Mensah',
 			email: 'kofi.mensah@example.com',
@@ -183,6 +190,28 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 			coefficient: '3',
 		},
 		permission: 'SCHOOL_STRUCTURE_READ',
+	},
+	{
+		key: 'teacher_assignments',
+		labelKey: 'import.types.teacherAssignments.label',
+		descriptionKey: 'import.types.teacherAssignments.description',
+		hintKey: 'import.types.teacherAssignments.hint',
+		status: 'active',
+		icon: ClipboardCheck,
+		csvFilename: 'affectations-enseignants-template.csv',
+		xlsxFilename: 'affectations-enseignants-template.xlsx',
+		xlsxSheetName: 'Affectations',
+		columns: catalogColumns([
+			{ key: 'code', required: true, labelKey: 'import.types.teacherAssignments.columns.code' },
+			{ key: 'classe', required: true, labelKey: 'import.types.teacherAssignments.columns.classe' },
+			{ key: 'matiere', required: true, labelKey: 'import.types.teacherAssignments.columns.matiere' },
+		]),
+		exampleRow: {
+			code: 'ENS-001',
+			classe: '6ème A',
+			matiere: 'Mathématiques',
+		},
+		permission: 'STAFF_UPDATE',
 	},
 	{
 		key: 'chapters',

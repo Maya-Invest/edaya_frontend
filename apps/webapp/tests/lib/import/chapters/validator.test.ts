@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { ChapterImportRow, ChapterImportCatalogTarget } from '$lib/import/chapters/types';
+import { chapterImportDuplicateKey } from '$lib/import/chapters/types';
 import {
 	canImportValidatedChapters,
 	countChapterImportOperations,
@@ -81,6 +82,23 @@ describe('chapter import validator', () => {
 
 		expect(result.errors[0]?.messageKey).toBe('import.chapters.validation.duplicateInFile');
 		expect(result.validRows).toHaveLength(1);
+	});
+
+	it('flags chapters that already exist via existingChapterKeys', () => {
+		const duplicateKey = chapterImportDuplicateKey(
+			CATALOG_TARGET.gradeLevelSubjectId,
+			'Les fractions',
+		);
+		const result = validateChapterImportRows(
+			[row({ rowIndex: 2 })],
+			{
+				...CONTEXT,
+				existingChapterKeys: new Set([duplicateKey]),
+			},
+		);
+
+		expect(result.validRows).toHaveLength(0);
+		expect(result.errors[0]?.messageKey).toBe('import.chapters.validation.duplicateExisting');
 	});
 
 	it('flags catalog entries with no class assignments', () => {

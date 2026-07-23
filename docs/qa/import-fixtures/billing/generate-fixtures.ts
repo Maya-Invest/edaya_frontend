@@ -1,4 +1,4 @@
-import { dirname, join } from 'node:path';
+﻿import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createXlsxWriter } from '../_shared/xlsx-writer.ts';
 import { FEE_CATALOG_NAMES, FEE_SCHOOL, MATRICULES } from '../_shared/ivory-coast-data.ts';

@@ -1,4 +1,4 @@
-# Fixtures — Import **Facturation**
+﻿# Fixtures — Import **Facturation**
 
 Assignation en masse des frais aux élèves (création des factures), en **FCFA**.
 

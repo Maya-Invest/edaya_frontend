@@ -177,6 +177,7 @@ export function validateStudentImportRows(
 					column: 'classe',
 					value: row.classe,
 					messageKey: 'import.students.validation.classNotFound',
+					messageParams: { value: row.classe },
 					suggestions: resolution.suggestions,
 				}));
 			}

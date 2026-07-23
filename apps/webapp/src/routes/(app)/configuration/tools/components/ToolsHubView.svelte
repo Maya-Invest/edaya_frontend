@@ -4,13 +4,11 @@
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { CalendarRange, ClipboardCheck, Upload } from '$lib/icons';
-	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import { CalendarRange, Upload } from '$lib/icons';
 	import { getToolsPageState } from '../tools-page.svelte';
 	import SchoolTimetableGenerationModal from './SchoolTimetableGenerationModal.svelte';
 
 	const toolsPage = getToolsPageState();
-	const teacherAssignmentsHref = appPath('/(app)/configuration/tools/teacher-assignments');
 </script>
 
 <ListPageHeader
@@ -18,10 +16,6 @@
 	title={$t('tools.title')}
 	description={$t('tools.description')}
 />
-
-<div class="mb-6 rounded-xl border border-border bg-secondary/20 px-4 py-3 text-sm text-muted-foreground">
-	{$t('tools.recommendedOrder')}
-</div>
 
 <div class="grid gap-4 md:grid-cols-2 xl:max-w-4xl">
 	<article
@@ -35,6 +29,7 @@
 			<div class="min-w-0 flex-1">
 				<h3 class="font-display text-lg font-semibold">{$t('import.card.title')}</h3>
 				<p class="mt-1 text-sm text-muted-foreground">{$t('import.card.description')}</p>
+				<p class="mt-2 text-sm text-muted-foreground">{$t('import.recommendedOrder')}</p>
 			</div>
 		</div>
 
@@ -50,32 +45,6 @@
 			</Button>
 		</div>
 	</article>
-
-	<PermissionGate permission="STAFF_READ" mode="hide">
-		<article
-			class="flex flex-col rounded-xl border border-border bg-card p-5 shadow-sm"
-			data-testid="teacher-assignments-tool"
-		>
-			<div class="mb-4 flex items-start gap-3">
-				<div class="rounded-lg bg-primary/10 p-2 text-primary">
-					<ClipboardCheck class="size-5" aria-hidden="true" />
-				</div>
-				<div class="min-w-0 flex-1">
-					<h3 class="font-display text-lg font-semibold">{$t('tools.teacherAssignments.card.title')}</h3>
-					<p class="mt-1 text-sm text-muted-foreground">{$t('tools.teacherAssignments.card.description')}</p>
-				</div>
-			</div>
-
-			<div class="mt-auto">
-				<Button
-					data-testid="teacher-assignments-action"
-					onclick={() => void appGoto(teacherAssignmentsHref)}
-				>
-					{$t('tools.teacherAssignments.card.action')}
-				</Button>
-			</div>
-		</article>
-	</PermissionGate>
 
 	<PermissionGate permission="TIMETABLE_UPDATE" mode="hide">
 		<article
