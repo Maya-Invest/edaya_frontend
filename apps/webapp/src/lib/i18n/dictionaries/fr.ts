@@ -1086,6 +1086,11 @@ export const fr: Dict = {
 	'teaching.homework': 'Travail à faire',
 	'teaching.empty': 'Aucune entrée pour cette journée.',
 	'teaching.chaptersFromCatalogHint': 'Programme défini dans le catalogue (lecture seule). Vous pouvez ajouter des chapitres propres à cette classe.',
+	'teaching.downloadLogbook': 'Télécharger le cahier de texte',
+	'teaching.toastLogbookReady': 'Cahier de texte ouvert.',
+	'teaching.toastLogbookEmpty': 'Aucun contenu de cahier de texte à télécharger pour cette période.',
+	'teaching.toastLogbookError': 'Impossible de télécharger le cahier de texte.',
+	'teaching.toastLogbookNotConfigured': 'Le service de documents n\'est pas configuré sur le serveur.',
 
 	'header.insights': 'Analyses',
 	'header.settings': 'Paramètres',

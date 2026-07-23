@@ -45,7 +45,8 @@ User menu
 └── Account         → inbox, notification settings, profile
 ```
 
-Global header (all modules): **School** · **Academic year + period** · **Language** · **User menu**.
+Global header (all modules): **School** · **Academic year** · **Language** · **User menu**.
+Period scope is selected on period-filtered pages (evaluations, report cards), not in the global header.
 
 ### 2.2 Class context
 

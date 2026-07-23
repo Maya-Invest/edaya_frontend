@@ -1,6 +1,7 @@
 import type { GradeScale, ReportCardDefinition, ReportCardResult } from '$lib/types/report-cards';
 import type { StudentsPageState } from '../../../students-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
+import { resolveScopedPeriodId } from '$lib/academic/period-scope';
 import { openReportCardPdf } from '$lib/api/report-card-pdf';
 import { loadClassReportCardResultsData, loadReportCardCatalogData } from '$lib/api/report-cards-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -99,7 +100,7 @@ export class StudentReportCardTabState {
 		const results = await loadClassReportCardResultsData(
 			getBrowserSchoolClient(),
 			student.classId,
-			academicContext.periodId,
+			resolveScopedPeriodId(academicContext.periodId),
 			slice.reportCardDefinitions,
 		);
 		this.seed(studentId, {
@@ -130,11 +131,11 @@ export class StudentReportCardTabState {
 		const page = this.getPage();
 		const student = page.findStudent(studentId);
 		const slice = this.forStudent(studentId);
-		const periodId = academicContext.periodId;
+		const periodId = resolveScopedPeriodId(academicContext.periodId);
 		const definitionId = slice && student
 			? resolveReportCardDefinitionId(slice, student.classId)
 			: undefined;
-		if (!definitionId) {
+		if (!definitionId || !periodId) {
 			return false;
 		}
 

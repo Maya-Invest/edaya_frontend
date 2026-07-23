@@ -1,8 +1,9 @@
 <script lang="ts">
 	import type { ReportCardResult } from '$lib/types/report-cards';
 	import { page } from '$app/stores';
-	import { academicContext } from '$lib/academic/context.svelte';
+	import { periodsForSelectedYear, persistScopedPeriodId, resolveScopedPeriodId } from '$lib/academic/period-scope';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -17,6 +18,8 @@
 	import { formatGrade } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
+	import { untrack } from 'svelte';
+	import { loadReportCardsSlice } from '../lib/report-cards-queries';
 	import { getReportCardsPageState } from '../report-cards-page.svelte';
 
 	const {
@@ -34,15 +37,19 @@
 	const results = $derived(reportCardsPage.resultsFor(classId));
 	const scales = $derived(reportCardsPage.scalesFor(classId));
 	const classStudents = $derived(reportCardsPage.studentsFor(classId));
-	const period = $derived(academicContext.period);
+	const periods = $derived(periodsForSelectedYear());
 
-	const listFilters = new ListFiltersState<{ q: string; status: string }>(
+	const listFilters = new ListFiltersState<{ q: string; period: string; status: string }>(
 		{
 			getUrl: () => $page.url,
 			write: writeClassReportCardListFilters,
 			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
 		},
 		() => readClassReportCardListFilters($page.url),
+	);
+
+	const selectedPeriod = $derived(
+		periods.find(entry => entry.id === resolveScopedPeriodId(listFilters.values.period)),
 	);
 
 	const statusKeys = ['all', 'none', 'draft', 'generated', 'published'] as const;
@@ -53,6 +60,8 @@
 			? listFilters.values.status as StatusFilter
 			: 'all',
 	);
+
+	const statusFilterActive = $derived(status !== 'all' ? 1 : 0);
 
 	const filteredStudents = $derived(
 		classStudents.filter((student) => {
@@ -102,21 +111,24 @@
 	}
 
 	$effect(() => {
+		const periodFromUrl = initialFilters.period;
 		listFilters.hydrate({
 			q: initialFilters.q,
+			// Prefer the URL period as-is. Only resolve a default when the URL has none —
+			// and untrack so persisting academicContext.periodId cannot re-hydrate the old URL value.
+			period: periodFromUrl || untrack(() => resolveScopedPeriodId('')),
 			status: statusKeys.includes(initialFilters.status as StatusFilter)
 				? initialFilters.status
 				: 'all',
 		});
 	});
 
-	$effect(() => {
-		if (!listFilters.ready) {
-			return;
-		}
-		void listFilters.values.status;
-		listFilters.scheduleSync();
-	});
+	const periodFilterOptions = $derived(
+		periods.map(period => ({
+			value: period.id,
+			label: period.range ? `${period.label} · ${period.range}` : period.label,
+		})),
+	);
 
 	const statusFilterOptions = $derived(
 		statusKeys.map(key => ({
@@ -124,6 +136,19 @@
 			label: statusLabel(key),
 		})),
 	);
+
+	function onPeriodChange(periodId: string) {
+		listFilters.patchImmediate({ period: periodId });
+		persistScopedPeriodId(periodId);
+		// Load with the selected id immediately — don't wait for async URL/PageQuery.
+		void loadReportCardsSlice(classId, periodId).then((data) => {
+			reportCardsPage.applySlice(classId, data);
+		});
+	}
+
+	function onStatusChange(next: string) {
+		listFilters.patchImmediate({ status: next });
+	}
 
 	async function generateAll() {
 		const count = await reportCardsPage.generateForClass({ classId });
@@ -155,7 +180,9 @@
 
 <div class="animate-fade-in">
 	<ListPageHeader
-		eyebrow="{$t('reportCards.classSubtitle')} · {period?.label ?? '—'}"
+		eyebrow={selectedPeriod
+			? `${$t('reportCards.classSubtitle')} · ${selectedPeriod.label}`
+			: $t('reportCards.classSubtitle')}
 		title={$t('reportCards.studentsCount', { n: filteredStudents.length })}
 	>
 		{#snippet search()}
@@ -173,10 +200,19 @@
 		{/snippet}
 		{#snippet filters()}
 			<FilterSelect
-				bind:value={listFilters.values.status}
-				class="h-9 min-w-[10rem] rounded-full text-xs"
-				options={statusFilterOptions}
+				value={listFilters.values.period}
+				class="h-9 min-w-[12rem] rounded-full text-xs"
+				options={periodFilterOptions}
+				onchange={onPeriodChange}
 			/>
+			<FilterPanel activeCount={statusFilterActive} title={$t('reportCards.status')}>
+				<FilterSelect
+					value={listFilters.values.status}
+					class="h-9 w-full rounded-md text-xs"
+					options={statusFilterOptions}
+					onchange={onStatusChange}
+				/>
+			</FilterPanel>
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
@@ -215,23 +251,27 @@
 					<tr
 						class={cn(
 							'border-b border-border/60 last:border-0',
+							result && 'cursor-pointer',
 							selectedId === result?.id && 'bg-primary/5',
 						)}
+						onclick={() => {
+							if (result) {
+								onSelect?.(result);
+							}
+						}}
 					>
-						<td class="px-4 py-3">
-							<button
-								type="button"
-								class="text-left font-medium hover:text-primary"
-								onclick={() => result && onSelect?.(result)}
-							>
-								{student.name}
-							</button>
+						<td class="px-4 py-3 font-medium">
+							{student.name}
 						</td>
 						<td class="px-4 py-3 font-mono">
-							{result && scale ? formatGrade(result.overallAverage, scale) : '—'}
+							{result && scale && result.overallAverage != null
+								? formatGrade(result.overallAverage, scale)
+								: '—'}
 						</td>
 						<td class="px-4 py-3 font-mono">
-							{result ? `${result.classRank}/${result.classSize}` : '—'}
+							{result && result.classRank != null && result.classSize != null
+								? `${result.classRank}/${result.classSize}`
+								: '—'}
 						</td>
 						<td class="px-4 py-3">
 							{#if result}
@@ -252,22 +292,42 @@
 							{/if}
 						</td>
 						<td class="px-4 py-3">
-							<div class="flex justify-end gap-1">
-								{#if !result}
-									<Button size="sm" variant="outline" class="rounded-full" onclick={() => generateOne(student.id)}>
-										<FileSpreadsheet class="h-3.5 w-3.5" />
-										{$t('reportCards.generate')}
-									</Button>
-								{:else if result.status === 'generated'}
-									<Button size="sm" class="rounded-full" onclick={() => publishOne(result.id)}>
-										{$t('reportCards.publish')}
-									</Button>
-								{/if}
-								{#if result}
-									<Button size="sm" variant="ghost" class="rounded-full" onclick={() => onSelect?.(result)}>
-										{$t('reportCards.view')}
-									</Button>
-								{/if}
+							<div
+								class="flex justify-end gap-1"
+								role="presentation"
+								onclick={event => event.stopPropagation()}
+							>
+								<PermissionGate
+									permission="REPORT_CARD_GENERATE"
+									mode="disable"
+									tooltip={$t('reportCards.generate')}
+								>
+									{#snippet children({ disabled, title })}
+										<Button
+											size="sm"
+											variant="outline"
+											class="rounded-full"
+											disabled={disabled || result?.status === 'published'}
+											{title}
+											onclick={() => generateOne(student.id)}
+										>
+											<FileSpreadsheet class="h-3.5 w-3.5" />
+											{$t('reportCards.generate')}
+										</Button>
+									{/snippet}
+								</PermissionGate>
+								<Button
+									size="sm"
+									class="rounded-full"
+									disabled={!result || result.status !== 'generated'}
+									onclick={() => {
+										if (result) {
+											void publishOne(result.id);
+										}
+									}}
+								>
+									{$t('reportCards.publish')}
+								</Button>
 							</div>
 						</td>
 					</tr>

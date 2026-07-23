@@ -116,12 +116,18 @@
 			<div class="rounded-xl border border-border bg-secondary/30 p-4 text-center">
 				<p class="font-mono text-[10px] uppercase text-muted-foreground">{$t('reportCards.overall')}</p>
 				<p class="font-display text-3xl font-semibold">
-					{scale ? formatGrade(latest.overallAverage, scale) : latest.overallAverage}
+					{latest.overallAverage != null
+						? (scale ? formatGrade(latest.overallAverage, scale) : latest.overallAverage)
+						: '—'}
 				</p>
 			</div>
 			<div class="rounded-xl border border-border bg-secondary/30 p-4 text-center">
 				<p class="font-mono text-[10px] uppercase text-muted-foreground">{$t('reportCards.rank')}</p>
-				<p class="font-display text-3xl font-semibold">{latest.classRank}/{latest.classSize}</p>
+				<p class="font-display text-3xl font-semibold">
+					{latest.classRank != null && latest.classSize != null
+						? `${latest.classRank}/${latest.classSize}`
+						: '—'}
+				</p>
 			</div>
 		</div>
 
@@ -146,9 +152,16 @@
 											<p class="text-xs text-muted-foreground">{mark.teacherName}</p>
 										{/if}
 									</div>
-									<p class="font-mono font-medium">
-										{scale ? formatGrade(mark.average, scale) : mark.average}
-									</p>
+									<div class="text-right">
+										<p class="font-mono font-medium">
+											{scale ? formatGrade(mark.average, scale) : mark.average}
+										</p>
+										{#if mark.rank != null && latest.classSize != null}
+											<p class="font-mono text-xs text-muted-foreground">
+												{mark.rank}/{latest.classSize}
+											</p>
+										{/if}
+									</div>
 								</div>
 								{#if mark.appreciation}
 									<p class="mt-2 text-sm text-muted-foreground">{mark.appreciation}</p>

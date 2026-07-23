@@ -2,7 +2,6 @@ import type { components } from '$lib/api/schema';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { AssessmentKind, Evaluation } from '$lib/types/school';
 import type { EvaluationsPageSlice } from './lib/evaluation-helpers';
-import { academicContext } from '$lib/academic/context.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { inClassAssessmentWindow, nowIso, todayDateInput } from '$lib/date/format';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
@@ -12,6 +11,7 @@ import {
 	emptyEvaluationsSlice,
 	evaluationDetailIdFromUrl,
 	evaluationsClassIdFromUrl,
+	evaluationsPeriodIdFromUrl,
 	evaluationStatsFromResults,
 	normalizedDescription,
 
@@ -170,7 +170,7 @@ export class EvaluationsPageState {
 	}
 
 	async refreshSlice(classId: string) {
-		const data = await loadEvaluationsSlice(classId);
+		const data = await loadEvaluationsSlice(classId, evaluationsPeriodIdFromUrl(this.getUrl()));
 		this.applySlice(classId, data);
 	}
 
@@ -197,7 +197,7 @@ export class EvaluationsPageState {
 		successMessage?: string;
 	}): Promise<string | null> {
 		const client = getBrowserSchoolClient();
-		const periodId = academicContext.periodId;
+		const periodId = evaluationsPeriodIdFromUrl(this.getUrl());
 		if (!periodId) {
 			return null;
 		}

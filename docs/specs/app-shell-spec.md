@@ -62,7 +62,7 @@ The authenticated app uses a persistent four-layer frame:
 
 ```
 ┌─────────────┬──────────────────────────────────────────────────────────┐
-│  Sidebar    │  Header: [School] [Year · Period] [Lang] [User menu ▾]  │
+│  Sidebar    │  Header: [School] [Year] [Lang] [User menu ▾]           │
 │  Logo       ├──────────────────────────────────────────────────────────┤
 │  Modules    │                                                          │
 │  └ items    │  Main content (list / dashboard / special view)          │
@@ -99,9 +99,11 @@ Global selectors (scope data for the whole session/view):
 | Selector | Purpose |
 |----------|---------|
 | School | Multi-tenant context |
-| Academic year + period | Data time scope |
+| Academic year | Year scope for catalogs and defaults |
 | Language | i18n locale |
 | User menu | Avatar, name, role; dropdown with profile/preferences and sign out |
+
+Academic **period** is not a global header selector. Period-scoped routes (class evaluations, class report cards) own a URL-backed period filter on the page toolbar. Soft consumers (dashboard overview, metrics) default to the last published period of the selected year.
 
 ### 1.3 Layout variants
 
@@ -424,7 +426,7 @@ The user's **staff role label** (e.g. director, teacher) is shown in the header 
 
 ### 6.4 Global context
 
-Changing school, academic year, or period must invalidate/refetch list data for the active route. The app shell owns this central invalidation mechanism: selector changes clear affected `PageQuery` cache entries, notify the active route state to refresh, and preserve the current URL unless the new scope makes it inaccessible. Screen logic must derive scope from the shell's global context selectors, not hard-coded values.
+Changing school or academic year must invalidate/refetch list data for the active route. Period changes on period-scoped pages are URL-driven (`?period=`) and refresh that route’s `PageQuery` via a period-aware cache key. The app shell owns school/year invalidation: selector changes clear affected `PageQuery` cache entries, notify the active route state to refresh, and preserve the current URL unless the new scope makes it inaccessible. Screen logic must derive year scope from the shell’s global context selectors, and period scope from the page URL (or the year-default period helper) — not hard-coded values.
 
 ### 6.5 Responsive
 

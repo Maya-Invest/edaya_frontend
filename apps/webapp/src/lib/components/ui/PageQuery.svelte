@@ -47,7 +47,12 @@
 
 		inFlightKey = key;
 		const version = ++loadVersion;
-		if (key !== loadedKey) {
+		// Keep the current shell when only search params change (e.g. ?period=).
+		// Clearing result remounts list chrome and drops in-progress filters.
+		const sameListShell = result !== null
+			&& loadedKey !== null
+			&& loadedKey.split('?')[0] === key.split('?')[0];
+		if (key !== loadedKey && !sameListShell) {
 			result = null;
 		}
 		pageQueryStatus.markPending(key);

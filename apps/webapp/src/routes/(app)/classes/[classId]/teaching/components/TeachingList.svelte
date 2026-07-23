@@ -1,16 +1,22 @@
 <script lang="ts">
 	import type { Subject, SubjectCategory } from '$lib/types/school';
 	import { page } from '$app/stores';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import { downloadClassLogbook } from '$lib/api/logbook-pdf';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
-	import { t } from '$lib/i18n';
-	import { Clock, Search, Sparkles, User } from '$lib/icons';
+	import { locale, t } from '$lib/i18n';
+	import { Clock, Download, Search, Sparkles, User } from '$lib/icons';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readTeachingListFilters, writeTeachingListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
+	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
+	import { get } from 'svelte/store';
 	import { getTeachingPageState } from '../teaching-page.svelte';
 
 	const {
@@ -25,6 +31,7 @@
 	const subjects = $derived(teachingPage.subjectsFor(classId));
 	const overallProgress = $derived(teachingPage.overallProgress(classId));
 	const initialFilters = $derived(readTeachingListFilters($page.url));
+	let downloading = $state(false);
 
 	const listFilters = new ListFiltersState<{ q: string }>(
 		{
@@ -65,6 +72,40 @@
 	function selectSubject(subject: Subject) {
 		const path = detailHref.classTeachingSubjectTab(classId, subject.id, 'progression');
 		appGoto(path);
+	}
+
+	async function downloadLogbook() {
+		if (downloading) {
+			return;
+		}
+		downloading = true;
+		try {
+			const scope = academicContext.resolveSelectionForApi();
+			const result = await downloadClassLogbook({
+				classGroupId: classId,
+				academicPeriodId: scope?.academicPeriodId,
+				locale: get(locale).startsWith('en') ? 'en' : 'fr',
+			});
+			if (result.status === 'ready') {
+				toast.info(get(t)('teaching.toastLogbookReady'));
+				return;
+			}
+			if (result.status === 'empty') {
+				toast.info(get(t)('teaching.toastLogbookEmpty'));
+				return;
+			}
+			if (result.status === 'not_configured') {
+				toast.error(get(t)('teaching.toastLogbookNotConfigured'));
+				return;
+			}
+			toast.error(get(t)('teaching.toastLogbookError'));
+		}
+		catch {
+			toast.error(get(t)('teaching.toastLogbookError'));
+		}
+		finally {
+			downloading = false;
+		}
 	}
 
 	$effect(() => {
@@ -119,6 +160,26 @@
 		{/snippet}
 		{#snippet more()}
 			<ListMoreMenu exportOnly />
+		{/snippet}
+		{#snippet primary()}
+			<PermissionGate
+				permission="CLASS_LOGBOOK_READ"
+				classId={classId}
+				mode="disable"
+				tooltip={$t('teaching.downloadLogbook')}
+			>
+				{#snippet children({ disabled, title })}
+					<Button
+						class="rounded-full"
+						disabled={disabled || downloading}
+						{title}
+						onclick={downloadLogbook}
+					>
+						<Download class="h-4 w-4" />
+						{$t('teaching.downloadLogbook')}
+					</Button>
+				{/snippet}
+			</PermissionGate>
 		{/snippet}
 	</ListPageHeader>
 

@@ -1,5 +1,4 @@
 import type { ReportCardsPageState } from '../report-cards-page.svelte';
-import { academicContext } from '$lib/academic/context.svelte';
 import { loadClassPeopleData } from '$lib/api/people-data';
 import {
 	loadClassReportCardResultsData,
@@ -9,10 +8,9 @@ import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 import { ApiError } from '@maya-invest/edaya-api-client';
-import { emptyReportCardsSlice } from './report-cards-helpers';
+import { emptyReportCardsSlice, reportCardsPeriodIdFromUrl } from './report-cards-helpers';
 
-export async function loadReportCardsSlice(classId: string) {
-	const periodId = academicContext.periodId;
+export async function loadReportCardsSlice(classId: string, periodId: string) {
 	const client = getBrowserSchoolClient();
 	let catalog;
 	try {
@@ -38,6 +36,7 @@ export async function loadReportCardsSlice(classId: string) {
 
 	return {
 		...emptyReportCardsSlice(classId),
+		periodId,
 		students: people.students,
 		results,
 		scales: catalog.gradeScales,
@@ -49,7 +48,8 @@ export function queryReportCardsListPage(classId: string, state: ReportCardsPage
 	return (url: URL) => resolvePageLoad(url, {
 		empty: () => emptyReportCardsSlice(classId),
 		load: async () => {
-			const data = await loadReportCardsSlice(classId);
+			const periodId = reportCardsPeriodIdFromUrl(url);
+			const data = await loadReportCardsSlice(classId, periodId);
 			state.applySlice(classId, data);
 			return data;
 		},

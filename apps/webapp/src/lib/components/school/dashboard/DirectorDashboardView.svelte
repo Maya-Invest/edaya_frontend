@@ -132,7 +132,7 @@
 					{school?.name ?? school?.shortName ?? 'EDAYA'}
 				</h1>
 				<p class="mt-1 text-sm text-muted-foreground">
-					{academicContext.year?.label ?? '—'} · {academicContext.period?.label ?? '—'}
+					{academicContext.year?.label ?? '—'}
 				</p>
 			</div>
 			<div class="text-right text-sm">

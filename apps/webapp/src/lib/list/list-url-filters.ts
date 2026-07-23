@@ -64,6 +64,7 @@ const teacherListFiltersCodec = defineUrlFilterCodec({
 
 const classReportCardListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
+	period: { type: 'string', default: '' },
 	status: { type: 'string', default: 'all' },
 });
 
@@ -116,6 +117,7 @@ const educatorDashboardListFiltersCodec = defineUrlFilterCodec({
 });
 
 const classEvaluationListFiltersCodec = defineUrlFilterCodec({
+	period: { type: 'string', default: '' },
 	kind: { type: 'string', default: 'all' },
 });
 

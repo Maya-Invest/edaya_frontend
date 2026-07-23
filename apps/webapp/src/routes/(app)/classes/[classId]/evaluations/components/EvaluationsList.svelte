@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { AssessmentKind, Evaluation } from '$lib/types/school';
 	import { page } from '$app/stores';
+	import { periodsForSelectedYear, persistScopedPeriodId, resolveScopedPeriodId } from '$lib/academic/period-scope';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -17,7 +18,9 @@
 	import { appendModal } from '$lib/modal/modal-url';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
+	import { untrack } from 'svelte';
 	import { getEvaluationsPageState } from '../evaluations-page.svelte';
+	import { loadEvaluationsSlice } from '../lib/evaluations-queries';
 	import EvaluationCreateModal from './EvaluationCreateModal.svelte';
 
 	const KIND_FILTERS = ['all', 'homework', 'quiz', 'project', 'other'] as const;
@@ -34,9 +37,10 @@
 	const evaluationsPage = getEvaluationsPageState();
 	const evaluations = $derived(evaluationsPage.evaluationsFor(classId));
 	const initialFilters = $derived(readClassEvaluationListFilters($page.url));
+	const periods = $derived(periodsForSelectedYear());
 	let createOpen = $state(false);
 
-	const listFilters = new ListFiltersState<{ kind: string }>(
+	const listFilters = new ListFiltersState<{ period: string; kind: string }>(
 		{
 			getUrl: () => $page.url,
 			write: writeClassEvaluationListFilters,
@@ -55,6 +59,13 @@
 		kindFilter === 'all'
 			? evaluations
 			: evaluations.filter(evaluation => evaluation.kind === kindFilter),
+	);
+
+	const periodFilterOptions = $derived(
+		periods.map(period => ({
+			value: period.id,
+			label: period.range ? `${period.label} · ${period.range}` : period.label,
+		})),
 	);
 
 	const kindFilterOptions = $derived(
@@ -107,20 +118,26 @@
 	}
 
 	$effect(() => {
+		const periodFromUrl = initialFilters.period;
 		listFilters.hydrate({
+			period: periodFromUrl || untrack(() => resolveScopedPeriodId('')),
 			kind: KIND_FILTERS.includes(initialFilters.kind as KindFilter)
 				? initialFilters.kind
 				: 'all',
 		});
 	});
 
-	$effect(() => {
-		if (!listFilters.ready) {
-			return;
-		}
-		void listFilters.values.kind;
-		listFilters.scheduleSync();
-	});
+	function onPeriodChange(periodId: string) {
+		listFilters.patchImmediate({ period: periodId });
+		persistScopedPeriodId(periodId);
+		void loadEvaluationsSlice(classId, periodId).then((data) => {
+			evaluationsPage.applySlice(classId, data);
+		});
+	}
+
+	function onKindChange(next: string) {
+		listFilters.patchImmediate({ kind: next });
+	}
 </script>
 
 <div class="animate-fade-in">
@@ -130,9 +147,16 @@
 	>
 		{#snippet filters()}
 			<FilterSelect
-				bind:value={listFilters.values.kind}
+				value={listFilters.values.period}
+				class="h-9 min-w-[12rem] rounded-full text-xs"
+				options={periodFilterOptions}
+				onchange={onPeriodChange}
+			/>
+			<FilterSelect
+				value={listFilters.values.kind}
 				class="h-9 w-44 rounded-full text-xs"
 				options={kindFilterOptions}
+				onchange={onKindChange}
 			/>
 		{/snippet}
 		{#snippet more()}

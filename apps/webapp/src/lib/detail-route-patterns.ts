@@ -119,6 +119,13 @@ export function listRouteCacheKey(url: URL): string {
 	return cacheKeyWithDemo(normalizeListPathname(pathname), url);
 }
 
+/** List cache key that also varies by `period` search param (period-scoped routes). */
+export function listRouteCacheKeyWithPeriod(url: URL): string {
+	const base = listRouteCacheKey(url);
+	const period = url.searchParams.get('period');
+	return period ? `${base}?period=${encodeURIComponent(period)}` : base;
+}
+
 /** Stable key for drawer tab PageQuery instances — pathname only, separate from the list cache. */
 export function drawerTabRouteCacheKey(url: URL): string {
 	const pathname = url.pathname.replace(/\/$/, '') || '/';

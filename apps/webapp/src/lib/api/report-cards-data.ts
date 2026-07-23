@@ -219,6 +219,7 @@ interface ApiSectionResult {
 	name?: string;
 	average?: number;
 	weight?: number;
+	rank?: number | null;
 	comment?: string | null;
 	classSubjectId?: string | null;
 	subResults?: ApiSectionResult[];
@@ -228,17 +229,38 @@ function mapResultStatus(status: ReportCardResultRaw['status']): ReportCardResul
 	return status === 'published' ? 'published' : 'generated';
 }
 
+function asSectionResult(value: ApiSectionResult | Record<string, unknown>): ApiSectionResult {
+	if (
+		value
+		&& typeof value === 'object'
+		&& 'data' in value
+		&& value.data
+		&& typeof value.data === 'object'
+	) {
+		const nested = value.data as ApiSectionResult;
+		const subResults = Array.isArray(value.subResults)
+			? value.subResults
+			: nested.subResults;
+		return {
+			...nested,
+			subResults: (subResults ?? []).map(entry => asSectionResult(entry as ApiSectionResult)),
+		};
+	}
+	return value as ApiSectionResult;
+}
+
 export function mapSubjectMark(
 	subjectResult: ApiSectionResult,
 	sources: ClassSubjectsSources,
 ): ReportCardSubjectMark | null {
-	const classSubjectId = subjectResult.classSubjectId ?? undefined;
+	const normalized = asSectionResult(subjectResult);
+	const classSubjectId = normalized.classSubjectId ?? undefined;
 	if (!classSubjectId) {
 		return null;
 	}
 
 	const classSubject = sources.classSubjectsRaw.find(entry => entry.id === classSubjectId);
-	const catalogSubjectId = classSubject?.subjectId ?? subjectResult.name;
+	const catalogSubjectId = classSubject?.subjectId ?? normalized.name;
 	const subject = catalogSubjectId
 		? sources.subjectsRaw.find(entry => entry.id === catalogSubjectId)
 		: undefined;
@@ -246,9 +268,10 @@ export function mapSubjectMark(
 	return {
 		subjectId: classSubjectId,
 		subjectName: subject?.name ?? subjectLabelForCatalogId(catalogSubjectId ?? classSubjectId, sources),
-		average: subjectResult.average ?? 0,
-		coefficient: subjectResult.weight ?? 1,
-		appreciation: subjectResult.comment ?? undefined,
+		average: normalized.average ?? 0,
+		coefficient: normalized.weight ?? 1,
+		rank: normalized.rank ?? undefined,
+		appreciation: normalized.comment ?? undefined,
 		teacherName: teacherNameForClassSubjectFromSources(classSubjectId, sources),
 	};
 }
@@ -258,7 +281,8 @@ function mapSectionResults(
 	sources: ClassSubjectsSources,
 ): ReportCardSectionResult[] {
 	return sectionResultsRaw
-		.filter(section => (section.subResults ?? []).some(sub => sub.classSubjectId))
+		.map(section => asSectionResult(section))
+		.filter(section => (section.subResults ?? []).some(sub => asSectionResult(sub).classSubjectId))
 		.map((section) => {
 			const marks = (section.subResults ?? [])
 				.map(sub => mapSubjectMark(sub, sources))
@@ -282,7 +306,7 @@ export function mapReportCardResults(
 ): ReportCardResult[] {
 	const definitionById = new Map(definitions.map(definition => [definition.id, definition]));
 
-	return resultsRaw.map((result) => {
+	const mapped = resultsRaw.map((result) => {
 		const definition = definitionById.get(result.reportCardDefinitionId);
 
 		return {
@@ -295,9 +319,9 @@ export function mapReportCardResults(
 			academicPeriodId: result.periodId,
 			gradeScaleId: definition?.gradeScaleId ?? 'gs-20',
 			status: mapResultStatus(result.status),
-			overallAverage: result.overallAverage ?? 0,
-			classRank: result.rank ?? 0,
-			classSize: result.classSize ?? 0,
+			overallAverage: result.overallAverage ?? undefined,
+			classRank: result.rank ?? undefined,
+			classSize: result.classSize ?? undefined,
 			sectionResults: mapSectionResults(
 				(result.sectionResults ?? []) as ApiSectionResult[],
 				sources,
@@ -308,6 +332,64 @@ export function mapReportCardResults(
 			publishedAt: formatDate(result.publishedAt),
 		};
 	});
+
+	return enrichSubjectRanksFromClassmates(mapped);
+}
+
+/** Fill missing per-subject ranks from classmates (e.g. published cards generated before ranks existed). */
+function enrichSubjectRanksFromClassmates(results: ReportCardResult[]): ReportCardResult[] {
+	const groups = new Map<string, ReportCardResult[]>();
+	for (const result of results) {
+		const key = `${result.classId}::${result.academicPeriodId}`;
+		const group = groups.get(key) ?? [];
+		group.push(result);
+		groups.set(key, group);
+	}
+
+	const rankByResultAndSubject = new Map<string, number>();
+	for (const group of groups.values()) {
+		const subjectIds = new Set<string>();
+		for (const result of group) {
+			for (const section of result.sectionResults) {
+				for (const mark of section.marks) {
+					subjectIds.add(mark.subjectId);
+				}
+			}
+		}
+		for (const subjectId of subjectIds) {
+			const ranked = group
+				.map((result) => {
+					const mark = result.sectionResults
+						.flatMap(section => section.marks)
+						.find(entry => entry.subjectId === subjectId);
+					return mark
+						? { resultId: result.id, studentId: result.studentId, average: mark.average }
+						: null;
+				})
+				.filter((entry): entry is { resultId: string, studentId: string, average: number } => entry !== null)
+				.sort((left, right) =>
+					right.average - left.average
+					|| left.studentId.localeCompare(right.studentId),
+				);
+			ranked.forEach((entry, index) => {
+				rankByResultAndSubject.set(`${entry.resultId}::${subjectId}`, index + 1);
+			});
+		}
+	}
+
+	return results.map(result => ({
+		...result,
+		sectionResults: result.sectionResults.map(section => ({
+			...section,
+			marks: section.marks.map((mark) => {
+				if (mark.rank != null) {
+					return mark;
+				}
+				const rank = rankByResultAndSubject.get(`${result.id}::${mark.subjectId}`);
+				return rank != null ? { ...mark, rank } : mark;
+			}),
+		})),
+	}));
 }
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;

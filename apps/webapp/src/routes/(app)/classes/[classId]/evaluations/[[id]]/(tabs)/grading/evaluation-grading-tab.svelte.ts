@@ -1,10 +1,12 @@
 import type { AssessmentResultRow, Student } from '$lib/types/school';
-import { academicContext } from '$lib/academic/context.svelte';
 import { loadClassPeopleData } from '$lib/api/people-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { resolvePageLoad } from '$lib/queries/page-status';
 import { getContext, setContext } from 'svelte';
-import { evaluationsClassIdFromUrl } from '../../../lib/evaluation-helpers';
+import {
+	evaluationsClassIdFromUrl,
+	evaluationsPeriodIdFromUrl,
+} from '../../../lib/evaluation-helpers';
 import { loadEvaluationGradingData } from '../../../lib/evaluations-queries';
 
 const EVALUATION_GRADING_TAB_KEY = Symbol('evaluation-grading-tab');
@@ -74,7 +76,7 @@ export class EvaluationGradingTabState {
 			empty: () => ({}),
 			load: async () => {
 				const resolvedClassId = evaluationsClassIdFromUrl(url) ?? classId;
-				const periodId = academicContext.periodId;
+				const periodId = evaluationsPeriodIdFromUrl(url);
 				if (!periodId) {
 					this.slice = { classId: resolvedClassId, students: [], assessmentResults: [] };
 					return {};

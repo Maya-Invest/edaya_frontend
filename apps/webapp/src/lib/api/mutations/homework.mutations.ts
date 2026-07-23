@@ -1,6 +1,7 @@
 import type { components } from '$lib/api/schema';
 import type { Deadline } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
+import { resolveScopedPeriodId } from '$lib/academic/period-scope';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
@@ -29,7 +30,7 @@ export async function createHomeworkMutation(input: {
 }): Promise<string | null> {
 	const client = getBrowserSchoolClient();
 	const schoolId = authSession.schoolId;
-	const periodId = academicContext.periodId;
+	const periodId = resolveScopedPeriodId(academicContext.periodId);
 	if (!schoolId || !periodId) {
 		toast.error(get(t)('hw.noContext'));
 		return null;

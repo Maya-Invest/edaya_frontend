@@ -1095,6 +1095,11 @@ export const en: Dict = {
 	'teaching.homework': 'Homework',
 	'teaching.empty': 'No log entries for this day.',
 	'teaching.chaptersFromCatalogHint': 'Curriculum from the subject catalog (read-only). You can add chapters for this class only.',
+	'teaching.downloadLogbook': 'Download LogBook',
+	'teaching.toastLogbookReady': 'LogBook PDF opened.',
+	'teaching.toastLogbookEmpty': 'No logbook content to download for this period.',
+	'teaching.toastLogbookError': 'Could not download the LogBook PDF.',
+	'teaching.toastLogbookNotConfigured': 'Document rendering is not configured on the server.',
 
 	// Header
 	'header.insights': 'Insights',

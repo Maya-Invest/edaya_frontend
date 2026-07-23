@@ -103,8 +103,8 @@ const cases: FilterCase[] = [
 		name: 'class report cards',
 		read: readClassReportCardListFilters,
 		write: writeWith(writeClassReportCardListFilters),
-		defaults: { q: '', status: 'all' },
-		nonDefault: { q: 'term', status: 'published' },
+		defaults: { q: '', period: '', status: 'all' },
+		nonDefault: { q: 'term', period: 'period-t1', status: 'published' },
 	},
 	{
 		name: 'payments',

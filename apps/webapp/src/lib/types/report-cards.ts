@@ -51,6 +51,7 @@ export interface ReportCardSubjectMark {
 	subjectName: string;
 	average: number;
 	coefficient: number;
+	rank?: number;
 	appreciation?: string;
 	teacherName?: string;
 }
@@ -71,9 +72,9 @@ export interface ReportCardResult {
 	academicPeriodId: string;
 	gradeScaleId: string;
 	status: ReportCardResultStatus;
-	overallAverage: number;
-	classRank: number;
-	classSize: number;
+	overallAverage?: number;
+	classRank?: number;
+	classSize?: number;
 	sectionResults: ReportCardSectionResult[];
 	homeroomComment?: string;
 	principalComment?: string;

@@ -13,6 +13,7 @@ import {
 	emptyReportCardsSlice,
 	reportCardDetailIdFromUrl,
 	reportCardsClassIdFromUrl,
+	reportCardsPeriodIdFromUrl,
 } from './lib/report-cards-helpers';
 import { loadReportCardsSlice, queryReportCardsListPage } from './lib/report-cards-queries';
 import { runReportCardsRouteMutation } from './lib/report-cards-route-mutation';
@@ -56,6 +57,10 @@ export class ReportCardsPageState {
 			return undefined;
 		}
 		return this.selectedResult(classId, this.selectedId);
+	}
+
+	get periodId() {
+		return reportCardsPeriodIdFromUrl(this.getUrl());
 	}
 
 	studentsFor(classId: string): Student[] {
@@ -116,7 +121,7 @@ export class ReportCardsPageState {
 	}
 
 	async refreshSlice(classId: string) {
-		const data = await loadReportCardsSlice(classId);
+		const data = await loadReportCardsSlice(classId, this.periodId);
 		this.applySlice(classId, data);
 	}
 
@@ -155,7 +160,7 @@ export class ReportCardsPageState {
 	}
 
 	private async refreshResults(classId: string) {
-		const periodId = academicContext.periodId;
+		const periodId = this.periodId;
 		if (!periodId || !this.slice) {
 			return;
 		}
@@ -175,10 +180,12 @@ export class ReportCardsPageState {
 			return false;
 		}
 
+		const existing = this.slice?.results.find(
+			result => result.studentId === studentId && result.academicPeriodId === periodId,
+		);
 		const client = getBrowserSchoolClient();
-		const id = `rcr-${studentId}-${periodId}`;
 		await client.commands.generateReportCardResult({
-			id,
+			id: existing?.id ?? `rcr-${studentId}-${periodId}`,
 			studentId,
 			periodId,
 			reportCardDefinitionId: definitionId,
@@ -191,7 +198,7 @@ export class ReportCardsPageState {
 		studentId: string;
 		successMessage?: string;
 	}): Promise<boolean> {
-		const periodId = academicContext.periodId;
+		const periodId = this.periodId;
 		const classId = this.slice?.classId;
 		if (!periodId || !classId) {
 			return false;
@@ -215,25 +222,25 @@ export class ReportCardsPageState {
 		classId: string;
 		successMessage?: string;
 	}): Promise<number | null> {
-		const periodId = academicContext.periodId;
+		const periodId = this.periodId;
 		if (!periodId || this.slice?.classId !== input.classId) {
 			return null;
 		}
 
-		const pending = this.slice.students.filter(
-			student => !this.slice?.results.some(
+		const students = this.slice.students.filter((student) => {
+			const existing = this.slice?.results.find(
 				result => result.studentId === student.id && result.academicPeriodId === periodId,
-			),
-		);
-
-		if (pending.length === 0) {
+			);
+			return existing?.status !== 'published';
+		});
+		if (students.length === 0) {
 			return 0;
 		}
 
 		return runReportCardsRouteMutation({
 			request: async () => {
 				let count = 0;
-				for (const student of pending) {
+				for (const student of students) {
 					if (await this.generateReportCardResultCommand(student.id, periodId)) {
 						count += 1;
 					}
@@ -250,7 +257,7 @@ export class ReportCardsPageState {
 		resultId: string;
 		successMessage?: string;
 	}): Promise<boolean> {
-		const periodId = academicContext.periodId;
+		const periodId = this.periodId;
 		const existing = this.slice?.results.find(result => result.id === input.resultId);
 		if (!periodId || !existing || !this.slice) {
 			return false;

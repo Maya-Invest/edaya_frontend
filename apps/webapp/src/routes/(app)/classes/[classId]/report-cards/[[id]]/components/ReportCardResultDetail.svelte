@@ -1,9 +1,11 @@
 <script lang="ts">
 	import type { ReportCardResult } from '$lib/types/report-cards';
+	import { academicContext } from '$lib/academic/context.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { Download } from '$lib/icons';
+	import { Download, FileSpreadsheet } from '$lib/icons';
 	import { toast } from '$lib/toast.svelte';
 	import { formatGrade } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
@@ -21,6 +23,13 @@
 	const scale = $derived(
 		reportCardsPage.scalesFor(live.classId).find(entry => entry.id === live.gradeScaleId),
 	);
+	const hasSectionMarks = $derived(
+		live.sectionResults.some(section => section.marks.length > 0),
+	);
+	const periodLabel = $derived(
+		academicContext.periods.find(p => p.id === live.academicPeriodId)?.label
+			?? live.academicPeriodId,
+	);
 	let downloading = $state(false);
 
 	function resultStatusLabel(status: ReportCardResult['status']) {
@@ -31,6 +40,13 @@
 			return $t('reportCards.statusGenerated');
 		}
 		return $t('reportCards.statusDraft');
+	}
+
+	async function regenerate() {
+		await reportCardsPage.generateForStudent({
+			studentId: live.studentId,
+			successMessage: get(t)('reportCards.toastGenerated', { name: student?.name ?? '' }),
+		});
 	}
 
 	async function publish() {
@@ -87,6 +103,25 @@
 			</span>
 		{/snippet}
 		{#snippet actions()}
+			<PermissionGate
+				permission="REPORT_CARD_GENERATE"
+				mode="disable"
+				tooltip={$t('reportCards.generate')}
+			>
+				{#snippet children({ disabled, title })}
+					<Button
+						size="sm"
+						variant="outline"
+						class="rounded-full"
+						disabled={disabled || live.status === 'published'}
+						{title}
+						onclick={regenerate}
+					>
+						<FileSpreadsheet class="h-3.5 w-3.5" />
+						{$t('reportCards.generate')}
+					</Button>
+				{/snippet}
+			</PermissionGate>
 			{#if live.status === 'published'}
 				<Button
 					size="sm"
@@ -99,11 +134,14 @@
 					{$t('reportCards.downloadPdf')}
 				</Button>
 			{/if}
-			{#if live.status === 'generated'}
-				<Button size="sm" class="rounded-full" onclick={publish}>
-					{$t('reportCards.publish')}
-				</Button>
-			{/if}
+			<Button
+				size="sm"
+				class="rounded-full"
+				disabled={live.status !== 'generated'}
+				onclick={publish}
+			>
+				{$t('reportCards.publish')}
+			</Button>
 		{/snippet}
 	</DrawerEntityHeader>
 
@@ -111,18 +149,31 @@
 		<div class="rounded-xl border border-border bg-secondary/30 p-3 text-center">
 			<p class="font-mono text-[10px] uppercase text-muted-foreground">{$t('reportCards.overall')}</p>
 			<p class="font-display text-2xl font-semibold">
-				{scale ? formatGrade(live.overallAverage, scale) : live.overallAverage}
+				{live.overallAverage != null
+					? (scale ? formatGrade(live.overallAverage, scale) : live.overallAverage)
+					: '—'}
 			</p>
 		</div>
 		<div class="rounded-xl border border-border bg-secondary/30 p-3 text-center">
 			<p class="font-mono text-[10px] uppercase text-muted-foreground">{$t('reportCards.rank')}</p>
-			<p class="font-display text-2xl font-semibold">{live.classRank}/{live.classSize}</p>
+			<p class="font-display text-2xl font-semibold">
+				{live.classRank != null && live.classSize != null
+					? `${live.classRank}/${live.classSize}`
+					: '—'}
+			</p>
 		</div>
 		<div class="rounded-xl border border-border bg-secondary/30 p-3 text-center">
 			<p class="font-mono text-[10px] uppercase text-muted-foreground">{$t('reportCards.period')}</p>
-			<p class="font-display text-lg font-semibold">{live.academicPeriodId}</p>
+			<p class="font-display text-lg font-semibold">{periodLabel}</p>
 		</div>
 	</div>
+
+	{#if !hasSectionMarks}
+		<div class="rounded-xl border border-dashed border-border bg-secondary/20 px-4 py-8 text-center">
+			<p class="font-display text-sm font-semibold text-muted-foreground">{$t('reportCards.sections')}</p>
+			<p class="mt-1 text-xs text-muted-foreground">{$t('reportCards.emptyStudentHint')}</p>
+		</div>
+	{/if}
 
 	{#each live.sectionResults as section (section.sectionId)}
 		{#if section.marks.length > 0}
@@ -143,9 +194,16 @@
 									<p class="font-medium">{mark.subjectName}</p>
 									<p class="text-xs text-muted-foreground">{mark.teacherName}</p>
 								</div>
-								<p class="font-mono font-semibold">
-									{scale ? formatGrade(mark.average, scale) : mark.average}
-								</p>
+								<div class="text-right">
+									<p class="font-mono font-semibold">
+										{scale ? formatGrade(mark.average, scale) : mark.average}
+									</p>
+									{#if mark.rank != null && live.classSize != null}
+										<p class="font-mono text-xs text-muted-foreground">
+											{mark.rank}/{live.classSize}
+										</p>
+									{/if}
+								</div>
 							</div>
 							{#if mark.appreciation}
 								<p class="mt-2 text-sm text-muted-foreground">{mark.appreciation}</p>

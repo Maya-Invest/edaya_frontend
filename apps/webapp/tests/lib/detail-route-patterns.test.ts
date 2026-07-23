@@ -3,6 +3,7 @@ import {
 	drawerTabRouteCacheKey,
 	isLikelyDetailPath,
 	listRouteCacheKey,
+	listRouteCacheKeyWithPeriod,
 } from '$lib/detail-route-patterns';
 
 describe('isLikelyDetailPath', () => {
@@ -131,6 +132,22 @@ describe('listRouteCacheKey', () => {
 	it('maps configuration report-cards drawer paths to the list route', () => {
 		expect(listRouteCacheKey(new URL('http://local/configuration/report-cards'))).toBe('/configuration/report-cards');
 		expect(listRouteCacheKey(new URL('http://local/configuration/report-cards/rcd-1'))).toBe('/configuration/report-cards');
+	});
+});
+
+describe('listRouteCacheKeyWithPeriod', () => {
+	it('ignores resolved defaults and only keys on the raw period search param', () => {
+		expect(listRouteCacheKeyWithPeriod(new URL('http://local/classes/6a/report-cards'))).toBe(
+			'/classes/6a/report-cards',
+		);
+		expect(
+			listRouteCacheKeyWithPeriod(new URL('http://local/classes/6a/report-cards?period=p-t1')),
+		).toBe('/classes/6a/report-cards?period=p-t1');
+		expect(
+			listRouteCacheKeyWithPeriod(
+				new URL('http://local/classes/6a/report-cards/rcr-1?period=p-t2&status=draft'),
+			),
+		).toBe('/classes/6a/report-cards?period=p-t2');
 	});
 });
 

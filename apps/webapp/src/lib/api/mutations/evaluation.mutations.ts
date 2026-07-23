@@ -1,6 +1,7 @@
 import type { components } from '$lib/api/schema';
 import type { Evaluation } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
+import { resolveScopedPeriodId } from '$lib/academic/period-scope';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { t } from '$lib/i18n';
@@ -35,7 +36,7 @@ export async function createAssessmentMutation(input: {
 	successMessage?: string;
 }): Promise<string | null> {
 	const client = getBrowserSchoolClient();
-	const periodId = academicContext.periodId;
+	const periodId = resolveScopedPeriodId(academicContext.periodId);
 	if (!periodId) {
 		toast.error(get(t)('eval.noPeriod'));
 		return null;

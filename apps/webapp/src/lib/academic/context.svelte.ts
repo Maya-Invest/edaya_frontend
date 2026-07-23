@@ -138,9 +138,11 @@ class AcademicContext {
 			? this.periods.filter(period => period.academicYearId === academicYearId)
 			: this.periods;
 		const published = periodsForYear.filter(period => period.status === 'published');
-		const academicPeriodId = this.periodId
-			|| published.at(-1)?.id
-			|| periodsForYear.at(-1)?.id
+		const options = published.length > 0 ? published : periodsForYear;
+		const academicPeriodId = (this.periodId && options.some(period => period.id === this.periodId)
+			? this.periodId
+			: undefined)
+			|| options.at(-1)?.id
 			|| this.periods.at(-1)?.id
 			|| '';
 		if (!academicYearId || !academicPeriodId) {

@@ -324,6 +324,7 @@ describe('report cards result mapping', () => {
 						name: 'subj-math',
 						average: 18.5,
 						weight: 2,
+						rank: 1,
 						comment: 'Excellent — maîtrise remarquable de l\'algèbre.',
 						classSubjectId: 'cs-6a-math',
 						subResults: [],
@@ -338,11 +339,54 @@ describe('report cards result mapping', () => {
 			classSubjectsSources,
 		);
 
+		expect(results[0]).toMatchObject({
+			overallAverage: 17.2,
+			classRank: 1,
+			classSize: 6,
+		});
+
 		const mathMark = results[0]?.sectionResults[0]?.marks.find(mark => mark.subjectId === 'cs-6a-math');
 		expect(mathMark).toMatchObject({
 			average: 18.5,
 			coefficient: 2,
+			rank: 1,
 			appreciation: 'Excellent — maîtrise remarquable de l\'algèbre.',
 		});
+	});
+
+	it('leaves missing average and rank undefined instead of coercing to zero', () => {
+		const results = mapReportCardResults(
+			[{
+				id: 'rcr-empty',
+				studentId: 's1',
+				classGroupId: '6a',
+				periodId: '2025-t3',
+				reportCardDefinitionId: 'rcd-ms-6',
+				status: 'published',
+				overallAverage: null,
+				rank: null,
+				classSize: null,
+				attendanceSummary: {
+					presentCount: 0,
+					absenceCount: 0,
+					excusedAbsenceCount: 0,
+					lateCount: 0,
+					total: 0,
+					attendanceRate: 0,
+				},
+				assessmentResultCount: 0,
+				sectionResults: [],
+			} as unknown as components['schemas']['ReportCardResult']],
+			[reportCardDefinition({
+				id: 'rcd-ms-6',
+				name: 'Bulletin trimestriel — Collège (6ème)',
+				isDefault: true,
+			})],
+			classSubjectsSources,
+		);
+
+		expect(results[0]?.overallAverage).toBeUndefined();
+		expect(results[0]?.classRank).toBeUndefined();
+		expect(results[0]?.classSize).toBeUndefined();
 	});
 });
