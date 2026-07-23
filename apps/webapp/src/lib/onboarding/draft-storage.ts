@@ -1,9 +1,11 @@
 import type { OnboardingDraft, OnboardingPeriodDraft, OnboardingSchoolDraft, OnboardingStaffInviteRole, OnboardingStep } from '$lib/onboarding/types';
 import { createInitialPeriods } from '$lib/onboarding/school-periods';
 import { defaultAcademicYearPreset } from '$lib/onboarding/school-step-defaults';
+import { migrateLegacyGradeLevelId } from '$lib/onboarding/legacy-gl-map';
 import { ONBOARDING_DRAFT_VERSION } from '$lib/onboarding/types';
 
 const STORAGE_PREFIX = 'edaya:onboarding:draft';
+const ACCEPTED_DRAFT_VERSIONS = new Set([1, 3, 4]);
 
 function isOnboardingStaffInviteRole(value: unknown): value is OnboardingStaffInviteRole {
 	return value === 'deputy_director'
@@ -126,6 +128,20 @@ function normalizeSchoolDraft(candidate: Partial<LegacySchoolDraft>, empty: Onbo
 	};
 }
 
+function normalizeClassCount(value: unknown): number {
+	if (typeof value !== 'number' || !Number.isFinite(value)) {
+		return 0;
+	}
+	return Math.max(0, Math.trunc(value));
+}
+
+function normalizeCapacity(value: unknown): number {
+	if (typeof value !== 'number' || !Number.isFinite(value)) {
+		return 30;
+	}
+	return Math.max(0, Math.trunc(value));
+}
+
 function normalizeDraft(raw: unknown): OnboardingDraft | null {
 	if (!raw || typeof raw !== 'object') {
 		return null;
@@ -133,7 +149,7 @@ function normalizeDraft(raw: unknown): OnboardingDraft | null {
 
 	const candidate = raw as Partial<OnboardingDraft>;
 	const version = (raw as { version?: unknown }).version;
-	if (version !== 1 && version !== ONBOARDING_DRAFT_VERSION) {
+	if (typeof version !== 'number' || !ACCEPTED_DRAFT_VERSIONS.has(version)) {
 		return null;
 	}
 
@@ -160,9 +176,11 @@ function normalizeDraft(raw: unknown): OnboardingDraft | null {
 				: empty.structure.models,
 			levels: Array.isArray(candidate.structure?.levels)
 				? candidate.structure.levels.map(level => ({
-						gradeLevelId: typeof level.gradeLevelId === 'string' ? level.gradeLevelId : '',
-						classCount: typeof level.classCount === 'number' ? level.classCount : 1,
-						capacity: typeof level.capacity === 'number' ? level.capacity : 30,
+						gradeLevelId: typeof level.gradeLevelId === 'string'
+							? migrateLegacyGradeLevelId(level.gradeLevelId)
+							: '',
+						classCount: normalizeClassCount(level.classCount),
+						capacity: normalizeCapacity(level.capacity),
 					}))
 				: empty.structure.levels,
 		},

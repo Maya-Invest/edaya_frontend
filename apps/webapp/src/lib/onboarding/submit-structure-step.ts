@@ -2,11 +2,7 @@ import type { OnboardingStructureDraft } from '$lib/onboarding/types';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import { t } from '$lib/i18n';
-import {
-	isGradeLevelTemplateKey,
-	toApiGradeLevelTemplateId,
-	toApiStructureTemplateIds,
-} from '$lib/onboarding/structure-templates';
+import { toApiStructureTemplateIds } from '$lib/onboarding/structure-templates';
 import { toast } from '$lib/toast.svelte';
 import { ApiError } from '@maya-invest/edaya-api-client';
 import { get } from 'svelte/store';
@@ -37,16 +33,13 @@ export async function submitStructureOnboardingStep(
 	try {
 		await getBrowserSchoolClient().onboarding.applyStructureTemplate({
 			templates: toApiStructureTemplateIds(structure.models),
-			levels: structure.levels.flatMap((level) => {
-				if (!isGradeLevelTemplateKey(level.gradeLevelId)) {
-					return [];
-				}
-				return [{
-					gradeLevelId: toApiGradeLevelTemplateId(level.gradeLevelId),
+			levels: structure.levels
+				.filter(level => level.classCount >= 1 && level.gradeLevelId.trim())
+				.map(level => ({
+					gradeLevelId: level.gradeLevelId,
 					classCount: level.classCount,
 					capacity: level.capacity,
-				}];
-			}),
+				})),
 		});
 
 		resetAppShellBootstrap();

@@ -72,4 +72,64 @@ describe('draft-storage', () => {
 			});
 		}
 	});
+
+	it('migrates legacy gl-* gradeLevelIds to API fixture ids', () => {
+		const storage = new Map<string, string>([
+			[draftStorageKey('user-legacy'), JSON.stringify({
+				version: 3,
+				updatedAt: '2026-01-01T00:00:00.000Z',
+				maxReachedStep: 2,
+				wizardCompleted: false,
+				schoolStepSubmitted: true,
+				structureStepSubmitted: false,
+				staffStepSubmitted: false,
+				registeredSchoolId: null,
+				school: {
+					name: 'Lycée Test',
+					city: 'Abidjan',
+					country: "Côte d'Ivoire",
+					timezone: 'Africa/Abidjan',
+					academicYearLabel: '2025 — 2026',
+					academicYearStart: '2025-09-01',
+					academicYearEnd: '2026-07-03',
+					periodType: 'trimester',
+					periods: [],
+				},
+				structure: {
+					models: ['lycee'],
+					levels: [
+						{ gradeLevelId: 'gl-1', classCount: 2, capacity: 30 },
+						{ gradeLevelId: 'gl-t', classCount: 0, capacity: 30 },
+					],
+				},
+				staffInvites: [],
+			})],
+		]);
+		const sessionStorageMock = {
+			getItem: (key: string) => storage.get(key) ?? null,
+			setItem: () => {},
+			removeItem: () => {},
+		};
+
+		const original = globalThis.sessionStorage;
+		Object.defineProperty(globalThis, 'sessionStorage', {
+			value: sessionStorageMock,
+			configurable: true,
+		});
+
+		try {
+			const loaded = loadDraft('user-legacy');
+			expect(loaded?.version).toBe(4);
+			expect(loaded?.structure.levels).toEqual([
+				{ gradeLevelId: 'ci-lycee:1ERC', classCount: 2, capacity: 30 },
+				{ gradeLevelId: 'ci-lycee:TLEC', classCount: 0, capacity: 30 },
+			]);
+		}
+		finally {
+			Object.defineProperty(globalThis, 'sessionStorage', {
+				value: original,
+				configurable: true,
+			});
+		}
+	});
 });
