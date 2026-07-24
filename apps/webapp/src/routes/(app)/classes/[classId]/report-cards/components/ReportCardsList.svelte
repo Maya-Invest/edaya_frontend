@@ -152,9 +152,14 @@
 
 	async function generateAll() {
 		const count = await reportCardsPage.generateForClass({ classId });
-		if (count !== null && count > 0) {
-			toast.success(get(t)('reportCards.toastGeneratedClass', { n: String(count) }));
+		if (count === null) {
+			return;
 		}
+		if (count > 0) {
+			toast.success(get(t)('reportCards.toastGeneratedClass', { n: String(count) }));
+			return;
+		}
+		toast.info(get(t)('reportCards.toastNothingToGenerate'));
 	}
 
 	async function generateOne(studentId: string) {

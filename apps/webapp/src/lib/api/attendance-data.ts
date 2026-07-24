@@ -43,6 +43,27 @@ function formatDate(value: unknown): string {
 	return String(value).slice(0, 10);
 }
 
+/** Stable id used by backend `getOrCreateAttendance` for daily roll call. */
+export function dailyAttendanceOccurrenceId(classGroupId: string, dateIso: string): string {
+	return `${classGroupId}:${dateIso}`;
+}
+
+export function parseDailyAttendanceOccurrenceId(occurrenceId: string): {
+	classGroupId: string;
+	dateIso: string;
+} | null {
+	const separator = occurrenceId.lastIndexOf(':');
+	if (separator <= 0 || separator === occurrenceId.length - 1) {
+		return null;
+	}
+	const classGroupId = occurrenceId.slice(0, separator);
+	const dateIso = occurrenceId.slice(separator + 1);
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(dateIso)) {
+		return null;
+	}
+	return { classGroupId, dateIso };
+}
+
 export function mapAttendanceOccurrenceToDay(
 	occurrence: AttendanceOccurrenceRaw,
 	studentCount: number,
@@ -94,6 +115,29 @@ export function mapAttendanceDays(
 		.sort((a, b) => b.date.localeCompare(a.date) || b.label.localeCompare(a.label));
 }
 
+/** Ensure today's roll-call row exists so the list is never empty for daily-mode classes. */
+export function ensureTodayAttendanceDay(
+	days: readonly AttendanceDay[],
+	classGroupId: string,
+	studentCount: number,
+	todayIso = new Date().toISOString().slice(0, 10),
+): AttendanceDay[] {
+	if (days.some(day => day.date === todayIso)) {
+		return [...days];
+	}
+	return [
+		{
+			id: dailyAttendanceOccurrenceId(classGroupId, todayIso),
+			classId: classGroupId,
+			date: todayIso,
+			label: 'Daily attendance',
+			totalStudents: studentCount,
+			recordedCount: 0,
+		},
+		...days,
+	];
+}
+
 export async function loadClassAttendancePageData(
 	client: SchoolClient,
 	classGroupId: string,
@@ -103,7 +147,11 @@ export async function loadClassAttendancePageData(
 		classGroupId,
 	);
 	return {
-		attendanceDays: mapAttendanceDays(occurrencesRaw, recordsRaw, studentCount),
+		attendanceDays: ensureTodayAttendanceDay(
+			mapAttendanceDays(occurrencesRaw, recordsRaw, studentCount),
+			classGroupId,
+			studentCount,
+		),
 	};
 }
 
@@ -111,12 +159,29 @@ export async function loadAttendanceDayDetail(
 	client: SchoolClient,
 	occurrenceId: string,
 ): Promise<SessionDetail | null> {
-	let occurrence: AttendanceOccurrenceRaw;
+	let occurrence: AttendanceOccurrenceRaw | null = null;
 	try {
 		occurrence = await client.entities.attendances.get(occurrenceId);
 	}
 	catch {
-		return null;
+		occurrence = null;
+	}
+
+	if (!occurrence) {
+		const parsed = parseDailyAttendanceOccurrenceId(occurrenceId);
+		if (!parsed) {
+			return null;
+		}
+		const classStudents = mapStudents(await fetchClassPeopleSources(client, parsed.classGroupId));
+		return buildOccurrenceAttendanceDetail({
+			occurrenceId,
+			classGroupId: parsed.classGroupId,
+			classSubjectId: '',
+			startsAt: parsed.dateIso,
+			students: classStudents,
+			attendanceRaw: [],
+			displayLabel: 'Daily attendance',
+		});
 	}
 
 	const classStudents = mapStudents(await fetchClassPeopleSources(client, occurrence.classGroupId));

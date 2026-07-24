@@ -47,13 +47,29 @@ export async function lookupReportCardPdf(resultId: string): Promise<ReportCardP
 	return { status: 'missing' };
 }
 
+/** Prefer same-origin `/core/...` so Vite proxy keeps the session cookie. */
+function toBrowserDownloadUrl(downloadUrl: string): string {
+	try {
+		const parsed = /^https?:\/\//i.test(downloadUrl)
+			? new URL(downloadUrl)
+			: new URL(downloadUrl, 'http://localhost');
+		if (parsed.pathname.startsWith('/core/') || parsed.pathname.startsWith('/auth/') || parsed.pathname.startsWith('/public/')) {
+			return `${parsed.pathname}${parsed.search}`;
+		}
+		return downloadUrl;
+	}
+	catch {
+		return downloadUrl;
+	}
+}
+
 export async function resolveReportCardPdfDownloadUrl(attachmentId: string): Promise<string> {
 	const client = getBrowserSchoolClient();
 	const response = await client.files.getDownloadUrl({ attachmentId }) as FileDownloadUrlResponse;
 	if (!response?.downloadUrl) {
 		throw new Error('Download URL missing from school API response');
 	}
-	return response.downloadUrl;
+	return toBrowserDownloadUrl(response.downloadUrl);
 }
 
 /**

@@ -1,10 +1,12 @@
 <script lang="ts">
 	import type { AttendanceDay } from '$lib/types/school';
 	import { page } from '$app/stores';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { locale, t } from '$lib/i18n';
 	import { CalendarDays, ClipboardCheck } from '$lib/icons';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
@@ -28,6 +30,11 @@
 
 	const attendancePage = getAttendancePageState();
 	const days = $derived(attendancePage.daysFor(classId));
+	const todayIso = new Date().toISOString().slice(0, 10);
+	const todayDay = $derived(days.find(day => day.date === todayIso));
+	const todayFullyMarked = $derived(
+		!!todayDay && todayDay.totalStudents > 0 && todayDay.recordedCount >= todayDay.totalStudents,
+	);
 	const initialFilters = $derived(readClassAttendanceListFilters($page.url));
 
 	const listFilters = new ListFiltersState<{ completion: string }>(
@@ -92,6 +99,29 @@
 		eyebrow={$t('attendanceDay.eyebrow')}
 		title={$t('attendanceDay.count', { n: filteredDays.length })}
 	>
+		{#snippet primary()}
+			<PermissionGate
+				permission="ATTENDANCE_RECORD"
+				{classId}
+				mode="disable"
+				tooltip={$t('attendanceDay.permissionRecord')}
+			>
+				{#snippet children({ disabled, title })}
+					<Button
+						size="sm"
+						class="rounded-full"
+						disabled={disabled || !todayDay || todayFullyMarked}
+						{title}
+						onclick={() => {
+							if (todayDay) onSelect?.(todayDay);
+						}}
+					>
+						<ClipboardCheck class="mr-1 h-4 w-4" />
+						{$t('attendanceDay.takeToday')}
+					</Button>
+				{/snippet}
+			</PermissionGate>
+		{/snippet}
 		{#snippet filters()}
 			<FilterPanel activeCount={completionFilterActive} title={$t('attendanceDay.completionFilter')}>
 				<FilterSelect
