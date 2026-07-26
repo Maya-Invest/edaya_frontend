@@ -15,8 +15,10 @@ const ACCEPTED_DRAFT_VERSIONS = new Set([1, 3, 4]);
 function isOnboardingStaffInviteRole(value: unknown): value is OnboardingStaffInviteRole {
 	return value === 'deputy_director'
 		|| value === 'cpe'
-		|| value === 'teacher'
-		|| value === 'secretary';
+		|| value === 'secretary'
+		|| value === 'studies_director'
+		|| value === 'it_admin'
+		|| value === 'accountant';
 }
 
 export function draftStorageKey(authUserId: string): string {
@@ -194,11 +196,13 @@ function normalizeDraft(raw: unknown): OnboardingDraft | null {
 				: empty.structure.levels,
 		},
 		staffInvites: Array.isArray(candidate.staffInvites)
-			? candidate.staffInvites.map(invite => ({
-					id: typeof invite.id === 'string' ? invite.id : crypto.randomUUID(),
-					email: typeof invite.email === 'string' ? invite.email : '',
-					role: isOnboardingStaffInviteRole(invite.role) ? invite.role : '',
-				}))
+			? candidate.staffInvites
+					.map(invite => ({
+						id: typeof invite.id === 'string' ? invite.id : crypto.randomUUID(),
+						email: typeof invite.email === 'string' ? invite.email : '',
+						role: isOnboardingStaffInviteRole(invite.role) ? invite.role : '' as const,
+					}))
+					.filter(invite => invite.role !== '' || invite.email.trim().length > 0)
 			: empty.staffInvites,
 	};
 }

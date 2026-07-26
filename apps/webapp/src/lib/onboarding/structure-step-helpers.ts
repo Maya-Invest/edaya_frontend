@@ -105,5 +105,5 @@ export function gradeLevelLabel(gradeLevelId: string, catalog: StructureTemplate
 	if (!level) {
 		return gradeLevelId;
 	}
-	return `${level.name} · ${level.code}`;
+	return level.code;
 }

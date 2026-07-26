@@ -1,4 +1,5 @@
 import type { OnboardingStaffInviteDraft } from '$lib/onboarding/types';
+import { defaultStaffInviteRole } from '$lib/onboarding/staff-invite-profiles';
 import { activeStaffInvites } from '$lib/onboarding/staff-step-validation';
 
 export function addStaffInvite(invites: OnboardingStaffInviteDraft[]): OnboardingStaffInviteDraft[] {
@@ -7,7 +8,7 @@ export function addStaffInvite(invites: OnboardingStaffInviteDraft[]): Onboardin
 		{
 			id: crypto.randomUUID(),
 			email: '',
-			role: 'teacher',
+			role: defaultStaffInviteRole(),
 		},
 	];
 }
@@ -35,12 +36,4 @@ export function staffInvitesForSubmit(invites: OnboardingStaffInviteDraft[]) {
 			email: invite.email.trim(),
 			role: invite.role as Exclude<typeof invite.role, ''>,
 		}));
-}
-
-export function partitionStaffInvitesForSubmit(invites: OnboardingStaffInviteDraft[]) {
-	const payload = staffInvitesForSubmit(invites);
-	return {
-		teacherInvites: payload.filter(invite => invite.role === 'teacher'),
-		staffInvites: payload.filter(invite => invite.role !== 'teacher'),
-	};
 }

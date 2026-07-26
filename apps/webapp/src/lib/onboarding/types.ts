@@ -36,8 +36,10 @@ export interface OnboardingStructureDraft {
 export type OnboardingStaffInviteRole
 	= | 'deputy_director'
 		| 'cpe'
-		| 'teacher'
-		| 'secretary';
+		| 'secretary'
+		| 'studies_director'
+		| 'it_admin'
+		| 'accountant';
 
 export interface OnboardingStaffInviteDraft {
 	id: string;
