@@ -2,7 +2,10 @@ import { describe, expect, it } from 'bun:test';
 import {
 	COMMON_TIMEZONES,
 	COUNTRY_DEFAULT_TIMEZONE,
+	DEFAULT_ONBOARDING_COUNTRY,
 	ONBOARDING_COUNTRIES,
+	STRUCTURE_READY_COUNTRIES,
+	isStructureReadyCountry,
 	optionsWithCurrent,
 	timezoneForCountry,
 } from '$lib/onboarding/school-step-defaults';
@@ -43,5 +46,15 @@ describe('timezoneForCountry', () => {
 			expect(COMMON_TIMEZONES.includes(timezone as (typeof COMMON_TIMEZONES)[number])).toBe(true);
 			expect(timezoneForCountry(country)).toBe(timezone);
 		}
+	});
+});
+
+describe('isStructureReadyCountry', () => {
+	it('marks only Côte d\'Ivoire as structure-ready', () => {
+		expect(DEFAULT_ONBOARDING_COUNTRY).toBe("Côte d'Ivoire");
+		expect(STRUCTURE_READY_COUNTRIES).toEqual(["Côte d'Ivoire"]);
+		expect(isStructureReadyCountry("Côte d'Ivoire")).toBe(true);
+		expect(isStructureReadyCountry('France')).toBe(false);
+		expect(isStructureReadyCountry('Sénégal')).toBe(false);
 	});
 });

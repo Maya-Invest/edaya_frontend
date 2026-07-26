@@ -34,6 +34,16 @@ export const ONBOARDING_COUNTRIES = [
 	'Haïti',
 ] as const;
 
+/** Countries with structure templates available in onboarding (fixtures exist). */
+export const STRUCTURE_READY_COUNTRIES = ['Côte d\'Ivoire'] as const satisfies readonly (typeof ONBOARDING_COUNTRIES)[number][];
+
+export const DEFAULT_ONBOARDING_COUNTRY = STRUCTURE_READY_COUNTRIES[0];
+
+export function isStructureReadyCountry(country: string): boolean {
+	const trimmed = country.trim();
+	return (STRUCTURE_READY_COUNTRIES as readonly string[]).includes(trimmed);
+}
+
 export const COMMON_TIMEZONES = [
 	'Europe/Paris',
 	'Europe/Brussels',

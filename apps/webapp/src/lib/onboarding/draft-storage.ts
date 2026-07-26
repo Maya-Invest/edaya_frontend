@@ -1,6 +1,11 @@
 import type { OnboardingDraft, OnboardingPeriodDraft, OnboardingSchoolDraft, OnboardingStaffInviteRole, OnboardingStep } from '$lib/onboarding/types';
 import { createInitialPeriods } from '$lib/onboarding/school-periods';
-import { defaultAcademicYearPreset } from '$lib/onboarding/school-step-defaults';
+import {
+	DEFAULT_ONBOARDING_COUNTRY,
+	defaultAcademicYearPreset,
+	isStructureReadyCountry,
+	timezoneForCountry,
+} from '$lib/onboarding/school-step-defaults';
 import { migrateLegacyGradeLevelId } from '$lib/onboarding/legacy-gl-map';
 import { ONBOARDING_DRAFT_VERSION } from '$lib/onboarding/types';
 
@@ -19,12 +24,7 @@ export function draftStorageKey(authUserId: string): string {
 }
 
 function defaultTimezone(): string {
-	try {
-		return new Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Paris';
-	}
-	catch {
-		return 'Europe/Paris';
-	}
+	return timezoneForCountry(DEFAULT_ONBOARDING_COUNTRY) ?? 'Africa/Abidjan';
 }
 
 export function createEmptyDraft(): OnboardingDraft {
@@ -42,7 +42,7 @@ export function createEmptyDraft(): OnboardingDraft {
 		school: {
 			name: '',
 			city: '',
-			country: 'France',
+			country: DEFAULT_ONBOARDING_COUNTRY,
 			timezone: defaultTimezone(),
 			academicYearLabel: yearPreset.label,
 			academicYearStart: yearPreset.start,
@@ -87,6 +87,13 @@ type LegacySchoolDraft = OnboardingSchoolDraft & {
 function normalizeSchoolDraft(candidate: Partial<LegacySchoolDraft>, empty: OnboardingSchoolDraft): OnboardingSchoolDraft {
 	const periodType = candidate.periodType === 'semester' ? 'semester' : 'trimester';
 
+	const rawCountry = typeof candidate.country === 'string' ? candidate.country : empty.country;
+	const country = isStructureReadyCountry(rawCountry) ? rawCountry.trim() : empty.country;
+	const rawTimezone = typeof candidate.timezone === 'string' ? candidate.timezone : empty.timezone;
+	const timezone = isStructureReadyCountry(rawCountry)
+		? rawTimezone
+		: (timezoneForCountry(country) ?? empty.timezone);
+
 	if (Array.isArray(candidate.periods) && candidate.periods.length > 0) {
 		const periods = candidate.periods
 			.map(normalizePeriod)
@@ -95,6 +102,8 @@ function normalizeSchoolDraft(candidate: Partial<LegacySchoolDraft>, empty: Onbo
 			return {
 				...empty,
 				...candidate,
+				country,
+				timezone,
 				periodType,
 				periods,
 			};
@@ -112,8 +121,8 @@ function normalizeSchoolDraft(candidate: Partial<LegacySchoolDraft>, empty: Onbo
 		...empty,
 		name: typeof candidate.name === 'string' ? candidate.name : empty.name,
 		city: typeof candidate.city === 'string' ? candidate.city : empty.city,
-		country: typeof candidate.country === 'string' ? candidate.country : empty.country,
-		timezone: typeof candidate.timezone === 'string' ? candidate.timezone : empty.timezone,
+		country,
+		timezone,
 		academicYearLabel: typeof candidate.academicYearLabel === 'string'
 			? candidate.academicYearLabel
 			: empty.academicYearLabel,

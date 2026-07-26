@@ -37,6 +37,7 @@
 	let catalogStatus = $state<'idle' | 'loading' | 'ready' | 'error'>('idle');
 	let loadToken = 0;
 
+	const catalogHasLevels = $derived((catalog?.gradeLevels.length ?? 0) > 0);
 	const summary = $derived(structureSummary(onboardingContext.draft.structure));
 
 	const collegeLevels = $derived.by(() => levelsForModel('college'));
@@ -98,7 +99,7 @@
 	}
 
 	function setModelEnabled(model: StructureModel, enabled: boolean) {
-		if (!catalog) {
+		if (!catalog || catalog.gradeLevels.length === 0) {
 			return;
 		}
 		onboardingContext.draft.structure = toggleStructureModel(
@@ -212,7 +213,7 @@
 				<label class="inline-flex cursor-pointer items-center gap-2">
 					<Checkbox
 						checked={isModelSelected(model.value)}
-						disabled={disabled || catalogStatus !== 'ready' || !catalog}
+						disabled={disabled || catalogStatus !== 'ready' || !catalog || !catalogHasLevels}
 						onCheckedChange={checked => setModelEnabled(model.value, checked === true)}
 					/>
 					<span class="text-sm text-foreground">{$t(model.labelKey)}</span>
