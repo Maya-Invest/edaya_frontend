@@ -211,6 +211,7 @@ export const en: Dict = {
 	'onboarding.complete.colChapters': 'Chapters',
 	'onboarding.complete.emptyStructure': 'No levels with classes.',
 	'onboarding.complete.emptyTeam': 'No team invitations.',
+	'onboarding.complete.periodsHeading': 'Periods',
 	'onboarding.complete.catalogLoading': 'Loading summary…',
 	'onboarding.complete.catalogError': 'Could not load subject details. The rest of the summary is still available.',
 	'onboarding.completeStep.success': 'Onboarding complete. Welcome to EDAYA.',

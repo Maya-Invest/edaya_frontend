@@ -38,12 +38,12 @@
 		showSkipOnboarding={wizard.showSkipOnboarding}
 		canSkipOnboarding={wizard.canSkipOnboarding}
 		busy={wizard.busy}
-		onBack={wizard.goBack}
+		onBack={() => wizard.goBack()}
 		onContinue={() => void wizard.goNext()}
 		onFinish={() => void wizard.finishOnboarding()}
 		onSkipOnboarding={() => void wizard.skipOnboarding()}
-		onSkip={wizard.skipStep}
-		onStepSelect={wizard.navigateToStep}
+		onSkip={() => wizard.skipStep()}
+		onStepSelect={(step) => wizard.navigateToStep(step)}
 		onSignOut={() => void wizard.signOut()}
 	>
 		<OnboardingStepContent step={wizard.currentStep} busy={wizard.busy} />

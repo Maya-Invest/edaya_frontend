@@ -37,6 +37,10 @@ export interface MatterPreview {
 
 export interface CompleteStepSummary {
 	schoolLine: string;
+	academicYearLabel: string;
+	academicYearRange: string;
+	periodTypeLabelKey: 'onboarding.periodType.trimester' | 'onboarding.periodType.semester';
+	periods: Array<{ label: string; start: string; end: string }>;
 	levels: CompleteSummaryLevelRow[];
 	staffInvites: CompleteSummaryStaffInviteRow[];
 	levelCount: number;
@@ -55,6 +59,30 @@ function buildSchoolLine(school: OnboardingDraft['school']): string {
 		.map(part => part.trim())
 		.filter(Boolean)
 		.join(' · ');
+}
+
+function buildAcademicYearRange(school: OnboardingDraft['school']): string {
+	const start = school.academicYearStart.trim();
+	const end = school.academicYearEnd.trim();
+	return start && end ? `${start} → ${end}` : '';
+}
+
+function resolvePeriodTypeLabelKey(
+	periodType: OnboardingDraft['school']['periodType'],
+): CompleteStepSummary['periodTypeLabelKey'] {
+	return periodType === 'semester'
+		? 'onboarding.periodType.semester'
+		: 'onboarding.periodType.trimester';
+}
+
+function buildPeriodRows(
+	periods: OnboardingDraft['school']['periods'],
+): CompleteStepSummary['periods'] {
+	return periods.map(period => ({
+		label: period.label.trim() || '—',
+		start: period.start.trim(),
+		end: period.end.trim(),
+	}));
 }
 
 function truncateMatter(value: string, max = MATTER_TRUNCATE_AT): string {
@@ -118,8 +146,14 @@ export function buildCompleteStepSummary(
 		}),
 	);
 
+	const school = draft.school;
+
 	return {
-		schoolLine: buildSchoolLine(draft.school),
+		schoolLine: buildSchoolLine(school),
+		academicYearLabel: school.academicYearLabel.trim(),
+		academicYearRange: buildAcademicYearRange(school),
+		periodTypeLabelKey: resolvePeriodTypeLabelKey(school.periodType),
+		periods: buildPeriodRows(school.periods),
 		levels,
 		staffInvites,
 		levelCount: levels.length,

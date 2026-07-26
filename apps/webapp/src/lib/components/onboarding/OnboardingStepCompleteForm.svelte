@@ -5,8 +5,11 @@
 	import { t } from '$lib/i18n';
 	import { onboardingContext } from '$lib/onboarding/context.svelte';
 	import { buildCompleteStepSummary } from '$lib/onboarding/complete-step-summary';
+	import { getOnboardingWizardState } from '$lib/onboarding/onboarding-wizard-state.svelte';
 	import { loadStructureTemplateCatalog } from '$lib/onboarding/structure-template-catalog';
 	import { ChevronRight } from '$lib/icons';
+
+	const wizard = getOnboardingWizardState();
 
 	let catalog = $state<StructureTemplateCatalog | null>(null);
 	let catalogStatus = $state<'idle' | 'loading' | 'ready' | 'error'>('idle');
@@ -19,6 +22,10 @@
 	const summary = $derived(
 		buildCompleteStepSummary(onboardingContext.draft, catalog),
 	);
+
+	function goToStep(step: 1 | 2 | 3) {
+		wizard.navigateToStep(step);
+	}
 
 	async function ensureCatalog(country: string) {
 		const normalizedCountry = country.trim();
@@ -94,14 +101,54 @@
 				type="button"
 				variant="ghost"
 				size="sm"
-				disabled={true}
 				data-step="1"
-				title={$t('onboarding.complete.editSoon')}
+				onclick={() => goToStep(1)}
 			>
 				{$t('onboarding.complete.edit')}
 			</Button>
 		</div>
-		<p class="text-xs text-muted-foreground">{summary.schoolLine || '—'}</p>
+		<table class="w-full text-xs">
+			<tbody>
+				<tr class="border-b border-border/60">
+					<td class="px-1.5 py-1.5 text-muted-foreground">{$t('onboarding.schoolNameLabel')}</td>
+					<td class="px-1.5 py-1.5 font-medium">{summary.schoolLine || '—'}</td>
+				</tr>
+				<tr class="border-b border-border/60">
+					<td class="px-1.5 py-1.5 text-muted-foreground">{$t('onboarding.schoolSection.academicYear')}</td>
+					<td class="px-1.5 py-1.5 font-medium">
+						{summary.academicYearLabel || '—'}
+						{#if summary.academicYearRange}
+							<span class="font-normal text-muted-foreground"> · {summary.academicYearRange}</span>
+						{/if}
+					</td>
+				</tr>
+				<tr class="border-b border-border/60 last:border-0">
+					<td class="px-1.5 py-1.5 text-muted-foreground">{$t('onboarding.periodTypeLabel')}</td>
+					<td class="px-1.5 py-1.5 font-medium">{$t(summary.periodTypeLabelKey)}</td>
+				</tr>
+			</tbody>
+		</table>
+		{#if summary.periods.length > 0}
+			<p class="mt-1.5 text-xs font-medium text-foreground">{$t('onboarding.complete.periodsHeading')}</p>
+			<table class="w-full text-xs">
+				<thead>
+					<tr class="border-b border-border text-left text-muted-foreground">
+						<th class="px-1.5 py-1 font-medium">{$t('onboarding.periodLabel')}</th>
+						<th class="px-1.5 py-1 font-medium">{$t('onboarding.startDateLabel')}</th>
+						<th class="px-1.5 py-1 font-medium">{$t('onboarding.endDateLabel')}</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#each summary.periods as period (`${period.label}-${period.start}-${period.end}`)}
+						<tr class="border-b border-border/60 last:border-0">
+							<td class="px-1.5 py-1.5 font-medium">{period.label}</td>
+							<td class="px-1.5 py-1.5 text-muted-foreground">{period.start || '—'}</td>
+							<td class="px-1.5 py-1.5 text-muted-foreground">{period.end || '—'}</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		{/if}
 	</section>
 
 	<section class="rounded-md border border-border bg-card px-2.5 py-1.5">
@@ -111,9 +158,8 @@
 				type="button"
 				variant="ghost"
 				size="sm"
-				disabled={true}
 				data-step="2"
-				title={$t('onboarding.complete.editSoon')}
+				onclick={() => goToStep(2)}
 			>
 				{$t('onboarding.complete.edit')}
 			</Button>
@@ -180,9 +226,8 @@
 				type="button"
 				variant="ghost"
 				size="sm"
-				disabled={true}
 				data-step="3"
-				title={$t('onboarding.complete.editSoon')}
+				onclick={() => goToStep(3)}
 			>
 				{$t('onboarding.complete.edit')}
 			</Button>

@@ -209,6 +209,7 @@ export const fr: Dict = {
 	'onboarding.complete.colChapters': 'Chapitres',
 	'onboarding.complete.emptyStructure': 'Aucun niveau avec classes.',
 	'onboarding.complete.emptyTeam': 'Aucune invitation d’équipe.',
+	'onboarding.complete.periodsHeading': 'Périodes',
 	'onboarding.complete.catalogLoading': 'Chargement du récapitulatif…',
 	'onboarding.complete.catalogError': 'Impossible de charger le détail des matières. Le reste du récapitulatif reste disponible.',
 	'onboarding.completeStep.success': 'Configuration terminée. Bienvenue sur EDAYA.',

@@ -137,8 +137,8 @@ UI refinements landed in the same screen after the nested plan:
 - Chapters drawer matches configuration **SubjectDrawer** shell (`DrawerEntityHeader` + chapter cards), read-only.
 - Team: **Email / Profile** table for multi-invite scanability.
 
-## Out of scope (still)
+## Out of scope (at archive time)
 
-- Enabling Edit / Back navigation between steps.
+- Enabling Edit / Back navigation between steps → **done later** in [onboarding-navigation-and-edit-plan.md](./onboarding-navigation-and-edit-plan.md).
 - Changing shell width or finish CTA.
 - Restoring a post-dashboard checklist.

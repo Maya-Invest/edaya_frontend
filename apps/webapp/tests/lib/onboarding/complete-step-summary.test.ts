@@ -113,6 +113,19 @@ describe('buildCompleteStepSummary', () => {
 
 		const summary = buildCompleteStepSummary(draft, catalog);
 		expect(summary.schoolLine).toBe("Collège Test · Abidjan · Côte d'Ivoire");
+		expect(summary.academicYearLabel).toBe(draft.school.academicYearLabel);
+		expect(summary.academicYearRange).toBe(
+			`${draft.school.academicYearStart} → ${draft.school.academicYearEnd}`,
+		);
+		expect(summary.periodTypeLabelKey).toBe('onboarding.periodType.trimester');
+		expect(summary.periods).toEqual(
+			draft.school.periods.map(period => ({
+				label: period.label,
+				start: period.start,
+				end: period.end,
+			})),
+		);
+		expect(summary.periods.length).toBeGreaterThan(0);
 		expect(summary.levels).toHaveLength(1);
 		expect(summary.levels[0]).toMatchObject({
 			gradeLevelId: 'ci-college:6EME',

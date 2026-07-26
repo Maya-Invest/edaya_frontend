@@ -10,6 +10,7 @@ These documents are **historical**. They are not linked from `AGENTS.md`, specs,
 | [demo-ready-plan.md](./demo-ready-plan.md) | 2026-07 | Demo script and dry-run tracker |
 | [remaining-work-plan.md](./remaining-work-plan.md) | 2026-07 | Carry-over backlog (archived) |
 | [onboarding-step4-summary-plan.md](./onboarding-step4-summary-plan.md) | 2026-07 | Step-4 summary (checklist → nested Structure + chapters) ✅ |
+| [onboarding-navigation-and-edit-plan.md](./onboarding-navigation-and-edit-plan.md) | 2026-07 | Back/stepper bind fix; step-4 Modifier; school year/periods tables ✅ |
 
 **Unchecked items** from these archives are not re-opened here — start a new on-going plan under `docs/sprints/` if needed.
 
