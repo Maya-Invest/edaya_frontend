@@ -28,7 +28,12 @@
 
 	} from '$lib/onboarding/school-periods';
 
-	import { COMMON_TIMEZONES, ONBOARDING_COUNTRIES, optionsWithCurrent } from '$lib/onboarding/school-step-defaults';
+	import {
+		COMMON_TIMEZONES,
+		ONBOARDING_COUNTRIES,
+		optionsWithCurrent,
+		timezoneForCountry,
+	} from '$lib/onboarding/school-step-defaults';
 
 	import { periodFitsInAcademicYear } from '$lib/onboarding/school-step-validation';
 
@@ -97,6 +102,19 @@
 	) {
 		onboardingContext.draft.school[field] = value;
 
+		persistDraft();
+	}
+
+	function handleCountryChange(value: string | undefined) {
+		if (!value) {
+			return;
+		}
+
+		onboardingContext.draft.school.country = value;
+		const timezone = timezoneForCountry(value);
+		if (timezone) {
+			onboardingContext.draft.school.timezone = timezone;
+		}
 		persistDraft();
 	}
 
@@ -182,11 +200,7 @@
 
 					value={onboardingContext.draft.school.country}
 
-					onValueChange={(value) => {
-						if (value) {
-							bindSchoolField('country', value);
-						}
-					}}
+					onValueChange={handleCountryChange}
 
 				>
 

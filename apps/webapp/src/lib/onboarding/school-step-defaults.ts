@@ -42,17 +42,49 @@ export const COMMON_TIMEZONES = [
 	'America/Montreal',
 	'America/Toronto',
 	'America/New_York',
+	'America/Port-au-Prince',
 	'America/Martinique',
 	'America/Guadeloupe',
 	'America/Cayenne',
 	'Indian/Reunion',
 	'Indian/Mayotte',
+	'Indian/Antananarivo',
 	'Africa/Abidjan',
 	'Africa/Dakar',
+	'Africa/Douala',
 	'Africa/Casablanca',
 	'Africa/Tunis',
 	'Africa/Algiers',
+	'Asia/Beirut',
 ] as const;
+
+/** Default IANA timezone for each onboarding country option. */
+export const COUNTRY_DEFAULT_TIMEZONE: Record<(typeof ONBOARDING_COUNTRIES)[number], string> = {
+	France: 'Europe/Paris',
+	Belgique: 'Europe/Brussels',
+	Suisse: 'Europe/Zurich',
+	Canada: 'America/Toronto',
+	Luxembourg: 'Europe/Luxembourg',
+	Monaco: 'Europe/Paris',
+	Sénégal: 'Africa/Dakar',
+	'Côte d\'Ivoire': 'Africa/Abidjan',
+	Mali: 'Africa/Abidjan',
+	Cameroun: 'Africa/Douala',
+	Madagascar: 'Indian/Antananarivo',
+	Maroc: 'Africa/Casablanca',
+	Tunisie: 'Africa/Tunis',
+	Algérie: 'Africa/Algiers',
+	Liban: 'Asia/Beirut',
+	Haïti: 'America/Port-au-Prince',
+};
+
+export function timezoneForCountry(country: string): string | undefined {
+	const trimmed = country.trim();
+	if (!trimmed) {
+		return undefined;
+	}
+	return COUNTRY_DEFAULT_TIMEZONE[trimmed as keyof typeof COUNTRY_DEFAULT_TIMEZONE];
+}
 
 export function optionsWithCurrent<T extends string>(
 	options: readonly T[],
