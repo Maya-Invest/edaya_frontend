@@ -11,6 +11,12 @@ export type OnboardingListStructureTemplatesResponse
 export type StructureTemplateDefinition
 	= components['schemas']['StructureTemplateDefinition'];
 
+export interface CatalogSubject {
+	code: string;
+	name: string;
+	matters: string[];
+}
+
 export interface CatalogGradeLevel {
 	id: string;
 	code: string;
@@ -24,6 +30,7 @@ export interface StructureTemplateCatalog {
 	countryCode: OnboardingListStructureTemplatesResponse['countryCode'];
 	gradeLevels: CatalogGradeLevel[];
 	byId: Map<string, CatalogGradeLevel>;
+	subjectsByGradeLevelId: Map<string, CatalogSubject[]>;
 }
 
 const API_TEMPLATE_ID_TO_MODEL = Object.fromEntries(
@@ -65,12 +72,18 @@ export function buildCatalogFromTemplates(
 	countryCode: OnboardingListStructureTemplatesResponse['countryCode'] = 'CI',
 ): StructureTemplateCatalog {
 	const gradeLevels: CatalogGradeLevel[] = [];
+	const subjectsByGradeLevelId = new Map<string, CatalogSubject[]>();
 
 	for (const template of templates) {
 		const model = API_TEMPLATE_ID_TO_MODEL[template.id];
 		if (!model) {
 			continue;
 		}
+
+		const subjectNameByCode = new Map(
+			template.subjects.map(subject => [subject.code, subject.shortName || subject.code]),
+		);
+
 		for (const level of template.gradeLevels) {
 			gradeLevels.push({
 				id: level.id,
@@ -80,6 +93,21 @@ export function buildCatalogFromTemplates(
 				order: level.order,
 				model,
 			});
+
+			const levelSubjects: CatalogSubject[] = [];
+			const seenCodes = new Set<string>();
+			for (const entry of template.curriculum) {
+				if (entry.levelCode !== level.code || seenCodes.has(entry.subjectCode)) {
+					continue;
+				}
+				seenCodes.add(entry.subjectCode);
+				levelSubjects.push({
+					code: entry.subjectCode,
+					name: subjectNameByCode.get(entry.subjectCode) ?? entry.subjectCode,
+					matters: Array.isArray(entry.matters) ? [...entry.matters] : [],
+				});
+			}
+			subjectsByGradeLevelId.set(level.id, levelSubjects);
 		}
 	}
 
@@ -94,6 +122,7 @@ export function buildCatalogFromTemplates(
 		countryCode,
 		gradeLevels,
 		byId: new Map(gradeLevels.map(level => [level.id, level])),
+		subjectsByGradeLevelId,
 	};
 }
 
@@ -161,4 +190,21 @@ export function previewClassNamesFromCatalog(
 	return Array.from({ length: Math.max(0, classCount) }, (_, index) => {
 		return `${shortLabel} ${index + 1}`;
 	});
+}
+
+/** Unique subjects (by code) across the given grade-level ids. */
+export function subjectsForGradeLevelIds(
+	catalog: StructureTemplateCatalog,
+	gradeLevelIds: readonly string[],
+): CatalogSubject[] {
+	const byCode = new Map<string, CatalogSubject>();
+	for (const gradeLevelId of gradeLevelIds) {
+		const subjects = catalog.subjectsByGradeLevelId.get(gradeLevelId) ?? [];
+		for (const subject of subjects) {
+			if (!byCode.has(subject.code)) {
+				byCode.set(subject.code, subject);
+			}
+		}
+	}
+	return [...byCode.values()].sort((left, right) => left.code.localeCompare(right.code));
 }

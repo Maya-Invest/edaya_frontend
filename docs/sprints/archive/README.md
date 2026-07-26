@@ -9,6 +9,7 @@ These documents are **historical**. They are not linked from `AGENTS.md`, specs,
 | [svelte-state-alignment.md](./svelte-state-alignment.md) | 2026-07-05 → 2026-07-06 | State P0 + ListFiltersState pilots ✅ |
 | [demo-ready-plan.md](./demo-ready-plan.md) | 2026-07 | Demo script and dry-run tracker |
 | [remaining-work-plan.md](./remaining-work-plan.md) | 2026-07 | Carry-over backlog (archived) |
+| [onboarding-step4-summary-plan.md](./onboarding-step4-summary-plan.md) | 2026-07 | Step-4 summary (checklist → nested Structure + chapters) ✅ |
 
 **Unchecked items** from these archives are not re-opened here — start a new on-going plan under `docs/sprints/` if needed.
 
