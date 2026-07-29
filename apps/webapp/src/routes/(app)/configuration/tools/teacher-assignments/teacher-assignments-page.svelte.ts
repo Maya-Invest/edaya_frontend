@@ -9,10 +9,7 @@ import { authSession } from '$lib/auth/session.svelte';
 import { mergeById } from '$lib/detail-data/seed-policies';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
-import {
-	deleteTeacherAssignmentOnHub,
-	saveTeacherAssignmentOnHub,
-} from './lib/teacher-assignments-mutations';
+import { deleteTeacherAssignmentOnHub, saveTeacherAssignmentOnHub } from './lib/teacher-assignments-mutations';
 import { querySchoolTeacherAssignmentsPage } from './lib/teacher-assignments-queries';
 
 type TeacherAssignment = components['schemas']['TeacherAssignment'];
