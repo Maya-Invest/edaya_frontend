@@ -14,6 +14,7 @@ import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readClassGroupListFilters, writeClassGroupListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { nextClassGroupIdFromExistingClasses } from '$lib/school/next-class-group-id';
 import { getContext, setContext } from 'svelte';
 import { classGroupIdFromUrl } from './lib/classes-helpers';
 import {
@@ -25,7 +26,6 @@ import {
 	queryClassesListPage,
 } from './lib/classes-queries';
 import { runClassesRouteMutation } from './lib/classes-route-mutation';
-import { nextClassGroupIdFromExistingClasses } from '$lib/school/next-class-group-id';
 
 type StaffAssignment = components['schemas']['StaffAssignment'];
 

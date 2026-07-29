@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { CatalogGradeLevel, StructureTemplateCatalog } from '$lib/onboarding/structure-template-catalog';
-	import type { OnboardingStructureLevelDraft } from '$lib/onboarding/types';
 	import type { StructureModel } from '$lib/onboarding/structure-templates';
+	import type { OnboardingStructureLevelDraft } from '$lib/onboarding/types';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import Input from '$lib/components/ui/input/input.svelte';

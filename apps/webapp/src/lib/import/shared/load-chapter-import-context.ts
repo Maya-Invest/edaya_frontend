@@ -1,13 +1,13 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import {
-	fetchCatalogSubjectsSources,
-	subjectMattersLinkedToGradeLevelSubject,
-} from '$lib/api/subjects-data';
 import type {
 	ChapterImportCatalogTarget,
 	ChapterImportClassAssignment,
 } from '$lib/import/chapters/types';
+import {
+	fetchCatalogSubjectsSources,
+	subjectMattersLinkedToGradeLevelSubject,
+} from '$lib/api/subjects-data';
 import { chapterImportDuplicateKey } from '$lib/import/chapters/types';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;

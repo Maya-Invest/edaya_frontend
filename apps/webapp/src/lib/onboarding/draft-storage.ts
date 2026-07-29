@@ -1,4 +1,5 @@
 import type { OnboardingDraft, OnboardingPeriodDraft, OnboardingSchoolDraft, OnboardingStaffInviteRole, OnboardingStep } from '$lib/onboarding/types';
+import { migrateLegacyGradeLevelId } from '$lib/onboarding/legacy-gl-map';
 import { createInitialPeriods } from '$lib/onboarding/school-periods';
 import {
 	DEFAULT_ONBOARDING_COUNTRY,
@@ -6,7 +7,6 @@ import {
 	isStructureReadyCountry,
 	timezoneForCountry,
 } from '$lib/onboarding/school-step-defaults';
-import { migrateLegacyGradeLevelId } from '$lib/onboarding/legacy-gl-map';
 import { ONBOARDING_DRAFT_VERSION } from '$lib/onboarding/types';
 
 const STORAGE_PREFIX = 'edaya:onboarding:draft';

@@ -1,5 +1,5 @@
-import type { Subject } from '$lib/types/school';
 import type { SubjectMatterDrawerRow } from '$lib/api/mutations/subject-matter.mutations';
+import type { Subject } from '$lib/types/school';
 import {
 	loadCatalogSubjectMatterRows,
 	loadSubjectMatterDrawerRows,

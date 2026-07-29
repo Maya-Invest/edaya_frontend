@@ -36,7 +36,7 @@ export function buildImportTemplateRows(
 	const separator = options.multiValueSeparator ?? ';';
 	const columns = sortImportColumnsRequiredFirst(definition.columns);
 	const headers = columns.map(column => column.key);
-	const example = columns.map(column => {
+	const example = columns.map((column) => {
 		const raw = definition.exampleRow[column.key] ?? '';
 		return formatExampleCell(column, raw, separator);
 	});
@@ -72,4 +72,3 @@ export function downloadImportExcelTemplate(
 	);
 	downloadBlob(definition.xlsxFilename, blob);
 }
-

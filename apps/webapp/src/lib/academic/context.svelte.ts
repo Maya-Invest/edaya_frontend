@@ -59,8 +59,8 @@ class AcademicContext {
 
 	period = $derived(
 		this.periods.find(p => p.id === this.periodId)
-			?? this.periodsForYear.at(-1)
-			?? this.periods[0],
+		?? this.periodsForYear.at(-1)
+		?? this.periods[0],
 	);
 
 	periodsForYear = $derived(this.periods.filter(p => p.academicYearId === this.yearId));

@@ -1,4 +1,5 @@
 import type { SubjectsPageSlice } from './subjects-helpers';
+import { listAllEntityPages, schoolWideEntityList } from '$lib/api/entity-list-filters';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import {
 	fetchCatalogSubjectsSources,
@@ -6,7 +7,6 @@ import {
 	mapAllClassSubjects,
 	mapCatalogSubjects,
 } from '$lib/api/subjects-data';
-import { listAllEntityPages, schoolWideEntityList } from '$lib/api/entity-list-filters';
 import { fetchTeachingLogEntries } from '$lib/api/teaching-log-data';
 import { resolvePageLoad } from '$lib/queries/page-status';
 import { emptySubjectsSlice } from './subjects-helpers';

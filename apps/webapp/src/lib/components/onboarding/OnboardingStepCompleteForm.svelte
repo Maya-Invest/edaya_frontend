@@ -1,13 +1,13 @@
 <script lang="ts">
 	import type { CatalogSubject, StructureTemplateCatalog } from '$lib/onboarding/structure-template-catalog';
-	import Button from '$lib/components/ui/button/button.svelte';
 	import OnboardingSubjectChaptersDrawer from '$lib/components/onboarding/OnboardingSubjectChaptersDrawer.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import { t } from '$lib/i18n';
-	import { onboardingContext } from '$lib/onboarding/context.svelte';
+	import { ChevronRight } from '$lib/icons';
 	import { buildCompleteStepSummary } from '$lib/onboarding/complete-step-summary';
+	import { onboardingContext } from '$lib/onboarding/context.svelte';
 	import { getOnboardingWizardState } from '$lib/onboarding/onboarding-wizard-state.svelte';
 	import { loadStructureTemplateCatalog } from '$lib/onboarding/structure-template-catalog';
-	import { ChevronRight } from '$lib/icons';
 
 	const wizard = getOnboardingWizardState();
 
@@ -189,9 +189,9 @@
 							</thead>
 							<tbody>
 								{#each level.subjects as subject (subject.code)}
-									{@const isSelected =
-										selectedSubject?.levelCode === level.code &&
-										selectedSubject?.subject.code === subject.code}
+									{@const isSelected
+										= selectedSubject?.levelCode === level.code
+											&& selectedSubject?.subject.code === subject.code}
 									<tr
 										class="cursor-pointer border-b border-border/60 last:border-0 hover:bg-secondary/80 {isSelected
 											? 'bg-primary/10'
@@ -199,7 +199,7 @@
 										role="button"
 										tabindex="0"
 										onclick={() => selectSubject(level.code, subject)}
-										onkeydown={(event) => handleSubjectRowKeydown(event, level.code, subject)}
+										onkeydown={event => handleSubjectRowKeydown(event, level.code, subject)}
 									>
 										<td class="px-1.5 py-1.5 font-medium font-mono tabular-nums">{subject.code}</td>
 										<td class="px-1.5 py-1.5">{subject.name}</td>

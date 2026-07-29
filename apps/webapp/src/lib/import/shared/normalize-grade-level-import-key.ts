@@ -3,7 +3,7 @@
  * Accepts QA style (`6eme`), wizard style (`6ème`), and legacy fixture names (`Sixième`).
  */
 export function normalizeGradeLevelImportKey(value: string): string {
-	let key = value
+	const key = value
 		.trim()
 		.toLowerCase()
 		.normalize('NFD')

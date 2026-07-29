@@ -43,7 +43,7 @@
 		onFinish={() => void wizard.finishOnboarding()}
 		onSkipOnboarding={() => void wizard.skipOnboarding()}
 		onSkip={() => wizard.skipStep()}
-		onStepSelect={(step) => wizard.navigateToStep(step)}
+		onStepSelect={step => wizard.navigateToStep(step)}
 		onSignOut={() => void wizard.signOut()}
 	>
 		<OnboardingStepContent step={wizard.currentStep} busy={wizard.busy} />

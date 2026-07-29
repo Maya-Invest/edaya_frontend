@@ -70,22 +70,22 @@ export const COMMON_TIMEZONES = [
 
 /** Default IANA timezone for each onboarding country option. */
 export const COUNTRY_DEFAULT_TIMEZONE: Record<(typeof ONBOARDING_COUNTRIES)[number], string> = {
-	France: 'Europe/Paris',
-	Belgique: 'Europe/Brussels',
-	Suisse: 'Europe/Zurich',
-	Canada: 'America/Toronto',
-	Luxembourg: 'Europe/Luxembourg',
-	Monaco: 'Europe/Paris',
-	Sénégal: 'Africa/Dakar',
+	'France': 'Europe/Paris',
+	'Belgique': 'Europe/Brussels',
+	'Suisse': 'Europe/Zurich',
+	'Canada': 'America/Toronto',
+	'Luxembourg': 'Europe/Luxembourg',
+	'Monaco': 'Europe/Paris',
+	'Sénégal': 'Africa/Dakar',
 	'Côte d\'Ivoire': 'Africa/Abidjan',
-	Mali: 'Africa/Abidjan',
-	Cameroun: 'Africa/Douala',
-	Madagascar: 'Indian/Antananarivo',
-	Maroc: 'Africa/Casablanca',
-	Tunisie: 'Africa/Tunis',
-	Algérie: 'Africa/Algiers',
-	Liban: 'Asia/Beirut',
-	Haïti: 'America/Port-au-Prince',
+	'Mali': 'Africa/Abidjan',
+	'Cameroun': 'Africa/Douala',
+	'Madagascar': 'Indian/Antananarivo',
+	'Maroc': 'Africa/Casablanca',
+	'Tunisie': 'Africa/Tunis',
+	'Algérie': 'Africa/Algiers',
+	'Liban': 'Asia/Beirut',
+	'Haïti': 'America/Port-au-Prince',
 };
 
 export function timezoneForCountry(country: string): string | undefined {

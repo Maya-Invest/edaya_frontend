@@ -1,10 +1,14 @@
 import type { OnboardingStep } from '$lib/onboarding/types';
-import { redirectPathIfAuthenticated } from '$lib/auth/resolve-post-auth';
 import { academicContext } from '$lib/academic/context.svelte';
+import { redirectPathIfAuthenticated } from '$lib/auth/resolve-post-auth';
 import { authSession } from '$lib/auth/session.svelte';
 import { isOnboardingSkipEnabled } from '$lib/env/app-env';
 import { appGoto, appPath } from '$lib/navigation/app-navigation';
 import { onboardingContext } from '$lib/onboarding/context.svelte';
+import {
+	persistOnboardingFinalizeDebugSnapshot,
+	shouldClearOnboardingDraftAfterFinalize,
+} from '$lib/onboarding/debug-storage';
 import {
 	canVisitOnboardingStep,
 	clampOnboardingStep,
@@ -20,10 +24,6 @@ import {
 	previousOnboardingStep,
 } from '$lib/onboarding/steps';
 import { submitCompleteOnboardingStep } from '$lib/onboarding/submit-complete-step';
-import {
-	persistOnboardingFinalizeDebugSnapshot,
-	shouldClearOnboardingDraftAfterFinalize,
-} from '$lib/onboarding/debug-storage';
 import { submitSchoolOnboardingStep, scheduleAppShellBootstrapAfterSchoolStep } from '$lib/onboarding/submit-school-step';
 import { submitStaffOnboardingStep } from '$lib/onboarding/submit-staff-step';
 import { submitStructureOnboardingStep } from '$lib/onboarding/submit-structure-step';

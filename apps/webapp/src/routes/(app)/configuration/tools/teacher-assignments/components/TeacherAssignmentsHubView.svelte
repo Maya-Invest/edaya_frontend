@@ -9,8 +9,8 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
 	import { ArrowLeft, Plus, Trash2 } from '$lib/icons';
-	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { get } from 'svelte/store';
 	import { getTeacherAssignmentsPageState } from '../teacher-assignments-page.svelte';
 	import TeacherAssignmentHubFormModal from './TeacherAssignmentHubFormModal.svelte';

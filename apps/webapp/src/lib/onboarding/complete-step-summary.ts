@@ -1,15 +1,16 @@
-import type { OnboardingDraft, OnboardingStaffInviteRole } from '$lib/onboarding/types';
+import type { OnboardingStaffInviteProfile } from '$lib/onboarding/staff-invite-profiles';
+import type { CatalogSubject, StructureTemplateCatalog } from '$lib/onboarding/structure-template-catalog';
 import type { StructureModel } from '$lib/onboarding/structure-templates';
+import type { OnboardingDraft, OnboardingStaffInviteRole } from '$lib/onboarding/types';
 import {
 	ONBOARDING_STAFF_INVITE_PROFILES,
-	type OnboardingStaffInviteProfile,
+
 } from '$lib/onboarding/staff-invite-profiles';
 import { staffInvitesForSubmit } from '$lib/onboarding/staff-step-helpers';
 import {
 	getCatalogGradeLevel,
 	previewClassNamesFromCatalog,
-	type CatalogSubject,
-	type StructureTemplateCatalog,
+
 } from '$lib/onboarding/structure-template-catalog';
 
 const MATTER_PREVIEW_COUNT = 2;

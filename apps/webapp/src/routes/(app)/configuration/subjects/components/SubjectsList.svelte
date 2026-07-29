@@ -13,8 +13,8 @@
 	import { readConfigSubjectListFilters, writeConfigSubjectListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
-	import SubjectCatalogRow from './SubjectCatalogRow.svelte';
 	import { getSubjectsPageState } from '../subjects-page.svelte';
+	import SubjectCatalogRow from './SubjectCatalogRow.svelte';
 
 	const {
 		onSelect,

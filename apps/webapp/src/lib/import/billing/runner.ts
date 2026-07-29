@@ -1,6 +1,6 @@
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import { assignFeeToStudentMutation } from '$lib/api/mutations/billing.mutations';
 import type { ValidatedBillingImportRow } from './types';
+import { assignFeeToStudentMutation } from '$lib/api/mutations/billing.mutations';
 import { t } from '$lib/i18n';
 import { formatImportRunErrorMessage } from '$lib/import/shared/format-import-run-error';
 import { get } from 'svelte/store';

@@ -17,7 +17,7 @@ export function createBrowserTransport(getYearId: () => string | undefined): Tra
 	return {
 		async request<T>(method: string, path: string, options?: { body?: unknown }): Promise<T> {
 			const headers = new Headers({
-				'Accept': 'application/json',
+				Accept: 'application/json',
 			});
 			applyInteractiveActorHeaders(headers);
 			if (options?.body !== undefined) {

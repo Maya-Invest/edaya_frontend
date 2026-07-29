@@ -1,11 +1,11 @@
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import { DEFAULT_LIST_PAGE_SIZE, paginatedList } from '$lib/api/entity-list-filters';
-import { fetchSchoolSubjectsSources } from '$lib/api/subjects-data';
-import { formatPersonName } from '$lib/api/teacher-display';
 import type {
 	TeacherAssignmentImportClassSubjectOption,
 	TeacherAssignmentImportTeacherOption,
 } from '$lib/import/teacher-assignments/types';
+import { DEFAULT_LIST_PAGE_SIZE, paginatedList } from '$lib/api/entity-list-filters';
+import { fetchSchoolSubjectsSources } from '$lib/api/subjects-data';
+import { formatPersonName } from '$lib/api/teacher-display';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -36,14 +36,16 @@ export async function loadTeacherAssignmentImportTeachers(
 		const rows = page ?? [];
 		for (const teacher of rows) {
 			const code = typeof teacher.code === 'string' ? teacher.code.trim() : '';
-			if (!code) continue;
+			if (!code)
+				continue;
 			out.push({
 				id: teacher.id,
 				code,
 				name: formatPersonName(teacher.firstName, teacher.lastName),
 			});
 		}
-		if (rows.length < PAGE) break;
+		if (rows.length < PAGE)
+			break;
 		offset += PAGE;
 	}
 

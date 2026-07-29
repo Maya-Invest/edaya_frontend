@@ -1,7 +1,7 @@
 import type { TeacherAssignmentsPageState } from '../teacher-assignments-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
-import { fetchTeacherAssignmentsHubData } from '$lib/api/teacher-assignments-hub-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { fetchTeacherAssignmentsHubData } from '$lib/api/teacher-assignments-hub-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 
