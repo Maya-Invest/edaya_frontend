@@ -2,9 +2,11 @@ import { describe, expect, it, mock } from 'bun:test';
 import type { ValidatedPaymentImportRow } from '$lib/import/payments/types';
 
 const recordPaymentMutation = mock(async () => true);
+const assignFeeToStudentMutation = mock(async (): Promise<string | null> => null);
 
 mock.module('$lib/api/mutations/billing.mutations', () => ({
 	recordPaymentMutation,
+	assignFeeToStudentMutation,
 }));
 
 const { runPaymentImport } = await import('$lib/import/payments/runner');

@@ -144,12 +144,12 @@
 		validateTeacherImportRows,
 	} from '$lib/import/teachers/validator';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import { hasPermission } from '$lib/permissions';
 	import { resolveGradeLevelKeyForClassId } from '$lib/school/next-class-group-id';
 	import { notifyStaffListChanged } from '$lib/staff/notify-staff-list-changed';
 	import { notifyStudentsListChanged } from '$lib/students/notify-students-list-changed';
 	import { notifySubjectsListChanged } from '$lib/subjects/notify-subjects-list-changed';
 	import { notifyTeachersListChanged } from '$lib/teachers/notify-teachers-list-changed';
-	import { hasPermission } from '$lib/permissions';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 
@@ -652,14 +652,11 @@
 	const showSubjectsPrerequisite = $derived(
 		isSubjectsImport && step === 'download' && !hasClasses,
 	);
+	const teacherAssignmentsDownloadBlocked = $derived(
+		!hasClasses || (teacherAssignmentTeachers.length === 0 && !loadingTeacherAssignmentContext) || (teacherAssignmentClassSubjects.length === 0 && !loadingTeacherAssignmentContext),
+	);
 	const showTeacherAssignmentsPrerequisite = $derived(
-		isTeacherAssignmentsImport
-		&& step === 'download'
-			&& (
-				!hasClasses
-				|| (teacherAssignmentTeachers.length === 0 && !loadingTeacherAssignmentContext)
-				|| (teacherAssignmentClassSubjects.length === 0 && !loadingTeacherAssignmentContext)
-			),
+		isTeacherAssignmentsImport && step === 'download' && teacherAssignmentsDownloadBlocked,
 	);
 	const showPaymentsPrerequisite = $derived(
 		isPaymentsImport && step === 'download' && !hasStudents,

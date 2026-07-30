@@ -32,7 +32,7 @@
 		if (!academicContext.shellReady) {
 			return;
 		}
-		const _key = academicSelectionKey;
+		void academicSelectionKey;
 		void hubPage.refreshSlice();
 	});
 </script>

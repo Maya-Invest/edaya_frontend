@@ -38,80 +38,40 @@ function row(overrides: Partial<ValidatedSubjectImportRow> & Pick<ValidatedSubje
 
 describe('subject import runner', () => {
 
-	it('creates each valid row via subject save and offerSubjectToGradeLevel', async () => {
-
-		const saveSubject = mock(async () => ({}));
-
+	it('creates each valid row via configureSubject and offerSubjectToGradeLevel', async () => {
+		const configureSubject = mock(async () => ({}));
 		const offerSubjectToGradeLevel = mock(async () => ({}));
 
-
-
 		const result = await runSubjectImport({
-
 			schoolId: 'school-1',
-
 			academicYearId: 'ay-1',
-
 			seed: 'testseed',
-
 			client: {
-
-				entities: {
-
-					subjects: { save: saveSubject },
-
-				},
-
 				commands: {
-
+					configureSubject,
 					offerSubjectToGradeLevel,
-
 				},
-
 			} as never,
-
 			rows: [
-
 				row({ rowIndex: 2, abbreviation: 'MATH', coefficientValue: 3 }),
-
 			],
-
 		});
 
-
-
 		expect(result.created).toBe(1);
-
-		expect(saveSubject).toHaveBeenCalledWith(expect.objectContaining({
-
-			schoolId: 'school-1',
-
+		expect(configureSubject).toHaveBeenCalledWith(expect.objectContaining({
 			name: 'Mathématiques',
-
 			code: 'MATH',
-
 			defaultCoefficient: 3,
-
 		}));
-
 		expect(offerSubjectToGradeLevel).toHaveBeenCalledWith(expect.objectContaining({
-
 			gradeLevelId: 'gl-6',
-
 			academicYearId: 'ay-1',
-
 			coefficient: 3,
-
 			classSubjectIdsByClassGroupId: expect.objectContaining({
-
 				'class-6a': expect.any(String),
-
 				'class-6b': expect.any(String),
-
 			}),
-
 		}));
-
 	});
 
 });

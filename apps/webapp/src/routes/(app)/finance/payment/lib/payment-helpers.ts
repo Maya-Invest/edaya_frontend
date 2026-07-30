@@ -1,5 +1,5 @@
-import type { Fee, Student, StudentBilling } from '$lib/types/school';
 import type { FinancePayment } from '$lib/api/finance-data';
+import type { Fee, Student, StudentBilling } from '$lib/types/school';
 
 export interface PaymentPageSlice {
 	fees: Fee[];

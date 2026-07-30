@@ -47,8 +47,6 @@
 			return;
 		}
 
-		const authUserId = authSession.authUserId;
-
 		const resumePath = onboardingResumePath(
 			authSession.authUserId,
 			authSession.schoolId,
@@ -81,8 +79,8 @@
 		if (!authSession.sessionKind) {
 			return;
 		}
-		// Re-run when the linked school or actor changes (invalidates shell bootstrap cache).
-		const _shellIdentity = `${authSession.sessionKind}:${authSession.schoolId ?? ''}:${authSession.userId ?? ''}`;
+		const shellIdentity = `${authSession.sessionKind}:${authSession.schoolId ?? ''}:${authSession.userId ?? ''}`;
+		void shellIdentity;
 		void (async () => {
 			await bootstrapAppShell();
 			if (authSession.schoolId && academicContext.schools.length === 0) {

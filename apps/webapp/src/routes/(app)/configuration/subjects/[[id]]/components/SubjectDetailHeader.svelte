@@ -1,12 +1,12 @@
 <script lang="ts">
 	import type { Subject } from '$lib/types/school';
 	import { page } from '$app/stores';
+	import { removeSubjectFromGradeLevelMutation } from '$lib/api/mutations/grade-level-subject.mutations';
 	import SubjectFormModal from '$lib/components/school/academics/SubjectFormModal.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
-	import { removeSubjectFromGradeLevelMutation } from '$lib/api/mutations/grade-level-subject.mutations';
 	import { t } from '$lib/i18n';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';

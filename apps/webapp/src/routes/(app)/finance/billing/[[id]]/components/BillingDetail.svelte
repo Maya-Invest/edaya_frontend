@@ -1,13 +1,13 @@
 <script lang="ts">
 	import type { StudentBilling } from '$lib/types/school';
 	import { page } from '$app/stores';
+	import { cancelStudentFeeMutation, adjustStudentFeeMutation } from '$lib/api/mutations/billing.mutations';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
-	import { cancelStudentFeeMutation, adjustStudentFeeMutation } from '$lib/api/mutations/billing.mutations';
 	import { locale, t } from '$lib/i18n';
 	import { Check, Clock, Trash2 } from '$lib/icons';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
@@ -37,26 +37,25 @@
 
 	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
-	let cancelBusy = $state(false);
 
 	async function cancelFee() {
+		// eslint-disable-next-line no-alert -- interim billing action until dedicated modals exist
 		const reason = window.prompt(get(t)('billing.cancelReasonPrompt'));
 		if (!reason?.trim()) {
 			return;
 		}
-		cancelBusy = true;
 		const ok = await cancelStudentFeeMutation({
 			studentFeeId: live.id,
 			reason: reason.trim(),
 			successMessage: get(t)('billing.cancelSuccess'),
 		});
-		cancelBusy = false;
 		if (ok) {
 			await billingPage.refreshSlice();
 		}
 	}
 
 	async function adjustFee() {
+		// eslint-disable-next-line no-alert -- interim billing action until dedicated modals exist
 		const amountText = window.prompt(get(t)('billing.adjustAmountPrompt'));
 		if (!amountText?.trim()) {
 			return;
@@ -65,6 +64,7 @@
 		if (!Number.isFinite(adjustmentAmount)) {
 			return;
 		}
+		// eslint-disable-next-line no-alert -- interim billing action until dedicated modals exist
 		const reason = window.prompt(get(t)('billing.adjustReasonPrompt')) ?? '';
 		if (!reason.trim()) {
 			return;

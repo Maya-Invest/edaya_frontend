@@ -65,8 +65,7 @@ export async function recordPaymentMutation(input: {
 
 export {
 	adjustStudentFeeMutation,
+	cancelPaymentMutation,
 	cancelStudentFeeMutation,
 	reversePaymentMutation,
-	cancelPaymentMutation,
 } from './billing-ops.mutations';
-

@@ -78,7 +78,7 @@
 	name={student.name}
 	summary={$t('drawer.studentSummary', {
 		avg: student.average.toFixed(1),
-		att: student.attendance == null ? '—' : student.attendance,
+		att: student.attendance ?? '—',
 	})}
 >
 	{#snippet avatar()}

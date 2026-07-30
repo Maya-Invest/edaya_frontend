@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { ReportCardResult } from '$lib/types/report-cards';
+	import { writeHomeroomReportCommentMutation } from '$lib/api/mutations/student-ops.mutations';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
-	import { writeHomeroomReportCommentMutation } from '$lib/api/mutations/student-ops.mutations';
 	import { t } from '$lib/i18n';
 	import { formatGrade } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
@@ -22,12 +22,8 @@
 		reportCardsPage.scalesFor(live.classId).find(entry => entry.id === live.gradeScaleId),
 	);
 
-	let commentDraft = $state('');
+	let commentDraft = $derived(live.homeroomComment ?? '');
 	let commentBusy = $state(false);
-
-	$effect(() => {
-		commentDraft = live.homeroomComment ?? '';
-	});
 
 	function resultStatusLabel(status: ReportCardResult['status']) {
 		if (status === 'published') {

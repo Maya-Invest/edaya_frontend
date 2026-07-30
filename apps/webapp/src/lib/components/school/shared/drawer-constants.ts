@@ -52,8 +52,8 @@ export const kindLabelKey: Record<NonNullable<DrawerItem>['kind'], string> = {
 };
 
 export const relationKey: Partial<Record<string, string>> = {
-	Mother: 'guardian.relation.Mother',
-	Father: 'guardian.relation.Father',
+	'Mother': 'guardian.relation.Mother',
+	'Father': 'guardian.relation.Father',
 	'Legal guardian': 'guardian.relation.LegalGuardian',
 };
 

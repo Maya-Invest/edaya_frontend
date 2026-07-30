@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
+	import { upsertStudentHealthProfileMutation, updateStudentStatusMutation } from '$lib/api/mutations/student-ops.mutations';
 	import { relationKey, fmtDateFr } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
@@ -7,18 +8,17 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
-	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
-	import { upsertStudentHealthProfileMutation, updateStudentStatusMutation } from '$lib/api/mutations/student-ops.mutations';
+	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
 	import { FileText, Mail, Phone, Users, Plus } from '$lib/icons';
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { studentGenderLabelKey } from '$lib/students/format-student-gender';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
+	import { getStudentsPageState } from '../../../../students-page.svelte';
 	import { pedagogicalNoteToneByCategory, getStudentProfileTabState } from '../student-profile-tab.svelte';
 	import AccountLinkingSection from './StudentAccountLinkingSection.svelte';
-	import { getStudentsPageState } from '../../../../students-page.svelte';
 
 	const { s }: { s: Student } = $props();
 

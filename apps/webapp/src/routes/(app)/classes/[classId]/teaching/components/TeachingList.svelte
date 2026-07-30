@@ -1,10 +1,10 @@
 <script lang="ts">
 	import type { Subject, SubjectCategory } from '$lib/types/school';
 	import { page } from '$app/stores';
+	import { setClassSubjectOfferedMutation } from '$lib/api/mutations/grade-level-subject.mutations';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
-	import { setClassSubjectOfferedMutation } from '$lib/api/mutations/grade-level-subject.mutations';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { Clock, Search, Sparkles, User } from '$lib/icons';

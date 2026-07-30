@@ -13,7 +13,7 @@
 		onDelete: (def: PeriodDefinition) => void;
 	}
 
-	let { groups, onEdit, onDelete }: Props = $props();
+	const { groups, onEdit, onDelete }: Props = $props();
 </script>
 
 <div class="mt-3 w-full">

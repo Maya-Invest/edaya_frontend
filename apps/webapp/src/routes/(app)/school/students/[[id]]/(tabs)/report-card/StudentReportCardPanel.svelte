@@ -1,10 +1,10 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import { writeHomeroomReportCommentMutation } from '$lib/api/mutations/student-ops.mutations';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
-	import { writeHomeroomReportCommentMutation } from '$lib/api/mutations/student-ops.mutations';
 	import { t } from '$lib/i18n';
 	import { FileSpreadsheet } from '$lib/icons';
 	import { toast } from '$lib/toast.svelte';
@@ -27,12 +27,8 @@
 		latest ? academicContext.periods.find(p => p.id === latest.academicPeriodId) : null,
 	);
 
-	let commentDraft = $state('');
+	let commentDraft = $derived(latest?.homeroomComment ?? '');
 	let commentBusy = $state(false);
-
-	$effect(() => {
-		commentDraft = latest?.homeroomComment ?? '';
-	});
 
 	async function generate() {
 		const ok = await reportCardTab.generateReportCard(s.id);

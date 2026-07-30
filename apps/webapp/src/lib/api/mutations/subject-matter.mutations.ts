@@ -7,7 +7,6 @@ import { subjectMattersLinkedToGradeLevelSubject } from '$lib/api/subjects-data'
 type ClassSubjectRaw = components['schemas']['ClassSubject'];
 type ClassSubjectMatterRaw = components['schemas']['ClassSubjectMatter'];
 type GradeLevelSubjectRaw = components['schemas']['GradeLevelSubject'];
-type GradeLevelSubjectMatterRaw = components['schemas']['GradeLevelSubjectMatter'];
 type SubjectMatterRaw = components['schemas']['SubjectMatter'];
 
 export interface SubjectMatterDrawerRow {
