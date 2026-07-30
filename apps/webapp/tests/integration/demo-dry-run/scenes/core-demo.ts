@@ -1,5 +1,12 @@
 import { signIn } from '../support/auth';
-import { APP_SHELL_SELECTOR, CLASS_6A, CLASS_6B, DEMO_ACTIVITY_NAME } from '../support/constants';
+import { selectAcademicPeriod } from '../support/academic-period';
+import {
+	APP_SHELL_SELECTOR,
+	CLASS_6A,
+	CLASS_6B,
+	DEMO_ACTIVITY_NAME,
+	SEEDED_TIMETABLE_WEEK,
+} from '../support/constants';
 import { configClassGroupPath, schoolStudentPath, schoolTeacherPath } from '../support/paths';
 import { assertClassAttendanceNav, ensureDailyAttendanceMode } from '../support/setup';
 import { waitForDrawerAside } from '../support/drawer';
@@ -89,7 +96,8 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	await visit(ctx, `${base}/school/staff`, 'D4', '4.1 Staff list', { selector: 'main' });
 
 	const timetablePath = `/classes/${CLASS_6A}/timetable`;
-	await visit(ctx, `${base}${timetablePath}`, 'D5', '5.1 Timetable grid', {
+	const timetableSeededWeek = `${timetablePath}?week=${SEEDED_TIMETABLE_WEEK}`;
+	await visit(ctx, `${base}${timetableSeededWeek}`, 'D5', '5.1 Timetable grid', {
 		pathPrefix: timetablePath,
 		selector: '#planning-week-picker, .edaya-timetable-calendar',
 	});
@@ -98,30 +106,41 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	reporter.log(
 		'D5',
 		'5.2 Maths slot shows Mme Touré',
-		mathsOrTeacher ? 'pass' : 'skip',
-		mathsOrTeacher ? undefined : 'No maths lesson text in grid — verify seed week / teacher assignments manually',
+		mathsOrTeacher ? 'pass' : 'fail',
+		mathsOrTeacher ? undefined : 'No maths lesson text in seeded week — verify schedule fixtures',
 	);
 
-	await visit(ctx, `${base}/classes/${CLASS_6A}/evaluations`, 'D6', '6.1 Evaluations list', { selector: 'main' });
+	await selectAcademicPeriod(ctx);
+	await visit(ctx, `${base}/classes/${CLASS_6A}/evaluations?kind=homework`, 'D6', '6.1 Evaluations list', {
+		pathPrefix: `/classes/${CLASS_6A}/evaluations`,
+		selector: 'main',
+	});
 	try {
 		const homeworkFilter = page.locator('main select[aria-label="Filter"]').first();
 		if (await homeworkFilter.isVisible({ timeout: 10_000 }).catch(() => false)) {
-			const options = await homeworkFilter.locator('option').allTextContents();
-			const homeworkOption = options.find(text => /devoir|homework/i.test(text));
-			if (homeworkOption) {
-				await homeworkFilter.selectOption({ label: homeworkOption });
-			}
-			await page.waitForTimeout(500);
+			await homeworkFilter.selectOption('homework').catch(async () => {
+				const options = await homeworkFilter.locator('option').allTextContents();
+				const homeworkOption = options.find(text => /devoir|homework/i.test(text));
+				if (homeworkOption) {
+					await homeworkFilter.selectOption({ label: homeworkOption });
+				}
+			});
+			await page.waitForTimeout(800);
 			const hasHomeworkRow = await page
-				.locator('main .space-y-3 button')
-				.filter({ hasText: /devoir|homework|exercices|fractions|feuille/i })
+				.locator('main .space-y-3 [role="button"]')
+				.filter({ hasText: /devoir|homework|exercices|fractions|feuille|cigale/i })
 				.first()
 				.isVisible({ timeout: 10_000 })
 				.catch(() => false);
-			reporter.log('D6', '6.2 Homework filter', hasHomeworkRow ? 'pass' : 'skip', hasHomeworkRow ? undefined : 'No homework rows after filter');
+			reporter.log(
+				'D6',
+				'6.2 Homework filter',
+				hasHomeworkRow ? 'pass' : 'fail',
+				hasHomeworkRow ? undefined : 'No homework rows after filter on T1',
+			);
 		}
 		else {
-			reporter.log('D6', '6.2 Homework filter', 'skip', 'Filter select not visible');
+			reporter.log('D6', '6.2 Homework filter', 'fail', 'Filter select not visible');
 		}
 	}
 	catch (err) {

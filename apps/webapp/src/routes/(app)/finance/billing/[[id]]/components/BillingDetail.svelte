@@ -7,6 +7,7 @@
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
+	import { cancelStudentFeeMutation, adjustStudentFeeMutation } from '$lib/api/mutations/billing.mutations';
 	import { locale, t } from '$lib/i18n';
 	import { Check, Clock, Trash2 } from '$lib/icons';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
@@ -36,6 +37,48 @@
 
 	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
+	let cancelBusy = $state(false);
+
+	async function cancelFee() {
+		const reason = window.prompt(get(t)('billing.cancelReasonPrompt'));
+		if (!reason?.trim()) {
+			return;
+		}
+		cancelBusy = true;
+		const ok = await cancelStudentFeeMutation({
+			studentFeeId: live.id,
+			reason: reason.trim(),
+			successMessage: get(t)('billing.cancelSuccess'),
+		});
+		cancelBusy = false;
+		if (ok) {
+			await billingPage.refreshSlice();
+		}
+	}
+
+	async function adjustFee() {
+		const amountText = window.prompt(get(t)('billing.adjustAmountPrompt'));
+		if (!amountText?.trim()) {
+			return;
+		}
+		const adjustmentAmount = Number(amountText);
+		if (!Number.isFinite(adjustmentAmount)) {
+			return;
+		}
+		const reason = window.prompt(get(t)('billing.adjustReasonPrompt')) ?? '';
+		if (!reason.trim()) {
+			return;
+		}
+		const ok = await adjustStudentFeeMutation({
+			studentFeeId: live.id,
+			adjustmentAmount,
+			reason: reason.trim(),
+			successMessage: get(t)('billing.adjustSuccess'),
+		});
+		if (ok) {
+			await billingPage.refreshSlice();
+		}
+	}
 
 	const statusStyle: Record<StudentBilling['status'], string> = {
 		paid: 'bg-secondary text-foreground/80',
@@ -107,6 +150,20 @@
 			{#snippet overflow()}
 				<PermissionGate permission="FINANCIAL_CONFIG_CONFIGURE">
 					{#snippet children({ disabled, title })}
+						<RowActionMenuItem
+							{disabled}
+							{title}
+							onclick={() => void adjustFee()}
+						>
+							{$t('billing.adjustFee')}
+						</RowActionMenuItem>
+						<RowActionMenuItem
+							{disabled}
+							{title}
+							onclick={() => void cancelFee()}
+						>
+							{$t('billing.cancelFee')}
+						</RowActionMenuItem>
 						<RowActionMenuItem
 							destructive
 							{disabled}

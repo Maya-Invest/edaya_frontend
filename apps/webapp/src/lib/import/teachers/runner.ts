@@ -3,7 +3,7 @@ import type { ValidatedTeacherImportRow } from './types';
 import { t } from '$lib/i18n';
 import { formatImportRunErrorMessage } from '$lib/import/shared/format-import-run-error';
 import { notifyTeachersListChanged } from '$lib/teachers/notify-teachers-list-changed';
-import { createTeacherImportIds, saveTeacher } from '$lib/teachers/save-teacher';
+import { saveTeacher } from '$lib/teachers/save-teacher';
 import { get } from 'svelte/store';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
@@ -30,14 +30,15 @@ export interface TeacherImportRunOptions {
 }
 
 export async function runTeacherImport(options: TeacherImportRunOptions): Promise<TeacherImportRunResult> {
-	const { schoolId, client, rows, onProgress, seed = Date.now().toString(36) } = options;
+	const { schoolId, client, rows, onProgress } = options;
 	const failed: TeacherImportRunFailure[] = [];
 	const teacherIds: string[] = [];
 	const total = rows.length;
 
 	for (const [index, row] of rows.entries()) {
 		onProgress?.(index, total);
-		const { teacherId } = createTeacherImportIds(index, seed);
+		// API has no separate person `code`; import code is persisted as the entity id.
+		const teacherId = row.code;
 
 		try {
 			await saveTeacher(client, {
@@ -45,7 +46,6 @@ export async function runTeacherImport(options: TeacherImportRunOptions): Promis
 				teacherId,
 				firstName: row.prenom,
 				lastName: row.nom,
-				code: row.code,
 				email: row.email,
 				phone: row.telephone,
 				subjectId: null,

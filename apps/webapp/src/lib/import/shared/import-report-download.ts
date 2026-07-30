@@ -18,10 +18,10 @@ export interface ImportReportDownloadInput {
 	filenameBase: string;
 }
 
-type ExcelCellStyle = {
+interface ExcelCellStyle {
 	fill: { type: 'pattern'; pattern: 'solid'; fgColor: { argb: string } };
 	font: { color: { argb: string }; bold?: boolean };
-};
+}
 
 const STATUS_CELL_STYLE: Record<ImportReportRowStatus, ExcelCellStyle> = {
 	success: {

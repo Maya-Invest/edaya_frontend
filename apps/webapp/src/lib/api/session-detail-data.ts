@@ -85,8 +85,7 @@ function mapLogbook(
 		id: primaryProgress?.id ?? session.id,
 		chapter: matterLink?.id ?? session.displayLabel,
 		content: session.sessionNote ?? primaryProgress?.notes ?? '',
-		objectives: primaryProgress?.notes ? [primaryProgress.notes] : [],
-		homework: undefined,
+		notes: primaryProgress?.notes ?? session.sessionNote ?? '',
 		progress: primaryProgress?.completedPercentage ?? 0,
 	};
 }
@@ -207,7 +206,7 @@ export function buildOccurrenceAttendanceDetail(input: {
 					id: input.occurrenceId,
 					chapter: input.displayLabel ?? '',
 					content: input.notes,
-					objectives: [],
+					notes: input.notes,
 					progress: 0,
 				}
 			: undefined,

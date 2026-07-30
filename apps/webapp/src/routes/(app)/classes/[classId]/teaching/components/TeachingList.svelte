@@ -4,6 +4,7 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import { setClassSubjectOfferedMutation } from '$lib/api/mutations/grade-level-subject.mutations';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { Clock, Search, Sparkles, User } from '$lib/icons';
@@ -11,6 +12,7 @@
 	import { readTeachingListFilters, writeTeachingListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
+	import { get } from 'svelte/store';
 	import { getTeachingPageState } from '../teaching-page.svelte';
 
 	const {
@@ -46,6 +48,19 @@
 				|| subject.category.toLowerCase().includes(needle);
 		}),
 	);
+
+	async function toggleOffered(event: Event, subject: Subject) {
+		event.stopPropagation();
+		const next = !(subject.isOffered ?? true);
+		const ok = await setClassSubjectOfferedMutation({
+			classSubjectId: subject.id,
+			isOffered: next,
+			successMessage: get(t)('subjects.offeredUpdated'),
+		});
+		if (ok) {
+			teachingPage.patchSubject(subject.id, { isOffered: next });
+		}
+	}
 
 	const dotColor: Record<Subject['color'], string> = {
 		mint: 'bg-accent',
@@ -132,11 +147,18 @@
 		{#each filteredSubjects as subject, idx (subject.id)}
 			{@const active = selectedId === subject.id}
 			{@const progress = teachingPage.subjectProgress(subject)}
-			<button
-				type="button"
+			<div
+				role="button"
+				tabindex="0"
 				onclick={() => selectSubject(subject)}
+				onkeydown={(event) => {
+					if (event.key === 'Enter' || event.key === ' ') {
+						event.preventDefault();
+						selectSubject(subject);
+					}
+				}}
 				class={cn(
-					'flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-secondary',
+					'flex w-full cursor-pointer items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-secondary',
 					idx !== filteredSubjects.length - 1 && 'border-b border-border',
 					active && 'bg-primary/10',
 				)}
@@ -169,10 +191,27 @@
 					</span>
 					<span class="flex items-center gap-1.5">
 						<Clock class="h-3.5 w-3.5" />
-						{subject.hoursPerWeek}h
+						{subject.hoursPerWeek === null ? '—' : `${subject.hoursPerWeek}h`}
+					</span>
+					<span
+						role="button"
+						tabindex="0"
+						class={cn(
+							'rounded-full px-2 py-0.5 text-[10px] font-medium',
+							(subject.isOffered ?? true) ? 'bg-secondary text-foreground/80' : 'bg-muted text-muted-foreground',
+						)}
+						onclick={event => void toggleOffered(event, subject)}
+						onkeydown={(event) => {
+							if (event.key === 'Enter' || event.key === ' ') {
+								event.preventDefault();
+								void toggleOffered(event as unknown as MouseEvent, subject);
+							}
+						}}
+					>
+						{$t('subjects.toggleOffered')}: {(subject.isOffered ?? true) ? 'on' : 'off'}
 					</span>
 				</div>
-			</button>
+			</div>
 		{:else}
 			<p class="px-5 py-10 text-center text-sm text-muted-foreground">{$t('subjects.none')}</p>
 		{/each}

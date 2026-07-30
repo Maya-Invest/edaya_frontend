@@ -88,23 +88,21 @@ function initialsFor(firstName: string, lastName: string): string {
 	return `${firstName[0] ?? ''}${lastName[0] ?? ''}`;
 }
 
-function mapGuardianRelation(link: GuardianLinkRaw | undefined): Guardian['relation'] {
+function mapGuardianRelation(link: GuardianLinkRaw | undefined): string {
 	if (!link) {
 		return 'Legal guardian';
 	}
 
-	const relationship = link.relationship.toLowerCase();
-	if (relationship.includes('mother') || relationship.includes('mère')) {
-		return 'Mother';
+	const relationship = link.relationship?.trim();
+	if (relationship) {
+		return relationship;
 	}
-	if (relationship.includes('father') || relationship.includes('père')) {
-		return 'Father';
-	}
+
 	if (link.legalGuardian) {
 		return 'Legal guardian';
 	}
 
-	return 'Mother';
+	return 'Guardian';
 }
 
 function mapPreferredContact(guardian: GuardianRaw): Guardian['preferredContact'] {
@@ -124,7 +122,7 @@ function mapPreferredContact(guardian: GuardianRaw): Guardian['preferredContact'
 		return 'phone';
 	}
 
-	return 'email';
+	return 'phone';
 }
 
 function guardianDisplayName(
@@ -137,10 +135,10 @@ function guardianDisplayName(
 	return `${guardian.firstName} ${guardian.lastName}`;
 }
 
-function computeAttendancePercent(studentId: string, attendanceRaw: AttendanceRaw[]): number {
+function computeAttendancePercent(studentId: string, attendanceRaw: AttendanceRaw[]): number | null {
 	const records = attendanceRaw.filter(record => record.studentId === studentId);
 	if (records.length === 0) {
-		return 100;
+		return null;
 	}
 
 	const attended = records.filter(record => record.status === 'present' || record.status === 'late').length;
@@ -179,18 +177,19 @@ function computeStudentAverage(
 	return Math.round((weightedSum / totalCoefficient) * 10) / 10;
 }
 
-function mapStudentStatus(
-	status: StudentRaw['status'],
-	average: number,
-): Student['status'] {
-	if (status === 'inactive' || status === 'archived') {
-		return 'warning';
-	}
+function mapStudentAcademicBadge(average: number): Student['academicBadge'] {
 	if (average >= 16) {
 		return 'honor';
 	}
 	if (average > 0 && average < 10) {
 		return 'warning';
+	}
+	return null;
+}
+
+function mapStudentApiStatus(status: StudentRaw['status']): Student['status'] {
+	if (status === 'inactive' || status === 'archived') {
+		return status;
 	}
 	return 'active';
 }
@@ -592,14 +591,15 @@ export function mapStudents(
 			name: `${student.firstName} ${student.lastName}`,
 			initials: initialsFor(student.firstName, student.lastName),
 			photoUrl: student.photoUrl ?? null,
-			email: `${student.firstName.toLowerCase()}.${student.lastName.toLowerCase()}@school.edu`,
+			email: '',
 			birthdate: formatDateInput(student.birthDate),
 			matricule: student.matricule ?? null,
 			gender: student.gender ?? null,
 			guardian: guardianDisplayName(guardian),
 			attendance: computeAttendancePercent(student.id, metrics.attendanceRaw),
 			average,
-			status: mapStudentStatus(student.status, average),
+			status: mapStudentApiStatus(student.status),
+			academicBadge: mapStudentAcademicBadge(average),
 			subjectId: student.subjectId ?? null,
 		};
 	});

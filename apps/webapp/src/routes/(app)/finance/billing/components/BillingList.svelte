@@ -180,7 +180,9 @@
 								<div class="col-span-3">
 									<p class="truncate text-sm">{fee.name}</p>
 									<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-										{$t(`feeCat.${fee.category}`)} · {$t(`feePeriod.${fee.period}`)}
+										{$t(`feeCat.${fee.category}`)} · {fee.period
+											? $t(`feePeriod.${fee.period}`)
+											: $t('fee.installmentCount', { n: fee.installmentCount ?? 0 })}
 									</p>
 								</div>
 								<div class="col-span-2">

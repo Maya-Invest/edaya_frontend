@@ -123,8 +123,7 @@ export class SessionLogbookTabState {
 		classSubjectMatterId: string;
 		chapter: string;
 		content: string;
-		objectives: string[];
-		homework?: string;
+		notes: string;
 		progress: number;
 		successMessage?: string;
 	}): Promise<boolean> {
@@ -134,8 +133,7 @@ export class SessionLogbookTabState {
 			id: progressId,
 			chapter: input.chapter.trim(),
 			content: input.content.trim(),
-			objectives: input.objectives,
-			homework: input.homework?.trim() || undefined,
+			notes: input.notes.trim(),
 			progress: input.progress,
 		};
 		const previous = this.slice?.sessionId === input.sessionId ? this.slice.logbook : undefined;
@@ -154,7 +152,7 @@ export class SessionLogbookTabState {
 					classSubjectMatterId: input.classSubjectMatterId,
 					lessonSessionId: input.sessionId,
 					completedPercentage: input.progress,
-					notes: input.objectives.join('\n').trim() || null,
+					notes: input.notes.trim() || null,
 					recordedAt: nowIso(),
 				});
 			},

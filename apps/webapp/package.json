@@ -19,7 +19,7 @@
 		"quality": "bun run lint && bun run check",
 		"test": "bun test tests/lib",
 		"test:integration": "bun test tests/integration --timeout 600000",
-		"demo:e2e": "bun scripts/demo-dry-run.ts",
+		"demo:e2e": "bunx tsx scripts/demo-dry-run.ts",
 		"lint": "eslint src",
 		"lint:fix": "eslint src --fix"
 	},

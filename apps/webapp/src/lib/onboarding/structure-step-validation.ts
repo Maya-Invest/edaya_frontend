@@ -1,19 +1,29 @@
+import type { StructureTemplateCatalog } from '$lib/onboarding/structure-template-catalog';
 import type { OnboardingStructureDraft } from '$lib/onboarding/types';
-import { isGradeLevelTemplateKey } from '$lib/onboarding/structure-templates';
 
-export function isStructureStepValid(structure: OnboardingStructureDraft): boolean {
+export function isStructureStepValid(
+	structure: OnboardingStructureDraft,
+	catalog?: StructureTemplateCatalog | null,
+): boolean {
 	if (structure.models.length === 0) {
 		return false;
 	}
-	if (structure.levels.length === 0) {
+
+	const configuredLevels = structure.levels.filter(level => level.classCount >= 1);
+	if (configuredLevels.length === 0) {
 		return false;
 	}
 
-	return structure.levels.every(level =>
-		isGradeLevelTemplateKey(level.gradeLevelId)
-		&& Number.isInteger(level.classCount)
-		&& level.classCount >= 1
-		&& Number.isInteger(level.capacity)
-		&& level.capacity >= 1,
-	);
+	return configuredLevels.every((level) => {
+		if (!level.gradeLevelId.trim()) {
+			return false;
+		}
+		if (catalog && !catalog.byId.has(level.gradeLevelId)) {
+			return false;
+		}
+		return Number.isInteger(level.classCount)
+			&& level.classCount >= 1
+			&& Number.isInteger(level.capacity)
+			&& level.capacity >= 1;
+	});
 }

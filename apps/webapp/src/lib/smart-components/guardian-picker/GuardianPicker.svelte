@@ -43,14 +43,16 @@
 			.sort((a, b) => a.name.localeCompare(b.name, 'fr'))
 			.map((guardian) => {
 				const contact = guardian.email || guardian.phone;
+				const relKey = relationKey[guardian.relation];
+				const relationLabel = relKey ? $t(relKey) : guardian.relation;
 				return {
 					id: guardian.id,
 					name: guardian.name,
 					initials: guardian.initials,
 					photoUrl: guardian.photoUrl,
 					subtitle: contact,
-					hint: $t(relationKey[guardian.relation]),
-					searchText: [guardian.email, guardian.phone, $t(relationKey[guardian.relation])].join(' '),
+					hint: relationLabel,
+					searchText: [guardian.email, guardian.phone, relationLabel].join(' '),
 				};
 			}),
 	);

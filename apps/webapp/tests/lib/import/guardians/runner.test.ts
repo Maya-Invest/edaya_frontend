@@ -25,7 +25,6 @@ describe('guardian import runner', () => {
 
 		const result = await runGuardianImport({
 			schoolId: 'school-1',
-			seed: 'testseed',
 			client: {
 				commands: {
 					registerGuardian,
@@ -47,16 +46,16 @@ describe('guardian import runner', () => {
 
 		expect(result.created).toBe(2);
 		expect(result.failed).toEqual([]);
-		expect(result.guardianIds).toEqual(['grd-testseed-0', 'grd-testseed-1']);
+		expect(result.guardianIds).toEqual(['TUT-001', 'TUT-002']);
 		expect(registerGuardian).toHaveBeenCalledTimes(2);
 		expect(linkGuardianToStudent).toHaveBeenCalledTimes(2);
 		expect(registerGuardian).toHaveBeenNthCalledWith(1, expect.objectContaining({
-			code: 'TUT-001',
+			id: 'TUT-001',
 			sendAccountInvitation: false,
 		}));
 		expect(linkGuardianToStudent).toHaveBeenNthCalledWith(2, expect.objectContaining({
 			studentId: 'stu-2',
-			guardianId: 'grd-testseed-1',
+			guardianId: 'TUT-002',
 		}));
 	});
 });

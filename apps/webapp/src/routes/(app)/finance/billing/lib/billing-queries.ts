@@ -13,7 +13,12 @@ export async function loadBillingSlice() {
 		return emptyBillingSlice();
 	}
 	const client = getBrowserSchoolClient();
-	return loadFinanceData(client, { schoolId, academicYearId });
+	const data = await loadFinanceData(client, { schoolId, academicYearId });
+	return {
+		fees: data.fees,
+		billing: data.billing,
+		students: data.students,
+	};
 }
 
 export function queryBillingListPage(state: BillingPageState) {

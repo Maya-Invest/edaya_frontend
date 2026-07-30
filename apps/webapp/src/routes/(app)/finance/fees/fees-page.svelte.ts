@@ -133,7 +133,7 @@ export class FeesPageState {
 				category: UI_TO_API_CATEGORY[input.category],
 				defaultAmount: input.amount,
 				currency: 'XOF',
-				installments: installmentsForPeriod(input.period),
+				installments: installmentsForPeriod(input.period ?? 'Term'),
 				createdAt: nowIso(),
 			}),
 			successMessage: input.successMessage,

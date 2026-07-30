@@ -1,18 +1,20 @@
 <script lang="ts">
 	import type { ImportTypeDefinition } from '$lib/import/catalog/types';
-	import {
-		buildImportReportStatusByRow,
-		type ImportReportIssueLike,
-	} from '$lib/import/shared/import-report-status';
+	import type { ImportReportDownloadLabels } from '$lib/import/shared/import-report-download';
+	import type { ImportReportIssueLike } from '$lib/import/shared/import-report-status';
+	import Button from '$lib/components/ui/button/button.svelte';
+	import { t } from '$lib/i18n';
+	import { Download, FileSpreadsheet } from '$lib/icons';
 	import {
 		downloadImportReportCsv,
 		downloadImportReportExcel,
 		filterImportReportErrorRows,
-		type ImportReportDownloadLabels,
+
 	} from '$lib/import/shared/import-report-download';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import { t } from '$lib/i18n';
-	import { Download, FileSpreadsheet } from '$lib/icons';
+	import {
+		buildImportReportStatusByRow,
+
+	} from '$lib/import/shared/import-report-status';
 	import { get } from 'svelte/store';
 
 	export interface ImportReportIssue extends ImportReportIssueLike {

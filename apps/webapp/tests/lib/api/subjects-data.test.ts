@@ -39,8 +39,8 @@ describe('mapCatalogSubjects', () => {
 	it('lists chapters only for the matching grade-level subject when subjectId is shared', () => {
 		const sources = {
 			gradeLevelSubjectsRaw: [
-				{ id: 'gls-6-en', gradeLevelId: 'gl-6', subjectId: 'subj-en', academicYearId: 'ay-1' },
-				{ id: 'gls-3-en', gradeLevelId: 'gl-3', subjectId: 'subj-en', academicYearId: 'ay-1' },
+				{ id: 'gls-6-en', gradeLevelId: 'gl-6', subjectId: 'subj-en', academicYearId: 'ay-1', isOptional: false },
+				{ id: 'gls-3-en', gradeLevelId: 'gl-3', subjectId: 'subj-en', academicYearId: 'ay-1', isOptional: false },
 			],
 			classSubjectsRaw: [],
 			subjectsRaw: [
@@ -61,8 +61,85 @@ describe('mapCatalogSubjects', () => {
 		const sixieme = entries.find(entry => entry.id === 'gls-6-en');
 		const troisieme = entries.find(entry => entry.id === 'gls-3-en');
 
-		expect(sixieme?.catalogChapters).toEqual(['Unit 6ème A']);
-		expect(troisieme?.catalogChapters).toEqual(['Unit 3ème A']);
+		expect(sixieme?.catalogChapters).toEqual(
+			expect.arrayContaining([expect.objectContaining({ name: 'Unit 6ème A' })]),
+		);
+		expect(troisieme?.catalogChapters).toEqual(
+			expect.arrayContaining([expect.objectContaining({ name: 'Unit 3ème A' })]),
+		);
+	});
+
+	it('keeps late 3ème / lycée subjects and chapters when sources exceed the default list page', () => {
+		const gradeLevelSubjectsRaw = Array.from({ length: 52 }, (_, index) => ({
+			id: `gls-${index}`,
+			gradeLevelId: index < 50 ? 'gl-3' : 'gl-1era',
+			subjectId: index < 50 ? `subj-${index}` : 'subj-tech',
+			academicYearId: 'ay-1',
+			isOptional: false,
+		}));
+		gradeLevelSubjectsRaw[49] = {
+			id: 'gls-49',
+			gradeLevelId: 'gl-3',
+			subjectId: 'subj-svt',
+			academicYearId: 'ay-1',
+			isOptional: false,
+		};
+		gradeLevelSubjectsRaw[50] = {
+			id: 'gls-50',
+			gradeLevelId: 'gl-3',
+			subjectId: 'subj-tech',
+			academicYearId: 'ay-1',
+			isOptional: false,
+		};
+		gradeLevelSubjectsRaw[51] = {
+			id: 'gls-51',
+			gradeLevelId: 'gl-1era',
+			subjectId: 'subj-fr',
+			academicYearId: 'ay-1',
+			isOptional: false,
+		};
+
+		const subjectsRaw = [
+			...Array.from({ length: 49 }, (_, index) => subject({
+				id: `subj-${index}`,
+				name: `Subject ${index}`,
+				code: `S${index}`,
+			})),
+			subject({ id: 'subj-svt', name: 'Sciences de la Vie et de la Terre', code: 'SVT' }),
+			subject({ id: 'subj-tech', name: 'Technologie', code: 'TECH' }),
+			subject({ id: 'subj-fr', name: 'Français', code: 'FR' }),
+		];
+
+		const sources = {
+			gradeLevelSubjectsRaw,
+			classSubjectsRaw: [],
+			subjectsRaw,
+			subjectMattersRaw: [
+				{ id: 'sm-svt', subjectId: 'subj-svt', name: 'Génétique', sequenceOrder: 1 },
+				{ id: 'sm-tech', subjectId: 'subj-tech', name: 'Automatismes', sequenceOrder: 1 },
+				{ id: 'sm-fr', subjectId: 'subj-fr', name: 'Dissertation', sequenceOrder: 1 },
+			],
+			gradeLevelSubjectMattersRaw: [
+				{ id: 'glsm-svt', gradeLevelSubjectId: 'gls-49', subjectMatterId: 'sm-svt' },
+				{ id: 'glsm-tech', gradeLevelSubjectId: 'gls-50', subjectMatterId: 'sm-tech' },
+				{ id: 'glsm-fr', gradeLevelSubjectId: 'gls-51', subjectMatterId: 'sm-fr' },
+			],
+		};
+
+		const entries = mapCatalogSubjects(sources, {});
+		expect(entries.length).toBeGreaterThan(50);
+
+		const tech = entries.find(entry => entry.id === 'gls-50');
+		const lyceeFr = entries.find(entry => entry.id === 'gls-51');
+
+		expect(tech?.name).toBe('Technologie');
+		expect(tech?.catalogChapters).toEqual(
+			expect.arrayContaining([expect.objectContaining({ name: 'Automatismes' })]),
+		);
+		expect(lyceeFr?.name).toBe('Français');
+		expect(lyceeFr?.catalogChapters).toEqual(
+			expect.arrayContaining([expect.objectContaining({ name: 'Dissertation' })]),
+		);
 	});
 });
 

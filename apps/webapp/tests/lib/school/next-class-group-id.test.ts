@@ -19,4 +19,14 @@ describe('resolveGradeLevelKeyForClassId', () => {
 		const key = resolveGradeLevelKeyForClassId(uuid, 'Sixième');
 		expect(nextClassGroupId(key, taken, counts)).toBe('6c');
 	});
+
+	it('resolves fixture template ids and Première A / 1ERA codes', () => {
+		expect(resolveGradeLevelKeyForClassId('ci-lycee:1ERA')).toBe('1era');
+		expect(resolveGradeLevelKeyForClassId('ci-college:6EME')).toBe('6eme');
+		expect(resolveGradeLevelKeyForClassId('uuid', 'Première A')).toBe('1era');
+		expect(resolveGradeLevelKeyForClassId('uuid', '1ERA')).toBe('1era');
+
+		const key = resolveGradeLevelKeyForClassId('ci-lycee:1ERA');
+		expect(nextClassGroupId(key, new Set(), new Map())).toBe('1eraa');
+	});
 });

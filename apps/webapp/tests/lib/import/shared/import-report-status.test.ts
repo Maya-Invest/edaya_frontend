@@ -5,11 +5,11 @@ describe('buildImportReportStatusByRow', () => {
 	test('marks blocking validation errors', () => {
 		const outcomes = buildImportReportStatusByRow({
 			rowIndexes: [2],
-			errors: [{ rowIndex: 2, severity: 'error', messageKey: 'err' }],
+			errors: [{ rowIndex: 2, severity: 'error' }],
 			warnings: [],
 			validRowIndexes: new Set(),
 			phase: 'validate',
-			formatIssueMessage: issue => issue.messageKey ?? '',
+			formatIssueMessage: issue => issue.messageKey,
 			issuesWithMessages: [{ rowIndex: 2, severity: 'error', messageKey: 'err' }],
 		});
 
@@ -20,10 +20,10 @@ describe('buildImportReportStatusByRow', () => {
 		const outcomes = buildImportReportStatusByRow({
 			rowIndexes: [3],
 			errors: [],
-			warnings: [{ rowIndex: 3, severity: 'warning', messageKey: 'warn' }],
+			warnings: [{ rowIndex: 3, severity: 'warning' }],
 			validRowIndexes: new Set([3]),
 			phase: 'validate',
-			formatIssueMessage: issue => issue.messageKey ?? '',
+			formatIssueMessage: issue => issue.messageKey,
 			issuesWithMessages: [{ rowIndex: 3, severity: 'warning', messageKey: 'warn' }],
 		});
 

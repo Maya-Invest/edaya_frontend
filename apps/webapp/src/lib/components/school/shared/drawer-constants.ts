@@ -1,4 +1,4 @@
-import type { Guardian, Subject, StaffRole, ActivityEnrollmentStatus, Incident } from '$lib/types/school';
+import type { Subject, StaffRole, ActivityEnrollmentStatus, Incident } from '$lib/types/school';
 import type { DrawerItem } from './drawer-types.ts';
 import { BADGE, BADGE_DANGER, BADGE_INFO, BADGE_WARN } from '$lib/ui-tones';
 
@@ -51,11 +51,16 @@ export const kindLabelKey: Record<NonNullable<DrawerItem>['kind'], string> = {
 	classGroup: 'drawer.classGroup',
 };
 
-export const relationKey: Record<Guardian['relation'], string> = {
-	'Mother': 'guardian.relation.Mother',
-	'Father': 'guardian.relation.Father',
+export const relationKey: Partial<Record<string, string>> = {
+	Mother: 'guardian.relation.Mother',
+	Father: 'guardian.relation.Father',
 	'Legal guardian': 'guardian.relation.LegalGuardian',
 };
+
+/** Known relations → i18n key; otherwise return the raw API string for display. */
+export function guardianRelationLabel(relation: string): string {
+	return relationKey[relation] ?? relation;
+}
 
 export const dotByColor: Record<Subject['color'], string> = {
 	mint: 'bg-accent',

@@ -28,8 +28,6 @@ type ReportCardDefinitionRaw = components['schemas']['ReportCardDefinition'];
 type ReportCardDefinitionSectionRaw = components['schemas']['ReportCardDefinitionSection'];
 type ReportCardResultRaw = components['schemas']['ReportCardResult'];
 
-const DEMO_SCHOOL_ID = 'sch-edaya-central';
-
 const REPORT_CARD_CATALOG_SCOPE
 	= 'Report-card definitions and grade scales are small configuration catalogs cached in the report-card domain store.';
 
@@ -287,7 +285,7 @@ export function mapReportCardResults(
 
 		return {
 			id: result.id,
-			schoolId: definition?.schoolId ?? DEMO_SCHOOL_ID,
+			schoolId: definition?.schoolId ?? '',
 			studentId: result.studentId,
 			classId: result.classGroupId,
 			definitionId: result.reportCardDefinitionId,

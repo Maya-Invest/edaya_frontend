@@ -65,6 +65,7 @@ export function mapHealthProfiles(profilesRaw: StudentHealthProfileRaw[]): Recor
 
 	for (const profile of profilesRaw) {
 		records[profile.studentId] = {
+			id: profile.id,
 			studentId: profile.studentId,
 			bloodType: profile.bloodType ?? '—',
 			allergies: splitHealthList(profile.allergies),

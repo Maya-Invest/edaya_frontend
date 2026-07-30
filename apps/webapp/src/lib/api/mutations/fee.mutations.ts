@@ -15,11 +15,10 @@ const UI_TO_API_CATEGORY: Record<Fee['category'], ApiFeeCategory> = {
 	Tuition: 'tuition',
 	Transport: 'transport',
 	Materials: 'uniform',
-	Meals: 'other',
-	Activities: 'other',
+	Other: 'other',
 };
 
-function installmentsForPeriod(period: Fee['period']) {
+function installmentsForPeriod(period: NonNullable<Fee['period']>) {
 	if (period === 'Year') {
 		return [
 			{ label: 'T1', percentage: 33.33 },
@@ -68,7 +67,7 @@ export async function createFeeMutation(input: {
 	name: string;
 	category: Fee['category'];
 	amount: number;
-	period: Fee['period'];
+	period: NonNullable<Fee['period']>;
 	successMessage?: string;
 }): Promise<string | null> {
 	const client = getBrowserSchoolClient();

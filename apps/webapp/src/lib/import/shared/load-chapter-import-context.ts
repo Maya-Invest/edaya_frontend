@@ -1,18 +1,19 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import {
-	fetchCatalogSubjectsSources,
-	subjectMattersLinkedToGradeLevelSubject,
-} from '$lib/api/subjects-data';
 import type {
 	ChapterImportCatalogTarget,
 	ChapterImportClassAssignment,
 } from '$lib/import/chapters/types';
+import {
+	fetchCatalogSubjectsSources,
+	subjectMattersLinkedToGradeLevelSubject,
+} from '$lib/api/subjects-data';
 import { chapterImportDuplicateKey } from '$lib/import/chapters/types';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 type ClassSubjectRaw = components['schemas']['ClassSubject'];
 type GradeLevelSubjectRaw = components['schemas']['GradeLevelSubject'];
+type GradeLevelSubjectMatterRaw = components['schemas']['GradeLevelSubjectMatter'];
 
 export interface ChapterImportClassOption {
 	id: string;
@@ -32,15 +33,18 @@ export interface ChapterImportLoadedContext {
 
 export function buildExistingChapterImportKeys(
 	targets: readonly ChapterImportCatalogTarget[],
-	subjectMattersRaw: readonly { id: string; name: string }[],
+	subjectMattersRaw: readonly { id: string; name: string; sequenceOrder?: number }[],
 	gradeLevelSubjectMattersRaw: readonly { gradeLevelSubjectId: string; subjectMatterId: string }[],
 ): Set<string> {
 	const keys = new Set<string>();
 	for (const target of targets) {
 		const matters = subjectMattersLinkedToGradeLevelSubject(
 			target.gradeLevelSubjectId,
-			subjectMattersRaw,
-			gradeLevelSubjectMattersRaw,
+			subjectMattersRaw.map(matter => ({
+				...matter,
+				sequenceOrder: matter.sequenceOrder ?? 0,
+			})),
+			gradeLevelSubjectMattersRaw as GradeLevelSubjectMatterRaw[],
 		);
 		for (const matter of matters) {
 			keys.add(chapterImportDuplicateKey(target.gradeLevelSubjectId, matter.name));

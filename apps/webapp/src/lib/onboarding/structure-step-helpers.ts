@@ -1,20 +1,18 @@
-import type { GradeLevelTemplateKey, StructureModel } from '$lib/onboarding/structure-templates';
+import type { StructureTemplateCatalog } from '$lib/onboarding/structure-template-catalog';
+import type { StructureModel } from '$lib/onboarding/structure-templates';
 import type {
 	OnboardingStructureDraft,
 	OnboardingStructureLevelDraft,
 } from '$lib/onboarding/types';
 import {
-	GRADE_LEVEL_TEMPLATES,
-	isGradeLevelTemplateKey,
-	sortedStructureLevels,
-	templateKeysForModel,
+	getCatalogGradeLevel,
+	gradeLevelsForModels,
+} from '$lib/onboarding/structure-template-catalog';
 
-} from '$lib/onboarding/structure-templates';
-
-const DEFAULT_CLASS_COUNT = 1;
+const DEFAULT_CLASS_COUNT = 0;
 const DEFAULT_CAPACITY = 30;
 
-function defaultLevel(gradeLevelId: GradeLevelTemplateKey): OnboardingStructureLevelDraft {
+function defaultLevel(gradeLevelId: string): OnboardingStructureLevelDraft {
 	return {
 		gradeLevelId,
 		classCount: DEFAULT_CLASS_COUNT,
@@ -22,35 +20,33 @@ function defaultLevel(gradeLevelId: GradeLevelTemplateKey): OnboardingStructureL
 	};
 }
 
-export function syncStructureLevels(structure: OnboardingStructureDraft): OnboardingStructureDraft {
-	const allowedKeys = new Set<GradeLevelTemplateKey>();
-	for (const model of structure.models) {
-		for (const key of templateKeysForModel(model)) {
-			allowedKeys.add(key);
-		}
-	}
-
-	const keptLevels = structure.levels.filter(level =>
-		isGradeLevelTemplateKey(level.gradeLevelId) && allowedKeys.has(level.gradeLevelId),
+export function syncStructureLevels(
+	structure: OnboardingStructureDraft,
+	catalog: StructureTemplateCatalog,
+): OnboardingStructureDraft {
+	const catalogLevels = gradeLevelsForModels(catalog, structure.models);
+	const allowedIds = new Set(catalogLevels.map(level => level.id));
+	const existingById = new Map(
+		structure.levels
+			.filter(level => allowedIds.has(level.gradeLevelId))
+			.map(level => [level.gradeLevelId, level]),
 	);
 
-	const existingKeys = new Set(
-		keptLevels
-			.map(level => level.gradeLevelId)
-			.filter(isGradeLevelTemplateKey),
-	);
-
-	for (const model of structure.models) {
-		for (const key of templateKeysForModel(model)) {
-			if (!existingKeys.has(key)) {
-				keptLevels.push(defaultLevel(key));
-			}
-		}
-	}
+	const levels = catalogLevels.map((catalogLevel) => {
+		const existing = existingById.get(catalogLevel.id);
+		return existing
+			? {
+					...existing,
+					gradeLevelId: catalogLevel.id,
+					classCount: Math.max(0, existing.classCount),
+					capacity: existing.capacity,
+				}
+			: defaultLevel(catalogLevel.id);
+	});
 
 	return {
 		models: [...structure.models],
-		levels: sortedStructureLevels(keptLevels),
+		levels,
 	};
 }
 
@@ -58,6 +54,7 @@ export function toggleStructureModel(
 	structure: OnboardingStructureDraft,
 	model: StructureModel,
 	enabled: boolean,
+	catalog: StructureTemplateCatalog,
 ): OnboardingStructureDraft {
 	const models = new Set(structure.models);
 	if (enabled) {
@@ -70,12 +67,12 @@ export function toggleStructureModel(
 	return syncStructureLevels({
 		...structure,
 		models: [...models],
-	});
+	}, catalog);
 }
 
 export function updateStructureLevel(
 	structure: OnboardingStructureDraft,
-	gradeLevelId: GradeLevelTemplateKey,
+	gradeLevelId: string,
 	changes: Partial<Pick<OnboardingStructureLevelDraft, 'classCount' | 'capacity'>>,
 ): OnboardingStructureDraft {
 	return {
@@ -97,14 +94,16 @@ export function structureSummary(structure: OnboardingStructureDraft): {
 	levelCount: number;
 	classCount: number;
 } {
-	const levelCount = structure.levels.length;
-	const classCount = structure.levels.reduce((total, level) => total + level.classCount, 0);
+	const configured = structure.levels.filter(level => level.classCount >= 1);
+	const levelCount = configured.length;
+	const classCount = configured.reduce((total, level) => total + level.classCount, 0);
 	return { levelCount, classCount };
 }
 
-export function gradeLevelLabel(gradeLevelId: string): string {
-	if (!isGradeLevelTemplateKey(gradeLevelId)) {
+export function gradeLevelLabel(gradeLevelId: string, catalog: StructureTemplateCatalog): string {
+	const level = getCatalogGradeLevel(catalog, gradeLevelId);
+	if (!level) {
 		return gradeLevelId;
 	}
-	return GRADE_LEVEL_TEMPLATES[gradeLevelId].name;
+	return level.code;
 }

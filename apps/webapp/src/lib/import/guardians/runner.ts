@@ -2,7 +2,6 @@ import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { ValidatedGuardianImportRow } from './types';
 import { notifyGuardiansListChanged } from '$lib/guardians/notify-guardians-list-changed';
 import {
-	createGuardianImportIds,
 	createGuardianStudentLinkId,
 	linkGuardianToStudent,
 	registerGuardian,
@@ -35,7 +34,7 @@ export interface GuardianImportRunOptions {
 }
 
 export async function runGuardianImport(options: GuardianImportRunOptions): Promise<GuardianImportRunResult> {
-	const { schoolId, client, rows, onProgress, seed = Date.now().toString(36) } = options;
+	const { schoolId, client, rows, onProgress } = options;
 	const failed: GuardianImportRunFailure[] = [];
 	const guardianIds: string[] = [];
 	const createdAt = new Date().toISOString();
@@ -44,8 +43,8 @@ export async function runGuardianImport(options: GuardianImportRunOptions): Prom
 
 	for (const [index, row] of rows.entries()) {
 		onProgress?.(index, total);
-		const firstStudentId = row.studentIds[0] ?? '';
-		const { guardianId } = createGuardianImportIds(index, firstStudentId, seed);
+		// API has no separate person `code`; import code is persisted as the entity id.
+		const guardianId = row.code;
 		let guardianRegistered = false;
 		let rowLinksCreated = 0;
 
@@ -55,7 +54,6 @@ export async function runGuardianImport(options: GuardianImportRunOptions): Prom
 				guardianId,
 				firstName: row.prenom,
 				lastName: row.nom,
-				code: row.code,
 				email: row.email,
 				phone: row.telephone,
 				sendAccountInvitation: false,

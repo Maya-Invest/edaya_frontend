@@ -1,7 +1,8 @@
+import type { BootstrapSessionResult } from '$lib/auth/bootstrap';
 import type { OnboardingSchoolDraft } from '$lib/onboarding/types';
 import { paginatedList } from '$lib/api/entity-list-filters';
 import { configureBrowserSchoolClient, getBrowserSchoolClient } from '$lib/api/school-client';
-import { bootstrapSession, resetBootstrapSession, type BootstrapSessionResult } from '$lib/auth/bootstrap';
+import { bootstrapSession, resetBootstrapSession } from '$lib/auth/bootstrap';
 import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
@@ -83,7 +84,6 @@ async function resolveSchoolId(
 		}
 		throw error;
 	}
-
 }
 function periodsFitExistingYear(
 	school: OnboardingSchoolDraft,
@@ -110,11 +110,11 @@ async function safeOnboardingEntityList<T>(load: () => Promise<T[]>): Promise<T[
 	}
 }
 
-type OnboardingPeriodRow = {
+interface OnboardingPeriodRow {
 	id: string;
 	academicYearId: string;
 	isPublished?: boolean;
-};
+}
 
 /** Mirrors seeding: create then `publishAcademicPeriod` for each period. */
 async function publishAcademicPeriodIfNeeded(

@@ -56,6 +56,7 @@ function buildStoreIncident(input: {
 		involvedStudentIds: [input.studentId],
 		involvedCount: 1,
 		date: input.date ?? new Date().toISOString().slice(0, 10),
+		kind: input.kind,
 		category: incidentCategoryFromKind(input.kind),
 		severity: incidentSeverityFromKind(input.kind),
 		summary: input.title.trim(),

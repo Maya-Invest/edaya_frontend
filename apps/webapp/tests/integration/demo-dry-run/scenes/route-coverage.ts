@@ -10,6 +10,7 @@ interface RouteVisit {
 	selector?: string;
 	expectText?: RegExp;
 	skipOnFail?: string;
+	retry?: boolean;
 }
 
 const ROUTE_VISITS: readonly RouteVisit[] = [
@@ -36,7 +37,13 @@ const ROUTE_VISITS: readonly RouteVisit[] = [
 	{ path: '/configuration/grade-levels', step: 'Configuration grade levels', pathPrefix: '/configuration/grade-levels', selector: 'main' },
 	{ path: '/configuration/classes', step: 'Configuration class groups list', pathPrefix: '/configuration/classes', selector: 'main' },
 	{ path: '/configuration/subjects', step: 'Configuration subjects list', pathPrefix: '/configuration/subjects', selector: 'main' },
-	{ path: '/configuration/tools', step: 'Configuration tools hub', pathPrefix: '/configuration/tools', selector: 'main' },
+	{
+		path: '/configuration/tools',
+		step: 'Configuration tools hub',
+		pathPrefix: '/configuration/tools',
+		selector: '[data-testid="import-pack-generic"], [data-testid="timetable-planning-tool"]',
+		retry: true,
+	},
 	{ path: '/configuration/report-cards', step: 'Configuration report card definitions', pathPrefix: '/configuration/report-cards', skipOnFail: 'May require REPORT_CARD_CONFIGURE' },
 	{ path: '/configuration/grade-scales', step: 'Configuration grade scales', pathPrefix: '/configuration/grade-scales', selector: 'main' },
 	{ path: '/configuration/notifications', step: 'Configuration notification templates', pathPrefix: '/configuration/notifications', selector: 'main' },
@@ -70,6 +77,7 @@ export async function runRouteCoverageScenes(ctx: DemoContext): Promise<void> {
 				selector: route.selector,
 				expectText: route.expectText,
 				skipOnFail: route.skipOnFail,
+				retry: route.retry,
 			});
 		}
 		else {
@@ -77,6 +85,7 @@ export async function runRouteCoverageScenes(ctx: DemoContext): Promise<void> {
 				pathPrefix: route.pathPrefix,
 				selector: route.selector,
 				expectText: route.expectText,
+				retry: route.retry,
 			});
 		}
 	}

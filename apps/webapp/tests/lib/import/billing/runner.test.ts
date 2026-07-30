@@ -1,7 +1,7 @@
 import { describe, expect, it, mock } from 'bun:test';
 import type { ValidatedBillingImportRow } from '$lib/import/billing/types';
 
-const assignFeeToStudentMutation = mock(async () => 'sf-new');
+const assignFeeToStudentMutation = mock(async (): Promise<string | null> => 'sf-new');
 
 mock.module('$lib/api/mutations/billing.mutations', () => ({
 	assignFeeToStudentMutation,

@@ -24,7 +24,6 @@ describe('staff import runner', () => {
 
 		const result = await runStaffImport({
 			schoolId: 'school-1',
-			seed: 'testseed',
 			client: {
 				commands: {
 					registerStaffMember,
@@ -41,13 +40,12 @@ describe('staff import runner', () => {
 
 		expect(result.created).toBe(2);
 		expect(result.failed).toEqual([]);
-		expect(result.staffIds).toEqual(['stf-testseed-0', 'stf-testseed-1']);
+		expect(result.staffIds).toEqual(['PER-001', 'PER-002']);
 		expect(registerStaffMember).toHaveBeenCalledTimes(2);
 		expect(registerStaffMember).toHaveBeenNthCalledWith(1, expect.objectContaining({
-			id: 'stf-testseed-0',
+			id: 'PER-001',
 			firstName: 'Fatou',
 			lastName: 'Diallo',
-			code: 'PER-001',
 			email: 'fatou@example.com',
 			sendAccountInvitation: false,
 		}));

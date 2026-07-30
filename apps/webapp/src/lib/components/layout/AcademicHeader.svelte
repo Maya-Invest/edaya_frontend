@@ -3,6 +3,7 @@
 	import { t } from '$lib/i18n';
 	import { Check, ChevronDown, CalendarRange } from '$lib/icons';
 	import { cn } from '$lib/utils';
+
 	let open = $state<'year' | 'period' | null>(null);
 	const year = $derived(academicContext.year);
 	const period = $derived(academicContext.period);

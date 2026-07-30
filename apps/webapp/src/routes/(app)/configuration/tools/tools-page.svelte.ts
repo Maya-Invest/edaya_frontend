@@ -14,6 +14,7 @@ export class ToolsPageState {
 	slice = $state<ImportPageSlice | null>(null);
 	importModalOpen = $state(false);
 	timetablePlanningModalOpen = $state(false);
+	timetablePublishModalOpen = $state(false);
 	readonly planningPage = new TimetablePlanningPageState();
 
 	private readonly versions = new RouteVersionSnapshot(TOOLS_VERSION_FAMILIES);

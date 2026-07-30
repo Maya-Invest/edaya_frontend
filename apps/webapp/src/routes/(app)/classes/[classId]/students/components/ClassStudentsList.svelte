@@ -38,12 +38,17 @@
 	const infinite = useInfiniteList(() => filtered, 30);
 
 	const statusStyle: Record<Student['status'], string> = {
-		honor: 'bg-secondary text-foreground/80',
 		active: 'bg-secondary text-foreground/70',
+		inactive: 'bg-muted text-muted-foreground',
+		archived: 'bg-muted text-muted-foreground',
+	};
+
+	const badgeStyle: Record<NonNullable<Student['academicBadge']>, string> = {
+		honor: 'bg-secondary text-foreground/80',
 		warning: 'bg-highlight-soft text-highlight',
 	};
 
-	const statusKeys = ['all', 'honor', 'active', 'warning'] as const;
+	const statusKeys = ['all', 'active', 'inactive', 'archived'] as const;
 	const statusFilterActive = $derived(classStudentsPage.filters.values.status !== 'all' ? 1 : 0);
 	const statusFilterOptions = $derived(
 		statusKeys.map(key => ({
@@ -187,12 +192,16 @@
 									<p class="text-[11px] text-muted-foreground">/ 20</p>
 								</div>
 								<div class="col-span-2">
-									<div class="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
-										<div class="h-full rounded-full bg-accent" style:width="{student.attendance}%"></div>
-									</div>
-									<p class="mt-1 font-mono text-[11px] text-muted-foreground">{student.attendance}%</p>
+									{#if student.attendance === null}
+										<p class="font-mono text-[11px] text-muted-foreground">—</p>
+									{:else}
+										<div class="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+											<div class="h-full rounded-full bg-accent" style:width="{student.attendance}%"></div>
+										</div>
+										<p class="mt-1 font-mono text-[11px] text-muted-foreground">{student.attendance}%</p>
+									{/if}
 								</div>
-								<div class="col-span-3">
+								<div class="col-span-3 flex flex-wrap items-center gap-1">
 									<span
 										class={cn(
 											'rounded-full px-2.5 py-1 text-[11px] font-medium',
@@ -201,6 +210,16 @@
 									>
 										{$t(`studentStatus.${student.status}`)}
 									</span>
+									{#if student.academicBadge}
+										<span
+											class={cn(
+												'rounded-full px-2.5 py-1 text-[11px] font-medium',
+												badgeStyle[student.academicBadge],
+											)}
+										>
+											{$t(`studentStatus.${student.academicBadge}`)}
+										</span>
+									{/if}
 								</div>
 							</button>
 						</li>
@@ -243,16 +262,28 @@
 								<p class="truncate text-xs text-muted-foreground">{student.email}</p>
 							</div>
 						</div>
-						<div class="mt-4 flex items-center justify-between text-sm">
+						<div class="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm">
 							<span class="font-display font-semibold tabular-nums">{student.average.toFixed(1)}</span>
-							<span
-								class={cn(
-									'rounded-full px-2 py-0.5 text-[10px] font-medium',
-									statusStyle[student.status],
-								)}
-							>
-								{$t(`studentStatus.${student.status}`)}
-							</span>
+							<div class="flex flex-wrap items-center gap-1">
+								<span
+									class={cn(
+										'rounded-full px-2 py-0.5 text-[10px] font-medium',
+										statusStyle[student.status],
+									)}
+								>
+									{$t(`studentStatus.${student.status}`)}
+								</span>
+								{#if student.academicBadge}
+									<span
+										class={cn(
+											'rounded-full px-2 py-0.5 text-[10px] font-medium',
+											badgeStyle[student.academicBadge],
+										)}
+									>
+										{$t(`studentStatus.${student.academicBadge}`)}
+									</span>
+								{/if}
+							</div>
 						</div>
 					</button>
 				{/each}

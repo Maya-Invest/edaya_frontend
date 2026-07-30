@@ -8,11 +8,10 @@ export const UI_TO_API_CATEGORY: Record<Fee['category'], ApiFeeCategory> = {
 	Tuition: 'tuition',
 	Transport: 'transport',
 	Materials: 'uniform',
-	Meals: 'other',
-	Activities: 'other',
+	Other: 'other',
 };
 
-export function installmentsForPeriod(period: Fee['period']) {
+export function installmentsForPeriod(period: NonNullable<Fee['period']>) {
 	if (period === 'Year') {
 		return [
 			{ label: 'T1', percentage: 33.33 },

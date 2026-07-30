@@ -3,9 +3,9 @@
 	import type { Snippet } from 'svelte';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, X } from '$lib/icons';
+	import { subjectsDetailTabsFor } from '../../lib/subjects-detail-tabs';
 	import SubjectDetailHeader from './SubjectDetailHeader.svelte';
 	import SubjectDetailTabBar from './SubjectDetailTabBar.svelte';
-	import { subjectsDetailTabsFor } from '../../lib/subjects-detail-tabs';
 
 	const {
 		subject,

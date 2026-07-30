@@ -72,7 +72,9 @@
 	<DrawerEntityHeader
 		name={guardian.name}
 		summary={$t('guardian.prefers', {
-			rel: $t(relationKey[guardian.relation]),
+			rel: relationKey[guardian.relation]
+				? $t(relationKey[guardian.relation]!)
+				: guardian.relation,
 			contact: $t(`guardian.contact.${guardian.preferredContact}`),
 		})}
 	>

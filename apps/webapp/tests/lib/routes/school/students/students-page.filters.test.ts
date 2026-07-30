@@ -26,12 +26,12 @@ function student(id: string, overrides: Partial<Student> = {}): Student {
 describe('student list filters', () => {
 	it('filters students by class, status, and search query', () => {
 		const roster = [
-			student('1', { name: 'Ada Lovelace', email: 'ada@school.test', status: 'honor', classId: 'class-a' }),
+			student('1', { name: 'Ada Lovelace', email: 'ada@school.test', status: 'inactive', classId: 'class-a' }),
 			student('2', { name: 'Ada King', status: 'active', classId: 'class-a' }),
-			student('3', { name: 'Grace Hopper', email: 'ada.king@school.test', status: 'honor', classId: 'class-b' }),
+			student('3', { name: 'Grace Hopper', email: 'ada.king@school.test', status: 'inactive', classId: 'class-b' }),
 		];
 
-		expect(filterStudentList(roster, { q: 'ada', class: 'class-a', status: 'honor', sort: 'roster', sortDir: 'asc' }).map(entry => entry.id)).toEqual(['1']);
+		expect(filterStudentList(roster, { q: 'ada', class: 'class-a', status: 'inactive', sort: 'roster', sortDir: 'asc' }).map(entry => entry.id)).toEqual(['1']);
 		expect(filterStudentList(roster, { q: 'ada.king@school.test', class: 'all', status: 'all', sort: 'roster', sortDir: 'asc' }).map(entry => entry.id)).toEqual(['3']);
 		expect(filterStudentList(
 			[student('4', { name: 'Kouadio Yao', matricule: 'CI-2025-001' })],

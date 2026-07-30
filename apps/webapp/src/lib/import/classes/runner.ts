@@ -66,6 +66,7 @@ export async function runClassImport(options: ClassImportRunOptions): Promise<Cl
 				gradeLevelId: row.gradeLevelId,
 				name: row.nom.trim(),
 				capacity: row.capacity ?? null,
+				// Import template has no attendanceMode column yet — default session mode.
 				attendanceMode: 'session',
 				homeroomStaffId: null,
 			});

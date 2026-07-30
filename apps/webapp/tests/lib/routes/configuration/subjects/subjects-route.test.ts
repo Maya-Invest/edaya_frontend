@@ -36,17 +36,17 @@ describe('subjects route helpers', () => {
 
 	it('filters log entries for a subject', () => {
 		const entries = [
-			{ id: '1', classId: '6a', subject: 'Math', chapter: 'A', progress: 50, date: '2026-01-01', teacher: '', content: '', objectives: [] },
-			{ id: '2', classId: '6b', subject: 'Math', chapter: 'B', progress: 70, date: '2026-01-02', teacher: '', content: '', objectives: [] },
+			{ id: '1', classId: '6a', subject: 'Math', chapter: 'A', progress: 50, date: '2026-01-01', teacher: '', content: '', notes: '' },
+			{ id: '2', classId: '6b', subject: 'Math', chapter: 'B', progress: 70, date: '2026-01-02', teacher: '', content: '', notes: '' },
 		];
 		expect(logEntriesForSubject('Math', '6a', entries)).toHaveLength(1);
 	});
 
 	it('computes chapter progress from entries', () => {
 		const entries = [
-			{ id: '1', classId: '6a', subject: 'Math', chapter: 'A', progress: 40, date: '2026-01-01', teacher: '', content: '', objectives: [] },
-			{ id: '2', classId: '6a', subject: 'Math', chapter: 'A', progress: 60, date: '2026-01-02', teacher: '', content: '', objectives: [] },
-			{ id: '3', classId: '6a', subject: 'Math', chapter: 'B', progress: 80, date: '2026-01-03', teacher: '', content: '', objectives: [] },
+			{ id: '1', classId: '6a', subject: 'Math', chapter: 'A', progress: 40, date: '2026-01-01', teacher: '', content: '', notes: '' },
+			{ id: '2', classId: '6a', subject: 'Math', chapter: 'A', progress: 60, date: '2026-01-02', teacher: '', content: '', notes: '' },
+			{ id: '3', classId: '6a', subject: 'Math', chapter: 'B', progress: 80, date: '2026-01-03', teacher: '', content: '', notes: '' },
 		];
 		expect(chapterProgressFromEntries(entries)).toEqual({
 			chapters: [['A', 60], ['B', 80]],

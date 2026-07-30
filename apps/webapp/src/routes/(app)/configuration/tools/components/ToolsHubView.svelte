@@ -7,6 +7,7 @@
 	import { CalendarRange, Upload } from '$lib/icons';
 	import { getToolsPageState } from '../tools-page.svelte';
 	import SchoolTimetableGenerationModal from './SchoolTimetableGenerationModal.svelte';
+	import SchoolTimetablePublishModal from './SchoolTimetablePublishModal.svelte';
 
 	const toolsPage = getToolsPageState();
 </script>
@@ -61,9 +62,17 @@
 				</div>
 			</div>
 
-			<div class="mt-auto">
+			<div class="mt-auto flex flex-wrap gap-2">
 				<Button onclick={() => (toolsPage.timetablePlanningModalOpen = true)} data-testid="timetable-planning-action">
 					{$t('tools.timetablePlanning.card.action')}
+				</Button>
+				<Button
+					variant="outline"
+					disabled={!toolsPage.planningPage.classes[0]}
+					onclick={() => (toolsPage.timetablePublishModalOpen = true)}
+					data-testid="timetable-publish-action"
+				>
+					{$t('tools.timetablePlanning.publishAction')}
 				</Button>
 			</div>
 		</article>
@@ -72,3 +81,11 @@
 
 <DataImportModal bind:open={toolsPage.importModalOpen} />
 <SchoolTimetableGenerationModal bind:open={toolsPage.timetablePlanningModalOpen} state={toolsPage.planningPage} />
+{#if toolsPage.planningPage.classes[0]}
+	<SchoolTimetablePublishModal
+		bind:open={toolsPage.timetablePublishModalOpen}
+		state={toolsPage.planningPage}
+		classGroupId={toolsPage.planningPage.classes[0].id}
+		className={toolsPage.planningPage.classes[0].name}
+	/>
+{/if}

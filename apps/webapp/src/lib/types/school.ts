@@ -16,6 +16,9 @@ export interface ClassNode {
 
 export interface HierarchyGroup { level: string; classes: ClassNode[] }
 
+export type StudentApiStatus = 'active' | 'inactive' | 'archived';
+export type StudentAcademicBadge = 'honor' | 'warning';
+
 export interface Student {
 	id: string;
 	classId: string;
@@ -23,14 +26,19 @@ export interface Student {
 	name: string;
 	initials: string;
 	photoUrl?: string | null;
+	/** Empty when the student has no linked account / invitation email. */
 	email: string;
 	birthdate: string;
 	matricule?: string | null;
 	gender?: string | null;
 	guardian: string;
-	attendance: number;
+	/** Null when no attendance records exist (do not invent 100%). */
+	attendance: number | null;
 	average: number;
-	status: 'active' | 'warning' | 'honor';
+	/** API enrollment/person status — not honor/warning. */
+	status: StudentApiStatus;
+	/** Derived from grades only; never overwrites `status`. */
+	academicBadge?: StudentAcademicBadge | null;
 	subjectId?: string | null;
 }
 
@@ -43,12 +51,29 @@ export interface Subject {
 	gradeLevelId?: string;
 	name: string;
 	teacher: string;
-	hoursPerWeek: number;
+	/** Null when periods/hours are unknown — never invent coeff×2 or default 3. */
+	hoursPerWeek: number | null;
 	color: 'mint' | 'sky' | 'warm';
 	description: string;
 	category: SubjectCategory;
+	code?: string | null;
+	shortName?: string | null;
+	defaultCoefficient?: number | null;
+	isOffered?: boolean;
+	completedPercentage?: number | null;
+	periodsPerWeek?: number | null;
+	minPeriodSpan?: number | null;
+	maxPeriodSpan?: number | null;
 	/** Chapitres programme (catalogue par niveau uniquement). */
-	catalogChapters?: string[];
+	catalogChapters?: CatalogChapter[];
+}
+
+export interface CatalogChapter {
+	id: string;
+	name: string;
+	description?: string | null;
+	sequenceOrder: number;
+	estimatedHours?: number | null;
 }
 
 export type PlanningEventKind = 'lesson' | 'homework-due' | 'assessment' | 'activity';
@@ -145,7 +170,8 @@ export interface Guardian {
 	name: string;
 	initials: string;
 	photoUrl?: string | null;
-	relation: 'Mother' | 'Father' | 'Legal guardian';
+	/** Raw guardian↔student relationship from API (display as-is). */
+	relation: string;
 	email: string;
 	phone: string;
 	studentIds: string[];
@@ -185,6 +211,7 @@ export interface Teacher {
 export type ChronicCondition = 'Asthme' | 'Epilepsie' | 'Diabete';
 
 export interface HealthRecord {
+	id?: string;
 	studentId: string;
 	bloodType: string;
 	allergies: string[];
@@ -194,12 +221,17 @@ export interface HealthRecord {
 	notes: string;
 }
 
+export type IncidentKind = 'positive' | 'minor_infraction' | 'major_infraction' | 'emergency';
+
 export interface Incident {
 	id: string;
 	studentId: string;
 	involvedStudentIds: string[];
 	involvedCount: number;
 	date: string;
+	/** API incident kind — source of truth for tone. */
+	kind: IncidentKind;
+	/** Display grouping derived from `kind` only (no text NLP). */
 	category: 'Behavior' | 'Tardiness' | 'Conflict' | 'Other';
 	severity: 'low' | 'medium' | 'high';
 	summary: string;
@@ -282,9 +314,12 @@ export interface Deadline {
 export interface Fee {
 	id: string;
 	name: string;
-	category: 'Tuition' | 'Transport' | 'Meals' | 'Activities' | 'Materials';
+	/** UI labels aligned 1:1 with API fee.category (no name NLP). */
+	category: 'Tuition' | 'Transport' | 'Materials' | 'Other';
 	amount: number;
-	period: 'Year' | 'Term' | 'Month';
+	/** Create-form schedule only; omitted when mapping from API installments. */
+	period?: 'Year' | 'Term' | 'Month';
+	installmentCount?: number;
 }
 
 export interface StudentBilling {

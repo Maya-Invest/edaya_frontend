@@ -6,31 +6,25 @@
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
+	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
+	import { reversePaymentMutation, cancelPaymentMutation } from '$lib/api/mutations/billing.mutations';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { locale, t } from '$lib/i18n';
-	import { Check, Clock, Receipt } from '$lib/icons';
+	import { Check, Clock, Receipt, RotateCcw, XCircle } from '$lib/icons';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readPaymentListFilters, writePaymentListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
+	import { get } from 'svelte/store';
 	import { getPaymentPageState } from '../payment-page.svelte';
 
 	const paymentPage = getPaymentPageState();
 	const billing = $derived(paymentPage.billing);
 	const students = $derived(paymentPage.students);
 	const fees = $derived(paymentPage.fees);
+	const payments = $derived(paymentPage.payments);
 	const classes = $derived(academicContext.classes);
-
-	type PaymentRow = {
-		id: string;
-		billingId: string;
-		studentId: string;
-		feeId: string;
-		date: string;
-		amount: number;
-		status: 'paid' | 'pending';
-	};
 
 	const initialFilters = $derived(readPaymentListFilters($page.url));
 
@@ -43,31 +37,14 @@
 		() => readPaymentListFilters($page.url),
 	);
 
-	const rows = $derived.by((): PaymentRow[] => {
-		const out: PaymentRow[] = [];
-		for (const b of billing) {
-			b.installments.forEach((i, idx) =>
-				out.push({
-					id: `${b.id}-${idx}`,
-					billingId: b.id,
-					studentId: b.studentId,
-					feeId: b.feeId,
-					date: i.date,
-					amount: i.amount,
-					status: i.status,
-				}),
-			);
-		}
-		return out.sort((a, b) => b.date.localeCompare(a.date));
-	});
-
 	const list = $derived(
-		rows.filter((r) => {
-			if (listFilters.values.status !== 'all' && r.status !== listFilters.values.status) {
+		payments.filter((payment) => {
+			const bill = billing.find(entry => entry.id === payment.studentFeeId);
+			const st = bill ? students.find(student => student.id === bill.studentId) : undefined;
+			if (!st) {
 				return false;
 			}
-			const st = students.find(s => s.id === r.studentId);
-			if (!st) {
+			if (listFilters.values.status !== 'all' && payment.status !== listFilters.values.status) {
 				return false;
 			}
 			if (listFilters.values.class !== 'all' && st.classId !== listFilters.values.class) {
@@ -81,13 +58,12 @@
 	);
 
 	const collected = $derived(
-		list.filter(r => r.status === 'paid').reduce((s, r) => s + r.amount, 0),
-	);
-	const pending = $derived(
-		list.filter(r => r.status === 'pending').reduce((s, r) => s + r.amount, 0),
+		list
+			.filter(payment => payment.status !== 'cancelled' && payment.status !== 'reversed')
+			.reduce((sum, payment) => sum + payment.amount, 0),
 	);
 
-	const statusKeys = ['all', 'paid', 'pending'] as const;
+	const statusKeys = ['all', 'recorded', 'cancelled', 'reversed'] as const;
 
 	const classFilterOptions = $derived([
 		{ value: 'all', label: $t('common.allClasses') },
@@ -99,11 +75,7 @@
 	const statusFilterOptions = $derived(
 		statusKeys.map(k => ({
 			value: k,
-			label: k === 'all'
-				? $t('filter.all')
-				: k === 'paid'
-				? $t('installment.paid')
-				: $t('installment.pending'),
+			label: k === 'all' ? $t('filter.all') : $t(`payment.status.${k}`),
 		})),
 	);
 
@@ -129,6 +101,26 @@
 
 	function openBillingReceipt(billingId: string) {
 		appGoto(detailHref.financeBilling(billingId));
+	}
+
+	async function reversePayment(paymentId: string) {
+		const ok = await reversePaymentMutation({
+			paymentId,
+			successMessage: get(t)('payment.reverseSuccess'),
+		});
+		if (ok) {
+			await paymentPage.refreshSlice();
+		}
+	}
+
+	async function cancelPayment(paymentId: string) {
+		const ok = await cancelPaymentMutation({
+			paymentId,
+			successMessage: get(t)('payment.cancelSuccess'),
+		});
+		if (ok) {
+			await paymentPage.refreshSlice();
+		}
 	}
 </script>
 
@@ -156,21 +148,13 @@
 		{/snippet}
 	</ListPageHeader>
 
-	<div class="grid gap-3 sm:grid-cols-2">
+	<div class="grid gap-3 sm:grid-cols-1">
 		<div class="rounded-2xl border border-border bg-card p-5 shadow-soft">
 			<p class="text-[11px] uppercase tracking-wider text-muted-foreground">
 				{$t('finance.collectedFiltered')}
 			</p>
 			<p class="mt-1 font-display text-2xl font-semibold tabular-nums">
 				{collected.toLocaleString()} FCFA
-			</p>
-		</div>
-		<div class="rounded-2xl border border-border bg-card p-5 shadow-soft">
-			<p class="text-[11px] uppercase tracking-wider text-muted-foreground">
-				{$t('finance.pending')}
-			</p>
-			<p class="mt-1 font-display text-2xl font-semibold tabular-nums text-highlight">
-				{pending.toLocaleString()} FCFA
 			</p>
 		</div>
 	</div>
@@ -186,46 +170,72 @@
 			<div class="col-span-1 text-right">{$t('students.status')}</div>
 		</div>
 		<ul>
-			{#each list as r (r.id)}
-				{@const st = students.find(s => s.id === r.studentId)}
-				{@const fee = fees.find(f => f.id === r.feeId)}
+			{#each list as payment (payment.id)}
+				{@const bill = billing.find(entry => entry.id === payment.studentFeeId)}
+				{@const st = bill ? students.find(student => student.id === bill.studentId) : undefined}
+				{@const fee = bill ? fees.find(entry => entry.id === bill.feeId) : undefined}
 				<li
 					class="grid grid-cols-12 items-center gap-4 border-b border-border px-5 py-3 last:border-b-0"
 				>
 					<div class="col-span-2 font-mono text-xs text-muted-foreground">
-						{new Date(r.date).toLocaleDateString($locale, {
+						{new Date(payment.paymentDate).toLocaleDateString($locale, {
 							day: 'numeric',
 							month: 'short',
 							year: '2-digit',
 						})}
 					</div>
-					<div class="col-span-4 text-sm font-medium">{st?.name}</div>
-					<div class="col-span-3 text-sm text-foreground/70">{fee?.name}</div>
+					<div class="col-span-4 text-sm font-medium">{st?.name ?? '—'}</div>
+					<div class="col-span-3 text-sm text-foreground/70">{fee?.name ?? '—'}</div>
 					<div class="col-span-2 text-right font-display text-sm font-semibold tabular-nums">
-						{r.amount.toLocaleString()} FCFA
+						{payment.amount.toLocaleString()} FCFA
 					</div>
 					<div class="col-span-1 flex items-center justify-end gap-1">
-						{#if r.status === 'paid'}
+						{#if payment.status === 'cancelled' || payment.status === 'reversed'}
+							<span
+								class="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+							>
+								<Clock class="h-3 w-3" />
+								{$t(`payment.status.${payment.status}`)}
+							</span>
+						{:else}
 							<span
 								class="flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-medium text-accent-foreground"
 							>
 								<Check class="h-3 w-3" />
-								{$t('installment.paid')}
-							</span>
-						{:else}
-							<span
-								class="flex items-center gap-1 rounded-full bg-highlight-soft px-2 py-0.5 text-[10px] font-medium text-highlight"
-							>
-								<Clock class="h-3 w-3" />
-								{$t('installment.pending')}
+								{$t('payment.status.recorded')}
 							</span>
 						{/if}
-						<RowActionMenu>
-							<RowActionMenuItem onclick={() => openBillingReceipt(r.billingId)}>
-								<Receipt class="h-4 w-4" />
-								{$t('payment.viewReceipt')}
-							</RowActionMenuItem>
-						</RowActionMenu>
+						<PermissionGate permission="PAYMENT_RECORD">
+							{#snippet children({ disabled, title })}
+								<RowActionMenu>
+									{#if bill}
+										<RowActionMenuItem onclick={() => openBillingReceipt(bill.id)}>
+											<Receipt class="h-4 w-4" />
+											{$t('payment.viewReceipt')}
+										</RowActionMenuItem>
+									{/if}
+									{#if payment.status !== 'reversed' && payment.status !== 'cancelled'}
+										<RowActionMenuItem
+											{disabled}
+											{title}
+											onclick={() => void reversePayment(payment.id)}
+										>
+											<RotateCcw class="h-4 w-4" />
+											{$t('payment.reverse')}
+										</RowActionMenuItem>
+										<RowActionMenuItem
+											destructive
+											{disabled}
+											{title}
+											onclick={() => void cancelPayment(payment.id)}
+										>
+											<XCircle class="h-4 w-4" />
+											{$t('payment.cancel')}
+										</RowActionMenuItem>
+									{/if}
+								</RowActionMenu>
+							{/snippet}
+						</PermissionGate>
 					</div>
 				</li>
 			{/each}

@@ -1,4 +1,10 @@
 <script lang="ts">
+	import type { BillingImportRunResult } from '$lib/import/billing/runner';
+	import type {
+		BillingImportRow,
+		BillingImportValidationContext,
+		BillingImportValidationResult,
+	} from '$lib/import/billing/types';
 	import type { ImportTypeKey } from '$lib/import/catalog/types';
 	import type { ChapterImportRunResult } from '$lib/import/chapters/runner';
 	import type { ChapterImportRow, ChapterImportValidationResult, ChapterImportCatalogTarget } from '$lib/import/chapters/types';
@@ -12,12 +18,7 @@
 		PaymentImportValidationContext,
 		PaymentImportValidationResult,
 	} from '$lib/import/payments/types';
-	import type { BillingImportRunResult } from '$lib/import/billing/runner';
-	import type {
-		BillingImportRow,
-		BillingImportValidationContext,
-		BillingImportValidationResult,
-	} from '$lib/import/billing/types';
+	import type { SchoolSubjectCatalogEntry } from '$lib/import/shared/load-school-subject-names';
 	import type { StudentMatriculeEntry } from '$lib/import/shared/load-student-matricule-index';
 	import type { StaffImportRunResult } from '$lib/import/staff/runner';
 	import type { StaffImportRow, StaffImportValidationResult } from '$lib/import/staff/types';
@@ -25,8 +26,6 @@
 	import type { StudentImportRow, StudentImportValidationResult } from '$lib/import/students/types';
 	import type { SubjectImportRunResult } from '$lib/import/subjects/runner';
 	import type { SubjectImportRow, SubjectImportValidationResult } from '$lib/import/subjects/types';
-	import type { TeacherImportRunResult } from '$lib/import/teachers/runner';
-	import type { TeacherImportRow, TeacherImportValidationResult } from '$lib/import/teachers/types';
 	import type { TeacherAssignmentImportRunResult } from '$lib/import/teacher-assignments/runner';
 	import type {
 		TeacherAssignmentImportClassSubjectOption,
@@ -34,29 +33,36 @@
 		TeacherAssignmentImportTeacherOption,
 		TeacherAssignmentImportValidationResult,
 	} from '$lib/import/teacher-assignments/types';
-	import type { SchoolSubjectCatalogEntry } from '$lib/import/shared/load-school-subject-names';
+	import type { TeacherImportRunResult } from '$lib/import/teachers/runner';
+	import type { TeacherImportRow, TeacherImportValidationResult } from '$lib/import/teachers/types';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { authSession } from '$lib/auth/session.svelte';
-	import { resolveGradeLevelKeyForClassId } from '$lib/school/next-class-group-id';
 	import ImportFileDropzone from '$lib/components/school/configuration/ImportFileDropzone.svelte';
 	import ImportProgressBar from '$lib/components/school/configuration/ImportProgressBar.svelte';
-	import ImportValidationTable from '$lib/components/school/configuration/ImportValidationTable.svelte';
-	import ImportValidationSummary from '$lib/components/school/configuration/ImportValidationSummary.svelte';
 	import ImportReportDownload from '$lib/components/school/configuration/ImportReportDownload.svelte';
-	import FilterSelect from '$lib/components/ui/filter-select.svelte';
+	import ImportValidationSummary from '$lib/components/school/configuration/ImportValidationSummary.svelte';
+	import ImportValidationTable from '$lib/components/school/configuration/ImportValidationTable.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import { notifyGuardiansListChanged } from '$lib/guardians/notify-guardians-list-changed';
 	import { t } from '$lib/i18n';
 	import { Download, FileSpreadsheet, LoaderCircle } from '$lib/icons';
+	import { loadBillingImportContext } from '$lib/import/billing/load-billing-import-context';
+	import { parseBillingImportFile } from '$lib/import/billing/parser';
+	import { runBillingImport } from '$lib/import/billing/runner';
+	import {
+		canImportValidatedBilling,
+		validateBillingImportRows,
+	} from '$lib/import/billing/validator';
+	import { importTypeHasMultiValueColumns } from '$lib/import/catalog/import-multi-value';
 	import {
 		IMPORT_TYPE_DEFINITIONS,
 		getImportTypeDefinition,
 	} from '$lib/import/catalog/import-types';
-	import { importTypeHasMultiValueColumns } from '$lib/import/catalog/import-multi-value';
 	import { parseChapterImportFile } from '$lib/import/chapters/parser';
 	import { runChapterImport } from '$lib/import/chapters/runner';
 	import {
@@ -83,13 +89,7 @@
 		canImportValidatedPayments,
 		validatePaymentImportRows,
 	} from '$lib/import/payments/validator';
-	import { loadBillingImportContext } from '$lib/import/billing/load-billing-import-context';
-	import { parseBillingImportFile } from '$lib/import/billing/parser';
-	import { runBillingImport } from '$lib/import/billing/runner';
-	import {
-		canImportValidatedBilling,
-		validateBillingImportRows,
-	} from '$lib/import/billing/validator';
+	import { importPreferences } from '$lib/import/preferences/import-preferences.svelte';
 	import {
 		loadChapterImportContext,
 	} from '$lib/import/shared/load-chapter-import-context';
@@ -99,11 +99,15 @@
 		loadStaffCodeIndex,
 		loadTeacherCodeIndex,
 	} from '$lib/import/shared/load-person-code-index';
+	import { loadSchoolSubjectCatalog } from '$lib/import/shared/load-school-subject-names';
 	import {
 		loadStudentMatriculeIndex,
 	} from '$lib/import/shared/load-student-matricule-index';
 	import { loadExistingSubjectImportKeys } from '$lib/import/shared/load-subject-import-context';
-	import { importPreferences } from '$lib/import/preferences/import-preferences.svelte';
+	import {
+		loadTeacherAssignmentImportClassSubjects,
+		loadTeacherAssignmentImportTeachers,
+	} from '$lib/import/shared/load-teacher-assignment-import-context';
 	import {
 		downloadImportCsvTemplate,
 		downloadImportExcelTemplate,
@@ -127,28 +131,25 @@
 		canImportValidatedSubjects,
 		validateSubjectImportRows,
 	} from '$lib/import/subjects/validator';
-	import { parseTeacherImportFile } from '$lib/import/teachers/parser';
-	import { runTeacherImport } from '$lib/import/teachers/runner';
-	import {
-		canImportValidatedTeachers,
-		validateTeacherImportRows,
-	} from '$lib/import/teachers/validator';
 	import { parseTeacherAssignmentImportFile } from '$lib/import/teacher-assignments/parser';
 	import { runTeacherAssignmentImport } from '$lib/import/teacher-assignments/runner';
 	import {
 		canImportValidatedTeacherAssignments,
 		validateTeacherAssignmentImportRows,
 	} from '$lib/import/teacher-assignments/validator';
+	import { parseTeacherImportFile } from '$lib/import/teachers/parser';
+	import { runTeacherImport } from '$lib/import/teachers/runner';
 	import {
-		loadTeacherAssignmentImportClassSubjects,
-		loadTeacherAssignmentImportTeachers,
-	} from '$lib/import/shared/load-teacher-assignment-import-context';
-	import { loadSchoolSubjectCatalog } from '$lib/import/shared/load-school-subject-names';
+		canImportValidatedTeachers,
+		validateTeacherImportRows,
+	} from '$lib/import/teachers/validator';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import { resolveGradeLevelKeyForClassId } from '$lib/school/next-class-group-id';
 	import { notifyStaffListChanged } from '$lib/staff/notify-staff-list-changed';
 	import { notifyStudentsListChanged } from '$lib/students/notify-students-list-changed';
 	import { notifySubjectsListChanged } from '$lib/subjects/notify-subjects-list-changed';
 	import { notifyTeachersListChanged } from '$lib/teachers/notify-teachers-list-changed';
+	import { hasPermission } from '$lib/permissions';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 
@@ -654,11 +655,11 @@
 	const showTeacherAssignmentsPrerequisite = $derived(
 		isTeacherAssignmentsImport
 		&& step === 'download'
-		&& (
-			!hasClasses
-			|| (teacherAssignmentTeachers.length === 0 && !loadingTeacherAssignmentContext)
-			|| (teacherAssignmentClassSubjects.length === 0 && !loadingTeacherAssignmentContext)
-		),
+			&& (
+				!hasClasses
+				|| (teacherAssignmentTeachers.length === 0 && !loadingTeacherAssignmentContext)
+				|| (teacherAssignmentClassSubjects.length === 0 && !loadingTeacherAssignmentContext)
+			),
 	);
 	const showPaymentsPrerequisite = $derived(
 		isPaymentsImport && step === 'download' && !hasStudents,
@@ -1875,10 +1876,21 @@
 							</Select.Trigger>
 							<Select.Content class="z-[100]">
 								{#each IMPORT_TYPE_DEFINITIONS as definition (definition.key)}
-									<Select.Item value={definition.key} label={$t(definition.labelKey)}>
+									{@const allowed = definition.permission
+										? hasPermission(definition.permission as NonNullable<typeof definition.permission>)
+										: true}
+									<Select.Item
+										value={definition.key}
+										label={$t(definition.labelKey)}
+										disabled={!allowed}
+									>
 										<div class="flex items-center justify-between gap-3">
-											<span>{$t(definition.labelKey)}</span>
-											{#if definition.status === 'template_only'}
+											<span class={!allowed ? 'text-muted-foreground' : undefined}>{$t(definition.labelKey)}</span>
+											{#if !allowed}
+												<span class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+													{$t('import.permissionRequired')}
+												</span>
+											{:else if definition.status === 'template_only'}
 												<span class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
 													{$t('import.status.templateOnly')}
 												</span>

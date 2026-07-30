@@ -13,7 +13,7 @@ export async function assertNoFatalError(ctx: DemoContext, scene: string, step: 
 
 async function waitForAppShell(ctx: DemoContext): Promise<void> {
 	await ctx.page
-		.waitForSelector('nav, aside, [data-testid="app-shell"]', { timeout: 20_000 })
+		.waitForSelector('aside#app-sidebar, nav, aside, [data-testid="app-shell"]', { timeout: 20_000 })
 		.catch(() => ctx.page.waitForSelector('main', { timeout: 20_000 }));
 }
 

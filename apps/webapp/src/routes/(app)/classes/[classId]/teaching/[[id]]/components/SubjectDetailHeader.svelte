@@ -65,7 +65,7 @@
 <DrawerEntityHeader name={subject.name} summary={subject.description}>
 	{#snippet chips()}
 		<span class="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] tabular-nums text-foreground/80">
-			{$t('subjects.hoursPerWeek', { h: subject.hoursPerWeek })}
+			{subject.hoursPerWeek === null ? '—' : $t('subjects.hoursPerWeek', { h: subject.hoursPerWeek })}
 		</span>
 		<span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground/80">
 			{subject.teacher}

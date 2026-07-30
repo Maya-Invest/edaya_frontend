@@ -11,18 +11,18 @@ export interface PersonCodeEntry {
 }
 
 async function loadPersonCodeIndex(
-	list: () => Promise<readonly { id?: string | null; code?: string | null }[] | null | undefined>,
+	list: () => Promise<readonly { id?: string | null }[] | null | undefined>,
 ): Promise<Map<string, PersonCodeEntry>> {
 	const entities = await list();
 	const index = new Map<string, PersonCodeEntry>();
 
 	for (const entity of entities ?? []) {
-		const code = typeof entity.code === 'string' ? entity.code.trim() : '';
+		// Person entities no longer expose a separate `code`; import codes are the entity id.
 		const id = typeof entity.id === 'string' ? entity.id.trim() : '';
-		if (!code || !id) {
+		if (!id) {
 			continue;
 		}
-		index.set(normalizeImportCode(code), { id, code });
+		index.set(normalizeImportCode(id), { id, code: id });
 	}
 
 	return index;

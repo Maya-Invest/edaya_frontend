@@ -2,11 +2,11 @@ import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { ValidatedTeacherAssignmentImportRow } from './types';
 import { t } from '$lib/i18n';
 import { formatImportRunErrorMessage } from '$lib/import/shared/format-import-run-error';
+import { notifyTeachersListChanged } from '$lib/teachers/notify-teachers-list-changed';
 import {
 	createTeacherAssignmentImportId,
 	saveTeacherAssignment,
 } from '$lib/teachers/save-teacher-assignment';
-import { notifyTeachersListChanged } from '$lib/teachers/notify-teachers-list-changed';
 import { get } from 'svelte/store';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;

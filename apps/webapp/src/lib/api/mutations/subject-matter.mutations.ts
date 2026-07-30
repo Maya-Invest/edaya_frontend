@@ -19,6 +19,10 @@ export interface SubjectMatterDrawerRow {
 	classSubjectMatterId?: string;
 	status?: ClassSubjectMatterRaw['status'];
 	completedPercentage?: number;
+	notes?: string | null;
+	startedAt?: unknown;
+	completedAt?: unknown;
+	updatedByStaffId?: string | null;
 }
 
 export async function loadSubjectMatterDrawerRows(classSubjectId: string): Promise<{
@@ -67,6 +71,10 @@ function mapSubjectMatterRows(
 				classSubjectMatterId: link?.id,
 				status: link?.status,
 				completedPercentage: link?.completedPercentage ?? undefined,
+				notes: link?.notes ?? null,
+				startedAt: link?.startedAt,
+				completedAt: link?.completedAt,
+				updatedByStaffId: link?.updatedByStaffId ?? null,
 			} satisfies SubjectMatterDrawerRow;
 		});
 }
@@ -193,14 +201,25 @@ export async function saveSubjectMatterMutation(input: {
 	}
 
 	if (input.gradeLevelSubjectId) {
+		const classSubjects = (await client.entities.classSubjects.list({
+			gradeLevelSubjectId: input.gradeLevelSubjectId,
+		})) ?? [];
+		const classSubjectMatterIdsByClassGroupId = Object.fromEntries(
+			classSubjects.map(classSubject => [
+				classSubject.classGroupId,
+				`csm-${classSubject.id}-${matterId}`,
+			]),
+		);
+		if (input.classGroupId && !classSubjectMatterIdsByClassGroupId[input.classGroupId]) {
+			classSubjectMatterIdsByClassGroupId[input.classGroupId] = classSubjectMatterId;
+		}
+
 		const linked = await runMutation(
 			() => client.commands.assignMatterToGradeLevelSubject({
 				id: `glsm-${input.gradeLevelSubjectId}-${matterId}`,
 				gradeLevelSubjectId: input.gradeLevelSubjectId!,
 				subjectMatterId: matterId,
-				classSubjectMatterIdsByClassGroupId: {
-					[input.classGroupId]: classSubjectMatterId,
-				},
+				classSubjectMatterIdsByClassGroupId,
 			}),
 			{},
 		);

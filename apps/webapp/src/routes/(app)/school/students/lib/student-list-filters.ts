@@ -51,7 +51,7 @@ function sortStudentList(
 			);
 		case 'attendance':
 			return [...students].sort(
-				(left, right) => direction * (left.attendance - right.attendance) || compareNames(left, right),
+				(left, right) => direction * ((left.attendance ?? -1) - (right.attendance ?? -1)) || compareNames(left, right),
 			);
 		case 'status':
 			return [...students].sort(

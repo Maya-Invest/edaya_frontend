@@ -3,8 +3,8 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
-	import { getSubjectsPageState } from '../../../subjects-page.svelte';
 	import { isCatalogConfigSubject, activeSubjectsDetailTab } from '../../../lib/subjects-detail-tabs';
+	import { getSubjectsPageState } from '../../../subjects-page.svelte';
 	import SubjectLogbookTab from './components/SubjectLogbookTab.svelte';
 
 	const subjectsPage = getSubjectsPageState();

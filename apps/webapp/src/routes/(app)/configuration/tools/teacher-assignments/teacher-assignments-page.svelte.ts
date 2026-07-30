@@ -2,18 +2,15 @@ import type { components } from '$lib/api/schema';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { Subject, Teacher } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
-import { fetchTeacherAssignmentsHubData } from '$lib/api/teacher-assignments-hub-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadClassSubjectsByIds } from '$lib/api/subjects-data';
+import { fetchTeacherAssignmentsHubData } from '$lib/api/teacher-assignments-hub-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { mergeById } from '$lib/detail-data/seed-policies';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
+import { deleteTeacherAssignmentOnHub, saveTeacherAssignmentOnHub } from './lib/teacher-assignments-mutations';
 import { querySchoolTeacherAssignmentsPage } from './lib/teacher-assignments-queries';
-import {
-	deleteTeacherAssignmentOnHub,
-	saveTeacherAssignmentOnHub,
-} from './lib/teacher-assignments-mutations';
 
 type TeacherAssignment = components['schemas']['TeacherAssignment'];
 

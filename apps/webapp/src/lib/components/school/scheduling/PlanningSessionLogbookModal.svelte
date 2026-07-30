@@ -32,8 +32,7 @@
 			classSubjectMatterId: string;
 			chapter: string;
 			content: string;
-			objectives: string[];
-			homework?: string;
+			notes: string;
 			progress: number;
 			successMessage?: string;
 		}) => Promise<boolean>;
@@ -42,8 +41,7 @@
 	let wasOpen = $state(false);
 	let classSubjectMatterId = $state('');
 	let content = $state('');
-	let objectivesText = $state('');
-	let homework = $state('');
+	let notes = $state('');
 	let progress = $state('0');
 
 	const isEdit = $derived(detail.logbook !== undefined);
@@ -56,7 +54,7 @@
 
 	function resolveInitialMatterId(): string {
 		if (detail.logbook) {
-			const matched = subjectMatters.find(entry => entry.name === detail.logbook?.chapter);
+			const matched = subjectMatters.find(entry => entry.id === detail.logbook?.chapter || entry.name === detail.logbook?.chapter);
 			if (matched) {
 				return matched.id;
 			}
@@ -67,8 +65,7 @@
 	function resetForm() {
 		classSubjectMatterId = resolveInitialMatterId();
 		content = detail.logbook?.content ?? '';
-		objectivesText = detail.logbook?.objectives.join('\n') ?? '';
-		homework = detail.logbook?.homework ?? '';
+		notes = detail.logbook?.notes ?? '';
 		progress = String(
 			detail.logbook?.progress ?? subjectMatters.find(entry => entry.id === classSubjectMatterId)?.completedPercentage ?? 0,
 		);
@@ -105,11 +102,7 @@
 			logbookId: detail.logbook?.id,
 			chapter: selectedMatter.name,
 			content,
-			objectives: objectivesText
-				.split('\n')
-				.map(line => line.trim())
-				.filter(Boolean),
-			homework: homework.trim() || undefined,
+			notes,
 			progress: Math.max(0, Math.min(100, Number.parseInt(progress, 10) || 0)),
 			successMessage: get(t)('planning.session.logbookSuccess'),
 		};
@@ -181,22 +174,14 @@
 	</div>
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			{$t('planning.session.logbookObjectives')}
+			{$t('planning.session.logbookNotes')}
 		</Label>
-		<Textarea bind:value={objectivesText} rows={3} />
+		<Textarea bind:value={notes} rows={3} />
 	</div>
-	<div class="grid grid-cols-2 gap-3">
-		<div class="space-y-1.5">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				{$t('teaching.homework')}
-			</Label>
-			<Input bind:value={homework} />
-		</div>
-		<div class="space-y-1.5">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				{$t('planning.session.logbookProgress')}
-			</Label>
-			<Input type="number" min="0" max="100" bind:value={progress} />
-		</div>
+	<div class="space-y-1.5">
+		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+			{$t('planning.session.logbookProgress')}
+		</Label>
+		<Input type="number" min="0" max="100" bind:value={progress} />
 	</div>
 </FormModal>

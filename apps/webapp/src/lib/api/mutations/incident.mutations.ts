@@ -138,3 +138,51 @@ export async function resolveIncidentMutation(input: {
 	});
 	return result !== null;
 }
+
+export async function applyDisciplinaryActionMutation(input: {
+	id?: string;
+	schoolId: string;
+	incidentId: string;
+	studentId: string;
+	disciplinaryActionId: string;
+	notes?: string;
+	startsAt?: string;
+	endsAt?: string;
+	successMessage?: string;
+}): Promise<string | null> {
+	const client = getBrowserSchoolClient();
+	const id = input.id ?? `sda-${input.incidentId}-${input.studentId}-${Date.now().toString(36)}`;
+	const now = new Date().toISOString();
+	const result = await runMutation(() => client.commands.applyDisciplinaryAction({
+		id,
+		schoolId: input.schoolId,
+		incidentId: input.incidentId,
+		studentId: input.studentId,
+		disciplinaryActionId: input.disciplinaryActionId,
+		notes: input.notes?.trim() || null,
+		startsAt: input.startsAt ?? now,
+		endsAt: input.endsAt ?? null,
+		createdAt: now,
+	}), {
+		successMessage: input.successMessage,
+		versionKeys: ['incidents'],
+	});
+	return result ? id : null;
+}
+
+export async function updateStudentDisciplinaryActionStatusMutation(input: {
+	studentDisciplinaryActionId: string;
+	status: 'active' | 'completed' | 'cancelled';
+	successMessage?: string;
+}): Promise<boolean> {
+	const client = getBrowserSchoolClient();
+	const result = await runMutation(() => client.commands.updateStudentDisciplinaryActionStatus({
+		studentDisciplinaryActionId: input.studentDisciplinaryActionId,
+		status: input.status,
+		updatedAt: new Date().toISOString(),
+	}), {
+		successMessage: input.successMessage,
+		versionKeys: ['incidents'],
+	});
+	return result !== null;
+}

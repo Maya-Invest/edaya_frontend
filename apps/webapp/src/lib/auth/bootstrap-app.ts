@@ -1,5 +1,5 @@
-import { academicContext } from '$lib/academic/context.svelte';
 import type { AppShellData } from '$lib/api/shell-data';
+import { academicContext } from '$lib/academic/context.svelte';
 import { configureBrowserSchoolClient } from '$lib/api/school-client';
 import { resetBootstrapSession } from '$lib/auth/bootstrap';
 import { authSession } from '$lib/auth/session.svelte';
