@@ -372,6 +372,7 @@ export const en: Dict = {
 	'tools.timetablePlanning.card.title': 'Timetable planning',
 	'tools.timetablePlanning.card.description': 'Generate school-wide draft timetables for all classes in the active academic year.',
 	'tools.timetablePlanning.card.action': 'Open assistant',
+	'tools.timetablePlanning.publishAction': 'Publish timetable',
 
 	'import.eyebrow': 'Configuration · Tools',
 	'import.title': 'Tools',

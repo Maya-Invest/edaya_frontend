@@ -1,7 +1,9 @@
 import {
 	ACTIVITY_ID,
+	CATALOG_SUBJECT_ID,
 	CLASS_6A,
 	CLASS_SUBJECT_ID,
+	SEEDED_TIMETABLE_WEEK,
 	STAFF_ID,
 	STUDENT_ID,
 	TEACHER_ID,
@@ -64,9 +66,10 @@ export const DRAWER_TAB_ROUTE_CASES: readonly DrawerTabRouteCase[] = [
 	},
 	{
 		name: 'configuration subjects',
-		tabs: ['progression', 'logbook'],
-		pathForTab: tab => configSubjectPath(CLASS_SUBJECT_ID, tab as 'progression' | 'logbook'),
-		drawerPathPrefix: `/configuration/subjects/${CLASS_SUBJECT_ID}`,
+		// Catalog config subjects only expose progression (logbook lives under class teaching).
+		tabs: ['progression'],
+		pathForTab: tab => configSubjectPath(CATALOG_SUBJECT_ID, tab as 'progression' | 'logbook'),
+		drawerPathPrefix: `/configuration/subjects/${CATALOG_SUBJECT_ID}`,
 	},
 	{
 		name: 'class teaching',
@@ -95,7 +98,10 @@ export function classTimetableTabCase(sessionId: string): DrawerTabRouteCase {
 	return {
 		name: 'class timetable session',
 		tabs: ['details', 'attendance', 'logbook'],
-		pathForTab: tab => `/classes/${CLASS_6A}/timetable/${sessionId}/${tab}`,
+		// Keep seeded week in the URL so the session remains in the loaded slice.
+		// Do not encodeURIComponent — colons in session ids must stay literal (see app navigation).
+		pathForTab: tab =>
+			`/classes/${CLASS_6A}/timetable/${sessionId}/${tab}?week=${SEEDED_TIMETABLE_WEEK}`,
 		drawerPathPrefix: `/classes/${CLASS_6A}/timetable/${sessionId}`,
 	};
 }

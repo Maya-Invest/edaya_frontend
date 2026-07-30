@@ -13,6 +13,13 @@ export const OWNER_EMAIL = 'a.kone@ecole-ci.edaya.dev';
 export const CLASS_6A = 'ci-6a';
 export const CLASS_6B = 'ci-6b';
 export const CLASS_SUBJECT_ID = 'ci-cs-6a-math';
+/** Config subjects list uses grade-level catalog ids (not class-subject ids). */
+export const CATALOG_SUBJECT_ID = 'gls-ci-gl-6-ci-math';
+export const EVALUATION_ID = 'ci-asm-6a-t1-math';
+/** Monday inside demo-ci T1 — recurring maths slots are visible this week. */
+export const SEEDED_TIMETABLE_WEEK = '2025-11-10';
+export const T1_PERIOD_ID = 'ci-2025-t1';
+export const T1_PERIOD_LABEL = /Trimestre 1|Term 1|T1/i;
 export const STUDENT_ID = 'ci-s1';
 export const TEACHER_ID = 'ci-t1';
 export const STAFF_ID = 'ci-st3';

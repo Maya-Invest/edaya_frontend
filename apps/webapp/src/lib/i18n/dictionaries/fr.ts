@@ -365,6 +365,7 @@ export const fr: Dict = {
 	'tools.timetablePlanning.card.title': 'Planification des emplois du temps',
 	'tools.timetablePlanning.card.description': 'Générer des brouillons d\'emploi du temps pour toutes les classes de l\'année scolaire active.',
 	'tools.timetablePlanning.card.action': 'Ouvrir l\'assistant',
+	'tools.timetablePlanning.publishAction': 'Publier l\'emploi du temps',
 
 	'import.eyebrow': 'Configuration · Outils',
 	'import.title': 'Outils',

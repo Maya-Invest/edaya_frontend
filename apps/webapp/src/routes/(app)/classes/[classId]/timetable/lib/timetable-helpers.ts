@@ -34,5 +34,14 @@ export function timetableClassIdFromUrl(url: URL): string | undefined {
 }
 
 export function sessionDetailIdFromUrl(url: URL): string | undefined {
-	return url.pathname.match(/\/classes\/[^/]+\/timetable\/([^/]+)/)?.[1];
+	const raw = url.pathname.match(/\/classes\/[^/]+\/timetable\/([^/]+)/)?.[1];
+	if (!raw) {
+		return undefined;
+	}
+	try {
+		return decodeURIComponent(raw);
+	}
+	catch {
+		return raw;
+	}
 }

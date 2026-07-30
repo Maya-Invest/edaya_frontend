@@ -1,7 +1,7 @@
 {
-  "passed": 193,
+  "passed": 235,
   "failed": 0,
-  "skipped": 4,
+  "skipped": 0,
   "results": [
     {
       "scene": "D0",
@@ -66,8 +66,7 @@
     {
       "scene": "D5",
       "step": "5.2 Maths slot shows Mme Touré",
-      "status": "skip",
-      "detail": "No maths lesson text in grid — verify seed week / teacher assignments manually"
+      "status": "pass"
     },
     {
       "scene": "D6",
@@ -77,8 +76,7 @@
     {
       "scene": "D6",
       "step": "6.2 Homework filter",
-      "status": "skip",
-      "detail": "No homework rows after filter"
+      "status": "pass"
     },
     {
       "scene": "setup",
@@ -702,26 +700,6 @@
     },
     {
       "scene": "DD",
-      "step": "configuration-subjects deep-link logbook",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
-      "step": "configuration-subjects URL segment logbook",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
-      "step": "configuration-subjects click navigation setup",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
-      "step": "configuration-subjects click to progression",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "class-teaching deep-link progression",
       "status": "pass"
     },
@@ -837,9 +815,33 @@
     },
     {
       "scene": "DD",
-      "step": "class evaluations tabs",
-      "status": "skip",
-      "detail": "No evaluation rows in list for current academic period"
+      "step": "class-evaluations deep-link details",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-evaluations URL segment details",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-evaluations deep-link grading",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-evaluations URL segment grading",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-evaluations click navigation setup",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-evaluations click to details",
+      "status": "pass"
     },
     {
       "scene": "DD",
@@ -848,9 +850,43 @@
     },
     {
       "scene": "DD",
-      "step": "timetable session tabs",
-      "status": "skip",
-      "detail": "No timetable session link found in grid — verify seed week"
+      "step": "class-timetable-session deep-link details",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-timetable-session URL segment details",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-timetable-session deep-link attendance",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-timetable-session URL segment attendance",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-timetable-session deep-link logbook",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-timetable-session URL segment logbook",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-timetable-session click navigation setup",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
+      "step": "class-timetable-session click to details",
+      "status": "pass"
     },
     {
       "scene": "DD",
@@ -963,6 +999,111 @@
       "status": "pass"
     },
     {
+      "scene": "DI",
+      "step": "1 Tools hub",
+      "status": "pass"
+    },
+    {
+      "scene": "DI",
+      "step": "2 Import modal visible",
+      "status": "pass"
+    },
+    {
+      "scene": "DI",
+      "step": "3 Upload step",
+      "status": "pass"
+    },
+    {
+      "scene": "DI",
+      "step": "4 CSV parse success",
+      "status": "pass"
+    },
+    {
+      "scene": "DI",
+      "step": "5 Validate step",
+      "status": "pass"
+    },
+    {
+      "scene": "DI",
+      "step": "6 Close modal",
+      "status": "pass"
+    },
+    {
+      "scene": "DT",
+      "step": "1 Tools hub",
+      "status": "pass"
+    },
+    {
+      "scene": "DT",
+      "step": "2 Generation modal visible",
+      "status": "pass"
+    },
+    {
+      "scene": "DT",
+      "step": "3 Generation setup UI",
+      "status": "pass"
+    },
+    {
+      "scene": "DT",
+      "step": "4 Close generation modal",
+      "status": "pass"
+    },
+    {
+      "scene": "DT",
+      "step": "5 Publish modal",
+      "status": "pass"
+    },
+    {
+      "scene": "DG",
+      "step": "1 Guardian drawer deep-link",
+      "status": "pass"
+    },
+    {
+      "scene": "DG",
+      "step": "2 Guardian drawer visible",
+      "status": "pass"
+    },
+    {
+      "scene": "DG",
+      "step": "3 Edit-profile deep-link",
+      "status": "pass"
+    },
+    {
+      "scene": "DG",
+      "step": "4 URL modal=edit-profile",
+      "status": "pass"
+    },
+    {
+      "scene": "DG",
+      "step": "5 Reopen for close test",
+      "status": "pass"
+    },
+    {
+      "scene": "DG",
+      "step": "6 Close returns to list",
+      "status": "pass"
+    },
+    {
+      "scene": "DF",
+      "step": "1 Billing drawer deep-link",
+      "status": "pass"
+    },
+    {
+      "scene": "DF",
+      "step": "2 Billing drawer visible",
+      "status": "pass"
+    },
+    {
+      "scene": "DF",
+      "step": "3 Payment modal deep-link",
+      "status": "pass"
+    },
+    {
+      "scene": "DF",
+      "step": "4 URL modal=payment",
+      "status": "pass"
+    },
+    {
       "scene": "DN",
       "step": "N.1 Login f.assi@",
       "status": "pass"
@@ -991,11 +1132,54 @@
       "scene": "DN",
       "step": "N.5 Nudge deep-link to attendance",
       "status": "pass"
+    },
+    {
+      "scene": "DO",
+      "step": "O.1 Login a.kone@",
+      "status": "pass"
+    },
+    {
+      "scene": "DO",
+      "step": "O.2 Report card definitions",
+      "status": "pass"
+    },
+    {
+      "scene": "DO",
+      "step": "O.3 Report card definitions filter shell",
+      "status": "pass"
+    },
+    {
+      "scene": "DO",
+      "step": "O.4 Grade scales list",
+      "status": "pass"
+    },
+    {
+      "scene": "DO",
+      "step": "O.5 Grade scales list shell",
+      "status": "pass"
+    },
+    {
+      "scene": "DO",
+      "step": "O.6 School calendar",
+      "status": "pass"
+    },
+    {
+      "scene": "DO",
+      "step": "O.7 Calendar loads for owner",
+      "status": "pass"
+    },
+    {
+      "scene": "DO",
+      "step": "O.8 Staff add-permission deep-link",
+      "status": "pass"
+    },
+    {
+      "scene": "DO",
+      "step": "O.9 URL modal=add-permission",
+      "status": "pass"
     }
   ],
   "consoleErrors": [
-    "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)",
-    "API request failed (422)",
     "Failed to load resource: the server responded with a status of 403 (Forbidden)"
   ]
 }

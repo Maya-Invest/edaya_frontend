@@ -24,10 +24,12 @@ export async function walkDrawerTabRoute(
 	const slug = stepSlug(routeCase.name);
 
 	for (const tab of routeCase.tabs) {
-		const url = `${base}${routeCase.pathForTab(tab)}`;
+		const pathWithQuery = routeCase.pathForTab(tab);
+		const url = `${base}${pathWithQuery}`;
+		const pathPrefix = pathWithQuery.split('?')[0]!;
 		const step = `${slug} deep-link ${tab}`;
 		const visited = await visit(ctx, url, scene, step, {
-			pathPrefix: routeCase.pathForTab(tab),
+			pathPrefix,
 		});
 		if (!visited) {
 			if (routeCase.skipReason) {
@@ -65,9 +67,10 @@ export async function walkDrawerTabRoute(
 	const firstTab = routeCase.tabs[0];
 	const lastTab = routeCase.tabs[routeCase.tabs.length - 1];
 	if (firstTab && lastTab && firstTab !== lastTab) {
-		const reopenUrl = `${base}${routeCase.pathForTab(lastTab)}`;
+		const reopenPath = routeCase.pathForTab(lastTab);
+		const reopenUrl = `${base}${reopenPath}`;
 		if (await visit(ctx, reopenUrl, scene, `${slug} click navigation setup`, {
-			pathPrefix: routeCase.pathForTab(lastTab),
+			pathPrefix: reopenPath.split('?')[0],
 		}) && await waitForDrawerTabBar(ctx)) {
 			if (await clickDrawerTab(ctx, firstTab as DrawerTabKey) && await waitForUrlTab(ctx, firstTab)) {
 				reporter.log(scene, `${slug} click to ${firstTab}`, 'pass');

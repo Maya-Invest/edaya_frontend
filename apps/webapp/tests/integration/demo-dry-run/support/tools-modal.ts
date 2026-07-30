@@ -18,6 +18,33 @@ export async function openTimetableGenerationModal(ctx: DemoContext): Promise<bo
 		.catch(() => false);
 }
 
+export async function openTimetablePublishModal(ctx: DemoContext): Promise<boolean> {
+	const tool = ctx.page.getByTestId('timetable-planning-tool');
+	if (!(await tool.isVisible({ timeout: 15_000 }).catch(() => false))) {
+		return false;
+	}
+	const action = ctx.page.getByTestId('timetable-publish-action');
+	if (!(await action.isVisible({ timeout: 5_000 }).catch(() => false))) {
+		return false;
+	}
+	const deadline = Date.now() + 20_000;
+	while (Date.now() < deadline) {
+		if (await action.isEnabled().catch(() => false)) {
+			break;
+		}
+		await ctx.page.waitForTimeout(250);
+	}
+	if (!(await action.isEnabled().catch(() => false))) {
+		return false;
+	}
+	await action.click();
+	return ctx.page
+		.getByTestId('form-modal')
+		.waitFor({ state: 'visible', timeout: 15_000 })
+		.then(() => true)
+		.catch(() => false);
+}
+
 export async function waitForTimetableGenerationModal(ctx: DemoContext, timeoutMs = 15_000): Promise<boolean> {
 	return ctx.page
 		.getByTestId('form-modal')

@@ -1,11 +1,12 @@
 import {
 	closeTimetableGenerationModal,
 	openTimetableGenerationModal,
+	openTimetablePublishModal,
 } from '../support/tools-modal';
 import type { DemoContext } from '../support/types';
 import { visit } from '../support/visit';
 
-/** Tools hub timetable generation modal open/close (state-based, not URL-backed). */
+/** Tools hub timetable generation + publish modals (state-based, not URL-backed). */
 export async function runToolsModalsScene(ctx: DemoContext): Promise<void> {
 	const scene = 'DT';
 	const { base, reporter, shot, page } = ctx;
@@ -43,10 +44,15 @@ export async function runToolsModalsScene(ctx: DemoContext): Promise<void> {
 		await shot('DT-4-close');
 	}
 
-	reporter.log(
-		scene,
-		'5 Publish modal',
-		'skip',
-		'SchoolTimetablePublishModal not mounted in Tools hub',
-	);
+	if (await openTimetablePublishModal(ctx)) {
+		reporter.log(scene, '5 Publish modal', 'pass');
+		if (!(await closeTimetableGenerationModal(ctx))) {
+			reporter.log(scene, '5 Publish modal close', 'fail', 'Publish modal still visible');
+			await shot('DT-5-publish-close');
+		}
+	}
+	else {
+		reporter.log(scene, '5 Publish modal', 'fail', 'Publish form-modal not found');
+		await shot('DT-5-publish-modal');
+	}
 }
