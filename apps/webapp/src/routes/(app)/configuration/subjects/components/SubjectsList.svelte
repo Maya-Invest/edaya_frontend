@@ -149,7 +149,8 @@
 
 	<div class="space-y-8">
 		{#each visibleGroups as g (g.key)}
-			{@const totalHours = g.items.reduce((sum, s) => sum + s.hoursPerWeek, 0)}
+			{@const totalHours = g.items.reduce((sum, s) => sum + (s.hoursPerWeek ?? 0), 0)}
+			{@const hoursLabel = totalHours > 0 ? $t('subjects.hoursPerWeek', { h: totalHours }) : '—'}
 			{@const emphasize = selectedGradeLevelId !== 'all'}
 			<section
 				id={`subject-level-${g.key}`}
@@ -176,7 +177,7 @@
 						</span>
 					</div>
 					<div class="text-xs text-muted-foreground">
-						<span class="font-mono tabular-nums">{$t('subjects.hoursPerWeek', { h: totalHours })}</span>
+						<span class="font-mono tabular-nums">{hoursLabel}</span>
 					</div>
 				</div>
 

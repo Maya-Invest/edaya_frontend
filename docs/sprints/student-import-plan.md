@@ -224,7 +224,7 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 - [x] 19.1 — Template : colonne `niveau` (remplace `classe`) + catalogue import
 - [x] 19.2 — Validator : résolution `niveau` → `gradeLevelId` ; classes du niveau requises
 - [x] 19.3 — Runner : `subjects.save` + `offerSubjectToGradeLevel` (`create-subject-for-grade-level.ts`)
-- [ ] 19.4 — Sync chapitres catalogue : `assignMatterToGradeLevelSubject` (hors import batch)
+- [x] 19.4 — Sync chapitres catalogue : `assignMatterToGradeLevelSubject` (hors import batch)
 - [x] 19.5 — Import chapitres révisé : colonnes `niveau` **+** `matiere`
 - [x] 19.6 — Tests subjects/chapters mis à jour
 
@@ -234,8 +234,8 @@ Allow school admins to bulk-import school data from spreadsheets without backend
 
 - [ ] 20.1 — Uniformiser UI **Configuration → Catalogue des matières** (specs autres écrans)
 - [ ] 20.2 — Bouton **« Ajouter une matière »** au catalogue (par niveau)
-- [ ] 20.3 — Bouton **« Ajouter un chapitre »** au catalogue → sync classes du niveau
-- [ ] 20.4 — Vue **Classes → Leçons** : miroir chapitres catalogue (pas cahier de suivi seul)
+- [x] 20.3 — Bouton **« Ajouter un chapitre »** au catalogue → sync classes du niveau
+- [x] 20.4 — Vue **Classes → Leçons** : miroir chapitres catalogue (pas cahier de suivi seul)
 - [ ] 20.5 — Retirer toute affectation prof du panneau catalogue (config pure)
 
 ---
@@ -1105,7 +1105,7 @@ await client.commands.offerSubjectToGradeLevel({
 | 19.1 | Template + catalogue : colonne `niveau`                            | [x]    |
 | 19.2 | Validator : `resolveImportGradeLevel` + classes du niveau          | [x]    |
 | 19.3 | Runner : `createSubjectForGradeLevel` → `offerSubjectToGradeLevel` | [x]    |
-| 19.4 | Catalogue UI : chapitres via `assignMatterToGradeLevelSubject`     | [ ]    |
+| 19.4 | Catalogue UI : chapitres via `assignMatterToGradeLevelSubject`     | [x]    |
 | 19.5 | Import chapitres : colonnes `niveau` + `matiere`                   | [x]    |
 | 19.6 | Unit tests subjects + chapters                                     | [x]    |
 
@@ -1133,8 +1133,8 @@ await client.commands.offerSubjectToGradeLevel({
 | ---- | --------------------------------------------------------------- | ------ |
 | 20.1 | Uniformiser UI catalogue (aligner autres écrans config)         | [ ]    |
 | 20.2 | Bouton **« Ajouter une matière »** (par niveau)                 | [ ]    |
-| 20.3 | Bouton **« Ajouter un chapitre »** + sync classes               | [ ]    |
-| 20.4 | Vue Leçons : afficher chapitres synchronisés (pas logbook seul) | [ ]    |
+| 20.3 | Bouton **« Ajouter un chapitre »** + sync classes               | [x]    |
+| 20.4 | Vue Leçons : afficher chapitres synchronisés (pas logbook seul) | [x]    |
 | 20.5 | Retirer affectation prof du panneau catalogue                   | [ ]    |
 
 
@@ -1502,7 +1502,7 @@ await client.commands.updateStudentProfile({
 - [x] Phase 15 — Paiements batch actif (tests unitaires 15.6 ✅)
 - [x] Phase 18.3 — Affectation enseignant auto à l'import (`classe` + matières)
 - [x] Phase 16.6 — Rafraîchir shell classes avant validation élèves
-- [ ] Phase 19.4 — Sync chapitres catalogue (`assignMatterToGradeLevelSubject`)
+- [x] Phase 19.4 — Sync chapitres catalogue (`assignMatterToGradeLevelSubject`)
 - [ ] Phase 20 — Catalogue matières UI (boutons ajout, miroir Leçons)
 - [x] Tests `tests/lib/import/payments/`
 - [x] C12 — codes identité (impl + unit tests)

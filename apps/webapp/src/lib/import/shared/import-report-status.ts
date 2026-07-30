@@ -18,7 +18,11 @@ export interface BuildImportReportStatusInput {
 	importFailedByRowIndex?: ReadonlyMap<number, string>;
 	importWarningByRowIndex?: ReadonlyMap<number, string>;
 	phase: 'validate' | 'execute';
-	formatIssueMessage: (issue: ImportReportIssueLike & { messageKey?: string }) => string;
+	formatIssueMessage: (issue: ImportReportIssueLike & {
+		messageKey: string;
+		messageParams?: Record<string, string | number>;
+		suggestions?: string[];
+	}) => string;
 	issuesWithMessages: readonly (ImportReportIssueLike & {
 		messageKey: string;
 		messageParams?: Record<string, string | number>;

@@ -21,7 +21,7 @@
 	import { getFeesPageState } from '../fees-page.svelte';
 	import FeeFormModal from './FeeFormModal.svelte';
 
-	const FEE_CATEGORIES: Fee['category'][] = ['Tuition', 'Transport', 'Meals', 'Activities', 'Materials'];
+	const FEE_CATEGORIES: Fee['category'][] = ['Tuition', 'Transport', 'Materials', 'Other'];
 
 	const feesPage = getFeesPageState();
 	const fees = $derived(feesPage.fees);
@@ -66,8 +66,8 @@
 		...FEE_CATEGORIES.map(cat => ({ value: cat, label: $t(`feeCat.${cat}`) })),
 	]);
 
-	function periodKey(fee: Fee): string {
-		const lower = fee.period.toLowerCase();
+	function periodKey(period: NonNullable<Fee['period']>): string {
+		const lower = period.toLowerCase();
 		return lower === 'year' || lower === 'term' || lower === 'month' ? lower : 'term';
 	}
 
@@ -180,7 +180,9 @@
 							{$t(`feeCat.${fee.category}`)}
 						</div>
 						<div class="col-span-2 text-sm text-foreground/70">
-							{$t(`feePeriod.${periodKey(fee)}`)}
+							{fee.period
+								? $t(`feePeriod.${periodKey(fee.period)}`)
+								: $t('fee.installmentCount', { n: fee.installmentCount ?? 0 })}
 						</div>
 						<div class="col-span-2 text-right font-display text-sm font-semibold tabular-nums">
 							{fee.amount.toLocaleString()} FCFA

@@ -7,7 +7,6 @@ export interface SaveTeacherInput {
 	teacherId: string;
 	firstName: string;
 	lastName: string;
-	code?: string;
 	email?: string;
 	phone?: string;
 	subjectId?: string | null;
@@ -19,14 +18,12 @@ export async function saveTeacher(
 ): Promise<void> {
 	const email = input.email?.trim() ?? '';
 	const phone = input.phone?.trim() ?? '';
-	const code = input.code?.trim() ?? '';
 
 	await client.entities.teachers.save({
 		id: input.teacherId,
 		schoolId: input.schoolId,
 		firstName: input.firstName.trim(),
 		lastName: input.lastName.trim(),
-		code: code || null,
 		email: email || null,
 		phone: phone || null,
 		subjectId: input.subjectId ?? null,

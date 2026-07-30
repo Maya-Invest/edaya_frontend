@@ -33,9 +33,8 @@ export async function createSubjectForClass(
 	const createdAt = input.createdAt ?? new Date().toISOString();
 	const code = input.code?.trim() ?? '';
 
-	await client.entities.subjects.save({
+	await client.commands.configureSubject({
 		id: input.subjectId,
-		schoolId: input.schoolId,
 		name: input.name.trim(),
 		category: input.category ?? 'Scientifique',
 		color: input.color ?? 'mint',

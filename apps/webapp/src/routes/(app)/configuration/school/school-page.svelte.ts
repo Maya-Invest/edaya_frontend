@@ -83,8 +83,8 @@ export class SchoolPageState {
 
 		const result = await runSchoolRouteMutation({
 			request: async () => {
-				const saved = await client.entities.schools.save({
-					id: school.id,
+				const saved = await client.commands.updateSchoolConfiguration({
+					schoolId: school.id,
 					name: patch.name,
 					timeZone: patch.timeZone,
 					city: patch.city,

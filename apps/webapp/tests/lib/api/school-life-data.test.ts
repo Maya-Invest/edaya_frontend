@@ -92,11 +92,11 @@ describe('school-life calendar mapping', () => {
 		);
 	});
 
-	it('falls back to kind label only when description is missing', () => {
+	it('falls back to empty string when description is missing', () => {
 		expect(mapCalendarEventDescription({
 			...seedCalendarEvents[1],
 			description: undefined,
-		})).toBe('Événement scolaire.');
+		})).toBe('');
 	});
 
 	it('maps calendar events for the school calendar UI', () => {
@@ -172,13 +172,13 @@ describe('school-life calendar mapping', () => {
 describe('school-life incident mapping', () => {
 	it('derives category and severity from API fields without per-id tables', () => {
 		expect(mapIncidentCategory(seedIncidents[0])).toBe('Tardiness');
-		expect(mapIncidentSeverity(seedIncidents[0], 'Tardiness')).toBe('low');
+		expect(mapIncidentSeverity(seedIncidents[0])).toBe('low');
 
-		expect(mapIncidentCategory(seedIncidents[1])).toBe('Behavior');
-		expect(mapIncidentSeverity(seedIncidents[1], 'Behavior')).toBe('medium');
+		expect(mapIncidentCategory(seedIncidents[1])).toBe('Tardiness');
+		expect(mapIncidentSeverity(seedIncidents[1])).toBe('low');
 
 		expect(mapIncidentCategory(seedIncidents[2])).toBe('Conflict');
-		expect(mapIncidentSeverity(seedIncidents[2], 'Conflict')).toBe('medium');
+		expect(mapIncidentSeverity(seedIncidents[2])).toBe('medium');
 	});
 
 	it('maps seeded incidents for the school events UI', () => {
@@ -194,8 +194,8 @@ describe('school-life incident mapping', () => {
 		});
 		expect(incidents.find(entry => entry.id === 'i2')).toMatchObject({
 			studentId: 's2',
-			category: 'Behavior',
-			severity: 'medium',
+			category: 'Tardiness',
+			severity: 'low',
 		});
 		expect(incidents.find(entry => entry.id === 'i3')).toMatchObject({
 			studentId: 's3',

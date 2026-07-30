@@ -206,7 +206,9 @@
 				<span
 					class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
 				>
-					{$t(relationKey[guardian.relation])}
+					{relationKey[guardian.relation]
+						? $t(relationKey[guardian.relation]!)
+						: guardian.relation}
 				</span>
 			</div>
 			<div class={cn(ctx.selectionMode ? 'col-span-2' : 'col-span-3')}>

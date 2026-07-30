@@ -1,7 +1,7 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { ClassSubjectInstructorSources } from '$lib/api/teacher-display';
-import type { Subject, SubjectCategory } from '$lib/types/school';
+import type { CatalogChapter, Subject, SubjectCategory } from '$lib/types/school';
 import type { EntityQuery } from '@maya-invest/edaya-api-client';
 import {
 	classGroupScope,
@@ -86,7 +86,7 @@ function hoursPerWeekForGradeLevelSubject(
 	subject: SubjectRaw,
 	gradeLevelSubject: GradeLevelSubjectRaw,
 	subjectMattersRaw: SubjectMatterRaw[],
-): number {
+): number | null {
 	if (typeof gradeLevelSubject.periodsPerWeek === 'number' && gradeLevelSubject.periodsPerWeek > 0) {
 		return gradeLevelSubject.periodsPerWeek;
 	}
@@ -99,23 +99,18 @@ function hoursPerWeekForGradeLevelSubject(
 		return estimatedHours;
 	}
 
-	const coefficient = gradeLevelSubject.coefficient ?? subject.defaultCoefficient;
-	if (typeof coefficient === 'number' && coefficient > 0) {
-		return Math.max(1, Math.round(coefficient * 2));
-	}
-
-	return 3;
+	return null;
 }
 
 function catalogSubjectKey(gradeLevelId: string, subjectName: string): string {
 	return `${gradeLevelId}:${subjectName.trim().toLowerCase()}`;
 }
 
-export function subjectMattersLinkedToGradeLevelSubject(
+export function subjectMattersLinkedToGradeLevelSubject<T extends { id: string; sequenceOrder: number }>(
 	gradeLevelSubjectId: string,
-	subjectMattersRaw: readonly SubjectMatterRaw[],
+	subjectMattersRaw: readonly T[],
 	gradeLevelSubjectMattersRaw: readonly GradeLevelSubjectMatterRaw[],
-): SubjectMatterRaw[] {
+): T[] {
 	const linkedMatterIds = new Set(
 		gradeLevelSubjectMattersRaw
 			.filter(link => link.gradeLevelSubjectId === gradeLevelSubjectId)
@@ -127,12 +122,30 @@ export function subjectMattersLinkedToGradeLevelSubject(
 		.sort((left, right) => left.sequenceOrder - right.sequenceOrder);
 }
 
-function catalogChapterNamesForGradeLevelSubject(
+export function catalogChaptersForGradeLevelSubject(
 	gradeLevelSubjectId: string,
-	subjectMattersRaw: SubjectMatterRaw[],
+	subjectMattersRaw: readonly SubjectMatterRaw[],
+	gradeLevelSubjectMattersRaw: readonly GradeLevelSubjectMatterRaw[],
+): CatalogChapter[] {
+	return subjectMattersLinkedToGradeLevelSubject(
+		gradeLevelSubjectId,
+		subjectMattersRaw,
+		gradeLevelSubjectMattersRaw,
+	).map(matter => ({
+		id: matter.id,
+		name: matter.name,
+		description: matter.description ?? null,
+		sequenceOrder: matter.sequenceOrder,
+		estimatedHours: matter.estimatedHours ?? null,
+	}));
+}
+
+export function catalogChapterNamesForGradeLevelSubject(
+	gradeLevelSubjectId: string,
+	subjectMattersRaw: readonly SubjectMatterRaw[],
 	gradeLevelSubjectMattersRaw: readonly GradeLevelSubjectMatterRaw[],
 ): string[] {
-	return subjectMattersLinkedToGradeLevelSubject(
+	return catalogChaptersForGradeLevelSubject(
 		gradeLevelSubjectId,
 		subjectMattersRaw,
 		gradeLevelSubjectMattersRaw,
@@ -143,11 +156,12 @@ function mapCatalogSubjectEntry(input: {
 	id: string;
 	gradeLevelId: string;
 	subject: SubjectRaw;
-	hoursPerWeek: number;
+	hoursPerWeek: number | null;
+	gradeLevelSubject?: GradeLevelSubjectRaw;
 	subjectMattersRaw: SubjectMatterRaw[];
 	gradeLevelSubjectMattersRaw: readonly GradeLevelSubjectMatterRaw[];
 }): Subject {
-	const catalogChapters = catalogChapterNamesForGradeLevelSubject(
+	const catalogChapters = catalogChaptersForGradeLevelSubject(
 		input.id,
 		input.subjectMattersRaw,
 		input.gradeLevelSubjectMattersRaw,
@@ -165,8 +179,17 @@ function mapCatalogSubjectEntry(input: {
 		teacher: '',
 		hoursPerWeek: input.hoursPerWeek,
 		color: subjectColor(input.subject),
-		description: buildSubjectChapterSummary(catalogChapters) || descriptionForSubject(input.subject, linkedMatters),
+		description: buildSubjectChapterSummary(catalogChapters.map(c => c.name))
+			|| descriptionForSubject(input.subject, linkedMatters),
 		category: subjectCategory(input.subject),
+		code: input.subject.code ?? null,
+		shortName: input.subject.shortName ?? null,
+		defaultCoefficient: input.subject.defaultCoefficient
+			?? input.gradeLevelSubject?.coefficient
+			?? null,
+		periodsPerWeek: input.gradeLevelSubject?.periodsPerWeek ?? null,
+		minPeriodSpan: input.gradeLevelSubject?.minPeriodSpan ?? null,
+		maxPeriodSpan: input.gradeLevelSubject?.maxPeriodSpan ?? null,
 		catalogChapters,
 	};
 }
@@ -223,6 +246,7 @@ export function mapCatalogSubjects(
 				gradeLevelId: gradeLevelSubject.gradeLevelId,
 				subject,
 				hoursPerWeek: hoursPerWeekForGradeLevelSubject(subject, gradeLevelSubject, sources.subjectMattersRaw),
+				gradeLevelSubject,
 				subjectMattersRaw: sources.subjectMattersRaw,
 				gradeLevelSubjectMattersRaw: sources.gradeLevelSubjectMattersRaw,
 			}));
@@ -275,7 +299,11 @@ function hoursPerWeekForSubject(
 	subject: SubjectRaw,
 	classSubject: ClassSubjectRaw,
 	subjectMattersRaw: SubjectMatterRaw[],
-): number {
+): number | null {
+	if (typeof classSubject.periodsPerWeek === 'number' && classSubject.periodsPerWeek > 0) {
+		return classSubject.periodsPerWeek;
+	}
+
 	const estimatedHours = subjectMattersRaw
 		.filter(matter => matter.subjectId === subject.id)
 		.reduce((total, matter) => total + (matter.estimatedHours ?? 0), 0);
@@ -284,12 +312,7 @@ function hoursPerWeekForSubject(
 		return estimatedHours;
 	}
 
-	const coefficient = classSubject.coefficient ?? subject.defaultCoefficient;
-	if (typeof coefficient === 'number' && coefficient > 0) {
-		return Math.max(1, Math.round(coefficient * 2));
-	}
-
-	return 3;
+	return null;
 }
 
 function descriptionForSubject(
@@ -369,31 +392,36 @@ export function mapClassSubjects(
 ): Subject[] {
 	const subjectById = new Map(sources.subjectsRaw.map(subject => [subject.id, subject]));
 
-	return sources.classSubjectsRaw
-		.filter(classSubject => classSubject.classGroupId === classGroupId)
-		.map((classSubject) => {
-			const subject = subjectById.get(classSubject.subjectId);
-			if (!subject) {
-				return null;
-			}
-
-			const teacher = teacherNameForClassSubjectFromSources(
-				classSubject.id,
-				sources,
-			);
-			return {
-				id: classSubject.id,
-				classId: classSubject.classGroupId,
-				name: subject.name,
-				teacher,
-				hoursPerWeek: hoursPerWeekForSubject(subject, classSubject, sources.subjectMattersRaw),
-				color: subjectColor(subject),
-				description: teacher,
-				category: subjectCategory(subject),
-			} satisfies Subject;
-		})
-		.filter((subject): subject is Subject => subject !== null)
-		.sort((left, right) => left.name.localeCompare(right.name, 'fr'));
+	const mapped: Subject[] = [];
+	for (const classSubject of sources.classSubjectsRaw) {
+		if (classSubject.classGroupId !== classGroupId) {
+			continue;
+		}
+		const subject = subjectById.get(classSubject.subjectId);
+		if (!subject) {
+			continue;
+		}
+		const teacher = teacherNameForClassSubjectFromSources(classSubject.id, sources);
+		mapped.push({
+			id: classSubject.id,
+			classId: classSubject.classGroupId,
+			name: subject.name,
+			teacher,
+			hoursPerWeek: hoursPerWeekForSubject(subject, classSubject, sources.subjectMattersRaw),
+			color: subjectColor(subject),
+			description: teacher,
+			category: subjectCategory(subject),
+			code: subject.code ?? null,
+			shortName: subject.shortName ?? null,
+			defaultCoefficient: classSubject.coefficient ?? subject.defaultCoefficient ?? null,
+			isOffered: classSubject.isOffered,
+			completedPercentage: classSubject.completedPercentage ?? null,
+			periodsPerWeek: classSubject.periodsPerWeek ?? null,
+			minPeriodSpan: classSubject.minPeriodSpan ?? null,
+			maxPeriodSpan: classSubject.maxPeriodSpan ?? null,
+		});
+	}
+	return mapped.sort((left, right) => left.name.localeCompare(right.name, 'fr'));
 }
 
 export function mapAllClassSubjects(sources: ClassSubjectsSources): Subject[] {

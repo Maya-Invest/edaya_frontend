@@ -43,7 +43,7 @@ const FIXTURE_TEMPLATES: StructureTemplateDefinition[] = [
 			level('ci-college', '3EME', 'Troisième', 4),
 		],
 		subjects: [{ code: 'FR', shortName: 'Français', domain: 'Langues', defaultCoefficient: 3 }],
-		curriculum: [{ levelCode: '6EME', subjectCode: 'FR', coefficient: 3, matters: ['Lecture'] }],
+		curriculum: [{ levelCodes: ['6EME'], subjectCode: 'FR', coefficient: 3, matters: ['Lecture'] }],
 	},
 	{
 		id: 'ci-lycee',
@@ -62,7 +62,7 @@ const FIXTURE_TEMPLATES: StructureTemplateDefinition[] = [
 			level('ci-lycee', 'TLED', 'Terminale D', 8),
 		],
 		subjects: [{ code: 'FR', shortName: 'Français', domain: 'Langues', defaultCoefficient: 3 }],
-		curriculum: [{ levelCode: '1ERA', subjectCode: 'FR', coefficient: 3, matters: ['Dissertation'] }],
+		curriculum: [{ levelCodes: ['1ERA'], subjectCode: 'FR', coefficient: 3, matters: ['Dissertation'] }],
 	},
 ];
 

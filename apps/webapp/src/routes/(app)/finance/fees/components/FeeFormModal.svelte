@@ -8,8 +8,8 @@
 	import { get } from 'svelte/store';
 	import { getFeesPageState } from '../fees-page.svelte';
 
-	const FEE_CATEGORIES: Fee['category'][] = ['Tuition', 'Transport', 'Meals', 'Activities', 'Materials'];
-	const FEE_PERIODS: Fee['period'][] = ['Year', 'Term', 'Month'];
+	const FEE_CATEGORIES: Fee['category'][] = ['Tuition', 'Transport', 'Materials', 'Other'];
+	const FEE_PERIODS: NonNullable<Fee['period']>[] = ['Year', 'Term', 'Month'];
 
 	let {
 		fee,
@@ -27,7 +27,7 @@
 	let name = $state('');
 	let category = $state<Fee['category']>('Tuition');
 	let amount = $state('0');
-	let period = $state<Fee['period']>('Term');
+	let period = $state<NonNullable<Fee['period']>>('Term');
 
 	const isEdit = $derived(fee !== undefined);
 	const numericAmount = $derived(Number.parseFloat(amount));
@@ -38,7 +38,7 @@
 			name = fee.name;
 			category = fee.category;
 			amount = String(fee.amount);
-			period = fee.period;
+			period = fee.period ?? 'Term';
 		}
 		else {
 			name = '';
@@ -133,7 +133,7 @@
 				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 					{$t('fee.period')}
 				</Label>
-				<Select.Root type="single" value={period} onValueChange={v => v && (period = v as Fee['period'])}>
+				<Select.Root type="single" value={period} onValueChange={v => v && (period = v as NonNullable<Fee['period']>)}>
 					<Select.Trigger>
 						<Select.Value>
 							{$t(`feePeriod.${period}`)}

@@ -172,15 +172,18 @@ export async function updateScheduleMutation(input: {
 		return false;
 	}
 
-	const result = await runMutation(() => client.entities.schedules.save({
-		...existing,
-		title: input.title.trim(),
-		isRecurring: true,
-		dayOfWeek: PLANNING_DAY_TO_SCHEDULE[input.day],
-		startTime: input.startTime,
-		endTime: input.endTime,
-		classSubjectId: input.scheduleKind === 'lesson' ? (input.classSubjectId ?? null) : null,
-		activityId: input.scheduleKind === 'activity' ? (input.activityId ?? null) : null,
+	const result = await runMutation(() => client.commands.saveSchedule({
+		schedule: {
+			...existing,
+			title: input.title.trim(),
+			isRecurring: true,
+			dayOfWeek: PLANNING_DAY_TO_SCHEDULE[input.day],
+			startTime: input.startTime,
+			endTime: input.endTime,
+			classSubjectId: input.scheduleKind === 'lesson' ? (input.classSubjectId ?? null) : null,
+			activityId: input.scheduleKind === 'activity' ? (input.activityId ?? null) : null,
+		},
+		materialize: false,
 	}), {
 		successMessage: input.successMessage,
 		versionKeys: ['planning'],

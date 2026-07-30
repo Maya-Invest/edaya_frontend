@@ -25,8 +25,8 @@ export async function updateSchoolSettingsMutation(
 	const current = options?.current;
 
 	const result = await runMutation(
-		() => client.entities.schools.save({
-			id: input.id,
+		() => client.commands.updateSchoolConfiguration({
+			schoolId: input.id,
 			name: input.name.trim(),
 			timeZone: input.timeZone.trim(),
 			city: input.city?.trim() || null,

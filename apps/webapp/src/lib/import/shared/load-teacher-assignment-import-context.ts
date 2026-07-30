@@ -35,7 +35,8 @@ export async function loadTeacherAssignmentImportTeachers(
 		);
 		const rows = page ?? [];
 		for (const teacher of rows) {
-			const code = typeof teacher.code === 'string' ? teacher.code.trim() : '';
+			// API Teacher has no separate `code`; import keys resolve against entity id.
+			const code = typeof teacher.id === 'string' ? teacher.id.trim() : '';
 			if (!code)
 				continue;
 			out.push({

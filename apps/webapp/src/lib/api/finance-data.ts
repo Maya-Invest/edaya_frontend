@@ -42,35 +42,23 @@ const FEE_CATEGORY_LABELS: Record<string, Fee['category']> = {
 	tuition: 'Tuition',
 	transport: 'Transport',
 	uniform: 'Materials',
-	other: 'Activities',
+	other: 'Other',
 };
 
 function feeCategoryLabel(fee: FeeRaw): Fee['category'] {
-	if (fee.category === 'other') {
-		const name = fee.name.toLowerCase();
-		if (name.includes('cafeteria') || name.includes('meal')) {
-			return 'Meals';
-		}
-		if (name.includes('textbook') || name.includes('material')) {
-			return 'Materials';
-		}
-		if (name.includes('sport') || name.includes('club')) {
-			return 'Activities';
-		}
-		return 'Activities';
-	}
-
-	return FEE_CATEGORY_LABELS[fee.category] ?? 'Activities';
+	return FEE_CATEGORY_LABELS[fee.category] ?? 'Other';
 }
 
-function feePeriodLabel(fee: FeeRaw): Fee['period'] {
-	if (fee.installments.length === 0) {
-		return 'Month';
-	}
-	if (fee.installments.length === 1) {
-		return 'Term';
-	}
-	return 'Year';
+export function mapFees(feesRaw: FeeRaw[]): Fee[] {
+	return feesRaw
+		.map(fee => ({
+			id: fee.id,
+			name: fee.name,
+			category: feeCategoryLabel(fee),
+			amount: moneyAmount(fee.defaultAmount),
+			installmentCount: fee.installments.length,
+		}))
+		.sort((left, right) => left.name.localeCompare(right.name, 'fr'));
 }
 
 function mapBillingStatus(status: StudentFeeRaw['status']): StudentBilling['status'] {
@@ -153,16 +141,24 @@ export async function fetchFinanceSources(
 	};
 }
 
-export function mapFees(feesRaw: FeeRaw[]): Fee[] {
-	return feesRaw
-		.map(fee => ({
-			id: fee.id,
-			name: fee.name,
-			category: feeCategoryLabel(fee),
-			amount: moneyAmount(fee.defaultAmount),
-			period: feePeriodLabel(fee),
+export interface FinancePayment {
+	id: string;
+	studentFeeId: string;
+	amount: number;
+	paymentDate: string;
+	status: string;
+}
+
+export function mapPayments(paymentsRaw: PaymentRaw[]): FinancePayment[] {
+	return paymentsRaw
+		.map(payment => ({
+			id: payment.id,
+			studentFeeId: payment.studentFeeId,
+			amount: moneyAmount(payment.amount),
+			paymentDate: formatDate(payment.paymentDate),
+			status: String((payment as { status?: string }).status ?? 'recorded'),
 		}))
-		.sort((left, right) => left.name.localeCompare(right.name, 'fr'));
+		.sort((left, right) => right.paymentDate.localeCompare(left.paymentDate));
 }
 
 export function mapStudentBilling(studentFeesRaw: StudentFeeRaw[]): StudentBilling[] {
@@ -183,7 +179,7 @@ export function mapStudentBilling(studentFeesRaw: StudentFeeRaw[]): StudentBilli
 export async function loadFinanceData(
 	client: SchoolClient,
 	scope: { schoolId: string; academicYearId: string },
-): Promise<{ fees: Fee[]; billing: StudentBilling[]; students: Student[] }> {
+): Promise<{ fees: Fee[]; billing: StudentBilling[]; students: Student[]; payments: FinancePayment[] }> {
 	const sources = await fetchFinanceSources(client, scope);
 	const { students } = mapPeopleData({
 		studentsRaw: sources.studentsRaw,
@@ -195,5 +191,6 @@ export async function loadFinanceData(
 		fees: mapFees(sources.feesRaw),
 		billing: mapStudentBilling(sources.studentFeesRaw),
 		students,
+		payments: mapPayments(sources.paymentsRaw),
 	};
 }

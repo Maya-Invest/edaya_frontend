@@ -83,7 +83,12 @@
 	</header>
 
 	<p class="text-xs text-muted-foreground">
-		{$t('onboarding.complete.summaryCounts', summary)}
+		{$t('onboarding.complete.summaryCounts', {
+			levelCount: summary.levelCount,
+			classCount: summary.classCount,
+			subjectCount: summary.subjectCount,
+			inviteCount: summary.inviteCount,
+		})}
 	</p>
 
 	{#if catalogStatus === 'loading'}

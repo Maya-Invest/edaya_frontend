@@ -43,7 +43,7 @@ export class SchoolStudentsState {
 			case 'average':
 				return [...filtered].sort((left, right) => right.average - left.average || left.name.localeCompare(right.name, 'fr'));
 			case 'attendance':
-				return [...filtered].sort((left, right) => right.attendance - left.attendance || left.name.localeCompare(right.name, 'fr'));
+				return [...filtered].sort((left, right) => (right.attendance ?? -1) - (left.attendance ?? -1) || left.name.localeCompare(right.name, 'fr'));
 			case 'status':
 				return [...filtered].sort((left, right) => left.status.localeCompare(right.status, 'fr') || left.name.localeCompare(right.name, 'fr'));
 			default:

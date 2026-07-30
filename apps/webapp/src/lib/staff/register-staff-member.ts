@@ -8,7 +8,6 @@ export interface RegisterStaffMemberInput {
 	staffId: string;
 	firstName: string;
 	lastName: string;
-	code?: string;
 	email?: string;
 	sendAccountInvitation?: boolean;
 	createdAt?: string;
@@ -20,14 +19,12 @@ export async function registerStaffMember(
 ): Promise<void> {
 	const now = input.createdAt ?? new Date().toISOString();
 	const email = input.email?.trim() ?? '';
-	const code = input.code?.trim() ?? '';
 
 	await client.commands.registerStaffMember({
 		id: input.staffId,
 		schoolId: input.schoolId,
 		firstName: input.firstName.trim(),
 		lastName: input.lastName.trim(),
-		code: code || null,
 		email: email || null,
 		accountKind: 'human',
 		isActive: true,

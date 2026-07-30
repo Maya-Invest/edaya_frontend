@@ -9,7 +9,7 @@
 
 	const { label, subtitle, items }: { label: string; subtitle: string; items: Subject[] } = $props();
 
-	const totalHours = $derived(items.reduce((sum, subject) => sum + subject.hoursPerWeek, 0));
+	const totalHours = $derived(items.reduce((sum, subject) => sum + (subject.hoursPerWeek ?? 0), 0));
 
 	function openSubject(subject: Subject) {
 		const path = detailHref.configSubject(subject.id);

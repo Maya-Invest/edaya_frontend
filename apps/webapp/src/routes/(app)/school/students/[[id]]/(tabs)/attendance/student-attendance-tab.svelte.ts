@@ -143,7 +143,7 @@ export class StudentAttendanceTabState {
 				this.appendAbsence(optimisticAbsence);
 				if (previous) {
 					page.patchStudent(input.studentId, {
-						attendance: Math.max(0, Math.round((previous.attendance - 1) * 10) / 10),
+						attendance: Math.max(0, Math.round(((previous.attendance ?? 0) - 1) * 10) / 10),
 					});
 				}
 			},

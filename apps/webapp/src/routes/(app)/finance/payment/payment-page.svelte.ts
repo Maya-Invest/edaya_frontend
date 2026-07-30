@@ -36,6 +36,10 @@ export class PaymentPageState {
 		return this.slice?.students ?? [];
 	}
 
+	get payments() {
+		return this.slice?.payments ?? [];
+	}
+
 	queryListPage() {
 		return queryPaymentListPage(this);
 	}

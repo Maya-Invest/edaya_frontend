@@ -224,11 +224,14 @@ export async function reschedulePlanningSlotMutation(input: {
 		if (input.scheduleId) {
 			const schedule = await client.entities.schedules.get(input.scheduleId);
 			if (!schedule.isRecurring) {
-				await client.entities.schedules.save({
-					...schedule,
-					startTime: input.startTime,
-					endTime: input.endTime,
-					specificDate: instants.startsAt.toISOString().slice(0, 10),
+				await client.commands.saveSchedule({
+					schedule: {
+						...schedule,
+						startTime: input.startTime,
+						endTime: input.endTime,
+						specificDate: instants.startsAt.toISOString().slice(0, 10),
+					},
+					materialize: false,
 				});
 			}
 		}

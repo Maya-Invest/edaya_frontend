@@ -39,13 +39,6 @@ const CALENDAR_KIND_TO_TYPE: Record<string, SchoolYearEvent['type']> = {
 	event: 'ceremony',
 };
 
-const CALENDAR_KIND_FALLBACK_DESCRIPTION: Record<string, string> = {
-	holiday: 'Jour férié.',
-	break: 'Vacances scolaires.',
-	other: 'Fermeture ou arrêt de cours.',
-	event: 'Événement scolaire.',
-};
-
 export function mapCalendarEventType(kind: string): SchoolYearEvent['type'] {
 	return CALENDAR_KIND_TO_TYPE[kind] ?? 'ceremony';
 }
@@ -55,7 +48,7 @@ export function mapCalendarEventDescription(event: CalendarEventRaw): string {
 		return event.description;
 	}
 
-	return CALENDAR_KIND_FALLBACK_DESCRIPTION[event.kind] ?? CALENDAR_KIND_FALLBACK_DESCRIPTION.event;
+	return '';
 }
 
 function formatDate(value: unknown): string {
@@ -153,44 +146,30 @@ export function mapCalendarEvents(eventsRaw: CalendarEventRaw[]): SchoolYearEven
 		.sort((left, right) => left.date.localeCompare(right.date));
 }
 
-function incidentLabel(incident: IncidentRaw): string {
-	return `${incident.title} ${incident.description}`.toLowerCase();
-}
-
 export function mapIncidentCategory(incident: IncidentRaw): Incident['category'] {
-	const label = incidentLabel(incident);
-
-	if (/tardiness|retard|late/.test(label)) {
-		return 'Tardiness';
+	switch (incident.kind) {
+		case 'positive':
+			return 'Behavior';
+		case 'minor_infraction':
+			return 'Tardiness';
+		case 'major_infraction':
+			return 'Conflict';
+		default:
+			return 'Other';
 	}
-	if (/conflict|argument|dispute|fight/.test(label)) {
-		return 'Conflict';
-	}
-	if (/disruption|behavior|behaviour|discipline|bavard/.test(label)) {
-		return 'Behavior';
-	}
-
-	return 'Other';
 }
 
-export function mapIncidentSeverity(
-	incident: IncidentRaw,
-	category: Incident['category'],
-): Incident['severity'] {
-	if (incident.kind === 'emergency') {
-		return 'high';
+export function mapIncidentSeverity(incident: IncidentRaw): Incident['severity'] {
+	switch (incident.kind) {
+		case 'positive':
+			return 'low';
+		case 'minor_infraction':
+			return 'low';
+		case 'major_infraction':
+			return 'medium';
+		default:
+			return 'high';
 	}
-	if (incident.kind === 'major_infraction') {
-		return 'medium';
-	}
-	if (category === 'Tardiness') {
-		return 'low';
-	}
-	if (category === 'Behavior' || category === 'Conflict') {
-		return 'medium';
-	}
-
-	return 'low';
 }
 
 export function mapIncidents(
@@ -221,8 +200,9 @@ export function mapIncidents(
 				involvedStudentIds,
 				involvedCount: involvedStudentIds.length,
 				date: formatDate(incident.date),
+				kind: incident.kind,
 				category,
-				severity: mapIncidentSeverity(incident, category),
+				severity: mapIncidentSeverity(incident),
 				summary: incident.description,
 				status: incident.status ?? 'open',
 			} satisfies Incident;

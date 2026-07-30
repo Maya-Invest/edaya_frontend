@@ -130,12 +130,17 @@
 	]);
 
 	const statusStyle: Record<Student['status'], string> = {
-		honor: 'bg-secondary text-foreground/80',
 		active: 'bg-secondary text-foreground/70',
+		inactive: 'bg-secondary text-muted-foreground',
+		archived: 'bg-secondary/60 text-muted-foreground',
+	};
+
+	const badgeStyle: Record<NonNullable<Student['academicBadge']>, string> = {
+		honor: 'bg-secondary text-foreground/80',
 		warning: 'bg-highlight-soft text-highlight',
 	};
 
-	const statusKeys = ['all', 'honor', 'active', 'warning'] as const;
+	const statusKeys = ['all', 'active', 'inactive', 'archived'] as const;
 
 	const classFilterGroups = $derived(
 		hierarchy.map(group => ({
@@ -158,6 +163,10 @@
 			label: statusLabel(key),
 		})),
 	);
+
+	function attendanceLabel(attendance: number | null) {
+		return attendance == null ? '—' : `${attendance}%`;
+	}
 
 	function loadMoreStudents() {
 		if (usesFullRoster) {
@@ -209,7 +218,7 @@
 					classGroup?.name ?? student.classId,
 					student.status,
 					student.average.toFixed(1),
-					`${student.attendance}%`,
+					attendanceLabel(student.attendance),
 				];
 			}),
 		]);
@@ -325,7 +334,7 @@
 					/>
 					<div class="min-w-0">
 						<p class="truncate text-sm font-medium">{student.name}</p>
-						<p class="truncate text-xs text-muted-foreground">{student.email}</p>
+						<p class="truncate text-xs text-muted-foreground">{student.email || '—'}</p>
 					</div>
 				</div>
 				<div class="col-span-2 text-sm text-foreground/80">{classGroup?.name}</div>
@@ -333,12 +342,16 @@
 					{student.average.toFixed(1)}
 				</div>
 				<div class="col-span-2">
-					<div class="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
-						<div class="h-full rounded-full bg-accent" style:width="{student.attendance}%"></div>
-					</div>
-					<p class="mt-1 font-mono text-[10px] text-muted-foreground">{student.attendance}%</p>
+					{#if student.attendance == null}
+						<p class="font-mono text-[10px] text-muted-foreground">—</p>
+					{:else}
+						<div class="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+							<div class="h-full rounded-full bg-accent" style:width="{student.attendance}%"></div>
+						</div>
+						<p class="mt-1 font-mono text-[10px] text-muted-foreground">{student.attendance}%</p>
+					{/if}
 				</div>
-				<div class={cn(ctx.selectionMode ? 'col-span-1' : 'col-span-2')}>
+				<div class={cn(ctx.selectionMode ? 'col-span-1' : 'col-span-2', 'flex flex-wrap items-center gap-1')}>
 					<span
 						class={cn(
 							'rounded-full px-2 py-0.5 text-[10px] font-medium',
@@ -347,6 +360,16 @@
 					>
 						{$t(`studentStatus.${student.status}`)}
 					</span>
+					{#if student.academicBadge}
+						<span
+							class={cn(
+								'rounded-full px-2 py-0.5 text-[10px] font-medium',
+								badgeStyle[student.academicBadge],
+							)}
+						>
+							{$t(`studentStatus.${student.academicBadge}`)}
+						</span>
+					{/if}
 				</div>
 				<div class="col-span-1 flex justify-end" role="presentation" onclick={event => event.stopPropagation()}>
 					<RowActionMenu>
@@ -407,21 +430,37 @@
 						{student.average.toFixed(1)}
 					</span>
 				{:else if columnKey === 'attendance'}
-					<div class="min-w-[7rem]">
-						<div class="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
-							<div class="h-full rounded-full bg-accent" style:width="{student.attendance}%"></div>
+					{#if student.attendance == null}
+						<p class="font-mono text-[10px] text-muted-foreground">—</p>
+					{:else}
+						<div class="min-w-[7rem]">
+							<div class="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+								<div class="h-full rounded-full bg-accent" style:width="{student.attendance}%"></div>
+							</div>
+							<p class="mt-1 font-mono text-[10px] text-muted-foreground">{student.attendance}%</p>
 						</div>
-						<p class="mt-1 font-mono text-[10px] text-muted-foreground">{student.attendance}%</p>
-					</div>
+					{/if}
 				{:else if columnKey === 'status'}
-					<span
-						class={cn(
-							'rounded-full px-2 py-0.5 text-[10px] font-medium',
-							statusStyle[student.status],
-						)}
-					>
-						{$t(`studentStatus.${student.status}`)}
-					</span>
+					<div class="flex flex-wrap items-center gap-1">
+						<span
+							class={cn(
+								'rounded-full px-2 py-0.5 text-[10px] font-medium',
+								statusStyle[student.status],
+							)}
+						>
+							{$t(`studentStatus.${student.status}`)}
+						</span>
+						{#if student.academicBadge}
+							<span
+								class={cn(
+									'rounded-full px-2 py-0.5 text-[10px] font-medium',
+									badgeStyle[student.academicBadge],
+								)}
+							>
+								{$t(`studentStatus.${student.academicBadge}`)}
+							</span>
+						{/if}
+					</div>
 				{/if}
 			{/snippet}
 			{#snippet actions(student)}

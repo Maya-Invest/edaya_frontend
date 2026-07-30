@@ -153,6 +153,7 @@ export class StudentIncidentsTabState {
 			involvedStudentIds: [input.studentId],
 			involvedCount: 1,
 			date: incidentDate,
+			kind: input.kind,
 			category: incidentCategoryFromKind(input.kind),
 			severity: incidentSeverityFromKind(input.kind),
 			summary: input.title.trim(),

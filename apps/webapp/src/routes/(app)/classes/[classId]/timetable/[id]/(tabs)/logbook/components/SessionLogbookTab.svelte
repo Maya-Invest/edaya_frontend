@@ -7,7 +7,7 @@
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { Check, FileText } from '$lib/icons';
+	import { FileText } from '$lib/icons';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { getSessionLogbookTabState } from '../session-logbook-tab.svelte';
@@ -39,8 +39,7 @@
 		classSubjectMatterId: string;
 		chapter: string;
 		content: string;
-		objectives: string[];
-		homework?: string;
+		notes: string;
 		progress: number;
 		successMessage?: string;
 	}) {
@@ -85,21 +84,10 @@
 					{/if}
 				</div>
 				<p class="mt-2 text-xs leading-relaxed text-foreground/80">{detail.logbook.content}</p>
-				{#if isLesson && detail.logbook.objectives.length > 0}
-					<ul class="mt-2 space-y-1">
-						{#each detail.logbook.objectives as objective (objective)}
-							<li class="flex items-start gap-1.5 text-[11px]">
-								<Check class="mt-0.5 h-3 w-3 text-accent" />
-								{objective}
-							</li>
-						{/each}
-					</ul>
-				{/if}
-				{#if detail.logbook.homework}
-					<p class="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
-						<FileText class="h-3 w-3" />
-						<span class="font-medium text-foreground">{$t('teaching.homework')} :</span>
-						{detail.logbook.homework}
+				{#if isLesson && detail.logbook.notes.trim().length > 0}
+					<p class="mt-2 text-[11px] text-muted-foreground">
+						<span class="font-medium text-foreground">{$t('planning.session.logbookNotes')} :</span>
+						{detail.logbook.notes}
 					</p>
 				{/if}
 			</article>

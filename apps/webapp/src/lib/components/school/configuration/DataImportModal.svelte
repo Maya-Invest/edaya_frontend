@@ -149,6 +149,7 @@
 	import { notifyStudentsListChanged } from '$lib/students/notify-students-list-changed';
 	import { notifySubjectsListChanged } from '$lib/subjects/notify-subjects-list-changed';
 	import { notifyTeachersListChanged } from '$lib/teachers/notify-teachers-list-changed';
+	import { hasPermission } from '$lib/permissions';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 
@@ -1875,10 +1876,21 @@
 							</Select.Trigger>
 							<Select.Content class="z-[100]">
 								{#each IMPORT_TYPE_DEFINITIONS as definition (definition.key)}
-									<Select.Item value={definition.key} label={$t(definition.labelKey)}>
+									{@const allowed = definition.permission
+										? hasPermission(definition.permission as NonNullable<typeof definition.permission>)
+										: true}
+									<Select.Item
+										value={definition.key}
+										label={$t(definition.labelKey)}
+										disabled={!allowed}
+									>
 										<div class="flex items-center justify-between gap-3">
-											<span>{$t(definition.labelKey)}</span>
-											{#if definition.status === 'template_only'}
+											<span class={!allowed ? 'text-muted-foreground' : undefined}>{$t(definition.labelKey)}</span>
+											{#if !allowed}
+												<span class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+													{$t('import.permissionRequired')}
+												</span>
+											{:else if definition.status === 'template_only'}
 												<span class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
 													{$t('import.status.templateOnly')}
 												</span>

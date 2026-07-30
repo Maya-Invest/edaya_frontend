@@ -6,6 +6,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
+	import { removeSubjectFromGradeLevelMutation } from '$lib/api/mutations/grade-level-subject.mutations';
 	import { t } from '$lib/i18n';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
@@ -33,6 +34,9 @@
 
 	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
+	let removeCatalogBusy = $state(false);
+
+	const isCatalogSubject = $derived(Boolean(subject.gradeLevelId));
 
 	const teacherInitials = $derived(
 		subject.teacher
@@ -60,12 +64,29 @@
 			deleteBusy = false;
 		}
 	}
+
+	async function removeFromCatalog() {
+		removeCatalogBusy = true;
+		try {
+			const ok = await removeSubjectFromGradeLevelMutation({
+				gradeLevelSubjectId: subject.id,
+				successMessage: get(t)('subjects.removedFromCatalog'),
+			});
+			if (ok) {
+				subjectsPage.removeSubject(subject.id);
+				onDeleted?.();
+			}
+		}
+		finally {
+			removeCatalogBusy = false;
+		}
+	}
 </script>
 
 <DrawerEntityHeader name={subject.name} summary={subject.description}>
 	{#snippet chips()}
 		<span class="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] tabular-nums text-foreground/80">
-			{$t('subjects.hoursPerWeek', { h: subject.hoursPerWeek })}
+			{subject.hoursPerWeek === null ? '—' : $t('subjects.hoursPerWeek', { h: subject.hoursPerWeek })}
 		</span>
 		<span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground/80">
 			{subject.category}
@@ -89,7 +110,11 @@
 		</Button>
 	{/snippet}
 	{#snippet overflow()}
-		{#if !subject.gradeLevelId}
+		{#if isCatalogSubject}
+			<RowActionMenuItem destructive disabled={removeCatalogBusy} onclick={() => void removeFromCatalog()}>
+				{$t('subjects.removeFromCatalog')}
+			</RowActionMenuItem>
+		{:else}
 			<RowActionMenuItem destructive onclick={() => (deleteOpen = true)}>
 				{$t('common.delete')}
 			</RowActionMenuItem>

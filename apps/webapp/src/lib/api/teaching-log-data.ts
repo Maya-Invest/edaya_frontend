@@ -172,8 +172,7 @@ export function mapTeachingLogEntries(
 					? matterNameForProgress(primaryProgress, sources.classSubjectMattersRaw)
 					: session.displayLabel,
 				content: session.sessionNote ?? '',
-				objectives: primaryProgress?.notes ? [primaryProgress.notes] : [],
-				homework: undefined,
+				notes: primaryProgress?.notes ?? session.sessionNote ?? '',
 				attachments: undefined,
 				progress: primaryProgress?.completedPercentage ?? averageProgress,
 			} satisfies LogEntry;

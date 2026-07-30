@@ -97,7 +97,7 @@ export function buildCatalogFromTemplates(
 			const levelSubjects: CatalogSubject[] = [];
 			const seenCodes = new Set<string>();
 			for (const entry of template.curriculum) {
-				if (entry.levelCode !== level.code || seenCodes.has(entry.subjectCode)) {
+				if (!entry.levelCodes.includes(level.code) || seenCodes.has(entry.subjectCode)) {
 					continue;
 				}
 				seenCodes.add(entry.subjectCode);

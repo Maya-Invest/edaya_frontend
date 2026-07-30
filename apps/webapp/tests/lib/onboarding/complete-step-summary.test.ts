@@ -42,19 +42,19 @@ const FIXTURE_TEMPLATES: StructureTemplateDefinition[] = [
 		],
 		curriculum: [
 			{
-				levelCode: '6EME',
+				levelCodes: ['6EME'],
 				subjectCode: 'FR',
 				coefficient: 3,
 				matters: ['Lecture', 'Grammaire', 'Conjugaison', 'Expression écrite'],
 			},
 			{
-				levelCode: '6EME',
+				levelCodes: ['6EME'],
 				subjectCode: 'MATH',
 				coefficient: 3,
 				matters: ['Nombres', 'Fractions', 'Géométrie'],
 			},
 			{
-				levelCode: '5EME',
+				levelCodes: ['5EME'],
 				subjectCode: 'FR',
 				coefficient: 3,
 				matters: ['Grammaire'],

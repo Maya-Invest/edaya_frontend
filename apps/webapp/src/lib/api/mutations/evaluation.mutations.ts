@@ -133,3 +133,76 @@ export async function recordEvaluationAssessmentResultMutation(input: {
 }): Promise<boolean> {
 	return recordAssessmentResultMutation(input);
 }
+
+export async function completeAssessmentMutation(input: {
+	assessmentId: string;
+	successMessage?: string;
+}): Promise<boolean> {
+	const client = getBrowserSchoolClient();
+	const result = await runMutation(() => client.commands.completeAssessment({
+		assessmentId: input.assessmentId,
+		completedAt: new Date().toISOString(),
+	}), {
+		successMessage: input.successMessage,
+		versionKeys: ['evaluations'],
+	});
+	return result !== null;
+}
+
+export async function recordAssessmentResultComplianceMutation(input: {
+	id?: string;
+	studentId: string;
+	assessmentId: string;
+	status: 'met' | 'late' | 'missed' | 'excused';
+	notes?: string;
+	successMessage?: string;
+}): Promise<boolean> {
+	const client = getBrowserSchoolClient();
+	const id = input.id ?? `asr-${input.studentId}-${input.assessmentId}`;
+	const result = await runMutation(() => client.commands.recordAssessmentResultCompliance({
+		id,
+		studentId: input.studentId,
+		assessmentId: input.assessmentId,
+		status: input.status,
+		notes: input.notes?.trim() || null,
+		createdAt: new Date().toISOString(),
+	}), {
+		successMessage: input.successMessage,
+		versionKeys: ['evaluations'],
+	});
+	return result !== null;
+}
+
+export async function createReportCardDefinitionSectionMutation(input: {
+	id?: string;
+	reportCardDefinitionId: string;
+	name: string;
+	kind: 'group' | 'subject';
+	order: number;
+	weight: number;
+	role?: 'matieres' | 'synthese' | 'appreciation' | null;
+	coefficient?: number | null;
+	parentSectionId?: string | null;
+	subjectId?: string | null;
+	successMessage?: string;
+}): Promise<string | null> {
+	const client = getBrowserSchoolClient();
+	const id = input.id ?? `rcs-${Date.now().toString(36)}`;
+	const result = await runMutation(() => client.commands.createReportCardDefinitionSection({
+		id,
+		reportCardDefinitionId: input.reportCardDefinitionId,
+		name: input.name.trim(),
+		kind: input.kind,
+		order: input.order,
+		weight: input.weight,
+		role: input.role ?? null,
+		coefficient: input.coefficient ?? null,
+		parentSectionId: input.parentSectionId ?? null,
+		subjectId: input.subjectId ?? null,
+		createdAt: new Date().toISOString(),
+	}), {
+		successMessage: input.successMessage,
+		versionKeys: ['reportCards'],
+	});
+	return result ? id : null;
+}

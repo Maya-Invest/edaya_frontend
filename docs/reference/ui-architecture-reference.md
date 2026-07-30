@@ -922,6 +922,8 @@ Resource · ResourceAssignment — no staff UI
 ## 6. V1 implementation gaps
 
 > **Reconciled 2026-07-06.** Rows below marked **✅ Shipped** are implemented in `apps/webapp` — verify in codebase before reopening. §6.1 backend blockers remain **resolved**. Residual **blocked** work: `relinkActorSubject` UI, attendance justification UI, multi-school `X-School-Id` (see archived remaining-work-plan Track D).
+>
+> **UI ↔ API alignment (2026-07-29):** Active gap-close work is tracked in [ui-api-gap-matrix.md](./ui-api-gap-matrix.md). Do not reopen §6/§9 rows marked ✅ Shipped; use the matrix for synthetics, unwired commands, and catalog sync.
 
 Work remaining to reach the target architecture in §3. Track completion in [§0 progress tracker](#v1-progress-tracker). **Backend dependencies** that block UI work are in [§6.1](#61-backend-blockers). Ordered by priority.
 

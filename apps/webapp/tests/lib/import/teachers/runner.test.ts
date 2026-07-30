@@ -5,9 +5,6 @@ const saveTeacher = mock(async () => undefined);
 
 mock.module('$lib/teachers/save-teacher', () => ({
 	saveTeacher,
-	createTeacherImportIds: (index: number) => ({
-		teacherId: `teacher-${index}`,
-	}),
 }));
 
 mock.module('$lib/teachers/notify-teachers-list-changed', () => ({
@@ -45,10 +42,9 @@ describe('teacher import runner', () => {
 		expect(saveTeacher).toHaveBeenCalledTimes(2);
 		expect(saveTeacher).toHaveBeenNthCalledWith(1, expect.anything(), {
 			schoolId: 'school-1',
-			teacherId: 'teacher-0',
+			teacherId: 'ENS-001',
 			firstName: 'Jean',
 			lastName: 'Dupont',
-			code: 'ENS-001',
 			email: 'jean@example.com',
 			phone: undefined,
 			subjectId: null,

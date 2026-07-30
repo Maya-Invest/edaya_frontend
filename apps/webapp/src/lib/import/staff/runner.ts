@@ -3,7 +3,7 @@ import type { ValidatedStaffImportRow } from './types';
 import { t } from '$lib/i18n';
 import { formatImportRunErrorMessage } from '$lib/import/shared/format-import-run-error';
 import { notifyStaffListChanged } from '$lib/staff/notify-staff-list-changed';
-import { createStaffImportIds, registerStaffMember } from '$lib/staff/register-staff-member';
+import { registerStaffMember } from '$lib/staff/register-staff-member';
 import { get } from 'svelte/store';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
@@ -29,7 +29,7 @@ export interface StaffImportRunOptions {
 }
 
 export async function runStaffImport(options: StaffImportRunOptions): Promise<StaffImportRunResult> {
-	const { schoolId, client, rows, onProgress, seed = Date.now().toString(36) } = options;
+	const { schoolId, client, rows, onProgress } = options;
 	const failed: StaffImportRunFailure[] = [];
 	const staffIds: string[] = [];
 	const createdAt = new Date().toISOString();
@@ -37,7 +37,8 @@ export async function runStaffImport(options: StaffImportRunOptions): Promise<St
 
 	for (const [index, row] of rows.entries()) {
 		onProgress?.(index, total);
-		const { staffId } = createStaffImportIds(index, seed);
+		// API has no separate person `code`; import code is persisted as the entity id.
+		const staffId = row.code;
 
 		try {
 			await registerStaffMember(client, {
@@ -45,7 +46,6 @@ export async function runStaffImport(options: StaffImportRunOptions): Promise<St
 				staffId,
 				firstName: row.prenom,
 				lastName: row.nom,
-				code: row.code,
 				email: row.email,
 				sendAccountInvitation: false,
 				createdAt,
