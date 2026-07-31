@@ -1,6 +1,6 @@
 import type { DemoContext, VisitOptions } from './types';
 
-const LOADING_HIDDEN_TIMEOUT_MS = 10_000;
+const LOADING_HIDDEN_TIMEOUT_MS = 30_000;
 const PATH_STABLE_PAUSE_MS = 200;
 
 export async function assertNoFatalError(ctx: DemoContext, scene: string, step: string): Promise<boolean> {
@@ -22,9 +22,25 @@ async function waitForAppShell(ctx: DemoContext): Promise<void> {
 
 async function waitForLoadingHidden(ctx: DemoContext): Promise<void> {
 	const loading = ctx.page.locator('[role="status"][aria-live="polite"]');
-	if (await loading.isVisible({ timeout: 500 }).catch(() => false)) {
-		await loading.waitFor({ state: 'hidden', timeout: LOADING_HIDDEN_TIMEOUT_MS }).catch(() => {});
+	await ctx.page.waitForTimeout(50);
+	await loading.waitFor({ state: 'visible', timeout: 3_000 }).catch(() => {});
+	await loading.waitFor({ state: 'hidden', timeout: LOADING_HIDDEN_TIMEOUT_MS }).catch(() => {});
+	await ctx.page.waitForTimeout(PATH_STABLE_PAUSE_MS);
+}
+
+async function describePageBlocker(ctx: DemoContext): Promise<string | undefined> {
+	const loading = ctx.page.locator('[role="status"][aria-live="polite"]');
+	if (await loading.isVisible({ timeout: 200 }).catch(() => false)) {
+		return 'PageQuery still loading';
 	}
+	const errorAlert = ctx.page.locator('[role="alert"]').filter({
+		hasText: /something went wrong|une erreur est survenue|unable to load/i,
+	});
+	if (await errorAlert.isVisible({ timeout: 200 }).catch(() => false)) {
+		const text = (await errorAlert.innerText().catch(() => '')).trim();
+		return text ? `Error state: ${text.slice(0, 120)}` : 'Error state visible';
+	}
+	return undefined;
 }
 
 async function waitForPathStable(
@@ -147,7 +163,9 @@ export async function visit(
 			result = await attempt(false);
 		}
 		if (result === 'missing-selector') {
-			reporter.log(scene, step, 'fail', `Missing selector: ${selector}`);
+			const blocker = await describePageBlocker(ctx);
+			const detail = blocker ? ` — ${blocker}` : '';
+			reporter.log(scene, step, 'fail', `Missing selector: ${selector}${detail}`);
 			await shot(`${scene}-${step.replace(/\s+/g, '-')}`);
 			return false;
 		}

@@ -1,4 +1,5 @@
 import { CLASS_6A, SEEDED_TIMETABLE_WEEK } from './constants';
+import { selectAcademicPeriod } from './academic-period';
 import type { DemoContext } from './types';
 import { visit } from './visit';
 
@@ -63,6 +64,7 @@ export async function resolveTimetableSessionId(ctx: DemoContext): Promise<strin
 		}
 	}
 
+	await selectAcademicPeriod(ctx);
 	const ok = await visit(
 		ctx,
 		`${ctx.base}${listPath}?week=${SEEDED_TIMETABLE_WEEK}`,
@@ -71,6 +73,8 @@ export async function resolveTimetableSessionId(ctx: DemoContext): Promise<strin
 		{
 			pathPrefix: listPath,
 			selector: '#planning-week-picker, .edaya-timetable-calendar',
+			selectorTimeoutMs: 25_000,
+			retry: true,
 		},
 	);
 	if (!ok) {

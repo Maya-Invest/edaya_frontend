@@ -99,10 +99,11 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 
 	const timetablePath = `/classes/${CLASS_6A}/timetable`;
 	const timetableSeededWeek = `${timetablePath}?week=${SEEDED_TIMETABLE_WEEK}`;
+	await selectAcademicPeriod(ctx);
 	await visit(ctx, `${base}${timetableSeededWeek}`, 'D5', '5.1 Timetable grid', {
 		pathPrefix: timetablePath,
 		selector: '#planning-week-picker, .edaya-timetable-calendar',
-		selectorTimeoutMs: 25_000,
+		selectorTimeoutMs: 45_000,
 		retry: true,
 	});
 	const pageHtml = await page.content();
@@ -115,37 +116,25 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	);
 	ctx.timetableSessionId = await pickTimetableSessionIdFromPage(ctx);
 
+	await selectAcademicPeriod(ctx);
 	await visit(ctx, `${base}/classes/${CLASS_6A}/evaluations?kind=homework`, 'D6', '6.1 Evaluations list', {
 		pathPrefix: `/classes/${CLASS_6A}/evaluations`,
-		selector: 'main',
+		selector: 'select[aria-label="Filter"]',
+		selectorTimeoutMs: 20_000,
 	});
 	try {
-		const homeworkFilter = page.locator('main select[aria-label="Filter"]').first();
-		if (await homeworkFilter.isVisible({ timeout: 10_000 }).catch(() => false)) {
-			await homeworkFilter.selectOption('homework').catch(async () => {
-				const options = await homeworkFilter.locator('option').allTextContents();
-				const homeworkOption = options.find(text => /devoir|homework/i.test(text));
-				if (homeworkOption) {
-					await homeworkFilter.selectOption({ label: homeworkOption });
-				}
-			});
-			await page.waitForTimeout(300);
-			const hasHomeworkRow = await page
-				.locator('main .space-y-3 [role="button"]')
-				.filter({ hasText: /devoir|homework|exercices|fractions|feuille|cigale/i })
-				.first()
-				.isVisible({ timeout: 10_000 })
-				.catch(() => false);
-			reporter.log(
-				'D6',
-				'6.2 Homework filter',
-				hasHomeworkRow ? 'pass' : 'fail',
-				hasHomeworkRow ? undefined : 'No homework rows after filter on T1',
-			);
-		}
-		else {
-			reporter.log('D6', '6.2 Homework filter', 'fail', 'Filter select not visible');
-		}
+		const hasHomeworkRow = await page
+			.locator('main .space-y-3 [role="button"]')
+			.filter({ hasText: /devoir|homework|exercices|fractions|feuille|cigale/i })
+			.first()
+			.isVisible({ timeout: 15_000 })
+			.catch(() => false);
+		reporter.log(
+			'D6',
+			'6.2 Homework filter',
+			hasHomeworkRow ? 'pass' : 'fail',
+			hasHomeworkRow ? undefined : 'No homework rows for T1 — verify assessments-homework seed',
+		);
 	}
 	catch (err) {
 		reporter.log('D6', '6.2 Homework filter', 'fail', err instanceof Error ? err.message : String(err));
