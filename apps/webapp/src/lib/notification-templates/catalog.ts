@@ -74,7 +74,7 @@ export const NOTIFICATION_TEMPLATE_SAMPLE_VALUES: Record<string, string> = {
 	startDate: 'March 10, 2026 at 4:00 PM',
 	eventTitle: 'Sports day',
 	inviteeName: 'Jane Smith',
-	inviteUrl: 'https://school.edaya.app/invite/example',
+	inviteUrl: 'https://school.edayaplus.com/invite/example',
 	expiresAt: 'March 20, 2026',
 	actorKind: 'staff',
 };

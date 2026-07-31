@@ -18,15 +18,15 @@ export function groupSubjectsByGradeLevel(
 	const byGradeLevelId: Record<string, { subtitle: string; items: Subject[] }> = {};
 
 	for (const subject of subjects) {
-		const cls = classById[subject.classId];
-		if (!cls) {
+		const gradeLevelId = subject.gradeLevelId ?? classById[subject.classId]?.gradeLevelId;
+		if (!gradeLevelId) {
 			continue;
 		}
-		const gradeLevelId = cls.gradeLevelId;
+		const cls = classById[subject.classId];
 		if (!byGradeLevelId[gradeLevelId]) {
 			const gradeLevel = gradeLevelById[gradeLevelId];
 			byGradeLevelId[gradeLevelId] = {
-				subtitle: gradeLevel?.cycle ?? cls.level,
+				subtitle: gradeLevel?.cycle ?? cls?.level ?? '',
 				items: [],
 			};
 		}

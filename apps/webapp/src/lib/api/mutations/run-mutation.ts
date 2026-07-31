@@ -1,4 +1,6 @@
+import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
+import { entityVersions } from '$lib/entity-versions.svelte';
 import { toast } from '$lib/toast.svelte';
 import { ApiError } from '@maya-invest/edaya-api-client';
 
@@ -46,6 +48,8 @@ export async function runMutation<T>(
 		apply?: () => void;
 		/** Revert the optimistic patch when the request fails. */
 		rollback?: () => void;
+		/** Bump route entity version counters after a successful mutation. */
+		versionKeys?: EntityVersionKey[];
 		errorMessage?: string;
 		successMessage?: string;
 		onSuccess?: (result: T) => void | Promise<void>;
@@ -57,6 +61,9 @@ export async function runMutation<T>(
 		if (options?.refresh === true) {
 			await refreshAppShellData();
 		}
+		for (const key of options?.versionKeys ?? []) {
+			entityVersions.bump(key);
+		}
 		await options?.onSuccess?.(result);
 		if (options?.successMessage) {
 			toast.success(options.successMessage);
@@ -65,8 +72,18 @@ export async function runMutation<T>(
 	}
 	catch (error) {
 		options?.rollback?.();
+		if (error instanceof Error && error.message === 'ACTIVE_ENROLLMENTS' && options?.errorMessage) {
+			toast.error(options.errorMessage);
+			return null;
+		}
 		const message = error instanceof ApiError
-			? messageFromApiError(error) ?? options?.errorMessage ?? 'La requête a échoué.'
+			? (() => {
+					const apiMessage = messageFromApiError(error);
+					if (apiMessage && /dependent records still exist/i.test(apiMessage) && options?.errorMessage) {
+						return options.errorMessage;
+					}
+					return apiMessage ?? options?.errorMessage ?? 'La requête a échoué.';
+				})()
 			: error instanceof Error && error.message.trim().length > 0
 				? error.message
 				: options?.errorMessage ?? 'La requête a échoué.';

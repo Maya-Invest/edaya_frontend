@@ -1,12 +1,12 @@
 import type { AbsenceRecord, StudentAttendanceHistoryItem } from '$lib/types/school';
 import type { StudentsPageState } from '../../../students-page.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { loadStudentAttendanceHistory } from '$lib/api/student-drawer-data';
 import { nowIso } from '$lib/date/format';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { runStudentRouteMutation } from '../../../lib/student-route-mutation';
-import { schoolStudentDetailIdFromUrl } from '../../../students-page.svelte';
 
 export function summarizeStudentAttendanceHistory(
 	records: readonly StudentAttendanceHistoryItem[],
@@ -94,7 +94,7 @@ export class StudentAttendanceTabState {
 		return (url: URL) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
 			load: async () => {
-				const studentId = schoolStudentDetailIdFromUrl(url);
+				const studentId = studentDetailIdFromPathname(url.pathname);
 				if (!studentId) {
 					return {};
 				}
@@ -143,7 +143,7 @@ export class StudentAttendanceTabState {
 				this.appendAbsence(optimisticAbsence);
 				if (previous) {
 					page.patchStudent(input.studentId, {
-						attendance: Math.max(0, Math.round((previous.attendance - 1) * 10) / 10),
+						attendance: Math.max(0, Math.round(((previous.attendance ?? 0) - 1) * 10) / 10),
 					});
 				}
 			},

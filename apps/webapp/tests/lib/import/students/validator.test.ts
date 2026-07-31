@@ -7,14 +7,15 @@ import {
 } from '$lib/import/students/validator';
 
 const CLASSES = [
-	{ id: 'class-6a', name: '6ème A' },
-	{ id: 'class-6b', name: '6ème B' },
+	{ id: 'class-6a', name: '6ème A', studentCount: 0 },
+	{ id: 'class-6b', name: '6ème B', studentCount: 0 },
 ] as const;
 
 function row(overrides: Partial<StudentImportRow> & Pick<StudentImportRow, 'rowIndex'>): StudentImportRow {
 	return {
 		prenom: 'Jean',
 		nom: 'Dupont',
+		matricule: 'MAT-2024-001',
 		classe: '6ème A',
 		...overrides,
 	};
@@ -23,7 +24,10 @@ function row(overrides: Partial<StudentImportRow> & Pick<StudentImportRow, 'rowI
 describe('student import validator', () => {
 	it('accepts valid rows and resolves class ids', () => {
 		const result = validateStudentImportRows(
-			[row({ rowIndex: 2 }), row({ rowIndex: 3, prenom: 'Marie', nom: 'Kouassi' })],
+			[
+				row({ rowIndex: 2 }),
+				row({ rowIndex: 3, prenom: 'Marie', nom: 'Kouassi', matricule: 'MAT-2024-002' }),
+			],
 			{ classes: CLASSES },
 		);
 
@@ -92,6 +96,45 @@ describe('student import validator', () => {
 	it('validates iso dates', () => {
 		expect(isValidStudentImportBirthDate('2012-03-15')).toBe(true);
 		expect(isValidStudentImportBirthDate('2012-03-32')).toBe(false);
+	});
+
+	it('emits one capacity warning per overflow seat on distinct rows', () => {
+		const result = validateStudentImportRows(
+			[
+				row({ rowIndex: 2, matricule: 'MAT-001' }),
+				row({ rowIndex: 3, prenom: 'Marie', matricule: 'MAT-002' }),
+				row({ rowIndex: 4, prenom: 'Paul', matricule: 'MAT-003' }),
+			],
+			{
+				classes: [
+					{ id: 'class-6a', name: '6ème A', studentCount: 0, capacity: 1 },
+					{ id: 'class-6b', name: '6ème B', studentCount: 0, capacity: 10 },
+				],
+			},
+		);
+
+		const capacityWarnings = result.warnings.filter(
+			warning => warning.messageKey === 'import.students.validation.capacityExceeded',
+		);
+
+		expect(capacityWarnings).toHaveLength(2);
+		expect(capacityWarnings.map(warning => warning.rowIndex)).toEqual([3, 4]);
+		expect(result.validRows.find(entry => entry.rowIndex === 3)?.classGroupId).toBeUndefined();
+		expect(result.validRows.find(entry => entry.rowIndex === 4)?.classGroupId).toBeUndefined();
+		expect(result.validRows.find(entry => entry.rowIndex === 2)?.classGroupId).toBe('class-6a');
+	});
+
+	it('warns when class is omitted but still imports the row', () => {
+		const result = validateStudentImportRows(
+			[row({ rowIndex: 2, classe: '' })],
+			{ classes: CLASSES },
+		);
+
+		expect(result.errors).toEqual([]);
+		expect(result.validRows).toHaveLength(1);
+		expect(result.validRows[0]?.classGroupId).toBeUndefined();
+		expect(result.warnings).toHaveLength(1);
+		expect(result.warnings[0]?.messageKey).toBe('import.students.validation.noClassAssigned');
 	});
 
 	it('enables import when there are valid rows, even with blocking errors on other rows', () => {

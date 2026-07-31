@@ -71,7 +71,6 @@ const SCHOOL_ICONS: Record<string, LucideIcon> = {
 	staff: GraduationCap,
 	teachers: BookOpen,
 	calendar: CalendarDays,
-	timetablePlanning: CalendarRange,
 	activities: Sparkle,
 	announcements: Mail,
 	events: AlertTriangle,
@@ -102,7 +101,7 @@ const CONFIG_ICONS: Record<string, LucideIcon> = {
 	reportCards: FileSpreadsheet,
 	notificationTemplates: Mail,
 	discipline: AlertTriangle,
-	import: Upload,
+	tools: Upload,
 };
 
 const SCHOOL_ROUTES: Record<string, RouteId> = {
@@ -111,7 +110,6 @@ const SCHOOL_ROUTES: Record<string, RouteId> = {
 	staff: '/(app)/school/staff/[[id]]',
 	teachers: '/(app)/school/teachers/[[id]]',
 	calendar: '/(app)/school/calendar',
-	timetablePlanning: '/(app)/school/timetable-planning',
 	activities: '/(app)/school/activities/[[id]]',
 	announcements: '/(app)/school/announcements/[[id]]',
 	events: '/(app)/school/events/[[id]]',
@@ -133,7 +131,7 @@ const CONFIG_ROUTES: Record<string, RouteId> = {
 	reportCards: '/(app)/configuration/report-cards/[[id]]',
 	notificationTemplates: '/(app)/configuration/notifications',
 	discipline: '/(app)/configuration/discipline',
-	import: '/(app)/configuration/import',
+	tools: '/(app)/configuration/tools',
 };
 
 function buildSchoolItems(defs: NavItemDefinition[]): ContextItem[] {

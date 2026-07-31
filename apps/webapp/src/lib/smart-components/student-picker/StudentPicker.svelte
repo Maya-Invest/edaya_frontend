@@ -1,13 +1,14 @@
 <script lang="ts">
-	import type { PersonPickerItem } from '$lib/components/school/shared/pickers/person-picker-types';
+	import type { PersonPickerItem } from '$lib/smart-components/person-picker/person-picker-types';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
-	import { filterPersonPickerItems } from '$lib/components/school/shared/pickers/filter-person-picker-items';
-	import PersonPicker from '$lib/components/school/shared/pickers/PersonPicker.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
 	import { Check, LoaderCircle, Search } from '$lib/icons';
+	import { filterPersonPickerItems } from '$lib/smart-components/person-picker/filter-person-picker-items';
+	import PersonPicker from '$lib/smart-components/person-picker/PersonPicker.svelte';
+	import { studentPickerSearchText, studentPickerSubtitle } from '$lib/students/format-student-picker-subtitle';
 	import { cn } from '$lib/utils';
 	import { StudentPickerState } from './student-picker-state.svelte';
 
@@ -95,8 +96,17 @@
 				name: student.name,
 				initials: student.initials,
 				photoUrl: student.photoUrl,
-				subtitle: className ?? student.classId,
-				searchText: [student.email, className, student.classId].filter(Boolean).join(' '),
+				subtitle: studentPickerSubtitle({
+					classLabel: className,
+					classId: student.classId,
+					matricule: student.matricule,
+				}),
+				searchText: studentPickerSearchText({
+					email: student.email,
+					classLabel: className,
+					classId: student.classId,
+					matricule: student.matricule,
+				}),
 			};
 		}),
 	);

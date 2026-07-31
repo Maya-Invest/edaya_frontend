@@ -7,9 +7,15 @@ import { DemoReporter } from './support/reporter';
 import type { DemoSummary } from './support/types';
 import { runCoreDemoScenes } from './scenes/core-demo';
 import { runDrawerTabChecks } from './scenes/drawer-tabs';
+import { runFinanceDrawerScene } from './scenes/finance-drawer';
+import { runGuardianDrawerScene } from './scenes/guardian-drawer';
 import { runHomeroomNudgeCheck } from './scenes/homeroom';
+import { runImportScene } from './scenes/import';
 import { runListShellScenes } from './scenes/list-shell';
 import { runModalUrlChecks } from './scenes/modal-url';
+import { runOwnerPermissionChecks } from './scenes/owner-permissions';
+import { runRouteCoverageScenes } from './scenes/route-coverage';
+import { runToolsModalsScene } from './scenes/tools-modals';
 
 export interface RunDemoDryRunOptions {
 	base?: string;
@@ -34,15 +40,21 @@ export async function runDemoDryRun(options: RunDemoDryRunOptions = {}): Promise
 
 	try {
 		await runCoreDemoScenes(ctx);
+		await runRouteCoverageScenes(ctx);
 		await runListShellScenes(ctx);
 		await runDrawerTabChecks(ctx);
 		await runModalUrlChecks(ctx);
+		await runImportScene(ctx);
+		await runToolsModalsScene(ctx);
+		await runGuardianDrawerScene(ctx);
+		await runFinanceDrawerScene(ctx);
 	}
 	finally {
 		await context.close();
 	}
 
 	await runHomeroomNudgeCheck(browser, base, reporter, consoleErrors);
+	await runOwnerPermissionChecks(browser, base, reporter, consoleErrors);
 
 	const summary = reporter.summarize(consoleErrors);
 	await reporter.writeResults(outDir, summary);

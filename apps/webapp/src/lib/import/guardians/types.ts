@@ -1,4 +1,4 @@
-export type GuardianImportColumnKey = 'prenom' | 'nom' | 'email' | 'telephone' | 'eleve_matricule';
+export type GuardianImportColumnKey = 'code' | 'prenom' | 'nom' | 'email' | 'telephone' | 'eleve_matricule';
 
 export interface GuardianImportColumnDefinition {
 	key: GuardianImportColumnKey;
@@ -6,6 +6,7 @@ export interface GuardianImportColumnDefinition {
 }
 
 export const GUARDIAN_IMPORT_COLUMNS = [
+	{ key: 'code', required: true },
 	{ key: 'prenom', required: true },
 	{ key: 'nom', required: true },
 	{ key: 'eleve_matricule', required: true },
@@ -15,6 +16,7 @@ export const GUARDIAN_IMPORT_COLUMNS = [
 
 export interface GuardianImportRow {
 	rowIndex: number;
+	code: string;
 	prenom: string;
 	nom: string;
 	email?: string;
@@ -23,7 +25,7 @@ export interface GuardianImportRow {
 }
 
 export interface ValidatedGuardianImportRow extends GuardianImportRow {
-	studentId: string;
+	studentIds: readonly string[];
 }
 
 export type GuardianImportValidationSeverity = 'error' | 'warning';
@@ -46,4 +48,6 @@ export interface GuardianImportValidationResult {
 
 export interface GuardianImportValidationContext {
 	studentMatricules: ReadonlyMap<string, { studentId: string; matricule: string }>;
+	multiValueSeparator: ';' | '&';
+	existingCodes?: ReadonlySet<string>;
 }

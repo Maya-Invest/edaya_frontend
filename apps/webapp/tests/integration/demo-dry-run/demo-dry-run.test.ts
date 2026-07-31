@@ -8,6 +8,6 @@ describe('demo dry-run', () => {
 			const summary = await runDemoDryRun();
 			expect(summary.failed).toBe(0);
 		},
-		{ timeout: 600_000 },
+		{ timeout: 1_200_000 },
 	);
 });

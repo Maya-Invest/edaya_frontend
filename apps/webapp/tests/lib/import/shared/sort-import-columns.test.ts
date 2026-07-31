@@ -32,13 +32,13 @@ describe('import catalog column display order', () => {
 		const definition = getImportTypeDefinition('guardians');
 		const keys = definition.columns.map(column => column.key);
 
-		expect(keys).toEqual(['prenom', 'nom', 'eleve_matricule', 'email', 'telephone']);
+		expect(keys).toEqual(['code', 'prenom', 'nom', 'eleve_matricule', 'email', 'telephone']);
 	});
 
 	it('builds guardian templates with required columns first', () => {
 		const definition = getImportTypeDefinition('guardians');
 		const [headers] = buildImportTemplateRows(definition);
 
-		expect(headers).toEqual(['prenom', 'nom', 'eleve_matricule', 'email', 'telephone']);
+		expect(headers).toEqual(['code', 'prenom', 'nom', 'eleve_matricule', 'email', 'telephone']);
 	});
 });

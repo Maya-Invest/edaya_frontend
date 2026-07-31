@@ -9,10 +9,11 @@ const { runGuardianImport } = await import('$lib/import/guardians/runner');
 
 function row(overrides: Partial<ValidatedGuardianImportRow> & Pick<ValidatedGuardianImportRow, 'rowIndex'>): ValidatedGuardianImportRow {
 	return {
+		code: 'TUT-001',
 		prenom: 'Aminata',
 		nom: 'Koné',
 		eleve_matricule: 'MAT-2024-001',
-		studentId: 'stu-1',
+		studentIds: ['stu-1'],
 		...overrides,
 	};
 }
@@ -24,7 +25,6 @@ describe('guardian import runner', () => {
 
 		const result = await runGuardianImport({
 			schoolId: 'school-1',
-			seed: 'testseed',
 			client: {
 				commands: {
 					registerGuardian,
@@ -33,21 +33,29 @@ describe('guardian import runner', () => {
 			} as never,
 			rows: [
 				row({ rowIndex: 2 }),
-				row({ rowIndex: 3, prenom: 'Moussa', nom: 'Traoré', studentId: 'stu-2', eleve_matricule: 'MAT-2024-002' }),
+				row({
+					rowIndex: 3,
+					code: 'TUT-002',
+					prenom: 'Moussa',
+					nom: 'Traoré',
+					studentIds: ['stu-2'],
+					eleve_matricule: 'MAT-2024-002',
+				}),
 			],
 		});
 
 		expect(result.created).toBe(2);
 		expect(result.failed).toEqual([]);
-		expect(result.guardianIds).toEqual(['grd-testseed-0', 'grd-testseed-1']);
+		expect(result.guardianIds).toEqual(['TUT-001', 'TUT-002']);
 		expect(registerGuardian).toHaveBeenCalledTimes(2);
 		expect(linkGuardianToStudent).toHaveBeenCalledTimes(2);
 		expect(registerGuardian).toHaveBeenNthCalledWith(1, expect.objectContaining({
+			id: 'TUT-001',
 			sendAccountInvitation: false,
 		}));
 		expect(linkGuardianToStudent).toHaveBeenNthCalledWith(2, expect.objectContaining({
 			studentId: 'stu-2',
-			guardianId: 'grd-testseed-1',
+			guardianId: 'TUT-002',
 		}));
 	});
 });

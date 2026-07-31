@@ -1,12 +1,14 @@
 <script lang="ts">
-	import type { Student } from '$lib/types/school';
+	import type { Evaluation, Student } from '$lib/types/school';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import { loadClassEvaluations } from '$lib/api/assessments-data';
 	import { recordStudentAssessmentResultMutation } from '$lib/api/mutations/student.mutations';
+	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
-	import { detailDataContext } from '$lib/detail-data/context.svelte';
 	import { Plus } from '$lib/icons';
 
 	let {
@@ -24,14 +26,11 @@
 	} = $props();
 	let busy = $state(false);
 	let wasOpen = $state(false);
+	let loadingEvaluations = $state(false);
+	let evaluations = $state<Evaluation[]>([]);
 	let assessmentId = $state('');
 	let score = $state('');
 
-	const evaluations = $derived(
-		detailDataContext.evaluations
-			.filter(evaluation => evaluation.classId === s.classId)
-			.sort((left, right) => right.date.localeCompare(left.date)),
-	);
 	const selectedEvaluation = $derived(evaluations.find(evaluation => evaluation.id === assessmentId));
 	const assessmentLabel = $derived(
 		selectedEvaluation
@@ -47,10 +46,31 @@
 	});
 
 	$effect(() => {
-		if (open && !wasOpen)
-			resetForm();
+		if (open && !wasOpen) {
+			void loadEvaluations().then(() => resetForm());
+		}
 		wasOpen = open;
 	});
+
+	async function loadEvaluations() {
+		const periodId = academicContext.periodId;
+		if (!periodId || !s.classId) {
+			evaluations = [];
+			return;
+		}
+
+		loadingEvaluations = true;
+		try {
+			const rows = await loadClassEvaluations(getBrowserSchoolClient(), s.classId, periodId);
+			evaluations = rows.sort((left, right) => right.date.localeCompare(left.date));
+		}
+		catch {
+			evaluations = [];
+		}
+		finally {
+			loadingEvaluations = false;
+		}
+	}
 
 	function resetForm() {
 		assessmentId = evaluations[0]?.id ?? '';
@@ -93,12 +113,16 @@
 	title={`Saisir une note pour ${s.name}`}
 	description="Choisissez une évaluation existante de la classe."
 	submitLabel="Enregistrer"
-	busy={busy}
+	busy={busy || loadingEvaluations}
 	submitDisabled={!canSubmit}
 	onCancel={resetForm}
 	onSubmit={submit}
 >
-	{#if evaluations.length === 0}
+	{#if loadingEvaluations}
+		<p class="rounded-xl bg-secondary/40 p-3 text-sm text-muted-foreground">
+			Chargement des évaluations…
+		</p>
+	{:else if evaluations.length === 0}
 		<p class="rounded-xl bg-secondary/40 p-3 text-sm text-muted-foreground">
 			Aucune évaluation disponible pour cette classe.
 		</p>

@@ -3,13 +3,23 @@ import { PUBLIC_API_URL } from '$env/static/public';
 import { authSession } from '$lib/auth/session.svelte';
 import { parseApiResponse, resolveApiUrl } from './http';
 
+function applyInteractiveActorHeaders(headers: Headers) {
+	if (!authSession.sessionKind) {
+		return;
+	}
+	headers.set('X-Actor-Kind', authSession.sessionKind);
+	if (authSession.userId) {
+		headers.set('X-Actor-Id', authSession.userId);
+	}
+}
+
 export function createBrowserTransport(getYearId: () => string | undefined): Transport {
 	return {
 		async request<T>(method: string, path: string, options?: { body?: unknown }): Promise<T> {
 			const headers = new Headers({
-				'Accept': 'application/json',
-				'X-Actor-Kind': authSession.sessionKind ?? 'staff',
+				Accept: 'application/json',
 			});
+			applyInteractiveActorHeaders(headers);
 			if (options?.body !== undefined) {
 				headers.set('Content-Type', 'application/json');
 			}
@@ -18,13 +28,7 @@ export function createBrowserTransport(getYearId: () => string | undefined): Tra
 			if (yearId) {
 				headers.set('X-Academic-Year-Id', yearId);
 			}
-
-			if (authSession.userId) {
-				headers.set('X-Actor-Id', authSession.userId);
-			}
-			if (authSession.schoolId) {
-				headers.set('X-School-Id', authSession.schoolId);
-			}
+			// X-School-Id intentionally omitted until backend multi-school session support (Track D.3).
 
 			const base = PUBLIC_API_URL || '';
 			const response = await fetch(resolveApiUrl(base, path), {

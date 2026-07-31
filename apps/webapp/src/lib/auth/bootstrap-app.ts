@@ -1,33 +1,50 @@
+import type { AppShellData } from '$lib/api/shell-data';
 import { academicContext } from '$lib/academic/context.svelte';
 import { configureBrowserSchoolClient } from '$lib/api/school-client';
 import { resetBootstrapSession } from '$lib/auth/bootstrap';
-import { detailDataContext } from '$lib/detail-data/context.svelte';
-import { disciplineCatalogContext } from '$lib/discipline-catalog/context.svelte';
+import { authSession } from '$lib/auth/session.svelte';
 import { pageQueryStatus } from '$lib/queries/page-query-status.svelte';
 import { getAppShellData } from '$lib/queries/shell.queries';
-import { reportCardsContext } from '$lib/report-cards/context.svelte';
-import { sessionDetailContext } from '$lib/session-detail/context.svelte';
-import { teachingLogContext } from '$lib/teaching-log/context.svelte';
 
 let bootstrapPromise: Promise<void> | null = null;
+let bootstrapShellKey = '';
+
+function shellBootstrapKey(): string {
+	return `${authSession.sessionKind ?? ''}:${authSession.schoolId ?? ''}:${authSession.userId ?? ''}`;
+}
+
+function shellLooksEmpty(shell: AppShellData): boolean {
+	if (!authSession.schoolId) {
+		return false;
+	}
+	return shell.academicYears.length === 0 && shell.schools.length === 0;
+}
+
+function delay(ms: number): Promise<void> {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 export function bootstrapAppShell(): Promise<void> {
-	if (!bootstrapPromise) {
-		bootstrapPromise = runBootstrapAppShell();
+	const key = shellBootstrapKey();
+	if (bootstrapPromise && bootstrapShellKey === key) {
+		return bootstrapPromise;
 	}
+	bootstrapShellKey = key;
+	bootstrapPromise = runBootstrapAppShell();
 	return bootstrapPromise;
 }
 
 export function resetAppShellBootstrap() {
 	bootstrapPromise = null;
+	bootstrapShellKey = '';
 	resetBootstrapSession();
-	academicContext.reset();
-	detailDataContext.reset();
-	reportCardsContext.reset();
-	disciplineCatalogContext.reset();
-	teachingLogContext.reset();
-	sessionDetailContext.reset();
+	academicContext.clearShellCatalog();
 	pageQueryStatus.reset();
+}
+
+export function invalidateAppShellBootstrapCache() {
+	bootstrapPromise = null;
+	bootstrapShellKey = '';
 }
 
 async function runBootstrapAppShell() {
@@ -36,7 +53,11 @@ async function runBootstrapAppShell() {
 	});
 
 	try {
-		const shell = await getAppShellData();
+		let shell = await getAppShellData();
+		if (shellLooksEmpty(shell)) {
+			await delay(400);
+			shell = await getAppShellData();
+		}
 		academicContext.initFromShell(shell);
 	}
 	catch (error) {

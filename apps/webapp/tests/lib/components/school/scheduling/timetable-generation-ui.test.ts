@@ -91,6 +91,7 @@ describe('timetable-generation-ui', () => {
 				startTime: '08:00',
 				endTime: '08:45',
 				isBreak: false,
+				isTeachingSlot: true,
 			},
 			{
 				id: 'p1-tue',
@@ -102,6 +103,7 @@ describe('timetable-generation-ui', () => {
 				startTime: '08:00',
 				endTime: '08:45',
 				isBreak: false,
+				isTeachingSlot: true,
 			},
 			{
 				id: 'break-mon',
@@ -113,6 +115,7 @@ describe('timetable-generation-ui', () => {
 				startTime: '09:00',
 				endTime: '09:15',
 				isBreak: true,
+				isTeachingSlot: false,
 			},
 		]);
 

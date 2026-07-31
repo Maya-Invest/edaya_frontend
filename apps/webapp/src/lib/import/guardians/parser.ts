@@ -42,6 +42,7 @@ function mapRecordToGuardianImportRow(
 
 	return {
 		rowIndex,
+		code: values.code,
 		prenom: values.prenom,
 		nom: values.nom,
 		eleve_matricule: values.eleve_matricule,

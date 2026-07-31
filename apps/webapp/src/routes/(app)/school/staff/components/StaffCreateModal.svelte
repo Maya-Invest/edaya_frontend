@@ -20,12 +20,14 @@
 	let busy = $state(false);
 	let firstName = $state('');
 	let lastName = $state('');
+	let code = $state('');
 	let email = $state('');
 	let sendAccountInvitation = $state(true);
 
 	function resetForm() {
 		firstName = '';
 		lastName = '';
+		code = '';
 		email = '';
 		sendAccountInvitation = true;
 	}
@@ -42,6 +44,7 @@
 		const staffId = await staffPage.createStaff({
 			firstName,
 			lastName,
+			code,
 			email,
 			sendAccountInvitation,
 			successMessage: get(t)('staff.createSuccess', { name: fullName }),
@@ -78,6 +81,12 @@
 			</Label>
 			<Input bind:value={lastName} autocomplete="family-name" />
 		</div>
+	</div>
+	<div class="space-y-1.5">
+		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+			{$t('common.code')}
+		</Label>
+		<Input bind:value={code} />
 	</div>
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">

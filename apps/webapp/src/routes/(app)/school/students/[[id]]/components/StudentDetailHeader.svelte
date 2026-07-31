@@ -76,7 +76,10 @@
 
 <DrawerEntityHeader
 	name={student.name}
-	summary={$t('drawer.studentSummary', { avg: student.average.toFixed(1), att: student.attendance })}
+	summary={$t('drawer.studentSummary', {
+		avg: student.average.toFixed(1),
+		att: student.attendance ?? '—',
+	})}
 >
 	{#snippet avatar()}
 		{#if canChangePhoto}

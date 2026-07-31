@@ -57,9 +57,13 @@ class AcademicContext {
 
 	year = $derived(this.years.find(y => y.id === this.yearId) ?? this.years[0]);
 
-	period = $derived(this.periods.find(p => p.id === this.periodId) ?? this.periods[0]);
-
 	periodsForYear = $derived(this.periods.filter(p => p.academicYearId === this.yearId));
+
+	period = $derived(
+		this.periods.find(p => p.id === this.periodId)
+		?? this.periodsForYear.at(-1)
+		?? this.periods[0],
+	);
 
 	publishedPeriodsForYear = $derived(
 		this.publishedPeriods.filter(p => p.academicYearId === this.yearId),
@@ -74,9 +78,21 @@ class AcademicContext {
 	}
 
 	periodDefinitionsForYear(yearId: string): PeriodDefinition[] {
+		const dayOrder: Record<PeriodDefinition['dayOfWeek'], number> = {
+			monday: 0,
+			tuesday: 1,
+			wednesday: 2,
+			thursday: 3,
+			friday: 4,
+			saturday: 5,
+			sunday: 6,
+		};
 		return this.periodDefinitions
 			.filter(p => p.academicYearId === yearId)
-			.sort((a, b) => a.order - b.order);
+			.sort((a, b) => {
+				const byDay = dayOrder[a.dayOfWeek] - dayOrder[b.dayOfWeek];
+				return byDay !== 0 ? byDay : a.order - b.order;
+			});
 	}
 
 	upsertPeriodDefinition(def: PeriodDefinition) {
@@ -105,13 +121,56 @@ class AcademicContext {
 		this.persistSelection();
 	}
 
+	/** Year/period chosen during onboarding — survives empty shell bootstrap. */
+	applyOnboardingSelection(yearId: string, periodId: string) {
+		if (yearId) {
+			this.yearId = yearId;
+		}
+		if (periodId) {
+			this.periodId = periodId;
+		}
+		this.persistSelection();
+	}
+
+	resolveSelectionForApi(): { academicYearId: string; academicPeriodId: string } | null {
+		const academicYearId = this.yearId || this.years[0]?.id || '';
+		const periodsForYear = academicYearId
+			? this.periods.filter(period => period.academicYearId === academicYearId)
+			: this.periods;
+		const published = periodsForYear.filter(period => period.status === 'published');
+		const academicPeriodId = this.periodId
+			|| published.at(-1)?.id
+			|| periodsForYear.at(-1)?.id
+			|| this.periods.at(-1)?.id
+			|| '';
+		if (!academicYearId || !academicPeriodId) {
+			return null;
+		}
+		return { academicYearId, academicPeriodId };
+	}
+
 	private syncPeriodToYear() {
-		const options = this.publishedPeriodsForYear;
+		const options = this.publishedPeriodsForYear.length > 0
+			? this.publishedPeriodsForYear
+			: this.periodsForYear;
 		if (options.length === 0) {
 			return;
 		}
 		if (!options.some(p => p.id === this.periodId)) {
 			this.periodId = options[options.length - 1]!.id;
+			this.persistSelection();
+		}
+	}
+
+	private alignYearWithPeriodCatalog() {
+		if (this.periodsForYear.length > 0 || this.periods.length === 0) {
+			return;
+		}
+		const yearIdFromPeriod = this.periods.find(p => p.academicYearId)?.academicYearId;
+		if (yearIdFromPeriod && yearIdFromPeriod !== this.yearId) {
+			this.yearId = yearIdFromPeriod;
+			this.syncPeriodToYear();
+			this.persistSelection();
 		}
 	}
 
@@ -128,6 +187,7 @@ class AcademicContext {
 		}
 
 		this.syncPeriodToYear();
+		this.alignYearWithPeriodCatalog();
 	}
 
 	initFromShell(shell: AppShellData) {
@@ -153,6 +213,17 @@ class AcademicContext {
 	}
 
 	reset() {
+		this.clearShellCatalog();
+		this.yearId = '';
+		this.periodId = '';
+		if (browser) {
+			sessionStorage.removeItem(STORAGE_YEAR);
+			sessionStorage.removeItem(STORAGE_PERIOD);
+		}
+	}
+
+	/** Clears loaded catalog data without wiping year/period selection (e.g. before shell reload). */
+	clearShellCatalog() {
 		this.years = [];
 		this.periods = [];
 		this.classes = [];
@@ -162,12 +233,9 @@ class AcademicContext {
 		this.studentCount = 0;
 		this.guardianCount = 0;
 		this.staffCount = 0;
-		this.yearId = '';
-		this.periodId = '';
 		this.shellReady = false;
-		if (browser) {
-			sessionStorage.removeItem(STORAGE_YEAR);
-			sessionStorage.removeItem(STORAGE_PERIOD);
+		if (browser && !this.yearId) {
+			this.hydrateSelection();
 		}
 	}
 }

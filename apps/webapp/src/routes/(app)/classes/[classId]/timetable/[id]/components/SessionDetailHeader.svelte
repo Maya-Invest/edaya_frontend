@@ -74,7 +74,7 @@
 	{/snippet}
 	{#snippet actions()}
 		{#if canEditLesson}
-			<PlanningFormModal event={s} bind:open={editEventOpen.open} />
+			<PlanningFormModal event={s} subjects={timetablePage.subjects} bind:open={editEventOpen.open} />
 		{/if}
 	{/snippet}
 	{#snippet overflow()}

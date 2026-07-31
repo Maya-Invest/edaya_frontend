@@ -7,52 +7,13 @@ import type {
 	ValidatedClassImportRow,
 } from './types';
 import { canImportValidatedRows } from '$lib/import/shared/can-import-validated-rows';
+import {
+	buildImportGradeLevelLookup,
+	resolveImportGradeLevel,
+} from '$lib/import/shared/resolve-import-grade-level';
 
 function normalizeLookupValue(value: string): string {
 	return value.trim().toLowerCase();
-}
-
-function buildGradeLevelLookup(
-	gradeLevels: ClassImportValidationContext['gradeLevels'],
-): Map<string, ClassImportValidationContext['gradeLevels'][number][]> {
-	const lookup = new Map<string, ClassImportValidationContext['gradeLevels'][number][]>();
-	for (const gradeLevel of gradeLevels) {
-		const key = normalizeLookupValue(gradeLevel.name);
-		const bucket = lookup.get(key) ?? [];
-		bucket.push(gradeLevel);
-		lookup.set(key, bucket);
-	}
-	return lookup;
-}
-
-function resolveGradeLevel(
-	levelName: string,
-	lookup: Map<string, ClassImportValidationContext['gradeLevels'][number][]>,
-	allGradeLevels: ClassImportValidationContext['gradeLevels'],
-): { gradeLevelId?: string; suggestions?: string[] } {
-	const key = normalizeLookupValue(levelName);
-	if (!key) {
-		return { suggestions: allGradeLevels.slice(0, 5).map(entry => entry.name) };
-	}
-
-	const matches = lookup.get(key) ?? [];
-	if (matches.length === 1) {
-		return { gradeLevelId: matches[0]?.id };
-	}
-
-	const suggestions = allGradeLevels
-		.map(entry => entry.name)
-		.filter((name) => {
-			const normalized = normalizeLookupValue(name);
-			return normalized.includes(key) || key.includes(normalized);
-		})
-		.slice(0, 5);
-
-	return {
-		suggestions: suggestions.length > 0
-			? suggestions
-			: allGradeLevels.slice(0, 5).map(entry => entry.name),
-	};
 }
 
 function issue(
@@ -103,7 +64,7 @@ export function validateClassImportRows(
 	const errors: ClassImportValidationIssue[] = [];
 	const warnings: ClassImportValidationIssue[] = [];
 	const validRows: ValidatedClassImportRow[] = [];
-	const gradeLevelLookup = buildGradeLevelLookup(context.gradeLevels);
+	const gradeLevelLookup = buildImportGradeLevelLookup(context.gradeLevels);
 	const namesInFile = new Map<string, number>();
 
 	for (const row of rows) {
@@ -114,7 +75,7 @@ export function validateClassImportRows(
 
 		let gradeLevelId: string | undefined;
 		if (hasNiveau) {
-			const resolution = resolveGradeLevel(row.niveau, gradeLevelLookup, context.gradeLevels);
+			const resolution = resolveImportGradeLevel(row.niveau, gradeLevelLookup, context.gradeLevels);
 			if (resolution.gradeLevelId) {
 				gradeLevelId = resolution.gradeLevelId;
 			}

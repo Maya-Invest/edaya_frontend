@@ -22,10 +22,10 @@
 		<p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
 			{$t('onboarding.stepProgress', { current: step, total: 4 })}
 		</p>
-		<h1 class="mt-1 font-display text-2xl font-semibold">
+		<h1 class="mt-0.5 font-display text-2xl font-semibold">
 			{$t(definition.labelKey)}
 		</h1>
-		<p class="mt-2 text-sm text-muted-foreground">
+		<p class="mt-1 text-sm text-muted-foreground">
 			{$t(definition.descriptionKey)}
 		</p>
 	</header>

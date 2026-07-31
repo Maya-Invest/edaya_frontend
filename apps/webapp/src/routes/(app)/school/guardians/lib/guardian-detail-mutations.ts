@@ -65,6 +65,7 @@ export async function createGuardianOnPage(
 	input: {
 		firstName: string;
 		lastName: string;
+		code?: string;
 		email?: string;
 		phone?: string;
 		sendAccountInvitation?: boolean;
@@ -72,9 +73,10 @@ export async function createGuardianOnPage(
 	},
 ): Promise<string | null> {
 	const client = getBrowserSchoolClient();
-	const id = `grd-${Date.now().toString(36)}`;
 	const email = input.email?.trim() ?? '';
 	const phone = input.phone?.trim() ?? '';
+	const code = input.code?.trim() ?? '';
+	const id = code || `grd-${Date.now().toString(36)}`;
 	const optimistic = buildOptimisticGuardian({ id, ...input });
 
 	const result = await runGuardianRouteMutation({

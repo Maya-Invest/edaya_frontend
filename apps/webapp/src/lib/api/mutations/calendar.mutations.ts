@@ -4,7 +4,6 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
-import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { t } from '$lib/i18n';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
@@ -189,10 +188,6 @@ async function syncScopedCalendarEvents(
 	return primary;
 }
 
-function schoolYearEventSnapshot(eventId: string): SchoolYearEvent | undefined {
-	return detailDataContext.schoolYearEvents.find(event => event.id === eventId);
-}
-
 export async function createCalendarEventMutation(input: {
 	title: string;
 	description: string;
@@ -218,17 +213,6 @@ export async function createCalendarEventMutation(input: {
 	);
 	const baseId = `cal-${Date.now().toString(36)}`;
 	const createdAt = new Date().toISOString();
-	const optimisticId = input.scope === 'all' ? baseId : `${baseId}-${input.scope[0]}`;
-	const optimistic: SchoolYearEvent = {
-		id: optimisticId,
-		title: input.title.trim(),
-		date: input.date,
-		endDate,
-		type: input.type,
-		description,
-		scope: input.scope,
-		blocksTimetable,
-	};
 	const result = await runMutation(async () => {
 		if (input.scope === 'all') {
 			await client.commands.createCalendarEvent({
@@ -262,12 +246,7 @@ export async function createCalendarEventMutation(input: {
 		return `${baseId}-${input.scope[0]}`;
 	}, {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.appendSchoolYearEvent(optimistic);
-		},
-		rollback: () => {
-			detailDataContext.removeSchoolYearEvent(optimisticId);
-		},
+		versionKeys: ['schoolYearEvents'],
 	});
 	return result ?? null;
 }
@@ -287,21 +266,18 @@ export async function updateCalendarEventMutation(input: {
 	const endDate = input.endDate?.trim() || input.date;
 	const description = input.description.trim() || input.title.trim();
 	const title = input.title.trim();
-	const previous = schoolYearEventSnapshot(input.eventId);
+	let previousBlocksTimetable = defaultBlocksTimetable(input.type);
+	try {
+		const existing = await client.entities.calendarEvents.get(input.eventId);
+		previousBlocksTimetable = existing.isNonSchoolDay;
+	}
+	catch {
+		// Keep default when the event cannot be loaded for patch metadata.
+	}
 	const blocksTimetable = resolveIsNonSchoolDay(
 		input.type,
-		input.blocksTimetable ?? previous?.blocksTimetable ?? defaultBlocksTimetable(input.type),
+		input.blocksTimetable ?? previousBlocksTimetable,
 	);
-	const patch = {
-		title,
-		description,
-		date: input.date,
-		endDate,
-		type: input.type,
-		scope: input.scope,
-		blocksTimetable,
-		linkedIds: input.linkedIds ?? previous?.linkedIds,
-	};
 	const result = await runMutation(async () => {
 		const knownIds = input.linkedIds?.length ? [...input.linkedIds] : [input.eventId];
 		if (input.scope === 'all') {
@@ -334,14 +310,7 @@ export async function updateCalendarEventMutation(input: {
 		});
 	}, {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.patchSchoolYearEvent(input.eventId, patch);
-		},
-		rollback: () => {
-			if (previous) {
-				detailDataContext.patchSchoolYearEvent(input.eventId, previous);
-			}
-		},
+		versionKeys: ['schoolYearEvents'],
 	});
 	return result !== null;
 }

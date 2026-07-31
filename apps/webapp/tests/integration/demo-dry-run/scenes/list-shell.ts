@@ -58,6 +58,31 @@ export async function runListShellScenes(ctx: DemoContext): Promise<void> {
 		'Director role may lack REPORT_CARD_CONFIGURE',
 	);
 
+	await visit(ctx, `${base}/configuration/subjects`, 'DC11', 'Subjects list shell', {
+		pathPrefix: '/configuration/subjects',
+	});
+	await assertFilterSelectShell(ctx, 'DC11', 'Subjects FilterSelect + More menu');
+
+	await visitOrSkip(ctx, `${base}/configuration/grade-scales`, 'DC12', 'Grade scales list shell', {
+		pathPrefix: '/configuration/grade-scales',
+		skipOnFail: 'May require REPORT_CARD_CONFIGURE',
+	});
+	await assertListShellOrSkip(
+		ctx,
+		'DC12',
+		'Grade scales list more menu',
+		{ requireFilter: false, skipReason: 'May require REPORT_CARD_CONFIGURE' },
+	);
+
+	await visit(ctx, `${base}/configuration/notifications`, 'DC13', 'Notification templates list shell', {
+		pathPrefix: '/configuration/notifications',
+	});
+	await assertListShell(ctx, 'DC13', 'Notification templates list more menu', { requireFilter: false });
+
+	await visit(ctx, `${base}/account/inbox`, 'DC14', 'Account inbox shell', {
+		pathPrefix: '/account/inbox',
+	});
+
 	await visitOrSkip(ctx, `${base}/school/calendar`, 'DC10', 'School calendar filter select', {
 		pathPrefix: '/school/calendar',
 		skipOnFail: 'Calendar query returned 403 — verify seed grants',

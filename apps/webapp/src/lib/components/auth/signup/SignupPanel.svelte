@@ -25,6 +25,8 @@
 	let confirmPassword = $state('');
 	let busy = $state(false);
 	let verificationSent = $state(false);
+	/** Sync re-entry guard — reactive `busy` alone can miss double-submit before DOM disables. */
+	let submitting = false;
 
 	const passwordsMatch = $derived(confirmPassword.length === 0 || password === confirmPassword);
 	const passwordLongEnough = $derived(password.length === 0 || password.length >= MIN_PASSWORD_LENGTH);
@@ -32,11 +34,20 @@
 		apiConnected && !busy && name.trim().length > 0 && email.trim().length > 0 && password.length >= MIN_PASSWORD_LENGTH && password === confirmPassword,
 	);
 
+	async function finishSignUpAfterAuth(): Promise<boolean> {
+		const authUser = await getAuthenticatedAuthUser();
+		if (!authUser) {
+			return false;
+		}
+		return completeAuthSignIn($t('auth.signUpSuccess'));
+	}
+
 	async function handleSignUp() {
-		if (!canSubmit) {
+		if (submitting || !canSubmit) {
 			return;
 		}
 
+		submitting = true;
 		busy = true;
 		verificationSent = false;
 
@@ -49,6 +60,10 @@
 			});
 
 			if (error) {
+				// Parallel submit race: the other request may already have created the session.
+				if (await finishSignUpAfterAuth()) {
+					return;
+				}
 				if (isExistingAccountAuthError(error)) {
 					toast.error($t('auth.signUpAccountExists'));
 					onSwitchToSignIn(normalizedEmail);
@@ -58,12 +73,8 @@
 				return;
 			}
 
-			const authUser = await getAuthenticatedAuthUser();
-			if (authUser) {
-				const signedIn = await completeAuthSignIn($t('auth.signUpSuccess'));
-				if (signedIn) {
-					return;
-				}
+			if (await finishSignUpAfterAuth()) {
+				return;
 			}
 
 			verificationSent = true;
@@ -74,6 +85,7 @@
 			toast.error(`${$t('auth.signUpFailed')}: ${message}`);
 		}
 		finally {
+			submitting = false;
 			busy = false;
 		}
 	}

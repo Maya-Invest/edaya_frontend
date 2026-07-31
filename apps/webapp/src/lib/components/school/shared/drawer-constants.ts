@@ -1,4 +1,4 @@
-import type { Guardian, Subject, StaffRole, ActivityEnrollmentStatus, Incident } from '$lib/types/school';
+import type { Subject, StaffRole, ActivityEnrollmentStatus, Incident } from '$lib/types/school';
 import type { DrawerItem } from './drawer-types.ts';
 import { BADGE, BADGE_DANGER, BADGE_INFO, BADGE_WARN } from '$lib/ui-tones';
 
@@ -9,6 +9,7 @@ const drawerBadge = BADGE_INFO;
 
 export const kindStyle: Record<NonNullable<DrawerItem>['kind'], string> = {
 	student: drawerBadge,
+	catalogSubject: drawerBadge,
 	subject: drawerBadge,
 	planning: drawerBadge,
 	evaluation: drawerBadge,
@@ -30,6 +31,7 @@ export const kindStyle: Record<NonNullable<DrawerItem>['kind'], string> = {
 
 export const kindLabelKey: Record<NonNullable<DrawerItem>['kind'], string> = {
 	student: 'drawer.student',
+	catalogSubject: 'drawer.catalogSubject',
 	subject: 'drawer.subject',
 	planning: 'drawer.planning',
 	evaluation: 'drawer.evaluation',
@@ -49,11 +51,16 @@ export const kindLabelKey: Record<NonNullable<DrawerItem>['kind'], string> = {
 	classGroup: 'drawer.classGroup',
 };
 
-export const relationKey: Record<Guardian['relation'], string> = {
+export const relationKey: Partial<Record<string, string>> = {
 	'Mother': 'guardian.relation.Mother',
 	'Father': 'guardian.relation.Father',
 	'Legal guardian': 'guardian.relation.LegalGuardian',
 };
+
+/** Known relations → i18n key; otherwise return the raw API string for display. */
+export function guardianRelationLabel(relation: string): string {
+	return relationKey[relation] ?? relation;
+}
 
 export const dotByColor: Record<Subject['color'], string> = {
 	mint: 'bg-accent',

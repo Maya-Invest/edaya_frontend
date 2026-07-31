@@ -27,6 +27,7 @@ export interface ClassImportRunOptions {
 	rows: readonly ValidatedClassImportRow[];
 	existingClassIds: readonly string[];
 	siblingCountByGrade: Readonly<Record<string, number>>;
+	gradeLevelNameById?: ReadonlyMap<string, string>;
 	onProgress?: (current: number, total: number) => void;
 }
 
@@ -38,6 +39,7 @@ export async function runClassImport(options: ClassImportRunOptions): Promise<Cl
 		rows,
 		existingClassIds,
 		siblingCountByGrade,
+		gradeLevelNameById,
 		onProgress,
 	} = options;
 
@@ -49,7 +51,12 @@ export async function runClassImport(options: ClassImportRunOptions): Promise<Cl
 
 	for (const [index, row] of rows.entries()) {
 		onProgress?.(index, total);
-		const id = nextClassIdForImport(row.gradeLevelId, usedClassIds, gradeSiblingCounts);
+		const id = nextClassIdForImport(
+			row.gradeLevelId,
+			usedClassIds,
+			gradeSiblingCounts,
+			gradeLevelNameById?.get(row.gradeLevelId),
+		);
 
 		try {
 			await client.commands.createClassGroup({
@@ -59,6 +66,7 @@ export async function runClassImport(options: ClassImportRunOptions): Promise<Cl
 				gradeLevelId: row.gradeLevelId,
 				name: row.nom.trim(),
 				capacity: row.capacity ?? null,
+				// Import template has no attendanceMode column yet — default session mode.
 				attendanceMode: 'session',
 				homeroomStaffId: null,
 			});

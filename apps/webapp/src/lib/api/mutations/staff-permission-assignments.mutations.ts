@@ -1,10 +1,8 @@
 import type { components } from '$lib/api/schema';
-import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
-import { detailDataContext } from '$lib/detail-data/context.svelte';
 
 type StaffPermissionAssignment = components['schemas']['StaffPermissionAssignment'];
 type StaffPermissionAssignmentConfigCommand = components['schemas']['StaffPermissionAssignmentConfigCommand'];
@@ -32,27 +30,11 @@ function toStaffPermissionConfigCommand(
 	};
 }
 
-function applyStaffPermissionAssignment(
-	assignment: StaffPermissionAssignment,
-	previous?: StaffPermissionAssignmentView,
-) {
-	detailDataContext.upsertStaffPermissionAssignment({
-		...assignment,
-		scopeLabel: previous?.scopeLabel ?? assignment.scopeIds ?? '—',
-		tenantWide: (assignment.scopeIds ?? '') === '',
-		isSynced: Boolean(assignment.sourceStaffAssignmentId),
-		hasMissingScope: previous?.hasMissingScope ?? false,
-	});
-}
-
 export async function saveStaffPermissionAssignmentMutation(input: {
 	assignment: StaffPermissionAssignment;
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = detailDataContext.staffPermissionAssignments.find(
-		row => row.id === input.assignment.id,
-	);
 
 	const result = await runMutation(
 		() => client.commands.assignStaffPermission(
@@ -60,23 +42,9 @@ export async function saveStaffPermissionAssignmentMutation(input: {
 		),
 		{
 			successMessage: input.successMessage,
-			apply: () => {
-				applyStaffPermissionAssignment(input.assignment, previous);
-			},
-			rollback: () => {
-				if (previous) {
-					detailDataContext.upsertStaffPermissionAssignment(previous);
-				}
-				else {
-					detailDataContext.removeStaffPermissionAssignment(input.assignment.id);
-				}
-			},
+			versionKeys: ['staff'],
 		},
 	);
-
-	if (result) {
-		applyStaffPermissionAssignment(result, previous);
-	}
 
 	return result !== null;
 }
@@ -86,21 +54,12 @@ export async function deleteStaffPermissionAssignmentMutation(input: {
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = detailDataContext.staffPermissionAssignments.find(row => row.id === input.id);
-	if (!previous) {
-		return false;
-	}
 
 	const result = await runMutation(
 		() => client.entities.staffPermissionAssignments.delete({ id: input.id }),
 		{
 			successMessage: input.successMessage,
-			apply: () => {
-				detailDataContext.removeStaffPermissionAssignment(input.id);
-			},
-			rollback: () => {
-				detailDataContext.upsertStaffPermissionAssignment(previous);
-			},
+			versionKeys: ['staff'],
 		},
 	);
 

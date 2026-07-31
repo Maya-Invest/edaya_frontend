@@ -19,6 +19,12 @@ const CLASS_TIMETABLE_DRAWER_PATH = /^\/classes\/[^/]+\/timetable\/[^/]+(?:\/[^/
 const CLASS_EVALUATIONS_DRAWER_PATH = /^\/classes\/[^/]+\/evaluations\/[^/]+(?:\/[^/]+)?$/;
 const CLASS_TEACHING_DRAWER_PATH = /^\/classes\/[^/]+\/teaching\/[^/]+(?:\/[^/]+)?$/;
 const CLASS_REPORT_CARDS_DRAWER_PATH = /^\/classes\/[^/]+\/report-cards\/[^/]+(?:\/[^/]+)?$/;
+const CLASS_ATTENDANCE_DRAWER_PATH = /^\/classes\/[^/]+\/attendance\/[^/]+(?:\/[^/]+)?$/;
+const FINANCE_BILLING_DRAWER_PATH = /^\/finance\/billing\/[^/]+(?:\/[^/]+)?$/;
+const CONFIG_REPORT_CARDS_DRAWER_PATH = /^\/configuration\/report-cards\/[^/]+(?:\/[^/]+)?$/;
+const CONFIG_GRADE_LEVELS_DRAWER_PATH = /^\/configuration\/grade-levels\/[^/]+(?:\/[^/]+)?$/;
+const CONFIG_CLASSES_DRAWER_PATH = /^\/configuration\/classes\/[^/]+(?:\/[^/]+)?$/;
+const CONFIG_SUBJECTS_DRAWER_PATH = /^\/configuration\/subjects\/[^/]+(?:\/[^/]+)?$/;
 
 export function isLikelyDetailPath(pathname: string): boolean {
 	return DETAIL_PATH_PATTERNS.some(pattern => pattern.test(pathname))
@@ -29,7 +35,13 @@ export function isLikelyDetailPath(pathname: string): boolean {
 		|| CLASS_TIMETABLE_DRAWER_PATH.test(pathname)
 		|| CLASS_EVALUATIONS_DRAWER_PATH.test(pathname)
 		|| CLASS_TEACHING_DRAWER_PATH.test(pathname)
-		|| CLASS_REPORT_CARDS_DRAWER_PATH.test(pathname);
+		|| CLASS_REPORT_CARDS_DRAWER_PATH.test(pathname)
+		|| CLASS_ATTENDANCE_DRAWER_PATH.test(pathname)
+		|| FINANCE_BILLING_DRAWER_PATH.test(pathname)
+		|| CONFIG_REPORT_CARDS_DRAWER_PATH.test(pathname)
+		|| CONFIG_GRADE_LEVELS_DRAWER_PATH.test(pathname)
+		|| CONFIG_CLASSES_DRAWER_PATH.test(pathname)
+		|| CONFIG_SUBJECTS_DRAWER_PATH.test(pathname);
 }
 
 function normalizeListPathname(pathname: string): string {
@@ -61,10 +73,39 @@ function normalizeListPathname(pathname: string): string {
 	if (reportCardsMatch) {
 		return `/classes/${reportCardsMatch[1]}/report-cards`;
 	}
+	const attendanceMatch = pathname.match(/^\/classes\/([^/]+)\/attendance\/[^/]+/);
+	if (attendanceMatch) {
+		return `/classes/${attendanceMatch[1]}/attendance`;
+	}
+	const billingMatch = pathname.match(/^\/finance\/billing\/[^/]+/);
+	if (billingMatch) {
+		return '/finance/billing';
+	}
+	const configReportCardsMatch = pathname.match(/^\/configuration\/report-cards\/[^/]+/);
+	if (configReportCardsMatch) {
+		return '/configuration/report-cards';
+	}
+	const configGradeLevelsMatch = pathname.match(/^\/configuration\/grade-levels\/[^/]+/);
+	if (configGradeLevelsMatch) {
+		return '/configuration/grade-levels';
+	}
+	const configClassesMatch = pathname.match(/^\/configuration\/classes\/[^/]+/);
+	if (configClassesMatch) {
+		return '/configuration/classes';
+	}
+	const configSubjectsMatch = pathname.match(/^\/configuration\/subjects\/[^/]+(?:\/[^/]+)?/);
+	if (configSubjectsMatch) {
+		return '/configuration/subjects';
+	}
 	if (isLikelyDetailPath(pathname)) {
 		return pathname.replace(/\/[^/]+$/, '');
 	}
 	return pathname;
+}
+
+/** List URL to navigate to after closing or deleting a URL-backed detail entity. */
+export function listPathForDetailNavigation(pathname: string): string {
+	return normalizeListPathname(pathname);
 }
 
 function cacheKeyWithDemo(pathname: string, url: URL): string {

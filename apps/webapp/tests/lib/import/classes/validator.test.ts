@@ -35,6 +35,27 @@ describe('class import validator', () => {
 		expect(result.validRows[0]?.gradeLevelId).toBe('gl-6');
 	});
 
+	it('resolves niveau aliases (6eme) against wizard and legacy grade level names', () => {
+		const legacyLevels = [
+			{ id: 'gl-6', name: 'Sixième' },
+			{ id: 'gl-5', name: 'Cinquième' },
+		] as const;
+
+		const fromLegacy = validateClassImportRows(
+			[row({ rowIndex: 2, niveau: '6eme', nom: '6eme B' })],
+			{ gradeLevels: legacyLevels, existingClasses: [] },
+		);
+		expect(fromLegacy.errors).toEqual([]);
+		expect(fromLegacy.validRows[0]?.gradeLevelId).toBe('gl-6');
+
+		const fromWizard = validateClassImportRows(
+			[row({ rowIndex: 2, niveau: '6eme', nom: '6eme B' })],
+			{ gradeLevels: GRADE_LEVELS, existingClasses: EXISTING_CLASSES },
+		);
+		expect(fromWizard.errors).toEqual([]);
+		expect(fromWizard.validRows[0]?.gradeLevelId).toBe('gl-6');
+	});
+
 	it('flags missing required fields', () => {
 		const result = validateClassImportRows(
 			[row({ rowIndex: 2, nom: '' })],

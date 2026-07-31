@@ -50,6 +50,21 @@ describe('isLikelyDetailPath', () => {
 		expect(isLikelyDetailPath('/classes/6a/timetable/s-1/logbook')).toBe(true);
 		expect(isLikelyDetailPath('/classes/6a/timetable')).toBe(false);
 	});
+
+	it('recognizes class attendance drawer paths', () => {
+		expect(isLikelyDetailPath('/classes/6a/attendance/day-1')).toBe(true);
+		expect(isLikelyDetailPath('/classes/6a/attendance')).toBe(false);
+	});
+
+	it('recognizes finance billing drawer paths', () => {
+		expect(isLikelyDetailPath('/finance/billing/sf-1')).toBe(true);
+		expect(isLikelyDetailPath('/finance/billing')).toBe(false);
+	});
+
+	it('recognizes configuration report-cards drawer paths', () => {
+		expect(isLikelyDetailPath('/configuration/report-cards/rcd-1')).toBe(true);
+		expect(isLikelyDetailPath('/configuration/report-cards')).toBe(false);
+	});
 });
 
 describe('listRouteCacheKey', () => {
@@ -101,6 +116,21 @@ describe('listRouteCacheKey', () => {
 		expect(listRouteCacheKey(new URL('http://local/classes/6a/timetable/s-1'))).toBe('/classes/6a/timetable');
 		expect(listRouteCacheKey(new URL('http://local/classes/6a/timetable/s-1/details'))).toBe('/classes/6a/timetable');
 		expect(listRouteCacheKey(new URL('http://local/classes/6a/timetable/s-1/attendance'))).toBe('/classes/6a/timetable');
+	});
+
+	it('maps class attendance drawer paths to the list route', () => {
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/attendance'))).toBe('/classes/6a/attendance');
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/attendance/day-1'))).toBe('/classes/6a/attendance');
+	});
+
+	it('maps finance billing drawer paths to the list route', () => {
+		expect(listRouteCacheKey(new URL('http://local/finance/billing'))).toBe('/finance/billing');
+		expect(listRouteCacheKey(new URL('http://local/finance/billing/sf-1'))).toBe('/finance/billing');
+	});
+
+	it('maps configuration report-cards drawer paths to the list route', () => {
+		expect(listRouteCacheKey(new URL('http://local/configuration/report-cards'))).toBe('/configuration/report-cards');
+		expect(listRouteCacheKey(new URL('http://local/configuration/report-cards/rcd-1'))).toBe('/configuration/report-cards');
 	});
 });
 

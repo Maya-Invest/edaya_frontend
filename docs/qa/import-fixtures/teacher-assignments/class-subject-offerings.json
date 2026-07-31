@@ -1,0 +1,310 @@
+[
+  {
+    "classe": "1ère A",
+    "matiere": "Anglais"
+  },
+  {
+    "classe": "1ère A",
+    "matiere": "Français"
+  },
+  {
+    "classe": "1ère A",
+    "matiere": "Histoire-Géographie"
+  },
+  {
+    "classe": "1ère A",
+    "matiere": "Mathématiques"
+  },
+  {
+    "classe": "1ère A",
+    "matiere": "Philosophie"
+  },
+  {
+    "classe": "1ère A",
+    "matiere": "Physique-Chimie"
+  },
+  {
+    "classe": "1ère A",
+    "matiere": "Sciences de la Vie et de la Terre"
+  },
+  {
+    "classe": "1ère A",
+    "matiere": "TICE"
+  },
+  {
+    "classe": "1ère A",
+    "matiere": "Éducation Physique et Sportive"
+  },
+  {
+    "classe": "1ère A",
+    "matiere": "Éducation aux Droits de l'Homme et à la Citoyenneté"
+  },
+  {
+    "classe": "2nde A",
+    "matiere": "Anglais"
+  },
+  {
+    "classe": "2nde A",
+    "matiere": "Français"
+  },
+  {
+    "classe": "2nde A",
+    "matiere": "Histoire-Géographie"
+  },
+  {
+    "classe": "2nde A",
+    "matiere": "Mathématiques"
+  },
+  {
+    "classe": "2nde A",
+    "matiere": "Physique-Chimie"
+  },
+  {
+    "classe": "2nde A",
+    "matiere": "Sciences de la Vie et de la Terre"
+  },
+  {
+    "classe": "2nde A",
+    "matiere": "TICE"
+  },
+  {
+    "classe": "2nde A",
+    "matiere": "Éducation Physique et Sportive"
+  },
+  {
+    "classe": "2nde A",
+    "matiere": "Éducation aux Droits de l'Homme et à la Citoyenneté"
+  },
+  {
+    "classe": "3e A",
+    "matiere": "Anglais"
+  },
+  {
+    "classe": "3e A",
+    "matiere": "Arts Plastiques"
+  },
+  {
+    "classe": "3e A",
+    "matiere": "Français"
+  },
+  {
+    "classe": "3e A",
+    "matiere": "Histoire-Géographie"
+  },
+  {
+    "classe": "3e A",
+    "matiere": "Mathématiques"
+  },
+  {
+    "classe": "3e A",
+    "matiere": "Physique-Chimie"
+  },
+  {
+    "classe": "3e A",
+    "matiere": "Sciences de la Vie et de la Terre"
+  },
+  {
+    "classe": "3e A",
+    "matiere": "TICE"
+  },
+  {
+    "classe": "3e A",
+    "matiere": "Technologie"
+  },
+  {
+    "classe": "3e A",
+    "matiere": "Éducation Musicale"
+  },
+  {
+    "classe": "3e A",
+    "matiere": "Éducation Physique et Sportive"
+  },
+  {
+    "classe": "3e A",
+    "matiere": "Éducation aux Droits de l'Homme et à la Citoyenneté"
+  },
+  {
+    "classe": "4e A",
+    "matiere": "Anglais"
+  },
+  {
+    "classe": "4e A",
+    "matiere": "Arts Plastiques"
+  },
+  {
+    "classe": "4e A",
+    "matiere": "Français"
+  },
+  {
+    "classe": "4e A",
+    "matiere": "Histoire-Géographie"
+  },
+  {
+    "classe": "4e A",
+    "matiere": "Mathématiques"
+  },
+  {
+    "classe": "4e A",
+    "matiere": "Physique-Chimie"
+  },
+  {
+    "classe": "4e A",
+    "matiere": "Sciences de la Vie et de la Terre"
+  },
+  {
+    "classe": "4e A",
+    "matiere": "TICE"
+  },
+  {
+    "classe": "4e A",
+    "matiere": "Technologie"
+  },
+  {
+    "classe": "4e A",
+    "matiere": "Éducation Musicale"
+  },
+  {
+    "classe": "4e A",
+    "matiere": "Éducation Physique et Sportive"
+  },
+  {
+    "classe": "4e A",
+    "matiere": "Éducation aux Droits de l'Homme et à la Citoyenneté"
+  },
+  {
+    "classe": "5e A",
+    "matiere": "Anglais"
+  },
+  {
+    "classe": "5e A",
+    "matiere": "Arts Plastiques"
+  },
+  {
+    "classe": "5e A",
+    "matiere": "Français"
+  },
+  {
+    "classe": "5e A",
+    "matiere": "Histoire-Géographie"
+  },
+  {
+    "classe": "5e A",
+    "matiere": "Mathématiques"
+  },
+  {
+    "classe": "5e A",
+    "matiere": "Physique-Chimie"
+  },
+  {
+    "classe": "5e A",
+    "matiere": "Sciences de la Vie et de la Terre"
+  },
+  {
+    "classe": "5e A",
+    "matiere": "TICE"
+  },
+  {
+    "classe": "5e A",
+    "matiere": "Technologie"
+  },
+  {
+    "classe": "5e A",
+    "matiere": "Éducation Musicale"
+  },
+  {
+    "classe": "5e A",
+    "matiere": "Éducation Physique et Sportive"
+  },
+  {
+    "classe": "5e A",
+    "matiere": "Éducation aux Droits de l'Homme et à la Citoyenneté"
+  },
+  {
+    "classe": "6e A",
+    "matiere": "Anglais"
+  },
+  {
+    "classe": "6e A",
+    "matiere": "Arts Plastiques"
+  },
+  {
+    "classe": "6e A",
+    "matiere": "Français"
+  },
+  {
+    "classe": "6e A",
+    "matiere": "Histoire-Géographie"
+  },
+  {
+    "classe": "6e A",
+    "matiere": "Mathématiques"
+  },
+  {
+    "classe": "6e A",
+    "matiere": "Physique-Chimie"
+  },
+  {
+    "classe": "6e A",
+    "matiere": "Sciences de la Vie et de la Terre"
+  },
+  {
+    "classe": "6e A",
+    "matiere": "TICE"
+  },
+  {
+    "classe": "6e A",
+    "matiere": "Technologie"
+  },
+  {
+    "classe": "6e A",
+    "matiere": "Éducation Musicale"
+  },
+  {
+    "classe": "6e A",
+    "matiere": "Éducation Physique et Sportive"
+  },
+  {
+    "classe": "6e A",
+    "matiere": "Éducation aux Droits de l'Homme et à la Citoyenneté"
+  },
+  {
+    "classe": "Terminale A",
+    "matiere": "Anglais"
+  },
+  {
+    "classe": "Terminale A",
+    "matiere": "Français"
+  },
+  {
+    "classe": "Terminale A",
+    "matiere": "Histoire-Géographie"
+  },
+  {
+    "classe": "Terminale A",
+    "matiere": "Mathématiques"
+  },
+  {
+    "classe": "Terminale A",
+    "matiere": "Philosophie"
+  },
+  {
+    "classe": "Terminale A",
+    "matiere": "Physique-Chimie"
+  },
+  {
+    "classe": "Terminale A",
+    "matiere": "Sciences de la Vie et de la Terre"
+  },
+  {
+    "classe": "Terminale A",
+    "matiere": "TICE"
+  },
+  {
+    "classe": "Terminale A",
+    "matiere": "Éducation Physique et Sportive"
+  },
+  {
+    "classe": "Terminale A",
+    "matiere": "Éducation aux Droits de l'Homme et à la Citoyenneté"
+  }
+]

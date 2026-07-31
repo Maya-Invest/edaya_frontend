@@ -1,3 +1,4 @@
+import { configClassGroupPath } from './paths';
 import type { DemoContext, EnsureDailyAttendanceOptions } from './types';
 import { visit } from './visit';
 
@@ -34,9 +35,9 @@ export async function ensureDailyAttendanceMode(
 	const { homeroomStaffName, force = false } = options;
 	const { page, base } = ctx;
 
-	await visit(ctx, `${base}/configuration/classes/${classId}`, 'setup', `Open ${classId} config`, {
+	await visit(ctx, `${base}${configClassGroupPath(classId, 'profile')}`, 'setup', `Open ${classId} config`, {
 		pathPrefix: `/configuration/classes/${classId}`,
-		selector: 'main',
+		selector: 'aside#app-sidebar',
 	});
 
 	const dailyModePattern = /^(Appel quotidien|Daily roll call)$/i;
@@ -79,8 +80,6 @@ export async function ensureDailyAttendanceMode(
 
 	await page.getByRole('button', { name: /save|enregistrer/i }).click();
 	await page.locator('[role="dialog"]').waitFor({ state: 'hidden', timeout: 20_000 }).catch(() => {});
-	await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
-	await page.waitForTimeout(2_000);
 
 	const dailyConfigured = await page
 		.locator('main')

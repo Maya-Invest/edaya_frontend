@@ -1,12 +1,9 @@
 import type { components } from '$lib/api/schema';
-import type { Teacher } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { sendAccountInvitationMutation } from '$lib/api/mutations/invitation.mutations';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { mapTeacher } from '$lib/api/teachers-data';
 import { authSession } from '$lib/auth/session.svelte';
-import { detailDataContext } from '$lib/detail-data/context.svelte';
 import { navigateToListAfterEntityDelete } from '$lib/navigation/navigate-after-delete';
 
 type TeacherAssignment = components['schemas']['TeacherAssignment'];
@@ -17,14 +14,6 @@ function schoolId(): string {
 
 function academicYearId(): string {
 	return academicContext.yearId;
-}
-
-function teacherSnapshot(teacherId: string): Teacher | undefined {
-	return detailDataContext.teachers.find(teacher => teacher.id === teacherId);
-}
-
-function assignmentSnapshot(id: string): TeacherAssignment | undefined {
-	return detailDataContext.teacherAssignments.find(row => row.id === id);
 }
 
 export async function createTeacherMutation(input: {
@@ -38,15 +27,6 @@ export async function createTeacherMutation(input: {
 	const client = getBrowserSchoolClient();
 	const id = `tch-${Date.now().toString(36)}`;
 	const email = input.email?.trim() ?? '';
-	const optimistic = mapTeacher({
-		id,
-		schoolId: schoolId(),
-		firstName: input.firstName.trim(),
-		lastName: input.lastName.trim(),
-		email: email || null,
-		phone: input.phone?.trim() || null,
-		isActive: true,
-	});
 
 	const result = await runMutation(() => client.entities.teachers.save({
 		id,
@@ -58,12 +38,7 @@ export async function createTeacherMutation(input: {
 		isActive: true,
 	}), {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.upsertTeacher(optimistic);
-		},
-		rollback: () => {
-			detailDataContext.removeTeacher(id);
-		},
+		versionKeys: ['teachers'],
 	});
 
 	if (!result) {
@@ -93,7 +68,6 @@ export async function updateTeacherProfileMutation(input: {
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = teacherSnapshot(input.teacherId);
 	let existing: components['schemas']['Teacher'];
 	try {
 		existing = await client.entities.teachers.get(input.teacherId);
@@ -114,14 +88,7 @@ export async function updateTeacherProfileMutation(input: {
 		...patch,
 	}), {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.upsertTeacher(mapTeacher({ ...existing, ...patch }));
-		},
-		rollback: () => {
-			if (previous) {
-				detailDataContext.upsertTeacher(previous);
-			}
-		},
+		versionKeys: ['teachers'],
 	});
 
 	return result !== null;
@@ -133,7 +100,6 @@ export async function updateTeacherStatusMutation(input: {
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = teacherSnapshot(input.teacherId);
 	let existing: components['schemas']['Teacher'];
 	try {
 		existing = await client.entities.teachers.get(input.teacherId);
@@ -147,16 +113,7 @@ export async function updateTeacherStatusMutation(input: {
 		isActive: input.isActive,
 	}), {
 		successMessage: input.successMessage,
-		apply: () => {
-			if (previous) {
-				detailDataContext.upsertTeacher({ ...previous, isActive: input.isActive });
-			}
-		},
-		rollback: () => {
-			if (previous) {
-				detailDataContext.upsertTeacher(previous);
-			}
-		},
+		versionKeys: ['teachers'],
 	});
 
 	return result !== null;
@@ -167,23 +124,10 @@ export async function deleteTeacherMutation(
 	opts?: { successMessage?: string; navigate?: boolean },
 ): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = teacherSnapshot(teacherId);
-	const previousAssignments = detailDataContext.teacherAssignmentsForTeacher(teacherId);
 
 	const result = await runMutation(() => client.entities.teachers.delete({ id: teacherId }), {
 		successMessage: opts?.successMessage,
-		apply: () => {
-			detailDataContext.removeTeacher(teacherId);
-			for (const row of previousAssignments) {
-				detailDataContext.removeTeacherAssignment(row.id);
-			}
-		},
-		rollback: () => {
-			if (previous) {
-				detailDataContext.upsertTeacher(previous);
-			}
-			detailDataContext.mergeTeacherAssignments(previousAssignments);
-		},
+		versionKeys: ['teachers'],
 		onSuccess: opts?.navigate === false ? undefined : navigateToListAfterEntityDelete,
 	});
 
@@ -195,21 +139,10 @@ export async function saveTeacherAssignmentMutation(input: {
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = assignmentSnapshot(input.assignment.id);
 
 	const result = await runMutation(() => client.entities.teacherAssignments.save(input.assignment), {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.upsertTeacherAssignment(input.assignment);
-		},
-		rollback: () => {
-			if (previous) {
-				detailDataContext.upsertTeacherAssignment(previous);
-			}
-			else {
-				detailDataContext.removeTeacherAssignment(input.assignment.id);
-			}
-		},
+		versionKeys: ['teachers'],
 	});
 
 	return result !== null;
@@ -220,19 +153,10 @@ export async function deleteTeacherAssignmentMutation(input: {
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = assignmentSnapshot(input.id);
-	if (!previous) {
-		return false;
-	}
 
 	const result = await runMutation(() => client.entities.teacherAssignments.delete({ id: input.id }), {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.removeTeacherAssignment(input.id);
-		},
-		rollback: () => {
-			detailDataContext.upsertTeacherAssignment(previous);
-		},
+		versionKeys: ['teachers'],
 	});
 
 	return result !== null;

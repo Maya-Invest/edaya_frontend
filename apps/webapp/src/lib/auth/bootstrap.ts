@@ -8,6 +8,7 @@ import { persistServerOnboardingStatusToDraft } from '$lib/onboarding/resume-onb
 import {
 	fetchServerOnboardingAccountStatus,
 } from '$lib/onboarding/sync-account-status';
+import { mergeServerOnboardingStatus } from '$lib/onboarding/wizard-completion-flag';
 import { ApiError } from '@maya-invest/edaya-api-client';
 import { authClient } from './client';
 import { authSession } from './session.svelte';
@@ -30,9 +31,16 @@ export interface BootstrapSessionResult {
 
 let sessionBootstrapPromise: Promise<BootstrapSessionResult> | null = null;
 
-export async function bootstrapSession(): Promise<BootstrapSessionResult> {
+export interface BootstrapSessionOptions {
+	/** Refreshes session data without toggling authSession.ready (avoids full-page loaders). */
+	silent?: boolean;
+}
+
+export async function bootstrapSession(
+	options: BootstrapSessionOptions = {},
+): Promise<BootstrapSessionResult> {
 	if (!sessionBootstrapPromise) {
-		sessionBootstrapPromise = runBootstrapSession();
+		sessionBootstrapPromise = runBootstrapSession(options);
 	}
 	return sessionBootstrapPromise;
 }
@@ -41,7 +49,9 @@ export function resetBootstrapSession() {
 	sessionBootstrapPromise = null;
 }
 
-async function runBootstrapSession(): Promise<BootstrapSessionResult> {
+async function runBootstrapSession(
+	options: BootstrapSessionOptions = {},
+): Promise<BootstrapSessionResult> {
 	const emptyResult: BootstrapSessionResult = {
 		session: null,
 		staffProfile: null,
@@ -49,7 +59,10 @@ async function runBootstrapSession(): Promise<BootstrapSessionResult> {
 		pendingOnboarding: false,
 	};
 
-	authSession.markLoading();
+	const silent = options.silent === true;
+	if (!silent) {
+		authSession.markLoading();
+	}
 	try {
 		const { data: auth } = await authClient.getSession();
 		if (!auth?.session || !auth.user?.id) {
@@ -64,10 +77,12 @@ async function runBootstrapSession(): Promise<BootstrapSessionResult> {
 		}
 		catch (error) {
 			if (error instanceof ApiError && error.status === 401) {
-				authSession.setPendingOnboarding({
-					authUserId: auth.user.id,
-					loginEmail,
-				});
+				if (!silent) {
+					authSession.setPendingOnboarding({
+						authUserId: auth.user.id,
+						loginEmail,
+					});
+				}
 				return {
 					...emptyResult,
 					pendingOnboarding: true,
@@ -100,11 +115,15 @@ async function runBootstrapSession(): Promise<BootstrapSessionResult> {
 				notificationPhone: sessionStaff.notificationPhone,
 			});
 
-			authSession.setServerOnboardingStatus(serverOnboardingStatus);
-			if (serverOnboardingStatus) {
+			const mergedOnboardingStatus = mergeServerOnboardingStatus(
+				authSession.serverOnboardingStatus,
+				serverOnboardingStatus,
+			);
+			authSession.setServerOnboardingStatus(mergedOnboardingStatus);
+			if (mergedOnboardingStatus) {
 				persistServerOnboardingStatusToDraft(
 					auth.user.id,
-					serverOnboardingStatus,
+					mergedOnboardingStatus,
 					session.schoolId,
 				);
 			}
@@ -133,11 +152,11 @@ async function runBootstrapSession(): Promise<BootstrapSessionResult> {
 		throw error;
 	}
 	finally {
-		authSession.markReady();
+		if (!silent) {
+			authSession.markReady();
+		}
 	}
 }
-
-/** Loads Better Auth session only — skips school API (for /login, /invite, /onboarding). */
 export async function bootstrapAuthOnly(): Promise<void> {
 	if (authSession.hasAuthAccount || authSession.isLoggedIn) {
 		return;

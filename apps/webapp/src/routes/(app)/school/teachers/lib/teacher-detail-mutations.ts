@@ -52,6 +52,7 @@ export async function createTeacherOnPage(
 	input: {
 		firstName: string;
 		lastName: string;
+		code?: string;
 		email?: string;
 		phone?: string;
 		sendAccountInvitation?: boolean;
@@ -59,8 +60,9 @@ export async function createTeacherOnPage(
 	},
 ): Promise<string | null> {
 	const client = getBrowserSchoolClient();
-	const id = `tch-${Date.now().toString(36)}`;
 	const email = input.email?.trim() ?? '';
+	const code = input.code?.trim() ?? '';
+	const id = code || `tch-${Date.now().toString(36)}`;
 	const optimistic = buildOptimisticTeacher({ id, ...input });
 
 	const result = await runTeacherRouteMutation({

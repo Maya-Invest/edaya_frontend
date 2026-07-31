@@ -1,12 +1,12 @@
 import type { StudentEnrollmentHistoryItem } from '$lib/types/school';
 import type { StudentsPageState } from '../../../students-page.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { loadStudentEnrollmentHistory } from '$lib/api/student-drawer-data';
 import { todayDateInput } from '$lib/date/format';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { runStudentRouteMutation } from '../../../lib/student-route-mutation';
-import { schoolStudentDetailIdFromUrl } from '../../../students-page.svelte';
 
 const STUDENT_ENROLLMENTS_TAB_KEY = Symbol('student-enrollments-tab');
 
@@ -50,7 +50,7 @@ export class StudentEnrollmentsTabState {
 		return (url: URL) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
 			load: async () => {
-				const studentId = schoolStudentDetailIdFromUrl(url);
+				const studentId = studentDetailIdFromPathname(url.pathname);
 				if (!studentId) {
 					return {};
 				}

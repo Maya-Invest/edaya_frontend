@@ -36,20 +36,22 @@ const classes = [
 
 const subjects = [
 	{
-		id: 'ci-cs-6a-math',
-		classId: 'ci-6a',
+		id: 'gls-6-math',
+		classId: 'ci-gl-6',
+		gradeLevelId: 'ci-gl-6',
 		name: 'Mathématiques',
-		teacher: 'Prof. A',
+		teacher: '',
 		hoursPerWeek: 4,
 		color: 'mint',
 		description: '',
 		category: 'Scientifique',
 	},
 	{
-		id: 'ci-cs-5a-math',
-		classId: 'ci-5a',
+		id: 'gls-5-math',
+		classId: 'ci-gl-5',
+		gradeLevelId: 'ci-gl-5',
 		name: 'Mathématiques',
-		teacher: 'Prof. B',
+		teacher: '',
 		hoursPerWeek: 4,
 		color: 'mint',
 		description: '',
@@ -70,6 +72,6 @@ describe('findSubjectLevelGroup', () => {
 	it('resolves a level drawer group by grade level name', () => {
 		const group = findSubjectLevelGroup('6ème', subjects, classes, gradeLevels);
 		expect(group?.items).toHaveLength(1);
-		expect(group?.items[0]?.id).toBe('ci-cs-6a-math');
+		expect(group?.items[0]?.id).toBe('gls-6-math');
 	});
 });

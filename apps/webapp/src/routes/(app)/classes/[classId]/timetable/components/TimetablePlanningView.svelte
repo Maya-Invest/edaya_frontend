@@ -143,6 +143,8 @@
 						<NewSessionWizard
 							{classId}
 							{weekStart}
+							{subjects}
+							{activities}
 							bind:open={planning.wizardOpen}
 							{disabled}
 							{title}

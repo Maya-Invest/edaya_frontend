@@ -55,7 +55,7 @@
 	});
 </script>
 
-{#if !authSession.ready}
+{#if !authSession.ready && !authSession.hasAuthAccount}
 	<div class="flex min-h-screen items-center justify-center bg-background text-foreground">
 		<LoaderCircle class="h-8 w-8 animate-spin text-primary" />
 	</div>

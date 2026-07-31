@@ -1,7 +1,8 @@
+import type { BootstrapSessionResult } from '$lib/auth/bootstrap';
 import type { OnboardingSchoolDraft } from '$lib/onboarding/types';
-import { academicContext } from '$lib/academic/context.svelte';
+import { paginatedList } from '$lib/api/entity-list-filters';
 import { configureBrowserSchoolClient, getBrowserSchoolClient } from '$lib/api/school-client';
-import { bootstrapSession } from '$lib/auth/bootstrap';
+import { bootstrapSession, resetBootstrapSession } from '$lib/auth/bootstrap';
 import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
@@ -32,17 +33,34 @@ function messageFromError(error: unknown): string {
 	}
 	return get(t)('onboarding.schoolStep.failed');
 }
+
+async function refreshLinkedSchoolSession(maxAttempts = 6): Promise<BootstrapSessionResult> {
+	for (let attempt = 0; attempt < maxAttempts; attempt++) {
+		resetBootstrapSession();
+		configureBrowserSchoolClient({ getYearId: () => undefined });
+		const bootstrap = await bootstrapSession({ silent: true });
+		if (bootstrap.session?.schoolId && authSession.isLoggedIn) {
+			return bootstrap;
+		}
+		if (attempt < maxAttempts - 1) {
+			await new Promise(resolve => setTimeout(resolve, 50 * (attempt + 1)));
+		}
+	}
+	return bootstrapSession({ silent: true });
+}
+
 async function resolveSchoolId(
 	school: OnboardingSchoolDraft,
 ): Promise<string | null> {
 	resetAppShellBootstrap();
-	let bootstrap = await bootstrapSession();
+	let bootstrap = await bootstrapSession({ silent: true });
 	if (bootstrap.session?.schoolId) {
 		return bootstrap.session.schoolId;
 	}
 	if (authSession.schoolId) {
 		return authSession.schoolId;
 	}
+	configureBrowserSchoolClient({ getYearId: () => undefined });
 	try {
 		const registered = await getBrowserSchoolClient().onboarding.registerSchool({
 			name: school.name.trim(),
@@ -51,14 +69,18 @@ async function resolveSchoolId(
 			country: school.country.trim(),
 		});
 		resetAppShellBootstrap();
-		bootstrap = await bootstrapSession();
-		return bootstrap.session?.schoolId ?? registered.id ?? null;
+		const linked = await refreshLinkedSchoolSession();
+		return linked.session?.schoolId ?? authSession.schoolId ?? registered.id ?? null;
 	}
 	catch (error) {
 		if (error instanceof ApiError && error.status === 409) {
 			resetAppShellBootstrap();
-			bootstrap = await bootstrapSession();
+			bootstrap = await refreshLinkedSchoolSession();
 			return bootstrap.session?.schoolId ?? authSession.schoolId ?? null;
+		}
+		if (error instanceof ApiError && error.status === 503) {
+			toast.error(get(t)('onboarding.schoolStep.failed'));
+			return null;
 		}
 		throw error;
 	}
@@ -76,34 +98,105 @@ function periodsFitExistingYear(
 		&& period.start <= period.end,
 	);
 }
+async function safeOnboardingEntityList<T>(load: () => Promise<T[]>): Promise<T[]> {
+	try {
+		return await load();
+	}
+	catch (error) {
+		if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+			return [];
+		}
+		throw error;
+	}
+}
+
+interface OnboardingPeriodRow {
+	id: string;
+	academicYearId: string;
+	isPublished?: boolean;
+}
+
+/** Mirrors seeding: create then `publishAcademicPeriod` for each period. */
+async function publishAcademicPeriodIfNeeded(
+	client: ReturnType<typeof getBrowserSchoolClient>,
+	academicPeriodId: string,
+): Promise<void> {
+	try {
+		await client.commands.publishAcademicPeriod({ academicPeriodId });
+	}
+	catch (error) {
+		if (error instanceof ApiError && error.status === 403) {
+			return;
+		}
+		throw error;
+	}
+}
+
+async function publishAllAcademicPeriods(
+	client: ReturnType<typeof getBrowserSchoolClient>,
+	periods: OnboardingPeriodRow[],
+): Promise<void> {
+	for (const period of periods) {
+		if (!period.isPublished) {
+			await publishAcademicPeriodIfNeeded(client, period.id);
+		}
+	}
+}
+
+async function resolveYearAndPeriodSelection(
+	client: ReturnType<typeof getBrowserSchoolClient>,
+	academicYearId: string,
+): Promise<{ yearId: string; periodId: string }> {
+	const periodsRaw = await safeOnboardingEntityList(() =>
+		client.entities.academicPeriods.list(paginatedList({}, { limit: 50 })));
+	const yearPeriods = periodsRaw.filter(period => period.academicYearId === academicYearId);
+	if (yearPeriods.length === 0) {
+		throw new Error('period-create-failed');
+	}
+	const activePeriod = yearPeriods.find(period => period.isPublished) ?? yearPeriods[0]!;
+	return { yearId: academicYearId, periodId: activePeriod.id };
+}
+
 async function ensureAcademicStructure(
-	schoolId: string,
 	school: OnboardingSchoolDraft,
 ): Promise<{ yearId: string; periodId: string }> {
-	resetAppShellBootstrap();
-	await bootstrapSession();
+	const schoolId = authSession.schoolId;
+	if (!authSession.isLoggedIn || !schoolId) {
+		throw new Error('session-not-linked');
+	}
+
 	configureBrowserSchoolClient({ getYearId: () => undefined });
-	await bootstrapAppShell();
-	const publishedPeriod = academicContext.publishedPeriods[0];
-	if (publishedPeriod) {
-		return {
-			yearId: publishedPeriod.academicYearId,
-			periodId: publishedPeriod.id,
-		};
+	await refreshLinkedSchoolSession();
+	if (!authSession.schoolId) {
+		throw new Error('session-not-linked');
 	}
-	const draftPeriod = academicContext.periods.find(period => period.status === 'draft');
-	if (draftPeriod) {
-		const client = getBrowserSchoolClient();
-		await client.commands.publishAcademicPeriod({ academicPeriodId: draftPeriod.id });
-		return {
-			yearId: draftPeriod.academicYearId,
-			periodId: draftPeriod.id,
-		};
+	const linkedSchoolId = authSession.schoolId;
+	const client = getBrowserSchoolClient();
+
+	const [yearsRaw, periodsRaw] = await Promise.all([
+		safeOnboardingEntityList(() =>
+			client.entities.academicYears.list(paginatedList({}, { limit: 20 }))),
+		safeOnboardingEntityList(() =>
+			client.entities.academicPeriods.list(paginatedList({}, { limit: 50 }))),
+	]);
+
+	if (periodsRaw.length > 0) {
+		const academicYearId = periodsRaw[0]!.academicYearId;
+		const yearPeriods = periodsRaw.filter(period => period.academicYearId === academicYearId);
+		await publishAllAcademicPeriods(client, yearPeriods);
+		return resolveYearAndPeriodSelection(client, academicYearId);
 	}
-	const existingYear = academicContext.years[0];
+
+	const existingYear = yearsRaw[0];
 	let yearId = existingYear?.id;
 	if (existingYear) {
-		if (!periodsFitExistingYear(school, existingYear.startDate, existingYear.endDate)) {
+		const yearStart = typeof existingYear.startDate === 'string'
+			? existingYear.startDate
+			: String(existingYear.startDate);
+		const yearEnd = typeof existingYear.endDate === 'string'
+			? existingYear.endDate
+			: String(existingYear.endDate);
+		if (!periodsFitExistingYear(school, yearStart, yearEnd)) {
 			toast.error(get(t)('onboarding.schoolStep.periodOutsideExistingYear'));
 			throw new Error('period-outside-existing-year');
 		}
@@ -115,22 +208,21 @@ async function ensureAcademicStructure(
 		}
 		yearId = crypto.randomUUID();
 	}
-	const client = getBrowserSchoolClient();
 	if (!existingYear && yearId) {
 		await client.commands.createAcademicYear({
 			id: yearId,
-			schoolId,
+			schoolId: linkedSchoolId,
 			name: school.academicYearLabel.trim(),
 			startDate: school.academicYearStart,
 			endDate: school.academicYearEnd,
 		});
 	}
-	let firstPeriodId = '';
-	for (const [index, period] of school.periods.entries()) {
+	const createdPeriodIds: string[] = [];
+	for (const period of school.periods) {
 		const periodId = crypto.randomUUID();
 		await client.commands.createAcademicPeriod({
 			id: periodId,
-			schoolId,
+			schoolId: linkedSchoolId,
 			academicYearId: yearId!,
 			name: period.label.trim(),
 			type: school.periodType,
@@ -138,12 +230,15 @@ async function ensureAcademicStructure(
 			endDate: period.end,
 			isPublished: false,
 		});
-		if (index === 0) {
-			await client.commands.publishAcademicPeriod({ academicPeriodId: periodId });
-			firstPeriodId = periodId;
-		}
+		createdPeriodIds.push(periodId);
 	}
-	return { yearId: yearId!, periodId: firstPeriodId };
+	for (const periodId of createdPeriodIds) {
+		await publishAcademicPeriodIfNeeded(client, periodId);
+	}
+	if (createdPeriodIds.length === 0) {
+		throw new Error('period-create-failed');
+	}
+	return { yearId: yearId!, periodId: createdPeriodIds[0]! };
 }
 export async function submitSchoolOnboardingStep(
 	school: OnboardingSchoolDraft,
@@ -154,28 +249,37 @@ export async function submitSchoolOnboardingStep(
 		return null;
 	}
 	try {
-		let schoolId = options.alreadySubmitted ? options.registeredSchoolId : null;
-		if (!schoolId) {
+		let schoolId: string | null = null;
+		if (!options.alreadySubmitted) {
 			schoolId = await resolveSchoolId(school);
 		}
 		else {
 			resetAppShellBootstrap();
-			const bootstrap = await bootstrapSession();
-			schoolId = bootstrap.session?.schoolId ?? schoolId;
+			const bootstrap = await refreshLinkedSchoolSession();
+			schoolId = bootstrap.session?.schoolId
+				?? authSession.schoolId
+				?? options.registeredSchoolId;
 		}
 		if (!schoolId) {
 			toast.error(get(t)('onboarding.schoolStep.sessionFailed'));
 			return null;
 		}
-		const { yearId, periodId } = await ensureAcademicStructure(schoolId, school);
-		resetAppShellBootstrap();
-		await bootstrapSession();
-		await bootstrapAppShell();
+		await refreshLinkedSchoolSession();
+		if (!authSession.isLoggedIn || !authSession.schoolId) {
+			toast.error(get(t)('onboarding.schoolStep.sessionFailed'));
+			return null;
+		}
+		schoolId = authSession.schoolId;
+		const { yearId, periodId } = await ensureAcademicStructure(school);
 		toast.success(get(t)('onboarding.schoolStep.success'));
 		return { schoolId, yearId, periodId };
 	}
 	catch (error) {
 		if (error instanceof Error && error.message.startsWith('period-outside')) {
+			return null;
+		}
+		if (error instanceof Error && error.message === 'session-not-linked') {
+			toast.error(get(t)('onboarding.schoolStep.sessionFailed'));
 			return null;
 		}
 		toast.error(messageFromError(error));
@@ -184,4 +288,15 @@ export async function submitSchoolOnboardingStep(
 }
 export function readRegisteredSchoolId(): string | null {
 	return authSession.schoolId;
+}
+
+/** Loads shell data after step 1 without blocking the step transition UI. */
+export function scheduleAppShellBootstrapAfterSchoolStep(): void {
+	queueMicrotask(() => {
+		void (async () => {
+			resetAppShellBootstrap();
+			await bootstrapSession({ silent: true });
+			await bootstrapAppShell();
+		})();
+	});
 }

@@ -243,17 +243,21 @@
 				name: name.trim() || email.trim(),
 			});
 			if (error) {
-				if (isExistingAccountAuthError(error)) {
-					authMode = 'signIn';
-					const signedIn = await signInWithEmail();
-					if (!signedIn) {
-						toast.error($t('invitation.accept.accountExistsSignIn'));
+				// Parallel submit race: another request may already have established the session.
+				const racedAuthUser = await getAuthenticatedAuthUser();
+				if (!racedAuthUser) {
+					if (isExistingAccountAuthError(error)) {
+						authMode = 'signIn';
+						const signedIn = await signInWithEmail();
+						if (!signedIn) {
+							toast.error($t('invitation.accept.accountExistsSignIn'));
+							return false;
+						}
+					}
+					else {
+						toast.error(error.message ?? $t('invitation.accept.signUpFailed'));
 						return false;
 					}
-				}
-				else {
-					toast.error(error.message ?? $t('invitation.accept.signUpFailed'));
-					return false;
 				}
 			}
 		}

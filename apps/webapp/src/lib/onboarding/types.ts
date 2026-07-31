@@ -1,4 +1,4 @@
-export const ONBOARDING_DRAFT_VERSION = 3 as const;
+export const ONBOARDING_DRAFT_VERSION = 4 as const;
 export const ONBOARDING_STEP_COUNT = 4;
 
 export type OnboardingStep = 1 | 2 | 3 | 4;
@@ -36,8 +36,10 @@ export interface OnboardingStructureDraft {
 export type OnboardingStaffInviteRole
 	= | 'deputy_director'
 		| 'cpe'
-		| 'teacher'
-		| 'secretary';
+		| 'secretary'
+		| 'studies_director'
+		| 'it_admin'
+		| 'accountant';
 
 export interface OnboardingStaffInviteDraft {
 	id: string;

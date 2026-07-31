@@ -1,28 +1,106 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
+	import { upsertStudentHealthProfileMutation, updateStudentStatusMutation } from '$lib/api/mutations/student-ops.mutations';
 	import { relationKey, fmtDateFr } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
 	import { FileText, Mail, Phone, Users, Plus } from '$lib/icons';
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { studentGenderLabelKey } from '$lib/students/format-student-gender';
 	import { cn } from '$lib/utils';
+	import { get } from 'svelte/store';
+	import { getStudentsPageState } from '../../../../students-page.svelte';
 	import { pedagogicalNoteToneByCategory, getStudentProfileTabState } from '../student-profile-tab.svelte';
 	import AccountLinkingSection from './StudentAccountLinkingSection.svelte';
 
 	const { s }: { s: Student } = $props();
 
 	const profileTab = getStudentProfileTabState();
+	const studentsPage = getStudentsPageState();
 	const health = $derived(profileTab.healthFor(s.id));
 	const linkedGuardians = $derived(profileTab.linkedGuardians(s.id));
 	const studentNotes = $derived(profileTab.notesFor(s.id));
 	const staff = $derived(profileTab.staffFor(s.id));
 
 	const modals = getDrawerUrlModals();
+	const genderLabelKey = $derived(studentGenderLabelKey(s.gender));
+
+	let healthBusy = $state(false);
+	let statusBusy = $state(false);
+	let bloodType = $state('');
+	let allergiesText = $state('');
+	let medicationsText = $state('');
+	let conditionsText = $state('');
+	let notesText = $state('');
+	let editingHealth = $state(false);
+
+	$effect(() => {
+		bloodType = health?.bloodType === '—' ? '' : (health?.bloodType ?? '');
+		allergiesText = health?.allergies?.join(', ') ?? '';
+		medicationsText = health?.medications?.join(', ') ?? '';
+		conditionsText = health?.chronicConditions?.join(', ') ?? '';
+		notesText = health?.notes ?? '';
+	});
+
+	async function saveHealth() {
+		healthBusy = true;
+		const saved = await upsertStudentHealthProfileMutation({
+			id: health?.id,
+			studentId: s.id,
+			bloodType: bloodType.trim() || null,
+			allergies: allergiesText.trim() || null,
+			medications: medicationsText.trim() || null,
+			medicalConditions: conditionsText.trim() || null,
+			clinicalNotes: notesText.trim() || null,
+			lastVisit: health?.lastVisit || null,
+			successMessage: get(t)('student.healthSaved'),
+		});
+		healthBusy = false;
+		if (saved) {
+			profileTab.seed(s.id, {
+				health: {
+					id: saved.id,
+					studentId: s.id,
+					bloodType: (saved.bloodType ?? bloodType.trim()) || '—',
+					allergies: allergiesText.split(',').map(v => v.trim()).filter(Boolean),
+					medications: medicationsText.split(',').map(v => v.trim()).filter(Boolean),
+					chronicConditions: conditionsText
+						.split(',')
+						.map(v => v.trim())
+						.filter((v): v is 'Asthme' | 'Epilepsie' | 'Diabete' =>
+							v === 'Asthme' || v === 'Epilepsie' || v === 'Diabete'),
+					lastVisit: health?.lastVisit ?? '',
+					notes: notesText.trim(),
+				},
+			});
+			editingHealth = false;
+		}
+	}
+
+	async function updateStatus(status: Student['status']) {
+		if (status === s.status) {
+			return;
+		}
+		statusBusy = true;
+		const previous = s.status;
+		studentsPage.patchStudent(s.id, { status });
+		const ok = await updateStudentStatusMutation({
+			studentId: s.id,
+			status,
+			successMessage: get(t)('student.statusUpdated'),
+		});
+		statusBusy = false;
+		if (!ok) {
+			studentsPage.patchStudent(s.id, { status: previous });
+		}
+	}
 </script>
 
 <div class="space-y-4">
@@ -79,6 +157,48 @@
 			{/if}
 		</div>
 	{/if}
+	<PermissionGate permission="STUDENT_HEALTH_UPDATE" mode="disable" tooltip={$t('student.healthPermission')}>
+		{#snippet children({ disabled, title })}
+			{#if editingHealth}
+				<div class="space-y-2 rounded-xl border border-border p-3">
+					<div class="grid gap-2 sm:grid-cols-2">
+						<div class="space-y-1">
+							<Label class="text-[10px] uppercase text-muted-foreground">{$t('student.bloodType')}</Label>
+							<Input bind:value={bloodType} {disabled} />
+						</div>
+						<div class="space-y-1">
+							<Label class="text-[10px] uppercase text-muted-foreground">{$t('student.allergies')}</Label>
+							<Input bind:value={allergiesText} {disabled} />
+						</div>
+						<div class="space-y-1">
+							<Label class="text-[10px] uppercase text-muted-foreground">{$t('student.medications')}</Label>
+							<Input bind:value={medicationsText} {disabled} />
+						</div>
+						<div class="space-y-1">
+							<Label class="text-[10px] uppercase text-muted-foreground">{$t('student.conditions')}</Label>
+							<Input bind:value={conditionsText} {disabled} />
+						</div>
+					</div>
+					<div class="space-y-1">
+						<Label class="text-[10px] uppercase text-muted-foreground">{$t('student.healthNotes')}</Label>
+						<Textarea bind:value={notesText} rows={3} {disabled} />
+					</div>
+					<div class="flex gap-2">
+						<Button size="sm" class="rounded-full" {disabled} onclick={() => void saveHealth()} {title}>
+							{healthBusy ? '…' : $t('common.save')}
+						</Button>
+						<Button size="sm" variant="outline" class="rounded-full" disabled={healthBusy} onclick={() => (editingHealth = false)}>
+							{$t('common.cancel')}
+						</Button>
+					</div>
+				</div>
+			{:else}
+				<Button size="sm" variant="outline" class="rounded-full" {disabled} {title} onclick={() => (editingHealth = true)}>
+					{$t('student.editHealth')}
+				</Button>
+			{/if}
+		{/snippet}
+	</PermissionGate>
 	<DrawerField label={$t('guardian.fullName')}>
 		<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{s.name}</div>
 	</DrawerField>
@@ -97,8 +217,39 @@
 			</div>
 		</DrawerField>
 	</div>
-	<div class="rounded-xl bg-secondary/40 px-3 py-2 text-xs">
-		<span class="text-muted-foreground">Statut :</span> {$t(`studentStatus.${s.status}`)}
+	<div class="grid grid-cols-2 gap-3">
+		<DrawerField label={$t('student.matricule')}>
+			<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 font-mono text-sm">
+				{s.matricule?.trim() || '—'}
+			</div>
+		</DrawerField>
+		<DrawerField label={$t('student.gender')}>
+			<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">
+				{genderLabelKey ? $t(genderLabelKey) : '—'}
+			</div>
+		</DrawerField>
+	</div>
+	<div class="rounded-xl bg-secondary/40 px-3 py-2 text-xs space-y-2">
+		<div class="flex flex-wrap items-center gap-2">
+			<span class="text-muted-foreground">{$t('students.status')} :</span>
+			<select
+				class="rounded-md border border-input bg-background px-2 py-1 text-xs"
+				value={s.status}
+				onchange={event => void updateStatus((event.currentTarget as HTMLSelectElement).value as Student['status'])}
+			>
+				<option value="active">{$t('studentStatus.active')}</option>
+				<option value="inactive">{$t('studentStatus.inactive')}</option>
+				<option value="archived">{$t('studentStatus.archived')}</option>
+			</select>
+			{#if statusBusy}
+				<span class="text-muted-foreground">…</span>
+			{/if}
+			{#if s.academicBadge}
+				<span class="rounded-full bg-secondary px-2 py-0.5 text-[10px]">
+					{$t(`studentStatus.${s.academicBadge}`)}
+				</span>
+			{/if}
+		</div>
 	</div>
 
 	<AccountLinkingSection
@@ -166,7 +317,9 @@
 								</div>
 								<div class="col-span-3">
 									<span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] text-muted-foreground">
-										{$t(relationKey[guardian.relation])}
+										{relationKey[guardian.relation]
+											? $t(relationKey[guardian.relation]!)
+											: guardian.relation}
 									</span>
 								</div>
 								<div class="col-span-3">

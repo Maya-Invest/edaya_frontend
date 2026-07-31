@@ -1,7 +1,9 @@
 <script lang="ts">
 	import type { ReportCardResult } from '$lib/types/report-cards';
+	import { writeHomeroomReportCommentMutation } from '$lib/api/mutations/student-ops.mutations';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
 	import { formatGrade } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
@@ -20,6 +22,9 @@
 		reportCardsPage.scalesFor(live.classId).find(entry => entry.id === live.gradeScaleId),
 	);
 
+	let commentDraft = $derived(live.homeroomComment ?? '');
+	let commentBusy = $state(false);
+
 	function resultStatusLabel(status: ReportCardResult['status']) {
 		if (status === 'published') {
 			return $t('reportCards.statusPublished');
@@ -35,6 +40,19 @@
 			resultId: live.id,
 			successMessage: get(t)('reportCards.toastPublished', { name: student?.name ?? '' }),
 		});
+	}
+
+	async function saveHomeroomComment() {
+		commentBusy = true;
+		const ok = await writeHomeroomReportCommentMutation({
+			resultId: live.id,
+			teacherComment: commentDraft,
+			successMessage: get(t)('reportCards.homeroomCommentSaved'),
+		});
+		commentBusy = false;
+		if (ok) {
+			reportCardsPage.patchResult(live.id, { homeroomComment: commentDraft.trim() });
+		}
 	}
 </script>
 
@@ -116,12 +134,13 @@
 		{/if}
 	{/each}
 
-	{#if live.homeroomComment}
-		<div class="rounded-xl border border-border bg-card p-4">
-			<p class="font-mono text-[10px] uppercase text-muted-foreground">{$t('reportCards.homeroomComment')}</p>
-			<p class="mt-1 text-sm">{live.homeroomComment}</p>
-		</div>
-	{/if}
+	<div class="rounded-xl border border-border bg-card p-4 space-y-2">
+		<p class="font-mono text-[10px] uppercase text-muted-foreground">{$t('reportCards.homeroomComment')}</p>
+		<Textarea bind:value={commentDraft} rows={3} />
+		<Button size="sm" class="rounded-full" disabled={commentBusy} onclick={() => void saveHomeroomComment()}>
+			{$t('reportCards.saveHomeroomComment')}
+		</Button>
+	</div>
 
 	{#if live.principalComment}
 		<div class="rounded-xl border border-border bg-card p-4">

@@ -1,15 +1,24 @@
 import type { OnboardingDraft, OnboardingPeriodDraft, OnboardingSchoolDraft, OnboardingStaffInviteRole, OnboardingStep } from '$lib/onboarding/types';
+import { migrateLegacyGradeLevelId } from '$lib/onboarding/legacy-gl-map';
 import { createInitialPeriods } from '$lib/onboarding/school-periods';
-import { defaultAcademicYearPreset } from '$lib/onboarding/school-step-defaults';
+import {
+	DEFAULT_ONBOARDING_COUNTRY,
+	defaultAcademicYearPreset,
+	isStructureReadyCountry,
+	timezoneForCountry,
+} from '$lib/onboarding/school-step-defaults';
 import { ONBOARDING_DRAFT_VERSION } from '$lib/onboarding/types';
 
 const STORAGE_PREFIX = 'edaya:onboarding:draft';
+const ACCEPTED_DRAFT_VERSIONS = new Set([1, 3, 4]);
 
 function isOnboardingStaffInviteRole(value: unknown): value is OnboardingStaffInviteRole {
 	return value === 'deputy_director'
 		|| value === 'cpe'
-		|| value === 'teacher'
-		|| value === 'secretary';
+		|| value === 'secretary'
+		|| value === 'studies_director'
+		|| value === 'it_admin'
+		|| value === 'accountant';
 }
 
 export function draftStorageKey(authUserId: string): string {
@@ -17,12 +26,7 @@ export function draftStorageKey(authUserId: string): string {
 }
 
 function defaultTimezone(): string {
-	try {
-		return new Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Paris';
-	}
-	catch {
-		return 'Europe/Paris';
-	}
+	return timezoneForCountry(DEFAULT_ONBOARDING_COUNTRY) ?? 'Africa/Abidjan';
 }
 
 export function createEmptyDraft(): OnboardingDraft {
@@ -40,7 +44,7 @@ export function createEmptyDraft(): OnboardingDraft {
 		school: {
 			name: '',
 			city: '',
-			country: 'France',
+			country: DEFAULT_ONBOARDING_COUNTRY,
 			timezone: defaultTimezone(),
 			academicYearLabel: yearPreset.label,
 			academicYearStart: yearPreset.start,
@@ -85,6 +89,13 @@ type LegacySchoolDraft = OnboardingSchoolDraft & {
 function normalizeSchoolDraft(candidate: Partial<LegacySchoolDraft>, empty: OnboardingSchoolDraft): OnboardingSchoolDraft {
 	const periodType = candidate.periodType === 'semester' ? 'semester' : 'trimester';
 
+	const rawCountry = typeof candidate.country === 'string' ? candidate.country : empty.country;
+	const country = isStructureReadyCountry(rawCountry) ? rawCountry.trim() : empty.country;
+	const rawTimezone = typeof candidate.timezone === 'string' ? candidate.timezone : empty.timezone;
+	const timezone = isStructureReadyCountry(rawCountry)
+		? rawTimezone
+		: (timezoneForCountry(country) ?? empty.timezone);
+
 	if (Array.isArray(candidate.periods) && candidate.periods.length > 0) {
 		const periods = candidate.periods
 			.map(normalizePeriod)
@@ -93,6 +104,8 @@ function normalizeSchoolDraft(candidate: Partial<LegacySchoolDraft>, empty: Onbo
 			return {
 				...empty,
 				...candidate,
+				country,
+				timezone,
 				periodType,
 				periods,
 			};
@@ -110,8 +123,8 @@ function normalizeSchoolDraft(candidate: Partial<LegacySchoolDraft>, empty: Onbo
 		...empty,
 		name: typeof candidate.name === 'string' ? candidate.name : empty.name,
 		city: typeof candidate.city === 'string' ? candidate.city : empty.city,
-		country: typeof candidate.country === 'string' ? candidate.country : empty.country,
-		timezone: typeof candidate.timezone === 'string' ? candidate.timezone : empty.timezone,
+		country,
+		timezone,
 		academicYearLabel: typeof candidate.academicYearLabel === 'string'
 			? candidate.academicYearLabel
 			: empty.academicYearLabel,
@@ -126,6 +139,20 @@ function normalizeSchoolDraft(candidate: Partial<LegacySchoolDraft>, empty: Onbo
 	};
 }
 
+function normalizeClassCount(value: unknown): number {
+	if (typeof value !== 'number' || !Number.isFinite(value)) {
+		return 0;
+	}
+	return Math.max(0, Math.trunc(value));
+}
+
+function normalizeCapacity(value: unknown): number {
+	if (typeof value !== 'number' || !Number.isFinite(value)) {
+		return 30;
+	}
+	return Math.max(0, Math.trunc(value));
+}
+
 function normalizeDraft(raw: unknown): OnboardingDraft | null {
 	if (!raw || typeof raw !== 'object') {
 		return null;
@@ -133,7 +160,7 @@ function normalizeDraft(raw: unknown): OnboardingDraft | null {
 
 	const candidate = raw as Partial<OnboardingDraft>;
 	const version = (raw as { version?: unknown }).version;
-	if (version !== 1 && version !== ONBOARDING_DRAFT_VERSION) {
+	if (typeof version !== 'number' || !ACCEPTED_DRAFT_VERSIONS.has(version)) {
 		return null;
 	}
 
@@ -160,18 +187,22 @@ function normalizeDraft(raw: unknown): OnboardingDraft | null {
 				: empty.structure.models,
 			levels: Array.isArray(candidate.structure?.levels)
 				? candidate.structure.levels.map(level => ({
-						gradeLevelId: typeof level.gradeLevelId === 'string' ? level.gradeLevelId : '',
-						classCount: typeof level.classCount === 'number' ? level.classCount : 1,
-						capacity: typeof level.capacity === 'number' ? level.capacity : 30,
+						gradeLevelId: typeof level.gradeLevelId === 'string'
+							? migrateLegacyGradeLevelId(level.gradeLevelId)
+							: '',
+						classCount: normalizeClassCount(level.classCount),
+						capacity: normalizeCapacity(level.capacity),
 					}))
 				: empty.structure.levels,
 		},
 		staffInvites: Array.isArray(candidate.staffInvites)
-			? candidate.staffInvites.map(invite => ({
-					id: typeof invite.id === 'string' ? invite.id : crypto.randomUUID(),
-					email: typeof invite.email === 'string' ? invite.email : '',
-					role: isOnboardingStaffInviteRole(invite.role) ? invite.role : '',
-				}))
+			? candidate.staffInvites
+					.map(invite => ({
+						id: typeof invite.id === 'string' ? invite.id : crypto.randomUUID(),
+						email: typeof invite.email === 'string' ? invite.email : '',
+						role: isOnboardingStaffInviteRole(invite.role) ? invite.role : '' as const,
+					}))
+					.filter(invite => invite.role !== '' || invite.email.trim().length > 0)
 			: empty.staffInvites,
 	};
 }

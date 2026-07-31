@@ -3,7 +3,7 @@ import type { ValidatedStudentImportRow } from './types';
 import { t } from '$lib/i18n';
 import { formatImportRunErrorMessage } from '$lib/import/shared/format-import-run-error';
 import { notifyStudentsListChanged } from '$lib/students/notify-students-list-changed';
-import { createStudentImportIds, registerAndEnrollStudent } from '$lib/students/register-and-enroll-student';
+import { createStudentImportIds, registerAndEnrollStudent, StudentEnrollAfterRegisterFailedError } from '$lib/students/register-and-enroll-student';
 import { get } from 'svelte/store';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
@@ -14,9 +14,16 @@ export interface StudentImportRunFailure {
 	message: string;
 }
 
+export interface StudentImportRunWarning {
+	rowIndex: number;
+	studentName: string;
+	message: string;
+}
+
 export interface StudentImportRunResult {
 	created: number;
 	failed: StudentImportRunFailure[];
+	warnings: StudentImportRunWarning[];
 	studentIds: string[];
 }
 
@@ -32,6 +39,7 @@ export interface StudentImportRunOptions {
 export async function runStudentImport(options: StudentImportRunOptions): Promise<StudentImportRunResult> {
 	const { schoolId, client, rows, onProgress, seed = Date.now().toString(36), classNameById } = options;
 	const failed: StudentImportRunFailure[] = [];
+	const warnings: StudentImportRunWarning[] = [];
 	const studentIds: string[] = [];
 	const createdAt = new Date().toISOString();
 	const total = rows.length;
@@ -40,6 +48,18 @@ export async function runStudentImport(options: StudentImportRunOptions): Promis
 		onProgress?.(index, total);
 		const { studentId, enrollmentId } = createStudentImportIds(index, seed);
 
+		const studentName = `${row.prenom} ${row.nom}`.trim();
+		const errorContext = {
+			entityLabel: row.classe,
+			classGroupId: row.classGroupId,
+			classNameById,
+		};
+		const formatError = (error: unknown) => formatImportRunErrorMessage(
+			error,
+			errorContext,
+			(key, params) => get(t)(key, params ?? {}),
+		);
+
 		try {
 			await registerAndEnrollStudent(client, {
 				schoolId,
@@ -47,23 +67,31 @@ export async function runStudentImport(options: StudentImportRunOptions): Promis
 				enrollmentId,
 				firstName: row.prenom,
 				lastName: row.nom,
-				classGroupId: row.classGroupId,
+				...(row.classGroupId ? { classGroupId: row.classGroupId } : {}),
 				birthDate: row.date_naissance,
+				matricule: row.matricule,
+				...(row.genre?.trim() ? { gender: row.genre.trim() } : {}),
 				sendAccountInvitation: false,
 				createdAt,
 			});
 			studentIds.push(studentId);
 		}
 		catch (error) {
-			failed.push({
-				rowIndex: row.rowIndex,
-				studentName: `${row.prenom} ${row.nom}`.trim(),
-				message: formatImportRunErrorMessage(error, {
-					entityLabel: row.classe,
-					classGroupId: row.classGroupId,
-					classNameById,
-				}, (key, params) => get(t)(key, params ?? {})),
-			});
+			if (error instanceof StudentEnrollAfterRegisterFailedError) {
+				studentIds.push(studentId);
+				warnings.push({
+					rowIndex: row.rowIndex,
+					studentName,
+					message: formatError(error.cause),
+				});
+			}
+			else {
+				failed.push({
+					rowIndex: row.rowIndex,
+					studentName,
+					message: formatError(error),
+				});
+			}
 		}
 	}
 
@@ -72,6 +100,7 @@ export async function runStudentImport(options: StudentImportRunOptions): Promis
 	const result = {
 		created: studentIds.length,
 		failed,
+		warnings,
 		studentIds,
 	};
 

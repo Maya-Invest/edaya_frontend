@@ -25,6 +25,10 @@
 	const progressionTab = getSubjectProgressionTabState();
 	const matterRows = $derived(progressionTab.rowsFor(subject.id));
 	const matterContext = $derived(progressionTab.matterContextFor(subject.id));
+	const chaptersReadOnly = $derived(progressionTab.chaptersReadOnlyFor(subject.id));
+	const addPropagatesToGradeLevel = $derived(!chaptersReadOnly);
+	const canEditChapter = (row: SubjectMatterDrawerRow) =>
+		!progressionTab.isCatalogChapter(subject.id, row.id);
 	const entries = $derived(teachingPage.logEntriesForSubject(subject));
 	const chaptersData = $derived(chapterProgressFromEntries(entries));
 
@@ -67,9 +71,16 @@
 <div class="space-y-4">
 	<section class="space-y-2">
 		<div class="flex items-center justify-between gap-3">
-			<p class="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-				{$t('subjects.chapters.configured')}
-			</p>
+			<div class="min-w-0">
+				<p class="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+					{$t('subjects.chapters.configured')}
+				</p>
+				{#if chaptersReadOnly}
+					<p class="mt-0.5 text-[11px] text-muted-foreground">
+						{$t('teaching.chaptersFromCatalogHint')}
+					</p>
+				{/if}
+			</div>
 			<Button size="sm" class="rounded-full" onclick={() => modals.open('add-chapter')}>
 				<Plus class="mr-1 h-3.5 w-3.5" />
 				{$t('subjects.chapters.add')}
@@ -84,21 +95,23 @@
 							<p class="mt-1 text-xs text-muted-foreground">{row.description}</p>
 						{/if}
 					</div>
-					<div class="flex shrink-0 items-center gap-1">
-						<Button variant="ghost" size="sm" class="h-8 rounded-full" onclick={() => openEditChapter(row)}>
-							{$t('common.edit')}
-						</Button>
-						<DeleteEntityButton
-							confirmTitle={$t('common.deleteConfirmTitle')}
-							confirmDescription={$t('subjects.chapters.deleteConfirm', { name: row.name })}
-							onConfirm={() => removeChapter(row)}
-						/>
-					</div>
+					{#if canEditChapter(row)}
+						<div class="flex shrink-0 items-center gap-1">
+							<Button variant="ghost" size="sm" class="h-8 rounded-full" onclick={() => openEditChapter(row)}>
+								{$t('common.edit')}
+							</Button>
+							<DeleteEntityButton
+								confirmTitle={$t('common.deleteConfirmTitle')}
+								confirmDescription={$t('subjects.chapters.deleteConfirm', { name: row.name })}
+								onConfirm={() => removeChapter(row)}
+							/>
+						</div>
+					{/if}
 				</div>
 			</div>
 		{:else}
 			<p class="rounded-2xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
-				{$t('subjects.chapters.empty')}
+				{$t(chaptersReadOnly ? 'subjects.chapters.emptyCatalog' : 'subjects.chapters.empty')}
 			</p>
 		{/each}
 	</section>
@@ -136,7 +149,7 @@
 		subjectId={matterContext.catalogSubjectId}
 		classSubjectId={subject.id}
 		classGroupId={matterContext.classGroupId}
-		gradeLevelSubjectId={matterContext.gradeLevelSubjectId}
+		gradeLevelSubjectId={addPropagatesToGradeLevel ? matterContext.gradeLevelSubjectId : undefined}
 		defaultSequenceOrder={matterRows.length + 1}
 		onSaved={handleMatterSaved}
 	/>
@@ -146,7 +159,7 @@
 		subjectId={matterContext.catalogSubjectId}
 		classSubjectId={subject.id}
 		classGroupId={matterContext.classGroupId}
-		gradeLevelSubjectId={matterContext.gradeLevelSubjectId}
+		gradeLevelSubjectId={addPropagatesToGradeLevel ? matterContext.gradeLevelSubjectId : undefined}
 		onSaved={handleMatterSaved}
 	/>
 {/if}

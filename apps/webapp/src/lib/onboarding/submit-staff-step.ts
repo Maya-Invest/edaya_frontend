@@ -1,10 +1,8 @@
 import type { OnboardingStaffInviteDraft } from '$lib/onboarding/types';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
-import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
-import { invitePortalTeachersOnboarding } from '$lib/onboarding/invite-portal-teachers';
-import { partitionStaffInvitesForSubmit } from '$lib/onboarding/staff-step-helpers';
+import { staffInvitesForSubmit } from '$lib/onboarding/staff-step-helpers';
 import { toast } from '$lib/toast.svelte';
 import { ApiError } from '@maya-invest/edaya-api-client';
 import { get } from 'svelte/store';
@@ -35,35 +33,20 @@ export async function submitStaffOnboardingStep(
 		return true;
 	}
 
-	const { teacherInvites, staffInvites } = partitionStaffInvitesForSubmit(invites);
-	if (teacherInvites.length === 0 && staffInvites.length === 0) {
+	const staffInvites = staffInvitesForSubmit(invites);
+	if (staffInvites.length === 0) {
 		return true;
 	}
 
 	try {
-		let invitedCount = 0;
-
-		if (teacherInvites.length > 0) {
-			const teacherCount = await invitePortalTeachersOnboarding(teacherInvites, {
-				loginEmail: authSession.loginEmail,
-			});
-			if (teacherCount === null) {
-				return false;
-			}
-			invitedCount += teacherCount;
-		}
-
-		if (staffInvites.length > 0) {
-			const result = await getBrowserSchoolClient().onboarding.inviteStaffMembers({
-				invites: staffInvites,
-			});
-			invitedCount += result.invitedCount;
-		}
+		const result = await getBrowserSchoolClient().onboarding.inviteStaffMembers({
+			invites: staffInvites,
+		});
 
 		resetAppShellBootstrap();
 		await bootstrapAppShell();
 
-		toast.success(get(t)('onboarding.staffStep.success', { count: invitedCount }));
+		toast.success(get(t)('onboarding.staffStep.success', { count: result.invitedCount }));
 		return true;
 	}
 	catch (error) {

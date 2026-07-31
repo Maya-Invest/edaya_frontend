@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { namesFromInviteEmail } from '$lib/onboarding/names-from-email';
-import { partitionStaffInvitesForSubmit } from '$lib/onboarding/staff-step-helpers';
+import { staffInvitesForSubmit } from '$lib/onboarding/staff-step-helpers';
 
 describe('namesFromInviteEmail', () => {
 	it('derives first and last name from email local part', () => {
@@ -18,15 +18,20 @@ describe('namesFromInviteEmail', () => {
 	});
 });
 
-describe('partitionStaffInvitesForSubmit', () => {
-	it('routes portal teachers separately from workspace staff invites', () => {
-		const result = partitionStaffInvitesForSubmit([
-			{ id: '1', email: 'teacher@school.fr', role: 'teacher' },
-			{ id: '2', email: 'secretary@school.fr', role: 'secretary' },
-			{ id: '3', email: '', role: '' },
+describe('staffInvitesForSubmit', () => {
+	it('submits only complete workspace staff invites', () => {
+		expect(staffInvitesForSubmit([
+			{ id: '1', email: 'secretary@school.fr', role: 'secretary' },
+			{ id: '2', email: 'etudes@school.fr', role: 'studies_director' },
+			{ id: '3', email: 'it@school.fr', role: 'it_admin' },
+			{ id: '4', email: 'compta@school.fr', role: 'accountant' },
+			{ id: '5', email: '', role: 'cpe' },
+			{ id: '6', email: 'incomplete@school.fr', role: '' },
+		])).toEqual([
+			{ email: 'secretary@school.fr', role: 'secretary' },
+			{ email: 'etudes@school.fr', role: 'studies_director' },
+			{ email: 'it@school.fr', role: 'it_admin' },
+			{ email: 'compta@school.fr', role: 'accountant' },
 		]);
-
-		expect(result.teacherInvites).toEqual([{ email: 'teacher@school.fr', role: 'teacher' }]);
-		expect(result.staffInvites).toEqual([{ email: 'secretary@school.fr', role: 'secretary' }]);
 	});
 });

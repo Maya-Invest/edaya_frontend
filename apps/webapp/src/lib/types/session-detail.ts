@@ -14,8 +14,8 @@ export interface SessionLogbook {
 	id: string;
 	chapter: string;
 	content: string;
-	objectives: string[];
-	homework?: string;
+	/** Progress / session notes (API: ClassSubjectProgress.notes / sessionNote). */
+	notes: string;
 	progress: number;
 }
 

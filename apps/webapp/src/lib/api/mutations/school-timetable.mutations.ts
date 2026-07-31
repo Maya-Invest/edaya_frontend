@@ -48,8 +48,8 @@ export async function updateSchoolTimetableDefaultsMutation(input: {
 	}
 
 	const result = await runMutation(
-		() => client.entities.schools.save({
-			id: input.schoolId,
+		() => client.commands.updateSchoolConfiguration({
+			schoolId: input.schoolId,
 			name: current.name,
 			timeZone: current.timeZone,
 			city: current.city,

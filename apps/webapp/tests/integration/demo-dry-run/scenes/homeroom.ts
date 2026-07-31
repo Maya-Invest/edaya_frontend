@@ -31,7 +31,6 @@ export async function runHomeroomNudgeCheck(
 		}
 		reporter.log(scene, 'N.2 Ensure 6ème A daily mode', 'pass');
 
-		await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
 		await visit(ctx, `${base}/dashboard`, scene, 'N.3 Dashboard loads', { selector: 'main' });
 
 		const nudge = page.getByTestId('homeroom-attendance-nudge');

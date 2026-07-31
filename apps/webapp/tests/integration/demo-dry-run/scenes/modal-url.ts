@@ -2,6 +2,7 @@ import { CLASS_6A, CLASS_SUBJECT_ID, STAFF_ID, STUDENT_ID } from '../support/con
 import {
 	classTeachingDrawerPath,
 	classTeachingPath,
+	configClassGroupPath,
 	schoolStaffPath,
 	schoolStudentPath,
 } from '../support/paths';
@@ -70,7 +71,7 @@ export async function runModalUrlChecks(ctx: DemoContext): Promise<void> {
 		}
 	}
 
-	if (await visit(ctx, `${base}/configuration/classes/${CLASS_6A}?modal=edit`, scene, '9 Class edit deep-link', {
+	if (await visit(ctx, `${base}${configClassGroupPath(CLASS_6A, 'profile')}?modal=edit`, scene, '9 Class edit deep-link', {
 		pathPrefix: `/configuration/classes/${CLASS_6A}`,
 	})) {
 		if (await waitForDrawerAside(ctx) && await waitForFormModal(ctx) && await waitForUrlModal(ctx, 'edit')) {

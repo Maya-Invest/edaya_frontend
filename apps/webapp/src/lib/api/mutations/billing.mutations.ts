@@ -1,16 +1,11 @@
 import type { components } from '$lib/api/schema';
-import type { StudentBilling } from '$lib/types/school';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { detailDataContext } from '$lib/detail-data/context.svelte';
 
 type PaymentMethod = components['schemas']['RecordPaymentCommand']['method'];
 
-function billingSnapshot(studentFeeId: string): StudentBilling | undefined {
-	return detailDataContext.billing.find(record => record.id === studentFeeId);
-}
-
 export async function assignFeeToStudentMutation(input: {
+	id?: string;
 	studentId: string;
 	feeId: string;
 	expectedAmount?: number;
@@ -19,20 +14,7 @@ export async function assignFeeToStudentMutation(input: {
 }): Promise<string | null> {
 	const client = getBrowserSchoolClient();
 	const now = new Date().toISOString();
-	const id = `sf-${Date.now().toString(36)}`;
-	const fee = detailDataContext.fees.find(entry => entry.id === input.feeId);
-	const dueDate = input.dueDate ?? now.slice(0, 10);
-	const total = input.expectedAmount ?? fee?.amount ?? 0;
-	const optimistic: StudentBilling = {
-		id,
-		studentId: input.studentId,
-		feeId: input.feeId,
-		total,
-		paid: 0,
-		status: 'due',
-		dueDate,
-		installments: [{ date: dueDate, amount: total, status: 'pending' }],
-	};
+	const id = input.id ?? `sf-${Date.now().toString(36)}`;
 
 	const result = await runMutation(() => client.commands.assignFeeToStudent({
 		id,
@@ -44,12 +26,7 @@ export async function assignFeeToStudentMutation(input: {
 		referenceDate: now,
 	}), {
 		successMessage: input.successMessage,
-		apply: () => {
-			detailDataContext.appendBilling(optimistic);
-		},
-		rollback: () => {
-			detailDataContext.removeBilling(id);
-		},
+		versionKeys: ['billing'],
 	});
 
 	return result ? id : null;
@@ -67,7 +44,6 @@ export async function recordPaymentMutation(input: {
 	const client = getBrowserSchoolClient();
 	const now = new Date().toISOString();
 	const id = `pay-${Date.now().toString(36)}`;
-	const previous = billingSnapshot(input.studentFeeId);
 
 	const result = await runMutation(() => client.commands.recordPayment({
 		id,
@@ -81,20 +57,15 @@ export async function recordPaymentMutation(input: {
 		referenceDate: input.paymentDate,
 	}), {
 		successMessage: input.successMessage,
-		apply: () => {
-			if (!previous) {
-				return;
-			}
-			const paid = previous.paid + input.amount;
-			const status = paid >= previous.total ? 'paid' : paid > 0 ? 'partial' : previous.status;
-			detailDataContext.patchBilling(input.studentFeeId, { paid, status });
-		},
-		rollback: () => {
-			if (previous) {
-				detailDataContext.patchBilling(input.studentFeeId, previous);
-			}
-		},
+		versionKeys: ['payments', 'billing'],
 	});
 
 	return result !== null;
 }
+
+export {
+	adjustStudentFeeMutation,
+	cancelPaymentMutation,
+	cancelStudentFeeMutation,
+	reversePaymentMutation,
+} from './billing-ops.mutations';

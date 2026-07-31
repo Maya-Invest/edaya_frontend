@@ -1,8 +1,10 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import { writeHomeroomReportCommentMutation } from '$lib/api/mutations/student-ops.mutations';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
 	import { FileSpreadsheet } from '$lib/icons';
 	import { toast } from '$lib/toast.svelte';
@@ -25,6 +27,9 @@
 		latest ? academicContext.periods.find(p => p.id === latest.academicPeriodId) : null,
 	);
 
+	let commentDraft = $derived(latest?.homeroomComment ?? '');
+	let commentBusy = $state(false);
+
 	async function generate() {
 		const ok = await reportCardTab.generateReportCard(s.id);
 		if (ok) {
@@ -44,6 +49,22 @@
 		});
 		if (ok) {
 			toast.success(get(t)('reportCards.toastPublished', { name: s.name }));
+		}
+	}
+
+	async function saveHomeroomComment() {
+		if (!latest) {
+			return;
+		}
+		commentBusy = true;
+		const ok = await writeHomeroomReportCommentMutation({
+			resultId: latest.id,
+			teacherComment: commentDraft,
+			successMessage: get(t)('reportCards.homeroomCommentSaved'),
+		});
+		commentBusy = false;
+		if (ok) {
+			await reportCardTab.refreshResults(s.id);
 		}
 	}
 </script>
@@ -133,14 +154,15 @@
 			{/if}
 		{/each}
 
-		{#if latest.homeroomComment}
-			<div class="rounded-xl border border-border p-3">
-				<p class="font-mono text-[10px] uppercase text-muted-foreground">
-					{$t('reportCards.homeroomComment')}
-				</p>
-				<p class="mt-1 text-sm">{latest.homeroomComment}</p>
-			</div>
-		{/if}
+		<div class="rounded-xl border border-border p-3 space-y-2">
+			<p class="font-mono text-[10px] uppercase text-muted-foreground">
+				{$t('reportCards.homeroomComment')}
+			</p>
+			<Textarea bind:value={commentDraft} rows={3} />
+			<Button size="sm" class="rounded-full" disabled={commentBusy} onclick={() => void saveHomeroomComment()}>
+				{$t('reportCards.saveHomeroomComment')}
+			</Button>
+		</div>
 
 		{#if latest.principalComment}
 			<div class="rounded-xl border border-border p-3">

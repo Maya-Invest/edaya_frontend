@@ -3,12 +3,12 @@ import type { StudentsPageState } from '../../../students-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadIncidentRouteData } from '$lib/api/school-life-data';
+import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { authSession } from '$lib/auth/session.svelte';
 import { nowIso } from '$lib/date/format';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { runStudentRouteMutation } from '../../../lib/student-route-mutation';
-import { schoolStudentDetailIdFromUrl } from '../../../students-page.svelte';
 import { summarizeStudentIncidents } from './student-incidents-tab.selectors';
 
 export { summarizeStudentIncidents };
@@ -109,7 +109,7 @@ export class StudentIncidentsTabState {
 		return (url: URL) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
 			load: async () => {
-				const studentId = schoolStudentDetailIdFromUrl(url);
+				const studentId = studentDetailIdFromPathname(url.pathname);
 				if (!studentId) {
 					return {};
 				}
@@ -153,6 +153,7 @@ export class StudentIncidentsTabState {
 			involvedStudentIds: [input.studentId],
 			involvedCount: 1,
 			date: incidentDate,
+			kind: input.kind,
 			category: incidentCategoryFromKind(input.kind),
 			severity: incidentSeverityFromKind(input.kind),
 			summary: input.title.trim(),

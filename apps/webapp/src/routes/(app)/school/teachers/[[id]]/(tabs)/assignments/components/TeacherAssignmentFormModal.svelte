@@ -5,10 +5,12 @@
 	import { entitiesByIds, uniqueIds } from '$lib/api/entity-list-filters';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { authSession } from '$lib/auth/session.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import { t } from '$lib/i18n';
+	import { pickClassSubjectIdForTeacherSubject } from '$lib/teachers/pick-class-subject-for-teacher';
 	import { get } from 'svelte/store';
 	import { createTeacherAssignmentPayload } from '../../../../lib/teacher-detail-mutations';
 	import { getTeachersPageState } from '../../../../teachers-page.svelte';
@@ -28,9 +30,10 @@
 	let busy = $state(false);
 	let kind = $state<components['schemas']['TeacherAssignment']['kind']>('subject');
 	let classGroupId = $state('');
-	let classSubjectId = $state('');
+	let classSubjectIds = $state<string[]>(['']);
 	let classSubjects = $state<components['schemas']['ClassSubject'][]>([]);
 	let subjectLabels = $state<Record<string, string>>({});
+	let classSubjectsLoadId = 0;
 
 	const classOptions = $derived(
 		academicContext.classes.map(entry => ({ value: entry.id, label: entry.name })),
@@ -43,10 +46,13 @@
 		})),
 	);
 
-	const canSubmit = $derived(Boolean(classGroupId) && (kind === 'homeroom' || Boolean(classSubjectId)));
+	const selectedSubjectIds = $derived(classSubjectIds.filter(entry => entry.trim().length > 0));
+
+	const canSubmit = $derived(Boolean(classGroupId) && (kind === 'homeroom' || selectedSubjectIds.length > 0));
 
 	async function loadClassSubjects(nextClassGroupId: string) {
-		classSubjectId = '';
+		const loadId = ++classSubjectsLoadId;
+		classSubjectIds = [''];
 		classSubjects = [];
 		subjectLabels = {};
 		if (!nextClassGroupId) {
@@ -61,22 +67,43 @@
 			schoolId,
 			classGroupId: nextClassGroupId,
 		});
+		if (loadId !== classSubjectsLoadId) {
+			return;
+		}
 		classSubjects = nextClassSubjects;
 		const subjectIds = uniqueIds(nextClassSubjects.map(entry => entry.subjectId));
 		const subjects = subjectIds.length > 0
 			? await client.entities.subjects.list(entitiesByIds(subjectIds))
 			: [];
+		if (loadId !== classSubjectsLoadId) {
+			return;
+		}
 		subjectLabels = Object.fromEntries(nextClassSubjects.map((entry) => {
 			const name = subjects.find(subject => subject.id === entry.subjectId)?.name ?? entry.id;
 			return [entry.id, name];
 		}));
+		const hasManualSelections = classSubjectIds.some(entry => entry.trim().length > 0)
+			|| classSubjectIds.length > 1;
+		if (hasManualSelections) {
+			return;
+		}
+		const defaultSubjectId = pickClassSubjectIdForTeacherSubject(nextClassSubjects, teacher.subjectId);
+		classSubjectIds = defaultSubjectId ? [defaultSubjectId] : [''];
+	}
+
+	function addSubjectRow() {
+		classSubjectIds = [...classSubjectIds, ''];
+	}
+
+	function updateSubjectSelection(index: number, value: string) {
+		classSubjectIds = classSubjectIds.map((entry, entryIndex) => entryIndex === index ? value : entry);
 	}
 
 	$effect(() => {
 		if (!open) {
 			kind = 'subject';
 			classGroupId = '';
-			classSubjectId = '';
+			classSubjectIds = [''];
 			classSubjects = [];
 			subjectLabels = {};
 		}
@@ -94,23 +121,55 @@
 		}
 
 		busy = true;
-		const id = `ta-${Date.now().toString(36)}`;
-		const assignment = createTeacherAssignmentPayload({
-			id,
-			teacherId: teacher.id,
-			kind,
-			classGroupId,
-			classSubjectId: kind === 'subject' ? classSubjectId : null,
-		});
-		const ok = await teachersPage.saveAssignment({
-			assignment,
-			successMessage: get(t)('teacher.assignmentCreated'),
-		});
-		busy = false;
-		if (ok) {
-			assignmentsTab.upsertAssignment(assignment);
-			teachersPage.setAssignmentCount(teacher.id, assignmentsTab.assignmentsFor(teacher.id).length);
-			open = false;
+		try {
+			if (kind === 'homeroom') {
+				const id = `ta-${Date.now().toString(36)}`;
+				const assignment = createTeacherAssignmentPayload({
+					id,
+					teacherId: teacher.id,
+					kind,
+					classGroupId,
+					classSubjectId: null,
+				});
+				const ok = await teachersPage.saveAssignment({
+					assignment,
+					successMessage: get(t)('teacher.assignmentCreated'),
+				});
+				if (ok) {
+					assignmentsTab.upsertAssignment(assignment);
+					teachersPage.setAssignmentCount(teacher.id, assignmentsTab.assignmentsFor(teacher.id).length);
+					open = false;
+				}
+				return;
+			}
+
+			let saved = 0;
+			for (const classSubjectId of [...new Set(selectedSubjectIds)]) {
+				const id = `ta-${Date.now().toString(36)}-${saved}`;
+				const assignment = createTeacherAssignmentPayload({
+					id,
+					teacherId: teacher.id,
+					kind: 'subject',
+					classGroupId,
+					classSubjectId,
+				});
+				const ok = await teachersPage.saveAssignment({
+					assignment,
+					successMessage: saved === 0 ? get(t)('teacher.assignmentCreated') : undefined,
+				});
+				if (ok) {
+					assignmentsTab.upsertAssignment(assignment);
+					saved += 1;
+				}
+			}
+
+			if (saved > 0) {
+				teachersPage.setAssignmentCount(teacher.id, assignmentsTab.assignmentsFor(teacher.id).length);
+				open = false;
+			}
+		}
+		finally {
+			busy = false;
 		}
 	}
 </script>
@@ -147,14 +206,26 @@
 			/>
 		</div>
 		{#if kind === 'subject'}
-			<div class="space-y-1.5">
-				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-					{$t('teacher.classSubjectLabel')}
-				</Label>
-				<FilterSelect
-					bind:value={classSubjectId}
-					options={[{ value: '', label: $t('teacher.selectClassSubject') }, ...subjectOptions]}
-				/>
+			<div class="space-y-3">
+				{#each classSubjectIds as classSubjectId, index (index)}
+					<div class="flex items-end gap-2">
+						<div class="min-w-0 flex-1 space-y-1.5">
+							<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+								{$t('teacher.classSubjectLabel')}
+							</Label>
+							<FilterSelect
+								value={classSubjectId}
+								onchange={value => updateSubjectSelection(index, value)}
+								options={[{ value: '', label: $t('teacher.selectClassSubject') }, ...subjectOptions]}
+							/>
+						</div>
+						{#if index === classSubjectIds.length - 1}
+							<Button type="button" variant="outline" class="shrink-0 rounded-full" onclick={addSubjectRow}>
+								{$t('teacher.addSubject')}
+							</Button>
+						{/if}
+					</div>
+				{/each}
 			</div>
 		{/if}
 	</div>

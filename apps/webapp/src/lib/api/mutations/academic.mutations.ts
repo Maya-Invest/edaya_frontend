@@ -3,31 +3,22 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
-
-const GRADE_CLASS_PREFIX: Record<string, string> = {
-	'gl-6': '6',
-	'gl-5': '5',
-	'gl-4': '4',
-	'gl-3': '3',
-	'gl-2': '2',
-	'gl-1': '1st',
-	'gl-t': 'term',
-};
+import { navigateToListAfterEntityDelete } from '$lib/navigation/navigate-after-delete';
+import {
+	cleanupClassGroupDependencies,
+} from '$lib/school/delete-class-group-cleanup';
+import { nextClassGroupIdFromExistingClasses } from '$lib/school/next-class-group-id';
 
 function schoolId(): string {
 	return authSession.schoolId ?? academicContext.schools[0]?.id ?? 'sch-edaya-central';
 }
 
 function nextClassId(gradeLevelId: string): string {
-	const prefix = GRADE_CLASS_PREFIX[gradeLevelId] ?? 'cls';
-	const siblings = academicContext.classes.filter(c => c.gradeLevelId === gradeLevelId);
-	let index = siblings.length;
-	let id = index === 0 && prefix === '2' ? '2nd' : `${prefix}${String.fromCharCode(97 + index)}`;
-	while (academicContext.classes.some(c => c.id === id)) {
-		index += 1;
-		id = `${prefix}${String.fromCharCode(97 + index)}`;
-	}
-	return id;
+	return nextClassGroupIdFromExistingClasses(
+		gradeLevelId,
+		academicContext.classes.map(c => c.id),
+		{ gradeLevelName: academicContext.gradeLevelById(gradeLevelId)?.name },
+	);
 }
 
 function trimestersForYear(yearId: string, startDate: string, endDate: string) {
@@ -164,5 +155,26 @@ export async function updateClassGroupMutation(
 		successMessage: options?.successMessage,
 		refresh: true,
 	});
+	return result !== null;
+}
+
+export async function deleteClassGroupMutation(
+	classGroupId: string,
+	options?: { successMessage?: string; errorMessage?: string },
+): Promise<boolean> {
+	const client = getBrowserSchoolClient();
+	const result = await runMutation(
+		async () => {
+			await cleanupClassGroupDependencies(client, classGroupId);
+			await client.entities.classGroups.delete({ id: classGroupId });
+		},
+		{
+			successMessage: options?.successMessage,
+			errorMessage: options?.errorMessage,
+			refresh: false,
+			onSuccess: navigateToListAfterEntityDelete,
+		},
+	);
+
 	return result !== null;
 }

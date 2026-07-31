@@ -6,6 +6,7 @@ import type { StaffMember } from '$lib/types/school';
 import { browser } from '$app/environment';
 import { academicContext } from '$lib/academic/context.svelte';
 import { clearAuthGate } from '$lib/auth/auth-gate';
+import { clearWizardCompletedInSession } from '$lib/onboarding/wizard-completion-flag';
 import { authClient } from './client';
 
 class AuthSession {
@@ -194,6 +195,7 @@ class AuthSession {
 	}
 
 	async logout() {
+		clearWizardCompletedInSession(this.authUserId);
 		this.clear();
 		clearAuthGate();
 		if (browser) {

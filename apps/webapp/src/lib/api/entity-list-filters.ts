@@ -2,6 +2,9 @@ import type { EntityQuery } from '@maya-invest/edaya-api-client';
 
 export const DEFAULT_LIST_PAGE_SIZE = 50;
 
+/** Matches API `MAX_LIST_LIMIT` — use for school-wide catalog loads that exceed the default 50. */
+export const CATALOG_LIST_PAGE_SIZE = 500;
+
 export function pageToOffset(page: number, pageSize = DEFAULT_LIST_PAGE_SIZE): number {
 	const safePage = Number.isFinite(page) ? Math.max(1, Math.trunc(page)) : 1;
 	return (safePage - 1) * pageSize;
@@ -21,6 +24,37 @@ export function paginatedList(
 		$offset: options?.offset ?? 0,
 		...(options?.orderBy ? { $orderBy: options.orderBy } : {}),
 	};
+}
+
+/**
+ * Fetches every page of an entity list until a short/empty page.
+ * Prefer this for school-wide catalogs that exceed `DEFAULT_LIST_PAGE_SIZE`.
+ */
+export async function listAllEntityPages<T>(
+	fetchPage: (query: EntityQuery) => Promise<T[] | null | undefined>,
+	options?: {
+		baseQuery?: EntityQuery;
+		pageSize?: number;
+	},
+): Promise<T[]> {
+	const pageSize = options?.pageSize ?? CATALOG_LIST_PAGE_SIZE;
+	const baseQuery = options?.baseQuery ?? {};
+	const all: T[] = [];
+	let offset = 0;
+
+	while (true) {
+		const page = (await fetchPage(paginatedList(baseQuery, {
+			limit: pageSize,
+			offset,
+		}))) ?? [];
+		all.push(...page);
+		if (page.length < pageSize) {
+			break;
+		}
+		offset += pageSize;
+	}
+
+	return all;
 }
 
 export const ENROLLMENT_LIST_ORDER: EntityQuery['$orderBy'] = [
@@ -45,13 +79,14 @@ export const STAFF_LIST_ORDER: EntityQuery['$orderBy'] = [
 /**
  * Documented unscoped entity list read.
  * Use only when a route intentionally loads a school-wide collection.
+ * Pair with `listAllEntityPages` when the collection can exceed the default list limit.
  */
 export function schoolWideEntityList(_reason: string): EntityQuery {
 	return {};
 }
 
 const CONFIG_SUBJECTS_SCOPE
-	= 'Configuration subjects screen intentionally loads the school-wide subject catalog until route-level pagination is added.';
+	= 'Configuration subjects screen loads the school-wide subject catalog via paginated listAllEntityPages.';
 
 export const schoolSubjectsCatalogList = () => schoolWideEntityList(CONFIG_SUBJECTS_SCOPE);
 

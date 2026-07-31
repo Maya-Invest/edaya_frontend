@@ -11,10 +11,10 @@ export async function assertListShell(
 	const errorMark = pageErrors.snapshot();
 
 	try {
-		await page
-			.locator('[role="status"][aria-live="polite"]')
-			.waitFor({ state: 'hidden', timeout: 30_000 })
-			.catch(() => {});
+		const loading = page.locator('[role="status"][aria-live="polite"]');
+		if (await loading.isVisible({ timeout: 500 }).catch(() => false)) {
+			await loading.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {});
+		}
 		const moreBtn = page.getByTestId('list-more-menu');
 		if (!(await moreBtn.isVisible({ timeout: 15_000 }).catch(() => false))) {
 			reporter.log(scene, step, 'fail', 'Missing list more menu');
@@ -73,10 +73,10 @@ export async function assertFilterSelectShell(
 	const errorMark = pageErrors.snapshot();
 
 	try {
-		await page
-			.locator('[role="status"][aria-live="polite"]')
-			.waitFor({ state: 'hidden', timeout: 30_000 })
-			.catch(() => {});
+		const loading = page.locator('[role="status"][aria-live="polite"]');
+		if (await loading.isVisible({ timeout: 500 }).catch(() => false)) {
+			await loading.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {});
+		}
 		const filterSelect = page.locator('select[aria-label="Filter"]');
 		const moreBtn = page.getByTestId('list-more-menu');
 		if (!(await filterSelect.first().isVisible({ timeout: 15_000 }).catch(() => false))) {

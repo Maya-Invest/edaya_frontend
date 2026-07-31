@@ -7,7 +7,7 @@ const calendarListFiltersCodec = defineUrlFilterCodec({
 
 const configSubjectListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
-	mode: { type: 'enum', default: 'level', values: ['level', 'category'] as const },
+	gradeLevel: { type: 'string', default: 'all' },
 });
 
 const teachingListFiltersCodec = defineUrlFilterCodec({
