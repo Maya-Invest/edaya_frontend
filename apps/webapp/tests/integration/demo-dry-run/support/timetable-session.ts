@@ -1,10 +1,12 @@
 import { CLASS_6A, SEEDED_TIMETABLE_WEEK } from './constants';
 import { selectAcademicPeriod } from './academic-period';
+import { normalizeIntegrationPathname } from './paths';
 import type { DemoContext } from './types';
 import { visit } from './visit';
 
 function sessionIdFromPath(pathname: string): string | null {
-	const match = pathname.match(new RegExp(`/classes/${CLASS_6A}/timetable/([^/]+)`));
+	const normalized = normalizeIntegrationPathname(pathname);
+	const match = normalized.match(new RegExp(`/classes/${CLASS_6A}/timetable/([^/]+)`));
 	return match?.[1] ?? null;
 }
 
@@ -21,7 +23,12 @@ export async function pickTimetableSessionIdFromPage(ctx: DemoContext): Promise<
 		const href = await sessionLink.getAttribute('href');
 		const match = href?.match(new RegExp(`/classes/${CLASS_6A}/timetable/([^/?#]+)`));
 		if (match?.[1]) {
-			return match[1];
+			try {
+				return decodeURIComponent(match[1]);
+			}
+			catch {
+				return match[1];
+			}
 		}
 	}
 
@@ -55,7 +62,7 @@ export async function resolveTimetableSessionId(ctx: DemoContext): Promise<strin
 	}
 
 	const listPath = `/classes/${CLASS_6A}/timetable`;
-	const onGrid = new URL(ctx.page.url()).pathname === listPath;
+	const onGrid = normalizeIntegrationPathname(new URL(ctx.page.url()).pathname) === listPath;
 	if (onGrid) {
 		const picked = await pickTimetableSessionIdFromPage(ctx);
 		if (picked) {

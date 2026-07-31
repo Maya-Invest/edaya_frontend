@@ -1,4 +1,5 @@
 import type { DemoContext, VisitOptions } from './types';
+import { normalizeIntegrationPathname, pathMatchesPrefix } from './paths';
 
 const LOADING_HIDDEN_TIMEOUT_MS = 30_000;
 const PATH_STABLE_PAUSE_MS = 200;
@@ -52,10 +53,10 @@ async function waitForPathStable(
 	const deadline = Date.now() + timeoutMs;
 	while (Date.now() < deadline) {
 		const currentPath = new URL(page.url()).pathname;
-		if (currentPath.startsWith(expectedPathPrefix)) {
+		if (pathMatchesPrefix(currentPath, expectedPathPrefix)) {
 			await page.waitForTimeout(PATH_STABLE_PAUSE_MS);
 			const again = new URL(page.url()).pathname;
-			if (again.startsWith(expectedPathPrefix)) {
+			if (pathMatchesPrefix(again, expectedPathPrefix)) {
 				return { ok: true, path: again };
 			}
 		}
@@ -67,7 +68,8 @@ async function waitForPathStable(
 function isAlreadyOnTarget(page: DemoContext['page'], url: string): boolean {
 	const target = new URL(url);
 	const current = new URL(page.url());
-	return current.pathname === target.pathname && current.search === target.search;
+	return normalizeIntegrationPathname(current.pathname) === normalizeIntegrationPathname(target.pathname)
+		&& current.search === target.search;
 }
 
 async function verifyVisitExpectations(

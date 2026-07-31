@@ -1,10 +1,10 @@
 import type { DemoContext } from './types';
 import { DRAWER_TAB_LABELS, type DrawerTabKey } from './constants';
-import { drawerTabFromPathname } from './paths';
+import { drawerTabFromPathname, normalizeIntegrationPathname } from './paths';
 
 /** Active drawer tab from the URL path segment. */
 export function urlTabSegment(ctx: DemoContext): string | null {
-	return drawerTabFromPathname(new URL(ctx.page.url()).pathname);
+	return drawerTabFromPathname(normalizeIntegrationPathname(new URL(ctx.page.url()).pathname));
 }
 
 export async function waitForUrlTab(

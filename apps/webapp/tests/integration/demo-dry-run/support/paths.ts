@@ -17,6 +17,23 @@ export function webappReadinessPath(): string {
 		?? (integrationUsesDemoLogin() ? '/login/demo' : '/login');
 }
 
+/** Decode percent-encoding in URL path segments (e.g. colons in timetable session ids). */
+export function normalizeIntegrationPathname(pathname: string): string {
+	try {
+		return pathname
+			.split('/')
+			.map(segment => (segment ? decodeURIComponent(segment) : segment))
+			.join('/');
+	}
+	catch {
+		return pathname;
+	}
+}
+
+export function pathMatchesPrefix(pathname: string, prefix: string): boolean {
+	return normalizeIntegrationPathname(pathname).startsWith(normalizeIntegrationPathname(prefix));
+}
+
 const SCHOOL_DRAWER_PREFIXES = [
 	'/school/students/',
 	'/school/teachers/',
