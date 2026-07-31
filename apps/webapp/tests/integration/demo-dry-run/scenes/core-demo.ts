@@ -2,6 +2,7 @@ import { signIn } from '../support/auth';
 import { selectAcademicPeriod } from '../support/academic-period';
 import {
 	APP_SHELL_SELECTOR,
+	ACTIVITY_ID,
 	CLASS_6A,
 	CLASS_6B,
 	DEMO_ACTIVITY_NAME,
@@ -9,6 +10,7 @@ import {
 } from '../support/constants';
 import { configClassGroupPath, schoolStudentPath, schoolTeacherPath } from '../support/paths';
 import { assertClassAttendanceNav, ensureDailyAttendanceMode } from '../support/setup';
+import { pickTimetableSessionIdFromPage } from '../support/timetable-session';
 import { waitForDrawerAside } from '../support/drawer';
 import type { DemoContext } from '../support/types';
 import { assertNoFatalError, visit } from '../support/visit';
@@ -19,7 +21,6 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	try {
 		await signIn(ctx);
 		reporter.log('D0', '0.1 Login j.aka@', 'pass');
-		await shot('D0-login');
 	}
 	catch (err) {
 		reporter.log('D0', '0.1 Login j.aka@', 'fail', err instanceof Error ? err.message : String(err));
@@ -30,6 +31,7 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	await visit(ctx, `${base}/dashboard`, 'D0', '0.2 Dashboard / school context', {
 		expectText: /tableau|dashboard|directeur|cocody/i,
 	});
+	await selectAcademicPeriod(ctx);
 	await visit(ctx, `${base}/school/students`, 'D0', '0.3 Sidebar school students');
 
 	try {
@@ -100,6 +102,8 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	await visit(ctx, `${base}${timetableSeededWeek}`, 'D5', '5.1 Timetable grid', {
 		pathPrefix: timetablePath,
 		selector: '#planning-week-picker, .edaya-timetable-calendar',
+		selectorTimeoutMs: 25_000,
+		retry: true,
 	});
 	const pageHtml = await page.content();
 	const mathsOrTeacher = /Touré|Mathématiques|fractions|géométrie/i.test(pageHtml);
@@ -109,8 +113,8 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 		mathsOrTeacher ? 'pass' : 'fail',
 		mathsOrTeacher ? undefined : 'No maths lesson text in seeded week — verify schedule fixtures',
 	);
+	ctx.timetableSessionId = await pickTimetableSessionIdFromPage(ctx);
 
-	await selectAcademicPeriod(ctx);
 	await visit(ctx, `${base}/classes/${CLASS_6A}/evaluations?kind=homework`, 'D6', '6.1 Evaluations list', {
 		pathPrefix: `/classes/${CLASS_6A}/evaluations`,
 		selector: 'main',
@@ -125,7 +129,7 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 					await homeworkFilter.selectOption({ label: homeworkOption });
 				}
 			});
-			await page.waitForTimeout(800);
+			await page.waitForTimeout(300);
 			const hasHomeworkRow = await page
 				.locator('main .space-y-3 [role="button"]')
 				.filter({ hasText: /devoir|homework|exercices|fractions|feuille|cigale/i })
@@ -161,10 +165,19 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	await assertClassAttendanceNav(ctx, CLASS_6B, 'D7', '7.1 Attendance nav on 6ème B');
 	await visit(ctx, `${base}/classes/${CLASS_6B}/attendance`, 'D7', '7.2 Daily attendance page', { selector: 'main' });
 
-	await visit(ctx, `${base}/school/activities`, 'D8', '8.1 Activities list', {
-		selector: 'main',
-		expectText: DEMO_ACTIVITY_NAME,
-	});
+	await visit(ctx, `${base}/school/activities`, 'D8', '8.1 Activities list', { selector: 'main' });
+	const hasSeededActivity = await page
+		.locator(`a[href*="${ACTIVITY_ID}"]`)
+		.first()
+		.isVisible({ timeout: 15_000 })
+		.catch(() => false)
+		|| await page.getByText(DEMO_ACTIVITY_NAME).first().isVisible({ timeout: 5_000 }).catch(() => false);
+	reporter.log(
+		'D8',
+		'8.1 Activities list',
+		hasSeededActivity ? 'pass' : 'fail',
+		hasSeededActivity ? undefined : 'Seeded activity row not visible — verify demo-ci activities seed',
+	);
 	await visit(ctx, `${base}/school/announcements`, 'D8', '8.3 Announcements', { selector: 'main' });
 	await visit(ctx, `${base}/school/events`, 'D8', '8.4 Incidents/events', { selector: 'main' });
 

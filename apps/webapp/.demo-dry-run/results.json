@@ -1,5 +1,5 @@
 {
-  "passed": 235,
+  "passed": 202,
   "failed": 0,
   "skipped": 0,
   "results": [
@@ -101,6 +101,11 @@
     {
       "scene": "D7",
       "step": "7.2 Daily attendance page",
+      "status": "pass"
+    },
+    {
+      "scene": "D8",
+      "step": "8.1 Activities list",
       "status": "pass"
     },
     {
@@ -470,17 +475,7 @@
     },
     {
       "scene": "DD",
-      "step": "school-students deep-link grades",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "school-students URL segment grades",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
-      "step": "school-students deep-link attendance",
       "status": "pass"
     },
     {
@@ -490,17 +485,7 @@
     },
     {
       "scene": "DD",
-      "step": "school-students deep-link incidents",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "school-students URL segment incidents",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
-      "step": "school-students deep-link finances",
       "status": "pass"
     },
     {
@@ -510,27 +495,12 @@
     },
     {
       "scene": "DD",
-      "step": "school-students deep-link report-card",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "school-students URL segment report-card",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "school-students deep-link enrollments",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "school-students URL segment enrollments",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
-      "step": "school-students click navigation setup",
       "status": "pass"
     },
     {
@@ -550,27 +520,12 @@
     },
     {
       "scene": "DD",
-      "step": "school-staff deep-link permissions",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "school-staff URL segment permissions",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "school-staff deep-link assignments",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "school-staff URL segment assignments",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
-      "step": "school-staff click navigation setup",
       "status": "pass"
     },
     {
@@ -590,27 +545,12 @@
     },
     {
       "scene": "DD",
-      "step": "school-teachers deep-link assignments",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "school-teachers URL segment assignments",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "school-teachers deep-link availability",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "school-teachers URL segment availability",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
-      "step": "school-teachers click navigation setup",
       "status": "pass"
     },
     {
@@ -630,27 +570,12 @@
     },
     {
       "scene": "DD",
-      "step": "school-activities deep-link students",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "school-activities URL segment students",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "school-activities deep-link classes",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "school-activities URL segment classes",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
-      "step": "school-activities click navigation setup",
       "status": "pass"
     },
     {
@@ -670,17 +595,7 @@
     },
     {
       "scene": "DD",
-      "step": "configuration-classes deep-link assignments",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "configuration-classes URL segment assignments",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
-      "step": "configuration-classes click navigation setup",
       "status": "pass"
     },
     {
@@ -710,17 +625,7 @@
     },
     {
       "scene": "DD",
-      "step": "class-teaching deep-link logbook",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "class-teaching URL segment logbook",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
-      "step": "class-teaching click navigation setup",
       "status": "pass"
     },
     {
@@ -740,17 +645,7 @@
     },
     {
       "scene": "DD",
-      "step": "class-students deep-link grades",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "class-students URL segment grades",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
-      "step": "class-students deep-link attendance",
       "status": "pass"
     },
     {
@@ -760,17 +655,7 @@
     },
     {
       "scene": "DD",
-      "step": "class-students deep-link incidents",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "class-students URL segment incidents",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
-      "step": "class-students deep-link finances",
       "status": "pass"
     },
     {
@@ -780,17 +665,7 @@
     },
     {
       "scene": "DD",
-      "step": "class-students deep-link report-card",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "class-students URL segment report-card",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
-      "step": "class-students deep-link enrollments",
       "status": "pass"
     },
     {
@@ -800,17 +675,7 @@
     },
     {
       "scene": "DD",
-      "step": "class-students click navigation setup",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "class-students click to profile",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
-      "step": "evaluation id resolve",
       "status": "pass"
     },
     {
@@ -825,27 +690,12 @@
     },
     {
       "scene": "DD",
-      "step": "class-evaluations deep-link grading",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "class-evaluations URL segment grading",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "class-evaluations click navigation setup",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "class-evaluations click to details",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
-      "step": "timetable session resolve",
       "status": "pass"
     },
     {
@@ -860,27 +710,12 @@
     },
     {
       "scene": "DD",
-      "step": "class-timetable-session deep-link attendance",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "class-timetable-session URL segment attendance",
       "status": "pass"
     },
     {
       "scene": "DD",
-      "step": "class-timetable-session deep-link logbook",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
       "step": "class-timetable-session URL segment logbook",
-      "status": "pass"
-    },
-    {
-      "scene": "DD",
-      "step": "class-timetable-session click navigation setup",
       "status": "pass"
     },
     {

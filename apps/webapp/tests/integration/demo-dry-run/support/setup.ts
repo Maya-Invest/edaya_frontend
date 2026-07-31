@@ -80,8 +80,6 @@ export async function ensureDailyAttendanceMode(
 
 	await page.getByRole('button', { name: /save|enregistrer/i }).click();
 	await page.locator('[role="dialog"]').waitFor({ state: 'hidden', timeout: 20_000 }).catch(() => {});
-	await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
-	await page.waitForTimeout(2_000);
 
 	const dailyConfigured = await page
 		.locator('main')

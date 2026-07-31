@@ -38,6 +38,6 @@ export async function selectAcademicPeriod(
 		return true;
 	}
 	await option.click();
-	await page.waitForTimeout(600);
+	await page.waitForTimeout(200);
 	return true;
 }

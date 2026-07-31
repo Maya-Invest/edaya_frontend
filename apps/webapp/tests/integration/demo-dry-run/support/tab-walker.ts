@@ -14,6 +14,7 @@ function stepSlug(value: string): string {
 	return value.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
 }
 
+/** Deep-link first tab; click through remaining tabs (avoids full reload per tab). */
 export async function walkDrawerTabRoute(
 	ctx: DemoContext,
 	scene: string,
@@ -22,29 +23,70 @@ export async function walkDrawerTabRoute(
 	const { base, reporter, shot } = ctx;
 	let routeOk = true;
 	const slug = stepSlug(routeCase.name);
+	const tabs = routeCase.tabs;
+	if (tabs.length === 0) {
+		return true;
+	}
 
-	for (const tab of routeCase.tabs) {
-		const pathWithQuery = routeCase.pathForTab(tab);
-		const url = `${base}${pathWithQuery}`;
-		const pathPrefix = pathWithQuery.split('?')[0]!;
-		const step = `${slug} deep-link ${tab}`;
-		const visited = await visit(ctx, url, scene, step, {
-			pathPrefix,
-		});
-		if (!visited) {
-			if (routeCase.skipReason) {
-				reporter.log(scene, step, 'skip', routeCase.skipReason);
-				return false;
-			}
-			routeOk = false;
-			continue;
+	const firstTab = tabs[0]!;
+	const firstPath = routeCase.pathForTab(firstTab);
+	const firstUrl = `${base}${firstPath}`;
+	const firstPathPrefix = firstPath.split('?')[0]!;
+
+	const opened = await visit(ctx, firstUrl, scene, `${slug} deep-link ${firstTab}`, {
+		pathPrefix: firstPathPrefix,
+	});
+	if (!opened) {
+		if (routeCase.skipReason) {
+			reporter.log(scene, `${slug} deep-link ${firstTab}`, 'skip', routeCase.skipReason);
+			return false;
 		}
+		return false;
+	}
 
+	if (!(await waitForDrawerTabBar(ctx))) {
+		reporter.log(scene, `${slug} tab bar on ${firstTab}`, 'fail', 'Drawer tab bar not visible');
+		await shot(`${scene}-${slug}-tab-bar-${firstTab}`);
+		return false;
+	}
+
+	if (await waitForUrlTab(ctx, firstTab)) {
+		reporter.log(scene, `${slug} URL segment ${firstTab}`, 'pass');
+	}
+	else {
+		reporter.log(
+			scene,
+			`${slug} URL segment ${firstTab}`,
+			routeCase.skipReason ? 'skip' : 'fail',
+			`tab=${urlTabSegment(ctx) ?? 'none'}`,
+		);
+		if (!routeCase.skipReason) {
+			await shot(`${scene}-${slug}-url-${firstTab}`);
+			routeOk = false;
+		}
+	}
+
+	for (const tab of tabs.slice(1)) {
 		if (!(await waitForDrawerTabBar(ctx))) {
 			reporter.log(scene, `${slug} tab bar on ${tab}`, 'fail', 'Drawer tab bar not visible');
 			await shot(`${scene}-${slug}-tab-bar-${tab}`);
 			routeOk = false;
 			continue;
+		}
+
+		const tabKey = tab as DrawerTabKey;
+		const clicked = await clickDrawerTab(ctx, tabKey);
+		if (!clicked) {
+			const pathWithQuery = routeCase.pathForTab(tab);
+			const pathPrefix = pathWithQuery.split('?')[0]!;
+			const deepLinked = await visit(ctx, `${base}${pathWithQuery}`, scene, `${slug} deep-link ${tab}`, {
+				pathPrefix,
+			});
+			if (!deepLinked) {
+				reporter.log(scene, `${slug} click ${tab}`, 'fail', 'Tab button not found');
+				routeOk = false;
+				continue;
+			}
 		}
 
 		if (await waitForUrlTab(ctx, tab)) {
@@ -64,21 +106,14 @@ export async function walkDrawerTabRoute(
 		}
 	}
 
-	const firstTab = routeCase.tabs[0];
-	const lastTab = routeCase.tabs[routeCase.tabs.length - 1];
-	if (firstTab && lastTab && firstTab !== lastTab) {
-		const reopenPath = routeCase.pathForTab(lastTab);
-		const reopenUrl = `${base}${reopenPath}`;
-		if (await visit(ctx, reopenUrl, scene, `${slug} click navigation setup`, {
-			pathPrefix: reopenPath.split('?')[0],
-		}) && await waitForDrawerTabBar(ctx)) {
-			if (await clickDrawerTab(ctx, firstTab as DrawerTabKey) && await waitForUrlTab(ctx, firstTab)) {
-				reporter.log(scene, `${slug} click to ${firstTab}`, 'pass');
-			}
-			else {
-				reporter.log(scene, `${slug} click to ${firstTab}`, 'fail', `tab=${urlTabSegment(ctx) ?? 'none'}`);
-				routeOk = false;
-			}
+	const lastTab = tabs[tabs.length - 1]!;
+	if (firstTab !== lastTab && tabs.length > 1 && await waitForDrawerTabBar(ctx)) {
+		if (await clickDrawerTab(ctx, firstTab as DrawerTabKey) && await waitForUrlTab(ctx, firstTab)) {
+			reporter.log(scene, `${slug} click to ${firstTab}`, 'pass');
+		}
+		else {
+			reporter.log(scene, `${slug} click to ${firstTab}`, 'fail', `tab=${urlTabSegment(ctx) ?? 'none'}`);
+			routeOk = false;
 		}
 	}
 

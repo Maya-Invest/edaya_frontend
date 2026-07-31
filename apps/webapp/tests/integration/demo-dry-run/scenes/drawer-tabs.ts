@@ -1,4 +1,3 @@
-import { configClassGroupPath } from '../support/paths';
 import {
 	DRAWER_TAB_ROUTE_CASES,
 	classEvaluationsTabCase,
@@ -8,7 +7,7 @@ import {
 	assertDrawerCloseReturnsToList,
 	walkDrawerTabRoute,
 } from '../support/tab-walker';
-import { resolveEvaluationId } from '../support/evaluation-resolve';
+import { EVALUATION_ID } from '../support/constants';
 import { resolveTimetableSessionId } from '../support/timetable-session';
 import type { DemoContext } from '../support/types';
 
@@ -20,18 +19,7 @@ export async function runDrawerTabChecks(ctx: DemoContext): Promise<void> {
 		await walkDrawerTabRoute(ctx, scene, routeCase);
 	}
 
-	const evaluationId = await resolveEvaluationId(ctx);
-	if (evaluationId) {
-		await walkDrawerTabRoute(ctx, scene, classEvaluationsTabCase(evaluationId));
-	}
-	else {
-		ctx.reporter.log(
-			scene,
-			'class evaluations tabs',
-			'skip',
-			'No evaluation rows in list for current academic period',
-		);
-	}
+	await walkDrawerTabRoute(ctx, scene, classEvaluationsTabCase(EVALUATION_ID));
 
 	const sessionId = await resolveTimetableSessionId(ctx);
 	if (sessionId) {

@@ -1,5 +1,8 @@
 import type { DemoContext, VisitOptions } from './types';
 
+const LOADING_HIDDEN_TIMEOUT_MS = 10_000;
+const PATH_STABLE_PAUSE_MS = 200;
+
 export async function assertNoFatalError(ctx: DemoContext, scene: string, step: string): Promise<boolean> {
 	const alert = ctx.page.locator('[role="alert"]').filter({
 		hasText: /something went wrong|une erreur est survenue/i,
@@ -17,6 +20,13 @@ async function waitForAppShell(ctx: DemoContext): Promise<void> {
 		.catch(() => ctx.page.waitForSelector('main', { timeout: 20_000 }));
 }
 
+async function waitForLoadingHidden(ctx: DemoContext): Promise<void> {
+	const loading = ctx.page.locator('[role="status"][aria-live="polite"]');
+	if (await loading.isVisible({ timeout: 500 }).catch(() => false)) {
+		await loading.waitFor({ state: 'hidden', timeout: LOADING_HIDDEN_TIMEOUT_MS }).catch(() => {});
+	}
+}
+
 async function waitForPathStable(
 	ctx: DemoContext,
 	expectedPathPrefix: string,
@@ -27,15 +37,73 @@ async function waitForPathStable(
 	while (Date.now() < deadline) {
 		const currentPath = new URL(page.url()).pathname;
 		if (currentPath.startsWith(expectedPathPrefix)) {
-			await page.waitForTimeout(500);
+			await page.waitForTimeout(PATH_STABLE_PAUSE_MS);
 			const again = new URL(page.url()).pathname;
 			if (again.startsWith(expectedPathPrefix)) {
 				return { ok: true, path: again };
 			}
 		}
-		await page.waitForTimeout(150);
+		await page.waitForTimeout(100);
 	}
 	return { ok: false, path: new URL(page.url()).pathname };
+}
+
+function isAlreadyOnTarget(page: DemoContext['page'], url: string): boolean {
+	const target = new URL(url);
+	const current = new URL(page.url());
+	return current.pathname === target.pathname && current.search === target.search;
+}
+
+async function verifyVisitExpectations(
+	ctx: DemoContext,
+	scene: string,
+	step: string,
+	expectedPath: string,
+	options: VisitOptions,
+	errorMark: number,
+): Promise<boolean | 'missing-selector'> {
+	const { expectText, selector } = options;
+	const selectorTimeoutMs = options.selectorTimeoutMs ?? 15_000;
+	const { page, reporter, shot, pageErrors } = ctx;
+
+	await waitForLoadingHidden(ctx);
+	await waitForAppShell(ctx);
+
+	const navigation = await waitForPathStable(ctx, expectedPath);
+	if (!navigation.ok) {
+		reporter.log(scene, step, 'fail', `Redirected away — at ${navigation.path}, expected ${expectedPath}`);
+		await shot(`${scene}-${step.replace(/\s+/g, '-')}-redirect`);
+		return false;
+	}
+
+	if (selector) {
+		const el = page.locator(selector).first();
+		if (!(await el.isVisible({ timeout: selectorTimeoutMs }).catch(() => false))) {
+			return 'missing-selector';
+		}
+	}
+	if (expectText) {
+		const found = await page
+			.getByText(expectText, { exact: false })
+			.first()
+			.isVisible({ timeout: 10_000 })
+			.catch(() => false);
+		if (!found) {
+			reporter.log(scene, step, 'fail', `Expected text: ${expectText}`);
+			await shot(`${scene}-${step.replace(/\s+/g, '-')}`);
+			return false;
+		}
+	}
+	if (!(await assertNoFatalError(ctx, scene, step))) {
+		await shot(`${scene}-${step.replace(/\s+/g, '-')}-error`);
+		return false;
+	}
+	if (!pageErrors.assertCleanSince(errorMark, scene, step)) {
+		await shot(`${scene}-${step.replace(/\s+/g, '-')}-pageerror`);
+		return false;
+	}
+	reporter.log(scene, step, 'pass');
+	return true;
 }
 
 export async function visit(
@@ -45,62 +113,24 @@ export async function visit(
 	step: string,
 	options: VisitOptions = {},
 ): Promise<boolean> {
-	const { expectText, selector, pathPrefix, retry = false } = options;
-	const expectedPath = pathPrefix ?? new URL(url).pathname;
+	const { selector, retry = false } = options;
+	const expectedPath = options.pathPrefix ?? new URL(url).pathname;
 	const errorMark = ctx.pageErrors.snapshot();
-	const { page, reporter, shot, pageErrors } = ctx;
+	const { page, reporter, shot } = ctx;
 
-	const attempt = async (): Promise<boolean | 'missing-selector'> => {
+	const attempt = async (skipGoto: boolean): Promise<boolean | 'missing-selector'> => {
 		try {
-			const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-			const status = response?.status() ?? 0;
-			if (status >= 400) {
-				reporter.log(scene, step, 'fail', `HTTP ${status}`);
-				await shot(`${scene}-${step.replace(/\s+/g, '-')}-http`);
-				return false;
-			}
-			await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
-			await page
-				.locator('[role="status"][aria-live="polite"]')
-				.waitFor({ state: 'hidden', timeout: 30_000 })
-				.catch(() => {});
-			await waitForAppShell(ctx);
-
-			const navigation = await waitForPathStable(ctx, expectedPath);
-			if (!navigation.ok) {
-				reporter.log(scene, step, 'fail', `Redirected away — at ${navigation.path}, expected ${expectedPath}`);
-				await shot(`${scene}-${step.replace(/\s+/g, '-')}-redirect`);
-				return false;
-			}
-
-			if (selector) {
-				const el = page.locator(selector).first();
-				if (!(await el.isVisible({ timeout: 15_000 }).catch(() => false))) {
-					return 'missing-selector';
-				}
-			}
-			if (expectText) {
-				const found = await page
-					.getByText(expectText, { exact: false })
-					.first()
-					.isVisible({ timeout: 10_000 })
-					.catch(() => false);
-				if (!found) {
-					reporter.log(scene, step, 'fail', `Expected text: ${expectText}`);
-					await shot(`${scene}-${step.replace(/\s+/g, '-')}`);
+			if (!skipGoto) {
+				const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+				const status = response?.status() ?? 0;
+				if (status >= 400) {
+					reporter.log(scene, step, 'fail', `HTTP ${status}`);
+					await shot(`${scene}-${step.replace(/\s+/g, '-')}-http`);
 					return false;
 				}
 			}
-			if (!(await assertNoFatalError(ctx, scene, step))) {
-				await shot(`${scene}-${step.replace(/\s+/g, '-')}-error`);
-				return false;
-			}
-			if (!pageErrors.assertCleanSince(errorMark, scene, step)) {
-				await shot(`${scene}-${step.replace(/\s+/g, '-')}-pageerror`);
-				return false;
-			}
-			reporter.log(scene, step, 'pass');
-			return true;
+
+			return await verifyVisitExpectations(ctx, scene, step, expectedPath, options, errorMark);
 		}
 		catch (err) {
 			reporter.log(scene, step, 'fail', err instanceof Error ? err.message : String(err));
@@ -109,11 +139,12 @@ export async function visit(
 		}
 	};
 
-	let result = await attempt();
+	const skipGoto = isAlreadyOnTarget(page, url);
+	let result = await attempt(skipGoto);
 	if (result === 'missing-selector') {
 		if (retry) {
 			await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
-			result = await attempt();
+			result = await attempt(false);
 		}
 		if (result === 'missing-selector') {
 			reporter.log(scene, step, 'fail', `Missing selector: ${selector}`);
