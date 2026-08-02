@@ -2,6 +2,7 @@
 	import type { Subject } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import { sortGradeLevels } from '$lib/academic/grade-level-sort';
 	import { groupSubjectsByGradeLevel } from '$lib/academic/subject-level-groups';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -83,9 +84,7 @@
 
 	const gradeLevelFilterOptions = $derived([
 		{ value: 'all', label: $t('subjects.allGradeLevels') },
-		...academicContext.gradeLevels
-			.slice()
-			.sort((left, right) => left.order - right.order)
+		...sortGradeLevels(academicContext.gradeLevels)
 			.map(level => ({ value: level.id, label: level.name })),
 	]);
 

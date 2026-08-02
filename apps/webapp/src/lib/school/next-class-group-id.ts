@@ -16,7 +16,6 @@ export const GRADE_LEVEL_CLASS_ID_PREFIX: Record<string, string> = {
 	'2nde': '2',
 	'2nda': '2nda',
 	'2ndc': '2ndc',
-	'2ndd': '2ndd',
 	'1ere': '1st',
 	'1era': '1era',
 	'1erc': '1erc',

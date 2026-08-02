@@ -1,6 +1,6 @@
 /**
  * Canonical key for matching niveau values in imports against school grade level names.
- * Accepts QA style (`6eme`), wizard style (`6ème`), and legacy fixture names (`Sixième`).
+ * Accepts QA style (`6eme`), wizard style (`6ème`), series (`Seconde A`), and legacy names (`Sixième`).
  */
 export function normalizeGradeLevelImportKey(value: string): string {
 	const key = value
@@ -23,26 +23,27 @@ export function normalizeGradeLevelImportKey(value: string): string {
 		'troisieme': '3eme',
 		'3e': '3eme',
 		'3eme': '3eme',
-		'2nde': '2nde',
 		'2nda': '2nda',
 		'2ndc': '2ndc',
-		'2ndd': '2ndd',
-		'seconde': '2nde',
+		'2nde a': '2nda',
+		'2nde c': '2ndc',
 		'seconde a': '2nda',
 		'seconde c': '2ndc',
-		'seconde d': '2ndd',
-		'1ere': '1ere',
 		'1era': '1era',
 		'1erc': '1erc',
 		'1erd': '1erd',
-		'premiere': '1ere',
+		'1ere a': '1era',
+		'1ere c': '1erc',
+		'1ere d': '1erd',
 		'premiere a': '1era',
 		'premiere c': '1erc',
 		'premiere d': '1erd',
-		'terminale': 'terminale',
 		'tlea': 'tlea',
 		'tlec': 'tlec',
 		'tled': 'tled',
+		'tle a': 'tlea',
+		'tle c': 'tlec',
+		'tle d': 'tled',
 		'terminale a': 'tlea',
 		'terminale c': 'tlec',
 		'terminale d': 'tled',

@@ -2,6 +2,7 @@
 	import type { GradeLevel } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import { sortGradeLevels } from '$lib/academic/grade-level-sort';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -41,8 +42,7 @@
 	]);
 
 	const filteredLevels = $derived(
-		[...academicContext.gradeLevels]
-			.sort((a, b) => a.order - b.order)
+		sortGradeLevels(academicContext.gradeLevels)
 			.filter((level) => {
 				if (cycle !== 'all' && level.cycle !== cycle) {
 					return false;

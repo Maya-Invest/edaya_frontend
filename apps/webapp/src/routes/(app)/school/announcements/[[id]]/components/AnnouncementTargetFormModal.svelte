@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { AnnouncementTargetKind, Guardian, StaffMember, Student } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import { sortGradeLevels } from '$lib/academic/grade-level-sort';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
@@ -41,7 +42,7 @@
 	let targetKind = $state<AnnouncementTargetKind>('school');
 	let targetId = $state('');
 
-	const sortedLevels = $derived([...academicContext.gradeLevels].sort((a, b) => a.order - b.order));
+	const sortedLevels = $derived(sortGradeLevels(academicContext.gradeLevels));
 	const needsEntity = $derived(announcementTargetNeedsEntity(targetKind));
 	const targetKindLabel = $derived($t(`announcements.targetKind.${targetKind}`));
 

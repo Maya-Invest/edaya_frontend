@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ClassNode } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import { sortGradeLevels } from '$lib/academic/grade-level-sort';
 	import StaffPicker from '$lib/components/school/shared/pickers/StaffPicker.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -26,7 +27,7 @@
 	let homeroomStaffId = $state('');
 
 	const isEdit = $derived(classGroup !== undefined);
-	const sortedLevels = $derived([...academicContext.gradeLevels].sort((a, b) => a.order - b.order));
+	const sortedLevels = $derived(sortGradeLevels(academicContext.gradeLevels));
 	const staff = $derived(classesPage.staff);
 	const canSubmit = $derived(name.trim().length > 0);
 
