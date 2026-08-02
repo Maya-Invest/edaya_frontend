@@ -86,7 +86,7 @@ Rôles reconnus à l’**import** personnel (ex.) : `Directeur`, `Directeur adjo
 ## 4 · Structure pédagogique
 
 **Modèles structure wizard** (templates CI) :  
-☐ **Collège** (6ème → 3ème) ☐ **Lycée** (2nde → Terminale) ☐ Les deux
+☐ **Collège** (Sixième → Troisième) ☐ **Lycée** (Seconde → Terminale) ☐ Les deux
 
 > Hors Côte d’Ivoire : pas de template structure prêt — niveaux / classes / matières via configuration + Excel.
 

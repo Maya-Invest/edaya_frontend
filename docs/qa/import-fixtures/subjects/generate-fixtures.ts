@@ -62,7 +62,7 @@ write('SU06-error-duplicate-in-file.xlsx', HEADERS, [
 ]);
 
 const niveauWithoutClasses = levels.find(level => !levelsWithClasses.has(level.name))?.name
-	?? '2nde';
+	?? 'Seconde Z';
 write('SU07-error-no-classes-for-level.xlsx', HEADERS, [
 	['Arts plastiques', niveauWithoutClasses, 'ART', 1],
 ]);

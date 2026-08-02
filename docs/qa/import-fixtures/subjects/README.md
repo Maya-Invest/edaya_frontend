@@ -27,7 +27,7 @@ bun edaya_web/docs/qa/import-fixtures/subjects/generate-fixtures.ts
 | `SU04-error-missing-required.xlsx` | Nom ou niveau manquant | 0 créée |
 | `SU05-error-invalid-coefficient.xlsx` | `abc`, `-1`, `0` | 0 créée |
 | `SU06-error-duplicate-in-file.xlsx` | Mathématiques/6eme en double | 1 créée |
-| `SU07-error-no-classes-for-level.xlsx` | Niveau `2nde` sans classes | 0 créée |
+| `SU07-error-no-classes-for-level.xlsx` | Niveau `Seconde Z` sans classes | 0 créée |
 | `SU08-headers-only.xlsx` | En-têtes seuls | Fichier vide |
 | `SU09-trim-and-case.xlsx` | Espaces autour des valeurs | 2 créées |
 

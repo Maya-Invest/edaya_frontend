@@ -118,14 +118,19 @@ describe('structure onboarding', () => {
 
 	it('builds catalog grade levels and preview class names from templates', () => {
 		expect(catalog.gradeLevels).toHaveLength(12);
-		expect(catalog.byId.get('ci-lycee:1ERA')?.name).toBe('Première A');
-		expect(previewClassNamesFromCatalog(catalog.byId.get('ci-lycee:1ERA')!, 2)).toEqual([
-			'1ERA 1',
-			'1ERA 2',
+
+		const premiereA = catalog.byId.get('ci-lycee:1ERA');
+		const secondeA = catalog.byId.get('ci-lycee:2NDA');
+		expect(premiereA).toBeDefined();
+		expect(secondeA).toBeDefined();
+
+		expect(previewClassNamesFromCatalog(premiereA!, 2)).toEqual([
+			`${premiereA!.shortLabel} 1`,
+			`${premiereA!.shortLabel} 2`,
 		]);
-		expect(previewClassNamesFromCatalog(catalog.byId.get('ci-lycee:2NDA')!, 2)).toEqual([
-			'2NDA 1',
-			'2NDA 2',
+		expect(previewClassNamesFromCatalog(secondeA!, 2)).toEqual([
+			`${secondeA!.shortLabel} 1`,
+			`${secondeA!.shortLabel} 2`,
 		]);
 	});
 

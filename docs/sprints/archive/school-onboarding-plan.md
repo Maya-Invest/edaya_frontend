@@ -354,7 +354,7 @@ Route: `apps/webapp/src/routes/onboarding/+layout.svelte` + `+page.svelte` + `+p
 
 Extract from `@edaya/dev-fixtures` / seed into **`@edaya/fixtures/onboarding`** (shipped):
 
-- [x] **Middle school** (6e–3e) and **High school** (2nde, 1ère, Terminale) models — API templates (`ci-college`, `ci-lycee`)
+- [x] **Middle school** (6e–3e) and **High school** (Seconde A/C, Première A/C/D, Terminale A/C/D) models — API templates (`ci-college`, `ci-lycee`)
 - [x] Base subjects + placeholder chapters (`Subject` / `SubjectMatter`) — 6 identical subjects for all grades *(per-grade enrichment → Phase 9)*
 - [x] Grade level → `GradeLevel` records mapping (webapp: `lib/onboarding/structure-templates.ts` → CI template ids)
 
@@ -480,8 +480,8 @@ bun dev
 | Grade | Subjects |
 |-------|----------|
 | 6e – 3e (middle school) | 6 core: Maths, French, History-Geography, Sciences, English, PE |
-| 2nde | middle school base + LV2 (optional v1) |
-| 1ère / Terminale | high school base + Philosophy + Physics-Chemistry *(aligned with `extended-dataset`)* |
+| Seconde A/C | middle school base + LV2 (optional v1) |
+| Première / Terminale A/C/D | high school base + Philosophy + Physics-Chemistry *(aligned with `extended-dataset`)* |
 
 Out of scope v1: S / ES / L tracks, vocational options (AO), French Ministry of Education curriculum.
 

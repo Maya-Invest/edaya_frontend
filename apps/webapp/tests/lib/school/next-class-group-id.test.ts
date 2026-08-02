@@ -25,6 +25,7 @@ describe('resolveGradeLevelKeyForClassId', () => {
 		expect(resolveGradeLevelKeyForClassId('ci-college:6EME')).toBe('6eme');
 		expect(resolveGradeLevelKeyForClassId('uuid', 'Première A')).toBe('1era');
 		expect(resolveGradeLevelKeyForClassId('uuid', '1ERA')).toBe('1era');
+		expect(resolveGradeLevelKeyForClassId('uuid', 'Seconde C')).toBe('2ndc');
 
 		const key = resolveGradeLevelKeyForClassId('ci-lycee:1ERA');
 		expect(nextClassGroupId(key, new Set(), new Map())).toBe('1eraa');
