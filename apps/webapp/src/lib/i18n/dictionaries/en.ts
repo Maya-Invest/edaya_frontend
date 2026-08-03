@@ -166,6 +166,8 @@ export const en: Dict = {
 	'onboarding.structure.levelsTitle': 'Grade levels and classes',
 	'onboarding.structure.classCountLabel': 'Classes',
 	'onboarding.structure.capacityLabel': 'Capacity',
+	'onboarding.structure.namingAlphabetical': 'Alphabetical',
+	'onboarding.structure.namingNumerical': 'Numerical',
 	'onboarding.structure.previewLabel': 'Preview',
 	'onboarding.structure.summaryTitle': 'Summary',
 	'onboarding.structure.summaryBody': '{levelCount} grade levels · {classCount} classes · base subjects included',

@@ -1,4 +1,4 @@
-export const ONBOARDING_DRAFT_VERSION = 5 as const;
+export const ONBOARDING_DRAFT_VERSION = 6 as const;
 export const ONBOARDING_STEP_COUNT = 4;
 
 export type OnboardingStep = 1 | 2 | 3 | 4;
@@ -6,6 +6,8 @@ export type OnboardingStep = 1 | 2 | 3 | 4;
 export type OnboardingPathChoice = 'single' | 'consortium';
 
 export type OnboardingOwnerAssignment = 'self' | 'invite' | 'later';
+
+export type OnboardingClassNamingMode = 'alphabetical' | 'numerical';
 
 export interface OnboardingPeriodDraft {
 	id: string;
@@ -30,6 +32,7 @@ export interface OnboardingStructureLevelDraft {
 	gradeLevelId: string;
 	classCount: number;
 	capacity: number;
+	classNamingMode: OnboardingClassNamingMode;
 }
 
 export interface OnboardingStructureDraft {

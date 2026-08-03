@@ -49,7 +49,7 @@ describe('canAdvanceFromStep', () => {
 		const draft = createEmptyDraft();
 		expect(canAdvanceFromStep(2, draft)).toBe(false);
 		draft.structure.models = ['college'];
-		draft.structure.levels = [{ gradeLevelId: 'ci-college:6EME', classCount: 1, capacity: 30 }];
+		draft.structure.levels = [{ gradeLevelId: 'ci-college:6EME', classCount: 1, capacity: 30, classNamingMode: 'numerical' }];
 		expect(canAdvanceFromStep(2, draft)).toBe(true);
 	});
 });

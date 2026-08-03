@@ -8,6 +8,6 @@ describe('onboarding draft consortium fields', () => {
 		expect(draft.pathChoiceSubmitted).toBe(false)
 		expect(draft.consortiumId).toBeNull()
 		expect(draft.consortiumName).toBe('')
-		expect(draft.version).toBe(5)
+		expect(draft.version).toBe(6)
 	})
 })

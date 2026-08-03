@@ -7,12 +7,10 @@ import {
 	updateStructureLevel,
 } from '$lib/onboarding/structure-step-helpers';
 import { isStructureStepValid } from '$lib/onboarding/structure-step-validation';
-import {
-	buildCatalogFromTemplates,
-	previewClassNamesFromCatalog,
-} from '$lib/onboarding/structure-template-catalog';
+import { previewClassNamesFromCatalog } from '$lib/onboarding/class-naming';
+import { buildCatalogFromTemplates } from '$lib/onboarding/structure-template-model';
+import type { StructureTemplateDefinition } from '$lib/onboarding/structure-template-model';
 import { toApiStructureTemplateIds } from '$lib/onboarding/structure-templates';
-import type { StructureTemplateDefinition } from '$lib/onboarding/structure-template-catalog';
 
 function level(
 	templateId: string,
@@ -121,16 +119,22 @@ describe('structure onboarding', () => {
 
 		const premiereA = catalog.byId.get('ci-lycee:1ERA');
 		const secondeA = catalog.byId.get('ci-lycee:2NDA');
+		const sixieme = catalog.byId.get('ci-college:6EME');
 		expect(premiereA).toBeDefined();
 		expect(secondeA).toBeDefined();
+		expect(sixieme).toBeDefined();
 
 		expect(previewClassNamesFromCatalog(premiereA!, 2)).toEqual([
-			`${premiereA!.shortLabel} 1`,
-			`${premiereA!.shortLabel} 2`,
+			`${premiereA!.code} 1`,
+			`${premiereA!.code} 2`,
 		]);
 		expect(previewClassNamesFromCatalog(secondeA!, 2)).toEqual([
-			`${secondeA!.shortLabel} 1`,
-			`${secondeA!.shortLabel} 2`,
+			`${secondeA!.code} 1`,
+			`${secondeA!.code} 2`,
+		]);
+		expect(previewClassNamesFromCatalog(sixieme!, 2, 'alphabetical')).toEqual([
+			`${sixieme!.code} A`,
+			`${sixieme!.code} B`,
 		]);
 	});
 
@@ -145,11 +149,17 @@ describe('structure onboarding', () => {
 				gradeLevelId: level.gradeLevelId,
 				classCount: level.classCount,
 				capacity: level.capacity,
+				classNamingMode: level.classNamingMode,
 			}));
 
 		expect(toApiStructureTemplateIds(structure.models)).toEqual(['ci-lycee']);
 		expect(payloadLevels).toEqual([
-			{ gradeLevelId: 'ci-lycee:1ERA', classCount: 1, capacity: 35 },
+			{
+				gradeLevelId: 'ci-lycee:1ERA',
+				classCount: 1,
+				capacity: 35,
+				classNamingMode: 'numerical',
+			},
 		]);
 	});
 });

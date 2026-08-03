@@ -1,4 +1,4 @@
-import type { OnboardingDraft, OnboardingOwnerAssignment, OnboardingPeriodDraft, OnboardingSchoolDraft, OnboardingStaffInviteRole, OnboardingStep } from '$lib/onboarding/types';
+import type { OnboardingClassNamingMode, OnboardingDraft, OnboardingOwnerAssignment, OnboardingPeriodDraft, OnboardingSchoolDraft, OnboardingStaffInviteRole, OnboardingStep } from '$lib/onboarding/types';
 import { migrateLegacyGradeLevelId } from '$lib/onboarding/legacy-gl-map';
 import { createInitialPeriods } from '$lib/onboarding/school-periods';
 import {
@@ -10,7 +10,7 @@ import {
 import { ONBOARDING_DRAFT_VERSION } from '$lib/onboarding/types';
 
 const STORAGE_PREFIX = 'edaya:onboarding:draft';
-const ACCEPTED_DRAFT_VERSIONS = new Set([1, 3, 4, 5]);
+const ACCEPTED_DRAFT_VERSIONS = new Set([1, 3, 4, 5, 6]);
 
 function isOnboardingStaffInviteRole(value: unknown): value is OnboardingStaffInviteRole {
 	return value === 'deputy_director'
@@ -159,6 +159,10 @@ function normalizeCapacity(value: unknown): number {
 	return Math.max(0, Math.trunc(value));
 }
 
+function normalizeClassNamingMode(value: unknown): OnboardingClassNamingMode {
+	return value === 'alphabetical' ? 'alphabetical' : 'numerical';
+}
+
 function normalizeDraft(raw: unknown): OnboardingDraft | null {
 	if (!raw || typeof raw !== 'object') {
 		return null;
@@ -215,6 +219,9 @@ function normalizeDraft(raw: unknown): OnboardingDraft | null {
 							: '',
 						classCount: normalizeClassCount(level.classCount),
 						capacity: normalizeCapacity(level.capacity),
+						classNamingMode: normalizeClassNamingMode(
+							(level as { classNamingMode?: unknown }).classNamingMode,
+						),
 					}))
 				: empty.structure.levels,
 		},

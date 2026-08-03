@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { CatalogGradeLevel, StructureTemplateCatalog } from '$lib/onboarding/structure-template-catalog';
 	import type { StructureModel } from '$lib/onboarding/structure-templates';
-	import type { OnboardingStructureLevelDraft } from '$lib/onboarding/types';
+	import type { OnboardingClassNamingMode, OnboardingStructureLevelDraft } from '$lib/onboarding/types';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -137,6 +137,15 @@
 		);
 		persistDraft();
 	}
+
+	function setClassNamingMode(gradeLevelId: string, mode: OnboardingClassNamingMode) {
+		onboardingContext.draft.structure = updateStructureLevel(
+			onboardingContext.draft.structure,
+			gradeLevelId,
+			{ classNamingMode: mode },
+		);
+		persistDraft();
+	}
 </script>
 
 {#snippet levelRows(title: string, rows: Array<{ catalogLevel: CatalogGradeLevel; draft: OnboardingStructureLevelDraft }>)}
@@ -154,7 +163,7 @@
 							</p>
 							{#if draft.classCount > 0}
 								<p class="truncate text-[11px] text-muted-foreground">
-									{previewClassNamesFromCatalog(entry.catalogLevel, draft.classCount).join(', ')}
+									{previewClassNamesFromCatalog(entry.catalogLevel, draft.classCount, draft.classNamingMode).join(', ')}
 								</p>
 							{/if}
 						</div>
@@ -183,6 +192,30 @@
 									<Plus class="h-3.5 w-3.5" />
 								</Button>
 							</div>
+							{#if draft.classCount > 0}
+								<div class="flex items-center gap-1">
+									<Button
+										type="button"
+										variant={draft.classNamingMode === 'alphabetical' ? 'secondary' : 'outline'}
+										size="sm"
+										class="h-7 px-2 text-[11px]"
+										{disabled}
+										onclick={() => setClassNamingMode(gradeLevelId, 'alphabetical')}
+									>
+										{$t('onboarding.structure.namingAlphabetical')}
+									</Button>
+									<Button
+										type="button"
+										variant={draft.classNamingMode === 'numerical' ? 'secondary' : 'outline'}
+										size="sm"
+										class="h-7 px-2 text-[11px]"
+										{disabled}
+										onclick={() => setClassNamingMode(gradeLevelId, 'numerical')}
+									>
+										{$t('onboarding.structure.namingNumerical')}
+									</Button>
+								</div>
+							{/if}
 							<div class="flex items-center gap-1.5">
 								<Label for={`structure-capacity-${gradeLevelId}`} class="text-[11px] text-muted-foreground">
 									{$t('onboarding.structure.capacityLabel')}

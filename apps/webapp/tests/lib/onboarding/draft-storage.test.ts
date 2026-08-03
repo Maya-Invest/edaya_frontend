@@ -121,10 +121,10 @@ describe('draft-storage', () => {
 
 		try {
 			const loaded = loadDraft('user-legacy');
-			expect(loaded?.version).toBe(4);
+			expect(loaded?.version).toBe(6);
 			expect(loaded?.structure.levels).toEqual([
-				{ gradeLevelId: 'ci-lycee:1ERC', classCount: 2, capacity: 30 },
-				{ gradeLevelId: 'ci-lycee:TLEC', classCount: 0, capacity: 30 },
+				{ gradeLevelId: 'ci-lycee:1ERC', classCount: 2, capacity: 30, classNamingMode: 'numerical' },
+				{ gradeLevelId: 'ci-lycee:TLEC', classCount: 0, capacity: 30, classNamingMode: 'numerical' },
 			]);
 		}
 		finally {

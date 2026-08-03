@@ -164,6 +164,8 @@ export const fr: Dict = {
 	'onboarding.structure.levelsTitle': 'Niveaux et classes',
 	'onboarding.structure.classCountLabel': 'Classes',
 	'onboarding.structure.capacityLabel': 'Capacité',
+	'onboarding.structure.namingAlphabetical': 'Alphabétique',
+	'onboarding.structure.namingNumerical': 'Numérique',
 	'onboarding.structure.previewLabel': 'Aperçu',
 	'onboarding.structure.summaryTitle': 'Récapitulatif',
 	'onboarding.structure.summaryBody': '{levelCount} niveaux · {classCount} classes · matières de base incluses',

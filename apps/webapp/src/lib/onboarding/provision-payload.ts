@@ -28,6 +28,7 @@ export function buildProvisionPayload(draft: OnboardingDraft) {
 					gradeLevelId: level.gradeLevelId,
 					classCount: level.classCount,
 					capacity: level.capacity,
+					classNamingMode: level.classNamingMode ?? 'numerical',
 				})),
 		},
 		...(invites.length > 0 ? { invites } : {}),
