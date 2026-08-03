@@ -47,6 +47,21 @@ function emptyAppShellCounts(): AppShellCounts {
 	};
 }
 
+function emptyAppShellData(): AppShellData {
+	return {
+		schools: [],
+		academicYears: [],
+		academicPeriods: [],
+		gradeLevels: [],
+		periodDefinitions: [],
+		classes: [],
+		hierarchy: [],
+		studentCount: 0,
+		guardianCount: 0,
+		staffCount: 0,
+	};
+}
+
 export async function fetchActiveEnrollmentCountsByClass(
 	client: SchoolClient,
 	classGroupIds: readonly string[],
@@ -216,25 +231,8 @@ async function fetchSupplementalShellForSchool(
 	};
 }
 
-function mergeAppShellData(primary: AppShellData, supplemental: AppShellData): AppShellData {
-	return {
-		schools: primary.schools.length > 0 ? primary.schools : supplemental.schools,
-		academicYears: primary.academicYears.length > 0 ? primary.academicYears : supplemental.academicYears,
-		academicPeriods: primary.academicPeriods.length > 0 ? primary.academicPeriods : supplemental.academicPeriods,
-		gradeLevels: primary.gradeLevels.length > 0 ? primary.gradeLevels : supplemental.gradeLevels,
-		periodDefinitions: primary.periodDefinitions.length > 0
-			? primary.periodDefinitions
-			: supplemental.periodDefinitions,
-		classes: primary.classes.length > 0 ? primary.classes : supplemental.classes,
-		hierarchy: primary.hierarchy.length > 0 ? primary.hierarchy : supplemental.hierarchy,
-		studentCount: primary.studentCount || supplemental.studentCount,
-		guardianCount: primary.guardianCount || supplemental.guardianCount,
-		staffCount: primary.staffCount || supplemental.staffCount,
-	};
-}
-
 export interface FetchAppShellDataOptions {
-	/** Used when the schools entity list is empty but the session is already linked. */
+	/** Session school — when set, shell loads are school-scoped (avoids multi-tenant list 403s). */
 	fallbackSchoolId?: string | null;
 }
 
@@ -242,6 +240,15 @@ export async function fetchAppShellData(
 	client: SchoolClient,
 	options: FetchAppShellDataOptions = {},
 ): Promise<AppShellData> {
+	// Prefer school-scoped reads when the session already knows its school.
+	// Unscoped `{}` lists return every tenant row, then fail ensureEntitiesTenant (403)
+	// as soon as the local DB has more than one school (seed + onboarding).
+	const scopedSchoolId = options.fallbackSchoolId?.trim() || null;
+	if (scopedSchoolId) {
+		const scoped = await fetchSupplementalShellForSchool(client, scopedSchoolId);
+		return scoped ?? emptyAppShellData();
+	}
+
 	const [
 		schoolsRaw,
 		yearsRaw,
@@ -259,9 +266,7 @@ export async function fetchAppShellData(
 	]);
 
 	const classGroupIds = (classGroupsRaw ?? []).map(classGroup => classGroup.id);
-	const schoolId = (schoolsRaw ?? []).find(school => school?.id)?.id
-		?? options.fallbackSchoolId
-		?? '';
+	const schoolId = (schoolsRaw ?? []).find(school => school?.id)?.id ?? '';
 	const shellCounts = schoolId
 		? await safeAppShellCounts(client, schoolId, classGroupIds)
 		: emptyAppShellCounts();
@@ -334,7 +339,7 @@ export async function fetchAppShellData(
 	const hierarchy = buildClassHierarchy(classesList, gradeLevels);
 	const activeStudentCount = Object.values(studentCountByClass).reduce((total, count) => total + count, 0);
 
-	const primary: AppShellData = {
+	return {
 		schools,
 		academicYears,
 		academicPeriods,
@@ -346,18 +351,4 @@ export async function fetchAppShellData(
 		guardianCount: shellCounts.guardianCount,
 		staffCount: shellCounts.staffCount,
 	};
-
-	const needsSupplemental = options.fallbackSchoolId && (
-		primary.schools.length === 0
-		|| primary.academicYears.length === 0
-		|| primary.academicPeriods.length === 0
-	);
-	if (needsSupplemental) {
-		const supplemental = await fetchSupplementalShellForSchool(client, options.fallbackSchoolId!);
-		if (supplemental) {
-			return mergeAppShellData(primary, supplemental);
-		}
-	}
-
-	return primary;
 }
