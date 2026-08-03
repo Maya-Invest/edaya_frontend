@@ -102,4 +102,56 @@ describe('shell data loading', () => {
 			[classB]: 4,
 		});
 	});
+
+	it('scopes shell entity lists by fallbackSchoolId instead of unscoped schools/list', async () => {
+		const { client, requests } = createRecordingSchoolClient([
+			{
+				id: SEED_SCHOOL_ID,
+				name: 'Demo School',
+				city: 'Paris',
+				timeZone: 'Europe/Paris',
+			},
+			listEnvelope([]),
+			listEnvelope([]),
+			listEnvelope([{
+				id: 'grade-6',
+				schoolId: SEED_SCHOOL_ID,
+				name: 'Sixième',
+				cycle: 'Collège',
+				order: 1,
+			}]),
+			listEnvelope([]),
+			listEnvelope([
+				{
+					id: classA,
+					schoolId: SEED_SCHOOL_ID,
+					academicYearId: 'year-1',
+					gradeLevelId: 'grade-6',
+					name: '6A',
+				},
+			]),
+			{
+				schoolId: SEED_SCHOOL_ID,
+				activeEnrollmentCountsByClass: { [classA]: 18 },
+				studentCount: 18,
+				guardianCount: 4,
+				staffCount: 2,
+			},
+		]);
+
+		const shell = await fetchAppShellData(client, { fallbackSchoolId: SEED_SCHOOL_ID });
+
+		expect(shell.schools).toHaveLength(1);
+		expect(shell.schools[0]?.id).toBe(SEED_SCHOOL_ID);
+		expect(shell.classes).toHaveLength(1);
+		expect(entityListRequests(requests, 'schools')).toHaveLength(0);
+		expect(requests.some(request =>
+			request.method === 'GET' && request.path === `/core/entities/schools/${SEED_SCHOOL_ID}`)).toBe(true);
+		expect(entityListRequests(requests, 'academic-years')[0]?.body).toMatchObject({
+			schoolId: SEED_SCHOOL_ID,
+		});
+		expect(entityListRequests(requests, 'class-groups')[0]?.body).toMatchObject({
+			schoolId: SEED_SCHOOL_ID,
+		});
+	});
 });
