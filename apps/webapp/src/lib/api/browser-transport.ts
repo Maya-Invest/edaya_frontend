@@ -11,6 +11,9 @@ function applyInteractiveActorHeaders(headers: Headers) {
 	if (authSession.userId) {
 		headers.set('X-Actor-Id', authSession.userId);
 	}
+	if (authSession.schoolId) {
+		headers.set('X-School-Id', authSession.schoolId);
+	}
 }
 
 export function createBrowserTransport(getYearId: () => string | undefined): Transport {
@@ -28,7 +31,6 @@ export function createBrowserTransport(getYearId: () => string | undefined): Tra
 			if (yearId) {
 				headers.set('X-Academic-Year-Id', yearId);
 			}
-			// X-School-Id intentionally omitted until backend multi-school session support (Track D.3).
 
 			const base = PUBLIC_API_URL || '';
 			const response = await fetch(resolveApiUrl(base, path), {

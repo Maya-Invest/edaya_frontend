@@ -1,4 +1,5 @@
 import type { ClassNode, GradeLevel, Subject } from '$lib/types/school';
+import { sortGradeLevels } from '$lib/academic/grade-level-sort';
 
 export interface SubjectLevelGroup {
 	key: string;
@@ -33,8 +34,7 @@ export function groupSubjectsByGradeLevel(
 		byGradeLevelId[gradeLevelId].items.push(subject);
 	}
 
-	return [...gradeLevels]
-		.sort((left, right) => left.order - right.order)
+	return sortGradeLevels(gradeLevels)
 		.filter(level => (byGradeLevelId[level.id]?.items.length ?? 0) > 0)
 		.map(level => ({
 			key: level.id,

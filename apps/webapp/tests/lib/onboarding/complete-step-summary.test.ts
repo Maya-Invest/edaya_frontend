@@ -7,8 +7,8 @@ import { createEmptyDraft } from '$lib/onboarding/draft-storage';
 import {
 	buildCatalogFromTemplates,
 	subjectsForGradeLevelIds,
-} from '$lib/onboarding/structure-template-catalog';
-import type { StructureTemplateDefinition } from '$lib/onboarding/structure-template-catalog';
+} from '$lib/onboarding/structure-template-model';
+import type { StructureTemplateDefinition } from '$lib/onboarding/structure-template-model';
 
 function level(
 	templateId: string,
@@ -106,8 +106,8 @@ describe('buildCompleteStepSummary', () => {
 		draft.structure = {
 			models: ['college'],
 			levels: [
-				{ gradeLevelId: 'ci-college:6EME', classCount: 2, capacity: 30 },
-				{ gradeLevelId: 'ci-college:5EME', classCount: 0, capacity: 30 },
+				{ gradeLevelId: 'ci-college:6EME', classCount: 2, capacity: 30, classNamingMode: 'numerical' },
+				{ gradeLevelId: 'ci-college:5EME', classCount: 0, capacity: 30, classNamingMode: 'numerical' },
 			],
 		};
 
@@ -149,7 +149,7 @@ describe('buildCompleteStepSummary', () => {
 		const draft = createEmptyDraft();
 		draft.structure = {
 			models: ['college'],
-			levels: [{ gradeLevelId: 'ci-college:6EME', classCount: 1, capacity: 30 }],
+			levels: [{ gradeLevelId: 'ci-college:6EME', classCount: 1, capacity: 30, classNamingMode: 'numerical' }],
 		};
 		draft.staffInvites = [
 			{ id: '1', email: 'cpe@school.fr', role: 'cpe' },

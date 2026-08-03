@@ -42,6 +42,8 @@
 	const activeModule = $derived(getModuleFromPath($page.url.pathname));
 	const classId = $derived(resolveActiveClassId($page.params.classId, academicContext.classes));
 	const grants = $derived(authSession.grants);
+	const brandEyebrow = $derived(authSession.school?.shortName ?? $t('sidebar.module'));
+	const brandTitle = 'EDAYA';
 	let hoverExpanded = $state(false);
 
 	const collapsed = $derived(!shellContext.sidebarOpen);
@@ -123,9 +125,9 @@
 		{#if showExpanded}
 			<div class="min-w-0">
 				<p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-					{authSession.school?.shortName ?? $t('sidebar.module')}
+					{brandEyebrow}
 				</p>
-				<h2 class="truncate font-display text-sm font-semibold leading-tight">EDAYA</h2>
+				<h2 class="truncate font-display text-sm font-semibold leading-tight">{brandTitle}</h2>
 			</div>
 		{/if}
 	</div>

@@ -2,10 +2,16 @@
 	import type { OnboardingStep } from '$lib/onboarding/types';
 	import type { Snippet } from 'svelte';
 	import { authSession } from '$lib/auth/session.svelte';
+	import OnboardingProvisionProgress from '$lib/components/onboarding/OnboardingProvisionProgress.svelte';
 	import OnboardingStepper from '$lib/components/onboarding/OnboardingStepper.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { t } from '$lib/i18n';
 	import { ArrowLeft } from '$lib/icons';
+
+	interface ProvisionProgressStepProp {
+		id: string;
+		labelKey: string;
+	}
 
 	interface Props {
 		currentStep: OnboardingStep;
@@ -17,6 +23,12 @@
 		showFinish?: boolean;
 		canFinish?: boolean;
 		busy?: boolean;
+		busyMessage?: string | null;
+		provisionProgressVisible?: boolean;
+		provisionPercent?: number;
+		provisionActiveStepId?: string | null;
+		provisionCompletedIds?: string[];
+		provisionSteps?: ProvisionProgressStepProp[];
 		onBack: () => void;
 		onContinue: () => void;
 		onFinish?: () => void;
@@ -39,6 +51,12 @@
 		showFinish = false,
 		canFinish = true,
 		busy = false,
+		busyMessage = null,
+		provisionProgressVisible = false,
+		provisionPercent = 0,
+		provisionActiveStepId = null,
+		provisionCompletedIds = [],
+		provisionSteps = [],
 		onBack,
 		onContinue,
 		onFinish,
@@ -50,6 +68,10 @@
 		onSkipOnboarding,
 		children,
 	}: Props = $props();
+
+	const showProvisionProgress = $derived(
+		busy && provisionProgressVisible && provisionSteps.length > 0,
+	);
 </script>
 
 <div class="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-6 pt-2 sm:px-6">
@@ -57,6 +79,20 @@
 		<div class="mb-4">
 			<OnboardingStepper {currentStep} {maxReachedStep} {onStepSelect} />
 		</div>
+
+		{#if showProvisionProgress}
+			<OnboardingProvisionProgress
+				percent={provisionPercent}
+				activeStepId={provisionActiveStepId}
+				completedStepIds={provisionCompletedIds}
+				steps={provisionSteps}
+				visible={true}
+			/>
+		{:else if busy && busyMessage}
+			<p class="mb-3 text-xs text-muted-foreground" aria-live="polite">
+				{busyMessage}
+			</p>
+		{/if}
 
 		{@render children()}
 	</section>

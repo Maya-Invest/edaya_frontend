@@ -1,22 +1,25 @@
-import type { StructureTemplateCatalog } from '$lib/onboarding/structure-template-catalog';
+import type { StructureTemplateCatalog } from '$lib/onboarding/structure-template-model';
 import type { StructureModel } from '$lib/onboarding/structure-templates';
 import type {
+	OnboardingClassNamingMode,
 	OnboardingStructureDraft,
 	OnboardingStructureLevelDraft,
 } from '$lib/onboarding/types';
 import {
 	getCatalogGradeLevel,
 	gradeLevelsForModels,
-} from '$lib/onboarding/structure-template-catalog';
+} from '$lib/onboarding/structure-template-model';
 
 const DEFAULT_CLASS_COUNT = 0;
 const DEFAULT_CAPACITY = 30;
+const DEFAULT_CLASS_NAMING_MODE: OnboardingClassNamingMode = 'numerical';
 
 function defaultLevel(gradeLevelId: string): OnboardingStructureLevelDraft {
 	return {
 		gradeLevelId,
 		classCount: DEFAULT_CLASS_COUNT,
 		capacity: DEFAULT_CAPACITY,
+		classNamingMode: DEFAULT_CLASS_NAMING_MODE,
 	};
 }
 
@@ -40,6 +43,7 @@ export function syncStructureLevels(
 					gradeLevelId: catalogLevel.id,
 					classCount: Math.max(0, existing.classCount),
 					capacity: existing.capacity,
+					classNamingMode: existing.classNamingMode ?? DEFAULT_CLASS_NAMING_MODE,
 				}
 			: defaultLevel(catalogLevel.id);
 	});
@@ -73,7 +77,7 @@ export function toggleStructureModel(
 export function updateStructureLevel(
 	structure: OnboardingStructureDraft,
 	gradeLevelId: string,
-	changes: Partial<Pick<OnboardingStructureLevelDraft, 'classCount' | 'capacity'>>,
+	changes: Partial<Pick<OnboardingStructureLevelDraft, 'classCount' | 'capacity' | 'classNamingMode'>>,
 ): OnboardingStructureDraft {
 	return {
 		...structure,
@@ -84,6 +88,7 @@ export function updateStructureLevel(
 						...changes,
 						classCount: changes.classCount ?? level.classCount,
 						capacity: changes.capacity ?? level.capacity,
+						classNamingMode: changes.classNamingMode ?? level.classNamingMode,
 					}
 				: level,
 		),
@@ -100,10 +105,11 @@ export function structureSummary(structure: OnboardingStructureDraft): {
 	return { levelCount, classCount };
 }
 
+/** Prefer fixture `name` for the structure row title. */
 export function gradeLevelLabel(gradeLevelId: string, catalog: StructureTemplateCatalog): string {
 	const level = getCatalogGradeLevel(catalog, gradeLevelId);
 	if (!level) {
 		return gradeLevelId;
 	}
-	return level.code;
+	return level.name || level.code;
 }

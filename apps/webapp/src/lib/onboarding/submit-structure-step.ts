@@ -39,6 +39,7 @@ export async function submitStructureOnboardingStep(
 					gradeLevelId: level.gradeLevelId,
 					classCount: level.classCount,
 					capacity: level.capacity,
+					classNamingMode: level.classNamingMode ?? 'numerical',
 				})),
 		});
 
