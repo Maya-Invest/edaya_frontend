@@ -18,6 +18,7 @@
 		visibleClassNavItems,
 	} from '$lib/navigation';
 	import { filterNavItems, visibleNavModuleKeys } from '$lib/navigation/nav-permissions';
+	import { consortiumShell } from '$lib/shell/consortium-shell.svelte';
 	import { shellContext } from '$lib/shell/context.svelte';
 	import { cn } from '$lib/utils';
 
@@ -42,7 +43,26 @@
 	const activeModule = $derived(getModuleFromPath($page.url.pathname));
 	const classId = $derived(resolveActiveClassId($page.params.classId, academicContext.classes));
 	const grants = $derived(authSession.grants);
+	const onConsortiumPage = $derived(
+		$page.url.pathname === '/consortium' || $page.url.pathname.startsWith('/consortium/'),
+	);
+	const brandEyebrow = $derived(
+		onConsortiumPage && consortiumShell.consortium
+			? $t('consortium.title')
+			: (authSession.school?.shortName ?? $t('sidebar.module')),
+	);
+	const brandTitle = $derived(
+		onConsortiumPage && consortiumShell.consortium
+			? consortiumShell.consortium.name
+			: 'EDAYA',
+	);
 	let hoverExpanded = $state(false);
+
+	$effect(() => {
+		if (authSession.sessionKind === 'staff') {
+			void consortiumShell.ensureLoaded(authSession.sessionKind);
+		}
+	});
 
 	const collapsed = $derived(!shellContext.sidebarOpen);
 	const showExpanded = $derived(!collapsed || hoverExpanded);
@@ -123,9 +143,9 @@
 		{#if showExpanded}
 			<div class="min-w-0">
 				<p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-					{authSession.school?.shortName ?? $t('sidebar.module')}
+					{brandEyebrow}
 				</p>
-				<h2 class="truncate font-display text-sm font-semibold leading-tight">EDAYA</h2>
+				<h2 class="truncate font-display text-sm font-semibold leading-tight">{brandTitle}</h2>
 			</div>
 		{/if}
 	</div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { OnboardingOwnerAssignment } from '$lib/onboarding/types';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -31,6 +32,12 @@
 	const periodTypes = [
 		{ value: 'trimester', labelKey: 'onboarding.periodType.trimester' as const },
 		{ value: 'semester', labelKey: 'onboarding.periodType.semester' as const },
+	];
+
+	const ownerAssignmentOptions: Array<{ value: OnboardingOwnerAssignment; labelKey: 'onboarding.ownerAssignment.self' | 'onboarding.ownerAssignment.invite' | 'onboarding.ownerAssignment.later' }> = [
+		{ value: 'self', labelKey: 'onboarding.ownerAssignment.self' },
+		{ value: 'invite', labelKey: 'onboarding.ownerAssignment.invite' },
+		{ value: 'later', labelKey: 'onboarding.ownerAssignment.later' },
 	];
 
 	const periodTypeLabel = $derived(
@@ -100,6 +107,11 @@
 
 	function handleRemovePeriod(periodId: string) {
 		onboardingContext.draft.school = removePeriod(onboardingContext.draft.school, periodId);
+		persistDraft();
+	}
+
+	function handleOwnerAssignmentChange(value: OnboardingOwnerAssignment) {
+		onboardingContext.draft.ownerAssignment = value;
 		persistDraft();
 	}
 </script>
@@ -189,6 +201,43 @@
 			</div>
 		</div>
 	</section>
+
+	{#if onboardingContext.draft.consortiumId}
+		<section class="space-y-2">
+			<h2 class="text-sm font-medium text-foreground">{$t('onboarding.ownerAssignment.title')}</h2>
+			<p class="text-xs text-muted-foreground">{$t('onboarding.ownerAssignment.description')}</p>
+			<div class="space-y-2">
+				{#each ownerAssignmentOptions as option (option.value)}
+					<label class="flex items-start gap-2 text-sm text-foreground">
+						<input
+							type="radio"
+							name="onboarding-owner-assignment"
+							value={option.value}
+							checked={onboardingContext.draft.ownerAssignment === option.value}
+							{disabled}
+							onchange={() => handleOwnerAssignmentChange(option.value)}
+							class="mt-0.5 h-4 w-4 shrink-0 border-input text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+						/>
+						<span>{$t(option.labelKey)}</span>
+					</label>
+				{/each}
+			</div>
+
+			{#if onboardingContext.draft.ownerAssignment === 'invite'}
+				<div class="space-y-1">
+					<Label for="onboarding-owner-invite-email">{$t('onboarding.ownerAssignment.inviteEmail')}</Label>
+					<Input
+						id="onboarding-owner-invite-email"
+						type="email"
+						bind:value={onboardingContext.draft.ownerInviteEmail}
+						placeholder={$t('onboarding.ownerAssignment.inviteEmailPlaceholder')}
+						{disabled}
+						oninput={persistDraft}
+					/>
+				</div>
+			{/if}
+		</section>
+	{/if}
 
 	<section class="space-y-2">
 		<h2 class="text-sm font-medium text-foreground">{$t('onboarding.schoolSection.academicYear')}</h2>

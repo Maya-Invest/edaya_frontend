@@ -1,4 +1,4 @@
-import type { OnboardingDraft, OnboardingPeriodDraft, OnboardingSchoolDraft, OnboardingStaffInviteRole, OnboardingStep } from '$lib/onboarding/types';
+import type { OnboardingDraft, OnboardingOwnerAssignment, OnboardingPeriodDraft, OnboardingSchoolDraft, OnboardingStaffInviteRole, OnboardingStep } from '$lib/onboarding/types';
 import { migrateLegacyGradeLevelId } from '$lib/onboarding/legacy-gl-map';
 import { createInitialPeriods } from '$lib/onboarding/school-periods';
 import {
@@ -10,7 +10,7 @@ import {
 import { ONBOARDING_DRAFT_VERSION } from '$lib/onboarding/types';
 
 const STORAGE_PREFIX = 'edaya:onboarding:draft';
-const ACCEPTED_DRAFT_VERSIONS = new Set([1, 3, 4]);
+const ACCEPTED_DRAFT_VERSIONS = new Set([1, 3, 4, 5]);
 
 function isOnboardingStaffInviteRole(value: unknown): value is OnboardingStaffInviteRole {
 	return value === 'deputy_director'
@@ -37,6 +37,12 @@ export function createEmptyDraft(): OnboardingDraft {
 		updatedAt: new Date().toISOString(),
 		maxReachedStep: 1,
 		wizardCompleted: false,
+		pathChoice: null,
+		pathChoiceSubmitted: false,
+		consortiumId: null,
+		consortiumName: '',
+		ownerAssignment: 'later',
+		ownerInviteEmail: '',
 		schoolStepSubmitted: false,
 		structureStepSubmitted: false,
 		staffStepSubmitted: false,
@@ -169,11 +175,28 @@ function normalizeDraft(raw: unknown): OnboardingDraft | null {
 		? candidate.maxReachedStep
 		: empty.maxReachedStep;
 
+	const ownerAssignment: OnboardingOwnerAssignment
+		= candidate.ownerAssignment === 'self'
+			|| candidate.ownerAssignment === 'invite'
+			|| candidate.ownerAssignment === 'later'
+			? candidate.ownerAssignment
+			: empty.ownerAssignment;
+
 	return {
 		version: ONBOARDING_DRAFT_VERSION,
 		updatedAt: typeof candidate.updatedAt === 'string' ? candidate.updatedAt : empty.updatedAt,
 		maxReachedStep,
 		wizardCompleted: candidate.wizardCompleted === true,
+		pathChoice: candidate.pathChoice === 'single' || candidate.pathChoice === 'consortium'
+			? candidate.pathChoice
+			: empty.pathChoice,
+		pathChoiceSubmitted: candidate.pathChoiceSubmitted === true,
+		consortiumId: typeof candidate.consortiumId === 'string' ? candidate.consortiumId : empty.consortiumId,
+		consortiumName: typeof candidate.consortiumName === 'string' ? candidate.consortiumName : empty.consortiumName,
+		ownerAssignment,
+		ownerInviteEmail: typeof candidate.ownerInviteEmail === 'string'
+			? candidate.ownerInviteEmail
+			: empty.ownerInviteEmail,
 		schoolStepSubmitted: candidate.schoolStepSubmitted === true,
 		structureStepSubmitted: candidate.structureStepSubmitted === true,
 		staffStepSubmitted: candidate.staffStepSubmitted === true,

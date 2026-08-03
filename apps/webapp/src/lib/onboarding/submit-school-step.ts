@@ -6,6 +6,7 @@ import { bootstrapSession, resetBootstrapSession } from '$lib/auth/bootstrap';
 import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
+import { onboardingContext } from '$lib/onboarding/context.svelte';
 import { periodFitsInAcademicYear } from '$lib/onboarding/school-step-validation';
 import { toast } from '$lib/toast.svelte';
 import { ApiError } from '@maya-invest/edaya-api-client';
@@ -62,12 +63,26 @@ async function resolveSchoolId(
 	}
 	configureBrowserSchoolClient({ getYearId: () => undefined });
 	try {
-		const registered = await getBrowserSchoolClient().onboarding.registerSchool({
-			name: school.name.trim(),
-			timeZone: school.timezone.trim(),
-			city: school.city.trim(),
-			country: school.country.trim(),
-		});
+		const { registerSchoolApi } = await import('$lib/api/consortium-data');
+		const draft = onboardingContext.draft;
+		const registered = draft.consortiumId
+			? await registerSchoolApi({
+					name: school.name.trim(),
+					timeZone: school.timezone.trim(),
+					city: school.city.trim(),
+					country: school.country.trim(),
+					consortiumId: draft.consortiumId,
+					assignAsSchoolOwner: draft.ownerAssignment === 'self',
+					...(draft.ownerAssignment === 'invite' && draft.ownerInviteEmail.trim()
+						? { ownerInviteEmail: draft.ownerInviteEmail.trim() }
+						: {}),
+				})
+			: await getBrowserSchoolClient().onboarding.registerSchool({
+					name: school.name.trim(),
+					timeZone: school.timezone.trim(),
+					city: school.city.trim(),
+					country: school.country.trim(),
+				});
 		resetAppShellBootstrap();
 		const linked = await refreshLinkedSchoolSession();
 		return linked.session?.schoolId ?? authSession.schoolId ?? registered.id ?? null;

@@ -84,7 +84,7 @@ export function canAccessPath(
 	grants: EffectiveGrantsSnapshot | null,
 	ctx: NavPermissionContext = {},
 ): boolean {
-	if (pathname === '/dashboard' || pathname.startsWith('/dashboard/') || pathname.startsWith('/account')) {
+	if (pathname === '/dashboard' || pathname.startsWith('/dashboard/') || pathname.startsWith('/account') || pathname === '/consortium' || pathname.startsWith('/consortium/')) {
 		return true;
 	}
 

@@ -1,7 +1,7 @@
 import type { OnboardingDraft, OnboardingStep } from '$lib/onboarding/types';
 import { browser } from '$app/environment';
 import { authSession } from '$lib/auth/session.svelte';
-	import {
+import {
 	clearDraft,
 	createEmptyDraft,
 	saveDraft,
@@ -60,6 +60,18 @@ class OnboardingContext {
 
 	markStaffStepSubmitted() {
 		this.draft.staffStepSubmitted = true;
+		this.persist();
+	}
+
+	markPathChoice(input: {
+		pathChoice: 'single' | 'consortium';
+		consortiumId?: string | null;
+		consortiumName?: string;
+	}) {
+		this.draft.pathChoice = input.pathChoice;
+		this.draft.pathChoiceSubmitted = true;
+		this.draft.consortiumId = input.consortiumId ?? null;
+		this.draft.consortiumName = input.consortiumName ?? '';
 		this.persist();
 	}
 

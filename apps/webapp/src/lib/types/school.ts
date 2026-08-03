@@ -397,6 +397,7 @@ export interface School {
 	country?: string;
 	timeZone: string;
 	type?: SchoolType | null;
+	consortiumId?: string | null;
 	timetableEnforceWorkloadFulfillment: boolean;
 	timetableExcludeBreakSlots: boolean;
 	timetableMinDayGapSameSubject: number;
