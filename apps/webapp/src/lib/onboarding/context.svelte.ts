@@ -1,7 +1,7 @@
 import type { OnboardingDraft, OnboardingStep } from '$lib/onboarding/types';
 import { browser } from '$app/environment';
 import { authSession } from '$lib/auth/session.svelte';
-	import {
+import {
 	clearDraft,
 	createEmptyDraft,
 	saveDraft,
@@ -47,9 +47,11 @@ class OnboardingContext {
 		this.persist();
 	}
 
-	markSchoolStepSubmitted(schoolId: string) {
+	markSchoolStepSubmitted(schoolId?: string | null) {
 		this.draft.schoolStepSubmitted = true;
-		this.draft.registeredSchoolId = schoolId;
+		if (schoolId && schoolId !== 'draft') {
+			this.draft.registeredSchoolId = schoolId;
+		}
 		this.persist();
 	}
 

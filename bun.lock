@@ -48,7 +48,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@internationalized/date": "^3.12.2",
-        "@maya-invest/edaya-api-client": "file:../../edaya_backend/package/api-client",
+        "@maya-invest/edaya-api-client": "",
         "@svar-ui/calendar-locales": "^2.6.0",
         "@svar-ui/core-locales": "^2.6.0",
         "@svar-ui/lib-dom": "^0.13.1",
