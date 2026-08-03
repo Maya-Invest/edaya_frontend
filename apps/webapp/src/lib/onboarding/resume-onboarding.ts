@@ -8,6 +8,8 @@ export function mergeOnboardingDraftWithServerStatus(
 	status: ServerOnboardingAccountStatus,
 	schoolId?: string | null,
 ): OnboardingDraft {
+	// Local draft remains source of truth until provision succeeds.
+	// Server flags only raise progress (OR / Math.max), never lower it.
 	return {
 		...draft,
 		wizardCompleted: draft.wizardCompleted || status.wizardCompleted,
@@ -72,7 +74,9 @@ export function shouldContinueOnboarding(
 		return false;
 	}
 
-	if (serverStatus) {
+	// Server progress without completion: only resume when the account is already linked
+	// to a school. Draft-only wizard progress (no schoolId yet) is handled by needsOnboarding.
+	if (serverStatus && schoolId) {
 		return !serverStatus.wizardCompleted;
 	}
 

@@ -62,8 +62,11 @@ export interface OnboardingDraft {
 	consortiumName: string;
 	ownerAssignment: OnboardingOwnerAssignment;
 	ownerInviteEmail: string;
+	/** Draft completeness: school form validated and Continue pressed (not necessarily provisioned). */
 	schoolStepSubmitted: boolean;
+	/** Draft completeness: structure form validated and Continue pressed (not necessarily provisioned). */
 	structureStepSubmitted: boolean;
+	/** Draft completeness: staff step Continue pressed (invites may still be empty). */
 	staffStepSubmitted: boolean;
 	registeredSchoolId: string | null;
 	school: OnboardingSchoolDraft;
@@ -71,6 +74,7 @@ export interface OnboardingDraft {
 	staffInvites: OnboardingStaffInviteDraft[];
 }
 
+/** Server-derived progress from real DB state (years / grade levels / completion flag). */
 export interface ServerOnboardingAccountStatus {
 	wizardCompleted: boolean;
 	maxReachedStep: OnboardingStep;

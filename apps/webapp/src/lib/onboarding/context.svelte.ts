@@ -47,9 +47,11 @@ class OnboardingContext {
 		this.persist();
 	}
 
-	markSchoolStepSubmitted(schoolId: string) {
+	markSchoolStepSubmitted(schoolId?: string | null) {
 		this.draft.schoolStepSubmitted = true;
-		this.draft.registeredSchoolId = schoolId;
+		if (schoolId && schoolId !== 'draft') {
+			this.draft.registeredSchoolId = schoolId;
+		}
 		this.persist();
 	}
 
