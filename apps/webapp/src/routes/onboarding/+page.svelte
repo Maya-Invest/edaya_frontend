@@ -45,10 +45,10 @@
 		currentStep={wizard.currentStep}
 		maxReachedStep={wizard.maxReachedStep}
 		canAdvance={wizard.canAdvance}
-		canGoBack={wizard.canGoBack && onboardingContext.draft.pathChoiceSubmitted}
-		showSkip={wizard.showSkip && onboardingContext.draft.pathChoiceSubmitted}
-		showContinue={wizard.showContinue && onboardingContext.draft.pathChoiceSubmitted}
-		showFinish={wizard.showFinish && onboardingContext.draft.pathChoiceSubmitted}
+		canGoBack={wizard.canGoBack}
+		showSkip={wizard.showSkip}
+		showContinue={wizard.showContinue}
+		showFinish={wizard.showFinish}
 		canFinish={wizard.canFinish}
 		showSkipOnboarding={wizard.showSkipOnboarding}
 		canSkipOnboarding={wizard.canSkipOnboarding}

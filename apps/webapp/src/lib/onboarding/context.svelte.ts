@@ -65,18 +65,6 @@ class OnboardingContext {
 		this.persist();
 	}
 
-	markPathChoice(input: {
-		pathChoice: 'single' | 'consortium';
-		consortiumId?: string | null;
-		consortiumName?: string;
-	}) {
-		this.draft.pathChoice = input.pathChoice;
-		this.draft.pathChoiceSubmitted = true;
-		this.draft.consortiumId = input.consortiumId ?? null;
-		this.draft.consortiumName = input.consortiumName ?? '';
-		this.persist();
-	}
-
 	markWizardCompleted() {
 		this.draft.wizardCompleted = true;
 		this.persist();

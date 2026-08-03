@@ -56,18 +56,8 @@ export function canAdvanceFromStep(
 	loginEmail?: string | null,
 ): boolean {
 	switch (step) {
-		case 1: {
-			if (!isSchoolStepValid(draft.school)) {
-				return false;
-			}
-			if (!draft.consortiumId) {
-				return true;
-			}
-			if (draft.ownerAssignment === 'invite') {
-				return /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(draft.ownerInviteEmail.trim());
-			}
-			return draft.ownerAssignment === 'self' || draft.ownerAssignment === 'later';
-		}
+		case 1:
+			return isSchoolStepValid(draft.school);
 		case 2:
 			return isStructureStepValid(draft.structure);
 		case 3:

@@ -10,7 +10,6 @@ import {
 	mapServerPhaseToStepId,
 } from '$lib/onboarding/provision-progress';
 import { persistServerOnboardingStatusToDraft } from '$lib/onboarding/resume-onboarding';
-import { logOnboardingTiming, timeOnboardingPhase } from '$lib/onboarding/timing';
 import { markWizardCompletedInSession } from '$lib/onboarding/wizard-completion-flag';
 import { toast } from '$lib/toast.svelte';
 import { ApiError } from '@maya-invest/edaya-api-client';
@@ -118,23 +117,10 @@ export async function submitProvisionOnboarding(
 
 		let result: Awaited<ReturnType<typeof client.onboarding.provision>>;
 		try {
-			result = await timeOnboardingPhase('complete', 'provision', async () => {
-				return client.onboarding.provision(payload);
-			}, {
-				levelCount: payload.structure.levels.length,
-				inviteCount: payload.invites?.length ?? 0,
-			});
+			result = await client.onboarding.provision(payload);
 		}
 		finally {
 			clearInterval(progressInterval);
-		}
-
-		for (const phase of result.phases) {
-			logOnboardingTiming({
-				step: 'provision.server',
-				phase: phase.phase,
-				ms: phase.ms,
-			});
 		}
 
 		const completedIds = completedIdsFromPhases(result.phases);
@@ -157,20 +143,18 @@ export async function submitProvisionOnboarding(
 			completedIds,
 		});
 
-		await timeOnboardingPhase('complete', 'bootstrap', async () => {
-			resetBootstrapSession();
-			resetAppShellBootstrap();
-			await bootstrapSession({ silent: true });
-			authSession.setServerOnboardingStatus(result.status);
-			if (authSession.authUserId) {
-				persistServerOnboardingStatusToDraft(
-					authSession.authUserId,
-					result.status,
-					result.schoolId,
-				);
-			}
-			await bootstrapAppShell();
-		});
+		resetBootstrapSession();
+		resetAppShellBootstrap();
+		await bootstrapSession({ silent: true });
+		authSession.setServerOnboardingStatus(result.status);
+		if (authSession.authUserId) {
+			persistServerOnboardingStatusToDraft(
+				authSession.authUserId,
+				result.status,
+				result.schoolId,
+			);
+		}
+		await bootstrapAppShell();
 
 		emitProgress(options?.onProgress, {
 			phase: 'bootstrap',

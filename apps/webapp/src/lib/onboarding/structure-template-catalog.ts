@@ -1,10 +1,11 @@
-import type { StructureTemplateCatalog } from '$lib/onboarding/structure-template-model';
-import type { OnboardingListStructureTemplatesResponse } from '$lib/onboarding/structure-template-model';
+import type { StructureTemplateCatalog, OnboardingListStructureTemplatesResponse } from '$lib/onboarding/structure-template-model';
 import { PUBLIC_API_URL } from '$env/static/public';
 import { parseApiResponse, resolveApiUrl } from '$lib/api/http';
 import { previewClassNamesFromCatalog } from '$lib/onboarding/class-naming';
 import { buildCatalogFromTemplates } from '$lib/onboarding/structure-template-model';
 import { resolveClientRoutePath } from '@maya-invest/edaya-api-client';
+
+export type { ClassNamingMode } from '$lib/onboarding/class-naming';
 
 export type {
 	CatalogGradeLevel,
@@ -20,8 +21,6 @@ export {
 	gradeLevelsForModels,
 	subjectsForGradeLevelIds,
 } from '$lib/onboarding/structure-template-model';
-
-export type { ClassNamingMode } from '$lib/onboarding/class-naming';
 export { previewClassNamesFromCatalog };
 
 let cachedCatalog: StructureTemplateCatalog | null = null;

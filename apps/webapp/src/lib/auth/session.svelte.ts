@@ -7,7 +7,6 @@ import { browser } from '$app/environment';
 import { academicContext } from '$lib/academic/context.svelte';
 import { clearAuthGate } from '$lib/auth/auth-gate';
 import { clearWizardCompletedInSession } from '$lib/onboarding/wizard-completion-flag';
-import { consortiumShell } from '$lib/shell/consortium-shell.svelte';
 import { authClient } from './client';
 
 class AuthSession {
@@ -193,7 +192,6 @@ class AuthSession {
 		this.userProfile = null;
 		this.guardianSettings = null;
 		this.grants = null;
-		consortiumShell.reset();
 	}
 
 	async logout() {

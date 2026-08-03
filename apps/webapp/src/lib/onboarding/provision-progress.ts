@@ -1,10 +1,10 @@
-export type ProvisionProgressStepId =
-	| 'school'
-	| 'academic'
-	| 'structure'
-	| 'staff'
-	| 'complete'
-	| 'bootstrap';
+export type ProvisionProgressStepId
+	= | 'school'
+		| 'academic'
+		| 'structure'
+		| 'staff'
+		| 'complete'
+		| 'bootstrap';
 
 export interface ProvisionProgressStepDef {
 	id: ProvisionProgressStepId;

@@ -1,3 +1,4 @@
+import type { ProvisionProgressStep } from '$lib/onboarding/provision-progress';
 import type { OnboardingStep } from '$lib/onboarding/types';
 import { academicContext } from '$lib/academic/context.svelte';
 import { redirectPathIfAuthenticated } from '$lib/auth/resolve-post-auth';
@@ -15,7 +16,11 @@ import {
 	parseOnboardingStep,
 	writeOnboardingStepUrl,
 } from '$lib/onboarding/navigation';
+import {
+	getProvisionProgressSteps,
+} from '$lib/onboarding/provision-progress';
 import { mergeOnboardingDraftWithServerStatus } from '$lib/onboarding/resume-onboarding';
+import { staffInvitesForSubmit } from '$lib/onboarding/staff-step-helpers';
 import {
 	canAdvanceFromStep,
 	canFinishOnboarding,
@@ -23,15 +28,9 @@ import {
 	nextOnboardingStep,
 	previousOnboardingStep,
 } from '$lib/onboarding/steps';
-import {
-	getProvisionProgressSteps,
-	type ProvisionProgressStep,
-} from '$lib/onboarding/provision-progress';
-import { staffInvitesForSubmit } from '$lib/onboarding/staff-step-helpers';
 import { submitCompleteOnboardingStep } from '$lib/onboarding/submit-complete-step';
 import { submitProvisionOnboarding } from '$lib/onboarding/submit-provision-step';
 import { fetchServerOnboardingAccountStatus } from '$lib/onboarding/sync-account-status';
-import { timeOnboardingPhase } from '$lib/onboarding/timing';
 import { getContext, setContext } from 'svelte';
 
 const ONBOARDING_WIZARD_STATE_KEY = Symbol('onboarding-wizard-state');
@@ -202,27 +201,26 @@ export class OnboardingWizardState {
 	/**
 	 * Steps 1–3 only validate + persist draft locally. Provisioning runs on Finish.
 	 */
-	async goNext() {
-		if (!this.canAdvance || !this.nextStep || this.busy) {
+	goNext() {
+		const next = this.nextStep;
+		if (!this.canAdvance || !next || this.busy) {
 			return;
 		}
 
-		await timeOnboardingPhase('wizard', `advanceFromStep${this.currentStep}`, async () => {
-			onboardingContext.persist();
+		onboardingContext.persist();
 
-			if (this.currentStep === 1 && !onboardingContext.draft.schoolStepSubmitted) {
-				onboardingContext.markSchoolStepSubmitted();
-			}
-			if (this.currentStep === 2 && !onboardingContext.draft.structureStepSubmitted) {
-				onboardingContext.markStructureStepSubmitted();
-			}
-			if (this.currentStep === 3 && !onboardingContext.draft.staffStepSubmitted) {
-				onboardingContext.markStaffStepSubmitted();
-			}
+		if (this.currentStep === 1 && !onboardingContext.draft.schoolStepSubmitted) {
+			onboardingContext.markSchoolStepSubmitted();
+		}
+		if (this.currentStep === 2 && !onboardingContext.draft.structureStepSubmitted) {
+			onboardingContext.markStructureStepSubmitted();
+		}
+		if (this.currentStep === 3 && !onboardingContext.draft.staffStepSubmitted) {
+			onboardingContext.markStaffStepSubmitted();
+		}
 
-			onboardingContext.markStepReached(this.nextStep!);
-			appGoto(writeOnboardingStepUrl(this.getUrl(), this.nextStep!));
-		});
+		onboardingContext.markStepReached(next);
+		appGoto(writeOnboardingStepUrl(this.getUrl(), next));
 	}
 
 	skipStep() {

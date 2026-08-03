@@ -1,11 +1,7 @@
-export const ONBOARDING_DRAFT_VERSION = 6 as const;
+export const ONBOARDING_DRAFT_VERSION = 7 as const;
 export const ONBOARDING_STEP_COUNT = 4;
 
 export type OnboardingStep = 1 | 2 | 3 | 4;
-
-export type OnboardingPathChoice = 'single' | 'consortium';
-
-export type OnboardingOwnerAssignment = 'self' | 'invite' | 'later';
 
 export type OnboardingClassNamingMode = 'alphabetical' | 'numerical';
 
@@ -59,12 +55,6 @@ export interface OnboardingDraft {
 	updatedAt: string;
 	maxReachedStep: OnboardingStep;
 	wizardCompleted: boolean;
-	pathChoice: OnboardingPathChoice | null;
-	pathChoiceSubmitted: boolean;
-	consortiumId: string | null;
-	consortiumName: string;
-	ownerAssignment: OnboardingOwnerAssignment;
-	ownerInviteEmail: string;
 	/** Draft completeness: school form validated and Continue pressed (not necessarily provisioned). */
 	schoolStepSubmitted: boolean;
 	/** Draft completeness: structure form validated and Continue pressed (not necessarily provisioned). */

@@ -3,12 +3,12 @@ import type { CatalogSubject, StructureTemplateCatalog } from '$lib/onboarding/s
 import type { StructureModel } from '$lib/onboarding/structure-templates';
 import type { OnboardingDraft, OnboardingStaffInviteRole } from '$lib/onboarding/types';
 import {
+	previewClassNamesFromCatalog,
+} from '$lib/onboarding/class-naming';
+import {
 	ONBOARDING_STAFF_INVITE_PROFILES,
 } from '$lib/onboarding/staff-invite-profiles';
 import { staffInvitesForSubmit } from '$lib/onboarding/staff-step-helpers';
-import {
-	previewClassNamesFromCatalog,
-} from '$lib/onboarding/class-naming';
 import {
 	getCatalogGradeLevel,
 } from '$lib/onboarding/structure-template-model';
@@ -119,10 +119,10 @@ export function buildCompleteStepSummary(
 		const catalogLevel = catalog ? getCatalogGradeLevel(catalog, level.gradeLevelId) : undefined;
 		const classNames = catalogLevel
 			? previewClassNamesFromCatalog(
-				catalogLevel,
-				level.classCount,
-				level.classNamingMode ?? 'numerical',
-			)
+					catalogLevel,
+					level.classCount,
+					level.classNamingMode ?? 'numerical',
+				)
 			: Array.from({ length: level.classCount }, (_, index) => `${level.gradeLevelId} ${index + 1}`);
 		const subjects = catalog
 			? [...(catalog.subjectsByGradeLevelId.get(level.gradeLevelId) ?? [])]
