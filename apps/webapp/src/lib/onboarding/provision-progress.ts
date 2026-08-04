@@ -45,6 +45,9 @@ const SERVER_PHASE_TO_STEP: Record<string, ProvisionProgressStepId> = {
 	resolveOwnerActor: 'school',
 	ensureAcademicStructure: 'academic',
 	applyStructureTemplate: 'structure',
+	'structure.curriculum': 'structure',
+	'structure.classMirrors': 'structure',
+	'structure.reportCards': 'structure',
 	inviteStaffMembers: 'staff',
 	completeWizard: 'complete',
 };
@@ -104,5 +107,11 @@ export function estimateProvisionPercent(
 }
 
 export function mapServerPhaseToStepId(phase: string): string | null {
-	return SERVER_PHASE_TO_STEP[phase] ?? null;
+	if (SERVER_PHASE_TO_STEP[phase]) {
+		return SERVER_PHASE_TO_STEP[phase]!;
+	}
+	if (phase.startsWith('structure.')) {
+		return 'structure';
+	}
+	return null;
 }

@@ -31,6 +31,9 @@ describe('provision progress', () => {
 		expect(mapServerPhaseToStepId('registerSchool')).toBe('school');
 		expect(mapServerPhaseToStepId('ensureAcademicStructure')).toBe('academic');
 		expect(mapServerPhaseToStepId('applyStructureTemplate')).toBe('structure');
+		expect(mapServerPhaseToStepId('structure.curriculum')).toBe('structure');
+		expect(mapServerPhaseToStepId('structure.classMirrors')).toBe('structure');
+		expect(mapServerPhaseToStepId('structure.reportCards')).toBe('structure');
 		expect(mapServerPhaseToStepId('completeWizard')).toBe('complete');
 		expect(mapServerPhaseToStepId('unknown')).toBeNull();
 	});
