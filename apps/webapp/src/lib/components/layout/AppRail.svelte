@@ -1,11 +1,21 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { resolveActiveClassId } from '$lib/academic/class-selection';
+	import { academicContext } from '$lib/academic/context.svelte';
 	import { t } from '$lib/i18n';
 	import { GraduationCap } from '$lib/icons';
-	import { MODULES, getModuleFromPath } from '$lib/navigation';
+	import { MODULES, DASHBOARD_HREF, classItemHref, getModuleFromPath } from '$lib/navigation';
 	import { cn } from '$lib/utils';
 
 	const activeModule = $derived(getModuleFromPath($page.url.pathname));
+	const classId = $derived(resolveActiveClassId($page.params.classId, academicContext.classes));
+
+	function moduleHref(key: (typeof MODULES)[number]['key']): string {
+		if (key === 'classes') {
+			return classItemHref(classId, 'students');
+		}
+		return MODULES.find(mod => mod.key === key)?.href ?? DASHBOARD_HREF;
+	}
 </script>
 
 <aside
@@ -21,7 +31,7 @@
 			{@const active = activeModule === m.key}
 			{@const Icon = m.icon}
 			<a
-				href={m.href}
+				href={moduleHref(m.key)}
 				title={$t(m.tKey)}
 				class={cn(
 					'group relative flex h-11 w-11 items-center justify-center rounded-xl transition-all',

@@ -3,9 +3,10 @@ import type { components } from '$lib/api/schema';
 import type { TimetableMutationResult } from '$lib/components/school/scheduling/timetable-generation-errors';
 import type { TimetablePlacementOverrides } from '$lib/components/school/scheduling/timetable-placement-parameters';
 import type { ClassNode } from '$lib/types/school';
+import type { TimetableGenerationProgress } from './timetable-planning';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
-  generateSchoolTimetable,
+  generateClassTimetable,
   publishClassTimetable,
 } from '$lib/api/mutations/timetable-generation.mutations';
 import { academicYearPlanningRange } from '$lib/api/planning-data';
@@ -26,7 +27,12 @@ import { t } from '$lib/i18n';
 import { toast } from '$lib/toast.svelte';
 import { SvelteSet } from 'svelte/reactivity';
 import { get } from 'svelte/store';
-import { sortTimetableClasses } from './timetable-planning';
+import {
+  generateSchoolTimetableSequentially,
+  SequentialTimetableGenerationError,
+  sortTimetableClasses,
+
+} from './timetable-planning';
 
 function translateTimetable(key: string) {
   return get(t)(key);
@@ -50,6 +56,7 @@ export class TimetablePlanningPageState {
   subjectLabels = $state<Record<string, string>>({});
   teacherLabelsByClassSubjectId = $state<Record<string, string>>({});
   generationResult = $state<GenerateSchoolResult | null>(null);
+  generationProgress = $state<TimetableGenerationProgress | null>(null);
   busy = $state(false);
   loadStatus = $state<'idle' | 'loading' | 'ready' | 'error'>('idle');
   loadError = $state('');
@@ -197,18 +204,52 @@ export class TimetablePlanningPageState {
     endDate: string;
     options?: TimetableGenerationOptions;
   } & TimetablePlacementOverrides): Promise<TimetableMutationResult<GenerateSchoolResult>> {
-    const outcome = await this.runMutation(() => generateSchoolTimetable({
-      academicYearId: academicContext.yearId,
-      startDate: input.startDate,
-      endDate: input.endDate,
-      options: input.options,
-      placementParameters: buildTimetablePlacementParameters(input),
-    }), { reportInModal: true });
-    if (outcome.ok) {
-      this.generationResult = outcome.value;
+    this.busy = true;
+    this.generationProgress = null;
+    try {
+      const result = await generateSchoolTimetableSequentially({
+        academicYearId: academicContext.yearId,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        options: input.options,
+        placementParameters: buildTimetablePlacementParameters(input),
+        classes: this.classes,
+        classSubjects: this.classSubjects,
+        generateClass: generateClassTimetable,
+        onProgress: (progress) => {
+          this.generationProgress = progress;
+        },
+      });
+      this.generationResult = result;
       this.activeRange = { startDate: input.startDate, endDate: input.endDate };
+      entityVersions.bump('planning');
+      await this.load();
+      return { ok: true, value: result };
     }
-    return outcome;
+    catch (error) {
+      if (error instanceof SequentialTimetableGenerationError) {
+        entityVersions.bump('planning');
+        await this.load();
+        const parsed = parseTimetableGenerationError(error.cause, translateTimetable);
+        const partial = get(t)('timetable.generatePartialFailure', {
+          className: error.failedClass.name,
+          completed: error.completed.length,
+          total: error.total,
+        });
+        return {
+          ok: false,
+          error: {
+            ...parsed,
+            summary: `${partial} ${parsed.summary}`,
+          },
+        };
+      }
+      return { ok: false, error: parseTimetableGenerationError(error, translateTimetable) };
+    }
+    finally {
+      this.busy = false;
+      this.generationProgress = null;
+    }
   }
 
   publish(classGroupId: string, startDate: string, endDate: string, policy: 'fail' | 'skip') {

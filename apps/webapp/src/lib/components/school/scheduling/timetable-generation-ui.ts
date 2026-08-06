@@ -13,7 +13,9 @@ import { formatDateInput } from '$lib/date/format';
 import { cn } from '$lib/utils';
 import { SCHEDULE_DAY_TO_PLANNING } from './planning-calendar';
 
-export function timetableGenerationModalContentClass(phase: 'setup' | 'success' | 'error'): string {
+export function timetableGenerationModalContentClass(
+	phase: 'setup' | 'generating' | 'success' | 'error',
+): string {
 	return cn(
 		phase === 'setup'
 			? 'h-[min(90dvh,52.8rem)] max-h-[min(90dvh,52.8rem)] max-w-3xl'

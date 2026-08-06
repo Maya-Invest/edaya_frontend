@@ -2361,6 +2361,8 @@ export const fr: Dict = {
 	'timetable.teacherConstraints': 'Contraintes enseignants',
 	'timetable.schoolGenerateTitle': 'Générer les emplois du temps de l’établissement',
 	'timetable.schoolGenerateHint': 'Créer successivement les brouillons des classes pour la période sélectionnée.',
+	'timetable.generatingProgress': 'Génération de {className} ({current}/{total})',
+	'timetable.generatePartialFailure': 'Arrêt sur {className} après {completed}/{total} classes. Les brouillons précédents ont été conservés.',
 	'timetable.generateSchool': 'Générer les brouillons',
 	'timetable.searchClasses': 'Rechercher une classe',
 	'timetable.workloadOverrides': 'Surcharges des périodes par semaine',

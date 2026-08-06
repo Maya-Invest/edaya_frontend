@@ -8,7 +8,13 @@ import type {
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { timetableGenerationMutations } from './timetable-generation.client';
 
-export type { GenerateClassResult, GenerateSchoolResult, PublishResult, RepublishResult } from './timetable-generation.client';
+export type {
+	GenerateClassInput,
+	GenerateClassResult,
+	GenerateSchoolResult,
+	PublishResult,
+	RepublishResult,
+} from './timetable-generation.client';
 
 function browserMutations() {
 	return timetableGenerationMutations(getBrowserSchoolClient());
