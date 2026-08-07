@@ -87,6 +87,7 @@ export class GradeLevelsPageState {
 	async saveGradeLevel(input: {
 		id?: string;
 		name: string;
+		label: string;
 		cycle: string;
 		order: number;
 		successMessage?: string;
@@ -102,6 +103,7 @@ export class GradeLevelsPageState {
 			id,
 			schoolId: sid,
 			name: input.name.trim(),
+			label: input.label.trim(),
 			cycle: input.cycle.trim() || null,
 			order: input.order,
 		};

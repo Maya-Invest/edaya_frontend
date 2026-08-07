@@ -26,10 +26,10 @@ export async function runHomeroomNudgeCheck(
 			homeroomStaffName: /Assi/i,
 		});
 		if (!configured) {
-			reporter.log(scene, 'N.2 Ensure 6ème A daily mode', 'fail', 'Could not set daily attendance mode');
+			reporter.log(scene, 'N.2 Ensure 6ème 1 daily mode', 'fail', 'Could not set daily attendance mode');
 			return;
 		}
-		reporter.log(scene, 'N.2 Ensure 6ème A daily mode', 'pass');
+		reporter.log(scene, 'N.2 Ensure 6ème 1 daily mode', 'pass');
 
 		await visit(ctx, `${base}/dashboard`, scene, 'N.3 Dashboard loads', { selector: 'main' });
 
@@ -55,8 +55,8 @@ export async function runHomeroomNudgeCheck(
 			return;
 		}
 
-		if (!/6ème A|6eme A/i.test(nudgeText ?? '')) {
-			reporter.log(scene, 'N.4 Homeroom attendance nudge', 'skip', '6ème A label not in nudge — verify locale');
+		if (!/6ème 1|6eme 1/i.test(nudgeText ?? '')) {
+			reporter.log(scene, 'N.4 Homeroom attendance nudge', 'skip', '6ème 1 label not in nudge — verify locale');
 		}
 		else {
 			reporter.log(scene, 'N.4 Homeroom attendance nudge', 'pass');

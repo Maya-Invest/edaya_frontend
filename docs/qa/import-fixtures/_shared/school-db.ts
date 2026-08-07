@@ -15,6 +15,8 @@ const schoolDataDir = join(backendRoot, '.data/school');
 export type SchoolGradeLevel = {
 	id: string;
 	name: string;
+	/** Stem the school uses for its class names (`6ème` → `6ème 1`). */
+	label: string;
 	cycle: string;
 	orderVal: number;
 };
@@ -78,9 +80,26 @@ export type SchoolImportSnapshot = {
 	chapters: SchoolChapter[];
 };
 
+/** Anchors ordered from the most hoisted to the package that always depends on PGlite. */
+const PGLITE_ANCHORS = [
+	'package.json',
+	'package/adaptor-postgres/package.json',
+	'apps/api/package.json',
+];
+
 function requirePglite() {
-	const require = createRequire(join(backendRoot, 'package.json'));
-	return require('@electric-sql/pglite') as typeof import('@electric-sql/pglite');
+	for (const anchor of PGLITE_ANCHORS) {
+		const require = createRequire(join(backendRoot, anchor));
+		try {
+			return require('@electric-sql/pglite') as typeof import('@electric-sql/pglite');
+		}
+		catch {
+			continue;
+		}
+	}
+	throw new Error(
+		`Could not resolve @electric-sql/pglite from ${backendRoot} — run bun install in edaya_backend.`,
+	);
 }
 
 export async function loadSchoolImportSnapshot(): Promise<SchoolImportSnapshot> {
@@ -99,15 +118,17 @@ export async function loadSchoolImportSnapshot(): Promise<SchoolImportSnapshot> 
 		const gradeLevels = (await db.query<{
 			id: string;
 			name: string;
+			label: string;
 			cycle: string;
 			order_val: number;
 		}>(`
-			SELECT id, name, cycle, order_val
+			SELECT id, name, label, cycle, order_val
 			FROM grade_levels
 			ORDER BY cycle, order_val, name
 		`)).rows.map(row => ({
 			id: row.id,
 			name: row.name,
+			label: row.label,
 			cycle: row.cycle,
 			orderVal: row.order_val,
 		}));
@@ -281,14 +302,68 @@ export function secondaryNiveau(snapshot: SchoolImportSnapshot): string {
 	return (levels[1] ?? levels[0])!.name;
 }
 
-/** Libellé de classe volontairement absent du snapshot (scénarios d’erreur). */
-export function unknownClassName(snapshot: SchoolImportSnapshot): string {
-	const existing = new Set(snapshot.classes.map(entry => entry.name.toLowerCase()));
-	const candidate = `${primaryNiveau(snapshot)} Z`;
-	if (!existing.has(candidate.toLowerCase())) {
-		return candidate;
+/** Retient les `count` premiers candidats absents de la base, sinon échoue explicitement. */
+function pickAbsent(
+	existing: ReadonlySet<string>,
+	candidates: readonly string[],
+	count: number,
+	kind: string,
+): string[] {
+	const picked = candidates.filter(candidate => !existing.has(candidate.trim().toLowerCase()));
+	if (picked.length < count) {
+		throw new Error(
+			`Only ${picked.length} of the reserved ${kind} names are absent from the local school DB, ${count} needed.`,
+		);
 	}
-	return 'Classe Inconnue QA';
+	return picked.slice(0, count);
+}
+
+/** Libellés de classe volontairement absents du snapshot (scénarios d’erreur). */
+export function unknownClassNames(snapshot: SchoolImportSnapshot, count: number): string[] {
+	const existing = new Set(snapshot.classes.map(entry => entry.name.trim().toLowerCase()));
+	return pickAbsent(
+		existing,
+		[`${primaryNiveau(snapshot)} Z`, 'Classe Fantôme QA', 'Classe Inconnue QA', 'Classe Absente QA'],
+		count,
+		'class',
+	);
+}
+
+export function unknownClassName(snapshot: SchoolImportSnapshot): string {
+	return unknownClassNames(snapshot, 1)[0]!;
+}
+
+/** Noms de niveau volontairement absents du snapshot (scénarios d’erreur). */
+export function unknownNiveauNames(snapshot: SchoolImportSnapshot, count: number): string[] {
+	const existing = new Set(snapshot.gradeLevels.map(level => level.name.trim().toLowerCase()));
+	return pickAbsent(
+		existing,
+		['Niveau Inconnu QA', 'Niveau Fantôme QA', 'Niveau Absent QA', 'Niveau Hors Catalogue QA'],
+		count,
+		'grade level',
+	);
+}
+
+export function unknownNiveauName(snapshot: SchoolImportSnapshot): string {
+	return unknownNiveauNames(snapshot, 1)[0]!;
+}
+
+/** Libellés de matière volontairement absents du snapshot (scénarios d’erreur). */
+export function unknownSubjectNames(snapshot: SchoolImportSnapshot, count: number): string[] {
+	const existing = new Set([
+		...snapshot.subjectsAtLevel.map(entry => entry.matiere.trim().toLowerCase()),
+		...snapshot.classSubjectOfferings.map(entry => entry.matiere.trim().toLowerCase()),
+	]);
+	return pickAbsent(
+		existing,
+		['Matière Fantôme QA', 'Matière Inconnue QA', 'Matière Absente QA'],
+		count,
+		'subject',
+	);
+}
+
+export function unknownSubjectName(snapshot: SchoolImportSnapshot): string {
+	return unknownSubjectNames(snapshot, 1)[0]!;
 }
 
 export function primaryFeeName(snapshot: SchoolImportSnapshot, fallback: string): string {

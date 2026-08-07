@@ -41,15 +41,15 @@ const PROVISION_PROGRESS_STEPS: ProvisionProgressStepDef[] = [
 ];
 
 const SERVER_PHASE_TO_STEP: Record<string, ProvisionProgressStepId> = {
-	registerSchool: 'school',
-	resolveOwnerActor: 'school',
-	ensureAcademicStructure: 'academic',
-	applyStructureTemplate: 'structure',
+	'registerSchool': 'school',
+	'resolveOwnerActor': 'school',
+	'ensureAcademicStructure': 'academic',
+	'applyStructureTemplate': 'structure',
 	'structure.curriculum': 'structure',
 	'structure.classMirrors': 'structure',
 	'structure.reportCards': 'structure',
-	inviteStaffMembers: 'staff',
-	completeWizard: 'complete',
+	'inviteStaffMembers': 'staff',
+	'completeWizard': 'complete',
 };
 
 function toProgressStep(def: ProvisionProgressStepDef): ProvisionProgressStep {

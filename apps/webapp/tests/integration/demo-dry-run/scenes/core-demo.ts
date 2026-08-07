@@ -141,17 +141,17 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	}
 
 	if (await ensureDailyAttendanceMode(ctx, CLASS_6B)) {
-		reporter.log('D7', '7.0 Ensure 6ème B daily mode', 'pass');
+		reporter.log('D7', '7.0 Ensure 6ème 2 daily mode', 'pass');
 	}
 	else {
 		reporter.log(
 			'D7',
-			'7.0 Ensure 6ème B daily mode',
+			'7.0 Ensure 6ème 2 daily mode',
 			'skip',
 			'Could not configure daily mode — check SCHOOL_STRUCTURE_CONFIGURE',
 		);
 	}
-	await assertClassAttendanceNav(ctx, CLASS_6B, 'D7', '7.1 Attendance nav on 6ème B');
+	await assertClassAttendanceNav(ctx, CLASS_6B, 'D7', '7.1 Attendance nav on 6ème 2');
 	await visit(ctx, `${base}/classes/${CLASS_6B}/attendance`, 'D7', '7.2 Daily attendance page', { selector: 'main' });
 
 	await visit(ctx, `${base}/school/activities`, 'D8', '8.1 Activities list', { selector: 'main' });

@@ -14,7 +14,7 @@ bun docs/qa/import-fixtures/teacher-assignments/generate-fixtures.ts
 | Fichier | Scénario | Résultat attendu |
 |---------|----------|------------------|
 | `TA01-happy-all-valid.xlsx` | Toutes les offres `class_subjects` réparties sur les enseignants | 1 affectation / offre |
-| `TA02-partial-import.xlsx` | 1 OK + code inconnu + classe inconnue + matière fantôme | 1 créée + erreurs |
+| `TA02-partial-import.xlsx` | 1 OK + code inconnu + classe absente + matière absente | 1 créée + erreurs |
 | `TA03-error-missing-required.xlsx` | Champs obligatoires manquants | 0 créée |
 | `TA04-subject-not-in-class.xlsx` | Matière absente de la classe cible | 0 créée |
 | `TA05-error-duplicate-in-file.xlsx` | Même trio `code`/classe/matière deux fois | 1 créée |

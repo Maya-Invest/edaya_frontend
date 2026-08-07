@@ -193,6 +193,7 @@ async function fetchSupplementalShellForSchool(
 		id: gl.id,
 		schoolId: gl.schoolId,
 		name: gl.name,
+		label: gl.label,
 		cycle: gl.cycle ?? '',
 		order: gl.order,
 	}));
@@ -316,6 +317,7 @@ export async function fetchAppShellData(
 		id: gl.id,
 		schoolId: gl.schoolId,
 		name: gl.name,
+		label: gl.label,
 		cycle: gl.cycle ?? '',
 		order: gl.order,
 	}));

@@ -6,6 +6,19 @@ Les générateurs lisent la **PGlite locale** (`edaya_backend/.data/school`) via
 
 Contexte nominal : noms ivoiriens, matricules `CI-2025-xxx`, téléphones `+225`, paiements Mobile Money / espèces / virement en **FCFA**.
 
+## Provenance des libellés
+
+Les fixtures sont un **reflet de la base au moment de la génération**, jamais un catalogue figé. Régénérez-les après un `seed` **ou** après un onboarding : les deux chemins produisent des fichiers cohérents avec l'école, sans divergence de nommage.
+
+Règle de nommage des classes, identique à celle du produit :
+
+- la **racine** est le libellé court du niveau (`grade_levels.label`, ex. `6ème`), jamais une déduction à partir du nom du niveau ;
+- le **suffixe** poursuit la série déjà présente pour ce niveau — chiffres (`6ème 1`, `6ème 2`) ou lettres (`6ème A`, `6ème B`), avec les chiffres par défaut quand le niveau n'a pas encore de classe.
+
+Séparation des colonnes dans les fichiers : `niveau` = **nom** du niveau (`Sixième`), `nom` / `classe` = **nom complet de la classe** (`6ème 1`).
+
+Si un niveau possède des classes dont aucune ne commence par son libellé (base non re-seedée après la migration `label`, ou libellé modifié après coup), la génération échoue avec un message explicite au lieu de produire des fixtures incohérentes.
+
 ## Regénérer tout
 
 Prérequis : API locale déjà démarrée au moins une fois (data dir présent). `bun repo dev` peut rester allumé — le loader copie le data dir.
@@ -36,7 +49,8 @@ Les packs sont **chaînés** : chaque étape suppose les données créées par l
 
 | Source | Contenu |
 |--------|---------|
-| [`_shared/school-db.ts`](./_shared/school-db.ts) | Snapshot live PGlite |
+| [`_shared/school-db.ts`](./_shared/school-db.ts) | Snapshot live PGlite + libellés volontairement absents (niveaux, classes, matières) |
+| [`_shared/class-naming.ts`](./_shared/class-naming.ts) | Noms de classes construits depuis `grade_levels.label` |
 | [`_shared/fixture-pool.ts`](./_shared/fixture-pool.ts) | Élèves synthétiques `CI-2025-*` répartis sur les classes DB |
 | [`_shared/ivory-coast-data.ts`](./_shared/ivory-coast-data.ts) | Pool enseignants EN01 (50), codes staff, fallback frais, téléphones |
 

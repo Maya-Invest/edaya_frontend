@@ -7,7 +7,7 @@ import {
 	loadSchoolImportSnapshot,
 	primaryClass,
 	requireClasses,
-	unknownClassName,
+	unknownClassNames,
 } from '../_shared/school-db.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -18,7 +18,7 @@ const classes = requireClasses(snapshot);
 const students = buildImportStudents(snapshot, Math.max(12, classes.length));
 const primary = primaryClass(snapshot);
 const secondary = classes[1] ?? primary;
-const unknown = unknownClassName(snapshot);
+const [unknown, otherUnknown] = unknownClassNames(snapshot, 2) as [string, string];
 
 write('EL02-partial-import.xlsx', STUDENT_HEADERS, [
 	studentToRow(students[0]!),
@@ -41,7 +41,7 @@ write('EL04-error-invalid-date.xlsx', STUDENT_HEADERS, [
 
 write('EL05-error-class-not-found.xlsx', STUDENT_HEADERS, [
 	['Seydou', 'Diabaté', 'CI-2025-130', unknown, '2012-03-18', 'M'],
-	['Mariam', 'Ouattara', 'CI-2025-131', 'Classe Fantôme QA', '2013-09-08', 'F'],
+	['Mariam', 'Ouattara', 'CI-2025-131', otherUnknown, '2013-09-08', 'F'],
 ]);
 
 write('EL06-error-duplicate-in-file.xlsx', STUDENT_HEADERS, [

@@ -12,17 +12,19 @@ import { buildCatalogFromTemplates } from '$lib/onboarding/structure-template-mo
 import type { StructureTemplateDefinition } from '$lib/onboarding/structure-template-model';
 import { toApiStructureTemplateIds } from '$lib/onboarding/structure-templates';
 
+/** `shortLabel` is deliberately distinct from `code` so the naming assertions prove which one is the stem. */
 function level(
 	templateId: string,
 	code: string,
 	name: string,
+	shortLabel: string,
 	order: number,
 ): StructureTemplateDefinition['gradeLevels'][number] {
 	return {
 		id: `${templateId}:${code}`,
 		code,
 		name,
-		shortLabel: code,
+		shortLabel,
 		order,
 	};
 }
@@ -35,10 +37,10 @@ const FIXTURE_TEMPLATES: StructureTemplateDefinition[] = [
 		description: 'Lower Secondary Education (4 years)',
 		cycle: 'Collège',
 		gradeLevels: [
-			level('ci-college', '6EME', 'Sixième', 1),
-			level('ci-college', '5EME', 'Cinquième', 2),
-			level('ci-college', '4EME', 'Quatrième', 3),
-			level('ci-college', '3EME', 'Troisième', 4),
+			level('ci-college', '6EME', 'Sixième', '6ème', 1),
+			level('ci-college', '5EME', 'Cinquième', '5ème', 2),
+			level('ci-college', '4EME', 'Quatrième', '4ème', 3),
+			level('ci-college', '3EME', 'Troisième', '3ème', 4),
 		],
 		subjects: [{ code: 'FR', shortName: 'Français', domain: 'Langues', defaultCoefficient: 3 }],
 		curriculum: [{ levelCode: '6EME', subjectCode: 'FR', coefficient: 3, matters: ['Lecture'] }],
@@ -50,14 +52,14 @@ const FIXTURE_TEMPLATES: StructureTemplateDefinition[] = [
 		description: 'Upper Secondary Education (3 years)',
 		cycle: 'Lycée',
 		gradeLevels: [
-			level('ci-lycee', '2NDA', 'Seconde A', 1),
-			level('ci-lycee', '2NDC', 'Seconde C', 2),
-			level('ci-lycee', '1ERA', 'Première A', 3),
-			level('ci-lycee', '1ERC', 'Première C', 4),
-			level('ci-lycee', '1ERD', 'Première D', 5),
-			level('ci-lycee', 'TLEA', 'Terminale A', 6),
-			level('ci-lycee', 'TLEC', 'Terminale C', 7),
-			level('ci-lycee', 'TLED', 'Terminale D', 8),
+			level('ci-lycee', '2NDA', 'Seconde A', '2nde A', 1),
+			level('ci-lycee', '2NDC', 'Seconde C', '2nde C', 2),
+			level('ci-lycee', '1ERA', 'Première A', '1ère A', 3),
+			level('ci-lycee', '1ERC', 'Première C', '1ère C', 4),
+			level('ci-lycee', '1ERD', 'Première D', '1ère D', 5),
+			level('ci-lycee', 'TLEA', 'Terminale A', 'Tle A', 6),
+			level('ci-lycee', 'TLEC', 'Terminale C', 'Tle C', 7),
+			level('ci-lycee', 'TLED', 'Terminale D', 'Tle D', 8),
 		],
 		subjects: [{ code: 'FR', shortName: 'Français', domain: 'Langues', defaultCoefficient: 3 }],
 		curriculum: [{ levelCode: '1ERA', subjectCode: 'FR', coefficient: 3, matters: ['Dissertation'] }],
@@ -124,18 +126,9 @@ describe('structure onboarding', () => {
 		expect(secondeA).toBeDefined();
 		expect(sixieme).toBeDefined();
 
-		expect(previewClassNamesFromCatalog(premiereA!, 2)).toEqual([
-			`${premiereA!.code} 1`,
-			`${premiereA!.code} 2`,
-		]);
-		expect(previewClassNamesFromCatalog(secondeA!, 2)).toEqual([
-			`${secondeA!.code} 1`,
-			`${secondeA!.code} 2`,
-		]);
-		expect(previewClassNamesFromCatalog(sixieme!, 2, 'alphabetical')).toEqual([
-			`${sixieme!.code} A`,
-			`${sixieme!.code} B`,
-		]);
+		expect(previewClassNamesFromCatalog(premiereA!, 2)).toEqual(['1ère A 1', '1ère A 2']);
+		expect(previewClassNamesFromCatalog(secondeA!, 2)).toEqual(['2nde A 1', '2nde A 2']);
+		expect(previewClassNamesFromCatalog(sixieme!, 2, 'alphabetical')).toEqual(['6ème A', '6ème B']);
 	});
 
 	it('builds submit payload levels with api ids and classCount >= 1 only', () => {
