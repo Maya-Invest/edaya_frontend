@@ -9,10 +9,10 @@ bun edaya_web/docs/qa/import-fixtures/payments/generate-fixtures.ts
 **Prérequis :**
 
 1. Élèves importés ([EL01](../students/xlsx/EL01-happy-all-valid.xlsx))
-2. Types de frais **demo-ci** configurés dans Finances
+2. Au moins un **type de frais** configuré dans Finances
 3. **Facturation importée** ([BI01](../billing/xlsx/BI01-happy-all-valid.xlsx)) — ou assignation manuelle équivalente
-4. Autres libellés du catalogue demo-ci : Cantine, Club sportif, Fournitures scolaires, Transport scolaire
-5. Si le libellé diffère dans votre école, éditez la colonne `type_frais` ou `_shared/ivory-coast-data.ts`
+
+Comme pour la facturation, les libellés `type_frais` proviennent de la base locale (fallback `FEE_CATALOG_NAMES`).
 
 | Fichier | Scénario | Résultat attendu |
 |---------|----------|------------------|

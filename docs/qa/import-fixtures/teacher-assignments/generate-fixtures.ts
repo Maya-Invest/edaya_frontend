@@ -11,6 +11,7 @@ import {
 	loadSchoolImportSnapshot,
 	primaryClass,
 	unknownClassName,
+	unknownSubjectNames,
 } from '../_shared/school-db.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -36,8 +37,9 @@ const secondarySubject = offerings.find(
 const primarySubjects = new Set(
 	offerings.filter(entry => entry.classe === primary.name).map(entry => entry.matiere),
 );
+const [unknownSubject, spareUnknownSubject] = unknownSubjectNames(snapshot, 2) as [string, string];
 const subjectNotInPrimary = offerings.map(entry => entry.matiere).find(name => !primarySubjects.has(name))
-	?? 'Matière Hors Classe QA';
+	?? spareUnknownSubject;
 
 /**
  * Affecte chaque offre classe×matière à un enseignant du pool EN01 (round-robin).
@@ -67,7 +69,7 @@ write('TA02-partial-import.xlsx', HEADERS, [
 	[C.aka, primary.name, primarySubject],
 	['ENS-INCONNU-999', primary.name, secondarySubject],
 	[C.zongo, unknownClass, primarySubject],
-	[C.gbe, primary.name, 'Espagnol Fantôme QA'],
+	[C.gbe, primary.name, unknownSubject],
 ]);
 
 write('TA03-error-missing-required.xlsx', HEADERS, [

@@ -56,7 +56,7 @@ export function buildCatalogFromTemplates(
 				id: level.id,
 				code: level.code,
 				name: level.name,
-				shortLabel: level.shortLabel || level.code,
+				shortLabel: level.shortLabel,
 				order: level.order,
 				model,
 			});

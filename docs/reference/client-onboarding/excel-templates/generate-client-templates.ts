@@ -28,20 +28,28 @@ const BILLING_HEADERS = ['matricule', 'type_frais', 'montant', 'date_echeance'] 
 const PAYMENT_HEADERS = ['matricule', 'type_frais', 'reference', 'montant', 'date', 'mode', 'notes'] as const;
 const HOMEROOM_HEADERS = ['code', 'classe'] as const;
 
+/**
+ * Exemples volontairement neutres : la colonne `niveau` attend le nom du niveau
+ * tel qu'il est enregistré, et la colonne `classe`/`nom` le nom exact de la classe
+ * (libellé du niveau + section).
+ */
+const NIVEAU = '<nom du niveau>';
+const CLASSE = '<nom exact de la classe>';
+
 write('ProfPrincipaux')('00-professeur-principal.xlsx', HOMEROOM_HEADERS, [
-	['ENS-AKA-001', '6eme A'],
+	['ENS-AKA-001', CLASSE],
 ]);
 
 write('Classes')('01-classes.xlsx', CLASS_HEADERS, [
-	['6eme A', '6eme', 40],
+	[CLASSE, NIVEAU, 40],
 ]);
 
 write('Matieres')('02-matieres.xlsx', SUBJECT_HEADERS, [
-	['Mathématiques', '6eme', 'MATH', 3],
+	['Mathématiques', NIVEAU, 'MATH', 3],
 ]);
 
 write('Eleves')('03-eleves.xlsx', STUDENT_HEADERS, [
-	['Kouadio', 'Yao', 'CI-2025-001', '6eme A', '2013-04-12', 'M'],
+	['Kouadio', 'Yao', 'CI-2025-001', CLASSE, '2013-04-12', 'M'],
 ]);
 
 write('Tuteurs')('04-tuteurs.xlsx', GUARDIAN_HEADERS, [
@@ -57,11 +65,11 @@ write('Enseignants')('06-enseignants.xlsx', TEACHER_HEADERS, [
 ]);
 
 write('Affectations')('07-affectations-enseignants.xlsx', TEACHER_ASSIGNMENT_HEADERS, [
-	['ENS-AKA-001', '6eme A', 'Mathématiques'],
+	['ENS-AKA-001', CLASSE, 'Mathématiques'],
 ]);
 
 write('Chapitres')('08-chapitres.xlsx', CHAPTER_HEADERS, [
-	['6eme', 'Mathématiques', 'Les fractions', 1, 'Introduction aux fractions simples'],
+	[NIVEAU, 'Mathématiques', 'Les fractions', 1, 'Introduction aux fractions simples'],
 ]);
 
 write('Facturation')('09-facturation.xlsx', BILLING_HEADERS, [

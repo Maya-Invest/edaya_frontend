@@ -21,8 +21,8 @@ These accounts are **`Teacher`** entities in the seed. Staff manage them in the 
 
 | Email | Teacher ID | Notes |
 |-------|------------|-------|
-| `a.toure@ecole-ci.edaya.dev` | `ci-t1` | Maths — 6ème A, 5ème A |
-| `k.diomande@ecole-ci.edaya.dev` | `ci-t2` | Portal homeroom — 6ème B |
+| `a.toure@ecole-ci.edaya.dev` | `ci-t1` | Maths — 6ème 1, 5ème 1 |
+| `k.diomande@ecole-ci.edaya.dev` | `ci-t2` | Portal homeroom — 6ème 2 |
 
 After backend permission or assignment changes, verify portal teacher labels still resolve in the staff webapp (timetable grid, teacher drawer).
 

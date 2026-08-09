@@ -116,6 +116,7 @@
 						<thead class="border-b border-border bg-secondary/30 text-left">
 							<tr>
 								<th class="px-4 py-3 font-medium">{$t('gradeLevels.name')}</th>
+								<th class="px-4 py-3 font-medium">{$t('gradeLevels.label')}</th>
 								<th class="px-4 py-3 font-medium">{$t('gradeLevels.order')}</th>
 								<th class="px-4 py-3 font-medium">{$t('gradeLevels.classCount')}</th>
 							</tr>
@@ -137,6 +138,7 @@
 											<p class="font-mono text-[10px] text-muted-foreground">{level.id}</p>
 										</button>
 									</td>
+									<td class="px-4 py-3 text-muted-foreground">{level.label}</td>
 									<td class="px-4 py-3 font-mono text-muted-foreground">{level.order}</td>
 									<td class="px-4 py-3 font-mono">{gradeLevelsPage.classCountFor(level.id)}</td>
 								</tr>

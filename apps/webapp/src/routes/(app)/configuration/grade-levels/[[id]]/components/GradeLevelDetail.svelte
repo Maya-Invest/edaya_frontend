@@ -89,6 +89,9 @@
 		<DrawerField label={$t('gradeLevels.name')}>
 			<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{live.name}</div>
 		</DrawerField>
+		<DrawerField label={$t('gradeLevels.label')}>
+			<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{live.label}</div>
+		</DrawerField>
 		<DrawerField label={$t('gradeLevels.cycle')}>
 			<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{live.cycle || '—'}</div>
 		</DrawerField>

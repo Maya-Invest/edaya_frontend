@@ -361,6 +361,8 @@ export interface GradeLevel {
 	id: string;
 	schoolId: string;
 	name: string;
+	/** Stem used to build class names (`6ème` → `6ème 1`). */
+	label: string;
 	cycle: string;
 	order: number;
 }

@@ -6,6 +6,7 @@ import {
 	primaryNiveau,
 	requireGradeLevels,
 	secondaryNiveau,
+	unknownNiveauNames,
 } from '../_shared/school-db.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -16,6 +17,7 @@ const snapshot = await loadSchoolImportSnapshot();
 const levels = requireGradeLevels(snapshot);
 const niveau = primaryNiveau(snapshot);
 const niveau2 = secondaryNiveau(snapshot);
+const [unknownNiveau, otherUnknownNiveau, spareUnknownNiveau] = unknownNiveauNames(snapshot, 3) as [string, string, string];
 
 /** Catalogue existant (niveaux qui ont déjà des classes) — base du happy path. */
 const levelsWithClasses = new Set(snapshot.classes.map(entry => entry.niveau));
@@ -35,13 +37,13 @@ write('SU02-partial-import.xlsx', HEADERS, [
 	[...sample],
 	[...sample2],
 	['', niveau, 'VIDE', 1],
-	['Latin', '7eme Z', 'LAT', 1],
+	['Latin', unknownNiveau, 'LAT', 1],
 	['Français', niveau, 'FR', 'abc'],
 ]);
 
 write('SU03-error-unknown-niveau.xlsx', HEADERS, [
-	['Mathématiques', '7eme Z', 'MATH', 3],
-	['Français', 'Terminale X', 'FR', 3],
+	['Mathématiques', unknownNiveau, 'MATH', 3],
+	['Français', otherUnknownNiveau, 'FR', 3],
 ]);
 
 write('SU04-error-missing-required.xlsx', HEADERS, [
@@ -62,7 +64,7 @@ write('SU06-error-duplicate-in-file.xlsx', HEADERS, [
 ]);
 
 const niveauWithoutClasses = levels.find(level => !levelsWithClasses.has(level.name))?.name
-	?? 'Seconde Z';
+	?? spareUnknownNiveau;
 write('SU07-error-no-classes-for-level.xlsx', HEADERS, [
 	['Arts plastiques', niveauWithoutClasses, 'ART', 1],
 ]);

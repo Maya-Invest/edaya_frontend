@@ -5,6 +5,8 @@ import {
 	loadSchoolImportSnapshot,
 	primaryNiveau,
 	secondaryNiveau,
+	unknownNiveauNames,
+	unknownSubjectNames,
 } from '../_shared/school-db.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -14,6 +16,8 @@ const HEADERS = ['niveau', 'matiere', 'titre', 'ordre', 'description'] as const;
 const snapshot = await loadSchoolImportSnapshot();
 const niveau = primaryNiveau(snapshot);
 const niveau2 = secondaryNiveau(snapshot);
+const [unknownNiveau, otherUnknownNiveau] = unknownNiveauNames(snapshot, 2) as [string, string];
+const [unknownSubject, otherUnknownSubject] = unknownSubjectNames(snapshot, 2) as [string, string];
 
 /** Paires niveau×matière réellement proposées (évite « matière absente »). */
 const pairs = snapshot.subjectsAtLevel.length > 0
@@ -64,18 +68,18 @@ write('CH02-partial-import.xlsx', HEADERS, [
 	sample,
 	sampleFr,
 	['', String(sample[1]), 'Chapitre sans niveau', 1, ''],
-	[niveau, 'Latin', 'Declinaisons', 1, 'Matière absente du catalogue'],
+	[niveau, unknownSubject, 'Declinaisons', 1, 'Matière absente du catalogue'],
 	[niveau, String(sample[1]), 'Ordre invalide', 'abc', ''],
 ]);
 
 write('CH03-error-unknown-niveau.xlsx', HEADERS, [
-	['7eme Z', String(sample[1]), 'Chapitre test', 1, ''],
-	['Terminale X', String(sampleFr[1]), 'Autre chapitre', 1, ''],
+	[unknownNiveau, String(sample[1]), 'Chapitre test', 1, ''],
+	[otherUnknownNiveau, String(sampleFr[1]), 'Autre chapitre', 1, ''],
 ]);
 
 write('CH04-error-subject-not-found.xlsx', HEADERS, [
-	[niveau, 'Latin', 'Les déclinaisons', 1, 'Matière non proposée'],
-	[niveau2, 'Matière Fantôme QA', 'Introduction', 1, 'Matière absente'],
+	[niveau, unknownSubject, 'Les déclinaisons', 1, 'Matière non proposée'],
+	[niveau2, otherUnknownSubject, 'Introduction', 1, 'Matière absente'],
 ]);
 
 write('CH05-error-missing-required.xlsx', HEADERS, [

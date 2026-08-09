@@ -2,6 +2,7 @@
 	import type { ClassNode } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { sortGradeLevels } from '$lib/academic/grade-level-sort';
+	import { suggestNextClassName } from '$lib/academic/next-class-name';
 	import StaffPicker from '$lib/components/school/shared/pickers/StaffPicker.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -25,13 +26,27 @@
 	let capacity = $state('');
 	let attendanceMode = $state<ClassNode['attendanceMode']>('session');
 	let homeroomStaffId = $state('');
+	/** Once the user types a name, changing the grade level stops overwriting it. */
+	let nameEdited = $state(false);
 
 	const isEdit = $derived(classGroup !== undefined);
 	const sortedLevels = $derived(sortGradeLevels(academicContext.gradeLevels));
 	const staff = $derived(classesPage.staff);
 	const canSubmit = $derived(name.trim().length > 0);
 
+	function suggestedNameFor(levelId: string): string {
+		const level = academicContext.gradeLevelById(levelId);
+		if (!level) {
+			return '';
+		}
+		const siblingNames = academicContext.classes
+			.filter(entry => entry.gradeLevelId === levelId)
+			.map(entry => entry.name);
+		return suggestNextClassName(level.label, siblingNames);
+	}
+
 	function resetForm() {
+		nameEdited = false;
 		if (classGroup) {
 			name = classGroup.name;
 			gradeLevelId = classGroup.gradeLevelId;
@@ -40,11 +55,18 @@
 			homeroomStaffId = classGroup.homeroomStaffId ?? '';
 		}
 		else {
-			name = '';
 			gradeLevelId = academicContext.gradeLevels[0]?.id ?? 'gl-6';
+			name = suggestedNameFor(gradeLevelId);
 			capacity = '';
 			attendanceMode = 'session';
 			homeroomStaffId = '';
+		}
+	}
+
+	function onGradeLevelChange(event: Event) {
+		gradeLevelId = (event.currentTarget as HTMLSelectElement).value;
+		if (!isEdit && !nameEdited) {
+			name = suggestedNameFor(gradeLevelId);
 		}
 	}
 
@@ -111,12 +133,18 @@
 	<div class="grid gap-4 sm:grid-cols-2">
 		<label class="space-y-1.5 text-sm sm:col-span-2">
 			<span class="text-muted-foreground">{$t('classGroups.name')}</span>
-			<Input bind:value={name} placeholder="6th — C" class="rounded-xl" required />
+			<Input
+				bind:value={name}
+				oninput={() => (nameEdited = true)}
+				class="rounded-xl"
+				required
+			/>
 		</label>
 		<label class="space-y-1.5 text-sm">
 			<span class="text-muted-foreground">{$t('classGroups.gradeLevel')}</span>
 			<select
-				bind:value={gradeLevelId}
+				value={gradeLevelId}
+				onchange={onGradeLevelChange}
 				disabled={isEdit}
 				class="flex h-10 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
 			>

@@ -17,6 +17,17 @@ Ce guide détaille **tous** les types d’import actifs de la webapp, plus le fi
 6. Classes, matières, matricules et codes référencés doivent **exister** (ou être importés avant).
 7. Fichiers multi-valeurs (tuteurs) : séparer par `;` (ex. `CI-2025-001;CI-2025-002`).
 
+### Niveau vs classe
+
+Deux colonnes différentes, à ne pas confondre :
+
+| Colonne | Contenu attendu | Où la vérifier |
+|---------|-----------------|----------------|
+| `niveau` | **Nom** du niveau tel qu'enregistré (`Sixième`) | Configuration → Niveaux, colonne *Nom* |
+| `nom` (classes) / `classe` | **Nom complet de la classe** = libellé court du niveau + section | Configuration → Classes |
+
+Chaque niveau porte un **libellé court** (`6ème`) qui sert de racine aux noms de classes : `6ème 1`, `6ème 2` par défaut, ou `6ème A`, `6ème B` si l'établissement préfère les lettres. Reprenez dans vos fichiers les noms exacts affichés dans l'application.
+
 ### Clés d’unicité
 
 | Module | Clé |
@@ -52,8 +63,8 @@ Les modèles (en-têtes + ligne d’exemple) : [`excel-templates/`](./excel-temp
 
 | Colonne | Obligatoire | Description | Exemple |
 |---------|-------------|-------------|---------|
-| `nom` | Oui | Libellé complet de la classe | `6eme A` |
-| `niveau` | Oui | Niveau scolaire (libellé exact EDAYA) | `6eme` |
+| `nom` | Oui | Nom complet de la classe (libellé du niveau + section) | `6ème 1` |
+| `niveau` | Oui | Nom du niveau tel qu'enregistré | `Sixième` |
 | `capacite` | Non | Capacité cible | `40` |
 
 ---
@@ -63,7 +74,7 @@ Les modèles (en-têtes + ligne d’exemple) : [`excel-templates/`](./excel-temp
 | Colonne | Obligatoire | Description | Exemple |
 |---------|-------------|-------------|---------|
 | `nom` | Oui | Libellé matière | `Mathématiques` |
-| `niveau` | Oui | Niveau concerné | `6eme` |
+| `niveau` | Oui | Niveau concerné (nom enregistré) | `Sixième` |
 | `abbreviation` | Non | Abréviation | `MATH` |
 | `coefficient` | Non | Coefficient (> 0) | `3` |
 
@@ -78,7 +89,7 @@ Si template **collège / lycée CI** accepté : ce fichier peut être omis.
 | `prenom` | Oui | | `Kouadio` |
 | `nom` | Oui | | `Yao` |
 | `matricule` | Oui | Unique école | `CI-2025-001` |
-| `classe` | Oui* | Libellé classe exact | `6eme A` |
+| `classe` | Oui* | Nom de classe exact | `6ème 1` |
 | `date_naissance` | Non | `AAAA-MM-JJ` | `2013-04-12` |
 | `genre` | Non | `M` ou `F` | `M` |
 
@@ -151,7 +162,7 @@ Une ligne = un trio enseignant / classe / matière.
 | Colonne | Obligatoire | Description | Exemple |
 |---------|-------------|-------------|---------|
 | `code` | Oui | Code enseignant existant (`06-…`) | `ENS-AKA-001` |
-| `classe` | Oui | Libellé classe exact (`01-…`) | `6eme A` |
+| `classe` | Oui | Nom de classe exact (`01-…`) | `6ème 1` |
 
 Une ligne = un PP pour une classe. Prérequis : enseignants et classes déjà créés.
 
@@ -161,7 +172,7 @@ Une ligne = un PP pour une classe. Prérequis : enseignants et classes déjà cr
 
 | Colonne | Obligatoire | Description | Exemple |
 |---------|-------------|-------------|---------|
-| `niveau` | Oui | Niveau | `6eme` |
+| `niveau` | Oui | Niveau (nom enregistré) | `Sixième` |
 | `matiere` | Oui | Libellé matière | `Mathématiques` |
 | `titre` | Oui | Titre du chapitre | `Les fractions` |
 | `ordre` | Non | Ordre d’affichage | `1` |
