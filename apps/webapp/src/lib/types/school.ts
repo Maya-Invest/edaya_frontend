@@ -333,7 +333,9 @@ export interface StudentBilling {
 	installments: { date: string; amount: number; status: 'paid' | 'pending' }[];
 }
 
-export type AcademicPublishStatus = 'draft' | 'published';
+export type AcademicYearStatus = 'draft' | 'published' | 'archived';
+
+export type AcademicPublishStatus = AcademicYearStatus;
 
 export type PeriodDefinitionDayOfWeek
 	= | 'monday'
@@ -373,7 +375,7 @@ export interface AcademicYear {
 	label: string;
 	startDate: string;
 	endDate: string;
-	status: AcademicPublishStatus;
+	status: AcademicYearStatus;
 }
 
 export interface AcademicPeriod {
@@ -384,7 +386,7 @@ export interface AcademicPeriod {
 	range: string;
 	startDate: string;
 	endDate: string;
-	status: AcademicPublishStatus;
+	status: AcademicYearStatus;
 }
 
 export type SchoolType = 'primary' | 'secondary' | 'k12' | 'vocational' | 'other';

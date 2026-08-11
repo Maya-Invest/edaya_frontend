@@ -142,7 +142,11 @@ export class ActivitiesPageState {
 		const version = ++this.studentsLoadVersion;
 		this.studentsLoading = true;
 		try {
-			const sources = await fetchPeopleSources(this.client());
+			const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
+			if (!schoolId) {
+				return;
+			}
+			const sources = await fetchPeopleSources(this.client(), schoolId);
 			if (version !== this.studentsLoadVersion) {
 				return;
 			}

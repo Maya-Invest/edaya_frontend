@@ -85,7 +85,7 @@ describe('people data loading', () => {
 		}
 	});
 
-	it('keeps school roster entity lists documented as school-wide except grade metadata', async () => {
+	it('scopes school roster entity lists by schoolId instead of unscoped reads', async () => {
 		const { client, requests } = createRecordingSchoolClient([
 			listEnvelope([student]),
 			listEnvelope([enrollment]),
@@ -95,13 +95,13 @@ describe('people data loading', () => {
 			listEnvelope([]),
 		]);
 
-		await loadPeopleData(client);
+		await loadPeopleData(client, SEED_SCHOOL_ID);
 
 		expect(entityListRequests(requests, 'students')).toHaveLength(1);
-		expect(entityListRequests(requests, 'students')[0]?.body).toEqual({});
-		expect(entityListRequests(requests, 'enrollments')[0]?.body).toEqual({});
-		expect(entityListRequests(requests, 'guardians')[0]?.body).toEqual({});
-		expect(entityListRequests(requests, 'guardian-links')[0]?.body).toEqual({});
+		expect(entityListRequests(requests, 'students')[0]?.body).toEqual({ schoolId: SEED_SCHOOL_ID });
+		expect(entityListRequests(requests, 'enrollments')[0]?.body).toEqual({ schoolId: SEED_SCHOOL_ID });
+		expect(entityListRequests(requests, 'guardians')[0]?.body).toEqual({ schoolId: SEED_SCHOOL_ID });
+		expect(entityListRequests(requests, 'guardian-links')[0]?.body).toEqual({ schoolId: SEED_SCHOOL_ID });
 		expect(entityListRequests(requests, 'attendance')[0]?.body).toEqual({
 			studentId: { $in: ['student-1'] },
 		});
@@ -140,7 +140,7 @@ describe('people data loading', () => {
 			listEnvelope([assessment]),
 		]);
 
-		const { students } = await loadPeopleData(client);
+		const { students } = await loadPeopleData(client, SEED_SCHOOL_ID);
 
 		expect(students[0]?.average).toBe(16);
 		expect(entityListRequests(requests, 'assessments')[0]?.body).toEqual({
@@ -174,12 +174,12 @@ describe('people data loading', () => {
 			listEnvelope([enrollment]),
 		]);
 
-		const { guardians, students } = await loadGuardiansPeopleData(client);
+		const { guardians, students } = await loadGuardiansPeopleData(client, SEED_SCHOOL_ID);
 
 		expect(guardians).toHaveLength(1);
 		expect(students).toHaveLength(1);
 		expect(students[0]?.id).toBe('student-1');
-		expect(entityListRequests(requests, 'guardians')[0]?.body).toEqual({});
+		expect(entityListRequests(requests, 'guardians')[0]?.body).toEqual({ schoolId: SEED_SCHOOL_ID });
 		expect(entityListRequests(requests, 'guardian-links')[0]?.body).toEqual({
 			guardianId: { $in: ['guardian-1'] },
 		});
@@ -206,6 +206,7 @@ describe('people data loading', () => {
 		]);
 
 		const result = await loadPeopleDataPage(client, {
+			schoolId: SEED_SCHOOL_ID,
 			classGroupId,
 			offset: 0,
 			limit: 25,
@@ -251,7 +252,7 @@ describe('people data loading', () => {
 		await loadClassPeopleData(classLoad.client, classGroupId, periodId);
 
 		const schoolLoad = createRecordingSchoolClient([...schoolResponses]);
-		await loadPeopleData(schoolLoad.client);
+		await loadPeopleData(schoolLoad.client, SEED_SCHOOL_ID);
 
 		const classListCount = classLoad.requests.filter(request => request.path.endsWith('/list')).length;
 		const schoolListCount = schoolLoad.requests.filter(request => request.path.endsWith('/list')).length;

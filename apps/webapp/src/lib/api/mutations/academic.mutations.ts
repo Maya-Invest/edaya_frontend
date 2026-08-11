@@ -10,7 +10,11 @@ import {
 import { nextClassGroupIdFromExistingClasses } from '$lib/school/next-class-group-id';
 
 function schoolId(): string {
-	return authSession.schoolId ?? academicContext.schools[0]?.id ?? 'sch-edaya-central';
+	const sid = authSession.schoolId;
+	if (!sid) {
+		throw new Error('Missing school session');
+	}
+	return sid;
 }
 
 function nextClassId(gradeLevelId: string): string {
@@ -21,24 +25,34 @@ function nextClassId(gradeLevelId: string): string {
 	);
 }
 
-function trimestersForYear(yearId: string, startDate: string, endDate: string) {
+function yearDisplayName(label: string, startDate: string, endDate: string): string {
+	const trimmed = label.trim();
+	if (trimmed) {
+		return trimmed;
+	}
+	const startYear = startDate.slice(0, 4);
+	const endYear = endDate.slice(0, 4);
+	return `${startYear} — ${endYear}`;
+}
+
+function trimestersForYear(startDate: string, endDate: string) {
 	const startYear = Number.parseInt(startDate.slice(0, 4), 10);
 	const endYear = Number.parseInt(endDate.slice(0, 4), 10);
 	return [
 		{
-			id: `${yearId}-t1`,
+			id: crypto.randomUUID(),
 			name: 'Trimestre 1',
 			startDate,
 			endDate: `${startYear}-12-19`,
 		},
 		{
-			id: `${yearId}-t2`,
+			id: crypto.randomUUID(),
 			name: 'Trimestre 2',
 			startDate: `${endYear}-01-05`,
 			endDate: `${endYear}-04-03`,
 		},
 		{
-			id: `${yearId}-t3`,
+			id: crypto.randomUUID(),
 			name: 'Trimestre 3',
 			startDate: `${endYear}-04-20`,
 			endDate,
@@ -52,16 +66,12 @@ export async function createAcademicYearMutation(
 	endDate: string,
 	options?: { successMessage?: string },
 ): Promise<string | null> {
-	const numericIds = academicContext.years
-		.map(y => Number.parseInt(y.id, 10))
-		.filter(n => !Number.isNaN(n));
-	const nextNumeric = (numericIds.length ? Math.max(...numericIds) : 2025) + 1;
-	const yearId = String(nextNumeric);
-	const yearName = label.trim() || `${nextNumeric - 1} — ${nextNumeric}`;
-	const sid = schoolId();
+	const yearId = crypto.randomUUID();
+	const yearName = yearDisplayName(label, startDate, endDate);
 	const client = getBrowserSchoolClient();
 
 	const created = await runMutation(async () => {
+		const sid = schoolId();
 		await client.commands.createAcademicYear({
 			id: yearId,
 			schoolId: sid,
@@ -70,7 +80,7 @@ export async function createAcademicYearMutation(
 			endDate,
 		});
 
-		for (const period of trimestersForYear(yearId, startDate, endDate)) {
+		for (const period of trimestersForYear(startDate, endDate)) {
 			await client.commands.createAcademicPeriod({
 				id: period.id,
 				schoolId: sid,
@@ -89,9 +99,15 @@ export async function createAcademicYearMutation(
 	return created;
 }
 
-export async function activateAcademicYearMutation(yearId: string): Promise<boolean> {
+export async function publishAcademicYearMutation(yearId: string): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const result = await runMutation(() => client.commands.activateAcademicYear({ academicYearId: yearId }));
+	const result = await runMutation(() => client.commands.publishAcademicYear({ academicYearId: yearId }));
+	return result !== null;
+}
+
+export async function archiveAcademicYearMutation(yearId: string): Promise<boolean> {
+	const client = getBrowserSchoolClient();
+	const result = await runMutation(() => client.commands.archiveAcademicYear({ academicYearId: yearId }));
 	return result !== null;
 }
 

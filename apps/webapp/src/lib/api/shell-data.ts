@@ -9,7 +9,7 @@ import type {
 	School,
 } from '$lib/types/school';
 import { buildClassHierarchy } from '$lib/academic/hierarchy';
-import { paginatedList, schoolWideEntityList } from '$lib/api/entity-list-filters';
+import { paginatedList, schoolScopedEntityList, schoolWideEntityList } from '$lib/api/entity-list-filters';
 import { fetchSchoolById, mapSchoolFromApi } from '$lib/api/school-data';
 import { ApiError } from '@maya-invest/edaya-api-client';
 
@@ -127,7 +127,7 @@ async function safeEntityList<T>(load: () => Promise<T[] | null | undefined>): P
 }
 
 function schoolScopedList(schoolId: string) {
-	return paginatedList({ schoolId }, { limit: 50 });
+	return paginatedList(schoolScopedEntityList(schoolId), { limit: 50 });
 }
 
 async function fetchSupplementalShellForSchool(
@@ -163,7 +163,7 @@ async function fetchSupplementalShellForSchool(
 		label: y.name,
 		startDate: typeof y.startDate === 'string' ? y.startDate : String(y.startDate),
 		endDate: typeof y.endDate === 'string' ? y.endDate : String(y.endDate),
-		status: y.isActive ? 'published' as const : 'draft' as const,
+		status: y.status ?? 'draft',
 	}));
 	const periodDefinitions: PeriodDefinition[] = (periodDefsRaw ?? []).map(def => ({
 		id: def.id,
@@ -284,7 +284,7 @@ export async function fetchAppShellData(
 		label: y.name,
 		startDate: typeof y.startDate === 'string' ? y.startDate : String(y.startDate),
 		endDate: typeof y.endDate === 'string' ? y.endDate : String(y.endDate),
-		status: y.isActive ? 'published' as const : 'draft' as const,
+		status: y.status ?? 'draft',
 	}));
 
 	const periodDefinitions: PeriodDefinition[] = (periodDefsRaw ?? []).map(def => ({

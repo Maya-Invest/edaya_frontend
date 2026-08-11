@@ -21,12 +21,14 @@
 	let name = $state('');
 	let label = $state('');
 	let cycle = $state('');
-	let order = $state('0');
+	let order = $state('1');
 	/** Once the user edits the label, it stops mirroring the name. */
 	let labelEdited = $state(false);
 
 	const isEdit = $derived(gradeLevel !== undefined);
-	const canSubmit = $derived(name.trim().length > 0 && label.trim().length > 0);
+	const canSubmit = $derived(
+		name.trim().length > 0 && label.trim().length > 0 && Number(order) >= 1,
+	);
 	const existingClassCount = $derived(
 		gradeLevel ? gradeLevelsPage.classCountFor(gradeLevel.id) : 0,
 	);
@@ -45,7 +47,7 @@
 		else {
 			const nextOrder = academicContext.gradeLevels.length > 0
 				? Math.max(...academicContext.gradeLevels.map(level => level.order)) + 1
-				: 0;
+				: 1;
 			name = '';
 			label = '';
 			cycle = '';
@@ -80,7 +82,7 @@
 				name: trimmedName,
 				label: label.trim(),
 				cycle,
-				order: Number(order) || 0,
+				order: Math.max(1, Math.trunc(Number(order) || 1)),
 				successMessage: get(t)(
 					isEdit ? 'gradeLevels.toastUpdated' : 'gradeLevels.toastCreated',
 					{ name: trimmedName },
@@ -133,7 +135,7 @@
 		</label>
 		<label class="space-y-1.5 text-sm">
 			<span class="text-muted-foreground">{$t('gradeLevels.order')}</span>
-			<Input type="number" min="0" bind:value={order} class="rounded-xl" />
+			<Input type="number" min="1" bind:value={order} class="rounded-xl" />
 		</label>
 	</div>
 </FormModal>

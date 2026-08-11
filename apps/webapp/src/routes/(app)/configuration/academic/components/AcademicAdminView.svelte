@@ -40,11 +40,30 @@
 	let deleteBusy = $state(false);
 	let deleteTarget = $state<PeriodDefinition | null>(null);
 
+	let archiveOpen = $state(false);
+	let archiveBusy = $state(false);
+	let archiveTargetId = $state('');
+
 	const statusOptions = $derived([
 		{ value: 'all', label: $t('academic.filterAllStatuses') },
 		{ value: 'published', label: $t('academic.published') },
 		{ value: 'draft', label: $t('academic.draft') },
+		{ value: 'archived', label: $t('academic.archived') },
 	]);
+
+	const publishedYearId = $derived(
+		academicContext.years.find(year => year.status === 'published')?.id ?? null,
+	);
+
+	function yearStatusLabel(status: string): string {
+		if (status === 'published') {
+			return get(t)('academic.published');
+		}
+		if (status === 'archived') {
+			return get(t)('academic.archived');
+		}
+		return get(t)('academic.draft');
+	}
 
 	const sortedYears = $derived(
 		[...academicContext.years].sort((a, b) => b.startDate.localeCompare(a.startDate)),
@@ -99,6 +118,33 @@
 		const year = academicContext.years.find(entry => entry.id === yearId);
 		if (year) {
 			toast.success(get(t)('academic.toastYearPublished', { label: year.label }));
+		}
+	}
+
+	function openArchiveYear(yearId: string) {
+		archiveTargetId = yearId;
+		archiveOpen = true;
+	}
+
+	async function confirmArchiveYear() {
+		if (!archiveTargetId) {
+			return;
+		}
+		archiveBusy = true;
+		try {
+			const ok = await academicPage.archiveYear(archiveTargetId);
+			if (!ok) {
+				return;
+			}
+			const year = academicContext.years.find(entry => entry.id === archiveTargetId);
+			if (year) {
+				toast.success(get(t)('academic.toastYearArchived', { label: year.label }));
+			}
+			archiveOpen = false;
+			archiveTargetId = '';
+		}
+		finally {
+			archiveBusy = false;
 		}
 	}
 
@@ -215,10 +261,12 @@
 									'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide',
 									year.status === 'published'
 										? 'bg-accent/15 text-accent-foreground'
-										: 'bg-secondary text-muted-foreground',
+										: year.status === 'archived'
+											? 'bg-muted text-muted-foreground'
+											: 'bg-secondary text-muted-foreground',
 								)}
 							>
-								{year.status === 'published' ? $t('academic.published') : $t('academic.draft')}
+								{yearStatusLabel(year.status)}
 							</span>
 						</div>
 						<p class="mt-0.5 font-mono text-xs text-muted-foreground">
@@ -235,9 +283,22 @@
 								<Button
 									size="sm"
 									class="rounded-full"
+									disabled={publishedYearId !== null}
+									title={publishedYearId !== null ? $t('academic.publishBlocked') : undefined}
 									onclick={() => handlePublishYear(year.id)}
 								>
 									{$t('academic.publishYear')}
+								</Button>
+							</div>
+						{:else if year.status === 'published'}
+							<div class="mb-4 flex justify-end">
+								<Button
+									size="sm"
+									variant="outline"
+									class="rounded-full"
+									onclick={() => openArchiveYear(year.id)}
+								>
+									{$t('academic.archiveYear')}
 								</Button>
 							</div>
 						{/if}
@@ -348,6 +409,20 @@
 <PeriodDefinitionWizardModal
 	bind:open={wizardOpen}
 	academicYearId={wizardYearId}
+/>
+
+<ConfirmModal
+	bind:open={archiveOpen}
+	title={$t('academic.archiveYear')}
+	description={archiveTargetId
+		? $t('academic.archiveYearConfirm', {
+			label: academicContext.years.find(entry => entry.id === archiveTargetId)?.label ?? '',
+		})
+		: ''}
+	confirmLabel={$t('academic.archiveYear')}
+	cancelLabel={$t('academic.cancel')}
+	busy={archiveBusy}
+	onConfirm={confirmArchiveYear}
 />
 
 <ConfirmModal

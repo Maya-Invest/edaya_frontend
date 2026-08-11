@@ -2,9 +2,10 @@ import type { PeriodDefinition } from '$lib/types/school';
 import type { AcademicPageSlice } from './lib/academic-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
-	activateAcademicYearMutation,
+	archiveAcademicYearMutation,
 	createAcademicYearMutation,
 	publishAcademicPeriodMutation,
+	publishAcademicYearMutation,
 } from '$lib/api/mutations/academic.mutations';
 import { refreshAppShellData } from '$lib/api/mutations/run-mutation';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
@@ -87,7 +88,17 @@ export class AcademicPageState {
 	}
 
 	async publishYear(yearId: string): Promise<boolean> {
-		const ok = await activateAcademicYearMutation(yearId);
+		const ok = await publishAcademicYearMutation(yearId);
+		if (!ok) {
+			return false;
+		}
+		await refreshAppShellData();
+		await this.refreshSlice();
+		return true;
+	}
+
+	async archiveYear(yearId: string): Promise<boolean> {
+		const ok = await archiveAcademicYearMutation(yearId);
 		if (!ok) {
 			return false;
 		}

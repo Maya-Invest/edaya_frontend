@@ -23,7 +23,7 @@
 
 	const query = academicPage.queryListPage();
 	const urlFilters = $derived(readAcademicAdminListFilters($page.url));
-	const statusKeys = ['all', 'draft', 'published'] as const;
+	const statusKeys = ['all', 'draft', 'published', 'archived'] as const;
 
 	$effect(() => {
 		const next = urlFilters;

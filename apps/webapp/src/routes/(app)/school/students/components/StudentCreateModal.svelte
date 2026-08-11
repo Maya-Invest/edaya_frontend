@@ -33,6 +33,8 @@
 		}) => Promise<string | null>;
 	} = $props();
 
+	const studentsPage = getStudentsPageState();
+
 	let busy = $state(false);
 	let firstName = $state('');
 	let lastName = $state('');
@@ -95,7 +97,7 @@
 		busy = true;
 		try {
 			const fullName = `${firstName.trim()} ${lastName.trim()}`;
-			const resolvedCreateStudent = createStudent ?? (input => getStudentsPageState().createStudent(input));
+			const resolvedCreateStudent = createStudent ?? (input => studentsPage.createStudent(input));
 			const studentId = await resolvedCreateStudent({
 				firstName,
 				lastName,

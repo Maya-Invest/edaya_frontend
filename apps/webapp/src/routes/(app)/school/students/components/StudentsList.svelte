@@ -288,6 +288,7 @@
 		bind:open={createOpen.open}
 		onOpenChange={closeUrlModal(modals)}
 		{hierarchy}
+		createStudent={input => studentsPage.createStudent(input)}
 		onCreated={handleCreated}
 	/>
 

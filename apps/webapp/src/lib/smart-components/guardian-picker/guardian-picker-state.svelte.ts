@@ -1,6 +1,7 @@
 import type { Guardian } from '$lib/types/school';
 import { loadGuardiansPeopleData } from '$lib/api/people-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { authSession } from '$lib/auth/session.svelte';
 
 export class GuardianPickerState {
 	guardians = $state<Guardian[]>([]);
@@ -17,8 +18,12 @@ export class GuardianPickerState {
 		const version = ++this.loadVersion;
 		this.loading = true;
 		try {
+			const schoolId = authSession.schoolId ?? '';
+			if (!schoolId) {
+				return;
+			}
 			const client = getBrowserSchoolClient();
-			const data = await loadGuardiansPeopleData(client);
+			const data = await loadGuardiansPeopleData(client, schoolId);
 			if (version !== this.loadVersion) {
 				return;
 			}

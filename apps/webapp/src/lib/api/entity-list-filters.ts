@@ -77,9 +77,18 @@ export const STAFF_LIST_ORDER: EntityQuery['$orderBy'] = [
 ];
 
 /**
+ * School-scoped entity list read.
+ * Prefer this for school-wide roster/catalog loads on multi-tenant databases.
+ */
+export function schoolScopedEntityList(schoolId: string, _reason?: string): EntityQuery {
+	return { schoolId };
+}
+
+/**
  * Documented unscoped entity list read.
  * Use only when a route intentionally loads a school-wide collection.
  * Pair with `listAllEntityPages` when the collection can exceed the default list limit.
+ * @deprecated Prefer `schoolScopedEntityList` when the session school is known.
  */
 export function schoolWideEntityList(_reason: string): EntityQuery {
 	return {};
