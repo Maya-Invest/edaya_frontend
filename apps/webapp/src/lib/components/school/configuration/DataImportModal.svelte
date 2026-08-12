@@ -889,10 +889,17 @@
 		if (loadingChapterContext) {
 			return;
 		}
+		const schoolId = authSession.schoolId;
+		if (!schoolId) {
+			chapterImportContext = [];
+			existingChapterKeys = new Set();
+			return;
+		}
 		loadingChapterContext = true;
 		try {
 			const loaded = await loadChapterImportContext(
 				getBrowserSchoolClient(),
+				schoolId,
 				academicContext.classes.map(classGroup => ({
 					id: classGroup.id,
 					name: classGroup.name,
@@ -1024,10 +1031,15 @@
 		}
 		loadingSubjectImportContext = true;
 		try {
+			const schoolId = authSession.schoolId;
+			if (!schoolId) {
+				subjectImportExistingKeys = new Set();
+				return;
+			}
 			const classGradeLevelById = Object.fromEntries(
 				academicContext.classes.map(classGroup => [classGroup.id, classGroup.gradeLevelId]),
 			);
-			subjectImportExistingKeys = await loadExistingSubjectImportKeys(classGradeLevelById);
+			subjectImportExistingKeys = await loadExistingSubjectImportKeys(schoolId, classGradeLevelById);
 		}
 		catch {
 			subjectImportExistingKeys = new Set();
@@ -1056,8 +1068,8 @@
 			const client = getBrowserSchoolClient();
 			const [teachers, classSubjects, subjectCatalog] = await Promise.all([
 				loadTeacherAssignmentImportTeachers(client, schoolId),
-				loadTeacherAssignmentImportClassSubjects(client),
-				loadSchoolSubjectCatalog(),
+				loadTeacherAssignmentImportClassSubjects(client, schoolId),
+				loadSchoolSubjectCatalog(schoolId),
 			]);
 			teacherAssignmentTeachers = teachers;
 			teacherAssignmentClassSubjects = classSubjects;

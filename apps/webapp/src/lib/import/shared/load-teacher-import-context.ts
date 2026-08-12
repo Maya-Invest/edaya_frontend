@@ -12,8 +12,9 @@ export interface TeacherImportClassSubjectOption {
 /** @deprecated Prefer loadTeacherAssignmentImportClassSubjects for the assignments import pack. */
 export async function loadTeacherImportClassSubjects(
 	client: SchoolClient,
+	schoolId: string,
 ): Promise<TeacherImportClassSubjectOption[]> {
-	const sources = await fetchSchoolSubjectsSources(client);
+	const sources = await fetchSchoolSubjectsSources(client, schoolId);
 	return sources.classSubjectsRaw.map(classSubject => ({
 		id: classSubject.id,
 		classGroupId: classSubject.classGroupId,

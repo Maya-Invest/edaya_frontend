@@ -14,7 +14,6 @@ import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readClassGroupListFilters, writeClassGroupListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
-import { nextClassGroupIdFromExistingClasses } from '$lib/school/next-class-group-id';
 import { getContext, setContext } from 'svelte';
 import { classGroupIdFromUrl } from './lib/classes-helpers';
 import {
@@ -37,14 +36,6 @@ export type { ClassesPageSlice };
 
 function schoolId(): string {
 	return authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
-}
-
-function nextClassId(gradeLevelId: string): string {
-	return nextClassGroupIdFromExistingClasses(
-		gradeLevelId,
-		academicContext.classes.map(entry => entry.id),
-		{ gradeLevelName: academicContext.gradeLevelById(gradeLevelId)?.name },
-	);
 }
 
 export class ClassesPageState {
@@ -182,12 +173,17 @@ export class ClassesPageState {
 			return false;
 		}
 
-		const id = nextClassId(input.gradeLevelId);
+		const academicYearId = academicContext.resolveAcademicYearIdForApi();
+		if (!academicYearId) {
+			return false;
+		}
+
+		const id = crypto.randomUUID();
 		const result = await runClassesRouteMutation({
 			request: () => client.commands.createClassGroup({
 				id,
 				schoolId: sid,
-				academicYearId: academicContext.yearId,
+				academicYearId,
 				gradeLevelId: input.gradeLevelId,
 				name: input.name.trim(),
 				capacity: input.capacity ?? null,

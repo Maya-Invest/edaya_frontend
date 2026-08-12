@@ -16,6 +16,7 @@ import { runRouteCoverageScenes } from '../tests/integration/demo-dry-run/scenes
 import { DemoReporter } from '../tests/integration/demo-dry-run/support/reporter';
 import { DEMO_WEBAPP_BASE } from '../tests/integration/demo-dry-run/support/paths';
 import type { DemoContext } from '../tests/integration/demo-dry-run/support/types';
+import { listSearchInput } from './qa-harness-ui';
 
 const OUT_DIR = path.join(import.meta.dirname, '../../../..', '.qa-checklist-run');
 const RESULTS_PATH = path.join(import.meta.dirname, '../../../..', 'qa-checklist-results.json');
@@ -168,9 +169,9 @@ async function createStudentViaUi(ctx: DemoContext): Promise<string | null> {
 		await page.goto(`${base}/school/students`, { waitUntil: 'domcontentloaded' });
 		await waitForAppShell(page);
 
-		const newBtn = page.getByRole('button', { name: /nouvel élève|new student/i });
+		const newBtn = page.getByRole('button', { name: /add student|ajouter un élève/i });
 		if (!(await newBtn.isVisible({ timeout: 8_000 }).catch(() => false))) {
-			record(pageUrl, probleme, 'NOT OK', 'Bouton « Nouvel élève » introuvable');
+			record(pageUrl, probleme, 'NOT OK', 'Bouton Add student introuvable');
 			return null;
 		}
 		await newBtn.click();
@@ -203,7 +204,7 @@ async function createStudentViaUi(ctx: DemoContext): Promise<string | null> {
 		};
 		page.on('console', onConsole);
 
-		const submit = dialog.getByRole('button', { name: /nouvel élève|new student|créer|create|enregistrer|save/i }).last();
+		const submit = dialog.getByRole('button', { name: /add student|ajouter un élève|créer|create|enregistrer|save/i }).last();
 		const submitVisible = await submit.isVisible({ timeout: 5_000 }).catch(() => false);
 		if (!submitVisible) {
 			page.off('console', onConsole);
@@ -243,7 +244,7 @@ async function createStudentViaUi(ctx: DemoContext): Promise<string | null> {
 			return null;
 		}
 
-		await page.getByRole('searchbox').or(page.locator('input[type="search"]')).first().fill(`${firstName} ${lastName}`).catch(() => {});
+		await listSearchInput(page).first().fill(`${firstName} ${lastName}`).catch(() => {});
 		await page.waitForTimeout(1_500);
 
 		const row = page.getByText(new RegExp(`${firstName}.*${lastName}|${lastName}`, 'i')).first();
@@ -421,9 +422,9 @@ async function createFeeIfNeeded(ctx: DemoContext): Promise<string | null> {
 			return 'qa-fee-existing';
 		}
 
-		const newBtn = page.getByRole('button', { name: /nouveau frais|new fee|nouveau/i }).first();
+		const newBtn = page.getByRole('button', { name: /add fee|ajouter un frais/i }).first();
 		if (!(await newBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
-			record(pageUrl, probleme, 'NOT OK', 'Bouton nouveau frais introuvable');
+			record(pageUrl, probleme, 'NOT OK', 'Bouton Add fee introuvable');
 			return null;
 		}
 		await newBtn.click();
@@ -437,7 +438,7 @@ async function createFeeIfNeeded(ctx: DemoContext): Promise<string | null> {
 			await amountInput.fill('50000');
 		}
 
-		const save = dialog.getByRole('button', { name: /nouveau|nouveau frais|new fee|créer|create|enregistrer|save/i }).last();
+		const save = dialog.getByRole('button', { name: /add fee|ajouter un frais|créer|create|enregistrer|save/i }).last();
 		await save.click({ timeout: 15_000 });
 		await page.waitForTimeout(2_000);
 

@@ -31,7 +31,7 @@ export class ScopeBuilderDataState {
 			const [peopleSources, activities, subjectSources] = await Promise.all([
 				fetchPeopleSources(client, schoolId),
 				fetchActivities(client, schoolId),
-				fetchSchoolSubjectsSources(client),
+				fetchSchoolSubjectsSources(client, schoolId),
 			]);
 			if (version !== this.loadVersion) {
 				return;

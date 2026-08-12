@@ -7,7 +7,6 @@ import { navigateToListAfterEntityDelete } from '$lib/navigation/navigate-after-
 import {
 	cleanupClassGroupDependencies,
 } from '$lib/school/delete-class-group-cleanup';
-import { nextClassGroupIdFromExistingClasses } from '$lib/school/next-class-group-id';
 
 function schoolId(): string {
 	const sid = authSession.schoolId;
@@ -15,14 +14,6 @@ function schoolId(): string {
 		throw new Error('Missing school session');
 	}
 	return sid;
-}
-
-function nextClassId(gradeLevelId: string): string {
-	return nextClassGroupIdFromExistingClasses(
-		gradeLevelId,
-		academicContext.classes.map(c => c.id),
-		{ gradeLevelName: academicContext.gradeLevelById(gradeLevelId)?.name },
-	);
 }
 
 function yearDisplayName(label: string, startDate: string, endDate: string): string {
@@ -135,11 +126,15 @@ export async function createClassGroupMutation(
 	},
 ): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const id = nextClassId(gradeLevelId);
+	const academicYearId = academicContext.resolveAcademicYearIdForApi();
+	if (!academicYearId) {
+		return false;
+	}
+	const id = crypto.randomUUID();
 	const result = await runMutation(() => client.commands.createClassGroup({
 		id,
 		schoolId: schoolId(),
-		academicYearId: academicContext.yearId,
+		academicYearId,
 		gradeLevelId,
 		name: name.trim(),
 		capacity: options?.capacity ?? null,

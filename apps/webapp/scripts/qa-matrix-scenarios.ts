@@ -8,6 +8,8 @@ import {
 	ensureAcademicYearReady,
 	fillClassCreateDialog,
 	fillStudentCreateDialog,
+	clickCreateButton,
+	listSearchInput,
 	openDialogButton,
 	submitDialog,
 	waitForDialogClosed,
@@ -54,24 +56,6 @@ async function ensureLoggedOut(page: Page, base: string): Promise<void> {
 
 async function loginPassword(page: Page, base: string, email: string, password: string): Promise<boolean> {
 	return attemptPasswordSignIn(page, base, email, password);
-}
-
-async function clickCreateButton(page: Page): Promise<boolean> {
-	const patterns = [
-		/nouveau frais|new fee/i,
-		/signaler un év.nement|log event/i,
-		/ajouter une classe|add class/i,
-		/nouvel élève|new student/i,
-		/nouvelle année scolaire|new academic year/i,
-		/ajouter un niveau|add grade level/i,
-		/nouveau|nouvel|new |créer|create|ajouter|add /i,
-	];
-	for (const pattern of patterns) {
-		if (await openDialogButton(page, pattern, 6_000)) {
-			return true;
-		}
-	}
-	return false;
 }
 
 async function hasMainContent(page: Page): Promise<boolean> {
@@ -170,7 +154,9 @@ async function runAuthScenario(
 	if (row.endpoint.includes('/invite/')) {
 		await page.goto(`${base}/invite/qa-invalid-token`, { waitUntil: 'domcontentloaded' });
 		if (action.includes('Token invalide')) {
-			const err = await page.getByText(/invalide|expiré|expired|invalid|révoqué|revoked/i).first().isVisible({ timeout: 8_000 }).catch(() => false);
+			await page.locator('.animate-spin').first().waitFor({ state: 'detached', timeout: 12_000 }).catch(() => {});
+			const err = await page.getByText(/invalide|expiré|expired|invalid|introuvable|not found|révoqué|revoked/i).first()
+				.isVisible({ timeout: 8_000 }).catch(() => false);
 			return err ? ok(row) : notOk(row, 'Message token invalide non affiché');
 		}
 		return na(row, 'Token invitation valide requis — test manuel');
@@ -226,9 +212,8 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 		try {
 			await p.context().clearCookies();
 			await p.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
-			await p.waitForTimeout(1_500);
-			const onLogin = p.url().includes('/login');
-			return onLogin ? ok(row) : notOk(row, p.url());
+			const redirected = await p.waitForURL(/\/login/, { timeout: 10_000 }).then(() => true).catch(() => false);
+			return redirected ? ok(row) : notOk(row, p.url());
 		}
 		finally {
 			await isolated.close();
@@ -247,8 +232,8 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 		await waitForAppShell(page);
 		const sidebar = page.locator('aside#app-sidebar');
 		const visible = await sidebar.isVisible().catch(() => false);
-		const links = await sidebar.locator('a[href]').count();
-		return visible && links > 2 ? ok(row, `${links} liens sidebar`) : notOk(row, 'Sidebar vide ou absente');
+		const links = await sidebar.locator('a[href], nav button').count();
+		return visible && links > 2 ? ok(row, `${links} entrées sidebar`) : notOk(row, 'Sidebar vide ou absente');
 	}
 
 	if (action.includes('sans permission')) {
@@ -261,7 +246,9 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 	}
 
 	if (action.includes('année scolaire')) {
-		const trigger = page.getByRole('button', { name: /année|year|scolaire/i }).first();
+		const trigger = page.locator('[data-testid="academic-year-trigger"]')
+			.or(page.getByRole('button', { name: /année|year|scolaire/i }))
+			.first();
 		return (await trigger.isVisible({ timeout: 5_000 }).catch(() => false)) ? ok(row) : notOk(row, 'Sélecteur année absent');
 	}
 
@@ -279,7 +266,7 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 		await page.goto(url, { waitUntil: 'domcontentloaded' });
 		await waitForAppShell(page);
 		const dialog = page.getByRole('dialog');
-		const profileBtn = page.locator('[data-testid="user-menu"], button[aria-label*="profil"], button[aria-label*="account"]').first();
+		const profileBtn = page.locator('[data-testid="user-menu"], button[aria-label*="profil" i], button[aria-label*="account" i], button[aria-label*="compte" i]').first();
 		if (action.includes('profile=1')) {
 			const opened = await dialog.isVisible({ timeout: 8_000 }).catch(() => false);
 			return opened ? ok(row) : notOk(row, 'Modal profil non ouvert via ?profile=1');
@@ -359,7 +346,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 
 	// ── Search ──
 	if (/recherche/i.test(action)) {
-		const search = page.getByRole('searchbox').or(page.locator('input[type="search"]')).first();
+		const search = listSearchInput(page).first();
 		if (!(await search.isVisible({ timeout: 5_000 }).catch(() => false))) {
 			return notOk(row, 'Champ recherche introuvable');
 		}
@@ -382,10 +369,18 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 			return hasTable ? ok(row, 'Filtres statut navigables') : notOk(row, 'Liste absente après filtre statut');
 		}
 		const combobox = page.getByRole('combobox').first();
+		const nativeFilter = page.locator('select[aria-label="Filter"], [data-testid="list-filter"]').first();
 		const filterBtn = page.getByRole('button', { name: /filtre|filter/i }).first();
 		if (await combobox.isVisible({ timeout: 4_000 }).catch(() => false)) {
 			await combobox.click();
 			await page.getByRole('option').first().click({ timeout: 5_000 }).catch(() => {});
+			return ok(row);
+		}
+		if (await nativeFilter.isVisible({ timeout: 4_000 }).catch(() => false)) {
+			const options = await nativeFilter.locator('option').count();
+			if (options > 1) {
+				await nativeFilter.selectOption({ index: 1 });
+			}
 			return ok(row);
 		}
 		if (await filterBtn.isVisible().catch(() => false)) {
@@ -420,9 +415,9 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		if (row.endpoint.includes('/school/events') && /incident/i.test(action)) {
 			await waitForPageQuery(page);
 			await dismissPageError(page);
-			const opened = await openDialogButton(page, /signaler un év.nement|log event/i);
+			const opened = await openDialogButton(page, /add incident|ajouter un incident/i);
 			if (!opened) {
-				return notOk(row, 'Bouton Log event introuvable sur /school/events');
+				return notOk(row, 'Bouton Add incident introuvable sur /school/events');
 			}
 			const dialog = page.getByRole('dialog');
 			const studentCombo = dialog.getByRole('combobox').first();
@@ -472,7 +467,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 				if (msg.type() === 'error') consoleErrors.push(msg.text());
 			};
 			page.on('console', onConsole);
-			const opened = await clickCreateButton(page);
+			const opened = await clickCreateButton(page, action, row.endpoint);
 			if (!opened) {
 				page.off('console', onConsole);
 				return notOk(row, 'Modal création élève non ouvert');
@@ -502,8 +497,8 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		if (action.includes('frais') && row.endpoint.includes('/finance/fees')) {
 			await waitForPageQuery(page);
 			await dismissPageError(page);
-			const opened = await openDialogButton(page, /nouveau frais|new fee/i);
-			if (!opened) return notOk(row, 'Bouton New fee introuvable sur /finance/fees');
+			const opened = await openDialogButton(page, /add fee|ajouter un frais/i);
+			if (!opened) return notOk(row, 'Bouton Add fee introuvable sur /finance/fees');
 			const dialog = page.getByRole('dialog');
 			await dialog.locator('input').first().fill(`QA-Frais-${Date.now()}`);
 			const amount = dialog.locator('input[type="number"]').first();
@@ -514,12 +509,60 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 			return closed ? ok(row) : notOk(row, 'Création frais non confirmée');
 		}
 
-		const opened = await clickCreateButton(page);
+		const opened = await clickCreateButton(page, action, row.endpoint);
 		return opened ? ok(row, 'Modal création ouvert') : notOk(row, 'Bouton création introuvable');
 	}
 
 	// ── Edit / drawer / open ──
 	if (/éditer|édi|ouvrir|drawer|onglet|assigner|affectation|photo|commentaire|changer|notes pédagogiques/i.test(action)) {
+		if (/notes pédagogiques/i.test(action)) {
+			const addNoteBtn = page.getByRole('button', { name: /add note|ajouter une note/i }).first();
+			if (!(await addNoteBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
+				return notOk(row, 'Bouton Add note introuvable');
+			}
+			await addNoteBtn.click();
+			const dialog = page.getByRole('dialog');
+			if (!(await dialog.isVisible({ timeout: 5_000 }).catch(() => false))) {
+				return notOk(row, 'Modal note pédagogique non ouvert');
+			}
+			const body = dialog.locator('textarea').first();
+			await body.fill(`QA note ${Date.now()}`);
+			const createResponse = page.waitForResponse(
+				res => res.url().includes('/core/commands/create-student-note') && res.request().method() === 'POST',
+				{ timeout: 15_000 },
+			).catch(() => null);
+			await submitDialog(page);
+			const response = await createResponse;
+			const closed = !(await dialog.isVisible().catch(() => false));
+			if (response && response.ok() && closed) {
+				return ok(row, 'Note pédagogique créée');
+			}
+			return notOk(row, closed ? 'API create-student-note échouée' : 'Modal note toujours ouvert');
+		}
+
+		if (row.endpoint.includes('/finance/billing')) {
+			if (/assigner/i.test(action)) {
+				const assignBtn = page.getByRole('button', { name: /ajouter une facture|add invoice/i }).first();
+				if (await assignBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
+					await assignBtn.click();
+					const dialog = page.getByRole('dialog');
+					const visible = await dialog.isVisible({ timeout: 5_000 }).catch(() => false);
+					return visible ? ok(row) : notOk(row, 'Modal assignation facture non ouvert');
+				}
+				return notOk(row, 'Bouton Ajouter une facture introuvable');
+			}
+			if (/drawer|ouvrir/i.test(action)) {
+				const rowBtn = page.locator('main ul button, [role="main"] ul button').first();
+				if (await rowBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
+					await rowBtn.click();
+					const drawer = page.locator('aside[aria-label]');
+					const visible = await drawer.isVisible({ timeout: 5_000 }).catch(() => false);
+					return visible ? ok(row) : notOk(row, 'Drawer facturation non ouvert');
+				}
+				return na(row, 'Aucune ligne facturation — drawer non testable');
+			}
+		}
+
 		const editBtn = page.getByRole('button', { name: /éditer|edit|modifier|assigner/i }).first();
 		const tab = page.getByRole('tab').first();
 		if (await editBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
@@ -572,10 +615,16 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 
 	// ── Publish / generate / payment / toggle — smoke only ──
 	if (row.endpoint.includes('/configuration/academic') && /publier année/i.test(action)) {
-		const heading = page.locator('section h3').first();
-		const label = (await heading.textContent().catch(() => ''))?.trim();
-		if (!label) {
-			return na(row, 'Aucune année scolaire dans la liste');
+		const label = `E2E ${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
+		const yearHeading = page.getByRole('heading', { name: label, exact: true });
+		if (!(await yearHeading.isVisible({ timeout: 8_000 }).catch(() => false))) {
+			const fallback = page.locator('section h3').first();
+			const fallbackLabel = (await fallback.textContent().catch(() => ''))?.trim();
+			if (!fallbackLabel) {
+				return na(row, 'Aucune année scolaire dans la liste');
+			}
+			const ready = await ensureAcademicYearReady(page, fallbackLabel);
+			return ready ? ok(row, `${fallbackLabel} published`) : notOk(row, `Publish failed for ${fallbackLabel}`);
 		}
 		const ready = await ensureAcademicYearReady(page, label);
 		return ready ? ok(row, `${label} published`) : notOk(row, `Publish failed for ${label}`);

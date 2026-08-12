@@ -197,7 +197,7 @@
 
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				{$t('eval.newEvaluation')}
+				{$t('hw.titleField')}
 			</Label>
 			<Input bind:value={title} />
 		</div>

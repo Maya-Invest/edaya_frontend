@@ -97,7 +97,12 @@ export function schoolWideEntityList(_reason: string): EntityQuery {
 const CONFIG_SUBJECTS_SCOPE
 	= 'Configuration subjects screen loads the school-wide subject catalog via paginated listAllEntityPages.';
 
-export const schoolSubjectsCatalogList = () => schoolWideEntityList(CONFIG_SUBJECTS_SCOPE);
+export function schoolSubjectsCatalogList(schoolId: string): EntityQuery {
+	return {
+		...schoolWideEntityList(CONFIG_SUBJECTS_SCOPE),
+		schoolId,
+	};
+}
 
 export function uniqueIds(ids: readonly string[]): string[] {
 	return [...new Set(ids)];

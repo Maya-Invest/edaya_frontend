@@ -23,7 +23,7 @@
 	let busy = $state(false);
 	let name = $state('');
 	let gradeLevelId = $state(academicContext.gradeLevels[0]?.id ?? 'gl-6');
-	let capacity = $state('');
+	let capacity = $state<string | number>('');
 	let attendanceMode = $state<ClassNode['attendanceMode']>('session');
 	let homeroomStaffId = $state('');
 	/** Once the user types a name, changing the grade level stops overwriting it. */
@@ -84,7 +84,12 @@
 		busy = true;
 		try {
 			const trimmedName = name.trim();
-			const parsedCapacity = capacity.trim() ? Number(capacity) : null;
+			const rawCapacity =
+				capacity === '' || capacity == null ? null : Number(capacity);
+			const parsedCapacity =
+				rawCapacity == null || Number.isNaN(rawCapacity) || rawCapacity <= 0
+					? null
+					: rawCapacity;
 			if (classGroup) {
 				const ok = await classesPage.updateClassGroup({
 					classGroupId: classGroup.id,
@@ -155,7 +160,7 @@
 		</label>
 		<label class="space-y-1.5 text-sm">
 			<span class="text-muted-foreground">{$t('classGroups.capacity')}</span>
-			<Input type="number" min="0" bind:value={capacity} class="rounded-xl" />
+			<Input type="number" min="1" bind:value={capacity} class="rounded-xl" />
 		</label>
 		<label class="space-y-1.5 text-sm sm:col-span-2">
 			<span class="text-muted-foreground">{$t('classGroups.attendanceMode')}</span>

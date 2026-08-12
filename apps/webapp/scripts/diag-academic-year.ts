@@ -30,7 +30,7 @@ await waitForAppShell(page);
 await waitForPageQuery(page);
 
 const label = `E2E ${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
-const opened = await openDialogButton(page, /nouvelle année scolaire|new academic year/i);
+const opened = await openDialogButton(page, /add academic year|ajouter une année scolaire/i);
 if (!opened) {
 	throw new Error('Create year button not found');
 }

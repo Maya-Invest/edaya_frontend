@@ -163,6 +163,7 @@
 					<div class="flex items-center gap-1.5">
 						<button
 							type="button"
+							data-testid="user-menu"
 							onclick={() => (profileOpen = true)}
 							class="flex h-9 items-center gap-2 rounded-full border border-border bg-card pl-1 pr-3 text-xs font-medium text-foreground transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 							aria-label={$t('account.profile.openProfile')}

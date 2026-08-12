@@ -61,7 +61,7 @@ async function diagStudentModal(page: import('playwright').Page, base: string) {
 	await waitForPageQuery(page);
 	await dismissPageError(page);
 
-	const opened = await openDialogButton(page, /nouvel élève|new student/i, 30_000);
+	const opened = await openDialogButton(page, /add student|ajouter un élève/i, 30_000);
 	if (!opened) {
 		return { opened: false, reason: 'Create student modal not found' };
 	}
@@ -85,7 +85,7 @@ async function diagStudentModal(page: import('playwright').Page, base: string) {
 		await page.getByRole('option').first().click({ timeout: 5_000 }).catch(() => {});
 	}
 
-	const submit = dialog.getByRole('button', { name: /nouvel élève|créer|create|enregistrer|save/i }).last();
+	const submit = dialog.getByRole('button', { name: /add student|ajouter un élève|créer|create|enregistrer|save/i }).last();
 	const submitDisabled = await submit.isDisabled().catch(() => true);
 	const submitLabel = await submit.innerText().catch(() => '');
 
@@ -143,7 +143,7 @@ async function main() {
 	await page.goto(`${base}/configuration/academic`, { waitUntil: 'domcontentloaded' });
 	await waitForPageQuery(page);
 	await dismissPageError(page);
-	const yearOpened = await openDialogButton(page, /nouvelle année scolaire|new academic year/i);
+	const yearOpened = await openDialogButton(page, /add academic year|ajouter une année scolaire/i);
 	if (yearOpened) {
 		const label = `E2E ${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
 		const dialog = page.getByRole('dialog');

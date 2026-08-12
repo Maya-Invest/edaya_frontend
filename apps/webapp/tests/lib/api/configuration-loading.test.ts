@@ -1,8 +1,10 @@
 import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
 import { fetchActivitySources } from '$lib/api/activities-data';
+import { listAllEntityPages, schoolScopedEntityList } from '$lib/api/entity-list-filters';
 import { fetchStaffMembers } from '$lib/api/staff-data';
 import { loadStaffPermissionAssignments } from '$lib/api/staff-permission-assignments-data';
+import { fetchCatalogSubjectsSources } from '$lib/api/subjects-data';
 import { createRecordingSchoolClient, entityListRequests } from '$tests/support/recording-school-client';
 
 const academicYearId = 'year-1';
@@ -90,5 +92,49 @@ describe('configuration and activity loading', () => {
 		});
 		expect(entityListRequests(requests, 'class-subjects')).toHaveLength(0);
 		expect(entityListRequests(requests, 'subjects')).toHaveLength(0);
+	});
+
+	it('loads subjects catalog with school-scoped entity lists', async () => {
+		const empty = listEnvelope([]);
+		const { client, requests } = createRecordingSchoolClient([
+			empty,
+			empty,
+			empty,
+			empty,
+			empty,
+		]);
+
+		await fetchCatalogSubjectsSources(client, SEED_SCHOOL_ID);
+
+		for (const entity of [
+			'grade-level-subjects',
+			'class-subjects',
+			'subjects',
+			'subject-matters',
+			'grade-level-subject-matters',
+		]) {
+			expect(entityListRequests(requests, entity)[0]?.body).toMatchObject({
+				schoolId: SEED_SCHOOL_ID,
+			});
+		}
+	});
+
+	it('loads class grade levels with school-scoped class-groups list', async () => {
+		const { client, requests } = createRecordingSchoolClient([
+			listEnvelope([{
+				id: 'class-1',
+				schoolId: SEED_SCHOOL_ID,
+				gradeLevelId: 'grade-level-1',
+			}]),
+		]);
+
+		await listAllEntityPages(
+			query => client.entities.classGroups.list(query),
+			{ baseQuery: schoolScopedEntityList(SEED_SCHOOL_ID) },
+		);
+
+		expect(entityListRequests(requests, 'class-groups')[0]?.body).toMatchObject({
+			schoolId: SEED_SCHOOL_ID,
+		});
 	});
 });

@@ -35,7 +35,7 @@ if (!signedIn) throw new Error('login failed');
 await page.goto(`${base}/configuration/academic`, { waitUntil: 'domcontentloaded' });
 await waitForAppShell(page);
 const yearLabel = `E2E ${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
-await openDialogButton(page, /nouvelle année scolaire|new academic year/i);
+await openDialogButton(page, /add academic year|ajouter une année scolaire/i);
 await page.getByRole('dialog').locator('input').first().fill(yearLabel);
 await submitDialog(page);
 await waitForDialogClosed(page);

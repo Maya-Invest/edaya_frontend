@@ -18,6 +18,7 @@ import {
 	submitDialog,
 	waitForDialogClosed,
 	waitForPageQuery,
+	waitForResolvedAcademicYearId,
 } from '../../../scripts/qa-harness-ui';
 import {
 	configEntityIdByName,
@@ -56,7 +57,7 @@ async function setupAcademicYear(ctx: DemoContext): Promise<SetupStepResult> {
 		await waitForPageQuery(page);
 		await dismissPageError(page);
 
-		const opened = await openDialogButton(page, /nouvelle année scolaire|new academic year/i);
+		const opened = await openDialogButton(page, /add academic year|ajouter une année scolaire/i);
 		if (!opened) {
 			return { step: 'academic-year', ok: false, detail: 'Create year button or modal not found' };
 		}
@@ -125,6 +126,8 @@ async function setupGradeLevel(ctx: DemoContext): Promise<SetupStepResult> {
 async function setupClass(ctx: DemoContext): Promise<SetupStepResult> {
 	const { page } = ctx;
 	try {
+		await refreshAppShell(page, ctx.base);
+		await waitForResolvedAcademicYearId(page);
 		await gotoAppPage(ctx, '/configuration/classes');
 		await waitForPageQuery(page);
 		await dismissPageError(page);
@@ -172,7 +175,7 @@ async function setupStudent(ctx: DemoContext): Promise<SetupStepResult> {
 		await waitForPageQuery(page);
 		await dismissPageError(page);
 
-		const opened = await openDialogButton(page, /nouvel élève|new student/i, 30_000);
+		const opened = await openDialogButton(page, /add student|ajouter un élève/i, 30_000);
 		if (!opened) {
 			const pageError = await page.getByText(/unable to load|une erreur est survenue/i).first().isVisible().catch(() => false);
 			return {

@@ -18,6 +18,7 @@ import { DEMO_PASSWORD, OWNER_EMAIL, STAFF_EMAIL } from '../tests/integration/de
 import { DEMO_WEBAPP_BASE } from '../tests/integration/demo-dry-run/support/paths';
 import { DemoReporter } from '../tests/integration/demo-dry-run/support/reporter';
 import { QA_TEMPLATE_MATRIX } from './qa-template-matrix';
+import { clearAcademicSelectionStorage } from './qa-harness-ui';
 import { waitForAppShell } from './qa-matrix-support';
 import { discoverEntities, emptyEntities, runMatrixScenario } from './qa-matrix-scenarios';
 import type { MatrixResult } from './qa-matrix-support';
@@ -98,7 +99,11 @@ async function loginWithPassword(
 	email: string,
 	password: string,
 ): Promise<boolean> {
-	return attemptPasswordSignIn(page, base, email, password);
+	const ok = await attemptPasswordSignIn(page, base, email, password);
+	if (ok) {
+		await clearAcademicSelectionStorage(page);
+	}
+	return ok;
 }
 
 async function qaSignIn(

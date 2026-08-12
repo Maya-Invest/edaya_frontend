@@ -42,11 +42,12 @@ export interface ClassSubjectsSources extends ClassSubjectInstructorSources {
 }
 
 async function listAllCatalogEntities<T>(
+	schoolId: string,
 	list: (query: EntityQuery) => Promise<T[] | null | undefined>,
 ): Promise<T[]> {
 	return listAllEntityPages(
 		async query => safeOptionalEntityList(() => list(query)),
-		{ baseQuery: schoolSubjectsCatalogList() },
+		{ baseQuery: schoolSubjectsCatalogList(schoolId) },
 	);
 }
 
@@ -194,7 +195,10 @@ function mapCatalogSubjectEntry(input: {
 	};
 }
 
-export async function fetchCatalogSubjectsSources(client: SchoolClient): Promise<CatalogSubjectsSources> {
+export async function fetchCatalogSubjectsSources(
+	client: SchoolClient,
+	schoolId: string,
+): Promise<CatalogSubjectsSources> {
 	const [
 		gradeLevelSubjectsRaw,
 		classSubjectsRaw,
@@ -202,11 +206,11 @@ export async function fetchCatalogSubjectsSources(client: SchoolClient): Promise
 		subjectMattersRaw,
 		gradeLevelSubjectMattersRaw,
 	] = await Promise.all([
-		listAllCatalogEntities(query => client.entities.gradeLevelSubjects.list(query)),
-		listAllCatalogEntities(query => client.entities.classSubjects.list(query)),
-		listAllCatalogEntities(query => client.entities.subjects.list(query)),
-		listAllCatalogEntities(query => client.entities.subjectMatters.list(query)),
-		listAllCatalogEntities(query => client.entities.gradeLevelSubjectMatters.list(query)),
+		listAllCatalogEntities(schoolId, query => client.entities.gradeLevelSubjects.list(query)),
+		listAllCatalogEntities(schoolId, query => client.entities.classSubjects.list(query)),
+		listAllCatalogEntities(schoolId, query => client.entities.subjects.list(query)),
+		listAllCatalogEntities(schoolId, query => client.entities.subjectMatters.list(query)),
+		listAllCatalogEntities(schoolId, query => client.entities.gradeLevelSubjectMatters.list(query)),
 	]);
 
 	return {
@@ -289,9 +293,10 @@ export function mapCatalogSubjects(
 
 export async function loadCatalogSubjects(
 	client: SchoolClient,
+	schoolId: string,
 	classGradeLevelById: Readonly<Record<string, string>>,
 ): Promise<Subject[]> {
-	const sources = await fetchCatalogSubjectsSources(client);
+	const sources = await fetchCatalogSubjectsSources(client, schoolId);
 	return mapCatalogSubjects(sources, classGradeLevelById);
 }
 
@@ -335,15 +340,18 @@ function descriptionForSubject(
 	return subject.name;
 }
 
-export async function fetchSchoolSubjectsSources(client: SchoolClient): Promise<ClassSubjectsSources> {
+export async function fetchSchoolSubjectsSources(
+	client: SchoolClient,
+	schoolId: string,
+): Promise<ClassSubjectsSources> {
 	const [
 		classSubjectsRaw,
 		subjectsRaw,
 		subjectMattersRaw,
 	] = await Promise.all([
-		listAllCatalogEntities(query => client.entities.classSubjects.list(query)),
-		listAllCatalogEntities(query => client.entities.subjects.list(query)),
-		listAllCatalogEntities(query => client.entities.subjectMatters.list(query)),
+		listAllCatalogEntities(schoolId, query => client.entities.classSubjects.list(query)),
+		listAllCatalogEntities(schoolId, query => client.entities.subjects.list(query)),
+		listAllCatalogEntities(schoolId, query => client.entities.subjectMatters.list(query)),
 	]);
 	const classSubjectIds = uniqueIds(classSubjectsRaw.map(classSubject => classSubject.id));
 	const instructorSources = await fetchClassSubjectInstructorSourcesBundle(client, classSubjectIds);
