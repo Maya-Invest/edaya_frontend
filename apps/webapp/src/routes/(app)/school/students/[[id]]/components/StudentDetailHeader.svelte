@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { ModalUrlBind } from '$lib/modal/modal-state.svelte';
 	import type { Student } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
@@ -8,7 +9,6 @@
 	import { t } from '$lib/i18n';
 	import { canUploadProfilePhoto } from '$lib/permissions';
 	import { get } from 'svelte/store';
-	import type { ModalUrlBind } from '$lib/modal/modal-state.svelte';
 	import StudentProfileEditModal from '../(tabs)/profile/components/StudentProfileEditModal.svelte';
 	import { getStudentProfileTabState } from '../(tabs)/profile/student-profile-tab.svelte';
 	import ChangeClassButton from './ChangeClassButton.svelte';

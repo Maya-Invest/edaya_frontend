@@ -385,7 +385,7 @@
 
 				{#if open}
 					<div class="border-t border-border px-5 py-4">
-						{#if year.status === 'draft'}
+						{#if year.status !== 'published'}
 							<div class="mb-4 flex justify-end">
 								<Button
 									size="sm"

@@ -125,7 +125,7 @@ export function isAcademicModalTargetValid(
 		return catalog.years.some(entry => entry.id === target && entry.status === 'published');
 	}
 	if (modal === 'publish-year') {
-		return catalog.years.some(entry => entry.id === target && entry.status === 'draft')
+		return catalog.years.some(entry => entry.id === target && entry.status !== 'published')
 			&& !catalog.years.some(entry => entry.status === 'published');
 	}
 	if (modal === 'delete-period-def') {

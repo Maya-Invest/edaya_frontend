@@ -281,7 +281,7 @@ async function fetchPeopleSourcesPageWithMetrics(
 async function fetchClassPeopleSourcesPageWithMetrics(
 	client: SchoolClient,
 	classGroupId: string,
-	request: PeoplePageRequest = {},
+	request: Pick<PeoplePageRequest, 'limit' | 'offset'> = {},
 ): Promise<PaginatedPeopleSourcesWithMetrics> {
 	const limit = request.limit ?? DEFAULT_LIST_PAGE_SIZE;
 	const offset = request.offset ?? 0;

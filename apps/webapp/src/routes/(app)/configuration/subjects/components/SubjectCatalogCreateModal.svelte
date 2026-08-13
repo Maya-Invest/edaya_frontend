@@ -53,11 +53,7 @@
 		})),
 	);
 	const colorLabel = $derived(COLOR_LABELS[color]);
-	const canSubmit = $derived(
-		name.trim().length > 0
-		&& gradeLevelId.length > 0
-		&& (academicContext.yearId?.length ?? 0) > 0,
-	);
+	const canSubmit = $derived(name.trim().length > 0 && gradeLevelId.length > 0 && (academicContext.yearId?.length ?? 0) > 0);
 
 	function resetForm() {
 		name = '';

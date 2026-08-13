@@ -163,7 +163,7 @@ async function fetchSupplementalShellForSchool(
 		label: y.name,
 		startDate: typeof y.startDate === 'string' ? y.startDate : String(y.startDate),
 		endDate: typeof y.endDate === 'string' ? y.endDate : String(y.endDate),
-		status: y.status ?? 'draft',
+		status: y.isActive ? 'published' : 'archived',
 	}));
 	const periodDefinitions: PeriodDefinition[] = (periodDefsRaw ?? []).map(def => ({
 		id: def.id,
@@ -284,7 +284,7 @@ export async function fetchAppShellData(
 		label: y.name,
 		startDate: typeof y.startDate === 'string' ? y.startDate : String(y.startDate),
 		endDate: typeof y.endDate === 'string' ? y.endDate : String(y.endDate),
-		status: y.status ?? 'draft',
+		status: y.isActive ? 'published' : 'archived',
 	}));
 
 	const periodDefinitions: PeriodDefinition[] = (periodDefsRaw ?? []).map(def => ({

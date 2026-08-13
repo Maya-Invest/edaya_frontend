@@ -1,3 +1,4 @@
+import type { AcademicModalCatalog } from '../../../../../src/routes/(app)/configuration/academic/lib/academic-modal-surface';
 import { describe, expect, it } from 'bun:test';
 import { emptyAcademicSlice } from '../../../../../src/routes/(app)/configuration/academic/lib/academic-helpers';
 import {
@@ -8,7 +9,6 @@ import {
 	isAcademicModalTargetValid,
 	resolvePeriodDefinitionModalTarget,
 	snapshotAcademicMutationTarget,
-	type AcademicModalCatalog,
 } from '../../../../../src/routes/(app)/configuration/academic/lib/academic-modal-surface';
 
 const modalCatalog: AcademicModalCatalog = {
@@ -60,16 +60,23 @@ describe('academic route helpers', () => {
 			years: [{ id: 'year-1', status: 'published' }],
 			periods: [{ id: 'period-1', status: 'published' }],
 		};
+		const archivedCatalog: AcademicModalCatalog = {
+			...modalCatalog,
+			years: [{ id: 'year-1', status: 'archived' }],
+		};
 		const blockedPublishCatalog: AcademicModalCatalog = {
 			...modalCatalog,
 			years: [
-				{ id: 'year-1', status: 'draft' },
+				{ id: 'year-1', status: 'archived' },
 				{ id: 'year-2', status: 'published' },
 			],
 		};
 
 		expect(isAcademicModalTargetValid('archive-year', 'year-1', modalCatalog)).toBe(false);
+		expect(isAcademicModalTargetValid('archive-year', 'year-1', archivedCatalog)).toBe(false);
 		expect(isAcademicModalTargetValid('archive-year', 'year-1', publishedCatalog)).toBe(true);
+		expect(isAcademicModalTargetValid('publish-year', 'year-1', modalCatalog)).toBe(true);
+		expect(isAcademicModalTargetValid('publish-year', 'year-1', archivedCatalog)).toBe(true);
 		expect(isAcademicModalTargetValid('publish-year', 'year-1', publishedCatalog)).toBe(false);
 		expect(isAcademicModalTargetValid('publish-year', 'year-1', blockedPublishCatalog)).toBe(false);
 		expect(isAcademicModalTargetValid('publish-period', 'period-1', publishedCatalog)).toBe(false);
