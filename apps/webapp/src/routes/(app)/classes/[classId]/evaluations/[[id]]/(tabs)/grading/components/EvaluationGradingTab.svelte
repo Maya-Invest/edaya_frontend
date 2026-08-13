@@ -33,6 +33,18 @@
 	const gradeEntryStudent = $derived(
 		modals.target ? classStudents.find(student => student.id === modals.target) : undefined,
 	);
+	$effect(() => {
+		if (!modals.ready || modals.active !== 'grade-entry') {
+			return;
+		}
+		if (!modals.target) {
+			modals.close();
+			return;
+		}
+		if (gradingTab.slice?.classId === classId && !gradeEntryStudent) {
+			modals.close();
+		}
+	});
 	const gradeEntryScore = $derived(
 		gradeEntryStudent ? evaluationsPage.scoreFor(evaluation.id, gradeEntryStudent.id) : null,
 	);

@@ -7,47 +7,22 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
 	import { Pencil, Plus, ShieldCheck, Trash2 } from '$lib/icons';
-	import { get } from 'svelte/store';
 	import { getStaffPageState } from '../../../../staff-page.svelte';
 
-	let {
+	const {
 		s,
-		editing = $bindable(null),
-		addPermissionOpen = $bindable(false),
+		onCreate,
+		onEdit,
+		onDelete,
 	}: {
 		s: StaffMember;
-		editing?: StaffPermissionAssignmentView | null;
-		addPermissionOpen?: boolean;
+		onCreate: () => void;
+		onEdit: (row: StaffPermissionAssignmentView) => void;
+		onDelete: (row: StaffPermissionAssignmentView) => void;
 	} = $props();
 
 	const staffPage = getStaffPageState();
-	let deleteBusy = $state<string | null>(null);
 	const rows = $derived(staffPage.permissionAssignmentsForStaff(s.id));
-
-	function openCreate() {
-		editing = null;
-		addPermissionOpen = true;
-	}
-
-	function openEdit(row: StaffPermissionAssignmentView) {
-		editing = row;
-		addPermissionOpen = true;
-	}
-
-	async function removeRow(row: StaffPermissionAssignmentView) {
-		if (row.isSynced || deleteBusy) {
-			return;
-		}
-		deleteBusy = row.id;
-		await staffPage.deletePermission({
-			assignmentId: row.id,
-			staffId: s.id,
-			successMessage: get(t)('roles.permissionDeleted', {
-				permission: formatPermissionLabel(row.permission, get(t)),
-			}),
-		});
-		deleteBusy = null;
-	}
 </script>
 
 <div class="space-y-3">
@@ -64,7 +39,7 @@
 					size="sm"
 					class="rounded-full"
 					disabled={disabled}
-					onclick={openCreate}
+					onclick={onCreate}
 				>
 					<Plus class="mr-1.5 h-3.5 w-3.5" />
 					{$t('roles.addPermission')}
@@ -107,9 +82,9 @@
 											variant="ghost"
 											size="icon"
 											class="h-8 w-8 rounded-full"
-											disabled={disabled || deleteBusy === row.id}
+											{disabled}
 											aria-label={$t('roles.editPermission')}
-											onclick={() => openEdit(row)}
+											onclick={() => onEdit(row)}
 										>
 											<Pencil class="h-4 w-4" />
 										</Button>
@@ -117,9 +92,9 @@
 											variant="ghost"
 											size="icon"
 											class="h-8 w-8 rounded-full"
-											disabled={disabled || deleteBusy === row.id}
+											{disabled}
 											aria-label={$t('common.delete')}
-											onclick={() => removeRow(row)}
+											onclick={() => onDelete(row)}
 										>
 											<Trash2 class="h-4 w-4" />
 										</Button>

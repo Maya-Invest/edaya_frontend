@@ -170,7 +170,7 @@ These remain route-local (T3) or legacy until migrated. Follow visual patterns f
 
 | Pattern | Current location | Target |
 |---------|------------------|--------|
-| **Drawer tab navigation** | Legacy `DrawerTabBar` + `createUrlSyncedDrawerTabs` (`?tab=`) | **Nested child routes** under `[[id]]/`; tab bar renders route links. Deprecate `?tab=` for new work. |
+| **Drawer tab navigation** | Feature-local tab bars in routed drawer layouts | **Nested child routes** under `[[id]]/`; tab bars render route links. The callback-based `DrawerTabBar` primitive is removed and must not be restored. |
 | **Entity table / card list** | `ui/ListEntityTable.svelte` + `ui/ListEntityCards.svelte` + route snippets | Built — students list uses both views |
 | **Chip-bar main filter (legacy)** | Some older views in `lib/components/school/` | Migrate to `FilterSelect` + `FilterPanel` when touching the file |
 | **Feature views in lib** | Legacy `lib/components/school/{domain}/` | Colocate under `routes/.../components/` per route-state spec |
@@ -240,6 +240,7 @@ When building or refactoring a screen:
 
 | Date | Change |
 |------|--------|
+| 2026-08-12 | Removed callback-based `DrawerTabBar`; route-link tab bars are the replacement |
 | 2026-07-06 | §4 feature-local patterns; DrawerTabBar / EntityTable guidance; registry cleanup |
 | 2026-07-06 | DrawerActionBar = body footer; PermissionCheckboxGroup scope |
 | 2026-07-03 | Initial registry — T0/T1/T2 tiers, mandatory components |

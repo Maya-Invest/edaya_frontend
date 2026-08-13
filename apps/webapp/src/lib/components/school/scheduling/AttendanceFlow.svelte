@@ -1,5 +1,7 @@
 <script lang="ts">
+	import type { AttendanceStep } from '$lib/scheduling/planning-surface';
 	import type { Student } from '$lib/types/school';
+	import { afterNavigate } from '$app/navigation';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { locale, t } from '$lib/i18n';
 	import { Check, X, Clock, ArrowLeft, RotateCcw } from '$lib/icons';
@@ -9,12 +11,16 @@
 
 	const {
 		open,
+		step,
+		onStepChange,
 		onClose,
 		students,
 		className,
 		classLevel,
 	}: {
 		open: boolean;
+		step: AttendanceStep;
+		onStepChange: (step: AttendanceStep, replace?: boolean) => void;
 		onClose: () => void;
 		students: Student[];
 		className: string;
@@ -61,15 +67,31 @@
 	function setStatus(s: Status) {
 		if (!current)
 			return;
-		marks = { ...marks, [current.id]: s };
-		if (index < total - 1)
+		const nextMarks = { ...marks, [current.id]: s };
+		marks = nextMarks;
+		if (Object.keys(nextMarks).length === total && total > 0) {
+			onStepChange('review');
+		}
+		else if (index < total - 1) {
 			index += 1;
+		}
 	}
 
 	function reset() {
 		marks = {};
 		index = 0;
 	}
+
+	function startOver() {
+		reset();
+		onStepChange('mark');
+	}
+
+	afterNavigate(() => {
+		if (open && step === 'review' && !done) {
+			onStepChange('mark', true);
+		}
+	});
 
 	const statusKeys = ['present', 'absent', 'late'] as const;
 </script>
@@ -124,7 +146,7 @@
 			</div>
 
 			<div class="flex min-h-0 flex-1 flex-col bg-[hsl(220_28%_8%)] px-6 py-6">
-				{#if !done && current}
+				{#if step === 'mark' && current}
 					<div class="flex flex-1 animate-fade-in flex-col items-center justify-center">
 						<div
 							class="w-full rounded-3xl border border-white/5 bg-white/[0.03] px-8 py-10 text-center"
@@ -162,7 +184,7 @@
 					</div>
 				{/if}
 
-				{#if done}
+				{#if step === 'review' && done}
 					<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
 						<div class="shrink-0 text-center">
 							<h3 class="font-display text-2xl font-semibold">{$t('attendance.complete')}</h3>
@@ -237,7 +259,7 @@
 						</ul>
 
 						<Button
-							onclick={reset}
+							onclick={startOver}
 							variant="secondary"
 							class="mt-4 h-11 w-full shrink-0 rounded-full bg-white/5 text-primary-foreground hover:bg-white/10"
 						>
@@ -248,7 +270,7 @@
 				{/if}
 			</div>
 
-			{#if !done && current}
+			{#if step === 'mark' && current}
 				<div
 					class="grid shrink-0 grid-cols-3 gap-2 border-t border-white/5 bg-[hsl(220_28%_8%)] p-4"
 				>

@@ -47,6 +47,8 @@ const REDIRECTS: Record<string, string> = {
 	'/classes/:classId/homework/:id?': '/classes/:classId/evaluations/:id',
 	'/configuration/staff/:id?': '/school/staff/:id?',
 	'/configuration/roles/:role?': '/school/staff/:role? ou /school/staff',
+	'/school/teacher-assignments': '/configuration/tools/teacher-assignments',
+	'/configuration/subjects/level/:level?': '/configuration/subjects?gradeLevel=:level',
 };
 
 const LEGACY_ROUTES = new Set([
@@ -54,6 +56,8 @@ const LEGACY_ROUTES = new Set([
 	'/classes/:classId/homework/:id?',
 	'/configuration/staff/:id?',
 	'/configuration/roles/:role?',
+	'/school/teacher-assignments',
+	'/configuration/subjects/level/:level?',
 ]);
 
 const DESCRIPTIONS: Record<string, string> = {
@@ -74,7 +78,7 @@ const DESCRIPTIONS: Record<string, string> = {
 	'/school/activities': 'Activités parascolaires',
 	'/school/announcements': 'Annonces',
 	'/school/events': 'Incidents discipline',
-	'/school/teacher-assignments': 'Affectations enseignants (placeholder)',
+	'/school/teacher-assignments': 'Compatibilité → hub affectations enseignants',
 	'/finance/fees': 'Configuration des frais',
 	'/finance/billing': 'Facturation — liste',
 	'/finance/billing/:id?': 'Facturation — détail élève',
@@ -84,6 +88,7 @@ const DESCRIPTIONS: Record<string, string> = {
 	'/configuration/grade-levels': 'Niveaux scolaires',
 	'/configuration/classes': 'Groupes-classes',
 	'/configuration/subjects': 'Matières',
+	'/configuration/subjects/level/:level?': 'Compatibilité → filtre matières par niveau',
 	'/configuration/grade-scales': 'Barèmes de notes',
 	'/configuration/report-cards': 'Modèles de bulletins',
 	'/configuration/notifications': 'Templates notifications',

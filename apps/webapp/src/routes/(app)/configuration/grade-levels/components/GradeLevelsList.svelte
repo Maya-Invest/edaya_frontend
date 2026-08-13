@@ -26,9 +26,6 @@
 
 	const gradeLevelsPage = getGradeLevelsPageState();
 
-	let q = $state('');
-	let cycle = $state('all');
-
 	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
 	$effect(() => {
 		modals.hydrate();
@@ -44,10 +41,13 @@
 	const filteredLevels = $derived(
 		sortGradeLevels(academicContext.gradeLevels)
 			.filter((level) => {
-				if (cycle !== 'all' && level.cycle !== cycle) {
+				if (
+					gradeLevelsPage.filters.values.cycle !== 'all'
+					&& level.cycle !== gradeLevelsPage.filters.values.cycle
+				) {
 					return false;
 				}
-				const needle = q.trim().toLowerCase();
+				const needle = gradeLevelsPage.filters.values.q.trim().toLowerCase();
 				if (!needle) {
 					return true;
 				}
@@ -74,11 +74,15 @@
 		title={$t('gradeLevels.title', { n: filteredLevels.length })}
 	>
 		{#snippet search()}
-			<ListSearchField bind:value={q} />
+			<ListSearchField
+				value={gradeLevelsPage.filters.values.q}
+				oninput={event => gradeLevelsPage.filters.setField('q', event.currentTarget.value)}
+			/>
 		{/snippet}
 		{#snippet filters()}
 			<FilterSelect
-				bind:value={cycle}
+				value={gradeLevelsPage.filters.values.cycle}
+				onchange={value => gradeLevelsPage.filters.patchImmediate({ cycle: value })}
 				class="h-9 w-44 rounded-full text-xs"
 				options={cycleOptions}
 			/>

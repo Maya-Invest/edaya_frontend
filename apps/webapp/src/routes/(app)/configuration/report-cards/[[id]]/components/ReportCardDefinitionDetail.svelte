@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ResolvedPathname } from '$app/types';
 	import type { ReportCardDefinition } from '$lib/types/report-cards';
+	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import ReportCardSectionTree from '$lib/components/school/configuration/ReportCardSectionTree.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
@@ -9,6 +10,8 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { formatGrade } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
@@ -18,11 +21,20 @@
 	const { definition }: { definition: ReportCardDefinition } = $props();
 
 	const reportCardsPage = getReportCardsPageState();
+	const modals = createUrlSyncedModals({
+		allowed: ['delete'],
+		getUrl: () => $page.url,
+	});
+	setDrawerUrlModals(modals);
+	$effect(() => {
+		modals.hydrate();
+	});
+	const deleteOpen = bindUrlModal(modals, 'delete');
+
 	const live = $derived(reportCardsPage.selectedDefinition(definition.id) ?? definition);
 	const level = $derived(academicContext.gradeLevelById(live.gradeLevelId));
 	const scale = $derived(reportCardsPage.scales.find(entry => entry.id === live.gradeScaleId));
 
-	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
 
 	async function confirmDelete() {
@@ -37,7 +49,7 @@
 				},
 			});
 			if (ok) {
-				deleteOpen = false;
+				deleteOpen.open = false;
 			}
 		}
 		finally {
@@ -85,7 +97,7 @@
 							destructive
 							{disabled}
 							{title}
-							onclick={() => (deleteOpen = true)}
+							onclick={() => (deleteOpen.open = true)}
 						>
 							{$t('common.delete')}
 						</RowActionMenuItem>
@@ -126,7 +138,7 @@
 </div>
 
 <ConfirmModal
-	bind:open={deleteOpen}
+	bind:open={deleteOpen.open}
 	title={$t('common.deleteConfirmTitle')}
 	description={$t('reportCards.deleteConfirm', { name: live.name })}
 	confirmLabel={$t('common.delete')}

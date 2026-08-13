@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PublishResult } from '$lib/api/mutations/timetable-generation.mutations';
+	import type { TimetablePublishStep } from '../lib/tools-workflow';
 	import type { TimetablePlanningPageState } from '../timetable-planning-page.svelte';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { buildTimetableRangePresets } from '$lib/components/school/scheduling/timetable-generation-ui';
@@ -15,16 +16,19 @@
 		state: planningPage,
 		classGroupId,
 		className,
+		phase,
+		onPhaseChange,
+		onInvalidPhase,
 	}: {
 		open?: boolean;
 		state: TimetablePlanningPageState;
 		classGroupId: string;
 		className: string;
+		phase: TimetablePublishStep;
+		onPhaseChange: (phase: TimetablePublishStep) => void;
+		onInvalidPhase: (phase: TimetablePublishStep) => void;
 	} = $props();
 
-	type Phase = 'setup' | 'result';
-
-	let phase = $state<Phase>('setup');
 	let startDate = $state('');
 	let endDate = $state('');
 	let policy = $state<'fail' | 'skip'>('fail');
@@ -56,11 +60,9 @@
 
 	function handleModalOpenChange(isOpen: boolean) {
 		if (isOpen) {
-			phase = 'setup';
 			initializeForm();
 			return;
 		}
-		phase = 'setup';
 		publishResult = null;
 	}
 
@@ -73,8 +75,14 @@
 			return;
 		}
 		publishResult = result;
-		phase = 'result';
+		onPhaseChange('result');
 	}
+
+	$effect(() => {
+		if (open && phase === 'result' && !publishResult) {
+			onInvalidPhase('setup');
+		}
+	});
 </script>
 
 <FormModal

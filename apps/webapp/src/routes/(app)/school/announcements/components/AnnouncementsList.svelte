@@ -166,7 +166,9 @@
 		{/snippet}
 	</ListPageHeader>
 
-	<AnnouncementFormModal bind:open={createOpen.open} onCreated={handleCreated} />
+	{#if createOpen.open}
+		<AnnouncementFormModal bind:open={createOpen.open} onCreated={handleCreated} />
+	{/if}
 
 	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
 		<div

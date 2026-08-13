@@ -2,18 +2,19 @@
 	import type { NotificationChannel, NotificationTemplateKey } from '$lib/notification-templates/catalog';
 	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
-	import { confirmAction } from '$lib/confirm-action';
 	import { t } from '$lib/i18n';
 	import { Pencil, RotateCcw } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import {
 		channelsForTemplateKey,
 		NOTIFICATION_TEMPLATE_CATEGORIES,
+		NOTIFICATION_TEMPLATE_KEYS,
 	} from '$lib/notification-templates/catalog';
 	import { get } from 'svelte/store';
 	import { getNotificationsPageState } from '../notifications-page.svelte';
@@ -22,33 +23,84 @@
 	const notificationsPage = getNotificationsPageState();
 	const document = $derived(notificationsPage.document);
 
-	const modals = createUrlSyncedModals({ allowed: ['edit'], getUrl: () => $page.url });
+	const modals = createUrlSyncedModals({
+		allowed: ['edit', 'reset-all'],
+		allowedTabs: ['reset-key'],
+		getUrl: () => $page.url,
+	});
 	$effect(() => {
 		modals.hydrate();
 	});
 	const editOpen = bindUrlModal(modals, 'edit');
+	const resetAllOpen = bindUrlModal(modals, 'reset-all');
 
-	let editKey = $state<NotificationTemplateKey | null>(null);
 	let resetting = $state(false);
 
-	function openEdit(key: NotificationTemplateKey) {
-		editKey = key;
-		editOpen.open = true;
+	function isTemplateKey(value: string | null): value is NotificationTemplateKey {
+		return value !== null && NOTIFICATION_TEMPLATE_KEYS.includes(value as NotificationTemplateKey);
 	}
 
-	async function resetAll() {
-		if (resetting || !document?.schoolId) {
+	const editKey = $derived.by((): NotificationTemplateKey | null => {
+		const target = modals.target;
+		return modals.active === 'edit' && document && isTemplateKey(target) ? target : null;
+	});
+	const resetKeyConfirmOpen = $derived(
+		editKey !== null && modals.active === 'edit' && modals.tab === 'reset-key',
+	);
+
+	$effect(() => {
+		if (!modals.ready) {
 			return;
 		}
-		if (!confirmAction(get(t)('notificationTemplates.resetAllConfirm'))) {
+		if (modals.active === 'reset-all') {
+			if (modals.target !== null || modals.tab !== null) {
+				modals.open('reset-all');
+			}
+			return;
+		}
+		if (modals.active === 'edit' && !editKey) {
+			modals.close();
+		}
+	});
+
+	function openEdit(key: NotificationTemplateKey) {
+		modals.open('edit', { target: key });
+	}
+
+	async function confirmResetAll() {
+		if (resetting || !document?.schoolId) {
 			return;
 		}
 
 		resetting = true;
 		try {
-			await notificationsPage.resetTemplates({
+			const result = await notificationsPage.resetTemplates({
 				successMessage: get(t)('notificationTemplates.toastResetAll'),
 			});
+			if (result) {
+				resetAllOpen.open = false;
+			}
+		}
+		finally {
+			resetting = false;
+		}
+	}
+
+	async function confirmResetKey() {
+		const target = editKey;
+		if (resetting || !target || !document?.schoolId) {
+			return;
+		}
+
+		resetting = true;
+		try {
+			const result = await notificationsPage.resetTemplates({
+				templateKey: target,
+				successMessage: get(t)('notificationTemplates.toastResetKey'),
+			});
+			if (result) {
+				modals.close();
+			}
 		}
 		finally {
 			resetting = false;
@@ -75,7 +127,7 @@
 						variant="outline"
 						class="rounded-full"
 						disabled={disabled || resetting || !document}
-						onclick={resetAll}
+						onclick={() => modals.open('reset-all')}
 					>
 						<RotateCcw class="mr-1 h-4 w-4" />
 						{$t('notificationTemplates.resetAll')}
@@ -135,4 +187,37 @@
 	</PermissionGate>
 </div>
 
-<NotificationTemplateEditModal bind:open={editOpen.open} templateKey={editKey} />
+{#if editKey}
+	{#key editKey}
+		<NotificationTemplateEditModal
+			bind:open={editOpen.open}
+			templateKey={editKey}
+			onReset={() => modals.setTab('reset-key')}
+		/>
+	{/key}
+{/if}
+
+<ConfirmModal
+	bind:open={resetAllOpen.open}
+	title={$t('notificationTemplates.resetAll')}
+	description={$t('notificationTemplates.resetAllConfirm')}
+	confirmLabel={$t('notificationTemplates.resetAll')}
+	cancelLabel={$t('common.cancel')}
+	busy={resetting}
+	onConfirm={confirmResetAll}
+/>
+
+<ConfirmModal
+	open={resetKeyConfirmOpen}
+	title={editKey ? $t(`notificationTemplates.keys.${editKey}`) : ''}
+	description={$t('notificationTemplates.resetKeyConfirm')}
+	confirmLabel={$t('notificationTemplates.resetKey')}
+	cancelLabel={$t('common.cancel')}
+	busy={resetting}
+	onOpenChange={(open) => {
+		if (!open && modals.active === 'edit') {
+			modals.setTab(null);
+		}
+	}}
+	onConfirm={confirmResetKey}
+/>

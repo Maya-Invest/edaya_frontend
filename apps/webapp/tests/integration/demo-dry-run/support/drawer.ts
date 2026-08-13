@@ -1,5 +1,6 @@
+import type { DrawerTabKey } from './constants';
 import type { DemoContext } from './types';
-import { DRAWER_TAB_LABELS, type DrawerTabKey } from './constants';
+import { DRAWER_TAB_LABELS } from './constants';
 import { drawerTabFromPathname, normalizeIntegrationPathname } from './paths';
 
 /** Active drawer tab from the URL path segment. */
@@ -28,7 +29,7 @@ export async function waitForDrawerAside(ctx: DemoContext, timeoutMs = 30_000) {
 	return drawer.waitFor({ state: 'visible', timeout: timeoutMs }).then(() => drawer).catch(() => null);
 }
 
-export async function waitForDrawerTabBar(ctx: DemoContext, timeoutMs = 30_000) {
+export async function waitForDrawerTabLinks(ctx: DemoContext, timeoutMs = 30_000) {
 	const drawer = await waitForDrawerAside(ctx, timeoutMs);
 	if (!drawer) {
 		return null;
@@ -53,7 +54,7 @@ export async function clickDrawerTab(ctx: DemoContext, tabKey: DrawerTabKey): Pr
 	if (!label) {
 		throw new Error(`Unknown drawer tab key: ${tabKey}`);
 	}
-	if (!(await waitForDrawerTabBar(ctx))) {
+	if (!(await waitForDrawerTabLinks(ctx))) {
 		return false;
 	}
 	const testBar = ctx.page.getByTestId('drawer-tab-bar');

@@ -138,8 +138,6 @@ export const detailHref = {
 		id: string,
 		tab: ConfigSubjectTabSegment = 'progression',
 	): ResolvedPathname => appPath(CONFIG_SUBJECT_TAB_ROUTES[tab], { id }),
-	configSubjectLevel: (label: string): ResolvedPathname =>
-		appPath('/(app)/configuration/subjects/level/[[level]]', { level: label }),
 	configStaffGuardian: (id: string): ResolvedPathname => appPath('/(app)/school/staff/[[id]]/(tabs)/profile', { id }),
 	configStaffMember: (id: string): ResolvedPathname => appPath('/(app)/school/staff/[[id]]/(tabs)/profile', { id }),
 	schoolStaffTab: (id: string, tab: SchoolStaffTabSegment = 'profile'): ResolvedPathname =>

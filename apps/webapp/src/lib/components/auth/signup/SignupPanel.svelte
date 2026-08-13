@@ -16,15 +16,22 @@
 		email?: string;
 		apiConnected: boolean;
 		onSwitchToSignIn: (email: string) => void;
+		stage?: 'form' | 'verification';
+		onStageChange?: (stage: 'form' | 'verification') => void;
 	}
 
-	let { email = $bindable(''), apiConnected, onSwitchToSignIn }: Props = $props();
+	let {
+		email = $bindable(''),
+		apiConnected,
+		onSwitchToSignIn,
+		stage = 'form',
+		onStageChange,
+	}: Props = $props();
 
 	let name = $state('');
 	let password = $state('');
 	let confirmPassword = $state('');
 	let busy = $state(false);
-	let verificationSent = $state(false);
 	/** Sync re-entry guard — reactive `busy` alone can miss double-submit before DOM disables. */
 	let submitting = false;
 
@@ -49,7 +56,7 @@
 
 		submitting = true;
 		busy = true;
-		verificationSent = false;
+		onStageChange?.('form');
 
 		try {
 			const normalizedEmail = email.trim();
@@ -77,7 +84,7 @@
 				return;
 			}
 
-			verificationSent = true;
+			onStageChange?.('verification');
 			toast.success($t('auth.signUpVerificationSent'));
 		}
 		catch (err: unknown) {
@@ -91,13 +98,13 @@
 	}
 
 	function resetVerificationState() {
-		verificationSent = false;
+		onStageChange?.('form');
 		password = '';
 		confirmPassword = '';
 	}
 </script>
 
-{#if verificationSent}
+{#if stage === 'verification'}
 	<div class="space-y-3 rounded-xl bg-primary-foreground/10 p-4 text-primary-foreground">
 		<div class="flex items-start gap-3">
 			<Mail class="mt-0.5 h-5 w-5 shrink-0" />

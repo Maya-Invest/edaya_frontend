@@ -1,7 +1,9 @@
 <script lang="ts">
 	import type { ListEntityTableColumn } from '$lib/list/list-entity-table-types';
+	import type { ListCardColumns, ListView } from '$lib/list/list-view-url';
 	import type { Activity } from '$lib/types/school';
 	import type { ActivitySortColumn } from '../lib/activity-list-filters';
+	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { fmtActivityDate } from '$lib/components/school/shared/drawer-constants';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -16,6 +18,13 @@
 	import { t } from '$lib/i18n';
 	import { CalendarRange, Plus, Users } from '$lib/icons';
 	import { loadCardColumnsPreference, saveCardColumnsPreference } from '$lib/list/list-card-columns-preference';
+	import {
+		isListCardColumns,
+		readListCardColumns,
+		readListView,
+		writeListCardColumns,
+		writeListView,
+	} from '$lib/list/list-view-url';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
@@ -34,12 +43,30 @@
 	} = $props();
 
 	const activitiesPage = getActivitiesPageState();
-	let view = $state<'table' | 'cards'>('table');
-	let cardColumns = $state(loadCardColumnsPreference('school-activities-card-columns', 3));
+	const view = $derived(readListView($page.url));
+	const storedCardColumns = loadCardColumnsPreference('school-activities-card-columns', 3);
+	const defaultCardColumns: ListCardColumns = isListCardColumns(storedCardColumns)
+		? storedCardColumns
+		: 3;
+	const cardColumns = $derived(readListCardColumns($page.url, defaultCardColumns));
 
 	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
 	$effect(() => {
 		modals.hydrate();
+	});
+	afterNavigate(() => {
+		const viewHref = writeListView($page.url, view);
+		const canonicalHref = writeListCardColumns(
+			new URL(viewHref, $page.url),
+			cardColumns,
+		);
+		if (canonicalHref !== `${$page.url.pathname}${$page.url.search}`) {
+			void appGoto(canonicalHref, {
+				replaceState: true,
+				keepFocus: true,
+				noScroll: true,
+			});
+		}
 	});
 	const createOpen = bindUrlModal(modals, 'create');
 
@@ -108,8 +135,23 @@
 	]);
 
 	function setCardColumns(next: number) {
-		cardColumns = next;
+		if (!isListCardColumns(next)) {
+			return;
+		}
 		saveCardColumnsPreference('school-activities-card-columns', next);
+		void appGoto(writeListCardColumns($page.url, next), {
+			replaceState: true,
+			keepFocus: true,
+			noScroll: true,
+		});
+	}
+
+	function setView(next: ListView) {
+		void appGoto(writeListView($page.url, next), {
+			replaceState: true,
+			keepFocus: true,
+			noScroll: true,
+		});
 	}
 
 	function applyCategoryFilter(value: string) {
@@ -168,7 +210,7 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu {view} onViewChange={value => (view = value)} exportLabel={$t('list.export')} />
+			<ListMoreMenu {view} onViewChange={setView} exportLabel={$t('list.export')} />
 		{/snippet}
 	</ListPageHeader>
 

@@ -8,17 +8,21 @@
 		activeMethod: LoginMethodId;
 		email: string;
 		apiConnected: boolean;
+		stage?: 'form' | 'code';
 		onMethodChange: (method: LoginMethodId) => void;
+		onStageChange?: (stage: 'form' | 'code') => void;
 	}
 
-	let { activeMethod, email = $bindable(''), apiConnected, onMethodChange }: Props = $props();
-
-	let emailOtpPanel = $state<LoginEmailOtpPanel | undefined>();
+	let {
+		activeMethod,
+		email = $bindable(''),
+		apiConnected,
+		stage = 'form',
+		onMethodChange,
+		onStageChange,
+	}: Props = $props();
 
 	function handleMethodChange(method: LoginMethodId) {
-		if (method !== 'email-otp') {
-			emailOtpPanel?.reset();
-		}
 		onMethodChange(method);
 	}
 </script>
@@ -28,7 +32,12 @@
 {#if activeMethod === 'password'}
 	<LoginPasswordPanel bind:email {apiConnected} />
 {:else if activeMethod === 'email-otp'}
-	<LoginEmailOtpPanel bind:this={emailOtpPanel} bind:email {apiConnected} />
+	<LoginEmailOtpPanel
+		bind:email
+		{apiConnected}
+		{stage}
+		{onStageChange}
+	/>
 {/if}
 
 <!-- Future sign-in methods (OAuth, magic link, etc.) plug in here. -->

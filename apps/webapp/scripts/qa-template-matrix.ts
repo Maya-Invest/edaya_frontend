@@ -150,6 +150,9 @@ export const QA_TEMPLATE_MATRIX: QaTemplateRow[] = [
 	...rows('École', `${B}/school/teachers/[id]/profile`, ['Éditer profil']),
 	...rows('École', `${B}/school/teachers/[id]/assignments`, ['CRUD affectations matière/classe']),
 	...rows('École', `${B}/school/teachers/[id]/availability`, ['CRUD indisponibilités']),
+	...rows('École', `${B}/school/teacher-assignments`, [
+		'Redirect vers /configuration/tools/teacher-assignments',
+	]),
 
 	...rows('École', `${B}/school/calendar`, [
 		'Liste événements',
@@ -287,7 +290,9 @@ export const QA_TEMPLATE_MATRIX: QaTemplateRow[] = [
 	]),
 	...rows('Configuration', `${B}/configuration/subjects/[id]/progression`, ['Chapitres CRUD']),
 	...rows('Configuration', `${B}/configuration/subjects/[id]/logbook`, ['Logbook (si applicable)']),
-	...rows('Configuration', `${B}/configuration/subjects/level/[level]`, ['Vue matières par niveau']),
+	...rows('Configuration', `${B}/configuration/subjects/level/[level]`, [
+		'Redirect vers /configuration/subjects?gradeLevel=[id]',
+	]),
 	...rows('Configuration', `${B}/configuration/grade-scales`, [
 		'Liste barèmes',
 		'CRUD barème',

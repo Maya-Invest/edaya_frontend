@@ -1,15 +1,16 @@
 <script lang="ts">
 	import type { SubjectMatterDrawerRow } from '$lib/api/mutations/subject-matter.mutations';
 	import type { Subject } from '$lib/types/school';
+	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { deleteSubjectMatterMutation } from '$lib/api/mutations/subject-matter.mutations';
 	import ClassSubjectTimetableSection from '$lib/components/school/academics/ClassSubjectTimetableSection.svelte';
 	import SubjectMatterFormModal from '$lib/components/school/academics/SubjectMatterFormModal.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import DeleteEntityButton from '$lib/components/ui/DeleteEntityButton.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import { t } from '$lib/i18n';
-	import { Plus } from '$lib/icons';
+	import { Plus, Trash2 } from '$lib/icons';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
@@ -17,7 +18,7 @@
 	import { getSubjectsPageState } from '../../../../subjects-page.svelte';
 	import { getSubjectProgressionTabState } from '../subject-progression-tab.svelte';
 
-	type SubjectDrawerModal = 'add-chapter' | 'edit-chapter';
+	type SubjectDrawerModal = 'add-chapter' | 'edit-chapter' | 'delete-chapter';
 
 	const { subject }: { subject: Subject } = $props();
 
@@ -30,21 +31,47 @@
 	const chaptersData = $derived(chapterProgressFromEntries(entries));
 
 	const modals = createUrlSyncedModals<SubjectDrawerModal>({
-		allowed: ['add-chapter', 'edit-chapter'],
+		allowed: ['add-chapter', 'edit-chapter', 'delete-chapter'],
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
-	$effect(() => {
+	afterNavigate(() => {
 		modals.hydrate();
+		validateModalTarget();
 	});
 	const addChapterOpen = bindUrlModal(modals, 'add-chapter');
 	const editChapterOpen = bindUrlModal(modals, 'edit-chapter');
+	const deleteChapterOpen = bindUrlModal(modals, 'delete-chapter');
 
-	let editingMatter = $state<SubjectMatterDrawerRow | null>(null);
+	let deleteBusy = $state(false);
 
-	function openEditChapter(row: SubjectMatterDrawerRow) {
-		editingMatter = row;
-		modals.open('edit-chapter');
+	const editingMatter = $derived(
+		modals.isOpen('edit-chapter') && modals.target
+			? matterRows.find(row => row.id === modals.target) ?? null
+			: null,
+	);
+	const deletingMatter = $derived(
+		modals.isOpen('delete-chapter') && modals.target
+			? matterRows.find(row => row.id === modals.target) ?? null
+			: null,
+	);
+
+	function validateModalTarget() {
+		if (!modals.ready || progressionTab.slice?.subjectKey !== subject.id || !modals.active) {
+			return;
+		}
+		if (modals.active === 'add-chapter') {
+			if (modals.target !== null) {
+				modals.open('add-chapter');
+			}
+			return;
+		}
+		if (
+			(modals.active === 'edit-chapter' && !editingMatter)
+			|| (modals.active === 'delete-chapter' && !deletingMatter)
+		) {
+			modals.close();
+		}
 	}
 
 	function handleMatterSaved(row: SubjectMatterDrawerRow) {
@@ -60,6 +87,22 @@
 			progressionTab.removeRow(row.id);
 		}
 		return ok;
+	}
+
+	async function confirmDeleteChapter() {
+		if (!deletingMatter || deleteBusy) {
+			return;
+		}
+		deleteBusy = true;
+		try {
+			const ok = await removeChapter(deletingMatter);
+			if (ok) {
+				modals.close();
+			}
+		}
+		finally {
+			deleteBusy = false;
+		}
 	}
 </script>
 
@@ -88,14 +131,23 @@
 						{/if}
 					</div>
 					<div class="flex shrink-0 items-center gap-1">
-						<Button variant="ghost" size="sm" class="h-8 rounded-full" onclick={() => openEditChapter(row)}>
+						<Button
+							variant="ghost"
+							size="sm"
+							class="h-8 rounded-full"
+							onclick={() => modals.open('edit-chapter', { target: row.id })}
+						>
 							{$t('common.edit')}
 						</Button>
-						<DeleteEntityButton
-							confirmTitle={$t('common.deleteConfirmTitle')}
-							confirmDescription={$t('subjects.chapters.deleteConfirm', { name: row.name })}
-							onConfirm={() => removeChapter(row)}
-						/>
+						<Button
+							variant="outline"
+							size="sm"
+							class="rounded-full text-destructive hover:text-destructive"
+							onclick={() => modals.open('delete-chapter', { target: row.id })}
+						>
+							<Trash2 class="mr-1 h-3.5 w-3.5" />
+							{$t('common.delete')}
+						</Button>
 					</div>
 				</div>
 			</div>
@@ -157,3 +209,15 @@
 		onSaved={handleMatterSaved}
 	/>
 {/if}
+
+<ConfirmModal
+	bind:open={deleteChapterOpen.open}
+	title={$t('common.deleteConfirmTitle')}
+	description={deletingMatter
+		? $t('subjects.chapters.deleteConfirm', { name: deletingMatter.name })
+		: undefined}
+	confirmLabel={$t('common.delete')}
+	cancelLabel={$t('common.cancel')}
+	busy={deleteBusy}
+	onConfirm={confirmDeleteChapter}
+/>

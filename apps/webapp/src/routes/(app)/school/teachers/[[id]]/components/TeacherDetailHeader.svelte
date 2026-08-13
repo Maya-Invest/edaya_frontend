@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Teacher } from '$lib/types/school';
+	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
@@ -23,14 +24,23 @@
 
 	const teachersPage = getTeachersPageState();
 
-	const modals = createUrlSyncedModals({ allowed: ['edit-profile'], getUrl: () => $page.url });
+	const modals = createUrlSyncedModals({
+		allowed: [
+			'edit-profile',
+			'delete',
+			'add-unavailability',
+			'edit-unavailability',
+			'delete-unavailability',
+		],
+		getUrl: () => $page.url,
+	});
 	setDrawerUrlModals(modals);
-	$effect(() => {
+	afterNavigate(() => {
 		modals.hydrate();
 	});
 	const editProfileOpen = bindUrlModal(modals, 'edit-profile');
+	const deleteOpen = bindUrlModal(modals, 'delete');
 
-	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
 
 	async function confirmDelete() {
@@ -40,7 +50,7 @@
 				successMessage: get(t)('teacher.toastDeleted', { name: teacher.name }),
 			});
 			if (ok) {
-				deleteOpen = false;
+				deleteOpen.open = false;
 				onDeleted?.();
 			}
 		}
@@ -76,7 +86,7 @@
 					{disabled}
 					{title}
 					destructive
-					onclick={() => (deleteOpen = true)}
+					onclick={() => (deleteOpen.open = true)}
 				>
 					{$t('common.delete')}
 				</RowActionMenuItem>
@@ -86,7 +96,7 @@
 </DrawerEntityHeader>
 
 <ConfirmModal
-	bind:open={deleteOpen}
+	bind:open={deleteOpen.open}
 	title={$t('teacher.deleteTitle', { name: teacher.name })}
 	description={$t('teacher.deleteDescription')}
 	confirmLabel={$t('common.delete')}

@@ -6,7 +6,6 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { listRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
-	import { readClassGroupListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
@@ -16,6 +15,7 @@
 		setClassesPageState,
 	} from './classes-page.svelte';
 	import ClassGroupsList from './components/ClassGroupsList.svelte';
+	import { readClassGroupsListFilters } from './lib/class-groups-list-filters';
 
 	const { children: pageChildren }: { children: Snippet } = $props();
 
@@ -26,7 +26,7 @@
 
 	const selectedId = $derived(classesPage.selectedId);
 	const query = classesPage.queryListPage();
-	const urlFilters = $derived(readClassGroupListFilters($page.url));
+	const urlFilters = $derived(readClassGroupsListFilters($page.url));
 
 	$effect(() => {
 		classesPage.filters.hydrate(urlFilters);

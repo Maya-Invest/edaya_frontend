@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { PlanningEvent } from '$lib/types/school';
 	import type { SessionAttendanceStatus } from '$lib/types/session-detail';
-	import { page } from '$app/stores';
 	import PlanningSessionAttendanceModal from '$lib/components/school/scheduling/PlanningSessionAttendanceModal.svelte';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -9,8 +8,8 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
 	import { Check, ClipboardCheck } from '$lib/icons';
-	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
-	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
+	import { getPlanningState } from '$lib/scheduling/planning-state.svelte';
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
@@ -19,6 +18,7 @@
 	const { s }: { s: PlanningEvent } = $props();
 
 	const attendanceTab = getSessionAttendanceTabState();
+	const planning = getPlanningState();
 	const isLesson = $derived(s.kind === 'lesson');
 	const attendanceRows = $derived(attendanceTab.attendanceFor(s.id));
 	const recordedCount = $derived(attendanceRows.filter(row => row.status).length);
@@ -26,16 +26,7 @@
 
 	let bulkBusy = $state(false);
 
-	type SessionDrawerModal = 'session-attendance';
-
-	const modals = createUrlSyncedModals<SessionDrawerModal>({
-		allowed: ['session-attendance'],
-		getUrl: () => $page.url,
-	});
-	setDrawerUrlModals(modals);
-	$effect(() => {
-		modals.hydrate();
-	});
+	const modals = planning.modals;
 	const sessionAttendanceOpen = bindUrlModal(modals, 'session-attendance');
 
 	const attendanceTargetRow = $derived(

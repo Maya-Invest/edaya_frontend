@@ -3,7 +3,6 @@
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
-	import { confirmAction } from '$lib/confirm-action';
 	import { t } from '$lib/i18n';
 	import {
 		channelsForTemplateKey,
@@ -12,27 +11,41 @@
 	} from '$lib/notification-templates/catalog';
 	import { renderTemplatePreview } from '$lib/notification-templates/render-preview';
 	import { cn } from '$lib/utils';
+	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getNotificationsPageState } from '../notifications-page.svelte';
 
 	let {
 		open = $bindable(false),
 		templateKey,
+		onReset,
 	}: {
 		open?: boolean;
 		templateKey: NotificationTemplateKey | null;
+		onReset?: () => void;
 	} = $props();
 
 	const notificationsPage = getNotificationsPageState();
 	const document = $derived(notificationsPage.document);
 
+	function readEntry(key: NotificationTemplateKey) {
+		const templates = document?.templates as Record<string, {
+			email?: { subject?: string; body?: string };
+			in_app?: { subject?: string; body?: string };
+		}> | undefined;
+		return templates?.[key];
+	}
+
+	const initialTemplateKey = untrack(() => templateKey);
+	const initialEntry = initialTemplateKey ? readEntry(initialTemplateKey) : undefined;
 	let busy = $state(false);
-	let channel = $state<NotificationChannel>('email');
-	let emailSubject = $state('');
-	let emailBody = $state('');
-	let inAppSubject = $state('');
-	let inAppBody = $state('');
-	let hydratedKey = $state<NotificationTemplateKey | null>(null);
+	let channel = $state<NotificationChannel>(
+		initialTemplateKey ? channelsForTemplateKey(initialTemplateKey)[0] ?? 'email' : 'email',
+	);
+	let emailSubject = $state(initialEntry?.email?.subject ?? '');
+	let emailBody = $state(initialEntry?.email?.body ?? '');
+	let inAppSubject = $state(initialEntry?.in_app?.subject ?? '');
+	let inAppBody = $state(initialEntry?.in_app?.body ?? '');
 
 	const channels = $derived.by((): NotificationChannel[] =>
 		templateKey ? channelsForTemplateKey(templateKey) : ['email'],
@@ -53,36 +66,6 @@
 			return false;
 		}
 		return channel === 'email' ? emailBody.trim().length > 0 : inAppBody.trim().length > 0;
-	});
-
-	function readEntry(key: NotificationTemplateKey) {
-		const templates = document?.templates as Record<string, {
-			email?: { subject?: string; body?: string };
-			in_app?: { subject?: string; body?: string };
-		}> | undefined;
-		return templates?.[key];
-	}
-
-	function hydrateForm() {
-		if (!templateKey || !document) {
-			return;
-		}
-		const entry = readEntry(templateKey);
-		emailSubject = entry?.email?.subject ?? '';
-		emailBody = entry?.email?.body ?? '';
-		inAppSubject = entry?.in_app?.subject ?? '';
-		inAppBody = entry?.in_app?.body ?? '';
-		channel = channels[0] ?? 'email';
-		hydratedKey = templateKey;
-	}
-
-	$effect(() => {
-		if (!open || !templateKey) {
-			return;
-		}
-		if (templateKey !== hydratedKey) {
-			hydrateForm();
-		}
 	});
 
 	async function submit() {
@@ -123,28 +106,6 @@
 		}
 	}
 
-	async function resetKey() {
-		if (busy || !templateKey || !document?.schoolId) {
-			return;
-		}
-		if (!confirmAction(get(t)('notificationTemplates.resetKeyConfirm'))) {
-			return;
-		}
-
-		busy = true;
-		try {
-			const result = await notificationsPage.resetTemplates({
-				templateKey,
-				successMessage: get(t)('notificationTemplates.toastResetKey'),
-			});
-			if (result) {
-				open = false;
-			}
-		}
-		finally {
-			busy = false;
-		}
-	}
 </script>
 
 <FormModal
@@ -225,8 +186,8 @@
 				<button
 					type="button"
 					class="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-					onclick={resetKey}
-					disabled={busy}
+					onclick={onReset}
+					disabled={busy || !onReset}
 				>
 					{$t('notificationTemplates.resetKey')}
 				</button>

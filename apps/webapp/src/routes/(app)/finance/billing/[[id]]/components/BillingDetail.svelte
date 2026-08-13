@@ -28,14 +28,17 @@
 	const pct = $derived((live.paid / live.total) * 100);
 	const canRecordPayment = $derived(remaining > 0 && live.status !== 'paid');
 
-	const modals = createUrlSyncedModals({ allowed: ['payment'], getUrl: () => $page.url });
+	const modals = createUrlSyncedModals({
+		allowed: ['payment', 'delete'],
+		getUrl: () => $page.url,
+	});
 	setDrawerUrlModals(modals);
 	$effect(() => {
 		modals.hydrate();
 	});
 	const paymentOpen = bindUrlModal(modals, 'payment');
+	const deleteOpen = bindUrlModal(modals, 'delete');
 
-	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
 
 	async function cancelFee() {
@@ -97,7 +100,7 @@
 				studentFeeId: live.id,
 				successMessage: get(t)('finance.toastBillingDeleted'),
 				onSuccess: () => {
-					deleteOpen = false;
+					deleteOpen.open = false;
 					appGoto(appPath('/(app)/finance/billing/[[id]]'));
 				},
 			});
@@ -168,7 +171,7 @@
 							destructive
 							{disabled}
 							{title}
-							onclick={() => (deleteOpen = true)}
+							onclick={() => (deleteOpen.open = true)}
 						>
 							<Trash2 class="h-4 w-4" />
 							{$t('common.delete')}
@@ -261,7 +264,7 @@
 	/>
 
 	<ConfirmModal
-		bind:open={deleteOpen}
+		bind:open={deleteOpen.open}
 		title={$t('common.deleteConfirmTitle')}
 		description={$t('finance.deleteBillingConfirm', { name: student.name })}
 		confirmLabel={$t('common.delete')}

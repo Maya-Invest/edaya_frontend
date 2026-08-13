@@ -24,9 +24,6 @@
 	});
 	const createOpen = bindUrlModal(modals, 'create');
 
-	let searchQuery = $state('');
-	let classFilter = $state('');
-	let teacherFilter = $state('');
 	let deleteBusy = $state<string | null>(null);
 
 	const teacherNameById = $derived(
@@ -42,19 +39,20 @@
 	);
 
 	const rows = $derived.by(() => {
-		const q = searchQuery.trim().toLowerCase();
+		const filters = hubPage.filters.values;
+		const q = filters.q.trim().toLowerCase();
 		return hubPage.assignments
 			.filter((row) => {
-				if (classFilter) {
+				if (filters.class !== 'all') {
 					const subjectClassId = row.classSubjectId
 						? hubPage.classSubjects.find(entry => entry.id === row.classSubjectId)?.classId
 						: undefined;
 					const rowClassId = subjectClassId ?? row.classGroupId;
-					if (rowClassId !== classFilter) {
+					if (rowClassId !== filters.class) {
 						return false;
 					}
 				}
-				if (teacherFilter && row.teacherId !== teacherFilter) {
+				if (filters.teacher !== 'all' && row.teacherId !== filters.teacher) {
 					return false;
 				}
 				if (!q) {
@@ -149,17 +147,23 @@
 
 	<div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
 		<div class="min-w-[12rem] flex-1">
-			<ListSearchField bind:value={searchQuery} placeholder={$t('tools.teacherAssignments.search')} />
+			<ListSearchField
+				value={hubPage.filters.values.q}
+				placeholder={$t('tools.teacherAssignments.search')}
+				oninput={event => hubPage.filters.setField('q', event.currentTarget.value)}
+			/>
 		</div>
 		<FilterSelect
-			bind:value={classFilter}
+			value={hubPage.filters.values.class}
+			onchange={value => hubPage.filters.patchImmediate({ class: value })}
 			class="w-full sm:w-44"
-			options={[{ value: '', label: $t('tools.teacherAssignments.filterAllClasses') }, ...classOptions]}
+			options={[{ value: 'all', label: $t('tools.teacherAssignments.filterAllClasses') }, ...classOptions]}
 		/>
 		<FilterSelect
-			bind:value={teacherFilter}
+			value={hubPage.filters.values.teacher}
+			onchange={value => hubPage.filters.patchImmediate({ teacher: value })}
 			class="w-full sm:w-52"
-			options={[{ value: '', label: $t('tools.teacherAssignments.filterAllTeachers') }, ...teacherOptions]}
+			options={[{ value: 'all', label: $t('tools.teacherAssignments.filterAllTeachers') }, ...teacherOptions]}
 		/>
 	</div>
 

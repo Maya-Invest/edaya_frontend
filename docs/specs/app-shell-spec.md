@@ -239,6 +239,8 @@ Canonical example: **Student 360** — entity header (photo, class, Change class
 - Open: click row/card in list → navigate to `…/[id]` (or `…/[id]/{tab}`) → drawer syncs from URL (complex entities only)
 - Tab switch: navigate to child route under `…/[id]/{tab}` — each tab route loads its own data via `PageQuery`
 - Close: Close button or backdrop → navigate back to list URL (strip `[id]` and tab segments)
+- Close must not push a second list entry. Use Back when the drawer was opened from that list in the
+  current history chain; otherwise replace to the canonical list URL.
 - Drawer overlays the list; list remains visible underneath (desktop)
 
 ### 3.4 Edit affordances in the drawer
@@ -364,6 +366,13 @@ All mutations use modal dialogs — **centered overlay on desktop**; **full-scre
 - Toast on success and on server error
 - On success: close modal, patch route state optimistically, bump every affected entity-family version for cross-route sync, and refresh active tab query if server returns derived data
 - Do not navigate away from the current list+detail URL
+- The active modal/form/confirmation is URL-backed with `?modal=…`; add `modalTarget` when the
+  pathname does not identify the record.
+- Multi-step flows expose stable `modalStep` and substantive internal panels expose `modalTab`.
+- Opening a modal pushes a history entry. Back closes an in-session modal; direct-link/reload close
+  replaces to the canonical parent URL.
+- The URL identifies the surface, target, and safe workflow step — never credentials, OTPs,
+  uploaded payloads, or unsaved field values.
 - Focus trap; Escape closes; return focus to trigger on close
 
 ### 5.3 Decision matrix

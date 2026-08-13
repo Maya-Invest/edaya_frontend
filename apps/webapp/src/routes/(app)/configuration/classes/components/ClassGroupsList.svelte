@@ -27,8 +27,6 @@
 
 	const classesPage = getClassesPageState();
 
-	let gradeLevelFilter = $state('all');
-
 	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
 	$effect(() => {
 		modals.hydrate();
@@ -47,7 +45,10 @@
 			.map(group => ({
 				...group,
 				classes: group.classes.filter((cls) => {
-					if (gradeLevelFilter !== 'all' && cls.gradeLevelId !== gradeLevelFilter) {
+					if (
+						classesPage.filters.values.gradeLevel !== 'all'
+						&& cls.gradeLevelId !== classesPage.filters.values.gradeLevel
+					) {
 						return false;
 					}
 					if (!needle) {
@@ -67,19 +68,9 @@
 		filteredHierarchy.reduce((acc, group) => acc + group.classes.length, 0),
 	);
 
-	const gradeLevelFilterActive = $derived(gradeLevelFilter !== 'all' ? 1 : 0);
-
-	$effect(() => {
-		if (!classesPage.filters.ready) {
-			return;
-		}
-		void classesPage.filters.values.q;
-		classesPage.filters.scheduleSync();
-	});
-
-	$effect(() => {
-		void gradeLevelFilter;
-	});
+	const gradeLevelFilterActive = $derived(
+		classesPage.filters.values.gradeLevel !== 'all' ? 1 : 0,
+	);
 </script>
 
 <div class="animate-fade-in">
@@ -89,14 +80,15 @@
 	>
 		{#snippet search()}
 			<ListSearchField
-				bind:value={classesPage.filters.values.q}
-				oninput={() => classesPage.filters.scheduleSync()}
+				value={classesPage.filters.values.q}
+				oninput={event => classesPage.filters.setField('q', event.currentTarget.value)}
 			/>
 		{/snippet}
 		{#snippet filters()}
 			<FilterPanel activeCount={gradeLevelFilterActive} title={$t('gradeLevels.subtitle')}>
 				<FilterSelect
-					bind:value={gradeLevelFilter}
+					value={classesPage.filters.values.gradeLevel}
+					onchange={value => classesPage.filters.patchImmediate({ gradeLevel: value })}
 					class="h-9 w-full rounded-md text-xs"
 					options={gradeLevelOptions}
 				/>

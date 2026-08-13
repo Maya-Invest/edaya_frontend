@@ -4,9 +4,15 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { refreshAppShellData } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
+import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
+import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
 import { gradeLevelIdFromUrl } from './lib/grade-levels-helpers';
+import {
+	readGradeLevelsListFilters,
+	writeGradeLevelsListFilters,
+} from './lib/grade-levels-list-filters';
 import { loadGradeLevelsSlice, queryGradeLevelsListPage } from './lib/grade-levels-queries';
 import { runGradeLevelsRouteMutation } from './lib/grade-levels-route-mutation';
 
@@ -35,9 +41,20 @@ function nextGradeLevelId(name: string): string {
 export class GradeLevelsPageState {
 	slice = $state<GradeLevelsPageSlice | null>(null);
 
+	readonly filters: ListFiltersState<{ q: string; cycle: string }>;
+
 	private readonly versions = new RouteVersionSnapshot(GRADE_LEVELS_VERSION_FAMILIES);
 
-	constructor(private readonly getUrl: () => URL) {}
+	constructor(private readonly getUrl: () => URL) {
+		this.filters = new ListFiltersState(
+			{
+				getUrl,
+				write: writeGradeLevelsListFilters,
+				goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+			},
+			() => readGradeLevelsListFilters(getUrl()),
+		);
+	}
 
 	applySlice(data: GradeLevelsPageSlice) {
 		this.slice = data;

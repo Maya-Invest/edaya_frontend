@@ -60,17 +60,25 @@
 		},
 	};
 
-	const modals = createUrlSyncedModals({ allowed: ['create', 'edit'], getUrl: () => $page.url });
+	const modals = createUrlSyncedModals({
+		allowed: ['create', 'edit', 'delete'],
+		getUrl: () => $page.url,
+	});
 	$effect(() => {
 		modals.hydrate();
 	});
 	const createOpen = bindUrlModal(modals, 'create');
 	const editOpen = bindUrlModal(modals, 'edit');
+	const deleteOpen = bindUrlModal(modals, 'delete');
 
-	let editingEvent = $state<SchoolYearEvent | null>(null);
-	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
-	let deleteTarget = $state<SchoolYearEvent | null>(null);
+
+	const editingEvent = $derived(
+		modals.active === 'edit' && modals.target ? calendarPage.findEvent(modals.target) ?? null : null,
+	);
+	const deleteTarget = $derived(
+		modals.active === 'delete' && modals.target ? calendarPage.findEvent(modals.target) ?? null : null,
+	);
 
 	const typeFilterKeys = ['all', 'holiday', 'vacation', 'closure', 'ceremony'] as const;
 	type TypeFilter = (typeof typeFilterKeys)[number];
@@ -137,28 +145,44 @@
 		})),
 	);
 
+	$effect(() => {
+		if (!modals.ready) {
+			return;
+		}
+		if (modals.active === 'create') {
+			if (modals.target !== null) {
+				modals.open('create');
+			}
+			return;
+		}
+		if (
+			(modals.active === 'edit' && !editingEvent)
+			|| (modals.active === 'delete' && !deleteTarget)
+		) {
+			modals.close();
+		}
+	});
+
 	function openEdit(event: SchoolYearEvent) {
-		editingEvent = event;
-		editOpen.open = true;
+		modals.open('edit', { target: event.id });
 	}
 
 	function openDelete(event: SchoolYearEvent) {
-		deleteTarget = event;
-		deleteOpen = true;
+		modals.open('delete', { target: event.id });
 	}
 
 	async function confirmDelete() {
-		if (!deleteTarget) {
+		const target = deleteTarget;
+		if (!target) {
 			return;
 		}
 		deleteBusy = true;
 		try {
-			const ok = await deleteCalendarEventOnPage(calendarPage, deleteTarget, {
-				successMessage: get(t)('cal.toastDeleted', { title: deleteTarget.title }),
+			const ok = await deleteCalendarEventOnPage(calendarPage, target, {
+				successMessage: get(t)('cal.toastDeleted', { title: target.title }),
 			});
 			if (ok) {
-				deleteOpen = false;
-				deleteTarget = null;
+				deleteOpen.open = false;
 			}
 		}
 		finally {
@@ -209,7 +233,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen.open = true)}
+						onclick={() => modals.open('create')}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('calendar.newEvent')}
@@ -230,7 +254,7 @@
 	/>
 
 	<ConfirmModal
-		bind:open={deleteOpen}
+		bind:open={deleteOpen.open}
 		title={$t('common.deleteConfirmTitle')}
 		description={$t('cal.deleteConfirm', { title: deleteTarget?.title ?? '' })}
 		confirmLabel={$t('common.delete')}

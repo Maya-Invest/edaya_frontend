@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { AssessmentKind, Evaluation } from '$lib/types/school';
+	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
@@ -14,8 +15,10 @@
 	import { CalendarDays, Clock, Eye, Pencil, Plus } from '$lib/icons';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readClassEvaluationListFilters, writeClassEvaluationListFilters } from '$lib/list/list-url-filters';
-	import { appendModal } from '$lib/modal/modal-url';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { appendModal, writeModalSurface } from '$lib/modal/modal-url';
 	import { appGoto } from '$lib/navigation/app-navigation';
+	import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
 	import { cn } from '$lib/utils';
 	import { getEvaluationsPageState } from '../evaluations-page.svelte';
 	import EvaluationCreateModal from './EvaluationCreateModal.svelte';
@@ -34,7 +37,20 @@
 	const evaluationsPage = getEvaluationsPageState();
 	const evaluations = $derived(evaluationsPage.evaluationsFor(classId));
 	const initialFilters = $derived(readClassEvaluationListFilters($page.url));
-	let createOpen = $state(false);
+	type EvaluationRouteModal = 'create' | 'edit' | 'delete' | 'attach' | 'grade-entry';
+	const modals = createUrlSyncedModals<EvaluationRouteModal>({
+		allowed: () => $page.params.id
+			? ['edit', 'delete', 'attach', 'grade-entry']
+			: ['create'],
+		getUrl: () => $page.url,
+	});
+	afterNavigate(() => {
+		modals.hydrate();
+		if (modals.active && modals.active !== 'grade-entry' && modals.target) {
+			replaceRouteSurface(writeModalSurface($page.url, { modal: modals.active }));
+		}
+	});
+	const createOpen = bindUrlModal(modals, 'create');
 
 	const listFilters = new ListFiltersState<{ kind: string }>(
 		{
@@ -150,7 +166,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen = true)}
+						onclick={() => modals.open('create')}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('eval.newEvaluation')}
@@ -160,7 +176,7 @@
 		{/snippet}
 	</ListPageHeader>
 
-	<EvaluationCreateModal {classId} bind:open={createOpen} onCreated={handleCreated} />
+	<EvaluationCreateModal {classId} bind:open={createOpen.open} onCreated={handleCreated} />
 
 	<div class="space-y-3">
 		{#each filtered as evaluation (evaluation.id)}

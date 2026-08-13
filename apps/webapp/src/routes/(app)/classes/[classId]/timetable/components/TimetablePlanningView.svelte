@@ -21,9 +21,10 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { locale, t } from '$lib/i18n';
 	import { ChevronLeft, ChevronRight, Plus, Search } from '$lib/icons';
+	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
-	import { canEditTimetable } from '$lib/permissions';
-	import { PlanningState, setPlanningState } from '$lib/scheduling/planning-state.svelte';
+	import { canEditTimetable, hasPermission } from '$lib/permissions';
+	import { getPlanningState } from '$lib/scheduling/planning-state.svelte';
 	import { cn } from '$lib/utils';
 
 	const {
@@ -56,14 +57,16 @@
 	const classes = $derived(academicContext.classes);
 	const students = $derived(routeStudents);
 
-	const planning = new PlanningState(() => $page.url);
-	setPlanningState(planning);
+	const planning = getPlanningState();
+	const newSessionOpen = bindUrlModal(planning.modals, 'new-session');
+	const scheduleCreateOpen = bindUrlModal(planning.modals, 'create-schedule');
 
 	const weekStart = $derived(planning.weekStart);
 	const weekRange = $derived(formatPlanningWeekRange(weekStart, $locale));
 	const viewingCurrentWeek = $derived(planning.viewingCurrentWeek());
 
 	const editable = $derived(canEditTimetable({ classId }));
+	const canRecordAttendance = $derived(hasPermission('ATTENDANCE_RECORD', { classId }));
 
 	const filteredEvents = $derived(planning.filterEvents(events));
 	const weekEvents = $derived(
@@ -71,12 +74,13 @@
 	);
 	const planningOverlaps = $derived(detectPlanningOverlaps(weekEvents));
 
+	const attendanceSession = $derived(planning.attendanceSession(events));
 	const attendanceClass = $derived(
-		planning.attendanceSession ? classes.find(c => c.id === planning.attendanceSession!.classId) : null,
+		attendanceSession ? classes.find(c => c.id === attendanceSession.classId) : null,
 	);
 	const attendanceStudents = $derived(
-		planning.attendanceSession
-			? students.filter(s => s.classId === planning.attendanceSession!.classId)
+		attendanceSession
+			? students.filter(s => s.classId === attendanceSession.classId)
 			: [],
 	);
 
@@ -87,10 +91,6 @@
 		}
 		planning.navigateWeek(parseWeekAnchor(value));
 	}
-
-	$effect(() => {
-		planning.hydrateFromUrl($page.url);
-	});
 
 	let lastAppliedFocusDate = $state('');
 
@@ -135,31 +135,38 @@
 		{#snippet primary()}
 			<PermissionGate
 				permission="TIMETABLE_UPDATE"
+				{classId}
 				mode="disable"
 				tooltip={$t('calendar.permissionUpdate')}
 			>
 				{#snippet children({ disabled, title })}
 					<div class="flex flex-wrap items-center gap-2">
-						<NewSessionWizard
-							{classId}
-							{weekStart}
-							{subjects}
-							{activities}
-							bind:open={planning.wizardOpen}
-							{disabled}
-							{title}
-							onCreated={async (sessionId) => {
-								await onRefresh?.();
-								appGoto(detailHref.classPlanning(classId, sessionId));
-							}}
-						/>
+						{#key newSessionOpen.open}
+							<NewSessionWizard
+								{classId}
+								{weekStart}
+								{subjects}
+								{activities}
+								bind:open={newSessionOpen.open}
+								step={planning.newSessionStep}
+								onOpen={() => planning.openNewSession()}
+								onStepChange={(step, replace) =>
+									replace ? planning.replaceStep(step) : planning.setStep(step)}
+								{disabled}
+								{title}
+								onCreated={async (sessionId) => {
+									await onRefresh?.();
+									appGoto(detailHref.classPlanning(classId, sessionId));
+								}}
+							/>
+						{/key}
 						<Button
 							size="sm"
 							variant="outline"
 							class="rounded-full"
 							{disabled}
 							{title}
-							onclick={() => planning.openScheduleCreate('lesson')}
+							onclick={() => planning.openScheduleCreate()}
 						>
 							<Plus class="mr-1 h-4 w-4" />
 							{$t('planning.newSchedule')}
@@ -243,7 +250,15 @@
 		</div>
 	{/if}
 
-	<ScheduleFormModal {classId} {weekStart} {subjects} {activities} defaultScheduleKind={planning.scheduleCreateKind} bind:open={planning.scheduleCreateOpen} onSaved={onRefresh} />
+	<ScheduleFormModal
+		{classId}
+		{weekStart}
+		{subjects}
+		{activities}
+		defaultScheduleKind="lesson"
+		bind:open={scheduleCreateOpen.open}
+		onSaved={onRefresh}
+	/>
 
 	<div class={cn(expandCalendar && 'min-h-0 flex-1')}>
 		<ClassTimetableCalendar
@@ -255,18 +270,28 @@
 			{weekStart}
 			{editable}
 			{onSelect}
-			onAttendance={planning.openAttendance}
+			onAttendance={canRecordAttendance ? planning.openAttendance : undefined}
+			rescheduleOpen={planning.modals.isOpen('reschedule')}
+			rescheduleTarget={planning.modals.target}
+			onRescheduleRequest={eventId => planning.openReschedule(eventId)}
+			onInvalidReschedule={() => planning.closeInvalidSurface()}
+			onRescheduleClose={() => planning.modals.close()}
 			onChanged={onRefresh}
 		/>
 	</div>
 
-	{#if planning.attendanceSession && attendanceClass}
-		<AttendanceFlow
-			open={true}
-			onClose={() => (planning.attendanceSession = null)}
-			students={attendanceStudents}
-			className="{attendanceClass.name} · {planning.attendanceSession.subject}"
-			classLevel="{$t(`day.${planning.attendanceSession.day}`)} {planning.attendanceSession.start}–{planning.attendanceSession.end}"
-		/>
+	{#if attendanceSession && attendanceClass}
+		{#key attendanceSession.id}
+			<AttendanceFlow
+				open={true}
+				step={planning.attendanceStep}
+				onStepChange={(step, replace) =>
+					replace ? planning.replaceStep(step) : planning.setStep(step)}
+				onClose={() => planning.modals.close()}
+				students={attendanceStudents}
+				className="{attendanceClass.name} · {attendanceSession.subject}"
+				classLevel="{$t(`day.${attendanceSession.day}`)} {attendanceSession.start}–{attendanceSession.end}"
+			/>
+		{/key}
 	{/if}
 </div>

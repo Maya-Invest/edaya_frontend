@@ -16,14 +16,17 @@
 
 	const gradeLevelsPage = getGradeLevelsPageState();
 
-	const modals = createUrlSyncedModals({ allowed: ['edit'], getUrl: () => $page.url });
+	const modals = createUrlSyncedModals({
+		allowed: ['edit', 'delete'],
+		getUrl: () => $page.url,
+	});
 	setDrawerUrlModals(modals);
 	$effect(() => {
 		modals.hydrate();
 	});
 	const editOpen = bindUrlModal(modals, 'edit');
+	const deleteOpen = bindUrlModal(modals, 'delete');
 
-	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
 
 	const live = $derived(
@@ -40,7 +43,7 @@
 				successMessage: get(t)('gradeLevels.toastDeleted', { name: live.name }),
 			});
 			if (ok) {
-				deleteOpen = false;
+				deleteOpen.open = false;
 			}
 		}
 		finally {
@@ -76,7 +79,7 @@
 						class="inline-flex h-9 items-center rounded-full border border-destructive/30 bg-background px-4 text-sm font-medium text-destructive transition hover:bg-destructive/10 disabled:opacity-50"
 						disabled={disabled || !canDelete}
 						title={canDelete ? title : $t('gradeLevels.deleteBlockedClasses')}
-						onclick={() => (deleteOpen = true)}
+						onclick={() => (deleteOpen.open = true)}
 					>
 						{$t('common.delete')}
 					</button>
@@ -107,7 +110,7 @@
 <GradeLevelFormModal bind:open={editOpen.open} gradeLevel={live} />
 
 <ConfirmModal
-	bind:open={deleteOpen}
+	bind:open={deleteOpen.open}
 	title={$t('common.deleteConfirmTitle')}
 	description={$t('gradeLevels.deleteConfirm', { name: live.name })}
 	confirmLabel={$t('common.delete')}

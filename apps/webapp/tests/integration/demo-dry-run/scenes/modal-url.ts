@@ -20,7 +20,7 @@ import { visit } from '../support/visit';
 /** URL-backed modals: deep links, open sync, close strips ?modal=. */
 export async function runModalUrlChecks(ctx: DemoContext): Promise<void> {
 	const scene = 'DM';
-	const { base, reporter, shot } = ctx;
+	const { base, page, reporter, shot } = ctx;
 
 	if (await visit(ctx, `${base}/school/students?modal=create`, scene, '1 Students create deep-link', {
 		pathPrefix: '/school/students',
@@ -40,12 +40,57 @@ export async function runModalUrlChecks(ctx: DemoContext): Promise<void> {
 			reporter.log(scene, '3 Students URL modal=create', 'fail', `modal=${urlModalParam(ctx) ?? 'none'}`);
 		}
 
+		await page.reload();
+		if (await waitForFormModal(ctx) && await waitForUrlModal(ctx, 'create')) {
+			reporter.log(scene, '3a Students modal survives reload', 'pass');
+		}
+		else {
+			reporter.log(scene, '3a Students modal survives reload', 'fail', page.url());
+		}
+
 		if (await closeFormModal(ctx) && await waitForUrlModal(ctx, null, { absent: true })) {
 			reporter.log(scene, '4 Students close strips modal param', 'pass');
 		}
 		else {
 			reporter.log(scene, '4 Students close strips modal param', 'fail', `modal=${urlModalParam(ctx) ?? 'none'}`);
 			await shot('DM-4-students-close');
+		}
+
+		const createButton = page.getByRole('button', {
+			name: /new student|nouvel élève|ajouter.*élève/i,
+		}).first();
+		if (await createButton.isVisible({ timeout: 5_000 }).catch(() => false)) {
+			await createButton.click();
+			if (await waitForFormModal(ctx) && await waitForUrlModal(ctx, 'create')) {
+				reporter.log(scene, '4a Students UI open pushes modal URL', 'pass');
+				await page.goBack();
+				const backClosed = await page
+					.getByTestId('form-modal')
+					.waitFor({ state: 'hidden', timeout: 8_000 })
+					.then(() => true)
+					.catch(() => false);
+				if (backClosed && await waitForUrlModal(ctx, null, { absent: true })) {
+					reporter.log(scene, '4b Browser Back closes modal', 'pass');
+				}
+				else {
+					reporter.log(scene, '4b Browser Back closes modal', 'fail', page.url());
+				}
+
+				await page.goForward();
+				if (await waitForFormModal(ctx) && await waitForUrlModal(ctx, 'create')) {
+					reporter.log(scene, '4c Browser Forward restores modal', 'pass');
+					await closeFormModal(ctx);
+				}
+				else {
+					reporter.log(scene, '4c Browser Forward restores modal', 'fail', page.url());
+				}
+			}
+			else {
+				reporter.log(scene, '4a Students UI open pushes modal URL', 'fail', page.url());
+			}
+		}
+		else {
+			reporter.log(scene, '4a Students UI open pushes modal URL', 'skip', 'Create permission unavailable');
 		}
 	}
 
@@ -133,11 +178,23 @@ export async function runModalUrlChecks(ctx: DemoContext): Promise<void> {
 	if (await visit(ctx, `${base}${schoolStaffPath(STAFF_ID, 'permissions')}?modal=add-permission`, scene, '19 Staff add-permission deep-link', {
 		pathPrefix: schoolStaffPath(STAFF_ID, 'permissions'),
 	})) {
-		if (await waitForDrawerAside(ctx) && await waitForFormModal(ctx) && await waitForUrlModal(ctx, 'add-permission')) {
+		const addPermissionAction = page.getByRole('button', {
+			name: /add permission|ajouter une permission/i,
+		}).first();
+		const actionVisible = await addPermissionAction.isVisible({ timeout: 5_000 }).catch(() => false);
+		if (!actionVisible) {
+			reporter.log(scene, '20 Staff URL modal=add-permission', 'fail', 'ACCESS_CONTROL_ASSIGN action not found');
+			await shot('DM-20-staff-permission-action');
+		}
+		else if (!(await addPermissionAction.isEnabled().catch(() => false))) {
+			reporter.log(scene, '20 Staff URL modal=add-permission', 'skip', 'ACCESS_CONTROL_ASSIGN unavailable');
+		}
+		else if (await waitForDrawerAside(ctx) && await waitForFormModal(ctx) && await waitForUrlModal(ctx, 'add-permission')) {
 			reporter.log(scene, '20 Staff URL modal=add-permission', 'pass');
 		}
 		else {
-			reporter.log(scene, '20 Staff URL modal=add-permission', 'skip', 'Permissions tab or ACCESS_CONTROL_ASSIGN');
+			reporter.log(scene, '20 Staff URL modal=add-permission', 'fail', `modal=${urlModalParam(ctx) ?? 'none'}`);
+			await shot('DM-20-staff-permission-modal');
 		}
 	}
 }

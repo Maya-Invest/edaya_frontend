@@ -1,5 +1,10 @@
 <script lang="ts">
 	import type { InvitationPreview } from '$lib/api/invitation-data';
+	import type {
+		InvitationAuthMode,
+		InvitationAuthStage,
+	} from './invitation-auth-url';
+	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { acceptInvitation, fetchInvitationPreview } from '$lib/api/invitation-data';
 	import { isExistingAccountAuthError } from '$lib/auth/auth-errors';
@@ -22,6 +27,11 @@
 	import { toast } from '$lib/toast.svelte';
 	import { ApiError } from '@maya-invest/edaya-api-client';
 	import { get } from 'svelte/store';
+	import {
+		canonicalInvitationAuthUrlState,
+		readInvitationAuthUrlState,
+		writeInvitationAuthUrlState,
+	} from './invitation-auth-url';
 
 	function sessionBlocksInvitationAccept(
 		preview: InvitationPreview,
@@ -60,12 +70,15 @@
 	let pageState = $state<PageState>('loading');
 	let acceptedIssue = $state<AcceptedIssue>('none');
 	let acceptedCompletionAttempted = $state(false);
-	let authMode = $state<'signUp' | 'signIn'>('signUp');
 	let email = $state('');
 	let password = $state('');
 	let name = $state('');
 	let busy = $state(false);
-	let verificationSent = $state(false);
+	const authUrlState = $derived(readInvitationAuthUrlState($page.url));
+	const authMode = $derived(authUrlState.mode);
+	const verificationSent = $derived(
+		authUrlState.stage === 'verification' && email.trim().length > 0,
+	);
 
 	const actorKindLabel = $derived.by(() => {
 		if (preview?.kind === 'staff') {
@@ -102,19 +115,52 @@
 	const invitedEmail = $derived(preview?.contactEmail?.trim() ?? '');
 	const useSignIn = $derived(preview?.authAccountExists === true || authMode === 'signIn');
 
-	$effect(() => {
-		if (pageState !== 'ready' || !preview) {
+	function setInvitationAuthState(
+		patch: Partial<{ mode: InvitationAuthMode; stage: InvitationAuthStage }>,
+		options: { replaceState?: boolean } = {},
+	) {
+		const href = writeInvitationAuthUrlState($page.url, { ...authUrlState, ...patch });
+		if (href === `${$page.url.pathname}${$page.url.search}`) {
 			return;
 		}
+		void appGoto(href, {
+			keepFocus: true,
+			noScroll: true,
+			replaceState: options.replaceState,
+		});
+	}
 
-		if (invitedEmail && !email.trim()) {
-			email = invitedEmail;
+	function prepareReadyInvitation(result: InvitationPreview) {
+		const restoredEmail = result.contactEmail?.trim() ?? '';
+		if (restoredEmail && !email.trim()) {
+			email = restoredEmail;
 		}
-		if (preview.inviteeName && !name.trim()) {
-			name = preview.inviteeName;
+		if (result.inviteeName && !name.trim()) {
+			name = result.inviteeName;
 		}
-		if (preview.authAccountExists) {
-			authMode = 'signIn';
+
+		const nextAuthState = canonicalInvitationAuthUrlState(
+			result.authAccountExists
+				? { mode: 'signIn', stage: 'form' }
+				: authUrlState,
+			{ hasEmailIdentity: email.trim().length > 0 },
+		);
+		if (
+			nextAuthState.mode !== authUrlState.mode
+			|| nextAuthState.stage !== authUrlState.stage
+		) {
+			setInvitationAuthState(nextAuthState, { replaceState: true });
+		}
+	}
+
+	afterNavigate(() => {
+		const canonicalHref = writeInvitationAuthUrlState($page.url, authUrlState);
+		if (canonicalHref !== `${$page.url.pathname}${$page.url.search}`) {
+			void appGoto(canonicalHref, {
+				replaceState: true,
+				keepFocus: true,
+				noScroll: true,
+			});
 		}
 	});
 
@@ -210,6 +256,7 @@
 					pageState = 'invalid';
 					return;
 				}
+				prepareReadyInvitation(result);
 				pageState = 'ready';
 			}
 			catch (err) {
@@ -235,7 +282,9 @@
 	}
 
 	async function authenticate(): Promise<boolean> {
-		verificationSent = false;
+		if (verificationSent) {
+			setInvitationAuthState({ stage: 'form' }, { replaceState: true });
+		}
 		if (!useSignIn) {
 			const { error } = await authClient.signUp.email({
 				email: email.trim(),
@@ -247,7 +296,7 @@
 				const racedAuthUser = await getAuthenticatedAuthUser();
 				if (!racedAuthUser) {
 					if (isExistingAccountAuthError(error)) {
-						authMode = 'signIn';
+						setInvitationAuthState({ mode: 'signIn', stage: 'form' });
 						const signedIn = await signInWithEmail();
 						if (!signedIn) {
 							toast.error($t('invitation.accept.accountExistsSignIn'));
@@ -268,7 +317,7 @@
 		const authUser = await getAuthenticatedAuthUser();
 		if (!authUser) {
 			if (!useSignIn) {
-				verificationSent = true;
+				setInvitationAuthState({ stage: 'verification' });
 				toast.success($t('auth.signUpVerificationSent'));
 				return false;
 			}
@@ -465,8 +514,7 @@
 									variant="outline"
 									class="w-full"
 									onclick={() => {
-										verificationSent = false;
-										authMode = 'signIn';
+										setInvitationAuthState({ mode: 'signIn', stage: 'form' });
 									}}
 								>
 									{$t('auth.switchToSignIn')}
@@ -485,7 +533,7 @@
 										type="button"
 										size="sm"
 										variant={authMode === 'signUp' ? 'default' : 'outline'}
-										onclick={() => (authMode = 'signUp')}
+										onclick={() => setInvitationAuthState({ mode: 'signUp', stage: 'form' })}
 									>
 										{$t('invitation.accept.signUp')}
 									</Button>
@@ -493,7 +541,7 @@
 										type="button"
 										size="sm"
 										variant={authMode === 'signIn' ? 'default' : 'outline'}
-										onclick={() => (authMode = 'signIn')}
+										onclick={() => setInvitationAuthState({ mode: 'signIn', stage: 'form' })}
 									>
 										{$t('invitation.accept.signIn')}
 									</Button>
