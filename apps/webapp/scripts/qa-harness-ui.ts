@@ -430,6 +430,27 @@ export async function fillStudentCreateDialog(
 	await submit.click();
 }
 
+/** Staff / teacher / guardian create modals — first+last name, skip invite email. */
+export async function fillPersonCreateDialog(
+	page: Page,
+	options: { firstName?: string; lastName?: string } = {},
+): Promise<void> {
+	const dialog = page.getByRole('dialog');
+	await dialog.locator('input').nth(0).fill(options.firstName ?? 'E2E');
+	await dialog.locator('input').nth(1).fill(options.lastName ?? `Person${Date.now()}`);
+
+	const invite = dialog.locator('#staff-send-invite, #teacher-send-invite, #guardian-send-invite, [id$="-send-invite"]');
+	const count = await invite.count();
+	for (let i = 0; i < count; i++) {
+		const box = invite.nth(i);
+		if (await box.isVisible().catch(() => false) && await box.isChecked().catch(() => false)) {
+			await box.click();
+		}
+	}
+
+	await submitDialog(page);
+}
+
 async function expandYearSection(yearSection: Locator): Promise<void> {
 	const section = yearSection.first();
 	const body = section.locator(':scope > div.border-t');

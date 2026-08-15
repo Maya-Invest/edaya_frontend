@@ -8,6 +8,7 @@
  * Env: WEBAPP_URL, QA_LOGIN_EMAIL, QA_LOGIN_PASSWORD
  * Provisioned runs (canonical integration contract): INTEGRATION_PROVISIONED=1
  *   → bun run test:integration:provisioned
+ *   UI journey records matrix rows as it goes; leftover unclaimed rows still run.
  * Demo smoke (local only): bun run qa:matrix
  * Always excluded (manual): Auth, Onboarding, Outils & imports, /login, /configuration/tools
  */
@@ -28,8 +29,9 @@ import { waitForAppShell, mergeEntities } from './qa-matrix-support';
 import { discoverEntities, emptyEntities, runMatrixScenario } from './qa-matrix-scenarios';
 import type { MatrixResult } from './qa-matrix-support';
 import type { ProvisionedTenant } from '../tests/integration/support/api-provision';
-import { loadSetupEntities, runWebTenantSetup } from '../tests/integration/setup/web-tenant-setup';
-import { STUDENT_SETUP_BLOCKER, studentSetupBlockerReport } from '../tests/integration/setup/setup-blockers';
+import { loadSetupEntities } from '../tests/integration/setup/web-tenant-setup';
+import { runUiJourney } from '../tests/integration/setup/ui-flow-runner';
+import { studentSetupBlockerReport } from '../tests/integration/setup/setup-blockers';
 import {
 	INTEGRATION_POLICY,
 	countByActionType,
@@ -256,36 +258,38 @@ async function main(): Promise<void> {
 	}
 
 	if (isProvisionedRun()) {
-		const setup = await runWebTenantSetup(ctx);
-		const setupEntities = { ...setup.entities, ...(await loadSetupEntities()) };
+		console.log('\n--- UI journey ---');
+		const journey = await runUiJourney(ctx, appRows, record);
+		const setupEntities = { ...journey.entities, ...(await loadSetupEntities()) };
 		Object.assign(entities, setupEntities);
 		entities.onboarded = true;
-		if (setup.steps.some(s => s.blocked)) {
+		if (journey.steps.some(s => s.blocked)) {
 			entities.studentSetupBlocked = true;
 		}
-		const criticalFailed = setup.steps.filter(
-			s => ['academic-year', 'class', 'student'].includes(s.step) && !s.ok,
-		);
-		if (criticalFailed.length > 0) {
-			console.error(`Setup fail-fast: ${criticalFailed.map(s => s.step).join(', ')}`);
+		if (!journey.structureOk) {
+			console.error('Journey fail-fast: school structure incomplete');
 		}
 	}
-
-	console.log('\n--- Découverte entités ---');
-	const discovered = await discoverEntities(ctx);
-	Object.assign(entities, mergeEntities(discovered, entities));
+	else {
+		console.log('\n--- Découverte entités ---');
+		const discovered = await discoverEntities(ctx);
+		Object.assign(entities, mergeEntities(discovered, entities));
+	}
 	console.log(
 		`IDs: class=${entities.classId ?? '-'} student=${entities.studentId ?? '-'} eval=${entities.evaluationId ?? '-'}`,
 	);
 
-	console.log('\n--- Phase Application ---');
+	console.log('\n--- Phase Application (unclaimed rows) ---');
 	let prevModule = '';
 	for (const row of appRows) {
+		if (isProvisionedRun() && results.some(r =>
+			r.module === row.module && r.endpoint === row.endpoint && r.action === row.action
+		)) {
+			continue;
+		}
 		if (prevModule === 'Shell' && row.module !== 'Shell') {
 			console.log('--- Re-login après tests Shell ---');
 			await qaSignIn(ctx, credentials);
-			const rediscovered = await discoverEntities(ctx);
-			Object.assign(entities, mergeEntities(rediscovered, entities));
 		}
 		record(await runMatrixScenario(row, ctx, browser, entities));
 		prevModule = row.module;
@@ -328,7 +332,7 @@ async function persistAndExit(
 		total: results.length,
 		excludedModules: excluded.length > 0 ? excluded : undefined,
 		provisioningMode: isProvisionedRun() ? PROVISIONING_MODE : undefined,
-		setupPhase: isProvisionedRun() ? 'web-configuration-and-entities' : undefined,
+		setupPhase: isProvisionedRun() ? 'ui-journey-then-unclaimed-matrix' : undefined,
 		policy: isProvisionedRun() ? INTEGRATION_POLICY : undefined,
 		apiCreates: isProvisionedRun() ? ['user', 'school'] : undefined,
 		apiFlags: isProvisionedRun() ? ['wizardCompleted'] : undefined,
@@ -346,7 +350,7 @@ async function persistAndExit(
 		await writeFile(INTEGRATION_SUMMARY_PATH, JSON.stringify({
 			generatedAt: summary.generatedAt,
 			provisioningMode: PROVISIONING_MODE,
-			setupPhase: 'web-configuration-and-entities',
+			setupPhase: 'ui-journey-then-unclaimed-matrix',
 			policy: INTEGRATION_POLICY,
 			apiCreates: ['user', 'school'],
 			apiFlags: ['wizardCompleted'],

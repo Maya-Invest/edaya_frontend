@@ -2,8 +2,8 @@
 /**
  * Full provisioned integration pipeline:
  *   1. API provision (user + school + wizard flag)
- *   2. Playwright web setup (academic structure + entities via UI)
- *   3. Playwright qa-matrix (Auth, Onboarding, tools excluded — manual)
+ *   2. Playwright UI journey (structure → configuration → people → school → teaching → class/finance)
+ *   3. Unclaimed QA matrix rows (journey already recorded coverage)
  *   4. Summary report in .integration-run/summary.json
  *
  * Policy: on NOT OK — log blockers, do not edit src/. See integration-report.ts.
@@ -134,7 +134,7 @@ async function main(): Promise<void> {
 	const summary = {
 		generatedAt: new Date().toISOString(),
 		provisioningMode: PROVISIONING_MODE,
-		setupPhase: 'web-configuration-and-entities',
+		setupPhase: 'ui-journey-then-unclaimed-matrix',
 		policy: INTEGRATION_POLICY,
 		apiCreates: ['user', 'school'],
 		apiFlags: ['wizardCompleted'],

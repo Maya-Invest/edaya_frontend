@@ -24,3 +24,7 @@ vite.config.ts.timestamp-*
 .demo-dry-run
 .integration-run
 .qa-matrix-run
+
+# Windows device name accidentally created by shell redirects (e.g. bun > NUL)
+/NUL
+NUL
