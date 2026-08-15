@@ -7,10 +7,10 @@ import type { QaTemplateRow } from './qa-template-matrix';
 import {
 	assertListContains,
 	listSearchInput,
-	selectListFilter,
 	waitForPageQuery,
+	waitForResolvedAcademicYearId,
 } from './qa-harness-ui';
-import type { MatrixEntities, MatrixResult } from './qa-matrix-support';
+import { waitForAppShell, type MatrixEntities, type MatrixResult } from './qa-matrix-support';
 import { filterFixturesReady } from '../tests/integration/setup/filter-setup';
 
 type FilterRunner = (
@@ -40,6 +40,13 @@ function matrixPath(endpoint: string): string {
 	return endpoint.replace(/^https?:\/\/[^/]+/i, '').split('?')[0] ?? endpoint;
 }
 
+async function gotoFiltered(page: Page, ctx: DemoContext, path: string): Promise<void> {
+	await page.goto(`${ctx.base}${path}`, { waitUntil: 'domcontentloaded' });
+	await waitForAppShell(page);
+	await waitForResolvedAcademicYearId(page).catch(() => {});
+	await waitForPageQuery(page);
+}
+
 async function assertSearch(page: Page, token: string): Promise<boolean> {
 	const search = listSearchInput(page);
 	if (!(await search.isVisible({ timeout: 6_000 }).catch(() => false))) {
@@ -64,13 +71,19 @@ const FILTER_RUNNERS: Array<{
 				return na(row, 'Setup filter-students incomplete');
 			}
 			for (const status of ['active', 'inactive', 'archived'] as const) {
-				await page.goto(`${ctx.base}/school/students?status=${status}`, { waitUntil: 'domcontentloaded' });
-				await waitForPageQuery(page);
 				const fixture = entities.filterFixtures.studentsByStatus?.[status];
 				if (!fixture) {
 					return na(row, `Setup missing studentsByStatus.${status}`);
 				}
-				const visible = await assertListContains(page, fixture.lastName, true);
+				const classQuery = entities.classId ? `&class=${entities.classId}` : '';
+				await gotoFiltered(page, ctx, `/school/students?status=${status}${classQuery}`);
+				const search = listSearchInput(page);
+				if (await search.isVisible({ timeout: 4_000 }).catch(() => false)) {
+					await search.fill(fixture.lastName);
+					await page.waitForTimeout(800);
+					await waitForPageQuery(page);
+				}
+				const visible = await assertListContains(page, fixture.lastName, true, 20_000);
 				if (!visible) {
 					return notOk(row, `${status} filter missing ${fixture.lastName}`);
 				}
@@ -88,13 +101,18 @@ const FILTER_RUNNERS: Array<{
 			if (!filterFixturesReady(entities.filterFixtures, 'studentsByClass')) {
 				return na(row, 'Setup filter-students incomplete (studentsByClass)');
 			}
-			await page.goto(`${ctx.base}/school/students?classGroupId=${entities.classId}`, { waitUntil: 'domcontentloaded' });
-			await waitForPageQuery(page);
 			const fixture = entities.filterFixtures.studentsByClass?.[entities.classId];
 			if (!fixture) {
 				return na(row, `No studentsByClass fixture for ${entities.classId}`);
 			}
-			if (!(await assertListContains(page, fixture.lastName, true))) {
+			await gotoFiltered(page, ctx, `/school/students?class=${entities.classId}`);
+			const search = listSearchInput(page);
+			if (await search.isVisible({ timeout: 4_000 }).catch(() => false)) {
+				await search.fill(fixture.lastName);
+				await page.waitForTimeout(800);
+				await waitForPageQuery(page);
+			}
+			if (!(await assertListContains(page, fixture.lastName, true, 20_000))) {
 				return notOk(row, `Class filter missing student ${fixture.lastName}`);
 			}
 			return ok(row, `Class filter classGroupId=${entities.classId}`);
@@ -117,15 +135,9 @@ const FILTER_RUNNERS: Array<{
 			if (!filterFixturesReady(entities.filterFixtures, 'calendarByType')) {
 				return na(row, 'Setup calendar-event incomplete');
 			}
-			await page.goto(`${ctx.base}/school/calendar`, { waitUntil: 'domcontentloaded' });
-			await waitForPageQuery(page);
 			for (const [type, fixture] of Object.entries(entities.filterFixtures.calendarByType ?? {})) {
-				const selected = await selectListFilter(page, type);
-				if (!selected) {
-					await page.goto(`${ctx.base}/school/calendar?type=${type}`, { waitUntil: 'domcontentloaded' });
-				}
-				await waitForPageQuery(page);
-				if (!(await assertListContains(page, fixture.title, true))) {
+				await gotoFiltered(page, ctx, `/school/calendar?type=${encodeURIComponent(type)}`);
+				if (!(await assertListContains(page, fixture.title, true, 20_000))) {
 					return notOk(row, `Calendar type ${type} missing ${fixture.title}`);
 				}
 			}
@@ -247,7 +259,7 @@ const FILTER_RUNNERS: Array<{
 		match: row => matrixPath(row.endpoint) === '/finance/payment' && /filtre classe/i.test(row.action),
 		run: async (page, ctx, entities, row) => {
 			if (!entities.classId) return na(row, 'No classId');
-			await page.goto(`${ctx.base}/finance/payment?classGroupId=${entities.classId}`, { waitUntil: 'domcontentloaded' });
+			await page.goto(`${ctx.base}/finance/payment?class=${entities.classId}`, { waitUntil: 'domcontentloaded' });
 			await waitForPageQuery(page);
 			return ok(row);
 		},
@@ -285,10 +297,9 @@ const FILTER_RUNNERS: Array<{
 		setupKey: 'subjectsByGradeLevel',
 		run: async (page, ctx, entities, row) => {
 			if (!entities.gradeLevelId) return na(row, 'No gradeLevelId');
-			await page.goto(`${ctx.base}/configuration/subjects?gradeLevel=${entities.gradeLevelId}`, { waitUntil: 'domcontentloaded' });
-			await waitForPageQuery(page);
 			const subject = entities.filterFixtures.subjectsByGradeLevel?.[entities.gradeLevelId];
-			if (subject && !(await assertListContains(page, subject.name, true))) {
+			await gotoFiltered(page, ctx, `/configuration/subjects?gradeLevel=${entities.gradeLevelId}`);
+			if (subject && !(await assertListContains(page, subject.name, true, 20_000))) {
 				return notOk(row, `Subject ${subject.name} not visible for level`);
 			}
 			return ok(row);

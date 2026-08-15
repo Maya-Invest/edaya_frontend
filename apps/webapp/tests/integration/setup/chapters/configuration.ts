@@ -1,11 +1,15 @@
 import {
 	clickCreateButton,
-	fillPersonCreateDialog,
+	fillReportCardDefinitionDialog,
 	openDialogButton,
-	selectComboboxOption,
+	openUrlModal,
 	submitDialog,
+	trySubmitDialog,
 	waitForDialogClosed,
+	waitForFormModal,
 	waitForPageQuery,
+	waitForSubmitEnabled,
+	assertListContains,
 } from '../../../../scripts/qa-harness-ui';
 import { configEntityIdByName, firstIdFromLinks } from '../../../../scripts/qa-matrix-support';
 import {
@@ -41,19 +45,15 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 		coverModal(journey, '/configuration/subjects', 'create-subject', 'OK');
 		const dialog = page.getByRole('dialog');
 		await dialog.locator('input').first().fill(subjectName);
-		const gradeCombobox = dialog.getByRole('combobox').first();
-		if (await gradeCombobox.isVisible().catch(() => false)) {
-			if (entities.gradeLevelId) {
-				await selectComboboxOption(page, gradeCombobox, { value: entities.gradeLevelId });
-			}
-			else {
-				await selectComboboxOption(page, gradeCombobox);
-			}
+		if (!(await waitForSubmitEnabled(page, 12_000))) {
+			throw new Error('Subject Save stayed disabled — grade level or year missing');
 		}
 		const payloadPromise = waitForCommandPayload(page, 'configure-subject');
+		const offerPromise = waitForCommandPayload(page, 'offer-subject-to-grade-level', 20_000);
 		await submitDialog(page);
 		const closed = await waitForDialogClosed(page);
 		const payload = await payloadPromise;
+		await offerPromise;
 		let subjectId = typeof payload?.gradeLevelSubjectId === 'string'
 			? payload.gradeLevelSubjectId
 			: typeof payload?.id === 'string' ? payload.id : null;
@@ -73,6 +73,17 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 			entities.filterFixtures.subjectsByGradeLevel = {
 				[entities.gradeLevelId]: { id: subjectId, name: subjectName },
 			};
+			await gotoApp(journey, `/configuration/subjects?gradeLevel=${entities.gradeLevelId}`);
+			const levelVisible = await assertListContains(page, subjectName, true, 20_000);
+			if (levelVisible) {
+				coverActions(
+					journey,
+					'http://localhost:5173/configuration/subjects',
+					['Filtre niveau'],
+					'OK',
+					subjectName,
+				);
+			}
 		}
 		coverActions(journey, 'http://localhost:5173/configuration/subjects', ['Liste matières', 'Créer matière'], closed && subjectId ? 'OK' : 'NOT OK', subjectName);
 		logStep(journey, { step: 'subject', ok: Boolean(subjectId), detail: subjectName, entityId: subjectId ?? undefined });
@@ -115,23 +126,39 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 	}
 
 	await visitCovered(journey, '/configuration/report-cards', '/configuration/report-cards');
+	await page.reload({ waitUntil: 'domcontentloaded' });
+	await waitForPageQuery(page);
 	const rcOpened = await clickCreateButton(page, 'CRUD / publier', '/configuration/report-cards')
 		|| await openDialogButton(page, /add model|ajouter un modèle|créer/i);
 	coverModal(journey, '/configuration/report-cards', 'create', rcOpened ? 'OK' : 'NOT OK');
 	if (rcOpened) {
-		await page.getByRole('dialog').locator('input').first().fill(`E2E-RC-${Date.now()}`);
-		await submitDialog(page);
-		await waitForDialogClosed(page);
-		await gotoApp(journey, '/configuration/report-cards');
-		const defId = await configEntityIdByName(page, 'E2E-RC-') ?? await firstIdFromLinks(page, /\/configuration\/report-cards\/([^/?]+)/);
-		entities.reportCardDefId = defId;
-		coverActions(journey, 'http://localhost:5173/configuration/report-cards', ['Liste définitions bulletins', 'CRUD / publier'], 'OK');
-		if (defId) {
-			await gotoApp(journey, `/configuration/report-cards/${defId}`);
-			await visitCovered(journey, '/configuration/report-cards/[id]', `/configuration/report-cards/${defId}`);
-			coverActions(journey, 'http://localhost:5173/configuration/report-cards/[id]', ['Drawer définition'], 'OK');
+		try {
+			const rcName = `E2E-RC-${Date.now()}`;
+			await fillReportCardDefinitionDialog(page, {
+				name: rcName,
+				gradeLevelId: entities.gradeLevelId,
+			});
+			if (!(await trySubmitDialog(page))) {
+				throw new Error('Report-card Save stayed disabled');
+			}
+			await waitForDialogClosed(page);
+			await gotoApp(journey, '/configuration/report-cards');
+			const defId = await configEntityIdByName(page, 'E2E-RC-') ?? await firstIdFromLinks(page, /\/configuration\/report-cards\/([^/?]+)/);
+			entities.reportCardDefId = defId;
+			coverActions(journey, 'http://localhost:5173/configuration/report-cards', ['Liste définitions bulletins', 'CRUD / publier'], defId ? 'OK' : 'NOT OK', rcName);
+			if (defId) {
+				await gotoApp(journey, `/configuration/report-cards/${defId}`);
+				await visitCovered(journey, '/configuration/report-cards/[id]', `/configuration/report-cards/${defId}`);
+				coverActions(journey, 'http://localhost:5173/configuration/report-cards/[id]', ['Drawer définition'], 'OK');
+			}
+			logStep(journey, { step: 'report-card-def', ok: Boolean(defId), detail: rcName, entityId: defId ?? undefined });
 		}
-		logStep(journey, { step: 'report-card-def', ok: true, entityId: defId ?? undefined });
+		catch (err) {
+			const detail = err instanceof Error ? err.message : String(err);
+			logStep(journey, { step: 'report-card-def', ok: false, detail });
+			coverActions(journey, 'http://localhost:5173/configuration/report-cards', ['CRUD / publier'], 'NOT OK', detail);
+			await page.keyboard.press('Escape').catch(() => {});
+		}
 	}
 	else {
 		logStep(journey, { step: 'report-card-def', ok: false, detail: 'Create definition modal not found' });
@@ -139,8 +166,36 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 
 	await visitCovered(journey, '/configuration/notifications', '/configuration/notifications');
 	entities.notificationTemplateKey = 'report_card.published';
-	await gotoApp(journey, `/configuration/notifications?modal=edit&modalTarget=${entities.notificationTemplateKey}`);
-	const notifDialog = await page.getByRole('dialog').isVisible({ timeout: 12_000 }).catch(() => false);
+	const resetAll = page.getByRole('button', { name: /réinitialiser|reset all/i }).first();
+	await resetAll.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
+	const resetEnabledAt = Date.now();
+	while (Date.now() - resetEnabledAt < 15_000 && await resetAll.isDisabled().catch(() => true)) {
+		await page.waitForTimeout(250);
+	}
+	const keyText = page.getByText(entities.notificationTemplateKey, { exact: true }).first();
+	await keyText.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
+	const card = page.locator('article').filter({ hasText: entities.notificationTemplateKey }).first();
+	let notifDialog = false;
+	if (await card.isVisible().catch(() => false)) {
+		const menuBtn = card.getByRole('button', { name: /actions de ligne|row actions/i })
+			.or(card.locator('button').last());
+		await menuBtn.click();
+		await page.waitForTimeout(400);
+		const editItem = page.getByRole('button', { name: /modifier|edit/i }).last()
+			.or(page.getByText(/modifier|edit/i).last());
+		if (await editItem.isVisible({ timeout: 6_000 }).catch(() => false)) {
+			await editItem.click({ force: true });
+			notifDialog = await waitForFormModal(page, 12_000);
+		}
+	}
+	if (!notifDialog) {
+		notifDialog = await openUrlModal(
+			page,
+			'/configuration/notifications',
+			'edit',
+			{ target: entities.notificationTemplateKey, base: ctx.base, timeout: 20_000 },
+		);
+	}
 	coverModal(journey, '/configuration/notifications', 'edit', notifDialog ? 'OK' : 'NOT OK');
 	coverActions(journey, 'http://localhost:5173/configuration/notifications', ['Templates notifications école'], notifDialog ? 'OK' : 'NOT OK');
 	if (notifDialog) {

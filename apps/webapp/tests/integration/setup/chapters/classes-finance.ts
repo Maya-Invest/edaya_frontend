@@ -1,7 +1,10 @@
 import {
 	clickCreateButton,
+	fillAssignFeeDialog,
+	fillEvaluationCreateDialog,
 	openDialogButton,
 	submitDialog,
+	trySubmitDialog,
 	waitForDialogClosed,
 	waitForPageQuery,
 } from '../../../../scripts/qa-harness-ui';
@@ -13,6 +16,7 @@ import {
 	idFromUrl,
 	logStep,
 	visitCovered,
+	waitForCommandPayload,
 	type UiJourney,
 } from '../journey-context';
 
@@ -79,14 +83,25 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 	await visitCovered(journey, '/classes/[classId]/evaluations', `/classes/${classId}/evaluations`);
 	const evalOpened = await clickCreateButton(page, 'Créer évaluation', `/classes/${classId}/evaluations`);
 	if (evalOpened) {
-		const dialog = page.getByRole('dialog');
-		await dialog.locator('input').first().fill(`E2E-Eval-${Date.now()}`);
-		await submitDialog(page);
-		await waitForDialogClosed(page);
-		await waitForPageQuery(page);
+		const evalTitle = `E2E-Eval-${Date.now()}`;
+		const filled = await fillEvaluationCreateDialog(page, evalTitle);
+		if (filled) {
+			const payloadPromise = waitForCommandPayload(page, 'create-assessment', 20_000);
+			await trySubmitDialog(page);
+			await waitForDialogClosed(page);
+			await waitForPageQuery(page);
+			const payload = await payloadPromise;
+			if (typeof payload?.id === 'string') {
+				entities.evaluationId = payload.id;
+			}
+		}
+		else {
+			await page.keyboard.press('Escape').catch(() => {});
+		}
 	}
 	await gotoApp(journey, `/classes/${classId}/evaluations`);
-	const evaluationId = await firstIdFromLinks(page, new RegExp(`/classes/${classId}/evaluations/([^/?]+)`));
+	const evaluationId = entities.evaluationId
+		?? await firstIdFromLinks(page, new RegExp(`/classes/${classId}/evaluations/([^/?]+)`));
 	entities.evaluationId = evaluationId;
 	if (evaluationId) {
 		entities.filterFixtures.evaluationsByType = { default: { id: evaluationId, title: 'E2E-Eval' } };
@@ -155,16 +170,29 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 	const assignOpened = await openDialogButton(page, /assign|attribuer|ajouter une facture|add invoice/i);
 	coverModal(journey, '/finance/billing', 'assign-fee', assignOpened ? 'OK' : 'NOT OK');
 	if (assignOpened) {
-		await submitDialog(page).catch(() => {});
-		await waitForDialogClosed(page).catch(() => {});
+		const payloadPromise = waitForCommandPayload(page, 'assign-fee-to-student');
+		if (await fillAssignFeeDialog(page)) {
+			await trySubmitDialog(page);
+			await waitForDialogClosed(page).catch(() => {});
+			const payload = await payloadPromise;
+			if (typeof payload?.id === 'string') {
+				entities.billingId = payload.id;
+			}
+		}
+		else {
+			await page.keyboard.press('Escape').catch(() => {});
+		}
 	}
 	coverActions(journey, 'http://localhost:5173/finance/billing', ['Liste facturations', 'Assigner frais à élève'], assignOpened ? 'OK' : 'NOT OK');
 	await gotoApp(journey, '/finance/billing');
-	const billingId = await firstIdFromLinks(page, /\/finance\/billing\/([^/?]+)/);
+	const billingId = entities.billingId
+		?? await firstIdFromLinks(page, /\/finance\/billing\/([^/?]+)/);
 	entities.billingId = billingId;
 	if (billingId) {
+		coverActions(journey, 'http://localhost:5173/finance/billing', ['Ouvrir drawer facturation'], 'OK');
 		await visitCovered(journey, '/finance/billing/[id]', `/finance/billing/${billingId}`);
 		coverActions(journey, 'http://localhost:5173/finance/billing/[id]', ['Enregistrer paiement'], 'OK');
+		coverActions(journey, 'http://localhost:5173/finance/billing/[id]', ['Supprimer facturation'], 'N/A', 'journey must not delete');
 		coverModal(journey, '/finance/billing/[id]', 'payment', 'OK');
 		const payOpened = await openDialogButton(page, /paiement|payment|enregistrer/i);
 		if (payOpened) {

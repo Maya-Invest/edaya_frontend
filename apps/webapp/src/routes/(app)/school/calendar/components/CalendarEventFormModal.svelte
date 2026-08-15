@@ -73,10 +73,13 @@
 		}
 	}
 
+	let wasOpen = false;
+
 	$effect(() => {
-		if (open) {
+		if (open && !wasOpen) {
 			resetForm();
 		}
+		wasOpen = open;
 	});
 
 	function toggleClass(id: string) {

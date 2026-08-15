@@ -228,17 +228,88 @@ export async function clickCreateButton(
 	return false;
 }
 
+function formModalSubmit(
+	page: Page,
+	label: RegExp = /enregistrer|save changes|^save$|add note|ajouter une note|ajouter une facture|add invoice/i,
+): Locator {
+	const modal = page.getByTestId('form-modal');
+	const dialog = modal.or(page.getByRole('dialog'));
+	return modal.getByTestId('form-modal-submit')
+		.or(dialog.getByRole('button', { name: label }))
+		.last();
+}
+
+export async function waitForSubmitEnabled(page: Page, timeout = 15_000): Promise<boolean> {
+	const submit = formModalSubmit(page);
+	const started = Date.now();
+	while (Date.now() - started < timeout) {
+		if (await submit.isVisible().catch(() => false) && !(await submit.isDisabled().catch(() => true))) {
+			return true;
+		}
+		await page.waitForTimeout(150);
+	}
+	return false;
+}
+
 export async function submitDialog(
 	page: Page,
 	label: RegExp = /enregistrer|save changes|^save$|add note|ajouter une note/i,
 ): Promise<void> {
-	const modal = page.getByTestId('form-modal');
-	const dialog = modal.or(page.getByRole('dialog'));
-	const submit = modal.getByTestId('form-modal-submit')
-		.or(dialog.getByRole('button', { name: label }))
-		.last();
+	const submit = formModalSubmit(page, label);
 	await waitForEnabled(submit);
 	await submit.click();
+}
+
+/** Like submitDialog, but returns false instead of throwing when Save stays disabled. */
+export async function trySubmitDialog(page: Page): Promise<boolean> {
+	try {
+		await submitDialog(page);
+		return true;
+	}
+	catch {
+		return false;
+	}
+}
+
+export async function waitForFormModal(page: Page, timeout = 12_000): Promise<boolean> {
+	const dialog = page.locator('[data-testid="form-modal"]').or(page.getByRole('dialog'));
+	return dialog.first().isVisible({ timeout }).catch(() => false);
+}
+
+/** Visit a route with ?modal= (and optional modalTarget) and wait for the dialog. */
+export async function openUrlModal(
+	page: Page,
+	pathname: string,
+	modal: string,
+	options: { target?: string; timeout?: number; base?: string } = {},
+): Promise<boolean> {
+	const origin = options.base ?? new URL(page.url()).origin;
+	const url = new URL(pathname.startsWith('http') ? pathname : `${origin}${pathname}`);
+	url.searchParams.set('modal', modal);
+	if (options.target) {
+		url.searchParams.set('modalTarget', options.target);
+	}
+	await page.goto(url.toString(), { waitUntil: 'domcontentloaded' });
+	await waitForAppShell(page);
+	await waitForPageQuery(page);
+	await dismissPageError(page);
+	return waitForFormModal(page, options.timeout ?? 12_000);
+}
+
+export async function pickFirstPerson(page: Page): Promise<boolean> {
+	const dialog = page.getByRole('dialog');
+	const trigger = dialog.locator('button').filter({ has: page.locator('svg') }).first();
+	if (!(await trigger.isVisible().catch(() => false))) {
+		return false;
+	}
+	await trigger.click();
+	const option = page.getByRole('option').first();
+	if (!(await option.isVisible({ timeout: 8_000 }).catch(() => false))) {
+		await page.keyboard.press('Escape').catch(() => {});
+		return false;
+	}
+	await option.click();
+	return true;
 }
 
 export async function selectListFilter(page: Page, value: string): Promise<boolean> {
@@ -274,9 +345,10 @@ export async function openFilterPanel(page: Page, titlePattern: RegExp): Promise
 	return false;
 }
 
-export async function assertListContains(page: Page, text: string, visible = true): Promise<boolean> {
-	const row = page.locator('main').getByText(text, { exact: false }).first();
-	const isVisible = await row.isVisible({ timeout: 6_000 }).catch(() => false);
+export async function assertListContains(page: Page, text: string, visible = true, timeout = 12_000): Promise<boolean> {
+	const row = page.locator('main').getByText(text, { exact: false }).first()
+		.or(page.getByText(text, { exact: false }).first());
+	const isVisible = await row.isVisible({ timeout }).catch(() => false);
 	return visible ? isVisible : !isVisible;
 }
 
@@ -350,6 +422,18 @@ export async function fillClassCreateDialog(
 	await dialog.locator('input').first().fill(className);
 	const gradeSelect = await waitForGradeLevelSelectOptions(dialog);
 	await gradeSelect.selectOption({ index: 0 });
+	const attendanceSelect = dialog.locator('select').filter({
+		has: page.locator('option[value="daily"]'),
+	}).last();
+	if (await attendanceSelect.isVisible().catch(() => false)) {
+		await attendanceSelect.selectOption('daily');
+		await attendanceSelect.evaluate((el) => {
+			const select = el as HTMLSelectElement;
+			select.value = 'daily';
+			select.dispatchEvent(new Event('input', { bubbles: true }));
+			select.dispatchEvent(new Event('change', { bubbles: true }));
+		});
+	}
 	const modal = page.getByTestId('form-modal');
 	const submit = modal.getByRole('button', { name: /enregistrer|save changes|^save$/i }).last();
 	await waitForEnabled(submit);
@@ -451,6 +535,123 @@ export async function fillPersonCreateDialog(
 	await submitDialog(page);
 }
 
+/** Report-card model create — name + grade level + grade scale are all required. Prefer auto-defaults; fill name until Save enables. */
+export async function fillReportCardDefinitionDialog(
+	page: Page,
+	options: { name: string; gradeLevelId?: string | null; gradeLevelName?: string } = { name: 'E2E-RC' },
+): Promise<void> {
+	const dialog = page.getByRole('dialog');
+	const nameInput = dialog.locator('input').first();
+	await nameInput.waitFor({ state: 'visible', timeout: 10_000 });
+
+	const started = Date.now();
+	while (Date.now() - started < 8_000) {
+		await nameInput.fill(options.name);
+		if (await waitForSubmitEnabled(page, 400)) {
+			return;
+		}
+		await page.waitForTimeout(200);
+	}
+
+	const comboboxes = dialog.getByRole('combobox');
+	const grade = comboboxes.nth(0);
+	if (await grade.isVisible().catch(() => false)) {
+		await selectComboboxOption(page, grade, {
+			value: options.gradeLevelId ?? undefined,
+			name: options.gradeLevelName,
+		});
+	}
+	const scale = comboboxes.nth(1);
+	if (await scale.isVisible().catch(() => false)) {
+		await scale.click();
+		const option = page.getByRole('option').first();
+		await option.waitFor({ state: 'visible', timeout: 12_000 });
+		await option.click();
+	}
+	const remaining = Date.now();
+	while (Date.now() - remaining < 10_000) {
+		await nameInput.fill(options.name);
+		if (await waitForSubmitEnabled(page, 400)) {
+			return;
+		}
+		await page.waitForTimeout(200);
+	}
+}
+
+/** Activity create — name, coach, and description are required (dates default to today). */
+export async function fillActivityCreateDialog(
+	page: Page,
+	options: { name: string; coach?: string; description?: string } = { name: 'E2E-Activity' },
+): Promise<void> {
+	const dialog = page.getByRole('dialog');
+	await dialog.locator('input').first().fill(options.name);
+	const coachInput = dialog.locator('input:not([type="number"]):not([type="date"])').nth(1);
+	await coachInput.fill(options.coach ?? 'E2E Coach');
+	await dialog.locator('textarea').first().fill(options.description ?? 'E2E activity description');
+	await waitForSubmitEnabled(page);
+}
+
+export async function fillIncidentCreateDialog(
+	page: Page,
+	options: { title: string; description?: string } = { title: 'E2E-Incident' },
+): Promise<void> {
+	const dialog = page.getByRole('dialog');
+	if (!(await waitForSubmitEnabled(page, 2_000))) {
+		await pickFirstPerson(page);
+	}
+	await dialog.locator('input:not([type="date"])').first().fill(options.title);
+	const textarea = dialog.locator('textarea').first();
+	if (await textarea.isVisible().catch(() => false)) {
+		await textarea.fill(options.description ?? 'E2E incident description');
+	}
+	await waitForSubmitEnabled(page);
+}
+
+export async function fillAssignFeeDialog(page: Page): Promise<boolean> {
+	if (await waitForSubmitEnabled(page, 8_000)) {
+		return true;
+	}
+	await pickFirstPerson(page);
+	const feeCombo = page.getByRole('dialog').getByRole('combobox').first();
+	if (await feeCombo.isVisible().catch(() => false)) {
+		await selectComboboxOption(page, feeCombo);
+	}
+	return waitForSubmitEnabled(page);
+}
+
+export async function fillEvaluationCreateDialog(page: Page, title: string): Promise<boolean> {
+	const dialog = page.getByRole('dialog');
+	const empty = await dialog.getByText(/aucune|empty|no (subject|matière)/i).isVisible().catch(() => false);
+	if (empty) {
+		return false;
+	}
+	const titleInput = dialog.locator('input:not([type="number"]):not([type="date"])').first();
+	await titleInput.waitFor({ state: 'visible', timeout: 8_000 });
+	const started = Date.now();
+	while (Date.now() - started < 12_000) {
+		await titleInput.fill(title);
+		if (await waitForSubmitEnabled(page, 400)) {
+			return true;
+		}
+		await page.waitForTimeout(250);
+	}
+	const subjectCombo = dialog.getByRole('combobox').nth(1);
+	if (await subjectCombo.isVisible().catch(() => false)) {
+		await selectComboboxOption(page, subjectCombo);
+	}
+	await titleInput.fill(title);
+	return waitForSubmitEnabled(page);
+}
+
+/** Year card — not the configuration layout `<section>` that wraps the whole page. */
+function yearCardByLabel(page: Page, label: string): Locator {
+	return page.getByRole('heading', { name: label, exact: true }).locator('xpath=ancestor::section[1]');
+}
+
+function yearCards(page: Page): Locator {
+	return page.locator('section.overflow-hidden.rounded-2xl');
+}
+
 async function expandYearSection(yearSection: Locator): Promise<void> {
 	const section = yearSection.first();
 	const body = section.locator(':scope > div.border-t');
@@ -485,8 +686,8 @@ async function yearHeaderStatus(yearSection: Locator): Promise<'published' | 'dr
 	return 'unknown';
 }
 
-const publishYearButtonName = /^publish year$|^publier l['']année$/iu;
-const archiveYearButtonName = /^archive year$|^archiver l['']année$/iu;
+const publishYearButtonName = /^publish year$|^publier l['’']année$/iu;
+const archiveYearButtonName = /^archive year$|^archiver l['’']année$/iu;
 
 async function confirmNamedDialog(page: Page, confirmButtonName: RegExp): Promise<void> {
 	const dialog = page.getByRole('dialog');
@@ -500,15 +701,28 @@ async function confirmNamedDialog(page: Page, confirmButtonName: RegExp): Promis
 /** Archive published years so a draft year can be published (only one published year allowed). */
 async function archivePublishedYears(page: Page): Promise<void> {
 	for (let attempt = 0; attempt < 5; attempt++) {
-		const archiveBtn = page.getByRole('button', { name: archiveYearButtonName }).first();
-		if (!(await archiveBtn.isVisible().catch(() => false))) {
+		const cards = yearCards(page);
+		const count = await cards.count();
+		let archived = false;
+		for (let i = 0; i < count; i++) {
+			const card = cards.nth(i);
+			if ((await yearHeaderStatus(card)) !== 'published') {
+				continue;
+			}
+			await expandYearSection(card);
+			const archiveBtn = card.getByRole('button', { name: archiveYearButtonName }).first();
+			if (!(await archiveBtn.isVisible({ timeout: 2_000 }).catch(() => false))) {
+				continue;
+			}
+			await archiveBtn.click();
+			await confirmNamedDialog(page, archiveYearButtonName);
+			await waitForPageQuery(page);
+			archived = true;
+			break;
+		}
+		if (!archived) {
 			return;
 		}
-		const section = page.locator('section').filter({ has: archiveBtn }).first();
-		await expandYearSection(section);
-		await archiveBtn.click();
-		await confirmNamedDialog(page, archiveYearButtonName);
-		await page.waitForTimeout(1_500);
 	}
 }
 
@@ -516,9 +730,7 @@ async function archivePublishedYears(page: Page): Promise<void> {
  * Academic years are created as draft. Publish explicitly; archive any blocking published year first.
  */
 export async function ensureAcademicYearReady(page: Page, label: string): Promise<boolean> {
-	const yearSection = page.locator('section').filter({
-		has: page.getByRole('heading', { name: label, exact: true }),
-	}).first();
+	const yearSection = yearCardByLabel(page, label);
 	await yearSection.waitFor({ state: 'visible', timeout: 20_000 });
 
 	const readStatus = async () => yearHeaderStatus(yearSection);
@@ -540,8 +752,11 @@ export async function ensureAcademicYearReady(page: Page, label: string): Promis
 		}
 
 		const publishBtn = yearSection.getByRole('button', { name: publishYearButtonName }).first();
-		if (await publishBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-			if (await publishBtn.isDisabled().catch(() => false)) {
+		const publishVisible = await publishBtn.isVisible({ timeout: 2_000 }).catch(() => false);
+		const publishDisabled = publishVisible && await publishBtn.isDisabled().catch(() => false);
+		console.log(`academic-year publish attempt ${attempt + 1}: status=${status} visible=${publishVisible} disabled=${publishDisabled}`);
+		if (publishVisible) {
+			if (publishDisabled) {
 				await archivePublishedYears(page);
 				await waitForPageQuery(page);
 				continue;

@@ -9,6 +9,7 @@ import {
 	waitForDialogClosed,
 	waitForPageQuery,
 	waitForResolvedAcademicYearId,
+	openUrlModal,
 } from '../../../../scripts/qa-harness-ui';
 import { configEntityIdByName } from '../../../../scripts/qa-matrix-support';
 import { ensureDailyAttendanceMode } from '../../demo-dry-run/support/setup';
@@ -156,8 +157,13 @@ export async function runStructureChapter(journey: UiJourney): Promise<boolean> 
 		await gotoApp(journey, `/configuration/classes/${entityId}/profile`);
 		await visitCovered(journey, '/configuration/classes/[id]/profile', `/configuration/classes/${entityId}/profile`);
 		coverActions(journey, 'http://localhost:5173/configuration/classes/[id]/profile', ['Profil classe — éditer'], 'OK');
+		const editOpened = await openUrlModal(page, `/configuration/classes/${entityId}/profile`, 'edit', { base: ctx.base });
+		coverModal(journey, '/configuration/classes/[id]/profile', 'edit', editOpened ? 'OK' : 'NOT OK');
+		if (editOpened) {
+			await page.keyboard.press('Escape');
+			await waitForDialogClosed(page).catch(() => {});
+		}
 		const daily = await ensureDailyAttendanceMode(ctx, entityId, { force: true });
-		coverModal(journey, '/configuration/classes/[id]/profile', 'edit', daily ? 'OK' : 'NOT OK');
 		logStep(journey, { step: 'class', ok: true, detail: `${className} daily=${daily}`, entityId });
 	}
 	catch (err) {

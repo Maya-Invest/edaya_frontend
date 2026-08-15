@@ -28,6 +28,7 @@
 	let homeroomStaffId = $state('');
 	/** Once the user types a name, changing the grade level stops overwriting it. */
 	let nameEdited = $state(false);
+	let wasOpen = false;
 
 	const isEdit = $derived(classGroup !== undefined);
 	const sortedLevels = $derived(sortGradeLevels(academicContext.gradeLevels));
@@ -71,9 +72,10 @@
 	}
 
 	$effect(() => {
-		if (open) {
+		if (open && !wasOpen) {
 			resetForm();
 		}
+		wasOpen = open;
 	});
 
 	async function submit() {

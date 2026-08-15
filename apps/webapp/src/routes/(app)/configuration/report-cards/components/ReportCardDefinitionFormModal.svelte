@@ -19,6 +19,7 @@
 	const reportCardsPage = getReportCardsPageState();
 
 	let busy = $state(false);
+	let wasOpen = false;
 	let name = $state('');
 	let gradeLevelId = $state('');
 	let gradeScaleId = $state('');
@@ -30,15 +31,24 @@
 		name.trim().length > 0 && gradeLevelId !== '' && gradeScaleId !== '',
 	);
 
-	function resetForm() {
-		name = '';
-		gradeLevelId = gradeLevels[0]?.id ?? '';
-		gradeScaleId = scales[0]?.id ?? '';
-	}
+	$effect(() => {
+		if (open && !wasOpen) {
+			name = '';
+			gradeLevelId = '';
+			gradeScaleId = '';
+		}
+		wasOpen = open;
+	});
 
 	$effect(() => {
-		if (open) {
-			resetForm();
+		if (open && gradeLevelId === '' && gradeLevels[0]) {
+			gradeLevelId = gradeLevels[0].id;
+		}
+	});
+
+	$effect(() => {
+		if (open && gradeScaleId === '' && scales[0]) {
+			gradeScaleId = scales[0].id;
 		}
 	});
 

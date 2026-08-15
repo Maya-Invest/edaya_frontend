@@ -42,7 +42,6 @@ export async function ensureDailyAttendanceMode(
 
 	const dailyModePattern = /^(Appel quotidien|Daily roll call)$/i;
 	const dailyOk = await page
-		.locator('main')
 		.getByText(dailyModePattern)
 		.first()
 		.isVisible({ timeout: 8_000 })
@@ -71,6 +70,12 @@ export async function ensureDailyAttendanceMode(
 		const currentMode = await modeSelect.inputValue().catch(() => 'session');
 		if (currentMode !== 'daily') {
 			await modeSelect.selectOption('daily');
+			await modeSelect.evaluate((el) => {
+				const select = el as HTMLSelectElement;
+				select.value = 'daily';
+				select.dispatchEvent(new Event('input', { bubbles: true }));
+				select.dispatchEvent(new Event('change', { bubbles: true }));
+			});
 		}
 	}
 
@@ -78,11 +83,17 @@ export async function ensureDailyAttendanceMode(
 		await assignHomeroomCoordinator(ctx, homeroomStaffName);
 	}
 
-	await page.getByRole('button', { name: /save|enregistrer/i }).click();
+	const saveBtn = page.getByTestId('form-modal-submit')
+		.or(page.getByRole('button', { name: /save|enregistrer/i }))
+		.last();
+	await saveBtn.waitFor({ state: 'visible', timeout: 8_000 }).catch(() => {});
+	if (await saveBtn.isDisabled().catch(() => false)) {
+		await page.waitForTimeout(1_000);
+	}
+	await saveBtn.click();
 	await page.locator('[role="dialog"]').waitFor({ state: 'hidden', timeout: 20_000 }).catch(() => {});
 
 	const dailyConfigured = await page
-		.locator('main')
 		.getByText(dailyModePattern)
 		.first()
 		.isVisible({ timeout: 8_000 })

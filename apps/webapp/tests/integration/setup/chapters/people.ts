@@ -1,13 +1,16 @@
 import {
+	assertListContains,
 	fillPersonCreateDialog,
 	fillStudentCreateDialog,
 	listSearchInput,
 	openDialogButton,
+	openUrlModal,
 	submitDialog,
 	waitForDialogClosed,
 	waitForPageQuery,
 } from '../../../../scripts/qa-harness-ui';
 import { firstIdFromLinks } from '../../../../scripts/qa-matrix-support';
+import { setStudentStatus } from '../filter-setup';
 import {
 	clickFirstRow,
 	coverActions,
@@ -21,6 +24,22 @@ import {
 } from '../journey-context';
 
 const STUDENT_TABS = ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments'] as const;
+
+async function createExtraStudent(journey: UiJourney, lastName: string): Promise<string | null> {
+	const { page } = journey.ctx;
+	await gotoApp(journey, '/school/students');
+	const opened = await openDialogButton(page, /add student|ajouter un élève/i, 30_000);
+	if (!opened) {
+		return null;
+	}
+	const payloadPromise = waitForCommandPayload(page, 'register-student');
+	await fillStudentCreateDialog(page, { firstName: 'E2E', lastName, className: /E2E-6A-/ });
+	if (!(await waitForDialogClosed(page))) {
+		return null;
+	}
+	const payload = await payloadPromise;
+	return typeof payload?.id === 'string' ? payload.id : null;
+}
 
 async function createPerson(
 	journey: UiJourney,
@@ -81,7 +100,7 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 	}
 	else {
 		const payloadPromise = waitForCommandPayload(page, 'register-student');
-		await fillStudentCreateDialog(page, { firstName: 'E2E', lastName });
+		await fillStudentCreateDialog(page, { firstName: 'E2E', lastName, className: /E2E-6A-/ });
 		const closed = await waitForDialogClosed(page);
 		const payload = await payloadPromise;
 		let studentId = typeof payload?.id === 'string' ? payload.id : null;
@@ -100,12 +119,23 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 		entities.classStudentId = studentId;
 		entities.createdStudentId = studentId ?? 'created';
 		if (studentId && entities.classId) {
+			await gotoApp(journey, `/school/students?class=${entities.classId}`);
+			const classVisible = await assertListContains(page, lastName, true, 20_000);
 			entities.filterFixtures.studentsByClass = {
 				[entities.classId]: { id: studentId, lastName, classId: entities.classId },
 			};
 			entities.filterFixtures.studentsByStatus = {
 				active: { id: studentId, lastName },
 			};
+			if (classVisible) {
+				coverActions(
+					journey,
+					'http://localhost:5173/school/students',
+					['Filtre classe'],
+					'OK',
+					lastName,
+				);
+			}
 		}
 		coverActions(journey, 'http://localhost:5173/school/students', ['Liste — affichage', 'Créer élève (modal)', 'Recherche'], closed ? 'OK' : 'NOT OK', lastName);
 		logStep(journey, { step: 'student', ok: Boolean(studentId), detail: lastName, entityId: studentId ?? undefined });
@@ -142,6 +172,55 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 		}
 	}
 
+	if (entities.studentId) {
+		for (const status of ['inactive', 'archived'] as const) {
+			const extraName = `E2E-${status}-${Date.now()}`;
+			const extraId = await createExtraStudent(journey, extraName);
+			if (!extraId) {
+				logStep(journey, { step: `student-${status}`, ok: false, detail: 'create failed' });
+				continue;
+			}
+			const updated = await setStudentStatus(ctx, extraId, status);
+			if (updated) {
+				entities.filterFixtures.studentsByStatus = {
+					...entities.filterFixtures.studentsByStatus,
+					[status]: { id: extraId, lastName: extraName },
+				};
+			}
+			logStep(journey, {
+				step: `student-${status}`,
+				ok: updated,
+				detail: extraName,
+				entityId: extraId,
+			});
+		}
+		const byStatus = entities.filterFixtures.studentsByStatus;
+		if (byStatus?.active && byStatus.inactive && byStatus.archived) {
+			let statusOk = true;
+			for (const status of ['active', 'inactive', 'archived'] as const) {
+				const fixture = byStatus[status];
+				if (!fixture) {
+					statusOk = false;
+					break;
+				}
+				const classQuery = entities.classId ? `&class=${entities.classId}` : '';
+				await gotoApp(journey, `/school/students?status=${status}${classQuery}`);
+				if (!(await assertListContains(page, fixture.lastName, true, 20_000))) {
+					statusOk = false;
+					break;
+				}
+			}
+			if (statusOk) {
+				coverActions(
+					journey,
+					'http://localhost:5173/school/students',
+					['Filtre statut (actif / inactif / archivé)'],
+					'OK',
+				);
+			}
+		}
+	}
+
 	const guardianId = await createPerson(journey, {
 		step: 'guardian',
 		listPath: '/school/guardians',
@@ -163,8 +242,12 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 		coverActions(journey, 'http://localhost:5173/school/guardians/[id]', ['Drawer — éditer', 'Élèves liés'], 'OK');
 		coverModal(journey, '/school/guardians/[id]', 'edit-profile', 'OK');
 		if (entities.studentId) {
-			await gotoApp(journey, `/school/students/${entities.studentId}/profile`);
-			const linkOpened = await openDialogButton(page, /tuteur|guardian|lier|link/i);
+			const linkOpened = await openUrlModal(
+				page,
+				`/school/students/${entities.studentId}/profile`,
+				'link-guardian',
+				{ base: ctx.base },
+			) || await openDialogButton(page, /rattacher|tuteur|guardian|lier|link/i);
 			coverModal(journey, '/school/students/[id]/profile', 'link-guardian', linkOpened ? 'OK' : 'NOT OK');
 			if (linkOpened) {
 				await submitDialog(page).catch(() => {});

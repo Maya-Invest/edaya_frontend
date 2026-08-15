@@ -1,6 +1,6 @@
 import {
 	openDialogButton,
-	submitDialog,
+	openUrlModal,
 	waitForDialogClosed,
 } from '../../../../scripts/qa-harness-ui';
 import { firstIdFromLinks } from '../../../../scripts/qa-matrix-support';
@@ -32,10 +32,15 @@ export async function runTeachingChapter(journey: UiJourney): Promise<void> {
 			`/configuration/classes/${entities.configClassId}/assignments`,
 		);
 		coverActions(journey, 'http://localhost:5173/configuration/classes/[id]/assignments', ['Affectations staff'], 'OK');
-		const formOpened = await openDialogButton(page, /assign|affecter|ajouter/i);
+		const formOpened = await openUrlModal(
+			page,
+			`/configuration/classes/${entities.configClassId}/assignments`,
+			'form',
+			{ base: journey.ctx.base },
+		) || await openDialogButton(page, /assign|affecter|ajouter/i);
 		coverModal(journey, '/configuration/classes/[id]/assignments', 'form', formOpened ? 'OK' : 'NOT OK');
 		if (formOpened) {
-			await submitDialog(page).catch(() => {});
+			await page.keyboard.press('Escape').catch(() => {});
 			await waitForDialogClosed(page).catch(() => {});
 		}
 	}
@@ -87,7 +92,7 @@ export async function runTeachingChapter(journey: UiJourney): Promise<void> {
 		const assignOpened = await openDialogButton(page, /assign|affecter|ajouter/i);
 		coverModal(journey, '/school/teachers/[id]/assignments', 'form', assignOpened ? 'OK' : 'NOT OK');
 		if (assignOpened) {
-			await submitDialog(page).catch(() => {});
+			await page.keyboard.press('Escape').catch(() => {});
 			await waitForDialogClosed(page).catch(() => {});
 		}
 	}

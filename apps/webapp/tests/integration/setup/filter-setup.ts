@@ -243,7 +243,7 @@ export function seedNotificationTemplateKey(entities: MatrixEntities): SetupStep
 	};
 }
 
-async function setStudentStatus(
+export async function setStudentStatus(
 	ctx: DemoContext,
 	studentId: string,
 	status: 'inactive' | 'archived',
@@ -251,13 +251,30 @@ async function setStudentStatus(
 	const { page, base } = ctx;
 	await page.goto(`${base}/school/students/${studentId}/profile`, { waitUntil: 'domcontentloaded' });
 	await waitForAppShell(page);
+	await waitForPageQuery(page);
 
-	const select = page.locator('select').filter({ has: page.locator('option[value="inactive"]') }).first();
-	if (!(await select.isVisible({ timeout: 8_000 }).catch(() => false))) {
+	const select = page.locator('select').filter({ has: page.locator('option[value="inactive"]') }).last();
+	await select.waitFor({ state: 'attached', timeout: 20_000 }).catch(() => {});
+	await select.scrollIntoViewIfNeeded().catch(() => {});
+	const mutation = page.waitForResponse(
+		res => res.request().method() === 'POST' && res.url().includes('/core/commands/update-student-status'),
+		{ timeout: 20_000 },
+	).catch(() => null);
+	try {
+		await select.selectOption(status);
+		await select.evaluate((el, next) => {
+			const node = el as HTMLSelectElement;
+			node.value = next;
+			node.dispatchEvent(new Event('input', { bubbles: true }));
+			node.dispatchEvent(new Event('change', { bubbles: true }));
+		}, status);
+	}
+	catch {
 		return false;
 	}
-	await select.selectOption(status);
-	await page.waitForTimeout(1_500);
+	await mutation;
+	await waitForPageQuery(page);
+	await page.waitForTimeout(1_000);
 	return true;
 }
 

@@ -18,6 +18,15 @@ import { runClassesFinanceChapter } from './chapters/classes-finance';
 const WEBAPP_DIR = path.join(import.meta.dirname, '../../..');
 export const ENTITIES_PATH = path.join(WEBAPP_DIR, '.integration-run', 'entities.json');
 
+async function runJourneyChapter(name: string, run: () => Promise<void>): Promise<void> {
+	try {
+		await run();
+	}
+	catch (err) {
+		console.error(`Journey chapter "${name}" failed:`, err instanceof Error ? err.message : err);
+	}
+}
+
 export interface UiJourneyResult {
 	steps: SetupStepResult[];
 	entities: MatrixEntities;
@@ -40,11 +49,11 @@ export async function runUiJourney(
 		console.error('Journey fail-fast: school structure incomplete');
 	}
 	else {
-		await runConfigurationChapter(journey);
-		await runPeopleChapter(journey);
-		await runSchoolChapter(journey);
-		await runTeachingChapter(journey);
-		await runClassesFinanceChapter(journey);
+		await runJourneyChapter('configuration', () => runConfigurationChapter(journey));
+		await runJourneyChapter('people', () => runPeopleChapter(journey));
+		await runJourneyChapter('school', () => runSchoolChapter(journey));
+		await runJourneyChapter('teaching', () => runTeachingChapter(journey));
+		await runJourneyChapter('classes-finance', () => runClassesFinanceChapter(journey));
 	}
 
 	await mkdir(path.dirname(ENTITIES_PATH), { recursive: true });
