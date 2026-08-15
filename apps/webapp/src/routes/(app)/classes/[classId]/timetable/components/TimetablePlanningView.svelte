@@ -17,10 +17,11 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { locale, t } from '$lib/i18n';
-	import { ChevronLeft, ChevronRight, Plus, Search } from '$lib/icons';
+	import { ChevronLeft, ChevronRight, Plus } from '$lib/icons';
 	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { canEditTimetable, hasPermission } from '$lib/permissions';
@@ -120,17 +121,7 @@
 		title={$t('planning.title')}
 	>
 		{#snippet search()}
-			<div class="relative">
-				<Search
-					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-				/>
-				<Input
-					bind:value={planning.filters.values.q}
-					oninput={() => planning.filters.scheduleSync()}
-					placeholder={$t('common.search')}
-					class="h-9 w-56 rounded-full pl-9 text-sm"
-				/>
-			</div>
+			<ListSearchField bind:value={planning.filters.values.q} oninput={() => planning.filters.scheduleSync()} />
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate

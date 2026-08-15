@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { components } from '$lib/api/schema';
 	import type { ClassNode } from '$lib/types/school';
-	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { catalogEntriesForClassGroupStaffAssignment } from '$lib/api/staff-assignment-permissions';
 	import { formatPermissionLabel } from '$lib/api/staff-permission-assignments-data';
@@ -110,7 +109,7 @@
 		}
 	}
 
-	afterNavigate(() => {
+	$effect(() => {
 		modals.hydrate();
 		if (validateModalTarget() && modals.isOpen('form')) {
 			void prepareForm(editing);

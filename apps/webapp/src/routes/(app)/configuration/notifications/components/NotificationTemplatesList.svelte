@@ -42,7 +42,7 @@
 
 	const editKey = $derived.by((): NotificationTemplateKey | null => {
 		const target = modals.target;
-		return modals.active === 'edit' && document && isTemplateKey(target) ? target : null;
+		return modals.active === 'edit' && isTemplateKey(target) ? target : null;
 	});
 	const resetKeyConfirmOpen = $derived(
 		editKey !== null && modals.active === 'edit' && modals.tab === 'reset-key',

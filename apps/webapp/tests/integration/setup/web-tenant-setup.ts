@@ -24,9 +24,11 @@ import {
 	configEntityIdByName,
 	discoverEntities,
 	emptyEntities,
+	mergeEntities,
 	waitForAppShell,
 } from '../../../scripts/qa-matrix-support';
 import type { MatrixEntities } from '../../../scripts/qa-matrix-support';
+import { runFilterEntitySetup } from './filter-setup';
 
 const WEBAPP_DIR = path.join(import.meta.dirname, '../../..');
 export const ENTITIES_PATH = path.join(WEBAPP_DIR, '.integration-run', 'entities.json');
@@ -203,6 +205,8 @@ async function setupStudent(ctx: DemoContext): Promise<SetupStepResult> {
 
 export async function runWebTenantSetup(ctx: DemoContext): Promise<WebSetupResult> {
 	const steps: SetupStepResult[] = [];
+	const entities = emptyEntities();
+	entities.onboarded = true;
 
 	console.log('\n--- Web tenant setup (via UI) ---');
 	for (const fn of [setupAcademicYear, setupGradeLevel, setupClass, setupStudent]) {
@@ -210,13 +214,6 @@ export async function runWebTenantSetup(ctx: DemoContext): Promise<WebSetupResul
 		steps.push(result);
 		const tag = result.blocked ? '⊘' : result.ok ? '✓' : '✗';
 		console.log(`${tag} ${result.step}${result.detail ? ` — ${result.detail.slice(0, 100)}` : ''}`);
-	}
-
-	const entities = emptyEntities();
-	entities.onboarded = true;
-
-	if (steps.some(s => s.step === 'student' && s.blocked)) {
-		entities.studentSetupBlocked = true;
 	}
 
 	const classStep = steps.find(s => s.step === 'class' && s.ok && s.entityId);
@@ -231,28 +228,33 @@ export async function runWebTenantSetup(ctx: DemoContext): Promise<WebSetupResul
 		entities.level = gradeStep.entityId;
 	}
 
-	Object.assign(entities, await discoverEntities(ctx).catch((err) => {
+	if (steps.some(s => s.step === 'student' && s.blocked)) {
+		entities.studentSetupBlocked = true;
+	}
+
+	console.log('\n--- Filter + modal entity setup ---');
+	const filterSteps = await runFilterEntitySetup(ctx, entities);
+	for (const result of filterSteps) {
+		steps.push(result);
+		const tag = result.ok ? '✓' : '✗';
+		console.log(`${tag} ${result.step}${result.detail ? ` — ${result.detail.slice(0, 100)}` : ''}`);
+	}
+
+	const discovered = await discoverEntities(ctx).catch((err) => {
 		console.warn(`discoverEntities skipped: ${err instanceof Error ? err.message : String(err)}`);
 		return emptyEntities();
-	}));
+	});
 
-	if (classStep?.entityId) {
-		entities.configClassId = classStep.entityId;
-		entities.classId = classStep.entityId;
-	}
-	if (gradeStep?.entityId) {
-		entities.gradeLevelId = gradeStep.entityId;
-		entities.level = gradeStep.entityId;
-	}
+	const merged = mergeEntities(discovered, entities);
 
 	if (steps.some(s => s.step === 'student' && s.ok)) {
-		entities.createdStudentId = entities.studentId ?? 'created';
+		merged.createdStudentId = merged.studentId ?? 'created';
 	}
 
 	await mkdir(path.dirname(ENTITIES_PATH), { recursive: true });
-	await writeFile(ENTITIES_PATH, JSON.stringify({ steps, entities, generatedAt: new Date().toISOString() }, null, 2));
+	await writeFile(ENTITIES_PATH, JSON.stringify({ steps, entities: merged, generatedAt: new Date().toISOString() }, null, 2));
 
-	return { steps, entities };
+	return { steps, entities: merged };
 }
 
 export async function loadSetupEntities(): Promise<Partial<MatrixEntities>> {

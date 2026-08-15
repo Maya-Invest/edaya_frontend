@@ -3,7 +3,7 @@
  * Full provisioned integration pipeline:
  *   1. API provision (user + school + wizard flag)
  *   2. Playwright web setup (academic structure + entities via UI)
- *   3. Playwright qa-matrix (Onboarding excluded)
+ *   3. Playwright qa-matrix (Auth, Onboarding, tools excluded — manual)
  *   4. Summary report in .integration-run/summary.json
  *
  * Policy: on NOT OK — log blockers, do not edit src/. See integration-report.ts.
@@ -13,13 +13,14 @@
  *   - Webapp at WEBAPP_URL (default http://localhost:5173) — bun dev
  *   - Playwright chromium installed: bunx playwright install chromium
  *
- * Usage:
- *   bun run test:integration:provisioned
+ * Canonical integration contract: bun run test:integration:provisioned
+ * Local demo smoke only: bun run qa:matrix (warns when INTEGRATION_PROVISIONED is unset)
  */
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { provisionTenant } from '../tests/integration/support/api-provision';
+import { defaultExcludedModulesForRun } from './qa-matrix-exclusions';
 import { INTEGRATION_POLICY, printBlockers, type BlockerReport } from './integration-report';
 
 const WEBAPP_DIR = path.join(import.meta.dirname, '..');
@@ -76,7 +77,7 @@ async function main(): Promise<void> {
 	console.log(`Provisioned: ${tenant.email} / ${tenant.schoolName} (${tenant.schoolId})`);
 	console.log(`Wizard flag: ${tenant.wizardCompleted ? 'set' : 'not confirmed'}`);
 
-	const excludedModules = process.env['QA_MATRIX_EXCLUDE_MODULES'] ?? 'Onboarding';
+	const excludedModules = process.env['QA_MATRIX_EXCLUDE_MODULES'] ?? '';
 	const env = {
 		...process.env,
 		QA_LOGIN_EMAIL: tenant.email,
@@ -87,7 +88,7 @@ async function main(): Promise<void> {
 	};
 
 	console.log('\n=== Step 2-3: Web setup + Playwright qa-matrix ===');
-	console.log(`Excluded modules: ${excludedModules}`);
+	console.log(`Excluded from automated run: ${[...defaultExcludedModulesForRun(), ...excludedModules.split(',').map(m => m.trim()).filter(Boolean)].join(', ')}`);
 	console.log(`Policy: ${INTEGRATION_POLICY}`);
 
 	const matrixRun = spawnSync(

@@ -6,7 +6,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { QA_TEMPLATE_MATRIX, type QaTemplateRow } from './qa-template-matrix';
+import { QA_TEMPLATE_MATRIX_RUNNABLE, type QaTemplateRow } from './qa-template-matrix';
 
 const ROOT = path.join(import.meta.dirname, '../../../..');
 const MATRIX_RESULTS_PATH = path.join(ROOT, 'qa-matrix-results.json');
@@ -193,7 +193,7 @@ async function main(): Promise<void> {
 
 	const stats = { ok: 0, notOk: 0, na: 0, todo: 0 };
 
-	for (const row of QA_TEMPLATE_MATRIX) {
+	for (const row of QA_TEMPLATE_MATRIX_RUNNABLE) {
 		const { statut, detail, suggestion } = resolveRow(row, matrixResults, legacyResults);
 		if (statut === 'OK') stats.ok++;
 		else if (statut === 'NOT OK') stats.notOk++;
@@ -219,7 +219,7 @@ async function main(): Promise<void> {
 		{ stdio: 'inherit', shell: true },
 	);
 
-	console.log(`\nMatrice QA générée : ${QA_TEMPLATE_MATRIX.length} lignes`);
+	console.log(`\nMatrice QA générée : ${QA_TEMPLATE_MATRIX_RUNNABLE.length} lignes`);
 	console.log(`  OK: ${stats.ok}  NOT OK: ${stats.notOk}  N/A: ${stats.na}  À faire: ${stats.todo}`);
 	console.log(`  CSV:  ${CSV_PATH}`);
 	console.log(`  XLSX: ${XLSX_PATH}`);

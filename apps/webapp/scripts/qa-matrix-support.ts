@@ -12,8 +12,28 @@ export interface MatrixResult {
 	detail?: string;
 }
 
+export interface FilterFixtures {
+	studentsByStatus?: Partial<Record<'active' | 'inactive' | 'archived', { id: string; lastName: string }>>;
+	studentsByClass?: Record<string, { id: string; lastName: string; classId: string }>;
+	searchToken?: string;
+	calendarByType?: Record<string, { id: string; title: string }>;
+	announcementsByStatus?: Record<string, { id: string; title: string }>;
+	activitiesByCategory?: Record<string, { id: string; title: string }>;
+	evaluationsByType?: Record<string, { id: string; title: string }>;
+	attendanceByCompletion?: Record<string, { id: string; label: string }>;
+	reportCardsByStatus?: Record<string, { id: string; label: string }>;
+	feesByCategory?: Record<string, { id: string; name: string }>;
+	paymentsByStatus?: Record<string, { id: string; label: string }>;
+	paymentsByClass?: Record<string, { id: string; label: string }>;
+	subjectsByGradeLevel?: Record<string, { id: string; name: string }>;
+	disciplineByKind?: Record<string, { id: string; name: string }>;
+	teachingSearchToken?: string;
+	academicYearsByStatus?: Record<string, { id: string; label: string }>;
+}
+
 export interface MatrixEntities {
 	classId: string | null;
+	secondClassId: string | null;
 	studentId: string | null;
 	classStudentId: string | null;
 	guardianId: string | null;
@@ -22,6 +42,8 @@ export interface MatrixEntities {
 	activityId: string | null;
 	announcementId: string | null;
 	eventId: string | null;
+	calendarEventId: string | null;
+	notificationTemplateKey: string | null;
 	sessionId: string | null;
 	evaluationId: string | null;
 	dayId: string | null;
@@ -29,6 +51,7 @@ export interface MatrixEntities {
 	billingId: string | null;
 	configClassId: string | null;
 	gradeLevelId: string | null;
+	secondGradeLevelId: string | null;
 	subjectId: string | null;
 	reportCardDefId: string | null;
 	deliveryId: string | null;
@@ -38,11 +61,13 @@ export interface MatrixEntities {
 	hasDemoLogin: boolean;
 	createdStudentId: string | null;
 	studentSetupBlocked: boolean;
+	filterFixtures: FilterFixtures;
 }
 
 export function emptyEntities(): MatrixEntities {
 	return {
 		classId: null,
+		secondClassId: null,
 		studentId: null,
 		classStudentId: null,
 		guardianId: null,
@@ -51,6 +76,8 @@ export function emptyEntities(): MatrixEntities {
 		activityId: null,
 		announcementId: null,
 		eventId: null,
+		calendarEventId: null,
+		notificationTemplateKey: null,
 		sessionId: null,
 		evaluationId: null,
 		dayId: null,
@@ -58,6 +85,7 @@ export function emptyEntities(): MatrixEntities {
 		billingId: null,
 		configClassId: null,
 		gradeLevelId: null,
+		secondGradeLevelId: null,
 		subjectId: null,
 		reportCardDefId: null,
 		deliveryId: null,
@@ -67,7 +95,30 @@ export function emptyEntities(): MatrixEntities {
 		hasDemoLogin: false,
 		createdStudentId: null,
 		studentSetupBlocked: false,
+		filterFixtures: {},
 	};
+}
+
+/** Setup-written entity keys win over discoverEntities() scrape results. */
+export function mergeEntities(discovered: MatrixEntities, setup: Partial<MatrixEntities>): MatrixEntities {
+	const merged: MatrixEntities = {
+		...discovered,
+		...setup,
+		filterFixtures: {
+			...discovered.filterFixtures,
+			...setup.filterFixtures,
+		},
+	};
+
+	for (const key of Object.keys(setup) as (keyof MatrixEntities)[]) {
+		if (key === 'filterFixtures') continue;
+		const value = setup[key];
+		if (value !== null && value !== undefined && value !== false && value !== '') {
+			(merged as unknown as Record<string, unknown>)[key as string] = value;
+		}
+	}
+
+	return merged;
 }
 
 export function formatError(err: unknown): string {
@@ -76,6 +127,18 @@ export function formatError(err: unknown): string {
 
 export async function waitForAppShell(page: Page): Promise<void> {
 	await page.waitForSelector('aside#app-sidebar, [data-onboarding-shell], main', { timeout: 30_000 });
+}
+
+export async function waitForAcademicYearTrigger(page: Page, timeout = 10_000): Promise<boolean> {
+	const trigger = page.locator('[data-testid="academic-year-trigger"]')
+		.or(page.getByRole('button', { name: /année|year|scolaire/i }));
+	try {
+		await trigger.first().waitFor({ state: 'visible', timeout });
+		return true;
+	}
+	catch {
+		return false;
+	}
 }
 
 export async function assertNoFatalError(page: Page): Promise<string | null> {
@@ -131,7 +194,8 @@ export async function firstStudentIdFromList(page: Page): Promise<string | null>
 	}
 	await row.click();
 	await page.waitForTimeout(800);
-	const match = page.url().match(/\/school\/students\/([^/?]+)/);
+	const match = page.url().match(/\/school\/students\/([^/?]+)/)
+		?? page.url().match(/\/classes\/[^/]+\/students\/([^/?]+)/);
 	return match?.[1] ?? null;
 }
 
@@ -153,9 +217,13 @@ export function resolveEndpoint(endpoint: string, base: string, entities: Matrix
 		'[sessionId]': entities.sessionId,
 		'[dayId]': entities.dayId,
 		'[level]': entities.level ?? '6',
+		'[role]': entities.staffId,
 	};
 
 	// Context-specific [id] on nested routes
+	if (path.includes('/account/inbox/')) {
+		map['[id]'] = entities.deliveryId;
+	}
 	if (path.includes('/classes/') && path.includes('/students/')) {
 		map['[id]'] = entities.classStudentId ?? entities.studentId;
 	}
@@ -209,7 +277,26 @@ export function resolveEndpoint(endpoint: string, base: string, entities: Matrix
 		path = path.replaceAll(token, value ?? '');
 	}
 
-	return `${base}${path.startsWith('/') ? path : `/${path}`}`;
+	const searchIndex = path.indexOf('?');
+	const pathname = searchIndex >= 0 ? path.slice(0, searchIndex) : path;
+	let search = searchIndex >= 0 ? path.slice(searchIndex) : '';
+
+	const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+	const modal = params.get('modal');
+
+	if (modal === 'edit' && !params.get('modalTarget')) {
+		if (pathname.includes('/school/calendar') && entities.calendarEventId) {
+			params.set('modalTarget', entities.calendarEventId);
+		}
+		if (pathname.includes('/configuration/notifications') && entities.notificationTemplateKey) {
+			params.set('modalTarget', entities.notificationTemplateKey);
+		}
+	}
+
+	const query = params.toString();
+	search = query ? `?${query}` : '';
+
+	return `${base}${pathname.startsWith('/') ? pathname : `/${pathname}`}${search}`;
 }
 
 export function rowKey(row: QaTemplateRow): string {
@@ -241,10 +328,11 @@ export async function discoverEntities(ctx: DemoContext): Promise<MatrixEntities
 
 	if (entities.classId) {
 		await safeGoto(ctx, `${base}/classes/${entities.classId}/students`);
-		entities.classStudentId = await firstIdFromLinks(
-			page,
-			new RegExp(`/classes/${entities.classId}/students/([^/]+)`),
-		);
+		entities.classStudentId = await firstStudentIdFromList(page)
+			?? await firstIdFromLinks(
+				page,
+				new RegExp(`/classes/${entities.classId}/students/([^/]+)`),
+			);
 	}
 
 	await safeGoto(ctx, `${base}/school/guardians`);

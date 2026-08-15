@@ -6,7 +6,10 @@
  * Policy: on NOT OK — log blocker, continue, exit 1. Never edit src/ to green the run.
  *
  * Env: WEBAPP_URL, QA_LOGIN_EMAIL, QA_LOGIN_PASSWORD
- * Provisioned runs: INTEGRATION_PROVISIONED=1, QA_MATRIX_EXCLUDE_MODULES=Onboarding
+ * Provisioned runs (canonical integration contract): INTEGRATION_PROVISIONED=1
+ *   → bun run test:integration:provisioned
+ * Demo smoke (local only): bun run qa:matrix
+ * Always excluded (manual): Auth, Onboarding, Outils & imports, /login, /configuration/tools
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -17,9 +20,11 @@ import { createDemoContext } from '../tests/integration/demo-dry-run/support/con
 import { DEMO_PASSWORD, OWNER_EMAIL, STAFF_EMAIL } from '../tests/integration/demo-dry-run/support/constants';
 import { DEMO_WEBAPP_BASE } from '../tests/integration/demo-dry-run/support/paths';
 import { DemoReporter } from '../tests/integration/demo-dry-run/support/reporter';
-import { QA_TEMPLATE_MATRIX } from './qa-template-matrix';
+import { QA_TEMPLATE_MATRIX_RUNNABLE } from './qa-template-matrix';
+import { defaultExcludedModulesForRun } from './qa-matrix-exclusions';
+import type { QaTemplateRow } from './qa-template-matrix.manual';
 import { clearAcademicSelectionStorage } from './qa-harness-ui';
-import { waitForAppShell } from './qa-matrix-support';
+import { waitForAppShell, mergeEntities } from './qa-matrix-support';
 import { discoverEntities, emptyEntities, runMatrixScenario } from './qa-matrix-scenarios';
 import type { MatrixResult } from './qa-matrix-support';
 import type { ProvisionedTenant } from '../tests/integration/support/api-provision';
@@ -60,13 +65,12 @@ function excludedModules(): Set<string> {
 	);
 }
 
-function filterMatrix(): typeof QA_TEMPLATE_MATRIX {
-	const excluded = excludedModules();
-	if (excluded.size === 0) {
-		return QA_TEMPLATE_MATRIX;
+function filterMatrix(): QaTemplateRow[] {
+	const extra = excludedModules();
+	if (extra.size === 0) {
+		return [...QA_TEMPLATE_MATRIX_RUNNABLE];
 	}
-
-	return QA_TEMPLATE_MATRIX.filter(row => !excluded.has(row.module));
+	return QA_TEMPLATE_MATRIX_RUNNABLE.filter(row => !extra.has(row.module));
 }
 
 async function loadProvisionedCredentials(): Promise<FixtureCredentials | null> {
@@ -153,14 +157,19 @@ async function qaSignIn(
 async function main(): Promise<void> {
 	const base = process.env['WEBAPP_URL'] ?? DEMO_WEBAPP_BASE;
 	const matrix = filterMatrix();
-	const excluded = [...excludedModules()];
+	const excluded = [...defaultExcludedModulesForRun(), ...excludedModules()];
 	const credentials = await loadProvisionedCredentials();
 
 	await mkdir(OUT_DIR, { recursive: true });
 
 	console.log(`QA matrix run — ${matrix.length} scénarios — ${base}`);
+	if (!isProvisionedRun()) {
+		console.warn(
+			'⚠ Local demo smoke — not the canonical integration contract. Use: bun run test:integration:provisioned',
+		);
+	}
 	if (excluded.length > 0) {
-		console.log(`Excluded modules: ${excluded.join(', ')}`);
+		console.log(`Excluded from automated run: ${excluded.join(', ')}`);
 	}
 	if (isProvisionedRun() && credentials) {
 		console.log(`Provisioned login: ${credentials.email}`);
@@ -217,9 +226,11 @@ async function main(): Promise<void> {
 	const authRows = matrix.filter(r => r.module === 'Auth');
 	const appRows = matrix.filter(r => r.module !== 'Auth');
 
-	console.log('\n--- Phase Auth ---');
-	for (const row of authRows) {
-		record(await runMatrixScenario(row, ctx, browser, entities));
+	if (authRows.length > 0) {
+		console.log('\n--- Phase Auth ---');
+		for (const row of authRows) {
+			record(await runMatrixScenario(row, ctx, browser, entities));
+		}
 	}
 
 	console.log('\n--- Login session ---');
@@ -246,16 +257,23 @@ async function main(): Promise<void> {
 
 	if (isProvisionedRun()) {
 		const setup = await runWebTenantSetup(ctx);
-		Object.assign(entities, setup.entities, await loadSetupEntities());
+		const setupEntities = { ...setup.entities, ...(await loadSetupEntities()) };
+		Object.assign(entities, setupEntities);
 		entities.onboarded = true;
 		if (setup.steps.some(s => s.blocked)) {
 			entities.studentSetupBlocked = true;
+		}
+		const criticalFailed = setup.steps.filter(
+			s => ['academic-year', 'class', 'student'].includes(s.step) && !s.ok,
+		);
+		if (criticalFailed.length > 0) {
+			console.error(`Setup fail-fast: ${criticalFailed.map(s => s.step).join(', ')}`);
 		}
 	}
 
 	console.log('\n--- Découverte entités ---');
 	const discovered = await discoverEntities(ctx);
-	Object.assign(entities, discovered);
+	Object.assign(entities, mergeEntities(discovered, entities));
 	console.log(
 		`IDs: class=${entities.classId ?? '-'} student=${entities.studentId ?? '-'} eval=${entities.evaluationId ?? '-'}`,
 	);
@@ -266,7 +284,8 @@ async function main(): Promise<void> {
 		if (prevModule === 'Shell' && row.module !== 'Shell') {
 			console.log('--- Re-login après tests Shell ---');
 			await qaSignIn(ctx, credentials);
-			Object.assign(entities, await discoverEntities(ctx));
+			const rediscovered = await discoverEntities(ctx);
+			Object.assign(entities, mergeEntities(rediscovered, entities));
 		}
 		record(await runMatrixScenario(row, ctx, browser, entities));
 		prevModule = row.module;
@@ -348,7 +367,7 @@ async function persistAndExit(
 	console.log(`\n--- Résumé ---`);
 	console.log(`OK: ${passed}  NOT OK: ${failed}  N/A: ${na}  Total: ${results.length}`);
 	if (excluded.length > 0) {
-		console.log(`Excluded modules: ${excluded.join(', ')}`);
+		console.log(`Excluded from automated run: ${excluded.join(', ')}`);
 	}
 	for (const [module, counts] of Object.entries(byModule)) {
 		console.log(`${module}: ${counts.ok} OK, ${counts.na} N/A, ${counts.notOk} NOT OK`);

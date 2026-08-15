@@ -20,12 +20,22 @@ import {
 	discoverEntities,
 	emptyEntities,
 	formatError,
+	mergeEntities,
 	navigateToRow,
 	type MatrixEntities,
 	type MatrixResult,
+	waitForAcademicYearTrigger,
 	waitForAppShell,
 } from './qa-matrix-support';
+import {
+	MODAL_SURFACES,
+	ROUTE_REDIRECTS,
+	ROUTE_SMOKE_ACTION,
+	inventoryRouteToMatrixPath,
+} from './qa-route-catalog';
 import { isStudentBlockedScenario, STUDENT_SETUP_BLOCKER } from '../tests/integration/setup/setup-blockers';
+import { isFilterOrSearchRow, runFilterScenario } from './filter-setup-registry';
+import { waitForResolvedAcademicYearId } from './qa-harness-ui';
 
 function result(row: QaTemplateRow, statut: MatrixResult['statut'], detail?: string): MatrixResult {
 	return {
@@ -58,7 +68,12 @@ async function loginPassword(page: Page, base: string, email: string, password: 
 	return attemptPasswordSignIn(page, base, email, password);
 }
 
-async function hasMainContent(page: Page): Promise<boolean> {
+async function hasMainContent(page: Page, options: { drawerTimeout?: number } = {}): Promise<boolean> {
+	const drawerTimeout = options.drawerTimeout ?? 15_000;
+	const drawer = page.locator('aside[aria-label]');
+	if (await drawer.isVisible({ timeout: drawerTimeout }).catch(() => false)) {
+		return true;
+	}
 	return page.locator('main, [role="main"], table, [data-testid]').first().isVisible({ timeout: 8_000 }).catch(() => false);
 }
 
@@ -227,7 +242,7 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 		return na(row, 'Compte déjà onboardé — nécessite compte frais');
 	}
 
-	if (action.includes('Sidebar')) {
+	if (action.includes('Sidebar') && !action.includes('Sidebar — lien')) {
 		await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
 		await waitForAppShell(page);
 		const sidebar = page.locator('aside#app-sidebar');
@@ -246,10 +261,11 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 	}
 
 	if (action.includes('année scolaire')) {
-		const trigger = page.locator('[data-testid="academic-year-trigger"]')
-			.or(page.getByRole('button', { name: /année|year|scolaire/i }))
-			.first();
-		return (await trigger.isVisible({ timeout: 5_000 }).catch(() => false)) ? ok(row) : notOk(row, 'Sélecteur année absent');
+		await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
+		await waitForAppShell(page);
+		await waitForResolvedAcademicYearId(page).catch(() => {});
+		const visible = await waitForAcademicYearTrigger(page, 10_000);
+		return visible ? ok(row) : notOk(row, 'Sélecteur année absent');
 	}
 
 	if (action.includes('langue')) {
@@ -261,15 +277,20 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 		return ok(row);
 	}
 
-	if (action.includes('Avatar') || action.includes('profile=1')) {
-		const url = action.includes('profile=1') ? `${base}/dashboard?profile=1` : `${base}/dashboard`;
+	if (action.includes('Avatar') || action.includes('modal=account-profile')) {
+		const url = action.includes('modal=account-profile')
+			? `${base}/dashboard?modal=account-profile`
+			: `${base}/dashboard`;
 		await page.goto(url, { waitUntil: 'domcontentloaded' });
 		await waitForAppShell(page);
 		const dialog = page.getByRole('dialog');
 		const profileBtn = page.locator('[data-testid="user-menu"], button[aria-label*="profil" i], button[aria-label*="account" i], button[aria-label*="compte" i]').first();
-		if (action.includes('profile=1')) {
+		if (action.includes('modal=account-profile')) {
 			const opened = await dialog.isVisible({ timeout: 8_000 }).catch(() => false);
-			return opened ? ok(row) : notOk(row, 'Modal profil non ouvert via ?profile=1');
+			const urlOk = page.url().includes('modal=account-profile');
+			return opened && urlOk
+				? ok(row)
+				: notOk(row, 'Modal profil non ouvert via ?modal=account-profile');
 		}
 		if (await profileBtn.isVisible().catch(() => false)) {
 			await profileBtn.click();
@@ -297,8 +318,78 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		return runOnboardingScenario(row, ctx, entities);
 	}
 
-	if (row.endpoint === '(app)' || row.module === 'Shell') {
+	if (
+		row.endpoint === '(app)'
+		|| (row.module === 'Shell'
+			&& !/^Sidebar — lien /i.test(action)
+			&& !/^Modal deep-link /i.test(action))
+	) {
 		return runShellScenario(row, ctx, browser);
+	}
+
+	// ── Generated: legacy redirect smoke ──
+	if (/^Redirect — cible attendue$/i.test(action)) {
+		const nav = await navigateToRow(ctx, row, entities);
+		if (!nav.url) return na(row, nav.reason ?? 'URL non résolue');
+		await page.waitForTimeout(1_500);
+		const pathname = new URL(page.url()).pathname;
+		const routeKey = inventoryRouteToMatrixPath(pathname).replace(/\[id\]/g, ':id?').replace(/\[classId\]/g, ':classId');
+		const expected = ROUTE_REDIRECTS[routeKey] ?? ROUTE_REDIRECTS[inventoryRouteToMatrixPath(row.endpoint.replace(/^https?:\/\/[^/]+/i, '').split('?')[0] ?? '')];
+		if (!expected) {
+			return ok(row, `Redirected to ${pathname}`);
+		}
+		const targetPrefix = expected.split('?')[0]?.replace(':classId', entities.classId ?? '')
+			.replace(':id?', entities.studentId ?? '')
+			.replace(':id', entities.studentId ?? '') ?? expected;
+		const okRedirect = pathname.startsWith(targetPrefix.split('?')[0] ?? targetPrefix)
+			|| page.url().includes(targetPrefix.replace(/:\w+\??/g, ''));
+		return okRedirect ? ok(row, page.url()) : notOk(row, `Expected redirect toward ${expected}, got ${page.url()}`);
+	}
+
+	// ── Generated: sidebar href smoke ──
+	if (/^Sidebar — lien /i.test(action)) {
+		const targetPath = new URL(
+			row.endpoint.startsWith('http') ? row.endpoint : `${ctx.base}${row.endpoint}`,
+		).pathname.replace('[classId]', entities.classId ?? '[classId]');
+		if (targetPath.includes('[classId]') && !entities.classId) {
+			return na(row, 'classId requis pour lien sidebar classe');
+		}
+		await page.goto(`${ctx.base}/dashboard`, { waitUntil: 'domcontentloaded' });
+		await waitForAppShell(page);
+
+		const resolvedPath = targetPath.replace('[classId]', entities.classId ?? '');
+		const sidebar = page.locator('aside#app-sidebar');
+		await sidebar.hover().catch(() => {});
+
+		const modulePatterns: Array<{ prefix: string; pattern: RegExp }> = [
+			{ prefix: '/school', pattern: /école|school/i },
+			{ prefix: '/classes/', pattern: /classes|classe/i },
+			{ prefix: '/finance', pattern: /finance|finances/i },
+			{ prefix: '/configuration', pattern: /config/i },
+		];
+		const moduleMatch = modulePatterns.find(entry => resolvedPath.startsWith(entry.prefix));
+		if (moduleMatch) {
+			const moduleButtons = sidebar.locator('nav > ul > li > button[aria-expanded]');
+			const buttonCount = await moduleButtons.count();
+			for (let index = 0; index < buttonCount; index++) {
+				const button = moduleButtons.nth(index);
+				const label = await button.innerText().catch(() => '');
+				if (!moduleMatch.pattern.test(label)) continue;
+				if ((await button.getAttribute('aria-expanded')) !== 'true') {
+					await button.click();
+					await page.waitForTimeout(400);
+				}
+				break;
+			}
+		}
+
+		const link = sidebar.locator(`a[href="${resolvedPath}"], a[href^="${resolvedPath}/"]`).first();
+		if (!(await link.isVisible({ timeout: 6_000 }).catch(() => false))) {
+			return notOk(row, `Lien sidebar introuvable: ${resolvedPath}`);
+		}
+		await link.click();
+		await page.waitForTimeout(1_000);
+		return page.url().includes(resolvedPath) ? ok(row) : notOk(row, page.url());
 	}
 
 	// Redirect-only tests
@@ -336,6 +427,91 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 	const fatal = await assertNoFatalError(page);
 	if (fatal) return notOk(row, fatal);
 
+	// ── Generated: modal deep-link smoke ──
+	if (/^Modal deep-link \?modal=/i.test(action)) {
+		const endpointPath = row.endpoint.replace(/^https?:\/\/[^/]+/i, '');
+		const modalMatch = endpointPath.match(/[?&]modal=([^&]+)/);
+		const modalKey = modalMatch?.[1];
+		const pathOnly = endpointPath.split('?')[0] ?? '';
+		const surface = MODAL_SURFACES.find((s) => {
+			if (s.modal !== modalKey) return false;
+			const normalizedParent = s.parentRoute
+				.replace('/[classId]', '')
+				.replace('/[id]', '');
+			return pathOnly === normalizedParent || pathOnly.startsWith(`${normalizedParent}/`);
+		});
+		if (surface?.requiresTarget && surface.targetEntityKey) {
+			const target = entities[surface.targetEntityKey as keyof MatrixEntities];
+			if (!target) {
+				return na(row, `Setup missing ${surface.setupStep ?? surface.targetEntityKey} for modalTarget`);
+			}
+		}
+
+		if (modalKey === 'add-chapter' && pathOnly.includes('/configuration/subjects/') && !entities.subjectId) {
+			return na(row, 'Setup missing subjectId for progression modal');
+		}
+
+		if (modalKey === 'edit' && pathOnly.includes('/configuration/notifications')) {
+			await waitForPageQuery(page);
+			await page.locator('[data-testid="form-modal"], [role="dialog"]').first()
+				.waitFor({ state: 'visible', timeout: 15_000 })
+				.catch(() => {});
+		}
+
+		const dialogTimeout = modalKey === 'edit' && pathOnly.includes('/configuration/notifications') ? 20_000 : 8_000;
+		const dialog = pathOnly.includes('/configuration/notifications') && modalKey === 'edit'
+			? page.locator('[data-testid="form-modal"]')
+			: page.getByRole('dialog').or(page.locator('[data-testid="form-modal"]'));
+		let visible = await dialog.first().isVisible({ timeout: dialogTimeout }).catch(() => false);
+		if (!visible && modalKey === 'edit' && pathOnly.includes('/configuration/notifications')) {
+			for (let attempt = 0; attempt < 10; attempt++) {
+				await page.waitForTimeout(500);
+				visible = await dialog.first().isVisible().catch(() => false);
+				if (visible) break;
+			}
+		}
+
+		const urlHasModal = modalKey ? page.url().includes(`modal=${modalKey}`) : false;
+		return visible && urlHasModal ? ok(row) : notOk(row, `Modal non visible (url=${page.url()})`);
+	}
+
+	// ── Generated: direct route navigation smoke ──
+	if (action === ROUTE_SMOKE_ACTION) {
+		const isStudentDrawerRoute = /\/school\/students\/[^/]+\//.test(page.url())
+			|| row.endpoint.includes('/school/students/[id]/');
+		if (isStudentDrawerRoute) {
+			await waitForPageQuery(page);
+		}
+		const content = await hasMainContent(page, { drawerTimeout: 15_000 });
+		return content ? ok(row) : notOk(row, 'Contenu principal / drawer absent');
+	}
+
+	// ── Notes pédagogiques (before generic CRUD — action contains "CRUD") ──
+	if (/notes pédagogiques/i.test(action)) {
+		const addNoteBtn = page.getByRole('button', { name: /add note|ajouter une note/i }).first();
+		if (!(await addNoteBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
+			return notOk(row, 'Bouton Add note introuvable');
+		}
+		await addNoteBtn.click();
+		const dialog = page.getByRole('dialog');
+		if (!(await dialog.isVisible({ timeout: 5_000 }).catch(() => false))) {
+			return notOk(row, 'Modal note pédagogique non ouvert');
+		}
+		const body = dialog.locator('textarea').first();
+		await body.fill(`QA note ${Date.now()}`);
+		const createResponse = page.waitForResponse(
+			res => res.url().includes('/core/commands/create-student-note') && res.request().method() === 'POST',
+			{ timeout: 15_000 },
+		).catch(() => null);
+		await submitDialog(page);
+		const response = await createResponse;
+		const closed = !(await dialog.isVisible().catch(() => false));
+		if (response && response.ok() && closed) {
+			return ok(row, 'Note pédagogique créée');
+		}
+		return notOk(row, closed ? 'API create-student-note échouée' : 'Modal note toujours ouvert');
+	}
+
 	// ── List / display / load ──
 	if (/^(Liste|Chargement|Ledger|Hub|Templates|Catalogue|Affichage|Consulter|Vue |Redirect)/i.test(action)
 		|| /affichage|charge|visible|historique|métadonnées|détail message|profil élève|notes|assiduité|incidents|finances|bulletin|inscriptions/i.test(action)
@@ -344,50 +520,12 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		return content ? ok(row) : notOk(row, 'Contenu principal absent');
 	}
 
-	// ── Search ──
-	if (/recherche/i.test(action)) {
-		const search = listSearchInput(page).first();
-		if (!(await search.isVisible({ timeout: 5_000 }).catch(() => false))) {
-			return notOk(row, 'Champ recherche introuvable');
+	// ── Search / Filters (registry-driven setup-first) ──
+	if (isFilterOrSearchRow(action)) {
+		const filterResult = await runFilterScenario(row, ctx, entities);
+		if (filterResult) {
+			return filterResult;
 		}
-		await search.fill('test');
-		await page.waitForTimeout(1_000);
-		return ok(row);
-	}
-
-	// ── Filters ──
-	if (/filtre/i.test(action)) {
-		if (action.includes('statut') && row.endpoint.includes('/school/students')) {
-			for (const status of ['inactive', 'archived']) {
-				await page.goto(`${ctx.base}/school/students?status=${status}`, { waitUntil: 'domcontentloaded' });
-				await page.waitForTimeout(1_500);
-			}
-			const hasTable = await page.locator('table, [role="table"], main').first().isVisible().catch(() => false);
-			if (!entities.createdStudentId && !entities.studentId) {
-				return na(row, 'Aucun élève inactif créé — filtre non vérifiable');
-			}
-			return hasTable ? ok(row, 'Filtres statut navigables') : notOk(row, 'Liste absente après filtre statut');
-		}
-		const combobox = page.getByRole('combobox').first();
-		const nativeFilter = page.locator('select[aria-label="Filter"], [data-testid="list-filter"]').first();
-		const filterBtn = page.getByRole('button', { name: /filtre|filter/i }).first();
-		if (await combobox.isVisible({ timeout: 4_000 }).catch(() => false)) {
-			await combobox.click();
-			await page.getByRole('option').first().click({ timeout: 5_000 }).catch(() => {});
-			return ok(row);
-		}
-		if (await nativeFilter.isVisible({ timeout: 4_000 }).catch(() => false)) {
-			const options = await nativeFilter.locator('option').count();
-			if (options > 1) {
-				await nativeFilter.selectOption({ index: 1 });
-			}
-			return ok(row);
-		}
-		if (await filterBtn.isVisible().catch(() => false)) {
-			await filterBtn.click();
-			return ok(row);
-		}
-		return notOk(row, 'Contrôle filtre introuvable');
 	}
 
 	// ── Sort / pagination ──
@@ -411,7 +549,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 	}
 
 	// ── Create / modal ──
-	if (/créer|crud|nouveau|ajouter/i.test(action)) {
+	if (/créer|crud|nouveau|ajouter/i.test(action) && !/notes pédagogiques/i.test(action)) {
 		if (row.endpoint.includes('/school/events') && /incident/i.test(action)) {
 			await waitForPageQuery(page);
 			await dismissPageError(page);
@@ -514,32 +652,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 	}
 
 	// ── Edit / drawer / open ──
-	if (/éditer|édi|ouvrir|drawer|onglet|assigner|affectation|photo|commentaire|changer|notes pédagogiques/i.test(action)) {
-		if (/notes pédagogiques/i.test(action)) {
-			const addNoteBtn = page.getByRole('button', { name: /add note|ajouter une note/i }).first();
-			if (!(await addNoteBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
-				return notOk(row, 'Bouton Add note introuvable');
-			}
-			await addNoteBtn.click();
-			const dialog = page.getByRole('dialog');
-			if (!(await dialog.isVisible({ timeout: 5_000 }).catch(() => false))) {
-				return notOk(row, 'Modal note pédagogique non ouvert');
-			}
-			const body = dialog.locator('textarea').first();
-			await body.fill(`QA note ${Date.now()}`);
-			const createResponse = page.waitForResponse(
-				res => res.url().includes('/core/commands/create-student-note') && res.request().method() === 'POST',
-				{ timeout: 15_000 },
-			).catch(() => null);
-			await submitDialog(page);
-			const response = await createResponse;
-			const closed = !(await dialog.isVisible().catch(() => false));
-			if (response && response.ok() && closed) {
-				return ok(row, 'Note pédagogique créée');
-			}
-			return notOk(row, closed ? 'API create-student-note échouée' : 'Modal note toujours ouvert');
-		}
-
+	if (/éditer|édi|ouvrir|drawer|onglet|assigner|affectation|photo|commentaire|changer/i.test(action)) {
 		if (row.endpoint.includes('/finance/billing')) {
 			if (/assigner/i.test(action)) {
 				const assignBtn = page.getByRole('button', { name: /ajouter une facture|add invoice/i }).first();
@@ -617,6 +730,11 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 	if (row.endpoint.includes('/configuration/academic') && /publier année/i.test(action)) {
 		const label = `E2E ${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
 		const yearHeading = page.getByRole('heading', { name: label, exact: true });
+		const section = yearHeading.locator('xpath=ancestor::section[1]');
+		const publishedBadge = section.getByText(/publié|published/i).first();
+		if (await publishedBadge.isVisible({ timeout: 3_000 }).catch(() => false)) {
+			return ok(row, `${label} déjà publiée (setup)`);
+		}
 		if (!(await yearHeading.isVisible({ timeout: 8_000 }).catch(() => false))) {
 			const fallback = page.locator('section h3').first();
 			const fallbackLabel = (await fallback.textContent().catch(() => ''))?.trim();

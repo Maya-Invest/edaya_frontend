@@ -25,6 +25,7 @@
 	/>
 	<input
 		type="search"
+		data-testid="list-search"
 		bind:value
 		{oninput}
 		placeholder={placeholder ?? $t('common.search')}

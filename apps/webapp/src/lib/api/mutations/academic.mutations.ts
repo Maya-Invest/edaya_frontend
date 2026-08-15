@@ -92,24 +92,13 @@ export async function createAcademicYearMutation(
 
 export async function publishAcademicYearMutation(yearId: string): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const result = await runMutation(() => client.commands.activateAcademicYear({ academicYearId: yearId }));
+	const result = await runMutation(() => client.commands.publishAcademicYear({ academicYearId: yearId }));
 	return result !== null;
 }
 
 export async function archiveAcademicYearMutation(yearId: string): Promise<boolean> {
-	const year = academicContext.years.find(candidate => candidate.id === yearId);
-	if (!year) {
-		return false;
-	}
 	const client = getBrowserSchoolClient();
-	const result = await runMutation(() => client.entities.academicYears.save({
-		id: year.id,
-		schoolId: year.schoolId,
-		name: year.label,
-		startDate: year.startDate,
-		endDate: year.endDate,
-		isActive: false,
-	}));
+	const result = await runMutation(() => client.commands.archiveAcademicYear({ academicYearId: yearId }));
 	return result !== null;
 }
 

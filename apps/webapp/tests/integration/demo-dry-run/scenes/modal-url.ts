@@ -1,3 +1,4 @@
+import { MODAL_SURFACES } from '../../../../scripts/qa-route-catalog';
 import { CLASS_6A, CLASS_SUBJECT_ID, STAFF_ID, STUDENT_ID } from '../support/constants';
 import {
 	classTeachingDrawerPath,
@@ -16,6 +17,30 @@ import {
 } from '../support/modal';
 import type { DemoContext } from '../support/types';
 import { visit } from '../support/visit';
+
+/** Demo deep-link cases — each entry must exist in MODAL_SURFACES (qa-route-catalog). */
+const DEMO_MODAL_CATALOG_KEYS: ReadonlyArray<{ parentRoute: string; modal: string }> = [
+	{ parentRoute: '/school/students', modal: 'create' },
+	{ parentRoute: '/school/teachers', modal: 'create' },
+	{ parentRoute: '/school/staff', modal: 'create' },
+	{ parentRoute: '/configuration/classes/[id]/profile', modal: 'edit' },
+	{ parentRoute: '/school/students/[id]/profile', modal: 'edit-profile' },
+	{ parentRoute: '/school/students/[id]/profile', modal: 'link-guardian' },
+	{ parentRoute: '/school/students/[id]/grades', modal: 'add-grade' },
+	{ parentRoute: '/classes/[classId]/teaching/[id]/progression', modal: 'edit-subject' },
+	{ parentRoute: '/school/staff/[id]/permissions', modal: 'add-permission' },
+];
+
+for (const key of DEMO_MODAL_CATALOG_KEYS) {
+	const found = MODAL_SURFACES.some(
+		surface => surface.parentRoute === key.parentRoute && surface.modal === key.modal,
+	);
+	if (!found) {
+		throw new Error(
+			`Demo modal ${key.modal} on ${key.parentRoute} missing from MODAL_SURFACES — update qa-route-catalog.ts`,
+		);
+	}
+}
 
 /** URL-backed modals: deep links, open sync, close strips ?modal=. */
 export async function runModalUrlChecks(ctx: DemoContext): Promise<void> {

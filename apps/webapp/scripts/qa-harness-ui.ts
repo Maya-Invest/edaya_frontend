@@ -59,19 +59,10 @@ function mainContentScope(page: Page): Locator {
 	return page.locator('main, [role="main"]').first();
 }
 
-const LIST_SEARCH_PLACEHOLDER = /search|recherch/i;
-
-/**
- * List-page search field — matches both `ListSearchField` (`type="search"`) and legacy
- * header snippets that use `<Input type="text">` + Search icon (e.g. teaching, subjects).
- */
+/** Canonical list-page search — `ListSearchField` exposes data-testid="list-search". */
 export function listSearchInput(page: Page): Locator {
-	const scope = mainContentScope(page);
-	return scope
-		.getByRole('searchbox')
-		.or(scope.locator('input[type="search"]'))
-		.or(scope.getByPlaceholder(LIST_SEARCH_PLACEHOLDER))
-		.or(scope.locator('div.relative:has(svg) input[type="text"]'));
+	const scoped = mainContentScope(page).locator('[data-testid="list-search"]');
+	return scoped.or(page.locator('[data-testid="list-search"]'));
 }
 
 /**
@@ -239,12 +230,62 @@ export async function clickCreateButton(
 
 export async function submitDialog(
 	page: Page,
-	label: RegExp = /enregistrer|save changes|^save$/i,
+	label: RegExp = /enregistrer|save changes|^save$|add note|ajouter une note/i,
 ): Promise<void> {
-	const dialog = page.getByRole('dialog');
-	const submit = dialog.getByRole('button', { name: label }).last();
+	const modal = page.getByTestId('form-modal');
+	const dialog = modal.or(page.getByRole('dialog'));
+	const submit = modal.getByTestId('form-modal-submit')
+		.or(dialog.getByRole('button', { name: label }))
+		.last();
 	await waitForEnabled(submit);
 	await submit.click();
+}
+
+export async function selectListFilter(page: Page, value: string): Promise<boolean> {
+	const native = page.locator('[data-testid="list-filter"], select[aria-label="Filter"]').first();
+	if (await native.isVisible({ timeout: 4_000 }).catch(() => false)) {
+		await native.selectOption(value);
+		return true;
+	}
+	const combobox = page.getByRole('combobox').first();
+	if (await combobox.isVisible({ timeout: 4_000 }).catch(() => false)) {
+		await combobox.click();
+		const option = page.getByRole('option', { name: new RegExp(value, 'i') }).first();
+		if (await option.isVisible({ timeout: 4_000 }).catch(() => false)) {
+			await option.click();
+			return true;
+		}
+		await page.getByRole('option').first().click({ timeout: 3_000 }).catch(() => {});
+		return true;
+	}
+	return false;
+}
+
+export async function openFilterPanel(page: Page, titlePattern: RegExp): Promise<boolean> {
+	const panel = page.locator('section, div').filter({ has: page.getByText(titlePattern) }).first();
+	if (await panel.isVisible({ timeout: 3_000 }).catch(() => false)) {
+		return true;
+	}
+	const filterBtn = page.getByRole('button', { name: /filtre|filter/i }).first();
+	if (await filterBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+		await filterBtn.click();
+		return true;
+	}
+	return false;
+}
+
+export async function assertListContains(page: Page, text: string, visible = true): Promise<boolean> {
+	const row = page.locator('main').getByText(text, { exact: false }).first();
+	const isVisible = await row.isVisible({ timeout: 6_000 }).catch(() => false);
+	return visible ? isVisible : !isVisible;
+}
+
+export async function assertListCount(page: Page, min: number, max?: number): Promise<boolean> {
+	const rows = page.locator('main table tbody tr, main ul li [role="button"][tabindex="0"]');
+	const count = await rows.count();
+	if (count < min) return false;
+	if (max !== undefined && count > max) return false;
+	return true;
 }
 
 /** ClassGroupFormModal — grade levels come from academicContext, not placeholder options. */
@@ -327,10 +368,39 @@ export async function fillClassCreateDialog(
  * StudentCreateModal — requires classGroupId; invite email required when checkbox is checked.
  * Uses bits-ui Select (combobox) when classes exist; otherwise fails fast with a clear message.
  */
-export async function fillStudentCreateDialog(page: Page): Promise<void> {
+export async function selectComboboxOption(
+	page: Page,
+	combobox: Locator,
+	match: { value?: string; name?: RegExp | string } = {},
+): Promise<void> {
+	await combobox.click();
+	if (match.value) {
+		const byValue = page.locator(`[role="option"][data-value="${match.value}"]`).first();
+		if (await byValue.isVisible({ timeout: 5_000 }).catch(() => false)) {
+			await byValue.click();
+			return;
+		}
+	}
+	if (match.name) {
+		const pattern = typeof match.name === 'string' ? new RegExp(match.name, 'i') : match.name;
+		const option = page.getByRole('option', { name: pattern }).first();
+		if (await option.isVisible({ timeout: 5_000 }).catch(() => false)) {
+			await option.click();
+			return;
+		}
+	}
+	await page.getByRole('option').first().click({ timeout: 10_000 });
+}
+
+export async function fillStudentCreateDialog(
+	page: Page,
+	options: { firstName?: string; lastName?: string; className?: RegExp | string } = {},
+): Promise<void> {
 	const dialog = page.getByRole('dialog');
-	await dialog.locator('input').nth(0).fill('E2E');
-	await dialog.locator('input').nth(1).fill(`Student${Date.now()}`);
+	const firstName = options.firstName ?? 'E2E';
+	const lastName = options.lastName ?? `Student${Date.now()}`;
+	await dialog.locator('input').nth(0).fill(firstName);
+	await dialog.locator('input').nth(1).fill(lastName);
 
 	const noClasses = await dialog.getByText(/no classes|aucune classe|pas de classe/i).isVisible().catch(() => false);
 	if (noClasses) {
@@ -339,8 +409,12 @@ export async function fillStudentCreateDialog(page: Page): Promise<void> {
 
 	const classTrigger = dialog.getByRole('combobox').first();
 	if (await classTrigger.isVisible().catch(() => false)) {
-		await classTrigger.click();
-		await page.getByRole('option').first().click({ timeout: 10_000 });
+		if (options.className) {
+			await selectComboboxOption(page, classTrigger, { name: options.className });
+		}
+		else {
+			await selectComboboxOption(page, classTrigger);
+		}
 	}
 
 	const inviteCheckbox = dialog.locator('#student-send-invite');
@@ -393,6 +467,15 @@ async function yearHeaderStatus(yearSection: Locator): Promise<'published' | 'dr
 const publishYearButtonName = /^publish year$|^publier l['']année$/iu;
 const archiveYearButtonName = /^archive year$|^archiver l['']année$/iu;
 
+async function confirmNamedDialog(page: Page, confirmButtonName: RegExp): Promise<void> {
+	const dialog = page.getByRole('dialog');
+	await dialog.waitFor({ state: 'visible', timeout: 10_000 });
+	const confirm = dialog.getByRole('button', { name: confirmButtonName }).last();
+	await waitForEnabled(confirm);
+	await confirm.click();
+	await waitForDialogClosed(page);
+}
+
 /** Archive published years so a draft year can be published (only one published year allowed). */
 async function archivePublishedYears(page: Page): Promise<void> {
 	for (let attempt = 0; attempt < 5; attempt++) {
@@ -403,12 +486,7 @@ async function archivePublishedYears(page: Page): Promise<void> {
 		const section = page.locator('section').filter({ has: archiveBtn }).first();
 		await expandYearSection(section);
 		await archiveBtn.click();
-		const dialog = page.getByRole('dialog');
-		await dialog.waitFor({ state: 'visible', timeout: 10_000 });
-		const confirm = dialog.getByRole('button', { name: archiveYearButtonName }).last();
-		await waitForEnabled(confirm);
-		await confirm.click();
-		await waitForDialogClosed(page);
+		await confirmNamedDialog(page, archiveYearButtonName);
 		await page.waitForTimeout(1_500);
 	}
 }
@@ -440,28 +518,28 @@ export async function ensureAcademicYearReady(page: Page, label: string): Promis
 			return true;
 		}
 
-		const publishBtn = yearSection.getByRole('button', { name: publishYearButtonName });
+		const publishBtn = yearSection.getByRole('button', { name: publishYearButtonName }).first();
 		if (await publishBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
 			if (await publishBtn.isDisabled().catch(() => false)) {
 				await archivePublishedYears(page);
 				await waitForPageQuery(page);
 				continue;
 			}
-			await Promise.all([
-				page.waitForResponse(
-					(response) => response.url().includes('/core/commands/publish-academic-year')
-						&& response.request().method() === 'POST'
-						&& response.status() < 400,
-					{ timeout: 30_000 },
-				).catch(() => null),
-				publishBtn.click(),
-			]);
+			await publishBtn.click();
+			const responsePromise = page.waitForResponse(
+				(response) => response.url().includes('/core/commands/publish-academic-year')
+					&& response.request().method() === 'POST'
+					&& response.status() < 400,
+				{ timeout: 30_000 },
+			).catch(() => null);
+			await confirmNamedDialog(page, publishYearButtonName);
+			await responsePromise;
 			await waitForPageQuery(page);
 			await page.waitForTimeout(500);
 			if ((await readStatus()) === 'published') {
 				return true;
 			}
-			// Header badge can lag shell refresh — wait for archive action (published years only).
+			// Header badge can lag shell refresh — archive button appears only on published years.
 			const archiveInSection = yearSection.getByRole('button', { name: archiveYearButtonName });
 			if (await archiveInSection.isVisible({ timeout: 5_000 }).catch(() => false)) {
 				return true;
