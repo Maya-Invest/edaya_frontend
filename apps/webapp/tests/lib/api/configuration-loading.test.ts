@@ -94,11 +94,9 @@ describe('configuration and activity loading', () => {
 		expect(entityListRequests(requests, 'subjects')).toHaveLength(0);
 	});
 
-	it('loads subjects catalog with school-scoped entity lists', async () => {
+	it('loads subjects catalog with school-scoped parents and child rows by those ids', async () => {
 		const empty = listEnvelope([]);
 		const { client, requests } = createRecordingSchoolClient([
-			empty,
-			empty,
 			empty,
 			empty,
 			empty,
@@ -106,17 +104,64 @@ describe('configuration and activity loading', () => {
 
 		await fetchCatalogSubjectsSources(client, SEED_SCHOOL_ID);
 
-		for (const entity of [
-			'grade-level-subjects',
-			'class-subjects',
-			'subjects',
-			'subject-matters',
-			'grade-level-subject-matters',
-		]) {
-			expect(entityListRequests(requests, entity)[0]?.body).toMatchObject({
+		expect(entityListRequests(requests, 'grade-levels')[0]?.body).toMatchObject({
+			schoolId: SEED_SCHOOL_ID,
+		});
+		expect(entityListRequests(requests, 'class-groups')[0]?.body).toMatchObject({
+			schoolId: SEED_SCHOOL_ID,
+		});
+		expect(entityListRequests(requests, 'subjects')[0]?.body).toMatchObject({
+			schoolId: SEED_SCHOOL_ID,
+		});
+		expect(entityListRequests(requests, 'grade-level-subjects')).toHaveLength(0);
+		expect(entityListRequests(requests, 'class-subjects')).toHaveLength(0);
+		expect(entityListRequests(requests, 'subject-matters')).toHaveLength(0);
+		expect(entityListRequests(requests, 'grade-level-subject-matters')).toHaveLength(0);
+	});
+
+	it('lists grade-level-subjects and class-subjects by parent ids, not schoolId', async () => {
+		const { client, requests } = createRecordingSchoolClient([
+			listEnvelope([{
+				id: 'gl-1',
 				schoolId: SEED_SCHOOL_ID,
-			});
-		}
+				name: '6e',
+			}]),
+			listEnvelope([{
+				id: 'class-1',
+				schoolId: SEED_SCHOOL_ID,
+				gradeLevelId: 'gl-1',
+			}]),
+			listEnvelope([{
+				id: 'subj-1',
+				schoolId: SEED_SCHOOL_ID,
+				name: 'Math',
+			}]),
+			listEnvelope([{
+				id: 'gls-1',
+				gradeLevelId: 'gl-1',
+				subjectId: 'subj-1',
+				academicYearId: 'year-1',
+				isOptional: false,
+			}]),
+			listEnvelope([]),
+			listEnvelope([]),
+			listEnvelope([]),
+		]);
+
+		await fetchCatalogSubjectsSources(client, SEED_SCHOOL_ID);
+
+		expect(entityListRequests(requests, 'grade-level-subjects')[0]?.body).toMatchObject({
+			gradeLevelId: { $in: ['gl-1'] },
+		});
+		expect(entityListRequests(requests, 'class-subjects')[0]?.body).toMatchObject({
+			classGroupId: { $in: ['class-1'] },
+		});
+		expect(entityListRequests(requests, 'subject-matters')[0]?.body).toMatchObject({
+			subjectId: { $in: ['subj-1'] },
+		});
+		expect(entityListRequests(requests, 'grade-level-subject-matters')[0]?.body).toMatchObject({
+			gradeLevelSubjectId: { $in: ['gls-1'] },
+		});
 	});
 
 	it('loads class grade levels with school-scoped class-groups list', async () => {

@@ -102,16 +102,26 @@ export function logStep(journey: UiJourney, result: SetupStepResult): void {
 	console.log(`${tag} ${result.step}${result.detail ? ` — ${result.detail.slice(0, 120)}` : ''}`);
 }
 
+function commandPublicName(fragment: string): string {
+	if (fragment.includes('-')) {
+		return fragment;
+	}
+	return fragment.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`).replace(/^-/, '');
+}
+
 export async function waitForCommandPayload(
 	page: Page,
 	commandFragment: string,
 	timeout = 45_000,
 ): Promise<Record<string, unknown> | null> {
+	const publicName = commandPublicName(commandFragment);
 	const response = await page.waitForResponse(
-		res => res.request().method() === 'POST' && res.url().includes(`/core/commands/${commandFragment}`),
+		res => res.request().method() === 'POST'
+			&& (res.url().includes(`/core/commands/${publicName}`)
+				|| res.url().includes(`/core/commands/${commandFragment}`)),
 		{ timeout },
 	).catch(() => null);
-	if (!response) {
+	if (!response?.ok()) {
 		return null;
 	}
 	const postData = response.request().postData();

@@ -300,10 +300,45 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 	}
 
 	if (action.includes('Logout')) {
+		if (process.env['INTEGRATION_PROVISIONED'] === '1') {
+			return na(row, 'Logout exécuté en fin de run provisioned');
+		}
 		return na(row, 'Logout non exécuté — casserait la session pour les tests suivants');
 	}
 
 	return notOk(row, 'Scénario Shell non mappé');
+}
+
+/** Run at end of provisioned matrix — session destruction is safe after all other tests. */
+export async function runLogoutShellScenario(row: QaTemplateRow, ctx: DemoContext): Promise<MatrixResult> {
+	const { page, base } = ctx;
+	try {
+		await page.goto(`${base}/dashboard?modal=account-profile`, { waitUntil: 'domcontentloaded' });
+		await waitForAppShell(page);
+
+		const dialog = page.getByRole('dialog');
+		if (!(await dialog.isVisible({ timeout: 8_000 }).catch(() => false))) {
+			const profileBtn = page.locator('[data-testid="user-menu"]').first();
+			if (await profileBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
+				await profileBtn.click();
+			}
+			if (!(await dialog.isVisible({ timeout: 5_000 }).catch(() => false))) {
+				return notOk(row, 'Modal profil non ouvert avant logout');
+			}
+		}
+
+		const signOut = dialog.getByRole('button', { name: /se déconnecter|sign out/i }).last();
+		if (!(await signOut.isVisible({ timeout: 5_000 }).catch(() => false))) {
+			return notOk(row, 'Bouton déconnexion introuvable');
+		}
+		await signOut.click();
+
+		const redirected = await page.waitForURL(/\/login/, { timeout: 15_000 }).then(() => true).catch(() => false);
+		return redirected ? ok(row) : notOk(row, `Pas de redirect /login (url=${page.url()})`);
+	}
+	catch (err) {
+		return notOk(row, formatError(err));
+	}
 }
 
 async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Browser, entities: MatrixEntities): Promise<MatrixResult> {

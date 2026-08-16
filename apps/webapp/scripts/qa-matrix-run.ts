@@ -26,7 +26,7 @@ import { defaultExcludedModulesForRun } from './qa-matrix-exclusions';
 import type { QaTemplateRow } from './qa-template-matrix.manual';
 import { clearAcademicSelectionStorage } from './qa-harness-ui';
 import { waitForAppShell, mergeEntities } from './qa-matrix-support';
-import { discoverEntities, emptyEntities, runMatrixScenario } from './qa-matrix-scenarios';
+import { discoverEntities, emptyEntities, runLogoutShellScenario, runMatrixScenario } from './qa-matrix-scenarios';
 import type { MatrixResult } from './qa-matrix-support';
 import type { ProvisionedTenant } from '../tests/integration/support/api-provision';
 import { loadSetupEntities } from '../tests/integration/setup/web-tenant-setup';
@@ -183,6 +183,19 @@ async function main(): Promise<void> {
 		const tag = r.statut === 'OK' ? '✓' : r.statut === 'N/A' ? '○' : '✗';
 		console.log(`${tag} [${r.module}] ${r.action.slice(0, 60)}${r.detail ? ` — ${r.detail.slice(0, 80)}` : ''}`);
 	};
+	const replaceResult = (r: MatrixResult) => {
+		const idx = results.findIndex(
+			entry => entry.module === r.module && entry.endpoint === r.endpoint && entry.action === r.action,
+		);
+		if (idx >= 0) {
+			results[idx] = r;
+		}
+		else {
+			results.push(r);
+		}
+		const tag = r.statut === 'OK' ? '✓' : r.statut === 'N/A' ? '○' : '✗';
+		console.log(`${tag} [${r.module}] ${r.action.slice(0, 60)}${r.detail ? ` — ${r.detail.slice(0, 80)}` : ''}`);
+	};
 
 	try {
 		await assertStackReady(base);
@@ -287,12 +300,23 @@ async function main(): Promise<void> {
 		)) {
 			continue;
 		}
+		if (isProvisionedRun() && row.module === 'Shell' && row.action === 'Logout') {
+			continue;
+		}
 		if (prevModule === 'Shell' && row.module !== 'Shell') {
 			console.log('--- Re-login après tests Shell ---');
 			await qaSignIn(ctx, credentials);
 		}
 		record(await runMatrixScenario(row, ctx, browser, entities));
 		prevModule = row.module;
+	}
+
+	if (isProvisionedRun()) {
+		const logoutRow = appRows.find(r => r.module === 'Shell' && r.action === 'Logout');
+		if (logoutRow) {
+			console.log('\n--- Logout (fin de session provisioned) ---');
+			replaceResult(await runLogoutShellScenario(logoutRow, ctx));
+		}
 	}
 
 	const setupBlockers = entities.studentSetupBlocked ? [studentSetupBlockerReport()] : [];

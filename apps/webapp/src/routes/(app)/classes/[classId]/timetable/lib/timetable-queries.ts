@@ -38,7 +38,7 @@ export async function loadTimetableSlice(classId: string): Promise<TimetablePage
 			? safeOptionalFetch(() => fetchActivities(client, schoolId), [])
 			: Promise.resolve([]),
 		yearId
-			? safeOptionalFetch(() => loadCalendarEvents(client, yearId), [])
+			? safeOptionalFetch(() => loadCalendarEvents(client, yearId, schoolId), [])
 			: Promise.resolve([]),
 	]);
 

@@ -58,7 +58,17 @@
 			}
 			return;
 		}
-		if (modals.active === 'edit' && !editKey) {
+		if (modals.active !== 'edit') {
+			return;
+		}
+		if (!modals.target) {
+			if ($page.url.searchParams.get('modalTarget')) {
+				return;
+			}
+			modals.open('edit', { target: NOTIFICATION_TEMPLATE_KEYS[0] });
+			return;
+		}
+		if (!editKey) {
 			modals.close();
 		}
 	});
@@ -166,7 +176,7 @@
 										</div>
 										<RowActionMenu>
 											<RowActionMenuItem
-												disabled={disabled || !document}
+												disabled={disabled}
 												onclick={() => openEdit(key)}
 											>
 												<Pencil class="h-4 w-4" />

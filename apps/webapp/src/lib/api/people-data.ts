@@ -14,6 +14,7 @@ import {
 	guardianLinksForGuardians,
 	guardianLinksForStudents,
 	guardiansByIds,
+	listAllEntityPages,
 	paginatedList,
 	schoolScopedEntityList,
 	ENROLLMENT_LIST_ORDER,
@@ -21,7 +22,7 @@ import {
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 import { formatDateInput } from '$lib/date/format';
-import { ApiError } from '@maya-invest/edaya-api-client';
+import { ApiError, type EntityQuery } from '@maya-invest/edaya-api-client';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -195,25 +196,54 @@ function mapStudentApiStatus(status: StudentRaw['status']): Student['status'] {
 	return 'active';
 }
 
+async function listRosterPages<T>(
+	list: (query: EntityQuery) => Promise<T[] | null | undefined>,
+	baseQuery: EntityQuery,
+): Promise<T[]> {
+	return listAllEntityPages(query => list(query), { baseQuery });
+}
+
 export async function fetchPeopleSources(client: SchoolClient, schoolId: string): Promise<PeopleSources> {
-	const rosterScope = schoolScopedEntityList(schoolId, SCHOOL_ROSTER_SCOPE);
-	const [
+	const studentsRaw = await listRosterPages(
+		query => client.entities.students.list(query),
+		{
+			...schoolScopedEntityList(schoolId, SCHOOL_ROSTER_SCOPE),
+			$orderBy: STUDENT_LIST_ORDER,
+		},
+	);
+	const studentIds = uniqueIds(studentsRaw.map(student => student.id));
+	if (studentIds.length === 0) {
+		return {
+			studentsRaw,
+			enrollmentsRaw: [],
+			guardiansRaw: [],
+			linksRaw: [],
+		};
+	}
+
+	const [enrollmentsRaw, linksRaw] = await Promise.all([
+		listRosterPages(
+			query => client.entities.enrollments.list(query),
+			enrollmentsForStudents(studentIds),
+		),
+		listRosterPages(
+			query => client.entities.guardianLinks.list(query),
+			guardianLinksForStudents(studentIds),
+		),
+	]);
+	const guardianIds = uniqueIds(linksRaw.map(link => link.guardianId));
+	const guardiansRaw = guardianIds.length > 0
+		? await listRosterPages(
+				query => client.entities.guardians.list(query),
+				guardiansByIds(guardianIds),
+			)
+		: [];
+
+	return {
 		studentsRaw,
 		enrollmentsRaw,
 		guardiansRaw,
 		linksRaw,
-	] = await Promise.all([
-		client.entities.students.list(rosterScope),
-		client.entities.enrollments.list(rosterScope),
-		client.entities.guardians.list(rosterScope),
-		client.entities.guardianLinks.list(rosterScope),
-	]);
-
-	return {
-		studentsRaw: studentsRaw ?? [],
-		enrollmentsRaw: enrollmentsRaw ?? [],
-		guardiansRaw: guardiansRaw ?? [],
-		linksRaw: linksRaw ?? [],
 	};
 }
 

@@ -190,13 +190,6 @@
 		}
 	}
 
-	$effect(() => {
-		if (!calendarPage.filters.ready) {
-			return;
-		}
-		void calendarPage.filters.values.type;
-		calendarPage.filters.scheduleSync();
-	});
 </script>
 
 <div class="animate-fade-in space-y-6">
@@ -216,9 +209,10 @@
 		{/snippet}
 		{#snippet filters()}
 			<FilterSelect
-				bind:value={calendarPage.filters.values.type}
+				value={calendarPage.filters.values.type}
 				class="h-9 min-w-[10rem] rounded-full text-xs"
 				options={typeFilterOptions}
+				onchange={value => calendarPage.filters.patchImmediate({ type: value })}
 			/>
 		{/snippet}
 		{#snippet primary()}

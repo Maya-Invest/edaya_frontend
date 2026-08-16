@@ -7,6 +7,7 @@ import {
 	clickCreateButton,
 	dismissPageError,
 	fillClassCreateDialog,
+	fillDateInputsInRange,
 	fillGradeLevelCreateDialog,
 	fillStudentCreateDialog,
 	openDialogButton,
@@ -28,10 +29,6 @@ import type { SetupStepResult } from './web-tenant-setup';
 async function gotoAppPage(ctx: DemoContext, routePath: string): Promise<void> {
 	await ctx.page.goto(`${ctx.base}${routePath}`, { waitUntil: 'domcontentloaded' });
 	await waitForAppShell(ctx.page);
-}
-
-function todayIso(): string {
-	return new Date().toISOString().slice(0, 10);
 }
 
 export async function setupClassDailyAttendance(
@@ -78,10 +75,7 @@ export async function setupCalendarEvent(
 		}
 
 		await dialog.locator('input').first().fill(eventTitle);
-		const dateInput = dialog.locator('input[type="date"]').first();
-		if (await dateInput.isVisible().catch(() => false)) {
-			await dateInput.fill(todayIso());
-		}
+		await fillDateInputsInRange(dialog);
 		const typeSelect = dialog.locator('select').first();
 		if (await typeSelect.isVisible().catch(() => false)) {
 			await typeSelect.selectOption(type).catch(() => {});

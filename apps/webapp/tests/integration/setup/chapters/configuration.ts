@@ -1,5 +1,6 @@
 import {
 	clickCreateButton,
+	fillGradeScaleCreateDialog,
 	fillReportCardDefinitionDialog,
 	openDialogButton,
 	openUrlModal,
@@ -111,14 +112,52 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 	}
 
 	await visitCovered(journey, '/configuration/grade-scales', '/configuration/grade-scales');
-	const scaleOpened = await openDialogButton(page, /add|ajouter|créer|create/i);
+	const scaleName = `E2E-Scale-${Date.now()}`;
+	const scaleOpened = await clickCreateButton(page, 'CRUD barème', '/configuration/grade-scales')
+		|| await openDialogButton(page, /add scale|ajouter un barème/i);
 	coverModal(journey, '/configuration/grade-scales', 'create', scaleOpened ? 'OK' : 'NOT OK');
 	if (scaleOpened) {
-		await page.getByRole('dialog').locator('input').first().fill(`E2E-Scale-${Date.now()}`);
-		await submitDialog(page);
-		await waitForDialogClosed(page);
-		coverActions(journey, 'http://localhost:5173/configuration/grade-scales', ['Liste barèmes', 'CRUD barème'], 'OK');
-		logStep(journey, { step: 'grade-scale', ok: true });
+		try {
+			const payloadPromise = waitForCommandPayload(page, 'create-grade-scale');
+			await fillGradeScaleCreateDialog(page, scaleName);
+			const closed = await waitForDialogClosed(page);
+			const payload = await payloadPromise;
+			let scaleId = typeof payload?.id === 'string' ? payload.id : null;
+			await waitForPageQuery(page);
+			const listed = await assertListContains(page, scaleName, true, 20_000);
+			if (!scaleId && listed) {
+				const row = page.locator('main li').filter({ hasText: scaleName }).first();
+				const editBtn = row.getByRole('button', { name: /actions de ligne|row actions/i })
+					.or(row.locator('button').last());
+				if (await editBtn.isVisible().catch(() => false)) {
+					await editBtn.click();
+					await page.waitForTimeout(300);
+					const editItem = page.getByRole('button', { name: /modifier|edit/i }).last();
+					if (await editItem.isVisible({ timeout: 4_000 }).catch(() => false)) {
+						await editItem.click();
+						await waitForFormModal(page, 8_000);
+						scaleId = new URL(page.url()).searchParams.get('modalTarget');
+						await page.keyboard.press('Escape');
+						await waitForDialogClosed(page).catch(() => {});
+					}
+				}
+			}
+			entities.gradeScaleId = scaleId;
+			coverActions(
+				journey,
+				'http://localhost:5173/configuration/grade-scales',
+				['Liste barèmes', 'CRUD barème'],
+				closed && listed && scaleId ? 'OK' : 'NOT OK',
+				scaleName,
+			);
+			logStep(journey, { step: 'grade-scale', ok: Boolean(scaleId), detail: scaleName, entityId: scaleId ?? undefined });
+		}
+		catch (err) {
+			const detail = err instanceof Error ? err.message : String(err);
+			coverActions(journey, 'http://localhost:5173/configuration/grade-scales', ['CRUD barème'], 'NOT OK', detail);
+			logStep(journey, { step: 'grade-scale', ok: false, detail });
+			await page.keyboard.press('Escape').catch(() => {});
+		}
 	}
 	else {
 		coverActions(journey, 'http://localhost:5173/configuration/grade-scales', ['CRUD barème'], 'NOT OK', 'Scale modal not found');
@@ -128,40 +167,57 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 	await visitCovered(journey, '/configuration/report-cards', '/configuration/report-cards');
 	await page.reload({ waitUntil: 'domcontentloaded' });
 	await waitForPageQuery(page);
-	const rcOpened = await clickCreateButton(page, 'CRUD / publier', '/configuration/report-cards')
-		|| await openDialogButton(page, /add model|ajouter un modèle|créer/i);
-	coverModal(journey, '/configuration/report-cards', 'create', rcOpened ? 'OK' : 'NOT OK');
-	if (rcOpened) {
-		try {
-			const rcName = `E2E-RC-${Date.now()}`;
-			await fillReportCardDefinitionDialog(page, {
-				name: rcName,
-				gradeLevelId: entities.gradeLevelId,
-			});
-			if (!(await trySubmitDialog(page))) {
-				throw new Error('Report-card Save stayed disabled');
-			}
-			await waitForDialogClosed(page);
-			await gotoApp(journey, '/configuration/report-cards');
-			const defId = await configEntityIdByName(page, 'E2E-RC-') ?? await firstIdFromLinks(page, /\/configuration\/report-cards\/([^/?]+)/);
-			entities.reportCardDefId = defId;
-			coverActions(journey, 'http://localhost:5173/configuration/report-cards', ['Liste définitions bulletins', 'CRUD / publier'], defId ? 'OK' : 'NOT OK', rcName);
-			if (defId) {
-				await gotoApp(journey, `/configuration/report-cards/${defId}`);
-				await visitCovered(journey, '/configuration/report-cards/[id]', `/configuration/report-cards/${defId}`);
-				coverActions(journey, 'http://localhost:5173/configuration/report-cards/[id]', ['Drawer définition'], 'OK');
-			}
-			logStep(journey, { step: 'report-card-def', ok: Boolean(defId), detail: rcName, entityId: defId ?? undefined });
-		}
-		catch (err) {
-			const detail = err instanceof Error ? err.message : String(err);
-			logStep(journey, { step: 'report-card-def', ok: false, detail });
-			coverActions(journey, 'http://localhost:5173/configuration/report-cards', ['CRUD / publier'], 'NOT OK', detail);
-			await page.keyboard.press('Escape').catch(() => {});
-		}
+	if (!entities.gradeScaleId) {
+		logStep(journey, { step: 'report-card-def', ok: false, detail: 'No gradeScaleId to reference' });
+		coverActions(journey, 'http://localhost:5173/configuration/report-cards', ['CRUD / publier'], 'NOT OK', 'No gradeScaleId to reference');
 	}
 	else {
-		logStep(journey, { step: 'report-card-def', ok: false, detail: 'Create definition modal not found' });
+		const rcOpened = await clickCreateButton(page, 'CRUD / publier', '/configuration/report-cards')
+			|| await openDialogButton(page, /add model|ajouter un modèle|créer/i);
+		coverModal(journey, '/configuration/report-cards', 'create', rcOpened ? 'OK' : 'NOT OK');
+		if (rcOpened) {
+			try {
+				const rcName = `E2E-RC-${Date.now()}`;
+				const payloadPromise = waitForCommandPayload(page, 'create-report-card-definition');
+				await fillReportCardDefinitionDialog(page, {
+					name: rcName,
+					gradeLevelId: entities.gradeLevelId,
+					gradeScaleId: entities.gradeScaleId,
+					gradeScaleName: scaleName,
+				});
+				if (!(await trySubmitDialog(page))) {
+					throw new Error('Report-card Save stayed disabled');
+				}
+				const payload = await payloadPromise;
+				await waitForDialogClosed(page);
+				let defId = typeof payload?.id === 'string' ? payload.id : null;
+				if (!defId) {
+					const fromUrl = page.url().match(/\/configuration\/report-cards\/([^/?]+)/)?.[1];
+					defId = fromUrl && fromUrl.length > 0 ? fromUrl : null;
+				}
+				await gotoApp(journey, '/configuration/report-cards');
+				defId = defId
+					?? await configEntityIdByName(page, 'E2E-RC-')
+					?? await firstIdFromLinks(page, /\/configuration\/report-cards\/([^/?]+)/);
+				entities.reportCardDefId = defId;
+				coverActions(journey, 'http://localhost:5173/configuration/report-cards', ['Liste définitions bulletins', 'CRUD / publier'], defId ? 'OK' : 'NOT OK', rcName);
+				if (defId) {
+					await gotoApp(journey, `/configuration/report-cards/${defId}`);
+					await visitCovered(journey, '/configuration/report-cards/[id]', `/configuration/report-cards/${defId}`);
+					coverActions(journey, 'http://localhost:5173/configuration/report-cards/[id]', ['Drawer définition'], 'OK');
+				}
+				logStep(journey, { step: 'report-card-def', ok: Boolean(defId), detail: rcName, entityId: defId ?? undefined });
+			}
+			catch (err) {
+				const detail = err instanceof Error ? err.message : String(err);
+				logStep(journey, { step: 'report-card-def', ok: false, detail });
+				coverActions(journey, 'http://localhost:5173/configuration/report-cards', ['CRUD / publier'], 'NOT OK', detail);
+				await page.keyboard.press('Escape').catch(() => {});
+			}
+		}
+		else {
+			logStep(journey, { step: 'report-card-def', ok: false, detail: 'Create definition modal not found' });
+		}
 	}
 
 	await visitCovered(journey, '/configuration/notifications', '/configuration/notifications');
@@ -201,7 +257,7 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 	if (notifDialog) {
 		await page.keyboard.press('Escape');
 	}
-	logStep(journey, { step: 'notification-template', ok: true, detail: entities.notificationTemplateKey });
+	logStep(journey, { step: 'notification-template', ok: notifDialog, detail: entities.notificationTemplateKey });
 
 	await visitCovered(journey, '/configuration/discipline', '/configuration/discipline');
 	const discOpened = await clickCreateButton(page, 'CRUD entrée', '/configuration/discipline')

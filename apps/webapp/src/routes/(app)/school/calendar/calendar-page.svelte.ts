@@ -2,6 +2,7 @@ import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { AbsenceRecord, SchoolYearEvent } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadAbsences, loadCalendarEvents } from '$lib/api/school-life-data';
+import { authSession } from '$lib/auth/session.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readCalendarListFilters, writeCalendarListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
@@ -64,10 +65,11 @@ export class CalendarPageState {
 	async refreshSlice() {
 		const client = queryClient();
 		const classIds = academicContext.classes.map(entry => entry.id);
+		const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
 		const [events, absences] = await Promise.all([
-			loadCalendarEvents(client, academicContext.yearId).catch((error) => {
+			loadCalendarEvents(client, academicContext.yearId, schoolId).catch((error) => {
 				if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-					return [];
+					return this.events;
 				}
 				throw error;
 			}),

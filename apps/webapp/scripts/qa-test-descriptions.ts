@@ -54,7 +54,9 @@ export function describeTestExactly(row: QaTemplateRow): string {
 		if (action.includes('account-profile')) {
 			return 'goto /dashboard?modal=account-profile; assert dialog visible and URL contains modal=account-profile.';
 		}
-		if (action.includes('Logout')) return 'Skipped — would destroy session for remaining tests.';
+		if (action.includes('Logout')) {
+			return 'Deferred to end of provisioned run (opens profile modal, sign out, expect /login).';
+		}
 		if (action.includes('permission')) return 'Navigate restricted URL; expect redirect to /dashboard (needs low-permission account).';
 		return 'Shell layout / header control smoke.';
 	}

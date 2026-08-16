@@ -53,6 +53,7 @@ export interface MatrixEntities {
 	gradeLevelId: string | null;
 	secondGradeLevelId: string | null;
 	subjectId: string | null;
+	gradeScaleId: string | null;
 	reportCardDefId: string | null;
 	deliveryId: string | null;
 	teachingId: string | null;
@@ -87,6 +88,7 @@ export function emptyEntities(): MatrixEntities {
 		gradeLevelId: null,
 		secondGradeLevelId: null,
 		subjectId: null,
+		gradeScaleId: null,
 		reportCardDefId: null,
 		deliveryId: null,
 		teachingId: null,
@@ -178,12 +180,25 @@ export async function firstIdFromConfigTable(page: Page, timeout = 8_000): Promi
 
 export async function configEntityIdByName(page: Page, name: string): Promise<string | null> {
 	const row = page.locator('table tbody tr').filter({ hasText: name });
-	if (!(await row.first().isVisible().catch(() => false))) {
-		return null;
+	if (await row.first().isVisible().catch(() => false)) {
+		const id = await row.first().locator('.font-mono').first().textContent();
+		const trimmed = id?.trim();
+		if (trimmed && trimmed.length > 0) {
+			return trimmed;
+		}
 	}
-	const id = await row.first().locator('.font-mono').first().textContent();
-	const trimmed = id?.trim();
-	return trimmed && trimmed.length > 0 ? trimmed : null;
+
+	const link = page.locator('main a[href]').filter({ hasText: name }).first();
+	if (await link.isVisible().catch(() => false)) {
+		const href = await link.getAttribute('href');
+		const match = href?.match(/\/configuration\/report-cards\/([^/?]+)/)
+			?? href?.match(/\/([^/?]+)\/?$/);
+		if (match?.[1] && match[1] !== 'report-cards') {
+			return match[1];
+		}
+	}
+
+	return null;
 }
 
 /** Student roster uses ListEntityTable row buttons — navigate via click and parse URL. */

@@ -44,6 +44,25 @@ export async function waitForResolvedAcademicYearId(page: Page, timeout = 20_000
 	await page.getByText(/E2E 20\d\d-|20\d\d-\d{4}/i).first().waitFor({ state: 'visible', timeout: 5_000 });
 }
 
+/** Keep date inputs inside their min/max (academic-year bounds on calendar create). */
+export async function fillDateInputsInRange(scope: Locator): Promise<void> {
+	const dateInputs = scope.locator('input[type="date"]');
+	const dateCount = await dateInputs.count();
+	for (let index = 0; index < dateCount; index += 1) {
+		const input = dateInputs.nth(index);
+		const current = await input.inputValue().catch(() => '');
+		const min = (await input.getAttribute('min')) ?? '';
+		const max = (await input.getAttribute('max')) ?? '';
+		const inRange = current.length > 0
+			&& (min.length === 0 || current >= min)
+			&& (max.length === 0 || current <= max);
+		if (inRange) {
+			continue;
+		}
+		await input.fill(min.length > 0 ? min : new Date().toISOString().slice(0, 10));
+	}
+}
+
 export async function waitForDialogClosed(page: Page, timeout = 15_000): Promise<boolean> {
 	const dialog = page.getByRole('dialog');
 	try {
@@ -126,6 +145,9 @@ export function resolveCreateButtonPatterns(action: string, endpoint: string): R
 	}
 	if (endpointLower.includes('/configuration/academic')) {
 		push(/add academic year|ajouter une année scolaire/i);
+	}
+	if (endpointLower.includes('/configuration/grade-scales')) {
+		push(/add scale|ajouter un barème/i);
 	}
 	if (endpointLower.includes('/configuration/report-cards')) {
 		push(/add model|ajouter un modèle/i);
@@ -535,41 +557,87 @@ export async function fillPersonCreateDialog(
 	await submitDialog(page);
 }
 
-/** Report-card model create — name + grade level + grade scale are all required. Prefer auto-defaults; fill name until Save enables. */
+/** GradeScaleFormModal — name is required; min/max/passing already default to 0/20/10. */
+export async function fillGradeScaleCreateDialog(page: Page, scaleName: string): Promise<void> {
+	const dialog = page.getByRole('dialog');
+	const nameInput = dialog.locator('input').first();
+	await nameInput.waitFor({ state: 'visible', timeout: 10_000 });
+	const started = Date.now();
+	while (Date.now() - started < 12_000) {
+		await nameInput.fill(scaleName);
+		if (await waitForSubmitEnabled(page, 400)) {
+			await submitDialog(page);
+			return;
+		}
+		await page.waitForTimeout(150);
+	}
+	throw new Error('Grade scale Save stayed disabled');
+}
+
+async function waitForSelectOptionCount(
+	select: Locator,
+	minOptions: number,
+	timeout = 15_000,
+): Promise<boolean> {
+	const started = Date.now();
+	while (Date.now() - started < timeout) {
+		if (await select.locator('option').count() >= minOptions) {
+			return true;
+		}
+		await select.page().waitForTimeout(250);
+	}
+	return false;
+}
+
+/** Report-card model create — name + grade level + grade scale are all required. */
 export async function fillReportCardDefinitionDialog(
 	page: Page,
-	options: { name: string; gradeLevelId?: string | null; gradeLevelName?: string } = { name: 'E2E-RC' },
+	options: {
+		name: string;
+		gradeLevelId?: string | null;
+		gradeLevelName?: string;
+		gradeScaleId?: string | null;
+		gradeScaleName?: string;
+	} = { name: 'E2E-RC' },
 ): Promise<void> {
 	const dialog = page.getByRole('dialog');
 	const nameInput = dialog.locator('input').first();
 	await nameInput.waitFor({ state: 'visible', timeout: 10_000 });
+	await nameInput.fill(options.name);
+
+	const nativeSelects = dialog.locator('select');
+	const gradeSelect = nativeSelects.nth(0);
+	const scaleSelect = nativeSelects.nth(1);
+
+	if (await gradeSelect.isVisible().catch(() => false)) {
+		if (!(await waitForSelectOptionCount(gradeSelect, 1))) {
+			throw new Error('Report-card grade level select has no options');
+		}
+		if (options.gradeLevelId) {
+			await gradeSelect.selectOption(options.gradeLevelId).catch(() => gradeSelect.selectOption({ index: 0 }));
+		}
+		else {
+			await gradeSelect.selectOption({ index: 0 });
+		}
+	}
+
+	if (await scaleSelect.isVisible().catch(() => false)) {
+		if (!(await waitForSelectOptionCount(scaleSelect, 1))) {
+			throw new Error('Report-card scale select has no options — create a grade scale first');
+		}
+		if (options.gradeScaleId) {
+			await scaleSelect.selectOption(options.gradeScaleId).catch(() => scaleSelect.selectOption({ index: 0 }));
+		}
+		else if (options.gradeScaleName) {
+			await scaleSelect.selectOption({ label: options.gradeScaleName }).catch(() => scaleSelect.selectOption({ index: 0 }));
+		}
+		else {
+			await scaleSelect.selectOption({ index: 0 });
+		}
+	}
 
 	const started = Date.now();
-	while (Date.now() - started < 8_000) {
-		await nameInput.fill(options.name);
-		if (await waitForSubmitEnabled(page, 400)) {
-			return;
-		}
-		await page.waitForTimeout(200);
-	}
-
-	const comboboxes = dialog.getByRole('combobox');
-	const grade = comboboxes.nth(0);
-	if (await grade.isVisible().catch(() => false)) {
-		await selectComboboxOption(page, grade, {
-			value: options.gradeLevelId ?? undefined,
-			name: options.gradeLevelName,
-		});
-	}
-	const scale = comboboxes.nth(1);
-	if (await scale.isVisible().catch(() => false)) {
-		await scale.click();
-		const option = page.getByRole('option').first();
-		await option.waitFor({ state: 'visible', timeout: 12_000 });
-		await option.click();
-	}
-	const remaining = Date.now();
-	while (Date.now() - remaining < 10_000) {
+	while (Date.now() - started < 10_000) {
 		await nameInput.fill(options.name);
 		if (await waitForSubmitEnabled(page, 400)) {
 			return;

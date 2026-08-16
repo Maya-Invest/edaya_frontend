@@ -4,6 +4,7 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { loadClassReportCardResultsData, loadReportCardCatalogData } from '$lib/api/report-cards-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
+import { authSession } from '$lib/auth/session.svelte';
 import { nowIso } from '$lib/date/format';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
@@ -80,7 +81,10 @@ export class StudentReportCardTabState {
 	}
 
 	async loadCatalog(studentId: string) {
-		const catalog = await loadReportCardCatalogData(getBrowserSchoolClient());
+		const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
+		const catalog = schoolId
+			? await loadReportCardCatalogData(getBrowserSchoolClient(), schoolId)
+			: { gradeScales: [], definitions: [] };
 		this.seed(studentId, {
 			gradeScales: catalog.gradeScales,
 			reportCardDefinitions: catalog.definitions,

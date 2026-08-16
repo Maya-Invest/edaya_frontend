@@ -16,7 +16,8 @@ import {
 	entitiesByIds,
 	recordsForFieldIds,
 	reportCardResultsForClassPeriod,
-	schoolWideEntityList,
+	schoolScopedEntityList,
+	schoolSubjectsCatalogList,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
@@ -31,8 +32,8 @@ type ReportCardResultRaw = components['schemas']['ReportCardResult'];
 const REPORT_CARD_CATALOG_SCOPE
 	= 'Report-card definitions and grade scales are small configuration catalogs cached in the report-card domain store.';
 
-const REPORT_CARD_SUBJECT_CATALOG_SCOPE
-	= 'Report-card definition sections reference the school subject catalog by id.';
+const GRADE_SCALES_CATALOG_SCOPE
+	= 'Grade-scale configuration lists only the current school catalog after create/update.';
 
 type GradeScaleRangeRaw = GradeScaleRaw['ranges'][number];
 
@@ -310,14 +311,36 @@ export function mapReportCardResults(
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
-export async function loadReportCardCatalogData(client: SchoolClient): Promise<{
+export async function loadGradeScalesCatalogData(
+	client: SchoolClient,
+	schoolId: string,
+): Promise<GradeScale[]> {
+	if (!schoolId) {
+		return [];
+	}
+	const gradeScalesRaw = await client.entities.gradeScales.list(
+		schoolScopedEntityList(schoolId, GRADE_SCALES_CATALOG_SCOPE),
+	);
+	return mapGradeScales(gradeScalesRaw ?? []);
+}
+
+export async function loadReportCardCatalogData(
+	client: SchoolClient,
+	schoolId: string,
+): Promise<{
 	gradeScales: GradeScale[];
 	definitions: ReportCardDefinition[];
 }> {
-	const [gradeScalesRaw, definitionsRaw, subjectsRaw] = await Promise.all([
-		client.entities.gradeScales.list(schoolWideEntityList(REPORT_CARD_CATALOG_SCOPE)),
-		client.entities.definitions.list(schoolWideEntityList(REPORT_CARD_CATALOG_SCOPE)),
-		client.entities.subjects.list(schoolWideEntityList(REPORT_CARD_SUBJECT_CATALOG_SCOPE)),
+	if (!schoolId) {
+		return { gradeScales: [], definitions: [] };
+	}
+	const catalogQuery = schoolScopedEntityList(schoolId, REPORT_CARD_CATALOG_SCOPE);
+	const [gradeScales, definitionsRaw, subjectsRaw] = await Promise.all([
+		loadGradeScalesCatalogData(client, schoolId),
+		client.entities.definitions.list(catalogQuery),
+		safeOptionalEntityList(() =>
+			client.entities.subjects.list(schoolSubjectsCatalogList(schoolId)),
+		),
 	]);
 	const definitionIds = uniqueIds((definitionsRaw ?? []).map(definition => definition.id));
 	const sectionsRaw = definitionIds.length > 0
@@ -325,7 +348,7 @@ export async function loadReportCardCatalogData(client: SchoolClient): Promise<{
 		: [];
 
 	return {
-		gradeScales: mapGradeScales(gradeScalesRaw ?? []),
+		gradeScales,
 		definitions: mapReportCardDefinitions(
 			definitionsRaw ?? [],
 			sectionsRaw ?? [],

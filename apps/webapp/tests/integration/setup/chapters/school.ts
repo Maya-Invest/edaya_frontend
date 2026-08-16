@@ -1,9 +1,9 @@
 import {
 	clickCreateButton,
 	fillActivityCreateDialog,
+	fillDateInputsInRange,
 	fillIncidentCreateDialog,
 	openDialogButton,
-	selectComboboxOption,
 	trySubmitDialog,
 	waitForDialogClosed,
 	waitForPageQuery,
@@ -20,10 +20,6 @@ import {
 	waitForCommandPayload,
 	type UiJourney,
 } from '../journey-context';
-
-function todayIso(): string {
-	return new Date().toISOString().slice(0, 10);
-}
 
 async function resolveCalendarEventId(
 	journey: UiJourney,
@@ -72,14 +68,7 @@ export async function runSchoolChapter(journey: UiJourney): Promise<void> {
 			const payloadPromise = waitForCommandPayload(page, 'create-calendar-event');
 			const dialog = page.getByRole('dialog');
 			await dialog.locator('input').first().fill(eventTitle);
-			const dateInput = dialog.locator('input[type="date"]').first();
-			if (await dateInput.isVisible().catch(() => false)) {
-				await dateInput.fill(todayIso());
-			}
-			const typeCombo = dialog.getByRole('combobox').first();
-			if (await typeCombo.isVisible().catch(() => false)) {
-				await selectComboboxOption(page, typeCombo, { name: /férié|holiday/i });
-			}
+			await fillDateInputsInRange(dialog);
 			await trySubmitDialog(page);
 			await waitForDialogClosed(page);
 			await waitForPageQuery(page);
@@ -93,7 +82,10 @@ export async function runSchoolChapter(journey: UiJourney): Promise<void> {
 			coverActions(journey, 'http://localhost:5173/school/calendar', ['Liste événements', 'Créer / éditer événement'], 'OK', eventTitle);
 			coverModal(journey, '/school/calendar', 'edit', eventId ? 'OK' : 'NOT OK');
 			if (eventId) {
+				await waitForPageQuery(page);
+				await assertListContains(page, eventTitle, true, 20_000);
 				await gotoApp(journey, '/school/calendar?type=holiday');
+				await waitForPageQuery(page);
 				const typeVisible = await assertListContains(page, eventTitle, true, 20_000);
 				if (typeVisible) {
 					coverActions(

@@ -22,7 +22,7 @@ export async function loadNotificationsSlice() {
 	}
 	catch (error) {
 		if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-			return emptyNotificationsSlice();
+			return { schoolId, document: null };
 		}
 		throw error;
 	}

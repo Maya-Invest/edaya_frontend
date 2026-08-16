@@ -243,8 +243,14 @@ export function mapAbsences(sources: SchoolLifeSources): AbsenceRecord[] {
 export async function loadCalendarEvents(
 	client: SchoolClient,
 	academicYearId: string,
+	schoolId = '',
 ): Promise<SchoolYearEvent[]> {
-	const eventsRaw = await client.entities.calendarEvents.list({ academicYearId });
+	if (!academicYearId) {
+		return [];
+	}
+	const eventsRaw = await client.entities.calendarEvents.list(
+		schoolId ? { schoolId, academicYearId } : { academicYearId },
+	);
 	return mapCalendarEvents(eventsRaw ?? []);
 }
 

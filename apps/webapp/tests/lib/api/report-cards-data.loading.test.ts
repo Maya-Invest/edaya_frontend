@@ -3,6 +3,7 @@ import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
 import {
 	loadClassReportCardResultsData,
+	loadGradeScalesCatalogData,
 	loadReportCardCatalogData,
 } from '$lib/api/report-cards-data';
 import { createRecordingSchoolClient, entityListRequests } from '$tests/support/recording-school-client';
@@ -40,15 +41,45 @@ describe('report-card data loading', () => {
 			listEnvelope([]),
 		]);
 
-		await loadReportCardCatalogData(client);
+		await loadReportCardCatalogData(client, SEED_SCHOOL_ID);
 
-		expect(entityListRequests(requests, 'grade-scales')[0]?.body).toEqual({});
-		expect(entityListRequests(requests, 'definitions')[0]?.body).toEqual({});
-		expect(entityListRequests(requests, 'subjects')[0]?.body).toEqual({});
+		expect(entityListRequests(requests, 'grade-scales')[0]?.body).toEqual({
+			schoolId: SEED_SCHOOL_ID,
+		});
+		expect(entityListRequests(requests, 'definitions')[0]?.body).toEqual({
+			schoolId: SEED_SCHOOL_ID,
+		});
+		expect(entityListRequests(requests, 'subjects')[0]?.body).toEqual({
+			schoolId: SEED_SCHOOL_ID,
+		});
 		expect(entityListRequests(requests, 'sections')[0]?.body).toEqual({
 			reportCardDefinitionId: { $in: ['definition-1'] },
 		});
 		expect(entityListRequests(requests, 'results')).toHaveLength(0);
+	});
+
+	it('lists grade scales for the current school without loading subjects', async () => {
+		const { client, requests } = createRecordingSchoolClient([
+			listEnvelope([{
+				id: 'scale-1',
+				schoolId: SEED_SCHOOL_ID,
+				name: 'Scale 20',
+				minScore: 0,
+				maxScore: 20,
+				decimalPlaces: 1,
+				isDefault: true,
+				ranges: [],
+			}]),
+		]);
+
+		const scales = await loadGradeScalesCatalogData(client, SEED_SCHOOL_ID);
+
+		expect(scales.map(scale => scale.id)).toEqual(['scale-1']);
+		expect(entityListRequests(requests, 'grade-scales')[0]?.body).toEqual({
+			schoolId: SEED_SCHOOL_ID,
+		});
+		expect(entityListRequests(requests, 'subjects')).toHaveLength(0);
+		expect(entityListRequests(requests, 'definitions')).toHaveLength(0);
 	});
 
 	it('loads report-card results only for the selected class and period', async () => {

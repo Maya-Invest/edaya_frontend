@@ -18,9 +18,12 @@ describe('school-life data loading', () => {
 	it('loads calendar events for the active academic year', async () => {
 		const { client, requests } = createRecordingSchoolClient([listEnvelope([])]);
 
-		await loadCalendarEvents(client, academicYearId);
+		await loadCalendarEvents(client, academicYearId, SEED_SCHOOL_ID);
 
-		expect(entityListRequests(requests, 'calendar-events')[0]?.body).toEqual({ academicYearId });
+		expect(entityListRequests(requests, 'calendar-events')[0]?.body).toEqual({
+			schoolId: SEED_SCHOOL_ID,
+			academicYearId,
+		});
 	});
 
 	it('loads absences through lesson sessions for the active class set', async () => {

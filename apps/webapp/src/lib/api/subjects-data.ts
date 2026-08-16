@@ -5,8 +5,12 @@ import type { CatalogChapter, Subject, SubjectCategory } from '$lib/types/school
 import type { EntityQuery } from '@maya-invest/edaya-api-client';
 import {
 	classGroupScope,
+	classSubjectsForClasses,
 	entitiesByIds,
+	gradeLevelSubjectMattersForGradeLevelSubjects,
+	gradeLevelSubjectsForLevels,
 	listAllEntityPages,
+	schoolScopedEntityList,
 	schoolSubjectsCatalogList,
 	subjectMattersForSubjects,
 	uniqueIds,
@@ -41,14 +45,28 @@ export interface ClassSubjectsSources extends ClassSubjectInstructorSources {
 	subjectMattersRaw: SubjectMatterRaw[];
 }
 
-async function listAllCatalogEntities<T>(
-	schoolId: string,
+const SUBJECTS_PARENT_SCOPE
+	= 'Subject catalog loads school-owned parents, then child rows by those ids.';
+
+async function listPages<T>(
 	list: (query: EntityQuery) => Promise<T[] | null | undefined>,
+	baseQuery: EntityQuery,
 ): Promise<T[]> {
 	return listAllEntityPages(
 		async query => safeOptionalEntityList(() => list(query)),
-		{ baseQuery: schoolSubjectsCatalogList(schoolId) },
+		{ baseQuery },
 	);
+}
+
+async function listPagesForIds<T>(
+	ids: readonly string[],
+	list: (query: EntityQuery) => Promise<T[] | null | undefined>,
+	baseQuery: EntityQuery,
+): Promise<T[]> {
+	if (ids.length === 0) {
+		return [];
+	}
+	return listPages(list, baseQuery);
 }
 
 const SUBJECT_CATEGORIES = new Set<SubjectCategory>([
@@ -199,19 +217,49 @@ export async function fetchCatalogSubjectsSources(
 	client: SchoolClient,
 	schoolId: string,
 ): Promise<CatalogSubjectsSources> {
-	const [
-		gradeLevelSubjectsRaw,
-		classSubjectsRaw,
-		subjectsRaw,
-		subjectMattersRaw,
-		gradeLevelSubjectMattersRaw,
-	] = await Promise.all([
-		listAllCatalogEntities(schoolId, query => client.entities.gradeLevelSubjects.list(query)),
-		listAllCatalogEntities(schoolId, query => client.entities.classSubjects.list(query)),
-		listAllCatalogEntities(schoolId, query => client.entities.subjects.list(query)),
-		listAllCatalogEntities(schoolId, query => client.entities.subjectMatters.list(query)),
-		listAllCatalogEntities(schoolId, query => client.entities.gradeLevelSubjectMatters.list(query)),
+	if (!schoolId) {
+		return {
+			gradeLevelSubjectsRaw: [],
+			classSubjectsRaw: [],
+			subjectsRaw: [],
+			subjectMattersRaw: [],
+			gradeLevelSubjectMattersRaw: [],
+		};
+	}
+
+	const parentQuery = schoolScopedEntityList(schoolId, SUBJECTS_PARENT_SCOPE);
+	const [gradeLevelsRaw, classGroupsRaw, subjectsRaw] = await Promise.all([
+		listPages(query => client.entities.gradeLevels.list(query), parentQuery),
+		listPages(query => client.entities.classGroups.list(query), parentQuery),
+		listPages(query => client.entities.subjects.list(query), schoolSubjectsCatalogList(schoolId)),
 	]);
+	const gradeLevelIds = uniqueIds(gradeLevelsRaw.map(level => level.id));
+	const classGroupIds = uniqueIds(classGroupsRaw.map(classGroup => classGroup.id));
+	const subjectIds = uniqueIds(subjectsRaw.map(subject => subject.id));
+
+	const [gradeLevelSubjectsRaw, classSubjectsRaw, subjectMattersRaw] = await Promise.all([
+		listPagesForIds(
+			gradeLevelIds,
+			query => client.entities.gradeLevelSubjects.list(query),
+			gradeLevelSubjectsForLevels(gradeLevelIds),
+		),
+		listPagesForIds(
+			classGroupIds,
+			query => client.entities.classSubjects.list(query),
+			classSubjectsForClasses(classGroupIds),
+		),
+		listPagesForIds(
+			subjectIds,
+			query => client.entities.subjectMatters.list(query),
+			subjectMattersForSubjects(subjectIds),
+		),
+	]);
+	const gradeLevelSubjectIds = uniqueIds(gradeLevelSubjectsRaw.map(entry => entry.id));
+	const gradeLevelSubjectMattersRaw = await listPagesForIds(
+		gradeLevelSubjectIds,
+		query => client.entities.gradeLevelSubjectMatters.list(query),
+		gradeLevelSubjectMattersForGradeLevelSubjects(gradeLevelSubjectIds),
+	);
 
 	return {
 		gradeLevelSubjectsRaw,
@@ -344,14 +392,33 @@ export async function fetchSchoolSubjectsSources(
 	client: SchoolClient,
 	schoolId: string,
 ): Promise<ClassSubjectsSources> {
-	const [
-		classSubjectsRaw,
-		subjectsRaw,
-		subjectMattersRaw,
-	] = await Promise.all([
-		listAllCatalogEntities(schoolId, query => client.entities.classSubjects.list(query)),
-		listAllCatalogEntities(schoolId, query => client.entities.subjects.list(query)),
-		listAllCatalogEntities(schoolId, query => client.entities.subjectMatters.list(query)),
+	if (!schoolId) {
+		return {
+			classSubjectsRaw: [],
+			subjectsRaw: [],
+			subjectMattersRaw: [],
+			...(await fetchClassSubjectInstructorSourcesBundle(client, [])),
+		};
+	}
+
+	const parentQuery = schoolScopedEntityList(schoolId, SUBJECTS_PARENT_SCOPE);
+	const [classGroupsRaw, subjectsRaw] = await Promise.all([
+		listPages(query => client.entities.classGroups.list(query), parentQuery),
+		listPages(query => client.entities.subjects.list(query), schoolSubjectsCatalogList(schoolId)),
+	]);
+	const classGroupIds = uniqueIds(classGroupsRaw.map(classGroup => classGroup.id));
+	const subjectIds = uniqueIds(subjectsRaw.map(subject => subject.id));
+	const [classSubjectsRaw, subjectMattersRaw] = await Promise.all([
+		listPagesForIds(
+			classGroupIds,
+			query => client.entities.classSubjects.list(query),
+			classSubjectsForClasses(classGroupIds),
+		),
+		listPagesForIds(
+			subjectIds,
+			query => client.entities.subjectMatters.list(query),
+			subjectMattersForSubjects(subjectIds),
+		),
 	]);
 	const classSubjectIds = uniqueIds(classSubjectsRaw.map(classSubject => classSubject.id));
 	const instructorSources = await fetchClassSubjectInstructorSourcesBundle(client, classSubjectIds);

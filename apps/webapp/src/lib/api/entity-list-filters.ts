@@ -318,6 +318,16 @@ export function classSubjectsForClasses(classGroupIds: readonly string[]): Entit
 	return recordsForFieldIds('classGroupId', classGroupIds);
 }
 
+export function gradeLevelSubjectsForLevels(gradeLevelIds: readonly string[]): EntityQuery {
+	return recordsForFieldIds('gradeLevelId', gradeLevelIds);
+}
+
+export function gradeLevelSubjectMattersForGradeLevelSubjects(
+	gradeLevelSubjectIds: readonly string[],
+): EntityQuery {
+	return recordsForFieldIds('gradeLevelSubjectId', gradeLevelSubjectIds);
+}
+
 export function assignmentsForClassSubjects(classSubjectIds: readonly string[]): EntityQuery {
 	return recordsForFieldIds('classSubjectId', classSubjectIds);
 }

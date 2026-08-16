@@ -112,9 +112,21 @@ export class ReportCardsPageState {
 		return queryReportCardsListPage(this);
 	}
 
-	async refreshSlice() {
-		const data = await loadReportCardsSlice();
-		this.applySlice(data);
+	async refreshSlice(options?: { keepCurrentOnEmpty?: boolean }) {
+		try {
+			const data = await loadReportCardsSlice();
+			if (
+				options?.keepCurrentOnEmpty
+				&& data.definitions.length === 0
+				&& this.definitions.length > 0
+			) {
+				return;
+			}
+			this.applySlice(data);
+		}
+		catch {
+			// Keep the current row if reload fails after a persisted write.
+		}
 	}
 
 	async invalidateIfStale() {
@@ -165,7 +177,7 @@ export class ReportCardsPageState {
 			successMessage: input.successMessage,
 			apply: () => this.upsertDefinition(optimistic),
 			rollback: () => this.removeDefinition(id),
-			onSuccess: () => this.refreshSlice(),
+			onSuccess: () => this.refreshSlice({ keepCurrentOnEmpty: true }),
 		});
 		return result !== null ? id : null;
 	}
@@ -191,7 +203,7 @@ export class ReportCardsPageState {
 			successMessage: input.successMessage,
 			apply: () => this.patchDefinition(input.definitionId, { status: 'published' }),
 			rollback: () => this.upsertDefinition(previous),
-			onSuccess: () => this.refreshSlice(),
+			onSuccess: () => this.refreshSlice({ keepCurrentOnEmpty: true }),
 		});
 		return result !== null;
 	}
