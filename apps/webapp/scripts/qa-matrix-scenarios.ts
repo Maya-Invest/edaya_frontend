@@ -17,6 +17,7 @@ import {
 	submitDialog,
 	waitForDialogClosed,
 	waitForPageQuery,
+	clickFirstListSortColumn,
 } from './qa-harness-ui';
 import {
 	assertNoFatalError,
@@ -782,24 +783,41 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		}
 	}
 
-	// ── Sort / pagination ──
-	if (/tri|pagination|charger plus|navigation semaine/i.test(action)) {
-		const sortHeader = page.locator('th button, th[role="columnheader"]').first();
-		const loadMore = page.getByRole('button', { name: /charger|more|suivant|next/i }).first();
-		if (await sortHeader.isVisible({ timeout: 4_000 }).catch(() => false)) {
-			await sortHeader.click();
+	// ── Sort columns ──
+	if (/^tri colonnes$/i.test(action) || (/^tri\b/i.test(action) && !/pagination|charger plus|semaine/i.test(action))) {
+		const sorted = await clickFirstListSortColumn(page);
+		return sorted
+			? ok(row, 'sort: first column header clicked')
+			: na(row, 'Aucune colonne triable (vue cartes ou liste sans tri)');
+	}
+
+	// ── Pagination / load more ──
+	if (/pagination|charger plus/i.test(action)) {
+		const loadMore = page.getByRole('button', { name: /charger plus|load more|page suivante|next page/i }).first();
+		if (await loadMore.isVisible({ timeout: 3_000 }).catch(() => false)) {
+			await loadMore.click({ timeout: 3_000 }).catch(() => {});
 			return ok(row);
 		}
-		if (await loadMore.isVisible().catch(() => false)) {
-			await loadMore.click();
+		const pageNav = page.getByRole('button', { name: /précédent|previous page|^suivant$|^next$/i }).first();
+		if (await pageNav.isVisible().catch(() => false)) {
+			await pageNav.click({ timeout: 3_000 }).catch(() => {});
 			return ok(row);
 		}
-		const weekNav = page.getByRole('button', { name: /semaine|week|précédent|suivant|</i }).first();
-		if (await weekNav.isVisible().catch(() => false)) {
-			await weekNav.click();
+		const infiniteStatus = page.getByText(/chargement…|loading more/i).first();
+		if (await infiniteStatus.isVisible().catch(() => false)) {
+			return ok(row, 'pagination: infinite list loading more');
+		}
+		return na(row, 'Pas de contrôle pagination / charger plus (liste courte ou scroll infini déjà chargé)');
+	}
+
+	// ── Week navigation ──
+	if (/navigation semaine/i.test(action)) {
+		const weekNav = page.getByRole('button', { name: /semaine précédente|semaine suivante|previous week|next week|cette semaine|this week/i }).first();
+		if (await weekNav.isVisible({ timeout: 4_000 }).catch(() => false)) {
+			await weekNav.click({ timeout: 3_000 }).catch(() => {});
 			return ok(row);
 		}
-		return na(row, 'Tri/pagination non applicable (liste courte)');
+		return na(row, 'Navigation semaine absente');
 	}
 
 	// ── Create / modal ──

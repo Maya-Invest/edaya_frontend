@@ -89,8 +89,16 @@ export function describeTestExactly(row: QaTemplateRow): string {
 		return describeFilterTest(row);
 	}
 
-	if (/tri|pagination|charger plus|navigation semaine/i.test(action)) {
-		return 'Click first sortable column header, Load more, or week nav button; N/A if list too short.';
+	if (/^tri colonnes$/i.test(action) || (/^tri\b/i.test(action) && !/pagination|charger plus|semaine/i.test(action))) {
+		return 'On the list (table view): click the first sortable column header (data-testid=list-sort). Pass if URL sort=/sortDir= changes or the header shows tri croissant / sorted ascending. N/A if the page has no sortable columns.';
+	}
+
+	if (/pagination|charger plus/i.test(action)) {
+		return 'Click Load more / next page if present. Pass if infinite-list “Chargement…” is visible. N/A if the list fits on one page (no pagination control).';
+	}
+
+	if (/navigation semaine/i.test(action)) {
+		return 'Click Previous week / Next week / This week on the timetable. N/A if week navigation is absent.';
 	}
 
 	if (/créer|crud|nouveau|ajouter/i.test(action) && !/notes pédagogiques/i.test(action)) {

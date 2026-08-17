@@ -78,6 +78,70 @@ function mainContentScope(page: Page): Locator {
 	return page.locator('main, [role="main"]').first();
 }
 
+export const LIST_SORT_TEST_ID = 'list-sort';
+
+const SORT_APPLIED_NAME = /tri croissant|tri décroissant|sorted ascending|sorted descending/i;
+
+function listSortState(url: string): string {
+	const parsed = new URL(url);
+	return `${parsed.searchParams.get('sort') ?? ''}|${parsed.searchParams.get('sortDir') ?? ''}`;
+}
+
+async function ensureTableViewForSort(page: Page): Promise<void> {
+	if (await page.getByTestId(LIST_SORT_TEST_ID).first().isVisible().catch(() => false)) {
+		return;
+	}
+	const more = page.getByTestId('list-more-menu');
+	if (!(await more.isVisible().catch(() => false))) {
+		return;
+	}
+	await more.click({ timeout: 3_000 }).catch(() => {});
+	const tableView = page.getByRole('button', { name: /vue tableau|table view/i });
+	if (await tableView.isVisible({ timeout: 2_000 }).catch(() => false)) {
+		await tableView.click();
+		return;
+	}
+	await page.keyboard.press('Escape').catch(() => {});
+}
+
+/** Click the first sortable list column and wait until sort is reflected in the URL or aria state. */
+export async function clickFirstListSortColumn(page: Page): Promise<boolean> {
+	await ensureTableViewForSort(page);
+	const sortBtn = page.getByTestId(LIST_SORT_TEST_ID)
+		.or(page.getByRole('columnheader').getByRole('button'))
+		.or(page.locator('th button, th[role="columnheader"]'))
+		.first();
+	if (!(await sortBtn.isVisible({ timeout: 4_000 }).catch(() => false))) {
+		return false;
+	}
+
+	const before = listSortState(page.url());
+	const clicked = await sortBtn.click({ timeout: 3_000 }).then(() => true).catch(() => false);
+	if (!clicked) {
+		return false;
+	}
+
+	const deadline = Date.now() + 5_000;
+	while (Date.now() < deadline) {
+		if (listSortState(page.url()) !== before) {
+			return true;
+		}
+		const label = await sortBtn.getAttribute('aria-label').catch(() => null);
+		if (label && SORT_APPLIED_NAME.test(label)) {
+			return true;
+		}
+		const ariaSort = await sortBtn.evaluate((el) => {
+			const header = el.closest('[aria-sort]');
+			return header?.getAttribute('aria-sort') ?? el.getAttribute('aria-sort');
+		}).catch(() => null);
+		if (ariaSort === 'ascending' || ariaSort === 'descending') {
+			return true;
+		}
+		await page.waitForTimeout(100);
+	}
+	return false;
+}
+
 /** Canonical list-page search — `ListSearchField` exposes data-testid="list-search". */
 export function listSearchInput(page: Page): Locator {
 	const scoped = mainContentScope(page).locator('[data-testid="list-search"]');
@@ -1092,21 +1156,52 @@ export async function publishAcademicYearByLabel(page: Page, label: string): Pro
 	return ensureAcademicYearReady(page, label);
 }
 
+/**
+ * Matches list.rowActions / list.moreActions.
+ * Must not match sidebar.show / sidebar.hide (bare `menu` did, and timed out behind drawer overlays).
+ */
+export const ACTION_MENU_BUTTON_NAME = /actions de ligne|row actions|plus d['’]?actions|more actions/i;
+
+export const DELETE_CONTROL_NAME = /supprimer|delete|retirer|remove/i;
+
+function deleteControlLocator(root: Page | Locator): Locator {
+	return root.getByRole('button', { name: DELETE_CONTROL_NAME })
+		.or(root.getByRole('menuitem', { name: DELETE_CONTROL_NAME }));
+}
+
+async function isDirectDeleteVisible(root: Page | Locator): Promise<boolean> {
+	return deleteControlLocator(root).first().isVisible({ timeout: 1_500 }).catch(() => false);
+}
+
+async function openActionMenusForDelete(page: Page, root: Page | Locator): Promise<boolean> {
+	const menus = root.getByRole('button', { name: ACTION_MENU_BUTTON_NAME });
+	const count = await menus.count();
+	for (let i = 0; i < count; i++) {
+		const btn = menus.nth(i);
+		if (!(await btn.isVisible().catch(() => false))) {
+			continue;
+		}
+		const clicked = await btn.click({ timeout: 3_000 }).then(() => true).catch(() => false);
+		if (!clicked) {
+			continue;
+		}
+		// Overflow items are <button>s; bits-ui popovers portal to document.body.
+		const visible = await deleteControlLocator(page).first().isVisible({ timeout: 2_000 }).catch(() => false);
+		await page.keyboard.press('Escape').catch(() => {});
+		if (visible) {
+			return true;
+		}
+	}
+	return false;
+}
+
 /** Provisioned runs assert delete affordance without clicking (no destructive mutation). */
 export async function isDeleteControlVisible(page: Page): Promise<boolean> {
-	const deleteBtn = page.getByRole('button', { name: /supprimer|delete|retirer|remove/i }).first();
-	if (await deleteBtn.isVisible({ timeout: 6_000 }).catch(() => false)) {
+	const drawer = page.locator('aside[aria-label]').first();
+	const scope = (await drawer.isVisible().catch(() => false)) ? drawer : page;
+
+	if (await isDirectDeleteVisible(scope)) {
 		return true;
 	}
-
-	const menuBtn = page.getByRole('button', { name: /actions|menu|plus d|more|⋯/i }).first();
-	if (!(await menuBtn.isVisible({ timeout: 4_000 }).catch(() => false))) {
-		return false;
-	}
-
-	await menuBtn.click();
-	const menuDelete = page.getByRole('menuitem', { name: /supprimer|delete/i }).first();
-	const visible = await menuDelete.isVisible({ timeout: 3_000 }).catch(() => false);
-	await page.keyboard.press('Escape').catch(() => {});
-	return visible;
+	return openActionMenusForDelete(page, scope);
 }
