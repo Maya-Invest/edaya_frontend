@@ -282,6 +282,17 @@ async function main(): Promise<void> {
 		if (!journey.structureOk) {
 			console.error('Journey fail-fast: school structure incomplete');
 		}
+		if (entities.secondaryAccounts) {
+			try {
+				const raw = await readFile(FIXTURE_PATH, 'utf8');
+				const fixture = JSON.parse(raw) as ProvisionedTenant;
+				fixture.secondaryAccounts = entities.secondaryAccounts;
+				await writeFile(FIXTURE_PATH, JSON.stringify(fixture, null, 2));
+			}
+			catch {
+				// fixture optional if provisioning failed early
+			}
+		}
 	}
 	else {
 		console.log('\n--- Découverte entités ---');

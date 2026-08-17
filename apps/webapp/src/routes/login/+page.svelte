@@ -9,6 +9,10 @@
 	import AuthSplitShell from '$lib/components/auth/AuthSplitShell.svelte';
 	import LoginPanelHost from '$lib/components/auth/login/LoginPanelHost.svelte';
 	import SignupPanel from '$lib/components/auth/signup/SignupPanel.svelte';
+	import {
+		isTeacherPortalGateUrl,
+		TEACHER_PORTAL_GATE_BANNER_TEST_ID,
+	} from '$lib/auth/teacher-portal-gate';
 	import { isDemoLoginEnabled, isPublicSchoolRegistrationEnabled } from '$lib/env/app-env';
 	import { t } from '$lib/i18n';
 	import { appGoto } from '$lib/navigation/app-navigation';
@@ -28,6 +32,7 @@
 	const urlState = $derived(canonicalLoginUrlState(routedUrlState, {
 		hasEmailIdentity: email.trim().length > 0,
 	}));
+	const showTeacherPortalGate = $derived(isTeacherPortalGateUrl($page.url));
 
 	onMount(() => {
 		void (async () => {
@@ -95,6 +100,15 @@
 	{/snippet}
 
 	{#snippet signin()}
+		{#if showTeacherPortalGate}
+			<div
+				class="mb-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground"
+				role="status"
+				data-testid={TEACHER_PORTAL_GATE_BANNER_TEST_ID}
+			>
+				{$t('auth.teacherPortalGateHint')}
+			</div>
+		{/if}
 		<ApiConnectionBanner connected={apiConnected} />
 
 		<LoginPanelHost

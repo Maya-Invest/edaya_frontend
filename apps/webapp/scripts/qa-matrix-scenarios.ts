@@ -1,4 +1,7 @@
 import { attemptPasswordSignIn, ensurePasswordSignInPanel, waitForEnabled } from '../tests/integration/demo-dry-run/support/auth';
+import { TEACHER_PORTAL_GATE_BANNER_TEST_ID } from '../src/lib/auth/teacher-portal-gate';
+import type { SecondaryAccounts } from '../tests/integration/support/api-provision';
+import { completeWizardViaApi } from '../tests/integration/setup/journey-api';
 import type { Browser, Page } from 'playwright';
 import type { DemoContext } from '../tests/integration/demo-dry-run/support/types';
 import { DEMO_PASSWORD, STAFF_EMAIL } from '../tests/integration/demo-dry-run/support/constants';
@@ -35,7 +38,7 @@ import {
 } from './qa-route-catalog';
 import { isStudentBlockedScenario, STUDENT_SETUP_BLOCKER } from '../tests/integration/setup/setup-blockers';
 import { isFilterOrSearchRow, runFilterScenario } from './filter-setup-registry';
-import { waitForResolvedAcademicYearId } from './qa-harness-ui';
+import { isDeleteControlVisible, waitForResolvedAcademicYearId } from './qa-harness-ui';
 
 function result(row: QaTemplateRow, statut: MatrixResult['statut'], detail?: string): MatrixResult {
 	return {
@@ -217,7 +220,7 @@ async function runOnboardingScenario(row: QaTemplateRow, ctx: DemoContext, entit
 	return ok(row, 'Page onboarding accessible');
 }
 
-async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: Browser): Promise<MatrixResult> {
+async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: Browser, entities: MatrixEntities): Promise<MatrixResult> {
 	const { page, base } = ctx;
 	const action = row.action;
 
@@ -252,6 +255,10 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 	}
 
 	if (action.includes('sans permission')) {
+		const financeRedirect = await assertFinanceRedirectRestricted(row, browser, base, entities.secondaryAccounts);
+		if (financeRedirect) {
+			return financeRedirect;
+		}
 		return na(row, 'Nécessite compte sans droit finance');
 	}
 
@@ -341,12 +348,241 @@ export async function runLogoutShellScenario(row: QaTemplateRow, ctx: DemoContex
 	}
 }
 
+async function sidebarNavHrefs(page: Page): Promise<string[]> {
+	await waitForAppShell(page);
+	await page.waitForTimeout(1_000);
+	for (const pattern of [/école|school/i, /classe|class/i]) {
+		const toggle = page.locator('aside#app-sidebar button').filter({ hasText: pattern }).first();
+		if (await toggle.isVisible({ timeout: 2_000 }).catch(() => false)) {
+			await toggle.click().catch(() => {});
+			await page.waitForTimeout(400);
+		}
+	}
+	await page.locator('aside#app-sidebar a[href]').first().waitFor({ timeout: 15_000 }).catch(() => {});
+	const hrefs = await page.locator('aside#app-sidebar a[href]').evaluateAll(
+		elements => elements
+			.map(element => element.getAttribute('href'))
+			.filter((href): href is string => Boolean(href)),
+	);
+	return hrefs;
+}
+
+function hrefsInclude(hrefs: readonly string[], fragment: string): boolean {
+	return hrefs.some(href => href.includes(fragment));
+}
+
+function hrefsExclude(hrefs: readonly string[], fragment: string): boolean {
+	return !hrefs.some(href => href.includes(fragment));
+}
+
+async function assertTeacherPortalGate(page: Page): Promise<{ ok: boolean; detail: string }> {
+	const pathname = new URL(page.url()).pathname;
+	if (!pathname.endsWith('/login')) {
+		return { ok: false, detail: `attendu /login, obtenu ${pathname}` };
+	}
+	const banner = await page.getByTestId(TEACHER_PORTAL_GATE_BANNER_TEST_ID)
+		.isVisible({ timeout: 8_000 })
+		.catch(() => false);
+	if (!banner) {
+		return { ok: false, detail: 'bannière portail enseignant absente' };
+	}
+	const sidebar = await page.locator('aside#app-sidebar').isVisible().catch(() => false);
+	if (sidebar) {
+		return { ok: false, detail: 'sidebar applicative visible pour enseignant' };
+	}
+	return { ok: true, detail: 'portail enseignant — accès web bloqué' };
+}
+
+async function loginIsolatedTeacher(
+	browser: Browser,
+	base: string,
+	email: string,
+	password: string,
+): Promise<{ page: Page; context: import('playwright').BrowserContext } | null> {
+	const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+	const page = await context.newPage();
+	const logged = await attemptPasswordSignIn(page, base, email, password);
+	if (!logged) {
+		await context.close();
+		return null;
+	}
+	return { page, context };
+}
+
+async function loginIsolated(
+	browser: Browser,
+	base: string,
+	email: string,
+	password: string,
+): Promise<{ page: import('playwright').Page; context: import('playwright').BrowserContext } | null> {
+	const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+	const page = await context.newPage();
+	const logged = await attemptPasswordSignIn(page, base, email, password);
+	if (!logged) {
+		await context.close();
+		return null;
+	}
+	await waitForAppShell(page).catch(() => {});
+	await completeWizardViaApi(page, base).catch(() => {});
+	if (page.url().includes('/onboarding')) {
+		await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
+		await waitForAppShell(page).catch(() => {});
+	}
+	return { page, context };
+}
+
+async function runPermissionsScenario(
+	row: QaTemplateRow,
+	browser: Browser,
+	base: string,
+	accounts: SecondaryAccounts | undefined,
+): Promise<MatrixResult> {
+	const action = row.action;
+	if (!accounts?.teacher && !accounts?.educator) {
+		return na(row, 'Comptes secondaires non provisionnés');
+	}
+
+	if (action.includes('enseignant') && action.includes('sidebar')) {
+		if (!accounts.teacher) {
+			return na(row, 'Compte enseignant non provisionné');
+		}
+		const session = await loginIsolatedTeacher(
+			browser,
+			base,
+			accounts.teacher.email,
+			accounts.teacher.password,
+		);
+		if (!session) {
+			return notOk(row, 'Connexion enseignant échouée');
+		}
+		try {
+			const gate = await assertTeacherPortalGate(session.page);
+			return gate.ok ? ok(row, gate.detail) : notOk(row, gate.detail);
+		}
+		finally {
+			await session.context.close();
+		}
+	}
+
+	if (action.includes('éducateur') && action.includes('sidebar')) {
+		if (!accounts.educator) {
+			return na(row, 'Compte éducateur non provisionné');
+		}
+		const session = await loginIsolated(browser, base, accounts.educator.email, accounts.educator.password);
+		if (!session) {
+			return notOk(row, 'Connexion éducateur échouée');
+		}
+		try {
+			await session.page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
+			await waitForAppShell(session.page).catch(() => {});
+			await session.page.waitForTimeout(1_000);
+			const hrefs = await sidebarNavHrefs(session.page);
+			const required = ['/school/students', '/school/events'];
+			const forbidden = ['/finance', '/configuration', '/school/calendar', '/school/announcements'];
+			const missing = required.filter(fragment => !hrefsInclude(hrefs, fragment));
+			const leaked = forbidden.filter(fragment => !hrefsExclude(hrefs, fragment));
+			if (missing.length > 0) {
+				return notOk(row, `Liens manquants: ${missing.join(', ')}`);
+			}
+			if (leaked.length > 0) {
+				return notOk(row, `Liens interdits visibles: ${leaked.join(', ')}`);
+			}
+			return ok(row, `${hrefs.length} entrées sidebar`);
+		}
+		finally {
+			await session.context.close();
+		}
+	}
+
+	if (action.includes('finance') && action.includes('/dashboard')) {
+		if (!accounts.educator) {
+			return na(row, 'Compte éducateur non provisionné');
+		}
+		const session = await loginIsolated(browser, base, accounts.educator.email, accounts.educator.password);
+		if (!session) {
+			return notOk(row, 'Connexion compte restreint échouée');
+		}
+		try {
+			await session.page.goto(`${base}/finance/billing`, { waitUntil: 'domcontentloaded' });
+			await session.page.waitForTimeout(1_500);
+			const pathname = new URL(session.page.url()).pathname;
+			return pathname.startsWith('/dashboard')
+				? ok(row, pathname)
+				: notOk(row, `Pas de redirect dashboard (${session.page.url()})`);
+		}
+		finally {
+			await session.context.close();
+		}
+	}
+
+	if (action.includes('PermissionGate')) {
+		if (!accounts.teacher) {
+			return na(row, 'Compte enseignant non provisionné');
+		}
+		const session = await loginIsolatedTeacher(
+			browser,
+			base,
+			accounts.teacher.email,
+			accounts.teacher.password,
+		);
+		if (!session) {
+			return notOk(row, 'Connexion enseignant échouée');
+		}
+		try {
+			const gate = await assertTeacherPortalGate(session.page);
+			if (!gate.ok) {
+				return notOk(row, gate.detail);
+			}
+			await session.page.goto(`${base}/school/staff`, { waitUntil: 'domcontentloaded' });
+			await session.page.waitForTimeout(1_500);
+			const blocked = await assertTeacherPortalGate(session.page);
+			return blocked.ok
+				? ok(row, 'accès staff bloqué après tentative directe')
+				: notOk(row, blocked.detail);
+		}
+		finally {
+			await session.context.close();
+		}
+	}
+
+	return notOk(row, 'Scénario Permissions non mappé');
+}
+
+async function assertFinanceRedirectRestricted(
+	row: QaTemplateRow,
+	browser: Browser,
+	base: string,
+	accounts: SecondaryAccounts | undefined,
+): Promise<MatrixResult | null> {
+	if (!row.action.includes('sans permission')) {
+		return null;
+	}
+	if (!accounts?.educator) {
+		return na(row, 'Compte restreint non provisionné');
+	}
+	const session = await loginIsolated(browser, base, accounts.educator.email, accounts.educator.password);
+	if (!session) {
+		return notOk(row, 'Connexion compte restreint échouée');
+	}
+	try {
+		await session.page.goto(`${base}/finance/billing`, { waitUntil: 'domcontentloaded' });
+		await session.page.waitForTimeout(1_500);
+		const pathname = new URL(session.page.url()).pathname;
+		return pathname.startsWith('/dashboard')
+			? ok(row, pathname)
+			: notOk(row, `Pas de redirect dashboard (${session.page.url()})`);
+	}
+	finally {
+		await session.context.close();
+	}
+}
+
 async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Browser, entities: MatrixEntities): Promise<MatrixResult> {
 	const { page } = ctx;
 	const action = row.action;
 
 	if (row.module === 'Permissions') {
-		return na(row, 'Nécessite plusieurs comptes (enseignant, éducateur)');
+		return runPermissionsScenario(row, browser, ctx.base, entities.secondaryAccounts);
 	}
 
 	if (row.endpoint.includes('/onboarding') || row.module === 'Onboarding') {
@@ -359,7 +595,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 			&& !/^Sidebar — lien /i.test(action)
 			&& !/^Modal deep-link /i.test(action))
 	) {
-		return runShellScenario(row, ctx, browser);
+		return runShellScenario(row, ctx, browser, entities);
 	}
 
 	// ── Generated: legacy redirect smoke ──
@@ -486,25 +722,8 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 			return na(row, 'Setup missing subjectId for progression modal');
 		}
 
-		if (modalKey === 'edit' && pathOnly.includes('/configuration/notifications')) {
-			await waitForPageQuery(page);
-			await page.locator('[data-testid="form-modal"], [role="dialog"]').first()
-				.waitFor({ state: 'visible', timeout: 15_000 })
-				.catch(() => {});
-		}
-
-		const dialogTimeout = modalKey === 'edit' && pathOnly.includes('/configuration/notifications') ? 20_000 : 8_000;
-		const dialog = pathOnly.includes('/configuration/notifications') && modalKey === 'edit'
-			? page.locator('[data-testid="form-modal"]')
-			: page.getByRole('dialog').or(page.locator('[data-testid="form-modal"]'));
-		let visible = await dialog.first().isVisible({ timeout: dialogTimeout }).catch(() => false);
-		if (!visible && modalKey === 'edit' && pathOnly.includes('/configuration/notifications')) {
-			for (let attempt = 0; attempt < 10; attempt++) {
-				await page.waitForTimeout(500);
-				visible = await dialog.first().isVisible().catch(() => false);
-				if (visible) break;
-			}
-		}
+		const dialog = page.getByRole('dialog').or(page.locator('[data-testid="form-modal"]'));
+		const visible = await dialog.first().isVisible({ timeout: 8_000 }).catch(() => false);
 
 		const urlHasModal = modalKey ? page.url().includes(`modal=${modalKey}`) : false;
 		return visible && urlHasModal ? ok(row) : notOk(row, `Modal non visible (url=${page.url()})`);
@@ -739,26 +958,12 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		return notOk(row, 'Préférences introuvables');
 	}
 
-	// ── Delete ──
+	// ── Delete (visibility only — provisioned runs must not mutate) ──
 	if (/supprimer|delete/i.test(action) && !/export/i.test(action)) {
-		const deleteBtn = page.getByRole('button', { name: /supprimer|delete|retirer|remove/i }).first();
-		if (await deleteBtn.isVisible({ timeout: 6_000 }).catch(() => false)) {
-			await deleteBtn.click();
-			const confirm = page.getByRole('button', { name: /confirmer|confirm|supprimer|delete|oui|yes/i }).last();
-			if (await confirm.isVisible({ timeout: 4_000 }).catch(() => false)) {
-				return ok(row, 'delete: confirm dialog visible (not submitted — avoids destructive mutation)');
-			}
-			return ok(row, 'delete: action button visible');
-		}
-		const menuBtn = page.getByRole('button', { name: /actions|menu|plus d|more|⋯/i }).first();
-		if (await menuBtn.isVisible({ timeout: 4_000 }).catch(() => false)) {
-			await menuBtn.click();
-			const menuDelete = page.getByRole('menuitem', { name: /supprimer|delete/i }).first();
-			if (await menuDelete.isVisible({ timeout: 3_000 }).catch(() => false)) {
-				return ok(row, 'delete: menu item visible (not clicked)');
-			}
-		}
-		return na(row, 'delete: no delete control or insufficient data');
+		const visible = await isDeleteControlVisible(page);
+		return visible
+			? ok(row, 'delete: control visible (not clicked)')
+			: na(row, 'delete: no delete control or insufficient data');
 	}
 
 	// ── Publish / generate / payment / toggle — smoke only ──

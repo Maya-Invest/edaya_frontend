@@ -1,3 +1,4 @@
+import { openUrlModal } from '../../../../scripts/qa-harness-ui';
 import { configClassGroupPath } from './paths';
 import type { DemoContext, EnsureDailyAttendanceOptions } from './types';
 import { visit } from './visit';
@@ -56,11 +57,19 @@ export async function ensureDailyAttendanceMode(
 		return true;
 	}
 
-	const editBtn = page.getByRole('button', { name: /edit|modifier/i });
-	if (!(await editBtn.isVisible({ timeout: 10_000 }).catch(() => false))) {
-		return false;
+	const modalOpened = await openUrlModal(
+		page,
+		`/configuration/classes/${classId}/profile`,
+		'edit',
+		{ base, timeout: 12_000 },
+	);
+	if (!modalOpened) {
+		const editBtn = page.getByRole('button', { name: /edit|modifier/i });
+		if (!(await editBtn.isVisible({ timeout: 10_000 }).catch(() => false))) {
+			return false;
+		}
+		await editBtn.click();
 	}
-	await editBtn.click();
 	await page.locator('[role="dialog"]').waitFor({ state: 'visible', timeout: 10_000 });
 
 	if (!dailyOk || force) {

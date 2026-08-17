@@ -14,6 +14,7 @@ import { runPeopleChapter } from './chapters/people';
 import { runSchoolChapter } from './chapters/school';
 import { runTeachingChapter } from './chapters/teaching';
 import { runClassesFinanceChapter } from './chapters/classes-finance';
+import { runAccountsChapter } from './chapters/accounts';
 
 const WEBAPP_DIR = path.join(import.meta.dirname, '../../..');
 export const ENTITIES_PATH = path.join(WEBAPP_DIR, '.integration-run', 'entities.json');
@@ -54,6 +55,7 @@ export async function runUiJourney(
 		await runJourneyChapter('school', () => runSchoolChapter(journey));
 		await runJourneyChapter('teaching', () => runTeachingChapter(journey));
 		await runJourneyChapter('classes-finance', () => runClassesFinanceChapter(journey));
+		await runJourneyChapter('accounts', () => runAccountsChapter(journey));
 	}
 
 	await mkdir(path.dirname(ENTITIES_PATH), { recursive: true });

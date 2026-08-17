@@ -1,6 +1,7 @@
 import type { Page } from 'playwright';
 import type { DemoContext, SignInOptions } from './types';
 import path from 'node:path';
+import { TEACHER_PORTAL_GATE_BANNER_TEST_ID } from '$lib/auth/teacher-portal-gate';
 import { DEMO_PASSWORD, STAFF_EMAIL } from './constants';
 import { integrationUsesDemoLogin, webappReadinessPath } from './paths';
 
@@ -62,6 +63,39 @@ export async function attemptPasswordSignIn(
 			.getByRole('button', { name: /sign in|se connecter/i })
 			.click();
 
+		const appShellUrl = page.waitForURL(
+			/\/(dashboard|school|classes|configuration|onboarding|finance)/,
+			{ timeout: 30_000 },
+		);
+		const teacherGateBanner = page.waitForSelector(
+			`[data-testid="${TEACHER_PORTAL_GATE_BANNER_TEST_ID}"]`,
+			{ timeout: 30_000 },
+		);
+		await Promise.race([appShellUrl, teacherGateBanner]);
+		return true;
+	}
+	catch {
+		return false;
+	}
+}
+
+/** Sign in via the auth API (bypasses UI post-auth redirects e.g. teacher → /login). */
+export async function attemptApiSignIn(
+	page: Page,
+	base: string,
+	email: string,
+	password: string,
+): Promise<boolean> {
+	try {
+		const response = await page.request.post(`${base}/auth/sign-in/email`, {
+			headers: { 'content-type': 'application/json' },
+			data: { email, password },
+		});
+		if (!response.ok()) {
+			return false;
+		}
+
+		await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
 		await page.waitForURL(/\/(dashboard|school|classes|configuration|onboarding|finance)/, { timeout: 30_000 });
 		return true;
 	}

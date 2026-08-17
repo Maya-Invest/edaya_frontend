@@ -1,5 +1,6 @@
 import type { Page } from 'playwright';
 import type { DemoContext } from '../tests/integration/demo-dry-run/support/types';
+import type { SecondaryAccounts } from '../tests/integration/support/api-provision';
 import type { QaTemplateRow } from './qa-template-matrix';
 
 export type MatrixStatut = 'OK' | 'NOT OK' | 'N/A';
@@ -45,6 +46,7 @@ export interface MatrixEntities {
 	calendarEventId: string | null;
 	notificationTemplateKey: string | null;
 	sessionId: string | null;
+	timetableWeek: string | null;
 	evaluationId: string | null;
 	dayId: string | null;
 	reportCardId: string | null;
@@ -63,6 +65,7 @@ export interface MatrixEntities {
 	createdStudentId: string | null;
 	studentSetupBlocked: boolean;
 	filterFixtures: FilterFixtures;
+	secondaryAccounts?: SecondaryAccounts;
 }
 
 export function emptyEntities(): MatrixEntities {
@@ -78,8 +81,9 @@ export function emptyEntities(): MatrixEntities {
 		announcementId: null,
 		eventId: null,
 		calendarEventId: null,
-		notificationTemplateKey: null,
+		notificationTemplateKey: 'report_card.published',
 		sessionId: null,
+		timetableWeek: null,
 		evaluationId: null,
 		dayId: null,
 		reportCardId: null,
@@ -98,6 +102,7 @@ export function emptyEntities(): MatrixEntities {
 		createdStudentId: null,
 		studentSetupBlocked: false,
 		filterFixtures: {},
+		secondaryAccounts: undefined,
 	};
 }
 
@@ -214,6 +219,31 @@ export async function firstStudentIdFromList(page: Page): Promise<string | null>
 	return match?.[1] ?? null;
 }
 
+/** Encode dynamic path segments (e.g. lesson session ids containing `:`). */
+export function encodePathSegment(segment: string): string {
+	return encodeURIComponent(segment);
+}
+
+export function timetableWeekFromSessionId(sessionId: string | null): string | null {
+	if (!sessionId?.includes(':')) {
+		return null;
+	}
+	const week = sessionId.split(':').slice(1).join(':');
+	return /^\d{4}-\d{2}-\d{2}$/.test(week) ? week : null;
+}
+
+export function buildTimetableSessionPath(
+	classId: string,
+	sessionId: string,
+	tab?: string,
+	week?: string | null,
+): string {
+	const encodedSessionId = encodePathSegment(sessionId);
+	const path = `/classes/${classId}/timetable/${encodedSessionId}${tab ? `/${tab}` : ''}`;
+	const weekParam = week ?? timetableWeekFromSessionId(sessionId);
+	return weekParam ? `${path}?week=${weekParam}` : path;
+}
+
 export function resolveEndpoint(endpoint: string, base: string, entities: MatrixEntities): string | null {
 	if (endpoint === '(app)' || endpoint === '(multi-comptes)') {
 		return null;
@@ -289,7 +319,10 @@ export function resolveEndpoint(endpoint: string, base: string, entities: Matrix
 		if (path.includes(token) && !value) {
 			return null;
 		}
-		path = path.replaceAll(token, value ?? '');
+		const replacement = token === '[sessionId]' && value
+			? encodePathSegment(value)
+			: (value ?? '');
+		path = path.replaceAll(token, replacement);
 	}
 
 	const searchIndex = path.indexOf('?');
@@ -298,6 +331,13 @@ export function resolveEndpoint(endpoint: string, base: string, entities: Matrix
 
 	const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
 	const modal = params.get('modal');
+
+	if (pathname.includes('/timetable/') && entities.sessionId) {
+		const week = entities.timetableWeek ?? timetableWeekFromSessionId(entities.sessionId);
+		if (week && !params.has('week')) {
+			params.set('week', week);
+		}
+	}
 
 	if (modal === 'edit' && !params.get('modalTarget')) {
 		if (pathname.includes('/school/calendar') && entities.calendarEventId) {
@@ -374,6 +414,9 @@ export async function discoverEntities(ctx: DemoContext): Promise<MatrixEntities
 			page,
 			new RegExp(`/classes/${entities.classId}/timetable/([^/]+)`),
 		);
+		entities.timetableWeek = entities.sessionId
+			? (entities.timetableWeek ?? timetableWeekFromSessionId(entities.sessionId))
+			: null;
 
 		await safeGoto(ctx, `${base}/classes/${entities.classId}/evaluations`);
 		entities.evaluationId = await firstIdFromLinks(

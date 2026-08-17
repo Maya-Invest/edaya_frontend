@@ -421,7 +421,7 @@
 							{$t('invitation.accept.teacherLinkedTitle')}
 						</h2>
 						<p class="text-sm text-muted-foreground">
-							{$t('invitation.accept.teacherLinkedHint')}
+							{$t('auth.teacherPortalGateHint')}
 						</p>
 					</div>
 				{:else if pageState === 'accepted'}

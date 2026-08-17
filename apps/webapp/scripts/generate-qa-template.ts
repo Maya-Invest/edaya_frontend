@@ -7,6 +7,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { QA_TEMPLATE_MATRIX_RUNNABLE, type QaTemplateRow } from './qa-template-matrix';
+import { describeTestExactly } from './qa-test-descriptions';
 
 const ROOT = path.join(import.meta.dirname, '../../../..');
 const MATRIX_RESULTS_PATH = path.join(ROOT, 'qa-matrix-results.json');
@@ -188,7 +189,15 @@ function resolveRow(
 async function main(): Promise<void> {
 	const matrixResults = await loadMatrixResults();
 	const legacyResults = matrixResults.length > 0 ? [] : await loadLegacyResults();
-	const header = ['Catégorie', 'Endpoint', 'Action / description du test', 'Détail problème', 'Suggestion', 'Statut'];
+	const header = [
+		'Catégorie',
+		'Endpoint',
+		'Action / description du test',
+		'Objectif du test',
+		'Détail problème',
+		'Suggestion',
+		'Statut',
+	];
 	const lines: string[][] = [header];
 
 	const stats = { ok: 0, notOk: 0, na: 0, todo: 0 };
@@ -204,6 +213,7 @@ async function main(): Promise<void> {
 			row.module,
 			row.endpoint,
 			row.action,
+			describeTestExactly(row),
 			statut === 'NOT OK' ? detail : '',
 			suggestion,
 			statut,

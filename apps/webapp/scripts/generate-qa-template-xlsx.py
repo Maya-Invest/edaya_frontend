@@ -37,7 +37,7 @@ THIN = Border(
     top=Side(style="thin", color="D9D9D9"),
     bottom=Side(style="thin", color="D9D9D9"),
 )
-WIDTHS = [18, 52, 48, 42, 28, 12]
+WIDTHS = [18, 52, 48, 56, 42, 28, 12]
 
 
 def read_csv(path: Path) -> tuple[list[str], list[dict[str, str]]]:
@@ -86,7 +86,15 @@ def main() -> None:
 
     fieldnames, rows = read_csv(csv_path)
     if not fieldnames:
-        fieldnames = ["Catégorie", "Endpoint", "Action / description du test", "Détail problème", "Suggestion", "Statut"]
+        fieldnames = [
+            "Catégorie",
+            "Endpoint",
+            "Action / description du test",
+            "Objectif du test",
+            "Détail problème",
+            "Suggestion",
+            "Statut",
+        ]
 
     wb = Workbook()
     # Feuille globale

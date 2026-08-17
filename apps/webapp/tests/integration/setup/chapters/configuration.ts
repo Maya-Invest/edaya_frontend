@@ -220,38 +220,13 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 		}
 	}
 
-	await visitCovered(journey, '/configuration/notifications', '/configuration/notifications');
 	entities.notificationTemplateKey = 'report_card.published';
-	const resetAll = page.getByRole('button', { name: /réinitialiser|reset all/i }).first();
-	await resetAll.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
-	const resetEnabledAt = Date.now();
-	while (Date.now() - resetEnabledAt < 15_000 && await resetAll.isDisabled().catch(() => true)) {
-		await page.waitForTimeout(250);
-	}
-	const keyText = page.getByText(entities.notificationTemplateKey, { exact: true }).first();
-	await keyText.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
-	const card = page.locator('article').filter({ hasText: entities.notificationTemplateKey }).first();
-	let notifDialog = false;
-	if (await card.isVisible().catch(() => false)) {
-		const menuBtn = card.getByRole('button', { name: /actions de ligne|row actions/i })
-			.or(card.locator('button').last());
-		await menuBtn.click();
-		await page.waitForTimeout(400);
-		const editItem = page.getByRole('button', { name: /modifier|edit/i }).last()
-			.or(page.getByText(/modifier|edit/i).last());
-		if (await editItem.isVisible({ timeout: 6_000 }).catch(() => false)) {
-			await editItem.click({ force: true });
-			notifDialog = await waitForFormModal(page, 12_000);
-		}
-	}
-	if (!notifDialog) {
-		notifDialog = await openUrlModal(
-			page,
-			'/configuration/notifications',
-			'edit',
-			{ target: entities.notificationTemplateKey, base: ctx.base, timeout: 20_000 },
-		);
-	}
+	await visitCovered(journey, '/configuration/notifications', '/configuration/notifications');
+	const notifDialog = await openUrlModal(page, '/configuration/notifications', 'edit', {
+		target: entities.notificationTemplateKey,
+		base: ctx.base,
+		timeout: 12_000,
+	});
 	coverModal(journey, '/configuration/notifications', 'edit', notifDialog ? 'OK' : 'NOT OK');
 	coverActions(journey, 'http://localhost:5173/configuration/notifications', ['Templates notifications école'], notifDialog ? 'OK' : 'NOT OK');
 	if (notifDialog) {

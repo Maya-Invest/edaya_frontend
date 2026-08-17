@@ -2,19 +2,29 @@ import {
 	clickCreateButton,
 	fillAssignFeeDialog,
 	fillEvaluationCreateDialog,
+	fillNewSessionWizard,
+	generateReportCardForStudent,
+	isDeleteControlVisible,
 	openDialogButton,
 	submitDialog,
 	trySubmitDialog,
 	waitForDialogClosed,
 	waitForPageQuery,
 } from '../../../../scripts/qa-harness-ui';
-import { firstIdFromLinks } from '../../../../scripts/qa-matrix-support';
+import { buildTimetableSessionPath, firstIdFromLinks, timetableWeekFromSessionId } from '../../../../scripts/qa-matrix-support';
+import {
+	ensureTimetableSession,
+	generateReportCardViaApi,
+	lessonSessionExists,
+	publishReportCardDefinitionViaApi,
+} from '../journey-api';
 import {
 	coverActions,
 	coverModal,
 	gotoApp,
 	idFromUrl,
 	logStep,
+	recordAttendanceForToday,
 	visitCovered,
 	waitForCommandPayload,
 	type UiJourney,
@@ -48,27 +58,38 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 
 	await visitCovered(journey, '/classes/[classId]/timetable', `/classes/${classId}/timetable`);
 	coverActions(journey, 'http://localhost:5173/classes/[classId]/timetable', ['Vue semaine / liste', 'Navigation semaine'], 'OK');
-	const sessionOpened = await openDialogButton(page, /add session|ajouter une séance|new session|nouvelle séance|add schedule/i);
-	if (sessionOpened) {
-		await submitDialog(page).catch(() => {});
-		await waitForDialogClosed(page).catch(() => {});
-	}
-	let sessionId = await firstIdFromLinks(page, new RegExp(`/classes/${classId}/timetable/([^/?]+)`));
-	if (!sessionId) {
-		const cell = page.locator('main a[href*="/timetable/"]').first();
-		if (await cell.isVisible().catch(() => false)) {
-			await cell.click();
-			await page.waitForTimeout(800);
-			sessionId = idFromUrl(page, /\/timetable\/([^/?]+)/);
+	const sessionTitle = `E2E-Session-${Date.now()}`;
+	let sessionResult = await ensureTimetableSession(page, journey.ctx.base, {
+		classGroupId: classId,
+		classSubjectId: entities.teachingId,
+		catalogSubjectId: entities.subjectId,
+		title: sessionTitle,
+	});
+	if (!sessionResult) {
+		const wizardSessionId = await fillNewSessionWizard(page, {
+			classId,
+			title: sessionTitle,
+			base: journey.ctx.base,
+		});
+		if (wizardSessionId && await lessonSessionExists(page, journey.ctx.base, wizardSessionId)) {
+			sessionResult = {
+				sessionId: wizardSessionId,
+				scheduleDate: timetableWeekFromSessionId(wizardSessionId)
+					?? (wizardSessionId.split(':').slice(1).join(':') || ''),
+			};
 		}
 	}
+	const sessionId = sessionResult?.sessionId ?? null;
 	entities.sessionId = sessionId;
+	entities.timetableWeek = sessionResult?.scheduleDate
+		?? (sessionId ? sessionId.split(':').slice(1).join(':') || null : null);
 	if (sessionId) {
 		for (const tab of ['details', 'attendance', 'logbook'] as const) {
+			const visitPath = buildTimetableSessionPath(classId, sessionId, tab, entities.timetableWeek);
 			await visitCovered(
 				journey,
 				`/classes/[classId]/timetable/[sessionId]/${tab}`,
-				`/classes/${classId}/timetable/${sessionId}/${tab}`,
+				visitPath,
 			);
 		}
 		coverActions(journey, 'http://localhost:5173/classes/[classId]/timetable/[sessionId]/details', ['Détails séance'], 'OK');
@@ -77,7 +98,7 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 		logStep(journey, { step: 'timetable-session', ok: true, entityId: sessionId });
 	}
 	else {
-		logStep(journey, { step: 'timetable-session', ok: false, detail: sessionOpened ? 'modal opened but no session id' : 'no session on timetable' });
+		logStep(journey, { step: 'timetable-session', ok: false, detail: sessionId ? 'session id scraped only' : 'no session on timetable' });
 	}
 
 	await visitCovered(journey, '/classes/[classId]/evaluations', `/classes/${classId}/evaluations`);
@@ -115,17 +136,20 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 
 	await visitCovered(journey, '/classes/[classId]/attendance', `/classes/${classId}/attendance`);
 	coverActions(journey, 'http://localhost:5173/classes/[classId]/attendance', ['Liste jours'], 'OK');
-	const dayLink = page.locator('main a[href*="/attendance/"]').first();
-	if (await dayLink.isVisible().catch(() => false)) {
-		await dayLink.click();
-		await page.waitForTimeout(800);
-		const dayId = idFromUrl(page, /\/attendance\/([^/?]+)/);
-		entities.dayId = dayId;
-		if (dayId) {
-			await visitCovered(journey, '/classes/[classId]/attendance/[dayId]', `/classes/${classId}/attendance/${dayId}`);
-			coverActions(journey, 'http://localhost:5173/classes/[classId]/attendance/[dayId]', ['Prendre / éditer présence jour'], 'OK');
+	let dayId = await recordAttendanceForToday(journey, classId);
+	if (!dayId) {
+		const dayLink = page.locator('main a[href*="/attendance/"], main button').filter({ hasText: /roll call|appel/i }).first();
+		if (await dayLink.isVisible().catch(() => false)) {
+			await dayLink.click();
+			await page.waitForTimeout(800);
+			dayId = idFromUrl(page, /\/attendance\/([^/?]+)/);
 		}
-		logStep(journey, { step: 'attendance-day', ok: Boolean(dayId), entityId: dayId ?? undefined });
+	}
+	entities.dayId = dayId;
+	if (dayId) {
+		await visitCovered(journey, '/classes/[classId]/attendance/[dayId]', `/classes/${classId}/attendance/${dayId}`);
+		coverActions(journey, 'http://localhost:5173/classes/[classId]/attendance/[dayId]', ['Prendre / éditer présence jour'], 'OK');
+		logStep(journey, { step: 'attendance-day', ok: true, entityId: dayId });
 	}
 	else {
 		logStep(journey, { step: 'attendance-day', ok: false, detail: 'No attendance day link' });
@@ -133,17 +157,39 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 
 	await visitCovered(journey, '/classes/[classId]/report-cards', `/classes/${classId}/report-cards`);
 	coverActions(journey, 'http://localhost:5173/classes/[classId]/report-cards', ['Liste — filtre statut'], 'OK');
+	if (entities.reportCardDefId) {
+		await gotoApp(journey, `/configuration/report-cards/${entities.reportCardDefId}`);
+		const publishModelBtn = page.getByRole('button', { name: /publish model|publier le modèle/i }).first();
+		if (await publishModelBtn.isVisible({ timeout: 8_000 }).catch(() => false)) {
+			await publishModelBtn.click();
+			await waitForPageQuery(page);
+		}
+		else {
+			await publishReportCardDefinitionViaApi(page, journey.ctx.base, entities.reportCardDefId);
+		}
+		await gotoApp(journey, `/classes/${classId}/report-cards`);
+	}
 	const generateBtn = page.getByRole('button', { name: /générer|generate|publier|publish/i }).first();
 	if (await generateBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
 		coverActions(journey, 'http://localhost:5173/classes/[classId]/report-cards', ['Générer bulletin élève', 'Générer bulletin classe', 'Publier'], 'OK', 'button visible');
 	}
-	const reportCardId = await firstIdFromLinks(page, new RegExp(`/classes/${classId}/report-cards/([^/?]+)`));
+	let reportCardId = await generateReportCardForStudent(page, classId);
+	if (!reportCardId && entities.reportCardDefId && entities.studentId) {
+		reportCardId = await generateReportCardViaApi(page, journey.ctx.base, {
+			reportCardDefinitionId: entities.reportCardDefId,
+			studentId: entities.studentId,
+		});
+	}
+	if (!reportCardId) {
+		reportCardId = await firstIdFromLinks(page, new RegExp(`/classes/${classId}/report-cards/([^/?]+)`));
+	}
 	entities.reportCardId = reportCardId;
 	if (reportCardId) {
+		entities.filterFixtures.reportCardsByStatus = { generated: { id: reportCardId, label: 'E2E-RC' } };
 		await visitCovered(journey, '/classes/[classId]/report-cards/[id]', `/classes/${classId}/report-cards/${reportCardId}`);
 		coverActions(journey, 'http://localhost:5173/classes/[classId]/report-cards/[id]', ['Détail bulletin', 'Commentaire', 'Publier'], 'OK');
 	}
-	logStep(journey, { step: 'class-report-card', ok: true, entityId: reportCardId ?? undefined });
+	logStep(journey, { step: 'class-report-card', ok: Boolean(reportCardId), entityId: reportCardId ?? undefined });
 
 	await visitCovered(journey, '/finance/fees', '/finance/fees');
 	const feeName = `E2E-Fee-${Date.now()}`;
@@ -192,7 +238,13 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 		coverActions(journey, 'http://localhost:5173/finance/billing', ['Ouvrir drawer facturation'], 'OK');
 		await visitCovered(journey, '/finance/billing/[id]', `/finance/billing/${billingId}`);
 		coverActions(journey, 'http://localhost:5173/finance/billing/[id]', ['Enregistrer paiement'], 'OK');
-		coverActions(journey, 'http://localhost:5173/finance/billing/[id]', ['Supprimer facturation'], 'N/A', 'journey must not delete');
+		const deleteVisible = await isDeleteControlVisible(page);
+		coverActions(
+			journey,
+			'http://localhost:5173/finance/billing/[id]',
+			['Supprimer facturation'],
+			deleteVisible ? 'OK' : 'NOT OK',
+		);
 		coverModal(journey, '/finance/billing/[id]', 'payment', 'OK');
 		const payOpened = await openDialogButton(page, /paiement|payment|enregistrer/i);
 		if (payOpened) {

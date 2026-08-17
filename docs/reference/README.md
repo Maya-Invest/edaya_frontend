@@ -12,5 +12,7 @@ Human-targeted architecture notes, operational guides, and progress catalogs.
 | [client-onboarding/](./client-onboarding/README.md) | Ops-led school onboarding kit (intake, import pack, runbook, kickoff) |
 | [legal/nda-accord-confidentialite.md](./legal/nda-accord-confidentialite.md) | Modèle NDA bilatéral (démo / pourparlers) |
 | [rapport-flotte-tablettes.md](./rapport-flotte-tablettes.md) | Flottes tablettes CI + Canada (prix, sécurité, TCO 3 ans) |
+| [decision-flotte-tablettes-1pager.md](./decision-flotte-tablettes-1pager.md) | 1-pager décision (réunion) — lot 50 unités |
+| [decision-flotte-tablettes-equipe.md](./decision-flotte-tablettes-equipe.md) | Plan détaillé équipe — générations iPad, devis, 30 jours |
 
 Do not link these from specs, cursor rules, or `AGENTS.md`.

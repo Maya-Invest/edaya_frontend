@@ -44,6 +44,7 @@ export const fr: Dict = {
 	'auth.passwordPlaceholder': 'Saisissez votre mot de passe',
 	'auth.signInWithPassword': 'Se connecter',
 	'auth.passwordSignInFailed': 'Connexion échouée. Vérifiez votre e-mail et votre mot de passe.',
+	'auth.teacherPortalGateHint': 'Cet espace est réservé au personnel administratif. Utilisez l’application enseignant Edaya avec le même e-mail pour accéder à vos classes.',
 	'auth.pickSchool': 'Campus',
 	'auth.pickAccount': 'Compte démo',
 	'auth.demoHint': 'Connexion prototype — aucun mot de passe.',

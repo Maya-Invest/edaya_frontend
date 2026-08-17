@@ -4,6 +4,7 @@ import {
 	waitForDialogClosed,
 } from '../../../../scripts/qa-harness-ui';
 import { firstIdFromLinks } from '../../../../scripts/qa-matrix-support';
+import { ensureClassSubjectForClass } from '../journey-api';
 import {
 	coverActions,
 	coverModal,
@@ -66,6 +67,15 @@ export async function runTeachingChapter(journey: UiJourney): Promise<void> {
 	}
 	entities.teachingId = teachingId;
 	entities.filterFixtures.teachingSearchToken = teachingId ?? undefined;
+
+	if (!teachingId) {
+		teachingId = await ensureClassSubjectForClass(page, journey.ctx.base, {
+			classGroupId: classId,
+			catalogSubjectId: entities.subjectId,
+		});
+		entities.teachingId = teachingId;
+		entities.filterFixtures.teachingSearchToken = teachingId ?? undefined;
+	}
 
 	if (teachingId) {
 		await visitCovered(

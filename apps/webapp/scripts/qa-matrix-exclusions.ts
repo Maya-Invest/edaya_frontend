@@ -1,5 +1,8 @@
 /**
  * Rows and routes excluded from automated QA matrix runs (manual testing only).
+ *
+ * Delete rows: provisioned runs assert the delete control is visible without clicking
+ * (see `isDeleteControlVisible` in qa-harness-ui.ts).
  */
 import type { QaModule, QaTemplateRow } from './qa-template-matrix.manual';
 import { isNamespaceRootPath } from './qa-route-catalog';

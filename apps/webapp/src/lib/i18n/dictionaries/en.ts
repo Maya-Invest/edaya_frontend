@@ -46,6 +46,7 @@ export const en: Dict = {
 	'auth.passwordPlaceholder': 'Enter your password',
 	'auth.signInWithPassword': 'Sign in',
 	'auth.passwordSignInFailed': 'Sign-in failed. Check your email and password.',
+	'auth.teacherPortalGateHint': 'This workspace is for school staff. Use the Edaya teacher app with the same email to access your classes.',
 	'auth.pickSchool': 'Campus',
 	'auth.pickAccount': 'Demo account',
 	'auth.demoHint': 'Prototype login — no password required.',

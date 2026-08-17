@@ -557,6 +557,220 @@ export async function fillPersonCreateDialog(
 	await submitDialog(page);
 }
 
+/** Staff / teacher / guardian create — keep invite on and fill email. */
+export async function fillPersonCreateDialogWithInvite(
+	page: Page,
+	options: { email: string; firstName?: string; lastName?: string },
+): Promise<void> {
+	const dialog = page.getByRole('dialog');
+	await dialog.locator('input').nth(0).fill(options.firstName ?? 'E2E');
+	await dialog.locator('input').nth(1).fill(options.lastName ?? `Person${Date.now()}`);
+
+	const invite = dialog.locator('#staff-send-invite, #teacher-send-invite, #guardian-send-invite, [id$="-send-invite"]');
+	const count = await invite.count();
+	for (let i = 0; i < count; i++) {
+		const box = invite.nth(i);
+		if (await box.isVisible().catch(() => false) && !(await box.isChecked().catch(() => false))) {
+			await box.click();
+		}
+	}
+
+	const emailInput = dialog.locator('input[type="email"]').first();
+	if (await emailInput.isVisible().catch(() => false)) {
+		await emailInput.fill(options.email);
+	}
+	else {
+		const inputs = dialog.locator('input:not([type="checkbox"])');
+		const inputCount = await inputs.count();
+		if (inputCount >= 3) {
+			await inputs.nth(2).fill(options.email);
+		}
+	}
+
+	const submit = dialog.getByTestId('form-modal-submit')
+		.or(dialog.getByRole('button', { name: /save|enregistrer|add teacher|ajouter|créer|create/i }))
+		.last();
+	await waitForEnabled(submit);
+	await submit.click();
+}
+
+const nextButtonName = /^(next|suivant)$/i;
+const createButtonName = /create|créer|session|séance/i;
+
+async function clickWizardSubmit(page: Page, label?: RegExp): Promise<boolean> {
+	const submit = page.getByTestId('form-modal-submit')
+		.or(label ? page.getByRole('dialog').getByRole('button', { name: label }) : page.getByRole('dialog').getByRole('button').last())
+		.last();
+	if (!(await submit.isVisible({ timeout: 8_000 }).catch(() => false))) {
+		return false;
+	}
+	await waitForEnabled(submit);
+	await submit.click();
+	return true;
+}
+
+/** Drive the 3-step new-session wizard on the class timetable page. */
+export async function fillNewSessionWizard(
+	page: Page,
+	options: { classId: string; title?: string; base?: string },
+): Promise<string | null> {
+	try {
+		const title = options.title ?? `E2E-Session-${Date.now()}`;
+		const base = options.base ?? '';
+		const timetablePath = `/classes/${options.classId}/timetable?modal=new-session&modalStep=type`;
+		await page.goto(`${base}${timetablePath}`, { waitUntil: 'domcontentloaded' });
+		await waitForAppShell(page);
+		await waitForPageQuery(page);
+
+		const dialog = page.getByRole('dialog');
+		if (!(await dialog.isVisible({ timeout: 15_000 }).catch(() => false))) {
+			const opened = await openDialogButton(page, /new session|nouvelle séance|add session|ajouter une séance/i);
+			if (!opened) {
+				return null;
+			}
+		}
+
+		if (!(await clickWizardSubmit(page, nextButtonName))) {
+			return null;
+		}
+		await page.waitForTimeout(500);
+
+		const titleInput = dialog.locator('input').first();
+		if (await titleInput.isVisible({ timeout: 5_000 }).catch(() => false)) {
+			await titleInput.fill(title);
+		}
+		const noSubjects = await dialog.getByText(/no subject|aucune matière|createNoSubjects/i).isVisible().catch(() => false);
+		if (noSubjects) {
+			return null;
+		}
+		const subjectTrigger = dialog.getByRole('combobox').first()
+			.or(dialog.locator('button').filter({ hasText: /subject|matière/i }).first());
+		if (await subjectTrigger.isVisible().catch(() => false)) {
+			await selectComboboxOption(page, subjectTrigger);
+		}
+		if (!(await clickWizardSubmit(page, nextButtonName))) {
+			return null;
+		}
+		await page.waitForTimeout(500);
+
+		const materializePromise = page.waitForResponse(
+			res => res.request().method() === 'POST'
+				&& (res.url().includes('/core/commands/materialize-schedule')
+					|| res.url().includes('/core/commands/create-schedule')),
+			{ timeout: 45_000 },
+		).catch(() => null);
+
+		if (!(await clickWizardSubmit(page, createButtonName))) {
+			await trySubmitDialog(page);
+		}
+		await waitForDialogClosed(page).catch(() => {});
+		await waitForPageQuery(page);
+
+		const materializeResponse = await materializePromise;
+		let sessionId: string | null = null;
+		if (materializeResponse?.ok()) {
+			try {
+				const body = await materializeResponse.json() as unknown;
+				if (Array.isArray(body) && body[0] && typeof body[0] === 'object' && body[0] !== null && 'id' in body[0]) {
+					sessionId = String((body[0] as { id: string }).id);
+				}
+				else if (body && typeof body === 'object' && 'id' in body) {
+					sessionId = String((body as { id: string }).id);
+				}
+			}
+			catch {
+				// scrape from page
+			}
+		}
+
+		if (!sessionId) {
+			const match = page.url().match(new RegExp(`/classes/${options.classId}/timetable/([^/?]+)`));
+			sessionId = match?.[1] ?? null;
+		}
+		if (!sessionId) {
+			const link = page.locator(`main a[href*="/classes/${options.classId}/timetable/"]`).first();
+			if (await link.isVisible({ timeout: 5_000 }).catch(() => false)) {
+				const href = await link.getAttribute('href');
+				sessionId = href?.match(/\/timetable\/([^/?]+)/)?.[1] ?? null;
+			}
+		}
+
+		return sessionId;
+	}
+	catch {
+		return null;
+	}
+}
+
+/** Generate a report card for the first student (or named student) on the class report-cards list. */
+export async function generateReportCardForStudent(
+	page: Page,
+	classId: string,
+	studentName?: string,
+): Promise<string | null> {
+	await waitForPageQuery(page);
+
+	const generateResponse = page.waitForResponse(
+		res => res.request().method() === 'POST'
+			&& res.url().includes('/core/commands/generate-report-card-result')
+			&& res.ok(),
+		{ timeout: 30_000 },
+	).catch(() => null);
+
+	if (studentName) {
+		const row = page.locator('main tr').filter({ hasText: studentName }).first();
+		const generateBtn = row.getByRole('button', { name: /generate|générer/i }).first();
+		if (await generateBtn.isVisible({ timeout: 8_000 }).catch(() => false)) {
+			await generateBtn.click();
+		}
+	}
+	else {
+		const generateBtn = page.getByRole('button', { name: /generate|générer/i }).first();
+		if (await generateBtn.isVisible({ timeout: 8_000 }).catch(() => false)) {
+			await generateBtn.click();
+		}
+		else {
+			const generateAll = page.getByRole('button', { name: /generate all|générer tout|tout générer/i }).first();
+			if (await generateAll.isVisible({ timeout: 5_000 }).catch(() => false)) {
+				await generateAll.click();
+			}
+		}
+	}
+
+	const generateResult = await generateResponse;
+	if (generateResult) {
+		try {
+			const body = await generateResult.json() as { id?: string };
+			if (typeof body.id === 'string') {
+				return body.id;
+			}
+		}
+		catch {
+			// scrape from page
+		}
+	}
+
+	await waitForPageQuery(page);
+	await page.waitForTimeout(1_500);
+
+	const match = page.url().match(new RegExp(`/classes/${classId}/report-cards/([^/?]+)`));
+	if (match?.[1]) {
+		return match[1];
+	}
+	const link = page.locator(`main a[href*="/classes/${classId}/report-cards/"]`).first();
+	if (await link.isVisible({ timeout: 8_000 }).catch(() => false)) {
+		const href = await link.getAttribute('href');
+		return href?.match(/\/report-cards\/([^/?]+)/)?.[1] ?? null;
+	}
+	const viewBtn = page.getByRole('button', { name: /view|voir|consulter/i }).first();
+	if (await viewBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
+		await viewBtn.click();
+		await page.waitForTimeout(800);
+		return page.url().match(/\/report-cards\/([^/?]+)/)?.[1] ?? null;
+	}
+	return null;
+}
+
 /** GradeScaleFormModal — name is required; min/max/passing already default to 0/20/10. */
 export async function fillGradeScaleCreateDialog(page: Page, scaleName: string): Promise<void> {
 	const dialog = page.getByRole('dialog');
@@ -661,11 +875,28 @@ export async function fillActivityCreateDialog(
 
 export async function fillIncidentCreateDialog(
 	page: Page,
-	options: { title: string; description?: string } = { title: 'E2E-Incident' },
+	options: { title: string; description?: string; studentName?: string } = { title: 'E2E-Incident' },
 ): Promise<void> {
 	const dialog = page.getByRole('dialog');
 	if (!(await waitForSubmitEnabled(page, 2_000))) {
-		await pickFirstPerson(page);
+		if (options.studentName) {
+			const picker = dialog.locator('button').filter({ has: page.locator('svg') }).first();
+			if (await picker.isVisible().catch(() => false)) {
+				await picker.click();
+				const search = page.locator('[role="dialog"] input, [data-state="open"] input').last();
+				await search.fill(options.studentName);
+				const option = page.getByRole('option', { name: new RegExp(options.studentName, 'i') }).first();
+				if (await option.isVisible({ timeout: 8_000 }).catch(() => false)) {
+					await option.click();
+				}
+				else {
+					await page.getByRole('option').first().click({ timeout: 5_000 }).catch(() => {});
+				}
+			}
+		}
+		else {
+			await pickFirstPerson(page);
+		}
 	}
 	await dialog.locator('input:not([type="date"])').first().fill(options.title);
 	const textarea = dialog.locator('textarea').first();
@@ -859,4 +1090,23 @@ export async function ensureAcademicYearReady(page: Page, label: string): Promis
 /** @deprecated Use ensureAcademicYearReady */
 export async function publishAcademicYearByLabel(page: Page, label: string): Promise<boolean> {
 	return ensureAcademicYearReady(page, label);
+}
+
+/** Provisioned runs assert delete affordance without clicking (no destructive mutation). */
+export async function isDeleteControlVisible(page: Page): Promise<boolean> {
+	const deleteBtn = page.getByRole('button', { name: /supprimer|delete|retirer|remove/i }).first();
+	if (await deleteBtn.isVisible({ timeout: 6_000 }).catch(() => false)) {
+		return true;
+	}
+
+	const menuBtn = page.getByRole('button', { name: /actions|menu|plus d|more|⋯/i }).first();
+	if (!(await menuBtn.isVisible({ timeout: 4_000 }).catch(() => false))) {
+		return false;
+	}
+
+	await menuBtn.click();
+	const menuDelete = page.getByRole('menuitem', { name: /supprimer|delete/i }).first();
+	const visible = await menuDelete.isVisible({ timeout: 3_000 }).catch(() => false);
+	await page.keyboard.press('Escape').catch(() => {});
+	return visible;
 }

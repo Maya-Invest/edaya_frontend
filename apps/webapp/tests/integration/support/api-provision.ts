@@ -10,6 +10,17 @@
  */
 const SEED_AUTH_PROVISION_HEADER = 'x-edaya-seed-provision';
 
+export interface SecondaryAccountCredentials {
+	email: string;
+	password: string;
+	entityId: string;
+}
+
+export interface SecondaryAccounts {
+	teacher?: SecondaryAccountCredentials;
+	educator?: SecondaryAccountCredentials;
+}
+
 export interface ProvisionedTenant {
 	email: string;
 	password: string;
@@ -20,6 +31,7 @@ export interface ProvisionedTenant {
 	apiUrl: string;
 	wizardCompleted: boolean;
 	createdAt: string;
+	secondaryAccounts?: SecondaryAccounts;
 }
 
 export interface ProvisionTenantOptions {
@@ -133,14 +145,231 @@ class ProvisionHttpClient {
 	}
 }
 
-function generateEmail(): string {
+function generateEmail(prefix = 'e2e'): string {
 	const suffix = crypto.randomUUID().slice(0, 8);
-	return `e2e-${Date.now()}-${suffix}@integration.edaya.test`;
+	return `${prefix}-${Date.now()}-${suffix}@integration.edaya.test`;
 }
 
 function generatePassword(): string {
 	const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
 	return `E2e!${suffix}`;
+}
+
+export function createSecondaryEmail(role: 'teacher' | 'educator'): string {
+	return generateEmail(`e2e-${role}`);
+}
+
+export function createSecondaryPassword(): string {
+	return generatePassword();
+}
+
+export async function signUpAccount(
+	apiUrl: string,
+	appOrigin: string,
+	email: string,
+	password: string,
+	name: string,
+): Promise<{ client: ProvisionHttpClient; subjectId: string }> {
+	const client = new ProvisionHttpClient(normalizeBaseUrl(apiUrl), appOrigin);
+	const subjectId = await signUp(client, email, password, name);
+	return { client, subjectId };
+}
+
+export async function signInAccount(
+	apiUrl: string,
+	appOrigin: string,
+	email: string,
+	password: string,
+): Promise<ProvisionHttpClient> {
+	const client = new ProvisionHttpClient(normalizeBaseUrl(apiUrl), appOrigin);
+	const { response, body } = await client.jsonRequest('/auth/sign-in/email', {
+		method: 'POST',
+		headers: { 'content-type': 'application/json' },
+		body: JSON.stringify({ email, password }),
+	});
+	if (!response.ok) {
+		const detail = body ? JSON.stringify(body) : await response.text();
+		throw new Error(`sign-in failed: ${response.status} ${detail}`);
+	}
+	return client;
+}
+
+export interface AcceptInvitationResult {
+	ok: boolean;
+	detail?: string;
+}
+
+export interface AcceptInvitationTokenOptions {
+	refreshToken?: () => Promise<string | null>;
+}
+
+async function acceptInvitationTokenDetailed(
+	client: ProvisionHttpClient,
+	token: string,
+): Promise<AcceptInvitationResult> {
+	const { response, body } = await client.jsonRequest<Record<string, unknown>>(
+		'/public/invitations/' + encodeURIComponent(token) + '/accept',
+		{
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({}),
+		},
+	);
+	if (!response.ok) {
+		const detail = body ? JSON.stringify(body) : await response.text();
+		return { ok: false, detail: `accept ${response.status}: ${detail}` };
+	}
+	await client.jsonRequest<OnboardingAccountStatusResponse>(
+		'/core/onboarding/complete-wizard',
+		{
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({}),
+		},
+	).catch(() => null);
+	return { ok: true };
+}
+
+export async function acceptInvitationToken(
+	client: ProvisionHttpClient,
+	token: string,
+): Promise<boolean> {
+	return (await acceptInvitationTokenDetailed(client, token)).ok;
+}
+
+export async function acceptInvitationTokenWithRetry(
+	apiUrl: string,
+	appOrigin: string,
+	email: string,
+	password: string,
+	name: string,
+	token: string,
+	options: AcceptInvitationTokenOptions = {},
+): Promise<AcceptInvitationResult> {
+	try {
+		await signUpAccount(apiUrl, appOrigin, email, password, name);
+	}
+	catch (err) {
+		const message = err instanceof Error ? err.message : String(err);
+		if (!/already exists|USER_ALREADY_EXISTS/i.test(message)) {
+			return { ok: false, detail: `sign-up: ${message}` };
+		}
+	}
+
+	let client: ProvisionHttpClient;
+	try {
+		client = await signInAccount(apiUrl, appOrigin, email, password);
+	}
+	catch (err) {
+		const message = err instanceof Error ? err.message : String(err);
+		return { ok: false, detail: `sign-in: ${message}` };
+	}
+
+	let currentToken = token;
+	for (let attempt = 0; attempt < 2; attempt++) {
+		const result = await acceptInvitationTokenDetailed(client, currentToken);
+		if (result.ok) {
+			return result;
+		}
+
+		if (attempt === 0 && options.refreshToken) {
+			const freshToken = await options.refreshToken();
+			if (freshToken && freshToken !== currentToken) {
+				currentToken = freshToken;
+				continue;
+			}
+		}
+
+		return result;
+	}
+
+	return { ok: false, detail: 'accept failed after token refresh' };
+}
+
+export async function ensureSecondaryAuthAccount(
+	apiUrl: string,
+	appOrigin: string,
+	email: string,
+	password: string,
+	name: string,
+): Promise<{ client: ProvisionHttpClient; subjectId: string } | AcceptInvitationResult> {
+	try {
+		return await signUpAccount(apiUrl, appOrigin, email, password, name);
+	}
+	catch (err) {
+		const message = err instanceof Error ? err.message : String(err);
+		if (!/already exists|USER_ALREADY_EXISTS/i.test(message)) {
+			return { ok: false, detail: `sign-up: ${message}` };
+		}
+	}
+
+	try {
+		const client = await signInAccount(apiUrl, appOrigin, email, password);
+		const { response, body } = await client.jsonRequest<{ user?: { id?: string } }>('/auth/get-session');
+		const subjectId = response.ok ? body?.user?.id : undefined;
+		if (!subjectId) {
+			return { ok: false, detail: 'sign-in succeeded but session has no user.id' };
+		}
+		return { client, subjectId };
+	}
+	catch (err) {
+		const message = err instanceof Error ? err.message : String(err);
+		return { ok: false, detail: `sign-in: ${message}` };
+	}
+}
+
+async function completeWizardForClient(client: ProvisionHttpClient): Promise<void> {
+	await client.jsonRequest<OnboardingAccountStatusResponse>(
+		'/core/onboarding/complete-wizard',
+		{
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({}),
+		},
+	).catch(() => null);
+}
+
+export async function activateTeacherSecondaryAccount(
+	apiUrl: string,
+	appOrigin: string,
+	email: string,
+	password: string,
+	name: string,
+	token: string | null,
+	teacherId: string,
+	linkViaOwner: (subjectId: string) => Promise<boolean>,
+): Promise<AcceptInvitationResult> {
+	if (!token) {
+		return { ok: false, detail: 'no invitation token' };
+	}
+
+	const auth = await ensureSecondaryAuthAccount(apiUrl, appOrigin, email, password, name);
+	if ('ok' in auth && auth.ok === false) {
+		return auth;
+	}
+	const { client, subjectId } = auth as { client: ProvisionHttpClient; subjectId: string };
+
+	const acceptResult = await acceptInvitationTokenDetailed(client, token);
+	if (acceptResult.ok) {
+		return acceptResult;
+	}
+
+	// Public accept uses a system actor that cannot pass checkTeacherAccess (backend gap).
+	// Owner link-actor-subject is equivalent for harness provisioning.
+	if (!/403|forbidden/i.test(acceptResult.detail ?? '')) {
+		return acceptResult;
+	}
+
+	const linked = await linkViaOwner(subjectId);
+	if (!linked) {
+		return {
+			ok: false,
+			detail: `link-actor-subject fallback failed after ${acceptResult.detail}`,
+		};
+	}
+
+	await completeWizardForClient(client);
+	return { ok: true, detail: `linked via owner (${subjectId} -> ${teacherId})` };
 }
 
 async function markEmailVerified(client: ProvisionHttpClient, email: string, subjectId?: string): Promise<void> {

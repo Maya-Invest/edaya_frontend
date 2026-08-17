@@ -11,7 +11,6 @@
 	} from '$lib/notification-templates/catalog';
 	import { renderTemplatePreview } from '$lib/notification-templates/render-preview';
 	import { cn } from '$lib/utils';
-	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getNotificationsPageState } from '../notifications-page.svelte';
 
@@ -36,16 +35,33 @@
 		return templates?.[key];
 	}
 
-	const initialTemplateKey = untrack(() => templateKey);
-	const initialEntry = initialTemplateKey ? readEntry(initialTemplateKey) : undefined;
 	let busy = $state(false);
-	let channel = $state<NotificationChannel>(
-		initialTemplateKey ? channelsForTemplateKey(initialTemplateKey)[0] ?? 'email' : 'email',
-	);
-	let emailSubject = $state(initialEntry?.email?.subject ?? '');
-	let emailBody = $state(initialEntry?.email?.body ?? '');
-	let inAppSubject = $state(initialEntry?.in_app?.subject ?? '');
-	let inAppBody = $state(initialEntry?.in_app?.body ?? '');
+	let channel = $state<NotificationChannel>('email');
+	let emailSubject = $state('');
+	let emailBody = $state('');
+	let inAppSubject = $state('');
+	let inAppBody = $state('');
+	let hydratedFromDocument = $state<string | null>(null);
+
+	$effect(() => {
+		if (!templateKey) {
+			return;
+		}
+		channel = channelsForTemplateKey(templateKey)[0] ?? 'email';
+		if (!document) {
+			return;
+		}
+		const signature = `${templateKey}:${document.updatedAt ?? ''}`;
+		if (hydratedFromDocument === signature) {
+			return;
+		}
+		const entry = readEntry(templateKey);
+		emailSubject = entry?.email?.subject ?? '';
+		emailBody = entry?.email?.body ?? '';
+		inAppSubject = entry?.in_app?.subject ?? '';
+		inAppBody = entry?.in_app?.body ?? '';
+		hydratedFromDocument = signature;
+	});
 
 	const channels = $derived.by((): NotificationChannel[] =>
 		templateKey ? channelsForTemplateKey(templateKey) : ['email'],

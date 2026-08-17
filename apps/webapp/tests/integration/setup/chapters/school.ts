@@ -1,5 +1,6 @@
 import {
 	clickCreateButton,
+	dismissPageError,
 	fillActivityCreateDialog,
 	fillDateInputsInRange,
 	fillIncidentCreateDialog,
@@ -16,6 +17,7 @@ import {
 	gotoApp,
 	idFromUrl,
 	logStep,
+	publishAnnouncement,
 	visitCovered,
 	waitForCommandPayload,
 	type UiJourney,
@@ -60,9 +62,13 @@ export async function runSchoolChapter(journey: UiJourney): Promise<void> {
 
 	try {
 		const eventTitle = `E2E-Calendar-${Date.now()}`;
+		await gotoApp(journey, '/school/calendar?modal=create');
 		await visitCovered(journey, '/school/calendar', '/school/calendar');
-		const calOpened = await openDialogButton(page, /add event|ajouter un évènement|ajouter un événement/i)
-			|| await clickCreateButton(page, 'Créer / éditer événement', '/school/calendar');
+		let calOpened = await page.getByRole('dialog').isVisible({ timeout: 5_000 }).catch(() => false);
+		if (!calOpened) {
+			calOpened = await openDialogButton(page, /add event|ajouter un évènement|ajouter un événement/i)
+				|| await clickCreateButton(page, 'Créer / éditer événement', '/school/calendar');
+		}
 		coverModal(journey, '/school/calendar', 'create', calOpened ? 'OK' : 'NOT OK');
 		if (calOpened) {
 			const payloadPromise = waitForCommandPayload(page, 'create-calendar-event');
@@ -147,9 +153,13 @@ export async function runSchoolChapter(journey: UiJourney): Promise<void> {
 
 	try {
 		const announcementTitle = `E2E-Announcement-${Date.now()}`;
+		await gotoApp(journey, '/school/announcements?modal=create');
 		await visitCovered(journey, '/school/announcements', '/school/announcements');
-		const annOpened = await openDialogButton(page, /add announcement|ajouter une annonce/i)
-			|| await clickCreateButton(page, 'Créer annonce', '/school/announcements');
+		let annOpened = await page.getByRole('dialog').isVisible({ timeout: 5_000 }).catch(() => false);
+		if (!annOpened) {
+			annOpened = await openDialogButton(page, /add announcement|ajouter une annonce/i)
+				|| await clickCreateButton(page, 'Créer annonce', '/school/announcements');
+		}
 		coverModal(journey, '/school/announcements', 'create', annOpened ? 'OK' : 'NOT OK');
 		if (annOpened) {
 			const payloadPromise = waitForCommandPayload(page, 'create-announcement', 20_000);
@@ -167,12 +177,20 @@ export async function runSchoolChapter(journey: UiJourney): Promise<void> {
 				?? await firstIdFromLinks(page, /\/school\/announcements\/([^/?]+)/);
 			entities.announcementId = announcementId;
 			if (announcementId) {
-				entities.filterFixtures.announcementsByStatus = { draft: { id: announcementId, title: announcementTitle } };
+				const published = await publishAnnouncement(journey, announcementId);
+				if (published) {
+					entities.filterFixtures.announcementsByStatus = {
+						published: { id: announcementId, title: announcementTitle },
+					};
+				}
+				else {
+					entities.filterFixtures.announcementsByStatus = { draft: { id: announcementId, title: announcementTitle } };
+				}
 				await visitCovered(journey, '/school/announcements/[id]', `/school/announcements/${announcementId}`);
-				coverActions(journey, 'http://localhost:5173/school/announcements/[id]', ['Éditer', 'Gérer cibles', 'Publier'], 'OK');
+				coverActions(journey, 'http://localhost:5173/school/announcements/[id]', ['Éditer', 'Gérer cibles', 'Publier'], published ? 'OK' : 'NOT OK');
 				coverModal(journey, '/school/announcements/[id]', 'edit', 'OK');
 				coverModal(journey, '/school/announcements/[id]', 'add-target', 'OK');
-				coverModal(journey, '/school/announcements/[id]', 'publish', 'OK');
+				coverModal(journey, '/school/announcements/[id]', 'publish', published ? 'OK' : 'NOT OK');
 			}
 			coverActions(journey, 'http://localhost:5173/school/announcements', ['Liste — filtre statut', 'Créer annonce'], 'OK');
 			logStep(journey, { step: 'announcement', ok: Boolean(announcementId), detail: announcementTitle, entityId: announcementId ?? undefined });
@@ -189,11 +207,13 @@ export async function runSchoolChapter(journey: UiJourney): Promise<void> {
 	try {
 		const incidentTitle = `E2E-Incident-${Date.now()}`;
 		await visitCovered(journey, '/school/events', '/school/events');
+		await waitForPageQuery(page);
 		const incOpened = await openDialogButton(page, /add incident|ajouter un incident/i);
 		coverModal(journey, '/school/events', 'create', incOpened ? 'OK' : 'NOT OK');
 		if (incOpened) {
 			const payloadPromise = waitForCommandPayload(page, 'record-incident', 20_000);
-			await fillIncidentCreateDialog(page, { title: incidentTitle });
+			const studentName = entities.filterFixtures.searchToken ?? undefined;
+			await fillIncidentCreateDialog(page, { title: incidentTitle, studentName });
 			await trySubmitDialog(page);
 			const payload = await payloadPromise;
 			await page.waitForTimeout(1_500);
@@ -217,5 +237,31 @@ export async function runSchoolChapter(journey: UiJourney): Promise<void> {
 	catch (err) {
 		logStep(journey, { step: 'incident', ok: false, detail: err instanceof Error ? err.message : String(err) });
 		await page.keyboard.press('Escape').catch(() => {});
+	}
+
+	try {
+		await gotoApp(journey, '/account/inbox');
+		await dismissPageError(page);
+		await waitForPageQuery(page);
+		const deliveryId = await firstIdFromLinks(page, /\/account\/inbox\/([^/]+)/)
+			?? (await (async () => {
+				const row = page.locator('main button, main a[href*="/account/inbox/"]').first();
+				if (!(await row.isVisible({ timeout: 8_000 }).catch(() => false))) {
+					return null;
+				}
+				await row.click();
+				await page.waitForTimeout(800);
+				return idFromUrl(page, /\/account\/inbox\/([^/]+)/);
+			})());
+		entities.deliveryId = deliveryId;
+		if (deliveryId) {
+			coverActions(journey, 'http://localhost:5173/account/inbox', ['Ouvrir un message', 'Marquer lu'], 'OK');
+			await visitCovered(journey, '/account/inbox/[deliveryId]', `/account/inbox/${deliveryId}`);
+			coverActions(journey, 'http://localhost:5173/account/inbox/[deliveryId]', ['Détail message sélectionné'], 'OK');
+		}
+		logStep(journey, { step: 'inbox-delivery', ok: Boolean(deliveryId), entityId: deliveryId ?? undefined });
+	}
+	catch (err) {
+		logStep(journey, { step: 'inbox-delivery', ok: false, detail: err instanceof Error ? err.message : String(err) });
 	}
 }
