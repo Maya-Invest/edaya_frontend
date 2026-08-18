@@ -141,34 +141,71 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 		logStep(journey, { step: 'student', ok: Boolean(studentId), detail: lastName, entityId: studentId ?? undefined });
 
 		if (studentId) {
-			for (const tab of STUDENT_TABS) {
-				const path = `/school/students/${studentId}/${tab}`;
-				await visitCovered(journey, `/school/students/[id]/${tab}`, path);
-			}
-			coverActions(journey, 'http://localhost:5173/school/students/[id]/profile', ['Ouvrir drawer profil'], 'OK');
-			coverActions(journey, 'http://localhost:5173/school/students/[id]/grades', ['Consulter notes'], 'OK');
-			coverActions(journey, 'http://localhost:5173/school/students/[id]/attendance', ['Consulter / enregistrer absence'], 'OK');
-			coverActions(journey, 'http://localhost:5173/school/students/[id]/incidents', ['Consulter / créer incident'], 'OK');
-			coverActions(journey, 'http://localhost:5173/school/students/[id]/finances', ['Consulter lignes finance'], 'OK');
-			coverActions(journey, 'http://localhost:5173/school/students/[id]/report-card', ['Générer / publier bulletin'], 'OK');
-			coverActions(journey, 'http://localhost:5173/school/students/[id]/enrollments', ['Historique inscriptions'], 'OK');
-
-			await gotoApp(journey, `/school/students/${studentId}/profile`);
-			const noteOpened = await openDialogButton(page, /note|ajouter une note|add note/i);
-			coverModal(journey, '/school/students/[id]/profile', 'note', noteOpened ? 'OK' : 'NOT OK');
-			if (noteOpened) {
-				const textarea = page.getByRole('dialog').locator('textarea').first();
-				if (await textarea.isVisible().catch(() => false)) {
-					await textarea.fill(`QA note ${Date.now()}`);
+			const failedTabs = new Set<string>();
+			try {
+				for (const tab of STUDENT_TABS) {
+					const path = `/school/students/${studentId}/${tab}`;
+					const failed = await visitCovered(journey, `/school/students/[id]/${tab}`, path);
+					if (failed) {
+						failedTabs.add(tab);
+					}
 				}
-				await submitDialog(page);
-				await waitForDialogClosed(page);
-				coverActions(journey, 'http://localhost:5173/school/students/[id]/profile', ['Notes pédagogiques CRUD'], 'OK');
 			}
-			coverModal(journey, '/school/students/[id]/profile', 'edit-profile', 'OK', 'profile visited');
-			coverModal(journey, '/school/students/[id]/grades', 'add-grade', 'OK', 'grades tab visited');
-			coverModal(journey, '/school/students/[id]/attendance', 'add-absence', 'OK', 'attendance tab visited');
-			coverModal(journey, '/school/students/[id]/incidents', 'add-incident', 'OK', 'incidents tab visited');
+			catch (err) {
+				console.error(
+					'Student tab walk failed; continuing people setup:',
+					err instanceof Error ? err.message : err,
+				);
+			}
+
+			const tabAction = (tab: (typeof STUDENT_TABS)[number], endpoint: string, actions: readonly string[]) => {
+				coverActions(
+					journey,
+					endpoint,
+					actions,
+					failedTabs.has(tab) ? 'NOT OK' : 'OK',
+				);
+			};
+			tabAction('profile', 'http://localhost:5173/school/students/[id]/profile', ['Ouvrir drawer profil']);
+			tabAction('grades', 'http://localhost:5173/school/students/[id]/grades', ['Consulter notes']);
+			tabAction('attendance', 'http://localhost:5173/school/students/[id]/attendance', ['Consulter / enregistrer absence']);
+			tabAction('incidents', 'http://localhost:5173/school/students/[id]/incidents', ['Consulter / créer incident']);
+			tabAction('finances', 'http://localhost:5173/school/students/[id]/finances', ['Consulter lignes finance']);
+			tabAction('report-card', 'http://localhost:5173/school/students/[id]/report-card', ['Générer / publier bulletin']);
+			tabAction('enrollments', 'http://localhost:5173/school/students/[id]/enrollments', ['Historique inscriptions']);
+
+			try {
+				await gotoApp(journey, `/school/students/${studentId}/profile`);
+				const noteOpened = await openDialogButton(page, /note|ajouter une note|add note/i);
+				coverModal(journey, '/school/students/[id]/profile', 'note', noteOpened ? 'OK' : 'NOT OK');
+				if (noteOpened) {
+					const textarea = page.getByRole('dialog').locator('textarea').first();
+					if (await textarea.isVisible().catch(() => false)) {
+						await textarea.fill(`QA note ${Date.now()}`);
+					}
+					await submitDialog(page);
+					const closedNote = await waitForDialogClosed(page);
+					if (!closedNote) {
+						await page.keyboard.press('Escape').catch(() => {});
+					}
+					coverActions(
+						journey,
+						'http://localhost:5173/school/students/[id]/profile',
+						['Notes pédagogiques CRUD'],
+						closedNote ? 'OK' : 'NOT OK',
+					);
+				}
+				coverModal(journey, '/school/students/[id]/profile', 'edit-profile', 'OK', 'profile visited');
+				coverModal(journey, '/school/students/[id]/grades', 'add-grade', 'OK', 'grades tab visited');
+				coverModal(journey, '/school/students/[id]/attendance', 'add-absence', 'OK', 'attendance tab visited');
+				coverModal(journey, '/school/students/[id]/incidents', 'add-incident', 'OK', 'incidents tab visited');
+			}
+			catch (err) {
+				console.error(
+					'Student note/profile follow-up failed; continuing people setup:',
+					err instanceof Error ? err.message : err,
+				);
+			}
 		}
 	}
 

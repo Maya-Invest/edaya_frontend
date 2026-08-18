@@ -203,10 +203,14 @@ async function activateSecondaryAccount(
 	token: string | null,
 	refreshToken?: () => Promise<string | null>,
 ): Promise<{ ok: boolean; detail?: string }> {
-	if (!token) {
+	let invitationToken = token;
+	if (!invitationToken && refreshToken) {
+		invitationToken = await refreshToken();
+	}
+	if (!invitationToken) {
 		return { ok: false, detail: 'no invitation token' };
 	}
-	return acceptInvitationTokenWithRetry(apiUrl, appOrigin, email, password, name, token, {
+	return acceptInvitationTokenWithRetry(apiUrl, appOrigin, email, password, name, invitationToken, {
 		refreshToken,
 	});
 }
@@ -237,7 +241,8 @@ export async function provisionSecondaryAccounts(
 		if (teacherId && !teacherToken) {
 			teacherToken = await resendInvitationTokenViaApi(page, base, teacherId);
 		}
-		const teacherActivation = teacherId
+		const resolvedTeacherId = teacherId;
+		const teacherActivation = resolvedTeacherId
 			? await activateTeacherSecondaryAccount(
 				apiUrl,
 				appOrigin,
@@ -245,8 +250,8 @@ export async function provisionSecondaryAccounts(
 				teacherPassword,
 				'E2E Teacher',
 				teacherToken,
-				teacherId,
-				subjectId => linkActorSubjectViaApi(page, base, { subjectId, teacherId }),
+				resolvedTeacherId,
+				subjectId => linkActorSubjectViaApi(page, base, { subjectId, teacherId: resolvedTeacherId }),
 			)
 			: await activateSecondaryAccount(
 				journey,
@@ -284,7 +289,11 @@ export async function provisionSecondaryAccounts(
 		if (educatorStaffId) {
 			entities.staffId = educatorStaffId;
 			educatorToken = await resendStaffInvitation(journey, educatorStaffId);
+			if (!educatorToken) {
+				educatorToken = await resendInvitationTokenViaApi(page, base, educatorStaffId);
+			}
 		}
+		const resolvedEducatorStaffId = educatorStaffId;
 		const educatorActivation = await activateSecondaryAccount(
 			journey,
 			apiUrl,
@@ -293,8 +302,8 @@ export async function provisionSecondaryAccounts(
 			educatorPassword,
 			'E2E Educator',
 			educatorToken,
-			educatorStaffId
-				? () => resendStaffInvitation(journey, educatorStaffId)
+			resolvedEducatorStaffId
+				? () => resendStaffInvitation(journey, resolvedEducatorStaffId)
 				: undefined,
 		);
 		educatorOk = educatorActivation.ok;

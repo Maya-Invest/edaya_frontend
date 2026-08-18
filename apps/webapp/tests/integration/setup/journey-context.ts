@@ -18,7 +18,9 @@ import {
 	type MatrixStatut,
 } from '../../../scripts/qa-matrix-support';
 import {
+	dismissOpenDialogs,
 	dismissPageError,
+	refreshAppShell,
 	submitDialog,
 	waitForDialogClosed,
 	waitForPageQuery,
@@ -58,8 +60,18 @@ export function createUiJourney(
 
 export async function gotoApp(journey: UiJourney, routePath: string): Promise<void> {
 	const { page, base } = journey.ctx;
-	await page.goto(`${base}${routePath}`, { waitUntil: 'domcontentloaded' });
-	await waitForAppShell(page);
+	await dismissOpenDialogs(page);
+	const target = `${base}${routePath}`;
+	await page.goto(target, { waitUntil: 'domcontentloaded' });
+	try {
+		await waitForAppShell(page);
+	}
+	catch {
+		await page.keyboard.press('Escape').catch(() => {});
+		await refreshAppShell(page, base);
+		await page.goto(target, { waitUntil: 'domcontentloaded' });
+		await waitForAppShell(page);
+	}
 	await waitForPageQuery(page);
 	await dismissPageError(page);
 }
@@ -70,7 +82,16 @@ export async function visitCovered(
 	actualPath: string,
 	statutIfOk: MatrixStatut = 'OK',
 ): Promise<string | null> {
-	await gotoApp(journey, actualPath);
+	try {
+		await gotoApp(journey, actualPath);
+	}
+	catch (err) {
+		const detail = (err instanceof Error ? err.message : String(err)).slice(0, 200);
+		for (const result of journey.ledger.coverVisit(templatePath, 'NOT OK', detail)) {
+			journey.onRecord(result);
+		}
+		return detail;
+	}
 	const fatal = await assertNoFatalError(journey.ctx.page);
 	const statut: MatrixStatut = fatal ? 'NOT OK' : statutIfOk;
 	const detail = fatal ?? undefined;

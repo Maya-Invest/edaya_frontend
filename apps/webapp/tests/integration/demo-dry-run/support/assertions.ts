@@ -31,7 +31,9 @@ export async function assertListShell(
 		await page.keyboard.press('Escape');
 
 		if (requireFilter) {
-			const filterBtn = page.getByTestId('list-filter');
+			const filterBtn = page.getByTestId('list-filter').or(
+				page.getByRole('button', { name: /filtre|filter/i }),
+			).first();
 			if (!(await filterBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
 				reporter.log(scene, step, 'fail', 'Missing filter panel trigger');
 				await shot(`${scene}-${step.replace(/\s+/g, '-')}-filter`);

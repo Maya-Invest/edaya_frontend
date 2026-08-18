@@ -6,8 +6,8 @@
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { NOTIFICATION_TEMPLATE_KEYS } from '$lib/notification-templates/catalog';
 	import { get } from 'svelte/store';
-	import { getNotificationsPageState } from '../notifications-page.svelte';
 	import { setNotificationModals } from '../notifications-modals.svelte';
+	import { getNotificationsPageState } from '../notifications-page.svelte';
 	import NotificationTemplateEditModal from './NotificationTemplateEditModal.svelte';
 
 	const notificationsPage = getNotificationsPageState();

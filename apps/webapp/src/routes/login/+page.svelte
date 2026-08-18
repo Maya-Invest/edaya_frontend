@@ -5,14 +5,14 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/stores';
 	import { checkBrowserApiHealth } from '$lib/api/check-api-health';
-	import ApiConnectionBanner from '$lib/components/auth/ApiConnectionBanner.svelte';
-	import AuthSplitShell from '$lib/components/auth/AuthSplitShell.svelte';
-	import LoginPanelHost from '$lib/components/auth/login/LoginPanelHost.svelte';
-	import SignupPanel from '$lib/components/auth/signup/SignupPanel.svelte';
 	import {
 		isTeacherPortalGateUrl,
 		TEACHER_PORTAL_GATE_BANNER_TEST_ID,
 	} from '$lib/auth/teacher-portal-gate';
+	import ApiConnectionBanner from '$lib/components/auth/ApiConnectionBanner.svelte';
+	import AuthSplitShell from '$lib/components/auth/AuthSplitShell.svelte';
+	import LoginPanelHost from '$lib/components/auth/login/LoginPanelHost.svelte';
+	import SignupPanel from '$lib/components/auth/signup/SignupPanel.svelte';
 	import { isDemoLoginEnabled, isPublicSchoolRegistrationEnabled } from '$lib/env/app-env';
 	import { t } from '$lib/i18n';
 	import { appGoto } from '$lib/navigation/app-navigation';

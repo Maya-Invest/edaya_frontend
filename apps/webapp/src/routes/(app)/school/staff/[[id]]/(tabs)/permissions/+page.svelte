@@ -108,22 +108,22 @@
 					onEdit={row => modals.open('add-permission', { target: row.id })}
 					onDelete={row => modals.open('delete-permission', { target: row.id })}
 				/>
-
-				<StaffPermissionFormModal
-					bind:open={addPermissionOpen.open}
-					staff={staff}
-					assignment={permissionEditing}
-				/>
-
-				<ConfirmModal
-					bind:open={deletePermissionOpen.open}
-					title={$t('common.deleteConfirmTitle')}
-					confirmLabel={$t('common.delete')}
-					cancelLabel={$t('common.cancel')}
-					busy={deleteBusy}
-					onConfirm={confirmDeletePermission}
-				/>
 			</DataState>
 		{/snippet}
 	</PageQuery>
+
+	<StaffPermissionFormModal
+		bind:open={addPermissionOpen.open}
+		staff={staff}
+		assignment={permissionEditing}
+	/>
+
+	<ConfirmModal
+		bind:open={deletePermissionOpen.open}
+		title={$t('common.deleteConfirmTitle')}
+		confirmLabel={$t('common.delete')}
+		cancelLabel={$t('common.cancel')}
+		busy={deleteBusy}
+		onConfirm={confirmDeletePermission}
+	/>
 {/if}

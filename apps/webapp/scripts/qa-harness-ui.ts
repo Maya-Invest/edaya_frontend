@@ -63,15 +63,31 @@ export async function fillDateInputsInRange(scope: Locator): Promise<void> {
 	}
 }
 
+export async function visibleDialogCount(page: Page): Promise<number> {
+	return page.getByRole('dialog').evaluateAll(nodes =>
+		nodes.filter(node => node instanceof HTMLElement && node.checkVisibility()).length,
+	);
+}
+
+export async function dismissOpenDialogs(page: Page): Promise<void> {
+	for (let attempt = 0; attempt < 3; attempt += 1) {
+		if ((await visibleDialogCount(page)) === 0) {
+			return;
+		}
+		await page.keyboard.press('Escape').catch(() => {});
+		await page.waitForTimeout(200);
+	}
+}
+
 export async function waitForDialogClosed(page: Page, timeout = 15_000): Promise<boolean> {
-	const dialog = page.getByRole('dialog');
-	try {
-		await dialog.waitFor({ state: 'hidden', timeout });
-		return true;
+	const started = Date.now();
+	while (Date.now() - started < timeout) {
+		if ((await visibleDialogCount(page)) === 0) {
+			return true;
+		}
+		await page.waitForTimeout(120);
 	}
-	catch {
-		return !(await dialog.isVisible().catch(() => false));
-	}
+	return (await visibleDialogCount(page)) === 0;
 }
 
 function mainContentScope(page: Page): Locator {
@@ -398,8 +414,12 @@ export async function pickFirstPerson(page: Page): Promise<boolean> {
 	return true;
 }
 
+/** Native `<select>` filter. Do not include `[data-testid="list-filter"]` — that is the FilterPanel button. */
+export const LIST_FILTER_NATIVE_LOCATOR
+	= 'select[data-testid="list-filter-select"], select[aria-label="Filter"]';
+
 export async function selectListFilter(page: Page, value: string): Promise<boolean> {
-	const native = page.locator('[data-testid="list-filter"], select[aria-label="Filter"]').first();
+	const native = page.locator(LIST_FILTER_NATIVE_LOCATOR).first();
 	if (await native.isVisible({ timeout: 4_000 }).catch(() => false)) {
 		await native.selectOption(value);
 		return true;
@@ -514,10 +534,12 @@ export async function fillClassCreateDialog(
 	if (await attendanceSelect.isVisible().catch(() => false)) {
 		await attendanceSelect.selectOption('daily');
 		await attendanceSelect.evaluate((el) => {
-			const select = el as HTMLSelectElement;
-			select.value = 'daily';
-			select.dispatchEvent(new Event('input', { bubbles: true }));
-			select.dispatchEvent(new Event('change', { bubbles: true }));
+			if (!(el instanceof HTMLSelectElement)) {
+				return;
+			}
+			el.value = 'daily';
+			el.dispatchEvent(new Event('input', { bubbles: true }));
+			el.dispatchEvent(new Event('change', { bubbles: true }));
 		});
 	}
 	const modal = page.getByTestId('form-modal');

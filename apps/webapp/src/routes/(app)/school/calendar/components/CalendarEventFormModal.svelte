@@ -66,13 +66,18 @@
 	}
 
 	const isEdit = $derived(event !== undefined);
-	const canSubmit = $derived(
-		eventTitle.trim().length > 0
-			&& Boolean(yearStart && yearEnd)
-			&& dateInAcademicYear(resolvedDate)
-			&& dateInAcademicYear(resolvedEndDate)
-			&& (!scoped || selectedClasses.length > 0),
-	);
+	const canSubmit = $derived.by(() => {
+		if (eventTitle.trim().length === 0) {
+			return false;
+		}
+		if (!yearStart || !yearEnd) {
+			return false;
+		}
+		if (!dateInAcademicYear(resolvedDate) || !dateInAcademicYear(resolvedEndDate)) {
+			return false;
+		}
+		return !scoped || selectedClasses.length > 0;
+	});
 
 	function resetForm() {
 		if (event) {
@@ -194,7 +199,7 @@
 				type="date"
 				min={yearStart || undefined}
 				max={yearEnd || undefined}
-				bind:value={() => resolvedDate, (next) => (date = next)}
+				bind:value={() => resolvedDate, next => (date = next)}
 			/>
 		</div>
 		<div class="space-y-1.5">
@@ -205,7 +210,7 @@
 				type="date"
 				min={yearStart || undefined}
 				max={yearEnd || undefined}
-				bind:value={() => resolvedEndDate, (next) => (endDate = next)}
+				bind:value={() => resolvedEndDate, next => (endDate = next)}
 			/>
 		</div>
 	</div>

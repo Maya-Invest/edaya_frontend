@@ -92,6 +92,14 @@ describe('addressable non-modal view URL state', () => {
 		expect(canonicalLoginUrlState(codeState, { hasEmailIdentity: true })).toBe(codeState);
 	});
 
+	it('keeps teacher portal gate while canonicalizing login params', () => {
+		const href = writeLoginUrlState(
+			url('/login?portal=teacher'),
+			{ panel: 'signin', method: 'password', stage: 'form' },
+		);
+		expect(href).toBe('/login?portal=teacher&panel=signin&method=password&stage=form');
+	});
+
 	it('routes invitation auth mode and safe stage only', () => {
 		const href = writeInvitationAuthUrlState(
 			url('/invite/token?email=ada%40school.test&password=secret'),

@@ -6,6 +6,7 @@ import type { DemoContext } from '../tests/integration/demo-dry-run/support/type
 import type { QaTemplateRow } from './qa-template-matrix';
 import {
 	assertListContains,
+	LIST_FILTER_NATIVE_LOCATOR,
 	listSearchInput,
 	waitForPageQuery,
 	waitForResolvedAcademicYearId,
@@ -179,7 +180,7 @@ const FILTER_RUNNERS: Array<{
 		match: row => matrixPath(row.endpoint).includes('/evaluations') && /filtre type/i.test(row.action),
 		run: async (page, _ctx, _entities, row) => {
 			const combobox = page.getByRole('combobox').first();
-			const native = page.locator('[data-testid="list-filter"]').first();
+			const native = page.locator(LIST_FILTER_NATIVE_LOCATOR).first();
 			if (await combobox.isVisible({ timeout: 4_000 }).catch(() => false)) {
 				await combobox.click();
 				await page.getByRole('option').first().click({ timeout: 4_000 }).catch(() => {});
@@ -280,7 +281,7 @@ const FILTER_RUNNERS: Array<{
 		match: row => matrixPath(row.endpoint) === '/configuration/academic' && /filtres liste/i.test(row.action),
 		run: async (page, _ctx, _entities, row) => {
 			const combobox = page.getByRole('combobox').first();
-			const native = page.locator('[data-testid="list-filter"], select').first();
+			const native = page.locator(`[data-testid="list-filter"], ${LIST_FILTER_NATIVE_LOCATOR}`).first();
 			if (await combobox.isVisible({ timeout: 4_000 }).catch(() => false)) {
 				await combobox.click();
 				await page.getByRole('option').first().click({ timeout: 4_000 }).catch(() => {});

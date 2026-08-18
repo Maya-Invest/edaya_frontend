@@ -197,8 +197,8 @@ async function resolveAcademicYearScheduleDate(
 	}
 	try {
 		const body = await response.json() as {
-			items?: Array<{ status?: string; startDate?: string; endDate?: string }>;
-		} | Array<{ status?: string; startDate?: string; endDate?: string }>;
+			items?: Array<{ id?: string; status?: string; startDate?: string; endDate?: string }>;
+		} | Array<{ id?: string; status?: string; startDate?: string; endDate?: string }>;
 		const years = parseEntityList(body).filter(year => year.status === 'published');
 		const year = years[0];
 		if (!year?.startDate) {

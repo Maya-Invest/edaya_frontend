@@ -94,7 +94,7 @@ export const ROUTE_REDIRECTS: Record<string, string> = {
 	'/configuration/staff/:id?': '/school/staff',
 	'/configuration/roles/:role?': '/school/staff',
 	'/school/teacher-assignments': '/configuration/tools/teacher-assignments',
-	'/configuration/subjects/level/:level?': '/configuration/subjects?gradeLevel=',
+	'/configuration/subjects/level/:level?': '/configuration/subjects?gradeLevel=:level',
 };
 
 export const LEGACY_ROUTES = new Set([

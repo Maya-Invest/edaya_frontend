@@ -535,11 +535,23 @@ async function runPermissionsScenario(
 				return notOk(row, gate.detail);
 			}
 			await session.page.goto(`${base}/school/staff`, { waitUntil: 'domcontentloaded' });
-			await session.page.waitForTimeout(1_500);
-			const blocked = await assertTeacherPortalGate(session.page);
-			return blocked.ok
-				? ok(row, 'accès staff bloqué après tentative directe')
-				: notOk(row, blocked.detail);
+			await session.page.waitForURL(
+				url => {
+					try {
+						return !new URL(url).pathname.startsWith('/school/staff');
+					}
+					catch {
+						return false;
+					}
+				},
+				{ timeout: 10_000 },
+			).catch(() => {});
+			const pathname = new URL(session.page.url()).pathname;
+			const sidebar = await session.page.locator('aside#app-sidebar').isVisible().catch(() => false);
+			if (pathname.startsWith('/school/staff') || sidebar) {
+				return notOk(row, `accès staff non bloqué (${session.page.url()})`);
+			}
+			return ok(row, 'accès staff bloqué après tentative directe');
 		}
 		finally {
 			await session.context.close();

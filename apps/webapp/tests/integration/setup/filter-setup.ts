@@ -257,10 +257,12 @@ export async function setStudentStatus(
 	try {
 		await select.selectOption(status);
 		await select.evaluate((el, next) => {
-			const node = el as HTMLSelectElement;
-			node.value = next;
-			node.dispatchEvent(new Event('input', { bubbles: true }));
-			node.dispatchEvent(new Event('change', { bubbles: true }));
+			if (!(el instanceof HTMLSelectElement)) {
+				return;
+			}
+			el.value = next;
+			el.dispatchEvent(new Event('input', { bubbles: true }));
+			el.dispatchEvent(new Event('change', { bubbles: true }));
 		}, status);
 	}
 	catch {

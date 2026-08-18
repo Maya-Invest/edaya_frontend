@@ -338,7 +338,7 @@
 			</FilterPanel>
 		{/snippet}
 		{#snippet primary()}
-			<Button size="sm" class="rounded-full" onclick={() => (createOpen.open = true)}>
+			<Button size="sm" class="rounded-full" onclick={() => modals.open('create')}>
 				<Plus class="mr-1 h-4 w-4" />
 				{$t('academic.createYear')}
 			</Button>

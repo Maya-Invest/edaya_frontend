@@ -195,7 +195,7 @@ async function main() {
 			await waitForPageQuery(page);
 			const createByHarness = await page.getByRole('button', { name: /add subject|ajouter une matière/i }).first()
 				.isVisible({ timeout: 10_000 }).catch(() => false);
-			const hasFilterSelect = await page.locator('select[aria-label="Filter"], [data-testid="list-filter"]').first()
+			const hasFilterSelect = await page.locator('select[aria-label="Filter"], [data-testid="list-filter-select"], [data-testid="list-filter"]').first()
 				.isVisible({ timeout: 10_000 }).catch(() => false);
 			const hasCombobox = await page.getByRole('combobox').first().isVisible().catch(() => false);
 			const hasMain = await page.locator('main, [role="main"], h1, h2').first().isVisible().catch(() => false);

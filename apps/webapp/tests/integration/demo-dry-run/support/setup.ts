@@ -80,10 +80,12 @@ export async function ensureDailyAttendanceMode(
 		if (currentMode !== 'daily') {
 			await modeSelect.selectOption('daily');
 			await modeSelect.evaluate((el) => {
-				const select = el as HTMLSelectElement;
-				select.value = 'daily';
-				select.dispatchEvent(new Event('input', { bubbles: true }));
-				select.dispatchEvent(new Event('change', { bubbles: true }));
+				if (!(el instanceof HTMLSelectElement)) {
+					return;
+				}
+				el.value = 'daily';
+				el.dispatchEvent(new Event('input', { bubbles: true }));
+				el.dispatchEvent(new Event('change', { bubbles: true }));
 			});
 		}
 	}

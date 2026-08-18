@@ -28,7 +28,7 @@
 		{value}
 		class={selectClass}
 		aria-label="Filter"
-		data-testid="list-filter"
+		data-testid="list-filter-select"
 		onchange={(event) => {
 			const next = event.currentTarget.value;
 			value = next;

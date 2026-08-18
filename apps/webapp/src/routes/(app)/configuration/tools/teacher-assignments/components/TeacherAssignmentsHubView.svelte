@@ -136,7 +136,7 @@
 		{#snippet primary()}
 			<PermissionGate permission="STAFF_UPDATE" mode="disable">
 				{#snippet children({ disabled })}
-					<Button class="rounded-full" disabled={disabled} onclick={() => (createOpen.open = true)}>
+					<Button class="rounded-full" disabled={disabled} onclick={() => modals.open('create')}>
 						<Plus class="mr-1.5 h-4 w-4" />
 						{$t('teacher.addAssignment')}
 					</Button>
