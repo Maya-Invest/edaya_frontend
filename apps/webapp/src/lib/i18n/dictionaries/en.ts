@@ -2404,6 +2404,8 @@ export const en: Dict = {
 	'timetable.teacherConstraints': 'Teacher constraints',
 	'timetable.schoolGenerateTitle': 'Generate school timetable',
 	'timetable.schoolGenerateHint': 'Create class drafts sequentially for the selected academic range.',
+	'timetable.generatingProgress': 'Generating {className} ({current}/{total})',
+	'timetable.generatePartialFailure': 'Stopped at {className} after {completed}/{total} classes. Earlier drafts were kept.',
 	'timetable.generateSchool': 'Generate school drafts',
 	'timetable.searchClasses': 'Search classes',
 	'timetable.workloadOverrides': 'Periods per week overrides',
