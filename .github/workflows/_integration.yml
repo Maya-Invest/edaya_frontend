@@ -21,17 +21,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Configure GitHub Packages auth
+        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
+
       - name: Resolve API client channel
         id: api_client
         run: |
-          case "${{ inputs.api_dev_base_ref }}" in
-            main|master) CHANNEL=production ;;
-            *) CHANNEL=staging ;;
-          esac
+          CHANNEL="$(node .github/scripts/ci-resolve-api-client-channel.mjs "${{ github.head_ref || github.ref_name }}")"
           echo "channel=${CHANNEL}" >> "$GITHUB_OUTPUT"
-
-      - name: Configure GitHub Packages auth
-        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
+          echo "Using @maya-invest/edaya-api-client@${CHANNEL}"
 
       - name: Use published API client
         run: node .github/scripts/ci-use-published-api-client.mjs "${{ steps.api_client.outputs.channel }}"
