@@ -3,6 +3,7 @@ import { bootstrapSession } from '$lib/auth/bootstrap';
 import { resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import { resolvePostAuthPath } from '$lib/auth/resolve-post-auth';
 import { authSession } from '$lib/auth/session.svelte';
+import { teacherPortalLoginPath } from '$lib/auth/teacher-portal-gate';
 import { t } from '$lib/i18n';
 import { appGoto } from '$lib/navigation/app-navigation';
 import { toast } from '$lib/toast.svelte';
@@ -24,6 +25,14 @@ export async function completeAuthSignIn(successMessage?: string): Promise<boole
 	if (!session) {
 		toast.error(get(t)('auth.sessionUnavailable'));
 		return false;
+	}
+
+	if (session.kind === 'teacher') {
+		await authSession.logout();
+		resetAppShellBootstrap();
+		toast.info(get(t)('auth.teacherPortalGateHint'));
+		appGoto(teacherPortalLoginPath(), { replaceState: true });
+		return true;
 	}
 
 	if (successMessage) {

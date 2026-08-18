@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ActivityEnrollmentStatus } from '$lib/types/school';
+	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { ENROLL_NEXT } from '$lib/components/school/shared/drawer-constants';
@@ -12,6 +13,9 @@
 	import { drawerTabRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
 	import { Plus, Trash2 } from '$lib/icons';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { writeModalSurface } from '$lib/modal/modal-url';
+	import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
 	import StudentPicker from '$lib/smart-components/student-picker/StudentPicker.svelte';
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
@@ -22,23 +26,25 @@
 
 	const activitiesPage = getActivitiesPageState();
 	const studentsTab = getActivityStudentsTabState();
-	const query = studentsTab.query();
+	const loadTab = studentsTab.query();
 	const activityId = $derived($page.params.id ?? '');
 	const activity = $derived(activityId ? activitiesPage.findActivity(activityId) : undefined);
 	const enrollments = $derived(studentsTab.enrollmentsFor(activityId));
 
-	let addOpen = $state(false);
+	type ActivityStudentsModal = 'edit' | 'delete' | 'add-students' | 'remove-enrollment';
+	const modals = createUrlSyncedModals<ActivityStudentsModal>({
+		allowed: ['edit', 'delete', 'add-students', 'remove-enrollment'],
+		getUrl: () => $page.url,
+	});
+	afterNavigate(() => {
+		modals.hydrate();
+		validateModal();
+	});
+	const addOpen = bindUrlModal(modals, 'add-students');
+	const removeOpen = bindUrlModal(modals, 'remove-enrollment');
 	let studentIds = $state<string[]>([]);
 	let busy = $state(false);
-	let removeEnrollmentId = $state<string | null>(null);
-	let removeOpen = $state(false);
 	let removeBusy = $state(false);
-
-	$effect(() => {
-		if (addOpen) {
-			void activitiesPage.ensureStudents();
-		}
-	});
 
 	const enrolledIds = $derived(new Set(enrollments.map(enrollment => enrollment.studentId)));
 	const linkedClassGroupIds = $derived(activity?.classEnrollments.map(enrollment => enrollment.classGroupId) ?? []);
@@ -49,8 +55,8 @@
 			: $t('activities.addStudentsRequiresLinkedClasses'),
 	);
 	const removeTarget = $derived(
-		removeEnrollmentId
-			? enrollments.find(enrollment => enrollment.id === removeEnrollmentId)
+		modals.isOpen('remove-enrollment') && modals.target
+			? enrollments.find(enrollment => enrollment.id === modals.target)
 			: undefined,
 	);
 	const removeStudentName = $derived(
@@ -58,6 +64,36 @@
 			? (activitiesPage.findStudent(removeTarget.studentId)?.name ?? studentDisplayFallback(removeTarget.studentId))
 			: '—',
 	);
+
+	function canonicalizeModal(modal: ActivityStudentsModal | null) {
+		replaceRouteSurface(writeModalSurface($page.url, { modal }));
+	}
+
+	function validateModal() {
+		if (!modals.ready || studentsTab.slice?.activityId !== activityId || !modals.active) {
+			return;
+		}
+		if (
+			(modals.active === 'edit' || modals.active === 'delete' || modals.active === 'add-students')
+			&& modals.target
+		) {
+			canonicalizeModal(modals.active);
+			return;
+		}
+		if (
+			modals.active === 'remove-enrollment'
+			&& !enrollments.some(enrollment => enrollment.id === modals.target)
+		) {
+			canonicalizeModal(null);
+		}
+	}
+
+	async function query(url: URL) {
+		const result = await loadTab(url);
+		void activitiesPage.ensureStudents();
+		validateModal();
+		return result;
+	}
 
 	function enrollStatusLabel(status: ActivityEnrollmentStatus): string {
 		return get(t)(`activities.enrollStatus.${status}`);
@@ -111,7 +147,7 @@
 		if (added > 0) {
 			toast.success(get(t)('activities.enrollStudentsSuccess', { n: added }));
 			studentsTab.syncFromPage(activity.id);
-			addOpen = false;
+			modals.close();
 			studentIds = [];
 		}
 	}
@@ -130,10 +166,10 @@
 		removeBusy = false;
 		if (ok) {
 			studentsTab.syncFromPage(activity.id);
-			removeOpen = false;
-			removeEnrollmentId = null;
+			modals.close();
 		}
 	}
+
 </script>
 
 {#if activity}
@@ -153,7 +189,7 @@
 									class="h-7 rounded-full text-xs"
 									disabled={disabled || busy || !canAddStudents}
 									title={!canAddStudents ? $t('activities.addStudentsRequiresLinkedClasses') : title}
-									onclick={() => (addOpen = true)}
+									onclick={() => modals.open('add-students')}
 								>
 									<Plus class="mr-1 h-3.5 w-3.5" /> {$t('activities.addStudent')}
 								</Button>
@@ -200,10 +236,7 @@
 													class="h-8 w-8 text-muted-foreground hover:text-destructive"
 													disabled={disabled || busy}
 													title={$t('activities.removeEnrollment')}
-													onclick={() => {
-														removeEnrollmentId = enrollment.id;
-														removeOpen = true;
-													}}
+													onclick={() => modals.open('remove-enrollment', { target: enrollment.id })}
 												>
 													<Trash2 class="h-4 w-4" />
 												</Button>
@@ -221,7 +254,7 @@
 {/if}
 
 <PickerModal
-	bind:open={addOpen}
+	bind:open={addOpen.open}
 	title={activity ? $t('activities.addStudentTitle', { name: activity.name }) : $t('activities.addStudent')}
 	description={addStudentsDescription}
 	confirmLabel={$t('activities.addStudentsAction')}
@@ -236,20 +269,17 @@
 		bind:values={studentIds}
 		mode="multi"
 		variant="panel"
-		active={addOpen}
+		active={addOpen.open}
 		classGroupIds={linkedClassGroupIds}
 		excludeIds={[...enrolledIds]}
 	/>
 </PickerModal>
 
 <ConfirmModal
-	bind:open={removeOpen}
+	bind:open={removeOpen.open}
 	title={$t('common.deleteConfirmTitle')}
 	description={$t('activities.removeEnrollmentConfirm', { name: removeStudentName })}
 	confirmLabel={$t('activities.removeEnrollment')}
 	busy={removeBusy}
-	onCancel={() => {
-		removeEnrollmentId = null;
-	}}
 	onConfirm={confirmRemoveEnrollment}
 />

@@ -20,18 +20,27 @@
 
 	const disciplinePage = getDisciplinePageState();
 
-	const modals = createUrlSyncedModals({ allowed: ['create', 'edit'], getUrl: () => $page.url });
+	const modals = createUrlSyncedModals({
+		allowed: ['create', 'edit', 'delete'],
+		getUrl: () => $page.url,
+	});
 	$effect(() => {
 		modals.hydrate();
 	});
 	const createOpen = bindUrlModal(modals, 'create');
 	const editOpen = bindUrlModal(modals, 'edit');
+	const deleteOpen = bindUrlModal(modals, 'delete');
 
-	let editingAction = $state<DisciplinaryActionCatalogItem | null>(null);
-	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
-	let deleteTargetId = $state<string | null>(null);
-	let deleteTargetName = $state('');
+
+	const targetAction = $derived.by((): DisciplinaryActionCatalogItem | null => {
+		if (!modals.target) {
+			return null;
+		}
+		return disciplinePage.actions.find(action => action.id === modals.target) ?? null;
+	});
+	const editingAction = $derived(modals.active === 'edit' ? targetAction : null);
+	const deleteTarget = $derived(modals.active === 'delete' ? targetAction : null);
 
 	const kindOptions = $derived([
 		{ value: 'all', label: $t('disciplinaryCatalog.filterAllKinds') },
@@ -61,30 +70,45 @@
 		disciplinePage.filters.scheduleSync();
 	});
 
+	$effect(() => {
+		if (!modals.ready) {
+			return;
+		}
+		if (modals.active === 'create') {
+			if (modals.target !== null) {
+				modals.open('create');
+			}
+			return;
+		}
+		if (
+			(modals.active === 'edit' && !editingAction)
+			|| (modals.active === 'delete' && !deleteTarget)
+		) {
+			modals.close();
+		}
+	});
+
 	function openEdit(action: DisciplinaryActionCatalogItem) {
-		editingAction = action;
-		editOpen.open = true;
+		modals.open('edit', { target: action.id });
 	}
 
-	function openDelete(actionId: string, actionName: string) {
-		deleteTargetId = actionId;
-		deleteTargetName = actionName;
-		deleteOpen = true;
+	function openDelete(action: DisciplinaryActionCatalogItem) {
+		modals.open('delete', { target: action.id });
 	}
 
 	async function confirmDelete() {
-		if (!deleteTargetId) {
+		const target = deleteTarget;
+		if (!target) {
 			return;
 		}
 		deleteBusy = true;
 		try {
 			const ok = await disciplinePage.deleteAction({
-				actionId: deleteTargetId,
-				successMessage: get(t)('disciplinaryCatalog.toastDeleted', { name: deleteTargetName }),
+				actionId: target.id,
+				successMessage: get(t)('disciplinaryCatalog.toastDeleted', { name: target.name }),
 			});
 			if (ok) {
-				deleteOpen = false;
-				deleteTargetId = null;
+				deleteOpen.open = false;
 			}
 		}
 		finally {
@@ -119,7 +143,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen.open = true)}
+						onclick={() => modals.open('create')}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('disciplinaryCatalog.add')}
@@ -190,7 +214,7 @@
 											destructive
 											{disabled}
 											{title}
-											onclick={() => openDelete(action.id, action.name)}
+											onclick={() => openDelete(action)}
 										>
 											<Trash2 class="h-4 w-4" />
 											{$t('common.delete')}
@@ -210,9 +234,9 @@
 <DisciplinaryActionFormModal bind:open={editOpen.open} action={editingAction} />
 
 <ConfirmModal
-	bind:open={deleteOpen}
+	bind:open={deleteOpen.open}
 	title={$t('common.deleteConfirmTitle')}
-	description={$t('disciplinaryCatalog.deleteConfirm', { name: deleteTargetName })}
+	description={$t('disciplinaryCatalog.deleteConfirm', { name: deleteTarget?.name ?? '' })}
 	confirmLabel={$t('common.delete')}
 	cancelLabel={$t('common.cancel')}
 	busy={deleteBusy}

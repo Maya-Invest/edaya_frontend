@@ -7,6 +7,7 @@
 	import PermissionCheckboxGroup from '$lib/components/school/configuration/PermissionCheckboxGroup.svelte';
 	import StaffPicker from '$lib/components/school/shared/pickers/StaffPicker.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -16,6 +17,7 @@
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { pruneStaffAssignmentPermissions } from '$lib/school/staff-assignment-form-helpers';
 	import { get } from 'svelte/store';
+	import { getClassGroupAssignmentsTabState } from '../[[id]]/(tabs)/assignments/class-group-assignments-tab.svelte';
 	import { getClassesPageState } from '../classes-page.svelte';
 
 	type StaffAssignment = components['schemas']['StaffAssignment'];
@@ -23,15 +25,16 @@
 	const { classGroup }: { classGroup: ClassNode } = $props();
 
 	const classesPage = getClassesPageState();
+	const assignmentsTab = getClassGroupAssignmentsTabState();
 
-	const modals = createUrlSyncedModals({ allowed: ['form'], getUrl: () => $page.url });
-	$effect(() => {
-		modals.hydrate();
+	const modals = createUrlSyncedModals({
+		allowed: ['form', 'delete-assignment'],
+		getUrl: () => $page.url,
 	});
 	const formOpen = bindUrlModal(modals, 'form');
+	const deleteOpen = bindUrlModal(modals, 'delete-assignment');
 
-	let editing = $state<StaffAssignment | null>(null);
-	let deleteBusy = $state<string | null>(null);
+	let deleteBusy = $state(false);
 	let formBusy = $state(false);
 	let staffId = $state('');
 	let responsibility = $state('');
@@ -41,6 +44,31 @@
 	const staff = $derived(classesPage.staff);
 	const catalog = $derived(classesPage.permissionCatalog);
 	const permissionEntries = $derived(catalogEntriesForClassGroupStaffAssignment(catalog));
+	const editing = $derived(
+		modals.isOpen('form') && modals.target
+			? rows.find(row => row.id === modals.target) ?? null
+			: null,
+	);
+	const deleteTarget = $derived(
+		modals.isOpen('delete-assignment') && modals.target
+			? rows.find(row => row.id === modals.target) ?? null
+			: null,
+	);
+
+	function validateModalTarget(): boolean {
+		if (!modals.ready || assignmentsTab.loadedClassGroupId !== classGroup.id) {
+			return false;
+		}
+		if (modals.active === 'form' && modals.target !== null && !editing) {
+			modals.close();
+			return false;
+		}
+		if (modals.active === 'delete-assignment' && !deleteTarget) {
+			modals.close();
+			return false;
+		}
+		return true;
+	}
 
 	function staffName(memberId: string): string {
 		return staff.find(member => member.id === memberId)?.name ?? memberId;
@@ -60,30 +88,31 @@
 	}
 
 	function openCreate() {
-		editing = null;
-		resetForm(null);
-		formOpen.open = true;
+		void prepareForm(null);
+		modals.open('form');
 	}
 
 	function openEdit(row: StaffAssignment) {
-		editing = row;
-		resetForm(row);
-		formOpen.open = true;
+		void prepareForm(row);
+		modals.open('form', { target: row.id });
 	}
 
-	$effect(() => {
-		if (formOpen.open) {
-			void classesPage.ensurePermissionCatalog();
-		}
-	});
-
-	$effect(() => {
+	async function prepareForm(assignment: StaffAssignment | null) {
+		resetForm(assignment);
+		await classesPage.ensurePermissionCatalog();
 		const pruned = pruneStaffAssignmentPermissions(
 			permissions,
 			permissionEntries.map(entry => entry.permission),
 		);
 		if (pruned) {
 			permissions = pruned;
+		}
+	}
+
+	$effect(() => {
+		modals.hydrate();
+		if (validateModalTarget() && modals.isOpen('form')) {
+			void prepareForm(editing);
 		}
 	});
 
@@ -115,16 +144,27 @@
 		}
 	}
 
-	async function removeRow(row: StaffAssignment) {
+	async function removeRow() {
+		const row = deleteTarget;
 		if (deleteBusy) {
 			return;
 		}
-		deleteBusy = row.id;
-		await classesPage.deleteStaffAssignment({
-			id: row.id,
-			successMessage: get(t)('classGroups.assignmentDeleted'),
-		});
-		deleteBusy = null;
+		if (!row) {
+			return;
+		}
+		deleteBusy = true;
+		try {
+			const ok = await classesPage.deleteStaffAssignment({
+				id: row.id,
+				successMessage: get(t)('classGroups.assignmentDeleted'),
+			});
+			if (ok) {
+				modals.close();
+			}
+		}
+		finally {
+			deleteBusy = false;
+		}
 	}
 </script>
 
@@ -173,8 +213,8 @@
 								variant="ghost"
 								size="icon"
 								class="h-8 w-8 rounded-full"
-								disabled={disabled || deleteBusy === row.id}
-								onclick={() => removeRow(row)}
+								disabled={disabled || deleteBusy}
+								onclick={() => modals.open('delete-assignment', { target: row.id })}
 							>
 								<Trash2 class="h-4 w-4" />
 							</Button>
@@ -217,3 +257,12 @@
 		</div>
 	</div>
 </FormModal>
+
+<ConfirmModal
+	bind:open={deleteOpen.open}
+	title={$t('common.deleteConfirmTitle')}
+	confirmLabel={$t('common.delete')}
+	cancelLabel={$t('common.cancel')}
+	busy={deleteBusy}
+	onConfirm={removeRow}
+/>

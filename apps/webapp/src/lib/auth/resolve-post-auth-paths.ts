@@ -20,6 +20,7 @@ export function resolveLinkedActorPath(
 		return appPath('/(app)/dashboard');
 	}
 
+	// Linked teachers use the Edaya teacher app — staff webapp redirects to login (see teacher-portal-gate).
 	if (kind === 'teacher') {
 		return appPath('/login');
 	}

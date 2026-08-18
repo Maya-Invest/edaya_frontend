@@ -1,8 +1,14 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { Incident, Student } from '$lib/types/school';
+import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
+import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
 import { incidentDetailIdFromUrl } from './lib/event-selectors';
+import {
+	readEventsListFilters,
+	writeEventsListFilters,
+} from './lib/events-list-filters';
 import {
 	ensureIncidentDrawerSelection,
 	loadEventsSlice,
@@ -23,9 +29,26 @@ export class EventsPageState {
 	incidents = $state<Incident[]>([]);
 	students = $state<Student[]>([]);
 
+	readonly filters: ListFiltersState<{
+		q: string;
+		class: string;
+		category: string;
+		severity: string;
+		status: string;
+	}>;
+
 	private readonly versions = new RouteVersionSnapshot(EVENTS_VERSION_FAMILIES);
 
-	constructor(private readonly getUrl: () => URL) {}
+	constructor(private readonly getUrl: () => URL) {
+		this.filters = new ListFiltersState(
+			{
+				getUrl,
+				write: writeEventsListFilters,
+				goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+			},
+			() => readEventsListFilters(getUrl()),
+		);
+	}
 
 	get selectedId() {
 		return incidentDetailIdFromUrl(this.getUrl());

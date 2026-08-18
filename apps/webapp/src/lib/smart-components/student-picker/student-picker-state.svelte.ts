@@ -1,6 +1,7 @@
 import type { Student } from '$lib/types/school';
 import { fetchPeopleSources, mapStudents } from '$lib/api/people-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { authSession } from '$lib/auth/session.svelte';
 
 export class StudentPickerState {
 	students = $state<Student[]>([]);
@@ -17,8 +18,12 @@ export class StudentPickerState {
 		const version = ++this.loadVersion;
 		this.loading = true;
 		try {
+			const schoolId = authSession.schoolId ?? '';
+			if (!schoolId) {
+				return;
+			}
 			const client = getBrowserSchoolClient();
-			const sources = await fetchPeopleSources(client);
+			const sources = await fetchPeopleSources(client, schoolId);
 			if (version !== this.loadVersion) {
 				return;
 			}

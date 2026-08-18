@@ -21,8 +21,8 @@ export async function waitForUrlModal(
 }
 
 export async function waitForFormModal(ctx: DemoContext, timeoutMs = 30_000): Promise<boolean> {
-	const modal = ctx.page.getByTestId('form-modal');
-	return modal.waitFor({ state: 'visible', timeout: timeoutMs }).then(() => true).catch(() => false);
+	const dialog = ctx.page.locator('[data-testid="form-modal"]').or(ctx.page.getByRole('dialog'));
+	return dialog.first().isVisible({ timeout: timeoutMs }).catch(() => false);
 }
 
 export async function waitForPickerModal(ctx: DemoContext, timeoutMs = 30_000): Promise<boolean> {

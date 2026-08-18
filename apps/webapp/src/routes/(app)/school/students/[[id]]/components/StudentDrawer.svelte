@@ -1,11 +1,33 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
 	import type { Snippet } from 'svelte';
+	import { page } from '$app/stores';
 	import { kindStyle, kindLabelKey } from '$lib/components/school/shared/drawer-constants';
+	import StudentGradeEntryModal from '$lib/components/school/students/StudentGradeEntryModal.svelte';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, X } from '$lib/icons';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { hasPermission } from '$lib/permissions';
+	import StudentAbsenceModal from '../(tabs)/attendance/components/StudentAbsenceModal.svelte';
+	import StudentIncidentModal from '../(tabs)/incidents/components/StudentIncidentModal.svelte';
+	import StudentGuardianLinkModal from '../(tabs)/profile/components/StudentGuardianLinkModal.svelte';
+	import StudentNoteModal from '../(tabs)/profile/components/StudentNoteModal.svelte';
+	import { getStudentProfileTabState } from '../(tabs)/profile/student-profile-tab.svelte';
+	import { shouldCloseStudentHealthModal } from '../../lib/student-modal-surface';
 	import StudentDetailHeader from './StudentDetailHeader.svelte';
 	import StudentDetailTabBar from './StudentDetailTabBar.svelte';
+
+	type StudentDrawerModal
+		= | 'edit-profile'
+			| 'edit-health'
+			| 'change-class'
+			| 'link-guardian'
+			| 'note'
+			| 'edit-note'
+			| 'add-absence'
+			| 'add-incident'
+			| 'add-grade';
 
 	const {
 		student,
@@ -18,6 +40,71 @@
 		onClose: () => void;
 		children: Snippet;
 	} = $props();
+
+	const profileTab = getStudentProfileTabState();
+
+	const modals = createUrlSyncedModals<StudentDrawerModal>({
+		allowed: [
+			'edit-profile',
+			'edit-health',
+			'change-class',
+			'link-guardian',
+			'note',
+			'edit-note',
+			'add-absence',
+			'add-incident',
+			'add-grade',
+		],
+		getUrl: () => $page.url,
+	});
+	setDrawerUrlModals(modals);
+	$effect(() => {
+		modals.hydrate();
+	});
+	const editProfileOpen = bindUrlModal(modals, 'edit-profile');
+	const changeClassOpen = bindUrlModal(modals, 'change-class');
+	const linkGuardianOpen = bindUrlModal(modals, 'link-guardian');
+	const noteOpen = bindUrlModal(modals, 'note');
+	const editNoteOpen = bindUrlModal(modals, 'edit-note');
+	const addAbsenceOpen = bindUrlModal(modals, 'add-absence');
+	const addIncidentOpen = bindUrlModal(modals, 'add-incident');
+	const addGradeOpen = bindUrlModal(modals, 'add-grade');
+
+	const editingNote = $derived(
+		student && modals.active === 'edit-note' && modals.target
+			? profileTab.notesFor(student.id).find(note => note.id === modals.target)
+			: undefined,
+	);
+	const canUpdateHealth = $derived(hasPermission('STUDENT_HEALTH_UPDATE'));
+	const closeHealthModal = $derived(
+		shouldCloseStudentHealthModal(modals.active, $page.route.id, canUpdateHealth),
+	);
+
+	$effect(() => {
+		if (!modals.ready || !student) {
+			return;
+		}
+		if (closeHealthModal) {
+			modals.close();
+			return;
+		}
+		if (modals.active === 'note' && modals.target) {
+			modals.close();
+			return;
+		}
+		if (modals.active !== 'edit-note') {
+			return;
+		}
+		if (!modals.target) {
+			modals.close();
+			return;
+		}
+		const profileLoaded = profileTab.slice?.studentId === student.id;
+		const onProfileRoute = $page.route.id?.endsWith('/(tabs)/profile') ?? false;
+		if ((!profileLoaded && !onProfileRoute) || (profileLoaded && !editingNote)) {
+			modals.close();
+		}
+	});
 
 	function handleKeydown(event: KeyboardEvent) {
 		if (event.key === 'Escape') {
@@ -59,10 +146,28 @@
 			</div>
 		{:else}
 			<div class="space-y-5">
-				<StudentDetailHeader {student} />
+				<StudentDetailHeader
+					{student}
+					editProfileOpen={editProfileOpen}
+					changeClassOpen={changeClassOpen}
+				/>
 				<StudentDetailTabBar {student} />
 				{@render children()}
 			</div>
+			<StudentGuardianLinkModal s={student} bind:open={linkGuardianOpen.open} showTrigger={false} />
+			{#if modals.active === 'note'}
+				<StudentNoteModal s={student} bind:open={noteOpen.open} showTrigger={false} />
+			{:else if editingNote}
+				<StudentNoteModal
+					s={student}
+					note={editingNote}
+					bind:open={editNoteOpen.open}
+					showTrigger={false}
+				/>
+			{/if}
+			<StudentAbsenceModal s={student} bind:open={addAbsenceOpen.open} showTrigger={false} />
+			<StudentIncidentModal s={student} bind:open={addIncidentOpen.open} showTrigger={false} />
+			<StudentGradeEntryModal s={student} bind:open={addGradeOpen.open} showTrigger={false} />
 		{/if}
 	</div>
 

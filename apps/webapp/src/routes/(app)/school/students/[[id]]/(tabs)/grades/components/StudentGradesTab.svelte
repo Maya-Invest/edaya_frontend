@@ -1,5 +1,7 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
+	import { afterNavigate } from '$app/navigation';
+	import { page } from '$app/stores';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -8,7 +10,12 @@
 	import { t } from '$lib/i18n';
 	import { FileText, Plus } from '$lib/icons';
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
+	import { appGoto } from '$lib/navigation/app-navigation';
 	import { getStudentGradesTabState } from '../student-grades-tab.svelte';
+	import {
+		readExpandedStudentSubject,
+		writeExpandedStudentSubject,
+	} from '../student-subject-url';
 	import StudentSubjectGroup from './StudentSubjectGroup.svelte';
 
 	const { s }: { s: Student } = $props();
@@ -18,7 +25,33 @@
 	const gradesData = $derived(
 		gradesTab.gradesSummaryFor(s.id, row => detailHref.classEvaluation(row.classGroupId, row.assessmentId)),
 	);
+	const collapsibleSubjects = $derived(
+		gradesData.subjectGroups
+			.filter(group => group.items.length > 1)
+			.map(group => group.subject),
+	);
+	const expandedSubject = $derived(
+		readExpandedStudentSubject($page.url, collapsibleSubjects),
+	);
 
+	afterNavigate(() => {
+		const canonicalHref = writeExpandedStudentSubject($page.url, expandedSubject);
+		if (canonicalHref !== `${$page.url.pathname}${$page.url.search}`) {
+			void appGoto(canonicalHref, {
+				replaceState: true,
+				keepFocus: true,
+				noScroll: true,
+			});
+		}
+	});
+
+	function setExpandedSubject(subject: string, open: boolean) {
+		void appGoto(writeExpandedStudentSubject($page.url, open ? subject : null), {
+			replaceState: true,
+			keepFocus: true,
+			noScroll: true,
+		});
+	}
 </script>
 
 <div class="space-y-4">
@@ -57,7 +90,13 @@
 				</DrawerEmptyState>
 			{:else}
 				{#each gradesData.subjectGroups as { subject, items, subjectAvg } (subject)}
-					<StudentSubjectGroup {subject} {items} {subjectAvg} />
+					<StudentSubjectGroup
+						{subject}
+						{items}
+						{subjectAvg}
+						open={expandedSubject === subject}
+						onOpenChange={open => setExpandedSubject(subject, open)}
+					/>
 				{/each}
 			{/if}
 		</div>

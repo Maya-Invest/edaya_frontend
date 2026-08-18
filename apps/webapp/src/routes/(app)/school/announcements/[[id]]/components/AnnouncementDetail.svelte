@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Announcement } from '$lib/types/school';
+	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
@@ -11,6 +12,8 @@
 	import { t } from '$lib/i18n';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { writeModalSurface } from '$lib/modal/modal-url';
+	import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getAnnouncementsPageState } from '../../announcements-page.svelte';
@@ -26,26 +29,30 @@
 		onDeleted?: () => void;
 	} = $props();
 
-	type AnnouncementDrawerModal = 'add-target';
+	type AnnouncementDrawerModal = 'edit' | 'add-target' | 'publish' | 'delete';
 
 	const announcementsPage = getAnnouncementsPageState();
 	const modals = createUrlSyncedModals<AnnouncementDrawerModal>({
-		allowed: ['add-target'],
+		allowed: ['edit', 'add-target', 'publish', 'delete'],
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
-	$effect(() => {
+	afterNavigate(() => {
 		modals.hydrate();
+		if (modals.active && modals.target) {
+			replaceRouteSurface(writeModalSurface($page.url, { modal: modals.active }));
+		}
 	});
+	const editOpen = bindUrlModal(modals, 'edit');
 	const addTargetOpen = bindUrlModal(modals, 'add-target');
+	const publishOpen = bindUrlModal(modals, 'publish');
+	const deleteOpen = bindUrlModal(modals, 'delete');
 
 	const live = $derived(
 		announcementsPage.findAnnouncement(announcement.id) ?? announcement,
 	);
 	const isDraft = $derived(live.status === 'draft');
 
-	let publishOpen = $state(false);
-	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
 
 	function fmtDate(value: string | undefined) {
@@ -70,7 +77,7 @@
 	}
 
 	function confirmPublish() {
-		publishOpen = false;
+		publishOpen.open = false;
 		void announcementsPage.publishAnnouncement({
 			announcementId: live.id,
 			successMessage: get(t)('announcements.publishSuccess', { title: live.title }),
@@ -84,7 +91,7 @@
 				successMessage: get(t)('announcements.toastDeleted', { title: live.title }),
 			});
 			if (ok) {
-				deleteOpen = false;
+				deleteOpen.open = false;
 				onDeleted?.();
 			}
 		}
@@ -132,7 +139,16 @@
 					tooltip={$t('announcements.permissionCreate')}
 				>
 					{#snippet children({ disabled, title })}
-						<AnnouncementFormModal announcement={live} {disabled} {title} />
+						<Button
+							variant="outline"
+							size="sm"
+							class="rounded-full"
+							{disabled}
+							{title}
+							onclick={() => modals.open('edit')}
+						>
+							{$t('common.edit')}
+						</Button>
 					{/snippet}
 				</PermissionGate>
 				<PermissionGate
@@ -146,7 +162,7 @@
 							class="rounded-full"
 							disabled={disabled || live.targets.length === 0}
 							{title}
-							onclick={() => (publishOpen = true)}
+							onclick={() => (publishOpen.open = true)}
 						>
 							{$t('announcements.publish')}
 						</Button>
@@ -173,7 +189,7 @@
 							destructive
 							{disabled}
 							{title}
-							onclick={() => (deleteOpen = true)}
+							onclick={() => (deleteOpen.open = true)}
 						>
 							{$t('common.delete')}
 						</RowActionMenuItem>
@@ -227,10 +243,13 @@
 	</div>
 </div>
 
+{#if editOpen.open}
+	<AnnouncementFormModal announcement={live} bind:open={editOpen.open} />
+{/if}
 <AnnouncementTargetFormModal announcementId={live.id} bind:open={addTargetOpen.open} />
 
 <FormModal
-	bind:open={publishOpen}
+	bind:open={publishOpen.open}
 	title={$t('announcements.publishTitle')}
 	description={$t('announcements.publishDescription', { title: live.title })}
 	submitLabel={$t('announcements.publish')}
@@ -239,7 +258,7 @@
 />
 
 <ConfirmModal
-	bind:open={deleteOpen}
+	bind:open={deleteOpen.open}
 	title={$t('common.deleteConfirmTitle')}
 	description={$t('announcements.deleteConfirm', { title: live.title })}
 	confirmLabel={$t('common.delete')}

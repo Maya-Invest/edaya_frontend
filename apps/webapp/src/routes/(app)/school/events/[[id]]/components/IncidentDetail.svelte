@@ -21,7 +21,7 @@
 	import IncidentResolveModal from './IncidentResolveModal.svelte';
 
 	type Involvement = components['schemas']['StudentIncidentInvolvement'];
-	type IncidentDrawerModal = 'edit' | 'resolve';
+	type IncidentDrawerModal = 'edit' | 'resolve' | 'delete';
 
 	const {
 		incident,
@@ -35,7 +35,7 @@
 	const students = $derived(eventsPage.students);
 
 	const modals = createUrlSyncedModals<IncidentDrawerModal>({
-		allowed: ['edit', 'resolve'],
+		allowed: ['edit', 'resolve', 'delete'],
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
@@ -44,8 +44,8 @@
 	});
 	const editOpen = bindUrlModal(modals, 'edit');
 	const resolveOpen = bindUrlModal(modals, 'resolve');
+	const deleteOpen = bindUrlModal(modals, 'delete');
 
-	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
 	let involvements = $state<Involvement[]>([]);
 	let sanctions = $state<Awaited<ReturnType<typeof loadIncidentSanctions>>>([]);
@@ -83,7 +83,7 @@
 				successMessage: get(t)('events.toastDeleted'),
 			});
 			if (ok) {
-				deleteOpen = false;
+				deleteOpen.open = false;
 				onDeleted?.();
 			}
 		}
@@ -152,7 +152,7 @@
 						{disabled}
 						{title}
 						destructive
-						onclick={() => (deleteOpen = true)}
+						onclick={() => (deleteOpen.open = true)}
 					>
 						{$t('common.delete')}
 					</RowActionMenuItem>
@@ -239,7 +239,7 @@
 />
 
 <ConfirmModal
-	bind:open={deleteOpen}
+	bind:open={deleteOpen.open}
 	title={$t('common.deleteConfirmTitle')}
 	description={$t('events.deleteConfirm', { title: live.summary })}
 	confirmLabel={$t('common.delete')}

@@ -167,6 +167,7 @@
 					{#if showExpanded}
 						<button
 							type="button"
+							aria-expanded={open}
 							onclick={() => toggleModule(mod.key)}
 							class={cn(
 								'group flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',

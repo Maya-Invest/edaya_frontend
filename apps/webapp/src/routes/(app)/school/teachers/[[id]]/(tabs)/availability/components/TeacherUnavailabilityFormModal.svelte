@@ -8,6 +8,7 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import { t } from '$lib/i18n';
+	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { createTeacherUnavailabilityPayload } from '../../../../lib/teacher-detail-mutations';
 	import {
@@ -20,23 +21,27 @@
 		open = $bindable(false),
 		teacher,
 		rule,
+		onSaved,
 	}: {
 		open?: boolean;
 		teacher: Teacher;
 		rule?: TeacherUnavailability;
+		onSaved?: () => void;
 	} = $props();
 
 	const teachersPage = getTeachersPageState();
+	const initialRule = untrack(() => rule);
+	const year = untrack(() => academicContext.year);
 	let busy = $state(false);
-	let recurrence = $state<'weekly' | 'one_off'>('weekly');
-	let dayOfWeek = $state('monday');
-	let startTime = $state('08:00');
-	let endTime = $state('09:00');
-	let effectiveFrom = $state('');
-	let effectiveUntil = $state('');
-	let startsAt = $state('');
-	let endsAt = $state('');
-	let reason = $state('');
+	let recurrence = $state<'weekly' | 'one_off'>(initialRule?.recurrence ?? 'weekly');
+	let dayOfWeek = $state(initialRule?.dayOfWeek ?? 'monday');
+	let startTime = $state(initialRule?.startTime ?? '08:00');
+	let endTime = $state(initialRule?.endTime ?? '09:00');
+	let effectiveFrom = $state(dateInput(initialRule?.effectiveFrom ?? year?.startDate));
+	let effectiveUntil = $state(dateInput(initialRule?.effectiveUntil ?? year?.endDate));
+	let startsAt = $state(dateTimeInput(initialRule?.startsAt));
+	let endsAt = $state(dateTimeInput(initialRule?.endsAt));
+	let reason = $state(initialRule?.reason ?? '');
 
 	function dateInput(value: unknown): string {
 		return value ? new Date(String(value)).toISOString().slice(0, 10) : '';
@@ -45,24 +50,6 @@
 	function dateTimeInput(value: unknown): string {
 		return utcWallClockDateTimeInput(value);
 	}
-
-	function reset() {
-		const year = academicContext.year;
-		recurrence = rule?.recurrence ?? 'weekly';
-		dayOfWeek = rule?.dayOfWeek ?? 'monday';
-		startTime = rule?.startTime ?? '08:00';
-		endTime = rule?.endTime ?? '09:00';
-		effectiveFrom = dateInput(rule?.effectiveFrom ?? year?.startDate);
-		effectiveUntil = dateInput(rule?.effectiveUntil ?? year?.endDate);
-		startsAt = dateTimeInput(rule?.startsAt);
-		endsAt = dateTimeInput(rule?.endsAt);
-		reason = rule?.reason ?? '';
-	}
-
-	$effect(() => {
-		if (open)
-			reset();
-	});
 
 	const canSubmit = $derived.by(() => {
 		const yearStart = academicContext.year?.startDate ?? '';
@@ -101,8 +88,10 @@
 			successMessage: get(t)('teacher.availabilitySaved'),
 		});
 		busy = false;
-		if (ok)
+		if (ok) {
+			onSaved?.();
 			open = false;
+		}
 	}
 </script>
 

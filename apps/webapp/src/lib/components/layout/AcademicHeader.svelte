@@ -25,6 +25,9 @@
 	<div class="relative">
 		<button
 			type="button"
+			data-testid="academic-year-trigger"
+			aria-label={$t('academic.selectYear')}
+			aria-expanded={open === 'year'}
 			onclick={() => (open = open === 'year' ? null : 'year')}
 			class={cn(
 				'flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
@@ -61,6 +64,9 @@
 	<div class="relative">
 		<button
 			type="button"
+			data-testid="academic-period-trigger"
+			aria-label={$t('academic.selectPeriod')}
+			aria-expanded={open === 'period'}
 			onclick={() => (open = open === 'period' ? null : 'period')}
 			class={cn(
 				'flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors',

@@ -7,6 +7,7 @@
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
+	import { clampDateInput, formatDateInput, todayDateInput } from '$lib/date/format';
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
 	import { getCalendarPageState } from '../calendar-page.svelte';
@@ -40,15 +41,43 @@
 	let selectedClasses = $state<string[]>([]);
 
 	const showBlocksTimetable = $derived(type !== 'ceremony');
+	const yearStart = $derived(formatDateInput(academicContext.year?.startDate));
+	const yearEnd = $derived(formatDateInput(academicContext.year?.endDate));
+	const defaultEventDate = $derived(clampDateInput(todayDateInput(), yearStart, yearEnd));
+	const resolvedDate = $derived(clampDateInput(date, yearStart, yearEnd));
+	const resolvedEndDate = $derived(clampDateInput(endDate || date, yearStart, yearEnd));
+
+	function dateInAcademicYear(value: string): boolean {
+		const civil = formatDateInput(value);
+		if (!civil) {
+			return false;
+		}
+		if (yearStart && civil < yearStart) {
+			return false;
+		}
+		if (yearEnd && civil > yearEnd) {
+			return false;
+		}
+		return true;
+	}
 
 	function defaultBlocksTimetable(eventType: SchoolYearEvent['type']): boolean {
 		return eventType !== 'ceremony';
 	}
 
 	const isEdit = $derived(event !== undefined);
-	const canSubmit = $derived(
-		eventTitle.trim().length > 0 && date.trim().length > 0 && (!scoped || selectedClasses.length > 0),
-	);
+	const canSubmit = $derived.by(() => {
+		if (eventTitle.trim().length === 0) {
+			return false;
+		}
+		if (!yearStart || !yearEnd) {
+			return false;
+		}
+		if (!dateInAcademicYear(resolvedDate) || !dateInAcademicYear(resolvedEndDate)) {
+			return false;
+		}
+		return !scoped || selectedClasses.length > 0;
+	});
 
 	function resetForm() {
 		if (event) {
@@ -64,8 +93,8 @@
 		else {
 			eventTitle = '';
 			description = '';
-			date = '';
-			endDate = '';
+			date = defaultEventDate;
+			endDate = defaultEventDate;
 			type = 'holiday';
 			blocksTimetable = true;
 			scoped = false;
@@ -73,10 +102,13 @@
 		}
 	}
 
+	let wasOpen = false;
+
 	$effect(() => {
-		if (open) {
+		if (open && !wasOpen) {
 			resetForm();
 		}
+		wasOpen = open;
 	});
 
 	function toggleClass(id: string) {
@@ -105,8 +137,8 @@
 					linkedIds: event.linkedIds,
 					title: eventTitle,
 					description,
-					date,
-					endDate: endDate || date,
+					date: resolvedDate,
+					endDate: resolvedEndDate,
 					type,
 					blocksTimetable,
 					scope: scopeValue(),
@@ -121,8 +153,8 @@
 				const eventId = await createCalendarEventOnPage(calendarPage, {
 					title: eventTitle,
 					description,
-					date,
-					endDate: endDate || date,
+					date: resolvedDate,
+					endDate: resolvedEndDate,
 					type,
 					blocksTimetable,
 					scope: scopeValue(),
@@ -163,13 +195,23 @@
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('drawer.start')}
 			</Label>
-			<Input type="date" bind:value={date} />
+			<Input
+				type="date"
+				min={yearStart || undefined}
+				max={yearEnd || undefined}
+				bind:value={() => resolvedDate, next => (date = next)}
+			/>
 		</div>
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('drawer.end')}
 			</Label>
-			<Input type="date" bind:value={endDate} />
+			<Input
+				type="date"
+				min={yearStart || undefined}
+				max={yearEnd || undefined}
+				bind:value={() => resolvedEndDate, next => (endDate = next)}
+			/>
 		</div>
 	</div>
 	<div class="space-y-1.5">
@@ -195,7 +237,7 @@
 					{$t(`calType.${type}`)}
 				</Select.Value>
 			</Select.Trigger>
-			<Select.Content>
+			<Select.Content class="z-[100]">
 				{#each EVENT_TYPES as eventType (eventType)}
 					<Select.Item value={eventType} label={$t(`calType.${eventType}`)}>
 						{$t(`calType.${eventType}`)}

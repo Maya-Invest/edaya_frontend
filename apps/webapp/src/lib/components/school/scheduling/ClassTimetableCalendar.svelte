@@ -2,6 +2,7 @@
 	import type { PlanningEvent, SchoolYearEvent } from '$lib/types/school';
 	import type { EventCss, CalendarInstanceApi } from '@svar-ui/svelte-calendar';
 	import { browser } from '$app/environment';
+	import { afterNavigate } from '$app/navigation';
 	import { reschedulePlanningSlotMutation } from '$lib/api/mutations/planning.mutations';
 	import { lang, t } from '$lib/i18n';
 	import {
@@ -37,6 +38,11 @@
 		editable = false,
 		onSelect,
 		onAttendance,
+		rescheduleOpen = false,
+		rescheduleTarget = null,
+		onRescheduleRequest,
+		onInvalidReschedule,
+		onRescheduleClose,
 		onChanged,
 	}: {
 		events: PlanningEvent[];
@@ -48,6 +54,11 @@
 		editable?: boolean;
 		onSelect?: (event: PlanningEvent) => void;
 		onAttendance?: (event: PlanningEvent) => void;
+		rescheduleOpen?: boolean;
+		rescheduleTarget?: string | null;
+		onRescheduleRequest?: (eventId: string) => void;
+		onInvalidReschedule?: () => void;
+		onRescheduleClose?: () => void;
 		onChanged?: () => Promise<void>;
 	} = $props();
 
@@ -139,6 +150,16 @@
 			: '',
 	);
 
+	afterNavigate(() => {
+		const pendingTarget = timetable.pendingReschedule?.event.id ?? null;
+		if (rescheduleOpen && pendingTarget !== rescheduleTarget) {
+			onInvalidReschedule?.();
+		}
+		else if (!rescheduleOpen && pendingTarget) {
+			timetable.closeConfirm();
+		}
+	});
+
 	const eventCss: EventCss = ({ event }) => {
 		const subject = typeof event.subject === 'string' ? event.subject : '';
 		const active = selectedId === String(event.id);
@@ -227,6 +248,7 @@
 			return false;
 
 		timetable.queueReschedule(planningEvent, slot);
+		onRescheduleRequest?.(planningEvent.id);
 		return false;
 	}
 
@@ -246,6 +268,7 @@
 
 	function closeConfirm() {
 		timetable.closeConfirm();
+		onRescheduleClose?.();
 	}
 
 	async function confirmReschedule() {
@@ -261,6 +284,9 @@
 			errorMessage: $t('planning.rescheduleError'),
 		}));
 		await onChanged?.();
+		if (!timetable.pendingReschedule) {
+			onRescheduleClose?.();
+		}
 	}
 </script>
 
@@ -293,7 +319,7 @@
 	</div>
 
 	<PlanningRescheduleConfirmModal
-		bind:open={timetable.confirmOpen}
+		open={rescheduleOpen && timetable.pendingReschedule?.event.id === rescheduleTarget}
 		title={timetable.pendingReschedule?.event.title ?? ''}
 		{fromLabel}
 		{toLabel}

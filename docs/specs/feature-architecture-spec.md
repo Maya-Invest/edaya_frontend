@@ -95,6 +95,9 @@ Shell chrome (sidebar, header, toasts, permissions) still applies.
 
 - Complex entities: row click → URL-backed drawer (`[[id]]` optional segment); tabs are child routes under `[[id]]/`.
 - Simple entities: row `···` menu only — **no drawer**, **no** `/[id]` route unless deep links are explicitly required.
+- Mutation forms and confirmations remain on the current structural route and are addressable through
+  `?modal=…`; use `modalTarget`, `modalStep`, and `modalTab` when the target or workflow subview is
+  not already identified by the pathname.
 
 ---
 
@@ -122,7 +125,7 @@ These are **fixed** for v1. Do not introduce alternate flows without updating th
 | **Staff assignments (config)** | **Class-level only** in Configuration → Classes drawer (`staffAssignments` with `classGroupId`). Lesson/session/subject-level assignment is post-v1. |
 | **Staff permissions** | **Staff drawer → Permissions** tab (`staffPermissionAssignments`). No `/configuration/roles`. |
 | **Incident resolve** | **One modal** — involved students, role, optional `DisciplinaryAction` per student, resolution notes. Command: **`resolveIncidentWithOutcomes`** (atomic). Drawer: involved students read-only; edits only via Resolve modal. |
-| **Assessments by `kind`** | **One route** `/evaluations`. Same drawer for all kinds; body shows **one exclusive section** (submissions vs grades grid). List row: **kind badge**. |
+| **Assessments by `kind`** | **One route** `/evaluations`. Same routed drawer for all kinds: Details + Grading child tabs; Grading shows the exclusive work surface (homework submissions vs grades grid). List row: **kind badge**. |
 | **Homework** | `Assessment` with `kind = homework` on evaluations screen — **no** `/homework` nav. |
 | **Timed assessments** | No exam menu. Appear on **timetable grid** and **evaluations list** (`startsAt`/`endsAt` or `lessonSessionId`). |
 | **Daily attendance** | **List of days** + drawer (same pattern as timetable session). Edits **permission-gated**, not mode-locked UI. |
@@ -262,6 +265,8 @@ Scope labels in the list use `POST authorization/scope/render` with `{ permissio
 | Grade scales | `/configuration/grade-scales` | — |
 | Notification templates | `/configuration/notifications` | — |
 | Disciplinary catalog | `/configuration/discipline` | — |
+| Configuration tools | `/configuration/tools` | — |
+| Teacher assignments hub | `/configuration/tools/teacher-assignments` | — |
 | Account inbox | `/account/inbox` | `/account/inbox/{id}` |
 
 ---
@@ -301,14 +306,15 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 - **Entity:** `Teacher` · **Complex drawer**
 - **List:** search name · filter active/inactive · CTA Add teacher
 - **Drawer header:** Edit profile
-- **Drawer tabs:** Profile · **Assignments** (`teacherAssignments`; subject + homeroom kinds) · Account linking (`kind: teacher` invitations)
+- **Drawer tabs:** Profile (includes account linking) · **Assignments** (`teacherAssignments`;
+  subject + homeroom kinds) · **Availability** (`teacherUnavailabilities`)
 - **Modals:** Create teacher (optional portal invite) · Edit profile · Add/edit assignment
 
 ### 7.5 School — Calendar
 
-- **Entity:** `CalendarEvent` · **Thin drawer**
+- **Entity:** `CalendarEvent` · **Simple** (row `···` only; mutation modals are URL-backed)
 - **List:** search title · main filter event type
-- **Drawer header:** Edit · Duplicate
+- **Row menu:** Edit · Duplicate · Delete
 
 ### 7.6 School — Activities
 
@@ -356,7 +362,8 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 - **Entities:** `Assessment` · `AssessmentResult`
 - **List:** main filter **kind** (all / homework / quiz / project / other) · kind badge on row · timed items show schedule hint when on timetable
-- **Drawer:** one body section by `kind` — homework → submissions; quiz/project/other → grades grid
+- **Drawer tabs:** Details · Grading. Grading is exclusive by `kind` — homework → submissions;
+  quiz/project/other → grades grid.
 - **CTA — New assessment modal:**
   1. Pick **kind** (homework · quiz · project · other)
   2. Core fields: title, subject/class subject, dates, grading config
@@ -437,6 +444,20 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 ### 7.27 Account — Inbox
 
 - **Entity:** `MessageDelivery` · **Thin drawer**
+
+### 7.28 Configuration — Tools
+
+- **Surface:** Layout variant at `/configuration/tools`
+- **Tools:** Data import · teacher assignments · timetable generation · timetable publication
+- Teacher assignments links to the canonical `/configuration/tools/teacher-assignments` hub;
+  workflow tools open URL-backed modals whose steps and substantive internal panels are addressable.
+
+### 7.29 Configuration — Teacher assignments hub
+
+- **Entity:** `TeacherAssignment` · standard list at `/configuration/tools/teacher-assignments`
+- **Purpose:** School-wide assignment search and maintenance across teachers; complements the
+  teacher-scoped Assignments drawer tab.
+- **List:** search · class filter · teacher filter; create/edit/delete through URL-backed modals.
 
 ---
 

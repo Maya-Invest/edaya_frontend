@@ -1,14 +1,24 @@
+import { academicContext } from '$lib/academic/context.svelte';
 import { schoolSubjectsCatalogList } from '$lib/api/entity-list-filters';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { authSession } from '$lib/auth/session.svelte';
 
 export interface SchoolSubjectCatalogEntry {
 	id: string;
 	name: string;
 }
 
-export async function loadSchoolSubjectCatalog(): Promise<SchoolSubjectCatalogEntry[]> {
+export async function loadSchoolSubjectCatalog(schoolId?: string): Promise<SchoolSubjectCatalogEntry[]> {
+	const resolvedSchoolId = schoolId
+		?? authSession.schoolId
+		?? academicContext.schools[0]?.id
+		?? null;
+	if (!resolvedSchoolId) {
+		return [];
+	}
+
 	const client = getBrowserSchoolClient();
-	const subjects = await client.entities.subjects.list(schoolSubjectsCatalogList());
+	const subjects = await client.entities.subjects.list(schoolSubjectsCatalogList(resolvedSchoolId));
 	const entries: SchoolSubjectCatalogEntry[] = [];
 
 	for (const subject of subjects ?? []) {
@@ -22,7 +32,7 @@ export async function loadSchoolSubjectCatalog(): Promise<SchoolSubjectCatalogEn
 	return entries.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
 }
 
-export async function loadSchoolSubjectNames(): Promise<string[]> {
-	const catalog = await loadSchoolSubjectCatalog();
+export async function loadSchoolSubjectNames(schoolId?: string): Promise<string[]> {
+	const catalog = await loadSchoolSubjectCatalog(schoolId);
 	return catalog.map(entry => entry.name);
 }

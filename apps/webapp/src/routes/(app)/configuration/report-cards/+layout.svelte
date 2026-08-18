@@ -56,7 +56,12 @@
 			emptyTitle={$t('reportCards.modelsTitle', { n: 0 })}
 			emptyDescription={$t('dataState.emptyDescription')}
 		>
-			<ReportCardDefinitionsList {selectedId} onSelect={selectDefinition} />
+			<ReportCardDefinitionsList
+				{selectedId}
+				onSelect={selectDefinition}
+				loadedScales={data.scales}
+				loadedDefinitions={data.definitions}
+			/>
 			{@render pageChildren()}
 		</DataState>
 	{/snippet}

@@ -12,6 +12,7 @@
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
 	import EventsList from './components/EventsList.svelte';
 	import { EventsPageState, setEventsPageState } from './events-page.svelte';
+	import { readEventsListFilters } from './lib/events-list-filters';
 
 	const { children: pageChildren }: { children: Snippet } = $props();
 
@@ -21,6 +22,11 @@
 	releaseRoutePageQueryOnDestroy(() => $page.url);
 
 	const query = eventsPage.queryListPage();
+	const urlFilters = $derived(readEventsListFilters($page.url));
+
+	$effect(() => {
+		eventsPage.filters.hydrate(urlFilters);
+	});
 
 	function selectIncident(incident: Incident) {
 		const path = detailHref.schoolIncident(incident.id);

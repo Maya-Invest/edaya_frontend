@@ -1,4 +1,12 @@
-import type { PlanningEvent, TimetableScheduleKind } from '$lib/types/school';
+import type {
+	AttendanceStep,
+	NewSessionStep,
+	PlanningModal,
+	PlanningModalStep,
+	PlanningSurface,
+	PlanningSurfaceEvent,
+} from '$lib/scheduling/planning-surface';
+import type { PlanningEvent } from '$lib/types/school';
 import {
 	formatWeekAnchor,
 	isCurrentWeek,
@@ -9,21 +17,30 @@ import {
 } from '$lib/components/school/scheduling/planning-calendar';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readPlanningListFilters, writePlanningListFilters } from '$lib/list/list-url-filters';
+import { createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 import { appGoto } from '$lib/navigation/app-navigation';
+import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
+import { hasPermission } from '$lib/permissions';
+import {
+	PLANNING_MODAL_KEYS,
+	canAccessPlanningModal,
+	planningSurfaceHref,
+	resolvePlanningSurface,
+} from '$lib/scheduling/planning-surface';
 import { getContext, setContext } from 'svelte';
 
 const PLANNING_STATE_KEY = Symbol('planning-state');
 
 export class PlanningState {
 	readonly filters: ListFiltersState<{ q: string; week: string }>;
+	readonly modals;
 
-	attendanceSession = $state<PlanningEvent | null>(null);
-	scheduleCreateOpen = $state(false);
-	scheduleCreateKind = $state<TimetableScheduleKind>('lesson');
-	wizardOpen = $state(false);
 	weekPickerValue = $state('');
 
-	constructor(private readonly getUrl: () => URL) {
+	constructor(
+		private readonly getUrl: () => URL,
+		private readonly getClassId: () => string,
+	) {
 		this.filters = new ListFiltersState(
 			{
 				getUrl: () => this.getUrl(),
@@ -32,6 +49,11 @@ export class PlanningState {
 			},
 			() => readPlanningListFilters(this.getUrl()),
 		);
+		this.modals = createUrlSyncedModals<PlanningModal>({
+			allowed: PLANNING_MODAL_KEYS,
+			allowedSteps: ['type', 'context', 'schedule', 'mark', 'review'],
+			getUrl: this.getUrl,
+		});
 	}
 
 	get weekStart(): Date {
@@ -55,10 +77,43 @@ export class PlanningState {
 		);
 	}
 
-	hydrateFromUrl(url: URL) {
+	hydrateFromUrl(
+		url: URL,
+		options: {
+			eventIds?: readonly string[];
+			validateEventTargets?: boolean;
+			studentIds?: readonly string[];
+			validateStudentTargets?: boolean;
+			events?: readonly PlanningSurfaceEvent[];
+		} = {},
+	) {
 		const next = readPlanningListFilters(url);
 		this.filters.hydrate(next);
 		this.weekPickerValue = formatWeekAnchor(parseWeekAnchor(next.week));
+
+		const classId = this.getClassId();
+		const surface = resolvePlanningSurface(url, {
+			...options,
+			classId,
+			validatePermissions: true,
+			hasPermission: (permission, scopedClassId) =>
+				hasPermission(permission, { classId: scopedClassId }),
+		});
+		const openingWorkflow = this.modals.active !== surface.modal;
+		if (openingWorkflow && surface.modal === 'new-session' && surface.step !== 'type') {
+			surface.step = 'type';
+		}
+		if (openingWorkflow && surface.modal === 'attendance' && surface.step !== 'mark') {
+			surface.step = 'mark';
+		}
+		const canonicalHref = planningSurfaceHref(url, surface);
+		const currentHref = `${url.pathname}${url.search}`;
+		if (canonicalHref !== currentHref) {
+			this.applySurface(surface);
+			replaceRouteSurface(canonicalHref);
+			return;
+		}
+		this.modals.hydrate();
 	}
 
 	navigateWeek(nextWeekStart: Date) {
@@ -81,13 +136,88 @@ export class PlanningState {
 		this.navigateWeek(mondayOfWeek(todayDate()));
 	}
 
-	openScheduleCreate(kind: TimetableScheduleKind) {
-		this.scheduleCreateKind = kind;
-		this.scheduleCreateOpen = true;
+	openNewSession() {
+		this.modals.open('new-session', { step: 'type' });
 	}
 
-	openAttendance(event: PlanningEvent) {
-		this.attendanceSession = event;
+	openAttendance = (event: PlanningEvent) => {
+		this.modals.open('attendance', { target: event.id, step: 'mark' });
+	};
+
+	openScheduleCreate() {
+		this.modals.open('create-schedule');
+	}
+
+	openReschedule(eventId: string) {
+		this.modals.open('reschedule', { target: eventId });
+	}
+
+	attendanceSession(events: readonly PlanningEvent[]): PlanningEvent | null {
+		if (!this.modals.isOpen('attendance') || !this.modals.target) {
+			return null;
+		}
+		return events.find(event => event.id === this.modals.target) ?? null;
+	}
+
+	get newSessionStep(): NewSessionStep {
+		const step = this.modals.step;
+		return step === 'context' || step === 'schedule' ? step : 'type';
+	}
+
+	get attendanceStep(): AttendanceStep {
+		return this.modals.step === 'review' ? 'review' : 'mark';
+	}
+
+	canOpenSessionLogbook(event: PlanningSurfaceEvent, logbookExists: boolean): boolean {
+		return canAccessPlanningModal('session-logbook', {
+			classId: this.getClassId(),
+			event,
+			logbookExists,
+			validatePermissions: true,
+			hasPermission: (permission, scopedClassId) =>
+				hasPermission(permission, { classId: scopedClassId }),
+		});
+	}
+
+	validateSessionLogbookSurface(event: PlanningSurfaceEvent, logbookExists: boolean) {
+		if (
+			this.modals.isOpen('session-logbook')
+			&& !this.canOpenSessionLogbook(event, logbookExists)
+		) {
+			this.closeInvalidSurface();
+		}
+	}
+
+	setStep(step: PlanningModalStep) {
+		this.modals.setStep(step);
+	}
+
+	replaceStep(step: PlanningModalStep) {
+		if (!this.modals.active) {
+			return;
+		}
+		this.replaceSurface({
+			modal: this.modals.active,
+			target: this.modals.target,
+			step,
+		});
+	}
+
+	closeInvalidSurface() {
+		this.replaceSurface({ modal: null, target: null, step: null });
+	}
+
+	private replaceSurface(surface: PlanningSurface) {
+		this.applySurface(surface);
+		replaceRouteSurface(planningSurfaceHref(this.getUrl(), surface));
+	}
+
+	private applySurface(surface: PlanningSurface) {
+		this.modals.active = surface.modal;
+		this.modals.target = surface.target;
+		this.modals.step = surface.step;
+		this.modals.tab = null;
+		this.modals.ready = true;
 	}
 }
 

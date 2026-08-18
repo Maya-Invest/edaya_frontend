@@ -102,4 +102,19 @@ describe('resolvePostAuthPath', () => {
 	it('falls back to login when there is no session and no pending onboarding', () => {
 		expect(resolvePostAuthPath({ session: null, pendingOnboarding: false })).toBe('/login');
 	});
+
+	it('routes linked teachers to login (staff webapp gate)', () => {
+		const target = resolvePostAuthPath({
+			session: {
+				kind: 'teacher',
+				actorId: 'tch1',
+				schoolId: 'sch1',
+				effectiveGrants: { isElevated: false, permissions: new Set() },
+			} as never,
+			pendingOnboarding: false,
+			authUserId: 'user-teacher',
+		});
+
+		expect(target).toBe('/login');
+	});
 });

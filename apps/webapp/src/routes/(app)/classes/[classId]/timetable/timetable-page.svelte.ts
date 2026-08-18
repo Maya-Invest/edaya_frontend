@@ -144,8 +144,9 @@ export class TimetablePageState {
 		try {
 			const data = await loadTimetableSlice(this.classId);
 			const yearId = academicContext.yearId;
+			const schoolId = academicContext.schools[0]?.id ?? '';
 			const schoolYearEvents = yearId
-				? await loadCalendarEvents(getBrowserSchoolClient(), yearId)
+				? await loadCalendarEvents(getBrowserSchoolClient(), yearId, schoolId)
 				: data.schoolYearEvents;
 			this.applySlice(this.classId, { ...data, schoolYearEvents });
 		}

@@ -6,7 +6,6 @@
 	import Label from '$lib/components/ui/label/label.svelte';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle } from '$lib/icons';
-	import { toast } from '$lib/toast.svelte';
 
 	interface Props {
 		email: string;
@@ -17,6 +16,11 @@
 
 	let password = $state('');
 	let busy = $state(false);
+	let errorMessage = $state('');
+
+	function clearError() {
+		errorMessage = '';
+	}
 
 	async function signInWithPassword() {
 		const normalizedEmail = email.trim();
@@ -25,6 +29,7 @@
 		}
 
 		busy = true;
+		errorMessage = '';
 		try {
 			const { error } = await authClient.signIn.email({
 				email: normalizedEmail,
@@ -32,7 +37,7 @@
 			});
 
 			if (error) {
-				toast.error(`${$t('auth.passwordSignInFailed')}: ${error.message ?? ''}`.trim());
+				errorMessage = `${$t('auth.passwordSignInFailed')}: ${error.message ?? ''}`.trim();
 				return;
 			}
 
@@ -40,7 +45,7 @@
 		}
 		catch (err: unknown) {
 			const message = err instanceof Error ? err.message : String(err);
-			toast.error(`${$t('auth.passwordSignInFailed')}: ${message}`);
+			errorMessage = `${$t('auth.passwordSignInFailed')}: ${message}`;
 		}
 		finally {
 			busy = false;
@@ -64,6 +69,7 @@
 			placeholder={$t('auth.emailPlaceholder')}
 			bind:value={email}
 			disabled={busy || !apiConnected}
+			oninput={clearError}
 			required
 		/>
 	</div>
@@ -76,8 +82,12 @@
 			placeholder={$t('auth.passwordPlaceholder')}
 			bind:value={password}
 			disabled={busy || !apiConnected}
+			oninput={clearError}
 			required
 		/>
+		{#if errorMessage}
+			<p role="alert" class="text-sm text-destructive">{errorMessage}</p>
+		{/if}
 	</div>
 	<Button
 		type="submit"

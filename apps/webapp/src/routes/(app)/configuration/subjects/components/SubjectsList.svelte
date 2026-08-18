@@ -4,17 +4,21 @@
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { sortGradeLevels } from '$lib/academic/grade-level-sort';
 	import { groupSubjectsByGradeLevel } from '$lib/academic/subject-level-groups';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
+	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { Search } from '$lib/icons';
+	import { Plus } from '$lib/icons';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readConfigSubjectListFilters, writeConfigSubjectListFilters } from '$lib/list/list-url-filters';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 	import { getSubjectsPageState } from '../subjects-page.svelte';
+	import SubjectCatalogCreateModal from './SubjectCatalogCreateModal.svelte';
 	import SubjectCatalogRow from './SubjectCatalogRow.svelte';
 
 	const {
@@ -59,6 +63,12 @@
 	);
 
 	const selectedGradeLevelId = $derived(listFilters.values.gradeLevel);
+
+	const modals = createUrlSyncedModals({ allowed: ['create-subject'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const createSubjectOpen = bindUrlModal(modals, 'create-subject');
 
 	const validGradeLevelIds = $derived(
 		new Set(academicContext.gradeLevels.map(level => level.id)),
@@ -121,17 +131,7 @@
 		title={$t('subjects.count', { n: filteredSubjects.length })}
 	>
 		{#snippet search()}
-			<div class="relative">
-				<Search
-					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-				/>
-				<Input
-					bind:value={listFilters.values.q}
-					oninput={() => listFilters.scheduleSync()}
-					placeholder={$t('common.search')}
-					class="h-9 w-56 rounded-full pl-9 text-sm"
-				/>
-			</div>
+			<ListSearchField bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
 		{/snippet}
 		{#snippet filters()}
 			<FilterSelect
@@ -141,10 +141,31 @@
 				onchange={handleGradeLevelFilterChange}
 			/>
 		{/snippet}
+		{#snippet primary()}
+			<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE" mode="disable">
+				{#snippet children({ disabled, title })}
+					<Button
+						size="sm"
+						class="rounded-full"
+						{disabled}
+						{title}
+						onclick={() => (createSubjectOpen.open = true)}
+					>
+						<Plus class="mr-1 h-4 w-4" />
+						{$t('subjects.createTitle')}
+					</Button>
+				{/snippet}
+			</PermissionGate>
+		{/snippet}
 		{#snippet more()}
 			<ListMoreMenu exportOnly />
 		{/snippet}
 	</ListPageHeader>
+
+	<SubjectCatalogCreateModal
+		bind:open={createSubjectOpen.open}
+		defaultGradeLevelId={selectedGradeLevelId}
+	/>
 
 	<div class="space-y-8">
 		{#each visibleGroups as g (g.key)}
@@ -192,11 +213,28 @@
 				</div>
 			</section>
 		{:else}
-			<p class="py-10 text-center text-sm text-muted-foreground">
-				{selectedGradeLevelId === 'all'
-					? $t('subjects.none')
-					: $t('subjects.noneForGradeLevel')}
-			</p>
+			<div class="space-y-4 py-10 text-center">
+				<p class="text-sm text-muted-foreground">
+					{selectedGradeLevelId === 'all'
+						? $t('subjects.none')
+						: $t('subjects.noneForGradeLevel')}
+				</p>
+				<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE" mode="disable">
+					{#snippet children({ disabled, title })}
+						<Button
+							variant="outline"
+							size="sm"
+							class="rounded-full"
+							{disabled}
+							{title}
+							onclick={() => (createSubjectOpen.open = true)}
+						>
+							<Plus class="mr-1 h-4 w-4" />
+							{$t('subjects.createTitle')}
+						</Button>
+					{/snippet}
+				</PermissionGate>
+			</div>
 		{/each}
 	</div>
 </div>

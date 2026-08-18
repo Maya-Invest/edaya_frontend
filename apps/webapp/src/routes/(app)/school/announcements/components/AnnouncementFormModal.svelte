@@ -1,12 +1,12 @@
 <script lang="ts">
 	import type { Announcement, AnnouncementPriority } from '$lib/types/school';
-	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
+	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getAnnouncementsPageState } from '../announcements-page.svelte';
 
@@ -16,24 +16,20 @@
 		announcement,
 		open = $bindable(false),
 		onCreated,
-		disabled = false,
-		title,
 	}: {
 		announcement?: Announcement;
 		open?: boolean;
 		onCreated?: (announcementId: string) => void;
-		disabled?: boolean;
-		title?: string;
 	} = $props();
 
 	const announcementsPage = getAnnouncementsPageState();
+	const initialAnnouncement = untrack(() => announcement);
 
 	let busy = $state(false);
-	let wasOpen = $state(false);
-	let announcementTitle = $state('');
-	let content = $state('');
-	let priority = $state<AnnouncementPriority>('normal');
-	let expiresAt = $state('');
+	let announcementTitle = $state(initialAnnouncement?.title ?? '');
+	let content = $state(initialAnnouncement?.content ?? '');
+	let priority = $state<AnnouncementPriority>(initialAnnouncement?.priority ?? 'normal');
+	let expiresAt = $state(initialAnnouncement?.expiresAt?.slice(0, 10) ?? '');
 
 	const isEdit = $derived(announcement !== undefined);
 	const isDraft = $derived(!announcement || announcement.status === 'draft');
@@ -47,28 +43,6 @@
 			return false;
 		}
 		return expiresAt.length === 0 || expiresAt >= minExpiresAt;
-	});
-
-	function resetForm() {
-		if (announcement) {
-			announcementTitle = announcement.title;
-			content = announcement.content;
-			priority = announcement.priority;
-			expiresAt = announcement.expiresAt?.slice(0, 10) ?? '';
-		}
-		else {
-			announcementTitle = '';
-			content = '';
-			priority = 'normal';
-			expiresAt = '';
-		}
-	}
-
-	$effect(() => {
-		if (open && !wasOpen) {
-			resetForm();
-		}
-		wasOpen = open;
 	});
 
 	async function submit() {
@@ -103,25 +77,11 @@
 			busy = false;
 			if (announcementId) {
 				open = false;
-				resetForm();
 				onCreated?.(announcementId);
 			}
 		}
 	}
 </script>
-
-{#if isEdit && isDraft}
-	<Button
-		variant="outline"
-		size="sm"
-		class="rounded-full"
-		{disabled}
-		{title}
-		onclick={() => (open = true)}
-	>
-		{$t('common.edit')}
-	</Button>
-{/if}
 
 <FormModal
 	bind:open
@@ -130,7 +90,6 @@
 	submitLabel={$t('common.save')}
 	busy={busy}
 	submitDisabled={!canSubmit}
-	onCancel={resetForm}
 	onSubmit={submit}
 >
 	<div class="space-y-1.5">

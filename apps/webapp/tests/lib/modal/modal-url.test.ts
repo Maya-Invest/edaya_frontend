@@ -3,7 +3,10 @@ import {
 	appendModal,
 	MODAL_QUERY_KEY,
 	readModal,
+	readModalStep,
+	readModalTab,
 	writeModal,
+	writeModalSurface,
 } from '$lib/modal/modal-url';
 
 const allowed = ['create', 'edit', 'edit-profile'] as const;
@@ -42,13 +45,56 @@ describe('writeModal', () => {
 	});
 
 	it('removes modalTarget when clearing modal', () => {
-		const url = new URL('http://local/school/students/stu-1?modal=note&modalTarget=note-1');
+		const url = new URL(
+			'http://local/school/students/stu-1?modal=note&modalTarget=note-1&modalStep=details&modalTab=people',
+		);
 		expect(writeModal(url, null)).toBe('/school/students/stu-1');
 	});
 
 	it('replaces an existing modal value', () => {
 		const url = new URL(`http://local/school/students?${MODAL_QUERY_KEY}=create`);
 		expect(writeModal(url, 'edit')).toBe('/school/students?modal=edit');
+	});
+});
+
+describe('modal workflow state', () => {
+	it('reads allow-listed step and tab values', () => {
+		const url = new URL(
+			'http://local/configuration/tools?modal=import&modalStep=upload&modalTab=students',
+		);
+		expect(readModalStep(url, ['upload', 'review'])).toBe('upload');
+		expect(readModalTab(url, ['students', 'staff'])).toBe('students');
+	});
+
+	it('rejects unknown step and tab values', () => {
+		const url = new URL(
+			'http://local/configuration/tools?modal=import&modalStep=secret&modalTab=unknown',
+		);
+		expect(readModalStep(url, ['upload', 'review'])).toBeNull();
+		expect(readModalTab(url, ['students', 'staff'])).toBeNull();
+	});
+
+	it('writes the complete addressable modal surface', () => {
+		const url = new URL('http://local/configuration/tools?q=active');
+		expect(
+			writeModalSurface(url, {
+				modal: 'generate-timetable',
+				target: 'class-1',
+				step: 'schedule',
+				tab: 'subjects',
+			}),
+		).toBe(
+			'/configuration/tools?q=active&modal=generate-timetable&modalTarget=class-1&modalStep=schedule&modalTab=subjects',
+		);
+	});
+
+	it('removes stale target, step and tab when opening a simple modal', () => {
+		const url = new URL(
+			'http://local/configuration/tools?modal=import&modalTarget=old&modalStep=review&modalTab=staff',
+		);
+		expect(writeModalSurface(url, { modal: 'publish-timetable' })).toBe(
+			'/configuration/tools?modal=publish-timetable',
+		);
 	});
 });
 

@@ -1,3 +1,4 @@
+import { openUrlModal } from '../../../../scripts/qa-harness-ui';
 import { configClassGroupPath } from './paths';
 import type { DemoContext, EnsureDailyAttendanceOptions } from './types';
 import { visit } from './visit';
@@ -42,7 +43,6 @@ export async function ensureDailyAttendanceMode(
 
 	const dailyModePattern = /^(Appel quotidien|Daily roll call)$/i;
 	const dailyOk = await page
-		.locator('main')
 		.getByText(dailyModePattern)
 		.first()
 		.isVisible({ timeout: 8_000 })
@@ -57,11 +57,19 @@ export async function ensureDailyAttendanceMode(
 		return true;
 	}
 
-	const editBtn = page.getByRole('button', { name: /edit|modifier/i });
-	if (!(await editBtn.isVisible({ timeout: 10_000 }).catch(() => false))) {
-		return false;
+	const modalOpened = await openUrlModal(
+		page,
+		`/configuration/classes/${classId}/profile`,
+		'edit',
+		{ base, timeout: 12_000 },
+	);
+	if (!modalOpened) {
+		const editBtn = page.getByRole('button', { name: /edit|modifier/i });
+		if (!(await editBtn.isVisible({ timeout: 10_000 }).catch(() => false))) {
+			return false;
+		}
+		await editBtn.click();
 	}
-	await editBtn.click();
 	await page.locator('[role="dialog"]').waitFor({ state: 'visible', timeout: 10_000 });
 
 	if (!dailyOk || force) {
@@ -71,6 +79,14 @@ export async function ensureDailyAttendanceMode(
 		const currentMode = await modeSelect.inputValue().catch(() => 'session');
 		if (currentMode !== 'daily') {
 			await modeSelect.selectOption('daily');
+			await modeSelect.evaluate((el) => {
+				if (!(el instanceof HTMLSelectElement)) {
+					return;
+				}
+				el.value = 'daily';
+				el.dispatchEvent(new Event('input', { bubbles: true }));
+				el.dispatchEvent(new Event('change', { bubbles: true }));
+			});
 		}
 	}
 
@@ -78,11 +94,17 @@ export async function ensureDailyAttendanceMode(
 		await assignHomeroomCoordinator(ctx, homeroomStaffName);
 	}
 
-	await page.getByRole('button', { name: /save|enregistrer/i }).click();
+	const saveBtn = page.getByTestId('form-modal-submit')
+		.or(page.getByRole('button', { name: /save|enregistrer/i }))
+		.last();
+	await saveBtn.waitFor({ state: 'visible', timeout: 8_000 }).catch(() => {});
+	if (await saveBtn.isDisabled().catch(() => false)) {
+		await page.waitForTimeout(1_000);
+	}
+	await saveBtn.click();
 	await page.locator('[role="dialog"]').waitFor({ state: 'hidden', timeout: 20_000 }).catch(() => {});
 
 	const dailyConfigured = await page
-		.locator('main')
 		.getByText(dailyModePattern)
 		.first()
 		.isVisible({ timeout: 8_000 })

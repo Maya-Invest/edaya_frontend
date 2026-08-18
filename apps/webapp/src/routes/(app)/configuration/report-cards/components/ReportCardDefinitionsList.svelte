@@ -1,16 +1,16 @@
 <script lang="ts">
-	import type { ReportCardDefinition } from '$lib/types/report-cards';
+	import type { GradeScale, ReportCardDefinition } from '$lib/types/report-cards';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
-	import { ChevronRight, Plus, Search } from '$lib/icons';
+	import { ChevronRight, Plus } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
@@ -20,12 +20,26 @@
 	const {
 		onSelect,
 		selectedId,
+		loadedScales,
+		loadedDefinitions,
 	}: {
 		onSelect?: (d: ReportCardDefinition) => void;
 		selectedId?: string;
+		loadedScales?: GradeScale[];
+		loadedDefinitions?: ReportCardDefinition[];
 	} = $props();
 
 	const reportCardsPage = getReportCardsPageState();
+
+	$effect(() => {
+		if (!loadedScales || !loadedDefinitions || reportCardsPage.slice) {
+			return;
+		}
+		reportCardsPage.applySlice({
+			scales: loadedScales,
+			definitions: loadedDefinitions,
+		});
+	});
 	const statusKeys = ['all', 'draft', 'published'] as const;
 
 	const filteredDefinitions = $derived(
@@ -86,17 +100,10 @@
 		title={$t('reportCards.modelsTitle', { n: filteredDefinitions.length })}
 	>
 		{#snippet search()}
-			<div class="relative">
-				<Search
-					class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-				/>
-				<Input
-					bind:value={reportCardsPage.filters.values.q}
-					oninput={() => reportCardsPage.filters.scheduleSync()}
-					placeholder={$t('common.search')}
-					class="h-9 w-56 rounded-full pl-9 text-sm"
-				/>
-			</div>
+			<ListSearchField
+				bind:value={reportCardsPage.filters.values.q}
+				oninput={() => reportCardsPage.filters.scheduleSync()}
+			/>
 		{/snippet}
 		{#snippet filters()}
 			<FilterSelect
@@ -113,7 +120,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen.open = true)}
+						onclick={() => modals.open('create')}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('reportCards.newModel')}
@@ -132,9 +139,15 @@
 		{#each filteredDefinitions as def (def.id)}
 			{@const level = academicContext.gradeLevelById(def.gradeLevelId)}
 			{@const scale = reportCardsPage.scales.find(entry => entry.id === def.gradeScaleId)}
-			<button
-				type="button"
-				onclick={() => onSelect?.(def)}
+			<a
+				href={detailHref.configReportCard(def.id)}
+				onclick={(event) => {
+					if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+						return;
+					}
+					event.preventDefault();
+					onSelect?.(def);
+				}}
 				class={cn(
 					'flex w-full items-center justify-between gap-4 rounded-2xl border border-border bg-card px-5 py-4 text-left shadow-soft transition hover:bg-secondary/40',
 					selectedId === def.id && 'border-primary/40 bg-primary/5',
@@ -159,7 +172,7 @@
 					</p>
 				</div>
 				<ChevronRight class="h-4 w-4 shrink-0 text-muted-foreground" />
-			</button>
+			</a>
 		{:else}
 			<p class="py-10 text-center text-sm text-muted-foreground">
 				{$t('dataState.emptyDescription')}

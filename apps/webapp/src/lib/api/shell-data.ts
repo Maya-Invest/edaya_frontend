@@ -2,6 +2,7 @@ import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type {
 	AcademicPeriod,
 	AcademicYear,
+	AcademicYearStatus,
 	ClassNode,
 	GradeLevel,
 	HierarchyGroup,
@@ -9,7 +10,7 @@ import type {
 	School,
 } from '$lib/types/school';
 import { buildClassHierarchy } from '$lib/academic/hierarchy';
-import { paginatedList, schoolWideEntityList } from '$lib/api/entity-list-filters';
+import { paginatedList, schoolScopedEntityList, schoolWideEntityList } from '$lib/api/entity-list-filters';
 import { fetchSchoolById, mapSchoolFromApi } from '$lib/api/school-data';
 import { ApiError } from '@maya-invest/edaya-api-client';
 
@@ -127,7 +128,34 @@ async function safeEntityList<T>(load: () => Promise<T[] | null | undefined>): P
 }
 
 function schoolScopedList(schoolId: string) {
-	return paginatedList({ schoolId }, { limit: 50 });
+	return paginatedList(schoolScopedEntityList(schoolId), { limit: 50 });
+}
+
+const ACADEMIC_YEAR_STATUSES: ReadonlySet<AcademicYearStatus> = new Set(['draft', 'published', 'archived']);
+
+function mapAcademicYearStatus(status: unknown): AcademicYearStatus {
+	if (typeof status === 'string' && ACADEMIC_YEAR_STATUSES.has(status as AcademicYearStatus)) {
+		return status as AcademicYearStatus;
+	}
+	return 'draft';
+}
+
+function mapAcademicYearFromApi(year: {
+	id: string;
+	schoolId: string;
+	name: string;
+	startDate: unknown;
+	endDate: unknown;
+	status?: unknown;
+}): AcademicYear {
+	return {
+		id: year.id,
+		schoolId: year.schoolId,
+		label: year.name,
+		startDate: typeof year.startDate === 'string' ? year.startDate : String(year.startDate),
+		endDate: typeof year.endDate === 'string' ? year.endDate : String(year.endDate),
+		status: mapAcademicYearStatus(year.status),
+	};
 }
 
 async function fetchSupplementalShellForSchool(
@@ -157,14 +185,7 @@ async function fetchSupplementalShellForSchool(
 	const schools: School[] = schoolRaw?.id && schoolRaw.name
 		? [mapSchoolFromApi(schoolRaw)]
 		: [];
-	const academicYears: AcademicYear[] = (yearsRaw ?? []).map(y => ({
-		id: y.id,
-		schoolId: y.schoolId,
-		label: y.name,
-		startDate: typeof y.startDate === 'string' ? y.startDate : String(y.startDate),
-		endDate: typeof y.endDate === 'string' ? y.endDate : String(y.endDate),
-		status: y.isActive ? 'published' as const : 'draft' as const,
-	}));
+	const academicYears: AcademicYear[] = (yearsRaw ?? []).map(mapAcademicYearFromApi);
 	const periodDefinitions: PeriodDefinition[] = (periodDefsRaw ?? []).map(def => ({
 		id: def.id,
 		schoolId: def.schoolId,
@@ -278,14 +299,7 @@ export async function fetchAppShellData(
 			Boolean(school?.id && school?.name))
 		.map(s => mapSchoolFromApi(s));
 
-	const academicYears: AcademicYear[] = (yearsRaw ?? []).map(y => ({
-		id: y.id,
-		schoolId: y.schoolId,
-		label: y.name,
-		startDate: typeof y.startDate === 'string' ? y.startDate : String(y.startDate),
-		endDate: typeof y.endDate === 'string' ? y.endDate : String(y.endDate),
-		status: y.isActive ? 'published' as const : 'draft' as const,
-	}));
+	const academicYears: AcademicYear[] = (yearsRaw ?? []).map(mapAcademicYearFromApi);
 
 	const periodDefinitions: PeriodDefinition[] = (periodDefsRaw ?? []).map(def => ({
 		id: def.id,

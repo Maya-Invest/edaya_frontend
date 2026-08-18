@@ -1,5 +1,7 @@
 <script lang="ts">
+	import type { NewSessionStep } from '$lib/scheduling/planning-surface';
 	import type { Activity, PlanningEvent, Subject } from '$lib/types/school';
+	import { afterNavigate } from '$app/navigation';
 	import { createAssessmentMutation } from '$lib/api/mutations/evaluation.mutations';
 	import { createSessionMutation } from '$lib/api/mutations/planning.mutations';
 	import { createScheduleMutation } from '$lib/api/mutations/schedule.mutations';
@@ -14,7 +16,6 @@
 	import { get } from 'svelte/store';
 
 	type SessionKind = 'lesson' | 'activity' | 'assessment';
-	type WizardStep = 1 | 2 | 3;
 
 	const DAYS: PlanningEvent['day'][] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 	const SESSION_KINDS: SessionKind[] = ['lesson', 'activity', 'assessment'];
@@ -25,6 +26,9 @@
 		subjects,
 		activities,
 		open = $bindable(false),
+		step,
+		onOpen,
+		onStepChange,
 		onCreated,
 		disabled = false,
 		title,
@@ -34,14 +38,15 @@
 		subjects: Subject[];
 		activities: Activity[];
 		open?: boolean;
+		step: NewSessionStep;
+		onOpen?: () => void;
+		onStepChange: (step: NewSessionStep, replace?: boolean) => void;
 		onCreated?: (sessionId: string) => void;
 		disabled?: boolean;
 		title?: string;
 	} = $props();
 
 	let busy = $state(false);
-	let wasOpen = $state(false);
-	let step = $state<WizardStep>(1);
 	let sessionKind = $state<SessionKind>('lesson');
 	let sessionTitle = $state('');
 	let classSubjectId = $state('');
@@ -76,23 +81,22 @@
 	);
 
 	const modalTitle = $derived(
-		step === 1
+		step === 'type'
 			? $t('planning.wizard.title')
-			: step === 2
+			: step === 'context'
 			? $t('planning.wizard.contextTitle')
 			: $t('planning.wizard.scheduleTitle'),
 	);
 
 	const modalDescription = $derived(
-		step === 1
+		step === 'type'
 			? $t('planning.wizard.description')
-			: step === 2
+			: step === 'context'
 			? $t('planning.wizard.contextDescription', { kind: kindLabel })
 			: $t('planning.wizard.scheduleDescription'),
 	);
 
 	function resetForm() {
-		step = 1;
 		sessionKind = 'lesson';
 		sessionTitle = '';
 		classSubjectId = classSubjects[0]?.id ?? '';
@@ -104,35 +108,40 @@
 		end = '09:00';
 	}
 
-	$effect(() => {
-		if (open && !wasOpen) {
-			resetForm();
+	resetForm();
+
+	afterNavigate(() => {
+		if (open && step === 'schedule' && !canAdvanceStep2) {
+			onStepChange('context', true);
 		}
-		wasOpen = open;
 	});
 
-	$effect(() => {
-		if (open && !classSubjectId && classSubjects[0]) {
-			classSubjectId = classSubjects[0].id;
+	function handleOpen() {
+		resetForm();
+		if (onOpen) {
+			onOpen();
 		}
-		if (open && !activityId && activities[0]) {
-			activityId = activities[0].id;
+		else {
+			open = true;
 		}
-	});
+	}
 
 	function handleBack() {
-		if (step > 1) {
-			step = (step - 1) as WizardStep;
+		if (step === 'schedule') {
+			onStepChange('context');
+		}
+		else if (step === 'context') {
+			onStepChange('type');
 		}
 	}
 
 	function handleNext() {
-		if (step === 1) {
-			step = 2;
+		if (step === 'type') {
+			onStepChange('context');
 			return;
 		}
-		if (step === 2 && canAdvanceStep2) {
-			step = 3;
+		if (step === 'context' && canAdvanceStep2) {
+			onStepChange('schedule');
 		}
 	}
 
@@ -228,7 +237,7 @@
 	class="rounded-full"
 	{disabled}
 	{title}
-	onclick={() => (open = true)}
+	onclick={handleOpen}
 >
 	{$t('planning.newSession')}
 </Button>
@@ -237,13 +246,13 @@
 	bind:open
 	title={modalTitle}
 	description={modalDescription}
-	submitLabel={step === 3 ? $t('planning.wizard.create') : $t('common.next')}
+	submitLabel={step === 'schedule' ? $t('planning.wizard.create') : $t('common.next')}
 	busy={busy}
-	submitDisabled={step === 3 ? !canSubmit : step === 2 ? !canAdvanceStep2 : false}
+	submitDisabled={step === 'schedule' ? !canSubmit : step === 'context' ? !canAdvanceStep2 : false}
 	onCancel={resetForm}
-	onSubmit={step === 3 ? submit : handleNext}
+	onSubmit={step === 'schedule' ? submit : handleNext}
 >
-	{#if step > 1}
+	{#if step !== 'type'}
 		<button
 			type="button"
 			class="mb-2 text-xs font-medium text-muted-foreground hover:text-foreground"
@@ -252,7 +261,7 @@
 			← {$t('common.back')}
 		</button>
 	{/if}
-	{#if step === 1}
+	{#if step === 'type'}
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('planning.wizard.sessionType')}
@@ -276,7 +285,7 @@
 				</Select.Content>
 			</Select.Root>
 		</div>
-	{:else if step === 2}
+	{:else if step === 'context'}
 		{#if sessionKind === 'lesson'}
 			<div class="space-y-1.5">
 				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">

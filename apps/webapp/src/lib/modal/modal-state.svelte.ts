@@ -1,27 +1,70 @@
 import { listHref } from '$lib/list/list-filters-state.svelte';
-import { readModal, readModalTarget, writeModal } from '$lib/modal/modal-url';
-import { appGoto } from '$lib/navigation/app-navigation';
+import {
+	MODAL_QUERY_KEY,
+	readModal,
+	readModalStep,
+	readModalTab,
+	readModalTarget,
+	writeModalSurface,
+} from '$lib/modal/modal-url';
+import {
+	closeRouteSurface,
+	navigateWithinRouteSurface,
+	openRouteSurface,
+	replaceRouteSurface,
+} from '$lib/navigation/route-surface-navigation';
 
 export interface UrlSyncedModalsConfig<T extends string> {
 	allowed: () => readonly T[];
+	owned: () => readonly T[];
+	allowedSteps: () => readonly string[];
+	allowedTabs: () => readonly string[];
 	getUrl: () => URL;
-	goto: (href: string) => void;
 }
 
 export class UrlSyncedModalsState<T extends string> {
 	active = $state<T | null>(null);
 	target = $state<string | null>(null);
+	step = $state<string | null>(null);
+	tab = $state<string | null>(null);
 	ready = $state(false);
 
 	constructor(private readonly config: UrlSyncedModalsConfig<T>) {}
 
 	hydrate() {
 		const url = this.config.getUrl();
+		const rawModal = url.searchParams.get(MODAL_QUERY_KEY);
 		const next = readModal(url, this.config.allowed());
-		const nextTarget = readModalTarget(url);
-		if (!this.ready || this.active !== next || this.target !== nextTarget) {
+		const ownsCurrentSurface = rawModal === null
+			|| this.config.owned().includes(rawModal as T);
+		const nextTarget = next ? readModalTarget(url) : null;
+		const nextStep = next ? readModalStep(url, this.config.allowedSteps()) : null;
+		const nextTab = next ? readModalTab(url, this.config.allowedTabs()) : null;
+		const canonicalHref = writeModalSurface(url, {
+			modal: next,
+			target: nextTarget,
+			step: nextStep,
+			tab: nextTab,
+		});
+		if (ownsCurrentSurface && canonicalHref !== listHref(url)) {
+			if (rawModal !== null && next === null) {
+				closeRouteSurface(canonicalHref);
+			}
+			else {
+				replaceRouteSurface(canonicalHref);
+			}
+		}
+		if (
+			!this.ready
+			|| this.active !== next
+			|| this.target !== nextTarget
+			|| this.step !== nextStep
+			|| this.tab !== nextTab
+		) {
 			this.active = next;
 			this.target = nextTarget;
+			this.step = nextStep;
+			this.tab = nextTab;
 			this.ready = true;
 		}
 	}
@@ -30,22 +73,44 @@ export class UrlSyncedModalsState<T extends string> {
 		return this.active === key;
 	}
 
-	open(key: T, options?: { target?: string }) {
+	open(key: T, options?: { target?: string; step?: string; tab?: string }) {
 		if (!this.config.allowed().includes(key)) {
 			return;
 		}
 		const nextTarget = options?.target ?? null;
+		const nextStep = this.allowedValue(options?.step, this.config.allowedSteps());
+		const nextTab = this.allowedValue(options?.tab, this.config.allowedTabs());
 		const currentUrl = this.config.getUrl();
-		const href = writeModal(currentUrl, key, nextTarget);
-		if (this.active === key && this.target === nextTarget && href === listHref(currentUrl)) {
+		const parentHref = writeModalSurface(currentUrl, { modal: null });
+		const href = writeModalSurface(currentUrl, {
+			modal: key,
+			target: nextTarget,
+			step: nextStep,
+			tab: nextTab,
+		});
+		if (
+			this.active === key
+			&& this.target === nextTarget
+			&& this.step === nextStep
+			&& this.tab === nextTab
+			&& href === listHref(currentUrl)
+		) {
 			return;
 		}
+		const opening = this.active === null;
 		this.active = key;
 		this.target = nextTarget;
+		this.step = nextStep;
+		this.tab = nextTab;
 		if (href === listHref(currentUrl)) {
 			return;
 		}
-		this.config.goto(href);
+		if (opening) {
+			openRouteSurface(href, parentHref);
+		}
+		else {
+			navigateWithinRouteSurface(href);
+		}
 	}
 
 	close() {
@@ -53,20 +118,90 @@ export class UrlSyncedModalsState<T extends string> {
 			return;
 		}
 		const currentUrl = this.config.getUrl();
-		const href = writeModal(currentUrl, null);
+		const href = writeModalSurface(currentUrl, { modal: null });
 		this.active = null;
 		this.target = null;
+		this.step = null;
+		this.tab = null;
 		if (href === listHref(currentUrl)) {
 			return;
 		}
-		this.config.goto(href);
+		closeRouteSurface(href);
+	}
+
+	setStep(step: string | null) {
+		if (this.active === null) {
+			return;
+		}
+		const nextStep = this.allowedValue(step ?? undefined, this.config.allowedSteps());
+		this.navigateSubview({ step: nextStep, tab: this.tab });
+	}
+
+	replaceStep(step: string | null) {
+		if (this.active === null) {
+			return;
+		}
+		const nextStep = this.allowedValue(step ?? undefined, this.config.allowedSteps());
+		this.navigateSubview({ step: nextStep, tab: this.tab }, true);
+	}
+
+	setTab(tab: string | null) {
+		if (this.active === null) {
+			return;
+		}
+		const nextTab = this.allowedValue(tab ?? undefined, this.config.allowedTabs());
+		this.navigateSubview({ step: this.step, tab: nextTab });
+	}
+
+	replaceTab(tab: string | null) {
+		if (this.active === null) {
+			return;
+		}
+		const nextTab = this.allowedValue(tab ?? undefined, this.config.allowedTabs());
+		this.navigateSubview({ step: this.step, tab: nextTab }, true);
+	}
+
+	private allowedValue(value: string | undefined, allowed: readonly string[]): string | null {
+		if (!value || !allowed.includes(value)) {
+			return null;
+		}
+		return value;
+	}
+
+	private navigateSubview(
+		value: { step: string | null; tab: string | null },
+		replace = false,
+	) {
+		if (this.active === null) {
+			return;
+		}
+		const currentUrl = this.config.getUrl();
+		const href = writeModalSurface(currentUrl, {
+			modal: this.active,
+			target: this.target,
+			step: value.step,
+			tab: value.tab,
+		});
+		if (href === listHref(currentUrl)) {
+			return;
+		}
+		this.step = value.step;
+		this.tab = value.tab;
+		if (replace) {
+			replaceRouteSurface(href);
+		}
+		else {
+			navigateWithinRouteSurface(href);
+		}
 	}
 }
 
 export function createUrlSyncedModals<T extends string>(config: {
 	allowed: readonly T[] | (() => readonly T[]);
+	owned?: readonly T[] | (() => readonly T[]);
+	allowedSteps?: readonly string[] | (() => readonly string[]);
+	allowedTabs?: readonly string[] | (() => readonly string[]);
 	getUrl: () => URL;
-	goto?: (href: string) => void;
 }): UrlSyncedModalsState<T> {
 	let allowedFn: () => readonly T[];
 	if (typeof config.allowed === 'function') {
@@ -79,9 +214,30 @@ export function createUrlSyncedModals<T extends string>(config: {
 
 	return new UrlSyncedModalsState({
 		allowed: allowedFn,
+		owned: config.owned ? normalizeTypedAllowed(config.owned) : allowedFn,
+		allowedSteps: normalizeAllowed(config.allowedSteps),
+		allowedTabs: normalizeAllowed(config.allowedTabs),
 		getUrl: config.getUrl,
-		goto: config.goto ?? (href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true })),
 	});
+}
+
+function normalizeTypedAllowed<T extends string>(
+	value: readonly T[] | (() => readonly T[]),
+): () => readonly T[] {
+	if (typeof value === 'function') {
+		return value;
+	}
+	return () => value;
+}
+
+function normalizeAllowed(
+	value: readonly string[] | (() => readonly string[]) | undefined,
+): () => readonly string[] {
+	if (typeof value === 'function') {
+		return value;
+	}
+	const values = value ?? [];
+	return () => values;
 }
 
 /** Per-modal bindable open flag synced with the URL — call from component init. */

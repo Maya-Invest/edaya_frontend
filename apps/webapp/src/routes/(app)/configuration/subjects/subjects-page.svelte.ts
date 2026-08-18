@@ -115,8 +115,16 @@ export class SubjectsPageState {
 	}
 
 	async refreshSlice() {
-		const data = await loadSubjectsSlice();
-		this.applySlice(data);
+		try {
+			const data = await loadSubjectsSlice();
+			if (data.subjects.length === 0 && this.subjects().length > 0) {
+				return;
+			}
+			this.applySlice(data);
+		}
+		catch {
+			// Keep the current row if reload fails after a persisted write.
+		}
 	}
 
 	async invalidateIfStale() {

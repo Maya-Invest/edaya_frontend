@@ -154,4 +154,59 @@ describe('shell data loading', () => {
 			schoolId: SEED_SCHOOL_ID,
 		});
 	});
+
+	it('maps academic year status verbatim from API', async () => {
+		const { client } = createRecordingSchoolClient([
+			{
+				id: SEED_SCHOOL_ID,
+				name: 'Demo School',
+				city: 'Paris',
+				timeZone: 'Europe/Paris',
+			},
+			listEnvelope([
+				{
+					id: 'year-draft',
+					schoolId: SEED_SCHOOL_ID,
+					name: 'Draft year',
+					startDate: '2026-09-01',
+					endDate: '2027-06-30',
+					status: 'draft',
+				},
+				{
+					id: 'year-published',
+					schoolId: SEED_SCHOOL_ID,
+					name: 'Published year',
+					startDate: '2025-09-01',
+					endDate: '2026-06-30',
+					status: 'published',
+				},
+				{
+					id: 'year-archived',
+					schoolId: SEED_SCHOOL_ID,
+					name: 'Archived year',
+					startDate: '2024-09-01',
+					endDate: '2025-06-30',
+					status: 'archived',
+				},
+			]),
+			listEnvelope([]),
+			listEnvelope([]),
+			listEnvelope([]),
+			listEnvelope([]),
+			{
+				schoolId: SEED_SCHOOL_ID,
+				activeEnrollmentCountsByClass: {},
+				studentCount: 0,
+				guardianCount: 0,
+				staffCount: 0,
+			},
+		]);
+
+		const shell = await fetchAppShellData(client, { fallbackSchoolId: SEED_SCHOOL_ID });
+		const statusById = Object.fromEntries(shell.academicYears.map(year => [year.id, year.status]));
+
+		expect(statusById['year-draft']).toBe('draft');
+		expect(statusById['year-published']).toBe('published');
+		expect(statusById['year-archived']).toBe('archived');
+	});
 });

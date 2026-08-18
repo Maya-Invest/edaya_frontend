@@ -3,10 +3,11 @@ import {
 	openTimetableGenerationModal,
 	openTimetablePublishModal,
 } from '../support/tools-modal';
+import { waitForUrlModal } from '../support/modal';
 import type { DemoContext } from '../support/types';
 import { visit } from '../support/visit';
 
-/** Tools hub timetable generation + publish modals (state-based, not URL-backed). */
+/** Tools hub URL-backed generation + publish workflows and nested history close. */
 export async function runToolsModalsScene(ctx: DemoContext): Promise<void> {
 	const scene = 'DT';
 	const { base, reporter, shot, page } = ctx;
@@ -19,7 +20,12 @@ export async function runToolsModalsScene(ctx: DemoContext): Promise<void> {
 	}
 
 	if (await openTimetableGenerationModal(ctx)) {
-		reporter.log(scene, '2 Generation modal visible', 'pass');
+		if (await waitForUrlModal(ctx, 'generate-timetable')) {
+			reporter.log(scene, '2 Generation modal visible and URL-backed', 'pass');
+		}
+		else {
+			reporter.log(scene, '2 Generation modal visible and URL-backed', 'fail', page.url());
+		}
 	}
 	else {
 		reporter.log(scene, '2 Generation modal visible', 'fail', 'form-modal not found');
@@ -36,8 +42,26 @@ export async function runToolsModalsScene(ctx: DemoContext): Promise<void> {
 		await shot('DT-3-setup');
 	}
 
+	const periodsTab = page.getByRole('tab').nth(1);
+	if (await periodsTab.isVisible({ timeout: 5_000 }).catch(() => false)) {
+		await periodsTab.click();
+		await page.waitForTimeout(300);
+		const url = new URL(page.url());
+		if (url.searchParams.get('modalTab') === 'periods') {
+			reporter.log(scene, '3a Generation panel is URL-backed', 'pass');
+		}
+		else {
+			reporter.log(scene, '3a Generation panel is URL-backed', 'fail', page.url());
+		}
+	}
+
 	if (await closeTimetableGenerationModal(ctx)) {
-		reporter.log(scene, '4 Close generation modal', 'pass');
+		if (await waitForUrlModal(ctx, null, { absent: true })) {
+			reporter.log(scene, '4 Close skips nested workflow history', 'pass');
+		}
+		else {
+			reporter.log(scene, '4 Close skips nested workflow history', 'fail', page.url());
+		}
 	}
 	else {
 		reporter.log(scene, '4 Close generation modal', 'fail', 'Modal still visible');

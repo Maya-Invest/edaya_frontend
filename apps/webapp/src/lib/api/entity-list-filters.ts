@@ -77,9 +77,18 @@ export const STAFF_LIST_ORDER: EntityQuery['$orderBy'] = [
 ];
 
 /**
+ * School-scoped entity list read.
+ * Prefer this for school-wide roster/catalog loads on multi-tenant databases.
+ */
+export function schoolScopedEntityList(schoolId: string, _reason?: string): EntityQuery {
+	return { schoolId };
+}
+
+/**
  * Documented unscoped entity list read.
  * Use only when a route intentionally loads a school-wide collection.
  * Pair with `listAllEntityPages` when the collection can exceed the default list limit.
+ * @deprecated Prefer `schoolScopedEntityList` when the session school is known.
  */
 export function schoolWideEntityList(_reason: string): EntityQuery {
 	return {};
@@ -88,7 +97,12 @@ export function schoolWideEntityList(_reason: string): EntityQuery {
 const CONFIG_SUBJECTS_SCOPE
 	= 'Configuration subjects screen loads the school-wide subject catalog via paginated listAllEntityPages.';
 
-export const schoolSubjectsCatalogList = () => schoolWideEntityList(CONFIG_SUBJECTS_SCOPE);
+export function schoolSubjectsCatalogList(schoolId: string): EntityQuery {
+	return {
+		...schoolWideEntityList(CONFIG_SUBJECTS_SCOPE),
+		schoolId,
+	};
+}
 
 export function uniqueIds(ids: readonly string[]): string[] {
 	return [...new Set(ids)];
@@ -302,6 +316,16 @@ export function staffAssignmentsForStaff(staffIds: readonly string[]): EntityQue
 
 export function classSubjectsForClasses(classGroupIds: readonly string[]): EntityQuery {
 	return recordsForFieldIds('classGroupId', classGroupIds);
+}
+
+export function gradeLevelSubjectsForLevels(gradeLevelIds: readonly string[]): EntityQuery {
+	return recordsForFieldIds('gradeLevelId', gradeLevelIds);
+}
+
+export function gradeLevelSubjectMattersForGradeLevelSubjects(
+	gradeLevelSubjectIds: readonly string[],
+): EntityQuery {
+	return recordsForFieldIds('gradeLevelSubjectId', gradeLevelSubjectIds);
 }
 
 export function assignmentsForClassSubjects(classSubjectIds: readonly string[]): EntityQuery {

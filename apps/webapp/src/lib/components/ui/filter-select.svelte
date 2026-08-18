@@ -25,10 +25,15 @@
 
 <div class={cn('relative inline-flex items-center', className)}>
 	<select
-		bind:value
+		{value}
 		class={selectClass}
 		aria-label="Filter"
-		onchange={event => onchange?.(event.currentTarget.value)}
+		data-testid="list-filter-select"
+		onchange={(event) => {
+			const next = event.currentTarget.value;
+			value = next;
+			onchange?.(next);
+		}}
 	>
 		{#each options as option (option.value)}
 			<option value={option.value}>{option.label}</option>

@@ -8,6 +8,7 @@
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { formatLocaleDate } from '$lib/date/format';
 	import { locale, t } from '$lib/i18n';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
 	import EvaluationCreateModal from '../../components/EvaluationCreateModal.svelte';
@@ -23,17 +24,19 @@
 		onDeleted?: () => void;
 	} = $props();
 
-	type EvaluationDrawerModal = 'edit';
+	type EvaluationDrawerModal = 'edit' | 'delete';
 
 	const evaluationsPage = getEvaluationsPageState();
 	const modals = createUrlSyncedModals<EvaluationDrawerModal>({
-		allowed: ['edit'],
+		allowed: ['edit', 'delete'],
 		getUrl: () => $page.url,
 	});
+	setDrawerUrlModals(modals);
 	$effect(() => {
 		modals.hydrate();
 	});
 	const editOpen = bindUrlModal(modals, 'edit');
+	const deleteOpen = bindUrlModal(modals, 'delete');
 
 	const isHomework = $derived(evaluation.kind === 'homework');
 	const formattedDate = $derived(
@@ -46,7 +49,6 @@
 			: '-',
 	);
 
-	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
 
 	async function confirmDelete() {
@@ -57,7 +59,7 @@
 				successMessage: get(t)('eval.toastDeleted', { title: evaluation.title }),
 			});
 			if (ok) {
-				deleteOpen = false;
+				deleteOpen.open = false;
 				onDeleted?.();
 			}
 		}
@@ -100,7 +102,7 @@
 					destructive
 					{disabled}
 					{title}
-					onclick={() => (deleteOpen = true)}
+					onclick={() => (deleteOpen.open = true)}
 				>
 					{$t('common.delete')}
 				</RowActionMenuItem>
@@ -112,7 +114,7 @@
 <EvaluationCreateModal evaluation={evaluation} {classId} bind:open={editOpen.open} />
 
 <ConfirmModal
-	bind:open={deleteOpen}
+	bind:open={deleteOpen.open}
 	title={$t('common.deleteConfirmTitle')}
 	description={$t('eval.deleteConfirm', { title: evaluation.title })}
 	confirmLabel={$t('common.delete')}

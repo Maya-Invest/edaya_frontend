@@ -22,6 +22,7 @@
 	"include": [
 		".svelte-kit/ambient.d.ts",
 		".svelte-kit/non-ambient.d.ts",
+		"src/app.d.ts",
 		"tests/support/ambient.d.ts",
 		"tests/**/*.test.ts",
 		"tests/integration/**/*.ts"

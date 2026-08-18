@@ -306,13 +306,21 @@
 	let {
 		open = $bindable(false),
 		initialImportType = 'students',
+		step = $bindable<ImportStep>('download'),
+		importType: selectedImportType = $bindable<ImportTypeKey>(initialImportType),
+		onStepChange,
+		onImportTypeChange,
+		onInvalidStep,
 	}: {
 		open?: boolean;
 		initialImportType?: ImportTypeKey;
+		step?: ImportStep;
+		importType?: ImportTypeKey;
+		onStepChange?: (step: ImportStep) => void;
+		onImportTypeChange?: (importType: ImportTypeKey) => void;
+		onInvalidStep?: (step: ImportStep) => void;
 	} = $props();
 
-	let step = $state<ImportStep>('download');
-	let selectedImportType = $state<ImportTypeKey>('students');
 	let selectedFileName = $state('');
 	let studentParsedRows = $state<StudentImportRow[]>([]);
 	let classParsedRows = $state<ClassImportRow[]>([]);
@@ -577,6 +585,39 @@
 		}
 		return null;
 	});
+	const activeImportResult = $derived.by(() => {
+		if (isStudentsImport) {
+			return studentImportResult;
+		}
+		if (isClassesImport) {
+			return classImportResult;
+		}
+		if (isGuardiansImport) {
+			return guardianImportResult;
+		}
+		if (isStaffImport) {
+			return staffImportResult;
+		}
+		if (isTeachersImport) {
+			return teacherImportResult;
+		}
+		if (isTeacherAssignmentsImport) {
+			return teacherAssignmentImportResult;
+		}
+		if (isSubjectsImport) {
+			return subjectImportResult;
+		}
+		if (isChaptersImport) {
+			return chapterImportResult;
+		}
+		if (isBillingImport) {
+			return billingImportResult;
+		}
+		if (isPaymentsImport) {
+			return paymentImportResult;
+		}
+		return null;
+	});
 	const activeValidRowCount = $derived(activeValidationResult?.validRows.length ?? 0);
 	const studentValidationIssues = $derived([
 		...(studentValidationResult?.errors ?? []),
@@ -675,7 +716,6 @@
 	);
 
 	function resetWizard() {
-		step = 'download';
 		selectedFileName = '';
 		studentParsedRows = [];
 		classParsedRows = [];
@@ -731,7 +771,6 @@
 	function handleOpenChange(next: boolean) {
 		open = next;
 		if (next) {
-			selectedImportType = initialImportType;
 			resetWizard();
 			void loadStudentMatriculeDataIfNeeded();
 			void loadTeacherCodeIndexIfNeeded();
@@ -753,6 +792,7 @@
 			return;
 		}
 		selectedImportType = importType;
+		onImportTypeChange?.(importType);
 		resetWizard();
 		void loadStudentMatriculeDataIfNeeded();
 		void loadTeacherCodeIndexIfNeeded();
@@ -764,6 +804,23 @@
 		void loadBillingImportContextIfNeeded();
 		void loadTeacherAssignmentImportContextIfNeeded();
 	}
+
+	function changeStep(next: ImportStep) {
+		step = next;
+		onStepChange?.(next);
+	}
+
+	$effect(() => {
+		if (!open || !onInvalidStep) {
+			return;
+		}
+		if (step === 'validate' && !activeValidationResult) {
+			onInvalidStep('upload');
+		}
+		else if (step === 'execute' && !importing && !activeImportResult) {
+			onInvalidStep(activeValidationResult ? 'validate' : 'upload');
+		}
+	});
 
 	function stepIndex(value: ImportStep): number {
 		return STEPS.indexOf(value);
@@ -889,10 +946,17 @@
 		if (loadingChapterContext) {
 			return;
 		}
+		const schoolId = authSession.schoolId;
+		if (!schoolId) {
+			chapterImportContext = [];
+			existingChapterKeys = new Set();
+			return;
+		}
 		loadingChapterContext = true;
 		try {
 			const loaded = await loadChapterImportContext(
 				getBrowserSchoolClient(),
+				schoolId,
 				academicContext.classes.map(classGroup => ({
 					id: classGroup.id,
 					name: classGroup.name,
@@ -1024,10 +1088,15 @@
 		}
 		loadingSubjectImportContext = true;
 		try {
+			const schoolId = authSession.schoolId;
+			if (!schoolId) {
+				subjectImportExistingKeys = new Set();
+				return;
+			}
 			const classGradeLevelById = Object.fromEntries(
 				academicContext.classes.map(classGroup => [classGroup.id, classGroup.gradeLevelId]),
 			);
-			subjectImportExistingKeys = await loadExistingSubjectImportKeys(classGradeLevelById);
+			subjectImportExistingKeys = await loadExistingSubjectImportKeys(schoolId, classGradeLevelById);
 		}
 		catch {
 			subjectImportExistingKeys = new Set();
@@ -1056,8 +1125,8 @@
 			const client = getBrowserSchoolClient();
 			const [teachers, classSubjects, subjectCatalog] = await Promise.all([
 				loadTeacherAssignmentImportTeachers(client, schoolId),
-				loadTeacherAssignmentImportClassSubjects(client),
-				loadSchoolSubjectCatalog(),
+				loadTeacherAssignmentImportClassSubjects(client, schoolId),
+				loadSchoolSubjectCatalog(schoolId),
 			]);
 			teacherAssignmentTeachers = teachers;
 			teacherAssignmentClassSubjects = classSubjects;
@@ -1188,7 +1257,7 @@
 			await loadPaymentImportContextIfNeeded();
 			await loadBillingImportContextIfNeeded();
 			runValidation();
-			step = 'validate';
+			changeStep('validate');
 		}
 		finally {
 			preparingValidation = false;
@@ -1225,7 +1294,7 @@
 		studentImportResult = null;
 		importFatalError = '';
 		importProgress = { current: 0, total: studentValidationResult.validRows.length };
-		step = 'execute';
+		changeStep('execute');
 
 		try {
 			studentImportResult = await runStudentImport({
@@ -1269,7 +1338,7 @@
 		classImportResult = null;
 		importFatalError = '';
 		importProgress = { current: 0, total: classValidationResult.validRows.length };
-		step = 'execute';
+		changeStep('execute');
 
 		try {
 			classImportResult = await runClassImport({
@@ -1316,7 +1385,7 @@
 		guardianImportResult = null;
 		importFatalError = '';
 		importProgress = { current: 0, total: guardianValidationResult.validRows.length };
-		step = 'execute';
+		changeStep('execute');
 
 		try {
 			guardianImportResult = await runGuardianImport({
@@ -1358,7 +1427,7 @@
 		staffImportResult = null;
 		importFatalError = '';
 		importProgress = { current: 0, total: staffValidationResult.validRows.length };
-		step = 'execute';
+		changeStep('execute');
 
 		try {
 			staffImportResult = await runStaffImport({
@@ -1400,7 +1469,7 @@
 		teacherImportResult = null;
 		importFatalError = '';
 		importProgress = { current: 0, total: teacherValidationResult.validRows.length };
-		step = 'execute';
+		changeStep('execute');
 
 		try {
 			teacherImportResult = await runTeacherImport({
@@ -1442,7 +1511,7 @@
 		teacherAssignmentImportResult = null;
 		importFatalError = '';
 		importProgress = { current: 0, total: teacherAssignmentValidationResult.validRows.length };
-		step = 'execute';
+		changeStep('execute');
 
 		try {
 			teacherAssignmentImportResult = await runTeacherAssignmentImport({
@@ -1483,7 +1552,7 @@
 		subjectImportResult = null;
 		importFatalError = '';
 		importProgress = { current: 0, total: subjectValidationResult.validRows.length };
-		step = 'execute';
+		changeStep('execute');
 
 		try {
 			subjectImportResult = await runSubjectImport({
@@ -1520,7 +1589,7 @@
 		billingImportResult = null;
 		importFatalError = '';
 		importProgress = { current: 0, total: billingValidationResult.validRows.length };
-		step = 'execute';
+		changeStep('execute');
 
 		try {
 			billingImportResult = await runBillingImport({
@@ -1555,7 +1624,7 @@
 		paymentImportResult = null;
 		importFatalError = '';
 		importProgress = { current: 0, total: paymentValidationResult.validRows.length };
-		step = 'execute';
+		changeStep('execute');
 
 		try {
 			paymentImportResult = await runPaymentImport({
@@ -1635,7 +1704,7 @@
 			current: 0,
 			total: countChapterImportOperations(chapterValidationResult.validRows),
 		};
-		step = 'execute';
+		changeStep('execute');
 
 		try {
 			chapterImportResult = await runChapterImport({
@@ -3502,7 +3571,7 @@
 					<Button
 						variant="outline"
 						disabled={importing}
-						onclick={() => (step = step === 'validate' ? 'upload' : 'download')}
+						onclick={() => changeStep(step === 'validate' ? 'upload' : 'download')}
 						data-testid="data-import-back"
 					>
 						{$t('common.back')}
@@ -3634,7 +3703,7 @@
 					<Button
 						disabled={!canGoToUpload}
 						title={!isActiveImport ? $t('import.comingSoon') : undefined}
-						onclick={() => (step = 'upload')}
+						onclick={() => changeStep('upload')}
 						data-testid="data-import-next"
 					>
 						{$t('common.next')}

@@ -28,6 +28,7 @@
 	let homeroomStaffId = $state('');
 	/** Once the user types a name, changing the grade level stops overwriting it. */
 	let nameEdited = $state(false);
+	let wasOpen = false;
 
 	const isEdit = $derived(classGroup !== undefined);
 	const sortedLevels = $derived(sortGradeLevels(academicContext.gradeLevels));
@@ -71,9 +72,10 @@
 	}
 
 	$effect(() => {
-		if (open) {
+		if (open && !wasOpen) {
 			resetForm();
 		}
+		wasOpen = open;
 	});
 
 	async function submit() {
@@ -84,7 +86,12 @@
 		busy = true;
 		try {
 			const trimmedName = name.trim();
-			const parsedCapacity = capacity.trim() ? Number(capacity) : null;
+			const rawCapacity
+				= capacity === '' ? null : Number(capacity);
+			const parsedCapacity
+				= rawCapacity == null || Number.isNaN(rawCapacity) || rawCapacity <= 0
+					? null
+					: rawCapacity;
 			if (classGroup) {
 				const ok = await classesPage.updateClassGroup({
 					classGroupId: classGroup.id,
@@ -155,7 +162,7 @@
 		</label>
 		<label class="space-y-1.5 text-sm">
 			<span class="text-muted-foreground">{$t('classGroups.capacity')}</span>
-			<Input type="number" min="0" bind:value={capacity} class="rounded-xl" />
+			<Input type="number" min="1" bind:value={capacity} class="rounded-xl" />
 		</label>
 		<label class="space-y-1.5 text-sm sm:col-span-2">
 			<span class="text-muted-foreground">{$t('classGroups.attendanceMode')}</span>
