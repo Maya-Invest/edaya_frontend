@@ -40,9 +40,7 @@
 		onInvalidPhase: (phase: TimetableGenerationStep) => void;
 	} = $props();
 
-	type Phase = 'setup' | 'generating' | 'success' | 'error';
-
-	let phase = $state<Phase>('setup');
+	let generating = $state(false);
 	let startDate = $state('');
 	let endDate = $state('');
 	let selectedClassId = $state('');
@@ -77,24 +75,26 @@
 	const classLabels = $derived(Object.fromEntries(planningPage.classes.map(row => [row.id, row.name])));
 	const rangeLabel = $derived(`${startDate} – ${endDate}`);
 	const progress = $derived(planningPage.generationProgress);
+	const viewPhase = $derived(generating && phase === 'setup' ? 'generating' as const : phase);
 	const modalTitle = $derived(
-		phase === 'error'
+		viewPhase === 'error'
 			? $t('timetable.schoolGenerateErrorTitle')
-			: phase === 'success'
+			: viewPhase === 'success'
 			? $t('timetable.schoolGenerateResultTitle')
 			: $t('timetable.schoolGenerateTitle'),
 	);
 	const modalDescription = $derived(
-		phase === 'error'
+		viewPhase === 'error'
 			? $t('timetable.errorReviewHint')
-			: phase === 'success'
+			: viewPhase === 'success'
 			? $t('timetable.resultReviewHint')
-			: phase === 'generating'
+			: viewPhase === 'generating'
 			? ''
 			: $t('timetable.schoolGenerateHint'),
 	);
 
 	function initializeForm() {
+		generating = false;
 		({ startDate, endDate } = planningPage.range);
 		selectedClassId = planningPage.classes[0]?.id ?? '';
 		overrides = {};
@@ -127,6 +127,7 @@
 		}
 		schoolResult = null;
 		generationError = null;
+		generating = false;
 	}
 
 	function buildOptions(): TimetableGenerationOptions | undefined {
@@ -153,28 +154,34 @@
 		if (!validRange) {
 			return;
 		}
-		phase = 'generating';
-		const outcome = await planningPage.generate({
-			startDate,
-			endDate,
-			options: buildOptions(),
-			periodsPerWeekByClassSubjectId: overrides,
-			minPeriodSpanByClassSubjectId: minSpanOverrides,
-			maxPeriodSpanByClassSubjectId: maxSpanOverrides,
-		});
-		if (outcome.ok) {
-			schoolResult = outcome.value;
-			onPhaseChange('success');
+		generating = true;
+		try {
+			const outcome = await planningPage.generate({
+				startDate,
+				endDate,
+				options: buildOptions(),
+				periodsPerWeekByClassSubjectId: overrides,
+				minPeriodSpanByClassSubjectId: minSpanOverrides,
+				maxPeriodSpanByClassSubjectId: maxSpanOverrides,
+			});
+			if (outcome.ok) {
+				schoolResult = outcome.value;
+				onPhaseChange('success');
+			}
+			else {
+				generationError = outcome.error;
+				onPhaseChange('error');
+			}
 		}
-		else {
-			generationError = outcome.error;
-			onPhaseChange('error');
+		finally {
+			generating = false;
 		}
 	}
 
 	function runAgain() {
 		schoolResult = null;
 		generationError = null;
+		generating = false;
 		onPhaseChange('setup');
 	}
 
@@ -195,22 +202,22 @@
 	bind:open
 	title={modalTitle}
 	description={modalDescription}
-	contentClass={timetableGenerationModalContentClass(phase)}
-	bodyClass={phase === 'setup' ? TIMETABLE_GENERATION_MODAL_SETUP_BODY_CLASS : undefined}
+	contentClass={timetableGenerationModalContentClass(viewPhase)}
+	bodyClass={viewPhase === 'setup' ? TIMETABLE_GENERATION_MODAL_SETUP_BODY_CLASS : undefined}
 	busy={planningPage.busy}
 	submitDisabled={!validRange || !planningPage.canGenerateSchoolInitial}
 	onSubmit={submit}
 	onOpenChange={handleModalOpenChange}
 >
-	{#if phase === 'error' && generationError}
+	{#if viewPhase === 'error' && generationError}
 		<TimetableGenerationErrorPanel
 			error={generationError}
 			{rangeLabel}
 			titleKey="timetable.schoolGenerateErrorTitle"
 		/>
-	{:else if phase === 'success' && schoolResult}
+	{:else if viewPhase === 'success' && schoolResult}
 		<TimetableGenerationResultPanel mode="school" {schoolResult} {classLabels} {rangeLabel} />
-	{:else if phase === 'generating'}
+	{:else if viewPhase === 'generating'}
 		<div class="space-y-4 py-2">
 			{#if progress}
 				<ImportProgressBar
@@ -277,12 +284,12 @@
 	{/if}
 
 	{#snippet footer({ close, submit, busy, submitDisabled })}
-		{#if phase === 'success' || phase === 'error'}
+		{#if viewPhase === 'success' || viewPhase === 'error'}
 			<Button variant="ghost" onclick={runAgain} disabled={busy}>{$t('timetable.runAgain')}</Button>
 			<Button onclick={close} disabled={busy}>{$t('common.close')}</Button>
 		{:else}
 			<Button variant="ghost" onclick={close} disabled={busy}>{$t('common.cancel')}</Button>
-			{#if phase !== 'generating'}
+			{#if viewPhase !== 'generating'}
 				<Button onclick={submit} disabled={busy || submitDisabled}>{$t('timetable.generateSchool')}</Button>
 			{/if}
 		{/if}
