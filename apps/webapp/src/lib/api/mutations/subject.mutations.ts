@@ -5,6 +5,10 @@ import { buildSubjectConfigCommand } from '$lib/api/subject-save-payload';
 import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
 import { createSubjectForClass } from '$lib/subjects/create-subject-for-class';
+import {
+	createSubjectForGradeLevel,
+	createSubjectImportIdsForGradeLevel,
+} from '$lib/subjects/create-subject-for-grade-level';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
 
@@ -70,4 +74,59 @@ export async function createSubjectForClassMutation(input: {
 		return classSubjectId;
 	}, { successMessage: input.successMessage });
 	return result ? classSubjectId : null;
+}
+
+export async function createSubjectForGradeLevelMutation(input: {
+	gradeLevelId: string;
+	academicYearId: string;
+	classGroupIds: string[];
+	name: string;
+	category: SubjectCategory;
+	color: Subject['color'];
+	successMessage?: string;
+}): Promise<string | null> {
+	const client = getBrowserSchoolClient();
+	const schoolId = authSession.schoolId;
+	if (!schoolId) {
+		toast.error(get(t)('subjects.noSchool'));
+		return null;
+	}
+	if (!input.academicYearId) {
+		toast.error(get(t)('subjects.noAcademicYear'));
+		return null;
+	}
+	if (input.classGroupIds.length === 0) {
+		toast.error(get(t)('subjects.noClassesForGradeLevel'));
+		return null;
+	}
+
+	const seed = Date.now().toString(36);
+	const { subjectId, gradeLevelSubjectId, classSubjectIdsByClassGroupId } = createSubjectImportIdsForGradeLevel(
+		0,
+		input.gradeLevelId,
+		input.classGroupIds,
+		seed,
+	);
+	const createdAt = new Date().toISOString();
+
+	const result = await runMutation(async () => {
+		await createSubjectForGradeLevel(client, {
+			schoolId,
+			academicYearId: input.academicYearId,
+			gradeLevelId: input.gradeLevelId,
+			subjectId,
+			gradeLevelSubjectId,
+			classSubjectIdsByClassGroupId,
+			name: input.name,
+			category: input.category,
+			color: input.color,
+			createdAt,
+		});
+		return Object.values(classSubjectIdsByClassGroupId)[0] ?? gradeLevelSubjectId;
+	}, {
+		successMessage: input.successMessage,
+		versionKeys: ['subjects'],
+		refresh: true,
+	});
+	return result;
 }

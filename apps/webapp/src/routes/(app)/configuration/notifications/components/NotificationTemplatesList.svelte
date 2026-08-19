@@ -1,58 +1,27 @@
 <script lang="ts">
 	import type { NotificationChannel, NotificationTemplateKey } from '$lib/notification-templates/catalog';
-	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
-	import { confirmAction } from '$lib/confirm-action';
 	import { t } from '$lib/i18n';
 	import { Pencil, RotateCcw } from '$lib/icons';
-	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import {
 		channelsForTemplateKey,
 		NOTIFICATION_TEMPLATE_CATEGORIES,
 	} from '$lib/notification-templates/catalog';
 	import { get } from 'svelte/store';
+	import { getNotificationModals } from '../notifications-modals.svelte';
 	import { getNotificationsPageState } from '../notifications-page.svelte';
-	import NotificationTemplateEditModal from './NotificationTemplateEditModal.svelte';
 
 	const notificationsPage = getNotificationsPageState();
+	const modals = getNotificationModals();
 	const document = $derived(notificationsPage.document);
 
-	const modals = createUrlSyncedModals({ allowed: ['edit'], getUrl: () => $page.url });
-	$effect(() => {
-		modals.hydrate();
-	});
-	const editOpen = bindUrlModal(modals, 'edit');
-
-	let editKey = $state<NotificationTemplateKey | null>(null);
-	let resetting = $state(false);
-
 	function openEdit(key: NotificationTemplateKey) {
-		editKey = key;
-		editOpen.open = true;
-	}
-
-	async function resetAll() {
-		if (resetting || !document?.schoolId) {
-			return;
-		}
-		if (!confirmAction(get(t)('notificationTemplates.resetAllConfirm'))) {
-			return;
-		}
-
-		resetting = true;
-		try {
-			await notificationsPage.resetTemplates({
-				successMessage: get(t)('notificationTemplates.toastResetAll'),
-			});
-		}
-		finally {
-			resetting = false;
-		}
+		modals.open('edit', { target: key });
 	}
 
 	function channelLabel(key: NotificationTemplateKey): string {
@@ -74,8 +43,8 @@
 						size="sm"
 						variant="outline"
 						class="rounded-full"
-						disabled={disabled || resetting || !document}
-						onclick={resetAll}
+						disabled={disabled || !document}
+						onclick={() => modals.open('reset-all')}
 					>
 						<RotateCcw class="mr-1 h-4 w-4" />
 						{$t('notificationTemplates.resetAll')}
@@ -114,7 +83,7 @@
 										</div>
 										<RowActionMenu>
 											<RowActionMenuItem
-												disabled={disabled || !document}
+												disabled={disabled}
 												onclick={() => openEdit(key)}
 											>
 												<Pencil class="h-4 w-4" />
@@ -134,5 +103,3 @@
 		{/snippet}
 	</PermissionGate>
 </div>
-
-<NotificationTemplateEditModal bind:open={editOpen.open} templateKey={editKey} />

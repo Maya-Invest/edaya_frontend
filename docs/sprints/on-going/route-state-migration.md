@@ -142,11 +142,16 @@ Primary tracker. **Notes** hold the remaining gap for ⚠️ rows.
 
 ### 4.1.1 Inventory notes
 
-**`/configuration/subjects/level/:level`** — alternate list URL for the subjects catalog (same `ConfigSubjectsView` + query as `/configuration/subjects`). Migrate with `/configuration/subjects`; not a separate matrix row.
+**Compatibility redirects:** `/configuration/subjects/level/:level` resolves the legacy level
+label to `/configuration/subjects?gradeLevel=<stable-id>` and falls back to the subjects list;
+`/school/teacher-assignments` redirects to `/configuration/tools/teacher-assignments`.
+The QA matrix keeps redirect-only checks for these paths, not separate feature coverage.
 
-**Redirect-only routes** (excluded from matrix): `/configuration/roles` → `/school/staff`; `/configuration/staff` → `/school/staff`; `/classes/:id/homework` → `/classes/:id/evaluations`; `/classes/:id/subjects` → `/classes/:id/teaching`.
+**Other redirect-only routes:** `/configuration/roles` → `/school/staff`; `/configuration/staff` → `/school/staff`; `/classes/:id/homework` → `/classes/:id/evaluations`; `/classes/:id/subjects` → `/classes/:id/teaching`.
 
-**Done:** school-wide timetable planning moved to `/configuration/tools` (modal assistant on tools hub).
+**Done:** school-wide timetable planning moved to `/configuration/tools` (modal assistant on tools hub);
+the tools hub now links to the canonical teacher assignments hub; callback-based `DrawerTabBar`
+was removed after routed feature-local tab bars replaced it.
 
 ### 4.2 Smart components
 
@@ -283,10 +288,45 @@ Keep: `lib/components/school/shared/` (T2 chrome), `lib/api/mutations/` shared l
 
 ---
 
+## 9. Addressable view-state migration
+
+**Status: complete.** Substantive UI views are reconstructable from pathname and search parameters.
+
+| Surface | URL owner | Status |
+|---------|-----------|--------|
+| Pages, complex-entity drawers, drawer tabs | Path segments | ✅ |
+| Mutation forms, confirmations, pickers | `modal` + optional `modalTarget` | ✅ |
+| Multi-step tools, academic, timetable, auth flows | `modalStep` / `modalTab` or route-local safe query keys | ✅ |
+| List search and facets | Route-local `ListFiltersState` codecs | ✅ |
+| Cards/table and card density | `view` / `cardColumns` | ✅ |
+| Form drafts, credentials, OTPs, focus, popovers | Component state / snapshots — never URL | ✅ |
+
+Shared infrastructure:
+
+- `lib/modal/modal-url.ts` — typed modal, target, step, and tab codecs.
+- `lib/modal/modal-state.svelte.ts` — allow-listed URL surface controller.
+- `lib/navigation/route-surface-history.ts` — parent + nested history depth.
+- `lib/navigation/route-surface-navigation.ts` — push on open, history-aware close, direct-link fallback.
+
+Verified cleanup:
+
+- Removed unused callback `DrawerTabBar`; feature-local route-link tab bars are the replacement.
+- Preserved and linked the useful school-wide teacher-assignment hub.
+- Empty legacy `/school/teacher-assignments` now redirects to the canonical hub.
+- Legacy subject-level drawer URLs redirect to the more capable stable-id list filter.
+
+Focused URL codec, target-validation, routing, and history tests pass. Browser-level demo dry-run
+coverage includes deep links, reload, Back/Forward, nested modal tabs, and history-aware close.
+Repository-wide verification is currently blocked by pre-existing API-client type drift recorded in
+the verification output.
+
+---
+
 ## Document history
 
 | Date | Change |
 |------|--------|
+| 2026-08-12 | Addressable view-state migration complete; verified orphan cleanup and compatibility redirects |
 | 2026-07-18 | §7 legacy deletion complete — global contexts, dead mutations/queries, and `_archive/route-state-legacy/` removed |
 | 2026-07-18 | Mutations stripped of `detailDataContext`; `runMutation` gains `versionKeys`; dead drawer files deleted; legacy queries archived |
 | 2026-07-18 | Legacy UI archived to `apps/webapp/_archive/route-state-legacy/`; global `DetailDrawer` removed from `(app)/+layout.svelte` |

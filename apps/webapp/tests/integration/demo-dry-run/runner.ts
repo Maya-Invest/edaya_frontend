@@ -10,12 +10,13 @@ import { runDrawerTabChecks } from './scenes/drawer-tabs';
 import { runFinanceDrawerScene } from './scenes/finance-drawer';
 import { runGuardianDrawerScene } from './scenes/guardian-drawer';
 import { runHomeroomNudgeCheck } from './scenes/homeroom';
-import { runImportScene } from './scenes/import';
 import { runListShellScenes } from './scenes/list-shell';
 import { runModalUrlChecks } from './scenes/modal-url';
 import { runOwnerPermissionChecks } from './scenes/owner-permissions';
 import { runRouteCoverageScenes } from './scenes/route-coverage';
-import { runToolsModalsScene } from './scenes/tools-modals';
+// /configuration/tools — manual QA only (see qa-matrix-exclusions.ts)
+// import { runImportScene } from './scenes/import';
+// import { runToolsModalsScene } from './scenes/tools-modals';
 
 export interface RunDemoDryRunOptions {
 	base?: string;
@@ -44,8 +45,6 @@ export async function runDemoDryRun(options: RunDemoDryRunOptions = {}): Promise
 		await runListShellScenes(ctx);
 		await runDrawerTabChecks(ctx);
 		await runModalUrlChecks(ctx);
-		await runImportScene(ctx);
-		await runToolsModalsScene(ctx);
 		await runGuardianDrawerScene(ctx);
 		await runFinanceDrawerScene(ctx);
 	}

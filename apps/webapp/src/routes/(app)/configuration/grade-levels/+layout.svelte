@@ -15,6 +15,7 @@
 		GradeLevelsPageState,
 		setGradeLevelsPageState,
 	} from './grade-levels-page.svelte';
+	import { readGradeLevelsListFilters } from './lib/grade-levels-list-filters';
 
 	const { children: pageChildren }: { children: Snippet } = $props();
 
@@ -25,6 +26,11 @@
 
 	const selectedId = $derived(gradeLevelsPage.selectedId);
 	const query = gradeLevelsPage.queryListPage();
+	const urlFilters = $derived(readGradeLevelsListFilters($page.url));
+
+	$effect(() => {
+		gradeLevelsPage.filters.hydrate(urlFilters);
+	});
 
 	function selectGradeLevel(level: { id: string }) {
 		const path = detailHref.configGradeLevel(level.id);

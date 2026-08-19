@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'bun:test';
 import {
+	resolveLegacySubjectGradeLevelId,
+	subjectLevelCompatibilityHref,
+} from '../../../../../src/routes/(app)/configuration/subjects/lib/subject-level-redirect';
+import {
 	activeSubjectsDetailTab,
 	SUBJECTS_DETAIL_TABS,
 } from '../../../../../src/routes/(app)/configuration/subjects/lib/subjects-detail-tabs';
@@ -8,7 +12,6 @@ import {
 	emptySubjectsSlice,
 	logEntriesForSubject,
 	subjectIdFromUrl,
-	subjectLevelLabelFromUrl,
 } from '../../../../../src/routes/(app)/configuration/subjects/lib/subjects-helpers';
 
 describe('subjects route helpers', () => {
@@ -22,9 +25,26 @@ describe('subjects route helpers', () => {
 		expect(subjectIdFromUrl(url)).toBeUndefined();
 	});
 
-	it('parses level label from level drawer URL', () => {
-		const url = new URL('http://local/configuration/subjects/level/6%C3%A8me');
-		expect(subjectLevelLabelFromUrl(url)).toBe('6ème');
+	it('redirects a legacy level label to the stable grade-level filter', () => {
+		const url = new URL(
+			'http://local/configuration/subjects/level/Sixi%C3%A8me?q=math&modal=create-subject&gradeLevel=stale',
+		);
+		const gradeLevels = [
+			{ id: 'ci-gl-6', name: 'Sixième' },
+			{ id: 'ci-gl-5', name: 'Cinquième' },
+		];
+		expect(resolveLegacySubjectGradeLevelId('Sixi%C3%A8me', gradeLevels)).toBe('ci-gl-6');
+		expect(subjectLevelCompatibilityHref(url, 'Sixième', gradeLevels)).toBe(
+			'/configuration/subjects?q=math&gradeLevel=ci-gl-6',
+		);
+	});
+
+	it('falls back to the subjects list when the legacy level does not resolve', () => {
+		const url = new URL(
+			'http://local/configuration/subjects/level/Inconnu?q=fran%C3%A7ais&modal=edit&modalTarget=secret',
+		);
+		expect(subjectLevelCompatibilityHref(url, 'Inconnu', [{ id: 'ci-gl-6', name: 'Sixième' }]))
+			.toBe('/configuration/subjects?q=fran%C3%A7ais');
 	});
 
 	it('returns an empty slice by default', () => {

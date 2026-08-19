@@ -31,6 +31,7 @@ export interface VisitOptions {
 export interface SignInOptions {
 	namePattern?: RegExp;
 	email?: string;
+	password?: string;
 }
 
 export interface DemoContext {

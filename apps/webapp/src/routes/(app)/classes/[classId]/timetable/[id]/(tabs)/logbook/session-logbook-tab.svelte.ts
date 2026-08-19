@@ -39,8 +39,16 @@ function emptySlice(sessionId: string): SessionLogbookTabSlice {
 
 export class SessionLogbookTabState {
 	slice = $state<SessionLogbookTabSlice | null>(null);
+	private validateSurface?: (logbookExists: boolean) => void;
 
 	constructor(private readonly getPage: () => TimetablePageState) {}
+
+	configureSurfaceValidation(validate: (logbookExists: boolean) => void) {
+		this.validateSurface = validate;
+		if (this.slice) {
+			validate(this.slice.logbook !== undefined);
+		}
+	}
 
 	clear() {
 		this.slice = null;
@@ -49,9 +57,11 @@ export class SessionLogbookTabState {
 	seed(sessionId: string, data: Omit<SessionLogbookTabSlice, 'sessionId'>) {
 		if (!this.slice || this.slice.sessionId !== sessionId) {
 			this.slice = { ...emptySlice(sessionId), ...data, sessionId };
+			this.validateSurface?.(data.logbook !== undefined);
 			return;
 		}
 		this.slice = { ...this.slice, ...data, sessionId };
+		this.validateSurface?.(data.logbook !== undefined);
 	}
 
 	detailFor(sessionId: string): SessionDetail | undefined {

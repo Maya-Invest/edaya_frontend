@@ -11,16 +11,22 @@
 	interface Props {
 		email: string;
 		apiConnected: boolean;
+		stage?: 'form' | 'code';
+		onStageChange?: (stage: 'form' | 'code') => void;
 	}
 
-	let { email = $bindable(''), apiConnected }: Props = $props();
+	let {
+		email = $bindable(''),
+		apiConnected,
+		stage = 'form',
+		onStageChange,
+	}: Props = $props();
 
 	let otp = $state('');
-	let step = $state<'email' | 'code'>('email');
 	let busy = $state(false);
 
 	export function reset() {
-		step = 'email';
+		onStageChange?.('form');
 		otp = '';
 	}
 
@@ -43,7 +49,7 @@
 			}
 
 			otp = '';
-			step = 'code';
+			onStageChange?.('code');
 			toast.success($t('auth.otpSent', { email: normalizedEmail }));
 		}
 		catch (err: unknown) {
@@ -86,12 +92,12 @@
 	}
 
 	function resetFlow() {
-		step = 'email';
+		onStageChange?.('form');
 		otp = '';
 	}
 </script>
 
-{#if step === 'email'}
+{#if stage === 'form'}
 	<form
 		class="space-y-4"
 		onsubmit={(event) => {

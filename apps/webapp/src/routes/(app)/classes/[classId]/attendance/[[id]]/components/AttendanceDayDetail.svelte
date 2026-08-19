@@ -46,6 +46,18 @@
 	const recordTargetRow = $derived(
 		modals.target ? attendanceRows.find(row => row.studentId === modals.target) : undefined,
 	);
+	$effect(() => {
+		if (!modals.ready || modals.active !== 'record-attendance') {
+			return;
+		}
+		if (!modals.target) {
+			modals.close();
+			return;
+		}
+		if (detailState.slice?.occurrenceId === day.id && !recordTargetRow) {
+			modals.close();
+		}
+	});
 
 	let bulkBusy = $state(false);
 

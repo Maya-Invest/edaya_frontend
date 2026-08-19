@@ -169,7 +169,7 @@ export class StudentProfileTabState {
 						() => loadStudent360Data(client, studentId),
 						{ healthRecord: undefined, pedagogicalNotes: [] },
 					),
-					loadGuardiansPeopleData(client).catch(() => ({
+					loadGuardiansPeopleData(client, scope.schoolId).catch(() => ({
 						guardians: [],
 						students: [],
 						totalGuardians: 0,

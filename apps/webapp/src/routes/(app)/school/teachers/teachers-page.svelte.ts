@@ -261,9 +261,15 @@ export class TeachersPageState {
 		if (this.subjectsLoaded) {
 			return;
 		}
+		const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? null;
+		if (!schoolId) {
+			this.subjects = [];
+			this.subjectsLoaded = true;
+			return;
+		}
 		const client = getBrowserSchoolClient();
 		try {
-			const sources = await fetchSchoolSubjectsSources(client);
+			const sources = await fetchSchoolSubjectsSources(client, schoolId);
 			this.subjects = mapAllClassSubjects(sources);
 			this.subjectsLoaded = true;
 		}

@@ -133,7 +133,7 @@ class AcademicContext {
 	}
 
 	resolveSelectionForApi(): { academicYearId: string; academicPeriodId: string } | null {
-		const academicYearId = this.yearId || this.years[0]?.id || '';
+		const academicYearId = this.resolveAcademicYearIdForApi() ?? '';
 		const periodsForYear = academicYearId
 			? this.periods.filter(period => period.academicYearId === academicYearId)
 			: this.periods;
@@ -147,6 +147,16 @@ class AcademicContext {
 			return null;
 		}
 		return { academicYearId, academicPeriodId };
+	}
+
+	/** Year id for structure mutations — ignores stale sessionStorage from another school. */
+	resolveAcademicYearIdForApi(): string | null {
+		const knownYearIds = new Set(this.years.map(year => year.id));
+		if (this.yearId && knownYearIds.has(this.yearId)) {
+			return this.yearId;
+		}
+		const published = this.years.find(year => year.status === 'published');
+		return published?.id ?? this.years[0]?.id ?? null;
 	}
 
 	private syncPeriodToYear() {
@@ -182,12 +192,13 @@ class AcademicContext {
 		if (years.length > 0 && !years.some(y => y.id === this.yearId)) {
 			const activeYear = years.find(y => y.status === 'published') ?? years[0];
 			if (activeYear) {
-				this.yearId = activeYear.id;
+				this.setYear(activeYear.id);
 			}
 		}
-
-		this.syncPeriodToYear();
-		this.alignYearWithPeriodCatalog();
+		else {
+			this.syncPeriodToYear();
+			this.alignYearWithPeriodCatalog();
+		}
 	}
 
 	initFromShell(shell: AppShellData) {

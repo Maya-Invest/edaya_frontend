@@ -25,6 +25,7 @@ export async function saveGradeLevelMutation(
 	input: {
 		id?: string;
 		name: string;
+		label: string;
 		cycle: string;
 		order: number;
 	},
@@ -36,6 +37,7 @@ export async function saveGradeLevelMutation(
 		id,
 		schoolId: schoolId(),
 		name: input.name.trim(),
+		label: input.label.trim(),
 		cycle: input.cycle.trim() || null,
 		order: input.order,
 	};

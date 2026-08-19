@@ -1,11 +1,16 @@
 <script lang="ts">
 	import type { Teacher } from '$lib/types/school';
 	import type { TeacherUnavailability } from '../../../../teachers-page.svelte';
+	import { afterNavigate } from '$app/navigation';
+	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
 	import { Pencil, Plus, Trash2 } from '$lib/icons';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { writeModalSurface } from '$lib/modal/modal-url';
+	import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
 	import { get } from 'svelte/store';
 	import { getTeachersPageState } from '../../../../teachers-page.svelte';
 	import { getTeacherAvailabilityTabState } from '../teacher-availability-tab.svelte';
@@ -14,20 +19,77 @@
 	const { teacher }: { teacher: Teacher } = $props();
 	const teachersPage = getTeachersPageState();
 	const availabilityTab = getTeacherAvailabilityTabState();
-	let formOpen = $state(false);
-	let editing = $state<TeacherUnavailability | undefined>();
-	let deleting = $state<TeacherUnavailability | undefined>();
+	type TeacherAvailabilityModal
+		= | 'edit-profile'
+			| 'delete'
+			| 'add-unavailability'
+			| 'edit-unavailability'
+			| 'delete-unavailability';
+	const modals = createUrlSyncedModals<TeacherAvailabilityModal>({
+		allowed: [
+			'edit-profile',
+			'delete',
+			'add-unavailability',
+			'edit-unavailability',
+			'delete-unavailability',
+		],
+		getUrl: () => $page.url,
+	});
+	afterNavigate(() => {
+		modals.hydrate();
+		validateModal();
+	});
+	const addOpen = bindUrlModal(modals, 'add-unavailability');
+	const editOpen = bindUrlModal(modals, 'edit-unavailability');
+	const deleteOpen = bindUrlModal(modals, 'delete-unavailability');
 	let busyId = $state<string | null>(null);
 
 	const rows = $derived(availabilityTab.unavailabilitiesFor(teacher.id));
+	const editing = $derived(
+		modals.isOpen('edit-unavailability') && modals.target
+			? rows.find(row => row.id === modals.target)
+			: undefined,
+	);
+	const deleting = $derived(
+		modals.isOpen('delete-unavailability') && modals.target
+			? rows.find(row => row.id === modals.target)
+			: undefined,
+	);
 	const weekly = $derived(rows.filter(row => row.recurrence === 'weekly').sort((a, b) =>
 		`${a.dayOfWeek}-${a.startTime}`.localeCompare(`${b.dayOfWeek}-${b.startTime}`)));
 	const oneOff = $derived(rows.filter(row => row.recurrence === 'one_off').sort((a, b) =>
 		String(a.startsAt).localeCompare(String(b.startsAt))));
 
-	function openForm(rule: TeacherUnavailability | undefined = undefined) {
-		editing = rule;
-		formOpen = true;
+	function canonicalizeModal(modal: TeacherAvailabilityModal | null) {
+		replaceRouteSurface(writeModalSurface($page.url, { modal }));
+	}
+
+	function validateModal() {
+		if (!modals.ready || availabilityTab.slice?.teacherId !== teacher.id || !modals.active) {
+			return;
+		}
+		if (
+			(modals.active === 'add-unavailability'
+				|| modals.active === 'edit-profile'
+				|| modals.active === 'delete')
+			&& modals.target
+		) {
+			canonicalizeModal(modals.active);
+			return;
+		}
+		if (
+			(modals.active === 'edit-unavailability' || modals.active === 'delete-unavailability')
+			&& !rows.some(row => row.id === modals.target)
+		) {
+			canonicalizeModal(null);
+		}
+	}
+
+	function syncRows() {
+		availabilityTab.replaceForTeacher(
+			teacher.id,
+			teachersPage.teacherUnavailabilitiesForTeacher(teacher.id),
+		);
 	}
 
 	function date(value: unknown): string {
@@ -38,7 +100,7 @@
 		busyId = rule.id;
 		const ok = await teachersPage.saveUnavailability({ rule: { ...rule, isActive: !rule.isActive } });
 		if (ok) {
-			availabilityTab.replaceForTeacher(teacher.id, teachersPage.teacherUnavailabilitiesForTeacher(teacher.id));
+			syncRows();
 		}
 		busyId = null;
 	}
@@ -53,10 +115,11 @@
 		});
 		busyId = null;
 		if (ok) {
-			availabilityTab.replaceForTeacher(teacher.id, teachersPage.teacherUnavailabilitiesForTeacher(teacher.id));
-			deleting = undefined;
+			syncRows();
+			modals.close();
 		}
 	}
+
 </script>
 
 <div class="space-y-6">
@@ -67,7 +130,7 @@
 		</div>
 		<PermissionGate permission="ACCESS_CONTROL_ASSIGN" mode="disable">
 			{#snippet children({ disabled })}
-				<Button size="sm" class="rounded-full" {disabled} onclick={() => openForm()}>
+				<Button size="sm" class="rounded-full" {disabled} onclick={() => modals.open('add-unavailability')}>
 					<Plus class="mr-1.5 h-3.5 w-3.5" />{$t('teacher.availabilityAdd')}
 				</Button>
 			{/snippet}
@@ -95,8 +158,8 @@
 							<PermissionGate permission="ACCESS_CONTROL_ASSIGN" mode="disable">
 								{#snippet children({ disabled })}
 									<Button size="sm" variant="ghost" disabled={disabled || busyId === rule.id} onclick={() => toggle(rule)}>{rule.isActive ? $t('common.disable') : $t('common.enable')}</Button>
-									<Button size="icon" variant="ghost" class="h-8 w-8" {disabled} onclick={() => openForm(rule)}><Pencil class="h-4 w-4" /></Button>
-									<Button size="icon" variant="ghost" class="h-8 w-8 text-destructive" {disabled} onclick={() => (deleting = rule)}><Trash2 class="h-4 w-4" /></Button>
+									<Button size="icon" variant="ghost" class="h-8 w-8" {disabled} onclick={() => modals.open('edit-unavailability', { target: rule.id })}><Pencil class="h-4 w-4" /></Button>
+									<Button size="icon" variant="ghost" class="h-8 w-8 text-destructive" {disabled} onclick={() => modals.open('delete-unavailability', { target: rule.id })}><Trash2 class="h-4 w-4" /></Button>
 								{/snippet}
 							</PermissionGate>
 						</li>
@@ -107,16 +170,17 @@
 	{/each}
 </div>
 
-<TeacherUnavailabilityFormModal bind:open={formOpen} {teacher} rule={editing} />
+{#if addOpen.open}
+	<TeacherUnavailabilityFormModal bind:open={addOpen.open} {teacher} onSaved={syncRows} />
+{/if}
+{#if editOpen.open && editing}
+	<TeacherUnavailabilityFormModal bind:open={editOpen.open} {teacher} rule={editing} onSaved={syncRows} />
+{/if}
 <ConfirmModal
-	open={Boolean(deleting)}
+	bind:open={deleteOpen.open}
 	title={$t('teacher.availabilityDeleteTitle')}
 	description={$t('teacher.availabilityDeleteHint')}
 	confirmLabel={$t('common.delete')}
 	busy={Boolean(deleting && busyId === deleting.id)}
-	onOpenChange={(open) => {
-		if (!open)
-			deleting = undefined;
-	}}
 	onConfirm={confirmDelete}
 />

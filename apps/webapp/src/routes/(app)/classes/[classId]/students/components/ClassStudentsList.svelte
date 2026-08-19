@@ -1,5 +1,7 @@
 <script lang="ts">
+	import type { ListView } from '$lib/list/list-view-url';
 	import type { Student } from '$lib/types/school';
+	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -14,8 +16,10 @@
 	import { t } from '$lib/i18n';
 	import { Mail, Plus } from '$lib/icons';
 	import { readClassStudentListFilters } from '$lib/list/list-url-filters';
+	import { readListView, writeListView } from '$lib/list/list-view-url';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { MODAL_QUERY_KEY } from '$lib/modal/modal-url';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { cn } from '$lib/utils';
@@ -57,11 +61,24 @@
 		})),
 	);
 
-	let view = $state<'table' | 'cards'>('table');
+	const view = $derived(readListView($page.url));
 
 	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
 	$effect(() => {
 		modals.hydrate();
+	});
+	afterNavigate(() => {
+		if ($page.url.searchParams.has(MODAL_QUERY_KEY)) {
+			return;
+		}
+		const canonicalHref = writeListView($page.url, view);
+		if (canonicalHref !== `${$page.url.pathname}${$page.url.search}`) {
+			void appGoto(canonicalHref, {
+				replaceState: true,
+				keepFocus: true,
+				noScroll: true,
+			});
+		}
 	});
 	const createOpen = bindUrlModal(modals, 'create');
 
@@ -83,6 +100,14 @@
 	function handleCreated(studentId: string) {
 		const path = detailHref.classStudent(classId, studentId);
 		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+	}
+
+	function setView(next: ListView) {
+		void appGoto(writeListView($page.url, next), {
+			replaceState: true,
+			keepFocus: true,
+			noScroll: true,
+		});
 	}
 </script>
 
@@ -110,7 +135,7 @@
 			</FilterPanel>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu {view} onViewChange={value => (view = value)} />
+			<ListMoreMenu {view} onViewChange={setView} />
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
@@ -124,7 +149,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen.open = true)}
+						onclick={() => modals.open('create')}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('students.newStudent')}

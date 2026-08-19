@@ -1,5 +1,6 @@
 import type { SubjectsPageSlice } from './subjects-helpers';
-import { listAllEntityPages, schoolWideEntityList } from '$lib/api/entity-list-filters';
+import { academicContext } from '$lib/academic/context.svelte';
+import { listAllEntityPages, schoolScopedEntityList } from '$lib/api/entity-list-filters';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import {
 	fetchCatalogSubjectsSources,
@@ -8,14 +9,19 @@ import {
 	mapCatalogSubjects,
 } from '$lib/api/subjects-data';
 import { fetchTeachingLogEntries } from '$lib/api/teaching-log-data';
+import { authSession } from '$lib/auth/session.svelte';
 import { resolvePageLoad } from '$lib/queries/page-status';
 import { emptySubjectsSlice } from './subjects-helpers';
 
-async function classGradeLevelById(client: ReturnType<typeof getBrowserSchoolClient>): Promise<Record<string, string>> {
+async function classGradeLevelById(
+	client: ReturnType<typeof getBrowserSchoolClient>,
+	schoolId: string,
+): Promise<Record<string, string>> {
 	const classGroups = await listAllEntityPages(
 		query => client.entities.classGroups.list(query),
 		{
-			baseQuery: schoolWideEntityList(
+			baseQuery: schoolScopedEntityList(
+				schoolId,
 				'Configuration subjects catalog maps class groups to grade levels.',
 			),
 		},
@@ -24,9 +30,14 @@ async function classGradeLevelById(client: ReturnType<typeof getBrowserSchoolCli
 }
 
 export async function loadSubjectsSlice(): Promise<SubjectsPageSlice> {
+	const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? null;
+	if (!schoolId) {
+		return emptySubjectsSlice();
+	}
+
 	const client = getBrowserSchoolClient();
-	const gradeLevelByClassId = await classGradeLevelById(client);
-	const catalogSources = await fetchCatalogSubjectsSources(client);
+	const gradeLevelByClassId = await classGradeLevelById(client, schoolId);
+	const catalogSources = await fetchCatalogSubjectsSources(client, schoolId);
 	const catalogSubjects = mapCatalogSubjects(catalogSources, gradeLevelByClassId);
 
 	if (catalogSubjects.length > 0) {
@@ -36,7 +47,7 @@ export async function loadSubjectsSlice(): Promise<SubjectsPageSlice> {
 		};
 	}
 
-	const sources = await fetchSchoolSubjectsSources(client);
+	const sources = await fetchSchoolSubjectsSources(client, schoolId);
 	const subjects = mapAllClassSubjects(sources);
 	const classIds = [...new Set(subjects.map(subject => subject.classId))];
 	const logEntrySets = await Promise.all(

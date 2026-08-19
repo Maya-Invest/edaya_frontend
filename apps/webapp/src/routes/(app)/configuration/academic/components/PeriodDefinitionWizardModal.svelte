@@ -19,7 +19,7 @@
 		expandPeriodDefinitionTemplate,
 	} from '../lib/period-definition-presets';
 
-	type WizardStep = 1 | 2 | 3;
+	type WizardStep = 'preset' | 'tweak' | 'preview';
 
 	function isValidTemplateRow(row: PeriodTemplateRow): boolean {
 		return row.label.trim().length > 0
@@ -33,16 +33,18 @@
 	let {
 		open = $bindable(false),
 		academicYearId,
+		step,
+		onStepChange,
 	}: {
 		open?: boolean;
 		academicYearId: string;
+		step: WizardStep;
+		onStepChange: (step: WizardStep) => void;
 	} = $props();
 
 	const academicPage = getAcademicPageState();
 
 	let busy = $state(false);
-	let wasOpen = $state(false);
-	let step = $state<WizardStep>(1);
 	let selectedPresetId = $state<PeriodDefinitionPresetId>('standard-secondary');
 	let weekdays = $state<PeriodDefinitionDayOfWeek[]>(['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
 	let halfDays = $state<PeriodDefinitionDayOfWeek[]>([]);
@@ -60,21 +62,21 @@
 	const canSubmit = $derived(canAdvanceTweak && expanded.length > 0);
 
 	const modalTitle = $derived(
-		step === 1
+		step === 'preset'
 			? $t('periodDefinitions.wizard.presetTitle')
-			: step === 2
+			: step === 'tweak'
 			? $t('periodDefinitions.wizard.tweakTitle')
 			: $t('periodDefinitions.wizard.previewTitle'),
 	);
 	const modalDescription = $derived(
-		step === 1
+		step === 'preset'
 			? $t('periodDefinitions.wizard.presetDescription')
-			: step === 2
+			: step === 'tweak'
 			? $t('periodDefinitions.wizard.tweakDescription')
 			: $t('periodDefinitions.wizard.previewDescription'),
 	);
 	const submitLabel = $derived(
-		step === 3 ? $t('periodDefinitions.wizard.apply') : $t('common.next'),
+		step === 'preview' ? $t('periodDefinitions.wizard.apply') : $t('common.next'),
 	);
 
 	function applyPreset(id: PeriodDefinitionPresetId) {
@@ -86,16 +88,8 @@
 	}
 
 	function resetForm() {
-		step = 1;
 		applyPreset('standard-secondary');
 	}
-
-	$effect(() => {
-		if (open && !wasOpen) {
-			resetForm();
-		}
-		wasOpen = open;
-	});
 
 	function toggleWeekday(day: PeriodDefinitionDayOfWeek) {
 		if (weekdays.includes(day)) {
@@ -148,18 +142,21 @@
 	}
 
 	function handleBack() {
-		if (step > 1) {
-			step = (step - 1) as WizardStep;
+		if (step === 'preview') {
+			onStepChange('tweak');
+		}
+		else if (step === 'tweak') {
+			onStepChange('preset');
 		}
 	}
 
 	function handleNext() {
-		if (step === 1) {
-			step = 2;
+		if (step === 'preset') {
+			onStepChange('tweak');
 			return;
 		}
-		if (step === 2 && canAdvanceTweak) {
-			step = 3;
+		if (step === 'tweak' && canAdvanceTweak) {
+			onStepChange('preview');
 		}
 	}
 
@@ -205,12 +202,12 @@
 	{submitLabel}
 	cancelLabel={$t('academic.cancel')}
 	{busy}
-	submitDisabled={step === 3 ? !canSubmit : step === 2 ? !canAdvanceTweak : false}
+	submitDisabled={step === 'preview' ? !canSubmit : step === 'tweak' ? !canAdvanceTweak : false}
 	contentClass="max-w-2xl"
 	onCancel={resetForm}
-	onSubmit={step === 3 ? submit : handleNext}
+	onSubmit={step === 'preview' ? submit : handleNext}
 >
-	{#if step > 1}
+	{#if step !== 'preset'}
 		<button
 			type="button"
 			class="mb-2 text-xs font-medium text-muted-foreground hover:text-foreground"
@@ -220,7 +217,7 @@
 		</button>
 	{/if}
 
-	{#if step === 1}
+	{#if step === 'preset'}
 		<div class="grid gap-2">
 			{#each PERIOD_DEFINITION_PRESET_IDS as presetId (presetId)}
 				<button
@@ -242,7 +239,7 @@
 				</button>
 			{/each}
 		</div>
-	{:else if step === 2}
+	{:else if step === 'tweak'}
 		<div class="space-y-4">
 			<div>
 				<p class="mb-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">

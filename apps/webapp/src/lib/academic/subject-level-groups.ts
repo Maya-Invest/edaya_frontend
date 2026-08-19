@@ -44,21 +44,3 @@ export function groupSubjectsByGradeLevel(
 			items: byGradeLevelId[level.id]!.items,
 		}));
 }
-
-export function findSubjectLevelGroup(
-	label: string,
-	subjects: readonly Subject[],
-	classes: readonly ClassNode[],
-	gradeLevels: readonly GradeLevel[],
-): Omit<SubjectLevelGroup, 'key' | 'count'> | null {
-	const group = groupSubjectsByGradeLevel(subjects, classes, gradeLevels)
-		.find(entry => entry.label === label);
-	if (!group) {
-		return null;
-	}
-	return {
-		label: group.label,
-		subtitle: group.subtitle,
-		items: group.items,
-	};
-}

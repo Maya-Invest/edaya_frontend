@@ -12,14 +12,16 @@ Les `.xlsx` sont écrits dans `./xlsx/`.
 
 ## Prérequis école
 
-- Des **niveaux** configurés : `6eme`, `5eme`, `4eme`, `3eme` (vérifier les libellés exacts dans **Configuration → Niveaux**).
-- Colonnes du fichier : `nom` = libellé complet de la classe (ex. `6eme A`), `niveau` = niveau scolaire (ex. `6eme`).
+- Au moins un **niveau** configuré (**Configuration → Niveaux**).
+- Colonnes du fichier : `nom` = nom complet de la classe (`{libellé du niveau} {section}`), `niveau` = **nom** du niveau tel qu'enregistré.
 
 ## Convention de nommage
 
-Noms **réalistes type collège ivoirien** : `{niveau} {section}` — ex. `6eme A`, `5eme B`, `3eme C`.
+Les noms sont construits comme le fait le produit : la racine est le **libellé court du niveau** (`grade_levels.label`), le suffixe **poursuit la série déjà présente** en base pour ce niveau (chiffres ou lettres ; chiffres par défaut si le niveau n'a encore aucune classe).
 
-Les fichiers d'erreur utilisent des sections **J, K, L, F, D** pour limiter les conflits avec le jeu nominal **CL01**.
+Rien n'est deviné à partir du nom du niveau : si un niveau a des classes dont aucune ne commence par son libellé, le générateur échoue avec un message explicite plutôt que de produire des fixtures incohérentes.
+
+Les sections utilisées par les fichiers d'erreur sont prises **après** celles du jeu nominal CL01, ce qui évite les collisions entre packs.
 
 Jeux liés (élèves, tuteurs, paiements…) : voir [README parent](../README.md).
 
@@ -27,26 +29,23 @@ Jeux liés (élèves, tuteurs, paiements…) : voir [README parent](../README.md
 
 | Fichier | ID test | Scénario | Résultat attendu |
 |---------|---------|----------|-------------------|
-| `CL01-happy-all-valid.xlsx` | CL1 | 18 classes (6eme A→I, 5eme A→E, 4eme B/C, 3eme A/B) | **18 classes créées** ; 0 erreur |
-| `CL02-partial-import.xlsx` | CL8 | 3 OK (`6eme J`, `5eme F`, `4eme D`) + nom vide + niveau inconnu | **3 créées**, 2 erreurs |
-| `CL03-error-unknown-niveau.xlsx` | CL5 | Niveaux `7eme Z`, `Terminale X` | **0 créée** ; suggestions de niveaux |
+| `CL01-happy-all-valid.xlsx` | CL1 | Une nouvelle section par niveau de l'école | **Toutes créées** ; 0 erreur |
+| `CL02-partial-import.xlsx` | CL8 | 2 sections libres + nom vide + niveau inconnu | **2 créées**, 2 erreurs |
+| `CL03-error-unknown-niveau.xlsx` | CL5 | Deux niveaux absents du catalogue | **0 créée** ; suggestions de niveaux |
 | `CL04-error-missing-required.xlsx` | CL6 | `nom` ou `niveau` manquant | **0 créée** |
 | `CL05-error-invalid-capacity.xlsx` | CL7 | `abc`, `-5`, `0` | **0 créée** |
-| `CL06-error-duplicate-in-file.xlsx` | CL4 | `6eme J` en double dans le fichier | **1 créée** (1ʳᵉ ligne) ; 2ᵉ doublon fichier |
-| `CL07-error-duplicate-existing.xlsx` | CL4b | `6eme A` déjà en base + `6eme J` nouvelle | **1 créée** (`6eme J`) ; `6eme A` rejetée |
+| `CL06-error-duplicate-in-file.xlsx` | CL4 | Même section deux fois dans le fichier | **1 créée** (1ʳᵉ ligne) ; 2ᵉ doublon fichier |
+| `CL07-error-duplicate-existing.xlsx` | CL4b | Une classe déjà en base + une section libre | **1 créée** (la libre) ; l'existante rejetée |
 | `CL08-headers-only.xlsx` | CL9 | En-têtes seuls | Erreur **fichier vide** |
-| `CL09-trim-and-case.xlsx` | CL10 | Espaces autour de `6eme K` / `6eme` | **2 créées** (`6eme K`, `6eme L`) |
+| `CL09-trim-and-case.xlsx` | CL10 | Espaces autour du nom et du niveau | **2 créées** (valeurs trimées) |
 
-### CL01 — École déjà peuplée
+### CL01 — Rejouer le pack
 
-Si vous avez **déjà importé** des classes (`6eme A`, etc.), CL01 échouera en doublons. Deux options :
-
-1. Tester CL01 sur une **école vierge** (recommandé pour le jeu complet).
-2. Supprimer les classes existantes, ou adapter les noms dans Excel vers des sections libres (`6eme J`, …).
+CL01 ne contient que des sections **libres au moment de la génération**. Après un premier import réussi, elles existent : régénérer les fixtures pour repartir sur les sections suivantes (`bun docs/qa/import-fixtures/classes/generate-fixtures.ts`).
 
 ### CL07 — Doublon classe existante
 
-Utilise `6eme A` comme classe déjà présente. Si votre école n'a pas encore `6eme A`, importer d'abord CL01 ou créer `6eme A` manuellement, puis lancer CL07.
+La première ligne reprend une classe **réellement présente** dans la base locale, la seconde une section libre. Aucun prérequis manuel : le générateur lit les deux depuis la base.
 
 ## Ordre de test suggéré
 

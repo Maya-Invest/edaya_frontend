@@ -58,8 +58,9 @@ export async function loadTeacherAssignmentImportTeachers(
  */
 export async function loadTeacherAssignmentImportClassSubjects(
 	client: SchoolClient,
+	schoolId: string,
 ): Promise<TeacherAssignmentImportClassSubjectOption[]> {
-	const sources = await fetchSchoolSubjectsSources(client);
+	const sources = await fetchSchoolSubjectsSources(client, schoolId);
 	return sources.classSubjectsRaw.map(classSubject => ({
 		id: classSubject.id,
 		classGroupId: classSubject.classGroupId,

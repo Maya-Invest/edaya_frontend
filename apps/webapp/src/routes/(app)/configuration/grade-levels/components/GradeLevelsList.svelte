@@ -26,9 +26,6 @@
 
 	const gradeLevelsPage = getGradeLevelsPageState();
 
-	let q = $state('');
-	let cycle = $state('all');
-
 	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
 	$effect(() => {
 		modals.hydrate();
@@ -44,10 +41,13 @@
 	const filteredLevels = $derived(
 		sortGradeLevels(academicContext.gradeLevels)
 			.filter((level) => {
-				if (cycle !== 'all' && level.cycle !== cycle) {
+				if (
+					gradeLevelsPage.filters.values.cycle !== 'all'
+					&& level.cycle !== gradeLevelsPage.filters.values.cycle
+				) {
 					return false;
 				}
-				const needle = q.trim().toLowerCase();
+				const needle = gradeLevelsPage.filters.values.q.trim().toLowerCase();
 				if (!needle) {
 					return true;
 				}
@@ -74,11 +74,15 @@
 		title={$t('gradeLevels.title', { n: filteredLevels.length })}
 	>
 		{#snippet search()}
-			<ListSearchField bind:value={q} />
+			<ListSearchField
+				value={gradeLevelsPage.filters.values.q}
+				oninput={event => gradeLevelsPage.filters.setField('q', event.currentTarget.value)}
+			/>
 		{/snippet}
 		{#snippet filters()}
 			<FilterSelect
-				bind:value={cycle}
+				value={gradeLevelsPage.filters.values.cycle}
+				onchange={value => gradeLevelsPage.filters.patchImmediate({ cycle: value })}
 				class="h-9 w-44 rounded-full text-xs"
 				options={cycleOptions}
 			/>
@@ -91,7 +95,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen.open = true)}
+						onclick={() => modals.open('create')}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('gradeLevels.add')}
@@ -116,6 +120,7 @@
 						<thead class="border-b border-border bg-secondary/30 text-left">
 							<tr>
 								<th class="px-4 py-3 font-medium">{$t('gradeLevels.name')}</th>
+								<th class="px-4 py-3 font-medium">{$t('gradeLevels.label')}</th>
 								<th class="px-4 py-3 font-medium">{$t('gradeLevels.order')}</th>
 								<th class="px-4 py-3 font-medium">{$t('gradeLevels.classCount')}</th>
 							</tr>
@@ -137,6 +142,7 @@
 											<p class="font-mono text-[10px] text-muted-foreground">{level.id}</p>
 										</button>
 									</td>
+									<td class="px-4 py-3 text-muted-foreground">{level.label}</td>
 									<td class="px-4 py-3 font-mono text-muted-foreground">{level.order}</td>
 									<td class="px-4 py-3 font-mono">{gradeLevelsPage.classCountFor(level.id)}</td>
 								</tr>

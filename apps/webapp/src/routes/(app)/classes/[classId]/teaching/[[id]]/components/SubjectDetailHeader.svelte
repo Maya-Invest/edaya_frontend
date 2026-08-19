@@ -7,6 +7,7 @@
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
+	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
 	import { getTeachingPageState } from '../../teaching-page.svelte';
@@ -19,19 +20,20 @@
 		onDeleted?: () => void;
 	} = $props();
 
-	type SubjectDrawerModal = 'edit-subject';
+	type SubjectDrawerModal = 'edit-subject' | 'delete';
 
 	const teachingPage = getTeachingPageState();
 	const modals = createUrlSyncedModals<SubjectDrawerModal>({
-		allowed: ['edit-subject'],
+		allowed: ['edit-subject', 'delete'],
 		getUrl: () => $page.url,
 	});
+	setDrawerUrlModals(modals);
 	$effect(() => {
 		modals.hydrate();
 	});
 	const editSubjectOpen = bindUrlModal(modals, 'edit-subject');
+	const deleteOpen = bindUrlModal(modals, 'delete');
 
-	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
 
 	const teacherInitials = $derived(
@@ -52,7 +54,7 @@
 				successMessage: get(t)('subjects.toastDeleted', { name: subject.name }),
 			});
 			if (ok) {
-				deleteOpen = false;
+				deleteOpen.open = false;
 				onDeleted?.();
 			}
 		}
@@ -84,7 +86,7 @@
 		</Button>
 	{/snippet}
 	{#snippet overflow()}
-		<RowActionMenuItem destructive onclick={() => (deleteOpen = true)}>
+		<RowActionMenuItem destructive onclick={() => (deleteOpen.open = true)}>
 			{$t('common.delete')}
 		</RowActionMenuItem>
 	{/snippet}
@@ -93,7 +95,7 @@
 <SubjectFormModal subject={subject} bind:open={editSubjectOpen.open} showTrigger={false} />
 
 <ConfirmModal
-	bind:open={deleteOpen}
+	bind:open={deleteOpen.open}
 	title={$t('common.deleteConfirmTitle')}
 	description={$t('subjects.deleteConfirm', { name: subject.name })}
 	confirmLabel={$t('common.delete')}

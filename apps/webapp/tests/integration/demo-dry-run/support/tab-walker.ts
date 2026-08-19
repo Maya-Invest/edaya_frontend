@@ -1,13 +1,13 @@
+import type { DrawerTabKey } from './constants';
+import type { DrawerTabRouteCase } from './tab-matrix';
+import type { DemoContext } from './types';
 import {
 	clickDrawerTab,
 	closeDrawer,
 	urlTabSegment,
-	waitForDrawerTabBar,
+	waitForDrawerTabLinks,
 	waitForUrlTab,
 } from './drawer';
-import type { DrawerTabKey } from './constants';
-import type { DrawerTabRouteCase } from './tab-matrix';
-import type { DemoContext } from './types';
 import { visit } from './visit';
 
 function stepSlug(value: string): string {
@@ -44,7 +44,7 @@ export async function walkDrawerTabRoute(
 		return false;
 	}
 
-	if (!(await waitForDrawerTabBar(ctx))) {
+	if (!(await waitForDrawerTabLinks(ctx))) {
 		reporter.log(scene, `${slug} tab bar on ${firstTab}`, 'fail', 'Drawer tab bar not visible');
 		await shot(`${scene}-${slug}-tab-bar-${firstTab}`);
 		return false;
@@ -67,7 +67,7 @@ export async function walkDrawerTabRoute(
 	}
 
 	for (const tab of tabs.slice(1)) {
-		if (!(await waitForDrawerTabBar(ctx))) {
+		if (!(await waitForDrawerTabLinks(ctx))) {
 			reporter.log(scene, `${slug} tab bar on ${tab}`, 'fail', 'Drawer tab bar not visible');
 			await shot(`${scene}-${slug}-tab-bar-${tab}`);
 			routeOk = false;
@@ -107,7 +107,7 @@ export async function walkDrawerTabRoute(
 	}
 
 	const lastTab = tabs[tabs.length - 1]!;
-	if (firstTab !== lastTab && tabs.length > 1 && await waitForDrawerTabBar(ctx)) {
+	if (firstTab !== lastTab && tabs.length > 1 && await waitForDrawerTabLinks(ctx)) {
 		if (await clickDrawerTab(ctx, firstTab as DrawerTabKey) && await waitForUrlTab(ctx, firstTab)) {
 			reporter.log(scene, `${slug} click to ${firstTab}`, 'pass');
 		}

@@ -36,17 +36,25 @@
 		() => readFeeListFilters($page.url),
 	);
 
-	const modals = createUrlSyncedModals({ allowed: ['create', 'edit'], getUrl: () => $page.url });
+	const modals = createUrlSyncedModals({
+		allowed: ['create', 'edit', 'delete'],
+		getUrl: () => $page.url,
+	});
 	$effect(() => {
 		modals.hydrate();
 	});
 	const createOpen = bindUrlModal(modals, 'create');
 	const editOpen = bindUrlModal(modals, 'edit');
+	const deleteOpen = bindUrlModal(modals, 'delete');
 
-	let editingFee = $state<Fee | null>(null);
-	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
-	let deleteTarget = $state<Fee | null>(null);
+
+	const editingFee = $derived(
+		modals.active === 'edit' && modals.target ? feesPage.feeFor(modals.target) ?? null : null,
+	);
+	const deleteTarget = $derived(
+		modals.active === 'delete' && modals.target ? feesPage.feeFor(modals.target) ?? null : null,
+	);
 
 	const filteredFees = $derived(
 		fees.filter((fee) => {
@@ -83,29 +91,45 @@
 		listFilters.scheduleSync();
 	});
 
+	$effect(() => {
+		if (!modals.ready) {
+			return;
+		}
+		if (modals.active === 'create') {
+			if (modals.target !== null) {
+				modals.open('create');
+			}
+			return;
+		}
+		if (
+			(modals.active === 'edit' && !editingFee)
+			|| (modals.active === 'delete' && !deleteTarget)
+		) {
+			modals.close();
+		}
+	});
+
 	function openEdit(fee: Fee) {
-		editingFee = fee;
-		editOpen.open = true;
+		modals.open('edit', { target: fee.id });
 	}
 
 	function openDelete(fee: Fee) {
-		deleteTarget = fee;
-		deleteOpen = true;
+		modals.open('delete', { target: fee.id });
 	}
 
 	async function confirmDelete() {
-		if (!deleteTarget) {
+		const target = deleteTarget;
+		if (!target) {
 			return;
 		}
 		deleteBusy = true;
 		try {
 			const ok = await feesPage.deleteFee({
-				feeId: deleteTarget.id,
-				successMessage: get(t)('fee.toastDeleted', { name: deleteTarget.name }),
+				feeId: target.id,
+				successMessage: get(t)('fee.toastDeleted', { name: target.name }),
 			});
 			if (ok) {
-				deleteOpen = false;
-				deleteTarget = null;
+				deleteOpen.open = false;
 			}
 		}
 		finally {
@@ -141,7 +165,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen.open = true)}
+						onclick={() => modals.open('create')}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('finance.newFee')}
@@ -217,7 +241,7 @@
 <FeeFormModal bind:open={editOpen.open} fee={editingFee ?? undefined} />
 
 <ConfirmModal
-	bind:open={deleteOpen}
+	bind:open={deleteOpen.open}
 	title={$t('common.deleteConfirmTitle')}
 	description={$t('fee.deleteConfirm', { name: deleteTarget?.name ?? '' })}
 	confirmLabel={$t('common.delete')}

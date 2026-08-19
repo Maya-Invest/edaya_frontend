@@ -13,6 +13,7 @@ This document defines how the webapp loads server data, holds state, mutates rec
 3. **Colocation** — route-specific UI and state live under the route directory; `lib/` holds shared infrastructure only.
 4. **Optimistic mutations** — local UI updates immediately; rollback on failure.
 5. **Cross-route consistency** — a lightweight version ledger signals when other routes should invalidate stale data.
+6. **Addressable views** — every substantive view can be reconstructed from its pathname and search parameters.
 
 ---
 
@@ -57,11 +58,16 @@ This document defines how the webapp loads server data, holds state, mutates rec
 | **1 — Shell** | Auth, academic selectors, nav counts | `lib/academic/context.svelte.ts` | Session |
 | **2 — Version ledger** | Per-entity-family version counters | `lib/entity-versions.svelte.ts` | Session |
 | **3 — Route / layout state** | Entity collections, filters, selection, mutations | `routes/.../*-page.svelte.ts` | Route subtree |
-| **4 — UI** | Modal open, form binding, visual flags | Component `<script>` | Component |
+| **4 — UI** | Form drafts, focus, transient visual flags | Component `<script>` | Component |
 
 **Smart components** (pickers, scope builders) are a parallel pattern: not route-bound, but use the same class + context structure as Tier 3. See §8.
 
 **Rule:** I/O, multi-component orchestration, or testable business logic → **not** Tier 4.
+
+**Addressability rule:** opening a modal, choosing an edit target, changing a wizard step,
+switching a substantive internal panel, or changing a shareable list view is navigation state —
+not Tier 4. Field drafts, credentials, focus, hover, popovers, busy flags, validation messages,
+and optimistic mutation state remain component-local and must not be encoded in the URL.
 
 ---
 
@@ -300,6 +306,47 @@ Route query functions may use a shared or route-local page-load resolver, but th
 
 Filter state uses `ListFiltersState` with `read*ListFilters` / `write*ListFilters` helpers from `lib/list/`.
 
+### Addressable overlay and workflow state
+
+Path segments own structural hierarchy:
+
+- Page / list route
+- Selected complex entity (`/[id]`)
+- Drawer tab (`/[id]/{tab}`)
+
+Search parameters own substantive overlays and workflow subviews:
+
+| Parameter | Meaning |
+|-----------|---------|
+| `modal` | Route-local modal / form / confirmation kind |
+| `modalTarget` | Record id when the pathname does not already identify the target |
+| `modalStep` | Stable wizard step slug |
+| `modalTab` | Stable substantive panel inside the active modal |
+| `view` | Shareable presentation mode such as `cards` / `table` |
+
+Rules:
+
+1. The route declares an allow-list for modal, step, tab, and view values.
+2. A URL-backed edit modal resolves `modalTarget` from route state. It must not depend on a
+   transient object retained from the click handler.
+3. Invalid or inaccessible values canonicalize to the nearest valid URL using `replaceState`.
+4. Form field values, passwords, OTPs, uploaded data, and unsaved records never go in search params.
+   Use component state and SvelteKit snapshots for safe draft restoration.
+5. `page.state` may carry non-authoritative history metadata or preloaded result payloads, but the
+   substantive view must still be reconstructable from the URL after reload.
+6. Use real URL navigation, not shallow `page.state` alone, for shareable views.
+
+### History semantics
+
+- Opening a drawer, modal, or wizard creates a history entry.
+- Switching drawer tabs or substantive wizard steps creates a history entry.
+- High-frequency list filter typing uses `replaceState`; deliberate filter selections may also
+  replace the current entry.
+- Close / Escape / backdrop navigates Back only when history metadata proves the current surface
+  was opened from its canonical parent in this app session.
+- Direct links and reloaded overlay URLs close by replacing to the canonical parent URL.
+- Closing a drawer must not push a second list entry that makes Back reopen the drawer.
+
 ### `PageQuery` contract
 
 `PageQuery` caches by URL-derived key. **Entity payloads are not in the cache** — only `PageLoadMeta` status. When a route layout unmounts, call `releaseRoutePageQueryOnDestroy(getUrl)` so the next visit re-runs `load` and seeds a new state instance.
@@ -530,16 +577,18 @@ Smart components **do not** read route state from another feature. They fetch wh
 <script lang="ts">
   import { getStudentsPageState } from '../students-page.svelte';
   import StudentsCreateModal from './StudentCreateModal.svelte';
+  import { bindUrlModal } from '$lib/modal/modal-state.svelte';
 
   const state = getStudentsPageState();
-  let createOpen = $state(false);
+  const createOpen = bindUrlModal(state.modals, 'create');
   const rows = $derived(state.visibleStudents);
 </script>
 ```
 
-**Keep in component:** modal open flags, form binding inside modals, CSS/focus.
+**Keep in component:** form field drafts inside modals, CSS/focus, ephemeral popover/dropdown state.
 
-**Move out:** fetch, business rules, shared selection, debounce/pagination, mutations.
+**Move out:** modal kind/target/step/tab, fetch, business rules, shared selection,
+debounce/pagination, mutations.
 
 **Extraction threshold:** extract route state methods when a view script exceeds **~60 lines** of non-markup logic, or when two sibling components share orchestration.
 
@@ -590,6 +639,10 @@ Migrate existing routes incrementally; do not extend `detailDataContext` seed me
 | Fetch in component `$effect` | Route `PageQuery` or smart component state |
 | Full shell refresh after saving a record | Optimistic patch on route state |
 | `?tab=` for drawer tabs | Nested child routes under `[[id]]/` |
+| Local boolean for a substantive modal / form | `?modal=` through the route URL-surface state |
+| URL edit modal with a transient target object | `?modal=edit&modalTarget={id}` resolved from route state |
+| Wizard step only in component state | Stable `?modalStep=` value; keep field drafts local |
+| `page.state` as the only modal state | Pathname / search params as source of truth |
 | `apply` without `rollback` | Always pair them |
 | Smart component reads another route's state | Self-fetch via smart component state |
 | `onclick={state.reset}` | `() => state.reset()` or arrow method |
@@ -603,6 +656,8 @@ Migrate existing routes incrementally; do not extend `detailDataContext` seed me
 - **Loading contracts** — `*.loading.test.ts` with `createRecordingSchoolClient` to assert payloads and request counts per route.
 - **Version ledger** — test that mutation bumps every affected version key and `invalidateIfStale` triggers refetch.
 - **Detail routing** — test `selected` resolution and missing-id handling from route state.
+- **Addressable views** — test deep links, reload, Back/Forward, invalid target canonicalization,
+  direct-link close, Escape, and backdrop close.
 - **Smart components** — unit-test picker state search and selection independently of routes.
 
 ---
@@ -617,6 +672,10 @@ Migrate existing routes incrementally; do not extend `detailDataContext` seed me
 - [ ] Successful mutation bumps `entityVersions` for every affected entity family
 - [ ] No full shell refresh except academic-structure changes
 - [ ] Drawer tabs are nested routes under `[[id]]/`
+- [ ] Every substantive modal / form / confirmation uses `modal` and, when needed, `modalTarget`
+- [ ] Wizard steps and substantive modal panels use allow-listed `modalStep` / `modalTab`
+- [ ] Back, Forward, reload, direct-link close, Escape, and backdrop behavior are tested
+- [ ] Sensitive values and form drafts are not encoded in the URL
 - [ ] No fetch in component `$effect`
 - [ ] Smart components in `lib/smart-components/` with own state — no route state reads
 - [ ] No new `detailDataContext` seeding

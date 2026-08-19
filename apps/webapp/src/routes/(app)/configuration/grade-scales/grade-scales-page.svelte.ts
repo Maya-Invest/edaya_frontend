@@ -82,9 +82,17 @@ export class GradeScalesPageState {
 		return queryGradeScalesListPage(this);
 	}
 
-	async refreshSlice() {
-		const data = await loadGradeScalesSlice();
-		this.applySlice(data);
+	async refreshSlice(options?: { keepCurrentOnEmpty?: boolean }) {
+		try {
+			const data = await loadGradeScalesSlice();
+			if (options?.keepCurrentOnEmpty && data.scales.length === 0 && this.scales.length > 0) {
+				return;
+			}
+			this.applySlice(data);
+		}
+		catch {
+			// Keep the current row if reload fails after a persisted write.
+		}
 	}
 
 	async invalidateIfStale() {
@@ -136,7 +144,7 @@ export class GradeScalesPageState {
 			successMessage: input.successMessage,
 			apply: () => this.upsertScale(optimistic),
 			rollback: () => this.removeScale(id),
-			onSuccess: () => this.refreshSlice(),
+			onSuccess: () => this.refreshSlice({ keepCurrentOnEmpty: true }),
 		});
 		return result !== null;
 	}
@@ -181,7 +189,7 @@ export class GradeScalesPageState {
 			successMessage: input.successMessage,
 			apply: () => this.upsertScale({ ...existing, ...patch }),
 			rollback: () => this.upsertScale(existing),
-			onSuccess: () => this.refreshSlice(),
+			onSuccess: () => this.refreshSlice({ keepCurrentOnEmpty: true }),
 		});
 		return result !== null;
 	}

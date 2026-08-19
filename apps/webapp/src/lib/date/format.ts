@@ -36,6 +36,20 @@ export function todayDateInput(): string {
 	return nowIso().slice(0, 10);
 }
 
+/** Clamp a `YYYY-MM-DD` value into `[start, end]` (inclusive). Empty bounds are ignored. */
+export function clampDateInput(value: string, start = '', end = ''): string {
+	const date = formatDateInput(value) || todayDateInput();
+	const min = formatDateInput(start);
+	const max = formatDateInput(end);
+	if (min && date < min) {
+		return min;
+	}
+	if (max && date > max) {
+		return max;
+	}
+	return date;
+}
+
 export function inClassAssessmentWindow(dateInput: string): { startsAt: string; endsAt: string } {
 	const [year, month, day] = dateInput.slice(0, 10).split('-').map(value => Number.parseInt(value, 10));
 	const startsAt = new Date(Date.UTC(year, month - 1, day, 9, 0, 0, 0));

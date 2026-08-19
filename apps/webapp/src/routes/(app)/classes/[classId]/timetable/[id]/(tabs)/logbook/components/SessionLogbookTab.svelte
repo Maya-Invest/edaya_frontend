@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { PlanningEvent } from '$lib/types/school';
-	import { page } from '$app/stores';
 	import PlanningSessionLogbookModal from '$lib/components/school/scheduling/PlanningSessionLogbookModal.svelte';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -8,27 +7,25 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
 	import { FileText } from '$lib/icons';
-	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
-	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
+	import { getPlanningState } from '$lib/scheduling/planning-state.svelte';
 	import { getSessionLogbookTabState } from '../session-logbook-tab.svelte';
 
 	const { s }: { s: PlanningEvent } = $props();
 
 	const logbookTab = getSessionLogbookTabState();
+	const planning = getPlanningState();
 	const isLesson = $derived(s.kind === 'lesson');
 	const detail = $derived(logbookTab.detailFor(s.id));
+	const logbookAuthorized = $derived(
+		detail ? planning.canOpenSessionLogbook(s, Boolean(detail.logbook)) : false,
+	);
 
-	type SessionDrawerModal = 'session-logbook';
-
-	const modals = createUrlSyncedModals<SessionDrawerModal>({
-		allowed: ['session-logbook'],
-		getUrl: () => $page.url,
-	});
-	setDrawerUrlModals(modals);
-	$effect(() => {
-		modals.hydrate();
-	});
+	const modals = planning.modals;
 	const sessionLogbookOpen = bindUrlModal(modals, 'session-logbook');
+	logbookTab.configureSurfaceValidation(logbookExists =>
+		planning.validateSessionLogbookSurface(s, logbookExists),
+	);
 
 	async function saveLogbook(input: {
 		sessionId: string;
@@ -121,5 +118,7 @@
 		{/if}
 	</div>
 
-	<PlanningSessionLogbookModal {detail} bind:open={sessionLogbookOpen.open} showTrigger={false} onSave={saveLogbook} />
+	{#if logbookAuthorized}
+		<PlanningSessionLogbookModal {detail} bind:open={sessionLogbookOpen.open} showTrigger={false} onSave={saveLogbook} />
+	{/if}
 {/if}

@@ -26,15 +26,18 @@
 
 	const staffPage = getStaffPageState();
 
-	const modals = createUrlSyncedModals({ allowed: ['edit-profile'], getUrl: () => $page.url });
+	const modals = createUrlSyncedModals({
+		allowed: ['edit-profile', 'delete'],
+		getUrl: () => $page.url,
+	});
 	setDrawerUrlModals(modals);
 	$effect(() => {
 		modals.hydrate();
 	});
 	const editProfileOpen = bindUrlModal(modals, 'edit-profile');
+	const deleteOpen = bindUrlModal(modals, 'delete');
 
 	const canChangePhoto = $derived(canUploadProfilePhoto('STAFF_UPDATE'));
-	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
 
 	const permissionsHref = $derived(detailHref.schoolStaffTab(staff.id, 'permissions'));
@@ -54,7 +57,7 @@
 				successMessage: get(t)('staff.toastDeleted', { name: staff.name }),
 			});
 			if (ok) {
-				deleteOpen = false;
+				deleteOpen.open = false;
 				onDeleted?.();
 			}
 		}
@@ -107,7 +110,7 @@
 					{disabled}
 					{title}
 					destructive
-					onclick={() => (deleteOpen = true)}
+					onclick={() => (deleteOpen.open = true)}
 				>
 					{$t('common.delete')}
 				</RowActionMenuItem>
@@ -117,7 +120,7 @@
 </DrawerEntityHeader>
 
 <ConfirmModal
-	bind:open={deleteOpen}
+	bind:open={deleteOpen.open}
 	title={$t('common.deleteConfirmTitle')}
 	description={$t('staff.deleteConfirm', { name: staff.name })}
 	confirmLabel={$t('common.delete')}

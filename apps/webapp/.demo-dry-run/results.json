@@ -1,5 +1,5 @@
 {
-  "passed": 202,
+  "passed": 194,
   "failed": 0,
   "skipped": 0,
   "results": [
@@ -85,17 +85,17 @@
     },
     {
       "scene": "D7",
-      "step": "7.0 Ensure 6ème B daily mode",
+      "step": "7.0 Ensure 6ème 2 daily mode",
       "status": "pass"
     },
     {
       "scene": "D7",
-      "step": "7.1 Attendance nav on 6ème B — class shell",
+      "step": "7.1 Attendance nav on 6ème 2 — class shell",
       "status": "pass"
     },
     {
       "scene": "D7",
-      "step": "7.1 Attendance nav on 6ème B",
+      "step": "7.1 Attendance nav on 6ème 2",
       "status": "pass"
     },
     {
@@ -170,162 +170,157 @@
     },
     {
       "scene": "DR",
-      "step": "1 Dashboard overview",
+      "step": "1 Boîte de réception notifications",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "2 School students list",
+      "step": "2 Préférences notifications",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "3 School guardians list",
+      "step": "3 Évaluations",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "4 School staff list",
+      "step": "4 Bulletins classe",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "5 School teachers list",
+      "step": "5 Élèves de la classe",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "6 School calendar",
+      "step": "6 Matières / enseignement",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "7 School activities list",
+      "step": "7 Emploi du temps",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "8 School announcements list",
+      "step": "8 Class attendance list",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "9 School incidents/events list",
+      "step": "9 Années et périodes académiques",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "10 Class timetable grid",
+      "step": "10 Groupes-classes",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "11 Class evaluations list",
+      "step": "11 Configuration class group drawer profile tab",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "12 Class students roster",
+      "step": "12 Actions disciplinaires",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "13 Class teaching list",
+      "step": "13 Niveaux scolaires",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "14 Class report cards list",
+      "step": "14 Barèmes de notes",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "15 Class attendance list",
+      "step": "15 Templates notifications",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "16 Finance fees list",
+      "step": "16 Configuration report card definitions",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "17 Finance billing list",
+      "step": "17 Paramètres école",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "18 Finance payments list",
+      "step": "18 Matières",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "19 Configuration school profile",
+      "step": "19 Dashboard overview",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "20 Configuration academic admin",
+      "step": "20 Facturation — liste",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "21 Configuration grade levels",
+      "step": "21 Configuration des frais",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "22 Configuration class groups list",
+      "step": "22 Paiements enregistrés",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "23 Configuration subjects list",
+      "step": "23 Activités parascolaires",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "24 Configuration tools hub",
+      "step": "24 Annonces",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "25 Configuration report card definitions",
+      "step": "25 School calendar",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "26 Configuration grade scales",
+      "step": "26 Incidents discipline",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "27 Configuration notification templates",
+      "step": "27 responsables",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "28 Configuration discipline catalog",
+      "step": "28 personnel",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "29 Account inbox",
+      "step": "29 School students list",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "30 Account notification settings",
+      "step": "30 School student drawer profile tab",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "31 School student drawer profile tab",
-      "status": "pass"
-    },
-    {
-      "scene": "DR",
-      "step": "32 Configuration class group drawer profile tab",
+      "step": "31 enseignants",
       "status": "pass"
     },
     {
@@ -750,7 +745,27 @@
     },
     {
       "scene": "DM",
+      "step": "3a Students modal survives reload",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
       "step": "4 Students close strips modal param",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "4a Students UI open pushes modal URL",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "4b Browser Back closes modal",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "4c Browser Forward restores modal",
       "status": "pass"
     },
     {
@@ -834,61 +849,6 @@
       "status": "pass"
     },
     {
-      "scene": "DI",
-      "step": "1 Tools hub",
-      "status": "pass"
-    },
-    {
-      "scene": "DI",
-      "step": "2 Import modal visible",
-      "status": "pass"
-    },
-    {
-      "scene": "DI",
-      "step": "3 Upload step",
-      "status": "pass"
-    },
-    {
-      "scene": "DI",
-      "step": "4 CSV parse success",
-      "status": "pass"
-    },
-    {
-      "scene": "DI",
-      "step": "5 Validate step",
-      "status": "pass"
-    },
-    {
-      "scene": "DI",
-      "step": "6 Close modal",
-      "status": "pass"
-    },
-    {
-      "scene": "DT",
-      "step": "1 Tools hub",
-      "status": "pass"
-    },
-    {
-      "scene": "DT",
-      "step": "2 Generation modal visible",
-      "status": "pass"
-    },
-    {
-      "scene": "DT",
-      "step": "3 Generation setup UI",
-      "status": "pass"
-    },
-    {
-      "scene": "DT",
-      "step": "4 Close generation modal",
-      "status": "pass"
-    },
-    {
-      "scene": "DT",
-      "step": "5 Publish modal",
-      "status": "pass"
-    },
-    {
       "scene": "DG",
       "step": "1 Guardian drawer deep-link",
       "status": "pass"
@@ -950,7 +910,7 @@
     },
     {
       "scene": "DN",
-      "step": "N.2 Ensure 6ème A daily mode",
+      "step": "N.2 Ensure 6ème 1 daily mode",
       "status": "pass"
     },
     {

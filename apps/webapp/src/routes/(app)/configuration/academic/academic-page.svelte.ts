@@ -2,9 +2,10 @@ import type { PeriodDefinition } from '$lib/types/school';
 import type { AcademicPageSlice } from './lib/academic-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
-	activateAcademicYearMutation,
+	archiveAcademicYearMutation,
 	createAcademicYearMutation,
 	publishAcademicPeriodMutation,
+	publishAcademicYearMutation,
 } from '$lib/api/mutations/academic.mutations';
 import { refreshAppShellData } from '$lib/api/mutations/run-mutation';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
@@ -12,6 +13,10 @@ import { readAcademicAdminListFilters, writeAcademicAdminListFilters } from '$li
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
+import {
+	readExpandedAcademicYear,
+	writeExpandedAcademicYear,
+} from './lib/academic-expanded-year';
 import { loadAcademicSlice, queryAcademicListPage } from './lib/academic-queries';
 import { deletePeriodDefinitionMutation } from './lib/academic-route-mutation';
 
@@ -42,10 +47,41 @@ export class AcademicPageState {
 
 	applySlice(data: AcademicPageSlice) {
 		this.slice = data;
-		if (!this.expandedYear && academicContext.yearId) {
-			this.expandedYear = academicContext.yearId;
-		}
+		this.hydrateExpandedYear();
 		this.versions.markLoaded();
+	}
+
+	hydrateExpandedYear() {
+		const url = this.getUrl();
+		const allowedYearIds = academicContext.years.map(year => year.id);
+		const expandedYear = readExpandedAcademicYear(
+			url,
+			allowedYearIds,
+			academicContext.yearId,
+		);
+		this.expandedYear = expandedYear;
+		const canonicalHref = writeExpandedAcademicYear(url, expandedYear);
+		if (canonicalHref !== `${url.pathname}${url.search}`) {
+			void appGoto(canonicalHref, {
+				replaceState: true,
+				keepFocus: true,
+				noScroll: true,
+			});
+		}
+	}
+
+	setExpandedYear(yearId: string | null) {
+		this.expandedYear = yearId;
+		const url = this.getUrl();
+		const href = writeExpandedAcademicYear(url, yearId);
+		if (href === `${url.pathname}${url.search}`) {
+			return;
+		}
+		void appGoto(href, {
+			replaceState: true,
+			keepFocus: true,
+			noScroll: true,
+		});
 	}
 
 	clear() {
@@ -81,13 +117,23 @@ export class AcademicPageState {
 			return null;
 		}
 		await refreshAppShellData();
-		this.expandedYear = yearId;
 		await this.refreshSlice();
+		this.setExpandedYear(yearId);
 		return yearId;
 	}
 
 	async publishYear(yearId: string): Promise<boolean> {
-		const ok = await activateAcademicYearMutation(yearId);
+		const ok = await publishAcademicYearMutation(yearId);
+		if (!ok) {
+			return false;
+		}
+		await refreshAppShellData();
+		await this.refreshSlice();
+		return true;
+	}
+
+	async archiveYear(yearId: string): Promise<boolean> {
+		const ok = await archiveAcademicYearMutation(yearId);
 		if (!ok) {
 			return false;
 		}

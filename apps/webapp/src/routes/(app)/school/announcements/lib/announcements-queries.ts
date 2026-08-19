@@ -15,7 +15,7 @@ export async function loadAnnouncementsSlice() {
 		schoolId
 			? safeOptionalEntityList(() => fetchAnnouncements(client, schoolId))
 			: Promise.resolve([]),
-		loadGuardiansPeopleData(client).catch(() => ({ guardians: [], students: [], totalGuardians: 0 })),
+		loadGuardiansPeopleData(client, schoolId).catch(() => ({ guardians: [], students: [], totalGuardians: 0 })),
 		schoolId && academicContext.yearId
 			? safeOptionalEntityList(() => fetchStaffMembers(client, {
 					schoolId,

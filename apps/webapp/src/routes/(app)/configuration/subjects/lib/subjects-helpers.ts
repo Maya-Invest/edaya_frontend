@@ -21,14 +21,6 @@ export function subjectIdFromUrl(url: URL): string | undefined {
 	return match[1];
 }
 
-export function subjectLevelLabelFromUrl(url: URL): string | undefined {
-	const match = url.pathname.match(/^\/configuration\/subjects\/level\/([^/]+)/);
-	if (!match?.[1]) {
-		return undefined;
-	}
-	return decodeURIComponent(match[1]);
-}
-
 export function logEntriesForSubject(
 	subjectName: string,
 	classId: string,

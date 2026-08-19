@@ -31,16 +31,19 @@
 
 	const guardiansPage = getGuardiansPageState();
 
-	const modals = createUrlSyncedModals({ allowed: ['edit-profile'], getUrl: () => $page.url });
+	const modals = createUrlSyncedModals({
+		allowed: ['edit-profile', 'delete'],
+		getUrl: () => $page.url,
+	});
 	setDrawerUrlModals(modals);
 	$effect(() => {
 		modals.hydrate();
 	});
 	const editProfileOpen = bindUrlModal(modals, 'edit-profile');
+	const deleteOpen = bindUrlModal(modals, 'delete');
 
 	const linked = $derived(guardiansPage.linkedStudents(guardian));
 	const canChangePhoto = $derived(canUploadProfilePhoto('PARENT_UPDATE'));
-	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
 
 	async function handlePhotoChange(file: File) {
@@ -58,7 +61,7 @@
 				successMessage: get(t)('guardian.toastDeleted', { name: guardian.name }),
 			});
 			if (ok) {
-				deleteOpen = false;
+				deleteOpen.open = false;
 				onDeleted?.();
 			}
 		}
@@ -105,7 +108,7 @@
 						destructive
 						{disabled}
 						{title}
-						onclick={() => (deleteOpen = true)}
+						onclick={() => (deleteOpen.open = true)}
 					>
 						<Trash2 class="h-4 w-4" />
 						{$t('common.delete')}
@@ -171,7 +174,7 @@
 </div>
 
 <ConfirmModal
-	bind:open={deleteOpen}
+	bind:open={deleteOpen.open}
 	title={$t('common.deleteConfirmTitle')}
 	description={$t('guardian.deleteConfirm', { name: guardian.name })}
 	confirmLabel={$t('common.delete')}

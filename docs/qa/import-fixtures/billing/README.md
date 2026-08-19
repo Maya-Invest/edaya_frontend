@@ -9,9 +9,9 @@ bun edaya_web/docs/qa/import-fixtures/billing/generate-fixtures.ts
 **Prérequis :**
 
 1. Élèves importés ([EL01](../students/xlsx/EL01-happy-all-valid.xlsx))
-2. Types de frais du catalogue **demo-ci** configurés dans Finances (au minimum **`Scolarité — Collège`** avec montant par défaut)
-3. Autres libellés utilisés : `Cantine`, `Transport scolaire` (voir `FEE_CATALOG_NAMES` dans `_shared/ivory-coast-data.ts`)
-4. Si les libellés diffèrent dans votre école, éditez la colonne `type_frais` ou `_shared/ivory-coast-data.ts`
+2. Au moins un **type de frais** configuré dans Finances, idéalement avec un montant par défaut
+
+Les libellés `type_frais` sont lus dans la base locale ; en l'absence de frais, le générateur avertit et retombe sur le catalogue `FEE_CATALOG_NAMES` de `_shared/ivory-coast-data.ts`.
 
 | Fichier | Scénario | Résultat attendu |
 |---------|----------|------------------|

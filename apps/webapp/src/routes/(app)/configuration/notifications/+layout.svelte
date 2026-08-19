@@ -7,6 +7,7 @@
 	import { t } from '$lib/i18n';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
+	import NotificationRouteModals from './components/NotificationRouteModals.svelte';
 	import NotificationTemplatesList from './components/NotificationTemplatesList.svelte';
 	import {
 		NotificationsPageState,
@@ -22,6 +23,8 @@
 
 	const query = notificationsPage.queryListPage();
 </script>
+
+<NotificationRouteModals />
 
 <PageQuery {query} cacheKey={listRouteCacheKey} loadingTitle={$t('config.notificationTemplates')}>
 	{#snippet children(data)}

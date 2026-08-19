@@ -1,6 +1,6 @@
 import type { ClassNode, GradeLevel, Subject } from '$lib/types/school';
+import { groupSubjectsByGradeLevel } from '$lib/academic/subject-level-groups';
 import { describe, expect, it } from 'bun:test';
-import { findSubjectLevelGroup, groupSubjectsByGradeLevel } from '$lib/academic/subject-level-groups';
 
 const gradeLevels = [
 	{ id: 'ci-gl-6', schoolId: 'sch', name: 'Sixième', cycle: 'Collège', order: 1 },
@@ -99,13 +99,5 @@ describe('groupSubjectsByGradeLevel', () => {
 		);
 		expect(groups.map(group => group.label)).toEqual(['Sixième', 'Cinquième', 'Seconde A']);
 		expect(groups.map(group => group.subtitle)).toEqual(['Collège', 'Collège', 'Lycée']);
-	});
-});
-
-describe('findSubjectLevelGroup', () => {
-	it('resolves a level drawer group by grade level name', () => {
-		const group = findSubjectLevelGroup('Sixième', subjects, classes, gradeLevels);
-		expect(group?.items).toHaveLength(1);
-		expect(group?.items[0]?.id).toBe('gls-6-math');
 	});
 });

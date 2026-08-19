@@ -10,6 +10,7 @@
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
 	import TeacherAssignmentsHubView from './components/TeacherAssignmentsHubView.svelte';
+	import { readTeacherAssignmentsListFilters } from './lib/teacher-assignments-list-filters';
 	import {
 		setTeacherAssignmentsPageState,
 		TeacherAssignmentsPageState,
@@ -23,10 +24,15 @@
 	releaseRoutePageQueryOnDestroy(() => $page.url);
 
 	const query = hubPage.queryListPage();
+	const urlFilters = $derived(readTeacherAssignmentsListFilters($page.url));
 
 	const academicSelectionKey = $derived(
 		`${academicContext.shellReady}|${authSession.schoolId ?? ''}|${academicContext.yearId}`,
 	);
+
+	$effect(() => {
+		hubPage.filters.hydrate(urlFilters);
+	});
 
 	$effect(() => {
 		if (!academicContext.shellReady) {

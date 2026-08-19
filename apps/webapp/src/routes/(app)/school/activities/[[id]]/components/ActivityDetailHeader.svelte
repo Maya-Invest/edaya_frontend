@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Activity } from '$lib/types/school';
+	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { fmtActivityDate } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
@@ -24,14 +25,24 @@
 	const activitiesPage = getActivitiesPageState();
 	const live = $derived(activitiesPage.findActivity(activity.id) ?? activity);
 
-	const modals = createUrlSyncedModals({ allowed: ['edit'], getUrl: () => $page.url });
+	const modals = createUrlSyncedModals({
+		allowed: [
+			'edit',
+			'delete',
+			'link-classes',
+			'unlink-class',
+			'add-students',
+			'remove-enrollment',
+		],
+		getUrl: () => $page.url,
+	});
 	setDrawerUrlModals(modals);
-	$effect(() => {
+	afterNavigate(() => {
 		modals.hydrate();
 	});
 	const editOpen = bindUrlModal(modals, 'edit');
+	const deleteOpen = bindUrlModal(modals, 'delete');
 
-	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
 
 	async function confirmDelete() {
@@ -41,7 +52,7 @@
 				successMessage: get(t)('activities.toastDeleted', { name: live.name }),
 			});
 			if (ok) {
-				deleteOpen = false;
+				deleteOpen.open = false;
 				onDeleted?.();
 			}
 		}
@@ -77,7 +88,7 @@
 					destructive
 					{disabled}
 					{title}
-					onclick={() => (deleteOpen = true)}
+					onclick={() => (deleteOpen.open = true)}
 				>
 					{$t('common.delete')}
 				</RowActionMenuItem>
@@ -87,7 +98,7 @@
 </DrawerEntityHeader>
 
 <ConfirmModal
-	bind:open={deleteOpen}
+	bind:open={deleteOpen.open}
 	title={$t('common.deleteConfirmTitle')}
 	description={$t('activities.deleteConfirm', { name: live.name })}
 	confirmLabel={$t('common.delete')}

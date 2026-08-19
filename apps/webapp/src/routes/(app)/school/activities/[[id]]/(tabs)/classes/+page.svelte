@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -10,6 +11,9 @@
 	import { drawerTabRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
 	import { Plus, Trash2 } from '$lib/icons';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { writeModalSurface } from '$lib/modal/modal-url';
+	import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
 	import ClassGroupPicker from '$lib/smart-components/class-group-picker/ClassGroupPicker.svelte';
 	import { toast } from '$lib/toast.svelte';
 	import { get } from 'svelte/store';
@@ -18,22 +22,30 @@
 
 	const activitiesPage = getActivitiesPageState();
 	const classesTab = getActivityClassesTabState();
-	const query = classesTab.query();
+	const loadTab = classesTab.query();
 	const activityId = $derived($page.params.id ?? '');
 	const activity = $derived(activityId ? activitiesPage.findActivity(activityId) : undefined);
 	const classEnrollments = $derived(classesTab.classEnrollmentsFor(activityId));
 
-	let addOpen = $state(false);
+	type ActivityClassesModal = 'edit' | 'delete' | 'link-classes' | 'unlink-class';
+	const modals = createUrlSyncedModals<ActivityClassesModal>({
+		allowed: ['edit', 'delete', 'link-classes', 'unlink-class'],
+		getUrl: () => $page.url,
+	});
+	afterNavigate(() => {
+		modals.hydrate();
+		validateModal();
+	});
+	const addOpen = bindUrlModal(modals, 'link-classes');
+	const removeOpen = bindUrlModal(modals, 'unlink-class');
 	let classGroupIds = $state<string[]>([]);
 	let busy = $state(false);
-	let removeEnrollmentId = $state<string | null>(null);
-	let removeOpen = $state(false);
 	let removeBusy = $state(false);
 
 	const linkedClassGroupIds = $derived(classEnrollments.map(enrollment => enrollment.classGroupId));
 	const removeTarget = $derived(
-		removeEnrollmentId
-			? classEnrollments.find(enrollment => enrollment.id === removeEnrollmentId)
+		modals.isOpen('unlink-class') && modals.target
+			? classEnrollments.find(enrollment => enrollment.id === modals.target)
 			: undefined,
 	);
 	const removeClassName = $derived(
@@ -41,6 +53,35 @@
 			? (academicContext.classes.find(entry => entry.id === removeTarget.classGroupId)?.name ?? removeTarget.classGroupId)
 			: '—',
 	);
+
+	function canonicalizeModal(modal: ActivityClassesModal | null) {
+		replaceRouteSurface(writeModalSurface($page.url, { modal }));
+	}
+
+	function validateModal() {
+		if (!modals.ready || classesTab.slice?.activityId !== activityId || !modals.active) {
+			return;
+		}
+		if (
+			(modals.active === 'edit' || modals.active === 'delete' || modals.active === 'link-classes')
+			&& modals.target
+		) {
+			canonicalizeModal(modals.active);
+			return;
+		}
+		if (
+			modals.active === 'unlink-class'
+			&& !classEnrollments.some(enrollment => enrollment.id === modals.target)
+		) {
+			canonicalizeModal(null);
+		}
+	}
+
+	async function query(url: URL) {
+		const result = await loadTab(url);
+		validateModal();
+		return result;
+	}
 
 	async function confirmAddClasses() {
 		if (!activity || classGroupIds.length === 0 || busy) {
@@ -62,7 +103,7 @@
 		if (linked > 0) {
 			toast.success(get(t)('activities.linkClassesSuccess', { n: linked }));
 			classesTab.syncFromPage(activity.id);
-			addOpen = false;
+			modals.close();
 			classGroupIds = [];
 		}
 	}
@@ -81,10 +122,10 @@
 		removeBusy = false;
 		if (ok) {
 			classesTab.syncFromPage(activity.id);
-			removeOpen = false;
-			removeEnrollmentId = null;
+			modals.close();
 		}
 	}
+
 </script>
 
 {#if activity}
@@ -106,7 +147,7 @@
 									class="h-7 rounded-full text-xs"
 									disabled={disabled || busy}
 									title={title}
-									onclick={() => (addOpen = true)}
+									onclick={() => modals.open('link-classes')}
 								>
 									<Plus class="mr-1 h-3.5 w-3.5" /> {$t('activities.linkClasses')}
 								</Button>
@@ -138,10 +179,7 @@
 												class="h-8 w-8 text-muted-foreground hover:text-destructive"
 												disabled={disabled || busy}
 												title={title ?? $t('activities.unlinkClass')}
-												onclick={() => {
-													removeEnrollmentId = enrollment.id;
-													removeOpen = true;
-												}}
+												onclick={() => modals.open('unlink-class', { target: enrollment.id })}
 											>
 												<Trash2 class="h-4 w-4" />
 											</Button>
@@ -158,7 +196,7 @@
 {/if}
 
 <PickerModal
-	bind:open={addOpen}
+	bind:open={addOpen.open}
 	title={activity ? $t('activities.linkClassesTitle', { name: activity.name }) : $t('activities.linkClasses')}
 	description={$t('activities.linkClassesDescription')}
 	confirmLabel={$t('activities.linkClassesAction')}
@@ -173,19 +211,16 @@
 		bind:values={classGroupIds}
 		mode="multi"
 		variant="panel"
-		active={addOpen}
+		active={addOpen.open}
 		excludeIds={linkedClassGroupIds}
 	/>
 </PickerModal>
 
 <ConfirmModal
-	bind:open={removeOpen}
+	bind:open={removeOpen.open}
 	title={$t('common.deleteConfirmTitle')}
 	description={$t('activities.unlinkClassConfirm', { name: removeClassName })}
 	confirmLabel={$t('activities.unlinkClass')}
 	busy={removeBusy}
-	onCancel={() => {
-		removeEnrollmentId = null;
-	}}
 	onConfirm={confirmRemoveClass}
 />

@@ -7,8 +7,14 @@ import { loadClassSubjectsByIds } from '$lib/api/subjects-data';
 import { fetchTeacherAssignmentsHubData } from '$lib/api/teacher-assignments-hub-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { mergeById } from '$lib/detail-data/seed-policies';
+import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
+import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
+import {
+	readTeacherAssignmentsListFilters,
+	writeTeacherAssignmentsListFilters,
+} from './lib/teacher-assignments-list-filters';
 import { deleteTeacherAssignmentOnHub, saveTeacherAssignmentOnHub } from './lib/teacher-assignments-mutations';
 import { querySchoolTeacherAssignmentsPage } from './lib/teacher-assignments-queries';
 
@@ -23,10 +29,19 @@ export class TeacherAssignmentsPageState {
 	assignments = $state<TeacherAssignment[]>([]);
 	classSubjects = $state<Subject[]>([]);
 
+	readonly filters: ListFiltersState<{ q: string; class: string; teacher: string }>;
+
 	private readonly versions = new RouteVersionSnapshot(VERSION_FAMILIES);
 
 	constructor(private readonly getUrl: () => URL) {
-		void this.getUrl;
+		this.filters = new ListFiltersState(
+			{
+				getUrl,
+				write: writeTeacherAssignmentsListFilters,
+				goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+			},
+			() => readTeacherAssignmentsListFilters(getUrl()),
+		);
 	}
 
 	hubScope() {

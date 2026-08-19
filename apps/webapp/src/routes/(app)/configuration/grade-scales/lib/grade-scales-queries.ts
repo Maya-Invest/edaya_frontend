@@ -1,14 +1,24 @@
 import type { GradeScalesPageState } from '../grade-scales-page.svelte';
-import { loadReportCardCatalogData } from '$lib/api/report-cards-data';
+import { academicContext } from '$lib/academic/context.svelte';
+import { loadGradeScalesCatalogData } from '$lib/api/report-cards-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { authSession } from '$lib/auth/session.svelte';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 import { ApiError } from '@maya-invest/edaya-api-client';
 import { emptyGradeScalesSlice } from './grade-scales-helpers';
 
+function catalogSchoolId() {
+	return authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
+}
+
 export async function loadGradeScalesSlice() {
+	const schoolId = catalogSchoolId();
+	if (!schoolId) {
+		return emptyGradeScalesSlice();
+	}
 	try {
-		const data = await loadReportCardCatalogData(getBrowserSchoolClient());
-		return { scales: data.gradeScales };
+		const scales = await loadGradeScalesCatalogData(getBrowserSchoolClient(), schoolId);
+		return { scales };
 	}
 	catch (error) {
 		if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {

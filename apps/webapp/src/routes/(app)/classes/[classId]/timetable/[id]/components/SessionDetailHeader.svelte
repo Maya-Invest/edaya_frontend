@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { PlanningEvent } from '$lib/types/school';
-	import { page } from '$app/stores';
 	import { cancelPlanningEventMutation } from '$lib/api/mutations/planning.mutations';
 	import PlanningFormModal from '$lib/components/school/scheduling/PlanningFormModal.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
@@ -8,8 +7,8 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
-	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
-	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
+	import { getPlanningState } from '$lib/scheduling/planning-state.svelte';
 	import { get } from 'svelte/store';
 	import { getTimetablePageState } from '../../timetable-page.svelte';
 
@@ -20,25 +19,17 @@
 	} = $props();
 
 	const timetablePage = getTimetablePageState();
+	const planning = getPlanningState();
 	const isLesson = $derived(s.kind === 'lesson');
 	const isActivity = $derived(s.kind === 'activity');
 	const canCancel = $derived((isLesson || isActivity) && s.status !== 'cancelled');
 	const canEditLesson = $derived(isLesson && s.status !== 'cancelled');
 
-	let cancelOpen = $state(false);
 	let cancelBusy = $state(false);
 
-	type SessionDrawerModal = 'edit-event';
-
-	const modals = createUrlSyncedModals<SessionDrawerModal>({
-		allowed: ['edit-event'],
-		getUrl: () => $page.url,
-	});
-	setDrawerUrlModals(modals);
-	$effect(() => {
-		modals.hydrate();
-	});
+	const modals = planning.modals;
 	const editEventOpen = bindUrlModal(modals, 'edit-event');
+	const cancelOpen = bindUrlModal(modals, 'cancel');
 
 	async function confirmCancel() {
 		cancelBusy = true;
@@ -48,7 +39,7 @@
 			});
 			if (ok) {
 				timetablePage.patchEvent(s.id, { status: 'cancelled' });
-				cancelOpen = false;
+				cancelOpen.open = false;
 			}
 		}
 		finally {
@@ -74,18 +65,25 @@
 	{/snippet}
 	{#snippet actions()}
 		{#if canEditLesson}
-			<PlanningFormModal event={s} subjects={timetablePage.subjects} bind:open={editEventOpen.open} />
+			<PermissionGate permission="TIMETABLE_UPDATE" classId={s.classId}>
+				<PlanningFormModal event={s} subjects={timetablePage.subjects} bind:open={editEventOpen.open} />
+			</PermissionGate>
 		{/if}
 	{/snippet}
 	{#snippet overflow()}
 		{#if canCancel}
-			<PermissionGate permission="TIMETABLE_UPDATE" mode="disable" tooltip={$t('calendar.permissionUpdate')}>
+			<PermissionGate
+				permission="TIMETABLE_UPDATE"
+				classId={s.classId}
+				mode="disable"
+				tooltip={$t('calendar.permissionUpdate')}
+			>
 				{#snippet children({ disabled, title })}
 					<RowActionMenuItem
 						destructive
 						{disabled}
 						{title}
-						onclick={() => (cancelOpen = true)}
+						onclick={() => (cancelOpen.open = true)}
 					>
 						{$t('planning.cancelConfirmTitle')}
 					</RowActionMenuItem>
@@ -97,12 +95,16 @@
 
 <p class="text-sm text-muted-foreground">{s.teacher}</p>
 
-<ConfirmModal
-	bind:open={cancelOpen}
-	title={$t('planning.cancelConfirmTitle')}
-	description={$t('planning.cancelConfirm', { title: s.title })}
-	confirmLabel={$t('common.delete')}
-	cancelLabel={$t('common.cancel')}
-	busy={cancelBusy}
-	onConfirm={confirmCancel}
-/>
+{#if canCancel}
+	<PermissionGate permission="TIMETABLE_UPDATE" classId={s.classId}>
+		<ConfirmModal
+			bind:open={cancelOpen.open}
+			title={$t('planning.cancelConfirmTitle')}
+			description={$t('planning.cancelConfirm', { title: s.title })}
+			confirmLabel={$t('common.delete')}
+			cancelLabel={$t('common.cancel')}
+			busy={cancelBusy}
+			onConfirm={confirmCancel}
+		/>
+	</PermissionGate>
+{/if}

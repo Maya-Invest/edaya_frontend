@@ -5,10 +5,11 @@ import { subjectImportDuplicateKey } from '$lib/import/shared/subject-import-dup
 export { subjectImportDuplicateKey } from '$lib/import/shared/subject-import-duplicate-key';
 
 export async function loadExistingSubjectImportKeys(
+	schoolId: string,
 	classGradeLevelById: Readonly<Record<string, string>>,
 ): Promise<Set<string>> {
 	const client = getBrowserSchoolClient();
-	const sources = await fetchCatalogSubjectsSources(client);
+	const sources = await fetchCatalogSubjectsSources(client, schoolId);
 	const catalog = mapCatalogSubjects(sources, classGradeLevelById);
 	const keys = new Set<string>();
 

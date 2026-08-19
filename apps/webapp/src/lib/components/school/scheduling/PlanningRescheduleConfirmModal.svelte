@@ -2,8 +2,8 @@
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import { t } from '$lib/i18n';
 
-	let {
-		open = $bindable(false),
+	const {
+		open = false,
 		title,
 		fromLabel,
 		toLabel,
@@ -22,13 +22,13 @@
 </script>
 
 <FormModal
-	bind:open
+	{open}
 	title={$t('planning.rescheduleTitle')}
 	description={$t('planning.rescheduleDescription', { title })}
 	submitLabel={$t('planning.rescheduleConfirm')}
 	cancelLabel={$t('common.cancel')}
 	{busy}
-	onCancel={() => onCancel?.()}
+	onOpenChange={nextOpen => !nextOpen && onCancel?.()}
 	onSubmit={onConfirm}
 >
 	<div class="space-y-3 rounded-xl bg-secondary/50 p-4 text-sm">

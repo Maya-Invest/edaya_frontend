@@ -153,7 +153,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen.open = true)}
+						onclick={() => modals.open('create')}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('announcements.new')}
@@ -166,7 +166,9 @@
 		{/snippet}
 	</ListPageHeader>
 
-	<AnnouncementFormModal bind:open={createOpen.open} onCreated={handleCreated} />
+	{#if createOpen.open}
+		<AnnouncementFormModal bind:open={createOpen.open} onCreated={handleCreated} />
+	{/if}
 
 	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
 		<div

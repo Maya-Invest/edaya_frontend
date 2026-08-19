@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { ResolvedPathname } from '$app/types';
 	import type { StudentSubjectGroupItem } from '../student-grades-tab.selectors';
 	import { fmtDateFr } from '$lib/components/school/shared/drawer-constants';
 	import { ChevronDown } from '$lib/icons';
@@ -8,14 +9,17 @@
 		subject,
 		items,
 		subjectAvg,
+		open = false,
+		onOpenChange,
 	}: {
 		subject: string;
 		items: StudentSubjectGroupItem[];
 		subjectAvg: number | null;
+		open?: boolean;
+		onOpenChange?: (open: boolean) => void;
 	} = $props();
 
 	const collapsible = $derived(items.length > 1);
-	let open = $state(false);
 	const graded = $derived(items.filter(item => item.mark !== null));
 	const shown = $derived(collapsible ? open : true);
 </script>
@@ -23,7 +27,7 @@
 <div class="overflow-hidden rounded-xl border border-border bg-card">
 	<button
 		type="button"
-		onclick={() => collapsible && (open = !open)}
+		onclick={() => collapsible && onOpenChange?.(!open)}
 		class={cn(
 			'flex w-full items-center justify-between border-b border-border bg-secondary/40 px-3 py-2 text-left',
 			collapsible ? 'cursor-pointer hover:bg-secondary/60' : 'cursor-default',
@@ -50,7 +54,7 @@
 				<div class="px-3 py-2">
 					<div class="flex items-center justify-between gap-2">
 						{#if href}
-							<a href={href} class="text-sm font-medium text-primary hover:underline">{e.title}</a>
+							<a href={href as ResolvedPathname} class="text-sm font-medium text-primary hover:underline">{e.title}</a>
 						{:else}
 							<p class="text-sm font-medium">{e.title}</p>
 						{/if}

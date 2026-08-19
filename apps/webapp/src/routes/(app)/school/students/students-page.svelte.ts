@@ -4,6 +4,7 @@ import type { Student } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { fetchStudentById, loadClassPeopleData, loadPeopleData, loadPeopleDataPage } from '$lib/api/people-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { authSession } from '$lib/auth/session.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readStudentListFilters, writeStudentListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
@@ -156,8 +157,13 @@ export class StudentsPageState {
 		this.listLoading = true;
 		this.fullRosterStudents = [];
 		try {
+			const schoolId = authSession.schoolId ?? '';
+			if (!schoolId) {
+				return;
+			}
 			const classGroupId = this.filters.values.class;
 			const result = await loadPeopleDataPage(getBrowserSchoolClient(), {
+				schoolId,
 				offset: 0,
 				limit: SCHOOL_STUDENTS_PAGE_SIZE,
 				...(classGroupId !== 'all' ? { classGroupId } : {}),
@@ -185,8 +191,13 @@ export class StudentsPageState {
 		const version = this.listRequestVersion;
 		this.listLoadingMore = true;
 		try {
+			const schoolId = authSession.schoolId ?? '';
+			if (!schoolId) {
+				return;
+			}
 			const classGroupId = this.filters.values.class;
 			const result = await loadPeopleDataPage(getBrowserSchoolClient(), {
+				schoolId,
 				offset: this.students.length,
 				limit: SCHOOL_STUDENTS_PAGE_SIZE,
 				...(classGroupId !== 'all' ? { classGroupId } : {}),
@@ -210,9 +221,12 @@ export class StudentsPageState {
 		this.listLoading = true;
 		this.loadingFullRoster = true;
 		try {
+			const schoolId = authSession.schoolId ?? '';
 			const classGroupId = this.filters.values.class;
 			const result = classGroupId === 'all'
-				? await loadPeopleData(getBrowserSchoolClient())
+				? schoolId
+					? await loadPeopleData(getBrowserSchoolClient(), schoolId)
+					: { students: [], guardians: [] }
 				: await loadClassPeopleData(
 						getBrowserSchoolClient(),
 						classGroupId,

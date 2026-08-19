@@ -5,13 +5,13 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { locale, t } from '$lib/i18n';
-	import { AlertTriangle, Plus, Search } from '$lib/icons';
+	import { AlertTriangle, Plus } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
@@ -46,28 +46,17 @@
 		Other: 'bg-secondary text-foreground/80',
 	};
 
-	let classFilter = $state('all');
-	let searchQuery = $state('');
-	let categoryFilter = $state<'all' | Incident['category']>('all');
-	let severityFilter = $state<'all' | Incident['severity']>('all');
-	let statusFilter = $state<'all' | Incident['status']>('all');
-
 	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
 	$effect(() => {
 		modals.hydrate();
 	});
 	const createOpen = bindUrlModal(modals, 'create');
 
-	$effect.pre(() => {
-		if (classId) {
-			classFilter = classId;
-		}
-	});
-
 	const list = $derived.by(() => {
 		let filtered = incidents;
+		const filters = eventsPage.filters.values;
 
-		const effectiveClassId = classId || (classFilter !== 'all' ? classFilter : undefined);
+		const effectiveClassId = classId || (filters.class !== 'all' ? filters.class : undefined);
 		if (effectiveClassId) {
 			const sIds = new Set(
 				students.filter(s => s.classId === effectiveClassId).map(s => s.id),
@@ -75,8 +64,8 @@
 			filtered = filtered.filter(i => i.involvedStudentIds.some(id => sIds.has(id)));
 		}
 
-		if (searchQuery.trim()) {
-			const q = searchQuery.toLowerCase();
+		if (filters.q.trim()) {
+			const q = filters.q.toLowerCase();
 			filtered = filtered.filter((i) => {
 				return i.involvedStudentIds.some((studentId) => {
 					const st = students.find(s => s.id === studentId);
@@ -85,14 +74,14 @@
 			});
 		}
 
-		if (categoryFilter !== 'all') {
-			filtered = filtered.filter(i => i.category === categoryFilter);
+		if (filters.category !== 'all') {
+			filtered = filtered.filter(i => i.category === filters.category);
 		}
-		if (severityFilter !== 'all') {
-			filtered = filtered.filter(i => i.severity === severityFilter);
+		if (filters.severity !== 'all') {
+			filtered = filtered.filter(i => i.severity === filters.severity);
 		}
-		if (statusFilter !== 'all') {
-			filtered = filtered.filter(i => i.status === statusFilter);
+		if (filters.status !== 'all') {
+			filtered = filtered.filter(i => i.status === filters.status);
 		}
 
 		return filtered;
@@ -126,7 +115,11 @@
 	] as const);
 
 	const secondaryFilterCount = $derived(
-		(categoryFilter !== 'all' ? 1 : 0) + (severityFilter !== 'all' ? 1 : 0) + (statusFilter !== 'all' ? 1 : 0),
+		[
+			eventsPage.filters.values.category,
+			eventsPage.filters.values.severity,
+			eventsPage.filters.values.status,
+		].filter(value => value !== 'all').length,
 	);
 
 	function studentSummary(incident: Incident): string {
@@ -156,21 +149,18 @@
 		title={$t('events.count', { n: list.length })}
 	>
 		{#snippet search()}
-			<div class="relative min-w-[200px] max-w-sm">
-				<Search
-					class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-				/>
-				<Input
-					placeholder={$t('common.searchStudent')}
-					bind:value={searchQuery}
-					class="h-9 rounded-lg pl-9 text-sm"
-				/>
-			</div>
+			<ListSearchField
+				value={eventsPage.filters.values.q}
+				placeholder={$t('common.searchStudent')}
+				class="min-w-[200px] max-w-sm"
+				oninput={event => eventsPage.filters.setField('q', event.currentTarget.value)}
+			/>
 		{/snippet}
 		{#snippet filters()}
 			{#if !classId}
 				<FilterSelect
-					bind:value={classFilter}
+					value={eventsPage.filters.values.class}
+					onchange={value => eventsPage.filters.patchImmediate({ class: value })}
 					class="h-9 w-[220px] rounded-lg text-sm"
 					options={classFilterOptions}
 				/>
@@ -178,17 +168,20 @@
 			<FilterPanel activeCount={secondaryFilterCount} title={$t('events.secondaryFilters')}>
 				<div class="space-y-3">
 					<FilterSelect
-						bind:value={categoryFilter}
+						value={eventsPage.filters.values.category}
+						onchange={value => eventsPage.filters.patchImmediate({ category: value })}
 						class="h-9 w-full rounded-md text-xs"
 						options={[...categoryOptions]}
 					/>
 					<FilterSelect
-						bind:value={severityFilter}
+						value={eventsPage.filters.values.severity}
+						onchange={value => eventsPage.filters.patchImmediate({ severity: value })}
 						class="h-9 w-full rounded-md text-xs"
 						options={[...severityOptions]}
 					/>
 					<FilterSelect
-						bind:value={statusFilter}
+						value={eventsPage.filters.values.status}
+						onchange={value => eventsPage.filters.patchImmediate({ status: value })}
 						class="h-9 w-full rounded-md text-xs"
 						options={[...statusOptions]}
 					/>
@@ -207,7 +200,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen.open = true)}
+						onclick={() => modals.open('create')}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('events.log')}

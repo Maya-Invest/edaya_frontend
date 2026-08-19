@@ -1,7 +1,9 @@
 <script lang="ts">
 	import type { ListEntityTableColumn } from '$lib/list/list-entity-table-types';
+	import type { ListCardColumns, ListView } from '$lib/list/list-view-url';
 	import type { Student } from '$lib/types/school';
 	import type { StudentSortColumn } from '../lib/student-list-filters';
+	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -22,9 +24,15 @@
 	import { loadCardColumnsPreference, saveCardColumnsPreference } from '$lib/list/list-card-columns-preference';
 	import { downloadCsv } from '$lib/list/list-csv-export';
 	import { ListSelectionState } from '$lib/list/list-selection-state.svelte';
+	import {
+		isListCardColumns,
+		readListCardColumns,
+		readListView,
+		writeListCardColumns,
+		writeListView,
+	} from '$lib/list/list-view-url';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
-	import { bindUrlModal, closeUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { appendModal } from '$lib/modal/modal-url';
+	import { appendModal, MODAL_QUERY_KEY } from '$lib/modal/modal-url';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { toast } from '$lib/toast.svelte';
@@ -34,14 +42,15 @@
 		getStudentsPageState,
 		SCHOOL_STUDENTS_PAGE_SIZE,
 	} from '../students-page.svelte';
-	import StudentCreateModal from './StudentCreateModal.svelte';
 
 	const {
 		onSelect,
 		selectedId,
+		onCreate,
 	}: {
 		onSelect?: (student: Student) => void;
 		selectedId?: string;
+		onCreate: () => void;
 	} = $props();
 
 	const studentsPage = getStudentsPageState();
@@ -49,19 +58,50 @@
 	const hierarchy = $derived(studentsPage.hierarchy);
 	const selection = new ListSelectionState<Student>();
 
-	let view = $state<'table' | 'cards'>('table');
-	let cardColumns = $state(loadCardColumnsPreference('school-students-card-columns', 3));
+	const view = $derived(readListView($page.url));
+	const storedCardColumns = loadCardColumnsPreference('school-students-card-columns', 3);
+	const defaultCardColumns: ListCardColumns = isListCardColumns(storedCardColumns)
+		? storedCardColumns
+		: 3;
+	const cardColumns = $derived(readListCardColumns($page.url, defaultCardColumns));
 
 	function setCardColumns(next: number) {
-		cardColumns = next;
+		if (!isListCardColumns(next)) {
+			return;
+		}
 		saveCardColumnsPreference('school-students-card-columns', next);
+		void appGoto(writeListCardColumns($page.url, next), {
+			replaceState: true,
+			keepFocus: true,
+			noScroll: true,
+		});
 	}
 
-	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
-	$effect(() => {
-		modals.hydrate();
+	function setView(next: ListView) {
+		void appGoto(writeListView($page.url, next), {
+			replaceState: true,
+			keepFocus: true,
+			noScroll: true,
+		});
+	}
+
+	afterNavigate(() => {
+		if ($page.url.searchParams.has(MODAL_QUERY_KEY)) {
+			return;
+		}
+		const viewHref = writeListView($page.url, view);
+		const canonicalHref = writeListCardColumns(
+			new URL(viewHref, $page.url),
+			cardColumns,
+		);
+		if (canonicalHref !== `${$page.url.pathname}${$page.url.search}`) {
+			void appGoto(canonicalHref, {
+				replaceState: true,
+				keepFocus: true,
+				noScroll: true,
+			});
+		}
 	});
-	const createOpen = bindUrlModal(modals, 'create');
 
 	const usesFullRoster = $derived(studentListUsesFullRoster(studentsPage.filters.values));
 
@@ -176,11 +216,6 @@
 		void studentsPage.loadMore();
 	}
 
-	function handleCreated(studentId: string) {
-		const path = detailHref.schoolStudent(studentId);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
-	}
-
 	function applyFacetFilter(field: 'class' | 'status', value: string) {
 		studentsPage.filters.patch({ [field]: value });
 		studentsPage.filters.syncNow();
@@ -259,7 +294,7 @@
 			<ListMoreMenu
 				{view}
 				onEnterSelectMode={selection.selectionMode ? undefined : () => selection.enterSelectionMode()}
-				onViewChange={value => (view = value)}
+				onViewChange={setView}
 			/>
 		{/snippet}
 		{#snippet primary()}
@@ -274,7 +309,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => (createOpen.open = true)}
+						onclick={onCreate}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('students.newStudent')}
@@ -283,13 +318,6 @@
 			</PermissionGate>
 		{/snippet}
 	</ListPageHeader>
-
-	<StudentCreateModal
-		bind:open={createOpen.open}
-		onOpenChange={closeUrlModal(modals)}
-		{hierarchy}
-		onCreated={handleCreated}
-	/>
 
 	{#if selection.selectionMode}
 		<ListSelectionBar

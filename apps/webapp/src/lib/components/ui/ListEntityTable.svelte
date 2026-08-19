@@ -5,7 +5,7 @@
 	import InfiniteList from '$lib/components/ui/InfiniteList.svelte';
 	import { t } from '$lib/i18n';
 	import { ChevronDown, ChevronUp } from '$lib/icons';
-	import { listSortButtonLabel } from '$lib/list/list-sort-label';
+	import { listSortAriaValue, listSortButtonLabel } from '$lib/list/list-sort-label';
 	import { cn } from '$lib/utils';
 
 	const {
@@ -113,10 +113,17 @@
 			</div>
 		{/if}
 		{#each columns as column (column.key)}
-			<div class={cn('flex items-center', colSpanClass[columnSpan(column)], column.class)}>
+			<div
+				class={cn('flex items-center', colSpanClass[columnSpan(column)], column.class)}
+				role={column.sortable && onSort && sort ? 'columnheader' : undefined}
+				aria-sort={column.sortable && onSort && sort
+					? listSortAriaValue(sort.column, sort.dir, column.key)
+					: undefined}
+			>
 				{#if column.sortable && onSort && sort}
 					<button
 						type="button"
+						data-testid="list-sort"
 						class={cn(
 							'flex items-center gap-1 transition-colors hover:text-foreground',
 							sort.column === column.key && 'text-foreground',

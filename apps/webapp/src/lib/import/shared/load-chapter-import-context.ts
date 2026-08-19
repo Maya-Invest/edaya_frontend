@@ -162,10 +162,11 @@ function buildLegacyCatalogTargets(
 
 export async function loadChapterImportContext(
 	client: SchoolClient,
+	schoolId: string,
 	classes: readonly ChapterImportClassOption[],
 	gradeLevels: readonly ChapterImportGradeLevelOption[],
 ): Promise<ChapterImportLoadedContext> {
-	const sources = await fetchCatalogSubjectsSources(client);
+	const sources = await fetchCatalogSubjectsSources(client, schoolId);
 
 	const classGradeLevelById = new Map(classes.map(entry => [entry.id, entry.gradeLevelId]));
 	const gradeLevelNameById = new Map(gradeLevels.map(entry => [entry.id, entry.name]));

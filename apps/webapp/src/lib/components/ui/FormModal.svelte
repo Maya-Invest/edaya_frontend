@@ -70,8 +70,8 @@
 			{#if footer}
 				{@render footer({ close, submit: onSubmit, busy, submitDisabled })}
 			{:else}
-				<Button variant="ghost" onclick={close} disabled={busy}>{cancelLabel}</Button>
-				<Button onclick={onSubmit} disabled={busy || submitDisabled}>{submitLabel}</Button>
+				<Button variant="ghost" data-testid="form-modal-cancel" onclick={close} disabled={busy}>{cancelLabel}</Button>
+				<Button data-testid="form-modal-submit" onclick={onSubmit} disabled={busy || submitDisabled}>{submitLabel}</Button>
 			{/if}
 		</Dialog.Footer>
 	</Dialog.Content>

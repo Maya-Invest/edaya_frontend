@@ -1,5 +1,10 @@
 <script lang="ts">
 	import type { PeriodDefinition, PeriodDefinitionDayOfWeek } from '$lib/types/school';
+	import type {
+		AcademicModalName,
+		PeriodDefinitionWizardStep,
+	} from '../lib/academic-modal-surface';
+	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -13,10 +18,21 @@
 	import { t } from '$lib/i18n';
 	import { CalendarRange, ChevronDown, Plus, Sparkles } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { hasPermission } from '$lib/permissions';
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getAcademicPageState } from '../academic-page.svelte';
+	import {
+		ACADEMIC_MODAL_NAMES,
+		AcademicWizardObservationGuard,
+		PERIOD_DEFINITION_WIZARD_STEPS,
+		allowedAcademicModalNames,
+		canonicalAcademicModalStep,
+		isAcademicModalTargetValid,
+		resolvePeriodDefinitionModalTarget,
+		snapshotAcademicMutationTarget,
+	} from '../lib/academic-modal-surface';
 	import { PERIOD_DEFINITION_WEEKDAYS } from '../lib/period-definition-presets';
 	import AcademicYearCreateModal from './AcademicYearCreateModal.svelte';
 	import PeriodDefinitionBoard from './PeriodDefinitionBoard.svelte';
@@ -24,27 +40,140 @@
 	import PeriodDefinitionWizardModal from './PeriodDefinitionWizardModal.svelte';
 
 	const academicPage = getAcademicPageState();
+	const canConfigureSchoolStructure = $derived(hasPermission('SCHOOL_STRUCTURE_CONFIGURE'));
+	const allowedModalNames = $derived(
+		allowedAcademicModalNames(canConfigureSchoolStructure),
+	);
 
-	const modals = createUrlSyncedModals({ allowed: ['create', 'period-def'], getUrl: () => $page.url });
-	$effect(() => {
-		modals.hydrate();
+	const modals = createUrlSyncedModals<AcademicModalName>({
+		allowed: () => allowedModalNames,
+		owned: ACADEMIC_MODAL_NAMES,
+		allowedSteps: PERIOD_DEFINITION_WIZARD_STEPS,
+		getUrl: () => $page.url,
 	});
+	const wizardObservation = new AcademicWizardObservationGuard();
 	const createOpen = bindUrlModal(modals, 'create');
 	const periodDefOpen = bindUrlModal(modals, 'period-def');
+	const wizardOpen = bindUrlModal(modals, 'period-def-wizard');
+	const deleteOpen = bindUrlModal(modals, 'delete-period-def');
+	const archiveOpen = bindUrlModal(modals, 'archive-year');
+	const publishYearOpen = bindUrlModal(modals, 'publish-year');
+	const publishPeriodOpen = bindUrlModal(modals, 'publish-period');
 
-	let periodDefYearId = $state('');
-	let editingPeriodDef = $state<PeriodDefinition | null>(null);
-	let wizardOpen = $state(false);
-	let wizardYearId = $state('');
-	let deleteOpen = $state(false);
 	let deleteBusy = $state(false);
-	let deleteTarget = $state<PeriodDefinition | null>(null);
+	let archiveBusy = $state(false);
+	let publishYearBusy = $state(false);
+	let publishPeriodBusy = $state(false);
+
+	const modalCatalog = $derived({
+		years: academicContext.years.map(entry => ({
+			id: entry.id,
+			status: entry.status,
+		})),
+		periods: academicContext.periods.map(entry => ({
+			id: entry.id,
+			status: entry.status,
+		})),
+		periodDefinitions: academicContext.periodDefinitions.map(entry => ({
+			id: entry.id,
+			academicYearId: entry.academicYearId,
+		})),
+	});
+	const targetedYear = $derived(
+		modals.target
+			? academicContext.years.find(entry => entry.id === modals.target) ?? null
+			: null,
+	);
+	const targetedPeriod = $derived(
+		modals.target
+			? academicContext.periods.find(entry => entry.id === modals.target) ?? null
+			: null,
+	);
+	const targetedPeriodDefinition = $derived(
+		modals.target ? academicContext.periodDefinitionById(modals.target) ?? null : null,
+	);
+	const periodDefinitionModalTarget = $derived(
+		modals.isOpen('period-def')
+			? resolvePeriodDefinitionModalTarget(modals.target, modalCatalog)
+			: null,
+	);
+	const editingPeriodDef = $derived(
+		periodDefinitionModalTarget?.mode === 'edit' ? targetedPeriodDefinition : null,
+	);
+	const deleteTarget = $derived(
+		modals.isOpen('delete-period-def') ? targetedPeriodDefinition : null,
+	);
+	const archiveTarget = $derived.by(() => {
+		if (!modals.isOpen('archive-year')) {
+			return null;
+		}
+		return isAcademicModalTargetValid('archive-year', modals.target, modalCatalog)
+			? targetedYear
+			: null;
+	});
+	const publishYearTarget = $derived.by(() => {
+		if (!modals.isOpen('publish-year')) {
+			return null;
+		}
+		return isAcademicModalTargetValid('publish-year', modals.target, modalCatalog)
+			? targetedYear
+			: null;
+	});
+	const publishPeriodTarget = $derived.by(() => {
+		if (!modals.isOpen('publish-period')) {
+			return null;
+		}
+		return isAcademicModalTargetValid('publish-period', modals.target, modalCatalog)
+			? targetedPeriod
+			: null;
+	});
+	const wizardStep = $derived<PeriodDefinitionWizardStep>(
+		canonicalAcademicModalStep('period-def-wizard', modals.step, {
+			resetAdvancedWizardStep: false,
+		}) ?? 'preset',
+	);
+
+	afterNavigate(() => {
+		modals.hydrate();
+		academicPage.hydrateExpandedYear();
+		if (!academicPage.slice || !academicContext.shellReady) {
+			return;
+		}
+		if (!isAcademicModalTargetValid(modals.active, modals.target, modalCatalog)) {
+			modals.close();
+			return;
+		}
+		const resetAdvancedWizardStep = wizardObservation.observe(
+			modals.isOpen('period-def-wizard'),
+		);
+		const canonicalStep = canonicalAcademicModalStep(modals.active, modals.step, {
+			resetAdvancedWizardStep,
+		});
+		if (canonicalStep !== modals.step) {
+			modals.replaceStep(canonicalStep);
+		}
+	});
 
 	const statusOptions = $derived([
 		{ value: 'all', label: $t('academic.filterAllStatuses') },
 		{ value: 'published', label: $t('academic.published') },
 		{ value: 'draft', label: $t('academic.draft') },
+		{ value: 'archived', label: $t('academic.archived') },
 	]);
+
+	const publishedYearId = $derived(
+		academicContext.years.find(year => year.status === 'published')?.id ?? null,
+	);
+
+	function yearStatusLabel(status: string): string {
+		if (status === 'published') {
+			return get(t)('academic.published');
+		}
+		if (status === 'archived') {
+			return get(t)('academic.archived');
+		}
+		return get(t)('academic.draft');
+	}
 
 	const sortedYears = $derived(
 		[...academicContext.years].sort((a, b) => b.startDate.localeCompare(a.startDate)),
@@ -88,55 +217,88 @@
 	}
 
 	function handleYearCreated(yearId: string) {
-		academicPage.expandedYear = yearId;
+		academicPage.setExpandedYear(yearId);
 	}
 
-	async function handlePublishYear(yearId: string) {
-		const ok = await academicPage.publishYear(yearId);
-		if (!ok) {
+	async function confirmPublishYear() {
+		if (!publishYearTarget || publishYearBusy) {
 			return;
 		}
-		const year = academicContext.years.find(entry => entry.id === yearId);
-		if (year) {
-			toast.success(get(t)('academic.toastYearPublished', { label: year.label }));
+		const target = snapshotAcademicMutationTarget(publishYearTarget);
+		publishYearBusy = true;
+		try {
+			const ok = await academicPage.publishYear(target.id);
+			if (!ok) {
+				return;
+			}
+			toast.success(get(t)('academic.toastYearPublished', { label: target.label }));
+			modals.close();
+		}
+		finally {
+			publishYearBusy = false;
 		}
 	}
 
-	async function handlePublishPeriod(periodId: string) {
-		const ok = await academicPage.publishPeriod(periodId);
-		if (!ok) {
+	function openArchiveYear(yearId: string) {
+		modals.open('archive-year', { target: yearId });
+	}
+
+	async function confirmArchiveYear() {
+		if (!archiveTarget || archiveBusy) {
 			return;
 		}
-		const period = academicContext.periods.find(entry => entry.id === periodId);
-		if (period) {
-			toast.success(get(t)('academic.toastPeriodPublished', { label: period.label }));
+		const target = snapshotAcademicMutationTarget(archiveTarget);
+		archiveBusy = true;
+		try {
+			const ok = await academicPage.archiveYear(target.id);
+			if (!ok) {
+				return;
+			}
+			toast.success(get(t)('academic.toastYearArchived', { label: target.label }));
+			modals.close();
+		}
+		finally {
+			archiveBusy = false;
+		}
+	}
+
+	async function confirmPublishPeriod() {
+		if (!publishPeriodTarget || publishPeriodBusy) {
+			return;
+		}
+		const target = snapshotAcademicMutationTarget(publishPeriodTarget);
+		publishPeriodBusy = true;
+		try {
+			const ok = await academicPage.publishPeriod(target.id);
+			if (!ok) {
+				return;
+			}
+			toast.success(get(t)('academic.toastPeriodPublished', { label: target.label }));
+			modals.close();
+		}
+		finally {
+			publishPeriodBusy = false;
 		}
 	}
 
 	function openCreatePeriodDef(yearId: string) {
-		periodDefYearId = yearId;
-		editingPeriodDef = null;
-		periodDefOpen.open = true;
+		modals.open('period-def', { target: yearId });
 	}
 
 	function openPeriodDefWizard(yearId: string) {
-		wizardYearId = yearId;
-		wizardOpen = true;
+		modals.open('period-def-wizard', { target: yearId, step: 'preset' });
 	}
 
 	function openEditPeriodDef(def: PeriodDefinition) {
-		periodDefYearId = def.academicYearId;
-		editingPeriodDef = def;
-		periodDefOpen.open = true;
+		modals.open('period-def', { target: def.id });
 	}
 
 	function openDeletePeriodDef(def: PeriodDefinition) {
-		deleteTarget = def;
-		deleteOpen = true;
+		modals.open('delete-period-def', { target: def.id });
 	}
 
 	async function confirmDeletePeriodDef() {
-		if (!deleteTarget) {
+		if (!deleteTarget || deleteBusy) {
 			return;
 		}
 		deleteBusy = true;
@@ -146,8 +308,7 @@
 				successMessage: get(t)('periodDefinitions.toastDeleted', { label: deleteTarget.label }),
 			});
 			if (ok) {
-				deleteOpen = false;
-				deleteTarget = null;
+				modals.close();
 			}
 		}
 		finally {
@@ -156,15 +317,6 @@
 	}
 
 	const statusFilterActive = $derived(academicPage.filters.values.status !== 'all' ? 1 : 0);
-
-	$effect(() => {
-		if (!academicPage.filters.ready) {
-			return;
-		}
-		void academicPage.filters.values.q;
-		void academicPage.filters.values.status;
-		academicPage.filters.scheduleSync();
-	});
 </script>
 
 <div class="animate-fade-in">
@@ -181,11 +333,12 @@
 					bind:value={academicPage.filters.values.status}
 					options={statusOptions}
 					class="h-9 w-full rounded-md text-xs"
+					onchange={() => academicPage.filters.scheduleSync()}
 				/>
 			</FilterPanel>
 		{/snippet}
 		{#snippet primary()}
-			<Button size="sm" class="rounded-full" onclick={() => (createOpen.open = true)}>
+			<Button size="sm" class="rounded-full" onclick={() => modals.open('create')}>
 				<Plus class="mr-1 h-4 w-4" />
 				{$t('academic.createYear')}
 			</Button>
@@ -204,7 +357,7 @@
 				<button
 					type="button"
 					class="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-secondary/40"
-					onclick={() => (academicPage.expandedYear = open ? null : year.id)}
+					onclick={() => academicPage.setExpandedYear(open ? null : year.id)}
 				>
 					<CalendarRange class="h-4 w-4 shrink-0 text-muted-foreground" />
 					<div class="min-w-0 flex-1">
@@ -215,10 +368,12 @@
 									'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide',
 									year.status === 'published'
 										? 'bg-accent/15 text-accent-foreground'
+										: year.status === 'archived'
+										? 'bg-muted text-muted-foreground'
 										: 'bg-secondary text-muted-foreground',
 								)}
 							>
-								{year.status === 'published' ? $t('academic.published') : $t('academic.draft')}
+								{yearStatusLabel(year.status)}
 							</span>
 						</div>
 						<p class="mt-0.5 font-mono text-xs text-muted-foreground">
@@ -230,14 +385,27 @@
 
 				{#if open}
 					<div class="border-t border-border px-5 py-4">
-						{#if year.status === 'draft'}
+						{#if year.status !== 'published'}
 							<div class="mb-4 flex justify-end">
 								<Button
 									size="sm"
 									class="rounded-full"
-									onclick={() => handlePublishYear(year.id)}
+									disabled={publishedYearId !== null}
+									title={publishedYearId !== null ? $t('academic.publishBlocked') : undefined}
+									onclick={() => modals.open('publish-year', { target: year.id })}
 								>
 									{$t('academic.publishYear')}
+								</Button>
+							</div>
+						{:else if year.status === 'published'}
+							<div class="mb-4 flex justify-end">
+								<Button
+									size="sm"
+									variant="outline"
+									class="rounded-full"
+									onclick={() => openArchiveYear(year.id)}
+								>
+									{$t('academic.archiveYear')}
 								</Button>
 							</div>
 						{/if}
@@ -274,7 +442,7 @@
 												size="sm"
 												variant="outline"
 												class="rounded-full"
-												onclick={() => handlePublishPeriod(period.id)}
+												onclick={() => modals.open('publish-period', { target: period.id })}
 											>
 												{$t('academic.publishPeriod')}
 											</Button>
@@ -339,25 +507,69 @@
 
 <AcademicYearCreateModal bind:open={createOpen.open} onCreated={handleYearCreated} />
 
-<PeriodDefinitionFormModal
-	bind:open={periodDefOpen.open}
-	academicYearId={periodDefYearId}
-	periodDefinition={editingPeriodDef}
-/>
+{#if periodDefOpen.open && periodDefinitionModalTarget}
+	<PeriodDefinitionFormModal
+		bind:open={periodDefOpen.open}
+		academicYearId={periodDefinitionModalTarget.academicYearId}
+		periodDefinition={editingPeriodDef}
+	/>
+{/if}
 
-<PeriodDefinitionWizardModal
-	bind:open={wizardOpen}
-	academicYearId={wizardYearId}
-/>
+{#if wizardOpen.open && targetedYear}
+	<PeriodDefinitionWizardModal
+		bind:open={wizardOpen.open}
+		academicYearId={targetedYear.id}
+		step={wizardStep}
+		onStepChange={step => modals.setStep(step)}
+	/>
+{/if}
 
-<ConfirmModal
-	bind:open={deleteOpen}
-	title={$t('common.deleteConfirmTitle')}
-	description={deleteTarget
-		? $t('periodDefinitions.deleteConfirm', { label: deleteTarget.label })
-		: ''}
-	confirmLabel={$t('common.delete')}
-	cancelLabel={$t('common.cancel')}
-	busy={deleteBusy}
-	onConfirm={confirmDeletePeriodDef}
-/>
+{#if archiveOpen.open && archiveTarget}
+	<ConfirmModal
+		bind:open={archiveOpen.open}
+		title={$t('academic.archiveYear')}
+		description={$t('academic.archiveYearConfirm', {
+			label: archiveTarget.label,
+		})}
+		confirmLabel={$t('academic.archiveYear')}
+		cancelLabel={$t('academic.cancel')}
+		busy={archiveBusy}
+		onConfirm={confirmArchiveYear}
+	/>
+{/if}
+
+{#if deleteOpen.open && deleteTarget}
+	<ConfirmModal
+		bind:open={deleteOpen.open}
+		title={$t('common.deleteConfirmTitle')}
+		description={$t('periodDefinitions.deleteConfirm', { label: deleteTarget.label })}
+		confirmLabel={$t('common.delete')}
+		cancelLabel={$t('common.cancel')}
+		busy={deleteBusy}
+		onConfirm={confirmDeletePeriodDef}
+	/>
+{/if}
+
+{#if publishYearOpen.open && publishYearTarget}
+	<ConfirmModal
+		bind:open={publishYearOpen.open}
+		title={$t('academic.publishYear')}
+		confirmLabel={$t('academic.publishYear')}
+		cancelLabel={$t('academic.cancel')}
+		busy={publishYearBusy}
+		variant="default"
+		onConfirm={confirmPublishYear}
+	/>
+{/if}
+
+{#if publishPeriodOpen.open && publishPeriodTarget}
+	<ConfirmModal
+		bind:open={publishPeriodOpen.open}
+		title={$t('academic.publishPeriod')}
+		confirmLabel={$t('academic.publishPeriod')}
+		cancelLabel={$t('academic.cancel')}
+		busy={publishPeriodBusy}
+		variant="default"
+		onConfirm={confirmPublishPeriod}
+	/>
+{/if}

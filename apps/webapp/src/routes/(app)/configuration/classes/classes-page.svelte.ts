@@ -11,11 +11,13 @@ import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 import { mergeById } from '$lib/detail-data/seed-policies';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
-import { readClassGroupListFilters, writeClassGroupListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
-import { nextClassGroupIdFromExistingClasses } from '$lib/school/next-class-group-id';
 import { getContext, setContext } from 'svelte';
+import {
+	readClassGroupsListFilters,
+	writeClassGroupsListFilters,
+} from './lib/class-groups-list-filters';
 import { classGroupIdFromUrl } from './lib/classes-helpers';
 import {
 	ensureClassGroupDrawerSelection,
@@ -39,14 +41,6 @@ function schoolId(): string {
 	return authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
 }
 
-function nextClassId(gradeLevelId: string): string {
-	return nextClassGroupIdFromExistingClasses(
-		gradeLevelId,
-		academicContext.classes.map(entry => entry.id),
-		{ gradeLevelName: academicContext.gradeLevelById(gradeLevelId)?.name },
-	);
-}
-
 export class ClassesPageState {
 	slice = $state<ClassesPageSlice | null>(null);
 	staff = $state<StaffMember[]>([]);
@@ -54,7 +48,7 @@ export class ClassesPageState {
 	permissionCatalog = $state<PermissionCatalogEntry[]>([]);
 	selectedResolving = $state(false);
 
-	readonly filters: ListFiltersState<{ q: string }>;
+	readonly filters: ListFiltersState<{ q: string; gradeLevel: string }>;
 
 	private readonly versions = new RouteVersionSnapshot(CLASSES_VERSION_FAMILIES);
 
@@ -62,10 +56,10 @@ export class ClassesPageState {
 		this.filters = new ListFiltersState(
 			{
 				getUrl,
-				write: writeClassGroupListFilters,
+				write: writeClassGroupsListFilters,
 				goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
 			},
-			() => readClassGroupListFilters(getUrl()),
+			() => readClassGroupsListFilters(getUrl()),
 		);
 	}
 
@@ -182,12 +176,17 @@ export class ClassesPageState {
 			return false;
 		}
 
-		const id = nextClassId(input.gradeLevelId);
+		const academicYearId = academicContext.resolveAcademicYearIdForApi();
+		if (!academicYearId) {
+			return false;
+		}
+
+		const id = crypto.randomUUID();
 		const result = await runClassesRouteMutation({
 			request: () => client.commands.createClassGroup({
 				id,
 				schoolId: sid,
-				academicYearId: academicContext.yearId,
+				academicYearId,
 				gradeLevelId: input.gradeLevelId,
 				name: input.name.trim(),
 				capacity: input.capacity ?? null,

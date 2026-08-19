@@ -19,25 +19,47 @@
 
 	let busy = $state(false);
 	let name = $state('');
+	let label = $state('');
 	let cycle = $state('');
-	let order = $state('0');
+	let order = $state('1');
+	/** Once the user edits the label, it stops mirroring the name. */
+	let labelEdited = $state(false);
 
 	const isEdit = $derived(gradeLevel !== undefined);
-	const canSubmit = $derived(name.trim().length > 0);
+	const canSubmit = $derived(
+		name.trim().length > 0 && label.trim().length > 0 && Number(order) >= 1,
+	);
+	const existingClassCount = $derived(
+		gradeLevel ? gradeLevelsPage.classCountFor(gradeLevel.id) : 0,
+	);
+	const showLabelWarning = $derived(
+		isEdit && existingClassCount > 0 && label.trim() !== gradeLevel?.label,
+	);
 
 	function resetForm() {
+		labelEdited = false;
 		if (gradeLevel) {
 			name = gradeLevel.name;
+			label = gradeLevel.label;
 			cycle = gradeLevel.cycle;
 			order = String(gradeLevel.order);
 		}
 		else {
 			const nextOrder = academicContext.gradeLevels.length > 0
 				? Math.max(...academicContext.gradeLevels.map(level => level.order)) + 1
-				: 0;
+				: 1;
 			name = '';
+			label = '';
 			cycle = '';
 			order = String(nextOrder);
+		}
+	}
+
+	function onNameInput(event: Event) {
+		const value = (event.currentTarget as HTMLInputElement).value;
+		name = value;
+		if (!isEdit && !labelEdited) {
+			label = value;
 		}
 	}
 
@@ -58,8 +80,9 @@
 			const ok = await gradeLevelsPage.saveGradeLevel({
 				id: gradeLevel?.id,
 				name: trimmedName,
+				label: label.trim(),
 				cycle,
-				order: Number(order) || 0,
+				order: Math.max(1, Math.trunc(Number(order) || 1)),
 				successMessage: get(t)(
 					isEdit ? 'gradeLevels.toastUpdated' : 'gradeLevels.toastCreated',
 					{ name: trimmedName },
@@ -89,7 +112,22 @@
 	<div class="grid gap-4 sm:grid-cols-2">
 		<label class="space-y-1.5 text-sm sm:col-span-2">
 			<span class="text-muted-foreground">{$t('gradeLevels.name')}</span>
-			<Input bind:value={name} class="rounded-xl" required />
+			<Input bind:value={name} oninput={onNameInput} class="rounded-xl" required />
+		</label>
+		<label class="space-y-1.5 text-sm sm:col-span-2">
+			<span class="text-muted-foreground">{$t('gradeLevels.label')}</span>
+			<Input
+				bind:value={label}
+				oninput={() => (labelEdited = true)}
+				class="rounded-xl"
+				required
+			/>
+			<span class="block text-xs text-muted-foreground">{$t('gradeLevels.labelHint')}</span>
+			{#if showLabelWarning}
+				<span class="block text-xs text-amber-600 dark:text-amber-500">
+					{$t('gradeLevels.labelEditWarning', { n: existingClassCount })}
+				</span>
+			{/if}
 		</label>
 		<label class="space-y-1.5 text-sm">
 			<span class="text-muted-foreground">{$t('gradeLevels.cycle')}</span>
@@ -97,7 +135,7 @@
 		</label>
 		<label class="space-y-1.5 text-sm">
 			<span class="text-muted-foreground">{$t('gradeLevels.order')}</span>
-			<Input type="number" min="0" bind:value={order} class="rounded-xl" />
+			<Input type="number" min="1" bind:value={order} class="rounded-xl" />
 		</label>
 	</div>
 </FormModal>

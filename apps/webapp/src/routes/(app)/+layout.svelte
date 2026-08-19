@@ -1,10 +1,10 @@
 <script lang="ts">
-	import type { ResolvedPathname } from '$app/types';
 	import type { Snippet } from 'svelte';
 	import { browser } from '$app/environment';
+	import { replaceState } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { ACCOUNT_OPEN_PROFILE_PARAM } from '$lib/account/profile-navigation';
+	import { ACCOUNT_PROFILE_MODAL } from '$lib/account/profile-navigation';
 	import { bootstrapAppShell, invalidateAppShellBootstrapCache, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 	import { shouldEnforceLoginGate } from '$lib/auth/enforce-login-gate';
 	import { authSession } from '$lib/auth/session.svelte';
@@ -16,6 +16,14 @@
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, PanelLeft, PanelLeftClose } from '$lib/icons';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import {
+		MODAL_QUERY_KEY,
+		MODAL_STEP_QUERY_KEY,
+		MODAL_TAB_QUERY_KEY,
+		MODAL_TARGET_QUERY_KEY,
+	} from '$lib/modal/modal-url';
+	import { isKnownModalForPathname } from '$lib/modal/route-modal-catalog';
 	import { DASHBOARD_HREF } from '$lib/navigation';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { canAccessPath } from '$lib/navigation/nav-permissions';
@@ -30,7 +38,42 @@
 	type ToastHostComponent = import('svelte').Component;
 
 	let ToastHost = $state<ToastHostComponent | null>(null);
-	let profileOpen = $state(false);
+	const modalQueryKeys = [
+		MODAL_QUERY_KEY,
+		MODAL_TARGET_QUERY_KEY,
+		MODAL_STEP_QUERY_KEY,
+		MODAL_TAB_QUERY_KEY,
+	] as const;
+
+	$effect.pre(() => {
+		if (!browser) {
+			return;
+		}
+		const url = $page.url;
+		const rawModalName = url.searchParams.get(MODAL_QUERY_KEY);
+		if (isKnownModalForPathname(url.pathname, rawModalName)) {
+			return;
+		}
+		if (!modalQueryKeys.some(key => url.searchParams.has(key))) {
+			return;
+		}
+		const canonicalUrl = new URL(url);
+		for (const key of modalQueryKeys) {
+			canonicalUrl.searchParams.delete(key);
+		}
+		// The URL is derived from the current resolved route and only removes search parameters.
+		// eslint-disable-next-line svelte/no-navigation-without-resolve
+		replaceState(canonicalUrl, $page.state);
+	});
+
+	const accountModals = createUrlSyncedModals({
+		allowed: [ACCOUNT_PROFILE_MODAL],
+		getUrl: () => $page.url,
+	});
+	$effect(() => {
+		accountModals.hydrate();
+	});
+	const profileOpen = bindUrlModal(accountModals, ACCOUNT_PROFILE_MODAL);
 
 	$effect(() => {
 		if (!authSession.ready) {
@@ -88,17 +131,6 @@
 				await bootstrapAppShell();
 			}
 		})();
-	});
-
-	$effect(() => {
-		if (!browser || $page.url.searchParams.get(ACCOUNT_OPEN_PROFILE_PARAM) !== '1') {
-			return;
-		}
-		profileOpen = true;
-		const next = new URL($page.url);
-		next.searchParams.delete(ACCOUNT_OPEN_PROFILE_PARAM);
-		const href = `${next.pathname}${next.search}` as ResolvedPathname;
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
 	});
 
 	$effect(() => {
@@ -163,11 +195,12 @@
 					<div class="flex items-center gap-1.5">
 						<button
 							type="button"
-							onclick={() => (profileOpen = true)}
+							data-testid="user-menu"
+							onclick={() => (profileOpen.open = true)}
 							class="flex h-9 items-center gap-2 rounded-full border border-border bg-card pl-1 pr-3 text-xs font-medium text-foreground transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 							aria-label={$t('account.profile.openProfile')}
 							aria-haspopup="dialog"
-							aria-expanded={profileOpen}
+							aria-expanded={profileOpen.open}
 						>
 							<PersonAvatar
 								name={me.name}
@@ -190,7 +223,7 @@
 		</div>
 	</div>
 
-	<AccountProfileModal bind:open={profileOpen} actor={me} onLogout={logout} />
+	<AccountProfileModal bind:open={profileOpen.open} actor={me} onLogout={logout} />
 
 	{#if ToastHost}
 		<ToastHost />
