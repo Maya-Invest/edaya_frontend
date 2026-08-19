@@ -32,8 +32,7 @@
 		writeListView,
 	} from '$lib/list/list-view-url';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
-	import { bindUrlModal, closeUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { appendModal } from '$lib/modal/modal-url';
+	import { appendModal, MODAL_QUERY_KEY } from '$lib/modal/modal-url';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { toast } from '$lib/toast.svelte';
@@ -43,14 +42,15 @@
 		getStudentsPageState,
 		SCHOOL_STUDENTS_PAGE_SIZE,
 	} from '../students-page.svelte';
-	import StudentCreateModal from './StudentCreateModal.svelte';
 
 	const {
 		onSelect,
 		selectedId,
+		onCreate,
 	}: {
 		onSelect?: (student: Student) => void;
 		selectedId?: string;
+		onCreate: () => void;
 	} = $props();
 
 	const studentsPage = getStudentsPageState();
@@ -85,11 +85,10 @@
 		});
 	}
 
-	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
-	$effect(() => {
-		modals.hydrate();
-	});
 	afterNavigate(() => {
+		if ($page.url.searchParams.has(MODAL_QUERY_KEY)) {
+			return;
+		}
 		const viewHref = writeListView($page.url, view);
 		const canonicalHref = writeListCardColumns(
 			new URL(viewHref, $page.url),
@@ -103,7 +102,6 @@
 			});
 		}
 	});
-	const createOpen = bindUrlModal(modals, 'create');
 
 	const usesFullRoster = $derived(studentListUsesFullRoster(studentsPage.filters.values));
 
@@ -218,11 +216,6 @@
 		void studentsPage.loadMore();
 	}
 
-	function handleCreated(studentId: string) {
-		const path = detailHref.schoolStudent(studentId);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
-	}
-
 	function applyFacetFilter(field: 'class' | 'status', value: string) {
 		studentsPage.filters.patch({ [field]: value });
 		studentsPage.filters.syncNow();
@@ -316,7 +309,7 @@
 						class="rounded-full"
 						{disabled}
 						{title}
-						onclick={() => modals.open('create')}
+						onclick={onCreate}
 					>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('students.newStudent')}
@@ -325,14 +318,6 @@
 			</PermissionGate>
 		{/snippet}
 	</ListPageHeader>
-
-	<StudentCreateModal
-		bind:open={createOpen.open}
-		onOpenChange={closeUrlModal(modals)}
-		{hierarchy}
-		createStudent={input => studentsPage.createStudent(input)}
-		onCreated={handleCreated}
-	/>
 
 	{#if selection.selectionMode}
 		<ListSelectionBar
