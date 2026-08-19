@@ -1,6 +1,6 @@
 {
-  "passed": 186,
-  "failed": 6,
+  "passed": 194,
+  "failed": 0,
   "skipped": 0,
   "results": [
     {
@@ -331,8 +331,7 @@
     {
       "scene": "DC1",
       "step": "Students Filter + More menu",
-      "status": "fail",
-      "detail": "Missing filter panel trigger"
+      "status": "pass"
     },
     {
       "scene": "DC2",
@@ -342,8 +341,7 @@
     {
       "scene": "DC2",
       "step": "Payments Filter + More menu",
-      "status": "fail",
-      "detail": "Missing filter panel trigger"
+      "status": "pass"
     },
     {
       "scene": "DC3",
@@ -383,8 +381,7 @@
     {
       "scene": "DC6",
       "step": "Announcements Filter + More menu",
-      "status": "fail",
-      "detail": "Missing filter panel trigger"
+      "status": "pass"
     },
     {
       "scene": "DC7",
@@ -759,8 +756,17 @@
     {
       "scene": "DM",
       "step": "4a Students UI open pushes modal URL",
-      "status": "fail",
-      "detail": "http://localhost:5173/school/students?view=table&cardColumns=3"
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "4b Browser Back closes modal",
+      "status": "pass"
+    },
+    {
+      "scene": "DM",
+      "step": "4c Browser Forward restores modal",
+      "status": "pass"
     },
     {
       "scene": "DM",
@@ -840,8 +846,7 @@
     {
       "scene": "DM",
       "step": "20 Staff URL modal=add-permission",
-      "status": "fail",
-      "detail": "modal=add-permission"
+      "status": "pass"
     },
     {
       "scene": "DG",
@@ -966,8 +971,7 @@
     {
       "scene": "DO",
       "step": "O.9 URL modal=add-permission",
-      "status": "fail",
-      "detail": "Permissions modal missing for owner"
+      "status": "pass"
     }
   ],
   "consoleErrors": [

@@ -27,6 +27,7 @@
 	} from '$lib/list/list-view-url';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { MODAL_QUERY_KEY } from '$lib/modal/modal-url';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { cn } from '$lib/utils';
@@ -55,6 +56,9 @@
 		modals.hydrate();
 	});
 	afterNavigate(() => {
+		if ($page.url.searchParams.has(MODAL_QUERY_KEY)) {
+			return;
+		}
 		const viewHref = writeListView($page.url, view);
 		const canonicalHref = writeListCardColumns(
 			new URL(viewHref, $page.url),

@@ -18,7 +18,7 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"quality": "bun run lint && bun run check",
 		"test": "bun test tests/lib",
-		"test:integration": "bun test tests/integration --timeout 1200000",
+		"test:integration": "bunx tsx scripts/demo-dry-run.ts",
 		"demo:e2e": "bunx tsx scripts/demo-dry-run.ts",
 		"qa:checklist": "bunx tsx scripts/qa-checklist-run.ts",
 		"qa:template": "bunx tsx scripts/generate-qa-template.ts",

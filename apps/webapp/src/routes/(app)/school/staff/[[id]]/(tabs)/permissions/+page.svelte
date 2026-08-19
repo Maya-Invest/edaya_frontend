@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { formatPermissionLabel } from '$lib/api/staff-permission-assignments-data';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
@@ -25,9 +24,8 @@
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
-	afterNavigate(() => {
+	$effect(() => {
 		modals.hydrate();
-		validateModalTarget();
 	});
 	const addPermissionOpen = bindUrlModal(modals, 'add-permission');
 	const deletePermissionOpen = bindUrlModal(modals, 'delete-permission');
@@ -68,6 +66,10 @@
 			modals.close();
 		}
 	}
+
+	$effect(() => {
+		validateModalTarget();
+	});
 
 	async function query(url: URL) {
 		const result = await loadPermissions(url);

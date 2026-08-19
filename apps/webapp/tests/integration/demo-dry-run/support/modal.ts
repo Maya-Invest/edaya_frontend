@@ -21,8 +21,8 @@ export async function waitForUrlModal(
 }
 
 export async function waitForFormModal(ctx: DemoContext, timeoutMs = 30_000): Promise<boolean> {
-	const dialog = ctx.page.locator('[data-testid="form-modal"]').or(ctx.page.getByRole('dialog'));
-	return dialog.first().isVisible({ timeout: timeoutMs }).catch(() => false);
+	const dialog = ctx.page.getByTestId('form-modal');
+	return dialog.waitFor({ state: 'visible', timeout: timeoutMs }).then(() => true).catch(() => false);
 }
 
 export async function waitForPickerModal(ctx: DemoContext, timeoutMs = 30_000): Promise<boolean> {
@@ -32,11 +32,14 @@ export async function waitForPickerModal(ctx: DemoContext, timeoutMs = 30_000): 
 
 export async function closeFormModal(ctx: DemoContext): Promise<boolean> {
 	const modal = ctx.page.getByTestId('form-modal');
-	const cancelBtn = modal.getByRole('button', { name: /cancel|annuler/i });
-	if (await cancelBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-		await cancelBtn.click();
-		await ctx.page.waitForTimeout(400);
-		return true;
+	const cancelBtn = modal.getByTestId('form-modal-cancel').or(
+		modal.getByRole('button', { name: /cancel|annuler/i }),
+	);
+	const visible = await cancelBtn.waitFor({ state: 'visible', timeout: 5_000 }).then(() => true).catch(() => false);
+	if (!visible) {
+		return false;
 	}
-	return false;
+	await cancelBtn.click();
+	await modal.waitFor({ state: 'hidden', timeout: 8_000 }).catch(() => {});
+	return true;
 }

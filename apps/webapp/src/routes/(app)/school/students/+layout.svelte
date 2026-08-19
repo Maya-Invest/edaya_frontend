@@ -7,10 +7,12 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { readStudentListFilters } from '$lib/list/list-url-filters';
+	import { bindUrlModal, closeUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
+	import StudentCreateModal from './components/StudentCreateModal.svelte';
 	import StudentsList from './components/StudentsList.svelte';
 	import { studentListUsesFullRoster } from './lib/student-list-filters';
 	import {
@@ -24,6 +26,12 @@
 	setStudentsPageState(studentsPage);
 	registerVersionInvalidation(studentsPage);
 	releaseRoutePageQueryOnDestroy(() => $page.url);
+
+	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const createOpen = bindUrlModal(modals, 'create');
 
 	const query = studentsPage.queryListPage();
 
@@ -80,7 +88,20 @@
 		const path = detailHref.schoolStudent(student.id);
 		appGoto(`${path}${detailNavigationSearch($page.url)}`);
 	}
+
+	function handleCreated(studentId: string) {
+		const path = detailHref.schoolStudent(studentId);
+		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+	}
 </script>
+
+<StudentCreateModal
+	bind:open={createOpen.open}
+	onOpenChange={closeUrlModal(modals)}
+	hierarchy={studentsPage.hierarchy}
+	createStudent={input => studentsPage.createStudent(input)}
+	onCreated={handleCreated}
+/>
 
 <PageQuery {query} loadingTitle={$t('school.students')}>
 	{#snippet children(data)}
@@ -91,7 +112,14 @@
 			emptyTitle={$t('school.students')}
 			emptyDescription={$t('dataState.emptyDescription')}
 		>
-			<StudentsList onSelect={selectStudent} selectedId={studentsPage.selectedId} />
+			<StudentsList
+				onSelect={selectStudent}
+				selectedId={studentsPage.selectedId}
+				onCreate={() => {
+					createOpen.open = true;
+					modals.open('create');
+				}}
+			/>
 			{@render pageChildren()}
 		</DataState>
 	{/snippet}
