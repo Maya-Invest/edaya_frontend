@@ -29,8 +29,7 @@ import { waitForAppShell, mergeEntities } from './qa-matrix-support';
 import { discoverEntities, emptyEntities, runLogoutShellScenario, runMatrixScenario } from './qa-matrix-scenarios';
 import type { MatrixResult } from './qa-matrix-support';
 import type { ProvisionedTenant } from '../tests/integration/support/api-provision';
-import { loadSetupEntities } from '../tests/integration/setup/web-tenant-setup';
-import { runUiJourney } from '../tests/integration/setup/ui-flow-runner';
+import { loadSetupEntities, runUiJourney } from '../tests/integration/setup/ui-flow-runner';
 import { studentSetupBlockerReport } from '../tests/integration/setup/setup-blockers';
 import {
 	INTEGRATION_POLICY,

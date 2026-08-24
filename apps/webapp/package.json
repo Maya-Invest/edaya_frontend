@@ -25,7 +25,6 @@
 		"qa:report:detailed": "bunx tsx scripts/generate-qa-detailed-report.ts",
 		"qa:matrix:sync": "bunx tsx scripts/sync-qa-matrix.ts",
 		"qa:matrix": "bunx tsx scripts/qa-matrix-run.ts",
-		"qa:matrix:demo": "bunx tsx scripts/qa-matrix-run.ts",
 		"test:integration:provisioned": "bunx tsx scripts/integration-run.ts",
 		"qa:compile": "bunx tsx scripts/compile-qa-results.ts",
 		"qa:update-xlsx": "python scripts/update-qa-xlsx.py",

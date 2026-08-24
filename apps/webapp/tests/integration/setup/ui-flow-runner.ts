@@ -2,7 +2,7 @@
  * Owner UI journey — one Playwright session, seed order as dependency spine,
  * each action recorded against the QA matrix ledger (no duplicate replay).
  */
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { DemoContext } from '../demo-dry-run/support/types';
 import type { QaTemplateRow } from '../../../scripts/qa-template-matrix.manual';
@@ -18,6 +18,17 @@ import { runAccountsChapter } from './chapters/accounts';
 
 const WEBAPP_DIR = path.join(import.meta.dirname, '../../..');
 export const ENTITIES_PATH = path.join(WEBAPP_DIR, '.integration-run', 'entities.json');
+
+export async function loadSetupEntities(): Promise<Partial<MatrixEntities>> {
+	try {
+		const raw = await readFile(ENTITIES_PATH, 'utf8');
+		const parsed = JSON.parse(raw) as { entities?: MatrixEntities };
+		return parsed.entities ?? {};
+	}
+	catch {
+		return {};
+	}
+}
 
 async function runJourneyChapter(name: string, run: () => Promise<void>): Promise<void> {
 	try {
