@@ -9,8 +9,9 @@ import { spawnSync } from 'node:child_process';
 import { QA_TEMPLATE_MATRIX_RUNNABLE, type QaTemplateRow } from './qa-template-matrix';
 import { describeTestExactly } from './qa-test-descriptions';
 
+const WEBAPP_DIR = path.join(import.meta.dirname, '..');
 const ROOT = path.join(import.meta.dirname, '../../../..');
-const MATRIX_RESULTS_PATH = path.join(ROOT, 'qa-matrix-results.json');
+const MATRIX_RESULTS_PATH = path.join(WEBAPP_DIR, '.integration-run', 'qa-matrix-results.json');
 const LEGACY_RESULTS_PATH = path.join(ROOT, 'qa-checklist-results.json');
 const CSV_PATH = path.join(ROOT, 'qa-test-matrix.csv');
 const XLSX_PATH = path.join(ROOT, 'qa-test-matrix.xlsx');

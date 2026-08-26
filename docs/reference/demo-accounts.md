@@ -45,8 +45,10 @@ cd edaya_web/apps/webapp && bun dev
 cd edaya_web/apps/webapp
 bun run check
 bun test tests/lib tests/generated
-bun run demo:e2e   # ~120 steps; results in .demo-dry-run/
+bun run demo:e2e   # client walkthrough; results in .demo-dry-run/
 ```
+
+App integration tests (API tenant + journey + QA matrix) are `bun run test:integration:provisioned`, not this walkthrough.
 
 **Playwright scenes:** D0–D11 (core), DR (route coverage), DC (list shell), DD (drawer tabs), DM (modal URL), **DI** (import upload/validate), **DT** (timetable generation modal), **DG** (guardian drawer), **DF** (finance billing drawer), DN (homeroom nudge), **DO** (owner permissions).
 

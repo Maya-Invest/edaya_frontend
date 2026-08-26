@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 /**
  * Exécute les scénarios de qa-template-matrix.ts via Playwright.
- * Écrit qa-matrix-results.json puis régénère qa-test-matrix.xlsx.
+ * Écrit apps/webapp/.integration-run/qa-matrix-results.json puis régénère qa-test-matrix.xlsx.
  *
  * Policy: on NOT OK — log blocker, continue, exit 1. Never edit src/ to green the run.
  *
@@ -39,10 +39,9 @@ import {
 	type BlockerReport,
 } from './integration-report';
 
-const ROOT = path.join(import.meta.dirname, '../../../..');
 const WEBAPP_DIR = path.join(import.meta.dirname, '..');
-const OUT_DIR = path.join(ROOT, '.qa-matrix-run');
-const RESULTS_PATH = path.join(ROOT, 'qa-matrix-results.json');
+const OUT_DIR = path.join(WEBAPP_DIR, '.qa-matrix-run');
+const RESULTS_PATH = path.join(WEBAPP_DIR, '.integration-run', 'qa-matrix-results.json');
 const FIXTURE_PATH = path.join(WEBAPP_DIR, '.integration-run', 'fixture.json');
 const INTEGRATION_SUMMARY_PATH = path.join(WEBAPP_DIR, '.integration-run', 'summary.json');
 
@@ -162,6 +161,7 @@ async function main(): Promise<void> {
 	const credentials = await loadProvisionedCredentials();
 
 	await mkdir(OUT_DIR, { recursive: true });
+	await mkdir(path.dirname(RESULTS_PATH), { recursive: true });
 
 	console.log(`QA matrix run — ${matrix.length} scénarios — ${base}`);
 	if (!isProvisionedRun()) {
@@ -210,6 +210,7 @@ async function main(): Promise<void> {
 				detail: `Stack indisponible: ${detail}`,
 			});
 		}
+		await mkdir(path.dirname(RESULTS_PATH), { recursive: true });
 		await writeFile(RESULTS_PATH, JSON.stringify({
 			generatedAt: new Date().toISOString(),
 			base,
@@ -377,6 +378,7 @@ async function persistAndExit(
 		results,
 	};
 
+	await mkdir(path.dirname(RESULTS_PATH), { recursive: true });
 	await writeFile(RESULTS_PATH, JSON.stringify(summary, null, 2));
 
 	if (isProvisionedRun()) {
