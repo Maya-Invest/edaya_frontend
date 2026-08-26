@@ -224,8 +224,16 @@
 	</div>
 
 	<AccountProfileModal bind:open={profileOpen.open} actor={me} onLogout={logout} />
+{:else}
+	<div
+		class="flex h-screen w-full items-center justify-center bg-background text-foreground"
+		data-testid="app-shell-pending"
+	>
+		<LoaderCircle class="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
+		<span class="sr-only">{$t('dataState.loading')}</span>
+	</div>
+{/if}
 
-	{#if ToastHost}
-		<ToastHost />
-	{/if}
+{#if ToastHost}
+	<ToastHost />
 {/if}

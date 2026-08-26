@@ -423,11 +423,11 @@ async function loginIsolated(
 		await context.close();
 		return null;
 	}
-	await waitForAppShell(page).catch(() => {});
+	await waitForAppShell(page);
 	await completeWizardViaApi(page, base).catch(() => {});
 	if (page.url().includes('/onboarding')) {
 		await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
-		await waitForAppShell(page).catch(() => {});
+		await waitForAppShell(page);
 	}
 	return { page, context };
 }
@@ -505,11 +505,16 @@ async function runPermissionsScenario(
 		}
 		try {
 			await session.page.goto(`${base}/finance/billing`, { waitUntil: 'domcontentloaded' });
-			await session.page.waitForTimeout(1_500);
-			const pathname = new URL(session.page.url()).pathname;
-			return pathname.startsWith('/dashboard')
-				? ok(row, pathname)
-				: notOk(row, `Pas de redirect dashboard (${session.page.url()})`);
+			try {
+				await session.page.waitForURL(
+					(url) => new URL(url).pathname.startsWith('/dashboard'),
+					{ timeout: 15_000 },
+				);
+				return ok(row, new URL(session.page.url()).pathname);
+			}
+			catch {
+				return notOk(row, `Pas de redirect dashboard (${session.page.url()})`);
+			}
 		}
 		finally {
 			await session.context.close();
@@ -579,11 +584,16 @@ async function assertFinanceRedirectRestricted(
 	}
 	try {
 		await session.page.goto(`${base}/finance/billing`, { waitUntil: 'domcontentloaded' });
-		await session.page.waitForTimeout(1_500);
-		const pathname = new URL(session.page.url()).pathname;
-		return pathname.startsWith('/dashboard')
-			? ok(row, pathname)
-			: notOk(row, `Pas de redirect dashboard (${session.page.url()})`);
+		try {
+			await session.page.waitForURL(
+				(url) => new URL(url).pathname.startsWith('/dashboard'),
+				{ timeout: 15_000 },
+			);
+			return ok(row, new URL(session.page.url()).pathname);
+		}
+		catch {
+			return notOk(row, `Pas de redirect dashboard (${session.page.url()})`);
+		}
 	}
 	finally {
 		await session.context.close();

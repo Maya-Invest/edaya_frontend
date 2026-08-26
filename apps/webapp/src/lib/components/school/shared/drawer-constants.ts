@@ -126,9 +126,14 @@ export const SCOPE_TONE: Record<Scope, string> = {
 export const ROLE_TINT: Record<StaffRole, string> = {
 	owner: 'bg-primary/10 text-primary',
 	directeur: 'bg-primary/10 text-primary',
-	prof_principal: 'bg-primary/10 text-primary',
-	professeur: 'bg-secondary text-foreground/80',
+	deputy_director: 'bg-primary/10 text-primary',
+	studies_director: 'bg-primary/10 text-primary',
 	educateur: 'bg-secondary text-foreground/80',
+	cpe: 'bg-secondary text-foreground/80',
+	secretary: 'bg-secondary text-foreground/80',
+	accountant: 'bg-secondary text-foreground/80',
+	it_admin: 'bg-secondary text-foreground/80',
+	staff: 'bg-secondary text-foreground/80',
 };
 
 export const CRUD_KEYS: Crud[] = ['C', 'R', 'U', 'D'];

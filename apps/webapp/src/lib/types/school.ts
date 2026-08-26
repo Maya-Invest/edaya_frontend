@@ -179,7 +179,17 @@ export interface Guardian {
 	subjectId?: string | null;
 }
 
-export type StaffRole = 'owner' | 'directeur' | 'prof_principal' | 'professeur' | 'educateur';
+export type StaffRole
+	= | 'owner'
+		| 'directeur'
+		| 'deputy_director'
+		| 'studies_director'
+		| 'educateur'
+		| 'cpe'
+		| 'secretary'
+		| 'accountant'
+		| 'it_admin'
+		| 'staff';
 
 export interface StaffMember {
 	id: string;

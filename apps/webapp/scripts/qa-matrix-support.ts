@@ -133,7 +133,10 @@ export function formatError(err: unknown): string {
 }
 
 export async function waitForAppShell(page: Page): Promise<void> {
-	await page.waitForSelector('aside#app-sidebar, [data-onboarding-shell], main', { timeout: 30_000 });
+	await page.locator('aside#app-sidebar, [data-onboarding-shell]').first().waitFor({
+		state: 'visible',
+		timeout: 30_000,
+	});
 }
 
 export async function waitForAcademicYearTrigger(page: Page, timeout = 10_000): Promise<boolean> {

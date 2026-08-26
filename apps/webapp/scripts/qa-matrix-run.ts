@@ -119,7 +119,7 @@ async function qaSignIn(
 	if (isProvisionedRun() && credentials) {
 		const ok = await loginWithPassword(page, base, credentials.email, credentials.password);
 		if (ok) {
-			await waitForAppShell(page).catch(() => {});
+			await waitForAppShell(page);
 			return;
 		}
 		throw new Error(`Login échoué pour ${credentials.email}`);
@@ -134,7 +134,7 @@ async function qaSignIn(
 	if (await demoBtn.waitFor({ timeout: 20_000 }).then(() => true).catch(() => false)) {
 		await demoBtn.click();
 		await page.waitForURL(/\/(dashboard|school|classes|configuration|onboarding|finance)/, { timeout: 45_000 });
-		await waitForAppShell(page).catch(() => {});
+		await waitForAppShell(page);
 		return;
 	}
 
@@ -146,7 +146,7 @@ async function qaSignIn(
 			process.env['QA_LOGIN_PASSWORD'] ?? DEMO_PASSWORD,
 		);
 		if (ok) {
-			await waitForAppShell(page).catch(() => {});
+			await waitForAppShell(page);
 			return;
 		}
 	}

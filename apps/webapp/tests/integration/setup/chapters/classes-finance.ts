@@ -56,8 +56,10 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 		}
 	}
 
-	await visitCovered(journey, '/classes/[classId]/timetable', `/classes/${classId}/timetable`);
-	coverActions(journey, 'http://localhost:5173/classes/[classId]/timetable', ['Vue semaine / liste', 'Navigation semaine'], 'OK');
+	const timetableVisit = await visitCovered(journey, '/classes/[classId]/timetable', `/classes/${classId}/timetable`);
+	if (!timetableVisit) {
+		coverActions(journey, 'http://localhost:5173/classes/[classId]/timetable', ['Vue semaine / liste', 'Navigation semaine'], 'OK');
+	}
 	const sessionTitle = `E2E-Session-${Date.now()}`;
 	let sessionResult = await ensureTimetableSession(page, journey.ctx.base, {
 		classGroupId: classId,

@@ -3,9 +3,16 @@
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
+	import * as Select from '$lib/components/ui/select';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { appGoto } from '$lib/navigation/app-navigation';
+	import {
+		DEFAULT_STAFF_PROFILE_ROLE,
+		isStaffProfileRole,
+		SELECTABLE_STAFF_PROFILE_ROLES,
+		type StaffProfileRole,
+	} from '$lib/staff/staff-profile-roles';
 	import { get } from 'svelte/store';
 	import { getStaffPageState } from '../staff-page.svelte';
 
@@ -20,6 +27,7 @@
 	let busy = $state(false);
 	let firstName = $state('');
 	let lastName = $state('');
+	let profileRole = $state<StaffProfileRole>(DEFAULT_STAFF_PROFILE_ROLE);
 	let code = $state('');
 	let email = $state('');
 	let sendAccountInvitation = $state(true);
@@ -27,12 +35,15 @@
 	function resetForm() {
 		firstName = '';
 		lastName = '';
+		profileRole = DEFAULT_STAFF_PROFILE_ROLE;
 		code = '';
 		email = '';
 		sendAccountInvitation = true;
 	}
 
-	const canSubmit = $derived(firstName.trim().length > 0 && lastName.trim().length > 0);
+	const canSubmit = $derived(
+		firstName.trim().length > 0 && lastName.trim().length > 0 && Boolean(profileRole),
+	);
 
 	async function submit() {
 		if (!canSubmit) {
@@ -46,6 +57,7 @@
 			lastName,
 			code,
 			email,
+			profileRole,
 			sendAccountInvitation,
 			successMessage: get(t)('staff.createSuccess', { name: fullName }),
 		});
@@ -81,6 +93,33 @@
 			</Label>
 			<Input bind:value={lastName} autocomplete="family-name" />
 		</div>
+	</div>
+	<div class="space-y-1.5">
+		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+			{$t('people.role')}
+		</Label>
+		<Select.Root
+			type="single"
+			value={profileRole}
+			onValueChange={(value) => {
+				if (isStaffProfileRole(value)) {
+					profileRole = value;
+				}
+			}}
+		>
+			<Select.Trigger class="w-full">
+				<Select.Value>
+					{$t(`staff.role.${profileRole}`)}
+				</Select.Value>
+			</Select.Trigger>
+			<Select.Content class="z-[100]">
+				{#each SELECTABLE_STAFF_PROFILE_ROLES as profile (profile.value)}
+					<Select.Item value={profile.value} label={$t(profile.labelKey)}>
+						{$t(profile.labelKey)}
+					</Select.Item>
+				{/each}
+			</Select.Content>
+		</Select.Root>
 	</div>
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">

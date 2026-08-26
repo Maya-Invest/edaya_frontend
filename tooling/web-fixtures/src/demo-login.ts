@@ -8,7 +8,7 @@
 
 export const DEV_AUTH_PASSWORD = 'DevPassword1!'
 
-export type DevDemoLoginRole = 'owner' | 'directeur' | 'prof_principal' | 'educateur'
+export type DevDemoLoginRole = 'owner' | 'directeur' | 'deputy_director' | 'educateur'
 
 export interface DevDemoLoginAccount {
   staffId: string
@@ -40,14 +40,14 @@ const DEV_AUTH_STAFF_ACCESS_ROLE_IDS: Record<
 
 const ACCESS_ROLE_TO_DEMO_ROLE: Record<string, DevDemoLoginRole> = {
   'role-director': 'directeur',
-  'role-coordinator': 'prof_principal',
+  'role-coordinator': 'deputy_director',
   'role-educator': 'educateur',
 }
 
 const DEMO_ROLE_DISPLAY_ORDER: Record<DevDemoLoginRole, number> = {
   owner: -1,
   directeur: 0,
-  prof_principal: 1,
+  deputy_director: 1,
   educateur: 2,
 }
 
@@ -73,7 +73,7 @@ function resolveDevDemoStaffRole(
   ]
   const role = accessRoleId && ACCESS_ROLE_TO_DEMO_ROLE[accessRoleId]
     ? ACCESS_ROLE_TO_DEMO_ROLE[accessRoleId]
-    : 'educateur'
+    : 'directeur'
 
   return { role, accessRoleId }
 }

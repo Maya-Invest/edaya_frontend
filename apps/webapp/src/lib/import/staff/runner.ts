@@ -2,6 +2,7 @@ import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { ValidatedStaffImportRow } from './types';
 import { t } from '$lib/i18n';
 import { formatImportRunErrorMessage } from '$lib/import/shared/format-import-run-error';
+import { mapStaffImportRoleToProfileRole } from '$lib/import/staff/staff-role-labels';
 import { notifyStaffListChanged } from '$lib/staff/notify-staff-list-changed';
 import { registerStaffMember } from '$lib/staff/register-staff-member';
 import { get } from 'svelte/store';
@@ -47,6 +48,7 @@ export async function runStaffImport(options: StaffImportRunOptions): Promise<St
 				firstName: row.prenom,
 				lastName: row.nom,
 				email: row.email,
+				profileRole: mapStaffImportRoleToProfileRole(row.role),
 				sendAccountInvitation: false,
 				createdAt,
 			});

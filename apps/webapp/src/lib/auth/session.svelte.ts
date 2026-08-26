@@ -63,7 +63,7 @@ class AuthSession {
 					? 'staff.role.owner'
 					: this.userProfile
 						? `staff.role.${this.userProfile.role}`
-						: 'staff.role.professeur',
+						: 'staff.role.staff',
 				subjectId: this.subjectId,
 				email: this.userProfile?.email,
 			};
@@ -104,6 +104,13 @@ class AuthSession {
 	}
 
 	setAuthAccountOnly(options: { authUserId: string; loginEmail: string | null }) {
+		if (this.grants && this.userId) {
+			this.authUserId = options.authUserId;
+			this.loginEmail = options.loginEmail;
+			this.ready = true;
+			return;
+		}
+
 		this.authUserId = options.authUserId;
 		this.loginEmail = options.loginEmail;
 		this.needsOnboarding = false;
