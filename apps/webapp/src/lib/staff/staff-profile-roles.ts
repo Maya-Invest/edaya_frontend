@@ -34,6 +34,6 @@ export function isStaffProfileRole(value: string | null | undefined): value is S
 }
 
 /** Live API field; published `@maya-invest/edaya-api-client` may lag the backend OpenAPI. */
-export type StaffMemberProfileRolePatch = {
+export interface StaffMemberProfileRolePatch {
 	profileRole?: StaffProfileRole | null;
-};
+}
