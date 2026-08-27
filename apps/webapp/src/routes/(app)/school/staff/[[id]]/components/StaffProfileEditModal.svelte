@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { StaffProfileRole } from '$lib/staff/staff-profile-roles';
 	import type { StaffMember } from '$lib/types/school';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
@@ -10,7 +11,6 @@
 		DEFAULT_STAFF_PROFILE_ROLE,
 		isStaffProfileRole,
 		SELECTABLE_STAFF_PROFILE_ROLES,
-		type StaffProfileRole,
 	} from '$lib/staff/staff-profile-roles';
 	import { get } from 'svelte/store';
 	import { getStaffPageState } from '../../staff-page.svelte';

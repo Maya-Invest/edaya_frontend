@@ -1,7 +1,7 @@
 import type { components } from '$lib/api/schema';
 import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
-import type { StaffMember } from '$lib/types/school';
 import type { StaffProfileRole } from '$lib/staff/staff-profile-roles';
+import type { StaffMember } from '$lib/types/school';
 import type { StaffPageState } from '../staff-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import {

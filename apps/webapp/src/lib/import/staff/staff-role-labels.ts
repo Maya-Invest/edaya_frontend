@@ -70,7 +70,7 @@ export function mapStaffImportRoleToProfileRole(value: string): StaffProfileRole
 	}
 
 	for (const entry of PROFILE_ROLE_IMPORT_LABELS) {
-		if (entry.labels.some(label => normalized === label)) {
+		if (entry.labels.includes(normalized)) {
 			return entry.role;
 		}
 	}

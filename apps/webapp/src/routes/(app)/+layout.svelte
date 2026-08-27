@@ -217,9 +217,7 @@
 			{#if pathAllowed}
 				{@render children()}
 			{:else}
-				<DataState status="empty">
-					{#snippet children()}{/snippet}
-				</DataState>
+				<DataState status="empty" />
 			{/if}
 		</div>
 	</div>

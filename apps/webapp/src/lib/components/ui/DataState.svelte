@@ -19,7 +19,7 @@
 		emptyDescription?: string;
 		/** Keep list shell (header + CTA) visible when the collection is empty. */
 		preserveShell?: boolean;
-		children: Snippet;
+		children?: Snippet;
 	} = $props();
 
 	function retry() {
@@ -59,5 +59,5 @@
 		</div>
 	</div>
 {:else}
-	{@render children()}
+	{@render children?.()}
 {/if}

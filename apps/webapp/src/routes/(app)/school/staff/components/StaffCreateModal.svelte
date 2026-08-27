@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { StaffProfileRole } from '$lib/staff/staff-profile-roles';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -11,7 +12,6 @@
 		DEFAULT_STAFF_PROFILE_ROLE,
 		isStaffProfileRole,
 		SELECTABLE_STAFF_PROFILE_ROLES,
-		type StaffProfileRole,
 	} from '$lib/staff/staff-profile-roles';
 	import { get } from 'svelte/store';
 	import { getStaffPageState } from '../staff-page.svelte';
