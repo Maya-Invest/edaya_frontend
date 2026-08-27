@@ -32,3 +32,8 @@ export const SELECTABLE_STAFF_PROFILE_ROLES: readonly {
 export function isStaffProfileRole(value: string | null | undefined): value is StaffProfileRole {
 	return Boolean(value && (STAFF_PROFILE_ROLES as readonly string[]).includes(value));
 }
+
+/** Live API field; published `@maya-invest/edaya-api-client` may lag the backend OpenAPI. */
+export type StaffMemberProfileRolePatch = {
+	profileRole?: StaffProfileRole | null;
+};
