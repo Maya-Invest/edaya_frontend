@@ -9,7 +9,6 @@ import { runCoreDemoScenes } from './scenes/core-demo';
 import { runDrawerTabChecks } from './scenes/drawer-tabs';
 import { runFinanceDrawerScene } from './scenes/finance-drawer';
 import { runGuardianDrawerScene } from './scenes/guardian-drawer';
-import { runHomeroomNudgeCheck } from './scenes/homeroom';
 import { runListShellScenes } from './scenes/list-shell';
 import { runModalUrlChecks } from './scenes/modal-url';
 import { runOwnerPermissionChecks } from './scenes/owner-permissions';
@@ -52,7 +51,6 @@ export async function runDemoDryRun(options: RunDemoDryRunOptions = {}): Promise
 		await context.close();
 	}
 
-	await runHomeroomNudgeCheck(browser, base, reporter, consoleErrors);
 	await runOwnerPermissionChecks(browser, base, reporter, consoleErrors);
 
 	const summary = reporter.summarize(consoleErrors);

@@ -120,14 +120,20 @@ export async function recordDailyAttendanceViaApi(
 	classGroupId: string,
 	studentId?: string | null,
 	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
+	options?: {
+		date?: string;
+		attendanceByStudent?: Record<string, 'present' | 'absent' | 'late'>;
+	},
 ): Promise<boolean> {
-	const today = new Date().toISOString().slice(0, 10);
+	const date = options?.date ?? new Date().toISOString().slice(0, 10);
+	const attendanceByStudent = options?.attendanceByStudent
+		?? (studentId ? { [studentId]: 'present' as const } : {});
 	const response = await apiFetch(page, appOrigin, '/core/commands/record-class-daily-attendance', {
 		method: 'POST',
 		data: {
 			classGroupId,
-			date: today,
-			...(studentId ? { attendanceByStudent: { [studentId]: 'present' } } : {}),
+			date,
+			attendanceByStudent,
 		},
 	}, apiUrl);
 	return response.ok();

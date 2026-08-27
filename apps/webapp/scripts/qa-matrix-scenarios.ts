@@ -18,6 +18,7 @@ import {
 	waitForDialogClosed,
 	waitForPageQuery,
 	clickFirstListSortColumn,
+	exportSelectedListRows,
 } from './qa-harness-ui';
 import {
 	assertNoFatalError,
@@ -504,17 +505,7 @@ async function runPermissionsScenario(
 			return notOk(row, 'Connexion compte restreint échouée');
 		}
 		try {
-			await session.page.goto(`${base}/finance/billing`, { waitUntil: 'domcontentloaded' });
-			try {
-				await session.page.waitForURL(
-					(url) => new URL(url).pathname.startsWith('/dashboard'),
-					{ timeout: 15_000 },
-				);
-				return ok(row, new URL(session.page.url()).pathname);
-			}
-			catch {
-				return notOk(row, `Pas de redirect dashboard (${session.page.url()})`);
-			}
+			return await assertFinanceRestrictedNoChrome(row, session.page, base);
 		}
 		finally {
 			await session.context.close();
@@ -566,6 +557,28 @@ async function runPermissionsScenario(
 	return notOk(row, 'Scénario Permissions non mappé');
 }
 
+async function assertFinanceRestrictedNoChrome(
+	row: QaTemplateRow,
+	page: Page,
+	base: string,
+): Promise<MatrixResult> {
+	await page.goto(`${base}/finance/billing`, { waitUntil: 'domcontentloaded' });
+	await waitForAppShell(page);
+	const hrefs = await sidebarNavHrefs(page);
+	if (!hrefsExclude(hrefs, '/finance')) {
+		return notOk(row, 'Lien finance visible dans la sidebar');
+	}
+	const financeChrome = page.getByRole('button', { name: /facturation|frais|billing|fees/i });
+	if (await financeChrome.first().isVisible({ timeout: 1_500 }).catch(() => false)) {
+		return notOk(row, `Chrome finance visible (${page.url()})`);
+	}
+	const emptyState = page.getByRole('heading', { name: /rien à afficher|nothing here yet/i });
+	if (!(await emptyState.isVisible({ timeout: 8_000 }).catch(() => false))) {
+		return notOk(row, `État vide attendu absent (${page.url()})`);
+	}
+	return ok(row, new URL(page.url()).pathname);
+}
+
 async function assertFinanceRedirectRestricted(
 	row: QaTemplateRow,
 	browser: Browser,
@@ -583,17 +596,7 @@ async function assertFinanceRedirectRestricted(
 		return notOk(row, 'Connexion compte restreint échouée');
 	}
 	try {
-		await session.page.goto(`${base}/finance/billing`, { waitUntil: 'domcontentloaded' });
-		try {
-			await session.page.waitForURL(
-				(url) => new URL(url).pathname.startsWith('/dashboard'),
-				{ timeout: 15_000 },
-			);
-			return ok(row, new URL(session.page.url()).pathname);
-		}
-		catch {
-			return notOk(row, `Pas de redirect dashboard (${session.page.url()})`);
-		}
+		return await assertFinanceRestrictedNoChrome(row, session.page, base);
 	}
 	finally {
 		await session.context.close();
@@ -1037,8 +1040,10 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 
 	// ── Export ──
 	if (/export/i.test(action)) {
-		const exportBtn = page.getByRole('button', { name: /export/i }).first();
-		return (await exportBtn.isVisible({ timeout: 5_000 }).catch(() => false)) ? ok(row) : na(row, 'Export nécessite sélection');
+		const outcome = await exportSelectedListRows(page);
+		if (outcome.status === 'ok') return ok(row);
+		if (outcome.status === 'na') return na(row, outcome.detail);
+		return notOk(row, outcome.detail);
 	}
 
 	// ── Imports ──
@@ -1071,9 +1076,6 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		if (action.includes('Cartes')) {
 			const link = page.locator('main a[href]').first();
 			return (await link.isVisible({ timeout: 5_000 }).catch(() => false)) ? ok(row) : na(row, 'Pas de carte cliquable');
-		}
-		if (action.includes('Nudge')) {
-			return na(row, 'Nudge homeroom dépend du rôle et des données');
 		}
 		if (action.includes('empty')) {
 			return ok(row, 'Page chargée sans erreur fatale');

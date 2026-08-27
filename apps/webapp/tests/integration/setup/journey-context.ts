@@ -284,6 +284,28 @@ export async function publishAnnouncement(
 	return publishAnnouncementViaApi(page, journey.ctx.base, announcementId);
 }
 
+async function recordCompletionFilterFixtureDays(
+	page: Page,
+	base: string,
+	classId: string,
+	studentId?: string | null,
+): Promise<void> {
+	const isoDay = (offsetDays: number) => {
+		const next = new Date();
+		next.setUTCDate(next.getUTCDate() + offsetDays);
+		return next.toISOString().slice(0, 10);
+	};
+	await recordDailyAttendanceViaApi(page, base, classId, studentId);
+	await recordDailyAttendanceViaApi(page, base, classId, studentId, undefined, {
+		date: isoDay(-1),
+		attendanceByStudent: studentId ? { [studentId]: 'present' } : {},
+	});
+	await recordDailyAttendanceViaApi(page, base, classId, null, undefined, {
+		date: isoDay(-2),
+		attendanceByStudent: {},
+	});
+}
+
 export async function recordAttendanceForToday(
 	journey: UiJourney,
 	classId: string,
@@ -312,7 +334,7 @@ export async function recordAttendanceForToday(
 			await page.waitForTimeout(1_000);
 		}
 		else {
-			await recordDailyAttendanceViaApi(page, base, classId, journey.entities.studentId);
+			await recordCompletionFilterFixtureDays(page, base, classId, journey.entities.studentId);
 			return dayId;
 		}
 	}
@@ -336,7 +358,7 @@ export async function recordAttendanceForToday(
 		}
 	}
 
-	await recordDailyAttendanceViaApi(page, base, classId, journey.entities.studentId);
+	await recordCompletionFilterFixtureDays(page, base, classId, journey.entities.studentId);
 	return resolvedDayId;
 }
 
