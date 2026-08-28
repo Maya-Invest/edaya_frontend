@@ -14,6 +14,7 @@
 	import LanguageSelector from '$lib/components/layout/LanguageSelector.svelte';
 	import SchoolSelector from '$lib/components/layout/SchoolSelector.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
+	import DataState from '$lib/components/ui/DataState.svelte';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, PanelLeft, PanelLeftClose } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
@@ -24,7 +25,6 @@
 		MODAL_TARGET_QUERY_KEY,
 	} from '$lib/modal/modal-url';
 	import { isKnownModalForPathname } from '$lib/modal/route-modal-catalog';
-	import { DASHBOARD_HREF } from '$lib/navigation';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { canAccessPath } from '$lib/navigation/nav-permissions';
 	import { onboardingResumePath } from '$lib/onboarding/resume-onboarding';
@@ -34,6 +34,11 @@
 	const { children }: { children: Snippet } = $props();
 
 	const me = $derived(authSession.accountActor);
+	const pathAllowed = $derived(
+		authSession.ready && authSession.isLoggedIn
+			? canAccessPath($page.url.pathname, authSession.grants, { schoolId: authSession.schoolId ?? '' })
+			: true,
+	);
 
 	type ToastHostComponent = import('svelte').Component;
 
@@ -102,16 +107,6 @@
 
 		if (!authSession.isLoggedIn) {
 			appGoto(appPath('/login'), { replaceState: true });
-		}
-	});
-
-	$effect(() => {
-		if (!browser || !authSession.ready || !authSession.isLoggedIn) {
-			return;
-		}
-		const pathname = $page.url.pathname;
-		if (!canAccessPath(pathname, authSession.grants, { schoolId: authSession.schoolId ?? '' })) {
-			appGoto(DASHBOARD_HREF, { replaceState: true });
 		}
 	});
 
@@ -219,13 +214,25 @@
 				</div>
 			</div>
 
-			{@render children()}
+			{#if pathAllowed}
+				{@render children()}
+			{:else}
+				<DataState status="empty" />
+			{/if}
 		</div>
 	</div>
 
 	<AccountProfileModal bind:open={profileOpen.open} actor={me} onLogout={logout} />
+{:else}
+	<div
+		class="flex h-screen w-full items-center justify-center bg-background text-foreground"
+		data-testid="app-shell-pending"
+	>
+		<LoaderCircle class="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
+		<span class="sr-only">{$t('dataState.loading')}</span>
+	</div>
+{/if}
 
-	{#if ToastHost}
-		<ToastHost />
-	{/if}
+{#if ToastHost}
+	<ToastHost />
 {/if}

@@ -1,10 +1,14 @@
 import type { ClassNode } from '$lib/types/school';
 import { describe, expect, it } from 'bun:test';
-import { dashboardActionHref, dashboardClassStudentsHref } from '$lib/navigation/dashboard-links';
+import {
+	dashboardActionHref,
+	dashboardAttendanceTodayHref,
+	dashboardClassStudentsHref,
+} from '$lib/navigation/dashboard-links';
 
 const classes = [
-	{ id: 'ci-6a', name: '6ème A' },
-	{ id: 'ci-6b', name: '6ème B' },
+	{ id: 'ci-6a', name: '6ème A', attendanceMode: 'session' },
+	{ id: 'ci-6b', name: '6ème B', attendanceMode: 'daily' },
 ] as ClassNode[];
 
 describe('dashboardActionHref', () => {
@@ -21,5 +25,26 @@ describe('dashboardActionHref', () => {
 	it('maps stale class ids from overview payloads to demo-ci class routes', () => {
 		expect(dashboardClassStudentsHref('6a', classes)).toBe('/classes/ci-6a/students/');
 		expect(dashboardClassStudentsHref('ci-6b', classes)).toBe('/classes/ci-6b/students/');
+	});
+});
+
+describe('dashboardAttendanceTodayHref', () => {
+	it('links to the first daily class attendance route', () => {
+		expect(dashboardAttendanceTodayHref(classes)).toBe('/classes/ci-6b/attendance/');
+	});
+
+	it('prefers the active class when it is daily', () => {
+		const dailyFirst = [
+			{ id: 'ci-6a', name: '6ème A', attendanceMode: 'daily' },
+			{ id: 'ci-6b', name: '6ème B', attendanceMode: 'daily' },
+		] as ClassNode[];
+		expect(dashboardAttendanceTodayHref(dailyFirst)).toBe('/classes/ci-6a/attendance/');
+	});
+
+	it('returns null when no class uses daily roll call', () => {
+		const sessionOnly = [
+			{ id: 'ci-6a', name: '6ème A', attendanceMode: 'session' },
+		] as ClassNode[];
+		expect(dashboardAttendanceTodayHref(sessionOnly)).toBeNull();
 	});
 });

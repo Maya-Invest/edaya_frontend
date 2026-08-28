@@ -121,6 +121,7 @@ describe('nav-permissions — éducateur (phase 3.4)', () => {
 		expect(canAccessPath('/school/staff', educatorGrants)).toBe(false);
 		expect(canAccessPath('/configuration/academic', educatorGrants)).toBe(false);
 		expect(canAccessPath('/finance/fees', educatorGrants)).toBe(false);
+		expect(canAccessPath('/finance/billing', educatorGrants)).toBe(false);
 	});
 });
 
@@ -128,5 +129,21 @@ describe('nav-permissions — directeur (phase 3.1)', () => {
 	it('shows every module when elevated', () => {
 		expect(visibleNavModuleKeys(elevatedGrants, schoolCtx)).toHaveLength(4);
 		expect(filterNavItems(SCHOOL_NAV_DEFS, elevatedGrants)).toHaveLength(SCHOOL_NAV_DEFS.length);
+	});
+
+	it('allows finance URLs when elevated', () => {
+		expect(canAccessPath('/finance/billing', elevatedGrants)).toBe(true);
+		expect(canAccessPath('/finance/fees', elevatedGrants)).toBe(true);
+		expect(canAccessPath('/finance/payment', elevatedGrants)).toBe(true);
+	});
+});
+
+describe('nav-permissions — comptable', () => {
+	const accountantGrants = mockGrants(['FINANCIAL_CONFIG_READ', 'PAYMENT_READ']);
+
+	it('allows finance URLs', () => {
+		expect(canAccessPath('/finance/billing', accountantGrants)).toBe(true);
+		expect(canAccessPath('/finance/fees', accountantGrants)).toBe(true);
+		expect(canAccessPath('/finance/payment', accountantGrants)).toBe(true);
 	});
 });

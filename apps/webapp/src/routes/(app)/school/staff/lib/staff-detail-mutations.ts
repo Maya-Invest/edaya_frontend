@@ -1,5 +1,6 @@
 import type { components } from '$lib/api/schema';
 import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
+import type { StaffMemberProfileRolePatch, StaffProfileRole } from '$lib/staff/staff-profile-roles';
 import type { StaffMember } from '$lib/types/school';
 import type { StaffPageState } from '../staff-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
@@ -42,13 +43,14 @@ function buildOptimisticStaff(input: {
 	firstName: string;
 	lastName: string;
 	email?: string;
+	profileRole: StaffProfileRole;
 }): StaffMember {
 	const email = input.email?.trim() ?? '';
 	return {
 		id: input.id,
 		name: `${input.firstName.trim()} ${input.lastName.trim()}`,
 		initials: staffInitials(input.firstName, input.lastName),
-		role: 'professeur',
+		role: input.profileRole,
 		department: '—',
 		email,
 		classes: [],
@@ -65,6 +67,7 @@ export async function createStaffOnPage(
 		lastName: string;
 		code?: string;
 		email?: string;
+		profileRole: StaffProfileRole;
 		sendAccountInvitation?: boolean;
 		successMessage?: string;
 	},
@@ -75,19 +78,22 @@ export async function createStaffOnPage(
 	const id = code || `stf-${Date.now().toString(36)}`;
 	const optimistic = buildOptimisticStaff({ id, ...input });
 
+	const payload: components['schemas']['RegisterStaffMemberCommand'] & StaffMemberProfileRolePatch = {
+		id,
+		schoolId: schoolId(),
+		firstName: input.firstName.trim(),
+		lastName: input.lastName.trim(),
+		email: email || null,
+		accountKind: 'human',
+		isActive: true,
+		serviceElevated: false,
+		profileRole: input.profileRole,
+		sendAccountInvitation: input.sendAccountInvitation ?? true,
+		createdAt: new Date().toISOString(),
+	};
+
 	const result = await runStaffRouteMutation({
-		request: () => client.commands.registerStaffMember({
-			id,
-			schoolId: schoolId(),
-			firstName: input.firstName.trim(),
-			lastName: input.lastName.trim(),
-			email: email || null,
-			accountKind: 'human',
-			isActive: true,
-			serviceElevated: false,
-			sendAccountInvitation: input.sendAccountInvitation ?? true,
-			createdAt: new Date().toISOString(),
-		}),
+		request: () => client.commands.registerStaffMember(payload),
 		apply: () => {
 			state.appendStaff(optimistic);
 		},
@@ -108,6 +114,7 @@ export async function updateStaffProfileOnPage(
 		firstName: string;
 		lastName: string;
 		email?: string;
+		profileRole?: StaffProfileRole | null;
 		successMessage?: string;
 	},
 ): Promise<boolean> {
@@ -116,18 +123,22 @@ export async function updateStaffProfileOnPage(
 	const email = input.email?.trim() ?? '';
 	const nextName = `${input.firstName.trim()} ${input.lastName.trim()}`;
 
+	const payload: components['schemas']['UpdateStaffMemberProfileCommand'] & StaffMemberProfileRolePatch = {
+		staffId: input.staffId,
+		firstName: input.firstName.trim(),
+		lastName: input.lastName.trim(),
+		email: email || null,
+		profileRole: input.profileRole ?? null,
+	};
+
 	const result = await runStaffRouteMutation({
-		request: () => client.commands.updateStaffMemberProfile({
-			staffId: input.staffId,
-			firstName: input.firstName.trim(),
-			lastName: input.lastName.trim(),
-			email: email || null,
-		}),
+		request: () => client.commands.updateStaffMemberProfile(payload),
 		apply: () => {
 			state.patchStaff(input.staffId, {
 				name: nextName,
 				initials: staffInitials(input.firstName, input.lastName),
 				email,
+				...(input.profileRole ? { role: input.profileRole } : {}),
 			});
 		},
 		rollback: () => {

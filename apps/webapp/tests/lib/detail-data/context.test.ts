@@ -136,12 +136,12 @@ describe('entity store seed policies', () => {
 			roleEnabledPermissions: { owner: { students: true } },
 		});
 		permissions = seedRolePermissionsCollection({
-			roleCrudMatrix: { professeur: { students: { C: false, R: true, U: false, D: false } } },
-			roleEnabledPermissions: { professeur: { students: true } },
+			roleCrudMatrix: { educateur: { students: { C: false, R: true, U: false, D: false } } },
+			roleEnabledPermissions: { educateur: { students: true } },
 		});
 
 		expect(permissions.roleCrudMatrix.owner).toBeUndefined();
-		expect(permissions.roleCrudMatrix.professeur?.students?.R).toBe(true);
-		expect(permissions.roleEnabledPermissions.professeur?.students).toBe(true);
+		expect(permissions.roleCrudMatrix.educateur?.students?.R).toBe(true);
+		expect(permissions.roleEnabledPermissions.educateur?.students).toBe(true);
 	});
 });

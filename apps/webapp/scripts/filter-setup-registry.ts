@@ -8,6 +8,8 @@ import {
 	assertListContains,
 	LIST_FILTER_NATIVE_LOCATOR,
 	listSearchInput,
+	openFilterPanel,
+	selectListFilter,
 	waitForPageQuery,
 	waitForResolvedAcademicYearId,
 } from './qa-harness-ui';
@@ -195,14 +197,24 @@ const FILTER_RUNNERS: Array<{
 	},
 	{
 		match: row => matrixPath(row.endpoint).includes('/attendance') && /filtre completion/i.test(row.action),
-		run: async (page, _ctx, _entities, row) => {
-			const combobox = page.getByRole('combobox').first();
-			if (await combobox.isVisible({ timeout: 4_000 }).catch(() => false)) {
-				await combobox.click();
-				await page.getByRole('option').first().click({ timeout: 4_000 }).catch(() => {});
-				return ok(row);
+		run: async (page, ctx, entities, row) => {
+			if (!entities.classId) {
+				return notOk(row, 'No classId');
 			}
-			return na(row, 'Attendance completion filter unavailable');
+			await gotoFiltered(page, ctx, `/classes/${entities.classId}/attendance`);
+			const filterBtn = page.getByTestId('list-filter');
+			if (await filterBtn.isVisible({ timeout: 8_000 }).catch(() => false)) {
+				await filterBtn.click();
+			}
+			else if (!(await openFilterPanel(page, /complétion|completion/i))) {
+				return notOk(row, 'Attendance completion filter unavailable');
+			}
+			for (const value of ['marked', 'partial', 'unmarked'] as const) {
+				if (!(await selectListFilter(page, value))) {
+					return notOk(row, `Could not select completion=${value}`);
+				}
+			}
+			return ok(row, 'Completion filter marked/partial/unmarked');
 		},
 	},
 	{

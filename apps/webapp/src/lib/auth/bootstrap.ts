@@ -30,6 +30,8 @@ export interface BootstrapSessionResult {
 }
 
 let sessionBootstrapPromise: Promise<BootstrapSessionResult> | null = null;
+/** Bumps when a full bootstrap is reset so in-flight auth-only fetches cannot clobber it. */
+let bootstrapGeneration = 0;
 
 export interface BootstrapSessionOptions {
 	/** Refreshes session data without toggling authSession.ready (avoids full-page loaders). */
@@ -47,6 +49,11 @@ export async function bootstrapSession(
 
 export function resetBootstrapSession() {
 	sessionBootstrapPromise = null;
+	bootstrapGeneration += 1;
+}
+
+function fullSessionBootstrapOwnsAuth(): boolean {
+	return authSession.isLoggedIn || sessionBootstrapPromise !== null;
 }
 
 async function runBootstrapSession(
@@ -157,14 +164,20 @@ async function runBootstrapSession(
 		}
 	}
 }
+
 export async function bootstrapAuthOnly(): Promise<void> {
-	if (authSession.hasAuthAccount || authSession.isLoggedIn) {
+	if (fullSessionBootstrapOwnsAuth()) {
 		return;
 	}
 
+	const generation = bootstrapGeneration;
 	authSession.markLoading();
 	try {
 		const { data: auth } = await authClient.getSession();
+		if (generation !== bootstrapGeneration || fullSessionBootstrapOwnsAuth()) {
+			return;
+		}
+
 		if (!auth?.session || !auth.user?.id) {
 			authSession.clear();
 			return;
@@ -176,6 +189,8 @@ export async function bootstrapAuthOnly(): Promise<void> {
 		});
 	}
 	finally {
-		authSession.markReady();
+		if (generation === bootstrapGeneration && !sessionBootstrapPromise) {
+			authSession.markReady();
+		}
 	}
 }

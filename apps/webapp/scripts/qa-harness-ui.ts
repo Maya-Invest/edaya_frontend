@@ -164,6 +164,53 @@ export function listSearchInput(page: Page): Locator {
 	return scoped.or(page.locator('[data-testid="list-search"]'));
 }
 
+export type ListSelectionExportResult =
+	| { status: 'ok' }
+	| { status: 'na'; detail: string }
+	| { status: 'fail'; detail: string };
+
+/**
+ * More → Sélectionner/Select (not the stub Exporter) → check first row → Exporter on the selection bar.
+ * Product export lives on ListSelectionBar; the More-menu Exporter is list.exportSoon.
+ */
+export async function exportSelectedListRows(page: Page): Promise<ListSelectionExportResult> {
+	const more = page.getByTestId('list-more-menu');
+	if (!(await more.isVisible({ timeout: 5_000 }).catch(() => false))) {
+		return { status: 'na', detail: 'Menu Plus absent' };
+	}
+
+	await more.click({ timeout: 3_000 });
+
+	const enterSelect = page.getByRole('button', { name: /^(sélectionner|select)$/i });
+	if (!(await enterSelect.isVisible({ timeout: 3_000 }).catch(() => false))) {
+		await page.keyboard.press('Escape').catch(() => {});
+		return { status: 'na', detail: 'Action Sélectionner absente' };
+	}
+	await enterSelect.click();
+
+	const selectionBar = page.getByText(/sélectionnez des lignes|select rows to export/i);
+	await selectionBar.waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
+
+	const rowCheckbox = page.getByRole('checkbox', { name: /^(sélectionner la ligne|select row)$/i }).first();
+	if (!(await rowCheckbox.isVisible({ timeout: 5_000 }).catch(() => false))) {
+		return { status: 'na', detail: 'Liste vide' };
+	}
+	await rowCheckbox.click();
+
+	const exportBtn = page.getByRole('button', { name: /^(exporter|export)$/i }).first();
+	if (!(await exportBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
+		return { status: 'fail', detail: 'Bouton Exporter de la barre de sélection absent' };
+	}
+	if (await exportBtn.isDisabled().catch(() => true)) {
+		return { status: 'fail', detail: 'Exporter reste désactivé après sélection' };
+	}
+
+	const download = page.waitForEvent('download', { timeout: 8_000 }).catch(() => null);
+	await exportBtn.click();
+	await download;
+	return { status: 'ok' };
+}
+
 /**
  * Matrix actions are French intent labels ("Créer évaluation"); the UI uses i18n
  * primary buttons ("Add evaluation" / "Ajouter une évaluation", etc.).

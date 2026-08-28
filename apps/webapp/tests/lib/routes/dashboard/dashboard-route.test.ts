@@ -5,7 +5,6 @@ describe('dashboard route helpers', () => {
 	it('returns an empty slice by default', () => {
 		expect(emptyDashboardSlice()).toEqual({
 			overview: null,
-			homeroomAttendanceByClass: {},
 		});
 	});
 });

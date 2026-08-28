@@ -24,7 +24,7 @@ import {
 	type FilterFixtures,
 	type MatrixEntities,
 } from '../../../scripts/qa-matrix-support';
-import type { SetupStepResult } from './web-tenant-setup';
+import type { SetupStepResult } from './journey-context';
 
 async function gotoAppPage(ctx: DemoContext, routePath: string): Promise<void> {
 	await ctx.page.goto(`${ctx.base}${routePath}`, { waitUntil: 'domcontentloaded' });

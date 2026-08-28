@@ -100,7 +100,6 @@ Living checklist — check items off (`[x]`) as work lands. Mirrors [§6 gaps](#
 
 #### Post-v1 / cleanup
 - [x] Resources removed from v1 nav and planning ✅ *(never routed; `ResourcesView` retained for post-v1)*
-- [x] Dashboard homeroom attendance nudge ✅ *(2026-07-05 — `HomeroomAttendanceNudge` on school dashboard)*
 
 ---
 
@@ -949,7 +948,7 @@ Work remaining to reach the target architecture in §3. Track completion in [§0
 | **P2** | Payments | ✅ Shipped — filters + billing drawer link | Row menu; receipt links to billing drawer |
 | **P2** | Filter button | ✅ Shipped — wired on list pages | Secondary facets (status bands, date range, scope) |
 | **P2** | More menu | ✅ Shipped — export stubs | Per-feature export/bulk |
-| **P2** | Dashboard attendance nudge | ✅ Shipped — homeroom nudge (DN scene) | Unmarked daily classes for homeroom teacher (optional) |
+| **P2** | Dashboard attendance nudge | Removed — not a PP-specific dashboard reminder | — |
 | **P2** | Subject matter admin | ✅ Shipped (2026-07-06) — `SubjectTabs` chapters CRUD | `configureSubjectMatter` + link via `assignMatterToGradeLevelSubject` |
 | **—** | Resources | Component exists | **Post-v1** — remove from v1 nav and planning |
 
