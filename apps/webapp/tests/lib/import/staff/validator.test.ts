@@ -41,7 +41,7 @@ describe('staff import validator', () => {
 
 	it('warns on unknown roles without blocking import', () => {
 		const result = validateStaffImportRows([
-			row({ rowIndex: 2, role: 'Comptable' }),
+			row({ rowIndex: 2, role: 'Gardien' }),
 		]);
 
 		expect(result.validRows).toHaveLength(1);
