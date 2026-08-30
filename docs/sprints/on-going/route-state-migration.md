@@ -96,7 +96,7 @@ Primary tracker. **Notes** hold the remaining gap for ⚠️ rows.
 | `/configuration/grade-scales` | ✅ | ✅ | — | — | — | ✅ | ✅ | **✅ Full** | Row `···` only; route-owned catalog slice |
 | `/configuration/notifications` | ✅ | ✅ | — | — | — | ✅ | ✅ | **✅ Full** | Template catalog + edit modal on route state |
 | `/configuration/discipline` | ✅ | ✅ | — | — | — | ✅ | ✅ | **✅ Full** | Catalog list + modals on route state |
-| `/dashboard` | ✅ | ✅ | — | — | — | ✅ | ✅ | **✅ Full** | Overview + homeroom nudge on route state |
+| `/dashboard` | ✅ | ✅ | — | — | — | ✅ | ✅ | **✅ Full** | Overview on route state |
 | `/account/inbox` | ✅ | ✅ | — | — | — | ✅ | ✅ | **✅ Full** | Split-pane inbox on route state |
 | `/account/notifications` | ✅ | ✅ | — | — | — | — | ✅ | **✅ Full** | Staff/guardian settings on route state |
 

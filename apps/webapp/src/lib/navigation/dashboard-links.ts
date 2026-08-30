@@ -30,3 +30,14 @@ export function dashboardClassStudentsHref(
 ): ResolvedPathname {
 	return classItemHref(resolveActiveClassId(classGroupId, classes), 'students');
 }
+
+/** First daily class attendance route, or null when no class uses daily roll call. */
+export function dashboardAttendanceTodayHref(classes: ClassNode[]): ResolvedPathname | null {
+	const daily = classes.filter(cls => cls.attendanceMode === 'daily');
+	if (daily.length === 0) {
+		return null;
+	}
+	const preferredId = resolveActiveClassId(undefined, classes);
+	const target = daily.find(cls => cls.id === preferredId) ?? daily[0];
+	return classItemHref(target.id, 'attendance');
+}

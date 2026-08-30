@@ -10,7 +10,7 @@ on:
         type: boolean
         default: true
       run_integration:
-        description: Run Playwright integration tests
+        description: Run provisioned Playwright tests
         type: boolean
         default: true
       pr_base_ref:

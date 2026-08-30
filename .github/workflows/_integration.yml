@@ -16,7 +16,7 @@ permissions:
 jobs:
   integration:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -96,6 +96,9 @@ jobs:
         working-directory: apps/webapp
         run: bunx playwright install --with-deps chromium
 
+      - name: Install Python Excel deps
+        run: python3 -m pip install --user openpyxl
+
       - name: Build webapp for integration
         run: |
           bun repo doctor
@@ -108,15 +111,23 @@ jobs:
           echo $! > /tmp/webapp-preview.pid
 
       - name: Wait for webapp
-        run: bash .github/scripts/ci-wait-for-url.sh http://127.0.0.1:4173/login/demo
+        run: bash .github/scripts/ci-wait-for-url.sh http://127.0.0.1:4173/login
 
-      - name: Integration tests
+      - name: Provisioned integration tests
         working-directory: apps/webapp
         env:
-          INTEGRATION_TARGET: staging
+          API_URL: http://127.0.0.1:9999
           WEBAPP_URL: http://127.0.0.1:4173
-          WEBAPP_READINESS_PATH: /login/demo
-        run: bun run test:integration
+          WEBAPP_READINESS_PATH: /login
+        run: bun run test:integration:provisioned
+
+      - name: Upload integration artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: integration-run
+          path: apps/webapp/.integration-run/
+          if-no-files-found: ignore
 
       - name: Stop webapp
         if: always()

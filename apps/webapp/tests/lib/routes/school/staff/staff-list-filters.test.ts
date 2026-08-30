@@ -12,7 +12,7 @@ function staff(id: string, overrides: Partial<StaffMember> = {}): StaffMember {
 		id,
 		name: `Staff ${id}`,
 		initials: 'ST',
-		role: 'professeur',
+		role: 'secretary',
 		department: 'Sciences',
 		email: `${id}@school.test`,
 		classes: [],

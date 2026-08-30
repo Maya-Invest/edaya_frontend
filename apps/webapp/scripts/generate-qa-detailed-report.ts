@@ -18,8 +18,9 @@ import {
 } from './qa-test-descriptions';
 import type { QaTemplateRow } from './qa-template-matrix.manual';
 
+const WEBAPP_DIR = path.join(import.meta.dirname, '..');
 const ROOT = path.join(import.meta.dirname, '../../../..');
-const MATRIX_RESULTS_PATH = path.join(ROOT, 'qa-matrix-results.json');
+const MATRIX_RESULTS_PATH = path.join(WEBAPP_DIR, '.integration-run', 'qa-matrix-results.json');
 const CSV_PATH = path.join(ROOT, 'qa-test-matrix-detailed.csv');
 const XLSX_PATH = path.join(ROOT, 'qa-test-matrix-detailed.xlsx');
 

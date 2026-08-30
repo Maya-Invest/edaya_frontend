@@ -93,7 +93,6 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	...rows('Dashboard', `${B}/dashboard`, [
 		'Chargement KPIs',
 		'Cartes actions cliquables',
-		'Nudge présence homeroom → classe',
 		'États empty / erreur',
 	]),
 

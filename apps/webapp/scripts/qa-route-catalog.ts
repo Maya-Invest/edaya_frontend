@@ -34,7 +34,7 @@ export interface ModalSurface {
 	/** Optional tab segment when modal opens on a drawer tab */
 	tab?: string;
 	module: string;
-	/** web-tenant-setup step that must succeed before edit modal tests */
+	/** UI journey step that must succeed before edit modal tests */
 	setupStep?: string;
 	/** When true, resolveEndpoint injects modalTarget from targetEntityKey */
 	requiresTarget?: boolean;

@@ -42,7 +42,7 @@ export function getCurrentUser(): StaffMember | null {
 }
 
 export function getCurrentRole(): StaffRole {
-	return getCurrentUser()?.role ?? 'professeur';
+	return getCurrentUser()?.role ?? 'staff';
 }
 
 export function canEditGrades(ctx: Ctx = {}): boolean {
@@ -73,15 +73,25 @@ export function canEditTimetable(ctx: Ctx = {}): boolean {
 export const ROLE_LABEL_FR: Record<StaffRole, string> = {
 	owner: 'Propriétaire',
 	directeur: 'Directeur',
-	prof_principal: 'Professeur principal',
-	professeur: 'Professeur',
+	deputy_director: 'Directeur adjoint',
+	studies_director: 'Directeur d\'études',
 	educateur: 'Éducateur',
+	cpe: 'CPE / Vie scolaire',
+	secretary: 'Secrétaire',
+	accountant: 'Comptable',
+	it_admin: 'Informaticien',
+	staff: 'Personnel',
 };
 
 export const ROLE_LABEL_EN: Record<StaffRole, string> = {
 	owner: 'Owner',
 	directeur: 'Principal',
-	prof_principal: 'Lead teacher',
-	professeur: 'Teacher',
+	deputy_director: 'Deputy director',
+	studies_director: 'Director of studies',
 	educateur: 'Educator',
+	cpe: 'Pastoral / Student life',
+	secretary: 'Secretary',
+	accountant: 'Accountant',
+	it_admin: 'IT administrator',
+	staff: 'Staff',
 };

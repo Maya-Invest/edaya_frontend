@@ -220,22 +220,31 @@ export async function waitForInvitationToken(page: Page, timeout = 45_000): Prom
 	}
 }
 
+const ADD_TARGET_CONTROL = /add recipient|add target|ajouter un destinataire|ajouter une cible|gérer les cibles|manage targets/i;
+
 export async function publishAnnouncement(
 	journey: UiJourney,
 	announcementId: string,
-): Promise<boolean> {
+): Promise<{ ok: boolean; detail: string }> {
 	const { page } = journey.ctx;
+	const viaApi = async (reason: string): Promise<{ ok: boolean; detail: string }> => {
+		const ok = await publishAnnouncementViaApi(page, journey.ctx.base, announcementId);
+		return { ok, detail: ok ? reason : `${reason}; API fallback failed` };
+	};
+
 	await gotoApp(journey, `/school/announcements/${announcementId}?modal=add-target`);
 	await waitForPageQuery(page);
 
 	const dialog = page.getByRole('dialog');
 	if (!(await dialog.isVisible({ timeout: 12_000 }).catch(() => false))) {
-		const addTargetBtn = page.getByRole('button', { name: /add target|ajouter une cible|gérer les cibles|manage targets/i }).first();
-		if (await addTargetBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-			await addTargetBtn.click();
+		const addTargetControl = page.getByRole('button', { name: ADD_TARGET_CONTROL })
+			.or(page.getByRole('menuitem', { name: ADD_TARGET_CONTROL }))
+			.first();
+		if (await addTargetControl.isVisible({ timeout: 5_000 }).catch(() => false)) {
+			await addTargetControl.click();
 		}
 		if (!(await dialog.isVisible({ timeout: 8_000 }).catch(() => false))) {
-			return publishAnnouncementViaApi(page, journey.ctx.base, announcementId);
+			return viaApi('add-target modal not visible');
 		}
 	}
 
@@ -244,12 +253,11 @@ export async function publishAnnouncement(
 		await submitDialog(page, /^add$|^ajouter$/i);
 	}
 	catch {
-		return publishAnnouncementViaApi(page, journey.ctx.base, announcementId);
+		return viaApi('add-target submit failed');
 	}
 	const addTargetPayload = await addTargetPromise;
 	if (!addTargetPayload) {
-		const apiOk = await publishAnnouncementViaApi(page, journey.ctx.base, announcementId);
-		return apiOk;
+		return viaApi('add-target command not observed');
 	}
 	await waitForDialogClosed(page).catch(() => {});
 	await page.waitForTimeout(800);
@@ -260,13 +268,15 @@ export async function publishAnnouncement(
 	if (!(await publishDialog.isVisible({ timeout: 12_000 }).catch(() => false))) {
 		const publishBtn = page.getByRole('button', { name: /^publish$|^publier$/i }).first();
 		if (!(await publishBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
-			return publishAnnouncementViaApi(page, journey.ctx.base, announcementId);
+			return viaApi('publish modal/button not visible');
 		}
 		const publishPromise = waitForCommandPayload(page, 'publish-announcement', 25_000);
 		await publishBtn.click();
-		await publishPromise;
+		if (!await publishPromise) {
+			return viaApi('publish command not observed after button');
+		}
 		await waitForPageQuery(page);
-		return true;
+		return { ok: true, detail: 'published via button' };
 	}
 
 	const publishPromise = waitForCommandPayload(page, 'publish-announcement', 30_000);
@@ -274,14 +284,38 @@ export async function publishAnnouncement(
 		await submitDialog(page, /^publish$|^publier$/i);
 	}
 	catch {
-		return publishAnnouncementViaApi(page, journey.ctx.base, announcementId);
+		return viaApi('publish submit failed');
 	}
-	await publishPromise;
+	if (!await publishPromise) {
+		return viaApi('publish command not observed');
+	}
 	await waitForPageQuery(page);
 	if (await page.getByText(/published|publiée/i).first().isVisible({ timeout: 3_000 }).catch(() => false)) {
-		return true;
+		return { ok: true, detail: 'published via modal' };
 	}
-	return publishAnnouncementViaApi(page, journey.ctx.base, announcementId);
+	return viaApi('publish confirmation not visible');
+}
+
+async function recordCompletionFilterFixtureDays(
+	page: Page,
+	base: string,
+	classId: string,
+	studentId?: string | null,
+): Promise<void> {
+	const isoDay = (offsetDays: number) => {
+		const next = new Date();
+		next.setUTCDate(next.getUTCDate() + offsetDays);
+		return next.toISOString().slice(0, 10);
+	};
+	await recordDailyAttendanceViaApi(page, base, classId, studentId);
+	await recordDailyAttendanceViaApi(page, base, classId, studentId, undefined, {
+		date: isoDay(-1),
+		attendanceByStudent: studentId ? { [studentId]: 'present' } : {},
+	});
+	await recordDailyAttendanceViaApi(page, base, classId, null, undefined, {
+		date: isoDay(-2),
+		attendanceByStudent: {},
+	});
 }
 
 export async function recordAttendanceForToday(
@@ -312,7 +346,7 @@ export async function recordAttendanceForToday(
 			await page.waitForTimeout(1_000);
 		}
 		else {
-			await recordDailyAttendanceViaApi(page, base, classId, journey.entities.studentId);
+			await recordCompletionFilterFixtureDays(page, base, classId, journey.entities.studentId);
 			return dayId;
 		}
 	}
@@ -336,7 +370,7 @@ export async function recordAttendanceForToday(
 		}
 	}
 
-	await recordDailyAttendanceViaApi(page, base, classId, journey.entities.studentId);
+	await recordCompletionFilterFixtureDays(page, base, classId, journey.entities.studentId);
 	return resolvedDayId;
 }
 

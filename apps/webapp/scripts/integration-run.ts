@@ -14,7 +14,7 @@
  *   - Playwright chromium installed: bunx playwright install chromium
  *
  * Canonical integration contract: bun run test:integration:provisioned
- * Local demo smoke only: bun run qa:matrix (warns when INTEGRATION_PROVISIONED is unset)
+ * Client walkthrough (not this suite): bun run demo:e2e
  */
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -28,7 +28,7 @@ const OUT_DIR = path.join(WEBAPP_DIR, '.integration-run');
 const FIXTURE_PATH = path.join(OUT_DIR, 'fixture.json');
 const SUMMARY_PATH = path.join(OUT_DIR, 'summary.json');
 const ENTITIES_PATH = path.join(OUT_DIR, 'entities.json');
-const MATRIX_RESULTS_PATH = path.join(WEBAPP_DIR, '..', '..', '..', 'qa-matrix-results.json');
+const MATRIX_RESULTS_PATH = path.join(OUT_DIR, 'qa-matrix-results.json');
 
 const PROVISIONING_MODE = 'school-via-api-wizard-flag-via-api';
 

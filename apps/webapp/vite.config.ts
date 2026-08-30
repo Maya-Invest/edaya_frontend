@@ -39,6 +39,8 @@ export default defineConfig({
 		noExternal: ['@maya-invest/edaya-api-client'],
 	},
 	server: {
+		// Listen on IPv4 and IPv6 so Playwright (`127.0.0.1`) and browsers (`localhost`) both connect.
+		host: true,
 		proxy: {
 			'/core': { target: apiOrigin, changeOrigin: true },
 			'/auth': { target: apiOrigin, changeOrigin: true },

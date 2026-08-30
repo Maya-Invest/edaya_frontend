@@ -15,7 +15,7 @@
 		Wallet,
 	} from '$lib/icons';
 	import { appPath } from '$lib/navigation/app-navigation';
-	import { dashboardActionHref, dashboardClassStudentsHref } from '$lib/navigation/dashboard-links';
+	import { dashboardActionHref, dashboardAttendanceTodayHref, dashboardClassStudentsHref } from '$lib/navigation/dashboard-links';
 	import { BADGE, BADGE_DANGER, BADGE_WARN } from '$lib/ui-tones';
 	import { cn } from '$lib/utils';
 
@@ -25,6 +25,7 @@
 	const school = $derived(authSession.school);
 	const kpis = $derived(overview.kpis);
 	const areaHealth = $derived(overview.areaHealth);
+	const attendanceTodayHref = $derived(dashboardAttendanceTodayHref(academicContext.classes));
 
 	const todayLabel = $derived(
 		new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date()),
@@ -160,7 +161,7 @@
 			<p class="mt-0.5 text-xs text-muted-foreground">{$t('dashboard.kpi.students')}</p>
 		</a>
 
-		<div class="rounded-2xl border border-border bg-card p-4 shadow-soft">
+		{#snippet attendanceTodayBody()}
 			<div class={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpiToneClass.sky)}>
 				<CalendarX2 class="h-4 w-4" />
 			</div>
@@ -168,7 +169,19 @@
 				{formatPercent(kpis.attendanceRateToday)}
 			</p>
 			<p class="mt-0.5 text-xs text-muted-foreground">{$t('dashboard.kpi.attendanceToday')}</p>
-		</div>
+		{/snippet}
+		{#if attendanceTodayHref}
+			<a
+				href={attendanceTodayHref}
+				class="rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
+			>
+				{@render attendanceTodayBody()}
+			</a>
+		{:else}
+			<div class="rounded-2xl border border-border bg-card p-4 shadow-soft">
+				{@render attendanceTodayBody()}
+			</div>
+		{/if}
 
 		<a
 			href={appPath('/(app)/finance/billing/[[id]]')}

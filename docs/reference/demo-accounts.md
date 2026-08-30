@@ -13,7 +13,7 @@ Full fixture reference: [edaya_backend/tooling/fixtures/src/datasets/demo-ci/REA
 |-------|------|
 | `a.kone@ecole-ci.edaya.dev` | School owner (DO scene — permission-gated routes) |
 | `j.aka@ecole-ci.edaya.dev` | Deputy director (staff workspace; primary dry-run login) |
-| `f.assi@ecole-ci.edaya.dev` | Staff coordinator / homeroom staff (`homeroomStaffId`; DN scene) |
+| `f.assi@ecole-ci.edaya.dev` | Staff coordinator / homeroom staff (`homeroomStaffId`) |
 
 ## Portal teachers (seed fixtures)
 
@@ -45,9 +45,11 @@ cd edaya_web/apps/webapp && bun dev
 cd edaya_web/apps/webapp
 bun run check
 bun test tests/lib tests/generated
-bun run demo:e2e   # ~120 steps; results in .demo-dry-run/
+bun run demo:e2e   # client walkthrough; results in .demo-dry-run/
 ```
 
-**Playwright scenes:** D0–D11 (core), DR (route coverage), DC (list shell), DD (drawer tabs), DM (modal URL), **DI** (import upload/validate), **DT** (timetable generation modal), **DG** (guardian drawer), **DF** (finance billing drawer), DN (homeroom nudge), **DO** (owner permissions).
+App integration tests (API tenant + journey + QA matrix) are `bun run test:integration:provisioned`, not this walkthrough.
+
+**Playwright scenes:** D0–D11 (core), DR (route coverage), DC (list shell), DD (drawer tabs), DM (modal URL), **DI** (import upload/validate), **DT** (timetable generation modal), **DG** (guardian drawer), **DF** (finance billing drawer), **DO** (owner permissions).
 
 Harness source: `apps/webapp/tests/integration/demo-dry-run/` · CLI: `apps/webapp/scripts/demo-dry-run.ts`

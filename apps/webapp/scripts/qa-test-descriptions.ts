@@ -131,7 +131,9 @@ export function describeTestExactly(row: QaTemplateRow): string {
 		return 'Assert action button visible (publish/generate/payment/resolve) — button NOT clicked to avoid mutation.';
 	}
 
-	if (/export/i.test(action)) return 'Assert Export button visible (needs row selection).';
+	if (/export/i.test(action)) {
+		return 'Open list-more-menu; click Sélectionner/Select (not stub Exporter); check first row; click enabled Exporter on selection bar. Empty list → N/A.';
+	}
 
 	if (/import/i.test(action)) {
 		return 'goto /configuration/tools; open import hub modal; assert pack option for action.';
@@ -140,7 +142,6 @@ export function describeTestExactly(row: QaTemplateRow): string {
 	if (row.module === 'Dashboard') {
 		if (action.includes('KPI')) return 'Count dashboard cards/articles with text.';
 		if (action.includes('Cartes')) return 'Assert main contains clickable link card.';
-		if (action.includes('Nudge')) return 'Homeroom attendance nudge — role/data dependent.';
 		return 'Dashboard loaded without fatal error.';
 	}
 
@@ -185,7 +186,7 @@ function describeFilterTest(row: QaTemplateRow): string {
 		return 'Open evaluation type filter combobox; select first option.';
 	}
 	if (ep.includes('/attendance') && /filtre completion/i.test(action)) {
-		return 'Open attendance completion filter combobox.';
+		return 'Open attendance completion filter; select marked, partial, unmarked.';
 	}
 	if (ep.includes('/report-cards') && /filtre statut/i.test(action)) {
 		return 'Open report-card status filter combobox.';
@@ -284,7 +285,10 @@ export function describeTestInputs(row: QaTemplateRow): string {
 		return 'GET /dashboard?modal=account-profile';
 	}
 
-	if (/publier|générer|supprimer|export/i.test(action)) {
+	if (/export/i.test(action)) {
+		return 'Client CSV download of selected student rows (no server mutation).';
+	}
+	if (/publier|générer|supprimer/i.test(action)) {
 		return 'No mutation submitted — visibility-only smoke.';
 	}
 

@@ -1,5 +1,6 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
+import type { StaffMemberProfileRolePatch, StaffProfileRole } from '$lib/staff/staff-profile-roles';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -9,6 +10,7 @@ export interface RegisterStaffMemberInput {
 	firstName: string;
 	lastName: string;
 	email?: string;
+	profileRole?: StaffProfileRole;
 	sendAccountInvitation?: boolean;
 	createdAt?: string;
 }
@@ -20,7 +22,7 @@ export async function registerStaffMember(
 	const now = input.createdAt ?? new Date().toISOString();
 	const email = input.email?.trim() ?? '';
 
-	await client.commands.registerStaffMember({
+	const payload: components['schemas']['RegisterStaffMemberCommand'] & StaffMemberProfileRolePatch = {
 		id: input.staffId,
 		schoolId: input.schoolId,
 		firstName: input.firstName.trim(),
@@ -29,9 +31,12 @@ export async function registerStaffMember(
 		accountKind: 'human',
 		isActive: true,
 		serviceElevated: false,
+		profileRole: input.profileRole ?? null,
 		sendAccountInvitation: input.sendAccountInvitation ?? false,
 		createdAt: now,
-	} satisfies components['schemas']['RegisterStaffMemberCommand']);
+	};
+
+	await client.commands.registerStaffMember(payload);
 }
 
 export function createStaffImportIds(index: number, seed = Date.now().toString(36)): { staffId: string } {

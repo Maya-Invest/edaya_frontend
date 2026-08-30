@@ -1,6 +1,5 @@
 import type { SchoolOverviewResponse } from '$lib/api/dashboard-data';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
-import type { HomeroomAttendanceClassContext } from '$lib/school/homeroom-attendance-nudge';
 import type { DashboardPageSlice } from './lib/dashboard-helpers';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
@@ -28,10 +27,6 @@ export class DashboardPageState {
 
 	get overview(): SchoolOverviewResponse | null {
 		return this.slice?.overview ?? null;
-	}
-
-	get homeroomAttendanceByClass(): Record<string, HomeroomAttendanceClassContext> {
-		return this.slice?.homeroomAttendanceByClass ?? {};
 	}
 
 	queryListPage() {

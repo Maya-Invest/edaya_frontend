@@ -56,11 +56,14 @@
 </script>
 
 {#if !authSession.ready && !authSession.hasAuthAccount}
-	<div class="flex min-h-screen items-center justify-center bg-background text-foreground">
+	<div
+		class="flex min-h-screen items-center justify-center bg-background text-foreground"
+		data-onboarding-shell
+	>
 		<LoaderCircle class="h-8 w-8 animate-spin text-primary" />
 	</div>
 {:else if showOnboardingShell}
-	<div class="flex min-h-screen flex-col bg-background text-foreground">
+	<div class="flex min-h-screen flex-col bg-background text-foreground" data-onboarding-shell>
 		<header class="flex items-center justify-between px-4 py-3 sm:px-6">
 			<div class="flex items-center gap-2">
 				<div
@@ -80,7 +83,10 @@
 		</main>
 	</div>
 {:else}
-	<div class="flex min-h-screen items-center justify-center bg-background text-foreground">
+	<div
+		class="flex min-h-screen items-center justify-center bg-background text-foreground"
+		data-onboarding-shell
+	>
 		<LoaderCircle class="h-8 w-8 animate-spin text-primary" />
 	</div>
 {/if}

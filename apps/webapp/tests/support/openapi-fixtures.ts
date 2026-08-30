@@ -1,4 +1,5 @@
 import type { components } from '$lib/api/schema';
+import type { StaffMemberProfileRolePatch } from '$lib/staff/staff-profile-roles';
 import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 
 type StaffMember = components['schemas']['StaffMember'];
@@ -16,8 +17,8 @@ const HUMAN_STAFF_DEFAULTS = {
 };
 
 export function staffMember(
-	overrides: Partial<StaffMember> & Pick<StaffMember, 'id' | 'firstName' | 'lastName'>,
-): StaffMember {
+	overrides: Partial<StaffMember> & Pick<StaffMember, 'id' | 'firstName' | 'lastName'> & StaffMemberProfileRolePatch,
+): StaffMember & StaffMemberProfileRolePatch {
 	return {
 		...HUMAN_STAFF_DEFAULTS,
 		schoolId: SEED_SCHOOL_ID,

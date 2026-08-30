@@ -8,7 +8,6 @@
 	import { t } from '$lib/i18n';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
-	import HomeroomAttendanceNudge from './components/HomeroomAttendanceNudge.svelte';
 	import {
 		DashboardPageState,
 		setDashboardPageState,
@@ -36,7 +35,6 @@
 						emptyTitle={$t('dashboard.title')}
 						emptyDescription={$t('dataState.emptyDescription')}
 					>
-						<HomeroomAttendanceNudge />
 						{#if dashboardPage.overview}
 							<DirectorDashboardView overview={dashboardPage.overview} />
 						{/if}
