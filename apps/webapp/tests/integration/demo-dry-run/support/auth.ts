@@ -47,21 +47,25 @@ export async function attemptPasswordSignIn(
 	password: string,
 ): Promise<boolean> {
 	try {
-		await page.goto(`${base}/login`, { waitUntil: 'domcontentloaded' });
+		// Canonical query avoids afterNavigate remounting the form after fill.
+		await page.goto(`${base}/login?panel=signin&method=password&stage=form`, {
+			waitUntil: 'domcontentloaded',
+		});
 		await ensurePasswordSignInPanel(page);
 
 		const emailInput = page.locator('#login-password-email');
 		const passwordInput = page.locator('#login-password');
+		const submit = page
+			.locator('form')
+			.filter({ has: page.locator('#login-password-email') })
+			.getByRole('button', { name: /sign in|se connecter/i });
 		await waitForEnabled(emailInput);
 		await waitForEnabled(passwordInput);
 
 		await emailInput.fill(email);
 		await passwordInput.fill(password);
-		await page
-			.locator('form')
-			.filter({ has: page.locator('#login-password-email') })
-			.getByRole('button', { name: /sign in|se connecter/i })
-			.click();
+		await waitForEnabled(submit);
+		await submit.click();
 
 		const appShellUrl = page.waitForURL(
 			/\/(dashboard|school|classes|configuration|onboarding|finance)/,

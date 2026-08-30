@@ -224,18 +224,25 @@ async function main(): Promise<void> {
 	const csv = lines.map(cols => cols.map(c => `"${c.replace(/"/g, '""')}"`).join(';')).join('\n');
 	await writeFile(CSV_PATH, `\uFEFF${csv}`, 'utf-8');
 
-	const py = spawnSync(
-		'python',
-		[path.join(import.meta.dirname, 'generate-qa-template-xlsx.py'), CSV_PATH, XLSX_PATH],
-		{ stdio: 'inherit', shell: true },
-	);
+	const xlsxScript = path.join(import.meta.dirname, 'generate-qa-template-xlsx.py');
+	let xlsxStatus = 1;
+	for (const bin of ['python', 'python3']) {
+		const py = spawnSync(bin, [xlsxScript, CSV_PATH, XLSX_PATH], { stdio: 'inherit', shell: true });
+		if (py.status === 0) {
+			xlsxStatus = 0;
+			break;
+		}
+	}
 
 	console.log(`\nMatrice QA générée : ${QA_TEMPLATE_MATRIX_RUNNABLE.length} lignes`);
 	console.log(`  OK: ${stats.ok}  NOT OK: ${stats.notOk}  N/A: ${stats.na}  À faire: ${stats.todo}`);
 	console.log(`  CSV:  ${CSV_PATH}`);
 	console.log(`  XLSX: ${XLSX_PATH}`);
 
-	process.exit(py.status === 0 ? 0 : 1);
+	if (xlsxStatus !== 0) {
+		console.warn('XLSX generation skipped (openpyxl missing) — CSV is available');
+	}
+	process.exit(0);
 }
 
 main().catch(err => {

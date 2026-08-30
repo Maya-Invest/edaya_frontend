@@ -178,7 +178,7 @@ export async function runSchoolChapter(journey: UiJourney): Promise<void> {
 			entities.announcementId = announcementId;
 			if (announcementId) {
 				const published = await publishAnnouncement(journey, announcementId);
-				if (published) {
+				if (published.ok) {
 					entities.filterFixtures.announcementsByStatus = {
 						published: { id: announcementId, title: announcementTitle },
 					};
@@ -187,10 +187,22 @@ export async function runSchoolChapter(journey: UiJourney): Promise<void> {
 					entities.filterFixtures.announcementsByStatus = { draft: { id: announcementId, title: announcementTitle } };
 				}
 				await visitCovered(journey, '/school/announcements/[id]', `/school/announcements/${announcementId}`);
-				coverActions(journey, 'http://localhost:5173/school/announcements/[id]', ['Éditer', 'Gérer cibles', 'Publier'], published ? 'OK' : 'NOT OK');
+				coverActions(
+					journey,
+					'http://localhost:5173/school/announcements/[id]',
+					['Éditer', 'Gérer cibles', 'Publier'],
+					published.ok ? 'OK' : 'NOT OK',
+					published.ok ? undefined : published.detail,
+				);
 				coverModal(journey, '/school/announcements/[id]', 'edit', 'OK');
 				coverModal(journey, '/school/announcements/[id]', 'add-target', 'OK');
-				coverModal(journey, '/school/announcements/[id]', 'publish', published ? 'OK' : 'NOT OK');
+				coverModal(
+					journey,
+					'/school/announcements/[id]',
+					'publish',
+					published.ok ? 'OK' : 'NOT OK',
+					published.ok ? undefined : published.detail,
+				);
 			}
 			coverActions(journey, 'http://localhost:5173/school/announcements', ['Liste — filtre statut', 'Créer annonce'], 'OK');
 			logStep(journey, { step: 'announcement', ok: Boolean(announcementId), detail: announcementTitle, entityId: announcementId ?? undefined });

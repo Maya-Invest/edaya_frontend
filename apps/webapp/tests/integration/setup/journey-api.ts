@@ -27,23 +27,51 @@ async function readProvisionedFixtureSchoolId(): Promise<string | null> {
 	}
 }
 
+function isLikelyApiResponse(response: import('playwright').APIResponse): boolean {
+	const contentType = response.headers()['content-type'] ?? '';
+	if (contentType.includes('text/html')) {
+		return false;
+	}
+	return contentType.includes('json') || response.ok();
+}
+
 async function apiFetch(
 	page: Page,
 	appOrigin: string,
 	path: string,
 	init: { method?: string; data?: unknown } = {},
-	_apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
+	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
 ): Promise<import('playwright').APIResponse> {
-	// Route via the webapp origin so Vite proxies /core to the API and Playwright sends session cookies.
-	const base = appOrigin.replace(/\/+$/, '');
-	const headers = {
+	const appBase = appOrigin.replace(/\/+$/, '');
+	const apiBase = apiUrl.replace(/\/+$/, '');
+	const schoolId = await readProvisionedFixtureSchoolId();
+	const headers: Record<string, string> = {
 		'content-type': 'application/json',
+		accept: 'application/json',
 	};
-	const url = `${base}${path.startsWith('/') ? path : `/${path}`}`;
-	if ((init.method ?? 'GET') === 'POST') {
-		return page.request.post(url, { headers, data: init.data ?? {} });
+	if (schoolId) {
+		headers['X-School-Id'] = schoolId;
 	}
-	return page.request.get(url, { headers });
+
+	// Local Vite proxies /core on the webapp origin. CI Wrangler SPA does not —
+	// POST /core there is 405/HTML, so also try API_URL (same cookie jar as the baked PUBLIC_API_URL).
+	const bases = [appBase];
+	if (apiBase && apiBase !== appBase) {
+		bases.push(apiBase);
+	}
+
+	let last: import('playwright').APIResponse | undefined;
+	for (const base of bases) {
+		const url = `${base}${path.startsWith('/') ? path : `/${path}`}`;
+		last = (init.method ?? 'GET') === 'POST'
+			? await page.request.post(url, { headers, data: init.data ?? {} })
+			: await page.request.get(url, { headers });
+		if (isLikelyApiResponse(last)) {
+			return last;
+		}
+		integrationDebug(`apiFetch skip ${last.status()} ${url}`);
+	}
+	return last!;
 }
 
 function parseEntityList<T extends { id?: string }>(
@@ -727,6 +755,8 @@ export async function publishAnnouncementViaApi(
 		},
 	}, apiUrl);
 	if (!addTarget.ok()) {
+		const body = await addTarget.text().catch(() => '');
+		integrationDebug(`add-target failed ${addTarget.status()} ${body.slice(0, 200)}`);
 		return false;
 	}
 
@@ -734,6 +764,10 @@ export async function publishAnnouncementViaApi(
 		method: 'POST',
 		data: { announcementId },
 	}, apiUrl);
+	if (!publish.ok()) {
+		const body = await publish.text().catch(() => '');
+		integrationDebug(`publish-announcement failed ${publish.status()} ${body.slice(0, 200)}`);
+	}
 	return publish.ok();
 }
 
