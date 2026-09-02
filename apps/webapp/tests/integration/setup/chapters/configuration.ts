@@ -11,6 +11,7 @@ import {
 	waitForPageQuery,
 	waitForSubmitEnabled,
 	assertListContains,
+	setAppLang,
 } from '../../../../scripts/qa-harness-ui';
 import { configEntityIdByName, firstIdFromLinks } from '../../../../scripts/qa-matrix-support';
 import {
@@ -88,6 +89,37 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 		}
 		coverActions(journey, 'http://localhost:5173/configuration/subjects', ['Liste matières', 'Créer matière'], closed && subjectId ? 'OK' : 'NOT OK', subjectName);
 		logStep(journey, { step: 'subject', ok: Boolean(subjectId), detail: subjectName, entityId: subjectId ?? undefined });
+
+		await gotoApp(journey, `/configuration/subjects${entities.gradeLevelId ? `?gradeLevel=${entities.gradeLevelId}` : ''}`);
+		const catalogOpened = await clickCreateButton(page, 'Créer matière', '/configuration/subjects');
+		let catalogLocalized = false;
+		if (catalogOpened) {
+			const catalogDialog = page.getByRole('dialog');
+			await catalogDialog.locator('input').first().fill('Mathématiques');
+			if (await waitForSubmitEnabled(page, 12_000)) {
+				await submitDialog(page);
+				await waitForDialogClosed(page);
+				await waitForPageQuery(page);
+				const listPath = `/configuration/subjects${entities.gradeLevelId ? `?gradeLevel=${entities.gradeLevelId}` : ''}`;
+				await gotoApp(journey, listPath);
+				const enOk = await setAppLang(page, 'en');
+				const showsEnglish = enOk && await assertListContains(page, 'Mathematics', true, 12_000);
+				const keepsCustom = await assertListContains(page, subjectName, true, 8_000);
+				const frOk = await setAppLang(page, 'fr');
+				await gotoApp(journey, listPath);
+				const showsFrench = frOk && await assertListContains(page, 'Mathématiques', true, 12_000);
+				catalogLocalized = Boolean(showsEnglish && keepsCustom && showsFrench);
+			}
+			else {
+				await page.keyboard.press('Escape').catch(() => {});
+				await waitForDialogClosed(page).catch(() => false);
+			}
+		}
+		logStep(journey, {
+			step: 'catalog-subject-en',
+			ok: catalogLocalized,
+			detail: catalogLocalized ? 'Mathématiques ↔ Mathematics' : 'Catalog subject EN display failed',
+		});
 
 		if (subjectId) {
 			await gotoApp(journey, `/configuration/subjects/${subjectId}/progression`);

@@ -5,6 +5,7 @@ import type { OnboardingDraft, OnboardingStaffInviteRole } from '$lib/onboarding
 import {
 	previewClassNamesFromCatalog,
 } from '$lib/onboarding/class-naming';
+import { academicYearLabelFromDates } from '$lib/onboarding/school-step-defaults';
 import {
 	ONBOARDING_STAFF_INVITE_PROFILES,
 } from '$lib/onboarding/staff-invite-profiles';
@@ -155,7 +156,7 @@ export function buildCompleteStepSummary(
 
 	return {
 		schoolLine: buildSchoolLine(school),
-		academicYearLabel: school.academicYearLabel.trim(),
+		academicYearLabel: academicYearLabelFromDates(school.academicYearStart, school.academicYearEnd),
 		academicYearRange: buildAcademicYearRange(school),
 		periodTypeLabelKey: resolvePeriodTypeLabelKey(school.periodType),
 		periods: buildPeriodRows(school.periods),

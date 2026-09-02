@@ -40,7 +40,7 @@ import {
 } from './qa-route-catalog';
 import { isStudentBlockedScenario, STUDENT_SETUP_BLOCKER } from '../tests/integration/setup/setup-blockers';
 import { isFilterOrSearchRow, runFilterScenario } from './filter-setup-registry';
-import { isDeleteControlVisible, waitForResolvedAcademicYearId } from './qa-harness-ui';
+import { isDeleteControlVisible, setAppLang, waitForResolvedAcademicYearId } from './qa-harness-ui';
 
 function result(row: QaTemplateRow, statut: MatrixResult['statut'], detail?: string): MatrixResult {
 	return {
@@ -278,11 +278,13 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 	}
 
 	if (action.includes('langue')) {
-		const langBtn = page.getByRole('button', { name: /fr|en|langue|language/i }).first();
-		if (!(await langBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
-			return notOk(row, 'Bouton langue introuvable');
+		await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
+		await waitForAppShell(page);
+		const switched = await setAppLang(page, 'en');
+		if (!switched) {
+			return notOk(row, 'Langue EN non appliquée (html[lang=en])');
 		}
-		await langBtn.click();
+		await setAppLang(page, 'fr');
 		return ok(row);
 	}
 

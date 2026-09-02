@@ -23,7 +23,7 @@ class ToastStore {
 	}
 
 	error(message: string) {
-		this.push(message, 'error');
+		this.push(message, 'error', 8000);
 	}
 
 	info(message: string) {

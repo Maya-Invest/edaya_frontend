@@ -2,7 +2,9 @@
 	import type { CatalogSubject, StructureTemplateCatalog } from '$lib/onboarding/structure-template-catalog';
 	import OnboardingSubjectChaptersDrawer from '$lib/components/onboarding/OnboardingSubjectChaptersDrawer.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import { t } from '$lib/i18n';
+	import { formatLocaleDate } from '$lib/date/format';
+	import { lang, locale, t } from '$lib/i18n';
+	import { catalogClassName, catalogPeriodLabel, catalogSubjectName } from '$lib/i18n/catalog-label';
 	import { ChevronRight } from '$lib/icons';
 	import { buildCompleteStepSummary } from '$lib/onboarding/complete-step-summary';
 	import { onboardingContext } from '$lib/onboarding/context.svelte';
@@ -22,6 +24,22 @@
 	const summary = $derived(
 		buildCompleteStepSummary(onboardingContext.draft, catalog),
 	);
+
+	const formattedRange = $derived.by(() => {
+		const start = onboardingContext.draft.school.academicYearStart;
+		const end = onboardingContext.draft.school.academicYearEnd;
+		if (!start.trim() || !end.trim()) {
+			return '';
+		}
+		return `${formatSummaryDate(start)} → ${formatSummaryDate(end)}`;
+	});
+
+	function formatSummaryDate(value: string): string {
+		const trimmed = value.trim();
+		if (!trimmed)
+			return '—';
+		return formatLocaleDate(trimmed, $locale, { day: 'numeric', month: 'short', year: 'numeric' });
+	}
 
 	function goToStep(step: 1 | 2 | 3) {
 		wizard.navigateToStep(step);
@@ -123,7 +141,7 @@
 					<td class="px-1.5 py-1.5 font-medium">
 						{summary.academicYearLabel || '—'}
 						{#if summary.academicYearRange}
-							<span class="font-normal text-muted-foreground"> · {summary.academicYearRange}</span>
+							<span class="block font-normal text-muted-foreground">{formattedRange}</span>
 						{/if}
 					</td>
 				</tr>
@@ -146,9 +164,9 @@
 				<tbody>
 					{#each summary.periods as period (`${period.label}-${period.start}-${period.end}`)}
 						<tr class="border-b border-border/60 last:border-0">
-							<td class="px-1.5 py-1.5 font-medium">{period.label}</td>
-							<td class="px-1.5 py-1.5 text-muted-foreground">{period.start || '—'}</td>
-							<td class="px-1.5 py-1.5 text-muted-foreground">{period.end || '—'}</td>
+							<td class="px-1.5 py-1.5 font-medium">{catalogPeriodLabel(period.label, $lang)}</td>
+							<td class="px-1.5 py-1.5 text-muted-foreground">{formatSummaryDate(period.start)}</td>
+							<td class="px-1.5 py-1.5 text-muted-foreground">{formatSummaryDate(period.end)}</td>
 						</tr>
 					{/each}
 				</tbody>
@@ -182,7 +200,9 @@
 							</span>
 						</p>
 						<p class="text-xs text-muted-foreground">
-							{level.classNames.length > 0 ? level.classNames.join(' · ') : '—'}
+							{level.classNames.length > 0
+								? level.classNames.map(name => catalogClassName(name, $lang)).join(' · ')
+								: '—'}
 						</p>
 						<table class="w-full text-xs">
 							<thead>
@@ -207,7 +227,7 @@
 										onkeydown={event => handleSubjectRowKeydown(event, level.code, subject)}
 									>
 										<td class="px-1.5 py-1.5 font-medium font-mono tabular-nums">{subject.code}</td>
-										<td class="px-1.5 py-1.5">{subject.name}</td>
+										<td class="px-1.5 py-1.5">{catalogSubjectName(subject.name, $lang, subject.code)}</td>
 										<td class="px-1.5 py-1.5">
 											<span class="flex items-center justify-end gap-1 text-muted-foreground">
 												{subject.matters.length}
@@ -265,7 +285,7 @@
 		open={selectedSubject !== null}
 		levelCode={selectedSubject?.levelCode ?? ''}
 		subjectCode={selectedSubject?.subject.code ?? ''}
-		subjectName={selectedSubject?.subject.name ?? ''}
+		subjectName={catalogSubjectName(selectedSubject?.subject.name ?? '', $lang, selectedSubject?.subject.code)}
 		matters={selectedSubject?.subject.matters ?? []}
 		onClose={closeSubjectDrawer}
 	/>

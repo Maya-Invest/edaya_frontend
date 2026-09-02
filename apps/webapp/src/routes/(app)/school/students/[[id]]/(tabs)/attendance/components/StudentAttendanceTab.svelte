@@ -5,7 +5,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
-	import { t } from '$lib/i18n';
+	import { locale, t } from '$lib/i18n';
 	import { Clock, Plus } from '$lib/icons';
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { cn } from '$lib/utils';
@@ -90,7 +90,7 @@
 						</div>
 						<p class="mt-1.5 text-sm font-medium">{record.label}</p>
 						<p class="mt-0.5 font-mono text-[10px] text-muted-foreground">
-							{fmtDateFr(record.date)} · {record.time}
+							{fmtDateFr(record.date, $locale)} · {record.time}
 						</p>
 					</div>
 				{/each}

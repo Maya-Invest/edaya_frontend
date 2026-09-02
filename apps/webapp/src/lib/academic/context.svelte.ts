@@ -1,7 +1,17 @@
 import type { AppShellData } from '$lib/api/shell-data';
+import type { Lang } from '$lib/i18n/dictionaries';
 import type { AcademicPeriod, AcademicYear, ClassNode, GradeLevel, PeriodDefinition, School } from '$lib/types/school';
 import { browser } from '$app/environment';
 import { buildClassHierarchy } from '$lib/academic/hierarchy';
+import { toCanonicalCatalogText } from '$lib/i18n/catalog-label';
+import {
+	localizeAcademicPeriod,
+	localizeClassNode,
+	localizeGradeLevel,
+	localizePeriodDefinition,
+} from '$lib/i18n/catalog-view';
+import { lang } from '$lib/i18n';
+import { get } from 'svelte/store';
 
 const STORAGE_YEAR = 'edaya:yearId';
 const STORAGE_PERIOD = 'edaya:periodId';
@@ -12,10 +22,11 @@ function clone<T>(value: T): T {
 
 class AcademicContext {
 	years = $state<AcademicYear[]>([]);
-	periods = $state<AcademicPeriod[]>([]);
-	classes = $state<ClassNode[]>([]);
-	gradeLevels = $state<GradeLevel[]>([]);
-	periodDefinitions = $state<PeriodDefinition[]>([]);
+	uiLang = $state<Lang>('fr');
+	canonicalPeriods = $state<AcademicPeriod[]>([]);
+	canonicalClasses = $state<ClassNode[]>([]);
+	canonicalGradeLevels = $state<GradeLevel[]>([]);
+	canonicalPeriodDefinitions = $state<PeriodDefinition[]>([]);
 	schools = $state<School[]>([]);
 	studentCount = $state(0);
 	guardianCount = $state(0);
@@ -24,7 +35,18 @@ class AcademicContext {
 	yearId = $state('');
 	periodId = $state('');
 
+	periods = $derived(this.canonicalPeriods.map(period => localizeAcademicPeriod(period, this.uiLang)));
+	classes = $derived(this.canonicalClasses.map(node => localizeClassNode(node, this.uiLang)));
+	gradeLevels = $derived(this.canonicalGradeLevels.map(level => localizeGradeLevel(level, this.uiLang)));
+	periodDefinitions = $derived(
+		this.canonicalPeriodDefinitions.map(definition => localizePeriodDefinition(definition, this.uiLang)),
+	);
+
 	constructor() {
+		this.uiLang = get(lang);
+		lang.subscribe((value) => {
+			this.uiLang = value;
+		});
 		if (browser) {
 			this.hydrateSelection();
 		}
@@ -96,18 +118,19 @@ class AcademicContext {
 	}
 
 	upsertPeriodDefinition(def: PeriodDefinition) {
-		const index = this.periodDefinitions.findIndex(entry => entry.id === def.id);
+		const canonical = { ...clone(def), label: toCanonicalCatalogText(def.label) };
+		const index = this.canonicalPeriodDefinitions.findIndex(entry => entry.id === canonical.id);
 		if (index === -1) {
-			this.periodDefinitions = [...this.periodDefinitions, clone(def)];
+			this.canonicalPeriodDefinitions = [...this.canonicalPeriodDefinitions, canonical];
 			return;
 		}
-		const next = [...this.periodDefinitions];
-		next[index] = clone(def);
-		this.periodDefinitions = next;
+		const next = [...this.canonicalPeriodDefinitions];
+		next[index] = canonical;
+		this.canonicalPeriodDefinitions = next;
 	}
 
 	removePeriodDefinition(id: string) {
-		this.periodDefinitions = this.periodDefinitions.filter(entry => entry.id !== id);
+		this.canonicalPeriodDefinitions = this.canonicalPeriodDefinitions.filter(entry => entry.id !== id);
 	}
 
 	setYear(id: string) {
@@ -186,8 +209,8 @@ class AcademicContext {
 
 	init(years: AcademicYear[], periods: AcademicPeriod[], classes: ClassNode[]) {
 		this.years = years;
-		this.periods = periods;
-		this.classes = classes;
+		this.canonicalPeriods = periods;
+		this.canonicalClasses = classes;
 
 		if (years.length > 0 && !years.some(y => y.id === this.yearId)) {
 			const activeYear = years.find(y => y.status === 'published') ?? years[0];
@@ -203,8 +226,8 @@ class AcademicContext {
 
 	initFromShell(shell: AppShellData) {
 		this.schools = clone(shell.schools);
-		this.gradeLevels = clone(shell.gradeLevels);
-		this.periodDefinitions = clone(shell.periodDefinitions);
+		this.canonicalGradeLevels = clone(shell.gradeLevels);
+		this.canonicalPeriodDefinitions = clone(shell.periodDefinitions);
 		this.studentCount = shell.studentCount;
 		this.guardianCount = shell.guardianCount;
 		this.staffCount = shell.staffCount;
@@ -236,10 +259,10 @@ class AcademicContext {
 	/** Clears loaded catalog data without wiping year/period selection (e.g. before shell reload). */
 	clearShellCatalog() {
 		this.years = [];
-		this.periods = [];
-		this.classes = [];
-		this.gradeLevels = [];
-		this.periodDefinitions = [];
+		this.canonicalPeriods = [];
+		this.canonicalClasses = [];
+		this.canonicalGradeLevels = [];
+		this.canonicalPeriodDefinitions = [];
 		this.schools = [];
 		this.studentCount = 0;
 		this.guardianCount = 0;

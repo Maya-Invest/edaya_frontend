@@ -4,6 +4,8 @@ import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 import { navigateToListAfterEntityDelete } from '$lib/navigation/navigate-after-delete';
+import { toCanonicalCatalogText } from '$lib/i18n/catalog-label';
+import { academicYearLabelFromDates } from '$lib/onboarding/school-step-defaults';
 import {
 	cleanupClassGroupDependencies,
 } from '$lib/school/delete-class-group-cleanup';
@@ -14,16 +16,6 @@ function schoolId(): string {
 		throw new Error('Missing school session');
 	}
 	return sid;
-}
-
-function yearDisplayName(label: string, startDate: string, endDate: string): string {
-	const trimmed = label.trim();
-	if (trimmed) {
-		return trimmed;
-	}
-	const startYear = startDate.slice(0, 4);
-	const endYear = endDate.slice(0, 4);
-	return `${startYear} — ${endYear}`;
 }
 
 function trimestersForYear(startDate: string, endDate: string) {
@@ -52,13 +44,12 @@ function trimestersForYear(startDate: string, endDate: string) {
 }
 
 export async function createAcademicYearMutation(
-	label: string,
 	startDate: string,
 	endDate: string,
 	options?: { successMessage?: string },
 ): Promise<string | null> {
 	const yearId = crypto.randomUUID();
-	const yearName = yearDisplayName(label, startDate, endDate);
+	const yearName = academicYearLabelFromDates(startDate, endDate);
 	const client = getBrowserSchoolClient();
 
 	const created = await runMutation(async () => {
@@ -136,7 +127,7 @@ export async function createClassGroupMutation(
 		schoolId: schoolId(),
 		academicYearId,
 		gradeLevelId,
-		name: name.trim(),
+		name: toCanonicalCatalogText(name.trim()),
 		capacity: options?.capacity ?? null,
 		attendanceMode: options?.attendanceMode ?? 'session',
 		homeroomStaffId: options?.homeroomStaffId ?? null,
@@ -156,7 +147,7 @@ export async function updateClassGroupMutation(
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(() => client.commands.updateClassGroupConfiguration({
 		classGroupId,
-		name: patch.name ?? current?.name,
+		name: toCanonicalCatalogText(patch.name ?? current?.name ?? ''),
 		capacity: patch.capacity !== undefined ? patch.capacity : (current?.capacity ?? null),
 		attendanceMode: patch.attendanceMode ?? current?.attendanceMode ?? 'session',
 		homeroomStaffId: patch.homeroomStaffId !== undefined

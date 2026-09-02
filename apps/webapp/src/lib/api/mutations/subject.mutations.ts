@@ -4,6 +4,7 @@ import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { buildSubjectConfigCommand } from '$lib/api/subject-save-payload';
 import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
+import { toCanonicalCatalogText } from '$lib/i18n/catalog-label';
 import { createSubjectForClass } from '$lib/subjects/create-subject-for-class';
 import {
 	createSubjectForGradeLevel,
@@ -34,8 +35,8 @@ export async function updateSubjectMutation(input: {
 	const result = await runMutation(() => client.commands.configureSubject(
 		buildSubjectConfigCommand(subject, {
 			id: subject.id,
-			name: input.name,
-			category: input.category,
+			name: toCanonicalCatalogText(input.name),
+			category: toCanonicalCatalogText(input.category) as SubjectCategory,
 			color: input.color,
 		}),
 	), { successMessage: input.successMessage });
@@ -66,8 +67,8 @@ export async function createSubjectForClassMutation(input: {
 			classGroupId: input.classGroupId,
 			subjectId,
 			classSubjectId,
-			name: input.name,
-			category: input.category,
+			name: toCanonicalCatalogText(input.name),
+			category: toCanonicalCatalogText(input.category) as SubjectCategory,
 			color: input.color,
 			createdAt,
 		});
@@ -117,8 +118,8 @@ export async function createSubjectForGradeLevelMutation(input: {
 			subjectId,
 			gradeLevelSubjectId,
 			classSubjectIdsByClassGroupId,
-			name: input.name,
-			category: input.category,
+			name: toCanonicalCatalogText(input.name),
+			category: toCanonicalCatalogText(input.category) as SubjectCategory,
 			color: input.color,
 			createdAt,
 		});

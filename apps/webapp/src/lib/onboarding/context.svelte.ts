@@ -6,7 +6,9 @@ import {
 	createEmptyDraft,
 	saveDraft,
 } from '$lib/onboarding/draft-storage';
+import { toCanonicalCatalogText } from '$lib/i18n/catalog-label';
 import { persistSyncedOnboardingDraft } from '$lib/onboarding/resume-onboarding';
+import { academicYearLabelFromDates } from '$lib/onboarding/school-step-defaults';
 
 class OnboardingContext {
 	draft = $state<OnboardingDraft>(createEmptyDraft());
@@ -34,6 +36,14 @@ class OnboardingContext {
 	}
 
 	persist() {
+		this.draft.school.academicYearLabel = academicYearLabelFromDates(
+			this.draft.school.academicYearStart,
+			this.draft.school.academicYearEnd,
+		);
+		this.draft.school.periods = this.draft.school.periods.map(period => ({
+			...period,
+			label: toCanonicalCatalogText(period.label),
+		}));
 		if (!browser || !this.authUserId) {
 			return;
 		}

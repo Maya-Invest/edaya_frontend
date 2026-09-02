@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { createEmptyDraft } from '$lib/onboarding/draft-storage';
 import { buildProvisionPayload } from '$lib/onboarding/provision-payload';
+import { academicYearLabelFromDates } from '$lib/onboarding/school-step-defaults';
 
 describe('buildProvisionPayload', () => {
 	it('maps draft school structure and filters empty class levels', () => {
@@ -35,5 +36,17 @@ describe('buildProvisionPayload', () => {
 		draft.structure.levels = [{ gradeLevelId: 'ci-college:6EME', classCount: 1, capacity: 30, classNamingMode: 'numerical' }];
 		const payload = buildProvisionPayload(draft);
 		expect(payload.invites).toBeUndefined();
+	});
+
+	it('derives the academic year label from school dates', () => {
+		const draft = createEmptyDraft();
+		draft.school.academicYearLabel = 'anneeteny';
+		draft.school.academicYearStart = '2026-09-01';
+		draft.school.academicYearEnd = '2027-07-03';
+		const payload = buildProvisionPayload(draft);
+		expect(payload.school.academicYearLabel).toBe(
+			academicYearLabelFromDates('2026-09-01', '2027-07-03'),
+		);
+		expect(payload.school.academicYearLabel).toBe('2026-2027');
 	});
 });

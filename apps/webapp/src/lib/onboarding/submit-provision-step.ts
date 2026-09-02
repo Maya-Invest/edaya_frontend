@@ -4,6 +4,7 @@ import { bootstrapSession, resetBootstrapSession } from '$lib/auth/bootstrap';
 import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
+import { onboardingUserErrorMessage } from '$lib/onboarding/onboarding-user-error';
 import { buildProvisionPayload } from '$lib/onboarding/provision-payload';
 import {
 	estimateProvisionPercent,
@@ -12,7 +13,6 @@ import {
 import { persistServerOnboardingStatusToDraft } from '$lib/onboarding/resume-onboarding';
 import { markWizardCompletedInSession } from '$lib/onboarding/wizard-completion-flag';
 import { toast } from '$lib/toast.svelte';
-import { ApiError } from '@maya-invest/edaya-api-client';
 import { get } from 'svelte/store';
 
 export { buildProvisionPayload } from '$lib/onboarding/provision-payload';
@@ -31,37 +31,14 @@ export interface ProvisionProgressState {
 	completedIds: string[];
 }
 
-function messageFromError(error: unknown): string {
-	if (error instanceof TypeError) {
-		return get(t)('onboarding.completeStep.failed');
-	}
-	if (error instanceof ApiError) {
-		if (error.body && typeof error.body === 'object') {
-			const body = error.body as Record<string, unknown>;
-			if (body.code === 'ACADEMIC_PERIOD_OUTSIDE_YEAR') {
-				return get(t)('onboarding.schoolStep.periodOutsideYear');
-			}
-			if (body.code === 'SUBJECT_ALREADY_LINKED') {
-				return get(t)('onboarding.schoolStep.alreadyLinked');
-			}
-			if (body.code === 'STRUCTURE_ALREADY_CONFIGURED') {
-				return get(t)('onboarding.structureStep.alreadyConfigured');
-			}
-			if (body.code === 'STAFF_INVITE_OWNER_EMAIL') {
-				return get(t)('onboarding.staffStep.ownerEmail');
-			}
-			if (body.code === 'INVITE_BASE_URL_MISSING') {
-				return get(t)('onboarding.staffStep.inviteUrlMissing');
-			}
-			if (typeof body.message === 'string' && body.message.length > 0) {
-				return body.message;
-			}
-		}
-		if (error.status === 404) {
-			return get(t)('onboarding.completeStep.failed');
-		}
-	}
-	return get(t)('onboarding.completeStep.failed');
+function failWithUserMessage(
+	error: unknown,
+	onError?: (message: string) => void,
+): null {
+	const message = onboardingUserErrorMessage(error, 'onboarding.completeStep.failed');
+	onError?.(message);
+	toast.error(message);
+	return null;
 }
 
 function completedIdsFromPhases(phases: Array<{ phase: string }>): string[] {
@@ -90,6 +67,7 @@ export async function submitProvisionOnboarding(
 	options?: {
 		successMessageKey?: 'onboarding.completeStep.success' | 'onboarding.skipWizardSuccess';
 		onProgress?: (state: ProvisionProgressState) => void;
+		onError?: (message: string) => void;
 	},
 ): Promise<ProvisionOnboardingResult | null> {
 	try {
@@ -98,8 +76,7 @@ export async function submitProvisionOnboarding(
 		const client = getBrowserSchoolClient();
 		if (typeof client.onboarding.provision !== 'function') {
 			console.error('[onboarding] client.onboarding.provision is missing — restart vite / clear .vite cache');
-			toast.error(get(t)('onboarding.completeStep.failed'));
-			return null;
+			return failWithUserMessage(null, options?.onError);
 		}
 
 		const waitStarted = performance.now();
@@ -174,7 +151,6 @@ export async function submitProvisionOnboarding(
 	}
 	catch (error) {
 		console.error('[onboarding] provision failed', error);
-		toast.error(messageFromError(error));
-		return null;
+		return failWithUserMessage(error, options?.onError);
 	}
 }

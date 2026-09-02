@@ -5,8 +5,10 @@
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
+	import { t } from '$lib/i18n';
 	import { Users } from '$lib/icons';
 	import { toast } from '$lib/toast.svelte';
+	import { get } from 'svelte/store';
 	import { getStudentEnrollmentsTabState } from '../(tabs)/enrollments/student-enrollments-tab.svelte';
 
 	let {
@@ -42,7 +44,7 @@
 	async function confirmTransfer() {
 		if (target === s.classId || !s.enrollmentId) {
 			if (!s.enrollmentId) {
-				toast.error('Inscription active introuvable pour cet élève.');
+				toast.error(get(t)('student.noActiveEnrollment'));
 			}
 			return;
 		}
@@ -52,7 +54,10 @@
 			enrollmentId: s.enrollmentId,
 			studentId: s.id,
 			nextClassGroupId: target,
-			successMessage: `${s.name} a été transféré(e) vers ${targetClass?.name ?? 'la nouvelle classe'}.`,
+			successMessage: get(t)('student.transferSuccess', {
+				name: s.name,
+				class: targetClass?.name ?? get(t)('student.newClass'),
+			}),
 		});
 		busy = false;
 		if (ok) {
@@ -63,25 +68,28 @@
 
 <Button variant="outline" size="sm" class="gap-2 rounded-full" onclick={() => (open = true)}>
 	<Users class="h-3.5 w-3.5" />
-	Changer de classe
+	{$t('student.changeClass')}
 </Button>
 
 <FormModal
 	bind:open
-	title={`Changer la classe de ${s.name}`}
-	description={`Classe actuelle : ${currentClass?.name ?? '—'} · ${currentClass?.level ?? ''}`}
-	submitLabel="Confirmer"
+	title={$t('student.changeClassTitle', { name: s.name })}
+	description={$t('student.currentClass', {
+		name: currentClass?.name ?? '—',
+		level: currentClass?.level ?? '',
+	})}
+	submitLabel={$t('common.confirm')}
 	busy={busy}
 	submitDisabled={target === s.classId || !s.enrollmentId}
 	onSubmit={confirmTransfer}
 >
 	<div class="space-y-2 py-2">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			Nouvelle classe
+			{$t('student.newClass')}
 		</Label>
 		<Select.Root type="single" value={target} onValueChange={v => v && (target = v)}>
 			<Select.Trigger>
-				<Select.Value placeholder="Nouvelle classe">
+				<Select.Value placeholder={$t('student.newClass')}>
 					{targetClassLabel}
 				</Select.Value>
 			</Select.Trigger>
@@ -96,7 +104,7 @@
 		</Select.Root>
 		{#if targetClass && target !== s.classId}
 			<p class="text-xs text-muted-foreground">
-				{s.name} sera transféré(e) vers {targetClass.name}.
+				{$t('student.transferPreview', { name: s.name, class: targetClass.name })}
 			</p>
 		{/if}
 	</div>

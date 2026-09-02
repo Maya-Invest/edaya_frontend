@@ -6,7 +6,8 @@
 	import * as Select from '$lib/components/ui/select';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { todayDateInput } from '$lib/date/format';
-	import { t } from '$lib/i18n';
+	import { lang, t } from '$lib/i18n';
+	import { catalogSubjectName } from '$lib/i18n/catalog-label';
 	import { get } from 'svelte/store';
 	import { getEvaluationsPageState } from '../evaluations-page.svelte';
 
@@ -38,9 +39,10 @@
 	const isEdit = $derived(evaluation !== null);
 	const isHomework = $derived(kind === 'homework');
 	const classSubjects = $derived(evaluationsPage.subjectsFor(classId));
-	const selectedSubjectName = $derived(
-		classSubjects.find(subject => subject.id === classSubjectId)?.name ?? '',
-	);
+	const selectedSubjectName = $derived.by(() => {
+		const subject = classSubjects.find(entry => entry.id === classSubjectId);
+		return subject ? catalogSubjectName(subject.name, $lang, subject.code) : '';
+	});
 	const kindLabel = $derived($t(`eval.kind.${kind}`));
 	const numericMax = $derived(Number.parseFloat(maxScore));
 	const numericCoef = $derived(Number.parseFloat(coefficient));
@@ -189,7 +191,9 @@
 				</Select.Trigger>
 				<Select.Content class="z-[100]">
 					{#each classSubjects as subject (subject.id)}
-						<Select.Item value={subject.id} label={subject.name}>{subject.name}</Select.Item>
+						<Select.Item value={subject.id} label={catalogSubjectName(subject.name, $lang, subject.code)}>
+							{catalogSubjectName(subject.name, $lang, subject.code)}
+						</Select.Item>
 					{/each}
 				</Select.Content>
 			</Select.Root>

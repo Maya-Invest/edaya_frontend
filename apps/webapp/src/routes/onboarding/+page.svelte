@@ -54,6 +54,7 @@
 		canSkipOnboarding={wizard.canSkipOnboarding}
 		busy={wizard.busy}
 		busyMessage={busyMessage}
+		actionError={wizard.lastActionError}
 		provisionProgressVisible={wizard.provisionProgressVisible}
 		provisionPercent={wizard.provisionPercent}
 		provisionActiveStepId={wizard.provisionActiveStepId}

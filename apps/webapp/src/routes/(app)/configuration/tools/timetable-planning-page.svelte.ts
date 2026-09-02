@@ -12,6 +12,9 @@ import {
 import { academicYearPlanningRange } from '$lib/api/planning-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { teacherNameForClassSubject } from '$lib/api/teacher-display';
+import { catalogSubjectName } from '$lib/i18n/catalog-label';
+import { lang } from '$lib/i18n';
+import { get } from 'svelte/store';
 import {
   parseTimetableGenerationError,
   timetableErrorMessage,
@@ -145,7 +148,10 @@ export class TimetablePlanningPageState {
           })
           : Promise.resolve([]),
       ]);
-      this.subjectLabels = Object.fromEntries(subjects.map(subject => [subject.id, subject.name]));
+      this.subjectLabels = Object.fromEntries(subjects.map(subject => [
+        subject.id,
+        catalogSubjectName(subject.name, get(lang), subject.code),
+      ]));
       const teacherIds = [...new SvelteSet(teacherAssignments.map(row => row.teacherId))];
       const teachers = teacherIds.length
         ? await client.entities.teachers.list({ id: { $in: teacherIds } })

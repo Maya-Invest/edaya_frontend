@@ -23,6 +23,34 @@ export async function refreshAppShell(page: Page, base: string): Promise<void> {
 	await page.waitForTimeout(1_500);
 }
 
+export async function setAppLang(page: Page, next: 'en' | 'fr'): Promise<boolean> {
+	const current = await page.locator('html').getAttribute('lang');
+	if (current === next) {
+		return true;
+	}
+
+	const trigger = page.getByTestId('language-selector');
+	if (!(await trigger.isVisible({ timeout: 5_000 }).catch(() => false))) {
+		return false;
+	}
+
+	await trigger.click();
+	const option = page.getByTestId(`language-option-${next}`);
+	if (!(await option.isVisible({ timeout: 5_000 }).catch(() => false))) {
+		await page.keyboard.press('Escape').catch(() => {});
+		return false;
+	}
+
+	await option.click();
+	await page.waitForFunction(
+		(lang) => document.documentElement.lang === lang,
+		next,
+		{ timeout: 8_000 },
+	).catch(() => {});
+
+	return (await page.locator('html').getAttribute('lang')) === next;
+}
+
 /** Clear stale year/period picks from prior tenants in the same browser session. */
 export async function clearAcademicSelectionStorage(page: Page): Promise<void> {
 	await page.evaluate(() => {
@@ -430,13 +458,16 @@ export async function openUrlModal(
 	page: Page,
 	pathname: string,
 	modal: string,
-	options: { target?: string; timeout?: number; base?: string } = {},
+	options: { target?: string; step?: string; timeout?: number; base?: string } = {},
 ): Promise<boolean> {
 	const origin = options.base ?? new URL(page.url()).origin;
 	const url = new URL(pathname.startsWith('http') ? pathname : `${origin}${pathname}`);
 	url.searchParams.set('modal', modal);
 	if (options.target) {
 		url.searchParams.set('modalTarget', options.target);
+	}
+	if (options.step) {
+		url.searchParams.set('modalStep', options.step);
 	}
 	await page.goto(url.toString(), { waitUntil: 'domcontentloaded' });
 	await waitForAppShell(page);

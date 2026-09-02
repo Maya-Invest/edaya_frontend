@@ -1,6 +1,7 @@
 <script lang="ts">
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
-	import { t } from '$lib/i18n';
+	import { lang, t } from '$lib/i18n';
+	import { catalogMatter } from '$lib/i18n/catalog-label';
 	import { X } from '$lib/icons';
 
 	const {
@@ -81,7 +82,7 @@
 					</p>
 					{#each matters as matter, index (`${index}-${matter}`)}
 						<div class="rounded-2xl border border-border bg-card px-4 py-3 shadow-soft">
-							<p class="text-sm font-semibold">{matter}</p>
+							<p class="text-sm font-semibold">{catalogMatter(matter, $lang)}</p>
 						</div>
 					{:else}
 						<p class="rounded-2xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground">

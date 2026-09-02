@@ -5,7 +5,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
-	import { t } from '$lib/i18n';
+	import { locale, t } from '$lib/i18n';
 	import { AlertTriangle, Plus } from '$lib/icons';
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { cn } from '$lib/utils';
@@ -22,28 +22,28 @@
 <div class="space-y-4">
 	<div class="grid grid-cols-3 gap-3">
 		<div class="rounded-xl bg-destructive/10 p-4">
-			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">Élevés</p>
+			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('events.severity.high')}</p>
 			<p class="mt-1 font-display text-2xl text-destructive">{incidentsData.high}</p>
 		</div>
 		<div class="rounded-xl bg-secondary/60 p-4">
-			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">Moyens</p>
+			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('events.severity.medium')}</p>
 			<p class="mt-1 font-display text-2xl">{incidentsData.med}</p>
 		</div>
 		<div class="rounded-xl bg-secondary p-4">
-			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">Faibles</p>
+			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('events.severity.low')}</p>
 			<p class="mt-1 font-display text-2xl">{incidentsData.low}</p>
 		</div>
 	</div>
 	<div>
 		<div class="flex items-center justify-between gap-3">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				Évènements · {incidentsData.sorted.length}
+				{$t('events.heading')} · {incidentsData.sorted.length}
 			</Label>
 			<PermissionGate
 				permission="DISCIPLINE_CREATE"
 				classId={s.classId}
 				mode="disable"
-				tooltip="Droit DISCIPLINE_CREATE requis."
+				tooltip={$t('events.permissionCreate')}
 			>
 				{#snippet children({ disabled, title })}
 					<Button
@@ -55,7 +55,7 @@
 						onclick={() => modals?.open('add-incident')}
 					>
 						<Plus class="mr-1 h-4 w-4" />
-						Consigner
+						{$t('events.log')}
 					</Button>
 				{/snippet}
 			</PermissionGate>
@@ -83,7 +83,7 @@
 							>
 								{$t(`events.severity.${incident.severity}`)}
 							</span>
-							<span class="font-mono text-[10px] text-muted-foreground">{fmtDateFr(incident.date)}</span>
+							<span class="font-mono text-[10px] text-muted-foreground">{fmtDateFr(incident.date, $locale)}</span>
 						</div>
 						<p class="mt-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
 							{$t(`events.cat.${incident.category}`)}

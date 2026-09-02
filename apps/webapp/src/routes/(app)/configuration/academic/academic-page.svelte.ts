@@ -105,12 +105,11 @@ export class AcademicPageState {
 	}
 
 	async createYear(input: {
-		label: string;
 		startDate: string;
 		endDate: string;
 		successMessage?: string;
 	}): Promise<string | null> {
-		const yearId = await createAcademicYearMutation(input.label, input.startDate, input.endDate, {
+		const yearId = await createAcademicYearMutation(input.startDate, input.endDate, {
 			successMessage: input.successMessage,
 		});
 		if (!yearId) {

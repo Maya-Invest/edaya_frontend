@@ -3,7 +3,9 @@ import {
 	buildCompleteStepSummary,
 	previewMatters,
 } from '$lib/onboarding/complete-step-summary';
+import { catalogClassName, catalogPeriodLabel, catalogSubjectName } from '$lib/i18n/catalog-label';
 import { createEmptyDraft } from '$lib/onboarding/draft-storage';
+import { academicYearLabelFromDates } from '$lib/onboarding/school-step-defaults';
 import {
 	buildCatalogFromTemplates,
 	subjectsForGradeLevelIds,
@@ -113,7 +115,9 @@ describe('buildCompleteStepSummary', () => {
 
 		const summary = buildCompleteStepSummary(draft, catalog);
 		expect(summary.schoolLine).toBe("Collège Test · Abidjan · Côte d'Ivoire");
-		expect(summary.academicYearLabel).toBe(draft.school.academicYearLabel);
+		expect(summary.academicYearLabel).toBe(
+			academicYearLabelFromDates(draft.school.academicYearStart, draft.school.academicYearEnd),
+		);
 		expect(summary.academicYearRange).toBe(
 			`${draft.school.academicYearStart} → ${draft.school.academicYearEnd}`,
 		);
@@ -165,4 +169,32 @@ describe('buildCompleteStepSummary', () => {
 		]);
 		expect(summary.inviteCount).toBe(2);
 	});
+
+	it('derives the academic year label from dates instead of a free-text name', () => {
+		const draft = createEmptyDraft();
+		draft.school.academicYearLabel = 'anneeteny';
+		draft.school.academicYearStart = '2026-09-01';
+		draft.school.academicYearEnd = '2027-07-03';
+
+		const summary = buildCompleteStepSummary(draft, catalog);
+		expect(summary.academicYearLabel).toBe('2026-2027');
+	});
+
+	it('keeps canonical FR catalog values so the recap can localize them', () => {
+		const draft = createEmptyDraft();
+		draft.structure = {
+			models: ['college'],
+			levels: [{ gradeLevelId: 'ci-college:6EME', classCount: 2, capacity: 30, classNamingMode: 'numerical' }],
+		};
+
+		const summary = buildCompleteStepSummary(draft, catalog);
+		expect(summary.levels[0]?.classNames).toEqual(['6EME 1', '6EME 2']);
+		expect(summary.levels[0]?.subjects.find(subject => subject.code === 'FR')?.name).toBe('Français');
+		expect(summary.periods[0]?.label.startsWith('Trimestre') || summary.periods[0]?.label.startsWith('Semestre')).toBe(true);
+		expect(catalogSubjectName('Français', 'en', 'FR')).toBe('French');
+		expect(catalogSubjectName('Espagnol', 'en', 'ESP')).toBe('Spanish');
+		expect(catalogClassName('2nde A 1', 'en')).toBe('10th A 1');
+		expect(catalogPeriodLabel(summary.periods[0]?.label ?? '', 'en')).toMatch(/^(Term|Semester) /);
+	});
 });
+

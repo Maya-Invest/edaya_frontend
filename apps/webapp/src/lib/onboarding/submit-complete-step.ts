@@ -3,26 +3,15 @@ import { bootstrapSession } from '$lib/auth/bootstrap';
 import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
+import { onboardingUserErrorMessage } from '$lib/onboarding/onboarding-user-error';
 import { persistServerOnboardingStatusToDraft } from '$lib/onboarding/resume-onboarding';
 import { markWizardCompletedInSession } from '$lib/onboarding/wizard-completion-flag';
 import { toast } from '$lib/toast.svelte';
-import { ApiError } from '@maya-invest/edaya-api-client';
 import { get } from 'svelte/store';
-
-function messageFromError(error: unknown): string {
-	if (error instanceof ApiError) {
-		if (error.body && typeof error.body === 'object') {
-			const body = error.body as Record<string, unknown>;
-			if (typeof body.message === 'string' && body.message.length > 0) {
-				return body.message;
-			}
-		}
-	}
-	return get(t)('onboarding.completeStep.failed');
-}
 
 export async function submitCompleteOnboardingStep(options?: {
 	successMessageKey?: 'onboarding.completeStep.success' | 'onboarding.skipWizardSuccess';
+	onError?: (message: string) => void;
 }): Promise<boolean> {
 	try {
 		const status = await getBrowserSchoolClient().onboarding.completeWizard({});
@@ -49,7 +38,9 @@ export async function submitCompleteOnboardingStep(options?: {
 		return true;
 	}
 	catch (error) {
-		toast.error(messageFromError(error));
+		const message = onboardingUserErrorMessage(error, 'onboarding.completeStep.failed');
+		options?.onError?.(message);
+		toast.error(message);
 		return false;
 	}
 }

@@ -1,3 +1,4 @@
+import type { Lang } from '$lib/i18n/dictionaries';
 import type { StructureTemplateCatalog } from '$lib/onboarding/structure-template-model';
 import type { StructureModel } from '$lib/onboarding/structure-templates';
 import type {
@@ -5,6 +6,7 @@ import type {
 	OnboardingStructureDraft,
 	OnboardingStructureLevelDraft,
 } from '$lib/onboarding/types';
+import { catalogGradeName } from '$lib/i18n/catalog-label';
 import {
 	getCatalogGradeLevel,
 	gradeLevelsForModels,
@@ -106,10 +108,14 @@ export function structureSummary(structure: OnboardingStructureDraft): {
 }
 
 /** Prefer fixture `name` for the structure row title. */
-export function gradeLevelLabel(gradeLevelId: string, catalog: StructureTemplateCatalog): string {
+export function gradeLevelLabel(
+	gradeLevelId: string,
+	catalog: StructureTemplateCatalog,
+	lang: Lang = 'fr',
+): string {
 	const level = getCatalogGradeLevel(catalog, gradeLevelId);
 	if (!level) {
 		return gradeLevelId;
 	}
-	return level.name || level.code;
+	return catalogGradeName(level.name || level.code, lang, level.code);
 }

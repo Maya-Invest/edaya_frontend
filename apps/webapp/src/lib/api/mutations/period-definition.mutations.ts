@@ -3,6 +3,7 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
+import { toCanonicalCatalogText } from '$lib/i18n/catalog-label';
 
 function schoolId(): string {
 	return authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
@@ -26,7 +27,7 @@ function toEntity(input: PeriodDefinitionSaveInput, sid: string, id: string): Pe
 		id,
 		schoolId: sid,
 		academicYearId: input.academicYearId,
-		label: input.label.trim(),
+		label: toCanonicalCatalogText(input.label.trim()),
 		dayOfWeek: input.dayOfWeek,
 		order: input.order,
 		startTime: input.startTime,
