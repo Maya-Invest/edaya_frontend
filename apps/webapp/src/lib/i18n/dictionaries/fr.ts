@@ -95,6 +95,7 @@ export const fr: Dict = {
 	'auth.signUpVerificationTitle': 'Vérifiez votre boîte mail',
 	'auth.signUpVerificationHint':
 		'Nous avons envoyé un lien de confirmation à {email}. Cliquez dessus pour activer votre compte, puis connectez-vous.',
+	'auth.emailVerifiedSignIn': 'E-mail vérifié — vous pouvez vous connecter.',
 	'auth.alreadyHaveAccount': 'Déjà un compte ?',
 	'auth.noAccountYet': 'Pas encore de compte ?',
 	'auth.switchToSignIn': 'Se connecter',
