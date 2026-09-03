@@ -10,6 +10,7 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
+	import { Trash2 } from '$lib/icons';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { writeModalSurface } from '$lib/modal/modal-url';
@@ -54,6 +55,9 @@
 	const isDraft = $derived(live.status === 'draft');
 
 	let deleteBusy = $state(false);
+	let removeTargetBusy = $state(false);
+	let pendingRemoveTarget = $state<Announcement['targets'][number] | null>(null);
+	let removeTargetOpen = $state(false);
 
 	function fmtDate(value: string | undefined) {
 		if (!value) {
@@ -97,6 +101,27 @@
 		}
 		finally {
 			deleteBusy = false;
+		}
+	}
+
+	async function confirmRemoveTarget() {
+		if (!pendingRemoveTarget || removeTargetBusy) {
+			return;
+		}
+		removeTargetBusy = true;
+		try {
+			const ok = await announcementsPage.removeTarget({
+				announcementId: live.id,
+				targetId: pendingRemoveTarget.id,
+				successMessage: get(t)('announcements.targetRemoved'),
+			});
+			if (ok) {
+				removeTargetOpen = false;
+				pendingRemoveTarget = null;
+			}
+		}
+		finally {
+			removeTargetBusy = false;
 		}
 	}
 
@@ -179,13 +204,6 @@
 				>
 					{#snippet children({ disabled, title })}
 						<RowActionMenuItem
-							{disabled}
-							{title}
-							onclick={() => modals.open('add-target')}
-						>
-							{$t('announcements.addTarget')}
-						</RowActionMenuItem>
-						<RowActionMenuItem
 							destructive
 							{disabled}
 							{title}
@@ -234,8 +252,32 @@
 		{:else}
 			<ul class="divide-y divide-border">
 				{#each live.targets as target (target.id)}
-					<li class="px-4 py-2.5 text-sm text-foreground/80">
-						{targetLabel(target)}
+					<li class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-foreground/80">
+						<span class="min-w-0 truncate">{targetLabel(target)}</span>
+						{#if isDraft}
+							<PermissionGate
+								permission="COMMUNICATION_CREATE"
+								mode="disable"
+								tooltip={$t('announcements.permissionCreate')}
+							>
+								{#snippet children({ disabled, title })}
+									<Button
+										type="button"
+										variant="ghost"
+										size="icon"
+										class="h-8 w-8 text-muted-foreground hover:text-destructive"
+										disabled={disabled || removeTargetBusy}
+										title={title ?? $t('announcements.removeTarget')}
+										onclick={() => {
+											pendingRemoveTarget = target;
+											removeTargetOpen = true;
+										}}
+									>
+										<Trash2 class="h-4 w-4" />
+									</Button>
+								{/snippet}
+							</PermissionGate>
+						{/if}
 					</li>
 				{/each}
 			</ul>
@@ -265,4 +307,15 @@
 	cancelLabel={$t('common.cancel')}
 	busy={deleteBusy}
 	onConfirm={confirmDelete}
+/>
+
+<ConfirmModal
+	bind:open={removeTargetOpen}
+	title={$t('common.deleteConfirmTitle')}
+	description={$t('announcements.removeTargetConfirm', { name: pendingRemoveTarget ? targetLabel(pendingRemoveTarget) : '' })}
+	confirmLabel={$t('announcements.removeTarget')}
+	cancelLabel={$t('common.cancel')}
+	busy={removeTargetBusy}
+	onConfirm={confirmRemoveTarget}
+	onCancel={() => { pendingRemoveTarget = null }}
 />
