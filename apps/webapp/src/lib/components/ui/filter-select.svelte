@@ -20,7 +20,7 @@
 	} = $props();
 
 	const selectClass
-		= 'h-full w-full appearance-none rounded-md border border-input bg-background py-2 pl-3 pr-8 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+		= 'control-focus h-full w-full appearance-none rounded-md border border-input bg-background py-2 pl-3 pr-8 text-sm disabled:cursor-not-allowed disabled:opacity-50';
 </script>
 
 <div class={cn('relative inline-flex items-center', className)}>

@@ -63,6 +63,13 @@
 	}
 }
 
+@layer components {
+	.control-focus {
+		@apply outline-none focus:outline-none focus-visible:outline-none;
+		@apply focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring;
+	}
+}
+
 @layer utilities {
 	.text-balance {
 		text-wrap: balance;
