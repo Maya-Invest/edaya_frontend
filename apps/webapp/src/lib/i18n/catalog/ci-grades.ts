@@ -15,7 +15,7 @@ export const CI_GRADES: Record<string, CatalogGradePair> = {
 	'1ERA': { name: { fr: 'Première A', en: '11th year A' }, shortLabel: { fr: '1ère A', en: '11th A' } },
 	'1ERC': { name: { fr: 'Première C', en: '11th year C' }, shortLabel: { fr: '1ère C', en: '11th C' } },
 	'1ERD': { name: { fr: 'Première D', en: '11th year D' }, shortLabel: { fr: '1ère D', en: '11th D' } },
-	TLEA: { name: { fr: 'Terminale A', en: '12th year A' }, shortLabel: { fr: 'Tle A', en: '12th A' } },
-	TLEC: { name: { fr: 'Terminale C', en: '12th year C' }, shortLabel: { fr: 'Tle C', en: '12th C' } },
-	TLED: { name: { fr: 'Terminale D', en: '12th year D' }, shortLabel: { fr: 'Tle D', en: '12th D' } },
+	'TLEA': { name: { fr: 'Terminale A', en: '12th year A' }, shortLabel: { fr: 'Tle A', en: '12th A' } },
+	'TLEC': { name: { fr: 'Terminale C', en: '12th year C' }, shortLabel: { fr: 'Tle C', en: '12th C' } },
+	'TLED': { name: { fr: 'Terminale D', en: '12th year D' }, shortLabel: { fr: 'Tle D', en: '12th D' } },
 };

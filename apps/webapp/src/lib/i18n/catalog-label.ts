@@ -1,4 +1,5 @@
 import type { Lang } from '$lib/i18n/dictionaries';
+import type { CatalogNamePair } from './catalog/ci-subjects';
 import { CI_GRADES } from './catalog/ci-grades';
 import {
 	CI_BULLETIN_SECTIONS,
@@ -10,7 +11,7 @@ import {
 	CI_SUBJECT_CATEGORIES,
 } from './catalog/ci-labels';
 import { CI_MATTERS } from './catalog/ci-matters';
-import { CI_SUBJECTS, type CatalogNamePair } from './catalog/ci-subjects';
+import { CI_SUBJECTS } from './catalog/ci-subjects';
 
 export type CatalogLang = Lang;
 

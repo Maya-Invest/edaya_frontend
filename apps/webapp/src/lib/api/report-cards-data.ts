@@ -23,8 +23,8 @@ import {
 import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 import { fetchClassSubjectsSources } from '$lib/api/subjects-data';
 import { teacherNameForClassSubject } from '$lib/api/teacher-display';
-import { catalogBulletinSection, catalogSubjectName } from '$lib/i18n/catalog-label';
 import { lang } from '$lib/i18n';
+import { catalogBulletinSection, catalogSubjectName } from '$lib/i18n/catalog-label';
 import { get } from 'svelte/store';
 
 type GradeScaleRaw = components['schemas']['GradeScale'];

@@ -1,10 +1,10 @@
 import type { ImportTypeDefinition } from '$lib/import/catalog/types';
 import type { ImportMultiValueSeparator } from '$lib/import/preferences/import-preferences.svelte';
-import { mapStaffImportRoleToProfileRole } from '$lib/import/staff/staff-role-labels';
-import { sortImportColumnsRequiredFirst } from '$lib/import/shared/sort-import-columns';
+import { lang } from '$lib/i18n';
 import { catalogCycle, catalogText } from '$lib/i18n/catalog-label';
 import { dictionaries } from '$lib/i18n/dictionaries';
-import { lang } from '$lib/i18n';
+import { sortImportColumnsRequiredFirst } from '$lib/import/shared/sort-import-columns';
+import { mapStaffImportRoleToProfileRole } from '$lib/import/staff/staff-role-labels';
 import { downloadCsv } from '$lib/list/list-csv-export';
 import { get } from 'svelte/store';
 import * as XLSX from 'xlsx';

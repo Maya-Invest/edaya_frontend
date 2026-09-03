@@ -3,6 +3,7 @@ import type { Lang } from '$lib/i18n/dictionaries';
 import type { AcademicPeriod, AcademicYear, ClassNode, GradeLevel, PeriodDefinition, School } from '$lib/types/school';
 import { browser } from '$app/environment';
 import { buildClassHierarchy } from '$lib/academic/hierarchy';
+import { lang } from '$lib/i18n';
 import { toCanonicalCatalogText } from '$lib/i18n/catalog-label';
 import {
 	localizeAcademicPeriod,
@@ -10,7 +11,6 @@ import {
 	localizeGradeLevel,
 	localizePeriodDefinition,
 } from '$lib/i18n/catalog-view';
-import { lang } from '$lib/i18n';
 import { get } from 'svelte/store';
 
 const STORAGE_YEAR = 'edaya:yearId';

@@ -12,9 +12,6 @@ import {
 import { academicYearPlanningRange } from '$lib/api/planning-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { teacherNameForClassSubject } from '$lib/api/teacher-display';
-import { catalogSubjectName } from '$lib/i18n/catalog-label';
-import { lang } from '$lib/i18n';
-import { get } from 'svelte/store';
 import {
   parseTimetableGenerationError,
   timetableErrorMessage,
@@ -26,7 +23,8 @@ import {
 } from '$lib/components/school/scheduling/timetable-placement-parameters';
 import { formatDateInput } from '$lib/date/format';
 import { entityVersions } from '$lib/entity-versions.svelte';
-import { t } from '$lib/i18n';
+import { lang, t } from '$lib/i18n';
+import { catalogSubjectName } from '$lib/i18n/catalog-label';
 import { toast } from '$lib/toast.svelte';
 import { SvelteSet } from 'svelte/reactivity';
 import { get } from 'svelte/store';

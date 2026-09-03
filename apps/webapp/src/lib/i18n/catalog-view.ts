@@ -1,3 +1,4 @@
+import type { CatalogLang } from '$lib/i18n/catalog-label';
 import type {
 	AcademicPeriod,
 	CatalogChapter,
@@ -6,7 +7,6 @@ import type {
 	PeriodDefinition,
 	Subject,
 } from '$lib/types/school';
-import type { CatalogLang } from '$lib/i18n/catalog-label';
 import {
 	catalogCategory,
 	catalogClassName,

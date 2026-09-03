@@ -9,12 +9,12 @@ export const CI_DOMAINS: Record<string, CatalogNamePair> = {
 };
 
 export const CI_SUBJECT_CATEGORIES: Record<string, CatalogNamePair> = {
-	Scientifique: { fr: 'Scientifique', en: 'Science' },
-	Littéraire: { fr: 'Littéraire', en: 'Literature' },
-	Langues: { fr: 'Langues', en: 'Languages' },
+	'Scientifique': { fr: 'Scientifique', en: 'Science' },
+	'Littéraire': { fr: 'Littéraire', en: 'Literature' },
+	'Langues': { fr: 'Langues', en: 'Languages' },
 	'Sciences humaines': { fr: 'Sciences humaines', en: 'Humanities' },
-	Sport: { fr: 'Sport', en: 'Sport' },
-	Arts: { fr: 'Arts', en: 'Arts' },
+	'Sport': { fr: 'Sport', en: 'Sport' },
+	'Arts': { fr: 'Arts', en: 'Arts' },
 };
 
 export const CI_CYCLES: Record<string, CatalogNamePair> = {
@@ -32,7 +32,7 @@ export const CI_BULLETIN_SECTIONS: Record<string, CatalogNamePair> = {
 };
 
 export const CI_EXAMS: Record<string, CatalogNamePair> = {
-	BEPC: { fr: 'BEPC', en: 'BEPC' },
+	'BEPC': { fr: 'BEPC', en: 'BEPC' },
 	'BAC A': { fr: 'BAC A', en: 'Baccalaureate A' },
 	'BAC C': { fr: 'BAC C', en: 'Baccalaureate C' },
 	'BAC D': { fr: 'BAC D', en: 'Baccalaureate D' },

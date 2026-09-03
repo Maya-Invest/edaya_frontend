@@ -100,9 +100,9 @@ export async function runStructureChapter(journey: UiJourney): Promise<boolean> 
 				if (await next.isVisible({ timeout: 5_000 }).catch(() => false)) {
 					await next.click();
 				}
-				const hasPeriod1 = await dialog.getByDisplayValue('Period 1').or(dialog.getByText('Period 1', { exact: true })).first()
+				const hasPeriod1 = await dialog.locator('input[value="Period 1"]').or(dialog.getByText('Period 1', { exact: true })).first()
 					.isVisible({ timeout: 8_000 }).catch(() => false);
-				const hasBreak = await dialog.getByDisplayValue('Break').or(dialog.getByText('Break', { exact: true })).first()
+				const hasBreak = await dialog.locator('input[value="Break"]').or(dialog.getByText('Break', { exact: true })).first()
 					.isVisible({ timeout: 5_000 }).catch(() => false);
 				wizardOk = hasPeriod1 && hasBreak;
 				await page.keyboard.press('Escape').catch(() => {});
