@@ -16,6 +16,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { chromium } from 'playwright';
+import { ensurePlaywrightChromium } from './playwright-browsers';
 import { assertStackReady, attemptPasswordSignIn } from '../tests/integration/demo-dry-run/support/auth';
 import { createDemoContext } from '../tests/integration/demo-dry-run/support/context';
 import { DEMO_PASSWORD, OWNER_EMAIL, STAFF_EMAIL } from '../tests/integration/demo-dry-run/support/constants';
@@ -155,6 +156,7 @@ async function qaSignIn(
 }
 
 async function main(): Promise<void> {
+	ensurePlaywrightChromium();
 	const base = process.env['WEBAPP_URL'] ?? DEMO_WEBAPP_BASE;
 	const matrix = filterMatrix();
 	const excluded = [...defaultExcludedModulesForRun(), ...excludedModules()];

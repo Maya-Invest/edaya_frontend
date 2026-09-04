@@ -156,9 +156,11 @@
 			>
 				{$t('onboarding.skipWizard')}
 			</Button>
-			<p class="max-w-sm text-xs text-muted-foreground">
-				{$t('onboarding.skipWizardHint')}
-			</p>
+			{#if currentStep !== 3}
+				<p class="max-w-sm text-xs text-muted-foreground">
+					{$t('onboarding.skipWizardHint')}
+				</p>
+			{/if}
 		{/if}
 		<Button variant="ghost" size="sm" type="button" disabled={busy} onclick={onSignOut}>
 			{$t('auth.signOut')}

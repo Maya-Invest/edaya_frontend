@@ -318,5 +318,5 @@
 	cancelLabel={$t('common.cancel')}
 	busy={removeTargetBusy}
 	onConfirm={confirmRemoveTarget}
-	onCancel={() => { pendingRemoveTarget = null }}
+	onCancel={() => { pendingRemoveTarget = null; }}
 />

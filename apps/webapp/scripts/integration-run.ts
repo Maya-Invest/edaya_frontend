@@ -11,7 +11,7 @@
  * Prerequisites:
  *   - API at API_URL (default http://localhost:9999)
  *   - Webapp at WEBAPP_URL (default http://localhost:5173) — bun dev
- *   - Playwright chromium installed: bunx playwright install chromium
+ *   - Playwright chromium (auto-installed into apps/webapp/.cache/ms-playwright)
  *
  * Canonical integration contract: bun run test:integration:provisioned
  * Client walkthrough (not this suite): bun run demo:e2e
@@ -22,6 +22,7 @@ import { spawnSync } from 'node:child_process';
 import { provisionTenant } from '../tests/integration/support/api-provision';
 import { defaultExcludedModulesForRun } from './qa-matrix-exclusions';
 import { INTEGRATION_POLICY, printBlockers, type BlockerReport } from './integration-report';
+import { ensurePlaywrightChromium } from './playwright-browsers';
 
 const WEBAPP_DIR = path.join(import.meta.dirname, '..');
 const OUT_DIR = path.join(WEBAPP_DIR, '.integration-run');
@@ -70,6 +71,7 @@ function shouldFail(matrix: MatrixSummary, failOn: string): boolean {
 
 async function main(): Promise<void> {
 	await mkdir(OUT_DIR, { recursive: true });
+	const browsersPath = ensurePlaywrightChromium();
 
 	console.log('=== Step 1: API provisioning (user + school + wizard flag) ===');
 	const tenant = await provisionTenant();
@@ -80,6 +82,7 @@ async function main(): Promise<void> {
 	const excludedModules = process.env['QA_MATRIX_EXCLUDE_MODULES'] ?? '';
 	const env = {
 		...process.env,
+		PLAYWRIGHT_BROWSERS_PATH: browsersPath,
 		QA_LOGIN_EMAIL: tenant.email,
 		QA_LOGIN_PASSWORD: tenant.password,
 		INTEGRATION_TARGET: 'production',
