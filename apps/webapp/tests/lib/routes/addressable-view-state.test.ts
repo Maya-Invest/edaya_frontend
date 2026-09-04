@@ -104,7 +104,10 @@ describe('addressable non-modal view URL state', () => {
 	it('detects email-verified redirects and strips the query param', () => {
 		expect(isEmailVerifiedRedirect(url('/login?verified=1'))).toBe(true);
 		expect(isEmailVerifiedRedirect(url('/login?verified=true'))).toBe(true);
+		expect(isEmailVerifiedRedirect(url('/login?verified=TRUE'))).toBe(true);
 		expect(isEmailVerifiedRedirect(url('/login'))).toBe(false);
+		expect(isEmailVerifiedRedirect(url('/login?verified=0'))).toBe(false);
+		expect(isEmailVerifiedRedirect(url('/login?verified=false'))).toBe(false);
 
 		const href = writeLoginUrlState(
 			url('/login?verified=1&portal=teacher'),

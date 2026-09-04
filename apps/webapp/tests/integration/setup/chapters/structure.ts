@@ -1,6 +1,7 @@
 import {
 	dismissPageError,
 	ensureAcademicYearReady,
+	fillAcademicYearCreateDialog,
 	fillClassCreateDialog,
 	fillGradeLevelCreateDialog,
 	openDialogButton,
@@ -11,6 +12,7 @@ import {
 	waitForResolvedAcademicYearId,
 	openUrlModal,
 	setAppLang,
+	dialogHasInputValue,
 } from '../../../../scripts/qa-harness-ui';
 import { configEntityIdByName } from '../../../../scripts/qa-matrix-support';
 import { ensureDailyAttendanceMode } from '../../demo-dry-run/support/setup';
@@ -57,8 +59,7 @@ export async function runStructureChapter(journey: UiJourney): Promise<boolean> 
 		}
 		coverModal(journey, '/configuration/academic', 'create', 'OK');
 
-		const label = `E2E ${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
-		await page.getByRole('dialog').locator('input').first().fill(label);
+		const label = await fillAcademicYearCreateDialog(page);
 		await submitDialog(page);
 		if (!(await waitForDialogClosed(page))) {
 			logStep(journey, { step: 'academic-year', ok: false, detail: 'Create year modal still open after submit' });
@@ -81,32 +82,38 @@ export async function runStructureChapter(journey: UiJourney): Promise<boolean> 
 
 		let wizardOk = false;
 		if (langOk) {
-			await gotoApp(journey, '/configuration/academic');
-			const yearId = await page.evaluate(() => sessionStorage.getItem('edaya:yearId'));
-			const opened = yearId
-				? await openUrlModal(page, '/configuration/academic', 'period-def-wizard', {
-					target: yearId,
-					step: 'preset',
-					base: ctx.base,
-				})
-				: false;
-			const dialog = page.getByRole('dialog');
-			if (opened || await dialog.isVisible({ timeout: 5_000 }).catch(() => false)) {
-				const preset = dialog.getByRole('button', { name: /standard secondary|secondaire standard/i }).first();
-				if (await preset.isVisible({ timeout: 5_000 }).catch(() => false)) {
-					await preset.click();
+			try {
+				await gotoApp(journey, '/configuration/academic');
+				const yearId = await page.evaluate(() => sessionStorage.getItem('edaya:yearId'));
+				const opened = yearId
+					? await openUrlModal(page, '/configuration/academic', 'period-def-wizard', {
+						target: yearId,
+						step: 'preset',
+						base: ctx.base,
+					})
+					: false;
+				const dialog = page.getByRole('dialog');
+				if (opened || await dialog.isVisible({ timeout: 5_000 }).catch(() => false)) {
+					const preset = dialog.getByRole('button', { name: /standard secondary|secondaire standard/i }).first();
+					if (await preset.isVisible({ timeout: 5_000 }).catch(() => false)) {
+						await preset.click();
+					}
+					const next = dialog.getByRole('button', { name: /next|suivant/i }).last();
+					if (await next.isVisible({ timeout: 5_000 }).catch(() => false)) {
+						await next.click();
+					}
+					const hasPeriod1 = await dialogHasInputValue(dialog, /période 1|period 1/i);
+					const hasBreak = await dialogHasInputValue(dialog, /récréation|^break$|lunch break/i);
+					wizardOk = hasPeriod1 && hasBreak;
+					await page.keyboard.press('Escape').catch(() => {});
+					await waitForDialogClosed(page).catch(() => false);
 				}
-				const next = dialog.getByRole('button', { name: /next|suivant/i }).last();
-				if (await next.isVisible({ timeout: 5_000 }).catch(() => false)) {
-					await next.click();
-				}
-				const hasPeriod1 = await dialog.locator('input[value="Period 1"]').or(dialog.getByText('Period 1', { exact: true })).first()
-					.isVisible({ timeout: 8_000 }).catch(() => false);
-				const hasBreak = await dialog.locator('input[value="Break"]').or(dialog.getByText('Break', { exact: true })).first()
-					.isVisible({ timeout: 5_000 }).catch(() => false);
-				wizardOk = hasPeriod1 && hasBreak;
-				await page.keyboard.press('Escape').catch(() => {});
-				await waitForDialogClosed(page).catch(() => false);
+			}
+			catch (err) {
+				console.error(
+					'Period wizard catalog assert failed; academic year stays published:',
+					err instanceof Error ? err.message : err,
+				);
 			}
 		}
 		coverActions(

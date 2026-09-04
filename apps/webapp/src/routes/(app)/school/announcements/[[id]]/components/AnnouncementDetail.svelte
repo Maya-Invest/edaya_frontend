@@ -268,6 +268,7 @@
 										class="h-8 w-8 text-muted-foreground hover:text-destructive"
 										disabled={disabled || removeTargetBusy}
 										title={title ?? $t('announcements.removeTarget')}
+										aria-label={$t('announcements.removeTarget')}
 										onclick={() => {
 											pendingRemoveTarget = target;
 											removeTargetOpen = true;

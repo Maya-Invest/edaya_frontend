@@ -5,6 +5,7 @@ import {
 	listSearchInput,
 	openDialogButton,
 	openUrlModal,
+	refreshAppShell,
 	submitDialog,
 	waitForDialogClosed,
 	waitForPageQuery,
@@ -24,11 +25,32 @@ import {
 } from '../journey-context';
 
 const STUDENT_TABS = ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments'] as const;
+const STUDENT_CREATE_BUTTON = /add student|ajouter un élève/i;
+
+async function openStudentCreateModal(journey: UiJourney): Promise<boolean> {
+	const { page, base } = journey.ctx;
+	const heading = page.getByRole('heading', { name: /effectif|roster|élèves|students/i }).first();
+	await heading.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
+
+	if (await openDialogButton(page, STUDENT_CREATE_BUTTON, 15_000)) {
+		return true;
+	}
+	if (await openUrlModal(page, '/school/students', 'create', { base })) {
+		return true;
+	}
+	await refreshAppShell(page, base);
+	await gotoApp(journey, '/school/students');
+	await heading.waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
+	if (await openDialogButton(page, STUDENT_CREATE_BUTTON, 10_000)) {
+		return true;
+	}
+	return openUrlModal(page, '/school/students', 'create', { base });
+}
 
 async function createExtraStudent(journey: UiJourney, lastName: string): Promise<string | null> {
 	const { page } = journey.ctx;
 	await gotoApp(journey, '/school/students');
-	const opened = await openDialogButton(page, /add student|ajouter un élève/i, 30_000);
+	const opened = await openStudentCreateModal(journey);
 	if (!opened) {
 		return null;
 	}
@@ -91,9 +113,14 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 
 	await visitCovered(journey, '/school/students', '/school/students');
 	const lastName = `E2E-Student-${Date.now()}`;
-	entities.filterFixtures.searchToken = lastName;
-	const opened = await openDialogButton(page, /add student|ajouter un élève/i, 30_000);
-	coverModal(journey, '/school/students', 'create', opened ? 'OK' : 'NOT OK');
+	const opened = await openStudentCreateModal(journey);
+	coverModal(
+		journey,
+		'/school/students',
+		'create',
+		opened ? 'OK' : 'NOT OK',
+		opened ? 'create modal opened' : 'Create student modal not found',
+	);
 	if (!opened) {
 		coverActions(journey, 'http://localhost:5173/school/students', ['Créer élève (modal)'], 'NOT OK', 'Create student modal not found');
 		logStep(journey, { step: 'student', ok: false, detail: 'Create student modal not found' });
@@ -118,6 +145,9 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 		entities.studentId = studentId;
 		entities.classStudentId = studentId;
 		entities.createdStudentId = studentId ?? 'created';
+		if (studentId) {
+			entities.filterFixtures.searchToken = lastName;
+		}
 		if (studentId && entities.classId) {
 			await gotoApp(journey, `/school/students?class=${entities.classId}`);
 			const classVisible = await assertListContains(page, lastName, true, 20_000);
@@ -137,7 +167,15 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 				);
 			}
 		}
-		coverActions(journey, 'http://localhost:5173/school/students', ['Liste — affichage', 'Créer élève (modal)', 'Recherche'], closed ? 'OK' : 'NOT OK', lastName);
+		coverActions(
+			journey,
+			'http://localhost:5173/school/students',
+			studentId
+				? ['Liste — affichage', 'Créer élève (modal)', 'Recherche']
+				: ['Liste — affichage', 'Créer élève (modal)'],
+			closed ? 'OK' : 'NOT OK',
+			lastName,
+		);
 		logStep(journey, { step: 'student', ok: Boolean(studentId), detail: lastName, entityId: studentId ?? undefined });
 
 		if (studentId) {

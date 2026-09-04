@@ -102,6 +102,9 @@ export function describeTestExactly(row: QaTemplateRow): string {
 	}
 
 	if (/créer|crud|nouveau|ajouter/i.test(action) && !/notes pédagogiques/i.test(action)) {
+		if (ep.includes('/configuration/academic') && /crud années/i.test(action)) {
+			return 'Open Add academic year; fill start/end dates only (no name field); submit; assert heading is derived YYYY-YYYY.';
+		}
 		if (ep.includes('/school/events')) return 'Open Add incident dialog; fill fields; submit if enabled.';
 		if (ep.includes('/configuration/classes')) return 'Open Add class dialog; fillClassCreateDialog; assert modal closes.';
 		if (action.includes('élève') && ep.includes('/school/students')) {
@@ -119,12 +122,16 @@ export function describeTestExactly(row: QaTemplateRow): string {
 		return 'Account preferences: assert toggles loaded or Save button present (save not clicked).';
 	}
 
+	if (/retirer destinataire/i.test(action)) {
+		return 'On draft announcement detail: assert Remove recipient / Retirer le destinataire on a target row. Do not confirm — provisioned runs must not mutate. N/A if published or no targets.';
+	}
+
 	if (/supprimer|delete/i.test(action)) {
 		return 'Assert delete button or menu item visible; confirm dialog if opened — mutation NOT submitted.';
 	}
 
 	if (ep.includes('/configuration/academic') && /publier année/i.test(action)) {
-		return 'ensureAcademicYearReady: find year section; click Publier; confirm dialog; assert Published badge.';
+		return 'ensureAcademicYearReady: find year section by derived YYYY-YYYY heading; click Publier; confirm dialog; assert Published badge.';
 	}
 
 	if (/publier|générer|enregistrer paiement|résoudre|toggle|offer/i.test(action)) {
@@ -288,7 +295,7 @@ export function describeTestInputs(row: QaTemplateRow): string {
 	if (/export/i.test(action)) {
 		return 'Client CSV download of selected student rows (no server mutation).';
 	}
-	if (/publier|générer|supprimer/i.test(action)) {
+	if (/publier|générer|supprimer|retirer/i.test(action)) {
 		return 'No mutation submitted — visibility-only smoke.';
 	}
 

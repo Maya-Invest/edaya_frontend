@@ -194,6 +194,13 @@ export async function runSchoolChapter(journey: UiJourney): Promise<void> {
 					published.ok ? 'OK' : 'NOT OK',
 					published.ok ? undefined : published.detail,
 				);
+				coverActions(
+					journey,
+					'http://localhost:5173/school/announcements/[id]',
+					['Retirer destinataire'],
+					published.removeTargetVisible ? 'OK' : 'NOT OK',
+					published.removeTargetVisible ? undefined : 'remove-target control not visible on draft',
+				);
 				coverModal(journey, '/school/announcements/[id]', 'edit', 'OK');
 				coverModal(journey, '/school/announcements/[id]', 'add-target', 'OK');
 				coverModal(

@@ -282,24 +282,4 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 	else {
 		logStep(journey, { step: 'discipline', ok: false, detail: 'Discipline modal not found' });
 	}
-
-	try {
-		await gotoApp(journey, '/configuration/tools');
-		const toolsVisible = await page.locator('main').isVisible().catch(() => false);
-		logStep(journey, { step: 'tools-hub', ok: toolsVisible, detail: toolsVisible ? 'hub visible' : 'hub missing' });
-		await gotoApp(journey, '/configuration/tools/teacher-assignments');
-		coverModal(journey, '/configuration/tools/teacher-assignments', 'create', 'OK', 'page visited — assignment later');
-		logStep(journey, { step: 'tools-teacher-assignments', ok: true, detail: 'visited (assign after teacher)' });
-	}
-	catch (err) {
-		console.error(
-			'Tools hub visit failed; configuration chapter continuing:',
-			err instanceof Error ? err.message : err,
-		);
-		logStep(journey, {
-			step: 'tools-hub',
-			ok: false,
-			detail: err instanceof Error ? err.message : String(err),
-		});
-	}
 }

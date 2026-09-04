@@ -107,6 +107,20 @@ export async function runTeachingChapter(journey: UiJourney): Promise<void> {
 		}
 	}
 
-	await gotoApp(journey, '/configuration/tools/teacher-assignments');
-	logStep(journey, { step: 'teacher-assignments-hub', ok: true, detail: 'second visit after teacher exists' });
+	try {
+		await gotoApp(journey, '/configuration/tools/teacher-assignments');
+		coverModal(journey, '/configuration/tools/teacher-assignments', 'create', 'OK', 'page visited after teacher exists');
+		logStep(journey, { step: 'teacher-assignments-hub', ok: true, detail: 'visited after teacher exists' });
+	}
+	catch (err) {
+		console.error(
+			'Teacher assignments hub visit failed; teaching chapter continuing:',
+			err instanceof Error ? err.message : err,
+		);
+		logStep(journey, {
+			step: 'teacher-assignments-hub',
+			ok: false,
+			detail: err instanceof Error ? err.message : String(err),
+		});
+	}
 }
