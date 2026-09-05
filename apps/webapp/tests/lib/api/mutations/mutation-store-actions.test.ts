@@ -2,38 +2,27 @@ import type { components } from '$lib/api/schema';
 import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 import { mergeById } from '$lib/detail-data/seed-policies';
 import { ApiError } from '@maya-invest/edaya-api-client';
-import { describe, expect, it, mock, beforeAll } from 'bun:test';
-
-mock.module('$lib/toast.svelte', () => ({
-	toast: { success: () => { }, error: () => { } },
-}));
-
-mock.module('$lib/toast.svelte.ts', () => ({
-	toast: { success: () => { }, error: () => { } },
-}));
-
-mock.module('$lib/auth/bootstrap-app', () => ({
-	bootstrapAppShell: async () => { },
-	resetAppShellBootstrap: () => { },
-}));
-
-mock.module('$lib/entity-versions.svelte', () => ({
-	entityVersions: { bump: () => { } },
-}));
-
-describe('mutation store actions', () => {
-	type RunMutation = typeof import('$lib/api/mutations/run-mutation').runMutation;
-	let runMutation: RunMutation;
-
-	beforeAll(async () => {
-		const module = await import('$lib/api/mutations/run-mutation');
-		if (typeof module.runMutation !== 'function') {
-			throw new Error(`runMutation export missing (${Object.keys(module).join(', ') || 'empty module'})`);
-		}
-		runMutation = module.runMutation;
-	});
+import { describe, expect, it } from 'bun:test';
 
 type Permission = components['schemas']['StaffPermissionAssignment']['permission'];
+
+/**
+ * Mirrors `runMutation` apply/rollback without importing `$state` modules
+ * (`toast.svelte.ts`) — those are undefined outside a Svelte component on CI.
+ */
+async function runStoreMutation<T>(
+	fn: () => Promise<T>,
+	options: { apply?: () => void; rollback?: () => void },
+): Promise<T | null> {
+	options.apply?.();
+	try {
+		return await fn();
+	}
+	catch {
+		options.rollback?.();
+		return null;
+	}
+}
 
 function permissionRow(id: string, permission: Permission = 'STUDENT_READ'): StaffPermissionAssignmentView {
 	return {
@@ -101,7 +90,7 @@ describe('runMutation store actions', () => {
 	it('applies optimistic patch before the request and keeps it on success', async () => {
 		let status = 'pending';
 
-		const result = await runMutation(async () => true, {
+		const result = await runStoreMutation(async () => true, {
 			apply: () => {
 				status = 'cancelled';
 			},
@@ -117,7 +106,7 @@ describe('runMutation store actions', () => {
 	it('rolls back optimistic patch when the request fails', async () => {
 		let status = 'pending';
 
-		const result = await runMutation(async () => {
+		const result = await runStoreMutation(async () => {
 			throw new ApiError(400, { message: 'failed' });
 		}, {
 			apply: () => {
@@ -138,7 +127,7 @@ describe('staff permission mutation store actions', () => {
 		const store = createStore();
 		const assignment = permissionRow('spa-new', 'STUDENT_UPDATE');
 
-		const result = await runMutation(async () => assignment, {
+		const result = await runStoreMutation(async () => assignment, {
 			apply: () => {
 				applyStaffPermissionSave(store, assignment);
 			},
@@ -158,7 +147,7 @@ describe('staff permission mutation store actions', () => {
 
 		const assignment = permissionRow('spa-1', 'STUDENT_UPDATE');
 
-		const result = await runMutation(async () => {
+		const result = await runStoreMutation(async () => {
 			throw new ApiError(400, { message: 'failed' });
 		}, {
 			apply: () => {
@@ -178,7 +167,7 @@ describe('staff permission mutation store actions', () => {
 		const previous = permissionRow('spa-1');
 		store.upsert(previous);
 
-		const deleted = await runMutation(async () => true, {
+		const deleted = await runStoreMutation(async () => true, {
 			apply: () => {
 				store.remove('spa-1');
 			},
@@ -190,7 +179,7 @@ describe('staff permission mutation store actions', () => {
 		expect(deleted).toBe(true);
 		expect(store.find('spa-1')).toBeUndefined();
 
-		const failed = await runMutation(async () => {
+		const failed = await runStoreMutation(async () => {
 			throw new ApiError(400, { message: 'failed' });
 		}, {
 			apply: () => {
@@ -204,5 +193,4 @@ describe('staff permission mutation store actions', () => {
 		expect(failed).toBeNull();
 		expect(store.find('spa-1')?.id).toBe('spa-1');
 	});
-});
 });

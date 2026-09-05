@@ -35,7 +35,7 @@ Do **not** import `DetailDataContext` or other `$state` singletons directly in t
 Prefer:
 
 1. **Pure helpers** — test mapping/codec functions with fixtures (`tests/lib/api/*-data.test.ts`).
-2. **Mutation apply/rollback** — extract the patch logic or mirror it with a small in-memory store + `runMutation` (`tests/lib/api/mutations/mutation-store-actions.test.ts`).
+2. **Mutation apply/rollback** — extract the patch logic or mirror it with a small in-memory store (`tests/lib/api/mutations/mutation-store-actions.test.ts`). Do not import `run-mutation.ts` here: it pulls `$lib/toast.svelte` (`$state`), which is undefined outside a component on CI.
 3. **Mocks before dynamic import** — when testing `runMutation` callers, mock `$lib/toast.svelte` and `$lib/auth/bootstrap-app` first, then `await import('...mutations')`.
 
 ## Adding tests
