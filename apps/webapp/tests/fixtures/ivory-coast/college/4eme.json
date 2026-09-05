@@ -1,0 +1,261 @@
+{
+  "code": "4EME",
+  "name": "Quatrième",
+  "short_label": "4ème",
+  "sections": [
+    {
+      "role": "subjects",
+      "label": "Bilan Lettre",
+      "order": 1,
+      "subject_codes": [
+        "FR",
+        "ANG",
+        "ALL",
+        "ESP",
+        "HG"
+      ]
+    },
+    {
+      "role": "subjects",
+      "label": "Bilan Science",
+      "order": 2,
+      "subject_codes": [
+        "MATH",
+        "PC",
+        "SVT",
+        "TECH",
+        "TICE"
+      ]
+    },
+    {
+      "role": "subjects",
+      "label": "Bilan autres",
+      "order": 3,
+      "subject_codes": [
+        "EDHC",
+        "AP",
+        "MUS",
+        "EPS"
+      ]
+    },
+    {
+      "role": "comments",
+      "label": "Appréciations",
+      "order": 4
+    }
+  ],
+  "subjects": [
+    {
+      "code": "MATH",
+      "name": "Mathématiques",
+      "domain": "Sciences",
+      "coefficient": 3,
+      "matters": [
+        "Nombres rationnels et irrationnels : racines carrées",
+        "Calcul littéral : développement, factorisation, identités remarquables",
+        "Équations et inéquations du 1er degré à une inconnue",
+        "Systèmes d'équations à deux inconnues dans R2",
+        "Applications affines et linéaires : expressions, représentations graphiques, coefficient directeur",
+        "Vecteurs et translations : relations de Chasles, colinéarité, repères du plan",
+        "Théorème de Thalès et sa réciproque",
+        "Théorème de Pythagore et sa réciproque",
+        "Trigonométrie dans le triangle rectangle (cos, sin, tan)",
+        "Angles inscrits et polygones réguliers",
+        "Géométrie dans l'espace : cônes, cylindres, pyramides, sphères (sections et volumes)",
+        "Statistiques : moyennes, médianes, fréquences, diagrammes"
+      ]
+    },
+    {
+      "code": "FR",
+      "name": "Français",
+      "domain": "Langues",
+      "coefficient": 3,
+      "matters": [
+        "Lecture expliquée de textes littéraires (auteurs africains et français)",
+        "Grammaire de la phrase complexe : la juxtaposition, la coordination, la subordination",
+        "Les propositions subordonnées relatives, conjonctives, circonstancielles (cause, but, conséquence, condition)",
+        "Le discours rapporté : style direct et indirect, concordance des temps",
+        "La voix active et la voix passive",
+        "Expression écrite : le texte narratif avec dialogue intégré, le résumé d'un texte argumentatif",
+        "Figures de style : métaphore, comparaison, hyperbole, anaphore, personnification"
+      ]
+    },
+    {
+      "code": "ANG",
+      "name": "Anglais",
+      "domain": "Langues",
+      "coefficient": 2,
+      "matters": [
+        "Compréhension orale et expression orale",
+        "Compréhension écrite de textes authentiques",
+        "Vocabulaire thématique et expressions utiles",
+        "Grammaire : temps, structures et concordance",
+        "Production écrite guidée et libre",
+        "Civilisation et documents culturels"
+      ]
+    },
+    {
+      "code": "HG",
+      "name": "Histoire-Géographie",
+      "domain": "Univers Social",
+      "coefficient": 2,
+      "matters": [
+        "Repères chronologiques et sociétés",
+        "Territoires, populations et activités",
+        "Lecture de cartes, frises et documents",
+        "Afrique et Côte d'Ivoire dans le monde",
+        "Enjeux contemporains",
+        "Méthodologie de l'étude de documents"
+      ]
+    },
+    {
+      "code": "PC",
+      "name": "Physique-Chimie",
+      "domain": "Sciences",
+      "coefficient": 2,
+      "matters": [
+        "Notion de force, le poids, la masse, relation P = mg",
+        "La poussée d'Archimède dans les liquides",
+        "Masse volumique et densité",
+        "Structure de la matière : atomes, molécules",
+        "Les ions et les solutions aqueuses",
+        "Acides et bases : pH, réactions acido-basiques",
+        "Oxydoréduction (actions des acides sur les métaux)",
+        "Le courant alternatif : tension efficace, période, fréquence",
+        "Résistance électrique et Loi d'Ohm",
+        "Énergie et puissance électrique"
+      ]
+    },
+    {
+      "code": "SVT",
+      "name": "Sciences de la Vie et de la Terre",
+      "domain": "Sciences",
+      "coefficient": 2,
+      "matters": [
+        "La digestion et l'absorption intestinale",
+        "Le sang et la circulation sanguine",
+        "La respiration chez l'homme",
+        "L'excrétion urinaire",
+        "Le système nerveux : centres nerveux, organes des sens, l'œil",
+        "La reproduction humaine : puberté, appareils génitaux, cycle menstruel, fécondation",
+        "Les maladies nutritionnelles (carences)",
+        "Immunologie de base : microbes, infection, phagocytose, anticorps, VIH/SIDA",
+        "Les roches sédimentaires et la formation des sols"
+      ]
+    },
+    {
+      "code": "ALL",
+      "name": "Allemand",
+      "domain": "Langues",
+      "coefficient": 1,
+      "matters": [
+        "Compréhension et expression orale de base",
+        "Vocabulaire et structures grammaticales essentielles",
+        "Lecture de textes simples",
+        "Production écrite courte",
+        "Civilisation germanophone",
+        "Interaction en situations quotidiennes"
+      ],
+      "optional": true
+    },
+    {
+      "code": "ESP",
+      "name": "Espagnol",
+      "domain": "Langues",
+      "coefficient": 1,
+      "matters": [
+        "Compréhension et expression orale de base",
+        "Vocabulaire et structures grammaticales essentielles",
+        "Lecture de textes simples",
+        "Production écrite courte",
+        "Civilisation hispanophone",
+        "Interaction en situations quotidiennes"
+      ],
+      "optional": true
+    },
+    {
+      "code": "EDHC",
+      "name": "Éducation aux Droits de l'Homme et à la Citoyenneté",
+      "domain": "Univers Social",
+      "coefficient": 1,
+      "matters": [
+        "Droits et devoirs du citoyen",
+        "Vivre ensemble et respect de la diversité",
+        "Institutions et vie démocratique",
+        "Santé, hygiène et responsabilité sociale",
+        "Développement durable",
+        "Engagement et solidarité"
+      ]
+    },
+    {
+      "code": "EPS",
+      "name": "Éducation Physique et Sportive",
+      "domain": "Développement Physique",
+      "coefficient": 1,
+      "matters": [
+        "Activités athlétiques et motricité",
+        "Sports collectifs",
+        "Gymnastique et expression corporelle",
+        "Condition physique et santé",
+        "Règles de sécurité et fair-play",
+        "Préparation et évaluation des APSA"
+      ]
+    },
+    {
+      "code": "AP",
+      "name": "Arts Plastiques",
+      "domain": "Arts",
+      "coefficient": 1,
+      "matters": [
+        "Dessin et représentation",
+        "Couleurs, formes et composition",
+        "Techniques plastiques",
+        "Lecture d'œuvres",
+        "Expression créative",
+        "Projet plastique personnel"
+      ]
+    },
+    {
+      "code": "MUS",
+      "name": "Éducation Musicale",
+      "domain": "Arts",
+      "coefficient": 1,
+      "matters": [
+        "Écoute et discrimination sonore",
+        "Chant et rythme",
+        "Notions de solfège de base",
+        "Musiques traditionnelles et contemporaines",
+        "Pratique collective",
+        "Culture musicale"
+      ]
+    },
+    {
+      "code": "TECH",
+      "name": "Technologie",
+      "domain": "Sciences",
+      "coefficient": 1,
+      "matters": [
+        "Objets techniques et matériaux",
+        "Mesure, dessin et représentation technique",
+        "Énergie et systèmes simples",
+        "Démarche de projet technologique",
+        "Sécurité et usage des outils",
+        "Innovation et design"
+      ]
+    },
+    {
+      "code": "TICE",
+      "name": "TICE",
+      "domain": "Sciences",
+      "coefficient": 1,
+      "matters": [
+        "Système d'exploitation et fichiers",
+        "Traitement de texte et présentation",
+        "Recherche d'information et sources",
+        "Tableurs et multimédia",
+        "Citoyenneté et sécurité numériques",
+        "Collaboration et outils en ligne"
+      ]
+    }
+  ]
+}

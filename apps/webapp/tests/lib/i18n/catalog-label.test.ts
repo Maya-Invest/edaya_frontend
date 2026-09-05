@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
 	CI_BULLETIN_SECTIONS,
@@ -70,23 +70,7 @@ describe('catalog-label', () => {
 	});
 });
 
-function ivoryCoastFixtureRoot(): string | null {
-	const candidates = [
-		join(import.meta.dir, '../../../../../../edaya_backend/tooling/fixtures/data/onboarding/ivory-coast'),
-		join(import.meta.dir, '../../../../../../../edaya_backend/tooling/fixtures/data/onboarding/ivory-coast'),
-	];
-	for (const candidate of candidates) {
-		try {
-			if (existsSync(candidate) && statSync(candidate).isDirectory()) {
-				return candidate;
-			}
-		}
-		catch {
-			// CI has no sibling edaya_backend checkout.
-		}
-	}
-	return null;
-}
+const IVORY_COAST_FIXTURE_ROOT = join(import.meta.dir, '../../fixtures/ivory-coast');
 
 function walkJsonFiles(root: string): string[] {
 	const files: string[] = [];
@@ -145,11 +129,7 @@ describe('CI catalog coverage', () => {
 	});
 
 	it('has an English chapter for every Ivory Coast fixture matter', () => {
-		const root = ivoryCoastFixtureRoot();
-		if (!root) {
-			return;
-		}
-		const files = walkJsonFiles(root);
+		const files = walkJsonFiles(IVORY_COAST_FIXTURE_ROOT);
 
 		const missing: string[] = [];
 		for (const file of files) {
@@ -172,16 +152,11 @@ describe('CI catalog coverage', () => {
 		expect(catalogPeriodLabel('Trimestre 1', 'en')).toBe('Term 1');
 		expect(catalogPeriodLabel('Trimestre 3', 'en')).toBe('Term 3');
 
-		const root = ivoryCoastFixtureRoot();
-		if (!root) {
-			// edaya_web CI has no sibling edaya_backend checkout.
-			return;
-		}
 		const missingGrades: string[] = [];
 		const missingDomains: string[] = [];
 		const missingSections: string[] = [];
 
-		for (const path of walkJsonFiles(root)) {
+		for (const path of walkJsonFiles(IVORY_COAST_FIXTURE_ROOT)) {
 			const parsed = JSON.parse(readFileSync(path, 'utf8')) as {
 				code?: string;
 				name?: string;

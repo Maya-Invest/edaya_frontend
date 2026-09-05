@@ -1,2 +1,2 @@
 [test]
-preload = ["./tests/support/svelte-module-loader.ts", "./tests/support/sveltekit-mocks.ts"]
+preload = ["./tests/support/sveltekit-mocks.ts"]
