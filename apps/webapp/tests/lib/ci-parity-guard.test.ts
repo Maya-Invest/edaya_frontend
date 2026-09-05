@@ -40,6 +40,16 @@ describe('CI parity guard', () => {
 		expect(offenders).toEqual([]);
 	});
 
+	it('does not import mutation modules that load Svelte state', () => {
+		const offenders = files.filter((file) => {
+			const source = readFileSync(file, 'utf8');
+			return source.includes("import('$lib/api/mutations/")
+				&& source.includes('.mutations')
+				&& !source.includes('.client');
+		});
+		expect(offenders).toEqual([]);
+	});
+
 	it('does not statically import Svelte state or run-mutation modules', () => {
 		const offenders: string[] = [];
 		for (const file of files) {
