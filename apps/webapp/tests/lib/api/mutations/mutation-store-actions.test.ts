@@ -1,14 +1,34 @@
-import type { components } from '$lib/api/schema';
-import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
-import { mergeById } from '$lib/detail-data/seed-policies';
-import { ApiError } from '@maya-invest/edaya-api-client';
 import { describe, expect, it } from 'bun:test';
 
-type Permission = components['schemas']['StaffPermissionAssignment']['permission'];
+type Permission = 'STUDENT_READ' | 'STUDENT_UPDATE';
+
+interface StaffPermissionAssignmentView {
+	id: string;
+	staffId: string;
+	schoolId: string;
+	academicYearId: string;
+	permission: Permission;
+	scopeIds: string;
+	status: 'active';
+	sourceStaffAssignmentId: string | null;
+	scopeLabel: string;
+	tenantWide: boolean;
+	isSynced: boolean;
+	hasMissingScope: boolean;
+}
+
+function mergeById<T extends { id: string }>(existing: readonly T[], incoming: readonly T[]): T[] {
+	const map = new Map(existing.map(item => [item.id, item]));
+	for (const item of incoming) {
+		map.set(item.id, item);
+	}
+	return [...map.values()];
+}
 
 /**
- * Mirrors `runMutation` apply/rollback without importing `$state` modules
- * (`toast.svelte.ts`) — those are undefined outside a Svelte component on CI.
+ * Mirrors `runMutation` apply/rollback without importing production modules.
+ * `run-mutation.ts` pulls `$lib/toast.svelte` (`$state`), which bun test does not
+ * compile on Linux CI unless a Svelte module loader is registered.
  */
 async function runStoreMutation<T>(
 	fn: () => Promise<T>,
@@ -44,7 +64,6 @@ function permissionRow(id: string, permission: Permission = 'STUDENT_READ'): Sta
 function createStore() {
 	const assignments: StaffPermissionAssignmentView[] = [];
 	return {
-		assignments,
 		upsert(row: StaffPermissionAssignmentView) {
 			const next = mergeById(assignments, [row]);
 			assignments.splice(0, assignments.length, ...next);
@@ -107,7 +126,7 @@ describe('runMutation store actions', () => {
 		let status = 'pending';
 
 		const result = await runStoreMutation(async () => {
-			throw new ApiError(400, { message: 'failed' });
+			throw new Error('failed');
 		}, {
 			apply: () => {
 				status = 'cancelled';
@@ -148,7 +167,7 @@ describe('staff permission mutation store actions', () => {
 		const assignment = permissionRow('spa-1', 'STUDENT_UPDATE');
 
 		const result = await runStoreMutation(async () => {
-			throw new ApiError(400, { message: 'failed' });
+			throw new Error('failed');
 		}, {
 			apply: () => {
 				applyStaffPermissionSave(store, assignment, previous);
@@ -180,7 +199,7 @@ describe('staff permission mutation store actions', () => {
 		expect(store.find('spa-1')).toBeUndefined();
 
 		const failed = await runStoreMutation(async () => {
-			throw new ApiError(400, { message: 'failed' });
+			throw new Error('failed');
 		}, {
 			apply: () => {
 				store.remove('spa-1');

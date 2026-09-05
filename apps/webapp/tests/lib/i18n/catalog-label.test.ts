@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import {
 	CI_BULLETIN_SECTIONS,
@@ -75,7 +75,17 @@ function ivoryCoastFixtureRoot(): string | null {
 		join(import.meta.dir, '../../../../../../edaya_backend/tooling/fixtures/data/onboarding/ivory-coast'),
 		join(import.meta.dir, '../../../../../../../edaya_backend/tooling/fixtures/data/onboarding/ivory-coast'),
 	];
-	return candidates.find(path => existsSync(path)) ?? null;
+	for (const candidate of candidates) {
+		try {
+			if (existsSync(candidate) && statSync(candidate).isDirectory()) {
+				return candidate;
+			}
+		}
+		catch {
+			// CI has no sibling edaya_backend checkout.
+		}
+	}
+	return null;
 }
 
 function walkJsonFiles(root: string): string[] {
