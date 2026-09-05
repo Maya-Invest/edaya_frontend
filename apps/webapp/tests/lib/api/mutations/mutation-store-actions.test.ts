@@ -2,9 +2,13 @@ import type { components } from '$lib/api/schema';
 import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 import { mergeById } from '$lib/detail-data/seed-policies';
 import { ApiError } from '@maya-invest/edaya-api-client';
-import { describe, expect, it, mock } from 'bun:test';
+import { describe, expect, it, mock, beforeAll } from 'bun:test';
 
 mock.module('$lib/toast.svelte', () => ({
+	toast: { success: () => { }, error: () => { } },
+}));
+
+mock.module('$lib/toast.svelte.ts', () => ({
 	toast: { success: () => { }, error: () => { } },
 }));
 
@@ -17,7 +21,17 @@ mock.module('$lib/entity-versions.svelte', () => ({
 	entityVersions: { bump: () => { } },
 }));
 
-const { runMutation } = await import('$lib/api/mutations/run-mutation');
+describe('mutation store actions', () => {
+	type RunMutation = typeof import('$lib/api/mutations/run-mutation').runMutation;
+	let runMutation: RunMutation;
+
+	beforeAll(async () => {
+		const module = await import('$lib/api/mutations/run-mutation');
+		if (typeof module.runMutation !== 'function') {
+			throw new Error(`runMutation export missing (${Object.keys(module).join(', ') || 'empty module'})`);
+		}
+		runMutation = module.runMutation;
+	});
 
 type Permission = components['schemas']['StaffPermissionAssignment']['permission'];
 
@@ -190,4 +204,5 @@ describe('staff permission mutation store actions', () => {
 		expect(failed).toBeNull();
 		expect(store.find('spa-1')?.id).toBe('spa-1');
 	});
+});
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
 	CI_BULLETIN_SECTIONS,
@@ -70,6 +70,35 @@ describe('catalog-label', () => {
 	});
 });
 
+function ivoryCoastFixtureRoot(): string | null {
+	const candidates = [
+		join(import.meta.dir, '../../../../../../edaya_backend/tooling/fixtures/data/onboarding/ivory-coast'),
+		join(import.meta.dir, '../../../../../../../edaya_backend/tooling/fixtures/data/onboarding/ivory-coast'),
+	];
+	return candidates.find(path => existsSync(path)) ?? null;
+}
+
+function walkJsonFiles(root: string): string[] {
+	const files: string[] = [];
+	function walk(dir: string) {
+		if (!existsSync(dir)) {
+			return;
+		}
+		for (const entry of readdirSync(dir, { withFileTypes: true })) {
+			const path = join(dir, entry.name);
+			if (entry.isDirectory()) {
+				walk(path);
+				continue;
+			}
+			if (entry.name.endsWith('.json') && entry.name !== 'fixture.json') {
+				files.push(path);
+			}
+		}
+	}
+	walk(root);
+	return files;
+}
+
 describe('CI catalog coverage', () => {
 	it('has an English pair for every subject and grade code', () => {
 		expect(Object.keys(CI_SUBJECTS).sort()).toEqual([
@@ -106,24 +135,11 @@ describe('CI catalog coverage', () => {
 	});
 
 	it('has an English chapter for every Ivory Coast fixture matter', () => {
-		const root = join(
-			import.meta.dir,
-			'../../../../../../edaya_backend/tooling/fixtures/data/onboarding/ivory-coast',
-		);
-		const files: string[] = [];
-		function walk(dir: string) {
-			for (const entry of readdirSync(dir, { withFileTypes: true })) {
-				const path = join(dir, entry.name);
-				if (entry.isDirectory()) {
-					walk(path);
-					continue;
-				}
-				if (entry.name.endsWith('.json') && entry.name !== 'fixture.json') {
-					files.push(path);
-				}
-			}
+		const root = ivoryCoastFixtureRoot();
+		if (!root) {
+			return;
 		}
-		walk(root);
+		const files = walkJsonFiles(root);
 
 		const missing: string[] = [];
 		for (const file of files) {
@@ -143,66 +159,57 @@ describe('CI catalog coverage', () => {
 	});
 
 	it('has English pairs for every Ivory Coast fixture grade, domain, and bulletin section', () => {
-		const root = join(
-			import.meta.dir,
-			'../../../../../../edaya_backend/tooling/fixtures/data/onboarding/ivory-coast',
-		);
+		expect(catalogPeriodLabel('Trimestre 1', 'en')).toBe('Term 1');
+		expect(catalogPeriodLabel('Trimestre 3', 'en')).toBe('Term 3');
+
+		const root = ivoryCoastFixtureRoot();
+		if (!root) {
+			// edaya_web CI has no sibling edaya_backend checkout.
+			return;
+		}
 		const missingGrades: string[] = [];
 		const missingDomains: string[] = [];
 		const missingSections: string[] = [];
 
-		function walk(dir: string) {
-			for (const entry of readdirSync(dir, { withFileTypes: true })) {
-				const path = join(dir, entry.name);
-				if (entry.isDirectory()) {
-					walk(path);
+		for (const path of walkJsonFiles(root)) {
+			const parsed = JSON.parse(readFileSync(path, 'utf8')) as {
+				code?: string;
+				name?: string;
+				short_label?: string;
+				sections?: Array<{ label?: string }>;
+				subjects?: Array<{ domain?: string; code?: string }>;
+			};
+			if (parsed.code && !CI_GRADES[parsed.code]) {
+				missingGrades.push(parsed.code);
+			}
+			for (const section of parsed.sections ?? []) {
+				if (!section.label) {
 					continue;
 				}
-				if (!entry.name.endsWith('.json') || entry.name === 'fixture.json') {
+				const known = Boolean(
+					CI_BULLETIN_SECTIONS[section.label]
+					?? Object.values(CI_BULLETIN_SECTIONS).find(pair => pair.fr === section.label || pair.en === section.label),
+				);
+				if (!known) {
+					missingSections.push(section.label);
+				}
+			}
+			for (const subject of parsed.subjects ?? []) {
+				if (!subject.domain) {
 					continue;
 				}
-				const parsed = JSON.parse(readFileSync(path, 'utf8')) as {
-					code?: string;
-					name?: string;
-					short_label?: string;
-					sections?: Array<{ label?: string }>;
-					subjects?: Array<{ domain?: string; code?: string }>;
-				};
-				if (parsed.code && !CI_GRADES[parsed.code]) {
-					missingGrades.push(parsed.code);
-				}
-				for (const section of parsed.sections ?? []) {
-					if (!section.label) {
-						continue;
-					}
-					const known = Boolean(
-						CI_BULLETIN_SECTIONS[section.label]
-						?? Object.values(CI_BULLETIN_SECTIONS).find(pair => pair.fr === section.label || pair.en === section.label),
-					);
-					if (!known) {
-						missingSections.push(section.label);
-					}
-				}
-				for (const subject of parsed.subjects ?? []) {
-					if (!subject.domain) {
-						continue;
-					}
-					const known = Boolean(
-						CI_DOMAINS[subject.domain]
-						?? Object.values(CI_DOMAINS).find(pair => pair.fr === subject.domain || pair.en === subject.domain),
-					);
-					if (!known) {
-						missingDomains.push(subject.domain);
-					}
+				const known = Boolean(
+					CI_DOMAINS[subject.domain]
+					?? Object.values(CI_DOMAINS).find(pair => pair.fr === subject.domain || pair.en === subject.domain),
+				);
+				if (!known) {
+					missingDomains.push(subject.domain);
 				}
 			}
 		}
-		walk(root);
 
 		expect(missingGrades).toEqual([]);
 		expect([...new Set(missingDomains)]).toEqual([]);
 		expect([...new Set(missingSections)]).toEqual([]);
-		expect(catalogPeriodLabel('Trimestre 1', 'en')).toBe('Term 1');
-		expect(catalogPeriodLabel('Trimestre 3', 'en')).toBe('Term 3');
 	});
 });
