@@ -6,7 +6,8 @@
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
-	import { t } from '$lib/i18n';
+	import { lang, t } from '$lib/i18n';
+	import { catalogCategory, catalogSubjectName } from '$lib/i18n/catalog-label';
 	import { Clock, Sparkles, User } from '$lib/icons';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readTeachingListFilters, writeTeachingListFilters } from '$lib/list/list-url-filters';
@@ -44,8 +45,10 @@
 				return true;
 			}
 			return subject.name.toLowerCase().includes(needle)
+				|| catalogSubjectName(subject.name, $lang, subject.code).toLowerCase().includes(needle)
 				|| subject.teacher.toLowerCase().includes(needle)
-				|| subject.category.toLowerCase().includes(needle);
+				|| subject.category.toLowerCase().includes(needle)
+				|| catalogCategory(subject.category, $lang).toLowerCase().includes(needle);
 		}),
 	);
 
@@ -156,14 +159,14 @@
 				<div class={cn('h-8 w-1.5 shrink-0 rounded-full', dotColor[subject.color])}></div>
 				<div class="min-w-0 flex-1">
 					<div class="flex items-center gap-2">
-						<span class="font-display text-sm font-semibold">{subject.name}</span>
+						<span class="font-display text-sm font-semibold">{catalogSubjectName(subject.name, $lang, subject.code)}</span>
 						<span
 							class={cn(
 								'rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider',
 								categoryTone[subject.category],
 							)}
 						>
-							{subject.category}
+							{catalogCategory(subject.category, $lang)}
 						</span>
 					</div>
 					<p class="mt-0.5 truncate text-xs text-muted-foreground">{subject.description}</p>

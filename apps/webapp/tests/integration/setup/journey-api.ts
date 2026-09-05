@@ -739,7 +739,7 @@ export async function createTimetableSessionViaApi(
 	return result?.sessionId ?? null;
 }
 
-export async function publishAnnouncementViaApi(
+export async function addAnnouncementTargetViaApi(
 	page: Page,
 	appOrigin: string,
 	announcementId: string,
@@ -759,7 +759,15 @@ export async function publishAnnouncementViaApi(
 		integrationDebug(`add-target failed ${addTarget.status()} ${body.slice(0, 200)}`);
 		return false;
 	}
+	return true;
+}
 
+export async function publishAnnouncementCommandViaApi(
+	page: Page,
+	appOrigin: string,
+	announcementId: string,
+	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
+): Promise<boolean> {
 	const publish = await apiFetch(page, appOrigin, '/core/commands/publish-announcement', {
 		method: 'POST',
 		data: { announcementId },
@@ -769,6 +777,18 @@ export async function publishAnnouncementViaApi(
 		integrationDebug(`publish-announcement failed ${publish.status()} ${body.slice(0, 200)}`);
 	}
 	return publish.ok();
+}
+
+export async function publishAnnouncementViaApi(
+	page: Page,
+	appOrigin: string,
+	announcementId: string,
+	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
+): Promise<boolean> {
+	if (!await addAnnouncementTargetViaApi(page, appOrigin, announcementId, apiUrl)) {
+		return false;
+	}
+	return publishAnnouncementCommandViaApi(page, appOrigin, announcementId, apiUrl);
 }
 
 export async function publishReportCardDefinitionViaApi(

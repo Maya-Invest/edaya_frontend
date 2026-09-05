@@ -74,10 +74,10 @@ export const ENROLL_STATUS_STYLE: Record<ActivityEnrollmentStatus, string> = {
 	denied: `${BADGE_DANGER} border-destructive/20`,
 };
 
-export const ENROLL_STATUS_LABEL: Record<ActivityEnrollmentStatus, string> = {
-	approved: 'Autorisé',
-	pending: 'En attente',
-	denied: 'Refusé',
+export const ENROLL_STATUS_LABEL_KEY: Record<ActivityEnrollmentStatus, string> = {
+	approved: 'activities.enrollStatus.approved',
+	pending: 'activities.enrollStatus.pending',
+	denied: 'activities.enrollStatus.denied',
 };
 
 export const ENROLL_NEXT: Record<ActivityEnrollmentStatus, ActivityEnrollmentStatus> = {
@@ -101,10 +101,10 @@ export const incidentCatTone: Record<Incident['category'], string> = {
 
 export type StaffPermScope = PermissionScope;
 
-export const STAFF_SCOPE_LABEL: Record<StaffPermScope, string> = {
-	global: 'Globale',
-	class: 'Classe',
-	subject: 'Matière',
+export const STAFF_SCOPE_LABEL_KEY: Record<StaffPermScope, string> = {
+	global: 'staff.scope.global',
+	class: 'staff.scope.class',
+	subject: 'staff.scope.subject',
 };
 
 export const STAFF_SCOPE_TONE: Record<StaffPermScope, string> = {
@@ -115,7 +115,11 @@ export const STAFF_SCOPE_TONE: Record<StaffPermScope, string> = {
 
 export type Scope = PermissionScope;
 
-export const SCOPE_LABEL: Record<Scope, string> = { global: 'Globale', class: 'Classe', subject: 'Matière' };
+export const SCOPE_LABEL_KEY: Record<Scope, string> = {
+	global: 'staff.scope.global',
+	class: 'staff.scope.class',
+	subject: 'staff.scope.subject',
+};
 
 export const SCOPE_TONE: Record<Scope, string> = {
 	global: `${BADGE_INFO} border-primary/20`,
@@ -138,11 +142,11 @@ export const ROLE_TINT: Record<StaffRole, string> = {
 
 export const CRUD_KEYS: Crud[] = ['C', 'R', 'U', 'D'];
 
-export const CRUD_LABEL: Record<Crud, string> = {
-	C: 'Créer',
-	R: 'Lire',
-	U: 'Modifier',
-	D: 'Supprimer',
+export const CRUD_LABEL_KEY: Record<Crud, string> = {
+	C: 'common.add',
+	R: 'common.open',
+	U: 'common.edit',
+	D: 'common.delete',
 };
 
 export const CRUD_TONE: Record<Crud, string> = {
@@ -152,10 +156,16 @@ export const CRUD_TONE: Record<Crud, string> = {
 	D: 'data-[on=true]:bg-destructive/10 data-[on=true]:text-destructive data-[on=true]:border-destructive/20',
 };
 
-export function fmtActivityDate(d: string) {
-	return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+const SHORT_DATE: Intl.DateTimeFormatOptions = {
+	day: '2-digit',
+	month: 'short',
+	year: 'numeric',
+};
+
+export function fmtActivityDate(d: string, dateLocale = 'fr-FR') {
+	return new Date(d).toLocaleDateString(dateLocale, SHORT_DATE);
 }
 
-export function fmtDateFr(d: string) {
-	return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+export function fmtDateFr(d: string, dateLocale = 'fr-FR') {
+	return new Date(d).toLocaleDateString(dateLocale, SHORT_DATE);
 }

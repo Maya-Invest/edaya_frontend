@@ -39,10 +39,6 @@
 			? canAccessPath($page.url.pathname, authSession.grants, { schoolId: authSession.schoolId ?? '' })
 			: true,
 	);
-
-	type ToastHostComponent = import('svelte').Component;
-
-	let ToastHost = $state<ToastHostComponent | null>(null);
 	const modalQueryKeys = [
 		MODAL_QUERY_KEY,
 		MODAL_TARGET_QUERY_KEY,
@@ -126,15 +122,6 @@
 				await bootstrapAppShell();
 			}
 		})();
-	});
-
-	$effect(() => {
-		if (!browser || ToastHost) {
-			return;
-		}
-		void import('$lib/components/ui/ToastHost.svelte').then((module) => {
-			ToastHost = module.default;
-		});
 	});
 
 	function logout() {
@@ -231,8 +218,4 @@
 		<LoaderCircle class="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
 		<span class="sr-only">{$t('dataState.loading')}</span>
 	</div>
-{/if}
-
-{#if ToastHost}
-	<ToastHost />
 {/if}

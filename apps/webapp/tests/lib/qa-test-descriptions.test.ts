@@ -32,4 +32,26 @@ describe('describeTestExactly sort / pagination / week', () => {
 		expect(steps.toLowerCase()).not.toContain('list-sort');
 		expect(steps.toLowerCase()).not.toContain('load more');
 	});
+
+	test('Retirer destinataire is visibility-only and does not mention mutation', () => {
+		const steps = describeTestExactly({
+			module: 'École',
+			endpoint: 'http://localhost:5173/school/announcements/[id]',
+			action: 'Retirer destinataire',
+		});
+		expect(steps.toLowerCase()).toContain('remove recipient');
+		expect(steps.toLowerCase()).toContain('must not mutate');
+		expect(steps.toLowerCase()).not.toContain('confirm dialog if opened');
+	});
+
+	test('CRUD années scolaires fills dates, not a free-text name', () => {
+		const steps = describeTestExactly({
+			module: 'Configuration',
+			endpoint: 'http://localhost:5173/configuration/academic',
+			action: 'CRUD années scolaires',
+		});
+		expect(steps.toLowerCase()).toContain('start/end dates');
+		expect(steps.toLowerCase()).toContain('no name field');
+		expect(steps.toLowerCase()).toContain('yyyy-yyyy');
+	});
 });

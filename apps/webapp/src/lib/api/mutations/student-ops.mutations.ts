@@ -1,5 +1,6 @@
 import type { components } from '$lib/api/schema';
 import { runMutation } from '$lib/api/mutations/run-mutation';
+import { studentHealthProfileCommand } from '$lib/api/mutations/student-ops.payload';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 
@@ -19,25 +20,8 @@ export async function upsertStudentHealthProfileMutation(input: {
 	successMessage?: string;
 }): Promise<HealthProfile | null> {
 	const client = getBrowserSchoolClient();
-	const id = input.id ?? `shp-${input.studentId}`;
-	// Omit updatedAt — sending it without createdAt fails server validation.
-	const parsedLastVisit = input.lastVisit ? new Date(input.lastVisit) : null;
-	const lastVisit = parsedLastVisit && !Number.isNaN(parsedLastVisit.getTime())
-		? parsedLastVisit.toISOString()
-		: null;
-
 	return runMutation(
-		() => client.commands.upsertStudentHealthProfile({
-			id,
-			studentId: input.studentId,
-			allergies: input.allergies ?? null,
-			medicalConditions: input.medicalConditions ?? null,
-			medications: input.medications ?? null,
-			clinicalNotes: input.clinicalNotes ?? null,
-			bloodType: input.bloodType ?? null,
-			lastVisit,
-			emergencyProtocols: input.emergencyProtocols ?? null,
-		}),
+		() => client.commands.upsertStudentHealthProfile(studentHealthProfileCommand(input)),
 		{
 			successMessage: input.successMessage,
 			versionKeys: ['students'],

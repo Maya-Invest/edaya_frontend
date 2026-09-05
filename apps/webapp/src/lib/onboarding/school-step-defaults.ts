@@ -4,14 +4,28 @@ export interface DefaultAcademicYearPreset {
 	end: string;
 }
 
+const CIVIL_YEAR = /^\d{4}$/;
+
+/** Display identity for an academic year, e.g. `2026-2027`. */
+export function academicYearLabelFromDates(start: string, end: string): string {
+	const startYear = start.trim().slice(0, 4);
+	const endYear = end.trim().slice(0, 4);
+	if (!CIVIL_YEAR.test(startYear) || !CIVIL_YEAR.test(endYear)) {
+		return '';
+	}
+	return `${startYear}-${endYear}`;
+}
+
 export function defaultAcademicYearPreset(reference = new Date()): DefaultAcademicYearPreset {
 	const month = reference.getMonth();
 	const startYear = month >= 8 ? reference.getFullYear() : reference.getFullYear() - 1;
 	const endYear = startYear + 1;
+	const start = `${startYear}-09-01`;
+	const end = `${endYear}-07-03`;
 	return {
-		label: `${startYear} — ${endYear}`,
-		start: `${startYear}-09-01`,
-		end: `${endYear}-07-03`,
+		label: academicYearLabelFromDates(start, end),
+		start,
+		end,
 	};
 }
 

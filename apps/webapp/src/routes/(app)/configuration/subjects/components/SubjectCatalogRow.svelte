@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Subject } from '$lib/types/school';
 	import { dotByColor } from '$lib/components/school/shared/drawer-constants';
+	import { lang } from '$lib/i18n';
+	import { catalogCategory, catalogSubjectName } from '$lib/i18n/catalog-label';
 	import { ChevronRight } from '$lib/icons';
 	import { cn } from '$lib/utils';
 
@@ -29,11 +31,11 @@
 	<div class={cn('h-8 w-1.5 shrink-0 rounded-full', dotByColor[subject.color])}></div>
 	<div class="min-w-0 flex-1">
 		<div class="flex items-center gap-2">
-			<span class="font-display text-sm font-semibold">{subject.name}</span>
+			<span class="font-display text-sm font-semibold">{catalogSubjectName(subject.name, $lang, subject.code)}</span>
 			<span
 				class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
 			>
-				{subject.category}
+				{catalogCategory(subject.category, $lang)}
 			</span>
 		</div>
 		<p class="mt-0.5 truncate text-xs text-muted-foreground">{subject.description}</p>

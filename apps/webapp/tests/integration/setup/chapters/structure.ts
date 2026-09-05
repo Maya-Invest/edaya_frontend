@@ -1,6 +1,7 @@
 import {
 	dismissPageError,
 	ensureAcademicYearReady,
+	fillAcademicYearCreateDialog,
 	fillClassCreateDialog,
 	fillGradeLevelCreateDialog,
 	openDialogButton,
@@ -10,6 +11,8 @@ import {
 	waitForPageQuery,
 	waitForResolvedAcademicYearId,
 	openUrlModal,
+	setAppLang,
+	dialogHasInputValue,
 } from '../../../../scripts/qa-harness-ui';
 import { configEntityIdByName } from '../../../../scripts/qa-matrix-support';
 import { ensureDailyAttendanceMode } from '../../demo-dry-run/support/setup';
@@ -30,12 +33,6 @@ export async function runStructureChapter(journey: UiJourney): Promise<boolean> 
 	const fatalDash = await visitCovered(journey, '/dashboard', '/dashboard');
 	coverActions(journey, '(app)', ['Sidebar — modules visibles selon permissions', 'Sélecteur école', 'Sélecteur année scolaire'], fatalDash ? 'NOT OK' : 'OK');
 	coverActions(journey, 'http://localhost:5173/dashboard', ['Chargement KPIs', 'Cartes actions cliquables', 'États empty / erreur'], fatalDash ? 'NOT OK' : 'OK');
-
-	const langBtn = page.getByRole('button', { name: /fr|en|langue|language/i }).first();
-	if (await langBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-		await langBtn.click();
-		coverActions(journey, '(app)', ['Changement langue FR/EN'], 'OK');
-	}
 
 	await gotoApp(journey, '/dashboard?modal=account-profile');
 	const profileDialog = page.getByRole('dialog');
@@ -62,8 +59,7 @@ export async function runStructureChapter(journey: UiJourney): Promise<boolean> 
 		}
 		coverModal(journey, '/configuration/academic', 'create', 'OK');
 
-		const label = `E2E ${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
-		await page.getByRole('dialog').locator('input').first().fill(label);
+		const label = await fillAcademicYearCreateDialog(page);
 		await submitDialog(page);
 		if (!(await waitForDialogClosed(page))) {
 			logStep(journey, { step: 'academic-year', ok: false, detail: 'Create year modal still open after submit' });
@@ -79,8 +75,67 @@ export async function runStructureChapter(journey: UiJourney): Promise<boolean> 
 		}
 		entities.filterFixtures.academicYearsByStatus = { published: { id: label, label } };
 		await refreshAppShell(page, ctx.base);
-		coverActions(journey, 'http://localhost:5173/configuration/academic', ['CRUD années scolaires', 'Publier année', 'Définitions périodes (wizard)'], 'OK', label);
-		logStep(journey, { step: 'academic-year', ok: true, detail: `${label} (published)` });
+		await waitForResolvedAcademicYearId(page);
+
+		const langOk = await setAppLang(page, 'en');
+		coverActions(journey, '(app)', ['Changement langue FR/EN'], langOk ? 'OK' : 'NOT OK');
+
+		let wizardOk = false;
+		if (langOk) {
+			try {
+				await gotoApp(journey, '/configuration/academic');
+				const yearId = await page.evaluate(() => sessionStorage.getItem('edaya:yearId'));
+				const opened = yearId
+					? await openUrlModal(page, '/configuration/academic', 'period-def-wizard', {
+						target: yearId,
+						step: 'preset',
+						base: ctx.base,
+					})
+					: false;
+				const dialog = page.getByRole('dialog');
+				if (opened || await dialog.isVisible({ timeout: 5_000 }).catch(() => false)) {
+					const preset = dialog.getByRole('button', { name: /standard secondary|secondaire standard/i }).first();
+					if (await preset.isVisible({ timeout: 5_000 }).catch(() => false)) {
+						await preset.click();
+					}
+					const next = dialog.getByRole('button', { name: /next|suivant/i }).last();
+					if (await next.isVisible({ timeout: 5_000 }).catch(() => false)) {
+						await next.click();
+					}
+					const hasPeriod1 = await dialogHasInputValue(dialog, /période 1|period 1/i);
+					const hasBreak = await dialogHasInputValue(dialog, /récréation|^break$|lunch break/i);
+					wizardOk = hasPeriod1 && hasBreak;
+					await page.keyboard.press('Escape').catch(() => {});
+					await waitForDialogClosed(page).catch(() => false);
+				}
+			}
+			catch (err) {
+				console.error(
+					'Period wizard catalog assert failed; academic year stays published:',
+					err instanceof Error ? err.message : err,
+				);
+			}
+		}
+		coverActions(
+			journey,
+			'http://localhost:5173/configuration/academic',
+			['CRUD années scolaires', 'Publier année'],
+			'OK',
+			label,
+		);
+		coverActions(
+			journey,
+			'http://localhost:5173/configuration/academic',
+			['Définitions périodes (wizard)'],
+			wizardOk ? 'OK' : 'NOT OK',
+			label,
+		);
+		const restoredFr = await setAppLang(page, 'fr');
+		if (!restoredFr) {
+			logStep(journey, { step: 'academic-year', ok: false, detail: 'Could not restore FR after catalog EN asserts' });
+			return false;
+		}
+		logStep(journey, { step: 'academic-year', ok: true, detail: `${label} (published) wizardEn=${wizardOk}` });
 	}
 	catch (err) {
 		logStep(journey, { step: 'academic-year', ok: false, detail: err instanceof Error ? err.message : String(err) });

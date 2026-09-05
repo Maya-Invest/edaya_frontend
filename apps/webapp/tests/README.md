@@ -10,8 +10,9 @@ bun test tests
 
 ```text
 tests/
+├── fixtures/         # In-repo data (Ivory Coast catalog JSON) — not edaya_backend
 ├── lib/              # Pure helpers, mutations, queries, navigation
-├── support/          # Shared fixtures and harness utilities
+├── support/          # Shared fixtures, SvelteKit + $state stubs, harness utilities
 └── README.md
 ```
 
@@ -30,13 +31,20 @@ tests/
 
 ## `.svelte.ts` and entity store
 
-Do **not** import `DetailDataContext` or other `$state` singletons directly in tests — `$state` is undefined outside a component context.
+GitHub Actions checks out **only** `edaya_web` and runs bun test on Linux. Do **not** import `DetailDataContext` or other `$state` singletons in tests — Linux bun does not compile runes outside a component.
+
+[`tests/support/sveltekit-mocks.ts`](./support/sveltekit-mocks.ts) (bun preload) stubs toast, session, entity-versions, and academic/onboarding context so those files never execute.
 
 Prefer:
 
 1. **Pure helpers** — test mapping/codec functions with fixtures (`tests/lib/api/*-data.test.ts`).
-2. **Mutation apply/rollback** — extract the patch logic or mirror it with a small in-memory store + `runMutation` (`tests/lib/api/mutations/mutation-store-actions.test.ts`).
-3. **Mocks before dynamic import** — when testing `runMutation` callers, mock `$lib/toast.svelte` and `$lib/auth/bootstrap-app` first, then `await import('...mutations')`.
+2. **Mutation apply/rollback** — extract the patch logic or mirror it with a small in-memory store (`tests/lib/api/mutations/mutation-store-actions.test.ts`). Do not import `run-mutation.ts`.
+3. **Mocks before dynamic import** — do not `await import` mutation files that pull `run-mutation.ts` (toast/session). Test payload helpers instead (`student-ops.payload.ts`). When a test must load a mutation module, mock `$lib/api/school-client` first.
+4. **In-repo fixtures** — catalog coverage reads `tests/fixtures/ivory-coast/`, not a sibling `edaya_backend` tree.
+
+`tests/lib/ci-parity-guard.test.ts` fails locally if a new test reintroduces a backend path or a static `$state` / `run-mutation` import.
+
+CI still installs the **published** `@maya-invest/edaya-api-client`; local `bun run verify` keeps the `file:` sibling. Quality/build would fail first if that client were wrong.
 
 ## Adding tests
 

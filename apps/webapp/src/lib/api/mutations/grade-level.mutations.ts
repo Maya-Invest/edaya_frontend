@@ -3,6 +3,7 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
+import { toCanonicalCatalogText } from '$lib/i18n/catalog-label';
 import { navigateToListAfterEntityDelete } from '$lib/navigation/navigate-after-delete';
 
 function schoolId(): string {
@@ -36,9 +37,9 @@ export async function saveGradeLevelMutation(
 	const entity = {
 		id,
 		schoolId: schoolId(),
-		name: input.name.trim(),
-		label: input.label.trim(),
-		cycle: input.cycle.trim() || null,
+		name: toCanonicalCatalogText(input.name.trim()),
+		label: toCanonicalCatalogText(input.label.trim()),
+		cycle: input.cycle.trim() ? toCanonicalCatalogText(input.cycle.trim()) : null,
 		order: input.order,
 	};
 

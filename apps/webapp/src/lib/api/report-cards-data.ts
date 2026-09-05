@@ -23,6 +23,9 @@ import {
 import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 import { fetchClassSubjectsSources } from '$lib/api/subjects-data';
 import { teacherNameForClassSubject } from '$lib/api/teacher-display';
+import { lang } from '$lib/i18n';
+import { catalogBulletinSection, catalogSubjectName } from '$lib/i18n/catalog-label';
+import { get } from 'svelte/store';
 
 type GradeScaleRaw = components['schemas']['GradeScale'];
 type ReportCardDefinitionRaw = components['schemas']['ReportCardDefinition'];
@@ -51,7 +54,11 @@ export function subjectLabelForCatalogId(
 	catalogSubjectId: string,
 	sources: Pick<ClassSubjectsSources, 'subjectsRaw'>,
 ): string {
-	return sources.subjectsRaw.find(entry => entry.id === catalogSubjectId)?.name ?? catalogSubjectId;
+	const subject = sources.subjectsRaw.find(entry => entry.id === catalogSubjectId);
+	if (!subject) {
+		return catalogSubjectId;
+	}
+	return catalogSubjectName(subject.name, get(lang), subject.code);
 }
 
 function formatDate(value: unknown): string | undefined {
@@ -167,7 +174,7 @@ function mapDefinitionSection(
 	return {
 		id: section.id,
 		definitionId,
-		name: section.name,
+		name: catalogBulletinSection(section.name, get(lang)),
 		sectionType: 'group',
 		kind,
 		order: section.order,
@@ -244,7 +251,9 @@ export function mapSubjectMark(
 
 	return {
 		subjectId: classSubjectId,
-		subjectName: subject?.name ?? subjectLabelForCatalogId(catalogSubjectId ?? classSubjectId, sources),
+		subjectName: subject
+			? catalogSubjectName(subject.name, get(lang), subject.code)
+			: subjectLabelForCatalogId(catalogSubjectId ?? classSubjectId, sources),
 		average: subjectResult.average ?? 0,
 		coefficient: subjectResult.weight ?? 1,
 		appreciation: subjectResult.comment ?? undefined,

@@ -8,6 +8,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium, type Page } from 'playwright';
+import { ensurePlaywrightChromium } from './playwright-browsers';
 import { assertStackReady } from '../tests/integration/demo-dry-run/support/auth';
 import { createDemoContext } from '../tests/integration/demo-dry-run/support/context';
 import { DEMO_PASSWORD, STAFF_EMAIL, OWNER_EMAIL } from '../tests/integration/demo-dry-run/support/constants';
@@ -546,6 +547,7 @@ function mapDryRunToQa(dryRunResults: DemoReporter): void {
 }
 
 async function main(): Promise<void> {
+	ensurePlaywrightChromium();
 	const base = process.env.WEBAPP_URL ?? DEMO_WEBAPP_BASE;
 	await mkdir(OUT_DIR, { recursive: true });
 

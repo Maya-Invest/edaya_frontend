@@ -3,6 +3,7 @@ import { recordsForFieldIds } from '$lib/api/entity-list-filters';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { subjectMattersLinkedToGradeLevelSubject } from '$lib/api/subjects-data';
+import { toCanonicalCatalogText } from '$lib/i18n/catalog-label';
 
 type ClassSubjectRaw = components['schemas']['ClassSubject'];
 type ClassSubjectMatterRaw = components['schemas']['ClassSubjectMatter'];
@@ -187,7 +188,7 @@ export async function saveSubjectMatterMutation(input: {
 		() => client.commands.configureSubjectMatter({
 			id: matterId,
 			subjectId: input.subjectId,
-			name: input.name.trim(),
+			name: toCanonicalCatalogText(input.name.trim()),
 			description: input.description?.trim() || null,
 			sequenceOrder: input.sequenceOrder,
 			estimatedHours: input.estimatedHours ?? null,
@@ -242,7 +243,7 @@ export async function saveSubjectMatterMutation(input: {
 
 	return {
 		id: matterId,
-		name: input.name.trim(),
+		name: toCanonicalCatalogText(input.name.trim()),
 		description: input.description?.trim() || undefined,
 		sequenceOrder: input.sequenceOrder,
 		estimatedHours: input.estimatedHours,

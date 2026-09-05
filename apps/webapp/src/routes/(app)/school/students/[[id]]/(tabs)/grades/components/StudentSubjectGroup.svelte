@@ -2,6 +2,7 @@
 	import type { ResolvedPathname } from '$app/types';
 	import type { StudentSubjectGroupItem } from '../student-grades-tab.selectors';
 	import { fmtDateFr } from '$lib/components/school/shared/drawer-constants';
+	import { locale } from '$lib/i18n';
 	import { ChevronDown } from '$lib/icons';
 	import { cn } from '$lib/utils';
 
@@ -64,7 +65,7 @@
 						</p>
 					</div>
 					<p class="mt-0.5 font-mono text-[10px] text-muted-foreground">
-						{fmtDateFr(e.date)} - x{e.coefficient}
+						{fmtDateFr(e.date, $locale)} - x{e.coefficient}
 					</p>
 				</div>
 			{/each}

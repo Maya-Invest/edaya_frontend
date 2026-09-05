@@ -28,4 +28,9 @@ describe('translation dictionaries', () => {
 	it('has no duplicate keys in French', () => {
 		expect(collectDuplicateKeys(fr)).toEqual([]);
 	});
+
+	it('labels school-wide announcement targets as All school', () => {
+		expect(en['announcements.targetKind.school']).toBe('All school');
+		expect(fr['announcements.targetKind.school']).toMatch(/école/i);
+	});
 });

@@ -153,7 +153,7 @@
 				value={gradeLevelId}
 				onchange={onGradeLevelChange}
 				disabled={isEdit}
-				class="flex h-10 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+				class="control-focus flex h-10 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
 			>
 				{#each sortedLevels as level (level.id)}
 					<option value={level.id}>{level.name} · {level.cycle}</option>
@@ -168,7 +168,7 @@
 			<span class="text-muted-foreground">{$t('classGroups.attendanceMode')}</span>
 			<select
 				bind:value={attendanceMode}
-				class="flex h-10 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+				class="control-focus flex h-10 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-sm"
 			>
 				<option value="session">{$t('classGroups.attendanceMode.session')}</option>
 				<option value="daily">{$t('classGroups.attendanceMode.daily')}</option>

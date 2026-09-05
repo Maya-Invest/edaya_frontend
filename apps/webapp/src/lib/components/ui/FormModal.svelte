@@ -63,7 +63,7 @@
 				<Dialog.Description>{description}</Dialog.Description>
 			{/if}
 		</Dialog.Header>
-		<div class={cn('scrollbar-thin min-h-0 flex-1 space-y-4 overflow-y-auto py-2', bodyClass)}>
+		<div class={cn('scrollbar-thin min-h-0 flex-1 space-y-4 overflow-y-auto px-1 py-2', bodyClass)}>
 			{@render children?.()}
 		</div>
 		<Dialog.Footer class="shrink-0">

@@ -23,7 +23,8 @@ import {
 } from '$lib/components/school/scheduling/timetable-placement-parameters';
 import { formatDateInput } from '$lib/date/format';
 import { entityVersions } from '$lib/entity-versions.svelte';
-import { t } from '$lib/i18n';
+import { lang, t } from '$lib/i18n';
+import { catalogSubjectName } from '$lib/i18n/catalog-label';
 import { toast } from '$lib/toast.svelte';
 import { SvelteSet } from 'svelte/reactivity';
 import { get } from 'svelte/store';
@@ -145,7 +146,10 @@ export class TimetablePlanningPageState {
           })
           : Promise.resolve([]),
       ]);
-      this.subjectLabels = Object.fromEntries(subjects.map(subject => [subject.id, subject.name]));
+      this.subjectLabels = Object.fromEntries(subjects.map(subject => [
+        subject.id,
+        catalogSubjectName(subject.name, get(lang), subject.code),
+      ]));
       const teacherIds = [...new SvelteSet(teacherAssignments.map(row => row.teacherId))];
       const teachers = teacherIds.length
         ? await client.entities.teachers.list({ id: { $in: teacherIds } })

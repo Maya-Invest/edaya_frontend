@@ -18,6 +18,15 @@ describe('validateSchoolStep', () => {
 		expect(isSchoolStepValid(draft)).toBe(true);
 	});
 
+	it('does not require a user-entered academic year label', () => {
+		const draft = createEmptyDraft().school;
+		draft.name = 'Collège EDAYA';
+		draft.city = 'Lyon';
+		draft.academicYearLabel = '';
+		expect(isSchoolStepValid(draft)).toBe(true);
+		expect(validateSchoolStep(draft).missingFields).not.toContain('academicYearLabel');
+	});
+
 	it('rejects invalid date ranges', () => {
 		const draft = createEmptyDraft().school;
 		draft.name = 'Collège EDAYA';

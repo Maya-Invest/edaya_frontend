@@ -4,7 +4,8 @@
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
-	import { t } from '$lib/i18n';
+	import { lang, t } from '$lib/i18n';
+	import { catalogSubjectName } from '$lib/i18n/catalog-label';
 	import { LoaderCircle } from '$lib/icons';
 	import { cn } from '$lib/utils';
 	import { ScopeBuilderDataState } from './scope-builder-data-state.svelte';
@@ -160,6 +161,7 @@
 						{$t('roles.scopeWildcardSubjects', { classGroup: builder.classLabel(row.classGroupId) })}
 					</label>
 					{#if !row.wildcard}
+						{@const selectedSubject = builder.subjectsForClass(row.classGroupId).find(entry => entry.id === row.classSubjectId)}
 						<div class="space-y-1">
 							<Label class="text-xs">{$t('roles.scopeClassSubject')}</Label>
 							<Select.Root
@@ -174,7 +176,9 @@
 							>
 								<Select.Trigger class="h-9 w-full rounded-lg">
 									<Select.Value placeholder={$t('roles.selectClassSubject')}>
-										{builder.subjectLabel(row.classGroupId, row.classSubjectId) || $t('roles.selectClassSubject')}
+										{selectedSubject
+											? catalogSubjectName(selectedSubject.name, $lang, selectedSubject.code)
+											: $t('roles.selectClassSubject')}
 									</Select.Value>
 								</Select.Trigger>
 								<Select.Content>
@@ -182,10 +186,10 @@
 										{@const subjectTaken = builder.isSubjectScopeTaken(row.classGroupId, subject.id, index)}
 										<Select.Item
 											value={subject.id}
-											label={subject.name}
+											label={catalogSubjectName(subject.name, $lang, subject.code)}
 											disabled={subjectTaken}
 										>
-											{subject.name}
+											{catalogSubjectName(subject.name, $lang, subject.code)}
 										</Select.Item>
 									{/each}
 								</Select.Content>

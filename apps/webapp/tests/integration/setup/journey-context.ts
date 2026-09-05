@@ -5,8 +5,9 @@ import type { Page } from 'playwright';
 import type { DemoContext } from '../demo-dry-run/support/types';
 import { ensureDailyAttendanceMode } from '../demo-dry-run/support/setup';
 import {
+	addAnnouncementTargetViaApi,
 	ensureDailyAttendanceViaApi,
-	publishAnnouncementViaApi,
+	publishAnnouncementCommandViaApi,
 	recordDailyAttendanceViaApi,
 } from './journey-api';
 import {
@@ -21,6 +22,7 @@ import {
 	dismissOpenDialogs,
 	dismissPageError,
 	refreshAppShell,
+	REMOVE_ANNOUNCEMENT_TARGET_CONTROL,
 	submitDialog,
 	waitForDialogClosed,
 	waitForPageQuery,
@@ -86,11 +88,17 @@ export async function visitCovered(
 		await gotoApp(journey, actualPath);
 	}
 	catch (err) {
-		const detail = (err instanceof Error ? err.message : String(err)).slice(0, 200);
-		for (const result of journey.ledger.coverVisit(templatePath, 'NOT OK', detail)) {
-			journey.onRecord(result);
+		try {
+			await refreshAppShell(journey.ctx.page, journey.ctx.base);
+			await gotoApp(journey, actualPath);
 		}
-		return detail;
+		catch (retryErr) {
+			const detail = (retryErr instanceof Error ? retryErr.message : err instanceof Error ? err.message : String(retryErr)).slice(0, 200);
+			for (const result of journey.ledger.coverVisit(templatePath, 'NOT OK', detail)) {
+				journey.onRecord(result);
+			}
+			return detail;
+		}
 	}
 	const fatal = await assertNoFatalError(journey.ctx.page);
 	const statut: MatrixStatut = fatal ? 'NOT OK' : statutIfOk;
@@ -222,14 +230,40 @@ export async function waitForInvitationToken(page: Page, timeout = 45_000): Prom
 
 const ADD_TARGET_CONTROL = /add recipient|add target|ajouter un destinataire|ajouter une cible|gérer les cibles|manage targets/i;
 
+async function inspectRemoveAnnouncementTarget(
+	journey: UiJourney,
+	announcementId: string,
+): Promise<boolean> {
+	const { page } = journey.ctx;
+	await gotoApp(journey, `/school/announcements/${announcementId}`);
+	await waitForPageQuery(page);
+	return page.getByRole('button', { name: REMOVE_ANNOUNCEMENT_TARGET_CONTROL })
+		.first()
+		.isVisible({ timeout: 8_000 })
+		.catch(() => false);
+}
+
 export async function publishAnnouncement(
 	journey: UiJourney,
 	announcementId: string,
-): Promise<{ ok: boolean; detail: string }> {
+): Promise<{ ok: boolean; detail: string; removeTargetVisible: boolean }> {
 	const { page } = journey.ctx;
-	const viaApi = async (reason: string): Promise<{ ok: boolean; detail: string }> => {
-		const ok = await publishAnnouncementViaApi(page, journey.ctx.base, announcementId);
-		return { ok, detail: ok ? reason : `${reason}; API fallback failed` };
+	const viaApiAfterAddTarget = async (
+		reason: string,
+		removeTargetVisible: boolean,
+	): Promise<{ ok: boolean; detail: string; removeTargetVisible: boolean }> => {
+		const ok = await publishAnnouncementCommandViaApi(page, journey.ctx.base, announcementId);
+		return { ok, detail: ok ? reason : `${reason}; API fallback failed`, removeTargetVisible };
+	};
+	const viaApiFromScratch = async (
+		reason: string,
+	): Promise<{ ok: boolean; detail: string; removeTargetVisible: boolean }> => {
+		const added = await addAnnouncementTargetViaApi(page, journey.ctx.base, announcementId);
+		if (!added) {
+			return { ok: false, detail: `${reason}; add-target API failed`, removeTargetVisible: false };
+		}
+		const removeTargetVisible = await inspectRemoveAnnouncementTarget(journey, announcementId);
+		return viaApiAfterAddTarget(reason, removeTargetVisible);
 	};
 
 	await gotoApp(journey, `/school/announcements/${announcementId}?modal=add-target`);
@@ -244,7 +278,7 @@ export async function publishAnnouncement(
 			await addTargetControl.click();
 		}
 		if (!(await dialog.isVisible({ timeout: 8_000 }).catch(() => false))) {
-			return viaApi('add-target modal not visible');
+			return viaApiFromScratch('add-target modal not visible');
 		}
 	}
 
@@ -253,14 +287,16 @@ export async function publishAnnouncement(
 		await submitDialog(page, /^add$|^ajouter$/i);
 	}
 	catch {
-		return viaApi('add-target submit failed');
+		return viaApiFromScratch('add-target submit failed');
 	}
 	const addTargetPayload = await addTargetPromise;
 	if (!addTargetPayload) {
-		return viaApi('add-target command not observed');
+		return viaApiFromScratch('add-target command not observed');
 	}
 	await waitForDialogClosed(page).catch(() => {});
 	await page.waitForTimeout(800);
+
+	const removeTargetVisible = await inspectRemoveAnnouncementTarget(journey, announcementId);
 
 	await gotoApp(journey, `/school/announcements/${announcementId}?modal=publish`);
 	await waitForPageQuery(page);
@@ -268,15 +304,15 @@ export async function publishAnnouncement(
 	if (!(await publishDialog.isVisible({ timeout: 12_000 }).catch(() => false))) {
 		const publishBtn = page.getByRole('button', { name: /^publish$|^publier$/i }).first();
 		if (!(await publishBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
-			return viaApi('publish modal/button not visible');
+			return viaApiAfterAddTarget('publish modal/button not visible', removeTargetVisible);
 		}
 		const publishPromise = waitForCommandPayload(page, 'publish-announcement', 25_000);
 		await publishBtn.click();
 		if (!await publishPromise) {
-			return viaApi('publish command not observed after button');
+			return viaApiAfterAddTarget('publish command not observed after button', removeTargetVisible);
 		}
 		await waitForPageQuery(page);
-		return { ok: true, detail: 'published via button' };
+		return { ok: true, detail: 'published via button', removeTargetVisible };
 	}
 
 	const publishPromise = waitForCommandPayload(page, 'publish-announcement', 30_000);
@@ -284,16 +320,16 @@ export async function publishAnnouncement(
 		await submitDialog(page, /^publish$|^publier$/i);
 	}
 	catch {
-		return viaApi('publish submit failed');
+		return viaApiAfterAddTarget('publish submit failed', removeTargetVisible);
 	}
 	if (!await publishPromise) {
-		return viaApi('publish command not observed');
+		return viaApiAfterAddTarget('publish command not observed', removeTargetVisible);
 	}
 	await waitForPageQuery(page);
 	if (await page.getByText(/published|publiée/i).first().isVisible({ timeout: 3_000 }).catch(() => false)) {
-		return { ok: true, detail: 'published via modal' };
+		return { ok: true, detail: 'published via modal', removeTargetVisible };
 	}
-	return viaApi('publish confirmation not visible');
+	return viaApiAfterAddTarget('publish confirmation not visible', removeTargetVisible);
 }
 
 async function recordCompletionFilterFixtureDays(

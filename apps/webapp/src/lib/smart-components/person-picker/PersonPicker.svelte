@@ -65,7 +65,7 @@
 				type="button"
 				{disabled}
 				class={cn(
-					'flex h-10 w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-left text-sm ring-offset-background transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+					'control-focus flex h-10 w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-left text-sm transition disabled:cursor-not-allowed disabled:opacity-50',
 					className,
 				)}
 			>
@@ -104,7 +104,7 @@
 					bind:this={searchInput}
 					bind:value={query}
 					placeholder={searchPlaceholder ?? $t('common.search')}
-					class="flex h-9 w-full rounded-lg border border-input bg-background py-2 pl-8 pr-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+					class="control-focus flex h-9 w-full rounded-lg border border-input bg-background py-2 pl-8 pr-3 text-sm placeholder:text-muted-foreground"
 				/>
 			</div>
 		</div>

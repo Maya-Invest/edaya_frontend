@@ -7,7 +7,8 @@
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
-	import { t } from '$lib/i18n';
+	import { lang, t } from '$lib/i18n';
+	import { catalogSlotLabel, toCanonicalCatalogText } from '$lib/i18n/catalog-label';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getAcademicPageState } from '../academic-page.svelte';
@@ -291,9 +292,9 @@
 								<label class="grid gap-1 text-sm">
 									<span class="text-muted-foreground">{$t('periodDefinitions.label')}</span>
 									<Input
-										value={row.label}
+										value={catalogSlotLabel(row.label, $lang)}
 										oninput={event => updateTemplateRow(index, {
-											label: event.currentTarget.value,
+											label: toCanonicalCatalogText(event.currentTarget.value),
 										})}
 									/>
 								</label>
@@ -373,7 +374,7 @@
 				{#each expanded.slice(0, 12) as slot, index (`${slot.dayOfWeek}-${slot.order}-${index}`)}
 					<li class="rounded-xl border border-border/70 px-3 py-2 text-sm">
 						<p class="font-medium">
-							{slot.label}
+							{catalogSlotLabel(slot.label, $lang)}
 							{#if slot.isBreak}
 								<span class="ml-2 rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] uppercase text-muted-foreground">
 									{$t('periodDefinitions.break')}

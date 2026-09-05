@@ -1,4 +1,8 @@
 import type { Locator, Page } from 'playwright';
+import {
+	academicYearLabelFromDates,
+	defaultAcademicYearPreset,
+} from '../src/lib/onboarding/school-step-defaults';
 import { waitForEnabled } from '../tests/integration/demo-dry-run/support/auth';
 import { waitForAppShell } from './qa-matrix-support';
 
@@ -23,6 +27,34 @@ export async function refreshAppShell(page: Page, base: string): Promise<void> {
 	await page.waitForTimeout(1_500);
 }
 
+export async function setAppLang(page: Page, next: 'en' | 'fr'): Promise<boolean> {
+	const current = await page.locator('html').getAttribute('lang');
+	if (current === next) {
+		return true;
+	}
+
+	const trigger = page.getByTestId('language-selector');
+	if (!(await trigger.isVisible({ timeout: 5_000 }).catch(() => false))) {
+		return false;
+	}
+
+	await trigger.click();
+	const option = page.getByTestId(`language-option-${next}`);
+	if (!(await option.isVisible({ timeout: 5_000 }).catch(() => false))) {
+		await page.keyboard.press('Escape').catch(() => {});
+		return false;
+	}
+
+	await option.click();
+	await page.waitForFunction(
+		(lang) => document.documentElement.lang === lang,
+		next,
+		{ timeout: 8_000 },
+	).catch(() => {});
+
+	return (await page.locator('html').getAttribute('lang')) === next;
+}
+
 /** Clear stale year/period picks from prior tenants in the same browser session. */
 export async function clearAcademicSelectionStorage(page: Page): Promise<void> {
 	await page.evaluate(() => {
@@ -41,7 +73,7 @@ export async function waitForResolvedAcademicYearId(page: Page, timeout = 20_000
 		await page.waitForTimeout(250);
 	}
 	// Fallback: shell may show the year before sessionStorage is written on slow boots.
-	await page.getByText(/E2E 20\d\d-|20\d\d-\d{4}/i).first().waitFor({ state: 'visible', timeout: 5_000 });
+	await page.getByText(/\b\d{4}-\d{4}\b/).first().waitFor({ state: 'visible', timeout: 5_000 });
 }
 
 /** Keep date inputs inside their min/max (academic-year bounds on calendar create). */
@@ -425,18 +457,38 @@ export async function waitForFormModal(page: Page, timeout = 12_000): Promise<bo
 	return dialog.first().isVisible({ timeout }).catch(() => false);
 }
 
+/** Live input values — Svelte bind:value does not set the HTML value attribute. */
+export async function dialogHasInputValue(dialog: Locator, pattern: RegExp): Promise<boolean> {
+	const inputs = dialog.locator('input');
+	const started = Date.now();
+	while (Date.now() - started < 8_000) {
+		const count = await inputs.count();
+		for (let i = 0; i < count; i++) {
+			const value = await inputs.nth(i).inputValue().catch(() => '');
+			if (pattern.test(value)) {
+				return true;
+			}
+		}
+		await dialog.page().waitForTimeout(250);
+	}
+	return false;
+}
+
 /** Visit a route with ?modal= (and optional modalTarget) and wait for the dialog. */
 export async function openUrlModal(
 	page: Page,
 	pathname: string,
 	modal: string,
-	options: { target?: string; timeout?: number; base?: string } = {},
+	options: { target?: string; step?: string; timeout?: number; base?: string } = {},
 ): Promise<boolean> {
 	const origin = options.base ?? new URL(page.url()).origin;
 	const url = new URL(pathname.startsWith('http') ? pathname : `${origin}${pathname}`);
 	url.searchParams.set('modal', modal);
 	if (options.target) {
 		url.searchParams.set('modalTarget', options.target);
+	}
+	if (options.step) {
+		url.searchParams.set('modalStep', options.step);
 	}
 	await page.goto(url.toString(), { waitUntil: 'domcontentloaded' });
 	await waitForAppShell(page);
@@ -565,6 +617,29 @@ export async function fillGradeLevelCreateDialog(page: Page, levelName: string):
 	}
 
 	throw new Error('Grade level submit stayed disabled — name/label may have been reset by the form');
+}
+
+export const ACADEMIC_YEAR_START_DATE_CONTROL = /date de début|start date/i;
+export const ACADEMIC_YEAR_END_DATE_CONTROL = /date de fin|end date/i;
+
+/** Create-year modal: dates only; heading is the derived `YYYY-YYYY` label. */
+export async function fillAcademicYearCreateDialog(
+	page: Page,
+	dates: { start: string; end: string } = defaultAcademicYearPreset(),
+): Promise<string> {
+	const dialog = page.getByRole('dialog');
+	const start = dialog.getByLabel(ACADEMIC_YEAR_START_DATE_CONTROL);
+	const end = dialog.getByLabel(ACADEMIC_YEAR_END_DATE_CONTROL);
+	if (await start.isVisible({ timeout: 5_000 }).catch(() => false)) {
+		await start.fill(dates.start);
+		await end.fill(dates.end);
+	}
+	else {
+		const dateInputs = dialog.locator('input[type="date"]');
+		await dateInputs.nth(0).fill(dates.start);
+		await dateInputs.nth(1).fill(dates.end);
+	}
+	return academicYearLabelFromDates(dates.start, dates.end);
 }
 
 export async function fillClassCreateDialog(
@@ -1232,6 +1307,9 @@ export async function publishAcademicYearByLabel(page: Page, label: string): Pro
 export const ACTION_MENU_BUTTON_NAME = /actions de ligne|row actions|plus d['’]?actions|more actions/i;
 
 export const DELETE_CONTROL_NAME = /supprimer|delete|retirer|remove/i;
+
+/** Draft announcement recipient row — not the overflow "Delete announcement" item. */
+export const REMOVE_ANNOUNCEMENT_TARGET_CONTROL = /remove recipient|retirer le destinataire/i;
 
 function deleteControlLocator(root: Page | Locator): Locator {
 	return root.getByRole('button', { name: DELETE_CONTROL_NAME })

@@ -10,6 +10,7 @@ import {
 	createAnnouncementOnPage,
 	deleteAnnouncementOnPage,
 	publishAnnouncementOnPage,
+	removeAnnouncementTargetOnPage,
 	updateAnnouncementOnPage,
 } from './lib/announcement-detail-mutations';
 import { announcementDetailIdFromUrl } from './lib/announcement-selectors';
@@ -145,6 +146,10 @@ export class AnnouncementsPageState {
 
 	addTarget(...args: Parameters<typeof addAnnouncementTargetOnPage> extends [AnnouncementsPageState, ...infer R] ? R : never) {
 		return addAnnouncementTargetOnPage(this, ...args);
+	}
+
+	removeTarget(...args: Parameters<typeof removeAnnouncementTargetOnPage> extends [AnnouncementsPageState, ...infer R] ? R : never) {
+		return removeAnnouncementTargetOnPage(this, ...args);
 	}
 
 	publishAnnouncement(...args: Parameters<typeof publishAnnouncementOnPage> extends [AnnouncementsPageState, ...infer R] ? R : never) {

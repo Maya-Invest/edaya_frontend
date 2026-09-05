@@ -3,6 +3,7 @@
 	import { fmtDateFr } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
+	import { locale, t } from '$lib/i18n';
 	import { Check, Clock, Wallet } from '$lib/icons';
 	import { cn } from '$lib/utils';
 	import { billingStatusTone, getStudentFinanceTabState } from './student-finance-tab.svelte';
@@ -17,25 +18,25 @@
 <div class="space-y-4">
 	<div class="grid grid-cols-3 gap-3">
 		<div class="rounded-xl bg-secondary p-4">
-			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">Total</p>
-			<p class="mt-1 font-display text-2xl">{financesData.total.toLocaleString('fr-FR')} €</p>
+			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('finance.total')}</p>
+			<p class="mt-1 font-display text-2xl">{financesData.total.toLocaleString($locale)} €</p>
 		</div>
 		<div class="rounded-xl bg-primary/10 p-4">
-			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">Payé</p>
-			<p class="mt-1 font-display text-2xl">{financesData.paid.toLocaleString('fr-FR')} €</p>
+			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('finance.paid')}</p>
+			<p class="mt-1 font-display text-2xl">{financesData.paid.toLocaleString($locale)} €</p>
 		</div>
 		<div class="rounded-xl bg-secondary/60 p-4">
-			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">Solde</p>
-			<p class="mt-1 font-display text-2xl">{financesData.balance.toLocaleString('fr-FR')} €</p>
+			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('finance.remaining')}</p>
+			<p class="mt-1 font-display text-2xl">{financesData.balance.toLocaleString($locale)} €</p>
 		</div>
 	</div>
 	<div>
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			Facturation · {financesData.studentBilling.length}
+			{$t('finance.billing')} · {financesData.studentBilling.length}
 		</Label>
 		<div class="mt-2 space-y-2">
 			{#if financesData.studentBilling.length === 0}
-				<DrawerEmptyState label="Aucune facture.">
+				<DrawerEmptyState label={$t('finance.noInvoices')}>
 					{#snippet icon()}
 						<Wallet class="h-5 w-5 text-muted-foreground" />
 					{/snippet}
@@ -53,16 +54,16 @@
 							>
 								{billing.status}
 							</span>
-							<span class="font-mono text-[10px] text-muted-foreground">{fmtDateFr(billing.dueDate)}</span>
+							<span class="font-mono text-[10px] text-muted-foreground">{fmtDateFr(billing.dueDate, $locale)}</span>
 						</div>
-						<p class="mt-2 text-sm font-medium">{fee?.name ?? 'Frais'}</p>
+						<p class="mt-2 text-sm font-medium">{fee?.name ?? $t('billing.fee')}</p>
 						<p class="mt-1 text-xs text-muted-foreground">
-							{billing.paid.toLocaleString('fr-FR')} € / {billing.total.toLocaleString('fr-FR')} €
+							{billing.paid.toLocaleString($locale)} € / {billing.total.toLocaleString($locale)} €
 						</p>
 						{#if billing.installments.length > 0}
 							<div class="mt-3 space-y-1.5 border-t border-border pt-3">
 								<p class="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-									Détail des paiements
+									{$t('finance.paymentDetails')}
 								</p>
 								{#each billing.installments as installment, index (index)}
 									<div class="flex items-center justify-between gap-2 text-xs">
@@ -82,7 +83,7 @@
 												{/if}
 											</span>
 											<span class="font-mono text-[10px] text-muted-foreground">
-												{fmtDateFr(installment.date)}
+												{fmtDateFr(installment.date, $locale)}
 											</span>
 										</div>
 										<span
@@ -91,7 +92,7 @@
 												installment.status === 'paid' ? 'text-foreground' : 'text-muted-foreground',
 											)}
 										>
-											{installment.amount.toLocaleString('fr-FR')} €
+											{installment.amount.toLocaleString($locale)} €
 										</span>
 									</div>
 								{/each}

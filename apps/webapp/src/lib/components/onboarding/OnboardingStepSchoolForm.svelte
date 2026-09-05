@@ -3,7 +3,8 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
-	import { t } from '$lib/i18n';
+	import { lang, t } from '$lib/i18n';
+	import { catalogPeriodLabel, toCanonicalCatalogText } from '$lib/i18n/catalog-label';
 	import { Plus, Trash2 } from '$lib/icons';
 	import { onboardingContext } from '$lib/onboarding/context.svelte';
 	import {
@@ -192,17 +193,7 @@
 
 	<section class="space-y-2">
 		<h2 class="text-sm font-medium text-foreground">{$t('onboarding.schoolSection.academicYear')}</h2>
-		<div class="grid gap-2 sm:grid-cols-3">
-			<div class="space-y-1 sm:col-span-3">
-				<Label for="onboarding-year-label">{$t('onboarding.academicYearLabel')}</Label>
-				<Input
-					id="onboarding-year-label"
-					bind:value={onboardingContext.draft.school.academicYearLabel}
-					placeholder={$t('onboarding.academicYearPlaceholder')}
-					{disabled}
-					oninput={persistDraft}
-				/>
-			</div>
+		<div class="grid gap-2 sm:grid-cols-2">
 			<div class="space-y-1">
 				<Label for="onboarding-year-start">{$t('onboarding.startDateLabel')}</Label>
 				<Input
@@ -284,10 +275,13 @@
 							<Label for={`onboarding-period-label-${period.id}`}>{$t('onboarding.periodLabel')}</Label>
 							<Input
 								id={`onboarding-period-label-${period.id}`}
-								bind:value={period.label}
+								value={catalogPeriodLabel(period.label, $lang)}
 								placeholder={$t('onboarding.periodPlaceholder')}
 								{disabled}
-								oninput={persistDraft}
+								oninput={(event) => {
+									period.label = toCanonicalCatalogText(event.currentTarget.value);
+									persistDraft();
+								}}
 							/>
 						</div>
 						<div class="space-y-1">

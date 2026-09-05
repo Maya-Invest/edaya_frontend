@@ -176,6 +176,7 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	...rows('École', `${B}/school/announcements/[id]`, [
 		'Éditer',
 		'Gérer cibles',
+		'Retirer destinataire',
 		'Publier',
 	]),
 
