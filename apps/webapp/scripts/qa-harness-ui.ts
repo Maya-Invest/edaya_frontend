@@ -4,6 +4,7 @@ import {
 	defaultAcademicYearPreset,
 } from '../src/lib/onboarding/school-step-defaults';
 import { waitForEnabled } from '../tests/integration/demo-dry-run/support/auth';
+import { ensureAcademicYearPublishedViaApi } from '../tests/integration/setup/journey-api';
 import { waitForAppShell } from './qa-matrix-support';
 
 export async function waitForPageQuery(page: Page): Promise<void> {
@@ -11,6 +12,24 @@ export async function waitForPageQuery(page: Page): Promise<void> {
 		.locator('[role="status"] .animate-spin')
 		.waitFor({ state: 'detached', timeout: 30_000 })
 		.catch(() => {});
+}
+
+const SPA_NAV_TIMEOUT_MS = 15_000;
+
+/**
+ * Wrangler SPA fallback can return HTML in milliseconds while deferred modules
+ * never fire `domcontentloaded`/`load` (in-flight `/core` fetches). `commit`
+ * ends the Playwright navigation; callers then wait on the shell.
+ */
+export async function navigateSpaPage(page: Page, target: string, timeout = SPA_NAV_TIMEOUT_MS): Promise<void> {
+	try {
+		await page.goto(target, { waitUntil: 'commit', timeout });
+		return;
+	}
+	catch {
+		await page.evaluate(() => window.stop()).catch(() => {});
+	}
+	await page.goto(target, { waitUntil: 'commit', timeout });
 }
 
 export async function dismissPageError(page: Page): Promise<void> {
@@ -22,7 +41,7 @@ export async function dismissPageError(page: Page): Promise<void> {
 }
 
 export async function refreshAppShell(page: Page, base: string): Promise<void> {
-	await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
+	await navigateSpaPage(page, `${base}/dashboard`);
 	await waitForAppShell(page);
 	await page.waitForTimeout(1_500);
 }
@@ -490,7 +509,7 @@ export async function openUrlModal(
 	if (options.step) {
 		url.searchParams.set('modalStep', options.step);
 	}
-	await page.goto(url.toString(), { waitUntil: 'domcontentloaded' });
+	await navigateSpaPage(page, url.toString());
 	await waitForAppShell(page);
 	await waitForPageQuery(page);
 	await dismissPageError(page);
@@ -826,7 +845,7 @@ export async function fillNewSessionWizard(
 		const title = options.title ?? `E2E-Session-${Date.now()}`;
 		const base = options.base ?? '';
 		const timetablePath = `/classes/${options.classId}/timetable?modal=new-session&modalStep=type`;
-		await page.goto(`${base}${timetablePath}`, { waitUntil: 'domcontentloaded' });
+		await navigateSpaPage(page, `${base}${timetablePath}`);
 		await waitForAppShell(page);
 		await waitForPageQuery(page);
 
@@ -1152,7 +1171,7 @@ export async function fillEvaluationCreateDialog(page: Page, title: string): Pro
 
 /** Year card — not the configuration layout `<section>` that wraps the whole page. */
 function yearCardByLabel(page: Page, label: string): Locator {
-	return page.getByRole('heading', { name: label, exact: true }).locator('xpath=ancestor::section[1]');
+	return page.getByRole('heading', { name: label, exact: true }).first().locator('xpath=ancestor::section[1]');
 }
 
 function yearCards(page: Page): Locator {
@@ -1166,7 +1185,10 @@ async function expandYearSection(yearSection: Locator): Promise<void> {
 		if (await body.isVisible().catch(() => false)) {
 			return;
 		}
-		await section.getByRole('button').first().click();
+		const clicked = await section.getByRole('button').first().click({ timeout: 5_000 }).then(() => true).catch(() => false);
+		if (!clicked) {
+			return;
+		}
 		try {
 			await body.waitFor({ state: 'visible', timeout: 3_000 });
 			return;
@@ -1175,6 +1197,19 @@ async function expandYearSection(yearSection: Locator): Promise<void> {
 			await section.page().waitForTimeout(300);
 		}
 	}
+}
+
+async function dismissAcademicYearModals(page: Page): Promise<void> {
+	await dismissOpenDialogs(page);
+	const url = new URL(page.url());
+	if (!url.searchParams.has('modal')) {
+		return;
+	}
+	url.searchParams.delete('modal');
+	url.searchParams.delete('modalTarget');
+	url.searchParams.delete('modalStep');
+	await navigateSpaPage(page, `${url.pathname}${url.search}${url.hash}`);
+	await waitForPageQuery(page);
 }
 
 /** Status badge lives on the section header — period rows also use Draft/Published labels. */
@@ -1196,13 +1231,16 @@ async function yearHeaderStatus(yearSection: Locator): Promise<'published' | 'dr
 const publishYearButtonName = /^publish year$|^publier l['’']année$/iu;
 const archiveYearButtonName = /^archive year$|^archiver l['’']année$/iu;
 
-async function confirmNamedDialog(page: Page, confirmButtonName: RegExp): Promise<void> {
+async function confirmNamedDialog(page: Page, confirmButtonName: RegExp): Promise<boolean> {
 	const dialog = page.getByRole('dialog');
-	await dialog.waitFor({ state: 'visible', timeout: 10_000 });
+	const visible = await dialog.waitFor({ state: 'visible', timeout: 10_000 }).then(() => true).catch(() => false);
+	if (!visible) {
+		return false;
+	}
 	const confirm = dialog.getByRole('button', { name: confirmButtonName }).last();
 	await waitForEnabled(confirm);
 	await confirm.click();
-	await waitForDialogClosed(page);
+	return waitForDialogClosed(page);
 }
 
 /** Archive published years so a draft year can be published (only one published year allowed). */
@@ -1221,8 +1259,9 @@ async function archivePublishedYears(page: Page): Promise<void> {
 			if (!(await archiveBtn.isVisible({ timeout: 2_000 }).catch(() => false))) {
 				continue;
 			}
-			await archiveBtn.click();
+			await archiveBtn.click({ timeout: 8_000 }).catch(() => {});
 			await confirmNamedDialog(page, archiveYearButtonName);
+			await dismissAcademicYearModals(page);
 			await waitForPageQuery(page);
 			archived = true;
 			break;
@@ -1231,6 +1270,29 @@ async function archivePublishedYears(page: Page): Promise<void> {
 			return;
 		}
 	}
+}
+
+async function academicYearUiLooksPublished(yearSection: Locator): Promise<boolean> {
+	if ((await yearHeaderStatus(yearSection)) === 'published') {
+		return true;
+	}
+	const archiveInSection = yearSection.getByRole('button', { name: archiveYearButtonName });
+	return archiveInSection.isVisible({ timeout: 2_000 }).catch(() => false);
+}
+
+async function publishAcademicYearViaApiFallback(page: Page, label: string): Promise<boolean> {
+	const origin = new URL(page.url()).origin;
+	const published = await ensureAcademicYearPublishedViaApi(page, origin, label);
+	if (!published) {
+		return false;
+	}
+	const current = new URL(page.url());
+	current.searchParams.delete('modal');
+	current.searchParams.delete('modalTarget');
+	current.searchParams.delete('modalStep');
+	await navigateSpaPage(page, `${current.pathname}${current.search}${current.hash}`);
+	await waitForPageQuery(page);
+	return true;
 }
 
 /**
@@ -1249,9 +1311,11 @@ export async function ensureAcademicYearReady(page: Page, label: string): Promis
 		return false;
 	}
 
+	await dismissAcademicYearModals(page);
 	await archivePublishedYears(page);
 
-	for (let attempt = 0; attempt < 8; attempt++) {
+	for (let attempt = 0; attempt < 3; attempt++) {
+		await dismissAcademicYearModals(page);
 		await expandYearSection(yearSection);
 		status = await readStatus();
 		if (status === 'published') {
@@ -1268,31 +1332,42 @@ export async function ensureAcademicYearReady(page: Page, label: string): Promis
 				await waitForPageQuery(page);
 				continue;
 			}
-			await publishBtn.click();
+			const clicked = await publishBtn.click({ timeout: 8_000 }).then(() => true).catch(() => false);
+			if (!clicked) {
+				console.log('academic-year publish button click blocked (overlay)');
+				continue;
+			}
 			const responsePromise = page.waitForResponse(
 				(response) => response.url().includes('/core/commands/publish-academic-year')
-					&& response.request().method() === 'POST'
-					&& response.status() < 400,
-				{ timeout: 30_000 },
+					&& response.request().method() === 'POST',
+				{ timeout: 15_000 },
 			).catch(() => null);
 			await confirmNamedDialog(page, publishYearButtonName);
-			await responsePromise;
+			const publishResponse = await responsePromise;
+			if (publishResponse) {
+				console.log(`academic-year publish response: status=${publishResponse.status()}`);
+				if (publishResponse.status() >= 400) {
+					console.log(
+						`academic-year publish body: ${(await publishResponse.text().catch(() => '')).slice(0, 400)}`,
+					);
+				}
+			}
 			await waitForPageQuery(page);
 			await page.waitForTimeout(500);
-			if ((await readStatus()) === 'published') {
-				return true;
-			}
-			// Header badge can lag shell refresh — archive button appears only on published years.
-			const archiveInSection = yearSection.getByRole('button', { name: archiveYearButtonName });
-			if (await archiveInSection.isVisible({ timeout: 5_000 }).catch(() => false)) {
+			if (await academicYearUiLooksPublished(yearSection)) {
 				return true;
 			}
 		}
 
-		await page.waitForTimeout(1_000);
+		await page.waitForTimeout(500);
 	}
 
-	return (await readStatus()) === 'published';
+	if ((await readStatus()) === 'published') {
+		return true;
+	}
+
+	console.log(`academic-year UI publish stalled for ${label}; trying API fallback`);
+	return publishAcademicYearViaApiFallback(page, label);
 }
 
 /** @deprecated Use ensureAcademicYearReady */

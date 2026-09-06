@@ -66,7 +66,7 @@ export async function runStructureChapter(journey: UiJourney): Promise<boolean> 
 			return false;
 		}
 		await waitForPageQuery(page);
-		await page.getByRole('heading', { name: label, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
+		await page.getByRole('heading', { name: label, exact: true }).first().waitFor({ state: 'visible', timeout: 20_000 });
 		const ready = await ensureAcademicYearReady(page, label);
 		if (!ready) {
 			logStep(journey, { step: 'academic-year', ok: false, detail: `Year created but not visible as published (${label})` });
