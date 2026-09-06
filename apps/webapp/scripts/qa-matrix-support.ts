@@ -133,10 +133,19 @@ export function formatError(err: unknown): string {
 }
 
 export async function waitForAppShell(page: Page): Promise<void> {
-	await page.locator('aside#app-sidebar, [data-onboarding-shell]').first().waitFor({
-		state: 'visible',
-		timeout: 30_000,
-	});
+	const ready = page.locator('aside#app-sidebar, [data-onboarding-shell]').first();
+	try {
+		await ready.waitFor({ state: 'visible', timeout: 15_000 });
+		return;
+	}
+	catch {
+		// Layout may still be on the pending spinner before auth/bootstrap finishes.
+	}
+	const pending = page.getByTestId('app-shell-pending');
+	if (await pending.isVisible().catch(() => false)) {
+		await pending.waitFor({ state: 'hidden', timeout: 30_000 }).catch(() => {});
+	}
+	await ready.waitFor({ state: 'visible', timeout: 15_000 });
 }
 
 export async function waitForAcademicYearTrigger(page: Page, timeout = 10_000): Promise<boolean> {

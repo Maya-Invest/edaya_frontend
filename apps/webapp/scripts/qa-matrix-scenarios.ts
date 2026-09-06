@@ -1,5 +1,6 @@
 import { attemptPasswordSignIn, ensurePasswordSignInPanel, waitForEnabled } from '../tests/integration/demo-dry-run/support/auth';
 import { TEACHER_PORTAL_GATE_BANNER_TEST_ID } from '../src/lib/auth/teacher-portal-gate';
+import { defaultAcademicYearPreset } from '../src/lib/onboarding/school-step-defaults';
 import type { SecondaryAccounts } from '../tests/integration/support/api-provision';
 import { completeWizardViaApi } from '../tests/integration/setup/journey-api';
 import type { Browser, Page } from 'playwright';
@@ -7,18 +8,22 @@ import type { DemoContext } from '../tests/integration/demo-dry-run/support/type
 import { DEMO_PASSWORD, STAFF_EMAIL } from '../tests/integration/demo-dry-run/support/constants';
 import type { QaTemplateRow } from './qa-template-matrix';
 import {
+	clickCreateButton,
+	clickFirstListSortColumn,
 	dismissPageError,
 	ensureAcademicYearReady,
+	exportSelectedListRows,
 	fillClassCreateDialog,
 	fillStudentCreateDialog,
-	clickCreateButton,
+	isDeleteControlVisible,
 	listSearchInput,
 	openDialogButton,
+	REMOVE_ANNOUNCEMENT_TARGET_CONTROL,
+	setAppLang,
 	submitDialog,
 	waitForDialogClosed,
 	waitForPageQuery,
-	clickFirstListSortColumn,
-	exportSelectedListRows,
+	waitForResolvedAcademicYearId,
 } from './qa-harness-ui';
 import {
 	assertNoFatalError,
@@ -40,7 +45,6 @@ import {
 } from './qa-route-catalog';
 import { isStudentBlockedScenario, STUDENT_SETUP_BLOCKER } from '../tests/integration/setup/setup-blockers';
 import { isFilterOrSearchRow, runFilterScenario } from './filter-setup-registry';
-import { isDeleteControlVisible, waitForResolvedAcademicYearId } from './qa-harness-ui';
 
 function result(row: QaTemplateRow, statut: MatrixResult['statut'], detail?: string): MatrixResult {
 	return {
@@ -278,11 +282,13 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 	}
 
 	if (action.includes('langue')) {
-		const langBtn = page.getByRole('button', { name: /fr|en|langue|language/i }).first();
-		if (!(await langBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
-			return notOk(row, 'Bouton langue introuvable');
+		await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
+		await waitForAppShell(page);
+		const switched = await setAppLang(page, 'en');
+		if (!switched) {
+			return notOk(row, 'Langue EN non appliquée (html[lang=en])');
 		}
-		await langBtn.click();
+		await setAppLang(page, 'fr');
 		return ok(row);
 	}
 
@@ -1001,6 +1007,17 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		return notOk(row, 'Préférences introuvables');
 	}
 
+	// ── Remove draft recipient (visibility only — must not mutate) ──
+	if (/retirer destinataire/i.test(action)) {
+		const visible = await page.getByRole('button', { name: REMOVE_ANNOUNCEMENT_TARGET_CONTROL })
+			.first()
+			.isVisible({ timeout: 6_000 })
+			.catch(() => false);
+		return visible
+			? ok(row, 'remove-target: control visible (not clicked)')
+			: na(row, 'remove-target: no draft recipient (published or empty)');
+	}
+
 	// ── Delete (visibility only — provisioned runs must not mutate) ──
 	if (/supprimer|delete/i.test(action) && !/export/i.test(action)) {
 		const visible = await isDeleteControlVisible(page);
@@ -1011,7 +1028,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 
 	// ── Publish / generate / payment / toggle — smoke only ──
 	if (row.endpoint.includes('/configuration/academic') && /publier année/i.test(action)) {
-		const label = `E2E ${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
+		const label = defaultAcademicYearPreset().label;
 		const yearHeading = page.getByRole('heading', { name: label, exact: true });
 		const section = yearHeading.locator('xpath=ancestor::section[1]');
 		const publishedBadge = section.getByText(/publié|published/i).first();

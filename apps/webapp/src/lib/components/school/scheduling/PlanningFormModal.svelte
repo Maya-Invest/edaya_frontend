@@ -6,7 +6,8 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
-	import { t } from '$lib/i18n';
+	import { lang, t } from '$lib/i18n';
+	import { catalogSubjectName } from '$lib/i18n/catalog-label';
 	import { get } from 'svelte/store';
 
 	const DAYS: PlanningEvent['day'][] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -46,9 +47,10 @@
 		subjects.filter(subject => subject.classId === resolvedClassId),
 	);
 
-	const selectedSubjectName = $derived(
-		classSubjects.find(subject => subject.id === classSubjectId)?.name ?? '',
-	);
+	const selectedSubjectName = $derived.by(() => {
+		const subject = classSubjects.find(entry => entry.id === classSubjectId);
+		return subject ? catalogSubjectName(subject.name, $lang, subject.code) : '';
+	});
 
 	const canSubmit = $derived(
 		sessionTitle.trim().length > 0 && resolvedClassId.length > 0 && start.length > 0 && end.length > 0 && start < end,
@@ -161,7 +163,9 @@
 				</Select.Trigger>
 				<Select.Content class="z-[100]">
 					{#each classSubjects as subject (subject.id)}
-						<Select.Item value={subject.id} label={subject.name}>{subject.name}</Select.Item>
+						<Select.Item value={subject.id} label={catalogSubjectName(subject.name, $lang, subject.code)}>
+							{catalogSubjectName(subject.name, $lang, subject.code)}
+						</Select.Item>
 					{/each}
 				</Select.Content>
 			</Select.Root>

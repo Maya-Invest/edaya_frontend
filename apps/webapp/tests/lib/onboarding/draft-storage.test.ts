@@ -185,4 +185,61 @@ describe('draft-storage', () => {
 			});
 		}
 	});
+
+	it('replaces a free-text academic year label with years from the dates', () => {
+		const storage = new Map<string, string>([
+			[draftStorageKey('user-label'), JSON.stringify({
+				version: 7,
+				updatedAt: '2026-01-01T00:00:00.000Z',
+				maxReachedStep: 1,
+				wizardCompleted: false,
+				schoolStepSubmitted: false,
+				structureStepSubmitted: false,
+				staffStepSubmitted: false,
+				registeredSchoolId: null,
+				school: {
+					name: 'Collège Test',
+					city: 'Abidjan',
+					country: "Côte d'Ivoire",
+					timezone: 'Africa/Abidjan',
+					academicYearLabel: 'anneeteny',
+					academicYearStart: '2026-09-01',
+					academicYearEnd: '2027-07-03',
+					periodType: 'trimester',
+					periods: [{
+						id: 'p1',
+						label: 'Trimestre 1',
+						start: '2026-09-01',
+						end: '2026-12-19',
+					}],
+				},
+				structure: { models: [], levels: [] },
+				staffInvites: [],
+			})],
+		]);
+		const sessionStorageMock = {
+			getItem: (key: string) => storage.get(key) ?? null,
+			setItem: () => {},
+			removeItem: () => {},
+		};
+
+		const original = globalThis.sessionStorage;
+		Object.defineProperty(globalThis, 'sessionStorage', {
+			value: sessionStorageMock,
+			configurable: true,
+		});
+
+		try {
+			const loaded = loadDraft('user-label');
+			expect(loaded?.school.academicYearLabel).toBe('2026-2027');
+			expect(loaded?.school.academicYearStart).toBe('2026-09-01');
+			expect(loaded?.school.academicYearEnd).toBe('2027-07-03');
+		}
+		finally {
+			Object.defineProperty(globalThis, 'sessionStorage', {
+				value: original,
+				configurable: true,
+			});
+		}
+	});
 });

@@ -5,6 +5,8 @@ import {
 	DEFAULT_ONBOARDING_COUNTRY,
 	ONBOARDING_COUNTRIES,
 	STRUCTURE_READY_COUNTRIES,
+	academicYearLabelFromDates,
+	defaultAcademicYearPreset,
 	isStructureReadyCountry,
 	optionsWithCurrent,
 	timezoneForCountry,
@@ -46,6 +48,37 @@ describe('timezoneForCountry', () => {
 			expect(COMMON_TIMEZONES.includes(timezone as (typeof COMMON_TIMEZONES)[number])).toBe(true);
 			expect(timezoneForCountry(country)).toBe(timezone);
 		}
+	});
+});
+
+describe('academicYearLabelFromDates', () => {
+	it('joins civil years with a hyphen', () => {
+		expect(academicYearLabelFromDates('2026-09-01', '2027-07-03')).toBe('2026-2027');
+	});
+
+	it('keeps identical years', () => {
+		expect(academicYearLabelFromDates('2026-09-01', '2026-12-01')).toBe('2026-2026');
+	});
+
+	it('reads years from ISO timestamps', () => {
+		expect(academicYearLabelFromDates('2025-09-01T12:00:00.000Z', '2026-07-03T12:00:00.000Z')).toBe(
+			'2025-2026',
+		);
+	});
+
+	it('returns an empty string when a date is missing or not a year', () => {
+		expect(academicYearLabelFromDates('', '2027-07-03')).toBe('');
+		expect(academicYearLabelFromDates('2026-09-01', '')).toBe('');
+		expect(academicYearLabelFromDates('abcd-09-01', '2027-07-03')).toBe('');
+	});
+});
+
+describe('defaultAcademicYearPreset', () => {
+	it('labels the preset with derived civil years', () => {
+		const preset = defaultAcademicYearPreset(new Date('2026-09-15T12:00:00'));
+		expect(preset.start).toBe('2026-09-01');
+		expect(preset.end).toBe('2027-07-03');
+		expect(preset.label).toBe('2026-2027');
 	});
 });
 

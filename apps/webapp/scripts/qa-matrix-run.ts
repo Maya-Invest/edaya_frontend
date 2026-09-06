@@ -16,6 +16,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { chromium } from 'playwright';
+import { ensurePlaywrightChromium } from './playwright-browsers';
 import { assertStackReady, attemptPasswordSignIn } from '../tests/integration/demo-dry-run/support/auth';
 import { createDemoContext } from '../tests/integration/demo-dry-run/support/context';
 import { DEMO_PASSWORD, OWNER_EMAIL, STAFF_EMAIL } from '../tests/integration/demo-dry-run/support/constants';
@@ -155,6 +156,7 @@ async function qaSignIn(
 }
 
 async function main(): Promise<void> {
+	ensurePlaywrightChromium();
 	const base = process.env['WEBAPP_URL'] ?? DEMO_WEBAPP_BASE;
 	const matrix = filterMatrix();
 	const excluded = [...defaultExcludedModulesForRun(), ...excludedModules()];
@@ -305,21 +307,46 @@ async function main(): Promise<void> {
 
 	console.log('\n--- Phase Application (unclaimed rows) ---');
 	let prevModule = '';
-	for (const row of appRows) {
-		if (isProvisionedRun() && results.some(r =>
-			r.module === row.module && r.endpoint === row.endpoint && r.action === row.action
-		)) {
-			continue;
+	try {
+		for (const row of appRows) {
+			if (isProvisionedRun() && results.some(r =>
+				r.module === row.module && r.endpoint === row.endpoint && r.action === row.action
+			)) {
+				continue;
+			}
+			if (isProvisionedRun() && row.module === 'Shell' && row.action === 'Logout') {
+				continue;
+			}
+			if (prevModule === 'Shell' && row.module !== 'Shell') {
+				console.log('--- Re-login après tests Shell ---');
+				let signedIn = false;
+				for (let attempt = 1; attempt <= 3; attempt++) {
+					try {
+						await qaSignIn(ctx, credentials);
+						signedIn = true;
+						break;
+					}
+					catch (err) {
+						console.error(
+							`Re-login attempt ${attempt}/3 failed:`,
+							err instanceof Error ? err.message : err,
+						);
+						await ctx.page.waitForTimeout(3_000);
+					}
+				}
+				if (!signedIn) {
+					throw new Error('Re-login failed after Shell tests');
+				}
+			}
+			record(await runMatrixScenario(row, ctx, browser, entities));
+			prevModule = row.module;
 		}
-		if (isProvisionedRun() && row.module === 'Shell' && row.action === 'Logout') {
-			continue;
-		}
-		if (prevModule === 'Shell' && row.module !== 'Shell') {
-			console.log('--- Re-login après tests Shell ---');
-			await qaSignIn(ctx, credentials);
-		}
-		record(await runMatrixScenario(row, ctx, browser, entities));
-		prevModule = row.module;
+	}
+	catch (err) {
+		console.error(
+			'Unclaimed phase failed; persisting journey results:',
+			err instanceof Error ? err.message : err,
+		);
 	}
 
 	if (isProvisionedRun()) {

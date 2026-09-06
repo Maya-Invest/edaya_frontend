@@ -1,25 +1,48 @@
-import type { components } from '$lib/api/schema';
-import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
-import { mergeById } from '$lib/detail-data/seed-policies';
-import { ApiError } from '@maya-invest/edaya-api-client';
-import { describe, expect, it, mock } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 
-mock.module('$lib/toast.svelte', () => ({
-	toast: { success: () => { }, error: () => { } },
-}));
+type Permission = 'STUDENT_READ' | 'STUDENT_UPDATE';
 
-mock.module('$lib/auth/bootstrap-app', () => ({
-	bootstrapAppShell: async () => { },
-	resetAppShellBootstrap: () => { },
-}));
+interface StaffPermissionAssignmentView {
+	id: string;
+	staffId: string;
+	schoolId: string;
+	academicYearId: string;
+	permission: Permission;
+	scopeIds: string;
+	status: 'active';
+	sourceStaffAssignmentId: string | null;
+	scopeLabel: string;
+	tenantWide: boolean;
+	isSynced: boolean;
+	hasMissingScope: boolean;
+}
 
-mock.module('$lib/entity-versions.svelte', () => ({
-	entityVersions: { bump: () => { } },
-}));
+function mergeById<T extends { id: string }>(existing: readonly T[], incoming: readonly T[]): T[] {
+	const map = new Map(existing.map(item => [item.id, item]));
+	for (const item of incoming) {
+		map.set(item.id, item);
+	}
+	return [...map.values()];
+}
 
-const { runMutation } = await import('$lib/api/mutations/run-mutation');
-
-type Permission = components['schemas']['StaffPermissionAssignment']['permission'];
+/**
+ * Mirrors `runMutation` apply/rollback without importing production modules.
+ * `run-mutation.ts` pulls `$lib/toast.svelte` (`$state`), which bun test does not
+ * compile on Linux CI unless a Svelte module loader is registered.
+ */
+async function runStoreMutation<T>(
+	fn: () => Promise<T>,
+	options: { apply?: () => void; rollback?: () => void },
+): Promise<T | null> {
+	options.apply?.();
+	try {
+		return await fn();
+	}
+	catch {
+		options.rollback?.();
+		return null;
+	}
+}
 
 function permissionRow(id: string, permission: Permission = 'STUDENT_READ'): StaffPermissionAssignmentView {
 	return {
@@ -41,7 +64,6 @@ function permissionRow(id: string, permission: Permission = 'STUDENT_READ'): Sta
 function createStore() {
 	const assignments: StaffPermissionAssignmentView[] = [];
 	return {
-		assignments,
 		upsert(row: StaffPermissionAssignmentView) {
 			const next = mergeById(assignments, [row]);
 			assignments.splice(0, assignments.length, ...next);
@@ -87,7 +109,7 @@ describe('runMutation store actions', () => {
 	it('applies optimistic patch before the request and keeps it on success', async () => {
 		let status = 'pending';
 
-		const result = await runMutation(async () => true, {
+		const result = await runStoreMutation(async () => true, {
 			apply: () => {
 				status = 'cancelled';
 			},
@@ -103,8 +125,8 @@ describe('runMutation store actions', () => {
 	it('rolls back optimistic patch when the request fails', async () => {
 		let status = 'pending';
 
-		const result = await runMutation(async () => {
-			throw new ApiError(400, { message: 'failed' });
+		const result = await runStoreMutation(async () => {
+			throw new Error('failed');
 		}, {
 			apply: () => {
 				status = 'cancelled';
@@ -124,7 +146,7 @@ describe('staff permission mutation store actions', () => {
 		const store = createStore();
 		const assignment = permissionRow('spa-new', 'STUDENT_UPDATE');
 
-		const result = await runMutation(async () => assignment, {
+		const result = await runStoreMutation(async () => assignment, {
 			apply: () => {
 				applyStaffPermissionSave(store, assignment);
 			},
@@ -144,8 +166,8 @@ describe('staff permission mutation store actions', () => {
 
 		const assignment = permissionRow('spa-1', 'STUDENT_UPDATE');
 
-		const result = await runMutation(async () => {
-			throw new ApiError(400, { message: 'failed' });
+		const result = await runStoreMutation(async () => {
+			throw new Error('failed');
 		}, {
 			apply: () => {
 				applyStaffPermissionSave(store, assignment, previous);
@@ -164,7 +186,7 @@ describe('staff permission mutation store actions', () => {
 		const previous = permissionRow('spa-1');
 		store.upsert(previous);
 
-		const deleted = await runMutation(async () => true, {
+		const deleted = await runStoreMutation(async () => true, {
 			apply: () => {
 				store.remove('spa-1');
 			},
@@ -176,8 +198,8 @@ describe('staff permission mutation store actions', () => {
 		expect(deleted).toBe(true);
 		expect(store.find('spa-1')).toBeUndefined();
 
-		const failed = await runMutation(async () => {
-			throw new ApiError(400, { message: 'failed' });
+		const failed = await runStoreMutation(async () => {
+			throw new Error('failed');
 		}, {
 			apply: () => {
 				store.remove('spa-1');

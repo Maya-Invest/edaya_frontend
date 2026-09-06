@@ -53,25 +53,41 @@ async function apiFetch(
 		headers['X-School-Id'] = schoolId;
 	}
 
-	// Local Vite proxies /core on the webapp origin. CI Wrangler SPA does not —
-	// POST /core there is 405/HTML, so also try API_URL (same cookie jar as the baked PUBLIC_API_URL).
-	const bases = [appBase];
+	const cookies = await page.context().cookies();
+	const cookieHeader = cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
+	if (cookieHeader.length > 0) {
+		headers.cookie = cookieHeader;
+	}
+
+	// Isolated request context: page.request can deadlock while a Wrangler SPA
+	// navigation is still settling (announcement add-target hung the full suite).
+	const { request } = await import('playwright');
+	const isolated = await request.newContext({ extraHTTPHeaders: headers });
+
+	// Vite proxies /core on the webapp origin. Wrangler SPA does not — prefer API_URL first.
+	const bases: string[] = [];
 	if (apiBase && apiBase !== appBase) {
 		bases.push(apiBase);
 	}
+	bases.push(appBase);
 
-	let last: import('playwright').APIResponse | undefined;
-	for (const base of bases) {
-		const url = `${base}${path.startsWith('/') ? path : `/${path}`}`;
-		last = (init.method ?? 'GET') === 'POST'
-			? await page.request.post(url, { headers, data: init.data ?? {} })
-			: await page.request.get(url, { headers });
-		if (isLikelyApiResponse(last)) {
-			return last;
+	try {
+		let last: import('playwright').APIResponse | undefined;
+		for (const base of bases) {
+			const url = `${base}${path.startsWith('/') ? path : `/${path}`}`;
+			last = (init.method ?? 'GET') === 'POST'
+				? await isolated.post(url, { headers, data: init.data ?? {} })
+				: await isolated.get(url, { headers });
+			if (isLikelyApiResponse(last)) {
+				return last;
+			}
+			integrationDebug(`apiFetch skip ${last.status()} ${url}`);
 		}
-		integrationDebug(`apiFetch skip ${last.status()} ${url}`);
+		return last!;
 	}
-	return last!;
+	finally {
+		await isolated.dispose();
+	}
 }
 
 function parseEntityList<T extends { id?: string }>(
@@ -249,6 +265,91 @@ async function resolveAcademicYearScheduleDate(
 	catch {
 		return new Date().toISOString().slice(0, 10);
 	}
+}
+
+interface AcademicYearListItem {
+	id?: string;
+	name?: string;
+	status?: string;
+}
+
+async function listAcademicYearsViaApi(
+	page: Page,
+	appOrigin: string,
+	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
+): Promise<AcademicYearListItem[]> {
+	const schoolId = await resolveSchoolId(page, appOrigin, apiUrl);
+	if (!schoolId) {
+		console.log('academic-year API list skipped: no schoolId');
+		return [];
+	}
+	const response = await apiFetch(page, appOrigin, '/core/entities/academic-years/list', {
+		method: 'POST',
+		data: { schoolId, $limit: 50, $offset: 0 },
+	}, apiUrl);
+	if (!response.ok()) {
+		console.log(
+			`academic-year API list failed: status=${response.status()} body=${(await response.text().catch(() => '')).slice(0, 300)}`,
+		);
+		return [];
+	}
+	try {
+		return parseEntityList(await response.json() as { items?: AcademicYearListItem[] } | AcademicYearListItem[]);
+	}
+	catch {
+		return [];
+	}
+}
+
+/**
+ * Archive blocking published years and publish the draft matching `label`.
+ * Used when the academic-page URL modal leaves the heading unclickable on Wrangler.
+ */
+export async function ensureAcademicYearPublishedViaApi(
+	page: Page,
+	appOrigin: string,
+	label: string,
+	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
+): Promise<boolean> {
+	const years = await listAcademicYearsViaApi(page, appOrigin, apiUrl);
+	console.log(
+		`academic-year API list: ${years.map(year => `${year.name ?? '?'}[${year.status ?? '?'}]`).join(', ') || '(empty)'}`,
+	);
+	const target = years.find(year => year.name === label)
+		?? years.find(year => year.status === 'draft')
+		?? years[0];
+	if (!target?.id) {
+		console.log(`academic-year API publish skipped: no year matching ${label}`);
+		return false;
+	}
+	if (target.status === 'published') {
+		return true;
+	}
+
+	for (const year of years) {
+		if (year.status !== 'published' || !year.id || year.id === target.id) {
+			continue;
+		}
+		const archived = await apiFetch(page, appOrigin, '/core/commands/archive-academic-year', {
+			method: 'POST',
+			data: { academicYearId: year.id },
+		}, apiUrl);
+		console.log(`academic-year API archive ${year.name ?? year.id}: status=${archived.status()}`);
+		if (!archived.ok()) {
+			console.log(`academic-year API archive body: ${(await archived.text().catch(() => '')).slice(0, 300)}`);
+		}
+	}
+
+	const published = await apiFetch(page, appOrigin, '/core/commands/publish-academic-year', {
+		method: 'POST',
+		data: { academicYearId: target.id },
+	}, apiUrl);
+	console.log(`academic-year API publish ${target.name ?? target.id}: status=${published.status()}`);
+	if (!published.ok()) {
+		console.log(`academic-year API publish body: ${(await published.text().catch(() => '')).slice(0, 400)}`);
+		return false;
+	}
+	return true;
 }
 
 export async function ensureNotificationTemplatesViaApi(
@@ -739,7 +840,7 @@ export async function createTimetableSessionViaApi(
 	return result?.sessionId ?? null;
 }
 
-export async function publishAnnouncementViaApi(
+export async function addAnnouncementTargetViaApi(
 	page: Page,
 	appOrigin: string,
 	announcementId: string,
@@ -759,7 +860,15 @@ export async function publishAnnouncementViaApi(
 		integrationDebug(`add-target failed ${addTarget.status()} ${body.slice(0, 200)}`);
 		return false;
 	}
+	return true;
+}
 
+export async function publishAnnouncementCommandViaApi(
+	page: Page,
+	appOrigin: string,
+	announcementId: string,
+	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
+): Promise<boolean> {
 	const publish = await apiFetch(page, appOrigin, '/core/commands/publish-announcement', {
 		method: 'POST',
 		data: { announcementId },
@@ -769,6 +878,18 @@ export async function publishAnnouncementViaApi(
 		integrationDebug(`publish-announcement failed ${publish.status()} ${body.slice(0, 200)}`);
 	}
 	return publish.ok();
+}
+
+export async function publishAnnouncementViaApi(
+	page: Page,
+	appOrigin: string,
+	announcementId: string,
+	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
+): Promise<boolean> {
+	if (!await addAnnouncementTargetViaApi(page, appOrigin, announcementId, apiUrl)) {
+		return false;
+	}
+	return publishAnnouncementCommandViaApi(page, appOrigin, announcementId, apiUrl);
 }
 
 export async function publishReportCardDefinitionViaApi(

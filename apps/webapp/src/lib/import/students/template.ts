@@ -1,5 +1,9 @@
 import type { StudentImportColumnKey } from './types';
 import { sortImportColumnsRequiredFirst } from '$lib/import/shared/sort-import-columns';
+import {
+	localizeImportExampleCell,
+	localizedImportSheetName,
+} from '$lib/import/shared/template-download';
 import { downloadCsv } from '$lib/list/list-csv-export';
 import * as XLSX from 'xlsx';
 import { STUDENT_IMPORT_COLUMNS } from './types';
@@ -22,7 +26,9 @@ export const STUDENT_IMPORT_EXAMPLE_ROW: Record<StudentImportColumnKey, string> 
 export function buildStudentImportTemplateRows(): string[][] {
 	const columns = sortImportColumnsRequiredFirst(STUDENT_IMPORT_COLUMNS);
 	const headers = columns.map(column => column.key);
-	const example = columns.map(column => STUDENT_IMPORT_EXAMPLE_ROW[column.key]);
+	const example = columns.map(column =>
+		localizeImportExampleCell(column.key, STUDENT_IMPORT_EXAMPLE_ROW[column.key]),
+	);
 	return [headers, example];
 }
 
@@ -38,7 +44,7 @@ function downloadBlob(filename: string, blob: Blob): void {
 export function buildStudentImportExcelWorkbook(): XLSX.WorkBook {
 	const workbook = XLSX.utils.book_new();
 	const sheet = XLSX.utils.aoa_to_sheet(buildStudentImportTemplateRows());
-	XLSX.utils.book_append_sheet(workbook, sheet, 'Eleves');
+	XLSX.utils.book_append_sheet(workbook, sheet, localizedImportSheetName('Eleves'));
 	return workbook;
 }
 

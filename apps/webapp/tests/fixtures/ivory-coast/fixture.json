@@ -1,0 +1,102 @@
+{
+  "College": {
+    "description": "Lower Secondary Education (4 years)",
+    "periods": [
+      {
+        "code": "T1",
+        "name": "Trimestre 1",
+        "weight": 1
+      },
+      {
+        "code": "T2",
+        "name": "Trimestre 2",
+        "weight": 1
+      },
+      {
+        "code": "T3",
+        "name": "Trimestre 3",
+        "weight": 1
+      }
+    ],
+    "grading_scale": 20,
+    "passing_grade": 10,
+    "include_summary": false,
+    "include_comments": true,
+    "levels": [
+      {
+        "order": 1,
+        "file": "college/6eme.json"
+      },
+      {
+        "order": 2,
+        "file": "college/5eme.json"
+      },
+      {
+        "order": 3,
+        "file": "college/4eme.json"
+      },
+      {
+        "order": 4,
+        "file": "college/3eme.json"
+      }
+    ]
+  },
+  "Lycee": {
+    "description": "Upper Secondary Education (3 years)",
+    "periods": [
+      {
+        "code": "T1",
+        "name": "Trimestre 1",
+        "weight": 1
+      },
+      {
+        "code": "T2",
+        "name": "Trimestre 2",
+        "weight": 1
+      },
+      {
+        "code": "T3",
+        "name": "Trimestre 3",
+        "weight": 1
+      }
+    ],
+    "grading_scale": 20,
+    "passing_grade": 10,
+    "include_summary": false,
+    "include_comments": true,
+    "levels": [
+      {
+        "order": 1,
+        "file": "lycee/2nda.json"
+      },
+      {
+        "order": 2,
+        "file": "lycee/2ndc.json"
+      },
+      {
+        "order": 3,
+        "file": "lycee/1era.json"
+      },
+      {
+        "order": 4,
+        "file": "lycee/1erc.json"
+      },
+      {
+        "order": 5,
+        "file": "lycee/1erd.json"
+      },
+      {
+        "order": 6,
+        "file": "lycee/tlea.json"
+      },
+      {
+        "order": 7,
+        "file": "lycee/tlec.json"
+      },
+      {
+        "order": 8,
+        "file": "lycee/tled.json"
+      }
+    ]
+  }
+}

@@ -9,7 +9,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
-	import { t } from '$lib/i18n';
+	import { locale, t } from '$lib/i18n';
 	import { FileText, Mail, Phone, Users, Plus } from '$lib/icons';
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
@@ -64,13 +64,13 @@
 	<div class="grid grid-cols-3 gap-3">
 		<div class="rounded-xl bg-primary/10 p-3">
 			<p class="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-				Groupe
+				{$t('student.bloodType')}
 			</p>
 			<p class="mt-1 font-display text-xl">{health?.bloodType ?? '—'}</p>
 		</div>
 		<div class="rounded-xl bg-secondary/60 p-3">
 			<p class="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-				Allergies
+				{$t('student.allergies')}
 			</p>
 			{#if health?.allergies?.length}
 				<div class="mt-1.5 flex flex-wrap gap-1">
@@ -79,12 +79,12 @@
 					{/each}
 				</div>
 			{:else}
-				<p class="mt-1 text-xs text-muted-foreground">Aucune</p>
+				<p class="mt-1 text-xs text-muted-foreground">{$t('common.none')}</p>
 			{/if}
 		</div>
 		<div class="rounded-xl bg-secondary/60 p-3">
 			<p class="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-				Chroniques
+				{$t('student.conditions')}
 			</p>
 			{#if health?.chronicConditions?.length}
 				<div class="mt-1.5 flex flex-wrap gap-1">
@@ -93,7 +93,7 @@
 					{/each}
 				</div>
 			{:else}
-				<p class="mt-1 text-xs text-muted-foreground">Aucune</p>
+				<p class="mt-1 text-xs text-muted-foreground">{$t('common.none')}</p>
 			{/if}
 		</div>
 	</div>
@@ -101,15 +101,15 @@
 		<div class="grid gap-2 rounded-xl bg-secondary/40 p-3 text-xs sm:grid-cols-2">
 			{#if health?.medications?.length}
 				<div>
-					<span class="text-muted-foreground">Traitements :</span> {health.medications.join(', ')}
+					<span class="text-muted-foreground">{$t('student.medications')} :</span> {health.medications.join(', ')}
 				</div>
 			{/if}
 			{#if health?.lastVisit}
-				<div><span class="text-muted-foreground">Dernière visite :</span> {fmtDateFr(health.lastVisit)}</div>
+				<div><span class="text-muted-foreground">{$t('drawer.lastNurse')} :</span> {fmtDateFr(health.lastVisit, $locale)}</div>
 			{/if}
 			{#if health?.notes}
 				<div class="sm:col-span-2">
-					<span class="text-muted-foreground">Notes santé :</span> {health.notes}
+					<span class="text-muted-foreground">{$t('student.healthNotes')} :</span> {health.notes}
 				</div>
 			{/if}
 		</div>
@@ -145,7 +145,7 @@
 	<div class="grid grid-cols-2 gap-3">
 		<DrawerField label={$t('drawer.birthDate')}>
 			<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">
-				{fmtDateFr(s.birthdate)}
+				{fmtDateFr(s.birthdate, $locale)}
 			</div>
 		</DrawerField>
 		<DrawerField label={$t('drawer.guardianLabel')}>
@@ -200,9 +200,9 @@
 	<div class="space-y-2 border-t border-border pt-4">
 		<div class="flex items-center justify-between gap-3">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				Tuteurs · {linkedGuardians.length}
+				{$t('people.guardians')} · {linkedGuardians.length}
 			</Label>
-			<PermissionGate permission="STUDENT_UPDATE" mode="disable" tooltip="Droit STUDENT_UPDATE requis.">
+			<PermissionGate permission="STUDENT_UPDATE" mode="disable" tooltip={$t('student.permissionUpdate')}>
 				{#snippet children({ disabled, title })}
 					<Button
 						variant="outline"
@@ -213,7 +213,7 @@
 						onclick={() => modals?.open('link-guardian')}
 					>
 						<Plus class="mr-1 h-4 w-4" />
-						Rattacher
+						{$t('student.linkGuardian')}
 					</Button>
 				{/snippet}
 			</PermissionGate>
@@ -288,9 +288,9 @@
 	<div class="space-y-2 border-t border-border pt-4">
 		<div class="flex items-center justify-between gap-3">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				Notes pédagogiques · {studentNotes.length}
+				{$t('student.pedagogicalNotes')} · {studentNotes.length}
 			</Label>
-			<PermissionGate permission="STUDENT_UPDATE" mode="disable" tooltip="Droit STUDENT_UPDATE requis.">
+			<PermissionGate permission="STUDENT_UPDATE" mode="disable" tooltip={$t('student.permissionUpdate')}>
 				{#snippet children({ disabled, title })}
 					<Button
 						variant="outline"
@@ -307,7 +307,7 @@
 			</PermissionGate>
 		</div>
 		{#if studentNotes.length === 0}
-			<DrawerEmptyState label="Aucune note pédagogique.">
+			<DrawerEmptyState label={$t('student.noPedagogicalNotes')}>
 				{#snippet icon()}
 					<FileText class="h-5 w-5 text-muted-foreground" />
 				{/snippet}
@@ -327,11 +327,11 @@
 								{note.category}
 							</span>
 							<div class="flex items-center gap-2">
-								<span class="font-mono text-[10px] text-muted-foreground">{fmtDateFr(note.date)}</span>
+								<span class="font-mono text-[10px] text-muted-foreground">{fmtDateFr(note.date, $locale)}</span>
 								<PermissionGate
 									permission="STUDENT_UPDATE"
 									mode="disable"
-									tooltip="Droit STUDENT_UPDATE requis."
+									tooltip={$t('student.permissionUpdate')}
 								>
 									{#snippet children({ disabled, title })}
 										<Button

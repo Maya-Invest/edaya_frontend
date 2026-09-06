@@ -7,7 +7,8 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
-	import { t } from '$lib/i18n';
+	import { lang, t } from '$lib/i18n';
+	import { catalogSubjectName } from '$lib/i18n/catalog-label';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
@@ -39,6 +40,7 @@
 	let removeCatalogBusy = $state(false);
 
 	const isCatalogSubject = $derived(Boolean(subject.gradeLevelId));
+	const localizedName = $derived(catalogSubjectName(subject.name, $lang, subject.code));
 
 	const teacherInitials = $derived(
 		subject.teacher
@@ -85,7 +87,7 @@
 	}
 </script>
 
-<DrawerEntityHeader name={subject.name} summary={subject.description}>
+<DrawerEntityHeader name={localizedName} summary={subject.description}>
 	{#snippet chips()}
 		<span class="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] tabular-nums text-foreground/80">
 			{subject.hoursPerWeek === null ? '—' : $t('subjects.hoursPerWeek', { h: subject.hoursPerWeek })}
@@ -129,7 +131,7 @@
 <ConfirmModal
 	bind:open={deleteOpen.open}
 	title={$t('common.deleteConfirmTitle')}
-	description={$t('subjects.deleteConfirm', { name: subject.name })}
+	description={$t('subjects.deleteConfirm', { name: localizedName })}
 	confirmLabel={$t('common.delete')}
 	cancelLabel={$t('common.cancel')}
 	busy={deleteBusy}

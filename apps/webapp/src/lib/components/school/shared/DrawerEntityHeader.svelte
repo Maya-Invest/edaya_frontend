@@ -13,7 +13,7 @@
 		actions,
 		overflow,
 	}: {
-		name: string;
+		name?: string;
 		summary?: string;
 		avatar?: Snippet;
 		chips?: Snippet;
@@ -34,13 +34,15 @@
 			{/if}
 			<div class="min-w-0 flex-1">
 				{#if chips}
-					<div class="mb-2 flex flex-wrap items-center gap-2">
+					<div class={['flex flex-wrap items-center gap-2', name || summary ? 'mb-2' : '']}>
 						{@render chips()}
 					</div>
 				{/if}
-				<h3 class="font-display text-2xl font-semibold leading-tight">{name}</h3>
+				{#if name}
+					<h3 class="font-display text-2xl font-semibold leading-tight">{name}</h3>
+				{/if}
 				{#if summary}
-					<p class="mt-1 text-sm text-muted-foreground">{summary}</p>
+					<p class={['text-sm text-muted-foreground', name ? 'mt-1' : '']}>{summary}</p>
 				{/if}
 			</div>
 		</div>

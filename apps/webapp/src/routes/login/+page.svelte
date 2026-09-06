@@ -16,15 +16,18 @@
 	import { isDemoLoginEnabled, isPublicSchoolRegistrationEnabled } from '$lib/env/app-env';
 	import { t } from '$lib/i18n';
 	import { appGoto } from '$lib/navigation/app-navigation';
+	import { toast } from '$lib/toast.svelte';
 	import { onMount } from 'svelte';
 	import {
 		canonicalLoginUrlState,
+		isEmailVerifiedRedirect,
 		readLoginUrlState,
 		writeLoginUrlState,
 	} from './login-url-state';
 
 	let apiConnected = $state(false);
 	let email = $state('');
+	let emailVerifiedToastShown = false;
 
 	const showDemoLink = $derived(isDemoLoginEnabled());
 	const showSignup = $derived(isPublicSchoolRegistrationEnabled());
@@ -42,6 +45,10 @@
 	});
 
 	afterNavigate(() => {
+		if (isEmailVerifiedRedirect($page.url) && !emailVerifiedToastShown) {
+			emailVerifiedToastShown = true;
+			toast.success($t('auth.emailVerifiedSignIn'));
+		}
 		const canonicalHref = writeLoginUrlState($page.url, urlState);
 		if (canonicalHref !== `${$page.url.pathname}${$page.url.search}`) {
 			void appGoto(canonicalHref, {

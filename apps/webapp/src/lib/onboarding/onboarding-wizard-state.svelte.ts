@@ -4,6 +4,7 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { redirectPathIfAuthenticated } from '$lib/auth/resolve-post-auth';
 import { authSession } from '$lib/auth/session.svelte';
 import { isOnboardingSkipEnabled } from '$lib/env/app-env';
+import { t } from '$lib/i18n';
 import { appGoto, appPath } from '$lib/navigation/app-navigation';
 import { onboardingContext } from '$lib/onboarding/context.svelte';
 import {
@@ -31,7 +32,9 @@ import {
 import { submitCompleteOnboardingStep } from '$lib/onboarding/submit-complete-step';
 import { submitProvisionOnboarding } from '$lib/onboarding/submit-provision-step';
 import { fetchServerOnboardingAccountStatus } from '$lib/onboarding/sync-account-status';
+import { toast } from '$lib/toast.svelte';
 import { getContext, setContext } from 'svelte';
+import { get } from 'svelte/store';
 
 const ONBOARDING_WIZARD_STATE_KEY = Symbol('onboarding-wizard-state');
 
@@ -45,6 +48,12 @@ export class OnboardingWizardState {
 	provisionCompletedIds = $state<string[]>([]);
 	provisionSteps = $state<Array<Pick<ProvisionProgressStep, 'id' | 'labelKey'>>>([]);
 	provisionProgressVisible = $state(false);
+	lastActionError = $state<string | null>(null);
+
+	private reportActionError(message: string) {
+		this.lastActionError = message;
+		toast.error(message);
+	}
 
 	private resetProvisionProgress() {
 		this.provisionPhase = null;
@@ -113,11 +122,12 @@ export class OnboardingWizardState {
 	}
 
 	get showSkipOnboarding(): boolean {
-		return isOnboardingSkipEnabled();
+		// Skip-to-dashboard is only meaningful after school + classes (steps 1–2).
+		return isOnboardingSkipEnabled() && this.currentStep >= 3;
 	}
 
 	get canSkipOnboarding(): boolean {
-		return authSession.isLoggedIn;
+		return authSession.isLoggedIn && this.currentStep >= 3;
 	}
 
 	initAuthUser(authUserId: string | null) {
@@ -250,9 +260,15 @@ export class OnboardingWizardState {
 					this.provisionActiveStepId = state.activeStepId;
 					this.provisionCompletedIds = state.completedIds;
 				},
+				onError: (message) => {
+					this.lastActionError = message;
+				},
 			});
 			if (!result) {
 				this.resetProvisionProgress();
+				if (!this.lastActionError) {
+					this.reportActionError(get(t)('onboarding.completeStep.failed'));
+				}
 				return false;
 			}
 			academicContext.applyOnboardingSelection(result.yearId, result.periodId);
@@ -261,8 +277,16 @@ export class OnboardingWizardState {
 			onboardingContext.markStaffStepSubmitted();
 		}
 		else if (authSession.schoolId) {
-			const success = await submitCompleteOnboardingStep(options);
+			const success = await submitCompleteOnboardingStep({
+				successMessageKey: options.successMessageKey,
+				onError: (message) => {
+					this.lastActionError = message;
+				},
+			});
 			if (!success) {
+				if (!this.lastActionError) {
+					this.reportActionError(get(t)('onboarding.completeStep.failed'));
+				}
 				return false;
 			}
 		}
@@ -298,18 +322,33 @@ export class OnboardingWizardState {
 		});
 		if (target) {
 			appGoto(target, { replaceState: true });
+			return true;
 		}
-		return true;
+
+		this.reportActionError(get(t)('onboarding.completeStep.redirectFailed'));
+		return false;
 	}
 
 	async finishOnboarding() {
-		if (!this.canFinish || this.busy) {
+		if (this.busy) {
+			return;
+		}
+
+		this.lastActionError = null;
+		if (!this.canFinish) {
+			this.reportActionError(get(t)('onboarding.completeStep.incomplete'));
 			return;
 		}
 
 		this.busy = true;
 		try {
-			await this.completeAndExitOnboarding({ provision: true });
+			const ok = await this.completeAndExitOnboarding({ provision: true });
+			if (!ok && !this.lastActionError) {
+				this.reportActionError(get(t)('onboarding.completeStep.failed'));
+			}
+		}
+		catch {
+			this.reportActionError(get(t)('onboarding.completeStep.failed'));
 		}
 		finally {
 			this.busy = false;
@@ -318,17 +357,29 @@ export class OnboardingWizardState {
 	}
 
 	async skipOnboarding() {
-		if (!this.canSkipOnboarding || this.busy) {
+		if (this.busy) {
+			return;
+		}
+
+		this.lastActionError = null;
+		if (!this.canSkipOnboarding) {
+			this.reportActionError(get(t)('onboarding.completeStep.failed'));
 			return;
 		}
 
 		this.busy = true;
 		try {
 			// Skip does not provision from draft; only marks complete when a school already exists.
-			await this.completeAndExitOnboarding({
+			const ok = await this.completeAndExitOnboarding({
 				successMessageKey: 'onboarding.skipWizardSuccess',
 				provision: false,
 			});
+			if (!ok && !this.lastActionError) {
+				this.reportActionError(get(t)('onboarding.completeStep.failed'));
+			}
+		}
+		catch {
+			this.reportActionError(get(t)('onboarding.completeStep.failed'));
 		}
 		finally {
 			this.busy = false;

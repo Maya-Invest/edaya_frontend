@@ -41,7 +41,7 @@
 				<Dialog.Description>{description}</Dialog.Description>
 			{/if}
 		</Dialog.Header>
-		<div class="space-y-4 py-2">
+		<div class="space-y-4 px-1 py-2">
 			{@render children?.()}
 		</div>
 		<Dialog.Footer>

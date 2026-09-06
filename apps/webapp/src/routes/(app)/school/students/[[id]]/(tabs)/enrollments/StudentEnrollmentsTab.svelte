@@ -3,7 +3,7 @@
 	import { fmtDateFr } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
-	import { t } from '$lib/i18n';
+	import { locale, t } from '$lib/i18n';
 	import { GraduationCap } from '$lib/icons';
 	import { getStudentEnrollmentsTabState } from './student-enrollments-tab.svelte';
 
@@ -53,9 +53,9 @@
 							</span>
 						</div>
 						<p class="mt-2 font-mono text-[10px] text-muted-foreground">
-							{$t('student.enrolledAt', { date: fmtDateFr(enrollment.enrolledAt) })}
+							{$t('student.enrolledAt', { date: fmtDateFr(enrollment.enrolledAt, $locale) })}
 							{#if enrollment.endedAt}
-								· {$t('student.endedAt', { date: fmtDateFr(enrollment.endedAt) })}
+								· {$t('student.endedAt', { date: fmtDateFr(enrollment.endedAt, $locale) })}
 							{/if}
 						</p>
 						{#if endReasonLabel(enrollment.endReason)}

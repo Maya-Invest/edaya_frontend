@@ -29,6 +29,7 @@
 <div bind:this={ref} class="relative">
 	<button
 		type="button"
+		data-testid="language-selector"
 		onclick={() => (open = !open)}
 		title={$t('lang.label')}
 		class={cn(
@@ -48,6 +49,7 @@
 				{@const selected = o.value === $lang}
 				<button
 					type="button"
+					data-testid={`language-option-${o.value}`}
 					onclick={() => {
 						setLang(o.value);
 						open = false;

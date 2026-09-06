@@ -3,6 +3,7 @@ import { migrateLegacyGradeLevelId } from '$lib/onboarding/legacy-gl-map';
 import { createInitialPeriods } from '$lib/onboarding/school-periods';
 import {
 	DEFAULT_ONBOARDING_COUNTRY,
+	academicYearLabelFromDates,
 	defaultAcademicYearPreset,
 	isStructureReadyCountry,
 	timezoneForCountry,
@@ -86,6 +87,23 @@ type LegacySchoolDraft = OnboardingSchoolDraft & {
 	periodEnd?: string;
 };
 
+function resolveAcademicYearDates(
+	candidate: Partial<LegacySchoolDraft>,
+	empty: OnboardingSchoolDraft,
+): Pick<OnboardingSchoolDraft, 'academicYearStart' | 'academicYearEnd' | 'academicYearLabel'> {
+	const academicYearStart = typeof candidate.academicYearStart === 'string'
+		? candidate.academicYearStart
+		: empty.academicYearStart;
+	const academicYearEnd = typeof candidate.academicYearEnd === 'string'
+		? candidate.academicYearEnd
+		: empty.academicYearEnd;
+	return {
+		academicYearStart,
+		academicYearEnd,
+		academicYearLabel: academicYearLabelFromDates(academicYearStart, academicYearEnd),
+	};
+}
+
 function normalizeSchoolDraft(candidate: Partial<LegacySchoolDraft>, empty: OnboardingSchoolDraft): OnboardingSchoolDraft {
 	const periodType = candidate.periodType === 'semester' ? 'semester' : 'trimester';
 
@@ -95,6 +113,7 @@ function normalizeSchoolDraft(candidate: Partial<LegacySchoolDraft>, empty: Onbo
 	const timezone = isStructureReadyCountry(rawCountry)
 		? rawTimezone
 		: (timezoneForCountry(country) ?? empty.timezone);
+	const yearDates = resolveAcademicYearDates(candidate, empty);
 
 	if (Array.isArray(candidate.periods) && candidate.periods.length > 0) {
 		const periods = candidate.periods
@@ -108,6 +127,7 @@ function normalizeSchoolDraft(candidate: Partial<LegacySchoolDraft>, empty: Onbo
 				timezone,
 				periodType,
 				periods,
+				...yearDates,
 			};
 		}
 	}
@@ -125,15 +145,7 @@ function normalizeSchoolDraft(candidate: Partial<LegacySchoolDraft>, empty: Onbo
 		city: typeof candidate.city === 'string' ? candidate.city : empty.city,
 		country,
 		timezone,
-		academicYearLabel: typeof candidate.academicYearLabel === 'string'
-			? candidate.academicYearLabel
-			: empty.academicYearLabel,
-		academicYearStart: typeof candidate.academicYearStart === 'string'
-			? candidate.academicYearStart
-			: empty.academicYearStart,
-		academicYearEnd: typeof candidate.academicYearEnd === 'string'
-			? candidate.academicYearEnd
-			: empty.academicYearEnd,
+		...yearDates,
 		periodType,
 		periods: legacyPeriod ? [legacyPeriod] : empty.periods,
 	};

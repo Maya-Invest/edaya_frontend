@@ -1,6 +1,8 @@
 import type { Transport } from '@maya-invest/edaya-api-client';
 import { PUBLIC_API_URL } from '$env/static/public';
 import { authSession } from '$lib/auth/session.svelte';
+import { lang } from '$lib/i18n';
+import { get } from 'svelte/store';
 import { parseApiResponse, resolveApiUrl } from './http';
 
 function applyInteractiveActorHeaders(headers: Headers) {
@@ -23,6 +25,7 @@ export function createBrowserTransport(getYearId: () => string | undefined): Tra
 				Accept: 'application/json',
 			});
 			applyInteractiveActorHeaders(headers);
+			headers.set('Accept-Language', get(lang) === 'en' ? 'en-US' : 'fr-FR');
 			if (options?.body !== undefined) {
 				headers.set('Content-Type', 'application/json');
 			}

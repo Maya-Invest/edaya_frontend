@@ -8,7 +8,8 @@
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
-	import { t } from '$lib/i18n';
+	import { t, lang } from '$lib/i18n';
+	import { catalogSubjectName } from '$lib/i18n/catalog-label';
 	import { pickClassSubjectIdForTeacherSubject } from '$lib/teachers/pick-class-subject-for-teacher';
 	import { get } from 'svelte/store';
 	import { createTeacherAssignmentPayload } from '../../../../school/teachers/lib/teacher-detail-mutations';
@@ -79,7 +80,10 @@
 			return;
 		}
 		subjectLabels = Object.fromEntries(nextClassSubjects.map((entry) => {
-			const name = subjects.find(subject => subject.id === entry.subjectId)?.name ?? entry.id;
+			const subject = subjects.find(item => item.id === entry.subjectId);
+			const name = subject
+				? catalogSubjectName(subject.name, $lang, subject.code)
+				: entry.id;
 			return [entry.id, name];
 		}));
 		const teacher = selectedTeacher;

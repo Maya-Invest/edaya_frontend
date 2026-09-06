@@ -56,6 +56,8 @@ bun run verify
 
 Repo hygiene runs **first** (doctor, OpenAPI drift, repo unit tests). See [repo-cli.md](./repo-cli.md).
 
+Webapp **unit tests** (`bun test tests/lib`) must not depend on a sibling `edaya_backend` checkout or on live `$state` modules. Bun preload stubs toast/session in [`apps/webapp/tests/support/sveltekit-mocks.ts`](../../apps/webapp/tests/support/sveltekit-mocks.ts). Catalog fixtures live in [`apps/webapp/tests/fixtures/ivory-coast`](../../apps/webapp/tests/fixtures/ivory-coast). A local-green / CI-red loop usually means a new test opened one of those doors — `ci-parity-guard.test.ts` is meant to catch that before push.
+
 Playwright integration (`apps/webapp` `test:integration:provisioned`) is a **separate** PR job after verify — not part of `bun run verify`. Client walkthrough is `demo:e2e`, not CI.
 
 ## GHCR access for api-dev image

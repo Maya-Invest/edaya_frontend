@@ -8,7 +8,6 @@ import type { QaTemplateRow } from '../../../scripts/qa-template-matrix.manual';
 import {
 	MODAL_DEEP_LINK_ACTION_PREFIX,
 	ROUTE_SMOKE_ACTION,
-	SIDEBAR_LINK_ACTION_PREFIX,
 } from '../../../scripts/qa-route-catalog';
 
 export function normalizeMatrixPath(endpoint: string): string {
@@ -90,7 +89,6 @@ export class JourneyLedger {
 			const action = row.action;
 			if (
 				action === ROUTE_SMOKE_ACTION
-				|| action.startsWith(SIDEBAR_LINK_ACTION_PREFIX)
 				|| action === 'Liste'
 				|| action.startsWith('Liste — affichage')
 			) {

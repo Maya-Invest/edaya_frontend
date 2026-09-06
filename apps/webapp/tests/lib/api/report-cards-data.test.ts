@@ -13,6 +13,7 @@ import {
 	resolveClassSubjectId,
 	subjectLabelForCatalogId,
 } from '$lib/api/report-cards-data';
+import { setLang } from '$lib/i18n';
 
 const seedGradeScalesRaw = [
 	{
@@ -219,7 +220,7 @@ describe('report cards definition mapping', () => {
 			children: [{
 				sectionType: 'subject',
 				subjectId: 'subj-math',
-				subjectLabel: 'Mathematics',
+				subjectLabel: 'Mathématiques',
 			}],
 		});
 		expect(ms6?.sections.find(section => section.id === 'rcs-ms-sci')).toMatchObject({
@@ -252,8 +253,19 @@ describe('report cards subject resolution', () => {
 	});
 
 	it('maps catalog subject ids to display labels', () => {
-		expect(subjectLabelForCatalogId('subj-math', classSubjectsSources)).toBe('Mathematics');
+		expect(subjectLabelForCatalogId('subj-math', classSubjectsSources)).toBe('Mathématiques');
 		expect(subjectLabelForCatalogId('subj-advmath', classSubjectsSources)).toBe('Advanced Mathematics');
+	});
+
+	it('maps catalog subject ids to English labels when the UI language is English', () => {
+		setLang('en');
+		try {
+			expect(subjectLabelForCatalogId('subj-math', classSubjectsSources)).toBe('Mathematics');
+			expect(subjectLabelForCatalogId('subj-advmath', classSubjectsSources)).toBe('Advanced Mathematics');
+		}
+		finally {
+			setLang('fr');
+		}
 	});
 });
 

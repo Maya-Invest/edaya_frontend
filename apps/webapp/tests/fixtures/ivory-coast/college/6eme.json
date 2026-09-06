@@ -1,0 +1,214 @@
+{
+  "code": "6EME",
+  "name": "Sixième",
+  "short_label": "6ème",
+  "sections": [
+    {
+      "role": "subjects",
+      "label": "Bilan Lettre",
+      "order": 1,
+      "subject_codes": [
+        "FR",
+        "ANG",
+        "HG"
+      ]
+    },
+    {
+      "role": "subjects",
+      "label": "Bilan Science",
+      "order": 2,
+      "subject_codes": [
+        "MATH",
+        "PC",
+        "SVT",
+        "TECH",
+        "TICE"
+      ]
+    },
+    {
+      "role": "subjects",
+      "label": "Bilan autres",
+      "order": 3,
+      "subject_codes": [
+        "EDHC",
+        "AP",
+        "MUS",
+        "EPS"
+      ]
+    },
+    {
+      "role": "comments",
+      "label": "Appréciations",
+      "order": 4
+    }
+  ],
+  "subjects": [
+    {
+      "code": "MATH",
+      "name": "Mathématiques",
+      "domain": "Sciences",
+      "coefficient": 3,
+      "matters": [
+        "Arithmétique : PGCD, PPCM, division euclidienne, nombres premiers",
+        "Nombres relatifs : addition, soustraction, repérage sur un axe",
+        "Fractions : opérations simples, fractions équivalentes",
+        "Géométrie plane : points, segments, droites sécantes, parallèles, perpendiculaires",
+        "Angles : mesure, angles adjacents, complémentaires, supplémentaires",
+        "Symétrie axiale et centrale : propriétés de conservation",
+        "Les triangles : propriétés, inégalité triangulaire, droites remarquables",
+        "Parallélogrammes particuliers",
+        "Initiation aux probabilités et statistiques (tableaux d'effectifs)"
+      ]
+    },
+    {
+      "code": "FR",
+      "name": "Français",
+      "domain": "Langues",
+      "coefficient": 3,
+      "matters": [
+        "Lecture et compréhension de textes narratifs et documentaires",
+        "Grammaire de la phrase simple : classes et fonctions",
+        "Conjugaison des temps courants",
+        "Expression écrite : récit et description"
+      ]
+    },
+    {
+      "code": "ANG",
+      "name": "Anglais",
+      "domain": "Langues",
+      "coefficient": 2,
+      "matters": [
+        "Compréhension orale et expression orale",
+        "Compréhension écrite de textes authentiques",
+        "Vocabulaire thématique et expressions utiles",
+        "Grammaire : temps, structures et concordance",
+        "Production écrite guidée et libre",
+        "Civilisation et documents culturels"
+      ]
+    },
+    {
+      "code": "HG",
+      "name": "Histoire-Géographie",
+      "domain": "Univers Social",
+      "coefficient": 2,
+      "matters": [
+        "Repères chronologiques et sociétés",
+        "Territoires, populations et activités",
+        "Lecture de cartes, frises et documents",
+        "Afrique et Côte d'Ivoire dans le monde",
+        "Enjeux contemporains",
+        "Méthodologie de l'étude de documents"
+      ]
+    },
+    {
+      "code": "PC",
+      "name": "Physique-Chimie",
+      "domain": "Sciences",
+      "coefficient": 2,
+      "matters": [
+        "Solides, liquides et gaz : propriétés physiques",
+        "Température et changements d’état de l’eau",
+        "Mesure de la masse et du volume",
+        "Circuits électriques simples : générateur, récepteur, conducteurs",
+        "Pollution de l’air et combustions"
+      ]
+    },
+    {
+      "code": "SVT",
+      "name": "Sciences de la Vie et de la Terre",
+      "domain": "Sciences",
+      "coefficient": 2,
+      "matters": [
+        "Organisation du vivant : cellule et organismes",
+        "Nutrition et fonctions vitales chez les êtres vivants",
+        "Milieux de vie et relations entre êtres vivants",
+        "La Terre : structure et milieux naturels",
+        "Hygiène, santé et prévention"
+      ]
+    },
+    {
+      "code": "EDHC",
+      "name": "Éducation aux Droits de l'Homme et à la Citoyenneté",
+      "domain": "Univers Social",
+      "coefficient": 1,
+      "matters": [
+        "Droits et devoirs du citoyen",
+        "Vivre ensemble et respect de la diversité",
+        "Institutions et vie démocratique",
+        "Santé, hygiène et responsabilité sociale",
+        "Développement durable",
+        "Engagement et solidarité"
+      ]
+    },
+    {
+      "code": "EPS",
+      "name": "Éducation Physique et Sportive",
+      "domain": "Développement Physique",
+      "coefficient": 1,
+      "matters": [
+        "Activités athlétiques et motricité",
+        "Sports collectifs",
+        "Gymnastique et expression corporelle",
+        "Condition physique et santé",
+        "Règles de sécurité et fair-play",
+        "Préparation et évaluation des APSA"
+      ]
+    },
+    {
+      "code": "AP",
+      "name": "Arts Plastiques",
+      "domain": "Arts",
+      "coefficient": 1,
+      "matters": [
+        "Dessin et représentation",
+        "Couleurs, formes et composition",
+        "Techniques plastiques",
+        "Lecture d'œuvres",
+        "Expression créative",
+        "Projet plastique personnel"
+      ]
+    },
+    {
+      "code": "MUS",
+      "name": "Éducation Musicale",
+      "domain": "Arts",
+      "coefficient": 1,
+      "matters": [
+        "Écoute et discrimination sonore",
+        "Chant et rythme",
+        "Notions de solfège de base",
+        "Musiques traditionnelles et contemporaines",
+        "Pratique collective",
+        "Culture musicale"
+      ]
+    },
+    {
+      "code": "TECH",
+      "name": "Technologie",
+      "domain": "Sciences",
+      "coefficient": 1,
+      "matters": [
+        "Objets techniques et matériaux",
+        "Mesure, dessin et représentation technique",
+        "Énergie et systèmes simples",
+        "Démarche de projet technologique",
+        "Sécurité et usage des outils",
+        "Innovation et design"
+      ]
+    },
+    {
+      "code": "TICE",
+      "name": "TICE",
+      "domain": "Sciences",
+      "coefficient": 1,
+      "matters": [
+        "Système d'exploitation et fichiers",
+        "Traitement de texte et présentation",
+        "Recherche d'information et sources",
+        "Tableurs et multimédia",
+        "Citoyenneté et sécurité numériques",
+        "Collaboration et outils en ligne"
+      ]
+    }
+  ]
+}

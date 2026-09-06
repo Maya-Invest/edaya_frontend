@@ -4,6 +4,8 @@ import { DEFAULT_LOGIN_METHOD_ID, isLoginMethodId } from '$lib/auth/login-method
 export type LoginPanel = 'signin' | 'signup';
 export type LoginStage = 'form' | 'code' | 'verification';
 
+const EMAIL_VERIFIED_PARAM = 'verified';
+
 export interface LoginUrlState {
 	panel: LoginPanel;
 	method: LoginMethodId;
@@ -34,6 +36,11 @@ function validStage(
 	return 'form';
 }
 
+export function isEmailVerifiedRedirect(url: URL): boolean {
+	const value = url.searchParams.get(EMAIL_VERIFIED_PARAM)?.trim().toLowerCase();
+	return value === '1' || value === 'true';
+}
+
 export function readLoginUrlState(
 	url: URL,
 	options: { showSignup: boolean },
@@ -56,7 +63,7 @@ export function writeLoginUrlState(url: URL, state: LoginUrlState): string {
 	next.searchParams.set('panel', state.panel);
 	next.searchParams.set('method', state.method);
 	next.searchParams.set('stage', state.stage);
-	for (const sensitiveKey of ['email', 'password', 'otp', 'code']) {
+	for (const sensitiveKey of ['email', 'password', 'otp', 'code', EMAIL_VERIFIED_PARAM]) {
 		next.searchParams.delete(sensitiveKey);
 	}
 	return `${next.pathname}${next.search}`;

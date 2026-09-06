@@ -2,6 +2,7 @@
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
+	import { academicYearLabelFromDates } from '$lib/onboarding/school-step-defaults';
 	import { get } from 'svelte/store';
 	import { getAcademicPageState } from '../academic-page.svelte';
 
@@ -16,14 +17,14 @@
 	const academicPage = getAcademicPageState();
 
 	let busy = $state(false);
-	let label = $state('');
 	let startDate = $state('2027-09-01');
 	let endDate = $state('2028-07-02');
 
-	const canSubmit = $derived(label.trim().length > 0);
+	const canSubmit = $derived(
+		academicYearLabelFromDates(startDate, endDate).length > 0 && startDate <= endDate,
+	);
 
 	function resetForm() {
-		label = '';
 		startDate = '2027-09-01';
 		endDate = '2028-07-02';
 	}
@@ -40,12 +41,10 @@
 
 		busy = true;
 		try {
-			const trimmedLabel = label.trim();
 			const yearId = await academicPage.createYear({
-				label,
 				startDate,
 				endDate,
-				successMessage: get(t)('academic.toastYearCreated', { label: trimmedLabel }),
+				successMessage: get(t)('academic.toastYearCreated', { label: academicYearLabelFromDates(startDate, endDate) }),
 			});
 			if (yearId) {
 				open = false;
@@ -70,11 +69,7 @@
 	onCancel={resetForm}
 	onSubmit={submit}
 >
-	<div class="grid gap-4 sm:grid-cols-3">
-		<label class="space-y-1.5 text-sm sm:col-span-3">
-			<span class="text-muted-foreground">{$t('academic.yearLabel')}</span>
-			<Input bind:value={label} placeholder="2027 — 2028" class="rounded-xl" />
-		</label>
+	<div class="grid gap-4 sm:grid-cols-2">
 		<label class="space-y-1.5 text-sm">
 			<span class="text-muted-foreground">{$t('academic.startDate')}</span>
 			<Input type="date" bind:value={startDate} class="rounded-xl" />

@@ -157,6 +157,36 @@ export async function addAnnouncementTargetOnPage(
 	return result !== null;
 }
 
+export async function removeAnnouncementTargetOnPage(
+	state: AnnouncementsPageState,
+	input: {
+		announcementId: string;
+		targetId: string;
+		successMessage?: string;
+	},
+): Promise<boolean> {
+	const client = getBrowserSchoolClient();
+	const previous = state.findAnnouncement(input.announcementId);
+	const removed = previous?.targets.find(target => target.id === input.targetId);
+	if (!previous || previous.status !== 'draft' || !removed) {
+		toast.error(get(t)('dataState.errorDescription'));
+		return false;
+	}
+
+	const result = await runAnnouncementRouteMutation({
+		request: () => client.entities.announcementTargets.delete({ id: input.targetId }),
+		successMessage: input.successMessage,
+		apply: () => {
+			state.removeAnnouncementTarget(input.announcementId, input.targetId);
+		},
+		rollback: () => {
+			state.appendAnnouncementTarget(input.announcementId, removed);
+		},
+	});
+
+	return result !== null;
+}
+
 export async function publishAnnouncementOnPage(
 	state: AnnouncementsPageState,
 	input: {

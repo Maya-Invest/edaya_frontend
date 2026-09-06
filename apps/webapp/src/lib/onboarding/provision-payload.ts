@@ -1,4 +1,5 @@
 import type { OnboardingDraft } from '$lib/onboarding/types';
+import { academicYearLabelFromDates } from '$lib/onboarding/school-step-defaults';
 import { staffInvitesForSubmit } from '$lib/onboarding/staff-step-helpers';
 import { toApiStructureTemplateIds } from '$lib/onboarding/structure-templates';
 
@@ -10,7 +11,10 @@ export function buildProvisionPayload(draft: OnboardingDraft) {
 			timeZone: draft.school.timezone.trim(),
 			city: draft.school.city.trim(),
 			country: draft.school.country.trim(),
-			academicYearLabel: draft.school.academicYearLabel.trim(),
+			academicYearLabel: academicYearLabelFromDates(
+				draft.school.academicYearStart,
+				draft.school.academicYearEnd,
+			),
 			academicYearStart: draft.school.academicYearStart,
 			academicYearEnd: draft.school.academicYearEnd,
 			periodType: draft.school.periodType,

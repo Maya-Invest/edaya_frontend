@@ -8,6 +8,7 @@ import {
 	STUDENT_IMPORT_EXCEL_TEMPLATE_FILENAME,
 } from '$lib/import/students/template';
 import { STUDENT_IMPORT_COLUMNS } from '$lib/import/students/types';
+import { setLang } from '$lib/i18n';
 
 describe('student import template', () => {
 	it('uses the planned csv filename', () => {
@@ -19,6 +20,7 @@ describe('student import template', () => {
 	});
 
 	it('builds header and example rows from column definitions', () => {
+		setLang('fr');
 		const rows = buildStudentImportTemplateRows();
 
 		expect(rows).toHaveLength(2);
@@ -27,6 +29,7 @@ describe('student import template', () => {
 	});
 
 	it('builds an excel workbook with the same template rows', () => {
+		setLang('fr');
 		const workbook = buildStudentImportExcelWorkbook();
 		const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
 		const parsed = XLSX.read(buffer, { type: 'buffer' });
@@ -37,5 +40,20 @@ describe('student import template', () => {
 		const rows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: '' });
 
 		expect(rows).toEqual(buildStudentImportTemplateRows());
+	});
+
+	it('localizes the class example and excel sheet name in English', () => {
+		setLang('en');
+		try {
+			const rows = buildStudentImportTemplateRows();
+			const classeIndex = STUDENT_IMPORT_COLUMNS.findIndex(column => column.key === 'classe');
+			expect(rows[1]?.[classeIndex]).toBe('6th A');
+
+			const workbook = buildStudentImportExcelWorkbook();
+			expect(workbook.SheetNames).toEqual(['Students']);
+		}
+		finally {
+			setLang('fr');
+		}
 	});
 });

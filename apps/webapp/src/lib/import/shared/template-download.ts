@@ -1,8 +1,61 @@
 import type { ImportTypeDefinition } from '$lib/import/catalog/types';
 import type { ImportMultiValueSeparator } from '$lib/import/preferences/import-preferences.svelte';
+import { lang } from '$lib/i18n';
+import { catalogCycle, catalogText } from '$lib/i18n/catalog-label';
+import { dictionaries } from '$lib/i18n/dictionaries';
 import { sortImportColumnsRequiredFirst } from '$lib/import/shared/sort-import-columns';
+import { mapStaffImportRoleToProfileRole } from '$lib/import/staff/staff-role-labels';
 import { downloadCsv } from '$lib/list/list-csv-export';
+import { get } from 'svelte/store';
 import * as XLSX from 'xlsx';
+
+const IMPORT_SHEET_NAME_EN: Record<string, string> = {
+	Eleves: 'Students',
+	Tuteurs: 'Guardians',
+	Personnel: 'Staff',
+	Enseignants: 'Teachers',
+	Classes: 'Classes',
+	Matieres: 'Subjects',
+	Affectations: 'Assignments',
+	Chapitres: 'Chapters',
+	Facturation: 'Billing',
+	Paiements: 'Payments',
+};
+
+const IMPORT_FEE_TYPE_EN: Record<string, string> = {
+	'Scolarité — Collège': 'Tuition — Lower secondary',
+	'Scolarité — Lycée': 'Tuition — Upper secondary',
+};
+
+export function localizedImportSheetName(frName: string): string {
+	if (get(lang) !== 'en') {
+		return frName;
+	}
+	return IMPORT_SHEET_NAME_EN[frName] ?? frName;
+}
+
+export function localizeImportExampleCell(columnKey: string, raw: string): string {
+	if (!raw) {
+		return raw;
+	}
+
+	const current = get(lang);
+	if (columnKey === 'role') {
+		const role = mapStaffImportRoleToProfileRole(raw);
+		if (role) {
+			return dictionaries[current][`staff.role.${role}`] ?? raw;
+		}
+	}
+
+	if (columnKey === 'type_frais') {
+		if (current === 'en' && IMPORT_FEE_TYPE_EN[raw]) {
+			return IMPORT_FEE_TYPE_EN[raw];
+		}
+		return raw.replace(/\b(Collège|College|Lycée|Lycee)\b/g, match => catalogCycle(match, current));
+	}
+
+	return catalogText(raw, current);
+}
 
 export interface ImportTemplateDownloadOptions {
 	multiValueSeparator?: ImportMultiValueSeparator;
@@ -37,7 +90,7 @@ export function buildImportTemplateRows(
 	const columns = sortImportColumnsRequiredFirst(definition.columns);
 	const headers = columns.map(column => column.key);
 	const example = columns.map((column) => {
-		const raw = definition.exampleRow[column.key] ?? '';
+		const raw = localizeImportExampleCell(column.key, definition.exampleRow[column.key] ?? '');
 		return formatExampleCell(column, raw, separator);
 	});
 	return [headers, example];
@@ -64,7 +117,11 @@ export function downloadImportExcelTemplate(
 	}
 	const workbook = XLSX.utils.book_new();
 	const sheet = XLSX.utils.aoa_to_sheet(buildImportTemplateRows(definition, options));
-	XLSX.utils.book_append_sheet(workbook, sheet, definition.xlsxSheetName);
+	XLSX.utils.book_append_sheet(
+		workbook,
+		sheet,
+		localizedImportSheetName(definition.xlsxSheetName),
+	);
 	const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
 	const blob = new Blob(
 		[buffer],

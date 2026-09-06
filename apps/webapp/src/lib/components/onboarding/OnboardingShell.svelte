@@ -24,6 +24,7 @@
 		canFinish?: boolean;
 		busy?: boolean;
 		busyMessage?: string | null;
+		actionError?: string | null;
 		provisionProgressVisible?: boolean;
 		provisionPercent?: number;
 		provisionActiveStepId?: string | null;
@@ -52,6 +53,7 @@
 		canFinish = true,
 		busy = false,
 		busyMessage = null,
+		actionError = null,
 		provisionProgressVisible = false,
 		provisionPercent = 0,
 		provisionActiveStepId = null,
@@ -98,6 +100,14 @@
 	</section>
 
 	<footer class="sticky bottom-0 mt-4 border-t border-border/60 bg-background/95 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+		{#if actionError}
+			<p
+				class="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+				role="alert"
+			>
+				{actionError}
+			</p>
+		{/if}
 		<div class="flex flex-wrap items-center justify-between gap-3">
 			<div class="flex items-center gap-2">
 				{#if canGoBack}
@@ -146,9 +156,11 @@
 			>
 				{$t('onboarding.skipWizard')}
 			</Button>
-			<p class="max-w-sm text-xs text-muted-foreground">
-				{$t('onboarding.skipWizardHint')}
-			</p>
+			{#if currentStep !== 3}
+				<p class="max-w-sm text-xs text-muted-foreground">
+					{$t('onboarding.skipWizardHint')}
+				</p>
+			{/if}
 		{/if}
 		<Button variant="ghost" size="sm" type="button" disabled={busy} onclick={onSignOut}>
 			{$t('auth.signOut')}

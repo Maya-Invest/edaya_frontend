@@ -6,6 +6,7 @@ import { bootstrapSession, resetBootstrapSession } from '$lib/auth/bootstrap';
 import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
+import { academicYearLabelFromDates } from '$lib/onboarding/school-step-defaults';
 import { periodFitsInAcademicYear } from '$lib/onboarding/school-step-validation';
 import { toast } from '$lib/toast.svelte';
 import { ApiError } from '@maya-invest/edaya-api-client';
@@ -212,7 +213,7 @@ async function ensureAcademicStructure(
 		await client.commands.createAcademicYear({
 			id: yearId,
 			schoolId: linkedSchoolId,
-			name: school.academicYearLabel.trim(),
+			name: academicYearLabelFromDates(school.academicYearStart, school.academicYearEnd),
 			startDate: school.academicYearStart,
 			endDate: school.academicYearEnd,
 		});

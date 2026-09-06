@@ -7,7 +7,7 @@
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
-	import { t } from '$lib/i18n';
+	import { locale, t } from '$lib/i18n';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
@@ -64,7 +64,7 @@
 
 <DrawerEntityHeader
 	name={live.name}
-	summary="{fmtActivityDate(live.startDate)} → {fmtActivityDate(live.endDate)}"
+	summary="{fmtActivityDate(live.startDate, $locale)} → {fmtActivityDate(live.endDate, $locale)}"
 >
 	{#snippet chips()}
 		<span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase text-foreground/80">

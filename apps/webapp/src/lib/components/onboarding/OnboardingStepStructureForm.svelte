@@ -6,7 +6,8 @@
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
-	import { t } from '$lib/i18n';
+	import { lang, t } from '$lib/i18n';
+	import { catalogGradeShortLabel } from '$lib/i18n/catalog-label';
 	import { Minus, Plus } from '$lib/icons';
 	import { onboardingContext } from '$lib/onboarding/context.svelte';
 	import {
@@ -159,11 +160,17 @@
 					<div class="flex flex-col gap-1.5 px-3 py-2 sm:flex-row sm:items-center sm:gap-3">
 						<div class="min-w-0 flex-1">
 							<p class="truncate text-sm font-medium text-foreground">
-								{gradeLevelLabel(gradeLevelId, catalog)}
+								{gradeLevelLabel(gradeLevelId, catalog, $lang)}
 							</p>
 							{#if draft.classCount > 0}
 								<p class="truncate text-[11px] text-muted-foreground">
-									{previewClassNamesFromCatalog(entry.catalogLevel, draft.classCount, draft.classNamingMode).join(', ')}
+									{previewClassNamesFromCatalog({
+										shortLabel: catalogGradeShortLabel(
+											entry.catalogLevel.shortLabel,
+											$lang,
+											entry.catalogLevel.code,
+										),
+									}, draft.classCount, draft.classNamingMode).join(', ')}
 								</p>
 							{/if}
 						</div>
