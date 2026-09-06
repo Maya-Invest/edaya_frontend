@@ -21,6 +21,7 @@ import {
 import {
 	dismissOpenDialogs,
 	dismissPageError,
+	navigateSpaPage,
 	refreshAppShell,
 	REMOVE_ANNOUNCEMENT_TARGET_CONTROL,
 	submitDialog,
@@ -64,14 +65,14 @@ export async function gotoApp(journey: UiJourney, routePath: string): Promise<vo
 	const { page, base } = journey.ctx;
 	await dismissOpenDialogs(page);
 	const target = `${base}${routePath}`;
-	await page.goto(target, { waitUntil: 'domcontentloaded' });
+	await navigateSpaPage(page, target);
 	try {
 		await waitForAppShell(page);
 	}
 	catch {
 		await page.keyboard.press('Escape').catch(() => {});
 		await refreshAppShell(page, base);
-		await page.goto(target, { waitUntil: 'domcontentloaded' });
+		await navigateSpaPage(page, target);
 		await waitForAppShell(page);
 	}
 	await waitForPageQuery(page);
