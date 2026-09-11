@@ -35,15 +35,14 @@ Path: [`.github/actions/ci-bun-turbo`](../../.github/actions/ci-bun-turbo/action
 | Workflow | Job | Command |
 |----------|-----|---------|
 | [`_verify.yml`](../../.github/workflows/_verify.yml) | `verify` | `bun run verify` |
-| [`_integration.yml`](../../.github/workflows/_integration.yml) | `integration` | `test:integration:provisioned` (api-dev Docker + Wrangler + Playwright) |
+| [`_integration.yml`](../../.github/workflows/_integration.yml) | `integration` | `test:integration:provisioned` (empty Identity + school from source, Wrangler, Playwright) |
 | [`deploy_push.yml`](../../.github/workflows/deploy_push.yml) | `deploy-*` | `wrangler deploy` via [Cloudflare deploy](ci-setup.md#deploy-to-cloudflare-github-actions) |
 
-Integration uses inline setup because it starts api-dev containers, installs Playwright, builds the webapp, and serves it with Wrangler — not just the Turbo graph. The container publishes identity `:9900` and school `:9999`; the webapp build sets `PUBLIC_AUTH_URL=http://127.0.0.1:9900`, and Playwright provisions with `AUTH_URL` plus `API_URL`.
+Integration uses inline setup because it starts Identity and school from sibling checkouts, installs Playwright, builds the webapp, and serves it with Wrangler — not just the Turbo graph. Identity listens on `:9900`, school on `:9999` (files `:9200`). The webapp build sets `PUBLIC_AUTH_URL=http://127.0.0.1:9900`, and Playwright provisions a tenant with `AUTH_URL` plus `API_URL` (`provisionTenant()`). CI does **not** run `bun repo seed`.
 
 Caching in `_integration.yml`:
 - **Bun deps + Turbo** — `./.github/actions/ci-bun-turbo` (same as verify)
 - **Playwright** — `~/.cache/ms-playwright` keyed on `apps/webapp/package.json` + `bun.lock`
-- **api-dev Docker image** — `docker save`/`load` tar in Actions cache, keyed on GHCR digest (invalidates when `:staging` / `:production` moves)
 
 After `vite build`, CI runs `bun run preview:integration` (`wrangler dev --local`) instead of `vite preview`. Static adapter prerender creates files for list routes only; dynamic deep links (e.g. `/school/students/ci-s1`) need Wrangler’s `not_found_handling: single-page-application` — same as production deploy.
 
@@ -60,17 +59,35 @@ Webapp **unit tests** (`bun test tests/lib`) must not depend on a sibling `edaya
 
 Playwright integration (`apps/webapp` `test:integration:provisioned`) is a **separate** PR job after verify — not part of `bun run verify`. Client walkthrough is `demo:e2e`, not CI.
 
-## GHCR access for api-dev image
+## Sibling Identity and school (Playwright)
 
-Integration pulls `ghcr.io/maya-invest/edaya-api-dev:staging|production` from `edaya_backend`.
+Provisioned Playwright starts **empty** Identity and school from source. `GITHUB_TOKEN` cannot read those private repos.
 
-Consumer CI uses this repo's `GITHUB_TOKEN` (`packages: read`). Cross-repo pulls require **one-time** package access in GitHub (not a PAT):
+**One-time repo secret:** `IDENTITY_CHECKOUT_TOKEN` — a PAT with `contents:read` on both `Maya-Invest/edaya_identity` and `Maya-Invest/edaya_backend`. The same secret name is used in backend CI.
 
-1. Open [edaya-api-dev package settings](https://github.com/orgs/Maya-Invest/packages/container/edaya-api-dev/settings)
-2. **Manage Actions access** → **Add repository** → `edaya_web` → **Read**
-3. Repeat for `edaya_mobile`
+Checkout layout (same sibling pattern backend CI uses for the identity client):
 
-**Alternative:** set package visibility to **Public** (anonymous `docker pull`; fine for the dev API image).
+```text
+$GITHUB_WORKSPACE/              # this repo (edaya_web)
+.ci/edaya_identity
+.ci/edaya_backend
+$(dirname $GITHUB_WORKSPACE)/edaya_identity  → .ci/edaya_identity
+$(dirname $GITHUB_WORKSPACE)/edaya_backend   → .ci/edaya_backend
+```
+
+School’s `file:../edaya_identity/package/identity-client` override then resolves. The webapp **install still uses the published** `@maya-invest/edaya-api-client` (`ci-use-published-api-client.mjs`).
+
+Git ref is taken from the **web head branch** (PR branch, or `github.ref_name` on dispatch):
+
+| Web head | Identity + school ref |
+|----------|------------------------|
+| `staging` | `staging` |
+| `main` / `master` | `main` |
+| anything else | `dev` |
+
+The job fails if that branch is missing on either sibling. Identity needs `dev`, `staging`, and `main` on `Maya-Invest/edaya_identity` (not only a feature branch).
+
+Start script: [`.github/scripts/ci-start-local-apis.sh`](../../.github/scripts/ci-start-local-apis.sh) copies each checkout’s `.env.example`, sets a shared `IDENTITY_DIRECTORY_SECRET`, and adds Wrangler origins (`http://127.0.0.1:4173` and `http://localhost:4173`) to `TRUSTED_ORIGINS`. JWT issuer/audience stay `http://localhost:9900` / `http://localhost:9999`. Identity starts with `bun --filter @edaya/identity start`; school with `bun repo dev`.
 
 ## GitHub Packages access for API client
 
@@ -148,7 +165,7 @@ Local dev is unchanged: keep root `.npmrc` (scope only) and the root `overrides`
 
 ```text
 gate → verify (bun run verify)
-     → integration (test:integration:provisioned + api-dev image, after verify)
+     → integration (test:integration:provisioned + empty Identity/school, after verify)
 ```
 
 Configured in [`deploy_pr.yml`](../../.github/workflows/deploy_pr.yml).

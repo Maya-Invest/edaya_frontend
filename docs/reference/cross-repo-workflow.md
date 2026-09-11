@@ -7,6 +7,7 @@ Edaya is split across repositories:
 
 | Repo | Role |
 |------|------|
+| `edaya_identity` | Central auth (Better Auth, directory) |
 | `edaya_backend` | API, cron, domain packages, `@maya-invest/edaya-api-client`, client codegen |
 | `edaya_web` | SvelteKit webapp + webadmin |
 
@@ -14,15 +15,17 @@ OpenAPI export and client generation live **only** in `edaya_backend`. Web consu
 
 ## CI
 
-`edaya_web` CI installs `@maya-invest/edaya-api-client` from **GitHub Packages** (`staging` / `production` dist-tags). It does not check out `edaya_backend` — the default `GITHUB_TOKEN` cannot read that private repo.
+`edaya_web` **verify** and **deploy** install `@maya-invest/edaya-api-client` from **GitHub Packages** (`staging` / `production` dist-tags). They do not check out `edaya_backend`.
 
-One-time org setup: grant `edaya_web` **Read** on the `@maya-invest/edaya-api-client` package (same as [edaya-api-dev in ci-setup.md](./ci-setup.md#ghcr-access-for-api-dev-image)).
+**Playwright integration** does check out `edaya_identity` and `edaya_backend` (empty in-process APIs; no demo seed). The webapp still uses the published API client — not the sibling `file:` link. See [ci-setup.md](./ci-setup.md#sibling-identity-and-school-playwright) for refs, checkout layout, and `IDENTITY_CHECKOUT_TOKEN`.
+
+One-time org setup: grant `edaya_web` **Read** on the `@maya-invest/edaya-api-client` package.
 
 `edaya_backend` CI exports OpenAPI and drift-checks `package/api-client/src/` in-repo.
 
 ## Local install
 
-Clone both repos side by side, then symlink the backend into the web repo (CI uses the same layout):
+Clone the repos side by side, then symlink the backend into the web repo for the local `file:` API client:
 
 ```sh
 ln -s ../edaya_backend edaya_web/edaya_backend
