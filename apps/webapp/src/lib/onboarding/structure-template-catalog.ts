@@ -1,6 +1,7 @@
 import type { StructureTemplateCatalog, OnboardingListStructureTemplatesResponse } from '$lib/onboarding/structure-template-model';
 import { PUBLIC_API_URL } from '$env/static/public';
 import { parseApiResponse, resolveApiUrl } from '$lib/api/http';
+import { bearerFetch } from '$lib/auth/bearer-fetch';
 import { previewClassNamesFromCatalog } from '$lib/onboarding/class-naming';
 import { buildCatalogFromTemplates } from '$lib/onboarding/structure-template-model';
 import { resolveClientRoutePath } from '@maya-invest/edaya-api-client';
@@ -44,10 +45,9 @@ async function fetchStructureTemplates(
 		}
 	}
 
-	const response = await fetch(resolveApiUrl(PUBLIC_API_URL || '', path), {
+	const response = await bearerFetch(resolveApiUrl(PUBLIC_API_URL || '', path), {
 		method: 'GET',
 		headers,
-		credentials: 'include',
 	});
 
 	return parseApiResponse<OnboardingListStructureTemplatesResponse>(path, response);

@@ -1068,6 +1068,8 @@ export const fr: Dict = {
 	'classGroups.toastUpdated': 'Classe {name} mise à jour.',
 	'classGroups.toastDeleted': 'Classe {name} supprimée.',
 	'classGroups.deleteConfirm': 'Supprimer la classe {name} ? Les matières, chapitres et affectations liés seront aussi supprimés.',
+	'classGroups.deleteBlockedHistory': 'Une classe avec un historique d’inscriptions ne peut pas être supprimée. Les dossiers des élèves doivent être conservés.',
+	'classGroups.deleteBlockedCurriculum': 'Retirez le programme hérité depuis la gestion du niveau avant de supprimer cette classe.',
 	'classGroups.deleteBlockedStudents': 'Réaffectez ou retirez les élèves inscrits avant de supprimer cette classe.',
 	'classGroups.deleteFailed': 'Impossible de supprimer cette classe. Vérifiez qu\'aucun élève n\'y est inscrit.',
 	'classGroups.deleteUnsupported': 'La suppression de classe n\'est pas encore disponible via l\'API.',

@@ -7,6 +7,7 @@ import { browser } from '$app/environment';
 import { academicContext } from '$lib/academic/context.svelte';
 import { clearAuthGate } from '$lib/auth/auth-gate';
 import { clearWizardCompletedInSession } from '$lib/onboarding/wizard-completion-flag';
+import { accessTokens } from './bearer-fetch';
 import { authClient } from './client';
 
 class AuthSession {
@@ -186,6 +187,7 @@ class AuthSession {
 	}
 
 	clear() {
+		accessTokens.clear();
 		this.userId = null;
 		this.authUserId = null;
 		this.needsOnboarding = false;

@@ -1075,6 +1075,8 @@ export const en: Dict = {
 	'classGroups.toastUpdated': 'Class {name} updated.',
 	'classGroups.toastDeleted': 'Class {name} removed.',
 	'classGroups.deleteConfirm': 'Delete class {name}? Linked subjects, chapters and assignments will be removed too.',
+	'classGroups.deleteBlockedHistory': 'Classes with enrollment history cannot be deleted. Their student records must be preserved.',
+	'classGroups.deleteBlockedCurriculum': 'Remove inherited curriculum through grade-level management before deleting this class.',
 	'classGroups.deleteBlockedStudents': 'Move or unenroll students before deleting this class.',
 	'classGroups.deleteFailed': 'Unable to delete this class. Make sure no students are enrolled.',
 	'classGroups.deleteUnsupported': 'Class deletion is not available via the API yet.',

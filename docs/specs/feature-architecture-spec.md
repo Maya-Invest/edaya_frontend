@@ -392,6 +392,7 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 ### 7.16 Finance — Billing
 
 - **Entity:** `StudentFee` · **Complex drawer**
+- Preserve billing history: use the cancellation/adjustment commands; do not offer generic hard deletion.
 - **Drawer header:** Record payment · Waive
 
 ### 7.17 Finance — Payments

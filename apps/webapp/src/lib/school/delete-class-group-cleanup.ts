@@ -1,10 +1,11 @@
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import {
-	activeEnrollmentsForClass,
 	classGroupScope,
 	recordsForFieldIds,
 	teacherAssignmentsForClassSubjects,
 } from '$lib/api/entity-list-filters';
+import { t } from '$lib/i18n';
+import { get } from 'svelte/store';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -41,16 +42,19 @@ export async function cleanupClassGroupDependencies(
 	client: SchoolClient,
 	classGroupId: string,
 ): Promise<void> {
-	const activeEnrollments = await listOrEmpty(() =>
-		client.entities.enrollments.list(activeEnrollmentsForClass(classGroupId)),
+	const enrollmentHistory = await listOrEmpty(() =>
+		client.entities.enrollments.list({ ...classGroupScope(classGroupId), $limit: 1 }),
 	);
-	if (activeEnrollments.length > 0) {
-		throw new ClassGroupDeleteBlockedError('ACTIVE_ENROLLMENTS');
+	if (enrollmentHistory.length > 0) {
+		throw new ClassGroupDeleteBlockedError(get(t)('classGroups.deleteBlockedHistory'));
 	}
 
 	const classSubjects = await listOrEmpty(() =>
 		client.entities.classSubjects.list(classGroupScope(classGroupId)),
 	);
+	if (classSubjects.some(subject => subject.gradeLevelSubjectId)) {
+		throw new ClassGroupDeleteBlockedError(get(t)('classGroups.deleteBlockedCurriculum'));
+	}
 	const classSubjectIds = classSubjects.map(entry => entry.id);
 
 	const [
@@ -62,7 +66,6 @@ export async function cleanupClassGroupDependencies(
 		lessonSessions,
 		activitySessions,
 		assessments,
-		enrollments,
 		classSubjectMatters,
 		attendances,
 	] = await Promise.all([
@@ -78,7 +81,6 @@ export async function cleanupClassGroupDependencies(
 		listOrEmpty(() => client.entities.lessonSessions.list(classGroupScope(classGroupId))),
 		listOrEmpty(() => client.entities.activitySessions.list(classGroupScope(classGroupId))),
 		listOrEmpty(() => client.entities.assessments.list(classGroupScope(classGroupId))),
-		listOrEmpty(() => client.entities.enrollments.list(classGroupScope(classGroupId))),
 		classSubjectIds.length > 0
 			? listOrEmpty(() => client.entities.classSubjectMatters.list(
 					recordsForFieldIds('classSubjectId', classSubjectIds),
@@ -139,23 +141,9 @@ export async function cleanupClassGroupDependencies(
 	);
 
 	await deleteEntityIds(
-		id => client.entities.enrollments.delete({ id }),
-		client.entities.enrollments.batchDelete.bind(client.entities.enrollments),
-		enrollments.map(entry => entry.id),
-	);
-
-	const subjectMatterIds = [...new Set(classSubjectMatters.map(entry => entry.subjectMatterId))];
-
-	await deleteEntityIds(
 		id => client.entities.classSubjectMatters.delete({ id }),
 		client.entities.classSubjectMatters.batchDelete.bind(client.entities.classSubjectMatters),
 		classSubjectMatters.map(entry => entry.id),
-	);
-
-	await deleteEntityIds(
-		id => client.entities.subjectMatters.delete({ id }),
-		client.entities.subjectMatters.batchDelete.bind(client.entities.subjectMatters),
-		subjectMatterIds,
 	);
 
 	await deleteEntityIds(

@@ -201,29 +201,6 @@ export class BillingPageState {
 		});
 		return result !== null;
 	}
-
-	async deleteBilling(input: {
-		studentFeeId: string;
-		successMessage?: string;
-		onSuccess?: () => void;
-	}): Promise<boolean> {
-		const client = getBrowserSchoolClient();
-		const previous = this.selectedBilling(input.studentFeeId);
-
-		const result = await runFinanceRouteMutation({
-			request: () => client.entities.studentFees.delete({ id: input.studentFeeId }),
-			successMessage: input.successMessage,
-			versionKeys: ['billing', 'payments'],
-			apply: () => this.removeBilling(input.studentFeeId),
-			rollback: () => {
-				if (previous) {
-					this.appendBilling(previous);
-				}
-			},
-			onSuccess: input.onSuccess,
-		});
-		return result !== null;
-	}
 }
 
 export function setBillingPageState(state: BillingPageState) {

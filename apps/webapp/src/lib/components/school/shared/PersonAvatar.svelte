@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { loadPrivateImage } from '$lib/api/private-image';
 	import { cn } from '$lib/utils';
 
 	const {
@@ -14,6 +15,28 @@
 		size?: 'xs' | 'sm' | 'md' | 'list' | 'lg';
 		class?: string;
 	} = $props();
+
+	let imageSource = $state<string | null>(null);
+	$effect(() => {
+		const source = photoUrl;
+		imageSource = null;
+		if (!source)
+			return;
+		const controller = new AbortController();
+		let dispose = () => {};
+		void loadPrivateImage(source, controller.signal).then((image) => {
+			if (controller.signal.aborted) {
+				image.dispose();
+				return;
+			}
+			dispose = image.dispose;
+			imageSource = image.url;
+		}).catch(() => {});
+		return () => {
+			controller.abort();
+			dispose();
+		};
+	});
 
 	const sizeClass = $derived(
 		{
@@ -34,9 +57,9 @@
 	)}
 	aria-label={photoUrl ? undefined : name}
 >
-	{#if photoUrl}
+	{#if imageSource}
 		<img
-			src={photoUrl}
+			src={imageSource}
 			alt={name}
 			loading="lazy"
 			decoding="async"

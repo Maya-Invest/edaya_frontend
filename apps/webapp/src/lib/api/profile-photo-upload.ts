@@ -1,5 +1,6 @@
 import { PUBLIC_API_URL } from '$env/static/public';
 import { academicContext } from '$lib/academic/context.svelte';
+import { bearerFetch } from '$lib/auth/bearer-fetch';
 import { parseApiResponse, resolveApiUrl } from './http';
 import { getBrowserSchoolClient } from './school-client';
 
@@ -48,12 +49,11 @@ export async function uploadProfilePhoto(input: {
 }): Promise<{ attachmentId: string; photoUrl: string }> {
 	const mimeType = input.file.type || 'image/jpeg';
 
-	const intentResponse = await fetch(
+	const intentResponse = await bearerFetch(
 		resolveApiUrl(PUBLIC_API_URL || '', '/core/files/upload-intents'),
 		{
 			method: 'POST',
 			headers: apiHeaders(true),
-			credentials: 'include',
 			body: JSON.stringify({
 				ownerKind: input.ownerKind,
 				ownerId: input.ownerId,

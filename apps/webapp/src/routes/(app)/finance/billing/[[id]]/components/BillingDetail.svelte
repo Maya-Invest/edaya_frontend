@@ -4,15 +4,13 @@
 	import { cancelStudentFeeMutation, adjustStudentFeeMutation } from '$lib/api/mutations/billing.mutations';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { locale, t } from '$lib/i18n';
-	import { Check, Clock, Trash2 } from '$lib/icons';
+	import { Check, Clock } from '$lib/icons';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getBillingPageState } from '../../billing-page.svelte';
@@ -29,7 +27,7 @@
 	const canRecordPayment = $derived(remaining > 0 && live.status !== 'paid');
 
 	const modals = createUrlSyncedModals({
-		allowed: ['payment', 'delete'],
+		allowed: ['payment'],
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
@@ -37,9 +35,6 @@
 		modals.hydrate();
 	});
 	const paymentOpen = bindUrlModal(modals, 'payment');
-	const deleteOpen = bindUrlModal(modals, 'delete');
-
-	let deleteBusy = $state(false);
 
 	async function cancelFee() {
 		// eslint-disable-next-line no-alert -- interim billing action until dedicated modals exist
@@ -90,25 +85,6 @@
 		overdue: 'bg-destructive/10 text-destructive',
 	};
 
-	async function confirmDelete() {
-		if (!student) {
-			return;
-		}
-		deleteBusy = true;
-		try {
-			await billingPage.deleteBilling({
-				studentFeeId: live.id,
-				successMessage: get(t)('finance.toastBillingDeleted'),
-				onSuccess: () => {
-					deleteOpen.open = false;
-					appGoto(appPath('/(app)/finance/billing/[[id]]'));
-				},
-			});
-		}
-		finally {
-			deleteBusy = false;
-		}
-	}
 </script>
 
 {#if student && fee}
@@ -166,15 +142,6 @@
 							onclick={() => void cancelFee()}
 						>
 							{$t('billing.cancelFee')}
-						</RowActionMenuItem>
-						<RowActionMenuItem
-							destructive
-							{disabled}
-							{title}
-							onclick={() => (deleteOpen.open = true)}
-						>
-							<Trash2 class="h-4 w-4" />
-							{$t('common.delete')}
 						</RowActionMenuItem>
 					{/snippet}
 				</PermissionGate>
@@ -263,13 +230,4 @@
 		feeName={fee.name}
 	/>
 
-	<ConfirmModal
-		bind:open={deleteOpen.open}
-		title={$t('common.deleteConfirmTitle')}
-		description={$t('finance.deleteBillingConfirm', { name: student.name })}
-		confirmLabel={$t('common.delete')}
-		cancelLabel={$t('common.cancel')}
-		busy={deleteBusy}
-		onConfirm={confirmDelete}
-	/>
 {/if}
