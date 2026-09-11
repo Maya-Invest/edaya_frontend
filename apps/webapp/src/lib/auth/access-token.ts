@@ -18,7 +18,8 @@ export function createAccessTokenManager(issue: () => Promise<{ accessToken: str
 				if (started !== generation) {
 					throw new Error('Authentication changed during renewal');
 				}
-				if (!/^edaya_at_[\w-]{43}$/.test(issued.accessToken) || !(Date.parse(issued.expiresAt) > Date.now())) {
+				const segments = issued.accessToken.split('.');
+				if (segments.length !== 3 || segments.some(segment => !segment) || !(Date.parse(issued.expiresAt) > Date.now())) {
 					throw new Error('Invalid API token response');
 				}
 				token = issued;

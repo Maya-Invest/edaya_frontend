@@ -13,12 +13,13 @@
 		"prod": {
 			"name": "edaya-webapp-prod",
 			"vars": {
-				"PUBLIC_API_URL": "https://api.edayaplus.com",
+				"PUBLIC_AUTH_URL": "https://identity.edayaplus.com",
+				"PUBLIC_API_URL": "https://api.school.edayaplus.com",
 				"PUBLIC_APP_ENV": "production"
 			},
 			"routes": [
 				{
-					"pattern": "app.edayaplus.com",
+					"pattern": "app.school.edayaplus.com",
 					"custom_domain": true
 				}
 			]
@@ -26,13 +27,14 @@
 		"staging": {
 			"name": "edaya-webapp-staging",
 			"vars": {
-				"PUBLIC_API_URL": "https://staging.api.edayaplus.com",
+				"PUBLIC_AUTH_URL": "https://staging.identity.edayaplus.com",
+				"PUBLIC_API_URL": "https://staging.api.school.edayaplus.com",
 				"PUBLIC_APP_ENV": "staging",
 				"PUBLIC_ALLOW_SCHOOL_REGISTRATION": "true"
 			},
 			"routes": [
 				{
-					"pattern": "staging.app.edayaplus.com",
+					"pattern": "staging.app.school.edayaplus.com",
 					"custom_domain": true
 				}
 			]

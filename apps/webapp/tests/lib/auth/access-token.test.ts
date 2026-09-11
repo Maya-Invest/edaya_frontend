@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { createAccessTokenManager, createBearerFetch } from '../../../src/lib/auth/access-token';
 
-const issue = (letter: string) => ({ accessToken: `edaya_at_${letter.repeat(43)}`, expiresAt: new Date(Date.now() + 300_000).toISOString() });
+const issue = (letter: string) => ({ accessToken: `header.${letter}.signature`, expiresAt: new Date(Date.now() + 300_000).toISOString() });
 
 describe('Bearer transport', () => {
 	it('shares concurrent renewal and keeps access authority in memory', async () => {

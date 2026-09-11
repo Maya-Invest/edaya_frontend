@@ -127,7 +127,7 @@ Set **Root directory** to the repository root (not `apps/webapp`) so Bun workspa
 | Build | `bun run cloudflare:build:webapp` |
 | Deploy | `bun --filter @edaya/webapp deploy:staging` |
 
-Add build variables for Vite public env (same as `deploy:staging` in `apps/webapp/package.json`), e.g. `PUBLIC_API_URL=https://staging.api.edayaplus.com`, `PUBLIC_APP_ENV=staging`.
+Add build variables for Vite public env (same as `deploy:staging` in `apps/webapp/package.json`), e.g. `PUBLIC_AUTH_URL=https://staging.identity.edayaplus.com`, `PUBLIC_API_URL=https://staging.api.school.edayaplus.com`, `PUBLIC_APP_ENV=staging`.
 
 **Webadmin:** use `bun run cloudflare:build:webadmin` and `bun --filter @edaya/webadmin deploy:staging`.
 

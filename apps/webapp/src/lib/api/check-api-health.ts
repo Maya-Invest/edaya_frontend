@@ -1,17 +1,27 @@
-import { PUBLIC_API_URL } from '$env/static/public';
+import { PUBLIC_API_URL, PUBLIC_AUTH_URL } from '$env/static/public';
 import { resolveApiUrl } from './http';
+
+const authBaseUrl = PUBLIC_AUTH_URL.trim();
+if (!authBaseUrl) {
+	throw new Error('PUBLIC_AUTH_URL is required');
+}
 
 export async function checkBrowserApiHealth(): Promise<
 	{ connected: true; message: string } | { connected: false }
 > {
 	try {
-		const base = PUBLIC_API_URL || '';
-		// In local dev, Vite proxies /auth to the API — not GET / (that serves the SPA).
-		const response = await fetch(resolveApiUrl(base, '/auth/get-session'), { credentials: 'omit' });
-		if (!response.ok) {
+		const identity = await fetch(resolveApiUrl(authBaseUrl, '/auth/get-session'), { credentials: 'omit' });
+		if (!identity.ok) {
 			return { connected: false };
 		}
-		return { connected: true, message: 'Edaya Core API' };
+		const schoolProbe = PUBLIC_API_URL.trim()
+			? resolveApiUrl(PUBLIC_API_URL.trim(), '/reference')
+			: '/reference';
+		const school = await fetch(schoolProbe, { credentials: 'omit' });
+		if (!school.ok) {
+			return { connected: false };
+		}
+		return { connected: true, message: 'Edaya Identity' };
 	}
 	catch {
 		return { connected: false };

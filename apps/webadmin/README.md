@@ -9,7 +9,7 @@ cp .env.example .env   # from apps/webadmin
 bun dev                # http://localhost:5174
 ```
 
-Requires the Edaya Core API at `API_URL` when calling platform endpoints (default `http://localhost:9999` via Vite proxy).
+Requires identity at `AUTH_URL` (default `http://localhost:9900`) and the school API at `API_URL` (default `http://localhost:9999`) via the Vite proxy.
 
 ## Quality gates
 

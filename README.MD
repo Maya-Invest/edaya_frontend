@@ -100,10 +100,10 @@ Apps are static sites on Cloudflare Workers (assets):
 | App | Production | Staging |
 |-----|------------|---------|
 | Website | `edayaplus.com`, `www.edayaplus.com` | `staging.edayaplus.com` |
-| Webapp | `app.edayaplus.com` | `staging.app.edayaplus.com` |
+| Webapp | `app.school.edayaplus.com` | `staging.app.school.edayaplus.com` |
 | Webadmin | `admin.edayaplus.com` | `staging.admin.edayaplus.com` |
 
-Set `PUBLIC_API_URL` at build time when the API is not same-origin.
+Set the required `PUBLIC_AUTH_URL` and `PUBLIC_API_URL` at build time.
 
 ## API client
 

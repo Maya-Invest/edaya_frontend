@@ -1,10 +1,15 @@
-import { PUBLIC_API_URL } from '$env/static/public';
+import { PUBLIC_API_URL, PUBLIC_AUTH_URL } from '$env/static/public';
 import { resolveApiUrl } from '$lib/api/http';
 import { ApiError } from '@maya-invest/edaya-api-client';
 import { createAccessTokenManager, createBearerFetch } from './access-token';
 
+const authBaseUrl = PUBLIC_AUTH_URL.trim();
+if (!authBaseUrl) {
+	throw new Error('PUBLIC_AUTH_URL is required');
+}
+
 export const accessTokens = createAccessTokenManager(async () => {
-	const response = await fetch(resolveApiUrl(PUBLIC_API_URL || '', '/auth/edaya/access-token'), {
+	const response = await fetch(resolveApiUrl(authBaseUrl, '/auth/edaya/access-token'), {
 		method: 'POST',
 		credentials: 'include',
 		headers: { 'Content-Type': 'application/json' },

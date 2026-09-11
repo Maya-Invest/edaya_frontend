@@ -1,10 +1,15 @@
-import { PUBLIC_API_URL } from '$env/static/public';
+import { PUBLIC_AUTH_URL } from '$env/static/public';
 import { createAuthClient } from 'better-auth/client';
 import { emailOTPClient } from 'better-auth/client/plugins';
 import { accessTokens } from './bearer-fetch';
 
+const authBaseUrl = PUBLIC_AUTH_URL.trim();
+if (!authBaseUrl) {
+	throw new Error('PUBLIC_AUTH_URL is required');
+}
+
 export const authClient = createAuthClient({
-	baseURL: PUBLIC_API_URL || undefined,
+	baseURL: authBaseUrl,
 	basePath: '/auth',
 	fetchOptions: {
 		credentials: 'include',
