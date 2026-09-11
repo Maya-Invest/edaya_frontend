@@ -38,7 +38,7 @@ Path: [`.github/actions/ci-bun-turbo`](../../.github/actions/ci-bun-turbo/action
 | [`_integration.yml`](../../.github/workflows/_integration.yml) | `integration` | `test:integration:provisioned` (api-dev Docker + Wrangler + Playwright) |
 | [`deploy_push.yml`](../../.github/workflows/deploy_push.yml) | `deploy-*` | `wrangler deploy` via [Cloudflare deploy](ci-setup.md#deploy-to-cloudflare-github-actions) |
 
-Integration uses inline setup because it starts api-dev containers, installs Playwright, builds the webapp, and serves it with Wrangler — not just the Turbo graph.
+Integration uses inline setup because it starts api-dev containers, installs Playwright, builds the webapp, and serves it with Wrangler — not just the Turbo graph. The container publishes identity `:9900` and school `:9999`; the webapp build sets `PUBLIC_AUTH_URL=http://127.0.0.1:9900`, and Playwright provisions with `AUTH_URL` plus `API_URL`.
 
 Caching in `_integration.yml`:
 - **Bun deps + Turbo** — `./.github/actions/ci-bun-turbo` (same as verify)

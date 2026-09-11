@@ -9,7 +9,8 @@
  * Policy: on NOT OK — log blockers, do not edit src/. See integration-report.ts.
  *
  * Prerequisites:
- *   - API at API_URL (default http://localhost:9999)
+ *   - Identity at AUTH_URL (default http://localhost:9900)
+ *   - School API at API_URL (default http://localhost:9999)
  *   - Webapp at WEBAPP_URL (default http://localhost:5173) — bun dev
  *   - Playwright chromium (auto-installed into apps/webapp/.cache/ms-playwright)
  *
@@ -148,6 +149,7 @@ async function main(): Promise<void> {
 			schoolName: tenant.schoolName,
 			subjectId: tenant.subjectId,
 			apiUrl: tenant.apiUrl,
+			authUrl: tenant.authUrl,
 			wizardCompleted: tenant.wizardCompleted,
 		},
 		webSetup: { steps: setupSteps },

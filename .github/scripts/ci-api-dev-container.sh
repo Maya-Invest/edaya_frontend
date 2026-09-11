@@ -33,10 +33,12 @@ case "$ACTION" in
       --name "$CONTAINER_NAME" \
       --detach \
       --rm \
+      --publish 127.0.0.1:9900:9900 \
       --publish 127.0.0.1:9999:9999 \
       --publish 127.0.0.1:9200:9200 \
       --memory 4g \
       "$IMAGE"
+    bash .github/scripts/ci-wait-for-url.sh http://127.0.0.1:9900/ 120
     bash .github/scripts/ci-wait-for-url.sh http://127.0.0.1:9999/reference 120
     ;;
   stop)

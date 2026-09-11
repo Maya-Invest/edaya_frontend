@@ -1,9 +1,9 @@
 /**
  * Isolated Wrangler repro for announcement detail navigation.
  *
- * Requires API + webapp already running (CI-like: Wrangler :4173).
+ * Requires identity + school API + webapp already running (CI-like: Wrangler :4173).
  *
- *   $env:WEBAPP_URL='http://127.0.0.1:4173'; $env:API_URL='http://127.0.0.1:9999'
+ *   $env:WEBAPP_URL='http://127.0.0.1:4173'; $env:AUTH_URL='http://127.0.0.1:9900'; $env:API_URL='http://127.0.0.1:9999'
  *   bunx tsx scripts/repro-announcement-detail-nav.ts
  */
 import { provisionTenant } from '../tests/integration/support/api-provision';
@@ -26,7 +26,7 @@ async function main(): Promise<void> {
 	process.env.PLAYWRIGHT_BROWSERS_PATH = browsersPath;
 	const { chromium } = await import('playwright');
 
-	console.log(`Provisioning tenant against ${process.env.API_URL ?? 'http://localhost:9999'}`);
+	console.log(`Provisioning tenant against identity ${process.env.AUTH_URL ?? 'http://localhost:9900'} and school ${process.env.API_URL ?? 'http://localhost:9999'}`);
 	const tenant = await provisionTenant({ appOrigin: WEBAPP_URL });
 	console.log(`Login ${tenant.email}`);
 

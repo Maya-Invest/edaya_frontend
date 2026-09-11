@@ -3,6 +3,7 @@ import type { DemoContext, SignInOptions } from './types';
 import path from 'node:path';
 import { TEACHER_PORTAL_GATE_BANNER_TEST_ID } from '$lib/auth/teacher-portal-gate';
 import { DEMO_PASSWORD, STAFF_EMAIL } from './constants';
+import { resolveAuthUrl } from '../../support/integration-hosts';
 import { integrationUsesDemoLogin, webappReadinessPath } from './paths';
 
 export async function waitForEnabled(locator: ReturnType<Page['locator']>, timeout = 30_000): Promise<void> {
@@ -91,8 +92,12 @@ export async function attemptApiSignIn(
 	password: string,
 ): Promise<boolean> {
 	try {
-		const response = await page.request.post(`${base}/auth/sign-in/email`, {
-			headers: { 'content-type': 'application/json' },
+		const authUrl = resolveAuthUrl();
+		const response = await page.request.post(`${authUrl}/auth/sign-in/email`, {
+			headers: {
+				'content-type': 'application/json',
+				origin: base,
+			},
 			data: { email, password },
 		});
 		if (!response.ok()) {
@@ -140,7 +145,7 @@ async function signInWithDemoPicker(
 
 	if (await apiBanner.isVisible().catch(() => false)) {
 		throw new Error(
-			'Demo login page reports API unavailable after waiting for accounts. Start the API (`cd ../edaya_backend && bun repo dev`) and confirm /auth/get-session responds.',
+			'Demo login page reports API unavailable after waiting for accounts. Start identity (`cd ../edaya_identity && bun repo dev`) and the school API (`cd ../edaya_backend && bun repo dev`) and confirm /auth/get-session responds on AUTH_URL.',
 		);
 	}
 

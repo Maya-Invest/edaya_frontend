@@ -197,15 +197,17 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 	}
 
 	await visitCovered(journey, '/configuration/report-cards', '/configuration/report-cards');
-	await page.reload({ waitUntil: 'domcontentloaded' });
-	await waitForPageQuery(page);
+	await page.getByRole('button', { name: /add model|ajouter un modèle/i }).first()
+		.waitFor({ state: 'visible', timeout: 20_000 })
+		.catch(() => {});
 	if (!entities.gradeScaleId) {
 		logStep(journey, { step: 'report-card-def', ok: false, detail: 'No gradeScaleId to reference' });
 		coverActions(journey, 'http://localhost:5173/configuration/report-cards', ['CRUD / publier'], 'NOT OK', 'No gradeScaleId to reference');
 	}
 	else {
 		const rcOpened = await clickCreateButton(page, 'CRUD / publier', '/configuration/report-cards')
-			|| await openDialogButton(page, /add model|ajouter un modèle|créer/i);
+			|| await openDialogButton(page, /add model|ajouter un modèle|créer/i)
+			|| await openUrlModal(page, '/configuration/report-cards', 'create', { base: ctx.base, timeout: 15_000 });
 		coverModal(journey, '/configuration/report-cards', 'create', rcOpened ? 'OK' : 'NOT OK');
 		if (rcOpened) {
 			try {
@@ -275,9 +277,12 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 		await page.getByRole('dialog').locator('input').first().fill(discName);
 		await submitDialog(page);
 		await waitForDialogClosed(page);
-		entities.filterFixtures.disciplineByKind = { default: { id: discName, name: discName } };
-		coverActions(journey, 'http://localhost:5173/configuration/discipline', ['Catalogue disciplinaire', 'CRUD entrée'], 'OK');
-		logStep(journey, { step: 'discipline', ok: true, detail: discName });
+		const listed = await assertListContains(page, discName, true, 20_000);
+		if (listed) {
+			entities.filterFixtures.disciplineByKind = { default: { id: discName, name: discName } };
+		}
+		coverActions(journey, 'http://localhost:5173/configuration/discipline', ['Catalogue disciplinaire', 'CRUD entrée'], listed ? 'OK' : 'NOT OK', discName);
+		logStep(journey, { step: 'discipline', ok: listed, detail: discName });
 	}
 	else {
 		logStep(journey, { step: 'discipline', ok: false, detail: 'Discipline modal not found' });

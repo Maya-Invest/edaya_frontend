@@ -102,7 +102,7 @@ jobs:
       - name: Build webapp for integration
         run: |
           bun repo doctor
-          PUBLIC_API_URL=http://127.0.0.1:9999 PUBLIC_APP_ENV=staging bun --filter @edaya/webapp build
+          PUBLIC_AUTH_URL=http://127.0.0.1:9900 PUBLIC_API_URL=http://127.0.0.1:9999 PUBLIC_APP_ENV=staging bun --filter @edaya/webapp build
 
       - name: Start webapp (Wrangler SPA)
         working-directory: apps/webapp
@@ -116,6 +116,7 @@ jobs:
       - name: Provisioned integration tests
         working-directory: apps/webapp
         env:
+          AUTH_URL: http://127.0.0.1:9900
           API_URL: http://127.0.0.1:9999
           WEBAPP_URL: http://127.0.0.1:4173
           WEBAPP_READINESS_PATH: /login

@@ -570,8 +570,11 @@ export async function openFilterPanel(page: Page, titlePattern: RegExp): Promise
 }
 
 export async function assertListContains(page: Page, text: string, visible = true, timeout = 12_000): Promise<boolean> {
-	const row = page.locator('main').getByText(text, { exact: false }).first()
-		.or(page.getByText(text, { exact: false }).first());
+	const inMain = page.locator('main').getByText(text, { exact: false });
+	const anywhere = page.getByText(text, { exact: false });
+	const row = visible
+		? inMain.filter({ visible: true }).first().or(anywhere.filter({ visible: true }).first())
+		: inMain.first().or(anywhere.first());
 	const isVisible = await row.isVisible({ timeout }).catch(() => false);
 	return visible ? isVisible : !isVisible;
 }
@@ -1383,12 +1386,17 @@ export const ACTION_MENU_BUTTON_NAME = /actions de ligne|row actions|plus d['’
 
 export const DELETE_CONTROL_NAME = /supprimer|delete|retirer|remove/i;
 
+/** Billing fees are cancelled, not deleted — must not match FormModal "Cancel" / "Annuler". */
+export const BILLING_CANCEL_CONTROL_NAME = /annuler la facture|cancel fee/i;
+
 /** Draft announcement recipient row — not the overflow "Delete announcement" item. */
 export const REMOVE_ANNOUNCEMENT_TARGET_CONTROL = /remove recipient|retirer le destinataire/i;
 
 function deleteControlLocator(root: Page | Locator): Locator {
 	return root.getByRole('button', { name: DELETE_CONTROL_NAME })
-		.or(root.getByRole('menuitem', { name: DELETE_CONTROL_NAME }));
+		.or(root.getByRole('menuitem', { name: DELETE_CONTROL_NAME }))
+		.or(root.getByRole('button', { name: BILLING_CANCEL_CONTROL_NAME }))
+		.or(root.getByRole('menuitem', { name: BILLING_CANCEL_CONTROL_NAME }));
 }
 
 async function isDirectDeleteVisible(root: Page | Locator): Promise<boolean> {

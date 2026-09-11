@@ -6,8 +6,9 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Page } from 'playwright';
+import { DEFAULT_API_URL } from '../support/integration-hosts';
+import { schoolBearerFromPage } from '../support/playwright-identity';
 
-const DEFAULT_API_URL = 'http://localhost:9999';
 const PROVISIONED_FIXTURE_PATH = path.join(
 	path.dirname(fileURLToPath(import.meta.url)),
 	'../../../.integration-run/fixture.json',
@@ -53,10 +54,9 @@ async function apiFetch(
 		headers['X-School-Id'] = schoolId;
 	}
 
-	const cookies = await page.context().cookies();
-	const cookieHeader = cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
-	if (cookieHeader.length > 0) {
-		headers.cookie = cookieHeader;
+	const accessToken = await schoolBearerFromPage(page, appOrigin);
+	if (accessToken) {
+		headers.authorization = `Bearer ${accessToken}`;
 	}
 
 	// Isolated request context: page.request can deadlock while a Wrangler SPA

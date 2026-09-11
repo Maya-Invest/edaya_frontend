@@ -4,6 +4,7 @@
 import type { DemoContext } from '../demo-dry-run/support/types';
 import { ensureDailyAttendanceMode } from '../demo-dry-run/support/setup';
 import {
+	assertListContains,
 	clickCreateButton,
 	dismissPageError,
 	fillClassCreateDialog,
@@ -571,6 +572,9 @@ export async function setupFilterDiscipline(
 		await submitDialog(page);
 		if (!(await waitForDialogClosed(page))) {
 			return { step: 'filter-discipline', ok: false, detail: 'Discipline modal still open' };
+		}
+		if (!(await assertListContains(page, name, true, 20_000))) {
+			return { step: 'filter-discipline', ok: false, detail: `Created ${name} but it is not in the list` };
 		}
 
 		entities.filterFixtures.disciplineByKind ??= {};

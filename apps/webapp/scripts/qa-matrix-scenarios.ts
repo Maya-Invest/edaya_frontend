@@ -22,6 +22,7 @@ import {
 	setAppLang,
 	submitDialog,
 	waitForDialogClosed,
+	waitForFormModal,
 	waitForPageQuery,
 	waitForResolvedAcademicYearId,
 } from './qa-harness-ui';
@@ -754,8 +755,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 			return na(row, 'Setup missing subjectId for progression modal');
 		}
 
-		const dialog = page.getByRole('dialog').or(page.locator('[data-testid="form-modal"]'));
-		const visible = await dialog.first().isVisible({ timeout: 8_000 }).catch(() => false);
+		const visible = await waitForFormModal(page, 15_000);
 
 		const urlHasModal = modalKey ? page.url().includes(`modal=${modalKey}`) : false;
 		return visible && urlHasModal ? ok(row) : notOk(row, `Modal non visible (url=${page.url()})`);

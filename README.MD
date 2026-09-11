@@ -58,7 +58,7 @@ bun run dev:webadmin
 bun run dev:website
 ```
 
-Dev servers proxy `/core`, `/auth`, `/public`, and API docs to `API_URL` (default `http://localhost:9999`).
+Dev servers proxy `/auth` to `AUTH_URL` (default `http://localhost:9900`) and `/core`, `/public`, and API docs to `API_URL` (default `http://localhost:9999`).
 
 ## Commands
 

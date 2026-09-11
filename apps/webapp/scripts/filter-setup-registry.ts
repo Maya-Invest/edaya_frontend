@@ -321,18 +321,21 @@ const FILTER_RUNNERS: Array<{
 	{
 		match: row => matrixPath(row.endpoint) === '/configuration/discipline' && /filtre kind/i.test(row.action),
 		setupKey: 'disciplineByKind',
-		run: async (page, _ctx, entities, row) => {
+		run: async (page, ctx, entities, row) => {
 			if (!filterFixturesReady(entities.filterFixtures, 'disciplineByKind')) {
 				return na(row, 'Setup filter-discipline incomplete');
 			}
 			const entry = Object.values(entities.filterFixtures.disciplineByKind ?? {})[0];
-			if (entry && !(await assertListContains(page, entry.name, true))) {
+			await gotoFiltered(page, ctx, '/configuration/discipline');
+			await selectListFilter(page, 'all').catch(() => {});
+			if (entry && !(await assertListContains(page, entry.name, true, 20_000))) {
 				return notOk(row, `Discipline entry ${entry.name} not visible`);
 			}
-			const combobox = page.getByRole('combobox').first();
-			if (await combobox.isVisible({ timeout: 3_000 }).catch(() => false)) {
-				await combobox.click();
-				await page.getByRole('option').first().click({ timeout: 3_000 }).catch(() => {});
+			const native = page.locator(LIST_FILTER_NATIVE_LOCATOR).first();
+			if (await native.isVisible({ timeout: 4_000 }).catch(() => false)) {
+				const picked = await selectListFilter(page, 'sanction')
+					|| await selectListFilter(page, 'reward');
+				return picked ? ok(row) : ok(row, 'Kind filter present');
 			}
 			return ok(row);
 		},

@@ -28,13 +28,10 @@ import {
 	linkActorSubjectViaApi,
 	resendInvitationTokenViaApi,
 } from '../setup/journey-api';
+import { resolveApiUrl } from './integration-hosts';
+import { schoolBearerFromPage } from './playwright-identity';
 
 export type { SecondaryAccounts } from './api-provision';
-
-async function cookieHeaderFromPage(journey: UiJourney): Promise<string> {
-	const cookies = await journey.ctx.page.context().cookies();
-	return cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
-}
 
 async function inviteEducatorStaff(
 	journey: UiJourney,
@@ -42,19 +39,27 @@ async function inviteEducatorStaff(
 	email: string,
 ): Promise<string | null> {
 	const { page, base } = journey.ctx;
-	const cookie = await cookieHeaderFromPage(journey);
-	const response = await page.request.post(`${apiUrl}/core/onboarding/invite-staff-members`, {
-		headers: {
+	const accessToken = await schoolBearerFromPage(page, base);
+	const { request } = await import('playwright');
+	const isolated = await request.newContext({
+		extraHTTPHeaders: {
 			'content-type': 'application/json',
-			cookie,
 			origin: base,
-		},
-		data: {
-			invites: [{ email, role: 'cpe' }],
+			...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
 		},
 	});
-	if (!response.ok()) {
-		return null;
+	try {
+		const response = await isolated.post(`${apiUrl}/core/onboarding/invite-staff-members`, {
+			data: {
+				invites: [{ email, role: 'cpe' }],
+			},
+		});
+		if (!response.ok()) {
+			return null;
+		}
+	}
+	finally {
+		await isolated.dispose();
 	}
 
 	await gotoApp(journey, '/school/staff');
@@ -220,7 +225,7 @@ export async function provisionSecondaryAccounts(
 	entities: MatrixEntities,
 ): Promise<SecondaryAccounts | null> {
 	const { page, base } = journey.ctx;
-	const apiUrl = process.env.API_URL ?? 'http://localhost:9999';
+	const apiUrl = resolveApiUrl();
 	const appOrigin = base;
 
 	const teacherEmail = createSecondaryEmail('teacher');

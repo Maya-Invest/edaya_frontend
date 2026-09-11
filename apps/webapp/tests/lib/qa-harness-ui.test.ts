@@ -3,6 +3,8 @@ import {
 	ACTION_MENU_BUTTON_NAME,
 	ACADEMIC_YEAR_END_DATE_CONTROL,
 	ACADEMIC_YEAR_START_DATE_CONTROL,
+	BILLING_CANCEL_CONTROL_NAME,
+	DELETE_CONTROL_NAME,
 	REMOVE_ANNOUNCEMENT_TARGET_CONTROL,
 } from '../../scripts/qa-harness-ui';
 import { defaultAcademicYearPreset } from '../../src/lib/onboarding/school-step-defaults';
@@ -39,6 +41,15 @@ describe('isDeleteControlVisible locators', () => {
 		expect(REMOVE_ANNOUNCEMENT_TARGET_CONTROL.test(fr['announcements.removeTarget'])).toBe(true);
 		expect(REMOVE_ANNOUNCEMENT_TARGET_CONTROL.test(en['common.delete'])).toBe(false);
 		expect(REMOVE_ANNOUNCEMENT_TARGET_CONTROL.test(fr['common.delete'])).toBe(false);
+	});
+
+	test('billing cancel is the delete affordance and is not a generic Cancel', () => {
+		expect(BILLING_CANCEL_CONTROL_NAME.test(en['billing.cancelFee'])).toBe(true);
+		expect(BILLING_CANCEL_CONTROL_NAME.test(fr['billing.cancelFee'])).toBe(true);
+		expect(BILLING_CANCEL_CONTROL_NAME.test(en['common.cancel'])).toBe(false);
+		expect(BILLING_CANCEL_CONTROL_NAME.test(fr['common.cancel'])).toBe(false);
+		expect(DELETE_CONTROL_NAME.test(en['billing.cancelFee'])).toBe(false);
+		expect(DELETE_CONTROL_NAME.test(fr['billing.cancelFee'])).toBe(false);
 	});
 
 	test('academic year create locators match date fields, not a name', () => {
