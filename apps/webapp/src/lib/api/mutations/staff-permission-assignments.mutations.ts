@@ -24,9 +24,10 @@ function toStaffPermissionConfigCommand(
 		schoolId: assignment.schoolId,
 		academicYearId: assignment.academicYearId,
 		permission: assignment.permission,
-		scopeIds: assignment.scopeIds ?? '',
+		scopes: assignment.scopes,
+		startsAt: assignment.startsAt,
+		endsAt: assignment.endsAt,
 		status: assignment.status,
-		sourceStaffAssignmentId: assignment.sourceStaffAssignmentId ?? null,
 	};
 }
 
@@ -70,7 +71,7 @@ export function createStaffPermissionAssignmentPayload(input: {
 	id: string;
 	staffId: string;
 	permission: StaffPermissionAssignment['permission'];
-	scopeIds?: string;
+	scopes: StaffPermissionAssignment['scopes'];
 }): StaffPermissionAssignment {
 	return {
 		id: input.id,
@@ -78,8 +79,7 @@ export function createStaffPermissionAssignmentPayload(input: {
 		schoolId: schoolId(),
 		academicYearId: academicYearId(),
 		permission: input.permission,
-		scopeIds: input.scopeIds ?? '',
+		scopes: input.scopes,
 		status: 'active',
-		sourceStaffAssignmentId: null,
 	};
 }

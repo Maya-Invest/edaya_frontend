@@ -124,7 +124,7 @@ Variant layouts still use the same shell (sidebar + header). Only the body layou
 
 All variants still use shell chrome, permissions, toasts, and mutation modals where applicable.
 
-> **Removed in v1:** CRUD permission matrix (`/configuration/roles`). Staff permissions use the standard drawer sub-collection + modal pattern: Staff drawer → Permissions tab (`staffPermissionAssignments` add/edit/remove via modals; `ScopeBuilder` for `scopeIds`).
+> **Removed in v1:** CRUD permission matrix (`/configuration/roles`). Staff permissions use the standard drawer sub-collection + modal pattern: Staff drawer → Permissions tab (`staffPermissionAssignments` add/edit/remove via modals; `ScopeBuilder` for typed `scopes`).
 
 ---
 

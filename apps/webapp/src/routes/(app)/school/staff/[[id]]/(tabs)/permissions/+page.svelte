@@ -46,12 +46,12 @@
 	);
 	const permissionEditing = $derived(
 		modals.isOpen('add-permission') && modals.target
-			? permissionRows.find(row => row.id === modals.target && !row.isSynced) ?? null
+			? permissionRows.find(row => row.id === modals.target) ?? null
 			: null,
 	);
 	const permissionDeleting = $derived(
 		modals.isOpen('delete-permission') && modals.target
-			? permissionRows.find(row => row.id === modals.target && !row.isSynced) ?? null
+			? permissionRows.find(row => row.id === modals.target) ?? null
 			: null,
 	);
 
@@ -78,7 +78,7 @@
 	}
 
 	async function confirmDeletePermission() {
-		if (!staff || !permissionDeleting || permissionDeleting.isSynced || deleteBusy) {
+		if (!staff || !permissionDeleting || deleteBusy) {
 			return;
 		}
 		deleteBusy = true;

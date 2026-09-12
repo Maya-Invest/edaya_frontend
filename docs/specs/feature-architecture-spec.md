@@ -165,7 +165,7 @@ These are **fixed** for v1. Do not introduce alternate flows without updating th
 
 - Persist via `staffPermissionAssignments` entity CRUD.
 - Picker labels: `GET authorization/permission-catalog` + `POST authorization/scope/render`.
-- Client builds `scopeIds`; server validates on save.
+- Client edits typed `scopes`; server validates the action, target, year and validity on save. Manual grants and staff assignments are separate facts; no permission rows are copied from assignments.
 
 #### 5.3.1 Staff permission assignment UI
 
@@ -186,7 +186,6 @@ Sub-collection tabs use a read-only list with header CTA and row actions that op
 ┌ Permissions ─────────────────────────────── [+ Add permission] ┐
 │  • GRADE_INPUT — 6ème A, 6ème B          [Edit] [Delete]         │
 │  • TIMETABLE_UPDATE — Whole school        [Edit] [Delete]         │
-│  • CLASS_SUBJECT_UPDATE — 5ème:* (synced)  (read-only badge)      │
 └───────────────────────────────────────────────────────────────────┘
 ```
 
@@ -194,7 +193,7 @@ Sub-collection tabs use a read-only list with header CTA and row actions that op
 |---------|----------|
 | **Header CTA** | `+ Add permission` → **StaffPermissionFormModal** (create) |
 | **Row** | Permission label (i18n `permission.{CODE}`) · **scope label** from `scope/render` |
-| **Synced rows** | `sourceStaffAssignmentId` set → read-only; show “synced from assignment” badge; **no** edit/delete |
+| **Manual grants only** | Assignment-based authority is shown in the separate Assignments tab; no copied grant rows or sync badge |
 | **Stale scope** | When `scope/render` reports missing segments → warn badge (do not block read) |
 | **Row actions** | Edit → same modal (pre-filled); Delete → confirm → entity delete |
 | **Empty state** | Message + `+ Add permission` when user can assign |
@@ -205,22 +204,26 @@ Sub-collection tabs use a read-only list with header CTA and row actions that op
 |-------|---------|------|
 | **Permission** | `<select>` from catalog | Required; options from `GET authorization/permission-catalog` |
 | **Scope** | `ScopeBuilder` | Shown only when catalog entry has `scope` ≠ `platform`; hidden for tenant-wide permissions |
-| **Tenant-wide** | — | Empty `scopeIds`; show hint “whole school” |
+| **Tenant-wide** | — | `scopes: [{ kind: "school" }]`; show hint “whole school” |
 | **Submit** | Save | `staffPermissionAssignments` entity save; toast on success; refresh tab list |
 
 **ScopeBuilder** — one control set per catalog `scope` grain:
 
-| Grain | UI | `scopeIds` grammar (client composes; server validates) |
-|-------|-----|--------------------------------------------------------|
-| `class_group` | Multi-select checkboxes (classes) | Comma-separated class IDs |
-| `grade_level` | Single `<select>` | Grade level ID |
-| `class_subject` | Repeatable rows: class + subject **or** class wildcard (`classId:*`) | `classId:subjectId` paths, comma-separated |
-| `grade_level_subject` | Same as `class_subject` | Same path grammar |
-| `student` | Multi-select checkboxes (students) | Comma-separated student IDs |
-| `activity` | Activity picker + optional class link | `activityId` or `classId:activityId` |
-| `platform` | — | Not assignable in school UI (catalog only) |
+| Grain | UI | Typed scope fields |
+|-------|----|--------------------|
+| `class_group` | Repeatable class selections | `classGroupId` |
+| `grade_level` | Repeatable grade selections | `gradeLevelId` |
+| `class_subject` | Class and optional subject | `classGroupId`, optional `classSubjectId` (all subjects within that class) |
+| `grade_level_subject` | Grade and optional grade subject | `gradeLevelId`, optional `gradeLevelSubjectId` |
+| `student` | Repeatable StudentPicker | `studentId` |
+| `activity` | Activity and/or class selection | `activityId` and/or `classGroupId` |
+| `platform` | Not assignable in school UI | — |
 
-Scope labels in the list use `POST authorization/scope/render` with `{ permission, scopeIds }[]` — do not hand-format scope strings in the UI.
+Every entry carries its `kind`. Selecting all targets is explicit: `{ kind: "all", grain }`. Empty selections deny; they never mean whole school. Scope editing preserves all entries and the grant's validity dates.
+
+Scope labels use `POST authorization/scope/render` with `{ academicYearId, items: [{ permission, scopes }] }`. The web never creates or parses delimited authorization paths.
+
+The session contains one typed action-grant display. UI checks use that action's scopes and validity; owner labels and preset names never bypass those checks. The server remains authoritative for resource policies.
 
 **Data loading:**
 

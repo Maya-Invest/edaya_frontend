@@ -106,7 +106,7 @@ async function runBootstrapSession(
 		if (session?.kind === 'staff') {
 			const [sessionStaff, serverOnboardingStatus] = await Promise.all([
 				fetchSessionStaffProfile(client, session.actorId, {
-					isElevated: session.effectiveGrants.isElevated,
+					isElevated: session.grants.some(grant => grant.source === 'owner'),
 				}),
 				fetchServerOnboardingAccountStatus(),
 			]);

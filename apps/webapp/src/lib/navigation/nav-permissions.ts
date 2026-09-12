@@ -1,4 +1,4 @@
-import type { EffectiveGrantsSnapshot, PermissionCode } from '$lib/auth/types';
+import type { ActionGrantsSnapshot, PermissionCode } from '$lib/auth/types';
 import type { NavItemDefinition, NavModuleKey } from '$lib/navigation/nav-catalog';
 import {
 	NAV_MODULE_DEFS,
@@ -22,7 +22,7 @@ function resolveNavContext(ctx: NavPermissionContext = {}) {
 
 export function canAccessNavItem(
 	item: Pick<NavItemDefinition, 'permissions'>,
-	grants: EffectiveGrantsSnapshot | null,
+	grants: ActionGrantsSnapshot | null,
 	ctx: NavPermissionContext = {},
 ): boolean {
 	if (!item.permissions?.length) {
@@ -33,14 +33,14 @@ export function canAccessNavItem(
 
 export function filterNavItems<T extends Pick<NavItemDefinition, 'permissions'>>(
 	items: readonly T[],
-	grants: EffectiveGrantsSnapshot | null,
+	grants: ActionGrantsSnapshot | null,
 	ctx: NavPermissionContext = {},
 ): T[] {
 	return items.filter(item => canAccessNavItem(item, grants, ctx));
 }
 
 export function visibleNavModuleKeys(
-	grants: EffectiveGrantsSnapshot | null,
+	grants: ActionGrantsSnapshot | null,
 	ctx: NavPermissionContext = {},
 ): NavModuleKey[] {
 	const schoolCtx = { schoolId: ctx.schoolId };
@@ -81,7 +81,7 @@ export function findNavItemForPath(pathname: string, classId?: string): NavItemD
 
 export function canAccessPath(
 	pathname: string,
-	grants: EffectiveGrantsSnapshot | null,
+	grants: ActionGrantsSnapshot | null,
 	ctx: NavPermissionContext = {},
 ): boolean {
 	if (pathname === '/dashboard' || pathname.startsWith('/dashboard/') || pathname.startsWith('/account')) {

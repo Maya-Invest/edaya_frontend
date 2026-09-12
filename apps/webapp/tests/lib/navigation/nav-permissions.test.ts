@@ -1,4 +1,4 @@
-import type { EffectiveGrantsSnapshot } from '$lib/auth/types';
+import type { ActionGrantsSnapshot, PermissionCode } from '$lib/auth/types';
 import {
 	CONFIG_NAV_DEFS,
 	NAV_MODULE_DEFS,
@@ -14,19 +14,14 @@ import {
 } from '$lib/navigation/nav-permissions';
 import { describe, expect, it } from 'bun:test';
 
-function mockGrants(permissions: readonly string[], isElevated = false): EffectiveGrantsSnapshot {
-	return {
-		isElevated,
-		permissions: [...permissions],
-		scopeGrants: [],
-		scopeIdsByPermission: {},
-	};
+function mockGrants(permissions: readonly PermissionCode[]): ActionGrantsSnapshot {
+	return permissions.map(permission => ({ permission, scopes: [{ kind: 'school' }], source: 'manual' }));
 }
 
 const teacherGrants = mockGrants(TEACHER_NAV_PERMISSIONS);
 const coordinatorGrants = mockGrants(COORDINATOR_NAV_PERMISSIONS);
 const educatorGrants = mockGrants(EDUCATOR_NAV_PERMISSIONS);
-const elevatedGrants = mockGrants([], true);
+const elevatedGrants = mockGrants(Object.values(NAV_MODULE_DEFS).flatMap(items => items.flatMap(item => item.permissions ?? [])));
 const schoolCtx = { schoolId: 'sch1', classId: '6a' };
 
 describe('nav-permissions — professeur (phase 3.2)', () => {
@@ -126,12 +121,12 @@ describe('nav-permissions — éducateur (phase 3.4)', () => {
 });
 
 describe('nav-permissions — directeur (phase 3.1)', () => {
-	it('shows every module when elevated', () => {
+	it('shows every module when those actions are granted', () => {
 		expect(visibleNavModuleKeys(elevatedGrants, schoolCtx)).toHaveLength(4);
 		expect(filterNavItems(SCHOOL_NAV_DEFS, elevatedGrants)).toHaveLength(SCHOOL_NAV_DEFS.length);
 	});
 
-	it('allows finance URLs when elevated', () => {
+	it('allows finance URLs when those actions are granted', () => {
 		expect(canAccessPath('/finance/billing', elevatedGrants)).toBe(true);
 		expect(canAccessPath('/finance/fees', elevatedGrants)).toBe(true);
 		expect(canAccessPath('/finance/payment', elevatedGrants)).toBe(true);

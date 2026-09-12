@@ -65,43 +65,37 @@
 							<div class="mt-1 text-xs text-muted-foreground">
 								{row.scopeLabel}
 								{#if row.hasMissingScope}
-									<span class="ml-1 text-amber-600">{$t('roles.staleScopeWarning')}</span>
+									<span class="ml-1 text-highlight">{$t('roles.staleScopeWarning')}</span>
 								{/if}
 							</div>
-							{#if row.isSynced}
-								<div class="mt-1.5 inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">
-									{$t('roles.syncedFromAssignment')}
-								</div>
-							{/if}
+
 						</div>
-						{#if !row.isSynced}
-							<PermissionGate permission="ACCESS_CONTROL_ASSIGN" mode="disable">
-								{#snippet children({ disabled })}
-									<div class="flex shrink-0 items-center gap-1">
-										<Button
-											variant="ghost"
-											size="icon"
-											class="h-8 w-8 rounded-full"
-											{disabled}
-											aria-label={$t('roles.editPermission')}
-											onclick={() => onEdit(row)}
-										>
-											<Pencil class="h-4 w-4" />
-										</Button>
-										<Button
-											variant="ghost"
-											size="icon"
-											class="h-8 w-8 rounded-full"
-											{disabled}
-											aria-label={$t('common.delete')}
-											onclick={() => onDelete(row)}
-										>
-											<Trash2 class="h-4 w-4" />
-										</Button>
-									</div>
-								{/snippet}
-							</PermissionGate>
-						{/if}
+						<PermissionGate permission="ACCESS_CONTROL_ASSIGN" mode="disable">
+							{#snippet children({ disabled })}
+								<div class="flex shrink-0 items-center gap-1">
+									<Button
+										variant="ghost"
+										size="icon"
+										class="h-8 w-8 rounded-full"
+										{disabled}
+										aria-label={$t('roles.editPermission')}
+										onclick={() => onEdit(row)}
+									>
+										<Pencil class="h-4 w-4" />
+									</Button>
+									<Button
+										variant="ghost"
+										size="icon"
+										class="h-8 w-8 rounded-full"
+										{disabled}
+										aria-label={$t('common.delete')}
+										onclick={() => onDelete(row)}
+									>
+										<Trash2 class="h-4 w-4" />
+									</Button>
+								</div>
+							{/snippet}
+						</PermissionGate>
 					</li>
 				{/each}
 			</ul>

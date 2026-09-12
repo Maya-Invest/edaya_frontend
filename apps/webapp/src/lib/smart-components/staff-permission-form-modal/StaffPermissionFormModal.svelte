@@ -1,7 +1,9 @@
 <script lang="ts">
+	import type { GrantScope } from '$lib/api/grant-scopes';
 	import type { components } from '$lib/api/schema';
 	import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 	import type { StaffMember } from '$lib/types/school';
+	import { validGrantScopes } from '$lib/api/grant-scopes';
 	import {
 		createStaffPermissionAssignmentPayload,
 		saveStaffPermissionAssignmentMutation,
@@ -36,7 +38,7 @@
 
 	let busy = $state(false);
 	let permission = $state<StaffPermissionAssignmentView['permission'] | ''>('');
-	let scopeIds = $state('');
+	let scopes = $state<GrantScope[]>([]);
 
 	const catalog = $derived(modalState.catalog);
 	const selectedEntry = $derived(catalog.find(entry => entry.permission === permission));
@@ -53,10 +55,10 @@
 			return;
 		}
 		permission = assignment?.permission ?? '';
-		scopeIds = assignment?.scopeIds ?? '';
+		scopes = assignment?.scopes ?? [];
 	});
 
-	const canSubmit = $derived(Boolean(permission) && (!requiresScope || scopeIds.trim().length > 0) && !modalState.loading);
+	const canSubmit = $derived(Boolean(permission) && selectedEntry?.scope !== 'platform' && validGrantScopes(requiresScope ? scopes : [{ kind: 'school' }], selectedEntry?.scope ?? undefined) && !modalState.loading);
 
 	async function submit() {
 		if (!canSubmit || !permission) {
@@ -65,12 +67,12 @@
 
 		busy = true;
 		const id = assignment?.id ?? `spa-${Date.now().toString(36)}`;
-		const payload = createStaffPermissionAssignmentPayload({
+		const payload = { ...(assignment ?? {}), ...createStaffPermissionAssignmentPayload({
 			id,
 			staffId: staff.id,
 			permission,
-			scopeIds: requiresScope ? scopeIds.trim() : '',
-		});
+			scopes: requiresScope ? scopes : [{ kind: 'school' }],
+		}), startsAt: assignment?.startsAt, endsAt: assignment?.endsAt, status: assignment?.status ?? 'active' };
 		const successMessage = get(t)('roles.permissionSaved', {
 			permission: formatPermissionLabel(permission, get(t)),
 		});
@@ -109,10 +111,11 @@
 				<select
 					id="permission-select"
 					bind:value={permission}
+					onchange={() => scopes = []}
 					class="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
 				>
 					<option value="">{$t('roles.selectPermission')}</option>
-					{#each catalog as entry (entry.permission)}
+					{#each catalog.filter(entry => entry.scope !== 'platform') as entry (entry.permission)}
 						<option value={entry.permission}>{formatPermissionLabel(entry.permission, $t)}</option>
 					{/each}
 				</select>
@@ -120,8 +123,8 @@
 
 			{#if requiresScope && selectedEntry?.scope && selectedEntry.scope !== 'platform'}
 				<div class="space-y-2">
-					<Label>{$t('roles.scopeIdsField')}</Label>
-					<ScopeBuilder grain={selectedEntry.scope} bind:scopeIds active={open} />
+					<Label>{$t('roles.scopeField')}</Label>
+					<ScopeBuilder grain={selectedEntry.scope} bind:scopes active={open} />
 				</div>
 			{:else if permission}
 				<p class="text-xs text-muted-foreground">{$t('roles.tenantWidePermission')}</p>

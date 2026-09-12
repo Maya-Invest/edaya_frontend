@@ -32,9 +32,10 @@ function toStaffPermissionConfigCommand(
 		schoolId: assignment.schoolId,
 		academicYearId: assignment.academicYearId,
 		permission: assignment.permission,
-		scopeIds: assignment.scopeIds ?? '',
+		scopes: assignment.scopes,
+		startsAt: assignment.startsAt,
+		endsAt: assignment.endsAt,
 		status: assignment.status,
-		sourceStaffAssignmentId: assignment.sourceStaffAssignmentId ?? null,
 	};
 }
 
@@ -272,9 +273,8 @@ export async function saveStaffPermissionOnPage(
 		apply: () => {
 			state.upsertPermissionAssignment({
 				...input.assignment,
-				scopeLabel: previous?.scopeLabel ?? input.assignment.scopeIds ?? '—',
-				tenantWide: (input.assignment.scopeIds ?? '') === '',
-				isSynced: Boolean(input.assignment.sourceStaffAssignmentId),
+				scopeLabel: previous?.scopeLabel ?? '—',
+				tenantWide: input.assignment.scopes.some(scope => scope.kind === 'school'),
 				hasMissingScope: previous?.hasMissingScope ?? false,
 			});
 		},
@@ -291,9 +291,8 @@ export async function saveStaffPermissionOnPage(
 				.find(row => row.id === assignment.id);
 			state.upsertPermissionAssignment({
 				...assignment,
-				scopeLabel: existing?.scopeLabel ?? assignment.scopeIds ?? '—',
-				tenantWide: (assignment.scopeIds ?? '') === '',
-				isSynced: Boolean(assignment.sourceStaffAssignmentId),
+				scopeLabel: existing?.scopeLabel ?? '—',
+				tenantWide: assignment.scopes.some(scope => scope.kind === 'school'),
 				hasMissingScope: existing?.hasMissingScope ?? false,
 			});
 		},
@@ -338,13 +337,13 @@ export function buildStaffPermissionPayload(
 	input: {
 		id: string;
 		permission: StaffPermissionAssignmentView['permission'];
-		scopeIds: string;
+		scopes: StaffPermissionAssignment['scopes'];
 	},
 ) {
 	return createStaffPermissionAssignmentPayload({
 		id: input.id,
 		staffId: staff.id,
 		permission: input.permission,
-		scopeIds: input.scopeIds,
+		scopes: input.scopes,
 	});
 }

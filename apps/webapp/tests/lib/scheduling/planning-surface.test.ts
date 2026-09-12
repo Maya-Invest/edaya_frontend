@@ -1,4 +1,4 @@
-import type { EffectiveGrantsSnapshot } from '$lib/auth/types';
+import type { ActionGrantsSnapshot } from '$lib/auth/types';
 import type { PlanningSurfacePermission } from '$lib/scheduling/planning-surface';
 import { checkPermission } from '$lib/permission-check';
 import {
@@ -10,17 +10,14 @@ import { describe, expect, it } from 'bun:test';
 
 function mockGrants(
 	permissions: readonly PlanningSurfacePermission[],
-	scopeIdsByPermission: Record<string, string> = {},
-): EffectiveGrantsSnapshot {
-	return {
-		isElevated: false,
-		permissions: [...permissions],
-		scopeGrants: [],
-		scopeIdsByPermission,
-	};
+	classIds: Partial<Record<PlanningSurfacePermission, string>> = {},
+): ActionGrantsSnapshot {
+	return permissions.map(permission => ({ permission, source: 'manual',
+		scopes: classIds[permission] ? [{ kind: 'class_subject', classGroupId: classIds[permission]! }] : [],
+	}));
 }
 
-function permissionCheck(grants: EffectiveGrantsSnapshot) {
+function permissionCheck(grants: ActionGrantsSnapshot) {
 	return (permission: PlanningSurfacePermission, classId: string) =>
 		checkPermission(grants, permission, { classId });
 }

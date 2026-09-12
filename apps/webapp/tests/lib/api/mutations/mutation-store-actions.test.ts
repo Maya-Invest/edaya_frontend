@@ -8,12 +8,10 @@ interface StaffPermissionAssignmentView {
 	schoolId: string;
 	academicYearId: string;
 	permission: Permission;
-	scopeIds: string;
+	scopes: { kind: 'school' }[];
 	status: 'active';
-	sourceStaffAssignmentId: string | null;
 	scopeLabel: string;
 	tenantWide: boolean;
-	isSynced: boolean;
 	hasMissingScope: boolean;
 }
 
@@ -51,12 +49,10 @@ function permissionRow(id: string, permission: Permission = 'STUDENT_READ'): Sta
 		schoolId: 'school-1',
 		academicYearId: 'year-1',
 		permission,
-		scopeIds: '',
+		scopes: [{ kind: 'school' }],
 		status: 'active',
-		sourceStaffAssignmentId: null,
 		scopeLabel: 'School-wide',
 		tenantWide: true,
-		isSynced: false,
 		hasMissingScope: false,
 	};
 }
@@ -85,9 +81,8 @@ function applyStaffPermissionSave(
 ) {
 	store.upsert({
 		...assignment,
-		scopeLabel: previous?.scopeLabel ?? assignment.scopeIds ?? '—',
-		tenantWide: (assignment.scopeIds ?? '') === '',
-		isSynced: Boolean(assignment.sourceStaffAssignmentId),
+		scopeLabel: previous?.scopeLabel ?? '—',
+		tenantWide: assignment.scopes.some(scope => scope.kind === 'school'),
 		hasMissingScope: previous?.hasMissingScope ?? false,
 	});
 }

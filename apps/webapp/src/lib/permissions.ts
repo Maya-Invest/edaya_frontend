@@ -1,6 +1,7 @@
 import type { PermissionCode } from '$lib/auth/types';
 import type { PermissionContext } from '$lib/permission-check';
 import type { StaffMember, StaffRole } from '$lib/types/school';
+import { academicContext } from '$lib/academic/context.svelte';
 import { authSession } from '$lib/auth/session.svelte';
 import { checkAnyPermission, checkPermission } from '$lib/permission-check';
 
@@ -22,6 +23,7 @@ function sessionContext(ctx: Ctx = {}): PermissionContext {
 	return {
 		...ctx,
 		schoolId: authSession.schoolId ?? '',
+		academicYearId: academicContext.yearId,
 	};
 }
 
