@@ -1,5 +1,5 @@
 import type { Page } from 'playwright';
-import { resolveAuthUrl } from './integration-hosts';
+import { resolveApiUrl, resolveAuthUrl } from './integration-hosts';
 
 interface CachedToken {
 	value: string;
@@ -7,7 +7,7 @@ interface CachedToken {
 	cookie: string;
 }
 
-const tokens = new WeakMap<Page, CachedToken>();
+const tokens = new WeakMap<Page, Map<string, CachedToken>>();
 
 export async function identityCookieHeaderFromPage(
 	page: Page,
@@ -30,9 +30,12 @@ export async function schoolBearerFromPage(
 	page: Page,
 	appOrigin: string,
 	authUrl = resolveAuthUrl(),
+	apiUrl = resolveApiUrl(),
 ): Promise<string | undefined> {
 	const cookie = (await identityCookieHeaderFromPage(page, authUrl)) ?? '';
-	const cached = tokens.get(page);
+	const resource = new URL(apiUrl).origin;
+	const byResource = tokens.get(page) ?? new Map<string, CachedToken>();
+	const cached = byResource.get(resource);
 	if (cached && cached.cookie === cookie && cached.expiresAt > Date.now() + 30_000) {
 		return cached.value;
 	}
@@ -46,10 +49,11 @@ export async function schoolBearerFromPage(
 			cookie,
 			origin: appOrigin.replace(/\/+$/, ''),
 		},
-		data: {},
+		data: { resource },
 	});
 	if (response.status() === 401) {
-		tokens.delete(page);
+		byResource.delete(resource);
+		tokens.set(page, byResource);
 		return undefined;
 	}
 	if (!response.ok()) {
@@ -67,6 +71,7 @@ export async function schoolBearerFromPage(
 	}
 
 	const expiresAt = Date.parse(body.expiresAt);
-	tokens.set(page, { value: body.accessToken, expiresAt, cookie });
+	byResource.set(resource, { value: body.accessToken, expiresAt, cookie });
+	tokens.set(page, byResource);
 	return body.accessToken;
 }

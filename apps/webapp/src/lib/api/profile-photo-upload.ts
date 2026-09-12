@@ -33,7 +33,7 @@ function apiHeaders(json = false): Headers {
 }
 
 export function buildProfilePhotoContentUrl(attachmentId: string): string {
-	return resolveApiUrl(PUBLIC_API_URL || '', `/core/files/${attachmentId}/content`);
+	return resolveApiUrl(PUBLIC_API_URL, `/core/files/${attachmentId}/content`);
 }
 
 export function withPhotoCacheBust(photoUrl: string): string {
@@ -50,7 +50,7 @@ export async function uploadProfilePhoto(input: {
 	const mimeType = input.file.type || 'image/jpeg';
 
 	const intentResponse = await bearerFetch(
-		resolveApiUrl(PUBLIC_API_URL || '', '/core/files/upload-intents'),
+		resolveApiUrl(PUBLIC_API_URL, '/core/files/upload-intents'),
 		{
 			method: 'POST',
 			headers: apiHeaders(true),

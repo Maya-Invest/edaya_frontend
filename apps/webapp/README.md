@@ -9,7 +9,7 @@ cp .env.example .env   # from apps/webapp
 bun dev                # http://localhost:5173
 ```
 
-Requires the API running at `API_URL` (the Vite development proxy target, default `http://localhost:9999`). Leave `PUBLIC_API_URL` empty locally so browser requests use the same-origin proxy. From the repo root, `bun dev` starts both apps. Start the API from `edaya_backend` with `bun dev` (PGlite + local-files).
+Requires the API running at `API_URL` (default `http://localhost:9999`). Set `PUBLIC_API_URL` to that same origin; the browser exchanges `{ "resource": "<that origin>" }` for a JWT whose `aud` matches. From the repo root, `bun dev` starts both apps. Start the API from `edaya_backend` with `bun dev` (PGlite + local-files).
 
 ## Quality gates
 

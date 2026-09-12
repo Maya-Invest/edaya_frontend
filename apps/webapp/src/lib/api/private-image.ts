@@ -3,8 +3,8 @@ import { bearerFetch } from '$lib/auth/bearer-fetch';
 
 /** Private images are fetched with a header; credentials never enter image URLs. */
 export async function loadPrivateImage(source: string, signal: AbortSignal): Promise<{ url: string; dispose: () => void }> {
-	const api = new URL(PUBLIC_API_URL || '/', window.location.origin);
-	const url = new URL(source, window.location.origin);
+	const api = new URL(PUBLIC_API_URL);
+	const url = new URL(source, api.origin);
 	if (url.origin !== api.origin || !url.pathname.startsWith('/core/files/')) {
 		return { url: source, dispose: () => {} };
 	}

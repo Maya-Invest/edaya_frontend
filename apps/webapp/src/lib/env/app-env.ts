@@ -6,7 +6,16 @@ export function isDemoLoginEnabled(): boolean {
 }
 
 export function isLocalDevApi(): boolean {
-	return dev && !PUBLIC_API_URL;
+	if (!dev || !PUBLIC_API_URL) {
+		return false;
+	}
+	try {
+		const host = new URL(PUBLIC_API_URL).hostname;
+		return host === 'localhost' || host === '127.0.0.1';
+	}
+	catch {
+		return false;
+	}
 }
 
 /** Dev/staging helper — mark onboarding complete without finishing every wizard step. */

@@ -87,7 +87,7 @@ Git ref is taken from the **web head branch** (PR branch, or `github.ref_name` o
 
 The job fails if that branch is missing on either sibling. Identity needs `dev`, `staging`, and `main` on `Maya-Invest/edaya_identity` (not only a feature branch).
 
-Start script: [`.github/scripts/ci-start-local-apis.sh`](../../.github/scripts/ci-start-local-apis.sh) copies each checkout’s `.env.example`, sets a shared `IDENTITY_DIRECTORY_SECRET`, and adds Wrangler origins (`http://127.0.0.1:4173` and `http://localhost:4173`) to `TRUSTED_ORIGINS`. JWT issuer/audience stay `http://localhost:9900` / `http://localhost:9999`. Identity starts with `bun --filter @edaya/identity start`; school with `bun repo dev`.
+Start script: [`.github/scripts/ci-start-local-apis.sh`](../../.github/scripts/ci-start-local-apis.sh) copies each checkout’s `.env.example`, sets a shared `IDENTITY_DIRECTORY_SECRET`, and adds Wrangler origins (`http://127.0.0.1:4173` and `http://localhost:4173`) to `TRUSTED_ORIGINS`. Identity gets `FIRST_PARTY_API_ORIGINS=http://localhost:9999`; school gets `API_ORIGIN=http://localhost:9999`. JWT issuer/audience stay `http://localhost:9900` / `http://localhost:9999`. Identity starts with `bun --filter @edaya/identity start`; school with `bun repo dev`.
 
 ## GitHub Packages access for API client
 

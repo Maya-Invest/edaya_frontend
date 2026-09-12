@@ -54,7 +54,7 @@ async function apiFetch(
 		headers['X-School-Id'] = schoolId;
 	}
 
-	const accessToken = await schoolBearerFromPage(page, appOrigin);
+	const accessToken = await schoolBearerFromPage(page, appOrigin, undefined, apiUrl);
 	if (accessToken) {
 		headers.authorization = `Bearer ${accessToken}`;
 	}

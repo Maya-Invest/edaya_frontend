@@ -36,7 +36,7 @@ export function createBrowserTransport(getYearId: () => string | undefined): Tra
 				headers.set('X-Academic-Year-Id', yearId);
 			}
 
-			const base = PUBLIC_API_URL || '';
+			const base = PUBLIC_API_URL;
 			const response = await bearerFetch(resolveApiUrl(base, path), {
 				method,
 				headers,
