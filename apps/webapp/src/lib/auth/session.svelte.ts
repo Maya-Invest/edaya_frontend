@@ -7,6 +7,7 @@ import { browser } from '$app/environment';
 import { academicContext } from '$lib/academic/context.svelte';
 import { clearAuthGate } from '$lib/auth/auth-gate';
 import { clearWizardCompletedInSession } from '$lib/onboarding/wizard-completion-flag';
+import { authPrincipalChanged } from './access-token';
 import { accessTokens } from './bearer-fetch';
 import { authClient } from './client';
 
@@ -88,6 +89,9 @@ class AuthSession {
 	}
 
 	setPendingOnboarding(options: { authUserId: string; loginEmail: string | null }) {
+		if (authPrincipalChanged(this.authUserId, options.authUserId)) {
+			accessTokens.clear();
+		}
 		this.authUserId = options.authUserId;
 		this.needsOnboarding = true;
 		this.serverOnboardingStatus = null;
@@ -105,6 +109,9 @@ class AuthSession {
 	}
 
 	setAuthAccountOnly(options: { authUserId: string; loginEmail: string | null }) {
+		if (authPrincipalChanged(this.authUserId, options.authUserId)) {
+			accessTokens.clear();
+		}
 		if (this.grants && this.userId) {
 			this.authUserId = options.authUserId;
 			this.loginEmail = options.loginEmail;
@@ -149,7 +156,11 @@ class AuthSession {
 		}
 
 		this.needsOnboarding = false;
-		this.authUserId = options?.authUserId ?? options?.subjectId ?? this.authUserId;
+		const nextAuthUserId = options?.authUserId ?? options?.subjectId ?? this.authUserId;
+		if (authPrincipalChanged(this.authUserId, nextAuthUserId)) {
+			accessTokens.clear();
+		}
+		this.authUserId = nextAuthUserId;
 		this.userId = session.actorId;
 		this.schoolId = session.schoolId;
 		this.sessionKind = session.kind;

@@ -45,7 +45,7 @@ async function fetchStructureTemplates(
 		}
 	}
 
-	const response = await bearerFetch(resolveApiUrl(PUBLIC_API_URL || '', path), {
+	const response = await bearerFetch(resolveApiUrl(PUBLIC_API_URL, path), {
 		method: 'GET',
 		headers,
 	});

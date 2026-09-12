@@ -39,7 +39,7 @@ async function inviteEducatorStaff(
 	email: string,
 ): Promise<string | null> {
 	const { page, base } = journey.ctx;
-	const accessToken = await schoolBearerFromPage(page, base);
+	const accessToken = await schoolBearerFromPage(page, base, undefined, apiUrl);
 	const { request } = await import('playwright');
 	const isolated = await request.newContext({
 		extraHTTPHeaders: {

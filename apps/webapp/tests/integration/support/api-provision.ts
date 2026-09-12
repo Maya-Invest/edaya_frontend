@@ -142,7 +142,7 @@ class ProvisionHttpClient {
 			const response = await this.request('/auth/edaya/access-token', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: '{}',
+				body: JSON.stringify({ resource: new URL(this.apiUrl).origin }),
 			});
 			if (response.status === 401) {
 				return undefined;
