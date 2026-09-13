@@ -32,18 +32,10 @@
 		readInvitationAuthUrlState,
 		writeInvitationAuthUrlState,
 	} from './invitation-auth-url';
-
-	function sessionBlocksInvitationAccept(
-		preview: InvitationPreview,
-	): boolean {
-		if (!authSession.isLoggedIn || !authSession.userId || !authSession.sessionKind) {
-			return false;
-		}
-		if (authSession.sessionKind !== preview.kind) {
-			return true;
-		}
-		return authSession.userId !== preview.targetId;
-	}
+	import {
+		canAcceptInvitationWithCurrentSession,
+		sessionBlocksInvitationAccept,
+	} from './invitation-session';
 
 	function apiErrorMessage(err: ApiError): string {
 		if (err.body && typeof err.body === 'object' && err.body !== null) {
@@ -111,7 +103,19 @@
 		void appGoto(resolveLinkedActorPath(session));
 	}
 
-	const wrongAccount = $derived(preview ? sessionBlocksInvitationAccept(preview) : false);
+	const invitationSession = $derived({
+		isLoggedIn: authSession.isLoggedIn,
+		hasAuthAccount: authSession.hasAuthAccount,
+		userId: authSession.userId,
+		sessionKind: authSession.sessionKind,
+		loginEmail: authSession.loginEmail,
+	});
+	const wrongAccount = $derived(
+		preview ? sessionBlocksInvitationAccept(preview, invitationSession) : false,
+	);
+	const matchingCurrentSession = $derived(
+		preview ? canAcceptInvitationWithCurrentSession(preview, invitationSession) : false,
+	);
 	const invitedEmail = $derived(preview?.contactEmail?.trim() ?? '');
 	const useSignIn = $derived(preview?.authAccountExists === true || authMode === 'signIn');
 
@@ -341,6 +345,21 @@
 		pageState = 'accepting';
 		try {
 			const authUser = await getAuthenticatedAuthUser();
+			const loginEmail = authUser?.email ?? authSession.loginEmail;
+			if (
+				sessionBlocksInvitationAccept(preview, {
+					isLoggedIn: authSession.isLoggedIn,
+					hasAuthAccount: Boolean(authUser) || authSession.hasAuthAccount,
+					userId: authSession.userId,
+					sessionKind: authSession.sessionKind,
+					loginEmail,
+				})
+			) {
+				pageState = 'ready';
+				toast.error($t('invitation.accept.wrongAccountHint'));
+				return;
+			}
+
 			if (!authUser) {
 				const authenticated = await authenticate();
 				if (!authenticated) {
@@ -522,7 +541,13 @@
 							</div>
 						{/if}
 
-						{#if !authSession.isLoggedIn && !verificationSent}
+						{#if matchingCurrentSession}
+							<p class="rounded-lg border border-border bg-secondary/30 px-3 py-2 text-sm text-muted-foreground">
+								{$t('invitation.accept.continueAs', { email: authSession.loginEmail ?? invitedEmail })}
+							</p>
+						{/if}
+
+						{#if !authSession.isLoggedIn && !verificationSent && !matchingCurrentSession && !wrongAccount}
 							{#if preview.authAccountExists}
 								<p class="rounded-lg border border-border bg-secondary/30 px-3 py-2 text-sm text-muted-foreground">
 									{$t('invitation.accept.existingAccountHint')}
@@ -576,7 +601,7 @@
 						<Button
 							type="button"
 							class="w-full"
-							disabled={busy || wrongAccount || verificationSent || (!authSession.isLoggedIn && (!email.trim() || !password.trim()))}
+							disabled={busy || wrongAccount || verificationSent || (!matchingCurrentSession && (!email.trim() || !password.trim()))}
 							onclick={handleAccept}
 						>
 							{$t('invitation.accept.cta')}

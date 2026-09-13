@@ -1239,6 +1239,7 @@ export const en: Dict = {
 	'invitation.accept.alreadyAcceptedOtherAccountHint': 'Sign in with the invited email address or contact your school office.',
 	'invitation.accept.alreadyAcceptedStillUnlinkedHint': 'You are signed in but not yet linked to the school. Try again or contact your school office.',
 	'invitation.accept.goToLogin': 'Go to login',
+	'invitation.accept.continueAs': 'You are signed in as {email}. Accept to link this invitation to your account.',
 	'invitation.accept.wrongAccountTitle': 'Signed in with another account',
 	'invitation.accept.wrongAccountHint': 'This invitation is for someone else. Sign out, then create an account or sign in with the invited email address.',
 	'invitation.accept.signOut': 'Sign out',

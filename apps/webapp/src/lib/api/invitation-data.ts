@@ -1,6 +1,6 @@
 import type { components } from '$lib/api/schema';
 import { pendingAccountInvitationForTarget } from '$lib/api/entity-list-filters';
-import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { getBrowserSchoolClient, getPublicSchoolClient } from '$lib/api/school-client';
 
 export type InvitationPreview = components['schemas']['InvitationPreviewResponse'];
 export type AccountInvitation = components['schemas']['AccountInvitation'];
@@ -18,7 +18,7 @@ export async function fetchPendingAccountInvitation(
 }
 
 export async function fetchInvitationPreview(token: string): Promise<InvitationPreview> {
-	return getBrowserSchoolClient().public.previewInvitation({ token });
+	return getPublicSchoolClient().public.previewInvitation({ token });
 }
 
 export async function acceptInvitation(token: string): Promise<AcceptInvitationResult> {

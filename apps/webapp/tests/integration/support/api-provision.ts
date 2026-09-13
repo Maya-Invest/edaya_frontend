@@ -430,8 +430,7 @@ export async function activateTeacherSecondaryAccount(
 		return acceptResult;
 	}
 
-	// Public accept uses a system actor that cannot pass checkTeacherAccess (backend gap).
-	// Owner link-actor-subject is equivalent for harness provisioning.
+	// Keep an owner link fallback if public accept is forbidden for any other reason.
 	if (!/403|forbidden/i.test(acceptResult.detail ?? '')) {
 		return acceptResult;
 	}

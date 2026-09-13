@@ -1229,6 +1229,7 @@ export const fr: Dict = {
 	'invitation.accept.alreadyAcceptedOtherAccountHint': 'Connectez-vous avec l\'adresse e-mail invitée ou contactez le secrétariat.',
 	'invitation.accept.alreadyAcceptedStillUnlinkedHint': 'Votre compte est connecté mais pas encore relié à l\'établissement. Réessayez ou contactez le secrétariat.',
 	'invitation.accept.goToLogin': 'Aller à la connexion',
+	'invitation.accept.continueAs': 'Vous êtes connecté en tant que {email}. Acceptez pour relier cette invitation à votre compte.',
 	'invitation.accept.wrongAccountTitle': 'Connecté avec un autre compte',
 	'invitation.accept.wrongAccountHint': 'Cette invitation concerne une autre personne. Déconnectez-vous, puis créez un compte ou connectez-vous avec l\'adresse invitée.',
 	'invitation.accept.signOut': 'Se déconnecter',
