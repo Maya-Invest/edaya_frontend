@@ -4,9 +4,16 @@
  * Local dev keeps file: links; see docs/reference/cross-repo-workflow.md.
  */
 import { readFileSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 
-const channel = process.argv[2] ?? "staging";
-const specifier = `npm:@maya-invest/edaya-api-client@${channel}`;
+const requested = process.env.API_CLIENT_VERSION || process.argv[2] || "staging";
+const version = /^0\.0\.0-[a-z0-9._-]+$/.test(requested)
+  ? requested
+  : JSON.parse(execFileSync("npm", ["view", `@maya-invest/edaya-api-client@${requested}`, "version", "--json"], { encoding: "utf8" }));
+if (typeof version !== "string" || !/^0\.0\.0-[a-z0-9._-]+$/.test(version)) {
+  throw new Error("Could not resolve an exact API client version");
+}
+const specifier = `npm:@maya-invest/edaya-api-client@${version}`;
 
 const files = [
   "package.json",
@@ -33,4 +40,4 @@ for (const file of files) {
   }
 }
 
-console.log(`Using @maya-invest/edaya-api-client@${channel} from GitHub Packages`);
+console.log(`Using @maya-invest/edaya-api-client@${version} from GitHub Packages`);

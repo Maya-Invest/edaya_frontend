@@ -19,8 +19,10 @@ jobs:
 
       - name: Resolve API client channel
         id: api_client
+        env:
+          CANDIDATE_REF: ${{ github.head_ref || github.ref_name }}
         run: |
-          CHANNEL="$(node .github/scripts/ci-resolve-api-client-channel.mjs "${{ github.head_ref || github.ref_name }}")"
+          CHANNEL="$(node .github/scripts/ci-resolve-api-client-channel.mjs "$CANDIDATE_REF")"
           echo "channel=${CHANNEL}" >> "$GITHUB_OUTPUT"
           echo "Using @maya-invest/edaya-api-client@${CHANNEL}"
 

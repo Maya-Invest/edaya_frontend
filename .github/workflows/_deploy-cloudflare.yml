@@ -41,6 +41,6 @@ jobs:
         run: |
           case "${{ inputs.channel }}" in
             production) DEPLOY_SCRIPT=deploy:production ;;
-            *) DEPLOY_SCRIPT=deploy:staging ;;
+            *) echo "Use the staging release coordinator" >&2; exit 1 ;;
           esac
           bun --filter "${{ inputs.package }}" "$DEPLOY_SCRIPT"

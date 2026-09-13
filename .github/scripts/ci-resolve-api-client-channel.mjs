@@ -5,7 +5,7 @@
  * main/master → production
  * staging → staging
  * other branches → sanitized ref (feature/onboarding → feature-onboarding)
- * when that tag exists, else staging.
+ * fails if the matching branch client has not been published.
  *
  * Must stay in sync with edaya_backend/.github/workflows/_publish-api-client.yml
  */
@@ -46,10 +46,7 @@ if (preferred === "production" || preferred === "staging") {
 }
 
 const tags = publishedDistTags();
-const channel = tags[preferred] ? preferred : "staging";
-if (channel !== preferred) {
-	console.error(
-		`No @maya-invest/edaya-api-client@${preferred} dist-tag; falling back to staging.`,
-	);
+if (!tags[preferred]) {
+  throw new Error(`Publish the matching @maya-invest/edaya-api-client@${preferred} before verifying this branch`);
 }
-process.stdout.write(`${channel}\n`);
+process.stdout.write(`${tags[preferred]}\n`);

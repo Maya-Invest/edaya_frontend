@@ -486,8 +486,9 @@ async function runPermissionsScenario(
 			await waitForAppShell(session.page).catch(() => {});
 			await session.page.waitForTimeout(1_000);
 			const hrefs = await sidebarNavHrefs(session.page);
-			const required = ['/school/students', '/school/events'];
-			const forbidden = ['/finance', '/configuration', '/school/calendar', '/school/announcements'];
+			// Personal announcements are available to every selected profile; rows remain audience-filtered.
+			const required = ['/school/students', '/school/events', '/school/announcements'];
+			const forbidden = ['/finance', '/configuration', '/school/calendar'];
 			const missing = required.filter(fragment => !hrefsInclude(hrefs, fragment));
 			const leaked = forbidden.filter(fragment => !hrefsExclude(hrefs, fragment));
 			if (missing.length > 0) {

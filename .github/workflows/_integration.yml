@@ -24,8 +24,10 @@ jobs:
 
       - name: Resolve API client channel
         id: api_client
+        env:
+          CANDIDATE_REF: ${{ github.head_ref || github.ref_name }}
         run: |
-          CHANNEL="$(node .github/scripts/ci-resolve-api-client-channel.mjs "${{ github.head_ref || github.ref_name }}")"
+          CHANNEL="$(node .github/scripts/ci-resolve-api-client-channel.mjs "$CANDIDATE_REF")"
           echo "channel=${CHANNEL}" >> "$GITHUB_OUTPUT"
           echo "Using @maya-invest/edaya-api-client@${CHANNEL}"
 
@@ -37,8 +39,10 @@ jobs:
 
       - name: Resolve API source ref
         id: api_source
+        env:
+          CANDIDATE_REF: ${{ github.head_ref || github.ref_name }}
         run: |
-          WEB_HEAD="${{ github.head_ref || github.ref_name }}"
+          WEB_HEAD="$CANDIDATE_REF"
           REF="$(bash .github/scripts/ci-api-source-ref.sh "$WEB_HEAD")"
           echo "ref=${REF}" >> "$GITHUB_OUTPUT"
           echo "Using Identity + school @${REF} (web head ${WEB_HEAD})"
