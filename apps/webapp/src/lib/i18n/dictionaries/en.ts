@@ -2038,6 +2038,8 @@ export const en: Dict = {
 	'events.selectStudent': 'Select student',
 	'events.permissionCreate': 'DISCIPLINE_CREATE permission required.',
 	'events.permissionUpdate': 'DISCIPLINE_UPDATE permission required.',
+	'events.permissionValidate': 'DISCIPLINE_VALIDATE permission required.',
+	'events.permissionArchive': 'DISCIPLINE_ARCHIVE permission required.',
 	'events.kind.positive': 'Positive',
 	'events.kind.minor_infraction': 'Minor infraction',
 	'events.kind.major_infraction': 'Major infraction',

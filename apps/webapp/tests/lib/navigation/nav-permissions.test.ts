@@ -29,17 +29,18 @@ describe('nav-permissions — professeur (phase 3.2)', () => {
 		expect(visibleNavModuleKeys(teacherGrants, schoolCtx)).toEqual(['school', 'classes']);
 	});
 
-	it('hides staff, announcements, finance and configuration entries', () => {
+	it('keeps personal announcements visible while hiding administrative entries', () => {
 		const schoolKeys = filterNavItems(SCHOOL_NAV_DEFS, teacherGrants).map(item => item.key);
 		expect(schoolKeys).toEqual([
 			'students',
 			'guardians',
 			'calendar',
 			'activities',
+			'announcements',
 			'events',
 		]);
 		expect(schoolKeys).not.toContain('staff');
-		expect(schoolKeys).not.toContain('announcements');
+		expect(schoolKeys).toContain('announcements');
 
 		expect(filterNavItems(NAV_MODULE_DEFS.finance, teacherGrants)).toHaveLength(0);
 		expect(filterNavItems(NAV_MODULE_DEFS.configuration, teacherGrants)).toHaveLength(0);
@@ -53,7 +54,7 @@ describe('nav-permissions — professeur (phase 3.2)', () => {
 		expect(canAccessPath('/dashboard', teacherGrants)).toBe(true);
 		expect(canAccessPath('/school/students', teacherGrants)).toBe(true);
 		expect(canAccessPath('/finance/billing', teacherGrants)).toBe(false);
-		expect(canAccessPath('/school/announcements', teacherGrants)).toBe(false);
+		expect(canAccessPath('/school/announcements', teacherGrants)).toBe(true);
 	});
 });
 
@@ -107,9 +108,9 @@ describe('nav-permissions — éducateur (phase 3.4)', () => {
 		expect(visibleNavModuleKeys(educatorGrants, schoolCtx)).toEqual(['school', 'classes']);
 	});
 
-	it('shows students, guardians and discipline events only in school menu', () => {
+	it('shows personal announcements alongside permitted school entries', () => {
 		const schoolKeys = filterNavItems(SCHOOL_NAV_DEFS, educatorGrants).map(item => item.key);
-		expect(schoolKeys).toEqual(['students', 'guardians', 'events']);
+		expect(schoolKeys).toEqual(['students', 'guardians', 'announcements', 'events']);
 	});
 
 	it('blocks staff, finance and configuration URLs', () => {
@@ -140,5 +141,15 @@ describe('nav-permissions — comptable', () => {
 		expect(canAccessPath('/finance/billing', accountantGrants)).toBe(true);
 		expect(canAccessPath('/finance/fees', accountantGrants)).toBe(true);
 		expect(canAccessPath('/finance/payment', accountantGrants)).toBe(true);
+	});
+});
+
+describe('personal communications without administrative grants', () => {
+	it('keeps inbox and own announcements reachable without inventing school grants', () => {
+		expect(filterNavItems(SCHOOL_NAV_DEFS, []).map(item => item.key)).toEqual(['announcements']);
+		expect(canAccessPath('/school/announcements', [])).toBe(true);
+		expect(canAccessPath('/account/inbox', [])).toBe(true);
+		expect(canAccessPath('/school/staff', [])).toBe(false);
+		expect(canAccessPath('/finance/billing', [])).toBe(false);
 	});
 });

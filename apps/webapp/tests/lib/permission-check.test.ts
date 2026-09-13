@@ -38,3 +38,11 @@ describe('action grant display', () => {
 		expect(checkPermission([{ ...grant, scopes: [] }], 'GRADE_READ')).toBe(false);
 	});
 });
+
+it('occurrence assignments never enable another occurrence or a class-wide mutation', () => {
+	const grants: ActionGrantsSnapshot = [{ permission: 'GRADE_INPUT', source: 'assignment', scopes: [{ kind: 'assessment', assessmentId: 'exam-a', classGroupId: 'a', classSubjectId: 'math' }] }];
+	expect(checkPermission(grants, 'GRADE_INPUT', { assessmentId: 'exam-a', classId: 'a' })).toBe(true);
+	expect(checkPermission(grants, 'GRADE_INPUT', { assessmentId: 'exam-b', classId: 'a' })).toBe(false);
+	expect(checkPermission(grants, 'GRADE_INPUT', { classId: 'a' })).toBe(false);
+	expect(checkPermission(grants, 'GRADE_UPDATE', { assessmentId: 'exam-a' })).toBe(false);
+});

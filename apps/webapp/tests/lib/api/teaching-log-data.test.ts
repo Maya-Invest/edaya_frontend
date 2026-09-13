@@ -1,7 +1,7 @@
 import type { TeachingLogSources } from '$lib/api/teaching-log-data';
+import { mapTeachingLogEntries } from '$lib/api/teaching-log-data';
 import { classSubject, lessonSession, staffMember, subject } from '$tests/support/openapi-fixtures';
 import { describe, expect, it } from 'bun:test';
-import { mapTeachingLogEntries } from '$lib/api/teaching-log-data';
 
 const classSources: TeachingLogSources = {
 	lessonSessionsRaw: [
@@ -44,8 +44,8 @@ const classSources: TeachingLogSources = {
 	staffAssignmentsRaw: [
 		{ id: 'sa-st1-math', staffId: 'st1', academicYearId: '2025', responsibility: 'Teacher', classSubjectId: 'cs-6a-math', permissions: [] },
 	],
-	teachersRaw: [],
-	teacherAssignmentsRaw: [],
+	teachersRaw: [{ id: 'teacher', firstName: 'Aminata', lastName: 'Touré', isActive: true }],
+	teacherAssignmentsRaw: [{ id: 'teaching', teacherId: 'teacher', academicYearId: '2025', kind: 'subject', classSubjectId: 'cs-6a-math', status: 'active' }],
 };
 
 describe('mapTeachingLogEntries', () => {
@@ -58,8 +58,8 @@ describe('mapTeachingLogEntries', () => {
 			subjectsRaw: [...classSources.subjectsRaw],
 			staffMembersRaw: [...classSources.staffMembersRaw],
 			staffAssignmentsRaw: [...classSources.staffAssignmentsRaw],
-			teachersRaw: [],
-			teacherAssignmentsRaw: [],
+			teachersRaw: classSources.teachersRaw,
+			teacherAssignmentsRaw: classSources.teacherAssignmentsRaw,
 		});
 
 		expect(entries).toHaveLength(1);
@@ -67,7 +67,7 @@ describe('mapTeachingLogEntries', () => {
 			id: 'ls-cs-6a-math-0',
 			classId: '6a',
 			subject: 'Mathematics',
-			teacher: 'Marie Dupont',
+			teacher: 'Aminata Touré',
 			content: 'Addition et soustraction de fractions.',
 			progress: 62,
 		});
@@ -82,8 +82,8 @@ describe('mapTeachingLogEntries', () => {
 			subjectsRaw: [...classSources.subjectsRaw],
 			staffMembersRaw: [...classSources.staffMembersRaw],
 			staffAssignmentsRaw: [...classSources.staffAssignmentsRaw],
-			teachersRaw: [],
-			teacherAssignmentsRaw: [],
+			teachersRaw: classSources.teachersRaw,
+			teacherAssignmentsRaw: classSources.teacherAssignmentsRaw,
 		}, 'Mathematics');
 
 		expect(entries).toHaveLength(1);
@@ -102,8 +102,8 @@ describe('mapTeachingLogEntries', () => {
 			subjectsRaw: [...classSources.subjectsRaw],
 			staffMembersRaw: [],
 			staffAssignmentsRaw: [],
-			teachersRaw: [],
-			teacherAssignmentsRaw: [],
+			teachersRaw: classSources.teachersRaw,
+			teacherAssignmentsRaw: classSources.teacherAssignmentsRaw,
 		});
 
 		expect(entries.map(entry => entry.date)).toEqual(['2026-05-22', '2026-05-18']);

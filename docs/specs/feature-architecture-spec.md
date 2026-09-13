@@ -145,7 +145,7 @@ These are **fixed** for v1. Do not introduce alternate flows without updating th
 | Field | Control |
 |-------|---------|
 | `attendanceMode` | `<select>`: Daily roll call · Per session |
-| `homeroomStaffId` | Staff picker (daily mode: owner of day board) |
+| `homeroomStaffId` | Staff coordinator picker (administrative contact only; grants no teaching or attendance authority) |
 
 **API commands (existing):**
 
@@ -299,6 +299,7 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 ### 7.4 School — Staff
 
+- **Account scope:** human staff only. Apply `accountKind = human` to lists, counts and direct drawer lookup before pagination. Service-account lifecycle and permission changes use the dedicated service-account API, never ordinary staff forms.
 - **Entity:** `StaffMember` · **Complex drawer**
 - **List:** search name · main filter assigned class · filter active/inactive
 - **Drawer header:** Edit profile · Manage permissions
@@ -423,6 +424,9 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 - **Entity:** `ClassGroup` · **Complex drawer** (URL-backed)
 - **Profile fields:** `attendanceMode` · `homeroomStaffId` · capacity · labels
 - **Tab:** **Staff assignments** (class-level only)
+- `homeroomStaffId` stores the staff coordinator only. Homeroom teachers come from current `TeacherAssignment` rows with kind `homeroom`; these are distinct business facts.
+- The profile query loads teacher assignments for the selected class and its academic year into route state. Optional forbidden enrichment leaves the teacher display empty.
+- Teacher labels require active teacher profiles and active assignments within their validity interval. Staff assignments never fill missing subject or homeroom teacher labels.
 
 ### 7.22 Configuration — Subjects catalog
 
@@ -511,6 +515,8 @@ Sub-entities (`studentIncidentInvolvements`, `staffPermissionAssignments`, `teac
 | Timetable materialize | `createSchedule` · `materializeSchedule` |
 | Class activity link | `classActivityEnrollments` entity CRUD |
 
+Incident content editing uses `DISCIPLINE_UPDATE`; resolution uses `DISCIPLINE_VALIDATE`; cancellation and deletion use `DISCIPLINE_ARCHIVE`. The resolve command also checks the permissions needed to add or change participants and apply sanctions. Each visible action must display its own required permission.
+
 Regenerate the API client in **edaya_backend** after API changes (`bun repo openapi generate`), then refresh the web dependency.
 
 ---
@@ -537,3 +543,8 @@ For interaction patterns, shared components, data loading, visuals, and state �
 | 2026-07-06 | Self-contained spec; removed cross-doc links |
 | 2026-07-03 | §5.3.1 Staff permission UI; expanded incidents, timetable, assessments |
 | 2026-07-03 | Initial normative spec |
+
+
+### Personal communications
+
+The personal inbox queries deliveries by login subject and selected recipient kind/id together, including for school owners. Selecting another profile never merges personal delivery or read state. The announcements entry is available to every signed-in profile; the backend restricts rows to current audiences and any explicitly granted administrative scope. Administrative mutations still require their canonical actions. Do not invent school-wide grants to make personal communications navigation visible.

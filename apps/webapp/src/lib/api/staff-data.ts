@@ -232,7 +232,7 @@ export async function fetchStaffMembers(
 	scope: { schoolId: string; academicYearId: string },
 ): Promise<StaffMember[]> {
 	const [staffRaw, classGroupsRaw] = await Promise.all([
-		client.entities.staffMembers.list({ schoolId: scope.schoolId }),
+		client.entities.staffMembers.list({ schoolId: scope.schoolId, accountKind: 'human' }),
 		client.entities.classGroups.list({
 			schoolId: scope.schoolId,
 			academicYearId: scope.academicYearId,
@@ -262,7 +262,10 @@ export async function fetchStaffMemberById(
 	staffId: string,
 	schoolId: string,
 ): Promise<StaffMember | null> {
-	const staff = await client.entities.staffMembers.get(staffId);
+	const [staff] = await client.entities.staffMembers.list({ id: staffId, schoolId, accountKind: 'human', $limit: 1 });
+	if (!staff) {
+		return null;
+	}
 	const relations = await fetchStaffRelations(client, [staffId]);
 	const assignedClassIds = uniqueIds(
 		relations.assignmentsRaw
@@ -344,7 +347,7 @@ export async function fetchStaffMembersPage(
 ): Promise<PaginatedStaffData> {
 	const limit = request.limit ?? DEFAULT_LIST_PAGE_SIZE;
 	const offset = request.offset ?? 0;
-	const staffFilter = paginatedList({ schoolId: scope.schoolId }, {
+	const staffFilter = paginatedList({ schoolId: scope.schoolId, accountKind: 'human' }, {
 		limit,
 		offset,
 		orderBy: STAFF_LIST_ORDER,
@@ -352,7 +355,7 @@ export async function fetchStaffMembersPage(
 
 	const [staffRaw, totalStaff, classGroupsRaw] = await Promise.all([
 		client.entities.staffMembers.list(staffFilter),
-		client.entities.staffMembers.count({ schoolId: scope.schoolId }).then(result => result.count),
+		client.entities.staffMembers.count({ schoolId: scope.schoolId, accountKind: 'human' }).then(result => result.count),
 		scope.academicYearId
 			? client.entities.classGroups.list({
 					schoolId: scope.schoolId,

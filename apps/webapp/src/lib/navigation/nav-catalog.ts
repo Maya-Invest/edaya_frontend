@@ -50,7 +50,7 @@ export const SCHOOL_NAV_DEFS: NavItemDefinition[] = [
 		key: 'announcements',
 		labelKey: 'school.announcements',
 		href: '/school/announcements',
-		permissions: ['QUERY_COMMUNICATIONS_READ', 'COMMUNICATION_READ'],
+		// Every selected profile may read announcements addressed to it; policies filter the rows.
 	},
 	{
 		key: 'events',

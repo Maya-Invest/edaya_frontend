@@ -1,12 +1,10 @@
 import type { GuardianNotificationSettings, StaffNotificationSettings } from '$lib/api/account-data';
-import type { InboxDelivery } from '$lib/api/notifications-inbox-data';
 import {
 	fetchGuardianNotificationSettings,
 	fetchStaffSubjectId,
 
 } from '$lib/api/account-data';
 import { entitiesByIds } from '$lib/api/entity-list-filters';
-import { fetchInboxDeliveries } from '$lib/api/notifications-inbox-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 import { resolvePageLoad } from '$lib/queries/page-status';
@@ -17,11 +15,6 @@ export interface NotificationSettingsPageData {
 	loginEmail: string | null;
 	studentNames: Record<string, string>;
 	kind: 'staff' | 'guardian' | 'student' | 'teacher' | null;
-}
-
-export interface InboxPageData {
-	deliveries: InboxDelivery[];
-	subjectId: string | null;
 }
 
 export function queryNotificationSettingsPage() {
@@ -63,27 +56,5 @@ export function queryNotificationSettingsPage() {
 		},
 		hasItems: data => Boolean(data.settings) || Boolean(data.staffSettings),
 		errorMessage: 'Unable to load notification settings.',
-	});
-}
-
-export function queryInboxPage() {
-	return (url: URL) => resolvePageLoad(url, {
-		empty: (): InboxPageData => ({
-			deliveries: [],
-			subjectId: authSession.subjectId,
-		}),
-		load: async (): Promise<InboxPageData> => {
-			const subjectId = authSession.subjectId;
-			if (!subjectId) {
-				return { deliveries: [], subjectId: null };
-			}
-			const deliveries = await fetchInboxDeliveries(
-				getBrowserSchoolClient(),
-				subjectId,
-			);
-			return { deliveries, subjectId };
-		},
-		hasItems: data => data.deliveries.length > 0,
-		errorMessage: 'Unable to load your inbox.',
 	});
 }

@@ -349,7 +349,7 @@ Rules:
 
 ### `PageQuery` contract
 
-`PageQuery` caches by URL-derived key. **Entity payloads are not in the cache** — only `PageLoadMeta` status. When a route layout unmounts, call `releaseRoutePageQueryOnDestroy(getUrl)` so the next visit re-runs `load` and seeds a new state instance.
+`PageQuery` caches by URL-derived key by default. Use `cache={false}` for a view whose route state retains only its current selection and must reload current facts on each visit; class profile teacher assignments use this option. **Entity payloads are not in the cache** — only `PageLoadMeta` status. When a route layout unmounts, call `releaseRoutePageQueryOnDestroy(getUrl)` so the next visit re-runs `load` and seeds a new state instance.
 
 The app shell must own academic-context invalidation. When school, academic year, or period changes, the central shell mechanism shall:
 

@@ -18,10 +18,9 @@
 		classesPage.staff.find(member => member.id === live.homeroomStaffId)?.name ?? '—',
 	);
 	const portalHomeroomTeacher = $derived(
-		portalHomeroomTeacherNameForClass(live.id, {
-			teachersRaw: [],
-			teacherAssignmentsRaw: [],
-		}),
+		classesPage.profileClassGroupId === live.id
+			? portalHomeroomTeacherNameForClass(live.id, classesPage.profileTeacherSources)
+			: '—',
 	);
 </script>
 

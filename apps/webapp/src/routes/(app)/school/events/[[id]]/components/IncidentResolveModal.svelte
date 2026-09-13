@@ -11,6 +11,7 @@
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, Plus, Trash2 } from '$lib/icons';
+	import { hasPermission } from '$lib/permissions';
 	import StudentPicker from '$lib/smart-components/student-picker/StudentPicker.svelte';
 	import { get } from 'svelte/store';
 	import { getEventsPageState } from '../../events-page.svelte';
@@ -42,6 +43,9 @@
 	let loading = $state(false);
 	let rows = $state<ResolveRow[]>([]);
 	let resolutionNotes = $state('');
+	let classGroupId = $state<string | undefined>(undefined);
+	const canAddParticipant = $derived(hasPermission('DISCIPLINE_CREATE', { classId: classGroupId }));
+	const canEditParticipant = $derived(hasPermission('DISCIPLINE_UPDATE'));
 	let disciplinaryActions = $state<Array<{ id: string; name: string }>>([]);
 
 	const canSubmit = $derived(!loading && rows.length > 0 && rows.every(row => row.studentId.length > 0));
@@ -72,6 +76,7 @@
 				incident.id,
 				academicContext.periodId,
 			);
+			classGroupId = data.incident.classGroupId ?? undefined;
 			disciplinaryActions = data.disciplinaryActions.map(action => ({
 				id: action.id,
 				name: action.name,
@@ -180,7 +185,7 @@
 					<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 						{$t('events.involvedStudents')}
 					</Label>
-					<Button type="button" variant="outline" size="sm" class="rounded-full" onclick={addRow}>
+					<Button type="button" variant="outline" size="sm" class="rounded-full" disabled={!canAddParticipant} title={!canAddParticipant ? $t('events.permissionCreate') : undefined} onclick={addRow}>
 						<Plus class="mr-1 h-3.5 w-3.5" />
 						{$t('events.addInvolvedStudent')}
 					</Button>
@@ -193,7 +198,7 @@
 								<p class="text-xs font-medium text-muted-foreground">
 									{$t('events.involvedStudentRow')}
 								</p>
-								{#if rows.length > 1}
+								{#if rows.length > 1 && !row.involvementId}
 									<Button
 										type="button"
 										variant="ghost"
@@ -211,6 +216,7 @@
 								</Label>
 								<StudentPicker
 									value={row.studentId}
+									disabled={Boolean(row.involvementId) || !canAddParticipant}
 									active={open}
 									excludeIds={excludeStudentIds(row.key)}
 									onValueChange={studentId => updateRow(row.key, { studentId })}
@@ -224,6 +230,7 @@
 									<Select.Root
 										type="single"
 										value={row.role}
+										disabled={row.involvementId ? !canEditParticipant : !canAddParticipant}
 										onValueChange={value => value && updateRow(row.key, { role: value as IncidentInvolvementRole })}
 									>
 										<Select.Trigger>

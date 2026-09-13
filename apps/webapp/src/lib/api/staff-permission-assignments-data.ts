@@ -73,7 +73,7 @@ export async function buildStaffPermissionAssignmentViews(
 				? translate?.('roles.wholeSchool') ?? 'Whole school'
 				: rendered.items[index]?.scopes.map(scope => scope.label).join('; ') ?? '—',
 			tenantWide: assignment.scopes.some(scope => scope.kind === 'school'),
-			hasMissingScope: false,
+			hasMissingScope: rendered.items[index]?.scopes.some(scope => scope.missing) ?? false,
 		})));
 	}
 	return views;

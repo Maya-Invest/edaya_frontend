@@ -184,10 +184,6 @@ export function pendingAccountInvitationForTarget(
 	};
 }
 
-export function deliveriesForSubject(subjectId: string): EntityQuery {
-	return { subjectId };
-}
-
 export function enrollmentsForStudents(studentIds: readonly string[]): EntityQuery {
 	return recordsForFieldIds('studentId', studentIds);
 }

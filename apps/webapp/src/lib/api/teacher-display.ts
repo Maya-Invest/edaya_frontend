@@ -15,16 +15,7 @@ export type TeacherAssignmentRaw = components['schemas']['TeacherAssignment'];
 export type StaffMemberRaw = components['schemas']['StaffMember'];
 export type StaffAssignmentRaw = components['schemas']['StaffAssignment'];
 
-export type TeacherNameLookup
-	= | Pick<TeacherRaw, 'id' | 'firstName' | 'lastName'>
-		| { id: string; name: string };
-
-function resolveTeacherName(teacher: TeacherNameLookup): string {
-	if ('name' in teacher) {
-		return teacher.name;
-	}
-	return formatPersonName(teacher.firstName, teacher.lastName);
-}
+export type TeacherNameLookup = Pick<TeacherRaw, 'id' | 'firstName' | 'lastName' | 'isActive'>;
 
 export interface ClassSubjectInstructorSources {
 	teachersRaw: TeacherNameLookup[];
@@ -37,37 +28,35 @@ export function formatPersonName(firstName: string, lastName: string): string {
 	return `${firstName} ${lastName}`.trim();
 }
 
+function timestamp(value: unknown): number {
+	return value instanceof Date ? value.getTime() : typeof value === 'string' ? Date.parse(value) : Number.NaN;
+}
+
+function currentTeacherNames(
+	sources: Pick<ClassSubjectInstructorSources, 'teachersRaw' | 'teacherAssignmentsRaw'>,
+	match: (assignment: TeacherAssignmentRaw) => boolean,
+): string {
+	const now = Date.now();
+	const names = new Set<string>();
+	for (const assignment of sources.teacherAssignmentsRaw) {
+		if (!match(assignment) || assignment.status !== 'active'
+			|| (assignment.startsAt != null && !(timestamp(assignment.startsAt) <= now))
+			|| (assignment.endsAt != null && !(now < timestamp(assignment.endsAt)))) {
+			continue;
+		}
+		const teacher = sources.teachersRaw.find(entry => entry.id === assignment.teacherId && entry.isActive);
+		if (teacher)
+			names.add(formatPersonName(teacher.firstName, teacher.lastName));
+	}
+	return [...names].sort().join(', ');
+}
+
 export function teacherNameForClassSubject(
 	classSubjectId: string,
 	sources: ClassSubjectInstructorSources,
 	fallback = 'Non assigné',
 ): string {
-	const teacherAssignments = sources.teacherAssignmentsRaw ?? [];
-	const staffAssignments = sources.staffAssignmentsRaw ?? [];
-	const teachers = sources.teachersRaw ?? [];
-	const staffMembers = sources.staffMembersRaw ?? [];
-
-	const teacherAssignment = teacherAssignments.find(
-		entry => entry.kind === 'subject' && entry.classSubjectId === classSubjectId,
-	);
-	if (teacherAssignment) {
-		const teacher = teachers.find(entry => entry.id === teacherAssignment.teacherId);
-		if (teacher) {
-			return resolveTeacherName(teacher);
-		}
-	}
-
-	const staffAssignment = staffAssignments.find(
-		entry => entry.classSubjectId === classSubjectId,
-	);
-	if (staffAssignment) {
-		const staff = staffMembers.find(member => member.id === staffAssignment.staffId);
-		if (staff) {
-			return formatPersonName(staff.firstName, staff.lastName);
-		}
-	}
-
-	return fallback;
+	return currentTeacherNames(sources, entry => entry.kind === 'subject' && entry.classSubjectId === classSubjectId) || fallback;
 }
 
 export function instructorNameFromStaffAssignment(
@@ -117,17 +106,23 @@ export function portalHomeroomTeacherNameForClass(
 	sources: Pick<ClassSubjectInstructorSources, 'teachersRaw' | 'teacherAssignmentsRaw'>,
 	fallback = '—',
 ): string {
-	const assignment = sources.teacherAssignmentsRaw.find(
-		entry => entry.kind === 'homeroom'
-			&& entry.classGroupId === classGroupId
-			&& entry.status === 'active',
-	);
-	if (!assignment) {
-		return fallback;
-	}
+	return currentTeacherNames(sources, entry => entry.kind === 'homeroom' && entry.classGroupId === classGroupId) || fallback;
+}
 
-	const teacher = sources.teachersRaw.find(entry => entry.id === assignment.teacherId);
-	return teacher ? resolveTeacherName(teacher) : fallback;
+export async function fetchHomeroomTeacherSources(
+	client: SchoolClient,
+	classGroupId: string,
+	academicYearId: string,
+): Promise<Pick<ClassSubjectInstructorSources, 'teachersRaw' | 'teacherAssignmentsRaw'>> {
+	const teacherAssignmentsRaw = await safeOptionalEntityList(() => client.entities.teacherAssignments.list({
+		classGroupId,
+		academicYearId,
+		kind: 'homeroom',
+		status: 'active',
+	}));
+	const teacherIds = uniqueIds(teacherAssignmentsRaw.map(entry => entry.teacherId));
+	const teachersRaw = teacherIds.length ? await safeOptionalEntityList(() => client.entities.teachers.list(entitiesByIds(teacherIds))) : [];
+	return { teachersRaw, teacherAssignmentsRaw };
 }
 
 export async function fetchClassSubjectInstructorSources(

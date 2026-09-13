@@ -2,10 +2,10 @@ import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
 import { fetchActivitySources } from '$lib/api/activities-data';
 import { listAllEntityPages, schoolScopedEntityList } from '$lib/api/entity-list-filters';
-import { fetchStaffMembers } from '$lib/api/staff-data';
+import { fetchStaffMemberById, fetchStaffMembers, fetchStaffMembersPage } from '$lib/api/staff-data';
 import { loadStaffPermissionAssignments } from '$lib/api/staff-permission-assignments-data';
 import { fetchCatalogSubjectsSources } from '$lib/api/subjects-data';
-import { createRecordingSchoolClient, entityListRequests } from '$tests/support/recording-school-client';
+import { createRecordingSchoolClient, entityCountRequests, entityListRequests } from '$tests/support/recording-school-client';
 
 const academicYearId = 'year-1';
 
@@ -82,6 +82,7 @@ describe('configuration and activity loading', () => {
 
 		expect(entityListRequests(requests, 'staff-members')[0]?.body).toEqual({
 			schoolId: SEED_SCHOOL_ID,
+			accountKind: 'human',
 		});
 		expect(entityListRequests(requests, 'class-groups')[0]?.body).toEqual({
 			schoolId: SEED_SCHOOL_ID,
@@ -92,6 +93,21 @@ describe('configuration and activity loading', () => {
 		});
 		expect(entityListRequests(requests, 'class-subjects')).toHaveLength(0);
 		expect(entityListRequests(requests, 'subjects')).toHaveLength(0);
+	});
+
+	it('uses the same human-staff boundary for pagination and totals', async () => {
+		const { client, requests } = createRecordingSchoolClient([[], { count: 0 }, []]);
+		const page = await fetchStaffMembersPage(client, { schoolId: SEED_SCHOOL_ID, academicYearId }, { offset: 20, limit: 10 });
+		expect(page).toMatchObject({ staff: [], totalStaff: 0 });
+		expect(entityListRequests(requests, 'staff-members')[0]?.body).toMatchObject({ schoolId: SEED_SCHOOL_ID, accountKind: 'human', $offset: 20, $limit: 10 });
+		expect(entityCountRequests(requests, 'staff-members')[0]?.body).toEqual({ schoolId: SEED_SCHOOL_ID, accountKind: 'human' });
+	});
+
+	it('does not open a service account in the human staff drawer or load its permission relations', async () => {
+		const { client, requests } = createRecordingSchoolClient([[]]);
+		expect(await fetchStaffMemberById(client, 'service-account', SEED_SCHOOL_ID)).toBeNull();
+		expect(requests).toHaveLength(1);
+		expect(entityListRequests(requests, 'staff-members')[0]?.body).toEqual({ id: 'service-account', schoolId: SEED_SCHOOL_ID, accountKind: 'human', $limit: 1 });
 	});
 
 	it('loads subjects catalog with school-scoped parents and child rows by those ids', async () => {

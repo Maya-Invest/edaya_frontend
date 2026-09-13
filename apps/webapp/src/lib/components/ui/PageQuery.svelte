@@ -12,11 +12,13 @@
 	const {
 		query,
 		cacheKey = listRouteCacheKey,
+		cache = true,
 		loadingTitle,
 		children,
 	}: {
 		query: (url: URL) => Promise<T>;
 		cacheKey?: (url: URL) => string;
+		cache?: boolean;
 		loadingTitle?: string;
 		children: Snippet<[T]>;
 	} = $props();
@@ -37,7 +39,7 @@
 			return;
 		}
 
-		const cached = getPageQueryCache<T>(key);
+		const cached = cache ? getPageQueryCache<T>(key) : undefined;
 		if (cached) {
 			result = cached;
 			loadedKey = key;
@@ -61,7 +63,8 @@
 				result = data;
 				loadedKey = key;
 				inFlightKey = null;
-				setPageQueryCache(key, data);
+				if (cache)
+					setPageQueryCache(key, data);
 				pageQueryStatus.markReady(key);
 			})
 			.catch(() => {

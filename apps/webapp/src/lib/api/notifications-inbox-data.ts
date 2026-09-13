@@ -1,9 +1,14 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import { deliveriesForSubject } from '$lib/api/entity-list-filters';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 type MessageDeliveryRaw = components['schemas']['MessageDelivery'];
+
+export interface InboxRecipient {
+	subjectId: string;
+	recipientKind: NonNullable<MessageDeliveryRaw['recipientKind']>;
+	recipientId: string;
+}
 
 export interface InboxDelivery {
 	id: string;
@@ -33,9 +38,11 @@ function toIso(value: unknown): string | undefined {
 
 export async function fetchInboxDeliveries(
 	client: SchoolClient,
-	subjectId: string,
+	recipient: InboxRecipient,
 ): Promise<InboxDelivery[]> {
-	const deliveries = await client.entities.messageDeliveries.list(deliveriesForSubject(subjectId));
+	if (!recipient.subjectId || !recipient.recipientKind || !recipient.recipientId)
+		return [];
+	const deliveries = await client.entities.messageDeliveries.list({ subjectId: recipient.subjectId, recipientKind: recipient.recipientKind, recipientId: recipient.recipientId });
 	return (deliveries ?? [])
 		.map((delivery: MessageDeliveryRaw) => ({
 			id: delivery.id,

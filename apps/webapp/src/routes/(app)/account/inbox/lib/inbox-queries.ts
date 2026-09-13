@@ -9,11 +9,13 @@ import { emptyInboxSlice } from './inbox-helpers';
 
 export async function loadInboxSlice(): Promise<InboxPageSlice> {
 	const subjectId = authSession.subjectId;
-	if (!subjectId) {
+	const recipientKind = authSession.sessionKind;
+	const recipientId = authSession.userId;
+	if (!subjectId || !recipientKind || !recipientId) {
 		return { deliveries: [], subjectId: null };
 	}
 
-	const deliveries = await fetchInboxDeliveries(getBrowserSchoolClient(), subjectId);
+	const deliveries = await fetchInboxDeliveries(getBrowserSchoolClient(), { subjectId, recipientKind, recipientId });
 	return { deliveries, subjectId };
 }
 

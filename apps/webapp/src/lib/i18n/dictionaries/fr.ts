@@ -2013,6 +2013,8 @@ export const fr: Dict = {
 	'events.selectStudent': 'Choisir un élève',
 	'events.permissionCreate': 'Droit DISCIPLINE_CREATE requis.',
 	'events.permissionUpdate': 'Droit DISCIPLINE_UPDATE requis.',
+	'events.permissionValidate': 'Droit DISCIPLINE_VALIDATE requis.',
+	'events.permissionArchive': 'Droit DISCIPLINE_ARCHIVE requis.',
 	'events.kind.positive': 'Positif',
 	'events.kind.minor_infraction': 'Infraction mineure',
 	'events.kind.major_infraction': 'Infraction majeure',

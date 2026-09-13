@@ -7,7 +7,7 @@ import { loadPermissionCatalog } from '$lib/api/staff-permission-assignments-dat
 import { queryClient } from '$lib/queries/client';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 import { ApiError } from '@maya-invest/edaya-api-client';
-import { emptyClassesSlice } from './classes-helpers';
+import { classGroupIdFromUrl, emptyClassesSlice } from './classes-helpers';
 
 export async function loadClassesSlice(): Promise<ClassesPageSlice> {
 	return {
@@ -76,4 +76,18 @@ export async function fetchStaffDirectory() {
 
 export async function fetchPermissionCatalogEntries() {
 	return loadPermissionCatalog(queryClient());
+}
+
+export function queryClassGroupProfile(state: ClassesPageState) {
+	return (url: URL) => resolvePageLoad(url, {
+		empty: () => ({}),
+		load: async () => {
+			const id = classGroupIdFromUrl(url);
+			if (id)
+				await state.loadProfileTeachers(id);
+			return {};
+		},
+		hasItems: () => true,
+		errorMessage: 'Unable to load class teachers.',
+	});
 }

@@ -129,7 +129,7 @@
 				{/snippet}
 			</PermissionGate>
 			{#if !isResolved}
-				<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('events.permissionUpdate')}>
+				<PermissionGate permission="DISCIPLINE_VALIDATE" mode="disable" tooltip={$t('events.permissionValidate')}>
 					{#snippet children({ disabled, title })}
 						<Button
 							variant="outline"
@@ -146,7 +146,7 @@
 			{/if}
 		{/snippet}
 		{#snippet overflow()}
-			<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('events.permissionUpdate')}>
+			<PermissionGate permission="DISCIPLINE_ARCHIVE" mode="disable" tooltip={$t('events.permissionArchive')}>
 				{#snippet children({ disabled, title })}
 					<RowActionMenuItem
 						{disabled}
