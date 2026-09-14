@@ -25,6 +25,10 @@ export function resolveLinkedActorPath(
 		return appPath('/login');
 	}
 
+	if (kind === 'guardian') {
+		return appPath('/login');
+	}
+
 	return appPath('/(app)/school/students/[[id]]');
 }
 

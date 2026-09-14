@@ -1,6 +1,7 @@
 import { markAuthGatePassed } from '$lib/auth/auth-gate';
 import { bootstrapSession } from '$lib/auth/bootstrap';
 import { resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
+import { guardianPortalLoginPath } from '$lib/auth/guardian-portal-gate';
 import { resolvePostAuthPath } from '$lib/auth/resolve-post-auth';
 import { authSession } from '$lib/auth/session.svelte';
 import { teacherPortalLoginPath } from '$lib/auth/teacher-portal-gate';
@@ -32,6 +33,14 @@ export async function completeAuthSignIn(successMessage?: string): Promise<boole
 		resetAppShellBootstrap();
 		toast.info(get(t)('auth.teacherPortalGateHint'));
 		appGoto(teacherPortalLoginPath(), { replaceState: true });
+		return true;
+	}
+
+	if (session.kind === 'guardian') {
+		await authSession.logout();
+		resetAppShellBootstrap();
+		toast.info(get(t)('auth.guardianPortalGateHint'));
+		appGoto(guardianPortalLoginPath(), { replaceState: true });
 		return true;
 	}
 

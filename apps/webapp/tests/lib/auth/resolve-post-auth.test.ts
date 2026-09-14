@@ -117,4 +117,19 @@ describe('resolvePostAuthPath', () => {
 
 		expect(target).toBe('/login');
 	});
+
+	it('routes linked guardians to login (staff webapp gate)', () => {
+		const target = resolvePostAuthPath({
+			session: {
+				kind: 'guardian',
+				actorId: 'grd1',
+				schoolId: 'sch1',
+				grants: [],
+			} as never,
+			pendingOnboarding: false,
+			authUserId: 'user-guardian',
+		});
+
+		expect(target).toBe('/login');
+	});
 });

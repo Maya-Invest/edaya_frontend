@@ -11,6 +11,7 @@
 	import { bootstrapSession, getAuthenticatedAuthUser } from '$lib/auth/bootstrap';
 	import { resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 	import { authClient } from '$lib/auth/client';
+	import { GUARDIAN_PLAY_STORE_URL } from '$lib/auth/guardian-app';
 	import {
 		clearPendingInviteToken,
 		persistPendingInviteToken,
@@ -19,7 +20,7 @@
 	import { authSession } from '$lib/auth/session.svelte';
 	import LanguageSelector from '$lib/components/layout/LanguageSelector.svelte';
 	import BrandLogo from '$lib/components/ui/BrandLogo.svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
+	import Button, { buttonVariants } from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import { t } from '$lib/i18n';
@@ -64,7 +65,7 @@
 
 	const token = $derived($page.params.token ?? '');
 
-	type PageState = 'loading' | 'invalid' | 'notFound' | 'revoked' | 'expired' | 'accepted' | 'ready' | 'accepting' | 'teacherLinked';
+	type PageState = 'loading' | 'invalid' | 'notFound' | 'revoked' | 'expired' | 'accepted' | 'ready' | 'accepting' | 'teacherLinked' | 'guardianLinked';
 	type AcceptedIssue = 'none' | 'otherAccount' | 'stillUnlinked';
 
 	let preview = $state<InvitationPreview | null>(null);
@@ -101,11 +102,20 @@
 		return kind === 'teacher';
 	}
 
+	function isGuardianInvitation(kind: InvitationKind | null | undefined): boolean {
+		return kind === 'guardian';
+	}
+
 	function completeInvitationAccept(session: BootstrapSession) {
 		clearPendingInviteToken();
 		if (isTeacherInvitation(session.kind)) {
 			toast.success($t('invitation.accept.teacherSuccess'));
 			pageState = 'teacherLinked';
+			return;
+		}
+		if (isGuardianInvitation(session.kind)) {
+			toast.success($t('invitation.accept.guardianSuccess'));
+			pageState = 'guardianLinked';
 			return;
 		}
 		toast.success($t('invitation.accept.success'));
@@ -422,6 +432,30 @@
 							{$t('auth.teacherPortalGateHint')}
 						</p>
 					</div>
+				{:else if pageState === 'guardianLinked'}
+					<div class="space-y-4 py-4 text-center">
+						<h2 class="font-display text-lg font-semibold">
+							{$t('invitation.accept.guardianLinkedTitle')}
+						</h2>
+						<p class="text-sm text-muted-foreground">
+							{$t('auth.guardianPortalGateHint')}
+						</p>
+						<div class="space-y-2 text-left">
+							<p class="text-sm font-medium">{$t('invitation.accept.guardianGetAppTitle')}</p>
+							<p class="text-sm text-muted-foreground">{$t('invitation.accept.guardianGetAppHint')}</p>
+							<a
+								class={buttonVariants({ class: 'w-full' })}
+								href={GUARDIAN_PLAY_STORE_URL}
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								{$t('invitation.accept.guardianGetAppPlayStore')}
+							</a>
+							<p class="text-xs text-muted-foreground">
+								{$t('invitation.accept.guardianGetAppAppStore')}
+							</p>
+						</div>
+					</div>
 				{:else if pageState === 'accepted'}
 					<div class="space-y-4 py-4 text-center">
 						{#if acceptedIssue === 'otherAccount'}
@@ -495,6 +529,24 @@
 								})}
 							</p>
 						</div>
+
+						{#if isGuardianInvitation(preview.kind)}
+							<div class="space-y-3 rounded-xl border border-border bg-secondary/40 px-4 py-3 text-sm">
+								<p class="font-medium">{$t('invitation.accept.guardianGetAppTitle')}</p>
+								<p class="text-muted-foreground">{$t('invitation.accept.guardianGetAppHint')}</p>
+								<a
+									class={buttonVariants({ variant: 'outline', class: 'w-full' })}
+									href={GUARDIAN_PLAY_STORE_URL}
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									{$t('invitation.accept.guardianGetAppPlayStore')}
+								</a>
+								<p class="text-xs text-muted-foreground">
+									{$t('invitation.accept.guardianGetAppAppStore')}
+								</p>
+							</div>
+						{/if}
 
 						{#if verificationSent}
 							<div class="space-y-3 rounded-xl border border-border bg-secondary/40 px-4 py-3 text-sm">

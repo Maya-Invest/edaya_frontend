@@ -6,6 +6,10 @@
 	import { page } from '$app/stores';
 	import { checkBrowserApiHealth } from '$lib/api/check-api-health';
 	import {
+		isGuardianPortalGateUrl,
+		GUARDIAN_PORTAL_GATE_BANNER_TEST_ID,
+	} from '$lib/auth/guardian-portal-gate';
+	import {
 		isTeacherPortalGateUrl,
 		TEACHER_PORTAL_GATE_BANNER_TEST_ID,
 	} from '$lib/auth/teacher-portal-gate';
@@ -37,6 +41,7 @@
 		hasEmailIdentity: email.trim().length > 0,
 	}));
 	const showTeacherPortalGate = $derived(isTeacherPortalGateUrl($page.url));
+	const showGuardianPortalGate = $derived(isGuardianPortalGateUrl($page.url));
 
 	onMount(() => {
 		void (async () => {
@@ -117,6 +122,15 @@
 				data-testid={TEACHER_PORTAL_GATE_BANNER_TEST_ID}
 			>
 				{$t('auth.teacherPortalGateHint')}
+			</div>
+		{/if}
+		{#if showGuardianPortalGate}
+			<div
+				class="mb-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground"
+				role="status"
+				data-testid={GUARDIAN_PORTAL_GATE_BANNER_TEST_ID}
+			>
+				{$t('auth.guardianPortalGateHint')}
 			</div>
 		{/if}
 		<ApiConnectionBanner connected={apiConnected} checking={apiChecking} />
