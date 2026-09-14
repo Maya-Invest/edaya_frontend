@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { NotificationChannel, NotificationTemplateKey } from '$lib/notification-templates/catalog';
+	import type { NotificationSendChannel, NotificationTemplateKey } from '$lib/notification-templates/catalog';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
@@ -9,7 +9,7 @@
 	import { t } from '$lib/i18n';
 	import { Pencil, RotateCcw } from '$lib/icons';
 	import {
-		channelsForTemplateKey,
+		listChannelsForTemplateKey,
 		NOTIFICATION_TEMPLATE_CATEGORIES,
 	} from '$lib/notification-templates/catalog';
 	import { get } from 'svelte/store';
@@ -25,8 +25,8 @@
 	}
 
 	function channelLabel(key: NotificationTemplateKey): string {
-		return channelsForTemplateKey(key)
-			.map((channel: NotificationChannel) => get(t)(`notificationTemplates.channel.${channel}`))
+		return listChannelsForTemplateKey(key)
+			.map((channel: NotificationSendChannel) => get(t)(`notificationTemplates.channel.${channel}`))
 			.join(' · ');
 	}
 </script>

@@ -7,7 +7,8 @@ type SchoolNotificationTemplatesRow = components['schemas']['SchoolNotificationT
 
 export interface UpdateSchoolNotificationTemplatesInput {
 	schoolId: string;
-	templates: Record<string, unknown>;
+	templates?: Record<string, unknown>;
+	invitationSmsEnabled?: boolean;
 	expectedUpdatedAt?: string | null;
 }
 

@@ -19,10 +19,9 @@ describe('notification templates loading', () => {
 	});
 
 	it('loads notification templates by school id via entity get', async () => {
-		const templates = { welcome: { subject: 'Hello', body: 'World' } };
 		const { client, requests } = createRecordingSchoolClient([{
 			schoolId: SEED_SCHOOL_ID,
-			templates,
+			invitationSmsEnabled: false,
 		}]);
 		recordingClient = client;
 
