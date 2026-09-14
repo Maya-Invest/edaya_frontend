@@ -145,7 +145,12 @@ const routeCases = [
 		['create', 'delete'],
 	],
 	['configuration-grade-scales', '/configuration/grade-scales', ['create', 'edit', 'delete']],
-	['configuration-notifications', '/configuration/notifications', ['edit', 'reset-all']],
+	['configuration-notifications-list', '/configuration/notifications', ['reset-all']],
+	[
+		'configuration-notifications-detail',
+		'/configuration/notifications/report_card.published',
+		['edit', 'reset-key', 'reset-all'],
+	],
 	['configuration-discipline', '/configuration/discipline', ['create', 'edit', 'delete']],
 	[
 		'configuration-tools',

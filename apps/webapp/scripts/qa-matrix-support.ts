@@ -314,6 +314,9 @@ export function resolveEndpoint(endpoint: string, base: string, entities: Matrix
 	if (path.includes('/configuration/report-cards/')) {
 		map['[id]'] = entities.reportCardDefId;
 	}
+	if (path.includes('/configuration/notifications/')) {
+		map['[id]'] = entities.notificationTemplateKey;
+	}
 	if (path.includes('/finance/billing/')) {
 		map['[id]'] = entities.billingId;
 	}
@@ -354,9 +357,6 @@ export function resolveEndpoint(endpoint: string, base: string, entities: Matrix
 	if (modal === 'edit' && !params.get('modalTarget')) {
 		if (pathname.includes('/school/calendar') && entities.calendarEventId) {
 			params.set('modalTarget', entities.calendarEventId);
-		}
-		if (pathname.includes('/configuration/notifications') && entities.notificationTemplateKey) {
-			params.set('modalTarget', entities.notificationTemplateKey);
 		}
 	}
 

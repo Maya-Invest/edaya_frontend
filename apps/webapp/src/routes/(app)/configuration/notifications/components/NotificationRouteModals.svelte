@@ -4,7 +4,7 @@
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import { t } from '$lib/i18n';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { NOTIFICATION_TEMPLATE_KEYS } from '$lib/notification-templates/catalog';
+	import { templateKeyFromPathname } from '$lib/notification-templates/catalog';
 	import { get } from 'svelte/store';
 	import { setNotificationModals } from '../notifications-modals.svelte';
 	import { getNotificationsPageState } from '../notifications-page.svelte';
@@ -14,8 +14,7 @@
 	const document = $derived(notificationsPage.document);
 
 	const modals = createUrlSyncedModals({
-		allowed: ['edit', 'reset-all'],
-		allowedTabs: ['reset-key'],
+		allowed: ['edit', 'reset-all', 'reset-key'],
 		getUrl: () => $page.url,
 	});
 	setNotificationModals(modals);
@@ -27,54 +26,24 @@
 
 	const editOpen = bindUrlModal(modals, 'edit');
 	const resetAllOpen = bindUrlModal(modals, 'reset-all');
+	const resetKeyOpen = bindUrlModal(modals, 'reset-key');
 
 	let resetting = $state(false);
 
-	function isTemplateKey(value: string | null): value is NotificationTemplateKey {
-		return value !== null && NOTIFICATION_TEMPLATE_KEYS.includes(value as NotificationTemplateKey);
-	}
-
-	const editKey = $derived.by((): NotificationTemplateKey | null => {
-		if (modals.active !== 'edit') {
+	const pathnameKey = $derived(templateKeyFromPathname($page.url.pathname));
+	const activeKey = $derived.by((): NotificationTemplateKey | null => {
+		if (modals.active !== 'edit' && modals.active !== 'reset-key') {
 			return null;
 		}
-		if (isTemplateKey(modals.target)) {
-			return modals.target;
-		}
-		const urlTarget = $page.url.searchParams.get('modalTarget');
-		if (urlTarget && isTemplateKey(urlTarget)) {
-			return urlTarget;
-		}
-		return NOTIFICATION_TEMPLATE_KEYS[0] ?? null;
+		return pathnameKey;
 	});
-
-	const resetKeyConfirmOpen = $derived(
-		editKey !== null && modals.active === 'edit' && modals.tab === 'reset-key',
-	);
 
 	$effect(() => {
 		if (!modals.ready) {
 			return;
 		}
-		if (modals.active === 'reset-all') {
-			if (modals.target !== null || modals.tab !== null) {
-				modals.open('reset-all');
-			}
-			return;
-		}
-		if (modals.active !== 'edit') {
-			return;
-		}
-		if (isTemplateKey(modals.target)) {
-			return;
-		}
-		const urlTarget = $page.url.searchParams.get('modalTarget');
-		if (urlTarget && isTemplateKey(urlTarget)) {
-			modals.open('edit', { target: urlTarget });
-			return;
-		}
-		if (!urlTarget) {
-			modals.open('edit', { target: NOTIFICATION_TEMPLATE_KEYS[0] });
+		if (modals.active === 'reset-all' && (modals.target !== null || modals.tab !== null)) {
+			modals.open('reset-all');
 		}
 	});
 
@@ -98,7 +67,7 @@
 	}
 
 	async function confirmResetKey() {
-		const target = editKey;
+		const target = activeKey;
 		if (resetting || !target || !document?.schoolId) {
 			return;
 		}
@@ -110,7 +79,7 @@
 				successMessage: get(t)('notificationTemplates.toastResetKey'),
 			});
 			if (result) {
-				modals.close();
+				resetKeyOpen.open = false;
 			}
 		}
 		finally {
@@ -121,8 +90,7 @@
 
 <NotificationTemplateEditModal
 	bind:open={editOpen.open}
-	templateKey={editKey}
-	onReset={() => modals.setTab('reset-key')}
+	templateKey={pathnameKey}
 />
 
 <ConfirmModal
@@ -136,16 +104,11 @@
 />
 
 <ConfirmModal
-	open={resetKeyConfirmOpen}
-	title={editKey ? $t(`notificationTemplates.keys.${editKey}`) : ''}
+	bind:open={resetKeyOpen.open}
+	title={activeKey ? $t(`notificationTemplates.keys.${activeKey}`) : ''}
 	description={$t('notificationTemplates.resetKeyConfirm')}
 	confirmLabel={$t('notificationTemplates.resetKey')}
 	cancelLabel={$t('common.cancel')}
 	busy={resetting}
-	onOpenChange={(open) => {
-		if (!open && modals.active === 'edit') {
-			modals.setTab(null);
-		}
-	}}
 	onConfirm={confirmResetKey}
 />

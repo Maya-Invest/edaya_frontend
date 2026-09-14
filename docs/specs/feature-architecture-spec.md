@@ -108,8 +108,8 @@ Every feature **must** declare one surface type. Simple entities **must** use ro
 | Type | Drawer | Mutations | Examples |
 |------|--------|-----------|----------|
 | **Complex** | URL-backed read-only drawer | Entity-header actions → modals; sub-collections read-only, `+ Add` → modal | Student, Staff, Assessment, Incident, Billing |
-| **Simple** | None | Row `···` menu → modals | Fee, GradeScale, Payment, DisciplinaryAction, Notification templates |
-| **Thin drawer** | Sections only (no tabs) | Header actions → modals | CalendarEvent, Inbox delivery |
+| **Simple** | None | Row `···` menu → modals | Fee, GradeScale, Payment, DisciplinaryAction |
+| **Thin drawer** | Sections only (no tabs) | Header actions → modals | CalendarEvent, Inbox delivery, Notification templates |
 | **Layout variant** | None | Page-level or inline modals | Dashboard, School profile, Academic calendar accordion |
 
 **Drawer entity header** (complex + thin): identity block + **up to 2 primary actions** → modals. Destructive actions in overflow `···` only. Body = related content only — not a repeat of list columns.
@@ -266,7 +266,7 @@ The session contains one typed action-grant display. UI checks use that action's
 | Subjects catalog | `/configuration/subjects` | `/configuration/subjects/{id}` |
 | Report card models | `/configuration/report-cards` | `/configuration/report-cards/{id}` |
 | Grade scales | `/configuration/grade-scales` | — |
-| Notification templates | `/configuration/notifications` | — |
+| Notification templates | `/configuration/notifications` | `/configuration/notifications/{key}` |
 | Disciplinary catalog | `/configuration/discipline` | — |
 | Configuration tools | `/configuration/tools` | — |
 | Teacher assignments hub | `/configuration/tools/teacher-assignments` | — |
@@ -443,7 +443,10 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 ### 7.25 Configuration — Notification templates
 
-- **Entity:** school notification templates · **Simple** (row edit → modal)
+- **Entity:** school notification templates · **Thin drawer**
+- **List:** categorized cards; card click → `/configuration/notifications/{key}`; row `···` Edit → same URL + `?modal=edit`; primary CTA Reset all
+- **Drawer:** read-only sections (channels/flags, in-app/push copy, rendered email HTML, SMS, placeholders); header Edit + overflow Reset this template
+- **Modal:** edit copy by type (TipTap for `rich_message.body`; plaintext for in-app/push/SMS)
 
 ### 7.26 Configuration — Disciplinary catalog
 
@@ -495,7 +498,7 @@ Authoritative surface per entity. §7 has per-feature drawer/tab detail.
 | `Payment` | Simple | `/finance/payment` |
 | `GradeScale` | Simple | `/configuration/grade-scales` |
 | `DisciplinaryAction` | Simple | `/configuration/discipline` |
-| Notification templates | Simple | `/configuration/notifications` |
+| Notification templates | Thin | `/configuration/notifications` |
 | `School` | Layout | `/configuration/school` |
 | Dashboard / academic admin | Layout | `/dashboard`, `/configuration/academic` |
 | Timetable occurrences | Layout + drawer | `/classes/{id}/timetable` |

@@ -293,7 +293,7 @@ When a record has **nothing meaningful to browse** beyond what the list already 
 | Primary CTA | Unchanged — **Add …** on the list toolbar → create modal |
 | Deep links | Optional `[[id]]` route only when shareable URLs are required; prefer opening an edit modal from the URL |
 
-Examples: grade scale (edit bands in modal), notification template (edit body in modal). Borderline cases (e.g. fee definition) — prefer row menu unless usage/billing sub-data justifies a thin drawer.
+Examples: grade scale (edit bands in modal). Borderline cases (e.g. fee definition) — prefer row menu unless usage/billing sub-data justifies a thin drawer.
 
 ### 3.6 What must NOT appear in the drawer
 

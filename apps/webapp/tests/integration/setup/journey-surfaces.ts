@@ -85,18 +85,22 @@ export const JOURNEY_SURFACE_CLAIMS: readonly JourneySurfaceClaim[] = [
 		modals: [
 			{ parentRoute: '/configuration/grade-scales', modal: 'create' },
 			{ parentRoute: '/configuration/report-cards', modal: 'create' },
+			{ parentRoute: '/configuration/report-cards/[id]', modal: 'delete' },
 		],
 	},
 	{
 		stepId: 'configuration.notifications-discipline-tools',
 		paths: [
 			'/configuration/notifications',
+			'/configuration/notifications/[id]',
 			'/configuration/discipline',
 			'/configuration/tools',
 			'/configuration/tools/teacher-assignments',
 		],
 		modals: [
-			{ parentRoute: '/configuration/notifications', modal: 'edit' },
+			{ parentRoute: '/configuration/notifications', modal: 'reset-all' },
+			{ parentRoute: '/configuration/notifications/[id]', modal: 'edit' },
+			{ parentRoute: '/configuration/notifications/[id]', modal: 'reset-key' },
 			{ parentRoute: '/configuration/discipline', modal: 'create' },
 			{ parentRoute: '/configuration/tools/teacher-assignments', modal: 'create' },
 		],

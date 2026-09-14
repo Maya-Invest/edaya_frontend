@@ -22,18 +22,18 @@
 		NOTIFICATION_TEMPLATE_VARIABLES,
 	} from '$lib/notification-templates/catalog';
 	import { renderTemplatePreview } from '$lib/notification-templates/render-preview';
+	import { sanitizeNotificationHtml } from '$lib/notification-templates/sanitize-html';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getNotificationsPageState } from '../notifications-page.svelte';
+	import NotificationRichTextEditor from './NotificationRichTextEditor.svelte';
 
 	let {
 		open = $bindable(false),
 		templateKey,
-		onReset,
 	}: {
 		open?: boolean;
 		templateKey: NotificationTemplateKey | null;
-		onReset?: () => void;
 	} = $props();
 
 	const notificationsPage = getNotificationsPageState();
@@ -52,6 +52,9 @@
 	let richBody = $state('');
 	let simpleBody = $state('');
 	let hydratedFromDocument = $state<string | null>(null);
+	let focusedField = $state<'richSubject' | 'richBody' | 'baseTitle' | 'baseBody' | 'simpleBody'>('richBody');
+	let insertRichPlaceholder = $state<(text: string) => void>(() => {});
+	let lastTextField = $state<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
 	$effect(() => {
 		if (!templateKey) {
@@ -112,7 +115,9 @@
 	});
 	const previewBody = $derived.by(() => {
 		if (previewCopyType === 'rich_message') {
-			return renderTemplatePreview(richBody, NOTIFICATION_TEMPLATE_SAMPLE_VALUES);
+			return sanitizeNotificationHtml(
+				renderTemplatePreview(richBody, NOTIFICATION_TEMPLATE_SAMPLE_VALUES),
+			);
 		}
 		if (previewCopyType === 'base_message') {
 			return renderTemplatePreview(baseBody, NOTIFICATION_TEMPLATE_SAMPLE_VALUES);
@@ -125,7 +130,7 @@
 			return false;
 		}
 		if (copyType === 'rich_message') {
-			return richBody.trim().length > 0;
+			return richBody.replace(/<[^>]+>/g, '').trim().length > 0;
 		}
 		if (copyType === 'base_message') {
 			return baseTitle.trim().length > 0 && baseBody.trim().length > 0;
@@ -152,6 +157,52 @@
 		}
 		else {
 			enableSms = value;
+		}
+	}
+
+	function insertAtCaret(current: string, token: string): string {
+		const el = lastTextField;
+		if (!el || !el.isConnected) {
+			return `${current}${token}`;
+		}
+		const start = el.selectionStart ?? current.length;
+		const end = el.selectionEnd ?? current.length;
+		const next = `${current.slice(0, start)}${token}${current.slice(end)}`;
+		queueMicrotask(() => {
+			el.focus();
+			const pos = start + token.length;
+			el.setSelectionRange(pos, pos);
+		});
+		return next;
+	}
+
+	function rememberTextField(event: FocusEvent) {
+		const target = event.currentTarget;
+		lastTextField = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement
+			? target
+			: null;
+	}
+
+	function insertPlaceholder(name: string) {
+		const token = `{{${name}}}`;
+		if (copyType === 'rich_message' && focusedField === 'richBody') {
+			insertRichPlaceholder(token);
+			return;
+		}
+		if (focusedField === 'richSubject') {
+			richSubject = insertAtCaret(richSubject, token);
+			return;
+		}
+		if (focusedField === 'baseTitle') {
+			baseTitle = insertAtCaret(baseTitle, token);
+			return;
+		}
+		if (focusedField === 'baseBody') {
+			baseBody = insertAtCaret(baseBody, token);
+			return;
+		}
+		if (focusedField === 'simpleBody') {
+			simpleBody = insertAtCaret(simpleBody, token);
 		}
 	}
 
@@ -218,6 +269,7 @@
 	cancelLabel={$t('common.cancel')}
 	busy={busy}
 	submitDisabled={!canSubmit}
+	contentClass="max-w-3xl"
 	onSubmit={submit}
 >
 	{#if templateKey}
@@ -259,7 +311,19 @@
 									? 'bg-background text-foreground shadow-soft'
 									: 'text-muted-foreground hover:text-foreground',
 							)}
-							onclick={() => (copyType = item)}
+							onclick={() => {
+								copyType = item;
+								previewChannel = item === 'rich_message'
+									? 'email'
+									: item === 'simple_message'
+									? 'sms'
+									: 'in_app';
+								focusedField = item === 'rich_message'
+									? 'richBody'
+									: item === 'base_message'
+									? 'baseBody'
+									: 'simpleBody';
+							}}
 						>
 							{$t(`notificationTemplates.copyType.${item}`)}
 						</button>
@@ -270,25 +334,62 @@
 			{#if copyType === 'rich_message'}
 				<label class="block space-y-1.5 text-sm">
 					<span class="text-muted-foreground">{$t('notificationTemplates.subject')}</span>
-					<Input bind:value={richSubject} class="rounded-xl" />
+					<Input
+						bind:value={richSubject}
+						class="rounded-xl"
+						onfocus={(event) => {
+							focusedField = 'richSubject';
+							rememberTextField(event);
+						}}
+					/>
 				</label>
-				<label class="block space-y-1.5 text-sm">
+				<div class="space-y-1.5 text-sm">
 					<span class="text-muted-foreground">{$t('notificationTemplates.body')}</span>
-					<Textarea bind:value={richBody} rows={8} class="rounded-xl font-sans tabular-nums text-xs" />
-				</label>
+					<NotificationRichTextEditor
+						bind:value={richBody}
+						disabled={busy}
+						onFocus={() => (focusedField = 'richBody')}
+						onReady={(api) => {
+							insertRichPlaceholder = api.insertPlaceholder;
+						}}
+					/>
+				</div>
 			{:else if copyType === 'base_message'}
 				<label class="block space-y-1.5 text-sm">
 					<span class="text-muted-foreground">{$t('notificationTemplates.titleLabel')}</span>
-					<Input bind:value={baseTitle} class="rounded-xl" />
+					<Input
+						bind:value={baseTitle}
+						class="rounded-xl"
+						onfocus={(event) => {
+							focusedField = 'baseTitle';
+							rememberTextField(event);
+						}}
+					/>
 				</label>
 				<label class="block space-y-1.5 text-sm">
 					<span class="text-muted-foreground">{$t('notificationTemplates.body')}</span>
-					<Textarea bind:value={baseBody} rows={6} class="rounded-xl font-sans tabular-nums text-xs" />
+					<Textarea
+						bind:value={baseBody}
+						rows={6}
+						class="rounded-xl"
+						onfocus={(event) => {
+							focusedField = 'baseBody';
+							rememberTextField(event);
+						}}
+					/>
 				</label>
 			{:else}
 				<label class="block space-y-1.5 text-sm">
 					<span class="text-muted-foreground">{$t('notificationTemplates.body')}</span>
-					<Textarea bind:value={simpleBody} rows={4} class="rounded-xl font-sans tabular-nums text-xs" />
+					<Textarea
+						bind:value={simpleBody}
+						rows={4}
+						class="rounded-xl"
+						onfocus={(event) => {
+							focusedField = 'simpleBody';
+							rememberTextField(event);
+						}}
+					/>
 				</label>
 			{/if}
 
@@ -311,7 +412,15 @@
 				{#if previewSubject}
 					<p class="mb-2 text-sm font-semibold">{previewSubject}</p>
 				{/if}
-				<div class="whitespace-pre-wrap text-sm text-foreground/90">{previewBody}</div>
+				{#if previewCopyType === 'rich_message'}
+					<div class="notification-html-preview text-sm text-foreground/90">
+						<!-- Sanitized to p/br/strong/em/a/ul/ol/li before render. -->
+						<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+						{@html previewBody}
+					</div>
+				{:else}
+					<div class="whitespace-pre-wrap text-sm text-foreground/90">{previewBody}</div>
+				{/if}
 			</div>
 
 			<div class="rounded-xl border border-dashed border-border p-3">
@@ -320,23 +429,37 @@
 				</p>
 				<div class="flex flex-wrap gap-2">
 					{#each variables as variable (variable)}
-						<code class="rounded-md bg-secondary px-2 py-0.5 font-mono text-[11px]">
+						<button
+							type="button"
+							class="rounded-md bg-secondary px-2 py-0.5 font-mono text-[11px] hover:bg-secondary/80"
+							onclick={() => insertPlaceholder(variable)}
+						>
 							{`{{${variable}}}`}
-						</code>
+						</button>
 					{/each}
 				</div>
-			</div>
-
-			<div class="flex justify-end">
-				<button
-					type="button"
-					class="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-					onclick={onReset}
-					disabled={busy || !onReset}
-				>
-					{$t('notificationTemplates.resetKey')}
-				</button>
 			</div>
 		</div>
 	{/if}
 </FormModal>
+
+<style>
+	.notification-html-preview :global(p) {
+		margin: 0 0 0.5rem;
+	}
+
+	.notification-html-preview :global(a) {
+		color: hsl(var(--primary));
+		text-decoration: underline;
+	}
+
+	.notification-html-preview :global(ul) {
+		list-style: disc;
+		padding-left: 1.25rem;
+	}
+
+	.notification-html-preview :global(ol) {
+		list-style: decimal;
+		padding-left: 1.25rem;
+	}
+</style>

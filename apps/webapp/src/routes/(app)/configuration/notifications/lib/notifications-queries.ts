@@ -2,7 +2,7 @@ import type { NotificationsPageState } from '../notifications-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { fetchSchoolNotificationTemplates } from '$lib/api/notification-templates-data';
 import { authSession } from '$lib/auth/session.svelte';
-import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
+import { resolvePageLoad } from '$lib/queries/page-status';
 import { ApiError } from '@maya-invest/edaya-api-client';
 import { emptyNotificationsSlice } from './notifications-helpers';
 
@@ -36,7 +36,7 @@ export function queryNotificationsListPage(state: NotificationsPageState) {
 			state.applySlice(data);
 			return data;
 		},
-		hasItems: listPageHasItems,
+		hasItems: data => Boolean(data.document),
 		errorMessage: 'Unable to load notification templates.',
 	});
 }

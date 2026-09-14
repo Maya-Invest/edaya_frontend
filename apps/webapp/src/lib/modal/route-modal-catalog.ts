@@ -267,9 +267,14 @@ export const ROUTE_MODAL_CATALOG = [
 		modalNames: ['create', 'edit', 'delete'],
 	},
 	{
-		routeFamily: 'configuration-notifications',
+		routeFamily: 'configuration-notifications-list',
 		pathnamePattern: /^\/configuration\/notifications\/?$/,
-		modalNames: ['edit', 'reset-all'],
+		modalNames: ['reset-all'],
+	},
+	{
+		routeFamily: 'configuration-notifications-detail',
+		pathnamePattern: /^\/configuration\/notifications\/[^/]+\/?$/,
+		modalNames: ['edit', 'reset-key', 'reset-all'],
 	},
 	{
 		routeFamily: 'configuration-discipline',

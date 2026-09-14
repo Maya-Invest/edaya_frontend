@@ -143,6 +143,8 @@ export const detailHref = {
 	schoolStaffTab: (id: string, tab: SchoolStaffTabSegment = 'profile'): ResolvedPathname =>
 		appPath(STAFF_TAB_ROUTES[tab], { id }),
 	configReportCard: (id: string): ResolvedPathname => appPath('/(app)/configuration/report-cards/[[id]]', { id }),
+	configNotificationTemplate: (id: string): ResolvedPathname =>
+		appPath('/(app)/configuration/notifications/[[id]]', { id }),
 	configGradeLevel: (id: string): ResolvedPathname => appPath('/(app)/configuration/grade-levels/[[id]]', { id }),
 	configClassGroup: (id: string): ResolvedPathname => appPath(CONFIG_CLASS_GROUP_TAB_ROUTES.profile, { id }),
 	configClassGroupTab: (

@@ -8,6 +8,7 @@ const DETAIL_PATH_PATTERNS = [
 	/^\/configuration\/grade-levels\/[^/]+$/,
 	/^\/configuration\/classes\/[^/]+$/,
 	/^\/configuration\/report-cards\/[^/]+$/,
+	/^\/configuration\/notifications\/[^/]+$/,
 ] as const;
 
 /** School students drawer tabs use nested paths (`/:id/:tab`) beyond the single-segment detail pattern. */
@@ -25,6 +26,7 @@ const CONFIG_REPORT_CARDS_DRAWER_PATH = /^\/configuration\/report-cards\/[^/]+(?
 const CONFIG_GRADE_LEVELS_DRAWER_PATH = /^\/configuration\/grade-levels\/[^/]+(?:\/[^/]+)?$/;
 const CONFIG_CLASSES_DRAWER_PATH = /^\/configuration\/classes\/[^/]+(?:\/[^/]+)?$/;
 const CONFIG_SUBJECTS_DRAWER_PATH = /^\/configuration\/subjects\/[^/]+(?:\/[^/]+)?$/;
+const CONFIG_NOTIFICATIONS_DRAWER_PATH = /^\/configuration\/notifications\/[^/]+$/;
 
 export function isLikelyDetailPath(pathname: string): boolean {
 	return DETAIL_PATH_PATTERNS.some(pattern => pattern.test(pathname))
@@ -41,7 +43,8 @@ export function isLikelyDetailPath(pathname: string): boolean {
 		|| CONFIG_REPORT_CARDS_DRAWER_PATH.test(pathname)
 		|| CONFIG_GRADE_LEVELS_DRAWER_PATH.test(pathname)
 		|| CONFIG_CLASSES_DRAWER_PATH.test(pathname)
-		|| CONFIG_SUBJECTS_DRAWER_PATH.test(pathname);
+		|| CONFIG_SUBJECTS_DRAWER_PATH.test(pathname)
+		|| CONFIG_NOTIFICATIONS_DRAWER_PATH.test(pathname);
 }
 
 function normalizeListPathname(pathname: string): string {
@@ -96,6 +99,9 @@ function normalizeListPathname(pathname: string): string {
 	const configSubjectsMatch = pathname.match(/^\/configuration\/subjects\/[^/]+(?:\/[^/]+)?/);
 	if (configSubjectsMatch) {
 		return '/configuration/subjects';
+	}
+	if (CONFIG_NOTIFICATIONS_DRAWER_PATH.test(pathname)) {
+		return '/configuration/notifications';
 	}
 	if (isLikelyDetailPath(pathname)) {
 		return pathname.replace(/\/[^/]+$/, '');
