@@ -1,7 +1,5 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
-import { entityVersions } from '$lib/entity-versions.svelte';
-import { toast } from '$lib/toast.svelte';
-import { ApiError } from '@maya-invest/edaya-api-client';
+import { runRouteMutation } from '$lib/api/mutations/route-mutation';
 
 export interface FinanceRouteMutationOptions<T> {
 	request: () => Promise<T>;
@@ -13,38 +11,11 @@ export interface FinanceRouteMutationOptions<T> {
 	versionKeys?: EntityVersionKey[];
 }
 
-function messageFromError(error: unknown, fallback?: string): string {
-	if (error instanceof ApiError) {
-		const body = error.body;
-		if (body && typeof body === 'object' && typeof (body as Record<string, unknown>).message === 'string') {
-			return (body as Record<string, string>).message;
-		}
-		return fallback ?? 'La requête a échoué.';
-	}
-	if (error instanceof Error && error.message.trim().length > 0) {
-		return error.message;
-	}
-	return fallback ?? 'La requête a échoué.';
-}
-
-export async function runFinanceRouteMutation<T>(
+export function runFinanceRouteMutation<T>(
 	options: FinanceRouteMutationOptions<T>,
 ): Promise<T | null> {
-	options.apply?.();
-	try {
-		const result = await options.request();
-		await options.onSuccess?.(result);
-		for (const key of options.versionKeys ?? ['billing']) {
-			entityVersions.bump(key);
-		}
-		if (options.successMessage) {
-			toast.success(options.successMessage);
-		}
-		return result;
-	}
-	catch (error) {
-		options.rollback?.();
-		toast.error(messageFromError(error, options.errorMessage));
-		return null;
-	}
+	return runRouteMutation({
+		...options,
+		versionKeys: options.versionKeys ?? ['billing'],
+	});
 }

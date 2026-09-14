@@ -456,7 +456,7 @@ export const entityVersions = new EntityVersions();
 
 | Rule | Detail |
 |------|--------|
-| **Bump after server success** | Apply optimistic state before the request, but bump versions only after the request succeeds and any `onSuccess` completes |
+| **Bump after server success** | Apply optimistic state before the request, but bump versions only after the request succeeds and any `onSuccess` settles, even if the refresh fails |
 | **Bump per affected entity family** | `students`, not per-record id; cross-entity writes bump every affected family (`students` + `guardians`, etc.) |
 | **Same-route mutations** | Patch local state directly; bump for other routes |
 | **Invalidation is pull-based** | Active route states call `invalidateIfStale()` on navigate or focus — not a global push sync |
@@ -486,11 +486,11 @@ type RouteMutationOptions<T> = {
 Execution order is mandatory:
 
 1. Run `apply` before `request`.
-2. Run `rollback` only if `request` or `onSuccess` fails.
+2. Run `rollback` only if `apply` or `request` fails. Once the server confirms success, a failing `onSuccess` is a display refresh failure, not a failed write.
 3. Run `onSuccess` after server success.
-4. Bump every `versionKeys` entry after `onSuccess` completes.
-5. Show `successMessage` after version bumps.
-6. Show `errorMessage` or the parsed server error after rollback.
+4. Bump every `versionKeys` entry after `onSuccess` settles, including refresh failure, so stale views can refetch.
+5. Show `successMessage` after version bumps when refresh succeeds. If refresh fails after a confirmed write, retain the successful result and show localized saved-but-refresh-failed guidance; never roll back or repeat the write.
+6. Show `errorMessage` or the parsed server error after request rollback. HTTP 409 uses localized reload-and-review guidance. Generic mutation runners never retry requests automatically.
 
 ### Standard shape
 
