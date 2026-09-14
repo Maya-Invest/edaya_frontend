@@ -217,17 +217,17 @@
 								{student.name}
 							</button>
 						</td>
-						<td class="px-4 py-3 font-mono">
+						<td class="px-4 py-3 font-sans tabular-nums">
 							{result && scale ? formatGrade(result.overallAverage, scale) : '—'}
 						</td>
-						<td class="px-4 py-3 font-mono">
+						<td class="px-4 py-3 font-sans tabular-nums">
 							{result ? `${result.classRank}/${result.classSize}` : '—'}
 						</td>
 						<td class="px-4 py-3">
 							{#if result}
 								<span
 									class={cn(
-										'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase',
+										'rounded-full px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase',
 										result.status === 'published'
 											? 'bg-accent/15'
 											: result.status === 'generated'

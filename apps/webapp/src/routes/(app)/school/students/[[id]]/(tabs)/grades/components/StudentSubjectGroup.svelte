@@ -44,7 +44,7 @@
 				{items.length} eval. - {graded.length} notees
 			</span>
 		</div>
-		<p class="font-display text-lg tabular-nums">
+		<p class="font-sans text-lg tabular-nums">
 			{subjectAvg !== null ? subjectAvg.toFixed(1) : '-'}
 			<span class="ml-0.5 text-xs font-normal text-muted-foreground">/20</span>
 		</p>
@@ -59,12 +59,12 @@
 						{:else}
 							<p class="text-sm font-medium">{e.title}</p>
 						{/if}
-						<p class="font-mono text-sm tabular-nums">
+						<p class="font-sans tabular-nums text-sm tabular-nums">
 							{mark !== null ? mark.toFixed(1) : '-'}
 							<span class="ml-0.5 text-xs text-muted-foreground">/{e.outOf}</span>
 						</p>
 					</div>
-					<p class="mt-0.5 font-mono text-[10px] text-muted-foreground">
+					<p class="mt-0.5 font-sans tabular-nums text-[10px] text-muted-foreground">
 						{fmtDateFr(e.date, $locale)} - x{e.coefficient}
 					</p>
 				</div>

@@ -32,6 +32,7 @@
 	let password = $state('');
 	let confirmPassword = $state('');
 	let busy = $state(false);
+	let errorMessage = $state<string | null>(null);
 	/** Sync re-entry guard — reactive `busy` alone can miss double-submit before DOM disables. */
 	let submitting = false;
 
@@ -56,6 +57,7 @@
 
 		submitting = true;
 		busy = true;
+		errorMessage = null;
 		onStageChange?.('form');
 
 		try {
@@ -76,7 +78,7 @@
 					onSwitchToSignIn(normalizedEmail);
 					return;
 				}
-				toast.error(error.message ?? $t('auth.signUpFailed'));
+				errorMessage = error.message ?? $t('auth.signUpFailed');
 				return;
 			}
 
@@ -89,7 +91,7 @@
 		}
 		catch (err: unknown) {
 			const message = err instanceof Error ? err.message : String(err);
-			toast.error(`${$t('auth.signUpFailed')}: ${message}`);
+			errorMessage = `${$t('auth.signUpFailed')}: ${message}`;
 		}
 		finally {
 			submitting = false;
@@ -105,12 +107,12 @@
 </script>
 
 {#if stage === 'verification'}
-	<div class="space-y-3 rounded-xl bg-primary-foreground/10 p-4 text-primary-foreground">
+	<div class="space-y-4 rounded-xl bg-secondary p-4 text-foreground">
 		<div class="flex items-start gap-3">
 			<Mail class="mt-0.5 h-5 w-5 shrink-0" />
 			<div class="space-y-1.5">
 				<p class="font-medium">{$t('auth.signUpVerificationTitle')}</p>
-				<p class="text-sm leading-relaxed text-primary-foreground/90">
+				<p class="text-sm leading-relaxed text-foreground">
 					{$t('auth.signUpVerificationHint', { email: email.trim() })}
 				</p>
 			</div>
@@ -118,7 +120,7 @@
 		<Button
 			type="button"
 			variant="secondary"
-			class="w-full border-0 bg-primary-foreground/15 text-primary-foreground hover:bg-primary-foreground/25"
+			class="w-full"
 			onclick={() => {
 				resetVerificationState();
 				onSwitchToSignIn(email.trim());
@@ -129,14 +131,15 @@
 	</div>
 {:else}
 	<form
-		class="space-y-3"
+		class="space-y-4"
+		aria-busy={busy}
 		onsubmit={(event) => {
 			event.preventDefault();
 			void handleSignUp();
 		}}
 	>
 		<div class="space-y-1.5">
-			<Label for="signup-name" class="text-primary-foreground/90">
+			<Label for="signup-name" class="text-foreground">
 				{$t('auth.fullNameLabel')}
 			</Label>
 			<Input
@@ -147,12 +150,12 @@
 				bind:value={name}
 				disabled={busy || !apiConnected}
 				required
-				class="border-primary-foreground/20 bg-primary-foreground/10 text-primary-foreground placeholder:text-primary-foreground/50"
+				class="bg-card"
 			/>
 		</div>
 
 		<div class="space-y-1.5">
-			<Label for="signup-email" class="text-primary-foreground/90">
+			<Label for="signup-email" class="text-foreground">
 				{$t('auth.emailLabel')}
 			</Label>
 			<Input
@@ -163,12 +166,12 @@
 				bind:value={email}
 				disabled={busy || !apiConnected}
 				required
-				class="border-primary-foreground/20 bg-primary-foreground/10 text-primary-foreground placeholder:text-primary-foreground/50"
+				class="bg-card"
 			/>
 		</div>
 
 		<div class="space-y-1.5">
-			<Label for="signup-password" class="text-primary-foreground/90">
+			<Label for="signup-password" class="text-foreground">
 				{$t('auth.passwordLabel')}
 			</Label>
 			<Input
@@ -180,15 +183,15 @@
 				disabled={busy || !apiConnected}
 				required
 				minlength={MIN_PASSWORD_LENGTH}
-				class="border-primary-foreground/20 bg-primary-foreground/10 text-primary-foreground placeholder:text-primary-foreground/50"
+				class="bg-card"
 			/>
 			{#if !passwordLongEnough && password.length > 0}
-				<p class="text-xs text-primary-foreground/80">{$t('auth.signUpPasswordTooShort')}</p>
+				<p class="text-xs text-destructive">{$t('auth.signUpPasswordTooShort')}</p>
 			{/if}
 		</div>
 
 		<div class="space-y-1.5">
-			<Label for="signup-confirm-password" class="text-primary-foreground/90">
+			<Label for="signup-confirm-password" class="text-foreground">
 				{$t('auth.confirmPasswordLabel')}
 			</Label>
 			<Input
@@ -199,22 +202,26 @@
 				bind:value={confirmPassword}
 				disabled={busy || !apiConnected}
 				required
-				class="border-primary-foreground/20 bg-primary-foreground/10 text-primary-foreground placeholder:text-primary-foreground/50"
+				class="bg-card"
 			/>
 			{#if !passwordsMatch}
-				<p class="text-xs text-primary-foreground/80">{$t('auth.signUpPasswordMismatch')}</p>
+				<p class="text-xs text-destructive">{$t('auth.signUpPasswordMismatch')}</p>
 			{/if}
 		</div>
 
+		{#if errorMessage}
+			<p role="alert" class="text-sm text-destructive">{errorMessage}</p>
+		{/if}
+
 		<Button
 			type="submit"
-			class="w-full bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+			class="w-full"
 			disabled={!canSubmit}
 		>
 			{#if busy}
 				<LoaderCircle class="mr-2 h-4 w-4 animate-spin" />
 			{/if}
-			{$t('auth.signUpSubmit')}
+			{$t(busy ? 'auth.creatingAccount' : 'auth.signUpSubmit')}
 		</Button>
 	</form>
 {/if}

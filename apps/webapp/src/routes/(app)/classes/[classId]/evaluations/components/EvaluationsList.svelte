@@ -198,7 +198,7 @@
 			>
 				<div class="col-span-5">
 					<div class="flex flex-wrap items-center gap-2">
-						<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+						<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 							{evaluation.subject}
 						</p>
 						<span class={cn('rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider', kindBadgeClass(evaluation.kind))}>
@@ -216,7 +216,7 @@
 							})}
 						</span>
 						{#if hasScheduleHint(evaluation)}
-							<span class="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px]">
+							<span class="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 font-sans tabular-nums text-[10px]">
 								<Clock class="h-3 w-3" />
 								{$t('eval.scheduledHint')}
 							</span>
@@ -228,13 +228,13 @@
 						<p class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 							{$t('hw.due')}
 						</p>
-						<p class="font-mono text-sm">{evaluation.dueDate ?? evaluation.date}</p>
+						<p class="font-sans tabular-nums text-sm">{evaluation.dueDate ?? evaluation.date}</p>
 					</div>
 					<div class="col-span-2"></div>
 					<div class="col-span-2">
 						<div class="flex items-center justify-between text-[11px] text-muted-foreground">
 							<span>{$t('drawer.submissions')}</span>
-							<span class="font-mono">{evaluation.submittedCount}/{evaluation.total}</span>
+							<span class="font-sans tabular-nums">{evaluation.submittedCount}/{evaluation.total}</span>
 						</div>
 						<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary">
 							<div
@@ -248,7 +248,7 @@
 						<p class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 							{$t('eval.average')}
 						</p>
-						<p class="font-display text-2xl font-semibold tabular-nums">
+						<p class="font-sans text-2xl font-semibold tabular-nums">
 							{isDone ? evaluation.averageMark.toFixed(1) : '-'}
 							<span class="ml-1 text-xs font-normal text-muted-foreground">/ {evaluation.outOf}</span>
 						</p>
@@ -257,12 +257,12 @@
 						<p class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 							{$t('eval.coefficient')}
 						</p>
-						<p class="font-mono text-base">x{evaluation.coefficient}</p>
+						<p class="font-sans tabular-nums text-base">x{evaluation.coefficient}</p>
 					</div>
 					<div class="col-span-2">
 						<div class="flex items-center justify-between text-[11px] text-muted-foreground">
 							<span>{$t('eval.graded')}</span>
-							<span class="font-mono">{evaluation.graded}/{evaluation.total}</span>
+							<span class="font-sans tabular-nums">{evaluation.graded}/{evaluation.total}</span>
 						</div>
 						<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary">
 							<div

@@ -24,7 +24,7 @@
 				<p class="font-medium text-foreground">{$t(titleKey)}</p>
 				<p class="text-sm text-foreground">{error.summary}</p>
 				{#if error.detail}
-					<p class="rounded-lg border border-border/70 bg-background/80 px-3 py-2 font-mono text-xs text-muted-foreground">
+					<p class="rounded-lg border border-border/70 bg-background/80 px-3 py-2 font-sans tabular-nums text-xs text-muted-foreground">
 						{error.detail}
 					</p>
 				{/if}

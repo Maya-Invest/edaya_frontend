@@ -26,6 +26,7 @@ export {
 	Crown,
 	Download,
 	Eye,
+	EyeOff,
 	FileSpreadsheet,
 	FileText,
 	Flag,

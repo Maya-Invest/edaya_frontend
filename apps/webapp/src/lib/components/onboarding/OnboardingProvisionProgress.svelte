@@ -42,7 +42,7 @@
 			<p class="text-xs font-medium text-foreground">
 				{$t('onboarding.provision.progressTitle')}
 			</p>
-			<span class="font-mono text-[10px] tabular-nums text-muted-foreground">
+			<span class="font-sans tabular-nums text-[10px] tabular-nums text-muted-foreground">
 				{Math.round(clampedPercent)}%
 			</span>
 		</div>

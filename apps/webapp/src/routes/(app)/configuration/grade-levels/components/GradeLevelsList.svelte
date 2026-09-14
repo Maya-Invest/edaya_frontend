@@ -128,7 +128,7 @@
 						<tbody>
 							{#each levels as level (level.id)}
 								{@const isSelected = level.id === selectedId}
-								<tr class="border-b border-border/60 last:border-0">
+								<tr data-entity-id={level.id} class="border-b border-border/60 last:border-0">
 									<td class="px-4 py-3">
 										<button
 											type="button"
@@ -139,12 +139,12 @@
 											onclick={() => onSelect?.(level)}
 										>
 											<p class="font-medium">{level.name}</p>
-											<p class="font-mono text-[10px] text-muted-foreground">{level.id}</p>
+											<p class="font-sans tabular-nums text-[10px] text-muted-foreground">{level.id}</p>
 										</button>
 									</td>
 									<td class="px-4 py-3 text-muted-foreground">{level.label}</td>
-									<td class="px-4 py-3 font-mono text-muted-foreground">{level.order}</td>
-									<td class="px-4 py-3 font-mono">{gradeLevelsPage.classCountFor(level.id)}</td>
+									<td class="px-4 py-3 font-sans tabular-nums text-muted-foreground">{level.order}</td>
+									<td class="px-4 py-3 font-sans tabular-nums">{gradeLevelsPage.classCountFor(level.id)}</td>
 								</tr>
 							{/each}
 						</tbody>

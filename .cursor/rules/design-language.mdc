@@ -12,8 +12,8 @@ alwaysApply: false
 
 ## Core invariants
 
-1. **Semantic tokens only** — HSL CSS variables from `app.css`; no hard-coded hex in components.
-2. **Typography** — `font-display` (Fraunces) titles; Inter body; `font-mono` for metadata and counts.
+1. **Semantic tokens only** — versioned manifest → generated HSL CSS, imported by `app.css`; no hard-coded hex in components.
+2. **Typography** — `font-display` (bundled Poppins) headings; bundled Inter body, labels, tables and tabular numbers.
 3. **Collections** — `rounded-2xl border bg-card shadow-soft` around list/table/card groups.
 4. **Toolbar controls** — pill-shaped inputs and buttons on list headers.
 5. **Status chips** — `BADGE_*` / `ui-tones` / `drawer-constants`; no one-off badge colors.
@@ -26,3 +26,7 @@ alwaysApply: false
 - Add `dark:` variants until a full dark palette is specified
 - Hard-code French strings (use i18n)
 - Invent parallel color systems per screen
+- Reconstruct the EDAYA wordmark; use `BrandLogo` and supplied artwork
+- Change authentication, routes, permissions or business logic as part of styling
+
+Run `bun run brand:check` and refresh current visual evidence for shared design changes.

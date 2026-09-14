@@ -77,7 +77,7 @@
 				<div class="flex items-start justify-between gap-2">
 					<h4 class="font-display text-sm font-semibold">{detail.logbook.chapter}</h4>
 					{#if isLesson}
-						<span class="font-mono text-[10px] text-muted-foreground">{detail.logbook.progress}%</span>
+						<span class="font-sans tabular-nums text-[10px] text-muted-foreground">{detail.logbook.progress}%</span>
 					{/if}
 				</div>
 				<p class="mt-2 text-xs leading-relaxed text-foreground/80">{detail.logbook.content}</p>

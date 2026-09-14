@@ -247,11 +247,11 @@
 				<div class="col-span-2 truncate text-sm text-foreground/80">{activity.coach}</div>
 				<div class="col-span-3 flex items-center gap-1.5 text-xs text-foreground/80">
 					<CalendarRange class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-					<span class="font-mono tabular-nums">{fmtActivityDate(activity.startDate, $locale)} → {fmtActivityDate(activity.endDate, $locale)}</span>
+					<span class="font-sans tabular-nums">{fmtActivityDate(activity.startDate, $locale)} → {fmtActivityDate(activity.endDate, $locale)}</span>
 				</div>
 				<div class="col-span-2 flex items-center justify-end gap-1 text-xs">
 					<Users class="h-3.5 w-3.5 text-muted-foreground" />
-					<span class="font-mono tabular-nums">{activity.enrollments.length}/{activity.capacity}</span>
+					<span class="font-sans tabular-nums">{activity.enrollments.length}/{activity.capacity}</span>
 				</div>
 			{/snippet}
 		</ListEntityTable>
@@ -284,14 +284,14 @@
 				{:else if columnKey === 'period'}
 					<span class="inline-flex items-center gap-1.5 text-xs text-foreground/80">
 						<CalendarRange class="h-3.5 w-3.5 text-muted-foreground" />
-						<span class="font-mono tabular-nums">{fmtActivityDate(activity.startDate, $locale)} → {fmtActivityDate(activity.endDate, $locale)}</span>
+						<span class="font-sans tabular-nums">{fmtActivityDate(activity.startDate, $locale)} → {fmtActivityDate(activity.endDate, $locale)}</span>
 					</span>
 				{:else if columnKey === 'description'}
 					<p class="line-clamp-3 text-xs text-muted-foreground">{activity.description}</p>
 				{:else if columnKey === 'enrolled'}
 					<span class="inline-flex items-center gap-1 text-xs">
 						<Users class="h-3.5 w-3.5 text-muted-foreground" />
-						<span class="font-mono tabular-nums">{activity.enrollments.length}/{activity.capacity}</span>
+						<span class="font-sans tabular-nums">{activity.enrollments.length}/{activity.capacity}</span>
 					</span>
 				{/if}
 			{/snippet}

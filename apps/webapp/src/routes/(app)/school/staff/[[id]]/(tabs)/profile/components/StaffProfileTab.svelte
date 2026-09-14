@@ -79,7 +79,7 @@
 			<div class="flex flex-wrap gap-1.5">
 				{#each classLabels as label (label)}
 					<span
-						class="rounded-md bg-secondary px-2 py-0.5 font-mono text-[10px] text-muted-foreground"
+						class="rounded-md bg-secondary px-2 py-0.5 font-sans tabular-nums text-[10px] text-muted-foreground"
 					>
 						{label}
 					</span>

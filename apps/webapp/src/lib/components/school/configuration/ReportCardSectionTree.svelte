@@ -46,7 +46,7 @@
 			{#if section.sectionType === 'subject'}
 				<div class="flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-sm">
 					<span class="text-muted-foreground">{section.subjectLabel ?? section.name}</span>
-					<span class="shrink-0 font-mono text-xs text-muted-foreground">
+					<span class="shrink-0 font-sans tabular-nums text-xs text-muted-foreground">
 						{coefficientLabel(section)}
 					</span>
 				</div>
@@ -62,7 +62,7 @@
 								<p class="mt-1 text-xs text-muted-foreground">{groupScopeLabel(section)}</p>
 							{/if}
 						</div>
-						<span class="shrink-0 font-mono text-xs text-muted-foreground">
+						<span class="shrink-0 font-sans tabular-nums text-xs text-muted-foreground">
 							{coefficientLabel(section)}
 						</span>
 					</div>

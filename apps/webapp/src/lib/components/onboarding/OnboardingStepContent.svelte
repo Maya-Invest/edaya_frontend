@@ -19,7 +19,7 @@
 
 <div class="space-y-4">
 	<header>
-		<p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+		<p class="font-sans tabular-nums text-[10px] uppercase tracking-widest text-muted-foreground">
 			{$t('onboarding.stepProgress', { current: step, total: 4 })}
 		</p>
 		<h1 class="mt-0.5 font-display text-2xl font-semibold">

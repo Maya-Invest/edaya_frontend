@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { LoginMethodId } from '$lib/auth/login-methods';
+	import { ENABLED_LOGIN_METHODS } from '$lib/auth/login-methods';
 	import LoginEmailOtpPanel from '$lib/components/auth/login/LoginEmailOtpPanel.svelte';
 	import LoginMethodPicker from '$lib/components/auth/login/LoginMethodPicker.svelte';
 	import LoginPasswordPanel from '$lib/components/auth/login/LoginPasswordPanel.svelte';
@@ -29,15 +30,12 @@
 
 <LoginMethodPicker activeMethod={activeMethod} onSelect={handleMethodChange} />
 
-{#if activeMethod === 'password'}
-	<LoginPasswordPanel bind:email {apiConnected} />
-{:else if activeMethod === 'email-otp'}
-	<LoginEmailOtpPanel
-		bind:email
-		{apiConnected}
-		{stage}
-		{onStageChange}
-	/>
-{/if}
-
-<!-- Future sign-in methods (OAuth, magic link, etc.) plug in here. -->
+{#each ENABLED_LOGIN_METHODS as method (method.id)}
+	<div hidden={activeMethod !== method.id} inert={activeMethod !== method.id}>
+		{#if method.id === 'password'}
+			<LoginPasswordPanel bind:email {apiConnected} />
+		{:else if method.id === 'email-otp'}
+			<LoginEmailOtpPanel bind:email {apiConnected} {stage} {onStageChange} />
+		{/if}
+	</div>
+{/each}

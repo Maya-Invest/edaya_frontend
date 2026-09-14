@@ -120,7 +120,7 @@
 						<div class="h-1.5 w-28 overflow-hidden rounded-full bg-secondary">
 							<div class="h-full bg-accent" style:width="{overallProgress}%"></div>
 						</div>
-						<span class="font-mono text-xs">{overallProgress}%</span>
+						<span class="font-sans tabular-nums text-xs">{overallProgress}%</span>
 					</div>
 				</div>
 			</div>
@@ -131,7 +131,7 @@
 	</ListPageHeader>
 
 	<div class="mb-2">
-		<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+		<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 			{$t('teaching.progressByMatter')}
 		</p>
 	</div>
@@ -176,7 +176,7 @@
 						<span class="h-1.5 w-24 overflow-hidden rounded-full bg-secondary">
 							<span class="block h-full bg-accent" style:width="{progress}%"></span>
 						</span>
-						<span class="font-mono tabular-nums">{progress}%</span>
+						<span class="font-sans tabular-nums">{progress}%</span>
 					</span>
 					<span class="flex items-center gap-1.5">
 						<User class="h-3.5 w-3.5" />

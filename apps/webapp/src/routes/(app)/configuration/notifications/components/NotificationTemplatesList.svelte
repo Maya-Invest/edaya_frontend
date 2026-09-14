@@ -77,7 +77,7 @@
 											<h3 class="font-display font-semibold">
 												{$t(`notificationTemplates.keys.${key}`)}
 											</h3>
-											<p class="mt-1 font-mono text-[11px] text-muted-foreground">
+											<p class="mt-1 font-sans tabular-nums text-[11px] text-muted-foreground">
 												{key}
 											</p>
 										</div>

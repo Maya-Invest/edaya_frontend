@@ -510,3 +510,7 @@ Use this template when adding or refactoring an entity screen.
 | Create / edit modal | `<Entity>FormModal` | `routes/.../components/` |
 | Confirm modal | `<Entity>DeleteModal` | `routes/.../components/` |
 | Route | optional `[[id]]` segment + `[[id]]/{tab}` child routes for URL-backed drawer |
+
+## Small-screen presentation
+
+Below 1024px, present the existing AppSidebar in a modal sheet using shared Dialog primitives. Keep the same groups, destinations, permission filters and active states. Start mobile navigation closed, close it after navigation, support Escape/outside dismissal and focus restoration, and retain the desktop expansion preference separately. The main page uses the full viewport width; school, year, period, language and account controls wrap in the header. This is a presentation adaptation and must not change routing, permissions or bootstrap behavior.

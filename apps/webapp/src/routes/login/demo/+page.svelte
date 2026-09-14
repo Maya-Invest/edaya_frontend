@@ -118,7 +118,7 @@
 						</span>
 						<span class="min-w-0 flex-1">
 							<span class="block truncate text-sm font-medium">{account.name}</span>
-							<span class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+							<span class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 								{$t(`staff.role.${account.role}`)}
 							</span>
 						</span>

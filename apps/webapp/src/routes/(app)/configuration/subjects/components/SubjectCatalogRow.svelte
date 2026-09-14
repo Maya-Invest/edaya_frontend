@@ -41,7 +41,7 @@
 		<p class="mt-0.5 truncate text-xs text-muted-foreground">{subject.description}</p>
 	</div>
 	<div class="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
-		<span class="font-mono tabular-nums">{subject.hoursPerWeek === null ? '—' : `${subject.hoursPerWeek}h`}</span>
+		<span class="font-sans tabular-nums">{subject.hoursPerWeek === null ? '—' : `${subject.hoursPerWeek}h`}</span>
 		<ChevronRight class="h-4 w-4 text-muted-foreground" />
 	</div>
 </button>

@@ -136,7 +136,7 @@
 							{#each group.classes as cls (cls.id)}
 								{@const level = academicContext.gradeLevelById(cls.gradeLevelId)}
 								{@const isSelected = cls.id === selectedId}
-								<tr class="border-b border-border/60 last:border-0">
+								<tr data-entity-id={cls.id} class="border-b border-border/60 last:border-0">
 									<td class="px-4 py-3">
 										<button
 											type="button"
@@ -144,11 +144,11 @@
 											onclick={() => onSelect?.(cls)}
 										>
 											<p class="font-medium">{cls.name}</p>
-											<p class="font-mono text-[10px] text-muted-foreground">{cls.id}</p>
+											<p class="font-sans tabular-nums text-[10px] text-muted-foreground">{cls.id}</p>
 										</button>
 									</td>
 									<td class="px-4 py-3 text-muted-foreground">{level?.name ?? '—'}</td>
-									<td class="px-4 py-3 font-mono">{cls.studentCount}</td>
+									<td class="px-4 py-3 font-sans tabular-nums">{cls.studentCount}</td>
 									<td class="px-4 py-3 text-muted-foreground">
 										{$t(`classGroups.attendanceMode.${cls.attendanceMode}`)}
 									</td>

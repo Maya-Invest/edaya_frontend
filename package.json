@@ -17,7 +17,7 @@
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
     "test": "turbo run test",
-    "verify": "bun repo verify && turbo run quality && turbo run build && turbo run test -- --dots",
+    "verify": "bun run brand:check && bun repo verify && turbo run quality && turbo run build && turbo run test -- --dots",
     "dev": "turbo run dev --filter=@edaya/webapp --filter=@edaya/webadmin",
     "dev:webapp": "bun --filter @edaya/webapp dev",
     "dev:webadmin": "bun --filter @edaya/webadmin dev",
@@ -31,7 +31,9 @@
     "cloudflare:install": "bun run cloudflare:prepare && bun install",
     "cloudflare:build:webapp": "bun run cloudflare:install && bun --filter @edaya/webapp build",
     "cloudflare:build:webadmin": "bun run cloudflare:install && bun --filter @edaya/webadmin build",
-    "cloudflare:build:website": "bun install && bun --filter @edaya/website build"
+    "cloudflare:build:website": "bun install && bun --filter @edaya/website build",
+    "brand:generate": "python3 scripts/brand-tokens.py",
+    "brand:check": "python3 scripts/brand-check.py"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^9.0.0",

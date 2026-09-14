@@ -61,7 +61,7 @@
 {:else}
 	<div class="flex h-full min-h-0 flex-col justify-center gap-px pr-6">
 		{#if showTimes}
-			<p class="font-mono text-[9px] leading-none tracking-tight text-muted-foreground/90">
+			<p class="font-sans tabular-nums text-[9px] leading-none tracking-tight text-muted-foreground/90">
 				{formatTime(event.start)}–{formatTime(event.end)}
 				{#if isDraft}
 					<span class="ml-1 uppercase">· {$t('timetable.draft')}</span>
@@ -78,7 +78,7 @@
 				data-event-id={String(event.id ?? '')}
 				title={$t('calendar.takeAttendance')}
 				onclick={handleAttendance}
-				class="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-border/60 bg-card/90 text-muted-foreground opacity-0 transition hover:bg-accent hover:text-accent-foreground group-hover:opacity-100"
+				class="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-border/60 bg-card/90 text-muted-foreground opacity-0 transition hover:bg-secondary hover:text-foreground group-hover:opacity-100"
 			>
 				<ClipboardCheck class="h-3 w-3" />
 			</button>

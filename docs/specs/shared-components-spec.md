@@ -21,7 +21,7 @@ This document defines **which components to reuse**, where they live, and when t
 
 ---
 
-## 2. Mandatory registry (v1)
+## 2. Mandatory registry (EDAYA UI 1.0.0)
 
 Status: **Built** = use as-is. No **Planned** registry entries at this time — propose new T0/T2 components via §6 when criteria are met.
 
@@ -29,6 +29,7 @@ Status: **Built** = use as-is. No **Planned** registry entries at this time — 
 
 | Component | Path | Status | Use for |
 |-----------|------|--------|---------|
+| **BrandLogo** | `ui/BrandLogo.svelte` | Built | Official artwork, color/white tone and vertical/horizontal/symbol variants; minimum sizes and clear space |
 | **PageQuery** | `ui/PageQuery.svelte` | Built | Every list route — loading contract |
 | **DataState** | `ui/DataState.svelte` | Built | Loading · empty · error around collections |
 | **ListPageHeader** | `ui/ListPageHeader.svelte` | Built | Page title + toolbar slots |
@@ -244,3 +245,9 @@ When building or refactoring a screen:
 | 2026-07-06 | §4 feature-local patterns; DrawerTabBar / EntityTable guidance; registry cleanup |
 | 2026-07-06 | DrawerActionBar = body footer; PermissionCheckboxGroup scope |
 | 2026-07-03 | Initial registry — T0/T1/T2 tiers, mandatory components |
+
+### Small-screen shell and tables
+
+`AppSidebar.forceExpanded` is a presentation override used by the mobile staff navigation dialog; desktop expansion preferences remain in the existing shell state. `ListEntityTable` keeps its twelve-column layout inside a focusable horizontal scroll region with a 48rem minimum content width. Preserve all columns, sort/selection controls, row actions and infinite loading.
+
+`AccountProfileModal` uses the existing `Dialog` primitive with a bounded flex column: header and footer do not shrink, and the middle profile content scrolls. Close and sign-out actions must stay reachable on short viewports and with enlarged text. Preserve profile fields, photo permissions, shortcuts and the existing logout callback.

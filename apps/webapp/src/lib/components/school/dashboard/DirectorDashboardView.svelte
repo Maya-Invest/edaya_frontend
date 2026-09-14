@@ -117,7 +117,7 @@
 	}
 
 	function healthMetric(value: string | number, warn = false): string {
-		return cn('font-display text-xl font-semibold tabular-nums', warn && 'text-highlight');
+		return cn('font-sans text-xl font-semibold tabular-nums', warn && 'text-highlight');
 	}
 </script>
 
@@ -126,7 +126,7 @@
 	<section class="rounded-2xl border border-border bg-card p-5 shadow-soft">
 		<div class="flex flex-wrap items-start justify-between gap-4">
 			<div>
-				<p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+				<p class="font-sans tabular-nums text-[10px] uppercase tracking-widest text-muted-foreground">
 					{$t('dashboard.title')}
 				</p>
 				<h1 class="mt-1 font-display text-2xl font-semibold leading-tight">
@@ -141,7 +141,7 @@
 				{#if me}
 					<p class="mt-1 text-muted-foreground">{$t(`staff.role.${me.role}`)} · {me.name}</p>
 				{/if}
-				<p class="mt-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+				<p class="mt-2 font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 					{$t('dashboard.lastUpdated', { time: lastUpdatedLabel })}
 				</p>
 			</div>
@@ -157,7 +157,7 @@
 			<div class={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpiToneClass.primary)}>
 				<Users class="h-4 w-4" />
 			</div>
-			<p class="mt-3 font-display text-2xl font-semibold tabular-nums">{kpis.studentCount}</p>
+			<p class="mt-3 font-sans text-2xl font-semibold tabular-nums">{kpis.studentCount}</p>
 			<p class="mt-0.5 text-xs text-muted-foreground">{$t('dashboard.kpi.students')}</p>
 		</a>
 
@@ -165,7 +165,7 @@
 			<div class={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpiToneClass.sky)}>
 				<CalendarX2 class="h-4 w-4" />
 			</div>
-			<p class="mt-3 font-display text-2xl font-semibold tabular-nums">
+			<p class="mt-3 font-sans text-2xl font-semibold tabular-nums">
 				{formatPercent(kpis.attendanceRateToday)}
 			</p>
 			<p class="mt-0.5 text-xs text-muted-foreground">{$t('dashboard.kpi.attendanceToday')}</p>
@@ -190,7 +190,7 @@
 			<div class={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpis.overdueFeeCount > 0 ? kpiToneClass.warn : kpiToneClass.sky)}>
 				<Wallet class="h-4 w-4" />
 			</div>
-			<p class="mt-3 font-display text-2xl font-semibold tabular-nums">{kpis.overdueFeeCount}</p>
+			<p class="mt-3 font-sans text-2xl font-semibold tabular-nums">{kpis.overdueFeeCount}</p>
 			<p class="mt-0.5 text-xs text-muted-foreground">{$t('dashboard.kpi.overdueFees')}</p>
 		</a>
 
@@ -201,7 +201,7 @@
 			<div class={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpis.unpublishedReportCardCount > 0 ? kpiToneClass.warn : kpiToneClass.sky)}>
 				<FileSpreadsheet class="h-4 w-4" />
 			</div>
-			<p class="mt-3 font-display text-2xl font-semibold tabular-nums">{kpis.unpublishedReportCardCount}</p>
+			<p class="mt-3 font-sans text-2xl font-semibold tabular-nums">{kpis.unpublishedReportCardCount}</p>
 			<p class="mt-0.5 text-xs text-muted-foreground">{$t('dashboard.kpi.reportCards')}</p>
 		</a>
 
@@ -212,7 +212,7 @@
 			<div class={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpis.openIncidentCount > 0 ? kpiToneClass.destructive : kpiToneClass.sky)}>
 				<AlertTriangle class="h-4 w-4" />
 			</div>
-			<p class="mt-3 font-display text-2xl font-semibold tabular-nums">{kpis.openIncidentCount}</p>
+			<p class="mt-3 font-sans text-2xl font-semibold tabular-nums">{kpis.openIncidentCount}</p>
 			<p class="mt-0.5 text-xs text-muted-foreground">
 				{$t('dashboard.kpi.openIncidents')}
 				{#if kpis.highSeverityIncidentCount > 0}
@@ -267,7 +267,7 @@
 			<ul class="space-y-3">
 				{#each overview.upcoming as item (item.id)}
 					<li class="flex items-start gap-3 text-sm">
-						<span class="w-14 shrink-0 font-mono text-[11px] uppercase text-muted-foreground">
+						<span class="w-14 shrink-0 font-sans tabular-nums text-[11px] uppercase text-muted-foreground">
 							{upcomingDayLabel(item.date)}
 						</span>
 						<div class="min-w-0 flex-1">
@@ -451,18 +451,18 @@
 										{row.className}
 									</a>
 								</td>
-								<td class="px-4 py-3 font-mono tabular-nums">
+								<td class="px-4 py-3 font-sans tabular-nums">
 									{formatPercent(row.attendanceRateToday)}
 								</td>
-								<td class="px-4 py-3 font-mono tabular-nums">
+								<td class="px-4 py-3 font-sans tabular-nums">
 									<span class={row.openIncidentCount > 0 ? 'text-destructive' : ''}>
 										{row.openIncidentCount}
 									</span>
 								</td>
-								<td class="px-4 py-3 font-mono tabular-nums">
+								<td class="px-4 py-3 font-sans tabular-nums">
 									{formatPercent(row.gradingCompletionPercent)}
 								</td>
-								<td class="px-4 py-3 font-mono tabular-nums">
+								<td class="px-4 py-3 font-sans tabular-nums">
 									<span class={row.overdueFeeCount > 0 ? 'text-highlight' : ''}>
 										{row.overdueFeeCount}
 									</span>

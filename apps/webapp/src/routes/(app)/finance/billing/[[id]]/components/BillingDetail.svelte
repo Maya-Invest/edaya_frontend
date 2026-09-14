@@ -152,13 +152,13 @@
 			<div class="flex items-end justify-between">
 				<div>
 					<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('finance.paid')}</p>
-					<p class="font-display text-3xl font-semibold tabular-nums">{live.paid.toLocaleString()} FCFA</p>
+					<p class="font-sans text-3xl font-semibold tabular-nums">{live.paid.toLocaleString()} FCFA</p>
 				</div>
 				<div class="text-right">
 					<p class="text-[10px] uppercase tracking-wider text-muted-foreground">
 						{$t('finance.remaining')}
 					</p>
-					<p class="font-display text-xl font-semibold tabular-nums text-highlight">
+					<p class="font-sans text-xl font-semibold tabular-nums text-highlight">
 						{remaining.toLocaleString()} FCFA
 					</p>
 				</div>
@@ -169,7 +169,7 @@
 					style="width: {pct}%"
 				></div>
 			</div>
-			<p class="mt-2 font-mono text-[10px] uppercase text-muted-foreground">
+			<p class="mt-2 font-sans tabular-nums text-[10px] uppercase text-muted-foreground">
 				{$t('finance.total')}
 				{live.total.toLocaleString()} FCFA
 			</p>
@@ -197,7 +197,7 @@
 							</div>
 							<div>
 								<p class="text-sm font-medium">{inst.amount.toLocaleString()} FCFA</p>
-								<p class="font-mono text-[10px] text-muted-foreground">
+								<p class="font-sans tabular-nums text-[10px] text-muted-foreground">
 									{new Date(inst.date).toLocaleDateString($locale, {
 										day: 'numeric',
 										month: 'short',

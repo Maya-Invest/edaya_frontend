@@ -109,7 +109,7 @@
 >
 	<div class="rounded-xl border border-border bg-secondary/40 px-3 py-2 text-sm">
 		<p class="text-[11px] uppercase tracking-wider text-muted-foreground">{$t('finance.remaining')}</p>
-		<p class="font-display text-xl font-semibold tabular-nums">{remaining.toLocaleString()} FCFA</p>
+		<p class="font-sans text-xl font-semibold tabular-nums">{remaining.toLocaleString()} FCFA</p>
 	</div>
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">

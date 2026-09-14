@@ -151,7 +151,7 @@
 	{#if selectedFee}
 		<div class="rounded-xl border border-border bg-secondary/40 px-3 py-2 text-sm">
 			<p class="text-[11px] uppercase tracking-wider text-muted-foreground">{$t('invoice.defaultAmount')}</p>
-			<p class="font-display text-xl font-semibold tabular-nums">{defaultAmount.toLocaleString()} FCFA</p>
+			<p class="font-sans text-xl font-semibold tabular-nums">{defaultAmount.toLocaleString()} FCFA</p>
 		</div>
 	{/if}
 	<div class="space-y-1.5">

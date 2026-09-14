@@ -188,16 +188,16 @@
 							{g.label}
 						</h3>
 						{#if g.subtitle}
-							<span class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+							<span class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 								{g.subtitle}
 							</span>
 						{/if}
-						<span class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+						<span class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 							{$t('subjects.count', { n: g.count })}
 						</span>
 					</div>
 					<div class="text-xs text-muted-foreground">
-						<span class="font-mono tabular-nums">{hoursLabel}</span>
+						<span class="font-sans tabular-nums">{hoursLabel}</span>
 					</div>
 				</div>
 

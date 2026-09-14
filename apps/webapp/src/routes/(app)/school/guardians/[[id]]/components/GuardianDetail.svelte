@@ -165,7 +165,7 @@
 							size="md"
 						/>
 						<span class="text-sm">{student.name}</span>
-						<span class="ml-auto font-mono text-[10px] uppercase text-muted-foreground">{student.classId}</span>
+						<span class="ml-auto font-sans tabular-nums text-[10px] uppercase text-muted-foreground">{student.classId}</span>
 					</div>
 				{/each}
 			</div>

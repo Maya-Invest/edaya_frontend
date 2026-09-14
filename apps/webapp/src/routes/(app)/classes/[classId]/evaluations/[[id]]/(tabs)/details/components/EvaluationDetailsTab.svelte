@@ -64,7 +64,7 @@
 					</div>
 					<div class="min-w-0 flex-1">
 						<p class="truncate text-sm">{attachment.name}</p>
-						<p class="font-mono text-[10px] text-muted-foreground">{attachment.size}</p>
+						<p class="font-sans tabular-nums text-[10px] text-muted-foreground">{attachment.size}</p>
 					</div>
 				</div>
 			{/each}
@@ -83,14 +83,14 @@
 	<div class="grid grid-cols-2 gap-3">
 		<div class="rounded-xl bg-primary/10 p-3">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('eval.average')}</p>
-			<p class="mt-1 font-display text-xl tabular-nums">
+			<p class="mt-1 font-sans text-xl tabular-nums">
 				{evaluation.graded > 0 ? evaluation.averageMark.toFixed(1) : '-'}
 				<span class="text-sm text-muted-foreground">/ {evaluation.outOf}</span>
 			</p>
 		</div>
 		<div class="rounded-xl bg-secondary/60 p-3">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('eval.graded')}</p>
-			<p class="mt-1 font-display text-xl tabular-nums">{evaluation.graded}/{evaluation.total}</p>
+			<p class="mt-1 font-sans text-xl tabular-nums">{evaluation.graded}/{evaluation.total}</p>
 		</div>
 	</div>
 

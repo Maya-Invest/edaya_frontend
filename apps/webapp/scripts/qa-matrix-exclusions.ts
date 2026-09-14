@@ -22,8 +22,9 @@ const EXCLUDED_PATH_PREFIXES = [
 	'/school/teacher-assignments',
 ] as const;
 
-/** Layout-only routes with no standalone page content. */
+/** Layout-only routes and development fixtures without production page content. */
 const EXCLUDED_EXACT_PATHS = new Set([
+	'/__design', // Development component gallery; its load guard returns 404 in production.
 	'/account',
 ]);
 

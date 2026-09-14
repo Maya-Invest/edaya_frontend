@@ -85,12 +85,12 @@
 		</div>
 	{:else}
 		<div class="flex flex-wrap items-center gap-2">
-			<span class="font-mono text-xs text-muted-foreground">
+			<span class="font-sans tabular-nums text-xs text-muted-foreground">
 				{period?.label ?? latest.academicPeriodId}
 			</span>
 			<span
 				class={cn(
-					'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase',
+					'rounded-full px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase',
 					latest.status === 'published'
 						? 'bg-accent/15'
 						: latest.status === 'generated'
@@ -108,13 +108,13 @@
 
 		<div class="grid grid-cols-2 gap-3">
 			<div class="rounded-xl border border-border bg-secondary/30 p-4 text-center">
-				<p class="font-mono text-[10px] uppercase text-muted-foreground">{$t('reportCards.overall')}</p>
+				<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">{$t('reportCards.overall')}</p>
 				<p class="font-display text-3xl font-semibold">
 					{scale ? formatGrade(latest.overallAverage, scale) : latest.overallAverage}
 				</p>
 			</div>
 			<div class="rounded-xl border border-border bg-secondary/30 p-4 text-center">
-				<p class="font-mono text-[10px] uppercase text-muted-foreground">{$t('reportCards.rank')}</p>
+				<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">{$t('reportCards.rank')}</p>
 				<p class="font-display text-3xl font-semibold">{latest.classRank}/{latest.classSize}</p>
 			</div>
 		</div>
@@ -125,7 +125,7 @@
 					<p class="mb-2 text-sm font-semibold">
 						{$t('reportCards.marks')}
 						{#if section.sectionAverage !== undefined && scale}
-							<span class="ml-1 font-mono text-xs font-normal text-muted-foreground">
+							<span class="ml-1 font-sans tabular-nums text-xs font-normal text-muted-foreground">
 								({formatGrade(section.sectionAverage, scale)})
 							</span>
 						{/if}
@@ -140,7 +140,7 @@
 											<p class="text-xs text-muted-foreground">{mark.teacherName}</p>
 										{/if}
 									</div>
-									<p class="font-mono font-medium">
+									<p class="font-sans tabular-nums font-medium">
 										{scale ? formatGrade(mark.average, scale) : mark.average}
 									</p>
 								</div>
@@ -155,7 +155,7 @@
 		{/each}
 
 		<div class="rounded-xl border border-border p-3 space-y-2">
-			<p class="font-mono text-[10px] uppercase text-muted-foreground">
+			<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">
 				{$t('reportCards.homeroomComment')}
 			</p>
 			<Textarea bind:value={commentDraft} rows={3} />
@@ -166,7 +166,7 @@
 
 		{#if latest.principalComment}
 			<div class="rounded-xl border border-border p-3">
-				<p class="font-mono text-[10px] uppercase text-muted-foreground">
+				<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">
 					{$t('reportCards.principalComment')}
 				</p>
 				<p class="mt-1 text-sm">{latest.principalComment}</p>

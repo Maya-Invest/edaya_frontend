@@ -1,0 +1,419 @@
+{
+  "app": "webapp",
+  "designSystemVersion": "1.0.0",
+  "sourceDigestInputs": [
+    "apps/webapp/src",
+    "apps/webapp/static",
+    "design-system/tokens.json"
+  ],
+  "captures": [
+    {
+      "file": "current/account-phone-fr.png",
+      "app": "webapp",
+      "sourceRevision": "19e6ba150494b6d993533698ab84375344f96ef1",
+      "sourceDigest": "c6ae8197d66e272449ac8503930a390523ac11caab11760edd229adbc58d2981",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "locale": "fr",
+      "theme": "light",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "imagePixels": {
+        "width": 390,
+        "height": 844
+      },
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "isolated local Identity/School API with disposable seeded data",
+      "capturedAt": "2026-09-13T23:09:23.922881+00:00",
+      "sha256": "33c502d28063b85964f1174ac16fa650467409ddcad30e2d1128840f8a17d1b1"
+    },
+    {
+      "file": "current/components-desktop-fr.png",
+      "app": "webapp",
+      "sourceRevision": "19e6ba150494b6d993533698ab84375344f96ef1",
+      "sourceDigest": "2dc094127f7bdc293a56d4747192fc9f6dd2df20a2c1dc46fd20e233c01b8284",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "locale": "fr",
+      "theme": "light",
+      "viewport": {
+        "width": 1280,
+        "height": 1000
+      },
+      "imagePixels": {
+        "width": 1265,
+        "height": 1945
+      },
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-component-composition",
+      "fixtureSource": "dev-only /__design; fictional values, no API writes",
+      "capturedAt": "2026-09-13T22:21:10.461846+00:00",
+      "sha256": "7eacead75bc4f44ed7a2b2f11dab8e0b17e5d2eafab25777bb197363323a6112"
+    },
+    {
+      "file": "current/components-focus-desktop-fr.png",
+      "app": "webapp",
+      "sourceRevision": "19e6ba150494b6d993533698ab84375344f96ef1",
+      "sourceDigest": "2dc094127f7bdc293a56d4747192fc9f6dd2df20a2c1dc46fd20e233c01b8284",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "locale": "fr",
+      "theme": "light",
+      "viewport": {
+        "width": 1280,
+        "height": 1000
+      },
+      "imagePixels": {
+        "width": 1280,
+        "height": 1945
+      },
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-component-composition",
+      "fixtureSource": "dev-only /__design; fictional values, no API writes",
+      "capturedAt": "2026-09-13T22:21:12.091583+00:00",
+      "sha256": "10204fdc4d70f7295d3bb4c8bcb8b9e29fda1d57103e6a9ef4d24abc07a6010c"
+    },
+    {
+      "file": "current/components-phone-fr.png",
+      "app": "webapp",
+      "sourceRevision": "19e6ba150494b6d993533698ab84375344f96ef1",
+      "sourceDigest": "2dc094127f7bdc293a56d4747192fc9f6dd2df20a2c1dc46fd20e233c01b8284",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "locale": "fr",
+      "theme": "light",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "imagePixels": {
+        "width": 786,
+        "height": 2856
+      },
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-component-composition",
+      "fixtureSource": "dev-only /__design; fictional values, no API writes",
+      "capturedAt": "2026-09-13T22:21:13.418815+00:00",
+      "sha256": "4142927a50bae4f722e0e08205fe9446ddee645b9ae0990223d6654b05708586"
+    },
+    {
+      "file": "current/login-desktop-en.png",
+      "app": "webapp",
+      "sourceRevision": "19e6ba150494b6d993533698ab84375344f96ef1",
+      "sourceDigest": "2dc094127f7bdc293a56d4747192fc9f6dd2df20a2c1dc46fd20e233c01b8284",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "locale": "en",
+      "theme": "light",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "imagePixels": {
+        "width": 1280,
+        "height": 800
+      },
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "isolated local Identity/School API with disposable seeded data",
+      "capturedAt": "2026-09-13T21:46:47.065809+00:00",
+      "sha256": "86e78ed127b31b01b51b9125158925f628acef5b06b6bf5020c523a32e6e1189"
+    },
+    {
+      "file": "current/login-desktop-fr.png",
+      "app": "webapp",
+      "sourceRevision": "19e6ba150494b6d993533698ab84375344f96ef1",
+      "sourceDigest": "2dc094127f7bdc293a56d4747192fc9f6dd2df20a2c1dc46fd20e233c01b8284",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "locale": "fr",
+      "theme": "light",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "imagePixels": {
+        "width": 1280,
+        "height": 800
+      },
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "isolated local Identity/School API with disposable seeded data",
+      "capturedAt": "2026-09-13T21:46:38.849705+00:00",
+      "sha256": "7d2a477807054b50a89660944b117b7c6ad6a20ba6b6e772cbe7e919d5398a9b"
+    },
+    {
+      "file": "current/login-error-desktop-en.png",
+      "app": "webapp",
+      "sourceRevision": "19e6ba150494b6d993533698ab84375344f96ef1",
+      "sourceDigest": "2dc094127f7bdc293a56d4747192fc9f6dd2df20a2c1dc46fd20e233c01b8284",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "locale": "en",
+      "theme": "light",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "imagePixels": {
+        "width": 1280,
+        "height": 800
+      },
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "isolated local Identity/School API with disposable seeded data",
+      "capturedAt": "2026-09-13T21:47:06.879421+00:00",
+      "sha256": "5851f2d95cd565072885f72f3601b126513592b4d5d2106b971e61eb648af450"
+    },
+    {
+      "file": "current/login-otp-phone-fr.png",
+      "app": "webapp",
+      "sourceRevision": "19e6ba150494b6d993533698ab84375344f96ef1",
+      "sourceDigest": "2dc094127f7bdc293a56d4747192fc9f6dd2df20a2c1dc46fd20e233c01b8284",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "locale": "fr",
+      "theme": "light",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "imagePixels": {
+        "width": 390,
+        "height": 844
+      },
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "isolated local Identity/School API with disposable seeded data",
+      "capturedAt": "2026-09-13T21:52:13.186729+00:00",
+      "sha256": "f34de1b24f226daac190c4906b6945bfad5390d644fde6b4e497b80c28de4929"
+    },
+    {
+      "file": "current/login-phone-fr.png",
+      "app": "webapp",
+      "sourceRevision": "19e6ba150494b6d993533698ab84375344f96ef1",
+      "sourceDigest": "2dc094127f7bdc293a56d4747192fc9f6dd2df20a2c1dc46fd20e233c01b8284",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "locale": "fr",
+      "theme": "light",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "imagePixels": {
+        "width": 390,
+        "height": 844
+      },
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "isolated local Identity/School API with disposable seeded data",
+      "capturedAt": "2026-09-13T21:41:19.367033+00:00",
+      "sha256": "375106049482073abae187ceee487b52723b4b69d99e8287b206ade641bf105d"
+    },
+    {
+      "file": "current/navigation-phone-fr.png",
+      "app": "webapp",
+      "sourceRevision": "19e6ba150494b6d993533698ab84375344f96ef1",
+      "sourceDigest": "2dc094127f7bdc293a56d4747192fc9f6dd2df20a2c1dc46fd20e233c01b8284",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "locale": "fr",
+      "theme": "light",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "imagePixels": {
+        "width": 390,
+        "height": 844
+      },
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "isolated local Identity/School API with disposable seeded data",
+      "capturedAt": "2026-09-13T22:14:36.591537+00:00",
+      "sha256": "d90cb8fe7ec2c42ddece5a3cd54cd33cda4aa0f60abb66db1c112dd236231477"
+    },
+    {
+      "file": "current/signup-error-phone-fr.png",
+      "app": "webapp",
+      "sourceRevision": "19e6ba150494b6d993533698ab84375344f96ef1",
+      "sourceDigest": "b68efee017879d10aaecb474283011e1716a0d138ca560614d4e1f2eb95ab99b",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "locale": "fr",
+      "theme": "light",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "imagePixels": {
+        "width": 375,
+        "height": 812
+      },
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "isolated local Identity/School API with disposable seeded data",
+      "capturedAt": "2026-09-13T23:19:31.115990+00:00",
+      "sha256": "279eb7aa4b8a9ab8d3b0818d4ab01cbeedf3dfadcbe9475c38c575d524a06ee9"
+    },
+    {
+      "file": "current/signup-phone-fr.png",
+      "app": "webapp",
+      "sourceRevision": "19e6ba150494b6d993533698ab84375344f96ef1",
+      "sourceDigest": "2dc094127f7bdc293a56d4747192fc9f6dd2df20a2c1dc46fd20e233c01b8284",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "locale": "fr",
+      "theme": "light",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "imagePixels": {
+        "width": 375,
+        "height": 854
+      },
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "isolated local Identity/School API with disposable seeded data",
+      "capturedAt": "2026-09-13T21:43:00.786093+00:00",
+      "sha256": "2c73a84bd30eec74de602165ecc733b0359e5e4c95e51d0c887f3b6986085ab3"
+    },
+    {
+      "file": "current/student-drawer-desktop-fr.png",
+      "app": "webapp",
+      "sourceRevision": "19e6ba150494b6d993533698ab84375344f96ef1",
+      "sourceDigest": "2dc094127f7bdc293a56d4747192fc9f6dd2df20a2c1dc46fd20e233c01b8284",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "locale": "fr",
+      "theme": "light",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "imagePixels": {
+        "width": 1440,
+        "height": 1000
+      },
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "isolated local Identity/School API with disposable seeded data",
+      "capturedAt": "2026-09-13T22:15:58.765145+00:00",
+      "sha256": "604c05508a9d4c9e9162f31fe9e037d31bb414a462f9a382b97b162b4dec4b9f"
+    },
+    {
+      "file": "current/student-form-desktop-fr.png",
+      "app": "webapp",
+      "sourceRevision": "19e6ba150494b6d993533698ab84375344f96ef1",
+      "sourceDigest": "2dc094127f7bdc293a56d4747192fc9f6dd2df20a2c1dc46fd20e233c01b8284",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "locale": "fr",
+      "theme": "light",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "imagePixels": {
+        "width": 1440,
+        "height": 1000
+      },
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "isolated local Identity/School API with disposable seeded data",
+      "capturedAt": "2026-09-13T22:19:34.664276+00:00",
+      "sha256": "4d3d2948e81d42c70fc7a62228ec3d6dfae64eb06453093e9c9041239842f610"
+    },
+    {
+      "file": "current/student-form-phone-fr.png",
+      "app": "webapp",
+      "sourceRevision": "19e6ba150494b6d993533698ab84375344f96ef1",
+      "sourceDigest": "2dc094127f7bdc293a56d4747192fc9f6dd2df20a2c1dc46fd20e233c01b8284",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "locale": "fr",
+      "theme": "light",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "imagePixels": {
+        "width": 390,
+        "height": 844
+      },
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "isolated local Identity/School API with disposable seeded data",
+      "capturedAt": "2026-09-13T22:19:35.012840+00:00",
+      "sha256": "bbf87f60e1dbcf920302100a4ba16960e5b382f30b487a7ed2df12443158e10a"
+    },
+    {
+      "file": "current/students-desktop-fr.png",
+      "app": "webapp",
+      "sourceRevision": "19e6ba150494b6d993533698ab84375344f96ef1",
+      "sourceDigest": "2dc094127f7bdc293a56d4747192fc9f6dd2df20a2c1dc46fd20e233c01b8284",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "locale": "fr",
+      "theme": "light",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "imagePixels": {
+        "width": 1440,
+        "height": 1000
+      },
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "isolated local Identity/School API with disposable seeded data",
+      "capturedAt": "2026-09-13T22:14:48.523260+00:00",
+      "sha256": "24d5fef2cf00295d0c7f501cf7e9fb5bd03d6cca6fd3c71567916afc4b2fb84b"
+    },
+    {
+      "file": "current/students-phone-fr.png",
+      "app": "webapp",
+      "sourceRevision": "19e6ba150494b6d993533698ab84375344f96ef1",
+      "sourceDigest": "2dc094127f7bdc293a56d4747192fc9f6dd2df20a2c1dc46fd20e233c01b8284",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "locale": "fr",
+      "theme": "light",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "imagePixels": {
+        "width": 390,
+        "height": 844
+      },
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "isolated local Identity/School API with disposable seeded data",
+      "capturedAt": "2026-09-13T22:14:05.514441+00:00",
+      "sha256": "380daba9e8f5ebffa7624bd6f1fd95231141ccfbd84619c51979545107d0c1a5"
+    }
+  ]
+}

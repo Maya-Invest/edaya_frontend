@@ -208,7 +208,7 @@
 								? $t(`feePeriod.${periodKey(fee.period)}`)
 								: $t('fee.installmentCount', { n: fee.installmentCount ?? 0 })}
 						</div>
-						<div class="col-span-2 text-right font-display text-sm font-semibold tabular-nums">
+						<div class="col-span-2 text-right font-sans text-sm font-semibold tabular-nums">
 							{fee.amount.toLocaleString()} FCFA
 						</div>
 						<div class="col-span-1 text-right text-xs text-muted-foreground">

@@ -2105,7 +2105,7 @@
 								<ul class="mt-2 space-y-1 text-sm">
 									{#each studentPreviewRows as row (row.rowIndex)}
 										<li>
-											<span class="font-mono text-xs text-muted-foreground">L{row.rowIndex}</span>
+											<span class="font-sans tabular-nums text-xs text-muted-foreground">L{row.rowIndex}</span>
 											<span class="mx-2">·</span>
 											{row.prenom} {row.nom}
 											<span class="mx-2 text-muted-foreground">·</span>
@@ -2148,7 +2148,7 @@
 								<ul class="mt-2 space-y-1 text-sm">
 									{#each classPreviewRows as row (row.rowIndex)}
 										<li>
-											<span class="font-mono text-xs text-muted-foreground">L{row.rowIndex}</span>
+											<span class="font-sans tabular-nums text-xs text-muted-foreground">L{row.rowIndex}</span>
 											<span class="mx-2">·</span>
 											{row.nom}
 											<span class="mx-2 text-muted-foreground">·</span>
@@ -2191,7 +2191,7 @@
 								<ul class="mt-2 space-y-1 text-sm">
 									{#each guardianPreviewRows as row (row.rowIndex)}
 										<li>
-											<span class="font-mono text-xs text-muted-foreground">L{row.rowIndex}</span>
+											<span class="font-sans tabular-nums text-xs text-muted-foreground">L{row.rowIndex}</span>
 											<span class="mx-2">·</span>
 											{row.prenom} {row.nom}
 											<span class="mx-2 text-muted-foreground">·</span>
@@ -2234,7 +2234,7 @@
 								<ul class="mt-2 space-y-1 text-sm">
 									{#each staffPreviewRows as row (row.rowIndex)}
 										<li>
-											<span class="font-mono text-xs text-muted-foreground">L{row.rowIndex}</span>
+											<span class="font-sans tabular-nums text-xs text-muted-foreground">L{row.rowIndex}</span>
 											<span class="mx-2">·</span>
 											{row.prenom} {row.nom}
 											<span class="mx-2 text-muted-foreground">·</span>
@@ -2277,7 +2277,7 @@
 								<ul class="mt-2 space-y-1 text-sm">
 									{#each teacherPreviewRows as row (row.rowIndex)}
 										<li>
-											<span class="font-mono text-xs text-muted-foreground">L{row.rowIndex}</span>
+											<span class="font-sans tabular-nums text-xs text-muted-foreground">L{row.rowIndex}</span>
 											<span class="mx-2">·</span>
 											{row.prenom} {row.nom}
 											{#if row.email?.trim()}
@@ -2325,7 +2325,7 @@
 								<ul class="mt-2 space-y-1 text-sm">
 									{#each teacherAssignmentPreviewRows as row (row.rowIndex)}
 										<li>
-											<span class="font-mono text-xs text-muted-foreground">L{row.rowIndex}</span>
+											<span class="font-sans tabular-nums text-xs text-muted-foreground">L{row.rowIndex}</span>
 											<span class="mx-2">·</span>
 											{row.code}
 											<span class="mx-2 text-muted-foreground">·</span>
@@ -2370,7 +2370,7 @@
 								<ul class="mt-2 space-y-1 text-sm">
 									{#each subjectPreviewRows as row (row.rowIndex)}
 										<li>
-											<span class="font-mono text-xs text-muted-foreground">L{row.rowIndex}</span>
+											<span class="font-sans tabular-nums text-xs text-muted-foreground">L{row.rowIndex}</span>
 											<span class="mx-2">·</span>
 											{row.nom}
 											<span class="mx-2 text-muted-foreground">·</span>
@@ -2413,7 +2413,7 @@
 								<ul class="mt-2 space-y-1 text-sm">
 									{#each chapterPreviewRows as row (row.rowIndex)}
 										<li>
-											<span class="font-mono text-xs text-muted-foreground">L{row.rowIndex}</span>
+											<span class="font-sans tabular-nums text-xs text-muted-foreground">L{row.rowIndex}</span>
 											<span class="mx-2">·</span>
 											{row.niveau}
 											<span class="mx-2 text-muted-foreground">·</span>
@@ -2458,7 +2458,7 @@
 								<ul class="mt-2 space-y-1 text-sm">
 									{#each billingPreviewRows as row (row.rowIndex)}
 										<li>
-											<span class="font-mono text-xs text-muted-foreground">L{row.rowIndex}</span>
+											<span class="font-sans tabular-nums text-xs text-muted-foreground">L{row.rowIndex}</span>
 											<span class="mx-2">·</span>
 											{row.matricule}
 											<span class="mx-2 text-muted-foreground">·</span>
@@ -2501,7 +2501,7 @@
 								<ul class="mt-2 space-y-1 text-sm">
 									{#each paymentPreviewRows as row (row.rowIndex)}
 										<li>
-											<span class="font-mono text-xs text-muted-foreground">L{row.rowIndex}</span>
+											<span class="font-sans tabular-nums text-xs text-muted-foreground">L{row.rowIndex}</span>
 											<span class="mx-2">·</span>
 											{row.matricule}
 											<span class="mx-2 text-muted-foreground">·</span>
@@ -2865,7 +2865,7 @@
 									<ul class="space-y-2 text-sm text-amber-950 dark:text-amber-50">
 										{#each studentImportResult.warnings as warning (warning.rowIndex + warning.studentName)}
 											<li>
-												<span class="font-mono text-xs opacity-80">L{warning.rowIndex}</span>
+												<span class="font-sans tabular-nums text-xs opacity-80">L{warning.rowIndex}</span>
 												<span class="mx-2">·</span>
 												{warning.studentName}
 												<span class="mx-2 opacity-80">—</span>
@@ -2882,7 +2882,7 @@
 									<ul class="space-y-2 text-sm">
 										{#each studentImportResult.failed as failure (failure.rowIndex + failure.studentName)}
 											<li>
-												<span class="font-mono text-xs text-muted-foreground">L{failure.rowIndex}</span>
+												<span class="font-sans tabular-nums text-xs text-muted-foreground">L{failure.rowIndex}</span>
 												<span class="mx-2">·</span>
 												{failure.studentName}
 												<span class="mx-2 text-muted-foreground">—</span>
@@ -2956,7 +2956,7 @@
 									<ul class="space-y-2 text-sm">
 										{#each classImportResult.failed as failure (failure.rowIndex + failure.className)}
 											<li>
-												<span class="font-mono text-xs text-muted-foreground">L{failure.rowIndex}</span>
+												<span class="font-sans tabular-nums text-xs text-muted-foreground">L{failure.rowIndex}</span>
 												<span class="mx-2">·</span>
 												{failure.className}
 												<span class="mx-2 text-muted-foreground">—</span>
@@ -3027,7 +3027,7 @@
 									<ul class="space-y-2 text-sm">
 										{#each guardianImportResult.failed as failure (failure.rowIndex + failure.guardianName)}
 											<li>
-												<span class="font-mono text-xs text-muted-foreground">L{failure.rowIndex}</span>
+												<span class="font-sans tabular-nums text-xs text-muted-foreground">L{failure.rowIndex}</span>
 												<span class="mx-2">·</span>
 												{failure.guardianName}
 												<span class="mx-2 text-muted-foreground">—</span>
@@ -3098,7 +3098,7 @@
 									<ul class="space-y-2 text-sm">
 										{#each staffImportResult.failed as failure (failure.rowIndex + failure.staffName)}
 											<li>
-												<span class="font-mono text-xs text-muted-foreground">L{failure.rowIndex}</span>
+												<span class="font-sans tabular-nums text-xs text-muted-foreground">L{failure.rowIndex}</span>
 												<span class="mx-2">·</span>
 												{failure.staffName}
 												<span class="mx-2 text-muted-foreground">—</span>
@@ -3169,7 +3169,7 @@
 									<ul class="space-y-2 text-sm">
 										{#each teacherImportResult.failed as failure (failure.rowIndex + failure.teacherName)}
 											<li>
-												<span class="font-mono text-xs text-muted-foreground">L{failure.rowIndex}</span>
+												<span class="font-sans tabular-nums text-xs text-muted-foreground">L{failure.rowIndex}</span>
 												<span class="mx-2">·</span>
 												{failure.teacherName}
 												<span class="mx-2 text-muted-foreground">—</span>
@@ -3240,7 +3240,7 @@
 									<ul class="space-y-2 text-sm">
 										{#each teacherAssignmentImportResult.failed as failure (failure.rowIndex + failure.label)}
 											<li>
-												<span class="font-mono text-xs text-muted-foreground">L{failure.rowIndex}</span>
+												<span class="font-sans tabular-nums text-xs text-muted-foreground">L{failure.rowIndex}</span>
 												<span class="mx-2">·</span>
 												{failure.label}
 												<span class="mx-2 text-muted-foreground">—</span>
@@ -3311,7 +3311,7 @@
 									<ul class="space-y-2 text-sm">
 										{#each subjectImportResult.failed as failure (failure.rowIndex + failure.subjectName)}
 											<li>
-												<span class="font-mono text-xs text-muted-foreground">L{failure.rowIndex}</span>
+												<span class="font-sans tabular-nums text-xs text-muted-foreground">L{failure.rowIndex}</span>
 												<span class="mx-2">·</span>
 												{failure.subjectName}
 												<span class="mx-2 text-muted-foreground">—</span>
@@ -3382,7 +3382,7 @@
 									<ul class="space-y-2 text-sm">
 										{#each chapterImportResult.failed as failure (failure.rowIndex + failure.chapterLabel)}
 											<li>
-												<span class="font-mono text-xs text-muted-foreground">L{failure.rowIndex}</span>
+												<span class="font-sans tabular-nums text-xs text-muted-foreground">L{failure.rowIndex}</span>
 												<span class="mx-2">·</span>
 												{failure.chapterLabel}
 												<span class="mx-2 text-muted-foreground">—</span>
@@ -3453,7 +3453,7 @@
 									<ul class="space-y-2 text-sm">
 										{#each billingImportResult.failed as failure (failure.rowIndex + failure.label)}
 											<li>
-												<span class="font-mono text-xs text-muted-foreground">L{failure.rowIndex}</span>
+												<span class="font-sans tabular-nums text-xs text-muted-foreground">L{failure.rowIndex}</span>
 												<span class="mx-2">·</span>
 												{failure.label}
 												<span class="mx-2 text-muted-foreground">—</span>
@@ -3524,7 +3524,7 @@
 									<ul class="space-y-2 text-sm">
 										{#each paymentImportResult.failed as failure (failure.rowIndex + failure.label)}
 											<li>
-												<span class="font-mono text-xs text-muted-foreground">L{failure.rowIndex}</span>
+												<span class="font-sans tabular-nums text-xs text-muted-foreground">L{failure.rowIndex}</span>
 												<span class="mx-2">·</span>
 												{failure.label}
 												<span class="mx-2 text-muted-foreground">—</span>

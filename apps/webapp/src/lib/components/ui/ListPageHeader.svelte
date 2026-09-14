@@ -20,14 +20,14 @@
 	} = $props();
 </script>
 
-<header class="mb-5 flex flex-wrap items-end justify-between gap-3">
-	<div>
+<header class="mb-6 flex flex-wrap items-end justify-between gap-4">
+	<div class="min-w-0">
 		{#if eyebrow}
-			<p class="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+			<p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
 				{eyebrow}
 			</p>
 		{/if}
-		<h2 class="font-display text-2xl font-semibold">{title}</h2>
+		<h2 class="font-display text-[28px] font-semibold leading-tight">{title}</h2>
 		{#if description}
 			<p class="mt-1 text-sm text-muted-foreground">{description}</p>
 		{/if}

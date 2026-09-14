@@ -76,8 +76,8 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="max-w-md gap-0 overflow-hidden rounded-2xl p-0 shadow-panel">
-		<div class="border-b border-border bg-secondary/30 px-6 py-5">
+	<Dialog.Content class="flex max-w-md flex-col gap-0 overflow-hidden rounded-2xl p-0 shadow-panel">
+		<div class="shrink-0 border-b border-border bg-secondary/30 px-6 py-5">
 			<div class="flex items-center gap-4">
 				{#if canChangePhoto}
 					<ProfilePhotoPicker
@@ -106,9 +106,9 @@
 			</div>
 		</div>
 
-		<div class="space-y-6 px-6 py-5">
+		<div class="min-h-0 space-y-6 overflow-y-auto px-6 py-5">
 			<section class="space-y-4">
-				<h3 class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+				<h3 class="font-sans text-xs uppercase tracking-widest text-muted-foreground">
 					{$t('account.profile.sectionProfile')}
 				</h3>
 
@@ -146,7 +146,7 @@
 			</section>
 
 			<section class="space-y-2">
-				<h3 class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+				<h3 class="font-sans text-xs uppercase tracking-widest text-muted-foreground">
 					{$t('account.profile.sectionShortcuts')}
 				</h3>
 				<a
@@ -174,7 +174,7 @@
 			</section>
 		</div>
 
-		<Dialog.Footer class="border-t border-border bg-secondary/20 px-6 py-4 sm:justify-between">
+		<Dialog.Footer class="shrink-0 border-t border-border bg-secondary/20 px-6 py-4 sm:justify-between">
 			<Button variant="ghost" class="rounded-full" onclick={() => (open = false)}>
 				{$t('common.close')}
 			</Button>

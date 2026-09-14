@@ -350,10 +350,10 @@
 		--wx-background-alt: hsl(var(--secondary));
 		--wx-background-hover: hsl(var(--secondary));
 		--wx-border: 1px solid hsl(var(--border));
-		--wx-border-radius: 0.75rem;
-		--wx-radius-major: 1rem;
+		--wx-border-radius: var(--radius-control);
+		--wx-radius-major: var(--radius-surface);
 		--wx-font-family: var(--font-sans);
-		--wx-font-size-sm: 11px;
+		--wx-font-size-sm: 12px;
 		--wx-calendar-grid-color: hsl(var(--border));
 		--wx-calendar-weekend-background: hsl(var(--secondary) / 0.35);
 		height: 100%;

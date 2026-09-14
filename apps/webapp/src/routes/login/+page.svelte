@@ -26,6 +26,7 @@
 	} from './login-url-state';
 
 	let apiConnected = $state(false);
+	let apiChecking = $state(true);
 	let email = $state('');
 	let emailVerifiedToastShown = false;
 
@@ -41,6 +42,7 @@
 		void (async () => {
 			const health = await checkBrowserApiHealth();
 			apiConnected = health.connected;
+			apiChecking = false;
 		})();
 	});
 
@@ -94,6 +96,7 @@
 >
 	{#snippet signup()}
 		{#if showSignup}
+			<ApiConnectionBanner connected={apiConnected} checking={apiChecking} />
 			<SignupPanel
 				bind:email
 				{apiConnected}
@@ -116,7 +119,7 @@
 				{$t('auth.teacherPortalGateHint')}
 			</div>
 		{/if}
-		<ApiConnectionBanner connected={apiConnected} />
+		<ApiConnectionBanner connected={apiConnected} checking={apiChecking} />
 
 		<LoginPanelHost
 			bind:email

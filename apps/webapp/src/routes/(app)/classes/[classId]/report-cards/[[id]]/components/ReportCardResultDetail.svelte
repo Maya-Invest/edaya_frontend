@@ -64,7 +64,7 @@
 		{#snippet chips()}
 			<span
 				class={cn(
-					'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase',
+					'rounded-full px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase',
 					live.status === 'published'
 						? 'bg-accent/15 text-accent-foreground'
 						: live.status === 'generated'
@@ -86,17 +86,17 @@
 
 	<div class="grid grid-cols-3 gap-3">
 		<div class="rounded-xl border border-border bg-secondary/30 p-3 text-center">
-			<p class="font-mono text-[10px] uppercase text-muted-foreground">{$t('reportCards.overall')}</p>
+			<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">{$t('reportCards.overall')}</p>
 			<p class="font-display text-2xl font-semibold">
 				{scale ? formatGrade(live.overallAverage, scale) : live.overallAverage}
 			</p>
 		</div>
 		<div class="rounded-xl border border-border bg-secondary/30 p-3 text-center">
-			<p class="font-mono text-[10px] uppercase text-muted-foreground">{$t('reportCards.rank')}</p>
+			<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">{$t('reportCards.rank')}</p>
 			<p class="font-display text-2xl font-semibold">{live.classRank}/{live.classSize}</p>
 		</div>
 		<div class="rounded-xl border border-border bg-secondary/30 p-3 text-center">
-			<p class="font-mono text-[10px] uppercase text-muted-foreground">{$t('reportCards.period')}</p>
+			<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">{$t('reportCards.period')}</p>
 			<p class="font-display text-lg font-semibold">{live.academicPeriodId}</p>
 		</div>
 	</div>
@@ -107,7 +107,7 @@
 				<p class="mb-2 font-display text-sm font-semibold">
 					{definition?.sections.find(entry => entry.id === section.sectionId)?.name ?? 'Section'}
 					{#if section.sectionAverage !== undefined}
-						<span class="ml-2 font-mono text-xs text-muted-foreground">
+						<span class="ml-2 font-sans tabular-nums text-xs text-muted-foreground">
 							(moy. {scale ? formatGrade(section.sectionAverage, scale) : section.sectionAverage})
 						</span>
 					{/if}
@@ -120,7 +120,7 @@
 									<p class="font-medium">{mark.subjectName}</p>
 									<p class="text-xs text-muted-foreground">{mark.teacherName}</p>
 								</div>
-								<p class="font-mono font-semibold">
+								<p class="font-sans tabular-nums font-semibold">
 									{scale ? formatGrade(mark.average, scale) : mark.average}
 								</p>
 							</div>
@@ -135,7 +135,7 @@
 	{/each}
 
 	<div class="rounded-xl border border-border bg-card p-4 space-y-2">
-		<p class="font-mono text-[10px] uppercase text-muted-foreground">{$t('reportCards.homeroomComment')}</p>
+		<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">{$t('reportCards.homeroomComment')}</p>
 		<Textarea bind:value={commentDraft} rows={3} />
 		<Button size="sm" class="rounded-full" disabled={commentBusy} onclick={() => void saveHomeroomComment()}>
 			{$t('reportCards.saveHomeroomComment')}
@@ -144,7 +144,7 @@
 
 	{#if live.principalComment}
 		<div class="rounded-xl border border-border bg-card p-4">
-			<p class="font-mono text-[10px] uppercase text-muted-foreground">{$t('reportCards.principalComment')}</p>
+			<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">{$t('reportCards.principalComment')}</p>
 			<p class="mt-1 text-sm">{live.principalComment}</p>
 		</div>
 	{/if}
