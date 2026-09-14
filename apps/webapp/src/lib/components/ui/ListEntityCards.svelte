@@ -157,7 +157,7 @@
 								<div class="flex flex-col gap-0.5">
 									{#if cardFieldShowsLabel(column)}
 										<span
-											class="font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
+											class="font-sans tabular-nums text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
 										>
 											{column.label}
 										</span>
@@ -173,7 +173,7 @@
 								<div class="flex flex-col gap-0.5">
 									{#if cardFieldShowsLabel(column)}
 										<span
-											class="font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
+											class="font-sans tabular-nums text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
 										>
 											{column.label}
 										</span>
@@ -189,7 +189,7 @@
 								<div class="flex min-w-0 flex-col gap-0.5">
 									{#if cardFieldShowsLabel(column)}
 										<span
-											class="font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
+											class="font-sans tabular-nums text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
 										>
 											{column.label}
 										</span>

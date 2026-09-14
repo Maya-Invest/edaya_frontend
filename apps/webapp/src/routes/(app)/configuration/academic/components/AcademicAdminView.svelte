@@ -365,7 +365,7 @@
 							<h3 class="font-display font-semibold">{year.label}</h3>
 							<span
 								class={cn(
-									'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide',
+									'rounded-full px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase tracking-wide',
 									year.status === 'published'
 										? 'bg-accent/15 text-accent-foreground'
 										: year.status === 'archived'
@@ -376,7 +376,7 @@
 								{yearStatusLabel(year.status)}
 							</span>
 						</div>
-						<p class="mt-0.5 font-mono text-xs text-muted-foreground">
+						<p class="mt-0.5 font-sans tabular-nums text-xs text-muted-foreground">
 							{year.startDate} → {year.endDate}
 						</p>
 					</div>
@@ -410,7 +410,7 @@
 							</div>
 						{/if}
 
-						<p class="mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+						<p class="mb-3 font-sans tabular-nums text-[10px] uppercase tracking-widest text-muted-foreground">
 							{$t('academic.periods')}
 						</p>
 						<ul class="space-y-2">
@@ -420,14 +420,14 @@
 								>
 									<div>
 										<p class="text-sm font-medium">{period.label}</p>
-										<p class="font-mono text-[11px] text-muted-foreground">
+										<p class="font-sans tabular-nums text-[11px] text-muted-foreground">
 											{period.range} · {period.startDate} → {period.endDate}
 										</p>
 									</div>
 									<div class="flex items-center gap-2">
 										<span
 											class={cn(
-												'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase',
+												'rounded-full px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase',
 												period.status === 'published'
 													? 'bg-accent/15 text-accent-foreground'
 													: 'bg-secondary text-muted-foreground',
@@ -453,7 +453,7 @@
 						</ul>
 
 						<div class="mt-6 flex flex-wrap items-center justify-between gap-3">
-							<p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+							<p class="font-sans tabular-nums text-[10px] uppercase tracking-widest text-muted-foreground">
 								{$t('periodDefinitions.sectionTitle')}
 							</p>
 							<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE">

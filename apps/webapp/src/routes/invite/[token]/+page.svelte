@@ -18,11 +18,12 @@
 	import { resolveLinkedActorPath } from '$lib/auth/resolve-post-auth';
 	import { authSession } from '$lib/auth/session.svelte';
 	import LanguageSelector from '$lib/components/layout/LanguageSelector.svelte';
+	import BrandLogo from '$lib/components/ui/BrandLogo.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import { t } from '$lib/i18n';
-	import { GraduationCap, LoaderCircle, Mail } from '$lib/icons';
+	import { LoaderCircle, Mail } from '$lib/icons';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { toast } from '$lib/toast.svelte';
 	import { ApiError } from '@maya-invest/edaya-api-client';
@@ -382,10 +383,7 @@
 	<main class="flex flex-1 items-center justify-center p-6">
 		<div class="w-full max-w-lg animate-fade-in">
 			<div class="mb-8 flex flex-col items-center text-center">
-				<div class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-panel">
-					<GraduationCap class="h-7 w-7" />
-				</div>
-				<p class="font-mono text-xs uppercase tracking-widest text-muted-foreground">EDAYA</p>
+				<BrandLogo variant="horizontal" width={144} />
 				<h1 class="font-display text-3xl font-semibold">{$t('invitation.accept.title')}</h1>
 			</div>
 

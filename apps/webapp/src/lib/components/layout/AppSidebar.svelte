@@ -6,8 +6,9 @@
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { authSession } from '$lib/auth/session.svelte';
 	import ClassSelector from '$lib/components/layout/ClassSelector.svelte';
+	import BrandLogo from '$lib/components/ui/BrandLogo.svelte';
 	import { t } from '$lib/i18n';
-	import { Crown, GraduationCap, ChevronDown } from '$lib/icons';
+	import { Crown, ChevronDown } from '$lib/icons';
 	import {
 		DASHBOARD_HREF,
 		MODULES,
@@ -26,11 +27,13 @@
 		studentCount,
 		guardianCount,
 		staffCount,
+		forceExpanded = false,
 	}: {
 		hierarchy: HierarchyGroup[];
 		studentCount: number;
 		guardianCount: number;
 		staffCount: number;
+		forceExpanded?: boolean;
 	} = $props();
 
 	const schoolBadges = $derived<Record<string, number>>({
@@ -43,10 +46,9 @@
 	const classId = $derived(resolveActiveClassId($page.params.classId, academicContext.classes));
 	const grants = $derived(authSession.grants);
 	const brandEyebrow = $derived(authSession.school?.shortName ?? $t('sidebar.module'));
-	const brandTitle = 'EDAYA';
 	let hoverExpanded = $state(false);
 
-	const collapsed = $derived(!shellContext.sidebarOpen);
+	const collapsed = $derived(!forceExpanded && !shellContext.sidebarOpen);
 	const showExpanded = $derived(!collapsed || hoverExpanded);
 	const expanded = $state<Partial<Record<Exclude<ModuleKey, 'dashboard'>, boolean>>>({});
 
@@ -106,29 +108,15 @@
 	onmouseenter={onSidebarEnter}
 	onmouseleave={onSidebarLeave}
 	class={cn(
-		'flex h-full flex-col border-r border-border bg-card/60 backdrop-blur transition-[width] duration-200 ease-in-out',
-		showExpanded ? 'w-64' : 'w-14',
+		'flex h-full flex-col border-r border-border bg-card transition-[width] duration-200 ease-in-out',
+		forceExpanded ? 'w-full' : showExpanded ? 'w-64' : 'w-14',
 		collapsed && hoverExpanded && 'absolute left-0 top-0 z-50 shadow-panel',
 	)}
 >
-	<div
-		class={cn(
-			'flex items-center border-b border-border',
-			showExpanded ? 'gap-3 px-5 py-5' : 'justify-center px-2 py-4',
-		)}
-	>
-		<div
-			class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-soft"
-		>
-			<GraduationCap class="h-5 w-5" />
-		</div>
+	<div class={cn('flex flex-col border-b border-border', showExpanded ? 'items-start px-4 py-3' : 'items-center py-3')}>
+		<BrandLogo variant={showExpanded ? 'horizontal' : 'symbol'} width={showExpanded ? 144 : 32} />
 		{#if showExpanded}
-			<div class="min-w-0">
-				<p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-					{brandEyebrow}
-				</p>
-				<h2 class="truncate font-display text-sm font-semibold leading-tight">{brandTitle}</h2>
-			</div>
+			<p class="max-w-full truncate px-3 pb-1 text-xs font-medium text-muted-foreground">{brandEyebrow}</p>
 		{/if}
 	</div>
 
@@ -235,7 +223,7 @@
 											{#if it.badge !== undefined}
 												<span
 													class={cn(
-														'rounded-md px-1.5 py-0.5 font-mono text-[10px]',
+														'rounded-md px-1.5 py-0.5 font-sans tabular-nums text-[10px]',
 														active
 															? 'bg-primary-foreground/15 text-primary-foreground'
 															: 'bg-secondary text-muted-foreground',

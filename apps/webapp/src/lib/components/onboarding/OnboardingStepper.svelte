@@ -74,7 +74,7 @@
 		{/each}
 	</ol>
 
-	<p class="mt-3 text-center font-mono text-[10px] uppercase tracking-widest text-muted-foreground sm:hidden">
+	<p class="mt-3 text-center font-sans tabular-nums text-[10px] uppercase tracking-widest text-muted-foreground sm:hidden">
 		{$t('onboarding.stepProgress', { current: currentStep, total: ONBOARDING_STEPS.length })}
 	</p>
 </nav>

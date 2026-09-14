@@ -102,7 +102,7 @@
 				<p class="text-[11px] uppercase tracking-wider text-muted-foreground">
 					{$t('finance.collected')}
 				</p>
-				<p class="font-display text-2xl font-semibold tabular-nums">
+				<p class="font-sans text-2xl font-semibold tabular-nums">
 					{totals.collected.toLocaleString()} FCFA
 				</p>
 			</div>
@@ -115,7 +115,7 @@
 				<p class="text-[11px] uppercase tracking-wider text-muted-foreground">
 					{$t('finance.outstanding')}
 				</p>
-				<p class="font-display text-2xl font-semibold tabular-nums">
+				<p class="font-sans text-2xl font-semibold tabular-nums">
 					{totals.totalDue.toLocaleString()} FCFA
 				</p>
 			</div>
@@ -128,7 +128,7 @@
 				<p class="text-[11px] uppercase tracking-wider text-muted-foreground">
 					{$t('finance.overdueAccounts')}
 				</p>
-				<p class="font-display text-2xl font-semibold tabular-nums">{totals.overdue}</p>
+				<p class="font-sans text-2xl font-semibold tabular-nums">{totals.overdue}</p>
 			</div>
 		</div>
 	</div>
@@ -172,21 +172,21 @@
 									</div>
 									<div class="min-w-0">
 										<p class="truncate text-sm font-medium">{student.name}</p>
-										<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+										<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 											{student.classId}
 										</p>
 									</div>
 								</div>
 								<div class="col-span-3">
 									<p class="truncate text-sm">{fee.name}</p>
-									<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+									<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 										{$t(`feeCat.${fee.category}`)} · {fee.period
 											? $t(`feePeriod.${fee.period}`)
 											: $t('fee.installmentCount', { n: fee.installmentCount ?? 0 })}
 									</p>
 								</div>
 								<div class="col-span-2">
-									<p class="font-mono text-xs">
+									<p class="font-sans tabular-nums text-xs">
 										{b.paid.toLocaleString()} / {b.total.toLocaleString()} FCFA
 									</p>
 									<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary">

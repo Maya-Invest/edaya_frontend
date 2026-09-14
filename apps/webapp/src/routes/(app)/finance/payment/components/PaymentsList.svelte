@@ -153,7 +153,7 @@
 			<p class="text-[11px] uppercase tracking-wider text-muted-foreground">
 				{$t('finance.collectedFiltered')}
 			</p>
-			<p class="mt-1 font-display text-2xl font-semibold tabular-nums">
+			<p class="mt-1 font-sans text-2xl font-semibold tabular-nums">
 				{collected.toLocaleString()} FCFA
 			</p>
 		</div>
@@ -177,7 +177,7 @@
 				<li
 					class="grid grid-cols-12 items-center gap-4 border-b border-border px-5 py-3 last:border-b-0"
 				>
-					<div class="col-span-2 font-mono text-xs text-muted-foreground">
+					<div class="col-span-2 font-sans tabular-nums text-xs text-muted-foreground">
 						{new Date(payment.paymentDate).toLocaleDateString($locale, {
 							day: 'numeric',
 							month: 'short',
@@ -186,7 +186,7 @@
 					</div>
 					<div class="col-span-4 text-sm font-medium">{st?.name ?? '—'}</div>
 					<div class="col-span-3 text-sm text-foreground/70">{fee?.name ?? '—'}</div>
-					<div class="col-span-2 text-right font-display text-sm font-semibold tabular-nums">
+					<div class="col-span-2 text-right font-sans text-sm font-semibold tabular-nums">
 						{payment.amount.toLocaleString()} FCFA
 					</div>
 					<div class="col-span-1 flex items-center justify-end gap-1">

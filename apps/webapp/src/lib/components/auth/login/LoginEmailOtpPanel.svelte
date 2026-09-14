@@ -24,6 +24,13 @@
 
 	let otp = $state('');
 	let busy = $state(false);
+	let pendingAction = $state<'send' | 'verify' | null>(null);
+	let errorMessage = $state('');
+
+	function showError(message: string) {
+		errorMessage = message;
+		toast.error(message);
+	}
 
 	export function reset() {
 		onStageChange?.('form');
@@ -37,6 +44,8 @@
 		}
 
 		busy = true;
+		pendingAction = 'send';
+		errorMessage = '';
 		try {
 			const { error } = await authClient.emailOtp.sendVerificationOtp({
 				email: normalizedEmail,
@@ -44,7 +53,7 @@
 			});
 
 			if (error) {
-				toast.error(`${$t('auth.otpSendFailed')}: ${error.message ?? ''}`.trim());
+				showError(`${$t('auth.otpSendFailed')}: ${error.message ?? ''}`.trim());
 				return;
 			}
 
@@ -54,10 +63,11 @@
 		}
 		catch (err: unknown) {
 			const message = err instanceof Error ? err.message : String(err);
-			toast.error(`${$t('auth.otpSendFailed')}: ${message}`);
+			showError(`${$t('auth.otpSendFailed')}: ${message}`);
 		}
 		finally {
 			busy = false;
+			pendingAction = null;
 		}
 	}
 
@@ -69,6 +79,8 @@
 		}
 
 		busy = true;
+		pendingAction = 'verify';
+		errorMessage = '';
 		try {
 			const { error } = await authClient.signIn.emailOtp({
 				email: normalizedEmail,
@@ -76,7 +88,7 @@
 			});
 
 			if (error) {
-				toast.error(`${$t('auth.otpSignInFailed')}: ${error.message ?? ''}`.trim());
+				showError(`${$t('auth.otpSignInFailed')}: ${error.message ?? ''}`.trim());
 				return;
 			}
 
@@ -84,22 +96,30 @@
 		}
 		catch (err: unknown) {
 			const message = err instanceof Error ? err.message : String(err);
-			toast.error(`${$t('auth.otpSignInFailed')}: ${message}`);
+			showError(`${$t('auth.otpSignInFailed')}: ${message}`);
 		}
 		finally {
 			busy = false;
+			pendingAction = null;
 		}
 	}
 
 	function resetFlow() {
+		errorMessage = '';
+
 		onStageChange?.('form');
 		otp = '';
 	}
 </script>
 
+{#if errorMessage}
+	<p role="alert" class="mb-4 rounded-xl bg-destructive/5 px-4 py-3 text-sm text-destructive">{errorMessage}</p>
+{/if}
+
 {#if stage === 'form'}
 	<form
 		class="space-y-4"
+		aria-busy={busy}
 		onsubmit={(event) => {
 			event.preventDefault();
 			void sendOtp();
@@ -122,12 +142,13 @@
 			{#if busy}
 				<LoaderCircle class="mr-2 h-4 w-4 animate-spin" />
 			{/if}
-			{$t('auth.sendCode')}
+			{$t(busy ? 'auth.sendingCode' : 'auth.sendCode')}
 		</Button>
 	</form>
 {:else}
 	<form
 		class="space-y-4"
+		aria-busy={busy}
 		onsubmit={(event) => {
 			event.preventDefault();
 			void verifyOtp();
@@ -157,20 +178,20 @@
 			{#if busy}
 				<LoaderCircle class="mr-2 h-4 w-4 animate-spin" />
 			{/if}
-			{$t('auth.verifyCode')}
+			{$t(busy ? (pendingAction === 'send' ? 'auth.sendingCode' : 'auth.signingIn') : 'auth.verifyCode')}
 		</Button>
 		<div class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
 			<button
 				type="button"
-				class="text-primary hover:underline disabled:opacity-50"
+				class="control-focus rounded text-primary hover:underline disabled:opacity-50"
 				disabled={busy || !apiConnected}
 				onclick={() => void sendOtp()}
 			>
-				{$t('auth.resendCode')}
+				{$t(pendingAction === 'send' ? 'auth.sendingCode' : 'auth.resendCode')}
 			</button>
 			<button
 				type="button"
-				class="text-muted-foreground hover:underline disabled:opacity-50"
+				class="control-focus rounded text-muted-foreground hover:underline disabled:opacity-50"
 				disabled={busy}
 				onclick={resetFlow}
 			>

@@ -1,6 +1,7 @@
-/** Tons unifiés — 80 % neutre · 15 % teal · 5 % or */
+/** EDAYA semantic tones. Brand color never determines status meaning. */
 
 export const BADGE = 'bg-secondary text-foreground/80';
+export const BADGE_SUCCESS = 'bg-success-soft text-success';
 export const BADGE_INFO = 'bg-primary/10 text-primary';
 export const BADGE_WARN = 'bg-highlight-soft text-highlight';
 export const BADGE_DANGER = 'bg-destructive/10 text-destructive';

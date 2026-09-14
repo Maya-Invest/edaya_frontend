@@ -43,7 +43,7 @@
 				)}
 			>
 				<span>{$t(STAFF_SCOPE_LABEL_KEY[type])}</span>
-				<span class="font-mono opacity-80">· {summary}</span>
+				<span class="font-sans tabular-nums opacity-80">· {summary}</span>
 				<ChevronDown class="h-3 w-3 opacity-70" />
 			</button>
 		{/snippet}
@@ -78,7 +78,7 @@
 						<Checkbox checked={on} class="pointer-events-none h-3.5 w-3.5" />
 						<span class="flex-1 truncate">{it.label}</span>
 						{#if it.hint}
-							<span class="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+							<span class="font-sans tabular-nums text-[9px] uppercase tracking-wider text-muted-foreground">
 								{it.hint}
 							</span>
 						{/if}

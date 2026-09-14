@@ -38,7 +38,7 @@
 		)}
 	>
 		<Languages class="h-3.5 w-3.5 text-muted-foreground" />
-		<span class="font-mono">{current.short}</span>
+		<span class="font-sans tabular-nums">{current.short}</span>
 		<ChevronDown class={cn('h-3 w-3 transition-transform', open && 'rotate-180')} />
 	</button>
 	{#if open}

@@ -185,7 +185,7 @@
 						<div class="col-span-2">
 							<span
 								class={cn(
-									'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase',
+									'rounded-full px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase',
 									action.kind === 'sanction'
 										? 'bg-destructive/10 text-destructive'
 										: 'bg-accent/15 text-accent-foreground',

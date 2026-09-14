@@ -69,7 +69,7 @@
 								<tr>
 									<td class="sticky left-0 z-10 border-b border-border/40 bg-card px-2 py-2 align-middle">
 										<p class="font-medium leading-tight text-foreground">{entry.label}</p>
-										<p class="mt-0.5 font-mono text-[10px] text-muted-foreground">{entry.startTime}–{entry.endTime}</p>
+										<p class="mt-0.5 font-sans tabular-nums text-[10px] text-muted-foreground">{entry.startTime}–{entry.endTime}</p>
 									</td>
 									{#each weekGrid.weekDays as day (day)}
 										{@const cell = entry.cells[day]}
@@ -115,7 +115,7 @@
 						onclick={() => togglePreferred(period.id)}
 					>
 						<span class="block font-medium">{period.label}</span>
-						<span class="mt-0.5 block font-mono text-[11px] text-muted-foreground">{period.startTime}–{period.endTime}</span>
+						<span class="mt-0.5 block font-sans tabular-nums text-[11px] text-muted-foreground">{period.startTime}–{period.endTime}</span>
 					</button>
 				{/each}
 			</div>

@@ -276,14 +276,14 @@
 								class="flex w-28 shrink-0 flex-col items-center justify-center rounded-xl bg-secondary/50 py-2 text-center"
 							>
 								{#if multiDay}
-									<span class="mb-1 font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+									<span class="mb-1 font-sans tabular-nums text-[9px] uppercase tracking-wider text-muted-foreground">
 										{$t('drawer.start')}
 									</span>
 								{/if}
 								<span class="font-display text-lg font-semibold leading-tight">
 									{parseCivilDate(ev.date).getDate()}
 								</span>
-								<span class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+								<span class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 									{parseCivilDate(ev.date).toLocaleDateString($locale, { month: 'short' })}
 								</span>
 							</div>
@@ -307,7 +307,7 @@
 										{/if}
 										{$t(cfg.labelKey)}
 									</span>
-									<span class="font-mono text-[10px] text-muted-foreground">
+									<span class="font-sans tabular-nums text-[10px] text-muted-foreground">
 										{scopeLabel(ev.scope)}
 									</span>
 								</div>
@@ -321,13 +321,13 @@
 									<div
 										class="flex w-28 flex-col items-center justify-center rounded-xl bg-secondary/50 py-2 text-center"
 									>
-										<span class="mb-1 font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+										<span class="mb-1 font-sans tabular-nums text-[9px] uppercase tracking-wider text-muted-foreground">
 											{$t('drawer.end')}
 										</span>
 										<span class="font-display text-lg font-semibold leading-tight">
 											{parseCivilDate(endDate).getDate()}
 										</span>
-										<span class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+										<span class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 											{parseCivilDate(endDate).toLocaleDateString($locale, { month: 'short' })}
 										</span>
 									</div>

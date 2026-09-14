@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { browser } from '$app/environment';
-	import { replaceState } from '$app/navigation';
+	import { afterNavigate, replaceState } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { ACCOUNT_PROFILE_MODAL } from '$lib/account/profile-navigation';
@@ -15,6 +15,7 @@
 	import SchoolSelector from '$lib/components/layout/SchoolSelector.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
+	import { Dialog, DialogContent, DialogTitle, Close as DialogClose } from '$lib/components/ui/dialog';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, PanelLeft, PanelLeftClose } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
@@ -30,8 +31,19 @@
 	import { onboardingResumePath } from '$lib/onboarding/resume-onboarding';
 	import { shellContext } from '$lib/shell/context.svelte';
 	import { cn } from '$lib/utils';
+	import { MediaQuery } from 'svelte/reactivity';
 
 	const { children }: { children: Snippet } = $props();
+	const desktop = new MediaQuery('(min-width: 1024px)');
+	let mobileSidebarOpen = $state(false);
+	const navigationOpen = $derived(desktop.current ? shellContext.sidebarOpen : mobileSidebarOpen);
+	afterNavigate(() => {
+		mobileSidebarOpen = false;
+	});
+	$effect(() => {
+		if (desktop.current)
+			mobileSidebarOpen = false;
+	});
 
 	const me = $derived(authSession.accountActor);
 	const pathAllowed = $derived(
@@ -132,44 +144,58 @@
 </script>
 
 {#if authSession.ready && authSession.isLoggedIn && me}
-	<div class="flex h-screen w-full overflow-hidden bg-background text-foreground">
-		<div
-			class={cn(
-				'relative h-full shrink-0 transition-[width] duration-200 ease-in-out',
-				shellContext.sidebarOpen ? 'w-64' : 'w-14',
-			)}
-		>
-			<AppSidebar
-				hierarchy={academicContext.hierarchy}
-				studentCount={academicContext.studentCount}
-				guardianCount={academicContext.guardianCount}
-				staffCount={academicContext.staffCount}
-			/>
-		</div>
+	<div class="flex h-dvh w-full overflow-hidden bg-background text-foreground">
+		{#if desktop.current}
+			<div
+				class={cn(
+					'relative h-full shrink-0 transition-[width] duration-200 ease-in-out',
+					shellContext.sidebarOpen ? 'w-64' : 'w-14',
+				)}
+			>
+				<AppSidebar
+					hierarchy={academicContext.hierarchy}
+					studentCount={academicContext.studentCount}
+					guardianCount={academicContext.guardianCount}
+					staffCount={academicContext.staffCount}
+				/>
+			</div>
+		{:else}
+			<Dialog bind:open={mobileSidebarOpen}>
+				<DialogContent class="left-0 top-0 flex h-dvh max-h-none w-[min(85vw,320px)] translate-x-0 translate-y-0 flex-col gap-0 rounded-none p-0">
+					<div class="flex shrink-0 items-center justify-between border-b border-border px-4 py-2">
+						<DialogTitle class="text-base">{$t('sidebar.navigationTitle')}</DialogTitle>
+						<DialogClose class="control-focus flex h-11 w-11 items-center justify-center rounded-xl hover:bg-secondary" aria-label={$t('sidebar.hide')}><PanelLeftClose class="h-5 w-5" /></DialogClose>
+					</div>
+					<div class="min-h-0 flex-1">
+						<AppSidebar forceExpanded hierarchy={academicContext.hierarchy} studentCount={academicContext.studentCount} guardianCount={academicContext.guardianCount} staffCount={academicContext.staffCount} />
+					</div>
+				</DialogContent>
+			</Dialog>
+		{/if}
 
 		<div class="flex min-w-0 flex-1 flex-col">
 			<div
-				class="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-6"
+				class="flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-3 py-2 lg:h-14 lg:flex-nowrap lg:gap-3 lg:px-6 lg:py-0"
 			>
 				<button
 					type="button"
-					onclick={() => shellContext.toggleSidebar()}
-					class="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-foreground/80 transition hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					aria-label={shellContext.sidebarOpen ? $t('sidebar.hide') : $t('sidebar.show')}
-					aria-expanded={shellContext.sidebarOpen}
+					onclick={() => desktop.current ? shellContext.toggleSidebar() : mobileSidebarOpen = !mobileSidebarOpen}
+					class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground/80 transition hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:h-9 lg:w-9"
+					aria-label={navigationOpen ? $t('sidebar.hide') : $t('sidebar.show')}
+					aria-expanded={navigationOpen}
 					aria-controls="app-sidebar"
 				>
-					{#if shellContext.sidebarOpen}
+					{#if navigationOpen}
 						<PanelLeftClose class="h-4 w-4" />
 					{:else}
 						<PanelLeft class="h-4 w-4" />
 					{/if}
 				</button>
 
-				<div class="flex items-center gap-3">
+				<div class="contents lg:flex lg:items-center lg:gap-3">
 					{#if academicContext.shellReady}
 						<SchoolSelector schools={academicContext.schools} />
-						<AcademicHeader />
+						<div class="order-last flex w-full justify-end lg:order-none lg:w-auto"><AcademicHeader /></div>
 					{:else}
 						<LoaderCircle class="h-4 w-4 animate-spin text-muted-foreground" aria-hidden="true" />
 					{/if}
@@ -179,7 +205,8 @@
 							type="button"
 							data-testid="user-menu"
 							onclick={() => (profileOpen.open = true)}
-							class="flex h-9 items-center gap-2 rounded-full border border-border bg-card pl-1 pr-3 text-xs font-medium text-foreground transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+							class="flex h-11 items-center gap-2 rounded-full border border-border bg-card px-1 text-xs font-medium text-foreground transition hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:pr-3 lg:h-9"
+							title={`${me.name} · ${$t(me.subtitleKey)}`}
 							aria-label={$t('account.profile.openProfile')}
 							aria-haspopup="dialog"
 							aria-expanded={profileOpen.open}
@@ -190,9 +217,9 @@
 								photoUrl={me.photoUrl}
 								size="md"
 							/>
-							<span class="flex flex-col items-start leading-tight">
+							<span class="hidden flex-col items-start leading-tight sm:flex">
 								<span class="text-[11px] font-semibold">{me.name}</span>
-								<span class="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+								<span class="font-sans tabular-nums text-[9px] uppercase tracking-wider text-muted-foreground">
 									{$t(me.subtitleKey)}
 								</span>
 							</span>

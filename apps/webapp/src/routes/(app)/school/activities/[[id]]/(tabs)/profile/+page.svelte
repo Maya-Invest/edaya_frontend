@@ -41,22 +41,22 @@
 			<div class={cn(fieldClass, 'text-foreground/80')}>{activity.schedule}</div>
 		</DrawerField>
 		<DrawerField label={$t('activities.startDate')}>
-			<div class={cn(fieldClass, 'flex items-center gap-2 font-mono tabular-nums text-foreground/80')}>
+			<div class={cn(fieldClass, 'flex items-center gap-2 font-sans tabular-nums text-foreground/80')}>
 				<CalendarRange class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
 				{fmtActivityDate(activity.startDate, $locale)}
 			</div>
 		</DrawerField>
 		<DrawerField label={$t('activities.endDate')}>
-			<div class={cn(fieldClass, 'flex items-center gap-2 font-mono tabular-nums text-foreground/80')}>
+			<div class={cn(fieldClass, 'flex items-center gap-2 font-sans tabular-nums text-foreground/80')}>
 				<CalendarRange class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
 				{fmtActivityDate(activity.endDate, $locale)}
 			</div>
 		</DrawerField>
 		<DrawerField label={$t('activities.capacity')}>
-			<div class={cn(fieldClass, 'font-mono tabular-nums text-foreground/80')}>{activity.capacity}</div>
+			<div class={cn(fieldClass, 'font-sans tabular-nums text-foreground/80')}>{activity.capacity}</div>
 		</DrawerField>
 		<DrawerField label={$t('activities.enrolled')}>
-			<div class={cn(fieldClass, 'flex items-center gap-2 font-mono tabular-nums text-foreground/80')}>
+			<div class={cn(fieldClass, 'flex items-center gap-2 font-sans tabular-nums text-foreground/80')}>
 				<Users class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
 				{activity.enrollments.length}
 			</div>

@@ -73,7 +73,7 @@
 		{#snippet chips()}
 			<span
 				class={cn(
-					'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase',
+					'rounded-full px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase',
 					live.status === 'published'
 						? 'bg-accent/15 text-accent-foreground'
 						: 'bg-secondary text-muted-foreground',
@@ -109,10 +109,10 @@
 
 	<div>
 		<div class="mb-3 flex items-end justify-between gap-3">
-			<p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+			<p class="font-sans tabular-nums text-[10px] uppercase tracking-widest text-muted-foreground">
 				{$t('reportCards.sections')}
 			</p>
-			<p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+			<p class="font-sans tabular-nums text-[10px] uppercase tracking-widest text-muted-foreground">
 				{$t('reportCards.coefficient')}
 			</p>
 		</div>
@@ -123,7 +123,7 @@
 
 	{#if scale}
 		<div class="rounded-2xl border border-border bg-secondary/20 px-4 py-3">
-			<p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+			<p class="font-sans tabular-nums text-[10px] uppercase tracking-widest text-muted-foreground">
 				{$t('reportCards.gradeScaleSummary')}
 			</p>
 			<p class="mt-1 font-display text-sm font-semibold">{scale.name}</p>

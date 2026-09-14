@@ -33,14 +33,14 @@
 >
 	<div class="space-y-3 rounded-xl bg-secondary/50 p-4 text-sm">
 		<div>
-			<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+			<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 				{$t('planning.rescheduleFrom')}
 			</p>
 			<p class="mt-1 font-medium">{fromLabel}</p>
 		</div>
 		<div class="text-muted-foreground">→</div>
 		<div>
-			<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+			<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 				{$t('planning.rescheduleTo')}
 			</p>
 			<p class="mt-1 font-medium">{toLabel}</p>

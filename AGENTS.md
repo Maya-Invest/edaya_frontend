@@ -34,13 +34,11 @@ One rule per spec. Auto-attached by glob when relevant files are edited:
 - **Mutations** — drawer is read-only; create/edit/delete via modals; pragmatic inline toggles only for boolean/single-value fields.
 - **Data** — `PageQuery` seeds route state from URL; `runMutation` with optimistic patch + version bump; `DataState` for loading/empty/error; toast on mutations.
 
-## Key docs
+## Operational commands
 
-| Topic | Path |
-|-------|------|
-| Repo CLI (`bun repo`) | [docs/reference/repo-cli.md](docs/reference/repo-cli.md) |
-| CI setup | [docs/reference/ci-setup.md](docs/reference/ci-setup.md) |
-| Cross-repo OpenAPI workflow | [docs/reference/cross-repo-workflow.md](docs/reference/cross-repo-workflow.md) |
+Use `bun repo --help` for repository commands. Keep human-facing reference documents separate from normative agent instructions.
+
+- **EDAYA UI 1.0.0** — royal blue, sky canvas, bundled Poppins headings and Inter UI. Use supplied logos, generated tokens and existing primitives. Preserve logic and effective layouts. Update design specs, token version and current visual evidence together.
 
 ## Verification
 

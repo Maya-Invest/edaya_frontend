@@ -54,7 +54,7 @@
 							>
 								{billing.status}
 							</span>
-							<span class="font-mono text-[10px] text-muted-foreground">{fmtDateFr(billing.dueDate, $locale)}</span>
+							<span class="font-sans tabular-nums text-[10px] text-muted-foreground">{fmtDateFr(billing.dueDate, $locale)}</span>
 						</div>
 						<p class="mt-2 text-sm font-medium">{fee?.name ?? $t('billing.fee')}</p>
 						<p class="mt-1 text-xs text-muted-foreground">
@@ -82,13 +82,13 @@
 													<Clock class="h-3 w-3" />
 												{/if}
 											</span>
-											<span class="font-mono text-[10px] text-muted-foreground">
+											<span class="font-sans tabular-nums text-[10px] text-muted-foreground">
 												{fmtDateFr(installment.date, $locale)}
 											</span>
 										</div>
 										<span
 											class={cn(
-												'font-mono tabular-nums',
+												'font-sans tabular-nums',
 												installment.status === 'paid' ? 'text-foreground' : 'text-muted-foreground',
 											)}
 										>

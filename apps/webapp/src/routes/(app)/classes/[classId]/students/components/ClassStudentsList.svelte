@@ -213,17 +213,17 @@
 									</div>
 								</div>
 								<div class="col-span-2">
-									<p class="font-display text-lg font-semibold tabular-nums">{student.average.toFixed(1)}</p>
+									<p class="font-sans text-lg font-semibold tabular-nums">{student.average.toFixed(1)}</p>
 									<p class="text-[11px] text-muted-foreground">/ 20</p>
 								</div>
 								<div class="col-span-2">
 									{#if student.attendance === null}
-										<p class="font-mono text-[11px] text-muted-foreground">—</p>
+										<p class="font-sans tabular-nums text-[11px] text-muted-foreground">—</p>
 									{:else}
 										<div class="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
 											<div class="h-full rounded-full bg-accent" style:width="{student.attendance}%"></div>
 										</div>
-										<p class="mt-1 font-mono text-[11px] text-muted-foreground">{student.attendance}%</p>
+										<p class="mt-1 font-sans tabular-nums text-[11px] text-muted-foreground">{student.attendance}%</p>
 									{/if}
 								</div>
 								<div class="col-span-3 flex flex-wrap items-center gap-1">
@@ -288,7 +288,7 @@
 							</div>
 						</div>
 						<div class="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm">
-							<span class="font-display font-semibold tabular-nums">{student.average.toFixed(1)}</span>
+							<span class="font-sans font-semibold tabular-nums">{student.average.toFixed(1)}</span>
 							<div class="flex flex-wrap items-center gap-1">
 								<span
 									class={cn(

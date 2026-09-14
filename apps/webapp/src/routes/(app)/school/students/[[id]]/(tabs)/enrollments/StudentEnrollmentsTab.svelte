@@ -44,7 +44,7 @@
 						<div class="flex items-start justify-between gap-3">
 							<div>
 								<p class="text-sm font-semibold">{enrollment.className}</p>
-								<p class="mt-0.5 font-mono text-[10px] text-muted-foreground">
+								<p class="mt-0.5 font-sans tabular-nums text-[10px] text-muted-foreground">
 									{enrollment.academicYearId}
 								</p>
 							</div>
@@ -52,7 +52,7 @@
 								{statusLabel(enrollment.status)}
 							</span>
 						</div>
-						<p class="mt-2 font-mono text-[10px] text-muted-foreground">
+						<p class="mt-2 font-sans tabular-nums text-[10px] text-muted-foreground">
 							{$t('student.enrolledAt', { date: fmtDateFr(enrollment.enrolledAt, $locale) })}
 							{#if enrollment.endedAt}
 								· {$t('student.endedAt', { date: fmtDateFr(enrollment.endedAt, $locale) })}

@@ -163,13 +163,13 @@
 								<p class="truncate text-xs text-muted-foreground">{scale.description}</p>
 							{/if}
 						</div>
-						<div class="col-span-3 font-mono text-sm text-muted-foreground">
+						<div class="col-span-3 font-sans tabular-nums text-sm text-muted-foreground">
 							{scale.minScore} → {scale.maxScore}
 						</div>
 						<div class="col-span-2 text-sm tabular-nums">{scale.passingScore}</div>
 						<div class="col-span-2">
 							{#if scale.isDefault}
-								<span class="rounded-full bg-accent/15 px-2 py-0.5 font-mono text-[10px] uppercase">
+								<span class="rounded-full bg-accent/15 px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase">
 									{$t('gradeScales.default')}
 								</span>
 							{:else}

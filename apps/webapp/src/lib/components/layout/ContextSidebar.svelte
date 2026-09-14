@@ -34,7 +34,7 @@
 
 <aside class="flex h-full w-72 shrink-0 flex-col border-r border-border bg-card/60 backdrop-blur">
 	<div class="px-5 pb-3 pt-6">
-		<p class="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{subtitle}</p>
+		<p class="font-sans tabular-nums text-[10px] uppercase tracking-widest text-muted-foreground">{subtitle}</p>
 		<h2 class="font-display text-lg font-semibold leading-tight">{title}</h2>
 	</div>
 
@@ -78,7 +78,7 @@
 						{#if it.badge !== undefined}
 							<span
 								class={cn(
-									'rounded-md px-1.5 py-0.5 font-mono text-[10px]',
+									'rounded-md px-1.5 py-0.5 font-sans tabular-nums text-[10px]',
 									active ? 'bg-primary-foreground/15 text-primary-foreground' : 'bg-secondary text-muted-foreground',
 								)}
 							>

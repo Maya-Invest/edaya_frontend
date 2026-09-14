@@ -21,3 +21,9 @@ bun run lint:fix  # lint:fix when needed
 ```
 
 Webapp-only: `bun run --cwd apps/webapp quality` (lint + svelte-check + test typecheck).
+
+## UI work
+
+Use the [EDAYA UI brief](../../docs/reference/edaya-ui-brief.md), [web design-language specification](../../docs/specs/design-language-spec.md) and [component registry](../../docs/specs/shared-components-spec.md). The staff webapp uses bundled fonts, supplied logo artwork and generated local tokens. `bun run brand:check` at repository root checks token, asset and color drift.
+
+The development-only `/__design` gallery composes production list, detail and form primitives with isolated fixtures; it returns 404 in production. [Current captures](../../docs/reference/design-review/README.md) record source and viewing conditions. Preserve auth, routes, permissions, data and effective UI structures during styling work.

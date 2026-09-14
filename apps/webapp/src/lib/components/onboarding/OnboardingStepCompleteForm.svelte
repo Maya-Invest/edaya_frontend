@@ -226,7 +226,7 @@
 										onclick={() => selectSubject(level.code, subject)}
 										onkeydown={event => handleSubjectRowKeydown(event, level.code, subject)}
 									>
-										<td class="px-1.5 py-1.5 font-medium font-mono tabular-nums">{subject.code}</td>
+										<td class="px-1.5 py-1.5 font-medium font-sans tabular-nums">{subject.code}</td>
 										<td class="px-1.5 py-1.5">{catalogSubjectName(subject.name, $lang, subject.code)}</td>
 										<td class="px-1.5 py-1.5">
 											<span class="flex items-center justify-end gap-1 text-muted-foreground">

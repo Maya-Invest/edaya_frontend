@@ -15,7 +15,7 @@
 		<article class="rounded-2xl border border-border bg-card p-4 shadow-soft">
 			<header class="mb-2 flex items-start justify-between gap-2">
 				<div>
-					<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+					<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 						{new Date(entry.date).toLocaleDateString('fr-FR', {
 							weekday: 'short',
 							day: '2-digit',
@@ -25,7 +25,7 @@
 					</p>
 					<h4 class="mt-0.5 font-display text-sm font-semibold">{entry.chapter}</h4>
 				</div>
-				<span class="font-mono text-[10px] text-muted-foreground">{entry.progress}%</span>
+				<span class="font-sans tabular-nums text-[10px] text-muted-foreground">{entry.progress}%</span>
 			</header>
 			<p class="text-xs leading-relaxed text-foreground/80">{entry.content}</p>
 			{#if entry.notes.trim().length > 0}

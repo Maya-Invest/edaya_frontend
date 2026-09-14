@@ -182,23 +182,23 @@ export async function firstIdFromLinks(page: Page, pattern: RegExp): Promise<str
 	return null;
 }
 
-/** Configuration list tables expose entity id in a `.font-mono` cell (rows are buttons, not links). */
+/** Configuration rows expose a stable record id independently of typography. */
 export async function firstIdFromConfigTable(page: Page, timeout = 8_000): Promise<string | null> {
-	const cell = page.locator('table tbody .font-mono').first();
+	const row = page.locator('table tbody tr[data-entity-id]').first();
 	try {
-		await cell.waitFor({ state: 'visible', timeout });
+		await row.waitFor({ state: 'visible', timeout });
 	} catch {
 		return null;
 	}
-	const id = await cell.textContent();
+	const id = await row.getAttribute('data-entity-id');
 	const trimmed = id?.trim();
 	return trimmed && trimmed.length > 0 ? trimmed : null;
 }
 
 export async function configEntityIdByName(page: Page, name: string): Promise<string | null> {
-	const row = page.locator('table tbody tr').filter({ hasText: name });
+	const row = page.locator('table tbody tr[data-entity-id]').filter({ hasText: name });
 	if (await row.first().isVisible().catch(() => false)) {
-		const id = await row.first().locator('.font-mono').first().textContent();
+		const id = await row.first().getAttribute('data-entity-id');
 		const trimmed = id?.trim();
 		if (trimmed && trimmed.length > 0) {
 			return trimmed;

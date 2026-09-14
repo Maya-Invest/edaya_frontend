@@ -5,7 +5,7 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import { t } from '$lib/i18n';
-	import { LoaderCircle } from '$lib/icons';
+	import { Eye, EyeOff, LoaderCircle } from '$lib/icons';
 
 	interface Props {
 		email: string;
@@ -15,6 +15,7 @@
 	let { email = $bindable(''), apiConnected }: Props = $props();
 
 	let password = $state('');
+	let showPassword = $state(false);
 	let busy = $state(false);
 	let errorMessage = $state('');
 
@@ -55,6 +56,7 @@
 
 <form
 	class="space-y-4"
+	aria-busy={busy}
 	onsubmit={(event) => {
 		event.preventDefault();
 		void signInWithPassword();
@@ -75,18 +77,32 @@
 	</div>
 	<div class="space-y-2">
 		<Label for="login-password">{$t('auth.passwordLabel')}</Label>
-		<Input
-			id="login-password"
-			type="password"
-			autocomplete="current-password"
-			placeholder={$t('auth.passwordPlaceholder')}
-			bind:value={password}
-			disabled={busy || !apiConnected}
-			oninput={clearError}
-			required
-		/>
+		<div class="relative">
+			<Input
+				id="login-password"
+				type={showPassword ? 'text' : 'password'}
+				autocomplete="current-password"
+				placeholder={$t('auth.passwordPlaceholder')}
+				bind:value={password}
+				disabled={busy || !apiConnected}
+				oninput={clearError}
+				aria-describedby={errorMessage ? 'login-password-error' : undefined}
+				class="pr-12"
+				required
+			/>
+			<button
+				type="button"
+				class="control-focus absolute inset-y-1 right-1 flex w-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary disabled:opacity-50"
+				aria-label={$t(showPassword ? 'auth.hidePassword' : 'auth.showPassword')}
+				aria-pressed={showPassword}
+				disabled={busy || !apiConnected}
+				onclick={() => showPassword = !showPassword}
+			>
+				{#if showPassword}<EyeOff class="h-4 w-4" />{:else}<Eye class="h-4 w-4" />{/if}
+			</button>
+		</div>
 		{#if errorMessage}
-			<p role="alert" class="text-sm text-destructive">{errorMessage}</p>
+			<p id="login-password-error" role="alert" class="text-sm text-destructive">{errorMessage}</p>
 		{/if}
 	</div>
 	<Button
@@ -97,6 +113,6 @@
 		{#if busy}
 			<LoaderCircle class="mr-2 h-4 w-4 animate-spin" />
 		{/if}
-		{$t('auth.signInWithPassword')}
+		{$t(busy ? 'auth.signingIn' : 'auth.signInWithPassword')}
 	</Button>
 </form>

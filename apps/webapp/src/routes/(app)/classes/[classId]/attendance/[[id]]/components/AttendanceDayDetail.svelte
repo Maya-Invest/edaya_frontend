@@ -93,7 +93,7 @@
 	<div class="shrink-0 space-y-5">
 		<DrawerEntityHeader name={day.label} summary={formattedDate}>
 			{#snippet chips()}
-				<span class="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] tabular-nums text-foreground/80">
+				<span class="rounded-full bg-secondary px-2 py-0.5 font-sans tabular-nums text-[10px] tabular-nums text-foreground/80">
 					{$t('attendanceDay.recordedSummary', {
 						recorded: recordedCount,
 						total: attendanceRows.length || day.totalStudents,

@@ -4,7 +4,7 @@
 > **Last audit:** 2026-07-05 — reconciled with `apps/webapp` + `apps/api`  
 > **Scope:** Public registration, split login/signup auth screen, school setup wizard (replaces manual seeding for new accounts)  
 > **Depends on:** Better Auth (done), `POST /core/onboarding/register-school` (done), staff invitations (done), `@edaya/fixtures/onboarding` (CI structure templates)  
-> **Related docs:** [`specs/design-language-spec.md`](../specs/design-language-spec.md), [`edaya_backend/docs/reference/local-dev.md`](../../edaya_backend/docs/reference/local-dev.md), [`sprints/done/account-invitation-plan.md`](./done/account-invitation-plan.md)
+> **Related docs:** [`specs/design-language-spec.md`](../../specs/design-language-spec.md), [`edaya_backend/docs/reference/local-dev.md`](../../../../edaya_backend/docs/reference/local-dev.md). The former account-invitation plan is historical material available in Git history.
 
 ---
 
@@ -109,10 +109,7 @@ Step 1 also calls core commands client-side: `createAcademicYear`, `createAcadem
 
 ### Product goal
 
-1. **Redesigned login page** — split layout inspired by the provided mockup, adapted to the EDAYA design system (institutional teal, not generic blue):
-   - **Left**: "Create an account" panel (name, email, password, confirmation)
-   - **Right**: current login (`LoginPanelHost` — password + email OTP)
-   - Cross-links: "Already have an account?" / "Don't have an account yet?"
+1. **Authentication entry points** — account registration and existing password/email-code login. The historical visual composition is superseded; use current implementation and the EDAYA design-language specification.
 
 2. **Post-registration wizard** — 4-step wizard with progress bar to configure a school **without** `bun seed:init`.
 
@@ -131,8 +128,8 @@ Step 1 also calls core commands client-side: `createAcademicYear`, `createAcadem
 
 ```mermaid
 flowchart TD
-    A["/login — split screen"] -->|Signup left| B[Better Auth sign-up]
-    A -->|Login right| C[Better Auth sign-in]
+    A["/login"] -->|Registration| B[Better Auth sign-up]
+    A -->|Sign in| C[Better Auth sign-in]
     B --> D{Account linked to a school?}
     C --> D
     D -->|Yes| E["/(app)/dashboard"]
@@ -164,34 +161,9 @@ flowchart TD
 
 ## 4. UI architecture
 
-### 4.1 Split auth layout (`AuthSplitShell`)
+### 4.1 Authentication implementation history
 
-Replace the single centered layout of `AuthScreenShell` with a **two-column** shell on `md+`; stacked on mobile (signup on top, login below).
-
-```
-┌─────────────────────────────┬─────────────────────────────┐
-│  Left panel (primary)       │  Right panel (card)         │
-│  ─────────────────────      │  ─────────────────────      │
-│  Headline title             │  EDAYA logo + "Sign in"     │
-│  Product value copy         │  LoginMethodPicker          │
-│  [Create my account] CTA    │  LoginPasswordPanel / OTP   │
-│  ─ or signup form ─         │  Link → switch panel        │
-│  Name · Email · Pwd · Conf. │                             │
-│  [Sign up]                  │                             │
-└─────────────────────────────┴─────────────────────────────┘
-```
-
-**Design (design-language-spec):**
-
-- Left panel: `bg-primary text-primary-foreground`, typography `font-display`, CTA `rounded-full` or `rounded-xl`
-- Right panel: `bg-background`, existing login card (`rounded-2xl border shadow-soft`)
-- No generic blue — EDAYA teal (`--primary`)
-
-**Key files:**
-
-- `apps/webapp/src/lib/components/auth/AuthSplitShell.svelte` (new)
-- `apps/webapp/src/lib/components/auth/signup/SignupPanel.svelte` (new)
-- `apps/webapp/src/routes/login/+page.svelte` — migrate to split shell
+`AuthSplitShell`, `SignupPanel`, and the `/login` route introduced account registration alongside existing sign-in methods. Preserve the functional history; their previous visual prescription has been retired by EDAYA UI 1.0.0.
 
 ### 4.2 Wizard layout (`OnboardingShell`)
 

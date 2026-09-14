@@ -1,507 +1,83 @@
-# EDAYA Webapp Design Language Spec
+# EDAYA webapp design language
 
-> **Applies to:** `apps/webapp` visual design (colors, typography, spacing, components, motion)
+Normative. Applies only to the staff `apps/webapp`. Website, webadmin, services, and generated documents are outside this specification. Source: supplied EDAYA brand guide and outlined logo assets; current source code defines available workflows. Historical proposals and galleries do not authorize feature or navigation changes.
 
-This document captures the visual design language extracted from the current webapp implementation. Use it when building new screens, components, or marketing surfaces that must feel native to EDAYA.
+## Visual foundations — version 1.0.0
 
----
+EDAYA should feel calm, trustworthy, and carefully finished. Staff, teachers, and families should recognize one brand while retaining interfaces suited to their daily tasks. Improve clarity through hierarchy, typography, spacing, and consistent feedback; preserve familiar workflows and effective components.
 
-## 1. Brand character
+| Role | Light value | Application |
+|---|---|---|
+| Primary | `#2563EB` | Actions, links, selection; hover `#1D4ED8` |
+| Supporting sky | `#60A5FA` | Decoration, never small text on white |
+| Amber | `#FBBF24` | Restrained decoration, under 10% of visible surface; navy foreground |
+| Canvas / surface | `#F0F7FF` / `#FFFFFF` | Sky canvas, white cards and chrome |
+| Text / secondary | `#1E293B` / `#64748B` | Titles/data and supporting labels |
+| Separator / control outline | `#E2E8F0` / `#64748B` | Subtle structure; identifiable inputs |
+| Success | `#15803D` on `#F0FDF4` | Confirmed success, with a label/icon |
+| Warning | `#92400E` on `#FEF3C7` | Pending or caution, with a label/icon |
+| Danger | `#B91C1C` on `#FEF2F2` | Error, overdue, destructive actions |
+| Information | `#1D4ED8` on `#E0F2FE` | Informational states |
 
-EDAYA is a school management product for non-technical staff. The visual language optimizes for **clarity, calm, and institutional trust** — not density or flash.
+The base slate remains `#64748B`; the shared secondary-text role uses `#5B6B82` so small text also meets contrast on the sky canvas (the base slate measures only 4.41:1 there).
 
-| Trait | Expression |
-|-------|------------|
-| **Warm institutional** | Deep teal primary, sage accent, soft off-white backgrounds |
-| **Editorial headings** | Fraunces serif for titles; gives personality without sacrificing readability |
-| **Operational clarity** | Inter for body; mono for metadata, counts, and role labels |
-| **Restrained color** | ~80% neutral · ~15% teal · ~5% gold (see `ui-tones.ts`) |
-| **Soft geometry** | Generous rounding (`rounded-xl`, `rounded-2xl`, `rounded-full`) |
-| **Layered depth** | Subtle borders + `shadow-soft` / `shadow-panel`; no harsh drop shadows |
+Poppins Semibold is for headings; Inter Regular/Medium/Semibold/Bold is for body, labels, buttons, tables, and all numerical data. Load fonts from bundled files with their OFL licenses. Never request fonts from a third-party server at runtime. Use tabular figures for aligned amounts and scores. Use 28px web page titles, 24 logical pixels mobile page titles, 20 section titles, 16 card titles, 14–16 body, and 12 supporting labels. Heading line-height is about 1.3; body 1.5–1.6. Support wrapping and enlargement; do not shrink important values to fit.
 
-**Source palette:** Coolors `#004d5a · #cc8b12 · #76958c · #5a726e · #0f2c31 · #132c78` — mapped into HSL CSS variables in `apps/webapp/src/app.css`.
+Use the 4/8/12/16/24/32/48 spacing scale. Retain established rounded primitives: 12 controls, 14 base, 16 cards, 24 overlays. Keep shadows restrained and neutral. Useful existing motion stays, with reduced-motion support; avoid decorative perpetual animation.
 
----
+## Artwork
 
-## 2. Design tokens
+The supplied outlined EDAYA logos are authoritative artwork. Never reconstruct the wordmark using text or substitute an academic icon for the product logo. Use vertical artwork in spacious sign-in areas, horizontal artwork in headers/sidebar areas, and symbols only in compact contexts already identified as EDAYA. Minimum rendered artwork widths: vertical 88, horizontal 128, symbol 32. The wrapper reserves clear space; do not crop its padding. Favicons alone may use the symbol at platform-required 16/24/32px. No recoloring, stretching, shadows on the artwork, or text laid over it. White artwork belongs on a dark or royal-blue surface.
 
-All colors are HSL CSS custom properties consumed by Tailwind (`apps/webapp/tailwind.config.ts`). Never hard-code hex in components; use semantic tokens.
+## Accessibility and preserved behavior
 
-### 2.1 Core palette
+Preserve every existing destination, field, data item, control, permission condition, validation rule, loading signal, and action result. UI-only work must not change authentication clients, controllers, API payloads, redirects, route contracts, session handling, grants, business rules, or calculations. A visual limitation is not authorization for a new feature. Keep recognizable operational icons and native platform behaviors.
 
-| Token | Role | Light value (HSL) |
-|-------|------|-------------------|
-| `--background` | Page canvas | `160 10% 98%` — warm off-white |
-| `--foreground` | Primary text | `189 53% 13%` — deep teal ink |
-| `--card` | Elevated surfaces | `0 0% 100%` |
-| `--primary` | Brand actions, avatars, active nav | `189 100% 18%` |
-| `--primary-foreground` | Text on primary | `0 0% 100%` |
-| `--secondary` | Hover fills, muted panels | `163 10% 93%` |
-| `--muted` / `--muted-foreground` | De-emphasized text, placeholders | `163 8% 95%` / `170 12% 40%` |
-| `--accent` | Progress bars, success toasts, active rail indicator | `163 13% 52%` — sage green |
-| `--accent-soft` | Soft accent backgrounds | `163 12% 91%` |
-| `--highlight` | Warnings, pending states | `39 84% 44%` — gold |
-| `--highlight-soft` | Soft warning backgrounds | `39 40% 94%` |
-| `--sky` | Secondary teal accent | `189 60% 28%` |
-| `--destructive` | Errors, delete, high severity | `0 70% 55%` |
-| `--border` / `--input` | Dividers, field borders | `163 10% 88%` |
-| `--ring` | Focus ring | `189 100% 18%` |
+Target WCAG AA: ordinary text 4.5:1, large text and essential control boundaries 3:1; inactive controls remain recognizable. Pair semantic colors with text/icons. Provide persistent labels, visible keyboard focus, logical reading order, meaningful icon-button labels, 44–48px touch targets, FR/EN copy, and 200% text support. Test long names, large amounts, phone/tablet/desktop widths, landscape and keyboard-open forms. Do not hide essential information to fix an overflow.
 
-### 2.2 Radius, shadows, gradients
+## Tokens and implementation
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--radius` | `0.875rem` (14px) | Base radius; Tailwind `rounded-lg` |
-| `--shadow-soft` | Layered 1–6px blur | Cards, pills, table containers |
-| `--shadow-panel` | 20px blur, stronger | Drawer, dropdowns, toasts |
-| `--gradient-mint` | `accent → primary` diagonal | Decorative (available, rarely used inline) |
+The canonical platform-neutral manifest is `design-system/tokens.json`. Generate local CSS with `python3 scripts/brand-tokens.py`; check it with `--check`. The generated `apps/webapp/src/lib/design-system/tokens.css` is imported through the existing `app.css` entry point and consumed by Tailwind. Builds read committed local assets and never need a mobile checkout. A coordinated version change supplies the identical JSON snapshot to mobile. Never edit generated files directly.
 
-Tailwind aliases: `rounded-md` = `radius - 2px`, `rounded-sm` = `radius - 4px`.
+Semantic token names are stable. Brand sky and amber primitives are decorative; `success`, `highlight`, `destructive`, and `sky` express independent state meanings. Keep the webapp light-only. The neutral manifest's dark values support mobile and do not introduce a web theme switch.
 
-### 2.3 Tone budget (`ui-tones.ts`)
+Use `font-display` for headings, `font-sans tabular-nums` for numbers. Metadata consumers use Inter directly. `font-mono` is reserved for actual code samples using the system monospace font. No additional font dependencies or raw visual colors in components. Scoped third-party calendar overrides consume the same semantic variables; never patch vendor CSS.
 
-Centralized class strings for consistent semantic coloring:
+## Approved authentication composition
 
-```ts
-// Neutral default
-BADGE          = 'bg-secondary text-foreground/80'
-SURFACE        = 'rounded-xl bg-secondary/50 p-3'
+At widths of at least 1024px, `AuthSplitShell` presents an approximately 1040px composition: 40% quiet sky brand panel, 60% white form area. The brand panel contains the vertical EDAYA logo and localized school-workspace copy. Below 1024px, use a compact horizontal branded header above the form. Keep form content at most 420px wide, persistent labels, 48px inputs and submit controls, and a visible language selector. Content grows and the page scrolls; no fixed-height clipping.
 
-// Teal (info / entity)
-BADGE_INFO     = 'bg-primary/10 text-primary'
-SURFACE_INFO   = 'rounded-xl bg-primary/5 p-3'
-ROW_ACTIVE     = 'bg-primary/10'
-AVATAR         = '… bg-primary … text-primary-foreground'
+Default to password sign-in. `LoginMethodPicker` uses the existing enabled-method registry and an accessible pressed-button group for Password / Email code. Registration is a secondary link under the existing flag. Exactly one active form is visible; inactive signup/signin sections stay mounted, hidden and inert to retain drafts. The `panel`, `method`, and `stage` URL contract, navigation callbacks, browser history, refresh canonicalization and redirects remain unchanged. Do not introduce recovery or alternative authentication flows.
 
-// Gold (warning / pending)
-BADGE_WARN     = 'bg-highlight-soft text-highlight'
-SURFACE_WARN   = 'rounded-xl bg-highlight-soft/60 p-3'
+Password visibility is local presentation state with an accessible show/hide button. Preserve autofill, Enter submission, validation, field bindings and current disabled/busy conditions. Pending submission uses a spinner and localized action label without width jumps. Show errors adjacent to the form with `role=alert`. OTP stays a single paste-friendly field, with recipient confirmation, resend and change-email actions. Keep all signup fields, email verification stages, shared email binding, environment-controlled demo access, teacher-portal guidance and verified-email feedback.
 
-// Red (danger)
-BADGE_DANGER   = 'bg-destructive/10 text-destructive'
-```
+Connection presentation has three states around the existing health check: neutral checking, available (no warning), unavailable (localized warning). Checking must never be displayed as failure and never enables authentication before the existing checks pass.
 
-Import from `$lib/ui-tones` or extend `drawer-constants.ts` patterns — do not invent one-off badge colors.
+## Reuse and operational presentation
 
----
+Preserve sidebar groups, school/year context selectors, list/card modes, filters, calendars, selection tools, URL drawers, and mutation modals. Sidebar uses white chrome and the horizontal logo; compact rail uses the symbol. Student/class and school context take precedence over decorative branding. Below 1024px, the same sidebar opens in a focus-managed modal sheet over full-width content; it starts closed, dismisses on navigation/Escape, and does not overwrite the desktop expansion preference. Header context controls wrap without removing school/year/period/language/account access.
 
-## 3. Typography
+| Surface | Required reuse / presentation |
+|---|---|
+| List route | `PageQuery`, `DataState`, `ListPageHeader`; heading → toolbar → collection hierarchy |
+| Main/secondary filters | `FilterSelect` / `FilterPanel`; wrapping pill controls and search |
+| Table/cards | `ListEntityTable`, `ListEntityCards`; white, bordered, rounded surfaces; readable rows; numbers aligned right and tabular |
+| Selection | Existing row selection and `ListSelectionBar`; preserve exports and bulk actions |
+| Drawer | Existing URL-driven detail shell and shared drawer chrome; full width on phone; read-only content, clear sections |
+| Mutation | `FormModal`, `ConfirmModal`, `PickerModal`, permission gates; keep all fields and actions |
+| Feedback | `DataState`, `ToastHost`, `BADGE_*` tone presets and existing status maps; success has its own tone |
+| Brand | `BrandLogo`; official horizontal/vertical/symbol variants and color/white tones |
 
-### 3.1 Font families
+Use the existing Bits UI primitives (Button, Input, Label, Textarea, Select, Checkbox, Dialog, Popover) and Lucide exports from `$lib/icons`. Tables retain readable columns in a keyboard-focusable horizontal scroll region at narrow widths; never squeeze names and labels into overlapping columns. Lists retain their information density; improve grouping with space and borders, not extra cards around each label. Keep main filters as selects, drawer tabs as existing route links, drawers read-only, and create/edit/delete in existing modals. Simple entities retain their row action menus. Primary actions remain in the entity header, subcollection additions in section headers. Never move these actions solely for a visual preference.
 
-| Role | Family | CSS variable | Tailwind |
-|------|--------|--------------|----------|
-| **Display** | Fraunces (serif) | `--font-display` | `font-display` |
-| **Body** | Inter | `--font-sans` | default / `font-sans` |
-| **Meta** | JetBrains Mono | `--font-mono` | `font-mono` |
+Neutral card → subtly tinted section → neutral overlay forms the surface hierarchy. Field boundaries use the stronger input token, dividers the border token. Toolbars wrap; dialogs and drawers scroll; popovers retain keyboard and dismissal behavior. Disabled and busy styles use the existing signals. Avoid fixed text heights, truncated important values, and purely color-based statuses.
 
-Loaded via Google Fonts in `app.css`. Body uses `font-feature-settings: 'ss01', 'cv11'` and antialiasing.
+For dialogs with a persistent header and footer, use a bounded flex column with a scrollable middle region. Never combine a clipped outer dialog with unscrollable content that pushes actions outside the viewport. Verify the account dialog at short desktop and phone heights as well as with enlarged text.
 
-### 3.2 Type scale & usage
+## Future UI review contract
 
-| Element | Classes | When |
-|---------|---------|------|
-| Page title | `font-display text-2xl font-semibold` | List page `<h2>` via `ListPageHeader` |
-| Section title | `font-display text-base font-semibold` | Panel/card headers |
-| Drawer entity name | `font-display text-2xl font-semibold` | Student name, etc. |
-| Dashboard hero | `font-display text-xl` or `text-3xl` | Login, educator dashboard |
-| Body | `text-sm` | Default copy, table cells |
-| Caption | `text-xs text-muted-foreground` | Descriptions, hints |
-| Eyebrow / module label | `font-mono text-[10px] uppercase tracking-widest text-muted-foreground` | Sidebar module, list eyebrows |
-| Role / meta chip | `font-mono text-[9px] uppercase tracking-wider text-muted-foreground` | User role under name |
-| Table header | `text-[11px] font-medium uppercase tracking-wider text-muted-foreground` | Column headers |
-| Field label (read-only) | `text-[11px] font-medium uppercase tracking-wider text-muted-foreground` | `DrawerField` |
-| Form label | `text-sm font-medium` | `Label` component |
-| Numeric emphasis | `font-display tabular-nums` | Averages, scores |
-| Mono detail | `font-mono text-[10px]` | Date ranges, counts in badges |
+Before adding UI: inventory existing T0/T1/T2/Smart components, extend their variants where needed, and keep single-feature markup route-local. New shared components require demonstrated reuse across at least three features. Review component states (default, hover, focus, pressed/selected, disabled, busy, error, empty) in the component gallery.
 
-**Display headings** use `letter-spacing: -0.02em` and optical sizing (Fraunces `opsz`).
+A visual exception must identify its affected component, why existing variants cannot serve it, accessibility evidence, owner, and intended lifetime. Obtain design review of the concrete proposal before adding the exception to the manifest or literal allowlist. No silent per-screen palette or typography forks.
 
-### 3.3 Hierarchy rules
-
-- One display title per viewport region (page header, drawer hero, modal title).
-- Eyebrows are optional; use for module/context, not for every section.
-- Prefer `text-muted-foreground` over smaller font sizes for de-emphasis.
-- Uppercase + tracking is reserved for labels and metadata — not sentences.
-
----
-
-## 4. Spacing & layout rhythm
-
-### 4.1 Shell dimensions
-
-| Zone | Size / pattern |
-|------|----------------|
-| App sidebar | `w-64`, `bg-card/60 backdrop-blur`, `border-r border-border` |
-| App rail (alt) | `w-16`, `bg-primary` — icon-only module switcher |
-| Context sidebar | `w-72`, same frosted card treatment |
-| Header bar | `h-14`, `border-b`, `px-6`, `bg-card` |
-| Main content | `flex-1`, typically `p-6` on list routes |
-| Detail drawer | `md:w-1/2`, full width mobile, `shadow-panel` |
-
-### 4.2 Content spacing
-
-| Pattern | Spacing |
-|---------|---------|
-| Page header → collection | `mb-5` (`ListPageHeader`) |
-| Section stacks | `space-y-4` to `space-y-6` |
-| Card/panel padding | `p-5` (panels), `p-3` (stat tiles) |
-| Drawer body | `px-6 py-6` |
-| Grid stat tiles | `grid gap-3`, `grid-cols-3` common |
-| Inline clusters | `gap-2` (toolbar), `gap-3` (identity blocks), `gap-4` (hero rows) |
-
-### 4.3 Container
-
-Tailwind `container` is centered with `2rem` padding, max `1400px` at `2xl`. Most app views use full-width flex layout inside the shell instead.
-
----
-
-## 5. Shape language
-
-Rounding is a primary brand marker. Default to soft corners.
-
-| Class | Use |
-|-------|-----|
-| `rounded-full` | Pills: search inputs, filter chips, segmented controls, badges, header selectors, icon buttons |
-| `rounded-2xl` | Cards, panels, table wrappers, avatars (large), empty/error states, toasts |
-| `rounded-xl` | Logo tiles, list avatars, list items, stat tiles, dashed empty states |
-| `rounded-lg` | Nav items, dialog content (base), sub-nav links |
-| `rounded-md` | Buttons (default), inputs, small badges |
-
-**Rule:** toolbar controls and header selectors are pill-shaped (`rounded-full`). Content containers are `rounded-2xl`.
-
----
-
-## 6. Elevation & borders
-
-### 6.1 Surface stack (bottom → top)
-
-1. **Canvas** — `bg-background`
-2. **Frosted chrome** — `bg-card/60 backdrop-blur` (sidebars)
-3. **Card** — `bg-card border border-border shadow-soft`
-4. **Overlay** — drawer/modal: `bg-card shadow-panel`; scrim `bg-primary/5` (drawer) or `bg-black/80` (dialog)
-
-### 6.2 Borders
-
-- Default divider: `border-border`
-- Destructive emphasis: `border-destructive/20`
-- Warning emphasis: `border-highlight/20` or `border-amber-500/30`
-- Dashed empty: `border-dashed border-border`
-- Active selection: background tint (`bg-primary/10`) rather than heavy borders
-
-### 6.3 Shadows
-
-| Class | When |
-|-------|------|
-| `shadow-soft` | Cards, tables, pill toolbars, small logo tiles |
-| `shadow-panel` | Drawer, dropdown menus, toasts, login hero icon |
-
-Avoid `shadow-lg` on app surfaces — reserved for dialog primitive default.
-
----
-
-## 7. Motion
-
-Defined in `tailwind.config.ts` + `app.css` utilities.
-
-| Animation | Duration / easing | Usage |
-|-----------|-------------------|-------|
-| `animate-fade-in` | 0.3s ease-out, `translateY(4px)` | Page enter, dropdowns, data states, toasts |
-| `animate-slide-in-right` | 0.35s cubic-bezier(0.32, 0.72, 0, 1) | Detail drawer (desktop) |
-| `animate-spin` | default | `LoaderCircle` loading indicators |
-| Accordion | 0.2s ease-out | bits-ui accordion (if used) |
-
-**Accessibility:** drawer/backdrop use `motion-safe:` prefix. Respect `prefers-reduced-motion`.
-
-**Page pattern:** top-level views wrap content in `animate-fade-in` on mount.
-
----
-
-## 8. Iconography
-
-- **Library:** Lucide via `$lib/icons` (re-export hub)
-- **Default size:** `h-4 w-4` in buttons; `h-3.5 w-3.5` in compact chrome; `h-8 w-8` in empty/error states
-- **Color:** inherit or `text-muted-foreground`; active nav uses `text-accent` or `text-primary`
-- **Placement:** leading icon in buttons (`gap-2`); search icon absolutely positioned `left-3`
-- **Product mark:** `GraduationCap` in rounded primary tile
-
----
-
-## 9. Component catalog
-
-### 9.1 Primitives (`src/lib/components/ui/`)
-
-Built on **bits-ui** + **Tailwind**, shadcn-style patterns.
-
-| Component | Variants / notes |
-|-----------|------------------|
-| **Button** | `default` (primary), `destructive`, `outline`, `secondary`, `ghost`, `link`; sizes `default`/`sm`/`lg`/`icon`. Focus ring: `ring-2 ring-ring ring-offset-2`. Toolbar CTAs often add `rounded-full`. |
-| **Input** | `h-10 rounded-md border-input`; search overrides: `h-9 rounded-full pl-9`. |
-| **Textarea** | Matches input styling |
-| **Label** | `text-sm font-medium` |
-| **Checkbox** | bits-ui; compact `h-3.5 w-3.5` in popover lists |
-| **Select / FilterSelect** | Native `<select>` with chevron overlay; filters use `rounded-full text-xs` |
-| **Dialog** | Centered `max-w-lg`, `bg-background p-6`, dark scrim `bg-black/80` |
-| **Popover** | `rounded-2xl border shadow-panel` for menus |
-| **FormModal** | Dialog + ghost Cancel + primary Save |
-| **ConfirmModal** | Dialog + destructive Confirm |
-| **PickerModal** | Dialog + confirm label defaults to "Ajouter" |
-| **DataState** | Centered `min-h-[40vh]`; error uses destructive tint card; empty uses inbox icon |
-| **ListPageHeader** | Standard list page title block with snippet slots |
-| **PermissionGate** | `hide` or `disable` + tooltip — no visual chrome |
-| **ToastHost** | Bottom-right stack, `rounded-2xl border shadow-panel` |
-
-### 9.2 Shell components (`src/lib/components/layout/`)
-
-| Component | Visual pattern |
-|-----------|----------------|
-| **AppSidebar** | Logo tile `rounded-xl bg-primary shadow-soft`; expandable modules; active sub-link `bg-primary text-primary-foreground`; badges `font-mono text-[10px]` |
-| **ContextSidebar** | Module title + frosted nav; active item `bg-primary shadow-soft` |
-| **AcademicHeader** | Pill container `rounded-full border bg-card/70 shadow-soft backdrop-blur`; segment buttons toggle `bg-primary` when open |
-| **SchoolSelector** | Compact pill `h-9 rounded-full` with `Building2` icon |
-| **LanguageSelector** | Same pill family |
-| **User block** | Avatar circle `bg-primary font-display`; role in mono caps |
-
-### 9.3 Shared drawer chrome (`src/lib/components/school/shared/`)
-
-| Component | Role |
-|-----------|------|
-| **DetailDrawer shell contract** | Right sheet, kind badge `rounded-full uppercase text-[11px]`, close as ghost circle; may be shared or route-local |
-| **DrawerField** | Read-only label + value stack |
-| **DrawerEmptyState** | Dashed `rounded-xl` centered placeholder |
-| **DrawerActionBar** | Optional drawer body footer — `border-t pt-4`, right-aligned secondary actions; **not** sub-collection `+ Add` header |
-| **StudentAvatar** | `rounded-2xl bg-primary` initials; hover camera overlay |
-
-Route-local list and drawer bodies (`*View.svelte`, tab `+page.svelte`) live under `routes/.../components/` and compose T0/T2 primitives — not under `lib/components/school/{domain}/`.
-
----
-
-## 10. Recurring UI patterns
-
-### 10.1 List page header
-
-```
-[eyebrow: mono caps]
-[title: font-display 2xl]
-[description: text-sm muted]          [search] [filters] [more] [primary CTA]
-```
-
-Use `ListPageHeader` snippet slots: `search`, `filters`, `more`, `primary`.
-
-### 10.2 Segmented control (drawer tab bar / in-drawer segments)
-
-Pill segment strips for **drawer tab navigation** (route links under `[[id]]/{tab}`) or in-panel mode toggles — **not** for list-page main filters (main filter is always a `<select>`). Tab bar items navigate to child routes; do not use `?tab=` query params for new work.
-
-```html
-<div class="flex items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft">
-  <button class="rounded-full px-3 py-1.5 text-xs font-medium
-    [active: bg-primary text-primary-foreground]
-    [idle: text-muted-foreground hover:text-foreground]">
-```
-
-Drawer tabs use `bg-secondary/40` track and `bg-card shadow-soft` for active segment.
-
-### 10.3 Data table
-
-```html
-<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-  <div class="grid … border-b bg-secondary/40 px-5 py-3 text-[11px] uppercase …">
-  <button class="grid … px-5 py-3.5 [active: bg-primary/10] [hover: bg-secondary]">
-```
-
-- Row click targets are full-width buttons
-- Selected row: `ROW_ACTIVE` (`bg-primary/10`)
-- Inline empty: centered `text-muted-foreground` inside table
-
-### 10.4 Stat / KPI tile
-
-```html
-<div class="rounded-xl bg-primary/10 p-3">        <!-- or bg-secondary/60 -->
-  <p class="text-[10px] uppercase tracking-wider text-muted-foreground">Label</p>
-  <p class="mt-1 font-display text-xl">Value</p>
-</div>
-```
-
-Dashboard KPIs may invert: `bg-primary text-primary-foreground` for hero metrics.
-
-### 10.5 Badge / status chip
-
-```html
-<span class="rounded-full px-2 py-0.5 text-[10px] font-medium {tone}">
-```
-
-Map status → tone via `drawer-constants.ts` or local `Record<Status, string>` using `BADGE_*` presets.
-
-### 10.6 Progress bar
-
-```html
-<div class="h-1.5 w-full rounded-full bg-secondary">
-  <div class="h-full rounded-full bg-accent" style:width="…%"></div>
-</div>
-<p class="mt-1 font-mono text-[10px] text-muted-foreground">…%</p>
-```
-
-### 10.7 Avatar / initials block
-
-| Size | Classes |
-|------|---------|
-| Table row | `h-9 w-9 rounded-xl bg-primary font-display text-xs` |
-| Drawer hero | `h-14 w-14 rounded-2xl` (`StudentAvatar`) |
-| Header user | `h-7 w-7 rounded-full` |
-| Login / dashboard | `h-10`–`h-12 rounded-xl` or `rounded-2xl` |
-
-### 10.8 Panel section (dashboard)
-
-```html
-<section class="rounded-2xl border border-border bg-card p-5 shadow-soft">
-  <header class="mb-3 flex justify-between">
-    <h3 class="font-display text-base font-semibold">…</h3>
-  </header>
-  …
-</section>
-```
-
-### 10.9 Search field
-
-```html
-<div class="relative">
-  <Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-  <Input class="h-9 w-56 rounded-full pl-9 text-sm" />
-</div>
-```
-
-### 10.10 Toast
-
-| Kind | Surface |
-|------|---------|
-| `success` | `border-accent/30 bg-accent/10` |
-| `error` | `border-destructive/30 bg-destructive/10` |
-| `info` | `border-border bg-card` |
-
-Position: `fixed bottom-6 right-6 z-[100] max-w-sm`.
-
-### 10.11 Dropdown menu
-
-`rounded-2xl border border-border bg-card shadow-panel animate-fade-in`
-
-Items: `px-4 py-2.5 text-sm hover:bg-secondary/60`; selected row `bg-primary/5` + `Check` icon in `text-accent`.
-
----
-
-## 11. Semantic color mapping
-
-Use these mappings consistently (see `drawer-constants.ts` for full records).
-
-| Meaning | Tone |
-|---------|------|
-| Default / neutral | `BADGE`, `bg-secondary` |
-| Info / entity / active | `BADGE_INFO`, `bg-primary/10` |
-| Warning / pending | `BADGE_WARN`, `bg-highlight-soft` |
-| Danger / error / high severity | `BADGE_DANGER`, `bg-destructive/10` |
-| Success / completed | `bg-secondary` or `bg-accent/10` (toasts) |
-| Director / elevated role | `bg-primary/10 text-primary` |
-| Teacher / educator role | `bg-secondary text-foreground/80` |
-
-**Incident severity:** low → neutral, medium → warn, high → danger.
-
-**Enrollment status:** approved → neutral, pending → warn, denied → danger.
-
-**Permission / capability chips:** assign → primary tint, read → secondary, update → highlight, delete → destructive.
-
----
-
-## 12. Form & modal styling
-
-- Modal body spacing: `space-y-4 py-2`
-- Footer: ghost Cancel (left) + primary Confirm (right) — `Dialog.Footer`
-- Destructive confirms: `variant="destructive"` on confirm button
-- Drawer footer: only `Close` on shell when needed; primary entity actions live in **`DrawerEntityHeader`**; sub-collection `+ Add` uses an **inline section header** (not `DrawerActionBar`)
-- Field errors: inline in modal — not in the read-only drawer
-- Disabled: `opacity-50 pointer-events-none` (buttons)
-
----
-
-## 13. Responsive behavior
-
-| Breakpoint | Visual adjustment |
-|------------|-------------------|
-| `< md` | Drawer full-width sheet; sidebar → hamburger menu |
-| `≥ md` | Drawer `w-1/2`; table layouts maintained |
-| Toolbar | `flex-wrap` on headers; filters wrap to next row |
-
----
-
-## 14. Dark mode
-
-`darkMode: ['class']` is configured in Tailwind but **no dark theme tokens are defined** in `app.css`. Do not add `dark:` variants until a full dark palette is specified.
-
----
-
-## 15. Tech stack
-
-| Layer | Choice |
-|-------|--------|
-| Framework | Svelte 5 + SvelteKit |
-| Styling | Tailwind CSS 3 + CSS variables |
-| Primitives | bits-ui (Dialog, Popover, Checkbox, Select) |
-| Icons | lucide-svelte via `$lib/icons` |
-| Utilities | `cn()` from `$lib/utils`, `tailwindcss-animate` |
-| i18n | `$lib/i18n` — all user-facing strings |
-
----
-
-## 16. Do / Don't
-
-### Do
-
-- Use semantic tokens (`bg-primary`, `text-muted-foreground`, etc.)
-- Use `font-display` for titles and numeric emphasis
-- Use `font-mono` + uppercase for metadata eyebrows
-- Wrap collections in `rounded-2xl border bg-card shadow-soft`
-- Use pill controls in toolbars and headers
-- Import tone presets from `$lib/ui-tones`
-- Apply `animate-fade-in` on page-level content
-- Keep icon sizes consistent (`3.5` compact, `4` default)
-
-### Don't
-
-- Introduce new accent colors outside the palette
-- Use sharp corners (`rounded-none`, `rounded-sm`) on marketing surfaces
-- Use heavy shadows or solid black overlays except dialog scrim
-- Mix flat Material-style cards with the frosted EDAYA shell
-- Use display font for body paragraphs or table data
-- Hard-code French strings in components (use i18n)
-- Create bespoke badge colors per screen
-
----
-
-## 17. File reference
-
-| Purpose | Path |
-|---------|------|
-| CSS variables & fonts | `apps/webapp/src/app.css` |
-| Tailwind theme | `apps/webapp/tailwind.config.ts` |
-| Tone presets | `apps/webapp/src/lib/ui-tones.ts` |
-| Status / badge maps | `apps/webapp/src/lib/components/school/shared/drawer-constants.ts` |
-| Button primitive | `apps/webapp/src/lib/components/ui/button/button.svelte` |
-| List header | `apps/webapp/src/lib/components/ui/ListPageHeader.svelte` |
-| Data states | `apps/webapp/src/lib/components/ui/DataState.svelte` |
-| Shell layout | `apps/webapp/src/routes/(app)/+layout.svelte` |
-
----
-
-## 18. Implementation checklist
-
-When adding a new screen:
-
-- [ ] Page uses `ListPageHeader` (or documented layout variant)
-- [ ] Title is `font-display`; eyebrow is `font-mono` caps if needed
-- [ ] Collection wrapped in `rounded-2xl border bg-card shadow-soft`
-- [ ] Toolbar controls are pill-shaped
-- [ ] Status chips use `BADGE_*` tones
-- [ ] Selected row uses `bg-primary/10`
-- [ ] Loading/empty/error use `DataState`
-- [ ] Mutations toast via `toast.success` / `toast.error`
-- [ ] Icons from `$lib/icons` at standard sizes
-- [ ] Motion uses `animate-fade-in` or `motion-safe:` drawer animations
-- [ ] No new colors outside token system
+A design-system change updates the versioned manifest, generated outputs, font/asset inventory, this specification, component registry, human brief, and current visual evidence together. Run token/asset/literal checks and `bun run verify`. Validate FR/EN, responsive widths, keyboard focus, text enlargement, reduced motion and existing authentication journeys. Review diffs for any unintended logic or permission changes. Current galleries identify source revision, dirty source digest, token version, viewport, locale and theme; temporary before/after material stays outside durable galleries.

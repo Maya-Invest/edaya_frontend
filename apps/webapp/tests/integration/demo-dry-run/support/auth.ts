@@ -79,7 +79,8 @@ export async function attemptPasswordSignIn(
 		await Promise.race([appShellUrl, teacherGateBanner]);
 		return true;
 	}
-	catch {
+	catch (error) {
+		console.warn('Password sign-in failed:', error instanceof Error ? error.message : String(error));
 		return false;
 	}
 }

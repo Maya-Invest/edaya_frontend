@@ -88,7 +88,7 @@
 										: $t('import.validation.severity.error')}
 								</span>
 							</td>
-							<td class="px-3 py-2 font-mono text-xs">{issue.rowIndex}</td>
+							<td class="px-3 py-2 font-sans tabular-nums text-xs">{issue.rowIndex}</td>
 							<td class="px-3 py-2">
 								{issue.column && columnLabelKeys[issue.column]
 									? $t(columnLabelKeys[issue.column])

@@ -83,7 +83,7 @@
 							>
 								{$t(`events.severity.${incident.severity}`)}
 							</span>
-							<span class="font-mono text-[10px] text-muted-foreground">{fmtDateFr(incident.date, $locale)}</span>
+							<span class="font-sans tabular-nums text-[10px] text-muted-foreground">{fmtDateFr(incident.date, $locale)}</span>
 						</div>
 						<p class="mt-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
 							{$t(`events.cat.${incident.category}`)}

@@ -1,0 +1,13 @@
+{
+  "apps/webapp/src/lib/assets/favicon.svg": "8685c8f84f34b19b7c3e91a5a826d958cbde6aaf2dbb786957f6b75cae20b919",
+  "apps/webapp/static/brand/edaya-horizontal-blanc.svg": "9ebd6ec9c07af09526dc8b8dfd18ac18970d675d30a34a2e2d661f363c74fc1a",
+  "apps/webapp/static/brand/edaya-horizontal-couleur.svg": "dce17251b789816cf533931901f81ce225c705eb8ccd52da00583c875f2a992b",
+  "apps/webapp/static/brand/edaya-symbole-blanc.svg": "c16fc2b960223fe1f9d5cc2696aff4be1b378b42af806603d8f8b6d1d4534a90",
+  "apps/webapp/static/brand/edaya-symbole-couleur.svg": "8685c8f84f34b19b7c3e91a5a826d958cbde6aaf2dbb786957f6b75cae20b919",
+  "apps/webapp/static/brand/edaya-vertical-blanc.svg": "2759c83c2952057ae57e4a3f4353e025c59a0502fa447594b13e625150ec71f4",
+  "apps/webapp/static/brand/edaya-vertical-couleur.svg": "937e34efecb23a5e1a67680c737811b7dee7eda5d2c53f5cf09c91678b4e36b5",
+  "apps/webapp/static/fonts/Inter-OFL.txt": "5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57",
+  "apps/webapp/static/fonts/Inter-Variable.woff2": "9f37d5592bbab4684573dd862e3212a2d200325be8ca36929d6ceb4df65840b8",
+  "apps/webapp/static/fonts/Poppins-OFL.txt": "6be04893d770899a015649c7aa3b582f871b272f8747a92b78b17c3e5c8b2573",
+  "apps/webapp/static/fonts/Poppins-SemiBold.woff2": "1d29aa28b22deaf2955150c978a893eb244a7066c3a29741616d75d26c4c0922"
+}

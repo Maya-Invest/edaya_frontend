@@ -241,7 +241,7 @@
 							selectedId === i.id && 'border-primary/40 bg-primary/5',
 						)}
 					>
-						<div class="col-span-2 font-mono text-xs text-muted-foreground">
+						<div class="col-span-2 font-sans tabular-nums text-xs text-muted-foreground">
 							{new Date(i.date).toLocaleDateString($locale, {
 								day: 'numeric',
 								month: 'short',

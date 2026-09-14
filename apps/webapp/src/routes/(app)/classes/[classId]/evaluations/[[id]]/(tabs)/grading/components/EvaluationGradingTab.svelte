@@ -81,13 +81,13 @@
 					<div class="min-w-0 flex-1">
 						<p class="truncate text-sm font-medium">{student.name}</p>
 						{#if submission?.date}
-							<p class="font-mono text-[10px] text-muted-foreground">
+							<p class="font-sans tabular-nums text-[10px] text-muted-foreground">
 								{formatLocaleDate(submission.date, $locale, { day: 'numeric', month: 'short' })}
 							</p>
 						{/if}
 					</div>
 					<meta.icon class={cn('h-4 w-4', meta.cls)} />
-					<span class={cn('font-mono text-[10px] uppercase', meta.cls)}>
+					<span class={cn('font-sans tabular-nums text-[10px] uppercase', meta.cls)}>
 						{$t(`submission.${status}`)}
 					</span>
 				</div>
@@ -123,9 +123,9 @@
 						</div>
 					</div>
 					<div class="flex items-center gap-2">
-						<span class="min-w-[3rem] text-right font-display text-sm tabular-nums">
+						<span class="min-w-[3rem] text-right font-sans text-sm tabular-nums">
 							{score !== null ? score.toFixed(1) : '-'}
-							<span class="font-mono text-[10px] text-muted-foreground">/{evaluation.outOf}</span>
+							<span class="font-sans tabular-nums text-[10px] text-muted-foreground">/{evaluation.outOf}</span>
 						</span>
 						<PermissionGate permission="GRADE_INPUT" mode="disable" tooltip={$t('eval.permissionInput')}>
 							{#snippet children({ disabled, title })}

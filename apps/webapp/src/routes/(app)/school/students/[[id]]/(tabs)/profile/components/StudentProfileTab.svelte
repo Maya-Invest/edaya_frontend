@@ -156,7 +156,7 @@
 	</div>
 	<div class="grid grid-cols-2 gap-3">
 		<DrawerField label={$t('student.matricule')}>
-			<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 font-mono text-sm">
+			<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 font-sans tabular-nums text-sm">
 				{s.matricule?.trim() || '—'}
 			</div>
 		</DrawerField>
@@ -327,7 +327,7 @@
 								{note.category}
 							</span>
 							<div class="flex items-center gap-2">
-								<span class="font-mono text-[10px] text-muted-foreground">{fmtDateFr(note.date, $locale)}</span>
+								<span class="font-sans tabular-nums text-[10px] text-muted-foreground">{fmtDateFr(note.date, $locale)}</span>
 								<PermissionGate
 									permission="STUDENT_UPDATE"
 									mode="disable"

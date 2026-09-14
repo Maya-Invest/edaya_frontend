@@ -366,17 +366,17 @@
 					</div>
 				</div>
 				<div class="col-span-2 text-sm text-foreground/80">{classGroup?.name}</div>
-				<div class="col-span-2 font-display text-base font-semibold tabular-nums">
+				<div class="col-span-2 font-sans text-base font-semibold tabular-nums">
 					{student.average.toFixed(1)}
 				</div>
 				<div class="col-span-2">
 					{#if student.attendance == null}
-						<p class="font-mono text-[10px] text-muted-foreground">—</p>
+						<p class="font-sans tabular-nums text-[10px] text-muted-foreground">—</p>
 					{:else}
 						<div class="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
 							<div class="h-full rounded-full bg-accent" style:width="{student.attendance}%"></div>
 						</div>
-						<p class="mt-1 font-mono text-[10px] text-muted-foreground">{student.attendance}%</p>
+						<p class="mt-1 font-sans tabular-nums text-[10px] text-muted-foreground">{student.attendance}%</p>
 					{/if}
 				</div>
 				<div class={cn(ctx.selectionMode ? 'col-span-1' : 'col-span-2', 'flex flex-wrap items-center gap-1')}>
@@ -454,18 +454,18 @@
 				{:else if columnKey === 'class'}
 					<p class="truncate text-sm text-muted-foreground">{classGroup?.name}</p>
 				{:else if columnKey === 'average'}
-					<span class="font-display font-semibold tabular-nums text-sm">
+					<span class="font-sans font-semibold tabular-nums text-sm">
 						{student.average.toFixed(1)}
 					</span>
 				{:else if columnKey === 'attendance'}
 					{#if student.attendance == null}
-						<p class="font-mono text-[10px] text-muted-foreground">—</p>
+						<p class="font-sans tabular-nums text-[10px] text-muted-foreground">—</p>
 					{:else}
 						<div class="min-w-[7rem]">
 							<div class="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
 								<div class="h-full rounded-full bg-accent" style:width="{student.attendance}%"></div>
 							</div>
-							<p class="mt-1 font-mono text-[10px] text-muted-foreground">{student.attendance}%</p>
+							<p class="mt-1 font-sans tabular-nums text-[10px] text-muted-foreground">{student.attendance}%</p>
 						</div>
 					{/if}
 				{:else if columnKey === 'status'}

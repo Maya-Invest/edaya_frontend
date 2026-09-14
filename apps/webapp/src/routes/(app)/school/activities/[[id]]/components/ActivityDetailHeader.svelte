@@ -70,7 +70,7 @@
 		<span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase text-foreground/80">
 			{$t(`activities.cat.${live.category}`)}
 		</span>
-		<span class="rounded-full bg-secondary px-2 py-0.5 font-mono text-[10px] tabular-nums text-foreground/80">
+		<span class="rounded-full bg-secondary px-2 py-0.5 font-sans tabular-nums text-[10px] tabular-nums text-foreground/80">
 			{live.enrollments.length}/{live.capacity}
 		</span>
 	{/snippet}

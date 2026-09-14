@@ -122,7 +122,7 @@
 				)}
 			>
 				<div class="col-span-7">
-					<p class="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+					<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 						{$t('attendanceDay.dailyRollCall')}
 					</p>
 					<h3 class="mt-1 font-display text-lg font-semibold leading-tight">{day.label}</h3>
@@ -142,7 +142,7 @@
 							<ClipboardCheck class="h-3 w-3" />
 							{$t('attendanceDay.recorded')}
 						</span>
-						<span class="font-mono">{day.recordedCount}/{day.totalStudents}</span>
+						<span class="font-sans tabular-nums">{day.recordedCount}/{day.totalStudents}</span>
 					</div>
 					<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary">
 						<div

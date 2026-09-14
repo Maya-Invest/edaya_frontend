@@ -12,6 +12,10 @@ export default {
 		extend: {
 			colors: {
 				border: 'hsl(var(--border))',
+				'primary-hover': 'hsl(var(--primary-hover))',
+				success: { DEFAULT: 'hsl(var(--success))', soft: 'hsl(var(--success-soft))' },
+				'brand-sky': 'hsl(var(--brand-sky))',
+				'brand-amber': 'hsl(var(--brand-amber))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
 				background: 'hsl(var(--background))',
@@ -70,8 +74,7 @@ export default {
 				panel: 'var(--shadow-panel)'
 			},
 			backgroundImage: {
-				'gradient-mint': 'var(--gradient-mint)',
-				'gradient-warm': 'var(--gradient-warm)'
+				'gradient-brand': 'var(--gradient-brand)'
 			},
 			keyframes: {
 				'accordion-down': { from: { height: '0' }, to: { height: 'var(--radix-accordion-content-height)' } },

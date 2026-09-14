@@ -5,7 +5,7 @@
 	import { cn } from '$lib/utils';
 
 	const tone: Record<ToastKind, string> = {
-		success: 'border-accent/30 bg-accent/10 text-foreground',
+		success: 'border-success/30 bg-success-soft text-foreground',
 		error: 'border-destructive/30 bg-destructive/10 text-foreground',
 		info: 'border-border bg-card text-foreground',
 	};
@@ -18,7 +18,7 @@
 </script>
 
 <div
-	class="pointer-events-none fixed bottom-6 right-6 z-[100] flex w-full max-w-sm flex-col gap-2"
+	class="pointer-events-none fixed bottom-4 right-4 z-[100] flex w-[calc(100%-2rem)] max-w-sm sm:bottom-6 sm:right-6 flex-col gap-2"
 	aria-live="polite"
 >
 	{#each toast.items as item (item.id)}

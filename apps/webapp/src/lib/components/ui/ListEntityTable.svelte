@@ -93,105 +93,112 @@
 	}
 </script>
 
+<!-- The labeled scroll region needs focus for native arrow-key horizontal scrolling. -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
-	class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft"
+	class="overflow-x-auto rounded-2xl border border-border bg-card shadow-soft control-focus"
 	aria-busy={loading}
+	role="region"
+	aria-label={$t('list.tableRegion')}
+	tabindex="0"
 >
-	<div
-		class="grid grid-cols-12 gap-4 border-b border-border bg-secondary/40 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
-	>
-		{#if selectionMode}
-			<div class="col-span-1 flex items-center">
-				<div role="presentation" onclick={event => event.stopPropagation()}>
-					<Checkbox
-						class="rounded-[2px]"
-						checked={allVisibleSelected}
-						onCheckedChange={checked => onToggleAllVisible?.(checked === true)}
-						aria-label={$t('list.selectAll')}
-					/>
-				</div>
-			</div>
-		{/if}
-		{#each columns as column (column.key)}
-			<div
-				class={cn('flex items-center', colSpanClass[columnSpan(column)], column.class)}
-				role={column.sortable && onSort && sort ? 'columnheader' : undefined}
-				aria-sort={column.sortable && onSort && sort
-					? listSortAriaValue(sort.column, sort.dir, column.key)
-					: undefined}
-			>
-				{#if column.sortable && onSort && sort}
-					<button
-						type="button"
-						data-testid="list-sort"
-						class={cn(
-							'flex items-center gap-1 transition-colors hover:text-foreground',
-							sort.column === column.key && 'text-foreground',
-						)}
-						aria-label={listSortButtonLabel(sort.column, sort.dir, column.key, column.label)}
-						onclick={() => onSort(column.key)}
-					>
-						{column.label}
-						{#if sort.column === column.key}
-							{#if sort.dir === 'asc'}
-								<ChevronUp class="h-3 w-3" />
-							{:else}
-								<ChevronDown class="h-3 w-3" />
-							{/if}
-						{/if}
-					</button>
-				{:else}
-					{column.label}
-				{/if}
-			</div>
-		{/each}
-		{@render trailingHeader?.()}
-	</div>
-	<InfiniteList
-		{hasMore}
-		{total}
-		{visibleCount}
-		loading={loading || loadingMore}
-		{onLoadMore}
-	>
-		<ul class={cn(loading && 'opacity-60')}>
-			{#each rows as rowItem (rowItem.id)}
-				{@const active = highlightId === rowItem.id}
-				{@const selected = selectedSet.has(rowItem.id)}
-				{@const ctx = { selectionMode, selected, active }}
-				<li>
-					<div
-						role="button"
-						tabindex="0"
-						onclick={() => handleRowClick(rowItem)}
-						onkeydown={event => handleRowKeydown(event, rowItem)}
-						class={cn(
-							'grid w-full grid-cols-12 items-center gap-4 border-b border-border px-5 text-left transition-colors last:border-b-0',
-							rowPaddingClass,
-							active ? 'bg-primary/10' : 'hover:bg-secondary',
-							selectionMode && selected && 'bg-primary/5',
-							rowClass?.(rowItem, ctx),
-						)}
-					>
-						{#if selectionMode}
-							<div class="col-span-1 flex items-center" role="presentation" onclick={event => event.stopPropagation()}>
-								<Checkbox
-									class="rounded-[2px]"
-									checked={selected}
-									onCheckedChange={checked => onToggleSelected?.(rowItem.id, checked === true)}
-									aria-label={$t('list.selectRow')}
-								/>
-							</div>
-						{/if}
-						{@render row(rowItem, ctx)}
+	<div class="min-w-[48rem]">
+		<div
+			class="grid grid-cols-12 gap-4 border-b border-border bg-secondary/60 px-5 py-3 text-xs font-semibold text-muted-foreground"
+		>
+			{#if selectionMode}
+				<div class="col-span-1 flex items-center">
+					<div role="presentation" onclick={event => event.stopPropagation()}>
+						<Checkbox
+							class="rounded-[2px]"
+							checked={allVisibleSelected}
+							onCheckedChange={checked => onToggleAllVisible?.(checked === true)}
+							aria-label={$t('list.selectAll')}
+						/>
 					</div>
-				</li>
-			{/each}
-			{#if rows.length === 0 && !loading}
-				<li class="px-5 py-12 text-center text-sm text-muted-foreground">
-					{resolvedEmptyLabel}
-				</li>
+				</div>
 			{/if}
-		</ul>
-	</InfiniteList>
+			{#each columns as column (column.key)}
+				<div
+					class={cn('flex items-center', colSpanClass[columnSpan(column)], column.class)}
+					role={column.sortable && onSort && sort ? 'columnheader' : undefined}
+					aria-sort={column.sortable && onSort && sort
+						? listSortAriaValue(sort.column, sort.dir, column.key)
+						: undefined}
+				>
+					{#if column.sortable && onSort && sort}
+						<button
+							type="button"
+							data-testid="list-sort"
+							class={cn(
+								'flex items-center gap-1 transition-colors hover:text-foreground',
+								sort.column === column.key && 'text-foreground',
+							)}
+							aria-label={listSortButtonLabel(sort.column, sort.dir, column.key, column.label)}
+							onclick={() => onSort(column.key)}
+						>
+							{column.label}
+							{#if sort.column === column.key}
+								{#if sort.dir === 'asc'}
+									<ChevronUp class="h-3 w-3" />
+								{:else}
+									<ChevronDown class="h-3 w-3" />
+								{/if}
+							{/if}
+						</button>
+					{:else}
+						{column.label}
+					{/if}
+				</div>
+			{/each}
+			{@render trailingHeader?.()}
+		</div>
+		<InfiniteList
+			{hasMore}
+			{total}
+			{visibleCount}
+			loading={loading || loadingMore}
+			{onLoadMore}
+		>
+			<ul class={cn(loading && 'opacity-60')}>
+				{#each rows as rowItem (rowItem.id)}
+					{@const active = highlightId === rowItem.id}
+					{@const selected = selectedSet.has(rowItem.id)}
+					{@const ctx = { selectionMode, selected, active }}
+					<li>
+						<div
+							role="button"
+							tabindex="0"
+							onclick={() => handleRowClick(rowItem)}
+							onkeydown={event => handleRowKeydown(event, rowItem)}
+							class={cn(
+								'grid w-full grid-cols-12 items-center gap-4 border-b border-border px-5 text-left transition-colors last:border-b-0',
+								rowPaddingClass,
+								active ? 'bg-primary/10' : 'hover:bg-secondary',
+								selectionMode && selected && 'bg-primary/5',
+								rowClass?.(rowItem, ctx),
+							)}
+						>
+							{#if selectionMode}
+								<div class="col-span-1 flex items-center" role="presentation" onclick={event => event.stopPropagation()}>
+									<Checkbox
+										class="rounded-[2px]"
+										checked={selected}
+										onCheckedChange={checked => onToggleSelected?.(rowItem.id, checked === true)}
+										aria-label={$t('list.selectRow')}
+									/>
+								</div>
+							{/if}
+							{@render row(rowItem, ctx)}
+						</div>
+					</li>
+				{/each}
+				{#if rows.length === 0 && !loading}
+					<li class="px-5 py-12 text-center text-sm text-muted-foreground">
+						{resolvedEmptyLabel}
+					</li>
+				{/if}
+			</ul>
+		</InfiniteList>
+	</div>
 </div>

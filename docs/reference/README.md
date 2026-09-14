@@ -6,6 +6,7 @@ Human-targeted architecture notes, operational guides, and progress catalogs.
 
 | Doc | Purpose |
 |-----|---------|
+| [edaya-ui-brief.md](./edaya-ui-brief.md) | Brand direction, audiences, UI boundaries and future review checklist |
 | [ui-architecture-reference.md](./ui-architecture-reference.md) | Per-feature cards, gap tracker, entity audit |
 | [demo-accounts.md](./demo-accounts.md) | Local seed logins (staff webapp and portal actors) |
 | [cross-repo-workflow.md](./cross-repo-workflow.md) | OpenAPI export, codegen, pair PR workflow |

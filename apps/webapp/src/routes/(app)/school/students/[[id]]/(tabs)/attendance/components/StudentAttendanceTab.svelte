@@ -89,7 +89,7 @@
 							</span>
 						</div>
 						<p class="mt-1.5 text-sm font-medium">{record.label}</p>
-						<p class="mt-0.5 font-mono text-[10px] text-muted-foreground">
+						<p class="mt-0.5 font-sans tabular-nums text-[10px] text-muted-foreground">
 							{fmtDateFr(record.date, $locale)} · {record.time}
 						</p>
 					</div>

@@ -145,7 +145,7 @@
 								{/if}
 							</span>
 							{#if item.hint}
-								<span class="shrink-0 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+								<span class="shrink-0 font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 									{item.hint}
 								</span>
 							{/if}

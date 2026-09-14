@@ -158,7 +158,7 @@
 						<p class="font-display font-semibold">{def.name}</p>
 						<span
 							class={cn(
-								'rounded-full px-2 py-0.5 font-mono text-[10px] uppercase',
+								'rounded-full px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase',
 								def.status === 'published'
 									? 'bg-accent/15 text-accent-foreground'
 									: 'bg-secondary text-muted-foreground',

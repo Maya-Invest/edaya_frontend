@@ -162,7 +162,7 @@
 				</label>
 				<label class="block space-y-1.5 text-sm">
 					<span class="text-muted-foreground">{$t('notificationTemplates.body')}</span>
-					<Textarea bind:value={emailBody} rows={8} class="rounded-xl font-mono text-xs" />
+					<Textarea bind:value={emailBody} rows={8} class="rounded-xl font-sans tabular-nums text-xs" />
 				</label>
 			{:else}
 				<label class="block space-y-1.5 text-sm">
@@ -171,7 +171,7 @@
 				</label>
 				<label class="block space-y-1.5 text-sm">
 					<span class="text-muted-foreground">{$t('notificationTemplates.body')}</span>
-					<Textarea bind:value={inAppBody} rows={6} class="rounded-xl font-mono text-xs" />
+					<Textarea bind:value={inAppBody} rows={6} class="rounded-xl font-sans tabular-nums text-xs" />
 				</label>
 			{/if}
 

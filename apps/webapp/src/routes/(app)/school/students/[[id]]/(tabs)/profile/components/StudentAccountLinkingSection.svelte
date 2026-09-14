@@ -227,7 +227,7 @@
 					{$t('invitation.inviteLinkLabel')}
 				</Label>
 				<div class="flex flex-col gap-2 sm:flex-row">
-					<Input readonly value={lastInviteUrl} class="font-mono text-xs" />
+					<Input readonly value={lastInviteUrl} class="font-sans tabular-nums text-xs" />
 					<Button type="button" size="sm" variant="outline" onclick={copyInviteLink}>
 						{$t('invitation.copyInviteLink')}
 					</Button>

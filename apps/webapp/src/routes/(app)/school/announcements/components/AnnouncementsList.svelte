@@ -172,7 +172,7 @@
 
 	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
 		<div
-			class="grid grid-cols-[1.6fr_1fr_1fr_0.8fr] gap-4 border-b border-border bg-secondary/40 px-4 py-2.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground"
+			class="grid grid-cols-[1.6fr_1fr_1fr_0.8fr] gap-4 border-b border-border bg-secondary/40 px-4 py-2.5 font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground"
 		>
 			<span>{$t('announcements.titleLabel')}</span>
 			<span>{$t('announcements.statusLabel')}</span>
@@ -221,11 +221,11 @@
 							</span>
 							<div class="flex items-center gap-1.5 text-xs text-foreground/80">
 								<Mail class="h-3.5 w-3.5 text-muted-foreground" />
-								<span class="font-mono tabular-nums">
+								<span class="font-sans tabular-nums">
 									{fmtDate(announcement.publishedAt ?? announcement.createdAt)}
 								</span>
 							</div>
-							<div class="text-right font-mono text-xs tabular-nums text-foreground/80">
+							<div class="text-right font-sans tabular-nums text-xs tabular-nums text-foreground/80">
 								{announcement.targets.length}
 							</div>
 						</button>

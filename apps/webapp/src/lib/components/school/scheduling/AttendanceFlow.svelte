@@ -31,7 +31,7 @@
 		'bg-primary text-primary-foreground',
 		'bg-primary/80 text-primary-foreground',
 		'bg-primary/60 text-primary-foreground',
-		'bg-accent text-accent-foreground',
+		'bg-success text-success-foreground',
 	];
 
 	let marks = $state<Record<string, Status>>({});
@@ -113,7 +113,7 @@
 					>
 						<ArrowLeft class="h-4 w-4" />
 					</button>
-					<span class="font-mono text-[11px] uppercase tracking-widest text-primary-foreground/50">
+					<span class="font-sans tabular-nums text-[11px] uppercase tracking-widest text-primary-foreground/50">
 						{classLevel}
 					</span>
 				</div>
@@ -131,7 +131,7 @@
 
 				<div class="mt-5">
 					<div
-						class="mb-1.5 flex items-center justify-between font-mono text-[11px] text-primary-foreground/60"
+						class="mb-1.5 flex items-center justify-between font-sans tabular-nums text-[11px] text-primary-foreground/60"
 					>
 						<span>{$t('attendance.checked', { c: checked, t: total })}</span>
 						<span>{progress}%</span>
@@ -161,7 +161,7 @@
 							</div>
 							<h3 class="mt-5 font-display text-2xl font-semibold">{current.name}</h3>
 							<p
-								class="mt-1 font-mono text-xs uppercase tracking-widest text-primary-foreground/50"
+								class="mt-1 font-sans tabular-nums text-xs uppercase tracking-widest text-primary-foreground/50"
 							>
 								STU-{current.id.toUpperCase().padStart(4, '0')}
 							</p>

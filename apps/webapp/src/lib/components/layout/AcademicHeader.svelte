@@ -76,7 +76,7 @@
 			<span>{period?.label ?? '—'}</span>
 			<span
 				class={cn(
-					'font-mono text-[10px]',
+					'font-sans tabular-nums text-[10px]',
 					open === 'period' ? 'text-primary-foreground/70' : 'text-muted-foreground',
 				)}
 			>
@@ -102,7 +102,7 @@
 					>
 						<span>
 							<span class="font-medium">{p.label}</span>
-							<span class="ml-2 font-mono text-[10px] text-muted-foreground">{p.range}</span>
+							<span class="ml-2 font-sans tabular-nums text-[10px] text-muted-foreground">{p.range}</span>
 						</span>
 						{#if p.id === academicContext.periodId}<Check class="h-3.5 w-3.5 text-accent" />{/if}
 					</button>
