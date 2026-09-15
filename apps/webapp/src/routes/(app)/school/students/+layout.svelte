@@ -52,6 +52,7 @@
 		void studentsPage.filters.values.status;
 		void studentsPage.filters.values.class;
 		void studentsPage.filters.values.sort;
+		void studentsPage.filters.values.photoReview;
 
 		if (!studentListUsesFullRoster(studentsPage.filters.values)) {
 			studentsPage.clearFullRoster();

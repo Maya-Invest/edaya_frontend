@@ -286,9 +286,10 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 ### 7.2 School — Students
 
 - **Entity:** `Student` · **Complex drawer**
-- **List:** search name · main filter class · filter enrollment status · CTA Add student
-- **Drawer header:** Edit profile · Change class
-- **Drawer tabs:** Profile (identity, health, guardians, notes) · **Grades** (links → `/evaluations/{id}`) · **Attendance** (all records) · Incidents · Finance · Report card · **Enrollments** (history)
+- **List:** search name · main filter class · filter enrollment status · filter pending portrait review (`photoReview=pending`) · CTA Add student
+- **Drawer header:** Edit profile · Change class · published portrait only
+- **Drawer tabs:** Profile (published vs proposed portrait review, identity, health, guardians, notes) · **Grades** (links → `/evaluations/{id}`) · **Attendance** (all records) · Incidents · Finance · Report card · **Enrollments** (history)
+- **Portrait review:** Approve / Reject / Replace published on the Profile tab (URL modals). Guardian and staff self-photos publish immediately from their own surfaces.
 
 ### 7.3 School — Guardians
 

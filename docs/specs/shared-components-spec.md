@@ -105,8 +105,8 @@ Do not build ad-hoc `<select>` lists for people — use pickers or **PickerModal
 | Component | Path | Use for |
 |-----------|------|---------|
 | **PersonAvatar** | `school/shared/PersonAvatar.svelte` | Staff, guardians |
-| **StudentAvatar** | `school/shared/StudentAvatar.svelte` | Students (photo overlay on edit) |
-| **ProfilePhotoPicker** | `school/shared/ProfilePhotoPicker.svelte` | Avatar upload in edit modals |
+| **StudentAvatar** | `school/shared/StudentAvatar.svelte` | Published student portrait only (headers, lists, switchers) |
+| **ProfilePhotoPicker** | `school/shared/ProfilePhotoPicker.svelte` | Crop/rotate JPEG export under 1 MiB. Staff and guardian self-photos publish immediately; student portraits use the Profile review card |
 
 ### 2.8 Shared modules (not components)
 

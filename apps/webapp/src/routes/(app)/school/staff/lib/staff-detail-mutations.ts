@@ -7,7 +7,7 @@ import { academicContext } from '$lib/academic/context.svelte';
 import {
 	createStaffPermissionAssignmentPayload,
 } from '$lib/api/mutations/staff-permission-assignments.mutations';
-import { uploadProfilePhoto, withPhotoCacheBust } from '$lib/api/profile-photo-upload';
+import { displayProfilePhotoUrl, uploadProfilePhoto } from '$lib/api/profile-photo-upload';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 import { runStaffRouteMutation } from './staff-route-mutation';
@@ -233,7 +233,11 @@ export async function updateStaffProfilePhotoOnPage(
 				file: input.file,
 				schoolId: resolvedSchoolId,
 			});
-			return withPhotoCacheBust(uploaded.photoUrl);
+			await getBrowserSchoolClient().commands.updateStaffMemberProfile({
+				staffId: input.staffId,
+				photoUrl: uploaded.photoUrl,
+			});
+			return displayProfilePhotoUrl(uploaded.attachmentId);
 		},
 		apply: () => {},
 		rollback: () => {

@@ -3,6 +3,7 @@
 	import { Camera, LoaderCircle } from '$lib/icons';
 	import { cn } from '$lib/utils';
 	import PersonAvatar from './PersonAvatar.svelte';
+	import ProfilePhotoCropDialog from './ProfilePhotoCropDialog.svelte';
 
 	const {
 		name,
@@ -22,6 +23,8 @@
 
 	let inputEl = $state<HTMLInputElement | undefined>();
 	let busy = $state(false);
+	let cropOpen = $state(false);
+	let cropSource = $state<Blob | null>(null);
 
 	const overlayRadius = $derived(
 		{
@@ -33,7 +36,7 @@
 		}[size],
 	);
 
-	async function handleFile(event: Event) {
+	function handleFile(event: Event) {
 		const input = event.target as HTMLInputElement;
 		const file = input.files?.[0];
 		input.value = '';
@@ -43,13 +46,18 @@
 		if (!file.type.startsWith('image/')) {
 			return;
 		}
+		cropSource = file;
+		cropOpen = true;
+	}
 
+	async function handleCropped(file: File) {
 		busy = true;
 		try {
 			await onChange(file);
 		}
 		finally {
 			busy = false;
+			cropSource = null;
 		}
 	}
 </script>
@@ -84,3 +92,5 @@
 		/>
 	{/if}
 </div>
+
+<ProfilePhotoCropDialog bind:open={cropOpen} source={cropSource} onConfirm={handleCropped} />

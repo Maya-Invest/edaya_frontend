@@ -36,7 +36,7 @@ export function hasAnyPermission(permissions: readonly PermissionCode[], ctx: Ct
 }
 
 export function canUploadProfilePhoto(updatePermission: PermissionCode): boolean {
-	return hasPermission('ATTACHMENT_CONFIGURE') && hasPermission(updatePermission);
+	return hasPermission(updatePermission);
 }
 
 export function getCurrentUser(): StaffMember | null {

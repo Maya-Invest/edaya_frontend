@@ -26,6 +26,7 @@ export interface Student {
 	name: string;
 	initials: string;
 	photoUrl?: string | null;
+	photoAttachmentId?: string | null;
 	/** Empty when the student has no linked account / invitation email. */
 	email: string;
 	birthdate: string;

@@ -42,6 +42,7 @@
 		overdue_fees: 'dashboard.module.finance',
 		unpublished_report_cards: 'dashboard.module.reportCards',
 		pending_justifications: 'dashboard.module.students',
+		pending_student_photos: 'dashboard.module.students',
 		high_severity_incidents: 'dashboard.module.schoolLife',
 		incomplete_grading: 'dashboard.module.evaluations',
 	};

@@ -61,6 +61,7 @@ export {
 	Plus,
 	Receipt,
 	RotateCcw,
+	RotateCw,
 	Search,
 	Settings2,
 	Shield,

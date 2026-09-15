@@ -40,6 +40,7 @@ const studentListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
 	class: { type: 'string', default: 'all' },
 	status: { type: 'string', default: 'all' },
+	photoReview: { type: 'enum', default: 'all', values: ['all', 'pending'] as const },
 	sort: { type: 'enum', default: 'roster', values: ['roster', 'name', 'class', 'average', 'attendance', 'status'] as const },
 	sortDir: { type: 'enum', default: 'asc', values: ['asc', 'desc'] as const },
 });

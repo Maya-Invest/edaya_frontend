@@ -1,7 +1,7 @@
 import type { Guardian } from '$lib/types/school';
 import type { GuardiansPageState } from '../guardians-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
-import { uploadProfilePhoto, withPhotoCacheBust } from '$lib/api/profile-photo-upload';
+import { displayProfilePhotoUrl, uploadProfilePhoto } from '$lib/api/profile-photo-upload';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 import { runGuardianRouteMutation } from './guardian-route-mutation';
@@ -203,7 +203,6 @@ export async function updateGuardianProfilePhotoOnPage(
 				file: input.file,
 				schoolId: resolvedSchoolId,
 			});
-			const photoUrl = withPhotoCacheBust(uploaded.photoUrl);
 			const client = getBrowserSchoolClient();
 			const existing = await client.entities.guardians.get(input.guardianId);
 			await client.commands.updateGuardianContactMethods({
@@ -214,9 +213,9 @@ export async function updateGuardianProfilePhotoOnPage(
 				phone: existing.phone,
 				contactMethods: existing.contactMethods,
 				hasAccess: existing.hasAccess,
-				photoUrl,
+				photoUrl: uploaded.photoUrl,
 			});
-			return photoUrl;
+			return displayProfilePhotoUrl(uploaded.attachmentId);
 		},
 		apply: () => {},
 		rollback: () => {

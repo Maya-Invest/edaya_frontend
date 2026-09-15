@@ -21,6 +21,7 @@
 	import { pedagogicalNoteToneByCategory, getStudentProfileTabState } from '../student-profile-tab.svelte';
 	import AccountLinkingSection from './StudentAccountLinkingSection.svelte';
 	import StudentHealthEditModal from './StudentHealthEditModal.svelte';
+	import StudentPortraitReviewCard from './StudentPortraitReviewCard.svelte';
 
 	const { s }: { s: Student } = $props();
 
@@ -61,6 +62,7 @@
 </script>
 
 <div class="space-y-4">
+	<StudentPortraitReviewCard {s} />
 	<div class="grid grid-cols-3 gap-3">
 		<div class="rounded-xl bg-primary/10 p-3">
 			<p class="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">

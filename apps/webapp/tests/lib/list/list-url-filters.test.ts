@@ -96,8 +96,8 @@ const cases: FilterCase[] = [
 		name: 'school students',
 		read: readStudentListFilters,
 		write: writeWith(writeStudentListFilters),
-		defaults: { q: '', class: 'all', status: 'all', sort: 'roster', sortDir: 'asc' },
-		nonDefault: { q: 'lee', class: 'class-1', status: 'warning', sort: 'name', sortDir: 'desc' },
+		defaults: { q: '', class: 'all', status: 'all', photoReview: 'all', sort: 'roster', sortDir: 'asc' },
+		nonDefault: { q: 'lee', class: 'class-1', status: 'warning', photoReview: 'pending', sort: 'name', sortDir: 'desc' },
 	},
 	{
 		name: 'class report cards',
