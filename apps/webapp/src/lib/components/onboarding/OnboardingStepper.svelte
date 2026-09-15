@@ -8,10 +8,11 @@
 	interface Props {
 		currentStep: OnboardingStep;
 		maxReachedStep: OnboardingStep;
+		locked?: boolean;
 		onStepSelect: (step: OnboardingStep) => void;
 	}
 
-	const { currentStep, maxReachedStep, onStepSelect }: Props = $props();
+	const { currentStep, maxReachedStep, locked = false, onStepSelect }: Props = $props();
 </script>
 
 <nav aria-label={$t('onboarding.stepperLabel')} class="w-full">
@@ -20,7 +21,7 @@
 			{@const isCompleted = step.id < currentStep}
 			{@const isActive = step.id === currentStep}
 			{@const isUpcoming = step.id > currentStep}
-			{@const isClickable = step.id <= maxReachedStep && step.id !== currentStep}
+			{@const isClickable = !locked && step.id <= maxReachedStep && step.id !== currentStep}
 
 			<li class="flex min-w-0 flex-1 items-start">
 				<button

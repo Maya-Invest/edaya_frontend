@@ -17,4 +17,30 @@ describe('onboardingUserErrorMessage', () => {
 			dictionaries.fr['onboarding.completeStep.failed'],
 		);
 	});
+
+	it('maps provision 422 invite issues to staff copy', () => {
+		const error = new ApiError(422, {
+			success: false,
+			error: {
+				name: 'ZodError',
+				issues: [{ path: ['invites', 0, 'email'], message: 'Invalid email' }],
+			},
+		});
+		expect(onboardingUserErrorMessage(error, 'onboarding.completeStep.failed')).toBe(
+			dictionaries.fr['onboarding.staffStep.invalidInvite'],
+		);
+	});
+
+	it('maps provision 422 school or structure issues to incomplete copy', () => {
+		const error = new ApiError(422, {
+			success: false,
+			error: {
+				name: 'ZodError',
+				issues: [{ path: ['structure', 'levels'], message: 'Required' }],
+			},
+		});
+		expect(onboardingUserErrorMessage(error, 'onboarding.completeStep.failed')).toBe(
+			dictionaries.fr['onboarding.completeStep.incomplete'],
+		);
+	});
 });

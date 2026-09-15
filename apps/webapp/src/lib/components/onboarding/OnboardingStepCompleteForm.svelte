@@ -24,6 +24,7 @@
 	const summary = $derived(
 		buildCompleteStepSummary(onboardingContext.draft, catalog),
 	);
+	const editsLocked = $derived(wizard.busy || wizard.provisionSucceeded);
 
 	const formattedRange = $derived.by(() => {
 		const start = onboardingContext.draft.school.academicYearStart;
@@ -42,6 +43,9 @@
 	}
 
 	function goToStep(step: 1 | 2 | 3) {
+		if (editsLocked) {
+			return;
+		}
 		wizard.navigateToStep(step);
 	}
 
@@ -125,6 +129,7 @@
 				variant="ghost"
 				size="sm"
 				data-step="1"
+				disabled={editsLocked}
 				onclick={() => goToStep(1)}
 			>
 				{$t('onboarding.complete.edit')}
@@ -182,6 +187,7 @@
 				variant="ghost"
 				size="sm"
 				data-step="2"
+				disabled={editsLocked}
 				onclick={() => goToStep(2)}
 			>
 				{$t('onboarding.complete.edit')}
@@ -252,6 +258,7 @@
 				variant="ghost"
 				size="sm"
 				data-step="3"
+				disabled={editsLocked}
 				onclick={() => goToStep(3)}
 			>
 				{$t('onboarding.complete.edit')}

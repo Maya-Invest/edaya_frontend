@@ -34,7 +34,7 @@
 
 {#if visible}
 	<div
-		class="mb-4 rounded-xl border border-border bg-secondary/20 px-3 py-3 sm:px-4"
+		class="rounded-xl border border-border bg-secondary/20 px-3 py-3 sm:px-4"
 		role="status"
 		aria-live="polite"
 	>

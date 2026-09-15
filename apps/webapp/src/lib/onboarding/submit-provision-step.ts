@@ -13,6 +13,7 @@ import {
 import { persistServerOnboardingStatusToDraft } from '$lib/onboarding/resume-onboarding';
 import { markWizardCompletedInSession } from '$lib/onboarding/wizard-completion-flag';
 import { toast } from '$lib/toast.svelte';
+import { ApiError } from '@maya-invest/edaya-api-client';
 import { get } from 'svelte/store';
 
 export { buildProvisionPayload } from '$lib/onboarding/provision-payload';
@@ -129,6 +130,7 @@ export async function submitProvisionOnboarding(
 				authSession.authUserId,
 				result.status,
 				result.schoolId,
+				{ holdLocalWizardCompleted: true },
 			);
 		}
 		await bootstrapAppShell();
@@ -150,7 +152,11 @@ export async function submitProvisionOnboarding(
 		};
 	}
 	catch (error) {
-		console.error('[onboarding] provision failed', error);
+		console.error(
+			'[onboarding] provision failed',
+			error,
+			error instanceof ApiError ? error.body : undefined,
+		);
 		return failWithUserMessage(error, options?.onError);
 	}
 }

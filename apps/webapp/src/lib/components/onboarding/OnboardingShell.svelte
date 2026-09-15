@@ -7,6 +7,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { t } from '$lib/i18n';
 	import { ArrowLeft } from '$lib/icons';
+	import { onboardingFinishCtaKey } from '$lib/onboarding/steps';
 
 	interface ProvisionProgressStepProp {
 		id: string;
@@ -30,6 +31,7 @@
 		provisionActiveStepId?: string | null;
 		provisionCompletedIds?: string[];
 		provisionSteps?: ProvisionProgressStepProp[];
+		provisionSucceeded?: boolean;
 		onBack: () => void;
 		onContinue: () => void;
 		onFinish?: () => void;
@@ -59,6 +61,7 @@
 		provisionActiveStepId = null,
 		provisionCompletedIds = [],
 		provisionSteps = [],
+		provisionSucceeded = false,
 		onBack,
 		onContinue,
 		onFinish,
@@ -72,34 +75,37 @@
 	}: Props = $props();
 
 	const showProvisionProgress = $derived(
-		busy && provisionProgressVisible && provisionSteps.length > 0,
+		provisionProgressVisible && provisionSteps.length > 0,
 	);
+	const finishCtaKey = $derived(onboardingFinishCtaKey(provisionSucceeded));
+	const stepsLocked = $derived(busy || provisionSucceeded);
 </script>
 
 <div class="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-6 pt-2 sm:px-6">
 	<section class="rounded-2xl border border-border bg-card p-5 shadow-soft sm:p-6">
 		<div class="mb-4">
-			<OnboardingStepper {currentStep} {maxReachedStep} {onStepSelect} />
+			<OnboardingStepper {currentStep} {maxReachedStep} locked={stepsLocked} {onStepSelect} />
 		</div>
-
-		{#if showProvisionProgress}
-			<OnboardingProvisionProgress
-				percent={provisionPercent}
-				activeStepId={provisionActiveStepId}
-				completedStepIds={provisionCompletedIds}
-				steps={provisionSteps}
-				visible={true}
-			/>
-		{:else if busy && busyMessage}
-			<p class="mb-3 text-xs text-muted-foreground" aria-live="polite">
-				{busyMessage}
-			</p>
-		{/if}
 
 		{@render children()}
 	</section>
 
 	<footer class="sticky bottom-0 mt-4 border-t border-border/60 bg-background/95 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+		{#if showProvisionProgress}
+			<div class="mb-3">
+				<OnboardingProvisionProgress
+					percent={provisionPercent}
+					activeStepId={provisionActiveStepId}
+					completedStepIds={provisionCompletedIds}
+					steps={provisionSteps}
+					visible={true}
+				/>
+			</div>
+		{:else if busy && busyMessage}
+			<p class="mb-3 text-xs text-muted-foreground" aria-live="polite">
+				{busyMessage}
+			</p>
+		{/if}
 		{#if actionError}
 			<p
 				class="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
@@ -133,7 +139,7 @@
 
 				{#if showFinish && onFinish}
 					<Button type="button" disabled={busy || !canFinish} onclick={onFinish}>
-						{$t('onboarding.finish')}
+						{$t(finishCtaKey)}
 					</Button>
 				{/if}
 			</div>

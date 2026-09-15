@@ -46,8 +46,40 @@ export function getOnboardingStepDefinition(step: OnboardingStep): OnboardingSte
 	return ONBOARDING_STEPS[step - 1]!;
 }
 
-export function canFinishOnboarding(draft: OnboardingDraft): boolean {
-	return draft.schoolStepSubmitted && draft.structureStepSubmitted;
+export type FinishOnboardingBlockKey
+	= | 'onboarding.completeStep.incomplete'
+		| 'onboarding.staffStep.invalidInvite';
+
+/** Why Finish is blocked. Null means the draft can be provisioned. */
+export function finishOnboardingBlockKey(
+	draft: OnboardingDraft,
+	loginEmail?: string | null,
+): FinishOnboardingBlockKey | null {
+	if (
+		!draft.schoolStepSubmitted
+		|| !draft.structureStepSubmitted
+		|| !isSchoolStepValid(draft.school)
+		|| !isStructureStepValid(draft.structure)
+	) {
+		return 'onboarding.completeStep.incomplete';
+	}
+	if (!isStaffStepValid(draft.staffInvites, loginEmail)) {
+		return 'onboarding.staffStep.invalidInvite';
+	}
+	return null;
+}
+
+export function canFinishOnboarding(
+	draft: OnboardingDraft,
+	loginEmail?: string | null,
+): boolean {
+	return finishOnboardingBlockKey(draft, loginEmail) === null;
+}
+
+export type OnboardingFinishCtaKey = 'onboarding.createSchool' | 'onboarding.finish';
+
+export function onboardingFinishCtaKey(provisionSucceeded: boolean): OnboardingFinishCtaKey {
+	return provisionSucceeded ? 'onboarding.finish' : 'onboarding.createSchool';
 }
 
 export function canAdvanceFromStep(

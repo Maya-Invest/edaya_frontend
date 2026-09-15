@@ -60,6 +60,7 @@
 		provisionActiveStepId={wizard.provisionActiveStepId}
 		provisionCompletedIds={wizard.provisionCompletedIds}
 		provisionSteps={wizard.provisionSteps}
+		provisionSucceeded={wizard.provisionSucceeded}
 		onBack={() => wizard.goBack()}
 		onContinue={() => void wizard.goNext()}
 		onFinish={() => void wizard.finishOnboarding()}

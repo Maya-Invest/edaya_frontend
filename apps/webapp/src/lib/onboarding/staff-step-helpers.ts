@@ -1,6 +1,6 @@
 import type { OnboardingStaffInviteDraft } from '$lib/onboarding/types';
 import { defaultStaffInviteRole } from '$lib/onboarding/staff-invite-profiles';
-import { activeStaffInvites } from '$lib/onboarding/staff-step-validation';
+import { activeStaffInvites, isValidStaffInviteEmail } from '$lib/onboarding/staff-step-validation';
 
 export function addStaffInvite(invites: OnboardingStaffInviteDraft[]): OnboardingStaffInviteDraft[] {
 	return [
@@ -31,7 +31,7 @@ export function updateStaffInvite(
 
 export function staffInvitesForSubmit(invites: OnboardingStaffInviteDraft[]) {
 	return activeStaffInvites(invites)
-		.filter(invite => invite.email.trim() && invite.role)
+		.filter(invite => isValidStaffInviteEmail(invite.email) && invite.role)
 		.map(invite => ({
 			email: invite.email.trim(),
 			role: invite.role as Exclude<typeof invite.role, ''>,
