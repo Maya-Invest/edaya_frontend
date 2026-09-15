@@ -2,9 +2,13 @@
 	import type { SchoolIssuanceAssetPurpose } from '$lib/api/mutations/issuance-asset.mutations';
 	import type { SchoolType } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import { uploadSchoolIssuanceAssetMutation } from '$lib/api/mutations/issuance-asset.mutations';
-	import { DEFAULT_SCHOOL_TIMEZONE } from '$lib/api/school-data';
+	import {
+		clearSchoolIssuanceAssetMutation,
+		uploadSchoolIssuanceAssetMutation,
+	} from '$lib/api/mutations/issuance-asset.mutations';
+	import { DEFAULT_SCHOOL_TIMEZONE, privateAttachmentContentPath } from '$lib/api/school-data';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
+	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -19,6 +23,7 @@
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
 	import { getSchoolPageState } from '../school-page.svelte';
+	import IssuanceAssetSlot from './IssuanceAssetSlot.svelte';
 
 	const SCHOOL_TYPES: SchoolType[] = ['primary', 'secondary', 'k12', 'vocational', 'other'];
 
@@ -37,6 +42,11 @@
 	let city = $state('');
 	let country = $state('');
 	let type = $state<SchoolType | ''>('');
+	let issuingName = $state('');
+	let postalAddress = $state('');
+	let phone = $state('');
+	let email = $state('');
+	let schoolCode = $state('');
 
 	const readOnlyFieldClass = 'min-h-10 rounded-md border border-input bg-card px-3 py-2 text-sm';
 
@@ -45,6 +55,10 @@
 			return '—';
 		}
 		return get(t)(`schoolSettings.type.${value}`);
+	}
+
+	function displayText(value: string | null | undefined): string {
+		return value?.trim() || '—';
 	}
 
 	function hydrateForm() {
@@ -56,6 +70,11 @@
 		city = school.city;
 		country = school.country ?? '';
 		type = school.type ?? '';
+		issuingName = school.issuingName ?? '';
+		postalAddress = school.postalAddress ?? '';
+		phone = school.phone ?? '';
+		email = school.email ?? '';
+		schoolCode = school.schoolCode ?? '';
 	}
 
 	$effect(() => {
@@ -67,28 +86,69 @@
 	const canSubmit = $derived(name.trim().length > 0 && timeZone.trim().length > 0);
 	const typeLabel = $derived(type ? get(t)(`schoolSettings.type.${type}`) : '');
 
-	const assetSlots: { purpose: SchoolIssuanceAssetPurpose; slot: 'logoAttachmentId' | 'crestAttachmentId' | 'stampAttachmentId' | 'signatureAttachmentId'; labelKey: string }[] = [
-		{ purpose: 'school.logo', slot: 'logoAttachmentId', labelKey: 'schoolSettings.asset.logo' },
-		{ purpose: 'school.crest', slot: 'crestAttachmentId', labelKey: 'schoolSettings.asset.crest' },
-		{ purpose: 'school.stamp', slot: 'stampAttachmentId', labelKey: 'schoolSettings.asset.stamp' },
-		{ purpose: 'school.signature', slot: 'signatureAttachmentId', labelKey: 'schoolSettings.asset.signature' },
+	const assetSlots: {
+		purpose: SchoolIssuanceAssetPurpose;
+		slot: 'logoAttachmentId' | 'crestAttachmentId' | 'stampAttachmentId' | 'signatureAttachmentId';
+		labelKey: string;
+		canPublish: boolean;
+	}[] = [
+		{ purpose: 'school.logo', slot: 'logoAttachmentId', labelKey: 'schoolSettings.asset.logo', canPublish: true },
+		{ purpose: 'school.crest', slot: 'crestAttachmentId', labelKey: 'schoolSettings.asset.crest', canPublish: true },
+		{ purpose: 'school.stamp', slot: 'stampAttachmentId', labelKey: 'schoolSettings.asset.stamp', canPublish: false },
+		{ purpose: 'school.signature', slot: 'signatureAttachmentId', labelKey: 'schoolSettings.asset.signature', canPublish: false },
 	];
 	let assetBusy = $state<SchoolIssuanceAssetPurpose | null>(null);
 
-	async function uploadAsset(purpose: SchoolIssuanceAssetPurpose, file: File | undefined) {
-		if (!file) {
-			return;
-		}
+	function assetSlotLabel(purpose: SchoolIssuanceAssetPurpose): string {
+		return get(t)(`schoolSettings.asset.${purpose.split('.')[1]}`);
+	}
+
+	async function uploadAsset(purpose: SchoolIssuanceAssetPurpose, file: File) {
 		assetBusy = purpose;
 		try {
 			const ok = await uploadSchoolIssuanceAssetMutation({
 				purpose,
 				file,
-				successMessage: get(t)('schoolSettings.assetToast', { slot: get(t)(`schoolSettings.asset.${purpose.split('.')[1]}`) }),
+				successMessage: get(t)('schoolSettings.assetToast', { slot: assetSlotLabel(purpose) }),
 			});
 			if (ok) {
 				await schoolPage.refreshSlice();
 			}
+		}
+		finally {
+			assetBusy = null;
+		}
+	}
+
+	async function clearAsset(purpose: SchoolIssuanceAssetPurpose) {
+		assetBusy = purpose;
+		try {
+			const ok = await clearSchoolIssuanceAssetMutation({
+				purpose,
+				successMessage: get(t)('schoolSettings.assetClearedToast', { slot: assetSlotLabel(purpose) }),
+			});
+			if (ok) {
+				await schoolPage.refreshSlice();
+			}
+		}
+		finally {
+			assetBusy = null;
+		}
+	}
+
+	async function changePublic(purpose: SchoolIssuanceAssetPurpose, next: boolean) {
+		if (!school || (purpose !== 'school.logo' && purpose !== 'school.crest')) {
+			return;
+		}
+		assetBusy = purpose;
+		try {
+			const current = (school.publicBrandingPurposes ?? []).filter(
+				(entry): entry is 'school.logo' | 'school.crest' => entry === 'school.logo' || entry === 'school.crest',
+			);
+			const nextPurposes = next
+				? [...new Set([...current, purpose])]
+				: current.filter(entry => entry !== purpose);
+			await schoolPage.updatePublicBranding(nextPurposes);
 		}
 		finally {
 			assetBusy = null;
@@ -107,6 +167,11 @@
 				city: city.trim() || null,
 				country: country.trim() || null,
 				type: type || null,
+				issuingName: issuingName.trim() || null,
+				postalAddress: postalAddress.trim() || null,
+				phone: phone.trim() || null,
+				email: email.trim() || null,
+				schoolCode: schoolCode.trim() || null,
 				successMessage: get(t)('schoolSettings.toastSaved'),
 			});
 			if (ok) {
@@ -148,11 +213,20 @@
 	{#if school}
 		<div class="mx-auto max-w-2xl space-y-6">
 			<div class="flex items-center gap-4 rounded-2xl border border-border bg-card p-5 shadow-soft">
-				<div
-					class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"
-				>
-					<Building2 class="h-8 w-8" />
-				</div>
+				{#if school.logoAttachmentId}
+					<PersonAvatar
+						name={school.name}
+						initials={school.shortName.charAt(0)}
+						photoUrl={privateAttachmentContentPath(school.logoAttachmentId)}
+						size="lg"
+					/>
+				{:else}
+					<div
+						class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"
+					>
+						<Building2 class="h-8 w-8" />
+					</div>
+				{/if}
 				<div class="min-w-0">
 					<h2 class="font-display text-xl font-semibold leading-tight">{school.name}</h2>
 					<p class="mt-1 text-sm text-muted-foreground">
@@ -175,6 +249,25 @@
 			</section>
 
 			<section class="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-soft">
+				<h3 class="font-display text-lg font-semibold">{$t('schoolSettings.sectionIssuing')}</h3>
+				<DrawerField label={$t('schoolSettings.issuingName')}>
+					<div class={readOnlyFieldClass}>{displayText(school.issuingName)}</div>
+				</DrawerField>
+				<DrawerField label={$t('schoolSettings.postalAddress')}>
+					<div class={readOnlyFieldClass}>{displayText(school.postalAddress)}</div>
+				</DrawerField>
+				<DrawerField label={$t('schoolSettings.phone')}>
+					<div class={readOnlyFieldClass}>{displayText(school.phone)}</div>
+				</DrawerField>
+				<DrawerField label={$t('schoolSettings.email')}>
+					<div class={readOnlyFieldClass}>{displayText(school.email)}</div>
+				</DrawerField>
+				<DrawerField label={$t('schoolSettings.schoolCode')}>
+					<div class={readOnlyFieldClass}>{displayText(school.schoolCode)}</div>
+				</DrawerField>
+			</section>
+
+			<section class="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-soft">
 				<h3 class="font-display text-lg font-semibold">{$t('schoolSettings.sectionLocation')}</h3>
 				<DrawerField label={$t('schoolSettings.city')}>
 					<div class={readOnlyFieldClass}>{school.city || '—'}</div>
@@ -190,40 +283,32 @@
 			<section class="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-soft">
 				<h3 class="font-display text-lg font-semibold">{$t('schoolSettings.sectionIssuanceAssets')}</h3>
 				<p class="text-xs text-muted-foreground">{$t('schoolSettings.issuanceAssetsHint')}</p>
-				{#each assetSlots as asset (asset.purpose)}
-					<div class="flex items-center justify-between gap-3">
-						<div>
-							<p class="text-sm font-medium">{$t(asset.labelKey)}</p>
-							<p class="text-xs text-muted-foreground">
-								{school[asset.slot] ? $t('schoolSettings.assetUploaded') : $t('schoolSettings.assetMissing')}
-							</p>
+				<p class="text-xs text-muted-foreground">{$t('schoolSettings.assetPublicHint')}</p>
+				<PermissionGate
+					permission={SCHOOL_LIFECYCLE_MANAGE_PERMISSION}
+					mode="disable"
+					tooltip={$t('schoolSettings.permissionAssets')}
+				>
+					{#snippet children({ disabled })}
+						<div class="space-y-4">
+							{#each assetSlots as asset (asset.purpose)}
+								<IssuanceAssetSlot
+									purpose={asset.purpose}
+									label={$t(asset.labelKey)}
+									attachmentId={school[asset.slot]}
+									publicAllowed={asset.canPublish
+										&& (school.publicBrandingPurposes ?? []).includes(asset.purpose as 'school.logo' | 'school.crest')}
+									canPublish={asset.canPublish}
+									canManage={!disabled}
+									busy={assetBusy === asset.purpose}
+									onUpload={file => uploadAsset(asset.purpose, file)}
+									onClear={() => clearAsset(asset.purpose)}
+									onPublicChange={next => changePublic(asset.purpose, next)}
+								/>
+							{/each}
 						</div>
-						<PermissionGate
-							permission={SCHOOL_LIFECYCLE_MANAGE_PERMISSION}
-							mode="disable"
-							tooltip={$t('schoolSettings.permissionAssets')}
-						>
-							{#snippet children({ disabled, title })}
-								<label class="inline-flex">
-									<input
-										type="file"
-										accept="image/png,image/jpeg,image/webp"
-										class="sr-only"
-										{disabled}
-										onchange={(event) => {
-											const input = event.currentTarget;
-											void uploadAsset(asset.purpose, input.files?.[0]);
-											input.value = '';
-										}}
-									/>
-									<Button size="sm" variant="outline" class="rounded-full" {disabled} {title} onclick={event => event.currentTarget.parentElement?.querySelector('input')?.click()}>
-										{assetBusy === asset.purpose ? '…' : $t('schoolSettings.assetChoose')}
-									</Button>
-								</label>
-							{/snippet}
-						</PermissionGate>
-					</div>
-				{/each}
+					{/snippet}
+				</PermissionGate>
 			</section>
 		</div>
 	{/if}
@@ -285,6 +370,38 @@
 			</Label>
 			<Input bind:value={timeZone} placeholder={DEFAULT_SCHOOL_TIMEZONE} />
 			<p class="text-xs text-muted-foreground">{$t('schoolSettings.timeZoneHint')}</p>
+		</div>
+		<div class="space-y-1.5">
+			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				{$t('schoolSettings.issuingName')}
+			</Label>
+			<Input bind:value={issuingName} />
+		</div>
+		<div class="space-y-1.5">
+			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				{$t('schoolSettings.postalAddress')}
+			</Label>
+			<Input bind:value={postalAddress} />
+		</div>
+		<div class="grid gap-3 sm:grid-cols-2">
+			<div class="space-y-1.5">
+				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+					{$t('schoolSettings.phone')}
+				</Label>
+				<Input bind:value={phone} type="tel" />
+			</div>
+			<div class="space-y-1.5">
+				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+					{$t('schoolSettings.email')}
+				</Label>
+				<Input bind:value={email} type="email" />
+			</div>
+		</div>
+		<div class="space-y-1.5">
+			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				{$t('schoolSettings.schoolCode')}
+			</Label>
+			<Input bind:value={schoolCode} />
 		</div>
 	</div>
 </FormModal>

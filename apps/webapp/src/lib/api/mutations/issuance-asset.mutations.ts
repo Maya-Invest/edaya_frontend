@@ -78,3 +78,20 @@ export async function uploadSchoolIssuanceAssetMutation(input: {
 
 	return result !== null;
 }
+
+export async function clearSchoolIssuanceAssetMutation(input: {
+	purpose: SchoolIssuanceAssetPurpose;
+	successMessage?: string;
+}): Promise<boolean> {
+	const result = await runMutation(async () => {
+		const client = getBrowserSchoolClient();
+		return documentCommand(client, 'clearSchoolIssuanceAsset', 'clear-school-issuance-asset', {
+			purpose: input.purpose,
+		});
+	}, {
+		successMessage: input.successMessage,
+		versionKeys: ['documents'],
+		refresh: true,
+	});
+	return result !== null;
+}

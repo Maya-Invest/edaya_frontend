@@ -3,7 +3,7 @@ import type { School, SchoolType } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { mapSchoolFromApi, schoolConfigurationIssuanceFields } from '$lib/api/school-data';
+import { mapSchoolFromApi, schoolConfigurationIdentityFields } from '$lib/api/school-data';
 
 export interface UpdateSchoolSettingsInput {
 	id: string;
@@ -12,6 +12,12 @@ export interface UpdateSchoolSettingsInput {
 	city?: string | null;
 	country?: string | null;
 	type?: SchoolType | null;
+	issuingName?: string | null;
+	postalAddress?: string | null;
+	phone?: string | null;
+	email?: string | null;
+	schoolCode?: string | null;
+	publicBrandingPurposes?: Array<'school.logo' | 'school.crest'>;
 }
 
 export async function updateSchoolSettingsMutation(
@@ -43,7 +49,17 @@ export async function updateSchoolSettingsMutation(
 			timetableGenerationMode: current?.timetableGenerationMode ?? 'weekly',
 			timetableMinPeriodSpan: current?.timetableMinPeriodSpan ?? 1,
 			timetableMaxPeriodSpan: current?.timetableMaxPeriodSpan ?? 1,
-			...(current ? schoolConfigurationIssuanceFields(current) : { issuanceAssetVersion: 0 }),
+			...(current
+				? {
+						...schoolConfigurationIdentityFields(current),
+						issuingName: input.issuingName ?? current.issuingName ?? null,
+						postalAddress: input.postalAddress ?? current.postalAddress ?? null,
+						phone: input.phone ?? current.phone ?? null,
+						email: input.email ?? current.email ?? null,
+						schoolCode: input.schoolCode ?? current.schoolCode ?? null,
+						publicBrandingPurposes: input.publicBrandingPurposes ?? current.publicBrandingPurposes ?? [],
+					}
+				: {}),
 		}),
 		{ successMessage: options?.successMessage },
 	);

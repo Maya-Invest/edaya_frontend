@@ -444,11 +444,17 @@ export interface School {
 	timetableGenerationMode: TimetableGenerationMode;
 	timetableMinPeriodSpan: number;
 	timetableMaxPeriodSpan: number;
+	issuingName?: string | null;
+	postalAddress?: string | null;
+	phone?: string | null;
+	email?: string | null;
+	schoolCode?: string | null;
 	logoAttachmentId?: string | null;
 	crestAttachmentId?: string | null;
 	stampAttachmentId?: string | null;
 	signatureAttachmentId?: string | null;
 	issuanceAssetVersion?: number;
+	publicBrandingPurposes?: Array<'school.logo' | 'school.crest'>;
 }
 
 export interface SchoolYearEvent {
