@@ -35,10 +35,10 @@ Path: [`.github/actions/ci-bun-turbo`](../../.github/actions/ci-bun-turbo/action
 | Workflow | Job | Command |
 |----------|-----|---------|
 | [`_verify.yml`](../../.github/workflows/_verify.yml) | `verify` | `bun run verify` |
-| [`_integration.yml`](../../.github/workflows/_integration.yml) | `integration` | `test:integration:provisioned` (empty Identity + school from source, Wrangler, Playwright) |
+| [`_integration.yml`](../../.github/workflows/_integration.yml) | `integration` | `test:integration:onboarding` then `test:integration:provisioned` (empty Identity + school from source, Wrangler, Playwright) |
 | [`deploy_push.yml`](../../.github/workflows/deploy_push.yml) | `deploy-*` | `wrangler deploy` via [Cloudflare deploy](ci-setup.md#deploy-to-cloudflare-github-actions) |
 
-Integration uses inline setup because it starts Identity and school from sibling checkouts, installs Playwright, builds the webapp, and serves it with Wrangler — not just the Turbo graph. Identity listens on `:9900`, school on `:9999` (files `:9200`). The webapp build sets `PUBLIC_AUTH_URL=http://127.0.0.1:9900`, and Playwright provisions a tenant with `AUTH_URL` plus `API_URL` (`provisionTenant()`). CI does **not** run `bun repo seed`.
+Integration uses inline setup because it starts Identity and school from sibling checkouts, installs Playwright, builds the webapp, and serves it with Wrangler — not just the Turbo graph. Identity listens on `:9900`, school on `:9999` (files `:9200`). The webapp build sets `PUBLIC_AUTH_URL=http://127.0.0.1:9900`. Playwright then runs two suites against that stack: UI signup + onboarding wizard (`test:integration:onboarding`), then API-provisioned owner journey (`test:integration:provisioned` / `provisionTenant()`). CI does **not** run `bun repo seed`. The provisioned suite still runs if onboarding fails, as long as the Wrangler preview came up.
 
 Caching in `_integration.yml`:
 - **Bun deps + Turbo** — `./.github/actions/ci-bun-turbo` (same as verify)
@@ -57,11 +57,11 @@ Repo hygiene runs **first** (doctor, OpenAPI drift, repo unit tests). See [repo-
 
 Webapp **unit tests** (`bun test tests/lib`) must not depend on a sibling `edaya_backend` checkout or on live `$state` modules. Bun preload stubs toast/session in [`apps/webapp/tests/support/sveltekit-mocks.ts`](../../apps/webapp/tests/support/sveltekit-mocks.ts). Catalog fixtures live in [`apps/webapp/tests/fixtures/ivory-coast`](../../apps/webapp/tests/fixtures/ivory-coast). A local-green / CI-red loop usually means a new test opened one of those doors — `ci-parity-guard.test.ts` is meant to catch that before push.
 
-Playwright integration (`apps/webapp` `test:integration:provisioned`) is a **separate** PR job after verify — not part of `bun run verify`. Client walkthrough is `demo:e2e`, not CI.
+Playwright integration (`apps/webapp` `test:integration:onboarding` then `test:integration:provisioned`) is a **separate** PR job after verify — not part of `bun run verify`. Client walkthrough is `demo:e2e`, not CI.
 
 ## Sibling Identity and school (Playwright)
 
-Provisioned Playwright starts **empty** Identity and school from source. `GITHUB_TOKEN` cannot read those private repos.
+Provisioned Playwright starts **empty** Identity and school from source. The onboarding suite signs up in the UI; the provisioned suite then creates a second tenant via `provisionTenant()`. `GITHUB_TOKEN` cannot read those private repos.
 
 **One-time repo secret:** `IDENTITY_CHECKOUT_TOKEN` — a PAT with `contents:read` on both `Maya-Invest/edaya_identity` and `Maya-Invest/edaya_backend`. The same secret name is used in backend CI.
 
@@ -165,7 +165,7 @@ Local dev is unchanged: keep root `.npmrc` (scope only) and the root `overrides`
 
 ```text
 gate → verify (bun run verify)
-     → integration (test:integration:provisioned + empty Identity/school, after verify)
+     → integration (test:integration:onboarding then test:integration:provisioned + empty Identity/school, after verify)
 ```
 
 Configured in [`deploy_pr.yml`](../../.github/workflows/deploy_pr.yml).

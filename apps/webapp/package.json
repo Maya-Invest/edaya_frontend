@@ -25,6 +25,7 @@
 		"qa:matrix:sync": "bunx tsx scripts/sync-qa-matrix.ts",
 		"qa:matrix": "bunx tsx scripts/qa-matrix-run.ts",
 		"test:integration:provisioned": "bunx tsx scripts/integration-run.ts",
+		"test:integration:onboarding": "bunx tsx scripts/onboarding-run.ts",
 		"qa:compile": "bunx tsx scripts/compile-qa-results.ts",
 		"qa:update-xlsx": "python scripts/update-qa-xlsx.py",
 		"lint": "eslint src",

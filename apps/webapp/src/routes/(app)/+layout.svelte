@@ -98,16 +98,15 @@
 			return;
 		}
 
-		if (authSession.needsOnboarding) {
-			appGoto(appPath('/onboarding'), { replaceState: true });
-			return;
-		}
-
 		const resumePath = onboardingResumePath(
 			authSession.authUserId,
 			authSession.schoolId,
 			authSession.serverOnboardingStatus,
 		);
+		if (authSession.needsOnboarding) {
+			appGoto(resumePath ?? appPath('/onboarding'), { replaceState: true });
+			return;
+		}
 		if (resumePath) {
 			appGoto(resumePath, { replaceState: true });
 			return;

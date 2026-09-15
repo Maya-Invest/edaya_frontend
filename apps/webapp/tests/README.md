@@ -1,9 +1,11 @@
 # Webapp tests (`apps/webapp/tests`)
 
-Unit and integration-style tests for the staff webapp. Run from `apps/webapp`:
+Unit tests and Playwright integration suites for the staff webapp. Run from `apps/webapp`.
+
+## Unit
 
 ```sh
-bun test tests
+bun test tests/lib
 ```
 
 ## Layout
@@ -12,12 +14,32 @@ bun test tests
 tests/
 ├── fixtures/         # In-repo data (Ivory Coast catalog JSON) — not edaya_backend
 ├── lib/              # Pure helpers, mutations, queries, navigation
+├── integration/      # Playwright library runners (not bun:test, not bun run verify)
+│   ├── onboarding/   # UI signup → wizard → provision
+│   ├── setup/        # Provisioned owner journey
+│   └── demo-dry-run/ # Seeded demo-ci walkthrough (`demo:e2e`)
 ├── support/          # Shared fixtures, SvelteKit + $state stubs, harness utilities
 └── README.md
 ```
 
 - **`tests/lib/**`** — mirror `src/lib/**` where practical (`api/`, `auth/`, `onboarding/`, …).
 - **`tests/support/**`** — OpenAPI fixtures, recording school client, SvelteKit mocks. Import via `$tests/support/...`.
+- **`tests/integration/onboarding/**`** — `bun run test:integration:onboarding` (empty Identity + school, real wizard).
+- **`tests/integration/setup/**`** — `bun run test:integration:provisioned` (API-completes the wizard, then owner UI).
+
+Local onboarding suite (Identity `:9900`, school `:9999` empty, webapp `:5173`):
+
+```sh
+bun run test:integration:onboarding
+```
+
+CI-shaped (Wrangler preview):
+
+```sh
+WEBAPP_URL=http://127.0.0.1:4173 WEBAPP_READINESS_PATH=/login bun run test:integration:onboarding
+```
+
+Artifacts: `apps/webapp/.onboarding-run/` (screenshots + `summary.json` on failure).
 
 ## Imports
 

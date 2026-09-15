@@ -10,7 +10,7 @@ on:
         type: boolean
         default: true
       run_integration:
-        description: Run provisioned Playwright tests
+        description: Run Playwright integration tests (onboarding + provisioned)
         type: boolean
         default: true
 

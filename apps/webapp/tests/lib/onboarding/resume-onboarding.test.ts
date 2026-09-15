@@ -38,6 +38,19 @@ function withSessionStorage<T>(run: () => T): T {
 }
 
 describe('resume onboarding', () => {
+	it('resumes unlinked draft progress without a school id', () => {
+		withSessionStorage(() => {
+			const authUserId = 'user-unlinked-draft';
+			const draft = createEmptyDraft();
+			draft.schoolStepSubmitted = true;
+			draft.maxReachedStep = 2;
+			saveDraft(authUserId, draft);
+
+			expect(shouldContinueOnboarding(authUserId)).toBe(true);
+			expect(onboardingResumePath(authUserId)).toBe('/onboarding?step=2');
+		});
+	});
+
 	it('resumes linked users when the wizard is not completed', () => {
 		withSessionStorage(() => {
 			const authUserId = 'user-resume-1';
