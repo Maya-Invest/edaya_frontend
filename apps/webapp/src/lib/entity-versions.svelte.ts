@@ -18,6 +18,7 @@ export const ENTITY_VERSION_KEYS = [
 	'fees',
 	'payments',
 	'inbox',
+	'documents',
 ] as const;
 
 export type EntityVersionKey = (typeof ENTITY_VERSION_KEYS)[number];
@@ -42,6 +43,7 @@ export class EntityVersions {
 	fees = $state(0);
 	payments = $state(0);
 	inbox = $state(0);
+	documents = $state(0);
 
 	bump(key: EntityVersionKey) {
 		this[key]++;

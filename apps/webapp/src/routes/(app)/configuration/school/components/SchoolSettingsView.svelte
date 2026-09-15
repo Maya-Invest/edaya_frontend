@@ -1,6 +1,8 @@
 <script lang="ts">
+	import type { SchoolIssuanceAssetPurpose } from '$lib/api/mutations/issuance-asset.mutations';
 	import type { SchoolType } from '$lib/types/school';
 	import { page } from '$app/stores';
+	import { uploadSchoolIssuanceAssetMutation } from '$lib/api/mutations/issuance-asset.mutations';
 	import { DEFAULT_SCHOOL_TIMEZONE } from '$lib/api/school-data';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -11,6 +13,7 @@
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import * as Select from '$lib/components/ui/select';
+	import { SCHOOL_LIFECYCLE_MANAGE_PERMISSION } from '$lib/documents/permissions';
 	import { t } from '$lib/i18n';
 	import { Building2, Pencil } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
@@ -63,6 +66,34 @@
 
 	const canSubmit = $derived(name.trim().length > 0 && timeZone.trim().length > 0);
 	const typeLabel = $derived(type ? get(t)(`schoolSettings.type.${type}`) : '');
+
+	const assetSlots: { purpose: SchoolIssuanceAssetPurpose; slot: 'logoAttachmentId' | 'crestAttachmentId' | 'stampAttachmentId' | 'signatureAttachmentId'; labelKey: string }[] = [
+		{ purpose: 'school.logo', slot: 'logoAttachmentId', labelKey: 'schoolSettings.asset.logo' },
+		{ purpose: 'school.crest', slot: 'crestAttachmentId', labelKey: 'schoolSettings.asset.crest' },
+		{ purpose: 'school.stamp', slot: 'stampAttachmentId', labelKey: 'schoolSettings.asset.stamp' },
+		{ purpose: 'school.signature', slot: 'signatureAttachmentId', labelKey: 'schoolSettings.asset.signature' },
+	];
+	let assetBusy = $state<SchoolIssuanceAssetPurpose | null>(null);
+
+	async function uploadAsset(purpose: SchoolIssuanceAssetPurpose, file: File | undefined) {
+		if (!file) {
+			return;
+		}
+		assetBusy = purpose;
+		try {
+			const ok = await uploadSchoolIssuanceAssetMutation({
+				purpose,
+				file,
+				successMessage: get(t)('schoolSettings.assetToast', { slot: get(t)(`schoolSettings.asset.${purpose.split('.')[1]}`) }),
+			});
+			if (ok) {
+				await schoolPage.refreshSlice();
+			}
+		}
+		finally {
+			assetBusy = null;
+		}
+	}
 
 	async function submit() {
 		if (!school || !canSubmit || busy) {
@@ -154,6 +185,45 @@
 				<DrawerField label={$t('schoolSettings.timeZone')}>
 					<div class={readOnlyFieldClass}>{school.timeZone}</div>
 				</DrawerField>
+			</section>
+
+			<section class="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-soft">
+				<h3 class="font-display text-lg font-semibold">{$t('schoolSettings.sectionIssuanceAssets')}</h3>
+				<p class="text-xs text-muted-foreground">{$t('schoolSettings.issuanceAssetsHint')}</p>
+				{#each assetSlots as asset (asset.purpose)}
+					<div class="flex items-center justify-between gap-3">
+						<div>
+							<p class="text-sm font-medium">{$t(asset.labelKey)}</p>
+							<p class="text-xs text-muted-foreground">
+								{school[asset.slot] ? $t('schoolSettings.assetUploaded') : $t('schoolSettings.assetMissing')}
+							</p>
+						</div>
+						<PermissionGate
+							permission={SCHOOL_LIFECYCLE_MANAGE_PERMISSION}
+							mode="disable"
+							tooltip={$t('schoolSettings.permissionAssets')}
+						>
+							{#snippet children({ disabled, title })}
+								<label class="inline-flex">
+									<input
+										type="file"
+										accept="image/png,image/jpeg,image/webp"
+										class="sr-only"
+										{disabled}
+										onchange={(event) => {
+											const input = event.currentTarget;
+											void uploadAsset(asset.purpose, input.files?.[0]);
+											input.value = '';
+										}}
+									/>
+									<Button size="sm" variant="outline" class="rounded-full" {disabled} {title} onclick={event => event.currentTarget.parentElement?.querySelector('input')?.click()}>
+										{assetBusy === asset.purpose ? '…' : $t('schoolSettings.assetChoose')}
+									</Button>
+								</label>
+							{/snippet}
+						</PermissionGate>
+					</div>
+				{/each}
 			</section>
 		</div>
 	{/if}

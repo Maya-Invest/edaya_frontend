@@ -3,7 +3,7 @@ import type { School, SchoolType } from '$lib/types/school';
 import type { SchoolPageSlice } from './lib/school-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { mapSchoolFromApi } from '$lib/api/school-data';
+import { mapSchoolFromApi, schoolConfigurationIssuanceFields } from '$lib/api/school-data';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
 import { loadSchoolSlice, querySchoolListPage } from './lib/school-queries';
@@ -101,6 +101,7 @@ export class SchoolPageState {
 					timetableGenerationMode: current.timetableGenerationMode ?? 'weekly',
 					timetableMinPeriodSpan: current.timetableMinPeriodSpan ?? 1,
 					timetableMaxPeriodSpan: current.timetableMaxPeriodSpan ?? 1,
+					...schoolConfigurationIssuanceFields(current),
 				});
 				return { school: mapSchoolFromApi(saved), raw: saved };
 			},

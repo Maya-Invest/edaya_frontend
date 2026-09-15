@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { AttendanceDay } from '$lib/types/school';
 	import { page } from '$app/stores';
+	import { attendanceSheetSourceId } from '$lib/api/documents-data';
+	import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -11,6 +13,7 @@
 	import { readClassAttendanceListFilters, writeClassAttendanceListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { cn } from '$lib/utils';
+	import { get } from 'svelte/store';
 	import { getAttendancePageState } from '../attendance-page.svelte';
 
 	const {
@@ -61,6 +64,19 @@
 			: days.filter(day => completionOf(day) === completion),
 	);
 
+	async function exportAttendanceSheet() {
+		const day = filteredDays.find(entry => entry.id === selectedId) ?? filteredDays[0];
+		if (!day) {
+			return;
+		}
+		await requestDocumentIssuanceMutation({
+			templateKey: 'attendance-sheet.v1',
+			sourceId: attendanceSheetSourceId(classId, day.date.slice(0, 10)),
+			classGroupId: classId,
+			successMessage: get(t)('documents.toastRequested'),
+		});
+	}
+
 	const completionFilterActive = $derived(completion !== 'all' ? 1 : 0);
 
 	const completionOptions = $derived([
@@ -102,7 +118,7 @@
 			</FilterPanel>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu exportOnly exportLabel={$t('documents.exportAttendance')} onExport={() => void exportAttendanceSheet()} />
 		{/snippet}
 	</ListPageHeader>
 

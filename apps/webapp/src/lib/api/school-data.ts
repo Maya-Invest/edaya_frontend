@@ -43,6 +43,26 @@ export function mapSchoolFromApi(raw: SchoolRaw): School {
 		timetableGenerationMode: raw.timetableGenerationMode,
 		timetableMinPeriodSpan: raw.timetableMinPeriodSpan,
 		timetableMaxPeriodSpan: raw.timetableMaxPeriodSpan,
+		logoAttachmentId: raw.logoAttachmentId,
+		crestAttachmentId: raw.crestAttachmentId,
+		stampAttachmentId: raw.stampAttachmentId,
+		signatureAttachmentId: raw.signatureAttachmentId,
+		issuanceAssetVersion: raw.issuanceAssetVersion,
+	};
+}
+
+export function schoolConfigurationIssuanceFields(current: SchoolRaw) {
+	return {
+		postalAddress: current.postalAddress,
+		phone: current.phone,
+		email: current.email,
+		schoolCode: current.schoolCode,
+		issuingName: current.issuingName,
+		logoAttachmentId: current.logoAttachmentId,
+		crestAttachmentId: current.crestAttachmentId,
+		stampAttachmentId: current.stampAttachmentId,
+		signatureAttachmentId: current.signatureAttachmentId,
+		issuanceAssetVersion: current.issuanceAssetVersion ?? 0,
 	};
 }
 

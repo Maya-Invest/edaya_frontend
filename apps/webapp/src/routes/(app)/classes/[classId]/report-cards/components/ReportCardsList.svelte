@@ -2,6 +2,7 @@
 	import type { ReportCardResult } from '$lib/types/report-cards';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import { requestDocumentIssuanceBatchMutation, requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -151,6 +152,23 @@
 			successMessage: get(t)('reportCards.toastPublished', { name }),
 		});
 	}
+
+	async function exportBulletinPack() {
+		const published = results.filter(entry => entry.status === 'published');
+		if (published.length === 0) {
+			return;
+		}
+		await requestDocumentIssuanceBatchMutation({
+			templateKey: 'report-card.v1',
+			items: published.map(entry => ({
+				sourceId: entry.id,
+				requestId: crypto.randomUUID(),
+				studentId: entry.studentId,
+				classGroupId: classId,
+			})),
+			successMessage: get(t)('documents.toastRequested'),
+		});
+	}
 </script>
 
 <div class="animate-fade-in">
@@ -183,7 +201,7 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu exportOnly exportLabel={$t('documents.exportBulletinPack')} onExport={() => void exportBulletinPack()} />
 		{/snippet}
 	</ListPageHeader>
 
@@ -251,6 +269,22 @@
 								{:else if result.status === 'generated'}
 									<Button size="sm" class="rounded-full" onclick={() => publishOne(result.id)}>
 										{$t('reportCards.publish')}
+									</Button>
+								{/if}
+								{#if result?.status === 'published'}
+									<Button
+										size="sm"
+										variant="outline"
+										class="rounded-full"
+										onclick={() => void requestDocumentIssuanceMutation({
+											templateKey: 'report-card.v1',
+											sourceId: result.id,
+											studentId: result.studentId,
+											classGroupId: classId,
+											successMessage: get(t)('documents.toastRequested'),
+										})}
+									>
+										{$t('documents.generatePdf')}
 									</Button>
 								{/if}
 								{#if result}

@@ -31,7 +31,7 @@ import {
 	type UiJourney,
 } from '../journey-context';
 
-const STUDENT_TABS = ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments'] as const;
+const STUDENT_TABS = ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments', 'documents'] as const;
 
 export async function runClassesFinanceChapter(journey: UiJourney): Promise<void> {
 	const { entities } = journey;

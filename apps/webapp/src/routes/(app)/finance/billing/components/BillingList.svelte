@@ -1,6 +1,9 @@
 <script lang="ts">
 	import type { StudentBilling } from '$lib/types/school';
 	import { page } from '$app/stores';
+	import { studentYearAccountSourceId } from '$lib/api/documents-data';
+	import { requestDocumentIssuanceBatchMutation } from '$lib/api/mutations/documents.mutations';
+	import { authSession } from '$lib/auth/session.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
@@ -14,6 +17,7 @@
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { cn } from '$lib/utils';
+	import { get } from 'svelte/store';
 	import FinanceSubnav from '../../components/FinanceSubnav.svelte';
 	import { getBillingPageState } from '../billing-page.svelte';
 	import AssignFeeFormModal from './AssignFeeFormModal.svelte';
@@ -55,6 +59,28 @@
 		const path = detailHref.financeBilling(chargeId);
 		appGoto(`${path}${detailNavigationSearch($page.url)}`);
 	}
+
+	async function exportOverdueReminders() {
+		const schoolId = authSession.schoolId;
+		const overdue = billing.filter(row => row.status === 'overdue');
+		if (!schoolId || overdue.length === 0) {
+			return;
+		}
+		await requestDocumentIssuanceBatchMutation({
+			templateKey: 'payment-reminder.v1',
+			items: overdue.map(row => ({
+				sourceId: studentYearAccountSourceId({
+					schoolId,
+					studentId: row.studentId,
+					academicYearId: row.academicYearId,
+					currency: row.currency,
+				}),
+				requestId: crypto.randomUUID(),
+				studentId: row.studentId,
+			})),
+			successMessage: get(t)('documents.toastRequested'),
+		});
+	}
 </script>
 
 <div class="animate-fade-in space-y-6">
@@ -83,7 +109,7 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu exportOnly exportLabel={$t('documents.exportReminders')} onExport={() => void exportOverdueReminders()} />
 		{/snippet}
 	</ListPageHeader>
 

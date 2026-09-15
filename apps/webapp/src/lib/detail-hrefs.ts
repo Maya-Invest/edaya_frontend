@@ -8,7 +8,8 @@ type SchoolStudentTabSegment
 		| 'incidents'
 		| 'finances'
 		| 'report-card'
-		| 'enrollments';
+		| 'enrollments'
+		| 'documents';
 
 type SchoolStaffTabSegment = 'profile' | 'permissions' | 'assignments';
 type SchoolTeacherTabSegment = 'profile' | 'assignments' | 'availability';
@@ -26,6 +27,7 @@ const STUDENT_TAB_ROUTES: Record<SchoolStudentTabSegment, RouteId> = {
 	'finances': '/(app)/school/students/[[id]]/(tabs)/finances',
 	'report-card': '/(app)/school/students/[[id]]/(tabs)/report-card',
 	'enrollments': '/(app)/school/students/[[id]]/(tabs)/enrollments',
+	'documents': '/(app)/school/students/[[id]]/(tabs)/documents',
 };
 
 const CLASS_STUDENT_TAB_ROUTES: Record<SchoolStudentTabSegment, RouteId> = {
@@ -36,6 +38,7 @@ const CLASS_STUDENT_TAB_ROUTES: Record<SchoolStudentTabSegment, RouteId> = {
 	'finances': '/(app)/classes/[classId]/students/[[id]]/(tabs)/finances',
 	'report-card': '/(app)/classes/[classId]/students/[[id]]/(tabs)/report-card',
 	'enrollments': '/(app)/classes/[classId]/students/[[id]]/(tabs)/enrollments',
+	'documents': '/(app)/classes/[classId]/students/[[id]]/(tabs)/documents',
 };
 
 const STAFF_TAB_ROUTES: Record<SchoolStaffTabSegment, RouteId> = {

@@ -3,7 +3,7 @@ import type { School, SchoolType } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { mapSchoolFromApi } from '$lib/api/school-data';
+import { mapSchoolFromApi, schoolConfigurationIssuanceFields } from '$lib/api/school-data';
 
 export interface UpdateSchoolSettingsInput {
 	id: string;
@@ -43,6 +43,7 @@ export async function updateSchoolSettingsMutation(
 			timetableGenerationMode: current?.timetableGenerationMode ?? 'weekly',
 			timetableMinPeriodSpan: current?.timetableMinPeriodSpan ?? 1,
 			timetableMaxPeriodSpan: current?.timetableMaxPeriodSpan ?? 1,
+			...(current ? schoolConfigurationIssuanceFields(current) : { issuanceAssetVersion: 0 }),
 		}),
 		{ successMessage: options?.successMessage },
 	);

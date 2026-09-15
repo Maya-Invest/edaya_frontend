@@ -1,6 +1,9 @@
 <script lang="ts">
 	import type { StudentBilling } from '$lib/types/school';
 	import { page } from '$app/stores';
+	import { studentYearAccountSourceId } from '$lib/api/documents-data';
+	import { authSession } from '$lib/auth/session.svelte';
+	import DocumentPdfButton from '$lib/components/school/documents/DocumentPdfButton.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -30,6 +33,16 @@
 	const pct = $derived(live.total > 0 ? (live.paid / live.total) * 100 : 0);
 	const canRecordPayment = $derived(live.status !== 'cancelled' && live.status !== 'waived');
 	const label = $derived(live.label || fee?.name || $t('billing.fee'));
+	const accountSourceId = $derived(
+		authSession.schoolId
+			? studentYearAccountSourceId({
+				schoolId: authSession.schoolId,
+				studentId: live.studentId,
+				academicYearId: live.academicYearId,
+				currency: live.currency,
+			})
+			: null,
+	);
 
 	const modals = createUrlSyncedModals({
 		allowed: ['payment', 'allocate', 'unallocate', 'waive', 'adjust', 'cancel'],
@@ -103,6 +116,12 @@
 						</Button>
 					{/snippet}
 				</PermissionGate>
+				<DocumentPdfButton
+					templateKey="invoice.v1"
+					sourceId={accountSourceId}
+					studentId={live.studentId}
+					permission="PAYMENT_READ"
+				/>
 			{/snippet}
 			{#snippet overflow()}
 				<PermissionGate permission="PAYMENT_RECORD">

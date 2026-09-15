@@ -12,7 +12,7 @@
 
 <input
 	{type}
-	bind:value={() => value, next => {
+	bind:value={() => value, (next) => {
 		value = next == null ? '' : String(next);
 	}}
 	class={cn(

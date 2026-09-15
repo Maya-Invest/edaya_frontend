@@ -21,7 +21,7 @@ export interface JourneySurfaceClaim {
 	naReason?: string;
 }
 
-const STUDENT_TABS = ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments'] as const;
+const STUDENT_TABS = ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments', 'documents'] as const;
 
 export const JOURNEY_SURFACE_CLAIMS: readonly JourneySurfaceClaim[] = [
 	{

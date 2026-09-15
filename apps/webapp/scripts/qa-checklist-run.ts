@@ -479,7 +479,7 @@ async function visitChecklistRoutes(ctx: DemoContext, studentId: string | null):
 		{ page: 'http://localhost:5173/account/notifications', probleme: 'Préférences notifications', path: '/account/notifications' },
 	];
 
-	const studentTabs = ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments'] as const;
+	const studentTabs = ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments', 'documents'] as const;
 
 	for (const route of routes) {
 		try {

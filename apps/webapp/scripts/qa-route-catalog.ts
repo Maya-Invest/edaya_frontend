@@ -155,7 +155,7 @@ export const DRAWER_TAB_PATTERNS: readonly DrawerTabPattern[] = [
 	{
 		name: 'school students',
 		routePattern: '/school/students/[id]',
-		tabs: ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments'],
+		tabs: ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments', 'documents'],
 	},
 	{
 		name: 'school staff',
@@ -190,7 +190,7 @@ export const DRAWER_TAB_PATTERNS: readonly DrawerTabPattern[] = [
 	{
 		name: 'class students',
 		routePattern: '/classes/[classId]/students/[id]',
-		tabs: ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments'],
+		tabs: ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments', 'documents'],
 	},
 	{
 		name: 'class evaluations',
@@ -389,7 +389,7 @@ export function resolveModuleFromPath(url: string, app: 'webapp' | 'webadmin' = 
 export function resolveRouteDescription(url: string): string {
 	if (ROUTE_DESCRIPTIONS[url]) return ROUTE_DESCRIPTIONS[url];
 
-	const tabMatch = url.match(/\/(profile|grades|report-card|attendance|enrollments|finances|incidents|assignments|permissions|availability|details|grading|logbook|progression|classes|students)$/);
+	const tabMatch = url.match(/\/(profile|grades|report-card|attendance|enrollments|finances|incidents|documents|assignments|permissions|availability|details|grading|logbook|progression|classes|students)$/);
 	if (tabMatch) {
 		return `Onglet ${tabMatch[1]}`;
 	}

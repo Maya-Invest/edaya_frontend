@@ -51,8 +51,8 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'school-students-detail',
 		pathnamePattern:
-			/^\/school\/students\/[^/]+(?:\/(?:profile|grades|attendance|incidents|finances|report-card|enrollments))?\/?$/,
-		modalNames: ['create', ...STUDENT_DETAIL_MODALS],
+			/^\/school\/students\/[^/]+(?:\/(?:profile|grades|attendance|incidents|finances|report-card|enrollments|documents))?\/?$/,
+		modalNames: ['create', ...STUDENT_DETAIL_MODALS, 'generate-document', 'void-document'],
 	},
 	{
 		routeFamily: 'class-students-list',
@@ -62,8 +62,8 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'class-students-detail',
 		pathnamePattern:
-			/^\/classes\/[^/]+\/students\/[^/]+(?:\/(?:profile|grades|attendance|incidents|finances|report-card|enrollments))?\/?$/,
-		modalNames: ['create', ...STUDENT_DETAIL_MODALS],
+			/^\/classes\/[^/]+\/students\/[^/]+(?:\/(?:profile|grades|attendance|incidents|finances|report-card|enrollments|documents))?\/?$/,
+		modalNames: ['create', ...STUDENT_DETAIL_MODALS, 'generate-document', 'void-document'],
 	},
 	{
 		routeFamily: 'school-guardians-list',

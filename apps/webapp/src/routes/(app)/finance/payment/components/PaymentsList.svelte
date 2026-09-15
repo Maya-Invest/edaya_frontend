@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
@@ -228,6 +229,36 @@
 						{/if}
 						{#if payment.status === 'recorded'}
 							<RowActionMenu>
+								<PermissionGate permission="PAYMENT_READ">
+									{#snippet children({ disabled, title })}
+										{#if payment.kind === 'receipt'}
+											<RowActionMenuItem
+												{disabled}
+												{title}
+												onclick={() => void requestDocumentIssuanceMutation({
+													templateKey: 'receipt.v1',
+													sourceId: payment.id,
+													studentId: payment.studentId,
+													successMessage: $t('documents.toastRequested'),
+												})}
+											>
+												{$t('documents.generatePdf')}
+											</RowActionMenuItem>
+											<RowActionMenuItem
+												{disabled}
+												{title}
+												onclick={() => void requestDocumentIssuanceMutation({
+													templateKey: 'settlement-quittance.v1',
+													sourceId: payment.id,
+													studentId: payment.studentId,
+													successMessage: $t('documents.toastRequested'),
+												})}
+											>
+												{$t('documents.exportPdf')}
+											</RowActionMenuItem>
+										{/if}
+									{/snippet}
+								</PermissionGate>
 								<PermissionGate permission="PAYMENT_REVERSE">
 									{#snippet children({ disabled, title })}
 										<RowActionMenuItem

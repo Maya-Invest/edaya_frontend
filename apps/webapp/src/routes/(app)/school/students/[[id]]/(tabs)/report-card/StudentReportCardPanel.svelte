@@ -2,6 +2,7 @@
 	import type { Student } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { writeHomeroomReportCommentMutation } from '$lib/api/mutations/student-ops.mutations';
+	import DocumentPdfButton from '$lib/components/school/documents/DocumentPdfButton.svelte';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
@@ -174,6 +175,16 @@
 		{/if}
 
 		<div class="flex justify-end gap-2">
+			{#if latest.status === 'published'}
+				<DocumentPdfButton
+					templateKey="report-card.v1"
+					sourceId={latest.id}
+					studentId={s.id}
+					permission="REPORT_CARD_PUBLISH"
+					classId={s.classId}
+					label={$t('documents.generatePdf')}
+				/>
+			{/if}
 			{#if latest.status === 'generated'}
 				<Button class="rounded-full" onclick={publish}>{$t('reportCards.publish')}</Button>
 			{/if}

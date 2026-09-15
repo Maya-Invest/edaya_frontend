@@ -3,6 +3,7 @@
 	import type { Student } from '$lib/types/school';
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { requestDocumentIssuanceBatchMutation, requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
@@ -23,6 +24,7 @@
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { cn } from '$lib/utils';
+	import { get } from 'svelte/store';
 	import StudentCreateModal from '../../../../school/students/components/StudentCreateModal.svelte';
 	import { getClassStudentsPageState } from '../class-students-page.svelte';
 
@@ -62,6 +64,30 @@
 	);
 
 	const view = $derived(readListView($page.url));
+
+	async function exportRosterAndIdCards() {
+		await requestDocumentIssuanceMutation({
+			templateKey: 'class-roster.v1',
+			sourceId: classId,
+			classGroupId: classId,
+			openWhenReady: false,
+			successMessage: get(t)('documents.toastRequested'),
+		});
+		const students = classStudentsPage.visibleStudents;
+		if (students.length === 0) {
+			return;
+		}
+		await requestDocumentIssuanceBatchMutation({
+			templateKey: 'student-id-card.v1',
+			items: students.map(student => ({
+				sourceId: student.id,
+				requestId: crypto.randomUUID(),
+				studentId: student.id,
+				classGroupId: classId,
+			})),
+			successMessage: get(t)('documents.toastRequested'),
+		});
+	}
 
 	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
 	$effect(() => {
@@ -135,7 +161,7 @@
 			</FilterPanel>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu {view} onViewChange={setView} />
+			<ListMoreMenu {view} onViewChange={setView} exportLabel={$t('documents.exportRoster')} onExport={() => void exportRosterAndIdCards()} />
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate

@@ -11,12 +11,14 @@
 		exportOnly = false,
 		exportLabel,
 		onEnterSelectMode,
+		onExport,
 	}: {
 		view?: 'table' | 'cards';
 		onViewChange?: (view: 'table' | 'cards') => void;
 		exportOnly?: boolean;
 		exportLabel?: string;
 		onEnterSelectMode?: () => void;
+		onExport?: () => void;
 	} = $props();
 
 	let open = $state(false);
@@ -25,6 +27,10 @@
 
 	function exportStub() {
 		open = false;
+		if (onExport) {
+			onExport();
+			return;
+		}
 		toast.info($t('list.exportSoon'));
 	}
 

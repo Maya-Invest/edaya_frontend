@@ -20,9 +20,9 @@ const STUDENT_DETAIL_MODALS = [
 const routeCases = [
 	['authenticated-app', '/dashboard', ['account-profile']],
 	['school-students-list', '/school/students', ['create']],
-	['school-students-detail', '/school/students/student-1/grades', STUDENT_DETAIL_MODALS],
+	['school-students-detail', '/school/students/student-1/grades', [...STUDENT_DETAIL_MODALS, 'generate-document', 'void-document']],
 	['class-students-list', '/classes/class-1/students', ['create']],
-	['class-students-detail', '/classes/class-1/students/student-1/profile', STUDENT_DETAIL_MODALS],
+	['class-students-detail', '/classes/class-1/students/student-1/profile', [...STUDENT_DETAIL_MODALS, 'generate-document', 'void-document']],
 	['school-guardians-list', '/school/guardians', ['create']],
 	['school-guardians-detail', '/school/guardians/guardian-1', ['create', 'edit-profile', 'delete']],
 	['school-staff-list', '/school/staff', ['create']],

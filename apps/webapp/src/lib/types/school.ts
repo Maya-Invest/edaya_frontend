@@ -444,6 +444,11 @@ export interface School {
 	timetableGenerationMode: TimetableGenerationMode;
 	timetableMinPeriodSpan: number;
 	timetableMaxPeriodSpan: number;
+	logoAttachmentId?: string | null;
+	crestAttachmentId?: string | null;
+	stampAttachmentId?: string | null;
+	signatureAttachmentId?: string | null;
+	issuanceAssetVersion?: number;
 }
 
 export interface SchoolYearEvent {

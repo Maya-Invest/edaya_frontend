@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Subject, SubjectCategory } from '$lib/types/school';
 	import { page } from '$app/stores';
+	import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 	import { setClassSubjectOfferedMutation } from '$lib/api/mutations/grade-level-subject.mutations';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
@@ -126,7 +127,12 @@
 			</div>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu exportOnly exportLabel={$t('documents.exportLogbook')} onExport={() => void requestDocumentIssuanceMutation({
+				templateKey: 'logbook.v1',
+				sourceId: classId,
+				classGroupId: classId,
+				successMessage: get(t)('documents.toastRequested'),
+			})} />
 		{/snippet}
 	</ListPageHeader>
 

@@ -1,9 +1,14 @@
 <script lang="ts">
 	import type { Student, StudentChargeStatus } from '$lib/types/school';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import { studentYearAccountSourceId } from '$lib/api/documents-data';
+	import { authSession } from '$lib/auth/session.svelte';
+	import DocumentPdfButton from '$lib/components/school/documents/DocumentPdfButton.svelte';
 	import { fmtDateFr } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import { formatMinorUnits } from '$lib/finance/money';
+	import { FINANCIAL_REPORT_READ_PERMISSION } from '$lib/finance/permissions';
 	import { billingStatusTone } from '$lib/finance/status';
 	import { locale, t } from '$lib/i18n';
 	import { Check, Clock, Wallet } from '$lib/icons';
@@ -18,6 +23,16 @@
 	const currency = $derived(summary?.currency || statement?.currency || 'XOF');
 	const charges = $derived(statement?.charges ?? []);
 	const entries = $derived(statement?.entries ?? []);
+	const accountSourceId = $derived(
+		authSession.schoolId && academicContext.yearId
+			? studentYearAccountSourceId({
+				schoolId: authSession.schoolId,
+				studentId: s.id,
+				academicYearId: academicContext.yearId,
+				currency,
+			})
+			: null,
+	);
 
 	function chargeTone(status: string): string {
 		if (status in billingStatusTone) {
@@ -56,6 +71,30 @@
 				{formatMinorUnits(summary?.overdue.amount ?? 0, currency, $locale)}
 			</p>
 		</div>
+	</div>
+	<div class="flex flex-wrap gap-2">
+		<DocumentPdfButton
+			templateKey="account-statement.v1"
+			sourceId={accountSourceId}
+			studentId={s.id}
+			permission={FINANCIAL_REPORT_READ_PERMISSION}
+			classId={s.classId}
+			label={$t('documents.generatePdf')}
+		/>
+		<DocumentPdfButton
+			templateKey="invoice.v1"
+			sourceId={accountSourceId}
+			studentId={s.id}
+			permission="PAYMENT_READ"
+			classId={s.classId}
+		/>
+		<DocumentPdfButton
+			templateKey="payment-reminder.v1"
+			sourceId={accountSourceId}
+			studentId={s.id}
+			permission="PAYMENT_READ"
+			classId={s.classId}
+		/>
 	</div>
 	<div>
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">

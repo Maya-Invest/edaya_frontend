@@ -4,6 +4,10 @@ import {
 	setStudentAttendanceTabState,
 } from './(tabs)/attendance/student-attendance-tab.svelte';
 import {
+	StudentDocumentsTabState,
+	setStudentDocumentsTabState,
+} from './(tabs)/documents/student-documents-tab.svelte';
+import {
 	StudentEnrollmentsTabState,
 	setStudentEnrollmentsTabState,
 } from './(tabs)/enrollments/student-enrollments-tab.svelte';
@@ -36,6 +40,7 @@ export interface StudentDetailTabStates {
 	finances: StudentFinanceTabState;
 	reportCard: StudentReportCardTabState;
 	enrollments: StudentEnrollmentsTabState;
+	documents: StudentDocumentsTabState;
 }
 
 export function createAndRegisterStudentDetailStates(
@@ -49,6 +54,7 @@ export function createAndRegisterStudentDetailStates(
 		finances: new StudentFinanceTabState(getPage),
 		reportCard: new StudentReportCardTabState(getPage),
 		enrollments: new StudentEnrollmentsTabState(getPage),
+		documents: new StudentDocumentsTabState(getPage),
 	};
 
 	setStudentProfileTabState(states.profile);
@@ -58,6 +64,7 @@ export function createAndRegisterStudentDetailStates(
 	setStudentFinanceTabState(states.finances);
 	setStudentReportCardTabState(states.reportCard);
 	setStudentEnrollmentsTabState(states.enrollments);
+	setStudentDocumentsTabState(states.documents);
 
 	return states;
 }
@@ -70,4 +77,5 @@ export function clearStudentDetailTabStates(states: StudentDetailTabStates) {
 	states.finances.clear();
 	states.reportCard.clear();
 	states.enrollments.clear();
+	states.documents.clear();
 }
