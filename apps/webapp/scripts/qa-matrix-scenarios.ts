@@ -14,6 +14,7 @@ import {
 	ensureAcademicYearReady,
 	exportSelectedListRows,
 	fillClassCreateDialog,
+	fillFeeCreateDialog,
 	fillStudentCreateDialog,
 	isDeleteControlVisible,
 	listSearchInput,
@@ -942,9 +943,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 			const opened = await openDialogButton(page, /add fee|ajouter un frais/i);
 			if (!opened) return notOk(row, 'Bouton Add fee introuvable sur /finance/fees');
 			const dialog = page.getByRole('dialog');
-			await dialog.locator('input').first().fill(`QA-Frais-${Date.now()}`);
-			const amount = dialog.locator('input[type="number"]').first();
-			await amount.fill('10000');
+			await fillFeeCreateDialog(page, `QA-Frais-${Date.now()}`);
 			await submitDialog(page);
 			await page.waitForTimeout(2_000);
 			const closed = !(await dialog.isVisible().catch(() => false));

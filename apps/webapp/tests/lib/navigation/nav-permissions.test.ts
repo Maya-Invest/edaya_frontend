@@ -131,6 +131,7 @@ describe('nav-permissions — directeur (phase 3.1)', () => {
 		expect(canAccessPath('/finance/billing', elevatedGrants)).toBe(true);
 		expect(canAccessPath('/finance/fees', elevatedGrants)).toBe(true);
 		expect(canAccessPath('/finance/payment', elevatedGrants)).toBe(true);
+		expect(canAccessPath('/finance/reconciliation', elevatedGrants)).toBe(true);
 	});
 });
 
@@ -141,6 +142,7 @@ describe('nav-permissions — comptable', () => {
 		expect(canAccessPath('/finance/billing', accountantGrants)).toBe(true);
 		expect(canAccessPath('/finance/fees', accountantGrants)).toBe(true);
 		expect(canAccessPath('/finance/payment', accountantGrants)).toBe(true);
+		expect(canAccessPath('/finance/reconciliation', accountantGrants)).toBe(false);
 	});
 });
 

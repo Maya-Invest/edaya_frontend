@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Fee } from '$lib/types/school';
 	import { page } from '$app/stores';
+	import { CATALOG_CATEGORIES } from '$lib/api/finance-types';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
@@ -10,8 +11,9 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
-	import { t } from '$lib/i18n';
-	import { Pencil, Plus, Trash2 } from '$lib/icons';
+	import { formatMinorUnits } from '$lib/finance/money';
+	import { locale, t } from '$lib/i18n';
+	import { Check, Pencil, Plus, XCircle } from '$lib/icons';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readFeeListFilters, writeFeeListFilters } from '$lib/list/list-url-filters';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
@@ -20,8 +22,6 @@
 	import FinanceSubnav from '../../components/FinanceSubnav.svelte';
 	import { getFeesPageState } from '../fees-page.svelte';
 	import FeeFormModal from './FeeFormModal.svelte';
-
-	const FEE_CATEGORIES: Fee['category'][] = ['Tuition', 'Transport', 'Materials', 'Other'];
 
 	const feesPage = getFeesPageState();
 	const fees = $derived(feesPage.fees);
@@ -37,7 +37,7 @@
 	);
 
 	const modals = createUrlSyncedModals({
-		allowed: ['create', 'edit', 'delete'],
+		allowed: ['create', 'edit', 'archive'],
 		getUrl: () => $page.url,
 	});
 	$effect(() => {
@@ -45,15 +45,15 @@
 	});
 	const createOpen = bindUrlModal(modals, 'create');
 	const editOpen = bindUrlModal(modals, 'edit');
-	const deleteOpen = bindUrlModal(modals, 'delete');
+	const archiveOpen = bindUrlModal(modals, 'archive');
 
-	let deleteBusy = $state(false);
+	let archiveBusy = $state(false);
 
 	const editingFee = $derived(
 		modals.active === 'edit' && modals.target ? feesPage.feeFor(modals.target) ?? null : null,
 	);
-	const deleteTarget = $derived(
-		modals.active === 'delete' && modals.target ? feesPage.feeFor(modals.target) ?? null : null,
+	const archiveTarget = $derived(
+		modals.active === 'archive' && modals.target ? feesPage.feeFor(modals.target) ?? null : null,
 	);
 
 	const filteredFees = $derived(
@@ -71,13 +71,8 @@
 
 	const categoryOptions = $derived([
 		{ value: 'all', label: $t('filter.all') },
-		...FEE_CATEGORIES.map(cat => ({ value: cat, label: $t(`feeCat.${cat}`) })),
+		...CATALOG_CATEGORIES.map(cat => ({ value: cat, label: $t(`feeCat.${cat}`) })),
 	]);
-
-	function periodKey(period: NonNullable<Fee['period']>): string {
-		const lower = period.toLowerCase();
-		return lower === 'year' || lower === 'term' || lower === 'month' ? lower : 'term';
-	}
 
 	$effect(() => {
 		listFilters.hydrate(initialFilters);
@@ -103,7 +98,7 @@
 		}
 		if (
 			(modals.active === 'edit' && !editingFee)
-			|| (modals.active === 'delete' && !deleteTarget)
+			|| (modals.active === 'archive' && !archiveTarget)
 		) {
 			modals.close();
 		}
@@ -113,28 +108,35 @@
 		modals.open('edit', { target: fee.id });
 	}
 
-	function openDelete(fee: Fee) {
-		modals.open('delete', { target: fee.id });
+	function openArchive(fee: Fee) {
+		modals.open('archive', { target: fee.id });
 	}
 
-	async function confirmDelete() {
-		const target = deleteTarget;
+	async function confirmArchive() {
+		const target = archiveTarget;
 		if (!target) {
 			return;
 		}
-		deleteBusy = true;
+		archiveBusy = true;
 		try {
-			const ok = await feesPage.deleteFee({
+			const ok = await feesPage.archiveFee({
 				feeId: target.id,
-				successMessage: get(t)('fee.toastDeleted', { name: target.name }),
+				successMessage: get(t)('fee.toastArchived', { name: target.name }),
 			});
 			if (ok) {
-				deleteOpen.open = false;
+				archiveOpen.open = false;
 			}
 		}
 		finally {
-			deleteBusy = false;
+			archiveBusy = false;
 		}
+	}
+
+	async function activateFee(fee: Fee) {
+		await feesPage.activateFee({
+			feeId: fee.id,
+			successMessage: get(t)('fee.toastActivated', { name: fee.name }),
+		});
 	}
 </script>
 
@@ -184,9 +186,8 @@
 		>
 			<div class="col-span-4">{$t('fee.name')}</div>
 			<div class="col-span-2">{$t('fee.category')}</div>
-			<div class="col-span-2">{$t('fee.period')}</div>
-			<div class="col-span-2 text-right">{$t('fee.amount')}</div>
-			<div class="col-span-1 text-right">{$t('finance.appliedTo')}</div>
+			<div class="col-span-2">{$t('fee.status')}</div>
+			<div class="col-span-3 text-right">{$t('fee.amount')}</div>
 			<div class="col-span-1"></div>
 		</div>
 		<ul>
@@ -204,28 +205,31 @@
 							{$t(`feeCat.${fee.category}`)}
 						</div>
 						<div class="col-span-2 text-sm text-foreground/70">
-							{fee.period
-								? $t(`feePeriod.${periodKey(fee.period)}`)
-								: $t('fee.installmentCount', { n: fee.installmentCount ?? 0 })}
+							{$t(`fee.status.${fee.status}`)}
 						</div>
-						<div class="col-span-2 text-right font-sans text-sm font-semibold tabular-nums">
-							{fee.amount.toLocaleString()} FCFA
-						</div>
-						<div class="col-span-1 text-right text-xs text-muted-foreground">
-							{feesPage.usageCount(fee.id)}
+						<div class="col-span-3 text-right font-sans text-sm font-semibold tabular-nums">
+							{formatMinorUnits(fee.amount, fee.currency, $locale)}
 						</div>
 						<div class="col-span-1 flex justify-end">
-							<PermissionGate permission="FINANCIAL_CONFIG_CONFIGURE">
+							<PermissionGate permission="FINANCIAL_CONFIG_UPDATE">
 								{#snippet children({ disabled, title })}
 									<RowActionMenu>
 										<RowActionMenuItem {disabled} {title} onclick={() => openEdit(fee)}>
 											<Pencil class="h-4 w-4" />
 											{$t('common.edit')}
 										</RowActionMenuItem>
-										<RowActionMenuItem destructive {disabled} {title} onclick={() => openDelete(fee)}>
-											<Trash2 class="h-4 w-4" />
-											{$t('common.delete')}
-										</RowActionMenuItem>
+										{#if fee.status !== 'active'}
+											<RowActionMenuItem {disabled} {title} onclick={() => void activateFee(fee)}>
+												<Check class="h-4 w-4" />
+												{$t('fee.activate')}
+											</RowActionMenuItem>
+										{/if}
+										{#if fee.status === 'active'}
+											<RowActionMenuItem destructive {disabled} {title} onclick={() => openArchive(fee)}>
+												<XCircle class="h-4 w-4" />
+												{$t('fee.archive')}
+											</RowActionMenuItem>
+										{/if}
 									</RowActionMenu>
 								{/snippet}
 							</PermissionGate>
@@ -241,11 +245,11 @@
 <FeeFormModal bind:open={editOpen.open} fee={editingFee ?? undefined} />
 
 <ConfirmModal
-	bind:open={deleteOpen.open}
-	title={$t('common.deleteConfirmTitle')}
-	description={$t('fee.deleteConfirm', { name: deleteTarget?.name ?? '' })}
-	confirmLabel={$t('common.delete')}
+	bind:open={archiveOpen.open}
+	title={$t('fee.archiveTitle')}
+	description={$t('fee.archiveConfirm', { name: archiveTarget?.name ?? '' })}
+	confirmLabel={$t('fee.archive')}
 	cancelLabel={$t('common.cancel')}
-	busy={deleteBusy}
-	onConfirm={confirmDelete}
+	busy={archiveBusy}
+	onConfirm={confirmArchive}
 />

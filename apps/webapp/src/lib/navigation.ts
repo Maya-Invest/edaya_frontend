@@ -90,6 +90,7 @@ const FINANCE_ICONS: Record<string, LucideIcon> = {
 	fees: BadgeDollarSign,
 	billing: Receipt,
 	payment: Wallet,
+	reconciliation: FileSpreadsheet,
 };
 
 const CONFIG_ICONS: Record<string, LucideIcon> = {
@@ -120,6 +121,7 @@ const FINANCE_ROUTES: Record<string, RouteId> = {
 	fees: '/(app)/finance/fees',
 	billing: '/(app)/finance/billing/[[id]]',
 	payment: '/(app)/finance/payment',
+	reconciliation: '/(app)/finance/reconciliation',
 };
 
 const CONFIG_ROUTES: Record<string, RouteId> = {

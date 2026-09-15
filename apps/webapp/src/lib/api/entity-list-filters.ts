@@ -188,12 +188,12 @@ export function enrollmentsForStudents(studentIds: readonly string[]): EntityQue
 	return recordsForFieldIds('studentId', studentIds);
 }
 
-export function studentFeesForStudents(studentIds: readonly string[]): EntityQuery {
+export function studentChargesForStudents(studentIds: readonly string[]): EntityQuery {
 	return recordsForFieldIds('studentId', studentIds);
 }
 
-export function paymentsForStudentFees(studentFeeIds: readonly string[]): EntityQuery {
-	return recordsForFieldIds('studentFeeId', studentFeeIds);
+export function paymentsForAccounts(accountIds: readonly string[]): EntityQuery {
+	return recordsForFieldIds('accountId', accountIds);
 }
 
 export function enrollmentsForStudentsInYear(

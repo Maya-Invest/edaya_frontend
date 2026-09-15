@@ -1,4 +1,5 @@
 import type { PermissionCode } from '$lib/auth/types';
+import { FINANCIAL_REPORT_READ_PERMISSION } from '$lib/finance/permissions';
 
 export interface NavItemDefinition {
 	key: string;
@@ -123,6 +124,12 @@ export const FINANCE_NAV_DEFS: NavItemDefinition[] = [
 		labelKey: 'finance.payment',
 		href: '/finance/payment',
 		permissions: ['PAYMENT_READ', 'FINANCIAL_CONFIG_READ'],
+	},
+	{
+		key: 'reconciliation',
+		labelKey: 'finance.reconciliation',
+		href: '/finance/reconciliation',
+		permissions: [FINANCIAL_REPORT_READ_PERMISSION],
 	},
 ];
 

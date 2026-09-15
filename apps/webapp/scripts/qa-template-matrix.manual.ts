@@ -255,13 +255,17 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	]),
 	...rows('Finance', `${B}/finance/billing/[id]`, [
 		'Enregistrer paiement',
-		'Supprimer facturation',
+		'Imputer le solde',
 	]),
 	...rows('Finance', `${B}/finance/payment`, [
 		'Ledger paiements',
 		'Recherche',
 		'Filtre statut',
 		'Filtre classe',
+		'Extourner un paiement',
+	]),
+	...rows('Finance', `${B}/finance/reconciliation`, [
+		'Rapprochement financier',
 	]),
 
 	// ─── Configuration ──────────────────────────────────────────────────

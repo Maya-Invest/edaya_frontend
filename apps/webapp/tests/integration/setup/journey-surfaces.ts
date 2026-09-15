@@ -236,11 +236,15 @@ export const JOURNEY_SURFACE_CLAIMS: readonly JourneySurfaceClaim[] = [
 	},
 	{
 		stepId: 'finance.ops',
-		paths: ['/finance/fees', '/finance/billing', '/finance/billing/[id]', '/finance/payment'],
+		paths: ['/finance/fees', '/finance/billing', '/finance/billing/[id]', '/finance/payment', '/finance/reconciliation'],
 		modals: [
 			{ parentRoute: '/finance/fees', modal: 'create' },
 			{ parentRoute: '/finance/billing', modal: 'assign-fee' },
 			{ parentRoute: '/finance/billing/[id]', modal: 'payment' },
+			{ parentRoute: '/finance/billing/[id]', modal: 'allocate' },
+			{ parentRoute: '/finance/billing/[id]', modal: 'unallocate' },
+			{ parentRoute: '/finance/payment', modal: 'reverse' },
+			{ parentRoute: '/finance/payment', modal: 'refund' },
 		],
 	},
 	{

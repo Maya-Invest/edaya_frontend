@@ -7,7 +7,7 @@ export interface PaymentImportColumnDefinition {
 
 export const PAYMENT_IMPORT_COLUMNS = [
 	{ key: 'matricule', required: true },
-	{ key: 'type_frais', required: true },
+	{ key: 'type_frais', required: false },
 	{ key: 'reference', required: true },
 	{ key: 'montant', required: false },
 	{ key: 'date', required: false },
@@ -29,10 +29,13 @@ export interface PaymentImportRow {
 }
 
 export interface ValidatedPaymentImportRow extends PaymentImportRow {
-	studentFeeId: string;
+	studentId: string;
+	chargeId?: string;
+	academicYearId: string;
 	amount: number;
 	paymentDate: string;
 	method: PaymentImportMethod;
+	allocationMode: 'account_only' | 'targeted';
 }
 
 export type PaymentImportValidationSeverity = 'error' | 'warning';
@@ -67,6 +70,7 @@ export interface PaymentImportStudentFeeOption {
 }
 
 export interface PaymentImportValidationContext {
+	academicYearId: string;
 	fees: readonly PaymentImportFeeOption[];
 	studentFees: readonly PaymentImportStudentFeeOption[];
 	studentMatricules: ReadonlyMap<string, { studentId: string; matricule: string }>;

@@ -1,14 +1,30 @@
 <script lang="ts">
+	import { FINANCIAL_REPORT_READ_PERMISSION } from '$lib/finance/permissions';
 	import { t } from '$lib/i18n';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import { hasAnyPermission, hasPermission } from '$lib/permissions';
 	import { cn } from '$lib/utils';
 
-	const { active }: { active: 'billing' | 'fees' } = $props();
+	type FinanceTab = 'billing' | 'fees' | 'payment' | 'reconciliation';
 
-	const tabs = [
-		{ key: 'billing' as const, href: appPath('/(app)/finance/billing/[[id]]') },
-		{ key: 'fees' as const, href: appPath('/(app)/finance/fees') },
-	];
+	const { active }: { active: FinanceTab } = $props();
+
+	const tabs = $derived.by(() => {
+		const items: { key: FinanceTab; href: string }[] = [];
+		if (hasAnyPermission(['FINANCIAL_CONFIG_READ', 'PAYMENT_READ'])) {
+			items.push({ key: 'billing', href: appPath('/(app)/finance/billing/[[id]]') });
+		}
+		if (hasPermission('FINANCIAL_CONFIG_READ')) {
+			items.push({ key: 'fees', href: appPath('/(app)/finance/fees') });
+		}
+		if (hasAnyPermission(['PAYMENT_READ', 'FINANCIAL_CONFIG_READ'])) {
+			items.push({ key: 'payment', href: appPath('/(app)/finance/payment') });
+		}
+		if (hasPermission(FINANCIAL_REPORT_READ_PERMISSION)) {
+			items.push({ key: 'reconciliation', href: appPath('/(app)/finance/reconciliation') });
+		}
+		return items;
+	});
 </script>
 
 <div class="flex items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft">

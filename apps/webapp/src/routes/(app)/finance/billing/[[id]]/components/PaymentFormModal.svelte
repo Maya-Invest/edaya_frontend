@@ -1,38 +1,38 @@
 <script lang="ts">
-	import type { components } from '$lib/api/schema';
+	import type { AllocationMode, AllocationPlan, PaymentMethod } from '$lib/api/finance-types';
 	import type { StudentBilling } from '$lib/types/school';
-	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
-	import { t } from '$lib/i18n';
+	import { previewFifoAllocation, previewTargetedAllocation } from '$lib/finance/allocation-preview';
+	import { formatMinorUnits, majorToMinor, minorToMajor, parseMajorInput } from '$lib/finance/money';
+	import { locale, t } from '$lib/i18n';
 	import { get } from 'svelte/store';
 	import { getBillingPageState } from '../../billing-page.svelte';
 
-	type PaymentMethod = components['schemas']['RecordPaymentCommand']['method'];
 	const PAYMENT_METHODS: PaymentMethod[] = ['cash', 'card', 'bank_transfer', 'mobile_money', 'other'];
+	const ALLOCATION_MODES: AllocationMode[] = ['account_only', 'fifo', 'targeted'];
 
 	let {
 		billing,
 		studentName,
 		feeName,
 		open = $bindable(false),
-		disabled = false,
-		title,
-		showTrigger = true,
 	}: {
 		billing: StudentBilling;
 		studentName: string;
 		feeName: string;
 		open?: boolean;
-		disabled?: boolean;
-		title?: string;
-		showTrigger?: boolean;
 	} = $props();
 
 	const billingPage = getBillingPageState();
+	const account = $derived(billingPage.accountForStudent(billing.studentId));
+	const currency = $derived(billing.currency || account?.currency || 'XOF');
+	const siblingCharges = $derived(
+		billingPage.billing.filter(entry => entry.studentId === billing.studentId),
+	);
 
 	let busy = $state(false);
 	let amount = $state('');
@@ -40,19 +40,49 @@
 	let method = $state<PaymentMethod>('cash');
 	let reference = $state('');
 	let notes = $state('');
+	let allocationMode = $state<AllocationMode>('targeted');
 
-	const remaining = $derived(billing.total - billing.paid);
-	const numericAmount = $derived(Number.parseFloat(amount));
+	const parsedMajor = $derived(parseMajorInput(amount));
+	const amountMinor = $derived(parsedMajor === null ? 0 : majorToMinor(parsedMajor, currency, $locale));
+	const preview = $derived.by(() => {
+		if (amountMinor <= 0) {
+			return null;
+		}
+		if (allocationMode === 'account_only') {
+			return {
+				accountId: account?.id ?? '',
+				availableBefore: account?.availableBalance ?? 0,
+				availableAfter: (account?.availableBalance ?? 0) + amountMinor,
+				allocations: [],
+			};
+		}
+		if (allocationMode === 'fifo') {
+			return previewFifoAllocation(
+				account?.id ?? '',
+				amountMinor,
+				account?.availableBalance ?? 0,
+				siblingCharges,
+			);
+		}
+		return previewTargetedAllocation(
+			account?.id ?? '',
+			amountMinor,
+			account?.availableBalance ?? 0,
+			billing,
+		);
+	});
+
 	const canSubmit = $derived(
-		Number.isFinite(numericAmount) && numericAmount > 0 && numericAmount <= remaining && paymentDate.trim().length > 0,
+		amountMinor > 0 && paymentDate.trim().length > 0 && (allocationMode !== 'targeted' || billing.remaining > 0),
 	);
 
 	function resetForm() {
-		amount = String(remaining);
+		amount = String(minorToMajor(Math.max(billing.remaining, 0), currency, $locale));
 		paymentDate = new Date().toISOString().slice(0, 10);
 		method = 'cash';
 		reference = '';
 		notes = '';
+		allocationMode = billing.remaining > 0 ? 'targeted' : 'account_only';
 	}
 
 	$effect(() => {
@@ -60,6 +90,14 @@
 			resetForm();
 		}
 	});
+
+	function allocationPlan(): AllocationPlan {
+		if (allocationMode === 'targeted') {
+			const applied = Math.min(amountMinor, billing.remaining);
+			return { mode: 'targeted', targets: [{ chargeId: billing.id, amount: applied }] };
+		}
+		return { mode: allocationMode };
+	}
 
 	async function submit() {
 		if (!canSubmit) {
@@ -69,14 +107,16 @@
 		busy = true;
 		try {
 			const ok = await billingPage.recordPayment({
-				studentFeeId: billing.id,
-				amount: numericAmount,
+				studentId: billing.studentId,
+				accountId: account?.id,
+				amount: amountMinor,
 				paymentDate: new Date(`${paymentDate}T12:00:00`).toISOString(),
 				method,
 				reference,
 				notes,
+				allocation: allocationPlan(),
 				successMessage: get(t)('payment.recordSuccess', {
-					amount: numericAmount.toLocaleString(),
+					amount: formatMinorUnits(amountMinor, currency, $locale),
 					student: studentName,
 				}),
 			});
@@ -90,13 +130,6 @@
 	}
 </script>
 
-{#if showTrigger}
-	<Button class="w-full rounded-full" {disabled} {title} onclick={() => (open = true)}>
-		<span class="mr-1">💳</span>
-		{$t('finance.recordPayment')}
-	</Button>
-{/if}
-
 <FormModal
 	bind:open
 	title={$t('payment.recordTitle')}
@@ -109,14 +142,50 @@
 >
 	<div class="rounded-xl border border-border bg-secondary/40 px-3 py-2 text-sm">
 		<p class="text-[11px] uppercase tracking-wider text-muted-foreground">{$t('finance.remaining')}</p>
-		<p class="font-sans text-xl font-semibold tabular-nums">{remaining.toLocaleString()} FCFA</p>
+		<p class="font-sans text-xl font-semibold tabular-nums">
+			{formatMinorUnits(billing.remaining, currency, $locale)}
+		</p>
+	</div>
+	<div class="space-y-1.5">
+		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+			{$t('payment.allocationMode')}
+		</Label>
+		<Select.Root type="single" value={allocationMode} onValueChange={v => v && (allocationMode = v as AllocationMode)}>
+			<Select.Trigger>
+				<Select.Value>{$t(`payment.allocation.${allocationMode}`)}</Select.Value>
+			</Select.Trigger>
+			<Select.Content>
+				{#each ALLOCATION_MODES as mode (mode)}
+					<Select.Item value={mode} label={$t(`payment.allocation.${mode}`)}>
+						{$t(`payment.allocation.${mode}`)}
+					</Select.Item>
+				{/each}
+			</Select.Content>
+		</Select.Root>
 	</div>
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('payment.amount')}
 		</Label>
-		<Input type="number" min="0" max={remaining} step="100" bind:value={amount} />
+		<Input type="number" min="0" step="any" bind:value={amount} />
 	</div>
+	{#if preview}
+		<div class="rounded-xl border border-border px-3 py-2 text-sm">
+			<p class="text-[11px] uppercase tracking-wider text-muted-foreground">{$t('payment.preview')}</p>
+			{#if preview.allocations.length === 0}
+				<p class="mt-1 text-xs text-muted-foreground">{$t('payment.previewDeposit')}</p>
+			{:else}
+				<ul class="mt-1 space-y-1">
+					{#each preview.allocations as line (line.chargeId)}
+						<li class="flex justify-between gap-2 text-xs">
+							<span class="truncate">{line.label}</span>
+							<span class="font-sans tabular-nums">{formatMinorUnits(line.amount, currency, $locale)}</span>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</div>
+	{/if}
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -130,14 +199,12 @@
 			</Label>
 			<Select.Root type="single" value={method} onValueChange={v => v && (method = v as PaymentMethod)}>
 				<Select.Trigger>
-					<Select.Value>
-						{$t(`payment.method.${method}`)}
-					</Select.Value>
+					<Select.Value>{$t(`payment.method.${method}`)}</Select.Value>
 				</Select.Trigger>
 				<Select.Content>
-					{#each PAYMENT_METHODS as m (m)}
-						<Select.Item value={m} label={$t(`payment.method.${m}`)}>
-							{$t(`payment.method.${m}`)}
+					{#each PAYMENT_METHODS as option (option)}
+						<Select.Item value={option} label={$t(`payment.method.${option}`)}>
+							{$t(`payment.method.${option}`)}
 						</Select.Item>
 					{/each}
 				</Select.Content>

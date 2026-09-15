@@ -162,9 +162,10 @@ const routeCases = [
 		'/configuration/tools/teacher-assignments',
 		['create'],
 	],
-	['finance-fees', '/finance/fees', ['create', 'edit', 'delete']],
+	['finance-fees', '/finance/fees', ['create', 'edit', 'archive']],
 	['finance-billing-list', '/finance/billing', ['assign-fee']],
-	['finance-billing-detail', '/finance/billing/billing-1', ['assign-fee', 'payment', 'delete']],
+	['finance-billing-detail', '/finance/billing/billing-1', ['assign-fee', 'payment', 'allocate', 'unallocate', 'waive', 'adjust', 'cancel']],
+	['finance-payments', '/finance/payment', ['reverse', 'refund']],
 ] as const;
 
 describe('route modal catalog', () => {

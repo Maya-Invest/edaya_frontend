@@ -108,7 +108,7 @@ Every feature **must** declare one surface type. Simple entities **must** use ro
 | Type | Drawer | Mutations | Examples |
 |------|--------|-----------|----------|
 | **Complex** | URL-backed read-only drawer | Entity-header actions → modals; sub-collections read-only, `+ Add` → modal | Student, Staff, Assessment, Incident, Billing |
-| **Simple** | None | Row `···` menu → modals | Fee, GradeScale, Payment, DisciplinaryAction |
+| **Simple** | None | Row `···` menu → modals | CatalogService (fees), Payment, Reconciliation, GradeScale, DisciplinaryAction |
 | **Thin drawer** | Sections only (no tabs) | Header actions → modals | CalendarEvent, Inbox delivery, Notification templates |
 | **Layout variant** | None | Page-level or inline modals | Dashboard, School profile, Academic calendar accordion |
 
@@ -259,6 +259,7 @@ The session contains one typed action-grant display. UI checks use that action's
 | Fees | `/finance/fees` | — |
 | Billing | `/finance/billing` | `/finance/billing/{id}` |
 | Payments | `/finance/payment` | — |
+| Reconciliation | `/finance/reconciliation` | — |
 | School profile | `/configuration/school` | — |
 | Academic calendar | `/configuration/academic` | — |
 | Grade levels | `/configuration/grade-levels` | `/configuration/grade-levels/{id}` |
@@ -391,19 +392,32 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 ### 7.15 Finance — Fees
 
-- **Entity:** `Fee` · **Simple** (row `···` only — no drawer)
-- Row menu: Edit · Delete
+- **Entity:** `CatalogService` · **Simple** (row `···` only — no drawer)
+- Human labels stay **fees / frais**. Route stays `/finance/fees`.
+- Row menu: Edit · Activate · Archive (no hard-delete)
+- Create as **active**. Amounts are integer minor units; currency from API (create form last-resort `XOF`)
 
 ### 7.16 Finance — Billing
 
-- **Entity:** `StudentFee` · **Complex drawer**
-- Preserve billing history: use the cancellation/adjustment commands; do not offer generic hard deletion.
-- **Drawer header:** Record payment · Waive
+- **Entity:** `StudentCharge` · **Complex drawer**
+- Enroll via assign modal (`?modal=assign-fee`), including bounded batch (≤100 students)
+- Preserve history: waive / adjust / cancel commands; do not offer generic hard deletion
+- **Drawer header (max 2 primary):** Record payment · Allocate. Waive / Adjust / Cancel in overflow `···`
+- Allocation preview is a **modal** on the billing drawer, not a sidebar item
+- Reverse allocation is a **modal** on the billing drawer (`?modal=unallocate`); it is not a cash refund
+- Record payment modal: deposit-only (`account_only`) / FIFO / targeted + preview
 
 ### 7.17 Finance — Payments
 
 - **Entity:** `Payment` · **Simple** (row `···` only)
-- Row menu: View receipt → navigate to **billing** drawer (`/finance/billing/{studentFeeId}`) — cross-entity deep link; Payment itself has no drawer
+- Receipt and disbursement history. Reverse via FormModal (`?modal=reverse`). Refund available balance via FormModal (`?modal=refund`)
+- Payment itself has no drawer
+
+### 7.17.1 Finance — Reconciliation
+
+- **Surface:** simple page `/finance/reconciliation`
+- Permission: `FINANCIAL_REPORT_READ`
+- Named query `getFinanceReconciliation` — not an extra allocation sidebar item
 
 ### 7.18 Configuration — School profile
 
@@ -490,13 +504,14 @@ Authoritative surface per entity. §7 has per-feature drawer/tab detail.
 | `ClassSubject` / teaching | Complex | `/classes/{id}/teaching`, `/configuration/subjects` |
 | `ReportCardResult` | Complex | `/classes/{id}/report-cards` |
 | `ReportCardDefinition` | Complex | `/configuration/report-cards` |
-| `StudentFee` | Complex | `/finance/billing` |
+| `StudentCharge` | Complex | `/finance/billing` |
 | `ClassGroup` | Complex | `/configuration/classes` |
 | `GradeLevel` | Complex | `/configuration/grade-levels` |
 | `CalendarEvent` | Thin | `/school/calendar` |
 | `MessageDelivery` | Thin | `/account/inbox` |
-| `Fee` | Simple | `/finance/fees` |
+| `CatalogService` | Simple | `/finance/fees` |
 | `Payment` | Simple | `/finance/payment` |
+| Reconciliation | Simple page | `/finance/reconciliation` |
 | `GradeScale` | Simple | `/configuration/grade-scales` |
 | `DisciplinaryAction` | Simple | `/configuration/discipline` |
 | Notification templates | Thin | `/configuration/notifications` |

@@ -1136,6 +1136,28 @@ export async function fillIncidentCreateDialog(
 	await waitForSubmitEnabled(page);
 }
 
+export async function fillFeeCreateDialog(
+	page: Page,
+	feeName: string,
+	amount = '10000',
+): Promise<void> {
+	const dialog = page.getByRole('dialog');
+	const nameInput = dialog.getByLabel(/fee name|nom du frais/i)
+		.or(dialog.getByRole('textbox').first());
+	await nameInput.fill(feeName);
+	const amountInput = dialog.getByLabel(/amount|montant/i)
+		.or(dialog.locator('input[type="number"]').first());
+	await amountInput.fill(amount);
+	await amountInput.evaluate((element, nextAmount) => {
+		if (!(element instanceof HTMLInputElement)) {
+			return;
+		}
+		element.value = nextAmount;
+		element.dispatchEvent(new Event('input', { bubbles: true }));
+		element.dispatchEvent(new Event('change', { bubbles: true }));
+	}, amount);
+}
+
 export async function fillAssignFeeDialog(page: Page): Promise<boolean> {
 	if (await waitForSubmitEnabled(page, 8_000)) {
 		return true;

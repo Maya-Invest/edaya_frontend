@@ -322,26 +322,49 @@ export interface Deadline {
 	submissions: { studentId: string; status: 'submitted' | 'late' | 'missing'; date?: string }[];
 }
 
+export type FeeCategory
+	= | 'tuition'
+		| 'transport'
+		| 'meals'
+		| 'activities'
+		| 'materials'
+		| 'other';
+
+export type CatalogServiceStatus = 'draft' | 'active' | 'archived';
+export type CatalogEnrollmentMode = 'mandatory' | 'opt_in';
+export type StudentChargeStatus
+	= | 'pending'
+		| 'partial'
+		| 'paid'
+		| 'overdue'
+		| 'cancelled'
+		| 'waived';
+
 export interface Fee {
 	id: string;
 	name: string;
-	/** UI labels aligned 1:1 with API fee.category (no name NLP). */
-	category: 'Tuition' | 'Transport' | 'Materials' | 'Other';
+	category: FeeCategory;
 	amount: number;
-	/** Create-form schedule only; omitted when mapping from API installments. */
-	period?: 'Year' | 'Term' | 'Month';
+	currency: string;
+	status: CatalogServiceStatus;
+	enrollmentMode: CatalogEnrollmentMode;
 	installmentCount?: number;
 }
 
 export interface StudentBilling {
 	id: string;
 	studentId: string;
-	feeId: string;
+	enrollmentId: string;
+	catalogServiceId: string;
+	label: string;
 	total: number;
 	paid: number;
-	status: 'paid' | 'partial' | 'due' | 'overdue';
+	remaining: number;
+	currency: string;
+	status: StudentChargeStatus;
 	dueDate: string;
-	installments: { date: string; amount: number; status: 'paid' | 'pending' }[];
+	academicYearId: string;
+	installments: { id: string; date: string; amount: number; label: string; status: 'paid' | 'pending' }[];
 }
 
 export type AcademicYearStatus = 'draft' | 'published' | 'archived';

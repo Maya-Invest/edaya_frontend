@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { reversePaymentMutation, cancelPaymentMutation } from '$lib/api/mutations/billing.mutations';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -10,21 +10,26 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
-	import { detailHref } from '$lib/detail-hrefs';
+	import { formatMinorUnits } from '$lib/finance/money';
 	import { locale, t } from '$lib/i18n';
-	import { Check, Clock, Receipt, RotateCcw, XCircle } from '$lib/icons';
+	import { Check, Clock, RotateCcw, Wallet } from '$lib/icons';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readPaymentListFilters, writePaymentListFilters } from '$lib/list/list-url-filters';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
-	import { get } from 'svelte/store';
+	import FinanceSubnav from '../../components/FinanceSubnav.svelte';
 	import { getPaymentPageState } from '../payment-page.svelte';
+	import RefundAvailableBalanceFormModal from './RefundAvailableBalanceFormModal.svelte';
+	import ReversePaymentFormModal from './ReversePaymentFormModal.svelte';
 
 	const paymentPage = getPaymentPageState();
-	const billing = $derived(paymentPage.billing);
 	const students = $derived(paymentPage.students);
-	const fees = $derived(paymentPage.fees);
 	const payments = $derived(paymentPage.payments);
+	const accounts = $derived(paymentPage.accounts);
 	const classes = $derived(academicContext.classes);
+	const displayCurrency = $derived(
+		payments[0]?.currency || accounts[0]?.currency || 'XOF',
+	);
 
 	const initialFilters = $derived(readPaymentListFilters($page.url));
 
@@ -39,19 +44,22 @@
 
 	const list = $derived(
 		payments.filter((payment) => {
-			const bill = billing.find(entry => entry.id === payment.studentFeeId);
-			const st = bill ? students.find(student => student.id === bill.studentId) : undefined;
-			if (!st) {
+			if (payment.status !== 'recorded' && payment.status !== 'reversed') {
 				return false;
 			}
+			const student = students.find(entry => entry.id === payment.studentId);
 			if (listFilters.values.status !== 'all' && payment.status !== listFilters.values.status) {
 				return false;
 			}
-			if (listFilters.values.class !== 'all' && st.classId !== listFilters.values.class) {
-				return false;
+			if (listFilters.values.class !== 'all') {
+				if (!student || student.classId !== listFilters.values.class) {
+					return false;
+				}
 			}
-			if (listFilters.values.q && !st.name.toLowerCase().includes(listFilters.values.q.toLowerCase())) {
-				return false;
+			if (listFilters.values.q) {
+				if (!student || !student.name.toLowerCase().includes(listFilters.values.q.toLowerCase())) {
+					return false;
+				}
 			}
 			return true;
 		}),
@@ -59,11 +67,11 @@
 
 	const collected = $derived(
 		list
-			.filter(payment => payment.status !== 'cancelled' && payment.status !== 'reversed')
+			.filter(payment => payment.status === 'recorded' && payment.kind === 'receipt')
 			.reduce((sum, payment) => sum + payment.amount, 0),
 	);
 
-	const statusKeys = ['all', 'recorded', 'cancelled', 'reversed'] as const;
+	const statusKeys = ['all', 'recorded', 'reversed'] as const;
 
 	const classFilterOptions = $derived([
 		{ value: 'all', label: $t('common.allClasses') },
@@ -78,6 +86,17 @@
 			label: k === 'all' ? $t('filter.all') : $t(`payment.status.${k}`),
 		})),
 	);
+
+	const modals = createUrlSyncedModals({
+		allowed: ['reverse', 'refund'],
+		getUrl: () => $page.url,
+	});
+	$effect(() => {
+		modals.hydrate();
+	});
+	const reverseOpen = bindUrlModal(modals, 'reverse');
+	const refundOpen = bindUrlModal(modals, 'refund');
+	const reverseTarget = $derived(modals.active === 'reverse' ? modals.target : null);
 
 	$effect(() => {
 		const next = initialFilters;
@@ -98,30 +117,6 @@
 		void listFilters.values.class;
 		listFilters.scheduleSync();
 	});
-
-	function openBillingReceipt(billingId: string) {
-		appGoto(detailHref.financeBilling(billingId));
-	}
-
-	async function reversePayment(paymentId: string) {
-		const ok = await reversePaymentMutation({
-			paymentId,
-			successMessage: get(t)('payment.reverseSuccess'),
-		});
-		if (ok) {
-			await paymentPage.refreshSlice();
-		}
-	}
-
-	async function cancelPayment(paymentId: string) {
-		const ok = await cancelPaymentMutation({
-			paymentId,
-			successMessage: get(t)('payment.cancelSuccess'),
-		});
-		if (ok) {
-			await paymentPage.refreshSlice();
-		}
-	}
 </script>
 
 <div class="animate-fade-in space-y-6">
@@ -130,18 +125,41 @@
 			<ListSearchField bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
 		{/snippet}
 		{#snippet filters()}
-			<FilterSelect
-				bind:value={listFilters.values.class}
-				class="h-9 min-w-[10rem] rounded-full text-xs"
-				options={classFilterOptions}
-			/>
-			<FilterPanel activeCount={statusFilterActive} title={$t('finance.paymentStatusFilter')}>
+			<div class="flex flex-wrap items-center gap-2">
+				<FinanceSubnav active="payment" />
 				<FilterSelect
-					bind:value={listFilters.values.status}
-					class="h-9 w-full rounded-md text-xs"
-					options={statusFilterOptions}
+					bind:value={listFilters.values.class}
+					class="h-9 min-w-[10rem] rounded-full text-xs"
+					options={classFilterOptions}
 				/>
-			</FilterPanel>
+				<FilterPanel activeCount={statusFilterActive} title={$t('finance.paymentStatusFilter')}>
+					<FilterSelect
+						bind:value={listFilters.values.status}
+						class="h-9 w-full rounded-md text-xs"
+						options={statusFilterOptions}
+					/>
+				</FilterPanel>
+			</div>
+		{/snippet}
+		{#snippet primary()}
+			<PermissionGate
+				permission="PAYMENT_REVERSE"
+				mode="disable"
+				tooltip={$t('payment.permissionRefund')}
+			>
+				{#snippet children({ disabled, title })}
+					<Button
+						size="sm"
+						class="rounded-full"
+						{disabled}
+						{title}
+						onclick={() => (refundOpen.open = true)}
+					>
+						<Wallet class="mr-1 h-4 w-4" />
+						{$t('payment.refund')}
+					</Button>
+				{/snippet}
+			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
 			<ListMoreMenu exportOnly />
@@ -154,7 +172,7 @@
 				{$t('finance.collectedFiltered')}
 			</p>
 			<p class="mt-1 font-sans text-2xl font-semibold tabular-nums">
-				{collected.toLocaleString()} FCFA
+				{formatMinorUnits(collected, displayCurrency, $locale)}
 			</p>
 		</div>
 	</div>
@@ -165,18 +183,14 @@
 		>
 			<div class="col-span-2">{$t('events.date')}</div>
 			<div class="col-span-4">{$t('events.student')}</div>
-			<div class="col-span-3">{$t('billing.fee')}</div>
-			<div class="col-span-2 text-right">{$t('eval.average')}</div>
-			<div class="col-span-1 text-right">{$t('students.status')}</div>
+			<div class="col-span-2">{$t('payment.kindLabel')}</div>
+			<div class="col-span-2 text-right">{$t('payment.amount')}</div>
+			<div class="col-span-2 text-right">{$t('students.status')}</div>
 		</div>
 		<ul>
 			{#each list as payment (payment.id)}
-				{@const bill = billing.find(entry => entry.id === payment.studentFeeId)}
-				{@const st = bill ? students.find(student => student.id === bill.studentId) : undefined}
-				{@const fee = bill ? fees.find(entry => entry.id === bill.feeId) : undefined}
-				<li
-					class="grid grid-cols-12 items-center gap-4 border-b border-border px-5 py-3 last:border-b-0"
-				>
+				{@const student = students.find(entry => entry.id === payment.studentId)}
+				<li class="grid grid-cols-12 items-center gap-4 border-b border-border px-5 py-3 last:border-b-0">
 					<div class="col-span-2 font-sans tabular-nums text-xs text-muted-foreground">
 						{new Date(payment.paymentDate).toLocaleDateString($locale, {
 							day: 'numeric',
@@ -184,18 +198,25 @@
 							year: '2-digit',
 						})}
 					</div>
-					<div class="col-span-4 text-sm font-medium">{st?.name ?? '—'}</div>
-					<div class="col-span-3 text-sm text-foreground/70">{fee?.name ?? '—'}</div>
-					<div class="col-span-2 text-right font-sans text-sm font-semibold tabular-nums">
-						{payment.amount.toLocaleString()} FCFA
+					<div class="col-span-4 text-sm font-medium">{student?.name ?? '—'}</div>
+					<div class="col-span-2 min-w-0">
+						<p class="truncate text-sm text-foreground/70">
+							{$t(`payment.kind.${payment.kind}`)}
+						</p>
+						<p class="truncate font-sans text-[10px] uppercase tracking-wider text-muted-foreground">
+							{$t(`payment.method.${payment.method}`)}
+						</p>
 					</div>
-					<div class="col-span-1 flex items-center justify-end gap-1">
-						{#if payment.status === 'cancelled' || payment.status === 'reversed'}
+					<div class="col-span-2 text-right font-sans text-sm font-semibold tabular-nums">
+						{formatMinorUnits(payment.amount, payment.currency, $locale)}
+					</div>
+					<div class="col-span-2 flex items-center justify-end gap-1">
+						{#if payment.status === 'reversed'}
 							<span
 								class="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
 							>
 								<Clock class="h-3 w-3" />
-								{$t(`payment.status.${payment.status}`)}
+								{$t('payment.status.reversed')}
 							</span>
 						{:else}
 							<span
@@ -205,37 +226,23 @@
 								{$t('payment.status.recorded')}
 							</span>
 						{/if}
-						<PermissionGate permission="PAYMENT_RECORD">
-							{#snippet children({ disabled, title })}
-								<RowActionMenu>
-									{#if bill}
-										<RowActionMenuItem onclick={() => openBillingReceipt(bill.id)}>
-											<Receipt class="h-4 w-4" />
-											{$t('payment.viewReceipt')}
-										</RowActionMenuItem>
-									{/if}
-									{#if payment.status !== 'reversed' && payment.status !== 'cancelled'}
-										<RowActionMenuItem
-											{disabled}
-											{title}
-											onclick={() => void reversePayment(payment.id)}
-										>
-											<RotateCcw class="h-4 w-4" />
-											{$t('payment.reverse')}
-										</RowActionMenuItem>
+						{#if payment.status === 'recorded'}
+							<RowActionMenu>
+								<PermissionGate permission="PAYMENT_REVERSE">
+									{#snippet children({ disabled, title })}
 										<RowActionMenuItem
 											destructive
 											{disabled}
 											{title}
-											onclick={() => void cancelPayment(payment.id)}
+											onclick={() => modals.open('reverse', { target: payment.id })}
 										>
-											<XCircle class="h-4 w-4" />
-											{$t('payment.cancel')}
+											<RotateCcw class="h-4 w-4" />
+											{$t('payment.reverse')}
 										</RowActionMenuItem>
-									{/if}
-								</RowActionMenu>
-							{/snippet}
-						</PermissionGate>
+									{/snippet}
+								</PermissionGate>
+							</RowActionMenu>
+						{/if}
 					</div>
 				</li>
 			{/each}
@@ -247,3 +254,10 @@
 		</ul>
 	</div>
 </div>
+
+{#if reverseOpen}
+	<ReversePaymentFormModal bind:open={reverseOpen.open} paymentId={reverseTarget ?? ''} />
+{/if}
+{#if refundOpen}
+	<RefundAvailableBalanceFormModal bind:open={refundOpen.open} />
+{/if}

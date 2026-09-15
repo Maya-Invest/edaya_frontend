@@ -1,6 +1,6 @@
 import type { PaymentPageState } from '../payment-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
-import { loadFinanceData } from '$lib/api/finance-data';
+import { loadPaymentPageData } from '$lib/api/finance-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
@@ -13,7 +13,7 @@ export async function loadPaymentSlice() {
 		return emptyPaymentSlice();
 	}
 	const client = getBrowserSchoolClient();
-	return loadFinanceData(client, { schoolId, academicYearId });
+	return loadPaymentPageData(client, { schoolId, academicYearId });
 }
 
 export function queryPaymentListPage(state: PaymentPageState) {

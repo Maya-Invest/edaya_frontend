@@ -4,7 +4,7 @@ import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
 import { loadPaymentSlice, queryPaymentListPage } from './lib/payment-queries';
 
-const PAYMENT_VERSION_FAMILIES = ['fees', 'billing', 'students', 'payments'] as const satisfies readonly EntityVersionKey[];
+const PAYMENT_VERSION_FAMILIES = ['billing', 'students', 'payments'] as const satisfies readonly EntityVersionKey[];
 
 const PAYMENT_PAGE_STATE_KEY = Symbol('payment-page-state');
 
@@ -24,20 +24,16 @@ export class PaymentPageState {
 		this.slice = null;
 	}
 
-	get fees() {
-		return this.slice?.fees ?? [];
-	}
-
-	get billing() {
-		return this.slice?.billing ?? [];
-	}
-
 	get students() {
 		return this.slice?.students ?? [];
 	}
 
 	get payments() {
 		return this.slice?.payments ?? [];
+	}
+
+	get accounts() {
+		return this.slice?.accounts ?? [];
 	}
 
 	queryListPage() {

@@ -1,10 +1,10 @@
 import { describe, expect, it, mock } from 'bun:test';
 import type { ValidatedBillingImportRow } from '$lib/import/billing/types';
 
-const assignFeeToStudentMutation = mock(async (): Promise<string | null> => 'sf-new');
+const enrollStudentInServiceMutation = mock(async (): Promise<string | null> => 'enr-new');
 
 mock.module('$lib/api/mutations/billing.mutations', () => ({
-	assignFeeToStudentMutation,
+	enrollStudentInServiceMutation,
 	recordPaymentMutation: mock(async () => true),
 }));
 
@@ -22,9 +22,9 @@ function row(overrides: Partial<ValidatedBillingImportRow> & Pick<ValidatedBilli
 }
 
 describe('billing import runner', () => {
-	it('assigns each valid row sequentially', async () => {
-		assignFeeToStudentMutation.mockReset();
-		assignFeeToStudentMutation.mockResolvedValue('sf-new');
+	it('enrolls each valid row sequentially', async () => {
+		enrollStudentInServiceMutation.mockReset();
+		enrollStudentInServiceMutation.mockResolvedValue('enr-new');
 		const progress: Array<{ current: number; total: number }> = [];
 
 		const result = await runBillingImport({
@@ -45,28 +45,28 @@ describe('billing import runner', () => {
 
 		expect(result.created).toBe(2);
 		expect(result.failed).toEqual([]);
-		expect(result.studentFeeIds).toEqual(['sf-new', 'sf-new']);
-		expect(assignFeeToStudentMutation).toHaveBeenCalledTimes(2);
-		expect(assignFeeToStudentMutation).toHaveBeenNthCalledWith(1, {
-			id: expect.stringMatching(/^sf-import-2-/),
+		expect(result.studentFeeIds).toEqual(['enr-new', 'enr-new']);
+		expect(enrollStudentInServiceMutation).toHaveBeenCalledTimes(2);
+		expect(enrollStudentInServiceMutation).toHaveBeenNthCalledWith(1, {
+			id: expect.stringMatching(/^enr-import-2-/),
 			studentId: 'stu-1',
-			feeId: 'fee-1',
-			expectedAmount: 150_000,
+			catalogServiceId: 'fee-1',
+			priceOverride: 150_000,
 			dueDate: undefined,
 		});
-		expect(assignFeeToStudentMutation).toHaveBeenNthCalledWith(2, {
-			id: expect.stringMatching(/^sf-import-3-/),
+		expect(enrollStudentInServiceMutation).toHaveBeenNthCalledWith(2, {
+			id: expect.stringMatching(/^enr-import-3-/),
 			studentId: 'stu-2',
-			feeId: 'fee-1',
-			expectedAmount: 150_000,
+			catalogServiceId: 'fee-1',
+			priceOverride: 150_000,
 			dueDate: '2025-10-15T12:00:00.000Z',
 		});
 		expect(progress.at(-1)).toEqual({ current: 2, total: 2 });
 	});
 
-	it('collects failures when assignFeeToStudentMutation returns null', async () => {
-		assignFeeToStudentMutation.mockReset();
-		assignFeeToStudentMutation.mockResolvedValue(null);
+	it('collects failures when enrollStudentInServiceMutation returns null', async () => {
+		enrollStudentInServiceMutation.mockReset();
+		enrollStudentInServiceMutation.mockResolvedValue(null);
 
 		const result = await runBillingImport({
 			client: {} as never,

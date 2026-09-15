@@ -1,6 +1,6 @@
 ﻿# Fixtures — Import **Paiements**
 
-Paiements scolaires en **FCFA**, modes ivoiriens : Mobile Money, espèces, virement. **`reference` unique** école (fichier + base).
+Paiements scolaires. Montants en unités mineures (entiers). Modes ivoiriens : Mobile Money, espèces, virement. **`reference` unique** école (fichier + base). `type_frais` est **optionnel** : vide = dépôt uniquement (`account_only`) ; renseigné = paiement ciblé sur la créance.
 
 ```bash
 bun edaya_web/docs/qa/import-fixtures/payments/generate-fixtures.ts
@@ -9,8 +9,8 @@ bun edaya_web/docs/qa/import-fixtures/payments/generate-fixtures.ts
 **Prérequis :**
 
 1. Élèves importés ([EL01](../students/xlsx/EL01-happy-all-valid.xlsx))
-2. Au moins un **type de frais** configuré dans Finances
-3. **Facturation importée** ([BI01](../billing/xlsx/BI01-happy-all-valid.xlsx)) — ou assignation manuelle équivalente
+2. Au moins un **type de frais** configuré dans Finances (table `catalog_services`)
+3. **Facturation importée** ([BI01](../billing/xlsx/BI01-happy-all-valid.xlsx)) — ou inscription manuelle équivalente — pour les lignes **ciblées**
 
 Comme pour la facturation, les libellés `type_frais` proviennent de la base locale (fallback `FEE_CATALOG_NAMES`).
 
@@ -30,6 +30,6 @@ Comme pour la facturation, les libellés `type_frais` proviennent de la base loc
 
 **Ordre suggéré :** PA10 → PA05 → PA06 → PA07 → PA11 → PA03 → PA04 → PA08 → PA02 → PA09 → **PA01**.
 
-Montant vide = **solde restant** automatique (comportement modal paiement).
+Montant vide (ligne ciblée) = **solde restant** automatique. Sans `type_frais`, `montant` est obligatoire (dépôt).
 
 Après PA01, réimporter une ligne avec la même `reference` → rejet « référence existe déjà ».
