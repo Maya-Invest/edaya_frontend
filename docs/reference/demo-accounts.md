@@ -52,7 +52,7 @@ App integration tests are not this walkthrough:
 
 | Command | What it covers |
 |---------|----------------|
-| `bun run test:integration:onboarding` | Empty APIs, UI signup → wizard → `POST /provision` → dashboard |
+| `bun run test:integration:onboarding` | Empty APIs, login/signup/invite gates, wizard UI, provision, invited staff → dashboard |
 | `bun run test:integration:provisioned` | Empty APIs, API tenant + owner journey + QA matrix |
 
 **Playwright scenes:** D0–D11 (core), DR (route coverage), DC (list shell), DD (drawer tabs), DM (modal URL), **DI** (import upload/validate), **DT** (timetable generation modal), **DG** (guardian drawer), **DF** (finance billing drawer), **DO** (owner permissions).

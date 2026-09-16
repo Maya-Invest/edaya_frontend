@@ -81,7 +81,11 @@
 	const stepsLocked = $derived(busy || provisionSucceeded);
 </script>
 
-<div class="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-6 pt-2 sm:px-6">
+<div
+	class="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-6 pt-2 sm:px-6"
+	data-onboarding-step={currentStep}
+	data-onboarding-max-step={maxReachedStep}
+>
 	<section class="rounded-2xl border border-border bg-card p-5 shadow-soft sm:p-6">
 		<div class="mb-4">
 			<OnboardingStepper {currentStep} {maxReachedStep} locked={stepsLocked} {onStepSelect} />

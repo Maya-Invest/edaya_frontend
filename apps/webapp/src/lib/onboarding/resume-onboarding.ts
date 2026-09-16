@@ -70,6 +70,12 @@ export function shouldContinueOnboarding(
 		return false;
 	}
 
+	// Linked actors: last gate before dashboard uses server account-status only.
+	// Leftover local drafts must not send invited staff into the owner wizard.
+	if (schoolId) {
+		return Boolean(serverStatus && !serverStatus.wizardCompleted);
+	}
+
 	if (serverStatus?.wizardCompleted) {
 		return false;
 	}
@@ -77,12 +83,6 @@ export function shouldContinueOnboarding(
 	const draft = resolveOnboardingDraft(authUserId, { schoolId });
 	if (draft.wizardCompleted) {
 		return false;
-	}
-
-	// Server progress without completion: only resume when the account is already linked
-	// to a school. Draft-only wizard progress (no schoolId yet) is handled by needsOnboarding.
-	if (serverStatus && schoolId) {
-		return !serverStatus.wizardCompleted;
 	}
 
 	// No server status (e.g. account-status 403) and no local draft: do not send owners back to step 1.

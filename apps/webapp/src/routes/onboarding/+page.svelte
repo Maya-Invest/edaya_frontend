@@ -32,7 +32,11 @@
 	});
 
 	$effect(() => {
+		void wizard.maxReachedStep;
+		void $page.url;
 		wizard.enforceStepAccess();
+		const timer = setInterval(() => wizard.enforceStepAccess(), 250);
+		return () => clearInterval(timer);
 	});
 
 	$effect(() => {

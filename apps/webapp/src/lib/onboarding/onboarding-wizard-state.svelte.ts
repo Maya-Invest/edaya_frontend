@@ -5,7 +5,7 @@ import { redirectPathIfAuthenticated } from '$lib/auth/resolve-post-auth';
 import { authSession } from '$lib/auth/session.svelte';
 import { isOnboardingSkipEnabled } from '$lib/env/app-env';
 import { t } from '$lib/i18n';
-import { appGoto, appPath } from '$lib/navigation/app-navigation';
+import { appGoto, appPath, markWizardOnboardingNavigation } from '$lib/navigation/app-navigation';
 import { onboardingContext } from '$lib/onboarding/context.svelte';
 import {
 	persistOnboardingFinalizeDebugSnapshot,
@@ -14,8 +14,8 @@ import {
 import {
 	canVisitOnboardingStep,
 	clampOnboardingStep,
+	onboardingStepUrl,
 	parseOnboardingStep,
-	writeOnboardingStepUrl,
 } from '$lib/onboarding/navigation';
 import {
 	getProvisionProgressSteps,
@@ -38,7 +38,7 @@ import { submitCompleteOnboardingStep } from '$lib/onboarding/submit-complete-st
 import { submitProvisionOnboarding } from '$lib/onboarding/submit-provision-step';
 import { fetchServerOnboardingAccountStatus } from '$lib/onboarding/sync-account-status';
 import { toast } from '$lib/toast.svelte';
-import { getContext, setContext } from 'svelte';
+import { flushSync, getContext, setContext } from 'svelte';
 import { get } from 'svelte/store';
 
 const ONBOARDING_WIZARD_STATE_KEY = Symbol('onboarding-wizard-state');
@@ -46,6 +46,8 @@ const ONBOARDING_WIZARD_STATE_KEY = Symbol('onboarding-wizard-state');
 export class OnboardingWizardState {
 	busy = $state(false);
 	syncedServerStatus = $state(false);
+	/** Last wizard-owned step. Survives a delayed post-auth goto back to step 1. */
+	private intendedStep = $state<OnboardingStep | null>(null);
 	/** Optional phase label while Finish provision is running. */
 	provisionPhase = $state<string | null>(null);
 	provisionPercent = $state(0);
@@ -83,8 +85,18 @@ export class OnboardingWizardState {
 
 	constructor(private readonly getUrl: () => URL) {}
 
+	private liveUrl(): URL {
+		if (typeof window !== 'undefined') {
+			return new URL(window.location.href);
+		}
+		return this.getUrl();
+	}
+
 	get currentStep(): OnboardingStep {
-		return parseOnboardingStep(this.getUrl());
+		if (this.intendedStep != null) {
+			return this.intendedStep;
+		}
+		return parseOnboardingStep(this.liveUrl());
 	}
 
 	get maxReachedStep(): OnboardingStep {
@@ -140,7 +152,35 @@ export class OnboardingWizardState {
 	initAuthUser(authUserId: string | null) {
 		if (authUserId) {
 			onboardingContext.init(authUserId);
+			this.hydrateIntendedStep();
 		}
+	}
+
+	private hydrateIntendedStep() {
+		if (this.intendedStep != null || !onboardingContext.initialized) {
+			return;
+		}
+		this.intendedStep = this.maxReachedStep;
+		if (parseOnboardingStep(this.liveUrl()) !== this.intendedStep) {
+			this.writeStepUrl(this.intendedStep);
+		}
+	}
+
+	private writeStepUrl(step: OnboardingStep) {
+		if (typeof window === 'undefined') {
+			return;
+		}
+		const next = new URL(onboardingStepUrl(step), window.location.href);
+		if (next.pathname === window.location.pathname && next.search === window.location.search) {
+			return;
+		}
+		markWizardOnboardingNavigation();
+		history.replaceState(history.state, '', next);
+	}
+
+	private gotoStep(step: OnboardingStep) {
+		this.intendedStep = step;
+		this.writeStepUrl(step);
 	}
 
 	enforceStepAccess() {
@@ -148,10 +188,18 @@ export class OnboardingWizardState {
 			return;
 		}
 
-		const requested = parseOnboardingStep(this.getUrl());
-		const allowed = clampOnboardingStep(requested, this.maxReachedStep);
-		if (requested !== allowed) {
-			appGoto(writeOnboardingStepUrl(this.getUrl(), allowed), { replaceState: true });
+		const requested = parseOnboardingStep(this.liveUrl());
+		if (this.intendedStep != null && requested < this.intendedStep) {
+			this.gotoStep(this.intendedStep);
+			return;
+		}
+
+		const allowed = clampOnboardingStep(
+			requested,
+			Math.max(this.maxReachedStep, this.intendedStep ?? 1) as OnboardingStep,
+		);
+		if (requested > allowed) {
+			this.gotoStep(allowed);
 		}
 	}
 
@@ -213,7 +261,7 @@ export class OnboardingWizardState {
 		if (this.provisionSucceeded || !canVisitOnboardingStep(step, this.maxReachedStep)) {
 			return;
 		}
-		appGoto(writeOnboardingStepUrl(this.getUrl(), step));
+		this.gotoStep(step);
 	}
 
 	goBack() {
@@ -247,8 +295,11 @@ export class OnboardingWizardState {
 			onboardingContext.markStaffStepSubmitted();
 		}
 
+		// Flush before goto: $page is a store and can notify before $state maxReachedStep
+		// is visible, which made enforceStepAccess clamp a legitimate step-2 URL back to 1.
 		onboardingContext.markStepReached(next);
-		appGoto(writeOnboardingStepUrl(this.getUrl(), next));
+		flushSync();
+		this.gotoStep(next);
 	}
 
 	skipStep() {
@@ -262,7 +313,8 @@ export class OnboardingWizardState {
 			onboardingContext.persist();
 		}
 		onboardingContext.markStepReached(this.nextStep);
-		appGoto(writeOnboardingStepUrl(this.getUrl(), this.nextStep));
+		flushSync();
+		this.gotoStep(this.nextStep);
 	}
 
 	private async runProvision(

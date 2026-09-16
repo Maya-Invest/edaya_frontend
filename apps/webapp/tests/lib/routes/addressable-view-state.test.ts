@@ -16,12 +16,15 @@ import {
 } from '../../../src/routes/(app)/school/students/[[id]]/(tabs)/grades/student-subject-url';
 import {
 	canonicalInvitationAuthUrlState,
+	invitationTokenFromRoute,
+	isInvitationRoute,
 	readInvitationAuthUrlState,
 	writeInvitationAuthUrlState,
 } from '../../../src/routes/invite/[token]/invitation-auth-url';
 import {
 	canonicalLoginUrlState,
 	isEmailVerifiedRedirect,
+	isLoginRoute,
 	readLoginUrlState,
 	writeLoginUrlState,
 } from '../../../src/routes/login/login-url-state';
@@ -53,6 +56,13 @@ describe('addressable non-modal view URL state', () => {
 		expect(readListCardColumns(url('/school/activities'), 2)).toBe(2);
 		expect(readListCardColumns(url('/school/activities?cardColumns=3'), 2)).toBe(3);
 		expect(readListCardColumns(url('/school/activities?cardColumns=99'), 4)).toBe(3);
+	});
+
+	it('detects login routes so afterNavigate cannot rewrite onboarding', () => {
+		expect(isLoginRoute('/login')).toBe(true);
+		expect(isLoginRoute('/login/demo')).toBe(true);
+		expect(isLoginRoute('/onboarding')).toBe(false);
+		expect(isLoginRoute('/invite/token')).toBe(false);
 	});
 
 	it('routes login panel, method, and stage without credentials', () => {
@@ -117,7 +127,16 @@ describe('addressable non-modal view URL state', () => {
 		expect(href).not.toContain('verified=');
 	});
 
+	it('detects invitation routes so afterNavigate cannot rewrite the dashboard', () => {
+		expect(isInvitationRoute('/invite/token-123')).toBe(true);
+		expect(isInvitationRoute('/invite')).toBe(true);
+		expect(isInvitationRoute('/login')).toBe(false);
+		expect(isInvitationRoute('/dashboard')).toBe(false);
+	});
+
 	it('routes invitation auth mode and safe stage only', () => {
+		expect(invitationTokenFromRoute('  abc-token  ')).toBe('abc-token');
+		expect(invitationTokenFromRoute(undefined)).toBe('');
 		const href = writeInvitationAuthUrlState(
 			url('/invite/token?email=ada%40school.test&password=secret'),
 			{ mode: 'signUp', stage: 'verification' },

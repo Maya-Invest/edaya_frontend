@@ -12,6 +12,10 @@ export interface LoginUrlState {
 	stage: LoginStage;
 }
 
+export function isLoginRoute(pathname: string): boolean {
+	return pathname === '/login' || pathname.startsWith('/login/');
+}
+
 export function canonicalLoginUrlState(
 	state: LoginUrlState,
 	options: { hasEmailIdentity: boolean },

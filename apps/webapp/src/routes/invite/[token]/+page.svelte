@@ -8,7 +8,8 @@
 	import { page } from '$app/stores';
 	import { acceptInvitation, fetchInvitationPreview } from '$lib/api/invitation-data';
 	import { isExistingAccountAuthError } from '$lib/auth/auth-errors';
-	import { bootstrapSession, getAuthenticatedAuthUser } from '$lib/auth/bootstrap';
+	import { bootstrapSessionAfterInvite } from '$lib/auth/accept-pending-invite';
+	import { getAuthenticatedAuthUser, resetBootstrapSession } from '$lib/auth/bootstrap';
 	import { resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 	import { authClient } from '$lib/auth/client';
 	import { GUARDIAN_PLAY_STORE_URL } from '$lib/auth/guardian-app';
@@ -16,7 +17,7 @@
 		clearPendingInviteToken,
 		persistPendingInviteToken,
 	} from '$lib/auth/pending-invite-token';
-	import { resolveLinkedActorPath } from '$lib/auth/resolve-post-auth';
+	import { resolvePostAuthPath } from '$lib/auth/resolve-post-auth';
 	import { authSession } from '$lib/auth/session.svelte';
 	import LanguageSelector from '$lib/components/layout/LanguageSelector.svelte';
 	import BrandLogo from '$lib/components/ui/BrandLogo.svelte';
@@ -31,6 +32,8 @@
 	import { get } from 'svelte/store';
 	import {
 		canonicalInvitationAuthUrlState,
+		invitationTokenFromRoute,
+		isInvitationRoute,
 		readInvitationAuthUrlState,
 		writeInvitationAuthUrlState,
 	} from './invitation-auth-url';
@@ -63,15 +66,16 @@
 		return get(t)('invitation.accept.failed');
 	}
 
-	const token = $derived($page.params.token ?? '');
+	const token = $derived(invitationTokenFromRoute($page.params.token));
 
-	type PageState = 'loading' | 'invalid' | 'notFound' | 'revoked' | 'expired' | 'accepted' | 'ready' | 'accepting' | 'teacherLinked' | 'guardianLinked';
+	type PageState = 'loading' | 'invalid' | 'loadFailed' | 'notFound' | 'revoked' | 'expired' | 'accepted' | 'ready' | 'accepting' | 'teacherLinked' | 'guardianLinked';
 	type AcceptedIssue = 'none' | 'otherAccount' | 'stillUnlinked';
 
 	let preview = $state<InvitationPreview | null>(null);
 	let pageState = $state<PageState>('loading');
 	let acceptedIssue = $state<AcceptedIssue>('none');
 	let acceptedCompletionAttempted = $state(false);
+	let previewReload = $state(0);
 	let email = $state('');
 	let password = $state('');
 	let name = $state('');
@@ -96,7 +100,7 @@
 	});
 
 	type InvitationKind = InvitationPreview['kind'];
-	type BootstrapSession = NonNullable<Awaited<ReturnType<typeof bootstrapSession>>['session']>;
+	type BootstrapSession = NonNullable<Awaited<ReturnType<typeof bootstrapSessionAfterInvite>>['session']>;
 
 	function isTeacherInvitation(kind: InvitationKind | null | undefined): boolean {
 		return kind === 'teacher';
@@ -106,7 +110,7 @@
 		return kind === 'guardian';
 	}
 
-	function completeInvitationAccept(session: BootstrapSession) {
+	async function completeInvitationAccept(session: BootstrapSession) {
 		clearPendingInviteToken();
 		if (isTeacherInvitation(session.kind)) {
 			toast.success($t('invitation.accept.teacherSuccess'));
@@ -119,7 +123,11 @@
 			return;
 		}
 		toast.success($t('invitation.accept.success'));
-		void appGoto(resolveLinkedActorPath(session));
+		await appGoto(resolvePostAuthPath({
+			session,
+			pendingOnboarding: false,
+			authUserId: authSession.authUserId,
+		}));
 	}
 
 	const wrongAccount = $derived(preview ? sessionBlocksInvitationAccept(preview) : false);
@@ -164,9 +172,13 @@
 		}
 	}
 
-	afterNavigate(() => {
-		const canonicalHref = writeInvitationAuthUrlState($page.url, authUrlState);
-		if (canonicalHref !== `${$page.url.pathname}${$page.url.search}`) {
+	afterNavigate((navigation) => {
+		const url = navigation.to?.url ?? $page.url;
+		if (!isInvitationRoute(url.pathname)) {
+			return;
+		}
+		const canonicalHref = writeInvitationAuthUrlState(url, authUrlState);
+		if (canonicalHref !== `${url.pathname}${url.search}`) {
 			void appGoto(canonicalHref, {
 				replaceState: true,
 				keepFocus: true,
@@ -207,9 +219,10 @@
 			try {
 				await acceptInvitation(currentToken);
 				resetAppShellBootstrap();
-				const { session, pendingOnboarding } = await bootstrapSession();
+				resetBootstrapSession();
+				const { session, pendingOnboarding } = await bootstrapSessionAfterInvite();
 				if (!pendingOnboarding && session) {
-					completeInvitationAccept(session);
+					await completeInvitationAccept(session);
 					return;
 				}
 
@@ -236,6 +249,7 @@
 
 	$effect(() => {
 		const currentToken = token;
+		const request = { cancelled: false, attempt: previewReload };
 		if (!currentToken) {
 			pageState = 'notFound';
 			return;
@@ -247,6 +261,9 @@
 			acceptedCompletionAttempted = false;
 			try {
 				const result = await fetchInvitationPreview(currentToken);
+				if (request.cancelled) {
+					return;
+				}
 				preview = result;
 				if (result.status === 'accepted') {
 					pageState = 'accepted';
@@ -271,13 +288,20 @@
 				pageState = 'ready';
 			}
 			catch (err) {
+				if (request.cancelled) {
+					return;
+				}
 				if (err instanceof ApiError && err.status === 404) {
 					pageState = 'notFound';
 					return;
 				}
-				pageState = 'invalid';
+				pageState = 'loadFailed';
 			}
 		})();
+
+		return () => {
+			request.cancelled = true;
+		};
 	});
 
 	async function signInWithEmail(): Promise<boolean> {
@@ -362,13 +386,14 @@
 
 			await acceptInvitation(token);
 			resetAppShellBootstrap();
-			const { session, pendingOnboarding } = await bootstrapSession();
+			resetBootstrapSession();
+			const { session, pendingOnboarding } = await bootstrapSessionAfterInvite();
 			if (pendingOnboarding || !session) {
 				pageState = 'ready';
 				toast.error($t('invitation.accept.alreadyAcceptedStillUnlinkedHint'));
 				return;
 			}
-			completeInvitationAccept(session);
+			await completeInvitationAccept(session);
 		}
 		catch (err) {
 			pageState = 'ready';
@@ -422,6 +447,14 @@
 					<div class="space-y-2 py-4 text-center">
 						<h2 class="font-display text-lg font-semibold">{$t('invitation.accept.invalidTitle')}</h2>
 						<p class="text-sm text-muted-foreground">{$t('invitation.accept.invalidHint')}</p>
+					</div>
+				{:else if pageState === 'loadFailed'}
+					<div class="space-y-4 py-4 text-center">
+						<h2 class="font-display text-lg font-semibold">{$t('invitation.accept.loadFailedTitle')}</h2>
+						<p class="text-sm text-muted-foreground">{$t('invitation.accept.loadFailedHint')}</p>
+						<Button type="button" onclick={() => { previewReload += 1; }}>
+							{$t('invitation.accept.retry')}
+						</Button>
 					</div>
 				{:else if pageState === 'teacherLinked'}
 					<div class="space-y-4 py-4 text-center">

@@ -7,6 +7,7 @@
 	import { ACCOUNT_PROFILE_MODAL } from '$lib/account/profile-navigation';
 	import { bootstrapAppShell, invalidateAppShellBootstrapCache, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 	import { shouldEnforceLoginGate } from '$lib/auth/enforce-login-gate';
+	import { ONBOARDING_PATH } from '$lib/auth/resolve-post-auth-paths';
 	import { authSession } from '$lib/auth/session.svelte';
 	import AccountProfileModal from '$lib/components/account/AccountProfileModal.svelte';
 	import AcademicHeader from '$lib/components/layout/AcademicHeader.svelte';
@@ -98,22 +99,27 @@
 			return;
 		}
 
-		const resumePath = onboardingResumePath(
-			authSession.authUserId,
-			authSession.schoolId,
-			authSession.serverOnboardingStatus,
-		);
 		if (authSession.needsOnboarding) {
-			appGoto(resumePath ?? appPath('/onboarding'), { replaceState: true });
-			return;
-		}
-		if (resumePath) {
-			appGoto(resumePath, { replaceState: true });
+			appGoto(ONBOARDING_PATH, { replaceState: true });
 			return;
 		}
 
 		if (!authSession.isLoggedIn) {
 			appGoto(appPath('/login'), { replaceState: true });
+			return;
+		}
+
+		if (authSession.sessionKind !== 'staff') {
+			return;
+		}
+
+		const resumePath = onboardingResumePath(
+			authSession.authUserId,
+			authSession.schoolId,
+			authSession.serverOnboardingStatus,
+		);
+		if (resumePath) {
+			appGoto(resumePath, { replaceState: true });
 		}
 	});
 

@@ -1,5 +1,5 @@
+import { bootstrapSessionAfterInvite } from '$lib/auth/accept-pending-invite';
 import { markAuthGatePassed } from '$lib/auth/auth-gate';
-import { bootstrapSession } from '$lib/auth/bootstrap';
 import { resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import { guardianPortalLoginPath } from '$lib/auth/guardian-portal-gate';
 import { resolvePostAuthPath } from '$lib/auth/resolve-post-auth';
@@ -12,14 +12,14 @@ import { get } from 'svelte/store';
 
 export async function completeAuthSignIn(successMessage?: string): Promise<boolean> {
 	resetAppShellBootstrap();
-	const { session, pendingOnboarding } = await bootstrapSession();
+	const { session, pendingOnboarding } = await bootstrapSessionAfterInvite();
 
 	if (pendingOnboarding) {
 		if (successMessage) {
 			toast.success(successMessage);
 		}
 		markAuthGatePassed();
-		appGoto(resolvePostAuthPath({ session: null, pendingOnboarding: true }));
+		await appGoto(resolvePostAuthPath({ session: null, pendingOnboarding: true }));
 		return true;
 	}
 
@@ -49,7 +49,7 @@ export async function completeAuthSignIn(successMessage?: string): Promise<boole
 	}
 
 	markAuthGatePassed();
-	appGoto(resolvePostAuthPath({
+	await appGoto(resolvePostAuthPath({
 		session,
 		pendingOnboarding: false,
 		authUserId: authSession.authUserId,

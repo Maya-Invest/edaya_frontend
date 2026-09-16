@@ -38,4 +38,19 @@ describe('qa-matrix-support timetable paths', () => {
 			'http://localhost:5173/classes/class-1/timetable/sch-abc%3A2026-08-16/attendance?week=2026-08-16',
 		);
 	});
+
+	test('resolveEndpoint substitutes family-feedback campaign ids', () => {
+		const entities = {
+			...emptyEntities(),
+			studentId: 'stu-1',
+			familyFeedbackCampaignId: 'ff-campaign-1',
+		};
+		expect(
+			resolveEndpoint(
+				'http://localhost:5173/school/family-feedback/[id]/setup?modal=edit',
+				'http://localhost:5173',
+				entities,
+			),
+		).toBe('http://localhost:5173/school/family-feedback/ff-campaign-1/setup?modal=edit');
+	});
 });

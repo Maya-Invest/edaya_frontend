@@ -330,6 +330,9 @@ export function resolveCreateButtonPatterns(action: string, endpoint: string): R
 	if (endpointLower.includes('/configuration/report-cards')) {
 		push(/add model|ajouter un modèle/i);
 	}
+	if (endpointLower.includes('/school/family-feedback')) {
+		push(/new campaign|nouvelle campagne|créer campagne|create campaign/i);
+	}
 	if (endpointLower.includes('/planning')) {
 		push(/add session|ajouter une séance|add schedule|ajouter un emploi du temps/i);
 	}
@@ -378,6 +381,9 @@ export function resolveCreateButtonPatterns(action: string, endpoint: string): R
 	}
 	if (/modèle|model/.test(actionLower)) {
 		push(/add model|ajouter un modèle/i);
+	}
+	if (/campagne|campaign/.test(actionLower)) {
+		push(/new campaign|nouvelle campagne|créer campagne|create campaign/i);
 	}
 
 	push(/^(add|ajouter)\s/i);

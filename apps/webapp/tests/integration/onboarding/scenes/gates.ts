@@ -1,6 +1,6 @@
 import type { Page } from 'playwright';
 import { expectOnboardingStep } from '../support/auth';
-import { dashboardPath, onboardingPath } from '../support/paths';
+import { dashboardPath, onboardingPath, stripTrailingSlash } from '../support/paths';
 
 export async function assertUnauthenticatedOnboardingRedirect(
 	page: Page,
@@ -8,6 +8,14 @@ export async function assertUnauthenticatedOnboardingRedirect(
 ): Promise<void> {
 	await page.goto(onboardingPath(base), { waitUntil: 'domcontentloaded' });
 	await page.waitForURL(/\/login/, { timeout: 20_000 });
+}
+
+export async function assertPublicAuthGates(page: Page, base: string): Promise<void> {
+	const origin = stripTrailingSlash(base);
+	for (const path of ['/', '/dashboard', '/onboarding']) {
+		await page.goto(`${origin}${path}`, { waitUntil: 'domcontentloaded' });
+		await page.waitForURL(/\/login/, { timeout: 20_000 });
+	}
 }
 
 export async function assertIncompleteWizardBouncesToStep(

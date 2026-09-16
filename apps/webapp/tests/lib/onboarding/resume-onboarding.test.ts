@@ -38,6 +38,28 @@ function withSessionStorage<T>(run: () => T): T {
 }
 
 describe('resume onboarding', () => {
+	it('does not send invited staff into the owner wizard', () => {
+		withSessionStorage(() => {
+			const authUserId = 'user-invited-staff';
+			const draft = createEmptyDraft();
+			draft.schoolStepSubmitted = true;
+			draft.maxReachedStep = 2;
+			saveDraft(authUserId, draft);
+
+			expect(shouldContinueOnboarding(authUserId, 'sch-1')).toBe(false);
+			expect(onboardingResumePath(authUserId, 'sch-1')).toBeNull();
+
+			const serverStatus = {
+				wizardCompleted: true,
+				maxReachedStep: 4 as const,
+				schoolStepSubmitted: true,
+				structureStepSubmitted: true,
+			};
+			expect(shouldContinueOnboarding(authUserId, 'sch-1', serverStatus)).toBe(false);
+			expect(onboardingResumePath(authUserId, 'sch-1', serverStatus)).toBeNull();
+		});
+	});
+
 	it('resumes unlinked draft progress without a school id', () => {
 		withSessionStorage(() => {
 			const authUserId = 'user-unlinked-draft';
@@ -59,8 +81,15 @@ describe('resume onboarding', () => {
 			draft.maxReachedStep = 2;
 			saveDraft(authUserId, draft);
 
-			expect(shouldContinueOnboarding(authUserId, 'sch-1')).toBe(true);
-			expect(onboardingResumePath(authUserId, 'sch-1')).toBe('/onboarding?step=2');
+			const serverStatus = {
+				wizardCompleted: false,
+				maxReachedStep: 2 as const,
+				schoolStepSubmitted: true,
+				structureStepSubmitted: false,
+			};
+
+			expect(shouldContinueOnboarding(authUserId, 'sch-1', serverStatus)).toBe(true);
+			expect(onboardingResumePath(authUserId, 'sch-1', serverStatus)).toBe('/onboarding?step=2');
 		});
 	});
 

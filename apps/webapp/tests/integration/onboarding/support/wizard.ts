@@ -1,5 +1,5 @@
 import type { Page } from 'playwright';
-import { waitForEnabled } from '../../demo-dry-run/support/auth';
+import { waitForEnabled } from './auth';
 import { currentOnboardingStep } from './paths';
 
 export const CONTINUE_BUTTON = /^(Continuer|Continue)$/;
@@ -11,7 +11,7 @@ export const COLLEGE_MODEL = /Collège|Middle school/;
 export const STEPPER_NAV = /progression de la configuration|setup progress/i;
 
 export function continueButton(page: Page) {
-	return page.getByRole('button', { name: CONTINUE_BUTTON });
+	return page.locator('footer').getByRole('button', { name: CONTINUE_BUTTON });
 }
 
 export function skipStepButton(page: Page) {
@@ -31,16 +31,64 @@ export function backButton(page: Page) {
 }
 
 export async function clickContinue(page: Page): Promise<void> {
+	const before = currentOnboardingStep(page.url()) ?? 1;
 	const button = continueButton(page);
 	await waitForEnabled(button);
-	await button.click();
+	await button.scrollIntoViewIfNeeded();
+	await button.evaluate((element) => {
+		(element as HTMLButtonElement).click();
+	});
+	if (before >= 4) {
+		return;
+	}
+	const deadline = Date.now() + 20_000;
+	let advancedAt: number | null = null;
+	while (Date.now() < deadline) {
+		const step = currentOnboardingStep(page.url()) ?? 1;
+		if (step > before) {
+			if (advancedAt == null) {
+				advancedAt = Date.now();
+			}
+			else if (Date.now() - advancedAt >= 300) {
+				return;
+			}
+		}
+		else if (advancedAt != null) {
+			throw new Error(
+				`Continue reached step ${step} then snapped back to ${page.url()}`,
+			);
+		}
+		await page.waitForTimeout(150);
+	}
+	throw new Error(`Continue did not leave onboarding step ${before}: ${page.url()}`);
+}
+
+export async function expectContinueDisabled(page: Page): Promise<void> {
+	const button = continueButton(page);
+	await button.waitFor({ state: 'visible', timeout: 15_000 });
+	if (!(await button.isDisabled())) {
+		throw new Error(`Expected Continue to be disabled on ${page.url()}`);
+	}
+}
+
+export async function addInvalidStaffInviteRow(page: Page): Promise<void> {
+	const addRow = page.getByRole('button', { name: /add colleague|ajouter un collègue/i });
+	await addRow.waitFor({ state: 'visible', timeout: 15_000 });
+	await addRow.click();
+	const email = page.locator('input[id^="staff-email-"]').first();
+	await email.waitFor({ state: 'visible', timeout: 10_000 });
+	await email.fill('not-an-email');
 }
 
 export async function fillSchoolIdentity(page: Page, name: string, city: string): Promise<void> {
 	const nameInput = page.locator('#onboarding-school-name');
+	const cityInput = page.locator('#onboarding-school-city');
 	await nameInput.waitFor({ state: 'visible', timeout: 20_000 });
 	await nameInput.fill(name);
-	await page.locator('#onboarding-school-city').fill(city);
+	await nameInput.blur();
+	await cityInput.fill(city);
+	await cityInput.blur();
+	await waitForEnabled(continueButton(page));
 }
 
 export async function selectCollegeAndOneClass(page: Page): Promise<void> {

@@ -3,14 +3,14 @@ import type { SessionSnapshot } from '$lib/auth/types';
 import type { ServerOnboardingAccountStatus } from '$lib/onboarding/types';
 import { pendingInvitePath } from '$lib/auth/pending-invite-token';
 import { appPath } from '$lib/navigation/app-navigation';
+import { onboardingStepUrl } from '$lib/onboarding/navigation';
 import { onboardingResumePath } from '$lib/onboarding/resume-onboarding';
 
-export const ONBOARDING_PATH = appPath('/onboarding');
+export const ONBOARDING_PATH = onboardingStepUrl(1);
 
 export function resolveLinkedActorPath(
 	session?: SessionSnapshot | null,
 	context?: {
-		role?: string | null;
 		sessionKind?: SessionKind | null;
 	},
 ): string {
@@ -36,7 +36,6 @@ export function resolvePostAuthPath(options: {
 	session: SessionSnapshot | null;
 	pendingOnboarding: boolean;
 	authUserId?: string | null;
-	role?: string | null;
 	sessionKind?: SessionKind | null;
 	serverOnboardingStatus?: ServerOnboardingAccountStatus | null;
 }): string {
@@ -48,17 +47,19 @@ export function resolvePostAuthPath(options: {
 		return appPath('/login');
 	}
 
-	const resumePath = onboardingResumePath(
-		options.authUserId,
-		options.session.schoolId,
-		options.serverOnboardingStatus,
-	);
-	if (resumePath) {
-		return resumePath;
+	const kind = options.sessionKind ?? options.session.kind;
+	if (kind === 'staff') {
+		const resumePath = onboardingResumePath(
+			options.authUserId,
+			options.session.schoolId,
+			options.serverOnboardingStatus,
+		);
+		if (resumePath) {
+			return resumePath;
+		}
 	}
 
 	return resolveLinkedActorPath(options.session, {
-		role: options.role,
-		sessionKind: options.sessionKind ?? options.session.kind,
+		sessionKind: kind,
 	});
 }

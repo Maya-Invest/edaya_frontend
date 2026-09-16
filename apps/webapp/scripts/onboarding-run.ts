@@ -1,10 +1,14 @@
 #!/usr/bin/env bun
 /**
- * Onboarding integration pipeline (Playwright library, fail-the-process):
- *   1. Unauthenticated /onboarding → /login
- *   2. UI signup → wizard steps 1–3 (local draft)
- *   3. POST /core/onboarding/provision from Finish
- *   4. Hold on step 4, then Open dashboard
+ * Login + onboarding integration pipeline (Playwright library, fail-the-process):
+ *   1. Public gates (`/`, `/dashboard`, `/onboarding`) → `/login`
+ *   2. Password login error + signup validation, then unlinked signup → wizard
+ *   3. Invalid invite token page
+ *   4. Wizard step UI (disabled Continue, skip staff, Create school enabled)
+ *   5. Owner logout after school step → resume `/onboarding?step=2`
+ *   6. Happy-path provision → dashboard
+ *   7. Invited staff `/invite/{token}` signup → dashboard
+ *   8. Provisioned owner password login → dashboard
  *
  * Prerequisites:
  *   - Identity at AUTH_URL (default http://localhost:9900)
@@ -41,7 +45,7 @@ async function main(): Promise<void> {
 			outDir: OUT_DIR,
 		});
 		await writeFile(SUMMARY_PATH, JSON.stringify(summary, null, 2));
-		console.log(`Onboarding suite OK — ${summary.scenes.length} scenes`);
+		console.log(`Login + onboarding suite OK — ${summary.scenes.length} scenes`);
 		console.log(`Summary: ${SUMMARY_PATH}`);
 	}
 	catch (error) {

@@ -15,7 +15,7 @@
  *   - Playwright chromium (auto-installed into apps/webapp/.cache/ms-playwright)
  *
  * Canonical integration contract: bun run test:integration:provisioned
- * Onboarding wizard (not this suite): bun run test:integration:onboarding
+ * Login + onboarding (not this suite): bun run test:integration:onboarding
  * Client walkthrough (not this suite): bun run demo:e2e
  */
 import { readFile, writeFile, mkdir } from 'node:fs/promises';

@@ -83,7 +83,7 @@ async function runBootstrapSession(
 			session = await getBrowserSchoolClient().authorization.effectiveGrants();
 		}
 		catch (error) {
-			if (error instanceof ApiError && error.status === 401) {
+			if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
 				if (!silent) {
 					authSession.setPendingOnboarding({
 						authUserId: auth.user.id,

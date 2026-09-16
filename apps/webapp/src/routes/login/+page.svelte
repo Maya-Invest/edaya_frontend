@@ -25,6 +25,7 @@
 	import {
 		canonicalLoginUrlState,
 		isEmailVerifiedRedirect,
+		isLoginRoute,
 		readLoginUrlState,
 		writeLoginUrlState,
 	} from './login-url-state';
@@ -51,13 +52,17 @@
 		})();
 	});
 
-	afterNavigate(() => {
-		if (isEmailVerifiedRedirect($page.url) && !emailVerifiedToastShown) {
+	afterNavigate((navigation) => {
+		const url = navigation.to?.url ?? $page.url;
+		if (!isLoginRoute(url.pathname)) {
+			return;
+		}
+		if (isEmailVerifiedRedirect(url) && !emailVerifiedToastShown) {
 			emailVerifiedToastShown = true;
 			toast.success($t('auth.emailVerifiedSignIn'));
 		}
-		const canonicalHref = writeLoginUrlState($page.url, urlState);
-		if (canonicalHref !== `${$page.url.pathname}${$page.url.search}`) {
+		const canonicalHref = writeLoginUrlState(url, urlState);
+		if (canonicalHref !== `${url.pathname}${url.search}`) {
 			void appGoto(canonicalHref, {
 				replaceState: true,
 				keepFocus: true,

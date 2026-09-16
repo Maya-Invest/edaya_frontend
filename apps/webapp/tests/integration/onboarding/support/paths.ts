@@ -27,19 +27,30 @@ export function loginSignupPath(base: string): string {
 	return `${stripTrailingSlash(base)}/login?panel=signup&method=password&stage=form`;
 }
 
+export function loginSignInPath(base: string): string {
+	return `${stripTrailingSlash(base)}/login?panel=signin&method=password&stage=form`;
+}
+
 export function dashboardPath(base: string): string {
 	return `${stripTrailingSlash(base)}/dashboard`;
+}
+
+export function invitePath(base: string, token: string): string {
+	return `${stripTrailingSlash(base)}/invite/${encodeURIComponent(token)}`;
 }
 
 export function currentOnboardingStep(url: string): number | null {
 	try {
 		const parsed = new URL(url);
-		const raw = parsed.searchParams.get('step');
-		if (!raw) {
+		if (parsed.pathname.replace(/\/+$/, '') !== '/onboarding') {
 			return null;
 		}
+		const raw = parsed.searchParams.get('step');
+		if (!raw) {
+			return 1;
+		}
 		const step = Number(raw);
-		return Number.isInteger(step) ? step : null;
+		return Number.isInteger(step) && step >= 1 ? step : null;
 	}
 	catch {
 		return null;

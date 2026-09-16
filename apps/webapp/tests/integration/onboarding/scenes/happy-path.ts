@@ -1,16 +1,16 @@
 import type { OnboardingRunContext } from '../types';
-import { expectOnboardingStep, signUpThroughUi } from '../support/auth';
+import { expectOnboardingStep, signUpThroughUi, waitForEnabled } from '../support/auth';
 import {
 	clickContinue,
 	createSchoolButton,
 	expectBackLocked,
+	expectContinueDisabled,
 	fillSchoolIdentity,
 	openDashboardButton,
 	selectCollegeAndOneClass,
 	skipStepButton,
 	waitForProvisionHold,
 } from '../support/wizard';
-import { waitForEnabled } from '../../demo-dry-run/support/auth';
 import {
 	assertIncompleteWizardBouncesToStep,
 	assertStepClamped,
@@ -26,6 +26,7 @@ export async function runHappyPath(ctx: OnboardingRunContext): Promise<void> {
 	});
 	await expectOnboardingStep(page, 1);
 
+	await expectContinueDisabled(page);
 	await fillSchoolIdentity(page, credentials.schoolName, credentials.city);
 	await clickContinue(page);
 	await expectOnboardingStep(page, 2);

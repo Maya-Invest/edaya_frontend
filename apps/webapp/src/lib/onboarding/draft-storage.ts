@@ -226,16 +226,39 @@ function normalizeDraft(raw: unknown): OnboardingDraft | null {
 	};
 }
 
+function readDraftStore(store: Storage | undefined, key: string): string | null {
+	try {
+		return store?.getItem(key) ?? null;
+	}
+	catch {
+		return null;
+	}
+}
+
+function writeDraftStore(store: Storage | undefined, key: string, value: string | null): void {
+	try {
+		if (!store) {
+			return;
+		}
+		if (value) {
+			store.setItem(key, value);
+			return;
+		}
+		store.removeItem(key);
+	}
+	catch {
+		// Private mode can deny web storage.
+	}
+}
+
 export function loadDraft(authUserId: string): OnboardingDraft | null {
-	if (typeof sessionStorage === 'undefined') {
+	const key = draftStorageKey(authUserId);
+	const raw = readDraftStore(globalThis.sessionStorage, key) ?? readDraftStore(globalThis.localStorage, key);
+	if (!raw) {
 		return null;
 	}
 
 	try {
-		const raw = sessionStorage.getItem(draftStorageKey(authUserId));
-		if (!raw) {
-			return null;
-		}
 		return normalizeDraft(JSON.parse(raw));
 	}
 	catch {
@@ -244,20 +267,18 @@ export function loadDraft(authUserId: string): OnboardingDraft | null {
 }
 
 export function saveDraft(authUserId: string, draft: OnboardingDraft): void {
-	if (typeof sessionStorage === 'undefined') {
-		return;
-	}
-
 	const payload: OnboardingDraft = {
 		...draft,
 		updatedAt: new Date().toISOString(),
 	};
-	sessionStorage.setItem(draftStorageKey(authUserId), JSON.stringify(payload));
+	const raw = JSON.stringify(payload);
+	const key = draftStorageKey(authUserId);
+	writeDraftStore(globalThis.sessionStorage, key, raw);
+	writeDraftStore(globalThis.localStorage, key, raw);
 }
 
 export function clearDraft(authUserId: string): void {
-	if (typeof sessionStorage === 'undefined') {
-		return;
-	}
-	sessionStorage.removeItem(draftStorageKey(authUserId));
+	const key = draftStorageKey(authUserId);
+	writeDraftStore(globalThis.sessionStorage, key, null);
+	writeDraftStore(globalThis.localStorage, key, null);
 }
