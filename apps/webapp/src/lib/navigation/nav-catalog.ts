@@ -44,13 +44,13 @@ export const SCHOOL_NAV_DEFS: NavItemDefinition[] = [
 		key: 'calendar',
 		labelKey: 'school.calendar',
 		href: '/school/calendar',
-		permissions: ['QUERY_CALENDAR_READ', 'ACCESS_CONTROL_READ'],
+		permissions: ['QUERY_CALENDAR_READ'],
 	},
 	{
 		key: 'activities',
 		labelKey: 'school.activities',
 		href: '/school/activities',
-		permissions: ['QUERY_CALENDAR_READ', 'ACCESS_CONTROL_READ'],
+		permissions: ['QUERY_CALENDAR_READ'],
 	},
 	{
 		key: 'announcements',
@@ -202,6 +202,12 @@ export const CONFIG_NAV_DEFS: NavItemDefinition[] = [
 		labelKey: 'config.discipline',
 		href: '/configuration/discipline',
 		permissions: ['DISCIPLINE_VALIDATE'],
+	},
+	{
+		key: 'permissionProfiles',
+		labelKey: 'config.permissionProfiles',
+		href: '/configuration/permission-profiles',
+		permissions: ['ACCESS_CONTROL_READ', 'ACCESS_CONTROL_CONFIGURE'],
 	},
 	{
 		key: 'tools',

@@ -5,6 +5,8 @@ export type LoginPanel = 'signin' | 'signup';
 export type LoginStage = 'form' | 'code' | 'verification';
 
 const EMAIL_VERIFIED_PARAM = 'verified';
+const LOGIN_ERROR_PARAM = 'error';
+const INVALID_VERIFICATION_TOKEN = 'INVALID_TOKEN';
 
 export interface LoginUrlState {
 	panel: LoginPanel;
@@ -40,9 +42,17 @@ function validStage(
 	return 'form';
 }
 
+export function isLoginAutoSignInRoute(pathname: string): boolean {
+	return pathname === '/login';
+}
+
 export function isEmailVerifiedRedirect(url: URL): boolean {
 	const value = url.searchParams.get(EMAIL_VERIFIED_PARAM)?.trim().toLowerCase();
 	return value === '1' || value === 'true';
+}
+
+export function isInvalidVerificationRedirect(url: URL): boolean {
+	return url.searchParams.get(LOGIN_ERROR_PARAM)?.trim().toUpperCase() === INVALID_VERIFICATION_TOKEN;
 }
 
 export function readLoginUrlState(
@@ -67,7 +77,7 @@ export function writeLoginUrlState(url: URL, state: LoginUrlState): string {
 	next.searchParams.set('panel', state.panel);
 	next.searchParams.set('method', state.method);
 	next.searchParams.set('stage', state.stage);
-	for (const sensitiveKey of ['email', 'password', 'otp', 'code', EMAIL_VERIFIED_PARAM]) {
+	for (const sensitiveKey of ['email', 'password', 'otp', 'code', EMAIL_VERIFIED_PARAM, LOGIN_ERROR_PARAM]) {
 		next.searchParams.delete(sensitiveKey);
 	}
 	return `${next.pathname}${next.search}`;

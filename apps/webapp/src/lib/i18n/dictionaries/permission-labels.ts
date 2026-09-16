@@ -125,6 +125,8 @@ export const permissionLabelsEn = {
 	'scope.grain.activity': 'Activity',
 	'scope.grain.student': 'Student',
 	'scope.grain.grade_level': 'Grade level',
+	'scope.grain.grade_level_subject': 'Grade-level subject',
+	'scope.grain.school': 'Whole school',
 	'roles.wholeSchool': 'Whole school',
 } as const satisfies Partial<Dict>;
 
@@ -252,5 +254,7 @@ export const permissionLabelsFr = {
 	'scope.grain.activity': 'Activité',
 	'scope.grain.student': 'Élève',
 	'scope.grain.grade_level': 'Niveau',
+	'scope.grain.grade_level_subject': 'Matière de niveau',
+	'scope.grain.school': 'Établissement',
 	'roles.wholeSchool': 'Tout l\'établissement',
 } as const satisfies Partial<Dict>;

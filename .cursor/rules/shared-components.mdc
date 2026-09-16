@@ -20,7 +20,7 @@ alwaysApply: false
 | Gating | `PermissionGate` |
 | Drawer | `DetailDrawer` · `DrawerEntityHeader` · `DrawerField` · `DrawerEmptyState` · `DrawerActionBar` (body footer only) |
 | People | Smart `StaffPicker` · `StudentPicker` · `GuardianPicker` (`lib/smart-components/`) |
-| Permissions | `ScopeBuilder` · `StaffPermissionFormModal` only |
+| Permissions | `ScopeBuilder` · `StaffPermissionFormModal`; profile catalog may use a same-grain checklist |
 
 ## Do not
 

@@ -24,6 +24,8 @@ import {
 import {
 	canonicalLoginUrlState,
 	isEmailVerifiedRedirect,
+	isInvalidVerificationRedirect,
+	isLoginAutoSignInRoute,
 	isLoginRoute,
 	readLoginUrlState,
 	writeLoginUrlState,
@@ -125,6 +127,21 @@ describe('addressable non-modal view URL state', () => {
 		);
 		expect(href).toBe('/login?portal=teacher&panel=signin&method=password&stage=form');
 		expect(href).not.toContain('verified=');
+	});
+
+	it('auto-signs in only on /login and detects invalid verification redirects', () => {
+		expect(isLoginAutoSignInRoute('/login')).toBe(true);
+		expect(isLoginAutoSignInRoute('/login/demo')).toBe(false);
+		expect(isInvalidVerificationRedirect(url('/login?error=INVALID_TOKEN'))).toBe(true);
+		expect(isInvalidVerificationRedirect(url('/login?error=invalid_token'))).toBe(true);
+		expect(isInvalidVerificationRedirect(url('/login?error=EXPIRED'))).toBe(false);
+
+		const href = writeLoginUrlState(
+			url('/login?error=INVALID_TOKEN&portal=teacher'),
+			{ panel: 'signin', method: 'password', stage: 'form' },
+		);
+		expect(href).toBe('/login?portal=teacher&panel=signin&method=password&stage=form');
+		expect(href).not.toContain('error=');
 	});
 
 	it('detects invitation routes so afterNavigate cannot rewrite the dashboard', () => {

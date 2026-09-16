@@ -7,6 +7,7 @@ import {
 import { waitForInvitationToken } from '../../setup/journey-context';
 import {
 	expectAppDashboard,
+	followVerificationLink,
 	markEmailVerified,
 	signInWithPassword,
 	waitForEnabled,
@@ -19,6 +20,37 @@ const SWITCH_TO_SIGN_IN = /sign in|se connecter/i;
 const SEND_OR_RESEND = /send invitation|envoyer une invitation|resend|renvoyer/i;
 const INVALID_INVITE = /not valid|n'est pas valide|not found|introuvable|expired|expiré|revoked|révoqué|replaced|remplacée/i;
 const ADD_STAFF = /add staff member|ajouter un membre/i;
+
+async function finishInviteAfterVerification(
+	page: Page,
+	base: string,
+	options: { email: string; password: string },
+): Promise<void> {
+	const followed = await followVerificationLink(page, options.email, /\/dashboard/);
+	if (followed) {
+		await expectAppDashboard(page);
+		return;
+	}
+
+	await markEmailVerified(options.email, base);
+	const switchToSignIn = page.getByRole('button', { name: SWITCH_TO_SIGN_IN }).first();
+	if (await switchToSignIn.isVisible().catch(() => false)) {
+		await switchToSignIn.click();
+	}
+	const retryPassword = page.locator('input[type="password"]').first();
+	if (await retryPassword.isVisible().catch(() => false)) {
+		await retryPassword.fill(options.password);
+		const retryAccept = page.getByRole('button', { name: ACCEPT_INVITE });
+		await waitForEnabled(retryAccept);
+		await retryAccept.evaluate((element) => {
+			(element as HTMLButtonElement).click();
+		});
+	}
+	else {
+		await signInWithPassword(page, base, options.email, options.password);
+	}
+	await expectAppDashboard(page);
+}
 
 function tokenFromInviteUrl(value: string): string | null {
 	try {
@@ -164,24 +196,7 @@ export async function acceptStaffInviteThroughUi(
 	if (outcome === 'linking') {
 		const linked = await Promise.race([dashboard, verification]).catch(() => 'timeout' as const);
 		if (linked === 'verification') {
-			await markEmailVerified(options.email, base);
-			const switchToSignIn = page.getByRole('button', { name: SWITCH_TO_SIGN_IN }).first();
-			if (await switchToSignIn.isVisible().catch(() => false)) {
-				await switchToSignIn.click();
-			}
-			const retryPassword = page.locator('input[type="password"]').first();
-			if (await retryPassword.isVisible().catch(() => false)) {
-				await retryPassword.fill(options.password);
-				const retryAccept = page.getByRole('button', { name: ACCEPT_INVITE });
-				await waitForEnabled(retryAccept);
-				await retryAccept.evaluate((element) => {
-					(element as HTMLButtonElement).click();
-				});
-			}
-			else {
-				await signInWithPassword(page, base, options.email, options.password);
-			}
-			await expectAppDashboard(page);
+			await finishInviteAfterVerification(page, base, options);
 			return;
 		}
 		if (linked !== 'dashboard' || page.url().includes('/onboarding')) {
@@ -196,24 +211,7 @@ export async function acceptStaffInviteThroughUi(
 	}
 
 	if (outcome === 'verification') {
-		await markEmailVerified(options.email, base);
-		const switchToSignIn = page.getByRole('button', { name: SWITCH_TO_SIGN_IN }).first();
-		if (await switchToSignIn.isVisible().catch(() => false)) {
-			await switchToSignIn.click();
-		}
-		const retryPassword = page.locator('input[type="password"]').first();
-		if (await retryPassword.isVisible().catch(() => false)) {
-			await retryPassword.fill(options.password);
-			const retryAccept = page.getByRole('button', { name: ACCEPT_INVITE });
-			await waitForEnabled(retryAccept);
-			await retryAccept.evaluate((element) => {
-				(element as HTMLButtonElement).click();
-			});
-		}
-		else {
-			await signInWithPassword(page, base, options.email, options.password);
-		}
-		await expectAppDashboard(page);
+		await finishInviteAfterVerification(page, base, options);
 		return;
 	}
 

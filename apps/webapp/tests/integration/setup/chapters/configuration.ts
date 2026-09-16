@@ -333,4 +333,21 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 	else {
 		logStep(journey, { step: 'discipline', ok: false, detail: 'Discipline modal not found' });
 	}
+
+	await visitCovered(journey, '/configuration/permission-profiles', '/configuration/permission-profiles');
+	const profileOpened = await clickCreateButton(page, 'CRUD entrée', '/configuration/permission-profiles')
+		|| await openDialogButton(page, /add profile|ajouter un profil|créer|create/i);
+	coverModal(journey, '/configuration/permission-profiles', 'create', profileOpened ? 'OK' : 'NOT OK');
+	if (profileOpened) {
+		const profileName = `E2E-Profile-${Date.now()}`;
+		await page.getByRole('dialog').locator('input').first().fill(profileName);
+		await submitDialog(page);
+		await waitForDialogClosed(page);
+		const listed = await assertListContains(page, profileName, true, 20_000);
+		coverActions(journey, 'http://localhost:5173/configuration/permission-profiles', ['Catalogue des profils', 'CRUD entrée'], listed ? 'OK' : 'NOT OK', profileName);
+		logStep(journey, { step: 'permission-profiles', ok: listed, detail: profileName });
+	}
+	else {
+		logStep(journey, { step: 'permission-profiles', ok: false, detail: 'Permission profile modal not found' });
+	}
 }

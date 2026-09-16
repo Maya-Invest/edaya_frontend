@@ -142,6 +142,7 @@ export const ROUTE_DESCRIPTIONS: Record<string, string> = {
 	'/configuration/notifications': 'Templates notifications',
 	'/configuration/notifications/[id]': 'Template notification — détail',
 	'/configuration/discipline': 'Actions disciplinaires',
+	'/configuration/permission-profiles': 'Profils de permissions',
 	'/configuration/tools': 'Outils (import, etc.)',
 	'/configuration/tools/teacher-assignments': 'Hub affectations enseignants',
 	'/classes/:classId/students': 'Élèves de la classe',
@@ -292,6 +293,7 @@ export const MODAL_SURFACES: readonly ModalSurface[] = [
 		setupStep: 'notification-template-key',
 	},
 	{ module: 'Configuration', parentRoute: '/configuration/discipline', modal: 'create' },
+	{ module: 'Configuration', parentRoute: '/configuration/permission-profiles', modal: 'create' },
 	{ module: 'Configuration', parentRoute: '/configuration/tools/teacher-assignments', modal: 'create' },
 	{ module: 'Shell', parentRoute: '/dashboard', modal: ACCOUNT_PROFILE_MODAL },
 ];

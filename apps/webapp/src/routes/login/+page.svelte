@@ -5,6 +5,8 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/stores';
 	import { checkBrowserApiHealth } from '$lib/api/check-api-health';
+	import { getAuthenticatedAuthUser } from '$lib/auth/bootstrap';
+	import { completeAuthSignIn } from '$lib/auth/complete-sign-in';
 	import {
 		isGuardianPortalGateUrl,
 		GUARDIAN_PORTAL_GATE_BANNER_TEST_ID,
@@ -25,6 +27,8 @@
 	import {
 		canonicalLoginUrlState,
 		isEmailVerifiedRedirect,
+		isInvalidVerificationRedirect,
+		isLoginAutoSignInRoute,
 		isLoginRoute,
 		readLoginUrlState,
 		writeLoginUrlState,
@@ -33,7 +37,9 @@
 	let apiConnected = $state(false);
 	let apiChecking = $state(true);
 	let email = $state('');
-	let emailVerifiedToastShown = false;
+	let invalidVerificationToastShown = false;
+	let completingAutoSignIn = false;
+	let sessionAutoSignInChecked = false;
 
 	const showDemoLink = $derived(isDemoLoginEnabled());
 	const showSignup = $derived(isPublicSchoolRegistrationEnabled());
@@ -52,15 +58,34 @@
 		})();
 	});
 
-	afterNavigate((navigation) => {
+	afterNavigate(async (navigation) => {
 		const url = navigation.to?.url ?? $page.url;
 		if (!isLoginRoute(url.pathname)) {
 			return;
 		}
-		if (isEmailVerifiedRedirect(url) && !emailVerifiedToastShown) {
-			emailVerifiedToastShown = true;
-			toast.success($t('auth.emailVerifiedSignIn'));
+
+		if (isInvalidVerificationRedirect(url) && !invalidVerificationToastShown) {
+			invalidVerificationToastShown = true;
+			toast.error($t('auth.invalidVerificationLink'));
 		}
+
+		if (isLoginAutoSignInRoute(url.pathname) && !completingAutoSignIn) {
+			const verified = isEmailVerifiedRedirect(url);
+			if (verified || !sessionAutoSignInChecked) {
+				sessionAutoSignInChecked = true;
+				if (verified || await getAuthenticatedAuthUser()) {
+					completingAutoSignIn = true;
+					const signedIn = await completeAuthSignIn(
+						verified ? $t('auth.emailVerifiedSignIn') : $t('auth.welcome'),
+					);
+					if (signedIn) {
+						return;
+					}
+					completingAutoSignIn = false;
+				}
+			}
+		}
+
 		const canonicalHref = writeLoginUrlState(url, urlState);
 		if (canonicalHref !== `${url.pathname}${url.search}`) {
 			void appGoto(canonicalHref, {

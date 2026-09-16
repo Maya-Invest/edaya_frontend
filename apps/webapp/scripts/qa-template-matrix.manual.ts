@@ -331,6 +331,11 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 		'Filtre kind',
 		'CRUD entrée',
 	]),
+	...rows('Configuration', `${B}/configuration/permission-profiles`, [
+		'Catalogue des profils',
+		'Filtre grain',
+		'CRUD entrée',
+	]),
 	...rows('Configuration', `${B}/configuration/tools`, [
 		'Hub outils visible',
 		'Modal import données',

@@ -29,6 +29,47 @@ export async function markEmailVerified(email: string, origin: string): Promise<
 	throw new Error(`mark-email-verified failed: ${response.status} ${await response.text()}`);
 }
 
+export async function peekLastVerificationUrl(email: string): Promise<string | null> {
+	const authUrl = resolveAuthUrl();
+	const deadline = Date.now() + 8_000;
+	while (Date.now() < deadline) {
+		const response = await fetch(
+			`${authUrl}/auth/edaya/dev/last-verification-url?email=${encodeURIComponent(email)}`,
+		);
+		if (response.ok) {
+			const body = await response.json() as { url?: string };
+			if (typeof body.url === 'string' && body.url.length > 0) {
+				return body.url;
+			}
+		}
+		else if (response.status === 400) {
+			return null;
+		}
+		else if (response.status === 404) {
+			const body = await response.json().catch(() => ({ message: '' })) as { message?: string };
+			if (body.message === 'Auth endpoint not found') {
+				return null;
+			}
+		}
+		await new Promise(resolve => setTimeout(resolve, 250));
+	}
+	return null;
+}
+
+export async function followVerificationLink(
+	page: Page,
+	email: string,
+	landed: RegExp,
+): Promise<boolean> {
+	const verificationUrl = await peekLastVerificationUrl(email);
+	if (!verificationUrl) {
+		return false;
+	}
+	await page.goto(verificationUrl, { waitUntil: 'domcontentloaded' });
+	await page.waitForURL(landed, { timeout: 30_000 });
+	return true;
+}
+
 export async function assertStackReady(base: string): Promise<void> {
 	const readinessPath = process.env.WEBAPP_READINESS_PATH ?? '/login';
 	try {
@@ -167,9 +208,12 @@ export async function signUpThroughUi(
 	}
 
 	if (outcome === 'verification') {
-		await markEmailVerified(options.email, base);
-		await signInWithPassword(page, base, options.email, options.password);
-		await page.waitForURL(/\/onboarding/, { timeout: 30_000 });
+		const followed = await followVerificationLink(page, options.email, /\/onboarding/);
+		if (!followed) {
+			await markEmailVerified(options.email, base);
+			await signInWithPassword(page, base, options.email, options.password);
+			await page.waitForURL(/\/onboarding/, { timeout: 30_000 });
+		}
 		await page.locator('#onboarding-school-name').waitFor({ state: 'visible', timeout: 20_000 });
 		return;
 	}

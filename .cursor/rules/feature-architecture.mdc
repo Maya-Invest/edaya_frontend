@@ -15,7 +15,7 @@ alwaysApply: false
 1. **Classify the entity** — complex (URL drawer) · simple (row `···` only) · thin drawer · layout variant.
 2. **Toolbar** — `[Primary CTA] [Search] [Main filter <select>] [Filter] [More]`; no chip-bar main filters.
 3. **Locked routes** — assessments at `/evaluations` (all `kind`s); no `/homework` nav; no `/configuration/roles`; no resource UI in v1.
-4. **Staff permissions** — Staff drawer → Permissions tab (`staffPermissionAssignments`); see spec **§5.3.1**; not a roles matrix screen.
+4. **Staff permissions** — Catalog at `/configuration/permission-profiles`; grant rows on Staff drawer → Permissions (`staffPermissionAssignments`); see spec **§5.3.1**; not a roles matrix screen.
 5. **Class attendance** — `attendanceMode` on class config; `/attendance` nav only when `daily`; daily = list of days + drawer.
 6. **Incidents** — resolve via **`resolveIncidentWithOutcomes`** in one modal; involved students read-only in drawer.
 7. **Assessments** — one drawer; exclusive body section by `kind`; homework is `kind = homework` on evaluations.

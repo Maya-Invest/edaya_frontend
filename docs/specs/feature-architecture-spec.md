@@ -23,7 +23,7 @@ All sidebar modules and account surfaces in §2 and routes in §6, using list ·
 
 | Route / surface | Replacement |
 |---------------|-------------|
-| `/configuration/roles` | **Staff drawer → Permissions** tab (`staffPermissionAssignments`) |
+| `/configuration/roles` | **Configuration → Permission profiles** catalog + **Staff drawer → Permissions** tab (`staffPermissionAssignments`). Do not restore a roles matrix. |
 | `/classes/{classId}/homework` | **`/classes/{classId}/evaluations`** with `kind = homework` filter + row badge |
 | Dedicated **exam** menu | Timed assessments on **timetable** + **evaluations** list (same `Assessment` entity) |
 
@@ -123,7 +123,7 @@ These are **fixed** for v1. Do not introduce alternate flows without updating th
 | Topic | Decision |
 |-------|----------|
 | **Staff assignments (config)** | **Class-level only** in Configuration → Classes drawer (`staffAssignments` with `classGroupId`). Lesson/session/subject-level assignment is post-v1. |
-| **Staff permissions** | **Staff drawer → Permissions** tab (`staffPermissionAssignments`). No `/configuration/roles`. |
+| **Staff permissions** | Catalog at `/configuration/permission-profiles`. Runtime authority stays grant rows on **Staff drawer → Permissions**. No `/configuration/roles` matrix. |
 | **Incident resolve** | **One modal** — involved students, role, optional `DisciplinaryAction` per student, resolution notes. Command: **`resolveIncidentWithOutcomes`** (atomic). Drawer: involved students read-only; edits only via Resolve modal. |
 | **Assessments by `kind`** | **One route** `/evaluations`. Same routed drawer for all kinds: Details + Grading child tabs; Grading shows the exclusive work surface (homework submissions vs grades grid). List row: **kind badge**. |
 | **Homework** | `Assessment` with `kind = homework` on evaluations screen — **no** `/homework` nav. |
@@ -163,40 +163,50 @@ These are **fixed** for v1. Do not introduce alternate flows without updating th
 
 ### 5.3 Permissions
 
-- Persist via `staffPermissionAssignments` entity CRUD.
+- Runtime authority is `staffPermissionAssignments` grant rows. Policies never read a profile name.
+- School-owned **permission profiles** are same-grain templates at `/configuration/permission-profiles`. Bound grants are stamped with `sourceProfileId` and stay locked; custom grants (`sourceProfileId` null) stay add/edit/delete.
 - Picker labels: `GET authorization/permission-catalog` + `POST authorization/scope/render`.
 - Client edits typed `scopes`; server validates the action, target, year and validity on save. Manual grants and staff assignments are separate facts; no permission rows are copied from assignments.
 
 #### 5.3.1 Staff permission assignment UI
 
-Permissions are managed on **Staff drawer → Permissions** tab only. There is **no** `/configuration/roles` matrix screen in v1.
+Grant rows stay on **Staff drawer → Permissions**. Profile **templates** live in Configuration. There is **no** `/configuration/roles` matrix screen.
 
 | Surface | Rule |
 |---------|------|
-| **Location** | Staff drawer → **Permissions** tab (`/school/staff/{id}`) |
-| **Mutation pattern** | **Modal-only** — no inline permission toggles, no CRUD matrix layout |
+| **Catalog** | `/configuration/permission-profiles` — simple list (discipline analog). Read `ACCESS_CONTROL_READ`; create/edit/delete `ACCESS_CONTROL_CONFIGURE`. |
+| **Location (grants)** | Staff drawer → **Permissions** tab (`/school/staff/{id}`) |
+| **Mutation pattern** | **Modal-only** for custom grants and apply/remove; reorder via explicit up/down. No inline permission toggles, no CRUD matrix layout |
 | **Manage affordance** | Drawer header **Manage permissions** scrolls/focuses Permissions tab, or user switches tab manually |
-| **Gating** | Add / edit / delete require `ACCESS_CONTROL_ASSIGN` via `PermissionGate` (`hide` or `disable` + tooltip) |
+| **Gating** | Apply / remove / reorder / custom add-edit-delete require `ACCESS_CONTROL_ASSIGN` via `PermissionGate` (`hide` or `disable` + tooltip) |
 
 **Permissions tab anatomy** (drawer sub-collection pattern):
 
-Sub-collection tabs use a read-only list with header CTA and row actions that open modals — never inline edit forms in the tab body.
+Sub-collection tabs use a read-only list with header CTAs and row actions that open modals — never inline edit forms in the tab body.
 
 ```
-┌ Permissions ─────────────────────────────── [+ Add permission] ┐
-│  • GRADE_INPUT — 6ème A, 6ème B          [Edit] [Delete]         │
-│  • TIMETABLE_UPDATE — Whole school        [Edit] [Delete]         │
-└───────────────────────────────────────────────────────────────────┘
+┌ Permissions ────────────── [Apply profile] [+ Add permission] ┐
+│  Profile A (rank 0) · Whole school              [↑][↓][Remove] │
+│    • ACCESS_CONTROL_READ                                       │
+│  Profile B (rank 1) · Whole school              [↑][↓][Remove] │
+│    • ACCESS_CONTROL_READ — already granted by A (muted)        │
+│  Additional permissions                                        │
+│    • PAYMENT_READ — Whole school            [Edit] [Delete]    │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 | Element | Behavior |
 |---------|----------|
-| **Header CTA** | `+ Add permission` → **StaffPermissionFormModal** (create) |
+| **Locked profile groups** | Bindings in `sortOrder` (0 = highest). Each group shows profile name, rendered scope, permissions. Later profiles **skip** permissions already claimed by an earlier profile — muted hint “already granted by {profile}”. No row Edit/Delete on stamped grants. |
+| **Reorder** | Up/down rewrites `sortOrder` then re-resolves that staff (first-wins). |
+| **Remove profile** | Confirm → drop binding, re-resolve remaining. Custom grants remain. |
+| **Apply profile** | Modal: profile picker + one `ScopeBuilder` for the bundle (tenant-wide profiles always `{ kind: "school" }`). Appends at lowest rank. Re-applying the same profile upserts scopes and keeps rank. |
+| **Additional permissions** | `sourceProfileId` null rows. Header `+ Add permission` → **StaffPermissionFormModal** (custom only). |
 | **Row** | Permission label (i18n `permission.{CODE}`) · **scope label** from `scope/render` |
-| **Manual grants only** | Assignment-based authority is shown in the separate Assignments tab; no copied grant rows or sync badge |
 | **Stale scope** | When `scope/render` reports missing segments → warn badge (do not block read) |
-| **Row actions** | Edit → same modal (pre-filled); Delete → confirm → entity delete |
-| **Empty state** | Message + `+ Add permission` when user can assign |
+| **Custom row actions** | Edit → same modal (pre-filled); Delete → confirm → entity delete. Hidden on stamped rows. |
+| **Staff create** | Optional **tenant-wide** profile only (rank 0). Grain profiles are applied from the Permissions tab. |
+| **Empty state** | Message + Apply profile / `+ Add permission` when the user can assign |
 
 **Add / edit modal** (`StaffPermissionFormModal`):
 
@@ -229,11 +239,11 @@ The session contains one typed action-grant display. UI checks use that action's
 
 - `querySchoolStaffPage` loads `permission-catalog` into the staff route state.
 - Assignments load via the Permissions tab child route `PageQuery` (or with staff list when colocated); views built via `buildStaffPermissionAssignmentViews`.
-- Mutations: `saveStaffPermissionAssignmentMutation` / `deleteStaffPermissionAssignmentMutation` with optimistic patch on route state + `entityVersions` bump for every affected entity family.
+- Mutations: `configurePermissionProfile` / `applyStaffPermissionProfile` / `reorderStaffPermissionProfiles` / `removeStaffPermissionProfile` for bound grants; `saveStaffPermissionAssignmentMutation` / `deleteStaffPermissionAssignmentMutation` for custom rows only. Optimistic patch + `entityVersions` bump (`staff`).
 
 **Staff drawer → Assignments tab** (read-only): summary list of `staffAssignments` (class-level and other targets). Editing assignments happens in **Configuration → Classes** drawer (class-level tab) — not on this tab.
 
-**Removed:** `/configuration/roles` route, roles matrix, `StaffRoleAssignment` UI, inline CRUD matrix toggles for permissions.
+**Removed:** `/configuration/roles` route, roles matrix, `StaffRoleAssignment` UI, inline CRUD matrix toggles for permissions. Do **not** treat `StaffMember.profileRole` as authority.
 
 ---
 
@@ -270,6 +280,7 @@ The session contains one typed action-grant display. UI checks use that action's
 | Grade scales | `/configuration/grade-scales` | — |
 | Notification templates | `/configuration/notifications` | `/configuration/notifications/{key}` |
 | Disciplinary catalog | `/configuration/discipline` | — |
+| Permission profiles | `/configuration/permission-profiles` | — |
 | Configuration tools | `/configuration/tools` | — |
 | Teacher assignments hub | `/configuration/tools/teacher-assignments` | — |
 | Account inbox | `/account/inbox` | `/account/inbox/{id}` |
@@ -306,7 +317,8 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 - **Entity:** `StaffMember` · **Complex drawer**
 - **List:** search name · main filter assigned class · filter active/inactive
 - **Drawer header:** Edit profile · Manage permissions
-- **Drawer tabs:** Profile · **Permissions** (`staffPermissionAssignments` via modals) · Assignments (read-only `staffAssignments` summary)
+- **Drawer tabs:** Profile · **Permissions** (locked profile groups + editable custom `staffPermissionAssignments`) · Assignments (read-only `staffAssignments` summary)
+- **Create:** optional tenant-wide permission profile (rank 0)
 
 ### 7.4.1 School — Teachers
 
@@ -477,6 +489,13 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 - **Entity:** `DisciplinaryAction` · **Simple** list + row `···` menu
 
+### 7.26.1 Configuration — Permission profiles
+
+- **Entity:** `StaffPermissionProfile` · **Simple** list + row `···` menu at `/configuration/permission-profiles`
+- **List:** search name · main filter grain · bound-staff count; CTA Add profile (`ACCESS_CONTROL_CONFIGURE`)
+- **Editor:** name, description, grain select unless assigned (then locked badge), grouped checklist of that grain only. Changing grain on an unassigned profile deselects incompatible permissions. Save confirms “This updates N staff.”
+- **Commands:** `configurePermissionProfile`; catalog delete via entity delete (unique grants freeze as custom)
+
 ### 7.27 Account — Inbox
 
 - **Entity:** `MessageDelivery` · **Thin drawer**
@@ -525,6 +544,7 @@ Authoritative surface per entity. §7 has per-feature drawer/tab detail.
 | Reconciliation | Simple page | `/finance/reconciliation` |
 | `GradeScale` | Simple | `/configuration/grade-scales` |
 | `DisciplinaryAction` | Simple | `/configuration/discipline` |
+| `StaffPermissionProfile` | Simple | `/configuration/permission-profiles` |
 | Notification templates | Thin | `/configuration/notifications` |
 | `School` | Layout | `/configuration/school` |
 | Dashboard / academic admin | Layout | `/dashboard`, `/configuration/academic` |
@@ -541,7 +561,7 @@ Sub-entities (`studentIncidentInvolvements`, `staffPermissionAssignments`, `teac
 | Log incident | `recordIncident` + `addStudentInvolvement` |
 | Resolve incident | **`resolveIncidentWithOutcomes`** |
 | Daily attendance bulk | `record-class-daily-attendance` |
-| Staff permissions | `staffPermissionAssignments` save + permission catalog APIs |
+| Staff permissions | `configurePermissionProfile` · `applyStaffPermissionProfile` · `reorderStaffPermissionProfiles` · `removeStaffPermissionProfile` · custom `assignStaffPermission` + permission catalog APIs |
 | Timetable materialize | `createSchedule` · `materializeSchedule` |
 | Class activity link | `classActivityEnrollments` entity CRUD |
 

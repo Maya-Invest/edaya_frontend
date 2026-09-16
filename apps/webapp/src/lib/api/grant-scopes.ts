@@ -2,6 +2,35 @@ import type { components } from '$lib/api/schema';
 
 export type GrantScope = components['schemas']['StaffPermissionAssignment']['scopes'][number];
 export type ScopeGrain = Exclude<GrantScope['kind'], 'school' | 'all'>;
+export type ProfileScopeGrain = 'school' | ScopeGrain;
+
+export const PROFILE_SCOPE_GRAINS = [
+	'school',
+	'class_group',
+	'class_subject',
+	'student',
+	'grade_level',
+	'grade_level_subject',
+	'activity',
+] as const satisfies readonly ProfileScopeGrain[];
+
+export function defaultScopesForProfileGrain(grain: ProfileScopeGrain): GrantScope[] {
+	return grain === 'school' ? [{ kind: 'school' }] : [{ kind: 'all', grain }];
+}
+
+export function grantScopesEquivalent(left: readonly GrantScope[], right: readonly GrantScope[]): boolean {
+	if (left.length !== right.length) {
+		return false;
+	}
+	const keys = (scopes: readonly GrantScope[]) => [...scopes.map(scope => JSON.stringify(scope))].sort();
+	const a = keys(left);
+	const b = keys(right);
+	return a.every((key, index) => key === b[index]);
+}
+
+export function profileGrainLabelKey(grain: ProfileScopeGrain): string {
+	return `scope.grain.${grain}`;
+}
 
 export function emptyGrantScope(grain: ScopeGrain): GrantScope {
 	switch (grain) {

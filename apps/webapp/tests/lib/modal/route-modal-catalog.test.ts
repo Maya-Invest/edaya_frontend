@@ -27,7 +27,7 @@ const routeCases = [
 	['school-guardians-detail', '/school/guardians/guardian-1', ['create', 'edit-profile', 'delete']],
 	['school-staff-list', '/school/staff', ['create']],
 	['school-staff-detail', '/school/staff/staff-1/profile', ['create', 'edit-profile', 'delete']],
-	['school-staff-permissions', '/school/staff/staff-1/permissions', ['add-permission', 'delete-permission']],
+	['school-staff-permissions', '/school/staff/staff-1/permissions', ['add-permission', 'delete-permission', 'apply-profile', 'remove-profile']],
 	['school-teachers-list', '/school/teachers', ['create']],
 	[
 		'school-teachers-detail',
@@ -169,6 +169,7 @@ const routeCases = [
 		['edit', 'reset-key', 'reset-all'],
 	],
 	['configuration-discipline', '/configuration/discipline', ['create', 'edit', 'delete']],
+	['configuration-permission-profiles', '/configuration/permission-profiles', ['create', 'edit', 'delete']],
 	[
 		'configuration-tools',
 		'/configuration/tools',

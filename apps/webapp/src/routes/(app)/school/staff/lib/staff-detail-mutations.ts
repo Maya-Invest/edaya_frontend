@@ -4,12 +4,22 @@ import type { StaffMemberProfileRolePatch, StaffProfileRole } from '$lib/staff/s
 import type { StaffMember } from '$lib/types/school';
 import type { StaffPageState } from '../staff-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
+import { grantScopesEquivalent, type GrantScope } from '$lib/api/grant-scopes';
 import {
 	createStaffPermissionAssignmentPayload,
 } from '$lib/api/mutations/staff-permission-assignments.mutations';
+import {
+	applyStaffPermissionProfileMutation,
+	removeStaffPermissionProfileMutation,
+	reorderStaffPermissionProfilesMutation,
+} from '$lib/api/mutations/staff-permission-profiles.mutations';
 import { displayProfilePhotoUrl, uploadProfilePhoto } from '$lib/api/profile-photo-upload';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { isProfileBoundGrant } from '$lib/api/staff-permission-profiles-data';
 import { authSession } from '$lib/auth/session.svelte';
+import { t } from '$lib/i18n';
+import { toast } from '$lib/toast.svelte';
+import { get } from 'svelte/store';
 import { runStaffRouteMutation } from './staff-route-mutation';
 
 type StaffPermissionAssignment = components['schemas']['StaffPermissionAssignment'];
@@ -70,6 +80,7 @@ export async function createStaffOnPage(
 		email?: string;
 		profileRole: StaffProfileRole;
 		sendAccountInvitation?: boolean;
+		permissionProfileId?: string;
 		successMessage?: string;
 	},
 ): Promise<string | null> {
@@ -105,7 +116,19 @@ export async function createStaffOnPage(
 		versionKeys: ['staff'],
 	});
 
-	return result ? id : null;
+	if (!result) {
+		return null;
+	}
+
+	if (input.permissionProfileId) {
+		await applyStaffPermissionProfileOnPage(state, {
+			staffId: id,
+			profileId: input.permissionProfileId,
+			scopes: [{ kind: 'school' }],
+		});
+	}
+
+	return id;
 }
 
 export async function updateStaffProfileOnPage(
@@ -267,6 +290,20 @@ export async function saveStaffPermissionOnPage(
 	},
 ): Promise<boolean> {
 	const client = getBrowserSchoolClient();
+	if (isProfileBoundGrant(input.assignment.sourceProfileId)) {
+		toast.error(get(t)('staff.permissionDuplicateBound'));
+		return false;
+	}
+	const duplicateBound = state.permissionAssignmentsForStaff(input.assignment.staffId).some(row =>
+		row.id !== input.assignment.id
+		&& isProfileBoundGrant(row.sourceProfileId)
+		&& row.permission === input.assignment.permission
+		&& grantScopesEquivalent(row.scopes, input.assignment.scopes),
+	);
+	if (duplicateBound) {
+		toast.error(get(t)('staff.permissionDuplicateBound'));
+		return false;
+	}
 	const previous = state.permissionAssignmentsForStaff(input.assignment.staffId)
 		.find(row => row.id === input.assignment.id);
 
@@ -334,6 +371,66 @@ export async function deleteStaffPermissionOnPage(
 	});
 
 	return result !== null;
+}
+
+export async function applyStaffPermissionProfileOnPage(
+	state: StaffPageState,
+	input: {
+		staffId: string;
+		profileId: string;
+		scopes: GrantScope[];
+		successMessage?: string;
+	},
+): Promise<boolean> {
+	const ok = await applyStaffPermissionProfileMutation({
+		staffId: input.staffId,
+		profileId: input.profileId,
+		scopes: input.scopes,
+		academicYearId: state.staffScope().academicYearId,
+		successMessage: input.successMessage,
+	});
+	if (ok) {
+		await state.reloadPermissionData();
+	}
+	return ok;
+}
+
+export async function reorderStaffPermissionProfilesOnPage(
+	state: StaffPageState,
+	input: {
+		staffId: string;
+		profileIds: string[];
+		successMessage?: string;
+	},
+): Promise<boolean> {
+	const ok = await reorderStaffPermissionProfilesMutation({
+		staffId: input.staffId,
+		profileIds: input.profileIds,
+		successMessage: input.successMessage,
+	});
+	if (ok) {
+		await state.reloadPermissionData();
+	}
+	return ok;
+}
+
+export async function removeStaffPermissionProfileOnPage(
+	state: StaffPageState,
+	input: {
+		staffId: string;
+		profileId: string;
+		successMessage?: string;
+	},
+): Promise<boolean> {
+	const ok = await removeStaffPermissionProfileMutation({
+		staffId: input.staffId,
+		profileId: input.profileId,
+		successMessage: input.successMessage,
+	});
+	if (ok) {
+		await state.reloadPermissionData();
+	}
+	return ok;
 }
 
 export function buildStaffPermissionPayload(

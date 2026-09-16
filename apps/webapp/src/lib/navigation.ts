@@ -105,6 +105,7 @@ const CONFIG_ICONS: Record<string, LucideIcon> = {
 	reportCards: FileSpreadsheet,
 	notificationTemplates: Mail,
 	discipline: AlertTriangle,
+	permissionProfiles: Shield,
 	tools: Upload,
 };
 
@@ -137,6 +138,7 @@ const CONFIG_ROUTES: Record<string, RouteId> = {
 	reportCards: '/(app)/configuration/report-cards/[[id]]',
 	notificationTemplates: '/(app)/configuration/notifications',
 	discipline: '/(app)/configuration/discipline',
+	permissionProfiles: '/(app)/configuration/permission-profiles',
 	tools: '/(app)/configuration/tools',
 };
 
