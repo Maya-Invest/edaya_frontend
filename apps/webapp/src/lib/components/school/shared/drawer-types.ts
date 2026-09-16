@@ -16,6 +16,7 @@ import type {
 	Announcement,
 	AttendanceDay,
 } from '$lib/types/school';
+import type { FamilyFeedbackCampaign } from '$lib/api/family-feedback-types';
 
 export type DrawerItem
 	= | { kind: 'student'; data: Student }
@@ -33,6 +34,7 @@ export type DrawerItem
 		| { kind: 'level'; data: { label: string; subtitle: string; items: Subject[] } }
 		| { kind: 'activity'; data: Activity }
 		| { kind: 'announcement'; data: Announcement }
+		| { kind: 'familyFeedback'; data: FamilyFeedbackCampaign }
 		| { kind: 'reportCardDefinition'; data: ReportCardDefinition }
 		| { kind: 'reportCardResult'; data: ReportCardResult }
 		| { kind: 'gradeLevel'; data: GradeLevel }

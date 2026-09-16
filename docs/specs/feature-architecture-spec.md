@@ -249,6 +249,7 @@ The session contains one typed action-grant display. UI checks use that action's
 | School calendar | `/school/calendar` | — (simple — row `···` only) |
 | Activities | `/school/activities` | `/school/activities/{id}` |
 | Announcements | `/school/announcements` | `/school/announcements/{id}` |
+| Family feedback | `/school/family-feedback` | `/school/family-feedback/{id}` |
 | Incidents | `/school/events` | `/school/events/{id}` |
 | Class students | `/classes/{classId}/students` | `…/students/{id}` |
 | Timetable | `/classes/{classId}/timetable` | `…/timetable/{id}` |
@@ -340,6 +341,15 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 - **Drawer header:** Edit · **Resolve** (hidden when `status = resolved`)
 - **Drawer body:** Summary · **Involved students** (read-only) · **Applied sanctions** (`studentDisciplinaryActions` read-only post-resolve)
 - **Resolve modal:** involved students + role + optional `DisciplinaryAction` per student + notes → `resolveIncidentWithOutcomes` *(shipped)*
+
+### 7.8.1 School — Family feedback
+
+- **Entity:** family-feedback campaign (command/query only; not a generic Core entity) · **Complex drawer**
+- **List:** search assignment label · filter status · CTA New campaign (`FAMILY_FEEDBACK_CAMPAIGN_MANAGE`)
+- **Drawer tabs:** Setup · Audience · Moderation · Results
+- **Drawer header:** schedule · assign moderator · open/close/cancel · theme draft · publish/archive
+- **API:** campaign commands plus `preview-family-feedback-audience`, `list-family-feedback-comments` (moderator), `get-family-feedback-aggregate-review`
+- **Copy:** “Family feedback” / “Retour des familles” — never mix with Assessments / Évaluations
 
 ### 7.9 Classes — Students (roster)
 
@@ -500,6 +510,7 @@ Authoritative surface per entity. §7 has per-feature drawer/tab detail.
 | `Incident` | Complex | `/school/events` |
 | `Activity` | Complex | `/school/activities` |
 | `Announcement` | Complex | `/school/announcements` |
+| Family feedback campaign | Complex | `/school/family-feedback` |
 | `Assessment` | Complex | `/classes/{id}/evaluations` |
 | `ClassSubject` / teaching | Complex | `/classes/{id}/teaching`, `/configuration/subjects` |
 | `ReportCardResult` | Complex | `/classes/{id}/report-cards` |

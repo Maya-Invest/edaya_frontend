@@ -181,6 +181,20 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 		'Publier',
 	]),
 
+	...rows('École', `${B}/school/family-feedback`, [
+		'Liste — filtre statut',
+		'Créer campagne',
+	]),
+	...rows('École', `${B}/school/family-feedback/[id]/setup`, [
+		'Paramétrage',
+		'Éditer calendrier',
+		'Désigner modérateur',
+		'Planifier / ouvrir / clôturer',
+	]),
+	...rows('École', `${B}/school/family-feedback/[id]/audience`, ['Audience']),
+	...rows('École', `${B}/school/family-feedback/[id]/moderation`, ['Thèmes et commentaires']),
+	...rows('École', `${B}/school/family-feedback/[id]/results`, ['Agrégats et publication']),
+
 	...rows('École', `${B}/school/events`, ['Liste incidents', 'Créer incident']),
 	...rows('École', `${B}/school/events/[id]`, ['Éditer', 'Résoudre incident']),
 

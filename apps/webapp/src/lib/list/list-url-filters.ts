@@ -36,6 +36,11 @@ const announcementListFiltersCodec = defineUrlFilterCodec({
 	status: { type: 'string', default: 'all' },
 });
 
+const familyFeedbackListFiltersCodec = defineUrlFilterCodec({
+	q: { type: 'search', default: '' },
+	status: { type: 'string', default: 'all' },
+});
+
 const studentListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
 	class: { type: 'string', default: 'all' },
@@ -131,6 +136,7 @@ export type PlanningListFilters = ReturnType<typeof planningListFiltersCodec.rea
 export type ClassStudentListFilters = ReturnType<typeof classStudentListFiltersCodec.read>;
 export type ActivityListFilters = ReturnType<typeof activityListFiltersCodec.read>;
 export type AnnouncementListFilters = ReturnType<typeof announcementListFiltersCodec.read>;
+export type FamilyFeedbackListFilters = ReturnType<typeof familyFeedbackListFiltersCodec.read>;
 export type StudentListFilters = ReturnType<typeof studentListFiltersCodec.read>;
 export type GuardianListFilters = ReturnType<typeof guardianListFiltersCodec.read>;
 export type StaffListFilters = ReturnType<typeof staffListFiltersCodec.read>;
@@ -203,6 +209,14 @@ export function readAnnouncementListFilters(url: URL): AnnouncementListFilters {
 
 export function writeAnnouncementListFilters(url: URL, filters: AnnouncementListFilters): string {
 	return announcementListFiltersCodec.write(url, filters);
+}
+
+export function readFamilyFeedbackListFilters(url: URL): FamilyFeedbackListFilters {
+	return familyFeedbackListFiltersCodec.read(url);
+}
+
+export function writeFamilyFeedbackListFilters(url: URL, filters: FamilyFeedbackListFilters): string {
+	return familyFeedbackListFiltersCodec.write(url, filters);
 }
 
 export function readStudentListFilters(url: URL): StudentListFilters {

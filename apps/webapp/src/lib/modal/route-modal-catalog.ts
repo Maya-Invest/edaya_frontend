@@ -144,6 +144,27 @@ export const ROUTE_MODAL_CATALOG = [
 		modalNames: ['create', 'edit', 'add-target', 'publish', 'delete'],
 	},
 	{
+		routeFamily: 'school-family-feedback-list',
+		pathnamePattern: /^\/school\/family-feedback\/?$/,
+		modalNames: ['create'],
+	},
+	{
+		routeFamily: 'school-family-feedback-detail',
+		pathnamePattern: /^\/school\/family-feedback\/[^/]+(?:\/(?:setup|audience|moderation|results))?\/?$/,
+		modalNames: [
+			'create',
+			'edit',
+			'assign-moderator',
+			'schedule',
+			'open',
+			'close',
+			'cancel',
+			'theme',
+			'publish',
+			'archive',
+		],
+	},
+	{
 		routeFamily: 'school-events-list',
 		pathnamePattern: /^\/school\/events\/?$/,
 		modalNames: ['create'],

@@ -9,6 +9,10 @@ export const NOTIFICATION_TEMPLATE_KEYS = [
 	'assessment.due_soon',
 	'activity.reminder',
 	'calendar.event_reminder',
+	'family_feedback.opened',
+	'family_feedback.reminder',
+	'family_feedback.published',
+	'family_feedback.purge_reminder',
 	'account_invitation',
 ] as const;
 
@@ -26,7 +30,15 @@ export const NOTIFICATION_TEMPLATE_CATEGORIES: {
 }[] = [
 	{
 		key: 'communications',
-		keys: ['announcement.published', 'activity.reminder', 'calendar.event_reminder'],
+		keys: [
+			'announcement.published',
+			'activity.reminder',
+			'calendar.event_reminder',
+			'family_feedback.opened',
+			'family_feedback.reminder',
+			'family_feedback.published',
+			'family_feedback.purge_reminder',
+		],
 	},
 	{
 		key: 'academic',
@@ -57,6 +69,10 @@ export const NOTIFICATION_TEMPLATE_FIELDS = {
 	'assessment.due_soon': 'assessmentDueSoon',
 	'activity.reminder': 'activityReminder',
 	'calendar.event_reminder': 'calendarEventReminder',
+	'family_feedback.opened': 'familyFeedbackOpened',
+	'family_feedback.reminder': 'familyFeedbackReminder',
+	'family_feedback.published': 'familyFeedbackPublished',
+	'family_feedback.purge_reminder': 'familyFeedbackPurgeReminder',
 	'account_invitation': 'accountInvitation',
 } as const satisfies Record<NotificationTemplateKey, string>;
 
@@ -135,6 +151,38 @@ export const NOTIFICATION_TEMPLATE_VARIABLES: Record<NotificationTemplateKey, re
 		'dateRange',
 		'scopeLabel',
 	],
+	'family_feedback.opened': [
+		'schoolName',
+		'studentName',
+		'teacherName',
+		'subjectName',
+		'classGroupName',
+		'periodName',
+		'closesAtLabel',
+	],
+	'family_feedback.reminder': [
+		'schoolName',
+		'studentName',
+		'teacherName',
+		'subjectName',
+		'classGroupName',
+		'periodName',
+		'closesAtLabel',
+	],
+	'family_feedback.published': [
+		'schoolName',
+		'teacherName',
+		'subjectName',
+		'classGroupName',
+		'periodName',
+	],
+	'family_feedback.purge_reminder': [
+		'schoolName',
+		'subjectName',
+		'classGroupName',
+		'periodName',
+		'purgeAtLabel',
+	],
 	'account_invitation': ['schoolName', 'inviteeName', 'inviteUrl', 'expiresAt', 'actorKind'],
 };
 
@@ -177,6 +225,9 @@ export const NOTIFICATION_TEMPLATE_SAMPLE_VALUES: Record<string, string> = {
 	inviteUrl: 'https://school.edayaplus.com/invite/example',
 	expiresAt: 'March 20, 2026',
 	actorKind: 'staff',
+	teacherName: 'Camille Dubois',
+	closesAtLabel: 'March 30, 2026',
+	purgeAtLabel: 'June 15, 2026',
 };
 
 export interface BaseMessageTemplate {

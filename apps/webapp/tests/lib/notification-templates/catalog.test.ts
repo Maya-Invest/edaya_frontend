@@ -70,6 +70,38 @@ const BACKEND_VARIABLES: Record<string, readonly string[]> = {
 		'dateRange',
 		'scopeLabel',
 	],
+	'family_feedback.opened': [
+		'schoolName',
+		'studentName',
+		'teacherName',
+		'subjectName',
+		'classGroupName',
+		'periodName',
+		'closesAtLabel',
+	],
+	'family_feedback.reminder': [
+		'schoolName',
+		'studentName',
+		'teacherName',
+		'subjectName',
+		'classGroupName',
+		'periodName',
+		'closesAtLabel',
+	],
+	'family_feedback.published': [
+		'schoolName',
+		'teacherName',
+		'subjectName',
+		'classGroupName',
+		'periodName',
+	],
+	'family_feedback.purge_reminder': [
+		'schoolName',
+		'subjectName',
+		'classGroupName',
+		'periodName',
+		'purgeAtLabel',
+	],
 	'account_invitation': ['schoolName', 'inviteeName', 'inviteUrl', 'expiresAt', 'actorKind'],
 };
 

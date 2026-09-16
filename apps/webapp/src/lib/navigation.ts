@@ -11,6 +11,7 @@ import {
 	Sparkle,
 	AlertTriangle,
 	GraduationCap,
+	HeartHandshake,
 	BookOpen,
 	ClipboardCheck,
 	FileSpreadsheet,
@@ -74,6 +75,7 @@ const SCHOOL_ICONS: Record<string, LucideIcon> = {
 	calendar: CalendarDays,
 	activities: Sparkle,
 	announcements: Mail,
+	familyFeedback: HeartHandshake,
 	events: AlertTriangle,
 };
 
@@ -114,6 +116,7 @@ const SCHOOL_ROUTES: Record<string, RouteId> = {
 	calendar: '/(app)/school/calendar',
 	activities: '/(app)/school/activities/[[id]]',
 	announcements: '/(app)/school/announcements/[[id]]',
+	familyFeedback: '/(app)/school/family-feedback/[[id]]',
 	events: '/(app)/school/events/[[id]]',
 };
 

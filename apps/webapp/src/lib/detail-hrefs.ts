@@ -80,11 +80,19 @@ const CONFIG_CLASS_GROUP_TAB_ROUTES: Record<ConfigClassGroupTabSegment, RouteId>
 };
 
 type SchoolActivityTabSegment = 'profile' | 'students' | 'classes';
+type SchoolFamilyFeedbackTabSegment = 'setup' | 'audience' | 'moderation' | 'results';
 
 const ACTIVITY_TAB_ROUTES: Record<SchoolActivityTabSegment, RouteId> = {
 	profile: '/(app)/school/activities/[[id]]/(tabs)/profile',
 	students: '/(app)/school/activities/[[id]]/(tabs)/students',
 	classes: '/(app)/school/activities/[[id]]/(tabs)/classes',
+};
+
+const FAMILY_FEEDBACK_TAB_ROUTES: Record<SchoolFamilyFeedbackTabSegment, RouteId> = {
+	setup: '/(app)/school/family-feedback/[[id]]/(tabs)/setup',
+	audience: '/(app)/school/family-feedback/[[id]]/(tabs)/audience',
+	moderation: '/(app)/school/family-feedback/[[id]]/(tabs)/moderation',
+	results: '/(app)/school/family-feedback/[[id]]/(tabs)/results',
 };
 
 export const detailHref = {
@@ -99,6 +107,10 @@ export const detailHref = {
 	schoolActivityTab: (id: string, tab: SchoolActivityTabSegment = 'profile'): ResolvedPathname =>
 		appPath(ACTIVITY_TAB_ROUTES[tab], { id }),
 	schoolAnnouncement: (id: string): ResolvedPathname => appPath('/(app)/school/announcements/[[id]]', { id }),
+	schoolFamilyFeedback: (id: string): ResolvedPathname =>
+		appPath(FAMILY_FEEDBACK_TAB_ROUTES.setup, { id }),
+	schoolFamilyFeedbackTab: (id: string, tab: SchoolFamilyFeedbackTabSegment = 'setup'): ResolvedPathname =>
+		appPath(FAMILY_FEEDBACK_TAB_ROUTES[tab], { id }),
 	schoolIncident: (id: string): ResolvedPathname => appPath('/(app)/school/events/[[id]]', { id }),
 	classStudent: (classId: string, id: string): ResolvedPathname =>
 		appPath('/(app)/classes/[classId]/students/[[id]]/(tabs)/profile', { classId, id }),

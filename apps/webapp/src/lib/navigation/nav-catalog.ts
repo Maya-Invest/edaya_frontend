@@ -1,4 +1,9 @@
 import type { PermissionCode } from '$lib/auth/types';
+import {
+	FAMILY_FEEDBACK_CAMPAIGN_MANAGE_PERMISSION,
+	FAMILY_FEEDBACK_CAMPAIGN_READ_PERMISSION,
+	FAMILY_FEEDBACK_PUBLISH_PERMISSION,
+} from '$lib/family-feedback/permissions';
 import { FINANCIAL_REPORT_READ_PERMISSION } from '$lib/finance/permissions';
 
 export interface NavItemDefinition {
@@ -52,6 +57,16 @@ export const SCHOOL_NAV_DEFS: NavItemDefinition[] = [
 		labelKey: 'school.announcements',
 		href: '/school/announcements',
 		// Every selected profile may read announcements addressed to it; policies filter the rows.
+	},
+	{
+		key: 'familyFeedback',
+		labelKey: 'school.familyFeedback',
+		href: '/school/family-feedback',
+		permissions: [
+			FAMILY_FEEDBACK_CAMPAIGN_READ_PERMISSION,
+			FAMILY_FEEDBACK_CAMPAIGN_MANAGE_PERMISSION,
+			FAMILY_FEEDBACK_PUBLISH_PERMISSION,
+		],
 	},
 	{
 		key: 'events',

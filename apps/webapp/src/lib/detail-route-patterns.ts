@@ -16,6 +16,7 @@ const SCHOOL_STUDENTS_DRAWER_PATH = /^\/school\/students\/[^/]+(?:\/[^/]+)?$/;
 const SCHOOL_STAFF_DRAWER_PATH = /^\/school\/staff\/[^/]+(?:\/[^/]+)?$/;
 const SCHOOL_TEACHERS_DRAWER_PATH = /^\/school\/teachers\/[^/]+(?:\/[^/]+)?$/;
 const SCHOOL_ACTIVITIES_DRAWER_PATH = /^\/school\/activities\/[^/]+(?:\/[^/]+)?$/;
+const SCHOOL_FAMILY_FEEDBACK_DRAWER_PATH = /^\/school\/family-feedback\/[^/]+(?:\/[^/]+)?$/;
 const CLASS_TIMETABLE_DRAWER_PATH = /^\/classes\/[^/]+\/timetable\/[^/]+(?:\/[^/]+)?$/;
 const CLASS_EVALUATIONS_DRAWER_PATH = /^\/classes\/[^/]+\/evaluations\/[^/]+(?:\/[^/]+)?$/;
 const CLASS_TEACHING_DRAWER_PATH = /^\/classes\/[^/]+\/teaching\/[^/]+(?:\/[^/]+)?$/;
@@ -34,6 +35,7 @@ export function isLikelyDetailPath(pathname: string): boolean {
 		|| SCHOOL_STAFF_DRAWER_PATH.test(pathname)
 		|| SCHOOL_TEACHERS_DRAWER_PATH.test(pathname)
 		|| SCHOOL_ACTIVITIES_DRAWER_PATH.test(pathname)
+		|| SCHOOL_FAMILY_FEEDBACK_DRAWER_PATH.test(pathname)
 		|| CLASS_TIMETABLE_DRAWER_PATH.test(pathname)
 		|| CLASS_EVALUATIONS_DRAWER_PATH.test(pathname)
 		|| CLASS_TEACHING_DRAWER_PATH.test(pathname)
@@ -59,6 +61,9 @@ function normalizeListPathname(pathname: string): string {
 	}
 	if (SCHOOL_ACTIVITIES_DRAWER_PATH.test(pathname)) {
 		return '/school/activities';
+	}
+	if (SCHOOL_FAMILY_FEEDBACK_DRAWER_PATH.test(pathname)) {
+		return '/school/family-feedback';
 	}
 	const timetableMatch = pathname.match(/^\/classes\/([^/]+)\/timetable\/[^/]+/);
 	if (timetableMatch) {
