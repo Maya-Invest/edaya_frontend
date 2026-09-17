@@ -112,6 +112,29 @@ describe('accept pending invite after sign-in', () => {
 		expect(resetAppShellBootstrap).toHaveBeenCalled();
 	});
 
+	it('accepts a stored second-school invite even when staff already exists', async () => {
+		persistPendingInviteToken('invite-token');
+		bootstrapSession.mockImplementationOnce(async () => ({
+			session: { kind: 'staff', actorId: 'st1', schoolId: 'sch1', grants: [], assuranceLevel: 'verified' },
+			staffProfile: null,
+			guardianSettings: null,
+			pendingOnboarding: false,
+			onboardingStatusUnknown: false,
+		} as Awaited<ReturnType<typeof bootstrap.bootstrapSession>>));
+		bootstrapSession.mockImplementation(async () => ({
+			session: { kind: 'staff', actorId: 'st2', schoolId: 'sch2', grants: [], assuranceLevel: 'verified' },
+			staffProfile: null,
+			guardianSettings: null,
+			pendingOnboarding: false,
+			onboardingStatusUnknown: false,
+		} as Awaited<ReturnType<typeof bootstrap.bootstrapSession>>));
+
+		const result = await bootstrapSessionAfterInvite();
+		expect(acceptInvitation).toHaveBeenCalledWith('invite-token');
+		expect(result.session?.schoolId).toBe('sch2');
+		expect(resetAppShellBootstrap).toHaveBeenCalled();
+	});
+
 	it('accepts a stored invite when the first grants read fails', async () => {
 		persistPendingInviteToken('invite-token');
 		bootstrapSession.mockImplementationOnce(async () => {

@@ -280,6 +280,7 @@ export const en: Dict = {
 	'sidebar.navigationTitle': 'Navigation',
 	'sidebar.show': 'Expand menu',
 	'sidebar.hide': 'Collapse menu',
+	'sidebar.switchSchool': 'Switch school',
 
 	// School sections
 	'school.students': 'Student list',

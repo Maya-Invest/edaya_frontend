@@ -21,7 +21,7 @@ export const AUTH_ONBOARDING_CATALOG_COVERAGE: readonly CatalogCoverageRow[] = [
 	{ module: 'Auth', endpoint: '/login/demo', action: 'Affichage comptes démo (dev)', kind: 'na', reason: 'canonical-lane-excludes-demo' },
 	{ module: 'Auth', endpoint: '/login/demo', action: 'Connexion via picker démo', kind: 'na', reason: 'canonical-lane-excludes-demo' },
 	{ module: 'Auth', endpoint: '/invite/[token]', action: 'Token invalide / expiré / révoqué', kind: 'scene', scenes: ['invalid-invite', 'invite-expired', 'invite-revoked'] },
-	{ module: 'Auth', endpoint: '/invite/[token]', action: 'Acceptation invitation (signup ou login)', kind: 'scene', scenes: ['invited-staff', 'invited-staff-existing'] },
+	{ module: 'Auth', endpoint: '/invite/[token]', action: 'Acceptation invitation (signup ou login)', kind: 'scene', scenes: ['invited-staff', 'invited-staff-existing', 'invited-staff-second-school'] },
 	{ module: 'Onboarding', endpoint: '/onboarding', action: 'Redirect vers ?step=1', kind: 'scene', scenes: ['login-signup-ui', 'happy-path'] },
 	{ module: 'Onboarding', endpoint: '/onboarding?step=1', action: 'Formulaire profil école — validation', kind: 'scene', scenes: ['wizard-step-interactions'] },
 	{ module: 'Onboarding', endpoint: '/onboarding?step=1', action: 'Submit étape 1', kind: 'scene', scenes: ['wizard-step-interactions', 'happy-path'] },

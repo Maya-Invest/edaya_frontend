@@ -1,4 +1,5 @@
 import type { SessionSnapshot } from '$lib/auth/types';
+import { academicContext } from '$lib/academic/context.svelte';
 import {
 	fetchGuardianNotificationSettings,
 } from '$lib/api/account-data';
@@ -12,6 +13,11 @@ import {
 } from '$lib/onboarding/wizard-completion-flag';
 import { ApiError } from '@maya-invest/edaya-api-client';
 import { authClient } from './client';
+import {
+	persistSelectedSchoolId,
+	pickStaffMembership,
+	staffMembershipsFromProfiles,
+} from './school-membership';
 import { authSession } from './session.svelte';
 
 export async function getAuthenticatedAuthUser() {
@@ -95,15 +101,48 @@ async function runBootstrapSession(
 		}
 
 		const loginEmail = auth.user.email ?? null;
+		const client = getBrowserSchoolClient();
+		let profiles;
+		try {
+			profiles = await client.authorization.profiles();
+		}
+		catch (error) {
+			if (generation !== bootstrapGeneration) {
+				return emptyResult;
+			}
+			if (error instanceof ApiError && error.status === 401) {
+				authSession.clear();
+				return emptyResult;
+			}
+			throw error;
+		}
+
+		if (generation !== bootstrapGeneration) {
+			return emptyResult;
+		}
+
+		const staffMemberships = staffMembershipsFromProfiles(profiles.profiles);
+		authSession.setStaffMemberships(staffMemberships);
+
+		const selectedStaff = pickStaffMembership(staffMemberships, auth.user.id);
+		if (selectedStaff) {
+			persistSelectedSchoolId(auth.user.id, selectedStaff.schoolId);
+			authSession.selectStaffMembership(selectedStaff);
+			academicContext.setSchoolScope(selectedStaff.schoolId);
+		}
+
 		let session: SessionSnapshot;
 		try {
-			session = await getBrowserSchoolClient().authorization.effectiveGrants();
+			session = await client.authorization.effectiveGrants();
 		}
 		catch (error) {
 			if (generation !== bootstrapGeneration) {
 				return emptyResult;
 			}
 			if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+				if (staffMemberships.length > 0 || profiles.profiles.length > 0) {
+					return emptyResult;
+				}
 				if (!silent) {
 					authSession.setPendingOnboarding({
 						authUserId: auth.user.id,
@@ -122,7 +161,6 @@ async function runBootstrapSession(
 			return emptyResult;
 		}
 
-		const client = getBrowserSchoolClient();
 		let staffProfile = null;
 		let guardianSettings = null;
 		let subjectId: string | null = null;

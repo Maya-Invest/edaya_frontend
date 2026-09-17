@@ -101,7 +101,7 @@ async function firstBootstrapAfterInvite(): Promise<BootstrapSessionResult> {
 /** Link a stored staff invite before treating the account as a new school to onboard. */
 export async function bootstrapSessionAfterInvite(): Promise<BootstrapSessionResult> {
 	const first = await firstBootstrapAfterInvite();
-	if (!first.pendingOnboarding || !readPendingInviteToken()) {
+	if (!readPendingInviteToken()) {
 		return first;
 	}
 

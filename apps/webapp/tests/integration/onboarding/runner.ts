@@ -15,6 +15,7 @@ import { runInvitedGuardian } from './scenes/invited-guardian';
 import { runInvitedStaff } from './scenes/invited-staff';
 import { runInvitedStaffExisting } from './scenes/invited-staff-existing';
 import { runInvitedStaffRelogin } from './scenes/invited-staff-relogin';
+import { runInvitedStaffSecondSchool } from './scenes/invited-staff-second-school';
 import { runInvitedTeacher } from './scenes/invited-teacher';
 import { runLoginSignupUi } from './scenes/login-signup-ui';
 import { runOwnerRelogin } from './scenes/owner-relogin';
@@ -175,6 +176,11 @@ export async function runOnboardingSuite(
 			await runInvitedStaffRelogin(page, base, invitedStaff);
 		});
 		summary.scenes.push({ id: 'invited-staff-relogin', ok: true });
+
+		await runScene(options.outDir, 'invited-staff-second-school', ownerPage, async () => {
+			await runInvitedStaffSecondSchool(options.browser, base, options.outDir, invitedStaff);
+		});
+		summary.scenes.push({ id: 'invited-staff-second-school', ok: true });
 
 		await runScene(options.outDir, 'invited-staff-existing', ownerPage, async () => {
 			await runInvitedStaffExisting(ownerPage, options.browser, base);

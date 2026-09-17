@@ -276,6 +276,7 @@ export const fr: Dict = {
 	'sidebar.navigationTitle': 'Navigation',
 	'sidebar.show': 'Développer le menu',
 	'sidebar.hide': 'Réduire le menu',
+	'sidebar.switchSchool': 'Changer d\'établissement',
 
 	'school.students': 'Liste des élèves',
 	'school.guardians': 'Liste des tuteurs',

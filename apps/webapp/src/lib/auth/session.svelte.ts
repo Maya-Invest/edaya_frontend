@@ -1,6 +1,6 @@
 import type { GuardianNotificationSettings } from '$lib/api/account-data';
 import type { AccountActor, SessionKind } from '$lib/auth/account-actor';
-import type { ActionGrantsSnapshot, SessionSnapshot } from '$lib/auth/types';
+import type { ActionGrantsSnapshot, SessionSnapshot, StaffSchoolMembership } from '$lib/auth/types';
 import type { ServerOnboardingAccountStatus } from '$lib/onboarding/types';
 import type { StaffMember } from '$lib/types/school';
 import { browser } from '$app/environment';
@@ -29,6 +29,7 @@ class AuthSession {
 	userProfile = $state<StaffMember | null>(null);
 	guardianSettings = $state<GuardianNotificationSettings | null>(null);
 	grants = $state<ActionGrantsSnapshot | null>(null);
+	staffMemberships = $state<StaffSchoolMembership[]>([]);
 	ready = $state(!browser);
 
 	get isLoggedIn(): boolean {
@@ -84,6 +85,13 @@ class AuthSession {
 		return academicContext.schools.find(entry => entry.id === this.schoolId) ?? null;
 	});
 
+	activeStaffMembership = $derived.by(() => {
+		if (!this.schoolId) {
+			return null;
+		}
+		return this.staffMemberships.find(entry => entry.schoolId === this.schoolId) ?? null;
+	});
+
 	markLoading() {
 		this.ready = false;
 	}
@@ -110,6 +118,7 @@ class AuthSession {
 		this.userProfile = null;
 		this.guardianSettings = null;
 		this.grants = null;
+		this.staffMemberships = [];
 		this.ready = true;
 	}
 
@@ -136,6 +145,7 @@ class AuthSession {
 		this.userProfile = null;
 		this.guardianSettings = null;
 		this.grants = null;
+		this.staffMemberships = [];
 		this.ready = true;
 	}
 
@@ -190,6 +200,18 @@ class AuthSession {
 		this.ready = true;
 	}
 
+	setStaffMemberships(memberships: StaffSchoolMembership[]) {
+		this.staffMemberships = memberships;
+	}
+
+	selectStaffMembership(membership: StaffSchoolMembership) {
+		this.needsOnboarding = false;
+		this.sessionKind = 'staff';
+		this.schoolId = membership.schoolId;
+		this.userId = membership.actorId;
+		this.grants = null;
+	}
+
 	updateNotificationContact(contact: {
 		notificationEmail?: string | null;
 		notificationPhone?: string | null;
@@ -225,6 +247,7 @@ class AuthSession {
 		this.userProfile = null;
 		this.guardianSettings = null;
 		this.grants = null;
+		this.staffMemberships = [];
 	}
 
 	async logout() {

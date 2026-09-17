@@ -20,6 +20,7 @@ describe('auth/onboarding catalog coverage', () => {
 			'invite-revoked',
 			'invited-staff',
 			'invited-staff-existing',
+			'invited-staff-second-school',
 			'happy-path',
 			'wizard-step-interactions',
 			'owner-wizard-resume',
