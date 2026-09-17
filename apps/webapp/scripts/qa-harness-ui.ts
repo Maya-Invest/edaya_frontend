@@ -8,10 +8,12 @@ import { ensureAcademicYearPublishedViaApi } from '../tests/integration/setup/jo
 import { waitForAppShell } from './qa-matrix-support';
 
 export async function waitForPageQuery(page: Page): Promise<void> {
-	await page
-		.locator('[role="status"] .animate-spin')
-		.waitFor({ state: 'detached', timeout: 30_000 })
-		.catch(() => {});
+	const spinner = page.locator('[role="status"] .animate-spin');
+	const visible = await spinner.first().isVisible().catch(() => false);
+	if (!visible) {
+		return;
+	}
+	await spinner.first().waitFor({ state: 'detached', timeout: 30_000 });
 }
 
 const SPA_NAV_TIMEOUT_MS = 15_000;

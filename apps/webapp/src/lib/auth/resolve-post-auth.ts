@@ -25,6 +25,7 @@ export function resolvePostAuthPath(options: {
 		authUserId: options.authUserId ?? authSession.authUserId,
 		sessionKind: authSession.sessionKind,
 		serverOnboardingStatus: authSession.serverOnboardingStatus,
+		onboardingStatusUnknown: authSession.onboardingStatusUnknown,
 	});
 }
 
@@ -35,6 +36,10 @@ export function redirectPathIfAuthenticated(): string | null {
 
 	if (authSession.needsOnboarding) {
 		return resolvePostAuthPath({ session: null, pendingOnboarding: true });
+	}
+
+	if (authSession.onboardingStatusUnknown) {
+		return null;
 	}
 
 	if (authSession.isLoggedIn) {

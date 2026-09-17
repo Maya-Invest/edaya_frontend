@@ -179,18 +179,40 @@ describe('resolvePostAuthPath', () => {
 		expect(target).toBe('/login');
 	});
 
-	it('routes linked guardians to login (staff webapp gate)', () => {
+	it('routes linked students to login (staff webapp gate)', () => {
 		const target = resolvePostAuthPath({
 			session: {
-				kind: 'guardian',
-				actorId: 'grd1',
+				kind: 'student',
+				actorId: 'stu1',
 				schoolId: 'sch1',
 				grants: [],
 			} as never,
 			pendingOnboarding: false,
-			authUserId: 'user-guardian',
+			authUserId: 'user-student',
 		});
 
 		expect(target).toBe('/login');
+	});
+
+	it('does not resume onboarding while staff status is unknown', () => {
+		const target = resolvePostAuthPath({
+			session: {
+				kind: 'staff',
+				actorId: 'st1',
+				schoolId: 'sch1',
+				grants: [],
+			} as never,
+			pendingOnboarding: false,
+			authUserId: 'user-unknown',
+			onboardingStatusUnknown: true,
+			serverOnboardingStatus: {
+				wizardCompleted: false,
+				maxReachedStep: 2,
+				schoolStepSubmitted: true,
+				structureStepSubmitted: false,
+			},
+		});
+
+		expect(target).toBe('/dashboard');
 	});
 });

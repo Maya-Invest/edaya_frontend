@@ -29,4 +29,11 @@ export interface OnboardingSuiteSummary {
 	email: string;
 	schoolName: string;
 	scenes: OnboardingSceneResult[];
+	catalog?: {
+		automated: number;
+		na: number;
+		unique: number;
+		excluded: number;
+		manual: number;
+	};
 }

@@ -32,6 +32,7 @@
 		provisionCompletedIds?: string[];
 		provisionSteps?: ProvisionProgressStepProp[];
 		provisionSucceeded?: boolean;
+		bootstrapRecoveryNeeded?: boolean;
 		onBack: () => void;
 		onContinue: () => void;
 		onFinish?: () => void;
@@ -62,6 +63,7 @@
 		provisionCompletedIds = [],
 		provisionSteps = [],
 		provisionSucceeded = false,
+		bootstrapRecoveryNeeded = false,
 		onBack,
 		onContinue,
 		onFinish,
@@ -77,8 +79,8 @@
 	const showProvisionProgress = $derived(
 		provisionProgressVisible && provisionSteps.length > 0,
 	);
-	const finishCtaKey = $derived(onboardingFinishCtaKey(provisionSucceeded));
-	const stepsLocked = $derived(busy || provisionSucceeded);
+	const finishCtaKey = $derived(onboardingFinishCtaKey(provisionSucceeded, bootstrapRecoveryNeeded));
+	const stepsLocked = $derived(busy || provisionSucceeded || bootstrapRecoveryNeeded);
 </script>
 
 <div

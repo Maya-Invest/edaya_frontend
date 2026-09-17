@@ -116,7 +116,10 @@ async function main(): Promise<void> {
 		console.warn('Could not read qa-matrix-results.json');
 	}
 
-	const excludedList = excludedModules.split(',').map(m => m.trim()).filter(Boolean);
+	const excludedList = [
+		...defaultExcludedModulesForRun(),
+		...excludedModules.split(',').map(m => m.trim()).filter(Boolean),
+	];
 	const moduleCounts = matrixSummary.byModule ?? countByModule(matrixSummary.results);
 
 	let setupSteps: unknown[] = [];

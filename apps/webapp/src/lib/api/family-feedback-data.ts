@@ -1,5 +1,6 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
+import type { PaginatedTeachersData } from '$lib/api/teachers-data';
 import type { StaffMember, Teacher } from '$lib/types/school';
 import type {
 	FamilyFeedbackAggregate,
@@ -19,7 +20,7 @@ import { familyFeedbackCommand, familyFeedbackQuery, familyFeedbackRequestId } f
 import { mapFamilyFeedbackCampaign } from '$lib/api/family-feedback-types';
 import { safeOptionalEntityList, safeOptionalFetch } from '$lib/api/safe-entity-access';
 import { fetchStaffMembers } from '$lib/api/staff-data';
-import { fetchTeachersPage, type PaginatedTeachersData } from '$lib/api/teachers-data';
+import { fetchTeachersPage } from '$lib/api/teachers-data';
 import { authSession } from '$lib/auth/session.svelte';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
@@ -121,7 +122,7 @@ function assignmentLabel(
 ): string {
 	const teacher = teachers.find(entry => entry.id === assignment.teacherId);
 	const classSubject = classSubjects.find(entry => entry.id === assignment.classSubjectId);
-	const subject = subjects.find(entry => entry.id === (classSubject?.subjectId ?? assignment.subjectId));
+	const subject = subjects.find(entry => entry.id === classSubject?.subjectId);
 	const className = academicContext.classes.find(entry => entry.id === (assignment.classGroupId ?? classSubject?.classGroupId))?.name;
 	return [teacher?.name, subject?.name, className].filter(Boolean).join(' · ') || assignment.id;
 }
@@ -138,18 +139,18 @@ export async function loadFamilyFeedbackSlice(client: SchoolClient): Promise<Fam
 		safeOptionalFetch(() => listFamilyFeedbackCampaigns(client), []),
 		academicYearId
 			? safeOptionalFetch(
-				() => fetchTeachersPage(client, { schoolId, academicYearId }, { includeAssignments: false, limit: CATALOG_LIST_PAGE_SIZE }),
-				emptyTeachersPage,
-			)
+					() => fetchTeachersPage(client, { schoolId, academicYearId }, { includeAssignments: false, limit: CATALOG_LIST_PAGE_SIZE }),
+					emptyTeachersPage,
+				)
 			: Promise.resolve(emptyTeachersPage),
 		academicYearId
 			? safeOptionalFetch(() => fetchStaffMembers(client, { schoolId, academicYearId }), [])
 			: Promise.resolve([]),
 		academicYearId
 			? safeOptionalEntityList(() => client.entities.teacherAssignments.list(paginatedList(
-				{ academicYearId, kind: 'subject', status: 'active' },
-				{ limit: CATALOG_LIST_PAGE_SIZE },
-			)))
+					{ academicYearId, kind: 'subject', status: 'active' },
+					{ limit: CATALOG_LIST_PAGE_SIZE },
+				)))
 			: Promise.resolve([]),
 		safeOptionalEntityList(() => client.entities.subjects.list(schoolSubjectsCatalogList(schoolId))),
 		safeOptionalEntityList(() => client.entities.classSubjects.list(paginatedList(
@@ -164,7 +165,7 @@ export async function loadFamilyFeedbackSlice(client: SchoolClient): Promise<Fam
 		teacherId: assignment.teacherId,
 		classSubjectId: assignment.classSubjectId,
 		classGroupId: assignment.classGroupId,
-		subjectId: assignment.subjectId,
+		subjectId: classSubjects.find(entry => entry.id === assignment.classSubjectId)?.subjectId,
 		label: assignmentLabel(assignment, teachers, classSubjects as ClassSubjectRaw[], subjects as SubjectRaw[]),
 	}));
 

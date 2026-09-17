@@ -67,6 +67,7 @@
 		provisionCompletedIds={wizard.provisionCompletedIds}
 		provisionSteps={wizard.provisionSteps}
 		provisionSucceeded={wizard.provisionSucceeded}
+		bootstrapRecoveryNeeded={wizard.bootstrapRecoveryNeeded}
 		onBack={() => wizard.goBack()}
 		onContinue={() => void wizard.goNext()}
 		onFinish={() => void wizard.finishOnboarding()}

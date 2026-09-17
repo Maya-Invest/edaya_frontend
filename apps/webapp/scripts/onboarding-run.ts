@@ -3,18 +3,25 @@
  * Login + onboarding integration pipeline (Playwright library, fail-the-process):
  *   1. Public gates (`/`, `/dashboard`, `/onboarding`) → `/login`
  *   2. Password login error + signup validation; valid signup must show verification UI (not jump to the wizard)
- *   3. Invalid invite token page (expired 7-day TTL is a documented gap — no expire command)
- *   4. Wizard step UI (disabled Continue, invalid staff email, skip staff, Create school enabled)
- *   5. Owner resume: reload + second tab stay on step 2; after provision, reload stays on step 4 with Back/stepper locked
- *   6. Happy-path provision with a valid wizard staff invite → dashboard
- *   7. Invited staff `/invite/{token}` new-account signup + verification (new tab) → dashboard
- *   8. Existing-account staff invite: API signup + seed-verify, then sign in on `/invite/{token}` → dashboard
- *   9. Owner session opens a different staff invite → blocked / not consumed
- *  10. Resend invitation → old token shows revoked heading
- *  11. Revisit consumed token → already-accepted heading, not dashboard
- *  12. Invited teacher → teacher-linked / teacher portal gate (not `/dashboard`)
- *  13. Invited guardian → guardian-linked / guardian portal gate (not `/dashboard`)
- *  14. Provisioned owner password login → dashboard
+ *   3. API-unavailable banner when Identity or school API probes fail
+ *   4. Captured-link verification in a second tab leaves the original tab on the inbox copy
+ *   5. Invalid, expired, and revoked invite tokens stay on `/invite/{token}`
+ *   6. Wizard step UI (disabled Continue, invalid staff email, skip staff, Create school enabled, chapters drawer)
+ *   7. Trimester/semester auto dates plus add/remove period
+ *   8. Owner resume: reload + second tab stay on step 2; after provision, reload stays on step 4 with Back/stepper locked
+ *   9. Double Create school submit reuses the provision identity and stays on the committed hold
+ *  10. Provision commit with bootstrap failure shows Retry opening workspace, then recovers
+ *  11. Happy-path provision with a valid wizard staff invite → dashboard
+ *  12. Invited staff `/invite/{token}` new-account signup + verification (new tab) → dashboard, then password relogin
+ *  13. Existing-account staff invite: captured-link signup, sign out, then sign in on `/invite/{token}` → dashboard
+ *  14. Owner session opens a different staff invite → blocked / not consumed
+ *  15. Revisit consumed token → already-accepted heading, not dashboard
+ *  16. Invited teacher → teacher-linked / teacher portal gate (not `/dashboard`)
+ *  17. Invited guardian → guardian-linked / guardian portal gate (not `/dashboard`)
+ *  18. Provisioned owner password login → dashboard
+ *
+ * Canonical lane: REQUIRE_EMAIL_VERIFICATION=true and captured verification URLs only.
+ * Seed `mark-email-verified` is not used here.
  *
  * Identity must run like staging:
  *   REQUIRE_EMAIL_VERIFICATION=true
@@ -58,6 +65,11 @@ async function main(): Promise<void> {
 		});
 		await writeFile(SUMMARY_PATH, JSON.stringify(summary, null, 2));
 		console.log(`Login + onboarding suite OK — ${summary.scenes.length} scenes`);
+		if (summary.catalog) {
+			console.log(
+				`Catalog: unique=${summary.catalog.unique} automated=${summary.catalog.automated} N/A=${summary.catalog.na} excluded=${summary.catalog.excluded} manual=${summary.catalog.manual}`,
+			);
+		}
 		console.log(`Summary: ${SUMMARY_PATH}`);
 	}
 	catch (error) {

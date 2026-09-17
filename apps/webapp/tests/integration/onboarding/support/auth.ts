@@ -1,6 +1,6 @@
 import type { Page } from 'playwright';
 import { waitForEnabled } from '../../demo-dry-run/support/auth';
-import { resolveAuthUrl } from '../../support/integration-hosts';
+import { resolveApiUrl, resolveAuthUrl } from '../../support/integration-hosts';
 import { currentOnboardingStep, loginSignInPath, loginSignupPath } from './paths';
 
 const SIGNUP_SUBMIT = /créer mon compte|create my account|création du compte|creating account/i;
@@ -99,17 +99,23 @@ export async function followVerificationLinkInNewPage(
 
 export async function assertStackReady(base: string): Promise<void> {
 	const readinessPath = process.env.WEBAPP_READINESS_PATH ?? '/login';
+	await assertHttpReady(`${base}${readinessPath}`, `Webapp not ready at ${base}${readinessPath}. Start bun dev or Wrangler preview:integration.`);
+	const authUrl = resolveAuthUrl();
+	await assertHttpReady(`${authUrl}/auth/get-session`, `Identity not ready at ${authUrl}/auth/get-session.`);
+	const apiUrl = resolveApiUrl();
+	await assertHttpReady(`${apiUrl}/reference`, `School API not ready at ${apiUrl}/reference.`);
+}
+
+async function assertHttpReady(url: string, message: string): Promise<void> {
 	try {
-		const res = await fetch(`${base}${readinessPath}`, { signal: AbortSignal.timeout(15_000) });
+		const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
 		if (!res.ok) {
 			throw new Error(`HTTP ${res.status}`);
 		}
 	}
 	catch (err) {
 		const detail = err instanceof Error ? err.message : String(err);
-		throw new Error(
-			`Webapp not ready at ${base}${readinessPath} (${detail}). Start bun dev or Wrangler preview:integration.`,
-		);
+		throw new Error(`${message} (${detail})`);
 	}
 }
 
@@ -203,8 +209,8 @@ export async function expectAppDashboard(page: Page): Promise<void> {
 export async function signUpThroughUi(
 	page: Page,
 	base: string,
-	options: { name: string; email: string; password: string },
-): Promise<void> {
+	options: { name: string; email: string; password: string; verifyInNewPage?: boolean },
+): Promise<Page> {
 	await page.goto(loginSignupPath(base), { waitUntil: 'domcontentloaded' });
 
 	const nameInput = page.locator('#signup-name');
@@ -236,9 +242,14 @@ export async function signUpThroughUi(
 	}
 
 	if (outcome === 'verification') {
+		if (options.verifyInNewPage) {
+			const next = await followVerificationLinkInNewPage(page, options.email, /\/onboarding/);
+			await next.locator('#onboarding-school-name').waitFor({ state: 'visible', timeout: 20_000 });
+			return next;
+		}
 		await followVerificationLink(page, options.email, /\/onboarding/);
 		await page.locator('#onboarding-school-name').waitFor({ state: 'visible', timeout: 20_000 });
-		return;
+		return page;
 	}
 
 	const alertText = await page.locator('[role="alert"]').allInnerTexts().catch(() => []);

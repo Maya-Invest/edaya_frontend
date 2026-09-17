@@ -71,7 +71,7 @@
 
 	const live = $derived(familyFeedbackPage.findCampaign(campaign.id) ?? campaign);
 	const title = $derived(familyFeedbackPage.campaignTitle(live));
-	const periodName = $derived(academicContext.periods.find(period => period.id === live.academicPeriodId)?.name ?? live.academicPeriodId);
+	const periodName = $derived(academicContext.periods.find(period => period.id === live.academicPeriodId)?.label ?? live.academicPeriodId);
 	const moderatorName = $derived.by(() => {
 		const name = familyFeedbackPage.staff.find(entry => entry.id === live.moderatorStaffId)?.name;
 		return name ?? $t('familyFeedback.noModerator');

@@ -3,7 +3,7 @@ import type { DemoContext, SignInOptions } from './types';
 import path from 'node:path';
 import { TEACHER_PORTAL_GATE_BANNER_TEST_ID } from '$lib/auth/teacher-portal-gate';
 import { DEMO_PASSWORD, STAFF_EMAIL } from './constants';
-import { resolveAuthUrl } from '../../support/integration-hosts';
+import { resolveApiUrl, resolveAuthUrl } from '../../support/integration-hosts';
 import { integrationUsesDemoLogin, isSignedInStaffUrl, webappReadinessPath } from './paths';
 
 export async function waitForEnabled(locator: ReturnType<Page['locator']>, timeout = 30_000): Promise<void> {
@@ -190,18 +190,28 @@ export async function signIn(ctx: DemoContext, account: SignInOptions = {}): Pro
 
 export async function assertStackReady(base: string): Promise<void> {
 	const readinessPath = webappReadinessPath();
+	await assertHttpReady(
+		`${base}${readinessPath}`,
+		`Webapp not ready at ${base}${readinessPath}. ${integrationUsesDemoLogin()
+			? 'Use WEBAPP_URL=https://staging.app.edayaplus.com for remote staging, or start bun dev locally.'
+			: 'Use WEBAPP_URL=https://app.edayaplus.com for remote production.'}`,
+	);
+	const authUrl = resolveAuthUrl();
+	await assertHttpReady(`${authUrl}/auth/get-session`, `Identity not ready at ${authUrl}/auth/get-session.`);
+	const apiUrl = resolveApiUrl();
+	await assertHttpReady(`${apiUrl}/reference`, `School API not ready at ${apiUrl}/reference.`);
+}
+
+async function assertHttpReady(url: string, message: string): Promise<void> {
 	try {
-		const res = await fetch(`${base}${readinessPath}`, { signal: AbortSignal.timeout(15_000) });
+		const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
 		if (!res.ok) {
 			throw new Error(`HTTP ${res.status}`);
 		}
 	}
 	catch (err) {
 		const detail = err instanceof Error ? err.message : String(err);
-		const hint = integrationUsesDemoLogin()
-			? 'Use WEBAPP_URL=https://staging.app.edayaplus.com for remote staging, or start bun dev locally.'
-			: 'Use WEBAPP_URL=https://app.edayaplus.com for remote production.';
-		throw new Error(`Webapp not ready at ${base}${readinessPath} (${detail}). ${hint}`);
+		throw new Error(`${message} (${detail})`);
 	}
 }
 

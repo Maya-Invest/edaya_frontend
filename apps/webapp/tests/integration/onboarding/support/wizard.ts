@@ -6,6 +6,7 @@ import { currentOnboardingStep } from './paths';
 export const CONTINUE_BUTTON = /^(Continuer|Continue)$/;
 export const SKIP_STEP_BUTTON = /passer cette étape|skip this step/i;
 export const CREATE_SCHOOL_BUTTON = /créer votre école|create your school/i;
+export const RETRY_BOOTSTRAP_BUTTON = /retry opening workspace|réessayer d['’]ouvrir l['’]espace/i;
 export const OPEN_DASHBOARD_BUTTON = /ouvrir le tableau de bord|open dashboard/i;
 export const BACK_BUTTON = /^(Précédent|Back)$/;
 export const COLLEGE_MODEL = /Collège|Middle school/;
@@ -17,6 +18,10 @@ export function continueButton(page: Page) {
 
 export function skipStepButton(page: Page) {
 	return page.getByRole('button', { name: SKIP_STEP_BUTTON });
+}
+
+export function retryBootstrapButton(page: Page) {
+	return page.locator('footer').getByRole('button', { name: RETRY_BOOTSTRAP_BUTTON });
 }
 
 export function createSchoolButton(page: Page) {
@@ -147,6 +152,7 @@ export async function clickCreateSchoolAndWaitForProvision(page: Page): Promise<
 		{ timeout: 120_000 },
 	);
 	await createSchool.click();
+	await createSchool.click({ timeout: 750 }).catch(() => undefined);
 	const response = await provisionResponse;
 	if (!response.ok()) {
 		throw new Error(`Onboarding provision failed: ${response.status()} ${page.url()}`);
@@ -165,6 +171,10 @@ async function footerFinishLabel(page: Page): Promise<string> {
 	return ((await buttons.nth(count - 1).textContent()) ?? '').replace(/\s+/g, ' ').trim();
 }
 
+function isRetryBootstrapLabel(label: string): boolean {
+	return /retry opening workspace|réessayer d['’]ouvrir l['’]espace/i.test(label);
+}
+
 function isOpenDashboardLabel(label: string): boolean {
 	return /^(ouvrir le tableau de bord|open dashboard)$/i.test(label);
 }
@@ -175,10 +185,11 @@ export async function waitForProvisionHold(page: Page): Promise<void> {
 	while (Date.now() < deadline) {
 		const finishLabel = await footerFinishLabel(page);
 		const dashboardVisible = isOpenDashboardLabel(finishLabel);
+		const retryVisible = isRetryBootstrapLabel(finishLabel);
 		const backVisible = await backButton(page).isVisible().catch(() => false);
 		const backLocked = !backVisible || (await backButton(page).isDisabled().catch(() => false));
 		const step = currentOnboardingStep(page.url());
-		if (dashboardVisible && backLocked && step === 4) {
+		if ((dashboardVisible || retryVisible) && backLocked && step === 4) {
 			if (stableAt == null) {
 				stableAt = Date.now();
 			}

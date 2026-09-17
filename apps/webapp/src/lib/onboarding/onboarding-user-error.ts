@@ -4,6 +4,7 @@ import { get } from 'svelte/store';
 
 const ONBOARDING_ERROR_CODE_KEYS = {
 	ACADEMIC_PERIOD_OUTSIDE_YEAR: 'onboarding.schoolStep.periodOutsideYear',
+	COMMAND_REPLAY_CONFLICT: 'onboarding.completeStep.replayConflict',
 	SUBJECT_ALREADY_LINKED: 'onboarding.schoolStep.alreadyLinked',
 	STRUCTURE_ALREADY_CONFIGURED: 'onboarding.structureStep.alreadyConfigured',
 	STAFF_INVITE_OWNER_EMAIL: 'onboarding.staffStep.ownerEmail',

@@ -7,6 +7,7 @@
 	import { ACCOUNT_PROFILE_MODAL } from '$lib/account/profile-navigation';
 	import { bootstrapAppShell, invalidateAppShellBootstrapCache, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 	import { shouldEnforceLoginGate } from '$lib/auth/enforce-login-gate';
+	import { leaveStaffWebappForSessionKind } from '$lib/auth/leave-staff-webapp';
 	import { ONBOARDING_PATH } from '$lib/auth/resolve-post-auth-paths';
 	import { authSession } from '$lib/auth/session.svelte';
 	import AccountProfileModal from '$lib/components/account/AccountProfileModal.svelte';
@@ -95,17 +96,26 @@
 		}
 
 		if (shouldEnforceLoginGate()) {
-			appGoto(appPath('/login'), { replaceState: true });
+			void appGoto(appPath('/login'), { replaceState: true });
 			return;
 		}
 
 		if (authSession.needsOnboarding) {
-			appGoto(ONBOARDING_PATH, { replaceState: true });
+			void appGoto(ONBOARDING_PATH, { replaceState: true });
 			return;
 		}
 
 		if (!authSession.isLoggedIn) {
-			appGoto(appPath('/login'), { replaceState: true });
+			void appGoto(appPath('/login'), { replaceState: true });
+			return;
+		}
+
+		if (authSession.sessionKind && authSession.sessionKind !== 'staff') {
+			void leaveStaffWebappForSessionKind(authSession.sessionKind);
+			return;
+		}
+
+		if (authSession.onboardingStatusUnknown) {
 			return;
 		}
 
@@ -141,10 +151,10 @@
 		})();
 	});
 
-	function logout() {
+	async function logout() {
 		resetAppShellBootstrap();
-		authSession.logout();
-		appGoto(appPath('/login'), { replaceState: true });
+		await authSession.logout();
+		await appGoto(appPath('/login'), { replaceState: true });
 	}
 </script>
 

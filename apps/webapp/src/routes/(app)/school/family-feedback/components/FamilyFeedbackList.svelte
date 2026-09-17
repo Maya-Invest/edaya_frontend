@@ -72,7 +72,7 @@
 	}
 
 	function periodLabel(campaign: FamilyFeedbackCampaign) {
-		return academicContext.periods.find(period => period.id === campaign.academicPeriodId)?.name ?? campaign.academicPeriodId;
+		return academicContext.periods.find(period => period.id === campaign.academicPeriodId)?.label ?? campaign.academicPeriodId;
 	}
 
 	function handleCreated(campaignId: string) {

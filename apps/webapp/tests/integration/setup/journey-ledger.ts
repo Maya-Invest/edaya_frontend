@@ -74,6 +74,9 @@ export class JourneyLedger {
 			if (wanted && !wanted.has(row.action)) {
 				continue;
 			}
+			if (this.has(row)) {
+				continue;
+			}
 			recorded.push(this.record(row, statut, detail));
 		}
 		return recorded;
@@ -92,6 +95,9 @@ export class JourneyLedger {
 				|| action === 'Liste'
 				|| action.startsWith('Liste — affichage')
 			) {
+				if (this.has(row)) {
+					continue;
+				}
 				recorded.push(this.record(row, statut, detail));
 			}
 		}

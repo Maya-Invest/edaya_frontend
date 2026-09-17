@@ -6,6 +6,7 @@
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
 	import {
+		copyTypesForTemplateKey,
 		gatedChannelsForTemplateKey,
 		isInvitationTemplateKey,
 		NOTIFICATION_TEMPLATE_SAMPLE_VALUES,
@@ -27,6 +28,7 @@
 	const eventEntry = $derived(readEventTemplateEntry(document, templateKey));
 	const invitationEntry = $derived(readInvitationTemplateEntry(document));
 	const gatedChannels = $derived(gatedChannelsForTemplateKey(templateKey));
+	const copyTypes = $derived(copyTypesForTemplateKey(templateKey));
 	const variables = $derived(NOTIFICATION_TEMPLATE_VARIABLES[templateKey]);
 
 	const baseTitle = $derived(eventEntry?.base_message.title ?? '');
@@ -112,14 +114,6 @@
 		</DrawerField>
 	{/if}
 
-	{#if invitation}
-		<DrawerField label={$t('notificationTemplates.invitationSms')}>
-			<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">
-				{flagLabel(Boolean(document?.invitationSmsEnabled))}
-			</div>
-		</DrawerField>
-	{/if}
-
 	{#if !invitation}
 		<DrawerField label={$t('notificationTemplates.copyType.base_message')}>
 			<div class="space-y-2 rounded-md border border-input bg-secondary/30 px-3 py-2">
@@ -147,11 +141,13 @@
 		</div>
 	</DrawerField>
 
-	<DrawerField label={$t('notificationTemplates.copyType.simple_message')}>
-		<div class="min-h-10 whitespace-pre-wrap rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">
-			{renderTemplatePreview(simpleBody, NOTIFICATION_TEMPLATE_SAMPLE_VALUES)}
-		</div>
-	</DrawerField>
+	{#if copyTypes.includes('simple_message')}
+		<DrawerField label={$t('notificationTemplates.copyType.simple_message')}>
+			<div class="min-h-10 whitespace-pre-wrap rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">
+				{renderTemplatePreview(simpleBody, NOTIFICATION_TEMPLATE_SAMPLE_VALUES)}
+			</div>
+		</DrawerField>
+	{/if}
 
 	<DrawerField label={$t('notificationTemplates.variables')}>
 		<div class="flex flex-wrap gap-2">

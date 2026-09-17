@@ -5,11 +5,11 @@ import {
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { fetchSessionStaffProfile } from '$lib/api/staff-data';
 import { persistServerOnboardingStatusToDraft } from '$lib/onboarding/resume-onboarding';
-import { isOnboardingSummaryHold } from '$lib/onboarding/wizard-completion-flag';
+import { fetchServerOnboardingAccountStatus } from '$lib/onboarding/sync-account-status';
 import {
-	fetchServerOnboardingAccountStatus,
-} from '$lib/onboarding/sync-account-status';
-import { mergeServerOnboardingStatus } from '$lib/onboarding/wizard-completion-flag';
+	isOnboardingSummaryHold,
+	mergeServerOnboardingStatus,
+} from '$lib/onboarding/wizard-completion-flag';
 import { ApiError } from '@maya-invest/edaya-api-client';
 import { authClient } from './client';
 import { authSession } from './session.svelte';
@@ -28,6 +28,7 @@ export interface BootstrapSessionResult {
 	staffProfile: Awaited<ReturnType<typeof fetchSessionStaffProfile>>['profile'] | null;
 	guardianSettings: Awaited<ReturnType<typeof fetchGuardianNotificationSettings>> | null;
 	pendingOnboarding: boolean;
+	onboardingStatusUnknown: boolean;
 }
 
 let sessionBootstrapPromise: Promise<BootstrapSessionResult> | null = null;
@@ -43,7 +44,13 @@ export async function bootstrapSession(
 	options: BootstrapSessionOptions = {},
 ): Promise<BootstrapSessionResult> {
 	if (!sessionBootstrapPromise) {
-		sessionBootstrapPromise = runBootstrapSession(options);
+		const promise = runBootstrapSession(options).catch((error) => {
+			if (sessionBootstrapPromise === promise) {
+				sessionBootstrapPromise = null;
+			}
+			throw error;
+		});
+		sessionBootstrapPromise = promise;
 	}
 	return sessionBootstrapPromise;
 }
@@ -57,15 +64,21 @@ function fullSessionBootstrapOwnsAuth(): boolean {
 	return authSession.isLoggedIn || sessionBootstrapPromise !== null;
 }
 
-async function runBootstrapSession(
-	options: BootstrapSessionOptions = {},
-): Promise<BootstrapSessionResult> {
-	const emptyResult: BootstrapSessionResult = {
+function emptyBootstrapResult(): BootstrapSessionResult {
+	return {
 		session: null,
 		staffProfile: null,
 		guardianSettings: null,
 		pendingOnboarding: false,
+		onboardingStatusUnknown: false,
 	};
+}
+
+async function runBootstrapSession(
+	options: BootstrapSessionOptions = {},
+): Promise<BootstrapSessionResult> {
+	const generation = bootstrapGeneration;
+	const emptyResult = emptyBootstrapResult();
 
 	const silent = options.silent === true;
 	if (!silent) {
@@ -73,6 +86,9 @@ async function runBootstrapSession(
 	}
 	try {
 		const { data: auth } = await authClient.getSession();
+		if (generation !== bootstrapGeneration) {
+			return emptyResult;
+		}
 		if (!auth?.session || !auth.user?.id) {
 			authSession.clear();
 			return emptyResult;
@@ -84,6 +100,9 @@ async function runBootstrapSession(
 			session = await getBrowserSchoolClient().authorization.effectiveGrants();
 		}
 		catch (error) {
+			if (generation !== bootstrapGeneration) {
+				return emptyResult;
+			}
 			if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
 				if (!silent) {
 					authSession.setPendingOnboarding({
@@ -99,49 +118,86 @@ async function runBootstrapSession(
 			throw error;
 		}
 
+		if (generation !== bootstrapGeneration) {
+			return emptyResult;
+		}
+
 		const client = getBrowserSchoolClient();
 		let staffProfile = null;
 		let guardianSettings = null;
 		let subjectId: string | null = null;
+		let onboardingStatusUnknown = false;
 
 		if (session?.kind === 'staff') {
-			const [sessionStaff, serverOnboardingStatus] = await Promise.all([
+			const [sessionStaffResult, serverOnboardingStatusResult] = await Promise.allSettled([
 				fetchSessionStaffProfile(client, session.actorId, {
 					isElevated: session.grants.some(grant => grant.source === 'owner'),
 				}),
 				fetchServerOnboardingAccountStatus(),
 			]);
-			staffProfile = sessionStaff.profile;
-			subjectId = sessionStaff.profile.subjectId ?? null;
+			if (generation !== bootstrapGeneration) {
+				return emptyResult;
+			}
+
+			let notificationEmail: string | null = null;
+			let notificationPhone: string | null = null;
+			if (sessionStaffResult.status === 'fulfilled') {
+				staffProfile = sessionStaffResult.value.profile;
+				subjectId = sessionStaffResult.value.profile.subjectId ?? null;
+				notificationEmail = sessionStaffResult.value.notificationEmail;
+				notificationPhone = sessionStaffResult.value.notificationPhone;
+			}
+
 			authSession.setFromServer(session, {
 				staffProfile,
 				guardianSettings,
 				subjectId,
 				loginEmail,
 				authUserId: auth.user.id,
-				notificationEmail: sessionStaff.notificationEmail,
-				notificationPhone: sessionStaff.notificationPhone,
+				notificationEmail,
+				notificationPhone,
 			});
 
-			const mergedOnboardingStatus = mergeServerOnboardingStatus(
-				authSession.serverOnboardingStatus,
-				serverOnboardingStatus,
-			);
-			authSession.setServerOnboardingStatus(mergedOnboardingStatus);
-			if (mergedOnboardingStatus) {
-				persistServerOnboardingStatusToDraft(
-					auth.user.id,
-					mergedOnboardingStatus,
-					session.schoolId,
-					{ holdLocalWizardCompleted: isOnboardingSummaryHold(auth.user.id) },
+			if (serverOnboardingStatusResult.status === 'fulfilled' && serverOnboardingStatusResult.value) {
+				const mergedOnboardingStatus = mergeServerOnboardingStatus(
+					authSession.serverOnboardingStatus,
+					serverOnboardingStatusResult.value,
 				);
+				authSession.setServerOnboardingStatus(mergedOnboardingStatus);
+				if (mergedOnboardingStatus) {
+					persistServerOnboardingStatusToDraft(
+						auth.user.id,
+						mergedOnboardingStatus,
+						session.schoolId,
+						{ holdLocalWizardCompleted: isOnboardingSummaryHold(auth.user.id) },
+					);
+				}
+			}
+			else {
+				onboardingStatusUnknown = true;
+				authSession.setOnboardingStatusUnknown(true);
 			}
 
-			return { session, staffProfile, guardianSettings, pendingOnboarding: false };
+			return {
+				session,
+				staffProfile,
+				guardianSettings,
+				pendingOnboarding: false,
+				onboardingStatusUnknown,
+			};
 		}
 		else if (session?.kind === 'guardian') {
-			guardianSettings = await fetchGuardianNotificationSettings(client, session.actorId);
-			subjectId = guardianSettings?.subjectId ?? null;
+			try {
+				guardianSettings = await fetchGuardianNotificationSettings(client, session.actorId);
+				subjectId = guardianSettings?.subjectId ?? null;
+			}
+			catch {
+				onboardingStatusUnknown = true;
+			}
+		}
+
+		if (generation !== bootstrapGeneration) {
+			return emptyResult;
 		}
 
 		authSession.setFromServer(session, {
@@ -151,17 +207,28 @@ async function runBootstrapSession(
 			loginEmail,
 			authUserId: auth.user.id,
 		});
-		return { session, staffProfile, guardianSettings, pendingOnboarding: false };
+		if (onboardingStatusUnknown) {
+			authSession.setOnboardingStatusUnknown(true);
+		}
+		return {
+			session,
+			staffProfile,
+			guardianSettings,
+			pendingOnboarding: false,
+			onboardingStatusUnknown,
+		};
 	}
 	catch (error) {
 		if (error instanceof ApiError && error.status === 401) {
-			authSession.clear();
+			if (generation === bootstrapGeneration) {
+				authSession.clear();
+			}
 			return emptyResult;
 		}
 		throw error;
 	}
 	finally {
-		if (!silent) {
+		if (!silent && generation === bootstrapGeneration) {
 			authSession.markReady();
 		}
 	}

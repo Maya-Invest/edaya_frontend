@@ -275,7 +275,7 @@ export function templateKeyFromPathname(pathname: string): NotificationTemplateK
 
 export function copyTypesForTemplateKey(key: NotificationTemplateKey): NotificationCopyType[] {
 	return isInvitationTemplateKey(key)
-		? ['rich_message', 'simple_message']
+		? ['rich_message']
 		: ['base_message', 'rich_message', 'simple_message'];
 }
 
@@ -284,11 +284,11 @@ export function gatedChannelsForTemplateKey(key: NotificationTemplateKey): Notif
 }
 
 export function previewChannelsForTemplateKey(key: NotificationTemplateKey): NotificationSendChannel[] {
-	return isInvitationTemplateKey(key) ? ['email', 'sms'] : ['in_app', 'email', 'push', 'sms'];
+	return isInvitationTemplateKey(key) ? ['email'] : ['in_app', 'email', 'push', 'sms'];
 }
 
 export function listChannelsForTemplateKey(key: NotificationTemplateKey): NotificationSendChannel[] {
-	return isInvitationTemplateKey(key) ? ['email', 'sms'] : ['in_app', 'email', 'push', 'sms'];
+	return isInvitationTemplateKey(key) ? ['email'] : ['in_app', 'email', 'push', 'sms'];
 }
 
 export function copyTypeForChannel(channel: NotificationSendChannel): NotificationCopyType {

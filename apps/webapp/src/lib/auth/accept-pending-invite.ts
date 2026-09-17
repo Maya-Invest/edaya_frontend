@@ -3,21 +3,37 @@ import { acceptInvitation } from '$lib/api/invitation-data';
 import {
 	bootstrapSession,
 	resetBootstrapSession,
-
 } from '$lib/auth/bootstrap';
 import { resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import {
-	clearPendingInviteToken,
+	clearPendingInviteTokenIf,
 	readPendingInviteToken,
 } from '$lib/auth/pending-invite-token';
 import { ApiError } from '@maya-invest/edaya-api-client';
 
-function invitationAlreadySettled(error: unknown): boolean {
+const SETTLED_INVITATION_CODES = new Set([
+	'INVITATION_ALREADY_ACCEPTED',
+	'SUBJECT_ALREADY_LINKED',
+]);
+
+const TERMINAL_INVITATION_CODES = new Set([
+	...SETTLED_INVITATION_CODES,
+	'INVITATION_NOT_FOUND',
+	'INVITATION_REVOKED',
+	'INVITATION_EXPIRED',
+]);
+
+function invitationErrorCode(error: unknown): string | null {
 	if (!(error instanceof ApiError) || !error.body || typeof error.body !== 'object') {
-		return false;
+		return null;
 	}
 	const code = (error.body as { code?: string }).code;
-	return code === 'INVITATION_ALREADY_ACCEPTED' || code === 'SUBJECT_ALREADY_LINKED';
+	return typeof code === 'string' ? code : null;
+}
+
+function invitationAlreadySettled(error: unknown): boolean {
+	const code = invitationErrorCode(error);
+	return code != null && SETTLED_INVITATION_CODES.has(code);
 }
 
 export async function acceptPendingInviteIfPresent(): Promise<boolean> {
@@ -28,13 +44,17 @@ export async function acceptPendingInviteIfPresent(): Promise<boolean> {
 
 	try {
 		await acceptInvitation(token);
-		clearPendingInviteToken();
+		clearPendingInviteTokenIf(token);
 		return true;
 	}
 	catch (error) {
 		if (invitationAlreadySettled(error)) {
-			clearPendingInviteToken();
+			clearPendingInviteTokenIf(token);
 			return true;
+		}
+		const code = invitationErrorCode(error);
+		if (code && TERMINAL_INVITATION_CODES.has(code)) {
+			clearPendingInviteTokenIf(token);
 		}
 		return false;
 	}
@@ -73,6 +93,7 @@ async function firstBootstrapAfterInvite(): Promise<BootstrapSessionResult> {
 			staffProfile: null,
 			guardianSettings: null,
 			pendingOnboarding: true,
+			onboardingStatusUnknown: false,
 		};
 	}
 }

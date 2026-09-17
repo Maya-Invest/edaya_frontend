@@ -9,7 +9,7 @@
 	const live = $derived(campaign ? familyFeedbackPage.findCampaign(campaign.id) ?? campaign : undefined);
 	const periodName = $derived(
 		live
-			? academicContext.periods.find(period => period.id === live.academicPeriodId)?.name ?? live.academicPeriodId
+			? academicContext.periods.find(period => period.id === live.academicPeriodId)?.label ?? live.academicPeriodId
 			: '',
 	);
 	const moderatorName = $derived.by(() => {

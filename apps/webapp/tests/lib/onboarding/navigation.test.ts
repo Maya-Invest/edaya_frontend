@@ -100,5 +100,7 @@ describe('onboardingFinishCtaKey', () => {
 	it('uses create-school until provision succeeds, then open dashboard', () => {
 		expect(onboardingFinishCtaKey(false)).toBe('onboarding.createSchool');
 		expect(onboardingFinishCtaKey(true)).toBe('onboarding.finish');
+		expect(onboardingFinishCtaKey(true, true)).toBe('onboarding.retryBootstrap');
+		expect(onboardingFinishCtaKey(false, true)).toBe('onboarding.retryBootstrap');
 	});
 });

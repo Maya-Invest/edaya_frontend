@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import {
 	clearPendingInviteToken,
+	clearPendingInviteTokenIf,
 	pendingInvitePath,
 	persistPendingInviteToken,
 	readPendingInviteToken,
@@ -51,6 +52,14 @@ describe('pending invite token storage', () => {
 	it('reads a token left only in sessionStorage', () => {
 		globalThis.sessionStorage.setItem('edaya:pending-invite-token', 'legacy-token');
 		expect(readPendingInviteToken()).toBe('legacy-token');
+	});
+
+	it('clears only the stored token when it matches', () => {
+		persistPendingInviteToken('keep-me');
+		clearPendingInviteTokenIf('other');
+		expect(readPendingInviteToken()).toBe('keep-me');
+		clearPendingInviteTokenIf('keep-me');
+		expect(readPendingInviteToken()).toBeNull();
 	});
 
 	it('builds invite paths from storage', () => {

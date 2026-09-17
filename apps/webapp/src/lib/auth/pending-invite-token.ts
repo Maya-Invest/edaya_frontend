@@ -44,6 +44,20 @@ export function clearPendingInviteToken(): void {
 	writeStore(globalThis.sessionStorage, null);
 }
 
+export function clearPendingInviteTokenIf(token: string | null | undefined): void {
+	const value = token?.trim();
+	if (!value) {
+		return;
+	}
+	if (readPendingInviteToken() === value) {
+		clearPendingInviteToken();
+	}
+}
+
+export function discardPendingInviteToken(): void {
+	clearPendingInviteToken();
+}
+
 export function pendingInvitePath(token?: string | null): string | null {
 	const value = token?.trim() || readPendingInviteToken();
 	if (!value) {

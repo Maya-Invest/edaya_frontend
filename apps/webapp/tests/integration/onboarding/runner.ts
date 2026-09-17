@@ -1,20 +1,28 @@
 import type { Browser, Page } from 'playwright';
+import { assertAuthOnboardingCatalogCoverage } from './catalog-coverage';
 import { captureFailure, uniqueOnboardingEmail, uniqueOnboardingPassword } from './support/capture';
 import { assertStackReady } from './support/auth';
 import { ONBOARDING_WEBAPP_BASE } from './support/paths';
+import { runApiUnavailableBanner } from './scenes/api-unavailable-banner';
 import { assertPublicAuthGates } from './scenes/gates';
 import { runHappyPath } from './scenes/happy-path';
 import { runInvalidInvite } from './scenes/invalid-invite';
 import { runInviteAlreadyAccepted } from './scenes/invite-already-accepted';
+import { runInviteExpired } from './scenes/invite-expired';
 import { runInviteRevoked } from './scenes/invite-revoked';
 import { runInviteWrongAccount } from './scenes/invite-wrong-account';
 import { runInvitedGuardian } from './scenes/invited-guardian';
 import { runInvitedStaff } from './scenes/invited-staff';
 import { runInvitedStaffExisting } from './scenes/invited-staff-existing';
+import { runInvitedStaffRelogin } from './scenes/invited-staff-relogin';
 import { runInvitedTeacher } from './scenes/invited-teacher';
 import { runLoginSignupUi } from './scenes/login-signup-ui';
 import { runOwnerRelogin } from './scenes/owner-relogin';
 import { runOwnerWizardResume } from './scenes/owner-resume';
+import { runProvisionBootstrapRetry } from './scenes/provision-bootstrap-retry';
+import { runProvisionDoubleSubmit } from './scenes/provision-double-submit';
+import { runSchoolPeriodDates } from './scenes/school-period-dates';
+import { runSignupCrossTab } from './scenes/signup-cross-tab';
 import { runWizardStepInteractions } from './scenes/wizard-interactions';
 import type { OnboardingCredentials, OnboardingSuiteSummary } from './types';
 
@@ -65,10 +73,25 @@ export async function runOnboardingSuite(
 	});
 	summary.scenes.push({ id: 'login-signup-ui', ok: true });
 
+	await withScene(options, 'api-unavailable-banner', async (page) => {
+		await runApiUnavailableBanner(page, base);
+	});
+	summary.scenes.push({ id: 'api-unavailable-banner', ok: true });
+
+	await withScene(options, 'signup-cross-tab', async (page) => {
+		await runSignupCrossTab(page, base);
+	});
+	summary.scenes.push({ id: 'signup-cross-tab', ok: true });
+
 	await withScene(options, 'invalid-invite', async (page) => {
 		await runInvalidInvite(page, base);
 	});
 	summary.scenes.push({ id: 'invalid-invite', ok: true });
+
+	await withScene(options, 'invite-expired', async (page) => {
+		await runInviteExpired(page, base);
+	});
+	summary.scenes.push({ id: 'invite-expired', ok: true });
 
 	await withScene(options, 'wizard-step-interactions', async (page) => {
 		await runWizardStepInteractions({
@@ -81,6 +104,17 @@ export async function runOnboardingSuite(
 	});
 	summary.scenes.push({ id: 'wizard-step-interactions', ok: true });
 
+	await withScene(options, 'school-period-dates', async (page) => {
+		await runSchoolPeriodDates({
+			page,
+			browser: options.browser,
+			base,
+			outDir: options.outDir,
+			credentials: uniqueOwner('Period Owner', 'Period School'),
+		});
+	});
+	summary.scenes.push({ id: 'school-period-dates', ok: true });
+
 	await withScene(options, 'owner-wizard-resume', async (page) => {
 		await runOwnerWizardResume({
 			page,
@@ -91,6 +125,28 @@ export async function runOnboardingSuite(
 		});
 	});
 	summary.scenes.push({ id: 'owner-wizard-resume', ok: true });
+
+	await withScene(options, 'provision-double-submit', async (page) => {
+		await runProvisionDoubleSubmit({
+			page,
+			browser: options.browser,
+			base,
+			outDir: options.outDir,
+			credentials: uniqueOwner('Double Submit Owner', 'Double Submit School'),
+		});
+	});
+	summary.scenes.push({ id: 'provision-double-submit', ok: true });
+
+	await withScene(options, 'provision-bootstrap-retry', async (page) => {
+		await runProvisionBootstrapRetry({
+			page,
+			browser: options.browser,
+			base,
+			outDir: options.outDir,
+			credentials: uniqueOwner('Bootstrap Retry Owner', 'Bootstrap Retry School'),
+		});
+	});
+	summary.scenes.push({ id: 'provision-bootstrap-retry', ok: true });
 
 	const ownerContext = await options.browser.newContext({ viewport: { width: 1440, height: 900 } });
 	const ownerPage = await ownerContext.newPage();
@@ -106,14 +162,19 @@ export async function runOnboardingSuite(
 		});
 		summary.scenes.push({ id: 'happy-path', ok: true, detail: owner.email });
 
-		const invitedStaffToken = await (async () => {
-			let token = '';
+		const invitedStaff = await (async () => {
+			let credentials = { token: '', email: '', password: '' };
 			await runScene(options.outDir, 'invited-staff', ownerPage, async () => {
-				token = await runInvitedStaff(ownerPage, options.browser, base);
+				credentials = await runInvitedStaff(ownerPage, options.browser, base);
 			});
-			return token;
+			return credentials;
 		})();
 		summary.scenes.push({ id: 'invited-staff', ok: true });
+
+		await withScene(options, 'invited-staff-relogin', async (page) => {
+			await runInvitedStaffRelogin(page, base, invitedStaff);
+		});
+		summary.scenes.push({ id: 'invited-staff-relogin', ok: true });
 
 		await runScene(options.outDir, 'invited-staff-existing', ownerPage, async () => {
 			await runInvitedStaffExisting(ownerPage, options.browser, base);
@@ -131,7 +192,7 @@ export async function runOnboardingSuite(
 		summary.scenes.push({ id: 'invite-revoked', ok: true });
 
 		await runScene(options.outDir, 'invite-already-accepted', ownerPage, async () => {
-			await runInviteAlreadyAccepted(options.browser, base, invitedStaffToken);
+			await runInviteAlreadyAccepted(options.browser, base, invitedStaff.token);
 		});
 		summary.scenes.push({ id: 'invite-already-accepted', ok: true });
 
@@ -153,6 +214,14 @@ export async function runOnboardingSuite(
 		await runOwnerRelogin(page, base, owner);
 	});
 	summary.scenes.push({ id: 'owner-relogin', ok: true });
+
+	summary.catalog = {
+		...assertAuthOnboardingCatalogCoverage(summary.scenes.map(scene => scene.id)),
+		manual: 0,
+	};
+	console.log(
+		`Auth/Onboarding catalog: automated=${summary.catalog.automated} N/A=${summary.catalog.na} unique=${summary.catalog.unique} excluded=${summary.catalog.excluded} manual=${summary.catalog.manual}`,
+	);
 
 	return summary;
 }

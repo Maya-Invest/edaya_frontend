@@ -41,4 +41,14 @@ export async function runWizardStepInteractions(ctx: OnboardingRunContext): Prom
 
 	const createSchool = createSchoolButton(page);
 	await waitForEnabled(createSchool);
+
+	const subjectRow = page.locator('tr[role="button"]').first();
+	await subjectRow.waitFor({ state: 'visible', timeout: 30_000 });
+	await subjectRow.click();
+	const chaptersDrawer = page.getByRole('complementary').filter({
+		hasText: /chapitres|chapters/i,
+	});
+	await chaptersDrawer.waitFor({ state: 'visible', timeout: 15_000 });
+	await page.keyboard.press('Escape');
+	await chaptersDrawer.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => undefined);
 }

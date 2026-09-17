@@ -56,6 +56,41 @@ export async function assertInvalidInvitePage(page: Page, base: string): Promise
 	}
 }
 
+export async function assertExpiredInvitePage(page: Page, base: string): Promise<void> {
+	await page.route('**/public/invitations/**', async (route) => {
+		if (route.request().method() !== 'GET' || route.request().url().includes('/accept')) {
+			await route.continue();
+			return;
+		}
+		await route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				status: 'expired',
+				kind: 'staff',
+				targetId: 'expired-target',
+				expiresAt: new Date(Date.now() - 60_000).toISOString(),
+				schoolName: 'Expired Invite School',
+				inviteeName: 'Expired Staff',
+				contactChannel: 'email',
+				contactEmail: 'expired-staff@integration.edaya.test',
+				authAccountExists: false,
+			}),
+		});
+	});
+	try {
+		await page.goto(invitePath(base, 'qa-expired-token'), { waitUntil: 'domcontentloaded' });
+		await page.locator('.animate-spin').first().waitFor({ state: 'detached', timeout: 15_000 }).catch(() => undefined);
+		await page.getByRole('heading', { name: /expired|expiré/i }).first().waitFor({ state: 'visible', timeout: 15_000 });
+		if (page.url().includes('/onboarding') || page.url().includes('/dashboard')) {
+			throw new Error(`Expired invite redirected into the app: ${page.url()}`);
+		}
+	}
+	finally {
+		await page.unroute('**/public/invitations/**');
+	}
+}
+
 export async function readDisplayedInviteToken(page: Page): Promise<string | null> {
 	const inputs = page.locator('input[readonly]');
 	const count = await inputs.count();

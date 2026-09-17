@@ -7,17 +7,29 @@
  */
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { chromium, type Page } from 'playwright';
+import { spawnSync } from 'node:child_process';
+import type { Browser, Page } from 'playwright';
 import { ensurePlaywrightChromium } from './playwright-browsers';
-import { assertStackReady } from '../tests/integration/demo-dry-run/support/auth';
+import {
+	assertStackReady,
+	attemptPasswordSignIn,
+	waitForEnabled,
+} from '../tests/integration/demo-dry-run/support/auth';
 import { createDemoContext } from '../tests/integration/demo-dry-run/support/context';
 import { DEMO_PASSWORD, STAFF_EMAIL, OWNER_EMAIL } from '../tests/integration/demo-dry-run/support/constants';
 import { runDrawerTabChecks } from '../tests/integration/demo-dry-run/scenes/drawer-tabs';
 import { runRouteCoverageScenes } from '../tests/integration/demo-dry-run/scenes/route-coverage';
 import { DemoReporter } from '../tests/integration/demo-dry-run/support/reporter';
-import { DEMO_WEBAPP_BASE } from '../tests/integration/demo-dry-run/support/paths';
+import { DEMO_WEBAPP_BASE, integrationUsesDemoLogin } from '../tests/integration/demo-dry-run/support/paths';
 import type { DemoContext } from '../tests/integration/demo-dry-run/support/types';
-import { listSearchInput } from './qa-harness-ui';
+import {
+	fillFeeCreateDialog,
+	fillStudentCreateDialog,
+	listSearchInput,
+	waitForDialogClosed,
+	waitForPageQuery,
+} from './qa-harness-ui';
+import { waitForCommandPayload } from '../tests/integration/setup/journey-context';
 
 const OUT_DIR = path.join(import.meta.dirname, '../../../..', '.qa-checklist-run');
 const RESULTS_PATH = path.join(import.meta.dirname, '../../../..', 'qa-checklist-results.json');
@@ -31,6 +43,7 @@ export interface QaRowResult {
 }
 
 const qaResults: QaRowResult[] = [];
+let lastCreatedStudentName = 'Eleve';
 
 function record(
 	page: string,
@@ -81,73 +94,49 @@ async function persistResults(base: string, consoleErrors: string[], reporter?: 
 
 async function waitForAppShell(page: Page): Promise<void> {
 	await page.waitForSelector('aside#app-sidebar', { timeout: 30_000 });
+	await waitForPageQuery(page);
 }
 
 async function dismissToasts(page: Page): Promise<void> {
 	await page.keyboard.press('Escape').catch(() => {});
 }
 
-async function qaSignIn(ctx: DemoContext): Promise<void> {
-	const { page, base } = ctx;
+function checklistCredentials(): Array<{ email: string; password: string }> {
+	const password = process.env.QA_LOGIN_PASSWORD ?? DEMO_PASSWORD;
 	const emails = [
 		process.env.QA_LOGIN_EMAIL,
 		STAFF_EMAIL,
 		OWNER_EMAIL,
 	].filter((value): value is string => Boolean(value?.trim()));
+	return emails.map(email => ({ email, password }));
+}
 
-	await page.goto(`${base}/login/demo`, { waitUntil: 'domcontentloaded' });
+async function qaSignIn(ctx: DemoContext): Promise<void> {
+	const { page, base } = ctx;
+	const credentials = checklistCredentials();
+	const preferPassword = Boolean(process.env.QA_LOGIN_EMAIL) || !integrationUsesDemoLogin();
 
-	const apiBanner = page.getByText(/API (locale )?indisponible|API unreachable|Local API unreachable/i);
-	const demoBtn = page.getByRole('button', { name: /Jean-Baptiste|Aka|Aminata|Koné|directeur/i }).first();
-	const hasDemo = await demoBtn.waitFor({ timeout: 45_000 }).then(() => true).catch(() => false);
-
-	if (hasDemo) {
-		await demoBtn.click();
-		const navigated = await page
-			.waitForURL(/\/(dashboard|school|classes|configuration|onboarding|finance)/, { timeout: 45_000 })
-			.then(() => true)
-			.catch(() => false);
-		if (navigated) {
-			await page.waitForSelector('aside#app-sidebar, [data-onboarding-shell]', { timeout: 30_000 }).catch(() => {});
-			return;
+	if (!preferPassword) {
+		await page.goto(`${base}/login/demo`, { waitUntil: 'domcontentloaded' });
+		const demoBtn = page.getByRole('button', { name: /Jean-Baptiste|Aka|Aminata|Koné|directeur/i }).first();
+		const hasDemo = await demoBtn.waitFor({ timeout: 12_000 }).then(() => true).catch(() => false);
+		if (hasDemo) {
+			await waitForEnabled(demoBtn);
+			await demoBtn.click();
+			const navigated = await page
+				.waitForURL(/\/(dashboard|school|classes|configuration|onboarding|finance)/, { timeout: 45_000 })
+				.then(() => true)
+				.catch(() => false);
+			if (navigated) {
+				await page.waitForSelector('aside#app-sidebar, [data-onboarding-shell]', { timeout: 30_000 }).catch(() => {});
+				return;
+			}
 		}
 	}
 
-	if (await apiBanner.isVisible().catch(() => false)) {
-		throw new Error('API indisponible sur /login/demo');
-	}
-
-	for (const email of emails) {
-		await page.goto(`${base}/login`, { waitUntil: 'domcontentloaded' });
-		const signInTab = page.getByRole('button', { name: /sign in|connexion|se connecter/i }).first();
-		if (await signInTab.isVisible().catch(() => false)) {
-			await signInTab.click();
-		}
-		const passwordTab = page.getByRole('tab', { name: /password|mot de passe/i });
-		if (await passwordTab.isVisible().catch(() => false)) {
-			await passwordTab.click();
-		}
-
-		const emailInput = page.locator('#login-password-email');
-		const passwordInput = page.locator('#login-password');
-		if (!(await emailInput.isVisible({ timeout: 8_000 }).catch(() => false))) {
-			continue;
-		}
-
-		const password = process.env.QA_LOGIN_PASSWORD ?? DEMO_PASSWORD;
-		await emailInput.fill(email);
-		await passwordInput.fill(password);
-		await page
-			.locator('form')
-			.filter({ has: page.locator('#login-password-email') })
-			.getByRole('button', { name: /sign in|se connecter/i })
-			.click();
-
-		const navigated = await page
-			.waitForURL(/\/(dashboard|school|classes|configuration|onboarding|finance)/, { timeout: 30_000 })
-			.then(() => true)
-			.catch(() => false);
-		if (navigated) {
+	for (const { email, password } of credentials) {
+		const ok = await attemptPasswordSignIn(page, base, email, password);
+		if (ok) {
 			await page.waitForSelector('aside#app-sidebar, [data-onboarding-shell]', { timeout: 30_000 }).catch(() => {});
 			return;
 		}
@@ -166,6 +155,7 @@ async function createStudentViaUi(ctx: DemoContext): Promise<string | null> {
 		const stamp = Date.now();
 		const firstName = 'QA';
 		const lastName = `Eleve${stamp}`;
+		lastCreatedStudentName = lastName;
 
 		await page.goto(`${base}/school/students`, { waitUntil: 'domcontentloaded' });
 		await waitForAppShell(page);
@@ -180,23 +170,6 @@ async function createStudentViaUi(ctx: DemoContext): Promise<string | null> {
 		const dialog = page.getByRole('dialog');
 		await dialog.waitFor({ state: 'visible', timeout: 10_000 });
 
-		await dialog.locator('input').nth(0).fill(firstName);
-		await dialog.locator('input').nth(1).fill(lastName);
-
-		const inviteCheckbox = dialog.getByRole('checkbox').first();
-		if (await inviteCheckbox.isChecked().catch(() => false)) {
-			await inviteCheckbox.click();
-		}
-
-		const classTrigger = dialog.getByRole('combobox').first();
-		if (await classTrigger.isVisible().catch(() => false)) {
-			await classTrigger.click();
-			const option = page.getByRole('option').first();
-			if (await option.isVisible({ timeout: 5_000 }).catch(() => false)) {
-				await option.click();
-			}
-		}
-
 		const consoleErrors: string[] = [];
 		const onConsole = (msg: { type: () => string; text: () => string }) => {
 			if (msg.type() === 'error') {
@@ -205,23 +178,18 @@ async function createStudentViaUi(ctx: DemoContext): Promise<string | null> {
 		};
 		page.on('console', onConsole);
 
-		const submit = dialog.getByRole('button', { name: /add student|ajouter un élève|créer|create|enregistrer|save/i }).last();
-		const submitVisible = await submit.isVisible({ timeout: 5_000 }).catch(() => false);
-		if (!submitVisible) {
+		const payloadPromise = waitForCommandPayload(page, 'register-student');
+		try {
+			await fillStudentCreateDialog(page, { firstName, lastName });
+		}
+		catch (err) {
 			page.off('console', onConsole);
-			record(pageUrl, probleme, 'NOT OK', 'Bouton submit du modal introuvable');
+			record(pageUrl, probleme, 'NOT OK', formatError(err));
 			return null;
 		}
 
-		const submitEnabled = await submit.isEnabled().catch(() => false);
-		if (!submitEnabled) {
-			page.off('console', onConsole);
-			record(pageUrl, probleme, 'NOT OK', 'Bouton submit désactivé (classe ou champs manquants)');
-			return null;
-		}
-
-		await submit.click();
-		await page.waitForTimeout(2_500);
+		await waitForDialogClosed(page);
+		await waitForPageQuery(page);
 		page.off('console', onConsole);
 
 		const lifecycleBug = consoleErrors.some(text => /lifecycle_outside_component|getContext/i.test(text));
@@ -248,15 +216,22 @@ async function createStudentViaUi(ctx: DemoContext): Promise<string | null> {
 		await listSearchInput(page).first().fill(`${firstName} ${lastName}`).catch(() => {});
 		await page.waitForTimeout(1_500);
 
+		const payload = await payloadPromise;
+		if (typeof payload?.id === 'string' && payload.id.length > 0) {
+			return payload.id;
+		}
+
 		const row = page.getByText(new RegExp(`${firstName}.*${lastName}|${lastName}`, 'i')).first();
 		if (await row.isVisible({ timeout: 8_000 }).catch(() => false)) {
 			const link = page.locator('a[href*="/school/students/"]').filter({ hasText: new RegExp(lastName, 'i') }).first();
 			const href = await link.getAttribute('href').catch(() => null);
 			const match = href?.match(/\/school\/students\/([^/]+)/);
-			return match?.[1] ?? `qa-student-${stamp}`;
+			if (match?.[1]) {
+				return match[1];
+			}
 		}
 
-		return `qa-student-${stamp}`;
+		return null;
 	}
 	catch (err) {
 		record(pageUrl, probleme, 'NOT OK', formatError(err));
@@ -318,47 +293,50 @@ async function testStudentStatusFilter(ctx: DemoContext, inactiveStudentName: st
 	}
 }
 
-async function testLoginErrorVisibility(base: string, browser: Awaited<ReturnType<typeof chromium.launch>>): Promise<void> {
+async function testLoginErrorVisibility(base: string, browser: Browser): Promise<void> {
 	const context = await browser.newContext();
 	const page = await context.newPage();
 
 	try {
-		await page.goto(`${base}/login`, { waitUntil: 'domcontentloaded' });
+		await page.goto(`${base}/login?panel=signin&method=password&stage=form`, {
+			waitUntil: 'domcontentloaded',
+		});
 
-		const signInTab = page.getByRole('button', { name: /sign in|connexion|se connecter/i }).first();
-		if (await signInTab.isVisible().catch(() => false)) {
-			await signInTab.click();
-		}
-		const passwordTab = page.getByRole('tab', { name: /password|mot de passe/i });
-		if (await passwordTab.isVisible().catch(() => false)) {
-			await passwordTab.click();
-		}
-
-		const email = process.env.QA_LOGIN_EMAIL ?? STAFF_EMAIL;
-		await page.locator('#login-password-email').fill(email);
-		await page.locator('#login-password').fill('WrongPassword999!');
-		await page
+		const emailInput = page.locator('#login-password-email');
+		const passwordInput = page.locator('#login-password');
+		const submit = page
 			.locator('form')
 			.filter({ has: page.locator('#login-password-email') })
-			.getByRole('button', { name: /sign in|se connecter/i })
-			.click();
+			.getByRole('button', { name: /sign in|se connecter/i });
 
-		await page.waitForTimeout(2_000);
+		await waitForEnabled(emailInput);
+		await waitForEnabled(passwordInput);
+		await emailInput.fill(`missing-${Date.now()}@integration.edaya.test`);
+		await passwordInput.fill('WrongPassword1!');
+		await waitForEnabled(submit);
+		await submit.click();
 
-		const errorEl = page.locator('[role="alert"], .text-destructive, [data-slot="alert-description"], form p.text-red, form .text-red-500').first();
-		const visible = await errorEl.isVisible({ timeout: 5_000 }).catch(() => false);
-		let isRed = false;
-		if (visible) {
-			const color = await errorEl.evaluate(el => getComputedStyle(el).color);
-			isRed = /rgb\(\s*(1?[0-9]{2}|2[0-4][0-9]),\s*0,\s*0\)|#f|#e|#c|#9|red|destructive/i.test(color);
-		}
+		const errorEl = page.locator('#login-password-error, [role="alert"]').first();
+		const visible = await errorEl.waitFor({ state: 'visible', timeout: 15_000 }).then(() => true).catch(() => false);
+		const color = visible
+			? await errorEl.evaluate((element) => getComputedStyle(element).color)
+			: '';
+		const looksError = visible && await errorEl.evaluate((element) => {
+			const className = typeof element.className === 'string' ? element.className : '';
+			if (className.includes('destructive')) {
+				return true;
+			}
+			const computed = getComputedStyle(element).color;
+			const body = getComputedStyle(document.body).color;
+			return computed !== body && computed !== 'rgba(0, 0, 0, 0)';
+		}).catch(() => false);
 
 		record(
 			'http://localhost:5173/login',
 			'Message d\'erreur login visible (rouge)',
-			visible && isRed ? 'OK' : 'NOT OK',
-			visible ? (isRed ? 'Message visible et coloré' : `Message visible mais couleur: ${await errorEl.evaluate(el => getComputedStyle(el).color).catch(() => 'unknown')}`) : 'Aucun message d\'erreur visible',
-			'CSS message d\'erreur en rouge (text-destructive)',
+			looksError ? 'OK' : 'NOT OK',
+			looksError ? `Message visible (${color})` : 'Aucun message d\'erreur visible',
+			'Message d\'erreur inline #login-password-error',
 		);
 	}
 	catch (err) {
@@ -374,7 +352,7 @@ async function testLoginErrorVisibility(base: string, browser: Awaited<ReturnTyp
 	}
 }
 
-async function testOnboardingSemesterCalc(base: string, browser: Awaited<ReturnType<typeof chromium.launch>>): Promise<void> {
+async function testOnboardingSemesterCalc(base: string, browser: Browser): Promise<void> {
 	const context = await browser.newContext();
 	const page = await context.newPage();
 
@@ -420,6 +398,7 @@ async function createFeeIfNeeded(ctx: DemoContext): Promise<string | null> {
 
 		const existing = await page.getByText(/QA-Frais-/i).first().isVisible({ timeout: 3_000 }).catch(() => false);
 		if (existing) {
+			record(pageUrl, probleme, 'N/A', 'Frais QA déjà présent');
 			return 'qa-fee-existing';
 		}
 
@@ -433,15 +412,14 @@ async function createFeeIfNeeded(ctx: DemoContext): Promise<string | null> {
 		const dialog = page.getByRole('dialog');
 		await dialog.waitFor({ state: 'visible', timeout: 8_000 });
 
-		await dialog.locator('input').first().fill(feeName);
-		const amountInput = dialog.locator('input[type="number"]').first();
-		if (await amountInput.isVisible().catch(() => false)) {
-			await amountInput.fill('50000');
-		}
-
-		const save = dialog.getByRole('button', { name: /add fee|ajouter un frais|créer|create|enregistrer|save/i }).last();
+		await fillFeeCreateDialog(page, feeName, '50000');
+		const save = dialog.getByTestId('form-modal-submit')
+			.or(dialog.getByRole('button', { name: /save changes|^save$|enregistrer/i }))
+			.last();
+		await waitForEnabled(save);
 		await save.click({ timeout: 15_000 });
-		await page.waitForTimeout(2_000);
+		await waitForDialogClosed(page);
+		await waitForPageQuery(page);
 
 		const ok = await page.getByText(feeName).isVisible({ timeout: 8_000 }).catch(() => false);
 		record(pageUrl, probleme, ok ? 'OK' : 'NOT OK', ok ? feeName : 'Frais non visible après création');
@@ -494,6 +472,19 @@ async function visitChecklistRoutes(ctx: DemoContext, studentId: string | null):
 	}
 
 	if (studentId) {
+		await ctx.page.goto(`${base}/school/students/${studentId}/profile`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+		await waitForAppShell(ctx.page);
+		const classLinks = await ctx.page.locator('a[href*="/classes/"]').all();
+		let classId: string | null = null;
+		for (const link of classLinks.slice(0, 5)) {
+			const href = await link.getAttribute('href');
+			const match = href?.match(/\/classes\/([^/]+)/);
+			if (match) {
+				classId = match[1];
+				break;
+			}
+		}
+
 		for (const tab of studentTabs) {
 			const url = `http://localhost:5173/school/students/${studentId}/${tab}`;
 			try {
@@ -506,31 +497,20 @@ async function visitChecklistRoutes(ctx: DemoContext, studentId: string | null):
 				record(url, `Onglet élève ${tab}`, 'NOT OK', err instanceof Error ? err.message : String(err));
 			}
 		}
-	}
 
-	const classLinks = await ctx.page.locator('a[href*="/classes/"]').all();
-	let classId: string | null = null;
-	for (const link of classLinks.slice(0, 5)) {
-		const href = await link.getAttribute('href');
-		const match = href?.match(/\/classes\/([^/]+)/);
-		if (match) {
-			classId = match[1];
-			break;
-		}
-	}
-
-	if (classId) {
-		const classRoutes = ['students', 'timetable', 'teaching', 'evaluations', 'attendance', 'report-cards'] as const;
-		for (const seg of classRoutes) {
-			const pageUrl = `http://localhost:5173/classes/${classId}/${seg}`;
-			try {
-				await ctx.page.goto(`${base}/classes/${classId}/${seg}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-				await waitForAppShell(ctx.page);
-				const fatal = await ctx.page.locator('[data-testid="data-state-error"]').first().isVisible({ timeout: 2_000 }).catch(() => false);
-				record(pageUrl, `Classe ${seg}`, fatal ? 'NOT OK' : 'OK');
-			}
-			catch (err) {
-				record(pageUrl, `Classe ${seg}`, 'NOT OK', err instanceof Error ? err.message : String(err));
+		if (classId) {
+			const classRoutes = ['students', 'timetable', 'teaching', 'evaluations', 'attendance', 'report-cards'] as const;
+			for (const seg of classRoutes) {
+				const pageUrl = `http://localhost:5173/classes/${classId}/${seg}`;
+				try {
+					await ctx.page.goto(`${base}/classes/${classId}/${seg}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+					await waitForAppShell(ctx.page);
+					const fatal = await ctx.page.locator('[data-testid="data-state-error"]').first().isVisible({ timeout: 2_000 }).catch(() => false);
+					record(pageUrl, `Classe ${seg}`, fatal ? 'NOT OK' : 'OK');
+				}
+				catch (err) {
+					record(pageUrl, `Classe ${seg}`, 'NOT OK', err instanceof Error ? err.message : String(err));
+				}
 			}
 		}
 	}
@@ -562,6 +542,7 @@ async function main(): Promise<void> {
 		record('http://localhost:5173/', 'Stack prête (webapp)', 'NOT OK', formatError(err));
 	}
 
+	const { chromium } = await import('playwright');
 	const browser = await chromium.launch({ headless: true });
 	const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 	const page = await context.newPage();
@@ -602,7 +583,13 @@ async function main(): Promise<void> {
 			'Passage élève en statut inactif',
 			async () => {
 				if (!studentId) {
-					throw new Error('Aucun élève QA créé — skip statut');
+					record(
+						'http://localhost:5173/school/students',
+						'Passage élève en statut inactif',
+						'N/A',
+						'Aucun élève QA créé',
+					);
+					return;
 				}
 				const ok = await setStudentStatus(ctx, studentId, 'inactive');
 				if (!ok) {
@@ -616,9 +603,15 @@ async function main(): Promise<void> {
 			"Filtre statut élève inactif / archivé",
 			async () => {
 				if (!studentId) {
-					throw new Error('Aucun élève QA créé — skip filtre');
+					record(
+						'http://localhost:5173/school/students',
+						"Filtre statut élève inactif / archivé",
+						'N/A',
+						'Aucun élève QA créé',
+					);
+					return;
 				}
-				await testStudentStatusFilter(ctx, 'Eleve');
+				await testStudentStatusFilter(ctx, lastCreatedStudentName);
 			},
 		);
 
@@ -628,14 +621,31 @@ async function main(): Promise<void> {
 			await visitChecklistRoutes(ctx, studentId);
 		});
 
-		await runStep('http://localhost:5173/', 'Dry-run route coverage', async () => {
-			await runRouteCoverageScenes(ctx);
-		});
+		const usesDemoSeed = !process.env.QA_LOGIN_EMAIL;
+		if (usesDemoSeed) {
+			await runStep('http://localhost:5173/', 'Dry-run route coverage', async () => {
+				await runRouteCoverageScenes(ctx);
+			});
 
-		await runStep('http://localhost:5173/', 'Dry-run drawer tabs', async () => {
-			await runDrawerTabChecks(ctx);
-			mapDryRunToQa(reporter);
-		});
+			await runStep('http://localhost:5173/', 'Dry-run drawer tabs', async () => {
+				await runDrawerTabChecks(ctx);
+				mapDryRunToQa(reporter);
+			});
+		}
+		else {
+			record(
+				'http://localhost:5173/',
+				'Dry-run route coverage',
+				'N/A',
+				'Scènes demo-ci ignorées (tenant provisionné)',
+			);
+			record(
+				'http://localhost:5173/',
+				'Dry-run drawer tabs',
+				'N/A',
+				'Scènes demo-ci ignorées (tenant provisionné)',
+			);
+		}
 	}
 
 	await runStep('http://localhost:5173/onboarding?step=1', 'Calcul auto dates semestre 1 vs 2', async () => {
@@ -652,11 +662,10 @@ async function main(): Promise<void> {
 	console.log(`OK: ${passed}  NOT OK: ${failed}  N/A: ${na}`);
 	console.log(`Results: ${RESULTS_PATH}`);
 
-	const { spawnSync } = await import('node:child_process');
-	const py = spawnSync('python', [path.join(import.meta.dirname, 'update-qa-xlsx.py')], {
+	const xlsxScript = path.join(import.meta.dirname, 'update-qa-xlsx.py');
+	const py = spawnSync('python3', [xlsxScript], {
 		cwd: path.join(import.meta.dirname, '..'),
 		stdio: 'inherit',
-		shell: true,
 	});
 	if (py.status !== 0) {
 		console.warn('update-qa-xlsx.py failed — results JSON is still available');

@@ -1,7 +1,6 @@
 import type { Browser, Page } from 'playwright';
-import { signUpAccount } from '../../support/api-provision';
-import { resolveApiUrl } from '../../support/integration-hosts';
 import { uniqueOnboardingEmail, uniqueOnboardingPassword } from '../support/capture';
+import { signOutFromOnboarding, signUpThroughUi } from '../support/auth';
 import { acceptInviteThroughUi, inviteStaffFromOwnerPage, withIsolatedPage } from '../support/invite';
 
 export async function runInvitedStaffExisting(
@@ -11,7 +10,15 @@ export async function runInvitedStaffExisting(
 ): Promise<void> {
 	const email = uniqueOnboardingEmail();
 	const password = uniqueOnboardingPassword();
-	await signUpAccount(resolveApiUrl(), base, email, password, 'Existing Staff');
+	await withIsolatedPage(browser, async (page) => {
+		await signUpThroughUi(page, base, {
+			name: 'Existing Staff',
+			email,
+			password,
+		});
+		await signOutFromOnboarding(page);
+	});
+
 	const token = await inviteStaffFromOwnerPage(ownerPage, base, email);
 
 	await withIsolatedPage(browser, async (page) => {

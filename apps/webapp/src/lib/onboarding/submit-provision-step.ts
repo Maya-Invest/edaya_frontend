@@ -5,6 +5,11 @@ import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-a
 import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
 import { onboardingUserErrorMessage } from '$lib/onboarding/onboarding-user-error';
+import {
+	markProvisionAttemptBootstrapReady,
+	markProvisionAttemptCommitted,
+	resolveProvisionAttempt,
+} from '$lib/onboarding/provision-attempt';
 import { buildProvisionPayload } from '$lib/onboarding/provision-payload';
 import {
 	estimateProvisionPercent,
@@ -23,6 +28,8 @@ export interface ProvisionOnboardingResult {
 	yearId: string;
 	periodId: string;
 	phases: Array<{ phase: string; ms: number }>;
+	replayed?: boolean;
+	bootstrapFailed?: boolean;
 }
 
 export interface ProvisionProgressState {
@@ -63,6 +70,55 @@ function emitProgress(
 	onProgress?.(state);
 }
 
+export async function refreshSessionAfterProvision(options?: {
+	onProgress?: (state: ProvisionProgressState) => void;
+	onError?: (message: string) => void;
+	completedIds?: string[];
+}): Promise<boolean> {
+	const completedIds = options?.completedIds ?? [];
+	emitProgress(options?.onProgress, {
+		phase: 'bootstrap',
+		percent: 94,
+		activeStepId: 'bootstrap',
+		completedIds,
+	});
+
+	try {
+		resetBootstrapSession();
+		resetAppShellBootstrap();
+		await bootstrapSession({ silent: true });
+		if (!authSession.isLoggedIn) {
+			throw new Error('bootstrap-unlinked');
+		}
+		if (authSession.authUserId && authSession.serverOnboardingStatus) {
+			persistServerOnboardingStatusToDraft(
+				authSession.authUserId,
+				authSession.serverOnboardingStatus,
+				authSession.schoolId,
+				{ holdLocalWizardCompleted: true },
+			);
+		}
+		await bootstrapAppShell();
+		if (authSession.authUserId) {
+			markProvisionAttemptBootstrapReady(authSession.authUserId);
+		}
+		emitProgress(options?.onProgress, {
+			phase: 'bootstrap',
+			percent: 100,
+			activeStepId: 'bootstrap',
+			completedIds: [...completedIds, 'bootstrap'],
+		});
+		return true;
+	}
+	catch (error) {
+		console.error('[onboarding] bootstrap after provision failed', error);
+		const message = onboardingUserErrorMessage(error, 'onboarding.completeStep.redirectFailed');
+		options?.onError?.(message);
+		toast.error(message);
+		return false;
+	}
+}
+
 export async function submitProvisionOnboarding(
 	draft: OnboardingDraft,
 	options?: {
@@ -71,8 +127,14 @@ export async function submitProvisionOnboarding(
 		onError?: (message: string) => void;
 	},
 ): Promise<ProvisionOnboardingResult | null> {
+	const authUserId = authSession.authUserId;
+	if (!authUserId) {
+		return failWithUserMessage(null, options?.onError);
+	}
+
 	try {
 		const payload = buildProvisionPayload(draft);
+		const attempt = resolveProvisionAttempt(authUserId, draft);
 		const includeStaff = (payload.invites?.length ?? 0) > 0;
 		const client = getBrowserSchoolClient();
 		if (typeof client.onboarding.provision !== 'function') {
@@ -95,12 +157,17 @@ export async function submitProvisionOnboarding(
 
 		let result: Awaited<ReturnType<typeof client.onboarding.provision>>;
 		try {
-			result = await client.onboarding.provision(payload);
+			result = await client.onboarding.provision({
+				...payload,
+				schoolId: attempt.schoolId,
+				requestId: attempt.requestId,
+			});
 		}
 		finally {
 			clearInterval(progressInterval);
 		}
 
+		markProvisionAttemptCommitted(authUserId, result.schoolId);
 		const completedIds = completedIdsFromPhases(result.phases);
 		emitProgress(options?.onProgress, {
 			phase: 'provision',
@@ -110,45 +177,33 @@ export async function submitProvisionOnboarding(
 		});
 
 		authSession.setServerOnboardingStatus(result.status);
-		if (authSession.authUserId) {
-			markOnboardingSummaryHold(authSession.authUserId);
-		}
+		markOnboardingSummaryHold(authUserId);
+		persistServerOnboardingStatusToDraft(
+			authUserId,
+			result.status,
+			result.schoolId,
+			{ holdLocalWizardCompleted: true },
+		);
 
-		emitProgress(options?.onProgress, {
-			phase: 'bootstrap',
-			percent: 94,
-			activeStepId: 'bootstrap',
+		const bootstrapped = await refreshSessionAfterProvision({
+			onProgress: options?.onProgress,
+			onError: options?.onError,
 			completedIds,
 		});
-
-		resetBootstrapSession();
-		resetAppShellBootstrap();
-		await bootstrapSession({ silent: true });
 		authSession.setServerOnboardingStatus(result.status);
-		if (authSession.authUserId) {
-			persistServerOnboardingStatusToDraft(
-				authSession.authUserId,
-				result.status,
-				result.schoolId,
-				{ holdLocalWizardCompleted: true },
-			);
+
+		if (bootstrapped) {
+			const messageKey = options?.successMessageKey ?? 'onboarding.completeStep.success';
+			toast.success(get(t)(messageKey));
 		}
-		await bootstrapAppShell();
 
-		emitProgress(options?.onProgress, {
-			phase: 'bootstrap',
-			percent: 100,
-			activeStepId: 'bootstrap',
-			completedIds: [...completedIds, 'bootstrap'],
-		});
-
-		const messageKey = options?.successMessageKey ?? 'onboarding.completeStep.success';
-		toast.success(get(t)(messageKey));
 		return {
 			schoolId: result.schoolId,
 			yearId: result.yearId,
 			periodId: result.periodId,
 			phases: result.phases,
+			replayed: result.replayed,
+			bootstrapFailed: !bootstrapped,
 		};
 	}
 	catch (error) {

@@ -20,12 +20,8 @@ export function resolveLinkedActorPath(
 		return appPath('/(app)/dashboard');
 	}
 
-	// Linked teachers use the Edaya teacher app — staff webapp redirects to login (see teacher-portal-gate).
-	if (kind === 'teacher') {
-		return appPath('/login');
-	}
-
-	if (kind === 'guardian') {
+	// Linked teachers, guardians, and students use portal apps — staff webapp redirects to login.
+	if (kind === 'teacher' || kind === 'guardian' || kind === 'student') {
 		return appPath('/login');
 	}
 
@@ -38,6 +34,7 @@ export function resolvePostAuthPath(options: {
 	authUserId?: string | null;
 	sessionKind?: SessionKind | null;
 	serverOnboardingStatus?: ServerOnboardingAccountStatus | null;
+	onboardingStatusUnknown?: boolean;
 }): string {
 	if (options.pendingOnboarding) {
 		return pendingInvitePath() ?? ONBOARDING_PATH;
@@ -45,6 +42,12 @@ export function resolvePostAuthPath(options: {
 
 	if (!options.session) {
 		return appPath('/login');
+	}
+
+	if (options.onboardingStatusUnknown) {
+		return resolveLinkedActorPath(options.session, {
+			sessionKind: options.sessionKind ?? options.session.kind,
+		});
 	}
 
 	const kind = options.sessionKind ?? options.session.kind;

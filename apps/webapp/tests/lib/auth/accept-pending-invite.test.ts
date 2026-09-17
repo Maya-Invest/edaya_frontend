@@ -22,6 +22,7 @@ const pendingOnboardingResult = {
 	staffProfile: null,
 	guardianSettings: null,
 	pendingOnboarding: true,
+	onboardingStatusUnknown: false,
 } as const;
 
 let bootstrapSession: ReturnType<typeof spyOn<typeof bootstrap, 'bootstrapSession'>>;
@@ -95,13 +96,15 @@ describe('accept pending invite after sign-in', () => {
 			staffProfile: null,
 			guardianSettings: null,
 			pendingOnboarding: true,
+			onboardingStatusUnknown: false,
 		}));
 		bootstrapSession.mockImplementation(async () => ({
-			session: { kind: 'staff', actorId: 'st1', schoolId: 'sch1', grants: [] },
+			session: { kind: 'staff', actorId: 'st1', schoolId: 'sch1', grants: [], assuranceLevel: 'verified' },
 			staffProfile: null,
 			guardianSettings: null,
 			pendingOnboarding: false,
-		}));
+			onboardingStatusUnknown: false,
+		} as Awaited<ReturnType<typeof bootstrap.bootstrapSession>>));
 
 		const result = await bootstrapSessionAfterInvite();
 		expect(result.pendingOnboarding).toBe(false);
@@ -115,11 +118,12 @@ describe('accept pending invite after sign-in', () => {
 			throw new ApiError(403, { message: 'Forbidden' });
 		});
 		bootstrapSession.mockImplementation(async () => ({
-			session: { kind: 'staff', actorId: 'st1', schoolId: 'sch1', grants: [] },
+			session: { kind: 'staff', actorId: 'st1', schoolId: 'sch1', grants: [], assuranceLevel: 'verified' },
 			staffProfile: null,
 			guardianSettings: null,
 			pendingOnboarding: false,
-		}));
+			onboardingStatusUnknown: false,
+		} as Awaited<ReturnType<typeof bootstrap.bootstrapSession>>));
 
 		const result = await bootstrapSessionAfterInvite();
 		expect(acceptInvitation).toHaveBeenCalledWith('invite-token');

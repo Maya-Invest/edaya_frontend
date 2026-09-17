@@ -35,7 +35,7 @@
 
 	const isEdit = $derived(campaign !== undefined);
 	const periods = $derived(academicContext.periodsForYear);
-	const periodLabel = $derived(periods.find(period => period.id === academicPeriodId)?.name ?? $t('familyFeedback.periodLabel'));
+	const periodLabel = $derived(periods.find(period => period.id === academicPeriodId)?.label ?? $t('familyFeedback.periodLabel'));
 	const assignmentLabel = $derived.by(() => {
 		const label = familyFeedbackPage.assignments.find(entry => entry.id === teacherAssignmentId)?.label;
 		return label ?? $t('familyFeedback.assignmentLabel');
@@ -145,8 +145,8 @@
 				</Select.Trigger>
 				<Select.Content class="z-[100]">
 					{#each periods as period (period.id)}
-						<Select.Item value={period.id} label={period.name}>
-							{period.name}
+						<Select.Item value={period.id} label={period.label}>
+							{period.label}
 						</Select.Item>
 					{/each}
 				</Select.Content>

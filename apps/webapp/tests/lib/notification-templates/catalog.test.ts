@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import {
+	copyTypesForTemplateKey,
 	isNotificationTemplateKey,
+	listChannelsForTemplateKey,
 	NOTIFICATION_TEMPLATE_KEYS,
 	NOTIFICATION_TEMPLATE_VARIABLES,
+	previewChannelsForTemplateKey,
 	templateKeyFromPathname,
 } from '$lib/notification-templates/catalog';
 
@@ -111,6 +114,12 @@ describe('notification template catalog', () => {
 		for (const key of NOTIFICATION_TEMPLATE_KEYS) {
 			expect([...NOTIFICATION_TEMPLATE_VARIABLES[key]]).toEqual([...BACKEND_VARIABLES[key]]);
 		}
+	});
+
+	it('keeps invitation copy and preview on email until phone auth ships', () => {
+		expect(copyTypesForTemplateKey('account_invitation')).toEqual(['rich_message']);
+		expect(previewChannelsForTemplateKey('account_invitation')).toEqual(['email']);
+		expect(listChannelsForTemplateKey('account_invitation')).toEqual(['email']);
 	});
 
 	it('reads a dotted template key from a detail pathname', () => {

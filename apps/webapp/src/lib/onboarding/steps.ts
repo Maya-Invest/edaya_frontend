@@ -76,9 +76,18 @@ export function canFinishOnboarding(
 	return finishOnboardingBlockKey(draft, loginEmail) === null;
 }
 
-export type OnboardingFinishCtaKey = 'onboarding.createSchool' | 'onboarding.finish';
+export type OnboardingFinishCtaKey
+	= | 'onboarding.createSchool'
+		| 'onboarding.retryBootstrap'
+		| 'onboarding.finish';
 
-export function onboardingFinishCtaKey(provisionSucceeded: boolean): OnboardingFinishCtaKey {
+export function onboardingFinishCtaKey(
+	provisionSucceeded: boolean,
+	bootstrapRecoveryNeeded = false,
+): OnboardingFinishCtaKey {
+	if (bootstrapRecoveryNeeded) {
+		return 'onboarding.retryBootstrap';
+	}
 	return provisionSucceeded ? 'onboarding.finish' : 'onboarding.createSchool';
 }
 

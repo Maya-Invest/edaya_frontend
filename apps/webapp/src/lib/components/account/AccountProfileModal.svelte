@@ -22,7 +22,7 @@
 	}: {
 		open?: boolean;
 		actor: AccountActor;
-		onLogout: () => void;
+		onLogout: () => void | Promise<void>;
 	} = $props();
 
 	const staffProfile = $derived(authSession.userProfile);
@@ -69,9 +69,9 @@
 		'bg-secondary/30 text-muted-foreground',
 	);
 
-	function handleLogout() {
+	async function handleLogout() {
 		open = false;
-		onLogout();
+		await onLogout();
 	}
 </script>
 

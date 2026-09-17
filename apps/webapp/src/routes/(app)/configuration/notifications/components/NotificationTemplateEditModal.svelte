@@ -45,7 +45,6 @@
 	let enableEmail = $state(true);
 	let enablePush = $state(true);
 	let enableSms = $state(false);
-	let invitationSmsEnabled = $state(false);
 	let baseTitle = $state('');
 	let baseBody = $state('');
 	let richSubject = $state('');
@@ -75,7 +74,6 @@
 			richSubject = entry?.rich_message.subject ?? '';
 			richBody = entry?.rich_message.body ?? '';
 			simpleBody = entry?.simple_message.body ?? '';
-			invitationSmsEnabled = Boolean(document.invitationSmsEnabled);
 		}
 		else {
 			const entry = readEventTemplateEntry(document, templateKey);
@@ -246,7 +244,7 @@
 
 			const result = await notificationsPage.updateTemplates({
 				templates: patch,
-				invitationSmsEnabled: invitation ? invitationSmsEnabled : undefined,
+				invitationSmsEnabled: invitation ? false : undefined,
 				expectedUpdatedAt: typeof document.updatedAt === 'string' ? document.updatedAt : null,
 				successMessage: get(t)('notificationTemplates.toastSaved'),
 			});
@@ -291,13 +289,6 @@
 						{/each}
 					</div>
 				</div>
-			{/if}
-
-			{#if invitation}
-				<label class="flex items-center gap-2 text-sm">
-					<Checkbox bind:checked={invitationSmsEnabled} />
-					<span>{$t('notificationTemplates.invitationSms')}</span>
-				</label>
 			{/if}
 
 			{#if copyTypes.length > 1}

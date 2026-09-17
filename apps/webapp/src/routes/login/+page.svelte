@@ -12,6 +12,10 @@
 		GUARDIAN_PORTAL_GATE_BANNER_TEST_ID,
 	} from '$lib/auth/guardian-portal-gate';
 	import {
+		isStudentPortalGateUrl,
+		STUDENT_PORTAL_GATE_BANNER_TEST_ID,
+	} from '$lib/auth/student-portal-gate';
+	import {
 		isTeacherPortalGateUrl,
 		TEACHER_PORTAL_GATE_BANNER_TEST_ID,
 	} from '$lib/auth/teacher-portal-gate';
@@ -49,6 +53,7 @@
 	}));
 	const showTeacherPortalGate = $derived(isTeacherPortalGateUrl($page.url));
 	const showGuardianPortalGate = $derived(isGuardianPortalGateUrl($page.url));
+	const showStudentPortalGate = $derived(isStudentPortalGateUrl($page.url));
 
 	onMount(() => {
 		void (async () => {
@@ -161,6 +166,15 @@
 				data-testid={GUARDIAN_PORTAL_GATE_BANNER_TEST_ID}
 			>
 				{$t('auth.guardianPortalGateHint')}
+			</div>
+		{/if}
+		{#if showStudentPortalGate}
+			<div
+				class="mb-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground"
+				role="status"
+				data-testid={STUDENT_PORTAL_GATE_BANNER_TEST_ID}
+			>
+				{$t('auth.studentPortalGateHint')}
 			</div>
 		{/if}
 		<ApiConnectionBanner connected={apiConnected} checking={apiChecking} />

@@ -19,6 +19,7 @@ class AuthSession {
 	authUserId = $state<string | null>(null);
 	needsOnboarding = $state(false);
 	serverOnboardingStatus = $state<ServerOnboardingAccountStatus | null>(null);
+	onboardingStatusUnknown = $state(false);
 	schoolId = $state<string | null>(null);
 	sessionKind = $state<SessionKind | null>(null);
 	subjectId = $state<string | null>(null);
@@ -98,6 +99,7 @@ class AuthSession {
 		this.authUserId = options.authUserId;
 		this.needsOnboarding = true;
 		this.serverOnboardingStatus = null;
+		this.onboardingStatusUnknown = false;
 		this.loginEmail = options.loginEmail;
 		this.userId = null;
 		this.schoolId = null;
@@ -139,6 +141,13 @@ class AuthSession {
 
 	setServerOnboardingStatus(status: ServerOnboardingAccountStatus | null) {
 		this.serverOnboardingStatus = status;
+		if (status) {
+			this.onboardingStatusUnknown = false;
+		}
+	}
+
+	setOnboardingStatusUnknown(unknown: boolean) {
+		this.onboardingStatusUnknown = unknown;
 	}
 
 	setFromServer(
@@ -206,6 +215,7 @@ class AuthSession {
 		this.authUserId = null;
 		this.needsOnboarding = false;
 		this.serverOnboardingStatus = null;
+		this.onboardingStatusUnknown = false;
 		this.schoolId = null;
 		this.sessionKind = null;
 		this.subjectId = null;
