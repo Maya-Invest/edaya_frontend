@@ -48,3 +48,4 @@ build/
 !.vscode/launch.json
 # CI sibling checkout for edaya_backend (see _verify.yml); local dev may use a symlink
 edaya_backend
+apps/webapp/.onboarding-run
