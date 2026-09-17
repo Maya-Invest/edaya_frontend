@@ -1,9 +1,10 @@
 <script lang="ts">
+	import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 	import type { StaffMember } from '$lib/types/school';
 	import { profileGrainLabelKey } from '$lib/api/grant-scopes';
 	import {
 		formatPermissionLabel,
-		type StaffPermissionAssignmentView,
+
 	} from '$lib/api/staff-permission-assignments-data';
 	import { skippedPermissionsByProfile } from '$lib/api/staff-permission-profiles-data';
 	import Button from '$lib/components/ui/button/button.svelte';

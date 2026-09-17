@@ -117,6 +117,11 @@ async function qaSignIn(
 ): Promise<void> {
 	const { page, base } = ctx;
 
+	if (await page.locator('aside#app-sidebar').isVisible().catch(() => false)) {
+		await waitForAppShell(page);
+		return;
+	}
+
 	if (isProvisionedRun() && credentials) {
 		const ok = await loginWithPassword(page, base, credentials.email, credentials.password);
 		if (ok) {

@@ -9,8 +9,8 @@
 	import { t } from '$lib/i18n';
 	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
-	import { previewAudienceOnPage } from '../lib/family-feedback-detail-mutations';
 	import { getFamilyFeedbackPageState } from '../family-feedback-page.svelte';
+	import { previewAudienceOnPage } from '../lib/family-feedback-detail-mutations';
 
 	let {
 		campaign,
@@ -36,14 +36,14 @@
 	const isEdit = $derived(campaign !== undefined);
 	const periods = $derived(academicContext.periodsForYear);
 	const periodLabel = $derived(periods.find(period => period.id === academicPeriodId)?.name ?? $t('familyFeedback.periodLabel'));
-	const assignmentLabel = $derived(
-		familyFeedbackPage.assignments.find(entry => entry.id === teacherAssignmentId)?.label
-			?? $t('familyFeedback.assignmentLabel'),
-	);
-	const moderatorLabel = $derived(
-		familyFeedbackPage.staff.find(entry => entry.id === moderatorStaffId)?.name
-			?? $t('familyFeedback.moderator'),
-	);
+	const assignmentLabel = $derived.by(() => {
+		const label = familyFeedbackPage.assignments.find(entry => entry.id === teacherAssignmentId)?.label;
+		return label ?? $t('familyFeedback.assignmentLabel');
+	});
+	const moderatorLabel = $derived.by(() => {
+		const name = familyFeedbackPage.staff.find(entry => entry.id === moderatorStaffId)?.name;
+		return name ?? $t('familyFeedback.moderator');
+	});
 	const canSubmit = $derived.by(() => {
 		if (isEdit) {
 			return true;

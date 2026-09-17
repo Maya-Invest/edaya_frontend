@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
 	import { FAMILY_FEEDBACK_MODERATE_PERMISSION } from '$lib/family-feedback/permissions';
+	import { t } from '$lib/i18n';
 	import { hasPermission } from '$lib/permissions';
 	import { getFamilyFeedbackPageState } from '../../../family-feedback-page.svelte';
 

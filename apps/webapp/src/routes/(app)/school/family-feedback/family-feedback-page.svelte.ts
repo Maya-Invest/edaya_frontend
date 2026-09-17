@@ -1,5 +1,3 @@
-import type { EntityVersionKey } from '$lib/entity-versions.svelte';
-import type { StaffMember, Teacher } from '$lib/types/school';
 import type {
 	FamilyFeedbackAggregate,
 	FamilyFeedbackAssignmentOption,
@@ -7,12 +5,14 @@ import type {
 	FamilyFeedbackComment,
 } from '$lib/api/family-feedback-types';
 import type { components } from '$lib/api/schema';
+import type { EntityVersionKey } from '$lib/entity-versions.svelte';
+import type { StaffMember, Teacher } from '$lib/types/school';
+import { getFamilyFeedbackAggregateReview, listFamilyFeedbackComments } from '$lib/api/family-feedback-data';
+import { FAMILY_FEEDBACK_MODERATE_PERMISSION } from '$lib/family-feedback/permissions';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readFamilyFeedbackListFilters, writeFamilyFeedbackListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
-import { getFamilyFeedbackAggregateReview, listFamilyFeedbackComments } from '$lib/api/family-feedback-data';
-import { FAMILY_FEEDBACK_MODERATE_PERMISSION } from '$lib/family-feedback/permissions';
 import { hasPermission } from '$lib/permissions';
 import { queryClient } from '$lib/queries/client';
 import { getContext, setContext } from 'svelte';
@@ -28,12 +28,12 @@ import {
 	scheduleFamilyFeedbackCampaignOnPage,
 	updateFamilyFeedbackCampaignOnPage,
 } from './lib/family-feedback-detail-mutations';
-import { familyFeedbackDetailIdFromUrl } from './lib/family-feedback-selectors';
 import {
 	ensureFamilyFeedbackDrawerSelection,
 	loadFamilyFeedbackPageSlice,
 	querySchoolFamilyFeedbackPage,
 } from './lib/family-feedback-queries';
+import { familyFeedbackDetailIdFromUrl } from './lib/family-feedback-selectors';
 
 type SubjectRaw = components['schemas']['Subject'];
 
@@ -50,6 +50,7 @@ export class FamilyFeedbackPageState {
 	comments = $state<FamilyFeedbackComment[]>([]);
 	aggregate = $state<FamilyFeedbackAggregate | undefined>(undefined);
 	reviewCampaignId = $state<string | undefined>(undefined);
+	selectedResolving = $state(false);
 
 	readonly filters: ListFiltersState<{ q: string; status: string }>;
 

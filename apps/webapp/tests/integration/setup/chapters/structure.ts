@@ -16,6 +16,7 @@ import {
 } from '../../../../scripts/qa-harness-ui';
 import { configEntityIdByName } from '../../../../scripts/qa-matrix-support';
 import { ensureDailyAttendanceMode } from '../../demo-dry-run/support/setup';
+import { ensureDailyAttendanceViaApi } from '../journey-api';
 import {
 	coverActions,
 	coverModal,
@@ -219,7 +220,14 @@ export async function runStructureChapter(journey: UiJourney): Promise<boolean> 
 			await waitForDialogClosed(page).catch(() => {});
 		}
 		const daily = await ensureDailyAttendanceMode(ctx, entityId, { force: true });
-		logStep(journey, { step: 'class', ok: true, detail: `${className} daily=${daily}`, entityId });
+		let dailyOk = daily;
+		if (!dailyOk) {
+			dailyOk = await ensureDailyAttendanceViaApi(page, ctx.base, entityId);
+			if (dailyOk) {
+				await refreshAppShell(page, ctx.base);
+			}
+		}
+		logStep(journey, { step: 'class', ok: true, detail: `${className} daily=${dailyOk}`, entityId });
 	}
 	catch (err) {
 		logStep(journey, { step: 'class', ok: false, detail: err instanceof Error ? err.message : String(err) });

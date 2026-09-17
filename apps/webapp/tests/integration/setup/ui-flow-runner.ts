@@ -13,6 +13,7 @@ import { runConfigurationChapter } from './chapters/configuration';
 import { runPeopleChapter } from './chapters/people';
 import { runSchoolChapter } from './chapters/school';
 import { runTeachingChapter } from './chapters/teaching';
+import { runFamilyFeedbackChapter } from './chapters/family-feedback';
 import { runClassesFinanceChapter } from './chapters/classes-finance';
 import { runAccountsChapter } from './chapters/accounts';
 
@@ -36,6 +37,7 @@ async function runJourneyChapter(name: string, run: () => Promise<void>): Promis
 	}
 	catch (err) {
 		console.error(`Journey chapter "${name}" failed:`, err instanceof Error ? err.message : err);
+		throw err;
 	}
 }
 
@@ -56,31 +58,33 @@ export async function runUiJourney(
 	journey.entities.onboarded = true;
 
 	console.log('\n=== UI journey (owner session) ===');
-	const structureOk = await runStructureChapter(journey);
-	if (!structureOk) {
-		console.error('Journey fail-fast: school structure incomplete');
-	}
-	else {
+	try {
+		const structureOk = await runStructureChapter(journey);
+		if (!structureOk) {
+			throw new Error('Journey fail-fast: school structure incomplete');
+		}
 		await runJourneyChapter('configuration', () => runConfigurationChapter(journey));
 		await runJourneyChapter('people', () => runPeopleChapter(journey));
 		await runJourneyChapter('school', () => runSchoolChapter(journey));
 		await runJourneyChapter('teaching', () => runTeachingChapter(journey));
+		await runJourneyChapter('family-feedback', () => runFamilyFeedbackChapter(journey));
 		await runJourneyChapter('classes-finance', () => runClassesFinanceChapter(journey));
 		await runJourneyChapter('accounts', () => runAccountsChapter(journey));
+
+		return {
+			steps: journey.steps,
+			entities: journey.entities,
+			results: journey.ledger.results(),
+			structureOk,
+			ledger: journey.ledger,
+		};
 	}
-
-	await mkdir(path.dirname(ENTITIES_PATH), { recursive: true });
-	await writeFile(ENTITIES_PATH, JSON.stringify({
-		steps: journey.steps,
-		entities: journey.entities,
-		generatedAt: new Date().toISOString(),
-	}, null, 2));
-
-	return {
-		steps: journey.steps,
-		entities: journey.entities,
-		results: journey.ledger.results(),
-		structureOk,
-		ledger: journey.ledger,
-	};
+	finally {
+		await mkdir(path.dirname(ENTITIES_PATH), { recursive: true });
+		await writeFile(ENTITIES_PATH, JSON.stringify({
+			steps: journey.steps,
+			entities: journey.entities,
+			generatedAt: new Date().toISOString(),
+		}, null, 2));
+	}
 }

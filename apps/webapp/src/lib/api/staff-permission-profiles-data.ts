@@ -1,8 +1,9 @@
-import type { PermissionCatalogEntry } from '$lib/api/staff-permission-assignments-data';
+import type { GrantScope, ProfileScopeGrain } from '$lib/api/grant-scopes';
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
+import type { PermissionCatalogEntry } from '$lib/api/staff-permission-assignments-data';
 import { listAllEntityPages, schoolWideEntityList } from '$lib/api/entity-list-filters';
-import { PROFILE_SCOPE_GRAINS, type GrantScope, type ProfileScopeGrain } from '$lib/api/grant-scopes';
+import { PROFILE_SCOPE_GRAINS } from '$lib/api/grant-scopes';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 

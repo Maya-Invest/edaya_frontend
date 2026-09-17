@@ -1,5 +1,8 @@
 import type { components } from '$lib/api/schema';
+import type { PermissionCatalogEntry, StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
+import type { StaffPermissionProfile, StaffPermissionProfileBinding } from '$lib/api/staff-permission-profiles-data';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
+import type { StaffListFilters } from '$lib/list/list-url-filters';
 import type { StaffMember } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { DEFAULT_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
@@ -7,22 +10,20 @@ import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { fetchStaffMemberById, fetchStaffMembersPage } from '$lib/api/staff-data';
 import {
 	loadStaffPermissionPageData,
-	type PermissionCatalogEntry,
-	type StaffPermissionAssignmentView,
+
 } from '$lib/api/staff-permission-assignments-data';
 import {
 	bindingsForStaff,
 	customAssignmentsForStaff,
 	loadPermissionProfileCatalogData,
 	renderBindingScopeLabel,
-	type StaffPermissionProfile,
-	type StaffPermissionProfileBinding,
+
 } from '$lib/api/staff-permission-profiles-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { mergeById } from '$lib/detail-data/seed-policies';
 import { t } from '$lib/i18n';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
-import { readStaffListFilters, writeStaffListFilters, type StaffListFilters } from '$lib/list/list-url-filters';
+import { readStaffListFilters, writeStaffListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';

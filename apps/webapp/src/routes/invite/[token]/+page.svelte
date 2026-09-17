@@ -7,8 +7,8 @@
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { acceptInvitation, fetchInvitationPreview } from '$lib/api/invitation-data';
-	import { isExistingAccountAuthError } from '$lib/auth/auth-errors';
 	import { bootstrapSessionAfterInvite } from '$lib/auth/accept-pending-invite';
+	import { isExistingAccountAuthError } from '$lib/auth/auth-errors';
 	import { getAuthenticatedAuthUser, resetBootstrapSession } from '$lib/auth/bootstrap';
 	import { resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 	import { authClient } from '$lib/auth/client';
@@ -41,6 +41,11 @@
 	function sessionBlocksInvitationAccept(
 		preview: InvitationPreview,
 	): boolean {
+		const loginEmail = authSession.loginEmail?.trim().toLowerCase() ?? '';
+		const invitedEmail = preview.contactEmail?.trim().toLowerCase() ?? '';
+		if (loginEmail && invitedEmail && loginEmail !== invitedEmail) {
+			return true;
+		}
 		if (!authSession.isLoggedIn || !authSession.userId || !authSession.sessionKind) {
 			return false;
 		}

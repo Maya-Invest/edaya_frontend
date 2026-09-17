@@ -3,7 +3,9 @@ import {
 	buildTimetableSessionPath,
 	emptyEntities,
 	encodePathSegment,
+	isClassDailyAttendanceSidebarPath,
 	resolveEndpoint,
+	sidebarSmokeStartPath,
 	timetableWeekFromSessionId,
 } from '../../scripts/qa-matrix-support';
 
@@ -39,6 +41,19 @@ describe('qa-matrix-support timetable paths', () => {
 		);
 	});
 
+	test('sidebarSmokeStartPath uses a class page for class-segment hrefs', () => {
+		expect(sidebarSmokeStartPath('/classes/c1/timetable', 'c1')).toBe('/classes/c1/students');
+		expect(sidebarSmokeStartPath('/school/students', 'c1')).toBe('/dashboard');
+		expect(sidebarSmokeStartPath('/classes/c1/timetable', null)).toBe('/dashboard');
+	});
+
+	test('isClassDailyAttendanceSidebarPath matches only the class attendance tab', () => {
+		expect(isClassDailyAttendanceSidebarPath('/classes/c1/attendance')).toBe(true);
+		expect(isClassDailyAttendanceSidebarPath('/classes/c1/timetable')).toBe(false);
+		expect(isClassDailyAttendanceSidebarPath('/classes/c1/students/s1/attendance')).toBe(false);
+		expect(isClassDailyAttendanceSidebarPath('/classes/c1/timetable/sess/attendance')).toBe(false);
+	});
+
 	test('resolveEndpoint substitutes family-feedback campaign ids', () => {
 		const entities = {
 			...emptyEntities(),
@@ -52,5 +67,15 @@ describe('qa-matrix-support timetable paths', () => {
 				entities,
 			),
 		).toBe('http://localhost:5173/school/family-feedback/ff-campaign-1/setup?modal=edit');
+	});
+
+	test('resolveEndpoint skips family-feedback detail without a campaign id', () => {
+		expect(
+			resolveEndpoint(
+				'http://localhost:5173/school/family-feedback/[id]/setup',
+				'http://localhost:5173',
+				emptyEntities(),
+			),
+		).toBeNull();
 	});
 });

@@ -34,6 +34,29 @@ export function pathMatchesPrefix(pathname: string, prefix: string): boolean {
 	return normalizeIntegrationPathname(pathname).startsWith(normalizeIntegrationPathname(prefix));
 }
 
+const STAFF_APP_PATH = /\/(dashboard|school|classes|configuration|onboarding|finance)(\/|$)/;
+
+/** True when a URL is already inside the staff app (not `/login`). */
+export function isSignedInStaffUrl(url: string): boolean {
+	try {
+		const pathname = new URL(url, 'http://localhost').pathname;
+		if (pathname === '/login' || pathname.startsWith('/login/')) {
+			return false;
+		}
+		return STAFF_APP_PATH.test(pathname);
+	}
+	catch {
+		return false;
+	}
+}
+
+/** Sidebar smoke: current path is the target or a nested drawer under it. */
+export function pathnameReachedSidebarTarget(pathname: string, resolvedPath: string): boolean {
+	const current = normalizeIntegrationPathname(pathname);
+	const target = normalizeIntegrationPathname(resolvedPath);
+	return current === target || current.startsWith(`${target}/`);
+}
+
 const SCHOOL_DRAWER_PREFIXES = [
 	'/school/students/',
 	'/school/teachers/',

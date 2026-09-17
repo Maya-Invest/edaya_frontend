@@ -1,11 +1,12 @@
 <script lang="ts">
+	import type { GrantScope } from '$lib/api/grant-scopes';
+	import type { StaffPermissionProfile } from '$lib/api/staff-permission-profiles-data';
 	import {
 		defaultScopesForProfileGrain,
 		profileGrainLabelKey,
 		validGrantScopes,
-		type GrantScope,
+
 	} from '$lib/api/grant-scopes';
-	import type { StaffPermissionProfile } from '$lib/api/staff-permission-profiles-data';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import { t } from '$lib/i18n';

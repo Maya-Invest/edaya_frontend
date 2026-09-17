@@ -12,12 +12,13 @@
 			? academicContext.periods.find(period => period.id === live.academicPeriodId)?.name ?? live.academicPeriodId
 			: '',
 	);
-	const moderatorName = $derived(
-		live
-			? familyFeedbackPage.staff.find(entry => entry.id === live.moderatorStaffId)?.name
-				?? $t('familyFeedback.noModerator')
-			: '',
-	);
+	const moderatorName = $derived.by(() => {
+		if (!live) {
+			return '';
+		}
+		const name = familyFeedbackPage.staff.find(entry => entry.id === live.moderatorStaffId)?.name;
+		return name ?? $t('familyFeedback.noModerator');
+	});
 	const fieldClass = 'min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm';
 </script>
 

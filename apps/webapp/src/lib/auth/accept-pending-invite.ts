@@ -1,8 +1,9 @@
+import type { BootstrapSessionResult } from '$lib/auth/bootstrap';
 import { acceptInvitation } from '$lib/api/invitation-data';
 import {
 	bootstrapSession,
 	resetBootstrapSession,
-	type BootstrapSessionResult,
+
 } from '$lib/auth/bootstrap';
 import { resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import {

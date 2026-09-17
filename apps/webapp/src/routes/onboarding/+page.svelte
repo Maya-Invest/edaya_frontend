@@ -40,6 +40,8 @@
 	});
 
 	$effect(() => {
+		void authSession.isLoggedIn;
+		void authSession.serverOnboardingStatus?.wizardCompleted;
 		void wizard.syncServerStatusOnce();
 	});
 </script>

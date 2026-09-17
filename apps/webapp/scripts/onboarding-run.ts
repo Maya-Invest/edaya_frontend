@@ -2,13 +2,25 @@
 /**
  * Login + onboarding integration pipeline (Playwright library, fail-the-process):
  *   1. Public gates (`/`, `/dashboard`, `/onboarding`) → `/login`
- *   2. Password login error + signup validation, then unlinked signup → wizard
- *   3. Invalid invite token page
- *   4. Wizard step UI (disabled Continue, skip staff, Create school enabled)
- *   5. Owner logout after school step → resume `/onboarding?step=2`
- *   6. Happy-path provision → dashboard
- *   7. Invited staff `/invite/{token}` signup → dashboard
- *   8. Provisioned owner password login → dashboard
+ *   2. Password login error + signup validation; valid signup must show verification UI (not jump to the wizard)
+ *   3. Invalid invite token page (expired 7-day TTL is a documented gap — no expire command)
+ *   4. Wizard step UI (disabled Continue, invalid staff email, skip staff, Create school enabled)
+ *   5. Owner resume: reload + second tab stay on step 2; after provision, reload stays on step 4 with Back/stepper locked
+ *   6. Happy-path provision with a valid wizard staff invite → dashboard
+ *   7. Invited staff `/invite/{token}` new-account signup + verification (new tab) → dashboard
+ *   8. Existing-account staff invite: API signup + seed-verify, then sign in on `/invite/{token}` → dashboard
+ *   9. Owner session opens a different staff invite → blocked / not consumed
+ *  10. Resend invitation → old token shows revoked heading
+ *  11. Revisit consumed token → already-accepted heading, not dashboard
+ *  12. Invited teacher → teacher-linked / teacher portal gate (not `/dashboard`)
+ *  13. Invited guardian → guardian-linked / guardian portal gate (not `/dashboard`)
+ *  14. Provisioned owner password login → dashboard
+ *
+ * Identity must run like staging:
+ *   REQUIRE_EMAIL_VERIFICATION=true
+ *   AUTH_DEV_OTP_PEEK=true (or AUTH_EMAIL_LOG_OTP=true) so GET /auth/edaya/dev/last-verification-url works
+ * CI overlays those flags in `.github/scripts/ci-start-local-apis.sh`. Local `.env.example` defaults
+ * REQUIRE_EMAIL_VERIFICATION=false — set it true before this suite or signup will fail the process.
  *
  * Prerequisites:
  *   - Identity at AUTH_URL (default http://localhost:9900)

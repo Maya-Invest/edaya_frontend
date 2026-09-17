@@ -4,7 +4,7 @@ import path from 'node:path';
 import { TEACHER_PORTAL_GATE_BANNER_TEST_ID } from '$lib/auth/teacher-portal-gate';
 import { DEMO_PASSWORD, STAFF_EMAIL } from './constants';
 import { resolveAuthUrl } from '../../support/integration-hosts';
-import { integrationUsesDemoLogin, webappReadinessPath } from './paths';
+import { integrationUsesDemoLogin, isSignedInStaffUrl, webappReadinessPath } from './paths';
 
 export async function waitForEnabled(locator: ReturnType<Page['locator']>, timeout = 30_000): Promise<void> {
 	await locator.waitFor({ state: 'visible', timeout });
@@ -52,9 +52,23 @@ export async function attemptPasswordSignIn(
 		await page.goto(`${base}/login?panel=signin&method=password&stage=form`, {
 			waitUntil: 'domcontentloaded',
 		});
-		await ensurePasswordSignInPanel(page);
+		if (isSignedInStaffUrl(page.url())) {
+			return true;
+		}
 
 		const emailInput = page.locator('#login-password-email');
+		const outcome = await Promise.race([
+			page.waitForURL(url => isSignedInStaffUrl(url.toString()), { timeout: 8_000 })
+				.then(() => 'shell' as const, () => null),
+			emailInput.waitFor({ state: 'visible', timeout: 8_000 })
+				.then(() => 'form' as const, () => null),
+		]);
+		if (outcome === 'shell' || isSignedInStaffUrl(page.url())) {
+			return true;
+		}
+
+		await ensurePasswordSignInPanel(page);
+
 		const passwordInput = page.locator('#login-password');
 		const submit = page
 			.locator('form')
@@ -69,7 +83,7 @@ export async function attemptPasswordSignIn(
 		await submit.click();
 
 		const appShellUrl = page.waitForURL(
-			/\/(dashboard|school|classes|configuration|onboarding|finance)/,
+			url => isSignedInStaffUrl(url.toString()),
 			{ timeout: 30_000 },
 		);
 		const teacherGateBanner = page.waitForSelector(

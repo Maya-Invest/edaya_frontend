@@ -51,8 +51,10 @@
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
-	afterNavigate(() => {
+	$effect(() => {
 		modals.hydrate();
+	});
+	afterNavigate(() => {
 		if (modals.active && modals.target) {
 			replaceRouteSurface(writeModalSurface($page.url, { modal: modals.active }));
 		}
@@ -70,10 +72,10 @@
 	const live = $derived(familyFeedbackPage.findCampaign(campaign.id) ?? campaign);
 	const title = $derived(familyFeedbackPage.campaignTitle(live));
 	const periodName = $derived(academicContext.periods.find(period => period.id === live.academicPeriodId)?.name ?? live.academicPeriodId);
-	const moderatorName = $derived(
-		familyFeedbackPage.staff.find(entry => entry.id === live.moderatorStaffId)?.name
-			?? $t('familyFeedback.noModerator'),
-	);
+	const moderatorName = $derived.by(() => {
+		const name = familyFeedbackPage.staff.find(entry => entry.id === live.moderatorStaffId)?.name;
+		return name ?? $t('familyFeedback.noModerator');
+	});
 
 	let themeDraft = $state('');
 	let moderatorStaffId = $state('');

@@ -3,35 +3,17 @@ import { waitForEnabled } from '../../demo-dry-run/support/auth';
 import { resolveAuthUrl } from '../../support/integration-hosts';
 import { currentOnboardingStep, loginSignInPath, loginSignupPath } from './paths';
 
-const SEED_AUTH_PROVISION_HEADER = 'x-edaya-seed-provision';
 const SIGNUP_SUBMIT = /créer mon compte|create my account|création du compte|creating account/i;
 const SIGN_IN_SUBMIT = /sign in|se connecter/i;
-const VERIFICATION_COPY = /vérifiez votre boîte mail|check your inbox/i;
+export const VERIFICATION_COPY = /vérifiez votre boîte mail|check your inbox/i;
 const SWITCH_TO_SIGNUP = /create account|créer un compte/i;
 const SIGN_OUT = /sign out|se déconnecter/i;
 
 export { waitForEnabled };
 
-export async function markEmailVerified(email: string, origin: string): Promise<void> {
-	const authUrl = resolveAuthUrl();
-	const response = await fetch(`${authUrl}/dev/seed/mark-email-verified`, {
-		method: 'POST',
-		headers: {
-			'content-type': 'application/json',
-			origin,
-			[SEED_AUTH_PROVISION_HEADER]: '1',
-		},
-		body: JSON.stringify({ email }),
-	});
-	if (response.ok || response.status === 404) {
-		return;
-	}
-	throw new Error(`mark-email-verified failed: ${response.status} ${await response.text()}`);
-}
-
 export async function peekLastVerificationUrl(email: string): Promise<string | null> {
 	const authUrl = resolveAuthUrl();
-	const deadline = Date.now() + 8_000;
+	const deadline = Date.now() + 15_000;
 	while (Date.now() < deadline) {
 		const response = await fetch(
 			`${authUrl}/auth/edaya/dev/last-verification-url?email=${encodeURIComponent(email)}`,
@@ -56,18 +38,63 @@ export async function peekLastVerificationUrl(email: string): Promise<string | n
 	return null;
 }
 
+export async function requireLastVerificationUrl(email: string): Promise<string> {
+	const verificationUrl = await peekLastVerificationUrl(email);
+	if (!verificationUrl) {
+		throw new Error(
+			`No verification URL for ${email}. Identity must run with REQUIRE_EMAIL_VERIFICATION=true and AUTH_DEV_OTP_PEEK=true (or AUTH_EMAIL_LOG_OTP=true).`,
+		);
+	}
+	return verificationUrl;
+}
+
+function isEmailVerifiedCallback(url: string): boolean {
+	try {
+		const parsed = new URL(url);
+		return parsed.pathname.replace(/\/+$/, '') === '/login' && parsed.searchParams.get('verified') === '1';
+	}
+	catch {
+		return false;
+	}
+}
+
+async function waitForPostVerificationLanding(page: Page, landed: RegExp): Promise<void> {
+	await page.waitForURL(/\/(onboarding|login|dashboard|invite)/, { timeout: 30_000 });
+	const deadline = Date.now() + 30_000;
+	while (Date.now() < deadline) {
+		const url = page.url();
+		if (isEmailVerifiedCallback(url)) {
+			await page.waitForTimeout(150);
+			continue;
+		}
+		if (landed.test(url)) {
+			return;
+		}
+		await page.waitForTimeout(150);
+	}
+	throw new Error(`Verification did not reach expected landing from ${page.url()}`);
+}
+
 export async function followVerificationLink(
 	page: Page,
 	email: string,
 	landed: RegExp,
-): Promise<boolean> {
-	const verificationUrl = await peekLastVerificationUrl(email);
-	if (!verificationUrl) {
-		return false;
-	}
+): Promise<void> {
+	const verificationUrl = await requireLastVerificationUrl(email);
 	await page.goto(verificationUrl, { waitUntil: 'domcontentloaded' });
-	await page.waitForURL(landed, { timeout: 30_000 });
-	return true;
+	await waitForPostVerificationLanding(page, landed);
+}
+
+export async function followVerificationLinkInNewPage(
+	page: Page,
+	email: string,
+	landed: RegExp,
+): Promise<Page> {
+	const verificationUrl = await requireLastVerificationUrl(email);
+	const next = await page.context().newPage();
+	await next.goto(verificationUrl, { waitUntil: 'domcontentloaded' });
+	await waitForPostVerificationLanding(next, landed);
+	return next;
 }
 
 export async function assertStackReady(base: string): Promise<void> {
@@ -203,24 +230,20 @@ export async function signUpThroughUi(
 	const outcome = await Promise.race([reachedOnboarding, verification]).catch(() => 'timeout' as const);
 
 	if (outcome === 'onboarding') {
-		await page.locator('#onboarding-school-name').waitFor({ state: 'visible', timeout: 20_000 });
-		return;
+		throw new Error(
+			`Signup skipped email verification for ${options.email} (landed ${page.url()}). Set REQUIRE_EMAIL_VERIFICATION=true on Identity.`,
+		);
 	}
 
 	if (outcome === 'verification') {
-		const followed = await followVerificationLink(page, options.email, /\/onboarding/);
-		if (!followed) {
-			await markEmailVerified(options.email, base);
-			await signInWithPassword(page, base, options.email, options.password);
-			await page.waitForURL(/\/onboarding/, { timeout: 30_000 });
-		}
+		await followVerificationLink(page, options.email, /\/onboarding/);
 		await page.locator('#onboarding-school-name').waitFor({ state: 'visible', timeout: 20_000 });
 		return;
 	}
 
 	const alertText = await page.locator('[role="alert"]').allInnerTexts().catch(() => []);
 	throw new Error(
-		`Signup did not reach onboarding for ${options.email}. url=${page.url()} alerts=${alertText.join(' | ')}`,
+		`Signup did not reach verification for ${options.email}. url=${page.url()} alerts=${alertText.join(' | ')}`,
 	);
 }
 

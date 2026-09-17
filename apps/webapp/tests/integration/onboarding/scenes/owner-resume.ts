@@ -4,8 +4,18 @@ import {
 	signInWithPassword,
 	signOutFromOnboarding,
 	signUpThroughUi,
+	waitForEnabled,
 } from '../support/auth';
-import { clickContinue, expectContinueDisabled, fillSchoolIdentity } from '../support/wizard';
+import { dashboardPath } from '../support/paths';
+import {
+	clickContinue,
+	clickCreateSchoolAndWaitForProvision,
+	expectBackLocked,
+	expectContinueDisabled,
+	fillSchoolIdentity,
+	selectCollegeAndOneClass,
+	skipStepButton,
+} from '../support/wizard';
 import { assertIncompleteWizardBouncesToStep } from './gates';
 
 export async function runOwnerWizardResume(ctx: OnboardingRunContext): Promise<void> {
@@ -22,6 +32,18 @@ export async function runOwnerWizardResume(ctx: OnboardingRunContext): Promise<v
 	await clickContinue(page);
 	await expectOnboardingStep(page, 2);
 
+	await page.reload({ waitUntil: 'domcontentloaded' });
+	await expectOnboardingStep(page, 2);
+
+	const second = await page.context().newPage();
+	try {
+		await second.goto(dashboardPath(base), { waitUntil: 'domcontentloaded' });
+		await expectOnboardingStep(second, 2);
+	}
+	finally {
+		await second.close();
+	}
+
 	await signOutFromOnboarding(page);
 	await signInWithPassword(page, base, credentials.email, credentials.password);
 	await expectOnboardingStep(page, 2);
@@ -30,4 +52,19 @@ export async function runOwnerWizardResume(ctx: OnboardingRunContext): Promise<v
 	}
 
 	await assertIncompleteWizardBouncesToStep(page, base, 2);
+
+	await selectCollegeAndOneClass(page);
+	await clickContinue(page);
+	await expectOnboardingStep(page, 3);
+	const skip = skipStepButton(page);
+	await waitForEnabled(skip);
+	await skip.click();
+	await expectOnboardingStep(page, 4);
+
+	await clickCreateSchoolAndWaitForProvision(page);
+	await expectBackLocked(page);
+
+	await page.reload({ waitUntil: 'domcontentloaded' });
+	await expectOnboardingStep(page, 4);
+	await expectBackLocked(page);
 }

@@ -1,8 +1,8 @@
 import type { PermissionProfilesPageState } from '../permission-profiles-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
+import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadPermissionCatalog } from '$lib/api/staff-permission-assignments-data';
 import { loadPermissionProfileCatalogData } from '$lib/api/staff-permission-profiles-data';
-import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 import { emptyPermissionProfilesSlice } from './permission-profiles-helpers';

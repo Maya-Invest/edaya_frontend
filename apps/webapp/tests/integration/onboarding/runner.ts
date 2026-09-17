@@ -5,7 +5,13 @@ import { ONBOARDING_WEBAPP_BASE } from './support/paths';
 import { assertPublicAuthGates } from './scenes/gates';
 import { runHappyPath } from './scenes/happy-path';
 import { runInvalidInvite } from './scenes/invalid-invite';
+import { runInviteAlreadyAccepted } from './scenes/invite-already-accepted';
+import { runInviteRevoked } from './scenes/invite-revoked';
+import { runInviteWrongAccount } from './scenes/invite-wrong-account';
+import { runInvitedGuardian } from './scenes/invited-guardian';
 import { runInvitedStaff } from './scenes/invited-staff';
+import { runInvitedStaffExisting } from './scenes/invited-staff-existing';
+import { runInvitedTeacher } from './scenes/invited-teacher';
 import { runLoginSignupUi } from './scenes/login-signup-ui';
 import { runOwnerRelogin } from './scenes/owner-relogin';
 import { runOwnerWizardResume } from './scenes/owner-resume';
@@ -100,10 +106,44 @@ export async function runOnboardingSuite(
 		});
 		summary.scenes.push({ id: 'happy-path', ok: true, detail: owner.email });
 
-		await runScene(options.outDir, 'invited-staff', ownerPage, async () => {
-			await runInvitedStaff(ownerPage, options.browser, base);
-		});
+		const invitedStaffToken = await (async () => {
+			let token = '';
+			await runScene(options.outDir, 'invited-staff', ownerPage, async () => {
+				token = await runInvitedStaff(ownerPage, options.browser, base);
+			});
+			return token;
+		})();
 		summary.scenes.push({ id: 'invited-staff', ok: true });
+
+		await runScene(options.outDir, 'invited-staff-existing', ownerPage, async () => {
+			await runInvitedStaffExisting(ownerPage, options.browser, base);
+		});
+		summary.scenes.push({ id: 'invited-staff-existing', ok: true });
+
+		await runScene(options.outDir, 'invite-wrong-account', ownerPage, async () => {
+			await runInviteWrongAccount(ownerPage, base);
+		});
+		summary.scenes.push({ id: 'invite-wrong-account', ok: true });
+
+		await runScene(options.outDir, 'invite-revoked', ownerPage, async () => {
+			await runInviteRevoked(ownerPage, options.browser, base);
+		});
+		summary.scenes.push({ id: 'invite-revoked', ok: true });
+
+		await runScene(options.outDir, 'invite-already-accepted', ownerPage, async () => {
+			await runInviteAlreadyAccepted(options.browser, base, invitedStaffToken);
+		});
+		summary.scenes.push({ id: 'invite-already-accepted', ok: true });
+
+		await runScene(options.outDir, 'invited-teacher', ownerPage, async () => {
+			await runInvitedTeacher(ownerPage, options.browser, base);
+		});
+		summary.scenes.push({ id: 'invited-teacher', ok: true });
+
+		await runScene(options.outDir, 'invited-guardian', ownerPage, async () => {
+			await runInvitedGuardian(ownerPage, options.browser, base);
+		});
+		summary.scenes.push({ id: 'invited-guardian', ok: true });
 	}
 	finally {
 		await ownerContext.close();

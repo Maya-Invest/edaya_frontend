@@ -11,7 +11,7 @@ import {
 	mapServerPhaseToStepId,
 } from '$lib/onboarding/provision-progress';
 import { persistServerOnboardingStatusToDraft } from '$lib/onboarding/resume-onboarding';
-import { markWizardCompletedInSession } from '$lib/onboarding/wizard-completion-flag';
+import { markOnboardingSummaryHold } from '$lib/onboarding/wizard-completion-flag';
 import { toast } from '$lib/toast.svelte';
 import { ApiError } from '@maya-invest/edaya-api-client';
 import { get } from 'svelte/store';
@@ -111,7 +111,7 @@ export async function submitProvisionOnboarding(
 
 		authSession.setServerOnboardingStatus(result.status);
 		if (authSession.authUserId) {
-			markWizardCompletedInSession(authSession.authUserId);
+			markOnboardingSummaryHold(authSession.authUserId);
 		}
 
 		emitProgress(options?.onProgress, {

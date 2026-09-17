@@ -11,11 +11,11 @@
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
+	import FamilyFeedbackList from './components/FamilyFeedbackList.svelte';
 	import {
 		FamilyFeedbackPageState,
 		setFamilyFeedbackPageState,
 	} from './family-feedback-page.svelte';
-	import FamilyFeedbackList from './components/FamilyFeedbackList.svelte';
 
 	const { children: pageChildren }: { children: Snippet } = $props();
 

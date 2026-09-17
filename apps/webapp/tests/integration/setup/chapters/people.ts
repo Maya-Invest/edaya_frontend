@@ -364,7 +364,7 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 		templatePath: '/school/teachers',
 		createAction: 'Créer enseignant',
 		openPattern: /add teacher|ajouter un enseignant/i,
-		command: 'register-staff',
+		command: 'teachers/save',
 		idPattern: /\/school\/teachers\/([^/?]+)/,
 		lastName: `E2E-Teacher-${Date.now()}`,
 		assignId: (id) => {

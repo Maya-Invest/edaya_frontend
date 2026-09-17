@@ -1,10 +1,11 @@
 import type { ProfileScopeGrain } from '$lib/api/grant-scopes';
 import type { components } from '$lib/api/schema';
+import type { StaffPermissionProfile } from '$lib/api/staff-permission-profiles-data';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { PermissionProfilesPageSlice } from './lib/permission-profiles-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { boundStaffCount, type StaffPermissionProfile } from '$lib/api/staff-permission-profiles-data';
+import { boundStaffCount } from '$lib/api/staff-permission-profiles-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import {

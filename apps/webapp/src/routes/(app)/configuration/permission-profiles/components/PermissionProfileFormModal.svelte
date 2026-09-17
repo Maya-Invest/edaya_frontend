@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { PROFILE_SCOPE_GRAINS, profileGrainLabelKey, type ProfileScopeGrain } from '$lib/api/grant-scopes';
+	import type { ProfileScopeGrain } from '$lib/api/grant-scopes';
+	import type { StaffPermissionCode, StaffPermissionProfile } from '$lib/api/staff-permission-profiles-data';
+	import { PROFILE_SCOPE_GRAINS, profileGrainLabelKey } from '$lib/api/grant-scopes';
 	import { formatPermissionLabel } from '$lib/api/staff-permission-assignments-data';
 	import {
 		groupCatalogEntries,
 		permissionsForGrain,
-		type StaffPermissionCode,
-		type StaffPermissionProfile,
+
 	} from '$lib/api/staff-permission-profiles-data';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';

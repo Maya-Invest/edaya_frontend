@@ -5,6 +5,7 @@ import {
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { fetchSessionStaffProfile } from '$lib/api/staff-data';
 import { persistServerOnboardingStatusToDraft } from '$lib/onboarding/resume-onboarding';
+import { isOnboardingSummaryHold } from '$lib/onboarding/wizard-completion-flag';
 import {
 	fetchServerOnboardingAccountStatus,
 } from '$lib/onboarding/sync-account-status';
@@ -132,6 +133,7 @@ async function runBootstrapSession(
 					auth.user.id,
 					mergedOnboardingStatus,
 					session.schoolId,
+					{ holdLocalWizardCompleted: isOnboardingSummaryHold(auth.user.id) },
 				);
 			}
 

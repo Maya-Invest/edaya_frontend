@@ -8,6 +8,7 @@
 	import { LoaderCircle } from '$lib/icons';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { onboardingContext } from '$lib/onboarding/context.svelte';
+	import { isOnboardingSummaryHold } from '$lib/onboarding/wizard-completion-flag';
 
 	const { children }: { children: Snippet } = $props();
 
@@ -18,7 +19,10 @@
 		if (authSession.needsOnboarding) {
 			return true;
 		}
-		return onboardingContext.initialized && !onboardingContext.draft.wizardCompleted;
+		return onboardingContext.initialized && (
+			!onboardingContext.draft.wizardCompleted
+			|| isOnboardingSummaryHold(authSession.authUserId)
+		);
 	});
 
 	$effect(() => {
@@ -47,7 +51,11 @@
 			return;
 		}
 
-		if (authSession.isLoggedIn && onboardingContext.draft.wizardCompleted) {
+		if (
+			authSession.isLoggedIn
+			&& onboardingContext.draft.wizardCompleted
+			&& !isOnboardingSummaryHold(authSession.authUserId)
+		) {
 			const target = redirectPathIfAuthenticated();
 			if (target) {
 				appGoto(target, { replaceState: true });

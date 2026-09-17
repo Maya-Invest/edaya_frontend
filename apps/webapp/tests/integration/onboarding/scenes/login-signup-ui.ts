@@ -1,11 +1,12 @@
 import type { Page } from 'playwright';
 import {
+	VERIFICATION_COPY,
 	ensurePasswordSignInPanel,
 	expectOnboardingStep,
+	followVerificationLink,
 	openSignupPanel,
 	passwordSignInSubmit,
 	signupSubmitButton,
-	signUpThroughUi,
 	waitForEnabled,
 } from '../support/auth';
 import { uniqueOnboardingEmail, uniqueOnboardingPassword } from '../support/capture';
@@ -53,11 +54,21 @@ export async function runLoginSignupUi(page: Page, base: string): Promise<void> 
 		throw new Error('Signup submit should stay disabled when passwords do not match');
 	}
 
-	const credentials = {
-		name: 'Login Suite Owner',
-		email: uniqueOnboardingEmail(),
-		password: uniqueOnboardingPassword(),
-	};
-	await signUpThroughUi(page, base, credentials);
+	const email = uniqueOnboardingEmail();
+	const password = uniqueOnboardingPassword();
+	await nameInput.fill('Login Suite Owner');
+	await signupEmail.fill(email);
+	await signupPassword.fill(password);
+	await confirm.fill(password);
+	await waitForEnabled(submit);
+	await submit.click();
+	await page.getByText(VERIFICATION_COPY).waitFor({ state: 'visible', timeout: 30_000 });
+	if (page.url().includes('/onboarding')) {
+		throw new Error(
+			`Signup skipped email verification for ${email} (landed ${page.url()}). Set REQUIRE_EMAIL_VERIFICATION=true on Identity.`,
+		);
+	}
+
+	await followVerificationLink(page, email, /\/onboarding/);
 	await expectOnboardingStep(page, 1);
 }

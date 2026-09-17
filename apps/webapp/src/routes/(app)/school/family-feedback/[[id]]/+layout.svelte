@@ -11,6 +11,7 @@
 
 	const familyFeedbackPage = getFamilyFeedbackPageState();
 	const campaign = $derived(familyFeedbackPage.selected);
+	let selectionRequestVersion = 0;
 
 	function closeDetail() {
 		const next = new URL($page.url);
@@ -25,18 +26,37 @@
 		if (!campaignId) {
 			return;
 		}
-		if (!familyFeedbackPage.findCampaign(campaignId)) {
-			closeDetail();
-			return;
-		}
-		void familyFeedbackPage.ensureDrawerSelection(campaignId);
+
+		const version = ++selectionRequestVersion;
+		familyFeedbackPage.selectedResolving = true;
+
+		void familyFeedbackPage.ensureDrawerSelection(campaignId)
+			.then((ok) => {
+				if (version !== selectionRequestVersion) {
+					return;
+				}
+				if (!ok) {
+					closeDetail();
+				}
+			})
+			.catch(() => {
+				if (version !== selectionRequestVersion) {
+					return;
+				}
+				closeDetail();
+			})
+			.finally(() => {
+				if (version === selectionRequestVersion) {
+					familyFeedbackPage.selectedResolving = false;
+				}
+			});
 	});
 </script>
 
 {#if $page.params.id}
 	<FamilyFeedbackDrawer
 		{campaign}
-		loading={!campaign}
+		loading={familyFeedbackPage.selectedResolving || !campaign}
 		onClose={closeDetail}
 	>
 		{@render children()}

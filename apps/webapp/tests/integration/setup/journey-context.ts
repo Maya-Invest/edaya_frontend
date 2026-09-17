@@ -150,7 +150,9 @@ function commandPublicName(fragment: string): string {
 function matchesCommandResponse(url: string, commandFragment: string): boolean {
 	const publicName = commandPublicName(commandFragment);
 	return url.includes(`/core/commands/${publicName}`)
-		|| url.includes(`/core/commands/${commandFragment}`);
+		|| url.includes(`/core/commands/${commandFragment}`)
+		|| url.includes(`/core/entities/${commandFragment}`)
+		|| url.includes(`/core/entities/${publicName}`);
 }
 
 async function waitForCommandResponse(

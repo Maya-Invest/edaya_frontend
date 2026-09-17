@@ -1,10 +1,11 @@
+import type { GrantScope } from '$lib/api/grant-scopes';
 import type { components } from '$lib/api/schema';
 import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 import type { StaffMemberProfileRolePatch, StaffProfileRole } from '$lib/staff/staff-profile-roles';
 import type { StaffMember } from '$lib/types/school';
 import type { StaffPageState } from '../staff-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
-import { grantScopesEquivalent, type GrantScope } from '$lib/api/grant-scopes';
+import { grantScopesEquivalent } from '$lib/api/grant-scopes';
 import {
 	createStaffPermissionAssignmentPayload,
 } from '$lib/api/mutations/staff-permission-assignments.mutations';

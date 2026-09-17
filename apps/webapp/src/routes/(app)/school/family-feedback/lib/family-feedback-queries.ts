@@ -28,5 +28,6 @@ export async function ensureFamilyFeedbackDrawerSelection(
 	if (state.findCampaign(campaignId)) {
 		return true;
 	}
-	return false;
+	await state.refreshSlice();
+	return Boolean(state.findCampaign(campaignId));
 }

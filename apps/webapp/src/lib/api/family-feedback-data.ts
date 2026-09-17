@@ -10,17 +10,17 @@ import type {
 	FamilyFeedbackQuestionAggregate,
 } from './family-feedback-types';
 import { academicContext } from '$lib/academic/context.svelte';
-import { familyFeedbackCommand, familyFeedbackQuery, familyFeedbackRequestId } from '$lib/api/family-feedback-client';
-import { authSession } from '$lib/auth/session.svelte';
 import {
 	CATALOG_LIST_PAGE_SIZE,
 	paginatedList,
 	schoolSubjectsCatalogList,
 } from '$lib/api/entity-list-filters';
+import { familyFeedbackCommand, familyFeedbackQuery, familyFeedbackRequestId } from '$lib/api/family-feedback-client';
 import { mapFamilyFeedbackCampaign } from '$lib/api/family-feedback-types';
-import { fetchStaffMembers } from '$lib/api/staff-data';
-import { fetchTeachersPage } from '$lib/api/teachers-data';
 import { safeOptionalEntityList, safeOptionalFetch } from '$lib/api/safe-entity-access';
+import { fetchStaffMembers } from '$lib/api/staff-data';
+import { fetchTeachersPage, type PaginatedTeachersData } from '$lib/api/teachers-data';
+import { authSession } from '$lib/auth/session.svelte';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 type TeacherAssignmentRaw = components['schemas']['TeacherAssignment'];
@@ -129,21 +129,28 @@ function assignmentLabel(
 export async function loadFamilyFeedbackSlice(client: SchoolClient): Promise<FamilyFeedbackSlice> {
 	const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
 	const academicYearId = academicContext.yearId;
-	if (!schoolId || !academicYearId) {
+	if (!schoolId) {
 		return { campaigns: [], teachers: [], staff: [], assignments: [], subjects: [] };
 	}
 
+	const emptyTeachersPage: PaginatedTeachersData = { teachers: [], totalTeachers: 0, assignments: [] };
 	const [campaigns, teachersPage, staff, assignmentsRaw, subjects, classSubjects] = await Promise.all([
 		safeOptionalFetch(() => listFamilyFeedbackCampaigns(client), []),
-		safeOptionalFetch(
-			() => fetchTeachersPage(client, { schoolId, academicYearId }, { includeAssignments: false, limit: CATALOG_LIST_PAGE_SIZE }),
-			{ teachers: [], totalTeachers: 0, assignments: [] },
-		),
-		safeOptionalFetch(() => fetchStaffMembers(client, { schoolId, academicYearId }), []),
-		safeOptionalEntityList(() => client.entities.teacherAssignments.list(paginatedList(
-			{ academicYearId, kind: 'subject', status: 'active' },
-			{ limit: CATALOG_LIST_PAGE_SIZE },
-		))),
+		academicYearId
+			? safeOptionalFetch(
+				() => fetchTeachersPage(client, { schoolId, academicYearId }, { includeAssignments: false, limit: CATALOG_LIST_PAGE_SIZE }),
+				emptyTeachersPage,
+			)
+			: Promise.resolve(emptyTeachersPage),
+		academicYearId
+			? safeOptionalFetch(() => fetchStaffMembers(client, { schoolId, academicYearId }), [])
+			: Promise.resolve([]),
+		academicYearId
+			? safeOptionalEntityList(() => client.entities.teacherAssignments.list(paginatedList(
+				{ academicYearId, kind: 'subject', status: 'active' },
+				{ limit: CATALOG_LIST_PAGE_SIZE },
+			)))
+			: Promise.resolve([]),
 		safeOptionalEntityList(() => client.entities.subjects.list(schoolSubjectsCatalogList(schoolId))),
 		safeOptionalEntityList(() => client.entities.classSubjects.list(paginatedList(
 			{ schoolId },

@@ -1,10 +1,12 @@
 <script lang="ts">
+	import type { StaffPermissionProfile } from '$lib/api/staff-permission-profiles-data';
+	import type { StaffProfileRole } from '$lib/staff/staff-profile-roles';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import {
 		loadStaffPermissionProfiles,
 		tenantWideProfiles,
-		type StaffPermissionProfile,
+
 	} from '$lib/api/staff-permission-profiles-data';
 	import { authSession } from '$lib/auth/session.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
@@ -19,7 +21,7 @@
 		DEFAULT_STAFF_PROFILE_ROLE,
 		isStaffProfileRole,
 		SELECTABLE_STAFF_PROFILE_ROLES,
-		type StaffProfileRole,
+
 	} from '$lib/staff/staff-profile-roles';
 	import { get } from 'svelte/store';
 	import { getStaffPageState } from '../staff-page.svelte';

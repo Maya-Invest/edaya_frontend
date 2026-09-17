@@ -1,3 +1,4 @@
+import type { FamilyFeedbackCampaign } from '$lib/api/family-feedback-types';
 import type { ReportCardDefinition, ReportCardResult } from '$lib/types/report-cards';
 import type {
 	ClassNode,
@@ -16,7 +17,6 @@ import type {
 	Announcement,
 	AttendanceDay,
 } from '$lib/types/school';
-import type { FamilyFeedbackCampaign } from '$lib/api/family-feedback-types';
 
 export type DrawerItem
 	= | { kind: 'student'; data: Student }

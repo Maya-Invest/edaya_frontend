@@ -28,7 +28,7 @@ async function readProvisionedFixtureSchoolId(): Promise<string | null> {
 	}
 }
 
-function isLikelyApiResponse(response: import('playwright').APIResponse): boolean {
+function isLikelyApiResponse(response: { headers: () => Record<string, string>; ok: () => boolean }): boolean {
 	const contentType = response.headers()['content-type'] ?? '';
 	if (contentType.includes('text/html')) {
 		return false;
@@ -36,22 +36,50 @@ function isLikelyApiResponse(response: import('playwright').APIResponse): boolea
 	return contentType.includes('json') || response.ok();
 }
 
+interface JourneyApiResponse {
+	ok(): boolean;
+	status(): number;
+	headers(): Record<string, string>;
+	json(): Promise<unknown>;
+	text(): Promise<string>;
+}
+
+async function snapshotApiResponse(
+	response: import('playwright').APIResponse,
+): Promise<JourneyApiResponse> {
+	const status = response.status();
+	const ok = response.ok();
+	const headers = response.headers();
+	const bodyText = await response.text().catch(() => '');
+	return {
+		ok: () => ok,
+		status: () => status,
+		headers: () => headers,
+		text: async () => bodyText,
+		json: async () => JSON.parse(bodyText),
+	};
+}
+
 async function apiFetch(
 	page: Page,
 	appOrigin: string,
 	path: string,
-	init: { method?: string; data?: unknown } = {},
+	init: { method?: string; data?: unknown; headers?: Record<string, string>; academicYearId?: string } = {},
 	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
-): Promise<import('playwright').APIResponse> {
+): Promise<JourneyApiResponse> {
 	const appBase = appOrigin.replace(/\/+$/, '');
 	const apiBase = apiUrl.replace(/\/+$/, '');
 	const schoolId = await readProvisionedFixtureSchoolId();
 	const headers: Record<string, string> = {
 		'content-type': 'application/json',
 		accept: 'application/json',
+		...init.headers,
 	};
 	if (schoolId) {
 		headers['X-School-Id'] = schoolId;
+	}
+	if (init.academicYearId) {
+		headers['X-Academic-Year-Id'] = init.academicYearId;
 	}
 
 	const accessToken = await schoolBearerFromPage(page, appOrigin, undefined, apiUrl);
@@ -72,12 +100,13 @@ async function apiFetch(
 	bases.push(appBase);
 
 	try {
-		let last: import('playwright').APIResponse | undefined;
+		let last: JourneyApiResponse | undefined;
 		for (const base of bases) {
 			const url = `${base}${path.startsWith('/') ? path : `/${path}`}`;
-			last = (init.method ?? 'GET') === 'POST'
+			const raw = (init.method ?? 'GET') === 'POST'
 				? await isolated.post(url, { headers, data: init.data ?? {} })
 				: await isolated.get(url, { headers });
+			last = await snapshotApiResponse(raw);
 			if (isLikelyApiResponse(last)) {
 				return last;
 			}
@@ -100,6 +129,21 @@ function parseEntityList<T extends { id?: string }>(
 		return body;
 	}
 	return body.items ?? [];
+}
+
+function unwrapEntityBody(body: unknown): Record<string, unknown> | null {
+	if (!body || typeof body !== 'object' || Array.isArray(body)) {
+		return null;
+	}
+	const record = body as Record<string, unknown>;
+	const nested = record.data;
+	if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+		const nestedRecord = nested as Record<string, unknown>;
+		if (typeof nestedRecord.id === 'string' || typeof nestedRecord.academicYearId === 'string') {
+			return nestedRecord;
+		}
+	}
+	return record;
 }
 
 export async function resolveSchoolId(
@@ -387,7 +431,7 @@ function integrationDebug(...args: unknown[]): void {
 	}
 }
 
-async function readApiBody(response: import('playwright').APIResponse): Promise<unknown> {
+async function readApiBody(response: JourneyApiResponse): Promise<unknown> {
 	try {
 		return await response.json();
 	}
@@ -560,12 +604,15 @@ async function getClassGroup(
 	if (!response.ok()) {
 		return null;
 	}
-	const body = await readApiBody(response) as {
-		academicYearId?: string;
-		homeroomStaffId?: string | null;
-		schoolId?: string;
-	} | null;
-	return body;
+	const body = unwrapEntityBody(await readApiBody(response));
+	if (!body) {
+		return null;
+	}
+	return {
+		academicYearId: typeof body.academicYearId === 'string' ? body.academicYearId : undefined,
+		homeroomStaffId: typeof body.homeroomStaffId === 'string' ? body.homeroomStaffId : null,
+		schoolId: typeof body.schoolId === 'string' ? body.schoolId : undefined,
+	};
 }
 
 async function ensureStaffAssignedToClassSubject(
@@ -1097,6 +1144,332 @@ export async function createTeacherWithInvitationViaApi(
 		token = await resendInvitationTokenViaApi(page, appOrigin, teacherId, apiUrl) ?? '';
 	}
 	return { teacherId, token };
+}
+
+interface TeacherAssignmentListItem {
+	id?: string;
+	teacherId?: string;
+	classSubjectId?: string | null;
+	kind?: string;
+	status?: string;
+}
+
+async function listFamilyFeedbackCampaignIds(
+	page: Page,
+	appOrigin: string,
+	apiUrl: string,
+): Promise<string[]> {
+	const response = await apiFetch(page, appOrigin, '/core/queries/list-family-feedback-campaigns', {
+		method: 'POST',
+		data: {},
+	}, apiUrl);
+	if (!response.ok()) {
+		console.log(
+			`family-feedback list failed: status=${response.status()} body=${(await response.text().catch(() => '')).slice(0, 300)}`,
+		);
+		return [];
+	}
+	const body = await readApiBody(response) as { items?: Array<{ id?: string }> } | Array<{ id?: string }> | null;
+	return parseEntityList(body).map(entry => entry.id).filter((id): id is string => typeof id === 'string');
+}
+
+async function resolvePeriodIdForYear(
+	page: Page,
+	appOrigin: string,
+	academicYearId: string,
+	apiUrl: string,
+): Promise<string | null> {
+	const schoolId = await resolveSchoolId(page, appOrigin, apiUrl);
+	if (!schoolId) {
+		return null;
+	}
+	const response = await apiFetch(page, appOrigin, '/core/entities/academic-periods/list', {
+		method: 'POST',
+		data: { schoolId, academicYearId },
+		academicYearId,
+	}, apiUrl);
+	if (!response.ok()) {
+		console.log(
+			`family-feedback period list failed: status=${response.status()} body=${(await response.text().catch(() => '')).slice(0, 300)}`,
+		);
+		return null;
+	}
+	try {
+		const body = await response.json() as {
+			items?: Array<{ id?: string; academicYearId?: string; isPublished?: boolean; startDate?: string; endDate?: string }>;
+		} | Array<{ id?: string; academicYearId?: string; isPublished?: boolean; startDate?: string; endDate?: string }>;
+		const periods = parseEntityList(body).filter(period =>
+			!period.academicYearId || period.academicYearId === academicYearId,
+		);
+		if (periods.length === 0) {
+			return null;
+		}
+		const today = new Date().toISOString().slice(0, 10);
+		const inRange = periods.find((period) => {
+			const start = period.startDate ? String(period.startDate).slice(0, 10) : '';
+			const end = period.endDate ? String(period.endDate).slice(0, 10) : '';
+			return start <= today && today <= end;
+		});
+		const published = periods.find(period => period.isPublished);
+		return inRange?.id ?? published?.id ?? periods[0]?.id ?? null;
+	}
+	catch {
+		return null;
+	}
+}
+
+async function teacherExistsViaApi(
+	page: Page,
+	appOrigin: string,
+	teacherId: string,
+	apiUrl: string,
+): Promise<boolean> {
+	const response = await apiFetch(
+		page,
+		appOrigin,
+		`/core/entities/teachers/${encodeURIComponent(teacherId)}`,
+		{},
+		apiUrl,
+	);
+	return response.ok();
+}
+
+async function ensureTeacherForFamilyFeedback(
+	page: Page,
+	appOrigin: string,
+	teacherId: string | null | undefined,
+	apiUrl: string,
+): Promise<string | null> {
+	if (teacherId && await teacherExistsViaApi(page, appOrigin, teacherId, apiUrl)) {
+		return teacherId;
+	}
+
+	const schoolId = await resolveSchoolId(page, appOrigin, apiUrl);
+	if (!schoolId) {
+		return null;
+	}
+
+	const listResponse = await apiFetch(page, appOrigin, '/core/entities/teachers/list', {
+		method: 'POST',
+		data: { schoolId, $limit: 20, $offset: 0 },
+	}, apiUrl);
+	if (listResponse.ok()) {
+		const body = await readApiBody(listResponse) as { items?: Array<{ id?: string }> } | Array<{ id?: string }>;
+		const existingId = parseEntityList(body)[0]?.id;
+		if (typeof existingId === 'string') {
+			return existingId;
+		}
+	}
+
+	const createdId = `tch-ff-${Date.now().toString(36)}`;
+	const saveResponse = await apiFetch(page, appOrigin, '/core/entities/teachers/save', {
+		method: 'POST',
+		data: {
+			id: createdId,
+			schoolId,
+			firstName: 'E2E',
+			lastName: `Feedback-${Date.now().toString(36)}`,
+			email: null,
+			phone: null,
+			isActive: true,
+		},
+	}, apiUrl);
+	if (!saveResponse.ok()) {
+		console.log(
+			`family-feedback teacher save failed: status=${saveResponse.status()} body=${(await saveResponse.text().catch(() => '')).slice(0, 300)}`,
+		);
+		return null;
+	}
+	return createdId;
+}
+
+async function listSubjectTeacherAssignments(
+	page: Page,
+	appOrigin: string,
+	academicYearId: string,
+	apiUrl: string,
+): Promise<TeacherAssignmentListItem[]> {
+	const response = await apiFetch(page, appOrigin, '/core/entities/teacher-assignments/list', {
+		method: 'POST',
+		data: { academicYearId, kind: 'subject', status: 'active', $limit: 50, $offset: 0 },
+		academicYearId,
+	}, apiUrl);
+	if (!response.ok()) {
+		console.log(
+			`family-feedback assignment list failed: status=${response.status()} body=${(await response.text().catch(() => '')).slice(0, 300)}`,
+		);
+		return [];
+	}
+	const body = await readApiBody(response) as { items?: TeacherAssignmentListItem[] } | TeacherAssignmentListItem[];
+	return parseEntityList(body);
+}
+
+async function resolveClassSubjectIdForCampaign(
+	page: Page,
+	appOrigin: string,
+	classGroupId: string,
+	preferredId: string | null,
+	catalogSubjectId: string | null | undefined,
+	apiUrl: string,
+): Promise<string | null> {
+	const listed = await listClassSubjects(page, appOrigin, classGroupId, apiUrl);
+	if (preferredId && listed.some(entry => entry.id === preferredId)) {
+		return preferredId;
+	}
+	const fromList = listed.find(entry => entry.isOffered !== false)?.id ?? listed[0]?.id ?? null;
+	if (fromList) {
+		return fromList;
+	}
+	if (preferredId) {
+		return preferredId;
+	}
+	return ensureClassSubjectForClass(page, appOrigin, {
+		classGroupId,
+		catalogSubjectId,
+	}, apiUrl);
+}
+
+async function ensureSubjectTeacherAssignmentViaApi(
+	page: Page,
+	appOrigin: string,
+	options: {
+		academicYearId: string;
+		teacherId: string;
+		classSubjectId: string;
+		classGroupId: string;
+	},
+	apiUrl: string,
+): Promise<string | null> {
+	const existing = await listSubjectTeacherAssignments(page, appOrigin, options.academicYearId, apiUrl);
+	const match = existing.find(entry =>
+		entry.id
+		&& entry.classSubjectId === options.classSubjectId
+		&& entry.teacherId === options.teacherId,
+	)
+		?? existing.find(entry => entry.id && entry.classSubjectId === options.classSubjectId)
+		?? existing.find(entry => entry.id && entry.teacherId === options.teacherId);
+	if (match?.id) {
+		return match.id;
+	}
+
+	const assignmentId = `ta-ff-${Date.now().toString(36)}`;
+	const saveResponse = await apiFetch(page, appOrigin, '/core/entities/teacher-assignments/save', {
+		method: 'POST',
+		data: {
+			id: assignmentId,
+			teacherId: options.teacherId,
+			academicYearId: options.academicYearId,
+			kind: 'subject',
+			classSubjectId: options.classSubjectId,
+			classGroupId: options.classGroupId,
+			responsibility: null,
+			status: 'active',
+		},
+		academicYearId: options.academicYearId,
+	}, apiUrl);
+	if (!saveResponse.ok()) {
+		console.log(
+			`family-feedback assignment save failed: status=${saveResponse.status()} body=${(await saveResponse.text().catch(() => '')).slice(0, 300)}`,
+		);
+		return null;
+	}
+	return assignmentId;
+}
+
+/**
+ * Provisioned QA [id] family-feedback rows N/A until a campaign exists.
+ * Creates an active subject TeacherAssignment when needed, then a draft campaign.
+ */
+export async function ensureFamilyFeedbackCampaignViaApi(
+	page: Page,
+	appOrigin: string,
+	options: {
+		classGroupId?: string | null;
+		classSubjectId?: string | null;
+		teacherId?: string | null;
+		catalogSubjectId?: string | null;
+	},
+	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
+): Promise<string | null> {
+	const existing = await listFamilyFeedbackCampaignIds(page, appOrigin, apiUrl);
+	if (existing[0]) {
+		return existing[0];
+	}
+
+	const classGroupId = options.classGroupId ?? null;
+	if (!classGroupId) {
+		console.log('family-feedback campaign skipped: no classGroupId');
+		return null;
+	}
+
+	const classGroup = await getClassGroup(page, appOrigin, classGroupId, apiUrl);
+	const academicYearId = classGroup?.academicYearId
+		?? await page.evaluate(() => sessionStorage.getItem('edaya:yearId')).catch(() => null);
+	if (!academicYearId) {
+		console.log('family-feedback campaign skipped: class group has no academicYearId');
+		return null;
+	}
+
+	const classSubjectId = await resolveClassSubjectIdForCampaign(
+		page,
+		appOrigin,
+		classGroupId,
+		options.classSubjectId ?? null,
+		options.catalogSubjectId,
+		apiUrl,
+	);
+	if (!classSubjectId) {
+		console.log('family-feedback campaign skipped: no classSubjectId');
+		return null;
+	}
+
+	const teacherId = await ensureTeacherForFamilyFeedback(page, appOrigin, options.teacherId, apiUrl);
+	if (!teacherId) {
+		console.log('family-feedback campaign skipped: no teacherId');
+		return null;
+	}
+
+	const teacherAssignmentId = await ensureSubjectTeacherAssignmentViaApi(page, appOrigin, {
+		academicYearId,
+		teacherId,
+		classSubjectId,
+		classGroupId,
+	}, apiUrl);
+	if (!teacherAssignmentId) {
+		return null;
+	}
+
+	const academicPeriodId = await resolvePeriodIdForYear(page, appOrigin, academicYearId, apiUrl)
+		?? await resolveFirstPeriodId(page, appOrigin, apiUrl);
+	if (!academicPeriodId) {
+		console.log('family-feedback campaign skipped: no academicPeriodId');
+		return null;
+	}
+
+	const campaignId = `ff-e2e-${Date.now().toString(36)}`;
+	const createResponse = await apiFetch(page, appOrigin, '/core/commands/create-family-feedback-campaign', {
+		method: 'POST',
+		data: {
+			requestId: crypto.randomUUID(),
+			id: campaignId,
+			academicYearId,
+			academicPeriodId,
+			teacherAssignmentId,
+		},
+		academicYearId,
+	}, apiUrl);
+	if (!createResponse.ok()) {
+		console.log(
+			`family-feedback create failed: status=${createResponse.status()} body=${(await createResponse.text().catch(() => '')).slice(0, 300)}`,
+		);
+		return null;
+	}
+
+	const body = unwrapEntityBody(await readApiBody(createResponse));
+	if (typeof body?.id === 'string' && body.id.length > 0) {
+		return body.id;
+	}
+	return campaignId;
 }
 
 export async function completeWizardViaApi(

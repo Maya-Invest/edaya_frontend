@@ -1,7 +1,10 @@
 import type { OnboardingDraft, OnboardingStep, ServerOnboardingAccountStatus } from '$lib/onboarding/types';
 import { createEmptyDraft, loadDraft, saveDraft } from '$lib/onboarding/draft-storage';
 import { onboardingStepUrl } from '$lib/onboarding/navigation';
-import { isWizardCompletedInSession } from '$lib/onboarding/wizard-completion-flag';
+import {
+	isOnboardingSummaryHold,
+	isWizardCompletedInSession,
+} from '$lib/onboarding/wizard-completion-flag';
 
 export function mergeOnboardingDraftWithServerStatus(
 	draft: OnboardingDraft,
@@ -115,11 +118,18 @@ export function shouldHoldOnboardingSummary(options: {
 	localWizardCompleted: boolean;
 	provisionProgressVisible: boolean;
 	provisionSucceeded: boolean;
+	serverWizardCompleted?: boolean;
+	summaryHold?: boolean;
 }): boolean {
+	if (options.summaryHold === true) {
+		return true;
+	}
 	if (options.localWizardCompleted) {
 		return false;
 	}
-	return options.provisionProgressVisible || options.provisionSucceeded;
+	return options.provisionProgressVisible
+		|| options.provisionSucceeded
+		|| options.serverWizardCompleted === true;
 }
 
 export function persistSyncedOnboardingDraft(
@@ -127,11 +137,15 @@ export function persistSyncedOnboardingDraft(
 	options?: { schoolId?: string | null },
 ) {
 	const stored = loadDraft(authUserId);
-	const draft = resolveOnboardingDraft(authUserId, options);
+	let draft = resolveOnboardingDraft(authUserId, options);
+	if (isOnboardingSummaryHold(authUserId) && draft.wizardCompleted) {
+		draft = { ...draft, wizardCompleted: false };
+	}
 
 	const needsPersist = Boolean(stored)
 		|| draft.wizardCompleted
-		|| draft.maxReachedStep > 1;
+		|| draft.maxReachedStep > 1
+		|| isOnboardingSummaryHold(authUserId);
 
 	if (needsPersist) {
 		saveDraft(authUserId, draft);

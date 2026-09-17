@@ -1,15 +1,16 @@
 import type { OnboardingRunContext } from '../types';
 import { expectOnboardingStep, signUpThroughUi, waitForEnabled } from '../support/auth';
+import { uniqueOnboardingEmail } from '../support/capture';
+import { assertWizardStaffInviteSent } from '../support/invite';
 import {
+	addValidStaffInviteRow,
 	clickContinue,
-	createSchoolButton,
+	clickCreateSchoolAndWaitForProvision,
 	expectBackLocked,
 	expectContinueDisabled,
 	fillSchoolIdentity,
 	openDashboardButton,
 	selectCollegeAndOneClass,
-	skipStepButton,
-	waitForProvisionHold,
 } from '../support/wizard';
 import {
 	assertIncompleteWizardBouncesToStep,
@@ -38,15 +39,12 @@ export async function runHappyPath(ctx: OnboardingRunContext): Promise<void> {
 	await clickContinue(page);
 	await expectOnboardingStep(page, 3);
 
-	const skip = skipStepButton(page);
-	await waitForEnabled(skip);
-	await skip.click();
+	const colleagueEmail = uniqueOnboardingEmail();
+	await addValidStaffInviteRow(page, colleagueEmail);
+	await clickContinue(page);
 	await expectOnboardingStep(page, 4);
 
-	const createSchool = createSchoolButton(page);
-	await waitForEnabled(createSchool);
-	await createSchool.click();
-	await waitForProvisionHold(page);
+	const { invitedCount } = await clickCreateSchoolAndWaitForProvision(page);
 	await expectBackLocked(page);
 
 	const openDashboard = openDashboardButton(page);
@@ -54,4 +52,5 @@ export async function runHappyPath(ctx: OnboardingRunContext): Promise<void> {
 	await openDashboard.click();
 	await page.waitForURL(/\/dashboard/, { timeout: 30_000 });
 	await page.locator('aside#app-sidebar').waitFor({ state: 'visible', timeout: 30_000 });
+	await assertWizardStaffInviteSent(page, base, colleagueEmail, invitedCount);
 }

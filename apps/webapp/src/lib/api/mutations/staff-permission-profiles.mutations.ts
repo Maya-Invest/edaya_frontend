@@ -1,5 +1,5 @@
-import type { components } from '$lib/api/schema';
 import type { GrantScope } from '$lib/api/grant-scopes';
+import type { components } from '$lib/api/schema';
 import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';

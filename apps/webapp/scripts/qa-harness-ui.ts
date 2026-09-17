@@ -478,7 +478,9 @@ export async function trySubmitDialog(page: Page): Promise<boolean> {
 }
 
 export async function waitForFormModal(page: Page, timeout = 12_000): Promise<boolean> {
-	const dialog = page.locator('[data-testid="form-modal"]').or(page.getByRole('dialog'));
+	const dialog = page
+		.locator('[data-testid="form-modal"], [data-testid="confirm-modal"]')
+		.or(page.getByRole('dialog'));
 	return dialog.first().isVisible({ timeout }).catch(() => false);
 }
 

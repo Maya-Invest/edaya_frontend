@@ -4,9 +4,11 @@ import {
 	mergeOnboardingDraftWithServerStatus,
 	onboardingResumePath,
 	persistServerOnboardingStatusToDraft,
+	persistSyncedOnboardingDraft,
 	shouldContinueOnboarding,
 	shouldHoldOnboardingSummary,
 } from '$lib/onboarding/resume-onboarding';
+import { markOnboardingSummaryHold } from '$lib/onboarding/wizard-completion-flag';
 
 function withSessionStorage<T>(run: () => T): T {
 	const storage = new Map<string, string>();
@@ -202,6 +204,19 @@ describe('resume onboarding', () => {
 		});
 	});
 
+	it('clears a stored wizardCompleted flag while the summary hold is active', () => {
+		withSessionStorage(() => {
+			const authUserId = 'user-hold-heal';
+			const draft = createEmptyDraft();
+			draft.wizardCompleted = true;
+			draft.maxReachedStep = 4;
+			saveDraft(authUserId, draft);
+			markOnboardingSummaryHold(authUserId);
+
+			expect(persistSyncedOnboardingDraft(authUserId).wizardCompleted).toBe(false);
+		});
+	});
+
 	it('holds the summary after provision until the local wizard is completed', () => {
 		expect(shouldHoldOnboardingSummary({
 			localWizardCompleted: false,
@@ -223,5 +238,24 @@ describe('resume onboarding', () => {
 			provisionProgressVisible: false,
 			provisionSucceeded: false,
 		})).toBe(false);
+		expect(shouldHoldOnboardingSummary({
+			localWizardCompleted: false,
+			provisionProgressVisible: false,
+			provisionSucceeded: false,
+			serverWizardCompleted: true,
+		})).toBe(true);
+		expect(shouldHoldOnboardingSummary({
+			localWizardCompleted: true,
+			provisionProgressVisible: false,
+			provisionSucceeded: false,
+			serverWizardCompleted: true,
+		})).toBe(false);
+		expect(shouldHoldOnboardingSummary({
+			localWizardCompleted: true,
+			provisionProgressVisible: false,
+			provisionSucceeded: false,
+			serverWizardCompleted: true,
+			summaryHold: true,
+		})).toBe(true);
 	});
 });

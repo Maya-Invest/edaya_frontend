@@ -250,6 +250,19 @@ export function encodePathSegment(segment: string): string {
 	return encodeURIComponent(segment);
 }
 
+/** Class-segment sidebar rows must start on a class page so tab hrefs resolve. */
+export function sidebarSmokeStartPath(resolvedPath: string, classId: string | null | undefined): string {
+	if (resolvedPath.startsWith('/classes/') && classId) {
+		return `/classes/${classId}/students`;
+	}
+	return '/dashboard';
+}
+
+/** Class attendance tab is omitted unless the class uses daily roll call. */
+export function isClassDailyAttendanceSidebarPath(resolvedPath: string): boolean {
+	return /\/classes\/[^/]+\/attendance\/?$/.test(resolvedPath);
+}
+
 export function timetableWeekFromSessionId(sessionId: string | null): string | null {
 	if (!sessionId?.includes(':')) {
 		return null;

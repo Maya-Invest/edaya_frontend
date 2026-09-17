@@ -6,7 +6,10 @@ import type { StaffMember } from '$lib/types/school';
 import { browser } from '$app/environment';
 import { academicContext } from '$lib/academic/context.svelte';
 import { clearAuthGate } from '$lib/auth/auth-gate';
-import { clearWizardCompletedInSession } from '$lib/onboarding/wizard-completion-flag';
+import {
+	clearOnboardingSummaryHold,
+	clearWizardCompletedInSession,
+} from '$lib/onboarding/wizard-completion-flag';
 import { authPrincipalChanged } from './access-token';
 import { accessTokens } from './bearer-fetch';
 import { authClient } from './client';
@@ -216,6 +219,7 @@ class AuthSession {
 
 	async logout() {
 		clearWizardCompletedInSession(this.authUserId);
+		clearOnboardingSummaryHold(this.authUserId);
 		this.clear();
 		clearAuthGate();
 		if (browser) {

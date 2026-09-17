@@ -24,6 +24,11 @@ import {
 	mergeOnboardingDraftWithServerStatus,
 	shouldHoldOnboardingSummary,
 } from '$lib/onboarding/resume-onboarding';
+import {
+	clearOnboardingSummaryHold,
+	isOnboardingSummaryHold,
+	markWizardCompletedInSession,
+} from '$lib/onboarding/wizard-completion-flag';
 import { staffInvitesForSubmit } from '$lib/onboarding/staff-step-helpers';
 import { isValidStaffInviteEmail } from '$lib/onboarding/staff-step-validation';
 import {
@@ -39,6 +44,7 @@ import { submitProvisionOnboarding } from '$lib/onboarding/submit-provision-step
 import { fetchServerOnboardingAccountStatus } from '$lib/onboarding/sync-account-status';
 import { toast } from '$lib/toast.svelte';
 import { flushSync, getContext, setContext } from 'svelte';
+import { SvelteURL } from 'svelte/reactivity';
 import { get } from 'svelte/store';
 
 const ONBOARDING_WIZARD_STATE_KEY = Symbol('onboarding-wizard-state');
@@ -87,7 +93,7 @@ export class OnboardingWizardState {
 
 	private liveUrl(): URL {
 		if (typeof window !== 'undefined') {
-			return new URL(window.location.href);
+			return new SvelteURL(window.location.href);
 		}
 		return this.getUrl();
 	}
@@ -153,6 +159,29 @@ export class OnboardingWizardState {
 		if (authUserId) {
 			onboardingContext.init(authUserId);
 			this.hydrateIntendedStep();
+			this.restoreProvisionHold();
+		}
+	}
+
+	private restoreProvisionHold() {
+		if (this.provisionSucceeded) {
+			return;
+		}
+		const summaryHold = isOnboardingSummaryHold(authSession.authUserId);
+		if (!shouldHoldOnboardingSummary({
+			localWizardCompleted: onboardingContext.draft.wizardCompleted,
+			provisionProgressVisible: this.provisionProgressVisible,
+			provisionSucceeded: this.provisionSucceeded,
+			serverWizardCompleted: this.currentStep === 4
+				? authSession.serverOnboardingStatus?.wizardCompleted
+				: undefined,
+			summaryHold,
+		})) {
+			return;
+		}
+		this.provisionSucceeded = true;
+		if (this.currentStep !== 4) {
+			this.gotoStep(4);
 		}
 	}
 
@@ -170,7 +199,7 @@ export class OnboardingWizardState {
 		if (typeof window === 'undefined') {
 			return;
 		}
-		const next = new URL(onboardingStepUrl(step), window.location.href);
+		const next = new SvelteURL(onboardingStepUrl(step), window.location.href);
 		if (next.pathname === window.location.pathname && next.search === window.location.search) {
 			return;
 		}
@@ -204,28 +233,33 @@ export class OnboardingWizardState {
 	}
 
 	async syncServerStatusOnce() {
+		this.restoreProvisionHold();
 		if (!onboardingContext.initialized || !authSession.isLoggedIn || this.syncedServerStatus) {
 			return;
 		}
-
-		this.syncedServerStatus = true;
 
 		const status = await fetchServerOnboardingAccountStatus();
 		if (!status) {
 			return;
 		}
 
+		this.syncedServerStatus = true;
+
 		const merged = mergeOnboardingDraftWithServerStatus(
 			onboardingContext.draft,
 			status,
 			authSession.schoolId,
+			{ holdLocalWizardCompleted: isOnboardingSummaryHold(authSession.authUserId) },
 		);
 
+		const summaryHold = isOnboardingSummaryHold(authSession.authUserId);
 		if (merged.wizardCompleted) {
 			if (shouldHoldOnboardingSummary({
 				localWizardCompleted: onboardingContext.draft.wizardCompleted,
 				provisionProgressVisible: this.provisionProgressVisible,
 				provisionSucceeded: this.provisionSucceeded,
+				serverWizardCompleted: this.currentStep === 4 ? status.wizardCompleted : undefined,
+				summaryHold,
 			})) {
 				this.provisionSucceeded = true;
 				return;
@@ -349,7 +383,11 @@ export class OnboardingWizardState {
 	}
 
 	async openDashboard(): Promise<boolean> {
+		clearOnboardingSummaryHold(authSession.authUserId);
 		onboardingContext.markWizardCompleted();
+		if (authSession.authUserId) {
+			markWizardCompletedInSession(authSession.authUserId);
+		}
 		if (shouldClearOnboardingDraftAfterFinalize()) {
 			onboardingContext.clearStoredDraft();
 		}
