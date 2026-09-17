@@ -5,7 +5,7 @@ import {
 	readPersistedSchoolId,
 	staffMembershipsFromProfiles,
 } from '$lib/auth/school-membership';
-import type { AuthorizationProfile } from '$lib/auth/types';
+import type { AuthorizationProfile, StaffSchoolMembership } from '$lib/auth/types';
 
 function mockWebStorage() {
 	function createStore() {
@@ -27,18 +27,25 @@ function mockWebStorage() {
 	});
 }
 
-const staffA: AuthorizationProfile = {
+const staffA: StaffSchoolMembership = {
 	kind: 'staff',
 	actorId: 'staff-b',
 	schoolId: 'school-b',
 	schoolName: 'Campus Nord',
 	schoolShortName: 'Nord',
 };
-const staffB: AuthorizationProfile = {
+const staffB: StaffSchoolMembership = {
 	kind: 'staff',
 	actorId: 'staff-a',
 	schoolId: 'school-a',
 	schoolName: 'Lycée — Cocody',
+	schoolShortName: 'Cocody',
+};
+const teacherA: AuthorizationProfile = {
+	kind: 'teacher',
+	actorId: 't1',
+	schoolId: 'school-a',
+	schoolName: 'Cocody',
 	schoolShortName: 'Cocody',
 };
 
@@ -54,7 +61,7 @@ describe('staff school membership helpers', () => {
 	it('keeps only staff profiles', () => {
 		expect(staffMembershipsFromProfiles([
 			staffA,
-			{ kind: 'teacher', actorId: 't1', schoolId: 'school-a', schoolName: 'Cocody', schoolShortName: 'Cocody' },
+			teacherA,
 		])).toEqual([staffA]);
 	});
 

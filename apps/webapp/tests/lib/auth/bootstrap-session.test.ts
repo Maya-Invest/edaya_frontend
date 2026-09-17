@@ -49,9 +49,9 @@ const authSession = {
 		this.ready = true;
 	},
 	clear: mock(() => {
-		this.isLoggedIn = false;
-		this.staffMemberships = [];
-		this.needsOnboarding = false;
+		authSession.isLoggedIn = false;
+		authSession.staffMemberships = [];
+		authSession.needsOnboarding = false;
 	}),
 	setAuthAccountOnly: mock(() => {}),
 	setStaffMemberships: mock((memberships: unknown[]) => {

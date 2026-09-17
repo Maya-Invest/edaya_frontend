@@ -1,13 +1,13 @@
+import { invalidateAll } from '$app/navigation';
 import { academicContext } from '$lib/academic/context.svelte';
 import { configureBrowserSchoolClient } from '$lib/api/school-client';
 import { bootstrapSession, resetBootstrapSession } from '$lib/auth/bootstrap';
 import { bootstrapAppShell, invalidateAppShellBootstrapCache, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 import { persistSelectedSchoolId } from '$lib/auth/school-membership';
 import { authSession } from '$lib/auth/session.svelte';
-import { canAccessPath } from '$lib/navigation/nav-permissions';
 import { appGoto, appPath } from '$lib/navigation/app-navigation';
+import { canAccessPath } from '$lib/navigation/nav-permissions';
 import { invalidatePageQueryCache } from '$lib/queries/page-query-cache';
-import { invalidateAll } from '$app/navigation';
 
 export async function switchActiveSchool(schoolId: string): Promise<void> {
 	if (!schoolId || authSession.schoolId === schoolId) {

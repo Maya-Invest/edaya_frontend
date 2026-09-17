@@ -5,4 +5,4 @@ export type ActionGrantsSnapshot = SessionSnapshot['grants'];
 export type ActionGrantSnapshot = ActionGrantsSnapshot[number];
 export type PermissionCode = ActionGrantSnapshot['permission'];
 export type AuthorizationProfile = components['schemas']['AuthorizationProfile'];
-export type StaffSchoolMembership = Extract<AuthorizationProfile, { kind: 'staff' }>;
+export type StaffSchoolMembership = AuthorizationProfile & { kind: 'staff' };

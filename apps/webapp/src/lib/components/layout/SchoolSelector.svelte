@@ -12,11 +12,11 @@
 	let open = $state(false);
 	const memberships = $derived(authSession.staffMemberships);
 	const canSwitch = $derived(memberships.length > 1);
-	const currentName = $derived(
-		authSession.school?.shortName
-		?? authSession.activeStaffMembership?.schoolShortName
-		?? $t('sidebar.module'),
-	);
+	const currentName = $derived.by(() => {
+		return authSession.school?.shortName
+			?? authSession.activeStaffMembership?.schoolShortName
+			?? $t('sidebar.module');
+	});
 
 	async function selectSchool(schoolId: string) {
 		open = false;
