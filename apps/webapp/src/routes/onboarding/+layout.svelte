@@ -8,6 +8,8 @@
 	import { LoaderCircle } from '$lib/icons';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { onboardingContext } from '$lib/onboarding/context.svelte';
+	import { shouldContinueOnboarding } from '$lib/onboarding/resume-onboarding';
+	import { isOnboardingSummaryHold } from '$lib/onboarding/wizard-completion-flag';
 
 	const { children }: { children: Snippet } = $props();
 
@@ -18,7 +20,21 @@
 		if (authSession.needsOnboarding) {
 			return true;
 		}
-		return onboardingContext.initialized && !onboardingContext.draft.wizardCompleted;
+		if (
+			authSession.isLoggedIn
+			&& !shouldContinueOnboarding(
+				authSession.authUserId,
+				authSession.schoolId,
+				authSession.serverOnboardingStatus,
+			)
+			&& !isOnboardingSummaryHold(authSession.authUserId)
+		) {
+			return false;
+		}
+		return onboardingContext.initialized && (
+			!onboardingContext.draft.wizardCompleted
+			|| isOnboardingSummaryHold(authSession.authUserId)
+		);
 	});
 
 	$effect(() => {
@@ -47,7 +63,15 @@
 			return;
 		}
 
-		if (authSession.isLoggedIn && onboardingContext.draft.wizardCompleted) {
+		if (
+			authSession.isLoggedIn
+			&& !isOnboardingSummaryHold(authSession.authUserId)
+			&& !shouldContinueOnboarding(
+				authSession.authUserId,
+				authSession.schoolId,
+				authSession.serverOnboardingStatus,
+			)
+		) {
 			const target = redirectPathIfAuthenticated();
 			if (target) {
 				appGoto(target, { replaceState: true });
@@ -68,7 +92,6 @@
 		<header class="flex items-center justify-between px-4 py-3 sm:px-6">
 			<div class="flex items-center gap-2">
 				<BrandLogo variant="horizontal" width={144} />
-
 			</div>
 			<LanguageSelector />
 		</header>

@@ -1,6 +1,6 @@
 ﻿# Fixtures — Import **Facturation**
 
-Assignation en masse des frais aux élèves (création des factures), en **FCFA**.
+Assignation en masse des frais aux élèves via `enrollStudentInService` (création des créances), montants en unités mineures.
 
 ```bash
 bun edaya_web/docs/qa/import-fixtures/billing/generate-fixtures.ts
@@ -9,7 +9,7 @@ bun edaya_web/docs/qa/import-fixtures/billing/generate-fixtures.ts
 **Prérequis :**
 
 1. Élèves importés ([EL01](../students/xlsx/EL01-happy-all-valid.xlsx))
-2. Au moins un **type de frais** configuré dans Finances, idéalement avec un montant par défaut
+2. Au moins un **type de frais** configuré dans Finances (`catalog_services`), idéalement avec un montant par défaut
 
 Les libellés `type_frais` sont lus dans la base locale ; en l'absence de frais, le générateur avertit et retombe sur le catalogue `FEE_CATALOG_NAMES` de `_shared/ivory-coast-data.ts`.
 

@@ -20,7 +20,8 @@ Companion to [ui-architecture-reference.md](./ui-architecture-reference.md) §6 
 | Curriculum | command | `setClassSubjectOffered`, grade-level update/remove | mutations + TeachingList | done |
 | People | command | `upsertStudentHealthProfile` | StudentProfileTab | done |
 | Report cards | command | `writeHomeroomReportComment` | ReportCardResultDetail | done |
-| Finance | command | adjust/cancel fee; reverse/cancel payment | billing-ops + BillingDetail | done |
+| Finance | command | adjust/waive/cancel charge; reverse payment | billing-ops + BillingDetail | done |
+| Finance | surface | service catalog Track E | fees/billing/payment/reconciliation | done |
 | People | command | lifecycle / status | student-ops.mutations | done |
 | Attendance | command | justification request/review | attendance-justification.mutations | done |
 | Discipline | command | apply / update sanction status | incident.mutations | done |
@@ -32,7 +33,6 @@ Companion to [ui-architecture-reference.md](./ui-architecture-reference.md) §6 
 | Authz | authz | `X-School-Id` multi-school | `browser-transport.ts` | deferred |
 | Resources | surface | resource CRUD / assign | planning | deferred |
 | Notifications | command | push devices / delivery materialize | — | deferred |
-| Finance | surface | service fee catalog Track E | — | deferred |
 
 ## Explicit deferrals
 
@@ -40,6 +40,5 @@ Companion to [ui-architecture-reference.md](./ui-architecture-reference.md) §6 
 - Push device register/unregister  
 - Delivery `recordDelivery` / `materializeDeliveries` / `applyDeliveryEvent`  
 - Multi-school `X-School-Id` (backend Track D.3) — comment in `browser-transport.ts`  
-- Service fee catalog (Track E / backend)  
 - `linkActorSubject` / `relinkActorSubject` / `unlinkActorSubject` (invites cover v1)  
 - `offerSubjectToClass` (grade-level + custom-class cover primary flows)

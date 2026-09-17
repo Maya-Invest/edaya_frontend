@@ -5,405 +5,617 @@ import { redirectPathIfAuthenticated } from '$lib/auth/resolve-post-auth';
 import { authSession } from '$lib/auth/session.svelte';
 import { isOnboardingSkipEnabled } from '$lib/env/app-env';
 import { t } from '$lib/i18n';
-import { appGoto, appPath } from '$lib/navigation/app-navigation';
+import { appGoto, appPath, markWizardOnboardingNavigation } from '$lib/navigation/app-navigation';
 import { onboardingContext } from '$lib/onboarding/context.svelte';
 import {
-	persistOnboardingFinalizeDebugSnapshot,
-	shouldClearOnboardingDraftAfterFinalize,
+  persistOnboardingFinalizeDebugSnapshot,
+  shouldClearOnboardingDraftAfterFinalize,
 } from '$lib/onboarding/debug-storage';
 import {
-	canVisitOnboardingStep,
-	clampOnboardingStep,
-	parseOnboardingStep,
-	writeOnboardingStepUrl,
+  canVisitOnboardingStep,
+  clampOnboardingStep,
+  onboardingStepUrl,
+  parseOnboardingStep,
 } from '$lib/onboarding/navigation';
 import {
-	getProvisionProgressSteps,
-} from '$lib/onboarding/provision-progress';
-import { mergeOnboardingDraftWithServerStatus } from '$lib/onboarding/resume-onboarding';
-import { staffInvitesForSubmit } from '$lib/onboarding/staff-step-helpers';
+  isProvisionAttemptBootstrapReady,
+  isProvisionAttemptCommitted,
+} from '$lib/onboarding/provision-attempt';
 import {
-	canAdvanceFromStep,
-	canFinishOnboarding,
-	getOnboardingStepDefinition,
-	nextOnboardingStep,
-	previousOnboardingStep,
+  getProvisionProgressSteps,
+} from '$lib/onboarding/provision-progress';
+import {
+  mergeOnboardingDraftWithServerStatus,
+  shouldHoldOnboardingSummary,
+} from '$lib/onboarding/resume-onboarding';
+import { staffInvitesForSubmit } from '$lib/onboarding/staff-step-helpers';
+import { isValidStaffInviteEmail } from '$lib/onboarding/staff-step-validation';
+import {
+  canAdvanceFromStep,
+  canFinishOnboarding,
+  finishOnboardingBlockKey,
+  getOnboardingStepDefinition,
+  nextOnboardingStep,
+  previousOnboardingStep,
 } from '$lib/onboarding/steps';
 import { submitCompleteOnboardingStep } from '$lib/onboarding/submit-complete-step';
-import { submitProvisionOnboarding } from '$lib/onboarding/submit-provision-step';
+import { refreshSessionAfterProvision, submitProvisionOnboarding } from '$lib/onboarding/submit-provision-step';
 import { fetchServerOnboardingAccountStatus } from '$lib/onboarding/sync-account-status';
+import {
+  clearOnboardingSummaryHold,
+  isOnboardingSummaryHold,
+  markWizardCompletedInSession,
+} from '$lib/onboarding/wizard-completion-flag';
 import { toast } from '$lib/toast.svelte';
-import { getContext, setContext } from 'svelte';
+import { flushSync, getContext, setContext } from 'svelte';
+import { SvelteURL } from 'svelte/reactivity';
 import { get } from 'svelte/store';
 
 const ONBOARDING_WIZARD_STATE_KEY = Symbol('onboarding-wizard-state');
 
 export class OnboardingWizardState {
-	busy = $state(false);
-	syncedServerStatus = $state(false);
-	/** Optional phase label while Finish provision is running. */
-	provisionPhase = $state<string | null>(null);
-	provisionPercent = $state(0);
-	provisionActiveStepId = $state<string | null>(null);
-	provisionCompletedIds = $state<string[]>([]);
-	provisionSteps = $state<Array<Pick<ProvisionProgressStep, 'id' | 'labelKey'>>>([]);
-	provisionProgressVisible = $state(false);
-	lastActionError = $state<string | null>(null);
+  busy = $state(false);
+  syncedServerStatus = $state(false);
+  /** Last wizard-owned step. Survives a delayed post-auth goto back to step 1. */
+  private intendedStep = $state<OnboardingStep | null>(null);
+  /** Optional phase label while Finish provision is running. */
+  provisionPhase = $state<string | null>(null);
+  provisionPercent = $state(0);
+  provisionActiveStepId = $state<string | null>(null);
+  provisionCompletedIds = $state<string[]>([]);
+  provisionSteps = $state<Array<Pick<ProvisionProgressStep, 'id' | 'labelKey'>>>([]);
+  provisionProgressVisible = $state(false);
+  provisionSucceeded = $state(false);
+  bootstrapRecoveryNeeded = $state(false);
+  lastActionError = $state<string | null>(null);
 
-	private reportActionError(message: string) {
-		this.lastActionError = message;
-		toast.error(message);
-	}
+  private reportActionError(message: string) {
+    this.lastActionError = message;
+    toast.error(message);
+  }
 
-	private resetProvisionProgress() {
-		this.provisionPhase = null;
-		this.provisionPercent = 0;
-		this.provisionActiveStepId = null;
-		this.provisionCompletedIds = [];
-		this.provisionSteps = [];
-		this.provisionProgressVisible = false;
-	}
+  private resetProvisionProgress() {
+    this.provisionPhase = null;
+    this.provisionPercent = 0;
+    this.provisionActiveStepId = null;
+    this.provisionCompletedIds = [];
+    this.provisionSteps = [];
+    this.provisionProgressVisible = false;
+  }
 
-	private initProvisionProgress() {
-		const includeStaff = staffInvitesForSubmit(onboardingContext.draft.staffInvites).length > 0;
-		const steps = getProvisionProgressSteps({ includeStaff });
-		this.provisionSteps = steps.map(step => ({ id: step.id, labelKey: step.labelKey }));
-		this.provisionPercent = 0;
-		this.provisionActiveStepId = steps[0]?.id ?? null;
-		this.provisionCompletedIds = [];
-		this.provisionProgressVisible = true;
-		this.provisionPhase = 'provision';
-	}
+  private initProvisionProgress() {
+    const includeStaff = staffInvitesForSubmit(onboardingContext.draft.staffInvites).length > 0;
+    const steps = getProvisionProgressSteps({ includeStaff });
+    this.provisionSteps = steps.map(step => ({ id: step.id, labelKey: step.labelKey }));
+    this.provisionPercent = 0;
+    this.provisionActiveStepId = steps[0]?.id ?? null;
+    this.provisionCompletedIds = [];
+    this.provisionProgressVisible = true;
+    this.provisionPhase = 'provision';
+  }
 
-	constructor(private readonly getUrl: () => URL) {}
+  constructor(private readonly getUrl: () => URL) {}
 
-	get currentStep(): OnboardingStep {
-		return parseOnboardingStep(this.getUrl());
-	}
+  private liveUrl(): URL {
+    if (typeof window !== 'undefined') {
+      return new SvelteURL(window.location.href);
+    }
+    return this.getUrl();
+  }
 
-	get maxReachedStep(): OnboardingStep {
-		return onboardingContext.draft.maxReachedStep;
-	}
+  get currentStep(): OnboardingStep {
+    if (this.intendedStep != null) {
+      return this.intendedStep;
+    }
+    return parseOnboardingStep(this.liveUrl());
+  }
 
-	get stepDefinition() {
-		return getOnboardingStepDefinition(this.currentStep);
-	}
+  get maxReachedStep(): OnboardingStep {
+    return onboardingContext.draft.maxReachedStep;
+  }
 
-	get canAdvance(): boolean {
-		return canAdvanceFromStep(
-			this.currentStep,
-			onboardingContext.draft,
-			authSession.loginEmail,
-		);
-	}
+  get stepDefinition() {
+    return getOnboardingStepDefinition(this.currentStep);
+  }
 
-	get canGoBack(): boolean {
-		return this.currentStep > 1;
-	}
+  get canAdvance(): boolean {
+    return canAdvanceFromStep(
+      this.currentStep,
+      onboardingContext.draft,
+      authSession.loginEmail,
+    );
+  }
 
-	get nextStep(): OnboardingStep | null {
-		return nextOnboardingStep(this.currentStep);
-	}
+  get canGoBack(): boolean {
+    return this.currentStep > 1 && !this.provisionSucceeded && !this.bootstrapRecoveryNeeded;
+  }
 
-	get showContinue(): boolean {
-		return this.currentStep < 4 && this.nextStep !== null;
-	}
+  get nextStep(): OnboardingStep | null {
+    return nextOnboardingStep(this.currentStep);
+  }
 
-	get showFinish(): boolean {
-		return this.currentStep === 4;
-	}
+  get showContinue(): boolean {
+    return this.currentStep < 4 && this.nextStep !== null;
+  }
+
+  get showFinish(): boolean {
+    return this.currentStep === 4;
+  }
 
 	get canFinish(): boolean {
-		return canFinishOnboarding(onboardingContext.draft);
+		return this.provisionSucceeded
+			|| this.bootstrapRecoveryNeeded
+			|| canFinishOnboarding(onboardingContext.draft, authSession.loginEmail);
 	}
 
-	get showSkip(): boolean {
-		return Boolean(this.stepDefinition.optional && this.nextStep !== null);
-	}
+  get showSkip(): boolean {
+    return Boolean(this.stepDefinition.optional && this.nextStep !== null);
+  }
 
-	get showSkipOnboarding(): boolean {
-		// Skip-to-dashboard is only meaningful after school + classes (steps 1–2).
-		return isOnboardingSkipEnabled() && this.currentStep >= 3;
-	}
+  get showSkipOnboarding(): boolean {
+    // Skip-to-dashboard is only meaningful after school + classes (steps 1–2).
+    return isOnboardingSkipEnabled() && this.currentStep >= 3 && !this.provisionSucceeded && !this.bootstrapRecoveryNeeded;
+  }
 
-	get canSkipOnboarding(): boolean {
-		return authSession.isLoggedIn && this.currentStep >= 3;
-	}
+  get canSkipOnboarding(): boolean {
+    return authSession.isLoggedIn && this.currentStep >= 3 && !this.provisionSucceeded && !this.bootstrapRecoveryNeeded;
+  }
 
-	initAuthUser(authUserId: string | null) {
-		if (authUserId) {
-			onboardingContext.init(authUserId);
-		}
-	}
+  initAuthUser(authUserId: string | null) {
+    if (authUserId) {
+      onboardingContext.init(authUserId);
+      this.hydrateIntendedStep();
+      this.restoreProvisionHold();
+    }
+  }
 
-	enforceStepAccess() {
-		if (!onboardingContext.initialized) {
-			return;
-		}
+  private restoreProvisionHold() {
+    if (this.provisionSucceeded && !this.bootstrapRecoveryNeeded) {
+      return;
+    }
+    const committed = isProvisionAttemptCommitted(authSession.authUserId);
+    if (committed) {
+      this.provisionSucceeded = true;
+      this.bootstrapRecoveryNeeded = !isProvisionAttemptBootstrapReady(authSession.authUserId) || !authSession.isLoggedIn;
+      if (this.currentStep !== 4) {
+        this.gotoStep(4);
+      }
+      return;
+    }
+    const summaryHold = isOnboardingSummaryHold(authSession.authUserId);
+    if (!shouldHoldOnboardingSummary({
+      localWizardCompleted: onboardingContext.draft.wizardCompleted,
+      provisionProgressVisible: this.provisionProgressVisible,
+      provisionSucceeded: this.provisionSucceeded,
+      serverWizardCompleted: this.currentStep === 4
+        ? authSession.serverOnboardingStatus?.wizardCompleted
+        : undefined,
+      summaryHold,
+    })) {
+      return;
+    }
+    this.provisionSucceeded = true;
+    this.bootstrapRecoveryNeeded = !authSession.isLoggedIn;
+    if (this.currentStep !== 4) {
+      this.gotoStep(4);
+    }
+  }
 
-		const requested = parseOnboardingStep(this.getUrl());
-		const allowed = clampOnboardingStep(requested, this.maxReachedStep);
-		if (requested !== allowed) {
-			appGoto(writeOnboardingStepUrl(this.getUrl(), allowed), { replaceState: true });
-		}
-	}
+  private hydrateIntendedStep() {
+    if (this.intendedStep != null || !onboardingContext.initialized) {
+      return;
+    }
+    this.intendedStep = this.maxReachedStep;
+    if (parseOnboardingStep(this.liveUrl()) !== this.intendedStep) {
+      this.writeStepUrl(this.intendedStep);
+    }
+  }
 
-	async syncServerStatusOnce() {
-		if (!onboardingContext.initialized || !authSession.isLoggedIn || this.syncedServerStatus) {
-			return;
-		}
+  private writeStepUrl(step: OnboardingStep) {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const next = new SvelteURL(onboardingStepUrl(step), window.location.href);
+    if (next.pathname === window.location.pathname && next.search === window.location.search) {
+      return;
+    }
+    markWizardOnboardingNavigation();
+    history.replaceState(history.state, '', next);
+  }
 
-		this.syncedServerStatus = true;
+  private gotoStep(step: OnboardingStep) {
+    this.intendedStep = step;
+    this.writeStepUrl(step);
+  }
 
-		const status = await fetchServerOnboardingAccountStatus();
-		if (!status) {
-			return;
-		}
+  enforceStepAccess() {
+    if (!onboardingContext.initialized) {
+      return;
+    }
 
-		const merged = mergeOnboardingDraftWithServerStatus(
-			onboardingContext.draft,
-			status,
-			authSession.schoolId,
-		);
+    const requested = parseOnboardingStep(this.liveUrl());
+    if (this.intendedStep != null && requested < this.intendedStep) {
+      this.gotoStep(this.intendedStep);
+      return;
+    }
 
-		if (merged.wizardCompleted) {
-			onboardingContext.markWizardCompleted();
-			if (shouldClearOnboardingDraftAfterFinalize()) {
-				onboardingContext.clearStoredDraft();
-			}
-			else {
-				onboardingContext.persist();
-			}
-			const target = redirectPathIfAuthenticated();
-			if (target) {
-				appGoto(target, { replaceState: true });
-			}
-			return;
-		}
+    const allowed = clampOnboardingStep(
+      requested,
+      Math.max(this.maxReachedStep, this.intendedStep ?? 1) as OnboardingStep,
+    );
+    if (requested > allowed) {
+      this.gotoStep(allowed);
+    }
+  }
 
-		// Only adopt server "submitted" flags when the server actually has DB progress.
-		// Empty server status must not reset draft maxReachedStep / filled form fields.
-		if (status.schoolStepSubmitted && !onboardingContext.draft.schoolStepSubmitted && merged.registeredSchoolId) {
-			onboardingContext.markSchoolStepSubmitted(merged.registeredSchoolId);
-		}
-		if (status.structureStepSubmitted && !onboardingContext.draft.structureStepSubmitted) {
-			onboardingContext.markStructureStepSubmitted();
-		}
-		if (status.maxReachedStep > onboardingContext.draft.maxReachedStep) {
-			onboardingContext.markStepReached(status.maxReachedStep);
-		}
-	}
+  async syncServerStatusOnce() {
+    this.restoreProvisionHold();
+    if (!onboardingContext.initialized || !authSession.isLoggedIn || this.syncedServerStatus) {
+      return;
+    }
 
-	navigateToStep(step: OnboardingStep) {
-		if (!canVisitOnboardingStep(step, this.maxReachedStep)) {
-			return;
-		}
-		appGoto(writeOnboardingStepUrl(this.getUrl(), step));
-	}
+    const status = await fetchServerOnboardingAccountStatus();
+    if (!status) {
+      return;
+    }
 
-	goBack() {
-		const previous = previousOnboardingStep(this.currentStep);
-		if (previous) {
-			this.navigateToStep(previous);
-		}
-	}
+    this.syncedServerStatus = true;
 
-	/**
-	 * Steps 1–3 only validate + persist draft locally. Provisioning runs on Finish.
-	 */
-	goNext() {
-		const next = this.nextStep;
-		if (!this.canAdvance || !next || this.busy) {
-			return;
-		}
+    const merged = mergeOnboardingDraftWithServerStatus(
+      onboardingContext.draft,
+      status,
+      authSession.schoolId,
+      { holdLocalWizardCompleted: isOnboardingSummaryHold(authSession.authUserId) },
+    );
 
-		onboardingContext.persist();
+    const summaryHold = isOnboardingSummaryHold(authSession.authUserId);
+    if (merged.wizardCompleted) {
+      if (shouldHoldOnboardingSummary({
+        localWizardCompleted: onboardingContext.draft.wizardCompleted,
+        provisionProgressVisible: this.provisionProgressVisible,
+        provisionSucceeded: this.provisionSucceeded,
+        serverWizardCompleted: this.currentStep === 4 ? status.wizardCompleted : undefined,
+        summaryHold,
+      })) {
+        this.provisionSucceeded = true;
+        return;
+      }
+      onboardingContext.markWizardCompleted();
+      if (shouldClearOnboardingDraftAfterFinalize()) {
+        onboardingContext.clearStoredDraft();
+      }
+      else {
+        onboardingContext.persist();
+      }
+      const target = redirectPathIfAuthenticated();
+      if (target) {
+        appGoto(target, { replaceState: true });
+      }
+      return;
+    }
 
-		if (this.currentStep === 1 && !onboardingContext.draft.schoolStepSubmitted) {
-			onboardingContext.markSchoolStepSubmitted();
-		}
-		if (this.currentStep === 2 && !onboardingContext.draft.structureStepSubmitted) {
-			onboardingContext.markStructureStepSubmitted();
-		}
-		if (this.currentStep === 3 && !onboardingContext.draft.staffStepSubmitted) {
-			onboardingContext.markStaffStepSubmitted();
-		}
+    // Only adopt server "submitted" flags when the server actually has DB progress.
+    // Empty server status must not reset draft maxReachedStep / filled form fields.
+    if (status.schoolStepSubmitted && !onboardingContext.draft.schoolStepSubmitted && merged.registeredSchoolId) {
+      onboardingContext.markSchoolStepSubmitted(merged.registeredSchoolId);
+    }
+    if (status.structureStepSubmitted && !onboardingContext.draft.structureStepSubmitted) {
+      onboardingContext.markStructureStepSubmitted();
+    }
+    if (status.maxReachedStep > onboardingContext.draft.maxReachedStep) {
+      onboardingContext.markStepReached(status.maxReachedStep);
+    }
+  }
 
-		onboardingContext.markStepReached(next);
-		appGoto(writeOnboardingStepUrl(this.getUrl(), next));
-	}
+  navigateToStep(step: OnboardingStep) {
+    if (this.provisionSucceeded || this.bootstrapRecoveryNeeded || !canVisitOnboardingStep(step, this.maxReachedStep)) {
+      return;
+    }
+    this.gotoStep(step);
+  }
 
-	skipStep() {
-		if (!this.stepDefinition.optional || !this.nextStep) {
-			return;
-		}
-		onboardingContext.markStepReached(this.nextStep);
-		appGoto(writeOnboardingStepUrl(this.getUrl(), this.nextStep));
-	}
+  goBack() {
+    if (this.provisionSucceeded || this.bootstrapRecoveryNeeded) {
+      return;
+    }
+    const previous = previousOnboardingStep(this.currentStep);
+    if (previous) {
+      this.navigateToStep(previous);
+    }
+  }
 
-	async completeAndExitOnboarding(
-		options: {
-			successMessageKey?: 'onboarding.completeStep.success' | 'onboarding.skipWizardSuccess';
-			provision?: boolean;
-		} = {},
-	): Promise<boolean> {
-		const shouldProvision = options.provision !== false
-			&& canFinishOnboarding(onboardingContext.draft);
+  /**
+   * Steps 1–3 only validate + persist draft locally. Provisioning runs on Finish.
+   */
+  goNext() {
+    const next = this.nextStep;
+    if (!this.canAdvance || !next || this.busy) {
+      return;
+    }
 
-		if (shouldProvision) {
-			this.initProvisionProgress();
-			const result = await submitProvisionOnboarding(onboardingContext.draft, {
-				successMessageKey: options.successMessageKey,
-				onProgress: (state) => {
-					this.provisionPhase = state.phase;
-					this.provisionPercent = state.percent;
-					this.provisionActiveStepId = state.activeStepId;
-					this.provisionCompletedIds = state.completedIds;
-				},
-				onError: (message) => {
-					this.lastActionError = message;
-				},
-			});
-			if (!result) {
-				this.resetProvisionProgress();
-				if (!this.lastActionError) {
-					this.reportActionError(get(t)('onboarding.completeStep.failed'));
-				}
-				return false;
-			}
-			academicContext.applyOnboardingSelection(result.yearId, result.periodId);
-			onboardingContext.markSchoolStepSubmitted(result.schoolId);
-			onboardingContext.markStructureStepSubmitted();
-			onboardingContext.markStaffStepSubmitted();
-		}
-		else if (authSession.schoolId) {
-			const success = await submitCompleteOnboardingStep({
-				successMessageKey: options.successMessageKey,
-				onError: (message) => {
-					this.lastActionError = message;
-				},
-			});
-			if (!success) {
-				if (!this.lastActionError) {
-					this.reportActionError(get(t)('onboarding.completeStep.failed'));
-				}
-				return false;
-			}
-		}
-		else {
-			// Dev skip without a linked school: local-only completion (no school provisioned).
-			onboardingContext.markWizardCompleted();
-		}
+    onboardingContext.persist();
 
-		onboardingContext.markWizardCompleted();
-		if (shouldClearOnboardingDraftAfterFinalize()) {
-			onboardingContext.clearStoredDraft();
-		}
-		else {
-			onboardingContext.persist();
-		}
+    if (this.currentStep === 1 && !onboardingContext.draft.schoolStepSubmitted) {
+      onboardingContext.markSchoolStepSubmitted();
+    }
+    if (this.currentStep === 2 && !onboardingContext.draft.structureStepSubmitted) {
+      onboardingContext.markStructureStepSubmitted();
+    }
+    if (this.currentStep === 3 && !onboardingContext.draft.staffStepSubmitted) {
+      onboardingContext.markStaffStepSubmitted();
+    }
 
-		// Prefer linked-app destination after a successful provision; avoid bouncing
-		// back to onboarding if resume flags lag behind the just-completed wizard.
-		let target = redirectPathIfAuthenticated();
-		if (
-			shouldProvision
-			&& authSession.isLoggedIn
-			&& (target == null || target.startsWith(appPath('/onboarding')))
-		) {
-			target = appPath('/(app)/dashboard');
-		}
-		persistOnboardingFinalizeDebugSnapshot({
-			authUserId: authSession.authUserId,
-			schoolId: authSession.schoolId,
-			serverStatus: authSession.serverOnboardingStatus,
-			draft: onboardingContext.draft,
-			redirectTarget: target,
-		});
-		if (target) {
-			appGoto(target, { replaceState: true });
-			return true;
-		}
+    // Flush before goto: $page is a store and can notify before $state maxReachedStep
+    // is visible, which made enforceStepAccess clamp a legitimate step-2 URL back to 1.
+    onboardingContext.markStepReached(next);
+    flushSync();
+    this.gotoStep(next);
+  }
 
-		this.reportActionError(get(t)('onboarding.completeStep.redirectFailed'));
-		return false;
-	}
+  skipStep() {
+    if (!this.stepDefinition.optional || !this.nextStep) {
+      return;
+    }
+    if (this.currentStep === 3) {
+      onboardingContext.draft.staffInvites = onboardingContext.draft.staffInvites.filter(
+        invite => isValidStaffInviteEmail(invite.email) && Boolean(invite.role),
+      );
+      onboardingContext.persist();
+    }
+    onboardingContext.markStepReached(this.nextStep);
+    flushSync();
+    this.gotoStep(this.nextStep);
+  }
 
-	async finishOnboarding() {
-		if (this.busy) {
-			return;
-		}
+  private async runProvision(
+    options?: { successMessageKey?: 'onboarding.completeStep.success' | 'onboarding.skipWizardSuccess' },
+  ): Promise<boolean> {
+    this.initProvisionProgress();
+    const result = await submitProvisionOnboarding(onboardingContext.draft, {
+      successMessageKey: options?.successMessageKey,
+      onProgress: (state) => {
+        this.provisionPhase = state.phase;
+        this.provisionPercent = state.percent;
+        this.provisionActiveStepId = state.activeStepId;
+        this.provisionCompletedIds = state.completedIds;
+      },
+      onError: (message) => {
+        this.lastActionError = message;
+      },
+    });
+    if (!result) {
+      this.resetProvisionProgress();
+      if (!this.lastActionError) {
+        this.reportActionError(get(t)('onboarding.completeStep.failed'));
+      }
+      return false;
+    }
+    academicContext.applyOnboardingSelection(result.yearId, result.periodId);
+    onboardingContext.markSchoolStepSubmitted(result.schoolId);
+    onboardingContext.markStructureStepSubmitted();
+    onboardingContext.markStaffStepSubmitted();
+    this.provisionSucceeded = true;
+    this.bootstrapRecoveryNeeded = result.bootstrapFailed === true;
+    return !result.bootstrapFailed;
+  }
 
-		this.lastActionError = null;
-		if (!this.canFinish) {
-			this.reportActionError(get(t)('onboarding.completeStep.incomplete'));
-			return;
-		}
+  async retryBootstrap(): Promise<boolean> {
+    this.initProvisionProgress();
+    this.provisionPhase = 'bootstrap';
+    const ok = await refreshSessionAfterProvision({
+      onProgress: (state) => {
+        this.provisionPhase = state.phase;
+        this.provisionPercent = state.percent;
+        this.provisionActiveStepId = state.activeStepId;
+        this.provisionCompletedIds = state.completedIds;
+      },
+      onError: (message) => {
+        this.lastActionError = message;
+      },
+    });
+    if (ok) {
+      this.bootstrapRecoveryNeeded = false;
+      this.provisionSucceeded = true;
+      return true;
+    }
+    this.bootstrapRecoveryNeeded = true;
+    this.provisionSucceeded = true;
+    return false;
+  }
 
-		this.busy = true;
-		try {
-			const ok = await this.completeAndExitOnboarding({ provision: true });
-			if (!ok && !this.lastActionError) {
-				this.reportActionError(get(t)('onboarding.completeStep.failed'));
-			}
-		}
-		catch {
-			this.reportActionError(get(t)('onboarding.completeStep.failed'));
-		}
-		finally {
-			this.busy = false;
-			this.resetProvisionProgress();
-		}
-	}
+  async openDashboard(): Promise<boolean> {
+    clearOnboardingSummaryHold(authSession.authUserId);
+    onboardingContext.markWizardCompleted();
+    if (authSession.authUserId) {
+      markWizardCompletedInSession(authSession.authUserId);
+    }
+    if (shouldClearOnboardingDraftAfterFinalize()) {
+      onboardingContext.clearStoredDraft();
+    }
+    else {
+      onboardingContext.persist();
+    }
 
-	async skipOnboarding() {
-		if (this.busy) {
-			return;
-		}
+    // Prefer linked-app destination after a successful provision; avoid bouncing
+    // back to onboarding if resume flags lag behind the just-completed wizard.
+    let target = redirectPathIfAuthenticated();
+    if (
+      this.provisionSucceeded
+      && authSession.isLoggedIn
+      && (target == null || target.startsWith(appPath('/onboarding')))
+    ) {
+      target = appPath('/(app)/dashboard');
+    }
+    persistOnboardingFinalizeDebugSnapshot({
+      authUserId: authSession.authUserId,
+      schoolId: authSession.schoolId,
+      serverStatus: authSession.serverOnboardingStatus,
+      draft: onboardingContext.draft,
+      redirectTarget: target,
+    });
+    if (target) {
+      appGoto(target, { replaceState: true });
+      return true;
+    }
 
-		this.lastActionError = null;
-		if (!this.canSkipOnboarding) {
-			this.reportActionError(get(t)('onboarding.completeStep.failed'));
-			return;
-		}
+    this.reportActionError(get(t)('onboarding.completeStep.redirectFailed'));
+    return false;
+  }
 
-		this.busy = true;
-		try {
-			// Skip does not provision from draft; only marks complete when a school already exists.
-			const ok = await this.completeAndExitOnboarding({
-				successMessageKey: 'onboarding.skipWizardSuccess',
-				provision: false,
-			});
-			if (!ok && !this.lastActionError) {
-				this.reportActionError(get(t)('onboarding.completeStep.failed'));
-			}
-		}
-		catch {
-			this.reportActionError(get(t)('onboarding.completeStep.failed'));
-		}
-		finally {
-			this.busy = false;
-			this.resetProvisionProgress();
-		}
-	}
+  async completeAndExitOnboarding(
+    options: {
+      successMessageKey?: 'onboarding.completeStep.success' | 'onboarding.skipWizardSuccess';
+      provision?: boolean;
+    } = {},
+  ): Promise<boolean> {
+    const shouldProvision = options.provision !== false && canFinishOnboarding(onboardingContext.draft, authSession.loginEmail);
 
-	async signOut() {
-		this.busy = true;
-		try {
-			await authSession.logout();
-			onboardingContext.reset();
-			appGoto(appPath('/login'), { replaceState: true });
-		}
-		finally {
-			this.busy = false;
-		}
-	}
+    if (shouldProvision) {
+      const ok = await this.runProvision({ successMessageKey: options.successMessageKey });
+      if (!ok) {
+        return false;
+      }
+    }
+    else if (authSession.schoolId) {
+      const success = await submitCompleteOnboardingStep({
+        successMessageKey: options.successMessageKey,
+        onError: (message) => {
+          this.lastActionError = message;
+        },
+      });
+      if (!success) {
+        if (!this.lastActionError) {
+          this.reportActionError(get(t)('onboarding.completeStep.failed'));
+        }
+        return false;
+      }
+    }
+    else {
+      // Dev skip without a linked school: local-only completion (no school provisioned).
+      onboardingContext.markWizardCompleted();
+    }
+
+    return this.openDashboard();
+  }
+
+  async finishOnboarding() {
+    if (this.busy) {
+      return;
+    }
+
+    this.lastActionError = null;
+
+    if (this.bootstrapRecoveryNeeded || (this.provisionSucceeded && !authSession.isLoggedIn)) {
+      this.busy = true;
+      try {
+        const ok = await this.retryBootstrap();
+        if (!ok && !this.lastActionError) {
+          this.reportActionError(get(t)('onboarding.completeStep.redirectFailed'));
+        }
+      }
+      catch {
+        this.reportActionError(get(t)('onboarding.completeStep.redirectFailed'));
+      }
+      finally {
+        this.busy = false;
+      }
+      return;
+    }
+
+    if (this.provisionSucceeded) {
+      this.busy = true;
+      try {
+        const ok = await this.openDashboard();
+        if (!ok && !this.lastActionError) {
+          this.reportActionError(get(t)('onboarding.completeStep.failed'));
+        }
+      }
+      catch {
+        this.reportActionError(get(t)('onboarding.completeStep.failed'));
+      }
+      finally {
+        this.busy = false;
+      }
+      return;
+    }
+
+    const blockKey = finishOnboardingBlockKey(onboardingContext.draft, authSession.loginEmail);
+    if (blockKey) {
+      this.reportActionError(get(t)(blockKey));
+      return;
+    }
+
+    onboardingContext.persist();
+
+    this.busy = true;
+    try {
+      const ok = await this.runProvision();
+      if (!ok && this.provisionSucceeded) {
+        this.bootstrapRecoveryNeeded = true;
+      }
+      else if (!ok && !this.lastActionError) {
+        this.reportActionError(get(t)('onboarding.completeStep.failed'));
+      }
+    }
+    catch {
+      this.reportActionError(get(t)('onboarding.completeStep.failed'));
+    }
+    finally {
+      this.busy = false;
+      if (!this.provisionSucceeded) {
+        this.resetProvisionProgress();
+      }
+    }
+  }
+
+  async skipOnboarding() {
+    if (this.busy) {
+      return;
+    }
+
+    this.lastActionError = null;
+    if (!this.canSkipOnboarding) {
+      this.reportActionError(get(t)('onboarding.completeStep.failed'));
+      return;
+    }
+
+    this.busy = true;
+    try {
+      // Skip does not provision from draft; only marks complete when a school already exists.
+      const ok = await this.completeAndExitOnboarding({
+        successMessageKey: 'onboarding.skipWizardSuccess',
+        provision: false,
+      });
+      if (!ok && !this.lastActionError) {
+        this.reportActionError(get(t)('onboarding.completeStep.failed'));
+      }
+    }
+    catch {
+      this.reportActionError(get(t)('onboarding.completeStep.failed'));
+    }
+    finally {
+      this.busy = false;
+      this.resetProvisionProgress();
+    }
+  }
+
+  async signOut() {
+    this.busy = true;
+    try {
+      await authSession.logout();
+      onboardingContext.reset();
+      appGoto(appPath('/login'), { replaceState: true });
+    }
+    finally {
+      this.busy = false;
+    }
+  }
 }
 
 export function setOnboardingWizardState(state: OnboardingWizardState) {
-	setContext(ONBOARDING_WIZARD_STATE_KEY, state);
+  setContext(ONBOARDING_WIZARD_STATE_KEY, state);
 }
 
 export function getOnboardingWizardState(): OnboardingWizardState {
-	return getContext<OnboardingWizardState>(ONBOARDING_WIZARD_STATE_KEY);
+  return getContext<OnboardingWizardState>(ONBOARDING_WIZARD_STATE_KEY);
 }

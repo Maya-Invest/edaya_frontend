@@ -8,6 +8,7 @@ const DETAIL_PATH_PATTERNS = [
 	/^\/configuration\/grade-levels\/[^/]+$/,
 	/^\/configuration\/classes\/[^/]+$/,
 	/^\/configuration\/report-cards\/[^/]+$/,
+	/^\/configuration\/notifications\/[^/]+$/,
 ] as const;
 
 /** School students drawer tabs use nested paths (`/:id/:tab`) beyond the single-segment detail pattern. */
@@ -15,6 +16,7 @@ const SCHOOL_STUDENTS_DRAWER_PATH = /^\/school\/students\/[^/]+(?:\/[^/]+)?$/;
 const SCHOOL_STAFF_DRAWER_PATH = /^\/school\/staff\/[^/]+(?:\/[^/]+)?$/;
 const SCHOOL_TEACHERS_DRAWER_PATH = /^\/school\/teachers\/[^/]+(?:\/[^/]+)?$/;
 const SCHOOL_ACTIVITIES_DRAWER_PATH = /^\/school\/activities\/[^/]+(?:\/[^/]+)?$/;
+const SCHOOL_FAMILY_FEEDBACK_DRAWER_PATH = /^\/school\/family-feedback\/[^/]+(?:\/[^/]+)?$/;
 const CLASS_TIMETABLE_DRAWER_PATH = /^\/classes\/[^/]+\/timetable\/[^/]+(?:\/[^/]+)?$/;
 const CLASS_EVALUATIONS_DRAWER_PATH = /^\/classes\/[^/]+\/evaluations\/[^/]+(?:\/[^/]+)?$/;
 const CLASS_TEACHING_DRAWER_PATH = /^\/classes\/[^/]+\/teaching\/[^/]+(?:\/[^/]+)?$/;
@@ -25,6 +27,7 @@ const CONFIG_REPORT_CARDS_DRAWER_PATH = /^\/configuration\/report-cards\/[^/]+(?
 const CONFIG_GRADE_LEVELS_DRAWER_PATH = /^\/configuration\/grade-levels\/[^/]+(?:\/[^/]+)?$/;
 const CONFIG_CLASSES_DRAWER_PATH = /^\/configuration\/classes\/[^/]+(?:\/[^/]+)?$/;
 const CONFIG_SUBJECTS_DRAWER_PATH = /^\/configuration\/subjects\/[^/]+(?:\/[^/]+)?$/;
+const CONFIG_NOTIFICATIONS_DRAWER_PATH = /^\/configuration\/notifications\/[^/]+$/;
 
 export function isLikelyDetailPath(pathname: string): boolean {
 	return DETAIL_PATH_PATTERNS.some(pattern => pattern.test(pathname))
@@ -32,6 +35,7 @@ export function isLikelyDetailPath(pathname: string): boolean {
 		|| SCHOOL_STAFF_DRAWER_PATH.test(pathname)
 		|| SCHOOL_TEACHERS_DRAWER_PATH.test(pathname)
 		|| SCHOOL_ACTIVITIES_DRAWER_PATH.test(pathname)
+		|| SCHOOL_FAMILY_FEEDBACK_DRAWER_PATH.test(pathname)
 		|| CLASS_TIMETABLE_DRAWER_PATH.test(pathname)
 		|| CLASS_EVALUATIONS_DRAWER_PATH.test(pathname)
 		|| CLASS_TEACHING_DRAWER_PATH.test(pathname)
@@ -41,7 +45,8 @@ export function isLikelyDetailPath(pathname: string): boolean {
 		|| CONFIG_REPORT_CARDS_DRAWER_PATH.test(pathname)
 		|| CONFIG_GRADE_LEVELS_DRAWER_PATH.test(pathname)
 		|| CONFIG_CLASSES_DRAWER_PATH.test(pathname)
-		|| CONFIG_SUBJECTS_DRAWER_PATH.test(pathname);
+		|| CONFIG_SUBJECTS_DRAWER_PATH.test(pathname)
+		|| CONFIG_NOTIFICATIONS_DRAWER_PATH.test(pathname);
 }
 
 function normalizeListPathname(pathname: string): string {
@@ -56,6 +61,9 @@ function normalizeListPathname(pathname: string): string {
 	}
 	if (SCHOOL_ACTIVITIES_DRAWER_PATH.test(pathname)) {
 		return '/school/activities';
+	}
+	if (SCHOOL_FAMILY_FEEDBACK_DRAWER_PATH.test(pathname)) {
+		return '/school/family-feedback';
 	}
 	const timetableMatch = pathname.match(/^\/classes\/([^/]+)\/timetable\/[^/]+/);
 	if (timetableMatch) {
@@ -96,6 +104,9 @@ function normalizeListPathname(pathname: string): string {
 	const configSubjectsMatch = pathname.match(/^\/configuration\/subjects\/[^/]+(?:\/[^/]+)?/);
 	if (configSubjectsMatch) {
 		return '/configuration/subjects';
+	}
+	if (CONFIG_NOTIFICATIONS_DRAWER_PATH.test(pathname)) {
+		return '/configuration/notifications';
 	}
 	if (isLikelyDetailPath(pathname)) {
 		return pathname.replace(/\/[^/]+$/, '');

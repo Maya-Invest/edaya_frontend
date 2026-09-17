@@ -54,9 +54,13 @@ stubSvelteModule('$lib/auth/session.svelte', {
 		subjectId: null,
 		loginEmail: null,
 		grants: null,
+		staffMemberships: [],
+		activeStaffMembership: null,
 		isLoggedIn: false,
 		ready: true,
 		userProfile: null,
+		setStaffMemberships() {},
+		selectStaffMembership() {},
 		markLoading() {
 			this.ready = false;
 		},
@@ -90,6 +94,10 @@ stubSvelteModule('$lib/academic/context.svelte', {
 		studentCount: 0,
 		guardianCount: 0,
 		staffCount: 0,
+		setSchoolScope() {},
+		initFromShell() {},
+		clearShellCatalog() {},
+		reset() {},
 	},
 });
 

@@ -48,7 +48,12 @@ bun test tests/lib tests/generated
 bun run demo:e2e   # client walkthrough; results in .demo-dry-run/
 ```
 
-App integration tests (API tenant + journey + QA matrix) are `bun run test:integration:provisioned`, not this walkthrough.
+App integration tests are not this walkthrough:
+
+| Command | What it covers |
+|---------|----------------|
+| `bun run test:integration:onboarding` | Empty APIs, login/signup/invite gates, required email verification, wizard, invited staff/teacher/guardian |
+| `bun run test:integration:provisioned` | Empty APIs, API tenant + owner journey + QA matrix |
 
 **Playwright scenes:** D0–D11 (core), DR (route coverage), DC (list shell), DD (drawer tabs), DM (modal URL), **DI** (import upload/validate), **DT** (timetable generation modal), **DG** (guardian drawer), **DF** (finance billing drawer), **DO** (owner permissions).
 

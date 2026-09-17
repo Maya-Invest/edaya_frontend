@@ -6,10 +6,7 @@ export interface LoginMethodDefinition {
 	enabled: boolean;
 }
 
-/**
- * Registry of sign-in methods shown on `/login`.
- * Add new entries here when enabling OAuth, magic link, etc.
- */
+/** Registry of sign-in methods shown on `/login`. */
 export const LOGIN_METHODS = [
 	{
 		id: 'password',

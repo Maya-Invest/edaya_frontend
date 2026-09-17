@@ -1,3 +1,4 @@
+import type { FamilyFeedbackCampaign } from '$lib/api/family-feedback-types';
 import type { ReportCardDefinition, ReportCardResult } from '$lib/types/report-cards';
 import type {
 	ClassNode,
@@ -33,6 +34,7 @@ export type DrawerItem
 		| { kind: 'level'; data: { label: string; subtitle: string; items: Subject[] } }
 		| { kind: 'activity'; data: Activity }
 		| { kind: 'announcement'; data: Announcement }
+		| { kind: 'familyFeedback'; data: FamilyFeedbackCampaign }
 		| { kind: 'reportCardDefinition'; data: ReportCardDefinition }
 		| { kind: 'reportCardResult'; data: ReportCardResult }
 		| { kind: 'gradeLevel'; data: GradeLevel }

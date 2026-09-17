@@ -25,7 +25,6 @@ import {
 } from '../setup/journey-context';
 import {
 	createTeacherWithInvitationViaApi,
-	linkActorSubjectViaApi,
 	resendInvitationTokenViaApi,
 } from '../setup/journey-api';
 import { resolveApiUrl } from './integration-hosts';
@@ -223,7 +222,7 @@ async function activateSecondaryAccount(
 export async function provisionSecondaryAccounts(
 	journey: UiJourney,
 	entities: MatrixEntities,
-): Promise<SecondaryAccounts | null> {
+): Promise<SecondaryAccounts> {
 	const { page, base } = journey.ctx;
 	const apiUrl = resolveApiUrl();
 	const appOrigin = base;
@@ -233,49 +232,39 @@ export async function provisionSecondaryAccounts(
 	const educatorEmail = createSecondaryEmail('educator');
 	const educatorPassword = createSecondaryPassword();
 
-	let teacherId: string | null = null;
-	let teacherToken: string | null = null;
-	let teacherOk = false;
+	let teacherId = '';
 	try {
 		const created = await createTeacherWithInvite(journey, teacherEmail);
+		if (!created.teacherId) {
+			throw new Error(`Teacher invite create failed for ${teacherEmail}: no teacher id`);
+		}
 		teacherId = created.teacherId;
-		teacherToken = created.token;
-		if (teacherId && !teacherToken) {
+		let teacherToken = created.token;
+		if (!teacherToken) {
 			teacherToken = await resendTeacherInvitation(journey, teacherId);
 		}
-		if (teacherId && !teacherToken) {
+		if (!teacherToken) {
 			teacherToken = await resendInvitationTokenViaApi(page, base, teacherId);
 		}
-		const resolvedTeacherId = teacherId;
-		const teacherActivation = resolvedTeacherId
-			? await activateTeacherSecondaryAccount(
-				apiUrl,
-				appOrigin,
-				teacherEmail,
-				teacherPassword,
-				'E2E Teacher',
-				teacherToken,
-				resolvedTeacherId,
-				subjectId => linkActorSubjectViaApi(page, base, { subjectId, teacherId: resolvedTeacherId }),
-			)
-			: await activateSecondaryAccount(
-				journey,
-				apiUrl,
-				appOrigin,
-				teacherEmail,
-				teacherPassword,
-				'E2E Teacher',
-				teacherToken,
+		const teacherActivation = await activateTeacherSecondaryAccount(
+			apiUrl,
+			appOrigin,
+			teacherEmail,
+			teacherPassword,
+			'E2E Teacher',
+			teacherToken,
+		);
+		if (!teacherActivation.ok) {
+			throw new Error(
+				`Teacher invitation did not activate for ${teacherEmail}: ${teacherActivation.detail ?? 'unknown'}`,
 			);
-		teacherOk = teacherActivation.ok;
-		if (teacherOk && teacherId) {
-			await assignTeacherToClass(journey, teacherId, entities.classId);
 		}
+		await assignTeacherToClass(journey, teacherId, entities.classId);
 		logStep(journey, {
 			step: 'secondary-teacher',
-			ok: teacherOk && Boolean(teacherId),
-			detail: teacherActivation.detail ? `${teacherEmail} (${teacherActivation.detail})` : teacherEmail,
-			entityId: teacherId ?? undefined,
+			ok: true,
+			detail: teacherEmail,
+			entityId: teacherId,
 		});
 	}
 	catch (err) {
@@ -284,21 +273,21 @@ export async function provisionSecondaryAccounts(
 			ok: false,
 			detail: err instanceof Error ? err.message : String(err),
 		});
+		throw err;
 	}
 
-	let educatorStaffId: string | null = null;
-	let educatorToken: string | null = null;
-	let educatorOk = false;
+	let educatorStaffId = '';
 	try {
-		educatorStaffId = await inviteEducatorStaff(journey, apiUrl, educatorEmail);
-		if (educatorStaffId) {
-			entities.staffId = educatorStaffId;
-			educatorToken = await resendStaffInvitation(journey, educatorStaffId);
-			if (!educatorToken) {
-				educatorToken = await resendInvitationTokenViaApi(page, base, educatorStaffId);
-			}
+		const createdStaffId = await inviteEducatorStaff(journey, apiUrl, educatorEmail);
+		if (!createdStaffId) {
+			throw new Error(`Educator staff invite failed for ${educatorEmail}: no staff id`);
 		}
-		const resolvedEducatorStaffId = educatorStaffId;
+		educatorStaffId = createdStaffId;
+		entities.staffId = educatorStaffId;
+		let educatorToken = await resendStaffInvitation(journey, educatorStaffId);
+		if (!educatorToken) {
+			educatorToken = await resendInvitationTokenViaApi(page, base, educatorStaffId);
+		}
 		const educatorActivation = await activateSecondaryAccount(
 			journey,
 			apiUrl,
@@ -307,16 +296,18 @@ export async function provisionSecondaryAccounts(
 			educatorPassword,
 			'E2E Educator',
 			educatorToken,
-			resolvedEducatorStaffId
-				? () => resendStaffInvitation(journey, resolvedEducatorStaffId)
-				: undefined,
+			() => resendStaffInvitation(journey, educatorStaffId),
 		);
-		educatorOk = educatorActivation.ok;
+		if (!educatorActivation.ok) {
+			throw new Error(
+				`Educator invitation did not activate for ${educatorEmail}: ${educatorActivation.detail ?? 'unknown'}`,
+			);
+		}
 		logStep(journey, {
 			step: 'secondary-educator',
-			ok: educatorOk && Boolean(educatorStaffId),
-			detail: educatorActivation.detail ? `${educatorEmail} (${educatorActivation.detail})` : educatorEmail,
-			entityId: educatorStaffId ?? undefined,
+			ok: true,
+			detail: educatorEmail,
+			entityId: educatorStaffId,
 		});
 	}
 	catch (err) {
@@ -325,17 +316,7 @@ export async function provisionSecondaryAccounts(
 			ok: false,
 			detail: err instanceof Error ? err.message : String(err),
 		});
-	}
-
-	if (!teacherOk || !educatorOk || !teacherId || !educatorStaffId) {
-		const partial: SecondaryAccounts = {};
-		if (teacherOk && teacherId) {
-			partial.teacher = { email: teacherEmail, password: teacherPassword, entityId: teacherId };
-		}
-		if (educatorOk && educatorStaffId) {
-			partial.educator = { email: educatorEmail, password: educatorPassword, entityId: educatorStaffId };
-		}
-		return partial.teacher || partial.educator ? partial : null;
+		throw err;
 	}
 
 	return {

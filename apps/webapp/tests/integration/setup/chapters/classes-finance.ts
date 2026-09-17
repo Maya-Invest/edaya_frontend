@@ -2,6 +2,7 @@ import {
 	clickCreateButton,
 	fillAssignFeeDialog,
 	fillEvaluationCreateDialog,
+	fillFeeCreateDialog,
 	fillNewSessionWizard,
 	generateReportCardForStudent,
 	isDeleteControlVisible,
@@ -30,7 +31,7 @@ import {
 	type UiJourney,
 } from '../journey-context';
 
-const STUDENT_TABS = ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments'] as const;
+const STUDENT_TABS = ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments', 'documents'] as const;
 
 export async function runClassesFinanceChapter(journey: UiJourney): Promise<void> {
 	const { entities } = journey;
@@ -198,12 +199,7 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 	const feeOpened = await openDialogButton(page, /add fee|ajouter un frais/i);
 	coverModal(journey, '/finance/fees', 'create', feeOpened ? 'OK' : 'NOT OK');
 	if (feeOpened) {
-		const dialog = page.getByRole('dialog');
-		await dialog.locator('input').first().fill(feeName);
-		const amount = dialog.locator('input[type="number"]').first();
-		if (await amount.isVisible().catch(() => false)) {
-			await amount.fill('10000');
-		}
+		await fillFeeCreateDialog(page, feeName);
 		await submitDialog(page);
 		await waitForDialogClosed(page);
 		entities.filterFixtures.feesByCategory = { default: { id: feeName, name: feeName } };
@@ -218,7 +214,7 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 	const assignOpened = await openDialogButton(page, /assign|attribuer|ajouter une facture|add invoice/i);
 	coverModal(journey, '/finance/billing', 'assign-fee', assignOpened ? 'OK' : 'NOT OK');
 	if (assignOpened) {
-		const payloadPromise = waitForCommandPayload(page, 'assign-fee-to-student');
+		const payloadPromise = waitForCommandPayload(page, 'enroll-student-in-service');
 		if (await fillAssignFeeDialog(page)) {
 			await trySubmitDialog(page);
 			await waitForDialogClosed(page).catch(() => {});

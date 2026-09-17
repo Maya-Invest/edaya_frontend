@@ -51,8 +51,8 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'school-students-detail',
 		pathnamePattern:
-			/^\/school\/students\/[^/]+(?:\/(?:profile|grades|attendance|incidents|finances|report-card|enrollments))?\/?$/,
-		modalNames: ['create', ...STUDENT_DETAIL_MODALS],
+			/^\/school\/students\/[^/]+(?:\/(?:profile|grades|attendance|incidents|finances|report-card|enrollments|documents))?\/?$/,
+		modalNames: ['create', ...STUDENT_DETAIL_MODALS, 'generate-document', 'void-document'],
 	},
 	{
 		routeFamily: 'class-students-list',
@@ -62,8 +62,8 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'class-students-detail',
 		pathnamePattern:
-			/^\/classes\/[^/]+\/students\/[^/]+(?:\/(?:profile|grades|attendance|incidents|finances|report-card|enrollments))?\/?$/,
-		modalNames: ['create', ...STUDENT_DETAIL_MODALS],
+			/^\/classes\/[^/]+\/students\/[^/]+(?:\/(?:profile|grades|attendance|incidents|finances|report-card|enrollments|documents))?\/?$/,
+		modalNames: ['create', ...STUDENT_DETAIL_MODALS, 'generate-document', 'void-document'],
 	},
 	{
 		routeFamily: 'school-guardians-list',
@@ -89,7 +89,7 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'school-staff-permissions',
 		pathnamePattern: /^\/school\/staff\/[^/]+\/permissions\/?$/,
-		modalNames: ['add-permission', 'delete-permission'],
+		modalNames: ['add-permission', 'delete-permission', 'apply-profile', 'remove-profile'],
 	},
 	{
 		routeFamily: 'school-teachers-list',
@@ -142,6 +142,27 @@ export const ROUTE_MODAL_CATALOG = [
 		routeFamily: 'school-announcements-detail',
 		pathnamePattern: /^\/school\/announcements\/[^/]+\/?$/,
 		modalNames: ['create', 'edit', 'add-target', 'publish', 'delete'],
+	},
+	{
+		routeFamily: 'school-family-feedback-list',
+		pathnamePattern: /^\/school\/family-feedback\/?$/,
+		modalNames: ['create'],
+	},
+	{
+		routeFamily: 'school-family-feedback-detail',
+		pathnamePattern: /^\/school\/family-feedback\/[^/]+(?:\/(?:setup|audience|moderation|results))?\/?$/,
+		modalNames: [
+			'create',
+			'edit',
+			'assign-moderator',
+			'schedule',
+			'open',
+			'close',
+			'cancel',
+			'theme',
+			'publish',
+			'archive',
+		],
 	},
 	{
 		routeFamily: 'school-events-list',
@@ -267,13 +288,23 @@ export const ROUTE_MODAL_CATALOG = [
 		modalNames: ['create', 'edit', 'delete'],
 	},
 	{
-		routeFamily: 'configuration-notifications',
+		routeFamily: 'configuration-notifications-list',
 		pathnamePattern: /^\/configuration\/notifications\/?$/,
-		modalNames: ['edit', 'reset-all'],
+		modalNames: ['reset-all'],
+	},
+	{
+		routeFamily: 'configuration-notifications-detail',
+		pathnamePattern: /^\/configuration\/notifications\/[^/]+\/?$/,
+		modalNames: ['edit', 'reset-key', 'reset-all'],
 	},
 	{
 		routeFamily: 'configuration-discipline',
 		pathnamePattern: /^\/configuration\/discipline\/?$/,
+		modalNames: ['create', 'edit', 'delete'],
+	},
+	{
+		routeFamily: 'configuration-permission-profiles',
+		pathnamePattern: /^\/configuration\/permission-profiles\/?$/,
 		modalNames: ['create', 'edit', 'delete'],
 	},
 	{
@@ -289,7 +320,7 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'finance-fees',
 		pathnamePattern: /^\/finance\/fees\/?$/,
-		modalNames: ['create', 'edit', 'delete'],
+		modalNames: ['create', 'edit', 'archive'],
 	},
 	{
 		routeFamily: 'finance-billing-list',
@@ -299,7 +330,12 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'finance-billing-detail',
 		pathnamePattern: /^\/finance\/billing\/[^/]+\/?$/,
-		modalNames: ['assign-fee', 'payment', 'delete'],
+		modalNames: ['assign-fee', 'payment', 'allocate', 'unallocate', 'waive', 'adjust', 'cancel'],
+	},
+	{
+		routeFamily: 'finance-payments',
+		pathnamePattern: /^\/finance\/payment\/?$/,
+		modalNames: ['reverse', 'refund'],
 	},
 ] as const satisfies readonly RouteModalCatalogEntry[];
 

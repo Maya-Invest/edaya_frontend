@@ -3,8 +3,8 @@ import type { DemoContext, SignInOptions } from './types';
 import path from 'node:path';
 import { TEACHER_PORTAL_GATE_BANNER_TEST_ID } from '$lib/auth/teacher-portal-gate';
 import { DEMO_PASSWORD, STAFF_EMAIL } from './constants';
-import { resolveAuthUrl } from '../../support/integration-hosts';
-import { integrationUsesDemoLogin, webappReadinessPath } from './paths';
+import { resolveApiUrl, resolveAuthUrl } from '../../support/integration-hosts';
+import { integrationUsesDemoLogin, isSignedInStaffUrl, webappReadinessPath } from './paths';
 
 export async function waitForEnabled(locator: ReturnType<Page['locator']>, timeout = 30_000): Promise<void> {
 	await locator.waitFor({ state: 'visible', timeout });
@@ -52,9 +52,23 @@ export async function attemptPasswordSignIn(
 		await page.goto(`${base}/login?panel=signin&method=password&stage=form`, {
 			waitUntil: 'domcontentloaded',
 		});
-		await ensurePasswordSignInPanel(page);
+		if (isSignedInStaffUrl(page.url())) {
+			return true;
+		}
 
 		const emailInput = page.locator('#login-password-email');
+		const outcome = await Promise.race([
+			page.waitForURL(url => isSignedInStaffUrl(url.toString()), { timeout: 8_000 })
+				.then(() => 'shell' as const, () => null),
+			emailInput.waitFor({ state: 'visible', timeout: 8_000 })
+				.then(() => 'form' as const, () => null),
+		]);
+		if (outcome === 'shell' || isSignedInStaffUrl(page.url())) {
+			return true;
+		}
+
+		await ensurePasswordSignInPanel(page);
+
 		const passwordInput = page.locator('#login-password');
 		const submit = page
 			.locator('form')
@@ -69,7 +83,7 @@ export async function attemptPasswordSignIn(
 		await submit.click();
 
 		const appShellUrl = page.waitForURL(
-			/\/(dashboard|school|classes|configuration|onboarding|finance)/,
+			url => isSignedInStaffUrl(url.toString()),
 			{ timeout: 30_000 },
 		);
 		const teacherGateBanner = page.waitForSelector(
@@ -176,18 +190,28 @@ export async function signIn(ctx: DemoContext, account: SignInOptions = {}): Pro
 
 export async function assertStackReady(base: string): Promise<void> {
 	const readinessPath = webappReadinessPath();
+	await assertHttpReady(
+		`${base}${readinessPath}`,
+		`Webapp not ready at ${base}${readinessPath}. ${integrationUsesDemoLogin()
+			? 'Use WEBAPP_URL=https://staging.app.edayaplus.com for remote staging, or start bun dev locally.'
+			: 'Use WEBAPP_URL=https://app.edayaplus.com for remote production.'}`,
+	);
+	const authUrl = resolveAuthUrl();
+	await assertHttpReady(`${authUrl}/auth/get-session`, `Identity not ready at ${authUrl}/auth/get-session.`);
+	const apiUrl = resolveApiUrl();
+	await assertHttpReady(`${apiUrl}/reference`, `School API not ready at ${apiUrl}/reference.`);
+}
+
+async function assertHttpReady(url: string, message: string): Promise<void> {
 	try {
-		const res = await fetch(`${base}${readinessPath}`, { signal: AbortSignal.timeout(15_000) });
+		const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
 		if (!res.ok) {
 			throw new Error(`HTTP ${res.status}`);
 		}
 	}
 	catch (err) {
 		const detail = err instanceof Error ? err.message : String(err);
-		const hint = integrationUsesDemoLogin()
-			? 'Use WEBAPP_URL=https://staging.app.school.edayaplus.com for remote staging, or start bun dev locally.'
-			: 'Use WEBAPP_URL=https://app.school.edayaplus.com for remote production.';
-		throw new Error(`Webapp not ready at ${base}${readinessPath} (${detail}). ${hint}`);
+		throw new Error(`${message} (${detail})`);
 	}
 }
 

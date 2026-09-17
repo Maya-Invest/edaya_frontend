@@ -17,6 +17,8 @@ export function dashboardActionHref(
 			return appPath('/(app)/configuration/report-cards/[[id]]');
 		case 'pending_justifications':
 			return appPath('/(app)/school/students/[[id]]');
+		case 'pending_student_photos':
+			return `${appPath('/(app)/school/students/[[id]]')}?photoReview=pending` as ResolvedPathname;
 		case 'high_severity_incidents':
 			return appPath('/(app)/school/events/[[id]]');
 		case 'incomplete_grading':

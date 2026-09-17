@@ -7,6 +7,7 @@ import {
 import { normalizeImportCode } from '$lib/import/shared/normalize-import-code';
 
 const CONTEXT: PaymentImportValidationContext = {
+	academicYearId: 'year-1',
 	fees: [
 		{ id: 'fee-scolarite', name: 'Scolarité — Collège' },
 		{ id: 'fee-cantine', name: 'Cantine' },
@@ -45,10 +46,13 @@ describe('payment import validator', () => {
 		expect(result.warnings).toEqual([]);
 		expect(result.validRows).toHaveLength(1);
 		expect(result.validRows[0]).toMatchObject({
-			studentFeeId: 'sf-1',
+			studentId: 'stu-1',
+			chargeId: 'sf-1',
+			academicYearId: 'year-1',
 			amount: 50_000,
 			paymentDate: '2025-09-01',
 			method: 'bank_transfer',
+			allocationMode: 'targeted',
 		});
 	});
 
@@ -59,6 +63,20 @@ describe('payment import validator', () => {
 
 		expect(result.errors).toEqual([]);
 		expect(result.validRows[0]?.amount).toBe(75_000);
+	});
+
+	it('records a deposit-only payment when type_frais is empty', () => {
+		const result = validatePaymentImportRows([
+			row({ rowIndex: 2, type_frais: '', montant: '25000', reference: 'DEP-1' }),
+		], CONTEXT);
+
+		expect(result.errors).toEqual([]);
+		expect(result.validRows[0]).toMatchObject({
+			studentId: 'stu-1',
+			allocationMode: 'account_only',
+			amount: 25_000,
+		});
+		expect(result.validRows[0]?.chargeId).toBeUndefined();
 	});
 
 	it('flags missing required fields', () => {

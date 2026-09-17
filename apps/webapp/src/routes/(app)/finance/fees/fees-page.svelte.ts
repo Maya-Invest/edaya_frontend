@@ -1,21 +1,15 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { Fee } from '$lib/types/school';
 import type { FeesPageSlice } from './lib/fees-helpers';
-import { academicContext } from '$lib/academic/context.svelte';
-import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { authSession } from '$lib/auth/session.svelte';
-import { nowIso } from '$lib/date/format';
-import { t } from '$lib/i18n';
-import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
-import { toast } from '$lib/toast.svelte';
-import { getContext, setContext } from 'svelte';
-import { get } from 'svelte/store';
+import { DEFAULT_CATALOG_CURRENCY } from '$lib/api/finance-types';
 import {
-	feeSavePayload,
-	installmentsForPeriod,
-	UI_TO_API_CATEGORY,
-} from '../lib/fee-api-helpers';
-import { runFinanceRouteMutation } from '../lib/finance-route-mutation';
+	activateCatalogServiceMutation,
+	archiveCatalogServiceMutation,
+	createCatalogServiceMutation,
+	updateCatalogServiceMutation,
+} from '$lib/api/mutations/fee.mutations';
+import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { getContext, setContext } from 'svelte';
 import { loadFeesSlice, queryFeesListPage } from './lib/fees-queries';
 
 const FEES_VERSION_FAMILIES = ['fees', 'billing'] as const satisfies readonly EntityVersionKey[];
@@ -42,16 +36,8 @@ export class FeesPageState {
 		return this.slice?.fees ?? [];
 	}
 
-	get billing() {
-		return this.slice?.billing ?? [];
-	}
-
 	feeFor(id: string) {
 		return this.fees.find(fee => fee.id === id);
-	}
-
-	usageCount(feeId: string): number {
-		return this.billing.filter(row => row.feeId === feeId).length;
 	}
 
 	appendFee(fee: Fee) {
@@ -104,44 +90,32 @@ export class FeesPageState {
 		name: string;
 		category: Fee['category'];
 		amount: number;
-		period: Fee['period'];
+		currency?: string;
+		enrollmentMode?: Fee['enrollmentMode'];
 		successMessage?: string;
 	}): Promise<string | null> {
-		const client = getBrowserSchoolClient();
-		const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
-		const academicYearId = academicContext.yearId;
-		if (!schoolId || !academicYearId) {
-			toast.error(get(t)('fee.noContext'));
-			return null;
-		}
-
-		const id = `fee-${Date.now().toString(36)}`;
-		const optimistic: Fee = {
-			id,
-			name: input.name.trim(),
+		const id = await createCatalogServiceMutation({
+			name: input.name,
 			category: input.category,
 			amount: input.amount,
-			period: input.period,
-		};
-
-		const result = await runFinanceRouteMutation({
-			request: () => client.commands.createFee({
-				id,
-				schoolId,
-				academicYearId,
-				name: input.name.trim(),
-				category: UI_TO_API_CATEGORY[input.category],
-				defaultAmount: input.amount,
-				currency: 'XOF',
-				installments: installmentsForPeriod(input.period ?? 'Term'),
-				createdAt: nowIso(),
-			}),
+			currency: input.currency,
+			enrollmentMode: input.enrollmentMode,
+			status: 'active',
 			successMessage: input.successMessage,
-			versionKeys: ['fees'],
-			apply: () => this.appendFee(optimistic),
-			rollback: () => this.removeFee(id),
 		});
-		return result !== null ? id : null;
+		if (id) {
+			this.appendFee({
+				id,
+				name: input.name.trim(),
+				category: input.category,
+				amount: input.amount,
+				currency: input.currency?.trim() || DEFAULT_CATALOG_CURRENCY,
+				status: 'active',
+				enrollmentMode: input.enrollmentMode ?? 'mandatory',
+				installmentCount: 0,
+			});
+		}
+		return id;
 	}
 
 	async updateFee(input: {
@@ -149,56 +123,49 @@ export class FeesPageState {
 		name: string;
 		category: Fee['category'];
 		amount: number;
+		enrollmentMode?: Fee['enrollmentMode'];
 		successMessage?: string;
 	}): Promise<boolean> {
-		const client = getBrowserSchoolClient();
 		const previous = this.feeFor(input.feeId);
-		const patch = {
-			name: input.name.trim(),
+		const ok = await updateCatalogServiceMutation({
+			id: input.feeId,
+			name: input.name,
 			category: input.category,
 			amount: input.amount,
-		};
-
-		const result = await runFinanceRouteMutation({
-			request: async () => {
-				const existing = await client.entities.fees.get(input.feeId);
-				return client.entities.fees.save(feeSavePayload(existing, {
-					name: input.name.trim(),
-					category: UI_TO_API_CATEGORY[input.category],
-					amount: input.amount,
-				}));
-			},
+			enrollmentMode: input.enrollmentMode,
 			successMessage: input.successMessage,
-			versionKeys: ['fees'],
-			apply: () => this.patchFee(input.feeId, patch),
-			rollback: () => {
-				if (previous) {
-					this.patchFee(input.feeId, previous);
-				}
-			},
 		});
-		return result !== null;
+		if (ok) {
+			this.patchFee(input.feeId, {
+				name: input.name.trim(),
+				category: input.category,
+				amount: input.amount,
+				enrollmentMode: input.enrollmentMode ?? previous?.enrollmentMode,
+			});
+		}
+		return ok;
 	}
 
-	async deleteFee(input: {
-		feeId: string;
-		successMessage?: string;
-	}): Promise<boolean> {
-		const client = getBrowserSchoolClient();
-		const previous = this.feeFor(input.feeId);
-
-		const result = await runFinanceRouteMutation({
-			request: () => client.entities.fees.delete({ id: input.feeId }),
+	async activateFee(input: { feeId: string; successMessage?: string }): Promise<boolean> {
+		const ok = await activateCatalogServiceMutation({
+			id: input.feeId,
 			successMessage: input.successMessage,
-			versionKeys: ['fees', 'billing'],
-			apply: () => this.removeFee(input.feeId),
-			rollback: () => {
-				if (previous) {
-					this.appendFee(previous);
-				}
-			},
 		});
-		return result !== null;
+		if (ok) {
+			this.patchFee(input.feeId, { status: 'active' });
+		}
+		return ok;
+	}
+
+	async archiveFee(input: { feeId: string; successMessage?: string }): Promise<boolean> {
+		const ok = await archiveCatalogServiceMutation({
+			id: input.feeId,
+			successMessage: input.successMessage,
+		});
+		if (ok) {
+			this.patchFee(input.feeId, { status: 'archived' });
+		}
+		return ok;
 	}
 }
 

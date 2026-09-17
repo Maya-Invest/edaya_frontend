@@ -32,10 +32,16 @@
 	});
 
 	$effect(() => {
+		void wizard.maxReachedStep;
+		void $page.url;
 		wizard.enforceStepAccess();
+		const timer = setInterval(() => wizard.enforceStepAccess(), 250);
+		return () => clearInterval(timer);
 	});
 
 	$effect(() => {
+		void authSession.isLoggedIn;
+		void authSession.serverOnboardingStatus?.wizardCompleted;
 		void wizard.syncServerStatusOnce();
 	});
 </script>
@@ -60,6 +66,8 @@
 		provisionActiveStepId={wizard.provisionActiveStepId}
 		provisionCompletedIds={wizard.provisionCompletedIds}
 		provisionSteps={wizard.provisionSteps}
+		provisionSucceeded={wizard.provisionSucceeded}
+		bootstrapRecoveryNeeded={wizard.bootstrapRecoveryNeeded}
 		onBack={() => wizard.goBack()}
 		onContinue={() => void wizard.goNext()}
 		onFinish={() => void wizard.finishOnboarding()}

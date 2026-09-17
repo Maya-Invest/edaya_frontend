@@ -35,21 +35,31 @@ export async function runPaymentImport(options: PaymentImportRunOptions): Promis
 		onProgress?.(index, total);
 
 		try {
+			const paymentId = `pay-import-${row.rowIndex}-${index}-${Date.now().toString(36)}`;
+			const targeted = row.allocationMode === 'targeted' && row.chargeId;
 			const ok = await recordPaymentMutation({
-				studentFeeId: row.studentFeeId,
+				id: paymentId,
+				studentId: row.studentId,
+				academicYearId: row.academicYearId,
 				amount: row.amount,
 				paymentDate: new Date(`${row.paymentDate}T12:00:00`).toISOString(),
 				method: row.method,
 				reference: row.reference,
 				notes: row.notes,
+				allocation: targeted
+					? {
+							mode: 'targeted',
+							targets: [{ chargeId: row.chargeId!, amount: row.amount }],
+						}
+					: { mode: 'account_only' },
 			});
 			if (ok) {
-				paymentIds.push(row.studentFeeId);
+				paymentIds.push(paymentId);
 			}
 			else {
 				failed.push({
 					rowIndex: row.rowIndex,
-					label: `${row.matricule} · ${row.type_frais}`,
+					label: `${row.matricule} · ${row.type_frais || row.reference}`,
 					message: get(t)('import.payments.runFailed'),
 				});
 			}
@@ -57,7 +67,7 @@ export async function runPaymentImport(options: PaymentImportRunOptions): Promis
 		catch (error) {
 			failed.push({
 				rowIndex: row.rowIndex,
-				label: `${row.matricule} · ${row.type_frais}`,
+				label: `${row.matricule} · ${row.type_frais || row.reference}`,
 				message: formatImportRunErrorMessage(error, {
 					entityLabel: row.reference,
 				}, (key, params) => get(t)(key, params ?? {})),

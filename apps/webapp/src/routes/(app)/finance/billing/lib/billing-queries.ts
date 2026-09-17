@@ -1,6 +1,6 @@
 import type { BillingPageState } from '../billing-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
-import { loadFinanceData } from '$lib/api/finance-data';
+import { loadBillingPageData } from '$lib/api/finance-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
@@ -13,12 +13,7 @@ export async function loadBillingSlice() {
 		return emptyBillingSlice();
 	}
 	const client = getBrowserSchoolClient();
-	const data = await loadFinanceData(client, { schoolId, academicYearId });
-	return {
-		fees: data.fees,
-		billing: data.billing,
-		students: data.students,
-	};
+	return loadBillingPageData(client, { schoolId, academicYearId });
 }
 
 export function queryBillingListPage(state: BillingPageState) {

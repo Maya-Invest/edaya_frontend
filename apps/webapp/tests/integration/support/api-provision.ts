@@ -3,12 +3,13 @@
  *
  * Identity (`AUTH_URL`, default http://localhost:9900):
  *   1. POST /auth/sign-up/email — user
- *   2. POST /dev/seed/mark-email-verified — skip email OTP in local/CI
- *   3. POST /auth/edaya/access-token — school Bearer JWT
+ *   2. POST /dev/seed/mark-email-verified — API provisioning only (not the onboarding UI)
+ *   3. POST /auth/sign-in/email — session cookie (required when email verification is on)
+ *   4. POST /auth/edaya/access-token — school Bearer JWT
  *
  * School API (`API_URL`, default http://localhost:9999):
- *   4. POST /core/onboarding/register-school — school (only data entity)
- *   5. POST /core/onboarding/complete-wizard — wizard flag (no data)
+ *   5. POST /core/onboarding/register-school — school (only data entity)
+ *   6. POST /core/onboarding/complete-wizard — wizard flag (no data)
  *
  * Identity cookies never go to `/core`. School requests use Bearer only.
  */
@@ -394,17 +395,6 @@ export async function ensureSecondaryAuthAccount(
 	}
 }
 
-async function completeWizardForClient(client: ProvisionHttpClient): Promise<void> {
-	await client.jsonRequest<OnboardingAccountStatusResponse>(
-		'/core/onboarding/complete-wizard',
-		{
-			method: 'POST',
-			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({}),
-		},
-	).catch(() => null);
-}
-
 export async function activateTeacherSecondaryAccount(
 	apiUrl: string,
 	appOrigin: string,
@@ -412,40 +402,12 @@ export async function activateTeacherSecondaryAccount(
 	password: string,
 	name: string,
 	token: string | null,
-	teacherId: string,
-	linkViaOwner: (subjectId: string) => Promise<boolean>,
 ): Promise<AcceptInvitationResult> {
 	if (!token) {
 		return { ok: false, detail: 'no invitation token' };
 	}
 
-	const auth = await ensureSecondaryAuthAccount(apiUrl, appOrigin, email, password, name);
-	if ('ok' in auth && auth.ok === false) {
-		return auth;
-	}
-	const { client, subjectId } = auth as { client: ProvisionHttpClient; subjectId: string };
-
-	const acceptResult = await acceptInvitationTokenDetailed(client, token);
-	if (acceptResult.ok) {
-		return acceptResult;
-	}
-
-	// Public accept uses a system actor that cannot pass checkTeacherAccess (backend gap).
-	// Owner link-actor-subject is equivalent for harness provisioning.
-	if (!/403|forbidden/i.test(acceptResult.detail ?? '')) {
-		return acceptResult;
-	}
-
-	const linked = await linkViaOwner(subjectId);
-	if (!linked) {
-		return {
-			ok: false,
-			detail: `link-actor-subject fallback failed after ${acceptResult.detail}`,
-		};
-	}
-
-	await completeWizardForClient(client);
-	return { ok: true, detail: `linked via owner (${subjectId} -> ${teacherId})` };
+	return acceptInvitationTokenWithRetry(apiUrl, appOrigin, email, password, name, token);
 }
 
 async function markEmailVerified(client: ProvisionHttpClient, email: string, subjectId?: string): Promise<void> {
@@ -492,7 +454,24 @@ async function signUp(
 	}
 
 	await markEmailVerified(client, email, subjectId);
+	await signIn(client, email, password);
 	return subjectId;
+}
+
+async function signIn(
+	client: ProvisionHttpClient,
+	email: string,
+	password: string,
+): Promise<void> {
+	const { response, body } = await client.jsonRequest('/auth/sign-in/email', {
+		method: 'POST',
+		headers: { 'content-type': 'application/json' },
+		body: JSON.stringify({ email, password }),
+	});
+	if (!response.ok) {
+		const detail = body ? JSON.stringify(body) : await response.text();
+		throw new Error(`sign-in after verify failed: ${response.status} ${detail}`);
+	}
 }
 
 async function registerSchool(

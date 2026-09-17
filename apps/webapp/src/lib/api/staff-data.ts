@@ -301,31 +301,54 @@ export async function fetchSessionStaffProfile(
 	notificationEmail: string | null;
 	notificationPhone: string | null;
 }> {
-	const staff = await client.entities.staffMembers.get(staffId);
-	const ownerSubjectId = options?.isElevated
-		? staff.subjectId
-		: await resolveSchoolOwnerSubjectId(client, staff.schoolId);
-	const role = mapStaffRole(staff, ownerSubjectId);
+	try {
+		const staff = await client.entities.staffMembers.get(staffId);
+		const ownerSubjectId = options?.isElevated
+			? staff.subjectId
+			: await resolveSchoolOwnerSubjectId(client, staff.schoolId);
+		const role = mapStaffRole(staff, ownerSubjectId);
 
-	return {
-		profile: {
-			id: staff.id,
-			name: `${staff.firstName} ${staff.lastName}`,
-			initials: `${staff.firstName[0] ?? ''}${staff.lastName[0] ?? ''}`,
-			photoUrl: staff.photoUrl ?? null,
-			role,
-			department: mapDepartment(role, staff.id, [], [], []),
-			email: staff.email ?? '',
-			classes: [],
-			mainClassId: undefined,
-			subjectsTaught: [],
-			subjectLabels: [],
-			isActive: staff.isActive ?? true,
-			subjectId: staff.subjectId ?? null,
-		},
-		notificationEmail: staff.notificationEmail ?? null,
-		notificationPhone: staff.notificationPhone ?? null,
-	};
+		return {
+			profile: {
+				id: staff.id,
+				name: `${staff.firstName} ${staff.lastName}`,
+				initials: `${staff.firstName[0] ?? ''}${staff.lastName[0] ?? ''}`,
+				photoUrl: staff.photoUrl ?? null,
+				role,
+				department: mapDepartment(role, staff.id, [], [], []),
+				email: staff.email ?? '',
+				classes: [],
+				mainClassId: undefined,
+				subjectsTaught: [],
+				subjectLabels: [],
+				isActive: staff.isActive ?? true,
+				subjectId: staff.subjectId ?? null,
+			},
+			notificationEmail: staff.notificationEmail ?? null,
+			notificationPhone: staff.notificationPhone ?? null,
+		};
+	}
+	catch (error) {
+		if (error instanceof ApiError && (error.status === 403 || error.status === 404)) {
+			return {
+				profile: {
+					id: staffId,
+					name: 'Staff',
+					initials: 'ST',
+					photoUrl: null,
+					role: 'staff',
+					department: '',
+					email: '',
+					classes: [],
+					isActive: true,
+					subjectId: null,
+				},
+				notificationEmail: null,
+				notificationPhone: null,
+			};
+		}
+		throw error;
+	}
 }
 
 export interface StaffPageRequest {

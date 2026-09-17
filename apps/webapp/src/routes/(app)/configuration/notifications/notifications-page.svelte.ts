@@ -62,7 +62,8 @@ export class NotificationsPageState {
 	}
 
 	async updateTemplates(input: {
-		templates: Record<string, unknown>;
+		templates?: Record<string, unknown>;
+		invitationSmsEnabled?: boolean;
 		expectedUpdatedAt?: string | null;
 		successMessage?: string;
 	}): Promise<SchoolNotificationTemplatesRow | null> {
@@ -77,6 +78,7 @@ export class NotificationsPageState {
 			request: () => client.commands.updateSchoolNotificationTemplates({
 				schoolId,
 				templates: input.templates,
+				invitationSmsEnabled: input.invitationSmsEnabled,
 				expectedUpdatedAt: input.expectedUpdatedAt ?? null,
 			}),
 			successMessage: input.successMessage,

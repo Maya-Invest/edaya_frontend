@@ -626,6 +626,7 @@ export function mapStudents(
 			name: `${student.firstName} ${student.lastName}`,
 			initials: initialsFor(student.firstName, student.lastName),
 			photoUrl: student.photoUrl ?? null,
+			photoAttachmentId: student.photoAttachmentId ?? null,
 			email: '',
 			birthdate: formatDateInput(student.birthDate),
 			matricule: student.matricule ?? null,

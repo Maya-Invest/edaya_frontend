@@ -1,17 +1,23 @@
 <script lang="ts">
 	import type { StudentBilling } from '$lib/types/school';
 	import { page } from '$app/stores';
+	import { studentYearAccountSourceId } from '$lib/api/documents-data';
+	import { requestDocumentIssuanceBatchMutation } from '$lib/api/mutations/documents.mutations';
+	import { authSession } from '$lib/auth/session.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
+	import { formatMinorUnits } from '$lib/finance/money';
+	import { billingStatusTone } from '$lib/finance/status';
 	import { locale, t } from '$lib/i18n';
 	import { Plus, TrendingUp, AlertCircle, Wallet } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { cn } from '$lib/utils';
+	import { get } from 'svelte/store';
 	import FinanceSubnav from '../../components/FinanceSubnav.svelte';
 	import { getBillingPageState } from '../billing-page.svelte';
 	import AssignFeeFormModal from './AssignFeeFormModal.svelte';
@@ -28,13 +34,7 @@
 	const fees = $derived(billingPage.fees);
 	const billing = $derived(billingPage.billing);
 	const students = $derived(billingPage.students);
-
-	const statusStyle: Record<StudentBilling['status'], string> = {
-		paid: 'bg-secondary text-foreground/80',
-		partial: 'bg-secondary text-foreground/80',
-		due: 'bg-highlight-soft text-highlight',
-		overdue: 'bg-destructive/10 text-destructive',
-	};
+	const displayCurrency = $derived(billing[0]?.currency || fees[0]?.currency || 'XOF');
 
 	const modals = createUrlSyncedModals({ allowed: ['assign-fee'], getUrl: () => $page.url });
 	$effect(() => {
@@ -43,9 +43,9 @@
 	const assignFeeOpen = bindUrlModal(modals, 'assign-fee');
 
 	const totals = $derived.by(() => {
-		const totalDue = billing.reduce((sum, b) => sum + (b.total - b.paid), 0);
-		const collected = billing.reduce((sum, b) => sum + b.paid, 0);
-		const overdue = billing.filter(b => b.status === 'overdue').length;
+		const totalDue = billing.reduce((sum, row) => sum + row.remaining, 0);
+		const collected = billing.reduce((sum, row) => sum + row.paid, 0);
+		const overdue = billing.filter(row => row.status === 'overdue').length;
 		return { totalDue, collected, overdue };
 	});
 
@@ -55,9 +55,31 @@
 		alert: 'bg-destructive/10 text-destructive',
 	} as const;
 
-	function handleBillingCreated(studentFeeId: string) {
-		const path = detailHref.financeBilling(studentFeeId);
+	function handleBillingCreated(chargeId: string) {
+		const path = detailHref.financeBilling(chargeId);
 		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+	}
+
+	async function exportOverdueReminders() {
+		const schoolId = authSession.schoolId;
+		const overdue = billing.filter(row => row.status === 'overdue');
+		if (!schoolId || overdue.length === 0) {
+			return;
+		}
+		await requestDocumentIssuanceBatchMutation({
+			templateKey: 'payment-reminder.v1',
+			items: overdue.map(row => ({
+				sourceId: studentYearAccountSourceId({
+					schoolId,
+					studentId: row.studentId,
+					academicYearId: row.academicYearId,
+					currency: row.currency,
+				}),
+				requestId: crypto.randomUUID(),
+				studentId: row.studentId,
+			})),
+			successMessage: get(t)('documents.toastRequested'),
+		});
 	}
 </script>
 
@@ -70,7 +92,7 @@
 			<PermissionGate
 				permission="PAYMENT_RECORD"
 				mode="disable"
-				tooltip={$t('payment.permissionRecord')}
+				tooltip={$t('invoice.permissionEnroll')}
 			>
 				{#snippet children({ disabled, title })}
 					<Button
@@ -87,7 +109,7 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu exportOnly exportLabel={$t('documents.exportReminders')} onExport={() => void exportOverdueReminders()} />
 		{/snippet}
 	</ListPageHeader>
 
@@ -103,7 +125,7 @@
 					{$t('finance.collected')}
 				</p>
 				<p class="font-sans text-2xl font-semibold tabular-nums">
-					{totals.collected.toLocaleString()} FCFA
+					{formatMinorUnits(totals.collected, displayCurrency, $locale)}
 				</p>
 			</div>
 		</div>
@@ -116,7 +138,7 @@
 					{$t('finance.outstanding')}
 				</p>
 				<p class="font-sans text-2xl font-semibold tabular-nums">
-					{totals.totalDue.toLocaleString()} FCFA
+					{formatMinorUnits(totals.totalDue, displayCurrency, $locale)}
 				</p>
 			</div>
 		</div>
@@ -149,73 +171,73 @@
 					{$t('dataState.emptyDescription')}
 				</li>
 			{:else}
-				{#each billing as b (b.id)}
-					{@const student = students.find(s => s.id === b.studentId)}
-					{@const fee = fees.find(f => f.id === b.feeId)}
-					{#if student && fee}
-						{@const pct = (b.paid / b.total) * 100}
-						{@const active = selectedId === b.id}
-						<li>
-							<button
-								type="button"
-								onclick={() => onSelectBilling?.(b)}
-								class={cn(
-									'grid w-full grid-cols-12 items-center gap-4 border-b border-border px-5 py-4 text-left transition-colors last:border-b-0',
-									active ? 'bg-primary/10' : 'hover:bg-secondary',
-								)}
-							>
-								<div class="col-span-4 flex items-center gap-3">
-									<div
-										class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary font-display text-xs font-semibold text-primary-foreground"
-									>
-										{student.initials}
-									</div>
-									<div class="min-w-0">
-										<p class="truncate text-sm font-medium">{student.name}</p>
-										<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
-											{student.classId}
-										</p>
-									</div>
+				{#each billing as row (row.id)}
+					{@const student = students.find(entry => entry.id === row.studentId)}
+					{@const fee = fees.find(entry => entry.id === row.catalogServiceId)}
+					{@const pct = row.total > 0 ? (row.paid / row.total) * 100 : 0}
+					{@const active = selectedId === row.id}
+					<li>
+						<button
+							type="button"
+							onclick={() => onSelectBilling?.(row)}
+							class={cn(
+								'grid w-full grid-cols-12 items-center gap-4 border-b border-border px-5 py-4 text-left transition-colors last:border-b-0',
+								active ? 'bg-primary/10' : 'hover:bg-secondary',
+							)}
+						>
+							<div class="col-span-4 flex items-center gap-3">
+								<div
+									class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary font-display text-xs font-semibold text-primary-foreground"
+								>
+									{student?.initials ?? '—'}
 								</div>
-								<div class="col-span-3">
-									<p class="truncate text-sm">{fee.name}</p>
+								<div class="min-w-0">
+									<p class="truncate text-sm font-medium">{student?.name ?? $t('events.student')}</p>
 									<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
-										{$t(`feeCat.${fee.category}`)} · {fee.period
-											? $t(`feePeriod.${fee.period}`)
-											: $t('fee.installmentCount', { n: fee.installmentCount ?? 0 })}
+										{student?.classId ?? ''}
 									</p>
 								</div>
-								<div class="col-span-2">
-									<p class="font-sans tabular-nums text-xs">
-										{b.paid.toLocaleString()} / {b.total.toLocaleString()} FCFA
-									</p>
-									<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary">
-										<div
-											class={cn('h-full rounded-full', b.status === 'overdue' ? 'bg-destructive' : 'bg-accent')}
-											style:width="{pct}%"
-										></div>
-									</div>
+							</div>
+							<div class="col-span-3">
+								<p class="truncate text-sm">{row.label || fee?.name || $t('billing.fee')}</p>
+								<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
+									{fee ? $t(`feeCat.${fee.category}`) : ''}
+								</p>
+							</div>
+							<div class="col-span-2">
+								<p class="font-sans tabular-nums text-xs">
+									{formatMinorUnits(row.paid, row.currency, $locale)}
+									/
+									{formatMinorUnits(row.total, row.currency, $locale)}
+								</p>
+								<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary">
+									<div
+										class={cn('h-full rounded-full', row.status === 'overdue' ? 'bg-destructive' : 'bg-accent')}
+										style:width="{pct}%"
+									></div>
 								</div>
-								<div class="col-span-2 text-xs text-foreground/70">
-									{new Date(b.dueDate).toLocaleDateString($locale, {
+							</div>
+							<div class="col-span-2 text-xs text-foreground/70">
+								{row.dueDate
+									? new Date(row.dueDate).toLocaleDateString($locale, {
 										day: 'numeric',
 										month: 'short',
 										year: 'numeric',
-									})}
-								</div>
-								<div class="col-span-1 flex justify-end">
-									<span
-										class={cn(
-											'rounded-full px-2 py-1 text-[10px] font-medium uppercase',
-											statusStyle[b.status],
-										)}
-									>
-										{$t(`billing.status.${b.status}`)}
-									</span>
-								</div>
-							</button>
-						</li>
-					{/if}
+									})
+									: '—'}
+							</div>
+							<div class="col-span-1 flex justify-end">
+								<span
+									class={cn(
+										'rounded-full px-2 py-1 text-[10px] font-medium uppercase',
+										billingStatusTone[row.status],
+									)}
+								>
+									{$t(`billing.status.${row.status}`)}
+								</span>
+							</div>
+						</button>
+					</li>
 				{/each}
 			{/if}
 		</ul>

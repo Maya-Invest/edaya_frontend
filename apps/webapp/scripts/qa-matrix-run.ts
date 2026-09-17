@@ -15,7 +15,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { chromium } from 'playwright';
+import type { Browser } from 'playwright';
 import { ensurePlaywrightChromium } from './playwright-browsers';
 import { assertStackReady, attemptPasswordSignIn } from '../tests/integration/demo-dry-run/support/auth';
 import { createDemoContext } from '../tests/integration/demo-dry-run/support/context';
@@ -117,6 +117,11 @@ async function qaSignIn(
 ): Promise<void> {
 	const { page, base } = ctx;
 
+	if (await page.locator('aside#app-sidebar').isVisible().catch(() => false)) {
+		await waitForAppShell(page);
+		return;
+	}
+
 	if (isProvisionedRun() && credentials) {
 		const ok = await loginWithPassword(page, base, credentials.email, credentials.password);
 		if (ok) {
@@ -179,7 +184,13 @@ async function main(): Promise<void> {
 	}
 
 	const results: MatrixResult[] = [];
+	const recordedKeys = new Set<string>();
 	const record = (r: MatrixResult) => {
+		const key = `${r.module}::${r.endpoint}::${r.action}`;
+		if (recordedKeys.has(key)) {
+			return;
+		}
+		recordedKeys.add(key);
 		results.push(r);
 		const tag = r.statut === 'OK' ? '✓' : r.statut === 'N/A' ? '○' : '✗';
 		console.log(`${tag} [${r.module}] ${r.action.slice(0, 60)}${r.detail ? ` — ${r.detail.slice(0, 80)}` : ''}`);
@@ -225,6 +236,7 @@ async function main(): Promise<void> {
 		process.exit(1);
 	}
 
+	const { chromium } = await import('playwright');
 	const browser = await chromium.launch({ headless: true });
 	const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 	const page = await context.newPage();
@@ -365,7 +377,7 @@ async function persistAndExit(
 	base: string,
 	results: MatrixResult[],
 	consoleErrors: string[],
-	browser: Awaited<ReturnType<typeof chromium.launch>>,
+	browser: Browser,
 	excluded: string[] = [],
 	setupBlockers: BlockerReport[] = [],
 ): Promise<void> {
@@ -432,7 +444,7 @@ async function persistAndExit(
 	}
 
 	console.log(`\n--- Résumé ---`);
-	console.log(`OK: ${passed}  NOT OK: ${failed}  N/A: ${na}  Total: ${results.length}`);
+	console.log(`OK: ${passed}  NOT OK: ${failed}  N/A: ${na}  Unique: ${results.length}`);
 	if (excluded.length > 0) {
 		console.log(`Excluded from automated run: ${excluded.join(', ')}`);
 	}

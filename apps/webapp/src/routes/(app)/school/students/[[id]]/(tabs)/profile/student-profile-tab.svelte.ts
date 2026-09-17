@@ -2,7 +2,8 @@ import type { Guardian, HealthRecord, PedagogicalNote, StaffMember } from '$lib/
 import type { StudentsPageState } from '../../../students-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadGuardiansPeopleData } from '$lib/api/people-data';
-import { uploadProfilePhoto, withPhotoCacheBust } from '$lib/api/profile-photo-upload';
+import { stableRequestId, studentPhotoCommandStorageKey } from '$lib/api/profile-photo-request';
+import { displayProfilePhotoUrl, uploadProfilePhoto } from '$lib/api/profile-photo-upload';
 import { safeOptionalEntityList, safeOptionalFetch } from '$lib/api/safe-entity-access';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { fetchStaffMembers } from '$lib/api/staff-data';
@@ -177,6 +178,7 @@ export class StudentProfileTabState {
 					scope.schoolId && scope.academicYearId
 						? safeOptionalEntityList(() => fetchStaffMembers(client, scope))
 						: Promise.resolve([]),
+					this.getPage().loadPendingPhotoReviews(),
 				]);
 
 				this.seed(studentId, {
@@ -240,7 +242,8 @@ export class StudentProfileTabState {
 			return false;
 		}
 
-		const previous = page.findStudent(input.studentId)?.photoUrl ?? null;
+		const previous = page.findStudent(input.studentId);
+		const previousPending = page.pendingPhotoFor(input.studentId);
 
 		const result = await runStudentRouteMutation({
 			request: async () => {
@@ -250,20 +253,110 @@ export class StudentProfileTabState {
 					file: input.file,
 					schoolId: resolvedSchoolId,
 				});
-				const photoUrl = withPhotoCacheBust(uploaded.photoUrl);
-				await getBrowserSchoolClient().commands.updateStudentProfile({
+				await getBrowserSchoolClient().commands.publishStudentPhoto({
+					requestId: stableRequestId(studentPhotoCommandStorageKey('publish', input.studentId)),
 					studentId: input.studentId,
-					photoUrl,
+					attachmentId: uploaded.attachmentId,
 				});
-				return photoUrl;
+				return {
+					photoUrl: displayProfilePhotoUrl(uploaded.attachmentId),
+					photoAttachmentId: uploaded.attachmentId,
+				};
 			},
 			successMessage: input.successMessage,
 			versionKeys: ['students'],
-			onSuccess: (photoUrl) => {
-				page.patchStudent(input.studentId, { photoUrl });
+			onSuccess: ({ photoUrl, photoAttachmentId }) => {
+				page.patchStudent(input.studentId, { photoUrl, photoAttachmentId });
+				page.pendingPhotoSubmissions = page.pendingPhotoSubmissions.filter(
+					submission => submission.studentId !== input.studentId,
+				);
 			},
 			rollback: () => {
-				page.patchStudent(input.studentId, { photoUrl: previous });
+				page.patchStudent(input.studentId, {
+					photoUrl: previous?.photoUrl ?? null,
+					photoAttachmentId: previous?.photoAttachmentId ?? null,
+				});
+				if (previousPending && !page.pendingPhotoFor(input.studentId)) {
+					page.pendingPhotoSubmissions = [...page.pendingPhotoSubmissions, previousPending];
+				}
+			},
+		});
+
+		return result !== null;
+	}
+
+	async approvePendingPhoto(input: {
+		studentId: string;
+		successMessage?: string;
+	}): Promise<boolean> {
+		const page = this.getPage();
+		const pending = page.pendingPhotoFor(input.studentId);
+		if (!pending) {
+			return false;
+		}
+		const previous = page.findStudent(input.studentId);
+
+		const result = await runStudentRouteMutation({
+			request: () => getBrowserSchoolClient().commands.reviewStudentPhoto({
+				requestId: stableRequestId(studentPhotoCommandStorageKey('review', input.studentId)),
+				submissionId: pending.id,
+				expectedVersion: pending.version,
+				decision: 'approve',
+			}),
+			successMessage: input.successMessage,
+			versionKeys: ['students'],
+			onSuccess: () => {
+				page.patchStudent(input.studentId, {
+					photoUrl: displayProfilePhotoUrl(pending.attachmentId),
+					photoAttachmentId: pending.attachmentId,
+				});
+				page.pendingPhotoSubmissions = page.pendingPhotoSubmissions.filter(
+					submission => submission.id !== pending.id,
+				);
+			},
+			rollback: () => {
+				if (previous) {
+					page.patchStudent(input.studentId, previous);
+				}
+				if (!page.pendingPhotoFor(input.studentId)) {
+					page.pendingPhotoSubmissions = [...page.pendingPhotoSubmissions, pending];
+				}
+			},
+		});
+
+		return result !== null;
+	}
+
+	async rejectPendingPhoto(input: {
+		studentId: string;
+		rejectionReason: string;
+		successMessage?: string;
+	}): Promise<boolean> {
+		const page = this.getPage();
+		const pending = page.pendingPhotoFor(input.studentId);
+		if (!pending) {
+			return false;
+		}
+
+		const result = await runStudentRouteMutation({
+			request: () => getBrowserSchoolClient().commands.reviewStudentPhoto({
+				requestId: stableRequestId(studentPhotoCommandStorageKey('review', input.studentId)),
+				submissionId: pending.id,
+				expectedVersion: pending.version,
+				decision: 'reject',
+				rejectionReason: input.rejectionReason.trim(),
+			}),
+			successMessage: input.successMessage,
+			versionKeys: ['students'],
+			onSuccess: () => {
+				page.pendingPhotoSubmissions = page.pendingPhotoSubmissions.filter(
+					submission => submission.id !== pending.id,
+				);
+			},
+			rollback: () => {
+				if (!page.pendingPhotoFor(input.studentId)) {
+					page.pendingPhotoSubmissions = [...page.pendingPhotoSubmissions, pending];
+				}
 			},
 		});
 

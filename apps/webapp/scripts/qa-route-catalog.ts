@@ -123,12 +123,14 @@ export const ROUTE_DESCRIPTIONS: Record<string, string> = {
 	'/school/calendar': 'Calendrier scolaire',
 	'/school/activities': 'Activités parascolaires',
 	'/school/announcements': 'Annonces',
+	'/school/family-feedback': 'Retour des familles',
 	'/school/events': 'Incidents discipline',
 	'/school/teacher-assignments': 'Compatibilité → hub affectations enseignants',
 	'/finance/fees': 'Configuration des frais',
 	'/finance/billing': 'Facturation — liste',
 	'/finance/billing/:id?': 'Facturation — détail élève',
 	'/finance/payment': 'Paiements enregistrés',
+	'/finance/reconciliation': 'Rapprochement financier',
 	'/configuration/school': 'Paramètres école',
 	'/configuration/academic': 'Années et périodes académiques',
 	'/configuration/grade-levels': 'Niveaux scolaires',
@@ -138,7 +140,9 @@ export const ROUTE_DESCRIPTIONS: Record<string, string> = {
 	'/configuration/grade-scales': 'Barèmes de notes',
 	'/configuration/report-cards': 'Modèles de bulletins',
 	'/configuration/notifications': 'Templates notifications',
+	'/configuration/notifications/[id]': 'Template notification — détail',
 	'/configuration/discipline': 'Actions disciplinaires',
+	'/configuration/permission-profiles': 'Profils de permissions',
 	'/configuration/tools': 'Outils (import, etc.)',
 	'/configuration/tools/teacher-assignments': 'Hub affectations enseignants',
 	'/classes/:classId/students': 'Élèves de la classe',
@@ -153,7 +157,7 @@ export const DRAWER_TAB_PATTERNS: readonly DrawerTabPattern[] = [
 	{
 		name: 'school students',
 		routePattern: '/school/students/[id]',
-		tabs: ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments'],
+		tabs: ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments', 'documents'],
 	},
 	{
 		name: 'school staff',
@@ -169,6 +173,11 @@ export const DRAWER_TAB_PATTERNS: readonly DrawerTabPattern[] = [
 		name: 'school activities',
 		routePattern: '/school/activities/[id]',
 		tabs: ['profile', 'students', 'classes'],
+	},
+	{
+		name: 'school family feedback',
+		routePattern: '/school/family-feedback/[id]',
+		tabs: ['setup', 'audience', 'moderation', 'results'],
 	},
 	{
 		name: 'configuration classes',
@@ -188,7 +197,7 @@ export const DRAWER_TAB_PATTERNS: readonly DrawerTabPattern[] = [
 	{
 		name: 'class students',
 		routePattern: '/classes/[classId]/students/[id]',
-		tabs: ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments'],
+		tabs: ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments', 'documents'],
 	},
 	{
 		name: 'class evaluations',
@@ -219,6 +228,7 @@ export const MODAL_SURFACES: readonly ModalSurface[] = [
 	},
 	{ module: 'École', parentRoute: '/school/activities', modal: 'create' },
 	{ module: 'École', parentRoute: '/school/announcements', modal: 'create' },
+	{ module: 'École', parentRoute: '/school/family-feedback', modal: 'create' },
 	{ module: 'École', parentRoute: '/school/events', modal: 'create' },
 	{ module: 'École', parentRoute: '/school/students/[id]/profile', modal: 'edit-profile' },
 	{ module: 'École', parentRoute: '/school/students/[id]/profile', modal: 'change-class' },
@@ -234,6 +244,15 @@ export const MODAL_SURFACES: readonly ModalSurface[] = [
 	{ module: 'École', parentRoute: '/school/announcements/[id]', modal: 'edit' },
 	{ module: 'École', parentRoute: '/school/announcements/[id]', modal: 'add-target' },
 	{ module: 'École', parentRoute: '/school/announcements/[id]', modal: 'publish' },
+	{ module: 'École', parentRoute: '/school/family-feedback/[id]/setup', modal: 'edit' },
+	{ module: 'École', parentRoute: '/school/family-feedback/[id]/setup', modal: 'assign-moderator' },
+	{ module: 'École', parentRoute: '/school/family-feedback/[id]/setup', modal: 'schedule' },
+	{ module: 'École', parentRoute: '/school/family-feedback/[id]/setup', modal: 'open' },
+	{ module: 'École', parentRoute: '/school/family-feedback/[id]/setup', modal: 'close' },
+	{ module: 'École', parentRoute: '/school/family-feedback/[id]/setup', modal: 'cancel' },
+	{ module: 'École', parentRoute: '/school/family-feedback/[id]/moderation', modal: 'theme' },
+	{ module: 'École', parentRoute: '/school/family-feedback/[id]/results', modal: 'publish' },
+	{ module: 'École', parentRoute: '/school/family-feedback/[id]/results', modal: 'archive' },
 	{ module: 'École', parentRoute: '/school/events/[id]', modal: 'edit' },
 	{ module: 'École', parentRoute: '/school/events/[id]', modal: 'resolve' },
 	{ module: 'Classes', parentRoute: '/classes/[classId]/students', modal: 'create' },
@@ -241,6 +260,10 @@ export const MODAL_SURFACES: readonly ModalSurface[] = [
 	{ module: 'Finance', parentRoute: '/finance/fees', modal: 'create' },
 	{ module: 'Finance', parentRoute: '/finance/billing', modal: 'assign-fee' },
 	{ module: 'Finance', parentRoute: '/finance/billing/[id]', modal: 'payment' },
+	{ module: 'Finance', parentRoute: '/finance/billing/[id]', modal: 'allocate' },
+	{ module: 'Finance', parentRoute: '/finance/billing/[id]', modal: 'unallocate' },
+	{ module: 'Finance', parentRoute: '/finance/payment', modal: 'reverse' },
+	{ module: 'Finance', parentRoute: '/finance/payment', modal: 'refund' },
 	{ module: 'Configuration', parentRoute: '/configuration/school', modal: 'edit' },
 	{ module: 'Configuration', parentRoute: '/configuration/grade-levels', modal: 'create' },
 	{ module: 'Configuration', parentRoute: '/configuration/grade-levels/[id]', modal: 'edit' },
@@ -251,15 +274,26 @@ export const MODAL_SURFACES: readonly ModalSurface[] = [
 	{ module: 'Configuration', parentRoute: '/configuration/subjects/[id]/progression', modal: 'add-chapter' },
 	{ module: 'Configuration', parentRoute: '/configuration/grade-scales', modal: 'create' },
 	{ module: 'Configuration', parentRoute: '/configuration/report-cards', modal: 'create' },
+	{ module: 'Configuration', parentRoute: '/configuration/report-cards/[id]', modal: 'delete' },
 	{
 		module: 'Configuration',
 		parentRoute: '/configuration/notifications',
+		modal: 'reset-all',
+	},
+	{
+		module: 'Configuration',
+		parentRoute: '/configuration/notifications/[id]',
 		modal: 'edit',
 		setupStep: 'notification-template-key',
-		requiresTarget: true,
-		targetEntityKey: 'notificationTemplateKey',
+	},
+	{
+		module: 'Configuration',
+		parentRoute: '/configuration/notifications/[id]',
+		modal: 'reset-key',
+		setupStep: 'notification-template-key',
 	},
 	{ module: 'Configuration', parentRoute: '/configuration/discipline', modal: 'create' },
+	{ module: 'Configuration', parentRoute: '/configuration/permission-profiles', modal: 'create' },
 	{ module: 'Configuration', parentRoute: '/configuration/tools/teacher-assignments', modal: 'create' },
 	{ module: 'Shell', parentRoute: '/dashboard', modal: ACCOUNT_PROFILE_MODAL },
 ];
@@ -373,7 +407,7 @@ export function resolveModuleFromPath(url: string, app: 'webapp' | 'webadmin' = 
 export function resolveRouteDescription(url: string): string {
 	if (ROUTE_DESCRIPTIONS[url]) return ROUTE_DESCRIPTIONS[url];
 
-	const tabMatch = url.match(/\/(profile|grades|report-card|attendance|enrollments|finances|incidents|assignments|permissions|availability|details|grading|logbook|progression|classes|students)$/);
+	const tabMatch = url.match(/\/(profile|grades|report-card|attendance|enrollments|finances|incidents|documents|assignments|permissions|availability|details|grading|logbook|progression|classes|students)$/);
 	if (tabMatch) {
 		return `Onglet ${tabMatch[1]}`;
 	}

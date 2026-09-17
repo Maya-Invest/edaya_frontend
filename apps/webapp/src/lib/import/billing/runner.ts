@@ -1,6 +1,6 @@
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { ValidatedBillingImportRow } from './types';
-import { assignFeeToStudentMutation } from '$lib/api/mutations/billing.mutations';
+import { enrollStudentInServiceMutation } from '$lib/api/mutations/billing.mutations';
 import { t } from '$lib/i18n';
 import { formatImportRunErrorMessage } from '$lib/import/shared/format-import-run-error';
 import { get } from 'svelte/store';
@@ -35,17 +35,17 @@ export async function runBillingImport(options: BillingImportRunOptions): Promis
 		onProgress?.(index, total);
 
 		try {
-			const studentFeeId = await assignFeeToStudentMutation({
-				id: `sf-import-${row.rowIndex}-${index}-${Date.now().toString(36)}`,
+			const enrollmentId = await enrollStudentInServiceMutation({
+				id: `enr-import-${row.rowIndex}-${index}-${Date.now().toString(36)}`,
 				studentId: row.studentId,
-				feeId: row.feeId,
-				expectedAmount: row.expectedAmount,
+				catalogServiceId: row.feeId,
+				priceOverride: row.expectedAmount,
 				dueDate: row.dueDate
 					? new Date(`${row.dueDate}T12:00:00`).toISOString()
 					: undefined,
 			});
-			if (studentFeeId) {
-				studentFeeIds.push(studentFeeId);
+			if (enrollmentId) {
+				studentFeeIds.push(enrollmentId);
 			}
 			else {
 				failed.push({

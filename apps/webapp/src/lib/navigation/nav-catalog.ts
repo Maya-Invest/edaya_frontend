@@ -1,4 +1,10 @@
 import type { PermissionCode } from '$lib/auth/types';
+import {
+	FAMILY_FEEDBACK_CAMPAIGN_MANAGE_PERMISSION,
+	FAMILY_FEEDBACK_CAMPAIGN_READ_PERMISSION,
+	FAMILY_FEEDBACK_PUBLISH_PERMISSION,
+} from '$lib/family-feedback/permissions';
+import { FINANCIAL_REPORT_READ_PERMISSION } from '$lib/finance/permissions';
 
 export interface NavItemDefinition {
 	key: string;
@@ -38,19 +44,29 @@ export const SCHOOL_NAV_DEFS: NavItemDefinition[] = [
 		key: 'calendar',
 		labelKey: 'school.calendar',
 		href: '/school/calendar',
-		permissions: ['QUERY_CALENDAR_READ', 'ACCESS_CONTROL_READ'],
+		permissions: ['QUERY_CALENDAR_READ'],
 	},
 	{
 		key: 'activities',
 		labelKey: 'school.activities',
 		href: '/school/activities',
-		permissions: ['QUERY_CALENDAR_READ', 'ACCESS_CONTROL_READ'],
+		permissions: ['QUERY_CALENDAR_READ'],
 	},
 	{
 		key: 'announcements',
 		labelKey: 'school.announcements',
 		href: '/school/announcements',
 		// Every selected profile may read announcements addressed to it; policies filter the rows.
+	},
+	{
+		key: 'familyFeedback',
+		labelKey: 'school.familyFeedback',
+		href: '/school/family-feedback',
+		permissions: [
+			FAMILY_FEEDBACK_CAMPAIGN_READ_PERMISSION,
+			FAMILY_FEEDBACK_CAMPAIGN_MANAGE_PERMISSION,
+			FAMILY_FEEDBACK_PUBLISH_PERMISSION,
+		],
 	},
 	{
 		key: 'events',
@@ -124,6 +140,12 @@ export const FINANCE_NAV_DEFS: NavItemDefinition[] = [
 		href: '/finance/payment',
 		permissions: ['PAYMENT_READ', 'FINANCIAL_CONFIG_READ'],
 	},
+	{
+		key: 'reconciliation',
+		labelKey: 'finance.reconciliation',
+		href: '/finance/reconciliation',
+		permissions: [FINANCIAL_REPORT_READ_PERMISSION],
+	},
 ];
 
 export const CONFIG_NAV_DEFS: NavItemDefinition[] = [
@@ -180,6 +202,12 @@ export const CONFIG_NAV_DEFS: NavItemDefinition[] = [
 		labelKey: 'config.discipline',
 		href: '/configuration/discipline',
 		permissions: ['DISCIPLINE_VALIDATE'],
+	},
+	{
+		key: 'permissionProfiles',
+		labelKey: 'config.permissionProfiles',
+		href: '/configuration/permission-profiles',
+		permissions: ['ACCESS_CONTROL_READ', 'ACCESS_CONTROL_CONFIGURE'],
 	},
 	{
 		key: 'tools',

@@ -133,6 +133,7 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	...rows('École', `${B}/school/students/[id]/finances`, ['Consulter lignes finance']),
 	...rows('École', `${B}/school/students/[id]/report-card`, ['Générer / publier bulletin']),
 	...rows('École', `${B}/school/students/[id]/enrollments`, ['Historique inscriptions']),
+	...rows('École', `${B}/school/students/[id]/documents`, ['Historique documents', 'Générer / télécharger / annuler']),
 
 	...rows('École', `${B}/school/guardians`, [
 		'Liste — affichage / recherche',
@@ -180,6 +181,20 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 		'Publier',
 	]),
 
+	...rows('École', `${B}/school/family-feedback`, [
+		'Liste — filtre statut',
+		'Créer campagne',
+	]),
+	...rows('École', `${B}/school/family-feedback/[id]/setup`, [
+		'Paramétrage',
+		'Éditer calendrier',
+		'Désigner modérateur',
+		'Planifier / ouvrir / clôturer',
+	]),
+	...rows('École', `${B}/school/family-feedback/[id]/audience`, ['Audience']),
+	...rows('École', `${B}/school/family-feedback/[id]/moderation`, ['Thèmes et commentaires']),
+	...rows('École', `${B}/school/family-feedback/[id]/results`, ['Agrégats et publication']),
+
 	...rows('École', `${B}/school/events`, ['Liste incidents', 'Créer incident']),
 	...rows('École', `${B}/school/events/[id]`, ['Éditer', 'Résoudre incident']),
 
@@ -197,6 +212,7 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	...rows('Classes', `${B}/classes/[classId]/students/[id]/finances`, ['Finances']),
 	...rows('Classes', `${B}/classes/[classId]/students/[id]/report-card`, ['Bulletin']),
 	...rows('Classes', `${B}/classes/[classId]/students/[id]/enrollments`, ['Inscriptions']),
+	...rows('Classes', `${B}/classes/[classId]/students/[id]/documents`, ['Documents']),
 
 	...rows('Classes', `${B}/classes/[classId]/timetable`, [
 		'Vue semaine / liste',
@@ -255,13 +271,17 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	]),
 	...rows('Finance', `${B}/finance/billing/[id]`, [
 		'Enregistrer paiement',
-		'Supprimer facturation',
+		'Imputer le solde',
 	]),
 	...rows('Finance', `${B}/finance/payment`, [
 		'Ledger paiements',
 		'Recherche',
 		'Filtre statut',
 		'Filtre classe',
+		'Extourner un paiement',
+	]),
+	...rows('Finance', `${B}/finance/reconciliation`, [
+		'Rapprochement financier',
 	]),
 
 	// ─── Configuration ──────────────────────────────────────────────────
@@ -309,6 +329,11 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	...rows('Configuration', `${B}/configuration/discipline`, [
 		'Catalogue disciplinaire',
 		'Filtre kind',
+		'CRUD entrée',
+	]),
+	...rows('Configuration', `${B}/configuration/permission-profiles`, [
+		'Catalogue des profils',
+		'Filtre grain',
 		'CRUD entrée',
 	]),
 	...rows('Configuration', `${B}/configuration/tools`, [

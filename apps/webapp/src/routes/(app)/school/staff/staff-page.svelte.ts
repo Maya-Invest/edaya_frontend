@@ -1,8 +1,6 @@
 import type { components } from '$lib/api/schema';
-import type {
-	PermissionCatalogEntry,
-	StaffPermissionAssignmentView,
-} from '$lib/api/staff-permission-assignments-data';
+import type { PermissionCatalogEntry, StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
+import type { StaffPermissionProfile, StaffPermissionProfileBinding } from '$lib/api/staff-permission-profiles-data';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { StaffListFilters } from '$lib/list/list-url-filters';
 import type { StaffMember } from '$lib/types/school';
@@ -12,19 +10,32 @@ import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { fetchStaffMemberById, fetchStaffMembersPage } from '$lib/api/staff-data';
 import {
 	loadStaffPermissionPageData,
+
 } from '$lib/api/staff-permission-assignments-data';
+import {
+	bindingsForStaff,
+	customAssignmentsForStaff,
+	loadPermissionProfileCatalogData,
+	renderBindingScopeLabel,
+
+} from '$lib/api/staff-permission-profiles-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { mergeById } from '$lib/detail-data/seed-policies';
+import { t } from '$lib/i18n';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readStaffListFilters, writeStaffListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
 import { SvelteMap } from 'svelte/reactivity';
+import { get } from 'svelte/store';
 import {
 	createStaffOnPage,
 	deleteStaffOnPage,
 	deleteStaffPermissionOnPage,
+	applyStaffPermissionProfileOnPage,
+	removeStaffPermissionProfileOnPage,
+	reorderStaffPermissionProfilesOnPage,
 	saveStaffPermissionOnPage,
 	updateStaffProfileOnPage,
 	updateStaffProfilePhotoOnPage,
@@ -53,6 +64,9 @@ export class StaffPageState {
 	classSubjects = $state<ClassSubject[]>([]);
 	staffPermissionAssignments = $state<StaffPermissionAssignmentView[]>([]);
 	permissionCatalog = $state<PermissionCatalogEntry[]>([]);
+	staffPermissionProfiles = $state<StaffPermissionProfile[]>([]);
+	staffPermissionProfileBindings = $state<StaffPermissionProfileBinding[]>([]);
+	bindingScopeLabels = $state<Record<string, string>>({});
 	staffPermissionDataKey = $state<string | null>(null);
 	totalStaff = $state(0);
 	listLoading = $state(false);
@@ -129,6 +143,22 @@ export class StaffPageState {
 		return this.staffPermissionAssignments.filter(row => row.staffId === staffId);
 	}
 
+	customPermissionAssignmentsForStaff(staffId: string): StaffPermissionAssignmentView[] {
+		return customAssignmentsForStaff(this.permissionAssignmentsForStaff(staffId));
+	}
+
+	permissionProfileBindingsForStaff(staffId: string): StaffPermissionProfileBinding[] {
+		return bindingsForStaff(
+			this.staffPermissionProfileBindings,
+			staffId,
+			this.staffScope().academicYearId,
+		);
+	}
+
+	findPermissionProfile(id: string): StaffPermissionProfile | undefined {
+		return this.staffPermissionProfiles.find(profile => profile.id === id);
+	}
+
 	hasStaffPermissionData(key: string) {
 		return this.staffPermissionDataKey === key;
 	}
@@ -166,11 +196,17 @@ export class StaffPageState {
 		data: {
 			assignments: StaffPermissionAssignmentView[];
 			catalog: PermissionCatalogEntry[];
+			profiles: StaffPermissionProfile[];
+			bindings: StaffPermissionProfileBinding[];
+			bindingScopeLabels: Record<string, string>;
 		},
 		key: string,
 	) {
 		this.staffPermissionAssignments = data.assignments;
 		this.permissionCatalog = data.catalog;
+		this.staffPermissionProfiles = data.profiles;
+		this.staffPermissionProfileBindings = data.bindings;
+		this.bindingScopeLabels = data.bindingScopeLabels;
 		this.staffPermissionDataKey = key;
 	}
 
@@ -225,17 +261,42 @@ export class StaffPageState {
 		return true;
 	}
 
-	async loadPermissionData() {
+	async loadPermissionData(force = false) {
 		const scope = this.staffScope();
 		if (!scope.schoolId || !scope.academicYearId) {
 			return;
 		}
 		const key = `${scope.schoolId}:${scope.academicYearId}`;
-		if (this.hasStaffPermissionData(key)) {
+		if (!force && this.hasStaffPermissionData(key)) {
 			return;
 		}
-		const data = await loadStaffPermissionPageData(getBrowserSchoolClient(), scope, undefined);
-		this.seedStaffPermissionData(data, key);
+		const client = getBrowserSchoolClient();
+		const translate = get(t);
+		const [assignmentData, catalogData] = await Promise.all([
+			loadStaffPermissionPageData(client, scope, translate),
+			loadPermissionProfileCatalogData(client, scope.schoolId),
+		]);
+		const bindingScopeLabels: Record<string, string> = {};
+		await Promise.all(catalogData.bindings.map(async (binding) => {
+			const profile = catalogData.profiles.find(entry => entry.id === binding.profileId);
+			bindingScopeLabels[binding.id] = await renderBindingScopeLabel(client, {
+				academicYearId: binding.academicYearId,
+				permission: profile?.permissions[0],
+				scopes: binding.scopes,
+				translate,
+			});
+		}));
+		this.seedStaffPermissionData({
+			assignments: assignmentData.assignments,
+			catalog: assignmentData.catalog,
+			profiles: catalogData.profiles,
+			bindings: catalogData.bindings,
+			bindingScopeLabels,
+		}, key);
+	}
+
+	async reloadPermissionData() {
+		await this.loadPermissionData(true);
 	}
 
 	async refreshList() {
@@ -347,6 +408,10 @@ export class StaffPageState {
 			return;
 		}
 		await this.refreshList();
+		this.staffPermissionDataKey = null;
+		if (this.selectedId) {
+			await this.reloadPermissionData();
+		}
 	}
 
 	hydrateFiltersFromUrl() {
@@ -387,6 +452,18 @@ export class StaffPageState {
 
 	deletePermission(...args: Parameters<typeof deleteStaffPermissionOnPage> extends [StaffPageState, ...infer R] ? R : never) {
 		return deleteStaffPermissionOnPage(this, ...args);
+	}
+
+	applyPermissionProfile(...args: Parameters<typeof applyStaffPermissionProfileOnPage> extends [StaffPageState, ...infer R] ? R : never) {
+		return applyStaffPermissionProfileOnPage(this, ...args);
+	}
+
+	reorderPermissionProfiles(...args: Parameters<typeof reorderStaffPermissionProfilesOnPage> extends [StaffPageState, ...infer R] ? R : never) {
+		return reorderStaffPermissionProfilesOnPage(this, ...args);
+	}
+
+	removePermissionProfile(...args: Parameters<typeof removeStaffPermissionProfileOnPage> extends [StaffPageState, ...infer R] ? R : never) {
+		return removeStaffPermissionProfileOnPage(this, ...args);
 	}
 }
 

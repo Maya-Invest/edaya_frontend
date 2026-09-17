@@ -1,9 +1,9 @@
+import { bootstrapSessionAfterInvite } from '$lib/auth/accept-pending-invite';
 import { markAuthGatePassed } from '$lib/auth/auth-gate';
-import { bootstrapSession } from '$lib/auth/bootstrap';
 import { resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
+import { leaveStaffWebappForSessionKind } from '$lib/auth/leave-staff-webapp';
 import { resolvePostAuthPath } from '$lib/auth/resolve-post-auth';
 import { authSession } from '$lib/auth/session.svelte';
-import { teacherPortalLoginPath } from '$lib/auth/teacher-portal-gate';
 import { t } from '$lib/i18n';
 import { appGoto } from '$lib/navigation/app-navigation';
 import { toast } from '$lib/toast.svelte';
@@ -11,14 +11,14 @@ import { get } from 'svelte/store';
 
 export async function completeAuthSignIn(successMessage?: string): Promise<boolean> {
 	resetAppShellBootstrap();
-	const { session, pendingOnboarding } = await bootstrapSession();
+	const { session, pendingOnboarding } = await bootstrapSessionAfterInvite();
 
 	if (pendingOnboarding) {
 		if (successMessage) {
 			toast.success(successMessage);
 		}
 		markAuthGatePassed();
-		appGoto(resolvePostAuthPath({ session: null, pendingOnboarding: true }));
+		await appGoto(resolvePostAuthPath({ session: null, pendingOnboarding: true }));
 		return true;
 	}
 
@@ -27,11 +27,14 @@ export async function completeAuthSignIn(successMessage?: string): Promise<boole
 		return false;
 	}
 
-	if (session.kind === 'teacher') {
-		await authSession.logout();
-		resetAppShellBootstrap();
-		toast.info(get(t)('auth.teacherPortalGateHint'));
-		appGoto(teacherPortalLoginPath(), { replaceState: true });
+	if (session.kind === 'teacher' || session.kind === 'guardian' || session.kind === 'student') {
+		const hintKey = session.kind === 'teacher'
+			? 'auth.teacherPortalGateHint'
+			: session.kind === 'guardian'
+				? 'auth.guardianPortalGateHint'
+				: 'auth.studentPortalGateHint';
+		toast.info(get(t)(hintKey));
+		await leaveStaffWebappForSessionKind(session.kind);
 		return true;
 	}
 
@@ -40,7 +43,7 @@ export async function completeAuthSignIn(successMessage?: string): Promise<boole
 	}
 
 	markAuthGatePassed();
-	appGoto(resolvePostAuthPath({
+	await appGoto(resolvePostAuthPath({
 		session,
 		pendingOnboarding: false,
 		authUserId: authSession.authUserId,

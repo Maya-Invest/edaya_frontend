@@ -1,4 +1,4 @@
-import { emptyGrantScope, validGrantScopes } from '$lib/api/grant-scopes';
+import { emptyGrantScope, grantScopesEquivalent, validGrantScopes } from '$lib/api/grant-scopes';
 import { describe, expect, it } from 'bun:test';
 
 describe('typed grant editor', () => {
@@ -17,5 +17,16 @@ describe('typed grant editor', () => {
 		expect(validGrantScopes([{ kind: 'class_subject', classGroupId: 'a' }], 'class_subject')).toBe(true);
 		expect(validGrantScopes([{ kind: 'activity', classGroupId: 'a' }], 'activity')).toBe(true);
 		expect(validGrantScopes([{ kind: 'class_group', classGroupId: 'a' }, { kind: 'class_group', classGroupId: 'a' }], 'class_group')).toBe(false);
+	});
+
+	it('treats equivalent grant scopes as the same regardless of order', () => {
+		expect(grantScopesEquivalent(
+			[{ kind: 'class_group', classGroupId: 'a' }, { kind: 'class_group', classGroupId: 'b' }],
+			[{ kind: 'class_group', classGroupId: 'b' }, { kind: 'class_group', classGroupId: 'a' }],
+		)).toBe(true);
+		expect(grantScopesEquivalent(
+			[{ kind: 'school' }],
+			[{ kind: 'all', grain: 'class_group' }],
+		)).toBe(false);
 	});
 });

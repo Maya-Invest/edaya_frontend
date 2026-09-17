@@ -23,7 +23,7 @@ All sidebar modules and account surfaces in §2 and routes in §6, using list ·
 
 | Route / surface | Replacement |
 |---------------|-------------|
-| `/configuration/roles` | **Staff drawer → Permissions** tab (`staffPermissionAssignments`) |
+| `/configuration/roles` | **Configuration → Permission profiles** catalog + **Staff drawer → Permissions** tab (`staffPermissionAssignments`). Do not restore a roles matrix. |
 | `/classes/{classId}/homework` | **`/classes/{classId}/evaluations`** with `kind = homework` filter + row badge |
 | Dedicated **exam** menu | Timed assessments on **timetable** + **evaluations** list (same `Assessment` entity) |
 
@@ -108,8 +108,8 @@ Every feature **must** declare one surface type. Simple entities **must** use ro
 | Type | Drawer | Mutations | Examples |
 |------|--------|-----------|----------|
 | **Complex** | URL-backed read-only drawer | Entity-header actions → modals; sub-collections read-only, `+ Add` → modal | Student, Staff, Assessment, Incident, Billing |
-| **Simple** | None | Row `···` menu → modals | Fee, GradeScale, Payment, DisciplinaryAction, Notification templates |
-| **Thin drawer** | Sections only (no tabs) | Header actions → modals | CalendarEvent, Inbox delivery |
+| **Simple** | None | Row `···` menu → modals | CatalogService (fees), Payment, Reconciliation, GradeScale, DisciplinaryAction |
+| **Thin drawer** | Sections only (no tabs) | Header actions → modals | CalendarEvent, Inbox delivery, Notification templates |
 | **Layout variant** | None | Page-level or inline modals | Dashboard, School profile, Academic calendar accordion |
 
 **Drawer entity header** (complex + thin): identity block + **up to 2 primary actions** → modals. Destructive actions in overflow `···` only. Body = related content only — not a repeat of list columns.
@@ -123,7 +123,7 @@ These are **fixed** for v1. Do not introduce alternate flows without updating th
 | Topic | Decision |
 |-------|----------|
 | **Staff assignments (config)** | **Class-level only** in Configuration → Classes drawer (`staffAssignments` with `classGroupId`). Lesson/session/subject-level assignment is post-v1. |
-| **Staff permissions** | **Staff drawer → Permissions** tab (`staffPermissionAssignments`). No `/configuration/roles`. |
+| **Staff permissions** | Catalog at `/configuration/permission-profiles`. Runtime authority stays grant rows on **Staff drawer → Permissions**. No `/configuration/roles` matrix. |
 | **Incident resolve** | **One modal** — involved students, role, optional `DisciplinaryAction` per student, resolution notes. Command: **`resolveIncidentWithOutcomes`** (atomic). Drawer: involved students read-only; edits only via Resolve modal. |
 | **Assessments by `kind`** | **One route** `/evaluations`. Same routed drawer for all kinds: Details + Grading child tabs; Grading shows the exclusive work surface (homework submissions vs grades grid). List row: **kind badge**. |
 | **Homework** | `Assessment` with `kind = homework` on evaluations screen — **no** `/homework` nav. |
@@ -163,40 +163,50 @@ These are **fixed** for v1. Do not introduce alternate flows without updating th
 
 ### 5.3 Permissions
 
-- Persist via `staffPermissionAssignments` entity CRUD.
+- Runtime authority is `staffPermissionAssignments` grant rows. Policies never read a profile name.
+- School-owned **permission profiles** are same-grain templates at `/configuration/permission-profiles`. Bound grants are stamped with `sourceProfileId` and stay locked; custom grants (`sourceProfileId` null) stay add/edit/delete.
 - Picker labels: `GET authorization/permission-catalog` + `POST authorization/scope/render`.
 - Client edits typed `scopes`; server validates the action, target, year and validity on save. Manual grants and staff assignments are separate facts; no permission rows are copied from assignments.
 
 #### 5.3.1 Staff permission assignment UI
 
-Permissions are managed on **Staff drawer → Permissions** tab only. There is **no** `/configuration/roles` matrix screen in v1.
+Grant rows stay on **Staff drawer → Permissions**. Profile **templates** live in Configuration. There is **no** `/configuration/roles` matrix screen.
 
 | Surface | Rule |
 |---------|------|
-| **Location** | Staff drawer → **Permissions** tab (`/school/staff/{id}`) |
-| **Mutation pattern** | **Modal-only** — no inline permission toggles, no CRUD matrix layout |
+| **Catalog** | `/configuration/permission-profiles` — simple list (discipline analog). Read `ACCESS_CONTROL_READ`; create/edit/delete `ACCESS_CONTROL_CONFIGURE`. |
+| **Location (grants)** | Staff drawer → **Permissions** tab (`/school/staff/{id}`) |
+| **Mutation pattern** | **Modal-only** for custom grants and apply/remove; reorder via explicit up/down. No inline permission toggles, no CRUD matrix layout |
 | **Manage affordance** | Drawer header **Manage permissions** scrolls/focuses Permissions tab, or user switches tab manually |
-| **Gating** | Add / edit / delete require `ACCESS_CONTROL_ASSIGN` via `PermissionGate` (`hide` or `disable` + tooltip) |
+| **Gating** | Apply / remove / reorder / custom add-edit-delete require `ACCESS_CONTROL_ASSIGN` via `PermissionGate` (`hide` or `disable` + tooltip) |
 
 **Permissions tab anatomy** (drawer sub-collection pattern):
 
-Sub-collection tabs use a read-only list with header CTA and row actions that open modals — never inline edit forms in the tab body.
+Sub-collection tabs use a read-only list with header CTAs and row actions that open modals — never inline edit forms in the tab body.
 
 ```
-┌ Permissions ─────────────────────────────── [+ Add permission] ┐
-│  • GRADE_INPUT — 6ème A, 6ème B          [Edit] [Delete]         │
-│  • TIMETABLE_UPDATE — Whole school        [Edit] [Delete]         │
-└───────────────────────────────────────────────────────────────────┘
+┌ Permissions ────────────── [Apply profile] [+ Add permission] ┐
+│  Profile A (rank 0) · Whole school              [↑][↓][Remove] │
+│    • ACCESS_CONTROL_READ                                       │
+│  Profile B (rank 1) · Whole school              [↑][↓][Remove] │
+│    • ACCESS_CONTROL_READ — already granted by A (muted)        │
+│  Additional permissions                                        │
+│    • PAYMENT_READ — Whole school            [Edit] [Delete]    │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 | Element | Behavior |
 |---------|----------|
-| **Header CTA** | `+ Add permission` → **StaffPermissionFormModal** (create) |
+| **Locked profile groups** | Bindings in `sortOrder` (0 = highest). Each group shows profile name, rendered scope, permissions. Later profiles **skip** permissions already claimed by an earlier profile — muted hint “already granted by {profile}”. No row Edit/Delete on stamped grants. |
+| **Reorder** | Up/down rewrites `sortOrder` then re-resolves that staff (first-wins). |
+| **Remove profile** | Confirm → drop binding, re-resolve remaining. Custom grants remain. |
+| **Apply profile** | Modal: profile picker + one `ScopeBuilder` for the bundle (tenant-wide profiles always `{ kind: "school" }`). Appends at lowest rank. Re-applying the same profile upserts scopes and keeps rank. |
+| **Additional permissions** | `sourceProfileId` null rows. Header `+ Add permission` → **StaffPermissionFormModal** (custom only). |
 | **Row** | Permission label (i18n `permission.{CODE}`) · **scope label** from `scope/render` |
-| **Manual grants only** | Assignment-based authority is shown in the separate Assignments tab; no copied grant rows or sync badge |
 | **Stale scope** | When `scope/render` reports missing segments → warn badge (do not block read) |
-| **Row actions** | Edit → same modal (pre-filled); Delete → confirm → entity delete |
-| **Empty state** | Message + `+ Add permission` when user can assign |
+| **Custom row actions** | Edit → same modal (pre-filled); Delete → confirm → entity delete. Hidden on stamped rows. |
+| **Staff create** | Optional **tenant-wide** profile only (rank 0). Grain profiles are applied from the Permissions tab. |
+| **Empty state** | Message + Apply profile / `+ Add permission` when the user can assign |
 
 **Add / edit modal** (`StaffPermissionFormModal`):
 
@@ -229,11 +239,11 @@ The session contains one typed action-grant display. UI checks use that action's
 
 - `querySchoolStaffPage` loads `permission-catalog` into the staff route state.
 - Assignments load via the Permissions tab child route `PageQuery` (or with staff list when colocated); views built via `buildStaffPermissionAssignmentViews`.
-- Mutations: `saveStaffPermissionAssignmentMutation` / `deleteStaffPermissionAssignmentMutation` with optimistic patch on route state + `entityVersions` bump for every affected entity family.
+- Mutations: `configurePermissionProfile` / `applyStaffPermissionProfile` / `reorderStaffPermissionProfiles` / `removeStaffPermissionProfile` for bound grants; `saveStaffPermissionAssignmentMutation` / `deleteStaffPermissionAssignmentMutation` for custom rows only. Optimistic patch + `entityVersions` bump (`staff`).
 
 **Staff drawer → Assignments tab** (read-only): summary list of `staffAssignments` (class-level and other targets). Editing assignments happens in **Configuration → Classes** drawer (class-level tab) — not on this tab.
 
-**Removed:** `/configuration/roles` route, roles matrix, `StaffRoleAssignment` UI, inline CRUD matrix toggles for permissions.
+**Removed:** `/configuration/roles` route, roles matrix, `StaffRoleAssignment` UI, inline CRUD matrix toggles for permissions. Do **not** treat `StaffMember.profileRole` as authority.
 
 ---
 
@@ -249,6 +259,7 @@ The session contains one typed action-grant display. UI checks use that action's
 | School calendar | `/school/calendar` | — (simple — row `···` only) |
 | Activities | `/school/activities` | `/school/activities/{id}` |
 | Announcements | `/school/announcements` | `/school/announcements/{id}` |
+| Family feedback | `/school/family-feedback` | `/school/family-feedback/{id}` |
 | Incidents | `/school/events` | `/school/events/{id}` |
 | Class students | `/classes/{classId}/students` | `…/students/{id}` |
 | Timetable | `/classes/{classId}/timetable` | `…/timetable/{id}` |
@@ -259,6 +270,7 @@ The session contains one typed action-grant display. UI checks use that action's
 | Fees | `/finance/fees` | — |
 | Billing | `/finance/billing` | `/finance/billing/{id}` |
 | Payments | `/finance/payment` | — |
+| Reconciliation | `/finance/reconciliation` | — |
 | School profile | `/configuration/school` | — |
 | Academic calendar | `/configuration/academic` | — |
 | Grade levels | `/configuration/grade-levels` | `/configuration/grade-levels/{id}` |
@@ -266,8 +278,9 @@ The session contains one typed action-grant display. UI checks use that action's
 | Subjects catalog | `/configuration/subjects` | `/configuration/subjects/{id}` |
 | Report card models | `/configuration/report-cards` | `/configuration/report-cards/{id}` |
 | Grade scales | `/configuration/grade-scales` | — |
-| Notification templates | `/configuration/notifications` | — |
+| Notification templates | `/configuration/notifications` | `/configuration/notifications/{key}` |
 | Disciplinary catalog | `/configuration/discipline` | — |
+| Permission profiles | `/configuration/permission-profiles` | — |
 | Configuration tools | `/configuration/tools` | — |
 | Teacher assignments hub | `/configuration/tools/teacher-assignments` | — |
 | Account inbox | `/account/inbox` | `/account/inbox/{id}` |
@@ -286,9 +299,10 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 ### 7.2 School — Students
 
 - **Entity:** `Student` · **Complex drawer**
-- **List:** search name · main filter class · filter enrollment status · CTA Add student
-- **Drawer header:** Edit profile · Change class
-- **Drawer tabs:** Profile (identity, health, guardians, notes) · **Grades** (links → `/evaluations/{id}`) · **Attendance** (all records) · Incidents · Finance · Report card · **Enrollments** (history)
+- **List:** search name · main filter class · filter enrollment status · filter pending portrait review (`photoReview=pending`) · CTA Add student
+- **Drawer header:** Edit profile · Change class · published portrait only
+- **Drawer tabs:** Profile (published vs proposed portrait review, identity, health, guardians, notes) · **Grades** (links → `/evaluations/{id}`) · **Attendance** (all records) · Incidents · Finance · Report card · **Enrollments** (history) · **Documents** (issuance history by year, generate/retry/void, download)
+- **Portrait review:** Approve / Reject / Replace published on the Profile tab (URL modals). Guardian and staff self-photos publish immediately from their own surfaces.
 
 ### 7.3 School — Guardians
 
@@ -303,7 +317,8 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 - **Entity:** `StaffMember` · **Complex drawer**
 - **List:** search name · main filter assigned class · filter active/inactive
 - **Drawer header:** Edit profile · Manage permissions
-- **Drawer tabs:** Profile · **Permissions** (`staffPermissionAssignments` via modals) · Assignments (read-only `staffAssignments` summary)
+- **Drawer tabs:** Profile · **Permissions** (locked profile groups + editable custom `staffPermissionAssignments`) · Assignments (read-only `staffAssignments` summary)
+- **Create:** optional tenant-wide permission profile (rank 0)
 
 ### 7.4.1 School — Teachers
 
@@ -338,6 +353,15 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 - **Drawer header:** Edit · **Resolve** (hidden when `status = resolved`)
 - **Drawer body:** Summary · **Involved students** (read-only) · **Applied sanctions** (`studentDisciplinaryActions` read-only post-resolve)
 - **Resolve modal:** involved students + role + optional `DisciplinaryAction` per student + notes → `resolveIncidentWithOutcomes` *(shipped)*
+
+### 7.8.1 School — Family feedback
+
+- **Entity:** family-feedback campaign (command/query only; not a generic Core entity) · **Complex drawer**
+- **List:** search assignment label · filter status · CTA New campaign (`FAMILY_FEEDBACK_CAMPAIGN_MANAGE`)
+- **Drawer tabs:** Setup · Audience · Moderation · Results
+- **Drawer header:** schedule · assign moderator · open/close/cancel · theme draft · publish/archive
+- **API:** campaign commands plus `preview-family-feedback-audience`, `list-family-feedback-comments` (moderator), `get-family-feedback-aggregate-review`
+- **Copy:** “Family feedback” / “Retour des familles” — never mix with Assessments / Évaluations
 
 ### 7.9 Classes — Students (roster)
 
@@ -390,19 +414,32 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 ### 7.15 Finance — Fees
 
-- **Entity:** `Fee` · **Simple** (row `···` only — no drawer)
-- Row menu: Edit · Delete
+- **Entity:** `CatalogService` · **Simple** (row `···` only — no drawer)
+- Human labels stay **fees / frais**. Route stays `/finance/fees`.
+- Row menu: Edit · Activate · Archive (no hard-delete)
+- Create as **active**. Amounts are integer minor units; currency from API (create form last-resort `XOF`)
 
 ### 7.16 Finance — Billing
 
-- **Entity:** `StudentFee` · **Complex drawer**
-- Preserve billing history: use the cancellation/adjustment commands; do not offer generic hard deletion.
-- **Drawer header:** Record payment · Waive
+- **Entity:** `StudentCharge` · **Complex drawer**
+- Enroll via assign modal (`?modal=assign-fee`), including bounded batch (≤100 students)
+- Preserve history: waive / adjust / cancel commands; do not offer generic hard deletion
+- **Drawer header (max 2 primary):** Record payment · Allocate. Waive / Adjust / Cancel in overflow `···`
+- Allocation preview is a **modal** on the billing drawer, not a sidebar item
+- Reverse allocation is a **modal** on the billing drawer (`?modal=unallocate`); it is not a cash refund
+- Record payment modal: deposit-only (`account_only`) / FIFO / targeted + preview
 
 ### 7.17 Finance — Payments
 
 - **Entity:** `Payment` · **Simple** (row `···` only)
-- Row menu: View receipt → navigate to **billing** drawer (`/finance/billing/{studentFeeId}`) — cross-entity deep link; Payment itself has no drawer
+- Receipt and disbursement history. Reverse via FormModal (`?modal=reverse`). Refund available balance via FormModal (`?modal=refund`)
+- Payment itself has no drawer
+
+### 7.17.1 Finance — Reconciliation
+
+- **Surface:** simple page `/finance/reconciliation`
+- Permission: `FINANCIAL_REPORT_READ`
+- Named query `getFinanceReconciliation` — not an extra allocation sidebar item
 
 ### 7.18 Configuration — School profile
 
@@ -443,11 +480,21 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 ### 7.25 Configuration — Notification templates
 
-- **Entity:** school notification templates · **Simple** (row edit → modal)
+- **Entity:** school notification templates · **Thin drawer**
+- **List:** categorized cards; card click → `/configuration/notifications/{key}`; row `···` Edit → same URL + `?modal=edit`; primary CTA Reset all
+- **Drawer:** read-only sections (channels/flags, in-app/push copy, rendered email HTML, SMS, placeholders); header Edit + overflow Reset this template
+- **Modal:** edit copy by type (TipTap for `rich_message.body`; plaintext for in-app/push/SMS)
 
 ### 7.26 Configuration — Disciplinary catalog
 
 - **Entity:** `DisciplinaryAction` · **Simple** list + row `···` menu
+
+### 7.26.1 Configuration — Permission profiles
+
+- **Entity:** `StaffPermissionProfile` · **Simple** list + row `···` menu at `/configuration/permission-profiles`
+- **List:** search name · main filter grain · bound-staff count; CTA Add profile (`ACCESS_CONTROL_CONFIGURE`)
+- **Editor:** name, description, grain select unless assigned (then locked badge), grouped checklist of that grain only. Changing grain on an unassigned profile deselects incompatible permissions. Save confirms “This updates N staff.”
+- **Commands:** `configurePermissionProfile`; catalog delete via entity delete (unique grants freeze as custom)
 
 ### 7.27 Account — Inbox
 
@@ -482,20 +529,23 @@ Authoritative surface per entity. §7 has per-feature drawer/tab detail.
 | `Incident` | Complex | `/school/events` |
 | `Activity` | Complex | `/school/activities` |
 | `Announcement` | Complex | `/school/announcements` |
+| Family feedback campaign | Complex | `/school/family-feedback` |
 | `Assessment` | Complex | `/classes/{id}/evaluations` |
 | `ClassSubject` / teaching | Complex | `/classes/{id}/teaching`, `/configuration/subjects` |
 | `ReportCardResult` | Complex | `/classes/{id}/report-cards` |
 | `ReportCardDefinition` | Complex | `/configuration/report-cards` |
-| `StudentFee` | Complex | `/finance/billing` |
+| `StudentCharge` | Complex | `/finance/billing` |
 | `ClassGroup` | Complex | `/configuration/classes` |
 | `GradeLevel` | Complex | `/configuration/grade-levels` |
 | `CalendarEvent` | Thin | `/school/calendar` |
 | `MessageDelivery` | Thin | `/account/inbox` |
-| `Fee` | Simple | `/finance/fees` |
+| `CatalogService` | Simple | `/finance/fees` |
 | `Payment` | Simple | `/finance/payment` |
+| Reconciliation | Simple page | `/finance/reconciliation` |
 | `GradeScale` | Simple | `/configuration/grade-scales` |
 | `DisciplinaryAction` | Simple | `/configuration/discipline` |
-| Notification templates | Simple | `/configuration/notifications` |
+| `StaffPermissionProfile` | Simple | `/configuration/permission-profiles` |
+| Notification templates | Thin | `/configuration/notifications` |
 | `School` | Layout | `/configuration/school` |
 | Dashboard / academic admin | Layout | `/dashboard`, `/configuration/academic` |
 | Timetable occurrences | Layout + drawer | `/classes/{id}/timetable` |
@@ -511,7 +561,7 @@ Sub-entities (`studentIncidentInvolvements`, `staffPermissionAssignments`, `teac
 | Log incident | `recordIncident` + `addStudentInvolvement` |
 | Resolve incident | **`resolveIncidentWithOutcomes`** |
 | Daily attendance bulk | `record-class-daily-attendance` |
-| Staff permissions | `staffPermissionAssignments` save + permission catalog APIs |
+| Staff permissions | `configurePermissionProfile` · `applyStaffPermissionProfile` · `reorderStaffPermissionProfiles` · `removeStaffPermissionProfile` · custom `assignStaffPermission` + permission catalog APIs |
 | Timetable materialize | `createSchedule` · `materializeSchedule` |
 | Class activity link | `classActivityEnrollments` entity CRUD |
 

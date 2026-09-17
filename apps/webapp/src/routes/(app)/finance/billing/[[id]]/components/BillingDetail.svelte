@@ -1,33 +1,51 @@
 <script lang="ts">
 	import type { StudentBilling } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import { cancelStudentFeeMutation, adjustStudentFeeMutation } from '$lib/api/mutations/billing.mutations';
+	import { studentYearAccountSourceId } from '$lib/api/documents-data';
+	import { authSession } from '$lib/auth/session.svelte';
+	import DocumentPdfButton from '$lib/components/school/documents/DocumentPdfButton.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
+	import { formatMinorUnits } from '$lib/finance/money';
+	import { PAYMENT_ALLOCATE_PERMISSION } from '$lib/finance/permissions';
+	import { billingStatusTone } from '$lib/finance/status';
 	import { locale, t } from '$lib/i18n';
 	import { Check, Clock } from '$lib/icons';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { cn } from '$lib/utils';
-	import { get } from 'svelte/store';
 	import { getBillingPageState } from '../../billing-page.svelte';
+	import AllocateBalanceFormModal from './AllocateBalanceFormModal.svelte';
+	import ChargeActionFormModal from './ChargeActionFormModal.svelte';
 	import PaymentFormModal from './PaymentFormModal.svelte';
+	import ReverseAllocationFormModal from './ReverseAllocationFormModal.svelte';
 
 	const { billing }: { billing: StudentBilling } = $props();
 
 	const billingPage = getBillingPageState();
 	const live = $derived(billingPage.selectedBilling(billing.id) ?? billing);
 	const student = $derived(billingPage.studentFor(live.studentId));
-	const fee = $derived(billingPage.feeFor(live.feeId));
-	const remaining = $derived(live.total - live.paid);
-	const pct = $derived((live.paid / live.total) * 100);
-	const canRecordPayment = $derived(remaining > 0 && live.status !== 'paid');
+	const fee = $derived(billingPage.feeFor(live.catalogServiceId));
+	const remaining = $derived(live.remaining);
+	const pct = $derived(live.total > 0 ? (live.paid / live.total) * 100 : 0);
+	const canRecordPayment = $derived(live.status !== 'cancelled' && live.status !== 'waived');
+	const label = $derived(live.label || fee?.name || $t('billing.fee'));
+	const accountSourceId = $derived(
+		authSession.schoolId
+			? studentYearAccountSourceId({
+				schoolId: authSession.schoolId,
+				studentId: live.studentId,
+				academicYearId: live.academicYearId,
+				currency: live.currency,
+			})
+			: null,
+	);
 
 	const modals = createUrlSyncedModals({
-		allowed: ['payment'],
+		allowed: ['payment', 'allocate', 'unallocate', 'waive', 'adjust', 'cancel'],
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
@@ -35,63 +53,18 @@
 		modals.hydrate();
 	});
 	const paymentOpen = bindUrlModal(modals, 'payment');
-
-	async function cancelFee() {
-		// eslint-disable-next-line no-alert -- interim billing action until dedicated modals exist
-		const reason = window.prompt(get(t)('billing.cancelReasonPrompt'));
-		if (!reason?.trim()) {
-			return;
-		}
-		const ok = await cancelStudentFeeMutation({
-			studentFeeId: live.id,
-			reason: reason.trim(),
-			successMessage: get(t)('billing.cancelSuccess'),
-		});
-		if (ok) {
-			await billingPage.refreshSlice();
-		}
-	}
-
-	async function adjustFee() {
-		// eslint-disable-next-line no-alert -- interim billing action until dedicated modals exist
-		const amountText = window.prompt(get(t)('billing.adjustAmountPrompt'));
-		if (!amountText?.trim()) {
-			return;
-		}
-		const adjustmentAmount = Number(amountText);
-		if (!Number.isFinite(adjustmentAmount)) {
-			return;
-		}
-		// eslint-disable-next-line no-alert -- interim billing action until dedicated modals exist
-		const reason = window.prompt(get(t)('billing.adjustReasonPrompt')) ?? '';
-		if (!reason.trim()) {
-			return;
-		}
-		const ok = await adjustStudentFeeMutation({
-			studentFeeId: live.id,
-			adjustmentAmount,
-			reason: reason.trim(),
-			successMessage: get(t)('billing.adjustSuccess'),
-		});
-		if (ok) {
-			await billingPage.refreshSlice();
-		}
-	}
-
-	const statusStyle: Record<StudentBilling['status'], string> = {
-		paid: 'bg-secondary text-foreground/80',
-		partial: 'bg-secondary text-foreground/80',
-		due: 'bg-highlight-soft text-highlight',
-		overdue: 'bg-destructive/10 text-destructive',
-	};
-
+	const allocateOpen = bindUrlModal(modals, 'allocate');
+	const unallocateOpen = bindUrlModal(modals, 'unallocate');
+	const waiveOpen = bindUrlModal(modals, 'waive');
+	const adjustOpen = bindUrlModal(modals, 'adjust');
+	const cancelOpen = bindUrlModal(modals, 'cancel');
 </script>
 
-{#if student && fee}
+{#if student}
 	<div class="space-y-5">
 		<DrawerEntityHeader
 			name={student.name}
-			summary="{fee.name} · {remaining.toLocaleString()} FCFA {$t('finance.remaining')}"
+			summary="{label} · {formatMinorUnits(remaining, live.currency, $locale)} {$t('finance.remaining')}"
 		>
 			{#snippet avatar()}
 				<div
@@ -101,7 +74,7 @@
 				</div>
 			{/snippet}
 			{#snippet chips()}
-				<span class={cn('rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase', statusStyle[live.status])}>
+				<span class={cn('rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase', billingStatusTone[live.status])}>
 					{$t(`billing.status.${live.status}`)}
 				</span>
 			{/snippet}
@@ -125,23 +98,53 @@
 						{/snippet}
 					</PermissionGate>
 				{/if}
+				<PermissionGate
+					permission={PAYMENT_ALLOCATE_PERMISSION}
+					mode="disable"
+					tooltip={$t('billing.permissionAllocate')}
+				>
+					{#snippet children({ disabled, title })}
+						<Button
+							size="sm"
+							variant="secondary"
+							class="rounded-full"
+							{disabled}
+							{title}
+							onclick={() => (allocateOpen.open = true)}
+						>
+							{$t('billing.allocate')}
+						</Button>
+					{/snippet}
+				</PermissionGate>
+				<DocumentPdfButton
+					templateKey="invoice.v1"
+					sourceId={accountSourceId}
+					studentId={live.studentId}
+					permission="PAYMENT_READ"
+				/>
 			{/snippet}
 			{#snippet overflow()}
-				<PermissionGate permission="FINANCIAL_CONFIG_CONFIGURE">
+				<PermissionGate permission="PAYMENT_RECORD">
 					{#snippet children({ disabled, title })}
-						<RowActionMenuItem
-							{disabled}
-							{title}
-							onclick={() => void adjustFee()}
-						>
-							{$t('billing.adjustFee')}
+						<RowActionMenuItem {disabled} {title} onclick={() => (waiveOpen.open = true)}>
+							{$t('billing.waive')}
 						</RowActionMenuItem>
-						<RowActionMenuItem
-							{disabled}
-							{title}
-							onclick={() => void cancelFee()}
-						>
-							{$t('billing.cancelFee')}
+						<RowActionMenuItem {disabled} {title} onclick={() => (adjustOpen.open = true)}>
+							{$t('billing.adjust')}
+						</RowActionMenuItem>
+					{/snippet}
+				</PermissionGate>
+				<PermissionGate permission="PAYMENT_REVERSE">
+					{#snippet children({ disabled, title })}
+						<RowActionMenuItem {disabled} {title} onclick={() => (unallocateOpen.open = true)}>
+							{$t('billing.unallocate')}
+						</RowActionMenuItem>
+					{/snippet}
+				</PermissionGate>
+				<PermissionGate permission="PAYMENT_CANCEL">
+					{#snippet children({ disabled, title })}
+						<RowActionMenuItem destructive {disabled} {title} onclick={() => (cancelOpen.open = true)}>
+							{$t('billing.cancel')}
 						</RowActionMenuItem>
 					{/snippet}
 				</PermissionGate>
@@ -152,14 +155,16 @@
 			<div class="flex items-end justify-between">
 				<div>
 					<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('finance.paid')}</p>
-					<p class="font-sans text-3xl font-semibold tabular-nums">{live.paid.toLocaleString()} FCFA</p>
+					<p class="font-sans text-3xl font-semibold tabular-nums">
+						{formatMinorUnits(live.paid, live.currency, $locale)}
+					</p>
 				</div>
 				<div class="text-right">
 					<p class="text-[10px] uppercase tracking-wider text-muted-foreground">
 						{$t('finance.remaining')}
 					</p>
 					<p class="font-sans text-xl font-semibold tabular-nums text-highlight">
-						{remaining.toLocaleString()} FCFA
+						{formatMinorUnits(remaining, live.currency, $locale)}
 					</p>
 				</div>
 			</div>
@@ -171,7 +176,7 @@
 			</div>
 			<p class="mt-2 font-sans tabular-nums text-[10px] uppercase text-muted-foreground">
 				{$t('finance.total')}
-				{live.total.toLocaleString()} FCFA
+				{formatMinorUnits(live.total, live.currency, $locale)}
 			</p>
 		</div>
 
@@ -180,7 +185,7 @@
 				{$t('finance.installments')}
 			</Label>
 			<div class="mt-2 space-y-2">
-				{#each live.installments as inst, i (i)}
+				{#each live.installments as inst (inst.id)}
 					<div class="flex items-center justify-between rounded-xl border border-border px-3 py-2.5">
 						<div class="flex items-center gap-3">
 							<div
@@ -196,13 +201,17 @@
 								{/if}
 							</div>
 							<div>
-								<p class="text-sm font-medium">{inst.amount.toLocaleString()} FCFA</p>
+								<p class="text-sm font-medium">{formatMinorUnits(inst.amount, live.currency, $locale)}</p>
 								<p class="font-sans tabular-nums text-[10px] text-muted-foreground">
-									{new Date(inst.date).toLocaleDateString($locale, {
-										day: 'numeric',
-										month: 'short',
-										year: 'numeric',
-									})}
+									{inst.label}
+									{#if inst.date}
+										·
+										{new Date(inst.date).toLocaleDateString($locale, {
+											day: 'numeric',
+											month: 'short',
+											year: 'numeric',
+										})}
+									{/if}
 								</p>
 							</div>
 						</div>
@@ -224,10 +233,13 @@
 
 	<PaymentFormModal
 		bind:open={paymentOpen.open}
-		showTrigger={false}
 		billing={live}
 		studentName={student.name}
-		feeName={fee.name}
+		feeName={label}
 	/>
-
+	<AllocateBalanceFormModal bind:open={allocateOpen.open} billing={live} />
+	<ReverseAllocationFormModal bind:open={unallocateOpen.open} billing={live} />
+	<ChargeActionFormModal bind:open={waiveOpen.open} billing={live} kind="waive" />
+	<ChargeActionFormModal bind:open={adjustOpen.open} billing={live} kind="adjust" />
+	<ChargeActionFormModal bind:open={cancelOpen.open} billing={live} kind="cancel" />
 {/if}

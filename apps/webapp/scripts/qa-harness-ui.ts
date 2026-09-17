@@ -8,10 +8,12 @@ import { ensureAcademicYearPublishedViaApi } from '../tests/integration/setup/jo
 import { waitForAppShell } from './qa-matrix-support';
 
 export async function waitForPageQuery(page: Page): Promise<void> {
-	await page
-		.locator('[role="status"] .animate-spin')
-		.waitFor({ state: 'detached', timeout: 30_000 })
-		.catch(() => {});
+	const spinner = page.locator('[role="status"] .animate-spin');
+	const visible = await spinner.first().isVisible().catch(() => false);
+	if (!visible) {
+		return;
+	}
+	await spinner.first().waitFor({ state: 'detached', timeout: 30_000 });
 }
 
 const SPA_NAV_TIMEOUT_MS = 15_000;
@@ -330,6 +332,9 @@ export function resolveCreateButtonPatterns(action: string, endpoint: string): R
 	if (endpointLower.includes('/configuration/report-cards')) {
 		push(/add model|ajouter un modèle/i);
 	}
+	if (endpointLower.includes('/school/family-feedback')) {
+		push(/new campaign|nouvelle campagne|créer campagne|create campaign/i);
+	}
 	if (endpointLower.includes('/planning')) {
 		push(/add session|ajouter une séance|add schedule|ajouter un emploi du temps/i);
 	}
@@ -378,6 +383,9 @@ export function resolveCreateButtonPatterns(action: string, endpoint: string): R
 	}
 	if (/modèle|model/.test(actionLower)) {
 		push(/add model|ajouter un modèle/i);
+	}
+	if (/campagne|campaign/.test(actionLower)) {
+		push(/new campaign|nouvelle campagne|créer campagne|create campaign/i);
 	}
 
 	push(/^(add|ajouter)\s/i);
@@ -472,7 +480,9 @@ export async function trySubmitDialog(page: Page): Promise<boolean> {
 }
 
 export async function waitForFormModal(page: Page, timeout = 12_000): Promise<boolean> {
-	const dialog = page.locator('[data-testid="form-modal"]').or(page.getByRole('dialog'));
+	const dialog = page
+		.locator('[data-testid="form-modal"], [data-testid="confirm-modal"]')
+		.or(page.getByRole('dialog'));
 	return dialog.first().isVisible({ timeout }).catch(() => false);
 }
 
@@ -1134,6 +1144,28 @@ export async function fillIncidentCreateDialog(
 		await textarea.fill(options.description ?? 'E2E incident description');
 	}
 	await waitForSubmitEnabled(page);
+}
+
+export async function fillFeeCreateDialog(
+	page: Page,
+	feeName: string,
+	amount = '10000',
+): Promise<void> {
+	const dialog = page.getByRole('dialog');
+	const nameInput = dialog.getByLabel(/fee name|nom du frais/i)
+		.or(dialog.getByRole('textbox').first());
+	await nameInput.fill(feeName);
+	const amountInput = dialog.getByLabel(/amount|montant/i)
+		.or(dialog.locator('input[type="number"]').first());
+	await amountInput.fill(amount);
+	await amountInput.evaluate((element, nextAmount) => {
+		if (!(element instanceof HTMLInputElement)) {
+			return;
+		}
+		element.value = nextAmount;
+		element.dispatchEvent(new Event('input', { bubbles: true }));
+		element.dispatchEvent(new Event('change', { bubbles: true }));
+	}, amount);
 }
 
 export async function fillAssignFeeDialog(page: Page): Promise<boolean> {

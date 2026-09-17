@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { FINANCE_BATCH_ENROLL_LIMIT } from '$lib/api/finance-types';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
-	import { t } from '$lib/i18n';
+	import { formatMinorUnits, majorToMinor, parseMajorInput } from '$lib/finance/money';
+	import { locale, t } from '$lib/i18n';
 	import StudentPicker from '$lib/smart-components/student-picker/StudentPicker.svelte';
 	import { get } from 'svelte/store';
 	import { getBillingPageState } from '../billing-page.svelte';
@@ -13,62 +15,52 @@
 		onCreated,
 	}: {
 		open?: boolean;
-		onCreated?: (studentFeeId: string) => void;
+		onCreated?: (chargeId: string) => void;
 	} = $props();
 
 	const billingPage = getBillingPageState();
-	const students = $derived(billingPage.students);
-	const fees = $derived(billingPage.fees);
+	const fees = $derived(billingPage.fees.filter(fee => fee.status === 'active'));
 	const billing = $derived(billingPage.billing);
 
 	let busy = $state(false);
+	let batch = $state(false);
 	let studentId = $state('');
-	let feeId = $state('');
+	let studentIds = $state<string[]>([]);
+	let catalogServiceId = $state('');
 	let customAmount = $state('');
 	let dueDate = $state('');
 	let wasOpen = $state(false);
 
-	const sortedStudents = $derived([...students].sort((a, b) => a.name.localeCompare(b.name, 'fr')));
-
-	function isFeeAssigned(student: string, fee: string) {
-		return billing.some(entry => entry.studentId === student && entry.feeId === fee);
-	}
-
-	function feesForStudent(student: string) {
-		return fees.filter(f => !isFeeAssigned(student, f.id));
-	}
-
-	const availableFees = $derived(feesForStudent(studentId));
-	const selectedStudent = $derived(sortedStudents.find(entry => entry.id === studentId));
-	const selectedFee = $derived(fees.find(entry => entry.id === feeId));
+	const selectedFee = $derived(fees.find(entry => entry.id === catalogServiceId));
 	const selectedFeeLabel = $derived(selectedFee?.name ?? '');
 	const defaultAmount = $derived(selectedFee?.amount ?? 0);
-	const numericCustomAmount = $derived(customAmount.trim() === '' ? undefined : Number.parseFloat(customAmount));
-	const effectiveAmount = $derived(numericCustomAmount ?? defaultAmount);
-	const canSubmit = $derived(studentId.length > 0 && feeId.length > 0 && availableFees.some(entry => entry.id === feeId) && Number.isFinite(effectiveAmount) && effectiveAmount > 0);
+	const currency = $derived(selectedFee?.currency ?? 'XOF');
+	const parsedOverride = $derived(customAmount.trim() === '' ? null : parseMajorInput(customAmount));
+	const selectedCount = $derived(batch ? studentIds.length : (studentId ? 1 : 0));
+	const canSubmit = $derived.by(() => {
+		if (catalogServiceId.length === 0) {
+			return false;
+		}
+		if (selectedCount <= 0 || selectedCount > FINANCE_BATCH_ENROLL_LIMIT) {
+			return false;
+		}
+		if (parsedOverride !== null && parsedOverride <= 0) {
+			return false;
+		}
+		return Boolean(selectedFee);
+	});
 
-	function firstAvailableFeeFor(student: string) {
-		return feesForStudent(student)[0]?.id ?? '';
+	function firstAvailableService() {
+		return fees[0]?.id ?? '';
 	}
 
 	function resetForm() {
-		const defaultStudentId = sortedStudents[0]?.id ?? '';
-		studentId = defaultStudentId;
-		feeId = firstAvailableFeeFor(defaultStudentId);
+		batch = false;
+		studentId = '';
+		studentIds = [];
+		catalogServiceId = firstAvailableService();
 		customAmount = '';
 		dueDate = '';
-	}
-
-	function handleStudentChange(next: string) {
-		studentId = next;
-		feeId = firstAvailableFeeFor(next);
-	}
-
-	function handleFeeChange(value: string | undefined) {
-		if (!value) {
-			return;
-		}
-		feeId = value;
 	}
 
 	$effect(() => {
@@ -79,22 +71,42 @@
 	});
 
 	async function submit() {
-		if (!canSubmit || !selectedStudent || !selectedFee) {
+		if (!canSubmit || !selectedFee) {
 			return;
 		}
 
+		const priceOverride = parsedOverride === null
+			? undefined
+			: majorToMinor(parsedOverride, currency, $locale);
+		const due = dueDate.trim() ? new Date(`${dueDate}T12:00:00`).toISOString() : undefined;
 		busy = true;
 		try {
-			const studentFeeId = await billingPage.assignFeeToStudent({
-				studentId,
-				feeId,
-				expectedAmount: numericCustomAmount,
-				dueDate: dueDate.trim() ? new Date(`${dueDate}T12:00:00`).toISOString() : undefined,
-				successMessage: get(t)('invoice.createSuccess', { student: selectedStudent.name }),
-			});
-			if (studentFeeId) {
-				open = false;
-				onCreated?.(studentFeeId);
+			if (batch) {
+				const ok = await billingPage.enrollStudents({
+					catalogServiceId,
+					studentIds,
+					priceOverride,
+					dueDate: due,
+					successMessage: get(t)('invoice.batchSuccess', { n: studentIds.length }),
+				});
+				if (ok) {
+					open = false;
+				}
+			}
+			else {
+				const chargeId = await billingPage.enrollStudent({
+					studentId,
+					catalogServiceId,
+					priceOverride,
+					dueDate: due,
+					successMessage: get(t)('invoice.createSuccess', {
+						student: billingPage.studentFor(studentId)?.name ?? studentId,
+					}),
+				});
+				if (chargeId) {
+					open = false;
+					onCreated?.(chargeId);
+				}
 			}
 		}
 		finally {
@@ -113,33 +125,45 @@
 	onCancel={resetForm}
 	onSubmit={submit}
 >
+	<label class="flex items-center gap-2 text-sm">
+		<input type="checkbox" bind:checked={batch} />
+		{$t('invoice.batchToggle')}
+	</label>
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('events.student')}
 		</Label>
-		<StudentPicker
-			bind:value={studentId}
-			active={open}
-			onValueChange={handleStudentChange}
-		/>
+		{#if batch}
+			<StudentPicker
+				bind:values={studentIds}
+				mode="multi"
+				active={open}
+				excludeIds={billing.filter(entry => entry.catalogServiceId === catalogServiceId).map(entry => entry.studentId)}
+			/>
+			<p class="text-xs text-muted-foreground">
+				{$t('invoice.batchLimit', { n: selectedCount, max: FINANCE_BATCH_ENROLL_LIMIT })}
+			</p>
+		{:else}
+			<StudentPicker bind:value={studentId} active={open} />
+		{/if}
 	</div>
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('billing.fee')}
 		</Label>
-		{#if availableFees.length === 0}
+		{#if fees.length === 0}
 			<p class="rounded-md border border-border bg-secondary/30 px-3 py-2 text-sm text-muted-foreground">
 				{$t('invoice.noFeesAvailable')}
 			</p>
 		{:else}
-			<Select.Root type="single" value={feeId} onValueChange={handleFeeChange}>
+			<Select.Root type="single" value={catalogServiceId} onValueChange={value => value && (catalogServiceId = value)}>
 				<Select.Trigger>
 					<Select.Value placeholder={$t('invoice.selectFee')}>
 						{selectedFeeLabel}
 					</Select.Value>
 				</Select.Trigger>
 				<Select.Content class="z-[100]">
-					{#each availableFees as fee (fee.id)}
+					{#each fees as fee (fee.id)}
 						<Select.Item value={fee.id} label={fee.name}>
 							{fee.name}
 						</Select.Item>
@@ -151,14 +175,16 @@
 	{#if selectedFee}
 		<div class="rounded-xl border border-border bg-secondary/40 px-3 py-2 text-sm">
 			<p class="text-[11px] uppercase tracking-wider text-muted-foreground">{$t('invoice.defaultAmount')}</p>
-			<p class="font-sans text-xl font-semibold tabular-nums">{defaultAmount.toLocaleString()} FCFA</p>
+			<p class="font-sans text-xl font-semibold tabular-nums">
+				{formatMinorUnits(defaultAmount, currency, $locale)}
+			</p>
 		</div>
 	{/if}
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('invoice.customAmount')}
 		</Label>
-		<Input type="number" min="0" step="100" bind:value={customAmount} placeholder={String(defaultAmount)} />
+		<Input type="number" min="0" step="any" bind:value={customAmount} />
 		<p class="text-xs text-muted-foreground">{$t('invoice.customAmountHint')}</p>
 	</div>
 	<div class="space-y-1.5">

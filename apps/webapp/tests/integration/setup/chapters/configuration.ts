@@ -24,6 +24,7 @@ import {
 	waitForCommandPayload,
 	type UiJourney,
 } from '../journey-context';
+import { ensureNotificationTemplatesViaApi } from '../journey-api';
 
 export async function runConfigurationChapter(journey: UiJourney): Promise<void> {
 	const { ctx, entities } = journey;
@@ -255,18 +256,63 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 	}
 
 	entities.notificationTemplateKey = 'report_card.published';
+	await ensureNotificationTemplatesViaApi(page, ctx.base, { classGroupId: entities.classId });
 	await visitCovered(journey, '/configuration/notifications', '/configuration/notifications');
-	const notifDialog = await openUrlModal(page, '/configuration/notifications', 'edit', {
-		target: entities.notificationTemplateKey,
-		base: ctx.base,
-		timeout: 12_000,
-	});
-	coverModal(journey, '/configuration/notifications', 'edit', notifDialog ? 'OK' : 'NOT OK');
-	coverActions(journey, 'http://localhost:5173/configuration/notifications', ['Templates notifications école'], notifDialog ? 'OK' : 'NOT OK');
+	const detailPath = `/configuration/notifications/${entities.notificationTemplateKey}`;
+	await visitCovered(journey, '/configuration/notifications/[id]', detailPath);
+	const drawer = page.getByTestId('notification-template-drawer');
+	const drawerVisible = await drawer.isVisible({ timeout: 12_000 }).catch(() => false);
+	const preview = drawer.getByTestId('notification-email-preview');
+	const previewHtml = drawerVisible ? await preview.innerHTML().catch(() => '') : '';
+	const previewText = drawerVisible ? await preview.innerText().catch(() => '') : '';
+	const renderedEmail = previewHtml.includes('<p>') && !previewText.includes('<p>');
+	coverActions(
+		journey,
+		'http://localhost:5173/configuration/notifications/[id]',
+		['Drawer template'],
+		drawerVisible && renderedEmail ? 'OK' : 'NOT OK',
+	);
+
+	const notifDialog = await openDialogButton(page, /edit|modifier|éditer/i)
+		|| await openUrlModal(page, detailPath, 'edit', { base: ctx.base, timeout: 12_000 });
+	coverModal(journey, '/configuration/notifications/[id]', 'edit', notifDialog ? 'OK' : 'NOT OK');
+	coverActions(journey, 'http://localhost:5173/configuration/notifications', ['Templates notifications école'], drawerVisible ? 'OK' : 'NOT OK');
+
+	let saved = false;
 	if (notifDialog) {
-		await page.keyboard.press('Escape');
+		const dialog = page.getByRole('dialog');
+		const emailTab = dialog.getByRole('button', { name: /e-mail|email/i }).first();
+		if (await emailTab.isVisible({ timeout: 4_000 }).catch(() => false)) {
+			await emailTab.click();
+		}
+		const editor = dialog.getByTestId('notification-rich-text-editor').locator('[contenteditable="true"]');
+		const editorVisible = await editor.isVisible({ timeout: 8_000 }).catch(() => false);
+		const customSubject = `E2E-Notif-${Date.now()}`;
+		await dialog.locator('input').first().fill(customSubject);
+		if (editorVisible) {
+			await editor.click();
+			await page.keyboard.type(' E2E');
+		}
+		const payloadPromise = waitForCommandPayload(page, 'update-school-notification-templates');
+		await submitDialog(page);
+		const closed = await waitForDialogClosed(page);
+		const payload = await payloadPromise;
+		await waitForPageQuery(page);
+		const drawerShowsSubject = await drawer.getByText(customSubject).isVisible({ timeout: 8_000 }).catch(() => false);
+		saved = Boolean(closed && payload && drawerShowsSubject);
+		coverActions(
+			journey,
+			'http://localhost:5173/configuration/notifications/[id]',
+			['Éditer modèle rich text'],
+			saved && editorVisible ? 'OK' : 'NOT OK',
+			customSubject,
+		);
 	}
-	logStep(journey, { step: 'notification-template', ok: notifDialog, detail: entities.notificationTemplateKey });
+	logStep(journey, {
+		step: 'notification-template',
+		ok: drawerVisible && notifDialog && saved,
+		detail: entities.notificationTemplateKey,
+	});
 
 	await visitCovered(journey, '/configuration/discipline', '/configuration/discipline');
 	const discOpened = await clickCreateButton(page, 'CRUD entrée', '/configuration/discipline')
@@ -286,5 +332,22 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 	}
 	else {
 		logStep(journey, { step: 'discipline', ok: false, detail: 'Discipline modal not found' });
+	}
+
+	await visitCovered(journey, '/configuration/permission-profiles', '/configuration/permission-profiles');
+	const profileOpened = await clickCreateButton(page, 'CRUD entrée', '/configuration/permission-profiles')
+		|| await openDialogButton(page, /add profile|ajouter un profil|créer|create/i);
+	coverModal(journey, '/configuration/permission-profiles', 'create', profileOpened ? 'OK' : 'NOT OK');
+	if (profileOpened) {
+		const profileName = `E2E-Profile-${Date.now()}`;
+		await page.getByRole('dialog').locator('input').first().fill(profileName);
+		await submitDialog(page);
+		await waitForDialogClosed(page);
+		const listed = await assertListContains(page, profileName, true, 20_000);
+		coverActions(journey, 'http://localhost:5173/configuration/permission-profiles', ['Catalogue des profils', 'CRUD entrée'], listed ? 'OK' : 'NOT OK', profileName);
+		logStep(journey, { step: 'permission-profiles', ok: listed, detail: profileName });
+	}
+	else {
+		logStep(journey, { step: 'permission-profiles', ok: false, detail: 'Permission profile modal not found' });
 	}
 }

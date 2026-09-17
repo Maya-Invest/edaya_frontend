@@ -34,4 +34,11 @@ describe('staffInvitesForSubmit', () => {
 			{ email: 'compta@school.fr', role: 'accountant' },
 		]);
 	});
+
+	it('does not submit invalid emails that would 422 on provision', () => {
+		expect(staffInvitesForSubmit([
+			{ id: '1', email: 'not-an-email', role: 'secretary' },
+			{ id: '2', email: 'ok@school.fr', role: 'cpe' },
+		])).toEqual([{ email: 'ok@school.fr', role: 'cpe' }]);
+	});
 });

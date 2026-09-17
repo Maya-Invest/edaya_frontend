@@ -88,7 +88,7 @@ export function validatePaymentImportRows(
 		const rowIssues: PaymentImportValidationIssue[] = [];
 
 		const hasMatricule = validateRequiredField(row, 'matricule', row.matricule, rowIssues);
-		const hasFeeType = validateRequiredField(row, 'type_frais', row.type_frais, rowIssues);
+		const hasFeeType = row.type_frais.trim().length > 0;
 		const hasReference = validateRequiredField(row, 'reference', row.reference, rowIssues);
 
 		if (hasReference) {
@@ -168,7 +168,7 @@ export function validatePaymentImportRows(
 			}
 		}
 
-		let amount = remaining;
+		let amount = 0;
 		if (row.montant?.trim()) {
 			const parsed = Number.parseFloat(row.montant.replace(',', '.'));
 			if (!Number.isFinite(parsed) || parsed <= 0) {
@@ -183,8 +183,18 @@ export function validatePaymentImportRows(
 				amount = parsed;
 			}
 		}
+		else if (hasFeeType) {
+			amount = remaining;
+		}
+		else {
+			rowIssues.push(issue({
+				rowIndex: row.rowIndex,
+				column: 'montant',
+				messageKey: 'import.payments.validation.required',
+			}));
+		}
 
-		if (studentFeeId && amount > remaining) {
+		if (hasFeeType && studentFeeId && amount > remaining) {
 			rowIssues.push(issue({
 				rowIndex: row.rowIndex,
 				column: 'montant',
@@ -221,13 +231,16 @@ export function validatePaymentImportRows(
 			}
 		}
 
-		if (blockingIssues.length === 0 && studentFeeId && hasReference && amount > 0) {
+		if (blockingIssues.length === 0 && studentId && hasReference && amount > 0 && (!hasFeeType || studentFeeId)) {
 			validRows.push({
 				...row,
-				studentFeeId,
+				studentId,
+				chargeId: studentFeeId,
+				academicYearId: context.academicYearId,
 				amount,
 				paymentDate,
 				method,
+				allocationMode: hasFeeType ? 'targeted' : 'account_only',
 			});
 		}
 	}

@@ -1,18 +1,16 @@
-import type { FinancePayment } from '$lib/api/finance-data';
-import type { Fee, Student, StudentBilling } from '$lib/types/school';
+import type { FinancePayment, StudentYearAccountView } from '$lib/api/finance-data';
+import type { Student } from '$lib/types/school';
 
 export interface PaymentPageSlice {
-	fees: Fee[];
-	billing: StudentBilling[];
-	students: Student[];
 	payments: FinancePayment[];
+	students: Student[];
+	accounts: StudentYearAccountView[];
 }
 
 export function emptyPaymentSlice(): PaymentPageSlice {
 	return {
-		fees: [],
-		billing: [],
-		students: [],
 		payments: [],
+		students: [],
+		accounts: [],
 	};
 }

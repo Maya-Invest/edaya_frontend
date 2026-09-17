@@ -21,7 +21,7 @@ export interface JourneySurfaceClaim {
 	naReason?: string;
 }
 
-const STUDENT_TABS = ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments'] as const;
+const STUDENT_TABS = ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments', 'documents'] as const;
 
 export const JOURNEY_SURFACE_CLAIMS: readonly JourneySurfaceClaim[] = [
 	{
@@ -85,19 +85,25 @@ export const JOURNEY_SURFACE_CLAIMS: readonly JourneySurfaceClaim[] = [
 		modals: [
 			{ parentRoute: '/configuration/grade-scales', modal: 'create' },
 			{ parentRoute: '/configuration/report-cards', modal: 'create' },
+			{ parentRoute: '/configuration/report-cards/[id]', modal: 'delete' },
 		],
 	},
 	{
 		stepId: 'configuration.notifications-discipline-tools',
 		paths: [
 			'/configuration/notifications',
+			'/configuration/notifications/[id]',
 			'/configuration/discipline',
+			'/configuration/permission-profiles',
 			'/configuration/tools',
 			'/configuration/tools/teacher-assignments',
 		],
 		modals: [
-			{ parentRoute: '/configuration/notifications', modal: 'edit' },
+			{ parentRoute: '/configuration/notifications', modal: 'reset-all' },
+			{ parentRoute: '/configuration/notifications/[id]', modal: 'edit' },
+			{ parentRoute: '/configuration/notifications/[id]', modal: 'reset-key' },
 			{ parentRoute: '/configuration/discipline', modal: 'create' },
+			{ parentRoute: '/configuration/permission-profiles', modal: 'create' },
 			{ parentRoute: '/configuration/tools/teacher-assignments', modal: 'create' },
 		],
 	},
@@ -160,6 +166,11 @@ export const JOURNEY_SURFACE_CLAIMS: readonly JourneySurfaceClaim[] = [
 			'/school/activities/[id]/classes',
 			'/school/announcements',
 			'/school/announcements/[id]',
+			'/school/family-feedback',
+			'/school/family-feedback/[id]/setup',
+			'/school/family-feedback/[id]/audience',
+			'/school/family-feedback/[id]/moderation',
+			'/school/family-feedback/[id]/results',
 			'/school/events',
 			'/school/events/[id]',
 		],
@@ -171,6 +182,16 @@ export const JOURNEY_SURFACE_CLAIMS: readonly JourneySurfaceClaim[] = [
 			{ parentRoute: '/school/announcements/[id]', modal: 'edit' },
 			{ parentRoute: '/school/announcements/[id]', modal: 'add-target' },
 			{ parentRoute: '/school/announcements/[id]', modal: 'publish' },
+			{ parentRoute: '/school/family-feedback', modal: 'create' },
+			{ parentRoute: '/school/family-feedback/[id]/setup', modal: 'edit' },
+			{ parentRoute: '/school/family-feedback/[id]/setup', modal: 'assign-moderator' },
+			{ parentRoute: '/school/family-feedback/[id]/setup', modal: 'schedule' },
+			{ parentRoute: '/school/family-feedback/[id]/setup', modal: 'open' },
+			{ parentRoute: '/school/family-feedback/[id]/setup', modal: 'close' },
+			{ parentRoute: '/school/family-feedback/[id]/setup', modal: 'cancel' },
+			{ parentRoute: '/school/family-feedback/[id]/moderation', modal: 'theme' },
+			{ parentRoute: '/school/family-feedback/[id]/results', modal: 'publish' },
+			{ parentRoute: '/school/family-feedback/[id]/results', modal: 'archive' },
 			{ parentRoute: '/school/events', modal: 'create' },
 			{ parentRoute: '/school/events/[id]', modal: 'edit' },
 			{ parentRoute: '/school/events/[id]', modal: 'resolve' },
@@ -179,6 +200,10 @@ export const JOURNEY_SURFACE_CLAIMS: readonly JourneySurfaceClaim[] = [
 			{ routePattern: '/school/activities/[id]', tab: 'profile' },
 			{ routePattern: '/school/activities/[id]', tab: 'students' },
 			{ routePattern: '/school/activities/[id]', tab: 'classes' },
+			{ routePattern: '/school/family-feedback/[id]', tab: 'setup' },
+			{ routePattern: '/school/family-feedback/[id]', tab: 'audience' },
+			{ routePattern: '/school/family-feedback/[id]', tab: 'moderation' },
+			{ routePattern: '/school/family-feedback/[id]', tab: 'results' },
 		],
 	},
 	{
@@ -232,11 +257,15 @@ export const JOURNEY_SURFACE_CLAIMS: readonly JourneySurfaceClaim[] = [
 	},
 	{
 		stepId: 'finance.ops',
-		paths: ['/finance/fees', '/finance/billing', '/finance/billing/[id]', '/finance/payment'],
+		paths: ['/finance/fees', '/finance/billing', '/finance/billing/[id]', '/finance/payment', '/finance/reconciliation'],
 		modals: [
 			{ parentRoute: '/finance/fees', modal: 'create' },
 			{ parentRoute: '/finance/billing', modal: 'assign-fee' },
 			{ parentRoute: '/finance/billing/[id]', modal: 'payment' },
+			{ parentRoute: '/finance/billing/[id]', modal: 'allocate' },
+			{ parentRoute: '/finance/billing/[id]', modal: 'unallocate' },
+			{ parentRoute: '/finance/payment', modal: 'reverse' },
+			{ parentRoute: '/finance/payment', modal: 'refund' },
 		],
 	},
 	{

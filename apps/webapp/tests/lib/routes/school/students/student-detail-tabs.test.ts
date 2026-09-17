@@ -23,7 +23,7 @@ describe('school student detail tab routes', () => {
 		expect(STUDENT_DETAIL_TABS.find(tab => tab.key === 'profile')?.segment).toBe('profile');
 	});
 
-	test('lists all seven drawer tabs', () => {
+	test('lists all eight drawer tabs', () => {
 		expect(STUDENT_DETAIL_TABS.map(tab => tab.key)).toEqual([
 			'profile',
 			'grades',
@@ -32,6 +32,7 @@ describe('school student detail tab routes', () => {
 			'finances',
 			'reportCard',
 			'enrollments',
+			'documents',
 		]);
 	});
 

@@ -34,6 +34,7 @@ class AcademicContext {
 	shellReady = $state(false);
 	yearId = $state('');
 	periodId = $state('');
+	schoolScopeId = $state('');
 
 	periods = $derived(this.canonicalPeriods.map(period => localizeAcademicPeriod(period, this.uiLang)));
 	classes = $derived(this.canonicalClasses.map(node => localizeClassNode(node, this.uiLang)));
@@ -53,8 +54,10 @@ class AcademicContext {
 	}
 
 	private hydrateSelection() {
-		const storedYear = sessionStorage.getItem(STORAGE_YEAR);
-		const storedPeriod = sessionStorage.getItem(STORAGE_PERIOD);
+		const storedYear = sessionStorage.getItem(this.yearStorageKey())
+			?? (this.schoolScopeId ? sessionStorage.getItem(STORAGE_YEAR) : null);
+		const storedPeriod = sessionStorage.getItem(this.periodStorageKey())
+			?? (this.schoolScopeId ? sessionStorage.getItem(STORAGE_PERIOD) : null);
 		if (storedYear) {
 			this.yearId = storedYear;
 		}
@@ -67,8 +70,28 @@ class AcademicContext {
 		if (!browser) {
 			return;
 		}
-		sessionStorage.setItem(STORAGE_YEAR, this.yearId);
-		sessionStorage.setItem(STORAGE_PERIOD, this.periodId);
+		sessionStorage.setItem(this.yearStorageKey(), this.yearId);
+		sessionStorage.setItem(this.periodStorageKey(), this.periodId);
+	}
+
+	private yearStorageKey(): string {
+		return this.schoolScopeId ? `${STORAGE_YEAR}:${this.schoolScopeId}` : STORAGE_YEAR;
+	}
+
+	private periodStorageKey(): string {
+		return this.schoolScopeId ? `${STORAGE_PERIOD}:${this.schoolScopeId}` : STORAGE_PERIOD;
+	}
+
+	setSchoolScope(schoolId: string) {
+		if (!schoolId || this.schoolScopeId === schoolId) {
+			return;
+		}
+		this.schoolScopeId = schoolId;
+		this.yearId = '';
+		this.periodId = '';
+		if (browser) {
+			this.hydrateSelection();
+		}
 	}
 
 	hierarchy = $derived(buildClassHierarchy(this.classes, this.gradeLevels));
@@ -250,6 +273,7 @@ class AcademicContext {
 		this.clearShellCatalog();
 		this.yearId = '';
 		this.periodId = '';
+		this.schoolScopeId = '';
 		if (browser) {
 			sessionStorage.removeItem(STORAGE_YEAR);
 			sessionStorage.removeItem(STORAGE_PERIOD);

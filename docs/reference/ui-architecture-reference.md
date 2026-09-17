@@ -117,7 +117,7 @@ User menu
 └── Account         → inbox, notification settings, profile
 ```
 
-Global header selectors (all modules): **School** · **Academic year + period** · **Language** · **User menu**.
+School switching lives under the sidebar logo (three-dot popup when the staff account has more than one school). Global header selectors: **Academic year + period** · **Language** · **User menu**.
 
 ---
 

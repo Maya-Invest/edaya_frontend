@@ -1,4 +1,7 @@
 import type { StudentBilling } from '$lib/types/school';
+import { billingStatusTone } from '$lib/finance/status';
+
+export { billingStatusTone };
 
 export function summarizeStudentFinances(billing: readonly StudentBilling[], studentId: string): {
 	studentBilling: StudentBilling[];
@@ -11,10 +14,3 @@ export function summarizeStudentFinances(billing: readonly StudentBilling[], stu
 	const paid = studentBilling.reduce((accumulator, item) => accumulator + item.paid, 0);
 	return { studentBilling, total, paid, balance: total - paid };
 }
-
-export const billingStatusTone: Record<'paid' | 'partial' | 'due' | 'overdue', string> = {
-	paid: 'bg-secondary text-foreground/80',
-	partial: 'bg-highlight-soft text-highlight',
-	due: 'bg-secondary text-muted-foreground',
-	overdue: 'bg-destructive/10 text-destructive',
-};

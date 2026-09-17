@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
+	import DocumentPdfButton from '$lib/components/school/documents/DocumentPdfButton.svelte';
 	import { fmtDateFr } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -89,6 +90,15 @@
 							{$t(`events.cat.${incident.category}`)}
 						</p>
 						<p class="mt-1 text-sm">{incident.summary}</p>
+						<div class="mt-3">
+							<DocumentPdfButton
+								templateKey="incident-report.v1"
+								sourceId={incident.id}
+								studentId={s.id}
+								permission="DISCIPLINE_READ"
+								classId={s.classId}
+							/>
+						</div>
 					</div>
 				{/each}
 			{/if}

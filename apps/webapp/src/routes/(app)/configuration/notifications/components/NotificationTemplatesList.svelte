@@ -1,32 +1,49 @@
 <script lang="ts">
-	import type { NotificationChannel, NotificationTemplateKey } from '$lib/notification-templates/catalog';
+	import type { ResolvedPathname } from '$app/types';
+	import type { NotificationSendChannel, NotificationTemplateKey } from '$lib/notification-templates/catalog';
+	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
+	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { Pencil, RotateCcw } from '$lib/icons';
+	import { writeModalSurface } from '$lib/modal/modal-url';
+	import { appGoto } from '$lib/navigation/app-navigation';
 	import {
-		channelsForTemplateKey,
+		listChannelsForTemplateKey,
 		NOTIFICATION_TEMPLATE_CATEGORIES,
 	} from '$lib/notification-templates/catalog';
+	import { cn } from '$lib/utils';
+	import { SvelteURL } from 'svelte/reactivity';
 	import { get } from 'svelte/store';
 	import { getNotificationModals } from '../notifications-modals.svelte';
 	import { getNotificationsPageState } from '../notifications-page.svelte';
+
+	const {
+		selectedKey,
+		onSelect,
+	}: {
+		selectedKey?: NotificationTemplateKey | null;
+		onSelect?: (key: NotificationTemplateKey) => void;
+	} = $props();
 
 	const notificationsPage = getNotificationsPageState();
 	const modals = getNotificationModals();
 	const document = $derived(notificationsPage.document);
 
 	function openEdit(key: NotificationTemplateKey) {
-		modals.open('edit', { target: key });
+		const next = new SvelteURL($page.url);
+		next.pathname = detailHref.configNotificationTemplate(key);
+		appGoto(writeModalSurface(next, { modal: 'edit' }) as ResolvedPathname);
 	}
 
 	function channelLabel(key: NotificationTemplateKey): string {
-		return channelsForTemplateKey(key)
-			.map((channel: NotificationChannel) => get(t)(`notificationTemplates.channel.${channel}`))
+		return listChannelsForTemplateKey(key)
+			.map((channel: NotificationSendChannel) => get(t)(`notificationTemplates.channel.${channel}`))
 			.join(' · ');
 	}
 </script>
@@ -71,16 +88,28 @@
 						</h2>
 						<div class="grid gap-3 lg:grid-cols-2">
 							{#each category.keys as key (key)}
-								<article class="rounded-2xl border border-border bg-card p-5 shadow-soft">
+								{@const isSelected = key === selectedKey}
+								<article
+									data-testid="notification-template-card"
+									data-template-key={key}
+									class={cn(
+										'rounded-2xl border bg-card p-5 shadow-soft transition-colors',
+										isSelected ? 'border-primary/40 bg-primary/5' : 'border-border',
+									)}
+								>
 									<div class="mb-3 flex items-start justify-between gap-3">
-										<div class="min-w-0">
-											<h3 class="font-display font-semibold">
+										<button
+											type="button"
+											class="min-w-0 flex-1 text-left"
+											onclick={() => onSelect?.(key)}
+										>
+											<h3 class={cn('font-display font-semibold', isSelected && 'text-primary')}>
 												{$t(`notificationTemplates.keys.${key}`)}
 											</h3>
 											<p class="mt-1 font-sans tabular-nums text-[11px] text-muted-foreground">
 												{key}
 											</p>
-										</div>
+										</button>
 										<RowActionMenu>
 											<RowActionMenuItem
 												disabled={disabled}
@@ -91,9 +120,13 @@
 											</RowActionMenuItem>
 										</RowActionMenu>
 									</div>
-									<p class="text-xs text-muted-foreground">
+									<button
+										type="button"
+										class="w-full text-left text-xs text-muted-foreground"
+										onclick={() => onSelect?.(key)}
+									>
 										{$t('notificationTemplates.channels')}: {channelLabel(key)}
-									</p>
+									</button>
 								</article>
 							{/each}
 						</div>

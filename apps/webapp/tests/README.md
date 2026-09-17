@@ -1,9 +1,11 @@
 # Webapp tests (`apps/webapp/tests`)
 
-Unit and integration-style tests for the staff webapp. Run from `apps/webapp`:
+Unit tests and Playwright integration suites for the staff webapp. Run from `apps/webapp`.
+
+## Unit
 
 ```sh
-bun test tests
+bun test tests/lib
 ```
 
 ## Layout
@@ -12,12 +14,34 @@ bun test tests
 tests/
 ├── fixtures/         # In-repo data (Ivory Coast catalog JSON) — not edaya_backend
 ├── lib/              # Pure helpers, mutations, queries, navigation
+├── integration/      # Playwright library runners (not bun:test, not bun run verify)
+│   ├── onboarding/   # Login + onboarding Playwright suite
+│   ├── setup/        # Provisioned owner journey
+│   └── demo-dry-run/ # Seeded demo-ci walkthrough (`demo:e2e`)
 ├── support/          # Shared fixtures, SvelteKit + $state stubs, harness utilities
 └── README.md
 ```
 
 - **`tests/lib/**`** — mirror `src/lib/**` where practical (`api/`, `auth/`, `onboarding/`, …).
 - **`tests/support/**`** — OpenAPI fixtures, recording school client, SvelteKit mocks. Import via `$tests/support/...`.
+- **`tests/integration/onboarding/**`** — `bun run test:integration:onboarding` (empty Identity + school: login/signup/invite gates, wizard UI, invited staff/teacher/guardian). Identity must require email verification (`REQUIRE_EMAIL_VERIFICATION=true`) with peek (`AUTH_DEV_OTP_PEEK=true` or `AUTH_EMAIL_LOG_OTP=true`). CI overlays those flags; local Identity `.env.example` defaults verification **off** — turn it on or the suite fails when signup skips `/login` verification.
+- **`tests/integration/setup/**`** — `bun run test:integration:provisioned` (API-completes the wizard, then owner UI). Secondary teacher/educator invites must actually activate; a missing token or owner-link fallback fails the run.
+
+Local login + onboarding suite (Identity `:9900`, school `:9999` empty, webapp `:5173`):
+
+```sh
+bun run test:integration:onboarding
+```
+
+CI-shaped (Wrangler preview):
+
+```sh
+WEBAPP_URL=http://127.0.0.1:4173 WEBAPP_READINESS_PATH=/login bun run test:integration:onboarding
+```
+
+Scenes (fail-the-process): public gates, login/signup validation + verification UI, unknown invite token, wizard step interactions, owner wizard resume (reload / second tab / post-provision lock), happy-path provision with a valid staff invite, invited staff (new account + existing account), wrong-account / revoked / already-accepted invites, invited teacher, invited guardian, owner relogin. Expired 7-day invite TTL is a documented gap (no expire command).
+
+Artifacts: `apps/webapp/.onboarding-run/` (screenshots + `summary.json` on failure).
 
 ## Imports
 

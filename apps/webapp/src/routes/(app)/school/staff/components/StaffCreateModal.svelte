@@ -1,5 +1,14 @@
 <script lang="ts">
+	import type { StaffPermissionProfile } from '$lib/api/staff-permission-profiles-data';
 	import type { StaffProfileRole } from '$lib/staff/staff-profile-roles';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import { getBrowserSchoolClient } from '$lib/api/school-client';
+	import {
+		loadStaffPermissionProfiles,
+		tenantWideProfiles,
+
+	} from '$lib/api/staff-permission-profiles-data';
+	import { authSession } from '$lib/auth/session.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -12,6 +21,7 @@
 		DEFAULT_STAFF_PROFILE_ROLE,
 		isStaffProfileRole,
 		SELECTABLE_STAFF_PROFILE_ROLES,
+
 	} from '$lib/staff/staff-profile-roles';
 	import { get } from 'svelte/store';
 	import { getStaffPageState } from '../staff-page.svelte';
@@ -31,6 +41,18 @@
 	let code = $state('');
 	let email = $state('');
 	let sendAccountInvitation = $state(true);
+	let tenantProfiles = $state<StaffPermissionProfile[]>([]);
+	let permissionProfileId = $state('');
+
+	async function loadTenantProfiles() {
+		const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
+		if (!schoolId) {
+			tenantProfiles = [];
+			return;
+		}
+		const profiles = await loadStaffPermissionProfiles(getBrowserSchoolClient(), schoolId);
+		tenantProfiles = tenantWideProfiles(profiles);
+	}
 
 	function resetForm() {
 		firstName = '';
@@ -39,7 +61,14 @@
 		code = '';
 		email = '';
 		sendAccountInvitation = true;
+		permissionProfileId = '';
 	}
+
+	$effect(() => {
+		if (open) {
+			void loadTenantProfiles();
+		}
+	});
 
 	const canSubmit = $derived(
 		firstName.trim().length > 0 && lastName.trim().length > 0 && Boolean(profileRole),
@@ -59,6 +88,7 @@
 			email,
 			profileRole,
 			sendAccountInvitation,
+			permissionProfileId: permissionProfileId || undefined,
 			successMessage: get(t)('staff.createSuccess', { name: fullName }),
 		});
 		busy = false;
@@ -120,6 +150,20 @@
 				{/each}
 			</Select.Content>
 		</Select.Root>
+	</div>
+	<div class="space-y-1.5">
+		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+			{$t('staff.tenantWideProfileOptional')}
+		</Label>
+		<select
+			bind:value={permissionProfileId}
+			class="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
+		>
+			<option value="">{$t('staff.noTenantWideProfile')}</option>
+			{#each tenantProfiles as profile (profile.id)}
+				<option value={profile.id}>{profile.name}</option>
+			{/each}
+		</select>
 	</div>
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">

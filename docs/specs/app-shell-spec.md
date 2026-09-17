@@ -62,8 +62,9 @@ The authenticated app uses a persistent four-layer frame:
 
 ```
 ┌─────────────┬──────────────────────────────────────────────────────────┐
-│  Sidebar    │  Header: [School] [Year · Period] [Lang] [User menu ▾]  │
+│  Sidebar    │  Header: [Year · Period] [Lang] [User menu ▾]            │
 │  Logo       ├──────────────────────────────────────────────────────────┤
+│  School ··· │                                                          │
 │  Modules    │                                                          │
 │  └ items    │  Main content (list / dashboard / special view)          │
 │             │                                                          │
@@ -78,8 +79,8 @@ The authenticated app uses a persistent four-layer frame:
 
 | Zone | Responsibility |
 |------|----------------|
-| **Sidebar** | Logo, school name, module navigation, contextual sub-nav (e.g. class picker in Classes) |
-| **Header** | Global context selectors + user identity |
+| **Sidebar** | Logo, school name (three-dot school popup when multi-school), module navigation, contextual sub-nav (e.g. class picker in Classes) |
+| **Header** | Year/period, language, and user identity |
 | **Body** | One primary entity-collection view per route (or an approved layout variant) |
 | **Detail drawer** | Read-only inspection of a selected entity |
 | **Mutation modal** | All create, edit, and destructive operations |
@@ -88,6 +89,7 @@ The authenticated app uses a persistent four-layer frame:
 ### 1.1 Sidebar
 
 - Logo + product name at top
+- Current school name under the logo; when the staff account belongs to more than one school, a three-dot button beside the name opens a popup to pick another school
 - Module groups (e.g. School, Classes, Finance, Configuration)
 - Active module expanded; sub-items with optional badges (counts)
 - Contextual selector inside a module when needed (e.g. class picker in Classes)
@@ -98,7 +100,6 @@ Global selectors (scope data for the whole session/view):
 
 | Selector | Purpose |
 |----------|---------|
-| School | Multi-tenant context |
 | Academic year + period | Data time scope |
 | Language | i18n locale |
 | User menu | Avatar, name, role; dropdown with profile/preferences and sign out |
@@ -293,7 +294,7 @@ When a record has **nothing meaningful to browse** beyond what the list already 
 | Primary CTA | Unchanged — **Add …** on the list toolbar → create modal |
 | Deep links | Optional `[[id]]` route only when shareable URLs are required; prefer opening an edit modal from the URL |
 
-Examples: grade scale (edit bands in modal), notification template (edit body in modal). Borderline cases (e.g. fee definition) — prefer row menu unless usage/billing sub-data justifies a thin drawer.
+Examples: grade scale (edit bands in modal). Borderline cases (e.g. fee definition) — prefer row menu unless usage/billing sub-data justifies a thin drawer.
 
 ### 3.6 What must NOT appear in the drawer
 
@@ -513,4 +514,4 @@ Use this template when adding or refactoring an entity screen.
 
 ## Small-screen presentation
 
-Below 1024px, present the existing AppSidebar in a modal sheet using shared Dialog primitives. Keep the same groups, destinations, permission filters and active states. Start mobile navigation closed, close it after navigation, support Escape/outside dismissal and focus restoration, and retain the desktop expansion preference separately. The main page uses the full viewport width; school, year, period, language and account controls wrap in the header. This is a presentation adaptation and must not change routing, permissions or bootstrap behavior.
+Below 1024px, present the existing AppSidebar in a modal sheet using shared Dialog primitives. Keep the same groups, destinations, permission filters and active states. Start mobile navigation closed, close it after navigation, support Escape/outside dismissal and focus restoration, and retain the desktop expansion preference separately. The main page uses the full viewport width; year, period, language and account controls wrap in the header. School switching stays in the sidebar under the logo. This is a presentation adaptation and must not change routing, permissions or bootstrap behavior.

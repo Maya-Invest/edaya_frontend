@@ -130,6 +130,10 @@ def write_xlsx(rows: list[dict], fieldnames: list[str]) -> None:
 
 def main() -> None:
     results = load_results()
+    if not CSV_PATH.exists():
+        print(f"No checklist CSV at {CSV_PATH}; skipping xlsx merge (JSON results still available)")
+        return
+
     with CSV_PATH.open(encoding="utf-8-sig", newline="") as f:
         reader = csv.DictReader(f, delimiter=";")
         fieldnames = [name for name in (reader.fieldnames or []) if name]

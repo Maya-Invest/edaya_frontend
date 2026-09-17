@@ -58,6 +58,7 @@ export interface MatrixEntities {
 	gradeScaleId: string | null;
 	reportCardDefId: string | null;
 	deliveryId: string | null;
+	familyFeedbackCampaignId: string | null;
 	teachingId: string | null;
 	level: string | null;
 	onboarded: boolean;
@@ -95,6 +96,7 @@ export function emptyEntities(): MatrixEntities {
 		gradeScaleId: null,
 		reportCardDefId: null,
 		deliveryId: null,
+		familyFeedbackCampaignId: null,
 		teachingId: null,
 		level: null,
 		onboarded: true,
@@ -218,6 +220,18 @@ export async function configEntityIdByName(page: Page, name: string): Promise<st
 	return null;
 }
 
+/** Family-feedback rows are buttons, not links — open the first campaign and parse the URL. */
+export async function firstFamilyFeedbackCampaignIdFromList(page: Page): Promise<string | null> {
+	const row = page.locator('ul li button[type="button"]').first();
+	if (!(await row.isVisible().catch(() => false))) {
+		return null;
+	}
+	await row.click();
+	await page.waitForTimeout(800);
+	const match = page.url().match(/\/school\/family-feedback\/([^/?]+)/);
+	return match?.[1] ?? null;
+}
+
 /** Student roster uses ListEntityTable row buttons — navigate via click and parse URL. */
 export async function firstStudentIdFromList(page: Page): Promise<string | null> {
 	const row = page.locator('ul li [role="button"][tabindex="0"]').first();
@@ -234,6 +248,19 @@ export async function firstStudentIdFromList(page: Page): Promise<string | null>
 /** Encode dynamic path segments (e.g. lesson session ids containing `:`). */
 export function encodePathSegment(segment: string): string {
 	return encodeURIComponent(segment);
+}
+
+/** Class-segment sidebar rows must start on a class page so tab hrefs resolve. */
+export function sidebarSmokeStartPath(resolvedPath: string, classId: string | null | undefined): string {
+	if (resolvedPath.startsWith('/classes/') && classId) {
+		return `/classes/${classId}/students`;
+	}
+	return '/dashboard';
+}
+
+/** Class attendance tab is omitted unless the class uses daily roll call. */
+export function isClassDailyAttendanceSidebarPath(resolvedPath: string): boolean {
+	return /\/classes\/[^/]+\/attendance\/?$/.test(resolvedPath);
 }
 
 export function timetableWeekFromSessionId(sessionId: string | null): string | null {
@@ -314,8 +341,14 @@ export function resolveEndpoint(endpoint: string, base: string, entities: Matrix
 	if (path.includes('/configuration/report-cards/')) {
 		map['[id]'] = entities.reportCardDefId;
 	}
+	if (path.includes('/configuration/notifications/')) {
+		map['[id]'] = entities.notificationTemplateKey;
+	}
 	if (path.includes('/finance/billing/')) {
 		map['[id]'] = entities.billingId;
+	}
+	if (path.includes('/school/family-feedback/')) {
+		map['[id]'] = entities.familyFeedbackCampaignId;
 	}
 	if (path.includes('/evaluations/')) {
 		map['[id]'] = entities.evaluationId;
@@ -354,9 +387,6 @@ export function resolveEndpoint(endpoint: string, base: string, entities: Matrix
 	if (modal === 'edit' && !params.get('modalTarget')) {
 		if (pathname.includes('/school/calendar') && entities.calendarEventId) {
 			params.set('modalTarget', entities.calendarEventId);
-		}
-		if (pathname.includes('/configuration/notifications') && entities.notificationTemplateKey) {
-			params.set('modalTarget', entities.notificationTemplateKey);
 		}
 	}
 
@@ -471,6 +501,9 @@ export async function discoverEntities(ctx: DemoContext): Promise<MatrixEntities
 
 	await safeGoto(ctx, `${base}/account/inbox`);
 	entities.deliveryId = await firstIdFromLinks(page, /\/account\/inbox\/([^/]+)/);
+
+	await safeGoto(ctx, `${base}/school/family-feedback`);
+	entities.familyFeedbackCampaignId = await firstFamilyFeedbackCampaignIdFromList(page);
 
 	return entities;
 }

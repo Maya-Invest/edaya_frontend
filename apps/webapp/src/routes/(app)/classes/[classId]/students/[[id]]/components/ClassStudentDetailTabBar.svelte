@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
+	import type { StudentDetailTabSegment } from '../../../../../school/students/lib/student-detail-tabs';
 	import { page } from '$app/stores';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
@@ -13,15 +14,11 @@
 	const classId = $derived($page.params.classId ?? '6a');
 	const activeTab = $derived(activeClassStudentDetailTab($page.url.pathname, classId, student.id));
 
-	function tabHref(segment: string) {
+	function tabHref(segment: StudentDetailTabSegment) {
 		const next = new URL($page.url);
 		next.searchParams.delete(MODAL_QUERY_KEY);
 		next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
-		const base = detailHref.classStudentTab(
-			classId,
-			student.id,
-			segment as 'profile' | 'grades' | 'attendance' | 'incidents' | 'finances' | 'report-card' | 'enrollments',
-		);
+		const base = detailHref.classStudentTab(classId, student.id, segment);
 		return `${base}${next.search}`;
 	}
 </script>

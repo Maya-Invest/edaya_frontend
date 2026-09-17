@@ -7,6 +7,7 @@ export const ENTITY_VERSION_KEYS = [
 	'incidents',
 	'activities',
 	'announcements',
+	'familyFeedback',
 	'schoolYearEvents',
 	'evaluations',
 	'attendance',
@@ -18,6 +19,7 @@ export const ENTITY_VERSION_KEYS = [
 	'fees',
 	'payments',
 	'inbox',
+	'documents',
 ] as const;
 
 export type EntityVersionKey = (typeof ENTITY_VERSION_KEYS)[number];
@@ -31,6 +33,7 @@ export class EntityVersions {
 	incidents = $state(0);
 	activities = $state(0);
 	announcements = $state(0);
+	familyFeedback = $state(0);
 	schoolYearEvents = $state(0);
 	evaluations = $state(0);
 	attendance = $state(0);
@@ -42,6 +45,7 @@ export class EntityVersions {
 	fees = $state(0);
 	payments = $state(0);
 	inbox = $state(0);
+	documents = $state(0);
 
 	bump(key: EntityVersionKey) {
 		this[key]++;

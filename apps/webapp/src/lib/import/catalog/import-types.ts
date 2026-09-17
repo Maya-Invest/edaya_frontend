@@ -275,7 +275,7 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 		xlsxSheetName: 'Paiements',
 		columns: catalogColumns([
 			{ key: 'matricule', required: true, labelKey: 'import.types.payments.columns.matricule' },
-			{ key: 'type_frais', required: true, labelKey: 'import.types.payments.columns.type_frais' },
+			{ key: 'type_frais', required: false, labelKey: 'import.types.payments.columns.type_frais' },
 			{ key: 'reference', required: true, labelKey: 'import.types.payments.columns.reference' },
 			{ key: 'montant', required: false, labelKey: 'import.types.payments.columns.montant' },
 			{ key: 'date', required: false, labelKey: 'import.types.payments.columns.date' },

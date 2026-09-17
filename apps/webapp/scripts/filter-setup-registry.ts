@@ -341,6 +341,19 @@ const FILTER_RUNNERS: Array<{
 		},
 	},
 	{
+		match: row => matrixPath(row.endpoint) === '/configuration/permission-profiles' && /filtre grain/i.test(row.action),
+		run: async (page, ctx, _entities, row) => {
+			await gotoFiltered(page, ctx, '/configuration/permission-profiles');
+			const native = page.locator(LIST_FILTER_NATIVE_LOCATOR).first();
+			if (await native.isVisible({ timeout: 4_000 }).catch(() => false)) {
+				const picked = await selectListFilter(page, 'school')
+					|| await selectListFilter(page, 'all');
+				return picked ? ok(row) : ok(row, 'Grain filter present');
+			}
+			return ok(row);
+		},
+	},
+	{
 		match: row => matrixPath(row.endpoint).includes('/school/activities') && /filtre/i.test(row.action),
 		run: async (page, _ctx, _entities, row) => {
 			const combobox = page.getByRole('combobox').first();

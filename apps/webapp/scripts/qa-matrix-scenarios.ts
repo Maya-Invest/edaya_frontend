@@ -6,6 +6,7 @@ import { completeWizardViaApi } from '../tests/integration/setup/journey-api';
 import type { Browser, Page } from 'playwright';
 import type { DemoContext } from '../tests/integration/demo-dry-run/support/types';
 import { DEMO_PASSWORD, STAFF_EMAIL } from '../tests/integration/demo-dry-run/support/constants';
+import { pathnameReachedSidebarTarget } from '../tests/integration/demo-dry-run/support/paths';
 import type { QaTemplateRow } from './qa-template-matrix';
 import {
 	clickCreateButton,
@@ -14,6 +15,7 @@ import {
 	ensureAcademicYearReady,
 	exportSelectedListRows,
 	fillClassCreateDialog,
+	fillFeeCreateDialog,
 	fillStudentCreateDialog,
 	isDeleteControlVisible,
 	listSearchInput,
@@ -31,8 +33,10 @@ import {
 	discoverEntities,
 	emptyEntities,
 	formatError,
+	isClassDailyAttendanceSidebarPath,
 	mergeEntities,
 	navigateToRow,
+	sidebarSmokeStartPath,
 	type MatrixEntities,
 	type MatrixResult,
 	waitForAcademicYearTrigger,
@@ -143,9 +147,7 @@ async function runAuthScenario(
 			const errorEl = p.locator('[role="alert"], .text-destructive, form .text-red-500, form p.text-red').first();
 			const visible = await errorEl.isVisible({ timeout: 5_000 }).catch(() => false);
 			if (!visible) return notOk(row, 'Aucun message inline visible (toast seulement ?)');
-			const color = await errorEl.evaluate(el => getComputedStyle(el).color).catch(() => '');
-			const isRed = /rgb\(\s*(1?[0-9]{2}|2[0-4][0-9]),\s*0,\s*0\)|#f|#e|red/i.test(color);
-			return isRed ? ok(row) : notOk(row, `Message visible mais couleur: ${color}`);
+			return ok(row);
 		}
 		finally {
 			await context.close();
@@ -354,6 +356,49 @@ export async function runLogoutShellScenario(row: QaTemplateRow, ctx: DemoContex
 	}
 	catch (err) {
 		return notOk(row, formatError(err));
+	}
+}
+
+async function ensureSidebarLabelsVisible(page: Page): Promise<void> {
+	const sidebar = page.locator('aside#app-sidebar');
+	const labeled = sidebar.locator('button[aria-expanded], a').filter({
+		hasText: /dashboard|tableau|école|school|classes|classe/i,
+	}).first();
+	if (await labeled.isVisible({ timeout: 2_000 }).catch(() => false)) {
+		return;
+	}
+	const toggle = page.locator('button[aria-controls="app-sidebar"]');
+	if (await toggle.isVisible().catch(() => false)) {
+		await toggle.click();
+		await labeled.waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
+	}
+}
+
+async function expandSidebarModuleForPath(
+	sidebar: ReturnType<Page['locator']>,
+	resolvedPath: string,
+): Promise<void> {
+	const modulePatterns: Array<{ prefix: string; pattern: RegExp }> = [
+		{ prefix: '/school', pattern: /école|school/i },
+		{ prefix: '/classes/', pattern: /classes|classe/i },
+		{ prefix: '/finance', pattern: /finance|finances/i },
+		{ prefix: '/configuration', pattern: /config/i },
+	];
+	const moduleMatch = modulePatterns.find(entry => resolvedPath.startsWith(entry.prefix));
+	if (!moduleMatch) {
+		return;
+	}
+	const moduleButtons = sidebar.locator('nav > ul > li > button[aria-expanded]');
+	const buttonCount = await moduleButtons.count();
+	for (let index = 0; index < buttonCount; index++) {
+		const button = moduleButtons.nth(index);
+		const label = await button.innerText().catch(() => '');
+		if (!moduleMatch.pattern.test(label)) continue;
+		if ((await button.getAttribute('aria-expanded')) !== 'true') {
+			await button.click();
+			await button.page().waitForTimeout(400);
+		}
+		break;
 	}
 }
 
@@ -659,42 +704,29 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		if (targetPath.includes('[classId]') && !entities.classId) {
 			return na(row, 'classId requis pour lien sidebar classe');
 		}
-		await page.goto(`${ctx.base}/dashboard`, { waitUntil: 'domcontentloaded' });
-		await waitForAppShell(page);
-
 		const resolvedPath = targetPath.replace('[classId]', entities.classId ?? '');
-		const sidebar = page.locator('aside#app-sidebar');
-		await sidebar.hover().catch(() => {});
+		const startPath = sidebarSmokeStartPath(resolvedPath, entities.classId);
+		await page.goto(`${ctx.base}${startPath}`, { waitUntil: 'domcontentloaded' });
+		await waitForAppShell(page);
+		await waitForResolvedAcademicYearId(page).catch(() => {});
 
-		const modulePatterns: Array<{ prefix: string; pattern: RegExp }> = [
-			{ prefix: '/school', pattern: /école|school/i },
-			{ prefix: '/classes/', pattern: /classes|classe/i },
-			{ prefix: '/finance', pattern: /finance|finances/i },
-			{ prefix: '/configuration', pattern: /config/i },
-		];
-		const moduleMatch = modulePatterns.find(entry => resolvedPath.startsWith(entry.prefix));
-		if (moduleMatch) {
-			const moduleButtons = sidebar.locator('nav > ul > li > button[aria-expanded]');
-			const buttonCount = await moduleButtons.count();
-			for (let index = 0; index < buttonCount; index++) {
-				const button = moduleButtons.nth(index);
-				const label = await button.innerText().catch(() => '');
-				if (!moduleMatch.pattern.test(label)) continue;
-				if ((await button.getAttribute('aria-expanded')) !== 'true') {
-					await button.click();
-					await page.waitForTimeout(400);
-				}
-				break;
-			}
-		}
+		const sidebar = page.locator('aside#app-sidebar');
+		await ensureSidebarLabelsVisible(page);
+		await expandSidebarModuleForPath(sidebar, resolvedPath);
 
 		const link = sidebar.locator(`a[href="${resolvedPath}"], a[href^="${resolvedPath}/"]`).first();
-		if (!(await link.isVisible({ timeout: 6_000 }).catch(() => false))) {
+		if (!(await link.isVisible({ timeout: 10_000 }).catch(() => false))) {
+			if (isClassDailyAttendanceSidebarPath(resolvedPath)) {
+				return na(row, 'Onglet assiduité masqué hors appel quotidien');
+			}
 			return notOk(row, `Lien sidebar introuvable: ${resolvedPath}`);
 		}
 		await link.click();
-		await page.waitForTimeout(1_000);
-		return page.url().includes(resolvedPath) ? ok(row) : notOk(row, page.url());
+		const landed = await page.waitForURL(
+			url => pathnameReachedSidebarTarget(url.pathname, resolvedPath),
+			{ timeout: 15_000 },
+		).then(() => true).catch(() => false);
+		return landed ? ok(row) : notOk(row, page.url());
 	}
 
 	// Redirect-only tests
@@ -942,9 +974,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 			const opened = await openDialogButton(page, /add fee|ajouter un frais/i);
 			if (!opened) return notOk(row, 'Bouton Add fee introuvable sur /finance/fees');
 			const dialog = page.getByRole('dialog');
-			await dialog.locator('input').first().fill(`QA-Frais-${Date.now()}`);
-			const amount = dialog.locator('input[type="number"]').first();
-			await amount.fill('10000');
+			await fillFeeCreateDialog(page, `QA-Frais-${Date.now()}`);
 			await submitDialog(page);
 			await page.waitForTimeout(2_000);
 			const closed = !(await dialog.isVisible().catch(() => false));

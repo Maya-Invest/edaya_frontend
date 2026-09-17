@@ -29,6 +29,17 @@ export function isOnboardingSkipEnabled(): boolean {
 	return dev || PUBLIC_APP_ENV === 'staging';
 }
 
+export const DEFAULT_PROFILE_PHOTO_MAX_BYTES = 1_048_576;
+
+/** Mirrors API `PROFILE_PHOTO_MAX_BYTES` for client JPEG export. */
+export function profilePhotoMaxBytes(): number {
+	const parsed = Number(optionalPublicEnv.PUBLIC_PROFILE_PHOTO_MAX_BYTES);
+	if (Number.isFinite(parsed) && parsed > 0) {
+		return Math.floor(parsed);
+	}
+	return DEFAULT_PROFILE_PHOTO_MAX_BYTES;
+}
+
 /** Mirrors API `ALLOW_PUBLIC_SCHOOL_REGISTRATION` — enabled in dev/staging by default. */
 export function isPublicSchoolRegistrationEnabled(): boolean {
 	const flag = optionalPublicEnv.PUBLIC_ALLOW_SCHOOL_REGISTRATION;

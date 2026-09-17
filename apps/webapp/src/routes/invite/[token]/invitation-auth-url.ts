@@ -1,3 +1,11 @@
+export function invitationTokenFromRoute(raw: string | undefined): string {
+	return (raw ?? '').trim();
+}
+
+export function isInvitationRoute(pathname: string): boolean {
+	return pathname === '/invite' || pathname.startsWith('/invite/');
+}
+
 export type InvitationAuthMode = 'signUp' | 'signIn';
 export type InvitationAuthStage = 'form' | 'verification';
 

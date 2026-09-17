@@ -1,12 +1,15 @@
 import type { GuardianNotificationSettings } from '$lib/api/account-data';
 import type { AccountActor, SessionKind } from '$lib/auth/account-actor';
-import type { ActionGrantsSnapshot, SessionSnapshot } from '$lib/auth/types';
+import type { ActionGrantsSnapshot, SessionSnapshot, StaffSchoolMembership } from '$lib/auth/types';
 import type { ServerOnboardingAccountStatus } from '$lib/onboarding/types';
 import type { StaffMember } from '$lib/types/school';
 import { browser } from '$app/environment';
 import { academicContext } from '$lib/academic/context.svelte';
 import { clearAuthGate } from '$lib/auth/auth-gate';
-import { clearWizardCompletedInSession } from '$lib/onboarding/wizard-completion-flag';
+import {
+	clearOnboardingSummaryHold,
+	clearWizardCompletedInSession,
+} from '$lib/onboarding/wizard-completion-flag';
 import { authPrincipalChanged } from './access-token';
 import { accessTokens } from './bearer-fetch';
 import { authClient } from './client';
@@ -16,6 +19,7 @@ class AuthSession {
 	authUserId = $state<string | null>(null);
 	needsOnboarding = $state(false);
 	serverOnboardingStatus = $state<ServerOnboardingAccountStatus | null>(null);
+	onboardingStatusUnknown = $state(false);
 	schoolId = $state<string | null>(null);
 	sessionKind = $state<SessionKind | null>(null);
 	subjectId = $state<string | null>(null);
@@ -25,6 +29,7 @@ class AuthSession {
 	userProfile = $state<StaffMember | null>(null);
 	guardianSettings = $state<GuardianNotificationSettings | null>(null);
 	grants = $state<ActionGrantsSnapshot | null>(null);
+	staffMemberships = $state<StaffSchoolMembership[]>([]);
 	ready = $state(!browser);
 
 	get isLoggedIn(): boolean {
@@ -80,6 +85,13 @@ class AuthSession {
 		return academicContext.schools.find(entry => entry.id === this.schoolId) ?? null;
 	});
 
+	activeStaffMembership = $derived.by(() => {
+		if (!this.schoolId) {
+			return null;
+		}
+		return this.staffMemberships.find(entry => entry.schoolId === this.schoolId) ?? null;
+	});
+
 	markLoading() {
 		this.ready = false;
 	}
@@ -95,6 +107,7 @@ class AuthSession {
 		this.authUserId = options.authUserId;
 		this.needsOnboarding = true;
 		this.serverOnboardingStatus = null;
+		this.onboardingStatusUnknown = false;
 		this.loginEmail = options.loginEmail;
 		this.userId = null;
 		this.schoolId = null;
@@ -105,6 +118,7 @@ class AuthSession {
 		this.userProfile = null;
 		this.guardianSettings = null;
 		this.grants = null;
+		this.staffMemberships = [];
 		this.ready = true;
 	}
 
@@ -131,11 +145,19 @@ class AuthSession {
 		this.userProfile = null;
 		this.guardianSettings = null;
 		this.grants = null;
+		this.staffMemberships = [];
 		this.ready = true;
 	}
 
 	setServerOnboardingStatus(status: ServerOnboardingAccountStatus | null) {
 		this.serverOnboardingStatus = status;
+		if (status) {
+			this.onboardingStatusUnknown = false;
+		}
+	}
+
+	setOnboardingStatusUnknown(unknown: boolean) {
+		this.onboardingStatusUnknown = unknown;
 	}
 
 	setFromServer(
@@ -178,6 +200,18 @@ class AuthSession {
 		this.ready = true;
 	}
 
+	setStaffMemberships(memberships: StaffSchoolMembership[]) {
+		this.staffMemberships = memberships;
+	}
+
+	selectStaffMembership(membership: StaffSchoolMembership) {
+		this.needsOnboarding = false;
+		this.sessionKind = 'staff';
+		this.schoolId = membership.schoolId;
+		this.userId = membership.actorId;
+		this.grants = null;
+	}
+
 	updateNotificationContact(contact: {
 		notificationEmail?: string | null;
 		notificationPhone?: string | null;
@@ -203,6 +237,7 @@ class AuthSession {
 		this.authUserId = null;
 		this.needsOnboarding = false;
 		this.serverOnboardingStatus = null;
+		this.onboardingStatusUnknown = false;
 		this.schoolId = null;
 		this.sessionKind = null;
 		this.subjectId = null;
@@ -212,10 +247,12 @@ class AuthSession {
 		this.userProfile = null;
 		this.guardianSettings = null;
 		this.grants = null;
+		this.staffMemberships = [];
 	}
 
 	async logout() {
 		clearWizardCompletedInSession(this.authUserId);
+		clearOnboardingSummaryHold(this.authUserId);
 		this.clear();
 		clearAuthGate();
 		if (browser) {

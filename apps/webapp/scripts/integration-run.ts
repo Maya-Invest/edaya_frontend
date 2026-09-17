@@ -2,7 +2,7 @@
 /**
  * Full provisioned integration pipeline:
  *   1. API provision (user + school + wizard flag)
- *   2. Playwright UI journey (structure → configuration → people → school → teaching → class/finance)
+ *   2. Playwright UI journey (structure → configuration → people → school → teaching → family-feedback → class/finance)
  *   3. Unclaimed QA matrix rows (journey already recorded coverage)
  *   4. Summary report in .integration-run/summary.json
  *
@@ -15,6 +15,7 @@
  *   - Playwright chromium (auto-installed into apps/webapp/.cache/ms-playwright)
  *
  * Canonical integration contract: bun run test:integration:provisioned
+ * Login + onboarding (not this suite): bun run test:integration:onboarding
  * Client walkthrough (not this suite): bun run demo:e2e
  */
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
@@ -115,7 +116,10 @@ async function main(): Promise<void> {
 		console.warn('Could not read qa-matrix-results.json');
 	}
 
-	const excludedList = excludedModules.split(',').map(m => m.trim()).filter(Boolean);
+	const excludedList = [
+		...defaultExcludedModulesForRun(),
+		...excludedModules.split(',').map(m => m.trim()).filter(Boolean),
+	];
 	const moduleCounts = matrixSummary.byModule ?? countByModule(matrixSummary.results);
 
 	let setupSteps: unknown[] = [];

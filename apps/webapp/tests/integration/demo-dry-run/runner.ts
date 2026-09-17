@@ -1,5 +1,4 @@
 import { mkdir } from 'node:fs/promises';
-import { chromium } from 'playwright';
 import { ensurePlaywrightChromium } from '../../../scripts/playwright-browsers';
 import { assertStackReady } from './support/auth';
 import { createDemoContext } from './support/context';
@@ -32,6 +31,7 @@ export async function runDemoDryRun(options: RunDemoDryRunOptions = {}): Promise
 	await assertStackReady(base);
 	await mkdir(outDir, { recursive: true });
 	ensurePlaywrightChromium();
+	const { chromium } = await import('playwright');
 
 	const reporter = new DemoReporter();
 	const consoleErrors: string[] = [];

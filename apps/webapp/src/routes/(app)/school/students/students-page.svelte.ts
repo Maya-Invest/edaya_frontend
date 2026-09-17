@@ -1,8 +1,10 @@
+import type { components } from '$lib/api/schema';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { StudentListFilters } from '$lib/list/list-url-filters';
 import type { Student } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
 import { fetchStudentById, loadClassPeopleData, loadPeopleData, loadPeopleDataPage } from '$lib/api/people-data';
+import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
@@ -10,13 +12,15 @@ import { readStudentListFilters, writeStudentListFilters } from '$lib/list/list-
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
-import { SvelteMap } from 'svelte/reactivity';
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import {
 	filterStudentList,
 	studentListUsesFullRoster,
 } from './lib/student-list-filters';
 import { createStudentOnPage } from './lib/students-list-mutations';
 import { ensureStudentDrawerSelection, querySchoolStudentsPage } from './lib/students-queries';
+
+export type StudentPhotoSubmission = components['schemas']['StudentPhotoSubmission'];
 
 export const SCHOOL_STUDENTS_PAGE_SIZE = 25;
 
@@ -32,6 +36,7 @@ export class StudentsPageState {
 	fullRosterStudents = $state<Student[]>([]);
 	loadingFullRoster = $state(false);
 	selectedResolving = $state(false);
+	pendingPhotoSubmissions = $state<StudentPhotoSubmission[]>([]);
 
 	private listRequestVersion = 0;
 
@@ -91,9 +96,26 @@ export class StudentsPageState {
 		return studentListUsesFullRoster(this.filters.values);
 	}
 
+	get pendingPhotoStudentIds() {
+		return new SvelteSet(
+			this.pendingPhotoSubmissions
+				.filter(submission => submission.status === 'pending')
+				.map(submission => submission.studentId),
+		);
+	}
+
+	pendingPhotoFor(studentId: string): StudentPhotoSubmission | undefined {
+		return this.pendingPhotoSubmissions.find(
+			submission => submission.studentId === studentId && submission.status === 'pending',
+		);
+	}
+
 	filterVisible(students: readonly Student[]): Student[] {
 		const classNameById = new SvelteMap(this.classes.map(classGroup => [classGroup.id, classGroup.name]));
-		return filterStudentList(students, this.filters.values, { classNameById });
+		return filterStudentList(students, this.filters.values, {
+			classNameById,
+			pendingPhotoStudentIds: this.pendingPhotoStudentIds,
+		});
 	}
 
 	get visibleStudents() {
@@ -152,6 +174,16 @@ export class StudentsPageState {
 		this.loadingFullRoster = false;
 	}
 
+	async loadPendingPhotoReviews() {
+		const rows = await safeOptionalEntityList(() =>
+			getBrowserSchoolClient().entities.studentPhotoSubmissions.list({
+				status: 'pending',
+				$limit: 200,
+			}),
+		);
+		this.pendingPhotoSubmissions = rows;
+	}
+
 	async loadFirstPage() {
 		const version = ++this.listRequestVersion;
 		this.listLoading = true;
@@ -172,6 +204,7 @@ export class StudentsPageState {
 				return;
 			}
 			this.seedPage(result.students, result.totalStudents);
+			await this.loadPendingPhotoReviews();
 		}
 		finally {
 			if (version === this.listRequestVersion) {
@@ -208,6 +241,7 @@ export class StudentsPageState {
 			this.mergeStudents(result.students);
 			this.totalStudents = result.totalStudents;
 			this.versions.markLoaded();
+			await this.loadPendingPhotoReviews();
 		}
 		finally {
 			if (version === this.listRequestVersion) {
@@ -237,6 +271,7 @@ export class StudentsPageState {
 			}
 			this.fullRosterStudents = result.students;
 			this.seedPage(result.students, result.students.length);
+			await this.loadPendingPhotoReviews();
 		}
 		finally {
 			if (version === this.listRequestVersion) {

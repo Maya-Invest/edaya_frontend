@@ -102,6 +102,36 @@ function requirePglite() {
 	);
 }
 
+async function loadSchoolFees(db: { query: (sql: string) => Promise<{ rows: { name: string; default_amount: number }[] }> }): Promise<SchoolFee[]> {
+	try {
+		const result = await db.query(`
+			SELECT name, default_price AS default_amount
+			FROM catalog_services
+			ORDER BY name
+		`);
+		return result.rows.map(row => ({
+			name: row.name,
+			defaultAmount: row.default_amount,
+		}));
+	}
+	catch {
+		try {
+			const result = await db.query(`
+				SELECT name, default_amount
+				FROM fees
+				ORDER BY name
+			`);
+			return result.rows.map(row => ({
+				name: row.name,
+				defaultAmount: row.default_amount,
+			}));
+		}
+		catch {
+			return [];
+		}
+	}
+}
+
 export async function loadSchoolImportSnapshot(): Promise<SchoolImportSnapshot> {
 	if (!existsSync(schoolDataDir)) {
 		throw new Error(
@@ -222,14 +252,7 @@ export async function loadSchoolImportSnapshot(): Promise<SchoolImportSnapshot> 
 			ORDER BY code
 		`)).rows;
 
-		const fees = (await db.query<{ name: string; default_amount: number }>(`
-			SELECT name, default_amount
-			FROM fees
-			ORDER BY name
-		`)).rows.map(row => ({
-			name: row.name,
-			defaultAmount: row.default_amount,
-		}));
+		const fees = await loadSchoolFees(db);
 
 		const chapters = (await db.query<{
 			niveau: string;

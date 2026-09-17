@@ -7,19 +7,23 @@
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { acceptInvitation, fetchInvitationPreview } from '$lib/api/invitation-data';
+	import { bootstrapSessionAfterInvite } from '$lib/auth/accept-pending-invite';
 	import { isExistingAccountAuthError } from '$lib/auth/auth-errors';
-	import { bootstrapSession, getAuthenticatedAuthUser } from '$lib/auth/bootstrap';
+	import { getAuthenticatedAuthUser, resetBootstrapSession } from '$lib/auth/bootstrap';
 	import { resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 	import { authClient } from '$lib/auth/client';
+	import { GUARDIAN_PLAY_STORE_URL } from '$lib/auth/guardian-app';
 	import {
 		clearPendingInviteToken,
+		clearPendingInviteTokenIf,
+		discardPendingInviteToken,
 		persistPendingInviteToken,
 	} from '$lib/auth/pending-invite-token';
-	import { resolveLinkedActorPath } from '$lib/auth/resolve-post-auth';
+	import { ONBOARDING_PATH, resolvePostAuthPath } from '$lib/auth/resolve-post-auth';
 	import { authSession } from '$lib/auth/session.svelte';
 	import LanguageSelector from '$lib/components/layout/LanguageSelector.svelte';
 	import BrandLogo from '$lib/components/ui/BrandLogo.svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
+	import Button, { buttonVariants } from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import { t } from '$lib/i18n';
@@ -30,6 +34,8 @@
 	import { get } from 'svelte/store';
 	import {
 		canonicalInvitationAuthUrlState,
+		invitationTokenFromRoute,
+		isInvitationRoute,
 		readInvitationAuthUrlState,
 		writeInvitationAuthUrlState,
 	} from './invitation-auth-url';
@@ -37,6 +43,11 @@
 	function sessionBlocksInvitationAccept(
 		preview: InvitationPreview,
 	): boolean {
+		const loginEmail = authSession.loginEmail?.trim().toLowerCase() ?? '';
+		const invitedEmail = preview.contactEmail?.trim().toLowerCase() ?? '';
+		if (loginEmail && invitedEmail && loginEmail !== invitedEmail) {
+			return true;
+		}
 		if (!authSession.isLoggedIn || !authSession.userId || !authSession.sessionKind) {
 			return false;
 		}
@@ -62,19 +73,21 @@
 		return get(t)('invitation.accept.failed');
 	}
 
-	const token = $derived($page.params.token ?? '');
+	const token = $derived(invitationTokenFromRoute($page.params.token));
 
-	type PageState = 'loading' | 'invalid' | 'notFound' | 'revoked' | 'expired' | 'accepted' | 'ready' | 'accepting' | 'teacherLinked';
-	type AcceptedIssue = 'none' | 'otherAccount' | 'stillUnlinked';
+	type PageState = 'loading' | 'invalid' | 'loadFailed' | 'notFound' | 'revoked' | 'expired' | 'accepted' | 'ready' | 'accepting' | 'teacherLinked' | 'guardianLinked' | 'studentLinked';
+	type AcceptedIssue = 'none' | 'otherAccount' | 'stillUnlinked' | 'contactMismatch';
 
 	let preview = $state<InvitationPreview | null>(null);
 	let pageState = $state<PageState>('loading');
 	let acceptedIssue = $state<AcceptedIssue>('none');
-	let acceptedCompletionAttempted = $state(false);
+	let acceptCommitted = $state(false);
+	let previewReload = $state(0);
 	let email = $state('');
 	let password = $state('');
 	let name = $state('');
 	let busy = $state(false);
+	let acceptInFlight = false;
 	const authUrlState = $derived(readInvitationAuthUrlState($page.url));
 	const authMode = $derived(authUrlState.mode);
 	const verificationSent = $derived(
@@ -95,21 +108,43 @@
 	});
 
 	type InvitationKind = InvitationPreview['kind'];
-	type BootstrapSession = NonNullable<Awaited<ReturnType<typeof bootstrapSession>>['session']>;
+	type BootstrapSession = NonNullable<Awaited<ReturnType<typeof bootstrapSessionAfterInvite>>['session']>;
 
 	function isTeacherInvitation(kind: InvitationKind | null | undefined): boolean {
 		return kind === 'teacher';
 	}
 
-	function completeInvitationAccept(session: BootstrapSession) {
+	function isGuardianInvitation(kind: InvitationKind | null | undefined): boolean {
+		return kind === 'guardian';
+	}
+
+	function isStudentInvitation(kind: InvitationKind | null | undefined): boolean {
+		return kind === 'student';
+	}
+
+	async function completeInvitationAccept(session: BootstrapSession) {
 		clearPendingInviteToken();
 		if (isTeacherInvitation(session.kind)) {
 			toast.success($t('invitation.accept.teacherSuccess'));
 			pageState = 'teacherLinked';
 			return;
 		}
+		if (isGuardianInvitation(session.kind)) {
+			toast.success($t('invitation.accept.guardianSuccess'));
+			pageState = 'guardianLinked';
+			return;
+		}
+		if (isStudentInvitation(session.kind)) {
+			toast.success($t('invitation.accept.studentSuccess'));
+			pageState = 'studentLinked';
+			return;
+		}
 		toast.success($t('invitation.accept.success'));
-		void appGoto(resolveLinkedActorPath(session));
+		await appGoto(resolvePostAuthPath({
+			session,
+			pendingOnboarding: false,
+			authUserId: authSession.authUserId,
+		}));
 	}
 
 	const wrongAccount = $derived(preview ? sessionBlocksInvitationAccept(preview) : false);
@@ -154,9 +189,13 @@
 		}
 	}
 
-	afterNavigate(() => {
-		const canonicalHref = writeInvitationAuthUrlState($page.url, authUrlState);
-		if (canonicalHref !== `${$page.url.pathname}${$page.url.search}`) {
+	afterNavigate((navigation) => {
+		const url = navigation.to?.url ?? $page.url;
+		if (!isInvitationRoute(url.pathname)) {
+			return;
+		}
+		const canonicalHref = writeInvitationAuthUrlState(url, authUrlState);
+		if (canonicalHref !== `${url.pathname}${url.search}`) {
 			void appGoto(canonicalHref, {
 				replaceState: true,
 				keepFocus: true,
@@ -170,62 +209,24 @@
 		if (!currentToken) {
 			return;
 		}
-		persistPendingInviteToken(currentToken);
-	});
-
-	$effect(() => {
-		const currentToken = token;
-		if (
-			pageState !== 'accepted'
-			|| !currentToken
-			|| acceptedCompletionAttempted
-			|| !authSession.ready
-		) {
+		if (pageState === 'ready' && preview?.status === 'pending') {
+			persistPendingInviteToken(currentToken);
 			return;
 		}
-
-		void (async () => {
-			const authUser = await getAuthenticatedAuthUser();
-			if (!authUser) {
-				return;
-			}
-
-			acceptedCompletionAttempted = true;
-			pageState = 'accepting';
-			acceptedIssue = 'none';
-
-			try {
-				await acceptInvitation(currentToken);
-				resetAppShellBootstrap();
-				const { session, pendingOnboarding } = await bootstrapSession();
-				if (!pendingOnboarding && session) {
-					completeInvitationAccept(session);
-					return;
-				}
-
-				acceptedIssue = 'stillUnlinked';
-				pageState = 'accepted';
-				toast.error($t('invitation.accept.alreadyAcceptedStillUnlinkedHint'));
-			}
-			catch (err) {
-				pageState = 'accepted';
-				if (err instanceof ApiError) {
-					const payload = err.body as { code?: string } | undefined;
-					if (payload?.code === 'INVITATION_ALREADY_ACCEPTED') {
-						acceptedIssue = 'otherAccount';
-						toast.error($t('invitation.accept.alreadyAcceptedOtherAccountHint'));
-						return;
-					}
-					toast.error(apiErrorMessage(err));
-					return;
-				}
-				toast.error($t('invitation.accept.failed'));
-			}
-		})();
+		if (
+			pageState === 'invalid'
+			|| pageState === 'notFound'
+			|| pageState === 'revoked'
+			|| pageState === 'expired'
+			|| pageState === 'accepted'
+		) {
+			clearPendingInviteTokenIf(currentToken);
+		}
 	});
 
 	$effect(() => {
 		const currentToken = token;
+		const request = { cancelled: false, attempt: previewReload };
 		if (!currentToken) {
 			pageState = 'notFound';
 			return;
@@ -234,9 +235,12 @@
 		void (async () => {
 			pageState = 'loading';
 			acceptedIssue = 'none';
-			acceptedCompletionAttempted = false;
+			acceptCommitted = false;
 			try {
 				const result = await fetchInvitationPreview(currentToken);
+				if (request.cancelled) {
+					return;
+				}
 				preview = result;
 				if (result.status === 'accepted') {
 					pageState = 'accepted';
@@ -261,13 +265,20 @@
 				pageState = 'ready';
 			}
 			catch (err) {
+				if (request.cancelled) {
+					return;
+				}
 				if (err instanceof ApiError && err.status === 404) {
 					pageState = 'notFound';
 					return;
 				}
-				pageState = 'invalid';
+				pageState = 'loadFailed';
 			}
 		})();
+
+		return () => {
+			request.cancelled = true;
+		};
 	});
 
 	async function signInWithEmail(): Promise<boolean> {
@@ -333,35 +344,82 @@
 		return true;
 	}
 
+	function signedInContactDiffersFromInvitation(): boolean {
+		const loginEmail = authSession.loginEmail?.trim().toLowerCase() ?? '';
+		const invited = invitedEmail.toLowerCase();
+		const entered = email.trim().toLowerCase();
+		if (loginEmail && invited && loginEmail !== invited) {
+			return true;
+		}
+		if (loginEmail && entered && loginEmail !== entered) {
+			return true;
+		}
+		return false;
+	}
+
+	async function retryLinkedSession(): Promise<boolean> {
+		resetAppShellBootstrap();
+		resetBootstrapSession();
+		const { session, pendingOnboarding } = await bootstrapSessionAfterInvite();
+		if (pendingOnboarding || !session) {
+			acceptedIssue = 'stillUnlinked';
+			pageState = 'accepted';
+			toast.error($t('invitation.accept.alreadyAcceptedStillUnlinkedHint'));
+			return false;
+		}
+		await completeInvitationAccept(session);
+		return true;
+	}
+
 	async function handleAccept() {
-		if (!token || !preview) {
+		if (!token || !preview || acceptInFlight) {
 			return;
 		}
 
+		acceptInFlight = true;
 		busy = true;
 		pageState = 'accepting';
 		try {
+			if (acceptCommitted) {
+				await retryLinkedSession();
+				return;
+			}
+
 			const authUser = await getAuthenticatedAuthUser();
+			if (authUser && signedInContactDiffersFromInvitation()) {
+				acceptedIssue = 'contactMismatch';
+				pageState = 'ready';
+				toast.error($t('invitation.accept.contactMismatchHint'));
+				return;
+			}
+
 			if (!authUser) {
 				const authenticated = await authenticate();
 				if (!authenticated) {
 					pageState = 'ready';
 					return;
 				}
+				if (signedInContactDiffersFromInvitation()) {
+					acceptedIssue = 'contactMismatch';
+					pageState = 'ready';
+					toast.error($t('invitation.accept.contactMismatchHint'));
+					return;
+				}
 			}
 
 			await acceptInvitation(token);
-			resetAppShellBootstrap();
-			const { session, pendingOnboarding } = await bootstrapSession();
-			if (pendingOnboarding || !session) {
-				pageState = 'ready';
-				toast.error($t('invitation.accept.alreadyAcceptedStillUnlinkedHint'));
-				return;
-			}
-			completeInvitationAccept(session);
+			acceptCommitted = true;
+			clearPendingInviteTokenIf(token);
+			await retryLinkedSession();
 		}
 		catch (err) {
-			pageState = 'ready';
+			if (acceptCommitted) {
+				acceptedIssue = 'stillUnlinked';
+				pageState = 'accepted';
+			}
+			else {
+				pageState = 'ready';
+			}
 			if (err instanceof ApiError) {
 				toast.error(apiErrorMessage(err));
 			}
@@ -371,6 +429,7 @@
 		}
 		finally {
 			busy = false;
+			acceptInFlight = false;
 		}
 	}
 </script>
@@ -394,24 +453,72 @@
 						<p>{pageState === 'accepting' ? $t('invitation.accept.linking') : $t('dataState.loading')}</p>
 					</div>
 				{:else if pageState === 'notFound'}
-					<div class="space-y-2 py-4 text-center">
+					<div class="space-y-4 py-4 text-center">
 						<h2 class="font-display text-lg font-semibold">{$t('invitation.accept.notFoundTitle')}</h2>
 						<p class="text-sm text-muted-foreground">{$t('invitation.accept.notFoundHint')}</p>
+						<Button
+							type="button"
+							variant="outline"
+							onclick={() => {
+								discardPendingInviteToken();
+								void appGoto(ONBOARDING_PATH);
+							}}
+						>
+							{$t('invitation.accept.startOnboarding')}
+						</Button>
 					</div>
 				{:else if pageState === 'revoked'}
-					<div class="space-y-2 py-4 text-center">
+					<div class="space-y-4 py-4 text-center">
 						<h2 class="font-display text-lg font-semibold">{$t('invitation.accept.revokedTitle')}</h2>
 						<p class="text-sm text-muted-foreground">{$t('invitation.accept.revokedHint')}</p>
+						<Button
+							type="button"
+							variant="outline"
+							onclick={() => {
+								discardPendingInviteToken();
+								void appGoto(ONBOARDING_PATH);
+							}}
+						>
+							{$t('invitation.accept.startOnboarding')}
+						</Button>
 					</div>
 				{:else if pageState === 'expired'}
-					<div class="space-y-2 py-4 text-center">
+					<div class="space-y-4 py-4 text-center">
 						<h2 class="font-display text-lg font-semibold">{$t('invitation.accept.expiredTitle')}</h2>
 						<p class="text-sm text-muted-foreground">{$t('invitation.accept.expiredHint')}</p>
+						<Button
+							type="button"
+							variant="outline"
+							onclick={() => {
+								discardPendingInviteToken();
+								void appGoto(ONBOARDING_PATH);
+							}}
+						>
+							{$t('invitation.accept.startOnboarding')}
+						</Button>
 					</div>
 				{:else if pageState === 'invalid'}
-					<div class="space-y-2 py-4 text-center">
+					<div class="space-y-4 py-4 text-center">
 						<h2 class="font-display text-lg font-semibold">{$t('invitation.accept.invalidTitle')}</h2>
 						<p class="text-sm text-muted-foreground">{$t('invitation.accept.invalidHint')}</p>
+						<Button
+							type="button"
+							variant="outline"
+							onclick={() => {
+								discardPendingInviteToken();
+								void appGoto(ONBOARDING_PATH);
+							}}
+						>
+							{$t('invitation.accept.startOnboarding')}
+						</Button>
+					</div>
+				{:else if pageState === 'loadFailed'}
+					<div class="space-y-4 py-4 text-center">
+						<h2 class="font-display text-lg font-semibold">{$t('invitation.accept.loadFailedTitle')}</h2>
+						<p class="text-sm text-muted-foreground">{$t('invitation.accept.loadFailedHint')}</p>
+						<Button type="button" onclick={() => { previewReload += 1; }}>
+							{$t('invitation.accept.retry')}
+						</Button>
 					</div>
 				{:else if pageState === 'teacherLinked'}
 					<div class="space-y-4 py-4 text-center">
@@ -420,6 +527,39 @@
 						</h2>
 						<p class="text-sm text-muted-foreground">
 							{$t('auth.teacherPortalGateHint')}
+						</p>
+					</div>
+				{:else if pageState === 'guardianLinked'}
+					<div class="space-y-4 py-4 text-center">
+						<h2 class="font-display text-lg font-semibold">
+							{$t('invitation.accept.guardianLinkedTitle')}
+						</h2>
+						<p class="text-sm text-muted-foreground">
+							{$t('auth.guardianPortalGateHint')}
+						</p>
+						<div class="space-y-2 text-left">
+							<p class="text-sm font-medium">{$t('invitation.accept.guardianGetAppTitle')}</p>
+							<p class="text-sm text-muted-foreground">{$t('invitation.accept.guardianGetAppHint')}</p>
+							<a
+								class={buttonVariants({ class: 'w-full' })}
+								href={GUARDIAN_PLAY_STORE_URL}
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								{$t('invitation.accept.guardianGetAppPlayStore')}
+							</a>
+							<p class="text-xs text-muted-foreground">
+								{$t('invitation.accept.guardianGetAppAppStore')}
+							</p>
+						</div>
+					</div>
+				{:else if pageState === 'studentLinked'}
+					<div class="space-y-4 py-4 text-center">
+						<h2 class="font-display text-lg font-semibold">
+							{$t('invitation.accept.studentLinkedTitle')}
+						</h2>
+						<p class="text-sm text-muted-foreground">
+							{$t('auth.studentPortalGateHint')}
 						</p>
 					</div>
 				{:else if pageState === 'accepted'}
@@ -438,6 +578,14 @@
 							<p class="text-sm text-muted-foreground">
 								{$t('invitation.accept.alreadyAcceptedStillUnlinkedHint')}
 							</p>
+							<Button
+								type="button"
+								onclick={() => {
+									void handleAccept();
+								}}
+							>
+								{$t('invitation.accept.retryLinking')}
+							</Button>
 						{:else}
 							<h2 class="font-display text-lg font-semibold">
 								{$t('invitation.accept.alreadyAcceptedTitle')}
@@ -450,7 +598,7 @@
 							<Button
 								type="button"
 								onclick={() => {
-									persistPendingInviteToken(token);
+									discardPendingInviteToken();
 									void appGoto('/login');
 								}}
 							>
@@ -460,10 +608,18 @@
 					</div>
 				{:else if preview}
 					<div class="space-y-4">
-						{#if wrongAccount}
+						{#if wrongAccount || acceptedIssue === 'contactMismatch'}
 							<div class="space-y-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
-								<p class="font-medium">{$t('invitation.accept.wrongAccountTitle')}</p>
-								<p class="text-muted-foreground">{$t('invitation.accept.wrongAccountHint')}</p>
+								<p class="font-medium">
+									{$t(acceptedIssue === 'contactMismatch'
+										? 'invitation.accept.contactMismatchTitle'
+										: 'invitation.accept.wrongAccountTitle')}
+								</p>
+								<p class="text-muted-foreground">
+									{$t(acceptedIssue === 'contactMismatch'
+										? 'invitation.accept.contactMismatchHint'
+										: 'invitation.accept.wrongAccountHint')}
+								</p>
 								<Button
 									type="button"
 									variant="outline"
@@ -472,6 +628,7 @@
 									onclick={async () => {
 										await authSession.logout();
 										resetAppShellBootstrap();
+										acceptedIssue = 'none';
 									}}
 								>
 									{$t('invitation.accept.signOut')}
@@ -495,6 +652,24 @@
 								})}
 							</p>
 						</div>
+
+						{#if isGuardianInvitation(preview.kind)}
+							<div class="space-y-3 rounded-xl border border-border bg-secondary/40 px-4 py-3 text-sm">
+								<p class="font-medium">{$t('invitation.accept.guardianGetAppTitle')}</p>
+								<p class="text-muted-foreground">{$t('invitation.accept.guardianGetAppHint')}</p>
+								<a
+									class={buttonVariants({ variant: 'outline', class: 'w-full' })}
+									href={GUARDIAN_PLAY_STORE_URL}
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									{$t('invitation.accept.guardianGetAppPlayStore')}
+								</a>
+								<p class="text-xs text-muted-foreground">
+									{$t('invitation.accept.guardianGetAppAppStore')}
+								</p>
+							</div>
+						{/if}
 
 						{#if verificationSent}
 							<div class="space-y-3 rounded-xl border border-border bg-secondary/40 px-4 py-3 text-sm">
@@ -574,7 +749,7 @@
 						<Button
 							type="button"
 							class="w-full"
-							disabled={busy || wrongAccount || verificationSent || (!authSession.isLoggedIn && (!email.trim() || !password.trim()))}
+							disabled={busy || wrongAccount || acceptedIssue === 'contactMismatch' || verificationSent || (!authSession.isLoggedIn && (!email.trim() || !password.trim()))}
 							onclick={handleAccept}
 						>
 							{$t('invitation.accept.cta')}

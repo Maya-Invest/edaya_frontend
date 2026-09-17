@@ -6,6 +6,7 @@
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { authSession } from '$lib/auth/session.svelte';
 	import ClassSelector from '$lib/components/layout/ClassSelector.svelte';
+	import SchoolSelector from '$lib/components/layout/SchoolSelector.svelte';
 	import BrandLogo from '$lib/components/ui/BrandLogo.svelte';
 	import { t } from '$lib/i18n';
 	import { Crown, ChevronDown } from '$lib/icons';
@@ -45,7 +46,6 @@
 	const activeModule = $derived(getModuleFromPath($page.url.pathname));
 	const classId = $derived(resolveActiveClassId($page.params.classId, academicContext.classes));
 	const grants = $derived(authSession.grants);
-	const brandEyebrow = $derived(authSession.school?.shortName ?? $t('sidebar.module'));
 	let hoverExpanded = $state(false);
 
 	const collapsed = $derived(!forceExpanded && !shellContext.sidebarOpen);
@@ -115,9 +115,7 @@
 >
 	<div class={cn('flex flex-col border-b border-border', showExpanded ? 'items-start px-4 py-3' : 'items-center py-3')}>
 		<BrandLogo variant={showExpanded ? 'horizontal' : 'symbol'} width={showExpanded ? 144 : 32} />
-		{#if showExpanded}
-			<p class="max-w-full truncate px-3 pb-1 text-xs font-medium text-muted-foreground">{brandEyebrow}</p>
-		{/if}
+		<SchoolSelector collapsed={!showExpanded} />
 	</div>
 
 	<nav class={cn('scrollbar-thin flex-1 overflow-y-auto py-4', showExpanded ? 'px-3' : 'px-2')}>

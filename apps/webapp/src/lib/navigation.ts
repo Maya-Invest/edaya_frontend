@@ -11,6 +11,7 @@ import {
 	Sparkle,
 	AlertTriangle,
 	GraduationCap,
+	HeartHandshake,
 	BookOpen,
 	ClipboardCheck,
 	FileSpreadsheet,
@@ -74,6 +75,7 @@ const SCHOOL_ICONS: Record<string, LucideIcon> = {
 	calendar: CalendarDays,
 	activities: Sparkle,
 	announcements: Mail,
+	familyFeedback: HeartHandshake,
 	events: AlertTriangle,
 };
 
@@ -90,6 +92,7 @@ const FINANCE_ICONS: Record<string, LucideIcon> = {
 	fees: BadgeDollarSign,
 	billing: Receipt,
 	payment: Wallet,
+	reconciliation: FileSpreadsheet,
 };
 
 const CONFIG_ICONS: Record<string, LucideIcon> = {
@@ -102,6 +105,7 @@ const CONFIG_ICONS: Record<string, LucideIcon> = {
 	reportCards: FileSpreadsheet,
 	notificationTemplates: Mail,
 	discipline: AlertTriangle,
+	permissionProfiles: Shield,
 	tools: Upload,
 };
 
@@ -113,6 +117,7 @@ const SCHOOL_ROUTES: Record<string, RouteId> = {
 	calendar: '/(app)/school/calendar',
 	activities: '/(app)/school/activities/[[id]]',
 	announcements: '/(app)/school/announcements/[[id]]',
+	familyFeedback: '/(app)/school/family-feedback/[[id]]',
 	events: '/(app)/school/events/[[id]]',
 };
 
@@ -120,6 +125,7 @@ const FINANCE_ROUTES: Record<string, RouteId> = {
 	fees: '/(app)/finance/fees',
 	billing: '/(app)/finance/billing/[[id]]',
 	payment: '/(app)/finance/payment',
+	reconciliation: '/(app)/finance/reconciliation',
 };
 
 const CONFIG_ROUTES: Record<string, RouteId> = {
@@ -132,6 +138,7 @@ const CONFIG_ROUTES: Record<string, RouteId> = {
 	reportCards: '/(app)/configuration/report-cards/[[id]]',
 	notificationTemplates: '/(app)/configuration/notifications',
 	discipline: '/(app)/configuration/discipline',
+	permissionProfiles: '/(app)/configuration/permission-profiles',
 	tools: '/(app)/configuration/tools',
 };
 

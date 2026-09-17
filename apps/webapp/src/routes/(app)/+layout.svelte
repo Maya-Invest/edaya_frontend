@@ -7,12 +7,13 @@
 	import { ACCOUNT_PROFILE_MODAL } from '$lib/account/profile-navigation';
 	import { bootstrapAppShell, invalidateAppShellBootstrapCache, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
 	import { shouldEnforceLoginGate } from '$lib/auth/enforce-login-gate';
+	import { leaveStaffWebappForSessionKind } from '$lib/auth/leave-staff-webapp';
+	import { ONBOARDING_PATH } from '$lib/auth/resolve-post-auth-paths';
 	import { authSession } from '$lib/auth/session.svelte';
 	import AccountProfileModal from '$lib/components/account/AccountProfileModal.svelte';
 	import AcademicHeader from '$lib/components/layout/AcademicHeader.svelte';
 	import AppSidebar from '$lib/components/layout/AppSidebar.svelte';
 	import LanguageSelector from '$lib/components/layout/LanguageSelector.svelte';
-	import SchoolSelector from '$lib/components/layout/SchoolSelector.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import { Dialog, DialogContent, DialogTitle, Close as DialogClose } from '$lib/components/ui/dialog';
@@ -94,12 +95,30 @@
 		}
 
 		if (shouldEnforceLoginGate()) {
-			appGoto(appPath('/login'), { replaceState: true });
+			void appGoto(appPath('/login'), { replaceState: true });
 			return;
 		}
 
 		if (authSession.needsOnboarding) {
-			appGoto(appPath('/onboarding'), { replaceState: true });
+			void appGoto(ONBOARDING_PATH, { replaceState: true });
+			return;
+		}
+
+		if (!authSession.isLoggedIn) {
+			void appGoto(appPath('/login'), { replaceState: true });
+			return;
+		}
+
+		if (authSession.sessionKind && authSession.sessionKind !== 'staff') {
+			void leaveStaffWebappForSessionKind(authSession.sessionKind);
+			return;
+		}
+
+		if (authSession.onboardingStatusUnknown) {
+			return;
+		}
+
+		if (authSession.sessionKind !== 'staff') {
 			return;
 		}
 
@@ -110,11 +129,6 @@
 		);
 		if (resumePath) {
 			appGoto(resumePath, { replaceState: true });
-			return;
-		}
-
-		if (!authSession.isLoggedIn) {
-			appGoto(appPath('/login'), { replaceState: true });
 		}
 	});
 
@@ -136,10 +150,10 @@
 		})();
 	});
 
-	function logout() {
+	async function logout() {
 		resetAppShellBootstrap();
-		authSession.logout();
-		appGoto(appPath('/login'), { replaceState: true });
+		await authSession.logout();
+		await appGoto(appPath('/login'), { replaceState: true });
 	}
 </script>
 
@@ -194,7 +208,6 @@
 
 				<div class="contents lg:flex lg:items-center lg:gap-3">
 					{#if academicContext.shellReady}
-						<SchoolSelector schools={academicContext.schools} />
 						<div class="order-last flex w-full justify-end lg:order-none lg:w-auto"><AcademicHeader /></div>
 					{:else}
 						<LoaderCircle class="h-4 w-4 animate-spin text-muted-foreground" aria-hidden="true" />

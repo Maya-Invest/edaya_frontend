@@ -93,6 +93,7 @@ describe('nav-permissions — prof principal (phase 3.3)', () => {
 			'reportCards',
 			'notificationTemplates',
 			'discipline',
+			'permissionProfiles',
 		]);
 	});
 
@@ -111,6 +112,7 @@ describe('nav-permissions — éducateur (phase 3.4)', () => {
 	it('shows personal announcements alongside permitted school entries', () => {
 		const schoolKeys = filterNavItems(SCHOOL_NAV_DEFS, educatorGrants).map(item => item.key);
 		expect(schoolKeys).toEqual(['students', 'guardians', 'announcements', 'events']);
+		expect(canAccessPath('/school/calendar', educatorGrants)).toBe(false);
 	});
 
 	it('blocks staff, finance and configuration URLs', () => {
@@ -131,6 +133,7 @@ describe('nav-permissions — directeur (phase 3.1)', () => {
 		expect(canAccessPath('/finance/billing', elevatedGrants)).toBe(true);
 		expect(canAccessPath('/finance/fees', elevatedGrants)).toBe(true);
 		expect(canAccessPath('/finance/payment', elevatedGrants)).toBe(true);
+		expect(canAccessPath('/finance/reconciliation', elevatedGrants)).toBe(true);
 	});
 });
 
@@ -141,6 +144,7 @@ describe('nav-permissions — comptable', () => {
 		expect(canAccessPath('/finance/billing', accountantGrants)).toBe(true);
 		expect(canAccessPath('/finance/fees', accountantGrants)).toBe(true);
 		expect(canAccessPath('/finance/payment', accountantGrants)).toBe(true);
+		expect(canAccessPath('/finance/reconciliation', accountantGrants)).toBe(false);
 	});
 });
 

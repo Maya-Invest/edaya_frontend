@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Student, StudentEnrollmentHistoryItem } from '$lib/types/school';
+	import DocumentPdfButton from '$lib/components/school/documents/DocumentPdfButton.svelte';
 	import { fmtDateFr } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -63,6 +64,32 @@
 								{endReasonLabel(enrollment.endReason)}
 							</p>
 						{/if}
+						<div class="mt-3 flex flex-wrap gap-2">
+							{#if enrollment.status === 'active'}
+								<DocumentPdfButton
+									templateKey="schooling-certificate.v1"
+									sourceId={enrollment.id}
+									studentId={s.id}
+									permission="ENROLLMENT_READ"
+									classId={s.classId}
+								/>
+								<DocumentPdfButton
+									templateKey="enrollment-record.v1"
+									sourceId={enrollment.id}
+									studentId={s.id}
+									permission="ENROLLMENT_READ"
+									classId={s.classId}
+								/>
+							{:else if enrollment.endReason === 'withdrawn'}
+								<DocumentPdfButton
+									templateKey="withdrawal-certificate.v1"
+									sourceId={enrollment.id}
+									studentId={s.id}
+									permission="ENROLLMENT_READ"
+									classId={s.classId}
+								/>
+							{/if}
+						</div>
 					</div>
 				{/each}
 			{/if}

@@ -242,4 +242,60 @@ describe('draft-storage', () => {
 			});
 		}
 	});
+
+	it('loads a draft from localStorage when sessionStorage is empty', () => {
+		const local = new Map<string, string>();
+		const session = new Map<string, string>();
+		const sessionStorageMock = {
+			getItem: (key: string) => session.get(key) ?? null,
+			setItem: (key: string, value: string) => {
+				session.set(key, value);
+			},
+			removeItem: (key: string) => {
+				session.delete(key);
+			},
+		};
+		const localStorageMock = {
+			getItem: (key: string) => local.get(key) ?? null,
+			setItem: (key: string, value: string) => {
+				local.set(key, value);
+			},
+			removeItem: (key: string) => {
+				local.delete(key);
+			},
+		};
+
+		const originalSession = globalThis.sessionStorage;
+		const originalLocal = globalThis.localStorage;
+		Object.defineProperty(globalThis, 'sessionStorage', {
+			value: sessionStorageMock,
+			configurable: true,
+		});
+		Object.defineProperty(globalThis, 'localStorage', {
+			value: localStorageMock,
+			configurable: true,
+		});
+
+		try {
+			const authUserId = 'user-local';
+			const draft = createEmptyDraft();
+			draft.school.name = 'Collège Local';
+			draft.maxReachedStep = 2;
+			saveDraft(authUserId, draft);
+			session.clear();
+			const loaded = loadDraft(authUserId);
+			expect(loaded?.school.name).toBe('Collège Local');
+			expect(loaded?.maxReachedStep).toBe(2);
+		}
+		finally {
+			Object.defineProperty(globalThis, 'sessionStorage', {
+				value: originalSession,
+				configurable: true,
+			});
+			Object.defineProperty(globalThis, 'localStorage', {
+				value: originalLocal,
+				configurable: true,
+			});
+		}
+	});
 });

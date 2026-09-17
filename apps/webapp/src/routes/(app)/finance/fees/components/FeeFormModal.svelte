@@ -1,15 +1,14 @@
 <script lang="ts">
 	import type { Fee } from '$lib/types/school';
+	import { CATALOG_CATEGORIES } from '$lib/api/finance-types';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
-	import { t } from '$lib/i18n';
+	import { formatMinorUnits, majorToMinor, minorToMajor, parseMajorInput } from '$lib/finance/money';
+	import { locale, t } from '$lib/i18n';
 	import { get } from 'svelte/store';
 	import { getFeesPageState } from '../fees-page.svelte';
-
-	const FEE_CATEGORIES: Fee['category'][] = ['Tuition', 'Transport', 'Materials', 'Other'];
-	const FEE_PERIODS: NonNullable<Fee['period']>[] = ['Year', 'Term', 'Month'];
 
 	let {
 		fee,
@@ -25,40 +24,44 @@
 
 	let busy = $state(false);
 	let name = $state('');
-	let category = $state<Fee['category']>('Tuition');
+	let category = $state<Fee['category']>('tuition');
 	let amount = $state('0');
-	let period = $state<NonNullable<Fee['period']>>('Term');
+	let enrollmentMode = $state<Fee['enrollmentMode']>('mandatory');
+	let wasOpen = $state(false);
 
 	const isEdit = $derived(fee !== undefined);
-	const numericAmount = $derived(Number.parseFloat(amount));
-	const canSubmit = $derived(name.trim().length > 0 && Number.isFinite(numericAmount) && numericAmount > 0);
+	const currency = $derived(fee?.currency || feesPage.fees[0]?.currency || 'XOF');
+	const parsedMajor = $derived(parseMajorInput(amount));
+	const canSubmit = $derived(name.trim().length > 0 && parsedMajor !== null && parsedMajor > 0);
 
 	function resetForm() {
 		if (fee) {
 			name = fee.name;
 			category = fee.category;
-			amount = String(fee.amount);
-			period = fee.period ?? 'Term';
+			amount = String(minorToMajor(fee.amount, fee.currency, $locale));
+			enrollmentMode = fee.enrollmentMode;
 		}
 		else {
 			name = '';
-			category = 'Tuition';
+			category = 'tuition';
 			amount = '0';
-			period = 'Term';
+			enrollmentMode = 'mandatory';
 		}
 	}
 
 	$effect(() => {
-		if (open) {
+		if (open && !wasOpen) {
 			resetForm();
 		}
+		wasOpen = open;
 	});
 
 	async function submit() {
-		if (!canSubmit) {
+		if (!canSubmit || parsedMajor === null) {
 			return;
 		}
 
+		const amountMinor = majorToMinor(parsedMajor, currency, $locale);
 		busy = true;
 		try {
 			if (fee) {
@@ -66,7 +69,8 @@
 					feeId: fee.id,
 					name,
 					category,
-					amount: numericAmount,
+					amount: amountMinor,
+					enrollmentMode,
 					successMessage: get(t)('fee.updateSuccess', { name: name.trim() }),
 				});
 				if (ok) {
@@ -77,8 +81,9 @@
 				const feeId = await feesPage.createFee({
 					name,
 					category,
-					amount: numericAmount,
-					period,
+					amount: amountMinor,
+					currency,
+					enrollmentMode,
 					successMessage: get(t)('fee.createSuccess', { name: name.trim() }),
 				});
 				if (feeId) {
@@ -105,10 +110,10 @@
 	onSubmit={submit}
 >
 	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+		<Label for={isEdit ? 'fee-edit-name' : 'fee-create-name'} class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('fee.name')}
 		</Label>
-		<Input bind:value={name} />
+		<Input id={isEdit ? 'fee-edit-name' : 'fee-create-name'} bind:value={name} />
 	</div>
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div class="space-y-1.5">
@@ -122,36 +127,44 @@
 					</Select.Value>
 				</Select.Trigger>
 				<Select.Content>
-					{#each FEE_CATEGORIES as cat (cat)}
+					{#each CATALOG_CATEGORIES as cat (cat)}
 						<Select.Item value={cat} label={$t(`feeCat.${cat}`)}>{$t(`feeCat.${cat}`)}</Select.Item>
 					{/each}
 				</Select.Content>
 			</Select.Root>
 		</div>
-		{#if !isEdit}
-			<div class="space-y-1.5">
-				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-					{$t('fee.period')}
-				</Label>
-				<Select.Root type="single" value={period} onValueChange={v => v && (period = v as NonNullable<Fee['period']>)}>
-					<Select.Trigger>
-						<Select.Value>
-							{$t(`feePeriod.${period}`)}
-						</Select.Value>
-					</Select.Trigger>
-					<Select.Content>
-						{#each FEE_PERIODS as p (p)}
-							<Select.Item value={p} label={$t(`feePeriod.${p}`)}>{$t(`feePeriod.${p}`)}</Select.Item>
-						{/each}
-					</Select.Content>
-				</Select.Root>
-			</div>
-		{/if}
+		<div class="space-y-1.5">
+			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				{$t('fee.enrollmentMode')}
+			</Label>
+			<Select.Root
+				type="single"
+				value={enrollmentMode}
+				onValueChange={v => v && (enrollmentMode = v as Fee['enrollmentMode'])}
+			>
+				<Select.Trigger>
+					<Select.Value>
+						{$t(`fee.enrollmentMode.${enrollmentMode}`)}
+					</Select.Value>
+				</Select.Trigger>
+				<Select.Content>
+					<Select.Item value="mandatory" label={$t('fee.enrollmentMode.mandatory')}>
+						{$t('fee.enrollmentMode.mandatory')}
+					</Select.Item>
+					<Select.Item value="opt_in" label={$t('fee.enrollmentMode.opt_in')}>
+						{$t('fee.enrollmentMode.opt_in')}
+					</Select.Item>
+				</Select.Content>
+			</Select.Root>
+		</div>
 	</div>
 	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+		<Label for={isEdit ? 'fee-edit-amount' : 'fee-create-amount'} class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('fee.amount')}
 		</Label>
-		<Input type="number" min="0" step="100" bind:value={amount} />
+		<Input id={isEdit ? 'fee-edit-amount' : 'fee-create-amount'} type="number" min="0" step="any" bind:value={amount} />
+		<p class="text-xs text-muted-foreground">
+			{formatMinorUnits(parsedMajor !== null ? majorToMinor(parsedMajor, currency, $locale) : 0, currency, $locale)}
+		</p>
 	</div>
 </FormModal>

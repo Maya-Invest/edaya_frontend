@@ -108,9 +108,20 @@ jobs:
           echo $! > /tmp/webapp-preview.pid
 
       - name: Wait for webapp
+        id: webapp_ready
         run: bash .github/scripts/ci-wait-for-url.sh http://127.0.0.1:4173/login
 
+      - name: Onboarding integration tests
+        working-directory: apps/webapp
+        env:
+          AUTH_URL: http://127.0.0.1:9900
+          API_URL: http://127.0.0.1:9999
+          WEBAPP_URL: http://127.0.0.1:4173
+          WEBAPP_READINESS_PATH: /login
+        run: bun run test:integration:onboarding
+
       - name: Provisioned integration tests
+        if: always() && steps.webapp_ready.outcome == 'success'
         working-directory: apps/webapp
         env:
           AUTH_URL: http://127.0.0.1:9900
@@ -118,6 +129,14 @@ jobs:
           WEBAPP_URL: http://127.0.0.1:4173
           WEBAPP_READINESS_PATH: /login
         run: bun run test:integration:provisioned
+
+      - name: Upload onboarding artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: onboarding-run
+          path: apps/webapp/.onboarding-run/
+          if-no-files-found: ignore
 
       - name: Upload integration artifacts
         if: always()

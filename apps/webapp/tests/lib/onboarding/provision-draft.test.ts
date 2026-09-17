@@ -30,6 +30,17 @@ describe('buildProvisionPayload', () => {
 		expect(payload.invites).toEqual([{ email: 'a@example.com', role: 'secretary' }]);
 	});
 
+	it('omits incomplete or invalid staff invites so provision is not rejected with 422', () => {
+		const draft = createEmptyDraft();
+		draft.structure.models = ['college'];
+		draft.structure.levels = [{ gradeLevelId: 'ci-college:6EME', classCount: 1, capacity: 30, classNamingMode: 'numerical' }];
+		draft.staffInvites = [
+			{ id: '1', email: 'not-an-email', role: 'secretary' },
+			{ id: '2', email: 'ok@school.fr', role: 'cpe' },
+		];
+		expect(buildProvisionPayload(draft).invites).toEqual([{ email: 'ok@school.fr', role: 'cpe' }]);
+	});
+
 	it('omits invites when none are active', () => {
 		const draft = createEmptyDraft();
 		draft.structure.models = ['college'];

@@ -1,5 +1,7 @@
 <script lang="ts">
 	import type { Subject } from '$lib/types/school';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import DocumentPdfButton from '$lib/components/school/documents/DocumentPdfButton.svelte';
 	import { t } from '$lib/i18n';
 	import { Paperclip } from '$lib/icons';
 	import { getTeachingPageState } from '../../../../teaching-page.svelte';
@@ -8,9 +10,20 @@
 
 	const teachingPage = getTeachingPageState();
 	const entries = $derived(teachingPage.logEntriesForSubject(subject));
+	const classId = $derived(subject.classId);
 </script>
 
 <div class="space-y-3">
+	<DocumentPdfButton
+		templateKey="logbook.v1"
+		sourceId={classId}
+		classGroupId={classId}
+		classSubjectId={subject.id}
+		academicPeriodId={academicContext.periodId}
+		permission="CLASS_LOGBOOK_READ"
+		classId={classId}
+		label={$t('documents.exportLogbook')}
+	/>
 	{#each entries as entry (entry.id)}
 		<article class="rounded-2xl border border-border bg-card p-4 shadow-soft">
 			<header class="mb-2 flex items-start justify-between gap-2">

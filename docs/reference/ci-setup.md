@@ -35,10 +35,10 @@ Path: [`.github/actions/ci-bun-turbo`](../../.github/actions/ci-bun-turbo/action
 | Workflow | Job | Command |
 |----------|-----|---------|
 | [`_verify.yml`](../../.github/workflows/_verify.yml) | `verify` | `bun run verify` |
-| [`_integration.yml`](../../.github/workflows/_integration.yml) | `integration` | `test:integration:provisioned` (empty Identity + school from source, Wrangler, Playwright) |
+| [`_integration.yml`](../../.github/workflows/_integration.yml) | `integration` | `test:integration:onboarding` then `test:integration:provisioned` (empty Identity + school from source, Wrangler, Playwright) |
 | [`deploy_push.yml`](../../.github/workflows/deploy_push.yml) | `deploy-*` | `wrangler deploy` via [Cloudflare deploy](ci-setup.md#deploy-to-cloudflare-github-actions) |
 
-Integration uses inline setup because it starts Identity and school from sibling checkouts, installs Playwright, builds the webapp, and serves it with Wrangler — not just the Turbo graph. Identity listens on `:9900`, school on `:9999` (files `:9200`). The webapp build sets `PUBLIC_AUTH_URL=http://127.0.0.1:9900`, and Playwright provisions a tenant with `AUTH_URL` plus `API_URL` (`provisionTenant()`). CI does **not** run `bun repo seed`.
+Integration uses inline setup because it starts Identity and school from sibling checkouts, installs Playwright, builds the webapp, and serves it with Wrangler — not just the Turbo graph. Identity listens on `:9900`, school on `:9999` (files `:9200`). The webapp build sets `PUBLIC_AUTH_URL=http://127.0.0.1:9900`. Playwright then runs two suites against that stack: login + onboarding (`test:integration:onboarding` — public gates, signup/login UI with required email verification, wizard, invited staff/teacher/guardian), then API-provisioned owner journey (`test:integration:provisioned` / `provisionTenant()`). CI Identity overlay sets `REQUIRE_EMAIL_VERIFICATION=true` plus `AUTH_DEV_OTP_PEEK` / `AUTH_EMAIL_LOG_OTP` so the onboarding suite can follow `GET /auth/edaya/dev/last-verification-url`. API provisioning still seed-verifies then password-signs-in (Better Auth does not auto-sign-in when verification is on). CI does **not** run `bun repo seed`. The provisioned suite still runs if onboarding fails, as long as the Wrangler preview came up.
 
 Caching in `_integration.yml`:
 - **Bun deps + Turbo** — `./.github/actions/ci-bun-turbo` (same as verify)
@@ -57,11 +57,11 @@ Repo hygiene runs **first** (doctor, OpenAPI drift, repo unit tests). See [repo-
 
 Webapp **unit tests** (`bun test tests/lib`) must not depend on a sibling `edaya_backend` checkout or on live `$state` modules. Bun preload stubs toast/session in [`apps/webapp/tests/support/sveltekit-mocks.ts`](../../apps/webapp/tests/support/sveltekit-mocks.ts). Catalog fixtures live in [`apps/webapp/tests/fixtures/ivory-coast`](../../apps/webapp/tests/fixtures/ivory-coast). A local-green / CI-red loop usually means a new test opened one of those doors — `ci-parity-guard.test.ts` is meant to catch that before push.
 
-Playwright integration (`apps/webapp` `test:integration:provisioned`) is a **separate** PR job after verify — not part of `bun run verify`. Client walkthrough is `demo:e2e`, not CI.
+Playwright integration (`apps/webapp` `test:integration:onboarding` then `test:integration:provisioned`) is a **separate** PR job after verify — not part of `bun run verify`. Client walkthrough is `demo:e2e`, not CI.
 
 ## Sibling Identity and school (Playwright)
 
-Provisioned Playwright starts **empty** Identity and school from source. `GITHUB_TOKEN` cannot read those private repos.
+Provisioned Playwright starts **empty** Identity and school from source. The onboarding suite signs up in the UI; the provisioned suite then creates a second tenant via `provisionTenant()`. `GITHUB_TOKEN` cannot read those private repos.
 
 **One-time repo secret:** `IDENTITY_CHECKOUT_TOKEN` — a PAT with `contents:read` on both `Maya-Invest/edaya_identity` and `Maya-Invest/edaya_backend`. The same secret name is used in backend CI.
 
@@ -87,7 +87,7 @@ Git ref is taken from the **web head branch** (PR branch, or `github.ref_name` o
 
 The job fails if that branch is missing on either sibling. Identity needs `dev`, `staging`, and `main` on `Maya-Invest/edaya_identity` (not only a feature branch).
 
-Start script: [`.github/scripts/ci-start-local-apis.sh`](../../.github/scripts/ci-start-local-apis.sh) copies each checkout’s `.env.example`, sets a shared `IDENTITY_DIRECTORY_SECRET`, and adds Wrangler origins (`http://127.0.0.1:4173` and `http://localhost:4173`) to `TRUSTED_ORIGINS`. Identity gets `FIRST_PARTY_API_ORIGINS=http://localhost:9999`; school gets `API_ORIGIN=http://localhost:9999`. JWT issuer/audience stay `http://localhost:9900` / `http://localhost:9999`. Identity starts with `bun --filter @edaya/identity start`; school with `bun repo dev`.
+Start script: [`.github/scripts/ci-start-local-apis.sh`](../../.github/scripts/ci-start-local-apis.sh) copies each checkout’s `.env.example`, sets a shared `IDENTITY_DIRECTORY_SECRET`, and adds Wrangler origins (`http://127.0.0.1:4173` and `http://localhost:4173`) to `TRUSTED_ORIGINS`. Identity gets `FIRST_PARTY_API_ORIGINS=http://localhost:9999`; school gets `API_ORIGIN=http://localhost:9999`. JWT issuer/audience stay `http://localhost:9900` / `http://localhost:9999`. Identity is overlaid with `REQUIRE_EMAIL_VERIFICATION=true`, `AUTH_DEV_OTP_PEEK=true`, and `AUTH_EMAIL_LOG_OTP=true` so signup/invite scenes cannot skip verification. Identity starts with `bun --filter @edaya/identity start`; school with `bun repo dev`.
 
 ## GitHub Packages access for API client
 
@@ -144,7 +144,7 @@ Set **Root directory** to the repository root (not `apps/webapp`) so Bun workspa
 | Build | `bun run cloudflare:build:webapp` |
 | Deploy | `bun --filter @edaya/webapp deploy:staging` |
 
-Add build variables for Vite public env (same as `deploy:staging` in `apps/webapp/package.json`), e.g. `PUBLIC_AUTH_URL=https://staging.identity.edayaplus.com`, `PUBLIC_API_URL=https://staging.api.school.edayaplus.com`, `PUBLIC_APP_ENV=staging`.
+Add build variables for Vite public env (same as `deploy:staging` in `apps/webapp/package.json`), e.g. `PUBLIC_AUTH_URL=https://staging.identity.api.edayaplus.com`, `PUBLIC_API_URL=https://staging.school.api.edayaplus.com`, `PUBLIC_APP_ENV=staging`.
 
 **Webadmin:** use `bun run cloudflare:build:webadmin` and `bun --filter @edaya/webadmin deploy:staging`.
 
@@ -165,7 +165,7 @@ Local dev is unchanged: keep root `.npmrc` (scope only) and the root `overrides`
 
 ```text
 gate → verify (bun run verify)
-     → integration (test:integration:provisioned + empty Identity/school, after verify)
+     → integration (test:integration:onboarding then test:integration:provisioned + empty Identity/school, after verify)
 ```
 
 Configured in [`deploy_pr.yml`](../../.github/workflows/deploy_pr.yml).

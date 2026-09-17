@@ -197,6 +197,11 @@
 	}
 
 	const statusFilterActive = $derived(studentsPage.filters.values.status !== 'all' ? 1 : 0);
+	const photoReviewFilterActive = $derived(studentsPage.filters.values.photoReview !== 'all' ? 1 : 0);
+	const photoReviewFilterOptions = $derived([
+		{ value: 'all', label: $t('students.photoReview.all') },
+		{ value: 'pending', label: $t('students.photoReview.pending') },
+	]);
 	const statusFilterOptions = $derived(
 		statusKeys.map(key => ({
 			value: key,
@@ -216,7 +221,7 @@
 		void studentsPage.loadMore();
 	}
 
-	function applyFacetFilter(field: 'class' | 'status', value: string) {
+	function applyFacetFilter(field: 'class' | 'status' | 'photoReview', value: string) {
 		studentsPage.filters.patch({ [field]: value });
 		studentsPage.filters.syncNow();
 		void studentsPage.refreshList();
@@ -287,6 +292,14 @@
 					class="h-9 w-full rounded-md text-xs"
 					options={statusFilterOptions}
 					onchange={value => applyFacetFilter('status', value)}
+				/>
+			</FilterPanel>
+			<FilterPanel activeCount={photoReviewFilterActive} title={$t('students.photoReviewFilter')}>
+				<FilterSelect
+					value={studentsPage.filters.values.photoReview}
+					class="h-9 w-full rounded-md text-xs"
+					options={photoReviewFilterOptions}
+					onchange={value => applyFacetFilter('photoReview', value)}
 				/>
 			</FilterPanel>
 		{/snippet}

@@ -98,15 +98,15 @@ Do not build ad-hoc `<select>` lists for people — use pickers or **PickerModal
 |-----------|------|---------|
 | **PermissionCheckboxGroup** | `school/configuration/PermissionCheckboxGroup.svelte` | **Staff assignment** create/edit forms only — pick permission codes authorized directly by a class-level assignment; **not** the Permissions tab list |
 
-**Do not** use `ScopeBuilder` outside staff permission flows. **Do not** restore a roles CRUD matrix screen.
+**Do not** use `ScopeBuilder` outside staff permission and permission-profile apply flows. A same-grain **profile checklist catalog** at `/configuration/permission-profiles` is allowed. **Do not** restore a roles CRUD matrix screen.
 
 ### 2.7 T2 — Identity
 
 | Component | Path | Use for |
 |-----------|------|---------|
 | **PersonAvatar** | `school/shared/PersonAvatar.svelte` | Staff, guardians |
-| **StudentAvatar** | `school/shared/StudentAvatar.svelte` | Students (photo overlay on edit) |
-| **ProfilePhotoPicker** | `school/shared/ProfilePhotoPicker.svelte` | Avatar upload in edit modals |
+| **StudentAvatar** | `school/shared/StudentAvatar.svelte` | Published student portrait only (headers, lists, switchers) |
+| **ProfilePhotoPicker** | `school/shared/ProfilePhotoPicker.svelte` | Crop/rotate JPEG export under 1 MiB. Staff and guardian self-photos publish immediately; student portraits use the Profile review card |
 
 ### 2.8 Shared modules (not components)
 
@@ -199,7 +199,7 @@ Remaining chip-bar **main** filters should migrate to `FilterSelect` when touche
 | Chip bar or pill toggle as **main** filter | `FilterSelect` + `FilterPanel` |
 | Identity block + actions only in drawer body tabs | `DrawerEntityHeader` |
 | Open `*Form.svelte` as default drawer body | Read-only body + `FormModal` |
-| Custom permission matrix / inline CRUD grid | Staff drawer + `StaffPermissionFormModal` |
+| Custom permission matrix / inline CRUD grid | Staff drawer + `StaffPermissionFormModal`; profile catalog uses a same-grain checklist, not a roles matrix |
 | Raw `<select>` for staff/student/guardian | Smart `*Picker` or `PickerModal` |
 | New `ScopeChipSelector` usages | `ScopeBuilder` or delete unused legacy |
 | One-off badge colors | `ui-tones` / `drawer-constants` |

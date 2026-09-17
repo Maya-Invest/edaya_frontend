@@ -17,6 +17,8 @@
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
     "test": "turbo run test",
+    "test:integration:onboarding": "bun --filter @edaya/webapp test:integration:onboarding",
+    "test:integration:provisioned": "bun --filter @edaya/webapp test:integration:provisioned",
     "verify": "bun run brand:check && bun repo verify && turbo run quality && turbo run build && turbo run test -- --dots",
     "dev": "turbo run dev --filter=@edaya/webapp --filter=@edaya/webadmin",
     "dev:webapp": "bun --filter @edaya/webapp dev",

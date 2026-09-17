@@ -5,6 +5,7 @@
 	// (see package.json deploy:* scripts). Vars below mirror those builds for wrangler dev / docs.
 	"name": "edaya-webapp",
 	"compatibility_date": "2024-09-23",
+	"workers_dev": false,
 	"assets": {
 		"directory": "./build",
 		"not_found_handling": "single-page-application"
@@ -13,13 +14,13 @@
 		"prod": {
 			"name": "edaya-webapp-prod",
 			"vars": {
-				"PUBLIC_AUTH_URL": "https://identity.edayaplus.com",
-				"PUBLIC_API_URL": "https://api.school.edayaplus.com",
+				"PUBLIC_AUTH_URL": "https://identity.api.edayaplus.com",
+				"PUBLIC_API_URL": "https://school.api.edayaplus.com",
 				"PUBLIC_APP_ENV": "production"
 			},
 			"routes": [
 				{
-					"pattern": "app.school.edayaplus.com",
+					"pattern": "app.edayaplus.com",
 					"custom_domain": true
 				}
 			]
@@ -27,14 +28,14 @@
 		"staging": {
 			"name": "edaya-webapp-staging",
 			"vars": {
-				"PUBLIC_AUTH_URL": "https://staging.identity.edayaplus.com",
-				"PUBLIC_API_URL": "https://staging.api.school.edayaplus.com",
+				"PUBLIC_AUTH_URL": "https://staging.identity.api.edayaplus.com",
+				"PUBLIC_API_URL": "https://staging.school.api.edayaplus.com",
 				"PUBLIC_APP_ENV": "staging",
 				"PUBLIC_ALLOW_SCHOOL_REGISTRATION": "true"
 			},
 			"routes": [
 				{
-					"pattern": "staging.app.school.edayaplus.com",
+					"pattern": "staging.app.edayaplus.com",
 					"custom_domain": true
 				}
 			]

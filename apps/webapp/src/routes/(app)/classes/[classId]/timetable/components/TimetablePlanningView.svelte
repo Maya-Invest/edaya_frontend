@@ -2,6 +2,7 @@
 	import type { Activity, PlanningEvent, SchoolYearEvent, Student, Subject } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 	import AttendanceFlow from '$lib/components/school/scheduling/AttendanceFlow.svelte';
 	import ClassTimetableCalendar from '$lib/components/school/scheduling/ClassTimetableCalendar.svelte';
 	import NewSessionWizard from '$lib/components/school/scheduling/NewSessionWizard.svelte';
@@ -27,6 +28,7 @@
 	import { canEditTimetable, hasPermission } from '$lib/permissions';
 	import { getPlanningState } from '$lib/scheduling/planning-state.svelte';
 	import { cn } from '$lib/utils';
+	import { get } from 'svelte/store';
 
 	const {
 		classId,
@@ -167,7 +169,12 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu exportOnly exportLabel={$t('documents.exportTimetable')} onExport={() => void requestDocumentIssuanceMutation({
+				templateKey: 'class-timetable.v1',
+				sourceId: classId,
+				classGroupId: classId,
+				successMessage: get(t)('documents.toastRequested'),
+			})} />
 		{/snippet}
 	</ListPageHeader>
 

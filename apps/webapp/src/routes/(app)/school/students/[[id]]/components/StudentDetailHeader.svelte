@@ -3,14 +3,10 @@
 	import type { Student } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
-	import ProfilePhotoPicker from '$lib/components/school/shared/ProfilePhotoPicker.svelte';
 	import StudentAvatar from '$lib/components/school/shared/StudentAvatar.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { canUploadProfilePhoto } from '$lib/permissions';
-	import { get } from 'svelte/store';
 	import StudentProfileEditModal from '../(tabs)/profile/components/StudentProfileEditModal.svelte';
-	import { getStudentProfileTabState } from '../(tabs)/profile/student-profile-tab.svelte';
 	import ChangeClassButton from './ChangeClassButton.svelte';
 
 	const {
@@ -23,17 +19,7 @@
 		changeClassOpen: ModalUrlBind<string>;
 	} = $props();
 
-	const profileTab = getStudentProfileTabState();
 	const studentClass = $derived(academicContext.classes.find(cl => cl.id === student.classId));
-	const canChangePhoto = $derived(canUploadProfilePhoto('STUDENT_UPDATE'));
-
-	async function handlePhotoChange(file: File) {
-		return profileTab.updateProfilePhoto({
-			studentId: student.id,
-			file,
-			successMessage: get(t)('profilePhoto.updateSuccess'),
-		});
-	}
 </script>
 
 <DrawerEntityHeader
@@ -44,17 +30,7 @@
 	})}
 >
 	{#snippet avatar()}
-		{#if canChangePhoto}
-			<ProfilePhotoPicker
-				name={student.name}
-				initials={student.initials}
-				photoUrl={student.photoUrl}
-				size="list"
-				onChange={handlePhotoChange}
-			/>
-		{:else}
-			<StudentAvatar s={student} />
-		{/if}
+		<StudentAvatar s={student} />
 	{/snippet}
 	{#snippet chips()}
 		{#if studentClass}
