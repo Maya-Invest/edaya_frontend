@@ -8,9 +8,13 @@ mock.module('$lib/api/invitation-data', () => ({
 }));
 
 const resetAppShellBootstrap = mock(() => {});
+const bootstrapAppShell = mock(async () => {});
+const invalidateAppShellBootstrapCache = mock(() => {});
 
 mock.module('$lib/auth/bootstrap-app', () => ({
 	resetAppShellBootstrap,
+	bootstrapAppShell,
+	invalidateAppShellBootstrapCache,
 }));
 
 const bootstrap = await import('$lib/auth/bootstrap');
