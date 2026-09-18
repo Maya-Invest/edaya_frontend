@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { ResolvedPathname } from '$app/types';
 	import type { Snippet } from 'svelte';
-	import type { StudentsPageState } from '../../../../school/students/students-page.svelte';
 	import { page } from '$app/stores';
 	import { createDrawerEntitySelection, drawerEntityLoading } from '$lib/drawer-entity-selection';
 	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
@@ -16,9 +15,7 @@
 	const { children }: { children: Snippet } = $props();
 
 	const classStudentsPage = getClassStudentsPageState();
-	const detailTabs = createAndRegisterStudentDetailStates(
-		() => classStudentsPage as unknown as StudentsPageState,
-	);
+	const detailTabs = createAndRegisterStudentDetailStates(() => classStudentsPage);
 
 	const classId = $derived($page.params.classId ?? '6a');
 	const student = $derived(classStudentsPage.selected);

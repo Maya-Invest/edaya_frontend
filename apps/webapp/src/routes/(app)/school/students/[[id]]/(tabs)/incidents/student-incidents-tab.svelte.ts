@@ -1,5 +1,5 @@
 import type { Incident } from '$lib/types/school';
-import type { StudentsPageState } from '../../../students-page.svelte';
+import type { StudentDetailHost } from '../../../lib/student-detail-host';
 import { academicContext } from '$lib/academic/context.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadIncidentRouteData } from '$lib/api/school-life-data';
@@ -61,7 +61,7 @@ function incidentSeverityFromKind(kind: IncidentKind): Incident['severity'] {
 export class StudentIncidentsTabState {
 	slice = $state<StudentIncidentsTabSlice | null>(null);
 
-	constructor(private readonly getPage: () => StudentsPageState) {}
+	constructor(private readonly getPage: () => StudentDetailHost) {}
 
 	clear() {
 		this.slice = null;

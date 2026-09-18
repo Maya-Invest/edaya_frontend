@@ -1,4 +1,4 @@
-import type { StudentsPageState } from '../students-page.svelte';
+import type { StudentDetailHost } from '../lib/student-detail-host';
 import {
 	StudentAttendanceTabState,
 	setStudentAttendanceTabState,
@@ -44,7 +44,7 @@ export interface StudentDetailTabStates {
 }
 
 export function createAndRegisterStudentDetailStates(
-	getPage: () => StudentsPageState,
+	getPage: () => StudentDetailHost,
 ): StudentDetailTabStates {
 	const states: StudentDetailTabStates = {
 		profile: new StudentProfileTabState(getPage),

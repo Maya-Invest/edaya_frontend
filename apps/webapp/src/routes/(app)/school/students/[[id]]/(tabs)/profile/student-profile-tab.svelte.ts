@@ -1,5 +1,5 @@
 import type { Guardian, HealthRecord, PedagogicalNote, StaffMember } from '$lib/types/school';
-import type { StudentsPageState } from '../../../students-page.svelte';
+import type { StudentDetailHost } from '../../../lib/student-detail-host';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadGuardiansPeopleData } from '$lib/api/people-data';
 import { stableRequestId, studentPhotoCommandStorageKey } from '$lib/api/profile-photo-request';
@@ -66,7 +66,11 @@ function studentInitials(firstName: string, lastName: string): string {
 export class StudentProfileTabState {
 	slice = $state<StudentProfileTabSlice | null>(null);
 
-	constructor(private readonly getPage: () => StudentsPageState) {}
+	constructor(private readonly getPage: () => StudentDetailHost) {}
+
+	get host(): StudentDetailHost {
+		return this.getPage();
+	}
 
 	clear() {
 		this.slice = null;

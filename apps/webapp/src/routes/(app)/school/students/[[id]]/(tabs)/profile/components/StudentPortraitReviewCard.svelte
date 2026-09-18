@@ -8,13 +8,12 @@
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { canUploadProfilePhoto } from '$lib/permissions';
 	import { get } from 'svelte/store';
-	import { getStudentsPageState } from '../../../../students-page.svelte';
 	import { getStudentProfileTabState } from '../student-profile-tab.svelte';
 
 	const { s }: { s: Student } = $props();
 
 	const profileTab = getStudentProfileTabState();
-	const studentsPage = getStudentsPageState();
+	const studentsPage = profileTab.host;
 	const modals = getDrawerUrlModals();
 	const pending = $derived(studentsPage?.pendingPhotoFor(s.id));
 	const canReview = $derived(canUploadProfilePhoto('STUDENT_UPDATE'));

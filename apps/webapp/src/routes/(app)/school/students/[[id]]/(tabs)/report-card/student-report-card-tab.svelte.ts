@@ -1,5 +1,5 @@
 import type { GradeScale, ReportCardDefinition, ReportCardResult } from '$lib/types/report-cards';
-import type { StudentsPageState } from '../../../students-page.svelte';
+import type { StudentDetailHost } from '../../../lib/student-detail-host';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadClassReportCardResultsData, loadReportCardCatalogData } from '$lib/api/report-cards-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -54,7 +54,7 @@ function resolveReportCardDefinitionId(
 export class StudentReportCardTabState {
 	slice = $state<StudentReportCardTabSlice | null>(null);
 
-	constructor(private readonly getPage: () => StudentsPageState) {}
+	constructor(private readonly getPage: () => StudentDetailHost) {}
 
 	clear() {
 		this.slice = null;

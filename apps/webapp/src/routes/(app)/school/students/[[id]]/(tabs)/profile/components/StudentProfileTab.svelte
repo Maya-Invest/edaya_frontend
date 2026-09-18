@@ -17,7 +17,6 @@
 	import { studentGenderLabelKey } from '$lib/students/format-student-gender';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
-	import { getStudentsPageState } from '../../../../students-page.svelte';
 	import { pedagogicalNoteToneByCategory, getStudentProfileTabState } from '../student-profile-tab.svelte';
 	import AccountLinkingSection from './StudentAccountLinkingSection.svelte';
 	import StudentHealthEditModal from './StudentHealthEditModal.svelte';
@@ -26,7 +25,7 @@
 	const { s }: { s: Student } = $props();
 
 	const profileTab = getStudentProfileTabState();
-	const studentsPage = getStudentsPageState();
+	const studentsPage = profileTab.host;
 	const health = $derived(profileTab.healthFor(s.id));
 	const linkedGuardians = $derived(profileTab.linkedGuardians(s.id));
 	const studentNotes = $derived(profileTab.notesFor(s.id));

@@ -5,7 +5,7 @@ import type {
 	DocumentTemplateKey,
 } from '$lib/api/documents-types';
 import type { StudentEnrollmentHistoryItem } from '$lib/types/school';
-import type { StudentsPageState } from '../../../students-page.svelte';
+import type { StudentDetailHost } from '../../../lib/student-detail-host';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadDocumentIssuances, loadDocumentTemplates, studentYearAccountSourceId } from '$lib/api/documents-data';
 import { CONVOCATION_TEMPLATE, STUDENT_GENERATE_TEMPLATE_KEYS } from '$lib/api/documents-types';
@@ -39,7 +39,7 @@ export class StudentDocumentsTabState {
 	slice = $state<StudentDocumentsTabSlice | null>(null);
 	documentsVersion = $state(entityVersions.documents);
 
-	constructor(private readonly getPage: () => StudentsPageState) {}
+	constructor(private readonly getPage: () => StudentDetailHost) {}
 
 	clear() {
 		this.slice = null;

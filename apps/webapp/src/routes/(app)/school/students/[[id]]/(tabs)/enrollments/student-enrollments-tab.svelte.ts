@@ -1,5 +1,5 @@
 import type { StudentEnrollmentHistoryItem } from '$lib/types/school';
-import type { StudentsPageState } from '../../../students-page.svelte';
+import type { StudentDetailHost } from '../../../lib/student-detail-host';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { loadStudentEnrollmentHistory } from '$lib/api/student-drawer-data';
@@ -24,7 +24,7 @@ function emptySlice(studentId: string): StudentEnrollmentsTabSlice {
 export class StudentEnrollmentsTabState {
 	slice = $state<StudentEnrollmentsTabSlice | null>(null);
 
-	constructor(private readonly getPage: () => StudentsPageState) {}
+	constructor(private readonly getPage: () => StudentDetailHost) {}
 
 	clear() {
 		this.slice = null;

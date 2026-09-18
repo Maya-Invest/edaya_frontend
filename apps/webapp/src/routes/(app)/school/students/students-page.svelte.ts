@@ -1,10 +1,9 @@
-import type { components } from '$lib/api/schema';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { StudentListFilters } from '$lib/list/list-url-filters';
 import type { Student } from '$lib/types/school';
+import type { StudentPhotoSubmission } from './lib/student-detail-host';
 import { academicContext } from '$lib/academic/context.svelte';
 import { fetchStudentById, loadClassPeopleData, loadPeopleData, loadPeopleDataPage } from '$lib/api/people-data';
-import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
@@ -14,13 +13,17 @@ import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import {
+	loadPendingStudentPhotoReviews,
+	pendingStudentPhotoFor,
+} from './lib/student-detail-host';
+import {
 	filterStudentList,
 	studentListUsesFullRoster,
 } from './lib/student-list-filters';
 import { createStudentOnPage } from './lib/students-list-mutations';
 import { ensureStudentDrawerSelection, querySchoolStudentsPage } from './lib/students-queries';
 
-export type StudentPhotoSubmission = components['schemas']['StudentPhotoSubmission'];
+export type { StudentPhotoSubmission };
 
 export const SCHOOL_STUDENTS_PAGE_SIZE = 25;
 
@@ -105,9 +108,7 @@ export class StudentsPageState {
 	}
 
 	pendingPhotoFor(studentId: string): StudentPhotoSubmission | undefined {
-		return this.pendingPhotoSubmissions.find(
-			submission => submission.studentId === studentId && submission.status === 'pending',
-		);
+		return pendingStudentPhotoFor(this.pendingPhotoSubmissions, studentId);
 	}
 
 	filterVisible(students: readonly Student[]): Student[] {
@@ -175,13 +176,7 @@ export class StudentsPageState {
 	}
 
 	async loadPendingPhotoReviews() {
-		const rows = await safeOptionalEntityList(() =>
-			getBrowserSchoolClient().entities.studentPhotoSubmissions.list({
-				status: 'pending',
-				$limit: 200,
-			}),
-		);
-		this.pendingPhotoSubmissions = rows;
+		this.pendingPhotoSubmissions = await loadPendingStudentPhotoReviews();
 	}
 
 	async loadFirstPage() {

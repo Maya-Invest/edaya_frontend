@@ -1,5 +1,6 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { ClassNode, Student } from '$lib/types/school';
+import type { StudentPhotoSubmission } from '../../../school/students/lib/student-detail-host';
 import type { ClassStudentsPageSlice } from './lib/class-students-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
 import { fetchStudentById } from '$lib/api/people-data';
@@ -9,6 +10,10 @@ import { readClassStudentListFilters, writeClassStudentListFilters } from '$lib/
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
+import {
+	loadPendingStudentPhotoReviews,
+	pendingStudentPhotoFor,
+} from '../../../school/students/lib/student-detail-host';
 import {
 	classStudentDetailIdFromUrl,
 	classStudentsClassIdFromUrl,
@@ -33,6 +38,7 @@ export class ClassStudentsPageState {
 	currentClass = $state<ClassNode | undefined>(undefined);
 	classId = $state<string | null>(null);
 	selectedResolving = $state(false);
+	pendingPhotoSubmissions = $state<StudentPhotoSubmission[]>([]);
 
 	private readonly versions = new RouteVersionSnapshot(CLASS_STUDENTS_VERSION_FAMILIES);
 
@@ -105,6 +111,14 @@ export class ClassStudentsPageState {
 		if (index >= 0) {
 			this.students[index] = { ...this.students[index], ...patch };
 		}
+	}
+
+	pendingPhotoFor(studentId: string): StudentPhotoSubmission | undefined {
+		return pendingStudentPhotoFor(this.pendingPhotoSubmissions, studentId);
+	}
+
+	async loadPendingPhotoReviews() {
+		this.pendingPhotoSubmissions = await loadPendingStudentPhotoReviews();
 	}
 
 	async refreshList(classId: string) {

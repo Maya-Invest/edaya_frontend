@@ -1,5 +1,5 @@
 import type { AccountStatement, StudentFinanceSummary } from '$lib/api/finance-types';
-import type { StudentsPageState } from '../../../students-page.svelte';
+import type { StudentDetailHost } from '../../../lib/student-detail-host';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadStudentAccountStatement, loadStudentFinanceSummary } from '$lib/api/finance-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -27,7 +27,7 @@ function emptySlice(studentId: string): StudentFinanceTabSlice {
 export class StudentFinanceTabState {
 	slice = $state<StudentFinanceTabSlice | null>(null);
 
-	constructor(private readonly getPage: () => StudentsPageState) {}
+	constructor(private readonly getPage: () => StudentDetailHost) {}
 
 	clear() {
 		this.slice = null;
