@@ -4,6 +4,7 @@
 	import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import { downloadDocumentLabel } from '$lib/documents/titles';
 	import { t } from '$lib/i18n';
 	import { FileText } from '$lib/icons';
 
@@ -33,6 +34,7 @@
 		disabled?: boolean;
 	} = $props();
 
+	const resolvedLabel = $derived(label ?? downloadDocumentLabel($t, templateKey));
 	let busy = $state(false);
 
 	async function generate() {
@@ -69,7 +71,7 @@
 			onclick={() => void generate()}
 		>
 			<FileText class="mr-1 h-4 w-4" />
-			{label ?? $t('documents.generatePdf')}
+			{resolvedLabel}
 		</Button>
 	{/snippet}
 </PermissionGate>

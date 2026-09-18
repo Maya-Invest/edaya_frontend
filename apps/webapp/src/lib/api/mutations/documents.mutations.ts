@@ -25,7 +25,7 @@ function sleep(ms: number) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function waitForTerminalIssuance(id: string, timeoutMs = 20000): Promise<DocumentIssuance> {
+async function waitForTerminalIssuance(id: string, timeoutMs = 45000): Promise<DocumentIssuance> {
 	const client = getBrowserSchoolClient();
 	const started = Date.now();
 	let latest = await loadDocumentIssuance(client, id);
@@ -180,7 +180,7 @@ export async function downloadDocumentMutation(input: { id: string }): Promise<b
 	const client = getBrowserSchoolClient();
 	try {
 		const grant = await grantDocumentDownload(client, input.id);
-		openDocumentDownload(grant);
+		await openDocumentDownload(grant);
 		return true;
 	}
 	catch (error) {
@@ -193,7 +193,7 @@ export async function downloadDocumentBundleMutation(input: { issuanceIds: strin
 	const client = getBrowserSchoolClient();
 	try {
 		const grants = await grantDocumentBundleDownload(client, input.issuanceIds);
-		openDocumentDownloads(grants);
+		await openDocumentDownloads(grants);
 		return grants.length > 0;
 	}
 	catch (error) {

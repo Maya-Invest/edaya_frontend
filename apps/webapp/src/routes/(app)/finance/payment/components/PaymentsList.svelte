@@ -12,6 +12,7 @@
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { formatMinorUnits } from '$lib/finance/money';
+	import { downloadDocumentLabel } from '$lib/documents/titles';
 	import { locale, t } from '$lib/i18n';
 	import { Check, Clock, RotateCcw, Wallet } from '$lib/icons';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
@@ -242,7 +243,7 @@
 													successMessage: $t('documents.toastRequested'),
 												})}
 											>
-												{$t('documents.generatePdf')}
+												{downloadDocumentLabel($t, 'receipt.v1')}
 											</RowActionMenuItem>
 											<RowActionMenuItem
 												{disabled}
@@ -254,7 +255,7 @@
 													successMessage: $t('documents.toastRequested'),
 												})}
 											>
-												{$t('documents.exportPdf')}
+												{downloadDocumentLabel($t, 'settlement-quittance.v1')}
 											</RowActionMenuItem>
 										{/if}
 									{/snippet}

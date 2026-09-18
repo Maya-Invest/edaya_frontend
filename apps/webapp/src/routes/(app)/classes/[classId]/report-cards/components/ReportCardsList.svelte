@@ -9,6 +9,7 @@
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import { downloadDocumentLabel } from '$lib/documents/titles';
 	import { t } from '$lib/i18n';
 	import { FileSpreadsheet, Sparkles } from '$lib/icons';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
@@ -284,7 +285,7 @@
 											successMessage: get(t)('documents.toastRequested'),
 										})}
 									>
-										{$t('documents.generatePdf')}
+										{downloadDocumentLabel($t, 'report-card.v1')}
 									</Button>
 								{/if}
 								{#if result}

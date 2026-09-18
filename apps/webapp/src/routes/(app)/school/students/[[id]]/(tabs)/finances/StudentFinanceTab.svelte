@@ -79,7 +79,6 @@
 			studentId={s.id}
 			permission={FINANCIAL_REPORT_READ_PERMISSION}
 			classId={s.classId}
-			label={$t('documents.generatePdf')}
 		/>
 		<DocumentPdfButton
 			templateKey="invoice.v1"

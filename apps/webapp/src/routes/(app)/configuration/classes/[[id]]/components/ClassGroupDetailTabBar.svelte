@@ -30,6 +30,7 @@
 	{#each CLASS_GROUP_DETAIL_TABS as tab (tab.key)}
 		<a
 			href={tabHref(tab.segment)}
+			data-sveltekit-noscroll
 			class={cn(
 				'whitespace-nowrap rounded-full px-2.5 py-1.5 font-medium transition',
 				activeTab === tab.key

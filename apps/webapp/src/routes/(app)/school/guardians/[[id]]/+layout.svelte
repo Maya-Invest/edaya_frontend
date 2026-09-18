@@ -2,6 +2,7 @@
 	import type { ResolvedPathname } from '$app/types';
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
+	import { createDrawerEntitySelection, drawerEntityLoading } from '$lib/drawer-entity-selection';
 	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { getGuardiansPageState } from '../guardians-page.svelte';
@@ -11,6 +12,7 @@
 
 	const guardiansPage = getGuardiansPageState();
 	const guardian = $derived(guardiansPage.selected);
+	const shouldResolveSelection = createDrawerEntitySelection();
 	let selectionRequestVersion = 0;
 
 	function closeDetail() {
@@ -23,7 +25,7 @@
 
 	$effect(() => {
 		const guardianId = $page.params.id;
-		if (!guardianId) {
+		if (!shouldResolveSelection(guardianId)) {
 			return;
 		}
 
@@ -56,7 +58,7 @@
 {#if $page.params.id}
 	<GuardianDrawer
 		{guardian}
-		loading={guardiansPage.selectedResolving || !guardian}
+		loading={drawerEntityLoading(guardian?.id, $page.params.id)}
 		onClose={closeDetail}
 	>
 		{@render children()}

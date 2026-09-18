@@ -36,6 +36,14 @@ describe('isLikelyDetailPath', () => {
 		expect(isLikelyDetailPath('/school/activities')).toBe(false);
 	});
 
+	it('recognizes class student drawer tabs', () => {
+		expect(isLikelyDetailPath('/classes/6a/students/stu-1')).toBe(true);
+		expect(isLikelyDetailPath('/classes/6a/students/stu-1/profile')).toBe(true);
+		expect(isLikelyDetailPath('/classes/6a/students/stu-1/grades')).toBe(true);
+		expect(isLikelyDetailPath('/classes/6a/students/stu-1/documents')).toBe(true);
+		expect(isLikelyDetailPath('/classes/6a/students')).toBe(false);
+	});
+
 	it('recognizes class evaluations drawer tabs', () => {
 		expect(isLikelyDetailPath('/classes/6a/evaluations/e-1')).toBe(true);
 		expect(isLikelyDetailPath('/classes/6a/evaluations/e-1/details')).toBe(true);
@@ -107,6 +115,14 @@ describe('listRouteCacheKey', () => {
 		expect(listRouteCacheKey(new URL('http://local/school/activities/act-1/profile'))).toBe('/school/activities');
 		expect(listRouteCacheKey(new URL('http://local/school/activities/act-1/students'))).toBe('/school/activities');
 		expect(listRouteCacheKey(new URL('http://local/school/activities/act-1/classes'))).toBe('/school/activities');
+	});
+
+	it('maps class student drawer paths to the list route', () => {
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/students'))).toBe('/classes/6a/students');
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/students/stu-1'))).toBe('/classes/6a/students');
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/students/stu-1/profile'))).toBe('/classes/6a/students');
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/students/stu-1/grades'))).toBe('/classes/6a/students');
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/students/stu-1/documents'))).toBe('/classes/6a/students');
 	});
 
 	it('maps class evaluations drawer paths to the list route', () => {

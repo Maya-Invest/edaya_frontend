@@ -182,7 +182,6 @@
 					studentId={s.id}
 					permission="REPORT_CARD_PUBLISH"
 					classId={s.classId}
-					label={$t('documents.generatePdf')}
 				/>
 			{/if}
 			{#if latest.status === 'generated'}

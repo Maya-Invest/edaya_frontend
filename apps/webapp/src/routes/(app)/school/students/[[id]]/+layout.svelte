@@ -2,6 +2,7 @@
 	import type { ResolvedPathname } from '$app/types';
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
+	import { createDrawerEntitySelection, drawerEntityLoading } from '$lib/drawer-entity-selection';
 	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { getStudentsPageState } from '../students-page.svelte';
@@ -17,6 +18,7 @@
 	const detailTabs = createAndRegisterStudentDetailStates(() => studentsPage);
 
 	const student = $derived(studentsPage.selected);
+	const shouldResolveSelection = createDrawerEntitySelection();
 	let selectionRequestVersion = 0;
 
 	function closeDetail() {
@@ -30,8 +32,10 @@
 
 	$effect(() => {
 		const studentId = $page.params.id;
-		if (!studentId) {
-			clearStudentDetailTabStates(detailTabs);
+		if (!shouldResolveSelection(studentId)) {
+			if (!studentId) {
+				clearStudentDetailTabStates(detailTabs);
+			}
 			return;
 		}
 
@@ -64,7 +68,7 @@
 {#if $page.params.id}
 	<StudentDrawer
 		student={student}
-		loading={studentsPage.selectedResolving || !student}
+		loading={drawerEntityLoading(student?.id, $page.params.id)}
 		onClose={closeDetail}
 	>
 		{@render children()}

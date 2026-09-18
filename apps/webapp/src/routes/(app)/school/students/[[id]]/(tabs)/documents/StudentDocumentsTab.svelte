@@ -95,7 +95,7 @@
 					<div class="mt-3 flex flex-wrap gap-2">
 						{#if isDownloadableStatus(issuance.status)}
 							<Button size="sm" variant="outline" class="rounded-full" onclick={() => void downloadDocumentMutation({ id: issuance.id })}>
-								{$t('documents.download')}
+								{$t('documents.downloadNamed', { name: titleFor(issuance.templateKey) })}
 							</Button>
 						{/if}
 						{#if isRetryableStatus(issuance.status)}

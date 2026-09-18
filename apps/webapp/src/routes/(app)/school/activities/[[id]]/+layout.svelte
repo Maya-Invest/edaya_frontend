@@ -2,6 +2,7 @@
 	import type { ResolvedPathname } from '$app/types';
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
+	import { createDrawerEntitySelection, drawerEntityLoading } from '$lib/drawer-entity-selection';
 	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
 	import { getActivitiesPageState } from '../activities-page.svelte';
@@ -16,6 +17,7 @@
 	const activitiesPage = getActivitiesPageState();
 	const detailTabs = createAndRegisterActivityDetailStates(() => activitiesPage);
 	const activity = $derived(activitiesPage.selected);
+	const shouldResolveSelection = createDrawerEntitySelection();
 	let selectionRequestVersion = 0;
 
 	function closeDetail() {
@@ -29,8 +31,10 @@
 
 	$effect(() => {
 		const activityId = $page.params.id;
-		if (!activityId) {
-			clearActivityDetailTabStates(detailTabs);
+		if (!shouldResolveSelection(activityId)) {
+			if (!activityId) {
+				clearActivityDetailTabStates(detailTabs);
+			}
 			return;
 		}
 
@@ -63,7 +67,7 @@
 {#if $page.params.id}
 	<ActivityDrawer
 		{activity}
-		loading={activitiesPage.selectedResolving || !activity}
+		loading={drawerEntityLoading(activity?.id, $page.params.id)}
 		onClose={closeDetail}
 	>
 		{@render children()}
