@@ -17,15 +17,18 @@ export const CLASS_SUBJECT_ID = 'ci-cs-6a-math';
 export const CATALOG_SUBJECT_ID = 'gls-ci-gl-6-ci-math';
 export const EVALUATION_ID = 'ci-asm-6a-t1-math';
 /** Monday inside demo-ci T1 — recurring maths slots are visible this week. */
-export const SEEDED_TIMETABLE_WEEK = '2025-11-10';
+export const SEEDED_TIMETABLE_WEEK = '2026-09-14';
 export const T1_PERIOD_ID = 'ci-2025-t1';
 export const T1_PERIOD_LABEL = /Trimestre 1|Term 1|T1/i;
 export const STUDENT_ID = 'ci-s1';
+export const STUDENT_NAME = /Aminata|Koné|ci-s1/i;
 export const TEACHER_ID = 'ci-t1';
 export const STAFF_ID = 'ci-st3';
 export const GUARDIAN_ID = 'ci-g1';
-export const BILLING_ID = 'ci-b1';
+export const BILLING_ID = 'ci-enr-60';
 export const ACTIVITY_ID = 'ci-act-robot';
+export const FAMILY_FEEDBACK_CAMPAIGN = /1 campagnes?|1 campaigns?|Brouillon|Draft|Touré|Mathématiques|Confidentiel/i;
+export const ATTENDANCE_EXPORT_NAME = /PDF feuille d['’]appel|Attendance sheet PDF|export|exporter/i;
 
 /** Routes without a `<main>` shell — finance uses layout + DataState only. */
 export const APP_SHELL_SELECTOR = 'aside#app-sidebar';
@@ -48,6 +51,7 @@ export const DRAWER_TAB_LABELS = {
 	students: /^(Students|Élèves|Participants)$/i,
 	classes: /^(Classes)$/i,
 	'report-card': /^(Report card|Bulletin|Bulletin scolaire)$/i,
+	documents: /^(Documents)$/i,
 } as const satisfies Record<string, RegExp>;
 
 export type DrawerTabKey = keyof typeof DRAWER_TAB_LABELS;

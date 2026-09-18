@@ -4,7 +4,7 @@ import {
 	resolveRouteDescription,
 } from '../../../../scripts/qa-route-catalog';
 import { isExcludedCatalogPath } from '../../../../scripts/qa-matrix-exclusions';
-import { APP_SHELL_SELECTOR, CLASS_6A, CLASS_6B } from '../support/constants';
+import { APP_SHELL_SELECTOR, CLASS_6A, CLASS_6B, STUDENT_NAME } from '../support/constants';
 import { configClassGroupPath, schoolStudentPath } from '../support/paths';
 import type { DemoContext } from '../support/types';
 import { visit, visitOrSkip } from '../support/visit';
@@ -117,7 +117,7 @@ function buildRouteVisitsFromCatalog(): readonly RouteVisit[] {
 		path: schoolStudentPath('ci-s1'),
 		step: 'School student drawer profile tab',
 		pathPrefix: schoolStudentPath('ci-s1'),
-		expectText: /Kouamé|Aya|ci-s1/i,
+		expectText: STUDENT_NAME,
 	});
 	visits.push({
 		path: configClassGroupPath(CLASS_6A, 'profile'),

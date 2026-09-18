@@ -5,7 +5,7 @@ export async function assertListShell(
 	ctx: DemoContext,
 	scene: string,
 	step: string,
-	{ requireFilter = true } = {},
+	{ requireFilter = true, exportName = /export|exporter/i }: { requireFilter?: boolean; exportName?: RegExp } = {},
 ): Promise<boolean> {
 	const { page, reporter, shot, pageErrors } = ctx;
 	const errorMark = pageErrors.snapshot();
@@ -22,7 +22,7 @@ export async function assertListShell(
 			return false;
 		}
 		await moreBtn.click();
-		const exportItem = page.getByRole('button', { name: /export|exporter/i });
+		const exportItem = page.getByRole('button', { name: exportName });
 		if (!(await exportItem.isVisible({ timeout: 5_000 }).catch(() => false))) {
 			reporter.log(scene, step, 'fail', 'Export action missing in more menu');
 			await shot(`${scene}-${step.replace(/\s+/g, '-')}-export`);
@@ -116,13 +116,13 @@ export async function assertListShellOrSkip(
 	ctx: DemoContext,
 	scene: string,
 	step: string,
-	{ requireFilter = true, skipReason }: { requireFilter?: boolean; skipReason?: string } = {},
+	{ requireFilter = true, skipReason, exportName }: { requireFilter?: boolean; skipReason?: string; exportName?: RegExp } = {},
 ): Promise<boolean> {
 	if (await pageHasFatalError(ctx)) {
 		ctx.reporter.log(scene, step, 'skip', skipReason ?? 'Page error — check permissions or seed');
 		return true;
 	}
-	return assertListShell(ctx, scene, step, { requireFilter });
+	return assertListShell(ctx, scene, step, { requireFilter, exportName });
 }
 
 export async function assertFilterSelectShellOrSkip(

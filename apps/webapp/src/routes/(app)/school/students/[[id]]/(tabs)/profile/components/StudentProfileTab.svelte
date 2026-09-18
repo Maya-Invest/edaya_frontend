@@ -48,7 +48,7 @@
 		}
 		statusBusy = true;
 		const previous = s.status;
-		studentsPage.patchStudent(s.id, { status });
+		studentsPage?.patchStudent(s.id, { status });
 		const ok = await updateStudentStatusMutation({
 			studentId: s.id,
 			status,
@@ -56,7 +56,7 @@
 		});
 		statusBusy = false;
 		if (!ok) {
-			studentsPage.patchStudent(s.id, { status: previous });
+			studentsPage?.patchStudent(s.id, { status: previous });
 		}
 	}
 </script>

@@ -1,7 +1,7 @@
 {
-  "passed": 194,
+  "passed": 193,
   "failed": 0,
-  "skipped": 0,
+  "skipped": 1,
   "results": [
     {
       "scene": "D0",
@@ -25,7 +25,7 @@
     },
     {
       "scene": "D2",
-      "step": "2.2 Student drawer Kouamé Aya",
+      "step": "2.2 Student drawer Aminata Koné",
       "status": "pass"
     },
     {
@@ -124,6 +124,16 @@
       "status": "pass"
     },
     {
+      "scene": "D8",
+      "step": "8.5 Family feedback list",
+      "status": "pass"
+    },
+    {
+      "scene": "D8",
+      "step": "8.5 Family feedback list",
+      "status": "pass"
+    },
+    {
       "scene": "D9",
       "step": "9.1 Fees list",
       "status": "pass"
@@ -166,6 +176,11 @@
     {
       "scene": "D11",
       "step": "11.4 Disciplinary catalog",
+      "status": "pass"
+    },
+    {
+      "scene": "D11",
+      "step": "11.5 Permission profiles",
       "status": "pass"
     },
     {
@@ -245,82 +260,97 @@
     },
     {
       "scene": "DR",
-      "step": "16 Configuration report card definitions",
+      "step": "16 Profils de permissions",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "17 Paramètres école",
+      "step": "17 Configuration report card definitions",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "18 Matières",
+      "step": "18 Paramètres école",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "19 Dashboard overview",
+      "step": "19 Matières",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "20 Facturation — liste",
+      "step": "20 Dashboard overview",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "21 Configuration des frais",
+      "step": "21 Facturation — liste",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "22 Paiements enregistrés",
+      "step": "22 Configuration des frais",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "23 Activités parascolaires",
+      "step": "23 Paiements enregistrés",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "24 Annonces",
+      "step": "24 Rapprochement financier",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "25 School calendar",
+      "step": "25 Activités parascolaires",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "26 Incidents discipline",
+      "step": "26 Annonces",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "27 responsables",
+      "step": "27 School calendar",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "28 personnel",
+      "step": "28 Incidents discipline",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "29 School students list",
+      "step": "29 Retour des familles",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "30 School student drawer profile tab",
+      "step": "30 responsables",
       "status": "pass"
     },
     {
       "scene": "DR",
-      "step": "31 enseignants",
+      "step": "31 personnel",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "32 School students list",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "33 School student drawer profile tab",
+      "status": "pass"
+    },
+    {
+      "scene": "DR",
+      "step": "34 enseignants",
       "status": "pass"
     },
     {
@@ -500,6 +530,11 @@
     },
     {
       "scene": "DD",
+      "step": "school-students URL segment documents",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
       "step": "school-students click to profile",
       "status": "pass"
     },
@@ -670,6 +705,11 @@
     },
     {
       "scene": "DD",
+      "step": "class-students URL segment documents",
+      "status": "pass"
+    },
+    {
+      "scene": "DD",
       "step": "class-students click to profile",
       "status": "pass"
     },
@@ -756,17 +796,8 @@
     {
       "scene": "DM",
       "step": "4a Students UI open pushes modal URL",
-      "status": "pass"
-    },
-    {
-      "scene": "DM",
-      "step": "4b Browser Back closes modal",
-      "status": "pass"
-    },
-    {
-      "scene": "DM",
-      "step": "4c Browser Forward restores modal",
-      "status": "pass"
+      "status": "skip",
+      "detail": "Create permission unavailable"
     },
     {
       "scene": "DM",
@@ -899,36 +930,6 @@
       "status": "pass"
     },
     {
-      "scene": "DN",
-      "step": "N.1 Login f.assi@",
-      "status": "pass"
-    },
-    {
-      "scene": "setup",
-      "step": "Open ci-6a config",
-      "status": "pass"
-    },
-    {
-      "scene": "DN",
-      "step": "N.2 Ensure 6ème 1 daily mode",
-      "status": "pass"
-    },
-    {
-      "scene": "DN",
-      "step": "N.3 Dashboard loads",
-      "status": "pass"
-    },
-    {
-      "scene": "DN",
-      "step": "N.4 Homeroom attendance nudge",
-      "status": "pass"
-    },
-    {
-      "scene": "DN",
-      "step": "N.5 Nudge deep-link to attendance",
-      "status": "pass"
-    },
-    {
       "scene": "DO",
       "step": "O.1 Login a.kone@",
       "status": "pass"
@@ -975,6 +976,7 @@
     }
   ],
   "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
     "Failed to load resource: the server responded with a status of 403 (Forbidden)"
   ]
 }

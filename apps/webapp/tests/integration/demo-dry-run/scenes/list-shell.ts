@@ -4,7 +4,7 @@ import {
 	assertListShell,
 	assertListShellOrSkip,
 } from '../support/assertions';
-import { CLASS_6A, CLASS_6B } from '../support/constants';
+import { ATTENDANCE_EXPORT_NAME, CLASS_6A, CLASS_6B } from '../support/constants';
 import type { DemoContext } from '../support/types';
 import { visit, visitOrSkip } from '../support/visit';
 
@@ -30,7 +30,7 @@ export async function runListShellScenes(ctx: DemoContext): Promise<void> {
 	await visit(ctx, `${base}/classes/${CLASS_6B}/attendance`, 'DC5', 'Attendance list shell', {
 		pathPrefix: `/classes/${CLASS_6B}/attendance`,
 	});
-	await assertListShell(ctx, 'DC5', 'Attendance Filter + More menu');
+	await assertListShell(ctx, 'DC5', 'Attendance Filter + More menu', { exportName: ATTENDANCE_EXPORT_NAME });
 
 	await visit(ctx, `${base}/school/announcements`, 'DC6', 'Announcements list shell', {
 		pathPrefix: '/school/announcements',

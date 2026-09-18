@@ -6,7 +6,9 @@ import {
 	CLASS_6A,
 	CLASS_6B,
 	DEMO_ACTIVITY_NAME,
+	FAMILY_FEEDBACK_CAMPAIGN,
 	SEEDED_TIMETABLE_WEEK,
+	STUDENT_NAME,
 } from '../support/constants';
 import { configClassGroupPath, schoolStudentPath, schoolTeacherPath } from '../support/paths';
 import { assertClassAttendanceNav, ensureDailyAttendanceMode } from '../support/setup';
@@ -58,9 +60,9 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 		reporter.log('D2', '2.1 Student list', 'fail', err instanceof Error ? err.message : String(err));
 		await shot('D2-2.1-Student-list-exception').catch(() => {});
 	}
-	await visit(ctx, `${base}${schoolStudentPath('ci-s1')}`, 'D2', '2.2 Student drawer Kouamé Aya', {
+	await visit(ctx, `${base}${schoolStudentPath('ci-s1')}`, 'D2', '2.2 Student drawer Aminata Koné', {
 		pathPrefix: schoolStudentPath('ci-s1'),
-		expectText: /Kouamé|Aya|ci-s1/i,
+		expectText: STUDENT_NAME,
 	});
 	await visit(ctx, `${base}/school/guardians`, 'D2', '2.4 Guardians list', { selector: 'main' });
 
@@ -169,6 +171,26 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	);
 	await visit(ctx, `${base}/school/announcements`, 'D8', '8.3 Announcements', { selector: 'main' });
 	await visit(ctx, `${base}/school/events`, 'D8', '8.4 Incidents/events', { selector: 'main' });
+	await visit(ctx, `${base}/school/family-feedback`, 'D8', '8.5 Family feedback list', { selector: 'main' });
+	const loading = page.locator('[role="status"][aria-live="polite"]');
+	if (await loading.isVisible({ timeout: 500 }).catch(() => false)) {
+		await loading.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {});
+	}
+	const hasSeededCampaign = await page
+		.locator('main ul li button')
+		.first()
+		.isVisible({ timeout: 15_000 })
+		.catch(() => false)
+		|| await page.getByText(FAMILY_FEEDBACK_CAMPAIGN).first().isVisible({ timeout: 2_000 }).catch(() => false);
+	if (!hasSeededCampaign) {
+		await shot('D8-8.5-family-feedback');
+	}
+	reporter.log(
+		'D8',
+		'8.5 Family feedback list',
+		hasSeededCampaign ? 'pass' : 'fail',
+		hasSeededCampaign ? undefined : 'Seeded campaign row not visible — verify family-feedback seed after access',
+	);
 
 	await visit(ctx, `${base}/finance/fees`, 'D9', '9.1 Fees list', { pathPrefix: '/finance/fees', selector: APP_SHELL_SELECTOR });
 	await visit(ctx, `${base}/finance/payment`, 'D9', '9.2 Payments', { pathPrefix: '/finance/payment', selector: APP_SHELL_SELECTOR });

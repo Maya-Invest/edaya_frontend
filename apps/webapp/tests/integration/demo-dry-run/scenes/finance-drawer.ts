@@ -13,7 +13,7 @@ export async function runFinanceDrawerScene(ctx: DemoContext): Promise<void> {
 
 	if (await visit(ctx, `${base}${drawerPath}`, scene, '1 Billing drawer deep-link', {
 		pathPrefix: drawerPath,
-		expectText: /Kouamé|Scolarité|Collège|overdue|en retard|impayé/i,
+		expectText: /Koné|Scolarité|Collège|overdue|en retard|impayé/i,
 	})) {
 		if (await waitForDrawerAside(ctx)) {
 			reporter.log(scene, '2 Billing drawer visible', 'pass');

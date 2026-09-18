@@ -12,7 +12,7 @@ Full fixture reference: [edaya_backend/tooling/fixtures/src/datasets/demo-ci/REA
 | Email | Role |
 |-------|------|
 | `a.kone@ecole-ci.edaya.dev` | School owner (DO scene — permission-gated routes) |
-| `j.aka@ecole-ci.edaya.dev` | Deputy director (staff workspace; primary dry-run login) |
+| `j.aka@ecole-ci.edaya.dev` | Director (staff workspace; primary dry-run login) |
 | `f.assi@ecole-ci.edaya.dev` | Staff coordinator / homeroom staff (`homeroomStaffId`) |
 
 ## Portal teachers (seed fixtures)
@@ -55,6 +55,6 @@ App integration tests are not this walkthrough:
 | `bun run test:integration:onboarding` | Empty APIs, login/signup/invite gates, required email verification, wizard, invited staff/teacher/guardian |
 | `bun run test:integration:provisioned` | Empty APIs, API tenant + owner journey + QA matrix |
 
-**Playwright scenes:** D0–D11 (core), DR (route coverage), DC (list shell), DD (drawer tabs), DM (modal URL), **DI** (import upload/validate), **DT** (timetable generation modal), **DG** (guardian drawer), **DF** (finance billing drawer), **DO** (owner permissions).
+**Playwright scenes:** D0–D11 (core), DR (route coverage), DC (list shell), DD (drawer tabs), DM (modal URL), **DG** (guardian drawer), **DF** (finance billing drawer), **DO** (owner permissions). Import/timetable-generation scenes (DI/DT) are not part of this walkthrough.
 
 Harness source: `apps/webapp/tests/integration/demo-dry-run/` · CLI: `apps/webapp/scripts/demo-dry-run.ts`

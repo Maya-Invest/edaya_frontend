@@ -32,9 +32,11 @@ export async function ensurePasswordSignInPanel(page: Page): Promise<void> {
 		await signInTab.click();
 	}
 
-	const passwordMethod = page.getByRole('tab', { name: /password|mot de passe/i });
-	if (await passwordMethod.isVisible().catch(() => false)) {
-		await passwordMethod.click();
+	const passwordMethod = page
+		.getByRole('tab', { name: /password|mot de passe/i })
+		.or(page.getByRole('button', { name: /^(password|mot de passe)$/i }));
+	if (await passwordMethod.first().isVisible().catch(() => false)) {
+		await passwordMethod.first().click();
 	}
 
 	await emailInput.waitFor({ state: 'visible', timeout: 15_000 });
