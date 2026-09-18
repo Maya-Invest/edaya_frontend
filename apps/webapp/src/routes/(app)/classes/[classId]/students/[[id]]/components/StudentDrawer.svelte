@@ -4,15 +4,18 @@
 	import { page } from '$app/stores';
 	import { kindStyle, kindLabelKey } from '$lib/components/school/shared/drawer-constants';
 	import StudentGradeEntryModal from '$lib/components/school/students/StudentGradeEntryModal.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, X } from '$lib/icons';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { hasPermission } from '$lib/permissions';
+	import { get } from 'svelte/store';
 	import StudentAbsenceModal from '../../../../../school/students/[[id]]/(tabs)/attendance/components/StudentAbsenceModal.svelte';
 	import StudentIncidentModal from '../../../../../school/students/[[id]]/(tabs)/incidents/components/StudentIncidentModal.svelte';
 	import StudentGuardianLinkModal from '../../../../../school/students/[[id]]/(tabs)/profile/components/StudentGuardianLinkModal.svelte';
 	import StudentNoteModal from '../../../../../school/students/[[id]]/(tabs)/profile/components/StudentNoteModal.svelte';
+	import StudentPhotoRejectModal from '../../../../../school/students/[[id]]/(tabs)/profile/components/StudentPhotoRejectModal.svelte';
 	import { getStudentProfileTabState } from '../../../../../school/students/[[id]]/(tabs)/profile/student-profile-tab.svelte';
 	import StudentDetailHeader from '../../../../../school/students/[[id]]/components/StudentDetailHeader.svelte';
 	import { shouldCloseStudentHealthModal } from '../../../../../school/students/lib/student-modal-surface';
@@ -27,7 +30,9 @@
 			| 'edit-note'
 			| 'add-absence'
 			| 'add-incident'
-			| 'add-grade';
+			| 'add-grade'
+			| 'approve-photo'
+			| 'reject-photo';
 
 	const {
 		student,
@@ -54,6 +59,8 @@
 			'add-absence',
 			'add-incident',
 			'add-grade',
+			'approve-photo',
+			'reject-photo',
 		],
 		getUrl: () => $page.url,
 	});
@@ -69,6 +76,8 @@
 	const addAbsenceOpen = bindUrlModal(modals, 'add-absence');
 	const addIncidentOpen = bindUrlModal(modals, 'add-incident');
 	const addGradeOpen = bindUrlModal(modals, 'add-grade');
+	const approvePhotoOpen = bindUrlModal(modals, 'approve-photo');
+	const rejectPhotoOpen = bindUrlModal(modals, 'reject-photo');
 
 	const editingNote = $derived(
 		student && modals.active === 'edit-note' && modals.target
@@ -78,6 +87,8 @@
 	const canUpdateHealth = $derived(
 		hasPermission('STUDENT_HEALTH_UPDATE', { classId: $page.params.classId }),
 	);
+	const pendingPhoto = $derived(student ? profileTab.host.pendingPhotoFor(student.id) : undefined);
+	let photoReviewBusy = $state(false);
 	const closeHealthModal = $derived(
 		shouldCloseStudentHealthModal(modals.active, $page.route.id, canUpdateHealth),
 	);
@@ -87,6 +98,10 @@
 			return;
 		}
 		if (closeHealthModal) {
+			modals.close();
+			return;
+		}
+		if ((modals.active === 'approve-photo' || modals.active === 'reject-photo') && !pendingPhoto) {
 			modals.close();
 			return;
 		}
@@ -111,6 +126,45 @@
 	function handleKeydown(event: KeyboardEvent) {
 		if (event.key === 'Escape') {
 			onClose();
+		}
+	}
+
+	async function approvePendingPhoto() {
+		if (!student || photoReviewBusy) {
+			return;
+		}
+		photoReviewBusy = true;
+		try {
+			const ok = await profileTab.approvePendingPhoto({
+				studentId: student.id,
+				successMessage: get(t)('student.photo.approvedToast'),
+			});
+			if (ok) {
+				approvePhotoOpen.open = false;
+			}
+		}
+		finally {
+			photoReviewBusy = false;
+		}
+	}
+
+	async function rejectPendingPhoto(reason: string) {
+		if (!student || photoReviewBusy) {
+			return;
+		}
+		photoReviewBusy = true;
+		try {
+			const ok = await profileTab.rejectPendingPhoto({
+				studentId: student.id,
+				rejectionReason: reason,
+				successMessage: get(t)('student.photo.rejectedToast'),
+			});
+			if (ok) {
+				rejectPhotoOpen.open = false;
+			}
+		}
+		finally {
+			photoReviewBusy = false;
 		}
 	}
 </script>
@@ -170,6 +224,21 @@
 			<StudentAbsenceModal s={student} bind:open={addAbsenceOpen.open} showTrigger={false} />
 			<StudentIncidentModal s={student} bind:open={addIncidentOpen.open} showTrigger={false} />
 			<StudentGradeEntryModal s={student} bind:open={addGradeOpen.open} showTrigger={false} />
+			<ConfirmModal
+				bind:open={approvePhotoOpen.open}
+				title={$t('student.photo.approveTitle')}
+				description={$t('student.photo.approveDescription')}
+				confirmLabel={$t('student.photo.approve')}
+				cancelLabel={$t('common.cancel')}
+				variant="default"
+				busy={photoReviewBusy}
+				onConfirm={() => void approvePendingPhoto()}
+			/>
+			<StudentPhotoRejectModal
+				bind:open={rejectPhotoOpen.open}
+				busy={photoReviewBusy}
+				onConfirm={reason => void rejectPendingPhoto(reason)}
+			/>
 		{/if}
 	</div>
 </aside>
