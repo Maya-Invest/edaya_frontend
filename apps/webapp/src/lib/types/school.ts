@@ -215,6 +215,7 @@ export interface Teacher {
 	photoUrl?: string | null;
 	email: string;
 	phone: string;
+	code?: string | null;
 	isActive: boolean;
 	subjectId?: string | null;
 }

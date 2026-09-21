@@ -48,6 +48,10 @@ describe('drawer path helpers', () => {
 		expect(drawerTabFromPathname('/school/students/ci-s1/report-card')).toBe('report-card');
 		expect(drawerTabFromPathname('/school/teachers/ci-t1/assignments')).toBe('assignments');
 		expect(drawerTabFromPathname('/school/teachers/ci-t1/availability')).toBe('availability');
+		expect(drawerTabFromPathname('/school/teachers/ci-t1/timetable')).toBe('timetable');
+		expect(drawerTabFromPathname('/school/teachers/ci-t1/evaluations')).toBe('evaluations');
+		expect(drawerTabFromPathname('/school/teachers/ci-t1/family-feedback')).toBe('family-feedback');
+		expect(drawerTabFromPathname('/school/teachers/ci-t1/documents')).toBe('documents');
 		expect(drawerTabFromPathname('/school/staff/ci-st3/permissions')).toBe('permissions');
 		expect(drawerTabFromPathname('/school/activities/ci-act-robot/students')).toBe('students');
 		expect(drawerTabFromPathname('/configuration/classes/ci-6a/profile')).toBe('profile');

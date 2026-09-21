@@ -28,12 +28,14 @@
 		studentCount,
 		guardianCount,
 		staffCount,
+		teacherCount,
 		forceExpanded = false,
 	}: {
 		hierarchy: HierarchyGroup[];
 		studentCount: number;
 		guardianCount: number;
 		staffCount: number;
+		teacherCount: number;
 		forceExpanded?: boolean;
 	} = $props();
 
@@ -41,6 +43,7 @@
 		students: studentCount,
 		guardians: guardianCount,
 		staff: staffCount,
+		teachers: teacherCount,
 	});
 
 	const activeModule = $derived(getModuleFromPath($page.url.pathname));

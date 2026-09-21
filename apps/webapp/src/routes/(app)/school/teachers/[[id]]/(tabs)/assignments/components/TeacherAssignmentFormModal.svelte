@@ -19,9 +19,11 @@
 	let {
 		open = $bindable(false),
 		teacher,
+		assignment = null,
 	}: {
 		open?: boolean;
 		teacher: Teacher;
+		assignment?: components['schemas']['TeacherAssignment'] | null;
 	} = $props();
 
 	const teachersPage = getTeachersPageState();
@@ -34,6 +36,9 @@
 	let classSubjects = $state<components['schemas']['ClassSubject'][]>([]);
 	let subjectLabels = $state<Record<string, string>>({});
 	let classSubjectsLoadId = 0;
+	let preserveNextSubjectLoad = false;
+
+	const editing = $derived(Boolean(assignment));
 
 	const classOptions = $derived(
 		academicContext.classes.map(entry => ({ value: entry.id, label: entry.name })),
@@ -50,9 +55,21 @@
 
 	const canSubmit = $derived(Boolean(classGroupId) && (kind === 'homeroom' || selectedSubjectIds.length > 0));
 
-	async function loadClassSubjects(nextClassGroupId: string) {
+	function classGroupIdForAssignment(row: components['schemas']['TeacherAssignment']): string {
+		if (row.classGroupId) {
+			return row.classGroupId;
+		}
+		if (row.classSubjectId) {
+			return teachersPage.subjects.find(entry => entry.id === row.classSubjectId)?.classId ?? '';
+		}
+		return '';
+	}
+
+	async function loadClassSubjects(nextClassGroupId: string, preserveSelection = false) {
 		const loadId = ++classSubjectsLoadId;
-		classSubjectIds = [''];
+		if (!preserveSelection) {
+			classSubjectIds = [''];
+		}
 		classSubjects = [];
 		subjectLabels = {};
 		if (!nextClassGroupId) {
@@ -82,6 +99,9 @@
 			const name = subjects.find(subject => subject.id === entry.subjectId)?.name ?? entry.id;
 			return [entry.id, name];
 		}));
+		if (preserveSelection) {
+			return;
+		}
 		const hasManualSelections = classSubjectIds.some(entry => entry.trim().length > 0)
 			|| classSubjectIds.length > 1;
 		if (hasManualSelections) {
@@ -106,12 +126,22 @@
 			classSubjectIds = [''];
 			classSubjects = [];
 			subjectLabels = {};
+			preserveNextSubjectLoad = false;
+			return;
+		}
+		if (assignment) {
+			kind = assignment.kind;
+			classGroupId = classGroupIdForAssignment(assignment);
+			classSubjectIds = assignment.classSubjectId ? [assignment.classSubjectId] : [''];
+			preserveNextSubjectLoad = true;
 		}
 	});
 
 	$effect(() => {
 		if (open && classGroupId && kind === 'subject') {
-			void loadClassSubjects(classGroupId);
+			const preserve = preserveNextSubjectLoad;
+			preserveNextSubjectLoad = false;
+			void loadClassSubjects(classGroupId, preserve);
 		}
 	});
 
@@ -122,9 +152,29 @@
 
 		busy = true;
 		try {
+			if (editing && assignment) {
+				const payload = createTeacherAssignmentPayload({
+					id: assignment.id,
+					teacherId: teacher.id,
+					kind,
+					classGroupId,
+					classSubjectId: kind === 'subject' ? selectedSubjectIds[0] ?? null : null,
+				});
+				const ok = await teachersPage.saveAssignment({
+					assignment: payload,
+					successMessage: get(t)('teacher.assignmentUpdated'),
+				});
+				if (ok) {
+					assignmentsTab.upsertAssignment(payload);
+					teachersPage.setAssignmentCount(teacher.id, assignmentsTab.assignmentsFor(teacher.id).length);
+					open = false;
+				}
+				return;
+			}
+
 			if (kind === 'homeroom') {
 				const id = `ta-${Date.now().toString(36)}`;
-				const assignment = createTeacherAssignmentPayload({
+				const nextAssignment = createTeacherAssignmentPayload({
 					id,
 					teacherId: teacher.id,
 					kind,
@@ -132,11 +182,11 @@
 					classSubjectId: null,
 				});
 				const ok = await teachersPage.saveAssignment({
-					assignment,
+					assignment: nextAssignment,
 					successMessage: get(t)('teacher.assignmentCreated'),
 				});
 				if (ok) {
-					assignmentsTab.upsertAssignment(assignment);
+					assignmentsTab.upsertAssignment(nextAssignment);
 					teachersPage.setAssignmentCount(teacher.id, assignmentsTab.assignmentsFor(teacher.id).length);
 					open = false;
 				}
@@ -146,7 +196,7 @@
 			let saved = 0;
 			for (const classSubjectId of [...new Set(selectedSubjectIds)]) {
 				const id = `ta-${Date.now().toString(36)}-${saved}`;
-				const assignment = createTeacherAssignmentPayload({
+				const nextAssignment = createTeacherAssignmentPayload({
 					id,
 					teacherId: teacher.id,
 					kind: 'subject',
@@ -154,11 +204,11 @@
 					classSubjectId,
 				});
 				const ok = await teachersPage.saveAssignment({
-					assignment,
+					assignment: nextAssignment,
 					successMessage: saved === 0 ? get(t)('teacher.assignmentCreated') : undefined,
 				});
 				if (ok) {
-					assignmentsTab.upsertAssignment(assignment);
+					assignmentsTab.upsertAssignment(nextAssignment);
 					saved += 1;
 				}
 			}
@@ -176,8 +226,10 @@
 
 <FormModal
 	bind:open
-	title={$t('teacher.assignmentCreateTitle')}
-	description={$t('teacher.assignmentCreateDescription', { name: teacher.name })}
+	title={editing ? $t('teacher.assignmentEditTitle') : $t('teacher.assignmentCreateTitle')}
+	description={editing
+		? $t('teacher.assignmentEditDescription', { name: teacher.name })
+		: $t('teacher.assignmentCreateDescription', { name: teacher.name })}
 	submitLabel={$t('common.save')}
 	busy={busy}
 	submitDisabled={!canSubmit}
@@ -219,7 +271,7 @@
 								options={[{ value: '', label: $t('teacher.selectClassSubject') }, ...subjectOptions]}
 							/>
 						</div>
-						{#if index === classSubjectIds.length - 1}
+						{#if !editing && index === classSubjectIds.length - 1}
 							<Button type="button" variant="outline" class="shrink-0 rounded-full" onclick={addSubjectRow}>
 								{$t('teacher.addSubject')}
 							</Button>

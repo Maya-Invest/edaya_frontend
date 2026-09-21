@@ -171,6 +171,7 @@
 					studentCount={academicContext.studentCount}
 					guardianCount={academicContext.guardianCount}
 					staffCount={academicContext.staffCount}
+					teacherCount={academicContext.teacherCount}
 				/>
 			</div>
 		{:else}
@@ -181,7 +182,7 @@
 						<DialogClose class="control-focus flex h-11 w-11 items-center justify-center rounded-xl hover:bg-secondary" aria-label={$t('sidebar.hide')}><PanelLeftClose class="h-5 w-5" /></DialogClose>
 					</div>
 					<div class="min-h-0 flex-1">
-						<AppSidebar forceExpanded hierarchy={academicContext.hierarchy} studentCount={academicContext.studentCount} guardianCount={academicContext.guardianCount} staffCount={academicContext.staffCount} />
+						<AppSidebar forceExpanded hierarchy={academicContext.hierarchy} studentCount={academicContext.studentCount} guardianCount={academicContext.guardianCount} staffCount={academicContext.staffCount} teacherCount={academicContext.teacherCount} />
 					</div>
 				</DialogContent>
 			</Dialog>

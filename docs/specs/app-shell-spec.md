@@ -91,7 +91,7 @@ The authenticated app uses a persistent four-layer frame:
 - Logo + product name at top
 - Current school name under the logo; when the staff account belongs to more than one school, a three-dot button beside the name opens a popup to pick another school
 - Module groups (e.g. School, Classes, Finance, Configuration)
-- Active module expanded; sub-items with optional badges (counts)
+- Active module expanded; sub-items with optional badges (counts). School people items **Students**, **Guardians**, **Staff**, and **Teachers** each show a count chip from `getAppShellCounts`
 - Contextual selector inside a module when needed (e.g. class picker in Classes)
 
 ### 1.2 Header
@@ -233,7 +233,7 @@ The drawer body holds content that adds context beyond the list. Choose the ligh
 
 **Do not** add tabs to pad a thin record. Prefer sections or skip the drawer (§3.5).
 
-Canonical example: **Student 360** — entity header (photo, class, Change class) → tabs (Profile, Grades, Attendance, …) → sections inside Profile.
+Canonical examples: **Student 360** — entity header (photo, class, Change class) → tabs (Profile, Grades, Attendance, …) → sections inside Profile. **Teacher 360** — entity header (photo, active chip, assignment summary) → tabs (Profile, Assignments, Availability, Timetable, Evaluations, Family feedback, Documents).
 
 ### 3.3 Opening and closing
 

@@ -153,6 +153,10 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	...rows('École', `${B}/school/teachers/[id]/profile`, ['Éditer profil']),
 	...rows('École', `${B}/school/teachers/[id]/assignments`, ['CRUD affectations matière/classe']),
 	...rows('École', `${B}/school/teachers/[id]/availability`, ['CRUD indisponibilités']),
+	...rows('École', `${B}/school/teachers/[id]/timetable`, ['Emploi du temps']),
+	...rows('École', `${B}/school/teachers/[id]/evaluations`, ['Évaluations']),
+	...rows('École', `${B}/school/teachers/[id]/family-feedback`, ['Retour des familles']),
+	...rows('École', `${B}/school/teachers/[id]/documents`, ['Documents']),
 	...rows('École', `${B}/school/teacher-assignments`, [
 		'Redirect vers /configuration/tools/teacher-assignments',
 	]),

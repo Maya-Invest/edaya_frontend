@@ -30,6 +30,7 @@ export interface AppShellData {
 	studentCount: number;
 	guardianCount: number;
 	staffCount: number;
+	teacherCount: number;
 }
 
 interface AppShellCounts {
@@ -37,6 +38,7 @@ interface AppShellCounts {
 	studentCount: number;
 	guardianCount: number;
 	staffCount: number;
+	teacherCount: number;
 }
 
 function emptyAppShellCounts(): AppShellCounts {
@@ -45,6 +47,7 @@ function emptyAppShellCounts(): AppShellCounts {
 		studentCount: 0,
 		guardianCount: 0,
 		staffCount: 0,
+		teacherCount: 0,
 	};
 }
 
@@ -60,6 +63,7 @@ function emptyAppShellData(): AppShellData {
 		studentCount: 0,
 		guardianCount: 0,
 		staffCount: 0,
+		teacherCount: 0,
 	};
 }
 
@@ -250,6 +254,7 @@ async function fetchSupplementalShellForSchool(
 		studentCount: shellCounts.studentCount || activeStudentCount,
 		guardianCount: shellCounts.guardianCount,
 		staffCount: shellCounts.staffCount,
+		teacherCount: shellCounts.teacherCount ?? 0,
 	};
 }
 
@@ -366,5 +371,6 @@ export async function fetchAppShellData(
 		studentCount: shellCounts.studentCount || activeStudentCount,
 		guardianCount: shellCounts.guardianCount,
 		staffCount: shellCounts.staffCount,
+		teacherCount: shellCounts.teacherCount ?? 0,
 	};
 }

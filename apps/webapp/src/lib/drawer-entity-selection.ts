@@ -2,7 +2,7 @@
 export function createDrawerEntitySelection() {
 	let lastId: string | undefined;
 
-	return function shouldResolve(id: string | undefined): boolean {
+	return function shouldResolve(id: string | undefined): id is string {
 		if (!id) {
 			lastId = undefined;
 			return false;

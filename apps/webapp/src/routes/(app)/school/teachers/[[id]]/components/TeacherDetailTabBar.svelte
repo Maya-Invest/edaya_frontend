@@ -1,28 +1,27 @@
 <script lang="ts">
 	import type { Teacher } from '$lib/types/school';
+	import type { TeacherDetailTabSegment } from '../../lib/teacher-detail-tabs';
 	import { page } from '$app/stores';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
 	import { hasAnyPermission } from '$lib/permissions';
 	import { cn } from '$lib/utils';
-	import { activeTeacherDetailTab, TEACHER_DETAIL_TABS } from '../../lib/teacher-detail-tabs';
+	import {
+		activeTeacherDetailTab,
+		visibleTeacherDetailTabs,
+	} from '../../lib/teacher-detail-tabs';
 
 	const { teacher }: { teacher: Teacher } = $props();
 
 	const activeTab = $derived(activeTeacherDetailTab($page.url.pathname, teacher.id));
-	const visibleTabs = $derived(TEACHER_DETAIL_TABS.filter(tab =>
-		tab.key !== 'availability' || hasAnyPermission(['ACCESS_CONTROL_ASSIGN', 'SCHOOL_STRUCTURE_CONFIGURE']),
-	));
+	const visibleTabs = $derived(visibleTeacherDetailTabs(hasAnyPermission));
 
-	function tabHref(segment: string) {
+	function tabHref(segment: TeacherDetailTabSegment) {
 		const next = new URL($page.url);
 		next.searchParams.delete(MODAL_QUERY_KEY);
 		next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
-		const base = detailHref.schoolTeacherTab(
-			teacher.id,
-			segment as 'profile' | 'assignments' | 'availability',
-		);
+		const base = detailHref.schoolTeacherTab(teacher.id, segment);
 		return `${base}${next.search}`;
 	}
 </script>

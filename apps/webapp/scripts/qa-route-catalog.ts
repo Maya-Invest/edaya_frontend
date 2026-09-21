@@ -167,7 +167,7 @@ export const DRAWER_TAB_PATTERNS: readonly DrawerTabPattern[] = [
 	{
 		name: 'school teachers',
 		routePattern: '/school/teachers/[id]',
-		tabs: ['profile', 'assignments', 'availability'],
+		tabs: ['profile', 'assignments', 'availability', 'timetable', 'evaluations', 'family-feedback', 'documents'],
 	},
 	{
 		name: 'school activities',
@@ -241,6 +241,8 @@ export const MODAL_SURFACES: readonly ModalSurface[] = [
 	{ module: 'École', parentRoute: '/school/staff/[id]/profile', modal: 'edit-profile' },
 	{ module: 'École', parentRoute: '/school/staff/[id]/permissions', modal: 'add-permission' },
 	{ module: 'École', parentRoute: '/school/teachers/[id]/assignments', modal: 'form' },
+	{ module: 'École', parentRoute: '/school/teachers/[id]/assignments', modal: 'delete-assignment' },
+	{ module: 'École', parentRoute: '/school/teachers/[id]/documents', modal: 'generate-document' },
 	{ module: 'École', parentRoute: '/school/announcements/[id]', modal: 'edit' },
 	{ module: 'École', parentRoute: '/school/announcements/[id]', modal: 'add-target' },
 	{ module: 'École', parentRoute: '/school/announcements/[id]', modal: 'publish' },

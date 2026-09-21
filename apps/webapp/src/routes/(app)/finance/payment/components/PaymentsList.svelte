@@ -11,8 +11,8 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
-	import { formatMinorUnits } from '$lib/finance/money';
 	import { downloadDocumentLabel } from '$lib/documents/titles';
+	import { formatMinorUnits } from '$lib/finance/money';
 	import { locale, t } from '$lib/i18n';
 	import { Check, Clock, RotateCcw, Wallet } from '$lib/icons';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';

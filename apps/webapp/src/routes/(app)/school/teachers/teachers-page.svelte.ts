@@ -23,6 +23,7 @@ import {
 	saveTeacherAssignmentOnPage,
 	saveTeacherUnavailabilityOnPage,
 	updateTeacherProfileOnPage,
+	updateTeacherProfilePhotoOnPage,
 	updateTeacherStatusOnPage,
 } from './lib/teacher-detail-mutations';
 import {
@@ -411,6 +412,10 @@ export class TeachersPageState {
 
 	updateProfile(...args: Parameters<typeof updateTeacherProfileOnPage> extends [TeachersPageState, ...infer R] ? R : never) {
 		return updateTeacherProfileOnPage(this, ...args);
+	}
+
+	updateProfilePhoto(...args: Parameters<typeof updateTeacherProfilePhotoOnPage> extends [TeachersPageState, ...infer R] ? R : never) {
+		return updateTeacherProfilePhotoOnPage(this, ...args);
 	}
 
 	updateStatus(...args: Parameters<typeof updateTeacherStatusOnPage> extends [TeachersPageState, ...infer R] ? R : never) {

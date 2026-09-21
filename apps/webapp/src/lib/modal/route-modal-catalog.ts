@@ -99,7 +99,7 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'school-teachers-detail',
 		pathnamePattern:
-			/^\/school\/teachers\/[^/]+(?:\/(?:profile|assignments|availability))?\/?$/,
+			/^\/school\/teachers\/[^/]+(?:\/(?:profile|assignments|availability|timetable|evaluations|family-feedback|documents))?\/?$/,
 		modalNames: [
 			'create',
 			'edit-profile',
@@ -107,12 +107,16 @@ export const ROUTE_MODAL_CATALOG = [
 			'add-unavailability',
 			'edit-unavailability',
 			'delete-unavailability',
+			'form',
+			'delete-assignment',
+			'generate-document',
+			'void-document',
 		],
 	},
 	{
 		routeFamily: 'school-teachers-assignments',
 		pathnamePattern: /^\/school\/teachers\/[^/]+\/assignments\/?$/,
-		modalNames: ['form'],
+		modalNames: ['form', 'delete-assignment'],
 	},
 	{
 		routeFamily: 'school-activities-list',

@@ -49,6 +49,11 @@
 	<DrawerField label={$t('guardian.fullName')}>
 		<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{teacher.name}</div>
 	</DrawerField>
+	<DrawerField label={$t('common.code')}>
+		<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">
+			{teacher.code || teacher.id}
+		</div>
+	</DrawerField>
 	<DrawerField label={$t('common.email')}>
 		<div class="flex min-h-10 items-center gap-2 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">
 			<Mail class="h-3.5 w-3.5 text-muted-foreground" />

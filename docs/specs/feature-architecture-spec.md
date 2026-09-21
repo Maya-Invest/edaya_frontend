@@ -322,12 +322,19 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 ### 7.4.1 School — Teachers
 
-- **Entity:** `Teacher` · **Complex drawer**
-- **List:** search name · filter active/inactive · CTA Add teacher
-- **Drawer header:** Edit profile
-- **Drawer tabs:** Profile (includes account linking) · **Assignments** (`teacherAssignments`;
-  subject + homeroom kinds) · **Availability** (`teacherUnavailabilities`)
-- **Modals:** Create teacher (optional portal invite) · Edit profile · Add/edit assignment
+- **Entity:** `Teacher` · **Complex drawer** (**Teacher 360**)
+- **Nav:** School → Teachers count chip from `getAppShellCounts.teacherCount` (school-wide total)
+- **List:** search name · filter active/inactive · CTA Add teacher · row `···` (Edit profile · Delete)
+- **Drawer header:** photo (immediate publish, like guardian) · active/inactive chip · assignment-count summary · Edit profile · overflow Delete
+- **Drawer tabs** (hide a tab the caller cannot read):
+  - **Profile** — identity including code, contact, active toggle, account linking
+  - **Assignments** (`teacherAssignments`; subject + homeroom kinds) — add/edit modal · delete confirm
+  - **Availability** (`teacherUnavailabilities`) — `ACCESS_CONTROL_ASSIGN` or `SCHOOL_STRUCTURE_CONFIGURE`
+  - **Timetable** — teacher-scoped week (`getTeacherTimetable`); `QUERY_TIMETABLE_READ`; rows link to class timetable occurrences
+  - **Evaluations** — assessments on assigned class subjects for the current period; `GRADE_READ` or `GRADE_INPUT`; rows link to `/classes/{classId}/evaluations/{id}`
+  - **Family feedback** — campaigns for this teacher; `FAMILY_FEEDBACK_CAMPAIGN_READ`; rows link to `/school/family-feedback/{id}`
+  - **Documents** — issuance history by year; generate/retry/void `teacher-timetable.v1`; `QUERY_TIMETABLE_READ`
+- **Modals:** Create teacher (optional portal invite) · Edit profile · Add/edit assignment · Add/edit/delete unavailability · Generate/void document
 
 ### 7.5 School — Calendar
 

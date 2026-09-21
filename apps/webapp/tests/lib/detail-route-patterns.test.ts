@@ -25,6 +25,10 @@ describe('isLikelyDetailPath', () => {
 		expect(isLikelyDetailPath('/school/teachers/tch-1/profile')).toBe(true);
 		expect(isLikelyDetailPath('/school/teachers/tch-1/assignments')).toBe(true);
 		expect(isLikelyDetailPath('/school/teachers/tch-1/availability')).toBe(true);
+		expect(isLikelyDetailPath('/school/teachers/tch-1/timetable')).toBe(true);
+		expect(isLikelyDetailPath('/school/teachers/tch-1/evaluations')).toBe(true);
+		expect(isLikelyDetailPath('/school/teachers/tch-1/family-feedback')).toBe(true);
+		expect(isLikelyDetailPath('/school/teachers/tch-1/documents')).toBe(true);
 		expect(isLikelyDetailPath('/school/teachers')).toBe(false);
 	});
 

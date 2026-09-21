@@ -4,9 +4,13 @@
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
+	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
-	import { Plus, Trash2 } from '$lib/icons';
+	import { Pencil, Plus, Trash2 } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
 	import { getTeachersPageState } from '../../../../teachers-page.svelte';
@@ -18,15 +22,26 @@
 	const teachersPage = getTeachersPageState();
 	const assignmentsTab = getTeacherAssignmentsTabState();
 
-	const modals = createUrlSyncedModals({ allowed: ['form'], getUrl: () => $page.url });
+	const modals = createUrlSyncedModals({ allowed: ['form', 'delete-assignment'], getUrl: () => $page.url });
 	$effect(() => {
 		modals.hydrate();
 	});
 	const formOpen = bindUrlModal(modals, 'form');
+	const deleteOpen = bindUrlModal(modals, 'delete-assignment');
 
-	let deleteBusy = $state<string | null>(null);
+	let deleteBusy = $state(false);
 
 	const rows = $derived(assignmentsTab.assignmentsFor(teacher.id));
+	const editingAssignment = $derived(
+		formOpen.open && modals.target
+			? rows.find(row => row.id === modals.target) ?? null
+			: null,
+	);
+	const deletingAssignment = $derived(
+		deleteOpen.open && modals.target
+			? rows.find(row => row.id === modals.target) ?? null
+			: null,
+	);
 
 	$effect(() => {
 		const classSubjectIds = rows
@@ -45,30 +60,39 @@
 		return academicContext.classes.find(entry => entry.id === classGroupId)?.name ?? classGroupId;
 	}
 
+	function classIdFor(row: components['schemas']['TeacherAssignment']): string | null {
+		if (row.kind === 'subject' && row.classSubjectId) {
+			return teachersPage.subjects.find(entry => entry.id === row.classSubjectId)?.classId
+				?? row.classGroupId
+				?? null;
+		}
+		return row.classGroupId ?? null;
+	}
+
 	function targetLabel(row: components['schemas']['TeacherAssignment']): string {
 		if (row.kind === 'subject' && row.classSubjectId) {
-			const subject = teachersPage.subjects.find(entry => entry.id === row.classSubjectId);
-			const className = classLabel(subject?.classId ?? row.classGroupId);
+			const className = classLabel(classIdFor(row));
 			return `${className} · ${teachersPage.subjectLabel(row.classSubjectId)}`;
 		}
 		return classLabel(row.classGroupId);
 	}
 
-	async function removeRow(row: components['schemas']['TeacherAssignment']) {
-		if (deleteBusy) {
+	async function confirmDelete() {
+		if (!deletingAssignment || deleteBusy) {
 			return;
 		}
-		deleteBusy = row.id;
+		deleteBusy = true;
 		const ok = await teachersPage.deleteAssignment({
-			id: row.id,
+			id: deletingAssignment.id,
 			teacherId: teacher.id,
 			successMessage: get(t)('teacher.assignmentDeleted'),
 		});
 		if (ok) {
-			assignmentsTab.removeAssignment(row.id);
+			assignmentsTab.removeAssignment(deletingAssignment.id);
 			teachersPage.setAssignmentCount(teacher.id, rows.length - 1);
+			deleteOpen.open = false;
 		}
-		deleteBusy = null;
+		deleteBusy = false;
 	}
 </script>
 
@@ -80,7 +104,7 @@
 		</div>
 		<PermissionGate permission="STAFF_UPDATE" mode="disable">
 			{#snippet children({ disabled })}
-				<Button size="sm" class="rounded-full" disabled={disabled} onclick={() => (formOpen.open = true)}>
+				<Button size="sm" class="rounded-full" {disabled} onclick={() => modals.open('form')}>
 					<Plus class="mr-1.5 h-3.5 w-3.5" />
 					{$t('teacher.addAssignment')}
 				</Button>
@@ -99,18 +123,34 @@
 							{$t(`teacher.assignmentKind.${row.kind}`)}
 						</div>
 						<div class="mt-1 text-xs text-muted-foreground">{targetLabel(row)}</div>
+						{#if classIdFor(row)}
+							<a
+								href={detailHref.classPlanning(classIdFor(row) ?? '')}
+								class="mt-1 inline-block text-xs font-medium text-primary hover:underline"
+							>
+								{$t('teacher.openClassTimetable')}
+							</a>
+						{/if}
 					</div>
 					<PermissionGate permission="STAFF_UPDATE" mode="disable">
 						{#snippet children({ disabled })}
-							<Button
-								variant="ghost"
-								size="icon"
-								class="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
-								disabled={disabled || deleteBusy === row.id}
-								onclick={() => removeRow(row)}
-							>
-								<Trash2 class="h-4 w-4" />
-							</Button>
+							<RowActionMenu>
+								<RowActionMenuItem
+									{disabled}
+									onclick={() => modals.open('form', { target: row.id })}
+								>
+									<Pencil class="h-4 w-4 text-muted-foreground" />
+									{$t('common.edit')}
+								</RowActionMenuItem>
+								<RowActionMenuItem
+									{disabled}
+									destructive
+									onclick={() => modals.open('delete-assignment', { target: row.id })}
+								>
+									<Trash2 class="h-4 w-4" />
+									{$t('common.delete')}
+								</RowActionMenuItem>
+							</RowActionMenu>
 						{/snippet}
 					</PermissionGate>
 				</li>
@@ -119,4 +159,12 @@
 	{/if}
 </div>
 
-<TeacherAssignmentFormModal bind:open={formOpen.open} {teacher} />
+<TeacherAssignmentFormModal bind:open={formOpen.open} {teacher} assignment={editingAssignment} />
+<ConfirmModal
+	bind:open={deleteOpen.open}
+	title={$t('teacher.deleteAssignmentTitle')}
+	description={$t('teacher.deleteAssignmentDescription')}
+	confirmLabel={$t('common.delete')}
+	busy={deleteBusy}
+	onConfirm={confirmDelete}
+/>

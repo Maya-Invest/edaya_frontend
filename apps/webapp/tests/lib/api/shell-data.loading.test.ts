@@ -58,6 +58,7 @@ describe('shell data loading', () => {
 				studentCount: 39,
 				guardianCount: 12,
 				staffCount: 5,
+				teacherCount: 8,
 			},
 		]);
 
@@ -66,6 +67,7 @@ describe('shell data loading', () => {
 		expect(shell.studentCount).toBe(39);
 		expect(shell.guardianCount).toBe(12);
 		expect(shell.staffCount).toBe(5);
+		expect(shell.teacherCount).toBe(8);
 		expect(shell.classes.find(entry => entry.id === classA)?.studentCount).toBe(18);
 		expect(shell.classes.find(entry => entry.id === classB)?.studentCount).toBe(21);
 		expect(entityListRequests(requests, 'enrollments')).toHaveLength(0);
@@ -92,6 +94,7 @@ describe('shell data loading', () => {
 				studentCount: 4,
 				guardianCount: 0,
 				staffCount: 0,
+				teacherCount: 0,
 			},
 		]);
 
@@ -136,6 +139,7 @@ describe('shell data loading', () => {
 				studentCount: 18,
 				guardianCount: 4,
 				staffCount: 2,
+				teacherCount: 3,
 			},
 		]);
 
@@ -199,6 +203,7 @@ describe('shell data loading', () => {
 				studentCount: 0,
 				guardianCount: 0,
 				staffCount: 0,
+				teacherCount: 0,
 			},
 		]);
 

@@ -64,6 +64,7 @@ const staffListFiltersCodec = defineUrlFilterCodec({
 
 const teacherListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
+	status: { type: 'string', default: 'all' },
 	sort: { type: 'enum', default: 'roster', values: ['roster', 'name', 'assignments', 'status'] as const },
 	sortDir: { type: 'enum', default: 'asc', values: ['asc', 'desc'] as const },
 });

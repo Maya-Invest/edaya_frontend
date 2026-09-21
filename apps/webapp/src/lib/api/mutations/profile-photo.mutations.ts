@@ -17,6 +17,8 @@ function versionKeyForOwner(ownerKind: ProfilePhotoOwnerKind): EntityVersionKey 
 			return 'students';
 		case 'guardian':
 			return 'guardians';
+		case 'teacher':
+			return 'teachers';
 	}
 }
 
@@ -44,6 +46,13 @@ async function uploadAndPublishSelfPhoto(input: {
 		if (input.ownerKind === 'staff') {
 			await client.commands.updateStaffMemberProfile({
 				staffId: input.ownerId,
+				photoUrl: uploaded.photoUrl,
+			});
+		}
+		else if (input.ownerKind === 'teacher') {
+			const existing = await client.entities.teachers.get(input.ownerId);
+			await client.entities.teachers.save({
+				...existing,
 				photoUrl: uploaded.photoUrl,
 			});
 		}
@@ -96,5 +105,20 @@ export async function updateGuardianProfilePhotoMutation(input: {
 		ownerId: input.guardianId,
 		file: input.file,
 		successMessage: input.successMessage,
+	});
+}
+
+export async function updateTeacherProfilePhotoMutation(input: {
+	teacherId: string;
+	file: File;
+	successMessage?: string;
+	onSuccess?: (photoUrl: string) => void;
+}): Promise<boolean> {
+	return uploadAndPublishSelfPhoto({
+		ownerKind: 'teacher',
+		ownerId: input.teacherId,
+		file: input.file,
+		successMessage: input.successMessage,
+		onSuccess: input.onSuccess,
 	});
 }

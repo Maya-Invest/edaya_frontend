@@ -10,7 +10,7 @@ function triggerDownload(href: string, fileName?: string): void {
 		link.download = fileName;
 	}
 	link.rel = 'noopener';
-	document.body.append(link);
+	document.body.appendChild(link);
 	link.click();
 	link.remove();
 }

@@ -5,18 +5,25 @@
 	import { page } from '$app/stores';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListEntityTable from '$lib/components/ui/ListEntityTable.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import ListSelectionBar from '$lib/components/ui/ListSelectionBar.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
+	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
-	import { Mail, Phone, Plus } from '$lib/icons';
+	import { Mail, Pencil, Phone, Plus, Trash2 } from '$lib/icons';
 	import { downloadCsv } from '$lib/list/list-csv-export';
 	import { ListSelectionState } from '$lib/list/list-selection-state.svelte';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { appendModal } from '$lib/modal/modal-url';
+	import { appGoto } from '$lib/navigation/app-navigation';
+	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import {
@@ -74,7 +81,14 @@
 	const columns = $derived<ListEntityTableColumn[]>([
 		{ key: 'name', label: $t('people.name'), span: 5, spanInSelectionMode: 4, sortable: true },
 		{ key: 'assignments', label: $t('teacher.assignmentsColumn'), span: 3, sortable: true },
-		{ key: 'status', label: $t('common.status'), span: 4, sortable: true },
+		{ key: 'status', label: $t('common.status'), span: 3, sortable: true },
+		{ key: 'actions', label: '', span: 1, spanInSelectionMode: 1 },
+	]);
+
+	const statusFilterOptions = $derived([
+		{ value: 'all', label: $t('filter.all') },
+		{ value: 'active', label: $t('teacher.statusActive') },
+		{ value: 'inactive', label: $t('teacher.statusInactive') },
 	]);
 
 	function loadMoreTeachers() {
@@ -83,6 +97,11 @@
 			return;
 		}
 		void teachersPage.loadMore();
+	}
+
+	function applyStatusFilter(value: string) {
+		teachersPage.filters.patch({ status: value });
+		teachersPage.filters.syncNow();
 	}
 
 	function cycleSort(column: TeacherSortColumn) {
@@ -108,6 +127,16 @@
 		]);
 		toast.success($t('list.exportedCount', { n: selectedTeachers.length }));
 	}
+
+	function teacherHref(teacher: Teacher, modal: 'edit-profile' | 'delete' | undefined) {
+		const href = `${detailHref.schoolTeacherTab(teacher.id)}${detailNavigationSearch($page.url)}`;
+		return modal ? appendModal(href, modal) : href;
+	}
+
+	function openTeacherAction(event: MouseEvent, teacher: Teacher, modal: 'edit-profile' | 'delete' | undefined) {
+		event.stopPropagation();
+		appGoto(teacherHref(teacher, modal));
+	}
 </script>
 
 <div class="animate-fade-in">
@@ -120,6 +149,14 @@
 				value={teachersPage.filters.values.q}
 				oninput={event => teachersPage.filters.patch({ q: event.currentTarget.value })}
 				placeholder={$t('common.search')}
+			/>
+		{/snippet}
+		{#snippet filters()}
+			<FilterSelect
+				value={teachersPage.filters.values.status}
+				class="h-9 w-40 rounded-full text-xs"
+				options={statusFilterOptions}
+				onchange={applyStatusFilter}
 			/>
 		{/snippet}
 		{#snippet primary()}
@@ -204,7 +241,7 @@
 					{$t('teacher.assignmentCount', { n: teachersPage.assignmentCount(teacher.id) ?? 0 })}
 				{/if}
 			</div>
-			<div class="col-span-4">
+			<div class="col-span-3">
 				{#if teacher.phone}
 					<p class="flex items-center gap-1 text-xs text-muted-foreground">
 						<Phone class="h-3 w-3" />
@@ -215,6 +252,35 @@
 						{teacher.isActive ? $t('teacher.statusActive') : $t('teacher.statusInactive')}
 					</span>
 				{/if}
+			</div>
+			<div
+				class="col-span-1 flex justify-end"
+				role="presentation"
+				onclick={event => event.stopPropagation()}
+			>
+				<PermissionGate permission="STAFF_UPDATE" mode="disable" tooltip={$t('teacher.permissionUpdate')}>
+					{#snippet children({ disabled, title })}
+						<RowActionMenu>
+							<RowActionMenuItem
+								{disabled}
+								{title}
+								onclick={event => openTeacherAction(event, teacher, 'edit-profile')}
+							>
+								<Pencil class="h-4 w-4 text-muted-foreground" />
+								{$t('common.edit')}
+							</RowActionMenuItem>
+							<RowActionMenuItem
+								{disabled}
+								{title}
+								destructive
+								onclick={event => openTeacherAction(event, teacher, 'delete')}
+							>
+								<Trash2 class="h-4 w-4" />
+								{$t('common.delete')}
+							</RowActionMenuItem>
+						</RowActionMenu>
+					{/snippet}
+				</PermissionGate>
 			</div>
 		{/snippet}
 	</ListEntityTable>

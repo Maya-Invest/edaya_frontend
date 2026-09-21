@@ -382,5 +382,10 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 		coverModal(journey, '/school/teachers/[id]/assignments', 'form', 'OK');
 		await visitCovered(journey, '/school/teachers/[id]/availability', `/school/teachers/${teacherId}/availability`);
 		coverActions(journey, 'http://localhost:5173/school/teachers/[id]/availability', ['CRUD indisponibilités'], 'OK');
+		await visitCovered(journey, '/school/teachers/[id]/timetable', `/school/teachers/${teacherId}/timetable`);
+		await visitCovered(journey, '/school/teachers/[id]/evaluations', `/school/teachers/${teacherId}/evaluations`);
+		await visitCovered(journey, '/school/teachers/[id]/family-feedback', `/school/teachers/${teacherId}/family-feedback`);
+		await visitCovered(journey, '/school/teachers/[id]/documents', `/school/teachers/${teacherId}/documents`);
+		coverModal(journey, '/school/teachers/[id]/documents', 'generate-document', 'OK');
 	}
 }

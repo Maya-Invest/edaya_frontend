@@ -12,7 +12,14 @@ type SchoolStudentTabSegment
 		| 'documents';
 
 type SchoolStaffTabSegment = 'profile' | 'permissions' | 'assignments';
-type SchoolTeacherTabSegment = 'profile' | 'assignments' | 'availability';
+type SchoolTeacherTabSegment
+	= | 'profile'
+		| 'assignments'
+		| 'availability'
+		| 'timetable'
+		| 'evaluations'
+		| 'family-feedback'
+		| 'documents';
 type ClassPlanningTabSegment = 'details' | 'attendance' | 'logbook';
 type ClassEvaluationTabSegment = 'details' | 'grading';
 type ClassTeachingTabSegment = 'progression' | 'logbook';
@@ -48,9 +55,13 @@ const STAFF_TAB_ROUTES: Record<SchoolStaffTabSegment, RouteId> = {
 };
 
 const TEACHER_TAB_ROUTES: Record<SchoolTeacherTabSegment, RouteId> = {
-	profile: '/(app)/school/teachers/[[id]]/(tabs)/profile',
-	assignments: '/(app)/school/teachers/[[id]]/(tabs)/assignments',
-	availability: '/(app)/school/teachers/[[id]]/(tabs)/availability',
+	'profile': '/(app)/school/teachers/[[id]]/(tabs)/profile',
+	'assignments': '/(app)/school/teachers/[[id]]/(tabs)/assignments',
+	'availability': '/(app)/school/teachers/[[id]]/(tabs)/availability',
+	'timetable': '/(app)/school/teachers/[[id]]/(tabs)/timetable',
+	'evaluations': '/(app)/school/teachers/[[id]]/(tabs)/evaluations',
+	'family-feedback': '/(app)/school/teachers/[[id]]/(tabs)/family-feedback',
+	'documents': '/(app)/school/teachers/[[id]]/(tabs)/documents',
 };
 
 const PLANNING_TAB_ROUTES: Record<ClassPlanningTabSegment, RouteId> = {

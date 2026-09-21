@@ -40,6 +40,7 @@
 		}
 		void teachersPage.filters.values.q;
 		void teachersPage.filters.values.sort;
+		void teachersPage.filters.values.status;
 
 		if (!teacherListUsesFullRoster(teachersPage.filters.values)) {
 			teachersPage.clearFullRoster();

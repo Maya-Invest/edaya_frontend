@@ -3,6 +3,7 @@ import type { Teacher } from '$lib/types/school';
 import type { TeachersPageState, TeacherUnavailability } from '../teachers-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { sendAccountInvitationMutation } from '$lib/api/mutations/invitation.mutations';
+import { updateTeacherProfilePhotoMutation } from '$lib/api/mutations/profile-photo.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { mapTeacher } from '$lib/api/teachers-data';
 import { authSession } from '$lib/auth/session.svelte';
@@ -30,6 +31,7 @@ function buildOptimisticTeacher(input: {
 	id: string;
 	firstName: string;
 	lastName: string;
+	code?: string;
 	email?: string;
 	phone?: string;
 }): Teacher {
@@ -42,6 +44,7 @@ function buildOptimisticTeacher(input: {
 		photoUrl: null,
 		email,
 		phone,
+		code: input.code?.trim() || input.id,
 		isActive: true,
 		subjectId: null,
 	};
@@ -71,6 +74,7 @@ export async function createTeacherOnPage(
 			schoolId: schoolId(),
 			firstName: input.firstName.trim(),
 			lastName: input.lastName.trim(),
+			code: code || id,
 			email: email || null,
 			phone: input.phone?.trim() || null,
 			isActive: true,
@@ -187,6 +191,24 @@ export async function updateTeacherStatusOnPage(
 	});
 
 	return result !== null;
+}
+
+export async function updateTeacherProfilePhotoOnPage(
+	state: TeachersPageState,
+	input: {
+		teacherId: string;
+		file: File;
+		successMessage?: string;
+	},
+): Promise<boolean> {
+	return updateTeacherProfilePhotoMutation({
+		teacherId: input.teacherId,
+		file: input.file,
+		successMessage: input.successMessage,
+		onSuccess: (photoUrl) => {
+			state.patchTeacher(input.teacherId, { photoUrl });
+		},
+	});
 }
 
 export async function deleteTeacherOnPage(

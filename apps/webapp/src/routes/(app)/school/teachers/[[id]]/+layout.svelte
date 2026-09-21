@@ -70,6 +70,6 @@
 		loading={drawerEntityLoading(teacher?.id, $page.params.id)}
 		onClose={closeDetail}
 	>
-		{@render children()}
+		{@render children?.()}
 	</TeacherDrawer>
 {/if}

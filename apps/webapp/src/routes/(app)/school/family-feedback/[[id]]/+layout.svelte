@@ -61,6 +61,6 @@
 		loading={drawerEntityLoading(campaign?.id, $page.params.id)}
 		onClose={closeDetail}
 	>
-		{@render children()}
+		{@render children?.()}
 	</FamilyFeedbackDrawer>
 {/if}

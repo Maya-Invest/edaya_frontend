@@ -31,6 +31,7 @@ class AcademicContext {
 	studentCount = $state(0);
 	guardianCount = $state(0);
 	staffCount = $state(0);
+	teacherCount = $state(0);
 	shellReady = $state(false);
 	yearId = $state('');
 	periodId = $state('');
@@ -254,6 +255,7 @@ class AcademicContext {
 		this.studentCount = shell.studentCount;
 		this.guardianCount = shell.guardianCount;
 		this.staffCount = shell.staffCount;
+		this.teacherCount = shell.teacherCount;
 		this.init(shell.academicYears, shell.academicPeriods, shell.classes);
 		this.shellReady = true;
 	}
@@ -291,6 +293,7 @@ class AcademicContext {
 		this.studentCount = 0;
 		this.guardianCount = 0;
 		this.staffCount = 0;
+		this.teacherCount = 0;
 		this.shellReady = false;
 		if (browser && !this.yearId) {
 			this.hydrateSelection();

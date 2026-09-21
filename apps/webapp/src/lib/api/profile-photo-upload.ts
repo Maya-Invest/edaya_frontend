@@ -8,7 +8,7 @@ import {
 } from './profile-photo-request';
 import { getBrowserSchoolClient } from './school-client';
 
-export type ProfilePhotoOwnerKind = 'staff' | 'student' | 'guardian';
+export type ProfilePhotoOwnerKind = 'staff' | 'student' | 'guardian' | 'teacher';
 
 export function profilePhotoContentPath(attachmentId: string): string {
 	return `/core/files/${attachmentId}/content`;

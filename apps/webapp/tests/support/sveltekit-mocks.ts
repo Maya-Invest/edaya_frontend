@@ -94,6 +94,7 @@ stubSvelteModule('$lib/academic/context.svelte', {
 		studentCount: 0,
 		guardianCount: 0,
 		staffCount: 0,
+		teacherCount: 0,
 		setSchoolScope() {},
 		initFromShell() {},
 		clearShellCatalog() {},

@@ -73,6 +73,7 @@ async function runBootstrapAppShell() {
 			studentCount: 0,
 			guardianCount: 0,
 			staffCount: 0,
+			teacherCount: 0,
 		});
 	}
 }

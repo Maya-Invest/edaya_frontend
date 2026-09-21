@@ -16,7 +16,7 @@
 		campaign?: FamilyFeedbackCampaign;
 		loading?: boolean;
 		onClose: () => void;
-		children: Snippet;
+		children: Snippet | undefined;
 	} = $props();
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -61,7 +61,7 @@
 			<div class="space-y-5">
 				<FamilyFeedbackDetailHeader {campaign} />
 				<FamilyFeedbackDetailTabBar {campaign} />
-				{@render children()}
+				{@render children?.()}
 			</div>
 		{/if}
 	</div>

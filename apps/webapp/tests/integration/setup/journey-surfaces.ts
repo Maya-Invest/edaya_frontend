@@ -137,6 +137,10 @@ export const JOURNEY_SURFACE_CLAIMS: readonly JourneySurfaceClaim[] = [
 			'/school/teachers/[id]/profile',
 			'/school/teachers/[id]/assignments',
 			'/school/teachers/[id]/availability',
+			'/school/teachers/[id]/timetable',
+			'/school/teachers/[id]/evaluations',
+			'/school/teachers/[id]/family-feedback',
+			'/school/teachers/[id]/documents',
 		],
 		modals: [
 			{ parentRoute: '/school/guardians', modal: 'create' },
@@ -146,6 +150,8 @@ export const JOURNEY_SURFACE_CLAIMS: readonly JourneySurfaceClaim[] = [
 			{ parentRoute: '/school/staff/[id]/permissions', modal: 'add-permission' },
 			{ parentRoute: '/school/teachers', modal: 'create' },
 			{ parentRoute: '/school/teachers/[id]/assignments', modal: 'form' },
+			{ parentRoute: '/school/teachers/[id]/assignments', modal: 'delete-assignment' },
+			{ parentRoute: '/school/teachers/[id]/documents', modal: 'generate-document' },
 		],
 		tabs: [
 			{ routePattern: '/school/staff/[id]', tab: 'profile' },
@@ -154,6 +160,10 @@ export const JOURNEY_SURFACE_CLAIMS: readonly JourneySurfaceClaim[] = [
 			{ routePattern: '/school/teachers/[id]', tab: 'profile' },
 			{ routePattern: '/school/teachers/[id]', tab: 'assignments' },
 			{ routePattern: '/school/teachers/[id]', tab: 'availability' },
+			{ routePattern: '/school/teachers/[id]', tab: 'timetable' },
+			{ routePattern: '/school/teachers/[id]', tab: 'evaluations' },
+			{ routePattern: '/school/teachers/[id]', tab: 'family-feedback' },
+			{ routePattern: '/school/teachers/[id]', tab: 'documents' },
 		],
 	},
 	{

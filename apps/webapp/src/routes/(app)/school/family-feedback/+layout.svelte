@@ -47,7 +47,7 @@
 			emptyDescription={$t('dataState.emptyDescription')}
 		>
 			<FamilyFeedbackList onSelect={selectCampaign} selectedId={familyFeedbackPage.selectedId} />
-			{@render pageChildren()}
+			{@render pageChildren?.()}
 		</DataState>
 	{/snippet}
 </PageQuery>
