@@ -84,8 +84,8 @@ function mapLogbook(
 	return {
 		id: primaryProgress?.id ?? session.id,
 		chapter: matterLink?.id ?? session.displayLabel,
-		content: session.sessionNote ?? primaryProgress?.notes ?? '',
-		notes: primaryProgress?.notes ?? session.sessionNote ?? '',
+		content: readableLogbookNote(session.sessionNote) || primaryProgress?.notes || '',
+		notes: primaryProgress?.notes ?? readableLogbookNote(session.sessionNote) ?? '',
 		progress: primaryProgress?.completedPercentage ?? 0,
 	};
 }
@@ -283,5 +283,26 @@ export async function loadPlanningOccurrenceDetail(
 		case 'lesson':
 		default:
 			return loadSessionDetail(client, event.id);
+	}
+}
+
+/** Parent-facing lesson text. Structured teacher notes stay out of the raw JSON. */
+export function readableLogbookNote(sessionNote: string | null | undefined): string {
+	const value = sessionNote?.trim() ?? '';
+	if (!value.startsWith('{"edayaLogbook":'))
+		return value;
+	try {
+		const decoded = JSON.parse(value) as {
+			edayaLogbook?: { content?: string; objectives?: string[]; homework?: string };
+		};
+		const envelope = decoded.edayaLogbook;
+		if (!envelope)
+			return value;
+		return [envelope.content, ...(envelope.objectives ?? []), envelope.homework]
+			.map(part => part?.trim())
+			.filter((part): part is string => Boolean(part))
+			.join('\n');
+	} catch {
+		return value;
 	}
 }

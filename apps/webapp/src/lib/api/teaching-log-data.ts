@@ -9,6 +9,7 @@ import {
 	listAllEntityPagesForIdFilters,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
+import { readableLogbookNote } from '$lib/api/session-detail-data';
 import {
 	fetchClassSubjectInstructorSourcesBundle,
 
@@ -175,8 +176,8 @@ export function mapTeachingLogEntries(
 				chapter: primaryProgress
 					? matterNameForProgress(primaryProgress, sources.classSubjectMattersRaw)
 					: session.displayLabel,
-				content: session.sessionNote ?? '',
-				notes: primaryProgress?.notes ?? session.sessionNote ?? '',
+				content: readableLogbookNote(session.sessionNote),
+				notes: primaryProgress?.notes ?? readableLogbookNote(session.sessionNote),
 				attachments: undefined,
 				progress: primaryProgress?.completedPercentage ?? averageProgress,
 			} satisfies LogEntry;
