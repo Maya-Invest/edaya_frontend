@@ -1144,10 +1144,23 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		return ok(row);
 	}
 
-	// ── Configuration academic wizard ──
-	if (action.includes('wizard') || action.includes('périodes')) {
-		const wizard = page.getByRole('button', { name: /période|period|wizard|ajouter/i }).first();
-		return (await wizard.isVisible({ timeout: 6_000 }).catch(() => false)) ? ok(row) : notOk(row, 'Wizard périodes introuvable');
+	// ── Weekly period grid ──
+	if (row.endpoint.includes('/configuration/period-grid') && /sélecteur année/i.test(action)) {
+		const yearSelect = page.getByTestId('list-filter-select');
+		return (await yearSelect.isVisible({ timeout: 8_000 }).catch(() => false))
+			? ok(row, 'Year select visible')
+			: notOk(row, 'Sélecteur année introuvable');
+	}
+	if (row.endpoint.includes('/configuration/period-grid') && (/wizard/i.test(action) || /périodes/i.test(action))) {
+		const wizard = page.getByRole('button', { name: /configuration rapide|quick setup/i }).first();
+		return (await wizard.isVisible({ timeout: 8_000 }).catch(() => false))
+			? ok(row, 'Quick setup visible')
+			: notOk(row, 'Wizard périodes introuvable');
+	}
+	if (row.endpoint.includes('/configuration/other') && /liste des catalogues/i.test(action)) {
+		const nav = page.getByRole('navigation', { name: /autres configurations|other configurations/i });
+		const links = await nav.getByRole('link').count();
+		return links >= 3 ? ok(row, `${links} catalogues`) : notOk(row, 'Liste des catalogues incomplète');
 	}
 
 	// ── Tools modal ──

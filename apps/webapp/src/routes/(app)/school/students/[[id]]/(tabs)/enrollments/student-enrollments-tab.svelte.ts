@@ -1,5 +1,6 @@
 import type { StudentEnrollmentHistoryItem } from '$lib/types/school';
 import type { StudentDetailHost } from '../../../lib/student-detail-host';
+import type { PageQueryRequest } from '../../../lib/student-page-status';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { loadStudentEnrollmentHistory } from '$lib/api/student-drawer-data';
@@ -47,20 +48,21 @@ export class StudentEnrollmentsTabState {
 	}
 
 	query() {
-		return (url: URL) => resolveStudentPageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const studentId = studentDetailIdFromPathname(url.pathname);
 				if (!studentId) {
 					return {};
 				}
 
 				const enrollments = await loadStudentEnrollmentHistory(getBrowserSchoolClient(), studentId);
+				signal.throwIfAborted();
 				this.seed(studentId, { enrollments });
 				return {};
 			},
 			hasItems: () => true,
-		});
+		}, request);
 	}
 
 	async transferClass(input: {

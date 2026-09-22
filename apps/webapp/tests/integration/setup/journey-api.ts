@@ -1154,14 +1154,36 @@ interface TeacherAssignmentListItem {
 	status?: string;
 }
 
+async function readStoredAcademicYearId(page: Page): Promise<string | null> {
+	return page.evaluate(() => {
+		const direct = sessionStorage.getItem('edaya:yearId');
+		if (direct) {
+			return direct;
+		}
+		for (let index = 0; index < sessionStorage.length; index += 1) {
+			const key = sessionStorage.key(index);
+			if (!key?.startsWith('edaya:yearId:')) {
+				continue;
+			}
+			const value = sessionStorage.getItem(key);
+			if (value) {
+				return value;
+			}
+		}
+		return null;
+	}).catch(() => null);
+}
+
 async function listFamilyFeedbackCampaignIds(
 	page: Page,
 	appOrigin: string,
 	apiUrl: string,
 ): Promise<string[]> {
+	const academicYearId = await readStoredAcademicYearId(page);
 	const response = await apiFetch(page, appOrigin, '/core/queries/list-family-feedback-campaigns', {
 		method: 'POST',
 		data: {},
+		academicYearId: academicYearId ?? undefined,
 	}, apiUrl);
 	if (!response.ok()) {
 		console.log(
@@ -1169,8 +1191,68 @@ async function listFamilyFeedbackCampaignIds(
 		);
 		return [];
 	}
-	const body = await readApiBody(response) as { items?: Array<{ id?: string }> } | Array<{ id?: string }> | null;
-	return parseEntityList(body).map(entry => entry.id).filter((id): id is string => typeof id === 'string');
+	const body = await readApiBody(response);
+	const rows = asRecordList(body);
+	const ids = rows
+		.map(entry => entry.id)
+		.filter((id): id is string => typeof id === 'string' && id.length > 0);
+	if (ids.length === 0) {
+		console.log(`family-feedback list empty: body=${JSON.stringify(body).slice(0, 300)}`);
+	}
+	return ids;
+}
+
+function asRecordList(value: unknown): Record<string, unknown>[] {
+	if (Array.isArray(value)) {
+		return value.filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object');
+	}
+	if (value && typeof value === 'object' && Array.isArray((value as { items?: unknown }).items)) {
+		return asRecordList((value as { items: unknown }).items);
+	}
+	if (value && typeof value === 'object' && Array.isArray((value as { campaigns?: unknown }).campaigns)) {
+		return asRecordList((value as { campaigns: unknown }).campaigns);
+	}
+	if (value && typeof value === 'object' && (value as { data?: unknown }).data) {
+		return asRecordList((value as { data: unknown }).data);
+	}
+	return [];
+}
+
+export async function cancelFamilyFeedbackCampaignsViaApi(
+	page: Page,
+	appOrigin: string,
+	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
+): Promise<void> {
+	const ids = await listFamilyFeedbackCampaignIds(page, appOrigin, apiUrl);
+	const academicYearId = await readStoredAcademicYearId(page);
+	console.log(`family-feedback cancel candidates: ${ids.join(', ') || '(none)'}`);
+	for (const id of ids) {
+		let cleared = false;
+		for (const command of ['cancel-family-feedback-campaign', 'archive-family-feedback-campaign'] as const) {
+			const response = await apiFetch(page, appOrigin, `/core/commands/${command}`, {
+				method: 'POST',
+				data: { requestId: crypto.randomUUID(), id },
+				academicYearId: academicYearId ?? undefined,
+			}, apiUrl);
+			console.log(`family-feedback ${command} ${id}: status=${response.status()}`);
+			if (response.ok()) {
+				cleared = true;
+				if (command === 'cancel-family-feedback-campaign') {
+					const archived = await apiFetch(page, appOrigin, '/core/commands/archive-family-feedback-campaign', {
+						method: 'POST',
+						data: { requestId: crypto.randomUUID(), id },
+						academicYearId: academicYearId ?? undefined,
+					}, apiUrl);
+					console.log(`family-feedback archive after cancel ${id}: status=${archived.status()}`);
+				}
+				break;
+			}
+			console.log(`family-feedback ${command} body: ${(await response.text().catch(() => '')).slice(0, 200)}`);
+		}
+		if (!cleared) {
+			console.log(`family-feedback could not clear ${id}; a later create will use a fresh assignment`);
+		}
+	}
 }
 
 async function resolvePeriodIdForYear(
@@ -1234,6 +1316,37 @@ async function teacherExistsViaApi(
 	return response.ok();
 }
 
+async function createTeacherForFamilyFeedback(
+	page: Page,
+	appOrigin: string,
+	apiUrl: string,
+): Promise<string | null> {
+	const schoolId = await resolveSchoolId(page, appOrigin, apiUrl);
+	if (!schoolId) {
+		return null;
+	}
+	const createdId = `tch-ff-${Date.now().toString(36)}`;
+	const saveResponse = await apiFetch(page, appOrigin, '/core/entities/teachers/save', {
+		method: 'POST',
+		data: {
+			id: createdId,
+			schoolId,
+			firstName: 'E2E',
+			lastName: `Feedback-${Date.now().toString(36)}`,
+			email: null,
+			phone: null,
+			isActive: true,
+		},
+	}, apiUrl);
+	if (!saveResponse.ok()) {
+		console.log(
+			`family-feedback teacher save failed: status=${saveResponse.status()} body=${(await saveResponse.text().catch(() => '')).slice(0, 300)}`,
+		);
+		return null;
+	}
+	return createdId;
+}
+
 async function ensureTeacherForFamilyFeedback(
 	page: Page,
 	appOrigin: string,
@@ -1261,26 +1374,7 @@ async function ensureTeacherForFamilyFeedback(
 		}
 	}
 
-	const createdId = `tch-ff-${Date.now().toString(36)}`;
-	const saveResponse = await apiFetch(page, appOrigin, '/core/entities/teachers/save', {
-		method: 'POST',
-		data: {
-			id: createdId,
-			schoolId,
-			firstName: 'E2E',
-			lastName: `Feedback-${Date.now().toString(36)}`,
-			email: null,
-			phone: null,
-			isActive: true,
-		},
-	}, apiUrl);
-	if (!saveResponse.ok()) {
-		console.log(
-			`family-feedback teacher save failed: status=${saveResponse.status()} body=${(await saveResponse.text().catch(() => '')).slice(0, 300)}`,
-		);
-		return null;
-	}
-	return createdId;
+	return createTeacherForFamilyFeedback(page, appOrigin, apiUrl);
 }
 
 async function listSubjectTeacherAssignments(
@@ -1337,19 +1431,22 @@ async function ensureSubjectTeacherAssignmentViaApi(
 		teacherId: string;
 		classSubjectId: string;
 		classGroupId: string;
+		forceNew?: boolean;
 	},
 	apiUrl: string,
 ): Promise<string | null> {
-	const existing = await listSubjectTeacherAssignments(page, appOrigin, options.academicYearId, apiUrl);
-	const match = existing.find(entry =>
-		entry.id
-		&& entry.classSubjectId === options.classSubjectId
-		&& entry.teacherId === options.teacherId,
-	)
-		?? existing.find(entry => entry.id && entry.classSubjectId === options.classSubjectId)
-		?? existing.find(entry => entry.id && entry.teacherId === options.teacherId);
-	if (match?.id) {
-		return match.id;
+	if (!options.forceNew) {
+		const existing = await listSubjectTeacherAssignments(page, appOrigin, options.academicYearId, apiUrl);
+		const match = existing.find(entry =>
+			entry.id
+			&& entry.classSubjectId === options.classSubjectId
+			&& entry.teacherId === options.teacherId,
+		)
+			?? existing.find(entry => entry.id && entry.classSubjectId === options.classSubjectId)
+			?? existing.find(entry => entry.id && entry.teacherId === options.teacherId);
+		if (match?.id) {
+			return match.id;
+		}
 	}
 
 	const assignmentId = `ta-ff-${Date.now().toString(36)}`;
@@ -1388,10 +1485,14 @@ export async function ensureFamilyFeedbackCampaignViaApi(
 		classSubjectId?: string | null;
 		teacherId?: string | null;
 		catalogSubjectId?: string | null;
+		forceNew?: boolean;
+		assignmentOnly?: boolean;
 	},
 	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
 ): Promise<string | null> {
-	const existing = await listFamilyFeedbackCampaignIds(page, appOrigin, apiUrl);
+	const existing = options.forceNew
+		? []
+		: await listFamilyFeedbackCampaignIds(page, appOrigin, apiUrl);
 	if (existing[0]) {
 		return existing[0];
 	}
@@ -1404,7 +1505,7 @@ export async function ensureFamilyFeedbackCampaignViaApi(
 
 	const classGroup = await getClassGroup(page, appOrigin, classGroupId, apiUrl);
 	const academicYearId = classGroup?.academicYearId
-		?? await page.evaluate(() => sessionStorage.getItem('edaya:yearId')).catch(() => null);
+		?? await readStoredAcademicYearId(page);
 	if (!academicYearId) {
 		console.log('family-feedback campaign skipped: class group has no academicYearId');
 		return null;
@@ -1423,7 +1524,9 @@ export async function ensureFamilyFeedbackCampaignViaApi(
 		return null;
 	}
 
-	const teacherId = await ensureTeacherForFamilyFeedback(page, appOrigin, options.teacherId, apiUrl);
+	const teacherId = options.forceNew
+		? await createTeacherForFamilyFeedback(page, appOrigin, apiUrl)
+		: await ensureTeacherForFamilyFeedback(page, appOrigin, options.teacherId, apiUrl);
 	if (!teacherId) {
 		console.log('family-feedback campaign skipped: no teacherId');
 		return null;
@@ -1434,9 +1537,13 @@ export async function ensureFamilyFeedbackCampaignViaApi(
 		teacherId,
 		classSubjectId,
 		classGroupId,
+		forceNew: options.forceNew,
 	}, apiUrl);
 	if (!teacherAssignmentId) {
 		return null;
+	}
+	if (options.assignmentOnly) {
+		return teacherAssignmentId;
 	}
 
 	const academicPeriodId = await resolvePeriodIdForYear(page, appOrigin, academicYearId, apiUrl)
@@ -1447,6 +1554,8 @@ export async function ensureFamilyFeedbackCampaignViaApi(
 	}
 
 	const campaignId = `ff-e2e-${Date.now().toString(36)}`;
+	const opensAt = new Date();
+	const closesAt = new Date(opensAt.getTime() + 7 * 24 * 60 * 60 * 1000);
 	const createResponse = await apiFetch(page, appOrigin, '/core/commands/create-family-feedback-campaign', {
 		method: 'POST',
 		data: {
@@ -1455,6 +1564,8 @@ export async function ensureFamilyFeedbackCampaignViaApi(
 			academicYearId,
 			academicPeriodId,
 			teacherAssignmentId,
+			opensAt: opensAt.toISOString(),
+			closesAt: closesAt.toISOString(),
 		},
 		academicYearId,
 	}, apiUrl);
@@ -1470,6 +1581,189 @@ export async function ensureFamilyFeedbackCampaignViaApi(
 		return body.id;
 	}
 	return campaignId;
+}
+
+export async function publishAcademicPeriodsViaApi(
+	page: Page,
+	appOrigin: string,
+	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
+): Promise<void> {
+	const schoolId = await resolveSchoolId(page, appOrigin, apiUrl);
+	const academicYearId = await readStoredAcademicYearId(page);
+	if (!schoolId) {
+		return;
+	}
+	const response = await apiFetch(page, appOrigin, '/core/entities/academic-periods/list', {
+		method: 'POST',
+		data: { schoolId, ...(academicYearId ? { academicYearId } : {}) },
+		academicYearId: academicYearId ?? undefined,
+	}, apiUrl);
+	if (!response.ok()) {
+		console.log(`publish periods list failed: status=${response.status()}`);
+		return;
+	}
+	const periods = parseEntityList(await readApiBody(response) as { items?: Array<{ id?: string; academicYearId?: string; isPublished?: boolean }> });
+	for (const period of periods) {
+		if (!period.id || period.isPublished) {
+			continue;
+		}
+		if (academicYearId && period.academicYearId && period.academicYearId !== academicYearId) {
+			continue;
+		}
+		const published = await apiFetch(page, appOrigin, '/core/commands/publish-academic-period', {
+			method: 'POST',
+			data: { academicPeriodId: period.id },
+			academicYearId: academicYearId ?? undefined,
+		}, apiUrl);
+		console.log(`publish period ${period.id}: status=${published.status()}`);
+	}
+}
+
+export async function ensurePublishedTeacherTimetableSession(
+	page: Page,
+	appOrigin: string,
+	options: {
+		classGroupId: string;
+		teacherId: string;
+		catalogSubjectId?: string | null;
+	},
+	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
+): Promise<string | null> {
+	console.log(`teacher timetable publish for ${options.teacherId}`);
+	const schoolId = await resolveSchoolId(page, appOrigin, apiUrl);
+	if (!schoolId) {
+		console.log('teacher timetable session skipped: no school');
+		return null;
+	}
+	const classSubjectId = await ensureClassSubjectForClass(page, appOrigin, {
+		classGroupId: options.classGroupId,
+		catalogSubjectId: options.catalogSubjectId,
+	}, apiUrl);
+	if (!classSubjectId) {
+		console.log('teacher timetable session skipped: no class subject');
+		return null;
+	}
+	const scheduleDate = new Date().toISOString().slice(0, 10);
+	const endDate = new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+	const classGroup = await getClassGroup(page, appOrigin, options.classGroupId, apiUrl);
+	const academicYearId = (typeof classGroup?.academicYearId === 'string' ? classGroup.academicYearId : null)
+		?? await readStoredAcademicYearId(page);
+	console.log(`teacher timetable year ${academicYearId ?? '(none)'}`);
+	if (!academicYearId) {
+		console.log('teacher timetable session skipped: no academic year');
+		return null;
+	}
+	const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
+	for (const [index, day] of days.entries()) {
+		const saved = await apiFetch(page, appOrigin, '/core/entities/period-definitions/save', {
+			method: 'POST',
+			data: {
+				id: `pd-e2e-${academicYearId.slice(0, 8)}-${day}`,
+				schoolId,
+				academicYearId,
+				label: `Période ${index + 1}`,
+				dayOfWeek: day,
+				order: index + 1,
+				startTime: '08:00',
+				endTime: '09:00',
+				isBreak: false,
+				isTeachingSlot: true,
+			},
+			academicYearId,
+		}, apiUrl);
+		if (!saved.ok()) {
+			console.log(`period slot ${day} status=${saved.status()} body=${(await saved.text().catch(() => '')).slice(0, 180)}`);
+		}
+	}
+	const classSubjects = await listClassSubjects(page, appOrigin, options.classGroupId, apiUrl);
+	const periodsPerWeekByClassSubjectId: Record<string, number> = {
+		[classSubjectId]: 2,
+	};
+	for (const subject of classSubjects) {
+		if (subject.isOffered !== false) {
+			periodsPerWeekByClassSubjectId[subject.id] = 2;
+		}
+	}
+	const generated = await apiFetch(page, appOrigin, '/core/commands/generate-class-group-timetable', {
+		method: 'POST',
+		data: {
+			classGroupId: options.classGroupId,
+			academicYearId,
+			startDate: scheduleDate,
+			endDate,
+			placementParameters: { periodsPerWeekByClassSubjectId },
+			options: {
+				allowUnassignedTeacherPlacements: true,
+				enforceWorkloadFulfillment: false,
+			},
+		},
+		academicYearId,
+	}, apiUrl);
+	const generatedBody = await generated.text().catch(() => '');
+	console.log(`generate timetable status=${generated.status()} body=${generatedBody.slice(0, 400)}`);
+	if (!generated.ok()) {
+		return null;
+	}
+	const published = await apiFetch(page, appOrigin, '/core/commands/publish-class-group-timetable', {
+		method: 'POST',
+		data: {
+			classGroupId: options.classGroupId,
+			startDate: scheduleDate,
+			endDate,
+			sessionConflictPolicy: 'skip',
+		},
+		academicYearId,
+	}, apiUrl);
+	const publishedBody = await published.text().catch(() => '');
+	console.log(`publish timetable status=${published.status()} body=${publishedBody.slice(0, 400)}`);
+	if (!published.ok()) {
+		return null;
+	}
+	return classSubjectId;
+}
+
+export async function grantFamilyFeedbackModerateViaApi(
+	page: Page,
+	appOrigin: string,
+	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
+): Promise<void> {
+	const schoolId = await resolveSchoolId(page, appOrigin, apiUrl);
+	const academicYearId = await readStoredAcademicYearId(page);
+	if (!schoolId || !academicYearId) {
+		return;
+	}
+	const response = await apiFetch(page, appOrigin, '/core/entities/staff-members/list', {
+		method: 'POST',
+		data: { schoolId, accountKind: 'human' },
+		academicYearId,
+	}, apiUrl);
+	if (!response.ok()) {
+		console.log(`family-feedback staff list failed: status=${response.status()}`);
+		return;
+	}
+	const staff = parseEntityList(await readApiBody(response) as {
+		items?: Array<{ id?: string; firstName?: string; lastName?: string }>;
+	});
+	const owner = staff.find(member => `${member.firstName ?? ''} ${member.lastName ?? ''}`.includes('Owner'))
+		?? staff[0];
+	if (!owner?.id) {
+		console.log('family-feedback moderate grant skipped: no staff');
+		return;
+	}
+	const granted = await apiFetch(page, appOrigin, '/core/commands/assign-staff-permission', {
+		method: 'POST',
+		data: {
+			id: `spa-ff-${owner.id}`,
+			staffId: owner.id,
+			schoolId,
+			academicYearId,
+			permission: 'FAMILY_FEEDBACK_MODERATE',
+			scopes: [{ kind: 'school' }],
+			status: 'active',
+		},
+		academicYearId,
+	}, apiUrl);
+	console.log(`family-feedback moderate grant ${owner.id}: status=${granted.status()}`);
 }
 
 export async function completeWizardViaApi(

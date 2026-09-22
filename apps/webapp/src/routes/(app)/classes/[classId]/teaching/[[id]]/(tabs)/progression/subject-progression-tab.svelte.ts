@@ -1,4 +1,5 @@
 import type { SubjectMatterDrawerRow } from '$lib/api/mutations/subject-matter.mutations';
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import { loadTeachingSubjectProgressionRows } from '$lib/api/mutations/subject-matter.mutations';
 import { resolvePageLoad } from '$lib/queries/page-status';
 import { getContext, setContext } from 'svelte';
@@ -80,15 +81,17 @@ export class SubjectProgressionTabState {
 	}
 
 	query(classSubjectId: string) {
-		return (url: URL) => resolvePageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const classId = teachingClassIdFromUrl(url);
 				if (!classId) {
+					signal.throwIfAborted();
 					this.slice = null;
 					return {};
 				}
 				const loaded = await loadTeachingSubjectProgressionRows(classSubjectId);
+				signal.throwIfAborted();
 				this.slice = {
 					classSubjectId,
 					catalogSubjectId: loaded.catalogSubjectId,
@@ -104,7 +107,7 @@ export class SubjectProgressionTabState {
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load subject progression data.',
-		});
+		}, request);
 	}
 }
 

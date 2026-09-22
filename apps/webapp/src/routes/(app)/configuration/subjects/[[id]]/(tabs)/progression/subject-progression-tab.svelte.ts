@@ -1,4 +1,5 @@
 import type { SubjectMatterDrawerRow } from '$lib/api/mutations/subject-matter.mutations';
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { Subject } from '$lib/types/school';
 import {
 	loadCatalogSubjectMatterRows,
@@ -72,11 +73,12 @@ export class SubjectProgressionTabState {
 		const subjectKey = subject.id;
 		const isCatalogSubject = Boolean(subject.gradeLevelId);
 
-		return (url: URL) => resolvePageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				if (isCatalogSubject) {
 					const loaded = await loadCatalogSubjectMatterRows(subjectKey);
+					signal.throwIfAborted();
 					this.slice = {
 						subjectKey,
 						classSubjectId: loaded.classSubjectId,
@@ -90,6 +92,7 @@ export class SubjectProgressionTabState {
 				}
 
 				const loaded = await loadSubjectMatterDrawerRows(subjectKey);
+				signal.throwIfAborted();
 				this.slice = {
 					subjectKey,
 					classSubjectId: subjectKey,
@@ -103,7 +106,7 @@ export class SubjectProgressionTabState {
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load subject progression data.',
-		});
+		}, request);
 	}
 }
 

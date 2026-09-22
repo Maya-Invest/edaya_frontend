@@ -111,7 +111,7 @@ describe('mapPlanningEvents', () => {
 				id: 'subj-math',
 				schoolId: 'school-1',
 				name: 'Mathematics',
-				category: 'Scientifique',
+				categoryId: 'school-1:subject-category:scientifique',
 				color: 'mint',
 			} satisfies SubjectRaw],
 		});

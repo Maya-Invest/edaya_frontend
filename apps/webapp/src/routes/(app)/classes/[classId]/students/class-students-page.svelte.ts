@@ -98,6 +98,10 @@ export class ClassStudentsPageState {
 		this.versions.markLoaded();
 	}
 
+	seed(classId: string, data: Partial<Omit<ClassStudentsPageSlice, 'classId'>>) {
+		this.applySlice(classId, data);
+	}
+
 	mergeStudents(incoming: readonly Student[]) {
 		const byId = Object.fromEntries(this.students.map(student => [student.id, student])) as Record<string, Student>;
 		for (const student of incoming) {

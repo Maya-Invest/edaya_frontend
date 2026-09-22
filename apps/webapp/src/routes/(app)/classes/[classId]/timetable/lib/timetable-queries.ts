@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { TimetablePageSlice } from './timetable-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
 import { fetchActivities } from '$lib/api/activities-data';
@@ -54,9 +55,9 @@ export async function loadTimetableSlice(classId: string): Promise<TimetablePage
 }
 
 export function queryTimetableListPage(classId: string) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyTimetableSlice(classId),
 		load: () => loadTimetableSlice(classId),
 		hasItems: () => true,
-	});
+	}, request);
 }

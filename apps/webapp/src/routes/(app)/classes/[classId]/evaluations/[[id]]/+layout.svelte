@@ -1,9 +1,8 @@
 <script lang="ts">
-	import type { ResolvedPathname } from '$app/types';
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
-	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
-	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import { appPath } from '$lib/navigation/app-navigation';
+	import { closeDetailDrawer, listSurfaceHref } from '$lib/navigation/route-surface-navigation';
 	import { getEvaluationsPageState } from '../evaluations-page.svelte';
 	import EvaluationDrawer from './components/EvaluationDrawer.svelte';
 	import {
@@ -15,16 +14,18 @@
 
 	const evaluationsPage = getEvaluationsPageState();
 	const detailTabs = createAndRegisterEvaluationDetailStates();
+	evaluationsPage.attachGrading(detailTabs.grading);
 	const classId = $derived($page.params.classId ?? '6a');
 	const evaluation = $derived(evaluationsPage.selected);
 
+	$effect(() => {
+		evaluationsPage.attachGrading(detailTabs.grading);
+		return () => evaluationsPage.detachGrading(detailTabs.grading);
+	});
+
 	function closeDetail() {
 		clearEvaluationDetailTabStates(detailTabs);
-		const next = new URL($page.url);
-		next.searchParams.delete(MODAL_QUERY_KEY);
-		next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
-		const href = `${appPath('/(app)/classes/[classId]/evaluations/[[id]]', { classId })}${next.search}` as ResolvedPathname;
-		appGoto(href);
+		closeDetailDrawer(listSurfaceHref(appPath('/(app)/classes/[classId]/evaluations/[[id]]', { classId }), $page.url));
 	}
 
 	$effect(() => {

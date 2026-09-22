@@ -1,7 +1,8 @@
 import type { components } from '$lib/api/schema';
+import type { PageQueryRequest } from '../../../lib/teacher-page-status';
 import type { TeachersPageState } from '../../../teachers-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
-import { recordsForFieldIds, teacherAssignmentsForTeachers, uniqueIds } from '$lib/api/entity-list-filters';
+import { listAllEntityPagesForIdFilters, uniqueIds } from '$lib/api/entity-list-filters';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { getContext, setContext } from 'svelte';
 import { resolveTeacherPageLoad } from '../../../lib/teacher-page-status';
@@ -44,15 +45,16 @@ export class TeacherEvaluationsTabState {
 	}
 
 	query() {
-		return (url: URL) => resolveTeacherPageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolveTeacherPageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const teacherId = teacherDetailIdFromUrl(url);
 				const page = this.getPage();
 				const scope = page.teacherScope();
 				const periodId = academicContext.periodId;
 				if (!teacherId || !scope.academicYearId || !periodId) {
 					if (teacherId) {
+						signal.throwIfAborted();
 						this.slice = { teacherId, evaluations: [] };
 					}
 					return {};
@@ -60,11 +62,11 @@ export class TeacherEvaluationsTabState {
 
 				await page.loadSubjectsIfNeeded();
 				const client = getBrowserSchoolClient();
-				const assignments = await client.entities.teacherAssignments.list({
-					...teacherAssignmentsForTeachers([teacherId]),
-					academicYearId: scope.academicYearId,
-					status: 'active',
-				});
+				const assignments = await listAllEntityPagesForIdFilters(
+					query => client.entities.teacherAssignments.list(query),
+					[{ field: 'teacherId', ids: [teacherId] }],
+					{ extraQuery: { academicYearId: scope.academicYearId, status: 'active' } },
+				);
 				const subjectAssignments = (assignments ?? []).filter(
 					row => row.kind === 'subject' && Boolean(row.classSubjectId),
 				);
@@ -83,13 +85,13 @@ export class TeacherEvaluationsTabState {
 						.map(row => row.classGroupId ?? ''),
 				].filter(id => id.length > 0));
 
-				const assessments = classIds.length === 0
-					? []
-					: await client.entities.assessments.list({
-							periodId,
-							...recordsForFieldIds('classGroupId', classIds),
-						});
+				const assessments = await listAllEntityPagesForIdFilters(
+					query => client.entities.assessments.list(query),
+					[{ field: 'classGroupId', ids: classIds }],
+					{ extraQuery: { periodId } },
+				);
 				const allowedClassSubjectIds = classSubjectIds;
+				signal.throwIfAborted();
 				this.slice = {
 					teacherId,
 					evaluations: (assessments ?? [])
@@ -107,7 +109,7 @@ export class TeacherEvaluationsTabState {
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load teacher evaluations.',
-		});
+		}, request);
 	}
 }
 

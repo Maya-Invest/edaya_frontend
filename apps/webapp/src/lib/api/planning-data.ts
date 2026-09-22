@@ -4,15 +4,11 @@ import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { ClassSubjectInstructorSources } from '$lib/api/teacher-display';
 import type { PlanningEvent, Resource } from '$lib/types/school';
 import {
-	assignmentsForActivitySessions,
-	assignmentsForAssessments,
-	assignmentsForClassSubjects,
-	assignmentsForLessonSessions,
 	classGroupScope,
 	dedupeById,
-	entitiesByIds,
-	resourcesByIds,
-	staffMembersByIds,
+	listAllEntityPages,
+	listAllEntityPagesByIds,
+	listAllEntityPagesForIdFilters,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 import { fetchClassHomeworkSources } from '$lib/api/homework-data';
@@ -199,31 +195,33 @@ export async function fetchClassPlanningSources(
 		classGroupStaffAssignmentsRaw,
 		classGroupResourceAssignmentsRaw,
 	] = await Promise.all([
-		lessonSessionIds.length > 0
-			? client.entities.lessonSessions.list(entitiesByIds(lessonSessionIds))
-			: Promise.resolve([]),
-		activitySessionIds.length > 0
-			? client.entities.activitySessions.list(entitiesByIds(activitySessionIds))
-			: Promise.resolve([]),
-		client.entities.classSubjects.list(classGroupScope(classGroupId)),
-		client.entities.staffAssignments.list(classGroupScope(classGroupId)),
-		client.entities.resourceAssignments.list(classGroupScope(classGroupId)),
+		listAllEntityPagesByIds(query => client.entities.lessonSessions.list(query), lessonSessionIds),
+		listAllEntityPagesByIds(query => client.entities.activitySessions.list(query), activitySessionIds),
+		listAllEntityPages(query => client.entities.classSubjects.list(query), {
+			baseQuery: classGroupScope(classGroupId),
+		}),
+		listAllEntityPages(query => client.entities.staffAssignments.list(query), {
+			baseQuery: classGroupScope(classGroupId),
+		}),
+		listAllEntityPages(query => client.entities.resourceAssignments.list(query), {
+			baseQuery: classGroupScope(classGroupId),
+		}),
 	]);
 
 	const lessonSessionsById = new Map(
-		(lessonSessionsRaw ?? []).map(session => [session.id, session]),
+		lessonSessionsRaw.map(session => [session.id, session]),
 	);
 	const activitySessionsById = new Map(
-		(activitySessionsRaw ?? []).map(session => [session.id, session]),
+		activitySessionsRaw.map(session => [session.id, session]),
 	);
 	const activityIds = uniqueIds([
 		...timetableEventsRaw
 			.map(event => event.activityId)
 			.filter((id): id is string => Boolean(id)),
-		...(activitySessionsRaw ?? []).map(session => session.activityId),
+		...activitySessionsRaw.map(session => session.activityId),
 	]);
-	const classSubjectIds = uniqueIds((classSubjectsRaw ?? []).map(classSubject => classSubject.id));
-	const subjectIds = uniqueIds((classSubjectsRaw ?? []).map(classSubject => classSubject.subjectId));
+	const classSubjectIds = uniqueIds(classSubjectsRaw.map(classSubject => classSubject.id));
+	const subjectIds = uniqueIds(classSubjectsRaw.map(classSubject => classSubject.subjectId));
 
 	const [
 		activitiesRaw,
@@ -235,44 +233,49 @@ export async function fetchClassPlanningSources(
 		activityResourceAssignmentsRaw,
 		assessmentResourceAssignmentsRaw,
 	] = await Promise.all([
-		activityIds.length > 0
-			? client.entities.activities.list(entitiesByIds(activityIds))
-			: Promise.resolve([]),
-		lessonSessionIds.length > 0
-			? client.entities.staffAssignments.list(assignmentsForLessonSessions(lessonSessionIds))
-			: Promise.resolve([]),
-		classSubjectIds.length > 0
-			? client.entities.staffAssignments.list(assignmentsForClassSubjects(classSubjectIds))
-			: Promise.resolve([]),
-		activitySessionIds.length > 0
-			? client.entities.staffAssignments.list(assignmentsForActivitySessions(activitySessionIds))
-			: Promise.resolve([]),
-		assessmentIds.length > 0
-			? client.entities.staffAssignments.list(assignmentsForAssessments(assessmentIds))
-			: Promise.resolve([]),
-		lessonSessionIds.length > 0
-			? client.entities.resourceAssignments.list(assignmentsForLessonSessions(lessonSessionIds))
-			: Promise.resolve([]),
-		activitySessionIds.length > 0
-			? client.entities.resourceAssignments.list(assignmentsForActivitySessions(activitySessionIds))
-			: Promise.resolve([]),
-		assessmentIds.length > 0
-			? client.entities.resourceAssignments.list(assignmentsForAssessments(assessmentIds))
-			: Promise.resolve([]),
+		listAllEntityPagesByIds(query => client.entities.activities.list(query), activityIds),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.staffAssignments.list(query),
+			[{ field: 'lessonSessionId', ids: lessonSessionIds }],
+		),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.staffAssignments.list(query),
+			[{ field: 'classSubjectId', ids: classSubjectIds }],
+		),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.staffAssignments.list(query),
+			[{ field: 'activitySessionId', ids: activitySessionIds }],
+		),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.staffAssignments.list(query),
+			[{ field: 'assessmentId', ids: assessmentIds }],
+		),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.resourceAssignments.list(query),
+			[{ field: 'lessonSessionId', ids: lessonSessionIds }],
+		),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.resourceAssignments.list(query),
+			[{ field: 'activitySessionId', ids: activitySessionIds }],
+		),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.resourceAssignments.list(query),
+			[{ field: 'assessmentId', ids: assessmentIds }],
+		),
 	]);
 
 	const staffAssignmentsRaw = dedupeById([
-		...(classGroupStaffAssignmentsRaw ?? []),
-		...(sessionStaffAssignmentsRaw ?? []),
-		...(classSubjectStaffAssignmentsRaw ?? []),
-		...(activityStaffAssignmentsRaw ?? []),
-		...(assessmentStaffAssignmentsRaw ?? []),
+		...classGroupStaffAssignmentsRaw,
+		...sessionStaffAssignmentsRaw,
+		...classSubjectStaffAssignmentsRaw,
+		...activityStaffAssignmentsRaw,
+		...assessmentStaffAssignmentsRaw,
 	]);
 	const resourceAssignmentsRaw = dedupeById([
-		...(classGroupResourceAssignmentsRaw ?? []),
-		...(sessionResourceAssignmentsRaw ?? []),
-		...(activityResourceAssignmentsRaw ?? []),
-		...(assessmentResourceAssignmentsRaw ?? []),
+		...classGroupResourceAssignmentsRaw,
+		...sessionResourceAssignmentsRaw,
+		...activityResourceAssignmentsRaw,
+		...assessmentResourceAssignmentsRaw,
 	]);
 
 	const staffIds = uniqueIds(staffAssignmentsRaw.map(assignment => assignment.staffId));
@@ -283,15 +286,9 @@ export async function fetchClassPlanningSources(
 		staffMembersRaw,
 		resourcesRaw,
 	] = await Promise.all([
-		subjectIds.length > 0
-			? client.entities.subjects.list(entitiesByIds(subjectIds))
-			: Promise.resolve([]),
-		staffIds.length > 0
-			? client.entities.staffMembers.list(staffMembersByIds(staffIds))
-			: Promise.resolve([]),
-		resourceIds.length > 0
-			? client.entities.resources.list(resourcesByIds(resourceIds))
-			: Promise.resolve([]),
+		listAllEntityPagesByIds(query => client.entities.subjects.list(query), subjectIds),
+		listAllEntityPagesByIds(query => client.entities.staffMembers.list(query), staffIds),
+		listAllEntityPagesByIds(query => client.entities.resources.list(query), resourceIds),
 	]);
 	const teacherInstructorSources = await fetchClassSubjectInstructorSources(client, classSubjectIds);
 
@@ -299,13 +296,13 @@ export async function fetchClassPlanningSources(
 		timetableEventsRaw,
 		lessonSessionsById,
 		activitySessionsById,
-		activitiesById: new Map((activitiesRaw ?? []).map(activity => [activity.id, activity])),
-		classSubjectsRaw: classSubjectsRaw ?? [],
-		subjectsRaw: subjectsRaw ?? [],
-		staffMembersRaw: staffMembersRaw ?? [],
+		activitiesById: new Map(activitiesRaw.map(activity => [activity.id, activity])),
+		classSubjectsRaw,
+		subjectsRaw,
+		staffMembersRaw,
 		staffAssignmentsRaw,
 		...teacherInstructorSources,
-		resourcesRaw: resourcesRaw ?? [],
+		resourcesRaw,
 		resourceAssignmentsRaw,
 	};
 }

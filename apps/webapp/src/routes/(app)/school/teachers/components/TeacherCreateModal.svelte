@@ -1,11 +1,12 @@
 <script lang="ts">
+	import { page } from '$app/stores';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
-	import { appGoto } from '$lib/navigation/app-navigation';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { get } from 'svelte/store';
 	import { getTeachersPageState } from '../teachers-page.svelte';
 
@@ -58,7 +59,7 @@
 		if (teacherId) {
 			open = false;
 			resetForm();
-			appGoto(detailHref.schoolTeacherTab(teacherId));
+			openDetailDrawer(detailHref.schoolTeacherTab(teacherId), currentRouteSurfaceHref($page.url));
 		}
 	}
 </script>

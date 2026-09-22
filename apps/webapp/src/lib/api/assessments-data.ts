@@ -7,10 +7,11 @@ import {
 } from '$lib/api/assessment-mapping';
 import {
 	activeEnrollmentsForClass,
-	assessmentResultsForScope,
 	assessmentsForClassPeriod,
 	classGroupScope,
-	entitiesByIds,
+	listAllEntityPages,
+	listAllEntityPagesByIds,
+	listAllEntityPagesForIdFilters,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 
@@ -46,33 +47,41 @@ export async function fetchClassAssessmentsSources(
 		classSubjectsRaw,
 		enrollmentsRaw,
 	] = await Promise.all([
-		client.entities.assessments.list(assessmentsForClassPeriod(classGroupId, periodId)),
-		client.entities.classSubjects.list(classGroupScope(classGroupId)),
-		client.entities.enrollments.list(activeEnrollmentsForClass(classGroupId)),
+		listAllEntityPages(query => client.entities.assessments.list(query), {
+			baseQuery: assessmentsForClassPeriod(classGroupId, periodId),
+		}),
+		listAllEntityPages(query => client.entities.classSubjects.list(query), {
+			baseQuery: classGroupScope(classGroupId),
+		}),
+		listAllEntityPages(query => client.entities.enrollments.list(query), {
+			baseQuery: activeEnrollmentsForClass(classGroupId),
+		}),
 	]);
 
-	const assessmentIds = uniqueIds((assessmentsRaw ?? []).map(assessment => assessment.id));
-	const studentIds = uniqueIds((enrollmentsRaw ?? []).map(enrollment => enrollment.studentId));
-	const subjectIds = uniqueIds((classSubjectsRaw ?? []).map(classSubject => classSubject.subjectId));
+	const assessmentIds = uniqueIds(assessmentsRaw.map(assessment => assessment.id));
+	const studentIds = uniqueIds(enrollmentsRaw.map(enrollment => enrollment.studentId));
+	const subjectIds = uniqueIds(classSubjectsRaw.map(classSubject => classSubject.subjectId));
 
 	const [
 		resultsRaw,
 		subjectsRaw,
 	] = await Promise.all([
-		assessmentIds.length > 0 && studentIds.length > 0
-			? client.entities.assessmentResults.list(assessmentResultsForScope(assessmentIds, studentIds))
-			: Promise.resolve([]),
-		subjectIds.length > 0
-			? client.entities.subjects.list(entitiesByIds(subjectIds))
-			: Promise.resolve([]),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.assessmentResults.list(query),
+			[
+				{ field: 'assessmentId', ids: assessmentIds },
+				{ field: 'studentId', ids: studentIds },
+			],
+		),
+		listAllEntityPagesByIds(query => client.entities.subjects.list(query), subjectIds),
 	]);
 
 	return {
-		assessmentsRaw: assessmentsRaw ?? [],
-		resultsRaw: resultsRaw ?? [],
-		classSubjectsRaw: classSubjectsRaw ?? [],
-		subjectsRaw: subjectsRaw ?? [],
-		enrollmentsRaw: enrollmentsRaw ?? [],
+		assessmentsRaw,
+		resultsRaw,
+		classSubjectsRaw,
+		subjectsRaw,
+		enrollmentsRaw,
 	};
 }
 

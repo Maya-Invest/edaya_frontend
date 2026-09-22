@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { FeesPageState } from '../fees-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadFeesPageData } from '$lib/api/finance-data';
@@ -17,13 +18,14 @@ export async function loadFeesSlice() {
 }
 
 export function queryFeesListPage(state: FeesPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyFeesSlice(),
-		load: async () => {
+		load: async (signal) => {
 			const data = await loadFeesSlice();
+			signal.throwIfAborted();
 			state.applySlice(data);
 			return data;
 		},
 		hasItems: listPageHasItems,
-	});
+	}, request);
 }

@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { TeachingPageSlice } from './teaching-helpers';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadClassSubjects } from '$lib/api/subjects-data';
@@ -19,9 +20,9 @@ export async function loadTeachingSlice(classId: string): Promise<TeachingPageSl
 }
 
 export function queryTeachingListPage(classId: string) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyTeachingSlice(classId),
 		load: () => loadTeachingSlice(classId),
 		hasItems: () => true,
-	});
+	}, request);
 }

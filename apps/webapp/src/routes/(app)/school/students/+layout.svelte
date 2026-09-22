@@ -8,9 +8,9 @@
 	import { t } from '$lib/i18n';
 	import { readStudentListFilters } from '$lib/list/list-url-filters';
 	import { bindUrlModal, closeUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
 	import StudentCreateModal from './components/StudentCreateModal.svelte';
 	import StudentsList from './components/StudentsList.svelte';
@@ -87,12 +87,12 @@
 
 	function selectStudent(student: Student) {
 		const path = detailHref.schoolStudent(student.id);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+		openDetailDrawer(`${path}${detailNavigationSearch($page.url)}`, currentRouteSurfaceHref($page.url));
 	}
 
 	function handleCreated(studentId: string) {
 		const path = detailHref.schoolStudent(studentId);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+		openDetailDrawer(`${path}${detailNavigationSearch($page.url)}`, currentRouteSurfaceHref($page.url));
 	}
 </script>
 

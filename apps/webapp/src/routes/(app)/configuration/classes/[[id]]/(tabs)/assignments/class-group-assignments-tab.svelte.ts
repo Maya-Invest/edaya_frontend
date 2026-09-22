@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { ClassesPageState } from '../../../classes-page.svelte';
 import { resolvePageLoad } from '$lib/queries/page-status';
 import { getContext, setContext } from 'svelte';
@@ -15,21 +16,22 @@ export class ClassGroupAssignmentsTabState {
 	}
 
 	query() {
-		return (url: URL) => resolvePageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const classGroupId = classGroupIdFromUrl(url);
 				if (!classGroupId) {
 					return {};
 				}
 
 				await this.getPage().loadDrawerData(classGroupId);
+				signal.throwIfAborted();
 				this.loadedClassGroupId = classGroupId;
 				return {};
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load class group assignments.',
-		});
+		}, request);
 	}
 }
 

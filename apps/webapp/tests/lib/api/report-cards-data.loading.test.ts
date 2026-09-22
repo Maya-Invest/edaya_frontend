@@ -1,6 +1,7 @@
 import type { ReportCardDefinition } from '$lib/types/report-cards';
 import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
+import { CATALOG_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
 import {
 	loadClassReportCardResultsData,
 	loadGradeScalesCatalogData,
@@ -10,6 +11,14 @@ import { createRecordingSchoolClient, entityListRequests } from '$tests/support/
 
 const classGroupId = 'class-6a';
 const periodId = 'period-1';
+
+function paged(body: Record<string, unknown>) {
+	return {
+		...body,
+		$limit: CATALOG_LIST_PAGE_SIZE,
+		$offset: 0,
+	};
+}
 
 function listEnvelope<T>(items: readonly T[]) {
 	return items.map(item => ({ data: item }));
@@ -43,18 +52,18 @@ describe('report-card data loading', () => {
 
 		await loadReportCardCatalogData(client, SEED_SCHOOL_ID);
 
-		expect(entityListRequests(requests, 'grade-scales')[0]?.body).toEqual({
+		expect(entityListRequests(requests, 'grade-scales')[0]?.body).toEqual(paged({
 			schoolId: SEED_SCHOOL_ID,
-		});
-		expect(entityListRequests(requests, 'definitions')[0]?.body).toEqual({
+		}));
+		expect(entityListRequests(requests, 'definitions')[0]?.body).toEqual(paged({
 			schoolId: SEED_SCHOOL_ID,
-		});
-		expect(entityListRequests(requests, 'subjects')[0]?.body).toEqual({
+		}));
+		expect(entityListRequests(requests, 'subjects')[0]?.body).toEqual(paged({
 			schoolId: SEED_SCHOOL_ID,
-		});
-		expect(entityListRequests(requests, 'sections')[0]?.body).toEqual({
+		}));
+		expect(entityListRequests(requests, 'sections')[0]?.body).toEqual(paged({
 			reportCardDefinitionId: { $in: ['definition-1'] },
-		});
+		}));
 		expect(entityListRequests(requests, 'results')).toHaveLength(0);
 	});
 
@@ -75,9 +84,9 @@ describe('report-card data loading', () => {
 		const scales = await loadGradeScalesCatalogData(client, SEED_SCHOOL_ID);
 
 		expect(scales.map(scale => scale.id)).toEqual(['scale-1']);
-		expect(entityListRequests(requests, 'grade-scales')[0]?.body).toEqual({
+		expect(entityListRequests(requests, 'grade-scales')[0]?.body).toEqual(paged({
 			schoolId: SEED_SCHOOL_ID,
-		});
+		}));
 		expect(entityListRequests(requests, 'subjects')).toHaveLength(0);
 		expect(entityListRequests(requests, 'definitions')).toHaveLength(0);
 	});
@@ -117,10 +126,10 @@ describe('report-card data loading', () => {
 		);
 
 		expect(results.map(result => result.id)).toEqual(['result-1']);
-		expect(entityListRequests(requests, 'results')[0]?.body).toEqual({
+		expect(entityListRequests(requests, 'results')[0]?.body).toEqual(paged({
 			classGroupId,
 			periodId,
-		});
-		expect(entityListRequests(requests, 'class-subjects')[0]?.body).toEqual({ classGroupId });
+		}));
+		expect(entityListRequests(requests, 'class-subjects')[0]?.body).toEqual(paged({ classGroupId }));
 	});
 });

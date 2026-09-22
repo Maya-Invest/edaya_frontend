@@ -1,4 +1,5 @@
 import type { FamilyFeedbackCampaign } from '$lib/api/family-feedback-types';
+import type { PageQueryRequest } from '../../../lib/teacher-page-status';
 import type { TeachersPageState } from '../../../teachers-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { listFamilyFeedbackCampaigns } from '$lib/api/family-feedback-data';
@@ -28,9 +29,9 @@ export class TeacherFamilyFeedbackTabState {
 	}
 
 	query() {
-		return (url: URL) => resolveTeacherPageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolveTeacherPageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const teacherId = teacherDetailIdFromUrl(url);
 				if (!teacherId) {
 					return {};
@@ -38,6 +39,7 @@ export class TeacherFamilyFeedbackTabState {
 				this.getPage();
 				const yearId = academicContext.yearId;
 				const campaigns = await listFamilyFeedbackCampaigns(getBrowserSchoolClient());
+				signal.throwIfAborted();
 				this.slice = {
 					teacherId,
 					campaigns: campaigns.filter(campaign =>
@@ -47,7 +49,7 @@ export class TeacherFamilyFeedbackTabState {
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load family feedback campaigns.',
-		});
+		}, request);
 	}
 }
 

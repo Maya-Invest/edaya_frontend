@@ -1,4 +1,5 @@
 import type { components } from '$lib/api/schema';
+import type { PageQueryRequest } from '../../../lib/staff-page-status';
 import type { StaffPageState } from '../../../staff-page.svelte';
 import { staffAssignmentsForStaff, uniqueIds } from '$lib/api/entity-list-filters';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -35,9 +36,9 @@ export class StaffAssignmentsTabState {
 	}
 
 	query() {
-		return (url: URL) => resolveStaffPageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolveStaffPageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const staffId = staffDetailIdFromUrl(url);
 				if (!staffId) {
 					return {};
@@ -54,6 +55,7 @@ export class StaffAssignmentsTabState {
 					? await client.entities.classSubjects.list({ id: { $in: classSubjectIds } })
 					: [];
 
+				signal.throwIfAborted();
 				this.slice = {
 					staffId,
 					assignments: assignments ?? [],
@@ -63,7 +65,7 @@ export class StaffAssignmentsTabState {
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load staff assignments.',
-		});
+		}, request);
 	}
 }
 

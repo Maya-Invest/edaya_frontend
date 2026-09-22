@@ -1,4 +1,5 @@
 import type { AnnouncementsPageState } from '../announcements-page.svelte';
+import type { PageQueryRequest } from './announcement-page-status';
 import { academicContext } from '$lib/academic/context.svelte';
 import { fetchAnnouncements } from '$lib/api/announcements-data';
 import { loadGuardiansPeopleData } from '$lib/api/people-data';
@@ -33,17 +34,18 @@ export async function loadAnnouncementsSlice() {
 }
 
 export function querySchoolAnnouncementsPage(state: AnnouncementsPageState) {
-	return (url: URL) => resolveAnnouncementPageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolveAnnouncementPageLoad(url, {
 		empty: () => ({}),
-		load: async () => {
+		load: async (signal) => {
 			state.hydrateFiltersFromUrl();
 			const data = await loadAnnouncementsSlice();
+			signal.throwIfAborted();
 			state.seed(data);
 			return {};
 		},
 		hasItems: listPageHasItems,
 		errorMessage: 'Unable to load announcements.',
-	});
+	}, request);
 }
 
 export async function ensureAnnouncementDrawerSelection(

@@ -48,7 +48,8 @@ export class ScopeBuilderDataState {
         teacher: '',
         color: 'mint',
         description: '',
-        category: 'Scientifique',
+        categoryId: names[subject.subjectId]?.categoryId ?? '',
+        category: subjectSources.categoryNameById?.[names[subject.subjectId]?.categoryId ?? ''] ?? 'Scientifique',
         hoursPerWeek: null,
       }));
       this.gradeSubjects = subjectSources.gradeLevelSubjectsRaw.map(subject => ({

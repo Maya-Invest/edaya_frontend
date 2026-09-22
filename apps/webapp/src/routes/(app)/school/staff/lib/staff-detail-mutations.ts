@@ -87,8 +87,8 @@ export async function createStaffOnPage(
 ): Promise<string | null> {
 	const client = getBrowserSchoolClient();
 	const email = input.email?.trim() ?? '';
-	const code = input.code?.trim() ?? '';
-	const id = code || `stf-${Date.now().toString(36)}`;
+	const code = input.code?.trim() || undefined;
+	const id = crypto.randomUUID();
 	const optimistic = buildOptimisticStaff({ id, ...input });
 
 	const payload: components['schemas']['RegisterStaffMemberCommand'] & StaffMemberProfileRolePatch = {
@@ -96,6 +96,7 @@ export async function createStaffOnPage(
 		schoolId: schoolId(),
 		firstName: input.firstName.trim(),
 		lastName: input.lastName.trim(),
+		...(code ? { code } : {}),
 		email: email || null,
 		accountKind: 'human',
 		isActive: true,

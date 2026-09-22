@@ -37,6 +37,9 @@
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
+	$effect(() => {
+		modals.hydrate();
+	});
 	afterNavigate(() => {
 		modals.hydrate();
 	});

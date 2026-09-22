@@ -1,10 +1,9 @@
 <script lang="ts">
-	import type { ResolvedPathname } from '$app/types';
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
 	import { createDrawerEntitySelection, drawerEntityLoading } from '$lib/drawer-entity-selection';
-	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
-	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import { appPath } from '$lib/navigation/app-navigation';
+	import { closeDetailDrawer, listSurfaceHref } from '$lib/navigation/route-surface-navigation';
 	import {
 		clearStudentDetailTabStates,
 		createAndRegisterStudentDetailStates,
@@ -24,11 +23,7 @@
 
 	function closeDetail() {
 		clearStudentDetailTabStates(detailTabs);
-		const next = new URL($page.url);
-		next.searchParams.delete(MODAL_QUERY_KEY);
-		next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
-		const href = `${appPath('/(app)/classes/[classId]/students/[[id]]', { classId })}${next.search}` as ResolvedPathname;
-		appGoto(href);
+		closeDetailDrawer(listSurfaceHref(appPath('/(app)/classes/[classId]/students/[[id]]', { classId }), $page.url));
 	}
 
 	$effect(() => {

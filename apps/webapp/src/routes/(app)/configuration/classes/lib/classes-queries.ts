@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { ClassesPageState } from '../classes-page.svelte';
 import type { ClassesPageSlice } from './classes-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
@@ -16,9 +17,9 @@ export async function loadClassesSlice(): Promise<ClassesPageSlice> {
 }
 
 export function queryClassesListPage(state: ClassesPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyClassesSlice(),
-		load: async () => {
+		load: async (signal) => {
 			try {
 				await state.loadStaffDirectory();
 			}
@@ -29,11 +30,12 @@ export function queryClassesListPage(state: ClassesPageState) {
 			}
 
 			const data = await loadClassesSlice();
+			signal.throwIfAborted();
 			state.applySlice(data);
 			return data;
 		},
 		hasItems: listPageHasItems,
-	});
+	}, request);
 }
 
 export async function ensureClassGroupDrawerSelection(
@@ -79,15 +81,17 @@ export async function fetchPermissionCatalogEntries() {
 }
 
 export function queryClassGroupProfile(state: ClassesPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => ({}),
-		load: async () => {
+		load: async (signal) => {
+			signal.throwIfAborted();
 			const id = classGroupIdFromUrl(url);
 			if (id)
 				await state.loadProfileTeachers(id);
+			signal.throwIfAborted();
 			return {};
 		},
 		hasItems: () => true,
 		errorMessage: 'Unable to load class teachers.',
-	});
+	}, request);
 }

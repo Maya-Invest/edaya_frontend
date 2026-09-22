@@ -25,7 +25,7 @@
 	const selectedLabel = $derived(
 		selected ? ($lang === 'en' ? selected.titles.en : selected.titles.fr) : '',
 	);
-	const canSubmit = $derived(Boolean(teacherId) && Boolean(selected));
+	const canSubmit = $derived(Boolean(teacherId) && Boolean(templateKey));
 
 	$effect(() => {
 		if (open && templates.length > 0 && !templates.some(entry => entry.templateKey === templateKey)) {
@@ -44,6 +44,7 @@
 				sourceId: teacherId,
 				teacherId,
 				successMessage: $t('documents.toastRequested'),
+				openWhenReady: false,
 			});
 			if (result) {
 				open = false;

@@ -4,8 +4,13 @@
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { t } from '$lib/i18n';
-	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import { appPath } from '$lib/navigation/app-navigation';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
+	import {
+		closeDetailDrawer,
+		currentRouteSurfaceHref,
+		openDetailDrawer,
+	} from '$lib/navigation/route-surface-navigation';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
 	import NotificationsInboxView from './components/NotificationsInboxView.svelte';
 	import {
@@ -23,11 +28,14 @@
 	const query = inboxPage.queryListPage();
 
 	function selectDelivery(delivery: { id: string }) {
-		appGoto(appPath('/(app)/account/inbox/[[id]]', { id: delivery.id }));
+		openDetailDrawer(
+			appPath('/(app)/account/inbox/[[id]]', { id: delivery.id }),
+			currentRouteSurfaceHref($page.url),
+		);
 	}
 
 	function closeDetail() {
-		appGoto(appPath('/(app)/account/inbox/[[id]]'));
+		closeDetailDrawer(appPath('/(app)/account/inbox/[[id]]'));
 	}
 </script>
 

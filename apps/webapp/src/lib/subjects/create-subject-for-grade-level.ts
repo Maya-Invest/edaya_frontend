@@ -1,5 +1,5 @@
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import type { Subject, SubjectCategory } from '$lib/types/school';
+import type { Subject } from '$lib/types/school';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -13,7 +13,7 @@ export interface CreateSubjectForGradeLevelInput {
 	name: string;
 	code?: string;
 	coefficient?: number;
-	category?: SubjectCategory;
+	categoryId: string;
 	color?: Subject['color'];
 	createdAt?: string;
 }
@@ -54,7 +54,7 @@ export async function createSubjectForGradeLevel(
 	await client.commands.configureSubject({
 		id: input.subjectId,
 		name: input.name.trim(),
-		category: input.category ?? 'Scientifique',
+		categoryId: input.categoryId,
 		color: input.color ?? 'mint',
 		...(code ? { code } : {}),
 		...(input.coefficient != null ? { defaultCoefficient: input.coefficient } : {}),

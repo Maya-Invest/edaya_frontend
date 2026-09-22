@@ -1,5 +1,5 @@
 import type { components } from '$lib/api/schema';
-import type { Subject, SubjectCategory } from '$lib/types/school';
+import type { Subject } from '$lib/types/school';
 
 type SubjectEntity = components['schemas']['Subject'];
 type SubjectConfigCommand = components['schemas']['SubjectConfigCommand'];
@@ -7,13 +7,13 @@ type SubjectConfigCommand = components['schemas']['SubjectConfigCommand'];
 /** Build a save payload that passes API OpenAPI validation (no blank code, positive coefficient). */
 export function buildSubjectSavePayload(
 	existing: SubjectEntity,
-	updates: { name: string; category: SubjectCategory; color: Subject['color'] },
+	updates: { name: string; categoryId: string; color: Subject['color'] },
 ): SubjectEntity {
 	const payload: SubjectEntity = {
 		id: existing.id,
 		schoolId: existing.schoolId,
 		name: updates.name.trim(),
-		category: updates.category,
+		categoryId: updates.categoryId,
 		color: updates.color,
 	};
 
@@ -42,7 +42,7 @@ export function buildSubjectConfigCommand(
 	updates: {
 		id: string;
 		name: string;
-		category: SubjectCategory;
+		categoryId: string;
 		color: Subject['color'];
 		createdAt?: string;
 		code?: string | null;
@@ -52,7 +52,7 @@ export function buildSubjectConfigCommand(
 	const payload: SubjectConfigCommand = {
 		id: updates.id,
 		name: updates.name.trim(),
-		category: updates.category,
+		categoryId: updates.categoryId,
 		color: updates.color,
 	};
 

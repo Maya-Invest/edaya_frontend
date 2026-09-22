@@ -2,9 +2,10 @@ import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { Deadline } from '$lib/types/school';
 import {
-	assessmentResultsForAssessments,
 	classGroupScope,
-	entitiesByIds,
+	listAllEntityPages,
+	listAllEntityPagesByIds,
+	listAllEntityPagesForIdFilters,
 	homeworkAssessmentsForClass,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
@@ -73,30 +74,33 @@ export async function fetchClassHomeworkSources(
 		homeworkAssessmentsRaw,
 		classSubjectsRaw,
 	] = await Promise.all([
-		client.entities.assessments.list(homeworkAssessmentsForClass(classGroupId, periodId)),
-		client.entities.classSubjects.list(classGroupScope(classGroupId)),
+		listAllEntityPages(query => client.entities.assessments.list(query), {
+			baseQuery: homeworkAssessmentsForClass(classGroupId, periodId),
+		}),
+		listAllEntityPages(query => client.entities.classSubjects.list(query), {
+			baseQuery: classGroupScope(classGroupId),
+		}),
 	]);
 
-	const assessmentIds = uniqueIds((homeworkAssessmentsRaw ?? []).map(assessment => assessment.id));
-	const subjectIds = uniqueIds((classSubjectsRaw ?? []).map(classSubject => classSubject.subjectId));
+	const assessmentIds = uniqueIds(homeworkAssessmentsRaw.map(assessment => assessment.id));
+	const subjectIds = uniqueIds(classSubjectsRaw.map(classSubject => classSubject.subjectId));
 
 	const [
 		assessmentResultsRaw,
 		subjectsRaw,
 	] = await Promise.all([
-		assessmentIds.length > 0
-			? client.entities.assessmentResults.list(assessmentResultsForAssessments(assessmentIds))
-			: Promise.resolve([]),
-		subjectIds.length > 0
-			? client.entities.subjects.list(entitiesByIds(subjectIds))
-			: Promise.resolve([]),
+		listAllEntityPagesForIdFilters(
+			query => client.entities.assessmentResults.list(query),
+			[{ field: 'assessmentId', ids: assessmentIds }],
+		),
+		listAllEntityPagesByIds(query => client.entities.subjects.list(query), subjectIds),
 	]);
 
 	return {
-		homeworkAssessmentsRaw: homeworkAssessmentsRaw ?? [],
-		assessmentResultsRaw: assessmentResultsRaw ?? [],
-		classSubjectsRaw: classSubjectsRaw ?? [],
-		subjectsRaw: subjectsRaw ?? [],
+		homeworkAssessmentsRaw,
+		assessmentResultsRaw,
+		classSubjectsRaw,
+		subjectsRaw,
 	};
 }
 

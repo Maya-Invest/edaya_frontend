@@ -17,9 +17,9 @@ import type {
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { Fee, Student, StudentBilling } from '$lib/types/school';
 import {
-	entitiesByIds,
-	enrollmentsForStudentsInYear,
 	listAllEntityPages,
+	listAllEntityPagesByIds,
+	listAllEntityPagesForIdFilters,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 import {
@@ -325,10 +325,15 @@ async function loadStudentsByIds(
 		return [];
 	}
 	const [studentsRaw, enrollmentsRaw] = await Promise.all([
-		safeOptionalEntityList(() => client.entities.students.list(entitiesByIds(studentIds))),
-		safeOptionalEntityList(() =>
-			client.entities.enrollments.list(enrollmentsForStudentsInYear(studentIds, academicYearId)),
-		),
+		safeOptionalEntityList(() => listAllEntityPagesByIds(
+			query => client.entities.students.list(query),
+			studentIds,
+		)),
+		safeOptionalEntityList(() => listAllEntityPagesForIdFilters(
+			query => client.entities.enrollments.list(query),
+			[{ field: 'studentId', ids: studentIds }],
+			{ extraQuery: { academicYearId, status: 'active' } },
+		)),
 	]);
 	return mapStudents(studentsRaw, enrollmentsRaw);
 }

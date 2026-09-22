@@ -1,4 +1,5 @@
 import type { DocumentIssuance, DocumentTemplateCatalogItem, DocumentTemplateKey } from '$lib/api/documents-types';
+import type { PageQueryRequest } from '../../../lib/teacher-page-status';
 import type { TeachersPageState } from '../../../teachers-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadDocumentIssuances, loadDocumentTemplates } from '$lib/api/documents-data';
@@ -42,9 +43,9 @@ export class TeacherDocumentsTabState {
 	}
 
 	query() {
-		return (url: URL) => resolveTeacherPageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolveTeacherPageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				this.documentsVersion = entityVersions.documents;
 				const teacherId = teacherDetailIdFromUrl(url);
 				const academicYearId = academicContext.yearId;
@@ -57,12 +58,13 @@ export class TeacherDocumentsTabState {
 					loadDocumentIssuances(client, { sourceId: teacherId, academicYearId }),
 					loadDocumentTemplates(client),
 				]);
+				signal.throwIfAborted();
 				this.slice = { teacherId, issuances, templates };
 				return {};
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load teacher documents.',
-		});
+		}, request);
 	}
 }
 

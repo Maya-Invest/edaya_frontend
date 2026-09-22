@@ -2,6 +2,7 @@ import type { getBrowserSchoolClient } from '$lib/api/school-client';
 
 import type { ValidatedSubjectImportRow } from './types';
 
+import { defaultSubjectCategoryId, loadSubjectCategories } from '$lib/api/subject-categories-data';
 import { t } from '$lib/i18n';
 
 import { formatImportRunErrorMessage } from '$lib/import/shared/format-import-run-error';
@@ -64,6 +65,11 @@ export async function runSubjectImport(options: SubjectImportRunOptions): Promis
 	const gradeLevelSubjectIds: string[] = [];
 
 	const createdAt = new Date().toISOString();
+	const categories = await loadSubjectCategories(client, schoolId);
+	const categoryId = defaultSubjectCategoryId(categories);
+	if (!categoryId) {
+		throw new Error('No subject category is configured');
+	}
 
 	const total = rows.length;
 
@@ -102,6 +108,8 @@ export async function runSubjectImport(options: SubjectImportRunOptions): Promis
 				code: row.abbreviation,
 
 				coefficient: row.coefficientValue,
+
+				categoryId,
 
 				createdAt,
 

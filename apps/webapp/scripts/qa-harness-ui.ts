@@ -13,7 +13,7 @@ export async function waitForPageQuery(page: Page): Promise<void> {
 	if (!visible) {
 		return;
 	}
-	await spinner.first().waitFor({ state: 'detached', timeout: 30_000 });
+	await spinner.first().waitFor({ state: 'detached', timeout: 30_000 }).catch(() => {});
 }
 
 const SPA_NAV_TIMEOUT_MS = 15_000;
@@ -326,7 +326,10 @@ export function resolveCreateButtonPatterns(action: string, endpoint: string): R
 	if (endpointLower.includes('/configuration/academic')) {
 		push(/add academic year|ajouter une année scolaire/i);
 	}
-	if (endpointLower.includes('/configuration/grade-scales')) {
+	if (endpointLower.includes('/configuration/other/subject-categories')) {
+		push(/add category|ajouter une catégorie/i);
+	}
+	if (endpointLower.includes('/configuration/other/grade-scales')) {
 		push(/add scale|ajouter un barème/i);
 	}
 	if (endpointLower.includes('/configuration/report-cards')) {
@@ -481,9 +484,139 @@ export async function trySubmitDialog(page: Page): Promise<boolean> {
 
 export async function waitForFormModal(page: Page, timeout = 12_000): Promise<boolean> {
 	const dialog = page
-		.locator('[data-testid="form-modal"], [data-testid="confirm-modal"]')
+		.locator('[data-testid="form-modal"], [data-testid="confirm-modal"], [data-testid="picker-modal"]')
 		.or(page.getByRole('dialog'));
 	return dialog.first().isVisible({ timeout }).catch(() => false);
+}
+
+export async function confirmDialog(
+	page: Page,
+	label: RegExp = /rattacher|confirmer|confirm|ajouter|^add$|^ok$/i,
+): Promise<boolean> {
+	const dialog = page.getByRole('dialog');
+	const submit = dialog.getByTestId('picker-modal').getByRole('button', { name: label })
+		.or(dialog.locator('[data-testid="confirm-modal"] button').filter({ hasText: label }))
+		.or(dialog.getByRole('button', { name: label }).last());
+	if (!(await submit.isVisible({ timeout: 8_000 }).catch(() => false))) {
+		return false;
+	}
+	if (await submit.isDisabled().catch(() => true)) {
+		await waitForEnabled(submit).catch(() => {});
+	}
+	if (await submit.isDisabled().catch(() => true)) {
+		return false;
+	}
+	await submit.click();
+	return true;
+}
+
+export async function fillLabeledInput(
+	page: Page,
+	label: RegExp,
+	value: string,
+): Promise<boolean> {
+	const dialog = page.getByRole('dialog').last();
+	const field = dialog.getByLabel(label).first();
+	if (await field.isVisible({ timeout: 1_500 }).catch(() => false)) {
+		await field.fill(value);
+		return true;
+	}
+	const labelNode = dialog.locator('label').filter({ hasText: label }).first();
+	if (!(await labelNode.isVisible({ timeout: 3_000 }).catch(() => false))) {
+		return false;
+	}
+	const wrapped = labelNode.locator('input, textarea').first();
+	if (await wrapped.isVisible().catch(() => false)) {
+		await wrapped.fill(value);
+		return true;
+	}
+	const following = labelNode.locator('xpath=following::input[1] | following::textarea[1]');
+	if (await following.isVisible().catch(() => false)) {
+		await following.fill(value);
+		return true;
+	}
+	return false;
+}
+
+export async function searchAndSelectPerson(page: Page, name: string): Promise<boolean> {
+	const dialog = page.getByRole('dialog').last();
+	const trigger = dialog.getByTestId('person-picker-trigger').first();
+	if (!(await trigger.isVisible({ timeout: 5_000 }).catch(() => false))) {
+		return false;
+	}
+	await trigger.click();
+	const anyOption = page.getByRole('option').first();
+	await anyOption.isVisible({ timeout: 8_000 }).catch(() => false);
+	const search = page.locator('[data-state="open"] input').last()
+		.or(dialog.locator('input').last());
+	if (name && await search.isVisible({ timeout: 2_000 }).catch(() => false)) {
+		await search.fill(name);
+	}
+	const named = page.getByRole('option', { name: new RegExp(name, 'i') }).first();
+	if (await named.isVisible({ timeout: 5_000 }).catch(() => false)) {
+		await named.click();
+		return true;
+	}
+	if (await search.isVisible().catch(() => false)) {
+		await search.fill('');
+	}
+	if (await anyOption.isVisible({ timeout: 3_000 }).catch(() => false)) {
+		await anyOption.click();
+		return true;
+	}
+	await page.keyboard.press('Escape').catch(() => {});
+	return false;
+}
+
+export async function fillPaymentDialog(page: Page): Promise<void> {
+	const dialog = page.getByRole('dialog');
+	const amount = dialog.getByLabel(/amount|montant/i).or(dialog.locator('input[type="number"]').first());
+	if (await amount.isVisible({ timeout: 5_000 }).catch(() => false)) {
+		const current = await amount.inputValue().catch(() => '');
+		if (!current || current === '0') {
+			await amount.fill('1000');
+		}
+	}
+	const date = dialog.getByLabel(/date|payment date|date de paiement/i).or(dialog.locator('input[type="date"]').first());
+	if (await date.isVisible().catch(() => false)) {
+		const current = await date.inputValue().catch(() => '');
+		if (!current) {
+			await date.fill(new Date().toISOString().slice(0, 10));
+		}
+	}
+	await waitForSubmitEnabled(page);
+}
+
+export async function selectNativeFilter(
+	page: Page,
+	nth: number,
+	option: { value?: string; label?: RegExp } = {},
+): Promise<boolean> {
+	const select = page.getByRole('dialog').locator('select').nth(nth)
+		.or(page.getByRole('dialog').getByTestId('list-filter-select').nth(nth));
+	if (!(await select.isVisible({ timeout: 8_000 }).catch(() => false))) {
+		return false;
+	}
+	if (option.value) {
+		await select.selectOption(option.value);
+		return true;
+	}
+	const values = await select.locator('option').evaluateAll((nodes) => (
+		nodes
+			.map(node => ({
+				value: (node as HTMLOptionElement).value,
+				label: node.textContent ?? '',
+			}))
+			.filter(entry => entry.value.length > 0)
+	));
+	const match = option.label
+		? values.find(entry => option.label?.test(entry.label))
+		: values[0];
+	if (!match) {
+		return false;
+	}
+	await select.selectOption(match.value);
+	return true;
 }
 
 /** Live input values — Svelte bind:value does not set the HTML value attribute. */
@@ -527,18 +660,64 @@ export async function openUrlModal(
 }
 
 export async function pickFirstPerson(page: Page): Promise<boolean> {
+	return searchAndSelectPerson(page, '');
+}
+
+/** Click every combobox in the open dialog and pick an option (last = newest list item). */
+export async function pickDialogComboboxes(page: Page, preferLast = false): Promise<number> {
 	const dialog = page.getByRole('dialog');
-	const trigger = dialog.locator('button').filter({ has: page.locator('svg') }).first();
-	if (!(await trigger.isVisible().catch(() => false))) {
+	const combos = dialog.getByRole('combobox');
+	const count = await combos.count();
+	let picked = 0;
+	for (let i = 0; i < count; i++) {
+		const trigger = combos.nth(i);
+		if (!(await trigger.isVisible().catch(() => false))) {
+			continue;
+		}
+		await trigger.click();
+		const options = page.getByRole('option');
+		const optionCount = await options.count();
+		if (optionCount === 0) {
+			await page.keyboard.press('Escape').catch(() => {});
+			continue;
+		}
+		await (preferLast ? options.nth(optionCount - 1) : options.first()).click();
+		picked += 1;
+	}
+	return picked;
+}
+
+/** Click one dialog select and pick a named option, else the first option. */
+export async function pickDialogComboboxOption(
+	page: Page,
+	optionName?: string | RegExp,
+	nth = 0,
+): Promise<boolean> {
+	const dialog = page.getByRole('dialog');
+	const trigger = dialog.locator('button[role="combobox"], button[aria-haspopup="listbox"]').nth(nth);
+	if (!(await trigger.isVisible({ timeout: 8_000 }).catch(() => false))) {
+		const labels = await dialog.getByRole('button').allTextContents().catch(() => []);
+		console.log(`dialog select missing; buttons: ${labels.join(' | ') || '(none)'}`);
 		return false;
 	}
 	await trigger.click();
-	const option = page.getByRole('option').first();
-	if (!(await option.isVisible({ timeout: 8_000 }).catch(() => false))) {
+	const options = page.locator('[role="option"]:visible');
+	if (!(await options.first().isVisible({ timeout: 8_000 }).catch(() => false))) {
+		const labels = await page.getByRole('option').allTextContents().catch(() => []);
+		console.log(`dialog select options: ${labels.join(' | ') || '(none)'}`);
 		await page.keyboard.press('Escape').catch(() => {});
 		return false;
 	}
-	await option.click();
+	if (optionName) {
+		const named = options.filter({
+			hasText: optionName instanceof RegExp ? optionName : new RegExp(optionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
+		}).first();
+		if (await named.isVisible({ timeout: 4_000 }).catch(() => false)) {
+			await named.click();
+			return true;
+		}
+	}
+	await options.first().click();
 	return true;
 }
 
@@ -1113,35 +1292,49 @@ export async function fillActivityCreateDialog(
 	await waitForSubmitEnabled(page);
 }
 
+export async function fillIncidentTitle(page: Page, title: string): Promise<boolean> {
+	const dialog = page.getByRole('dialog').last();
+	const titled = dialog.locator('#incident-title, [data-testid="incident-title-input"]').first();
+	if (await titled.isVisible({ timeout: 3_000 }).catch(() => false)) {
+		await titled.fill(title);
+		await titled.evaluate((element, nextTitle) => {
+			if (!(element instanceof HTMLInputElement)) {
+				return;
+			}
+			element.value = nextTitle;
+			element.dispatchEvent(new Event('input', { bubbles: true }));
+			element.dispatchEvent(new Event('change', { bubbles: true }));
+		}, title);
+		return true;
+	}
+	if (await fillLabeledInput(page, /^title$|^titre$/i, title)) {
+		return true;
+	}
+	const fallback = dialog.locator('input:not([type="date"]):not([type="search"]):not([type="time"]):not([type="number"])').first();
+	if (await fallback.isVisible().catch(() => false)) {
+		await fallback.fill(title);
+		return true;
+	}
+	return false;
+}
+
 export async function fillIncidentCreateDialog(
 	page: Page,
 	options: { title: string; description?: string; studentName?: string } = { title: 'E2E-Incident' },
 ): Promise<void> {
 	const dialog = page.getByRole('dialog');
-	if (!(await waitForSubmitEnabled(page, 2_000))) {
-		if (options.studentName) {
-			const picker = dialog.locator('button').filter({ has: page.locator('svg') }).first();
-			if (await picker.isVisible().catch(() => false)) {
-				await picker.click();
-				const search = page.locator('[role="dialog"] input, [data-state="open"] input').last();
-				await search.fill(options.studentName);
-				const option = page.getByRole('option', { name: new RegExp(options.studentName, 'i') }).first();
-				if (await option.isVisible({ timeout: 8_000 }).catch(() => false)) {
-					await option.click();
-				}
-				else {
-					await page.getByRole('option').first().click({ timeout: 5_000 }).catch(() => {});
-				}
-			}
-		}
-		else {
-			await pickFirstPerson(page);
-		}
+	if (!await fillIncidentTitle(page, options.title)) {
+		await dialog.locator('input:not([type="date"]):not([type="search"]):not([type="time"])').first().fill(options.title);
 	}
-	await dialog.locator('input:not([type="date"])').first().fill(options.title);
 	const textarea = dialog.locator('textarea').first();
 	if (await textarea.isVisible().catch(() => false)) {
 		await textarea.fill(options.description ?? 'E2E incident description');
+	}
+	if (options.studentName) {
+		await searchAndSelectPerson(page, options.studentName);
+	}
+	else if (!(await waitForSubmitEnabled(page, 2_000))) {
+		await pickFirstPerson(page);
 	}
 	await waitForSubmitEnabled(page);
 }
@@ -1243,7 +1436,7 @@ async function dismissAcademicYearModals(page: Page): Promise<void> {
 	url.searchParams.delete('modal');
 	url.searchParams.delete('modalTarget');
 	url.searchParams.delete('modalStep');
-	await navigateSpaPage(page, `${url.pathname}${url.search}${url.hash}`);
+	await navigateSpaPage(page, url.toString());
 	await waitForPageQuery(page);
 }
 
@@ -1325,7 +1518,7 @@ async function publishAcademicYearViaApiFallback(page: Page, label: string): Pro
 	current.searchParams.delete('modal');
 	current.searchParams.delete('modalTarget');
 	current.searchParams.delete('modalStep');
-	await navigateSpaPage(page, `${current.pathname}${current.search}${current.hash}`);
+	await navigateSpaPage(page, current.toString());
 	await waitForPageQuery(page);
 	return true;
 }

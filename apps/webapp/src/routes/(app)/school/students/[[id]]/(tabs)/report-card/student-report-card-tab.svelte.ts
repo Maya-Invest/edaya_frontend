@@ -1,5 +1,6 @@
 import type { GradeScale, ReportCardDefinition, ReportCardResult } from '$lib/types/report-cards';
 import type { StudentDetailHost } from '../../../lib/student-detail-host';
+import type { PageQueryRequest } from '../../../lib/student-page-status';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadClassReportCardResultsData, loadReportCardCatalogData } from '$lib/api/report-cards-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -80,18 +81,19 @@ export class StudentReportCardTabState {
 		return this.forStudent(studentId)?.gradeScales ?? [];
 	}
 
-	async loadCatalog(studentId: string) {
+	async loadCatalog(studentId: string, signal?: AbortSignal) {
 		const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
 		const catalog = schoolId
 			? await loadReportCardCatalogData(getBrowserSchoolClient(), schoolId)
 			: { gradeScales: [], definitions: [] };
+		signal?.throwIfAborted();
 		this.seed(studentId, {
 			gradeScales: catalog.gradeScales,
 			reportCardDefinitions: catalog.definitions,
 		});
 	}
 
-	async refreshResults(studentId: string) {
+	async refreshResults(studentId: string, signal?: AbortSignal) {
 		const page = this.getPage();
 		const student = page.findStudent(studentId);
 		const slice = this.forStudent(studentId);
@@ -105,15 +107,16 @@ export class StudentReportCardTabState {
 			academicContext.periodId,
 			slice.reportCardDefinitions,
 		);
+		signal?.throwIfAborted();
 		this.seed(studentId, {
 			reportCardResults: results.filter(result => result.studentId === studentId),
 		});
 	}
 
 	query() {
-		return (url: URL) => resolveStudentPageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const studentId = studentDetailIdFromPathname(url.pathname);
 				const page = this.getPage();
 				const student = studentId ? page.findStudent(studentId) : undefined;
@@ -121,12 +124,12 @@ export class StudentReportCardTabState {
 					return {};
 				}
 
-				await this.loadCatalog(studentId);
-				await this.refreshResults(studentId);
+				await this.loadCatalog(studentId, signal);
+				await this.refreshResults(studentId, signal);
 				return {};
 			},
 			hasItems: () => true,
-		});
+		}, request);
 	}
 
 	async generateReportCard(studentId: string): Promise<boolean> {

@@ -23,6 +23,7 @@
 	import { MODAL_QUERY_KEY } from '$lib/modal/modal-url';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import StudentCreateModal from '../../../../school/students/components/StudentCreateModal.svelte';
@@ -125,7 +126,7 @@
 
 	function handleCreated(studentId: string) {
 		const path = detailHref.classStudent(classId, studentId);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+		openDetailDrawer(`${path}${detailNavigationSearch($page.url)}`, currentRouteSurfaceHref($page.url));
 	}
 
 	function setView(next: ListView) {

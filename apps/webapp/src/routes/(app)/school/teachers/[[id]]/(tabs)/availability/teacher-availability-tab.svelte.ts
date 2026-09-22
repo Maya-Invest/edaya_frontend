@@ -1,4 +1,5 @@
 import type { components } from '$lib/api/schema';
+import type { PageQueryRequest } from '../../../lib/teacher-page-status';
 import type { TeachersPageState } from '../../../teachers-page.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { getContext, setContext } from 'svelte';
@@ -59,9 +60,9 @@ export class TeacherAvailabilityTabState {
 	}
 
 	query() {
-		return (url: URL) => resolveTeacherPageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolveTeacherPageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const teacherId = teacherDetailIdFromUrl(url);
 				if (!teacherId) {
 					return {};
@@ -77,13 +78,14 @@ export class TeacherAvailabilityTabState {
 						})
 					: [];
 
+				signal.throwIfAborted();
 				this.slice = { teacherId, unavailabilities: unavailabilities ?? [] };
 				page.seedTeacherUnavailabilities(teacherId, unavailabilities ?? []);
 				return {};
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load teacher availability.',
-		});
+		}, request);
 	}
 }
 

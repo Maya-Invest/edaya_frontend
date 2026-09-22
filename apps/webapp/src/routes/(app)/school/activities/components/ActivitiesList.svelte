@@ -18,6 +18,7 @@
 	import { locale, t } from '$lib/i18n';
 	import { CalendarRange, Plus, Users } from '$lib/icons';
 	import { loadCardColumnsPreference, saveCardColumnsPreference } from '$lib/list/list-card-columns-preference';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import {
 		isListCardColumns,
 		readListCardColumns,
@@ -30,6 +31,7 @@
 	import { MODAL_QUERY_KEY } from '$lib/modal/modal-url';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { cn } from '$lib/utils';
 	import { getActivitiesPageState } from '../activities-page.svelte';
 	import { cycleActivityListSort, filterActivityList } from '../lib/activity-list-filters';
@@ -169,7 +171,21 @@
 
 	function handleCreated(activityId: string) {
 		const path = detailHref.schoolActivityTab(activityId, 'classes');
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+		openDetailDrawer(`${path}${detailNavigationSearch($page.url)}`, currentRouteSurfaceHref($page.url));
+	}
+
+	function exportActivities() {
+		return exportMatchingList({
+			filename: 'activities.csv',
+			headers: ['name', 'category', 'coach', 'period', 'enrolled'],
+			loadAll: async () => filtered.map(activity => [
+				activity.name,
+				activity.category,
+				activity.coach,
+				`${fmtActivityDate(activity.startDate, $locale)} → ${fmtActivityDate(activity.endDate, $locale)}`,
+				`${activity.enrollments.length}/${activity.capacity}`,
+			]),
+		});
 	}
 </script>
 
@@ -214,7 +230,7 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu {view} onViewChange={setView} exportLabel={$t('list.export')} />
+			<ListMoreMenu {view} onViewChange={setView} exportLabel={$t('list.export')} onExport={() => void exportActivities()} />
 		{/snippet}
 	</ListPageHeader>
 

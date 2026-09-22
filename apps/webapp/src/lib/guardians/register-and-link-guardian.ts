@@ -30,6 +30,7 @@ export interface RegisterGuardianInput {
 	guardianId: string;
 	firstName: string;
 	lastName: string;
+	code?: string;
 	email?: string;
 	phone?: string;
 	sendAccountInvitation?: boolean;
@@ -53,11 +54,13 @@ export async function registerGuardian(
 	const email = input.email?.trim() ?? '';
 	const phone = input.phone?.trim() ?? '';
 
+	const code = input.code?.trim() || undefined;
 	await client.commands.registerGuardian({
 		id: input.guardianId,
 		schoolId: input.schoolId,
 		firstName: input.firstName.trim(),
 		lastName: input.lastName.trim(),
+		...(code ? { code } : {}),
 		email: email || null,
 		phone: phone || null,
 		contactMethods: buildContactMethods(email, phone),

@@ -1,4 +1,5 @@
 import type { components } from '$lib/api/schema';
+import type { PageQueryRequest } from '../../../lib/teacher-page-status';
 import type { TeachersPageState } from '../../../teachers-page.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import {
@@ -34,9 +35,9 @@ export class TeacherTimetableTabState {
 	}
 
 	query() {
-		return (url: URL) => resolveTeacherPageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolveTeacherPageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const teacherId = teacherDetailIdFromUrl(url);
 				if (!teacherId) {
 					return {};
@@ -50,6 +51,7 @@ export class TeacherTimetableTabState {
 					startDate: range.start,
 					endDate: range.end,
 				});
+				signal.throwIfAborted();
 				this.slice = {
 					teacherId,
 					week,
@@ -59,7 +61,7 @@ export class TeacherTimetableTabState {
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load teacher timetable.',
-		});
+		}, request);
 	}
 }
 

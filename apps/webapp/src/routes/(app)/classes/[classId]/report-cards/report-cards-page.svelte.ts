@@ -35,9 +35,6 @@ export class ReportCardsPageState {
 	}
 
 	seed(classId: string, data: Partial<Omit<ReportCardsPageSlice, 'classId'>>) {
-		if (this.slice?.classId === classId) {
-			return;
-		}
 		this.applySlice(classId, data);
 	}
 
@@ -249,8 +246,8 @@ export class ReportCardsPageState {
 		resultId: string;
 		successMessage?: string;
 	}): Promise<boolean> {
-		const periodId = academicContext.periodId;
 		const existing = this.slice?.results.find(result => result.id === input.resultId);
+		const periodId = existing?.academicPeriodId || academicContext.periodId;
 		if (!periodId || !existing || !this.slice) {
 			return false;
 		}

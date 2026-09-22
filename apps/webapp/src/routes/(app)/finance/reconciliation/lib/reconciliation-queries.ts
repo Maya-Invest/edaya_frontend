@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { ReconciliationPageState } from '../reconciliation-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadFinanceReconciliation } from '$lib/api/finance-data';
@@ -20,13 +21,14 @@ export async function loadReconciliationSlice() {
 }
 
 export function queryReconciliationPage(state: ReconciliationPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyReconciliationSlice(),
-		load: async () => {
+		load: async (signal) => {
 			const data = await loadReconciliationSlice();
+			signal.throwIfAborted();
 			state.applySlice(data);
 			return data;
 		},
 		hasItems: () => true,
-	});
+	}, request);
 }

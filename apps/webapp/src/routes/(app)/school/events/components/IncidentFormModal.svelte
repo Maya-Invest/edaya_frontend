@@ -46,7 +46,11 @@
 	let date = $state('');
 
 	const isEdit = $derived(incident !== undefined);
-	const schoolId = $derived(academicContext.schools[0]?.id ?? '');
+	const schoolId = $derived(
+		academicContext.schoolScopeId
+		|| academicContext.schools[0]?.id
+		|| '',
+	);
 
 	const selectedStudent = $derived(eventsPage.students.find(entry => entry.id === studentId));
 	const kindLabel = $derived($t(`events.kind.${kind}`));
@@ -165,10 +169,13 @@
 		</div>
 	{/if}
 	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+		<Label
+			for="incident-title"
+			class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+		>
 			{$t('events.titleField')}
 		</Label>
-		<Input bind:value={incidentTitle} />
+		<Input id="incident-title" data-testid="incident-title-input" bind:value={incidentTitle} />
 	</div>
 	<div class="grid gap-3 sm:grid-cols-2">
 		<div class="space-y-1.5">

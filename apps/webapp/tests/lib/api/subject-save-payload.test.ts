@@ -10,17 +10,17 @@ describe('buildSubjectSavePayload', () => {
 				name: 'GOLF',
 				code: '',
 				defaultCoefficient: 0,
-				category: 'Scientifique',
+				categoryId: 'school-1:subject-category:scientifique',
 				color: 'mint',
 			},
-			{ name: 'GOLF', category: 'Scientifique', color: 'warm' },
+			{ name: 'GOLF', categoryId: 'school-1:subject-category:scientifique', color: 'warm' },
 		);
 
 		expect(payload).toEqual({
 			id: 'subj-golf',
 			schoolId: 'school-1',
 			name: 'GOLF',
-			category: 'Scientifique',
+			categoryId: 'school-1:subject-category:scientifique',
 			color: 'warm',
 		});
 	});
@@ -33,11 +33,11 @@ describe('buildSubjectSavePayload', () => {
 				name: 'Mathematics',
 				code: 'MATH',
 				defaultCoefficient: 3,
-				category: 'Scientifique',
+				categoryId: 'school-1:subject-category:scientifique',
 				color: 'mint',
 				createdAt: '2024-01-01T00:00:00.000Z',
 			},
-			{ name: 'Maths', category: 'Scientifique', color: 'sky' },
+			{ name: 'Maths', categoryId: 'school-1:subject-category:scientifique', color: 'sky' },
 		);
 
 		expect(payload).toMatchObject({

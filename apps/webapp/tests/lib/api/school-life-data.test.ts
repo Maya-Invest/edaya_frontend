@@ -191,6 +191,7 @@ describe('school-life incident mapping', () => {
 			involvedCount: 1,
 			category: 'Tardiness',
 			severity: 'low',
+			summary: 'Repeated tardiness',
 		});
 		expect(incidents.find(entry => entry.id === 'i2')).toMatchObject({
 			studentId: 's2',
@@ -201,6 +202,19 @@ describe('school-life incident mapping', () => {
 			studentId: 's3',
 			category: 'Conflict',
 			severity: 'medium',
+		});
+	});
+
+	it('keeps incidents visible when involvements have not loaded yet', () => {
+		const incidents = mapIncidents([seedIncidents[0]], []);
+
+		expect(incidents).toHaveLength(1);
+		expect(incidents[0]).toMatchObject({
+			id: 'i1',
+			studentId: '',
+			involvedStudentIds: [],
+			involvedCount: 0,
+			summary: 'Repeated tardiness',
 		});
 	});
 });

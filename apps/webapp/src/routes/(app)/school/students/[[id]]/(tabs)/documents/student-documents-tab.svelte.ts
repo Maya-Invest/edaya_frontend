@@ -6,6 +6,7 @@ import type {
 } from '$lib/api/documents-types';
 import type { StudentEnrollmentHistoryItem } from '$lib/types/school';
 import type { StudentDetailHost } from '../../../lib/student-detail-host';
+import type { PageQueryRequest } from '../../../lib/student-page-status';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadDocumentIssuances, loadDocumentTemplates, studentYearAccountSourceId } from '$lib/api/documents-data';
 import { CONVOCATION_TEMPLATE, STUDENT_GENERATE_TEMPLATE_KEYS } from '$lib/api/documents-types';
@@ -124,9 +125,9 @@ export class StudentDocumentsTabState {
 	}
 
 	query() {
-		return (url: URL) => resolveStudentPageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				this.documentsVersion = entityVersions.documents;
 				const studentId = studentDetailIdFromPathname(url.pathname);
 				const academicYearId = academicContext.yearId;
@@ -140,6 +141,7 @@ export class StudentDocumentsTabState {
 					loadStudentEnrollmentHistory(client, studentId),
 					loadStudentFinanceSummary(client, { studentId, academicYearId }),
 				]);
+				signal.throwIfAborted();
 				this.seed(studentId, {
 					issuances,
 					templates,
@@ -149,7 +151,7 @@ export class StudentDocumentsTabState {
 				return {};
 			},
 			hasItems: () => true,
-		});
+		}, request);
 	}
 }
 

@@ -17,13 +17,13 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { Mail, Pencil, Phone, Plus, Trash2 } from '$lib/icons';
-	import { downloadCsv } from '$lib/list/list-csv-export';
+	import { downloadCsv, exportMatchingList, loadMatchingCollection } from '$lib/list/list-csv-export';
 	import { ListSelectionState } from '$lib/list/list-selection-state.svelte';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appendModal } from '$lib/modal/modal-url';
-	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import {
@@ -128,6 +128,31 @@
 		toast.success($t('list.exportedCount', { n: selectedTeachers.length }));
 	}
 
+	function exportMatching() {
+		return exportMatchingList({
+			filename: 'teachers.csv',
+			headers: ['name', 'email', 'assignments', 'status'],
+			loadAll: async () => {
+				const teachers = await loadMatchingCollection({
+					isComplete: () => teachersPage.fullRosterTeachers.length >= teachersPage.totalTeachers
+						|| teachersPage.teachers.length >= teachersPage.totalTeachers,
+					ensureComplete: () => teachersPage.loadFullRoster(),
+					current: () => teachersPage.filterVisible(
+						teachersPage.fullRosterTeachers.length > 0
+							? teachersPage.fullRosterTeachers
+							: teachersPage.teachers,
+					),
+				});
+				return teachers.map(teacher => [
+					teacher.name,
+					teacher.email,
+					teachersPage.assignmentCount(teacher.id) ?? '',
+					teacher.isActive ? 'active' : 'inactive',
+				]);
+			},
+		});
+	}
+
 	function teacherHref(teacher: Teacher, modal: 'edit-profile' | 'delete' | undefined) {
 		const href = `${detailHref.schoolTeacherTab(teacher.id)}${detailNavigationSearch($page.url)}`;
 		return modal ? appendModal(href, modal) : href;
@@ -135,7 +160,7 @@
 
 	function openTeacherAction(event: MouseEvent, teacher: Teacher, modal: 'edit-profile' | 'delete' | undefined) {
 		event.stopPropagation();
-		appGoto(teacherHref(teacher, modal));
+		openDetailDrawer(teacherHref(teacher, modal), currentRouteSurfaceHref($page.url));
 	}
 </script>
 
@@ -183,6 +208,7 @@
 			<ListMoreMenu
 				exportOnly
 				onEnterSelectMode={selection.selectionMode ? undefined : () => selection.enterSelectionMode()}
+				onExport={() => void exportMatching()}
 			/>
 		{/snippet}
 	</ListPageHeader>

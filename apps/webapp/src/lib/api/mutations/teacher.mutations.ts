@@ -25,10 +25,10 @@ export async function createTeacherMutation(input: {
 	successMessage?: string;
 }): Promise<string | null> {
 	const client = getBrowserSchoolClient();
-	const id = `tch-${Date.now().toString(36)}`;
+	const id = crypto.randomUUID();
 	const email = input.email?.trim() ?? '';
 
-	const result = await runMutation(() => client.entities.teachers.save({
+	const result = await runMutation(() => client.commands.registerTeacher({
 		id,
 		schoolId: schoolId(),
 		firstName: input.firstName.trim(),

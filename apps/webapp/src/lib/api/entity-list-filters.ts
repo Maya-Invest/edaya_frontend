@@ -31,7 +31,7 @@ export function paginatedList(
  * Prefer this for school-wide catalogs that exceed `DEFAULT_LIST_PAGE_SIZE`.
  */
 export async function listAllEntityPages<T>(
-	fetchPage: (query: EntityQuery) => Promise<T[] | null | undefined>,
+	fetchPage: (query: EntityQuery) => Promise<readonly T[] | null | undefined>,
 	options?: {
 		baseQuery?: EntityQuery;
 		pageSize?: number;
@@ -55,6 +55,70 @@ export async function listAllEntityPages<T>(
 	}
 
 	return all;
+}
+
+/** Alias used by catalog and export loaders that must not stop at the first page. */
+export const listCompleteCollection = listAllEntityPages;
+
+export function chunkIds(ids: readonly string[], size = DEFAULT_LIST_PAGE_SIZE): string[][] {
+	const unique = uniqueIds(ids);
+	const chunks: string[][] = [];
+	for (let index = 0; index < unique.length; index += size) {
+		chunks.push(unique.slice(index, index + size));
+	}
+	return chunks;
+}
+
+export async function listAllEntityPagesForIdFilters<T>(
+	fetchPage: (query: EntityQuery) => Promise<readonly T[] | null | undefined>,
+	filters: ReadonlyArray<{ field: string; ids: readonly string[] }>,
+	options?: {
+		extraQuery?: EntityQuery;
+		pageSize?: number;
+		batchSize?: number;
+	},
+): Promise<T[]> {
+	if (filters.some(filter => uniqueIds(filter.ids).length === 0)) {
+		return [];
+	}
+
+	const batchSize = options?.batchSize ?? DEFAULT_LIST_PAGE_SIZE;
+	const batched = filters.map(filter => ({
+		field: filter.field,
+		batches: chunkIds(filter.ids, batchSize),
+	}));
+
+	let combos: EntityQuery[] = [{}];
+	for (const entry of batched) {
+		const next: EntityQuery[] = [];
+		for (const combo of combos) {
+			for (const batch of entry.batches) {
+				next.push({
+					...combo,
+					[entry.field]: { $in: batch },
+				});
+			}
+		}
+		combos = next;
+	}
+
+	const pages = await Promise.all(combos.map(combo => listAllEntityPages(fetchPage, {
+		baseQuery: { ...options?.extraQuery, ...combo },
+		pageSize: options?.pageSize,
+	})));
+	return pages.flat();
+}
+
+export function listAllEntityPagesByIds<T>(
+	fetchPage: (query: EntityQuery) => Promise<readonly T[] | null | undefined>,
+	ids: readonly string[],
+	options?: {
+		extraQuery?: EntityQuery;
+		pageSize?: number;
+		batchSize?: number;
+	},
+): Promise<T[]> {
+	return listAllEntityPagesForIdFilters(fetchPage, [{ field: 'id', ids }], options);
 }
 
 export const ENROLLMENT_LIST_ORDER: EntityQuery['$orderBy'] = [
@@ -105,7 +169,7 @@ export function schoolSubjectsCatalogList(schoolId: string): EntityQuery {
 }
 
 export function uniqueIds(ids: readonly string[]): string[] {
-	return [...new Set(ids)];
+	return [...new Set(ids.filter((id): id is string => typeof id === 'string' && id.length > 0))];
 }
 
 export function dedupeById<T extends { id: string }>(items: readonly T[]): T[] {

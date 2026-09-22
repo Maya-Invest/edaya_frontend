@@ -1,5 +1,6 @@
 import type { PlanningEventKind } from '$lib/types/school';
 import type { SessionAttendanceRow, SessionAttendanceStatus } from '$lib/types/session-detail';
+import type { PageQueryRequest } from '../../../lib/timetable-page-status';
 import type { TimetablePageState } from '../../../timetable-page.svelte';
 import { findPlanningEventById } from '$lib/api/planning-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -66,9 +67,9 @@ export class SessionAttendanceTabState {
 	}
 
 	query() {
-		return (url: URL) => resolveTimetablePageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolveTimetablePageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const sessionId = sessionDetailIdFromUrl(url);
 				const classId = timetableClassIdFromUrl(url);
 				if (!sessionId || !classId) {
@@ -87,13 +88,14 @@ export class SessionAttendanceTabState {
 					{ id: session.id, kind: session.kind },
 				);
 				if (detail) {
+					signal.throwIfAborted();
 					this.seed(sessionId, detail.attendance);
 				}
 				return {};
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load session attendance.',
-		});
+		}, request);
 	}
 
 	async recordStudentAttendance(input: {

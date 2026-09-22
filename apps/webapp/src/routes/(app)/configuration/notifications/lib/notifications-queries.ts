@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { NotificationsPageState } from '../notifications-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { fetchSchoolNotificationTemplates } from '$lib/api/notification-templates-data';
@@ -29,14 +30,15 @@ export async function loadNotificationsSlice() {
 }
 
 export function queryNotificationsListPage(state: NotificationsPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyNotificationsSlice(),
-		load: async () => {
+		load: async (signal) => {
 			const data = await loadNotificationsSlice();
+			signal.throwIfAborted();
 			state.applySlice(data);
 			return data;
 		},
 		hasItems: data => Boolean(data.document),
 		errorMessage: 'Unable to load notification templates.',
-	});
+	}, request);
 }

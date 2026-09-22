@@ -35,6 +35,9 @@
 		],
 		getUrl: () => $page.url,
 	});
+	$effect(() => {
+		modals.hydrate();
+	});
 	afterNavigate(() => {
 		modals.hydrate();
 		validateModal();
@@ -170,9 +173,7 @@
 	{/each}
 </div>
 
-{#if addOpen.open}
-	<TeacherUnavailabilityFormModal bind:open={addOpen.open} {teacher} onSaved={syncRows} />
-{/if}
+<TeacherUnavailabilityFormModal bind:open={addOpen.open} {teacher} onSaved={syncRows} />
 {#if editOpen.open && editing}
 	<TeacherUnavailabilityFormModal bind:open={editOpen.open} {teacher} rule={editing} onSaved={syncRows} />
 {/if}

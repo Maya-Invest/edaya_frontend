@@ -11,8 +11,9 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { ChevronRight, Plus } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { appGoto } from '$lib/navigation/app-navigation';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { cn } from '$lib/utils';
 	import { getReportCardsPageState } from '../report-cards-page.svelte';
 	import ReportCardDefinitionFormModal from './ReportCardDefinitionFormModal.svelte';
@@ -90,7 +91,7 @@
 	const createOpen = bindUrlModal(modals, 'create');
 
 	function handleCreated(definitionId: string) {
-		appGoto(detailHref.configReportCard(definitionId));
+		openDetailDrawer(detailHref.configReportCard(definitionId), currentRouteSurfaceHref($page.url));
 	}
 </script>
 
@@ -129,7 +130,23 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'report-card-definitions.csv',
+					headers: ['name', 'status', 'gradeLevel', 'gradeScale'],
+					loadAll: async () => filteredDefinitions.map((def) => {
+						const level = academicContext.gradeLevelById(def.gradeLevelId);
+						const scale = reportCardsPage.scales.find(entry => entry.id === def.gradeScaleId);
+						return [
+							def.name,
+							def.status,
+							level?.name ?? '',
+							scale?.name ?? '',
+						];
+					}),
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 

@@ -38,13 +38,13 @@ export async function runStaffImport(options: StaffImportRunOptions): Promise<St
 
 	for (const [index, row] of rows.entries()) {
 		onProgress?.(index, total);
-		// API has no separate person `code`; import code is persisted as the entity id.
-		const staffId = row.code;
+		const staffId = crypto.randomUUID();
 
 		try {
 			await registerStaffMember(client, {
 				schoolId,
 				staffId,
+				code: row.code,
 				firstName: row.prenom,
 				lastName: row.nom,
 				email: row.email,

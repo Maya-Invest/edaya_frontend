@@ -121,7 +121,8 @@ Variant layouts still use the same shell (sidebar + header). Only the body layou
 |---------|-------------------|--------------|
 | **Dashboard** | `/dashboard` | No entity list toolbar; KPI cards + action queue |
 | **Calendar / timetable grid** | `/school/calendar`, `/classes/{classId}/timetable` | Grid-specific controls; search/main-filter optional |
-| **Accordion config** | `/configuration/academic` | Year accordion; CRUD via modals per row |
+| **Accordion config** | `/configuration/academic` | Year accordion; year and term CRUD via modals. Weekly period grid is `/configuration/period-grid` |
+| **Split catalog** | `/configuration/other` | Left list picks a simple catalog; the table is on the right |
 
 All variants still use shell chrome, permissions, toasts, and mutation modals where applicable.
 

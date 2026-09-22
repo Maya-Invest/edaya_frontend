@@ -1,4 +1,5 @@
 import type { GuardianNotificationSettings, StaffNotificationSettings } from '$lib/api/account-data';
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import {
 	fetchGuardianNotificationSettings,
 	fetchStaffSubjectId,
@@ -18,7 +19,7 @@ export interface NotificationSettingsPageData {
 }
 
 export function queryNotificationSettingsPage() {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: (): NotificationSettingsPageData => ({
 			settings: null,
 			staffSettings: null,
@@ -56,5 +57,5 @@ export function queryNotificationSettingsPage() {
 		},
 		hasItems: data => Boolean(data.settings) || Boolean(data.staffSettings),
 		errorMessage: 'Unable to load notification settings.',
-	});
+	}, request);
 }

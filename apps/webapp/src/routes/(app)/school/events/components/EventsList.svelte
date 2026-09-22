@@ -12,8 +12,9 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { locale, t } from '$lib/i18n';
 	import { AlertTriangle, Plus } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { appGoto } from '$lib/navigation/app-navigation';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { cn } from '$lib/utils';
 	import { getEventsPageState } from '../events-page.svelte';
 	import IncidentFormModal from './IncidentFormModal.svelte';
@@ -61,7 +62,10 @@
 			const sIds = new Set(
 				students.filter(s => s.classId === effectiveClassId).map(s => s.id),
 			);
-			filtered = filtered.filter(i => i.involvedStudentIds.some(id => sIds.has(id)));
+			filtered = filtered.filter(i =>
+				i.involvedStudentIds.length === 0
+				|| i.involvedStudentIds.some(id => sIds.has(id)),
+			);
 		}
 
 		if (filters.q.trim()) {
@@ -139,7 +143,7 @@
 	}
 
 	function handleCreated(incidentId: string) {
-		appGoto(detailHref.schoolIncident(incidentId));
+		openDetailDrawer(detailHref.schoolIncident(incidentId), currentRouteSurfaceHref($page.url));
 	}
 </script>
 
@@ -209,7 +213,20 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'incidents.csv',
+					headers: ['date', 'student', 'category', 'severity', 'summary'],
+					loadAll: async () => list.map(incident => [
+						incident.date,
+						studentSummary(incident),
+						incident.category,
+						incident.severity,
+						incident.summary,
+					]),
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 

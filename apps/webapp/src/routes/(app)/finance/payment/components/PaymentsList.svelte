@@ -15,11 +15,13 @@
 	import { formatMinorUnits } from '$lib/finance/money';
 	import { locale, t } from '$lib/i18n';
 	import { Check, Clock, RotateCcw, Wallet } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readPaymentListFilters, writePaymentListFilters } from '$lib/list/list-url-filters';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import FinanceSubnav from '../../components/FinanceSubnav.svelte';
+	import { collectedTotalsByCurrency, formatPaymentCivilDate } from '../lib/payment-helpers';
 	import { getPaymentPageState } from '../payment-page.svelte';
 	import RefundAvailableBalanceFormModal from './RefundAvailableBalanceFormModal.svelte';
 	import ReversePaymentFormModal from './ReversePaymentFormModal.svelte';
@@ -29,9 +31,7 @@
 	const payments = $derived(paymentPage.payments);
 	const accounts = $derived(paymentPage.accounts);
 	const classes = $derived(academicContext.classes);
-	const displayCurrency = $derived(
-		payments[0]?.currency || accounts[0]?.currency || 'XOF',
-	);
+	const fallbackCurrency = $derived(accounts[0]?.currency || 'XOF');
 
 	const initialFilters = $derived(readPaymentListFilters($page.url));
 
@@ -67,11 +67,7 @@
 		}),
 	);
 
-	const collected = $derived(
-		list
-			.filter(payment => payment.status === 'recorded' && payment.kind === 'receipt')
-			.reduce((sum, payment) => sum + payment.amount, 0),
-	);
+	const collectedByCurrency = $derived(collectedTotalsByCurrency(list));
 
 	const statusKeys = ['all', 'recorded', 'reversed'] as const;
 
@@ -164,7 +160,25 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'payments.csv',
+					headers: ['date', 'student', 'kind', 'method', 'amount', 'currency', 'status'],
+					loadAll: async () => list.map((payment) => {
+						const student = students.find(entry => entry.id === payment.studentId);
+						return [
+							payment.paymentDate,
+							student?.name ?? '',
+							payment.kind,
+							payment.method,
+							payment.amount,
+							payment.currency,
+							payment.status,
+						];
+					}),
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 
@@ -173,9 +187,19 @@
 			<p class="text-[11px] uppercase tracking-wider text-muted-foreground">
 				{$t('finance.collectedFiltered')}
 			</p>
-			<p class="mt-1 font-sans text-2xl font-semibold tabular-nums">
-				{formatMinorUnits(collected, displayCurrency, $locale)}
-			</p>
+			<div class="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+				{#if collectedByCurrency.length === 0}
+					<p class="font-sans text-2xl font-semibold tabular-nums">
+						{formatMinorUnits(0, fallbackCurrency, $locale)}
+					</p>
+				{:else}
+					{#each collectedByCurrency as total (total.currency)}
+						<p class="font-sans text-2xl font-semibold tabular-nums">
+							{formatMinorUnits(total.amount, total.currency, $locale)}
+						</p>
+					{/each}
+				{/if}
+			</div>
 		</div>
 	</div>
 
@@ -194,11 +218,7 @@
 				{@const student = students.find(entry => entry.id === payment.studentId)}
 				<li class="grid grid-cols-12 items-center gap-4 border-b border-border px-5 py-3 last:border-b-0">
 					<div class="col-span-2 font-sans tabular-nums text-xs text-muted-foreground">
-						{new Date(payment.paymentDate).toLocaleDateString($locale, {
-							day: 'numeric',
-							month: 'short',
-							year: '2-digit',
-						})}
+						{formatPaymentCivilDate(payment.paymentDate, $locale)}
 					</div>
 					<div class="col-span-4 text-sm font-medium">{student?.name ?? '—'}</div>
 					<div class="col-span-2 min-w-0">

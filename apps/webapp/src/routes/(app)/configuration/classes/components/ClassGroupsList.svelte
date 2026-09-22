@@ -12,6 +12,7 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
 	import { Layers, Plus } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { cn } from '$lib/utils';
 	import { getClassesPageState } from '../classes-page.svelte';
@@ -111,7 +112,22 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'class-groups.csv',
+					headers: ['name', 'gradeLevel', 'studentCount', 'attendanceMode'],
+					loadAll: async () => filteredHierarchy.flatMap(group => group.classes.map((cls) => {
+						const level = academicContext.gradeLevelById(cls.gradeLevelId);
+						return [
+							cls.name,
+							level?.name ?? '',
+							cls.studentCount,
+							cls.attendanceMode,
+						];
+					})),
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 

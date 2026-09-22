@@ -31,23 +31,28 @@
 	const isHomework = $derived(evaluation.kind === 'homework');
 	const classStudents = $derived(gradingTab.studentsFor(classId));
 	const gradeEntryStudent = $derived(
-		modals.target ? classStudents.find(student => student.id === modals.target) : undefined,
+		(modals.target ? classStudents.find(student => student.id === modals.target) : undefined)
+		?? classStudents[0],
+	);
+	const gradeEntryScore = $derived(
+		gradeEntryStudent ? evaluationsPage.scoreFor(evaluation.id, gradeEntryStudent.id) : null,
 	);
 	$effect(() => {
 		if (!modals.ready || modals.active !== 'grade-entry') {
 			return;
 		}
-		if (!modals.target) {
-			modals.close();
+		if (gradingTab.slice == null) {
 			return;
 		}
-		if (gradingTab.slice?.classId === classId && !gradeEntryStudent) {
-			modals.close();
+		if (!modals.target) {
+			return;
+		}
+		if (gradingTab.slice.classId === classId && !classStudents.some(student => student.id === modals.target)) {
+			if (classStudents[0]) {
+				modals.open('grade-entry', { target: classStudents[0].id });
+			}
 		}
 	});
-	const gradeEntryScore = $derived(
-		gradeEntryStudent ? evaluationsPage.scoreFor(evaluation.id, gradeEntryStudent.id) : null,
-	);
 	const submissionsByStudent = $derived.by(() => {
 		const submissions: Record<string, Evaluation['submissions'][number] | undefined> = {};
 		for (const submission of evaluation.submissions ?? []) {

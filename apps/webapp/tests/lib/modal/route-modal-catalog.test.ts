@@ -14,7 +14,6 @@ const STUDENT_DETAIL_MODALS = [
 	'edit-note',
 	'add-absence',
 	'add-incident',
-	'add-grade',
 ] as const;
 
 const routeCases = [
@@ -123,12 +122,18 @@ const routeCases = [
 		'/configuration/academic',
 		[
 			'create',
-			'period-def',
-			'period-def-wizard',
-			'delete-period-def',
 			'archive-year',
 			'publish-year',
 			'publish-period',
+		],
+	],
+	[
+		'configuration-period-grid',
+		'/configuration/period-grid',
+		[
+			'period-def',
+			'period-def-wizard',
+			'delete-period-def',
 		],
 	],
 	['configuration-grade-levels-list', '/configuration/grade-levels', ['create']],
@@ -165,14 +170,15 @@ const routeCases = [
 		'/configuration/report-cards/report-card-1',
 		['create', 'delete'],
 	],
-	['configuration-grade-scales', '/configuration/grade-scales', ['create', 'edit', 'delete']],
+	['configuration-grade-scales', '/configuration/other/grade-scales', ['create', 'edit', 'delete']],
 	['configuration-notifications-list', '/configuration/notifications', ['reset-all']],
 	[
 		'configuration-notifications-detail',
 		'/configuration/notifications/report_card.published',
 		['edit', 'reset-key', 'reset-all'],
 	],
-	['configuration-discipline', '/configuration/discipline', ['create', 'edit', 'delete']],
+	['configuration-discipline', '/configuration/other/discipline', ['create', 'edit', 'delete']],
+	['configuration-subject-categories', '/configuration/other/subject-categories', ['create', 'edit', 'delete']],
 	['configuration-permission-profiles', '/configuration/permission-profiles', ['create', 'edit', 'delete']],
 	[
 		'configuration-tools',
@@ -218,6 +224,11 @@ describe('route modal catalog', () => {
 		]) {
 			expect(isKnownModalForPathname(pathname, 'account-profile')).toBeTrue();
 		}
+	});
+
+	it('does not expose a student grades editor modal', () => {
+		expect(isKnownModalForPathname('/school/students/student-1/grades', 'add-grade')).toBeFalse();
+		expect(isKnownModalForPathname('/classes/class-1/students/student-1/grades', 'add-grade')).toBeFalse();
 	});
 
 	it('does not expose route-local names to sibling routes', () => {

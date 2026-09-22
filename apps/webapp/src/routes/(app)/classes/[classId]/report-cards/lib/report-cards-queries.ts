@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { ReportCardsPageState } from '../report-cards-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadClassPeopleData } from '$lib/api/people-data';
@@ -50,13 +51,14 @@ export async function loadReportCardsSlice(classId: string) {
 }
 
 export function queryReportCardsListPage(classId: string, state: ReportCardsPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyReportCardsSlice(classId),
-		load: async () => {
+		load: async (signal) => {
 			const data = await loadReportCardsSlice(classId);
+			signal.throwIfAborted();
 			state.applySlice(classId, data);
 			return data;
 		},
 		hasItems: listPageHasItems,
-	});
+	}, request);
 }

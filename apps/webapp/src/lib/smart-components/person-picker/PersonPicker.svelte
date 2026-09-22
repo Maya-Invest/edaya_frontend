@@ -64,6 +64,7 @@
 				{...props}
 				type="button"
 				{disabled}
+				data-testid="person-picker-trigger"
 				class={cn(
 					'control-focus flex h-10 w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-left text-sm transition disabled:cursor-not-allowed disabled:opacity-50',
 					className,

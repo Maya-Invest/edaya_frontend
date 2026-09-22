@@ -1,7 +1,7 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { Announcement, AnnouncementPriority, AnnouncementStatus, AnnouncementTarget } from '$lib/types/school';
-import { recordsForFieldIds } from '$lib/api/entity-list-filters';
+import { listAllEntityPages, listAllEntityPagesForIdFilters } from '$lib/api/entity-list-filters';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 type AnnouncementRaw = components['schemas']['Announcement'];
@@ -36,11 +36,15 @@ export async function fetchAnnouncementSources(
 	client: SchoolClient,
 	schoolId: string,
 ): Promise<AnnouncementSources> {
-	const announcementsRaw = (await client.entities.announcements.list({ schoolId })) ?? [];
+	const announcementsRaw = await listAllEntityPages(
+		query => client.entities.announcements.list(query),
+		{ baseQuery: { schoolId } },
+	);
 	const announcementIds = announcementsRaw.map(announcement => announcement.id);
-	const announcementTargetsRaw = announcementIds.length > 0
-		? (await client.entities.announcementTargets.list(recordsForFieldIds('announcementId', announcementIds))) ?? []
-		: [];
+	const announcementTargetsRaw = await listAllEntityPagesForIdFilters(
+		query => client.entities.announcementTargets.list(query),
+		[{ field: 'announcementId', ids: announcementIds }],
+	);
 
 	return {
 		announcementsRaw,

@@ -1,7 +1,7 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { TimetableSchedule, TimetableScheduleDay } from '$lib/types/school';
-import { classGroupScope, entitiesByIds } from '$lib/api/entity-list-filters';
+import { classGroupScope, listAllEntityPages, listAllEntityPagesByIds } from '$lib/api/entity-list-filters';
 import { SCHEDULE_DAY_TO_PLANNING } from '$lib/components/school/scheduling/planning-calendar';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
@@ -80,30 +80,30 @@ export function mapTimetableSchedules(
 
 export async function loadClassSchedules(client: SchoolClient, classGroupId: string): Promise<TimetableSchedule[]> {
 	const [schedulesRaw, classSubjectsRaw] = await Promise.all([
-		client.entities.schedules.list(classGroupScope(classGroupId)),
-		client.entities.classSubjects.list(classGroupScope(classGroupId)),
+		listAllEntityPages(query => client.entities.schedules.list(query), {
+			baseQuery: classGroupScope(classGroupId),
+		}),
+		listAllEntityPages(query => client.entities.classSubjects.list(query), {
+			baseQuery: classGroupScope(classGroupId),
+		}),
 	]);
-	const subjectIds = [...new Set((classSubjectsRaw ?? []).map(entry => entry.subjectId))];
+	const subjectIds = [...new Set(classSubjectsRaw.map(entry => entry.subjectId))];
 	const activityIds = [...new Set(
-		(schedulesRaw ?? [])
+		schedulesRaw
 			.filter(schedule => schedule.scheduleKind === 'activity' && schedule.activityId)
 			.map(schedule => schedule.activityId as string),
 	)];
 
 	const [subjectsRaw, activitiesRaw] = await Promise.all([
-		subjectIds.length > 0
-			? client.entities.subjects.list(entitiesByIds(subjectIds))
-			: Promise.resolve([]),
-		activityIds.length > 0
-			? client.entities.activities.list(entitiesByIds(activityIds))
-			: Promise.resolve([]),
+		listAllEntityPagesByIds(query => client.entities.subjects.list(query), subjectIds),
+		listAllEntityPagesByIds(query => client.entities.activities.list(query), activityIds),
 	]);
 
 	return mapTimetableSchedules(
 		classGroupId,
-		schedulesRaw ?? [],
-		classSubjectsRaw ?? [],
-		subjectsRaw ?? [],
-		activitiesRaw ?? [],
+		schedulesRaw,
+		classSubjectsRaw,
+		subjectsRaw,
+		activitiesRaw,
 	);
 }

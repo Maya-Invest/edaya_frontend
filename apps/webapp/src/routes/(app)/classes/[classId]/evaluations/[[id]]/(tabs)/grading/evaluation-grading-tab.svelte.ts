@@ -1,6 +1,7 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { AssessmentResultRow, Student } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
-import { loadClassPeopleData } from '$lib/api/people-data';
+import { fetchClassPeopleSources, loadClassPeopleData, mapPeopleData } from '$lib/api/people-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { resolvePageLoad } from '$lib/queries/page-status';
 import { getContext, setContext } from 'svelte';
@@ -70,22 +71,27 @@ export class EvaluationGradingTabState {
 	}
 
 	query(classId: string) {
-		return (url: URL) => resolvePageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const resolvedClassId = evaluationsClassIdFromUrl(url) ?? classId;
-				const periodId = academicContext.periodId;
-				if (!periodId) {
-					this.slice = { classId: resolvedClassId, students: [], assessmentResults: [] };
-					return {};
-				}
-
+				const periodId = academicContext.periodId || academicContext.yearId;
 				const client = getBrowserSchoolClient();
-				const [assessmentResults, { students }] = await Promise.all([
-					loadEvaluationGradingData(client, resolvedClassId, periodId),
-					loadClassPeopleData(client, resolvedClassId, periodId),
+				const [assessmentResults, students] = await Promise.all([
+					periodId
+						? loadEvaluationGradingData(client, resolvedClassId, periodId)
+						: Promise.resolve([]),
+					(async () => {
+						if (periodId) {
+							const people = await loadClassPeopleData(client, resolvedClassId, periodId);
+							return people.students;
+						}
+						const sources = await fetchClassPeopleSources(client, resolvedClassId);
+						return mapPeopleData(sources).students;
+					})(),
 				]);
 
+				signal.throwIfAborted();
 				this.slice = {
 					classId: resolvedClassId,
 					students,
@@ -95,7 +101,7 @@ export class EvaluationGradingTabState {
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load evaluation grading data.',
-		});
+		}, request);
 	}
 }
 
@@ -105,13 +111,4 @@ export function setEvaluationGradingTabState(state: EvaluationGradingTabState) {
 
 export function getEvaluationGradingTabState(): EvaluationGradingTabState {
 	return getContext<EvaluationGradingTabState>(EVALUATION_GRADING_TAB_KEY);
-}
-
-export function tryGetEvaluationGradingTabState(): EvaluationGradingTabState | undefined {
-	try {
-		return getEvaluationGradingTabState();
-	}
-	catch {
-		return undefined;
-	}
 }

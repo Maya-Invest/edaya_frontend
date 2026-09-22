@@ -1,5 +1,6 @@
 import type { FamilyFeedbackPageState } from '../family-feedback-page.svelte';
-import { loadFamilyFeedbackSlice } from '$lib/api/family-feedback-data';
+import type { PageQueryRequest } from './family-feedback-page-status';
+import { getFamilyFeedbackCampaign, loadFamilyFeedbackSlice } from '$lib/api/family-feedback-data';
 import { queryClient } from '$lib/queries/client';
 import { listPageHasItems, resolveFamilyFeedbackPageLoad } from './family-feedback-page-status';
 
@@ -8,17 +9,18 @@ export async function loadFamilyFeedbackPageSlice() {
 }
 
 export function querySchoolFamilyFeedbackPage(state: FamilyFeedbackPageState) {
-	return (url: URL) => resolveFamilyFeedbackPageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolveFamilyFeedbackPageLoad(url, {
 		empty: () => ({}),
-		load: async () => {
+		load: async (signal) => {
 			state.hydrateFiltersFromUrl();
 			const data = await loadFamilyFeedbackPageSlice();
+			signal.throwIfAborted();
 			state.seed(data);
 			return {};
 		},
 		hasItems: listPageHasItems,
 		errorMessage: 'Unable to load family feedback campaigns.',
-	});
+	}, request);
 }
 
 export async function ensureFamilyFeedbackDrawerSelection(
@@ -29,5 +31,18 @@ export async function ensureFamilyFeedbackDrawerSelection(
 		return true;
 	}
 	await state.refreshSlice();
-	return Boolean(state.findCampaign(campaignId));
+	if (state.findCampaign(campaignId)) {
+		return true;
+	}
+	try {
+		const campaign = await getFamilyFeedbackCampaign(queryClient(), campaignId);
+		if (!campaign) {
+			return false;
+		}
+		state.appendCampaign(campaign);
+		return true;
+	}
+	catch {
+		return false;
+	}
 }

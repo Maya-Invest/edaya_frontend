@@ -1,4 +1,4 @@
-import type { Subject, SubjectCategory } from '$lib/types/school';
+import type { Subject } from '$lib/types/school';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { buildSubjectConfigCommand } from '$lib/api/subject-save-payload';
@@ -16,7 +16,7 @@ import { get } from 'svelte/store';
 export async function updateSubjectMutation(input: {
 	classSubjectId: string;
 	name: string;
-	category: SubjectCategory;
+	categoryId: string;
 	color: Subject['color'];
 	successMessage?: string;
 }): Promise<boolean> {
@@ -36,7 +36,7 @@ export async function updateSubjectMutation(input: {
 		buildSubjectConfigCommand(subject, {
 			id: subject.id,
 			name: toCanonicalCatalogText(input.name),
-			category: toCanonicalCatalogText(input.category) as SubjectCategory,
+			categoryId: input.categoryId,
 			color: input.color,
 		}),
 	), { successMessage: input.successMessage });
@@ -46,7 +46,7 @@ export async function updateSubjectMutation(input: {
 export async function createSubjectForClassMutation(input: {
 	classGroupId: string;
 	name: string;
-	category: SubjectCategory;
+	categoryId: string;
 	color: Subject['color'];
 	successMessage?: string;
 }): Promise<string | null> {
@@ -68,7 +68,7 @@ export async function createSubjectForClassMutation(input: {
 			subjectId,
 			classSubjectId,
 			name: toCanonicalCatalogText(input.name),
-			category: toCanonicalCatalogText(input.category) as SubjectCategory,
+			categoryId: input.categoryId,
 			color: input.color,
 			createdAt,
 		});
@@ -82,7 +82,7 @@ export async function createSubjectForGradeLevelMutation(input: {
 	academicYearId: string;
 	classGroupIds: string[];
 	name: string;
-	category: SubjectCategory;
+	categoryId: string;
 	color: Subject['color'];
 	successMessage?: string;
 }): Promise<string | null> {
@@ -119,7 +119,7 @@ export async function createSubjectForGradeLevelMutation(input: {
 			gradeLevelSubjectId,
 			classSubjectIdsByClassGroupId,
 			name: toCanonicalCatalogText(input.name),
-			category: toCanonicalCatalogText(input.category) as SubjectCategory,
+			categoryId: input.categoryId,
 			color: input.color,
 			createdAt,
 		});

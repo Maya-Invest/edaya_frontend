@@ -203,11 +203,11 @@ describe('addressable non-modal view URL state', () => {
 
 	it('routes one expanded student subject and rejects stale subjects', () => {
 		const href = writeExpandedStudentSubject(
-			url('/school/students/stu-1/grades?modal=add-grade'),
+			url('/school/students/stu-1/grades?modal=add-absence'),
 			'Mathematics',
 		);
 		expect(href).toBe(
-			'/school/students/stu-1/grades?modal=add-grade&subject=Mathematics',
+			'/school/students/stu-1/grades?modal=add-absence&subject=Mathematics',
 		);
 		expect(readExpandedStudentSubject(url(href), ['Mathematics', 'French']))
 			.toBe('Mathematics');

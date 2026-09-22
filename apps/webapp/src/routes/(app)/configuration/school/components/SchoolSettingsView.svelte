@@ -20,6 +20,7 @@
 	import { SCHOOL_LIFECYCLE_MANAGE_PERMISSION } from '$lib/documents/permissions';
 	import { t } from '$lib/i18n';
 	import { Building2, Pencil } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
 	import { getSchoolPageState } from '../school-page.svelte';
@@ -206,7 +207,29 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'school-settings.csv',
+					headers: ['name', 'shortName', 'type', 'issuingName', 'phone', 'email', 'city', 'country', 'timeZone'],
+					loadAll: async () => {
+						if (!school) {
+							return [];
+						}
+						return [[
+							school.name ?? '',
+							school.shortName ?? '',
+							school.type ?? '',
+							school.issuingName ?? '',
+							school.phone ?? '',
+							school.email ?? '',
+							school.city ?? '',
+							school.country ?? '',
+							school.timeZone ?? '',
+						]];
+					},
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 

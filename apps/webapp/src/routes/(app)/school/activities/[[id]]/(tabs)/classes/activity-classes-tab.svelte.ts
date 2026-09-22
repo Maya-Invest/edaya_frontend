@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { ClassActivityEnrollment } from '$lib/types/school';
 import type { ActivitiesPageState } from '../../../activities-page.svelte';
 import { fetchActivityById } from '$lib/api/activities-data';
@@ -34,9 +35,9 @@ export class ActivityClassesTabState {
 	}
 
 	query() {
-		return (url: URL) => resolvePageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const activityId = activityDetailIdFromUrl(url);
 				if (!activityId) {
 					return {};
@@ -46,13 +47,14 @@ export class ActivityClassesTabState {
 				const activity = await fetchActivityById(page.client(), activityId);
 				if (activity) {
 					page.mergeActivities([activity]);
+					signal.throwIfAborted();
 					this.slice = { activityId, classEnrollments: activity.classEnrollments };
 				}
 				return {};
 			},
 			hasItems: listPageHasItems,
 			errorMessage: 'Unable to load activity classes.',
-		});
+		}, request);
 	}
 }
 

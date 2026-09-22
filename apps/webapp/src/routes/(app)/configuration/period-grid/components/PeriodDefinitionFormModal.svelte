@@ -8,7 +8,7 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
-	import { getAcademicPageState } from '../academic-page.svelte';
+	import { getPeriodGridPageState } from '../period-grid-page.svelte';
 	import {
 		PERIOD_DEFINITION_WEEKDAY_LABEL_KEY,
 		PERIOD_DEFINITION_WEEKDAYS,
@@ -24,7 +24,7 @@
 		periodDefinition?: PeriodDefinition | null;
 	} = $props();
 
-	const academicPage = getAcademicPageState();
+	const periodGridPage = getPeriodGridPageState();
 
 	let busy = $state(false);
 	let label = $state('');
@@ -107,7 +107,7 @@
 
 			if (ok) {
 				open = false;
-				await academicPage.refreshSlice();
+				await periodGridPage.refreshSlice();
 			}
 		}
 		finally {

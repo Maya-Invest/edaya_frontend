@@ -10,7 +10,7 @@ import type {
 	School,
 } from '$lib/types/school';
 import { buildClassHierarchy } from '$lib/academic/hierarchy';
-import { paginatedList, schoolScopedEntityList, schoolWideEntityList } from '$lib/api/entity-list-filters';
+import { listAllEntityPages, schoolScopedEntityList, schoolWideEntityList } from '$lib/api/entity-list-filters';
 import { fetchSchoolById, mapSchoolFromApi } from '$lib/api/school-data';
 import { ApiError } from '@maya-invest/edaya-api-client';
 
@@ -131,8 +131,13 @@ async function safeEntityList<T>(load: () => Promise<T[] | null | undefined>): P
 	}
 }
 
-function schoolScopedList(schoolId: string) {
-	return paginatedList(schoolScopedEntityList(schoolId), { limit: 50 });
+function schoolCatalogPages<T>(
+	list: (query: ReturnType<typeof schoolScopedEntityList>) => Promise<T[] | null | undefined>,
+	schoolId: string,
+) {
+	return listAllEntityPages(query => list(query), {
+		baseQuery: schoolScopedEntityList(schoolId),
+	});
 }
 
 const ACADEMIC_YEAR_STATUSES: ReadonlySet<AcademicYearStatus> = new Set(['draft', 'published', 'archived']);
@@ -175,11 +180,11 @@ async function fetchSupplementalShellForSchool(
 		classGroupsRaw,
 	] = await Promise.all([
 		fetchSchoolById(client, schoolId),
-		safeEntityList(() => client.entities.academicYears.list(schoolScopedList(schoolId))),
-		safeEntityList(() => client.entities.academicPeriods.list(schoolScopedList(schoolId))),
-		safeEntityList(() => client.entities.gradeLevels.list(schoolScopedList(schoolId))),
-		safeEntityList(() => client.entities.periodDefinitions.list(schoolScopedList(schoolId))),
-		safeEntityList(() => client.entities.classGroups.list(schoolScopedList(schoolId))),
+		safeEntityList(() => schoolCatalogPages(query => client.entities.academicYears.list(query), schoolId)),
+		safeEntityList(() => schoolCatalogPages(query => client.entities.academicPeriods.list(query), schoolId)),
+		safeEntityList(() => schoolCatalogPages(query => client.entities.gradeLevels.list(query), schoolId)),
+		safeEntityList(() => schoolCatalogPages(query => client.entities.periodDefinitions.list(query), schoolId)),
+		safeEntityList(() => schoolCatalogPages(query => client.entities.classGroups.list(query), schoolId)),
 	]);
 
 	if (!schoolRaw && yearsRaw.length === 0 && periodsRaw.length === 0) {
@@ -284,12 +289,30 @@ export async function fetchAppShellData(
 		periodDefsRaw,
 		classGroupsRaw,
 	] = await Promise.all([
-		safeEntityList(() => client.entities.schools.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE))),
-		safeEntityList(() => client.entities.academicYears.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE))),
-		safeEntityList(() => client.entities.academicPeriods.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE))),
-		safeEntityList(() => client.entities.gradeLevels.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE))),
-		safeEntityList(() => client.entities.periodDefinitions.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE))),
-		safeEntityList(() => client.entities.classGroups.list(schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE))),
+		safeEntityList(() => listAllEntityPages(
+			query => client.entities.schools.list(query),
+			{ baseQuery: schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE) },
+		)),
+		safeEntityList(() => listAllEntityPages(
+			query => client.entities.academicYears.list(query),
+			{ baseQuery: schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE) },
+		)),
+		safeEntityList(() => listAllEntityPages(
+			query => client.entities.academicPeriods.list(query),
+			{ baseQuery: schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE) },
+		)),
+		safeEntityList(() => listAllEntityPages(
+			query => client.entities.gradeLevels.list(query),
+			{ baseQuery: schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE) },
+		)),
+		safeEntityList(() => listAllEntityPages(
+			query => client.entities.periodDefinitions.list(query),
+			{ baseQuery: schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE) },
+		)),
+		safeEntityList(() => listAllEntityPages(
+			query => client.entities.classGroups.list(query),
+			{ baseQuery: schoolWideEntityList(SHELL_ACADEMIC_STRUCTURE_SCOPE) },
+		)),
 	]);
 
 	const classGroupIds = (classGroupsRaw ?? []).map(classGroup => classGroup.id);

@@ -168,6 +168,8 @@ export async function recordPaymentMutation(input: {
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
+	const reference = input.reference?.trim();
+	const notes = input.notes?.trim();
 	const result = await runMutation(() => financeCommand(client, 'recordPayment', 'record-payment', {
 		id: input.id ?? newId('pay'),
 		accountId: input.accountId,
@@ -176,8 +178,8 @@ export async function recordPaymentMutation(input: {
 		amount: input.amount,
 		paymentDate: input.paymentDate,
 		method: input.method,
-		reference: input.reference?.trim() || null,
-		notes: input.notes?.trim() || null,
+		...(reference ? { reference } : {}),
+		...(notes ? { notes } : {}),
 		allocation: input.allocation,
 	}), {
 		successMessage: input.successMessage,

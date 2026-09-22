@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { DisciplinePageState } from '../discipline-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadDisciplineCatalogData } from '$lib/api/discipline-catalog-data';
@@ -20,14 +21,15 @@ export async function loadDisciplineSlice() {
 }
 
 export function queryDisciplineListPage(state: DisciplinePageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyDisciplineSlice(),
-		load: async () => {
+		load: async (signal) => {
 			const data = await loadDisciplineSlice();
+			signal.throwIfAborted();
 			state.applySlice(data);
 			return data;
 		},
 		hasItems: listPageHasItems,
 		errorMessage: 'Unable to load the disciplinary catalog.',
-	});
+	}, request);
 }

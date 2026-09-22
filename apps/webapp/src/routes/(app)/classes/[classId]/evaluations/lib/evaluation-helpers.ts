@@ -38,6 +38,73 @@ export function evaluationStatsFromResults(
 	};
 }
 
+export function assessmentResultIdFor(assessmentId: string, studentId: string): string {
+	return `ar-${assessmentId}-${studentId}`;
+}
+
+export function upsertAssessmentResultRow(
+	results: readonly AssessmentResultRow[],
+	result: AssessmentResultRow,
+): AssessmentResultRow[] {
+	return [
+		...results.filter(entry => entry.id !== result.id),
+		result,
+	];
+}
+
+export function removeAssessmentResultRow(
+	results: readonly AssessmentResultRow[],
+	id: string,
+): AssessmentResultRow[] {
+	return results.filter(result => result.id !== id);
+}
+
+/** Apply path used when the grade-entry modal submits a score. */
+export function applyGradeEntry(input: {
+	results: readonly AssessmentResultRow[];
+	assessmentId: string;
+	studentId: string;
+	score: number;
+}): {
+	resultId: string;
+	previousResult: AssessmentResultRow | undefined;
+	nextResults: AssessmentResultRow[];
+	stats: Pick<Evaluation, 'graded' | 'averageMark'>;
+} {
+	const resultId = assessmentResultIdFor(input.assessmentId, input.studentId);
+	const previousResult = input.results.find(result => result.id === resultId);
+	const nextResults = upsertAssessmentResultRow(input.results, {
+		id: resultId,
+		studentId: input.studentId,
+		assessmentId: input.assessmentId,
+		score: input.score,
+	});
+	return {
+		resultId,
+		previousResult,
+		nextResults,
+		stats: evaluationStatsFromResults(input.assessmentId, nextResults),
+	};
+}
+
+export function rollbackGradeEntry(input: {
+	results: readonly AssessmentResultRow[];
+	resultId: string;
+	previousResult: AssessmentResultRow | undefined;
+	assessmentId: string;
+}): {
+	nextResults: AssessmentResultRow[];
+	stats: Pick<Evaluation, 'graded' | 'averageMark'>;
+} {
+	const nextResults = input.previousResult
+		? upsertAssessmentResultRow(input.results, input.previousResult)
+		: removeAssessmentResultRow(input.results, input.resultId);
+	return {
+		nextResults,
+		stats: evaluationStatsFromResults(input.assessmentId, nextResults),
+	};
+}
+
 export function evaluationDetailIdFromUrl(url: URL): string | undefined {
 	const match = url.pathname.match(/\/classes\/([^/]+)\/evaluations\/([^/]+)/);
 	return match?.[2];

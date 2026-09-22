@@ -6,15 +6,16 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { listRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
-	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
 	import {
 		AttendancePageState,
 		setAttendancePageState,
 	} from './attendance-page.svelte';
 	import AttendanceList from './components/AttendanceList.svelte';
+	import AttendancePageHydrator from './components/AttendancePageHydrator.svelte';
 
 	const { children: pageChildren }: { children: Snippet } = $props();
 
@@ -29,12 +30,13 @@
 
 	function selectDay(day: import('$lib/types/school').AttendanceDay) {
 		const path = detailHref.classAttendanceDay(classId, day.id);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+		openDetailDrawer(`${path}${detailNavigationSearch($page.url)}`, currentRouteSurfaceHref($page.url));
 	}
 </script>
 
 <PageQuery {query} cacheKey={listRouteCacheKey} loadingTitle={$t('tab.attendance')}>
 	{#snippet children(data)}
+		<AttendancePageHydrator {data} />
 		<DataState
 			preserveShell
 			status={data.status}

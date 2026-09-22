@@ -22,7 +22,7 @@
 	import { t } from '$lib/i18n';
 	import { Eye, GraduationCap, Pencil, Plus } from '$lib/icons';
 	import { loadCardColumnsPreference, saveCardColumnsPreference } from '$lib/list/list-card-columns-preference';
-	import { downloadCsv } from '$lib/list/list-csv-export';
+	import { downloadCsv, exportMatchingList, loadMatchingCollection } from '$lib/list/list-csv-export';
 	import { ListSelectionState } from '$lib/list/list-selection-state.svelte';
 	import {
 		isListCardColumns,
@@ -35,6 +35,7 @@
 	import { appendModal, MODAL_QUERY_KEY } from '$lib/modal/modal-url';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import { studentListUsesFullRoster, cycleStudentListSort } from '../lib/student-list-filters';
@@ -240,7 +241,7 @@
 
 	function openStudentAction(event: MouseEvent, student: Student, modal: 'edit-profile' | 'change-class' | undefined = undefined) {
 		event.stopPropagation();
-		appGoto(detailHrefFor(student, modal));
+		openDetailDrawer(detailHrefFor(student, modal), currentRouteSurfaceHref($page.url));
 	}
 
 	function exportSelected() {
@@ -263,6 +264,35 @@
 			}),
 		]);
 		toast.success($t('list.exportedCount', { n: selectedStudents.length }));
+	}
+
+	function exportMatching() {
+		return exportMatchingList({
+			filename: 'students.csv',
+			headers: ['name', 'class', 'average', 'attendance', 'status'],
+			loadAll: async () => {
+				const matching = await loadMatchingCollection({
+					isComplete: () => studentsPage.fullRosterStudents.length >= studentsPage.totalStudents
+						|| studentsPage.students.length >= studentsPage.totalStudents,
+					ensureComplete: () => studentsPage.loadFullRoster(),
+					current: () => studentsPage.filterVisible(
+						studentsPage.fullRosterStudents.length > 0
+							? studentsPage.fullRosterStudents
+							: studentsPage.students,
+					),
+				});
+				return matching.map((student) => {
+					const classGroup = classes.find(entry => entry.id === student.classId);
+					return [
+						student.name,
+						classGroup?.name ?? student.classId,
+						student.average.toFixed(1),
+						attendanceLabel(student.attendance),
+						student.status,
+					];
+				});
+			},
+		});
 	}
 </script>
 
@@ -308,6 +338,7 @@
 				{view}
 				onEnterSelectMode={selection.selectionMode ? undefined : () => selection.enterSelectionMode()}
 				onViewChange={setView}
+				onExport={() => void exportMatching()}
 			/>
 		{/snippet}
 		{#snippet primary()}

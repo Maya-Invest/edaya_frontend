@@ -86,13 +86,13 @@ describe('nav-permissions — prof principal (phase 3.3)', () => {
 		expect(filterNavItems(CONFIG_NAV_DEFS, coordinatorGrants).map(item => item.key)).toEqual([
 			'school',
 			'academic',
+			'periodGrid',
 			'gradeLevels',
 			'classGroups',
 			'subjects',
-			'gradeScales',
 			'reportCards',
 			'notificationTemplates',
-			'discipline',
+			'other',
 			'permissionProfiles',
 		]);
 	});

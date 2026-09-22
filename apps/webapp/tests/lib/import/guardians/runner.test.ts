@@ -46,16 +46,19 @@ describe('guardian import runner', () => {
 
 		expect(result.created).toBe(2);
 		expect(result.failed).toEqual([]);
-		expect(result.guardianIds).toEqual(['TUT-001', 'TUT-002']);
+		expect(result.guardianIds).toHaveLength(2);
+		expect(result.guardianIds[0]).toMatch(/^[0-9a-f-]{36}$/i);
+		expect(result.guardianIds[0]).not.toBe('TUT-001');
 		expect(registerGuardian).toHaveBeenCalledTimes(2);
 		expect(linkGuardianToStudent).toHaveBeenCalledTimes(2);
 		expect(registerGuardian).toHaveBeenNthCalledWith(1, expect.objectContaining({
-			id: 'TUT-001',
+			id: result.guardianIds[0],
+			code: 'TUT-001',
 			sendAccountInvitation: false,
 		}));
 		expect(linkGuardianToStudent).toHaveBeenNthCalledWith(2, expect.objectContaining({
 			studentId: 'stu-2',
-			guardianId: 'TUT-002',
+			guardianId: result.guardianIds[1],
 		}));
 	});
 });

@@ -1,4 +1,5 @@
-import { schoolWideEntityList } from '$lib/api/entity-list-filters';
+import type { EntityQuery } from '@maya-invest/edaya-api-client';
+import { listAllEntityPages, schoolWideEntityList } from '$lib/api/entity-list-filters';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { normalizeImportCode } from '$lib/import/shared/normalize-import-code';
 
@@ -11,18 +12,26 @@ export interface PersonCodeEntry {
 }
 
 async function loadPersonCodeIndex(
-	list: () => Promise<readonly { id?: string | null }[] | null | undefined>,
+	list: (query: EntityQuery) => Promise<readonly {
+		id?: string | null;
+		code?: string | null;
+	}[] | null | undefined>,
 ): Promise<Map<string, PersonCodeEntry>> {
-	const entities = await list();
+	const entities = await listAllEntityPages(query => list(query), {
+		baseQuery: schoolWideEntityList(PERSON_CODE_INDEX_SCOPE),
+	});
 	const index = new Map<string, PersonCodeEntry>();
 
-	for (const entity of entities ?? []) {
-		// Person entities no longer expose a separate `code`; import codes are the entity id.
+	for (const entity of entities) {
 		const id = typeof entity.id === 'string' ? entity.id.trim() : '';
 		if (!id) {
 			continue;
 		}
-		index.set(normalizeImportCode(id), { id, code: id });
+		const code = typeof entity.code === 'string' ? entity.code.trim() : '';
+		index.set(normalizeImportCode(id), { id, code: code || id });
+		if (code) {
+			index.set(normalizeImportCode(code), { id, code });
+		}
 	}
 
 	return index;
@@ -30,32 +39,27 @@ async function loadPersonCodeIndex(
 
 export async function loadTeacherCodeIndex(): Promise<Map<string, PersonCodeEntry>> {
 	const client = getBrowserSchoolClient();
-	return loadPersonCodeIndex(() =>
-		client.entities.teachers.list(schoolWideEntityList(PERSON_CODE_INDEX_SCOPE)),
-	);
+	return loadPersonCodeIndex(query => client.entities.teachers.list(query));
 }
 
 export async function loadStaffCodeIndex(): Promise<Map<string, PersonCodeEntry>> {
 	const client = getBrowserSchoolClient();
-	return loadPersonCodeIndex(() =>
-		client.entities.staffMembers.list(schoolWideEntityList(PERSON_CODE_INDEX_SCOPE)),
-	);
+	return loadPersonCodeIndex(query => client.entities.staffMembers.list(query));
 }
 
 export async function loadGuardianCodeIndex(): Promise<Map<string, PersonCodeEntry>> {
 	const client = getBrowserSchoolClient();
-	return loadPersonCodeIndex(() =>
-		client.entities.guardians.list(schoolWideEntityList(PERSON_CODE_INDEX_SCOPE)),
-	);
+	return loadPersonCodeIndex(query => client.entities.guardians.list(query));
 }
 
 export async function loadPaymentReferenceIndex(): Promise<ReadonlySet<string>> {
 	const client = getBrowserSchoolClient();
-	const payments = await client.entities.payments.list(
-		schoolWideEntityList('Import validation loads payment references for duplicate detection.'),
+	const payments = await listAllEntityPages(
+		query => client.entities.payments.list(query),
+		{ baseQuery: schoolWideEntityList('Import validation loads payment references for duplicate detection.') },
 	);
 	const index = new Set<string>();
-	for (const payment of payments ?? []) {
+	for (const payment of payments) {
 		const reference = typeof payment.reference === 'string' ? payment.reference.trim() : '';
 		if (!reference) {
 			continue;

@@ -13,12 +13,13 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { locale, t } from '$lib/i18n';
 	import { CalendarDays, Clock, Eye, Pencil, Plus } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readClassEvaluationListFilters, writeClassEvaluationListFilters } from '$lib/list/list-url-filters';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appendModal, writeModalSurface } from '$lib/modal/modal-url';
 	import { appGoto } from '$lib/navigation/app-navigation';
-	import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
+	import { replaceRouteSurface, currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { cn } from '$lib/utils';
 	import { getEvaluationsPageState } from '../evaluations-page.svelte';
 	import EvaluationCreateModal from './EvaluationCreateModal.svelte';
@@ -81,12 +82,15 @@
 	);
 
 	function handleCreated(assessmentId: string) {
-		appGoto(detailHref.classEvaluation(classId, assessmentId));
+		openDetailDrawer(
+			detailHref.classEvaluation(classId, assessmentId),
+			currentRouteSurfaceHref($page.url),
+		);
 	}
 
 	function openEvaluation(evaluation: Evaluation, modal: 'edit' | undefined = undefined) {
 		const href = detailHref.classEvaluation(classId, evaluation.id);
-		appGoto(modal ? appendModal(href, modal) : href);
+		openDetailDrawer(modal ? appendModal(href, modal) : href, currentRouteSurfaceHref($page.url));
 	}
 
 	function openEvaluationAction(event: MouseEvent, evaluation: Evaluation, modal: 'edit' | undefined = undefined) {
@@ -152,7 +156,20 @@
 			/>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'evaluations.csv',
+					headers: ['title', 'subject', 'kind', 'date', 'dueDate'],
+					loadAll: async () => filtered.map(evaluation => [
+						evaluation.title,
+						evaluation.subject,
+						evaluation.kind,
+						evaluation.date,
+						evaluation.dueDate ?? '',
+					]),
+				})}
+			/>
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate

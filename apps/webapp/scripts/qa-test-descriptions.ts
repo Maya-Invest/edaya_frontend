@@ -219,7 +219,19 @@ function describeFilterTest(row: QaTemplateRow): string {
 	if (ep === '/configuration/subjects' && /filtre niveau/i.test(action)) {
 		return 'goto ?gradeLevel={gradeLevelId}; assert subject fixture name in list.';
 	}
-	if (ep === '/configuration/discipline' && /filtre kind/i.test(action)) {
+	if (ep === '/configuration/period-grid' && /sélecteur année/i.test(action)) {
+		return 'Assert the period-grid year select is visible.';
+	}
+	if (ep === '/configuration/period-grid' && /wizard|périodes/i.test(action)) {
+		return 'Open the weekly period-grid quick setup and assert a preset is listed.';
+	}
+	if (ep === '/configuration/other' && /liste des catalogues/i.test(action)) {
+		return 'Assert grade scales, disciplinary catalog, and subject categories in the left list.';
+	}
+	if (ep === '/configuration/other/subject-categories' && /crud catégorie/i.test(action)) {
+		return 'Create a subject category and assert its name in the table.';
+	}
+	if (ep === '/configuration/other/discipline' && /filtre kind/i.test(action)) {
 		return 'Assert discipline fixture entry visible; optional kind combobox.';
 	}
 	if (ep === '/configuration/permission-profiles' && /filtre grain/i.test(action)) {

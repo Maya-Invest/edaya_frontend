@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { EvaluationsPageSlice } from './evaluation-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
@@ -38,9 +39,9 @@ export async function loadEvaluationsSlice(classId: string): Promise<Evaluations
 }
 
 export function queryEvaluationsListPage(classId: string) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyEvaluationsSlice(classId),
 		load: () => loadEvaluationsSlice(classId),
 		hasItems: () => true,
-	});
+	}, request);
 }

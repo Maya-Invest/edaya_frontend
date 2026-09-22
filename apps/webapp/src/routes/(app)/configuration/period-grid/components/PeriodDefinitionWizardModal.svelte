@@ -11,7 +11,7 @@
 	import { catalogSlotLabel, toCanonicalCatalogText } from '$lib/i18n/catalog-label';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
-	import { getAcademicPageState } from '../academic-page.svelte';
+	import { getPeriodGridPageState } from '../period-grid-page.svelte';
 	import {
 		PERIOD_DEFINITION_PRESET_IDS,
 		PERIOD_DEFINITION_WEEKDAY_LABEL_KEY,
@@ -43,7 +43,7 @@
 		onStepChange: (step: WizardStep) => void;
 	} = $props();
 
-	const academicPage = getAcademicPageState();
+	const periodGridPage = getPeriodGridPageState();
 
 	let busy = $state(false);
 	let selectedPresetId = $state<PeriodDefinitionPresetId>('standard-secondary');
@@ -61,6 +61,7 @@
 		weekdays.length > 0 && template.length > 0 && template.every(isValidTemplateRow),
 	);
 	const canSubmit = $derived(canAdvanceTweak && expanded.length > 0);
+	let wasOpen = $state(false);
 
 	const modalTitle = $derived(
 		step === 'preset'
@@ -91,6 +92,13 @@
 	function resetForm() {
 		applyPreset('standard-secondary');
 	}
+
+	$effect(() => {
+		if (open && !wasOpen) {
+			applyPreset(selectedPresetId);
+		}
+		wasOpen = open;
+	});
 
 	function toggleWeekday(day: PeriodDefinitionDayOfWeek) {
 		if (weekdays.includes(day)) {
@@ -187,7 +195,7 @@
 			if (ok) {
 				open = false;
 				resetForm();
-				await academicPage.refreshSlice();
+				await periodGridPage.refreshSlice();
 			}
 		}
 		finally {

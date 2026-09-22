@@ -39,7 +39,7 @@ describe('createSubjectForGradeLevel', () => {
 			gradeLevelSubjectId: 'gls-1',
 			classSubjectIdsByClassGroupId: { 'class-6a': 'cs-1' },
 			name: 'Mathématiques',
-			category: 'Scientifique',
+			categoryId: 'cat-scientifique',
 			color: 'mint',
 		});
 

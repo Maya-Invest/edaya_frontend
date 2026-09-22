@@ -296,8 +296,14 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	...rows('Configuration', `${B}/configuration/academic`, [
 		'CRUD années scolaires',
 		'Publier année',
-		'Définitions périodes (wizard)',
 		'Filtres liste',
+	]),
+	...rows('Configuration', `${B}/configuration/period-grid`, [
+		'Sélecteur année',
+		'Définitions périodes (wizard)',
+	]),
+	...rows('Configuration', `${B}/configuration/other`, [
+		'Liste des catalogues',
 	]),
 	...rows('Configuration', `${B}/configuration/grade-levels`, [
 		'Liste niveaux',
@@ -320,7 +326,7 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	...rows('Configuration', `${B}/configuration/subjects/level/[level]`, [
 		'Redirect vers /configuration/subjects?gradeLevel=[id]',
 	]),
-	...rows('Configuration', `${B}/configuration/grade-scales`, [
+	...rows('Configuration', `${B}/configuration/other/grade-scales`, [
 		'Liste barèmes',
 		'CRUD barème',
 	]),
@@ -330,10 +336,14 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	]),
 	...rows('Configuration', `${B}/configuration/report-cards/[id]`, ['Drawer définition']),
 	...rows('Configuration', `${B}/configuration/notifications`, ['Templates notifications école']),
-	...rows('Configuration', `${B}/configuration/discipline`, [
+	...rows('Configuration', `${B}/configuration/other/discipline`, [
 		'Catalogue disciplinaire',
 		'Filtre kind',
 		'CRUD entrée',
+	]),
+	...rows('Configuration', `${B}/configuration/other/subject-categories`, [
+		'Liste catégories',
+		'CRUD catégorie',
 	]),
 	...rows('Configuration', `${B}/configuration/permission-profiles`, [
 		'Catalogue des profils',

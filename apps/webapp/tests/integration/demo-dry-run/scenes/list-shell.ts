@@ -63,8 +63,8 @@ export async function runListShellScenes(ctx: DemoContext): Promise<void> {
 	});
 	await assertFilterSelectShell(ctx, 'DC11', 'Subjects FilterSelect + More menu');
 
-	await visitOrSkip(ctx, `${base}/configuration/grade-scales`, 'DC12', 'Grade scales list shell', {
-		pathPrefix: '/configuration/grade-scales',
+	await visitOrSkip(ctx, `${base}/configuration/other/grade-scales`, 'DC12', 'Grade scales list shell', {
+		pathPrefix: '/configuration/other/grade-scales',
 		skipOnFail: 'May require REPORT_CARD_CONFIGURE',
 	});
 	await assertListShellOrSkip(

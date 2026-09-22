@@ -1,17 +1,20 @@
 import type { GuardiansPageState } from '../guardians-page.svelte';
+import type { PageQueryRequest } from './guardian-page-status';
 import { ApiError } from '@maya-invest/edaya-api-client';
 import { listPageHasItems, resolveGuardianPageLoad } from './guardian-page-status';
 
 export function querySchoolGuardiansPage(state: GuardiansPageState) {
-	return (url: URL) => resolveGuardianPageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolveGuardianPageLoad(url, {
 		empty: () => ({ totalGuardians: 0 }),
-		load: async () => {
+		load: async (signal) => {
+			signal.throwIfAborted();
 			state.hydrateFiltersFromUrl();
 			await state.loadFirstPage();
+			signal.throwIfAborted();
 			return { totalGuardians: state.totalGuardians };
 		},
 		hasItems: listPageHasItems,
-	});
+	}, request);
 }
 
 export async function ensureGuardianDrawerSelection(

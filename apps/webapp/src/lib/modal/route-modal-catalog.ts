@@ -15,7 +15,6 @@ const STUDENT_DETAIL_MODALS = [
 	'edit-note',
 	'add-absence',
 	'add-incident',
-	'add-grade',
 ] as const;
 
 const TIMETABLE_MODALS = [
@@ -226,12 +225,18 @@ export const ROUTE_MODAL_CATALOG = [
 		pathnamePattern: /^\/configuration\/academic\/?$/,
 		modalNames: [
 			'create',
-			'period-def',
-			'period-def-wizard',
-			'delete-period-def',
 			'archive-year',
 			'publish-year',
 			'publish-period',
+		],
+	},
+	{
+		routeFamily: 'configuration-period-grid',
+		pathnamePattern: /^\/configuration\/period-grid\/?$/,
+		modalNames: [
+			'period-def',
+			'period-def-wizard',
+			'delete-period-def',
 		],
 	},
 	{
@@ -288,7 +293,7 @@ export const ROUTE_MODAL_CATALOG = [
 	},
 	{
 		routeFamily: 'configuration-grade-scales',
-		pathnamePattern: /^\/configuration\/grade-scales\/?$/,
+		pathnamePattern: /^\/configuration\/other\/grade-scales\/?$/,
 		modalNames: ['create', 'edit', 'delete'],
 	},
 	{
@@ -303,7 +308,12 @@ export const ROUTE_MODAL_CATALOG = [
 	},
 	{
 		routeFamily: 'configuration-discipline',
-		pathnamePattern: /^\/configuration\/discipline\/?$/,
+		pathnamePattern: /^\/configuration\/other\/discipline\/?$/,
+		modalNames: ['create', 'edit', 'delete'],
+	},
+	{
+		routeFamily: 'configuration-subject-categories',
+		pathnamePattern: /^\/configuration\/other\/subject-categories\/?$/,
 		modalNames: ['create', 'edit', 'delete'],
 	},
 	{

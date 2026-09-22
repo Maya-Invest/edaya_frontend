@@ -50,14 +50,20 @@ describe('configuration and activity loading', () => {
 
 		await fetchActivitySources(client, SEED_SCHOOL_ID);
 
-		expect(entityListRequests(requests, 'activities')[0]?.body).toEqual({
+		expect(entityListRequests(requests, 'activities')[0]?.body).toMatchObject({
 			schoolId: SEED_SCHOOL_ID,
+			$limit: 500,
+			$offset: 0,
 		});
-		expect(entityListRequests(requests, 'activity-enrollments')[0]?.body).toEqual({
+		expect(entityListRequests(requests, 'activity-enrollments')[0]?.body).toMatchObject({
 			activityId: { $in: ['activity-1'] },
+			$limit: 500,
+			$offset: 0,
 		});
-		expect(entityListRequests(requests, 'class-activity-enrollments')[0]?.body).toEqual({
+		expect(entityListRequests(requests, 'class-activity-enrollments')[0]?.body).toMatchObject({
 			activityId: { $in: ['activity-1'] },
+			$limit: 500,
+			$offset: 0,
 		});
 	});
 
@@ -80,16 +86,22 @@ describe('configuration and activity loading', () => {
 			academicYearId,
 		});
 
-		expect(entityListRequests(requests, 'staff-members')[0]?.body).toEqual({
+		expect(entityListRequests(requests, 'staff-members')[0]?.body).toMatchObject({
 			schoolId: SEED_SCHOOL_ID,
 			accountKind: 'human',
+			$limit: 500,
+			$offset: 0,
 		});
-		expect(entityListRequests(requests, 'class-groups')[0]?.body).toEqual({
+		expect(entityListRequests(requests, 'class-groups')[0]?.body).toMatchObject({
 			schoolId: SEED_SCHOOL_ID,
 			academicYearId,
+			$limit: 500,
+			$offset: 0,
 		});
-		expect(entityListRequests(requests, 'staff-assignments')[0]?.body).toEqual({
+		expect(entityListRequests(requests, 'staff-assignments')[0]?.body).toMatchObject({
 			staffId: { $in: ['staff-1'] },
+			$limit: 500,
+			$offset: 0,
 		});
 		expect(entityListRequests(requests, 'class-subjects')).toHaveLength(0);
 		expect(entityListRequests(requests, 'subjects')).toHaveLength(0);

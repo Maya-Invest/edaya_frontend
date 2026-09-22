@@ -75,8 +75,8 @@ export async function createGuardianOnPage(
 	const client = getBrowserSchoolClient();
 	const email = input.email?.trim() ?? '';
 	const phone = input.phone?.trim() ?? '';
-	const code = input.code?.trim() ?? '';
-	const id = code || `grd-${Date.now().toString(36)}`;
+	const code = input.code?.trim() || undefined;
+	const id = crypto.randomUUID();
 	const optimistic = buildOptimisticGuardian({ id, ...input });
 
 	const result = await runGuardianRouteMutation({
@@ -85,6 +85,7 @@ export async function createGuardianOnPage(
 			schoolId: schoolId(),
 			firstName: input.firstName.trim(),
 			lastName: input.lastName.trim(),
+			...(code ? { code } : {}),
 			email: email || null,
 			phone: phone || null,
 			contactMethods: buildContactMethods(email, phone),

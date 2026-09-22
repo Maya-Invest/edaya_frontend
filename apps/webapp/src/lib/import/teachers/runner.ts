@@ -37,13 +37,13 @@ export async function runTeacherImport(options: TeacherImportRunOptions): Promis
 
 	for (const [index, row] of rows.entries()) {
 		onProgress?.(index, total);
-		// API has no separate person `code`; import code is persisted as the entity id.
-		const teacherId = row.code;
+		const teacherId = crypto.randomUUID();
 
 		try {
 			await saveTeacher(client, {
 				schoolId,
 				teacherId,
+				code: row.code,
 				firstName: row.prenom,
 				lastName: row.nom,
 				email: row.email,

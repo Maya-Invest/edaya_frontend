@@ -13,8 +13,9 @@ import type {
 	ReportCardSubjectMark,
 } from '$lib/types/report-cards';
 import {
-	entitiesByIds,
-	recordsForFieldIds,
+	listAllEntityPages,
+	listAllEntityPagesByIds,
+	listAllEntityPagesForIdFilters,
 	reportCardResultsForClassPeriod,
 	schoolScopedEntityList,
 	schoolSubjectsCatalogList,
@@ -327,10 +328,11 @@ export async function loadGradeScalesCatalogData(
 	if (!schoolId) {
 		return [];
 	}
-	const gradeScalesRaw = await client.entities.gradeScales.list(
-		schoolScopedEntityList(schoolId, GRADE_SCALES_CATALOG_SCOPE),
+	const gradeScalesRaw = await listAllEntityPages(
+		query => client.entities.gradeScales.list(query),
+		{ baseQuery: schoolScopedEntityList(schoolId, GRADE_SCALES_CATALOG_SCOPE) },
 	);
-	return mapGradeScales(gradeScalesRaw ?? []);
+	return mapGradeScales(gradeScalesRaw);
 }
 
 export async function loadReportCardCatalogData(
@@ -346,21 +348,23 @@ export async function loadReportCardCatalogData(
 	const catalogQuery = schoolScopedEntityList(schoolId, REPORT_CARD_CATALOG_SCOPE);
 	const [gradeScales, definitionsRaw, subjectsRaw] = await Promise.all([
 		loadGradeScalesCatalogData(client, schoolId),
-		client.entities.definitions.list(catalogQuery),
-		safeOptionalEntityList(() =>
-			client.entities.subjects.list(schoolSubjectsCatalogList(schoolId)),
-		),
+		listAllEntityPages(query => client.entities.definitions.list(query), { baseQuery: catalogQuery }),
+		safeOptionalEntityList(() => listAllEntityPages(
+			query => client.entities.subjects.list(query),
+			{ baseQuery: schoolSubjectsCatalogList(schoolId) },
+		)),
 	]);
-	const definitionIds = uniqueIds((definitionsRaw ?? []).map(definition => definition.id));
-	const sectionsRaw = definitionIds.length > 0
-		? await client.entities.sections.list(recordsForFieldIds('reportCardDefinitionId', definitionIds))
-		: [];
+	const definitionIds = uniqueIds(definitionsRaw.map(definition => definition.id));
+	const sectionsRaw = await listAllEntityPagesForIdFilters(
+		query => client.entities.sections.list(query),
+		[{ field: 'reportCardDefinitionId', ids: definitionIds }],
+	);
 
 	return {
 		gradeScales,
 		definitions: mapReportCardDefinitions(
-			definitionsRaw ?? [],
-			sectionsRaw ?? [],
+			definitionsRaw,
+			sectionsRaw,
 			{ subjectsRaw: subjectsRaw ?? [] },
 		),
 	};
@@ -373,18 +377,21 @@ export async function loadClassReportCardResultsData(
 	definitions: readonly ReportCardDefinition[],
 ): Promise<ReportCardResult[]> {
 	const [resultsRaw, subjectsSources] = await Promise.all([
-		client.entities.results.list(reportCardResultsForClassPeriod(classGroupId, periodId)),
+		listAllEntityPages(
+			query => client.entities.results.list(query),
+			{ baseQuery: reportCardResultsForClassPeriod(classGroupId, periodId) },
+		),
 		fetchClassSubjectsSources(client, classGroupId),
 	]);
 	const referencedDefinitionIds = uniqueIds(
-		(resultsRaw ?? []).map(result => result.reportCardDefinitionId),
+		resultsRaw.map(result => result.reportCardDefinitionId),
 	);
 	const missingDefinitionIds = referencedDefinitionIds.filter(
 		id => !definitions.some(definition => definition.id === id),
 	);
-	const missingDefinitionsRaw = missingDefinitionIds.length > 0
-		? await safeOptionalEntityList(() => client.entities.definitions.list(entitiesByIds(missingDefinitionIds)))
-		: [];
+	const missingDefinitionsRaw = await safeOptionalEntityList(() =>
+		listAllEntityPagesByIds(query => client.entities.definitions.list(query), missingDefinitionIds),
+	);
 	const definitionReferences = [
 		...definitions,
 		...(missingDefinitionsRaw ?? []).map(definition => ({

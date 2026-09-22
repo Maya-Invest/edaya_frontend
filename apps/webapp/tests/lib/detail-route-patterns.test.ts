@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { afterEach, describe, expect, it } from 'bun:test';
 import {
 	drawerTabRouteCacheKey,
 	isLikelyDetailPath,
@@ -171,5 +171,27 @@ describe('drawerTabRouteCacheKey', () => {
 		expect(drawerTabRouteCacheKey(new URL('http://local/school/students/stu-1'))).toBe('/school/students/stu-1');
 		expect(drawerTabRouteCacheKey(new URL('http://local/school/students/stu-1/profile'))).toBe('/school/students/stu-1/profile');
 		expect(drawerTabRouteCacheKey(new URL('http://local/school/students/stu-1/grades'))).toBe('/school/students/stu-1/grades');
+	});
+});
+
+describe('academic scope in default cache keys', () => {
+	async function loadContext() {
+		const { academicContext } = await import('$lib/academic/context.svelte');
+		return academicContext;
+	}
+
+	afterEach(async () => {
+		(await loadContext()).reset();
+	});
+
+	it('includes school, year, and period in list and drawer keys', async () => {
+		const academicContext = await loadContext();
+		academicContext.schoolScopeId = 'sch-1';
+		academicContext.yearId = 'year-1';
+		academicContext.periodId = 'period-1';
+		expect(listRouteCacheKey(new URL('http://local/classes/6a/evaluations/e-1/grading')))
+			.toBe('/classes/6a/evaluations::scope=sch-1|year-1|period-1');
+		expect(drawerTabRouteCacheKey(new URL('http://local/school/students/stu-1/attendance')))
+			.toBe('/school/students/stu-1/attendance::scope=sch-1|year-1|period-1');
 	});
 });

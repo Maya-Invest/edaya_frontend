@@ -108,8 +108,8 @@ Every feature **must** declare one surface type. Simple entities **must** use ro
 | Type | Drawer | Mutations | Examples |
 |------|--------|-----------|----------|
 | **Complex** | URL-backed read-only drawer | Entity-header actions → modals; sub-collections read-only, `+ Add` → modal | Student, Staff, Assessment, Incident, Billing |
-| **Simple** | None | Row `···` menu → modals | CatalogService (fees), Payment, Reconciliation, GradeScale, DisciplinaryAction |
-| **Thin drawer** | Sections only (no tabs) | Header actions → modals | CalendarEvent, Inbox delivery, Notification templates |
+| **Simple** | None | Row `···` menu → modals | CatalogService (fees), Payment, Reconciliation, GradeScale, DisciplinaryAction, CalendarEvent |
+| **Thin drawer** | Sections only (no tabs) | Header actions → modals | Inbox delivery, Notification templates |
 | **Layout variant** | None | Page-level or inline modals | Dashboard, School profile, Academic calendar accordion |
 
 **Drawer entity header** (complex + thin): identity block + **up to 2 primary actions** → modals. Destructive actions in overflow `···` only. Body = related content only — not a repeat of list columns.
@@ -126,14 +126,14 @@ These are **fixed** for v1. Do not introduce alternate flows without updating th
 | **Staff permissions** | Catalog at `/configuration/permission-profiles`. Runtime authority stays grant rows on **Staff drawer → Permissions**. No `/configuration/roles` matrix. |
 | **Incident resolve** | **One modal** — involved students, role, optional `DisciplinaryAction` per student, resolution notes. Command: **`resolveIncidentWithOutcomes`** (atomic). Drawer: involved students read-only; edits only via Resolve modal. |
 | **Assessments by `kind`** | **One route** `/evaluations`. Same routed drawer for all kinds: Details + Grading child tabs; Grading shows the exclusive work surface (homework submissions vs grades grid). List row: **kind badge**. |
-| **Homework** | `Assessment` with `kind = homework` on evaluations screen — **no** `/homework` nav. |
-| **Timed assessments** | No exam menu. Appear on **timetable grid** and **evaluations list** (`startsAt`/`endsAt` or `lessonSessionId`). |
+| **Timed assessments** | No exam menu. Quiz/project/other require a visible date and start/end (school timezone) or `lessonSessionId`. They appear on the evaluations list; optional **Add to timetable** (`createSchedule`) is deferred and must not omit times. |
+| **Homework** | `Assessment` with `kind = homework` on evaluations screen — **no** `/homework` nav. Kind is frozen on edit (no homework↔quiz conversion). |
 | **Daily attendance** | **List of days** + drawer (same pattern as timetable session). Edits **permission-gated**, not mode-locked UI. |
-| **Timetable ↔ Schedule** | **From timetable:** New session wizard (Lesson · Activity · Assessment) → creates `Schedule` + materialized occurrence. **From Lessons / Activities / Assessments:** optional inline schedule on create/edit. |
+| **Timetable ↔ Schedule** | **From timetable:** New session wizard (Lesson · Activity · Assessment) → creates `Schedule` + materialized occurrence. **From Lessons / Activities:** optional inline schedule on create/edit. Assessments require occurrence times; optional Add to timetable is deferred. |
 | **Activity on class timetable** | `ActivityEnrollment` (school roster) + **`ClassActivityEnrollment`** (activity ↔ class link for timetable). |
 | **Student Grades tab** | Read-only **links** to class assessment drawer (`/evaluations/{id}`). |
 | **Global Subject** | Inline create/edit in subjects catalog — **no** dedicated Subject admin route. |
-| **Student Attendance tab** | **Mode-agnostic** — all `AttendanceRecord` rows (daily + session anchors). |
+| **Student Attendance tab** | **Mode-agnostic history** — all `AttendanceRecord` rows (daily + session anchors). **Declare** uses the student's class `attendanceMode`: daily → date modal + `recordDailyAttendance`; session → hide Declare and link to `/classes/{classId}/timetable`. |
 | **`attendanceMode` on class** | Required on create; editable on class profile. Warn on mid-year mode switch if records exist for the other mode; never delete historical records. |
 
 ---
@@ -159,7 +159,7 @@ These are **fixed** for v1. Do not introduce alternate flows without updating th
 | `Incident` | Complex drawer at `/school/events/[[id]]` |
 | `StudentIncidentInvolvement` | Sub-collection on incident drawer; resolve modal writes via `resolveIncidentWithOutcomes` |
 | `StudentDisciplinaryAction` | Created in resolve modal; show in drawer post-resolve (target) |
-| `DisciplinaryAction` | Simple list at `/configuration/discipline` — row `···` menu |
+| `DisciplinaryAction` | Simple list inside `/configuration/other` — row `···` menu |
 
 ### 5.3 Permissions
 
@@ -273,13 +273,16 @@ The session contains one typed action-grant display. UI checks use that action's
 | Reconciliation | `/finance/reconciliation` | — |
 | School profile | `/configuration/school` | — |
 | Academic calendar | `/configuration/academic` | — |
+| Weekly period grid | `/configuration/period-grid` | — |
 | Grade levels | `/configuration/grade-levels` | `/configuration/grade-levels/{id}` |
 | Classes config | `/configuration/classes` | `/configuration/classes/{id}` |
 | Subjects catalog | `/configuration/subjects` | `/configuration/subjects/{id}` |
 | Report card models | `/configuration/report-cards` | `/configuration/report-cards/{id}` |
-| Grade scales | `/configuration/grade-scales` | — |
+| Other configurations | `/configuration/other` | — |
+| Grade scales | `/configuration/other/grade-scales` | — |
 | Notification templates | `/configuration/notifications` | `/configuration/notifications/{key}` |
-| Disciplinary catalog | `/configuration/discipline` | — |
+| Disciplinary catalog | `/configuration/other/discipline` | — |
+| Subject categories | `/configuration/other/subject-categories` | — |
 | Permission profiles | `/configuration/permission-profiles` | — |
 | Configuration tools | `/configuration/tools` | — |
 | Teacher assignments hub | `/configuration/tools/teacher-assignments` | — |
@@ -400,10 +403,12 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 - **Drawer tabs:** Details · Grading. Grading is exclusive by `kind` — homework → submissions;
   quiz/project/other → grades grid.
 - **CTA — New assessment modal:**
-  1. Pick **kind** (homework · quiz · project · other)
+  1. Pick **kind** on create only. Kind is **read-only on edit** — no homework↔quiz conversion.
   2. Core fields: title, subject/class subject, dates, grading config
-  3. Optional **Add to timetable** (non-homework): schedule fields → `createSchedule` / materialize when checked
-- **Timetable link:** non-homework with `startsAt`/`endsAt` or `lessonSessionId` appear on timetable grid **and** this list
+  3. Homework: required due date; payload clears `startsAt` / `endsAt` / `lessonSessionId`
+  4. Quiz/project/other: required date + start/end in the school timezone, **or** a lesson session. Do not invent a UTC slot.
+  5. Optional **Add to timetable** (`createSchedule`) is a later Schedule feature
+- **Timetable link:** non-homework with `startsAt`/`endsAt` or `lessonSessionId` can appear on the timetable grid when scheduled; occurrence times are still required on the assessment itself
 - **No** `/homework` route or nav tab
 
 ### 7.13 Classes — Report cards
@@ -454,9 +459,16 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 ### 7.19 Configuration — Academic calendar
 
-- **Entities:** `AcademicYear` · `AcademicPeriod` · `PeriodDefinition`
-- Accordion by year; period + **period definition** CRUD via modals
-- `PeriodDefinition` rows are **weekly slots** (`dayOfWeek` + times); single-row form and optional **quick-setup wizard** (preset → tweak template/weekdays → batch create)
+- **Entities:** `AcademicYear` · `AcademicPeriod`
+- Accordion by year; term-period publish via modals
+- Weekly period slots live on `/configuration/period-grid`, not in this accordion
+
+### 7.19.1 Configuration — Weekly period grid
+
+- **Entity:** `PeriodDefinition` · layout page at `/configuration/period-grid`
+- Year `<select>` lists every year (draft, published, archived) in `?year=`, defaulting to the header year when that year is in the list
+- Slots are weekly (`dayOfWeek` + times); single-row form and optional **quick-setup wizard** (preset → tweak template/weekdays → batch create)
+- Mutations require `SCHOOL_STRUCTURE_CONFIGURE`
 
 ### 7.20 Configuration — Grade levels
 
@@ -484,6 +496,7 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 ### 7.24 Configuration — Grade scales
 
 - **Entity:** `GradeScale` · **Simple** (row `···` only)
+- Route: `/configuration/other/grade-scales` (left catalog picker on `/configuration/other`)
 
 ### 7.25 Configuration — Notification templates
 
@@ -495,6 +508,15 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 ### 7.26 Configuration — Disciplinary catalog
 
 - **Entity:** `DisciplinaryAction` · **Simple** list + row `···` menu
+- Route: `/configuration/other/discipline`
+
+### 7.26.2 Configuration — Subject categories
+
+- **Entity:** `SubjectCategory` · **Simple** list + row `···` menu
+- Route: `/configuration/other/subject-categories`
+- Schools can add, rename, and delete categories. Delete is rejected while a subject still uses the category
+- New schools start with Scientifique, Littéraire, Langues, Sciences humaines, Sport, and Arts
+- Subject forms store `categoryId`. The six default names still use `catalogCategory()` for EN/FR labels
 
 ### 7.26.1 Configuration — Permission profiles
 
@@ -544,13 +566,15 @@ Authoritative surface per entity. §7 has per-feature drawer/tab detail.
 | `StudentCharge` | Complex | `/finance/billing` |
 | `ClassGroup` | Complex | `/configuration/classes` |
 | `GradeLevel` | Complex | `/configuration/grade-levels` |
-| `CalendarEvent` | Thin | `/school/calendar` |
+| `CalendarEvent` | Simple | `/school/calendar` |
 | `MessageDelivery` | Thin | `/account/inbox` |
 | `CatalogService` | Simple | `/finance/fees` |
 | `Payment` | Simple | `/finance/payment` |
 | Reconciliation | Simple page | `/finance/reconciliation` |
-| `GradeScale` | Simple | `/configuration/grade-scales` |
-| `DisciplinaryAction` | Simple | `/configuration/discipline` |
+| `GradeScale` | Simple | `/configuration/other/grade-scales` |
+| `DisciplinaryAction` | Simple | `/configuration/other/discipline` |
+| `SubjectCategory` | Simple | `/configuration/other/subject-categories` |
+| `PeriodDefinition` | Layout | `/configuration/period-grid` |
 | `StaffPermissionProfile` | Simple | `/configuration/permission-profiles` |
 | Notification templates | Thin | `/configuration/notifications` |
 | `School` | Layout | `/configuration/school` |

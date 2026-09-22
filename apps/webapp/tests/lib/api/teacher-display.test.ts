@@ -176,8 +176,15 @@ describe('homeroom teacher loading', () => {
 		const teacher = { id: 'teacher', firstName: 'Aminata', lastName: 'Touré', isActive: true };
 		const { client, requests } = createRecordingSchoolClient([[assignment], [teacher]]);
 		expect(await fetchHomeroomTeacherSources(client, 'class', 'year')).toEqual({ teacherAssignmentsRaw: [assignment], teachersRaw: [teacher] });
-		expect(requests[0]?.body).toMatchObject({ classGroupId: 'class', academicYearId: 'year', kind: 'homeroom', status: 'active' });
-		expect(requests[1]?.body).toEqual({ id: { $in: ['teacher'] } });
+		expect(requests[0]?.body).toMatchObject({
+			classGroupId: { $in: ['class'] },
+			academicYearId: 'year',
+			kind: 'homeroom',
+			status: 'active',
+			$limit: 500,
+			$offset: 0,
+		});
+		expect(requests[1]?.body).toEqual({ id: { $in: ['teacher'] }, $limit: 500, $offset: 0 });
 		const empty = createRecordingSchoolClient([[]]);
 		expect(await fetchHomeroomTeacherSources(empty.client, 'class', 'next-year')).toEqual({ teacherAssignmentsRaw: [], teachersRaw: [] });
 		expect(empty.requests).toHaveLength(1);

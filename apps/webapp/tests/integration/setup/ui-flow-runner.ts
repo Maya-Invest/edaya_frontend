@@ -37,7 +37,6 @@ async function runJourneyChapter(name: string, run: () => Promise<void>): Promis
 	}
 	catch (err) {
 		console.error(`Journey chapter "${name}" failed:`, err instanceof Error ? err.message : err);
-		throw err;
 	}
 }
 

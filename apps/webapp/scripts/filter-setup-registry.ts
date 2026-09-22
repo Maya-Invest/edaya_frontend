@@ -319,14 +319,14 @@ const FILTER_RUNNERS: Array<{
 		},
 	},
 	{
-		match: row => matrixPath(row.endpoint) === '/configuration/discipline' && /filtre kind/i.test(row.action),
+		match: row => matrixPath(row.endpoint) === '/configuration/other/discipline' && /filtre kind/i.test(row.action),
 		setupKey: 'disciplineByKind',
 		run: async (page, ctx, entities, row) => {
 			if (!filterFixturesReady(entities.filterFixtures, 'disciplineByKind')) {
 				return na(row, 'Setup filter-discipline incomplete');
 			}
 			const entry = Object.values(entities.filterFixtures.disciplineByKind ?? {})[0];
-			await gotoFiltered(page, ctx, '/configuration/discipline');
+			await gotoFiltered(page, ctx, '/configuration/other/discipline');
 			await selectListFilter(page, 'all').catch(() => {});
 			if (entry && !(await assertListContains(page, entry.name, true, 20_000))) {
 				return notOk(row, `Discipline entry ${entry.name} not visible`);

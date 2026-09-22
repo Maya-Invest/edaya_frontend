@@ -14,6 +14,7 @@
 	import { formatMinorUnits } from '$lib/finance/money';
 	import { locale, t } from '$lib/i18n';
 	import { Check, Pencil, Plus, XCircle } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readFeeListFilters, writeFeeListFilters } from '$lib/list/list-url-filters';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
@@ -176,7 +177,20 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'fees.csv',
+					headers: ['name', 'category', 'status', 'amount', 'currency'],
+					loadAll: async () => filteredFees.map(fee => [
+						fee.name,
+						fee.category,
+						fee.status,
+						fee.amount,
+						fee.currency,
+					]),
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 

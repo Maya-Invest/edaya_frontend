@@ -27,15 +27,23 @@ export function staffMember(
 }
 
 export function subject(
-	overrides: Partial<Subject> & Pick<Subject, 'id' | 'name'>,
+	overrides: Partial<Subject> & Pick<Subject, 'id' | 'name'> & { category?: string },
 ): Subject {
+	const { category, ...rest } = overrides;
+	const categoryName = category ?? 'Scientifique';
+	const slug = categoryName
+		.normalize('NFD')
+		.replace(/\p{Diacritic}/gu, '')
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '');
 	return {
 		schoolId: SEED_SCHOOL_ID,
 		code: null,
 		defaultCoefficient: 1,
-		category: 'Scientifique',
+		categoryId: `${SEED_SCHOOL_ID}:subject-category:${slug || 'scientifique'}`,
 		color: 'mint',
-		...overrides,
+		...rest,
 	};
 }
 

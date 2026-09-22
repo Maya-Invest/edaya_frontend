@@ -2,6 +2,7 @@ import type { AppShellData } from '$lib/api/shell-data';
 import type { Lang } from '$lib/i18n/dictionaries';
 import type { AcademicPeriod, AcademicYear, ClassNode, GradeLevel, PeriodDefinition, School } from '$lib/types/school';
 import { browser } from '$app/environment';
+import { academicScopeIdentity, nextAcademicScopeGeneration } from '$lib/academic/academic-scope';
 import { buildClassHierarchy } from '$lib/academic/hierarchy';
 import { lang } from '$lib/i18n';
 import { toCanonicalCatalogText } from '$lib/i18n/catalog-label';
@@ -11,6 +12,7 @@ import {
 	localizeGradeLevel,
 	localizePeriodDefinition,
 } from '$lib/i18n/catalog-view';
+import { invalidatePageQueryCache } from '$lib/queries/page-query-cache';
 import { get } from 'svelte/store';
 
 const STORAGE_YEAR = 'edaya:yearId';
@@ -36,6 +38,8 @@ class AcademicContext {
 	yearId = $state('');
 	periodId = $state('');
 	schoolScopeId = $state('');
+	/** Bumped when school/year/period identity changes so PageQuery cannot reuse loadedKey. */
+	scopeGeneration = $state(0);
 
 	periods = $derived(this.canonicalPeriods.map(period => localizeAcademicPeriod(period, this.uiLang)));
 	classes = $derived(this.canonicalClasses.map(node => localizeClassNode(node, this.uiLang)));
@@ -87,12 +91,14 @@ class AcademicContext {
 		if (!schoolId || this.schoolScopeId === schoolId) {
 			return;
 		}
+		const previous = this.scopeIdentity();
 		this.schoolScopeId = schoolId;
 		this.yearId = '';
 		this.periodId = '';
 		if (browser) {
 			this.hydrateSelection();
 		}
+		this.notifyScopeChange(previous);
 	}
 
 	hierarchy = $derived(buildClassHierarchy(this.classes, this.gradeLevels));
@@ -158,18 +164,23 @@ class AcademicContext {
 	}
 
 	setYear(id: string) {
+		const previous = this.scopeIdentity();
 		this.yearId = id;
 		this.syncPeriodToYear();
 		this.persistSelection();
+		this.notifyScopeChange(previous);
 	}
 
 	setPeriod(id: string) {
+		const previous = this.scopeIdentity();
 		this.periodId = id;
 		this.persistSelection();
+		this.notifyScopeChange(previous);
 	}
 
 	/** Year/period chosen during onboarding — survives empty shell bootstrap. */
 	applyOnboardingSelection(yearId: string, periodId: string) {
+		const previous = this.scopeIdentity();
 		if (yearId) {
 			this.yearId = yearId;
 		}
@@ -177,6 +188,7 @@ class AcademicContext {
 			this.periodId = periodId;
 		}
 		this.persistSelection();
+		this.notifyScopeChange(previous);
 	}
 
 	resolveSelectionForApi(): { academicYearId: string; academicPeriodId: string } | null {
@@ -243,8 +255,10 @@ class AcademicContext {
 			}
 		}
 		else {
+			const previous = this.scopeIdentity();
 			this.syncPeriodToYear();
 			this.alignYearWithPeriodCatalog();
+			this.notifyScopeChange(previous);
 		}
 	}
 
@@ -272,6 +286,7 @@ class AcademicContext {
 	}
 
 	reset() {
+		const previous = this.scopeIdentity();
 		this.clearShellCatalog();
 		this.yearId = '';
 		this.periodId = '';
@@ -280,6 +295,20 @@ class AcademicContext {
 			sessionStorage.removeItem(STORAGE_YEAR);
 			sessionStorage.removeItem(STORAGE_PERIOD);
 		}
+		this.notifyScopeChange(previous);
+	}
+
+	private scopeIdentity(): string {
+		return academicScopeIdentity(this.schoolScopeId, this.yearId, this.periodId);
+	}
+
+	private notifyScopeChange(previous: string) {
+		const next = nextAcademicScopeGeneration(previous, this.scopeIdentity(), this.scopeGeneration);
+		if (!next.changed) {
+			return;
+		}
+		this.scopeGeneration = next.generation;
+		invalidatePageQueryCache();
 	}
 
 	/** Clears loaded catalog data without wiping year/period selection (e.g. before shell reload). */

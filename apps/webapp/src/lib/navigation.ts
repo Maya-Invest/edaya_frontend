@@ -15,7 +15,6 @@ import {
 	BookOpen,
 	ClipboardCheck,
 	FileSpreadsheet,
-	Percent,
 	Upload,
 	BadgeDollarSign,
 	Receipt,
@@ -25,7 +24,9 @@ import {
 	Wallet as WalletIcon,
 	Settings2,
 	CalendarRange,
+	CalendarClock,
 	Layers,
+	List,
 } from '$lib/icons';
 import { appPath } from '$lib/navigation/app-navigation';
 import {
@@ -98,13 +99,13 @@ const FINANCE_ICONS: Record<string, LucideIcon> = {
 const CONFIG_ICONS: Record<string, LucideIcon> = {
 	school: Building2,
 	academic: CalendarRange,
+	periodGrid: CalendarClock,
 	gradeLevels: Layers,
 	classGroups: Layers,
 	subjects: BookOpen,
-	gradeScales: Percent,
+	other: List,
 	reportCards: FileSpreadsheet,
 	notificationTemplates: Mail,
-	discipline: AlertTriangle,
 	permissionProfiles: Shield,
 	tools: Upload,
 };
@@ -131,13 +132,13 @@ const FINANCE_ROUTES: Record<string, RouteId> = {
 const CONFIG_ROUTES: Record<string, RouteId> = {
 	school: '/(app)/configuration/school',
 	academic: '/(app)/configuration/academic',
+	periodGrid: '/(app)/configuration/period-grid',
 	gradeLevels: '/(app)/configuration/grade-levels/[[id]]',
 	classGroups: '/(app)/configuration/classes/[[id]]',
 	subjects: '/(app)/configuration/subjects/[[id]]',
-	gradeScales: '/(app)/configuration/grade-scales',
 	reportCards: '/(app)/configuration/report-cards/[[id]]',
 	notificationTemplates: '/(app)/configuration/notifications',
-	discipline: '/(app)/configuration/discipline',
+	other: '/(app)/configuration/other',
 	permissionProfiles: '/(app)/configuration/permission-profiles',
 	tools: '/(app)/configuration/tools',
 };

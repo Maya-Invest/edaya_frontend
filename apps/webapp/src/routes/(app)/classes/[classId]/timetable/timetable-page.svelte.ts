@@ -98,9 +98,6 @@ export class TimetablePageState {
 	}
 
 	seed(classId: string, data: Partial<Omit<TimetablePageSlice, 'classId'>>) {
-		if (this.slice?.classId === classId) {
-			return;
-		}
 		this.applySlice(classId, data);
 	}
 

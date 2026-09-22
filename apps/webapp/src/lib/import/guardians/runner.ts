@@ -43,8 +43,7 @@ export async function runGuardianImport(options: GuardianImportRunOptions): Prom
 
 	for (const [index, row] of rows.entries()) {
 		onProgress?.(index, total);
-		// API has no separate person `code`; import code is persisted as the entity id.
-		const guardianId = row.code;
+		const guardianId = crypto.randomUUID();
 		let guardianRegistered = false;
 		let rowLinksCreated = 0;
 
@@ -52,6 +51,7 @@ export async function runGuardianImport(options: GuardianImportRunOptions): Prom
 			await registerGuardian(client, {
 				schoolId,
 				guardianId,
+				code: row.code,
 				firstName: row.prenom,
 				lastName: row.nom,
 				email: row.email,

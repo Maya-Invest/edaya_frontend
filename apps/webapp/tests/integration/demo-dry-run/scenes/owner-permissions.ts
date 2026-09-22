@@ -31,8 +31,8 @@ export async function runOwnerPermissionChecks(
 			await assertFilterSelectShell(ctx, scene, 'O.3 Report card definitions filter shell');
 		}
 
-		if (await visit(ctx, `${base}/configuration/grade-scales`, scene, 'O.4 Grade scales list', {
-			pathPrefix: '/configuration/grade-scales',
+		if (await visit(ctx, `${base}/configuration/other/grade-scales`, scene, 'O.4 Grade scales list', {
+			pathPrefix: '/configuration/other/grade-scales',
 			selector: 'main',
 		})) {
 			await assertListShell(ctx, scene, 'O.5 Grade scales list shell', { requireFilter: false });

@@ -1,5 +1,11 @@
 import { browser } from '$app/environment';
 import { page } from '$app/stores';
+import {
+	MODAL_QUERY_KEY,
+	MODAL_STEP_QUERY_KEY,
+	MODAL_TAB_QUERY_KEY,
+	MODAL_TARGET_QUERY_KEY,
+} from '$lib/modal/modal-url';
 import { get } from 'svelte/store';
 import { appGoto } from './app-navigation';
 import {
@@ -37,6 +43,21 @@ export function navigateWithinRouteSurface(href: string): void {
 	});
 }
 
+export function followDrawerTabLink(event: MouseEvent, href: string): void {
+	if (
+		event.defaultPrevented
+		|| event.button !== 0
+		|| event.metaKey
+		|| event.ctrlKey
+		|| event.shiftKey
+		|| event.altKey
+	) {
+		return;
+	}
+	event.preventDefault();
+	navigateWithinRouteSurface(href);
+}
+
 export function replaceRouteSurface(href: string): void {
 	const currentState = get(page).state;
 	void appGoto(href, {
@@ -66,4 +87,33 @@ export function closeRouteSurface(parentHref: string): void {
 			routeSurfaceDepth: undefined,
 		},
 	});
+}
+
+export function stripModalSearch(url: URL): string {
+	const next = new URL(url);
+	next.searchParams.delete(MODAL_QUERY_KEY);
+	next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
+	next.searchParams.delete(MODAL_STEP_QUERY_KEY);
+	next.searchParams.delete(MODAL_TAB_QUERY_KEY);
+	return next.search;
+}
+
+export function listSurfaceHref(listPath: string, url: URL): string {
+	return `${listPath}${stripModalSearch(url)}`;
+}
+
+export function currentRouteSurfaceHref(url: URL): string {
+	return `${url.pathname}${stripModalSearch(url)}`;
+}
+
+function hrefWithoutModal(href: string): string {
+	return listSurfaceHref(new URL(href, 'http://local').pathname, new URL(href, 'http://local'));
+}
+
+export function openDetailDrawer(href: string, parentHref: string): void {
+	openRouteSurface(href, hrefWithoutModal(parentHref));
+}
+
+export function closeDetailDrawer(parentHref: string): void {
+	closeRouteSurface(hrefWithoutModal(parentHref));
 }

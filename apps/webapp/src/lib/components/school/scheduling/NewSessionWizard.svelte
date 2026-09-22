@@ -5,7 +5,6 @@
 	import { createAssessmentMutation } from '$lib/api/mutations/evaluation.mutations';
 	import { createSessionMutation } from '$lib/api/mutations/planning.mutations';
 	import { createScheduleMutation } from '$lib/api/mutations/schedule.mutations';
-	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { sessionInstantsForSlot } from '$lib/components/school/scheduling/planning-calendar';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
@@ -187,6 +186,19 @@
 			else {
 				const numericMax = Number.parseFloat(maxScore);
 				const numericCoef = Number.parseFloat(coefficient);
+				const weekAnchor = weekStart.toISOString();
+				const slot = {
+					startsAt: sessionInstantsForSlot(weekAnchor, {
+						day,
+						startTime: start,
+						endTime: end,
+					}).startsAt.toISOString(),
+					endsAt: sessionInstantsForSlot(weekAnchor, {
+						day,
+						startTime: start,
+						endTime: end,
+					}).endsAt.toISOString(),
+				};
 				const assessmentId = await createAssessmentMutation({
 					classGroupId: classId,
 					classSubjectId,
@@ -194,30 +206,12 @@
 					maxScore: numericMax,
 					coefficient: numericCoef,
 					kind: 'quiz',
+					startsAt: slot.startsAt,
+					endsAt: slot.endsAt,
 					successMessage: get(t)('eval.createSuccess', { title: sessionTitle.trim() }),
 				});
 
 				if (assessmentId) {
-					const client = getBrowserSchoolClient();
-					const weekAnchor = weekStart.toISOString();
-					const { startsAt, endsAt } = {
-						startsAt: sessionInstantsForSlot(weekAnchor, {
-							day,
-							startTime: start,
-							endTime: end,
-						}).startsAt.toISOString(),
-						endsAt: sessionInstantsForSlot(weekAnchor, {
-							day,
-							startTime: start,
-							endTime: end,
-						}).endsAt.toISOString(),
-					};
-					const assessment = await client.entities.assessments.get(assessmentId);
-					await client.entities.assessments.save({
-						...assessment,
-						startsAt,
-						endsAt,
-					});
 					createdId = assessmentId;
 				}
 			}

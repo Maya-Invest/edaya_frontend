@@ -1,4 +1,5 @@
 import type { components } from '$lib/api/schema';
+import type { PageQueryRequest } from '../../../lib/teacher-page-status';
 import type { TeachersPageState } from '../../../teachers-page.svelte';
 import { teacherAssignmentsForTeachers } from '$lib/api/entity-list-filters';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -56,9 +57,9 @@ export class TeacherAssignmentsTabState {
 	}
 
 	query() {
-		return (url: URL) => resolveTeacherPageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolveTeacherPageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const teacherId = teacherDetailIdFromUrl(url);
 				if (!teacherId) {
 					return {};
@@ -73,6 +74,7 @@ export class TeacherAssignmentsTabState {
 					status: 'active',
 				});
 
+				signal.throwIfAborted();
 				this.slice = {
 					teacherId,
 					assignments: assignments ?? [],
@@ -82,7 +84,7 @@ export class TeacherAssignmentsTabState {
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load teacher assignments.',
-		});
+		}, request);
 	}
 }
 

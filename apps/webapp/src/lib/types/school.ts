@@ -56,7 +56,9 @@ export interface Subject {
 	hoursPerWeek: number | null;
 	color: 'mint' | 'sky' | 'warm';
 	description: string;
-	category: SubjectCategory;
+	categoryId: string;
+	/** Catalog name. The six defaults are still translated with catalogCategory(). */
+	category: string;
 	code?: string | null;
 	shortName?: string | null;
 	defaultCoefficient?: number | null;

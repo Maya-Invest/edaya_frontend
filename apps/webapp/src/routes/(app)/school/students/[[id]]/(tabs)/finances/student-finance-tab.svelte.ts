@@ -1,5 +1,6 @@
 import type { AccountStatement, StudentFinanceSummary } from '$lib/api/finance-types';
 import type { StudentDetailHost } from '../../../lib/student-detail-host';
+import type { PageQueryRequest } from '../../../lib/student-page-status';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadStudentAccountStatement, loadStudentFinanceSummary } from '$lib/api/finance-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -54,9 +55,9 @@ export class StudentFinanceTabState {
 	}
 
 	query() {
-		return (url: URL) => resolveStudentPageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const studentId = studentDetailIdFromPathname(url.pathname);
 				const academicYearId = academicContext.yearId;
 				if (!studentId || !academicYearId) {
@@ -68,11 +69,12 @@ export class StudentFinanceTabState {
 					loadStudentFinanceSummary(client, { studentId, academicYearId }),
 					loadStudentAccountStatement(client, { studentId, academicYearId }),
 				]);
+				signal.throwIfAborted();
 				this.seed(studentId, { summary, statement });
 				return {};
 			},
 			hasItems: () => true,
-		});
+		}, request);
 	}
 }
 

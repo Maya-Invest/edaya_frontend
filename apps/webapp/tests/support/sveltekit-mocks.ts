@@ -35,6 +35,33 @@ mock.module('$app/navigation', () => ({
 	disableScrollHandling: () => {},
 }));
 
+function readableStore<T>(value: T) {
+	return {
+		subscribe(run: (next: T) => void) {
+			run(value);
+			return () => {};
+		},
+	};
+}
+
+mock.module('$app/stores', () => ({
+	page: readableStore({
+		url: new URL('http://localhost/'),
+		params: {},
+		route: { id: null },
+		status: 200,
+		error: null,
+		data: {},
+		form: null,
+		state: {},
+	}),
+	navigating: readableStore(null),
+	updated: {
+		...readableStore(false),
+		check: async () => false,
+	},
+}));
+
 mock.module('$app/paths', () => ({
 	base: '',
 	assets: '',
@@ -81,6 +108,17 @@ stubSvelteModule('$lib/entity-versions.svelte', {
 	entityVersions: { bump: () => {} },
 });
 
+stubSvelteModule('$lib/toast.svelte', {
+	toast: {
+		success() {},
+		info() {},
+		error() {},
+		dismiss() {},
+		push() {},
+		items: [],
+	},
+});
+
 stubSvelteModule('$lib/academic/context.svelte', {
 	academicContext: {
 		years: [],
@@ -90,15 +128,24 @@ stubSvelteModule('$lib/academic/context.svelte', {
 		schools: [],
 		yearId: '',
 		periodId: '',
+		schoolScopeId: '',
+		scopeGeneration: 0,
 		shellReady: false,
 		studentCount: 0,
 		guardianCount: 0,
 		staffCount: 0,
 		teacherCount: 0,
 		setSchoolScope() {},
+		setYear() {},
+		setPeriod() {},
 		initFromShell() {},
 		clearShellCatalog() {},
-		reset() {},
+		reset() {
+			this.yearId = '';
+			this.periodId = '';
+			this.schoolScopeId = '';
+			this.scopeGeneration = 0;
+		},
 	},
 });
 

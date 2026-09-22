@@ -13,7 +13,7 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
 	import { Mail, Plus } from '$lib/icons';
-	import { downloadCsv } from '$lib/list/list-csv-export';
+	import { downloadCsv, exportMatchingList, loadMatchingCollection } from '$lib/list/list-csv-export';
 	import { ListSelectionState } from '$lib/list/list-selection-state.svelte';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
@@ -112,6 +112,30 @@
 		]);
 		toast.success($t('list.exportedCount', { n: selectedStaff.length }));
 	}
+
+	function exportMatching() {
+		return exportMatchingList({
+			filename: 'staff.csv',
+			headers: ['name', 'role', 'classes'],
+			loadAll: async () => {
+				const matching = await loadMatchingCollection({
+					isComplete: () => staffPage.fullRosterStaff.length >= staffPage.totalStaff
+						|| staffPage.staff.length >= staffPage.totalStaff,
+					ensureComplete: () => staffPage.loadFullRoster(),
+					current: () => staffPage.filterVisible(
+						staffPage.fullRosterStaff.length > 0
+							? staffPage.fullRosterStaff
+							: staffPage.staff,
+					),
+				});
+				return matching.map(member => [
+					member.name,
+					member.role,
+					member.classes.map(classId => classNameFor(classId)).join('; '),
+				]);
+			},
+		});
+	}
 </script>
 
 <div class="animate-fade-in">
@@ -150,6 +174,7 @@
 			<ListMoreMenu
 				exportOnly
 				onEnterSelectMode={selection.selectionMode ? undefined : () => selection.enterSelectionMode()}
+				onExport={() => void exportMatching()}
 			/>
 		{/snippet}
 	</ListPageHeader>

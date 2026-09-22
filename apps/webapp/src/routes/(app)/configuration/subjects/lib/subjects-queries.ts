@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { SubjectsPageSlice } from './subjects-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
 import { listAllEntityPages, schoolScopedEntityList } from '$lib/api/entity-list-filters';
@@ -60,9 +61,9 @@ export async function loadSubjectsSlice(): Promise<SubjectsPageSlice> {
 }
 
 export function querySubjectsListPage() {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptySubjectsSlice(),
 		load: () => loadSubjectsSlice(),
 		hasItems: () => true,
-	});
+	}, request);
 }

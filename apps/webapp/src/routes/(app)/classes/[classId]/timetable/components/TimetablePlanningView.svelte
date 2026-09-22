@@ -25,6 +25,7 @@
 	import { ChevronLeft, ChevronRight, Plus } from '$lib/icons';
 	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { canEditTimetable, hasPermission } from '$lib/permissions';
 	import { getPlanningState } from '$lib/scheduling/planning-state.svelte';
 	import { cn } from '$lib/utils';
@@ -149,7 +150,10 @@
 								{title}
 								onCreated={async (sessionId) => {
 									await onRefresh?.();
-									appGoto(detailHref.classPlanning(classId, sessionId));
+									openDetailDrawer(
+										detailHref.classPlanning(classId, sessionId),
+										currentRouteSurfaceHref($page.url),
+									);
 								}}
 							/>
 						{/key}

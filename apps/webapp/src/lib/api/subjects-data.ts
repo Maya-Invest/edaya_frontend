@@ -1,18 +1,15 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { ClassSubjectInstructorSources } from '$lib/api/teacher-display';
-import type { CatalogChapter, Subject, SubjectCategory } from '$lib/types/school';
+import type { CatalogChapter, Subject } from '$lib/types/school';
 import type { EntityQuery } from '@maya-invest/edaya-api-client';
 import {
 	classGroupScope,
-	classSubjectsForClasses,
-	entitiesByIds,
-	gradeLevelSubjectMattersForGradeLevelSubjects,
-	gradeLevelSubjectsForLevels,
 	listAllEntityPages,
+	listAllEntityPagesByIds,
+	listAllEntityPagesForIdFilters,
 	schoolScopedEntityList,
 	schoolSubjectsCatalogList,
-	subjectMattersForSubjects,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
@@ -22,6 +19,7 @@ import {
 	teacherNameForClassSubject,
 } from '$lib/api/teacher-display';
 import { buildSubjectChapterSummary } from '$lib/subjects/chapter-summary';
+import { categoryNameById, loadSubjectCategories } from '$lib/api/subject-categories-data';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -37,12 +35,14 @@ export interface CatalogSubjectsSources {
 	subjectsRaw: SubjectRaw[];
 	subjectMattersRaw: SubjectMatterRaw[];
 	gradeLevelSubjectMattersRaw: GradeLevelSubjectMatterRaw[];
+	categoryNameById?: Record<string, string>;
 }
 
 export interface ClassSubjectsSources extends ClassSubjectInstructorSources {
 	classSubjectsRaw: ClassSubjectRaw[];
 	subjectsRaw: SubjectRaw[];
 	subjectMattersRaw: SubjectMatterRaw[];
+	categoryNameById?: Record<string, string>;
 }
 
 const SUBJECTS_PARENT_SCOPE
@@ -61,30 +61,32 @@ async function listPages<T>(
 async function listPagesForIds<T>(
 	ids: readonly string[],
 	list: (query: EntityQuery) => Promise<T[] | null | undefined>,
-	baseQuery: EntityQuery,
+	field: string,
 ): Promise<T[]> {
-	if (ids.length === 0) {
-		return [];
-	}
-	return listPages(list, baseQuery);
+	return listAllEntityPagesForIdFilters(
+		async query => safeOptionalEntityList(() => list(query)),
+		[{ field, ids }],
+	);
 }
 
-const SUBJECT_CATEGORIES = new Set<SubjectCategory>([
-	'Scientifique',
-	'Littéraire',
-	'Langues',
-	'Sciences humaines',
-	'Sport',
-	'Arts',
-]);
+const DEFAULT_CATEGORY_BY_SLUG: Record<string, string> = {
+	scientifique: 'Scientifique',
+	litteraire: 'Littéraire',
+	langues: 'Langues',
+	'sciences-humaines': 'Sciences humaines',
+	sport: 'Sport',
+	arts: 'Arts',
+};
 
 const SUBJECT_COLORS = new Set<Subject['color']>(['mint', 'sky', 'warm']);
 
-function subjectCategory(raw: SubjectRaw): SubjectCategory {
-	if (raw.category && SUBJECT_CATEGORIES.has(raw.category as SubjectCategory)) {
-		return raw.category as SubjectCategory;
+function subjectCategory(raw: SubjectRaw, names?: Record<string, string>): string {
+	const fromCatalog = names?.[raw.categoryId];
+	if (fromCatalog) {
+		return fromCatalog;
 	}
-	return 'Scientifique';
+	const slug = raw.categoryId.split(':subject-category:').at(-1) ?? '';
+	return DEFAULT_CATEGORY_BY_SLUG[slug] ?? '';
 }
 
 function subjectColor(raw: SubjectRaw): Subject['color'] {
@@ -179,6 +181,7 @@ function mapCatalogSubjectEntry(input: {
 	gradeLevelSubject?: GradeLevelSubjectRaw;
 	subjectMattersRaw: SubjectMatterRaw[];
 	gradeLevelSubjectMattersRaw: readonly GradeLevelSubjectMatterRaw[];
+	categoryNameById?: Record<string, string>;
 }): Subject {
 	const catalogChapters = catalogChaptersForGradeLevelSubject(
 		input.id,
@@ -200,7 +203,8 @@ function mapCatalogSubjectEntry(input: {
 		color: subjectColor(input.subject),
 		description: buildSubjectChapterSummary(catalogChapters.map(c => c.name))
 			|| descriptionForSubject(input.subject, linkedMatters),
-		category: subjectCategory(input.subject),
+		categoryId: input.subject.categoryId,
+		category: subjectCategory(input.subject, input.categoryNameById),
 		code: input.subject.code ?? null,
 		shortName: input.subject.shortName ?? null,
 		defaultCoefficient: input.subject.defaultCoefficient
@@ -241,24 +245,24 @@ export async function fetchCatalogSubjectsSources(
 		listPagesForIds(
 			gradeLevelIds,
 			query => client.entities.gradeLevelSubjects.list(query),
-			gradeLevelSubjectsForLevels(gradeLevelIds),
+			'gradeLevelId',
 		),
 		listPagesForIds(
 			classGroupIds,
 			query => client.entities.classSubjects.list(query),
-			classSubjectsForClasses(classGroupIds),
+			'classGroupId',
 		),
 		listPagesForIds(
 			subjectIds,
 			query => client.entities.subjectMatters.list(query),
-			subjectMattersForSubjects(subjectIds),
+			'subjectId',
 		),
 	]);
 	const gradeLevelSubjectIds = uniqueIds(gradeLevelSubjectsRaw.map(entry => entry.id));
 	const gradeLevelSubjectMattersRaw = await listPagesForIds(
 		gradeLevelSubjectIds,
 		query => client.entities.gradeLevelSubjectMatters.list(query),
-		gradeLevelSubjectMattersForGradeLevelSubjects(gradeLevelSubjectIds),
+		'gradeLevelSubjectId',
 	);
 
 	return {
@@ -267,6 +271,7 @@ export async function fetchCatalogSubjectsSources(
 		subjectsRaw,
 		subjectMattersRaw,
 		gradeLevelSubjectMattersRaw,
+		categoryNameById: categoryNameById(await loadSubjectCategories(client, schoolId)),
 	};
 }
 
@@ -301,6 +306,7 @@ export function mapCatalogSubjects(
 				gradeLevelSubject,
 				subjectMattersRaw: sources.subjectMattersRaw,
 				gradeLevelSubjectMattersRaw: sources.gradeLevelSubjectMattersRaw,
+				categoryNameById: sources.categoryNameById,
 			}));
 		}
 		return entries.sort((left, right) => left.name.localeCompare(right.name, 'fr'));
@@ -333,6 +339,7 @@ export function mapCatalogSubjects(
 			hoursPerWeek: hoursPerWeekForSubject(subject, classSubject, sources.subjectMattersRaw),
 			subjectMattersRaw: sources.subjectMattersRaw,
 			gradeLevelSubjectMattersRaw: sources.gradeLevelSubjectMattersRaw,
+			categoryNameById: sources.categoryNameById,
 		}));
 	}
 
@@ -412,12 +419,12 @@ export async function fetchSchoolSubjectsSources(
 		listPagesForIds(
 			classGroupIds,
 			query => client.entities.classSubjects.list(query),
-			classSubjectsForClasses(classGroupIds),
+			'classGroupId',
 		),
 		listPagesForIds(
 			subjectIds,
 			query => client.entities.subjectMatters.list(query),
-			subjectMattersForSubjects(subjectIds),
+			'subjectId',
 		),
 	]);
 	const classSubjectIds = uniqueIds(classSubjectsRaw.map(classSubject => classSubject.id));
@@ -427,6 +434,7 @@ export async function fetchSchoolSubjectsSources(
 		classSubjectsRaw,
 		subjectsRaw,
 		subjectMattersRaw,
+		categoryNameById: categoryNameById(await loadSubjectCategories(client, schoolId)),
 		...instructorSources,
 	};
 }
@@ -435,7 +443,10 @@ export async function fetchClassSubjectsSources(
 	client: SchoolClient,
 	classGroupId: string,
 ): Promise<ClassSubjectsSources> {
-	const classSubjectsRaw = (await client.entities.classSubjects.list(classGroupScope(classGroupId))) ?? [];
+	const classSubjectsRaw = await listAllEntityPages(
+		query => client.entities.classSubjects.list(query),
+		{ baseQuery: classGroupScope(classGroupId) },
+	);
 	const classSubjectIds = uniqueIds(classSubjectsRaw.map(classSubject => classSubject.id));
 	const subjectIds = uniqueIds(classSubjectsRaw.map(classSubject => classSubject.subjectId));
 
@@ -443,20 +454,24 @@ export async function fetchClassSubjectsSources(
 		subjectsRaw,
 		subjectMattersRaw,
 	] = await Promise.all([
-		subjectIds.length > 0
-			? client.entities.subjects.list(entitiesByIds(subjectIds))
-			: Promise.resolve([]),
-		subjectIds.length > 0
-			? client.entities.subjectMatters.list(subjectMattersForSubjects(subjectIds))
-			: Promise.resolve([]),
+		listAllEntityPagesByIds(query => client.entities.subjects.list(query), subjectIds),
+		listPagesForIds(
+			subjectIds,
+			query => client.entities.subjectMatters.list(query),
+			'subjectId',
+		),
 	]);
 
 	const instructorSources = await fetchClassSubjectInstructorSourcesBundle(client, classSubjectIds);
+	const schoolId = subjectsRaw[0]?.schoolId ?? '';
 
 	return {
 		classSubjectsRaw,
-		subjectsRaw: subjectsRaw ?? [],
-		subjectMattersRaw: subjectMattersRaw ?? [],
+		subjectsRaw,
+		subjectMattersRaw,
+		...(schoolId
+			? { categoryNameById: categoryNameById(await loadSubjectCategories(client, schoolId)) }
+			: {}),
 		...instructorSources,
 	};
 }
@@ -485,7 +500,8 @@ export function mapClassSubjects(
 			hoursPerWeek: hoursPerWeekForSubject(subject, classSubject, sources.subjectMattersRaw),
 			color: subjectColor(subject),
 			description: teacher,
-			category: subjectCategory(subject),
+			categoryId: subject.categoryId,
+			category: subjectCategory(subject, sources.categoryNameById),
 			code: subject.code ?? null,
 			shortName: subject.shortName ?? null,
 			defaultCoefficient: classSubject.coefficient ?? subject.defaultCoefficient ?? null,
@@ -518,26 +534,29 @@ export async function loadClassSubjectsByIds(
 		return [];
 	}
 
-	const classSubjectsRaw = await client.entities.classSubjects.list(entitiesByIds(ids));
+	const classSubjectsRaw = await listAllEntityPagesByIds(
+		query => client.entities.classSubjects.list(query),
+		ids,
+	);
 	if (classSubjectsRaw.length === 0) {
 		return [];
 	}
 
 	const subjectIds = uniqueIds(classSubjectsRaw.map(entry => entry.subjectId));
 	const [subjectsRaw, subjectMattersRaw] = await Promise.all([
-		subjectIds.length > 0
-			? client.entities.subjects.list(entitiesByIds(subjectIds))
-			: Promise.resolve([]),
-		subjectIds.length > 0
-			? safeOptionalEntityList(() => client.entities.subjectMatters.list(subjectMattersForSubjects(subjectIds)))
-			: Promise.resolve([]),
+		listAllEntityPagesByIds(query => client.entities.subjects.list(query), subjectIds),
+		listPagesForIds(
+			subjectIds,
+			query => client.entities.subjectMatters.list(query),
+			'subjectId',
+		),
 	]);
 	const fetchedClassSubjectIds = uniqueIds(classSubjectsRaw.map(entry => entry.id));
 	const instructorSources = await fetchClassSubjectInstructorSourcesBundle(client, fetchedClassSubjectIds);
 	const sources: ClassSubjectsSources = {
 		classSubjectsRaw,
-		subjectsRaw: subjectsRaw ?? [],
-		subjectMattersRaw: subjectMattersRaw ?? [],
+		subjectsRaw,
+		subjectMattersRaw,
 		...instructorSources,
 	};
 	const classIds = uniqueIds(classSubjectsRaw.map(entry => entry.classGroupId));

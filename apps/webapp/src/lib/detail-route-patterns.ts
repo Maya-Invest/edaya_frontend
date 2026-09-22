@@ -1,3 +1,7 @@
+import { academicScopeCacheSegment as formatAcademicScopeCacheSegment } from '$lib/academic/academic-scope';
+import { academicContext } from '$lib/academic/context.svelte';
+import { withAcademicScopeSegment } from '$lib/queries/page-query-runtime';
+
 const DETAIL_PATH_PATTERNS = [
 	/^\/account\/inbox\/[^/]+$/,
 	/^\/school\/(students|guardians|staff|teachers|activities|announcements|events|calendar)\/[^/]+$/,
@@ -130,14 +134,26 @@ function cacheKeyWithDemo(pathname: string, url: URL): string {
 	return demo ? `${pathname}?demo=${demo}` : pathname;
 }
 
+export function academicScopeCacheSegment(): string {
+	return formatAcademicScopeCacheSegment(
+		academicContext.schoolScopeId,
+		academicContext.yearId,
+		academicContext.periodId,
+	);
+}
+
+function withAcademicScope(base: string): string {
+	return withAcademicScopeSegment(base, academicScopeCacheSegment());
+}
+
 /** Stable key for list page data — ignores optional detail segments in the URL. */
 export function listRouteCacheKey(url: URL): string {
 	const pathname = url.pathname.replace(/\/$/, '') || '/';
-	return cacheKeyWithDemo(normalizeListPathname(pathname), url);
+	return withAcademicScope(cacheKeyWithDemo(normalizeListPathname(pathname), url));
 }
 
 /** Stable key for drawer tab PageQuery instances — pathname only, separate from the list cache. */
 export function drawerTabRouteCacheKey(url: URL): string {
 	const pathname = url.pathname.replace(/\/$/, '') || '/';
-	return cacheKeyWithDemo(pathname, url);
+	return withAcademicScope(cacheKeyWithDemo(pathname, url));
 }

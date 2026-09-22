@@ -162,6 +162,12 @@ export const CONFIG_NAV_DEFS: NavItemDefinition[] = [
 		permissions: ['ACADEMIC_PROGRAM_READ', 'ACADEMIC_PROGRAM_UPDATE', 'SCHOOL_STRUCTURE_READ'],
 	},
 	{
+		key: 'periodGrid',
+		labelKey: 'config.periodGrid',
+		href: '/configuration/period-grid',
+		permissions: ['ACADEMIC_PROGRAM_READ', 'ACADEMIC_PROGRAM_UPDATE', 'SCHOOL_STRUCTURE_READ'],
+	},
+	{
 		key: 'gradeLevels',
 		labelKey: 'config.gradeLevels',
 		href: '/configuration/grade-levels',
@@ -180,12 +186,6 @@ export const CONFIG_NAV_DEFS: NavItemDefinition[] = [
 		permissions: ['ACADEMIC_PROGRAM_READ', 'ACADEMIC_PROGRAM_UPDATE'],
 	},
 	{
-		key: 'gradeScales',
-		labelKey: 'config.gradeScales',
-		href: '/configuration/grade-scales',
-		permissions: ['REPORT_CARD_CONFIGURE', 'EXAM_CONFIG_READ', 'EXAM_CONFIG_CONFIGURE'],
-	},
-	{
 		key: 'reportCards',
 		labelKey: 'config.reportCards',
 		href: '/configuration/report-cards',
@@ -198,10 +198,17 @@ export const CONFIG_NAV_DEFS: NavItemDefinition[] = [
 		permissions: ['SCHOOL_LIFECYCLE_MANAGE'],
 	},
 	{
-		key: 'discipline',
-		labelKey: 'config.discipline',
-		href: '/configuration/discipline',
-		permissions: ['DISCIPLINE_VALIDATE'],
+		key: 'other',
+		labelKey: 'config.other',
+		href: '/configuration/other',
+		permissions: [
+			'REPORT_CARD_CONFIGURE',
+			'EXAM_CONFIG_READ',
+			'EXAM_CONFIG_CONFIGURE',
+			'DISCIPLINE_VALIDATE',
+			'ACADEMIC_PROGRAM_READ',
+			'ACADEMIC_PROGRAM_UPDATE',
+		],
 	},
 	{
 		key: 'permissionProfiles',

@@ -36,9 +36,6 @@ export class TeachingPageState {
 	}
 
 	seed(classId: string, data: Partial<Omit<TeachingPageSlice, 'classId'>>) {
-		if (this.slice?.classId === classId) {
-			return;
-		}
 		this.applySlice(classId, data);
 	}
 

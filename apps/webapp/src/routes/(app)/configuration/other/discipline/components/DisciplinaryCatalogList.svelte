@@ -12,6 +12,7 @@
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
 	import { Pencil, Plus, Trash2 } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
@@ -152,7 +153,19 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'disciplinary-catalog.csv',
+					headers: ['name', 'kind', 'severity', 'description'],
+					loadAll: async () => filteredActions.map(action => [
+						action.name,
+						action.kind,
+						action.severity ?? '',
+						action.description ?? '',
+					]),
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 

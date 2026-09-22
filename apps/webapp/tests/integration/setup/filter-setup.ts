@@ -559,11 +559,11 @@ export async function setupFilterDiscipline(
 ): Promise<SetupStepResult> {
 	const { page } = ctx;
 	try {
-		await gotoAppPage(ctx, '/configuration/discipline');
+		await gotoAppPage(ctx, '/configuration/other/discipline');
 		await waitForPageQuery(page);
 
 		const name = `E2E-Discipline-${Date.now()}`;
-		const opened = await clickCreateButton(page, 'CRUD entrée', '/configuration/discipline');
+		const opened = await clickCreateButton(page, 'CRUD entrée', '/configuration/other/discipline');
 		if (!opened) {
 			return { step: 'filter-discipline', ok: false, detail: 'Discipline create modal not found' };
 		}

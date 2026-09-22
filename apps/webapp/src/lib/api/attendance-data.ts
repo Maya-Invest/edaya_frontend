@@ -4,8 +4,9 @@ import type { AttendanceDay } from '$lib/types/school';
 import type { SessionDetail } from '$lib/types/session-detail';
 import {
 	activeEnrollmentsForClass,
-	attendanceRecordsForOccurrences,
 	attendancesForClass,
+	listAllEntityPages,
+	listAllEntityPagesForIdFilters,
 } from '$lib/api/entity-list-filters';
 import { mapStudents, fetchClassPeopleSources } from '$lib/api/people-data';
 import { buildOccurrenceAttendanceDetail } from '$lib/api/session-detail-data';
@@ -68,14 +69,21 @@ export async function fetchClassAttendanceDaysSources(
 	studentCount: number;
 }> {
 	const [occurrencesRaw, enrollmentsRaw] = await Promise.all([
-		safeEntityList(() => client.entities.attendances.list(attendancesForClass(classGroupId))),
-		safeEntityList(() => client.entities.enrollments.list(activeEnrollmentsForClass(classGroupId))),
+		safeEntityList(() => listAllEntityPages(
+			query => client.entities.attendances.list(query),
+			{ baseQuery: attendancesForClass(classGroupId) },
+		)),
+		safeEntityList(() => listAllEntityPages(
+			query => client.entities.enrollments.list(query),
+			{ baseQuery: activeEnrollmentsForClass(classGroupId) },
+		)),
 	]);
 
 	const occurrenceIds = occurrencesRaw.map(occurrence => occurrence.id);
-	const recordsRaw = occurrenceIds.length > 0
-		? await safeEntityList(() => client.entities.attendance.list(attendanceRecordsForOccurrences(occurrenceIds)))
-		: [];
+	const recordsRaw = await listAllEntityPagesForIdFilters(
+		query => client.entities.attendance.list(query),
+		[{ field: 'attendanceId', ids: occurrenceIds }],
+	);
 
 	return {
 		occurrencesRaw,
@@ -120,8 +128,9 @@ export async function loadAttendanceDayDetail(
 	}
 
 	const classStudents = mapStudents(await fetchClassPeopleSources(client, occurrence.classGroupId));
-	const attendanceRaw = await client.entities.attendance.list(
-		attendanceRecordsForOccurrences([occurrenceId]),
+	const attendanceRaw = await listAllEntityPagesForIdFilters(
+		query => client.entities.attendance.list(query),
+		[{ field: 'attendanceId', ids: [occurrenceId] }],
 	);
 
 	return buildOccurrenceAttendanceDetail({

@@ -3,7 +3,7 @@ import {
 	clonePeriodDefinitionPreset,
 	expandPeriodDefinitionTemplate,
 	isTeachingSlotForExpandedRow,
-} from '../../../../../src/routes/(app)/configuration/academic/lib/period-definition-presets';
+} from '../../../../../src/routes/(app)/configuration/period-grid/lib/period-definition-presets';
 
 describe('period-definition-presets', () => {
 	test('expands standard secondary across weekdays', () => {

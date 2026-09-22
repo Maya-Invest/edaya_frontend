@@ -1,6 +1,11 @@
 <script lang="ts">
-	import type { PlanningEvent, Subject, SubjectCategory } from '$lib/types/school';
+	import type { PlanningEvent, Subject } from '$lib/types/school';
+	import type { SubjectCategoryOption } from '$lib/api/subject-categories-data';
+	import { defaultSubjectCategoryId, loadSubjectCategories } from '$lib/api/subject-categories-data';
 	import { createScheduleMutation } from '$lib/api/mutations/schedule.mutations';
+	import { getBrowserSchoolClient } from '$lib/api/school-client';
+	import { authSession } from '$lib/auth/session.svelte';
+	import { catalogCategory } from '$lib/i18n/catalog-label';
 	import { createSubjectForClassMutation, updateSubjectMutation } from '$lib/api/mutations/subject.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
@@ -8,19 +13,11 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
-	import { t } from '$lib/i18n';
+	import { lang, t } from '$lib/i18n';
 	import { get } from 'svelte/store';
 
 	const PLANNING_DAYS: PlanningEvent['day'][] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
-	const CATEGORIES: SubjectCategory[] = [
-		'Scientifique',
-		'Littéraire',
-		'Langues',
-		'Sciences humaines',
-		'Sport',
-		'Arts',
-	];
 	const COLORS: Subject['color'][] = ['mint', 'sky', 'warm'];
 
 	const COLOR_LABELS: Record<Subject['color'], string> = {
@@ -52,7 +49,8 @@
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let name = $state('');
-	let category = $state<SubjectCategory>('Scientifique');
+	let categories = $state<SubjectCategoryOption[]>([]);
+	let categoryId = $state('');
 	let color = $state<Subject['color']>('mint');
 	let addToTimetable = $state(false);
 	let scheduleDay = $state<PlanningEvent['day']>('Mon');
@@ -61,17 +59,36 @@
 
 	const isEdit = $derived(subject !== undefined);
 	const colorLabel = $derived(COLOR_LABELS[color]);
-	const canSubmit = $derived(name.trim().length > 0 && (isEdit || (classId?.length ?? 0) > 0));
+	const canSubmit = $derived(
+		name.trim().length > 0
+		&& categoryId.length > 0
+		&& (isEdit || (classId?.length ?? 0) > 0),
+	);
+	const selectedCategoryName = $derived(
+		categories.find(category => category.id === categoryId)?.name ?? '',
+	);
+
+	async function loadCategories() {
+		const schoolId = authSession.schoolId;
+		if (!schoolId) {
+			categories = [];
+			return;
+		}
+		categories = await loadSubjectCategories(getBrowserSchoolClient(), schoolId);
+		if (!categories.some(category => category.id === categoryId)) {
+			categoryId = subject?.categoryId || defaultSubjectCategoryId(categories);
+		}
+	}
 
 	function resetForm() {
 		if (subject) {
 			name = subject.name;
-			category = subject.category;
+			categoryId = subject.categoryId;
 			color = subject.color;
 		}
 		else {
 			name = '';
-			category = 'Scientifique';
+			categoryId = defaultSubjectCategoryId(categories);
 			color = 'mint';
 			addToTimetable = false;
 			scheduleDay = 'Mon';
@@ -81,8 +98,10 @@
 	}
 
 	$effect(() => {
-		if (open && !wasOpen)
+		if (open && !wasOpen) {
 			resetForm();
+			void loadCategories();
+		}
 		wasOpen = open;
 	});
 
@@ -95,7 +114,7 @@
 			const ok = await updateSubjectMutation({
 				classSubjectId: subject.id,
 				name,
-				category,
+				categoryId,
 				color,
 				successMessage: get(t)('subjects.updateSuccess', { name: name.trim() }),
 			});
@@ -108,7 +127,7 @@
 			const classSubjectId = await createSubjectForClassMutation({
 				classGroupId: classId,
 				name,
-				category,
+				categoryId,
 				color,
 				successMessage: get(t)('subjects.createSuccess', { name: name.trim() }),
 			});
@@ -171,15 +190,17 @@
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('subjects.category')}
 			</Label>
-			<Select.Root type="single" value={category} onValueChange={v => v && (category = v as SubjectCategory)}>
+			<Select.Root type="single" value={categoryId} onValueChange={value => value && (categoryId = value)}>
 				<Select.Trigger>
 					<Select.Value placeholder={$t('subjects.category')}>
-						{category}
+						{catalogCategory(selectedCategoryName, $lang)}
 					</Select.Value>
 				</Select.Trigger>
 				<Select.Content class="z-[100]">
-					{#each CATEGORIES as cat (cat)}
-						<Select.Item value={cat} label={cat}>{cat}</Select.Item>
+					{#each categories as category (category.id)}
+						<Select.Item value={category.id} label={catalogCategory(category.name, $lang)}>
+							{catalogCategory(category.name, $lang)}
+						</Select.Item>
 					{/each}
 				</Select.Content>
 			</Select.Root>

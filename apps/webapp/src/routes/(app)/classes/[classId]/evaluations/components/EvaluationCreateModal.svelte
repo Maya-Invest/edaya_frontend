@@ -1,11 +1,13 @@
 <script lang="ts">
 	import type { Evaluation } from '$lib/types/school';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import { DEFAULT_SCHOOL_TIMEZONE } from '$lib/api/school-data';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
-	import { todayDateInput } from '$lib/date/format';
+	import { civilDateTimeInTimeZoneToIso, isoToZonedDateAndTime, todayDateInput } from '$lib/date/format';
 	import { lang, t } from '$lib/i18n';
 	import { catalogSubjectName } from '$lib/i18n/catalog-label';
 	import { get } from 'svelte/store';
@@ -35,9 +37,13 @@
 	let coefficient = $state('1');
 	let kind = $state<(typeof ASSESSMENT_KINDS)[number]>('quiz');
 	let dueDate = $state('');
+	let occurrenceDate = $state('');
+	let startTime = $state('09:00');
+	let endTime = $state('10:00');
 
 	const isEdit = $derived(evaluation !== null);
 	const isHomework = $derived(kind === 'homework');
+	const timeZone = $derived(academicContext.schools[0]?.timeZone?.trim() || DEFAULT_SCHOOL_TIMEZONE);
 	const classSubjects = $derived(evaluationsPage.subjectsFor(classId));
 	const selectedSubjectName = $derived.by(() => {
 		const subject = classSubjects.find(entry => entry.id === classSubjectId);
@@ -56,7 +62,13 @@
 		if (!Number.isFinite(numericCoef) || numericCoef <= 0) {
 			return false;
 		}
-		return !isHomework || dueDate.length > 0;
+		if (isHomework) {
+			return dueDate.length > 0;
+		}
+		return occurrenceDate.length > 0
+			&& startTime.length > 0
+			&& endTime.length > 0
+			&& endTime > startTime;
 	});
 
 	function resetForm() {
@@ -68,6 +80,21 @@
 			coefficient = String(evaluation.coefficient);
 			kind = evaluation.kind;
 			dueDate = evaluation.dueDate ?? evaluation.date;
+			if (evaluation.startsAt) {
+				const start = isoToZonedDateAndTime(evaluation.startsAt, timeZone);
+				occurrenceDate = start.date;
+				startTime = start.time;
+			}
+			else {
+				occurrenceDate = evaluation.date || todayDateInput();
+				startTime = '09:00';
+			}
+			if (evaluation.endsAt) {
+				endTime = isoToZonedDateAndTime(evaluation.endsAt, timeZone).time;
+			}
+			else {
+				endTime = '10:00';
+			}
 			return;
 		}
 
@@ -78,6 +105,9 @@
 		coefficient = '1';
 		kind = 'quiz';
 		dueDate = todayDateInput();
+		occurrenceDate = todayDateInput();
+		startTime = '09:00';
+		endTime = '10:00';
 	}
 
 	$effect(() => {
@@ -107,9 +137,11 @@
 					title,
 					description,
 					dueDate: isHomework ? dueDate : undefined,
+					startsAt: isHomework ? null : civilDateTimeInTimeZoneToIso(occurrenceDate, startTime, timeZone),
+					endsAt: isHomework ? null : civilDateTimeInTimeZoneToIso(occurrenceDate, endTime, timeZone),
+					lessonSessionId: isHomework ? null : evaluation.lessonSessionId,
 					maxScore: numericMax,
 					coefficient: numericCoef,
-					kind,
 					successMessage: get(t)('eval.updateSuccess', { title: title.trim() }),
 				});
 				if (ok) {
@@ -127,6 +159,8 @@
 				coefficient: numericCoef,
 				kind,
 				dueAt: isHomework ? dueDate : undefined,
+				startsAt: isHomework ? undefined : civilDateTimeInTimeZoneToIso(occurrenceDate, startTime, timeZone),
+				endsAt: isHomework ? undefined : civilDateTimeInTimeZoneToIso(occurrenceDate, endTime, timeZone),
 				successMessage: get(t)('eval.createSuccess', { title: title.trim() }),
 			});
 
@@ -161,22 +195,28 @@
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('eval.kind')}
 			</Label>
-			<Select.Root
-				type="single"
-				value={kind}
-				onValueChange={value => value && (kind = value as (typeof ASSESSMENT_KINDS)[number])}
-			>
-				<Select.Trigger>
-					<Select.Value placeholder={$t('eval.kind')}>
-						{kindLabel}
-					</Select.Value>
-				</Select.Trigger>
-				<Select.Content class="z-[100]">
-					{#each ASSESSMENT_KINDS as entry (entry)}
-						<Select.Item value={entry} label={$t(`eval.kind.${entry}`)}>{$t(`eval.kind.${entry}`)}</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
+			{#if isEdit}
+				<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">
+					{kindLabel}
+				</div>
+			{:else}
+				<Select.Root
+					type="single"
+					value={kind}
+					onValueChange={value => value && (kind = value as (typeof ASSESSMENT_KINDS)[number])}
+				>
+					<Select.Trigger>
+						<Select.Value placeholder={$t('eval.kind')}>
+							{kindLabel}
+						</Select.Value>
+					</Select.Trigger>
+					<Select.Content class="z-[100]">
+						{#each ASSESSMENT_KINDS as entry (entry)}
+							<Select.Item value={entry} label={$t(`eval.kind.${entry}`)}>{$t(`eval.kind.${entry}`)}</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			{/if}
 		</div>
 
 		<div class="space-y-1.5">
@@ -221,20 +261,41 @@
 				<Input type="date" bind:value={dueDate} />
 			</div>
 		{:else}
+			<div class="space-y-1.5">
+				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+					{$t('eval.date')}
+				</Label>
+				<Input type="date" bind:value={occurrenceDate} />
+			</div>
 			<div class="grid gap-3 sm:grid-cols-2">
 				<div class="space-y-1.5">
 					<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-						{$t('eval.maxScore')}
+						{$t('eval.startTime')}
 					</Label>
-					<Input type="number" min="1" step="1" bind:value={maxScore} />
+					<Input type="time" bind:value={startTime} />
 				</div>
 				<div class="space-y-1.5">
 					<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-						{$t('eval.coefficient')}
+						{$t('eval.endTime')}
 					</Label>
-					<Input type="number" min="0.25" step="0.25" bind:value={coefficient} />
+					<Input type="time" bind:value={endTime} />
 				</div>
 			</div>
 		{/if}
+
+		<div class="grid gap-3 sm:grid-cols-2">
+			<div class="space-y-1.5">
+				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+					{$t('eval.maxScore')}
+				</Label>
+				<Input type="number" min="1" step="1" bind:value={maxScore} />
+			</div>
+			<div class="space-y-1.5">
+				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+					{$t('eval.coefficient')}
+				</Label>
+				<Input type="number" min="0.25" step="0.25" bind:value={coefficient} />
+			</div>
+		</div>
 	{/if}
 </FormModal>

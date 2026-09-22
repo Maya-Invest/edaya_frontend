@@ -23,14 +23,12 @@
 	const profileTab = getStudentProfileTabState();
 	let busy = $state(false);
 	let guardianId = $state('');
-
-	const available = $derived(profileTab.availableGuardians(s.id));
-	const selectedGuardian = $derived(available.find(g => g.id === guardianId));
+	const linkedIds = $derived(profileTab.linkedGuardians(s.id).map(guardian => guardian.id));
 
 	let wasOpen = $state(false);
 
 	function resetPicker() {
-		guardianId = available[0]?.id ?? '';
+		guardianId = '';
 	}
 
 	$effect(() => {
@@ -47,7 +45,7 @@
 		const ok = await profileTab.linkGuardian({
 			guardianId,
 			studentId: s.id,
-			successMessage: `${selectedGuardian?.name ?? 'Le tuteur'} a été rattaché à ${s.name}.`,
+			successMessage: `Le tuteur a été rattaché à ${s.name}.`,
 		});
 		busy = false;
 		if (ok) {
@@ -75,18 +73,12 @@
 	description="Choisissez un tuteur existant à associer au dossier de l’élève."
 	confirmLabel="Rattacher"
 	busy={busy}
-	confirmDisabled={!guardianId || available.length === 0}
+	confirmDisabled={!guardianId}
 	onCancel={resetPicker}
 	onConfirm={confirm}
 >
-	{#if available.length === 0}
-		<p class="rounded-xl bg-secondary/40 p-3 text-sm text-muted-foreground">
-			Tous les tuteurs connus sont déjà rattachés à cet élève.
-		</p>
-	{:else}
-		<div class="space-y-1.5">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Tuteur</Label>
-			<GuardianPicker bind:value={guardianId} guardians={available} active={open} />
-		</div>
-	{/if}
+	<div class="space-y-1.5">
+		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Tuteur</Label>
+		<GuardianPicker bind:value={guardianId} excludeIds={linkedIds} active={open} />
+	</div>
 </PickerModal>

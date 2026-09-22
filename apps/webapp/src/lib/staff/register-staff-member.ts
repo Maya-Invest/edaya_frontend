@@ -9,6 +9,7 @@ export interface RegisterStaffMemberInput {
 	staffId: string;
 	firstName: string;
 	lastName: string;
+	code?: string;
 	email?: string;
 	profileRole?: StaffProfileRole;
 	sendAccountInvitation?: boolean;
@@ -22,11 +23,13 @@ export async function registerStaffMember(
 	const now = input.createdAt ?? new Date().toISOString();
 	const email = input.email?.trim() ?? '';
 
+	const code = input.code?.trim() || undefined;
 	const payload: components['schemas']['RegisterStaffMemberCommand'] & StaffMemberProfileRolePatch = {
 		id: input.staffId,
 		schoolId: input.schoolId,
 		firstName: input.firstName.trim(),
 		lastName: input.lastName.trim(),
+		...(code ? { code } : {}),
 		email: email || null,
 		accountKind: 'human',
 		isActive: true,

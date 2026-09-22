@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { SchoolPageState } from '../school-page.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { fetchCurrentSchoolProfile } from '$lib/api/school-profile-data';
@@ -10,14 +11,15 @@ export async function loadSchoolSlice() {
 }
 
 export function querySchoolListPage(state: SchoolPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptySchoolSlice(),
-		load: async () => {
+		load: async (signal) => {
 			const data = await loadSchoolSlice();
+			signal.throwIfAborted();
 			state.applySlice(data);
 			return data;
 		},
 		hasItems: data => Boolean(data.school),
 		errorMessage: 'Unable to load school settings.',
-	});
+	}, request);
 }

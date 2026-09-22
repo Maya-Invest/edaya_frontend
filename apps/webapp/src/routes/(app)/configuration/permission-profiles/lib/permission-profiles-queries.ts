@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { PermissionProfilesPageState } from '../permission-profiles-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -29,14 +30,15 @@ export async function loadPermissionProfilesSlice() {
 }
 
 export function queryPermissionProfilesListPage(state: PermissionProfilesPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyPermissionProfilesSlice(),
-		load: async () => {
+		load: async (signal) => {
 			const data = await loadPermissionProfilesSlice();
+			signal.throwIfAborted();
 			state.applySlice(data);
 			return data;
 		},
 		hasItems: listPageHasItems,
 		errorMessage: 'Unable to load permission profiles.',
-	});
+	}, request);
 }

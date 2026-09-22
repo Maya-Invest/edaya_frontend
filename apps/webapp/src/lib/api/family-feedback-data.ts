@@ -1,6 +1,5 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import type { PaginatedTeachersData } from '$lib/api/teachers-data';
 import type { StaffMember, Teacher } from '$lib/types/school';
 import type {
 	FamilyFeedbackAggregate,
@@ -12,15 +11,14 @@ import type {
 } from './family-feedback-types';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
-	CATALOG_LIST_PAGE_SIZE,
-	paginatedList,
+	listAllEntityPages,
 	schoolSubjectsCatalogList,
 } from '$lib/api/entity-list-filters';
 import { familyFeedbackCommand, familyFeedbackQuery, familyFeedbackRequestId } from '$lib/api/family-feedback-client';
 import { mapFamilyFeedbackCampaign } from '$lib/api/family-feedback-types';
 import { safeOptionalEntityList, safeOptionalFetch } from '$lib/api/safe-entity-access';
 import { fetchStaffMembers } from '$lib/api/staff-data';
-import { fetchTeachersPage } from '$lib/api/teachers-data';
+import { fetchAllTeachers } from '$lib/api/teachers-data';
 import { authSession } from '$lib/auth/session.svelte';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
@@ -54,6 +52,20 @@ export async function listFamilyFeedbackCampaigns(client: SchoolClient): Promise
 		{},
 	);
 	return asRecordList(result).map(mapFamilyFeedbackCampaign).filter(campaign => campaign.id.length > 0);
+}
+
+export async function getFamilyFeedbackCampaign(
+	client: SchoolClient,
+	id: string,
+): Promise<FamilyFeedbackCampaign | null> {
+	const result = await familyFeedbackQuery<Record<string, unknown>>(
+		client,
+		'getFamilyFeedbackCampaign',
+		'get-family-feedback-campaign',
+		{ id },
+	);
+	const campaign = mapFamilyFeedbackCampaign(result ?? {});
+	return campaign.id.length > 0 ? campaign : null;
 }
 
 export async function previewFamilyFeedbackAudience(
@@ -129,38 +141,37 @@ function assignmentLabel(
 
 export async function loadFamilyFeedbackSlice(client: SchoolClient): Promise<FamilyFeedbackSlice> {
 	const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
-	const academicYearId = academicContext.yearId;
+	const academicYearId = academicContext.yearId || academicContext.years[0]?.id || '';
 	if (!schoolId) {
 		return { campaigns: [], teachers: [], staff: [], assignments: [], subjects: [] };
 	}
 
-	const emptyTeachersPage: PaginatedTeachersData = { teachers: [], totalTeachers: 0, assignments: [] };
-	const [campaigns, teachersPage, staff, assignmentsRaw, subjects, classSubjects] = await Promise.all([
+	const [campaigns, teachers, staff, assignmentsRaw, subjects, classSubjects] = await Promise.all([
 		safeOptionalFetch(() => listFamilyFeedbackCampaigns(client), []),
 		academicYearId
-			? safeOptionalFetch(
-					() => fetchTeachersPage(client, { schoolId, academicYearId }, { includeAssignments: false, limit: CATALOG_LIST_PAGE_SIZE }),
-					emptyTeachersPage,
-				)
-			: Promise.resolve(emptyTeachersPage),
+			? safeOptionalFetch(() => fetchAllTeachers(client, { schoolId, academicYearId }), [])
+			: Promise.resolve([]),
 		academicYearId
 			? safeOptionalFetch(() => fetchStaffMembers(client, { schoolId, academicYearId }), [])
 			: Promise.resolve([]),
 		academicYearId
-			? safeOptionalEntityList(() => client.entities.teacherAssignments.list(paginatedList(
-					{ academicYearId, kind: 'subject', status: 'active' },
-					{ limit: CATALOG_LIST_PAGE_SIZE },
-				)))
+			? safeOptionalEntityList(() => listAllEntityPages(
+					query => client.entities.teacherAssignments.list(query),
+					{ baseQuery: { academicYearId } },
+				))
 			: Promise.resolve([]),
-		safeOptionalEntityList(() => client.entities.subjects.list(schoolSubjectsCatalogList(schoolId))),
-		safeOptionalEntityList(() => client.entities.classSubjects.list(paginatedList(
-			{ schoolId },
-			{ limit: CATALOG_LIST_PAGE_SIZE },
-		))),
+		safeOptionalEntityList(() => listAllEntityPages(
+			query => client.entities.subjects.list(query),
+			{ baseQuery: schoolSubjectsCatalogList(schoolId) },
+		)),
+		safeOptionalEntityList(() => listAllEntityPages(
+			query => client.entities.classSubjects.list(query),
+			{ baseQuery: { schoolId } },
+		)),
 	]);
-
-	const teachers = teachersPage.teachers;
-	const assignments = (assignmentsRaw as TeacherAssignmentRaw[]).map(assignment => ({
+	const assignments = (assignmentsRaw as TeacherAssignmentRaw[])
+		.filter(assignment => assignment.kind === 'subject' && assignment.status === 'active' && assignment.classSubjectId)
+		.map(assignment => ({
 		id: assignment.id,
 		teacherId: assignment.teacherId,
 		classSubjectId: assignment.classSubjectId,

@@ -1,28 +1,20 @@
-import type { AbsenceRecord, StudentAttendanceHistoryItem } from '$lib/types/school';
-import type { StudentDetailHost } from '../../../lib/student-detail-host';
+import type { StudentAttendanceHistoryItem } from '$lib/types/school';
+import type { PageQueryRequest } from '../../../lib/student-page-status';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { loadStudentAttendanceHistory } from '$lib/api/student-drawer-data';
-import { nowIso } from '$lib/date/format';
+import { formatDateInput, nowIso } from '$lib/date/format';
 import { getContext, setContext } from 'svelte';
+import {
+	dailyAttendanceHistoryItem,
+	patchAttendanceHistory,
+	removeAttendanceHistory,
+	summarizeStudentAttendanceHistory,
+} from '../../../lib/student-attendance-history';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { runStudentRouteMutation } from '../../../lib/student-route-mutation';
 
-export function summarizeStudentAttendanceHistory(
-	records: readonly StudentAttendanceHistoryItem[],
-): {
-	records: StudentAttendanceHistoryItem[];
-	present: number;
-	absent: number;
-	late: number;
-} {
-	return {
-		records: [...records],
-		present: records.filter(record => record.status === 'present').length,
-		absent: records.filter(record => record.status === 'absent').length,
-		late: records.filter(record => record.status === 'late').length,
-	};
-}
+export { summarizeStudentAttendanceHistory };
 
 const STUDENT_ATTENDANCE_TAB_KEY = Symbol('student-attendance-tab');
 
@@ -31,7 +23,6 @@ type AttendanceStatus = 'absent' | 'late';
 export interface StudentAttendanceTabSlice {
 	studentId: string;
 	attendance: StudentAttendanceHistoryItem[];
-	absences: AbsenceRecord[];
 }
 
 export type StudentAttendanceTabSeed = Partial<Omit<StudentAttendanceTabSlice, 'studentId'>>;
@@ -40,14 +31,11 @@ function emptySlice(studentId: string): StudentAttendanceTabSlice {
 	return {
 		studentId,
 		attendance: [],
-		absences: [],
 	};
 }
 
 export class StudentAttendanceTabState {
 	slice = $state<StudentAttendanceTabSlice | null>(null);
-
-	constructor(private readonly getPage: () => StudentDetailHost) {}
 
 	clear() {
 		this.slice = null;
@@ -70,41 +58,42 @@ export class StudentAttendanceTabState {
 		return summarizeStudentAttendanceHistory(attendance);
 	}
 
-	appendAbsence(absence: AbsenceRecord) {
+	patchAttendance(record: StudentAttendanceHistoryItem, dropIds: readonly string[] = []) {
 		if (!this.slice) {
 			return;
 		}
 		this.slice = {
 			...this.slice,
-			absences: [...this.slice.absences, absence],
+			attendance: patchAttendanceHistory(this.slice.attendance, record, dropIds),
 		};
 	}
 
-	removeAbsence(id: string) {
+	removeAttendance(id: string) {
 		if (!this.slice) {
 			return;
 		}
 		this.slice = {
 			...this.slice,
-			absences: this.slice.absences.filter(absence => absence.id !== id),
+			attendance: removeAttendanceHistory(this.slice.attendance, id),
 		};
 	}
 
 	query() {
-		return (url: URL) => resolveStudentPageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const studentId = studentDetailIdFromPathname(url.pathname);
 				if (!studentId) {
 					return {};
 				}
 
 				const attendance = await loadStudentAttendanceHistory(getBrowserSchoolClient(), studentId);
+				signal.throwIfAborted();
 				this.seed(studentId, { attendance });
 				return {};
 			},
 			hasItems: () => true,
-		});
+		}, request);
 	}
 
 	async recordAbsence(input: {
@@ -114,19 +103,18 @@ export class StudentAttendanceTabState {
 		status: AttendanceStatus;
 		successMessage?: string;
 	}): Promise<boolean> {
-		const page = this.getPage();
 		const client = getBrowserSchoolClient();
-		const id = `att-${input.studentId}-${input.date}`;
-		const previous = page.findStudent(input.studentId);
-		const optimisticAbsence: AbsenceRecord = {
+		const currentDaily = this.slice?.attendance.find(
+			record => record.kind === 'daily' && record.date === input.date,
+		);
+		const id = currentDaily?.id ?? `att-${input.studentId}-${input.date}`;
+		const previous = currentDaily
+			?? this.slice?.attendance.find(record => record.id === id);
+		const optimistic = dailyAttendanceHistoryItem({
 			id,
-			studentId: input.studentId,
 			date: input.date,
-			time: '—',
-			subject: '—',
-			eventType: 'Cours',
-			reason: input.status === 'late' ? 'Retard' : 'Absence',
-		};
+			status: input.status,
+		});
 
 		const result = await runStudentRouteMutation({
 			request: () => client.commands.recordDailyAttendance({
@@ -140,18 +128,24 @@ export class StudentAttendanceTabState {
 			successMessage: input.successMessage,
 			versionKeys: ['students', 'attendance'],
 			apply: () => {
-				this.appendAbsence(optimisticAbsence);
-				if (previous) {
-					page.patchStudent(input.studentId, {
-						attendance: Math.max(0, Math.round(((previous.attendance ?? 0) - 1) * 10) / 10),
-					});
-				}
+				this.patchAttendance(optimistic);
+			},
+			onSuccess: (record) => {
+				this.patchAttendance(
+					dailyAttendanceHistoryItem({
+						id: record.id,
+						date: formatDateInput(record.date) || input.date,
+						status: record.status,
+					}),
+					record.id === id ? [] : [id],
+				);
 			},
 			rollback: () => {
-				this.removeAbsence(id);
 				if (previous) {
-					page.patchStudent(input.studentId, { attendance: previous.attendance });
+					this.patchAttendance(previous, [id]);
+					return;
 				}
+				this.removeAttendance(id);
 			},
 		});
 		return result !== null;

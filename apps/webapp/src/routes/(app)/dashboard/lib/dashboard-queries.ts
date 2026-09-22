@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { DashboardPageState } from '../dashboard-page.svelte';
 import { fetchSchoolOverview } from '$lib/api/dashboard-data';
 import { hasPermission } from '$lib/permissions';
@@ -14,13 +15,14 @@ export async function loadDashboardSlice() {
 }
 
 export function queryDashboardListPage(state: DashboardPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyDashboardSlice(),
-		load: async () => {
+		load: async (signal) => {
 			const data = await loadDashboardSlice();
+			signal.throwIfAborted();
 			state.applySlice(data);
 			return data;
 		},
 		hasItems: listPageHasItems,
-	});
+	}, request);
 }

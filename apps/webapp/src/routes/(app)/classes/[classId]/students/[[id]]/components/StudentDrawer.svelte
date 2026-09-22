@@ -3,7 +3,6 @@
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
 	import { kindStyle, kindLabelKey } from '$lib/components/school/shared/drawer-constants';
-	import StudentGradeEntryModal from '$lib/components/school/students/StudentGradeEntryModal.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, X } from '$lib/icons';
@@ -30,7 +29,6 @@
 			| 'edit-note'
 			| 'add-absence'
 			| 'add-incident'
-			| 'add-grade'
 			| 'approve-photo'
 			| 'reject-photo';
 
@@ -58,7 +56,6 @@
 			'edit-note',
 			'add-absence',
 			'add-incident',
-			'add-grade',
 			'approve-photo',
 			'reject-photo',
 		],
@@ -75,7 +72,6 @@
 	const editNoteOpen = bindUrlModal(modals, 'edit-note');
 	const addAbsenceOpen = bindUrlModal(modals, 'add-absence');
 	const addIncidentOpen = bindUrlModal(modals, 'add-incident');
-	const addGradeOpen = bindUrlModal(modals, 'add-grade');
 	const approvePhotoOpen = bindUrlModal(modals, 'approve-photo');
 	const rejectPhotoOpen = bindUrlModal(modals, 'reject-photo');
 
@@ -211,9 +207,8 @@
 				{@render children()}
 			</div>
 			<StudentGuardianLinkModal s={student} bind:open={linkGuardianOpen.open} showTrigger={false} />
-			{#if modals.active === 'note'}
-				<StudentNoteModal s={student} bind:open={noteOpen.open} showTrigger={false} />
-			{:else if editingNote}
+			<StudentNoteModal s={student} bind:open={noteOpen.open} showTrigger={false} />
+			{#if editingNote}
 				<StudentNoteModal
 					s={student}
 					note={editingNote}
@@ -223,7 +218,6 @@
 			{/if}
 			<StudentAbsenceModal s={student} bind:open={addAbsenceOpen.open} showTrigger={false} />
 			<StudentIncidentModal s={student} bind:open={addIncidentOpen.open} showTrigger={false} />
-			<StudentGradeEntryModal s={student} bind:open={addGradeOpen.open} showTrigger={false} />
 			<ConfirmModal
 				bind:open={approvePhotoOpen.open}
 				title={$t('student.photo.approveTitle')}

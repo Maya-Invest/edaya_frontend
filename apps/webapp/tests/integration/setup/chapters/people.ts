@@ -1,26 +1,31 @@
 import {
 	assertListContains,
+	confirmDialog,
+	fillIncidentTitle,
+	fillLabeledInput,
 	fillPersonCreateDialog,
 	fillStudentCreateDialog,
 	listSearchInput,
 	openDialogButton,
 	openUrlModal,
 	refreshAppShell,
-	submitDialog,
+	searchAndSelectPerson,
 	waitForDialogClosed,
 	waitForPageQuery,
+	waitForSubmitEnabled,
 } from '../../../../scripts/qa-harness-ui';
-import { firstIdFromLinks } from '../../../../scripts/qa-matrix-support';
 import { setStudentStatus } from '../filter-setup';
 import {
 	clickFirstRow,
 	coverActions,
-	coverModal,
+	coverCompletedModal,
+	coverMutationActions,
 	gotoApp,
 	idFromUrl,
 	logStep,
+	runModalMutation,
 	visitCovered,
-	waitForCommandPayload,
+	waitForCommandResult,
 	type UiJourney,
 } from '../journey-context';
 
@@ -54,13 +59,13 @@ async function createExtraStudent(journey: UiJourney, lastName: string): Promise
 	if (!opened) {
 		return null;
 	}
-	const payloadPromise = waitForCommandPayload(page, 'register-student');
+	const resultPromise = waitForCommandResult(page, 'register-student');
 	await fillStudentCreateDialog(page, { firstName: 'E2E', lastName, className: /E2E-6A-/ });
 	if (!(await waitForDialogClosed(page))) {
 		return null;
 	}
-	const payload = await payloadPromise;
-	return typeof payload?.id === 'string' ? payload.id : null;
+	const result = await resultPromise;
+	return typeof result?.id === 'string' ? result.id : null;
 }
 
 async function createPerson(
@@ -83,27 +88,61 @@ async function createPerson(
 	const { page } = journey.ctx;
 	await visitCovered(journey, opts.templatePath, opts.listPath);
 	const opened = await openDialogButton(page, opts.openPattern, 20_000);
-	coverModal(journey, opts.templatePath, 'create', opened ? 'OK' : 'NOT OK');
 	if (!opened) {
+		coverCompletedModal(journey, opts.templatePath, 'create', {
+			opened: false,
+			submitted: false,
+			closed: false,
+		}, 'Create modal not found');
 		coverActions(journey, opts.endpoint, [opts.createMatrixAction], 'NOT OK', 'Create modal not found');
 		logStep(journey, { step: opts.step, ok: false, detail: 'Create modal not found' });
 		return null;
 	}
-	const payloadPromise = waitForCommandPayload(page, opts.command);
+	const resultPromise = waitForCommandResult(page, opts.command);
 	await fillPersonCreateDialog(page, { firstName: 'E2E', lastName: opts.lastName });
 	const closed = await waitForDialogClosed(page);
-	const payload = await payloadPromise;
-	let id = typeof payload?.id === 'string' ? payload.id : idFromUrl(page, opts.idPattern);
-	if (!id) {
-		await gotoApp(journey, opts.listPath);
-		id = await firstIdFromLinks(page, opts.idPattern);
-	}
+	const result = await resultPromise;
+	const responseId = typeof result?.id === 'string' ? result.id : null;
+	await gotoApp(journey, opts.listPath);
+	await waitForPageQuery(page);
+	const listed = await assertListContains(page, opts.lastName, true, 20_000);
+	const id = responseId ?? (listed ? await idFromNamedRow(page, opts.lastName, opts.idPattern) : null);
 	if (id) {
 		opts.assignId(id);
 	}
-	coverActions(journey, opts.endpoint, [opts.listAction, opts.createMatrixAction], closed && id ? 'OK' : 'NOT OK', opts.lastName);
-	logStep(journey, { step: opts.step, ok: Boolean(id), detail: opts.lastName, entityId: id ?? undefined });
+	const persisted = listed || responseId !== null;
+	coverCompletedModal(journey, opts.templatePath, 'create', {
+		opened: true,
+		submitted: true,
+		closed,
+		postcondition: persisted,
+	}, opts.lastName);
+	coverMutationActions(
+		journey,
+		opts.endpoint,
+		[opts.createMatrixAction],
+		{ exercised: true, postcondition: persisted },
+		opts.lastName,
+	);
+	if (listed) {
+		coverActions(journey, opts.endpoint, [opts.listAction], 'OK', opts.lastName);
+	}
+	logStep(journey, { step: opts.step, ok: persisted, detail: opts.lastName, entityId: id ?? undefined });
 	return id;
+}
+
+async function idFromNamedRow(page: UiJourney['ctx']['page'], name: string, idPattern: RegExp): Promise<string | null> {
+	const row = page.locator('main li, main tr').filter({ hasText: name }).first();
+	if (!(await row.isVisible({ timeout: 2_000 }).catch(() => false))) {
+		return null;
+	}
+	const href = await row.locator('a[href]').first().getAttribute('href').catch(() => null);
+	const fromHref = href?.match(idPattern)?.[1];
+	if (fromHref) {
+		return fromHref;
+	}
+	await row.click().catch(() => {});
+	return idFromUrl(page, idPattern);
 }
 
 export async function runPeopleChapter(journey: UiJourney): Promise<void> {
@@ -114,34 +153,40 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 	await visitCovered(journey, '/school/students', '/school/students');
 	const lastName = `E2E-Student-${Date.now()}`;
 	const opened = await openStudentCreateModal(journey);
-	coverModal(
-		journey,
-		'/school/students',
-		'create',
-		opened ? 'OK' : 'NOT OK',
-		opened ? 'create modal opened' : 'Create student modal not found',
-	);
 	if (!opened) {
+		coverCompletedModal(journey, '/school/students', 'create', {
+			opened: false,
+			submitted: false,
+			closed: false,
+		}, 'Create student modal not found');
 		coverActions(journey, 'http://localhost:5173/school/students', ['Créer élève (modal)'], 'NOT OK', 'Create student modal not found');
 		logStep(journey, { step: 'student', ok: false, detail: 'Create student modal not found' });
 	}
 	else {
-		const payloadPromise = waitForCommandPayload(page, 'register-student');
+		const resultPromise = waitForCommandResult(page, 'register-student');
 		await fillStudentCreateDialog(page, { firstName: 'E2E', lastName, className: /E2E-6A-/ });
 		const closed = await waitForDialogClosed(page);
-		const payload = await payloadPromise;
-		let studentId = typeof payload?.id === 'string' ? payload.id : null;
+		const result = await resultPromise;
+		const responseId = typeof result?.id === 'string' ? result.id : null;
+		await gotoApp(journey, '/school/students');
 		await waitForPageQuery(page);
-		if (!studentId) {
+		const listed = await assertListContains(page, lastName, true, 20_000);
+		let studentId = responseId;
+		if (!studentId && listed) {
 			const search = listSearchInput(page);
 			if (await search.isVisible().catch(() => false)) {
 				await search.fill(lastName);
 				await page.waitForTimeout(800);
 			}
-			if (await clickFirstRow(page)) {
-				studentId = idFromUrl(page, /\/school\/students\/([^/?]+)/);
+			studentId = await idFromNamedRow(page, lastName, /\/school\/students\/([^/?]+)/);
+			if (!studentId && await clickFirstRow(page)) {
+				const openedId = idFromUrl(page, /\/school\/students\/([^/?]+)/);
+				const nameNode = page.getByText(lastName, { exact: false }).first();
+				const showsName = await nameNode.isVisible({ timeout: 4_000 }).catch(() => false);
+				studentId = showsName ? openedId : null;
 			}
 		}
+		const persisted = listed || responseId !== null;
 		entities.studentId = studentId;
 		entities.classStudentId = studentId;
 		entities.createdStudentId = studentId ?? 'created';
@@ -167,16 +212,29 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 				);
 			}
 		}
-		coverActions(
+		coverCompletedModal(journey, '/school/students', 'create', {
+			opened: true,
+			submitted: true,
+			closed,
+			postcondition: persisted,
+		}, lastName);
+		coverMutationActions(
 			journey,
 			'http://localhost:5173/school/students',
-			studentId
-				? ['Liste — affichage', 'Créer élève (modal)', 'Recherche']
-				: ['Liste — affichage', 'Créer élève (modal)'],
-			closed ? 'OK' : 'NOT OK',
+			['Créer élève (modal)'],
+			{ exercised: true, postcondition: persisted },
 			lastName,
 		);
-		logStep(journey, { step: 'student', ok: Boolean(studentId), detail: lastName, entityId: studentId ?? undefined });
+		if (listed) {
+			coverActions(
+				journey,
+				'http://localhost:5173/school/students',
+				studentId ? ['Liste — affichage', 'Recherche'] : ['Liste — affichage'],
+				'OK',
+				lastName,
+			);
+		}
+		logStep(journey, { step: 'student', ok: persisted, detail: lastName, entityId: studentId ?? undefined });
 
 		if (studentId) {
 			const failedTabs = new Set<string>();
@@ -206,37 +264,77 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 			};
 			tabAction('profile', 'http://localhost:5173/school/students/[id]/profile', ['Ouvrir drawer profil']);
 			tabAction('grades', 'http://localhost:5173/school/students/[id]/grades', ['Consulter notes']);
-			tabAction('attendance', 'http://localhost:5173/school/students/[id]/attendance', ['Consulter / enregistrer absence']);
-			tabAction('incidents', 'http://localhost:5173/school/students/[id]/incidents', ['Consulter / créer incident']);
 			tabAction('finances', 'http://localhost:5173/school/students/[id]/finances', ['Consulter lignes finance']);
-			tabAction('report-card', 'http://localhost:5173/school/students/[id]/report-card', ['Générer / publier bulletin']);
 			tabAction('enrollments', 'http://localhost:5173/school/students/[id]/enrollments', ['Historique inscriptions']);
 
 			try {
-				await gotoApp(journey, `/school/students/${studentId}/profile`);
-				const noteOpened = await openDialogButton(page, /note|ajouter une note|add note/i);
-				coverModal(journey, '/school/students/[id]/profile', 'note', noteOpened ? 'OK' : 'NOT OK');
-				if (noteOpened) {
-					const textarea = page.getByRole('dialog').locator('textarea').first();
-					if (await textarea.isVisible().catch(() => false)) {
-						await textarea.fill(`QA note ${Date.now()}`);
+				const noteBody = `QA note ${Date.now()}`;
+				await runModalMutation(journey, {
+					parentRoute: '/school/students/[id]/profile',
+					modal: 'note',
+					pathname: `/school/students/${studentId}/profile`,
+					command: 'create-student-note',
+					openLabel: /ajouter une note|add a note|add note/i,
+					fill: async (current) => {
+						const textarea = current.getByRole('dialog').locator('textarea').first();
+						await textarea.fill(noteBody);
+					},
+					visibleAfter: noteBody,
+					listPath: `/school/students/${studentId}/profile`,
+					actionPath: 'http://localhost:5173/school/students/[id]/profile',
+					actions: ['Notes pédagogiques CRUD'],
+				});
+
+				const editedStudentName = `${lastName}-QA`;
+				const studentEdit = await runModalMutation(journey, {
+					parentRoute: '/school/students/[id]/profile',
+					modal: 'edit-profile',
+					pathname: `/school/students/${studentId}/profile`,
+					command: 'update-student-profile',
+					fill: async (current) => {
+						if (!await fillLabeledInput(current, /^nom$|^last name$/i, editedStudentName)) {
+							await current.getByRole('dialog').locator('input:not([type="date"]):not([type="email"])').nth(1).fill(editedStudentName);
+						}
+					},
+					visibleAfter: editedStudentName,
+					listPath: `/school/students/${studentId}/profile`,
+				});
+				if (studentEdit.postcondition) {
+					entities.filterFixtures.searchToken = editedStudentName;
+					if (entities.filterFixtures.studentsByStatus?.active) {
+						entities.filterFixtures.studentsByStatus.active.lastName = editedStudentName;
 					}
-					await submitDialog(page);
-					const closedNote = await waitForDialogClosed(page);
-					if (!closedNote) {
-						await page.keyboard.press('Escape').catch(() => {});
+					if (entities.classId && entities.filterFixtures.studentsByClass?.[entities.classId]) {
+						entities.filterFixtures.studentsByClass[entities.classId].lastName = editedStudentName;
 					}
-					coverActions(
-						journey,
-						'http://localhost:5173/school/students/[id]/profile',
-						['Notes pédagogiques CRUD'],
-						closedNote ? 'OK' : 'NOT OK',
-					);
 				}
-				coverModal(journey, '/school/students/[id]/profile', 'edit-profile', 'OK', 'profile visited');
-				coverModal(journey, '/school/students/[id]/grades', 'add-grade', 'OK', 'grades tab visited');
-				coverModal(journey, '/school/students/[id]/attendance', 'add-absence', 'OK', 'attendance tab visited');
-				coverModal(journey, '/school/students/[id]/incidents', 'add-incident', 'OK', 'incidents tab visited');
+
+				await runModalMutation(journey, {
+					parentRoute: '/school/students/[id]/attendance',
+					modal: 'add-absence',
+					pathname: `/school/students/${studentId}/attendance`,
+					command: 'record-daily-attendance',
+					actionPath: 'http://localhost:5173/school/students/[id]/attendance',
+					actions: ['Consulter / enregistrer absence'],
+				});
+
+				const studentIncidentTitle = `E2E-Student-Incident-${Date.now()}`;
+				await runModalMutation(journey, {
+					parentRoute: '/school/students/[id]/incidents',
+					modal: 'add-incident',
+					pathname: `/school/students/${studentId}/incidents`,
+					command: 'record-incident',
+					openLabel: /ajouter un incident|add incident|consigner un incident/i,
+					fill: async (current) => {
+						await fillIncidentTitle(current, studentIncidentTitle);
+						const textarea = current.getByRole('dialog').locator('textarea').first();
+						await textarea.fill('QA student incident');
+					},
+					visibleAfter: studentIncidentTitle,
+					listPath: `/school/students/${studentId}/incidents`,
+					actionPath: 'http://localhost:5173/school/students/[id]/incidents',
+					actions: ['Consulter / créer incident'],
+				});
 			}
 			catch (err) {
 				console.error(
@@ -296,6 +394,7 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 		}
 	}
 
+	const guardianLastName = `E2E-Guardian-${Date.now()}`;
 	const guardianId = await createPerson(journey, {
 		step: 'guardian',
 		listPath: '/school/guardians',
@@ -304,7 +403,7 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 		openPattern: /add guardian|ajouter un tuteur/i,
 		command: 'register-guardian',
 		idPattern: /\/school\/guardians\/([^/?]+)/,
-		lastName: `E2E-Guardian-${Date.now()}`,
+		lastName: guardianLastName,
 		assignId: (id) => {
 			entities.guardianId = id;
 		},
@@ -314,8 +413,21 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 	});
 	if (guardianId) {
 		await visitCovered(journey, '/school/guardians/[id]', `/school/guardians/${guardianId}`);
-		coverActions(journey, 'http://localhost:5173/school/guardians/[id]', ['Drawer — éditer', 'Élèves liés'], 'OK');
-		coverModal(journey, '/school/guardians/[id]', 'edit-profile', 'OK');
+		coverActions(journey, 'http://localhost:5173/school/guardians/[id]', ['Élèves liés'], 'OK');
+		const editedGuardian = `${guardianLastName}-QA`;
+		await runModalMutation(journey, {
+			parentRoute: '/school/guardians/[id]',
+			modal: 'edit-profile',
+			pathname: `/school/guardians/${guardianId}`,
+			command: 'update-guardian-contact-methods',
+			fill: async (current) => {
+				await fillLabeledInput(current, /^nom$|^last name$/i, editedGuardian);
+			},
+			visibleAfter: editedGuardian,
+			listPath: `/school/guardians/${guardianId}`,
+			actionPath: 'http://localhost:5173/school/guardians/[id]',
+			actions: ['Drawer — éditer'],
+		});
 		if (entities.studentId) {
 			const linkOpened = await openUrlModal(
 				page,
@@ -323,11 +435,28 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 				'link-guardian',
 				{ base: ctx.base },
 			) || await openDialogButton(page, /rattacher|tuteur|guardian|lier|link/i);
-			coverModal(journey, '/school/students/[id]/profile', 'link-guardian', linkOpened ? 'OK' : 'NOT OK');
+			let linkClosed = false;
+			let linked = false;
+			let submitted = false;
 			if (linkOpened) {
-				await submitDialog(page).catch(() => {});
-				await waitForDialogClosed(page).catch(() => {});
+				const resultPromise = waitForCommandResult(page, 'link-guardian-to-student');
+				if (!await searchAndSelectPerson(page, editedGuardian)) {
+					await searchAndSelectPerson(page, guardianLastName);
+				}
+				submitted = await confirmDialog(page, /rattacher|link|attach/i);
+				linkClosed = submitted ? await waitForDialogClosed(page).catch(() => false) : false;
+				const result = submitted ? await resultPromise : null;
+				await gotoApp(journey, `/school/students/${entities.studentId}/profile`);
+				const visible = await assertListContains(page, editedGuardian, true, 8_000)
+					|| await assertListContains(page, guardianLastName, true, 4_000);
+				linked = visible || result !== null;
 			}
+			coverCompletedModal(journey, '/school/students/[id]/profile', 'link-guardian', {
+				opened: linkOpened,
+				submitted,
+				closed: linkClosed,
+				postcondition: linked,
+			}, editedGuardian);
 		}
 	}
 
@@ -337,7 +466,7 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 		templatePath: '/school/staff',
 		createAction: 'Créer personnel',
 		openPattern: /add staff member|ajouter un membre/i,
-		command: 'register-staff',
+		command: 'register-staff-member',
 		idPattern: /\/school\/staff\/([^/?]+)/,
 		lastName: `E2E-Staff-${Date.now()}`,
 		assignId: (id) => {
@@ -349,13 +478,46 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 	});
 	if (staffId) {
 		await visitCovered(journey, '/school/staff/[id]/profile', `/school/staff/${staffId}/profile`);
-		coverActions(journey, 'http://localhost:5173/school/staff/[id]/profile', ['Éditer profil'], 'OK');
-		coverModal(journey, '/school/staff/[id]/profile', 'edit-profile', 'OK');
+		const staffLastName = `E2E-Staff-QA-${Date.now()}`;
+		await runModalMutation(journey, {
+			parentRoute: '/school/staff/[id]/profile',
+			modal: 'edit-profile',
+			pathname: `/school/staff/${staffId}/profile`,
+			command: 'update-staff-member-profile',
+			fill: async (current) => {
+				await fillLabeledInput(current, /^nom$|^last name$/i, staffLastName);
+			},
+			visibleAfter: staffLastName,
+			listPath: `/school/staff/${staffId}/profile`,
+			actionPath: 'http://localhost:5173/school/staff/[id]/profile',
+			actions: ['Éditer profil'],
+		});
 		await visitCovered(journey, '/school/staff/[id]/permissions', `/school/staff/${staffId}/permissions`);
-		coverActions(journey, 'http://localhost:5173/school/staff/[id]/permissions', ['Assigner permissions'], 'OK');
-		coverModal(journey, '/school/staff/[id]/permissions', 'add-permission', 'OK');
+		await runModalMutation(journey, {
+			parentRoute: '/school/staff/[id]/permissions',
+			modal: 'add-permission',
+			pathname: `/school/staff/${staffId}/permissions`,
+			command: 'assign-staff-permission',
+			fill: async (current) => {
+				const select = current.locator('#permission-select');
+				await select.waitFor({ state: 'visible', timeout: 12_000 });
+				const values = await select.locator('option').evaluateAll((nodes) => (
+					nodes
+						.map(node => (node as HTMLOptionElement).value)
+						.filter(entry => entry.length > 0)
+				));
+				for (const value of values) {
+					await select.selectOption(value);
+					if (await waitForSubmitEnabled(current, 2_000)) {
+						return;
+					}
+				}
+			},
+			listPath: `/school/staff/${staffId}/permissions`,
+			actionPath: 'http://localhost:5173/school/staff/[id]/permissions',
+			actions: ['Assigner permissions'],
+		});
 		await visitCovered(journey, '/school/staff/[id]/assignments', `/school/staff/${staffId}/assignments`);
-		coverActions(journey, 'http://localhost:5173/school/staff/[id]/assignments', ['Assignations classe/rôle'], 'OK');
 	}
 
 	const teacherId = await createPerson(journey, {
@@ -364,7 +526,7 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 		templatePath: '/school/teachers',
 		createAction: 'Créer enseignant',
 		openPattern: /add teacher|ajouter un enseignant/i,
-		command: 'teachers/save',
+		command: 'register-teacher',
 		idPattern: /\/school\/teachers\/([^/?]+)/,
 		lastName: `E2E-Teacher-${Date.now()}`,
 		assignId: (id) => {
@@ -376,16 +538,40 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 	});
 	if (teacherId) {
 		await visitCovered(journey, '/school/teachers/[id]/profile', `/school/teachers/${teacherId}/profile`);
-		coverActions(journey, 'http://localhost:5173/school/teachers/[id]/profile', ['Éditer profil'], 'OK');
+		const teacherLastName = `E2E-Teacher-QA-${Date.now()}`;
+		await runModalMutation(journey, {
+			parentRoute: '/school/teachers/[id]/profile',
+			modal: 'edit-profile',
+			pathname: `/school/teachers/${teacherId}/profile`,
+			command: 'teachers',
+			openLabel: /modifier le profil|edit profile/i,
+			fill: async (current) => {
+				await fillLabeledInput(current, /^nom$|^last name$/i, teacherLastName);
+			},
+			visibleAfter: teacherLastName,
+			listPath: `/school/teachers/${teacherId}/profile`,
+			actionPath: 'http://localhost:5173/school/teachers/[id]/profile',
+			actions: ['Éditer profil'],
+		});
 		await visitCovered(journey, '/school/teachers/[id]/assignments', `/school/teachers/${teacherId}/assignments`);
-		coverActions(journey, 'http://localhost:5173/school/teachers/[id]/assignments', ['CRUD affectations matière/classe'], 'OK');
-		coverModal(journey, '/school/teachers/[id]/assignments', 'form', 'OK');
 		await visitCovered(journey, '/school/teachers/[id]/availability', `/school/teachers/${teacherId}/availability`);
-		coverActions(journey, 'http://localhost:5173/school/teachers/[id]/availability', ['CRUD indisponibilités'], 'OK');
+		await runModalMutation(journey, {
+			parentRoute: '/school/teachers/[id]/availability',
+			modal: 'add-unavailability',
+			pathname: `/school/teachers/${teacherId}/availability`,
+			command: 'teacherUnavailabilities',
+			openLabel: /ajouter une indisponibilité|add unavailability/i,
+			fill: async (current) => {
+				await fillLabeledInput(current, /reason|motif|raison/i, 'QA unavailability');
+			},
+			visibleAfter: 'QA unavailability',
+			listPath: `/school/teachers/${teacherId}/availability`,
+			actionPath: 'http://localhost:5173/school/teachers/[id]/availability',
+			actions: ['CRUD indisponibilités'],
+		});
 		await visitCovered(journey, '/school/teachers/[id]/timetable', `/school/teachers/${teacherId}/timetable`);
 		await visitCovered(journey, '/school/teachers/[id]/evaluations', `/school/teachers/${teacherId}/evaluations`);
 		await visitCovered(journey, '/school/teachers/[id]/family-feedback', `/school/teachers/${teacherId}/family-feedback`);
 		await visitCovered(journey, '/school/teachers/[id]/documents', `/school/teachers/${teacherId}/documents`);
-		coverModal(journey, '/school/teachers/[id]/documents', 'generate-document', 'OK');
 	}
 }

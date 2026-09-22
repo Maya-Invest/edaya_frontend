@@ -13,7 +13,7 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
 	import { Mail, Phone, Plus, Users } from '$lib/icons';
-	import { downloadCsv } from '$lib/list/list-csv-export';
+	import { downloadCsv, exportMatchingList, loadMatchingCollection } from '$lib/list/list-csv-export';
 	import { ListSelectionState } from '$lib/list/list-selection-state.svelte';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
@@ -112,6 +112,34 @@
 		]);
 		toast.success($t('list.exportedCount', { n: selectedGuardians.length }));
 	}
+
+	function exportMatching() {
+		return exportMatchingList({
+			filename: 'guardians.csv',
+			headers: ['name', 'relation', 'phone', 'students'],
+			loadAll: async () => {
+				const matching = await loadMatchingCollection({
+					isComplete: () => guardiansPage.fullRosterGuardians.length >= guardiansPage.totalGuardians
+						|| guardiansPage.guardians.length >= guardiansPage.totalGuardians,
+					ensureComplete: () => guardiansPage.loadFullRoster(),
+					current: () => guardiansPage.filterVisible(
+						guardiansPage.fullRosterGuardians.length > 0
+							? guardiansPage.fullRosterGuardians
+							: guardiansPage.guardians,
+					),
+				});
+				return matching.map((guardian) => {
+					const linked = guardiansPage.linkedStudents(guardian);
+					return [
+						guardian.name,
+						guardian.relation,
+						guardian.phone,
+						linked.map(student => student.name).join('; '),
+					];
+				});
+			},
+		});
+	}
 </script>
 
 <div class="animate-fade-in">
@@ -150,6 +178,7 @@
 			<ListMoreMenu
 				exportOnly
 				onEnterSelectMode={selection.selectionMode ? undefined : () => selection.enterSelectionMode()}
+				onExport={() => void exportMatching()}
 			/>
 		{/snippet}
 	</ListPageHeader>

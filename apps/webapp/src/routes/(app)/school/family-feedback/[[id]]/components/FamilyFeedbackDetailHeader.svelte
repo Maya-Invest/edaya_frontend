@@ -80,10 +80,16 @@
 	let themeDraft = $state('');
 	let moderatorStaffId = $state('');
 	let actionBusy = $state(false);
+	let seededCampaignId = $state<string | null>(null);
 
 	$effect(() => {
+		const campaignId = live.id;
+		if (seededCampaignId === campaignId) {
+			return;
+		}
 		themeDraft = live.themeDraft ?? '';
 		moderatorStaffId = live.moderatorStaffId ?? '';
+		seededCampaignId = campaignId;
 	});
 
 	function fmtDate(value: string | undefined) {
@@ -232,9 +238,7 @@
 	{/snippet}
 </DrawerEntityHeader>
 
-{#if editOpen.open}
-	<FamilyFeedbackFormModal campaign={live} bind:open={editOpen.open} />
-{/if}
+<FamilyFeedbackFormModal campaign={live} bind:open={editOpen.open} />
 
 <FormModal
 	bind:open={assignOpen.open}

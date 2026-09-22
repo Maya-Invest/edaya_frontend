@@ -1,4 +1,5 @@
 import type { SessionDetail, SessionLogbook, SessionSubjectMatterOption } from '$lib/types/session-detail';
+import type { PageQueryRequest } from '../../../lib/timetable-page-status';
 import type { TimetablePageState } from '../../../timetable-page.svelte';
 import { buildLessonSessionSavePayload } from '$lib/api/lesson-session-save-payload';
 import { findPlanningEventById } from '$lib/api/planning-data';
@@ -88,9 +89,9 @@ export class SessionLogbookTabState {
 	}
 
 	query() {
-		return (url: URL) => resolveTimetablePageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolveTimetablePageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const sessionId = sessionDetailIdFromUrl(url);
 				const classId = timetableClassIdFromUrl(url);
 				if (!sessionId || !classId) {
@@ -109,6 +110,7 @@ export class SessionLogbookTabState {
 					{ id: session.id, kind: session.kind },
 				);
 				if (loaded) {
+					signal.throwIfAborted();
 					this.seed(sessionId, {
 						classGroupId: loaded.classGroupId,
 						classSubjectId: loaded.classSubjectId,
@@ -121,7 +123,7 @@ export class SessionLogbookTabState {
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load session logbook.',
-		});
+		}, request);
 	}
 
 	async saveLogbook(input: {

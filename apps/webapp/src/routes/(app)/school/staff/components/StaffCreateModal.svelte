@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { StaffPermissionProfile } from '$lib/api/staff-permission-profiles-data';
 	import type { StaffProfileRole } from '$lib/staff/staff-profile-roles';
+	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import {
@@ -16,7 +17,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
-	import { appGoto } from '$lib/navigation/app-navigation';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import {
 		DEFAULT_STAFF_PROFILE_ROLE,
 		isStaffProfileRole,
@@ -95,7 +96,7 @@
 		if (staffId) {
 			open = false;
 			resetForm();
-			appGoto(detailHref.configStaffMember(staffId));
+			openDetailDrawer(detailHref.configStaffMember(staffId), currentRouteSurfaceHref($page.url));
 		}
 	}
 </script>

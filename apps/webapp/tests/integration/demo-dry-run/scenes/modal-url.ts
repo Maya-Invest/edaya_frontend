@@ -26,7 +26,7 @@ const DEMO_MODAL_CATALOG_KEYS: ReadonlyArray<{ parentRoute: string; modal: strin
 	{ parentRoute: '/configuration/classes/[id]/profile', modal: 'edit' },
 	{ parentRoute: '/school/students/[id]/profile', modal: 'edit-profile' },
 	{ parentRoute: '/school/students/[id]/profile', modal: 'link-guardian' },
-	{ parentRoute: '/school/students/[id]/grades', modal: 'add-grade' },
+	{ parentRoute: '/school/students/[id]/attendance', modal: 'add-absence' },
 	{ parentRoute: '/classes/[classId]/teaching/[id]/progression', modal: 'edit-subject' },
 	{ parentRoute: '/school/staff/[id]/permissions', modal: 'add-permission' },
 ];
@@ -178,14 +178,14 @@ export async function runModalUrlChecks(ctx: DemoContext): Promise<void> {
 		}
 	}
 
-	if (await visit(ctx, `${base}${schoolStudentPath(STUDENT_ID, 'grades')}?modal=add-grade`, scene, '15 Student add-grade deep-link', {
-		pathPrefix: schoolStudentPath(STUDENT_ID, 'grades'),
+	if (await visit(ctx, `${base}${schoolStudentPath(STUDENT_ID, 'attendance')}?modal=add-absence`, scene, '15 Student add-absence deep-link', {
+		pathPrefix: schoolStudentPath(STUDENT_ID, 'attendance'),
 	})) {
-		if (await waitForDrawerAside(ctx) && await waitForFormModal(ctx) && await waitForUrlModal(ctx, 'add-grade')) {
-			reporter.log(scene, '16 Student URL modal=add-grade', 'pass');
+		if (await waitForDrawerAside(ctx) && await waitForFormModal(ctx) && await waitForUrlModal(ctx, 'add-absence')) {
+			reporter.log(scene, '16 Student URL modal=add-absence', 'pass');
 		}
 		else {
-			reporter.log(scene, '16 Student URL modal=add-grade', 'fail', `modal=${urlModalParam(ctx) ?? 'none'}`);
+			reporter.log(scene, '16 Student URL modal=add-absence', 'fail', `modal=${urlModalParam(ctx) ?? 'none'}`);
 		}
 	}
 

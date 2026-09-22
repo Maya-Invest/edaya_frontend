@@ -23,6 +23,7 @@
 		Plus,
 		Trash2,
 	} from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, closeUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
@@ -236,7 +237,20 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'calendar.csv',
+					headers: ['date', 'endDate', 'type', 'title', 'scope'],
+					loadAll: async () => filtered.map(event => [
+						event.date,
+						event.endDate ?? event.date,
+						event.type,
+						event.title,
+						scopeLabel(event.scope),
+					]),
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 

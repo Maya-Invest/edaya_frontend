@@ -35,7 +35,7 @@ export const JOURNEY_SURFACE_CLAIMS: readonly JourneySurfaceClaim[] = [
 	},
 	{
 		stepId: 'structure.academic',
-		paths: ['/configuration/academic'],
+		paths: ['/configuration/academic', '/configuration/period-grid'],
 	},
 	{
 		stepId: 'structure.grade-level',
@@ -78,12 +78,13 @@ export const JOURNEY_SURFACE_CLAIMS: readonly JourneySurfaceClaim[] = [
 	{
 		stepId: 'configuration.scales-report-cards',
 		paths: [
-			'/configuration/grade-scales',
+			'/configuration/other',
+			'/configuration/other/grade-scales',
 			'/configuration/report-cards',
 			'/configuration/report-cards/[id]',
 		],
 		modals: [
-			{ parentRoute: '/configuration/grade-scales', modal: 'create' },
+			{ parentRoute: '/configuration/other/grade-scales', modal: 'create' },
 			{ parentRoute: '/configuration/report-cards', modal: 'create' },
 			{ parentRoute: '/configuration/report-cards/[id]', modal: 'delete' },
 		],
@@ -93,7 +94,8 @@ export const JOURNEY_SURFACE_CLAIMS: readonly JourneySurfaceClaim[] = [
 		paths: [
 			'/configuration/notifications',
 			'/configuration/notifications/[id]',
-			'/configuration/discipline',
+			'/configuration/other/discipline',
+			'/configuration/other/subject-categories',
 			'/configuration/permission-profiles',
 			'/configuration/tools',
 			'/configuration/tools/teacher-assignments',
@@ -102,7 +104,8 @@ export const JOURNEY_SURFACE_CLAIMS: readonly JourneySurfaceClaim[] = [
 			{ parentRoute: '/configuration/notifications', modal: 'reset-all' },
 			{ parentRoute: '/configuration/notifications/[id]', modal: 'edit' },
 			{ parentRoute: '/configuration/notifications/[id]', modal: 'reset-key' },
-			{ parentRoute: '/configuration/discipline', modal: 'create' },
+			{ parentRoute: '/configuration/other/discipline', modal: 'create' },
+			{ parentRoute: '/configuration/other/subject-categories', modal: 'create' },
 			{ parentRoute: '/configuration/permission-profiles', modal: 'create' },
 			{ parentRoute: '/configuration/tools/teacher-assignments', modal: 'create' },
 		],
@@ -120,7 +123,6 @@ export const JOURNEY_SURFACE_CLAIMS: readonly JourneySurfaceClaim[] = [
 			{ parentRoute: '/school/students/[id]/profile', modal: 'note' },
 			{ parentRoute: '/school/students/[id]/attendance', modal: 'add-absence' },
 			{ parentRoute: '/school/students/[id]/incidents', modal: 'add-incident' },
-			{ parentRoute: '/school/students/[id]/grades', modal: 'add-grade' },
 		],
 		tabs: STUDENT_TABS.map(tab => ({ routePattern: '/school/students/[id]', tab })),
 	},

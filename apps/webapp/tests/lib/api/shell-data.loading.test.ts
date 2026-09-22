@@ -1,5 +1,6 @@
 import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
+import { CATALOG_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
 import { fetchActiveEnrollmentCountsByClass, fetchAppShellData } from '$lib/api/shell-data';
 import {
 	createRecordingSchoolClient,
@@ -153,9 +154,13 @@ describe('shell data loading', () => {
 			request.method === 'GET' && request.path === `/core/entities/schools/${SEED_SCHOOL_ID}`)).toBe(true);
 		expect(entityListRequests(requests, 'academic-years')[0]?.body).toMatchObject({
 			schoolId: SEED_SCHOOL_ID,
+			$limit: CATALOG_LIST_PAGE_SIZE,
+			$offset: 0,
 		});
 		expect(entityListRequests(requests, 'class-groups')[0]?.body).toMatchObject({
 			schoolId: SEED_SCHOOL_ID,
+			$limit: CATALOG_LIST_PAGE_SIZE,
+			$offset: 0,
 		});
 	});
 
@@ -213,5 +218,52 @@ describe('shell data loading', () => {
 		expect(statusById['year-draft']).toBe('draft');
 		expect(statusById['year-published']).toBe('published');
 		expect(statusById['year-archived']).toBe('archived');
+	});
+
+	it('includes the 51st class group instead of stopping at the default list page', async () => {
+		const classGroups = Array.from({ length: 51 }, (_, index) => ({
+			id: `class-${index + 1}`,
+			schoolId: SEED_SCHOOL_ID,
+			academicYearId: 'year-1',
+			gradeLevelId: 'grade-6',
+			name: `Class ${index + 1}`,
+		}));
+
+		const { client, requests } = createRecordingSchoolClient([
+			{
+				id: SEED_SCHOOL_ID,
+				name: 'Demo School',
+				city: 'Paris',
+				timeZone: 'Europe/Paris',
+			},
+			listEnvelope([]),
+			listEnvelope([]),
+			listEnvelope([{
+				id: 'grade-6',
+				schoolId: SEED_SCHOOL_ID,
+				name: 'Sixième',
+				cycle: 'Collège',
+				order: 1,
+			}]),
+			listEnvelope([]),
+			listEnvelope(classGroups),
+			{
+				schoolId: SEED_SCHOOL_ID,
+				activeEnrollmentCountsByClass: Object.fromEntries(classGroups.map(entry => [entry.id, 1])),
+				studentCount: 51,
+				guardianCount: 0,
+				staffCount: 0,
+				teacherCount: 0,
+			},
+		]);
+
+		const shell = await fetchAppShellData(client, { fallbackSchoolId: SEED_SCHOOL_ID });
+
+		expect(shell.classes).toHaveLength(51);
+		expect(shell.classes.at(-1)?.id).toBe('class-51');
+		expect(entityListRequests(requests, 'class-groups')[0]?.body).toMatchObject({
+			$limit: CATALOG_LIST_PAGE_SIZE,
+			$offset: 0,
+		});
 	});
 });

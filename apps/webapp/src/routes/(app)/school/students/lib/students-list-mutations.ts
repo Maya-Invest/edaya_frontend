@@ -23,7 +23,7 @@ export async function createStudentOnPage(state: StudentsPageState, input: {
 		return null;
 	}
 
-	const studentId = `stu-${Date.now().toString(36)}`;
+	const studentId = crypto.randomUUID();
 	const enrollmentId = `enr-${studentId}`;
 	const now = new Date().toISOString();
 	const birthDate = dateInputToIso(input.birthDate ?? '');

@@ -44,7 +44,7 @@ function buildOptimisticTeacher(input: {
 		photoUrl: null,
 		email,
 		phone,
-		code: input.code?.trim() || input.id,
+		code: input.code?.trim() || null,
 		isActive: true,
 		subjectId: null,
 	};
@@ -64,17 +64,17 @@ export async function createTeacherOnPage(
 ): Promise<string | null> {
 	const client = getBrowserSchoolClient();
 	const email = input.email?.trim() ?? '';
-	const code = input.code?.trim() ?? '';
-	const id = code || `tch-${Date.now().toString(36)}`;
-	const optimistic = buildOptimisticTeacher({ id, ...input });
+	const code = input.code?.trim() || undefined;
+	const id = crypto.randomUUID();
+	const optimistic = buildOptimisticTeacher({ id, ...input, code });
 
 	const result = await runTeacherRouteMutation({
-		request: () => client.entities.teachers.save({
+		request: () => client.commands.registerTeacher({
 			id,
 			schoolId: schoolId(),
 			firstName: input.firstName.trim(),
 			lastName: input.lastName.trim(),
-			code: code || id,
+			...(code ? { code } : {}),
 			email: email || null,
 			phone: input.phone?.trim() || null,
 			isActive: true,

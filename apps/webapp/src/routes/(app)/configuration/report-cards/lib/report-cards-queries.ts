@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { ReportCardsPageState } from '../report-cards-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadReportCardCatalogData } from '$lib/api/report-cards-data';
@@ -28,14 +29,15 @@ export async function loadReportCardsSlice() {
 }
 
 export function queryReportCardsListPage(state: ReportCardsPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyReportCardsSlice(),
-		load: async () => {
+		load: async (signal) => {
 			const data = await loadReportCardsSlice();
+			signal.throwIfAborted();
 			state.applySlice(data);
 			return data;
 		},
 		hasItems: listPageHasItems,
 		errorMessage: 'Unable to load report card models.',
-	});
+	}, request);
 }

@@ -4,6 +4,7 @@
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import { formatMinorUnits } from '$lib/finance/money';
 	import { locale, t } from '$lib/i18n';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { cn } from '$lib/utils';
 	import FinanceSubnav from '../../components/FinanceSubnav.svelte';
 	import { getReconciliationPageState } from '../reconciliation-page.svelte';
@@ -25,7 +26,31 @@
 			<FinanceSubnav active="reconciliation" />
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'reconciliation.csv',
+					headers: ['kind', 'id', 'studentId', 'projected', 'actual', 'difference'],
+					loadAll: async () => [
+						...accounts.map(row => [
+							'account',
+							row.accountId,
+							row.studentId,
+							row.projectedAvailable,
+							row.entrySum,
+							row.difference,
+						]),
+						...charges.map(row => [
+							'charge',
+							row.chargeId,
+							row.studentId,
+							row.projectedAllocated,
+							row.settlement,
+							row.difference,
+						]),
+					],
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 

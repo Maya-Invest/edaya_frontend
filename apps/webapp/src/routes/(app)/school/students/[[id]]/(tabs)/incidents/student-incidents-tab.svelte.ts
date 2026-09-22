@@ -1,5 +1,6 @@
 import type { Incident } from '$lib/types/school';
 import type { StudentDetailHost } from '../../../lib/student-detail-host';
+import type { PageQueryRequest } from '../../../lib/student-page-status';
 import { academicContext } from '$lib/academic/context.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadIncidentRouteData } from '$lib/api/school-life-data';
@@ -29,7 +30,10 @@ function emptySlice(studentId: string): StudentIncidentsTabSlice {
 }
 
 function schoolId(): string {
-	return authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
+	return academicContext.schoolScopeId
+		|| authSession.schoolId
+		|| academicContext.schools[0]?.id
+		|| '';
 }
 
 function incidentCategoryFromKind(kind: IncidentKind): Incident['category'] {
@@ -106,9 +110,9 @@ export class StudentIncidentsTabState {
 	}
 
 	query() {
-		return (url: URL) => resolveStudentPageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const studentId = studentDetailIdFromPathname(url.pathname);
 				if (!studentId) {
 					return {};
@@ -124,13 +128,16 @@ export class StudentIncidentsTabState {
 					academicYearId: academicContext.yearId,
 				};
 				const { incidents } = await loadIncidentRouteData(getBrowserSchoolClient(), scope);
+				signal.throwIfAborted();
 				this.seed(studentId, {
-					incidents: incidents.filter(incident => incident.involvedStudentIds.includes(studentId)),
+					incidents: incidents.filter(incident =>
+						incident.involvedStudentIds.includes(studentId) || incident.studentId === studentId,
+					),
 				});
 				return {};
 			},
 			hasItems: () => true,
-		});
+		}, request);
 	}
 
 	async recordIncident(input: {

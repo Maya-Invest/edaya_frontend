@@ -1,24 +1,21 @@
 <script lang="ts">
-	import type { Subject, SubjectCategory } from '$lib/types/school';
+	import type { Subject } from '$lib/types/school';
+	import type { SubjectCategoryOption } from '$lib/api/subject-categories-data';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { sortGradeLevels } from '$lib/academic/grade-level-sort';
 	import { createSubjectForGradeLevelMutation } from '$lib/api/mutations/subject.mutations';
+	import { defaultSubjectCategoryId, loadSubjectCategories } from '$lib/api/subject-categories-data';
+	import { getBrowserSchoolClient } from '$lib/api/school-client';
+	import { authSession } from '$lib/auth/session.svelte';
+	import { catalogCategory } from '$lib/i18n/catalog-label';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
-	import { t } from '$lib/i18n';
+	import { lang, t } from '$lib/i18n';
 	import { get } from 'svelte/store';
 	import { getSubjectsPageState } from '../subjects-page.svelte';
 
-	const CATEGORIES: SubjectCategory[] = [
-		'Scientifique',
-		'Littéraire',
-		'Langues',
-		'Sciences humaines',
-		'Sport',
-		'Arts',
-	];
 	const COLORS: Subject['color'][] = ['mint', 'sky', 'warm'];
 
 	const COLOR_LABELS: Record<Subject['color'], string> = {
@@ -43,7 +40,8 @@
 	let wasOpen = $state(false);
 	let name = $state('');
 	let gradeLevelId = $state('');
-	let category = $state<SubjectCategory>('Scientifique');
+	let categories = $state<SubjectCategoryOption[]>([]);
+	let categoryId = $state('');
 	let color = $state<Subject['color']>('mint');
 
 	const gradeLevelOptions = $derived(
@@ -53,11 +51,32 @@
 		})),
 	);
 	const colorLabel = $derived(COLOR_LABELS[color]);
-	const canSubmit = $derived(name.trim().length > 0 && gradeLevelId.length > 0 && (academicContext.yearId?.length ?? 0) > 0);
+	const canSubmit = $derived(
+		name.trim().length > 0
+		&& categoryId.length > 0
+		&& gradeLevelId.length > 0
+		&& (academicContext.yearId?.length ?? 0) > 0,
+	);
+	const selectedCategoryName = $derived(
+		categories.find(category => category.id === categoryId)?.name ?? '',
+	);
+
+	async function loadCategories() {
+		const schoolId = authSession.schoolId;
+		if (!schoolId) {
+			categories = [];
+			categoryId = '';
+			return;
+		}
+		categories = await loadSubjectCategories(getBrowserSchoolClient(), schoolId);
+		if (!categories.some(category => category.id === categoryId)) {
+			categoryId = defaultSubjectCategoryId(categories);
+		}
+	}
 
 	function resetForm() {
 		name = '';
-		category = 'Scientifique';
+		categoryId = defaultSubjectCategoryId(categories);
 		color = 'mint';
 		const levels = sortGradeLevels(academicContext.gradeLevels);
 		if (defaultGradeLevelId !== 'all' && levels.some(level => level.id === defaultGradeLevelId)) {
@@ -71,6 +90,7 @@
 	$effect(() => {
 		if (open && !wasOpen) {
 			resetForm();
+			void loadCategories();
 		}
 		wasOpen = open;
 	});
@@ -91,7 +111,7 @@
 			academicYearId,
 			classGroupIds,
 			name: name.trim(),
-			category,
+			categoryId,
 			color,
 			successMessage: get(t)('subjects.createSuccess', { name: name.trim() }),
 		});
@@ -147,15 +167,17 @@
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('subjects.category')}
 			</Label>
-			<Select.Root type="single" value={category} onValueChange={value => value && (category = value as SubjectCategory)}>
+			<Select.Root type="single" value={categoryId} onValueChange={value => value && (categoryId = value)}>
 				<Select.Trigger>
 					<Select.Value placeholder={$t('subjects.category')}>
-						{category}
+						{catalogCategory(selectedCategoryName, $lang)}
 					</Select.Value>
 				</Select.Trigger>
 				<Select.Content class="z-[100]">
-					{#each CATEGORIES as cat (cat)}
-						<Select.Item value={cat} label={cat}>{cat}</Select.Item>
+					{#each categories as category (category.id)}
+						<Select.Item value={category.id} label={catalogCategory(category.name, $lang)}>
+							{catalogCategory(category.name, $lang)}
+						</Select.Item>
 					{/each}
 				</Select.Content>
 			</Select.Root>

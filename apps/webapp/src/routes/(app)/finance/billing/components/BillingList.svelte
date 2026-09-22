@@ -14,8 +14,8 @@
 	import { locale, t } from '$lib/i18n';
 	import { Plus, TrendingUp, AlertCircle, Wallet } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import FinanceSubnav from '../../components/FinanceSubnav.svelte';
@@ -57,7 +57,7 @@
 
 	function handleBillingCreated(chargeId: string) {
 		const path = detailHref.financeBilling(chargeId);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+		openDetailDrawer(`${path}${detailNavigationSearch($page.url)}`, currentRouteSurfaceHref($page.url));
 	}
 
 	async function exportOverdueReminders() {

@@ -11,6 +11,7 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { Pencil, RotateCcw } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { writeModalSurface } from '$lib/modal/modal-url';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import {
@@ -70,7 +71,19 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'notification-templates.csv',
+					headers: ['category', 'name', 'key', 'channels'],
+					loadAll: async () => NOTIFICATION_TEMPLATE_CATEGORIES.flatMap(category => category.keys.map(key => [
+						get(t)(`notificationTemplates.categories.${category.key}`),
+						get(t)(`notificationTemplates.keys.${key}`),
+						key,
+						channelLabel(key),
+					])),
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 

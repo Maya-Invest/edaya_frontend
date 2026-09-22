@@ -12,6 +12,7 @@
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
 	import { Plus } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readConfigSubjectListFilters, writeConfigSubjectListFilters } from '$lib/list/list-url-filters';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
@@ -158,7 +159,19 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'subjects.csv',
+					headers: ['name', 'category', 'hoursPerWeek', 'gradeLevel'],
+					loadAll: async () => visibleGroups.flatMap(group => group.items.map(subject => [
+						subject.name,
+						subject.category,
+						subject.hoursPerWeek ?? '',
+						group.label,
+					])),
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 

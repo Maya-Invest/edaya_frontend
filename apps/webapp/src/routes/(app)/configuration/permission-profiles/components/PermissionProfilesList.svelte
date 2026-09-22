@@ -13,6 +13,7 @@
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
 	import { Pencil, Plus, Trash2 } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
 	import { getPermissionProfilesPageState } from '../permission-profiles-page.svelte';
@@ -157,7 +158,19 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'permission-profiles.csv',
+					headers: ['name', 'grain', 'permissions', 'boundStaff'],
+					loadAll: async () => filteredProfiles.map(profile => [
+						profile.name,
+						profile.scopeGrain,
+						profile.permissions.length,
+						permissionProfilesPage.boundCount(profile.id),
+					]),
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 

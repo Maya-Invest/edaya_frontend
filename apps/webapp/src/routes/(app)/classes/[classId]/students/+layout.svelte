@@ -7,15 +7,16 @@
 	import { listRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
 	import { readClassStudentListFilters } from '$lib/list/list-url-filters';
-	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
 	import {
 		ClassStudentsPageState,
 		setClassStudentsPageState,
 	} from './class-students-page.svelte';
 	import ClassStudentsList from './components/ClassStudentsList.svelte';
+	import ClassStudentsPageHydrator from './components/ClassStudentsPageHydrator.svelte';
 
 	const { children: pageChildren }: { children: Snippet } = $props();
 
@@ -36,12 +37,13 @@
 
 	function selectStudent(student: import('$lib/types/school').Student) {
 		const path = detailHref.classStudent(classId, student.id);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+		openDetailDrawer(`${path}${detailNavigationSearch($page.url)}`, currentRouteSurfaceHref($page.url));
 	}
 </script>
 
 <PageQuery {query} cacheKey={listRouteCacheKey} loadingTitle={$t('tab.students')}>
 	{#snippet children(data)}
+		<ClassStudentsPageHydrator {data} />
 		<DataState
 			preserveShell
 			status={data.status}

@@ -1,7 +1,8 @@
 import { describe, expect, it, mock } from 'bun:test';
 import type { ValidatedTeacherImportRow } from '$lib/import/teachers/types';
+import type { SaveTeacherInput } from '$lib/teachers/save-teacher';
 
-const saveTeacher = mock(async () => undefined);
+const saveTeacher = mock(async (_client: unknown, _input: SaveTeacherInput) => undefined);
 
 mock.module('$lib/teachers/save-teacher', () => ({
 	saveTeacher,
@@ -42,12 +43,14 @@ describe('teacher import runner', () => {
 		expect(saveTeacher).toHaveBeenCalledTimes(2);
 		expect(saveTeacher).toHaveBeenNthCalledWith(1, expect.anything(), {
 			schoolId: 'school-1',
-			teacherId: 'ENS-001',
+			teacherId: expect.stringMatching(/^[0-9a-f-]{36}$/i),
+			code: 'ENS-001',
 			firstName: 'Jean',
 			lastName: 'Dupont',
 			email: 'jean@example.com',
 			phone: undefined,
 			subjectId: null,
 		});
+		expect(saveTeacher.mock.calls[0]?.[1].teacherId).not.toBe('ENS-001');
 	});
 });

@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '../../../lib/staff-page-status';
 import type { StaffPageState } from '../../../staff-page.svelte';
 import { getContext, setContext } from 'svelte';
 import { resolveStaffPageLoad } from '../../../lib/staff-page-status';
@@ -19,9 +20,9 @@ export class StaffPermissionsTabState {
 	}
 
 	query() {
-		return (url: URL) => resolveStaffPageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolveStaffPageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const staffId = staffDetailIdFromUrl(url);
 				if (!staffId) {
 					return {};
@@ -35,12 +36,13 @@ export class StaffPermissionsTabState {
 					return {};
 				}
 				await page.loadPermissionData();
+				signal.throwIfAborted();
 				this.loadedKey = key;
 				return {};
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load staff permissions.',
-		});
+		}, request);
 	}
 }
 

@@ -1,5 +1,6 @@
 import type { Guardian, HealthRecord, PedagogicalNote, StaffMember } from '$lib/types/school';
 import type { StudentDetailHost } from '../../../lib/student-detail-host';
+import type { PageQueryRequest } from '../../../lib/student-page-status';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadGuardiansPeopleData } from '$lib/api/people-data';
 import { stableRequestId, studentPhotoCommandStorageKey } from '$lib/api/profile-photo-request';
@@ -156,9 +157,9 @@ export class StudentProfileTabState {
 	}
 
 	query() {
-		return (url: URL) => resolveStudentPageLoad(url, {
+		return (url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
-			load: async () => {
+			load: async (signal) => {
 				const studentId = studentDetailIdFromPathname(url.pathname);
 				if (!studentId) {
 					return {};
@@ -185,6 +186,7 @@ export class StudentProfileTabState {
 					this.getPage().loadPendingPhotoReviews(),
 				]);
 
+				signal.throwIfAborted();
 				this.seed(studentId, {
 					health: healthRecord,
 					pedagogicalNotes,
@@ -194,7 +196,7 @@ export class StudentProfileTabState {
 				return {};
 			},
 			hasItems: () => true,
-		});
+		}, request);
 	}
 
 	async updateProfile(input: {

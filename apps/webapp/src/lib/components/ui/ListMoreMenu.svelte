@@ -3,7 +3,6 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import { t } from '$lib/i18n';
 	import { FileSpreadsheet, ClipboardCheck, Layers, LayoutGrid, MoreHorizontal } from '$lib/icons';
-	import { toast } from '$lib/toast.svelte';
 
 	const {
 		view = 'table',
@@ -18,20 +17,16 @@
 		exportOnly?: boolean;
 		exportLabel?: string;
 		onEnterSelectMode?: () => void;
-		onExport?: () => void;
+		onExport?: () => void | Promise<void>;
 	} = $props();
 
 	let open = $state(false);
 
 	const resolvedExportLabel = $derived(exportLabel ?? $t('list.export'));
 
-	function exportStub() {
+	function exportList() {
 		open = false;
-		if (onExport) {
-			onExport();
-			return;
-		}
-		toast.info($t('list.exportSoon'));
+		void onExport?.();
 	}
 
 	function setView(next: 'table' | 'cards') {
@@ -72,16 +67,20 @@
 			</button>
 			<div class="my-1 border-t border-border"></div>
 		{/if}
-		<button
-			type="button"
-			class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-secondary"
-			onclick={exportStub}
-		>
-			<FileSpreadsheet class="h-4 w-4 text-muted-foreground" />
-			<span>{resolvedExportLabel}</span>
-		</button>
+		{#if onExport}
+			<button
+				type="button"
+				class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-secondary"
+				onclick={exportList}
+			>
+				<FileSpreadsheet class="h-4 w-4 text-muted-foreground" />
+				<span>{resolvedExportLabel}</span>
+			</button>
+		{/if}
 		{#if !exportOnly}
-			<div class="my-1 border-t border-border"></div>
+			{#if onExport}
+				<div class="my-1 border-t border-border"></div>
+			{/if}
 			<button
 				type="button"
 				class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-secondary"

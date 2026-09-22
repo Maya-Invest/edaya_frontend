@@ -40,10 +40,13 @@ describe('staff import runner', () => {
 
 		expect(result.created).toBe(2);
 		expect(result.failed).toEqual([]);
-		expect(result.staffIds).toEqual(['PER-001', 'PER-002']);
+		expect(result.staffIds).toHaveLength(2);
+		expect(result.staffIds[0]).toMatch(/^[0-9a-f-]{36}$/i);
+		expect(result.staffIds[0]).not.toBe('PER-001');
 		expect(registerStaffMember).toHaveBeenCalledTimes(2);
 		expect(registerStaffMember).toHaveBeenNthCalledWith(1, expect.objectContaining({
-			id: 'PER-001',
+			id: result.staffIds[0],
+			code: 'PER-001',
 			firstName: 'Fatou',
 			lastName: 'Diallo',
 			email: 'fatou@example.com',

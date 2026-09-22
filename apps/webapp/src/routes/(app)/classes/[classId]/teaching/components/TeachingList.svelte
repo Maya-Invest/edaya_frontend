@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Subject, SubjectCategory } from '$lib/types/school';
+	import type { Subject } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 	import { setClassSubjectOfferedMutation } from '$lib/api/mutations/grade-level-subject.mutations';
@@ -70,15 +70,6 @@
 		mint: 'bg-accent',
 		sky: 'bg-accent/60',
 		warm: 'bg-muted-foreground/40',
-	};
-
-	const categoryTone: Record<SubjectCategory, string> = {
-		'Scientifique': 'bg-secondary text-foreground/80',
-		'Littéraire': 'bg-secondary text-foreground/80',
-		'Langues': 'bg-secondary text-foreground/80',
-		'Sciences humaines': 'bg-secondary text-foreground/80',
-		'Sport': 'bg-secondary text-foreground/80',
-		'Arts': 'bg-secondary text-foreground/80',
 	};
 
 	function selectSubject(subject: Subject) {
@@ -169,7 +160,7 @@
 						<span
 							class={cn(
 								'rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider',
-								categoryTone[subject.category],
+								'bg-secondary text-foreground/80',
 							)}
 						>
 							{catalogCategory(subject.category, $lang)}

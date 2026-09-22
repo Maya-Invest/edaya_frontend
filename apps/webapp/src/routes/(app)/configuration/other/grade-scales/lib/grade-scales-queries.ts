@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { GradeScalesPageState } from '../grade-scales-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadGradeScalesCatalogData } from '$lib/api/report-cards-data';
@@ -29,14 +30,15 @@ export async function loadGradeScalesSlice() {
 }
 
 export function queryGradeScalesListPage(state: GradeScalesPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyGradeScalesSlice(),
-		load: async () => {
+		load: async (signal) => {
 			const data = await loadGradeScalesSlice();
+			signal.throwIfAborted();
 			state.applySlice(data);
 			return data;
 		},
 		hasItems: listPageHasItems,
 		errorMessage: 'Unable to load grade scales.',
-	});
+	}, request);
 }

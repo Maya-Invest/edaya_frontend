@@ -19,14 +19,19 @@ import {
 	type MatrixStatut,
 } from '../../../scripts/qa-matrix-support';
 import {
+	assertListContains,
+	confirmDialog,
 	dismissOpenDialogs,
 	dismissPageError,
 	navigateSpaPage,
+	openDialogButton,
+	openUrlModal,
 	refreshAppShell,
 	REMOVE_ANNOUNCEMENT_TARGET_CONTROL,
 	submitDialog,
 	waitForDialogClosed,
 	waitForPageQuery,
+	waitForSubmitEnabled,
 } from '../../../scripts/qa-harness-ui';
 import type { QaTemplateRow } from '../../../scripts/qa-template-matrix.manual';
 import { JourneyLedger } from './journey-ledger';
@@ -134,6 +139,153 @@ export function coverModal(
 	}
 }
 
+/** Cover a mutation only after open, submit, close, and a visible or API-confirmed postcondition. */
+export function coverCompletedModal(
+	journey: UiJourney,
+	parentRoute: string,
+	modal: string,
+	input: {
+		opened: boolean;
+		submitted: boolean;
+		closed: boolean;
+		postcondition?: boolean;
+	},
+	detail?: string,
+): void {
+	const ok = input.opened
+		&& input.submitted
+		&& input.closed
+		&& input.postcondition === true;
+	coverModal(journey, parentRoute, modal, ok ? 'OK' : 'NOT OK', detail);
+}
+
+/** Unexercised mutation actions are N/A. Exercised ones are OK only with a confirmed postcondition. */
+export function coverMutationActions(
+	journey: UiJourney,
+	templatePath: string,
+	actions: readonly string[],
+	input: {
+		exercised: boolean;
+		postcondition?: boolean;
+	},
+	detail?: string,
+): void {
+	if (!input.exercised) {
+		coverActions(journey, templatePath, actions, 'N/A', detail);
+		return;
+	}
+	coverActions(
+		journey,
+		templatePath,
+		actions,
+		input.postcondition === true ? 'OK' : 'NOT OK',
+		detail,
+	);
+}
+
+export async function runModalMutation(
+	journey: UiJourney,
+	input: {
+		parentRoute: string;
+		modal: string;
+		pathname: string;
+		target?: string;
+		command: string;
+		fill?: (page: import('playwright').Page) => Promise<void>;
+		submit?: 'form' | 'confirm';
+		confirmLabel?: RegExp;
+		openLabel?: RegExp;
+		visibleAfter?: string;
+		listPath?: string;
+		actionPath?: string;
+		actions?: readonly string[];
+	},
+): Promise<{ opened: boolean; submitted: boolean; closed: boolean; postcondition: boolean; result: Record<string, unknown> | null }> {
+	const { page, base } = journey.ctx;
+	await dismissOpenDialogs(page);
+	let opened = false;
+	if (input.openLabel) {
+		await gotoApp(journey, input.pathname);
+		opened = await openDialogButton(page, input.openLabel, 15_000);
+	}
+	if (!opened) {
+		opened = await openUrlModal(page, input.pathname, input.modal, {
+			target: input.target,
+			base,
+		});
+	}
+	if (!opened && input.openLabel) {
+		opened = await openDialogButton(page, input.openLabel, 15_000);
+	}
+	if (!opened) {
+		coverCompletedModal(journey, input.parentRoute, input.modal, {
+			opened: false,
+			submitted: false,
+			closed: false,
+		}, `${input.modal} not found`);
+		if (input.actions && input.actionPath) {
+			coverMutationActions(journey, input.actionPath, input.actions, { exercised: false }, `${input.modal} not found`);
+		}
+		return { opened: false, submitted: false, closed: false, postcondition: false, result: null };
+	}
+
+	const resultPromise = waitForCommandResult(page, input.command);
+	if (input.fill) {
+		await input.fill(page);
+	}
+	let submitted = true;
+	if (input.submit === 'confirm') {
+		submitted = await confirmDialog(page, input.confirmLabel);
+	}
+	else {
+		await waitForSubmitEnabled(page, 15_000).catch(() => {});
+		try {
+			await submitDialog(page);
+		}
+		catch {
+			submitted = false;
+		}
+	}
+	let closed = submitted
+		? await waitForDialogClosed(page).catch(() => false)
+		: false;
+	const result = submitted ? await resultPromise : null;
+	if (!submitted) {
+		console.log(`modal ${input.modal} submit stayed disabled (${input.command})`);
+	}
+	else if (!result) {
+		console.log(`modal ${input.modal} command ${input.command} had no ok response`);
+	}
+	if (submitted && result && !closed) {
+		await dismissOpenDialogs(page);
+		closed = true;
+	}
+	if (input.listPath) {
+		await gotoApp(journey, input.listPath);
+		await waitForPageQuery(page);
+	}
+	const visible = input.visibleAfter
+		? await assertListContains(page, input.visibleAfter, true, 12_000)
+		: false;
+	const postcondition = visible || result !== null;
+	coverCompletedModal(journey, input.parentRoute, input.modal, {
+		opened: true,
+		submitted,
+		closed,
+		postcondition,
+	}, input.visibleAfter);
+	if (input.actions && input.actionPath) {
+		coverMutationActions(
+			journey,
+			input.actionPath,
+			input.actions,
+			{ exercised: true, postcondition },
+			input.visibleAfter,
+		);
+	}
+	return { opened: true, submitted, closed, postcondition, result };
+}
+
 export function logStep(journey: UiJourney, result: SetupStepResult): void {
 	journey.steps.push(result);
 	const tag = result.blocked ? '⊘' : result.ok ? '✓' : '✗';
@@ -161,7 +313,16 @@ async function waitForCommandResponse(
 	timeout = 45_000,
 ): Promise<import('playwright').Response | null> {
 	return page.waitForResponse(
-		res => res.request().method() === 'POST' && matchesCommandResponse(res.url(), commandFragment),
+		(res) => {
+			if (res.request().method() !== 'POST' || !matchesCommandResponse(res.url(), commandFragment)) {
+				return false;
+			}
+			if (!res.ok()) {
+				console.log(`command ${commandFragment} status=${res.status()}`);
+				return false;
+			}
+			return true;
+		},
 		{ timeout },
 	).catch(() => null);
 }

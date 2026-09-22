@@ -11,6 +11,7 @@
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
 	import { Pencil, Plus, Trash2 } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
 	import { getGradeScalesPageState } from '../grade-scales-page.svelte';
@@ -135,7 +136,20 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'grade-scales.csv',
+					headers: ['name', 'minScore', 'maxScore', 'passingScore', 'default'],
+					loadAll: async () => filteredScales.map(scale => [
+						scale.name,
+						scale.minScore,
+						scale.maxScore,
+						scale.passingScore,
+						scale.isDefault ? 'default' : '',
+					]),
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import type { ResolvedPathname } from '$app/types';
 	import type { ReportCardDefinition } from '$lib/types/report-cards';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
@@ -12,7 +11,8 @@
 	import { t } from '$lib/i18n';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import { appPath } from '$lib/navigation/app-navigation';
+	import { closeDetailDrawer, listSurfaceHref } from '$lib/navigation/route-surface-navigation';
 	import { formatGrade } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
@@ -44,8 +44,7 @@
 				definitionId: live.id,
 				successMessage: get(t)('reportCards.toastModelDeleted', { name: live.name }),
 				onSuccess: () => {
-					const href = appPath('/(app)/configuration/report-cards/[[id]]') as ResolvedPathname;
-					appGoto(href);
+					closeDetailDrawer(listSurfaceHref(appPath('/(app)/configuration/report-cards/[[id]]'), $page.url));
 				},
 			});
 			if (ok) {

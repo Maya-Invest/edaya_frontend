@@ -107,6 +107,10 @@ const academicAdminListFiltersCodec = defineUrlFilterCodec({
 	status: { type: 'string', default: 'all' },
 });
 
+const subjectCategoryListFiltersCodec = defineUrlFilterCodec({
+	q: { type: 'search', default: '' },
+});
+
 const disciplineCatalogListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
 	kind: { type: 'string', default: 'all' },
@@ -155,6 +159,7 @@ export type GradeScaleListFilters = ReturnType<typeof gradeScaleListFiltersCodec
 export type FeeListFilters = ReturnType<typeof feeListFiltersCodec.read>;
 export type ClassGroupListFilters = ReturnType<typeof classGroupListFiltersCodec.read>;
 export type AcademicAdminListFilters = ReturnType<typeof academicAdminListFiltersCodec.read>;
+export type SubjectCategoryListFilters = ReturnType<typeof subjectCategoryListFiltersCodec.read>;
 export type DisciplineCatalogListFilters = ReturnType<typeof disciplineCatalogListFiltersCodec.read>;
 export type PermissionProfileListFilters = ReturnType<typeof permissionProfileListFiltersCodec.read>;
 export type ResourceListFilters = ReturnType<typeof resourceListFiltersCodec.read>;
@@ -323,6 +328,14 @@ export function readAcademicAdminListFilters(url: URL): AcademicAdminListFilters
 
 export function writeAcademicAdminListFilters(url: URL, filters: AcademicAdminListFilters): string {
 	return academicAdminListFiltersCodec.write(url, filters);
+}
+
+export function readSubjectCategoryListFilters(url: URL): SubjectCategoryListFilters {
+	return subjectCategoryListFiltersCodec.read(url);
+}
+
+export function writeSubjectCategoryListFilters(url: URL, filters: SubjectCategoryListFilters): string {
+	return subjectCategoryListFiltersCodec.write(url, filters);
 }
 
 export function readDisciplineCatalogListFilters(url: URL): DisciplineCatalogListFilters {

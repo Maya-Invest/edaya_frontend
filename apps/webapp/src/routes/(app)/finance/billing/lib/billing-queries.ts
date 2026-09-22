@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { BillingPageState } from '../billing-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadBillingPageData } from '$lib/api/finance-data';
@@ -17,13 +18,14 @@ export async function loadBillingSlice() {
 }
 
 export function queryBillingListPage(state: BillingPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyBillingSlice(),
-		load: async () => {
+		load: async (signal) => {
 			const data = await loadBillingSlice();
+			signal.throwIfAborted();
 			state.applySlice(data);
 			return data;
 		},
 		hasItems: listPageHasItems,
-	});
+	}, request);
 }

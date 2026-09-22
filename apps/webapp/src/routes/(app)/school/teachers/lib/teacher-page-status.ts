@@ -1,49 +1,22 @@
 import type { PageLoadMeta } from '$lib/page/load-state';
-import { finalizeStatus, maybeSimulateLoading, resolveDemoState } from '$lib/page/load-state';
+import type { PageQueryRequest } from '$lib/queries/page-status';
+import { resolvePageLoad } from '$lib/queries/page-status';
 
-async function ensureAppShellReady() {
-	if (typeof window === 'undefined') {
-		return;
-	}
-	const { bootstrapAppShell } = await import('$lib/auth/bootstrap-app');
-	await bootstrapAppShell();
-}
+export type { PageQueryRequest } from '$lib/queries/page-status';
 
 export function listPageHasItems(): boolean {
 	return true;
 }
 
-export async function resolveTeacherPageLoad<T>(
+export function resolveTeacherPageLoad<T>(
 	url: URL,
 	options: {
-		load: () => Promise<T>;
+		load: (signal: AbortSignal) => Promise<T>;
 		empty: () => T;
 		hasItems: (data: T) => boolean;
 		errorMessage?: string;
 	},
+	request?: PageQueryRequest,
 ): Promise<T & PageLoadMeta> {
-	await ensureAppShellReady();
-	await maybeSimulateLoading(url);
-	const demo = resolveDemoState(url);
-	if (demo === 'error') {
-		return {
-			...options.empty(),
-			status: 'error',
-			errorMessage: options.errorMessage ?? 'Unable to load this page.',
-		};
-	}
-	if (demo === 'empty') {
-		return { ...options.empty(), status: 'empty' };
-	}
-	try {
-		const data = await options.load();
-		return { ...data, ...finalizeStatus(url, options.hasItems(data)) };
-	}
-	catch {
-		return {
-			...options.empty(),
-			status: 'error',
-			errorMessage: options.errorMessage ?? 'Unable to load this page.',
-		};
-	}
+	return resolvePageLoad(url, options, request);
 }

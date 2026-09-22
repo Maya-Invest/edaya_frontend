@@ -3,10 +3,11 @@ import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { StaffMember, StaffRole, SubjectCategory } from '$lib/types/school';
 import {
 	DEFAULT_LIST_PAGE_SIZE,
-	entitiesByIds,
+	listAllEntityPages,
+	listAllEntityPagesByIds,
+	listAllEntityPagesForIdFilters,
 	paginatedList,
 	STAFF_LIST_ORDER,
-	staffAssignmentsForStaff,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
@@ -190,19 +191,20 @@ export function mapStaffMembers(
 
 async function fetchStaffRelations(client: SchoolClient, staffIds: readonly string[]) {
 	const assignmentsRaw = await safeOptionalEntityList(() =>
-		client.entities.staffAssignments.list(staffAssignmentsForStaff(staffIds)));
+		listAllEntityPagesForIdFilters(
+			query => client.entities.staffAssignments.list(query),
+			[{ field: 'staffId', ids: staffIds }],
+		));
 	const classSubjectIds = uniqueIds(
 		assignmentsRaw
 			.map(assignment => assignment.classSubjectId)
 			.filter((id): id is string => Boolean(id)),
 	);
-	const classSubjectsRaw = classSubjectIds.length > 0
-		? await safeOptionalEntityList(() => client.entities.classSubjects.list(entitiesByIds(classSubjectIds)))
-		: [];
+	const classSubjectsRaw = await safeOptionalEntityList(() =>
+		listAllEntityPagesByIds(query => client.entities.classSubjects.list(query), classSubjectIds));
 	const subjectIds = uniqueIds(classSubjectsRaw.map(classSubject => classSubject.subjectId));
-	const subjectsRaw = subjectIds.length > 0
-		? await safeOptionalEntityList(() => client.entities.subjects.list(entitiesByIds(subjectIds)))
-		: [];
+	const subjectsRaw = await safeOptionalEntityList(() =>
+		listAllEntityPagesByIds(query => client.entities.subjects.list(query), subjectIds));
 
 	return {
 		assignmentsRaw,
@@ -232,13 +234,17 @@ export async function fetchStaffMembers(
 	scope: { schoolId: string; academicYearId: string },
 ): Promise<StaffMember[]> {
 	const [staffRaw, classGroupsRaw] = await Promise.all([
-		client.entities.staffMembers.list({ schoolId: scope.schoolId, accountKind: 'human' }),
-		client.entities.classGroups.list({
-			schoolId: scope.schoolId,
-			academicYearId: scope.academicYearId,
+		listAllEntityPages(query => client.entities.staffMembers.list(query), {
+			baseQuery: { schoolId: scope.schoolId, accountKind: 'human' },
+		}),
+		listAllEntityPages(query => client.entities.classGroups.list(query), {
+			baseQuery: {
+				schoolId: scope.schoolId,
+				academicYearId: scope.academicYearId,
+			},
 		}),
 	]);
-	const staffIds = uniqueIds((staffRaw ?? []).map(member => member.id));
+	const staffIds = uniqueIds(staffRaw.map(member => member.id));
 	if (staffIds.length === 0) {
 		return [];
 	}
@@ -248,8 +254,8 @@ export async function fetchStaffMembers(
 	]);
 
 	return mapStaffMembers(
-		staffRaw ?? [],
-		classGroupsRaw ?? [],
+		staffRaw,
+		classGroupsRaw,
 		relations.assignmentsRaw,
 		relations.classSubjectsRaw,
 		relations.subjectsRaw,
@@ -272,12 +278,14 @@ export async function fetchStaffMemberById(
 			.map(assignment => assignment.classGroupId)
 			.filter((id): id is string => Boolean(id)),
 	);
-	const classGroupsRaw = await client.entities.classGroups.list({
-		schoolId,
-		$or: [
-			{ homeroomStaffId: staffId },
-			...(assignedClassIds.length > 0 ? [entitiesByIds(assignedClassIds)] : []),
-		],
+	const classGroupsRaw = await listAllEntityPages(query => client.entities.classGroups.list(query), {
+		baseQuery: {
+			schoolId,
+			$or: [
+				{ homeroomStaffId: staffId },
+				...(assignedClassIds.length > 0 ? [{ id: { $in: assignedClassIds } }] : []),
+			],
+		},
 	});
 	const ownerSubjectId = await resolveSchoolOwnerSubjectId(client, schoolId);
 	const members = mapStaffMembers(
@@ -380,9 +388,11 @@ export async function fetchStaffMembersPage(
 		client.entities.staffMembers.list(staffFilter),
 		client.entities.staffMembers.count({ schoolId: scope.schoolId, accountKind: 'human' }).then(result => result.count),
 		scope.academicYearId
-			? client.entities.classGroups.list({
-					schoolId: scope.schoolId,
-					academicYearId: scope.academicYearId,
+			? listAllEntityPages(query => client.entities.classGroups.list(query), {
+					baseQuery: {
+						schoolId: scope.schoolId,
+						academicYearId: scope.academicYearId,
+					},
 				})
 			: Promise.resolve([]),
 	]);

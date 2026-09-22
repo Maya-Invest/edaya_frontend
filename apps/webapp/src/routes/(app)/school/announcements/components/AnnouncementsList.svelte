@@ -12,10 +12,11 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { Mail, Plus } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { cn } from '$lib/utils';
 	import { getAnnouncementsPageState } from '../announcements-page.svelte';
 	import AnnouncementFormModal from './AnnouncementFormModal.svelte';
@@ -88,7 +89,7 @@
 
 	function handleCreated(announcementId: string) {
 		const path = detailHref.schoolAnnouncement(announcementId);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+		openDetailDrawer(`${path}${detailNavigationSearch($page.url)}`, currentRouteSurfaceHref($page.url));
 	}
 
 	$effect(() => {
@@ -162,7 +163,19 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'announcements.csv',
+					headers: ['title', 'status', 'date', 'targets'],
+					loadAll: async () => filtered.map(announcement => [
+						announcement.title,
+						announcement.status,
+						announcement.publishedAt ?? announcement.createdAt,
+						announcement.targets.length,
+					]),
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 

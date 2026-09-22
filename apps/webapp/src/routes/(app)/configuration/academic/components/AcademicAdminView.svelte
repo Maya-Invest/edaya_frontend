@@ -1,9 +1,5 @@
 <script lang="ts">
-	import type { PeriodDefinition, PeriodDefinitionDayOfWeek } from '$lib/types/school';
-	import type {
-		AcademicModalName,
-		PeriodDefinitionWizardStep,
-	} from '../lib/academic-modal-surface';
+	import type { AcademicModalName } from '../lib/academic-modal-surface';
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
@@ -14,53 +10,33 @@
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
-	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { CalendarRange, ChevronDown, Plus, Sparkles } from '$lib/icons';
+	import { CalendarRange, ChevronDown, Plus } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { hasPermission } from '$lib/permissions';
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getAcademicPageState } from '../academic-page.svelte';
 	import {
 		ACADEMIC_MODAL_NAMES,
-		AcademicWizardObservationGuard,
-		PERIOD_DEFINITION_WIZARD_STEPS,
-		allowedAcademicModalNames,
-		canonicalAcademicModalStep,
 		isAcademicModalTargetValid,
-		resolvePeriodDefinitionModalTarget,
 		snapshotAcademicMutationTarget,
 	} from '../lib/academic-modal-surface';
-	import { PERIOD_DEFINITION_WEEKDAYS } from '../lib/period-definition-presets';
 	import AcademicYearCreateModal from './AcademicYearCreateModal.svelte';
-	import PeriodDefinitionBoard from './PeriodDefinitionBoard.svelte';
-	import PeriodDefinitionFormModal from './PeriodDefinitionFormModal.svelte';
-	import PeriodDefinitionWizardModal from './PeriodDefinitionWizardModal.svelte';
 
 	const academicPage = getAcademicPageState();
-	const canConfigureSchoolStructure = $derived(hasPermission('SCHOOL_STRUCTURE_CONFIGURE'));
-	const allowedModalNames = $derived(
-		allowedAcademicModalNames(canConfigureSchoolStructure),
-	);
 
 	const modals = createUrlSyncedModals<AcademicModalName>({
-		allowed: () => allowedModalNames,
+		allowed: () => ACADEMIC_MODAL_NAMES,
 		owned: ACADEMIC_MODAL_NAMES,
-		allowedSteps: PERIOD_DEFINITION_WIZARD_STEPS,
 		getUrl: () => $page.url,
 	});
-	const wizardObservation = new AcademicWizardObservationGuard();
 	const createOpen = bindUrlModal(modals, 'create');
-	const periodDefOpen = bindUrlModal(modals, 'period-def');
-	const wizardOpen = bindUrlModal(modals, 'period-def-wizard');
-	const deleteOpen = bindUrlModal(modals, 'delete-period-def');
 	const archiveOpen = bindUrlModal(modals, 'archive-year');
 	const publishYearOpen = bindUrlModal(modals, 'publish-year');
 	const publishPeriodOpen = bindUrlModal(modals, 'publish-period');
 
-	let deleteBusy = $state(false);
 	let archiveBusy = $state(false);
 	let publishYearBusy = $state(false);
 	let publishPeriodBusy = $state(false);
@@ -74,10 +50,6 @@
 			id: entry.id,
 			status: entry.status,
 		})),
-		periodDefinitions: academicContext.periodDefinitions.map(entry => ({
-			id: entry.id,
-			academicYearId: entry.academicYearId,
-		})),
 	});
 	const targetedYear = $derived(
 		modals.target
@@ -88,20 +60,6 @@
 		modals.target
 			? academicContext.periods.find(entry => entry.id === modals.target) ?? null
 			: null,
-	);
-	const targetedPeriodDefinition = $derived(
-		modals.target ? academicContext.periodDefinitionById(modals.target) ?? null : null,
-	);
-	const periodDefinitionModalTarget = $derived(
-		modals.isOpen('period-def')
-			? resolvePeriodDefinitionModalTarget(modals.target, modalCatalog)
-			: null,
-	);
-	const editingPeriodDef = $derived(
-		periodDefinitionModalTarget?.mode === 'edit' ? targetedPeriodDefinition : null,
-	);
-	const deleteTarget = $derived(
-		modals.isOpen('delete-period-def') ? targetedPeriodDefinition : null,
 	);
 	const archiveTarget = $derived.by(() => {
 		if (!modals.isOpen('archive-year')) {
@@ -127,12 +85,6 @@
 			? targetedPeriod
 			: null;
 	});
-	const wizardStep = $derived<PeriodDefinitionWizardStep>(
-		canonicalAcademicModalStep('period-def-wizard', modals.step, {
-			resetAdvancedWizardStep: false,
-		}) ?? 'preset',
-	);
-
 	afterNavigate(() => {
 		modals.hydrate();
 		academicPage.hydrateExpandedYear();
@@ -141,16 +93,6 @@
 		}
 		if (!isAcademicModalTargetValid(modals.active, modals.target, modalCatalog)) {
 			modals.close();
-			return;
-		}
-		const resetAdvancedWizardStep = wizardObservation.observe(
-			modals.isOpen('period-def-wizard'),
-		);
-		const canonicalStep = canonicalAcademicModalStep(modals.active, modals.step, {
-			resetAdvancedWizardStep,
-		});
-		if (canonicalStep !== modals.step) {
-			modals.replaceStep(canonicalStep);
 		}
 	});
 
@@ -199,21 +141,6 @@
 		return academicContext.periods
 			.filter(p => p.academicYearId === yearId)
 			.sort((a, b) => a.startDate.localeCompare(b.startDate));
-	}
-
-	function periodDefinitionsFor(yearId: string) {
-		return academicContext.periodDefinitionsForYear(yearId);
-	}
-
-	function periodDefinitionGroups(yearId: string): Array<{
-		dayOfWeek: PeriodDefinitionDayOfWeek;
-		defs: PeriodDefinition[];
-	}> {
-		const defs = periodDefinitionsFor(yearId);
-		return PERIOD_DEFINITION_WEEKDAYS.map(dayOfWeek => ({
-			dayOfWeek,
-			defs: defs.filter(def => def.dayOfWeek === dayOfWeek),
-		}));
 	}
 
 	function handleYearCreated(yearId: string) {
@@ -281,41 +208,6 @@
 		}
 	}
 
-	function openCreatePeriodDef(yearId: string) {
-		modals.open('period-def', { target: yearId });
-	}
-
-	function openPeriodDefWizard(yearId: string) {
-		modals.open('period-def-wizard', { target: yearId, step: 'preset' });
-	}
-
-	function openEditPeriodDef(def: PeriodDefinition) {
-		modals.open('period-def', { target: def.id });
-	}
-
-	function openDeletePeriodDef(def: PeriodDefinition) {
-		modals.open('delete-period-def', { target: def.id });
-	}
-
-	async function confirmDeletePeriodDef() {
-		if (!deleteTarget || deleteBusy) {
-			return;
-		}
-		deleteBusy = true;
-		try {
-			const ok = await academicPage.deletePeriodDefinition({
-				periodDefinition: deleteTarget,
-				successMessage: get(t)('periodDefinitions.toastDeleted', { label: deleteTarget.label }),
-			});
-			if (ok) {
-				modals.close();
-			}
-		}
-		finally {
-			deleteBusy = false;
-		}
-	}
-
 	const statusFilterActive = $derived(academicPage.filters.values.status !== 'all' ? 1 : 0);
 </script>
 
@@ -344,7 +236,19 @@
 			</Button>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'academic-years.csv',
+					headers: ['label', 'startDate', 'endDate', 'status'],
+					loadAll: async () => filteredYears.map(year => [
+						year.label,
+						year.startDate,
+						year.endDate,
+						year.status,
+					]),
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 
@@ -352,7 +256,6 @@
 		{#each filteredYears as year (year.id)}
 			{@const open = academicPage.expandedYear === year.id}
 			{@const yearPeriods = periodsFor(year.id)}
-			{@const yearPeriodDefs = periodDefinitionsFor(year.id)}
 			<section class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
 				<button
 					type="button"
@@ -451,53 +354,6 @@
 								</li>
 							{/each}
 						</ul>
-
-						<div class="mt-6 flex flex-wrap items-center justify-between gap-3">
-							<p class="font-sans tabular-nums text-[10px] uppercase tracking-widest text-muted-foreground">
-								{$t('periodDefinitions.sectionTitle')}
-							</p>
-							<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE">
-								{#snippet children({ disabled, title })}
-									<div class="flex flex-wrap items-center gap-2">
-										<Button
-											size="sm"
-											variant="outline"
-											class="rounded-full"
-											{disabled}
-											{title}
-											onclick={() => openPeriodDefWizard(year.id)}
-										>
-											<Sparkles class="mr-1 h-4 w-4" />
-											{$t('periodDefinitions.quickSetup')}
-										</Button>
-										<Button
-											size="sm"
-											variant="outline"
-											class="rounded-full"
-											{disabled}
-											{title}
-											onclick={() => openCreatePeriodDef(year.id)}
-										>
-											<Plus class="mr-1 h-4 w-4" />
-											{$t('periodDefinitions.add')}
-										</Button>
-									</div>
-								{/snippet}
-							</PermissionGate>
-						</div>
-						{#if yearPeriodDefs.length === 0}
-							<ul class="mt-3 space-y-2">
-								<li class="rounded-xl border border-dashed border-border/70 px-4 py-6 text-center text-sm text-muted-foreground">
-									{$t('periodDefinitions.empty')}
-								</li>
-							</ul>
-						{:else}
-							<PeriodDefinitionBoard
-								groups={periodDefinitionGroups(year.id)}
-								onEdit={openEditPeriodDef}
-								onDelete={openDeletePeriodDef}
-							/>
-						{/if}
 					</div>
 				{/if}
 			</section>
@@ -506,23 +362,6 @@
 </div>
 
 <AcademicYearCreateModal bind:open={createOpen.open} onCreated={handleYearCreated} />
-
-{#if periodDefOpen.open && periodDefinitionModalTarget}
-	<PeriodDefinitionFormModal
-		bind:open={periodDefOpen.open}
-		academicYearId={periodDefinitionModalTarget.academicYearId}
-		periodDefinition={editingPeriodDef}
-	/>
-{/if}
-
-{#if wizardOpen.open && targetedYear}
-	<PeriodDefinitionWizardModal
-		bind:open={wizardOpen.open}
-		academicYearId={targetedYear.id}
-		step={wizardStep}
-		onStepChange={step => modals.setStep(step)}
-	/>
-{/if}
 
 {#if archiveOpen.open && archiveTarget}
 	<ConfirmModal
@@ -535,18 +374,6 @@
 		cancelLabel={$t('academic.cancel')}
 		busy={archiveBusy}
 		onConfirm={confirmArchiveYear}
-	/>
-{/if}
-
-{#if deleteOpen.open && deleteTarget}
-	<ConfirmModal
-		bind:open={deleteOpen.open}
-		title={$t('common.deleteConfirmTitle')}
-		description={$t('periodDefinitions.deleteConfirm', { label: deleteTarget.label })}
-		confirmLabel={$t('common.delete')}
-		cancelLabel={$t('common.cancel')}
-		busy={deleteBusy}
-		onConfirm={confirmDeletePeriodDef}
 	/>
 {/if}
 

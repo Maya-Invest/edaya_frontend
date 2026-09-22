@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { NotificationSettingsPageState } from '../notification-settings-page.svelte';
 import type { NotificationSettingsPageSlice } from './notification-settings-helpers';
 import {
@@ -40,18 +41,19 @@ export async function loadNotificationSettingsSlice(): Promise<NotificationSetti
 }
 
 export function queryNotificationSettingsListPage(state: NotificationSettingsPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: (): NotificationSettingsPageSlice => ({
 			...emptyNotificationSettingsSlice(),
 			loginEmail: authSession.loginEmail,
 			kind: authSession.sessionKind,
 		}),
-		load: async () => {
+		load: async (signal) => {
 			const data = await loadNotificationSettingsSlice();
+			signal.throwIfAborted();
 			state.applySlice(data);
 			return data;
 		},
 		hasItems: data => Boolean(data.settings) || Boolean(data.staffSettings),
 		errorMessage: 'Unable to load notification settings.',
-	});
+	}, request);
 }

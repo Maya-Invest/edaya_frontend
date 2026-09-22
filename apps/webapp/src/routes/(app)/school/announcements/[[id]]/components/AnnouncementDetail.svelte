@@ -38,6 +38,9 @@
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
+	$effect(() => {
+		modals.hydrate();
+	});
 	afterNavigate(() => {
 		modals.hydrate();
 		if (modals.active && modals.target) {
@@ -286,9 +289,7 @@
 	</div>
 </div>
 
-{#if editOpen.open}
-	<AnnouncementFormModal announcement={live} bind:open={editOpen.open} />
-{/if}
+<AnnouncementFormModal announcement={live} bind:open={editOpen.open} />
 <AnnouncementTargetFormModal announcementId={live.id} bind:open={addTargetOpen.open} />
 
 <FormModal

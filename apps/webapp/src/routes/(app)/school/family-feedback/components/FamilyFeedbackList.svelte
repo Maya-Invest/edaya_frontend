@@ -14,10 +14,11 @@
 	import { FAMILY_FEEDBACK_STATUS_TONE } from '$lib/family-feedback/status';
 	import { t } from '$lib/i18n';
 	import { HeartHandshake, Plus } from '$lib/icons';
+	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { appGoto } from '$lib/navigation/app-navigation';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
+	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { cn } from '$lib/utils';
 	import { getFamilyFeedbackPageState } from '../family-feedback-page.svelte';
 	import FamilyFeedbackFormModal from './FamilyFeedbackFormModal.svelte';
@@ -77,7 +78,7 @@
 
 	function handleCreated(campaignId: string) {
 		const path = detailHref.schoolFamilyFeedback(campaignId);
-		appGoto(`${path}${detailNavigationSearch($page.url)}`);
+		openDetailDrawer(`${path}${detailNavigationSearch($page.url)}`, currentRouteSurfaceHref($page.url));
 	}
 
 	$effect(() => {
@@ -135,13 +136,23 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly />
+			<ListMoreMenu
+				exportOnly
+				onExport={() => void exportMatchingList({
+					filename: 'family-feedback.csv',
+					headers: ['title', 'period', 'status', 'closesAt'],
+					loadAll: async () => filtered.map(campaign => [
+						familyFeedbackPage.campaignTitle(campaign),
+						periodLabel(campaign),
+						campaign.status,
+						campaign.closesAt ?? '',
+					]),
+				})}
+			/>
 		{/snippet}
 	</ListPageHeader>
 
-	{#if createOpen.open}
-		<FamilyFeedbackFormModal bind:open={createOpen.open} onCreated={handleCreated} />
-	{/if}
+	<FamilyFeedbackFormModal bind:open={createOpen.open} onCreated={handleCreated} />
 
 	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
 		<div

@@ -1,9 +1,8 @@
 <script lang="ts">
-	import type { ResolvedPathname } from '$app/types';
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
-	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
-	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import { appPath } from '$lib/navigation/app-navigation';
+	import { closeDetailDrawer, listSurfaceHref } from '$lib/navigation/route-surface-navigation';
 	import { getAttendancePageState } from '../attendance-page.svelte';
 	import {
 		AttendanceDayDetailState,
@@ -22,11 +21,7 @@
 
 	function closeDetail() {
 		detailState.clear();
-		const next = new URL($page.url);
-		next.searchParams.delete(MODAL_QUERY_KEY);
-		next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
-		const href = `${appPath('/(app)/classes/[classId]/attendance/[[id]]', { classId })}${next.search}` as ResolvedPathname;
-		appGoto(href);
+		closeDetailDrawer(listSurfaceHref(appPath('/(app)/classes/[classId]/attendance/[[id]]', { classId }), $page.url));
 	}
 
 	$effect(() => {

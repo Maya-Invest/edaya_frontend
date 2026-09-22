@@ -3,13 +3,12 @@ import type {
 	TeacherAssignmentImportClassSubjectOption,
 	TeacherAssignmentImportTeacherOption,
 } from '$lib/import/teacher-assignments/types';
-import { DEFAULT_LIST_PAGE_SIZE, paginatedList } from '$lib/api/entity-list-filters';
+import { listAllEntityPages } from '$lib/api/entity-list-filters';
 import { fetchSchoolSubjectsSources } from '$lib/api/subjects-data';
 import { formatPersonName } from '$lib/api/teacher-display';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
-const PAGE = DEFAULT_LIST_PAGE_SIZE;
 const TEACHER_LIST_ORDER = [
 	{ field: 'lastName', direction: 'asc' as const },
 	{ field: 'firstName', direction: 'asc' as const },
@@ -22,35 +21,30 @@ export async function loadTeacherAssignmentImportTeachers(
 	client: SchoolClient,
 	schoolId: string,
 ): Promise<TeacherAssignmentImportTeacherOption[]> {
-	const out: TeacherAssignmentImportTeacherOption[] = [];
-	let offset = 0;
+	const rows = await listAllEntityPages(
+		query => client.entities.teachers.list(query),
+		{
+			baseQuery: {
+				schoolId,
+				$orderBy: TEACHER_LIST_ORDER,
+			},
+		},
+	);
 
-	for (;;) {
-		const page = await client.entities.teachers.list(
-			paginatedList({ schoolId }, {
-				limit: PAGE,
-				offset,
-				orderBy: TEACHER_LIST_ORDER,
-			}),
-		);
-		const rows = page ?? [];
-		for (const teacher of rows) {
-			// API Teacher has no separate `code`; import keys resolve against entity id.
-			const code = typeof teacher.id === 'string' ? teacher.id.trim() : '';
-			if (!code)
-				continue;
-			out.push({
-				id: teacher.id,
-				code,
-				name: formatPersonName(teacher.firstName, teacher.lastName),
-			});
+	return rows.flatMap((teacher) => {
+		const id = typeof teacher.id === 'string' ? teacher.id.trim() : '';
+		if (!id) {
+			return [];
 		}
-		if (rows.length < PAGE)
-			break;
-		offset += PAGE;
-	}
-
-	return out;
+		const code = typeof teacher.code === 'string' && teacher.code.trim()
+			? teacher.code.trim()
+			: id;
+		return [{
+			id,
+			code,
+			name: formatPersonName(teacher.firstName, teacher.lastName),
+		}];
+	});
 }
 
 /**

@@ -41,6 +41,7 @@
 	let reference = $state('');
 	let notes = $state('');
 	let allocationMode = $state<AllocationMode>('targeted');
+	let wasOpen = $state(false);
 
 	const parsedMajor = $derived(parseMajorInput(amount));
 	const amountMinor = $derived(parsedMajor === null ? 0 : majorToMinor(parsedMajor, currency, $locale));
@@ -86,9 +87,10 @@
 	}
 
 	$effect(() => {
-		if (open) {
+		if (open && !wasOpen) {
 			resetForm();
 		}
+		wasOpen = open;
 	});
 
 	function allocationPlan(): AllocationPlan {

@@ -1,3 +1,4 @@
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { PaymentPageState } from '../payment-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadPaymentPageData } from '$lib/api/finance-data';
@@ -17,13 +18,14 @@ export async function loadPaymentSlice() {
 }
 
 export function queryPaymentListPage(state: PaymentPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyPaymentSlice(),
-		load: async () => {
+		load: async (signal) => {
 			const data = await loadPaymentSlice();
+			signal.throwIfAborted();
 			state.applySlice(data);
 			return data;
 		},
 		hasItems: listPageHasItems,
-	});
+	}, request);
 }

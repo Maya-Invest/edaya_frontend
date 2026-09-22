@@ -1,4 +1,5 @@
 import type { InboxDelivery } from '$lib/api/notifications-inbox-data';
+import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { InboxPageState } from '../inbox-page.svelte';
 import type { InboxPageSlice } from './inbox-helpers';
 import { fetchInboxDeliveries } from '$lib/api/notifications-inbox-data';
@@ -20,16 +21,17 @@ export async function loadInboxSlice(): Promise<InboxPageSlice> {
 }
 
 export function queryInboxListPage(state: InboxPageState) {
-	return (url: URL) => resolvePageLoad(url, {
+	return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 		empty: () => emptyInboxSlice(),
-		load: async () => {
+		load: async (signal) => {
 			const data = await loadInboxSlice();
+			signal.throwIfAborted();
 			state.applySlice(data);
 			return data;
 		},
 		hasItems: (data: InboxPageSlice) => Boolean(data.subjectId),
 		errorMessage: 'Unable to load your inbox.',
-	});
+	}, request);
 }
 
 export type { InboxDelivery };
