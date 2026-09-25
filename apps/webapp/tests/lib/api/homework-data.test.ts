@@ -1,6 +1,6 @@
+import { mapDeadlines } from '$lib/api/homework-data';
 import { classSubject, homeworkAssessment, subject } from '$tests/support/openapi-fixtures';
 import { describe, expect, it } from 'bun:test';
-import { mapDeadlines } from '$lib/api/homework-data';
 
 const classSources = {
 	homeworkAssessmentsRaw: [
@@ -15,8 +15,8 @@ const classSources = {
 		}),
 	],
 	assessmentResultsRaw: [
-		{ id: 'ar-d1-s1', assessmentId: 'd1', studentId: 's1', status: 'met' as const, createdAt: '2026-05-15' },
-		{ id: 'ar-d1-s3', assessmentId: 'd1', studentId: 's3', status: 'missed' as const },
+		{ id: 'ar-d1-s1', revision: 0, assessmentId: 'd1', studentId: 's1', status: 'met' as const, createdAt: '2026-05-15' },
+		{ id: 'ar-d1-s3', revision: 0, assessmentId: 'd1', studentId: 's3', status: 'missed' as const },
 	],
 	classSubjectsRaw: [
 		classSubject({ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math' }),

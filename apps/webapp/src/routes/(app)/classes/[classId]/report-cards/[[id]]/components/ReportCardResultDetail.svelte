@@ -4,6 +4,7 @@
 	import ReportSectionComments from '$lib/components/school/report-cards/ReportSectionComments.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
 	import { formatGrade } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
@@ -62,13 +63,22 @@
 		{/snippet}
 		{#snippet actions()}
 			{#if live.status === 'generated'}
-				<Button size="sm" class="rounded-full" disabled={Boolean(live.pendingAssessmentIds?.length)} onclick={publish}>
+				<Button size="sm" class="rounded-full" disabled={Boolean(live.calculationStale || live.pendingAssessmentIds?.length || live.pendingCorrectionIds?.length)} onclick={publish}>
 					{$t('reportCards.publish')}
 				</Button>
 			{/if}
 		{/snippet}
 	</DrawerEntityHeader>
 
+	{#if live.calculationStale}
+		<p role="status">{$t('reportCards.staleMarks')}</p>
+	{/if}
+	{#if live.pendingAssessmentIds?.length}
+		<p role="status">{$t('reportCards.pendingSubmissions', { count: String(live.pendingAssessmentIds.length) })}</p>
+	{/if}
+	{#if live.pendingCorrectionIds?.length}
+		<p role="status">{$t('reportCards.pendingCorrections', { count: String(live.pendingCorrectionIds.length) })} <PermissionGate permission="GRADE_VALIDATE" classId={live.classId}><a href="/school/marks-review">{$t('marks.reviewQueue')}</a></PermissionGate></p>
+	{/if}
 	<div class="grid grid-cols-3 gap-3">
 		<div class="rounded-xl border border-border bg-secondary/30 p-3 text-center">
 			<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">{$t('reportCards.overall')}</p>

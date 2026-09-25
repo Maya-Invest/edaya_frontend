@@ -147,7 +147,7 @@ export interface EvaluationSubmission {
 
 export interface Evaluation {
 	marksRevision?: number;
-	marksStatus?: 'draft' | 'submitted' | 'approved';
+	marksStatus?: 'draft' | 'submitted';
 	id: string;
 	classId: string;
 	classSubjectId: string;

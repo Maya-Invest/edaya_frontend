@@ -42,6 +42,11 @@
 			return;
 		}
 
+		const authUserId = authSession.authUserId;
+		if (authUserId) {
+			onboardingContext.init(authUserId);
+		}
+
 		if (shouldEnforceLoginGate()) {
 			appGoto(appPath('/login'), { replaceState: true });
 			return;
@@ -49,12 +54,6 @@
 
 		if (!authSession.hasAuthAccount) {
 			appGoto(appPath('/login'), { replaceState: true });
-			return;
-		}
-
-		const authUserId = authSession.authUserId;
-		if (authUserId) {
-			onboardingContext.init(authUserId);
 		}
 	});
 

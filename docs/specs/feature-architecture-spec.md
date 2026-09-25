@@ -633,3 +633,7 @@ The personal inbox queries deliveries by login subject and selected recipient ki
 ## Marks approval
 
 `/school/marks-review` is a paginated staff review queue gated by GRADE_VALIDATE. Rows link to the existing evaluation Grading drawer. Review, submit, and return use named commands and URL-backed confirmation modals. Draft marks are editable; Submitted and Approved marks are frozen. Return requires a reason. Review permission and separation of duties are determined by the server.
+
+## Marks submission and corrections
+
+Evaluation sheets use Draft → Submitted. Submission makes marks official and visible to families. Submitted grading settings and rosters are frozen. Selected scores, absence/exemption designations, and mark comments may be proposed in one immutable pending batch per evaluation, with a reason and confirmation summary. Staff review uses a read-only comparison and URL-addressed approve/reject modals. Only the author may withdraw; the author cannot review their own request across profiles. Published report source marks are permanently locked individually. Pending corrections block publication only for affected students. The school marks-review route lists correction requests and links to the evaluation Grading drawer.

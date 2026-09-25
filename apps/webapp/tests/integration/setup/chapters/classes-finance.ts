@@ -1,3 +1,4 @@
+import type { UiJourney } from '../journey-context';
 import {
 	assertListContains,
 	clickCreateButton,
@@ -20,11 +21,13 @@ import {
 } from '../../../../scripts/qa-harness-ui';
 import { buildTimetableSessionPath, firstIdFromLinks, timetableWeekFromSessionId } from '../../../../scripts/qa-matrix-support';
 import {
+	approveAssessmentCorrectionViaIndependentStaff,
 	ensureTimetableSession,
 	generateReportCardViaApi,
 	lessonSessionExists,
 	publishAcademicPeriodsViaApi,
 	publishReportCardDefinitionViaApi,
+	submitAssessmentMarksViaApi,
 } from '../journey-api';
 import {
 	coverActions,
@@ -37,7 +40,7 @@ import {
 	runModalMutation,
 	visitCovered,
 	waitForCommandResult,
-	type UiJourney,
+
 } from '../journey-context';
 
 const STUDENT_TABS = ['profile', 'grades', 'attendance', 'incidents', 'finances', 'report-card', 'enrollments', 'documents'] as const;
@@ -180,6 +183,18 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 			actionPath: 'http://localhost:5173/classes/[classId]/evaluations/[id]/grading',
 			actions: ['Saisie notes'],
 		});
+		let submittedMarks = false;
+		let approvedCorrection = false;
+		try {
+			submittedMarks = await submitAssessmentMarksViaApi(page, journey.ctx.base, evaluationId);
+			approvedCorrection = submittedMarks
+				? await approveAssessmentCorrectionViaIndependentStaff(page, journey.ctx.base, evaluationId, classId)
+				: false;
+		}
+		catch (error) {
+			console.error('marks review skipped:', error instanceof Error ? error.message : error);
+		}
+		console.log(`marks submitted=${submittedMarks} approved=${approvedCorrection}`);
 	}
 	coverActions(journey, 'http://localhost:5173/classes/[classId]/evaluations', ['Liste — filtre type'], 'OK');
 	coverMutationActions(
@@ -269,17 +284,17 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 		await visitCovered(journey, '/classes/[classId]/report-cards/[id]', `/classes/${classId}/report-cards/${reportCardId}`);
 		coverActions(journey, 'http://localhost:5173/classes/[classId]/report-cards/[id]', ['Détail bulletin'], 'OK');
 		const comment = `QA comment ${Date.now()}`;
-		const commentBox = page.locator('textarea').first();
+		const homeroom = page.locator('section').filter({ hasText: /appréciation du professeur principal|homeroom teacher comment/i });
+		const editComment = homeroom.getByRole('button', { name: /^(modifier|edit)$/i });
 		let commentSaved = false;
-		if (await commentBox.isVisible({ timeout: 8_000 }).catch(() => false)) {
-			const commentPromise = waitForCommandResult(page, 'write-homeroom-report-comment', 20_000);
+		if (await editComment.isVisible({ timeout: 8_000 }).catch(() => false)) {
+			await editComment.click();
+			const commentBox = page.getByRole('dialog').locator('textarea').first();
 			await commentBox.fill(comment);
-			const saveComment = page.getByRole('button', { name: /save comment|enregistrer l[’']appréciation|enregistrer le commentaire/i }).first();
-			if (await saveComment.isVisible().catch(() => false)) {
-				await saveComment.click();
-				commentSaved = (await commentPromise) !== null
-					|| await page.getByText(comment).isVisible({ timeout: 8_000 }).catch(() => false);
-			}
+			const commentPromise = waitForCommandResult(page, 'write-homeroom-report-comment', 20_000);
+			await page.getByTestId('form-modal-submit').click();
+			commentSaved = (await commentPromise) !== null
+				|| await page.getByText(comment).isVisible({ timeout: 8_000 }).catch(() => false);
 		}
 		coverMutationActions(
 			journey,
@@ -291,10 +306,10 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 		const publishBtn = page.locator('aside').getByRole('button', { name: /^(publish|publier)$/i }).last();
 		let publishedCard = false;
 		await publishAcademicPeriodsViaApi(page, journey.ctx.base);
-		if (await publishBtn.isVisible({ timeout: 8_000 }).catch(() => false)) {
+		if (await publishBtn.isVisible({ timeout: 8_000 }).catch(() => false) && await publishBtn.isEnabled().catch(() => false)) {
 			const publishPromise = waitForCommandResult(page, 'publish-report-card-result', 30_000);
 			try {
-				await publishBtn.click({ force: true, timeout: 8_000 });
+				await publishBtn.click({ timeout: 8_000 });
 				publishedCard = (await publishPromise) !== null
 					|| await page.locator('aside').getByText(/published|publié/i).first().isVisible({ timeout: 12_000 }).catch(() => false);
 			}
@@ -370,7 +385,8 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 	}
 
 	await visitCovered(journey, '/finance/billing', '/finance/billing');
-	const assignOpened = await openDialogButton(page, /assign|attribuer|ajouter une facture|add invoice/i);
+	const assignOpened = await openUrlModal(page, '/finance/billing', 'assign-fee', { base: journey.ctx.base })
+		|| await openDialogButton(page, /ajouter une facture|add invoice/i);
 	if (assignOpened) {
 		const resultPromise = waitForCommandResult(page, 'enroll-student-in-service');
 		if (await fillAssignFeeDialog(page)) {

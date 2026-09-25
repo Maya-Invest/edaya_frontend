@@ -15,9 +15,9 @@
 	{#snippet children(data)}
 		<DataState status={data.status} errorMessage={data.errorMessage}>
 			<div class="space-y-3">
-				{#each queue.items as assessment (assessment.id)}
-					<a class="block rounded-xl border bg-card p-4" href={`/classes/${assessment.classGroupId}/evaluations/${assessment.id}/grading`}>
-						<strong>{assessment.title}</strong><p>{$t(`marks.${assessment.marksStatus}`)} · {assessment.marksRevision} · {assessment.completeness.completed}/{assessment.completeness.eligible}</p>
+				{#each queue.items as item (item.correction.id)}
+					<a class="block rounded-xl border bg-card p-4" href={`/classes/${item.assessment.classGroupId}/evaluations/${item.assessment.id}/grading`}>
+						<strong>{item.assessment.title}</strong><p>{$t(`marks.${item.correction.status}`)} · {item.correction.changes.length} · {item.correction.reason}</p>
 					</a>
 				{/each}
 			</div>

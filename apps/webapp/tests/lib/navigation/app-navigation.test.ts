@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'bun:test';
 import { isOnboardingStepRegression, shouldBlockStaleOnboardingNavigation } from '$lib/navigation/app-navigation';
+import { CONFIG_ITEMS, FINANCE_ITEMS, SCHOOL_ITEMS } from '$lib/navigation';
+
+describe('navigation route map', () => {
+	it('resolves every school, finance, and configuration entry', () => {
+		expect(SCHOOL_ITEMS.find(item => item.key === 'marksReview')?.href).toBe('/school/marks-review');
+		expect(SCHOOL_ITEMS.every(item => item.href.startsWith('/'))).toBe(true);
+		expect(FINANCE_ITEMS.every(item => item.href.startsWith('/'))).toBe(true);
+		expect(CONFIG_ITEMS.every(item => item.href.startsWith('/'))).toBe(true);
+	});
+});
 
 describe('isOnboardingStepRegression', () => {
 	it('blocks a stale onboarding entry from wiping a later wizard step', () => {

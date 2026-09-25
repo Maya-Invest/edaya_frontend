@@ -314,6 +314,8 @@ export function mapReportCardResults(
 				.map(section => ({ sectionId: section.sectionId!, name: section.name ?? section.sectionId!, comment: section.comment ?? '' })),
 			version: result.version,
 			pendingAssessmentIds: result.pendingAssessmentIds,
+			pendingCorrectionIds: result.pendingCorrectionIds,
+			calculationStale: result.calculationStale,
 			homeroomComment: result.teacherComment ?? undefined,
 			principalComment: result.principalComment ?? undefined,
 			generatedAt: formatDate(result.generatedAt),

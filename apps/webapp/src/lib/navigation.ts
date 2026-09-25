@@ -111,6 +111,7 @@ const CONFIG_ICONS: Record<string, LucideIcon> = {
 };
 
 const SCHOOL_ROUTES: Record<string, RouteId> = {
+	marksReview: '/(app)/school/marks-review',
 	students: '/(app)/school/students/[[id]]',
 	guardians: '/(app)/school/guardians/[[id]]',
 	staff: '/(app)/school/staff/[[id]]',

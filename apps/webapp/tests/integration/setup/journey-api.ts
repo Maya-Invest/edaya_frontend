@@ -1,3 +1,4 @@
+import type { Page } from 'playwright';
 /**
  * Authenticated API helpers for the owner UI journey (Playwright request context).
  * Used as fallbacks when drawer/modal UI flows are flaky.
@@ -5,7 +6,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { Page } from 'playwright';
+import { signUpAccount } from '../support/api-provision';
 import { DEFAULT_API_URL } from '../support/integration-hosts';
 import { schoolBearerFromPage } from '../support/playwright-identity';
 
@@ -15,7 +16,7 @@ const PROVISIONED_FIXTURE_PATH = path.join(
 );
 
 async function readProvisionedFixtureSchoolId(): Promise<string | null> {
-	if (process.env['INTEGRATION_PROVISIONED'] !== '1') {
+	if (process.env.INTEGRATION_PROVISIONED !== '1') {
 		return null;
 	}
 	try {
@@ -37,11 +38,11 @@ function isLikelyApiResponse(response: { headers: () => Record<string, string>; 
 }
 
 interface JourneyApiResponse {
-	ok(): boolean;
-	status(): number;
-	headers(): Record<string, string>;
-	json(): Promise<unknown>;
-	text(): Promise<string>;
+	ok: () => boolean;
+	status: () => number;
+	headers: () => Record<string, string>;
+	json: () => Promise<unknown>;
+	text: () => Promise<string>;
 }
 
 async function snapshotApiResponse(
@@ -72,7 +73,7 @@ async function apiFetch(
 	const schoolId = await readProvisionedFixtureSchoolId();
 	const headers: Record<string, string> = {
 		'content-type': 'application/json',
-		accept: 'application/json',
+		'accept': 'application/json',
 		...init.headers,
 	};
 	if (schoolId) {
@@ -426,7 +427,7 @@ export async function ensureNotificationTemplatesViaApi(
 }
 
 function integrationDebug(...args: unknown[]): void {
-	if (process.env['INTEGRATION_DEBUG'] === '1') {
+	if (process.env.INTEGRATION_DEBUG === '1') {
 		console.log('[journey-api]', ...args);
 	}
 }
@@ -1442,8 +1443,8 @@ async function ensureSubjectTeacherAssignmentViaApi(
 			&& entry.classSubjectId === options.classSubjectId
 			&& entry.teacherId === options.teacherId,
 		)
-			?? existing.find(entry => entry.id && entry.classSubjectId === options.classSubjectId)
-			?? existing.find(entry => entry.id && entry.teacherId === options.teacherId);
+		?? existing.find(entry => entry.id && entry.classSubjectId === options.classSubjectId)
+		?? existing.find(entry => entry.id && entry.teacherId === options.teacherId);
 		if (match?.id) {
 			return match.id;
 		}
@@ -1764,6 +1765,214 @@ export async function grantFamilyFeedbackModerateViaApi(
 		academicYearId,
 	}, apiUrl);
 	console.log(`family-feedback moderate grant ${owner.id}: status=${granted.status()}`);
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+	return value && typeof value === 'object' && !Array.isArray(value)
+		? value as Record<string, unknown>
+		: null;
+}
+
+/** Fill any missing roster scores, then submit the official sheet. */
+export async function submitAssessmentMarksViaApi(
+	page: Page,
+	appOrigin: string,
+	assessmentId: string,
+	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
+): Promise<boolean> {
+	const reviewResponse = await apiFetch(page, appOrigin, '/core/queries/get-assessment-marks-review', {
+		method: 'POST',
+		data: { assessmentId },
+	}, apiUrl);
+	if (!reviewResponse.ok()) {
+		console.log(`marks submit skipped: review ${reviewResponse.status()} ${(await reviewResponse.text()).slice(0, 240)}`);
+		return false;
+	}
+	const review = asRecord(await readApiBody(reviewResponse));
+	const assessment = asRecord(review?.assessment);
+	const missingStudentIds = Array.isArray(review?.missingStudentIds)
+		? review.missingStudentIds.filter((id): id is string => typeof id === 'string')
+		: [];
+	let revision = typeof assessment?.marksRevision === 'number' ? assessment.marksRevision : null;
+	const maxScore = typeof assessment?.maxScore === 'number' ? assessment.maxScore : 20;
+	if (revision === null) {
+		console.log('marks submit skipped: review has no revision');
+		return false;
+	}
+	if (missingStudentIds.length > 0) {
+		const recorded = await apiFetch(page, appOrigin, '/core/commands/record-assessment-results', {
+			method: 'POST',
+			data: {
+				requestId: crypto.randomUUID(),
+				assessmentId,
+				expectedRevision: revision,
+				results: missingStudentIds.map(studentId => ({
+					id: `ar-${assessmentId}-${studentId}`,
+					studentId,
+					score: Math.min(12, maxScore),
+					designation: 'scored',
+				})),
+			},
+		}, apiUrl);
+		if (!recorded.ok()) {
+			console.log(`marks roster fill failed: ${recorded.status()} ${(await recorded.text()).slice(0, 240)}`);
+			return false;
+		}
+		const refreshed = await apiFetch(
+			page,
+			appOrigin,
+			`/core/entities/assessments/${encodeURIComponent(assessmentId)}`,
+			{},
+			apiUrl,
+		);
+		const next = unwrapEntityBody(await readApiBody(refreshed));
+		revision = typeof next?.marksRevision === 'number' ? next.marksRevision : revision;
+	}
+	if (assessment?.marksStatus === 'submitted') {
+		return assessment.marksStatus === 'submitted';
+	}
+	const submitted = await apiFetch(page, appOrigin, '/core/commands/submit-assessment-marks', {
+		method: 'POST',
+		data: {
+			requestId: crypto.randomUUID(),
+			assessmentId,
+			expectedRevision: revision,
+		},
+	}, apiUrl);
+	if (!submitted.ok()) {
+		console.log(`marks submit failed: ${submitted.status()} ${(await submitted.text()).slice(0, 240)}`);
+		return false;
+	}
+	return true;
+}
+
+/** Request a mark-comment correction and approve it through an independent staff profile. */
+export async function approveAssessmentCorrectionViaIndependentStaff(
+	page: Page,
+	appOrigin: string,
+	assessmentId: string,
+	classGroupId: string,
+	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
+): Promise<boolean> {
+	const schoolId = await resolveSchoolId(page, appOrigin, apiUrl, { classGroupId });
+	const academicYearId = await readStoredAcademicYearId(page);
+	if (!schoolId || !academicYearId) {
+		console.log('marks approve skipped: missing school or year');
+		return false;
+	}
+	const assessmentResponse = await apiFetch(
+		page,
+		appOrigin,
+		`/core/entities/assessments/${encodeURIComponent(assessmentId)}`,
+		{},
+		apiUrl,
+	);
+	if (!assessmentResponse.ok()) {
+		console.log(`marks approve skipped: assessment read ${assessmentResponse.status()}`);
+		return false;
+	}
+	const assessment = unwrapEntityBody(await readApiBody(assessmentResponse));
+	const marksStatus = assessment?.marksStatus;
+	const expectedRevision = assessment?.marksRevision;
+	if (marksStatus !== 'submitted' || typeof expectedRevision !== 'number') {
+		console.log(`marks approve skipped: status=${String(marksStatus)} revision=${String(expectedRevision)}`);
+		return false;
+	}
+
+	const detailResponse = await apiFetch(page, appOrigin, '/core/queries/get-assessment-marks-review', { method: 'POST', data: { assessmentId } }, apiUrl);
+	const detail = asRecord(await readApiBody(detailResponse));
+	const mark = Array.isArray(detail?.results) ? asRecord(detail.results[0]) : null;
+	if (!mark)
+		throw new Error('Correction journey requires a submitted mark');
+	const requested = await apiFetch(page, appOrigin, '/core/commands/request-assessment-marks-correction', {
+		method: 'POST',
+		data: { requestId: crypto.randomUUID(), assessmentId, expectedRevision, reason: 'Verify original assessment comment', changes: [{ resultId: mark.id, proposed: { score: mark.score ?? null, designation: mark.designation ?? 'scored', notes: 'Original assessment checked' } }] },
+	}, apiUrl);
+	if (!requested.ok())
+		throw new Error(`Correction request failed: ${requested.status()} ${await requested.text()}`);
+	const correction = asRecord(await readApiBody(requested));
+	if (!correction)
+		throw new Error('Missing correction response');
+
+	const email = `e2e-reviewer-${Date.now()}@integration.edaya.test`;
+	const password = `E2e!${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
+	const staffId = `st-review-${Date.now().toString(36)}`;
+	let reviewer: Awaited<ReturnType<typeof signUpAccount>>;
+	try {
+		reviewer = await signUpAccount(apiUrl, appOrigin, email, password, 'E2E Reviewer');
+	}
+	catch (error) {
+		console.log(`marks reviewer sign-up failed: ${error instanceof Error ? error.message : error}`);
+		return false;
+	}
+
+	const saved = await apiFetch(page, appOrigin, '/core/entities/staff-members/save', {
+		method: 'POST',
+		data: {
+			id: staffId,
+			schoolId,
+			firstName: 'E2E',
+			lastName: 'Reviewer',
+			email,
+			isActive: true,
+			accountKind: 'human',
+		},
+		academicYearId,
+	}, apiUrl);
+	if (!saved.ok()) {
+		console.log(`marks reviewer staff save failed: ${saved.status()} ${(await saved.text()).slice(0, 240)}`);
+		return false;
+	}
+
+	const linked = await apiFetch(page, appOrigin, '/core/commands/link-actor-subject', {
+		method: 'POST',
+		data: { subjectId: reviewer.subjectId, staffMemberId: staffId },
+		academicYearId,
+	}, apiUrl);
+	if (!linked.ok()) {
+		console.log(`marks reviewer link failed: ${linked.status()} ${(await linked.text()).slice(0, 240)}`);
+		return false;
+	}
+
+	const granted = await apiFetch(page, appOrigin, '/core/commands/assign-staff-permission', {
+		method: 'POST',
+		data: {
+			id: `spa-review-${staffId}`,
+			staffId,
+			schoolId,
+			academicYearId,
+			permission: 'GRADE_VALIDATE',
+			scopes: [{ kind: 'class_group', classGroupId }],
+			status: 'active',
+		},
+		academicYearId,
+	}, apiUrl);
+	if (!granted.ok()) {
+		console.log(`marks reviewer grant failed: ${granted.status()} ${(await granted.text()).slice(0, 240)}`);
+		return false;
+	}
+
+	const { response, body } = await reviewer.client.jsonRequest<Record<string, unknown>>(
+		'/core/commands/approve-assessment-marks-correction',
+		{
+			method: 'POST',
+			headers: {
+				'content-type': 'application/json',
+				'X-School-Id': schoolId,
+			},
+			body: JSON.stringify({
+				requestId: crypto.randomUUID(),
+				correctionId: correction.id,
+				expectedVersion: correction.version,
+			}),
+		},
+	);
+	if (!response.ok) {
+		const detail = body ? JSON.stringify(body) : await response.text();
+		console.log(`marks approve failed: ${response.status} ${detail.slice(0, 300)}`);
+		return false;
+	}
+	return true;
 }
 
 export async function completeWizardViaApi(

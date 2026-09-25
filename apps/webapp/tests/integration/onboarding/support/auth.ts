@@ -244,7 +244,10 @@ export async function signUpThroughUi(
 	if (outcome === 'verification') {
 		if (options.verifyInNewPage) {
 			const next = await followVerificationLinkInNewPage(page, options.email, /\/onboarding/);
-			await next.locator('#onboarding-school-name').waitFor({ state: 'visible', timeout: 20_000 });
+			await next.locator('#onboarding-school-name').waitFor({ state: 'visible', timeout: 20_000 }).catch(async () => {
+				const body = await next.locator('body').innerText().catch(() => '');
+				throw new Error(`School form missing at ${next.url()} body=${body.slice(0, 700)}`);
+			});
 			return next;
 		}
 		await followVerificationLink(page, options.email, /\/onboarding/);

@@ -71,6 +71,8 @@ export interface ReportCardResult {
 	commentSections?: ReportCommentSection[];
 	version?: number;
 	pendingAssessmentIds?: string[];
+	pendingCorrectionIds?: string[];
+	calculationStale?: boolean;
 	id: string;
 	schoolId: string;
 	studentId: string;

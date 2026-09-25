@@ -987,6 +987,23 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 
 	// ── Edit / drawer / open ──
 	if (/éditer|édi|ouvrir|drawer|onglet|assigner|affectation|photo|commentaire|changer/i.test(action)) {
+		if (row.endpoint.includes('/finance/fees') && /éditer|supprimer/i.test(action)) {
+			const menu = page.getByRole('button', { name: /actions de ligne|row actions/i }).first();
+			if (!(await menu.isVisible({ timeout: 8_000 }).catch(() => false))) {
+				return notOk(row, 'Menu d’actions de frais introuvable');
+			}
+			await menu.click();
+			const edit = page.getByRole('button', { name: /^(modifier|edit)$/i }).last();
+			if (!(await edit.isVisible({ timeout: 4_000 }).catch(() => false))) {
+				return notOk(row, 'Action modifier introuvable');
+			}
+			await edit.click();
+			const dialog = page.getByRole('dialog');
+			return (await dialog.isVisible({ timeout: 5_000 }).catch(() => false))
+				? ok(row)
+				: notOk(row, 'Formulaire frais non ouvert');
+		}
+
 		if (row.endpoint.includes('/finance/billing')) {
 			if (/assigner/i.test(action)) {
 				const assignBtn = page.getByRole('button', { name: /ajouter une facture|add invoice/i }).first();

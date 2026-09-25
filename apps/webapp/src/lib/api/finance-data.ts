@@ -86,6 +86,20 @@ export function moneyCurrency(value: unknown): string {
 	throw new Error('A financial record is missing its currency');
 }
 
+/** Domain entities serialize money as `{ amount, currency }` without a sibling currency field. */
+function currencyOf(record: Record<string, unknown>, ...amountKeys: string[]): string {
+	if (typeof record.currency === 'string' && record.currency.trim()) {
+		return record.currency.trim();
+	}
+	for (const key of amountKeys) {
+		const amount = record[key];
+		if (amount && typeof amount === 'object' && 'currency' in amount) {
+			return moneyCurrency((amount as { currency: unknown }).currency);
+		}
+	}
+	return moneyCurrency(record.currency);
+}
+
 function stringField(value: unknown, fallback = ''): string {
 	return typeof value === 'string' ? value : fallback;
 }
@@ -146,7 +160,7 @@ export function mapFees(raw: readonly unknown[]): Fee[] {
 		.map((entry) => {
 			const fee = asRecord(entry);
 			const amount = moneyAmount(fee.defaultPrice);
-			const currency = moneyCurrency(fee.currency);
+			const currency = currencyOf(fee, 'defaultPrice');
 			const terms = asRecord(fee.billingTerms);
 			const installments = Array.isArray(terms.installments) ? terms.installments : [];
 			return {
@@ -203,7 +217,7 @@ export function mapStudentBilling(raw: readonly unknown[]): StudentBilling[] {
 				total: expected,
 				paid: allocated,
 				remaining,
-				currency: moneyCurrency(charge.currency),
+				currency: currencyOf(charge as unknown as Record<string, unknown>, 'expectedAmount'),
 				status: mapChargeStatus(charge.status),
 				dueDate: formatDateInput(charge.dueDate),
 				academicYearId: stringField(charge.academicYearId),
@@ -224,7 +238,7 @@ export function mapPayments(raw: readonly unknown[]): FinancePayment[] {
 				studentId: '',
 				academicYearId: stringField(payment.academicYearId),
 				amount: moneyAmount(payment.amount),
-				currency: moneyCurrency(payment.currency),
+				currency: currencyOf(payment as unknown as Record<string, unknown>, 'amount'),
 				paymentDate: formatDateInput(payment.paymentDate),
 				status: mapPaymentStatus(payment.status),
 				kind: mapPaymentKind(payment.kind),
@@ -244,7 +258,7 @@ export function mapYearAccounts(raw: readonly unknown[]): StudentYearAccountView
 				id: stringField(account.id),
 				studentId: stringField(account.studentId),
 				academicYearId: stringField(account.academicYearId),
-				currency: moneyCurrency(account.currency),
+				currency: currencyOf(account as unknown as Record<string, unknown>, 'availableBalance'),
 				availableBalance: moneyAmount(account.availableBalance),
 			} satisfies StudentYearAccountView;
 		})

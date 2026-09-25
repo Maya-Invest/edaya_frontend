@@ -109,11 +109,14 @@ export async function addValidStaffInviteRow(page: Page, email: string): Promise
 export async function fillSchoolIdentity(page: Page, name: string, city: string): Promise<void> {
 	const nameInput = page.locator('#onboarding-school-name');
 	const cityInput = page.locator('#onboarding-school-city');
+	const currencyInput = page.locator('#onboarding-finance-currency');
 	await nameInput.waitFor({ state: 'visible', timeout: 20_000 });
 	await nameInput.fill(name);
 	await nameInput.blur();
 	await cityInput.fill(city);
 	await cityInput.blur();
+	await currencyInput.fill('XOF');
+	await currencyInput.blur();
 	await waitForEnabled(continueButton(page));
 }
 
