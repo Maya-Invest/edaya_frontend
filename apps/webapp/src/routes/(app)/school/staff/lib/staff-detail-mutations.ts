@@ -27,7 +27,7 @@ type StaffPermissionAssignment = components['schemas']['StaffPermissionAssignmen
 type StaffPermissionAssignmentConfigCommand = components['schemas']['StaffPermissionAssignmentConfigCommand'];
 
 function schoolId(): string {
-	return authSession.schoolId ?? academicContext.schools[0]?.id ?? 'sch-edaya-central';
+	return authSession.schoolId ?? academicContext.schools[0]?.id ?? 'sch-edaya-ci-cocody';
 }
 
 function staffInitials(firstName: string, lastName: string): string {

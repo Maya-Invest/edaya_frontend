@@ -17,8 +17,6 @@ import {
 } from '../tests/integration/demo-dry-run/support/auth';
 import { createDemoContext } from '../tests/integration/demo-dry-run/support/context';
 import { DEMO_PASSWORD, STAFF_EMAIL, OWNER_EMAIL } from '../tests/integration/demo-dry-run/support/constants';
-import { runDrawerTabChecks } from '../tests/integration/demo-dry-run/scenes/drawer-tabs';
-import { runRouteCoverageScenes } from '../tests/integration/demo-dry-run/scenes/route-coverage';
 import { DemoReporter } from '../tests/integration/demo-dry-run/support/reporter';
 import { DEMO_WEBAPP_BASE, integrationUsesDemoLogin } from '../tests/integration/demo-dry-run/support/paths';
 import type { DemoContext } from '../tests/integration/demo-dry-run/support/types';
@@ -516,16 +514,6 @@ async function visitChecklistRoutes(ctx: DemoContext, studentId: string | null):
 	}
 }
 
-function mapDryRunToQa(dryRunResults: DemoReporter): void {
-	for (const r of dryRunResults.results) {
-		if (r.status === 'pass') {
-			continue;
-		}
-		const page = r.step.includes('/') ? `http://localhost:5173${r.step}` : `http://localhost:5173/ (scene ${r.scene})`;
-		record(page, `[dry-run] ${r.scene} ${r.step}`, r.status === 'skip' ? 'N/A' : 'NOT OK', r.detail);
-	}
-}
-
 async function main(): Promise<void> {
 	ensurePlaywrightChromium();
 	const base = process.env.WEBAPP_URL ?? DEMO_WEBAPP_BASE;
@@ -620,32 +608,6 @@ async function main(): Promise<void> {
 		await runStep('http://localhost:5173/', 'Parcours checklist routes', async () => {
 			await visitChecklistRoutes(ctx, studentId);
 		});
-
-		const usesDemoSeed = !process.env.QA_LOGIN_EMAIL;
-		if (usesDemoSeed) {
-			await runStep('http://localhost:5173/', 'Dry-run route coverage', async () => {
-				await runRouteCoverageScenes(ctx);
-			});
-
-			await runStep('http://localhost:5173/', 'Dry-run drawer tabs', async () => {
-				await runDrawerTabChecks(ctx);
-				mapDryRunToQa(reporter);
-			});
-		}
-		else {
-			record(
-				'http://localhost:5173/',
-				'Dry-run route coverage',
-				'N/A',
-				'Scènes demo-ci ignorées (tenant provisionné)',
-			);
-			record(
-				'http://localhost:5173/',
-				'Dry-run drawer tabs',
-				'N/A',
-				'Scènes demo-ci ignorées (tenant provisionné)',
-			);
-		}
 	}
 
 	await runStep('http://localhost:5173/onboarding?step=1', 'Calcul auto dates semestre 1 vs 2', async () => {

@@ -1,6 +1,5 @@
 import type { AcademicModalCatalog } from '../../../../../src/routes/(app)/configuration/academic/lib/academic-modal-surface';
 import { describe, expect, it } from 'bun:test';
-import { emptyAcademicSlice } from '../../../../../src/routes/(app)/configuration/academic/lib/academic-helpers';
 import {
 	ACADEMIC_MODAL_NAMES,
 	isAcademicModalTargetValid,
@@ -13,12 +12,6 @@ const modalCatalog: AcademicModalCatalog = {
 };
 
 describe('academic route helpers', () => {
-	it('returns an empty slice by default', () => {
-		expect(emptyAcademicSlice()).toEqual({
-			yearCount: 0,
-		});
-	});
-
 	it('requires a resolvable target for every target-backed modal', () => {
 		for (const modal of ACADEMIC_MODAL_NAMES.filter(modal => modal !== 'create')) {
 			expect(isAcademicModalTargetValid(modal, null, modalCatalog)).toBe(false);

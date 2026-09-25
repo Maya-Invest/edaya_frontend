@@ -1,6 +1,5 @@
 import { readModal } from '$lib/modal/modal-url';
 import { describe, expect, it } from 'bun:test';
-import { emptyImportSlice } from '../../../../../src/routes/(app)/configuration/tools/lib/import-helpers';
 import {
 	TOOL_MODAL_NAMES,
 	canonicalToolsWorkflowSurface,
@@ -9,12 +8,6 @@ import {
 import { teacherAssignmentsCompatibilityHref } from '../../../../../src/routes/(app)/school/teacher-assignments/teacher-assignments-redirect';
 
 describe('tools route helpers', () => {
-	it('returns a ready slice by default', () => {
-		expect(emptyImportSlice()).toEqual({
-			ready: true,
-		});
-	});
-
 	it('canonicalizes each tool to its safe initial workflow view', () => {
 		expect(canonicalToolsWorkflowSurface({
 			modal: 'import',

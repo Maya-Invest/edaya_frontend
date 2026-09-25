@@ -1,16 +1,7 @@
 import { describe, expect, it } from 'bun:test';
-import { emptyPermissionProfilesSlice } from '../../../../../src/routes/(app)/configuration/permission-profiles/lib/permission-profiles-helpers';
 import { skippedPermissionsByProfile } from '../../../../../src/lib/api/staff-permission-profiles-data';
 
 describe('permission profile route helpers', () => {
-	it('returns an empty slice when school context is missing', () => {
-		expect(emptyPermissionProfilesSlice()).toEqual({
-			profiles: [],
-			bindings: [],
-			catalog: [],
-		});
-	});
-
 	it('marks later duplicate permissions as skipped by the first profile', () => {
 		const skipped = skippedPermissionsByProfile(
 			[

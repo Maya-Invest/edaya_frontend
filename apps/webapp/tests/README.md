@@ -17,7 +17,7 @@ tests/
 ├── integration/      # Playwright library runners (not bun:test, not bun run verify)
 │   ├── onboarding/   # Login + onboarding Playwright suite
 │   ├── setup/        # Provisioned owner journey
-│   └── demo-dry-run/ # Seeded demo-ci walkthrough (`demo:e2e`)
+│   └── demo-dry-run/ # Seeded demo-ci walkthrough (`demo:e2e`). Keeps seeded drawers and permissions; it does not re-walk the route catalog.
 ├── support/          # Shared fixtures, SvelteKit + $state stubs, harness utilities
 └── README.md
 ```
@@ -72,6 +72,11 @@ CI still installs the **published** `@maya-invest/edaya-api-client`; local `bun 
 
 ## Adding tests
 
+Keep a unit test when it locks a branch a developer can get wrong, it is the cheapest suite that locks that branch, and no lower layer already asserts the same inputs and outcome. Line coverage is not a reason to add a test.
+
 - Colocate with the domain under `tests/lib/<domain>/`.
 - Use `@edaya/web-fixtures` / `tests/support/openapi-fixtures.ts` for stable IDs.
 - Keep component tests rare; favor stateless modules and mutation store actions.
+- Do not add `empty*Slice()` tests. TypeScript already types those literals.
+- New import packs add validator and runner tests. Add a parser test only for a branch the shared parser harness misses (Excel serial dates, optional columns, header aliases).
+- Catalog drift belongs in `tests/lib/catalog-drift.test.ts`. Do not add a second journey, matrix, or scene-id coverage file.

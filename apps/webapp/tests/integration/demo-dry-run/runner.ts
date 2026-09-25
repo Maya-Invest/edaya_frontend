@@ -6,13 +6,10 @@ import { DEMO_DRY_RUN_OUT_DIR, DEMO_WEBAPP_BASE } from './support/paths';
 import { DemoReporter } from './support/reporter';
 import type { DemoSummary } from './support/types';
 import { runCoreDemoScenes } from './scenes/core-demo';
-import { runDrawerTabChecks } from './scenes/drawer-tabs';
 import { runFinanceDrawerScene } from './scenes/finance-drawer';
 import { runGuardianDrawerScene } from './scenes/guardian-drawer';
 import { runListShellScenes } from './scenes/list-shell';
-import { runModalUrlChecks } from './scenes/modal-url';
 import { runOwnerPermissionChecks } from './scenes/owner-permissions';
-import { runRouteCoverageScenes } from './scenes/route-coverage';
 // /configuration/tools — manual QA only (see qa-matrix-exclusions.ts)
 // import { runImportScene } from './scenes/import';
 // import { runToolsModalsScene } from './scenes/tools-modals';
@@ -42,10 +39,7 @@ export async function runDemoDryRun(options: RunDemoDryRunOptions = {}): Promise
 
 	try {
 		await runCoreDemoScenes(ctx);
-		await runRouteCoverageScenes(ctx);
 		await runListShellScenes(ctx);
-		await runDrawerTabChecks(ctx);
-		await runModalUrlChecks(ctx);
 		await runGuardianDrawerScene(ctx);
 		await runFinanceDrawerScene(ctx);
 	}

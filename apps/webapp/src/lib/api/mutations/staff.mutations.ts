@@ -4,7 +4,7 @@ import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 
 function schoolId(): string {
-	return authSession.schoolId ?? academicContext.schools[0]?.id ?? 'sch-edaya-central';
+	return authSession.schoolId ?? academicContext.schools[0]?.id ?? 'sch-edaya-ci-cocody';
 }
 
 export async function registerStaffMemberMutation(input: {

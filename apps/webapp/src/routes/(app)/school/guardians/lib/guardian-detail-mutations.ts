@@ -7,7 +7,7 @@ import { authSession } from '$lib/auth/session.svelte';
 import { runGuardianRouteMutation } from './guardian-route-mutation';
 
 function schoolId(): string {
-	return authSession.schoolId ?? academicContext.schools[0]?.id ?? 'sch-edaya-central';
+	return authSession.schoolId ?? academicContext.schools[0]?.id ?? 'sch-edaya-ci-cocody';
 }
 
 function guardianInitials(firstName: string, lastName: string): string {

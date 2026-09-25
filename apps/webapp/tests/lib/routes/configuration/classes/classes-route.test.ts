@@ -1,21 +1,12 @@
 import { describe, expect, it } from 'bun:test';
 import { activeClassGroupDetailTab } from '../../../../../src/routes/(app)/configuration/classes/lib/class-group-detail-tabs';
-import {
-	classGroupIdFromUrl,
-	emptyClassesSlice,
-} from '../../../../../src/routes/(app)/configuration/classes/lib/classes-helpers';
+import { classGroupIdFromUrl } from '../../../../../src/routes/(app)/configuration/classes/lib/classes-helpers';
 
 describe('classes route helpers', () => {
 	it('parses class group id from drawer URL', () => {
 		expect(classGroupIdFromUrl(new URL('http://local/configuration/classes/ci-6a'))).toBe('ci-6a');
 		expect(classGroupIdFromUrl(new URL('http://local/configuration/classes/ci-6a/profile'))).toBe('ci-6a');
 		expect(classGroupIdFromUrl(new URL('http://local/configuration/classes/ci-6a/assignments'))).toBe('ci-6a');
-	});
-
-	it('returns an empty slice by default', () => {
-		expect(emptyClassesSlice()).toEqual({
-			classCount: 0,
-		});
 	});
 
 	it('resolves active tab from drawer path', () => {

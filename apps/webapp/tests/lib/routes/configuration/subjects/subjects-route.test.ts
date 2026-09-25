@@ -9,7 +9,6 @@ import {
 } from '../../../../../src/routes/(app)/configuration/subjects/lib/subjects-detail-tabs';
 import {
 	chapterProgressFromEntries,
-	emptySubjectsSlice,
 	logEntriesForSubject,
 	subjectIdFromUrl,
 } from '../../../../../src/routes/(app)/configuration/subjects/lib/subjects-helpers';
@@ -45,13 +44,6 @@ describe('subjects route helpers', () => {
 		);
 		expect(subjectLevelCompatibilityHref(url, 'Inconnu', [{ id: 'ci-gl-6', name: 'Sixième' }]))
 			.toBe('/configuration/subjects?q=fran%C3%A7ais');
-	});
-
-	it('returns an empty slice by default', () => {
-		expect(emptySubjectsSlice()).toEqual({
-			subjects: [],
-			logEntries: [],
-		});
 	});
 
 	it('filters log entries for a subject', () => {

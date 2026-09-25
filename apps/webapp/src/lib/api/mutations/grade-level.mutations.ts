@@ -7,7 +7,7 @@ import { toCanonicalCatalogText } from '$lib/i18n/catalog-label';
 import { navigateToListAfterEntityDelete } from '$lib/navigation/navigate-after-delete';
 
 function schoolId(): string {
-	return authSession.schoolId ?? academicContext.schools[0]?.id ?? 'sch-edaya-central';
+	return authSession.schoolId ?? academicContext.schools[0]?.id ?? 'sch-edaya-ci-cocody';
 }
 
 function nextGradeLevelId(name: string): string {

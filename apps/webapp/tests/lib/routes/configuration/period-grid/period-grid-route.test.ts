@@ -1,6 +1,5 @@
 import type { PeriodGridModalCatalog } from '../../../../../src/routes/(app)/configuration/period-grid/lib/period-grid-modal-surface';
 import { describe, expect, it } from 'bun:test';
-import { emptyPeriodGridSlice } from '../../../../../src/routes/(app)/configuration/period-grid/lib/period-grid-helpers';
 import {
 	PERIOD_GRID_MODAL_NAMES,
 	PeriodGridWizardObservationGuard,
@@ -20,12 +19,6 @@ const modalCatalog: PeriodGridModalCatalog = {
 };
 
 describe('period grid route helpers', () => {
-	it('returns an empty slice by default', () => {
-		expect(emptyPeriodGridSlice()).toEqual({
-			yearCount: 0,
-		});
-	});
-
 	it('requires a resolvable target for every modal', () => {
 		for (const modal of PERIOD_GRID_MODAL_NAMES) {
 			expect(isPeriodGridModalTargetValid(modal, null, modalCatalog)).toBe(false);
