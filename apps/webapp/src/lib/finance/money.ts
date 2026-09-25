@@ -32,7 +32,9 @@ export function formatMinorUnits(
 	currency: string,
 	locale = 'fr-FR',
 ): string {
-	const code = currency.trim().toUpperCase() || 'XOF';
+	const code = currency.trim().toUpperCase();
+	if (!code)
+		return '—';
 	const major = minorToMajor(amountMinor, code, locale);
 	try {
 		return new Intl.NumberFormat(locale, {

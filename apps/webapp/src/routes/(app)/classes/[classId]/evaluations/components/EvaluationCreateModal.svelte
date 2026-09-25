@@ -192,7 +192,7 @@
 		</p>
 	{:else}
 		<div class="space-y-1.5">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+			<Label class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('eval.kind')}
 			</Label>
 			{#if isEdit}
@@ -220,7 +220,7 @@
 		</div>
 
 		<div class="space-y-1.5">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+			<Label class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('reportCards.subjects')}
 			</Label>
 			<Select.Root type="single" value={classSubjectId} onValueChange={value => value && (classSubjectId = value)}>
@@ -240,14 +240,14 @@
 		</div>
 
 		<div class="space-y-1.5">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+			<Label class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('hw.titleField')}
 			</Label>
 			<Input bind:value={title} />
 		</div>
 
 		<div class="space-y-1.5">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+			<Label class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('hw.descriptionField')}
 			</Label>
 			<Textarea bind:value={description} rows={3} />
@@ -255,27 +255,27 @@
 
 		{#if isHomework}
 			<div class="space-y-1.5">
-				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				<Label class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
 					{$t('hw.due')}
 				</Label>
 				<Input type="date" bind:value={dueDate} />
 			</div>
 		{:else}
 			<div class="space-y-1.5">
-				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				<Label class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
 					{$t('eval.date')}
 				</Label>
 				<Input type="date" bind:value={occurrenceDate} />
 			</div>
 			<div class="grid gap-3 sm:grid-cols-2">
 				<div class="space-y-1.5">
-					<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+					<Label class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
 						{$t('eval.startTime')}
 					</Label>
 					<Input type="time" bind:value={startTime} />
 				</div>
 				<div class="space-y-1.5">
-					<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+					<Label class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
 						{$t('eval.endTime')}
 					</Label>
 					<Input type="time" bind:value={endTime} />
@@ -285,13 +285,13 @@
 
 		<div class="grid gap-3 sm:grid-cols-2">
 			<div class="space-y-1.5">
-				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				<Label class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
 					{$t('eval.maxScore')}
 				</Label>
 				<Input type="number" min="1" step="1" bind:value={maxScore} />
 			</div>
 			<div class="space-y-1.5">
-				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				<Label class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
 					{$t('eval.coefficient')}
 				</Label>
 				<Input type="number" min="0.25" step="0.25" bind:value={coefficient} />

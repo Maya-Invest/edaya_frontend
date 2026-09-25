@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
+	import { authSession } from '$lib/auth/session.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
@@ -29,9 +30,8 @@
 	const paymentPage = getPaymentPageState();
 	const students = $derived(paymentPage.students);
 	const payments = $derived(paymentPage.payments);
-	const accounts = $derived(paymentPage.accounts);
 	const classes = $derived(academicContext.classes);
-	const fallbackCurrency = $derived(accounts[0]?.currency || 'XOF');
+	const fallbackCurrency = $derived(authSession.school?.financeCurrency ?? '');
 
 	const initialFilters = $derived(readPaymentListFilters($page.url));
 

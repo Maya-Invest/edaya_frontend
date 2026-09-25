@@ -24,11 +24,11 @@
 		onDeleted?: () => void;
 	} = $props();
 
-	type EvaluationDrawerModal = 'edit' | 'delete';
+	type EvaluationDrawerModal = 'edit' | 'delete' | 'submit-marks' | 'approve-marks' | 'return-marks';
 
 	const evaluationsPage = getEvaluationsPageState();
 	const modals = createUrlSyncedModals<EvaluationDrawerModal>({
-		allowed: ['edit', 'delete'],
+		allowed: ['edit', 'delete', 'submit-marks', 'approve-marks', 'return-marks'],
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);

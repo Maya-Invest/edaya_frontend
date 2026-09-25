@@ -2,8 +2,8 @@ import type { PermissionCode } from '$lib/auth/types';
 
 export type OtherConfigHref
 	= '/configuration/other/grade-scales'
-	| '/configuration/other/discipline'
-	| '/configuration/other/subject-categories';
+		| '/configuration/other/discipline'
+		| '/configuration/other/subject-categories';
 
 export interface OtherConfigEntry {
 	key: string;

@@ -172,13 +172,13 @@ export async function loadFamilyFeedbackSlice(client: SchoolClient): Promise<Fam
 	const assignments = (assignmentsRaw as TeacherAssignmentRaw[])
 		.filter(assignment => assignment.kind === 'subject' && assignment.status === 'active' && assignment.classSubjectId)
 		.map(assignment => ({
-		id: assignment.id,
-		teacherId: assignment.teacherId,
-		classSubjectId: assignment.classSubjectId,
-		classGroupId: assignment.classGroupId,
-		subjectId: classSubjects.find(entry => entry.id === assignment.classSubjectId)?.subjectId,
-		label: assignmentLabel(assignment, teachers, classSubjects as ClassSubjectRaw[], subjects as SubjectRaw[]),
-	}));
+			id: assignment.id,
+			teacherId: assignment.teacherId,
+			classSubjectId: assignment.classSubjectId,
+			classGroupId: assignment.classGroupId,
+			subjectId: classSubjects.find(entry => entry.id === assignment.classSubjectId)?.subjectId,
+			label: assignmentLabel(assignment, teachers, classSubjects as ClassSubjectRaw[], subjects as SubjectRaw[]),
+		}));
 
 	return {
 		campaigns,

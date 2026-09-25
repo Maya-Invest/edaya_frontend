@@ -61,6 +61,7 @@ export async function createStudentMutation(input: {
 export async function recordStudentAssessmentResultMutation(input: {
 	studentId: string;
 	assessmentId: string;
+	expectedRevision: number;
 	score: number;
 	successMessage?: string;
 }): Promise<boolean> {

@@ -23,7 +23,7 @@
 
 	const billingPage = getBillingPageState();
 	const account = $derived(billingPage.accountForStudent(billing.studentId));
-	const currency = $derived(account?.currency || billing.currency || 'XOF');
+	const currency = $derived(billing.currency);
 
 	let busy = $state(false);
 	let allocationId = $state('');

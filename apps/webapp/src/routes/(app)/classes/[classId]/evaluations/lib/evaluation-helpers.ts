@@ -31,7 +31,7 @@ export function evaluationStatsFromResults(
 		result => result.assessmentId === assessmentId && typeof result.score === 'number',
 	);
 	return {
-		graded: scored.length,
+		graded: results.filter(result => result.assessmentId === assessmentId && (result.score !== null || result.designation === 'absent' || result.designation === 'exempt')).length,
 		averageMark: scored.length > 0
 			? scored.reduce((sum, result) => sum + (result.score ?? 0), 0) / scored.length
 			: 0,
@@ -64,7 +64,8 @@ export function applyGradeEntry(input: {
 	results: readonly AssessmentResultRow[];
 	assessmentId: string;
 	studentId: string;
-	score: number;
+	score: number | null;
+	designation?: 'scored' | 'absent' | 'exempt';
 }): {
 	resultId: string;
 	previousResult: AssessmentResultRow | undefined;
@@ -78,6 +79,7 @@ export function applyGradeEntry(input: {
 		studentId: input.studentId,
 		assessmentId: input.assessmentId,
 		score: input.score,
+		designation: input.designation,
 	});
 	return {
 		resultId,

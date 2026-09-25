@@ -40,6 +40,7 @@ describe('canAdvanceFromStep', () => {
 		draft.school.name = 'Lycée EDAYA';
 		expect(canAdvanceFromStep(1, draft)).toBe(false);
 		draft.school.city = 'Paris';
+		draft.school.financeCurrency = 'EUR';
 		expect(canAdvanceFromStep(1, draft)).toBe(true);
 	});
 
@@ -63,6 +64,7 @@ describe('canFinishOnboarding', () => {
 		const draft = createEmptyDraft();
 		draft.school.name = 'Lycée EDAYA';
 		draft.school.city = 'Abidjan';
+		draft.school.financeCurrency = 'EUR';
 		draft.schoolStepSubmitted = true;
 		draft.structureStepSubmitted = true;
 		expect(canFinishOnboarding(draft)).toBe(false);
@@ -80,6 +82,7 @@ describe('canFinishOnboarding', () => {
 		const draft = createEmptyDraft();
 		draft.school.name = 'Lycée EDAYA';
 		draft.school.city = 'Abidjan';
+		draft.school.financeCurrency = 'EUR';
 		draft.schoolStepSubmitted = true;
 		draft.structureStepSubmitted = true;
 		draft.structure.models = ['college'];

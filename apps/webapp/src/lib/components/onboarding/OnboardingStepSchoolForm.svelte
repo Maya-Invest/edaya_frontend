@@ -164,6 +164,8 @@
 				</Select.Root>
 			</div>
 			<div class="space-y-1">
+				<Label for="onboarding-finance-currency">Devise financière (ISO 4217)</Label>
+				<Input id="onboarding-finance-currency" bind:value={onboardingContext.draft.school.financeCurrency} maxlength={3} placeholder="EUR / XOF / USD" required {disabled} />
 				<Label for="onboarding-school-timezone">{$t('onboarding.timezoneLabel')}</Label>
 				<Select.Root
 					type="single"

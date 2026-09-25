@@ -1,12 +1,11 @@
 <script lang="ts">
-	import type { PlanningEvent, Subject } from '$lib/types/school';
 	import type { SubjectCategoryOption } from '$lib/api/subject-categories-data';
-	import { defaultSubjectCategoryId, loadSubjectCategories } from '$lib/api/subject-categories-data';
+	import type { PlanningEvent, Subject } from '$lib/types/school';
 	import { createScheduleMutation } from '$lib/api/mutations/schedule.mutations';
-	import { getBrowserSchoolClient } from '$lib/api/school-client';
-	import { authSession } from '$lib/auth/session.svelte';
-	import { catalogCategory } from '$lib/i18n/catalog-label';
 	import { createSubjectForClassMutation, updateSubjectMutation } from '$lib/api/mutations/subject.mutations';
+	import { getBrowserSchoolClient } from '$lib/api/school-client';
+	import { defaultSubjectCategoryId, loadSubjectCategories } from '$lib/api/subject-categories-data';
+	import { authSession } from '$lib/auth/session.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
@@ -14,6 +13,7 @@
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import { lang, t } from '$lib/i18n';
+	import { catalogCategory } from '$lib/i18n/catalog-label';
 	import { get } from 'svelte/store';
 
 	const PLANNING_DAYS: PlanningEvent['day'][] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -59,11 +59,9 @@
 
 	const isEdit = $derived(subject !== undefined);
 	const colorLabel = $derived(COLOR_LABELS[color]);
-	const canSubmit = $derived(
-		name.trim().length > 0
-		&& categoryId.length > 0
-		&& (isEdit || (classId?.length ?? 0) > 0),
-	);
+	const canSubmit = $derived.by(() => {
+		return name.trim().length > 0 && categoryId.length > 0 && (isEdit || (classId?.length ?? 0) > 0);
+	});
 	const selectedCategoryName = $derived(
 		categories.find(category => category.id === categoryId)?.name ?? '',
 	);

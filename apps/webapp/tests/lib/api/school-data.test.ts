@@ -32,7 +32,8 @@ function school(overrides: Partial<SchoolRaw> = {}): SchoolRaw {
 
 describe('school identity mapping', () => {
 	it('maps issuing identity and public branding purposes from the API school', () => {
-		const mapped = mapSchoolFromApi(school());
+		const mapped = mapSchoolFromApi(school({ financeCurrency: 'EUR' }));
+		expect(mapped.financeCurrency).toBe('EUR');
 		expect(mapped.shortName).toBe('Cocody');
 		expect(mapped.issuingName).toBe('École Edaya — Cocody');
 		expect(mapped.schoolCode).toBe('EDAYA-CI');

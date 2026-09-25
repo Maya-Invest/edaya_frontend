@@ -25,7 +25,7 @@
 <DrawerEntityHeader
 	name={student.name}
 	summary={$t('drawer.studentSummary', {
-		avg: student.average.toFixed(1),
+		avg: student.average.toFixed(2),
 		att: student.attendance ?? '—',
 	})}
 >

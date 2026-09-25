@@ -49,7 +49,7 @@ export type ReportCardResultStatus = 'draft' | 'generated' | 'published';
 export interface ReportCardSubjectMark {
 	subjectId: string;
 	subjectName: string;
-	average: number;
+	average?: number;
 	coefficient: number;
 	appreciation?: string;
 	teacherName?: string;
@@ -61,7 +61,16 @@ export interface ReportCardSectionResult {
 	marks: ReportCardSubjectMark[];
 }
 
+export interface ReportCommentSection {
+	sectionId: string;
+	name: string;
+	comment: string;
+}
+
 export interface ReportCardResult {
+	commentSections?: ReportCommentSection[];
+	version?: number;
+	pendingAssessmentIds?: string[];
 	id: string;
 	schoolId: string;
 	studentId: string;
@@ -71,7 +80,7 @@ export interface ReportCardResult {
 	academicPeriodId: string;
 	gradeScaleId: string;
 	status: ReportCardResultStatus;
-	overallAverage: number;
+	overallAverage?: number;
 	classRank: number;
 	classSize: number;
 	sectionResults: ReportCardSectionResult[];
@@ -81,6 +90,6 @@ export interface ReportCardResult {
 	publishedAt?: string;
 }
 
-export function formatGrade(value: number, scale: { decimalPlaces: number }): string {
-	return value.toFixed(scale.decimalPlaces);
+export function formatGrade(value: number | undefined, scale: { decimalPlaces: number }): string {
+	return value === undefined ? '—' : value.toFixed(Math.max(2, scale.decimalPlaces));
 }

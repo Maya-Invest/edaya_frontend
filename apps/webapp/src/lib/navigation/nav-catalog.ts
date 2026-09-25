@@ -16,6 +16,7 @@ export interface NavItemDefinition {
 }
 
 export const SCHOOL_NAV_DEFS: NavItemDefinition[] = [
+	{ key: 'marksReview', labelKey: 'marks.reviewQueue', href: '/school/marks-review', permissions: ['GRADE_VALIDATE'] },
 	{
 		key: 'students',
 		labelKey: 'school.students',

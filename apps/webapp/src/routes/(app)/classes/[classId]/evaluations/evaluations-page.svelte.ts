@@ -393,14 +393,39 @@ export class EvaluationsPageState {
 		return result !== null;
 	}
 
+    async reviewMarks(action: 'submit' | 'approve' | 'return', reason?: string): Promise<boolean> {
+        const review = this.grading?.review;
+        if (!review)
+return false;
+        const client = getBrowserSchoolClient();
+        const input = { assessmentId: review.assessment.id, expectedRevision: review.assessment.marksRevision, requestId: crypto.randomUUID() };
+        const result = await runEvaluationRouteMutation({
+            request: () => action === 'submit'
+? client.commands.submitAssessmentMarks(input)
+                : action === 'approve'
+? client.commands.approveAssessmentMarks(input)
+                : client.commands.returnAssessmentMarks({ ...input, reason: reason ?? '' }),
+            successMessage: 'Validation mise à jour',
+versionKeys: ['evaluations', 'reportCards'],
+            onSuccess: async () => {
+ if (this.grading)
+this.grading.review = await client.queries.getAssessmentMarksReview({ assessmentId: input.assessmentId });
+},
+        });
+        return result !== null;
+    }
+
 	async recordGrade(input: {
 		studentId: string;
 		assessmentId: string;
-		score: number;
+		score: number | null;
+    designation?: 'scored' | 'absent' | 'exempt';
 		successMessage?: string;
 	}): Promise<boolean> {
 		const client = getBrowserSchoolClient();
 		const grading = this.grading;
+		if (!grading?.review || grading.review.assessment.marksStatus !== 'draft')
+return false;
 		const currentResults = grading?.slice?.assessmentResults ?? [];
 		const applied = applyGradeEntry({
 			results: currentResults,
@@ -415,14 +440,16 @@ export class EvaluationsPageState {
 
 		const result = await runEvaluationRouteMutation({
 			request: () => client.commands.recordAssessmentResult({
+				requestId: crypto.randomUUID(),
+				expectedRevision: grading!.review!.assessment.marksRevision,
 				id: applied.resultId,
 				studentId: input.studentId,
 				assessmentId: input.assessmentId,
 				score: input.score,
-				createdAt: nowIso(),
 			}),
 			successMessage: input.successMessage,
 			versionKeys: ['evaluations', 'students'],
+            onSuccess: async () => { grading.review = await client.queries.getAssessmentMarksReview({ assessmentId: input.assessmentId }); },
 			apply: () => {
 				this.upsertAssessmentResult({
 					id: applied.resultId,

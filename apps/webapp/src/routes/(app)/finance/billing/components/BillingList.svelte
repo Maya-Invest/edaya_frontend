@@ -34,7 +34,7 @@
 	const fees = $derived(billingPage.fees);
 	const billing = $derived(billingPage.billing);
 	const students = $derived(billingPage.students);
-	const displayCurrency = $derived(billing[0]?.currency || fees[0]?.currency || 'XOF');
+	const displayCurrency = $derived(authSession.school?.financeCurrency ?? '');
 
 	const modals = createUrlSyncedModals({ allowed: ['assign-fee'], getUrl: () => $page.url });
 	$effect(() => {

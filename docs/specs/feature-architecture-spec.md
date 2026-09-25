@@ -629,3 +629,7 @@ For interaction patterns, shared components, data loading, visuals, and state â€
 ### Personal communications
 
 The personal inbox queries deliveries by login subject and selected recipient kind/id together, including for school owners. Selecting another profile never merges personal delivery or read state. The announcements entry is available to every signed-in profile; the backend restricts rows to current audiences and any explicitly granted administrative scope. Administrative mutations still require their canonical actions. Do not invent school-wide grants to make personal communications navigation visible.
+
+## Marks approval
+
+`/school/marks-review` is a paginated staff review queue gated by GRADE_VALIDATE. Rows link to the existing evaluation Grading drawer. Review, submit, and return use named commands and URL-backed confirmation modals. Draft marks are editable; Submitted and Approved marks are frozen. Return requires a reason. Review permission and separation of duties are determined by the server.

@@ -4,6 +4,7 @@ import { fetchActivitySources } from '$lib/api/activities-data';
 import { listAllEntityPages, schoolScopedEntityList } from '$lib/api/entity-list-filters';
 import { fetchStaffMemberById, fetchStaffMembers, fetchStaffMembersPage } from '$lib/api/staff-data';
 import { loadStaffPermissionAssignments } from '$lib/api/staff-permission-assignments-data';
+import { loadSubjectCategories } from '$lib/api/subject-categories-data';
 import { fetchCatalogSubjectsSources } from '$lib/api/subjects-data';
 import { createRecordingSchoolClient, entityCountRequests, entityListRequests } from '$tests/support/recording-school-client';
 
@@ -14,6 +15,21 @@ function listEnvelope<T>(items: readonly T[]) {
 }
 
 describe('configuration and activity loading', () => {
+	for (const size of [51, 501]) {
+		it(`loads all ${size} subject categories through the generated client`, async () => {
+			const categories = Array.from({ length: size }, (_, index) => ({ id: `category-${index}`, schoolId: SEED_SCHOOL_ID, name: `Category ${index}` }));
+			const pages = [listEnvelope(categories.slice(0, 500))];
+			if (size > 500)
+				pages.push(listEnvelope(categories.slice(500)));
+			const { client, requests } = createRecordingSchoolClient(pages);
+			const loaded = await loadSubjectCategories(client, SEED_SCHOOL_ID);
+			expect(loaded).toHaveLength(size);
+			expect(new Set(loaded.map(category => category.id)).size).toBe(size);
+			const lists = entityListRequests(requests, 'subject-categories');
+			expect(lists.map(request => (request.body as Record<string, unknown>).$offset)).toEqual(size > 500 ? [0, 500] : [0]);
+			expect(lists.every(request => (request.body as Record<string, unknown>).schoolId === SEED_SCHOOL_ID && (request.body as Record<string, unknown>).$limit === 500)).toBe(true);
+		});
+	}
 	it('keeps staff permission assignments school- and year-scoped', async () => {
 		const { client, requests } = createRecordingSchoolClient([listEnvelope([])]);
 
@@ -128,6 +144,7 @@ describe('configuration and activity loading', () => {
 			empty,
 			empty,
 			empty,
+			empty,
 		]);
 
 		await fetchCatalogSubjectsSources(client, SEED_SCHOOL_ID);
@@ -171,6 +188,7 @@ describe('configuration and activity loading', () => {
 				academicYearId: 'year-1',
 				isOptional: false,
 			}]),
+			listEnvelope([]),
 			listEnvelope([]),
 			listEnvelope([]),
 			listEnvelope([]),

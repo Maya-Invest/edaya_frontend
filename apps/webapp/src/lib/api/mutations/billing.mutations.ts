@@ -7,7 +7,6 @@ import type {
 } from '$lib/api/finance-types';
 import { academicContext } from '$lib/academic/context.svelte';
 import { financeCommand } from '$lib/api/finance-client';
-import { DEFAULT_CATALOG_CURRENCY } from '$lib/api/finance-types';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
@@ -37,6 +36,11 @@ export async function createCatalogServiceMutation(input: {
 		return null;
 	}
 
+	const currency = authSession.school?.financeCurrency;
+	if (!currency) {
+		toast.error(get(t)('finance.currencyRequired'));
+		return null;
+	}
 	const id = newId('svc');
 	const result = await runMutation(() => financeCommand(client, 'createCatalogService', 'create-catalog-service', {
 		id,
@@ -45,7 +49,7 @@ export async function createCatalogServiceMutation(input: {
 		category: input.category,
 		enrollmentMode: input.enrollmentMode ?? 'mandatory',
 		defaultPrice: input.amount,
-		currency: input.currency?.trim() || DEFAULT_CATALOG_CURRENCY,
+		currency: input.currency?.trim() || currency,
 		billingTerms: input.billingTerms ?? { kind: 'one_time', installments: [] },
 		status: input.status ?? 'active',
 	}), {
@@ -66,6 +70,7 @@ export async function updateCatalogServiceMutation(input: {
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(() => financeCommand(client, 'updateCatalogService', 'update-catalog-service', {
+		requestId: crypto.randomUUID(),
 		id: input.id,
 		name: input.name?.trim(),
 		category: input.category,
@@ -85,7 +90,7 @@ export async function activateCatalogServiceMutation(input: {
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(
-		() => financeCommand(client, 'activateCatalogService', 'activate-catalog-service', { id: input.id }),
+		() => financeCommand(client, 'activateCatalogService', 'activate-catalog-service', { id: input.id, requestId: crypto.randomUUID() }),
 		{
 			successMessage: input.successMessage,
 			versionKeys: ['fees'],
@@ -100,7 +105,7 @@ export async function archiveCatalogServiceMutation(input: {
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(
-		() => financeCommand(client, 'archiveCatalogService', 'archive-catalog-service', { id: input.id }),
+		() => financeCommand(client, 'archiveCatalogService', 'archive-catalog-service', { id: input.id, requestId: crypto.randomUUID() }),
 		{
 			successMessage: input.successMessage,
 			versionKeys: ['fees', 'billing'],

@@ -8,11 +8,11 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
-	import { getPeriodGridPageState } from '../period-grid-page.svelte';
 	import {
 		PERIOD_DEFINITION_WEEKDAY_LABEL_KEY,
 		PERIOD_DEFINITION_WEEKDAYS,
 	} from '../lib/period-definition-presets';
+	import { getPeriodGridPageState } from '../period-grid-page.svelte';
 
 	let {
 		open = $bindable(false),

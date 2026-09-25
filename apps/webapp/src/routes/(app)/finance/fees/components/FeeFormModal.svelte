@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Fee } from '$lib/types/school';
 	import { CATALOG_CATEGORIES } from '$lib/api/finance-types';
+	import { authSession } from '$lib/auth/session.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -30,9 +31,9 @@
 	let wasOpen = $state(false);
 
 	const isEdit = $derived(fee !== undefined);
-	const currency = $derived(fee?.currency || feesPage.fees[0]?.currency || 'XOF');
+	const currency = $derived(authSession.school?.financeCurrency ?? '');
 	const parsedMajor = $derived(parseMajorInput(amount));
-	const canSubmit = $derived(name.trim().length > 0 && parsedMajor !== null && parsedMajor > 0);
+	const canSubmit = $derived(currency.length > 0 && name.trim().length > 0 && parsedMajor !== null && parsedMajor > 0);
 
 	function resetForm() {
 		if (fee) {
@@ -109,6 +110,7 @@
 	onCancel={resetForm}
 	onSubmit={submit}
 >
+	{#if !currency}<p role="alert">{$t('finance.currencyRequired')}</p>{/if}
 	<div class="space-y-1.5">
 		<Label for={isEdit ? 'fee-edit-name' : 'fee-create-name'} class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('fee.name')}

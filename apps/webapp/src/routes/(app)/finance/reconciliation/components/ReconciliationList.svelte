@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { DEFAULT_CATALOG_CURRENCY } from '$lib/api/finance-types';
+	import { authSession } from '$lib/auth/session.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import { formatMinorUnits } from '$lib/finance/money';
@@ -13,7 +13,7 @@
 	const report = $derived(reconciliationPage.reconciliation);
 	const accounts = $derived(report?.accounts ?? []);
 	const charges = $derived(report?.charges ?? []);
-	const currency = DEFAULT_CATALOG_CURRENCY;
+	const currency = $derived(authSession.school?.financeCurrency ?? '');
 	const hasDiffs = $derived(
 		accounts.some(row => row.difference !== 0) || charges.some(row => row.difference !== 0),
 	);

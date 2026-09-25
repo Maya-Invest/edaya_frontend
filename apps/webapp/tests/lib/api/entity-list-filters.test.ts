@@ -11,6 +11,19 @@ import {
 } from '$lib/api/entity-list-filters';
 
 describe('listAllEntityPages', () => {
+	for (const pageSize of [50, 500]) {
+		it(`loads ${pageSize + 1} rows without losing the second page`, async () => {
+			const source = Array.from({ length: pageSize + 1 }, (_, id) => ({ id: String(id) }));
+			const offsets: number[] = [];
+			const rows = await listAllEntityPages(async (query) => {
+				const offset = Number(query.$offset);
+				offsets.push(offset);
+				return source.slice(offset, offset + Number(query.$limit));
+			}, { pageSize });
+			expect(rows).toEqual(source);
+			expect(offsets).toEqual([0, pageSize]);
+		});
+	}
 	it('concatenates pages until a short page and stops', async () => {
 		const pageSize = 500;
 		const firstPage = Array.from({ length: pageSize }, (_, index) => ({ id: `a-${index}` }));

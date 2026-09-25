@@ -255,30 +255,28 @@ export function mapSubjectMark(
 		subjectName: subject
 			? catalogSubjectName(subject.name, get(lang), subject.code)
 			: subjectLabelForCatalogId(catalogSubjectId ?? classSubjectId, sources),
-		average: subjectResult.average ?? 0,
+		average: subjectResult.average,
 		coefficient: subjectResult.weight ?? 1,
 		appreciation: subjectResult.comment ?? undefined,
 		teacherName: teacherNameForClassSubjectFromSources(classSubjectId, sources),
 	};
 }
 
+function flattenSections(sections: ApiSectionResult[]): ApiSectionResult[] {
+	return sections.flatMap(section => [section, ...flattenSections(section.subResults ?? [])]);
+}
+
 function mapSectionResults(
-	sectionResultsRaw: ApiSectionResult[],
+	sections: ApiSectionResult[],
 	sources: ClassSubjectsSources,
 ): ReportCardSectionResult[] {
-	return sectionResultsRaw
-		.filter(section => (section.subResults ?? []).some(sub => sub.classSubjectId))
-		.map((section) => {
-			const marks = (section.subResults ?? [])
-				.map(sub => mapSubjectMark(sub, sources))
-				.filter((mark): mark is ReportCardSubjectMark => mark !== null);
-
-			return {
-				sectionId: section.sectionId ?? '',
-				sectionAverage: section.average,
-				marks,
-			};
-		});
+	return sections.map(section => ({
+		sectionId: section.sectionId ?? '',
+		sectionAverage: section.average,
+		marks: flattenSections([section])
+			.map(sub => mapSubjectMark(sub, sources))
+			.filter((mark): mark is ReportCardSubjectMark => mark !== null),
+	}));
 }
 
 export function mapReportCardResults(
@@ -304,13 +302,18 @@ export function mapReportCardResults(
 			academicPeriodId: result.periodId,
 			gradeScaleId: definition?.gradeScaleId ?? 'gs-20',
 			status: mapResultStatus(result.status),
-			overallAverage: result.overallAverage ?? 0,
+			overallAverage: result.overallAverage ?? undefined,
 			classRank: result.rank ?? 0,
 			classSize: result.classSize ?? 0,
 			sectionResults: mapSectionResults(
 				(result.sectionResults ?? []) as ApiSectionResult[],
 				sources,
 			),
+			commentSections: flattenSections((result.sectionResults ?? []) as ApiSectionResult[])
+				.filter(section => Boolean(section.sectionId))
+				.map(section => ({ sectionId: section.sectionId!, name: section.name ?? section.sectionId!, comment: section.comment ?? '' })),
+			version: result.version,
+			pendingAssessmentIds: result.pendingAssessmentIds,
 			homeroomComment: result.teacherComment ?? undefined,
 			principalComment: result.principalComment ?? undefined,
 			generatedAt: formatDate(result.generatedAt),

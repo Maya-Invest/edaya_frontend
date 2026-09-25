@@ -34,7 +34,7 @@
 	const selectedFee = $derived(fees.find(entry => entry.id === catalogServiceId));
 	const selectedFeeLabel = $derived(selectedFee?.name ?? '');
 	const defaultAmount = $derived(selectedFee?.amount ?? 0);
-	const currency = $derived(selectedFee?.currency ?? 'XOF');
+	const currency = $derived(selectedFee?.currency ?? '');
 	const parsedOverride = $derived(customAmount.trim() === '' ? null : parseMajorInput(customAmount));
 	const selectedCount = $derived(batch ? studentIds.length : (studentId ? 1 : 0));
 	const canSubmit = $derived.by(() => {

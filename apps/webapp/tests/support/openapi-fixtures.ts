@@ -106,6 +106,9 @@ export function homeworkAssessment(
 	overrides: Partial<Assessment> & Pick<Assessment, 'id' | 'classGroupId' | 'classSubjectId' | 'periodId' | 'title'>,
 ): Assessment {
 	return {
+		marksStatus: 'draft',
+		marksRevision: 0,
+		marksReview: { rosterStudentIds: [], markEditorSubjectIds: {}, editedBySubjectIds: [], history: [] },
 		kind: 'homework',
 		maxScore: 20,
 		coefficient: 1,

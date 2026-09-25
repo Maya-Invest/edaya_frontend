@@ -1,5 +1,5 @@
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import { schoolWideEntityList } from '$lib/api/entity-list-filters';
+import { listAllEntityPages, schoolWideEntityList } from '$lib/api/entity-list-filters';
 
 export interface SubjectCategoryOption {
 	id: string;
@@ -14,9 +14,8 @@ export async function loadSubjectCategories(
 	client: ReturnType<typeof getBrowserSchoolClient>,
 	schoolId: string,
 ): Promise<SubjectCategoryOption[]> {
-	const rows = await client.entities.subjectCategories.list({
-		...schoolWideEntityList(SUBJECT_CATEGORY_SCOPE),
-		schoolId,
+	const rows = await listAllEntityPages(query => client.entities.subjectCategories.list(query), {
+		baseQuery: { ...schoolWideEntityList(SUBJECT_CATEGORY_SCOPE), schoolId },
 	});
 	return (rows ?? [])
 		.map(row => ({

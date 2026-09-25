@@ -5,8 +5,8 @@ import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
 import { loadPeriodGridSlice, queryPeriodGridPage } from './lib/period-grid-queries';
-import { readPeriodGridYear, writePeriodGridYear } from './lib/period-grid-year';
 import { deletePeriodDefinitionMutation } from './lib/period-grid-route-mutation';
+import { readPeriodGridYear, writePeriodGridYear } from './lib/period-grid-year';
 
 const PERIOD_GRID_PAGE_STATE_KEY = Symbol('period-grid-page-state');
 

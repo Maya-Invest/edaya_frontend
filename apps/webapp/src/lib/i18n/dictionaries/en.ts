@@ -2,6 +2,25 @@ import type { Dict } from '../dictionaries.ts';
 import { permissionLabelsEn } from './permission-labels.ts';
 
 export const en: Dict = {
+	'reportCards.sectionComments': 'Section comments',
+	'reportCards.pendingApprovals': '{count} evaluations still require approval before publication.',
+	'marks.status': 'Approval: {state} · Revision {revision}',
+	'marks.incomplete': '{count} students need a score, absence or exemption.',
+	'marks.returnReason': 'Return reason: {reason}',
+	'marks.draft': 'Draft',
+	'marks.submitted': 'Submitted',
+	'marks.approved': 'Approved',
+	'marks.submit': 'Submit marks',
+	'marks.approve': 'Approve marks',
+	'marks.return': 'Return for correction',
+	'marks.submitHint': 'Submission freezes marks, grading settings and the student roster.',
+	'marks.approveHint': 'Families will be able to see these marks.',
+	'marks.reasonRequired': 'Required reason',
+	'marks.designation': 'Mark designation',
+	'marks.scored': 'Numeric mark',
+	'marks.absent': 'Absent',
+	'marks.exempt': 'Exempt',
+	'marks.reviewQueue': 'Marks awaiting review',
 	// Modules
 	'module.school': 'School',
 	'module.classes': 'Classes',
@@ -2561,6 +2580,7 @@ export const en: Dict = {
 	'fee.editTitle': 'Edit fee',
 	'fee.createSuccess': 'Fee « {name} » created.',
 	'fee.updateSuccess': 'Fee « {name} » updated.',
+	'finance.currencyRequired': 'Configure the school finance currency in school settings before creating fees.',
 	'fee.noContext': 'Select a school year before creating a fee.',
 	'fee.permissionConfigure': 'Verified session required to configure fees.',
 	'fee.deleteConfirm': 'Delete fee “{name}”?',

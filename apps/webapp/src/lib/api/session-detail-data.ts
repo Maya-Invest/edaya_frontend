@@ -302,7 +302,8 @@ export function readableLogbookNote(sessionNote: string | null | undefined): str
 			.map(part => part?.trim())
 			.filter((part): part is string => Boolean(part))
 			.join('\n');
-	} catch {
+	}
+	catch {
 		return value;
 	}
 }

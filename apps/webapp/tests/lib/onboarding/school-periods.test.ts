@@ -52,6 +52,7 @@ describe('validateSchoolStep periods', () => {
 		const draft = createEmptyDraft().school;
 		draft.name = 'Collège EDAYA';
 		draft.city = 'Lyon';
+		draft.financeCurrency = 'EUR';
 		draft.periods = [
 			createDefaultPeriod('trimester', 0, draft.academicYearStart, draft.academicYearEnd),
 			createDefaultPeriod('trimester', 1, draft.academicYearStart, draft.academicYearEnd),
@@ -63,6 +64,7 @@ describe('validateSchoolStep periods', () => {
 		const draft = createEmptyDraft().school;
 		draft.name = 'Collège EDAYA';
 		draft.city = 'Lyon';
+		draft.financeCurrency = 'EUR';
 		draft.academicYearStart = '2026-07-02';
 		draft.academicYearEnd = '2026-07-11';
 		draft.periods = [{

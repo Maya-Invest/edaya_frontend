@@ -42,7 +42,7 @@
 		if (!assessmentId || !Number.isFinite(numericScore) || numericScore < 0) {
 			return false;
 		}
-		return !selectedEvaluation || numericScore <= selectedEvaluation.outOf;
+		return selectedEvaluation?.marksStatus === 'draft' && numericScore <= selectedEvaluation.outOf;
 	});
 
 	$effect(() => {
@@ -86,6 +86,7 @@
 			studentId: s.id,
 			assessmentId,
 			score: numericScore,
+			expectedRevision: selectedEvaluation!.marksRevision ?? 0,
 			successMessage: `Note enregistrée pour ${s.name}.`,
 		});
 		busy = false;

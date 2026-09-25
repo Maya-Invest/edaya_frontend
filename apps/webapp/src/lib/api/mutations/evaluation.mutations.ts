@@ -130,17 +130,19 @@ export async function updateAssessmentMutation(input: {
 export async function recordAssessmentResultMutation(input: {
 	studentId: string;
 	assessmentId: string;
+	expectedRevision: number;
 	score: number;
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
 	const id = `ar-${input.assessmentId}-${input.studentId}`;
 	const result = await runMutation(() => client.commands.recordAssessmentResult({
+		requestId: crypto.randomUUID(),
+		expectedRevision: input.expectedRevision,
 		id,
 		studentId: input.studentId,
 		assessmentId: input.assessmentId,
 		score: input.score,
-		createdAt: new Date().toISOString(),
 	}), {
 		successMessage: input.successMessage,
 		versionKeys: ['evaluations'],
@@ -151,6 +153,7 @@ export async function recordAssessmentResultMutation(input: {
 export async function recordEvaluationAssessmentResultMutation(input: {
 	studentId: string;
 	assessmentId: string;
+	expectedRevision: number;
 	score: number;
 	successMessage?: string;
 }): Promise<boolean> {
@@ -176,6 +179,7 @@ export async function recordAssessmentResultComplianceMutation(input: {
 	id?: string;
 	studentId: string;
 	assessmentId: string;
+	expectedRevision: number;
 	status: 'met' | 'late' | 'missed' | 'excused';
 	notes?: string;
 	successMessage?: string;
@@ -183,12 +187,13 @@ export async function recordAssessmentResultComplianceMutation(input: {
 	const client = getBrowserSchoolClient();
 	const id = input.id ?? `asr-${input.studentId}-${input.assessmentId}`;
 	const result = await runMutation(() => client.commands.recordAssessmentResultCompliance({
+		requestId: crypto.randomUUID(),
+		expectedRevision: input.expectedRevision,
 		id,
 		studentId: input.studentId,
 		assessmentId: input.assessmentId,
 		status: input.status,
 		notes: input.notes?.trim() || null,
-		createdAt: new Date().toISOString(),
 	}), {
 		successMessage: input.successMessage,
 		versionKeys: ['evaluations'],

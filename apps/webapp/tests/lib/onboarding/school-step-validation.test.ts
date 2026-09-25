@@ -15,6 +15,7 @@ describe('validateSchoolStep', () => {
 		const draft = createEmptyDraft().school;
 		draft.name = 'Collège EDAYA';
 		draft.city = 'Lyon';
+		draft.financeCurrency = 'EUR';
 		expect(isSchoolStepValid(draft)).toBe(true);
 	});
 
@@ -22,15 +23,24 @@ describe('validateSchoolStep', () => {
 		const draft = createEmptyDraft().school;
 		draft.name = 'Collège EDAYA';
 		draft.city = 'Lyon';
+		draft.financeCurrency = 'EUR';
 		draft.academicYearLabel = '';
 		expect(isSchoolStepValid(draft)).toBe(true);
 		expect(validateSchoolStep(draft).missingFields).not.toContain('academicYearLabel');
+	});
+
+	it('requires an explicit finance currency', () => {
+		const draft = createEmptyDraft().school;
+		draft.name = 'School';
+		draft.city = 'City';
+		expect(validateSchoolStep(draft).missingFields).toContain('financeCurrency');
 	});
 
 	it('rejects invalid date ranges', () => {
 		const draft = createEmptyDraft().school;
 		draft.name = 'Collège EDAYA';
 		draft.city = 'Lyon';
+		draft.financeCurrency = 'EUR';
 		draft.academicYearStart = '2026-09-01';
 		draft.academicYearEnd = '2025-06-30';
 		expect(isSchoolStepValid(draft)).toBe(false);
@@ -40,6 +50,7 @@ describe('validateSchoolStep', () => {
 		const draft = createEmptyDraft().school;
 		draft.name = 'Collège EDAYA';
 		draft.city = 'Lyon';
+		draft.financeCurrency = 'EUR';
 		draft.academicYearStart = '2026-07-02';
 		draft.academicYearEnd = '2026-07-11';
 		draft.periods = [{

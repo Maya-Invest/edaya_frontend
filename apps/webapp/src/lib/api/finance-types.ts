@@ -239,4 +239,3 @@ export const CATALOG_CATEGORIES: CatalogServiceCategory[] = [
 ];
 
 export const FINANCE_BATCH_ENROLL_LIMIT = 100;
-export const DEFAULT_CATALOG_CURRENCY = 'XOF';

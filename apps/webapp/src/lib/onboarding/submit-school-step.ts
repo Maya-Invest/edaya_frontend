@@ -66,6 +66,7 @@ async function resolveSchoolId(
 		const registered = await getBrowserSchoolClient().onboarding.registerSchool({
 			name: school.name.trim(),
 			timeZone: school.timezone.trim(),
+			financeCurrency: school.financeCurrency?.trim().toUpperCase(),
 			city: school.city.trim(),
 			country: school.country.trim(),
 		});

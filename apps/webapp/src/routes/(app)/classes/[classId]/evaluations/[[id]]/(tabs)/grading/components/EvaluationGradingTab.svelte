@@ -30,10 +30,9 @@
 
 	const isHomework = $derived(evaluation.kind === 'homework');
 	const classStudents = $derived(gradingTab.studentsFor(classId));
-	const gradeEntryStudent = $derived(
-		(modals.target ? classStudents.find(student => student.id === modals.target) : undefined)
-		?? classStudents[0],
-	);
+	const gradeEntryStudent = $derived.by(() => {
+		return (modals.target ? classStudents.find(student => student.id === modals.target) : undefined) ?? classStudents[0];
+	});
 	const gradeEntryScore = $derived(
 		gradeEntryStudent ? evaluationsPage.scoreFor(evaluation.id, gradeEntryStudent.id) : null,
 	);
@@ -129,7 +128,7 @@
 					</div>
 					<div class="flex items-center gap-2">
 						<span class="min-w-[3rem] text-right font-sans text-sm tabular-nums">
-							{score !== null ? score.toFixed(1) : '-'}
+							{score !== null ? score.toFixed(2) : gradingTab.slice?.assessmentResults.find(result => result.studentId === student.id)?.designation === 'absent' ? $t('marks.absent') : gradingTab.slice?.assessmentResults.find(result => result.studentId === student.id)?.designation === 'exempt' ? $t('marks.exempt') : '—'}
 							<span class="font-sans tabular-nums text-[10px] text-muted-foreground">/{evaluation.outOf}</span>
 						</span>
 						<PermissionGate permission="GRADE_INPUT" mode="disable" tooltip={$t('eval.permissionInput')}>
@@ -138,7 +137,7 @@
 									variant="outline"
 									size="sm"
 									class="rounded-full"
-									{disabled}
+									disabled={disabled || gradingTab.review?.assessment.marksStatus !== 'draft'}
 									{title}
 									onclick={() => modals.open('grade-entry', { target: student.id })}
 								>

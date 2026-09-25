@@ -66,6 +66,8 @@ export function mapAssessmentToEvaluation(
 	const endsAt = assessment.endsAt ? String(assessment.endsAt) : undefined;
 
 	return {
+		marksRevision: assessment.marksRevision,
+		marksStatus: assessment.marksStatus,
 		id: assessment.id,
 		classId: assessment.classGroupId,
 		classSubjectId: assessment.classSubjectId,

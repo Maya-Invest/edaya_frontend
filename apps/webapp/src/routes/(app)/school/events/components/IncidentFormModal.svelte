@@ -46,11 +46,9 @@
 	let date = $state('');
 
 	const isEdit = $derived(incident !== undefined);
-	const schoolId = $derived(
-		academicContext.schoolScopeId
-		|| academicContext.schools[0]?.id
-		|| '',
-	);
+	const schoolId = $derived.by(() => {
+		return academicContext.schoolScopeId || academicContext.schools[0]?.id || '';
+	});
 
 	const selectedStudent = $derived(eventsPage.students.find(entry => entry.id === studentId));
 	const kindLabel = $derived($t(`events.kind.${kind}`));
@@ -60,9 +58,9 @@
 			: undefined,
 	);
 
-	const canSubmit = $derived(
-		incidentTitle.trim().length > 0 && description.trim().length > 0 && (isEdit || (studentId.length > 0 && schoolId.length > 0)),
-	);
+	const canSubmit = $derived.by(() => {
+		return incidentTitle.trim().length > 0 && description.trim().length > 0 && (isEdit || (studentId.length > 0 && schoolId.length > 0));
+	});
 
 	function resetForm() {
 		if (incident) {

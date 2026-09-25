@@ -1,29 +1,28 @@
+import type { components } from '$lib/api/schema';
 import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { AssessmentResultRow, Student } from '$lib/types/school';
-import { academicContext } from '$lib/academic/context.svelte';
-import { fetchClassPeopleSources, loadClassPeopleData, mapPeopleData } from '$lib/api/people-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { resolvePageLoad } from '$lib/queries/page-status';
 import { getContext, setContext } from 'svelte';
 import { evaluationsClassIdFromUrl } from '../../../lib/evaluation-helpers';
-import { loadEvaluationGradingData } from '../../../lib/evaluations-queries';
 
 const EVALUATION_GRADING_TAB_KEY = Symbol('evaluation-grading-tab');
 
 export interface EvaluationGradingTabSlice {
 	classId: string;
-	students: Student[];
+	students: Pick<Student, 'id' | 'name' | 'initials'>[];
 	assessmentResults: AssessmentResultRow[];
 }
 
 export class EvaluationGradingTabState {
 	slice = $state<EvaluationGradingTabSlice | null>(null);
+	review = $state<components['schemas']['AssessmentMarksReviewResponse'] | null>(null);
 
 	clear() {
 		this.slice = null;
 	}
 
-	studentsFor(classId: string): Student[] {
+	studentsFor(classId: string): Pick<Student, 'id' | 'name' | 'initials'>[] {
 		if (this.slice?.classId !== classId) {
 			return [];
 		}
@@ -75,21 +74,12 @@ export class EvaluationGradingTabState {
 			empty: () => ({}),
 			load: async (signal) => {
 				const resolvedClassId = evaluationsClassIdFromUrl(url) ?? classId;
-				const periodId = academicContext.periodId || academicContext.yearId;
+
 				const client = getBrowserSchoolClient();
-				const [assessmentResults, students] = await Promise.all([
-					periodId
-						? loadEvaluationGradingData(client, resolvedClassId, periodId)
-						: Promise.resolve([]),
-					(async () => {
-						if (periodId) {
-							const people = await loadClassPeopleData(client, resolvedClassId, periodId);
-							return people.students;
-						}
-						const sources = await fetchClassPeopleSources(client, resolvedClassId);
-						return mapPeopleData(sources).students;
-					})(),
-				]);
+                const assessmentId = url.pathname.split('/evaluations/')[1]?.split('/')[0];
+                this.review = assessmentId ? await client.queries.getAssessmentMarksReview({ assessmentId }) : null;
+                const students = (this.review?.students ?? []).map(student => ({ id: student.id, name: `${student.firstName} ${student.lastName}`.trim(), initials: `${student.firstName[0] ?? ''}${student.lastName[0] ?? ''}` }));
+                const assessmentResults = (this.review?.results ?? []).map(result => ({ ...result, score: result.score ?? null }));
 
 				signal.throwIfAborted();
 				this.slice = {

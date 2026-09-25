@@ -17,7 +17,7 @@
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { hasPermission } from '$lib/permissions';
 	import { get } from 'svelte/store';
-	import { getPeriodGridPageState } from '../period-grid-page.svelte';
+	import { PERIOD_DEFINITION_WEEKDAYS } from '../lib/period-definition-presets';
 	import {
 		PERIOD_DEFINITION_WIZARD_STEPS,
 		PERIOD_GRID_MODAL_NAMES,
@@ -27,7 +27,7 @@
 		isPeriodGridModalTargetValid,
 		resolvePeriodDefinitionModalTarget,
 	} from '../lib/period-grid-modal-surface';
-	import { PERIOD_DEFINITION_WEEKDAYS } from '../lib/period-definition-presets';
+	import { getPeriodGridPageState } from '../period-grid-page.svelte';
 	import PeriodDefinitionBoard from './PeriodDefinitionBoard.svelte';
 	import PeriodDefinitionFormModal from './PeriodDefinitionFormModal.svelte';
 	import PeriodDefinitionWizardModal from './PeriodDefinitionWizardModal.svelte';

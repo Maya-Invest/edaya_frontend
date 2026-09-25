@@ -25,7 +25,7 @@
 	} = $props();
 
 	const billingPage = getBillingPageState();
-	const currency = $derived(billing.currency || 'XOF');
+	const currency = $derived(billing.currency);
 
 	let busy = $state(false);
 	let reason = $state('');

@@ -36,6 +36,9 @@ export function periodFitsInAcademicYear(draft: OnboardingSchoolDraft): boolean 
 }
 export function validateSchoolStep(draft: OnboardingSchoolDraft): SchoolStepValidationResult {
 	const missingFields: Array<keyof OnboardingSchoolDraft | 'periods'> = [];
+	if (!/^[A-Z]{3}$/.test(draft.financeCurrency?.trim().toUpperCase() ?? '')) {
+		missingFields.push('financeCurrency');
+	}
 	if (!hasText(draft.name)) {
 		missingFields.push('name');
 	}

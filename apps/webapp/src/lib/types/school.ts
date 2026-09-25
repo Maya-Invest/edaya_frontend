@@ -129,6 +129,7 @@ export interface TimetableSchedule {
 }
 
 export interface AssessmentResultRow {
+	designation?: 'scored' | 'absent' | 'exempt' | null;
 	id: string;
 	studentId: string;
 	assessmentId: string;
@@ -145,6 +146,8 @@ export interface EvaluationSubmission {
 }
 
 export interface Evaluation {
+	marksRevision?: number;
+	marksStatus?: 'draft' | 'submitted' | 'approved';
 	id: string;
 	classId: string;
 	classSubjectId: string;
@@ -431,6 +434,7 @@ export type SchoolType = 'primary' | 'secondary' | 'k12' | 'vocational' | 'other
 export type TimetableGenerationMode = 'weekly' | 'free';
 
 export interface School {
+	financeCurrency?: string | null;
 	id: string;
 	name: string;
 	shortName: string;

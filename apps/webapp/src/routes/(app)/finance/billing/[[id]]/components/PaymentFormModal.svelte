@@ -29,7 +29,7 @@
 
 	const billingPage = getBillingPageState();
 	const account = $derived(billingPage.accountForStudent(billing.studentId));
-	const currency = $derived(billing.currency || account?.currency || 'XOF');
+	const currency = $derived(billing.currency);
 	const siblingCharges = $derived(
 		billingPage.billing.filter(entry => entry.studentId === billing.studentId),
 	);

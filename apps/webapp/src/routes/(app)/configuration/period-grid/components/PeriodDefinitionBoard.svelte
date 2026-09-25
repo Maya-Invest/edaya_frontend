@@ -26,12 +26,12 @@
 					<h4 class="truncate text-xs font-medium text-foreground" title={$t(PERIOD_DEFINITION_WEEKDAY_LABEL_KEY[group.dayOfWeek])}>
 						{$t(PERIOD_DEFINITION_WEEKDAY_LABEL_KEY[group.dayOfWeek])}
 					</h4>
-					<span class="shrink-0 font-sans tabular-nums text-[11px] text-muted-foreground">
+					<span class="shrink-0 font-sans tabular-nums text-xs text-muted-foreground">
 						{group.defs.length}
 					</span>
 				</header>
 				{#if group.defs.length === 0}
-					<div class="mx-2 mb-2 rounded-xl border border-dashed border-border/60 px-2 py-6 text-center font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
+					<div class="mx-2 mb-2 rounded-xl border border-dashed border-border/60 px-2 py-6 text-center font-sans tabular-nums text-xs uppercase tracking-wider text-muted-foreground">
 						—
 					</div>
 				{:else}
@@ -70,18 +70,18 @@
 								</div>
 								{#if def.isBreak}
 									<span
-										class="mt-1.5 inline-block rounded-full bg-secondary px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase text-muted-foreground"
+										class="mt-1.5 inline-block rounded-full bg-secondary px-2 py-0.5 font-sans tabular-nums text-xs uppercase text-muted-foreground"
 									>
 										{$t('periodDefinitions.break')}
 									</span>
 								{:else if !def.isTeachingSlot}
 									<span
-										class="mt-1.5 inline-block rounded-full bg-secondary px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase text-muted-foreground"
+										class="mt-1.5 inline-block rounded-full bg-secondary px-2 py-0.5 font-sans tabular-nums text-xs uppercase text-muted-foreground"
 									>
 										{$t('periodDefinitions.nonTeaching')}
 									</span>
 								{/if}
-								<p class="mt-1.5 font-sans tabular-nums text-[11px] text-muted-foreground">
+								<p class="mt-1.5 font-sans tabular-nums text-xs text-muted-foreground">
 									#{def.order} · {def.startTime} → {def.endTime}
 								</p>
 							</li>

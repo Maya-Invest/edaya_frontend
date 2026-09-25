@@ -13,13 +13,13 @@ import {
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
 import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
+import { categoryNameById, loadSubjectCategories } from '$lib/api/subject-categories-data';
 import {
 	fetchClassSubjectInstructorSourcesBundle,
 
 	teacherNameForClassSubject,
 } from '$lib/api/teacher-display';
 import { buildSubjectChapterSummary } from '$lib/subjects/chapter-summary';
-import { categoryNameById, loadSubjectCategories } from '$lib/api/subject-categories-data';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -70,12 +70,12 @@ async function listPagesForIds<T>(
 }
 
 const DEFAULT_CATEGORY_BY_SLUG: Record<string, string> = {
-	scientifique: 'Scientifique',
-	litteraire: 'Littéraire',
-	langues: 'Langues',
+	'scientifique': 'Scientifique',
+	'litteraire': 'Littéraire',
+	'langues': 'Langues',
 	'sciences-humaines': 'Sciences humaines',
-	sport: 'Sport',
-	arts: 'Arts',
+	'sport': 'Sport',
+	'arts': 'Arts',
 };
 
 const SUBJECT_COLORS = new Set<Subject['color']>(['mint', 'sky', 'warm']);

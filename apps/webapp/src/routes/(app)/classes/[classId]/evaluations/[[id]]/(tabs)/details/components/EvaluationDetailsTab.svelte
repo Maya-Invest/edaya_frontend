@@ -84,7 +84,7 @@
 		<div class="rounded-xl bg-primary/10 p-3">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('eval.average')}</p>
 			<p class="mt-1 font-sans text-xl tabular-nums">
-				{evaluation.graded > 0 ? evaluation.averageMark.toFixed(1) : '-'}
+				{evaluation.graded > 0 ? evaluation.averageMark.toFixed(2) : '-'}
 				<span class="text-sm text-muted-foreground">/ {evaluation.outOf}</span>
 			</p>
 		</div>

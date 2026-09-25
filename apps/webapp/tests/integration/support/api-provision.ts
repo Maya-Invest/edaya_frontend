@@ -484,6 +484,7 @@ async function registerSchool(
 		body: JSON.stringify({
 			name: schoolName,
 			timeZone: 'Europe/Paris',
+			financeCurrency: 'XOF',
 			city: 'Abidjan',
 			country: 'Côte d\'Ivoire',
 			type: 'k12',

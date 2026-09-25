@@ -1,18 +1,18 @@
 <script lang="ts">
-	import type { Subject } from '$lib/types/school';
 	import type { SubjectCategoryOption } from '$lib/api/subject-categories-data';
+	import type { Subject } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { sortGradeLevels } from '$lib/academic/grade-level-sort';
 	import { createSubjectForGradeLevelMutation } from '$lib/api/mutations/subject.mutations';
-	import { defaultSubjectCategoryId, loadSubjectCategories } from '$lib/api/subject-categories-data';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
+	import { defaultSubjectCategoryId, loadSubjectCategories } from '$lib/api/subject-categories-data';
 	import { authSession } from '$lib/auth/session.svelte';
-	import { catalogCategory } from '$lib/i18n/catalog-label';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import { lang, t } from '$lib/i18n';
+	import { catalogCategory } from '$lib/i18n/catalog-label';
 	import { get } from 'svelte/store';
 	import { getSubjectsPageState } from '../subjects-page.svelte';
 
@@ -51,12 +51,9 @@
 		})),
 	);
 	const colorLabel = $derived(COLOR_LABELS[color]);
-	const canSubmit = $derived(
-		name.trim().length > 0
-		&& categoryId.length > 0
-		&& gradeLevelId.length > 0
-		&& (academicContext.yearId?.length ?? 0) > 0,
-	);
+	const canSubmit = $derived.by(() => {
+		return name.trim().length > 0 && categoryId.length > 0 && gradeLevelId.length > 0 && (academicContext.yearId?.length ?? 0) > 0;
+	});
 	const selectedCategoryName = $derived(
 		categories.find(category => category.id === categoryId)?.name ?? '',
 	);

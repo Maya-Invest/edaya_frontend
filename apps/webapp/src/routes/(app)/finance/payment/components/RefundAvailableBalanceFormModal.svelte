@@ -33,7 +33,7 @@
 	let wasOpen = $state(false);
 
 	const selectedAccount = $derived(refundableAccounts.find(account => account.id === accountId));
-	const currency = $derived(selectedAccount?.currency || 'XOF');
+	const currency = $derived(selectedAccount?.currency ?? '');
 	const parsedMajor = $derived(parseMajorInput(amount));
 	const amountMinor = $derived(parsedMajor === null ? 0 : majorToMinor(parsedMajor, currency, $locale));
 	const canSubmit = $derived(Boolean(selectedAccount) && amountMinor > 0 && amountMinor <= (selectedAccount?.availableBalance ?? 0) && paymentDate.trim().length > 0);

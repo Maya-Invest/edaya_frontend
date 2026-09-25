@@ -30,7 +30,6 @@ import {
 	studentServiceEnrollmentsEntity,
 	studentYearAccountsEntity,
 } from '$lib/api/finance-client';
-import { DEFAULT_CATALOG_CURRENCY } from '$lib/api/finance-types';
 import { mapPeopleData } from '$lib/api/people-data';
 import { safeOptionalEntityList, safeOptionalFetch } from '$lib/api/safe-entity-access';
 import { formatDateInput } from '$lib/date/format';
@@ -74,7 +73,7 @@ export function moneyAmount(value: unknown): number {
 	return 0;
 }
 
-export function moneyCurrency(value: unknown, fallback = DEFAULT_CATALOG_CURRENCY): string {
+export function moneyCurrency(value: unknown): string {
 	if (typeof value === 'string' && value.trim()) {
 		return value.trim();
 	}
@@ -84,7 +83,7 @@ export function moneyCurrency(value: unknown, fallback = DEFAULT_CATALOG_CURRENC
 			return currency.trim();
 		}
 	}
-	return fallback;
+	throw new Error('A financial record is missing its currency');
 }
 
 function stringField(value: unknown, fallback = ''): string {
@@ -147,7 +146,7 @@ export function mapFees(raw: readonly unknown[]): Fee[] {
 		.map((entry) => {
 			const fee = asRecord(entry);
 			const amount = moneyAmount(fee.defaultPrice);
-			const currency = moneyCurrency(fee.currency, moneyCurrency(fee.defaultPrice));
+			const currency = moneyCurrency(fee.currency);
 			const terms = asRecord(fee.billingTerms);
 			const installments = Array.isArray(terms.installments) ? terms.installments : [];
 			return {
@@ -204,7 +203,7 @@ export function mapStudentBilling(raw: readonly unknown[]): StudentBilling[] {
 				total: expected,
 				paid: allocated,
 				remaining,
-				currency: moneyCurrency(charge.currency, moneyCurrency(charge.expectedAmount)),
+				currency: moneyCurrency(charge.currency),
 				status: mapChargeStatus(charge.status),
 				dueDate: formatDateInput(charge.dueDate),
 				academicYearId: stringField(charge.academicYearId),
@@ -225,7 +224,7 @@ export function mapPayments(raw: readonly unknown[]): FinancePayment[] {
 				studentId: '',
 				academicYearId: stringField(payment.academicYearId),
 				amount: moneyAmount(payment.amount),
-				currency: moneyCurrency(payment.currency, moneyCurrency(payment.amount)),
+				currency: moneyCurrency(payment.currency),
 				paymentDate: formatDateInput(payment.paymentDate),
 				status: mapPaymentStatus(payment.status),
 				kind: mapPaymentKind(payment.kind),
@@ -245,7 +244,7 @@ export function mapYearAccounts(raw: readonly unknown[]): StudentYearAccountView
 				id: stringField(account.id),
 				studentId: stringField(account.studentId),
 				academicYearId: stringField(account.academicYearId),
-				currency: moneyCurrency(account.currency, moneyCurrency(account.availableBalance)),
+				currency: moneyCurrency(account.currency),
 				availableBalance: moneyAmount(account.availableBalance),
 			} satisfies StudentYearAccountView;
 		})
@@ -398,7 +397,7 @@ export async function loadPaymentPageData(
 		return {
 			...payment,
 			studentId: account?.studentId ?? payment.studentId,
-			currency: payment.currency || account?.currency || DEFAULT_CATALOG_CURRENCY,
+			currency: payment.currency,
 		};
 	});
 	const students = await loadStudentsByIds(

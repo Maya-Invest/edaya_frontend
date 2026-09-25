@@ -89,6 +89,7 @@ export class SchoolPageState {
 	async updateSettings(input: {
 		name: string;
 		timeZone: string;
+		financeCurrency: string;
 		city?: string | null;
 		country?: string | null;
 		type?: SchoolType | null;
@@ -132,6 +133,7 @@ export class SchoolPageState {
 					schoolId: school.id,
 					name: patch.name,
 					timeZone: patch.timeZone,
+					financeCurrency: input.financeCurrency.trim().toUpperCase(),
 					city: patch.city,
 					country: patch.country,
 					type: patch.type,

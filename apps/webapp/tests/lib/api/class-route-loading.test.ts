@@ -104,6 +104,7 @@ describe('class route scoped loading', () => {
 			listEnvelope([]),
 			listEnvelope([]),
 			listEnvelope([]),
+			listEnvelope([]),
 		]);
 
 		await fetchClassSubjectsSources(client, classGroupId);

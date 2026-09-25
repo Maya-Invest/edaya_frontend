@@ -16,6 +16,7 @@ export async function adjustStudentChargeMutation(input: {
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(
 		() => financeCommand(client, 'adjustStudentCharge', 'adjust-student-charge', {
+			requestId: crypto.randomUUID(),
 			chargeId: input.chargeId,
 			adjustmentAmount: input.adjustmentAmount,
 			reason: input.reason.trim(),
@@ -37,6 +38,7 @@ export async function waiveStudentChargeMutation(input: {
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(
 		() => financeCommand(client, 'waiveStudentCharge', 'waive-student-charge', {
+			requestId: crypto.randomUUID(),
 			chargeId: input.chargeId,
 			reason: input.reason.trim(),
 			waiverAmount: input.waiverAmount,
@@ -57,6 +59,7 @@ export async function cancelStudentChargeMutation(input: {
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(
 		() => financeCommand(client, 'cancelStudentCharge', 'cancel-student-charge', {
+			requestId: crypto.randomUUID(),
 			chargeId: input.chargeId,
 			reason: input.reason.trim(),
 		}),

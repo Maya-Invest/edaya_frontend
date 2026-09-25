@@ -171,7 +171,7 @@
 
 	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
 		<div
-			class="grid grid-cols-12 gap-4 border-b border-border bg-secondary/40 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+			class="grid grid-cols-12 gap-4 border-b border-border bg-secondary/40 px-5 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground"
 		>
 			<div class="col-span-4">{$t('disciplinaryCatalog.name')}</div>
 			<div class="col-span-2">{$t('disciplinaryCatalog.kind')}</div>
@@ -198,7 +198,7 @@
 						<div class="col-span-2">
 							<span
 								class={cn(
-									'rounded-full px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase',
+									'rounded-full px-2 py-0.5 font-sans tabular-nums text-xs uppercase',
 									action.kind === 'sanction'
 										? 'bg-destructive/10 text-destructive'
 										: 'bg-accent/15 text-accent-foreground',

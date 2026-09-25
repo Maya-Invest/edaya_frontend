@@ -176,7 +176,7 @@ function computeStudentAverage(
 		return 0;
 	}
 
-	return Math.round((weightedSum / totalCoefficient) * 10) / 10;
+	return Math.round((weightedSum / totalCoefficient) * 100) / 100;
 }
 
 function mapStudentAcademicBadge(average: number): Student['academicBadge'] {

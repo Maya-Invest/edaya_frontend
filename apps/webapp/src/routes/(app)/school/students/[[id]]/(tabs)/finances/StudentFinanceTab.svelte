@@ -20,11 +20,11 @@
 	const financesTab = getStudentFinanceTabState();
 	const summary = $derived(financesTab.summaryFor(s.id));
 	const statement = $derived(financesTab.statementFor(s.id));
-	const currency = $derived(summary?.currency || statement?.currency || 'XOF');
+	const currency = $derived(summary?.currency ?? statement?.currency ?? '');
 	const charges = $derived(statement?.charges ?? []);
 	const entries = $derived(statement?.entries ?? []);
 	const accountSourceId = $derived(
-		authSession.schoolId && academicContext.yearId
+		authSession.schoolId && academicContext.yearId && currency
 			? studentYearAccountSourceId({
 				schoolId: authSession.schoolId,
 				studentId: s.id,

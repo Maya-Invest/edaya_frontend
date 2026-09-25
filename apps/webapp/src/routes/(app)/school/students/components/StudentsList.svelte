@@ -258,7 +258,7 @@
 					student.email,
 					classGroup?.name ?? student.classId,
 					student.status,
-					student.average.toFixed(1),
+					student.average.toFixed(2),
 					attendanceLabel(student.attendance),
 				];
 			}),
@@ -286,7 +286,7 @@
 					return [
 						student.name,
 						classGroup?.name ?? student.classId,
-						student.average.toFixed(1),
+						student.average.toFixed(2),
 						attendanceLabel(student.attendance),
 						student.status,
 					];
@@ -411,7 +411,7 @@
 				</div>
 				<div class="col-span-2 text-sm text-foreground/80">{classGroup?.name}</div>
 				<div class="col-span-2 font-sans text-base font-semibold tabular-nums">
-					{student.average.toFixed(1)}
+					{student.average.toFixed(2)}
 				</div>
 				<div class="col-span-2">
 					{#if student.attendance == null}
@@ -499,7 +499,7 @@
 					<p class="truncate text-sm text-muted-foreground">{classGroup?.name}</p>
 				{:else if columnKey === 'average'}
 					<span class="font-sans font-semibold tabular-nums text-sm">
-						{student.average.toFixed(1)}
+						{student.average.toFixed(2)}
 					</span>
 				{:else if columnKey === 'attendance'}
 					{#if student.attendance == null}

@@ -11,7 +11,6 @@
 	import { catalogSlotLabel, toCanonicalCatalogText } from '$lib/i18n/catalog-label';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
-	import { getPeriodGridPageState } from '../period-grid-page.svelte';
 	import {
 		PERIOD_DEFINITION_PRESET_IDS,
 		PERIOD_DEFINITION_WEEKDAY_LABEL_KEY,
@@ -19,6 +18,7 @@
 		clonePeriodDefinitionPreset,
 		expandPeriodDefinitionTemplate,
 	} from '../lib/period-definition-presets';
+	import { getPeriodGridPageState } from '../period-grid-page.svelte';
 
 	type WizardStep = 'preset' | 'tweak' | 'preview';
 
@@ -251,7 +251,7 @@
 	{:else if step === 'tweak'}
 		<div class="space-y-4">
 			<div>
-				<p class="mb-2 font-sans tabular-nums text-[10px] uppercase tracking-widest text-muted-foreground">
+				<p class="mb-2 font-sans tabular-nums text-xs uppercase tracking-widest text-muted-foreground">
 					{$t('periodDefinitions.wizard.weekdays')}
 				</p>
 				<div class="flex flex-wrap gap-3">
@@ -268,7 +268,7 @@
 			</div>
 
 			<div>
-				<p class="mb-2 font-sans tabular-nums text-[10px] uppercase tracking-widest text-muted-foreground">
+				<p class="mb-2 font-sans tabular-nums text-xs uppercase tracking-widest text-muted-foreground">
 					{$t('periodDefinitions.wizard.halfDays')}
 				</p>
 				<div class="flex flex-wrap gap-3">
@@ -286,7 +286,7 @@
 
 			<div>
 				<div class="mb-2 flex items-center justify-between gap-3">
-					<p class="font-sans tabular-nums text-[10px] uppercase tracking-widest text-muted-foreground">
+					<p class="font-sans tabular-nums text-xs uppercase tracking-widest text-muted-foreground">
 						{$t('periodDefinitions.wizard.template')}
 					</p>
 					<Button type="button" size="sm" variant="outline" class="rounded-full" onclick={addTemplateRow}>
@@ -384,16 +384,16 @@
 						<p class="font-medium">
 							{catalogSlotLabel(slot.label, $lang)}
 							{#if slot.isBreak}
-								<span class="ml-2 rounded-full bg-secondary px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase text-muted-foreground">
+								<span class="ml-2 rounded-full bg-secondary px-2 py-0.5 font-sans tabular-nums text-xs uppercase text-muted-foreground">
 									{$t('periodDefinitions.break')}
 								</span>
 							{:else if !slot.isTeachingSlot}
-								<span class="ml-2 rounded-full bg-secondary px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase text-muted-foreground">
+								<span class="ml-2 rounded-full bg-secondary px-2 py-0.5 font-sans tabular-nums text-xs uppercase text-muted-foreground">
 									{$t('periodDefinitions.nonTeaching')}
 								</span>
 							{/if}
 						</p>
-						<p class="font-sans tabular-nums text-[11px] text-muted-foreground">
+						<p class="font-sans tabular-nums text-xs text-muted-foreground">
 							{$t(PERIOD_DEFINITION_WEEKDAY_LABEL_KEY[slot.dayOfWeek])}
 							· #{slot.order}
 							· {slot.startTime} → {slot.endTime}

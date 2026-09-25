@@ -3,6 +3,7 @@
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { writeHomeroomReportCommentMutation } from '$lib/api/mutations/student-ops.mutations';
 	import DocumentPdfButton from '$lib/components/school/documents/DocumentPdfButton.svelte';
+	import ReportSectionComments from '$lib/components/school/report-cards/ReportSectionComments.svelte';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
@@ -60,6 +61,7 @@
 		commentBusy = true;
 		const ok = await writeHomeroomReportCommentMutation({
 			resultId: latest.id,
+			expectedVersion: latest.version ?? 0,
 			teacherComment: commentDraft,
 			successMessage: get(t)('reportCards.homeroomCommentSaved'),
 		});
@@ -155,12 +157,13 @@
 			{/if}
 		{/each}
 
+		<ReportSectionComments result={latest} onSaved={() => reportCardTab.refreshResults(s.id)} />
 		<div class="rounded-xl border border-border p-3 space-y-2">
 			<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">
 				{$t('reportCards.homeroomComment')}
 			</p>
-			<Textarea bind:value={commentDraft} rows={3} />
-			<Button size="sm" class="rounded-full" disabled={commentBusy} onclick={() => void saveHomeroomComment()}>
+			<Textarea bind:value={commentDraft} rows={3} readonly={latest.status === 'published'} />
+			<Button size="sm" class="rounded-full" disabled={commentBusy || latest.status === 'published'} onclick={() => void saveHomeroomComment()}>
 				{$t('reportCards.saveHomeroomComment')}
 			</Button>
 		</div>
@@ -185,7 +188,7 @@
 				/>
 			{/if}
 			{#if latest.status === 'generated'}
-				<Button class="rounded-full" onclick={publish}>{$t('reportCards.publish')}</Button>
+				<Button class="rounded-full" disabled={Boolean(latest.pendingAssessmentIds?.length)} onclick={publish}>{$t('reportCards.publish')}</Button>
 			{/if}
 		</div>
 	{/if}

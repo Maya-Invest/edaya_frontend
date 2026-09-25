@@ -131,6 +131,7 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 		logStep(journey, { step: 'timetable-session', ok: false, detail: sessionId ? 'session id scraped only' : 'no session on timetable' });
 	}
 
+	await visitCovered(journey, '/school/marks-review', '/school/marks-review');
 	await visitCovered(journey, '/classes/[classId]/evaluations', `/classes/${classId}/evaluations`);
 	const evalOpened = await clickCreateButton(page, 'Créer évaluation', `/classes/${classId}/evaluations`);
 	const evalTitle = `E2E-Eval-${Date.now()}`;

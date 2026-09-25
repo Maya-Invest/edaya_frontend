@@ -11,7 +11,6 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { loadDocumentIssuances, loadDocumentTemplates, studentYearAccountSourceId } from '$lib/api/documents-data';
 import { CONVOCATION_TEMPLATE, STUDENT_GENERATE_TEMPLATE_KEYS } from '$lib/api/documents-types';
 import { loadStudentFinanceSummary } from '$lib/api/finance-data';
-import { DEFAULT_CATALOG_CURRENCY } from '$lib/api/finance-types';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { loadStudentEnrollmentHistory } from '$lib/api/student-drawer-data';
@@ -33,7 +32,7 @@ export interface StudentDocumentsTabSlice {
 export type StudentDocumentsTabSeed = Partial<Omit<StudentDocumentsTabSlice, 'studentId'>>;
 
 function emptySlice(studentId: string): StudentDocumentsTabSlice {
-	return { studentId, issuances: [], templates: [], enrollments: [], currency: DEFAULT_CATALOG_CURRENCY };
+	return { studentId, issuances: [], templates: [], enrollments: [], currency: '' };
 }
 
 export class StudentDocumentsTabState {
@@ -71,7 +70,7 @@ export class StudentDocumentsTabState {
 	}
 
 	currencyFor(studentId: string) {
-		return this.forStudent(studentId)?.currency ?? DEFAULT_CATALOG_CURRENCY;
+		return this.forStudent(studentId)?.currency ?? '';
 	}
 
 	generateTemplatesFor(studentId: string) {
@@ -96,7 +95,7 @@ export class StudentDocumentsTabState {
 			case 'invoice.v1':
 			case 'account-statement.v1':
 			case 'payment-reminder.v1':
-				if (!schoolId || !yearId) {
+				if (!schoolId || !yearId || !this.currencyFor(studentId)) {
 					return null;
 				}
 				return studentYearAccountSourceId({
@@ -146,7 +145,7 @@ export class StudentDocumentsTabState {
 					issuances,
 					templates,
 					enrollments,
-					currency: summary?.currency || DEFAULT_CATALOG_CURRENCY,
+					currency: summary?.currency ?? '',
 				});
 				return {};
 			},

@@ -37,6 +37,7 @@ export function mapSchoolFromApi(raw: SchoolRaw): School {
 		city: raw.city ?? '',
 		country: raw.country ?? undefined,
 		timeZone: raw.timeZone,
+		financeCurrency: raw.financeCurrency,
 		type: (raw.type ?? null) as SchoolType | null,
 		timetableEnforceWorkloadFulfillment: raw.timetableEnforceWorkloadFulfillment,
 		timetableExcludeBreakSlots: raw.timetableExcludeBreakSlots,

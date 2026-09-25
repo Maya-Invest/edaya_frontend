@@ -62,10 +62,9 @@
 			const sIds = new Set(
 				students.filter(s => s.classId === effectiveClassId).map(s => s.id),
 			);
-			filtered = filtered.filter(i =>
-				i.involvedStudentIds.length === 0
-				|| i.involvedStudentIds.some(id => sIds.has(id)),
-			);
+			filtered = filtered.filter((i) => {
+				return i.involvedStudentIds.length === 0 || i.involvedStudentIds.some(id => sIds.has(id));
+			});
 		}
 
 		if (filters.q.trim()) {

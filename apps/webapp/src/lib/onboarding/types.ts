@@ -17,6 +17,7 @@ export interface OnboardingSchoolDraft {
 	city: string;
 	country: string;
 	timezone: string;
+	financeCurrency?: string;
 	academicYearLabel: string;
 	academicYearStart: string;
 	academicYearEnd: string;

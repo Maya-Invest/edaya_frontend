@@ -155,7 +155,7 @@
 
 	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
 		<div
-			class="grid grid-cols-12 gap-4 border-b border-border bg-secondary/40 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+			class="grid grid-cols-12 gap-4 border-b border-border bg-secondary/40 px-5 py-3 text-xs font-medium uppercase tracking-wider text-muted-foreground"
 		>
 			<div class="col-span-4">{$t('gradeScales.name')}</div>
 			<div class="col-span-3">{$t('gradeScales.range')}</div>
@@ -183,7 +183,7 @@
 						<div class="col-span-2 text-sm tabular-nums">{scale.passingScore}</div>
 						<div class="col-span-2">
 							{#if scale.isDefault}
-								<span class="rounded-full bg-accent/15 px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase">
+								<span class="rounded-full bg-accent/15 px-2 py-0.5 font-sans tabular-nums text-xs uppercase">
 									{$t('gradeScales.default')}
 								</span>
 							{:else}

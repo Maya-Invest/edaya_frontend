@@ -26,7 +26,9 @@ export function collectedTotalsByCurrency(
 		if (payment.status !== 'recorded' || payment.kind !== 'receipt') {
 			continue;
 		}
-		const currency = payment.currency.trim().toUpperCase() || 'XOF';
+		const currency = payment.currency.trim().toUpperCase();
+		if (!currency)
+			throw new Error('A payment is missing its currency');
 		totals.set(currency, (totals.get(currency) ?? 0) + payment.amount);
 	}
 	return [...totals.entries()]

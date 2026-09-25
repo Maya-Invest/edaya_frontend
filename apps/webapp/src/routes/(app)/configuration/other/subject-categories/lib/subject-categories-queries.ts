@@ -1,8 +1,8 @@
 import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { SubjectCategoriesPageState } from '../subject-categories-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
-import { loadSubjectCategories } from '$lib/api/subject-categories-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { loadSubjectCategories } from '$lib/api/subject-categories-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 import { emptySubjectCategoriesSlice } from './subject-categories-helpers';

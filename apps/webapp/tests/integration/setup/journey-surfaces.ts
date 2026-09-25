@@ -246,6 +246,7 @@ export const JOURNEY_SURFACE_CLAIMS: readonly JourneySurfaceClaim[] = [
 			'/classes/[classId]/timetable/[sessionId]/details',
 			'/classes/[classId]/timetable/[sessionId]/attendance',
 			'/classes/[classId]/timetable/[sessionId]/logbook',
+			'/school/marks-review',
 			'/classes/[classId]/evaluations',
 			'/classes/[classId]/evaluations/[id]/details',
 			'/classes/[classId]/evaluations/[id]/grading',

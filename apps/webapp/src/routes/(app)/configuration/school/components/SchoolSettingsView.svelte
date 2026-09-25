@@ -40,6 +40,7 @@
 	let busy = $state(false);
 	let name = $state('');
 	let timeZone = $state('');
+	let financeCurrency = $state('');
 	let city = $state('');
 	let country = $state('');
 	let type = $state<SchoolType | ''>('');
@@ -68,6 +69,7 @@
 		}
 		name = school.name;
 		timeZone = school.timeZone;
+		financeCurrency = schoolPage.raw?.financeCurrency ?? '';
 		city = school.city;
 		country = school.country ?? '';
 		type = school.type ?? '';
@@ -165,6 +167,7 @@
 			const ok = await schoolPage.updateSettings({
 				name,
 				timeZone,
+				financeCurrency,
 				city: city.trim() || null,
 				country: country.trim() || null,
 				type: type || null,
@@ -392,6 +395,9 @@
 				{$t('schoolSettings.timeZone')}
 			</Label>
 			<Input bind:value={timeZone} placeholder={DEFAULT_SCHOOL_TIMEZONE} />
+			<Label for="finance-currency">Devise financière (ISO 4217)</Label>
+			<Input id="finance-currency" bind:value={financeCurrency} maxlength={3} required placeholder="EUR / XOF / USD" />
+			<p class="text-xs text-muted-foreground">La devise devient définitive après la première opération financière.</p>
 			<p class="text-xs text-muted-foreground">{$t('schoolSettings.timeZoneHint')}</p>
 		</div>
 		<div class="space-y-1.5">

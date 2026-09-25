@@ -9,6 +9,7 @@ export function buildProvisionPayload(draft: OnboardingDraft) {
 		school: {
 			name: draft.school.name.trim(),
 			timeZone: draft.school.timezone.trim(),
+			financeCurrency: draft.school.financeCurrency?.trim().toUpperCase(),
 			city: draft.school.city.trim(),
 			country: draft.school.country.trim(),
 			academicYearLabel: academicYearLabelFromDates(

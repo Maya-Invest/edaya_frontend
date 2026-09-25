@@ -6,6 +6,7 @@
 	import { t } from '$lib/i18n';
 	import { getEvaluationsPageState } from '../../../evaluations-page.svelte';
 	import EvaluationGradingTab from './components/EvaluationGradingTab.svelte';
+	import MarksReview from './components/MarksReview.svelte';
 	import { getEvaluationGradingTabState } from './evaluation-grading-tab.svelte';
 
 	const evaluationsPage = getEvaluationsPageState();
@@ -19,6 +20,7 @@
 	<PageQuery {query} cacheKey={drawerTabRouteCacheKey} loadingTitle={$t('eval.tab.grading')}>
 		{#snippet children(data)}
 			<DataState status={data.status} errorMessage={data.errorMessage}>
+				<MarksReview />
 				<EvaluationGradingTab {evaluation} {classId} />
 			</DataState>
 		{/snippet}

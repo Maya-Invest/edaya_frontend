@@ -47,6 +47,7 @@ describe('subject import runner', () => {
 			academicYearId: 'ay-1',
 			seed: 'testseed',
 			client: {
+				entities: { subjectCategories: { list: async () => [{ id: 'science', schoolId: 'school-1', name: 'Scientifique' }] } },
 				commands: {
 					configureSubject,
 					offerSubjectToGradeLevel,

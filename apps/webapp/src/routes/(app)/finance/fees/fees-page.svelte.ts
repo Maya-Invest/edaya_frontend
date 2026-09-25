@@ -1,13 +1,13 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { Fee } from '$lib/types/school';
 import type { FeesPageSlice } from './lib/fees-helpers';
-import { DEFAULT_CATALOG_CURRENCY } from '$lib/api/finance-types';
 import {
 	activateCatalogServiceMutation,
 	archiveCatalogServiceMutation,
 	createCatalogServiceMutation,
 	updateCatalogServiceMutation,
 } from '$lib/api/mutations/fee.mutations';
+import { authSession } from '$lib/auth/session.svelte';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
 import { loadFeesSlice, queryFeesListPage } from './lib/fees-queries';
@@ -109,7 +109,7 @@ export class FeesPageState {
 				name: input.name.trim(),
 				category: input.category,
 				amount: input.amount,
-				currency: input.currency?.trim() || DEFAULT_CATALOG_CURRENCY,
+				currency: input.currency?.trim() || authSession.school?.financeCurrency || '',
 				status: 'active',
 				enrollmentMode: input.enrollmentMode ?? 'mandatory',
 				installmentCount: 0,

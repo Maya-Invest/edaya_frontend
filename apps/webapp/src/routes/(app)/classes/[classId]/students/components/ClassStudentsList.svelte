@@ -240,7 +240,7 @@
 									</div>
 								</div>
 								<div class="col-span-2">
-									<p class="font-sans text-lg font-semibold tabular-nums">{student.average.toFixed(1)}</p>
+									<p class="font-sans text-lg font-semibold tabular-nums">{student.average.toFixed(2)}</p>
 									<p class="text-[11px] text-muted-foreground">/ 20</p>
 								</div>
 								<div class="col-span-2">
@@ -315,7 +315,7 @@
 							</div>
 						</div>
 						<div class="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm">
-							<span class="font-sans font-semibold tabular-nums">{student.average.toFixed(1)}</span>
+							<span class="font-sans font-semibold tabular-nums">{student.average.toFixed(2)}</span>
 							<div class="flex flex-wrap items-center gap-1">
 								<span
 									class={cn(

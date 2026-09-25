@@ -37,7 +37,7 @@ export async function createHomeworkMutation(input: {
 
 	const id = `hw-${Date.now().toString(36)}`;
 
-	const result = await runMutation(() => client.entities.assessments.save({
+	const result = await runMutation(() => client.commands.createAssessment({
 		id,
 		classGroupId: input.classGroupId,
 		classSubjectId: input.classSubjectId,
@@ -52,7 +52,6 @@ export async function createHomeworkMutation(input: {
 		lessonSessionId: null,
 		startsAt: null,
 		endsAt: null,
-		completedAt: null,
 		createdAt: new Date().toISOString(),
 	}), {
 		successMessage: input.successMessage,

@@ -8,6 +8,7 @@ describe('buildProvisionPayload', () => {
 		const draft = createEmptyDraft();
 		draft.school.name = 'Lycée Demo';
 		draft.school.city = 'Abidjan';
+		draft.school.financeCurrency = 'EUR';
 		draft.school.country = 'CI';
 		draft.structure.models = ['college', 'lycee'];
 		draft.structure.levels = [

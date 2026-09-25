@@ -37,15 +37,12 @@
 
 	const kindLabel = $derived($t(`events.kind.${kind}`));
 	const studentClass = $derived(academicContext.classes.find(entry => entry.id === s.classId));
-	const schoolId = $derived(
-		studentClass?.schoolId
-		?? academicContext.schoolScopeId
-		?? academicContext.schools[0]?.id
-		?? '',
-	);
-	const canSubmit = $derived(
-		schoolId.length > 0 && incidentTitle.trim().length > 0 && description.trim().length > 0,
-	);
+	const schoolId = $derived.by(() => {
+		return studentClass?.schoolId ?? academicContext.schoolScopeId ?? academicContext.schools[0]?.id ?? '';
+	});
+	const canSubmit = $derived.by(() => {
+		return schoolId.length > 0 && incidentTitle.trim().length > 0 && description.trim().length > 0;
+	});
 
 	function resetForm() {
 		incidentTitle = '';
