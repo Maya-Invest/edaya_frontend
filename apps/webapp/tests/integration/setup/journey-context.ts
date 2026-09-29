@@ -1,13 +1,14 @@
 /**
  * Shared Playwright helpers for the owner UI journey.
  */
+import assert from 'node:assert/strict';
+import { uiCommand, waitForMutationDialog } from '../support/ui-command';
 import type { Page } from 'playwright';
 import type { DemoContext } from '../demo-dry-run/support/types';
 import { ensureDailyAttendanceMode } from '../demo-dry-run/support/setup';
 import {
-	addAnnouncementTargetViaApi,
+	apiFetch,
 	ensureDailyAttendanceViaApi,
-	publishAnnouncementCommandViaApi,
 	recordDailyAttendanceViaApi,
 } from './journey-api';
 import {
@@ -171,7 +172,7 @@ export function coverMutationActions(
 	detail?: string,
 ): void {
 	if (!input.exercised) {
-		coverActions(journey, templatePath, actions, 'N/A', detail);
+		coverActions(journey, templatePath, actions, 'NOT OK', detail ?? 'Required mutation was not exercised');
 		return;
 	}
 	coverActions(
@@ -196,6 +197,7 @@ export async function runModalMutation(
 		confirmLabel?: RegExp;
 		openLabel?: RegExp;
 		visibleAfter?: string;
+		verifyPersisted?: (page: Page) => Promise<void>;
 		listPath?: string;
 		actionPath?: string;
 		actions?: readonly string[];
@@ -229,10 +231,10 @@ export async function runModalMutation(
 		return { opened: false, submitted: false, closed: false, postcondition: false, result: null };
 	}
 
-	const resultPromise = waitForCommandResult(page, input.command);
 	if (input.fill) {
 		await input.fill(page);
 	}
+	const resultPromise = waitForCommandResult(page, input.command);
 	let submitted = true;
 	if (input.submit === 'confirm') {
 		submitted = await confirmDialog(page, input.confirmLabel);
@@ -246,7 +248,7 @@ export async function runModalMutation(
 			submitted = false;
 		}
 	}
-	let closed = submitted
+	const closed = submitted
 		? await waitForDialogClosed(page).catch(() => false)
 		: false;
 	const result = submitted ? await resultPromise : null;
@@ -256,9 +258,8 @@ export async function runModalMutation(
 	else if (!result) {
 		console.log(`modal ${input.modal} command ${input.command} had no ok response`);
 	}
-	if (submitted && result && !closed) {
-		await dismissOpenDialogs(page);
-		closed = true;
+	if (!submitted || !closed || !result) {
+		await journey.ctx.shot(`failure-mutation-${input.command.replaceAll('/', '-')}-${input.modal}`);
 	}
 	if (input.listPath) {
 		await gotoApp(journey, input.listPath);
@@ -267,7 +268,13 @@ export async function runModalMutation(
 	const visible = input.visibleAfter
 		? await assertListContains(page, input.visibleAfter, true, 12_000)
 		: false;
-	const postcondition = visible || result !== null;
+	let persisted = true;
+	if (input.verifyPersisted) {
+		try { await input.verifyPersisted(page); }
+		catch { persisted = false; }
+	}
+	const postcondition = submitted && closed && result !== null && (!input.visibleAfter || visible) && persisted;
+	if (!postcondition) await journey.ctx.shot(`failure-postcondition-${input.command.replaceAll('/', '-')}-${input.modal}`);
 	coverCompletedModal(journey, input.parentRoute, input.modal, {
 		opened: true,
 		submitted,
@@ -392,108 +399,45 @@ export async function waitForInvitationToken(page: Page, timeout = 45_000): Prom
 	}
 }
 
-const ADD_TARGET_CONTROL = /add recipient|add target|ajouter un destinataire|ajouter une cible|gérer les cibles|manage targets/i;
-
-async function inspectRemoveAnnouncementTarget(
-	journey: UiJourney,
-	announcementId: string,
-): Promise<boolean> {
-	const { page } = journey.ctx;
-	await gotoApp(journey, `/school/announcements/${announcementId}`);
-	await waitForPageQuery(page);
-	return page.getByRole('button', { name: REMOVE_ANNOUNCEMENT_TARGET_CONTROL })
-		.first()
-		.isVisible({ timeout: 8_000 })
-		.catch(() => false);
-}
-
 export async function publishAnnouncement(
-	journey: UiJourney,
-	announcementId: string,
+  journey: UiJourney,
+  announcementId: string,
 ): Promise<{ ok: boolean; detail: string; removeTargetVisible: boolean }> {
-	const { page } = journey.ctx;
-	const viaApiAfterAddTarget = async (
-		reason: string,
-		removeTargetVisible: boolean,
-	): Promise<{ ok: boolean; detail: string; removeTargetVisible: boolean }> => {
-		const ok = await publishAnnouncementCommandViaApi(page, journey.ctx.base, announcementId);
-		return { ok, detail: ok ? reason : `${reason}; API fallback failed`, removeTargetVisible };
-	};
-	const viaApiFromScratch = async (
-		reason: string,
-	): Promise<{ ok: boolean; detail: string; removeTargetVisible: boolean }> => {
-		const added = await addAnnouncementTargetViaApi(page, journey.ctx.base, announcementId);
-		if (!added) {
-			return { ok: false, detail: `${reason}; add-target API failed`, removeTargetVisible: false };
-		}
-		const removeTargetVisible = await inspectRemoveAnnouncementTarget(journey, announcementId);
-		return viaApiAfterAddTarget(reason, removeTargetVisible);
-	};
-
-	await gotoApp(journey, `/school/announcements/${announcementId}?modal=add-target`);
-	await waitForPageQuery(page);
-
-	const dialog = page.getByRole('dialog');
-	if (!(await dialog.isVisible({ timeout: 12_000 }).catch(() => false))) {
-		const addTargetControl = page.getByRole('button', { name: ADD_TARGET_CONTROL })
-			.or(page.getByRole('menuitem', { name: ADD_TARGET_CONTROL }))
-			.first();
-		if (await addTargetControl.isVisible({ timeout: 5_000 }).catch(() => false)) {
-			await addTargetControl.click();
-		}
-		if (!(await dialog.isVisible({ timeout: 8_000 }).catch(() => false))) {
-			return viaApiFromScratch('add-target modal not visible');
-		}
-	}
-
-	const addTargetPromise = waitForCommandPayload(page, 'add-target', 30_000);
-	try {
-		await submitDialog(page, /^add$|^ajouter$/i);
-	}
-	catch {
-		return viaApiFromScratch('add-target submit failed');
-	}
-	const addTargetPayload = await addTargetPromise;
-	if (!addTargetPayload) {
-		return viaApiFromScratch('add-target command not observed');
-	}
-	await waitForDialogClosed(page).catch(() => {});
-	await page.waitForTimeout(800);
-
-	const removeTargetVisible = await inspectRemoveAnnouncementTarget(journey, announcementId);
-
-	await gotoApp(journey, `/school/announcements/${announcementId}?modal=publish`);
-	await waitForPageQuery(page);
-	const publishDialog = page.getByRole('dialog');
-	if (!(await publishDialog.isVisible({ timeout: 12_000 }).catch(() => false))) {
-		const publishBtn = page.getByRole('button', { name: /^publish$|^publier$/i }).first();
-		if (!(await publishBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
-			return viaApiAfterAddTarget('publish modal/button not visible', removeTargetVisible);
-		}
-		const publishPromise = waitForCommandPayload(page, 'publish-announcement', 25_000);
-		await publishBtn.click();
-		if (!await publishPromise) {
-			return viaApiAfterAddTarget('publish command not observed after button', removeTargetVisible);
-		}
-		await waitForPageQuery(page);
-		return { ok: true, detail: 'published via button', removeTargetVisible };
-	}
-
-	const publishPromise = waitForCommandPayload(page, 'publish-announcement', 30_000);
-	try {
-		await submitDialog(page, /^publish$|^publier$/i);
-	}
-	catch {
-		return viaApiAfterAddTarget('publish submit failed', removeTargetVisible);
-	}
-	if (!await publishPromise) {
-		return viaApiAfterAddTarget('publish command not observed', removeTargetVisible);
-	}
-	await waitForPageQuery(page);
-	if (await page.getByText(/published|publiée/i).first().isVisible({ timeout: 3_000 }).catch(() => false)) {
-		return { ok: true, detail: 'published via modal', removeTargetVisible };
-	}
-	return viaApiAfterAddTarget('publish confirmation not visible', removeTargetVisible);
+  const { page, base } = journey.ctx;
+  const path = `/school/announcements/${announcementId}`;
+  await page.goto(`${base}${path}`, { waitUntil: 'domcontentloaded' });
+  await waitForPageQuery(page);
+  const targets = async () => {
+    const response = await apiFetch(page, base, '/core/entities/announcement-targets/list', { method: 'POST', data: { announcementId } });
+    assert(response.ok(), `Target readback HTTP ${response.status()}`);
+    return await response.json() as Array<{ id: string }>;
+  };
+  const addTarget = async () => {
+    assert(await openUrlModal(page, path, 'add-target', { base }));
+    await uiCommand(page, '/commands/add-target', () => page.getByTestId('form-modal-submit').click());
+    await waitForMutationDialog(page);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await waitForPageQuery(page);
+    assert((await targets()).length > 0, 'Added announcement recipient must persist');
+  };
+  await addTarget();
+  const before = await targets();
+  await page.getByRole('button', { name: REMOVE_ANNOUNCEMENT_TARGET_CONTROL }).first().click();
+  await uiCommand(page, '/entities/announcement-targets/delete', () => page.getByRole('dialog').getByRole('button', { name: REMOVE_ANNOUNCEMENT_TARGET_CONTROL }).click());
+  await waitForMutationDialog(page);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForPageQuery(page);
+  assert.equal((await targets()).length, before.length - 1, 'Removed recipient must stay absent after reload');
+  await addTarget();
+  assert(await openUrlModal(page, path, 'publish', { base }));
+  await uiCommand(page, '/commands/publish-announcement', () => page.getByTestId('form-modal-submit').click());
+  await waitForMutationDialog(page);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForPageQuery(page);
+  const response = await apiFetch(page, base, `/core/entities/announcements/${announcementId}`);
+  assert(response.ok());
+  assert.equal((await response.json() as { status: string }).status, 'published');
+  return { ok: true, detail: 'Added and removed recipients, then published through the UI; changes persisted after reload', removeTargetVisible: true };
 }
 
 async function recordCompletionFilterFixtureDays(
@@ -507,71 +451,56 @@ async function recordCompletionFilterFixtureDays(
 		next.setUTCDate(next.getUTCDate() + offsetDays);
 		return next.toISOString().slice(0, 10);
 	};
-	await recordDailyAttendanceViaApi(page, base, classId, studentId);
-	await recordDailyAttendanceViaApi(page, base, classId, studentId, undefined, {
-		date: isoDay(-1),
+	assert(await recordDailyAttendanceViaApi(page, base, classId, studentId, undefined, {
+		date: isoDay(1),
 		attendanceByStudent: studentId ? { [studentId]: 'present' } : {},
-	});
-	await recordDailyAttendanceViaApi(page, base, classId, null, undefined, {
-		date: isoDay(-2),
+	}), 'Partial attendance fixture failed');
+	assert(await recordDailyAttendanceViaApi(page, base, classId, null, undefined, {
+		date: isoDay(2),
 		attendanceByStudent: {},
-	});
+	}), 'Unmarked attendance fixture failed');
 }
 
 export async function recordAttendanceForToday(
-	journey: UiJourney,
-	classId: string,
+  journey: UiJourney,
+  classId: string,
 ): Promise<string | null> {
-	const { page, base } = journey.ctx;
-	const homeroomStaffId = journey.entities.staffId;
-	await ensureDailyAttendanceMode(journey.ctx, classId, { force: true });
-	await ensureDailyAttendanceViaApi(page, base, classId, homeroomStaffId);
-
-	const today = new Date().toISOString().slice(0, 10);
-	const dayId = `${classId}:${today}`;
-
-	await gotoApp(journey, `/classes/${classId}/attendance/${encodeURIComponent(dayId)}`);
-	await waitForPageQuery(page);
-	await page.waitForTimeout(1_000);
-
-	const onDayDetail = page.url().includes(`/attendance/${encodeURIComponent(dayId)}`)
-		|| page.url().includes(`/attendance/${dayId}`);
-
-	if (!onDayDetail) {
-		await gotoApp(journey, `/classes/${classId}/attendance`);
-		await waitForPageQuery(page);
-		const dayButton = page.locator('main button').filter({ hasText: /roll call|appel|daily roll call|appel du jour/i }).first();
-		if (await dayButton.isVisible({ timeout: 12_000 }).catch(() => false)) {
-			await dayButton.click();
-			await page.waitForTimeout(1_000);
-		}
-		else {
-			await recordCompletionFilterFixtureDays(page, base, classId, journey.entities.studentId);
-			return dayId;
-		}
-	}
-
-	const resolvedDayId = idFromUrl(page, /\/attendance\/([^/?]+)/) ?? dayId;
-
-	const markAll = page.getByRole('button', { name: /mark all present|tout marquer présent|marquer tous présents|tous présents/i }).first();
-	if (await markAll.isVisible({ timeout: 8_000 }).catch(() => false)) {
-		await markAll.click();
-		await page.waitForTimeout(1_500);
-	}
-	else {
-		const recordBtn = page.getByRole('button', { name: /record|enregistrer|saisir|pointer/i }).first();
-		if (await recordBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-			await recordBtn.click();
-			const dialog = page.getByRole('dialog');
-			if (await dialog.isVisible({ timeout: 5_000 }).catch(() => false)) {
-				await dialog.getByRole('button', { name: /save|enregistrer/i }).last().click();
-				await waitForDialogClosed(page).catch(() => {});
-			}
-		}
-	}
-
-	await recordCompletionFilterFixtureDays(page, base, classId, journey.entities.studentId);
-	return resolvedDayId;
+  const { page, base } = journey.ctx;
+  const studentId = journey.entities.studentId;
+  assert(studentId, 'Required attendance student missing');
+  await ensureDailyAttendanceMode(journey.ctx, classId, { force: true });
+  assert(await ensureDailyAttendanceViaApi(page, base, classId, journey.entities.staffId), 'Daily attendance configuration failed');
+  const today = new Date().toISOString().slice(0, 10);
+  const dayId = `${classId}:${today}`;
+  const path = `/classes/${classId}/attendance/${encodeURIComponent(dayId)}`;
+  await gotoApp(journey, path);
+  await waitForPageQuery(page);
+  const markAll = page.locator('aside[aria-label]').getByRole('button', { name: /mark all present|tout marquer présent|marquer tous présents|tous présents/i });
+  const bulk = await uiCommand(page, '/commands/record-class-daily-attendance', () => markAll.click());
+  const bulkRecords = await bulk.json() as Array<{attendanceId:string;studentId:string;status:string}>;
+  const attendanceId = bulkRecords[0]?.attendanceId;
+  assert(attendanceId, 'Daily attendance occurrence missing');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForPageQuery(page);
+  const readRecords = async () => {
+    const response = await apiFetch(page, base, '/core/entities/attendance/list', { method: 'POST', data: { attendanceId } });
+    assert(response.ok());
+    return await response.json() as Array<{ studentId: string; status: string; date: string }>;
+  };
+  const recorded = await readRecords();
+  assert(recorded.length >= 2 && bulkRecords.length > 0, 'Required enrolled attendance roster missing');
+  for (const row of bulkRecords) assert.equal(recorded.find(saved => saved.studentId === row.studentId)?.status, 'present', 'Bulk-marked students must persist as present');
+  const nextStatus = recorded.find(row => row.studentId === studentId)?.status === 'absent' ? 'late' : 'absent';
+  assert(await openUrlModal(page, path, 'record-attendance', { base, target: studentId }));
+  await page.getByRole('dialog').getByTestId('attendance-status-select').click();
+  await page.getByTestId(`attendance-status-${nextStatus}`).click();
+  await uiCommand(page, '/commands/record-daily-attendance', () => page.getByTestId('form-modal-submit').click());
+  await waitForMutationDialog(page);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await waitForPageQuery(page);
+  assert.equal((await readRecords()).find(row => row.studentId === studentId)?.status, nextStatus, 'Edited daily attendance must persist');
+  await recordCompletionFilterFixtureDays(page, base, classId, studentId);
+  return dayId;
 }
 
 export function idFromUrl(page: Page, pattern: RegExp): string | null {

@@ -10,6 +10,7 @@
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import { formatDateInput } from '$lib/date/format';
 	import { t } from '$lib/i18n';
+	import { untrack } from 'svelte';
 
 	let {
 		open = $bindable(false),
@@ -58,6 +59,11 @@
 		publishResult = null;
 	}
 
+	$effect(() => {
+		const isOpen = open;
+		untrack(() => handleModalOpenChange(isOpen));
+	});
+
 	function handleModalOpenChange(isOpen: boolean) {
 		if (isOpen) {
 			initializeForm();
@@ -92,7 +98,6 @@
 	busy={planningPage.busy}
 	submitDisabled={!validRange}
 	onSubmit={submit}
-	onOpenChange={handleModalOpenChange}
 >
 	{#if phase === 'result' && publishResult}
 		<TimetablePublishResultPanel result={publishResult} {className} {rangeLabel} />

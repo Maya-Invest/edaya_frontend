@@ -5,6 +5,7 @@ import {
 } from '../../../../scripts/qa-harness-ui';
 import { waitForDrawerAside } from '../../demo-dry-run/support/drawer';
 import {
+	apiFetch,
 	cancelFamilyFeedbackCampaignsViaApi,
 	ensureFamilyFeedbackCampaignViaApi,
 	grantFamilyFeedbackModerateViaApi,
@@ -206,7 +207,12 @@ export async function runFamilyFeedbackChapter(journey: UiJourney): Promise<void
 		fill: async (current) => {
 			await current.getByRole('dialog').locator('textarea').first().fill('QA theme');
 		},
-		visibleAfter: 'QA theme',
+		verifyPersisted: async (current) => {
+			await current.reload({ waitUntil: 'domcontentloaded' });
+			const response = await apiFetch(current, journey.ctx.base, '/core/queries/get-family-feedback-campaign', { method: 'POST', data: { id: campaignId } });
+			if (!response.ok() || (await response.json() as { themeDraft: string }).themeDraft !== 'QA theme')
+				throw new Error('Feedback theme draft did not persist');
+		},
 		listPath: `/school/family-feedback/${campaignId}/moderation`,
 	});
 

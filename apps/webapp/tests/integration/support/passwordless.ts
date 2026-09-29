@@ -1,0 +1,45 @@
+import type { Page } from 'playwright';
+import { readFile } from 'node:fs/promises';
+import { resolveAuthUrl } from './integration-hosts';
+
+export async function peekOtp(email: string, channel = 'email'): Promise<string> {
+  const mailbox = process.env.EDAYA_TEST_OTP_FILE;
+  if (mailbox) {
+    const messages = (await readFile(mailbox, 'utf8')).trim().split('\n').filter(Boolean)
+      .map(line => JSON.parse(line) as { channel: string; destination: string; code: string });
+    const delivery = messages.findLast(message => message.channel === channel && message.destination === email.trim().toLowerCase());
+    if (!delivery || !/^\d{6}$/.test(delivery.code)) throw new Error('Required OTP transport delivery missing');
+    return delivery.code;
+  }
+  const authUrl = resolveAuthUrl();
+  if (!['localhost', '127.0.0.1', '[::1]'].includes(new URL(authUrl).hostname)) {
+    throw new Error('Automated OTP provisioning requires a local identity service with AUTH_DEV_OTP_PEEK=true');
+  }
+  const response = await fetch(`${authUrl}/auth/edaya/dev/last-otp?email=${encodeURIComponent(email)}`);
+  if (!response.ok) throw new Error(`Local OTP peek failed (${response.status})`);
+  return (await response.json() as { otp: string }).otp;
+}
+
+export async function sendOtpThroughUi(page: Page, email: string): Promise<void> {
+  await page.locator('[data-testid="auth-identifier"]:visible').fill(email);
+  const sent = page.waitForResponse(response => response.url().endsWith('/auth/edaya/otp/start'));
+  await page.locator('[data-testid="auth-submit"]:visible').click();
+  const response = await sent;
+  if (!response.ok()) throw new Error(`OTP send failed (${response.status()})`);
+  await page.locator('[data-testid="auth-code"]:visible').waitFor({ state: 'visible' });
+}
+
+export async function verifyOtpThroughUi(page: Page, email: string): Promise<void> {
+  await page.locator('[data-testid="auth-code"]:visible').fill(await peekOtp(email));
+  await page.locator('[data-testid="auth-submit"]:visible').click();
+}
+
+export async function passwordlessApiLogin(page: Page, origin: string, email: string): Promise<void> {
+  const authUrl = resolveAuthUrl();
+  const headers = { origin, 'content-type': 'application/json' };
+  const sent = await page.request.post(`${authUrl}/auth/edaya/otp/start`, { headers, data: { kind: 'email', value: email, channel: 'email' } });
+  if (!sent.ok()) throw new Error(`OTP send failed (${sent.status()})`);
+  const { challenge } = await sent.json();
+  const verified = await page.request.post(`${authUrl}/auth/edaya/otp/verify`, { headers, data: { challenge, code: await peekOtp(email) } });
+  if (!verified.ok() || (await verified.json()).state !== 'complete') throw new Error('Completed Account authentication required');
+}

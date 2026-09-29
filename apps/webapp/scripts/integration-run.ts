@@ -6,7 +6,7 @@
  *   3. Unclaimed QA matrix rows (journey already recorded coverage)
  *   4. Summary report in .integration-run/summary.json
  *
- * Policy: on NOT OK — log blockers, do not edit src/. See integration-report.ts.
+ * Required behavior and fixture failures fail the run. See integration-report.ts.
  *
  * Prerequisites:
  *   - Identity at AUTH_URL (default http://localhost:9900)
@@ -18,7 +18,8 @@
  * Login + onboarding (not this suite): bun run test:integration:onboarding
  * Client walkthrough (not this suite): bun run demo:e2e
  */
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { beginExecution } from '../tests/integration/support/execution-metadata';
+import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { provisionTenant } from '../tests/integration/support/api-provision';
@@ -62,17 +63,14 @@ function countByModule(results: MatrixSummary['results']): Record<string, { ok: 
 	return counts;
 }
 
-function shouldFail(matrix: MatrixSummary, failOn: string): boolean {
-	if (failOn === 'auth_only') {
-		const authResults = (matrix.results ?? []).filter(r => r.module === 'Auth');
-		return authResults.some(r => r.statut === 'NOT OK');
-	}
-
-	return (matrix.failed ?? 0) > 0;
+function shouldFail(matrix: MatrixSummary, _failOn: string): boolean {
+	return !matrix.results?.length || matrix.results.some(row => row.statut !== 'OK');
 }
 
 async function main(): Promise<void> {
 	await mkdir(OUT_DIR, { recursive: true });
+	for (const file of [SUMMARY_PATH, MATRIX_RESULTS_PATH, ENTITIES_PATH]) await rm(file, { force: true });
+	const completeExecution = beginExecution(OUT_DIR);
 	const browsersPath = ensurePlaywrightChromium();
 
 	console.log('=== Step 1: API provisioning (user + school + wizard flag) ===');
@@ -140,6 +138,7 @@ async function main(): Promise<void> {
 	const blockers = [...setupBlockers, ...(matrixSummary.blockers ?? [])];
 
 	const summary = {
+		ok: matrixRun.status === 0 && !shouldFail(matrixSummary, '') && setupSteps.length > 0 && setupSteps.every(step => Boolean(step && typeof step === 'object' && 'ok' in step && step.ok === true && !('blocked' in step && step.blocked))),
 		generatedAt: new Date().toISOString(),
 		provisioningMode: PROVISIONING_MODE,
 		setupPhase: 'ui-journey-then-unclaimed-matrix',
@@ -170,6 +169,7 @@ async function main(): Promise<void> {
 	};
 
 	await writeFile(SUMMARY_PATH, JSON.stringify(summary, null, 2));
+	completeExecution();
 
 	console.log('\n=== Step 4: Report ===');
 	console.log(`Provisioned: ${tenant.email} / school ${tenant.schoolId}`);
@@ -184,7 +184,7 @@ async function main(): Promise<void> {
 	console.log(`Summary: ${SUMMARY_PATH}`);
 
 	const failOn = process.env['INTEGRATION_FAIL_ON'] ?? 'not_ok';
-	if (matrixRun.status !== 0 || shouldFail(matrixSummary, failOn)) {
+	if (!summary.ok || matrixRun.status !== 0 || shouldFail(matrixSummary, failOn)) {
 		process.exit(1);
 	}
 }

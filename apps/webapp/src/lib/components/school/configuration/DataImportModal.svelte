@@ -1892,6 +1892,9 @@
 	<Dialog.Content
 		class="flex max-h-[min(90vh,52rem)] max-w-2xl flex-col gap-0 overflow-hidden p-0"
 		data-testid="data-import-modal"
+		data-validation-errors={activeValidationResult?.errors.length}
+		data-import-created={activeImportResult?.created}
+		data-import-failed={activeImportResult?.failed.length}
 	>
 		<div class="shrink-0 space-y-5 border-b border-border px-6 pb-4 pt-6">
 			<Dialog.Header>
@@ -1947,6 +1950,7 @@
 										: true}
 									<Select.Item
 										value={definition.key}
+										data-testid={`import-type-${definition.key}`}
 										label={$t(definition.labelKey)}
 										disabled={!allowed}
 									>

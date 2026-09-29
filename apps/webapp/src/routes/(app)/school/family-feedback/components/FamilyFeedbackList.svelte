@@ -175,6 +175,7 @@
 					<li>
 						<button
 							type="button"
+							data-campaign-id={campaign.id}
 							onclick={() => onSelect?.(campaign)}
 							class={cn(
 								'grid w-full grid-cols-[1.8fr_1fr_1fr_0.9fr] items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-secondary',

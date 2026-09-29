@@ -13,6 +13,7 @@ import {
 	openRouteSurface,
 	replaceRouteSurface,
 } from '$lib/navigation/route-surface-navigation';
+import { untrack } from 'svelte';
 
 export interface UrlSyncedModalsConfig<T extends string> {
 	allowed: () => readonly T[];
@@ -33,40 +34,47 @@ export class UrlSyncedModalsState<T extends string> {
 
 	hydrate() {
 		const url = this.config.getUrl();
-		const rawModal = url.searchParams.get(MODAL_QUERY_KEY);
-		const next = readModal(url, this.config.allowed());
-		const ownsCurrentSurface = rawModal === null
-			|| this.config.owned().includes(rawModal as T);
-		const nextTarget = next ? readModalTarget(url) : null;
-		const nextStep = next ? readModalStep(url, this.config.allowedSteps()) : null;
-		const nextTab = next ? readModalTab(url, this.config.allowedTabs()) : null;
-		const canonicalHref = writeModalSurface(url, {
-			modal: next,
-			target: nextTarget,
-			step: nextStep,
-			tab: nextTab,
+		const allowed = this.config.allowed();
+		const owned = this.config.owned();
+		const steps = this.config.allowedSteps();
+		const tabs = this.config.allowedTabs();
+		// Hydration follows URL/config changes, not optimistic local open/close state.
+		untrack(() => {
+			const rawModal = url.searchParams.get(MODAL_QUERY_KEY);
+			const next = readModal(url, allowed);
+			const ownsCurrentSurface = rawModal === null
+				|| owned.includes(rawModal as T);
+			const nextTarget = next ? readModalTarget(url) : null;
+			const nextStep = next ? readModalStep(url, steps) : null;
+			const nextTab = next ? readModalTab(url, tabs) : null;
+			const canonicalHref = writeModalSurface(url, {
+				modal: next,
+				target: nextTarget,
+				step: nextStep,
+				tab: nextTab,
+			});
+			if (ownsCurrentSurface && canonicalHref !== listHref(url)) {
+				if (rawModal !== null && next === null) {
+					closeRouteSurface(canonicalHref);
+				}
+				else {
+					replaceRouteSurface(canonicalHref);
+				}
+			}
+			if (
+				!this.ready
+				|| this.active !== next
+				|| this.target !== nextTarget
+				|| this.step !== nextStep
+				|| this.tab !== nextTab
+			) {
+				this.active = next;
+				this.target = nextTarget;
+				this.step = nextStep;
+				this.tab = nextTab;
+				this.ready = true;
+			}
 		});
-		if (ownsCurrentSurface && canonicalHref !== listHref(url)) {
-			if (rawModal !== null && next === null) {
-				closeRouteSurface(canonicalHref);
-			}
-			else {
-				replaceRouteSurface(canonicalHref);
-			}
-		}
-		if (
-			!this.ready
-			|| this.active !== next
-			|| this.target !== nextTarget
-			|| this.step !== nextStep
-			|| this.tab !== nextTab
-		) {
-			this.active = next;
-			this.target = nextTarget;
-			this.step = nextStep;
-			this.tab = nextTab;
-			this.ready = true;
-		}
 	}
 
 	isOpen(key: T): boolean {
@@ -242,34 +250,24 @@ function normalizeAllowed(
 
 /** Per-modal bindable open flag synced with the URL — call from component init. */
 export class ModalUrlBind<T extends string> {
-	open = $state(false);
-	private urlSynced = false;
-
 	constructor(
 		private readonly modals: UrlSyncedModalsState<T>,
 		private readonly key: T,
-	) {
-		// Apply URL state before the push effect so a stale `open = false` does not call close().
-		$effect.pre(() => {
-			if (!this.modals.ready) {
-				return;
-			}
-			this.open = this.modals.isOpen(this.key);
-			this.urlSynced = true;
-		});
+	) {}
 
-		$effect(() => {
-			if (!this.modals.ready || !this.urlSynced) {
-				return;
-			}
-			const urlOpen = this.modals.isOpen(this.key);
-			if (this.open && !urlOpen) {
-				this.modals.open(this.key);
-			}
-			else if (!this.open && urlOpen) {
-				this.modals.close();
-			}
-		});
+	get open(): boolean {
+		return this.modals.ready && this.modals.isOpen(this.key);
+	}
+
+	set open(value: boolean) {
+		if (!this.modals.ready)
+return;
+		if (value) {
+			this.modals.open(this.key);
+		}
+		else if (this.modals.isOpen(this.key)) {
+			this.modals.close();
+		}
 	}
 }
 

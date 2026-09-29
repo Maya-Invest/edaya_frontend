@@ -1,8 +1,6 @@
 /**
- * Rows and routes excluded from automated QA matrix runs (manual testing only).
- *
- * Delete rows: provisioned runs assert the delete control is visible without clicking
- * (see `isDeleteControlVisible` in qa-harness-ui.ts).
+ * Matrix ownership boundaries: Auth/Onboarding execute in their dedicated suite.
+ * Development-only routes remain explicit exclusions; tools/imports execute here.
  */
 import type { QaModule, QaTemplateRow } from './qa-template-matrix.manual';
 import { isNamespaceRootPath } from './qa-route-catalog';
@@ -11,15 +9,12 @@ import { isNamespaceRootPath } from './qa-route-catalog';
 export const ALWAYS_EXCLUDED_MODULES: readonly QaModule[] = [
 	'Auth',
 	'Onboarding',
-	'Outils & imports',
 ];
 
 const EXCLUDED_PATH_PREFIXES = [
 	'/login',
 	'/invite/',
 	'/onboarding',
-	'/configuration/tools',
-	'/school/teacher-assignments',
 ] as const;
 
 /** Layout-only routes and development fixtures without production page content. */
@@ -34,8 +29,7 @@ const EXCLUDED_SHELL_ACTIONS = new Set([
 ]);
 
 /** Manual-only actions (empty inbox, seeded data, etc.). */
-const EXCLUDED_MATRIX_ACTIONS = new Set([
-	'Ouvrir un message',
+const EXCLUDED_MATRIX_ACTIONS = new Set<string>([
 ]);
 
 export function matrixEndpointPath(endpoint: string): string {
@@ -80,10 +74,6 @@ export function isExcludedMatrixRow(
 	}
 
 	if (EXCLUDED_MATRIX_ACTIONS.has(row.action)) {
-		return true;
-	}
-
-	if (row.action.includes('/configuration/tools')) {
 		return true;
 	}
 

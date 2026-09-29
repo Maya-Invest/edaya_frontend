@@ -2,6 +2,27 @@ import type { Dict } from '../dictionaries.ts';
 import { permissionLabelsEn } from './permission-labels.ts';
 
 export const en: Dict = {
+	'auth.unlinkWarning': 'Removing this identifier signs out all devices. You must keep at least one recovery contact.',
+	'auth.accountSecurity': 'Account security',
+	'auth.showSecurity': 'Show security settings',
+	'auth.recentSignInHint': 'Sign in again before changing login identifiers or your authenticator.',
+	'auth.linkIdentifier': 'Link another login identifier',
+	'auth.unlinkIdentifier': 'Unlink and sign out',
+	'auth.authenticatorEnabled': 'Authenticator enabled',
+	'auth.recoveryEligible': 'Allow this identifier for account recovery',
+
+	'auth.deliveryChannel': 'Send my code by',
+	'auth.phoneLabel': 'Phone number',
+	'auth.phoneCountryHint': 'Include the country code, for example +225.',
+	'auth.authenticatorSetup': 'Add this secret to your authenticator app, then enter its code.',
+	'auth.authenticatorCode': 'Authenticator code',
+	'auth.recoveryCode': 'Recovery code',
+	'auth.useAuthenticator': 'Use authenticator',
+	'auth.useRecoveryCode': 'Use a recovery code',
+	'auth.enableAuthenticator': 'Set up authenticator',
+	'auth.saveRecoveryCodes': 'Save these recovery codes securely. They will only be shown once.',
+	'auth.savedRecoveryCodes': 'I have saved my codes',
+
 	'marks.confirmChanges': 'I have checked all proposed changes.',
 	'marks.comment': 'Mark comment',
 	'marks.author': 'Requested by',

@@ -41,7 +41,7 @@
 <div aria-busy={loading}>
 	{@render children?.()}
 	{#if hasMore}
-		<div bind:this={sentinel} class="h-px" aria-hidden="true"></div>
+		<div data-testid="list-load-more-sentinel" bind:this={sentinel} class="h-px" aria-hidden="true"></div>
 		<p class="py-4 text-center text-xs text-muted-foreground" aria-live="polite">
 			{$t('list.loadingMore')}
 		</p>

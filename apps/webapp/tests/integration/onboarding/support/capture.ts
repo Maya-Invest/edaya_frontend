@@ -1,31 +1,16 @@
+import { redactDiagnostic } from '../../support/scenario-registry';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Page } from 'playwright';
 
 export async function captureFailure(page: Page, outDir: string, name: string): Promise<void> {
-	await mkdir(outDir, { recursive: true });
-	const shotPath = path.join(outDir, `${name}.png`);
-	const urlPath = path.join(outDir, `${name}.url.txt`);
-	await page.screenshot({ path: shotPath, fullPage: true }).catch(() => undefined);
-	const alertText = await page.locator('[role="alert"]').allInnerTexts().catch(() => []);
-	const debug = await page.evaluate(() => {
-		const shell = document.querySelector('[data-onboarding-step]');
-		const draftKeys = (store: Storage) =>
-			Object.fromEntries(Object.entries(store).filter(([key]) => key.includes('onboarding')));
-		return {
-			domStep: shell?.getAttribute('data-onboarding-step'),
-			domMaxStep: shell?.getAttribute('data-onboarding-max-step'),
-			sessionDrafts: draftKeys(sessionStorage),
-			localDrafts: draftKeys(localStorage),
-		};
-	}).catch(() => null);
-	await writeFile(urlPath, [
-		page.url(),
-		debug ? `domStep=${debug.domStep} domMaxStep=${debug.domMaxStep}` : '',
-		debug ? `sessionDrafts=${JSON.stringify(debug.sessionDrafts)}` : '',
-		debug ? `localDrafts=${JSON.stringify(debug.localDrafts)}` : '',
-		alertText.length > 0 ? `alerts:\n${alertText.join('\n')}` : '',
-	].filter(Boolean).join('\n'), 'utf8');
+ await mkdir(outDir, { recursive: true });
+ const safeName = name.replace(/[^a-z0-9._-]/gi, '-');
+ await page.screenshot({ path: path.join(outDir, `${safeName}.png`), fullPage: true,
+  mask: [page.locator('input, textarea, [data-sensitive]')],
+ }).catch(() => undefined);
+ const alerts = await page.locator('[role="alert"]').allInnerTexts().catch(() => []);
+ await writeFile(path.join(outDir, `${safeName}.url.txt`), redactDiagnostic([page.url(), ...alerts].join('\n')), 'utf8');
 }
 
 export function uniqueOnboardingEmail(): string {

@@ -53,26 +53,28 @@
 </script>
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
-	<Dialog.Content
-		data-testid="form-modal"
-		class={cn('flex max-h-[min(90dvh,44rem)] w-full max-w-lg flex-col gap-4', contentClass)}
-	>
-		<Dialog.Header class="shrink-0">
-			<Dialog.Title>{title}</Dialog.Title>
-			{#if description}
-				<Dialog.Description>{description}</Dialog.Description>
-			{/if}
-		</Dialog.Header>
-		<div class={cn('scrollbar-thin min-h-0 flex-1 space-y-4 overflow-y-auto px-1 py-2', bodyClass)}>
-			{@render children?.()}
-		</div>
-		<Dialog.Footer class="shrink-0">
-			{#if footer}
-				{@render footer({ close, submit: onSubmit, busy, submitDisabled })}
-			{:else}
-				<Button variant="ghost" data-testid="form-modal-cancel" onclick={close} disabled={busy}>{cancelLabel}</Button>
-				<Button data-testid="form-modal-submit" onclick={onSubmit} disabled={busy || submitDisabled}>{submitLabel}</Button>
-			{/if}
-		</Dialog.Footer>
-	</Dialog.Content>
+	{#if open}
+		<Dialog.Content
+			data-testid="form-modal"
+			class={cn('flex max-h-[min(90dvh,44rem)] w-full max-w-lg flex-col gap-4', contentClass)}
+		>
+			<Dialog.Header class="shrink-0">
+				<Dialog.Title>{title}</Dialog.Title>
+				{#if description}
+					<Dialog.Description>{description}</Dialog.Description>
+				{/if}
+			</Dialog.Header>
+			<div class={cn('scrollbar-thin min-h-0 flex-1 space-y-4 overflow-y-auto px-1 py-2', bodyClass)}>
+				{@render children?.()}
+			</div>
+			<Dialog.Footer class="shrink-0">
+				{#if footer}
+					{@render footer({ close, submit: onSubmit, busy, submitDisabled })}
+				{:else}
+					<Button variant="ghost" data-testid="form-modal-cancel" onclick={close} disabled={busy}>{cancelLabel}</Button>
+					<Button data-testid="form-modal-submit" onclick={onSubmit} disabled={busy || submitDisabled}>{submitLabel}</Button>
+				{/if}
+			</Dialog.Footer>
+		</Dialog.Content>
+	{/if}
 </Dialog.Root>

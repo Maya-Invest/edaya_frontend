@@ -1,23 +1,23 @@
 import type { Browser, Page } from 'playwright';
+import process from 'node:process';
+import {
+	GUARDIAN_PORTAL_GATE_BANNER_TEST_ID,
+} from '$lib/auth/guardian-portal-gate';
+import {
+	TEACHER_PORTAL_GATE_BANNER_TEST_ID,
+} from '$lib/auth/teacher-portal-gate';
 import {
 	fillPersonCreateDialogWithInvite,
 	openDialogButton,
 	waitForPageQuery,
 } from '../../../../scripts/qa-harness-ui';
 import { waitForInvitationToken } from '../../setup/journey-context';
+import { sendOtpThroughUi, verifyOtpThroughUi } from '../../support/passwordless';
 import {
-	TEACHER_PORTAL_GATE_BANNER_TEST_ID,
-} from '$lib/auth/teacher-portal-gate';
-import {
-	GUARDIAN_PORTAL_GATE_BANNER_TEST_ID,
-} from '$lib/auth/guardian-portal-gate';
-import {
-	VERIFICATION_COPY,
 	expectAppDashboard,
-	followVerificationLink,
-	followVerificationLinkInNewPage,
 	waitForEnabled,
 } from './auth';
+import { captureFailure } from './capture';
 import { invitePath, stripTrailingSlash } from './paths';
 
 const ACCEPT_INVITE = /accepter l['’]invitation|accept invitation/i;
@@ -26,12 +26,11 @@ const INVALID_INVITE = /not valid|n'est pas valide|not found|introuvable|expired
 const ADD_STAFF = /add staff member|ajouter un membre/i;
 const ADD_TEACHER = /add teacher|ajouter un enseignant/i;
 const ADD_GUARDIAN = /add guardian|ajouter un tuteur/i;
-const WRONG_ACCOUNT = /signed in with another account|connecté avec un autre compte/i;
+const WRONG_ACCOUNT = /signed in with another account|connecté avec un autre compte|this account does not match the invitation|ce compte ne correspond pas à l’invitation|contact.*match|contact.*correspond/i;
 const REVOKED_INVITE = /invitation was replaced|invitation a été remplacée/i;
 const ALREADY_ACCEPTED = /already used|déjà été utilisée|linked to another account|liée à un autre compte/i;
 const TEACHER_LINKED = /teacher account linked|compte enseignant relié/i;
 const GUARDIAN_LINKED = /guardian account linked|compte tuteur relié/i;
-const INVITE_SIGN_IN = /^(sign in|se connecter)$/i;
 
 export type InviteAcceptKind = 'staff' | 'teacher' | 'guardian';
 
@@ -167,20 +166,26 @@ async function invitePersonFromOwnerPage(
 		throw new Error(`Could not open create dialog on ${options.listPath}`);
 	}
 
-	const tokenPromise = waitForInvitationToken(page, 25_000);
+	const commands: Record<string, string> = {
+		'/school/staff': 'register-staff',
+		'/school/teachers': 'register-teacher',
+		'/school/guardians': 'register-guardian',
+	};
+	const command = commands[options.listPath];
+	if (!command)
+		throw new Error(`Unregistered invitation fixture: ${options.listPath}`);
+	const creation = page.waitForResponse(response => response.request().method() === 'POST'
+		&& response.url().includes(`/core/commands/${command}`), { timeout: 25000 });
 	await fillPersonCreateDialogWithInvite(page, {
 		email: options.email,
 		firstName: options.firstName,
 		lastName: options.lastName,
 	});
-
-	const fromCreate = await tokenPromise.catch(() => null);
-	await page.waitForURL(options.idPattern, { timeout: 30_000 }).catch(() => undefined);
-	await waitForPageQuery(page);
-
-	if (fromCreate) {
-		return fromCreate;
-	}
+	const created = await creation;
+	if (!created.ok())
+		throw new Error(`${command} failed: HTTP ${created.status()}`);
+	await page.waitForURL(options.idPattern, { timeout: 30000 });
+	await page.locator('aside[aria-label]').waitFor({ state: 'visible', timeout: 15000 });
 	return sendOrReadInvitationToken(page);
 }
 
@@ -329,31 +334,10 @@ async function fillInviteForm(
 	const accept = page.getByRole('button', { name: ACCEPT_INVITE });
 	await accept.waitFor({ state: 'visible', timeout: 20_000 });
 
-	if (options.mode === 'signIn') {
-		const signInToggle = page.getByRole('button', { name: INVITE_SIGN_IN });
-		if (await signInToggle.isVisible().catch(() => false)) {
-			await signInToggle.click();
-		}
-	}
-
-	await page.locator('input[type="password"]').first().waitFor({ state: 'visible', timeout: 20_000 });
-
-	if (options.mode === 'signUp') {
-		const nameInput = page.locator('input[autocomplete="name"]');
-		if (await nameInput.isVisible().catch(() => false)) {
-			await nameInput.fill(options.name);
-			await nameInput.blur();
-		}
-	}
-
-	const emailInput = page.locator('input[type="email"]').first();
-	if (await emailInput.isEditable().catch(() => false)) {
-		await emailInput.fill(options.email);
-		await emailInput.blur();
-	}
-	const passwordInput = page.locator('input[type="password"]').first();
-	await passwordInput.fill(options.password);
-	await passwordInput.blur();
+	await sendOtpThroughUi(page, options.email);
+	if (await accept.isEnabled())
+		throw new Error('Invitation acceptance enabled before contact proof');
+	await verifyOtpThroughUi(page, options.email);
 	await waitForEnabled(accept);
 }
 
@@ -365,6 +349,10 @@ export async function withIsolatedPage<T>(
 	const page = await context.newPage();
 	try {
 		return await run(page);
+	}
+	catch (error) {
+		await captureFailure(page, process.env.EDAYA_ARTIFACT_DIR ?? '.onboarding-run', `${process.env.EDAYA_SCENARIO_ID ?? 'invite'}-invitee`);
+		throw error;
 	}
 	finally {
 		await context.close();
@@ -387,67 +375,23 @@ export async function acceptInviteThroughUi(
 	const mode = options.mode ?? 'signUp';
 	await page.goto(invitePath(base, options.token), { waitUntil: 'domcontentloaded' });
 	await fillInviteForm(page, { ...options, mode });
-	if (mode === 'signUp') {
-		await page.waitForFunction(
-			() => window.localStorage.getItem('edaya:pending-invite-token'),
-			{ timeout: 10_000 },
-		);
+	const target = options.verifyInNewPage ? await page.context().newPage() : page;
+	try {
+		if (target !== page)
+			await target.goto(invitePath(base, options.token), { waitUntil: 'domcontentloaded' });
+		const accept = target.getByRole('button', { name: ACCEPT_INVITE });
+		await waitForEnabled(accept);
+		await accept.click();
+		await expectInviteLanding(target, options.kind);
 	}
-
-	const accept = page.getByRole('button', { name: ACCEPT_INVITE });
-	const pageErrors: string[] = [];
-	page.on('pageerror', error => pageErrors.push(error.message));
-	page.on('console', message => {
-		if (message.type() === 'error') {
-			pageErrors.push(message.text());
-		}
-	});
-
-	await accept.click();
-
-	if (mode === 'signIn') {
-		await expectInviteLanding(page, options.kind);
-		return;
+	catch (error) {
+		await captureFailure(target, process.env.EDAYA_ARTIFACT_DIR ?? '.onboarding-run', `${process.env.EDAYA_SCENARIO_ID ?? 'invite'}-accept`);
+		throw error;
 	}
-
-	const verification = page.getByText(VERIFICATION_COPY).waitFor({
-		state: 'visible',
-		timeout: 30_000,
-	}).then(() => 'verification' as const);
-	const skipped = page.waitForURL(/\/(dashboard|onboarding)|portal=/, { timeout: 30_000 }).then(() => 'skipped' as const);
-	const outcome = await Promise.race([verification, skipped]).catch(() => 'timeout' as const);
-	if (outcome === 'skipped') {
-		throw new Error(
-			`Invite signup skipped email verification for ${options.email}: ${page.url()}${pageErrors.length ? ` errors=${pageErrors.join(' | ')}` : ''}`,
-		);
+	finally {
+		if (target !== page)
+			await target.close();
 	}
-	if (outcome !== 'verification') {
-		const alertText = await page.locator('[role="alert"]').allInnerTexts().catch(() => []);
-		throw new Error(
-			`Invite signup did not reach verification for ${options.email}. url=${page.url()} alerts=${alertText.join(' | ')}${pageErrors.length ? ` errors=${pageErrors.join(' | ')}` : ''}`,
-		);
-	}
-
-	const landed = /\/(dashboard|login|onboarding|invite)/;
-	if (options.verifyInNewPage ?? true) {
-		const verifiedPage = await followVerificationLinkInNewPage(page, options.email, landed);
-		try {
-			if (verifiedPage.url().includes('/onboarding')) {
-				throw new Error(`Invite accept sent ${options.kind} to onboarding: ${verifiedPage.url()}`);
-			}
-			await expectInviteLanding(verifiedPage, options.kind);
-		}
-		finally {
-			await verifiedPage.close();
-		}
-		return;
-	}
-
-	await followVerificationLink(page, options.email, landed);
-	if (page.url().includes('/onboarding')) {
-		throw new Error(`Invite accept sent ${options.kind} to onboarding: ${page.url()}`);
-	}
-	await expectInviteLanding(page, options.kind);
 }
 
 export async function acceptStaffInviteThroughUi(
@@ -465,6 +409,9 @@ export async function acceptStaffInviteThroughUi(
 export async function assertWrongAccountInvite(page: Page, base: string, token: string): Promise<void> {
 	await page.goto(invitePath(base, token), { waitUntil: 'domcontentloaded' });
 	await page.locator('.animate-spin').first().waitFor({ state: 'detached', timeout: 15_000 }).catch(() => undefined);
+	const action = page.getByRole('button', { name: ACCEPT_INVITE });
+	if (await action.isEnabled().catch(() => false))
+		await action.click();
 	await page.getByText(WRONG_ACCOUNT).first().waitFor({ state: 'visible', timeout: 20_000 });
 	const accept = page.getByRole('button', { name: ACCEPT_INVITE });
 	if (await accept.isVisible().catch(() => false) && await accept.isEnabled().catch(() => false)) {

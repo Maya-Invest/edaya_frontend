@@ -1,9 +1,13 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
 
 const refreshAppShellData = mock(async () => {});
+const invalidateAppShellBootstrapCache = mock(() => {});
+const resetAppShellBootstrap = mock(() => {});
 
-mock.module('$lib/api/mutations/run-mutation', () => ({
-	refreshAppShellData,
+mock.module('$lib/auth/bootstrap-app', () => ({
+	bootstrapAppShell: refreshAppShellData,
+	invalidateAppShellBootstrapCache,
+	resetAppShellBootstrap,
 }));
 
 const { refreshStudentImportShellContext } = await import(
@@ -13,6 +17,8 @@ const { refreshStudentImportShellContext } = await import(
 describe('refreshStudentImportShellContext', () => {
 	afterEach(() => {
 		refreshAppShellData.mockReset();
+		invalidateAppShellBootstrapCache.mockClear();
+		resetAppShellBootstrap.mockClear();
 		refreshAppShellData.mockImplementation(async () => {});
 	});
 
@@ -20,6 +26,8 @@ describe('refreshStudentImportShellContext', () => {
 		await refreshStudentImportShellContext();
 
 		expect(refreshAppShellData).toHaveBeenCalledTimes(1);
+		expect(invalidateAppShellBootstrapCache).toHaveBeenCalledTimes(1);
+		expect(resetAppShellBootstrap).not.toHaveBeenCalled();
 	});
 
 	test('ignores shell refresh failures', async () => {

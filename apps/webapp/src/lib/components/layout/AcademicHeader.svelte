@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { academicContext } from '$lib/academic/context.svelte';
+	import { authSession } from '$lib/auth/session.svelte';
 	import { t } from '$lib/i18n';
 	import { Check, ChevronDown, CalendarRange } from '$lib/icons';
 	import { cn } from '$lib/utils';
@@ -26,6 +27,8 @@
 		<button
 			type="button"
 			data-testid="academic-year-trigger"
+			data-school-id={authSession.schoolId}
+			data-year-id={academicContext.yearId}
 			aria-label={$t('academic.selectYear')}
 			aria-expanded={open === 'year'}
 			onclick={() => (open = open === 'year' ? null : 'year')}

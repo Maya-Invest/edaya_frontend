@@ -36,7 +36,9 @@
     "cloudflare:build:website": "bun install && bun --filter @edaya/website build",
     "brand:generate": "python3 scripts/brand-tokens.py",
     "brand:check": "python3 scripts/brand-check.py",
-    "contract:check": "python3 scripts/release-contract.py --role web"
+    "contract:check": "python3 scripts/release-contract.py --role web",
+    "test:integration:coverage": "bun --filter @edaya/webapp test:integration:coverage",
+    "test:integration:webadmin": "bun --filter @edaya/webapp test:integration:webadmin"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^9.0.0",
@@ -49,7 +51,7 @@
     "typescript": "^6.0.2"
   },
   "overrides": {
-    "@maya-invest/edaya-api-client": "file:../edaya_backend/package/api-client",
+    "@maya-invest/edaya-api-client": "file:./vendor/edaya-api-client",
     "@sveltejs/kit": "2.64.0",
     "svelte": "5.56.3",
     "vite": "8.0.16"

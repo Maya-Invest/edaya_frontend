@@ -216,7 +216,7 @@
 		<ul>
 			{#each list as payment (payment.id)}
 				{@const student = students.find(entry => entry.id === payment.studentId)}
-				<li class="grid grid-cols-12 items-center gap-4 border-b border-border px-5 py-3 last:border-b-0">
+				<li data-payment-id={payment.id} class="grid grid-cols-12 items-center gap-4 border-b border-border px-5 py-3 last:border-b-0">
 					<div class="col-span-2 font-sans tabular-nums text-xs text-muted-foreground">
 						{formatPaymentCivilDate(payment.paymentDate, $locale)}
 					</div>

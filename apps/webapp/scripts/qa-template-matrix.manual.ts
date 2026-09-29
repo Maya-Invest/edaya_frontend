@@ -2,8 +2,8 @@
  * Matrice QA complète — endpoints + actions par module.
  * Utilisée par generate-qa-template.ts
  *
- * Auth, Onboarding, Outils & imports et /configuration/tools sont exclus
- * des runs automatisés (voir qa-matrix-exclusions.ts).
+ * Auth and onboarding run in their dedicated executable suite.
+ * Tools and imports are required production scenarios.
  */
 export type QaModule =
 	| 'Auth'
@@ -35,8 +35,8 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	...rows('Auth', `${B}/`, ['Redirect vers /login']),
 	...rows('Auth', `${B}/login`, [
 		'Affichage page connexion',
-		'Connexion mot de passe — succès',
-		'Connexion mot de passe — erreur visible (message rouge inline)',
+		'Connexion OTP — succès',
+		'Connexion OTP — erreur visible (message rouge inline)',
 		'Onglet signup (si activé)',
 		'Banner API indisponible',
 	]),
@@ -123,7 +123,7 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 		'Ouvrir drawer profil',
 		'Éditer profil',
 		'Photo',
-		'Notes pédagogiques CRUD',
+		'Notes pédagogiques — créer / éditer',
 		'Changer classe',
 		'Changer statut élève',
 	]),
@@ -219,7 +219,7 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	...rows('Classes', `${B}/classes/[classId]/students/[id]/documents`, ['Documents']),
 
 	...rows('Classes', `${B}/classes/[classId]/timetable`, [
-		'Vue semaine / liste',
+		'Vue semaine',
 		'Navigation semaine',
 	]),
 	...rows('Classes', `${B}/classes/[classId]/timetable/[sessionId]/details`, ['Détails séance']),
@@ -266,7 +266,7 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 		'Liste frais',
 		'Filtre catégorie',
 		'Créer frais (nom, montant, échéances %)',
-		'Éditer / supprimer frais',
+		'Éditer / archiver frais',
 	]),
 	...rows('Finance', `${B}/finance/billing`, [
 		'Liste facturations',
@@ -294,7 +294,7 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 		'Éditer nom, timezone, ville, type école',
 	]),
 	...rows('Configuration', `${B}/configuration/academic`, [
-		'CRUD années scolaires',
+		'Créer année scolaire',
 		'Publier année',
 		'Filtres liste',
 	]),
@@ -322,7 +322,7 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 		'Créer matière',
 	]),
 	...rows('Configuration', `${B}/configuration/subjects/[id]/progression`, ['Chapitres CRUD']),
-	...rows('Configuration', `${B}/configuration/subjects/[id]/logbook`, ['Logbook (si applicable)']),
+	...rows('Configuration', `${B}/configuration/subjects/[id]/logbook`, ['Redirection catalogue vers progression']),
 	...rows('Configuration', `${B}/configuration/subjects/level/[level]`, [
 		'Redirect vers /configuration/subjects?gradeLevel=[id]',
 	]),
@@ -332,7 +332,7 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	]),
 	...rows('Configuration', `${B}/configuration/report-cards`, [
 		'Liste définitions bulletins',
-		'CRUD / publier',
+		'Créer / supprimer / publier',
 	]),
 	...rows('Configuration', `${B}/configuration/report-cards/[id]`, ['Drawer définition']),
 	...rows('Configuration', `${B}/configuration/notifications`, ['Templates notifications école']),
@@ -356,7 +356,7 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	]),
 	...rows('Configuration', `${B}/configuration/tools/teacher-assignments`, [
 		'Hub affectations enseignant (deep link)',
-		'CRUD affectation',
+		'Créer / supprimer affectation',
 	]),
 	...rows('Configuration', `${B}/configuration/tools`, [
 		'Planning EDT — générer brouillon',

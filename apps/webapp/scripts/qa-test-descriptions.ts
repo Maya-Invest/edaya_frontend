@@ -31,7 +31,7 @@ export function describeTestExactly(row: QaTemplateRow): string {
 		if (action.includes('Redirect')) return 'Navigate to route; assert browser redirects to /login.';
 		if (action.includes('succès')) return 'Fill #login-password-email + #login-password; click Se connecter; assert URL leaves /login.';
 		if (action.includes('erreur')) return 'Submit login with wrong password; assert inline error message visible.';
-		if (action.includes('Banner API')) return 'Load /login; assert API connection banner state matches /auth/get-session.';
+		if (action.includes('Banner API')) return 'Load /login; assert API connection banner state matches /auth/edaya/methods.';
 		if (action.includes('démo')) return 'Open /login/demo; click demo persona button; assert redirect to app shell.';
 		if (action.includes('invitation')) return 'Open /invite/[token]; assert signup/login flow or error for token.';
 		return 'Auth page smoke — form controls and navigation.';

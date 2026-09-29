@@ -21,6 +21,7 @@
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import { formatDateInput } from '$lib/date/format';
 	import { t } from '$lib/i18n';
+	import { untrack } from 'svelte';
 
 	let {
 		open = $bindable(false),
@@ -120,6 +121,11 @@
 		}
 	}
 
+	$effect(() => {
+		const isOpen = open;
+		untrack(() => handleModalOpenChange(isOpen));
+	});
+
 	function handleModalOpenChange(isOpen: boolean) {
 		if (isOpen) {
 			initializeForm();
@@ -207,7 +213,6 @@
 	busy={planningPage.busy}
 	submitDisabled={!validRange || !planningPage.canGenerateSchoolInitial}
 	onSubmit={submit}
-	onOpenChange={handleModalOpenChange}
 >
 	{#if viewPhase === 'error' && generationError}
 		<TimetableGenerationErrorPanel
@@ -290,7 +295,7 @@
 		{:else}
 			<Button variant="ghost" onclick={close} disabled={busy}>{$t('common.cancel')}</Button>
 			{#if viewPhase !== 'generating'}
-				<Button onclick={submit} disabled={busy || submitDisabled}>{$t('timetable.generateSchool')}</Button>
+				<Button data-testid="timetable-generate-submit" onclick={submit} disabled={busy || submitDisabled}>{$t('timetable.generateSchool')}</Button>
 			{/if}
 		{/if}
 	{/snippet}

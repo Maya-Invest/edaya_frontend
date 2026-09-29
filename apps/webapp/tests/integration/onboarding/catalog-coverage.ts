@@ -14,8 +14,8 @@ export interface CatalogCoverageRow {
 export const AUTH_ONBOARDING_CATALOG_COVERAGE: readonly CatalogCoverageRow[] = [
 	{ module: 'Auth', endpoint: '/', action: 'Redirect vers /login', kind: 'scene', scenes: ['unauthenticated-redirect'] },
 	{ module: 'Auth', endpoint: '/login', action: 'Affichage page connexion', kind: 'scene', scenes: ['login-signup-ui'] },
-	{ module: 'Auth', endpoint: '/login', action: 'Connexion mot de passe — succès', kind: 'scene', scenes: ['owner-relogin', 'invited-staff-relogin'] },
-	{ module: 'Auth', endpoint: '/login', action: 'Connexion mot de passe — erreur visible (message rouge inline)', kind: 'scene', scenes: ['login-signup-ui'] },
+	{ module: 'Auth', endpoint: '/login', action: 'Connexion OTP — succès', kind: 'scene', scenes: ['owner-relogin', 'invited-staff-relogin'] },
+	{ module: 'Auth', endpoint: '/login', action: 'Connexion OTP — erreur visible (message rouge inline)', kind: 'scene', scenes: ['login-signup-ui'] },
 	{ module: 'Auth', endpoint: '/login', action: 'Onglet signup (si activé)', kind: 'scene', scenes: ['login-signup-ui'] },
 	{ module: 'Auth', endpoint: '/login', action: 'Banner API indisponible', kind: 'scene', scenes: ['api-unavailable-banner'] },
 	{ module: 'Auth', endpoint: '/login/demo', action: 'Affichage comptes démo (dev)', kind: 'na', reason: 'canonical-lane-excludes-demo' },
@@ -75,7 +75,7 @@ export function assertAuthOnboardingCatalogCoverage(sceneIds: readonly string[])
 			na += 1;
 			continue;
 		}
-		const covered = (coverage.scenes ?? []).some(scene => sceneSet.has(scene));
+		const covered = Boolean(coverage.scenes?.length) && (coverage.scenes ?? []).every(scene => sceneSet.has(scene));
 		if (!covered) {
 			missing.push(`${row.module} ${row.action} (need ${coverage.scenes?.join(', ')})`);
 			continue;

@@ -11,6 +11,7 @@ import { grantDocumentBundleDownload, grantDocumentDownload, loadDocumentIssuanc
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { openDocumentDownload, openDocumentDownloads } from '$lib/documents/open-download';
+import { entityVersions } from '$lib/entity-versions.svelte';
 import { lang, t } from '$lib/i18n';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
@@ -31,6 +32,9 @@ async function waitForTerminalIssuance(id: string, timeoutMs = 45000): Promise<D
 	let latest = await loadDocumentIssuance(client, id);
 	while (Date.now() - started < timeoutMs) {
 		if (latest.status === 'ready' || latest.status === 'preview' || latest.status === 'failed' || latest.status === 'voided') {
+			// Rendering finishes after the command's initial invalidation. Refresh
+			// the document list again so its actions reflect the terminal state.
+			entityVersions.bump('documents');
 			return latest;
 		}
 		await sleep(500);
@@ -80,12 +84,10 @@ export async function requestDocumentIssuanceMutation(input: Omit<RequestDocumen
 		return null;
 	}
 	const issuance = unwrapIssuance(result);
-	if (input.openWhenReady === false) {
-		return issuance;
-	}
 	const settled = await waitForTerminalIssuance(issuance.id);
 	if (settled.status === 'ready' || settled.status === 'preview') {
-		await downloadDocumentMutation({ id: settled.id });
+		if (input.openWhenReady !== false)
+			await downloadDocumentMutation({ id: settled.id });
 		return settled;
 	}
 	if (settled.status === 'failed') {
@@ -140,12 +142,10 @@ export async function retryDocumentIssuanceMutation(input: {
 		return null;
 	}
 	const issuance = unwrapIssuance(result);
-	if (input.openWhenReady === false) {
-		return issuance;
-	}
 	const settled = await waitForTerminalIssuance(issuance.id);
 	if (settled.status === 'ready' || settled.status === 'preview') {
-		await downloadDocumentMutation({ id: settled.id });
+		if (input.openWhenReady !== false)
+			await downloadDocumentMutation({ id: settled.id });
 	}
 	else if (settled.status === 'failed') {
 		toast.error(get(t)('documents.toastFailed', { code: settled.failureCode ?? settled.status }));

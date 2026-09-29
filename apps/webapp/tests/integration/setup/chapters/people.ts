@@ -282,7 +282,7 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 					visibleAfter: noteBody,
 					listPath: `/school/students/${studentId}/profile`,
 					actionPath: 'http://localhost:5173/school/students/[id]/profile',
-					actions: ['Notes pédagogiques CRUD'],
+					actions: ['Notes pédagogiques — créer / éditer'],
 				});
 
 				const editedStudentName = `${lastName}-QA`;
@@ -298,6 +298,8 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 					},
 					visibleAfter: editedStudentName,
 					listPath: `/school/students/${studentId}/profile`,
+					actionPath: 'http://localhost:5173/school/students/[id]/profile',
+					actions: ['Éditer profil'],
 				});
 				if (studentEdit.postcondition) {
 					entities.filterFixtures.searchToken = editedStudentName;

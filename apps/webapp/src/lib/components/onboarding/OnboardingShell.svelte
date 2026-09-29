@@ -96,6 +96,7 @@
 		{@render children()}
 	</section>
 
+	<a href="/account/security" target="_blank" rel="noopener" class="mt-4 text-sm text-primary">{$t('auth.accountSecurity')}</a>
 	<footer class="sticky bottom-0 mt-4 border-t border-border/60 bg-background/95 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
 		{#if showProvisionProgress}
 			<div class="mb-3">

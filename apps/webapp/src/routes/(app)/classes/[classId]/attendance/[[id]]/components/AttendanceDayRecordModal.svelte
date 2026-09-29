@@ -95,14 +95,14 @@
 			{$t('students.status')}
 		</Label>
 		<Select.Root type="single" value={status} onValueChange={v => v && (status = v as SessionAttendanceStatus)}>
-			<Select.Trigger>
+			<Select.Trigger data-testid="attendance-status-select">
 				<Select.Value placeholder={$t('students.status')}>
 					{statusLabel}
 				</Select.Value>
 			</Select.Trigger>
 			<Select.Content class="z-[100]">
 				{#each STATUS_OPTIONS as entry (entry)}
-					<Select.Item value={entry} label={$t(`attendance.${entry}`)}>
+					<Select.Item data-testid={`attendance-status-${entry}`} value={entry} label={$t(`attendance.${entry}`)}>
 						{$t(`attendance.${entry}`)}
 					</Select.Item>
 				{/each}

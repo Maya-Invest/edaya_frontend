@@ -59,6 +59,7 @@
 					class="rounded-full"
 					{disabled}
 					{title}
+					data-testid="document-generate"
 					onclick={() => (generateOpen.open = true)}
 				>
 					<FileText class="mr-1 h-4 w-4" />
@@ -77,7 +78,7 @@
 			</DrawerEmptyState>
 		{:else}
 			{#each issuances as issuance (issuance.id)}
-				<div class="rounded-xl border border-border bg-card p-3">
+				<div data-issuance-id={issuance.id} class="rounded-xl border border-border bg-card p-3">
 					<div class="flex items-start justify-between gap-3">
 						<div>
 							<p class="text-sm font-semibold">{titleFor(issuance.templateKey)}</p>
@@ -94,7 +95,7 @@
 					{/if}
 					<div class="mt-3 flex flex-wrap gap-2">
 						{#if isDownloadableStatus(issuance.status)}
-							<Button size="sm" variant="outline" class="rounded-full" onclick={() => void downloadDocumentMutation({ id: issuance.id })}>
+							<Button size="sm" variant="outline" class="rounded-full" data-testid={`document-download-${issuance.id}`} onclick={() => void downloadDocumentMutation({ id: issuance.id })}>
 								{$t('documents.downloadNamed', { name: titleFor(issuance.templateKey) })}
 							</Button>
 						{/if}
@@ -107,7 +108,7 @@
 						{#if issuance.status === 'ready' || issuance.status === 'failed'}
 							<PermissionGate permission={DOCUMENT_VOID_PERMISSION} mode="disable" tooltip={$t('documents.permissionVoid')}>
 								{#snippet children({ disabled, title })}
-									<Button size="sm" variant="ghost" class="rounded-full" {disabled} {title} onclick={() => openVoid(issuance.id)}>
+									<Button size="sm" variant="ghost" class="rounded-full" {disabled} {title} data-testid="document-void" onclick={() => openVoid(issuance.id)}>
 										{$t('documents.void')}
 									</Button>
 								{/snippet}

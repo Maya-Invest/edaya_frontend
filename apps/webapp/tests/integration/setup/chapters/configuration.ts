@@ -70,9 +70,9 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 		await submitDialog(page);
 		const closed = await waitForDialogClosed(page);
 		const payload = await payloadPromise;
-		await offerPromise;
-		let subjectId = typeof payload?.gradeLevelSubjectId === 'string'
-			? payload.gradeLevelSubjectId
+		const offeredSubject = await offerPromise;
+		let subjectId = typeof offeredSubject?.id === 'string'
+			? offeredSubject.id
 			: typeof payload?.id === 'string' ? payload.id : null;
 		await waitForPageQuery(page);
 		if (!subjectId) {
@@ -85,7 +85,8 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 			}
 			subjectId ??= await firstIdFromLinks(page, /\/configuration\/subjects\/([^/?]+)/);
 		}
-		entities.subjectId = subjectId;
+		entities.subjectId = typeof payload?.id === 'string' ? payload.id : null;
+		entities.configurationSubjectId = subjectId;
 		coverCompletedModal(journey, '/configuration/subjects', 'create-subject', {
 			opened: true,
 			submitted: true,
@@ -177,7 +178,7 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 			);
 			await gotoApp(journey, `/configuration/subjects/${subjectId}/logbook`);
 			await visitCovered(journey, '/configuration/subjects/[id]/logbook', `/configuration/subjects/${subjectId}/logbook`);
-			coverActions(journey, 'http://localhost:5173/configuration/subjects/[id]/logbook', ['Logbook (si applicable)'], 'OK');
+			coverActions(journey, 'http://localhost:5173/configuration/subjects/[id]/logbook', ['Redirection catalogue vers progression'], 'OK');
 		}
 	}
 	else {
@@ -287,10 +288,10 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 			submitted: false,
 			closed: false,
 		}, 'No gradeScaleId to reference');
-		coverActions(journey, 'http://localhost:5173/configuration/report-cards', ['CRUD / publier'], 'NOT OK', 'No gradeScaleId to reference');
+		coverActions(journey, 'http://localhost:5173/configuration/report-cards', ['Créer / supprimer / publier'], 'NOT OK', 'No gradeScaleId to reference');
 	}
 	else {
-		const rcOpened = await clickCreateButton(page, 'CRUD / publier', '/configuration/report-cards')
+		const rcOpened = await clickCreateButton(page, 'Créer / supprimer / publier', '/configuration/report-cards')
 			|| await openDialogButton(page, /add model|ajouter un modèle|créer/i)
 			|| await openUrlModal(page, '/configuration/report-cards', 'create', { base: ctx.base, timeout: 15_000 });
 		if (rcOpened) {
@@ -324,7 +325,7 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 					closed,
 					postcondition: Boolean(defId),
 				}, rcName);
-				coverActions(journey, 'http://localhost:5173/configuration/report-cards', ['Liste définitions bulletins', 'CRUD / publier'], defId ? 'OK' : 'NOT OK', rcName);
+				coverActions(journey, 'http://localhost:5173/configuration/report-cards', ['Liste définitions bulletins', 'Créer / supprimer / publier'], defId ? 'OK' : 'NOT OK', rcName);
 				if (defId) {
 					await gotoApp(journey, `/configuration/report-cards/${defId}`);
 					await visitCovered(journey, '/configuration/report-cards/[id]', `/configuration/report-cards/${defId}`);
@@ -340,7 +341,7 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 					closed: false,
 				}, detail);
 				logStep(journey, { step: 'report-card-def', ok: false, detail });
-				coverActions(journey, 'http://localhost:5173/configuration/report-cards', ['CRUD / publier'], 'NOT OK', detail);
+				coverActions(journey, 'http://localhost:5173/configuration/report-cards', ['Créer / supprimer / publier'], 'NOT OK', detail);
 				await page.keyboard.press('Escape').catch(() => {});
 			}
 		}

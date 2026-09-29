@@ -18,7 +18,10 @@ export interface OnboardingRunContext {
 
 export interface OnboardingSceneResult {
 	id: string;
-	ok: true;
+	ok: boolean;
+	status: 'passed' | 'failed' | 'blocked';
+	feature: string;
+	durationMs: number;
 	detail?: string;
 }
 

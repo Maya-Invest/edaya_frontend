@@ -4,7 +4,6 @@ import {
 	defaultAcademicYearPreset,
 } from '../src/lib/onboarding/school-step-defaults';
 import { waitForEnabled } from '../tests/integration/demo-dry-run/support/auth';
-import { ensureAcademicYearPublishedViaApi } from '../tests/integration/setup/journey-api';
 import { waitForAppShell } from './qa-matrix-support';
 
 export async function waitForPageQuery(page: Page): Promise<void> {
@@ -79,22 +78,19 @@ export async function setAppLang(page: Page, next: 'en' | 'fr'): Promise<boolean
 /** Clear stale year/period picks from prior tenants in the same browser session. */
 export async function clearAcademicSelectionStorage(page: Page): Promise<void> {
 	await page.evaluate(() => {
-		sessionStorage.removeItem('edaya:yearId');
-		sessionStorage.removeItem('edaya:periodId');
+		for (const key of Object.keys(sessionStorage)) {
+			if (/^edaya:(yearId|periodId)(:|$)/.test(key)) sessionStorage.removeItem(key);
+		}
 	});
 }
 
 export async function waitForResolvedAcademicYearId(page: Page, timeout = 20_000): Promise<void> {
-	const started = Date.now();
-	while (Date.now() - started < timeout) {
-		const yearId = await page.evaluate(() => sessionStorage.getItem('edaya:yearId'));
-		if (yearId && yearId.length > 0) {
-			return;
-		}
-		await page.waitForTimeout(250);
-	}
-	// Fallback: shell may show the year before sessionStorage is written on slow boots.
-	await page.getByText(/\b\d{4}-\d{4}\b/).first().waitFor({ state: 'visible', timeout: 5_000 });
+	await page.waitForFunction(() => {
+		const trigger = document.querySelector('[data-testid="academic-year-trigger"]');
+		const schoolId = trigger?.getAttribute('data-school-id');
+		const yearId = trigger?.getAttribute('data-year-id');
+		return Boolean(schoolId && yearId && sessionStorage.getItem(`edaya:yearId:${schoolId}`) === yearId);
+	}, undefined, { timeout });
 }
 
 /** Keep date inputs inside their min/max (academic-year bounds on calendar create). */
@@ -556,6 +552,10 @@ export async function searchAndSelectPerson(page: Page, name: string): Promise<b
 	if (await named.isVisible({ timeout: 5_000 }).catch(() => false)) {
 		await named.click();
 		return true;
+	}
+	if (name) {
+		await page.keyboard.press('Escape');
+		throw new Error('Required named person fixture was not available in the picker');
 	}
 	if (await search.isVisible().catch(() => false)) {
 		await search.fill('');
@@ -1123,71 +1123,21 @@ export async function fillNewSessionWizard(
 
 /** Generate a report card for the first student (or named student) on the class report-cards list. */
 export async function generateReportCardForStudent(
-	page: Page,
-	classId: string,
-	studentName?: string,
+ page: Page,
+ _classId: string,
+ studentName?: string,
 ): Promise<string | null> {
-	await waitForPageQuery(page);
-
-	const generateResponse = page.waitForResponse(
-		res => res.request().method() === 'POST'
-			&& res.url().includes('/core/commands/generate-report-card-result')
-			&& res.ok(),
-		{ timeout: 30_000 },
-	).catch(() => null);
-
-	if (studentName) {
-		const row = page.locator('main tr').filter({ hasText: studentName }).first();
-		const generateBtn = row.getByRole('button', { name: /generate|générer/i }).first();
-		if (await generateBtn.isVisible({ timeout: 8_000 }).catch(() => false)) {
-			await generateBtn.click();
-		}
-	}
-	else {
-		const generateBtn = page.getByRole('button', { name: /generate|générer/i }).first();
-		if (await generateBtn.isVisible({ timeout: 8_000 }).catch(() => false)) {
-			await generateBtn.click();
-		}
-		else {
-			const generateAll = page.getByRole('button', { name: /generate all|générer tout|tout générer/i }).first();
-			if (await generateAll.isVisible({ timeout: 5_000 }).catch(() => false)) {
-				await generateAll.click();
-			}
-		}
-	}
-
-	const generateResult = await generateResponse;
-	if (generateResult) {
-		try {
-			const body = await generateResult.json() as { id?: string };
-			if (typeof body.id === 'string') {
-				return body.id;
-			}
-		}
-		catch {
-			// scrape from page
-		}
-	}
-
-	await waitForPageQuery(page);
-	await page.waitForTimeout(1_500);
-
-	const match = page.url().match(new RegExp(`/classes/${classId}/report-cards/([^/?]+)`));
-	if (match?.[1]) {
-		return match[1];
-	}
-	const link = page.locator(`main a[href*="/classes/${classId}/report-cards/"]`).first();
-	if (await link.isVisible({ timeout: 8_000 }).catch(() => false)) {
-		const href = await link.getAttribute('href');
-		return href?.match(/\/report-cards\/([^/?]+)/)?.[1] ?? null;
-	}
-	const viewBtn = page.getByRole('button', { name: /view|voir|consulter/i }).first();
-	if (await viewBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-		await viewBtn.click();
-		await page.waitForTimeout(800);
-		return page.url().match(/\/report-cards\/([^/?]+)/)?.[1] ?? null;
-	}
-	return null;
+ const rows = page.locator('main tr');
+ const scope = studentName ? rows.filter({ hasText: studentName }) : rows;
+ const button = scope.getByRole('button', { name: /^(generate|générer)$/i }).first();
+ await button.waitFor({ state: 'visible', timeout: 20000 });
+ const response = page.waitForResponse(result => result.request().method() === 'POST' && result.url().includes('/core/commands/generate-report-card-result'), { timeout: 30000 });
+ await button.click();
+ const generated = await response;
+ if (!generated.ok()) throw new Error(`Report generation HTTP ${generated.status()}`);
+ const body = await generated.json() as { id?: string };
+ if (!body.id) throw new Error('Report generation returned no result ID');
+ return body.id;
 }
 
 /** GradeScaleFormModal — name is required; min/max/passing already default to 0/20/10. */
@@ -1361,7 +1311,11 @@ export async function fillFeeCreateDialog(
 	}, amount);
 }
 
-export async function fillAssignFeeDialog(page: Page): Promise<boolean> {
+export async function fillAssignFeeDialog(page: Page, studentName?: string): Promise<boolean> {
+	if (studentName) {
+		if (!await searchAndSelectPerson(page, studentName)) return false;
+		return waitForSubmitEnabled(page);
+	}
 	if (await waitForSubmitEnabled(page, 8_000)) {
 		return true;
 	}
@@ -1373,7 +1327,7 @@ export async function fillAssignFeeDialog(page: Page): Promise<boolean> {
 	return waitForSubmitEnabled(page);
 }
 
-export async function fillEvaluationCreateDialog(page: Page, title: string): Promise<boolean> {
+export async function fillEvaluationCreateDialog(page: Page, title: string, classSubjectId?: string): Promise<boolean> {
 	const dialog = page.getByRole('dialog');
 	const empty = await dialog.getByText(/aucune|empty|no (subject|matière)/i).isVisible().catch(() => false);
 	if (empty) {
@@ -1381,6 +1335,14 @@ export async function fillEvaluationCreateDialog(page: Page, title: string): Pro
 	}
 	const titleInput = dialog.locator('input:not([type="number"]):not([type="date"])').first();
 	await titleInput.waitFor({ state: 'visible', timeout: 8_000 });
+	// Newly registered students are not eligible for a 09:00 assessment earlier today.
+	// Schedule this mutable fixture after enrollment, inside the current academic period.
+	if (classSubjectId) {
+		await dialog.getByTestId('assessment-subject-select').click();
+		await page.getByTestId(`assessment-subject-${classSubjectId}`).click();
+	}
+	const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+	await dialog.locator('input[type="date"]').fill(tomorrow);
 	const started = Date.now();
 	while (Date.now() - started < 12_000) {
 		await titleInput.fill(title);
@@ -1508,21 +1470,6 @@ async function academicYearUiLooksPublished(yearSection: Locator): Promise<boole
 	return archiveInSection.isVisible({ timeout: 2_000 }).catch(() => false);
 }
 
-async function publishAcademicYearViaApiFallback(page: Page, label: string): Promise<boolean> {
-	const origin = new URL(page.url()).origin;
-	const published = await ensureAcademicYearPublishedViaApi(page, origin, label);
-	if (!published) {
-		return false;
-	}
-	const current = new URL(page.url());
-	current.searchParams.delete('modal');
-	current.searchParams.delete('modalTarget');
-	current.searchParams.delete('modalStep');
-	await navigateSpaPage(page, current.toString());
-	await waitForPageQuery(page);
-	return true;
-}
-
 /**
  * Academic years are created as draft. Publish explicitly; archive any blocking published year first.
  */
@@ -1594,8 +1541,7 @@ export async function ensureAcademicYearReady(page: Page, label: string): Promis
 		return true;
 	}
 
-	console.log(`academic-year UI publish stalled for ${label}; trying API fallback`);
-	return publishAcademicYearViaApiFallback(page, label);
+	throw new Error(`Academic-year UI publication did not persist for ${label}`);
 }
 
 /** @deprecated Use ensureAcademicYearReady */

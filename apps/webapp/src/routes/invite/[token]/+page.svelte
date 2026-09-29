@@ -8,10 +8,8 @@
 	import { page } from '$app/stores';
 	import { acceptInvitation, fetchInvitationPreview } from '$lib/api/invitation-data';
 	import { bootstrapSessionAfterInvite } from '$lib/auth/accept-pending-invite';
-	import { isExistingAccountAuthError } from '$lib/auth/auth-errors';
 	import { getAuthenticatedAuthUser, resetBootstrapSession } from '$lib/auth/bootstrap';
 	import { resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
-	import { authClient } from '$lib/auth/client';
 	import { GUARDIAN_PLAY_STORE_URL } from '$lib/auth/guardian-app';
 	import {
 		clearPendingInviteToken,
@@ -21,16 +19,16 @@
 	} from '$lib/auth/pending-invite-token';
 	import { ONBOARDING_PATH, resolvePostAuthPath } from '$lib/auth/resolve-post-auth';
 	import { authSession } from '$lib/auth/session.svelte';
+	import PasswordlessPanel from '$lib/components/auth/login/PasswordlessPanel.svelte';
 	import LanguageSelector from '$lib/components/layout/LanguageSelector.svelte';
 	import BrandLogo from '$lib/components/ui/BrandLogo.svelte';
 	import Button, { buttonVariants } from '$lib/components/ui/button/button.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
-	import Label from '$lib/components/ui/label/label.svelte';
 	import { t } from '$lib/i18n';
-	import { LoaderCircle, Mail } from '$lib/icons';
+	import { LoaderCircle } from '$lib/icons';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { toast } from '$lib/toast.svelte';
 	import { ApiError } from '@maya-invest/edaya-api-client';
+	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import {
 		canonicalInvitationAuthUrlState,
@@ -43,11 +41,6 @@
 	function sessionBlocksInvitationAccept(
 		preview: InvitationPreview,
 	): boolean {
-		const loginEmail = authSession.loginEmail?.trim().toLowerCase() ?? '';
-		const invitedEmail = preview.contactEmail?.trim().toLowerCase() ?? '';
-		if (loginEmail && invitedEmail && loginEmail !== invitedEmail) {
-			return true;
-		}
 		if (!authSession.isLoggedIn || !authSession.userId || !authSession.sessionKind) {
 			return false;
 		}
@@ -84,15 +77,9 @@
 	let acceptCommitted = $state(false);
 	let previewReload = $state(0);
 	let email = $state('');
-	let password = $state('');
-	let name = $state('');
 	let busy = $state(false);
 	let acceptInFlight = false;
 	const authUrlState = $derived(readInvitationAuthUrlState($page.url));
-	const authMode = $derived(authUrlState.mode);
-	const verificationSent = $derived(
-		authUrlState.stage === 'verification' && email.trim().length > 0,
-	);
 
 	const actorKindLabel = $derived.by(() => {
 		if (preview?.kind === 'staff') {
@@ -148,8 +135,6 @@
 	}
 
 	const wrongAccount = $derived(preview ? sessionBlocksInvitationAccept(preview) : false);
-	const invitedEmail = $derived(preview?.contactEmail?.trim() ?? '');
-	const useSignIn = $derived(preview?.authAccountExists === true || authMode === 'signIn');
 
 	function setInvitationAuthState(
 		patch: Partial<{ mode: InvitationAuthMode; stage: InvitationAuthStage }>,
@@ -171,13 +156,11 @@
 		if (restoredEmail && !email.trim()) {
 			email = restoredEmail;
 		}
-		if (result.inviteeName && !name.trim()) {
-			name = result.inviteeName;
-		}
 
 		const nextAuthState = canonicalInvitationAuthUrlState(
 			result.authAccountExists
-				? { mode: 'signIn', stage: 'form' }
+				? { mode: 'signIn', stage: 'form',
+				}
 				: authUrlState,
 			{ hasEmailIdentity: email.trim().length > 0 },
 		);
@@ -232,7 +215,9 @@
 			return;
 		}
 
-		void (async () => {
+		// Only the token and explicit retry own preview loading. Transport reads of
+		// reactive auth state must not reload a just-accepted invitation.
+		void untrack(async () => {
 			pageState = 'loading';
 			acceptedIssue = 'none';
 			acceptCommitted = false;
@@ -274,87 +259,19 @@
 				}
 				pageState = 'loadFailed';
 			}
-		})();
+		});
 
 		return () => {
 			request.cancelled = true;
 		};
 	});
 
-	async function signInWithEmail(): Promise<boolean> {
-		const { error } = await authClient.signIn.email({
-			email: email.trim(),
-			password,
-		});
-		if (error) {
-			toast.error(error.message ?? $t('invitation.accept.signInFailed'));
-			return false;
-		}
-		return true;
-	}
-
 	async function authenticate(): Promise<boolean> {
-		if (verificationSent) {
-			setInvitationAuthState({ stage: 'form' }, { replaceState: true });
-		}
-		if (!useSignIn) {
-			const { error } = await authClient.signUp.email({
-				email: email.trim(),
-				password,
-				name: name.trim() || email.trim(),
-			});
-			if (error) {
-				// Parallel submit race: another request may already have established the session.
-				const racedAuthUser = await getAuthenticatedAuthUser();
-				if (!racedAuthUser) {
-					if (isExistingAccountAuthError(error)) {
-						setInvitationAuthState({ mode: 'signIn', stage: 'form' });
-						const signedIn = await signInWithEmail();
-						if (!signedIn) {
-							toast.error($t('invitation.accept.accountExistsSignIn'));
-							return false;
-						}
-					}
-					else {
-						toast.error(error.message ?? $t('invitation.accept.signUpFailed'));
-						return false;
-					}
-				}
-			}
-		}
-		else if (!(await signInWithEmail())) {
-			return false;
-		}
-
 		const authUser = await getAuthenticatedAuthUser();
-		if (!authUser) {
-			if (!useSignIn) {
-				setInvitationAuthState({ stage: 'verification' });
-				toast.success($t('auth.signUpVerificationSent'));
-				return false;
-			}
-			toast.error($t('invitation.accept.sessionFailed'));
+		if (!authUser)
 			return false;
-		}
-
-		authSession.setAuthAccountOnly({
-			authUserId: authUser.id,
-			loginEmail: authUser.email ?? null,
-		});
+		authSession.setAuthAccountOnly({ authUserId: authUser.id, loginEmail: authUser.email ?? null });
 		return true;
-	}
-
-	function signedInContactDiffersFromInvitation(): boolean {
-		const loginEmail = authSession.loginEmail?.trim().toLowerCase() ?? '';
-		const invited = invitedEmail.toLowerCase();
-		const entered = email.trim().toLowerCase();
-		if (loginEmail && invited && loginEmail !== invited) {
-			return true;
-		}
-		if (loginEmail && entered && loginEmail !== entered) {
-			return true;
-		}
-		return false;
 	}
 
 	async function retryLinkedSession(): Promise<boolean> {
@@ -385,26 +302,9 @@
 				return;
 			}
 
-			const authUser = await getAuthenticatedAuthUser();
-			if (authUser && signedInContactDiffersFromInvitation()) {
-				acceptedIssue = 'contactMismatch';
+			if (!await authenticate()) {
 				pageState = 'ready';
-				toast.error($t('invitation.accept.contactMismatchHint'));
 				return;
-			}
-
-			if (!authUser) {
-				const authenticated = await authenticate();
-				if (!authenticated) {
-					pageState = 'ready';
-					return;
-				}
-				if (signedInContactDiffersFromInvitation()) {
-					acceptedIssue = 'contactMismatch';
-					pageState = 'ready';
-					toast.error($t('invitation.accept.contactMismatchHint'));
-					return;
-				}
 			}
 
 			await acceptInvitation(token);
@@ -421,6 +321,8 @@
 				pageState = 'ready';
 			}
 			if (err instanceof ApiError) {
+				if (JSON.stringify(err.body).includes('INVITATION_CONTACT_MISMATCH'))
+					acceptedIssue = 'contactMismatch';
 				toast.error(apiErrorMessage(err));
 			}
 			else {
@@ -436,6 +338,7 @@
 
 <div class="flex min-h-screen flex-col bg-background text-foreground">
 	<header class="flex items-center justify-end gap-3 border-b border-border bg-card/60 px-6 py-4 backdrop-blur">
+		{#if authSession.hasAuthAccount}<a href="/account/security" target="_blank" rel="noopener" class="text-sm text-primary">{$t('auth.accountSecurity')}</a>{/if}
 		<LanguageSelector />
 	</header>
 
@@ -671,85 +574,14 @@
 							</div>
 						{/if}
 
-						{#if verificationSent}
-							<div class="space-y-3 rounded-xl border border-border bg-secondary/40 px-4 py-3 text-sm">
-								<div class="flex items-start gap-3">
-									<Mail class="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-									<div class="space-y-1.5 text-left">
-										<p class="font-medium">{$t('auth.signUpVerificationTitle')}</p>
-										<p class="text-muted-foreground">
-											{$t('invitation.accept.verificationHint', { email: email.trim() })}
-										</p>
-									</div>
-								</div>
-								<Button
-									type="button"
-									variant="outline"
-									class="w-full"
-									onclick={() => {
-										setInvitationAuthState({ mode: 'signIn', stage: 'form' });
-									}}
-								>
-									{$t('auth.switchToSignIn')}
-								</Button>
-							</div>
-						{/if}
-
-						{#if !authSession.isLoggedIn && !verificationSent}
-							{#if preview.authAccountExists}
-								<p class="rounded-lg border border-border bg-secondary/30 px-3 py-2 text-sm text-muted-foreground">
-									{$t('invitation.accept.existingAccountHint')}
-								</p>
-							{:else}
-								<div class="flex gap-2">
-									<Button
-										type="button"
-										size="sm"
-										variant={authMode === 'signUp' ? 'default' : 'outline'}
-										onclick={() => setInvitationAuthState({ mode: 'signUp', stage: 'form' })}
-									>
-										{$t('invitation.accept.signUp')}
-									</Button>
-									<Button
-										type="button"
-										size="sm"
-										variant={authMode === 'signIn' ? 'default' : 'outline'}
-										onclick={() => setInvitationAuthState({ mode: 'signIn', stage: 'form' })}
-									>
-										{$t('invitation.accept.signIn')}
-									</Button>
-								</div>
-							{/if}
-
-							{#if !useSignIn}
-								<div class="space-y-1.5">
-									<Label>{$t('guardian.fullName')}</Label>
-									<Input bind:value={name} autocomplete="name" />
-								</div>
-							{/if}
-
-							<div class="space-y-1.5">
-								<Label>{$t('common.email')}</Label>
-								<Input
-									type="email"
-									bind:value={email}
-									autocomplete="email"
-									readonly={Boolean(invitedEmail)}
-								/>
-							</div>
-							<div class="space-y-1.5">
-								<Label>{$t('invitation.accept.password')}</Label>
-								<Input type="password" bind:value={password} autocomplete={useSignIn ? 'current-password' : 'new-password'} />
-								{#if !useSignIn}
-									<p class="text-xs text-muted-foreground">{$t('invitation.accept.passwordHint')}</p>
-								{/if}
-							</div>
+						{#if !authSession.hasAuthAccount}
+							<PasswordlessPanel bind:email onComplete={async () => { await authenticate(); }} />
 						{/if}
 
 						<Button
 							type="button"
 							class="w-full"
-							disabled={busy || wrongAccount || acceptedIssue === 'contactMismatch' || verificationSent || (!authSession.isLoggedIn && (!email.trim() || !password.trim()))}
+							disabled={busy || wrongAccount || acceptedIssue === 'contactMismatch' || !authSession.hasAuthAccount}
 							onclick={handleAccept}
 						>
 							{$t('invitation.accept.cta')}

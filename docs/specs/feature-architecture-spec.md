@@ -637,3 +637,11 @@ The personal inbox queries deliveries by login subject and selected recipient ki
 ## Marks submission and corrections
 
 Evaluation sheets use Draft → Submitted. Submission makes marks official and visible to families. Submitted grading settings and rosters are frozen. Selected scores, absence/exemption designations, and mark comments may be proposed in one immutable pending batch per evaluation, with a reason and confirmation summary. Staff review uses a read-only comparison and URL-addressed approve/reject modals. Only the author may withdraw; the author cannot review their own request across profiles. Published report source marks are permanently locked individually. Pending corrections block publication only for affected students. The school marks-review route lists correction requests and links to the evaluation Grading drawer.
+
+## Account security
+
+Account authentication is independent of school actors. `/account/security` supports verified email/phone linking and optional authenticator enrollment, including before school creation. Telegram and WhatsApp are phone OTP delivery channels, not social identity providers. Invitation preview/opening is not contact verification; acceptance retains the existing invitation lifecycle and checks verified Account contacts.
+
+## Integration contract maintenance
+
+Production route, navigation, modal and action changes must update the integration scenario contract and executable assertions in the same PR. Navigation assertions do not satisfy mutations; verify saved state after reload and applicable denied operations. Keep exclusions explicit and never count them as behavioral coverage.

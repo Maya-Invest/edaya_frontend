@@ -20,6 +20,7 @@
 </script>
 
 <button
+	data-entity-id={subject.id}
 	type="button"
 	onclick={() => onSelect?.()}
 	class={cn(

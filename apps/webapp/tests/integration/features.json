@@ -1,0 +1,2802 @@
+[
+  {
+    "id": "web.scenario.0001",
+    "feature": "web.app",
+    "module": "Shell",
+    "endpoint": "(app)",
+    "action": "Non connecté → redirect /login"
+  },
+  {
+    "id": "web.scenario.0002",
+    "feature": "web.app",
+    "module": "Shell",
+    "endpoint": "(app)",
+    "action": "Onboarding incomplet → redirect /onboarding"
+  },
+  {
+    "id": "web.scenario.0003",
+    "feature": "web.app",
+    "module": "Shell",
+    "endpoint": "(app)",
+    "action": "Sidebar — modules visibles selon permissions"
+  },
+  {
+    "id": "web.scenario.0004",
+    "feature": "web.app",
+    "module": "Shell",
+    "endpoint": "(app)",
+    "action": "URL sans permission → redirect /dashboard"
+  },
+  {
+    "id": "web.scenario.0005",
+    "feature": "web.app",
+    "module": "Shell",
+    "endpoint": "(app)",
+    "action": "Sélecteur école"
+  },
+  {
+    "id": "web.scenario.0006",
+    "feature": "web.app",
+    "module": "Shell",
+    "endpoint": "(app)",
+    "action": "Sélecteur année scolaire"
+  },
+  {
+    "id": "web.scenario.0007",
+    "feature": "web.app",
+    "module": "Shell",
+    "endpoint": "(app)",
+    "action": "Changement langue FR/EN"
+  },
+  {
+    "id": "web.scenario.0008",
+    "feature": "web.app",
+    "module": "Shell",
+    "endpoint": "(app)",
+    "action": "Avatar — modal profil"
+  },
+  {
+    "id": "web.scenario.0009",
+    "feature": "web.app",
+    "module": "Shell",
+    "endpoint": "(app)",
+    "action": "Logout"
+  },
+  {
+    "id": "web.scenario.0010",
+    "feature": "web.app",
+    "module": "Shell",
+    "endpoint": "(app)",
+    "action": "?modal=account-profile ouvre profil"
+  },
+  {
+    "id": "web.scenario.0011",
+    "feature": "web.dashboard",
+    "module": "Dashboard",
+    "endpoint": "http://localhost:5173/dashboard",
+    "action": "Chargement KPIs"
+  },
+  {
+    "id": "web.scenario.0012",
+    "feature": "web.dashboard",
+    "module": "Dashboard",
+    "endpoint": "http://localhost:5173/dashboard",
+    "action": "Cartes actions cliquables"
+  },
+  {
+    "id": "web.scenario.0013",
+    "feature": "web.dashboard",
+    "module": "Dashboard",
+    "endpoint": "http://localhost:5173/dashboard",
+    "action": "États empty / erreur"
+  },
+  {
+    "id": "web.scenario.0014",
+    "feature": "web.account.inbox",
+    "module": "Compte",
+    "endpoint": "http://localhost:5173/account/inbox",
+    "action": "Liste notifications"
+  },
+  {
+    "id": "web.scenario.0015",
+    "feature": "web.account.inbox",
+    "module": "Compte",
+    "endpoint": "http://localhost:5173/account/inbox",
+    "action": "Ouvrir un message"
+  },
+  {
+    "id": "web.scenario.0016",
+    "feature": "web.account.inbox",
+    "module": "Compte",
+    "endpoint": "http://localhost:5173/account/inbox",
+    "action": "Marquer lu"
+  },
+  {
+    "id": "web.scenario.0017",
+    "feature": "web.account.inbox.deliveryId",
+    "module": "Compte",
+    "endpoint": "http://localhost:5173/account/inbox/[deliveryId]",
+    "action": "Détail message sélectionné"
+  },
+  {
+    "id": "web.scenario.0018",
+    "feature": "web.account.notifications",
+    "module": "Compte",
+    "endpoint": "http://localhost:5173/account/notifications",
+    "action": "Charger préférences"
+  },
+  {
+    "id": "web.scenario.0019",
+    "feature": "web.account.notifications",
+    "module": "Compte",
+    "endpoint": "http://localhost:5173/account/notifications",
+    "action": "Sauver préférences"
+  },
+  {
+    "id": "web.scenario.0020",
+    "feature": "web.school.students",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students",
+    "action": "Liste — affichage"
+  },
+  {
+    "id": "web.scenario.0021",
+    "feature": "web.school.students",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students",
+    "action": "Recherche"
+  },
+  {
+    "id": "web.scenario.0022",
+    "feature": "web.school.students",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students",
+    "action": "Filtre classe"
+  },
+  {
+    "id": "web.scenario.0023",
+    "feature": "web.school.students",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students",
+    "action": "Filtre statut (actif / inactif / archivé)"
+  },
+  {
+    "id": "web.scenario.0024",
+    "feature": "web.school.students",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students",
+    "action": "Tri colonnes"
+  },
+  {
+    "id": "web.scenario.0025",
+    "feature": "web.school.students",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students",
+    "action": "Pagination / charger plus"
+  },
+  {
+    "id": "web.scenario.0026",
+    "feature": "web.school.students",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students",
+    "action": "Créer élève (modal)"
+  },
+  {
+    "id": "web.scenario.0027",
+    "feature": "web.school.students",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students",
+    "action": "Export sélection"
+  },
+  {
+    "id": "web.scenario.0028",
+    "feature": "web.school.students.id.profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/profile",
+    "action": "Ouvrir drawer profil"
+  },
+  {
+    "id": "web.scenario.0029",
+    "feature": "web.school.students.id.profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/profile",
+    "action": "Éditer profil"
+  },
+  {
+    "id": "web.scenario.0030",
+    "feature": "web.school.students.id.profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/profile",
+    "action": "Photo"
+  },
+  {
+    "id": "web.scenario.0031",
+    "feature": "web.school.students.id.profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/profile",
+    "action": "Notes pédagogiques — créer / éditer"
+  },
+  {
+    "id": "web.scenario.0032",
+    "feature": "web.school.students.id.profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/profile",
+    "action": "Changer classe"
+  },
+  {
+    "id": "web.scenario.0033",
+    "feature": "web.school.students.id.profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/profile",
+    "action": "Changer statut élève"
+  },
+  {
+    "id": "web.scenario.0034",
+    "feature": "web.school.students.id.grades",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/grades",
+    "action": "Consulter notes"
+  },
+  {
+    "id": "web.scenario.0035",
+    "feature": "web.school.students.id.attendance",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/attendance",
+    "action": "Consulter / enregistrer absence"
+  },
+  {
+    "id": "web.scenario.0036",
+    "feature": "web.school.students.id.incidents",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/incidents",
+    "action": "Consulter / créer incident"
+  },
+  {
+    "id": "web.scenario.0037",
+    "feature": "web.school.students.id.finances",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/finances",
+    "action": "Consulter lignes finance"
+  },
+  {
+    "id": "web.scenario.0038",
+    "feature": "web.school.students.id.report.card",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/report-card",
+    "action": "Générer / publier bulletin"
+  },
+  {
+    "id": "web.scenario.0039",
+    "feature": "web.school.students.id.enrollments",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/enrollments",
+    "action": "Historique inscriptions"
+  },
+  {
+    "id": "web.scenario.0040",
+    "feature": "web.school.students.id.documents",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/documents",
+    "action": "Historique documents"
+  },
+  {
+    "id": "web.scenario.0041",
+    "feature": "web.school.students.id.documents",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/documents",
+    "action": "Générer / télécharger / annuler"
+  },
+  {
+    "id": "web.scenario.0042",
+    "feature": "web.school.guardians",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/guardians",
+    "action": "Liste — affichage / recherche"
+  },
+  {
+    "id": "web.scenario.0043",
+    "feature": "web.school.guardians",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/guardians",
+    "action": "Créer tuteur"
+  },
+  {
+    "id": "web.scenario.0044",
+    "feature": "web.school.guardians.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/guardians/[id]",
+    "action": "Drawer — éditer"
+  },
+  {
+    "id": "web.scenario.0045",
+    "feature": "web.school.guardians.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/guardians/[id]",
+    "action": "Élèves liés"
+  },
+  {
+    "id": "web.scenario.0046",
+    "feature": "web.school.staff",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/staff",
+    "action": "Liste"
+  },
+  {
+    "id": "web.scenario.0047",
+    "feature": "web.school.staff",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/staff",
+    "action": "Créer personnel"
+  },
+  {
+    "id": "web.scenario.0048",
+    "feature": "web.school.staff.id.profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/staff/[id]/profile",
+    "action": "Éditer profil"
+  },
+  {
+    "id": "web.scenario.0049",
+    "feature": "web.school.staff.id.permissions",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/staff/[id]/permissions",
+    "action": "Assigner permissions"
+  },
+  {
+    "id": "web.scenario.0050",
+    "feature": "web.school.staff.id.assignments",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/staff/[id]/assignments",
+    "action": "Assignations classe/rôle"
+  },
+  {
+    "id": "web.scenario.0051",
+    "feature": "web.school.teachers",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers",
+    "action": "Liste"
+  },
+  {
+    "id": "web.scenario.0052",
+    "feature": "web.school.teachers",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers",
+    "action": "Créer enseignant"
+  },
+  {
+    "id": "web.scenario.0053",
+    "feature": "web.school.teachers.id.profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers/[id]/profile",
+    "action": "Éditer profil"
+  },
+  {
+    "id": "web.scenario.0054",
+    "feature": "web.school.teachers.id.assignments",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers/[id]/assignments",
+    "action": "CRUD affectations matière/classe"
+  },
+  {
+    "id": "web.scenario.0055",
+    "feature": "web.school.teachers.id.availability",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers/[id]/availability",
+    "action": "CRUD indisponibilités"
+  },
+  {
+    "id": "web.scenario.0056",
+    "feature": "web.school.teachers.id.timetable",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers/[id]/timetable",
+    "action": "Emploi du temps"
+  },
+  {
+    "id": "web.scenario.0057",
+    "feature": "web.school.teachers.id.evaluations",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers/[id]/evaluations",
+    "action": "Évaluations"
+  },
+  {
+    "id": "web.scenario.0058",
+    "feature": "web.school.teachers.id.family.feedback",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers/[id]/family-feedback",
+    "action": "Retour des familles"
+  },
+  {
+    "id": "web.scenario.0059",
+    "feature": "web.school.teachers.id.documents",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers/[id]/documents",
+    "action": "Documents"
+  },
+  {
+    "id": "web.scenario.0060",
+    "feature": "web.school.teacher.assignments",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teacher-assignments",
+    "action": "Redirect vers /configuration/tools/teacher-assignments"
+  },
+  {
+    "id": "web.scenario.0061",
+    "feature": "web.school.calendar",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/calendar",
+    "action": "Liste événements"
+  },
+  {
+    "id": "web.scenario.0062",
+    "feature": "web.school.calendar",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/calendar",
+    "action": "Filtres type"
+  },
+  {
+    "id": "web.scenario.0063",
+    "feature": "web.school.calendar",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/calendar",
+    "action": "Créer / éditer événement"
+  },
+  {
+    "id": "web.scenario.0064",
+    "feature": "web.school.activities",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/activities",
+    "action": "Liste — filtres catégorie"
+  },
+  {
+    "id": "web.scenario.0065",
+    "feature": "web.school.activities",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/activities",
+    "action": "Créer / éditer activité"
+  },
+  {
+    "id": "web.scenario.0066",
+    "feature": "web.school.activities.id.profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/activities/[id]/profile",
+    "action": "Onglet profil"
+  },
+  {
+    "id": "web.scenario.0067",
+    "feature": "web.school.activities.id.students",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/activities/[id]/students",
+    "action": "Onglet participants"
+  },
+  {
+    "id": "web.scenario.0068",
+    "feature": "web.school.activities.id.classes",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/activities/[id]/classes",
+    "action": "Onglet classes liées"
+  },
+  {
+    "id": "web.scenario.0069",
+    "feature": "web.school.announcements",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/announcements",
+    "action": "Liste — filtre statut"
+  },
+  {
+    "id": "web.scenario.0070",
+    "feature": "web.school.announcements",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/announcements",
+    "action": "Créer annonce"
+  },
+  {
+    "id": "web.scenario.0071",
+    "feature": "web.school.announcements.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/announcements/[id]",
+    "action": "Éditer"
+  },
+  {
+    "id": "web.scenario.0072",
+    "feature": "web.school.announcements.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/announcements/[id]",
+    "action": "Gérer cibles"
+  },
+  {
+    "id": "web.scenario.0073",
+    "feature": "web.school.announcements.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/announcements/[id]",
+    "action": "Retirer destinataire"
+  },
+  {
+    "id": "web.scenario.0074",
+    "feature": "web.school.announcements.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/announcements/[id]",
+    "action": "Publier"
+  },
+  {
+    "id": "web.scenario.0075",
+    "feature": "web.school.family.feedback",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback",
+    "action": "Liste — filtre statut"
+  },
+  {
+    "id": "web.scenario.0076",
+    "feature": "web.school.family.feedback",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback",
+    "action": "Créer campagne"
+  },
+  {
+    "id": "web.scenario.0077",
+    "feature": "web.school.family.feedback.id.setup",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/setup",
+    "action": "Paramétrage"
+  },
+  {
+    "id": "web.scenario.0078",
+    "feature": "web.school.family.feedback.id.setup",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/setup",
+    "action": "Éditer calendrier"
+  },
+  {
+    "id": "web.scenario.0079",
+    "feature": "web.school.family.feedback.id.setup",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/setup",
+    "action": "Désigner modérateur"
+  },
+  {
+    "id": "web.scenario.0080",
+    "feature": "web.school.family.feedback.id.setup",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/setup",
+    "action": "Planifier / ouvrir / clôturer"
+  },
+  {
+    "id": "web.scenario.0081",
+    "feature": "web.school.family.feedback.id.audience",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/audience",
+    "action": "Audience"
+  },
+  {
+    "id": "web.scenario.0082",
+    "feature": "web.school.family.feedback.id.moderation",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/moderation",
+    "action": "Thèmes et commentaires"
+  },
+  {
+    "id": "web.scenario.0083",
+    "feature": "web.school.family.feedback.id.results",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/results",
+    "action": "Agrégats et publication"
+  },
+  {
+    "id": "web.scenario.0084",
+    "feature": "web.school.events",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/events",
+    "action": "Liste incidents"
+  },
+  {
+    "id": "web.scenario.0085",
+    "feature": "web.school.events",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/events",
+    "action": "Créer incident"
+  },
+  {
+    "id": "web.scenario.0086",
+    "feature": "web.school.events.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/events/[id]",
+    "action": "Éditer"
+  },
+  {
+    "id": "web.scenario.0087",
+    "feature": "web.school.events.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/events/[id]",
+    "action": "Résoudre incident"
+  },
+  {
+    "id": "web.scenario.0088",
+    "feature": "web.classes.classId",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]",
+    "action": "Redirect vers /students"
+  },
+  {
+    "id": "web.scenario.0089",
+    "feature": "web.classes.classId.students",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students",
+    "action": "Liste élèves classe"
+  },
+  {
+    "id": "web.scenario.0090",
+    "feature": "web.classes.classId.students",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students",
+    "action": "Filtres"
+  },
+  {
+    "id": "web.scenario.0091",
+    "feature": "web.classes.classId.students",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students",
+    "action": "Créer élève (scope classe)"
+  },
+  {
+    "id": "web.scenario.0092",
+    "feature": "web.classes.classId.students.id.profile",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/profile",
+    "action": "Profil élève"
+  },
+  {
+    "id": "web.scenario.0093",
+    "feature": "web.classes.classId.students.id.grades",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/grades",
+    "action": "Notes"
+  },
+  {
+    "id": "web.scenario.0094",
+    "feature": "web.classes.classId.students.id.attendance",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/attendance",
+    "action": "Assiduité"
+  },
+  {
+    "id": "web.scenario.0095",
+    "feature": "web.classes.classId.students.id.incidents",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/incidents",
+    "action": "Incidents"
+  },
+  {
+    "id": "web.scenario.0096",
+    "feature": "web.classes.classId.students.id.finances",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/finances",
+    "action": "Finances"
+  },
+  {
+    "id": "web.scenario.0097",
+    "feature": "web.classes.classId.students.id.report.card",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/report-card",
+    "action": "Bulletin"
+  },
+  {
+    "id": "web.scenario.0098",
+    "feature": "web.classes.classId.students.id.enrollments",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/enrollments",
+    "action": "Inscriptions"
+  },
+  {
+    "id": "web.scenario.0099",
+    "feature": "web.classes.classId.students.id.documents",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/documents",
+    "action": "Documents"
+  },
+  {
+    "id": "web.scenario.0100",
+    "feature": "web.classes.classId.timetable",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/timetable",
+    "action": "Vue semaine"
+  },
+  {
+    "id": "web.scenario.0101",
+    "feature": "web.classes.classId.timetable",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/timetable",
+    "action": "Navigation semaine"
+  },
+  {
+    "id": "web.scenario.0102",
+    "feature": "web.classes.classId.timetable.sessionId.details",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/timetable/[sessionId]/details",
+    "action": "Détails séance"
+  },
+  {
+    "id": "web.scenario.0103",
+    "feature": "web.classes.classId.timetable.sessionId.attendance",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/timetable/[sessionId]/attendance",
+    "action": "Présence séance"
+  },
+  {
+    "id": "web.scenario.0104",
+    "feature": "web.classes.classId.timetable.sessionId.logbook",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/timetable/[sessionId]/logbook",
+    "action": "Cahier de texte séance"
+  },
+  {
+    "id": "web.scenario.0105",
+    "feature": "web.classes.classId.teaching",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/teaching",
+    "action": "Liste matières"
+  },
+  {
+    "id": "web.scenario.0106",
+    "feature": "web.classes.classId.teaching",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/teaching",
+    "action": "Recherche"
+  },
+  {
+    "id": "web.scenario.0107",
+    "feature": "web.classes.classId.teaching",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/teaching",
+    "action": "Offer / toggle matière"
+  },
+  {
+    "id": "web.scenario.0108",
+    "feature": "web.classes.classId.teaching.id.progression",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/teaching/[id]/progression",
+    "action": "Chapitres / progression"
+  },
+  {
+    "id": "web.scenario.0109",
+    "feature": "web.classes.classId.teaching.id.logbook",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/teaching/[id]/logbook",
+    "action": "Logbook matière"
+  },
+  {
+    "id": "web.scenario.0110",
+    "feature": "web.classes.classId.evaluations",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/evaluations",
+    "action": "Liste — filtre type"
+  },
+  {
+    "id": "web.scenario.0111",
+    "feature": "web.classes.classId.evaluations",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/evaluations",
+    "action": "Créer évaluation"
+  },
+  {
+    "id": "web.scenario.0112",
+    "feature": "web.classes.classId.evaluations",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/evaluations",
+    "action": "Éditer / supprimer"
+  },
+  {
+    "id": "web.scenario.0113",
+    "feature": "web.classes.classId.evaluations.id.details",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/evaluations/[id]/details",
+    "action": "Métadonnées évaluation"
+  },
+  {
+    "id": "web.scenario.0114",
+    "feature": "web.classes.classId.evaluations.id.grading",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/evaluations/[id]/grading",
+    "action": "Saisie notes"
+  },
+  {
+    "id": "web.scenario.0115",
+    "feature": "web.classes.classId.attendance",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/attendance",
+    "action": "Liste jours"
+  },
+  {
+    "id": "web.scenario.0116",
+    "feature": "web.classes.classId.attendance",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/attendance",
+    "action": "Filtre completion"
+  },
+  {
+    "id": "web.scenario.0117",
+    "feature": "web.classes.classId.attendance.dayId",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/attendance/[dayId]",
+    "action": "Prendre / éditer présence jour"
+  },
+  {
+    "id": "web.scenario.0118",
+    "feature": "web.classes.classId.report.cards",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/report-cards",
+    "action": "Liste — filtre statut"
+  },
+  {
+    "id": "web.scenario.0119",
+    "feature": "web.classes.classId.report.cards",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/report-cards",
+    "action": "Générer bulletin élève"
+  },
+  {
+    "id": "web.scenario.0120",
+    "feature": "web.classes.classId.report.cards",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/report-cards",
+    "action": "Générer bulletin classe"
+  },
+  {
+    "id": "web.scenario.0121",
+    "feature": "web.classes.classId.report.cards",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/report-cards",
+    "action": "Publier"
+  },
+  {
+    "id": "web.scenario.0122",
+    "feature": "web.classes.classId.report.cards.id",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/report-cards/[id]",
+    "action": "Détail bulletin"
+  },
+  {
+    "id": "web.scenario.0123",
+    "feature": "web.classes.classId.report.cards.id",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/report-cards/[id]",
+    "action": "Commentaire"
+  },
+  {
+    "id": "web.scenario.0124",
+    "feature": "web.classes.classId.report.cards.id",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/report-cards/[id]",
+    "action": "Publier"
+  },
+  {
+    "id": "web.scenario.0125",
+    "feature": "web.finance",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance",
+    "action": "Redirect vers /finance/billing"
+  },
+  {
+    "id": "web.scenario.0126",
+    "feature": "web.finance.fees",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/fees",
+    "action": "Liste frais"
+  },
+  {
+    "id": "web.scenario.0127",
+    "feature": "web.finance.fees",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/fees",
+    "action": "Filtre catégorie"
+  },
+  {
+    "id": "web.scenario.0128",
+    "feature": "web.finance.fees",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/fees",
+    "action": "Créer frais (nom, montant, échéances %)"
+  },
+  {
+    "id": "web.scenario.0129",
+    "feature": "web.finance.fees",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/fees",
+    "action": "Éditer / archiver frais"
+  },
+  {
+    "id": "web.scenario.0130",
+    "feature": "web.finance.billing",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/billing",
+    "action": "Liste facturations"
+  },
+  {
+    "id": "web.scenario.0131",
+    "feature": "web.finance.billing",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/billing",
+    "action": "Assigner frais à élève"
+  },
+  {
+    "id": "web.scenario.0132",
+    "feature": "web.finance.billing",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/billing",
+    "action": "Ouvrir drawer facturation"
+  },
+  {
+    "id": "web.scenario.0133",
+    "feature": "web.finance.billing.id",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/billing/[id]",
+    "action": "Enregistrer paiement"
+  },
+  {
+    "id": "web.scenario.0134",
+    "feature": "web.finance.billing.id",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/billing/[id]",
+    "action": "Imputer le solde"
+  },
+  {
+    "id": "web.scenario.0135",
+    "feature": "web.finance.payment",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/payment",
+    "action": "Ledger paiements"
+  },
+  {
+    "id": "web.scenario.0136",
+    "feature": "web.finance.payment",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/payment",
+    "action": "Recherche"
+  },
+  {
+    "id": "web.scenario.0137",
+    "feature": "web.finance.payment",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/payment",
+    "action": "Filtre statut"
+  },
+  {
+    "id": "web.scenario.0138",
+    "feature": "web.finance.payment",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/payment",
+    "action": "Filtre classe"
+  },
+  {
+    "id": "web.scenario.0139",
+    "feature": "web.finance.payment",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/payment",
+    "action": "Extourner un paiement"
+  },
+  {
+    "id": "web.scenario.0140",
+    "feature": "web.finance.reconciliation",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/reconciliation",
+    "action": "Rapprochement financier"
+  },
+  {
+    "id": "web.scenario.0141",
+    "feature": "web.configuration",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration",
+    "action": "Redirect vers /configuration/subjects"
+  },
+  {
+    "id": "web.scenario.0142",
+    "feature": "web.configuration.school",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/school",
+    "action": "Éditer nom, timezone, ville, type école"
+  },
+  {
+    "id": "web.scenario.0143",
+    "feature": "web.configuration.academic",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/academic",
+    "action": "Créer année scolaire"
+  },
+  {
+    "id": "web.scenario.0144",
+    "feature": "web.configuration.academic",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/academic",
+    "action": "Publier année"
+  },
+  {
+    "id": "web.scenario.0145",
+    "feature": "web.configuration.academic",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/academic",
+    "action": "Filtres liste"
+  },
+  {
+    "id": "web.scenario.0146",
+    "feature": "web.configuration.period.grid",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/period-grid",
+    "action": "Sélecteur année"
+  },
+  {
+    "id": "web.scenario.0147",
+    "feature": "web.configuration.period.grid",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/period-grid",
+    "action": "Définitions périodes (wizard)"
+  },
+  {
+    "id": "web.scenario.0148",
+    "feature": "web.configuration.other",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other",
+    "action": "Liste des catalogues"
+  },
+  {
+    "id": "web.scenario.0149",
+    "feature": "web.configuration.grade.levels",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/grade-levels",
+    "action": "Liste niveaux"
+  },
+  {
+    "id": "web.scenario.0150",
+    "feature": "web.configuration.grade.levels",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/grade-levels",
+    "action": "Créer niveau"
+  },
+  {
+    "id": "web.scenario.0151",
+    "feature": "web.configuration.grade.levels.id",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/grade-levels/[id]",
+    "action": "Drawer — éditer / supprimer"
+  },
+  {
+    "id": "web.scenario.0152",
+    "feature": "web.configuration.classes",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/classes",
+    "action": "Liste classes"
+  },
+  {
+    "id": "web.scenario.0153",
+    "feature": "web.configuration.classes",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/classes",
+    "action": "Créer classe"
+  },
+  {
+    "id": "web.scenario.0154",
+    "feature": "web.configuration.classes.id.profile",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/classes/[id]/profile",
+    "action": "Profil classe — éditer"
+  },
+  {
+    "id": "web.scenario.0155",
+    "feature": "web.configuration.classes.id.assignments",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/classes/[id]/assignments",
+    "action": "Affectations staff"
+  },
+  {
+    "id": "web.scenario.0156",
+    "feature": "web.configuration.subjects",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/subjects",
+    "action": "Liste matières"
+  },
+  {
+    "id": "web.scenario.0157",
+    "feature": "web.configuration.subjects",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/subjects",
+    "action": "Filtre niveau"
+  },
+  {
+    "id": "web.scenario.0158",
+    "feature": "web.configuration.subjects",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/subjects",
+    "action": "Créer matière"
+  },
+  {
+    "id": "web.scenario.0159",
+    "feature": "web.configuration.subjects.id.progression",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/subjects/[id]/progression",
+    "action": "Chapitres CRUD"
+  },
+  {
+    "id": "web.scenario.0160",
+    "feature": "web.configuration.subjects.id.logbook",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/subjects/[id]/logbook",
+    "action": "Redirection catalogue vers progression"
+  },
+  {
+    "id": "web.scenario.0161",
+    "feature": "web.configuration.subjects.level.level",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/subjects/level/[level]",
+    "action": "Redirect vers /configuration/subjects?gradeLevel=[id]"
+  },
+  {
+    "id": "web.scenario.0162",
+    "feature": "web.configuration.other.grade.scales",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other/grade-scales",
+    "action": "Liste barèmes"
+  },
+  {
+    "id": "web.scenario.0163",
+    "feature": "web.configuration.other.grade.scales",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other/grade-scales",
+    "action": "CRUD barème"
+  },
+  {
+    "id": "web.scenario.0164",
+    "feature": "web.configuration.report.cards",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/report-cards",
+    "action": "Liste définitions bulletins"
+  },
+  {
+    "id": "web.scenario.0165",
+    "feature": "web.configuration.report.cards",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/report-cards",
+    "action": "Créer / supprimer / publier"
+  },
+  {
+    "id": "web.scenario.0166",
+    "feature": "web.configuration.report.cards.id",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/report-cards/[id]",
+    "action": "Drawer définition"
+  },
+  {
+    "id": "web.scenario.0167",
+    "feature": "web.configuration.notifications",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/notifications",
+    "action": "Templates notifications école"
+  },
+  {
+    "id": "web.scenario.0168",
+    "feature": "web.configuration.other.discipline",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other/discipline",
+    "action": "Catalogue disciplinaire"
+  },
+  {
+    "id": "web.scenario.0169",
+    "feature": "web.configuration.other.discipline",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other/discipline",
+    "action": "Filtre kind"
+  },
+  {
+    "id": "web.scenario.0170",
+    "feature": "web.configuration.other.discipline",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other/discipline",
+    "action": "CRUD entrée"
+  },
+  {
+    "id": "web.scenario.0171",
+    "feature": "web.configuration.other.subject.categories",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other/subject-categories",
+    "action": "Liste catégories"
+  },
+  {
+    "id": "web.scenario.0172",
+    "feature": "web.configuration.other.subject.categories",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other/subject-categories",
+    "action": "CRUD catégorie"
+  },
+  {
+    "id": "web.scenario.0173",
+    "feature": "web.configuration.permission.profiles",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/permission-profiles",
+    "action": "Catalogue des profils"
+  },
+  {
+    "id": "web.scenario.0174",
+    "feature": "web.configuration.permission.profiles",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/permission-profiles",
+    "action": "Filtre grain"
+  },
+  {
+    "id": "web.scenario.0175",
+    "feature": "web.configuration.permission.profiles",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/permission-profiles",
+    "action": "CRUD entrée"
+  },
+  {
+    "id": "web.scenario.0176",
+    "feature": "web.configuration.tools",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/tools",
+    "action": "Hub outils visible"
+  },
+  {
+    "id": "web.scenario.0177",
+    "feature": "web.configuration.tools",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/tools",
+    "action": "Modal import données"
+  },
+  {
+    "id": "web.scenario.0178",
+    "feature": "web.configuration.tools.teacher.assignments",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/tools/teacher-assignments",
+    "action": "Hub affectations enseignant (deep link)"
+  },
+  {
+    "id": "web.scenario.0179",
+    "feature": "web.configuration.tools.teacher.assignments",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/tools/teacher-assignments",
+    "action": "Créer / supprimer affectation"
+  },
+  {
+    "id": "web.scenario.0180",
+    "feature": "web.configuration.tools",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/tools",
+    "action": "Planning EDT — générer brouillon"
+  },
+  {
+    "id": "web.scenario.0181",
+    "feature": "web.configuration.tools",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/tools",
+    "action": "Planning EDT — publier"
+  },
+  {
+    "id": "web.scenario.0182",
+    "feature": "web.configuration.tools",
+    "module": "Outils & imports",
+    "endpoint": "http://localhost:5173/configuration/tools",
+    "action": "Import élèves — template, validation, import, rapport"
+  },
+  {
+    "id": "web.scenario.0183",
+    "feature": "web.configuration.tools",
+    "module": "Outils & imports",
+    "endpoint": "http://localhost:5173/configuration/tools",
+    "action": "Import tuteurs"
+  },
+  {
+    "id": "web.scenario.0184",
+    "feature": "web.configuration.tools",
+    "module": "Outils & imports",
+    "endpoint": "http://localhost:5173/configuration/tools",
+    "action": "Import personnel"
+  },
+  {
+    "id": "web.scenario.0185",
+    "feature": "web.configuration.tools",
+    "module": "Outils & imports",
+    "endpoint": "http://localhost:5173/configuration/tools",
+    "action": "Import enseignants"
+  },
+  {
+    "id": "web.scenario.0186",
+    "feature": "web.configuration.tools",
+    "module": "Outils & imports",
+    "endpoint": "http://localhost:5173/configuration/tools",
+    "action": "Import classes"
+  },
+  {
+    "id": "web.scenario.0187",
+    "feature": "web.configuration.tools",
+    "module": "Outils & imports",
+    "endpoint": "http://localhost:5173/configuration/tools",
+    "action": "Import matières"
+  },
+  {
+    "id": "web.scenario.0188",
+    "feature": "web.configuration.tools",
+    "module": "Outils & imports",
+    "endpoint": "http://localhost:5173/configuration/tools",
+    "action": "Import affectations enseignant"
+  },
+  {
+    "id": "web.scenario.0189",
+    "feature": "web.configuration.tools",
+    "module": "Outils & imports",
+    "endpoint": "http://localhost:5173/configuration/tools",
+    "action": "Import chapitres"
+  },
+  {
+    "id": "web.scenario.0190",
+    "feature": "web.configuration.tools",
+    "module": "Outils & imports",
+    "endpoint": "http://localhost:5173/configuration/tools",
+    "action": "Import facturation (prérequis: frais créés)"
+  },
+  {
+    "id": "web.scenario.0191",
+    "feature": "web.configuration.tools",
+    "module": "Outils & imports",
+    "endpoint": "http://localhost:5173/configuration/tools",
+    "action": "Import paiements (prérequis: facturation élève)"
+  },
+  {
+    "id": "web.scenario.0192",
+    "feature": "web.multi.comptes",
+    "module": "Permissions",
+    "endpoint": "(multi-comptes)",
+    "action": "Compte enseignant — sidebar filtrée"
+  },
+  {
+    "id": "web.scenario.0193",
+    "feature": "web.multi.comptes",
+    "module": "Permissions",
+    "endpoint": "(multi-comptes)",
+    "action": "Compte éducateur — sidebar filtrée"
+  },
+  {
+    "id": "web.scenario.0194",
+    "feature": "web.multi.comptes",
+    "module": "Permissions",
+    "endpoint": "(multi-comptes)",
+    "action": "URL finance sans droit → /dashboard"
+  },
+  {
+    "id": "web.scenario.0195",
+    "feature": "web.multi.comptes",
+    "module": "Permissions",
+    "endpoint": "(multi-comptes)",
+    "action": "Boutons CRUD masqués (PermissionGate)"
+  },
+  {
+    "id": "web.scenario.0196",
+    "feature": "web.configuration.report.cards",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/report-cards",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0197",
+    "feature": "web.configuration.report.cards.id",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/report-cards/[id]",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0198",
+    "feature": "web.configuration.permission.profiles",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/permission-profiles",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0199",
+    "feature": "web.configuration.classes",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/classes",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0200",
+    "feature": "web.configuration.classes.id.assignments",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/classes/[id]/assignments",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0201",
+    "feature": "web.configuration.classes.id.profile",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/classes/[id]/profile",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0202",
+    "feature": "web.configuration.other",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0203",
+    "feature": "web.configuration.other.subject.categories",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other/subject-categories",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0204",
+    "feature": "web.configuration.other.grade.scales",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other/grade-scales",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0205",
+    "feature": "web.configuration.other.discipline",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other/discipline",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0206",
+    "feature": "web.configuration.period.grid",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/period-grid",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0207",
+    "feature": "web.configuration.academic",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/academic",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0208",
+    "feature": "web.configuration.subjects",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/subjects",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0209",
+    "feature": "web.configuration.subjects.id.logbook",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/subjects/[id]/logbook",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0210",
+    "feature": "web.configuration.subjects.id.progression",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/subjects/[id]/progression",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0211",
+    "feature": "web.configuration.school",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/school",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0212",
+    "feature": "web.configuration.notifications",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/notifications",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0213",
+    "feature": "web.configuration.notifications.id",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/notifications/[id]",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0214",
+    "feature": "web.configuration.grade.levels",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/grade-levels",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0215",
+    "feature": "web.configuration.grade.levels.id",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/grade-levels/[id]",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0216",
+    "feature": "web.classes.classId.attendance",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/attendance",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0217",
+    "feature": "web.classes.classId.attendance.id",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/attendance/[id]",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0218",
+    "feature": "web.classes.classId.report.cards",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/report-cards",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0219",
+    "feature": "web.classes.classId.report.cards.id",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/report-cards/[id]",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0220",
+    "feature": "web.classes.classId.evaluations",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/evaluations",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0221",
+    "feature": "web.classes.classId.evaluations.id.grading",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/evaluations/[id]/grading",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0222",
+    "feature": "web.classes.classId.evaluations.id.details",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/evaluations/[id]/details",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0223",
+    "feature": "web.classes.classId.students",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0224",
+    "feature": "web.classes.classId.students.id.attendance",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/attendance",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0225",
+    "feature": "web.classes.classId.students.id.grades",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/grades",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0226",
+    "feature": "web.classes.classId.students.id.enrollments",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/enrollments",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0227",
+    "feature": "web.classes.classId.students.id.report.card",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/report-card",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0228",
+    "feature": "web.classes.classId.students.id.profile",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/profile",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0229",
+    "feature": "web.classes.classId.students.id.documents",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/documents",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0230",
+    "feature": "web.classes.classId.students.id.finances",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/finances",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0231",
+    "feature": "web.classes.classId.students.id.incidents",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]/incidents",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0232",
+    "feature": "web.classes.classId.teaching",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/teaching",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0233",
+    "feature": "web.classes.classId.teaching.id.logbook",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/teaching/[id]/logbook",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0234",
+    "feature": "web.classes.classId.teaching.id.progression",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/teaching/[id]/progression",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0235",
+    "feature": "web.classes.classId.timetable",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/timetable",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0236",
+    "feature": "web.classes.classId.timetable.id.attendance",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/timetable/[id]/attendance",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0237",
+    "feature": "web.classes.classId.timetable.id.logbook",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/timetable/[id]/logbook",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0238",
+    "feature": "web.classes.classId.timetable.id.details",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/timetable/[id]/details",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0239",
+    "feature": "web.dashboard",
+    "module": "Dashboard",
+    "endpoint": "http://localhost:5173/dashboard",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0240",
+    "feature": "web.finance.reconciliation",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/reconciliation",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0241",
+    "feature": "web.finance.fees",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/fees",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0242",
+    "feature": "web.finance.payment",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/payment",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0243",
+    "feature": "web.finance.billing",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/billing",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0244",
+    "feature": "web.finance.billing.id",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/billing/[id]",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0245",
+    "feature": "web.account.inbox",
+    "module": "Compte",
+    "endpoint": "http://localhost:5173/account/inbox",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0246",
+    "feature": "web.account.inbox.id",
+    "module": "Compte",
+    "endpoint": "http://localhost:5173/account/inbox/[id]",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0247",
+    "feature": "web.account.notifications",
+    "module": "Compte",
+    "endpoint": "http://localhost:5173/account/notifications",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0248",
+    "feature": "web.school.marks.review",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/marks-review",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0249",
+    "feature": "web.school.calendar",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/calendar",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0250",
+    "feature": "web.school.family.feedback",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0251",
+    "feature": "web.school.family.feedback.id.setup",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/setup",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0252",
+    "feature": "web.school.family.feedback.id.results",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/results",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0253",
+    "feature": "web.school.family.feedback.id.audience",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/audience",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0254",
+    "feature": "web.school.family.feedback.id.moderation",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/moderation",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0255",
+    "feature": "web.school.announcements",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/announcements",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0256",
+    "feature": "web.school.announcements.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/announcements/[id]",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0257",
+    "feature": "web.school.teachers",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0258",
+    "feature": "web.school.teachers.id.assignments",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers/[id]/assignments",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0259",
+    "feature": "web.school.teachers.id.evaluations",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers/[id]/evaluations",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0260",
+    "feature": "web.school.teachers.id.family.feedback",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers/[id]/family-feedback",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0261",
+    "feature": "web.school.teachers.id.profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers/[id]/profile",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0262",
+    "feature": "web.school.teachers.id.availability",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers/[id]/availability",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0263",
+    "feature": "web.school.teachers.id.documents",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers/[id]/documents",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0264",
+    "feature": "web.school.teachers.id.timetable",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers/[id]/timetable",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0265",
+    "feature": "web.school.students",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0266",
+    "feature": "web.school.students.id.attendance",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/attendance",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0267",
+    "feature": "web.school.students.id.grades",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/grades",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0268",
+    "feature": "web.school.students.id.enrollments",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/enrollments",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0269",
+    "feature": "web.school.students.id.report.card",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/report-card",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0270",
+    "feature": "web.school.students.id.profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/profile",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0271",
+    "feature": "web.school.students.id.documents",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/documents",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0272",
+    "feature": "web.school.students.id.finances",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/finances",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0273",
+    "feature": "web.school.students.id.incidents",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/incidents",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0274",
+    "feature": "web.school.guardians",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/guardians",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0275",
+    "feature": "web.school.guardians.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/guardians/[id]",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0276",
+    "feature": "web.school.activities",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/activities",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0277",
+    "feature": "web.school.activities.id.classes",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/activities/[id]/classes",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0278",
+    "feature": "web.school.activities.id.students",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/activities/[id]/students",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0279",
+    "feature": "web.school.activities.id.profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/activities/[id]/profile",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0280",
+    "feature": "web.school.staff",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/staff",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0281",
+    "feature": "web.school.staff.id.assignments",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/staff/[id]/assignments",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0282",
+    "feature": "web.school.staff.id.permissions",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/staff/[id]/permissions",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0283",
+    "feature": "web.school.staff.id.profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/staff/[id]/profile",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0284",
+    "feature": "web.school.events",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/events",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0285",
+    "feature": "web.school.events.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/events/[id]",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0286",
+    "feature": "web.account.security",
+    "module": "Compte",
+    "endpoint": "http://localhost:5173/account/security",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0287",
+    "feature": "web.school.students.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0288",
+    "feature": "web.school.staff.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/staff/[id]",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0289",
+    "feature": "web.school.teachers.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers/[id]",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0290",
+    "feature": "web.school.activities.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/activities/[id]",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0291",
+    "feature": "web.configuration.classes.id",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/classes/[id]",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0292",
+    "feature": "web.configuration.subjects.id",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/subjects/[id]",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0293",
+    "feature": "web.classes.classId.timetable.id",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/timetable/[id]",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0294",
+    "feature": "web.classes.classId.teaching.id",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/teaching/[id]",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0295",
+    "feature": "web.classes.classId.students.id",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students/[id]",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0296",
+    "feature": "web.classes.classId.evaluations.id",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/evaluations/[id]",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0297",
+    "feature": "web.classes.classId.subjects.id",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/subjects/[id]",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0298",
+    "feature": "web.classes.classId.homework.id",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/homework/[id]",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0299",
+    "feature": "web.configuration.staff.id",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/staff/[id]",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0300",
+    "feature": "web.configuration.roles.role",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/roles/[role]",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0301",
+    "feature": "web.configuration.subjects.level.level",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/subjects/level/[level]",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0302",
+    "feature": "web.school.students",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students?modal=create",
+    "action": "Modal deep-link ?modal=create"
+  },
+  {
+    "id": "web.scenario.0303",
+    "feature": "web.school.guardians",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/guardians?modal=create",
+    "action": "Modal deep-link ?modal=create"
+  },
+  {
+    "id": "web.scenario.0304",
+    "feature": "web.school.staff",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/staff?modal=create",
+    "action": "Modal deep-link ?modal=create"
+  },
+  {
+    "id": "web.scenario.0305",
+    "feature": "web.school.teachers",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers?modal=create",
+    "action": "Modal deep-link ?modal=create"
+  },
+  {
+    "id": "web.scenario.0306",
+    "feature": "web.school.calendar",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/calendar?modal=create",
+    "action": "Modal deep-link ?modal=create"
+  },
+  {
+    "id": "web.scenario.0307",
+    "feature": "web.school.calendar",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/calendar?modal=edit",
+    "action": "Modal deep-link ?modal=edit"
+  },
+  {
+    "id": "web.scenario.0308",
+    "feature": "web.school.activities",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/activities?modal=create",
+    "action": "Modal deep-link ?modal=create"
+  },
+  {
+    "id": "web.scenario.0309",
+    "feature": "web.school.announcements",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/announcements?modal=create",
+    "action": "Modal deep-link ?modal=create"
+  },
+  {
+    "id": "web.scenario.0310",
+    "feature": "web.school.family.feedback",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback?modal=create",
+    "action": "Modal deep-link ?modal=create"
+  },
+  {
+    "id": "web.scenario.0311",
+    "feature": "web.school.events",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/events?modal=create",
+    "action": "Modal deep-link ?modal=create"
+  },
+  {
+    "id": "web.scenario.0312",
+    "feature": "web.school.students.id.profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/profile?modal=edit-profile",
+    "action": "Modal deep-link ?modal=edit-profile"
+  },
+  {
+    "id": "web.scenario.0313",
+    "feature": "web.school.students.id.profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/profile?modal=change-class",
+    "action": "Modal deep-link ?modal=change-class"
+  },
+  {
+    "id": "web.scenario.0314",
+    "feature": "web.school.students.id.profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/profile?modal=link-guardian",
+    "action": "Modal deep-link ?modal=link-guardian"
+  },
+  {
+    "id": "web.scenario.0315",
+    "feature": "web.school.students.id.profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/profile?modal=note",
+    "action": "Modal deep-link ?modal=note"
+  },
+  {
+    "id": "web.scenario.0316",
+    "feature": "web.school.students.id.attendance",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/attendance?modal=add-absence",
+    "action": "Modal deep-link ?modal=add-absence"
+  },
+  {
+    "id": "web.scenario.0317",
+    "feature": "web.school.students.id.incidents",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students/[id]/incidents?modal=add-incident",
+    "action": "Modal deep-link ?modal=add-incident"
+  },
+  {
+    "id": "web.scenario.0318",
+    "feature": "web.school.guardians.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/guardians/[id]?modal=edit-profile",
+    "action": "Modal deep-link ?modal=edit-profile"
+  },
+  {
+    "id": "web.scenario.0319",
+    "feature": "web.school.staff.id.profile",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/staff/[id]/profile?modal=edit-profile",
+    "action": "Modal deep-link ?modal=edit-profile"
+  },
+  {
+    "id": "web.scenario.0320",
+    "feature": "web.school.staff.id.permissions",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/staff/[id]/permissions?modal=add-permission",
+    "action": "Modal deep-link ?modal=add-permission"
+  },
+  {
+    "id": "web.scenario.0321",
+    "feature": "web.school.teachers.id.assignments",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers/[id]/assignments?modal=form",
+    "action": "Modal deep-link ?modal=form"
+  },
+  {
+    "id": "web.scenario.0322",
+    "feature": "web.school.teachers.id.assignments",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers/[id]/assignments?modal=delete-assignment",
+    "action": "Modal deep-link ?modal=delete-assignment"
+  },
+  {
+    "id": "web.scenario.0323",
+    "feature": "web.school.teachers.id.documents",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers/[id]/documents?modal=generate-document",
+    "action": "Modal deep-link ?modal=generate-document"
+  },
+  {
+    "id": "web.scenario.0324",
+    "feature": "web.school.announcements.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/announcements/[id]?modal=edit",
+    "action": "Modal deep-link ?modal=edit"
+  },
+  {
+    "id": "web.scenario.0325",
+    "feature": "web.school.announcements.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/announcements/[id]?modal=add-target",
+    "action": "Modal deep-link ?modal=add-target"
+  },
+  {
+    "id": "web.scenario.0326",
+    "feature": "web.school.announcements.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/announcements/[id]?modal=publish",
+    "action": "Modal deep-link ?modal=publish"
+  },
+  {
+    "id": "web.scenario.0327",
+    "feature": "web.school.family.feedback.id.setup",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/setup?modal=edit",
+    "action": "Modal deep-link ?modal=edit"
+  },
+  {
+    "id": "web.scenario.0328",
+    "feature": "web.school.family.feedback.id.setup",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/setup?modal=assign-moderator",
+    "action": "Modal deep-link ?modal=assign-moderator"
+  },
+  {
+    "id": "web.scenario.0329",
+    "feature": "web.school.family.feedback.id.setup",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/setup?modal=schedule",
+    "action": "Modal deep-link ?modal=schedule"
+  },
+  {
+    "id": "web.scenario.0330",
+    "feature": "web.school.family.feedback.id.setup",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/setup?modal=open",
+    "action": "Modal deep-link ?modal=open"
+  },
+  {
+    "id": "web.scenario.0331",
+    "feature": "web.school.family.feedback.id.setup",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/setup?modal=close",
+    "action": "Modal deep-link ?modal=close"
+  },
+  {
+    "id": "web.scenario.0332",
+    "feature": "web.school.family.feedback.id.setup",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/setup?modal=cancel",
+    "action": "Modal deep-link ?modal=cancel"
+  },
+  {
+    "id": "web.scenario.0333",
+    "feature": "web.school.family.feedback.id.moderation",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/moderation?modal=theme",
+    "action": "Modal deep-link ?modal=theme"
+  },
+  {
+    "id": "web.scenario.0334",
+    "feature": "web.school.family.feedback.id.results",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/results?modal=publish",
+    "action": "Modal deep-link ?modal=publish"
+  },
+  {
+    "id": "web.scenario.0335",
+    "feature": "web.school.family.feedback.id.results",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback/[id]/results?modal=archive",
+    "action": "Modal deep-link ?modal=archive"
+  },
+  {
+    "id": "web.scenario.0336",
+    "feature": "web.school.events.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/events/[id]?modal=edit",
+    "action": "Modal deep-link ?modal=edit"
+  },
+  {
+    "id": "web.scenario.0337",
+    "feature": "web.school.events.id",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/events/[id]?modal=resolve",
+    "action": "Modal deep-link ?modal=resolve"
+  },
+  {
+    "id": "web.scenario.0338",
+    "feature": "web.classes.classId.students",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students?modal=create",
+    "action": "Modal deep-link ?modal=create"
+  },
+  {
+    "id": "web.scenario.0339",
+    "feature": "web.classes.classId.teaching.id.progression",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/teaching/[id]/progression?modal=edit-subject",
+    "action": "Modal deep-link ?modal=edit-subject"
+  },
+  {
+    "id": "web.scenario.0340",
+    "feature": "web.finance.fees",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/fees?modal=create",
+    "action": "Modal deep-link ?modal=create"
+  },
+  {
+    "id": "web.scenario.0341",
+    "feature": "web.finance.billing",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/billing?modal=assign-fee",
+    "action": "Modal deep-link ?modal=assign-fee"
+  },
+  {
+    "id": "web.scenario.0342",
+    "feature": "web.finance.billing.id",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/billing/[id]?modal=payment",
+    "action": "Modal deep-link ?modal=payment"
+  },
+  {
+    "id": "web.scenario.0343",
+    "feature": "web.finance.billing.id",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/billing/[id]?modal=allocate",
+    "action": "Modal deep-link ?modal=allocate"
+  },
+  {
+    "id": "web.scenario.0344",
+    "feature": "web.finance.billing.id",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/billing/[id]?modal=unallocate",
+    "action": "Modal deep-link ?modal=unallocate"
+  },
+  {
+    "id": "web.scenario.0345",
+    "feature": "web.finance.payment",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/payment?modal=reverse",
+    "action": "Modal deep-link ?modal=reverse"
+  },
+  {
+    "id": "web.scenario.0346",
+    "feature": "web.finance.payment",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/payment?modal=refund",
+    "action": "Modal deep-link ?modal=refund"
+  },
+  {
+    "id": "web.scenario.0347",
+    "feature": "web.configuration.school",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/school?modal=edit",
+    "action": "Modal deep-link ?modal=edit"
+  },
+  {
+    "id": "web.scenario.0348",
+    "feature": "web.configuration.grade.levels",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/grade-levels?modal=create",
+    "action": "Modal deep-link ?modal=create"
+  },
+  {
+    "id": "web.scenario.0349",
+    "feature": "web.configuration.grade.levels.id",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/grade-levels/[id]?modal=edit",
+    "action": "Modal deep-link ?modal=edit"
+  },
+  {
+    "id": "web.scenario.0350",
+    "feature": "web.configuration.classes",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/classes?modal=create",
+    "action": "Modal deep-link ?modal=create"
+  },
+  {
+    "id": "web.scenario.0351",
+    "feature": "web.configuration.classes.id.profile",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/classes/[id]/profile?modal=edit",
+    "action": "Modal deep-link ?modal=edit"
+  },
+  {
+    "id": "web.scenario.0352",
+    "feature": "web.configuration.classes.id.assignments",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/classes/[id]/assignments?modal=form",
+    "action": "Modal deep-link ?modal=form"
+  },
+  {
+    "id": "web.scenario.0353",
+    "feature": "web.configuration.subjects",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/subjects?modal=create-subject",
+    "action": "Modal deep-link ?modal=create-subject"
+  },
+  {
+    "id": "web.scenario.0354",
+    "feature": "web.configuration.subjects.id.progression",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/subjects/[id]/progression?modal=add-chapter",
+    "action": "Modal deep-link ?modal=add-chapter"
+  },
+  {
+    "id": "web.scenario.0355",
+    "feature": "web.configuration.other.grade.scales",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other/grade-scales?modal=create",
+    "action": "Modal deep-link ?modal=create"
+  },
+  {
+    "id": "web.scenario.0356",
+    "feature": "web.configuration.report.cards",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/report-cards?modal=create",
+    "action": "Modal deep-link ?modal=create"
+  },
+  {
+    "id": "web.scenario.0357",
+    "feature": "web.configuration.report.cards.id",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/report-cards/[id]?modal=delete",
+    "action": "Modal deep-link ?modal=delete"
+  },
+  {
+    "id": "web.scenario.0358",
+    "feature": "web.configuration.notifications",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/notifications?modal=reset-all",
+    "action": "Modal deep-link ?modal=reset-all"
+  },
+  {
+    "id": "web.scenario.0359",
+    "feature": "web.configuration.notifications.id",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/notifications/[id]?modal=edit",
+    "action": "Modal deep-link ?modal=edit"
+  },
+  {
+    "id": "web.scenario.0360",
+    "feature": "web.configuration.notifications.id",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/notifications/[id]?modal=reset-key",
+    "action": "Modal deep-link ?modal=reset-key"
+  },
+  {
+    "id": "web.scenario.0361",
+    "feature": "web.configuration.other.discipline",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other/discipline?modal=create",
+    "action": "Modal deep-link ?modal=create"
+  },
+  {
+    "id": "web.scenario.0362",
+    "feature": "web.configuration.other.subject.categories",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other/subject-categories?modal=create",
+    "action": "Modal deep-link ?modal=create"
+  },
+  {
+    "id": "web.scenario.0363",
+    "feature": "web.configuration.permission.profiles",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/permission-profiles?modal=create",
+    "action": "Modal deep-link ?modal=create"
+  },
+  {
+    "id": "web.scenario.0364",
+    "feature": "web.dashboard",
+    "module": "Shell",
+    "endpoint": "http://localhost:5173/dashboard?modal=account-profile",
+    "action": "Modal deep-link ?modal=account-profile"
+  },
+  {
+    "id": "web.scenario.0365",
+    "feature": "web.school.marks.review",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/marks-review",
+    "action": "Sidebar — lien marks.reviewQueue accessible"
+  },
+  {
+    "id": "web.scenario.0366",
+    "feature": "web.school.students",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/students",
+    "action": "Sidebar — lien school.students accessible"
+  },
+  {
+    "id": "web.scenario.0367",
+    "feature": "web.school.guardians",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/guardians",
+    "action": "Sidebar — lien school.guardians accessible"
+  },
+  {
+    "id": "web.scenario.0368",
+    "feature": "web.school.staff",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/staff",
+    "action": "Sidebar — lien config.staff accessible"
+  },
+  {
+    "id": "web.scenario.0369",
+    "feature": "web.school.teachers",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teachers",
+    "action": "Sidebar — lien school.teachers accessible"
+  },
+  {
+    "id": "web.scenario.0370",
+    "feature": "web.school.calendar",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/calendar",
+    "action": "Sidebar — lien school.calendar accessible"
+  },
+  {
+    "id": "web.scenario.0371",
+    "feature": "web.school.activities",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/activities",
+    "action": "Sidebar — lien school.activities accessible"
+  },
+  {
+    "id": "web.scenario.0372",
+    "feature": "web.school.announcements",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/announcements",
+    "action": "Sidebar — lien school.announcements accessible"
+  },
+  {
+    "id": "web.scenario.0373",
+    "feature": "web.school.family.feedback",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/family-feedback",
+    "action": "Sidebar — lien school.familyFeedback accessible"
+  },
+  {
+    "id": "web.scenario.0374",
+    "feature": "web.school.events",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/events",
+    "action": "Sidebar — lien school.events accessible"
+  },
+  {
+    "id": "web.scenario.0375",
+    "feature": "web.classes.classId.students",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/students",
+    "action": "Sidebar — lien tab.students accessible"
+  },
+  {
+    "id": "web.scenario.0376",
+    "feature": "web.classes.classId.timetable",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/timetable",
+    "action": "Sidebar — lien tab.timetable accessible"
+  },
+  {
+    "id": "web.scenario.0377",
+    "feature": "web.classes.classId.teaching",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/teaching",
+    "action": "Sidebar — lien tab.teaching accessible"
+  },
+  {
+    "id": "web.scenario.0378",
+    "feature": "web.classes.classId.evaluations",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/evaluations",
+    "action": "Sidebar — lien tab.evaluations accessible"
+  },
+  {
+    "id": "web.scenario.0379",
+    "feature": "web.classes.classId.attendance",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/attendance",
+    "action": "Sidebar — lien tab.attendance accessible"
+  },
+  {
+    "id": "web.scenario.0380",
+    "feature": "web.classes.classId.report.cards",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/report-cards",
+    "action": "Sidebar — lien tab.reportCards accessible"
+  },
+  {
+    "id": "web.scenario.0381",
+    "feature": "web.finance.fees",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/fees",
+    "action": "Sidebar — lien finance.fees accessible"
+  },
+  {
+    "id": "web.scenario.0382",
+    "feature": "web.finance.billing",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/billing",
+    "action": "Sidebar — lien finance.billing accessible"
+  },
+  {
+    "id": "web.scenario.0383",
+    "feature": "web.finance.payment",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/payment",
+    "action": "Sidebar — lien finance.payment accessible"
+  },
+  {
+    "id": "web.scenario.0384",
+    "feature": "web.finance.reconciliation",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/reconciliation",
+    "action": "Sidebar — lien finance.reconciliation accessible"
+  },
+  {
+    "id": "web.scenario.0385",
+    "feature": "web.configuration.school",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/school",
+    "action": "Sidebar — lien config.school accessible"
+  },
+  {
+    "id": "web.scenario.0386",
+    "feature": "web.configuration.academic",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/academic",
+    "action": "Sidebar — lien config.academic accessible"
+  },
+  {
+    "id": "web.scenario.0387",
+    "feature": "web.configuration.period.grid",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/period-grid",
+    "action": "Sidebar — lien config.periodGrid accessible"
+  },
+  {
+    "id": "web.scenario.0388",
+    "feature": "web.configuration.grade.levels",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/grade-levels",
+    "action": "Sidebar — lien config.gradeLevels accessible"
+  },
+  {
+    "id": "web.scenario.0389",
+    "feature": "web.configuration.classes",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/classes",
+    "action": "Sidebar — lien config.classGroups accessible"
+  },
+  {
+    "id": "web.scenario.0390",
+    "feature": "web.configuration.subjects",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/subjects",
+    "action": "Sidebar — lien config.subjects accessible"
+  },
+  {
+    "id": "web.scenario.0391",
+    "feature": "web.configuration.report.cards",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/report-cards",
+    "action": "Sidebar — lien config.reportCards accessible"
+  },
+  {
+    "id": "web.scenario.0392",
+    "feature": "web.configuration.notifications",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/notifications",
+    "action": "Sidebar — lien config.notificationTemplates accessible"
+  },
+  {
+    "id": "web.scenario.0393",
+    "feature": "web.configuration.other",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other",
+    "action": "Sidebar — lien config.other accessible"
+  },
+  {
+    "id": "web.scenario.0394",
+    "feature": "web.configuration.permission.profiles",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/permission-profiles",
+    "action": "Sidebar — lien config.permissionProfiles accessible"
+  },
+  {
+    "id": "web.scenario.0395",
+    "feature": "web.dashboard",
+    "module": "Dashboard",
+    "endpoint": "http://localhost:5173/dashboard",
+    "action": "Sidebar — lien nav.dashboard accessible"
+  },
+  {
+    "id": "web.scenario.0396",
+    "feature": "web.configuration.tools",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/tools",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0397",
+    "feature": "web.configuration.tools.teacher.assignments",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/tools/teacher-assignments",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.scenario.0398",
+    "feature": "web.school.teacher.assignments",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/teacher-assignments",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0399",
+    "feature": "web.configuration.tools.teacher.assignments",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/tools/teacher-assignments?modal=create",
+    "action": "Modal deep-link ?modal=create"
+  },
+  {
+    "id": "web.scenario.0400",
+    "feature": "web.configuration.tools",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/tools",
+    "action": "Sidebar — lien config.tools accessible"
+  }
+]

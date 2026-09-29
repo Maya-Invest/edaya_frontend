@@ -105,6 +105,7 @@
 				{#each filteredClasses as classGroup (classGroup.id)}
 					<button
 						type="button"
+						data-testid="timetable-workload-class"
 						class={cn(
 							'mb-0.5 w-full rounded-lg px-2 py-1.5 text-left text-sm transition-colors',
 							activeClassId === classGroup.id ? ROW_ACTIVE : 'hover:bg-secondary/80',
@@ -143,6 +144,7 @@
 									<span class="text-[10px] leading-none text-muted-foreground">{$t('timetable.periodsPerWeekShort')}</span>
 									<Input
 										type="number"
+										data-testid="timetable-workload-periods"
 										min="0"
 										class="h-8 w-12 px-1 text-center text-sm"
 										value={String(overrides[subject.id] ?? '')}

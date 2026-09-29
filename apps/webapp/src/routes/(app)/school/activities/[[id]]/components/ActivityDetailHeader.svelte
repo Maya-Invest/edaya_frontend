@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { Activity } from '$lib/types/school';
-	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { fmtActivityDate } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
@@ -37,7 +36,7 @@
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
-	afterNavigate(() => {
+	$effect(() => {
 		modals.hydrate();
 	});
 	const editOpen = bindUrlModal(modals, 'edit');

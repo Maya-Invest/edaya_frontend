@@ -15,7 +15,7 @@
 </script>
 
 {#if teacher}
-	<PageQuery {query} cacheKey={cacheKey} loadingTitle={$t('drawer.tab.documents')}>
+	<PageQuery preserveWhileLoading {query} cacheKey={cacheKey} loadingTitle={$t('drawer.tab.documents')}>
 		{#snippet children(data)}
 			<DataState status={data.status} errorMessage={data.errorMessage}>
 				<TeacherDocumentsTab {teacher} />

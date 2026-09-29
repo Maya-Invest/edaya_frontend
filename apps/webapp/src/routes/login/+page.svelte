@@ -123,7 +123,7 @@
 		if (prefillEmail) {
 			email = prefillEmail;
 		}
-		navigateLoginState({ panel: 'signin', method: 'password', stage: 'form' });
+		navigateLoginState({ panel: 'signin', method: 'email-otp', stage: 'form' });
 	}
 </script>
 

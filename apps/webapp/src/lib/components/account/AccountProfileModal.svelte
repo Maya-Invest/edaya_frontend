@@ -108,6 +108,7 @@
 
 		<div class="min-h-0 space-y-6 overflow-y-auto px-6 py-5">
 			<section class="space-y-4">
+				<a href="/account/security" onclick={() => (open = false)} class="text-sm text-primary">{$t('auth.accountSecurity')}</a>
 				<h3 class="font-sans text-xs uppercase tracking-widest text-muted-foreground">
 					{$t('account.profile.sectionProfile')}
 				</h3>
@@ -146,6 +147,7 @@
 			</section>
 
 			<section class="space-y-2">
+				<a href="/account/security" onclick={() => (open = false)} class="text-sm text-primary">{$t('auth.accountSecurity')}</a>
 				<h3 class="font-sans text-xs uppercase tracking-widest text-muted-foreground">
 					{$t('account.profile.sectionShortcuts')}
 				</h3>

@@ -51,13 +51,15 @@ export async function runClassImport(options: ClassImportRunOptions): Promise<Cl
 
 	for (const [index, row] of rows.entries()) {
 		onProgress?.(index, total);
-		const id = nextClassIdForImport(
+		const mnemonic = nextClassIdForImport(
 			row.gradeLevelId,
 			usedClassIds,
 			gradeSiblingCounts,
 			gradeLevelNameById?.get(row.gradeLevelId),
 		);
 
+		// Entity IDs are global; school-local mnemonic counters are not unique.
+		const id = `${mnemonic}-${crypto.randomUUID()}`;
 		try {
 			await client.commands.createClassGroup({
 				id,

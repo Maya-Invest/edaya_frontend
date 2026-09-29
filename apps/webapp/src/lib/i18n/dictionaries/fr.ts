@@ -2,6 +2,27 @@ import type { Dict } from '../dictionaries.ts';
 import { permissionLabelsFr } from './permission-labels.ts';
 
 export const fr: Dict = {
+	'auth.unlinkWarning': 'Supprimer cet identifiant déconnecte tous les appareils. Vous devez conserver au moins un contact de récupération.',
+	'auth.accountSecurity': 'Sécurité du compte',
+	'auth.showSecurity': 'Afficher les paramètres de sécurité',
+	'auth.recentSignInHint': 'Reconnectez-vous avant de modifier vos identifiants ou votre application d’authentification.',
+	'auth.linkIdentifier': 'Associer un autre identifiant',
+	'auth.unlinkIdentifier': 'Dissocier et se déconnecter',
+	'auth.authenticatorEnabled': 'Application d’authentification activée',
+	'auth.recoveryEligible': 'Autoriser cet identifiant pour récupérer le compte',
+
+	'auth.deliveryChannel': 'Recevoir mon code par',
+	'auth.phoneLabel': 'Numéro de téléphone',
+	'auth.phoneCountryHint': 'Incluez l’indicatif du pays, par exemple +225.',
+	'auth.authenticatorSetup': 'Ajoutez cette clé à votre application d’authentification, puis saisissez son code.',
+	'auth.authenticatorCode': 'Code de l’application',
+	'auth.recoveryCode': 'Code de récupération',
+	'auth.useAuthenticator': 'Utiliser l’application',
+	'auth.useRecoveryCode': 'Utiliser un code de récupération',
+	'auth.enableAuthenticator': 'Configurer l’application',
+	'auth.saveRecoveryCodes': 'Conservez ces codes de récupération en lieu sûr. Ils ne seront affichés qu’une fois.',
+	'auth.savedRecoveryCodes': 'J’ai conservé mes codes',
+
 	'marks.confirmChanges': 'Toutes les modifications proposées ont été vérifiées.',
 	'marks.comment': 'Commentaire de note',
 	'marks.author': 'Demandée par',

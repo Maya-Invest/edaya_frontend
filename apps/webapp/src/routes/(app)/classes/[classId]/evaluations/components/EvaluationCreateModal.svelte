@@ -224,14 +224,14 @@
 				{$t('reportCards.subjects')}
 			</Label>
 			<Select.Root type="single" value={classSubjectId} onValueChange={value => value && (classSubjectId = value)}>
-				<Select.Trigger>
+				<Select.Trigger data-testid="assessment-subject-select">
 					<Select.Value placeholder={$t('reportCards.subjects')}>
 						{selectedSubjectName || $t('reportCards.subjects')}
 					</Select.Value>
 				</Select.Trigger>
 				<Select.Content class="z-[100]">
 					{#each classSubjects as subject (subject.id)}
-						<Select.Item value={subject.id} label={catalogSubjectName(subject.name, $lang, subject.code)}>
+						<Select.Item data-testid={`assessment-subject-${subject.id}`} value={subject.id} label={catalogSubjectName(subject.name, $lang, subject.code)}>
 							{catalogSubjectName(subject.name, $lang, subject.code)}
 						</Select.Item>
 					{/each}

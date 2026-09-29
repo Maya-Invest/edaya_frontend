@@ -2,9 +2,9 @@
  * API provisioning for integration tests.
  *
  * Identity (`AUTH_URL`, default http://localhost:9900):
- *   1. POST /auth/sign-up/email — user
- *   2. POST /dev/seed/mark-email-verified — API provisioning only (not the onboarding UI)
- *   3. POST /auth/sign-in/email — session cookie (required when email verification is on)
+ *   1. POST /auth/edaya/otp/start — primary challenge
+ *   2. Local-only OTP peek fixture
+ *   3. POST /auth/edaya/otp/verify — verified Account and session cookie
  *   4. POST /auth/edaya/access-token — school Bearer JWT
  *
  * School API (`API_URL`, default http://localhost:9999):
@@ -15,7 +15,7 @@
  */
 import { isIdentityPath, resolveApiUrl, resolveAuthUrl } from './integration-hosts';
 
-const SEED_AUTH_PROVISION_HEADER = 'x-edaya-seed-provision';
+import { peekOtp } from './passwordless';
 
 export interface SecondaryAccountCredentials {
 	email: string;
@@ -259,15 +259,7 @@ export async function signInAccount(
 	password: string,
 ): Promise<ProvisionHttpClient> {
 	const client = new ProvisionHttpClient(apiUrl, appOrigin);
-	const { response, body } = await client.jsonRequest('/auth/sign-in/email', {
-		method: 'POST',
-		headers: { 'content-type': 'application/json' },
-		body: JSON.stringify({ email, password }),
-	});
-	if (!response.ok) {
-		const detail = body ? JSON.stringify(body) : await response.text();
-		throw new Error(`sign-in failed: ${response.status} ${detail}`);
-	}
+	await signIn(client, email, password);
 	return client;
 }
 
@@ -382,7 +374,7 @@ export async function ensureSecondaryAuthAccount(
 
 	try {
 		const client = await signInAccount(apiUrl, appOrigin, email, password);
-		const { response, body } = await client.jsonRequest<{ user?: { id?: string } }>('/auth/get-session');
+		const { response, body } = await client.jsonRequest<{ user?: { id?: string } }>('/auth/edaya/session', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
 		const subjectId = response.ok ? body?.user?.id : undefined;
 		if (!subjectId) {
 			return { ok: false, detail: 'sign-in succeeded but session has no user.id' };
@@ -410,68 +402,26 @@ export async function activateTeacherSecondaryAccount(
 	return acceptInvitationTokenWithRetry(apiUrl, appOrigin, email, password, name, token);
 }
 
-async function markEmailVerified(client: ProvisionHttpClient, email: string, subjectId?: string): Promise<void> {
-	const response = await client.request('/dev/seed/mark-email-verified', {
-		method: 'POST',
-		headers: {
-			'content-type': 'application/json',
-			[SEED_AUTH_PROVISION_HEADER]: '1',
-		},
-		body: JSON.stringify(subjectId ? { subjectId, email } : { email }),
-	});
-
-	if (response.ok || response.status === 404) {
-		return;
-	}
-
-	const message = await response.text();
-	throw new Error(`mark-email-verified failed: ${response.status} ${message}`);
+async function authenticateAccount(client: ProvisionHttpClient, email: string): Promise<string> {
+  const sent = await client.jsonRequest<{ challenge: string }>('/auth/edaya/otp/start', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ kind: 'email', value: email, channel: 'email' }),
+  });
+  if (!sent.response.ok || !sent.body?.challenge) throw new Error('OTP delivery failed');
+  const verified = await client.jsonRequest<AuthUserResponse>('/auth/edaya/otp/verify', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ challenge: sent.body.challenge, code: await peekOtp(email) }),
+  });
+  if (!verified.response.ok || !verified.body?.user?.id) throw new Error('Completed Account authentication required');
+  return verified.body.user.id;
 }
 
-async function signUp(
-	client: ProvisionHttpClient,
-	email: string,
-	password: string,
-	name: string,
-): Promise<string> {
-	const { response, body } = await client.jsonRequest<AuthUserResponse>('/auth/sign-up/email', {
-		method: 'POST',
-		headers: {
-			'content-type': 'application/json',
-			[SEED_AUTH_PROVISION_HEADER]: '1',
-		},
-		body: JSON.stringify({ email, password, name }),
-	});
-
-	if (!response.ok) {
-		const detail = body ? JSON.stringify(body) : await response.text();
-		throw new Error(`sign-up failed: ${response.status} ${detail}`);
-	}
-
-	const subjectId = body?.user?.id;
-	if (!subjectId) {
-		throw new Error('sign-up succeeded but no user.id in response');
-	}
-
-	await markEmailVerified(client, email, subjectId);
-	await signIn(client, email, password);
-	return subjectId;
+async function signUp(client: ProvisionHttpClient, email: string, _password: string, _name: string): Promise<string> {
+  return authenticateAccount(client, email);
 }
 
-async function signIn(
-	client: ProvisionHttpClient,
-	email: string,
-	password: string,
-): Promise<void> {
-	const { response, body } = await client.jsonRequest('/auth/sign-in/email', {
-		method: 'POST',
-		headers: { 'content-type': 'application/json' },
-		body: JSON.stringify({ email, password }),
-	});
-	if (!response.ok) {
-		const detail = body ? JSON.stringify(body) : await response.text();
-		throw new Error(`sign-in after verify failed: ${response.status} ${detail}`);
-	}
+async function signIn(client: ProvisionHttpClient, email: string, _password: string): Promise<void> {
+  await authenticateAccount(client, email);
 }
 
 async function registerSchool(

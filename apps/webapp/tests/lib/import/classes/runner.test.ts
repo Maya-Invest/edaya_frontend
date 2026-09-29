@@ -42,10 +42,10 @@ describe('class import runner', () => {
 
 		expect(result.created).toBe(2);
 		expect(result.failed).toEqual([]);
-		expect(result.classIds).toEqual(['6b', '6c']);
+		expect(result.classIds).toEqual([expect.stringMatching(/^6b-/), expect.stringMatching(/^6c-/)]);
 		expect(createClassGroup).toHaveBeenCalledTimes(2);
 		expect(createClassGroup).toHaveBeenNthCalledWith(1, expect.objectContaining({
-			id: '6b',
+			id: result.classIds[0],
 			name: '6ème B',
 			gradeLevelId: 'gl-6',
 			academicYearId: '2026',
@@ -81,4 +81,18 @@ describe('class import runner', () => {
 		expect(result.failed[0]?.rowIndex).toBe(3);
 		expect(result.failed[0]?.message).toContain('Class conflict');
 	});
+	it('keeps IDs unique across independent schools and repeated imports', async () => {
+		const ids = new Set<string>();
+		const client = { commands: { createClassGroup: async ({ id }: { id: string }) => {
+			if (ids.has(id)) throw new Error('Global ID collision');
+			ids.add(id);
+		} } } as never;
+		for (const schoolId of ['school-a', 'school-b', 'school-a']) {
+			const result = await runClassImport({ schoolId, academicYearId: 'year', client, rows: [row({ rowIndex: 2 })], existingClassIds: [], siblingCountByGrade: {} });
+			expect(result.created).toBe(1);
+			expect(result.failed).toEqual([]);
+		}
+		expect(ids.size).toBe(3);
+	});
+
 });

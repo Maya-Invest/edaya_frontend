@@ -168,6 +168,7 @@
 					<li>
 						<div
 							role="button"
+							data-entity-id={rowItem.id}
 							tabindex="0"
 							onclick={() => handleRowClick(rowItem)}
 							onkeydown={event => handleRowKeydown(event, rowItem)}

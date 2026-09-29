@@ -259,8 +259,11 @@ export async function deleteSubjectMatterMutation(
 ): Promise<boolean> {
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(
-		() => client.entities.subjectMatters.delete({ id: matterId }),
+		async () => {
+			await client.entities.subjectMatters.delete({ id: matterId });
+			return true;
+		},
 		{ successMessage },
 	);
-	return result !== null;
+	return result === true;
 }

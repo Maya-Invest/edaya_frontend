@@ -24,11 +24,11 @@ export function onboardingPath(base: string, step?: number): string {
 }
 
 export function loginSignupPath(base: string): string {
-	return `${stripTrailingSlash(base)}/login?panel=signup&method=password&stage=form`;
+	return `${stripTrailingSlash(base)}/login?panel=signup&method=email-otp&stage=form`;
 }
 
 export function loginSignInPath(base: string): string {
-	return `${stripTrailingSlash(base)}/login?panel=signin&method=password&stage=form`;
+	return `${stripTrailingSlash(base)}/login?panel=signin&method=email-otp&stage=form`;
 }
 
 export function dashboardPath(base: string): string {

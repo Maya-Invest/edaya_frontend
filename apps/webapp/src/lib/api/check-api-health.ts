@@ -10,7 +10,7 @@ export async function checkBrowserApiHealth(): Promise<
 	{ connected: true; message: string } | { connected: false }
 > {
 	try {
-		const identity = await fetch(resolveApiUrl(authBaseUrl, '/auth/get-session'), { credentials: 'omit' });
+		const identity = await fetch(resolveApiUrl(authBaseUrl, '/auth/edaya/methods'), { credentials: 'omit' });
 		if (!identity.ok) {
 			return { connected: false };
 		}

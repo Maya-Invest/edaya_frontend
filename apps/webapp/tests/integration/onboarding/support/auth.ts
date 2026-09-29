@@ -1,107 +1,17 @@
 import type { Page } from 'playwright';
 import { waitForEnabled } from '../../demo-dry-run/support/auth';
 import { resolveApiUrl, resolveAuthUrl } from '../../support/integration-hosts';
+import { sendOtpThroughUi, verifyOtpThroughUi } from '../../support/passwordless';
 import { currentOnboardingStep, loginSignInPath, loginSignupPath } from './paths';
 
-const SIGNUP_SUBMIT = /créer mon compte|create my account|création du compte|creating account/i;
-const SIGN_IN_SUBMIT = /sign in|se connecter/i;
-export const VERIFICATION_COPY = /vérifiez votre boîte mail|check your inbox/i;
-const SWITCH_TO_SIGNUP = /create account|créer un compte/i;
 const SIGN_OUT = /sign out|se déconnecter/i;
-
 export { waitForEnabled };
-
-export async function peekLastVerificationUrl(email: string): Promise<string | null> {
-	const authUrl = resolveAuthUrl();
-	const deadline = Date.now() + 15_000;
-	while (Date.now() < deadline) {
-		const response = await fetch(
-			`${authUrl}/auth/edaya/dev/last-verification-url?email=${encodeURIComponent(email)}`,
-		);
-		if (response.ok) {
-			const body = await response.json() as { url?: string };
-			if (typeof body.url === 'string' && body.url.length > 0) {
-				return body.url;
-			}
-		}
-		else if (response.status === 400) {
-			return null;
-		}
-		else if (response.status === 404) {
-			const body = await response.json().catch(() => ({ message: '' })) as { message?: string };
-			if (body.message === 'Auth endpoint not found') {
-				return null;
-			}
-		}
-		await new Promise(resolve => setTimeout(resolve, 250));
-	}
-	return null;
-}
-
-export async function requireLastVerificationUrl(email: string): Promise<string> {
-	const verificationUrl = await peekLastVerificationUrl(email);
-	if (!verificationUrl) {
-		throw new Error(
-			`No verification URL for ${email}. Identity must run with REQUIRE_EMAIL_VERIFICATION=true and AUTH_DEV_OTP_PEEK=true (or AUTH_EMAIL_LOG_OTP=true).`,
-		);
-	}
-	return verificationUrl;
-}
-
-function isEmailVerifiedCallback(url: string): boolean {
-	try {
-		const parsed = new URL(url);
-		return parsed.pathname.replace(/\/+$/, '') === '/login' && parsed.searchParams.get('verified') === '1';
-	}
-	catch {
-		return false;
-	}
-}
-
-async function waitForPostVerificationLanding(page: Page, landed: RegExp): Promise<void> {
-	await page.waitForURL(/\/(onboarding|login|dashboard|invite)/, { timeout: 30_000 });
-	const deadline = Date.now() + 30_000;
-	while (Date.now() < deadline) {
-		const url = page.url();
-		if (isEmailVerifiedCallback(url)) {
-			await page.waitForTimeout(150);
-			continue;
-		}
-		if (landed.test(url)) {
-			return;
-		}
-		await page.waitForTimeout(150);
-	}
-	throw new Error(`Verification did not reach expected landing from ${page.url()}`);
-}
-
-export async function followVerificationLink(
-	page: Page,
-	email: string,
-	landed: RegExp,
-): Promise<void> {
-	const verificationUrl = await requireLastVerificationUrl(email);
-	await page.goto(verificationUrl, { waitUntil: 'domcontentloaded' });
-	await waitForPostVerificationLanding(page, landed);
-}
-
-export async function followVerificationLinkInNewPage(
-	page: Page,
-	email: string,
-	landed: RegExp,
-): Promise<Page> {
-	const verificationUrl = await requireLastVerificationUrl(email);
-	const next = await page.context().newPage();
-	await next.goto(verificationUrl, { waitUntil: 'domcontentloaded' });
-	await waitForPostVerificationLanding(next, landed);
-	return next;
-}
 
 export async function assertStackReady(base: string): Promise<void> {
 	const readinessPath = process.env.WEBAPP_READINESS_PATH ?? '/login';
 	await assertHttpReady(`${base}${readinessPath}`, `Webapp not ready at ${base}${readinessPath}. Start bun dev or Wrangler preview:integration.`);
 	const authUrl = resolveAuthUrl();
-	await assertHttpReady(`${authUrl}/auth/get-session`, `Identity not ready at ${authUrl}/auth/get-session.`);
+	await assertHttpReady(`${authUrl}/auth/edaya/methods`, `Identity not ready at ${authUrl}/auth/edaya/methods.`);
 	const apiUrl = resolveApiUrl();
 	await assertHttpReady(`${apiUrl}/reference`, `School API not ready at ${apiUrl}/reference.`);
 }
@@ -119,66 +29,11 @@ async function assertHttpReady(url: string, message: string): Promise<void> {
 	}
 }
 
-export function signupSubmitButton(page: Page) {
-	return page.locator('form').filter({ has: page.locator('#signup-name') }).getByRole('button', { name: SIGNUP_SUBMIT });
-}
-
-export function passwordSignInSubmit(page: Page) {
-	return page
-		.locator('form')
-		.filter({ has: page.locator('#login-password-email') })
-		.getByRole('button', { name: SIGN_IN_SUBMIT });
-}
-
-export async function ensurePasswordSignInPanel(page: Page): Promise<void> {
-	const emailInput = page.locator('#login-password-email');
-	const alreadyVisible = await emailInput.waitFor({ state: 'visible', timeout: 2_000 }).then(() => true).catch(() => false);
-	if (alreadyVisible) {
-		return;
-	}
-
-	const signInTab = page.getByRole('button', { name: /sign in|connexion|se connecter/i }).first();
-	if (await signInTab.isVisible().catch(() => false)) {
-		await signInTab.click();
-	}
-
-	const passwordMethod = page.getByRole('button', { name: /password|mot de passe/i }).first();
-	if (await passwordMethod.isVisible().catch(() => false)) {
-		await passwordMethod.click();
-	}
-
-	await emailInput.waitFor({ state: 'visible', timeout: 15_000 });
-}
-
-export async function openSignupPanel(page: Page, base: string): Promise<void> {
-	await page.goto(loginSignInPath(base), { waitUntil: 'domcontentloaded' });
-	await ensurePasswordSignInPanel(page);
-	const switchToSignup = page.getByRole('button', { name: SWITCH_TO_SIGNUP }).first();
-	await switchToSignup.waitFor({ state: 'visible', timeout: 15_000 });
-	await switchToSignup.click();
-	await page.locator('#signup-name').waitFor({ state: 'visible', timeout: 15_000 });
-}
-
-export async function signInWithPassword(
-	page: Page,
-	base: string,
-	email: string,
-	password: string,
-): Promise<void> {
-	await page.goto(loginSignInPath(base), { waitUntil: 'domcontentloaded' });
-	await ensurePasswordSignInPanel(page);
-
-	const emailInput = page.locator('#login-password-email');
-	const passwordInput = page.locator('#login-password');
-	const submit = passwordSignInSubmit(page);
-	await waitForEnabled(emailInput);
-	await waitForEnabled(passwordInput);
-	await emailInput.fill(email);
-	await passwordInput.fill(password);
-	await waitForEnabled(submit);
-	await submit.click();
-
-	await page.waitForURL(/\/(dashboard|onboarding)/, { timeout: 30_000 });
+export async function signInWithPassword(page: Page, base: string, email: string, _password: string): Promise<void> {
+  await page.goto(loginSignInPath(base), { waitUntil: 'domcontentloaded' });
+  await sendOtpThroughUi(page, email);
+  await verifyOtpThroughUi(page, email);
+  await page.waitForURL(/\/(dashboard|onboarding)/, { timeout: 30_000 });
 }
 
 export async function signOutFromOnboarding(page: Page): Promise<void> {
@@ -211,54 +66,18 @@ export async function signUpThroughUi(
 	base: string,
 	options: { name: string; email: string; password: string; verifyInNewPage?: boolean },
 ): Promise<Page> {
-	await page.goto(loginSignupPath(base), { waitUntil: 'domcontentloaded' });
-
-	const nameInput = page.locator('#signup-name');
-	await nameInput.waitFor({ state: 'visible', timeout: 20_000 });
-	const emailInput = page.locator('#signup-email');
-	const passwordInput = page.locator('#signup-password');
-	const confirmInput = page.locator('#signup-confirm-password');
-	const submit = signupSubmitButton(page);
-
-	await waitForEnabled(nameInput);
-	await waitForEnabled(emailInput);
-	await waitForEnabled(passwordInput);
-	await waitForEnabled(confirmInput);
-	await nameInput.fill(options.name);
-	await emailInput.fill(options.email);
-	await passwordInput.fill(options.password);
-	await confirmInput.fill(options.password);
-	await waitForEnabled(submit);
-	await submit.click();
-
-	const reachedOnboarding = page.waitForURL(/\/onboarding/, { timeout: 30_000 }).then(() => 'onboarding' as const);
-	const verification = page.getByText(VERIFICATION_COPY).waitFor({ state: 'visible', timeout: 30_000 }).then(() => 'verification' as const);
-	const outcome = await Promise.race([reachedOnboarding, verification]).catch(() => 'timeout' as const);
-
-	if (outcome === 'onboarding') {
-		throw new Error(
-			`Signup skipped email verification for ${options.email} (landed ${page.url()}). Set REQUIRE_EMAIL_VERIFICATION=true on Identity.`,
-		);
-	}
-
-	if (outcome === 'verification') {
-		if (options.verifyInNewPage) {
-			const next = await followVerificationLinkInNewPage(page, options.email, /\/onboarding/);
-			await next.locator('#onboarding-school-name').waitFor({ state: 'visible', timeout: 20_000 }).catch(async () => {
-				const body = await next.locator('body').innerText().catch(() => '');
-				throw new Error(`School form missing at ${next.url()} body=${body.slice(0, 700)}`);
-			});
-			return next;
-		}
-		await followVerificationLink(page, options.email, /\/onboarding/);
-		await page.locator('#onboarding-school-name').waitFor({ state: 'visible', timeout: 20_000 });
-		return page;
-	}
-
-	const alertText = await page.locator('[role="alert"]').allInnerTexts().catch(() => []);
-	throw new Error(
-		`Signup did not reach verification for ${options.email}. url=${page.url()} alerts=${alertText.join(' | ')}`,
-	);
+  await page.goto(loginSignupPath(base), { waitUntil: 'domcontentloaded' });
+  await sendOtpThroughUi(page, options.email);
+  if (page.url().includes('/onboarding')) throw new Error('Account creation skipped OTP proof');
+  await verifyOtpThroughUi(page, options.email);
+  await page.waitForURL(/\/onboarding/, { timeout: 30_000 });
+  if (options.verifyInNewPage) {
+    const next = await page.context().newPage();
+    await next.goto(`${base}/onboarding`, { waitUntil: 'domcontentloaded' });
+    await expectOnboardingStep(next, 1);
+    return next;
+  }
+  return page;
 }
 
 export async function expectOnboardingStep(page: Page, step: number): Promise<void> {

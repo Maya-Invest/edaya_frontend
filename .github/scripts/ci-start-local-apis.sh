@@ -7,7 +7,7 @@ ACTION="${1:?usage: ci-start-local-apis.sh start|stop}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WEB_ROOT="${GITHUB_WORKSPACE:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
 PARENT="$(dirname "$WEB_ROOT")"
-IDENTITY_ROOT="${IDENTITY_ROOT:-$PARENT/edaya_identity}"
+IDENTITY_ROOT="${IDENTITY_ROOT:-$PARENT/edaya_backend}"
 BACKEND_ROOT="${BACKEND_ROOT:-$PARENT/edaya_backend}"
 PID_DIR="${EDAYA_CI_API_PID_DIR:-/tmp/edaya-ci-apis}"
 WAIT_SCRIPT="$SCRIPT_DIR/ci-wait-for-url.sh"
@@ -58,7 +58,12 @@ overlay_identity_env() {
 	upsert_env "$file" IDENTITY_DIRECTORY_SECRET "$DIRECTORY_SECRET"
 	upsert_env "$file" REQUIRE_EMAIL_VERIFICATION true
 	upsert_env "$file" AUTH_DEV_OTP_PEEK true
-	upsert_env "$file" AUTH_EMAIL_LOG_OTP true
+	upsert_env "$file" AUTH_EMAIL_LOG_OTP false
+	upsert_env "$file" TELEGRAM_GATEWAY_TOKEN test-captured-only
+	upsert_env "$file" WHATSAPP_ACCESS_TOKEN test-captured-only
+	upsert_env "$file" WHATSAPP_PHONE_NUMBER_ID 123456789
+	upsert_env "$file" WHATSAPP_AUTH_TEMPLATE test
+	upsert_env "$file" WHATSAPP_API_VERSION v23.0
 	upsert_env "$file" PORT "$AUTH_PORT"
 	upsert_env "$file" BETTER_AUTH_URL "$AUTH_ORIGIN"
 	upsert_env "$file" FIRST_PARTY_API_ORIGINS "$API_ORIGIN"
@@ -144,7 +149,7 @@ case "$ACTION" in
 		fi
 		cp "$BACKEND_ROOT/apps/api/.env.example" "$BACKEND_ROOT/apps/api/.env"
 
-		overlay_identity_env "$IDENTITY_ROOT/.env"
+		 # Identity app has its own environment; do not overwrite backend root configuration.
 		overlay_identity_env "$IDENTITY_ROOT/apps/identity/.env"
 		overlay_school_env "$BACKEND_ROOT/apps/api/.env"
 
@@ -154,9 +159,15 @@ case "$ACTION" in
 		echo "Installing school dependencies"
 		(cd "$BACKEND_ROOT" && bun install --frozen-lockfile)
 
+		if [ -n "${GITHUB_ENV:-}" ]; then
+			echo "EDAYA_TEST_OTP_FILE=$PID_DIR/otp.jsonl" >> "$GITHUB_ENV"
+			echo "EDAYA_TEST_POLICY_FILE=$PID_DIR/privileged-accounts.json" >> "$GITHUB_ENV"
+			echo "EDAYA_TEST_CLOCK_FILE=$PID_DIR/clock-offset" >> "$GITHUB_ENV"
+		fi
+
 		echo "Starting Identity on :$AUTH_PORT (empty, no seed)"
 		start_background "$PID_DIR/identity.pid" "$PID_DIR/identity.log" "$IDENTITY_ROOT" \
-			bun --filter @edaya/identity start
+			env NODE_ENV=test EDAYA_TEST_POLICY_FILE="$PID_DIR/privileged-accounts.json" EDAYA_TEST_OTP_FILE="$PID_DIR/otp.jsonl" EDAYA_TEST_CLOCK_FILE="$PID_DIR/clock-offset" bun apps/identity/tests/support/live-integration-server.ts
 		if ! bash "$WAIT_SCRIPT" "$AUTH_ORIGIN/" 120; then
 			dump_logs
 			exit 1

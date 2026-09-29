@@ -24,12 +24,15 @@
 		query,
 		cacheKey = listRouteCacheKey,
 		cache = true,
+		preserveWhileLoading = false,
 		loadingTitle,
 		children,
 	}: {
 		query: PageQueryFn<T>;
 		cacheKey?: (url: URL) => string;
 		cache?: boolean;
+		/** Keep mounted forms during a refresh of the same route and account scope. */
+		preserveWhileLoading?: boolean;
 		loadingTitle?: string;
 		children: Snippet<[T]>;
 	} = $props();
@@ -38,6 +41,7 @@
 	let loadedKey = $state<string | null>(null);
 	let instanceCacheKey: string | null = null;
 	let loadVersion = 0;
+	let loadedSurface: string | null = null;
 
 	$effect(() => {
 		const url = $page.url;
@@ -45,6 +49,7 @@
 		const resolveKey = untrack(() => cacheKey);
 		const key = resolveKey(url);
 		const identity = composePageQueryIdentity(key, generation);
+		const surface = `${url.pathname}|${generation}`;
 		instanceCacheKey = key;
 
 		const controller = new AbortController();
@@ -60,13 +65,14 @@
 		if (cached) {
 			result = cached;
 			loadedKey = identity;
+			loadedSurface = surface;
 			pageQueryStatus.markReady(key);
 			return () => {
 				controller.abort();
 			};
 		}
 
-		if (identity !== loadedKey) {
+		if (identity !== loadedKey && (!preserveWhileLoading || loadedSurface !== surface)) {
 			result = null;
 		}
 		pageQueryStatus.markPending(key);
@@ -79,6 +85,7 @@
 				}
 				result = data;
 				loadedKey = identity;
+				loadedSurface = surface;
 				if (cache) {
 					setPageQueryCache(key, data);
 				}

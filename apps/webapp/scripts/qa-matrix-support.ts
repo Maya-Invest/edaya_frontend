@@ -6,6 +6,9 @@ import type { QaTemplateRow } from './qa-template-matrix';
 export type MatrixStatut = 'OK' | 'NOT OK' | 'N/A';
 
 export interface MatrixResult {
+	blocked?: boolean;
+	id?: string;
+	feature?: string;
 	module: string;
 	endpoint: string;
 	action: string;
@@ -55,6 +58,7 @@ export interface MatrixEntities {
 	gradeLevelId: string | null;
 	secondGradeLevelId: string | null;
 	subjectId: string | null;
+	configurationSubjectId?: string | null;
 	gradeScaleId: string | null;
 	reportCardDefId: string | null;
 	deliveryId: string | null;
@@ -336,7 +340,7 @@ export function resolveEndpoint(endpoint: string, base: string, entities: Matrix
 		map['[id]'] = entities.gradeLevelId;
 	}
 	if (path.includes('/configuration/subjects/') && !path.includes('/level/')) {
-		map['[id]'] = entities.subjectId;
+		map['[id]'] = entities.configurationSubjectId ?? entities.subjectId;
 	}
 	if (path.includes('/configuration/report-cards/')) {
 		map['[id]'] = entities.reportCardDefId;

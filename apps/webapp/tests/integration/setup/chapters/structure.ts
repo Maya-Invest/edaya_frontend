@@ -90,7 +90,7 @@ export async function runStructureChapter(journey: UiJourney): Promise<boolean> 
 				submitted: false,
 				closed: false,
 			}, 'Create year modal not found');
-			coverActions(journey, 'http://localhost:5173/configuration/academic', ['CRUD années scolaires'], 'NOT OK', 'Create year modal not found');
+			coverActions(journey, 'http://localhost:5173/configuration/academic', ['Créer année scolaire'], 'NOT OK', 'Create year modal not found');
 			return false;
 		}
 
@@ -179,7 +179,7 @@ export async function runStructureChapter(journey: UiJourney): Promise<boolean> 
 		coverActions(
 			journey,
 			'http://localhost:5173/configuration/academic',
-			['CRUD années scolaires', 'Publier année'],
+			['Créer année scolaire', 'Publier année'],
 			'OK',
 			label,
 		);

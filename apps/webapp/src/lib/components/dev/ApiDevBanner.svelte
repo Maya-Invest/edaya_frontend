@@ -36,6 +36,6 @@
 		role="status"
 		class="border-b border-highlight/30 bg-highlight-soft px-4 py-1.5 text-center text-xs text-highlight"
 	>
-		Local identity/API unreachable — run <code class="font-mono">bun repo dev</code> in <code class="font-mono">edaya_identity</code> and <code class="font-mono">edaya_backend</code>
+		Local identity/API unreachable — run <code class="font-mono">bun repo dev</code> in <code class="font-mono">edaya_backend</code>
 	</div>
 {/if}

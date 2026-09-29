@@ -679,3 +679,7 @@ Migrate existing routes incrementally; do not extend `detailDataContext` seed me
 - [ ] No fetch in component `$effect`
 - [ ] Smart components in `lib/smart-components/` with own state — no route state reads
 - [ ] No new `detailDataContext` seeding
+
+## Account authentication flows
+
+`/account/security` is an Account-level route, independent of a selected school profile. Removal confirmation is addressable with `?unlink=<identifier-id>`. OTP/TOTP challenges, enrollment secrets and recovery codes stay in component-owned flow state and never enter URLs, browser storage, or entity caches. Reloading an in-progress challenge restarts authentication. Security mutations require fresh authentication; sensitive enrollment/recovery submissions are pessimistic and never optimistic.

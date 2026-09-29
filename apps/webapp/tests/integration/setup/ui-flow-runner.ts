@@ -1,3 +1,5 @@
+import { redactDiagnostic } from '../support/scenario-registry';
+import { createRequiredReadFixtures } from './required-read-fixtures';
 /**
  * Owner UI journey — one Playwright session, seed order as dependency spine,
  * each action recorded against the QA matrix ledger (no duplicate replay).
@@ -31,12 +33,15 @@ export async function loadSetupEntities(): Promise<Partial<MatrixEntities>> {
 	}
 }
 
-async function runJourneyChapter(name: string, run: () => Promise<void>): Promise<void> {
+async function runJourneyChapter(journey: UiJourney, name: string, run: () => Promise<void>): Promise<void> {
 	try {
 		await run();
 	}
 	catch (err) {
-		console.error(`Journey chapter "${name}" failed:`, err instanceof Error ? err.message : err);
+		const detail = redactDiagnostic(err instanceof Error ? err.message : String(err));
+        console.error(`Journey chapter "${name}" failed:`, detail);
+        await journey.ctx.shot(`failure-setup-${name}`).catch(() => {});
+		journey.steps.push({ step: name, ok: false, detail });
 	}
 }
 
@@ -62,13 +67,14 @@ export async function runUiJourney(
 		if (!structureOk) {
 			throw new Error('Journey fail-fast: school structure incomplete');
 		}
-		await runJourneyChapter('configuration', () => runConfigurationChapter(journey));
-		await runJourneyChapter('people', () => runPeopleChapter(journey));
-		await runJourneyChapter('school', () => runSchoolChapter(journey));
-		await runJourneyChapter('teaching', () => runTeachingChapter(journey));
-		await runJourneyChapter('family-feedback', () => runFamilyFeedbackChapter(journey));
-		await runJourneyChapter('classes-finance', () => runClassesFinanceChapter(journey));
-		await runJourneyChapter('accounts', () => runAccountsChapter(journey));
+		await runJourneyChapter(journey, 'configuration', () => runConfigurationChapter(journey));
+		await runJourneyChapter(journey, 'people', () => runPeopleChapter(journey));
+		await runJourneyChapter(journey, 'school', () => runSchoolChapter(journey));
+		await runJourneyChapter(journey, 'teaching', () => runTeachingChapter(journey));
+		await runJourneyChapter(journey, 'required-read-fixtures', () => createRequiredReadFixtures(journey));
+		await runJourneyChapter(journey, 'family-feedback', () => runFamilyFeedbackChapter(journey));
+		await runJourneyChapter(journey, 'classes-finance', () => runClassesFinanceChapter(journey));
+		await runJourneyChapter(journey, 'accounts', () => runAccountsChapter(journey));
 
 		return {
 			steps: journey.steps,

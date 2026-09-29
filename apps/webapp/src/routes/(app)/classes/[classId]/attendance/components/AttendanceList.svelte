@@ -131,6 +131,7 @@
 			{@const isComplete = day.totalStudents > 0 && day.recordedCount === day.totalStudents}
 			<button
 				type="button"
+				data-attendance-id={day.id}
 				onclick={() => onSelect?.(day)}
 				class={cn(
 					'group grid w-full grid-cols-12 items-center gap-4 rounded-2xl border border-border bg-card p-5 text-left shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-panel',

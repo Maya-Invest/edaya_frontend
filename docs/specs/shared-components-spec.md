@@ -251,3 +251,7 @@ When building or refactoring a screen:
 `AppSidebar.forceExpanded` is a presentation override used by the mobile staff navigation dialog; desktop expansion preferences remain in the existing shell state. `ListEntityTable` keeps its twelve-column layout inside a focusable horizontal scroll region with a 48rem minimum content width. Preserve all columns, sort/selection controls, row actions and infinite loading.
 
 `AccountProfileModal` uses the existing `Dialog` primitive with a bounded flex column: header and footer do not shrink, and the middle profile content scrolls. Close and sign-out actions must stay reachable on short viewports and with enlarged text. Preserve profile fields, photo permissions, shortcuts and the existing logout callback.
+
+## Passwordless authentication
+
+`PasswordlessPanel` is shared by login, signup, invitations and Account security. It owns delivery selection, OTP, authenticator verification/enrollment and one-time recovery-code display through `PasswordlessFlow`. Use existing Button/Input/Label primitives and ConfirmModal for identifier removal. No auth-provider SDK belongs in UI components.

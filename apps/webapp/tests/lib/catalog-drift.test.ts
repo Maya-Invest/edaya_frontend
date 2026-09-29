@@ -10,7 +10,6 @@ import {
 	MODAL_SURFACES,
 	REDIRECT_SMOKE_ACTION,
 	ROUTE_SMOKE_ACTION,
-	DRAWER_TAB_PATTERNS,
 	getWebappFilesystemRoutes,
 	inventoryRouteToMatrixPath,
 	modalDeepLinkAction,
@@ -22,33 +21,15 @@ import {
 } from '../../scripts/qa-matrix-exclusions';
 import { QA_TEMPLATE_MATRIX } from '../../scripts/qa-template-matrix';
 import { QA_TEMPLATE_MATRIX_MANUAL } from '../../scripts/qa-template-matrix.manual';
-import {
-	claimedModals,
-	claimedPaths,
-	claimedTabs,
-} from '../integration/setup/journey-surfaces';
+
 import {
 	AUTH_ONBOARDING_CATALOG_COVERAGE,
 	assertAuthOnboardingCatalogCoverage,
 } from '../integration/onboarding/catalog-coverage';
 
-const ONBOARDING_SCENE_IDS = [
-	'unauthenticated-redirect',
-	'login-signup-ui',
-	'owner-relogin',
-	'invited-staff-relogin',
-	'api-unavailable-banner',
-	'invalid-invite',
-	'invite-expired',
-	'invite-revoked',
-	'invited-staff',
-	'invited-staff-existing',
-	'invited-staff-second-school',
-	'happy-path',
-	'wizard-step-interactions',
-	'owner-wizard-resume',
-	'school-period-dates',
-] as const;
+import { assertFeatureRegistration } from '../integration/support/coverage-contract';
+import { ONBOARDING_SCENARIOS } from '../integration/onboarding/scenarios';
+const ONBOARDING_SCENE_IDS = ONBOARDING_SCENARIOS.map(scenario => scenario.id);
 
 const RUNNABLE_MATRIX = filterRunnableMatrix(QA_TEMPLATE_MATRIX);
 
@@ -89,29 +70,16 @@ function hasRedirectSmoke(legacyPath: string): boolean {
 }
 
 describe('catalog drift', () => {
-	it('claims every nav, modal, route, and journey id', () => {
-		const paths = claimedPaths();
-		const modals = claimedModals();
-		const tabs = claimedTabs();
+	it('registers every current navigation, modal, route and action', () => {
+		assertFeatureRegistration();
 		const missing: string[] = [];
 
 		for (const def of [...SCHOOL_NAV_DEFS, ...FINANCE_NAV_DEFS, ...CONFIG_NAV_DEFS]) {
-			if (!paths.has(def.href)) missing.push(`nav:${def.href}`);
+			if (!hasMatrixRowForPath(def.href)) missing.push(`nav:${def.href}`);
 		}
 		for (const path of CLASS_NAV_DEFS.map(def => classNavPath(def.href))) {
-			if (!paths.has(path)) missing.push(`class-nav:${path}`);
+			if (!hasMatrixRowForPath(path)) missing.push(`class-nav:${path}`);
 		}
-		for (const surface of MODAL_SURFACES) {
-			const key = `${surface.parentRoute}::${surface.modal}`;
-			if (!modals.has(key)) missing.push(`journey-modal:${key}`);
-		}
-		for (const pattern of DRAWER_TAB_PATTERNS) {
-			for (const tab of pattern.tabs) {
-				const key = `${pattern.routePattern}::${tab}`;
-				if (!tabs.has(key)) missing.push(`tab:${key}`);
-			}
-		}
-
 		for (const route of getWebappFilesystemRoutes()) {
 			if (route.type === 'redirect') continue;
 			const matrixPath = inventoryRouteToMatrixPath(route.url);

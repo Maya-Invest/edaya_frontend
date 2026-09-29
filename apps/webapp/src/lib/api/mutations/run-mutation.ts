@@ -1,10 +1,10 @@
 import type { MutationOptions } from './execute-mutation';
-import { bootstrapAppShell, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
+import { bootstrapAppShell, invalidateAppShellBootstrapCache } from '$lib/auth/bootstrap-app';
 import { runRouteMutation } from './route-mutation';
 
-/** Resets session stores and reloads the app shell (Tier 3 — academic structure changes only). */
+/** Refresh shell-shaped data without discarding mounted route state or form drafts. */
 export async function refreshAppShellData(): Promise<void> {
-	resetAppShellBootstrap();
+	invalidateAppShellBootstrapCache();
 	await bootstrapAppShell();
 }
 

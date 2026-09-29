@@ -1,3 +1,19 @@
+import { withScenarioArtifacts, observeScenarioPage, captureScenarioPage } from '../tests/integration/support/scenario-artifacts';
+import { exerciseAssignmentCrud } from '../tests/integration/support/assignment-workflows';
+import { exerciseDetailCrud } from '../tests/integration/support/detail-crud-workflows';
+import { exerciseStudentList } from '../tests/integration/support/student-list-workflows';
+import assert from 'node:assert/strict';
+import { apiFetch } from '../tests/integration/setup/journey-api';
+import { exerciseRegisteredRead } from '../tests/integration/support/read-workflows';
+import { exerciseDashboard } from '../tests/integration/support/dashboard-workflows';
+import { scenarioForSurface } from '../tests/integration/support/coverage-contract';
+import { exerciseStudentDocument } from '../tests/integration/support/document-workflows';
+import { exerciseStudentPhoto, exerciseStudentStatus, exerciseStudentTransfer } from '../tests/integration/support/student-workflows';
+import { exerciseActivityCreateEdit, exerciseReportDefinitionLifecycle, exerciseCatalogCrud, exerciseEvaluationEditDelete, exerciseFeeEditArchive, exerciseGradeLevelEditDelete } from '../tests/integration/support/catalog-workflows';
+import { exerciseFinanceMutation, exerciseReconciliation } from '../tests/integration/support/finance-workflows';
+import { exerciseTeacherRead } from '../tests/integration/support/teacher-workflows';
+import { exerciseTimetable } from '../tests/integration/support/timetable-workflows';
+import { IMPORT_SCENARIOS, exerciseImport } from '../tests/integration/support/import-workflows';
 import { attemptPasswordSignIn, ensurePasswordSignInPanel, waitForEnabled } from '../tests/integration/demo-dry-run/support/auth';
 import { TEACHER_PORTAL_GATE_BANNER_TEST_ID } from '../src/lib/auth/teacher-portal-gate';
 import { defaultAcademicYearPreset } from '../src/lib/onboarding/school-step-defaults';
@@ -10,8 +26,8 @@ import { pathnameReachedSidebarTarget } from '../tests/integration/demo-dry-run/
 import type { QaTemplateRow } from './qa-template-matrix';
 import {
 	clickCreateButton,
+	navigateSpaPage,
 	clickFirstListSortColumn,
-	dismissPageError,
 	ensureAcademicYearReady,
 	exportSelectedListRows,
 	fillClassCreateDialog,
@@ -62,7 +78,7 @@ function result(row: QaTemplateRow, statut: MatrixResult['statut'], detail?: str
 }
 
 function na(row: QaTemplateRow, detail: string): MatrixResult {
-	return result(row, 'N/A', detail);
+	return { ...result(row, 'NOT OK', `Blocked: ${detail}`), blocked: true };
 }
 
 function ok(row: QaTemplateRow, detail?: string): MatrixResult {
@@ -133,6 +149,7 @@ async function runAuthScenario(
 	if (action.includes('erreur visible')) {
 		const context = await browser.newContext();
 		const p = await context.newPage();
+		observeScenarioPage(p);
 		try {
 			await p.goto(`${base}/login`, { waitUntil: 'domcontentloaded' });
 			await ensurePasswordSignInPanel(p);
@@ -215,6 +232,7 @@ async function runOnboardingScenario(row: QaTemplateRow, ctx: DemoContext, entit
 	const fatal = await assertNoFatalError(page);
 	if (fatal) return notOk(row, fatal);
 
+
 	if (action.includes('validation') || action.includes('Formulaire')) {
 		const form = page.locator('form, input, select').first();
 		const visible = await form.isVisible({ timeout: 8_000 }).catch(() => false);
@@ -236,6 +254,7 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 	if (action.includes('Non connecté')) {
 		const isolated = await browser.newContext();
 		const p = await isolated.newPage();
+		observeScenarioPage(p);
 		try {
 			await p.context().clearCookies();
 			await p.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
@@ -243,6 +262,7 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 			return redirected ? ok(row) : notOk(row, p.url());
 		}
 		finally {
+			await captureScenarioPage(p).catch(() => {});
 			await isolated.close();
 		}
 	}
@@ -257,10 +277,8 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 	if (action.includes('Sidebar') && !action.includes('Sidebar — lien')) {
 		await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
 		await waitForAppShell(page);
-		const sidebar = page.locator('aside#app-sidebar');
-		const visible = await sidebar.isVisible().catch(() => false);
-		const links = await sidebar.locator('a[href], nav button').count();
-		return visible && links > 2 ? ok(row, `${links} entrées sidebar`) : notOk(row, 'Sidebar vide ou absente');
+		const checked = await runPermissionsScenario({ ...row, action: 'Compte éducateur — sidebar filtrée' }, browser, base, entities.secondaryAccounts);
+		return { ...checked, ...row };
 	}
 
 	if (action.includes('sans permission')) {
@@ -272,16 +290,41 @@ async function runShellScenario(row: QaTemplateRow, ctx: DemoContext, browser: B
 	}
 
 	if (action.includes('Sélecteur école')) {
-		const trigger = page.getByRole('button', { name: /école|school/i }).first();
-		return (await trigger.isVisible({ timeout: 5_000 }).catch(() => false)) ? ok(row) : na(row, 'Sélecteur école absent (mono-école)');
+		await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
+    await waitForAppShell(page);
+    const trigger = page.getByTestId('academic-year-trigger');
+    await trigger.waitFor();
+    const schoolId = await trigger.getAttribute('data-school-id');
+    assert(schoolId, 'Required active school missing');
+    const response = await apiFetch(page,base,`/core/entities/schools/${schoolId}`);
+    assert(response.ok());
+    const school = await response.json() as {name:string};
+    const label = (await page.getByTestId('school-selector').locator('p').innerText()).trim();
+    assert(label.length > 0 && school.name.startsWith(label), 'School selector must identify the persisted active school');
+    assert.equal(await page.getByTestId('school-selector-menu').count(),0, 'A single-school fixture must not offer a school switch');
+    return ok(row,'Verified the active school label against persisted data; multi-school switching executes in invited-staff-second-school');
 	}
 
 	if (action.includes('année scolaire')) {
 		await page.goto(`${base}/dashboard`, { waitUntil: 'domcontentloaded' });
 		await waitForAppShell(page);
 		await waitForResolvedAcademicYearId(page).catch(() => {});
-		const visible = await waitForAcademicYearTrigger(page, 10_000);
-		return visible ? ok(row) : notOk(row, 'Sélecteur année absent');
+		const trigger = page.getByTestId('academic-year-trigger');
+    await trigger.waitFor();
+    const schoolId = await trigger.getAttribute('data-school-id');
+    const yearId = await trigger.getAttribute('data-year-id');
+    assert(schoolId && yearId, 'Required school-scoped academic year missing');
+    const response = await apiFetch(page,base,`/core/entities/academic-years/${yearId}`);
+    assert(response.ok());
+    const year = await response.json() as {name:string;schoolId:string};
+    assert.equal(year.schoolId,schoolId);
+    await trigger.click();
+    await page.getByRole('button',{name:year.name,exact:true}).click();
+    assert.equal(await page.evaluate(({schoolId}) => sessionStorage.getItem(`edaya:yearId:${schoolId}`),{schoolId}),yearId);
+    await page.reload({waitUntil:'domcontentloaded'});
+    await trigger.waitFor();
+    assert.equal(await trigger.getAttribute('data-year-id'),yearId);
+    return ok(row,'Selected the published year and verified school-scoped persistence after reload');
 	}
 
 	if (action.includes('langue')) {
@@ -455,8 +498,10 @@ async function loginIsolatedTeacher(
 ): Promise<{ page: Page; context: import('playwright').BrowserContext } | null> {
 	const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 	const page = await context.newPage();
+	observeScenarioPage(page);
 	const logged = await attemptPasswordSignIn(page, base, email, password);
 	if (!logged) {
+		await captureScenarioPage(page).catch(() => {});
 		await context.close();
 		return null;
 	}
@@ -471,8 +516,10 @@ async function loginIsolated(
 ): Promise<{ page: import('playwright').Page; context: import('playwright').BrowserContext } | null> {
 	const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 	const page = await context.newPage();
+	observeScenarioPage(page);
 	const logged = await attemptPasswordSignIn(page, base, email, password);
 	if (!logged) {
+		await captureScenarioPage(page).catch(() => {});
 		await context.close();
 		return null;
 	}
@@ -514,6 +561,7 @@ async function runPermissionsScenario(
 			return gate.ok ? ok(row, gate.detail) : notOk(row, gate.detail);
 		}
 		finally {
+			await captureScenarioPage(session.page).catch(() => {});
 			await session.context.close();
 		}
 	}
@@ -545,6 +593,7 @@ async function runPermissionsScenario(
 			return ok(row, `${hrefs.length} entrées sidebar`);
 		}
 		finally {
+			await captureScenarioPage(session.page).catch(() => {});
 			await session.context.close();
 		}
 	}
@@ -561,6 +610,7 @@ async function runPermissionsScenario(
 			return await assertFinanceRestrictedNoChrome(row, session.page, base);
 		}
 		finally {
+			await captureScenarioPage(session.page).catch(() => {});
 			await session.context.close();
 		}
 	}
@@ -603,6 +653,7 @@ async function runPermissionsScenario(
 			return ok(row, 'accès staff bloqué après tentative directe');
 		}
 		finally {
+			await captureScenarioPage(session.page).catch(() => {});
 			await session.context.close();
 		}
 	}
@@ -652,7 +703,8 @@ async function assertFinanceRedirectRestricted(
 		return await assertFinanceRestrictedNoChrome(row, session.page, base);
 	}
 	finally {
-		await session.context.close();
+		await captureScenarioPage(session.page).catch(() => {});
+			await session.context.close();
 	}
 }
 
@@ -759,10 +811,49 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 	}
 
 	await waitForPageQuery(page);
-	await dismissPageError(page);
 
 	const fatal = await assertNoFatalError(page);
 	if (fatal) return notOk(row, fatal);
+
+	const scenarioId = scenarioForSurface(row).id;
+	if (['web.scenario.0011','web.scenario.0012','web.scenario.0013'].includes(scenarioId)) return ok(row, await exerciseDashboard(page,ctx.base,scenarioId));
+	const studentListResult = await exerciseStudentList(page, ctx.base, scenarioId);
+	if (studentListResult) return ok(row, studentListResult);
+	if (scenarioId === 'web.scenario.0065') return ok(row, await exerciseActivityCreateEdit(page, ctx.base));
+	const detailResult = await exerciseDetailCrud(page, ctx.base, scenarioId, entities);
+	if (detailResult) return ok(row, detailResult);
+	const assignmentResult = await exerciseAssignmentCrud(page, ctx.base, scenarioId, entities);
+	if (assignmentResult) return ok(row, assignmentResult);
+	if (scenarioId === 'web.scenario.0165') {
+		if (!entities.gradeLevelId || !entities.gradeScaleId) return na(row, 'Required report model fixtures missing');
+		return ok(row, await exerciseReportDefinitionLifecycle(page, ctx.base, entities.gradeLevelId, entities.gradeScaleId));
+	}
+	const catalogResult = await exerciseCatalogCrud(page, ctx.base, scenarioId);
+	if (catalogResult) return ok(row, catalogResult);
+	const readResult = await exerciseRegisteredRead(scenarioId, { page, base: ctx.base, entities });
+	if (readResult) return ok(row, readResult);
+
+	if (row.endpoint.endsWith('/school/students/[id]/profile') && ['Photo', 'Changer statut élève', 'Changer classe'].includes(action)) {
+		if (!entities.studentId) return notOk(row, 'Required student fixture missing');
+		const run = action === 'Photo' ? exerciseStudentPhoto : action === 'Changer classe' ? exerciseStudentTransfer : exerciseStudentStatus;
+		return ok(row, await run(page, ctx.base, entities.studentId));
+	}
+
+  if (row.endpoint.endsWith('/finance/fees') && action === 'Éditer / archiver frais') return ok(row, await exerciseFeeEditArchive(page, ctx.base));
+  if (action === 'Imputer le solde' || action === 'Extourner un paiement') {
+    if (!entities.classId) return notOk(row, 'Required finance classroom fixture missing');
+    return ok(row, await exerciseFinanceMutation(page, ctx.base, entities.classId, action === 'Imputer le solde' ? 'allocate' : 'reverse'));
+  }
+  if (action === 'Rapprochement financier') return ok(row, await exerciseReconciliation(page, ctx.base));
+  if (action === 'Documents' && row.endpoint.endsWith('/documents')) return ok(row, await exerciseStudentDocument(page, ctx.base));
+  if (row.endpoint.includes('/school/teachers/[id]/') && ['Emploi du temps', 'Évaluations', 'Retour des familles'].includes(action)) return ok(row, await exerciseTeacherRead(page, ctx.base, action, entities));
+  if (row.endpoint.endsWith('/configuration/grade-levels/[id]') && action === 'Drawer — éditer / supprimer') return ok(row, await exerciseGradeLevelEditDelete(page, ctx.base));
+  if (row.endpoint.includes('/evaluations') && action === 'Éditer / supprimer') {
+    if (!entities.classId) return notOk(row, 'Required assessment classroom fixture missing');
+    return ok(row, await exerciseEvaluationEditDelete(page, ctx.base, entities.classId));
+  }
+  const importType = (Object.keys(IMPORT_SCENARIOS) as Array<keyof typeof IMPORT_SCENARIOS>).find(key => IMPORT_SCENARIOS[key] === action);
+  if (importType) return ok(row, await exerciseImport(page, ctx.base, importType, entities));
 
 	// ── Generated: modal deep-link smoke ──
 	if (/^Modal deep-link \?modal=/i.test(action)) {
@@ -831,14 +922,6 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		return notOk(row, closed ? 'API create-student-note échouée' : 'Modal note toujours ouvert');
 	}
 
-	// ── List / display / load ──
-	if (/^(Liste|Chargement|Ledger|Hub|Templates|Catalogue|Affichage|Consulter|Vue |Redirect)/i.test(action)
-		|| /affichage|charge|visible|historique|métadonnées|détail message|profil élève|notes|assiduité|incidents|finances|bulletin|inscriptions/i.test(action)
-		&& !/créer|crud|éditer|sauver|publier|générer|supprimer|marquer|assigner|toggle|offer|import —/i.test(action)) {
-		const content = await hasMainContent(page);
-		return content ? ok(row) : notOk(row, 'Contenu principal absent');
-	}
-
 	// ── Search / Filters (registry-driven setup-first) ──
 	if (isFilterOrSearchRow(action)) {
 		const filterResult = await runFilterScenario(row, ctx, entities);
@@ -888,7 +971,6 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 	if (/créer|crud|nouveau|ajouter/i.test(action) && !/notes pédagogiques/i.test(action)) {
 		if (row.endpoint.includes('/school/events') && /incident/i.test(action)) {
 			await waitForPageQuery(page);
-			await dismissPageError(page);
 			const opened = await openDialogButton(page, /add incident|ajouter un incident/i);
 			if (!opened) {
 				return notOk(row, 'Bouton Add incident introuvable sur /school/events');
@@ -912,14 +994,13 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 				await submit.click();
 				await page.waitForTimeout(2_000);
 				const closed = !(await dialog.isVisible().catch(() => false));
-				return closed ? ok(row) : ok(row, 'Modal incident ouvert (submit disabled sans élève)');
+				return notOk(row, closed ? 'Incident submission requires persisted readback' : 'Incident submission did not close the form');
 			}
-			return ok(row, 'Modal incident ouvert');
+			return notOk(row, 'Incident creation was not submitted');
 		}
 
 		if (row.endpoint.includes('/configuration/classes') && /classe/i.test(action)) {
 			await waitForPageQuery(page);
-			await dismissPageError(page);
 			const opened = await openDialogButton(page, /ajouter une classe|add class/i);
 			if (!opened) {
 				return notOk(row, 'Bouton Add class introuvable sur /configuration/classes');
@@ -970,7 +1051,6 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 
 		if (action.includes('frais') && row.endpoint.includes('/finance/fees')) {
 			await waitForPageQuery(page);
-			await dismissPageError(page);
 			const opened = await openDialogButton(page, /add fee|ajouter un frais/i);
 			if (!opened) return notOk(row, 'Bouton Add fee introuvable sur /finance/fees');
 			const dialog = page.getByRole('dialog');
@@ -982,7 +1062,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		}
 
 		const opened = await clickCreateButton(page, action, row.endpoint);
-		return opened ? ok(row, 'Modal création ouvert') : notOk(row, 'Bouton création introuvable');
+		return notOk(row, opened ? 'Creation form opened without exercising the required mutation' : 'Bouton création introuvable');
 	}
 
 	// ── Edit / drawer / open ──
@@ -1000,7 +1080,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 			await edit.click();
 			const dialog = page.getByRole('dialog');
 			return (await dialog.isVisible({ timeout: 5_000 }).catch(() => false))
-				? ok(row)
+				? notOk(row, 'Fee edit form opened without saving and reading back a change')
 				: notOk(row, 'Formulaire frais non ouvert');
 		}
 
@@ -1011,7 +1091,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 					await assignBtn.click();
 					const dialog = page.getByRole('dialog');
 					const visible = await dialog.isVisible({ timeout: 5_000 }).catch(() => false);
-					return visible ? ok(row) : notOk(row, 'Modal assignation facture non ouvert');
+					return visible ? notOk(row, 'Invoice assignment opened without persisting an assignment') : notOk(row, 'Modal assignation facture non ouvert');
 				}
 				return notOk(row, 'Bouton Ajouter une facture introuvable');
 			}
@@ -1033,14 +1113,14 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 			await editBtn.click();
 			const drawer = page.getByRole('dialog').or(page.locator('[data-vaul-drawer]'));
 			const visible = await drawer.first().isVisible({ timeout: 5_000 }).catch(() => false);
-			return visible ? ok(row) : ok(row, 'Action édition déclenchée');
+			return notOk(row, visible ? 'Edit form opened without a persisted mutation assertion' : 'Edit action did not open its form');
 		}
 		if (await tab.isVisible().catch(() => false)) {
 			await tab.click();
-			return ok(row);
+			return /ouvrir|drawer|onglet/i.test(action) ? ok(row) : notOk(row, 'Tab navigation cannot satisfy a required mutation');
 		}
 		const form = page.locator('input, textarea, select').first();
-		return (await form.isVisible({ timeout: 5_000 }).catch(() => false)) ? ok(row) : notOk(row, 'Formulaire / drawer introuvable');
+		return notOk(row, (await form.isVisible({ timeout: 5_000 }).catch(() => false)) ? 'Visible form does not satisfy this action' : 'Formulaire / drawer introuvable');
 	}
 
 	// ── Save preferences ──
@@ -1050,7 +1130,17 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		const count = await toggles.count();
 		if (action.includes('Charger') && count > 0) return ok(row, `${count} préférences`);
 		if (await save.isVisible().catch(() => false)) {
-			return ok(row, 'Bouton sauvegarde présent (non cliqué)');
+			const email = `qa-notifications-${Date.now()}@integration.edaya.test`;
+			const input = page.locator('#staff-notification-email');
+			await input.fill(email);
+			const saved = page.waitForResponse(response => response.url().includes('/core/commands/update-notification-contact') && response.request().method() === 'POST', { timeout: 15000 });
+			await save.click();
+			const response = await saved;
+			if (!response.ok()) return notOk(row, `Notification contact save returned ${response.status()}`);
+			await page.reload({ waitUntil: 'domcontentloaded' });
+			await page.locator('#staff-notification-email').waitFor({ state: 'visible' });
+			await page.waitForFunction(value => (document.querySelector('#staff-notification-email') as HTMLInputElement | null)?.value === value, email, { timeout: 15000 });
+			return ok(row, 'Changed notification contact persisted after reload');
 		}
 		return notOk(row, 'Préférences introuvables');
 	}
@@ -1062,7 +1152,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 			.isVisible({ timeout: 6_000 })
 			.catch(() => false);
 		return visible
-			? ok(row, 'remove-target: control visible (not clicked)')
+			? notOk(row, 'Required recipient removal has no persisted postcondition')
 			: na(row, 'remove-target: no draft recipient (published or empty)');
 	}
 
@@ -1070,9 +1160,15 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 	if (/supprimer|delete/i.test(action) && !/export/i.test(action)) {
 		const visible = await isDeleteControlVisible(page);
 		return visible
-			? ok(row, 'delete: control visible (not clicked)')
+			? notOk(row, 'Required delete has no persisted postcondition')
 			: na(row, 'delete: no delete control or insufficient data');
 	}
+
+    if (action === 'Générer / télécharger / annuler') return ok(row, await exerciseStudentDocument(page, ctx.base));
+
+    if (action.startsWith('Planning EDT')) {
+        return ok(row, await exerciseTimetable(page, ctx.base, action.includes('publier')));
+    }
 
 	// ── Publish / generate / payment / toggle — smoke only ──
 	if (row.endpoint.includes('/configuration/academic') && /publier année/i.test(action)) {
@@ -1099,7 +1195,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 	if (/publier|générer|enregistrer paiement|résoudre|planning|brouillon|toggle|offer/i.test(action)) {
 		const btn = page.getByRole('button', { name: /publier|générer|paiement|résoudre|brouillon|publier|offer|toggle/i }).first();
 		return (await btn.isVisible({ timeout: 6_000 }).catch(() => false))
-			? ok(row, 'update: action available (not executed — avoids mutation)')
+			? notOk(row, 'Required mutation has no persisted postcondition')
 			: na(row, 'Bouton action absent ou données insuffisantes');
 	}
 
@@ -1111,25 +1207,15 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		return notOk(row, outcome.detail);
 	}
 
-	// ── Imports ──
-	if (/import/i.test(action)) {
-		await page.goto(`${ctx.base}/configuration/tools`, { waitUntil: 'domcontentloaded' });
-		await waitForAppShell(page);
-		const importBtn = page.getByRole('button', { name: /import/i }).first();
-		if (await importBtn.isVisible({ timeout: 6_000 }).catch(() => false)) {
-			await importBtn.click();
-			const modal = page.locator('[data-testid="import-pack-generic"], [role="dialog"]');
-			const visible = await modal.first().isVisible({ timeout: 8_000 }).catch(() => false);
-			if (!visible) return notOk(row, 'Modal import non ouvert');
-			const packName = action.match(/import (\w+)/i)?.[1] ?? '';
-			if (packName && packName !== 'données') {
-				const option = page.getByText(new RegExp(packName, 'i')).first();
-				return (await option.isVisible({ timeout: 4_000 }).catch(() => false)) ? ok(row) : ok(row, 'Hub import accessible');
-			}
-			return ok(row);
-		}
-		return notOk(row, 'Hub import introuvable');
+	if (action.includes('Modal import données')) {
+		await navigateSpaPage(page, `${ctx.base}/configuration/tools`);
+		await waitForPageQuery(page);
+		await page.getByTestId('import-action').click();
+		await page.getByTestId('data-import-modal').waitFor({ state: 'visible' });
+		return ok(row, 'Current import chooser opened');
 	}
+
+	if (/import/i.test(action)) return notOk(row, 'Import action requires a registered valid/invalid input scenario');
 
 	// ── Dashboard specifics ──
 	if (row.module === 'Dashboard') {
@@ -1143,7 +1229,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 			return (await link.isVisible({ timeout: 5_000 }).catch(() => false)) ? ok(row) : na(row, 'Pas de carte cliquable');
 		}
 		if (action.includes('empty')) {
-			return ok(row, 'Page chargée sans erreur fatale');
+			return notOk(row, 'Empty state requires an explicitly empty fixture and an asserted empty state');
 		}
 	}
 
@@ -1156,7 +1242,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		await first.click();
 		if (action.includes('Marquer')) {
 			const readBtn = page.getByRole('button', { name: /lu|read/i }).first();
-			return (await readBtn.isVisible({ timeout: 5_000 }).catch(() => false)) ? ok(row) : ok(row, 'Message ouvert');
+			return notOk(row, 'Read receipt requires a persisted delivery assertion');
 		}
 		return ok(row);
 	}
@@ -1180,17 +1266,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		return links >= 3 ? ok(row, `${links} catalogues`) : notOk(row, 'Liste des catalogues incomplète');
 	}
 
-	// ── Tools modal ──
-	if (action.includes('Modal import données')) {
-		const btn = page.getByRole('button', { name: /import/i }).first();
-		if (!(await btn.isVisible({ timeout: 5_000 }).catch(() => false))) return notOk(row, 'Bouton import absent');
-		await btn.click();
-		return (await page.getByRole('dialog').isVisible({ timeout: 5_000 }).catch(() => false)) ? ok(row) : notOk(row, 'Modal non ouvert');
-	}
-
-	// Default smoke
-	const content = await hasMainContent(page);
-	return content ? ok(row) : notOk(row, 'Scénario par défaut — contenu absent');
+	return notOk(row, `No executable behavior assertion registered for: ${action}`);
 }
 
 export async function runMatrixScenario(
@@ -1199,6 +1275,7 @@ export async function runMatrixScenario(
 	browser: Browser,
 	entities: MatrixEntities,
 ): Promise<MatrixResult> {
+	return withScenarioArtifacts({ id: scenarioForSurface(row).id, expected: row.action, directory: ctx.outDir, page: ctx.page }, async () => {
 	try {
 		if (entities.studentSetupBlocked && isStudentBlockedScenario(row.endpoint, row.action)) {
 			return na(row, STUDENT_SETUP_BLOCKER.detail);
@@ -1211,6 +1288,7 @@ export async function runMatrixScenario(
 	catch (err) {
 		return notOk(row, formatError(err));
 	}
+	});
 }
 
 export { discoverEntities, emptyEntities };

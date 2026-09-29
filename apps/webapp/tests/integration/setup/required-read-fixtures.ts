@@ -1,0 +1,45 @@
+import assert from 'node:assert/strict';
+import { apiFetch } from './journey-api';
+import type { UiJourney } from './journey-context';
+
+/** Explicit persisted prerequisites for behavior reads; never credits a UI scenario. */
+export async function createRequiredReadFixtures(journey: UiJourney): Promise<void> {
+  const {page,base} = journey.ctx;
+  const {activityId,classId,studentId,teachingId,subjectId,reportCardDefId} = journey.entities;
+  assert(activityId && classId && studentId && teachingId && subjectId && reportCardDefId, 'Required activity/curriculum fixture dependencies missing');
+  const post = async (path:string,data:Record<string,unknown>) => {
+    const response = await apiFetch(page,base,`/core/${path}`,{method:'POST',data});
+    assert(response.ok(), `Required ${path} fixture HTTP ${response.status()}`);
+  };
+  await post('entities/class-activity-enrollments/save',{id:crypto.randomUUID(),activityId,classGroupId:classId,createdAt:new Date().toISOString()});
+  await post('commands/enroll-student-in-activity',{id:crypto.randomUUID(),activityId,studentId,status:'approved'});
+  const subjectsResponse = await apiFetch(page,base,'/core/entities/class-subjects/list',{method:'POST',data:{classGroupId:classId}});
+  assert(subjectsResponse.ok(), 'Required class-subject query failed');
+  const subjects = await subjectsResponse.json() as Array<{id:string;subjectId:string;gradeLevelSubjectId?:string}>;
+  assert(subjects.length > 0, 'Required assigned curriculum missing');
+  const teaching = subjects.find(subject => subject.subjectId === subjectId || subject.gradeLevelSubjectId === subjectId);
+  assert(teaching, 'Required fixture subject is not assigned to the class');
+  journey.entities.teachingId = teaching.id;
+  journey.entities.configurationSubjectId = teaching.gradeLevelSubjectId;
+  for (const [index, subject] of subjects.entries()) {
+    assert(subject.gradeLevelSubjectId, 'Required catalog-backed class subject missing');
+    const subjectMatterId = crypto.randomUUID();
+    await post('commands/configure-subject-matter',{id:subjectMatterId,subjectId:subject.subjectId,name:`Integration curriculum ${subjectMatterId}`,sequenceOrder:2});
+    await post('commands/assign-matter-to-grade-level-subject',{id:crypto.randomUUID(),gradeLevelSubjectId:subject.gradeLevelSubjectId,subjectMatterId,classSubjectMatterIdsByClassGroupId:{[classId]:crypto.randomUUID()}});
+    await post('commands/create-report-card-definition-section',{id:crypto.randomUUID(),reportCardDefinitionId:reportCardDefId,name:`Integration marks ${index}`,kind:'subject',role:'matieres',subjectId:subject.subjectId,order:10+index,weight:1,coefficient:1});
+  }
+  const classResponse = await apiFetch(page,base,`/core/entities/class-groups/${classId}`);
+  assert(classResponse.ok());
+  const classroom = await classResponse.json() as Record<string,unknown>;
+  await post('commands/create-class-group',{...classroom,id:crypto.randomUUID(),name:'Integration contrasting class',homeroomStaffId:null});
+  const gradeResponse = await apiFetch(page,base,`/core/entities/grade-levels/${journey.entities.gradeLevelId}`);
+  assert(gradeResponse.ok(), 'Required grade-level fixture missing');
+  const grade = await gradeResponse.json() as Record<string,unknown>;
+  const contrastLevelId = crypto.randomUUID();
+  await post('commands/configure-grade-level',{...grade,id:contrastLevelId,name:`Integration filter level ${contrastLevelId}`});
+  const offerResponse = await apiFetch(page,base,`/core/entities/grade-level-subjects/${teaching.gradeLevelSubjectId}`);
+  assert(offerResponse.ok(), 'Required grade-level subject missing');
+  const offer = await offerResponse.json() as Record<string,unknown>;
+  await post('commands/offer-subject-to-grade-level',{...offer,id:crypto.randomUUID(),gradeLevelId:contrastLevelId});
+  journey.steps.push({step:'activity-and-curriculum-fixtures',ok:true});
+}

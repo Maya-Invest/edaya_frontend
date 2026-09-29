@@ -4,8 +4,8 @@ import type { PageQueryRequest } from '../../../lib/student-page-status';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { loadStudentEnrollmentHistory } from '$lib/api/student-drawer-data';
-import { todayDateInput } from '$lib/date/format';
 import { getContext, setContext } from 'svelte';
+import { SvelteDate } from 'svelte/reactivity';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { runStudentRouteMutation } from '../../../lib/student-route-mutation';
 
@@ -81,7 +81,7 @@ export class StudentEnrollmentsTabState {
 				enrollmentId: input.enrollmentId,
 				nextEnrollmentId,
 				nextClassGroupId: input.nextClassGroupId,
-				effectiveAt: todayDateInput(),
+				effectiveAt: new SvelteDate().toISOString(),
 			}),
 			successMessage: input.successMessage,
 			versionKeys: ['students', 'enrollments'],

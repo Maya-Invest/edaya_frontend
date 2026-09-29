@@ -83,14 +83,14 @@ describe('addressable non-modal view URL state', () => {
 				url('/login?panel=signup&method=password&stage=verification'),
 				{ showSignup: false },
 			),
-		).toEqual({ panel: 'signin', method: 'password', stage: 'form' });
+		).toEqual({ panel: 'signin', method: 'email-otp', stage: 'form' });
 	});
 
 	it('resets login stages that lost their local email identity', () => {
 		const codeState = { panel: 'signin', method: 'email-otp', stage: 'code' } as const;
 		const verificationState = {
 			panel: 'signup',
-			method: 'password',
+			method: 'email-otp',
 			stage: 'verification',
 		} as const;
 
@@ -108,9 +108,9 @@ describe('addressable non-modal view URL state', () => {
 	it('keeps teacher portal gate while canonicalizing login params', () => {
 		const href = writeLoginUrlState(
 			url('/login?portal=teacher'),
-			{ panel: 'signin', method: 'password', stage: 'form' },
+			{ panel: 'signin', method: 'email-otp', stage: 'form' },
 		);
-		expect(href).toBe('/login?portal=teacher&panel=signin&method=password&stage=form');
+		expect(href).toBe('/login?portal=teacher&panel=signin&method=email-otp&stage=form');
 	});
 
 	it('detects email-verified redirects and strips the query param', () => {
@@ -123,9 +123,9 @@ describe('addressable non-modal view URL state', () => {
 
 		const href = writeLoginUrlState(
 			url('/login?verified=1&portal=teacher'),
-			{ panel: 'signin', method: 'password', stage: 'form' },
+			{ panel: 'signin', method: 'email-otp', stage: 'form' },
 		);
-		expect(href).toBe('/login?portal=teacher&panel=signin&method=password&stage=form');
+		expect(href).toBe('/login?portal=teacher&panel=signin&method=email-otp&stage=form');
 		expect(href).not.toContain('verified=');
 	});
 
@@ -138,9 +138,9 @@ describe('addressable non-modal view URL state', () => {
 
 		const href = writeLoginUrlState(
 			url('/login?error=INVALID_TOKEN&portal=teacher'),
-			{ panel: 'signin', method: 'password', stage: 'form' },
+			{ panel: 'signin', method: 'email-otp', stage: 'form' },
 		);
-		expect(href).toBe('/login?portal=teacher&panel=signin&method=password&stage=form');
+		expect(href).toBe('/login?portal=teacher&panel=signin&method=email-otp&stage=form');
 		expect(href).not.toContain('error=');
 	});
 

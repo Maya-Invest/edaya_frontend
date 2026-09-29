@@ -61,7 +61,7 @@ async function snapshotApiResponse(
 	};
 }
 
-async function apiFetch(
+export async function apiFetch(
 	page: Page,
 	appOrigin: string,
 	path: string,
@@ -558,8 +558,9 @@ async function pickLessonSessionForClass(
 	classGroupId: string,
 	scheduleDate: string,
 	apiUrl: string,
+	classSubjectId?: string,
 ): Promise<string | null> {
-	const listed = await listLessonSessionIdsForClass(page, appOrigin, classGroupId, apiUrl);
+	const listed = await listLessonSessionIdsForClass(page, appOrigin, classGroupId, apiUrl, classSubjectId);
 	const match = listed.find(id => id.includes(scheduleDate)) ?? listed[0];
 	if (!match) {
 		return null;
@@ -575,10 +576,11 @@ async function listLessonSessionIdsForClass(
 	appOrigin: string,
 	classGroupId: string,
 	apiUrl: string,
+	classSubjectId?: string,
 ): Promise<string[]> {
 	const response = await apiFetch(page, appOrigin, '/core/entities/lesson-sessions/list', {
 		method: 'POST',
-		data: { classGroupId },
+		data: { classGroupId, ...(classSubjectId ? { classSubjectId } : {}) },
 	}, apiUrl);
 	if (!response.ok()) {
 		return [];
@@ -769,6 +771,7 @@ export async function ensureTimetableSession(
 		options.classGroupId,
 		scheduleDate,
 		apiUrl,
+		classSubjectId,
 	);
 	if (existingSession) {
 		return { sessionId: existingSession, scheduleDate };
@@ -847,6 +850,7 @@ export async function ensureTimetableSession(
 		options.classGroupId,
 		scheduleDate,
 		apiUrl,
+		classSubjectId,
 	);
 	if (fromList) {
 		return { sessionId: fromList, scheduleDate };

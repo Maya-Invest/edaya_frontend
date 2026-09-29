@@ -10,9 +10,20 @@ import { get } from 'svelte/store';
 import { appGoto } from './app-navigation';
 import {
 	nestedRouteSurfaceHistoryState,
+	replacementRouteSurfaceHistoryState,
 	routeSurfaceBackDelta,
 	routeSurfaceHistoryState,
 } from './route-surface-history';
+
+// A successful form can close its modal and open a drawer in the same turn.
+// Defer history traversal so the drawer can replace that closing modal instead.
+let pendingClose: object | null = null;
+
+function cancelPendingClose(): boolean {
+	const closing = pendingClose !== null;
+	pendingClose = null;
+	return closing;
+}
 
 const NAVIGATION_OPTIONS = {
 	keepFocus: true,
@@ -20,14 +31,19 @@ const NAVIGATION_OPTIONS = {
 } as const;
 
 export function openRouteSurface(href: string, parentHref: string): void {
+	const replaceClosingSurface = cancelPendingClose();
 	const currentState = get(page).state;
 	void appGoto(href, {
 		...NAVIGATION_OPTIONS,
-		state: routeSurfaceHistoryState(parentHref, currentState),
+		state: replaceClosingSurface
+			? replacementRouteSurfaceHistoryState(parentHref, currentState)
+			: routeSurfaceHistoryState(parentHref, currentState),
+		replaceState: replaceClosingSurface,
 	});
 }
 
 export function navigateWithinRouteSurface(href: string): void {
+	cancelPendingClose();
 	const currentState = get(page).state;
 	if (!currentState.routeSurfaceParent) {
 		void appGoto(href, {
@@ -59,6 +75,7 @@ export function followDrawerTabLink(event: MouseEvent, href: string): void {
 }
 
 export function replaceRouteSurface(href: string): void {
+	cancelPendingClose();
 	const currentState = get(page).state;
 	void appGoto(href, {
 		...NAVIGATION_OPTIONS,
@@ -68,24 +85,31 @@ export function replaceRouteSurface(href: string): void {
 }
 
 export function closeRouteSurface(parentHref: string): void {
-	const currentState = get(page).state;
-	const backDelta = routeSurfaceBackDelta(currentState, parentHref);
-	if (
-		browser
-		&& backDelta !== null
-		&& window.history.length > Math.abs(backDelta)
-	) {
-		window.history.go(backDelta);
-		return;
-	}
-	void appGoto(parentHref, {
-		...NAVIGATION_OPTIONS,
-		replaceState: true,
-		state: {
-			...currentState,
-			routeSurfaceParent: undefined,
-			routeSurfaceDepth: undefined,
-		},
+	const request = {};
+	pendingClose = request;
+	queueMicrotask(() => {
+		if (pendingClose !== request)
+			return;
+		pendingClose = null;
+		const currentState = get(page).state;
+		const backDelta = routeSurfaceBackDelta(currentState, parentHref);
+		if (
+			browser
+			&& backDelta !== null
+			&& window.history.length > Math.abs(backDelta)
+		) {
+			window.history.go(backDelta);
+			return;
+		}
+		void appGoto(parentHref, {
+			...NAVIGATION_OPTIONS,
+			replaceState: true,
+			state: {
+				...currentState,
+				routeSurfaceParent: undefined,
+				routeSurfaceDepth: undefined,
+			},
+		});
 	});
 }
 

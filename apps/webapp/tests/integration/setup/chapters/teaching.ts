@@ -4,14 +4,12 @@ import {
 	searchAndSelectPerson,
 	selectNativeFilter,
 } from '../../../../scripts/qa-harness-ui';
-import { firstIdFromLinks } from '../../../../scripts/qa-matrix-support';
-import { ensureClassSubjectForClass, ensurePublishedTeacherTimetableSession } from '../journey-api';
+import { apiFetch, resolveSchoolId, ensureClassSubjectForClass, ensurePublishedTeacherTimetableSession } from '../journey-api';
 import {
 	coverActions,
 	coverModal,
 	coverMutationActions,
 	gotoApp,
-	idFromUrl,
 	logStep,
 	runModalMutation,
 	visitCovered,
@@ -41,7 +39,7 @@ export async function runTeachingChapter(journey: UiJourney): Promise<void> {
 			parentRoute: '/configuration/classes/[id]/assignments',
 			modal: 'form',
 			pathname: `/configuration/classes/${entities.configClassId}/assignments`,
-			command: 'assign-staff-to-class',
+			command: 'staff-assignments/save',
 			fill: async (current) => {
 				await searchAndSelectPerson(current, 'E2E-Staff');
 				await fillLabeledInput(current, /responsabilité|responsibility/i, responsibility);
@@ -86,27 +84,13 @@ export async function runTeachingChapter(journey: UiJourney): Promise<void> {
 		offered ? undefined : 'offer toggle not confirmed',
 	);
 
-	let teachingId = await firstIdFromLinks(page, new RegExp(`/classes/${classId}/teaching/([^/?]+)`))
-		?? idFromUrl(page, /\/teaching\/([^/?]+)/);
-	if (!teachingId) {
-		const row = page.locator('main a[href*="/teaching/"], main [role="button"]').first();
-		if (await row.isVisible().catch(() => false)) {
-			await row.click();
-			await page.waitForTimeout(800);
-			teachingId = idFromUrl(page, /\/teaching\/([^/?]+)/);
-		}
-	}
+	const teachingId = await ensureClassSubjectForClass(page, journey.ctx.base, {
+		classGroupId: classId,
+		catalogSubjectId: entities.subjectId,
+	});
+	if (!teachingId) throw new Error('Required subject offering missing for teacher assignment');
 	entities.teachingId = teachingId;
-	entities.filterFixtures.teachingSearchToken = teachingId ?? undefined;
-
-	if (!teachingId) {
-		teachingId = await ensureClassSubjectForClass(page, journey.ctx.base, {
-			classGroupId: classId,
-			catalogSubjectId: entities.subjectId,
-		});
-		entities.teachingId = teachingId;
-		entities.filterFixtures.teachingSearchToken = teachingId ?? undefined;
-	}
+	entities.filterFixtures.teachingSearchToken = teachingId;
 
 	if (teachingId) {
 		await visitCovered(
@@ -147,15 +131,10 @@ export async function runTeachingChapter(journey: UiJourney): Promise<void> {
 			pathname: `/school/teachers/${entities.teacherId}/assignments`,
 			command: 'teacher-assignments',
 			fill: async (current) => {
-				await selectNativeFilter(current, 1, { label: /E2E-6A-/ })
-					|| await selectNativeFilter(current, 1);
-				const started = Date.now();
-				while (Date.now() - started < 10_000) {
-					if (await selectNativeFilter(current, 2)) {
-						return;
-					}
-					await current.waitForTimeout(300);
-				}
+				await selectNativeFilter(current, 1, { value: classId });
+				const subjectSelect = current.getByRole('dialog').locator('select').nth(2);
+				await subjectSelect.locator(`option[value="${teachingId}"]`).waitFor({ state: 'attached' });
+				await subjectSelect.selectOption(teachingId);
 			},
 			actionPath: 'http://localhost:5173/school/teachers/[id]/assignments',
 			actions: ['CRUD affectations matière/classe'],
@@ -182,8 +161,27 @@ export async function runTeachingChapter(journey: UiJourney): Promise<void> {
 	}
 
 	try {
+        const hubTeacherId = crypto.randomUUID();
+        const schoolId = await resolveSchoolId(page, journey.ctx.base);
+        const created = await apiFetch(page, journey.ctx.base, '/core/commands/register-teacher', {
+            method: 'POST', data: { id: hubTeacherId, schoolId, firstName: 'Integration', lastName: hubTeacherId, isActive: true },
+        });
+        if (!created.ok()) throw new Error(`Assignment fixture failed: ${created.status()}`);
 		await gotoApp(journey, '/configuration/tools/teacher-assignments');
-		coverModal(journey, '/configuration/tools/teacher-assignments', 'create', 'N/A', 'page visited; create not submitted');
+		await runModalMutation(journey, {
+            parentRoute: '/configuration/tools/teacher-assignments', modal: 'create',
+            pathname: '/configuration/tools/teacher-assignments', command: 'teacher-assignments',
+            fill: async current => {
+                const selects = current.getByRole('dialog').locator('select');
+                await current.getByRole('dialog').locator(`option[value="${hubTeacherId}"]`).waitFor({ state: 'attached', timeout: 15000 });
+                await selects.nth(0).selectOption(hubTeacherId);
+                await selects.nth(1).selectOption('homeroom');
+                await selects.nth(2).selectOption(entities.classId!);
+            },
+            listPath: '/configuration/tools/teacher-assignments',
+            actionPath: 'http://localhost:5173/configuration/tools/teacher-assignments',
+            actions: ['Créer / supprimer affectation'],
+        });
 		logStep(journey, { step: 'teacher-assignments-hub', ok: true, detail: 'visited after teacher exists' });
 	}
 	catch (err) {

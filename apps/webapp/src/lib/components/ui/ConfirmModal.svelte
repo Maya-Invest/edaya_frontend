@@ -40,16 +40,18 @@
 </script>
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
-	<Dialog.Content data-testid="confirm-modal">
-		<Dialog.Header>
-			<Dialog.Title>{title}</Dialog.Title>
-			{#if description}
-				<Dialog.Description>{description}</Dialog.Description>
-			{/if}
-		</Dialog.Header>
-		<Dialog.Footer>
-			<Button variant="ghost" onclick={close} disabled={busy}>{cancelLabel}</Button>
-			<Button variant={variant} onclick={onConfirm} disabled={busy}>{confirmLabel}</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
+	{#if open}
+		<Dialog.Content data-testid="confirm-modal">
+			<Dialog.Header>
+				<Dialog.Title>{title}</Dialog.Title>
+				{#if description}
+					<Dialog.Description>{description}</Dialog.Description>
+				{/if}
+			</Dialog.Header>
+			<Dialog.Footer>
+				<Button variant="ghost" onclick={close} disabled={busy}>{cancelLabel}</Button>
+				<Button variant={variant} onclick={onConfirm} disabled={busy}>{confirmLabel}</Button>
+			</Dialog.Footer>
+		</Dialog.Content>
+	{/if}
 </Dialog.Root>

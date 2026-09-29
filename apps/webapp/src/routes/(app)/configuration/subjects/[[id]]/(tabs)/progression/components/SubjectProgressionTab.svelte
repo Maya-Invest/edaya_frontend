@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { SubjectMatterDrawerRow } from '$lib/api/mutations/subject-matter.mutations';
 	import type { Subject } from '$lib/types/school';
-	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { deleteSubjectMatterMutation } from '$lib/api/mutations/subject-matter.mutations';
@@ -35,8 +34,10 @@
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
-	afterNavigate(() => {
+	$effect(() => {
 		modals.hydrate();
+	});
+	$effect(() => {
 		validateModalTarget();
 	});
 	const addChapterOpen = bindUrlModal(modals, 'add-chapter');

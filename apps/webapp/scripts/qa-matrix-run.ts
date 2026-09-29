@@ -3,7 +3,7 @@
  * Exécute les scénarios de qa-template-matrix.ts via Playwright.
  * Écrit apps/webapp/.integration-run/qa-matrix-results.json puis régénère qa-test-matrix.xlsx.
  *
- * Policy: on NOT OK — log blocker, continue, exit 1. Never edit src/ to green the run.
+ * Policy: on NOT OK — log blocker, continue, exit 1. Fix confirmed defects while preserving intended behavior.
  *
  * Env: WEBAPP_URL, QA_LOGIN_EMAIL, QA_LOGIN_PASSWORD
  * Provisioned runs (canonical integration contract): INTEGRATION_PROVISIONED=1
@@ -12,6 +12,7 @@
  * Demo smoke (local only): bun run qa:matrix
  * Always excluded (manual): Auth, Onboarding, Outils & imports, /login, /configuration/tools
  */
+import { scenarioForSurface } from '../tests/integration/support/coverage-contract';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -41,7 +42,7 @@ import {
 } from './integration-report';
 
 const WEBAPP_DIR = path.join(import.meta.dirname, '..');
-const OUT_DIR = path.join(WEBAPP_DIR, '.qa-matrix-run');
+const OUT_DIR = path.join(WEBAPP_DIR, isProvisionedRun() ? '.integration-run/artifacts' : '.qa-matrix-run');
 const RESULTS_PATH = path.join(WEBAPP_DIR, '.integration-run', 'qa-matrix-results.json');
 const FIXTURE_PATH = path.join(WEBAPP_DIR, '.integration-run', 'fixture.json');
 const INTEGRATION_SUMMARY_PATH = path.join(WEBAPP_DIR, '.integration-run', 'summary.json');
@@ -239,6 +240,8 @@ async function main(): Promise<void> {
 	const { chromium } = await import('playwright');
 	const browser = await chromium.launch({ headless: true });
 	const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+	context.setDefaultTimeout(15_000);
+	context.setDefaultNavigationTimeout(30_000);
 	const page = await context.newPage();
 	const consoleErrors: string[] = [];
 	page.on('console', msg => {
@@ -414,7 +417,10 @@ async function persistAndExit(
 		byActionType,
 		blockers,
 		consoleErrors: [...new Set(consoleErrors)].slice(0, 30),
-		results,
+		results: results.map(result => {
+			const scenario = scenarioForSurface(result);
+			return { ...result, id: scenario.id, feature: scenario.feature };
+		}),
 	};
 
 	await mkdir(path.dirname(RESULTS_PATH), { recursive: true });
@@ -464,7 +470,7 @@ async function persistAndExit(
 	}
 
 	await browser.close();
-	process.exit(failed > 0 ? 1 : 0);
+	process.exit(failed > 0 || na > 0 || results.length === 0 ? 1 : 0);
 }
 
 main().catch(err => {

@@ -64,6 +64,7 @@
 							class="h-7 rounded-full text-xs"
 							{disabled}
 							{title}
+							data-testid="session-logbook-edit"
 							onclick={() => modals.open('session-logbook')}
 						>
 							{detail.logbook ? $t('common.edit') : $t('planning.session.addLogbook')}
@@ -108,6 +109,7 @@
 							class="rounded-full"
 							{disabled}
 							{title}
+							data-testid="session-logbook-edit"
 							onclick={() => modals.open('session-logbook')}
 						>
 							{$t('planning.session.addLogbook')}
