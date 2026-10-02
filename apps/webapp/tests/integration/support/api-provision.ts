@@ -410,7 +410,7 @@ async function authenticateAccount(client: ProvisionHttpClient, email: string): 
   if (!sent.response.ok || !sent.body?.challenge) throw new Error('OTP delivery failed');
   const verified = await client.jsonRequest<AuthUserResponse>('/auth/edaya/otp/verify', {
     method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ challenge: sent.body.challenge, code: await peekOtp(email) }),
+    body: JSON.stringify({ challenge: sent.body.challenge, code: await peekOtp(email, 'email', sent.body.challenge) }),
   });
   if (!verified.response.ok || !verified.body?.user?.id) throw new Error('Completed Account authentication required');
   return verified.body.user.id;

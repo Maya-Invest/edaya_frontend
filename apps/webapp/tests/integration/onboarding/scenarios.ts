@@ -1,7 +1,8 @@
 import type { ScenarioDefinition } from '../support/scenario-registry';
 
 export const ONBOARDING_SCENARIOS = [
-  { id: 'auth.phone.telegram', feature: 'authentication.phone' },
+  { id: 'auth.testing.otp', feature: 'authentication.testing' },
+  { id: 'auth.phone.sms-switch', feature: 'authentication.phone' },
   { id: 'auth.phone.whatsapp', feature: 'authentication.phone' },
   { id: 'auth.email.resend', feature: 'authentication.email' },
   { id: 'auth.email.expiry', feature: 'authentication.email' },

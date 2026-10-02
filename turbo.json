@@ -6,18 +6,31 @@
       "cache": false
     },
     "build": {
-      "outputs": ["dist/**", "build/**", ".svelte-kit/**"]
+      "outputs": [
+        "dist/**",
+        "build/**",
+        ".svelte-kit/**"
+      ]
     },
     "check": {
-      "dependsOn": ["^check"]
+      "dependsOn": [
+        "^check"
+      ]
     },
     "quality": {
-      "dependsOn": ["^check"]
+      "dependsOn": [
+        "^check"
+      ]
     },
     "test": {
-      "dependsOn": ["^check"]
+      "dependsOn": [
+        "^check"
+      ]
     },
     "lint": {},
     "lint:fix": {}
-  }
+  },
+  "globalEnv": [
+    "PUBLIC_TEST_OTP_ACCESS"
+  ]
 }

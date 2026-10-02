@@ -38,7 +38,7 @@ Path: [`.github/actions/ci-bun-turbo`](../../.github/actions/ci-bun-turbo/action
 | [`_integration.yml`](../../.github/workflows/_integration.yml) | `integration` | `test:integration:onboarding` then `test:integration:provisioned` (empty Identity + school from source, Wrangler, Playwright) |
 | [`deploy_push.yml`](../../.github/workflows/deploy_push.yml) | `deploy-*` | `wrangler deploy` via [Cloudflare deploy](ci-setup.md#deploy-to-cloudflare-github-actions) |
 
-Integration uses inline setup because it starts Identity and school from sibling checkouts, installs Playwright, builds the webapp, and serves it with Wrangler — not just the Turbo graph. Identity listens on `:9900`, school on `:9999` (files `:9200`). The webapp build sets `PUBLIC_AUTH_URL=http://127.0.0.1:9900`. Playwright then runs two suites against that stack: login + onboarding (`test:integration:onboarding` — public gates, signup/login UI with required email verification, wizard, invited staff/teacher/guardian), then API-provisioned owner journey (`test:integration:provisioned` / `provisionTenant()`). CI Identity overlay sets `REQUIRE_EMAIL_VERIFICATION=true` plus `AUTH_DEV_OTP_PEEK` / `AUTH_EMAIL_LOG_OTP` so the onboarding suite can follow `GET /auth/edaya/dev/last-verification-url`. API provisioning still seed-verifies then password-signs-in (Better Auth does not auto-sign-in when verification is on). CI does **not** run `bun repo seed`. The provisioned suite still runs if onboarding fails, as long as the Wrangler preview came up.
+Use the dedicated backend `bun run dev:test` server for local captured email, WhatsApp and SMS. Enable web `PUBLIC_TEST_OTP_ACCESS=true` or Flutter debug `--dart-define=TEST_OTP_ACCESS=true` for explicit Show test code and Copy controls. CI uses that composition and a private captured mailbox; normal staging/production builds omit testing access.
 
 Caching in `_integration.yml`:
 - **Bun deps + Turbo** — `./.github/actions/ci-bun-turbo` (same as verify)
@@ -87,7 +87,7 @@ Git ref is taken from the **web head branch** (PR branch, or `github.ref_name` o
 
 The job fails if that branch is missing on either sibling. Identity needs `dev`, `staging`, and `main` on `Maya-Invest/edaya_identity` (not only a feature branch).
 
-Start script: [`.github/scripts/ci-start-local-apis.sh`](../../.github/scripts/ci-start-local-apis.sh) copies each checkout’s `.env.example`, sets a shared `IDENTITY_DIRECTORY_SECRET`, and adds Wrangler origins (`http://127.0.0.1:4173` and `http://localhost:4173`) to `TRUSTED_ORIGINS`. Identity gets `FIRST_PARTY_API_ORIGINS=http://localhost:9999`; school gets `API_ORIGIN=http://localhost:9999`. JWT issuer/audience stay `http://localhost:9900` / `http://localhost:9999`. Identity is overlaid with `REQUIRE_EMAIL_VERIFICATION=true`, `AUTH_DEV_OTP_PEEK=true`, and `AUTH_EMAIL_LOG_OTP=true` so signup/invite scenes cannot skip verification. Identity starts with `bun --filter @edaya/identity start`; school with `bun repo dev`.
+Use the dedicated backend `bun run dev:test` server for local captured email, WhatsApp and SMS. Enable web `PUBLIC_TEST_OTP_ACCESS=true` or Flutter debug `--dart-define=TEST_OTP_ACCESS=true` for explicit Show test code and Copy controls. CI uses that composition and a private captured mailbox; normal staging/production builds omit testing access.
 
 ## GitHub Packages access for API client
 

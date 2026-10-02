@@ -1,7 +1,7 @@
 import { createHmac } from 'node:crypto';
 import { writeFile } from 'node:fs/promises';
 import type { Page, Locator } from 'playwright';
-import { peekOtp, sendOtpThroughUi, verifyOtpThroughUi } from '../../support/passwordless';
+import { revealTestCode, peekOtp, sendOtpThroughUi, verifyOtpThroughUi } from '../../support/passwordless';
 import { uniqueOnboardingEmail } from '../support/capture';
 import { withIsolatedPage } from '../support/invite';
 
@@ -31,14 +31,44 @@ function totp(secret: string, offsetMs = 0): string {
   const digest = createHmac('sha1', key).update(counter).digest();
   return String((digest.readUInt32BE(digest[digest.length - 1]! & 15) & 0x7fffffff) % 1_000_000).padStart(6, '0');
 }
-export async function runPhoneOtp(page: Page, base: string, channel: 'telegram' | 'whatsapp') {
+export async function runPhoneOtp(page: Page, base: string, channel: 'sms' | 'whatsapp') {
   if (!process.env.EDAYA_TEST_OTP_FILE) throw new Error('Phone OTP requires the captured-delivery Identity entry');
   const phone = `+22507${Date.now().toString().slice(-8)}`;
   await page.goto(`${base}/login`);
   const form = panel(page);
-  await form.locator('select').selectOption(channel);
-  await sendOtpThroughUi(page, phone);
-  const verified = await verify(form, await peekOtp(phone, channel), 'otp/verify');
+  if (await form.locator('select').count()) throw new Error('Login still requires a contact type selection');
+  let sent = 0;
+  const countSend = (request: import('playwright').Request) => {
+    if (request.url().endsWith('/auth/edaya/otp/start')) sent++;
+  };
+  page.on('request', countSend);
+  await form.getByTestId('auth-identifier').fill('0712345678');
+  await form.getByTestId('auth-submit').click();
+  await form.getByRole('alert').waitFor();
+  if (sent || await form.getByTestId('auth-code').count()) throw new Error('Invalid contact started verification');
+  page.off('request', countSend);
+  await sendOtpThroughUi(page, `${phone.slice(0, 4)} (${phone.slice(4, 6)}) ${phone.slice(6)}`);
+  if (channel === 'sms') {
+    const clock = process.env.EDAYA_TEST_CLOCK_FILE;
+    if (!clock) throw new Error('SMS switch requires the integration clock');
+    if (await form.getByTestId('auth-sms').isEnabled()) throw new Error('SMS bypassed the initial cooldown');
+    const oldCode = await revealTestCode(page);
+    await form.getByTestId('auth-code').fill(oldCode);
+    try {
+      await writeFile(clock, '61000');
+      const resent = page.waitForResponse(r => r.url().endsWith('/auth/edaya/otp/resend'));
+      await form.getByTestId('auth-sms').click();
+      const response = await resent;
+      if (!response.ok() || (await response.json()).channel !== 'sms') throw new Error('SMS switch failed');
+      if (await form.getByTestId('auth-test-code').count()) throw new Error('Replacement retained the revealed code');
+      if (await form.getByTestId('auth-code').inputValue()) throw new Error('Replacement retained the old code');
+      if (await form.getByTestId('auth-sms').isVisible()) throw new Error('SMS offered a second channel switch');
+      const code = await peekOtp(phone, 'sms');
+      if (oldCode !== code) await verify(form, oldCode, 'otp/verify', false);
+    } finally { await writeFile(clock, '0'); }
+  }
+  await form.getByTestId('auth-code').fill('');
+  const verified = await verify(form, await revealTestCode(page), 'otp/verify');
   const replay = await page.request.post(verified.url(), {
     headers: { origin: base }, data: verified.request().postDataJSON(),
   });
@@ -51,10 +81,33 @@ export async function runPhoneOtp(page: Page, base: string, channel: 'telegram' 
 export async function runOtpResend(page: Page, base: string) {
   const email = uniqueOnboardingEmail();
   await page.goto(`${base}/login`);
-  await sendOtpThroughUi(page, email);
-  const oldCode = await peekOtp(email);
-  await panel(page).getByRole('button', { name: /resend|renvoyer/i }).click();
-  await sendOtpThroughUi(page, email);
+  await sendOtpThroughUi(page, ` ${email.toUpperCase()} `);
+  const oldCode = await revealTestCode(page);
+  let release!: () => void;
+  let received!: () => void;
+  const held = new Promise<void>(resolve => { release = resolve; });
+  const ready = new Promise<void>(resolve => { received = resolve; });
+  await page.route('**/auth/edaya/testing/otp', async route => {
+    const response = await route.fetch();
+    received();
+    await held;
+    await route.fulfill({ response });
+  }, { times: 1 });
+  await panel(page).getByTestId('auth-test-reveal').click();
+  await ready;
+  const clock = process.env.EDAYA_TEST_CLOCK_FILE;
+  if (!clock) throw new Error('Resend requires the integration clock');
+  try {
+    await writeFile(clock, '61000');
+    const resent = page.waitForResponse(r => r.url().endsWith('/auth/edaya/otp/resend'));
+    await panel(page).getByTestId('auth-resend').click();
+    if (!(await resent).ok()) throw new Error('Resend request failed');
+    if (await panel(page).getByTestId('auth-test-code').count()) throw new Error('Resend retained the revealed code');
+    if (await panel(page).getByTestId('auth-code').inputValue()) throw new Error('Resend retained the old code');
+    release();
+    await page.waitForTimeout(100);
+    if (await panel(page).getByTestId('auth-test-code').count()) throw new Error('Late lookup revealed a superseded code');
+  } finally { release(); await writeFile(clock, '0'); }
   // A newly generated code can coincidentally match; stale challenges are tested separately.
   const code = await peekOtp(email);
   if (oldCode !== code) await verify(panel(page), oldCode, 'otp/verify', false);
@@ -89,7 +142,7 @@ export async function runAccountSecurity(page: Page, base: string) {
   await link.locator('input[type="checkbox"]').check();
   await link.getByTestId('auth-submit').click();
   await link.getByTestId('auth-code').waitFor();
-  await verify(link, await peekOtp(alias), 'otp/verify');
+  await verify(link, await revealTestCode(page, 'link'), 'otp/verify');
   await page.getByTestId('account-identifier').filter({ hasText: alias }).waitFor();
   const enrollment = panel(page, 'enroll');
   await enrollment.getByTestId('auth-submit').click();
@@ -169,4 +222,36 @@ export async function runOwnerTotpPolicy(owner: Page, base: string, email: strin
       if (!restored.ok() || !session.session.secondFactorAt) throw new Error('Owner session missing second-factor proof');
     });
   } finally { await writeFile(file, '[]'); }
+}
+
+export async function runTestOtpLifecycle(page: Page, base: string) {
+  let capabilities = 0;
+  page.on('request', request => { if (request.url().endsWith('/auth/edaya/testing/capabilities')) capabilities++; });
+  await page.goto(`${base}/login`);
+  await sendOtpThroughUi(page, uniqueOnboardingEmail());
+  await revealTestCode(page);
+  await page.waitForTimeout(3100);
+  if (!(await panel(page).getByTestId('auth-test-code').count())) throw new Error('Routine status polling cleared a pending test code');
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  if (await page.getByTestId('auth-test-code').count()) throw new Error('Backgrounding retained a revealed code');
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await revealTestCode(page);
+  await panel(page).getByTestId('auth-change-contact').click();
+  if (await page.getByTestId('auth-test-code').count()) throw new Error('Reset retained a revealed code');
+  await sendOtpThroughUi(page, uniqueOnboardingEmail());
+  await revealTestCode(page);
+  if (capabilities !== 1) throw new Error('Capabilities should be discovered once per client lifetime');
+  await page.goto(`${base}/account/security`);
+  if (await page.getByTestId('auth-test-code').count()) throw new Error('Screen departure retained a revealed code');
+  await page.route('**/auth/edaya/testing/capabilities', route => route.fulfill({ status: 404, contentType: 'application/json', body: '{"code":"not_found"}' }));
+  await page.goto(`${base}/login`);
+  await sendOtpThroughUi(page, uniqueOnboardingEmail());
+  await page.waitForTimeout(100);
+  if (await page.getByTestId('auth-test-reveal').count()) throw new Error('Unsupported server exposed test access');
 }

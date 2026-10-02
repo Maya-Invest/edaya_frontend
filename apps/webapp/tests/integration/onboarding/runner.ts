@@ -1,4 +1,4 @@
-import { runPhoneOtp, runOtpResend, runOtpExpiry, runAccountSecurity, runOwnerTotpPolicy } from './scenes/passwordless-security';
+import { runTestOtpLifecycle, runPhoneOtp, runOtpResend, runOtpExpiry, runAccountSecurity, runOwnerTotpPolicy } from './scenes/passwordless-security';
 import type { Browser, Page } from 'playwright';
 import { assertAuthOnboardingCatalogCoverage } from './catalog-coverage';
 import { captureFailure, uniqueOnboardingEmail, uniqueOnboardingPassword } from './support/capture';
@@ -55,7 +55,8 @@ export async function runOnboardingSuite(options: RunOnboardingSuiteOptions): Pr
  };
  const wizard = (run: typeof runHappyPath, name: string) => isolated(page => run({ page, browser: options.browser, base, outDir: options.outDir, credentials: uniqueOwner(name, name) }), name);
  const handlers: Record<OnboardingScenarioId, () => Promise<void>> = {
-  'auth.phone.telegram': () => isolated(page => runPhoneOtp(page, base, 'telegram'), 'auth.phone.telegram'),
+  'auth.testing.otp': () => isolated(page => runTestOtpLifecycle(page, base), 'auth.testing.otp'),
+  'auth.phone.sms-switch': () => isolated(page => runPhoneOtp(page, base, 'sms'), 'auth.phone.sms-switch'),
   'auth.phone.whatsapp': () => isolated(page => runPhoneOtp(page, base, 'whatsapp'), 'auth.phone.whatsapp'),
   'auth.email.resend': () => isolated(page => runOtpResend(page, base), 'auth.email.resend'),
   'auth.email.expiry': () => isolated(page => runOtpExpiry(page, base), 'auth.email.expiry'),

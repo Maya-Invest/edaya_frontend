@@ -24,7 +24,7 @@ tests/
 
 - **`tests/lib/**`** — mirror `src/lib/**` where practical (`api/`, `auth/`, `onboarding/`, …).
 - **`tests/support/**`** — OpenAPI fixtures, recording school client, SvelteKit mocks. Import via `$tests/support/...`.
-- **`tests/integration/onboarding/**`** — `bun run test:integration:onboarding` (empty Identity + school: login/signup/invite gates, wizard UI, invited staff/teacher/guardian). Identity must require email verification (`REQUIRE_EMAIL_VERIFICATION=true`) with peek (`AUTH_DEV_OTP_PEEK=true` or `AUTH_EMAIL_LOG_OTP=true`). CI overlays those flags; local Identity `.env.example` defaults verification **off** — turn it on or the suite fails when signup skips `/login` verification.
+Use the dedicated backend `bun run dev:test` server for local captured email, WhatsApp and SMS. Enable web `PUBLIC_TEST_OTP_ACCESS=true` or Flutter debug `--dart-define=TEST_OTP_ACCESS=true` for explicit Show test code and Copy controls. CI uses that composition and a private captured mailbox; normal staging/production builds omit testing access.
 - **`tests/integration/setup/**`** — `bun run test:integration:provisioned` (API-completes the wizard, then owner UI). Secondary teacher/educator invites must actually activate; a missing token or owner-link fallback fails the run.
 
 Local login + onboarding suite (Identity `:9900`, school `:9999` empty, webapp `:5173`):
