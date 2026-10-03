@@ -7,9 +7,9 @@ Edaya is split across repositories:
 
 | Repo | Role |
 |------|------|
-| `edaya_identity` | Central auth (Better Auth, directory) |
-| `edaya_backend` | API, cron, domain packages, `@maya-invest/edaya-api-client`, client codegen |
+| `edaya_backend` | School API and Identity, domain packages, API and Identity clients, codegen |
 | `edaya_web` | SvelteKit webapp + webadmin |
+| `edaya_mobile` | Guardian and teacher Flutter apps |
 
 OpenAPI export and client generation live **only** in `edaya_backend`. Web consumes `@maya-invest/edaya-api-client` — no local OpenAPI copies or codegen.
 
@@ -17,7 +17,7 @@ OpenAPI export and client generation live **only** in `edaya_backend`. Web consu
 
 `edaya_web` **verify** and **deploy** install `@maya-invest/edaya-api-client` from **GitHub Packages** (`staging` / `production` dist-tags). They do not check out `edaya_backend`.
 
-**Playwright integration** does check out `edaya_identity` and `edaya_backend` (empty in-process APIs; no demo seed). The webapp still uses the published API client — not the sibling `file:` link. See [ci-setup.md](./ci-setup.md#sibling-identity-and-school-playwright) for refs, checkout layout, and `IDENTITY_CHECKOUT_TOKEN`.
+**Playwright integration** checks out only `edaya_backend` (which owns Identity) (empty in-process APIs; no demo seed). The webapp still uses the published API client — not the sibling `file:` link. See [ci-setup.md](./ci-setup.md#sibling-identity-and-school-playwright) for refs, checkout layout, and `IDENTITY_CHECKOUT_TOKEN`.
 
 One-time org setup: grant `edaya_web` **Read** on the `@maya-invest/edaya-api-client` package.
 
@@ -77,13 +77,8 @@ Web apps import:
 
 `edaya_web/packages/web-fixtures` mirrors seed IDs and demo login data from `edaya_backend/tooling/fixtures`. Update both when seed data changes.
 
-## Staging deploy and smoke
+## Staging validation and rollout
 
-```sh
-# API (from edaya_backend)
-cd edaya_backend && bun repo deploy api staging && bun repo smoke-test staging
+Use backend `release-staging.yml` or its dispatch wrapper with the exact backend/web/mobile revisions. `validate_only=true` runs qualification, staging builds/dry runs and signed-APK verification without publishing clients, deploying Workers or changing staging data. After qualification, the rollout coordinator publishes/reuses both API and Identity clients from the backend commit, then verifies the web against the exact published API version.
 
-# Web apps (from edaya_web)
-cd edaya_web && bun run deploy:webapp:staging && bun run deploy:webadmin:staging
-cd edaya_web && bun repo smoke-test staging
-```
+Keep phone/SMS/WhatsApp disabled until provider credentials are ready; forms use Identity availability and fail closed to email-only. The later first bootstrap uses explicit `reset_data=true`; after successful bootstrap, retries use `reset_data=false`. Target ownership, database and signing preflight must pass before staging is declared ready. See backend `docs/reference/staging-release.md`.

@@ -1836,6 +1836,126 @@ export declare const clientBindings: {
             readonly responseSchemaName: "TeacherFamilyFeedbackResult";
         };
     };
+    readonly auth: {
+        readonly methods: {
+            readonly method: "GET";
+            readonly path: "/auth/edaya/methods";
+            readonly responseSchemaName: "AuthMethods";
+            readonly basePath: "root";
+        };
+        readonly startOtp: {
+            readonly method: "POST";
+            readonly path: "/auth/edaya/otp/start";
+            readonly requestSchemaName: "AuthStart";
+            readonly responseSchemaName: "AuthPrimaryStatus";
+            readonly basePath: "root";
+        };
+        readonly statusOtp: {
+            readonly method: "POST";
+            readonly path: "/auth/edaya/otp/status";
+            readonly requestSchemaName: "AuthChallengeInput";
+            readonly responseSchemaName: "AuthPrimaryStatus";
+            readonly basePath: "root";
+        };
+        readonly resendOtp: {
+            readonly method: "POST";
+            readonly path: "/auth/edaya/otp/resend";
+            readonly requestSchemaName: "AuthResend";
+            readonly responseSchemaName: "AuthPrimaryStatus";
+            readonly basePath: "root";
+        };
+        readonly verifyOtp: {
+            readonly method: "POST";
+            readonly path: "/auth/edaya/otp/verify";
+            readonly requestSchemaName: "AuthProof";
+            readonly responseSchemaName: "AuthOutcome";
+            readonly basePath: "root";
+        };
+        readonly verifyTotp: {
+            readonly method: "POST";
+            readonly path: "/auth/edaya/totp/verify";
+            readonly requestSchemaName: "AuthProof";
+            readonly responseSchemaName: "AuthOutcome";
+            readonly basePath: "root";
+        };
+        readonly enroll: {
+            readonly method: "POST";
+            readonly path: "/auth/edaya/totp/enroll";
+            readonly requestSchemaName: "AuthEnrollmentInput";
+            readonly responseSchemaName: "AuthEnrollment";
+            readonly basePath: "root";
+        };
+        readonly confirmEnrollment: {
+            readonly method: "POST";
+            readonly path: "/auth/edaya/totp/confirm";
+            readonly requestSchemaName: "AuthProof";
+            readonly responseSchemaName: "AuthOutcome";
+            readonly basePath: "root";
+        };
+        readonly recover: {
+            readonly method: "POST";
+            readonly path: "/auth/edaya/recovery";
+            readonly requestSchemaName: "AuthProof";
+            readonly responseSchemaName: "AuthEnrollment";
+            readonly basePath: "root";
+        };
+        readonly linkIdentifier: {
+            readonly method: "POST";
+            readonly path: "/auth/edaya/identifiers/start";
+            readonly requestSchemaName: "AuthStart";
+            readonly responseSchemaName: "AuthPrimaryStatus";
+            readonly basePath: "root";
+        };
+        readonly unlinkIdentifier: {
+            readonly method: "POST";
+            readonly path: "/auth/edaya/identifiers/unlink";
+            readonly requestSchemaName: "AuthUnlink";
+            readonly responseSchemaName: "AuthSuccess";
+            readonly basePath: "root";
+        };
+        readonly security: {
+            readonly method: "POST";
+            readonly path: "/auth/edaya/security";
+            readonly requestSchemaName: "AuthEmptyInput";
+            readonly responseSchemaName: "AuthSecurity";
+            readonly basePath: "root";
+        };
+        readonly disableTotp: {
+            readonly method: "POST";
+            readonly path: "/auth/edaya/totp/disable";
+            readonly requestSchemaName: "AuthEmptyInput";
+            readonly responseSchemaName: "AuthSuccess";
+            readonly basePath: "root";
+        };
+        readonly getSession: {
+            readonly method: "POST";
+            readonly path: "/auth/edaya/session";
+            readonly requestSchemaName: "AuthEmptyInput";
+            readonly responseSchemaName: "AuthSnapshot";
+            readonly basePath: "root";
+        };
+        readonly accessToken: {
+            readonly method: "POST";
+            readonly path: "/auth/edaya/access-token";
+            readonly requestSchemaName: "AuthResource";
+            readonly responseSchemaName: "AuthAccessToken";
+            readonly basePath: "root";
+        };
+        readonly signOut: {
+            readonly method: "POST";
+            readonly path: "/auth/edaya/sign-out";
+            readonly requestSchemaName: "AuthEmptyInput";
+            readonly responseSchemaName: "AuthSuccess";
+            readonly basePath: "root";
+        };
+        readonly signOutAll: {
+            readonly method: "POST";
+            readonly path: "/auth/edaya/sign-out-all";
+            readonly requestSchemaName: "AuthEmptyInput";
+            readonly responseSchemaName: "AuthSuccess";
+            readonly basePath: "root";
+        };
+    };
     readonly authorization: {
         readonly effectiveGrants: {
             readonly method: "GET";

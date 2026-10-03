@@ -2,10 +2,636 @@
   "openapi": "3.0.0",
   "info": {
     "version": "0.0.1",
-    "title": "Edaya Core API"
+    "title": "Edaya API"
   },
   "components": {
+    "securitySchemes": {
+      "accountCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-edaya_session"
+      },
+      "nativeSession": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Native opaque Account session credential; distinct from school access JWTs."
+      }
+    },
     "schemas": {
+      "AccountIdentifier": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "email",
+              "phone"
+            ]
+          },
+          "value": {
+            "type": "string"
+          },
+          "verifiedAt": {
+            "type": "number"
+          },
+          "recoveryEligible": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "value",
+          "verifiedAt",
+          "recoveryEligible"
+        ]
+      },
+      "AuthAccount": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "disabled"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "securityVersion": {
+            "type": "number"
+          },
+          "identifiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountIdentifier"
+            }
+          },
+          "createdAt": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "name",
+          "securityVersion",
+          "identifiers",
+          "createdAt"
+        ]
+      },
+      "AuthUser": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "emailVerified": {
+            "type": "boolean"
+          },
+          "phoneVerified": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "accountId",
+          "email",
+          "phone",
+          "name",
+          "emailVerified",
+          "phoneVerified",
+          "createdAt"
+        ]
+      },
+      "AuthAccessToken": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "tokenType": {
+            "type": "string",
+            "enum": [
+              "Bearer"
+            ]
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "accessToken",
+          "tokenType",
+          "expiresAt"
+        ]
+      },
+      "AuthChallengeInput": {
+        "type": "object",
+        "properties": {
+          "challenge": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "challenge"
+        ],
+        "additionalProperties": false
+      },
+      "AuthEmptyInput": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "AuthEnrollmentInput": {
+        "type": "object",
+        "properties": {
+          "challenge": {
+            "type": "string",
+            "maxLength": 128
+          }
+        },
+        "additionalProperties": false
+      },
+      "AuthFailure": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "nextResendAt": {
+            "type": "number"
+          },
+          "serverNow": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "AuthMethods": {
+        "type": "object",
+        "properties": {
+          "methods": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "email",
+                    "phone"
+                  ]
+                },
+                "available": {
+                  "type": "boolean"
+                },
+                "channels": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "countries": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "prefixes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "key",
+                "kind"
+              ]
+            }
+          }
+        },
+        "required": [
+          "methods"
+        ]
+      },
+      "AuthPrimaryStatus": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "primary_required"
+            ]
+          },
+          "challenge": {
+            "type": "string"
+          },
+          "lifecycle": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "expired",
+              "superseded",
+              "completed",
+              "exhausted"
+            ]
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "email",
+              "whatsapp",
+              "sms"
+            ]
+          },
+          "delivery": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "uncertain",
+              "failed",
+              "sent",
+              "delivered",
+              "read"
+            ]
+          },
+          "expiresAt": {
+            "type": "number"
+          },
+          "nextResendAt": {
+            "type": "number"
+          },
+          "serverNow": {
+            "type": "number"
+          },
+          "actions": {
+            "type": "object",
+            "properties": {
+              "resend": {
+                "type": "boolean"
+              },
+              "sms": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "resend",
+              "sms"
+            ]
+          },
+          "resendAfter": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "state",
+          "challenge",
+          "lifecycle",
+          "channel",
+          "delivery",
+          "expiresAt",
+          "nextResendAt",
+          "serverNow",
+          "actions"
+        ]
+      },
+      "AuthSession": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "accountId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "secondFactorAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "accountId",
+          "createdAt",
+          "expiresAt",
+          "secondFactorAt"
+        ]
+      },
+      "AuthSnapshot": {
+        "type": "object",
+        "properties": {
+          "account": {
+            "$ref": "#/components/schemas/AuthAccount"
+          },
+          "user": {
+            "$ref": "#/components/schemas/AuthUser"
+          },
+          "session": {
+            "$ref": "#/components/schemas/AuthSession"
+          }
+        },
+        "required": [
+          "account",
+          "user",
+          "session"
+        ]
+      },
+      "AuthEnrollment": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "enrollment_required"
+            ]
+          },
+          "challenge": {
+            "type": "string"
+          },
+          "secret": {
+            "type": "string"
+          },
+          "uri": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "challenge"
+        ]
+      },
+      "AuthOutcome": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/AuthPrimaryStatus"
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AuthSnapshot"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "type": "string",
+                    "enum": [
+                      "complete"
+                    ]
+                  },
+                  "token": {
+                    "type": "string"
+                  },
+                  "recoveryCodes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "state"
+                ]
+              }
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "linked"
+                ]
+              },
+              "account": {
+                "$ref": "#/components/schemas/AuthAccount"
+              }
+            },
+            "required": [
+              "state",
+              "account"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "totp_required"
+                ]
+              },
+              "challenge": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "state",
+              "challenge"
+            ]
+          },
+          {
+            "$ref": "#/components/schemas/AuthEnrollment"
+          }
+        ]
+      },
+      "AuthProof": {
+        "type": "object",
+        "properties": {
+          "challenge": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "challenge",
+          "code"
+        ],
+        "additionalProperties": false
+      },
+      "AuthResend": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AuthChallengeInput"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "resend",
+                  "sms"
+                ]
+              },
+              "requestId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "action",
+              "requestId"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "AuthResource": {
+        "type": "object",
+        "properties": {
+          "resource": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "resource"
+        ],
+        "additionalProperties": false
+      },
+      "AuthSecurity": {
+        "type": "object",
+        "properties": {
+          "totpEnabled": {
+            "type": "boolean"
+          },
+          "totpRequired": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "totpEnabled",
+          "totpRequired"
+        ]
+      },
+      "AuthStart": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "email",
+              "phone"
+            ]
+          },
+          "value": {
+            "type": "string",
+            "maxLength": 254
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "email",
+              "telegram",
+              "whatsapp"
+            ]
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en"
+            ]
+          },
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recoveryEligible": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "value"
+        ],
+        "additionalProperties": false
+      },
+      "AuthSuccess": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "success"
+        ]
+      },
+      "AuthUnlink": {
+        "type": "object",
+        "properties": {
+          "identifierId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "identifierId"
+        ],
+        "additionalProperties": false
+      },
       "EffectiveGrantsResponse": {
         "type": "object",
         "properties": {
@@ -22440,6 +23066,1146 @@
     "parameters": {}
   },
   "paths": {
+    "/auth/edaya/methods": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "auth.methods",
+        "x-edaya-kind": "auth",
+        "x-edaya-client-key": "methods",
+        "x-edaya-client-path": "/auth/edaya/methods",
+        "x-edaya-response-schema": "AuthMethods",
+        "x-edaya-base-path": "root",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Account operation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthMethods"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthFailure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Origin or security policy rejected"
+          },
+          "413": {
+            "description": "Body too large"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "503": {
+            "description": "Authentication unavailable"
+          }
+        }
+      }
+    },
+    "/auth/edaya/otp/start": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "auth.startOtp",
+        "x-edaya-kind": "auth",
+        "x-edaya-client-key": "startOtp",
+        "x-edaya-client-path": "/auth/edaya/otp/start",
+        "x-edaya-request-schema": "AuthStart",
+        "x-edaya-response-schema": "AuthPrimaryStatus",
+        "x-edaya-base-path": "root",
+        "security": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthStart"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account operation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthPrimaryStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthFailure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Origin or security policy rejected"
+          },
+          "413": {
+            "description": "Body too large"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "503": {
+            "description": "Authentication unavailable"
+          }
+        }
+      }
+    },
+    "/auth/edaya/otp/status": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "auth.statusOtp",
+        "x-edaya-kind": "auth",
+        "x-edaya-client-key": "statusOtp",
+        "x-edaya-client-path": "/auth/edaya/otp/status",
+        "x-edaya-request-schema": "AuthChallengeInput",
+        "x-edaya-response-schema": "AuthPrimaryStatus",
+        "x-edaya-base-path": "root",
+        "security": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthChallengeInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account operation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthPrimaryStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthFailure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Origin or security policy rejected"
+          },
+          "413": {
+            "description": "Body too large"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "503": {
+            "description": "Authentication unavailable"
+          }
+        }
+      }
+    },
+    "/auth/edaya/otp/resend": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "auth.resendOtp",
+        "x-edaya-kind": "auth",
+        "x-edaya-client-key": "resendOtp",
+        "x-edaya-client-path": "/auth/edaya/otp/resend",
+        "x-edaya-request-schema": "AuthResend",
+        "x-edaya-response-schema": "AuthPrimaryStatus",
+        "x-edaya-base-path": "root",
+        "security": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthResend"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account operation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthPrimaryStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthFailure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Origin or security policy rejected"
+          },
+          "413": {
+            "description": "Body too large"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "503": {
+            "description": "Authentication unavailable"
+          }
+        }
+      }
+    },
+    "/auth/edaya/otp/verify": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "auth.verifyOtp",
+        "x-edaya-kind": "auth",
+        "x-edaya-client-key": "verifyOtp",
+        "x-edaya-client-path": "/auth/edaya/otp/verify",
+        "x-edaya-request-schema": "AuthProof",
+        "x-edaya-response-schema": "AuthOutcome",
+        "x-edaya-base-path": "root",
+        "security": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthProof"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account operation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthOutcome"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthFailure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Origin or security policy rejected"
+          },
+          "413": {
+            "description": "Body too large"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "503": {
+            "description": "Authentication unavailable"
+          }
+        }
+      }
+    },
+    "/auth/edaya/totp/verify": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "auth.verifyTotp",
+        "x-edaya-kind": "auth",
+        "x-edaya-client-key": "verifyTotp",
+        "x-edaya-client-path": "/auth/edaya/totp/verify",
+        "x-edaya-request-schema": "AuthProof",
+        "x-edaya-response-schema": "AuthOutcome",
+        "x-edaya-base-path": "root",
+        "security": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthProof"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account operation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthOutcome"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthFailure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Origin or security policy rejected"
+          },
+          "413": {
+            "description": "Body too large"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "503": {
+            "description": "Authentication unavailable"
+          }
+        }
+      }
+    },
+    "/auth/edaya/totp/enroll": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "auth.enroll",
+        "x-edaya-kind": "auth",
+        "x-edaya-client-key": "enroll",
+        "x-edaya-client-path": "/auth/edaya/totp/enroll",
+        "x-edaya-request-schema": "AuthEnrollmentInput",
+        "x-edaya-response-schema": "AuthEnrollment",
+        "x-edaya-base-path": "root",
+        "security": [
+          {
+            "accountCookie": []
+          },
+          {
+            "nativeSession": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthEnrollmentInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account operation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthEnrollment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthFailure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Origin or security policy rejected"
+          },
+          "413": {
+            "description": "Body too large"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "503": {
+            "description": "Authentication unavailable"
+          }
+        }
+      }
+    },
+    "/auth/edaya/totp/confirm": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "auth.confirmEnrollment",
+        "x-edaya-kind": "auth",
+        "x-edaya-client-key": "confirmEnrollment",
+        "x-edaya-client-path": "/auth/edaya/totp/confirm",
+        "x-edaya-request-schema": "AuthProof",
+        "x-edaya-response-schema": "AuthOutcome",
+        "x-edaya-base-path": "root",
+        "security": [
+          {
+            "accountCookie": []
+          },
+          {
+            "nativeSession": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthProof"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account operation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthOutcome"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthFailure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Origin or security policy rejected"
+          },
+          "413": {
+            "description": "Body too large"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "503": {
+            "description": "Authentication unavailable"
+          }
+        }
+      }
+    },
+    "/auth/edaya/recovery": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "auth.recover",
+        "x-edaya-kind": "auth",
+        "x-edaya-client-key": "recover",
+        "x-edaya-client-path": "/auth/edaya/recovery",
+        "x-edaya-request-schema": "AuthProof",
+        "x-edaya-response-schema": "AuthEnrollment",
+        "x-edaya-base-path": "root",
+        "security": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthProof"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account operation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthEnrollment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthFailure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Origin or security policy rejected"
+          },
+          "413": {
+            "description": "Body too large"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "503": {
+            "description": "Authentication unavailable"
+          }
+        }
+      }
+    },
+    "/auth/edaya/identifiers/start": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "auth.linkIdentifier",
+        "x-edaya-kind": "auth",
+        "x-edaya-client-key": "linkIdentifier",
+        "x-edaya-client-path": "/auth/edaya/identifiers/start",
+        "x-edaya-request-schema": "AuthStart",
+        "x-edaya-response-schema": "AuthPrimaryStatus",
+        "x-edaya-base-path": "root",
+        "security": [
+          {
+            "accountCookie": []
+          },
+          {
+            "nativeSession": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthStart"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account operation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthPrimaryStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthFailure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Origin or security policy rejected"
+          },
+          "413": {
+            "description": "Body too large"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "503": {
+            "description": "Authentication unavailable"
+          }
+        }
+      }
+    },
+    "/auth/edaya/identifiers/unlink": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "auth.unlinkIdentifier",
+        "x-edaya-kind": "auth",
+        "x-edaya-client-key": "unlinkIdentifier",
+        "x-edaya-client-path": "/auth/edaya/identifiers/unlink",
+        "x-edaya-request-schema": "AuthUnlink",
+        "x-edaya-response-schema": "AuthSuccess",
+        "x-edaya-base-path": "root",
+        "security": [
+          {
+            "accountCookie": []
+          },
+          {
+            "nativeSession": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthUnlink"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account operation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSuccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthFailure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Origin or security policy rejected"
+          },
+          "413": {
+            "description": "Body too large"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "503": {
+            "description": "Authentication unavailable"
+          }
+        }
+      }
+    },
+    "/auth/edaya/security": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "auth.security",
+        "x-edaya-kind": "auth",
+        "x-edaya-client-key": "security",
+        "x-edaya-client-path": "/auth/edaya/security",
+        "x-edaya-request-schema": "AuthEmptyInput",
+        "x-edaya-response-schema": "AuthSecurity",
+        "x-edaya-base-path": "root",
+        "security": [
+          {
+            "accountCookie": []
+          },
+          {
+            "nativeSession": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthEmptyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account operation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSecurity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthFailure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Origin or security policy rejected"
+          },
+          "413": {
+            "description": "Body too large"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "503": {
+            "description": "Authentication unavailable"
+          }
+        }
+      }
+    },
+    "/auth/edaya/totp/disable": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "auth.disableTotp",
+        "x-edaya-kind": "auth",
+        "x-edaya-client-key": "disableTotp",
+        "x-edaya-client-path": "/auth/edaya/totp/disable",
+        "x-edaya-request-schema": "AuthEmptyInput",
+        "x-edaya-response-schema": "AuthSuccess",
+        "x-edaya-base-path": "root",
+        "security": [
+          {
+            "accountCookie": []
+          },
+          {
+            "nativeSession": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthEmptyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account operation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSuccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthFailure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Origin or security policy rejected"
+          },
+          "413": {
+            "description": "Body too large"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "503": {
+            "description": "Authentication unavailable"
+          }
+        }
+      }
+    },
+    "/auth/edaya/session": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "auth.getSession",
+        "x-edaya-kind": "auth",
+        "x-edaya-client-key": "getSession",
+        "x-edaya-client-path": "/auth/edaya/session",
+        "x-edaya-request-schema": "AuthEmptyInput",
+        "x-edaya-response-schema": "AuthSnapshot",
+        "x-edaya-base-path": "root",
+        "security": [
+          {
+            "accountCookie": []
+          },
+          {
+            "nativeSession": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthEmptyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account operation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSnapshot"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthFailure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Origin or security policy rejected"
+          },
+          "413": {
+            "description": "Body too large"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "503": {
+            "description": "Authentication unavailable"
+          }
+        }
+      }
+    },
+    "/auth/edaya/access-token": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "auth.accessToken",
+        "x-edaya-kind": "auth",
+        "x-edaya-client-key": "accessToken",
+        "x-edaya-client-path": "/auth/edaya/access-token",
+        "x-edaya-request-schema": "AuthResource",
+        "x-edaya-response-schema": "AuthAccessToken",
+        "x-edaya-base-path": "root",
+        "security": [
+          {
+            "accountCookie": []
+          },
+          {
+            "nativeSession": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthResource"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account operation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthAccessToken"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthFailure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Origin or security policy rejected"
+          },
+          "413": {
+            "description": "Body too large"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "503": {
+            "description": "Authentication unavailable"
+          }
+        }
+      }
+    },
+    "/auth/edaya/sign-out": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "auth.signOut",
+        "x-edaya-kind": "auth",
+        "x-edaya-client-key": "signOut",
+        "x-edaya-client-path": "/auth/edaya/sign-out",
+        "x-edaya-request-schema": "AuthEmptyInput",
+        "x-edaya-response-schema": "AuthSuccess",
+        "x-edaya-base-path": "root",
+        "security": [
+          {
+            "accountCookie": []
+          },
+          {
+            "nativeSession": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthEmptyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account operation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSuccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthFailure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Origin or security policy rejected"
+          },
+          "413": {
+            "description": "Body too large"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "503": {
+            "description": "Authentication unavailable"
+          }
+        }
+      }
+    },
+    "/auth/edaya/sign-out-all": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "auth.signOutAll",
+        "x-edaya-kind": "auth",
+        "x-edaya-client-key": "signOutAll",
+        "x-edaya-client-path": "/auth/edaya/sign-out-all",
+        "x-edaya-request-schema": "AuthEmptyInput",
+        "x-edaya-response-schema": "AuthSuccess",
+        "x-edaya-base-path": "root",
+        "security": [
+          {
+            "accountCookie": []
+          },
+          {
+            "nativeSession": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthEmptyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account operation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSuccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or challenge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthFailure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Origin or security policy rejected"
+          },
+          "413": {
+            "description": "Body too large"
+          },
+          "429": {
+            "description": "Rate limited"
+          },
+          "503": {
+            "description": "Authentication unavailable"
+          }
+        }
+      }
+    },
+    "/.well-known/jwks.json": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Public ES256 signing keys"
+          }
+        }
+      }
+    },
+    "/auth/edaya/whatsapp/webhook": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Provider challenge or authenticated delivery receipt"
+          },
+          "403": {
+            "description": "Provider verification failed or phone unavailable"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Provider challenge or authenticated delivery receipt"
+          },
+          "403": {
+            "description": "Provider verification failed or phone unavailable"
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "tags": [

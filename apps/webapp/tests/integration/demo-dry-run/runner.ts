@@ -6,6 +6,7 @@ import { DEMO_DRY_RUN_OUT_DIR, DEMO_WEBAPP_BASE } from './support/paths';
 import { DemoReporter } from './support/reporter';
 import type { DemoSummary } from './support/types';
 import { runCoreDemoScenes } from './scenes/core-demo';
+import { runDemoAccountPicker } from './scenes/demo-account-picker';
 import { runFinanceDrawerScene } from './scenes/finance-drawer';
 import { runGuardianDrawerScene } from './scenes/guardian-drawer';
 import { runListShellScenes } from './scenes/list-shell';
@@ -38,6 +39,14 @@ export async function runDemoDryRun(options: RunDemoDryRunOptions = {}): Promise
 	const ctx = createDemoContext(page, base, outDir, reporter, consoleErrors);
 
 	try {
+		try {
+			const available = await runDemoAccountPicker(page, base);
+			reporter.log('D0', '0.0 Demo account selection preserves OTP login', available ? 'pass' : 'skip', available ? undefined : 'Development-only picker');
+		}
+		catch (error) {
+			reporter.log('D0', '0.0 Demo account selection preserves OTP login', 'fail', error instanceof Error ? error.message : String(error));
+			throw error;
+		}
 		await runCoreDemoScenes(ctx);
 		await runListShellScenes(ctx);
 		await runGuardianDrawerScene(ctx);

@@ -2,7 +2,7 @@
   "name": "@maya-invest/edaya-api-client",
   "type": "module",
   "version": "0.0.0",
-  "description": "Generated Edaya school API client",
+  "description": "Generated Edaya authentication and school API client",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
@@ -22,6 +22,12 @@
     "./schema": {
       "types": "./src/schema.d.ts",
       "default": "./src/schema.d.ts"
+    },
+    "./contract": {
+      "types": "./src/contract/index.ts",
+      "bun": "./src/contract/index.ts",
+      "import": "./dist/contract/index.js",
+      "default": "./dist/contract/index.js"
     }
   },
   "files": [

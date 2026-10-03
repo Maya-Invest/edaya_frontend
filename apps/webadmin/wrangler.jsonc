@@ -16,8 +16,7 @@
 		"prod": {
 			"name": "edaya-webadmin",
 			"vars": {
-				"PUBLIC_AUTH_URL": "https://identity.api.edayaplus.com",
-				"PUBLIC_API_URL": "https://school.api.edayaplus.com",
+				"PUBLIC_API_URL": "https://api.edayaplus.com",
 				"PUBLIC_APP_ENV": "production"
 			},
 			"routes": [
@@ -30,8 +29,7 @@
 		"staging": {
 			"name": "edaya-webadmin-staging",
 			"vars": {
-				"PUBLIC_AUTH_URL": "https://staging.identity.api.edayaplus.com",
-				"PUBLIC_API_URL": "https://staging.school.api.edayaplus.com",
+				"PUBLIC_API_URL": "https://staging.api.edayaplus.com",
 				"PUBLIC_APP_ENV": "staging"
 			},
 			"routes": [

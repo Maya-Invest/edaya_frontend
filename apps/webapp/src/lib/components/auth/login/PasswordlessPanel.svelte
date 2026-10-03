@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { authClient } from '$lib/auth/client';
 	import { completeAuthSignIn } from '$lib/auth/complete-sign-in';
-	import { detectIdentifier } from '$lib/auth/detect-identifier';
+	import { contactError, detectIdentifier } from '$lib/auth/detect-identifier';
 	import { PasswordlessFlow } from '$lib/auth/passwordless-flow.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -33,8 +33,9 @@
 	function submit() {
 		if (flow.state === 'form' && !enroll) {
 			const identifier = detectIdentifier(email);
-			if (!identifier) {
-				flow.error = $t('auth.invalidContact');
+			const error = contactError(identifier, flow.phoneAvailable);
+			if (error || !identifier) {
+				flow.error = $t(error ?? 'auth.invalidContact');
 				return;
 			}
 			void flow.begin({ ...identifier, locale: $lang, recoveryEligible }, link, onComplete);
@@ -65,9 +66,9 @@
 			submit();
 		}} aria-busy={flow.busy}>
 			{#if flow.state === 'form' && !enroll}
-				<Label for={`${uid}-identifier`}>{$t('auth.contactLabel')}</Label>
+				<Label for={`${uid}-identifier`}>{$t(flow.phoneAvailable ? 'auth.contactLabel' : 'auth.emailLabel')}</Label>
 				<Input data-testid="auth-identifier" id={`${uid}-identifier`} type="text" inputmode="email" bind:value={email} autocomplete="username" autocapitalize="none" spellcheck={false} required disabled={flow.busy || !!flow.retryRequest} />
-				{#if phoneInput}<p class="text-xs text-muted-foreground">{$t('auth.phoneCountryHint')}</p>{/if}
+				{#if flow.phoneAvailable && phoneInput}<p class="text-xs text-muted-foreground">{$t('auth.phoneCountryHint')}</p>{/if}
 				{#if link}<label class="flex gap-2 text-sm"><input type="checkbox" bind:checked={recoveryEligible} />{$t('auth.recoveryEligible')}</label>{/if}
 			{:else if flow.state !== 'form'}
 				{#if flow.state === 'enrollment_required'}

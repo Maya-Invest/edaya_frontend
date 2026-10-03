@@ -16,14 +16,14 @@ export async function assertListShell(
 			await loading.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {});
 		}
 		const moreBtn = page.getByTestId('list-more-menu');
-		if (!(await moreBtn.isVisible({ timeout: 15_000 }).catch(() => false))) {
+		if (!(await moreBtn.waitFor({ state: 'visible', timeout: 15_000 }).then(() => true).catch(() => false))) {
 			reporter.log(scene, step, 'fail', 'Missing list more menu');
 			await shot(`${scene}-${step.replace(/\s+/g, '-')}`);
 			return false;
 		}
 		await moreBtn.click();
 		const exportItem = page.getByRole('button', { name: exportName });
-		if (!(await exportItem.isVisible({ timeout: 5_000 }).catch(() => false))) {
+		if (!(await exportItem.waitFor({ state: 'visible', timeout: 5_000 }).then(() => true).catch(() => false))) {
 			reporter.log(scene, step, 'fail', 'Export action missing in more menu');
 			await shot(`${scene}-${step.replace(/\s+/g, '-')}-export`);
 			return false;
@@ -34,14 +34,14 @@ export async function assertListShell(
 			const filterBtn = page.getByTestId('list-filter').or(
 				page.getByRole('button', { name: /filtre|filter/i }),
 			).first();
-			if (!(await filterBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
+			if (!(await filterBtn.waitFor({ state: 'visible', timeout: 5_000 }).then(() => true).catch(() => false))) {
 				reporter.log(scene, step, 'fail', 'Missing filter panel trigger');
 				await shot(`${scene}-${step.replace(/\s+/g, '-')}-filter`);
 				return false;
 			}
 			await filterBtn.click();
 			const popover = page.locator('[data-state="open"]').last();
-			if (!(await popover.isVisible({ timeout: 5_000 }).catch(() => false))) {
+			if (!(await popover.waitFor({ state: 'visible', timeout: 5_000 }).then(() => true).catch(() => false))) {
 				reporter.log(scene, step, 'fail', 'Filter popover did not open');
 				await shot(`${scene}-${step.replace(/\s+/g, '-')}-filter-open`);
 				return false;
@@ -81,12 +81,12 @@ export async function assertFilterSelectShell(
 		}
 		const filterSelect = page.locator('select[aria-label="Filter"]');
 		const moreBtn = page.getByTestId('list-more-menu');
-		if (!(await filterSelect.first().isVisible({ timeout: 15_000 }).catch(() => false))) {
+		if (!(await filterSelect.first().waitFor({ state: 'visible', timeout: 15_000 }).then(() => true).catch(() => false))) {
 			reporter.log(scene, step, 'fail', 'Missing filter select');
 			await shot(`${scene}-${step.replace(/\s+/g, '-')}`);
 			return false;
 		}
-		if (!(await moreBtn.isVisible({ timeout: 5_000 }).catch(() => false))) {
+		if (!(await moreBtn.waitFor({ state: 'visible', timeout: 5_000 }).then(() => true).catch(() => false))) {
 			reporter.log(scene, step, 'fail', 'Missing list more menu');
 			await shot(`${scene}-${step.replace(/\s+/g, '-')}`);
 			return false;

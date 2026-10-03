@@ -59,7 +59,7 @@ describe('mutation coverage', () => {
 		]);
 	});
 
-	it('marks an unexercised mutation N/A', () => {
+	it('fails an unexercised required mutation', () => {
 		const current = journey();
 		coverMutationActions(
 			current,
@@ -71,7 +71,7 @@ describe('mutation coverage', () => {
 		expect(current.ledger.results()).toEqual([
 			expect.objectContaining({
 				action: 'Éditer profil',
-				statut: 'N/A',
+				statut: 'NOT OK',
 				detail: 'profile visited; edit not submitted',
 			}),
 		]);

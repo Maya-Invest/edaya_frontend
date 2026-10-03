@@ -11,7 +11,7 @@ export function resolveClientRoutePath(
 	params: Record<string, string> = {},
 	basePath: 'core' | 'root' = 'core',
 ): string {
-	const segments = pathTemplate.split('/').map((segment) => {
+	const segments = pathTemplate.split('/').filter(Boolean).map((segment) => {
 		if (segment.startsWith('{') && segment.endsWith('}')) {
 			const paramName = segment.slice(1, -1)
 			const value = params[paramName]

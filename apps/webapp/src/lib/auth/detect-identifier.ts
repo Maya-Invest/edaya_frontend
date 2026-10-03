@@ -10,3 +10,10 @@ export function detectIdentifier(input: string): LoginIdentifier | null {
 		return { kind: 'phone', value: phone };
 	return null;
 }
+
+/** Phone use is permitted only after Identity advertises it for this session. */
+export function contactError(identifier: LoginIdentifier | null, phoneAvailable: boolean): 'auth.invalidContact' | 'auth.phoneUnavailable' | null {
+	if (!identifier)
+		return 'auth.invalidContact';
+	return identifier.kind === 'phone' && !phoneAvailable ? 'auth.phoneUnavailable' : null;
+}

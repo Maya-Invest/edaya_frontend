@@ -233,19 +233,22 @@ export async function resolveFirstPeriodId(
 	appOrigin: string,
 	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
 ): Promise<string | null> {
-	const fromSession = await page.evaluate(() => sessionStorage.getItem('edaya:periodId')).catch(() => null);
+	const schoolId = await page.getByTestId('academic-year-trigger').getAttribute('data-school-id').catch(() => null);
+	const fromSession = await page.evaluate((schoolId) =>
+		(schoolId ? sessionStorage.getItem(`edaya:periodId:${schoolId}`) : null)
+		?? sessionStorage.getItem('edaya:periodId'), schoolId).catch(() => null);
 	if (fromSession) {
 		return fromSession;
 	}
 
-	const schoolId = await resolveSchoolId(page, appOrigin, apiUrl);
-	if (!schoolId) {
+	const resolvedSchoolId = schoolId ?? await resolveSchoolId(page, appOrigin, apiUrl);
+	if (!resolvedSchoolId) {
 		return null;
 	}
 
 	const response = await apiFetch(page, appOrigin, '/core/entities/academic-periods/list', {
 		method: 'POST',
-		data: { schoolId },
+		data: { schoolId: resolvedSchoolId },
 	}, apiUrl);
 	if (!response.ok()) {
 		return null;
@@ -774,7 +777,10 @@ export async function ensureTimetableSession(
 		classSubjectId,
 	);
 	if (existingSession) {
-		return { sessionId: existingSession, scheduleDate };
+		const response = await apiFetch(page, appOrigin, `/core/entities/lesson-sessions/${encodeURIComponent(existingSession)}`, {}, apiUrl);
+		const session = unwrapEntityBody(await readApiBody(response));
+		const startsAt = typeof session?.startsAt === 'string' ? session.startsAt : null;
+		return startsAt ? { sessionId: existingSession, scheduleDate: startsAt.slice(0, 10) } : null;
 	}
 
 	const directId = await createLessonSessionDirect(page, appOrigin, {

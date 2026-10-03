@@ -227,7 +227,7 @@ async function main(): Promise<void> {
 	const xlsxScript = path.join(import.meta.dirname, 'generate-qa-template-xlsx.py');
 	let xlsxStatus = 1;
 	for (const bin of ['python', 'python3']) {
-		const py = spawnSync(bin, [xlsxScript, CSV_PATH, XLSX_PATH], { stdio: 'inherit', shell: true });
+		const py = spawnSync(bin, [xlsxScript, CSV_PATH, XLSX_PATH], { stdio: 'inherit' });
 		if (py.status === 0) {
 			xlsxStatus = 0;
 			break;

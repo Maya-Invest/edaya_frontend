@@ -1,5 +1,6 @@
 import type { DemoContext, VisitOptions } from './types';
 import { normalizeIntegrationPathname, pathMatchesPrefix } from './paths';
+import { waitForResolvedAcademicYearId } from '../../../../scripts/qa-harness-ui';
 
 const LOADING_HIDDEN_TIMEOUT_MS = 30_000;
 const PATH_STABLE_PAUSE_MS = 200;
@@ -84,8 +85,9 @@ async function verifyVisitExpectations(
 	const selectorTimeoutMs = options.selectorTimeoutMs ?? 15_000;
 	const { page, reporter, shot, pageErrors } = ctx;
 
-	await waitForLoadingHidden(ctx);
 	await waitForAppShell(ctx);
+	await waitForResolvedAcademicYearId(page);
+	await waitForLoadingHidden(ctx);
 
 	const navigation = await waitForPathStable(ctx, expectedPath);
 	if (!navigation.ok) {
@@ -96,7 +98,7 @@ async function verifyVisitExpectations(
 
 	if (selector) {
 		const el = page.locator(selector).first();
-		if (!(await el.isVisible({ timeout: selectorTimeoutMs }).catch(() => false))) {
+		if (!(await el.waitFor({ state: 'visible', timeout: selectorTimeoutMs }).then(() => true).catch(() => false))) {
 			return 'missing-selector';
 		}
 	}
@@ -104,7 +106,8 @@ async function verifyVisitExpectations(
 		const found = await page
 			.getByText(expectText, { exact: false })
 			.first()
-			.isVisible({ timeout: 10_000 })
+			.waitFor({ state: 'visible', timeout: 10_000 })
+			.then(() => true)
 			.catch(() => false);
 		if (!found) {
 			reporter.log(scene, step, 'fail', `Expected text: ${expectText}`);

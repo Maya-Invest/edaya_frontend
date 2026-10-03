@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-export const DEMO_DRY_RUN_OUT_DIR = path.join(
+export const DEMO_DRY_RUN_OUT_DIR = process.env.DEMO_DRY_RUN_OUT_DIR ?? path.join(
 	import.meta.dirname,
 	'../../../../.demo-dry-run',
 );

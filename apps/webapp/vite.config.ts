@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
-const authOrigin = process.env.AUTH_URL ?? 'http://localhost:9900';
 const apiOrigin = process.env.API_URL ?? 'http://localhost:9999';
 const webappRoot = path.dirname(fileURLToPath(import.meta.url));
 /** Sibling checkout: `maya_invest/edaya_backend` next to `edaya_web`. */
@@ -44,7 +43,7 @@ export default defineConfig({
 		host: true,
 		proxy: {
 			'/core': { target: apiOrigin, changeOrigin: true },
-			'/auth': { target: authOrigin, changeOrigin: true },
+			'/auth': { target: apiOrigin, changeOrigin: true },
 			'/public': { target: apiOrigin, changeOrigin: true },
 			'/doc': { target: apiOrigin, changeOrigin: true },
 			'/reference': { target: apiOrigin, changeOrigin: true },

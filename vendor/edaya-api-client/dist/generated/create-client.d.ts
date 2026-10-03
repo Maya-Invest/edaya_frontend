@@ -15,6 +15,25 @@ type CommandClients<TSchemas extends Record<string, unknown>> = {
 type QueryClients<TSchemas extends Record<string, unknown>> = {
     [K in keyof typeof clientBindings.queries]: (payload: SchemaName<TSchemas, typeof clientBindings.queries[K]['requestSchemaName']>) => Promise<SchemaName<TSchemas, typeof clientBindings.queries[K]['responseSchemaName']>>;
 };
+type AuthClients<TSchemas extends Record<string, unknown>> = {
+    methods: () => Promise<SchemaName<TSchemas, 'AuthMethods'>>;
+    startOtp: (payload: SchemaName<TSchemas, 'AuthStart'>) => Promise<SchemaName<TSchemas, 'AuthPrimaryStatus'>>;
+    statusOtp: (payload: SchemaName<TSchemas, 'AuthChallengeInput'>) => Promise<SchemaName<TSchemas, 'AuthPrimaryStatus'>>;
+    resendOtp: (payload: SchemaName<TSchemas, 'AuthResend'>) => Promise<SchemaName<TSchemas, 'AuthPrimaryStatus'>>;
+    verifyOtp: (payload: SchemaName<TSchemas, 'AuthProof'>) => Promise<SchemaName<TSchemas, 'AuthOutcome'>>;
+    verifyTotp: (payload: SchemaName<TSchemas, 'AuthProof'>) => Promise<SchemaName<TSchemas, 'AuthOutcome'>>;
+    enroll: (payload: SchemaName<TSchemas, 'AuthEnrollmentInput'>) => Promise<SchemaName<TSchemas, 'AuthEnrollment'>>;
+    confirmEnrollment: (payload: SchemaName<TSchemas, 'AuthProof'>) => Promise<SchemaName<TSchemas, 'AuthOutcome'>>;
+    recover: (payload: SchemaName<TSchemas, 'AuthProof'>) => Promise<SchemaName<TSchemas, 'AuthEnrollment'>>;
+    linkIdentifier: (payload: SchemaName<TSchemas, 'AuthStart'>) => Promise<SchemaName<TSchemas, 'AuthPrimaryStatus'>>;
+    unlinkIdentifier: (payload: SchemaName<TSchemas, 'AuthUnlink'>) => Promise<SchemaName<TSchemas, 'AuthSuccess'>>;
+    security: (payload: SchemaName<TSchemas, 'AuthEmptyInput'>) => Promise<SchemaName<TSchemas, 'AuthSecurity'>>;
+    disableTotp: (payload: SchemaName<TSchemas, 'AuthEmptyInput'>) => Promise<SchemaName<TSchemas, 'AuthSuccess'>>;
+    getSession: (payload: SchemaName<TSchemas, 'AuthEmptyInput'>) => Promise<SchemaName<TSchemas, 'AuthSnapshot'>>;
+    accessToken: (payload: SchemaName<TSchemas, 'AuthResource'>) => Promise<SchemaName<TSchemas, 'AuthAccessToken'>>;
+    signOut: (payload: SchemaName<TSchemas, 'AuthEmptyInput'>) => Promise<SchemaName<TSchemas, 'AuthSuccess'>>;
+    signOutAll: (payload: SchemaName<TSchemas, 'AuthEmptyInput'>) => Promise<SchemaName<TSchemas, 'AuthSuccess'>>;
+};
 type AuthorizationClients<TSchemas extends Record<string, unknown>> = {
     effectiveGrants: () => Promise<SchemaName<TSchemas, 'EffectiveGrantsResponse'>>;
     profiles: () => Promise<SchemaName<TSchemas, 'AuthorizationProfilesResponse'>>;
@@ -86,6 +105,7 @@ export interface SchoolClient<TSchemas extends Record<string, unknown>> {
     entities: EntityClients<TSchemas>;
     commands: CommandClients<TSchemas>;
     queries: QueryClients<TSchemas>;
+    auth: AuthClients<TSchemas>;
     authorization: AuthorizationClients<TSchemas>;
     files: FilesClients<TSchemas>;
     onboarding: OnboardingClients<TSchemas>;

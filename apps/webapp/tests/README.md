@@ -27,7 +27,7 @@ tests/
 Use the dedicated backend `bun run dev:test` server for local captured email, WhatsApp and SMS. Enable web `PUBLIC_TEST_OTP_ACCESS=true` or Flutter debug `--dart-define=TEST_OTP_ACCESS=true` for explicit Show test code and Copy controls. CI uses that composition and a private captured mailbox; normal staging/production builds omit testing access.
 - **`tests/integration/setup/**`** — `bun run test:integration:provisioned` (API-completes the wizard, then owner UI). Secondary teacher/educator invites must actually activate; a missing token or owner-link fallback fails the run.
 
-Local login + onboarding suite (Identity `:9900`, school `:9999` empty, webapp `:5173`):
+Local login + onboarding suite (unified API `:9999` with empty school storage, webapp `:5173`):
 
 ```sh
 bun run test:integration:onboarding

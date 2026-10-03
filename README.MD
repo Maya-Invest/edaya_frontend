@@ -58,7 +58,7 @@ bun run dev:webadmin
 bun run dev:website
 ```
 
-Dev servers proxy `/auth` to `AUTH_URL` (default `http://localhost:9900`) and `/core`, `/public`, and API docs to `API_URL` (default `http://localhost:9999`).
+Dev servers proxy authentication, school requests and API docs to `API_URL` (default `http://localhost:9999`). Browser requests derive from the same `PUBLIC_API_URL`.
 
 ## Commands
 
@@ -103,7 +103,7 @@ Apps are static sites on Cloudflare Workers (assets):
 | Webapp | `app.edayaplus.com` | `staging.app.edayaplus.com` |
 | Webadmin | `admin.edayaplus.com` | `staging.admin.edayaplus.com` |
 
-Set the required `PUBLIC_AUTH_URL` and `PUBLIC_API_URL` at build time.
+Set the required `PUBLIC_API_URL` at build time.
 
 ## API client
 

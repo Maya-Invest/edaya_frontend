@@ -14,5 +14,13 @@ export function emptyInboxSlice(): InboxPageSlice {
 
 export function inboxDeliveryIdFromUrl(url: URL): string | undefined {
 	const match = url.pathname.match(/^\/account\/inbox\/([^/]+)$/);
-	return match?.[1];
+	if (!match?.[1]) {
+		return undefined;
+	}
+	try {
+		return decodeURIComponent(match[1]);
+	}
+	catch {
+		return match[1];
+	}
 }

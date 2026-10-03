@@ -5,7 +5,7 @@ export function schoolApiPath(...segments) {
     return `${SCHOOL_API_BASE_PATH}/${segments.join('/')}`;
 }
 export function resolveClientRoutePath(pathTemplate, params = {}, basePath = 'core') {
-    const segments = pathTemplate.split('/').map((segment) => {
+    const segments = pathTemplate.split('/').filter(Boolean).map((segment) => {
         if (segment.startsWith('{') && segment.endsWith('}')) {
             const paramName = segment.slice(1, -1);
             const value = params[paramName];

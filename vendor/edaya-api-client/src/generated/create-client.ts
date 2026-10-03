@@ -34,6 +34,26 @@ type QueryClients<TSchemas extends Record<string, unknown>> = {
   ) => Promise<SchemaName<TSchemas, typeof clientBindings.queries[K]['responseSchemaName']>>
 }
 
+type AuthClients<TSchemas extends Record<string, unknown>> = {
+  methods: () => Promise<SchemaName<TSchemas, 'AuthMethods'>>
+  startOtp: (payload: SchemaName<TSchemas, 'AuthStart'>) => Promise<SchemaName<TSchemas, 'AuthPrimaryStatus'>>
+  statusOtp: (payload: SchemaName<TSchemas, 'AuthChallengeInput'>) => Promise<SchemaName<TSchemas, 'AuthPrimaryStatus'>>
+  resendOtp: (payload: SchemaName<TSchemas, 'AuthResend'>) => Promise<SchemaName<TSchemas, 'AuthPrimaryStatus'>>
+  verifyOtp: (payload: SchemaName<TSchemas, 'AuthProof'>) => Promise<SchemaName<TSchemas, 'AuthOutcome'>>
+  verifyTotp: (payload: SchemaName<TSchemas, 'AuthProof'>) => Promise<SchemaName<TSchemas, 'AuthOutcome'>>
+  enroll: (payload: SchemaName<TSchemas, 'AuthEnrollmentInput'>) => Promise<SchemaName<TSchemas, 'AuthEnrollment'>>
+  confirmEnrollment: (payload: SchemaName<TSchemas, 'AuthProof'>) => Promise<SchemaName<TSchemas, 'AuthOutcome'>>
+  recover: (payload: SchemaName<TSchemas, 'AuthProof'>) => Promise<SchemaName<TSchemas, 'AuthEnrollment'>>
+  linkIdentifier: (payload: SchemaName<TSchemas, 'AuthStart'>) => Promise<SchemaName<TSchemas, 'AuthPrimaryStatus'>>
+  unlinkIdentifier: (payload: SchemaName<TSchemas, 'AuthUnlink'>) => Promise<SchemaName<TSchemas, 'AuthSuccess'>>
+  security: (payload: SchemaName<TSchemas, 'AuthEmptyInput'>) => Promise<SchemaName<TSchemas, 'AuthSecurity'>>
+  disableTotp: (payload: SchemaName<TSchemas, 'AuthEmptyInput'>) => Promise<SchemaName<TSchemas, 'AuthSuccess'>>
+  getSession: (payload: SchemaName<TSchemas, 'AuthEmptyInput'>) => Promise<SchemaName<TSchemas, 'AuthSnapshot'>>
+  accessToken: (payload: SchemaName<TSchemas, 'AuthResource'>) => Promise<SchemaName<TSchemas, 'AuthAccessToken'>>
+  signOut: (payload: SchemaName<TSchemas, 'AuthEmptyInput'>) => Promise<SchemaName<TSchemas, 'AuthSuccess'>>
+  signOutAll: (payload: SchemaName<TSchemas, 'AuthEmptyInput'>) => Promise<SchemaName<TSchemas, 'AuthSuccess'>>
+}
+
 type AuthorizationClients<TSchemas extends Record<string, unknown>> = {
   effectiveGrants: () => Promise<SchemaName<TSchemas, 'EffectiveGrantsResponse'>>
   profiles: () => Promise<SchemaName<TSchemas, 'AuthorizationProfilesResponse'>>
@@ -90,6 +110,7 @@ export interface SchoolClient<TSchemas extends Record<string, unknown>> {
   entities: EntityClients<TSchemas>
   commands: CommandClients<TSchemas>
   queries: QueryClients<TSchemas>
+  auth: AuthClients<TSchemas>
   authorization: AuthorizationClients<TSchemas>
   files: FilesClients<TSchemas>
   onboarding: OnboardingClients<TSchemas>
@@ -137,6 +158,25 @@ export function createSchoolClient<TSchemas extends Record<string, unknown>>(
     entities,
     commands,
     queries,
+    auth: {
+    methods: () => transport.request('GET', resolveClientRoutePath('/auth/edaya/methods', {}, 'root')),
+    startOtp: (payload: SchemaName<TSchemas, 'AuthStart'>) => transport.request('POST', resolveClientRoutePath('/auth/edaya/otp/start', {}, 'root'), { body: payload }),
+    statusOtp: (payload: SchemaName<TSchemas, 'AuthChallengeInput'>) => transport.request('POST', resolveClientRoutePath('/auth/edaya/otp/status', {}, 'root'), { body: payload }),
+    resendOtp: (payload: SchemaName<TSchemas, 'AuthResend'>) => transport.request('POST', resolveClientRoutePath('/auth/edaya/otp/resend', {}, 'root'), { body: payload }),
+    verifyOtp: (payload: SchemaName<TSchemas, 'AuthProof'>) => transport.request('POST', resolveClientRoutePath('/auth/edaya/otp/verify', {}, 'root'), { body: payload }),
+    verifyTotp: (payload: SchemaName<TSchemas, 'AuthProof'>) => transport.request('POST', resolveClientRoutePath('/auth/edaya/totp/verify', {}, 'root'), { body: payload }),
+    enroll: (payload: SchemaName<TSchemas, 'AuthEnrollmentInput'>) => transport.request('POST', resolveClientRoutePath('/auth/edaya/totp/enroll', {}, 'root'), { body: payload }),
+    confirmEnrollment: (payload: SchemaName<TSchemas, 'AuthProof'>) => transport.request('POST', resolveClientRoutePath('/auth/edaya/totp/confirm', {}, 'root'), { body: payload }),
+    recover: (payload: SchemaName<TSchemas, 'AuthProof'>) => transport.request('POST', resolveClientRoutePath('/auth/edaya/recovery', {}, 'root'), { body: payload }),
+    linkIdentifier: (payload: SchemaName<TSchemas, 'AuthStart'>) => transport.request('POST', resolveClientRoutePath('/auth/edaya/identifiers/start', {}, 'root'), { body: payload }),
+    unlinkIdentifier: (payload: SchemaName<TSchemas, 'AuthUnlink'>) => transport.request('POST', resolveClientRoutePath('/auth/edaya/identifiers/unlink', {}, 'root'), { body: payload }),
+    security: (payload: SchemaName<TSchemas, 'AuthEmptyInput'>) => transport.request('POST', resolveClientRoutePath('/auth/edaya/security', {}, 'root'), { body: payload }),
+    disableTotp: (payload: SchemaName<TSchemas, 'AuthEmptyInput'>) => transport.request('POST', resolveClientRoutePath('/auth/edaya/totp/disable', {}, 'root'), { body: payload }),
+    getSession: (payload: SchemaName<TSchemas, 'AuthEmptyInput'>) => transport.request('POST', resolveClientRoutePath('/auth/edaya/session', {}, 'root'), { body: payload }),
+    accessToken: (payload: SchemaName<TSchemas, 'AuthResource'>) => transport.request('POST', resolveClientRoutePath('/auth/edaya/access-token', {}, 'root'), { body: payload }),
+    signOut: (payload: SchemaName<TSchemas, 'AuthEmptyInput'>) => transport.request('POST', resolveClientRoutePath('/auth/edaya/sign-out', {}, 'root'), { body: payload }),
+    signOutAll: (payload: SchemaName<TSchemas, 'AuthEmptyInput'>) => transport.request('POST', resolveClientRoutePath('/auth/edaya/sign-out-all', {}, 'root'), { body: payload }),
+  } as AuthClients<TSchemas>,
     authorization: {
     effectiveGrants: () => transport.request('GET', resolveClientRoutePath('authorization/effective-grants')),
     profiles: () => transport.request('GET', resolveClientRoutePath('authorization/profiles')),

@@ -17,3 +17,15 @@ describe('login contact detection', () => {
 			expect(detectIdentifier(input)).toBeNull();
 	});
 });
+
+import { contactError } from '../../../src/lib/auth/detect-identifier';
+describe('Identity availability', () => {
+  test('email works when phone discovery fails or is disabled', () => {
+    expect(contactError(detectIdentifier(' user@example.com '), false)).toBeNull();
+  });
+  test('pasted phone is rejected locally until explicitly available', () => {
+    const phone = detectIdentifier('+1 (514) 555-0100');
+    expect(contactError(phone, false)).toBe('auth.phoneUnavailable');
+    expect(contactError(phone, true)).toBeNull();
+  });
+});

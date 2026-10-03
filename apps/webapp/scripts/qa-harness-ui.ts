@@ -761,11 +761,16 @@ export async function openFilterPanel(page: Page, titlePattern: RegExp): Promise
 export async function assertListContains(page: Page, text: string, visible = true, timeout = 12_000): Promise<boolean> {
 	const inMain = page.locator('main').getByText(text, { exact: false });
 	const anywhere = page.getByText(text, { exact: false });
-	const row = visible
+	const row = (visible
 		? inMain.filter({ visible: true }).first().or(anywhere.filter({ visible: true }).first())
-		: inMain.first().or(anywhere.first());
-	const isVisible = await row.isVisible({ timeout }).catch(() => false);
-	return visible ? isVisible : !isVisible;
+		: inMain.first().or(anywhere.first())).first();
+	try {
+		await row.waitFor({ state: visible ? 'visible' : 'hidden', timeout });
+		return true;
+	}
+	catch {
+		return false;
+	}
 }
 
 export async function assertListCount(page: Page, min: number, max?: number): Promise<boolean> {

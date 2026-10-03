@@ -1,4 +1,4 @@
-import type { AuthOutcome, OtpStart, PrimaryStatus } from './client';
+import type { AuthFailure, AuthOutcome, OtpStart, PrimaryStatus } from './client';
 import { SvelteMap } from 'svelte/reactivity';
 import { authClient } from './client';
 
@@ -36,8 +36,13 @@ export class PasswordlessFlow {
 }
 
 	async loadMethods() {
-		const { data } = await authClient.methods();
-		this.phoneAvailable = data?.methods.some(method => method.kind === 'phone' && method.available === true) ?? false;
+		try {
+			const { data } = await authClient.methods();
+			this.phoneAvailable = data?.methods.some(method => method.kind === 'phone' && method.available === true) ?? false;
+		}
+ catch {
+			this.phoneAvailable = false;
+		}
 	}
 
 	private updatePrimary(data: PrimaryStatus) {
@@ -91,7 +96,7 @@ return;
 		await this.run(() => this.sendRequest(`${challenge}:${action}`, requestId => authClient.resendOtp(challenge, action, requestId)), onComplete);
 	}
 
-	async run(action: () => ReturnType<typeof authClient.startOtp>, onComplete: () => Promise<unknown>) {
+	async run(action: () => Promise<{ data: AuthOutcome | null; error: AuthFailure | null }>, onComplete: () => Promise<unknown>) {
 		if (this.busy)
 return;
 		this.busy = true;

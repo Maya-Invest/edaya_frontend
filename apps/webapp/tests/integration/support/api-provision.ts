@@ -1,13 +1,13 @@
 /**
  * API provisioning for integration tests.
  *
- * Identity (`AUTH_URL`, default http://localhost:9900):
+ * Account auth on the unified API (`API_URL`, default http://localhost:9999):
  *   1. POST /auth/edaya/otp/start — primary challenge
  *   2. Local-only OTP peek fixture
  *   3. POST /auth/edaya/otp/verify — verified Account and session cookie
  *   4. POST /auth/edaya/access-token — school Bearer JWT
  *
- * School API (`API_URL`, default http://localhost:9999):
+ * School operations on the same API:
  *   5. POST /core/onboarding/register-school — school (only data entity)
  *   6. POST /core/onboarding/complete-wizard — wizard flag (no data)
  *

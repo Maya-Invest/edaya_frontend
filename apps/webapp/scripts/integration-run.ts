@@ -9,8 +9,7 @@
  * Required behavior and fixture failures fail the run. See integration-report.ts.
  *
  * Prerequisites:
- *   - Identity at AUTH_URL (default http://localhost:9900)
- *   - School API at API_URL (default http://localhost:9999)
+ *   - Unified API at API_URL (default http://localhost:9999)
  *   - Webapp at WEBAPP_URL (default http://localhost:5173) — bun dev
  *   - Playwright chromium (auto-installed into apps/webapp/.cache/ms-playwright)
  *
@@ -101,7 +100,6 @@ async function main(): Promise<void> {
 			cwd: WEBAPP_DIR,
 			env,
 			stdio: 'inherit',
-			shell: true,
 		},
 	);
 

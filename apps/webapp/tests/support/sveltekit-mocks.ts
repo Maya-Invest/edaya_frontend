@@ -13,7 +13,6 @@ function stubSvelteModule(baseSpecifier: string, exports: Record<string, unknown
 }
 
 mock.module('$env/static/public', () => ({
-	PUBLIC_AUTH_URL: 'http://localhost:9900',
 	PUBLIC_API_URL: 'http://localhost:8787',
 	PUBLIC_APP_ENV: 'test',
 	PUBLIC_ALLOW_SCHOOL_REGISTRATION: undefined,

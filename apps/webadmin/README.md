@@ -9,7 +9,7 @@ cp .env.example .env   # from apps/webadmin
 bun dev                # http://localhost:5174
 ```
 
-Requires identity at `AUTH_URL` (default `http://localhost:9900`) and the school API at `API_URL` (default `http://localhost:9999`) via the Vite proxy.
+Requires identity at `API_URL` (default `http://localhost:9999`) and the school API at `API_URL` (default `http://localhost:9999`) via the Vite proxy.
 
 ## Quality gates
 

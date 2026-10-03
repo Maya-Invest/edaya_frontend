@@ -63,19 +63,17 @@ Playwright integration (`apps/webapp` `test:integration:onboarding` then `test:i
 
 Provisioned Playwright starts **empty** Identity and school from source. The onboarding suite signs up in the UI; the provisioned suite then creates a second tenant via `provisionTenant()`. `GITHUB_TOKEN` cannot read those private repos.
 
-**One-time repo secret:** `IDENTITY_CHECKOUT_TOKEN` — a PAT with `contents:read` on both `Maya-Invest/edaya_identity` and `Maya-Invest/edaya_backend`. The same secret name is used in backend CI.
+**One-time repo secret:** `IDENTITY_CHECKOUT_TOKEN` — a PAT with `contents:read` on `Maya-Invest/edaya_backend` (Identity is included in that checkout). The same secret name is used in backend CI.
 
 Checkout layout (same sibling pattern backend CI uses for the identity client):
 
 ```text
 $GITHUB_WORKSPACE/              # this repo (edaya_web)
-.ci/edaya_identity
 .ci/edaya_backend
-$(dirname $GITHUB_WORKSPACE)/edaya_identity  → .ci/edaya_identity
 $(dirname $GITHUB_WORKSPACE)/edaya_backend   → .ci/edaya_backend
 ```
 
-School’s `file:../edaya_identity/package/identity-client` override then resolves. The webapp **install still uses the published** `@maya-invest/edaya-api-client` (`ci-use-published-api-client.mjs`).
+Backend workspace dependencies resolve Identity’s client within the same checkout. The webapp **install still uses the published** `@maya-invest/edaya-api-client` (`ci-use-published-api-client.mjs`).
 
 Git ref is taken from the **web head branch** (PR branch, or `github.ref_name` on dispatch):
 
@@ -85,7 +83,7 @@ Git ref is taken from the **web head branch** (PR branch, or `github.ref_name` o
 | `main` / `master` | `main` |
 | anything else | `dev` |
 
-The job fails if that branch is missing on either sibling. Identity needs `dev`, `staging`, and `main` on `Maya-Invest/edaya_identity` (not only a feature branch).
+The job fails if that branch is missing on the backend. Backend needs `dev`, `staging`, and `main` (not only a feature branch).
 
 Use the dedicated backend `bun run dev:test` server for local captured email, WhatsApp and SMS. Enable web `PUBLIC_TEST_OTP_ACCESS=true` or Flutter debug `--dart-define=TEST_OTP_ACCESS=true` for explicit Show test code and Copy controls. CI uses that composition and a private captured mailbox; normal staging/production builds omit testing access.
 
@@ -144,7 +142,7 @@ Set **Root directory** to the repository root (not `apps/webapp`) so Bun workspa
 | Build | `bun run cloudflare:build:webapp` |
 | Deploy | `bun --filter @edaya/webapp deploy:staging` |
 
-Add build variables for Vite public env (same as `deploy:staging` in `apps/webapp/package.json`), e.g. `PUBLIC_AUTH_URL=https://staging.identity.api.edayaplus.com`, `PUBLIC_API_URL=https://staging.school.api.edayaplus.com`, `PUBLIC_APP_ENV=staging`.
+Add build variables for Vite public env (same as `deploy:staging` in `apps/webapp/package.json`), e.g. ``PUBLIC_API_URL=https://staging.api.edayaplus.com`, `PUBLIC_APP_ENV=staging`.
 
 **Webadmin:** use `bun run cloudflare:build:webadmin` and `bun --filter @edaya/webadmin deploy:staging`.
 

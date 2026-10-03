@@ -463,7 +463,6 @@ async function persistAndExit(
 	const gen = spawnSync('bun', ['run', 'qa:template'], {
 		cwd: path.join(import.meta.dirname, '..'),
 		stdio: 'inherit',
-		shell: true,
 	});
 	if (gen.status !== 0) {
 		console.warn('qa:template a échoué — JSON disponible');

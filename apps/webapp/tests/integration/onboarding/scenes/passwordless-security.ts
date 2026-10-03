@@ -197,7 +197,7 @@ export async function runAccountSecurity(page: Page, base: string) {
 export async function runOwnerTotpPolicy(owner: Page, base: string, email: string) {
   const file = process.env.EDAYA_TEST_POLICY_FILE;
   if (!file) throw new Error('Owner MFA scenario requires the test policy fixture');
-  const auth = process.env.AUTH_URL!;
+  const auth = process.env.API_URL!;
   const response = await owner.request.post(`${auth}/auth/edaya/session`, { headers: { origin: base }, data: {} });
   if (!response.ok()) throw new Error('Owner session fixture missing');
   const { account } = await response.json() as { account: { id: string } };
