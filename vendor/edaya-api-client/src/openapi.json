@@ -11528,6 +11528,308 @@
           "expectedRevision"
         ]
       },
+      "TeacherWorkflowStateResponse": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "workflow": {
+            "type": "string",
+            "enum": [
+              "attendance",
+              "report_comments",
+              "logbook",
+              "discipline"
+            ]
+          },
+          "targetId": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer"
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "payload": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true
+            }
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "string"
+                },
+                "subjectId": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string"
+                },
+                "payload": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "nullable": true
+                  }
+                }
+              },
+              "required": [
+                "at",
+                "subjectId",
+                "action",
+                "payload"
+              ]
+            }
+          }
+        },
+        "required": [
+          "schoolId",
+          "workflow",
+          "targetId",
+          "version",
+          "locked",
+          "payload",
+          "history"
+        ]
+      },
+      "SaveTeacherAttendanceDraftCommand": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "anchor": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "lesson"
+                    ]
+                  },
+                  "lessonSessionId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "kind",
+                  "lessonSessionId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "daily"
+                    ]
+                  },
+                  "classGroupId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "date": {}
+                },
+                "required": [
+                  "kind",
+                  "classGroupId",
+                  "date"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "studentId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "present",
+                    "absent",
+                    "late"
+                  ]
+                },
+                "notes": {
+                  "type": "string",
+                  "nullable": true,
+                  "maxLength": 20000
+                },
+                "teacherExplanation": {
+                  "type": "string",
+                  "nullable": true,
+                  "maxLength": 20000
+                }
+              },
+              "required": [
+                "studentId",
+                "status"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 500
+          }
+        },
+        "required": [
+          "requestId",
+          "expectedVersion",
+          "anchor",
+          "entries"
+        ],
+        "additionalProperties": false
+      },
+      "SubmitTeacherAttendanceCommand": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "anchor": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "lesson"
+                    ]
+                  },
+                  "lessonSessionId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "kind",
+                  "lessonSessionId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "daily"
+                    ]
+                  },
+                  "classGroupId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "date": {}
+                },
+                "required": [
+                  "kind",
+                  "classGroupId",
+                  "date"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "studentId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "present",
+                    "absent",
+                    "late"
+                  ]
+                },
+                "notes": {
+                  "type": "string",
+                  "nullable": true,
+                  "maxLength": 20000
+                },
+                "teacherExplanation": {
+                  "type": "string",
+                  "nullable": true,
+                  "maxLength": 20000
+                }
+              },
+              "required": [
+                "studentId",
+                "status"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 500
+          }
+        },
+        "required": [
+          "requestId",
+          "expectedVersion",
+          "anchor",
+          "entries"
+        ],
+        "additionalProperties": false
+      },
+      "RecordTeacherAttendanceArrivalCommand": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "recordId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "occurredAt": {},
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "requestId",
+          "recordId",
+          "occurredAt",
+          "expectedVersion"
+        ],
+        "additionalProperties": false
+      },
       "AssessmentMarksCorrectionResponse": {
         "type": "object",
         "properties": {
@@ -11602,6 +11904,16 @@
                       "type": "string",
                       "nullable": true,
                       "minLength": 1
+                    },
+                    "status": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "met",
+                        "late",
+                        "missed",
+                        "excused"
+                      ]
                     }
                   },
                   "required": [
@@ -11631,6 +11943,16 @@
                       "type": "string",
                       "nullable": true,
                       "minLength": 1
+                    },
+                    "status": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "met",
+                        "late",
+                        "missed",
+                        "excused"
+                      ]
                     }
                   },
                   "required": [
@@ -11647,6 +11969,134 @@
                 "revision",
                 "before",
                 "proposed"
+              ]
+            }
+          },
+          "revisions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "version": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "changes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "resultId": {
+                        "type": "string"
+                      },
+                      "studentId": {
+                        "type": "string"
+                      },
+                      "revision": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "before": {
+                        "type": "object",
+                        "properties": {
+                          "score": {
+                            "type": "number",
+                            "nullable": true,
+                            "minimum": 0
+                          },
+                          "designation": {
+                            "type": "string",
+                            "enum": [
+                              "scored",
+                              "absent",
+                              "exempt"
+                            ]
+                          },
+                          "notes": {
+                            "type": "string",
+                            "nullable": true,
+                            "minLength": 1
+                          },
+                          "status": {
+                            "type": "string",
+                            "nullable": true,
+                            "enum": [
+                              "met",
+                              "late",
+                              "missed",
+                              "excused"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "score",
+                          "designation",
+                          "notes"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "proposed": {
+                        "type": "object",
+                        "properties": {
+                          "score": {
+                            "type": "number",
+                            "nullable": true,
+                            "minimum": 0
+                          },
+                          "designation": {
+                            "type": "string",
+                            "enum": [
+                              "scored",
+                              "absent",
+                              "exempt"
+                            ]
+                          },
+                          "notes": {
+                            "type": "string",
+                            "nullable": true,
+                            "minLength": 1
+                          },
+                          "status": {
+                            "type": "string",
+                            "nullable": true,
+                            "enum": [
+                              "met",
+                              "late",
+                              "missed",
+                              "excused"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "score",
+                          "designation",
+                          "notes"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "resultId",
+                      "studentId",
+                      "revision",
+                      "before",
+                      "proposed"
+                    ]
+                  }
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "version",
+                "reason",
+                "changes",
+                "at"
               ]
             }
           },
@@ -11671,8 +12121,1773 @@
           "authorSubjectId",
           "reason",
           "createdAt",
-          "changes"
+          "changes",
+          "revisions"
         ]
+      },
+      "ReviseAssessmentMarksCorrectionCommand": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "assessmentId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "resultId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "proposed": {
+                  "type": "object",
+                  "properties": {
+                    "score": {
+                      "type": "number",
+                      "nullable": true,
+                      "minimum": 0
+                    },
+                    "designation": {
+                      "type": "string",
+                      "enum": [
+                        "scored",
+                        "absent",
+                        "exempt"
+                      ]
+                    },
+                    "notes": {
+                      "type": "string",
+                      "nullable": true,
+                      "minLength": 1
+                    },
+                    "status": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "met",
+                        "late",
+                        "missed",
+                        "excused"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "score",
+                    "designation",
+                    "notes"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "resultId",
+                "proposed"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 500
+          },
+          "correctionId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "requestId",
+          "assessmentId",
+          "expectedRevision",
+          "reason",
+          "changes",
+          "correctionId",
+          "expectedVersion"
+        ],
+        "additionalProperties": false
+      },
+      "TeacherCorrectionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "schoolId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "classGroupId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "studentIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "periodId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "workflow": {
+            "type": "string",
+            "enum": [
+              "attendance",
+              "report_comments",
+              "logbook",
+              "discipline"
+            ]
+          },
+          "targetId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected",
+              "withdrawn"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "baseVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "authorSubjectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "before": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "attendance"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "present",
+                      "absent",
+                      "late"
+                    ]
+                  },
+                  "notes": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "teacherExplanation": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "status",
+                  "notes",
+                  "teacherExplanation"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "report_comments"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "teacherComment": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "sections": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "sectionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "comment": {
+                          "type": "string",
+                          "nullable": true,
+                          "maxLength": 20000
+                        }
+                      },
+                      "required": [
+                        "sectionId",
+                        "comment"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 100
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "sections"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "logbook"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sessionNote": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "progress": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "matterId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "completedPercentage": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 100
+                        }
+                      },
+                      "required": [
+                        "matterId",
+                        "completedPercentage"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 100
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "sessionNote",
+                  "progress"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "discipline"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "positive",
+                      "minor_infraction",
+                      "major_infraction",
+                      "emergency"
+                    ]
+                  },
+                  "studentIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "maxItems": 500
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "title",
+                  "description",
+                  "kind",
+                  "studentIds"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "proposal": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "attendance"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "present",
+                      "absent",
+                      "late"
+                    ]
+                  },
+                  "notes": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "teacherExplanation": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "status",
+                  "notes",
+                  "teacherExplanation"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "report_comments"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "teacherComment": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "sections": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "sectionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "comment": {
+                          "type": "string",
+                          "nullable": true,
+                          "maxLength": 20000
+                        }
+                      },
+                      "required": [
+                        "sectionId",
+                        "comment"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 100
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "sections"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "logbook"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sessionNote": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "progress": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "matterId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "completedPercentage": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 100
+                        }
+                      },
+                      "required": [
+                        "matterId",
+                        "completedPercentage"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 100
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "sessionNote",
+                  "progress"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "discipline"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "positive",
+                      "minor_infraction",
+                      "major_infraction",
+                      "emergency"
+                    ]
+                  },
+                  "studentIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "maxItems": 500
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "title",
+                  "description",
+                  "kind",
+                  "studentIds"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "consequences": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "decidedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "decidedBy": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rejectionReason": {
+            "type": "string"
+          },
+          "revisions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "version": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "before": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "workflow": {
+                          "type": "string",
+                          "enum": [
+                            "attendance"
+                          ]
+                        },
+                        "targetId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "present",
+                            "absent",
+                            "late"
+                          ]
+                        },
+                        "notes": {
+                          "type": "string",
+                          "nullable": true,
+                          "maxLength": 20000
+                        },
+                        "teacherExplanation": {
+                          "type": "string",
+                          "nullable": true,
+                          "maxLength": 20000
+                        }
+                      },
+                      "required": [
+                        "workflow",
+                        "targetId",
+                        "status",
+                        "notes",
+                        "teacherExplanation"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "workflow": {
+                          "type": "string",
+                          "enum": [
+                            "report_comments"
+                          ]
+                        },
+                        "targetId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "teacherComment": {
+                          "type": "string",
+                          "nullable": true,
+                          "maxLength": 20000
+                        },
+                        "sections": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "sectionId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "comment": {
+                                "type": "string",
+                                "nullable": true,
+                                "maxLength": 20000
+                              }
+                            },
+                            "required": [
+                              "sectionId",
+                              "comment"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "maxItems": 100
+                        }
+                      },
+                      "required": [
+                        "workflow",
+                        "targetId",
+                        "sections"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "workflow": {
+                          "type": "string",
+                          "enum": [
+                            "logbook"
+                          ]
+                        },
+                        "targetId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "sessionNote": {
+                          "type": "string",
+                          "nullable": true,
+                          "maxLength": 20000
+                        },
+                        "progress": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "matterId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "completedPercentage": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 100
+                              }
+                            },
+                            "required": [
+                              "matterId",
+                              "completedPercentage"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "maxItems": 100
+                        }
+                      },
+                      "required": [
+                        "workflow",
+                        "targetId",
+                        "sessionNote",
+                        "progress"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "workflow": {
+                          "type": "string",
+                          "enum": [
+                            "discipline"
+                          ]
+                        },
+                        "targetId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "title": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 500
+                        },
+                        "description": {
+                          "type": "string",
+                          "nullable": true,
+                          "maxLength": 20000
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "positive",
+                            "minor_infraction",
+                            "major_infraction",
+                            "emergency"
+                          ]
+                        },
+                        "studentIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "maxItems": 500
+                        }
+                      },
+                      "required": [
+                        "workflow",
+                        "targetId",
+                        "title",
+                        "description",
+                        "kind",
+                        "studentIds"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "proposal": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "workflow": {
+                          "type": "string",
+                          "enum": [
+                            "attendance"
+                          ]
+                        },
+                        "targetId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "present",
+                            "absent",
+                            "late"
+                          ]
+                        },
+                        "notes": {
+                          "type": "string",
+                          "nullable": true,
+                          "maxLength": 20000
+                        },
+                        "teacherExplanation": {
+                          "type": "string",
+                          "nullable": true,
+                          "maxLength": 20000
+                        }
+                      },
+                      "required": [
+                        "workflow",
+                        "targetId",
+                        "status",
+                        "notes",
+                        "teacherExplanation"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "workflow": {
+                          "type": "string",
+                          "enum": [
+                            "report_comments"
+                          ]
+                        },
+                        "targetId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "teacherComment": {
+                          "type": "string",
+                          "nullable": true,
+                          "maxLength": 20000
+                        },
+                        "sections": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "sectionId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "comment": {
+                                "type": "string",
+                                "nullable": true,
+                                "maxLength": 20000
+                              }
+                            },
+                            "required": [
+                              "sectionId",
+                              "comment"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "maxItems": 100
+                        }
+                      },
+                      "required": [
+                        "workflow",
+                        "targetId",
+                        "sections"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "workflow": {
+                          "type": "string",
+                          "enum": [
+                            "logbook"
+                          ]
+                        },
+                        "targetId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "sessionNote": {
+                          "type": "string",
+                          "nullable": true,
+                          "maxLength": 20000
+                        },
+                        "progress": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "matterId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "completedPercentage": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 100
+                              }
+                            },
+                            "required": [
+                              "matterId",
+                              "completedPercentage"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "maxItems": 100
+                        }
+                      },
+                      "required": [
+                        "workflow",
+                        "targetId",
+                        "sessionNote",
+                        "progress"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "workflow": {
+                          "type": "string",
+                          "enum": [
+                            "discipline"
+                          ]
+                        },
+                        "targetId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "title": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 500
+                        },
+                        "description": {
+                          "type": "string",
+                          "nullable": true,
+                          "maxLength": 20000
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "positive",
+                            "minor_infraction",
+                            "major_infraction",
+                            "emergency"
+                          ]
+                        },
+                        "studentIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "maxItems": 500
+                        }
+                      },
+                      "required": [
+                        "workflow",
+                        "targetId",
+                        "title",
+                        "description",
+                        "kind",
+                        "studentIds"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "version",
+                "reason",
+                "before",
+                "proposal",
+                "at"
+              ]
+            }
+          },
+          "documentIssuanceId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "classGroupId",
+          "studentIds",
+          "workflow",
+          "targetId",
+          "status",
+          "version",
+          "baseVersion",
+          "authorSubjectId",
+          "reason",
+          "before",
+          "proposal",
+          "consequences",
+          "createdAt",
+          "revisions"
+        ]
+      },
+      "RequestTeacherCorrectionCommand": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "proposal": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "attendance"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "present",
+                      "absent",
+                      "late"
+                    ]
+                  },
+                  "notes": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "teacherExplanation": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "status",
+                  "notes",
+                  "teacherExplanation"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "report_comments"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "teacherComment": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "sections": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "sectionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "comment": {
+                          "type": "string",
+                          "nullable": true,
+                          "maxLength": 20000
+                        }
+                      },
+                      "required": [
+                        "sectionId",
+                        "comment"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 100
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "sections"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "logbook"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sessionNote": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "progress": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "matterId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "completedPercentage": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 100
+                        }
+                      },
+                      "required": [
+                        "matterId",
+                        "completedPercentage"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 100
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "sessionNote",
+                  "progress"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "discipline"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "positive",
+                      "minor_infraction",
+                      "major_infraction",
+                      "emergency"
+                    ]
+                  },
+                  "studentIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "maxItems": 500
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "title",
+                  "description",
+                  "kind",
+                  "studentIds"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "requestId",
+          "expectedVersion",
+          "reason",
+          "proposal"
+        ],
+        "additionalProperties": false
+      },
+      "ReviseTeacherCorrectionCommand": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "proposal": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "attendance"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "present",
+                      "absent",
+                      "late"
+                    ]
+                  },
+                  "notes": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "teacherExplanation": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "status",
+                  "notes",
+                  "teacherExplanation"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "report_comments"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "teacherComment": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "sections": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "sectionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "comment": {
+                          "type": "string",
+                          "nullable": true,
+                          "maxLength": 20000
+                        }
+                      },
+                      "required": [
+                        "sectionId",
+                        "comment"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 100
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "sections"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "logbook"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sessionNote": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "progress": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "matterId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "completedPercentage": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 100
+                        }
+                      },
+                      "required": [
+                        "matterId",
+                        "completedPercentage"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 100
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "sessionNote",
+                  "progress"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "discipline"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "positive",
+                      "minor_infraction",
+                      "major_infraction",
+                      "emergency"
+                    ]
+                  },
+                  "studentIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "maxItems": 500
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "title",
+                  "description",
+                  "kind",
+                  "studentIds"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "correctionId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "requestId",
+          "expectedVersion",
+          "reason",
+          "proposal",
+          "correctionId"
+        ],
+        "additionalProperties": false
+      },
+      "ApproveTeacherCorrectionCommand": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "correctionId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "confirmConsequences": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "requestId",
+          "correctionId",
+          "expectedVersion"
+        ],
+        "additionalProperties": false
+      },
+      "RejectTeacherCorrectionCommand": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "correctionId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "confirmConsequences": {
+            "type": "boolean",
+            "default": false
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          }
+        },
+        "required": [
+          "requestId",
+          "correctionId",
+          "expectedVersion",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "WithdrawTeacherCorrectionCommand": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "correctionId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "confirmConsequences": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "requestId",
+          "correctionId",
+          "expectedVersion"
+        ],
+        "additionalProperties": false
+      },
+      "SaveTeacherLogbookCommand": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "proposal": {
+            "type": "object",
+            "properties": {
+              "workflow": {
+                "type": "string",
+                "enum": [
+                  "logbook"
+                ]
+              },
+              "targetId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sessionNote": {
+                "type": "string",
+                "nullable": true,
+                "maxLength": 20000
+              },
+              "progress": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "matterId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "completedPercentage": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    }
+                  },
+                  "required": [
+                    "matterId",
+                    "completedPercentage"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 100
+              }
+            },
+            "required": [
+              "workflow",
+              "targetId",
+              "sessionNote",
+              "progress"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "requestId",
+          "expectedVersion",
+          "proposal"
+        ],
+        "additionalProperties": false
+      },
+      "TeacherWorkflowStateListResponse": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/TeacherWorkflowStateResponse"
+        }
+      },
+      "ValidateTeacherLogbookCommand": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "lessonSessionIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "requestId",
+          "lessonSessionIds"
+        ],
+        "additionalProperties": false
+      },
+      "EditTeacherIncidentCommand": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "proposal": {
+            "type": "object",
+            "properties": {
+              "workflow": {
+                "type": "string",
+                "enum": [
+                  "discipline"
+                ]
+              },
+              "targetId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "description": {
+                "type": "string",
+                "nullable": true,
+                "maxLength": 20000
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "positive",
+                  "minor_infraction",
+                  "major_infraction",
+                  "emergency"
+                ]
+              },
+              "studentIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "maxItems": 500
+              }
+            },
+            "required": [
+              "workflow",
+              "targetId",
+              "title",
+              "description",
+              "kind",
+              "studentIds"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "requestId",
+          "expectedVersion",
+          "proposal"
+        ],
+        "additionalProperties": false
+      },
+      "TakeOverTeacherIncidentCommand": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "incidentId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "requestId",
+          "incidentId"
+        ],
+        "additionalProperties": false
+      },
+      "AppendIncidentFollowUpCommand": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "incidentId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          }
+        },
+        "required": [
+          "requestId",
+          "incidentId",
+          "text"
+        ],
+        "additionalProperties": false
       },
       "RequestAssessmentMarksCorrectionCommand": {
         "type": "object",
@@ -11723,6 +13938,16 @@
                       "type": "string",
                       "nullable": true,
                       "minLength": 1
+                    },
+                    "status": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "met",
+                        "late",
+                        "missed",
+                        "excused"
+                      ]
                     }
                   },
                   "required": [
@@ -18676,6 +20901,1060 @@
         },
         "required": [
           "schoolId"
+        ]
+      },
+      "TeacherAttendanceCallResponse": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "submitted": {
+            "type": "boolean"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "studentId": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "present",
+                    "absent",
+                    "late"
+                  ]
+                },
+                "notes": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "teacherExplanation": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "studentId",
+                "status"
+              ]
+            }
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "nullable": true
+              }
+            }
+          },
+          "students": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "firstName": {
+                  "type": "string"
+                },
+                "lastName": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "firstName",
+                "lastName"
+              ]
+            }
+          }
+        },
+        "required": [
+          "key",
+          "version",
+          "submitted",
+          "entries",
+          "records",
+          "students"
+        ]
+      },
+      "GetTeacherAttendanceCallQuery": {
+        "type": "object",
+        "properties": {
+          "anchor": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "lesson"
+                    ]
+                  },
+                  "lessonSessionId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "kind",
+                  "lessonSessionId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "daily"
+                    ]
+                  },
+                  "classGroupId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "date": {}
+                },
+                "required": [
+                  "kind",
+                  "classGroupId",
+                  "date"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "anchor"
+        ]
+      },
+      "TeacherWorkflowEligibilityResponse": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number"
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "official": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "attendance"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "present",
+                      "absent",
+                      "late"
+                    ]
+                  },
+                  "notes": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "teacherExplanation": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "status",
+                  "notes",
+                  "teacherExplanation"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "report_comments"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "teacherComment": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "sections": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "sectionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "comment": {
+                          "type": "string",
+                          "nullable": true,
+                          "maxLength": 20000
+                        }
+                      },
+                      "required": [
+                        "sectionId",
+                        "comment"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 100
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "sections"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "logbook"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sessionNote": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "progress": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "matterId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "completedPercentage": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 100
+                        }
+                      },
+                      "required": [
+                        "matterId",
+                        "completedPercentage"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 100
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "sessionNote",
+                  "progress"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "discipline"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "positive",
+                      "minor_infraction",
+                      "major_infraction",
+                      "emergency"
+                    ]
+                  },
+                  "studentIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "maxItems": 500
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "title",
+                  "description",
+                  "kind",
+                  "studentIds"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "context": {
+            "type": "object",
+            "properties": {
+              "className": {
+                "type": "string"
+              },
+              "teacherName": {
+                "type": "string"
+              },
+              "students": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "className",
+              "teacherName",
+              "students"
+            ]
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "string"
+                },
+                "subjectId": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string"
+                },
+                "payload": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "nullable": true
+                  }
+                }
+              },
+              "required": [
+                "at",
+                "subjectId",
+                "action",
+                "payload"
+              ]
+            }
+          },
+          "corrections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TeacherCorrectionResponse"
+            }
+          },
+          "consequences": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "version",
+          "locked",
+          "official",
+          "context",
+          "history",
+          "corrections",
+          "consequences"
+        ]
+      },
+      "GetTeacherWorkflowStateQuery": {
+        "type": "object",
+        "properties": {
+          "proposal": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "attendance"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "present",
+                      "absent",
+                      "late"
+                    ]
+                  },
+                  "notes": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "teacherExplanation": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "status",
+                  "notes",
+                  "teacherExplanation"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "report_comments"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "teacherComment": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "sections": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "sectionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "comment": {
+                          "type": "string",
+                          "nullable": true,
+                          "maxLength": 20000
+                        }
+                      },
+                      "required": [
+                        "sectionId",
+                        "comment"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 100
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "sections"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "logbook"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sessionNote": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "progress": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "matterId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "completedPercentage": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 100
+                        }
+                      },
+                      "required": [
+                        "matterId",
+                        "completedPercentage"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 100
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "sessionNote",
+                  "progress"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "workflow": {
+                    "type": "string",
+                    "enum": [
+                      "discipline"
+                    ]
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 20000
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "positive",
+                      "minor_infraction",
+                      "major_infraction",
+                      "emergency"
+                    ]
+                  },
+                  "studentIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "maxItems": 500
+                  }
+                },
+                "required": [
+                  "workflow",
+                  "targetId",
+                  "title",
+                  "description",
+                  "kind",
+                  "studentIds"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "proposal"
+        ]
+      },
+      "TeacherCorrectionsResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/TeacherCorrectionResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "title": {
+                          "type": "string"
+                        },
+                        "className": {
+                          "type": "string"
+                        },
+                        "teacherName": {
+                          "type": "string"
+                        },
+                        "students": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "title",
+                        "className",
+                        "teacherName",
+                        "students"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/AssessmentMarksCorrectionResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "workflow": {
+                          "type": "string",
+                          "enum": [
+                            "grades"
+                          ]
+                        },
+                        "targetId": {
+                          "type": "string"
+                        },
+                        "classGroupId": {
+                          "type": "string"
+                        },
+                        "periodId": {
+                          "type": "string"
+                        },
+                        "studentIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "className": {
+                          "type": "string"
+                        },
+                        "teacherName": {
+                          "type": "string"
+                        },
+                        "students": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "workflow",
+                        "targetId",
+                        "classGroupId",
+                        "periodId",
+                        "studentIds",
+                        "title",
+                        "className",
+                        "teacherName",
+                        "students"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "filters": {
+            "type": "object",
+            "properties": {
+              "classes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "label"
+                  ]
+                }
+              },
+              "teachers": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "label"
+                  ]
+                }
+              },
+              "students": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "value": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "label"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "classes",
+              "teachers",
+              "students"
+            ]
+          },
+          "total": {
+            "type": "number"
+          },
+          "offset": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "filters",
+          "total",
+          "offset",
+          "limit"
+        ]
+      },
+      "ListTeacherCorrectionsQuery": {
+        "type": "object",
+        "properties": {
+          "workflow": {
+            "type": "string",
+            "enum": [
+              "grades",
+              "attendance",
+              "report_comments",
+              "logbook",
+              "discipline"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected",
+              "withdrawn"
+            ],
+            "default": "pending"
+          },
+          "classGroupId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "periodId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "teacherSubjectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "studentId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "search": {
+            "type": "string"
+          },
+          "from": {},
+          "to": {},
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 25
+          }
+        }
+      },
+      "TeacherCorrectionDetailResponse": {
+        "type": "object",
+        "properties": {
+          "context": {
+            "type": "object",
+            "properties": {
+              "className": {
+                "type": "string"
+              },
+              "teacherName": {
+                "type": "string"
+              },
+              "students": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "className",
+              "teacherName",
+              "students"
+            ]
+          },
+          "correction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TeacherCorrectionResponse"
+              },
+              {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/AssessmentMarksCorrectionResponse"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "workflow": {
+                        "type": "string",
+                        "enum": [
+                          "grades"
+                        ]
+                      },
+                      "targetId": {
+                        "type": "string"
+                      },
+                      "classGroupId": {
+                        "type": "string"
+                      },
+                      "periodId": {
+                        "type": "string"
+                      },
+                      "studentIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "workflow",
+                      "targetId",
+                      "classGroupId",
+                      "periodId",
+                      "studentIds"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "original": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true
+            }
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "string"
+                },
+                "subjectId": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string"
+                },
+                "payload": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "nullable": true
+                  }
+                }
+              },
+              "required": [
+                "at",
+                "subjectId",
+                "action",
+                "payload"
+              ]
+            }
+          },
+          "allowedActions": {
+            "type": "object",
+            "properties": {
+              "approve": {
+                "type": "boolean"
+              },
+              "reject": {
+                "type": "boolean"
+              },
+              "withdraw": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "approve",
+              "reject",
+              "withdraw"
+            ]
+          }
+        },
+        "required": [
+          "context",
+          "correction",
+          "history",
+          "allowedActions"
+        ]
+      },
+      "GetTeacherCorrectionQuery": {
+        "type": "object",
+        "properties": {
+          "correctionId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "correctionId"
         ]
       },
       "AssessmentMarksReviewResponse": {
@@ -38083,6 +41362,1826 @@
         }
       }
     },
+    "/core/commands/save-teacher-attendance-draft": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "save-teacher-attendance-draft",
+        "operationId": "commands.saveTeacherAttendanceDraft",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "saveTeacherAttendanceDraft",
+        "x-edaya-command-public-name": "save-teacher-attendance-draft",
+        "x-edaya-request-schema": "SaveTeacherAttendanceDraftCommand",
+        "x-edaya-response-schema": "TeacherWorkflowStateResponse",
+        "requestBody": {
+          "description": "save-teacher-attendance-draft payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveTeacherAttendanceDraftCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed save-teacher-attendance-draft",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherWorkflowStateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/submit-teacher-attendance": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "submit-teacher-attendance",
+        "operationId": "commands.submitTeacherAttendance",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "submitTeacherAttendance",
+        "x-edaya-command-public-name": "submit-teacher-attendance",
+        "x-edaya-request-schema": "SubmitTeacherAttendanceCommand",
+        "x-edaya-response-schema": "TeacherWorkflowStateResponse",
+        "requestBody": {
+          "description": "submit-teacher-attendance payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitTeacherAttendanceCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed submit-teacher-attendance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherWorkflowStateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/record-teacher-attendance-arrival": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "record-teacher-attendance-arrival",
+        "operationId": "commands.recordTeacherAttendanceArrival",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "recordTeacherAttendanceArrival",
+        "x-edaya-command-public-name": "record-teacher-attendance-arrival",
+        "x-edaya-request-schema": "RecordTeacherAttendanceArrivalCommand",
+        "x-edaya-response-schema": "TeacherWorkflowStateResponse",
+        "requestBody": {
+          "description": "record-teacher-attendance-arrival payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordTeacherAttendanceArrivalCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed record-teacher-attendance-arrival",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherWorkflowStateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/revise-assessment-marks-correction": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "revise-assessment-marks-correction",
+        "operationId": "commands.reviseAssessmentMarksCorrection",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "reviseAssessmentMarksCorrection",
+        "x-edaya-command-public-name": "revise-assessment-marks-correction",
+        "x-edaya-request-schema": "ReviseAssessmentMarksCorrectionCommand",
+        "x-edaya-response-schema": "AssessmentMarksCorrectionResponse",
+        "requestBody": {
+          "description": "revise-assessment-marks-correction payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviseAssessmentMarksCorrectionCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed revise-assessment-marks-correction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentMarksCorrectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/request-teacher-correction": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "request-teacher-correction",
+        "operationId": "commands.requestTeacherCorrection",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "requestTeacherCorrection",
+        "x-edaya-command-public-name": "request-teacher-correction",
+        "x-edaya-request-schema": "RequestTeacherCorrectionCommand",
+        "x-edaya-response-schema": "TeacherCorrectionResponse",
+        "requestBody": {
+          "description": "request-teacher-correction payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestTeacherCorrectionCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed request-teacher-correction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherCorrectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/revise-teacher-correction": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "revise-teacher-correction",
+        "operationId": "commands.reviseTeacherCorrection",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "reviseTeacherCorrection",
+        "x-edaya-command-public-name": "revise-teacher-correction",
+        "x-edaya-request-schema": "ReviseTeacherCorrectionCommand",
+        "x-edaya-response-schema": "TeacherCorrectionResponse",
+        "requestBody": {
+          "description": "revise-teacher-correction payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviseTeacherCorrectionCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed revise-teacher-correction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherCorrectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/approve-teacher-correction": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "approve-teacher-correction",
+        "operationId": "commands.approveTeacherCorrection",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "approveTeacherCorrection",
+        "x-edaya-command-public-name": "approve-teacher-correction",
+        "x-edaya-request-schema": "ApproveTeacherCorrectionCommand",
+        "x-edaya-response-schema": "TeacherCorrectionResponse",
+        "requestBody": {
+          "description": "approve-teacher-correction payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveTeacherCorrectionCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed approve-teacher-correction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherCorrectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/reject-teacher-correction": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "reject-teacher-correction",
+        "operationId": "commands.rejectTeacherCorrection",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "rejectTeacherCorrection",
+        "x-edaya-command-public-name": "reject-teacher-correction",
+        "x-edaya-request-schema": "RejectTeacherCorrectionCommand",
+        "x-edaya-response-schema": "TeacherCorrectionResponse",
+        "requestBody": {
+          "description": "reject-teacher-correction payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectTeacherCorrectionCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed reject-teacher-correction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherCorrectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/withdraw-teacher-correction": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "withdraw-teacher-correction",
+        "operationId": "commands.withdrawTeacherCorrection",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "withdrawTeacherCorrection",
+        "x-edaya-command-public-name": "withdraw-teacher-correction",
+        "x-edaya-request-schema": "WithdrawTeacherCorrectionCommand",
+        "x-edaya-response-schema": "TeacherCorrectionResponse",
+        "requestBody": {
+          "description": "withdraw-teacher-correction payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawTeacherCorrectionCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed withdraw-teacher-correction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherCorrectionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/save-teacher-logbook": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "save-teacher-logbook",
+        "operationId": "commands.saveTeacherLogbook",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "saveTeacherLogbook",
+        "x-edaya-command-public-name": "save-teacher-logbook",
+        "x-edaya-request-schema": "SaveTeacherLogbookCommand",
+        "x-edaya-response-schema": "TeacherWorkflowStateResponse",
+        "requestBody": {
+          "description": "save-teacher-logbook payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveTeacherLogbookCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed save-teacher-logbook",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherWorkflowStateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/validate-teacher-logbook": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "validate-teacher-logbook",
+        "operationId": "commands.validateTeacherLogbook",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "validateTeacherLogbook",
+        "x-edaya-command-public-name": "validate-teacher-logbook",
+        "x-edaya-request-schema": "ValidateTeacherLogbookCommand",
+        "x-edaya-response-schema": "TeacherWorkflowStateListResponse",
+        "requestBody": {
+          "description": "validate-teacher-logbook payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateTeacherLogbookCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed validate-teacher-logbook",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherWorkflowStateListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/edit-teacher-incident": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "edit-teacher-incident",
+        "operationId": "commands.editTeacherIncident",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "editTeacherIncident",
+        "x-edaya-command-public-name": "edit-teacher-incident",
+        "x-edaya-request-schema": "EditTeacherIncidentCommand",
+        "x-edaya-response-schema": "TeacherWorkflowStateResponse",
+        "requestBody": {
+          "description": "edit-teacher-incident payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditTeacherIncidentCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed edit-teacher-incident",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherWorkflowStateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/take-over-teacher-incident": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "take-over-teacher-incident",
+        "operationId": "commands.takeOverTeacherIncident",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "takeOverTeacherIncident",
+        "x-edaya-command-public-name": "take-over-teacher-incident",
+        "x-edaya-request-schema": "TakeOverTeacherIncidentCommand",
+        "x-edaya-response-schema": "TeacherWorkflowStateResponse",
+        "requestBody": {
+          "description": "take-over-teacher-incident payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TakeOverTeacherIncidentCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed take-over-teacher-incident",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherWorkflowStateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/append-incident-follow-up": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "append-incident-follow-up",
+        "operationId": "commands.appendIncidentFollowUp",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "appendIncidentFollowUp",
+        "x-edaya-command-public-name": "append-incident-follow-up",
+        "x-edaya-request-schema": "AppendIncidentFollowUpCommand",
+        "x-edaya-response-schema": "TeacherWorkflowStateResponse",
+        "requestBody": {
+          "description": "append-incident-follow-up payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppendIncidentFollowUpCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed append-incident-follow-up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherWorkflowStateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/core/commands/request-assessment-marks-correction": {
       "post": {
         "tags": [
@@ -50592,6 +55691,526 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SchoolNotificationTemplates"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/queries/get-teacher-attendance-call": {
+      "post": {
+        "tags": [
+          "Core Queries"
+        ],
+        "summary": "get-teacher-attendance-call",
+        "operationId": "queries.getTeacherAttendanceCall",
+        "x-edaya-kind": "query",
+        "x-edaya-query-key": "getTeacherAttendanceCall",
+        "x-edaya-query-public-name": "get-teacher-attendance-call",
+        "x-edaya-request-schema": "GetTeacherAttendanceCallQuery",
+        "x-edaya-response-schema": "TeacherAttendanceCallResponse",
+        "requestBody": {
+          "description": "get-teacher-attendance-call payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetTeacherAttendanceCallQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resolved get-teacher-attendance-call",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherAttendanceCallResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/queries/get-teacher-workflow-state": {
+      "post": {
+        "tags": [
+          "Core Queries"
+        ],
+        "summary": "get-teacher-workflow-state",
+        "operationId": "queries.getTeacherWorkflowState",
+        "x-edaya-kind": "query",
+        "x-edaya-query-key": "getTeacherWorkflowState",
+        "x-edaya-query-public-name": "get-teacher-workflow-state",
+        "x-edaya-request-schema": "GetTeacherWorkflowStateQuery",
+        "x-edaya-response-schema": "TeacherWorkflowEligibilityResponse",
+        "requestBody": {
+          "description": "get-teacher-workflow-state payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetTeacherWorkflowStateQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resolved get-teacher-workflow-state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherWorkflowEligibilityResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/queries/list-teacher-corrections": {
+      "post": {
+        "tags": [
+          "Core Queries"
+        ],
+        "summary": "list-teacher-corrections",
+        "operationId": "queries.listTeacherCorrections",
+        "x-edaya-kind": "query",
+        "x-edaya-query-key": "listTeacherCorrections",
+        "x-edaya-query-public-name": "list-teacher-corrections",
+        "x-edaya-request-schema": "ListTeacherCorrectionsQuery",
+        "x-edaya-response-schema": "TeacherCorrectionsResponse",
+        "requestBody": {
+          "description": "list-teacher-corrections payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListTeacherCorrectionsQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resolved list-teacher-corrections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherCorrectionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/queries/get-teacher-correction": {
+      "post": {
+        "tags": [
+          "Core Queries"
+        ],
+        "summary": "get-teacher-correction",
+        "operationId": "queries.getTeacherCorrection",
+        "x-edaya-kind": "query",
+        "x-edaya-query-key": "getTeacherCorrection",
+        "x-edaya-query-public-name": "get-teacher-correction",
+        "x-edaya-request-schema": "GetTeacherCorrectionQuery",
+        "x-edaya-response-schema": "TeacherCorrectionDetailResponse",
+        "requestBody": {
+          "description": "get-teacher-correction payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetTeacherCorrectionQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resolved get-teacher-correction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherCorrectionDetailResponse"
                 }
               }
             }

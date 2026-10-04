@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { requestDocumentIssuanceBatchMutation, requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
+	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -181,6 +182,7 @@
 			<ListSearchField bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
 		{/snippet}
 		{#snippet filters()}
+			<AcademicPeriodSelector />
 			<FilterSelect
 				bind:value={listFilters.values.status}
 				class="h-9 min-w-[10rem] rounded-full text-xs"
@@ -194,7 +196,7 @@
 				tooltip={$t('reportCards.generateAll')}
 			>
 				{#snippet children({ disabled, title })}
-					<Button class="rounded-full" {disabled} {title} onclick={generateAll}>
+					<Button class="rounded-full" disabled={disabled || !academicContext.periodId} {title} onclick={generateAll}>
 						<Sparkles class="h-4 w-4" />
 						{$t('reportCards.generateAll')}
 					</Button>

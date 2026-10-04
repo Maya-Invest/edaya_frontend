@@ -12,6 +12,7 @@ These captures show the current working tree. Each manifest entry identifies the
 | Phone registration error | A service failure is announced as an alert beside the submit action. Entered fields remain available for retry. |
 | Phone navigation | Existing groups/links in a focus-managed overlay; Escape restores trigger focus. Main content retains full width, context controls remain available. |
 | Student list | Existing sidebar groups, school/year context, filters, row actions and information density remain. Inter tabular numbers, blue selection and quieter surfaces unify presentation. At narrow widths, columns scroll horizontally instead of crushing names and labels. |
+| Correction review | URL-driven workflow/status filters and read-only Official → Proposed drawer; decisions retain the review outcome. Phone layout wraps fields and action buttons; Corrections is the last School navigation item. |
 | Student drawer | Existing URL-driven tabs and actions remain. Clear heading, grouped labels and readable numerical summaries. |
 | Student edit modal | Existing fields, focus and dismissal behavior; white surface, visible input boundaries, neutral overlay, scroll-safe dimensions. |
 | Phone account dialog | Existing profile fields, photo action, shortcuts and logout callback. Header and actions remain visible; the middle content scrolls when the viewport is shorter. |

@@ -351,7 +351,7 @@ Rules:
 
 `PageQuery` caches by URL-derived key by default. Use `cache={false}` for a view whose route state retains only its current selection and must reload current facts on each visit; class profile teacher assignments use this option. **Entity payloads are not in the cache** — only `PageLoadMeta` status. When a route layout unmounts, call `releaseRoutePageQueryOnDestroy(getUrl)` so the next visit re-runs `load` and seeds a new state instance.
 
-The app shell must own academic-context invalidation. When school, academic year, or period changes, the central shell mechanism shall:
+Academic year selection lives in the sidebar. Term pickers beside affected page/tab/action content share `academicContext`; they do not create independent route selections. Empty years clear the term instead of reusing another year’s term or redirecting the year. The app shell must own academic-context invalidation. When school, academic year, or period changes, the central shell mechanism shall:
 
 1. Clear affected `PageQuery` cache entries.
 2. Invalidate the active route state (`invalidateIfStale()` or a route-scoped refresh callback).
@@ -683,3 +683,7 @@ Migrate existing routes incrementally; do not extend `detailDataContext` seed me
 ## Account authentication flows
 
 `/account/security` is an Account-level route, independent of a selected school profile. Removal confirmation is addressable with `?unlink=<identifier-id>`. OTP/TOTP challenges, enrollment secrets and recovery codes stay in component-owned flow state and never enter URLs, browser storage, or entity caches. Reloading an in-progress challenge restarts authentication. Security mutations require fresh authentication; sensitive enrollment/recovery submissions are pessimistic and never optimistic.
+
+## Correction route state
+
+`corrections-page.svelte.ts` owns the scoped queue and selected request. Filter options come from authorized correction records. URL keys are workflow, status, classGroupId, teacherSubjectId, studentId, search, from, to, correction and action. Loaded batches and the next offset stay in route state; filter/scope changes reset to the first batch, and stale pagination responses cannot append to a newer collection. Selection persists on reload. Decisions carry the displayed request version; stale review must reload before deciding. Mutations retain filters and refresh the queue.

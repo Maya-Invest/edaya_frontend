@@ -5,15 +5,19 @@
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { assertPublishedCandidate } from "./api-client-version.mjs";
 
-const requested = process.env.API_CLIENT_VERSION || process.argv[2] || "staging";
-const version = /^0\.0\.0-[a-z0-9._-]+$/.test(requested)
-  ? requested
-  : JSON.parse(execFileSync("npm", ["view", `@maya-invest/edaya-api-client@${requested}`, "version", "--json"], { encoding: "utf8" }));
-if (typeof version !== "string" || !/^0\.0\.0-[a-z0-9._-]+$/.test(version)) {
-  throw new Error("Could not resolve an exact API client version");
+const version = process.env.API_CLIENT_VERSION || process.argv[2];
+const sourceCommit = process.env.API_CLIENT_SOURCE_COMMIT || /^0\.0\.0-(?:staging|production)\.([a-f0-9]{40})$/.exec(version || "")?.[1];
+// Validate the requested version before invoking npm; never resolve a moving tag.
+assertPublishedCandidate(version, { version, edayaSourceCommit: sourceCommit }, sourceCommit);
+let metadata;
+try {
+  metadata = JSON.parse(execFileSync("npm", ["view", `@maya-invest/edaya-api-client@${version}`, "--json"], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }));
+} catch {
+  throw new Error("Qualified API client is unavailable; publish it after backend qualification before retrying deployment");
 }
-const specifier = `npm:@maya-invest/edaya-api-client@${version}`;
+const specifier = assertPublishedCandidate(version, metadata, sourceCommit);
 
 const files = [
   "package.json",

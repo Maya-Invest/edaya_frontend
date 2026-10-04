@@ -126,6 +126,11 @@ export class SessionLogbookTabState {
 		}, request);
 	}
 
+	async validateLogbook(sessionIds: string[]): Promise<boolean> {
+		const result = await runTimetableRouteMutation({ request: () => getBrowserSchoolClient().commands.validateTeacherLogbook({ requestId: crypto.randomUUID(), lessonSessionIds: sessionIds }), successMessage: get(t)('corrections.validateLogbook') });
+		return result !== null;
+	}
+
 	async saveLogbook(input: {
 		sessionId: string;
 		classGroupId: string;

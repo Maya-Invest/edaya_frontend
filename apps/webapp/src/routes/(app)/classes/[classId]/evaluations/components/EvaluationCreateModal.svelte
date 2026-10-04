@@ -53,6 +53,9 @@
 	const numericMax = $derived(Number.parseFloat(maxScore));
 	const numericCoef = $derived(Number.parseFloat(coefficient));
 	const canSubmit = $derived.by(() => {
+		if (!isEdit && !academicContext.periodId) {
+			return false;
+		}
 		if (title.trim().length === 0 || classSubjectId.length === 0) {
 			return false;
 		}

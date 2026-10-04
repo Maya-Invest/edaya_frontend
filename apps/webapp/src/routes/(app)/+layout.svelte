@@ -11,7 +11,6 @@
 	import { ONBOARDING_PATH } from '$lib/auth/resolve-post-auth-paths';
 	import { authSession } from '$lib/auth/session.svelte';
 	import AccountProfileModal from '$lib/components/account/AccountProfileModal.svelte';
-	import AcademicHeader from '$lib/components/layout/AcademicHeader.svelte';
 	import AppSidebar from '$lib/components/layout/AppSidebar.svelte';
 	import LanguageSelector from '$lib/components/layout/LanguageSelector.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
@@ -208,11 +207,6 @@
 				</button>
 
 				<div class="contents lg:flex lg:items-center lg:gap-3">
-					{#if academicContext.shellReady}
-						<div class="order-last flex w-full justify-end lg:order-none lg:w-auto"><AcademicHeader /></div>
-					{:else}
-						<LoaderCircle class="h-4 w-4 animate-spin text-muted-foreground" aria-hidden="true" />
-					{/if}
 					<LanguageSelector />
 					<div class="flex items-center gap-1.5">
 						<button

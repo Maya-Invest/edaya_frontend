@@ -1,16 +1,24 @@
 import { createHash } from 'node:crypto';
-import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
 const web = resolve(import.meta.dirname, '../../..');
 export function sourceFingerprint(): string {
   const hash = createHash('sha256');
-  for (const directory of ['src', 'scripts', 'tests', '../webadmin/src']) {
+  for (const directory of ['src', 'scripts', 'tests', '../webadmin/src', '../../.github/scripts']) {
     const root = resolve(web, directory);
-    for (const file of readdirSync(root, { recursive: true, withFileTypes: true }).filter(entry => entry.isFile()).sort((a, b) => `${a.parentPath}/${a.name}`.localeCompare(`${b.parentPath}/${b.name}`))) {
+    for (const file of readdirSync(root, { recursive: true, withFileTypes: true }).filter(entry => entry.isFile() && /\.(?:ts|mjs|py|sh|svelte|css|json|svg)$/.test(entry.name)).sort((a, b) => `${a.parentPath}/${a.name}`.localeCompare(`${b.parentPath}/${b.name}`))) {
       hash.update(`${directory}/${file.parentPath.replace(root, '')}/${file.name}`);
       hash.update(readFileSync(resolve(file.parentPath, file.name)));
     }
   }
+  const repository = resolve(web, '../..');
+  for (const file of ['package.json', 'apps/webapp/package.json', 'apps/webadmin/package.json', 'bun.lock', 'release-contract.json', '../edaya_backend/bun.lock', '../edaya_backend/release-contract.json']) {
+    const path = resolve(repository, file);
+    if (existsSync(path)) { hash.update(file); hash.update(readFileSync(path)); }
+  }
+  const backend = resolve(repository, '../edaya_backend');
+  if (existsSync(resolve(backend, '.git'))) hash.update(execFileSync('git', ['rev-parse', 'HEAD'], { cwd: backend }));
   return hash.digest('hex');
 }
 export function beginExecution(directory: string): () => void {

@@ -6,8 +6,9 @@ import {
 	activeEnrollmentsForClass,
 	assessmentsForClassPeriod,
 	DEFAULT_LIST_PAGE_SIZE,
-	entitiesByIds,
+	ENROLLMENT_LIST_ORDER,
 	enrollmentsForStudents,
+	entitiesByIds,
 	GUARDIAN_LIST_ORDER,
 	guardianLinksForGuardians,
 	guardianLinksForStudents,
@@ -17,7 +18,6 @@ import {
 	listAllEntityPagesForIdFilters,
 	paginatedList,
 	schoolScopedEntityList,
-	ENROLLMENT_LIST_ORDER,
 	STUDENT_LIST_ORDER,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
@@ -554,9 +554,11 @@ async function fetchClassRosterMetricsSources(
 			query => client.entities.attendance.list(query),
 			[{ field: 'studentId', ids: studentIds }],
 		),
-		listAllEntityPages(query => client.entities.assessments.list(query), {
-			baseQuery: assessmentsForClassPeriod(classScope.classGroupId, classScope.periodId),
-		}),
+		classScope.periodId
+			? listAllEntityPages(query => client.entities.assessments.list(query), {
+					baseQuery: assessmentsForClassPeriod(classScope.classGroupId, classScope.periodId),
+				})
+			: Promise.resolve([]),
 	]);
 	const assessmentIds = uniqueIds(assessmentsRaw.map(assessment => assessment.id));
 	const resultsRaw = await listAllEntityPagesForIdFilters(

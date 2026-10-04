@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
@@ -10,7 +11,9 @@
 
 	const queue = new MarksReviewPageState();
 </script>
-<ListPageHeader title={$t('marks.reviewQueue')} />
+<ListPageHeader title={$t('marks.reviewQueue')}>
+	{#snippet filters()}<AcademicPeriodSelector />{/snippet}
+</ListPageHeader>
 <PageQuery query={queue.query} cache={false} loadingTitle={$t('marks.reviewQueue')}>
 	{#snippet children(data)}
 		<DataState status={data.status} errorMessage={data.errorMessage}>

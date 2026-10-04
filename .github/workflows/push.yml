@@ -2,9 +2,7 @@ name: Branch push
 
 on:
   push:
-    branches-ignore:
-      - main
-      - staging
+    branches-ignore: [main, staging]
   workflow_dispatch:
 
 concurrency:
@@ -12,11 +10,8 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  actions: write
   contents: read
-  packages: read
 
-  
 jobs:
   verify:
     uses: ./.github/workflows/_verify.yml

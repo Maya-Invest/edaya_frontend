@@ -62,7 +62,7 @@ The authenticated app uses a persistent four-layer frame:
 
 ```
 ┌─────────────┬──────────────────────────────────────────────────────────┐
-│  Sidebar    │  Header: [Year · Period] [Lang] [User menu ▾]            │
+│  Sidebar    │  Header: [Lang] [User menu ▾]                           │
 │  Logo       ├──────────────────────────────────────────────────────────┤
 │  School ··· │                                                          │
 │  Modules    │                                                          │
@@ -79,9 +79,9 @@ The authenticated app uses a persistent four-layer frame:
 
 | Zone | Responsibility |
 |------|----------------|
-| **Sidebar** | Logo, school name (three-dot school popup when multi-school), module navigation, contextual sub-nav (e.g. class picker in Classes) |
-| **Header** | Year/period, language, and user identity |
-| **Body** | One primary entity-collection view per route (or an approved layout variant) |
+| **Sidebar** | Logo, school selector, academic year beneath school, module navigation and contextual class picker |
+| **Header** | Navigation toggle, language, and user identity |
+| **Body** | One primary entity-collection view per route; shared term selector beside affected content/actions |
 | **Detail drawer** | Read-only inspection of a selected entity |
 | **Mutation modal** | All create, edit, and destructive operations |
 | **Toast** | Success / error feedback after mutations |
@@ -90,19 +90,25 @@ The authenticated app uses a persistent four-layer frame:
 
 - Logo + product name at top
 - Current school name under the logo; when the staff account belongs to more than one school, a three-dot button beside the name opens a popup to pick another school
+- Academic year selector beneath school; keyboard-accessible calendar trigger in the collapsed rail and the same selector in mobile navigation
 - Module groups (e.g. School, Classes, Finance, Configuration)
 - Active module expanded; sub-items with optional badges (counts). School people items **Students**, **Guardians**, **Staff**, and **Teachers** each show a count chip from `getAppShellCounts`
 - Contextual selector inside a module when needed (e.g. class picker in Classes)
 
 ### 1.2 Header
 
-Global selectors (scope data for the whole session/view):
+Global header controls:
 
 | Selector | Purpose |
 |----------|---------|
-| Academic year + period | Data time scope |
 | Language | i18n locale |
 | User menu | Avatar, name, role; dropdown with profile/preferences and sign out |
+
+### 1.2.1 Academic context placement
+
+Academic year is workspace context in the sidebar. The shared term selection remains session context, but its picker appears only beside affected content: dashboard summary; evaluations, report cards and marks-review toolbars; class roster assessment metrics; timetable controls; student report-card and teacher evaluations tabs; timetable-planning tool; logbook export. Grade-entry forms label their captured term; family-feedback forms retain their own period field. Finance, attendance and general configuration do not gain a term picker.
+
+Use `AcademicPeriodSelector` with a persistent Term label and dates in its options. Keep selection shared and school-scoped. A year with no eligible terms clears the selected term, displays an explicit empty state and disables term-dependent actions; never reuse a term from another year. Pickers stay available in empty/error drawer tabs. Use existing keyboard/focus-managed primitives and wrapping controls on mobile.
 
 ### 1.3 Layout variants
 
@@ -515,4 +521,8 @@ Use this template when adding or refactoring an entity screen.
 
 ## Small-screen presentation
 
-Below 1024px, present the existing AppSidebar in a modal sheet using shared Dialog primitives. Keep the same groups, destinations, permission filters and active states. Start mobile navigation closed, close it after navigation, support Escape/outside dismissal and focus restoration, and retain the desktop expansion preference separately. The main page uses the full viewport width; year, period, language and account controls wrap in the header. School switching stays in the sidebar under the logo. This is a presentation adaptation and must not change routing, permissions or bootstrap behavior.
+Below 1024px, present the existing AppSidebar in a modal sheet using shared Dialog primitives. Keep the same groups, destinations, permission filters and active states. Start mobile navigation closed, close it after navigation, support Escape/outside dismissal and focus restoration, and retain the desktop expansion preference separately. The main page uses the full viewport width; language and account controls wrap in the header. School and academic year switching stay in the sidebar under the logo; term controls wrap beside their affected content. This is a presentation adaptation and must not change routing, permissions or bootstrap behavior.
+
+## Correction queue interaction
+
+The queue lists oldest pending requests first. Workflow, status, class, teacher, student, search, dates and selected request are URL state. Use the shared infinite-loading collection shell: append batches on scroll, retain loaded rows while opening/closing the drawer, and reset the collection when filters or academic scope change. Do not show Previous/Next pagination controls. Show Term only in Grades and Report comments views. Detail is a read-only drawer with named students/teacher/class, Official → Proposed typed fields, reason, revisions, history and consequences. Approve is one action; Reject asks for one reason. Extra approval confirmation is reserved for superseding reviewed attendance justification or replacing a published report document. The optional Next pending control keeps review moving without resetting filters. Closing a drawer also closes its action modal.

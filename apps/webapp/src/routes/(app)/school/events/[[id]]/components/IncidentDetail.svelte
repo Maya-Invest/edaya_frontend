@@ -14,6 +14,7 @@
 	import { locale, t } from '$lib/i18n';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import IncidentFormModal from '../../components/IncidentFormModal.svelte';
@@ -129,6 +130,13 @@
 				{/snippet}
 			</PermissionGate>
 			{#if !isResolved}
+				<PermissionGate permission="DISCIPLINE_VALIDATE"><Button variant="outline" size="sm" onclick={async () => {
+					try {
+						await eventsPage.takeOverIncident(live.id);
+						toast.success($t('corrections.takeOver'));
+					}
+					catch (error) { toast.error(error instanceof Error ? error.message : $t('corrections.error')); }
+				}}>{$t('corrections.takeOver')}</Button></PermissionGate>
 				<PermissionGate permission="DISCIPLINE_VALIDATE" mode="disable" tooltip={$t('events.permissionValidate')}>
 					{#snippet children({ disabled, title })}
 						<Button

@@ -4,6 +4,7 @@ import type { AcademicPeriod, AcademicYear, ClassNode, GradeLevel, PeriodDefinit
 import { browser } from '$app/environment';
 import { academicScopeIdentity, nextAcademicScopeGeneration } from '$lib/academic/academic-scope';
 import { buildClassHierarchy } from '$lib/academic/hierarchy';
+import { resolveAcademicPeriodId, selectableAcademicPeriods } from '$lib/academic/period-selection';
 import { lang } from '$lib/i18n';
 import { toCanonicalCatalogText } from '$lib/i18n/catalog-label';
 import {
@@ -111,11 +112,9 @@ class AcademicContext {
 
 	periodsForYear = $derived(this.periods.filter(p => p.academicYearId === this.yearId));
 
-	period = $derived(
-		this.periods.find(p => p.id === this.periodId)
-		?? this.periodsForYear.at(-1)
-		?? this.periods[0],
-	);
+	selectablePeriodsForYear = $derived(selectableAcademicPeriods(this.periods, this.yearId));
+
+	period = $derived(this.selectablePeriodsForYear.find(p => p.id === this.periodId));
 
 	publishedPeriodsForYear = $derived(
 		this.publishedPeriods.filter(p => p.academicYearId === this.yearId),
@@ -172,13 +171,16 @@ class AcademicContext {
 	}
 
 	setPeriod(id: string) {
+		if (!this.selectablePeriodsForYear.some(period => period.id === id)) {
+			return;
+		}
 		const previous = this.scopeIdentity();
 		this.periodId = id;
 		this.persistSelection();
 		this.notifyScopeChange(previous);
 	}
 
-	/** Year/period chosen during onboarding — survives empty shell bootstrap. */
+	/** Year/period chosen during onboarding — validated against the next shell catalog. */
 	applyOnboardingSelection(yearId: string, periodId: string) {
 		const previous = this.scopeIdentity();
 		if (yearId) {
@@ -193,15 +195,7 @@ class AcademicContext {
 
 	resolveSelectionForApi(): { academicYearId: string; academicPeriodId: string } | null {
 		const academicYearId = this.resolveAcademicYearIdForApi() ?? '';
-		const periodsForYear = academicYearId
-			? this.periods.filter(period => period.academicYearId === academicYearId)
-			: this.periods;
-		const published = periodsForYear.filter(period => period.status === 'published');
-		const academicPeriodId = this.periodId
-			|| published.at(-1)?.id
-			|| periodsForYear.at(-1)?.id
-			|| this.periods.at(-1)?.id
-			|| '';
+		const academicPeriodId = resolveAcademicPeriodId(this.periods, academicYearId, this.periodId);
 		if (!academicYearId || !academicPeriodId) {
 			return null;
 		}
@@ -219,26 +213,9 @@ class AcademicContext {
 	}
 
 	private syncPeriodToYear() {
-		const options = this.publishedPeriodsForYear.length > 0
-			? this.publishedPeriodsForYear
-			: this.periodsForYear;
-		if (options.length === 0) {
-			return;
-		}
-		if (!options.some(p => p.id === this.periodId)) {
-			this.periodId = options[options.length - 1]!.id;
-			this.persistSelection();
-		}
-	}
-
-	private alignYearWithPeriodCatalog() {
-		if (this.periodsForYear.length > 0 || this.periods.length === 0) {
-			return;
-		}
-		const yearIdFromPeriod = this.periods.find(p => p.academicYearId)?.academicYearId;
-		if (yearIdFromPeriod && yearIdFromPeriod !== this.yearId) {
-			this.yearId = yearIdFromPeriod;
-			this.syncPeriodToYear();
+		const periodId = resolveAcademicPeriodId(this.periods, this.yearId, this.periodId);
+		if (periodId !== this.periodId) {
+			this.periodId = periodId;
 			this.persistSelection();
 		}
 	}
@@ -257,7 +234,6 @@ class AcademicContext {
 		else {
 			const previous = this.scopeIdentity();
 			this.syncPeriodToYear();
-			this.alignYearWithPeriodCatalog();
 			this.notifyScopeChange(previous);
 		}
 	}

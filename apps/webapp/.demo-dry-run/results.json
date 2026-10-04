@@ -1,8 +1,13 @@
 {
-  "passed": 82,
+  "passed": 83,
   "failed": 0,
   "skipped": 0,
   "results": [
+    {
+      "scene": "D0",
+      "step": "0.0 Demo account selection preserves OTP login",
+      "status": "pass"
+    },
     {
       "scene": "D0",
       "step": "0.1 Login j.aka@",

@@ -139,6 +139,7 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 	}
 
 	await runRequiredGroup(journey, 'evaluations', async () => {
+		await visitCovered(journey, '/school/corrections', '/school/corrections');
 		await visitCovered(journey, '/school/marks-review', '/school/marks-review');
 		await visitCovered(journey, '/classes/[classId]/evaluations', `/classes/${classId}/evaluations`);
 		const evalOpened = await clickCreateButton(page, 'Créer évaluation', `/classes/${classId}/evaluations`);

@@ -55,7 +55,7 @@ Connection presentation has three states around the existing health check: neutr
 
 ## Reuse and operational presentation
 
-Preserve sidebar groups, school/year context selectors, list/card modes, filters, calendars, selection tools, URL drawers, and mutation modals. Sidebar uses white chrome and the horizontal logo; compact rail uses the symbol. Student/class and school context take precedence over decorative branding. Below 1024px, the same sidebar opens in a focus-managed modal sheet over full-width content; it starts closed, dismisses on navigation/Escape, and does not overwrite the desktop expansion preference. Header context controls wrap without removing school/year/period/language/account access.
+Preserve sidebar groups, school/year context selectors, list/card modes, filters, calendars, selection tools, URL drawers, and mutation modals. Sidebar uses white chrome and the horizontal logo; compact rail uses the symbol. Student/class and school context take precedence over decorative branding. Below 1024px, the same sidebar opens in a focus-managed modal sheet over full-width content; it starts closed, dismisses on navigation/Escape, and does not overwrite the desktop expansion preference. School and academic year controls live beneath the sidebar logo, including a keyboard-accessible year trigger in the compact rail and the mobile sheet. Labeled term controls wrap beside affected page content, drawer tabs or export/planning actions; dates appear in their options. Language and account remain in the global header. Preserve shared school-scoped selection and provide an explicit empty-year state without a stale term.
 
 | Surface | Required reuse / presentation |
 |---|---|

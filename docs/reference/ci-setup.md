@@ -1,183 +1,43 @@
 # CI setup
 
-> **Audience:** humans — GitHub Actions workflows and reusable setup  
-> **Not normative for agents**
+Branch pushes run repository hygiene, unit/tooling tests and applicable builds. Every pull request, including PRs targeting development branches, runs complete integration qualification. Production release jobs and the staging coordinator require qualification before publication or live changes. Git hooks are unchanged.
 
-`edaya_web` CI follows the same pattern as [`edaya_backend`](../../edaya_backend): a composite action for Bun install, dependency caching, and Turbo remote cache.
+## Required checks
 
-## Composite action: `ci-bun-turbo`
+`verify / verify` is the unit check. `Full validation` requires successful verification and integration jobs, plus backend resolution for consumers. Failed, cancelled, missing or skipped required jobs fail this check. Manual PR dispatch runs the same full gates; test-skipping switches have been removed.
 
-Path: [`.github/actions/ci-bun-turbo`](../../.github/actions/ci-bun-turbo/action.yml)
+Ordinary staging pushes run unit checks. Staging release/validation is dispatched only through the backend **Full-stack staging release** coordinator. `validate_only=true` qualifies the three commits, performs dry runs and checks signed APKs without publishing, deploying or changing live data. Manifest schema 4 and APK provenance schema 3 remain unchanged.
 
-| Step | What it does |
-|------|----------------|
-| Setup Bun | `oven-sh/setup-bun@v2` — version from root `packageManager` (`bun@1.3.14`) |
-| Cache Bun deps | `actions/cache@v6` on `~/.bun/install/cache`, keyed by `bun.lock` |
-| Install | `bun install` |
-| Turbo cache | `rharkor/caching-for-turbo@v2.5.0` — restores/saves `.turbo` via GitHub Actions cache |
+## Backend revision and client contracts
 
-### Inputs
+Frontend/mobile resolve one immutable backend SHA before integration jobs. An explicit `backend_ref` wins; otherwise a matching consumer head branch is preferred, followed by the PR target branch when the matching branch is absent. Access failures do not fall back. Manual dispatch without a matching branch must supply `backend_ref`.
 
-| Input | Default | Purpose |
-|-------|---------|---------|
-| `bun-version` | `1.3.14` | Bun runtime (match `packageManager` in root `package.json`) |
-| `cache-prefix` | `edaya-web-turbo-` | Isolate Turbo cache keys from `edaya_backend` |
+The retained secret `IDENTITY_CHECKOUT_TOKEN` needs contents:read access to the private backend repository; the staging coordinator additionally needs web/mobile checkout access. Checkout credentials are not persisted. Consumer and backend release contracts must match, and the backend's generated artifacts and content-addressed source fingerprint must pass verification before fixture startup. Every mobile matrix job receives the same resolved SHA.
 
-### Usage
+Frontend unit/browser checks install the committed vendored API client with the frozen lockfile. They do not require a branch client to be published first. Production deployment uses `0.0.0-production.<qualified-backend-sha>` and checks the package's `edayaSourceCommit` and installed contract hashes. Missing or mismatched publication blocks deployment. Feature pushes never publish API clients.
 
-```yaml
-- name: Setup Bun and Turbo cache
-  uses: ./.github/actions/ci-bun-turbo
-```
+Browser qualification executes TypeScript through pinned Bun 1.3.14. It does not fetch an untracked `tsx@latest` runner. Source freshness includes the application script manifests, committed lock, CI helpers and backend candidate.
 
-## Workflows
+## Toolchains and evidence
 
-| Workflow | Job | Command |
-|----------|-----|---------|
-| [`_verify.yml`](../../.github/workflows/_verify.yml) | `verify` | `bun run verify` |
-| [`_integration.yml`](../../.github/workflows/_integration.yml) | `integration` | `test:integration:onboarding` then `test:integration:provisioned` (empty Identity + school from source, Wrangler, Playwright) |
-| [`deploy_push.yml`](../../.github/workflows/deploy_push.yml) | `deploy-*` | `wrangler deploy` via [Cloudflare deploy](ci-setup.md#deploy-to-cloudflare-github-actions) |
+Jobs use Ubuntu 24.04, Node 22, Python 3.13, Bun 1.3.14, Flutter 3.44.8, Melos 8.0.0 and Java 17 where applicable. Actions are pinned to reviewed release commits with version comments. Dependency installations enforce committed locks. Workflow definitions are checked with actionlint 1.7.12, downloaded only after matching the pinned archive checksum; shell syntax is also checked.
 
-Use the dedicated backend `bun run dev:test` server for local captured email, WhatsApp and SMS. Enable web `PUBLIC_TEST_OTP_ACCESS=true` or Flutter debug `--dart-define=TEST_OTP_ACCESS=true` for explicit Show test code and Copy controls. CI uses that composition and a private captured mailbox; normal staging/production builds omit testing access.
+Browser and mobile artifacts contain only `.ci-evidence/results.json`: revision, backend SHA, lock hash, fixed suite names, completion metadata and numeric counts. Fixture files, private sessions, OTP captures, screenshots and browser traces stay out of uploads. Failures still produce sanitized evidence. Staging uploads use a separate explicit file allowlist, including early configuration-preflight failures.
 
-Caching in `_integration.yml`:
-- **Bun deps + Turbo** — `./.github/actions/ci-bun-turbo` (same as verify)
-- **Playwright** — `~/.cache/ms-playwright` keyed on `apps/webapp/package.json` + `bun.lock`
+Local evidence and GitHub results are distinct. A local green run does not establish GitHub success for a newer revision. GitHub's current plan rejects private-repository branch protection/ruleset checks; deployment/publication dependencies are enforced by workflows, while protected merge enforcement remains unavailable/unverified. No billing or visibility changes are made.
 
-After `vite build`, CI runs `bun run preview:integration` (`wrangler dev --local`) instead of `vite preview`. Static adapter prerender creates files for list routes only; dynamic deep links (e.g. `/school/students/ci-s1`) need Wrangler’s `not_found_handling: single-page-application` — same as production deploy.
+## Browser qualification
 
-## Verify entry point
+`bun run verify` includes CI publication-helper tests and all application/tooling unit tests. `bash .github/scripts/run-browser-integration.sh` owns a disposable unified API and file service, runs availability, onboarding, provisioned, webadmin and development demo suites, then requires complete fresh execution of all five. Demo profiles are seeded only into this disposable fixture. The runner stops only its owned processes and removes captured credentials on exit.
+
+The browser cache and installer both use `apps/webapp/.cache/ms-playwright`. Test OTP access is enabled only for local fixture builds. Staging/production builds omit it.
+
+Run the complete local gate:
 
 ```sh
+bun install --frozen-lockfile
 bun run verify
-# bun repo verify && turbo run quality && turbo run build && turbo run test -- --dots
+bash .github/scripts/run-browser-integration.sh
 ```
 
-Repo hygiene runs **first** (doctor, OpenAPI drift, repo unit tests). See [repo-cli.md](./repo-cli.md).
-
-Webapp **unit tests** (`bun test tests/lib`) must not depend on a sibling `edaya_backend` checkout or on live `$state` modules. Bun preload stubs toast/session in [`apps/webapp/tests/support/sveltekit-mocks.ts`](../../apps/webapp/tests/support/sveltekit-mocks.ts). Catalog fixtures live in [`apps/webapp/tests/fixtures/ivory-coast`](../../apps/webapp/tests/fixtures/ivory-coast). A local-green / CI-red loop usually means a new test opened one of those doors — `ci-parity-guard.test.ts` is meant to catch that before push.
-
-Playwright integration (`apps/webapp` `test:integration:onboarding` then `test:integration:provisioned`) is a **separate** PR job after verify — not part of `bun run verify`. Client walkthrough is `demo:e2e`, not CI.
-
-## Sibling Identity and school (Playwright)
-
-Provisioned Playwright starts **empty** Identity and school from source. The onboarding suite signs up in the UI; the provisioned suite then creates a second tenant via `provisionTenant()`. `GITHUB_TOKEN` cannot read those private repos.
-
-**One-time repo secret:** `IDENTITY_CHECKOUT_TOKEN` — a PAT with `contents:read` on `Maya-Invest/edaya_backend` (Identity is included in that checkout). The same secret name is used in backend CI.
-
-Checkout layout (same sibling pattern backend CI uses for the identity client):
-
-```text
-$GITHUB_WORKSPACE/              # this repo (edaya_web)
-.ci/edaya_backend
-$(dirname $GITHUB_WORKSPACE)/edaya_backend   → .ci/edaya_backend
-```
-
-Backend workspace dependencies resolve Identity’s client within the same checkout. The webapp **install still uses the published** `@maya-invest/edaya-api-client` (`ci-use-published-api-client.mjs`).
-
-Git ref is taken from the **web head branch** (PR branch, or `github.ref_name` on dispatch):
-
-| Web head | Identity + school ref |
-|----------|------------------------|
-| `staging` | `staging` |
-| `main` / `master` | `main` |
-| anything else | `dev` |
-
-The job fails if that branch is missing on the backend. Backend needs `dev`, `staging`, and `main` (not only a feature branch).
-
-Use the dedicated backend `bun run dev:test` server for local captured email, WhatsApp and SMS. Enable web `PUBLIC_TEST_OTP_ACCESS=true` or Flutter debug `--dart-define=TEST_OTP_ACCESS=true` for explicit Show test code and Copy controls. CI uses that composition and a private captured mailbox; normal staging/production builds omit testing access.
-
-## GitHub Packages access for API client
-
-Verify and deploy install `@maya-invest/edaya-api-client` from GitHub Packages (see [cross-repo-workflow.md](./cross-repo-workflow.md#ci)). Grant `edaya_web` **Read** on the [api-client package](https://github.com/orgs/Maya-Invest/packages/npm/edaya-api-client/settings) under **Manage Actions access**, or publish the package as **Public**.
-
-Workflows append `GITHUB_TOKEN` to `.npmrc`, then run [`.github/scripts/ci-use-published-api-client.mjs`](../../.github/scripts/ci-use-published-api-client.mjs) to patch root `overrides` and app `dependencies` before `bun install`. Local dev keeps the `file:` link via the committed `package.json` files.
-
-## Deploy to Cloudflare (GitHub Actions)
-
-Deploy runs from GitHub Actions — not Cloudflare Workers Builds. See [`deploy_push.yml`](../../.github/workflows/deploy_push.yml) (push to `staging` / `main`).
-
-| Step | What happens |
-|------|----------------|
-| `deploy-webapp` | Published API client → build → `wrangler deploy` |
-| `deploy-webadmin` | Same for webadmin |
-
-**One-time repo secret:** `CLOUDFLARE_API_TOKEN` with Workers Scripts edit (+ routes if using custom domains). Wrangler reads it from the environment.
-
-Branch mapping:
-
-| Branch | API client channel | Wrangler env |
-|--------|-------------------|--------------|
-| `staging` | `staging` | `--env staging` |
-| `main` | `production` | `--env prod` |
-
-Manual deploy: **Actions → Push / Merge deploy → Run workflow**.
-
-Root `cloudflare:*` scripts remain available for ad-hoc builds; GHA deploy uses the same `ci-use-published-api-client` path as verify (no `GITHUB_PACKAGES_TOKEN` or `.npmrc.cloudflare` needed).
-
-## Cloudflare Workers Builds (optional)
-
-If you prefer Cloudflare-native CI instead of GitHub Actions deploy, Cloudflare does not check out `edaya_backend`. Use the published API client and a custom install step.
-
-### One-time dashboard setup (per Worker)
-
-In **Workers & Pages → your Worker → Settings → Build**:
-
-| Type | Name | Value |
-|------|------|-------|
-| Variable | `SKIP_DEPENDENCY_INSTALL` | `true` |
-| Variable | `BUN_VERSION` | `1.3.14` (match root `packageManager`) |
-| Variable | `NPM_CONFIG_USERCONFIG` | `/opt/buildhome/repo/.npmrc.cloudflare` |
-| Secret | `GITHUB_PACKAGES_TOKEN` | Fine-grained PAT with `read:packages` on `Maya-Invest/edaya-api-client` |
-| Variable | `API_CLIENT_CHANNEL` | Optional — `staging` or `production`. Defaults from branch (`main` → production, else staging). |
-
-Set **Root directory** to the repository root (not `apps/webapp`) so Bun workspaces resolve.
-
-### Build / deploy commands
-
-**Webapp (staging example):**
-
-| Step | Command |
-|------|---------|
-| Build | `bun run cloudflare:build:webapp` |
-| Deploy | `bun --filter @edaya/webapp deploy:staging` |
-
-Add build variables for Vite public env (same as `deploy:staging` in `apps/webapp/package.json`), e.g. ``PUBLIC_API_URL=https://staging.api.edayaplus.com`, `PUBLIC_APP_ENV=staging`.
-
-**Webadmin:** use `bun run cloudflare:build:webadmin` and `bun --filter @edaya/webadmin deploy:staging`.
-
-**Website (Astro, no API client):**
-
-| Step | Command |
-|------|---------|
-| Build | `bun run cloudflare:build:website` |
-| Deploy | `bun --filter @edaya/website exec wrangler deploy --env staging` |
-
-No `GITHUB_PACKAGES_TOKEN` or `cloudflare-build-prepare` needed for the website — it has no private npm dependencies.
-
-`cloudflare:build:webapp` and `cloudflare:build:webadmin` run `scripts/cloudflare-build-prepare.mjs` (patches root `overrides` and app `dependencies` to GitHub Packages) then `bun install`. Auth is read from `.npmrc.cloudflare` via `GITHUB_PACKAGES_TOKEN`.
-
-Local dev is unchanged: keep root `.npmrc` (scope only) and the root `overrides` `file:` link for sibling `edaya_backend`.
-
-## PR pipeline
-
-```text
-gate → verify (bun run verify)
-     → integration (test:integration:onboarding then test:integration:provisioned + empty Identity/school, after verify)
-```
-
-Configured in [`deploy_pr.yml`](../../.github/workflows/deploy_pr.yml).
-
-## Merge pipeline (staging / main)
-
-```text
-gate (path filter) → deploy-webapp / deploy-webadmin when app paths changed
-```
-
-On push, `dorny/paths-filter` sets `deploy_webapp` / `deploy_webadmin` from changed paths. Manual **Run workflow** keeps explicit toggles. Deploy jobs patch `@maya-invest/edaya-api-client` to GitHub Packages before `bun install` (see `_deploy-cloudflare.yml`). Verify and provisioned integration run on PRs only (`deploy_pr.yml`), not on merge deploy.
-
-Configured in [`deploy_push.yml`](../../.github/workflows/deploy_push.yml). Requires repo secret `CLOUDFLARE_API_TOKEN`.
-
-## Backend reference
-
-The composite action is aligned with [edaya_backend/docs/reference/ci-setup.md](../../edaya_backend/docs/reference/ci-setup.md). Cache prefix differs per repo.
+The backend must be checked out as the sibling `edaya_backend` with matching release contracts. Production webapp/webadmin deployment requires both browser qualification and the exact qualified published client. Frontend staging dispatch fails with instructions to use the backend coordinator.

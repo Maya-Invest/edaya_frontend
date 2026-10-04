@@ -45,7 +45,7 @@ User menu
 └── Account         → inbox, notification settings, profile
 ```
 
-Global header (all modules): **School** · **Academic year + period** · **Language** · **User menu**.
+Workspace context in the sidebar: **School** → **Academic year** → navigation. Global header: navigation toggle · **Language** · **User menu**. Shared academic term selection appears beside affected content/actions, not in the global header. Dashboard, evaluations, report cards, marks review, class assessment metrics, timetable/planning, relevant drawer tabs and logbook export expose this picker; unrelated finance, attendance and general configuration do not.
 
 ### 2.2 Class context
 
@@ -466,7 +466,7 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 ### 7.19.1 Configuration — Weekly period grid
 
 - **Entity:** `PeriodDefinition` · layout page at `/configuration/period-grid`
-- Year `<select>` lists every year (draft, published, archived) in `?year=`, defaulting to the header year when that year is in the list
+- Year `<select>` lists every year (draft, published, archived) in `?year=`, defaulting to the workspace year when that year is in the list
 - Slots are weekly (`dayOfWeek` + times); single-row form and optional **quick-setup wizard** (preset → tweak template/weekdays → batch create)
 - Mutations require `SCHOOL_STRUCTURE_CONFIGURE`
 
@@ -645,3 +645,7 @@ Account authentication is independent of school actors. `/account/security` supp
 ## Integration contract maintenance
 
 Production route, navigation, modal and action changes must update the integration scenario contract and executable assertions in the same PR. Navigation assertions do not satisfy mutations; verify saved state after reload and applicable denied operations. Keep exclusions explicit and never count them as behavioral coverage.
+
+## Teacher correction review
+
+`/school/corrections` is the last School navigation item on desktop and mobile. Any of GRADE_VALIDATE, ATTENDANCE_VALIDATE, CLASS_LOGBOOK_VALIDATE, DISCIPLINE_VALIDATE, or REPORT_CARD_PUBLISH can expose it; the server scopes each workflow separately. `/school/marks-review` redirects to the queue with the Grades filter. The queue handles marks, submitted attendance, published report comments, validated logbooks, and staff-managed incidents. Other teacher workflows keep their existing lifecycle. Logbook validation and incident takeover are explicit staff actions; opening a detail never performs either action.

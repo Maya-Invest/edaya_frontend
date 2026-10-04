@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { academicContext } from '$lib/academic/context.svelte';
+	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { drawerTabRouteCacheKey } from '$lib/detail-route-patterns';
@@ -17,6 +18,7 @@
 </script>
 
 {#if teacher}
+	<div class="mb-4"><AcademicPeriodSelector /></div>
 	<PageQuery {query} cacheKey={cacheKey} loadingTitle={$t('drawer.tab.evaluations')}>
 		{#snippet children(data)}
 			<DataState status={data.status} errorMessage={data.errorMessage}>

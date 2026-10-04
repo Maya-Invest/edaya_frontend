@@ -2,6 +2,8 @@
 	import type { AssessmentKind, Evaluation } from '$lib/types/school';
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -149,6 +151,7 @@
 		title={$t('eval.count', { n: filtered.length })}
 	>
 		{#snippet filters()}
+			<AcademicPeriodSelector />
 			<FilterSelect
 				bind:value={listFilters.values.kind}
 				class="h-9 w-44 rounded-full text-xs"
@@ -181,7 +184,7 @@
 					<Button
 						size="sm"
 						class="rounded-full"
-						{disabled}
+						disabled={disabled || !academicContext.periodId}
 						{title}
 						onclick={() => modals.open('create')}
 					>

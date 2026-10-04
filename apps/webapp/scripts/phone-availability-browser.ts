@@ -2,6 +2,11 @@ import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { ensurePlaywrightChromium } from './playwright-browsers';
+import { beginExecution } from '../tests/integration/support/execution-metadata';
+
+const output = resolve(import.meta.dirname, '../.availability-run');
+mkdirSync(output, { recursive: true });
+const completeExecution = beginExecution(output);
 
 ensurePlaywrightChromium();
 const { chromium } = await import('playwright');
@@ -58,9 +63,8 @@ try {
 	}
 } finally {
 	await browser.close();
-	const output = resolve(process.env.RELEASE_ROOT ?? resolve(import.meta.dirname, '../../../..'), 'release/web-phone-availability');
-	mkdirSync(output, { recursive: true });
 	writeFileSync(resolve(output, 'summary.json'), JSON.stringify({ outcomes }, null, 2));
 }
 assert.equal(outcomes.length, 6);
+completeExecution();
 console.log('Email-only browser availability: 6 scenarios passed');

@@ -54,3 +54,8 @@ apps/webapp/.onboarding-run
 !vendor/edaya-api-client/dist/**
 
 apps/webapp/.webadmin-run/
+
+# Sanitized local/CI test evidence
+.ci-evidence/
+apps/webapp/.availability-run/
+__pycache__/

@@ -2,7 +2,6 @@
 	import type { ResolvedPathname } from '$app/types';
 	import type { SchoolOverviewResponse } from '$lib/api/dashboard-data';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { authSession } from '$lib/auth/session.svelte';
 	import { t } from '$lib/i18n';
 	import {
 		AlertTriangle,
@@ -21,19 +20,9 @@
 
 	const { overview }: { overview: SchoolOverviewResponse } = $props();
 
-	const me = $derived(authSession.user);
-	const school = $derived(authSession.school);
 	const kpis = $derived(overview.kpis);
 	const areaHealth = $derived(overview.areaHealth);
 	const attendanceTodayHref = $derived(dashboardAttendanceTodayHref(academicContext.classes));
-
-	const todayLabel = $derived(
-		new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date()),
-	);
-
-	const lastUpdatedLabel = $derived(
-		new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' }).format(new Date(overview.generatedAt)),
-	);
 
 	const actionModuleKeys: Record<
 		SchoolOverviewResponse['actionItems'][number]['key'],
@@ -123,32 +112,6 @@
 </script>
 
 <div class="animate-fade-in mx-auto max-w-[1400px] space-y-6 overflow-y-auto p-6">
-	<!-- Executive header -->
-	<section class="rounded-2xl border border-border bg-card p-5 shadow-soft">
-		<div class="flex flex-wrap items-start justify-between gap-4">
-			<div>
-				<p class="font-sans tabular-nums text-[10px] uppercase tracking-widest text-muted-foreground">
-					{$t('dashboard.title')}
-				</p>
-				<h1 class="mt-1 font-display text-2xl font-semibold leading-tight">
-					{school?.name ?? school?.shortName ?? 'EDAYA'}
-				</h1>
-				<p class="mt-1 text-sm text-muted-foreground">
-					{academicContext.year?.label ?? '—'} · {academicContext.period?.label ?? '—'}
-				</p>
-			</div>
-			<div class="text-right text-sm">
-				<p class="font-medium">{todayLabel}</p>
-				{#if me}
-					<p class="mt-1 text-muted-foreground">{$t(`staff.role.${me.role}`)} · {me.name}</p>
-				{/if}
-				<p class="mt-2 font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
-					{$t('dashboard.lastUpdated', { time: lastUpdatedLabel })}
-				</p>
-			</div>
-		</div>
-	</section>
-
 	<!-- Top KPIs -->
 	<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
 		<a

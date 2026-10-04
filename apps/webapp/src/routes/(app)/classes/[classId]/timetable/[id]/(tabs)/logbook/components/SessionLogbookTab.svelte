@@ -51,6 +51,7 @@
 				{$t('subjects.tab.logbook')}
 			</Label>
 			{#if isLesson}
+				<PermissionGate permission="CLASS_LOGBOOK_VALIDATE" classId={s.classId}><Button variant="outline" size="sm" onclick={() => logbookTab.validateLogbook([s.id])}>{$t('corrections.validateLogbook')}</Button></PermissionGate>
 				<PermissionGate
 					permission={detail.logbook ? 'CLASS_LOGBOOK_UPDATE' : 'CLASS_LOGBOOK_CREATE'}
 					classId={s.classId}

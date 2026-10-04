@@ -78,6 +78,7 @@ describe('nav-permissions — prof principal (phase 3.3)', () => {
 			'activities',
 			'announcements',
 			'events',
+			'marksReview',
 		]);
 	});
 

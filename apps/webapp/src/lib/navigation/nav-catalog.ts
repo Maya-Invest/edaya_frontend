@@ -16,7 +16,6 @@ export interface NavItemDefinition {
 }
 
 export const SCHOOL_NAV_DEFS: NavItemDefinition[] = [
-	{ key: 'marksReview', labelKey: 'marks.reviewQueue', href: '/school/marks-review', permissions: ['GRADE_VALIDATE'] },
 	{
 		key: 'students',
 		labelKey: 'school.students',
@@ -75,6 +74,7 @@ export const SCHOOL_NAV_DEFS: NavItemDefinition[] = [
 		href: '/school/events',
 		permissions: ['DISCIPLINE_READ'],
 	},
+	{ key: 'marksReview', labelKey: 'corrections.title', href: '/school/corrections', permissions: ['GRADE_VALIDATE', 'ATTENDANCE_VALIDATE', 'CLASS_LOGBOOK_VALIDATE', 'DISCIPLINE_VALIDATE', 'REPORT_CARD_PUBLISH'] },
 ];
 
 export const CLASS_NAV_DEFS: NavItemDefinition[] = [

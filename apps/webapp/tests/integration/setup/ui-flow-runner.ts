@@ -82,8 +82,14 @@ export async function runUiJourney(
 		const period = periods.sort((a, b) => a.startDate.localeCompare(b.startDate))[0];
 		assert(period, 'Required fixture academic period missing');
 		await ctx.page.getByTestId('academic-period-trigger').click();
-		await ctx.page.getByRole('button').filter({ has: ctx.page.getByText(period.name, { exact: true }) }).last().click();
+		await ctx.page.getByRole('option').filter({ has: ctx.page.getByText(period.name, { exact: true }) }).click();
 		await waitForPageQuery(ctx.page);
+		assert.equal(await ctx.page.getByTestId('academic-period-trigger').getAttribute('data-period-id'), period.id, 'Dashboard term picker must update shared academic scope');
+		assert.equal(await ctx.page.locator('#app-sidebar').getByTestId('academic-year-trigger').count(), 1, 'Academic year must live in sidebar context');
+		await ctx.page.reload({ waitUntil: 'domcontentloaded' });
+		await waitForPageQuery(ctx.page);
+		assert.equal(await ctx.page.getByTestId('academic-period-trigger').getAttribute('data-period-id'), period.id, 'Academic term must survive reload');
+		assert.equal(await ctx.page.getByTestId('academic-year-trigger').getAttribute('data-year-id'), yearId, 'Academic year must survive reload');
 		await runJourneyChapter(journey, 'configuration', () => runConfigurationChapter(journey));
 		await runJourneyChapter(journey, 'people', () => runPeopleChapter(journey));
 		await runJourneyChapter(journey, 'school', () => runSchoolChapter(journey));

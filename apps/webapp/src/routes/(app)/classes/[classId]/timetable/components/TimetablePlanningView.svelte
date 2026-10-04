@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
+	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
 	import AttendanceFlow from '$lib/components/school/scheduling/AttendanceFlow.svelte';
 	import ClassTimetableCalendar from '$lib/components/school/scheduling/ClassTimetableCalendar.svelte';
 	import NewSessionWizard from '$lib/components/school/scheduling/NewSessionWizard.svelte';
@@ -125,6 +126,9 @@
 	>
 		{#snippet search()}
 			<ListSearchField bind:value={planning.filters.values.q} oninput={() => planning.filters.scheduleSync()} />
+		{/snippet}
+		{#snippet filters()}
+			<AcademicPeriodSelector />
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate

@@ -97,7 +97,8 @@ export class StudentReportCardTabState {
 		const page = this.getPage();
 		const student = page.findStudent(studentId);
 		const slice = this.forStudent(studentId);
-		if (!student || !slice) {
+		if (!student || !slice || !academicContext.periodId) {
+			this.seed(studentId, { reportCardResults: [] });
 			return;
 		}
 
@@ -140,7 +141,7 @@ export class StudentReportCardTabState {
 		const definitionId = slice && student
 			? resolveReportCardDefinitionId(slice, student.classId)
 			: undefined;
-		if (!definitionId) {
+		if (!periodId || !definitionId) {
 			return false;
 		}
 

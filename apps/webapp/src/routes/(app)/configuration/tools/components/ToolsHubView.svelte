@@ -4,6 +4,7 @@
 		TimetableGenerationStep,
 		TimetablePublishStep,
 	} from '../lib/tools-workflow';
+	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
 	import DataImportModal from '$lib/components/school/configuration/DataImportModal.svelte';
 	import Button, { buttonVariants } from '$lib/components/ui/button/button.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
@@ -144,6 +145,7 @@
 				</div>
 			</div>
 
+			<div class="mb-4"><AcademicPeriodSelector /></div>
 			<div class="mt-auto flex flex-wrap gap-2">
 				<Button
 					onclick={() => modals.open('generate-timetable', { step: 'setup', tab: 'subjects' })}

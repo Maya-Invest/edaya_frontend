@@ -2311,6 +2311,244 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/core/commands/save-teacher-attendance-draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** save-teacher-attendance-draft */
+        post: operations["commands.saveTeacherAttendanceDraft"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/commands/submit-teacher-attendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** submit-teacher-attendance */
+        post: operations["commands.submitTeacherAttendance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/commands/record-teacher-attendance-arrival": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** record-teacher-attendance-arrival */
+        post: operations["commands.recordTeacherAttendanceArrival"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/commands/revise-assessment-marks-correction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** revise-assessment-marks-correction */
+        post: operations["commands.reviseAssessmentMarksCorrection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/commands/request-teacher-correction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** request-teacher-correction */
+        post: operations["commands.requestTeacherCorrection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/commands/revise-teacher-correction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** revise-teacher-correction */
+        post: operations["commands.reviseTeacherCorrection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/commands/approve-teacher-correction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** approve-teacher-correction */
+        post: operations["commands.approveTeacherCorrection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/commands/reject-teacher-correction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** reject-teacher-correction */
+        post: operations["commands.rejectTeacherCorrection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/commands/withdraw-teacher-correction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** withdraw-teacher-correction */
+        post: operations["commands.withdrawTeacherCorrection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/commands/save-teacher-logbook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** save-teacher-logbook */
+        post: operations["commands.saveTeacherLogbook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/commands/validate-teacher-logbook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** validate-teacher-logbook */
+        post: operations["commands.validateTeacherLogbook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/commands/edit-teacher-incident": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** edit-teacher-incident */
+        post: operations["commands.editTeacherIncident"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/commands/take-over-teacher-incident": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** take-over-teacher-incident */
+        post: operations["commands.takeOverTeacherIncident"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/commands/append-incident-follow-up": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** append-incident-follow-up */
+        post: operations["commands.appendIncidentFollowUp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/core/commands/request-assessment-marks-correction": {
         parameters: {
             query?: never;
@@ -3954,6 +4192,74 @@ export interface paths {
         put?: never;
         /** reset-school-notification-templates */
         post: operations["commands.resetSchoolNotificationTemplates"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/queries/get-teacher-attendance-call": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** get-teacher-attendance-call */
+        post: operations["queries.getTeacherAttendanceCall"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/queries/get-teacher-workflow-state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** get-teacher-workflow-state */
+        post: operations["queries.getTeacherWorkflowState"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/queries/list-teacher-corrections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** list-teacher-corrections */
+        post: operations["queries.listTeacherCorrections"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/queries/get-teacher-correction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** get-teacher-correction */
+        post: operations["queries.getTeacherCorrection"];
         delete?: never;
         options?: never;
         head?: never;
@@ -14200,6 +14506,73 @@ export interface components {
             assessmentId: string;
             expectedRevision: number;
         };
+        TeacherWorkflowStateResponse: {
+            schoolId: string;
+            /** @enum {string} */
+            workflow: "attendance" | "report_comments" | "logbook" | "discipline";
+            targetId: string;
+            version: number;
+            locked: boolean;
+            payload: {
+                [key: string]: unknown;
+            };
+            history: {
+                at: string;
+                subjectId: string;
+                action: string;
+                payload: {
+                    [key: string]: unknown;
+                };
+            }[];
+        };
+        SaveTeacherAttendanceDraftCommand: {
+            requestId: string;
+            expectedVersion: number;
+            anchor: {
+                /** @enum {string} */
+                kind: "lesson";
+                lessonSessionId: string;
+            } | {
+                /** @enum {string} */
+                kind: "daily";
+                classGroupId: string;
+                date: unknown;
+            };
+            entries: {
+                studentId: string;
+                /** @enum {string} */
+                status: "present" | "absent" | "late";
+                notes?: string | null;
+                teacherExplanation?: string | null;
+            }[];
+        };
+        SubmitTeacherAttendanceCommand: {
+            requestId: string;
+            expectedVersion: number;
+            anchor: {
+                /** @enum {string} */
+                kind: "lesson";
+                lessonSessionId: string;
+            } | {
+                /** @enum {string} */
+                kind: "daily";
+                classGroupId: string;
+                date: unknown;
+            };
+            entries: {
+                studentId: string;
+                /** @enum {string} */
+                status: "present" | "absent" | "late";
+                notes?: string | null;
+                teacherExplanation?: string | null;
+            }[];
+        };
+        RecordTeacherAttendanceArrivalCommand: {
+            requestId: string;
+            recordId: string;
+            occurredAt: unknown;
+            expectedVersion: number;
+        };
         AssessmentMarksCorrectionResponse: {
             id: string;
             schoolId: string;
@@ -14221,18 +14594,389 @@ export interface components {
                     /** @enum {string} */
                     designation: "scored" | "absent" | "exempt";
                     notes: string | null;
+                    /** @enum {string|null} */
+                    status?: "met" | "late" | "missed" | "excused" | null;
                 };
                 proposed: {
                     score: number | null;
                     /** @enum {string} */
                     designation: "scored" | "absent" | "exempt";
                     notes: string | null;
+                    /** @enum {string|null} */
+                    status?: "met" | "late" | "missed" | "excused" | null;
                 };
+            }[];
+            revisions: {
+                version: number;
+                reason: string;
+                changes: {
+                    resultId: string;
+                    studentId: string;
+                    revision: number;
+                    before: {
+                        score: number | null;
+                        /** @enum {string} */
+                        designation: "scored" | "absent" | "exempt";
+                        notes: string | null;
+                        /** @enum {string|null} */
+                        status?: "met" | "late" | "missed" | "excused" | null;
+                    };
+                    proposed: {
+                        score: number | null;
+                        /** @enum {string} */
+                        designation: "scored" | "absent" | "exempt";
+                        notes: string | null;
+                        /** @enum {string|null} */
+                        status?: "met" | "late" | "missed" | "excused" | null;
+                    };
+                }[];
+                /** Format: date-time */
+                at: string;
             }[];
             decidedBy?: string;
             /** Format: date-time */
             decidedAt?: string;
             rejectionReason?: string;
+        };
+        ReviseAssessmentMarksCorrectionCommand: {
+            requestId: string;
+            assessmentId: string;
+            expectedRevision: number;
+            reason: string;
+            changes: {
+                resultId: string;
+                proposed: {
+                    score: number | null;
+                    /** @enum {string} */
+                    designation: "scored" | "absent" | "exempt";
+                    notes: string | null;
+                    /** @enum {string|null} */
+                    status?: "met" | "late" | "missed" | "excused" | null;
+                };
+            }[];
+            correctionId: string;
+            expectedVersion: number;
+        };
+        TeacherCorrectionResponse: {
+            id: string;
+            schoolId: string;
+            classGroupId: string;
+            studentIds: string[];
+            periodId?: string;
+            /** @enum {string} */
+            workflow: "attendance" | "report_comments" | "logbook" | "discipline";
+            targetId: string;
+            /** @enum {string} */
+            status: "pending" | "approved" | "rejected" | "withdrawn";
+            version: number;
+            baseVersion: number;
+            authorSubjectId: string;
+            reason: string;
+            before: {
+                /** @enum {string} */
+                workflow: "attendance";
+                targetId: string;
+                /** @enum {string} */
+                status: "present" | "absent" | "late";
+                notes: string | null;
+                teacherExplanation: string | null;
+            } | {
+                /** @enum {string} */
+                workflow: "report_comments";
+                targetId: string;
+                teacherComment?: string | null;
+                sections: {
+                    sectionId: string;
+                    comment: string | null;
+                }[];
+            } | {
+                /** @enum {string} */
+                workflow: "logbook";
+                targetId: string;
+                sessionNote: string | null;
+                progress: {
+                    matterId: string;
+                    completedPercentage: number;
+                }[];
+            } | {
+                /** @enum {string} */
+                workflow: "discipline";
+                targetId: string;
+                title: string;
+                description: string | null;
+                /** @enum {string} */
+                kind: "positive" | "minor_infraction" | "major_infraction" | "emergency";
+                studentIds: string[];
+            };
+            proposal: {
+                /** @enum {string} */
+                workflow: "attendance";
+                targetId: string;
+                /** @enum {string} */
+                status: "present" | "absent" | "late";
+                notes: string | null;
+                teacherExplanation: string | null;
+            } | {
+                /** @enum {string} */
+                workflow: "report_comments";
+                targetId: string;
+                teacherComment?: string | null;
+                sections: {
+                    sectionId: string;
+                    comment: string | null;
+                }[];
+            } | {
+                /** @enum {string} */
+                workflow: "logbook";
+                targetId: string;
+                sessionNote: string | null;
+                progress: {
+                    matterId: string;
+                    completedPercentage: number;
+                }[];
+            } | {
+                /** @enum {string} */
+                workflow: "discipline";
+                targetId: string;
+                title: string;
+                description: string | null;
+                /** @enum {string} */
+                kind: "positive" | "minor_infraction" | "major_infraction" | "emergency";
+                studentIds: string[];
+            };
+            consequences: string[];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            decidedAt?: string;
+            decidedBy?: string;
+            rejectionReason?: string;
+            revisions: {
+                version: number;
+                reason: string;
+                before: {
+                    /** @enum {string} */
+                    workflow: "attendance";
+                    targetId: string;
+                    /** @enum {string} */
+                    status: "present" | "absent" | "late";
+                    notes: string | null;
+                    teacherExplanation: string | null;
+                } | {
+                    /** @enum {string} */
+                    workflow: "report_comments";
+                    targetId: string;
+                    teacherComment?: string | null;
+                    sections: {
+                        sectionId: string;
+                        comment: string | null;
+                    }[];
+                } | {
+                    /** @enum {string} */
+                    workflow: "logbook";
+                    targetId: string;
+                    sessionNote: string | null;
+                    progress: {
+                        matterId: string;
+                        completedPercentage: number;
+                    }[];
+                } | {
+                    /** @enum {string} */
+                    workflow: "discipline";
+                    targetId: string;
+                    title: string;
+                    description: string | null;
+                    /** @enum {string} */
+                    kind: "positive" | "minor_infraction" | "major_infraction" | "emergency";
+                    studentIds: string[];
+                };
+                proposal: {
+                    /** @enum {string} */
+                    workflow: "attendance";
+                    targetId: string;
+                    /** @enum {string} */
+                    status: "present" | "absent" | "late";
+                    notes: string | null;
+                    teacherExplanation: string | null;
+                } | {
+                    /** @enum {string} */
+                    workflow: "report_comments";
+                    targetId: string;
+                    teacherComment?: string | null;
+                    sections: {
+                        sectionId: string;
+                        comment: string | null;
+                    }[];
+                } | {
+                    /** @enum {string} */
+                    workflow: "logbook";
+                    targetId: string;
+                    sessionNote: string | null;
+                    progress: {
+                        matterId: string;
+                        completedPercentage: number;
+                    }[];
+                } | {
+                    /** @enum {string} */
+                    workflow: "discipline";
+                    targetId: string;
+                    title: string;
+                    description: string | null;
+                    /** @enum {string} */
+                    kind: "positive" | "minor_infraction" | "major_infraction" | "emergency";
+                    studentIds: string[];
+                };
+                /** Format: date-time */
+                at: string;
+            }[];
+            documentIssuanceId?: string;
+        };
+        RequestTeacherCorrectionCommand: {
+            requestId: string;
+            expectedVersion: number;
+            reason: string;
+            proposal: {
+                /** @enum {string} */
+                workflow: "attendance";
+                targetId: string;
+                /** @enum {string} */
+                status: "present" | "absent" | "late";
+                notes: string | null;
+                teacherExplanation: string | null;
+            } | {
+                /** @enum {string} */
+                workflow: "report_comments";
+                targetId: string;
+                teacherComment?: string | null;
+                sections: {
+                    sectionId: string;
+                    comment: string | null;
+                }[];
+            } | {
+                /** @enum {string} */
+                workflow: "logbook";
+                targetId: string;
+                sessionNote: string | null;
+                progress: {
+                    matterId: string;
+                    completedPercentage: number;
+                }[];
+            } | {
+                /** @enum {string} */
+                workflow: "discipline";
+                targetId: string;
+                title: string;
+                description: string | null;
+                /** @enum {string} */
+                kind: "positive" | "minor_infraction" | "major_infraction" | "emergency";
+                studentIds: string[];
+            };
+        };
+        ReviseTeacherCorrectionCommand: {
+            requestId: string;
+            expectedVersion: number;
+            reason: string;
+            proposal: {
+                /** @enum {string} */
+                workflow: "attendance";
+                targetId: string;
+                /** @enum {string} */
+                status: "present" | "absent" | "late";
+                notes: string | null;
+                teacherExplanation: string | null;
+            } | {
+                /** @enum {string} */
+                workflow: "report_comments";
+                targetId: string;
+                teacherComment?: string | null;
+                sections: {
+                    sectionId: string;
+                    comment: string | null;
+                }[];
+            } | {
+                /** @enum {string} */
+                workflow: "logbook";
+                targetId: string;
+                sessionNote: string | null;
+                progress: {
+                    matterId: string;
+                    completedPercentage: number;
+                }[];
+            } | {
+                /** @enum {string} */
+                workflow: "discipline";
+                targetId: string;
+                title: string;
+                description: string | null;
+                /** @enum {string} */
+                kind: "positive" | "minor_infraction" | "major_infraction" | "emergency";
+                studentIds: string[];
+            };
+            correctionId: string;
+        };
+        ApproveTeacherCorrectionCommand: {
+            requestId: string;
+            correctionId: string;
+            expectedVersion: number;
+            /** @default false */
+            confirmConsequences: boolean;
+        };
+        RejectTeacherCorrectionCommand: {
+            requestId: string;
+            correctionId: string;
+            expectedVersion: number;
+            /** @default false */
+            confirmConsequences: boolean;
+            reason: string;
+        };
+        WithdrawTeacherCorrectionCommand: {
+            requestId: string;
+            correctionId: string;
+            expectedVersion: number;
+            /** @default false */
+            confirmConsequences: boolean;
+        };
+        SaveTeacherLogbookCommand: {
+            requestId: string;
+            expectedVersion: number;
+            proposal: {
+                /** @enum {string} */
+                workflow: "logbook";
+                targetId: string;
+                sessionNote: string | null;
+                progress: {
+                    matterId: string;
+                    completedPercentage: number;
+                }[];
+            };
+        };
+        TeacherWorkflowStateListResponse: components["schemas"]["TeacherWorkflowStateResponse"][];
+        ValidateTeacherLogbookCommand: {
+            requestId: string;
+            lessonSessionIds: string[];
+        };
+        EditTeacherIncidentCommand: {
+            requestId: string;
+            expectedVersion: number;
+            proposal: {
+                /** @enum {string} */
+                workflow: "discipline";
+                targetId: string;
+                title: string;
+                description: string | null;
+                /** @enum {string} */
+                kind: "positive" | "minor_infraction" | "major_infraction" | "emergency";
+                studentIds: string[];
+            };
+        };
+        TakeOverTeacherIncidentCommand: {
+            requestId: string;
+            incidentId: string;
+        };
+        AppendIncidentFollowUpCommand: {
+            requestId: string;
+            incidentId: string;
+            text: string;
         };
         RequestAssessmentMarksCorrectionCommand: {
             requestId: string;
@@ -14246,6 +14990,8 @@ export interface components {
                     /** @enum {string} */
                     designation: "scored" | "absent" | "exempt";
                     notes: string | null;
+                    /** @enum {string|null} */
+                    status?: "met" | "late" | "missed" | "excused" | null;
                 };
             }[];
         };
@@ -15971,6 +16717,233 @@ export interface components {
             schoolId: string;
             /** @enum {string} */
             templateKey?: "announcement.published" | "report_card.published" | "attendance.recorded" | "assessment.result_recorded" | "incident.recorded" | "assessment.due_soon" | "activity.reminder" | "calendar.event_reminder" | "student_photo.approved" | "student_photo.rejected" | "family_feedback.opened" | "family_feedback.reminder" | "family_feedback.published" | "family_feedback.purge_reminder" | "account_invitation";
+        };
+        TeacherAttendanceCallResponse: {
+            key: string;
+            version: number;
+            submitted: boolean;
+            entries: {
+                studentId: string;
+                /** @enum {string} */
+                status: "present" | "absent" | "late";
+                notes?: string | null;
+                teacherExplanation?: string | null;
+            }[];
+            records: {
+                [key: string]: unknown;
+            }[];
+            students: {
+                id: string;
+                firstName: string;
+                lastName: string;
+            }[];
+        };
+        GetTeacherAttendanceCallQuery: {
+            anchor: {
+                /** @enum {string} */
+                kind: "lesson";
+                lessonSessionId: string;
+            } | {
+                /** @enum {string} */
+                kind: "daily";
+                classGroupId: string;
+                date: unknown;
+            };
+        };
+        TeacherWorkflowEligibilityResponse: {
+            version: number;
+            locked: boolean;
+            official: {
+                /** @enum {string} */
+                workflow: "attendance";
+                targetId: string;
+                /** @enum {string} */
+                status: "present" | "absent" | "late";
+                notes: string | null;
+                teacherExplanation: string | null;
+            } | {
+                /** @enum {string} */
+                workflow: "report_comments";
+                targetId: string;
+                teacherComment?: string | null;
+                sections: {
+                    sectionId: string;
+                    comment: string | null;
+                }[];
+            } | {
+                /** @enum {string} */
+                workflow: "logbook";
+                targetId: string;
+                sessionNote: string | null;
+                progress: {
+                    matterId: string;
+                    completedPercentage: number;
+                }[];
+            } | {
+                /** @enum {string} */
+                workflow: "discipline";
+                targetId: string;
+                title: string;
+                description: string | null;
+                /** @enum {string} */
+                kind: "positive" | "minor_infraction" | "major_infraction" | "emergency";
+                studentIds: string[];
+            };
+            context: {
+                className: string;
+                teacherName: string;
+                students: {
+                    id: string;
+                    name: string;
+                }[];
+            };
+            history: {
+                at: string;
+                subjectId: string;
+                action: string;
+                payload: {
+                    [key: string]: unknown;
+                };
+            }[];
+            corrections: components["schemas"]["TeacherCorrectionResponse"][];
+            consequences: string[];
+        };
+        GetTeacherWorkflowStateQuery: {
+            proposal: {
+                /** @enum {string} */
+                workflow: "attendance";
+                targetId: string;
+                /** @enum {string} */
+                status: "present" | "absent" | "late";
+                notes: string | null;
+                teacherExplanation: string | null;
+            } | {
+                /** @enum {string} */
+                workflow: "report_comments";
+                targetId: string;
+                teacherComment?: string | null;
+                sections: {
+                    sectionId: string;
+                    comment: string | null;
+                }[];
+            } | {
+                /** @enum {string} */
+                workflow: "logbook";
+                targetId: string;
+                sessionNote: string | null;
+                progress: {
+                    matterId: string;
+                    completedPercentage: number;
+                }[];
+            } | {
+                /** @enum {string} */
+                workflow: "discipline";
+                targetId: string;
+                title: string;
+                description: string | null;
+                /** @enum {string} */
+                kind: "positive" | "minor_infraction" | "major_infraction" | "emergency";
+                studentIds: string[];
+            };
+        };
+        TeacherCorrectionsResponse: {
+            items: ((components["schemas"]["TeacherCorrectionResponse"] & {
+                title: string;
+                className: string;
+                teacherName: string;
+                students: {
+                    id: string;
+                    name: string;
+                }[];
+            }) | (components["schemas"]["AssessmentMarksCorrectionResponse"] & {
+                /** @enum {string} */
+                workflow: "grades";
+                targetId: string;
+                classGroupId: string;
+                periodId: string;
+                studentIds: string[];
+                title: string;
+                className: string;
+                teacherName: string;
+                students: {
+                    id: string;
+                    name: string;
+                }[];
+            }))[];
+            filters: {
+                classes: {
+                    value: string;
+                    label: string;
+                }[];
+                teachers: {
+                    value: string;
+                    label: string;
+                }[];
+                students: {
+                    value: string;
+                    label: string;
+                }[];
+            };
+            total: number;
+            offset: number;
+            limit: number;
+        };
+        ListTeacherCorrectionsQuery: {
+            /** @enum {string} */
+            workflow?: "grades" | "attendance" | "report_comments" | "logbook" | "discipline";
+            /**
+             * @default pending
+             * @enum {string}
+             */
+            status: "pending" | "approved" | "rejected" | "withdrawn";
+            classGroupId?: string;
+            periodId?: string;
+            teacherSubjectId?: string;
+            studentId?: string;
+            search?: string;
+            from?: unknown;
+            to?: unknown;
+            /** @default 0 */
+            offset: number;
+            /** @default 25 */
+            limit: number;
+        };
+        TeacherCorrectionDetailResponse: {
+            context: {
+                className: string;
+                teacherName: string;
+                students: {
+                    id: string;
+                    name: string;
+                }[];
+            };
+            correction: components["schemas"]["TeacherCorrectionResponse"] | (components["schemas"]["AssessmentMarksCorrectionResponse"] & {
+                /** @enum {string} */
+                workflow: "grades";
+                targetId: string;
+                classGroupId: string;
+                periodId: string;
+                studentIds: string[];
+            });
+            original?: {
+                [key: string]: unknown;
+            };
+            history: {
+                at: string;
+                subjectId: string;
+                action: string;
+                payload: {
+                    [key: string]: unknown;
+                };
+            }[];
+            allowedActions: {
+                approve: boolean;
+                reject: boolean;
+                withdraw: boolean;
+            };
+        };
+        GetTeacherCorrectionQuery: {
+            correctionId: string;
         };
         AssessmentMarksReviewResponse: {
             assessment: components["schemas"]["Assessment"];
@@ -26225,6 +27198,1098 @@ export interface operations {
             };
         };
     };
+    "commands.saveTeacherAttendanceDraft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description save-teacher-attendance-draft payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SaveTeacherAttendanceDraftCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed save-teacher-attendance-draft */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherWorkflowStateResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "commands.submitTeacherAttendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description submit-teacher-attendance payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SubmitTeacherAttendanceCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed submit-teacher-attendance */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherWorkflowStateResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "commands.recordTeacherAttendanceArrival": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description record-teacher-attendance-arrival payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RecordTeacherAttendanceArrivalCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed record-teacher-attendance-arrival */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherWorkflowStateResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "commands.reviseAssessmentMarksCorrection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description revise-assessment-marks-correction payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviseAssessmentMarksCorrectionCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed revise-assessment-marks-correction */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssessmentMarksCorrectionResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "commands.requestTeacherCorrection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description request-teacher-correction payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RequestTeacherCorrectionCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed request-teacher-correction */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherCorrectionResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "commands.reviseTeacherCorrection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description revise-teacher-correction payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviseTeacherCorrectionCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed revise-teacher-correction */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherCorrectionResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "commands.approveTeacherCorrection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description approve-teacher-correction payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ApproveTeacherCorrectionCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed approve-teacher-correction */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherCorrectionResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "commands.rejectTeacherCorrection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description reject-teacher-correction payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RejectTeacherCorrectionCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed reject-teacher-correction */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherCorrectionResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "commands.withdrawTeacherCorrection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description withdraw-teacher-correction payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["WithdrawTeacherCorrectionCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed withdraw-teacher-correction */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherCorrectionResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "commands.saveTeacherLogbook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description save-teacher-logbook payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SaveTeacherLogbookCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed save-teacher-logbook */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherWorkflowStateResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "commands.validateTeacherLogbook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description validate-teacher-logbook payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ValidateTeacherLogbookCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed validate-teacher-logbook */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherWorkflowStateListResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "commands.editTeacherIncident": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description edit-teacher-incident payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EditTeacherIncidentCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed edit-teacher-incident */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherWorkflowStateResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "commands.takeOverTeacherIncident": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description take-over-teacher-incident payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TakeOverTeacherIncidentCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed take-over-teacher-incident */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherWorkflowStateResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "commands.appendIncidentFollowUp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description append-incident-follow-up payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AppendIncidentFollowUpCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed append-incident-follow-up */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherWorkflowStateResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
     "commands.requestAssessmentMarksCorrection": {
         parameters: {
             query?: never;
@@ -33734,6 +35799,318 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchoolNotificationTemplates"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "queries.getTeacherAttendanceCall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description get-teacher-attendance-call payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["GetTeacherAttendanceCallQuery"];
+            };
+        };
+        responses: {
+            /** @description Resolved get-teacher-attendance-call */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherAttendanceCallResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "queries.getTeacherWorkflowState": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description get-teacher-workflow-state payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["GetTeacherWorkflowStateQuery"];
+            };
+        };
+        responses: {
+            /** @description Resolved get-teacher-workflow-state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherWorkflowEligibilityResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "queries.listTeacherCorrections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description list-teacher-corrections payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ListTeacherCorrectionsQuery"];
+            };
+        };
+        responses: {
+            /** @description Resolved list-teacher-corrections */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherCorrectionsResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "queries.getTeacherCorrection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description get-teacher-correction payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["GetTeacherCorrectionQuery"];
+            };
+        };
+        responses: {
+            /** @description Resolved get-teacher-correction */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherCorrectionDetailResponse"];
                 };
             };
             /** @description Invalid request payload */

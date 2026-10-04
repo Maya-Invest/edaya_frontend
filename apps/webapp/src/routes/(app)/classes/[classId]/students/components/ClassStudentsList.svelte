@@ -4,6 +4,7 @@
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { requestDocumentIssuanceBatchMutation, requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
+	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
@@ -185,6 +186,11 @@
 			</PermissionGate>
 		{/snippet}
 	</ListPageHeader>
+
+	<div class="mb-4 flex flex-wrap items-center gap-3">
+		<span class="text-xs text-muted-foreground">{$t('academic.assessmentMetrics')}</span>
+		<AcademicPeriodSelector />
+	</div>
 
 	{#if createOpen.open}
 		<StudentCreateModal

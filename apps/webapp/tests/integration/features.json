@@ -1730,9 +1730,9 @@
   },
   {
     "id": "web.scenario.0248",
-    "feature": "web.school.marks.review",
+    "feature": "web.school.corrections",
     "module": "École",
-    "endpoint": "http://localhost:5173/school/marks-review",
+    "endpoint": "http://localhost:5173/school/corrections",
     "action": "Navigation directe — contenu visible"
   },
   {
@@ -2549,10 +2549,10 @@
   },
   {
     "id": "web.scenario.0365",
-    "feature": "web.school.marks.review",
+    "feature": "web.school.corrections",
     "module": "École",
-    "endpoint": "http://localhost:5173/school/marks-review",
-    "action": "Sidebar — lien marks.reviewQueue accessible"
+    "endpoint": "http://localhost:5173/school/corrections",
+    "action": "Sidebar — lien corrections.title accessible"
   },
   {
     "id": "web.scenario.0366",
@@ -2798,5 +2798,12 @@
     "module": "Configuration",
     "endpoint": "http://localhost:5173/configuration/tools",
     "action": "Sidebar — lien config.tools accessible"
+  },
+  {
+    "id": "web.school.corrections.legacy-route",
+    "feature": "web.school.corrections",
+    "module": "École",
+    "endpoint": "http://localhost:5173/school/marks-review",
+    "action": "Redirect — cible attendue"
   }
 ]

@@ -15,13 +15,7 @@ OpenAPI export and client generation live **only** in `edaya_backend`. Web consu
 
 ## CI
 
-`edaya_web` **verify** and **deploy** install `@maya-invest/edaya-api-client` from **GitHub Packages** (`staging` / `production` dist-tags). They do not check out `edaya_backend`.
-
-**Playwright integration** checks out only `edaya_backend` (which owns Identity) (empty in-process APIs; no demo seed). The webapp still uses the published API client — not the sibling `file:` link. See [ci-setup.md](./ci-setup.md#sibling-identity-and-school-playwright) for refs, checkout layout, and `IDENTITY_CHECKOUT_TOKEN`.
-
-One-time org setup: grant `edaya_web` **Read** on the `@maya-invest/edaya-api-client` package.
-
-`edaya_backend` CI exports OpenAPI and drift-checks `package/api-client/src/` in-repo.
+Unit checks install the committed vendored API client with a frozen lockfile. Full PR/release qualification resolves a backend candidate once, verifies release contracts and source fingerprints, and runs all five browser suites against its unified disposable API. Resolution prefers explicit `backend_ref`, then the matching consumer branch, then the PR target. Registry publication is needed only for a deployment's exact qualified client version. See [ci-setup.md](./ci-setup.md).
 
 ## Local install
 

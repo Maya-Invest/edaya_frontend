@@ -81,7 +81,7 @@
 		</DrawerEmptyState>
 		<p class="text-center text-xs text-muted-foreground">{$t('reportCards.emptyStudentHint')}</p>
 		<div class="flex justify-center">
-			<Button class="rounded-full" onclick={generate}>
+			<Button class="rounded-full" disabled={!academicContext.periodId} onclick={generate}>
 				<FileSpreadsheet class="h-4 w-4" />
 				{$t('reportCards.generate')}
 			</Button>

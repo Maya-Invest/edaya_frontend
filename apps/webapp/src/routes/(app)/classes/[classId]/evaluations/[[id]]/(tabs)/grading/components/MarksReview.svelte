@@ -24,7 +24,6 @@
 	let drafts = $state<Record<string, { selected: boolean; score: string; designation: Values['designation']; notes: string }>>({});
 	let reason = $state('');
 	let busy = $state(false);
-	let confirmed = $state(false);
 	const selectedCorrection = $derived(grading.review?.corrections.find(row => row.id === modals.target));
 	const rows = $derived(grading.review?.results.filter(row => !grading.review?.publishedResultIds.includes(row.id)) ?? []);
 	const changes = $derived(rows.filter(row => drafts[row.id]?.selected).map(row => ({ resultId: row.id, proposed: { score: drafts[row.id].designation === 'scored' ? Number(drafts[row.id].score) : null, designation: drafts[row.id].designation, notes: drafts[row.id].notes.trim() || null } })));
@@ -51,7 +50,6 @@
 				modals.close();
 				drafts = {};
 				reason = '';
-				confirmed = false;
 			}
 		}
 		finally { busy = false; }
@@ -85,24 +83,23 @@
 	</section>
 {/if}
 <FormModal bind:open={submit.open} title={$t('marks.submit')} {busy} onSubmit={() => confirm('submit')}><p>{$t('marks.submitHint')}</p></FormModal>
-<FormModal bind:open={request.open} title={$t('marks.requestCorrection')} {busy} submitDisabled={!valid || !confirmed} onSubmit={() => confirm('request')}>
+<FormModal bind:open={request.open} title={$t('marks.requestCorrection')} {busy} submitDisabled={!valid} onSubmit={() => confirm('request')}>
 	<div class="space-y-4">
 		<p>{$t('marks.correctionHint')}</p>
 		{#each rows as row (row.id)}
 			{#if drafts[row.id]}
 				<fieldset class="space-y-2 rounded-xl bg-secondary p-3">
-					<label class="flex gap-2"><input type="checkbox" bind:checked={drafts[row.id].selected} onchange={() => confirmed = false} /> {name(row.studentId)} · {display(row)}</label>
+					<label class="flex gap-2"><input type="checkbox" bind:checked={drafts[row.id].selected} /> {name(row.studentId)} · {display(row)}</label>
 					{#if drafts[row.id].selected}
-						<label>{$t('marks.designation')}<select class="w-full rounded-md border p-2" bind:value={drafts[row.id].designation} onchange={() => confirmed = false}>{#each ['scored', 'absent', 'exempt'] as designation (designation)}<option value={designation}>{$t(`marks.${designation}`)}</option>{/each}</select></label>
-						{#if drafts[row.id].designation === 'scored'}<label>{$t('marks.scored')}<input class="w-full rounded-md border p-2" type="text" inputmode="decimal" bind:value={drafts[row.id].score} oninput={() => confirmed = false} /></label>{/if}
-						<label>{$t('marks.comment')}<Textarea bind:value={drafts[row.id].notes} oninput={() => confirmed = false} /></label>
+						<label>{$t('marks.designation')}<select class="w-full rounded-md border p-2" bind:value={drafts[row.id].designation}>{#each ['scored', 'absent', 'exempt'] as designation (designation)}<option value={designation}>{$t(`marks.${designation}`)}</option>{/each}</select></label>
+						{#if drafts[row.id].designation === 'scored'}<label>{$t('marks.scored')}<input class="w-full rounded-md border p-2" type="text" inputmode="decimal" bind:value={drafts[row.id].score} /></label>{/if}
+						<label>{$t('marks.comment')}<Textarea bind:value={drafts[row.id].notes} /></label>
 					{/if}
 				</fieldset>
 			{/if}
 		{/each}
 		<label>{$t('marks.reasonRequired')}<Textarea bind:value={reason} required /></label>
 		{#each changes as change (change.resultId)}<p>{name(rows.find(row => row.id === change.resultId)!.studentId)}: {display(rows.find(row => row.id === change.resultId)!)} → {display(change.proposed)}</p>{/each}
-		<label class="flex gap-2"><input type="checkbox" bind:checked={confirmed} /> {$t('marks.confirmChanges')}</label>
 	</div>
 </FormModal>
 <FormModal bind:open={approve.open} title={$t('marks.approve')} {busy} submitDisabled={!selectedCorrection?.allowedActions.approve} onSubmit={() => confirm('approve')}><p>{$t('marks.approveHint')}</p></FormModal>

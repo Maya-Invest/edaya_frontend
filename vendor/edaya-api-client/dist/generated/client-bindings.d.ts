@@ -1173,6 +1173,76 @@ export declare const clientBindings: {
             readonly requestSchemaName: "SubmitAssessmentMarksCommand";
             readonly responseSchemaName: "Assessment";
         };
+        readonly saveTeacherAttendanceDraft: {
+            readonly publicName: "save-teacher-attendance-draft";
+            readonly requestSchemaName: "SaveTeacherAttendanceDraftCommand";
+            readonly responseSchemaName: "TeacherWorkflowStateResponse";
+        };
+        readonly submitTeacherAttendance: {
+            readonly publicName: "submit-teacher-attendance";
+            readonly requestSchemaName: "SubmitTeacherAttendanceCommand";
+            readonly responseSchemaName: "TeacherWorkflowStateResponse";
+        };
+        readonly recordTeacherAttendanceArrival: {
+            readonly publicName: "record-teacher-attendance-arrival";
+            readonly requestSchemaName: "RecordTeacherAttendanceArrivalCommand";
+            readonly responseSchemaName: "TeacherWorkflowStateResponse";
+        };
+        readonly reviseAssessmentMarksCorrection: {
+            readonly publicName: "revise-assessment-marks-correction";
+            readonly requestSchemaName: "ReviseAssessmentMarksCorrectionCommand";
+            readonly responseSchemaName: "AssessmentMarksCorrectionResponse";
+        };
+        readonly requestTeacherCorrection: {
+            readonly publicName: "request-teacher-correction";
+            readonly requestSchemaName: "RequestTeacherCorrectionCommand";
+            readonly responseSchemaName: "TeacherCorrectionResponse";
+        };
+        readonly reviseTeacherCorrection: {
+            readonly publicName: "revise-teacher-correction";
+            readonly requestSchemaName: "ReviseTeacherCorrectionCommand";
+            readonly responseSchemaName: "TeacherCorrectionResponse";
+        };
+        readonly approveTeacherCorrection: {
+            readonly publicName: "approve-teacher-correction";
+            readonly requestSchemaName: "ApproveTeacherCorrectionCommand";
+            readonly responseSchemaName: "TeacherCorrectionResponse";
+        };
+        readonly rejectTeacherCorrection: {
+            readonly publicName: "reject-teacher-correction";
+            readonly requestSchemaName: "RejectTeacherCorrectionCommand";
+            readonly responseSchemaName: "TeacherCorrectionResponse";
+        };
+        readonly withdrawTeacherCorrection: {
+            readonly publicName: "withdraw-teacher-correction";
+            readonly requestSchemaName: "WithdrawTeacherCorrectionCommand";
+            readonly responseSchemaName: "TeacherCorrectionResponse";
+        };
+        readonly saveTeacherLogbook: {
+            readonly publicName: "save-teacher-logbook";
+            readonly requestSchemaName: "SaveTeacherLogbookCommand";
+            readonly responseSchemaName: "TeacherWorkflowStateResponse";
+        };
+        readonly validateTeacherLogbook: {
+            readonly publicName: "validate-teacher-logbook";
+            readonly requestSchemaName: "ValidateTeacherLogbookCommand";
+            readonly responseSchemaName: "TeacherWorkflowStateListResponse";
+        };
+        readonly editTeacherIncident: {
+            readonly publicName: "edit-teacher-incident";
+            readonly requestSchemaName: "EditTeacherIncidentCommand";
+            readonly responseSchemaName: "TeacherWorkflowStateResponse";
+        };
+        readonly takeOverTeacherIncident: {
+            readonly publicName: "take-over-teacher-incident";
+            readonly requestSchemaName: "TakeOverTeacherIncidentCommand";
+            readonly responseSchemaName: "TeacherWorkflowStateResponse";
+        };
+        readonly appendIncidentFollowUp: {
+            readonly publicName: "append-incident-follow-up";
+            readonly requestSchemaName: "AppendIncidentFollowUpCommand";
+            readonly responseSchemaName: "TeacherWorkflowStateResponse";
+        };
         readonly requestAssessmentMarksCorrection: {
             readonly publicName: "request-assessment-marks-correction";
             readonly requestSchemaName: "RequestAssessmentMarksCorrectionCommand";
@@ -1660,6 +1730,26 @@ export declare const clientBindings: {
         };
     };
     readonly queries: {
+        readonly getTeacherAttendanceCall: {
+            readonly publicName: "get-teacher-attendance-call";
+            readonly requestSchemaName: "GetTeacherAttendanceCallQuery";
+            readonly responseSchemaName: "TeacherAttendanceCallResponse";
+        };
+        readonly getTeacherWorkflowState: {
+            readonly publicName: "get-teacher-workflow-state";
+            readonly requestSchemaName: "GetTeacherWorkflowStateQuery";
+            readonly responseSchemaName: "TeacherWorkflowEligibilityResponse";
+        };
+        readonly listTeacherCorrections: {
+            readonly publicName: "list-teacher-corrections";
+            readonly requestSchemaName: "ListTeacherCorrectionsQuery";
+            readonly responseSchemaName: "TeacherCorrectionsResponse";
+        };
+        readonly getTeacherCorrection: {
+            readonly publicName: "get-teacher-correction";
+            readonly requestSchemaName: "GetTeacherCorrectionQuery";
+            readonly responseSchemaName: "TeacherCorrectionDetailResponse";
+        };
         readonly getAssessmentMarksReview: {
             readonly publicName: "get-assessment-marks-review";
             readonly requestSchemaName: "GetAssessmentMarksReviewQuery";

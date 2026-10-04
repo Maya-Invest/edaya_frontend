@@ -59,7 +59,8 @@ Use **Button**, **Input**, **Label**, **Checkbox**, **Select**, **Dialog**, **Po
 | Component | Path | Use for |
 |-----------|------|---------|
 | **AppSidebar** | `layout/AppSidebar.svelte` | Module navigation |
-| **AcademicHeader** | `layout/AcademicHeader.svelte` | School · year/period · language · user menu |
+| **AcademicYearSelector** | `layout/AcademicYearSelector.svelte` | Sidebar year selection beneath school; collapsed calendar trigger and mobile navigation |
+| **AcademicPeriodSelector** | `layout/AcademicPeriodSelector.svelte` | Shared term context beside affected page/tab/action content; persistent label, dated options and empty-year state |
 | **ClassSelector** | `layout/ClassSelector.svelte` | Class context in Classes module |
 
 Feature routes **do not** reimplement shell chrome.
@@ -261,3 +262,7 @@ When building or refactoring a screen:
 `/login/demo` retains the development-only staff account picker. Choosing a fixture account only prefills `PasswordlessPanel`; sending and verifying its OTP, optional authenticator steps, resend and testing controls use the existing flow. Choosing another account unmounts the panel and clears its transient challenge. No password or automatic sign-in is used by the picker.
 
 Identity advertises phone availability. Until discovery succeeds with phone available, authentication and contact-linking forms display email-only labels, omit phone choices and country hints, and reject pasted phone identifiers locally with translated feedback. Discovery failures fail closed to email-only; phone controls return when availability is explicitly restored. Email OTP, authenticator verification/enrollment and recovery remain available.
+
+## Correction review controls
+
+Correction lists use ListPageHeader, FilterSelect, FilterPanel, PageQuery and DataState. Correction detail uses the shared accessible Dialog drawer and FormModal for rejection/consequence confirmation. Structured logbook content, objectives, homework, family summary and progress render as individual differences; use subject/chapter/student names instead of internal identifiers.

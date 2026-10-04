@@ -1,14 +1,15 @@
-name: Deploy to Cloudflare
+name: Deploy qualified web build
 
 on:
   workflow_call:
     inputs:
       package:
-        description: Bun workspace package to deploy (e.g. @edaya/webapp)
         required: true
         type: string
       channel:
-        description: API client + deploy channel (staging or production)
+        required: true
+        type: string
+      backend_sha:
         required: true
         type: string
     secrets:
@@ -21,26 +22,39 @@ permissions:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
-      - name: Checkout web
-        uses: actions/checkout@v5
-
-      - name: Configure GitHub Packages auth
-        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
-
-      - name: Use published API client
-        run: node .github/scripts/ci-use-published-api-client.mjs "${{ inputs.channel }}"
-
-      - name: Setup Bun and Turbo cache
-        uses: ./.github/actions/ci-bun-turbo
-
-      - name: Deploy ${{ inputs.package }}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/ci-bun-turbo
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
+          registry-url: https://npm.pkg.github.com
+          scope: '@maya-invest'
+      - name: Consume only the qualified immutable client
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+          API_CLIENT_VERSION: 0.0.0-production.${{ inputs.backend_sha }}
+          API_CLIENT_SOURCE_COMMIT: ${{ inputs.backend_sha }}
+        run: |
+          node .github/scripts/ci-use-published-api-client.mjs
+          # The publication substitution is temporary and deliberately changes
+          # the runner's install specification; the committed lock remains the CI baseline.
+          bun install
+          bun run contract:check
+      - name: Deploy qualified application
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CHANNEL: ${{ inputs.channel }}
+          PACKAGE: ${{ inputs.package }}
         run: |
-          case "${{ inputs.channel }}" in
-            production) DEPLOY_SCRIPT=deploy:production ;;
-            *) echo "Use the staging release coordinator" >&2; exit 1 ;;
+          test "$CHANNEL" = production
+          case "$PACKAGE" in
+            @edaya/webapp|@edaya/webadmin) bun --filter "$PACKAGE" deploy:production ;;
+            *) echo 'Unsupported deployment package' >&2; exit 1 ;;
           esac
-          bun --filter "${{ inputs.package }}" "$DEPLOY_SCRIPT"

@@ -26,6 +26,12 @@ const EVENTS_VERSION_FAMILIES = ['incidents'] as const satisfies readonly Entity
 const EVENTS_PAGE_STATE_KEY = Symbol('events-page-state');
 
 export class EventsPageState {
+	async takeOverIncident(incidentId: string): Promise<boolean> {
+		const { getBrowserSchoolClient } = await import('$lib/api/school-client');
+		await getBrowserSchoolClient().commands.takeOverTeacherIncident({ requestId: crypto.randomUUID(), incidentId });
+		return true;
+	}
+
 	incidents = $state<Incident[]>([]);
 	students = $state<Student[]>([]);
 

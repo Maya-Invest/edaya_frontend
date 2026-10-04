@@ -3,6 +3,7 @@ import { ensurePlaywrightChromium } from '../../../scripts/playwright-browsers';
 import { assertStackReady } from './support/auth';
 import { createDemoContext } from './support/context';
 import { DEMO_DRY_RUN_OUT_DIR, DEMO_WEBAPP_BASE } from './support/paths';
+import { beginExecution } from '../support/execution-metadata';
 import { DemoReporter } from './support/reporter';
 import type { DemoSummary } from './support/types';
 import { runCoreDemoScenes } from './scenes/core-demo';
@@ -28,6 +29,7 @@ export async function runDemoDryRun(options: RunDemoDryRunOptions = {}): Promise
 
 	await assertStackReady(base);
 	await mkdir(outDir, { recursive: true });
+	const completeExecution = beginExecution(outDir);
 	ensurePlaywrightChromium();
 	const { chromium } = await import('playwright');
 
@@ -62,6 +64,7 @@ export async function runDemoDryRun(options: RunDemoDryRunOptions = {}): Promise
 	await reporter.writeResults(outDir, summary);
 	reporter.printSummary(summary);
 	await browser.close();
+	if (summary.failed === 0 && summary.skipped === 0 && summary.passed > 0) completeExecution();
 
 	return summary;
 }

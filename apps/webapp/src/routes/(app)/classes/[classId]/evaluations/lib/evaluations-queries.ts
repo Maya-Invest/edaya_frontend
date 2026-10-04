@@ -24,6 +24,9 @@ export async function loadEvaluationGradingData(
 
 export async function loadEvaluationsSlice(classId: string): Promise<EvaluationsPageSlice> {
 	const periodId = academicContext.periodId;
+	if (!periodId) {
+		return emptyEvaluationsSlice(classId);
+	}
 	const client = getBrowserSchoolClient();
 	const [{ evaluations }, subjects] = await Promise.all([
 		loadClassEvaluationsPageData(client, classId, periodId).then(({ evaluations }) => ({ evaluations })),

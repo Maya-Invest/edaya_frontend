@@ -9,6 +9,7 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
+	import { t } from '$lib/i18n';
 	import { Plus } from '$lib/icons';
 
 	let {
@@ -30,6 +31,8 @@
 	let evaluations = $state<Evaluation[]>([]);
 	let assessmentId = $state('');
 	let score = $state('');
+	let loadedPeriodId = $state('');
+	const loadedPeriod = $derived(academicContext.periods.find(period => period.id === loadedPeriodId));
 
 	const selectedEvaluation = $derived(evaluations.find(evaluation => evaluation.id === assessmentId));
 	const assessmentLabel = $derived(
@@ -39,7 +42,7 @@
 	);
 	const numericScore = $derived(Number.parseFloat(score));
 	const canSubmit = $derived.by(() => {
-		if (!assessmentId || !Number.isFinite(numericScore) || numericScore < 0) {
+		if (!loadedPeriodId || loadedPeriodId !== academicContext.periodId || !assessmentId || !Number.isFinite(numericScore) || numericScore < 0) {
 			return false;
 		}
 		return selectedEvaluation?.marksStatus === 'draft' && numericScore <= selectedEvaluation.outOf;
@@ -54,6 +57,7 @@
 
 	async function loadEvaluations() {
 		const periodId = academicContext.periodId;
+		loadedPeriodId = periodId;
 		if (!periodId || !s.classId) {
 			evaluations = [];
 			return;
@@ -119,6 +123,10 @@
 	onCancel={resetForm}
 	onSubmit={submit}
 >
+	<p class="text-sm text-muted-foreground">
+		{$t('academic.term')} · {loadedPeriod?.label ?? $t('academic.noPeriodsForYear')}
+		{#if loadedPeriod}<span class="ml-2 font-sans text-xs tabular-nums">{loadedPeriod.range}</span>{/if}
+	</p>
 	{#if loadingEvaluations}
 		<p class="rounded-xl bg-secondary/40 p-3 text-sm text-muted-foreground">
 			Chargement des évaluations…

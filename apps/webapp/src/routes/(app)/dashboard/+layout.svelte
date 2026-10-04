@@ -7,6 +7,7 @@
 	import { t } from '$lib/i18n';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
+	import DashboardSummaryHeader from './components/DashboardSummaryHeader.svelte';
 	import {
 		DashboardPageState,
 		setDashboardPageState,
@@ -24,6 +25,7 @@
 
 <main class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
 	<section class="scrollbar-thin flex-1 overflow-y-auto px-8 py-8">
+		<DashboardSummaryHeader generatedAt={dashboardPage.overview?.generatedAt} />
 		<PageQuery {query} loadingTitle={$t('dashboard.title')}>
 			{#snippet children(data)}
 				<DataState
