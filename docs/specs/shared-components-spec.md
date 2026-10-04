@@ -266,3 +266,7 @@ Identity advertises phone availability. Until discovery succeeds with phone avai
 ## Correction review controls
 
 Correction lists use ListPageHeader, FilterSelect, FilterPanel, PageQuery and DataState. Correction detail uses the shared accessible Dialog drawer and FormModal for rejection/consequence confirmation. Structured logbook content, objectives, homework, family summary and progress render as individual differences; use subject/chapter/student names instead of internal identifiers.
+
+### School conversation surfaces
+
+Route-local MessagesView composes ListPageHeader, DataState, DrawerEntityHeader, Dialog, FormModal, Button, Label and Textarea. Read-only teacher oversight uses the same thread presentation without school mutation actions. School queue status, unread state, author identity and conflict feedback are textual as well as visual.

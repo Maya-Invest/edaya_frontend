@@ -2805,5 +2805,33 @@
     "module": "École",
     "endpoint": "http://localhost:5173/school/marks-review",
     "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.messaging.1",
+    "feature": "web.messaging",
+    "module": "École",
+    "endpoint": "/school/messages",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.messaging.2",
+    "feature": "web.messaging",
+    "module": "École",
+    "endpoint": "/school/messages/[id]",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.messaging.3",
+    "feature": "web.messaging",
+    "module": "École",
+    "endpoint": "/school/messages/[id]?modal=reply",
+    "action": "Modal deep-link ?modal=reply"
+  },
+  {
+    "id": "web.messaging.4",
+    "feature": "web.messaging",
+    "module": "École",
+    "endpoint": "/school/messages",
+    "action": "Sidebar — lien messages.title accessible"
   }
 ]

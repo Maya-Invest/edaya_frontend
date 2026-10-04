@@ -54,6 +54,12 @@ describe('qa-matrix-support timetable paths', () => {
 		expect(isClassDailyAttendanceSidebarPath('/classes/c1/timetable/sess/attendance')).toBe(false);
 	});
 
+	test('messaging detail resolves a conversation id without falling back to a child id', () => {
+		const entities = { ...emptyEntities(), studentId: 'child', conversationId: 'thread' };
+		expect(resolveEndpoint('/school/messages/[id]', 'http://local', entities)).toBe('http://local/school/messages/thread');
+		expect(resolveEndpoint('/school/messages/[id]', 'http://local', { ...entities, conversationId: null })).toBeNull();
+	});
+
 	test('resolveEndpoint substitutes family-feedback campaign ids', () => {
 		const entities = {
 			...emptyEntities(),

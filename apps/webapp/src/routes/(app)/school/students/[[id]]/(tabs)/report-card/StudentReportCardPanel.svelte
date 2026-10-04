@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
+	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { writeHomeroomReportCommentMutation } from '$lib/api/mutations/student-ops.mutations';
 	import DocumentPdfButton from '$lib/components/school/documents/DocumentPdfButton.svelte';
@@ -9,15 +10,22 @@
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
 	import { FileSpreadsheet } from '$lib/icons';
+	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { toast } from '$lib/toast.svelte';
 	import { formatGrade } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
+	import AnnualReportCardFormModal from '../../components/AnnualReportCardFormModal.svelte';
 	import { getStudentReportCardTabState } from './student-report-card-tab.svelte';
 
 	const { s }: { s: Student } = $props();
 
 	const reportCardTab = getStudentReportCardTabState();
+	const modals = createUrlSyncedModals({ allowed: ['annual-report-card'], getUrl: () => $page.url });
+	$effect(() => {
+		modals.hydrate();
+	});
+	const annualOpen = bindUrlModal(modals, 'annual-report-card');
 	const results = $derived(reportCardTab.reportCardResultsFor(s.id));
 	const latest = $derived(
 		[...results].sort((a, b) => b.academicPeriodId.localeCompare(a.academicPeriodId))[0],
@@ -73,6 +81,7 @@
 </script>
 
 <div class="space-y-4">
+	<Button size="sm" variant="outline" disabled={!reportCardTab.annual.canAccess(s.id)} data-testid="annual-report-card-open" onclick={() => annualOpen.open = true}>{$t('reportCards.annual.title')}</Button>
 	{#if !latest}
 		<DrawerEmptyState label={$t('reportCards.emptyStudent')}>
 			{#snippet icon()}
@@ -193,3 +202,5 @@
 		</div>
 	{/if}
 </div>
+
+<AnnualReportCardFormModal bind:open={annualOpen.open} annualState={reportCardTab.annual} studentId={s.id} classId={s.classId} />

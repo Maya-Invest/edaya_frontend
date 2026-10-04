@@ -1193,6 +1193,26 @@ export declare const clientBindings: {
             readonly requestSchemaName: "ReviseAssessmentMarksCorrectionCommand";
             readonly responseSchemaName: "AssessmentMarksCorrectionResponse";
         };
+        readonly startConversation: {
+            readonly publicName: "start-conversation";
+            readonly requestSchemaName: "StartConversationCommand";
+            readonly responseSchemaName: "ConversationResponse";
+        };
+        readonly replyConversation: {
+            readonly publicName: "reply-conversation";
+            readonly requestSchemaName: "ReplyConversationCommand";
+            readonly responseSchemaName: "ConversationResponse";
+        };
+        readonly resolveConversation: {
+            readonly publicName: "resolve-conversation";
+            readonly requestSchemaName: "ResolveConversationCommand";
+            readonly responseSchemaName: "ConversationResponse";
+        };
+        readonly markConversationRead: {
+            readonly publicName: "mark-conversation-read";
+            readonly requestSchemaName: "MarkConversationReadCommand";
+            readonly responseSchemaName: "MarkConversationReadResponse";
+        };
         readonly requestTeacherCorrection: {
             readonly publicName: "request-teacher-correction";
             readonly requestSchemaName: "RequestTeacherCorrectionCommand";
@@ -1739,6 +1759,21 @@ export declare const clientBindings: {
             readonly publicName: "get-teacher-workflow-state";
             readonly requestSchemaName: "GetTeacherWorkflowStateQuery";
             readonly responseSchemaName: "TeacherWorkflowEligibilityResponse";
+        };
+        readonly listConversationRecipients: {
+            readonly publicName: "list-conversation-recipients";
+            readonly requestSchemaName: "ConversationRecipientsQuery";
+            readonly responseSchemaName: "ConversationRecipientsResponse";
+        };
+        readonly listConversations: {
+            readonly publicName: "list-conversations";
+            readonly requestSchemaName: "ConversationsQuery";
+            readonly responseSchemaName: "ConversationsResponse";
+        };
+        readonly getConversation: {
+            readonly publicName: "get-conversation";
+            readonly requestSchemaName: "ConversationDetailQuery";
+            readonly responseSchemaName: "ConversationDetailResponse";
         };
         readonly listTeacherCorrections: {
             readonly publicName: "list-teacher-corrections";

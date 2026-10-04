@@ -45,6 +45,7 @@ export interface MatrixEntities {
 	teacherId: string | null;
 	activityId: string | null;
 	announcementId: string | null;
+	conversationId?: string | null;
 	eventId: string | null;
 	calendarEventId: string | null;
 	notificationTemplateKey: string | null;
@@ -84,6 +85,7 @@ export function emptyEntities(): MatrixEntities {
 		teacherId: null,
 		activityId: null,
 		announcementId: null,
+		conversationId: null,
 		eventId: null,
 		calendarEventId: null,
 		notificationTemplateKey: 'report_card.published',
@@ -327,6 +329,9 @@ export function resolveEndpoint(endpoint: string, base: string, entities: Matrix
 	if (path.includes('/school/activities/')) {
 		map['[id]'] = entities.activityId;
 	}
+	if (path.includes('/school/messages/')) {
+		map['[id]'] = entities.conversationId ?? null;
+	}
 	if (path.includes('/school/announcements/')) {
 		map['[id]'] = entities.announcementId;
 	}
@@ -450,6 +455,9 @@ export async function discoverEntities(ctx: DemoContext): Promise<MatrixEntities
 
 	await safeGoto(ctx, `${base}/school/announcements`);
 	entities.announcementId = await firstIdFromLinks(page, /\/school\/announcements\/([^/]+)/);
+
+	await safeGoto(ctx, `${base}/school/messages`);
+	entities.conversationId = await firstIdFromLinks(page, /\/school\/messages\/([^/]+)/);
 
 	await safeGoto(ctx, `${base}/school/events`);
 	entities.eventId = await firstIdFromLinks(page, /\/school\/events\/([^/]+)/);

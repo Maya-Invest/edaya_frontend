@@ -68,6 +68,7 @@ export interface ReportCommentSection {
 }
 
 export interface ReportCardResult {
+	aggregation?: { source: 'assessments' | 'report_cards'; sourcePeriodIds: string[]; periodWeightsByPeriodId?: Record<string, number> } | null;
 	commentSections?: ReportCommentSection[];
 	version?: number;
 	pendingAssessmentIds?: string[];

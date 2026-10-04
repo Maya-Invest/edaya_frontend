@@ -1,5 +1,6 @@
 export type DocumentTemplateKey
 	= | 'report-card.v1'
+		| 'annual-report-card.v1'
 		| 'logbook.v1'
 		| 'schooling-certificate.v1'
 		| 'enrollment-record.v1'

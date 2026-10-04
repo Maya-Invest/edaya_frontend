@@ -18,6 +18,7 @@ import { authSession } from '$lib/auth/session.svelte';
 import { entityVersions } from '$lib/entity-versions.svelte';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
+import { AnnualReportCardState } from '../../annual-report-card-state.svelte';
 
 const STUDENT_DOCUMENTS_TAB_KEY = Symbol('student-documents-tab');
 
@@ -39,9 +40,10 @@ export class StudentDocumentsTabState {
 	slice = $state<StudentDocumentsTabSlice | null>(null);
 	documentsVersion = $state(entityVersions.documents);
 
-	constructor(private readonly getPage: () => StudentDetailHost) {}
+	constructor(private readonly getPage: () => StudentDetailHost, readonly annual = new AnnualReportCardState(getPage)) {}
 
 	clear() {
+		this.annual.clear();
 		this.slice = null;
 	}
 
@@ -107,6 +109,8 @@ export class StudentDocumentsTabState {
 			case 'student-id-card.v1':
 			case CONVOCATION_TEMPLATE:
 				return studentId;
+			case 'annual-report-card.v1':
+				return null; // Annual selection owns the validated report result ID.
 			case 'annual-transcript.v1':
 			case 'report-card.v1':
 			case 'receipt.v1':
@@ -147,6 +151,7 @@ export class StudentDocumentsTabState {
 					enrollments,
 					currency: summary?.currency ?? '',
 				});
+				await this.annual.refresh(studentId, signal);
 				return {};
 			},
 			hasItems: () => true,

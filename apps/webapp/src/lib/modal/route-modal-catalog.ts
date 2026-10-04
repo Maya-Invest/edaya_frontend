@@ -36,6 +36,7 @@ const TIMETABLE_MODALS = [
  * route-local validation for names recognized here.
  */
 export const ROUTE_MODAL_CATALOG = [
+	{ routeFamily: 'school-messages-detail', pathnamePattern: /^\/school\/messages\/[^/]+\/?$/, modalNames: ['reply'] },
 	{
 		routeFamily: 'authenticated-app',
 		pathnamePattern:
@@ -51,7 +52,7 @@ export const ROUTE_MODAL_CATALOG = [
 		routeFamily: 'school-students-detail',
 		pathnamePattern:
 			/^\/school\/students\/[^/]+(?:\/(?:profile|grades|attendance|incidents|finances|report-card|enrollments|documents))?\/?$/,
-		modalNames: ['create', ...STUDENT_DETAIL_MODALS, 'generate-document', 'void-document'],
+		modalNames: ['create', ...STUDENT_DETAIL_MODALS, 'generate-document', 'void-document', 'annual-report-card'],
 	},
 	{
 		routeFamily: 'class-students-list',
@@ -62,7 +63,7 @@ export const ROUTE_MODAL_CATALOG = [
 		routeFamily: 'class-students-detail',
 		pathnamePattern:
 			/^\/classes\/[^/]+\/students\/[^/]+(?:\/(?:profile|grades|attendance|incidents|finances|report-card|enrollments|documents))?\/?$/,
-		modalNames: ['create', ...STUDENT_DETAIL_MODALS, 'generate-document', 'void-document'],
+		modalNames: ['create', ...STUDENT_DETAIL_MODALS, 'generate-document', 'void-document', 'annual-report-card'],
 	},
 	{
 		routeFamily: 'school-guardians-list',

@@ -313,6 +313,7 @@ export function mapReportCardResults(
 				.filter(section => Boolean(section.sectionId))
 				.map(section => ({ sectionId: section.sectionId!, name: section.name ?? section.sectionId!, comment: section.comment ?? '' })),
 			version: result.version,
+			aggregation: result.aggregation,
 			pendingAssessmentIds: result.pendingAssessmentIds,
 			pendingCorrectionIds: result.pendingCorrectionIds,
 			calculationStale: result.calculationStale,

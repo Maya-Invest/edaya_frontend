@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'bun:test';
 import {
-	ROUTE_MODAL_CATALOG,
 	isKnownModalForPathname,
+	ROUTE_MODAL_CATALOG,
 } from '$lib/modal/route-modal-catalog';
+import { describe, expect, it } from 'bun:test';
 
 const STUDENT_DETAIL_MODALS = [
 	'create',
@@ -17,11 +17,12 @@ const STUDENT_DETAIL_MODALS = [
 ] as const;
 
 const routeCases = [
+	['school-messages-detail', '/school/messages/thread', ['reply']],
 	['authenticated-app', '/dashboard', ['account-profile']],
 	['school-students-list', '/school/students', ['create']],
-	['school-students-detail', '/school/students/student-1/grades', [...STUDENT_DETAIL_MODALS, 'generate-document', 'void-document']],
+	['school-students-detail', '/school/students/student-1/grades', [...STUDENT_DETAIL_MODALS, 'generate-document', 'void-document', 'annual-report-card']],
 	['class-students-list', '/classes/class-1/students', ['create']],
-	['class-students-detail', '/classes/class-1/students/student-1/profile', [...STUDENT_DETAIL_MODALS, 'generate-document', 'void-document']],
+	['class-students-detail', '/classes/class-1/students/student-1/profile', [...STUDENT_DETAIL_MODALS, 'generate-document', 'void-document', 'annual-report-card']],
 	['school-guardians-list', '/school/guardians', ['create']],
 	['school-guardians-detail', '/school/guardians/guardian-1', ['create', 'edit-profile', 'delete']],
 	['school-staff-list', '/school/staff', ['create']],

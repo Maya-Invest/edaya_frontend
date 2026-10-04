@@ -69,6 +69,7 @@ export interface ContextItem {
 type RouteId = Parameters<typeof appPath>[0];
 
 const SCHOOL_ICONS: Record<string, LucideIcon> = {
+	messages: Mail,
 	students: Users,
 	guardians: Shield,
 	staff: GraduationCap,
@@ -111,6 +112,7 @@ const CONFIG_ICONS: Record<string, LucideIcon> = {
 };
 
 const SCHOOL_ROUTES: Record<string, RouteId> = {
+	messages: '/(app)/school/messages/[[id]]',
 	marksReview: '/(app)/school/corrections',
 	students: '/(app)/school/students/[[id]]',
 	guardians: '/(app)/school/guardians/[[id]]',

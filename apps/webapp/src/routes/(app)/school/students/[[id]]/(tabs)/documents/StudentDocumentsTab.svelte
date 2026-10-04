@@ -15,6 +15,7 @@
 	import { FileText, RotateCcw } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { cn } from '$lib/utils';
+	import AnnualReportCardFormModal from '../../components/AnnualReportCardFormModal.svelte';
 	import GenerateDocumentFormModal from './components/GenerateDocumentFormModal.svelte';
 	import VoidDocumentFormModal from './components/VoidDocumentFormModal.svelte';
 	import { getStudentDocumentsTabState } from './student-documents-tab.svelte';
@@ -25,10 +26,11 @@
 	const issuances = $derived(documentsTab.issuancesFor(s.id));
 	const templates = $derived(documentsTab.templatesFor(s.id));
 
-	const modals = createUrlSyncedModals({ allowed: ['generate-document', 'void-document'], getUrl: () => $page.url });
+	const modals = createUrlSyncedModals({ allowed: ['generate-document', 'void-document', 'annual-report-card'], getUrl: () => $page.url });
 	$effect(() => {
 		modals.hydrate();
 	});
+	const annualOpen = bindUrlModal(modals, 'annual-report-card');
 	const generateOpen = bindUrlModal(modals, 'generate-document');
 	const voidOpen = bindUrlModal(modals, 'void-document');
 	let voidTargetId = $state<string | null>(null);
@@ -68,6 +70,7 @@
 			{/snippet}
 		</PermissionGate>
 	</div>
+	<Button size="sm" variant="outline" disabled={!documentsTab.annual.canAccess(s.id)} data-testid="annual-report-card-open" onclick={() => annualOpen.open = true}>{$t('reportCards.annual.title')}</Button>
 	<p class="text-xs text-muted-foreground">{$t('documents.downloadRecall')}</p>
 	<div class="space-y-2">
 		{#if issuances.length === 0}
@@ -123,3 +126,5 @@
 
 <GenerateDocumentFormModal bind:open={generateOpen.open} studentId={s.id} />
 <VoidDocumentFormModal bind:open={voidOpen.open} issuanceId={voidTargetId} />
+
+<AnnualReportCardFormModal bind:open={annualOpen.open} annualState={documentsTab.annual} studentId={s.id} classId={s.classId} />

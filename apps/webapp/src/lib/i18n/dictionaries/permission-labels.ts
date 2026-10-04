@@ -2,6 +2,10 @@ import type { Dict } from '../dictionaries.ts';
 
 /** Auto-aligned with @edaya/core Permission enum — update when backend adds permissions. */
 export const permissionLabelsEn = {
+	'permission.SCHOOL_MESSAGES_READ': 'Read school enquiries',
+	'permission.SCHOOL_MESSAGES_REPLY': 'Reply to school enquiries',
+	'permission.TEACHER_MESSAGES_REVIEW': 'Review teacher conversations',
+
 	'permission.SCHOOL_STRUCTURE_READ': 'School Structure Read',
 	'permission.SCHOOL_STRUCTURE_CONFIGURE': 'School Structure Configure',
 	'permission.SCHOOL_LIFECYCLE_MANAGE': 'School Lifecycle Manage',
@@ -131,6 +135,10 @@ export const permissionLabelsEn = {
 } as const satisfies Partial<Dict>;
 
 export const permissionLabelsFr = {
+	'permission.SCHOOL_MESSAGES_READ': 'Consulter les demandes à l’école',
+	'permission.SCHOOL_MESSAGES_REPLY': 'Répondre aux demandes à l’école',
+	'permission.TEACHER_MESSAGES_REVIEW': 'Consulter les échanges des enseignants',
+
 	'permission.SCHOOL_STRUCTURE_READ': 'École structure lecture',
 	'permission.SCHOOL_STRUCTURE_CONFIGURE': 'École structure configuration',
 	'permission.SCHOOL_LIFECYCLE_MANAGE': 'École cycle de vie gestion',

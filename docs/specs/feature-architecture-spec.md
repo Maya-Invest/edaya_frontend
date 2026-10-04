@@ -649,3 +649,7 @@ Production route, navigation, modal and action changes must update the integrati
 ## Teacher correction review
 
 `/school/corrections` is the last School navigation item on desktop and mobile. Any of GRADE_VALIDATE, ATTENDANCE_VALIDATE, CLASS_LOGBOOK_VALIDATE, DISCIPLINE_VALIDATE, or REPORT_CARD_PUBLISH can expose it; the server scopes each workflow separately. `/school/marks-review` redirects to the queue with the Grades filter. The queue handles marks, submitted attendance, published report comments, validated logbooks, and staff-managed incidents. Other teacher workflows keep their existing lifecycle. Logbook validation and incident takeover are explicit staff actions; opening a detail never performs either action.
+
+### Guardian messaging
+
+`/school/messages` is a complex conversation collection with optional detail `/school/messages/{id}`. School enquiries and teacher oversight are URL-selected views (`view=teacher` for oversight). School status and order filters are URL-backed. Conversation details show immutable text history, captured family context and actual authors. School replies use `?modal=reply`; teacher oversight is read-only. Dedicated SCHOOL_MESSAGES_READ, SCHOOL_MESSAGES_REPLY and TEACHER_MESSAGES_REVIEW permissions govern these surfaces independently of announcements.

@@ -1195,6 +1195,26 @@ export const clientBindings = {
             "requestSchemaName": "ReviseAssessmentMarksCorrectionCommand",
             "responseSchemaName": "AssessmentMarksCorrectionResponse"
         },
+        "startConversation": {
+            "publicName": "start-conversation",
+            "requestSchemaName": "StartConversationCommand",
+            "responseSchemaName": "ConversationResponse"
+        },
+        "replyConversation": {
+            "publicName": "reply-conversation",
+            "requestSchemaName": "ReplyConversationCommand",
+            "responseSchemaName": "ConversationResponse"
+        },
+        "resolveConversation": {
+            "publicName": "resolve-conversation",
+            "requestSchemaName": "ResolveConversationCommand",
+            "responseSchemaName": "ConversationResponse"
+        },
+        "markConversationRead": {
+            "publicName": "mark-conversation-read",
+            "requestSchemaName": "MarkConversationReadCommand",
+            "responseSchemaName": "MarkConversationReadResponse"
+        },
         "requestTeacherCorrection": {
             "publicName": "request-teacher-correction",
             "requestSchemaName": "RequestTeacherCorrectionCommand",
@@ -1741,6 +1761,21 @@ export const clientBindings = {
             "publicName": "get-teacher-workflow-state",
             "requestSchemaName": "GetTeacherWorkflowStateQuery",
             "responseSchemaName": "TeacherWorkflowEligibilityResponse"
+        },
+        "listConversationRecipients": {
+            "publicName": "list-conversation-recipients",
+            "requestSchemaName": "ConversationRecipientsQuery",
+            "responseSchemaName": "ConversationRecipientsResponse"
+        },
+        "listConversations": {
+            "publicName": "list-conversations",
+            "requestSchemaName": "ConversationsQuery",
+            "responseSchemaName": "ConversationsResponse"
+        },
+        "getConversation": {
+            "publicName": "get-conversation",
+            "requestSchemaName": "ConversationDetailQuery",
+            "responseSchemaName": "ConversationDetailResponse"
         },
         "listTeacherCorrections": {
             "publicName": "list-teacher-corrections",

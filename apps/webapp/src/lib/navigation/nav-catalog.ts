@@ -16,6 +16,7 @@ export interface NavItemDefinition {
 }
 
 export const SCHOOL_NAV_DEFS: NavItemDefinition[] = [
+	{ key: 'messages', labelKey: 'messages.title', href: '/school/messages', permissions: ['SCHOOL_MESSAGES_READ', 'TEACHER_MESSAGES_REVIEW'] },
 	{
 		key: 'students',
 		labelKey: 'school.students',

@@ -758,6 +758,9 @@
                     "FAMILY_FEEDBACK_CAMPAIGN_MANAGE",
                     "FAMILY_FEEDBACK_MODERATE",
                     "FAMILY_FEEDBACK_PUBLISH",
+                    "SCHOOL_MESSAGES_READ",
+                    "SCHOOL_MESSAGES_REPLY",
+                    "TEACHER_MESSAGES_REVIEW",
                     "COMMUNICATION_READ",
                     "COMMUNICATION_CREATE",
                     "COMMUNICATION_UPDATE",
@@ -1254,6 +1257,9 @@
               "FAMILY_FEEDBACK_CAMPAIGN_MANAGE",
               "FAMILY_FEEDBACK_MODERATE",
               "FAMILY_FEEDBACK_PUBLISH",
+              "SCHOOL_MESSAGES_READ",
+              "SCHOOL_MESSAGES_REPLY",
+              "TEACHER_MESSAGES_REVIEW",
               "COMMUNICATION_READ",
               "COMMUNICATION_CREATE",
               "COMMUNICATION_UPDATE",
@@ -1438,6 +1444,9 @@
                     "FAMILY_FEEDBACK_CAMPAIGN_MANAGE",
                     "FAMILY_FEEDBACK_MODERATE",
                     "FAMILY_FEEDBACK_PUBLISH",
+                    "SCHOOL_MESSAGES_READ",
+                    "SCHOOL_MESSAGES_REPLY",
+                    "TEACHER_MESSAGES_REVIEW",
                     "COMMUNICATION_READ",
                     "COMMUNICATION_CREATE",
                     "COMMUNICATION_UPDATE",
@@ -1788,6 +1797,9 @@
                     "FAMILY_FEEDBACK_CAMPAIGN_MANAGE",
                     "FAMILY_FEEDBACK_MODERATE",
                     "FAMILY_FEEDBACK_PUBLISH",
+                    "SCHOOL_MESSAGES_READ",
+                    "SCHOOL_MESSAGES_REPLY",
+                    "TEACHER_MESSAGES_REVIEW",
                     "COMMUNICATION_READ",
                     "COMMUNICATION_CREATE",
                     "COMMUNICATION_UPDATE",
@@ -3257,6 +3269,9 @@
               "FAMILY_FEEDBACK_CAMPAIGN_MANAGE",
               "FAMILY_FEEDBACK_MODERATE",
               "FAMILY_FEEDBACK_PUBLISH",
+              "SCHOOL_MESSAGES_READ",
+              "SCHOOL_MESSAGES_REPLY",
+              "TEACHER_MESSAGES_REVIEW",
               "COMMUNICATION_READ",
               "COMMUNICATION_CREATE",
               "COMMUNICATION_UPDATE",
@@ -6529,6 +6544,9 @@
                 "FAMILY_FEEDBACK_CAMPAIGN_MANAGE",
                 "FAMILY_FEEDBACK_MODERATE",
                 "FAMILY_FEEDBACK_PUBLISH",
+                "SCHOOL_MESSAGES_READ",
+                "SCHOOL_MESSAGES_REPLY",
+                "TEACHER_MESSAGES_REVIEW",
                 "COMMUNICATION_READ",
                 "COMMUNICATION_CREATE",
                 "COMMUNICATION_UPDATE",
@@ -6716,6 +6734,9 @@
                 "FAMILY_FEEDBACK_CAMPAIGN_MANAGE",
                 "FAMILY_FEEDBACK_MODERATE",
                 "FAMILY_FEEDBACK_PUBLISH",
+                "SCHOOL_MESSAGES_READ",
+                "SCHOOL_MESSAGES_REPLY",
+                "TEACHER_MESSAGES_REVIEW",
                 "COMMUNICATION_READ",
                 "COMMUNICATION_CREATE",
                 "COMMUNICATION_UPDATE",
@@ -6883,6 +6904,9 @@
                 "FAMILY_FEEDBACK_CAMPAIGN_MANAGE",
                 "FAMILY_FEEDBACK_MODERATE",
                 "FAMILY_FEEDBACK_PUBLISH",
+                "SCHOOL_MESSAGES_READ",
+                "SCHOOL_MESSAGES_REPLY",
+                "TEACHER_MESSAGES_REVIEW",
                 "COMMUNICATION_READ",
                 "COMMUNICATION_CREATE",
                 "COMMUNICATION_UPDATE",
@@ -7050,6 +7074,9 @@
                 "FAMILY_FEEDBACK_CAMPAIGN_MANAGE",
                 "FAMILY_FEEDBACK_MODERATE",
                 "FAMILY_FEEDBACK_PUBLISH",
+                "SCHOOL_MESSAGES_READ",
+                "SCHOOL_MESSAGES_REPLY",
+                "TEACHER_MESSAGES_REVIEW",
                 "COMMUNICATION_READ",
                 "COMMUNICATION_CREATE",
                 "COMMUNICATION_UPDATE",
@@ -7215,6 +7242,9 @@
               "FAMILY_FEEDBACK_CAMPAIGN_MANAGE",
               "FAMILY_FEEDBACK_MODERATE",
               "FAMILY_FEEDBACK_PUBLISH",
+              "SCHOOL_MESSAGES_READ",
+              "SCHOOL_MESSAGES_REPLY",
+              "TEACHER_MESSAGES_REVIEW",
               "COMMUNICATION_READ",
               "COMMUNICATION_CREATE",
               "COMMUNICATION_UPDATE",
@@ -7577,6 +7607,9 @@
               "FAMILY_FEEDBACK_CAMPAIGN_MANAGE",
               "FAMILY_FEEDBACK_MODERATE",
               "FAMILY_FEEDBACK_PUBLISH",
+              "SCHOOL_MESSAGES_READ",
+              "SCHOOL_MESSAGES_REPLY",
+              "TEACHER_MESSAGES_REVIEW",
               "COMMUNICATION_READ",
               "COMMUNICATION_CREATE",
               "COMMUNICATION_UPDATE",
@@ -7954,6 +7987,9 @@
                 "FAMILY_FEEDBACK_CAMPAIGN_MANAGE",
                 "FAMILY_FEEDBACK_MODERATE",
                 "FAMILY_FEEDBACK_PUBLISH",
+                "SCHOOL_MESSAGES_READ",
+                "SCHOOL_MESSAGES_REPLY",
+                "TEACHER_MESSAGES_REVIEW",
                 "COMMUNICATION_READ",
                 "COMMUNICATION_CREATE",
                 "COMMUNICATION_UPDATE",
@@ -8135,6 +8171,9 @@
                 "FAMILY_FEEDBACK_CAMPAIGN_MANAGE",
                 "FAMILY_FEEDBACK_MODERATE",
                 "FAMILY_FEEDBACK_PUBLISH",
+                "SCHOOL_MESSAGES_READ",
+                "SCHOOL_MESSAGES_REPLY",
+                "TEACHER_MESSAGES_REVIEW",
                 "COMMUNICATION_READ",
                 "COMMUNICATION_CREATE",
                 "COMMUNICATION_UPDATE",
@@ -12223,6 +12262,249 @@
         ],
         "additionalProperties": false
       },
+      "ConversationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "schoolId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "guardianId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "destination": {
+            "type": "string",
+            "enum": [
+              "school",
+              "teacher"
+            ]
+          },
+          "teacherId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "studentId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "assignmentIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "guardianName": {
+            "type": "string"
+          },
+          "teacherName": {
+            "type": "string"
+          },
+          "studentName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "awaiting_school",
+              "awaiting_guardian",
+              "resolved"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "lastSequence": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "lastMessage": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "awaitingSince": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "guardianId",
+          "destination",
+          "assignmentIds",
+          "subject",
+          "schoolName",
+          "guardianName",
+          "status",
+          "version",
+          "lastSequence",
+          "lastMessage",
+          "createdAt",
+          "updatedAt",
+          "awaitingSince"
+        ]
+      },
+      "StartConversationCommand": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "destination": {
+            "type": "string",
+            "enum": [
+              "school",
+              "teacher"
+            ]
+          },
+          "teacherId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "studentId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          }
+        },
+        "required": [
+          "requestId",
+          "destination",
+          "subject",
+          "body"
+        ]
+      },
+      "ReplyConversationCommand": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "conversationId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          }
+        },
+        "required": [
+          "requestId",
+          "conversationId",
+          "expectedVersion",
+          "body"
+        ]
+      },
+      "ResolveConversationCommand": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "conversationId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          }
+        },
+        "required": [
+          "requestId",
+          "conversationId",
+          "expectedVersion"
+        ]
+      },
+      "MarkConversationReadResponse": {
+        "type": "object",
+        "properties": {
+          "conversationId": {
+            "type": "string"
+          },
+          "throughSequence": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "conversationId",
+          "throughSequence"
+        ]
+      },
+      "MarkConversationReadCommand": {
+        "type": "object",
+        "properties": {
+          "conversationId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "throughSequence": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "conversationId",
+          "throughSequence"
+        ]
+      },
       "TeacherCorrectionResponse": {
         "type": "object",
         "properties": {
@@ -14528,6 +14810,36 @@
                   "minimum": 0,
                   "exclusiveMinimum": true
                 }
+              },
+              "sourceReportVersions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "periodId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "resultId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "sourceVersion": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "periodId",
+                    "resultId",
+                    "version",
+                    "sourceVersion"
+                  ]
+                }
               }
             },
             "required": [
@@ -14593,6 +14905,36 @@
                   "type": "number",
                   "minimum": 0,
                   "exclusiveMinimum": true
+                }
+              },
+              "sourceReportVersions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "periodId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "resultId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "sourceVersion": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "periodId",
+                    "resultId",
+                    "version",
+                    "sourceVersion"
+                  ]
                 }
               }
             },
@@ -14864,6 +15206,7 @@
             "type": "string",
             "enum": [
               "report-card.v1",
+              "annual-report-card.v1",
               "logbook.v1",
               "schooling-certificate.v1",
               "enrollment-record.v1",
@@ -15001,6 +15344,7 @@
             "type": "string",
             "enum": [
               "report-card.v1",
+              "annual-report-card.v1",
               "logbook.v1",
               "schooling-certificate.v1",
               "enrollment-record.v1",
@@ -15174,6 +15518,7 @@
             "type": "string",
             "enum": [
               "report-card.v1",
+              "annual-report-card.v1",
               "logbook.v1",
               "schooling-certificate.v1",
               "enrollment-record.v1",
@@ -21534,6 +21879,504 @@
           "proposal"
         ]
       },
+      "ConversationRecipientsResponse": {
+        "type": "object",
+        "properties": {
+          "schoolAvailable": {
+            "type": "boolean"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "teachers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "name": {
+                  "type": "string"
+                },
+                "subjects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "subjects"
+              ]
+            }
+          }
+        },
+        "required": [
+          "schoolAvailable",
+          "schoolName",
+          "teachers"
+        ]
+      },
+      "ConversationRecipientsQuery": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        }
+      },
+      "ConversationsResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "schoolId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "guardianId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "destination": {
+                  "type": "string",
+                  "enum": [
+                    "school",
+                    "teacher"
+                  ]
+                },
+                "teacherId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "studentId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "assignmentIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "subject": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "schoolName": {
+                  "type": "string"
+                },
+                "guardianName": {
+                  "type": "string"
+                },
+                "teacherName": {
+                  "type": "string"
+                },
+                "studentName": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "awaiting_school",
+                    "awaiting_guardian",
+                    "resolved"
+                  ]
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "exclusiveMinimum": true
+                },
+                "lastSequence": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "lastMessage": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "awaitingSince": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "unread": {
+                  "type": "boolean"
+                },
+                "allowedActions": {
+                  "type": "object",
+                  "properties": {
+                    "reply": {
+                      "type": "boolean"
+                    },
+                    "resolve": {
+                      "type": "boolean"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "reply",
+                    "resolve",
+                    "reason"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "schoolId",
+                "guardianId",
+                "destination",
+                "assignmentIds",
+                "subject",
+                "schoolName",
+                "guardianName",
+                "status",
+                "version",
+                "lastSequence",
+                "lastMessage",
+                "createdAt",
+                "updatedAt",
+                "awaitingSince",
+                "unread",
+                "allowedActions"
+              ]
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "unreadCount": {
+            "type": "number"
+          },
+          "offset": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "unreadCount",
+          "offset",
+          "limit"
+        ]
+      },
+      "ConversationsQuery": {
+        "type": "object",
+        "properties": {
+          "destination": {
+            "type": "string",
+            "enum": [
+              "school",
+              "teacher"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "awaiting_school",
+              "awaiting_guardian",
+              "resolved"
+            ]
+          },
+          "order": {
+            "type": "string",
+            "enum": [
+              "latest",
+              "oldest_awaiting"
+            ],
+            "default": "latest"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 25
+          }
+        }
+      },
+      "ConversationDetailResponse": {
+        "type": "object",
+        "properties": {
+          "conversation": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "schoolId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "guardianId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "destination": {
+                "type": "string",
+                "enum": [
+                  "school",
+                  "teacher"
+                ]
+              },
+              "teacherId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "studentId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "assignmentIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              },
+              "subject": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "schoolName": {
+                "type": "string"
+              },
+              "guardianName": {
+                "type": "string"
+              },
+              "teacherName": {
+                "type": "string"
+              },
+              "studentName": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "awaiting_school",
+                  "awaiting_guardian",
+                  "resolved"
+                ]
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 0,
+                "exclusiveMinimum": true
+              },
+              "lastSequence": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "lastMessage": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "awaitingSince": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "unread": {
+                "type": "boolean"
+              },
+              "allowedActions": {
+                "type": "object",
+                "properties": {
+                  "reply": {
+                    "type": "boolean"
+                  },
+                  "resolve": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "reply",
+                  "resolve",
+                  "reason"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "schoolId",
+              "guardianId",
+              "destination",
+              "assignmentIds",
+              "subject",
+              "schoolName",
+              "guardianName",
+              "status",
+              "version",
+              "lastSequence",
+              "lastMessage",
+              "createdAt",
+              "updatedAt",
+              "awaitingSince",
+              "unread",
+              "allowedActions"
+            ]
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "schoolId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "conversationId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "sequence": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "exclusiveMinimum": true
+                },
+                "authorKind": {
+                  "type": "string",
+                  "enum": [
+                    "guardian",
+                    "teacher",
+                    "staff"
+                  ]
+                },
+                "authorId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "authorSubjectId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "authorName": {
+                  "type": "string"
+                },
+                "body": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 10000
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "schoolId",
+                "conversationId",
+                "sequence",
+                "authorKind",
+                "authorId",
+                "authorSubjectId",
+                "authorName",
+                "body",
+                "createdAt"
+              ]
+            }
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "conversation",
+          "messages",
+          "hasMore"
+        ]
+      },
+      "ConversationDetailQuery": {
+        "type": "object",
+        "properties": {
+          "conversationId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "beforeSequence": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 50
+          }
+        },
+        "required": [
+          "conversationId"
+        ]
+      },
       "TeacherCorrectionsResponse": {
         "type": "object",
         "properties": {
@@ -26081,6 +26924,7 @@
             "type": "string",
             "enum": [
               "report-card.v1",
+              "annual-report-card.v1",
               "logbook.v1",
               "schooling-certificate.v1",
               "enrollment-record.v1",
@@ -26206,6 +27050,31 @@
               "academicPeriodId": {
                 "type": "string",
                 "minLength": 1
+              },
+              "academicSources": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "resultId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "periodId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "sourceVersion": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "resultId",
+                    "periodId",
+                    "sourceVersion"
+                  ]
+                }
               },
               "classSubjectId": {
                 "type": "string",
@@ -41882,6 +42751,526 @@
         }
       }
     },
+    "/core/commands/start-conversation": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "start-conversation",
+        "operationId": "commands.startConversation",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "startConversation",
+        "x-edaya-command-public-name": "start-conversation",
+        "x-edaya-request-schema": "StartConversationCommand",
+        "x-edaya-response-schema": "ConversationResponse",
+        "requestBody": {
+          "description": "start-conversation payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartConversationCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed start-conversation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/reply-conversation": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "reply-conversation",
+        "operationId": "commands.replyConversation",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "replyConversation",
+        "x-edaya-command-public-name": "reply-conversation",
+        "x-edaya-request-schema": "ReplyConversationCommand",
+        "x-edaya-response-schema": "ConversationResponse",
+        "requestBody": {
+          "description": "reply-conversation payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplyConversationCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed reply-conversation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/resolve-conversation": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "resolve-conversation",
+        "operationId": "commands.resolveConversation",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "resolveConversation",
+        "x-edaya-command-public-name": "resolve-conversation",
+        "x-edaya-request-schema": "ResolveConversationCommand",
+        "x-edaya-response-schema": "ConversationResponse",
+        "requestBody": {
+          "description": "resolve-conversation payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveConversationCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed resolve-conversation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/mark-conversation-read": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "mark-conversation-read",
+        "operationId": "commands.markConversationRead",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "markConversationRead",
+        "x-edaya-command-public-name": "mark-conversation-read",
+        "x-edaya-request-schema": "MarkConversationReadCommand",
+        "x-edaya-response-schema": "MarkConversationReadResponse",
+        "requestBody": {
+          "description": "mark-conversation-read payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkConversationReadCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed mark-conversation-read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarkConversationReadResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/core/commands/request-teacher-correction": {
       "post": {
         "tags": [
@@ -55951,6 +57340,396 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TeacherWorkflowEligibilityResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/queries/list-conversation-recipients": {
+      "post": {
+        "tags": [
+          "Core Queries"
+        ],
+        "summary": "list-conversation-recipients",
+        "operationId": "queries.listConversationRecipients",
+        "x-edaya-kind": "query",
+        "x-edaya-query-key": "listConversationRecipients",
+        "x-edaya-query-public-name": "list-conversation-recipients",
+        "x-edaya-request-schema": "ConversationRecipientsQuery",
+        "x-edaya-response-schema": "ConversationRecipientsResponse",
+        "requestBody": {
+          "description": "list-conversation-recipients payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationRecipientsQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resolved list-conversation-recipients",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationRecipientsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/queries/list-conversations": {
+      "post": {
+        "tags": [
+          "Core Queries"
+        ],
+        "summary": "list-conversations",
+        "operationId": "queries.listConversations",
+        "x-edaya-kind": "query",
+        "x-edaya-query-key": "listConversations",
+        "x-edaya-query-public-name": "list-conversations",
+        "x-edaya-request-schema": "ConversationsQuery",
+        "x-edaya-response-schema": "ConversationsResponse",
+        "requestBody": {
+          "description": "list-conversations payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationsQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resolved list-conversations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/queries/get-conversation": {
+      "post": {
+        "tags": [
+          "Core Queries"
+        ],
+        "summary": "get-conversation",
+        "operationId": "queries.getConversation",
+        "x-edaya-kind": "query",
+        "x-edaya-query-key": "getConversation",
+        "x-edaya-query-public-name": "get-conversation",
+        "x-edaya-request-schema": "ConversationDetailQuery",
+        "x-edaya-response-schema": "ConversationDetailResponse",
+        "requestBody": {
+          "description": "get-conversation payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationDetailQuery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resolved get-conversation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDetailResponse"
                 }
               }
             }

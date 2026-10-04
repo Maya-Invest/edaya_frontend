@@ -17,7 +17,7 @@ export async function loadInboxSlice(): Promise<InboxPageSlice> {
 	}
 
 	const deliveries = await fetchInboxDeliveries(getBrowserSchoolClient(), { subjectId, recipientKind, recipientId });
-	return { deliveries, subjectId };
+	return { deliveries: deliveries.filter(row => row.eventKey !== 'conversation.message'), subjectId };
 }
 
 export function queryInboxListPage(state: InboxPageState) {

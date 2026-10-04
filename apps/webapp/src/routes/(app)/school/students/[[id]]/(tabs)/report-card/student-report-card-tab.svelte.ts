@@ -10,6 +10,7 @@ import { nowIso } from '$lib/date/format';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { runStudentRouteMutation } from '../../../lib/student-route-mutation';
+import { AnnualReportCardState } from '../../annual-report-card-state.svelte';
 
 const STUDENT_REPORT_CARD_TAB_KEY = Symbol('student-report-card-tab');
 
@@ -55,9 +56,10 @@ function resolveReportCardDefinitionId(
 export class StudentReportCardTabState {
 	slice = $state<StudentReportCardTabSlice | null>(null);
 
-	constructor(private readonly getPage: () => StudentDetailHost) {}
+	constructor(private readonly getPage: () => StudentDetailHost, readonly annual = new AnnualReportCardState(getPage)) {}
 
 	clear() {
+		this.annual.clear();
 		this.slice = null;
 	}
 
@@ -125,7 +127,7 @@ export class StudentReportCardTabState {
 					return {};
 				}
 
-				await this.loadCatalog(studentId, signal);
+				await Promise.all([this.loadCatalog(studentId, signal), this.annual.refresh(studentId, signal)]);
 				await this.refreshResults(studentId, signal);
 				return {};
 			},

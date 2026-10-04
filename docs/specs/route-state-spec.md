@@ -687,3 +687,7 @@ Migrate existing routes incrementally; do not extend `detailDataContext` seed me
 ## Correction route state
 
 `corrections-page.svelte.ts` owns the scoped queue and selected request. Filter options come from authorized correction records. URL keys are workflow, status, classGroupId, teacherSubjectId, studentId, search, from, to, correction and action. Loaded batches and the next offset stay in route state; filter/scope changes reset to the first batch, and stale pagination responses cannot append to a newer collection. Selection persists on reload. Decisions carry the displayed request version; stale review must reload before deciding. Mutations retain filters and refresh the queue.
+
+### Conversation route state
+
+The `/school/messages` layout owns its list, selected thread, read positions, paging and transient reply draft through MessagesPageState and PageQuery. View, status, order, selected conversation and reply-modal state are reconstructed from the URL. Immutable messages use command request identities; successful replies/resolution bump inbox versions and refresh the owning route. Identity switches clear content and drafts and discard stale completions. Refresh visible pages every 15 seconds and on visibility resume; stop when hidden or unmounted.
