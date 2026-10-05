@@ -59,3 +59,6 @@ apps/webapp/.webadmin-run/
 .ci-evidence/
 apps/webapp/.availability-run/
 __pycache__/
+
+# Local screenshot runs and diagnostic artifacts
+apps/webapp/.screenshots/

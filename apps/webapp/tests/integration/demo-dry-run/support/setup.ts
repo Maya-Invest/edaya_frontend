@@ -129,12 +129,12 @@ export async function assertClassAttendanceNav(
 		.locator('aside#app-sidebar button, aside#app-sidebar a')
 		.filter({ hasText: /classes|classe/i })
 		.first();
-	if (await classesToggle.isVisible({ timeout: 3_000 }).catch(() => false)) {
+	const attendanceLink = page.locator(`aside#app-sidebar a[href*="/classes/${classId}/attendance"]`);
+	if (!await attendanceLink.isVisible() && await classesToggle.isVisible({ timeout: 3_000 }).catch(() => false)) {
 		await classesToggle.click().catch(() => {});
 	}
 
-	const attendanceLink = page.locator(`aside#app-sidebar a[href*="/classes/${classId}/attendance"]`);
-	const visible = await attendanceLink.isVisible({ timeout: 10_000 }).catch(() => false);
+	const visible = await attendanceLink.waitFor({ state: 'visible', timeout: 10_000 }).then(() => true).catch(() => false);
 	if (visible) {
 		reporter.log(scene, step, 'pass');
 		return true;

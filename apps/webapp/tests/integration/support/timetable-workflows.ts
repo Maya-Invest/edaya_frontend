@@ -27,12 +27,19 @@ export async function exerciseTimetable(page: Page, base: string, publish: boole
   const endDate = end.toISOString().slice(0, 10);
   await inputs.nth(1).fill(endDate);
   // Set a valid workload for every offered subject through the production form.
+  await dialog.getByRole('tab', { name: /classes.*(?:matières|subjects)/i }).click();
+  await dialog.getByTestId('timetable-workload-periods').first().waitFor({ state: 'visible', timeout: 20000 });
   const classes = dialog.getByTestId('timetable-workload-class');
   const fillWorkload = async () => {
     for (const input of await dialog.getByTestId('timetable-workload-periods').all()) await input.fill('1');
   };
   if (await classes.count()) {
-    for (const button of await classes.all()) { await button.click(); await fillWorkload(); }
+    for (const button of await classes.all()) {
+      const label = (await button.innerText()).trim();
+      await button.click();
+      await dialog.locator('section').getByText(label, { exact: true }).first().waitFor({ state: 'visible' });
+      await fillWorkload();
+    }
   } else await fillWorkload();
   await dialog.getByRole('tab', { name: /avancé|advanced/i }).click();
   const allow = dialog.locator('label').filter({ hasText: /sans enseignant|unassigned/i }).first().getByRole('checkbox');

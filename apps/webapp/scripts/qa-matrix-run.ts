@@ -1,4 +1,6 @@
 #!/usr/bin/env bun
+import { runScenarios } from '../tests/integration/support/scenario-registry';
+import { bindBrowserScenarioContext, type BrowserScenarioContext } from '../tests/integration/support/browser-scenario';
 /**
  * Exécute les scénarios de qa-template-matrix.ts via Playwright.
  * Écrit apps/webapp/.integration-run/qa-matrix-results.json puis régénère qa-test-matrix.xlsx.
@@ -239,6 +241,7 @@ async function main(): Promise<void> {
 
 	const { chromium } = await import('playwright');
 	const browser = await chromium.launch({ headless: true });
+	try {
 	const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 	context.setDefaultTimeout(15_000);
 	context.setDefaultNavigationTimeout(30_000);
@@ -322,16 +325,16 @@ async function main(): Promise<void> {
 
 	console.log('\n--- Phase Application (unclaimed rows) ---');
 	let prevModule = '';
-	try {
-		for (const row of appRows) {
-			if (isProvisionedRun() && results.some(r =>
-				r.module === row.module && r.endpoint === row.endpoint && r.action === row.action
-			)) {
-				continue;
-			}
-			if (isProvisionedRun() && row.module === 'Shell' && row.action === 'Logout') {
-				continue;
-			}
+    try {
+      const unclaimed = appRows.filter(row => !(isProvisionedRun() && (
+        results.some(result => result.module === row.module && result.endpoint === row.endpoint && result.action === row.action)
+        || (row.module === 'Shell' && row.action === 'Logout'))));
+      if (unclaimed.length) {
+        const definitions = unclaimed.map(row => scenarioForSurface(row));
+        const outcomes = await runScenarios<BrowserScenarioContext>(definitions, {
+          createContext: async (_definition, cleanup) => bindBrowserScenarioContext({ browser, base: ctx.base, outDir: ctx.outDir, fixtures: { entities } }, ctx.page, cleanup),
+          execute: async scenario => {
+          const row = unclaimed.find(row => scenarioForSurface(row).id === scenario.id)!;
 			if (prevModule === 'Shell' && row.module !== 'Shell') {
 				console.log('--- Re-login après tests Shell ---');
 				let signedIn = false;
@@ -353,10 +356,20 @@ async function main(): Promise<void> {
 					throw new Error('Re-login failed after Shell tests');
 				}
 			}
-			record(await runMatrixScenario(row, ctx, browser, entities));
+			const result = await runMatrixScenario(row, ctx, browser, entities);
+			record(result);
 			prevModule = row.module;
-		}
-	}
+			if (result.statut !== 'OK') throw new Error(result.detail ?? `Failed action: ${row.action}`);
+
+        } });
+        for (const outcome of outcomes.filter(result => result.status !== 'passed')) {
+          const row = unclaimed.find(row => scenarioForSurface(row).id === outcome.id)!;
+          if (!results.some(result => result.module === row.module && result.endpoint === row.endpoint && result.action === row.action)) {
+            record({ ...row, statut: 'NOT OK', detail: outcome.detail });
+          }
+        }
+      }
+    }
 	catch (err) {
 		console.error(
 			'Unclaimed phase failed; persisting journey results:',
@@ -374,6 +387,7 @@ async function main(): Promise<void> {
 
 	const setupBlockers = entities.studentSetupBlocked ? [studentSetupBlockerReport()] : [];
 	await persistAndExit(base, results, consoleErrors, browser, excluded, setupBlockers);
+	} finally { await browser.close(); }
 }
 
 async function persistAndExit(

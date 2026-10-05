@@ -31,7 +31,8 @@
     "contract:check": "python3 scripts/release-contract.py --role web",
     "test:integration:coverage": "bun --filter @edaya/webapp test:integration:coverage",
     "test:integration:webadmin": "bun --filter @edaya/webapp test:integration:webadmin",
-    "test:integration:availability": "bun --filter @edaya/webapp test:integration:availability"
+    "test:integration:availability": "bun --filter @edaya/webapp test:integration:availability",
+    "screenshots": "bun --filter @edaya/webapp screenshots"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^9.0.0",

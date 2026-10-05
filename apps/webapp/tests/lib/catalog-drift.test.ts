@@ -1,3 +1,4 @@
+import { assertVisualCoverage } from '../integration/screenshots/scenarios';
 import { describe, expect, it } from 'bun:test';
 import {
 	CLASS_NAV_DEFS,
@@ -72,6 +73,7 @@ function hasRedirectSmoke(legacyPath: string): boolean {
 describe('catalog drift', () => {
 	it('registers every current navigation, modal, route and action', () => {
 		assertFeatureRegistration();
+        assertVisualCoverage();
 		const missing: string[] = [];
 
 		for (const def of [...SCHOOL_NAV_DEFS, ...FINANCE_NAV_DEFS, ...CONFIG_NAV_DEFS]) {

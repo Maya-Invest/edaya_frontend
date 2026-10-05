@@ -1,3 +1,6 @@
+import { openViewSurface } from '../tests/integration/support/view-workflow';
+import { bindBrowserScenarioContext } from '../tests/integration/support/browser-scenario';
+import { captureIntegrationCheckpoint } from '../tests/integration/support/visual-artifacts';
 import { withScenarioArtifacts, observeScenarioPage, captureScenarioPage } from '../tests/integration/support/scenario-artifacts';
 import { exerciseAssignmentCrud } from '../tests/integration/support/assignment-workflows';
 import { exerciseDetailCrud } from '../tests/integration/support/detail-crud-workflows';
@@ -802,6 +805,21 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		return ok(row, page.url());
 	}
 
+  if (action === ROUTE_SMOKE_ACTION || /^Modal deep-link \?modal=/i.test(action)) {
+    const path = row.endpoint.replace(/^https?:\/\/[^/]+/i, '');
+    const modal = new URL(path, ctx.base).searchParams.get('modal');
+    const registered = MODAL_SURFACES.find(surface => surface.parentRoute === path.split('?')[0] && surface.modal === modal);
+    const definition = scenarioForSurface(row);
+    const surface = { id: definition.id, feature: definition.feature, path, title: row.action,
+      kind: modal ? 'modal' as const : 'page' as const, identity: 'owner' as const,
+      target: registered?.targetEntityKey as keyof MatrixEntities | undefined };
+    await openViewSurface(page, ctx.base, surface, entities);
+    const locale = await page.locator('html').getAttribute('lang') === 'en' ? 'en' as const : 'fr' as const;
+    await captureIntegrationCheckpoint({ id: modal ? 'dialog' : 'loaded', title: row.action, surface: path, ready: async () => {} },
+      bindBrowserScenarioContext({ browser, base: ctx.base, outDir: ctx.outDir, locale }, page, () => {}), definition);
+    return ok(row);
+  }
+
 	const nav = await navigateToRow(ctx, row, entities);
 	if (!nav.url) {
 		if (/import/i.test(action) && action.includes('prérequis')) {
@@ -854,47 +872,6 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
   }
   const importType = (Object.keys(IMPORT_SCENARIOS) as Array<keyof typeof IMPORT_SCENARIOS>).find(key => IMPORT_SCENARIOS[key] === action);
   if (importType) return ok(row, await exerciseImport(page, ctx.base, importType, entities));
-
-	// ── Generated: modal deep-link smoke ──
-	if (/^Modal deep-link \?modal=/i.test(action)) {
-		const endpointPath = row.endpoint.replace(/^https?:\/\/[^/]+/i, '');
-		const modalMatch = endpointPath.match(/[?&]modal=([^&]+)/);
-		const modalKey = modalMatch?.[1];
-		const pathOnly = endpointPath.split('?')[0] ?? '';
-		const surface = MODAL_SURFACES.find((s) => {
-			if (s.modal !== modalKey) return false;
-			const normalizedParent = s.parentRoute
-				.replace('/[classId]', '')
-				.replace('/[id]', '');
-			return pathOnly === normalizedParent || pathOnly.startsWith(`${normalizedParent}/`);
-		});
-		if (surface?.requiresTarget && surface.targetEntityKey) {
-			const target = entities[surface.targetEntityKey as keyof MatrixEntities];
-			if (!target) {
-				return na(row, `Setup missing ${surface.setupStep ?? surface.targetEntityKey} for modalTarget`);
-			}
-		}
-
-		if (modalKey === 'add-chapter' && pathOnly.includes('/configuration/subjects/') && !entities.subjectId) {
-			return na(row, 'Setup missing subjectId for progression modal');
-		}
-
-		const visible = await waitForFormModal(page, 15_000);
-
-		const urlHasModal = modalKey ? page.url().includes(`modal=${modalKey}`) : false;
-		return visible && urlHasModal ? ok(row) : notOk(row, `Modal non visible (url=${page.url()})`);
-	}
-
-	// ── Generated: direct route navigation smoke ──
-	if (action === ROUTE_SMOKE_ACTION) {
-		const isStudentDrawerRoute = /\/school\/students\/[^/]+\//.test(page.url())
-			|| row.endpoint.includes('/school/students/[id]/');
-		if (isStudentDrawerRoute) {
-			await waitForPageQuery(page);
-		}
-		const content = await hasMainContent(page, { drawerTimeout: 15_000 });
-		return content ? ok(row) : notOk(row, 'Contenu principal / drawer absent');
-	}
 
 	// ── Notes pédagogiques (before generic CRUD — action contains "CRUD") ──
 	if (/notes pédagogiques/i.test(action)) {

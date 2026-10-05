@@ -1,3 +1,4 @@
+import { captureScenarioPage } from '../../support/scenario-artifacts';
 import assert from 'node:assert/strict';
 import type { Browser } from 'playwright';
 import { signIn } from '../support/auth';
@@ -36,6 +37,7 @@ export async function runCleanupLayouts(browser: Browser, base: string, outDir: 
 						await ctx.shot(`cleanup-${step}`);
 					}
 					catch (error) {
+						await captureScenarioPage(page);
 						reporter.log('Cleanup', `${step} language/capture`, 'fail', error instanceof Error ? error.message : String(error));
 					}
 				}

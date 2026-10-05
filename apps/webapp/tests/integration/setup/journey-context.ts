@@ -2,6 +2,9 @@
  * Shared Playwright helpers for the owner UI journey.
  */
 import assert from 'node:assert/strict';
+import { runScenarios, type ScenarioStep } from '../support/scenario-registry';
+import { bindBrowserScenarioContext, type BrowserScenarioContext } from '../support/browser-scenario';
+import { captureIntegrationCheckpoint } from '../support/visual-artifacts';
 import { uiCommand, waitForMutationDialog } from '../support/ui-command';
 import type { Page } from 'playwright';
 import type { DemoContext } from '../demo-dry-run/support/types';
@@ -184,9 +187,7 @@ export function coverMutationActions(
 	);
 }
 
-export async function runModalMutation(
-	journey: UiJourney,
-	input: {
+export type ModalMutationInput = {
 		parentRoute: string;
 		modal: string;
 		pathname: string;
@@ -201,43 +202,44 @@ export async function runModalMutation(
 		listPath?: string;
 		actionPath?: string;
 		actions?: readonly string[];
-	},
-): Promise<{ opened: boolean; submitted: boolean; closed: boolean; postcondition: boolean; result: Record<string, unknown> | null }> {
-	const { page, base } = journey.ctx;
+	};
+export interface ModalMutationState {
+  opened: boolean; submitted: boolean; closed: boolean; postcondition: boolean;
+  result: Record<string, unknown> | null;
+}
+export const emptyModalMutation = (): ModalMutationState => ({ opened: false, submitted: false, closed: false, postcondition: false, result: null });
+
+/** Shared form boundary: capture stops before submit; integration preserves command and persistence assertions. */
+export function modalMutationSteps<C extends BrowserScenarioContext>(input: ModalMutationInput, state: ModalMutationState,
+  hooks: { navigate: (path: string) => Promise<void>; shot: (name: string) => Promise<unknown> },
+): ScenarioStep<C>[] {
+  return [
+    { id: 'open-form', run: async ({ page, base }) => {
 	await dismissOpenDialogs(page);
-	let opened = false;
+	state.opened = false;
 	if (input.openLabel) {
-		await gotoApp(journey, input.pathname);
-		opened = await openDialogButton(page, input.openLabel, 15_000);
+		await hooks.navigate(input.pathname);
+		state.opened = await openDialogButton(page, input.openLabel, 15_000);
 	}
-	if (!opened) {
-		opened = await openUrlModal(page, input.pathname, input.modal, {
+	if (!state.opened) {
+		state.opened = await openUrlModal(page, input.pathname, input.modal, {
 			target: input.target,
 			base,
 		});
 	}
-	if (!opened && input.openLabel) {
-		opened = await openDialogButton(page, input.openLabel, 15_000);
-	}
-	if (!opened) {
-		coverCompletedModal(journey, input.parentRoute, input.modal, {
-			opened: false,
-			submitted: false,
-			closed: false,
-		}, `${input.modal} not found`);
-		if (input.actions && input.actionPath) {
-			coverMutationActions(journey, input.actionPath, input.actions, { exercised: false }, `${input.modal} not found`);
-		}
-		return { opened: false, submitted: false, closed: false, postcondition: false, result: null };
+	if (!state.opened && input.openLabel) {
+		state.opened = await openDialogButton(page, input.openLabel, 15_000);
 	}
 
-	if (input.fill) {
-		await input.fill(page);
-	}
+      assert(state.opened, `${input.modal} not found`);
+	if (input.fill) await input.fill(page);
+    }, checkpoint: { id: 'edit-form', title: input.modal, surface: `${input.parentRoute}?modal=${input.modal}`,
+      ready: async ({ page }) => { await page.getByRole('dialog').last().waitFor({ state: 'visible' }); } } },
+    { id: 'submit', run: async ({ page }) => {
 	const resultPromise = waitForCommandResult(page, input.command);
-	let submitted = true;
+	state.submitted = true;
 	if (input.submit === 'confirm') {
-		submitted = await confirmDialog(page, input.confirmLabel);
+		state.submitted = await confirmDialog(page, input.confirmLabel);
 	}
 	else {
 		await waitForSubmitEnabled(page, 15_000).catch(() => {});
@@ -245,24 +247,27 @@ export async function runModalMutation(
 			await submitDialog(page);
 		}
 		catch {
-			submitted = false;
+			state.submitted = false;
 		}
 	}
-	const closed = submitted
+	state.closed = state.submitted
 		? await waitForDialogClosed(page).catch(() => false)
 		: false;
-	const result = submitted ? await resultPromise : null;
-	if (!submitted) {
+	state.result = state.submitted ? await resultPromise : null;
+	if (!state.submitted) {
 		console.log(`modal ${input.modal} submit stayed disabled (${input.command})`);
 	}
-	else if (!result) {
+	else if (!state.result) {
 		console.log(`modal ${input.modal} command ${input.command} had no ok response`);
 	}
-	if (!submitted || !closed || !result) {
-		await journey.ctx.shot(`failure-mutation-${input.command.replaceAll('/', '-')}-${input.modal}`);
+	if (!state.submitted || !state.closed || !state.result) {
+		await hooks.shot(`failure-mutation-${input.command.replaceAll('/', '-')}-${input.modal}`);
 	}
+
+    } },
+    { id: 'verify-persistence', run: async ({ page }) => {
 	if (input.listPath) {
-		await gotoApp(journey, input.listPath);
+		await hooks.navigate(input.listPath);
 		await waitForPageQuery(page);
 	}
 	const visible = input.visibleAfter
@@ -273,24 +278,29 @@ export async function runModalMutation(
 		try { await input.verifyPersisted(page); }
 		catch { persisted = false; }
 	}
-	const postcondition = submitted && closed && result !== null && (!input.visibleAfter || visible) && persisted;
-	if (!postcondition) await journey.ctx.shot(`failure-postcondition-${input.command.replaceAll('/', '-')}-${input.modal}`);
-	coverCompletedModal(journey, input.parentRoute, input.modal, {
-		opened: true,
-		submitted,
-		closed,
-		postcondition,
-	}, input.visibleAfter);
-	if (input.actions && input.actionPath) {
-		coverMutationActions(
-			journey,
-			input.actionPath,
-			input.actions,
-			{ exercised: true, postcondition },
-			input.visibleAfter,
-		);
-	}
-	return { opened: true, submitted, closed, postcondition, result };
+	state.postcondition = state.submitted && state.closed && state.result !== null && (!input.visibleAfter || visible) && persisted;
+	if (!state.postcondition) await hooks.shot(`failure-postcondition-${input.command.replaceAll('/', '-')}-${input.modal}`);
+	assert(state.postcondition, `${input.command}: mutation or persistence assertion failed`);
+
+    } },
+  ];
+}
+
+export async function runModalMutation(journey: UiJourney, input: ModalMutationInput): Promise<ModalMutationState> {
+  const state = emptyModalMutation();
+  const { page, base } = journey.ctx;
+  const scenario = { id: `mutation.${input.command}.${input.modal}`, feature: 'provisioned-journey',
+    steps: modalMutationSteps(input, state, { navigate: path => gotoApp(journey, path), shot: name => journey.ctx.shot(name) }) };
+  const outcomes = await runScenarios<BrowserScenarioContext>([scenario], {
+    createContext: async (_definition, cleanup) => bindBrowserScenarioContext({ browser: page.context().browser()!, base, outDir: journey.ctx.outDir }, page, cleanup),
+    onCheckpoint: captureIntegrationCheckpoint,
+    onFailure: async () => { await journey.ctx.shot(`failure-mutation-${input.command}-${input.modal}`); },
+  });
+  if (outcomes[0]?.status !== 'passed') state.postcondition = false;
+  coverCompletedModal(journey, input.parentRoute, input.modal, state, input.visibleAfter);
+  if (input.actions && input.actionPath) coverMutationActions(journey, input.actionPath, input.actions,
+    { exercised: state.submitted, postcondition: state.postcondition }, input.visibleAfter);
+  return state;
 }
 
 export function logStep(journey: UiJourney, result: SetupStepResult): void {

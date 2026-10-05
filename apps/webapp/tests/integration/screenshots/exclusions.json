@@ -1,0 +1,167 @@
+[
+  {
+    "surface": "/",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/configuration",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/configuration/classes/:id?",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/configuration/roles/:role?",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/configuration/subjects/level/:level?",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/configuration/subjects/:id?",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/configuration/staff/:id?",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/classes/:classId",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/classes/:classId/evaluations/:id?",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/classes/:classId/students/:id?",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/classes/:classId/homework/:id?",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/classes/:classId/subjects/:id?",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/classes/:classId/teaching/:id?",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/classes/:classId/timetable/:id",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/finance",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/account",
+    "kind": "layout-only",
+    "reason": "Layout container has no independent content; capture its child pages."
+  },
+  {
+    "surface": "/account/inbox",
+    "kind": "layout-only",
+    "reason": "Layout container has no independent content; capture its child pages."
+  },
+  {
+    "surface": "/school",
+    "kind": "layout-only",
+    "reason": "Layout container has no independent content; capture its child pages."
+  },
+  {
+    "surface": "/school/marks-review",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/school/messages",
+    "kind": "layout-only",
+    "reason": "Layout container has no independent content; capture its child pages."
+  },
+  {
+    "surface": "/school/family-feedback",
+    "kind": "layout-only",
+    "reason": "Layout container has no independent content; capture its child pages."
+  },
+  {
+    "surface": "/school/family-feedback/:id?",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/school/teacher-assignments",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/school/announcements",
+    "kind": "layout-only",
+    "reason": "Layout container has no independent content; capture its child pages."
+  },
+  {
+    "surface": "/school/teachers/:id?",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/school/students/:id?",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/school/activities/:id?",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/school/staff/:id?",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/school/events",
+    "kind": "layout-only",
+    "reason": "Layout container has no independent content; capture its child pages."
+  },
+  {
+    "surface": "/__design",
+    "kind": "page",
+    "reason": "Development component gallery; capture product views directly."
+  },
+  {
+    "surface": "/login/demo",
+    "kind": "redirect",
+    "reason": "Redirect has no independent view; capture its destination."
+  },
+  {
+    "surface": "/configuration/other",
+    "kind": "redirect",
+    "reason": "Permission-aware landing redirect to the first other-configuration page."
+  },
+  {
+    "surface": "/configuration/subjects/[id]/logbook",
+    "kind": "legacy-alias",
+    "reason": "Legacy class-subject logbook alias redirects to progression for the current grade-level catalog; capture class teaching logbooks instead."
+  }
+]

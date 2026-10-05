@@ -39,6 +39,25 @@ export async function captureScenarioPage(page: Page): Promise<void> {
     mask: [page.locator('input, textarea, pre, code, [data-testid*="secret"], [data-testid*="recovery"], [data-testid*="otp"], canvas, svg[aria-label*="QR"]')] });
   capture.captured = file;
 }
+
+export async function withArtifactScope<T>(
+  input: { id: string; expected: string; directory: string; page: Page }, run: () => Promise<T>,
+): Promise<T> {
+  return active.run({ ...input, http: [], cleanup: [] }, async () => {
+    const capture = active.getStore()!;
+    observeScenarioPage(input.page);
+    try { return await run(); }
+    catch (error) {
+      await captureScenarioPage(capture.page);
+      await writeFile(join(capture.directory, `${capture.id}.json`), JSON.stringify({
+        scenarioId: capture.id, expected: capture.expected, detail: redactDiagnostic(String(error)),
+        screenshot: capture.captured, http: capture.http.slice(-30),
+      }, null, 2));
+      throw error;
+    }
+    finally { for (const cleanup of capture.cleanup) cleanup(); }
+  });
+}
 export async function withScenarioArtifacts<T extends { statut: string; detail?: string }>(
   input: { id: string; expected: string; directory: string; page: Page }, run: () => Promise<T>,
 ): Promise<T> {
@@ -56,6 +75,15 @@ export async function withScenarioArtifacts<T extends { statut: string; detail?:
         }, null, 2));
       }
       return result;
+    }
+    catch (error) {
+      await captureScenarioPage(capture.page);
+      await mkdir(capture.directory, { recursive: true });
+      await writeFile(join(capture.directory, `${capture.id}.json`), JSON.stringify({
+        scenarioId: capture.id, expected: capture.expected, detail: redactDiagnostic(String(error)),
+        screenshot: capture.captured, http: capture.http.slice(-30),
+      }, null, 2));
+      throw error;
     }
     finally { for (const cleanup of capture.cleanup) cleanup(); }
   });

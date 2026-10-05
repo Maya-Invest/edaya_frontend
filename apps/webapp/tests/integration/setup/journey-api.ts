@@ -65,12 +65,12 @@ export async function apiFetch(
 	page: Page,
 	appOrigin: string,
 	path: string,
-	init: { method?: string; data?: unknown; headers?: Record<string, string>; academicYearId?: string } = {},
+	init: { method?: string; data?: unknown; headers?: Record<string, string>; academicYearId?: string; schoolId?: string } = {},
 	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
 ): Promise<JourneyApiResponse> {
 	const appBase = appOrigin.replace(/\/+$/, '');
 	const apiBase = apiUrl.replace(/\/+$/, '');
-	const schoolId = await readProvisionedFixtureSchoolId();
+	const schoolId = init.schoolId ?? await readProvisionedFixtureSchoolId();
 	const headers: Record<string, string> = {
 		'content-type': 'application/json',
 		'accept': 'application/json',

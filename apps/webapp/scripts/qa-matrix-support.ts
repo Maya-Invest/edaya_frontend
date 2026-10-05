@@ -141,7 +141,7 @@ export function formatError(err: unknown): string {
 }
 
 export async function waitForAppShell(page: Page): Promise<void> {
-	const ready = page.locator('aside#app-sidebar, [data-onboarding-shell]').first();
+	const ready = page.locator('[data-testid="app-shell"], [data-onboarding-shell]').first();
 	try {
 		await ready.waitFor({ state: 'visible', timeout: 15_000 });
 		return;

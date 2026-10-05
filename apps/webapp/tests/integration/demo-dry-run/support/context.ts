@@ -1,3 +1,4 @@
+import { observeScenarioPage } from '../../support/scenario-artifacts';
 import type { Page } from 'playwright';
 import { createShot } from './auth';
 import { setupPageErrorTracking } from './page-errors';
@@ -11,6 +12,7 @@ export function createDemoContext(
 	reporter: DemoReporter,
 	consoleErrors: string[],
 ): DemoContext {
+	observeScenarioPage(page);
 	const pageErrors = setupPageErrorTracking(page, reporter, consoleErrors);
 	return {
 		base,

@@ -485,8 +485,20 @@
 		}
 		return true;
 	});
+	const importPrerequisitesLoading = $derived([
+		loadingMatricules,
+		loadingTeacherCodes,
+		loadingStaffCodes,
+		loadingGuardianCodes,
+		loadingPaymentReferences,
+		loadingSubjectImportContext,
+		loadingChapterContext,
+		loadingPaymentContext,
+		loadingBillingContext,
+		loadingTeacherAssignmentContext,
+	].some(Boolean));
 	const canGoToValidate = $derived(
-		isWiredImport && parsedRowCount > 0 && !parseErrorMessage && !parsing && !preparingValidation,
+		isWiredImport && parsedRowCount > 0 && !parseErrorMessage && !parsing && !preparingValidation && !importPrerequisitesLoading,
 	);
 	const canStartStudentImport = $derived(canImportValidatedStudents(studentValidationResult));
 	const canStartClassImport = $derived(canImportValidatedClasses(classValidationResult));

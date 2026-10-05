@@ -1,3 +1,4 @@
+import { observeScenarioPage, captureScenarioPage } from '../../support/scenario-artifacts';
 import type { Browser, Page } from 'playwright';
 import process from 'node:process';
 import {
@@ -17,7 +18,6 @@ import {
 	expectAppDashboard,
 	waitForEnabled,
 } from './auth';
-import { captureFailure } from './capture';
 import { invitePath, stripTrailingSlash } from './paths';
 
 const ACCEPT_INVITE = /accepter l['’]invitation|accept invitation/i;
@@ -347,11 +347,12 @@ export async function withIsolatedPage<T>(
 ): Promise<T> {
 	const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 	const page = await context.newPage();
+	observeScenarioPage(page);
 	try {
 		return await run(page);
 	}
 	catch (error) {
-		await captureFailure(page, process.env.EDAYA_ARTIFACT_DIR ?? '.onboarding-run', `${process.env.EDAYA_SCENARIO_ID ?? 'invite'}-invitee`);
+		await captureScenarioPage(page);
 		throw error;
 	}
 	finally {
@@ -376,6 +377,7 @@ export async function acceptInviteThroughUi(
 	await page.goto(invitePath(base, options.token), { waitUntil: 'domcontentloaded' });
 	await fillInviteForm(page, { ...options, mode });
 	const target = options.verifyInNewPage ? await page.context().newPage() : page;
+	observeScenarioPage(target);
 	try {
 		if (target !== page)
 			await target.goto(invitePath(base, options.token), { waitUntil: 'domcontentloaded' });
@@ -385,7 +387,7 @@ export async function acceptInviteThroughUi(
 		await expectInviteLanding(target, options.kind);
 	}
 	catch (error) {
-		await captureFailure(target, process.env.EDAYA_ARTIFACT_DIR ?? '.onboarding-run', `${process.env.EDAYA_SCENARIO_ID ?? 'invite'}-accept`);
+		await captureScenarioPage(target);
 		throw error;
 	}
 	finally {

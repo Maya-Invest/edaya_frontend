@@ -80,3 +80,119 @@ Keep a unit test when it locks a branch a developer can get wrong, it is the che
 - Do not add `empty*Slice()` tests. TypeScript already types those literals.
 - New import packs add validator and runner tests. Add a parser test only for a branch the shared parser harness misses (Excel serial dates, optional columns, header aliases).
 - Catalog drift belongs in `tests/lib/catalog-drift.test.ts`. Do not add a second journey, matrix, or scene-id coverage file.
+
+## Shared scenarios and screenshot gallery
+
+Onboarding, the provisioned owner journey and its unclaimed QA matrix, and the
+seeded demo walkthrough use `integration/support/scenario-registry.ts`. Existing
+commands and reports remain in `.onboarding-run/`, `.integration-run/` and
+`.demo-dry-run/`. A failed dependency blocks its descendants; independent work
+continues. Legacy returned failures are recorded as failures, including required
+matrix actions. The provisioned journey ledger claims each exercised action once;
+the matrix runs only remaining actions.
+
+The integration profile runs every step and postcondition. The screenshot profile
+stops at one declared checkpoint per execution. Earlier steps and checkpoint
+readiness assertions still run, but neither a PNG nor an unsubmitted form earns
+mutation or release coverage. Form mutations share `modalMutationSteps`; onboarding
+shares `happyPathSteps` and `loginSignupSteps`. Screenshot view navigation and QA
+route/modal assertions share `openViewSurface`.
+
+### Local setup
+
+Use a disposable local database and the dedicated backend testing entry point;
+never point these fixture-producing runs at staging or production. From
+`edaya_backend`, start `bun run dev:test` with the local database configuration and
+captured OTP mailbox, then run `bun repo seed --skip-attachments` against that
+same API. Keep the local file service available if the seed has image references.
+See the backend local development documentation for the database and mailbox
+configuration. Do not reset an existing database to satisfy a missing prerequisite.
+
+From `apps/webapp`, start the development server with testing access:
+
+```sh
+PUBLIC_TEST_OTP_ACCESS=true PUBLIC_APP_ENV=development bun run dev
+```
+
+Defaults are webapp `http://localhost:5173` and unified API/auth
+`http://localhost:9999`. Override `WEBAPP_URL` and `API_URL` for another local
+stack. The webapp's `API_URL`/`PUBLIC_API_URL` must refer to that same API. OTP
+helpers need the matching `EDAYA_TEST_OTP_FILE` when they use the captured mailbox.
+The runner validates local-only endpoints, service readiness, the seeded owner,
+class and student. It resolves actual domain IDs and academic scope through
+admitted reads and adds a fictional parent conversation if absent. It never wipes
+local data. Onboarding accounts are unique disposable identities.
+
+### Capture commands
+
+Run from the frontend root:
+
+```sh
+bun run screenshots
+bun run screenshots --list
+bun run screenshots --device mobile,tablet --locale en --module school
+bun run screenshots --scenario view.school.students.record.profile.modal.edit-profile --checkpoint edit-form
+bun run screenshots --headed --out /tmp/edaya-review-new-run
+```
+
+`--device` accepts mobile (390 × 844), tablet (820 × 1180), desktop
+(1440 × 1000). Defaults capture all three in French and English, using Chromium,
+light mode and one isolated browser context per checkpoint/variant. `--module`
+accepts a top-level feature (`auth`, `onboarding`, `school`, `classes`, `finance`,
+`configuration`, `dashboard`, `account`, `shell`); `--scenario` matches an ID prefix;
+`--checkpoint` matches an exact checkpoint ID. Filters combine. `--list` needs no
+running services. `--out` must name a new directory, protecting previous evidence.
+
+Each run writes ignored `apps/webapp/.screenshots/<run-id>/index.html`,
+`manifest.json`, viewport PNGs and failure diagnostics. Open `index.html` directly
+for search, module/language filters and device comparison. The manifest records
+source revision/fingerprint, fixture identity, URL, viewport and image hashes.
+Failed or blocked captures remain visible and exit unsuccessfully. Partial
+results are saved after each capture. Normal fictional form values remain visible;
+passwords, OTPs and marked secrets are masked. Fonts/images/layout settle before
+capture and animations are disabled. Long forms have explicitly named scrolled
+checkpoints. Previous runs and curated design-review galleries are preserved.
+
+To capture declared checkpoints while completing integration assertions:
+
+```sh
+bun run test:integration:onboarding --capture-checkpoints
+bun run test:integration:provisioned --capture-checkpoints
+SCENARIO_CAPTURE_CHECKPOINTS=true bun run demo:e2e
+```
+
+These use the same collector and put a gallery under the suite's `checkpoints/`
+folder. Capture failure fails the scenario. Finish source edits before running a
+suite or full gallery: execution metadata rejects results if source changes during
+execution. Screenshots are an on-demand review aid; there is no baseline approval
+or GitHub Actions visual-diff workflow.
+
+### Authoring
+
+Extend `ScenarioDefinition<BrowserScenarioContext>` with a stable `id`, `feature`,
+`dependsOn`, `fixtureRequirements`, and ordered executable `steps`. Attach a
+checkpoint with stable `id`, `title`, catalog `surface` and a `ready` assertion to
+the step that reaches it. Keep submit/persistence steps after an edit-form
+checkpoint. Actions and assertions must not branch on execution profile.
+
+Use `createBrowserScenarioContext` for isolated scenarios and
+`bindBrowserScenarioContext` for an explicitly shared journey session. Context
+supplies page/browser helpers, service addresses, locale/viewport, fixture handles,
+artifact location and `registerCleanup`. Register disposal immediately after
+allocation; cleanup runs in reverse order even after setup or capture failures.
+A suite owns a bound journey's primary context, while newly opened contexts belong
+to their scenario. Observe secondary pages and capture them before closing on
+failure so diagnostics describe the failing view. Never use environment variables
+to pass scenario identity or mutable scenario state.
+
+Add product routes, tabs and modal surfaces to
+`integration/screenshots/surfaces.json` with their fixture target when required;
+add multi-step workflows in `scenarios.ts`. `exclusions.json` records concrete
+redirects, layout-only containers, legacy aliases and the development gallery.
+`tests/lib/catalog-drift.test.ts` requires visual coverage or an explicit exclusion.
+Update the existing catalog guard when introducing another workflow/tab catalog.
+
+Validation: `bun test tests/lib/shared-scenario-runner.test.ts`, the existing
+registry/catalog tests, all three integration commands, the complete six-variant
+`bun run screenshots`, and frontend-root `bun run verify`. Inspect representative
+sign-in, list, drawer, form and navigation PNGs after capturing.
