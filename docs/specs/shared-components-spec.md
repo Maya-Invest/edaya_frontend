@@ -49,7 +49,6 @@ Status: **Built** = use as-is. No **Planned** registry entries at this time — 
 | **ConfirmModal** | `ui/ConfirmModal.svelte` | Built | Delete / irreversible — Cancel + Confirm |
 | **PickerModal** | `ui/PickerModal.svelte` | Built | Link / assign related entity |
 | **PermissionGate** | `ui/PermissionGate.svelte` | Built | Hide or disable actions by effective grant |
-| **DeleteEntityButton** | `ui/DeleteEntityButton.svelte` | Built | Standard destructive control in modals / overflow |
 | **ToastHost** | `ui/ToastHost.svelte` | Built | Global mutation feedback (via `toast` helper) |
 
 Use **Button**, **Input**, **Label**, **Checkbox**, **Select**, **Dialog**, **Popover**, **Textarea** from `ui/` for form fields — not raw unstyled HTML (except inside `FilterSelect`).
@@ -69,11 +68,10 @@ Feature routes **do not** reimplement shell chrome.
 
 | Component | Path | Status | Use for |
 |-----------|------|--------|---------|
-| **DetailDrawer shell contract** | Shared `school/shared/DetailDrawer.svelte` or route-local `[[id]]/+layout.svelte` shell | Built / route-local | Overlay shell — type chip, close, backdrop/Escape close, `md:w-1/2`, lazy or routed body dispatch |
+| **DetailDrawer shell contract** | Route-local `[[id]]/+layout.svelte` shell | Built / route-local | Overlay shell — type chip, close, backdrop/Escape close, `md:w-1/2`, lazy or routed body dispatch |
 | **DrawerEntityHeader** | `school/shared/DrawerEntityHeader.svelte` | Built | Identity + ≤2 primary actions + overflow |
 | **DrawerField** | `school/shared/DrawerField.svelte` | Built | Read-only label + value in drawer body |
 | **DrawerEmptyState** | `school/shared/DrawerEmptyState.svelte` | Built | Empty sub-collection / tab placeholder |
-| **DrawerActionBar** | `school/shared/DrawerActionBar.svelte` | Built | Optional drawer **body footer** — `border-t`, right-aligned actions; **not** sub-collection `+ Add` header |
 
 Complex drawer bodies (`*Detail.svelte`, `*Tabs.svelte`, nested tab routes) **must** use `DrawerEntityHeader` for identity and actions — not a duplicate hero block in tab content. Nested-route drawers may own a route-local shell when the shared dispatcher would couple the route back to legacy feature bodies.
 
@@ -83,13 +81,13 @@ Smart components are shared, self-contained features with their own state class 
 
 | Component | Path | Use for |
 |-----------|------|---------|
-| **PersonPicker** | `smart-components/person-picker/` (target) · legacy `school/shared/pickers/PersonPicker.svelte` | Base searchable person popover |
-| **StaffPicker** | `smart-components/staff-picker/` (target) · legacy `school/shared/pickers/StaffPicker.svelte` | Homeroom, staff assignment targets |
-| **StudentPicker** | `smart-components/student-picker/` (target) · legacy `school/shared/pickers/StudentPicker.svelte` | Incidents, billing, enrollments |
+| **PersonPicker** | `smart-components/person-picker/` | Base searchable person popover |
+| **StaffPicker** | `smart-components/staff-picker/` | Homeroom, staff assignment targets |
+| **StudentPicker** | `smart-components/student-picker/` | Incidents, billing, enrollments |
 | **ClassGroupPicker** | `smart-components/class-group-picker/` | Activity class timetable links, class multi-select on create |
-| **GuardianPicker** | `smart-components/guardian-picker/` (target) · legacy `school/shared/pickers/GuardianPicker.svelte` | Guardian ↔ student linking |
-| **ScopeBuilder** | `smart-components/scope-builder/` (target) · legacy `school/configuration/ScopeBuilder.svelte` | Staff permission typed `scopes` by catalog grain |
-| **StaffPermissionFormModal** | route-local or smart — legacy `school/configuration/StaffPermissionFormModal.svelte` | Add / edit `staffPermissionAssignments` |
+| **GuardianPicker** | `smart-components/guardian-picker/` | Guardian ↔ student linking |
+| **ScopeBuilder** | `smart-components/scope-builder/` | Staff permission typed `scopes` by catalog grain |
+| **StaffPermissionFormModal** | `smart-components/staff-permission-form-modal/` | Add / edit `staffPermissionAssignments` |
 
 Do not build ad-hoc `<select>` lists for people — use pickers or **PickerModal**. New smart components follow `*-state.svelte.ts` + root `.svelte` + `components/` subfolder.
 
@@ -154,7 +152,6 @@ DetailDrawer shell (shared or route-local)
     tab bar: route links under [[id]]/ (e.g. …/guardians) — not ?tab= query params
     sections: DrawerField …
     sub-collection: inline section header (+ Add) + read-only list + row Edit/Delete → modals
-    optional footer: DrawerActionBar (secondary actions only)
     empty: DrawerEmptyState
 ```
 
@@ -202,7 +199,7 @@ Remaining chip-bar **main** filters should migrate to `FilterSelect` when touche
 | Open `*Form.svelte` as default drawer body | Read-only body + `FormModal` |
 | Custom permission matrix / inline CRUD grid | Staff drawer + `StaffPermissionFormModal`; profile catalog uses a same-grain checklist, not a roles matrix |
 | Raw `<select>` for staff/student/guardian | Smart `*Picker` or `PickerModal` |
-| New `ScopeChipSelector` usages | `ScopeBuilder` or delete unused legacy |
+| Ad-hoc scope chip selectors | `ScopeBuilder` |
 | One-off badge colors | `ui-tones` / `drawer-constants` |
 | Feature views in `lib/components/school/{domain}/` | `routes/.../components/` |
 | `?tab=` query param for drawer tabs | Nested routes under `[[id]]/` |

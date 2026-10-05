@@ -5,7 +5,6 @@
 	import { catalogEntriesForClassGroupStaffAssignment } from '$lib/api/staff-assignment-permissions';
 	import { formatPermissionLabel } from '$lib/api/staff-permission-assignments-data';
 	import PermissionCheckboxGroup from '$lib/components/school/configuration/PermissionCheckboxGroup.svelte';
-	import StaffPicker from '$lib/components/school/shared/pickers/StaffPicker.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
@@ -16,6 +15,7 @@
 	import { Plus, Trash2 } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { pruneStaffAssignmentPermissions } from '$lib/school/staff-assignment-form-helpers';
+	import StaffPicker from '$lib/smart-components/staff-picker/StaffPicker.svelte';
 	import { get } from 'svelte/store';
 	import { getClassGroupAssignmentsTabState } from '../[[id]]/(tabs)/assignments/class-group-assignments-tab.svelte';
 	import { getClassesPageState } from '../classes-page.svelte';
@@ -238,7 +238,7 @@
 	<div class="space-y-4">
 		<div class="space-y-2">
 			<Label>{$t('classGroups.assignmentStaff')}</Label>
-			<StaffPicker bind:value={staffId} {staff} active={formOpen.open} placeholder={$t('classGroups.selectStaff')} />
+			<StaffPicker active bind:value={staffId} {staff} placeholder={$t('classGroups.selectStaff')} />
 		</div>
 
 		<div class="space-y-2">

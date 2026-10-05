@@ -50,7 +50,7 @@ export const MODULES: {
 	href: ResolvedPathname;
 }[] = [
 	{ key: 'school', tKey: 'module.school', icon: Building2, href: appPath('/(app)/school/students/[[id]]') },
-	// Placeholder only — AppRail/AppSidebar resolve the real class id at click time.
+	// Placeholder only — AppSidebar resolve the real class id at click time.
 	{ key: 'classes', tKey: 'module.classes', icon: LayoutGrid, href: DASHBOARD_HREF },
 	{ key: 'finance', tKey: 'module.finance', icon: WalletIcon, href: appPath('/(app)/finance/billing/[[id]]') },
 	{ key: 'configuration', tKey: 'module.configuration', icon: Settings2, href: appPath('/(app)/configuration/subjects/[[id]]') },

@@ -3,10 +3,10 @@
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { sortGradeLevels } from '$lib/academic/grade-level-sort';
 	import { suggestNextClassName } from '$lib/academic/next-class-name';
-	import StaffPicker from '$lib/components/school/shared/pickers/StaffPicker.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
+	import StaffPicker from '$lib/smart-components/staff-picker/StaffPicker.svelte';
 	import { get } from 'svelte/store';
 	import { getClassesPageState } from '../classes-page.svelte';
 
@@ -176,7 +176,7 @@
 		</label>
 		<div class="space-y-1.5 text-sm sm:col-span-2">
 			<span class="text-muted-foreground">{$t('classGroups.staffCoordinator')}</span>
-			<StaffPicker bind:value={homeroomStaffId} {staff} active={open} class="w-full" />
+			<StaffPicker active bind:value={homeroomStaffId} {staff} class="w-full" />
 		</div>
 	</div>
 </FormModal>
