@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PeriodDefinition, PeriodDefinitionDayOfWeek } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { savePeriodDefinitionMutation } from '$lib/api/mutations/period-definition.mutations';
+
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
@@ -95,12 +95,12 @@
 			};
 
 			const ok = isEdit && periodDefinition
-				? await savePeriodDefinitionMutation({
+				? await periodGridPage.performSavePeriodDefinition({
 					id: periodDefinition.id,
 					...payload,
 					successMessage: get(t)('periodDefinitions.toastUpdated', { label: trimmedLabel }),
 				})
-				: await savePeriodDefinitionMutation({
+				: await periodGridPage.performSavePeriodDefinition({
 					...payload,
 					successMessage: get(t)('periodDefinitions.toastCreated', { label: trimmedLabel }),
 				});

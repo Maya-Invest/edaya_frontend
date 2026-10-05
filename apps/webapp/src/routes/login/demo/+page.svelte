@@ -5,9 +5,9 @@
 	import { checkBrowserApiHealth } from '$lib/api/check-api-health';
 	import ApiConnectionBanner from '$lib/components/auth/ApiConnectionBanner.svelte';
 	import AuthScreenShell from '$lib/components/auth/AuthScreenShell.svelte';
-	import PasswordlessPanel from '$lib/components/auth/login/PasswordlessPanel.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { t } from '$lib/i18n';
+	import PasswordlessPanel from '$lib/smart-components/passwordless-panel/PasswordlessPanel.svelte';
 	import { onMount } from 'svelte';
 
 	let accounts = $state<DemoAccount[]>([]);

@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import PasswordlessPanel from '$lib/components/auth/login/PasswordlessPanel.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import { t } from '$lib/i18n';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import PasswordlessPanel from '$lib/smart-components/passwordless-panel/PasswordlessPanel.svelte';
 	import { SecurityPage } from './security-page.svelte';
 
 	const state = new SecurityPage();

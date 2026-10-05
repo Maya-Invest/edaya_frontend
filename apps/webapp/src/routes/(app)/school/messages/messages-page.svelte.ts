@@ -7,10 +7,12 @@ import { hasPermission } from '$lib/permissions';
 import { resolvePageLoad } from '$lib/queries/page-status';
 import { ApiError } from '@maya-invest/edaya-api-client';
 import { get } from 'svelte/store';
+import { messageQueryKey } from './message-query-key';
 
 type Summary = components['schemas']['ConversationsResponse']['items'][number];
 type Detail = components['schemas']['ConversationDetailResponse'];
 export class MessagesPageState {
+    readonly queryKey = messageQueryKey;
     items = $state<Summary[]>([]);
     detail = $state<Detail | null>(null);
     total = $state(0);

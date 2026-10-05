@@ -1,17 +1,20 @@
 <script lang="ts">
+	import type { updateClassSubjectTimetableMutation } from '$lib/api/mutations/class-subject.mutations';
 	import type { components } from '$lib/api/schema';
 	import type { School } from '$lib/types/school';
-	import { updateClassSubjectTimetableMutation } from '$lib/api/mutations/class-subject.mutations';
-	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
 	import { resolvedPeriodSpanPlaceholder } from '$lib/scheduling/timetable-placement-parameters';
 
 	const {
+		onLoadClassSubject,
+		onUpdateClassSubjectTimetable,
 		classSubjectId,
 		school,
 	}: {
+		onLoadClassSubject: (id: string) => Promise<components['schemas']['ClassSubject']>;
+		onUpdateClassSubjectTimetable: typeof updateClassSubjectTimetableMutation;
 		classSubjectId: string;
 		school?: School | null;
 	} = $props();
@@ -34,7 +37,7 @@
 	async function loadClassSubject() {
 		loading = true;
 		try {
-			const row = await getBrowserSchoolClient().entities.classSubjects.get(classSubjectId);
+			const row = await onLoadClassSubject(classSubjectId);
 			classSubject = row;
 			periodsPerWeek = row.periodsPerWeek != null ? String(row.periodsPerWeek) : '';
 			minPeriodSpan = row.minPeriodSpan != null ? String(row.minPeriodSpan) : '';
@@ -53,7 +56,7 @@
 	async function saveTimetableConfig() {
 		busy = true;
 		try {
-			const ok = await updateClassSubjectTimetableMutation({
+			const ok = await onUpdateClassSubjectTimetable({
 				classSubjectId,
 				periodsPerWeek,
 				minPeriodSpan,

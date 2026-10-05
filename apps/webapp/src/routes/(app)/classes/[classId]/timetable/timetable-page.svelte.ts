@@ -3,6 +3,7 @@ import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { PlanningEvent } from '$lib/types/school';
 import type { TimetablePageSlice } from './lib';
 import { academicContext } from '$lib/academic/context.svelte';
+import { cancelPlanningEventMutation } from '$lib/api/mutations/planning.mutations';
 import { academicYearPlanningRange } from '$lib/api/planning-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadCalendarEvents } from '$lib/api/school-life-data';
@@ -21,10 +22,27 @@ import {
 export type TimetableGenerationOptions = components['schemas']['TimetableGenerationOptions'];
 export type { TimetablePageSlice };
 
-const TIMETABLE_VERSION_FAMILIES = ['planning'] as const satisfies readonly EntityVersionKey[];
+const TIMETABLE_VERSION_FAMILIES = ['planning', 'school', 'periodDefinitions', 'enrollments', 'staff', 'students', 'guardians', 'subjects', 'activities', 'schoolYearEvents', 'teachers', 'teacherUnavailabilities'] as const satisfies readonly EntityVersionKey[];
 const KEY = Symbol('timetable-page-state');
 
 export class TimetablePageState {
+	performCancelPlanningEvent = (event: Parameters<typeof cancelPlanningEventMutation>[0], options?: Parameters<typeof cancelPlanningEventMutation>[1]) => {
+		const classId = this.classId;
+		const previous = this.events.find(entry => entry.id === event.id)?.status;
+		return cancelPlanningEventMutation(event, {
+			...options,
+			apply: () => {
+				this.patchEvent(event.id, { status: 'cancelled' });
+				options?.apply?.();
+			},
+			rollback: () => {
+				if (this.classId === classId && previous !== undefined)
+					this.patchEvent(event.id, { status: previous });
+				options?.rollback?.();
+			},
+		});
+	};
+
 	slice = $state<TimetablePageSlice | null>(null);
 	busy = $state(false);
 	focusDate = $state('');

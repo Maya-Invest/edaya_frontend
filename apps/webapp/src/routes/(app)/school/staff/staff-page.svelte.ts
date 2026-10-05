@@ -12,13 +12,7 @@ import {
 	loadStaffPermissionPageData,
 
 } from '$lib/api/staff-permission-assignments-data';
-import {
-	bindingsForStaff,
-	customAssignmentsForStaff,
-	loadPermissionProfileCatalogData,
-	renderBindingScopeLabel,
-
-} from '$lib/api/staff-permission-profiles-data';
+import { loadStaffPermissionProfiles,	bindingsForStaff,	customAssignmentsForStaff,	loadPermissionProfileCatalogData,	renderBindingScopeLabel } from '$lib/api/staff-permission-profiles-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { mergeById } from '$lib/detail-data/seed-policies';
 import { t } from '$lib/i18n';
@@ -58,6 +52,8 @@ const STAFF_VERSION_FAMILIES = ['staff'] as const satisfies readonly EntityVersi
 const STAFF_PAGE_STATE_KEY = Symbol('staff-page-state');
 
 export class StaffPageState {
+	loadStaffPermissionProfilesForForm = (...args: Parameters<typeof loadStaffPermissionProfiles> extends [unknown, ...infer Rest] ? Rest : never) => loadStaffPermissionProfiles(getBrowserSchoolClient(), ...args);
+
 	staff = $state<StaffMember[]>([]);
 	fullRosterStaff = $state<StaffMember[]>([]);
 	staffAssignments = $state<StaffAssignment[]>([]);

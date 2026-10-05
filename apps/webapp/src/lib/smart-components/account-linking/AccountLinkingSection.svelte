@@ -1,12 +1,5 @@
 <script lang="ts">
 	import type { components } from '$lib/api/schema';
-	import { readPendingInvitation } from '$lib/api/invitation-cache';
-	import { fetchPendingAccountInvitation } from '$lib/api/invitation-data';
-	import {
-		resendAccountInvitationMutation,
-		revokeAccountInvitationMutation,
-		sendAccountInvitationMutation,
-	} from '$lib/api/mutations/invitation.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -15,6 +8,7 @@
 	import { Mail, ShieldCheck, User } from '$lib/icons';
 	import { toast } from '$lib/toast.svelte';
 	import { get } from 'svelte/store';
+	import { AccountLinkingState } from './account-linking-state.svelte';
 
 	type InvitationKind = components['schemas']['SendAccountInvitationCommand']['kind'];
 
@@ -32,25 +26,14 @@
 		displayName: string;
 	} = $props();
 
-	let busy = $state(false);
-	let pendingOverride = $state<string | null | undefined>(undefined);
-	let serverPendingId = $state<string | null>(null);
-	let lastInviteUrl = $state<string | null>(null);
-
-	const pendingInvitationId = $derived(
-		pendingOverride !== undefined
-			? pendingOverride
-			: serverPendingId ?? readPendingInvitation(kind, targetId),
-	);
-
-	const linkStatus = $derived.by(() => {
-		if (subjectId) {
-			return 'linked' as const;
-		}
-		if (pendingInvitationId) {
-			return 'pending' as const;
-		}
-		return 'not_linked' as const;
+	const state = new AccountLinkingState(() => ({ kind, targetId, subjectId, contactEmail, displayName }));
+	const linkStatus = $derived(state.linkStatus);
+	$effect(() => {
+		void kind;
+		void targetId;
+		void subjectId;
+		void state.loadPending();
+		return () => state.cancelPending();
 	});
 
 	const statusLabel = $derived(
@@ -69,88 +52,12 @@
 			: 'text-muted-foreground bg-secondary/50 border-border',
 	);
 
-	$effect(() => {
-		pendingOverride = undefined;
-
-		if (subjectId) {
-			serverPendingId = null;
-			return;
-		}
-
-		const currentKind = kind;
-		const currentTargetId = targetId;
-		let cancelled = false;
-		void fetchPendingAccountInvitation(currentKind, currentTargetId).then((invitation) => {
-			if (!cancelled) {
-				serverPendingId = invitation?.id ?? null;
-			}
-		});
-
-		return () => {
-			cancelled = true;
-		};
-	});
-
-	async function handleSend() {
-		busy = true;
-		const result = await sendAccountInvitationMutation({
-			kind,
-			targetId,
-			contactValue: contactEmail || undefined,
-			successMessage: get(t)('invitation.sendSuccess', { name: displayName }),
-		});
-		busy = false;
-		if (result) {
-			pendingOverride = result.invitationId;
-			serverPendingId = result.invitationId;
-			lastInviteUrl = result.inviteUrl;
-		}
-	}
-
-	async function handleResend() {
-		if (!pendingInvitationId) {
-			return;
-		}
-		busy = true;
-		const result = await resendAccountInvitationMutation({
-			kind,
-			targetId,
-			invitationId: pendingInvitationId,
-			successMessage: get(t)('invitation.resendSuccess', { name: displayName }),
-		});
-		busy = false;
-		if (result) {
-			pendingOverride = result.invitationId;
-			serverPendingId = result.invitationId;
-			lastInviteUrl = result.inviteUrl;
-		}
-	}
-
-	async function handleRevoke() {
-		if (!pendingInvitationId) {
-			return;
-		}
-		busy = true;
-		const ok = await revokeAccountInvitationMutation({
-			kind,
-			targetId,
-			invitationId: pendingInvitationId,
-			successMessage: get(t)('invitation.revokeSuccess', { name: displayName }),
-		});
-		busy = false;
-		if (ok) {
-			pendingOverride = null;
-			serverPendingId = null;
-			lastInviteUrl = null;
-		}
-	}
-
 	async function copyInviteLink() {
-		if (!lastInviteUrl) {
+		if (!state.lastInviteUrl) {
 			return;
 		}
 		try {
-			await navigator.clipboard.writeText(lastInviteUrl);
+			await navigator.clipboard.writeText(state.lastInviteUrl);
 			toast.success(get(t)('invitation.copyInviteLinkSuccess'));
 		}
 		catch {
@@ -188,9 +95,9 @@
 							type="button"
 							size="sm"
 							variant="outline"
-							disabled={disabled || busy || !contactEmail}
+							disabled={disabled || state.busy || !contactEmail}
 							title={!contactEmail ? $t('invitation.emailRequired') : title}
-							onclick={handleSend}
+							onclick={state.send}
 						>
 							<Mail class="mr-1.5 h-3.5 w-3.5" />
 							{$t('invitation.send')}
@@ -200,9 +107,9 @@
 							type="button"
 							size="sm"
 							variant="outline"
-							disabled={disabled || busy}
+							disabled={disabled || state.busy}
 							title={title}
-							onclick={handleResend}
+							onclick={state.resend}
 						>
 							{$t('invitation.resend')}
 						</Button>
@@ -210,9 +117,9 @@
 							type="button"
 							size="sm"
 							variant="ghost"
-							disabled={disabled || busy}
+							disabled={disabled || state.busy}
 							title={title}
-							onclick={handleRevoke}
+							onclick={state.revoke}
 						>
 							{$t('invitation.revoke')}
 						</Button>
@@ -221,13 +128,13 @@
 			{/snippet}
 		</PermissionGate>
 
-		{#if linkStatus === 'pending' && lastInviteUrl}
+		{#if linkStatus === 'pending' && state.lastInviteUrl}
 			<div class="space-y-2 rounded-lg border border-border bg-secondary/30 px-3 py-2.5">
 				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 					{$t('invitation.inviteLinkLabel')}
 				</Label>
 				<div class="flex flex-col gap-2 sm:flex-row">
-					<Input readonly value={lastInviteUrl} class="font-sans tabular-nums text-xs" />
+					<Input readonly value={state.lastInviteUrl} class="font-sans tabular-nums text-xs" />
 					<Button type="button" size="sm" variant="outline" onclick={copyInviteLink}>
 						{$t('invitation.copyInviteLink')}
 					</Button>

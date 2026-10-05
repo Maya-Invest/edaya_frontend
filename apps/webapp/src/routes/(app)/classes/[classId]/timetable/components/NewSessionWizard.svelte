@@ -1,11 +1,10 @@
 <script lang="ts">
 	import type { Activity, PlanningEvent, Subject } from '$lib/types/school';
+
 	import type { NewSessionStep } from '../planning-surface';
 	import { afterNavigate } from '$app/navigation';
-	import { createAssessmentMutation } from '$lib/api/mutations/evaluation.mutations';
-	import { createSessionMutation } from '$lib/api/mutations/planning.mutations';
-	import { createScheduleMutation } from '$lib/api/mutations/schedule.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
+
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -14,6 +13,9 @@
 	import { catalogSubjectName } from '$lib/i18n/catalog-label';
 	import { sessionInstantsForSlot } from '$lib/scheduling/planning-calendar';
 	import { get } from 'svelte/store';
+	import { getPlanningTimetableState } from '../planning-timetable-state.svelte';
+
+	const actionState = getPlanningTimetableState();
 
 	type SessionKind = 'lesson' | 'activity' | 'assessment';
 
@@ -156,7 +158,7 @@
 
 		try {
 			if (sessionKind === 'lesson') {
-				createdId = await createSessionMutation({
+				createdId = await actionState.performCreateSession({
 					classGroupId: classId,
 					title: sessionTitle,
 					classSubjectId,
@@ -169,7 +171,7 @@
 			}
 			else if (sessionKind === 'activity') {
 				const activity = activities.find(entry => entry.id === activityId);
-				createdId = await createScheduleMutation({
+				createdId = await actionState.performCreateSchedule({
 					classGroupId: classId,
 					scheduleKind: 'activity',
 					title: activity?.name ?? $t('planning.wizard.activityFallback'),
@@ -199,7 +201,7 @@
 						endTime: end,
 					}).endsAt.toISOString(),
 				};
-				const assessmentId = await createAssessmentMutation({
+				const assessmentId = await actionState.performCreateAssessment({
 					classGroupId: classId,
 					classSubjectId,
 					title: sessionTitle,

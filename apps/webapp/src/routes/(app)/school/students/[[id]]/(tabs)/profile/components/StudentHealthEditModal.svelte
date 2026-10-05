@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
-	import { upsertStudentHealthProfileMutation } from '$lib/api/mutations/student-ops.mutations';
+
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -44,7 +44,7 @@
 		}
 		busy = true;
 		try {
-			const saved = await upsertStudentHealthProfileMutation({
+			const saved = await profileTab.performUpsertStudentHealthProfile({
 				id: health?.id,
 				studentId: s.id,
 				bloodType: bloodType.trim() || null,

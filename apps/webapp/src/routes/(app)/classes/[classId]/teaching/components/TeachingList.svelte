@@ -1,8 +1,7 @@
 <script lang="ts">
 	import type { Subject } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
-	import { setClassSubjectOfferedMutation } from '$lib/api/mutations/grade-level-subject.mutations';
+
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
@@ -56,7 +55,7 @@
 	async function toggleOffered(event: Event, subject: Subject) {
 		event.stopPropagation();
 		const next = !(subject.isOffered ?? true);
-		const ok = await setClassSubjectOfferedMutation({
+		const ok = await teachingPage.performSetClassSubjectOffered({
 			classSubjectId: subject.id,
 			isOffered: next,
 			successMessage: get(t)('subjects.offeredUpdated'),
@@ -118,7 +117,7 @@
 			</div>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly exportLabel={$t('documents.exportLogbook')} onExport={() => void requestDocumentIssuanceMutation({
+			<ListMoreMenu exportOnly exportLabel={$t('documents.exportLogbook')} onExport={() => void teachingPage.performRequestDocumentIssuance({
 				templateKey: 'logbook.v1',
 				sourceId: classId,
 				classGroupId: classId,

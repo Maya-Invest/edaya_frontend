@@ -91,7 +91,7 @@
 						</p>
 						<p class="mt-1 text-sm">{incident.summary}</p>
 						<div class="mt-3">
-							<DocumentPdfButton
+							<DocumentPdfButton onRequestDocumentIssuance={incidentsTab.performRequestDocumentIssuance}
 								templateKey="incident-report.v1"
 								sourceId={incident.id}
 								studentId={s.id}

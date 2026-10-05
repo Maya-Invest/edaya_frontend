@@ -2,7 +2,7 @@
 	import type { Activity, PlanningEvent, SchoolYearEvent, Student, Subject } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
+
 	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -177,7 +177,7 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu exportOnly exportLabel={$t('documents.exportTimetable')} onExport={() => void requestDocumentIssuanceMutation({
+			<ListMoreMenu exportOnly exportLabel={$t('documents.exportTimetable')} onExport={() => void planning.performRequestDocumentIssuance({
 				templateKey: 'class-timetable.v1',
 				sourceId: classId,
 				classGroupId: classId,

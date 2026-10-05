@@ -1,9 +1,6 @@
 <script lang="ts">
-	import type { components } from '$lib/api/schema';
 	import type { Incident } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import { getBrowserSchoolClient } from '$lib/api/school-client';
-	import { loadIncidentInvolvements, loadIncidentSanctions } from '$lib/api/school-life-data';
 	import { incidentSevTone, incidentCatTone } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
@@ -21,7 +18,6 @@
 	import { getEventsPageState } from '../../events-page.svelte';
 	import IncidentResolveModal from './IncidentResolveModal.svelte';
 
-	type Involvement = components['schemas']['StudentIncidentInvolvement'];
 	type IncidentDrawerModal = 'edit' | 'resolve' | 'delete';
 
 	const {
@@ -48,30 +44,11 @@
 	const deleteOpen = bindUrlModal(modals, 'delete');
 
 	let deleteBusy = $state(false);
-	let involvements = $state<Involvement[]>([]);
-	let sanctions = $state<Awaited<ReturnType<typeof loadIncidentSanctions>>>([]);
-	let detailLoading = $state(false);
-
+	const involvements = $derived(eventsPage.involvements);
+	const sanctions = $derived(eventsPage.sanctions);
+	const detailLoading = $derived(eventsPage.detailLoading);
 	const live = $derived(eventsPage.findIncident(incident.id) ?? incident);
 	const isResolved = $derived(live.status === 'resolved');
-
-	$effect(() => {
-		const incidentId = live.id;
-		const names = new Map(students.map(student => [student.id, student.name]));
-		void (async () => {
-			detailLoading = true;
-			try {
-				const client = getBrowserSchoolClient();
-				[involvements, sanctions] = await Promise.all([
-					loadIncidentInvolvements(client, incidentId),
-					loadIncidentSanctions(client, incidentId, names),
-				]);
-			}
-			finally {
-				detailLoading = false;
-			}
-		})();
-	});
 
 	function studentFor(studentId: string) {
 		return students.find(student => student.id === studentId);
@@ -93,14 +70,8 @@
 		}
 	}
 
-	async function refreshDetail() {
-		const client = getBrowserSchoolClient();
-		const names = new Map(students.map(student => [student.id, student.name]));
-		[involvements, sanctions] = await Promise.all([
-			loadIncidentInvolvements(client, live.id),
-			loadIncidentSanctions(client, live.id, names),
-		]);
-	}
+	const refreshDetail = () => eventsPage.refreshDetail(live.id);
+
 </script>
 
 <div class="space-y-5">

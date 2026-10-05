@@ -1,6 +1,7 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { AttendanceDay } from '$lib/types/school';
 import type { AttendancePageSlice } from './lib/attendance-helpers';
+import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
 import {
@@ -10,13 +11,15 @@ import {
 } from './lib/attendance-helpers';
 import { loadAttendanceSlice, queryAttendanceListPage } from './lib/attendance-queries';
 
-const ATTENDANCE_VERSION_FAMILIES = ['attendance', 'students'] as const satisfies readonly EntityVersionKey[];
+const ATTENDANCE_VERSION_FAMILIES = ['attendance', 'students', 'guardians', 'enrollments'] as const satisfies readonly EntityVersionKey[];
 
 const ATTENDANCE_PAGE_STATE_KEY = Symbol('attendance-page-state');
 
 export type { AttendancePageSlice };
 
 export class AttendancePageState {
+	performRequestDocumentIssuance = (...args: Parameters<typeof requestDocumentIssuanceMutation>) => requestDocumentIssuanceMutation(...args);
+
 	slice = $state<AttendancePageSlice | null>(null);
 
 	private readonly versions = new RouteVersionSnapshot(ATTENDANCE_VERSION_FAMILIES);

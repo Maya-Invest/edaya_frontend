@@ -5,7 +5,7 @@
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { ACCOUNT_PROFILE_MODAL } from '$lib/account/profile-navigation';
-	import { bootstrapAppShell, invalidateAppShellBootstrapCache, resetAppShellBootstrap } from '$lib/auth/bootstrap-app';
+	import { bootstrapAppShell, invalidateAppShellBootstrapCache } from '$lib/auth/bootstrap-app';
 	import { shouldEnforceLoginGate } from '$lib/auth/enforce-login-gate';
 	import { leaveStaffWebappForSessionKind } from '$lib/auth/leave-staff-webapp';
 	import { ONBOARDING_PATH } from '$lib/auth/resolve-post-auth-paths';
@@ -31,8 +31,11 @@
 	import { shellContext } from '$lib/shell/context.svelte';
 	import { cn } from '$lib/utils';
 	import { MediaQuery } from 'svelte/reactivity';
+	import { AccountState, setAccountState } from './account-state.svelte';
 	import AccountProfileModal from './components/AccountProfileModal.svelte';
 
+	const accountState = new AccountState();
+	setAccountState(accountState);
 	const { children }: { children: Snippet } = $props();
 	const desktop = new MediaQuery('(min-width: 1024px)');
 	let mobileSidebarOpen = $state(false);
@@ -149,15 +152,15 @@
 		})();
 	});
 
-	async function logout() {
-		resetAppShellBootstrap();
-		await authSession.logout();
-		await appGoto(appPath('/login'), { replaceState: true });
-	}
 </script>
 
 {#if authSession.ready && authSession.isLoggedIn && me}
-	<div class="flex h-dvh w-full overflow-hidden bg-background text-foreground">
+	<div
+		class="flex h-dvh w-full overflow-hidden bg-background text-foreground"
+		data-testid="app-shell"
+		data-school-id={academicContext.schoolScopeId}
+		data-year-id={academicContext.shellReady ? academicContext.yearId : ''}
+	>
 		{#if desktop.current}
 			<div
 				class={cn(
@@ -244,7 +247,7 @@
 		</div>
 	</div>
 
-	<AccountProfileModal bind:open={profileOpen.open} actor={me} onLogout={logout} />
+	<AccountProfileModal bind:open={profileOpen.open} actor={me} onLogout={() => accountState.logout()} />
 {:else}
 	<div
 		class="flex h-screen w-full items-center justify-center bg-background text-foreground"

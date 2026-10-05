@@ -3,7 +3,7 @@
 	import type { Student } from '$lib/types/school';
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { requestDocumentIssuanceBatchMutation, requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
+
 	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -68,7 +68,7 @@
 	const view = $derived(readListView($page.url));
 
 	async function exportRosterAndIdCards() {
-		await requestDocumentIssuanceMutation({
+		await classStudentsPage.performRequestDocumentIssuance({
 			templateKey: 'class-roster.v1',
 			sourceId: classId,
 			classGroupId: classId,
@@ -79,7 +79,7 @@
 		if (students.length === 0) {
 			return;
 		}
-		await requestDocumentIssuanceBatchMutation({
+		await classStudentsPage.performRequestDocumentIssuanceBatch({
 			templateKey: 'student-id-card.v1',
 			items: students.map(student => ({
 				sourceId: student.id,

@@ -1,12 +1,12 @@
 <script lang="ts">
-	import type { SubjectMatterDrawerRow } from '$lib/api/mutations/subject-matter.mutations';
-	import { saveSubjectMatterMutation } from '$lib/api/mutations/subject-matter.mutations';
+	import type { SubjectMatterDrawerRow, saveSubjectMatterMutation } from '$lib/api/mutations/subject-matter.mutations';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
 
 	let {
+		onSaveSubjectMatter,
 		open = $bindable(false),
 		matter = null,
 		subjectId,
@@ -16,6 +16,7 @@
 		defaultSequenceOrder = 1,
 		onSaved,
 	}: {
+		onSaveSubjectMatter: typeof saveSubjectMatterMutation;
 		open?: boolean;
 		matter?: SubjectMatterDrawerRow | null;
 		subjectId: string;
@@ -71,7 +72,7 @@
 		try {
 			const trimmedName = name.trim();
 			const estimatedHoursText = fieldText(estimatedHours);
-			const saved = await saveSubjectMatterMutation({
+			const saved = await onSaveSubjectMatter({
 				id: matter?.id,
 				subjectId,
 				classSubjectId,

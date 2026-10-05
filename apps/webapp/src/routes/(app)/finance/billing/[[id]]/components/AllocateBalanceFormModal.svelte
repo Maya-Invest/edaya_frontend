@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { AllocationMode, AllocationPlan, AllocationPreview } from '$lib/api/finance-types';
 	import type { StudentBilling } from '$lib/types/school';
-	import { allocateAccountBalanceMutation, previewAccountAllocationQuery } from '$lib/api/mutations/billing-ops.mutations';
+
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -64,7 +64,7 @@
 			preview = null;
 			return;
 		}
-		preview = await previewAccountAllocationQuery({
+		preview = await billingPage.performPreviewAccountAllocationQuery({
 			accountId: account.id,
 			allocation: allocationPlan(),
 		});
@@ -85,7 +85,7 @@
 		}
 		busy = true;
 		try {
-			const ok = await allocateAccountBalanceMutation({
+			const ok = await billingPage.performAllocateAccountBalance({
 				accountId: account.id,
 				allocation: allocationPlan(),
 				successMessage: get(t)('billing.allocateSuccess'),

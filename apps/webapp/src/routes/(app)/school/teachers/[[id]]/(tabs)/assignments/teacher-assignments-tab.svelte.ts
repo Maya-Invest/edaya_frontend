@@ -1,9 +1,12 @@
 import type { components } from '$lib/api/schema';
 import type { PageQueryRequest } from '../../../lib/teacher-page-status';
 import type { TeachersPageState } from '../../../teachers-page.svelte';
-import { teacherAssignmentsForTeachers } from '$lib/api/entity-list-filters';
+import { entitiesByIds, teacherAssignmentsForTeachers } from '$lib/api/entity-list-filters';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { VersionedRouteQuery } from '$lib/navigation/versioned-route-query';
 import { getContext, setContext } from 'svelte';
+import { SvelteSet } from 'svelte/reactivity';
 import { resolveTeacherPageLoad } from '../../../lib/teacher-page-status';
 import { teacherDetailIdFromUrl } from '../../../lib/teacher-selectors';
 
@@ -17,11 +20,23 @@ export interface TeacherAssignmentsTabSlice {
 }
 
 export class TeacherAssignmentsTabState {
+	private readonly versionedQuery = new VersionedRouteQuery(new RouteVersionSnapshot(['teachers', 'subjects', 'staff']));
+	invalidateIfStale = () => this.versionedQuery.invalidateIfStale();
+
+	async loadClassSubjectChoices(schoolId: string, classGroupId: string) {
+		const client = getBrowserSchoolClient();
+		const classSubjects = await client.entities.classSubjects.list({ schoolId, classGroupId });
+		const ids = [...new SvelteSet(classSubjects.map(entry => entry.subjectId))];
+		const subjects = ids.length ? await client.entities.subjects.list(entitiesByIds(ids)) : [];
+		return { classSubjects, subjects };
+	}
+
 	slice = $state<TeacherAssignmentsTabSlice | null>(null);
 
 	constructor(private readonly getPage: () => TeachersPageState) {}
 
 	clear() {
+		this.versionedQuery.clear();
 		this.slice = null;
 	}
 
@@ -57,7 +72,7 @@ export class TeacherAssignmentsTabState {
 	}
 
 	query() {
-		return (url: URL, request?: PageQueryRequest) => resolveTeacherPageLoad(url, {
+		return this.versionedQuery.track((url: URL, request?: PageQueryRequest) => resolveTeacherPageLoad(url, {
 			empty: () => ({}),
 			load: async (signal) => {
 				const teacherId = teacherDetailIdFromUrl(url);
@@ -84,7 +99,7 @@ export class TeacherAssignmentsTabState {
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load teacher assignments.',
-		}, request);
+		}, request));
 	}
 }
 

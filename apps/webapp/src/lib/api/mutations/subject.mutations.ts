@@ -39,7 +39,7 @@ export async function updateSubjectMutation(input: {
 			categoryId: input.categoryId,
 			color: input.color,
 		}),
-	), { successMessage: input.successMessage });
+	), { successMessage: input.successMessage, versionKeys: ['subjects', 'planning'] });
 	return result !== null;
 }
 
@@ -73,7 +73,7 @@ export async function createSubjectForClassMutation(input: {
 			createdAt,
 		});
 		return classSubjectId;
-	}, { successMessage: input.successMessage });
+	}, { successMessage: input.successMessage, versionKeys: ['subjects', 'planning'] });
 	return result ? classSubjectId : null;
 }
 
@@ -127,7 +127,6 @@ export async function createSubjectForGradeLevelMutation(input: {
 	}, {
 		successMessage: input.successMessage,
 		versionKeys: ['subjects'],
-		refresh: true,
 	});
 	return result;
 }

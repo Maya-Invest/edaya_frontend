@@ -11,11 +11,14 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { loadDocumentIssuances, loadDocumentTemplates, studentYearAccountSourceId } from '$lib/api/documents-data';
 import { CONVOCATION_TEMPLATE, STUDENT_GENERATE_TEMPLATE_KEYS } from '$lib/api/documents-types';
 import { loadStudentFinanceSummary } from '$lib/api/finance-data';
+import { voidDocumentIssuanceMutation, requestDocumentIssuanceMutation, retryDocumentIssuanceMutation, downloadDocumentMutation } from '$lib/api/mutations/documents.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { loadStudentEnrollmentHistory } from '$lib/api/student-drawer-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { entityVersions } from '$lib/entity-versions.svelte';
+import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { VersionedRouteQuery } from '$lib/navigation/versioned-route-query';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { AnnualReportCardState } from '../../annual-report-card-state.svelte';
@@ -37,12 +40,24 @@ function emptySlice(studentId: string): StudentDocumentsTabSlice {
 }
 
 export class StudentDocumentsTabState {
+	private readonly versionedQuery = new VersionedRouteQuery(new RouteVersionSnapshot(['documents', 'students']));
+	invalidateIfStale = () => this.versionedQuery.invalidateIfStale();
+
+	performVoidDocumentIssuance = (...args: Parameters<typeof voidDocumentIssuanceMutation>) => voidDocumentIssuanceMutation(...args);
+
+	performRequestDocumentIssuance = (...args: Parameters<typeof requestDocumentIssuanceMutation>) => requestDocumentIssuanceMutation(...args);
+
+	performRetryDocumentIssuance = (...args: Parameters<typeof retryDocumentIssuanceMutation>) => retryDocumentIssuanceMutation(...args);
+
+	performDownloadDocument = (...args: Parameters<typeof downloadDocumentMutation>) => downloadDocumentMutation(...args);
+
 	slice = $state<StudentDocumentsTabSlice | null>(null);
 	documentsVersion = $state(entityVersions.documents);
 
 	constructor(private readonly getPage: () => StudentDetailHost, readonly annual = new AnnualReportCardState(getPage)) {}
 
 	clear() {
+		this.versionedQuery.clear();
 		this.annual.clear();
 		this.slice = null;
 	}
@@ -128,7 +143,7 @@ export class StudentDocumentsTabState {
 	}
 
 	query() {
-		return (url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
+		return this.versionedQuery.track((url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
 			load: async (signal) => {
 				this.documentsVersion = entityVersions.documents;
@@ -155,7 +170,7 @@ export class StudentDocumentsTabState {
 				return {};
 			},
 			hasItems: () => true,
-		}, request);
+		}, request));
 	}
 }
 

@@ -2,7 +2,7 @@
 	import type { AttendanceDay } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { attendanceSheetSourceId } from '$lib/api/documents-data';
-	import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
+
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -69,7 +69,7 @@
 		if (!day) {
 			return;
 		}
-		await requestDocumentIssuanceMutation({
+		await attendancePage.performRequestDocumentIssuance({
 			templateKey: 'attendance-sheet.v1',
 			sourceId: attendanceSheetSourceId(classId, day.date.slice(0, 10)),
 			classGroupId: classId,

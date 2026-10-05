@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { StudentYearAccountView } from '$lib/api/finance-data';
 	import type { PaymentMethod } from '$lib/api/finance-types';
-	import { refundAvailableBalanceMutation } from '$lib/api/mutations/billing-ops.mutations';
+
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -80,7 +80,7 @@
 		}
 		busy = true;
 		try {
-			const ok = await refundAvailableBalanceMutation({
+			const ok = await paymentPage.performRefundAvailableBalance({
 				accountId: selectedAccount.id,
 				amount: amountMinor,
 				paymentDate: new Date(`${paymentDate}T12:00:00`).toISOString(),

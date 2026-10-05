@@ -15,7 +15,7 @@ const config = {
 		alias: {
 			
 			'$tests': 'tests',
-			'$testOtpPanel': testOtpAccess ? 'src/lib/components/auth/testing/TestOtpPanel.svelte' : 'src/lib/components/auth/testing/DisabledOtpPanel.svelte',
+			'$testOtpPanel': testOtpAccess ? 'src/lib/smart-components/test-otp-panel/TestOtpPanel.svelte' : 'src/lib/smart-components/test-otp-panel/DisabledOtpPanel.svelte',
 		},
 		paths: {
 			relative: false,

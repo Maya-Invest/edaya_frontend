@@ -3,11 +3,15 @@ import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { StudentBilling } from '$lib/types/school';
 import type { BillingPageSlice } from './lib/billing-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
+import { loadPaymentSettlementHistory } from '$lib/api/finance-data';
+import { waiveStudentChargeMutation, cancelStudentChargeMutation, adjustStudentChargeMutation, previewAccountAllocationQuery, allocateAccountBalanceMutation, reverseAllocationMutation } from '$lib/api/mutations/billing-ops.mutations';
 import {
 	enrollStudentInServiceMutation,
 	enrollStudentsInServiceMutation,
 	recordPaymentMutation,
 } from '$lib/api/mutations/billing.mutations';
+import { requestDocumentIssuanceMutation, requestDocumentIssuanceBatchMutation } from '$lib/api/mutations/documents.mutations';
+import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
 import { billingDetailIdFromUrl } from './lib/billing-helpers';
@@ -20,6 +24,24 @@ const BILLING_PAGE_STATE_KEY = Symbol('billing-page-state');
 export type { BillingPageSlice };
 
 export class BillingPageState {
+	loadSettlementHistory = (...args: Parameters<typeof loadPaymentSettlementHistory> extends [unknown, ...infer Rest] ? Rest : never) => loadPaymentSettlementHistory(getBrowserSchoolClient(), ...args);
+
+	performRequestDocumentIssuance = (...args: Parameters<typeof requestDocumentIssuanceMutation>) => requestDocumentIssuanceMutation(...args);
+
+	performWaiveStudentCharge = (...args: Parameters<typeof waiveStudentChargeMutation>) => waiveStudentChargeMutation(...args);
+
+	performCancelStudentCharge = (...args: Parameters<typeof cancelStudentChargeMutation>) => cancelStudentChargeMutation(...args);
+
+	performAdjustStudentCharge = (...args: Parameters<typeof adjustStudentChargeMutation>) => adjustStudentChargeMutation(...args);
+
+	performPreviewAccountAllocationQuery = (...args: Parameters<typeof previewAccountAllocationQuery>) => previewAccountAllocationQuery(...args);
+
+	performAllocateAccountBalance = (...args: Parameters<typeof allocateAccountBalanceMutation>) => allocateAccountBalanceMutation(...args);
+
+	performReverseAllocation = (...args: Parameters<typeof reverseAllocationMutation>) => reverseAllocationMutation(...args);
+
+	performRequestDocumentIssuanceBatch = (...args: Parameters<typeof requestDocumentIssuanceBatchMutation>) => requestDocumentIssuanceBatchMutation(...args);
+
 	slice = $state<BillingPageSlice | null>(null);
 
 	private readonly versions = new RouteVersionSnapshot(BILLING_VERSION_FAMILIES);

@@ -1,10 +1,9 @@
 <script lang="ts">
+	import type { createScheduleMutation } from '$lib/api/mutations/schedule.mutations';
+	import type { createSubjectForClassMutation, updateSubjectMutation } from '$lib/api/mutations/subject.mutations';
 	import type { SubjectCategoryOption } from '$lib/api/subject-categories-data';
 	import type { PlanningEvent, Subject } from '$lib/types/school';
-	import { createScheduleMutation } from '$lib/api/mutations/schedule.mutations';
-	import { createSubjectForClassMutation, updateSubjectMutation } from '$lib/api/mutations/subject.mutations';
-	import { getBrowserSchoolClient } from '$lib/api/school-client';
-	import { defaultSubjectCategoryId, loadSubjectCategories } from '$lib/api/subject-categories-data';
+	import { defaultSubjectCategoryId } from '$lib/api/subject-categories-data';
 	import { authSession } from '$lib/auth/session.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
@@ -27,6 +26,10 @@
 	};
 
 	let {
+		onLoadCategories,
+		onCreateSchedule,
+		onCreateSubjectForClass,
+		onUpdateSubject,
 		subject,
 		classId,
 		weekStart = new Date(),
@@ -36,6 +39,10 @@
 		title,
 		showTrigger = true,
 	}: {
+		onLoadCategories: (schoolId: string) => Promise<SubjectCategoryOption[]>;
+		onCreateSchedule: typeof createScheduleMutation;
+		onCreateSubjectForClass: typeof createSubjectForClassMutation;
+		onUpdateSubject: typeof updateSubjectMutation;
 		subject?: Subject;
 		classId?: string;
 		weekStart?: Date;
@@ -72,7 +79,7 @@
 			categories = [];
 			return;
 		}
-		categories = await loadSubjectCategories(getBrowserSchoolClient(), schoolId);
+		categories = await onLoadCategories(schoolId);
 		if (!categories.some(category => category.id === categoryId)) {
 			categoryId = subject?.categoryId || defaultSubjectCategoryId(categories);
 		}
@@ -109,7 +116,7 @@
 
 		busy = true;
 		if (subject) {
-			const ok = await updateSubjectMutation({
+			const ok = await onUpdateSubject({
 				classSubjectId: subject.id,
 				name,
 				categoryId,
@@ -122,7 +129,7 @@
 			}
 		}
 		else if (classId) {
-			const classSubjectId = await createSubjectForClassMutation({
+			const classSubjectId = await onCreateSubjectForClass({
 				classGroupId: classId,
 				name,
 				categoryId,
@@ -132,7 +139,7 @@
 			busy = false;
 			if (classSubjectId) {
 				if (addToTimetable) {
-					await createScheduleMutation({
+					await onCreateSchedule({
 						classGroupId: classId,
 						scheduleKind: 'lesson',
 						title: name.trim(),

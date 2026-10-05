@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { Activity, PlanningEvent, Subject, TimetableSchedule, TimetableScheduleKind } from '$lib/types/school';
-	import { createScheduleMutation, updateScheduleMutation } from '$lib/api/mutations/schedule.mutations';
+
 	import Button from '$lib/components/ui/button/button.svelte';
+
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -9,6 +10,9 @@
 	import { lang, t } from '$lib/i18n';
 	import { catalogSubjectName } from '$lib/i18n/catalog-label';
 	import { get } from 'svelte/store';
+	import { getPlanningTimetableState } from '../planning-timetable-state.svelte';
+
+	const actionState = getPlanningTimetableState();
 
 	const DAYS: PlanningEvent['day'][] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 	const SCHEDULE_KINDS: TimetableScheduleKind[] = ['lesson', 'activity'];
@@ -113,7 +117,7 @@
 
 		busy = true;
 		if (schedule) {
-			const ok = await updateScheduleMutation({
+			const ok = await actionState.performUpdateSchedule({
 				scheduleId: schedule.id,
 				classGroupId: classId,
 				scheduleKind,
@@ -133,7 +137,7 @@
 			}
 		}
 		else {
-			const scheduleId = await createScheduleMutation({
+			const scheduleId = await actionState.performCreateSchedule({
 				classGroupId: classId,
 				scheduleKind,
 				weekStart,

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { reversePaymentMutation } from '$lib/api/mutations/billing-ops.mutations';
+
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
@@ -22,7 +22,7 @@
 		}
 		busy = true;
 		try {
-			const ok = await reversePaymentMutation({
+			const ok = await paymentPage.performReversePayment({
 				paymentId,
 				successMessage: get(t)('payment.reverseSuccess'),
 			});

@@ -116,7 +116,7 @@
 						</Button>
 					{/snippet}
 				</PermissionGate>
-				<DocumentPdfButton
+				<DocumentPdfButton onRequestDocumentIssuance={billingPage.performRequestDocumentIssuance}
 					templateKey="invoice.v1"
 					sourceId={accountSourceId}
 					studentId={live.studentId}

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Subject } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import { removeSubjectFromGradeLevelMutation } from '$lib/api/mutations/grade-level-subject.mutations';
+
 	import SubjectFormModal from '$lib/components/school/academics/SubjectFormModal.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -72,7 +72,7 @@
 	async function removeFromCatalog() {
 		removeCatalogBusy = true;
 		try {
-			const ok = await removeSubjectFromGradeLevelMutation({
+			const ok = await subjectsPage.performRemoveSubjectFromGradeLevel({
 				gradeLevelSubjectId: subject.id,
 				successMessage: get(t)('subjects.removedFromCatalog'),
 			});
@@ -126,7 +126,7 @@
 	{/snippet}
 </DrawerEntityHeader>
 
-<SubjectFormModal subject={subject} bind:open={editSubjectOpen.open} showTrigger={false} />
+<SubjectFormModal onLoadCategories={subjectsPage.onLoadCategories} onCreateSchedule={subjectsPage.performCreateSchedule} onCreateSubjectForClass={subjectsPage.performCreateSubjectForClass} onUpdateSubject={subjectsPage.performUpdateSubject} subject={subject} bind:open={editSubjectOpen.open} showTrigger={false} />
 
 <ConfirmModal
 	bind:open={deleteOpen.open}

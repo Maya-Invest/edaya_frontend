@@ -1,6 +1,7 @@
 import type { components } from '$lib/api/schema';
 import type { ScheduleDayOfWeek } from '$lib/scheduling/planning-calendar';
 import type { PlanningEvent } from '$lib/types/school';
+import type { MutationOptions } from './execute-mutation';
 import { buildLessonSessionSavePayload } from '$lib/api/lesson-session-save-payload';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -260,7 +261,7 @@ export async function reschedulePlanningSlotMutation(input: {
 
 export async function cancelPlanningEventMutation(
 	event: Pick<PlanningEvent, 'id' | 'kind' | 'title'>,
-	opts?: { successMessage?: string },
+	opts?: Pick<MutationOptions<void>, 'successMessage' | 'apply' | 'rollback' | 'onSuccess'>,
 ): Promise<boolean> {
 	if (event.kind !== 'lesson' && event.kind !== 'activity') {
 		return false;
@@ -274,7 +275,7 @@ export async function cancelPlanningEventMutation(
 		}
 		await client.commands.cancelLessonSession({ lessonSessionId: event.id });
 	}, {
-		successMessage: opts?.successMessage,
+		...opts,
 		versionKeys: ['planning'],
 	});
 	return result !== null;

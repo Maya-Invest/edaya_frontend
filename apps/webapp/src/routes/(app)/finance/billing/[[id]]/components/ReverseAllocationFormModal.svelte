@@ -1,10 +1,9 @@
 <script lang="ts">
 	import type { PaymentSettlementHistory } from '$lib/api/finance-types';
 	import type { StudentBilling } from '$lib/types/school';
-	import { loadPaymentSettlementHistory } from '$lib/api/finance-data';
+
 	import { activeSettleAllocations } from '$lib/api/finance-types';
-	import { reverseAllocationMutation } from '$lib/api/mutations/billing-ops.mutations';
-	import { getBrowserSchoolClient } from '$lib/api/school-client';
+
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
@@ -59,7 +58,7 @@
 			history = null;
 			return;
 		}
-		history = await loadPaymentSettlementHistory(getBrowserSchoolClient(), { accountId });
+		history = await billingPage.loadSettlementHistory({ accountId });
 		allocationId = activeSettleAllocations(history?.allocations ?? [], billing.id)[0]?.id ?? '';
 	}
 
@@ -77,7 +76,7 @@
 		}
 		busy = true;
 		try {
-			const ok = await reverseAllocationMutation({
+			const ok = await billingPage.performReverseAllocation({
 				allocationId: selectedAllocation.id,
 				successMessage: get(t)('billing.unallocateSuccess'),
 			});

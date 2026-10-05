@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import { updateStudentStatusMutation } from '$lib/api/mutations/student-ops.mutations';
+
 	import { relationKey, fmtDateFr } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
@@ -14,11 +14,11 @@
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
 	import { hasPermission } from '$lib/permissions';
+	import AccountLinkingSection from '$lib/smart-components/account-linking/AccountLinkingSection.svelte';
 	import { studentGenderLabelKey } from '$lib/students/format-student-gender';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { pedagogicalNoteToneByCategory, getStudentProfileTabState } from '../student-profile-tab.svelte';
-	import AccountLinkingSection from './StudentAccountLinkingSection.svelte';
 	import StudentHealthEditModal from './StudentHealthEditModal.svelte';
 	import StudentPortraitReviewCard from './StudentPortraitReviewCard.svelte';
 
@@ -48,7 +48,7 @@
 		statusBusy = true;
 		const previous = s.status;
 		studentsPage?.patchStudent(s.id, { status });
-		const ok = await updateStudentStatusMutation({
+		const ok = await profileTab.performUpdateStudentStatus({
 			studentId: s.id,
 			status,
 			successMessage: get(t)('student.statusUpdated'),

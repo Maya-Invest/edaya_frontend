@@ -4,6 +4,7 @@ import {
 	readModalTarget,
 	writeModalSurface,
 } from '$lib/modal/modal-url';
+import { sessionDetailIdFromUrl } from './lib/timetable-helpers';
 
 export const PLANNING_MODAL_KEYS = [
 	'new-session',
@@ -184,7 +185,7 @@ function eventForSurface(
 	surface: PlanningSurface,
 	events: readonly PlanningSurfaceEvent[] | undefined,
 ): PlanningSurfaceEvent | undefined {
-	const eventId = surface.target ?? sessionIdFromPath(url);
+	const eventId = surface.target ?? sessionDetailIdFromUrl(url);
 	return eventId ? events?.find(event => event.id === eventId) : undefined;
 }
 
@@ -231,10 +232,6 @@ function accessibleEventTarget(
 
 function hasSessionDetailPath(url: URL): boolean {
 	return /\/timetable\/[^/]+(?:\/|$)/.test(url.pathname);
-}
-
-function sessionIdFromPath(url: URL): string | null {
-	return /\/timetable\/([^/]+)/.exec(url.pathname)?.[1] ?? null;
 }
 
 function hasSessionTabPath(url: URL, tab: 'attendance' | 'logbook'): boolean {

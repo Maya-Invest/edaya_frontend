@@ -1,10 +1,11 @@
 <script lang="ts">
 	import type { PlanningEvent, SchoolYearEvent } from '$lib/types/school';
+
 	import type { EventCss, CalendarInstanceApi } from '@svar-ui/svelte-calendar';
 	import { browser } from '$app/environment';
 	import { afterNavigate } from '$app/navigation';
-	import { reschedulePlanningSlotMutation } from '$lib/api/mutations/planning.mutations';
 	import { lang, t } from '$lib/i18n';
+
 	import {
 		calendarSlotFromDates,
 		formatPlanningSlotLabel,
@@ -20,13 +21,12 @@
 	} from '$lib/scheduling/planning-calendar';
 	import { cn } from '$lib/utils';
 	import { Calendar, Willow } from '@svar-ui/svelte-calendar';
-	import {
-		PlanningTimetableState,
-		setPlanningTimetableState,
-	} from '../planning-timetable-state.svelte';
+	import { getPlanningTimetableState, PlanningTimetableState, setPlanningTimetableState } from '../planning-timetable-state.svelte';
 	import PlanningEventContent from './PlanningEventContent.svelte';
 	import PlanningRescheduleConfirmModal from './PlanningRescheduleConfirmModal.svelte';
 	import SvarCalendarLocale from './SvarCalendarLocale.svelte';
+
+	const actionState = getPlanningTimetableState();
 
 	const {
 		events,
@@ -272,7 +272,7 @@
 	}
 
 	async function confirmReschedule() {
-		await timetable.confirmReschedule(async input => reschedulePlanningSlotMutation({
+		await timetable.confirmReschedule(async input => actionState.performReschedulePlanningSlot({
 			sessionId: input.sessionId,
 			kind: input.kind,
 			scheduleId: input.scheduleId,

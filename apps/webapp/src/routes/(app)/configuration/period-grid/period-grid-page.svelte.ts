@@ -1,6 +1,7 @@
 import type { PeriodDefinition } from '$lib/types/school';
 import type { PeriodGridPageSlice } from './lib/period-grid-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
+import { savePeriodDefinitionMutation, savePeriodDefinitionsBatchMutation } from '$lib/api/mutations/period-definition.mutations';
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
@@ -13,10 +14,14 @@ const PERIOD_GRID_PAGE_STATE_KEY = Symbol('period-grid-page-state');
 export type { PeriodGridPageSlice };
 
 export class PeriodGridPageState {
+	performSavePeriodDefinition = (...args: Parameters<typeof savePeriodDefinitionMutation>) => savePeriodDefinitionMutation(...args);
+
+	performSavePeriodDefinitionsBatch = (...args: Parameters<typeof savePeriodDefinitionsBatchMutation>) => savePeriodDefinitionsBatchMutation(...args);
+
 	slice = $state<PeriodGridPageSlice | null>(null);
 	selectedYearId = $state<string | null>(academicContext.yearId || null);
 
-	private readonly versions = new RouteVersionSnapshot([]);
+	private readonly versions = new RouteVersionSnapshot(['periodDefinitions']);
 
 	constructor(private readonly getUrl: () => URL) {}
 

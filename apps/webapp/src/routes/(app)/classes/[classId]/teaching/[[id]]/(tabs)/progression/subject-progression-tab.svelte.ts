@@ -1,6 +1,10 @@
 import type { SubjectMatterDrawerRow } from '$lib/api/mutations/subject-matter.mutations';
 import type { PageQueryRequest } from '$lib/queries/page-status';
-import { loadTeachingSubjectProgressionRows } from '$lib/api/mutations/subject-matter.mutations';
+import { updateClassSubjectTimetableMutation } from '$lib/api/mutations/class-subject.mutations';
+import { saveSubjectMatterMutation, deleteSubjectMatterMutation, loadTeachingSubjectProgressionRows } from '$lib/api/mutations/subject-matter.mutations';
+import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { VersionedRouteQuery } from '$lib/navigation/versioned-route-query';
 import { resolvePageLoad } from '$lib/queries/page-status';
 import { getContext, setContext } from 'svelte';
 import { teachingClassIdFromUrl } from '../../../lib/teaching-helpers';
@@ -19,9 +23,21 @@ export interface SubjectProgressionTabSlice {
 }
 
 export class SubjectProgressionTabState {
+	private readonly versionedQuery = new VersionedRouteQuery(new RouteVersionSnapshot(['subjects', 'planning']));
+	invalidateIfStale = () => this.versionedQuery.invalidateIfStale();
+
+	onLoadClassSubject = (id: string) => getBrowserSchoolClient().entities.classSubjects.get(id);
+
+	performUpdateClassSubjectTimetable = (...args: Parameters<typeof updateClassSubjectTimetableMutation>) => updateClassSubjectTimetableMutation(...args);
+
+	performSaveSubjectMatter = (...args: Parameters<typeof saveSubjectMatterMutation>) => saveSubjectMatterMutation(...args);
+
+	performDeleteSubjectMatter = (...args: Parameters<typeof deleteSubjectMatterMutation>) => deleteSubjectMatterMutation(...args);
+
 	slice = $state<SubjectProgressionTabSlice | null>(null);
 
 	clear() {
+		this.versionedQuery.clear();
 		this.slice = null;
 	}
 
@@ -81,7 +97,7 @@ export class SubjectProgressionTabState {
 	}
 
 	query(classSubjectId: string) {
-		return (url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
+		return this.versionedQuery.track((url: URL, request?: PageQueryRequest) => resolvePageLoad(url, {
 			empty: () => ({}),
 			load: async (signal) => {
 				const classId = teachingClassIdFromUrl(url);
@@ -107,7 +123,7 @@ export class SubjectProgressionTabState {
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load subject progression data.',
-		}, request);
+		}, request));
 	}
 }
 

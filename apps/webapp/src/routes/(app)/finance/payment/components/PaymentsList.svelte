@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
+
 	import { authSession } from '$lib/auth/session.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
@@ -256,7 +256,7 @@
 											<RowActionMenuItem
 												{disabled}
 												{title}
-												onclick={() => void requestDocumentIssuanceMutation({
+												onclick={() => void paymentPage.performRequestDocumentIssuance({
 													templateKey: 'receipt.v1',
 													sourceId: payment.id,
 													studentId: payment.studentId,
@@ -268,7 +268,7 @@
 											<RowActionMenuItem
 												{disabled}
 												{title}
-												onclick={() => void requestDocumentIssuanceMutation({
+												onclick={() => void paymentPage.performRequestDocumentIssuance({
 													templateKey: 'settlement-quittance.v1',
 													sourceId: payment.id,
 													studentId: payment.studentId,

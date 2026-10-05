@@ -2,11 +2,15 @@ import type { GradeScale, ReportCardDefinition, ReportCardResult } from '$lib/ty
 import type { StudentDetailHost } from '../../../lib/student-detail-host';
 import type { PageQueryRequest } from '../../../lib/student-page-status';
 import { academicContext } from '$lib/academic/context.svelte';
+import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
+import { writeReportSectionCommentsMutation, writeHomeroomReportCommentMutation } from '$lib/api/mutations/student-ops.mutations';
 import { loadClassReportCardResultsData, loadReportCardCatalogData } from '$lib/api/report-cards-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { authSession } from '$lib/auth/session.svelte';
 import { nowIso } from '$lib/date/format';
+import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { VersionedRouteQuery } from '$lib/navigation/versioned-route-query';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { runStudentRouteMutation } from '../../../lib/student-route-mutation';
@@ -54,11 +58,21 @@ function resolveReportCardDefinitionId(
 }
 
 export class StudentReportCardTabState {
+	private readonly versionedQuery = new VersionedRouteQuery(new RouteVersionSnapshot(['students', 'reportCards', 'evaluations', 'subjects', 'documents']));
+	invalidateIfStale = () => this.versionedQuery.invalidateIfStale();
+
+	performWriteReportSectionComments = (...args: Parameters<typeof writeReportSectionCommentsMutation>) => writeReportSectionCommentsMutation(...args);
+
+	performRequestDocumentIssuance = (...args: Parameters<typeof requestDocumentIssuanceMutation>) => requestDocumentIssuanceMutation(...args);
+
+	performWriteHomeroomReportComment = (...args: Parameters<typeof writeHomeroomReportCommentMutation>) => writeHomeroomReportCommentMutation(...args);
+
 	slice = $state<StudentReportCardTabSlice | null>(null);
 
 	constructor(private readonly getPage: () => StudentDetailHost, readonly annual = new AnnualReportCardState(getPage)) {}
 
 	clear() {
+		this.versionedQuery.clear();
 		this.annual.clear();
 		this.slice = null;
 	}
@@ -117,7 +131,7 @@ export class StudentReportCardTabState {
 	}
 
 	query() {
-		return (url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
+		return this.versionedQuery.track((url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
 			load: async (signal) => {
 				const studentId = studentDetailIdFromPathname(url.pathname);
@@ -132,7 +146,7 @@ export class StudentReportCardTabState {
 				return {};
 			},
 			hasItems: () => true,
-		}, request);
+		}, request));
 	}
 
 	async generateReportCard(studentId: string): Promise<boolean> {

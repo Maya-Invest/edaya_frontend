@@ -17,6 +17,7 @@ import { hasPermission } from '$lib/permissions';
 import { queryClient } from '$lib/queries/client';
 import { getContext, setContext } from 'svelte';
 import {
+	previewAudienceOnPage,
 	archiveFamilyFeedbackCampaignOnPage,
 	assignFamilyFeedbackModeratorOnPage,
 	cancelFamilyFeedbackCampaignOnPage,
@@ -37,11 +38,12 @@ import { familyFeedbackDetailIdFromUrl } from './lib/family-feedback-selectors';
 
 type SubjectRaw = components['schemas']['Subject'];
 
-const FAMILY_FEEDBACK_VERSION_FAMILIES = ['familyFeedback'] as const satisfies readonly EntityVersionKey[];
+const FAMILY_FEEDBACK_VERSION_FAMILIES = ['familyFeedback', 'teachers', 'staff', 'subjects'] as const satisfies readonly EntityVersionKey[];
 
 const FAMILY_FEEDBACK_PAGE_STATE_KEY = Symbol('family-feedback-page-state');
 
 export class FamilyFeedbackPageState {
+	previewAudience = (...args: Parameters<typeof previewAudienceOnPage>) => previewAudienceOnPage(...args);
 	campaigns = $state<FamilyFeedbackCampaign[]>([]);
 	teachers = $state<Teacher[]>([]);
 	staff = $state<StaffMember[]>([]);

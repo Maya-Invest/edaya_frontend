@@ -3,9 +3,7 @@
 	import type { StaffProfileRole } from '$lib/staff/staff-profile-roles';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import {
-		loadStaffPermissionProfiles,
 		tenantWideProfiles,
 
 	} from '$lib/api/staff-permission-profiles-data';
@@ -51,7 +49,7 @@
 			tenantProfiles = [];
 			return;
 		}
-		const profiles = await loadStaffPermissionProfiles(getBrowserSchoolClient(), schoolId);
+		const profiles = await staffPage.loadStaffPermissionProfilesForForm(schoolId);
 		tenantProfiles = tenantWideProfiles(profiles);
 	}
 

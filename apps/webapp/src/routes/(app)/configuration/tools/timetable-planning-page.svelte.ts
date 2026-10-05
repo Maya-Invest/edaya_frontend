@@ -5,6 +5,7 @@ import type { ClassNode } from '$lib/types/school';
 import type { TimetableMutationResult } from './lib/timetable-generation-errors';
 import type { TimetableGenerationProgress } from './timetable-planning';
 import { academicContext } from '$lib/academic/context.svelte';
+import { executeMutation } from '$lib/api/mutations/execute-mutation';
 import {
   generateClassTimetable,
   publishClassTimetable,
@@ -16,6 +17,7 @@ import { formatDateInput } from '$lib/date/format';
 import { entityVersions } from '$lib/entity-versions.svelte';
 import { lang, t } from '$lib/i18n';
 import { catalogSubjectName } from '$lib/i18n/catalog-label';
+import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import {
   buildTimetablePlacementParameters,
 
@@ -52,6 +54,17 @@ export interface TimetablePlanningRow {
 }
 
 export class TimetablePlanningPageState {
+  private readonly versions = new RouteVersionSnapshot(['planning', 'subjects', 'teachers', 'school', 'periodDefinitions']);
+
+  async invalidateIfStale() {
+    if (!this.versions.hasLoaded() || !this.versions.isStale() || this.busy)
+return;
+    try {
+      await this.load();
+    }
+    catch { /* Keep stale for the next visit; PageQuery owns first-paint errors. */ }
+  }
+
   sessions = $state<components['schemas']['LessonSession'][]>([]);
   classSubjects = $state<ClassSubject[]>([]);
   subjectLabels = $state<Record<string, string>>({});
@@ -167,6 +180,7 @@ export class TimetablePlanningPageState {
         ]),
       );
       this.loadStatus = 'ready';
+      this.versions.markLoaded();
     }
     catch (error) {
       this.loadStatus = 'error';
@@ -175,27 +189,59 @@ export class TimetablePlanningPageState {
     }
   }
 
+  private describeMutationError(error: unknown) {
+    if (!(error instanceof SequentialTimetableGenerationError))
+      return parseTimetableGenerationError(error, translateTimetable);
+    const parsed = parseTimetableGenerationError(error.cause, translateTimetable);
+    const partial = get(t)('timetable.generatePartialFailure', {
+      className: error.failedClass.name,
+      completed: error.completed.length,
+      total: error.total,
+    });
+    return { ...parsed, summary: `${partial} ${parsed.summary}` };
+  }
+
   private async runMutation<T>(
     request: () => Promise<T>,
     options?: { reportInModal?: boolean },
   ): Promise<TimetableMutationResult<T>> {
     this.busy = true;
+    let failure: ReturnType<typeof parseTimetableGenerationError> | undefined;
     try {
-      const result = await request();
-      entityVersions.bump('planning');
+      const result = await executeMutation({
+        request: async () => {
+          try {
+            return await request();
+          }
+          catch (error) {
+            failure = this.describeMutationError(error);
+            // Earlier class writes remain committed when sequential generation stops.
+            if (error instanceof SequentialTimetableGenerationError && error.completed.length > 0) {
+              entityVersions.bump('planning');
+              try {
       await this.load();
-      return { ok: true, value: result };
     }
-    catch (error) {
-      const parsed = parseTimetableGenerationError(error, translateTimetable);
-      if (!options?.reportInModal) {
-        toast.error(parsed.summary);
-      }
-      return { ok: false, error: parsed };
+              catch { toast.error(translateTimetable('mutation.savedRefreshFailed')); }
+            }
+            throw error;
+          }
+        },
+        onSuccess: () => this.load(),
+        versionKeys: ['planning'],
+      }, {
+        bump: key => entityVersions.bump(key),
+        success: message => toast.success(message),
+        error: (message) => {
+          if (!failure || !options?.reportInModal)
+            toast.error(failure?.summary ?? message);
+        },
+        translate: translateTimetable,
+      });
+      return result !== null
+        ? { ok: true, value: result }
+        : { ok: false, error: failure! };
     }
-    finally {
-      this.busy = false;
-    }
+    finally { this.busy = false; }
   }
 
   private async run<T>(request: () => Promise<T>): Promise<T | null> {
@@ -208,52 +254,26 @@ export class TimetablePlanningPageState {
     endDate: string;
     options?: TimetableGenerationOptions;
   } & TimetablePlacementOverrides): Promise<TimetableMutationResult<GenerateSchoolResult>> {
-    this.busy = true;
     this.generationProgress = null;
     try {
-      const result = await generateSchoolTimetableSequentially({
-        academicYearId: academicContext.yearId,
-        startDate: input.startDate,
-        endDate: input.endDate,
-        options: input.options,
-        placementParameters: buildTimetablePlacementParameters(input),
-        classes: this.classes,
-        classSubjects: this.classSubjects,
-        generateClass: generateClassTimetable,
-        onProgress: (progress) => {
-          this.generationProgress = progress;
-        },
-      });
-      this.generationResult = result;
-      this.activeRange = { startDate: input.startDate, endDate: input.endDate };
-      entityVersions.bump('planning');
-      await this.load();
-      return { ok: true, value: result };
-    }
-    catch (error) {
-      if (error instanceof SequentialTimetableGenerationError) {
-        entityVersions.bump('planning');
-        await this.load();
-        const parsed = parseTimetableGenerationError(error.cause, translateTimetable);
-        const partial = get(t)('timetable.generatePartialFailure', {
-          className: error.failedClass.name,
-          completed: error.completed.length,
-          total: error.total,
+      return await this.runMutation(async () => {
+        const result = await generateSchoolTimetableSequentially({
+          academicYearId: academicContext.yearId,
+          startDate: input.startDate,
+          endDate: input.endDate,
+          options: input.options,
+          placementParameters: buildTimetablePlacementParameters(input),
+          classes: this.classes,
+          classSubjects: this.classSubjects,
+          generateClass: generateClassTimetable,
+          onProgress: (progress) => { this.generationProgress = progress; },
         });
-        return {
-          ok: false,
-          error: {
-            ...parsed,
-            summary: `${partial} ${parsed.summary}`,
-          },
-        };
-      }
-      return { ok: false, error: parseTimetableGenerationError(error, translateTimetable) };
+        this.generationResult = result;
+        this.activeRange = { startDate: input.startDate, endDate: input.endDate };
+        return result;
+      }, { reportInModal: true });
     }
-    finally {
-      this.busy = false;
-      this.generationProgress = null;
-    }
+    finally { this.generationProgress = null; }
   }
 
   publish(classGroupId: string, startDate: string, endDate: string, policy: 'fail' | 'skip') {

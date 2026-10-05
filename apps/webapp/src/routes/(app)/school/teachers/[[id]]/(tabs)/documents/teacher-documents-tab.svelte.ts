@@ -3,8 +3,11 @@ import type { PageQueryRequest } from '../../../lib/teacher-page-status';
 import type { TeachersPageState } from '../../../teachers-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadDocumentIssuances, loadDocumentTemplates } from '$lib/api/documents-data';
+import { retryDocumentIssuanceMutation, downloadDocumentMutation, requestDocumentIssuanceMutation, voidDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { entityVersions } from '$lib/entity-versions.svelte';
+import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { VersionedRouteQuery } from '$lib/navigation/versioned-route-query';
 import { getContext, setContext } from 'svelte';
 import { resolveTeacherPageLoad } from '../../../lib/teacher-page-status';
 import { teacherDetailIdFromUrl } from '../../../lib/teacher-selectors';
@@ -19,12 +22,24 @@ export interface TeacherDocumentsTabSlice {
 }
 
 export class TeacherDocumentsTabState {
+	private readonly versionedQuery = new VersionedRouteQuery(new RouteVersionSnapshot(['documents', 'teachers']));
+	invalidateIfStale = () => this.versionedQuery.invalidateIfStale();
+
+	performRetryDocumentIssuance = (...args: Parameters<typeof retryDocumentIssuanceMutation>) => retryDocumentIssuanceMutation(...args);
+
+	performDownloadDocument = (...args: Parameters<typeof downloadDocumentMutation>) => downloadDocumentMutation(...args);
+
+	performRequestDocumentIssuance = (...args: Parameters<typeof requestDocumentIssuanceMutation>) => requestDocumentIssuanceMutation(...args);
+
+	performVoidDocumentIssuance = (...args: Parameters<typeof voidDocumentIssuanceMutation>) => voidDocumentIssuanceMutation(...args);
+
 	slice = $state<TeacherDocumentsTabSlice | null>(null);
 	documentsVersion = $state(entityVersions.documents);
 
 	constructor(private readonly getPage: () => TeachersPageState) {}
 
 	clear() {
+		this.versionedQuery.clear();
 		this.slice = null;
 	}
 
@@ -43,7 +58,7 @@ export class TeacherDocumentsTabState {
 	}
 
 	query() {
-		return (url: URL, request?: PageQueryRequest) => resolveTeacherPageLoad(url, {
+		return this.versionedQuery.track((url: URL, request?: PageQueryRequest) => resolveTeacherPageLoad(url, {
 			empty: () => ({}),
 			load: async (signal) => {
 				this.documentsVersion = entityVersions.documents;
@@ -64,7 +79,7 @@ export class TeacherDocumentsTabState {
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load teacher documents.',
-		}, request);
+		}, request));
 	}
 }
 

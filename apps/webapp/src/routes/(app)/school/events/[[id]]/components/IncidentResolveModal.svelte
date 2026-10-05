@@ -2,8 +2,6 @@
 	import type { Incident } from '$lib/types/school';
 	import type { IncidentInvolvementRole } from '../../lib/incident-detail-mutations';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { getBrowserSchoolClient } from '$lib/api/school-client';
-	import { loadIncidentResolveModalData } from '$lib/api/school-life-data';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -71,11 +69,7 @@
 	async function loadModalData() {
 		loading = true;
 		try {
-			const data = await loadIncidentResolveModalData(
-				getBrowserSchoolClient(),
-				incident.id,
-				academicContext.periodId,
-			);
+			const data = await eventsPage.loadIncidentResolution(incident.id, academicContext.periodId);
 			classGroupId = data.incident.classGroupId ?? undefined;
 			disciplinaryActions = data.disciplinaryActions.map(action => ({
 				id: action.id,

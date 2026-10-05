@@ -1,7 +1,7 @@
 <script lang="ts">
+	import type { writeReportSectionCommentsMutation } from '$lib/api/mutations/student-ops.mutations';
 	import type { ReportCardResult, ReportCommentSection } from '$lib/types/report-cards';
 	import { page } from '$app/stores';
-	import { writeReportSectionCommentsMutation } from '$lib/api/mutations/student-ops.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
@@ -10,7 +10,15 @@
 	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 
-	const { result, onSaved }: { result: ReportCardResult; onSaved: (sections: ReportCommentSection[], version: number) => void | Promise<void> } = $props();
+	const {
+		onWriteReportSectionComments,
+		result,
+		onSaved,
+	}: {
+		onWriteReportSectionComments: typeof writeReportSectionCommentsMutation;
+		result: ReportCardResult;
+		onSaved: (sections: ReportCommentSection[], version: number) => void | Promise<void>;
+	} = $props();
 	const modals = createUrlSyncedModals<'report-comments'>({ allowed: ['report-comments'], getUrl: () => $page.url });
 	const modal = bindUrlModal(modals, 'report-comments');
 	let drafts = $state<ReportCommentSection[]>([]);
@@ -37,7 +45,7 @@
 		}
 		busy = true;
 		try {
-			const ok = await writeReportSectionCommentsMutation({ requestId, resultId: result.id, expectedVersion: version, sections: drafts.map(section => ({ sectionId: section.sectionId, comment: section.comment.trim() || null })), successMessage: get(t)('reportCards.homeroomCommentSaved') });
+			const ok = await onWriteReportSectionComments({ requestId, resultId: result.id, expectedVersion: version, sections: drafts.map(section => ({ sectionId: section.sectionId, comment: section.comment.trim() || null })), successMessage: get(t)('reportCards.homeroomCommentSaved') });
 			if (ok) {
 				modal.open = false;
 				await onSaved(drafts, version + 1);

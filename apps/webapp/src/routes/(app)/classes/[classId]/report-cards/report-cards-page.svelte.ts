@@ -3,6 +3,8 @@ import type { GradeScale, ReportCardDefinition, ReportCardResult } from '$lib/ty
 import type { Student } from '$lib/types/school';
 import type { ReportCardsPageSlice } from './lib/report-cards-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
+import { requestDocumentIssuanceMutation, requestDocumentIssuanceBatchMutation } from '$lib/api/mutations/documents.mutations';
+import { writeReportSectionCommentsMutation, writeHomeroomReportCommentMutation } from '$lib/api/mutations/student-ops.mutations';
 import { loadClassReportCardResultsData } from '$lib/api/report-cards-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { nowIso } from '$lib/date/format';
@@ -16,13 +18,21 @@ import {
 import { loadReportCardsSlice, queryReportCardsListPage } from './lib/report-cards-queries';
 import { runReportCardsRouteMutation } from './lib/report-cards-route-mutation';
 
-const REPORT_CARDS_VERSION_FAMILIES = ['reportCards', 'students'] as const satisfies readonly EntityVersionKey[];
+const REPORT_CARDS_VERSION_FAMILIES = ['reportCards', 'students', 'guardians', 'enrollments', 'subjects', 'evaluations'] as const satisfies readonly EntityVersionKey[];
 
 const REPORT_CARDS_PAGE_STATE_KEY = Symbol('report-cards-page-state');
 
 export type { ReportCardsPageSlice };
 
 export class ReportCardsPageState {
+	performWriteReportSectionComments = (...args: Parameters<typeof writeReportSectionCommentsMutation>) => writeReportSectionCommentsMutation(...args);
+
+	performRequestDocumentIssuance = (...args: Parameters<typeof requestDocumentIssuanceMutation>) => requestDocumentIssuanceMutation(...args);
+
+	performRequestDocumentIssuanceBatch = (...args: Parameters<typeof requestDocumentIssuanceBatchMutation>) => requestDocumentIssuanceBatchMutation(...args);
+
+	performWriteHomeroomReportComment = (...args: Parameters<typeof writeHomeroomReportCommentMutation>) => writeHomeroomReportCommentMutation(...args);
+
 	slice = $state<ReportCardsPageSlice | null>(null);
 
 	private readonly versions = new RouteVersionSnapshot(REPORT_CARDS_VERSION_FAMILIES);

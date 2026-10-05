@@ -2,10 +2,7 @@
 	import type { SchoolIssuanceAssetPurpose } from '$lib/api/mutations/issuance-asset.mutations';
 	import type { SchoolType } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import {
-		clearSchoolIssuanceAssetMutation,
-		uploadSchoolIssuanceAssetMutation,
-	} from '$lib/api/mutations/issuance-asset.mutations';
+
 	import { DEFAULT_SCHOOL_TIMEZONE, privateAttachmentContentPath } from '$lib/api/school-data';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
@@ -109,7 +106,7 @@
 	async function uploadAsset(purpose: SchoolIssuanceAssetPurpose, file: File) {
 		assetBusy = purpose;
 		try {
-			const ok = await uploadSchoolIssuanceAssetMutation({
+			const ok = await schoolPage.performUploadSchoolIssuanceAsset({
 				purpose,
 				file,
 				successMessage: get(t)('schoolSettings.assetToast', { slot: assetSlotLabel(purpose) }),
@@ -126,7 +123,7 @@
 	async function clearAsset(purpose: SchoolIssuanceAssetPurpose) {
 		assetBusy = purpose;
 		try {
-			const ok = await clearSchoolIssuanceAssetMutation({
+			const ok = await schoolPage.performClearSchoolIssuanceAsset({
 				purpose,
 				successMessage: get(t)('schoolSettings.assetClearedToast', { slot: assetSlotLabel(purpose) }),
 			});

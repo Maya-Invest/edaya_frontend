@@ -11,10 +11,6 @@
 	import { t } from '$lib/i18n';
 	import { get } from 'svelte/store';
 	import { getCalendarPageState } from '../calendar-page.svelte';
-	import {
-		createCalendarEventOnPage,
-		updateCalendarEventOnPage,
-	} from '../lib/calendar-mutations';
 
 	const calendarPage = getCalendarPageState();
 
@@ -132,7 +128,7 @@
 		busy = true;
 		try {
 			if (event) {
-				const ok = await updateCalendarEventOnPage(calendarPage, {
+				const ok = await calendarPage.updateCalendarEvent({
 					eventId: event.id,
 					linkedIds: event.linkedIds,
 					title: eventTitle,
@@ -150,7 +146,7 @@
 				}
 			}
 			else {
-				const eventId = await createCalendarEventOnPage(calendarPage, {
+				const eventId = await calendarPage.createCalendarEvent({
 					title: eventTitle,
 					description,
 					date: resolvedDate,

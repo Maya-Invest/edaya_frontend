@@ -1,8 +1,9 @@
 <script lang="ts">
 	import type { AccountActor } from '$lib/auth/account-actor';
+
 	import { accountHrefWithReturn } from '$lib/account/profile-navigation';
-	import { updateStaffProfilePhotoMutation } from '$lib/api/mutations/profile-photo.mutations';
 	import { authSession } from '$lib/auth/session.svelte';
+
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import ProfilePhotoPicker from '$lib/components/school/shared/ProfilePhotoPicker.svelte';
@@ -14,6 +15,9 @@
 	import { canUploadProfilePhoto } from '$lib/permissions';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
+	import { getAccountState } from '../account-state.svelte';
+
+	const actionState = getAccountState();
 
 	let {
 		open = $bindable(false),
@@ -56,7 +60,7 @@
 		if (!staffProfile?.id) {
 			return false;
 		}
-		return updateStaffProfilePhotoMutation({
+		return actionState.performUpdateStaffProfilePhoto({
 			staffId: staffProfile.id,
 			file,
 			successMessage: get(t)('profilePhoto.updateSuccess'),

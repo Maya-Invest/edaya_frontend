@@ -46,7 +46,7 @@ export async function updateClassSubjectTimetableMutation(input: {
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(
 		() => client.commands.configureClassSubjectTimetable(payload),
-		{ successMessage: input.successMessage },
+		{ successMessage: input.successMessage, versionKeys: ['subjects', 'planning'] },
 	);
 	return result !== null;
 }

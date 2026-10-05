@@ -1,5 +1,5 @@
 <script lang="ts">
-	import PasswordlessPanel from '../login/PasswordlessPanel.svelte';
+	import PasswordlessPanel from '$lib/smart-components/passwordless-panel/PasswordlessPanel.svelte';
 
 	let { email = $bindable(''), apiConnected }: { email: string; apiConnected: boolean; stage?: 'form' | 'verification'; onStageChange?: (stage: 'form' | 'verification') => void; onSwitchToSignIn?: (email: string) => void } = $props();
 </script>

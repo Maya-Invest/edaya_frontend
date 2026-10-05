@@ -2,7 +2,6 @@
 	import type { FamilyFeedbackAudiencePreview } from '$lib/api/family-feedback-types';
 	import { t } from '$lib/i18n';
 	import { getFamilyFeedbackPageState } from '../../../family-feedback-page.svelte';
-	import { previewAudienceOnPage } from '../../../lib/family-feedback-detail-mutations';
 
 	const familyFeedbackPage = getFamilyFeedbackPageState();
 	const campaign = $derived(familyFeedbackPage.selected);
@@ -20,7 +19,7 @@
 		const campaignId = current.id;
 		let cancelled = false;
 		previewCampaignId = campaignId;
-		void previewAudienceOnPage({
+		void familyFeedbackPage.previewAudience({
 			id: campaignId,
 			academicYearId: current.academicYearId,
 			academicPeriodId: current.academicPeriodId,

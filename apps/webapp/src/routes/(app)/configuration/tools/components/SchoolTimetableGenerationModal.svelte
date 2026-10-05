@@ -1,19 +1,19 @@
 <script lang="ts">
 	import type { GenerateSchoolResult } from '$lib/api/mutations/timetable-generation.mutations';
+
 	import type { SchoolRaw } from '$lib/api/school-data';
 	import type { TimetableGenerationError } from '../lib/timetable-generation-errors';
 	import type { TimetableGenerationStep } from '../lib/tools-workflow';
 	import type { TimetableGenerationOptions, TimetablePlanningPageState } from '../timetable-planning-page.svelte';
 	import type { TimetableSetupTab } from './TimetableGenerationSetupTabs.svelte';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { getBrowserSchoolClient } from '$lib/api/school-client';
-	import { fetchSchoolById } from '$lib/api/school-data';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import { formatDateInput } from '$lib/date/format';
 	import { t } from '$lib/i18n';
 	import { untrack } from 'svelte';
 	import { buildTimetableRangePresets, timetableGenerationModalContentClass, TIMETABLE_GENERATION_MODAL_SETUP_BODY_CLASS, TIMETABLE_GENERATION_MODAL_SETUP_LAYOUT_CLASS, TIMETABLE_GENERATION_MODAL_TAB_PANEL_CLASS } from '../lib/timetable-generation-ui';
+	import { getToolsPageState } from '../tools-page.svelte';
 	import ImportProgressBar from './ImportProgressBar.svelte';
 	import TimetableGenerationErrorPanel from './TimetableGenerationErrorPanel.svelte';
 	import TimetableGenerationResultPanel from './TimetableGenerationResultPanel.svelte';
@@ -22,6 +22,8 @@
 	import TimetableRangeSelector from './TimetableRangeSelector.svelte';
 	import TimetableSolverOptionsPanel from './TimetableSolverOptionsPanel.svelte';
 	import TimetableWorkloadConfigPanel from './TimetableWorkloadConfigPanel.svelte';
+
+	const actionState = getToolsPageState();
 
 	let {
 		open = $bindable(false),
@@ -115,7 +117,7 @@
 		preferredIds = [...(school?.timetablePreferredPeriodDefinitionIds ?? [])];
 		schoolRaw = null;
 		if (school) {
-			void fetchSchoolById(getBrowserSchoolClient(), school.id).then((raw) => {
+			void actionState.loadSchoolForForm(school.id).then((raw) => {
 				schoolRaw = raw;
 			});
 		}

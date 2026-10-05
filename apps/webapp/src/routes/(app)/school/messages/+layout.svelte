@@ -6,22 +6,13 @@
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 
-	import { untrack, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import { SvelteURL } from 'svelte/reactivity';
 	import MessagesView from './components/MessagesView.svelte';
 	import { MessagesPageState } from './messages-page.svelte';
 
 	const { children: pageChildren }: { children: Snippet } = $props();
 	const state = new MessagesPageState(() => $page.url);
-	$effect(() => {
-		const identity = state.identity;
-		untrack(() => {
-			if (identity) {
-				state.clear();
-				void state.refresh();
-			}
-		});
-	});
 	onMount(() => {
 		const refresh = () => {
 			if (!document.hidden)
@@ -47,11 +38,13 @@
 		void goto(resolve(destination as `/school/messages${string}`));
 	}
 </script>
-<PageQuery query={state.query} cache={false} loadingTitle="Messages">
-	{#snippet children(data)}
-		<DataState status={data.status} errorMessage={data.errorMessage}>
-			<MessagesView {state} {navigate} />
-			{@render pageChildren()}
-		</DataState>
-	{/snippet}
-</PageQuery>
+{#key state.identity}
+	<PageQuery query={state.query} cache={false} cacheKey={state.queryKey} loadingTitle="Messages">
+		{#snippet children(data)}
+			<DataState status={data.status} errorMessage={data.errorMessage}>
+				<MessagesView {state} {navigate} />
+				{@render pageChildren()}
+			</DataState>
+		{/snippet}
+	</PageQuery>
+{/key}

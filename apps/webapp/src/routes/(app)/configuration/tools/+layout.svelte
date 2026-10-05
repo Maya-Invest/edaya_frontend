@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
@@ -10,6 +9,7 @@
 	import { appPath } from '$lib/navigation/app-navigation';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
+	import { untrack } from 'svelte';
 	import {
 		ToolsPageState,
 		setToolsPageState,
@@ -22,9 +22,10 @@
 	setToolsPageState(toolsPage);
 	registerVersionInvalidation(toolsPage);
 	releaseRoutePageQueryOnDestroy(() => $page.url);
-	afterNavigate(() => {
-		if ($page.url.pathname === toolsHref) {
-			toolsPage.hydrateWorkflow();
+	$effect(() => {
+		const url = $page.url;
+		if (academicContext.shellReady && url.pathname === toolsHref) {
+			untrack(() => toolsPage.hydrateWorkflow());
 		}
 	});
 

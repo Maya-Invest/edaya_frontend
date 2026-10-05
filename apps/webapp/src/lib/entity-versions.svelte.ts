@@ -1,4 +1,6 @@
 export const ENTITY_VERSION_KEYS = [
+	'school',
+	'periodDefinitions',
 	'students',
 	'guardians',
 	'staff',
@@ -25,6 +27,8 @@ export const ENTITY_VERSION_KEYS = [
 export type EntityVersionKey = (typeof ENTITY_VERSION_KEYS)[number];
 
 export class EntityVersions {
+	school = $state(0);
+	periodDefinitions = $state(0);
 	students = $state(0);
 	guardians = $state(0);
 	staff = $state(0);

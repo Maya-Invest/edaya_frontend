@@ -12,7 +12,7 @@ export async function setClassSubjectOfferedMutation(input: {
 			classSubjectId: input.classSubjectId,
 			isOffered: input.isOffered,
 		}),
-		{ successMessage: input.successMessage },
+		{ successMessage: input.successMessage, versionKeys: ['subjects', 'planning', 'reportCards'] },
 	);
 	return result !== null;
 }
@@ -30,7 +30,7 @@ export async function updateGradeLevelSubjectMutation(input: {
 			coefficient: input.coefficient,
 			isOptional: input.isOptional,
 		}),
-		{ successMessage: input.successMessage },
+		{ successMessage: input.successMessage, versionKeys: ['subjects', 'planning', 'reportCards'] },
 	);
 	return result !== null;
 }
@@ -44,7 +44,7 @@ export async function removeSubjectFromGradeLevelMutation(input: {
 		() => client.commands.removeSubjectFromGradeLevel({
 			gradeLevelSubjectId: input.gradeLevelSubjectId,
 		}),
-		{ successMessage: input.successMessage },
+		{ successMessage: input.successMessage, versionKeys: ['subjects', 'planning', 'reportCards'] },
 	);
 	return result !== null;
 }

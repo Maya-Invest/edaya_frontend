@@ -87,6 +87,21 @@ describe('planning URL surface codec', () => {
 		);
 	});
 
+	it('matches encoded session identifiers before validating drawer actions', () => {
+		const id = 'schedule:2026-10-05';
+		const url = new URL(`http://local/classes/6a/timetable/${encodeURIComponent(id)}/logbook?modal=session-logbook`);
+		const options = {
+			events: [{ id, kind: 'lesson' }],
+			validateEventTargets: true,
+			validatePermissions: true,
+			classId: '6a',
+			hasPermission: permissionCheck(mockGrants(['CLASS_LOGBOOK_CREATE'], { CLASS_LOGBOOK_CREATE: '6a' })),
+		};
+		expect(resolvePlanningSurface(url, options).modal).toBe('session-logbook');
+		expect(resolvePlanningSurface(url, { ...options, events: [] }).modal).toBeNull();
+		expect(resolvePlanningSurface(url, { ...options, hasPermission: () => false }).modal).toBeNull();
+	});
+
 	it('closes an inaccessible drawer attendance student target', () => {
 		const url = new URL(
 			'http://local/classes/6a/timetable/s-1/attendance?modal=session-attendance&modalTarget=stu-404',

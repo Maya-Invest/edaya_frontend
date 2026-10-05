@@ -3,7 +3,7 @@
 	import type { Subject } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { deleteSubjectMatterMutation } from '$lib/api/mutations/subject-matter.mutations';
+
 	import ClassSubjectTimetableSection from '$lib/components/school/academics/ClassSubjectTimetableSection.svelte';
 	import SubjectMatterFormModal from '$lib/components/school/academics/SubjectMatterFormModal.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -80,7 +80,7 @@
 	}
 
 	async function removeChapter(row: SubjectMatterDrawerRow): Promise<boolean> {
-		const ok = await deleteSubjectMatterMutation(
+		const ok = await progressionTab.performDeleteSubjectMatter(
 			row.id,
 			get(t)('subjects.chapters.deleteSuccess', { name: row.name }),
 		);
@@ -108,7 +108,7 @@
 </script>
 
 {#if !isCatalogSubject}
-	<ClassSubjectTimetableSection classSubjectId={subject.id} school={academicContext.schools[0]} />
+	<ClassSubjectTimetableSection onLoadClassSubject={progressionTab.onLoadClassSubject} onUpdateClassSubjectTimetable={progressionTab.performUpdateClassSubjectTimetable} classSubjectId={subject.id} school={academicContext.schools[0]} />
 {/if}
 
 <div class="space-y-4">
@@ -191,7 +191,7 @@
 </div>
 
 {#if matterContext}
-	<SubjectMatterFormModal
+	<SubjectMatterFormModal onSaveSubjectMatter={progressionTab.performSaveSubjectMatter}
 		bind:open={addChapterOpen.open}
 		subjectId={matterContext.catalogSubjectId}
 		classSubjectId={matterContext.classSubjectId}
@@ -200,7 +200,7 @@
 		defaultSequenceOrder={matterRows.length + 1}
 		onSaved={handleMatterSaved}
 	/>
-	<SubjectMatterFormModal
+	<SubjectMatterFormModal onSaveSubjectMatter={progressionTab.performSaveSubjectMatter}
 		bind:open={editChapterOpen.open}
 		matter={editingMatter}
 		subjectId={matterContext.catalogSubjectId}

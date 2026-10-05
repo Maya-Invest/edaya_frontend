@@ -17,7 +17,7 @@
 <div class="space-y-3">
 	<div class="flex flex-wrap items-center gap-3">
 		<AcademicPeriodSelector />
-		<DocumentPdfButton
+		<DocumentPdfButton onRequestDocumentIssuance={teachingPage.performRequestDocumentIssuance}
 			disabled={!academicContext.periodId}
 			templateKey="logbook.v1"
 			sourceId={classId}

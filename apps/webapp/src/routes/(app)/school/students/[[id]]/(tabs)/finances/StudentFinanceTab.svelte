@@ -73,21 +73,21 @@
 		</div>
 	</div>
 	<div class="flex flex-wrap gap-2">
-		<DocumentPdfButton
+		<DocumentPdfButton onRequestDocumentIssuance={financesTab.performRequestDocumentIssuance}
 			templateKey="account-statement.v1"
 			sourceId={accountSourceId}
 			studentId={s.id}
 			permission={FINANCIAL_REPORT_READ_PERMISSION}
 			classId={s.classId}
 		/>
-		<DocumentPdfButton
+		<DocumentPdfButton onRequestDocumentIssuance={financesTab.performRequestDocumentIssuance}
 			templateKey="invoice.v1"
 			sourceId={accountSourceId}
 			studentId={s.id}
 			permission="PAYMENT_READ"
 			classId={s.classId}
 		/>
-		<DocumentPdfButton
+		<DocumentPdfButton onRequestDocumentIssuance={financesTab.performRequestDocumentIssuance}
 			templateKey="payment-reminder.v1"
 			sourceId={accountSourceId}
 			studentId={s.id}

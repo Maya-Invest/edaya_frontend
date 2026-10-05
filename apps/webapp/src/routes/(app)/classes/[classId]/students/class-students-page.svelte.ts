@@ -3,6 +3,7 @@ import type { ClassNode, Student } from '$lib/types/school';
 import type { StudentPhotoSubmission } from '../../../school/students/lib/student-detail-host';
 import type { ClassStudentsPageSlice } from './lib/class-students-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
+import { requestDocumentIssuanceMutation, requestDocumentIssuanceBatchMutation } from '$lib/api/mutations/documents.mutations';
 import { fetchStudentById } from '$lib/api/people-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
@@ -27,13 +28,17 @@ import {
 	queryClassStudentsListPage,
 } from './lib/class-students-queries';
 
-const CLASS_STUDENTS_VERSION_FAMILIES = ['students'] as const satisfies readonly EntityVersionKey[];
+const CLASS_STUDENTS_VERSION_FAMILIES = ['students', 'guardians', 'enrollments'] as const satisfies readonly EntityVersionKey[];
 
 const CLASS_STUDENTS_PAGE_STATE_KEY = Symbol('class-students-page-state');
 
 export type { ClassStudentsPageSlice };
 
 export class ClassStudentsPageState {
+	performRequestDocumentIssuance = (...args: Parameters<typeof requestDocumentIssuanceMutation>) => requestDocumentIssuanceMutation(...args);
+
+	performRequestDocumentIssuanceBatch = (...args: Parameters<typeof requestDocumentIssuanceBatchMutation>) => requestDocumentIssuanceBatchMutation(...args);
+
 	students = $state<Student[]>([]);
 	currentClass = $state<ClassNode | undefined>(undefined);
 	classId = $state<string | null>(null);

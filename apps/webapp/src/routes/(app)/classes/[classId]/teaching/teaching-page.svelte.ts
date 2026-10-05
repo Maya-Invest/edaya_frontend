@@ -2,7 +2,12 @@ import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { Subject } from '$lib/types/school';
 import type { LogEntry } from '$lib/types/teaching-log';
 import type { TeachingPageSlice } from './lib/teaching-helpers';
+import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
+import { setClassSubjectOfferedMutation } from '$lib/api/mutations/grade-level-subject.mutations';
+import { createScheduleMutation } from '$lib/api/mutations/schedule.mutations';
+import { updateSubjectMutation, createSubjectForClassMutation } from '$lib/api/mutations/subject.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { loadSubjectCategories } from '$lib/api/subject-categories-data';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
 import {
@@ -17,13 +22,25 @@ import {
 import { loadTeachingSlice, queryTeachingListPage } from './lib/teaching-queries';
 import { runTeachingRouteMutation } from './lib/teaching-route-mutation';
 
-const TEACHING_VERSION_FAMILIES = ['subjects', 'planning'] as const satisfies readonly EntityVersionKey[];
+const TEACHING_VERSION_FAMILIES = ['subjects', 'planning', 'teachers', 'staff'] as const satisfies readonly EntityVersionKey[];
 
 const TEACHING_PAGE_STATE_KEY = Symbol('teaching-page-state');
 
 export type { TeachingPageSlice };
 
 export class TeachingPageState {
+	onLoadCategories = (schoolId: string) => loadSubjectCategories(getBrowserSchoolClient(), schoolId);
+
+	performUpdateSubject = (...args: Parameters<typeof updateSubjectMutation>) => updateSubjectMutation(...args);
+
+	performCreateSubjectForClass = (...args: Parameters<typeof createSubjectForClassMutation>) => createSubjectForClassMutation(...args);
+
+	performCreateSchedule = (...args: Parameters<typeof createScheduleMutation>) => createScheduleMutation(...args);
+
+	performSetClassSubjectOffered = (...args: Parameters<typeof setClassSubjectOfferedMutation>) => setClassSubjectOfferedMutation(...args);
+
+	performRequestDocumentIssuance = (...args: Parameters<typeof requestDocumentIssuanceMutation>) => requestDocumentIssuanceMutation(...args);
+
 	slice = $state<TeachingPageSlice | null>(null);
 
 	private readonly versions = new RouteVersionSnapshot(TEACHING_VERSION_FAMILIES);
@@ -175,7 +192,7 @@ export class TeachingPageState {
 		const result = await runTeachingRouteMutation({
 			request: () => client.entities.classSubjects.delete({ id: input.classSubjectId }),
 			successMessage: input.successMessage,
-			versionKeys: ['subjects', 'planning'],
+			versionKeys: ['subjects', 'planning', 'teachers', 'staff'],
 			apply: () => {
 				this.removeSubject(input.classSubjectId);
 			},

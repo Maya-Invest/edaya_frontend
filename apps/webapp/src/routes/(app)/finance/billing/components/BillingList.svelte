@@ -2,7 +2,7 @@
 	import type { StudentBilling } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { studentYearAccountSourceId } from '$lib/api/documents-data';
-	import { requestDocumentIssuanceBatchMutation } from '$lib/api/mutations/documents.mutations';
+
 	import { authSession } from '$lib/auth/session.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -66,7 +66,7 @@
 		if (!schoolId || overdue.length === 0) {
 			return;
 		}
-		await requestDocumentIssuanceBatchMutation({
+		await billingPage.performRequestDocumentIssuanceBatch({
 			templateKey: 'payment-reminder.v1',
 			items: overdue.map(row => ({
 				sourceId: studentYearAccountSourceId({

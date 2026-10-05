@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { DocumentTemplateKey } from '$lib/api/documents-types';
+	import type { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 	import type { PermissionCode } from '$lib/auth/types';
-	import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { downloadDocumentLabel } from '$lib/documents/titles';
@@ -9,6 +9,7 @@
 	import { FileText } from '$lib/icons';
 
 	const {
+		onRequestDocumentIssuance,
 		templateKey,
 		sourceId,
 		studentId,
@@ -21,6 +22,7 @@
 		label,
 		disabled = false,
 	}: {
+		onRequestDocumentIssuance: typeof requestDocumentIssuanceMutation;
 		templateKey: DocumentTemplateKey;
 		sourceId: string | null | undefined;
 		studentId?: string;
@@ -43,7 +45,7 @@
 		}
 		busy = true;
 		try {
-			await requestDocumentIssuanceMutation({
+			await onRequestDocumentIssuance({
 				templateKey,
 				sourceId,
 				studentId,

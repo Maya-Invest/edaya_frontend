@@ -1,14 +1,18 @@
 <script lang="ts">
 	import type { NotificationSettingsPageData } from '$lib/queries/account.queries';
+
 	import { page } from '$app/stores';
 	import { returnToProfileModalIfRequested } from '$lib/account/profile-navigation';
-	import { saveNotificationContactMutation } from '$lib/api/mutations/notifications.mutations';
 	import { authSession } from '$lib/auth/session.svelte';
+
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import { t } from '$lib/i18n';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
+	import { getNotificationSettingsPageState } from '../notification-settings-page.svelte';
+
+	const actionState = getNotificationSettingsPageState();
 
 	const { data }: { data: NotificationSettingsPageData } = $props();
 
@@ -34,7 +38,7 @@
 			return;
 		}
 		saving = true;
-		const ok = await saveNotificationContactMutation({
+		const ok = await actionState.performSaveNotificationContact({
 			notificationEmail: notificationEmail.trim() || null,
 			notificationPhone: notificationPhone.trim() || null,
 		}, {

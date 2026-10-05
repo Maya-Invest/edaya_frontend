@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { Guardian } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import AccountLinkingSection from '$lib/components/account/AccountLinkingSection.svelte';
 	import { relationKey } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
@@ -17,6 +16,7 @@
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { canUploadProfilePhoto } from '$lib/permissions';
+	import AccountLinkingSection from '$lib/smart-components/account-linking/AccountLinkingSection.svelte';
 	import { get } from 'svelte/store';
 	import { getGuardiansPageState } from '../../guardians-page.svelte';
 	import GuardianEditModal from './GuardianEditModal.svelte';

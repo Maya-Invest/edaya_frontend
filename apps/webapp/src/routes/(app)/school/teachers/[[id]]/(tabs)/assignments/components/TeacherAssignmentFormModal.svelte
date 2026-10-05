@@ -2,8 +2,6 @@
 	import type { components } from '$lib/api/schema';
 	import type { Teacher } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { entitiesByIds, uniqueIds } from '$lib/api/entity-list-filters';
-	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { authSession } from '$lib/auth/session.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
@@ -79,22 +77,10 @@
 		if (!schoolId) {
 			return;
 		}
-		const client = getBrowserSchoolClient();
-		const nextClassSubjects = await client.entities.classSubjects.list({
-			schoolId,
-			classGroupId: nextClassGroupId,
-		});
-		if (loadId !== classSubjectsLoadId) {
+		const { classSubjects: nextClassSubjects, subjects } = await assignmentsTab.loadClassSubjectChoices(schoolId, nextClassGroupId);
+		if (loadId !== classSubjectsLoadId)
 			return;
-		}
 		classSubjects = nextClassSubjects;
-		const subjectIds = uniqueIds(nextClassSubjects.map(entry => entry.subjectId));
-		const subjects = subjectIds.length > 0
-			? await client.entities.subjects.list(entitiesByIds(subjectIds))
-			: [];
-		if (loadId !== classSubjectsLoadId) {
-			return;
-		}
 		subjectLabels = Object.fromEntries(nextClassSubjects.map((entry) => {
 			const name = subjects.find(subject => subject.id === entry.subjectId)?.name ?? entry.id;
 			return [entry.id, name];

@@ -7,6 +7,8 @@ import type {
 	PlanningSurface,
 	PlanningSurfaceEvent,
 } from './planning-surface';
+import { academicContext } from '$lib/academic/context.svelte';
+import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readPlanningListFilters, writePlanningListFilters } from '$lib/list/list-url-filters';
 import { createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
@@ -32,6 +34,8 @@ import {
 const PLANNING_STATE_KEY = Symbol('planning-state');
 
 export class PlanningState {
+	performRequestDocumentIssuance = (...args: Parameters<typeof requestDocumentIssuanceMutation>) => requestDocumentIssuanceMutation(...args);
+
 	readonly filters: ListFiltersState<{ q: string; week: string }>;
 	readonly modals;
 
@@ -95,7 +99,7 @@ export class PlanningState {
 		const surface = resolvePlanningSurface(url, {
 			...options,
 			classId,
-			validatePermissions: true,
+			validatePermissions: academicContext.shellReady,
 			hasPermission: (permission, scopedClassId) =>
 				hasPermission(permission, { classId: scopedClassId }),
 		});

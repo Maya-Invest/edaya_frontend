@@ -1,12 +1,14 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
+	import DataState from '$lib/components/ui/DataState.svelte';
+	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { appPath } from '$lib/navigation/app-navigation';
 	import { closeDetailDrawer, listSurfaceHref } from '$lib/navigation/route-surface-navigation';
 	import { getEventsPageState } from '../events-page.svelte';
 	import IncidentDrawer from './components/IncidentDrawer.svelte';
 
-	const { children }: { children: Snippet } = $props();
+	const { children: pageChildren }: { children: Snippet } = $props();
 
 	const eventsPage = getEventsPageState();
 	const incident = $derived(eventsPage.selected);
@@ -36,11 +38,17 @@
 </script>
 
 {#if $page.params.id}
-	<IncidentDrawer
-		{incident}
-		loading={!incident}
-		onClose={closeDetail}
-	>
-		{@render children()}
-	</IncidentDrawer>
+	<PageQuery query={eventsPage.queryDetail} cache={false} cacheKey={url => url.pathname}>
+		{#snippet children(data)}
+			<DataState status={data.status} errorMessage={data.errorMessage}>
+				<IncidentDrawer
+					{incident}
+					loading={!incident}
+					onClose={closeDetail}
+				>
+					{@render pageChildren()}
+				</IncidentDrawer>
+			</DataState>
+		{/snippet}
+	</PageQuery>
 {/if}

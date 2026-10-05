@@ -66,14 +66,14 @@
 						{/if}
 						<div class="mt-3 flex flex-wrap gap-2">
 							{#if enrollment.status === 'active'}
-								<DocumentPdfButton
+								<DocumentPdfButton onRequestDocumentIssuance={enrollmentsTab.performRequestDocumentIssuance}
 									templateKey="schooling-certificate.v1"
 									sourceId={enrollment.id}
 									studentId={s.id}
 									permission="ENROLLMENT_READ"
 									classId={s.classId}
 								/>
-								<DocumentPdfButton
+								<DocumentPdfButton onRequestDocumentIssuance={enrollmentsTab.performRequestDocumentIssuance}
 									templateKey="enrollment-record.v1"
 									sourceId={enrollment.id}
 									studentId={s.id}
@@ -81,7 +81,7 @@
 									classId={s.classId}
 								/>
 							{:else if enrollment.endReason === 'withdrawn'}
-								<DocumentPdfButton
+								<DocumentPdfButton onRequestDocumentIssuance={enrollmentsTab.performRequestDocumentIssuance}
 									templateKey="withdrawal-certificate.v1"
 									sourceId={enrollment.id}
 									studentId={s.id}

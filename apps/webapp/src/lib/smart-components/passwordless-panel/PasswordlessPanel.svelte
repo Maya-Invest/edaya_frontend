@@ -1,21 +1,18 @@
 <script lang="ts">
-	import { authClient } from '$lib/auth/client';
-	import { completeAuthSignIn } from '$lib/auth/complete-sign-in';
-	import { contactError, detectIdentifier } from '$lib/auth/detect-identifier';
-	import { PasswordlessFlow } from '$lib/auth/passwordless-flow.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import { lang, t } from '$lib/i18n';
 	import TestOtpPanel from '$testOtpPanel';
 	import { onMount } from 'svelte';
+	import { PasswordlessPanelState, completePasswordlessSignIn } from './passwordless-panel-state.svelte';
 
-	let { email = $bindable(''), apiConnected = true, onComplete = () => completeAuthSignIn(''), enroll = false, link = false }:
+	let { email = $bindable(''), apiConnected = true, onComplete = completePasswordlessSignIn, enroll = false, link = false }:
 		{ email?: string; apiConnected?: boolean; onComplete?: () => Promise<unknown>; enroll?: boolean; link?: boolean } = $props();
 	let recoveryEligible = $state(false);
 	const phoneInput = $derived(/^[+\d(]/.test(email.trim()) && !email.includes('@'));
 	let container: HTMLDivElement;
-	const flow = new PasswordlessFlow();
+	const flow = new PasswordlessPanelState();
 	const uid = $props.id();
 	onMount(() => {
 		void flow.loadMethods();
@@ -31,25 +28,7 @@
 		};
 	});
 	function submit() {
-		if (flow.state === 'form' && !enroll) {
-			const identifier = detectIdentifier(email);
-			const error = contactError(identifier, flow.phoneAvailable);
-			if (error || !identifier) {
-				flow.error = $t(error ?? 'auth.invalidContact');
-				return;
-			}
-			void flow.begin({ ...identifier, locale: $lang, recoveryEligible }, link, onComplete);
-			return;
-		}
-		void flow.run(() => {
-			if (flow.state === 'form')
-				return authClient.enroll();
-			if (flow.state === 'primary_required')
-				return authClient.verifyOtp(flow.challenge, flow.code);
-			if (flow.state === 'enrollment_required')
-				return authClient.confirmEnrollment(flow.challenge, flow.code);
-			return flow.recovery ? authClient.recover(flow.challenge, flow.code) : authClient.verifyTotp(flow.challenge, flow.code);
-		}, onComplete);
+		void flow.submit({ email, locale: $lang, recoveryEligible, enroll, link, onComplete });
 	}
 </script>
 

@@ -85,6 +85,7 @@ export async function saveGuardianNotificationPreferencesMutation(
 		return true;
 	}, {
 		successMessage: options?.successMessage,
+		versionKeys: ['guardians', 'students', 'inbox'],
 	});
 
 	return result !== null;
@@ -105,7 +106,7 @@ export async function saveNotificationContactMutation(
 			notificationEmail: input.notificationEmail ?? null,
 			notificationPhone: input.notificationPhone ?? null,
 		}),
-		{ successMessage: options?.successMessage },
+		{ successMessage: options?.successMessage, versionKeys: ['inbox'] },
 	);
 	return result !== null;
 }
@@ -114,7 +115,7 @@ export async function markDeliveryReadMutation(deliveryId: string): Promise<bool
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(
 		() => client.commands.markDeliveryRead({ deliveryId }),
-		{ errorMessage: 'Unable to mark this message as read.' },
+		{ errorMessage: 'Unable to mark this message as read.', versionKeys: ['inbox'] },
 	);
 	return result !== null;
 }

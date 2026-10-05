@@ -2,6 +2,7 @@ import type { components } from '$lib/api/schema';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { Subject, Teacher } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
+import { entitiesByIds } from '$lib/api/entity-list-filters';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadClassSubjectsByIds } from '$lib/api/subjects-data';
 import { fetchTeacherAssignmentsHubData } from '$lib/api/teacher-assignments-hub-data';
@@ -11,6 +12,7 @@ import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
+import { SvelteSet } from 'svelte/reactivity';
 import {
 	readTeacherAssignmentsListFilters,
 	writeTeacherAssignmentsListFilters,
@@ -20,11 +22,19 @@ import { querySchoolTeacherAssignmentsPage } from './lib/teacher-assignments-que
 
 type TeacherAssignment = components['schemas']['TeacherAssignment'];
 
-const VERSION_FAMILIES = ['teachers'] as const satisfies readonly EntityVersionKey[];
+const VERSION_FAMILIES = ['teachers', 'subjects', 'staff'] as const satisfies readonly EntityVersionKey[];
 
 const TEACHER_ASSIGNMENTS_PAGE_STATE_KEY = Symbol('teacher-assignments-page-state');
 
 export class TeacherAssignmentsPageState {
+	async loadClassSubjectChoices(schoolId: string, classGroupId: string) {
+		const client = getBrowserSchoolClient();
+		const classSubjects = await client.entities.classSubjects.list({ schoolId, classGroupId });
+		const ids = [...new SvelteSet(classSubjects.map(entry => entry.subjectId))];
+		const subjects = ids.length ? await client.entities.subjects.list(entitiesByIds(ids)) : [];
+		return { classSubjects, subjects };
+	}
+
 	teachers = $state<Teacher[]>([]);
 	assignments = $state<TeacherAssignment[]>([]);
 	classSubjects = $state<Subject[]>([]);

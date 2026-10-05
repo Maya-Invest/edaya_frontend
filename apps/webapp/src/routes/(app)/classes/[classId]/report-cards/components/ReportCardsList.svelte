@@ -2,7 +2,7 @@
 	import type { ReportCardResult } from '$lib/types/report-cards';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { requestDocumentIssuanceBatchMutation, requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
+
 	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
@@ -160,7 +160,7 @@
 		if (published.length === 0) {
 			return;
 		}
-		await requestDocumentIssuanceBatchMutation({
+		await reportCardsPage.performRequestDocumentIssuanceBatch({
 			templateKey: 'report-card.v1',
 			items: published.map(entry => ({
 				sourceId: entry.id,
@@ -279,7 +279,7 @@
 										size="sm"
 										variant="outline"
 										class="rounded-full"
-										onclick={() => void requestDocumentIssuanceMutation({
+										onclick={() => void reportCardsPage.performRequestDocumentIssuance({
 											templateKey: 'report-card.v1',
 											sourceId: result.id,
 											studentId: result.studentId,

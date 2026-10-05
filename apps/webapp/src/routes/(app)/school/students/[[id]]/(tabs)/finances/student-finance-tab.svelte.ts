@@ -3,8 +3,11 @@ import type { StudentDetailHost } from '../../../lib/student-detail-host';
 import type { PageQueryRequest } from '../../../lib/student-page-status';
 import { academicContext } from '$lib/academic/context.svelte';
 import { loadStudentAccountStatement, loadStudentFinanceSummary } from '$lib/api/finance-data';
+import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
+import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { VersionedRouteQuery } from '$lib/navigation/versioned-route-query';
 import { getContext, setContext } from 'svelte';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
 import { billingStatusTone } from './student-finance-tab.selectors';
@@ -26,11 +29,17 @@ function emptySlice(studentId: string): StudentFinanceTabSlice {
 }
 
 export class StudentFinanceTabState {
+	private readonly versionedQuery = new VersionedRouteQuery(new RouteVersionSnapshot(['students', 'billing', 'payments', 'fees']));
+	invalidateIfStale = () => this.versionedQuery.invalidateIfStale();
+
+	performRequestDocumentIssuance = (...args: Parameters<typeof requestDocumentIssuanceMutation>) => requestDocumentIssuanceMutation(...args);
+
 	slice = $state<StudentFinanceTabSlice | null>(null);
 
 	constructor(private readonly getPage: () => StudentDetailHost) {}
 
 	clear() {
+		this.versionedQuery.clear();
 		this.slice = null;
 	}
 
@@ -55,7 +64,7 @@ export class StudentFinanceTabState {
 	}
 
 	query() {
-		return (url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
+		return this.versionedQuery.track((url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
 			load: async (signal) => {
 				const studentId = studentDetailIdFromPathname(url.pathname);
@@ -74,7 +83,7 @@ export class StudentFinanceTabState {
 				return {};
 			},
 			hasItems: () => true,
-		}, request);
+		}, request));
 	}
 }
 

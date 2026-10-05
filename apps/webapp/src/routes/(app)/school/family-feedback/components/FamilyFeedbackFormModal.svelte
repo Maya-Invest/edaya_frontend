@@ -10,7 +10,6 @@
 	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getFamilyFeedbackPageState } from '../family-feedback-page.svelte';
-	import { previewAudienceOnPage } from '../lib/family-feedback-detail-mutations';
 
 	let {
 		campaign,
@@ -57,7 +56,7 @@
 			return;
 		}
 		let cancelled = false;
-		void previewAudienceOnPage({ academicPeriodId, teacherAssignmentId }).then((result) => {
+		void familyFeedbackPage.previewAudience({ academicPeriodId, teacherAssignmentId }).then((result) => {
 			if (!cancelled) {
 				preview = result;
 			}

@@ -4,10 +4,6 @@
 	import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 	import type { StaffMember } from '$lib/types/school';
 	import { validGrantScopes } from '$lib/api/grant-scopes';
-	import {
-		createStaffPermissionAssignmentPayload,
-		saveStaffPermissionAssignmentMutation,
-	} from '$lib/api/mutations/staff-permission-assignments.mutations';
 	import { formatPermissionLabel } from '$lib/api/staff-permission-assignments-data';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -67,7 +63,7 @@
 
 		busy = true;
 		const id = assignment?.id ?? `spa-${Date.now().toString(36)}`;
-		const payload = { ...(assignment ?? {}), ...createStaffPermissionAssignmentPayload({
+		const payload = { ...(assignment ?? {}), ...modalState.createStaffPermissionAssignmentPayload({
 			id,
 			staffId: staff.id,
 			permission,
@@ -79,7 +75,7 @@
 
 		const ok = onSave
 			? await onSave({ assignment: payload, successMessage })
-			: await saveStaffPermissionAssignmentMutation({
+			: await modalState.saveStaffPermissionAssignmentMutation({
 				assignment: payload,
 				successMessage,
 			});

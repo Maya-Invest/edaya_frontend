@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PlanningEvent } from '$lib/types/school';
-	import { cancelPlanningEventMutation } from '$lib/api/mutations/planning.mutations';
+
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
@@ -34,11 +34,10 @@
 	async function confirmCancel() {
 		cancelBusy = true;
 		try {
-			const ok = await cancelPlanningEventMutation(s, {
+			const ok = await timetablePage.performCancelPlanningEvent(s, {
 				successMessage: get(t)('planning.toastCancelled', { title: s.title }),
 			});
 			if (ok) {
-				timetablePage.patchEvent(s.id, { status: 'cancelled' });
 				cancelOpen.open = false;
 			}
 		}

@@ -1,14 +1,14 @@
-# School UI components
+# Shared school UI components
 
-Domain-oriented folders under `components/school/`. Migrated routes colocate feature UI under `routes/(app)/…/components/`.
+Feature implementations live with their owning routes. This directory contains UI reused across routes:
 
 | Folder | Scope |
-|--------|--------|
-| `shared/` | Drawer chrome, `drawer-types`, `drawer-constants`, person pickers (re-exports → `lib/smart-components/`) |
-| `scheduling/` | Timetable planning, session modals, generation UI (shared by class + school routes) |
-| `dashboard/` | `DirectorDashboardView` |
-| `academics/` | Shared subject modals/sections still used by teaching + config subject tabs |
-| `configuration/` | Import modal stack, permission checkbox group, report-card section tree |
-| `students/` | `StudentGradeEntryModal` |
+|--------|-------|
+| `shared/` | Drawer chrome, avatars, profile photo controls, and shared display constants |
+| `academics/` | Subject editors and sections used by teaching and Configuration subjects |
+| `documents/` | Reusable document issuance/download controls |
+| `report-cards/` | Section comments shared by class and student report-card views |
 
-Cross-domain imports should stay rare. Prefer lifting shared pieces into `shared/` when two domains need the same UI primitive.
+Shared presentation receives typed action callbacks from its owner. Account linking, pickers and permission workflows own their I/O under `lib/smart-components/`. Reusable calendar/date helpers live in `lib/scheduling/`.
+
+Dashboard, import, timetable, class permission, report-card definition and onboarding implementations belong to their route subtrees. Do not add forwarding components here.

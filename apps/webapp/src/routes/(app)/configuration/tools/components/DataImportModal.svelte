@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { getToolsPageState } from '../tools-page.svelte';
+
+	const importState = getToolsPageState().importState;
 	import type { BillingImportRunResult } from '$lib/import/billing/runner';
 	import type {
 		BillingImportRow,
@@ -36,7 +39,7 @@
 	import type { TeacherImportRunResult } from '$lib/import/teachers/runner';
 	import type { TeacherImportRow, TeacherImportValidationResult } from '$lib/import/teachers/types';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { getBrowserSchoolClient } from '$lib/api/school-client';
+
 	import { authSession } from '$lib/auth/session.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -46,9 +49,9 @@
 	import { notifyGuardiansListChanged } from '$lib/guardians/notify-guardians-list-changed';
 	import { t } from '$lib/i18n';
 	import { Download, FileSpreadsheet, LoaderCircle } from '$lib/icons';
-	import { loadBillingImportContext } from '$lib/import/billing/load-billing-import-context';
+
 	import { parseBillingImportFile } from '$lib/import/billing/parser';
-	import { runBillingImport } from '$lib/import/billing/runner';
+
 	import {
 		canImportValidatedBilling,
 		validateBillingImportRows,
@@ -59,81 +62,64 @@
 		getImportTypeDefinition,
 	} from '$lib/import/catalog/import-types';
 	import { parseChapterImportFile } from '$lib/import/chapters/parser';
-	import { runChapterImport } from '$lib/import/chapters/runner';
+
 	import {
 		canImportValidatedChapters,
 		countChapterImportOperations,
 		validateChapterImportRows,
 	} from '$lib/import/chapters/validator';
 	import { parseClassImportFile } from '$lib/import/classes/parser';
-	import { runClassImport } from '$lib/import/classes/runner';
+
 	import {
 		canImportValidatedClasses,
 		validateClassImportRows,
 	} from '$lib/import/classes/validator';
 	import { parseGuardianImportFile } from '$lib/import/guardians/parser';
-	import { runGuardianImport } from '$lib/import/guardians/runner';
+
 	import {
 		canImportValidatedGuardians,
 		validateGuardianImportRows,
 	} from '$lib/import/guardians/validator';
-	import { loadPaymentImportContext } from '$lib/import/payments/load-payment-import-context';
+
 	import { parsePaymentImportFile } from '$lib/import/payments/parser';
-	import { runPaymentImport } from '$lib/import/payments/runner';
+
 	import {
 		canImportValidatedPayments,
 		validatePaymentImportRows,
 	} from '$lib/import/payments/validator';
 	import { importPreferences } from '$lib/import/preferences/import-preferences.svelte';
-	import {
-		loadChapterImportContext,
-	} from '$lib/import/shared/load-chapter-import-context';
-	import {
-		loadGuardianCodeIndex,
-		loadPaymentReferenceIndex,
-		loadStaffCodeIndex,
-		loadTeacherCodeIndex,
-	} from '$lib/import/shared/load-person-code-index';
-	import { loadSchoolSubjectCatalog } from '$lib/import/shared/load-school-subject-names';
-	import {
-		loadStudentMatriculeIndex,
-	} from '$lib/import/shared/load-student-matricule-index';
-	import { loadExistingSubjectImportKeys } from '$lib/import/shared/load-subject-import-context';
-	import {
-		loadTeacherAssignmentImportClassSubjects,
-		loadTeacherAssignmentImportTeachers,
-	} from '$lib/import/shared/load-teacher-assignment-import-context';
+
 	import {
 		downloadImportCsvTemplate,
 		downloadImportExcelTemplate,
 	} from '$lib/import/shared/template-download';
 	import { parseStaffImportFile } from '$lib/import/staff/parser';
-	import { runStaffImport } from '$lib/import/staff/runner';
+
 	import {
 		canImportValidatedStaff,
 		validateStaffImportRows,
 	} from '$lib/import/staff/validator';
 	import { parseStudentImportFile } from '$lib/import/students/parser';
 	import { refreshStudentImportShellContext } from '$lib/import/students/refresh-student-import-shell-context';
-	import { runStudentImport } from '$lib/import/students/runner';
+
 	import {
 		canImportValidatedStudents,
 		validateStudentImportRows,
 	} from '$lib/import/students/validator';
 	import { parseSubjectImportFile } from '$lib/import/subjects/parser';
-	import { runSubjectImport } from '$lib/import/subjects/runner';
+
 	import {
 		canImportValidatedSubjects,
 		validateSubjectImportRows,
 	} from '$lib/import/subjects/validator';
 	import { parseTeacherAssignmentImportFile } from '$lib/import/teacher-assignments/parser';
-	import { runTeacherAssignmentImport } from '$lib/import/teacher-assignments/runner';
+
 	import {
 		canImportValidatedTeacherAssignments,
 		validateTeacherAssignmentImportRows,
 	} from '$lib/import/teacher-assignments/validator';
 	import { parseTeacherImportFile } from '$lib/import/teachers/parser';
-	import { runTeacherImport } from '$lib/import/teachers/runner';
+
 	import {
 		canImportValidatedTeachers,
 		validateTeacherImportRows,
@@ -898,7 +884,7 @@
 		}
 		loadingPaymentContext = true;
 		try {
-			paymentImportContext = await loadPaymentImportContext(getBrowserSchoolClient(), {
+			paymentImportContext = await importState.loadPaymentImportContext({
 				schoolId,
 				academicYearId,
 			});
@@ -926,7 +912,7 @@
 		}
 		loadingBillingContext = true;
 		try {
-			billingImportContext = await loadBillingImportContext(getBrowserSchoolClient(), {
+			billingImportContext = await importState.loadBillingImportContext({
 				schoolId,
 				academicYearId,
 			});
@@ -954,19 +940,14 @@
 		}
 		loadingChapterContext = true;
 		try {
-			const loaded = await loadChapterImportContext(
-				getBrowserSchoolClient(),
-				schoolId,
-				academicContext.classes.map(classGroup => ({
-					id: classGroup.id,
-					name: classGroup.name,
-					gradeLevelId: classGroup.gradeLevelId,
-				})),
-				academicContext.gradeLevels.map(gradeLevel => ({
-					id: gradeLevel.id,
-					name: gradeLevel.name,
-				})),
-			);
+			const loaded = await importState.loadChapterImportContext(schoolId, academicContext.classes.map(classGroup => ({
+				id: classGroup.id,
+				name: classGroup.name,
+				gradeLevelId: classGroup.gradeLevelId,
+			})), academicContext.gradeLevels.map(gradeLevel => ({
+				id: gradeLevel.id,
+				name: gradeLevel.name,
+			})));
 			chapterImportContext = loaded.targets;
 			existingChapterKeys = loaded.existingChapterKeys;
 		}
@@ -988,7 +969,7 @@
 		}
 		loadingMatricules = true;
 		try {
-			studentMatriculeIndex = await loadStudentMatriculeIndex();
+			studentMatriculeIndex = await importState.loadStudentMatriculeIndex();
 			existingMatricules = new Set(studentMatriculeIndex.keys());
 		}
 		catch {
@@ -1009,7 +990,7 @@
 		}
 		loadingTeacherCodes = true;
 		try {
-			const index = await loadTeacherCodeIndex();
+			const index = await importState.loadTeacherCodeIndex();
 			existingTeacherCodes = new Set(index.keys());
 		}
 		catch {
@@ -1029,7 +1010,7 @@
 		}
 		loadingStaffCodes = true;
 		try {
-			const index = await loadStaffCodeIndex();
+			const index = await importState.loadStaffCodeIndex();
 			existingStaffCodes = new Set(index.keys());
 		}
 		catch {
@@ -1049,7 +1030,7 @@
 		}
 		loadingGuardianCodes = true;
 		try {
-			const index = await loadGuardianCodeIndex();
+			const index = await importState.loadGuardianCodeIndex();
 			existingGuardianCodes = new Set(index.keys());
 		}
 		catch {
@@ -1069,7 +1050,7 @@
 		}
 		loadingPaymentReferences = true;
 		try {
-			existingPaymentReferences = new Set(await loadPaymentReferenceIndex());
+			existingPaymentReferences = new Set(await importState.loadPaymentReferenceIndex());
 		}
 		catch {
 			existingPaymentReferences = new Set();
@@ -1096,7 +1077,7 @@
 			const classGradeLevelById = Object.fromEntries(
 				academicContext.classes.map(classGroup => [classGroup.id, classGroup.gradeLevelId]),
 			);
-			subjectImportExistingKeys = await loadExistingSubjectImportKeys(schoolId, classGradeLevelById);
+			subjectImportExistingKeys = await importState.loadExistingSubjectImportKeys(schoolId, classGradeLevelById);
 		}
 		catch {
 			subjectImportExistingKeys = new Set();
@@ -1122,11 +1103,10 @@
 		}
 		loadingTeacherAssignmentContext = true;
 		try {
-			const client = getBrowserSchoolClient();
 			const [teachers, classSubjects, subjectCatalog] = await Promise.all([
-				loadTeacherAssignmentImportTeachers(client, schoolId),
-				loadTeacherAssignmentImportClassSubjects(client, schoolId),
-				loadSchoolSubjectCatalog(schoolId),
+				importState.loadTeacherAssignmentImportTeachers(schoolId),
+				importState.loadTeacherAssignmentImportClassSubjects(schoolId),
+				importState.loadSchoolSubjectCatalog(schoolId),
 			]);
 			teacherAssignmentTeachers = teachers;
 			teacherAssignmentClassSubjects = classSubjects;
@@ -1297,9 +1277,8 @@
 		changeStep('execute');
 
 		try {
-			studentImportResult = await runStudentImport({
+			studentImportResult = await importState.runStudentImport({
 				schoolId,
-				client: getBrowserSchoolClient(),
 				rows: studentValidationResult.validRows,
 				classNameById: buildClassNameById(),
 				onProgress: (current, total) => {
@@ -1341,10 +1320,9 @@
 		changeStep('execute');
 
 		try {
-			classImportResult = await runClassImport({
+			classImportResult = await importState.runClassImport({
 				schoolId,
 				academicYearId,
-				client: getBrowserSchoolClient(),
 				rows: classValidationResult.validRows,
 				existingClassIds: academicContext.classes.map(classGroup => classGroup.id),
 				siblingCountByGrade: buildClassSiblingCounts(),
@@ -1388,9 +1366,8 @@
 		changeStep('execute');
 
 		try {
-			guardianImportResult = await runGuardianImport({
+			guardianImportResult = await importState.runGuardianImport({
 				schoolId,
-				client: getBrowserSchoolClient(),
 				rows: guardianValidationResult.validRows,
 				onProgress: (current, total) => {
 					importProgress = { current, total };
@@ -1430,9 +1407,8 @@
 		changeStep('execute');
 
 		try {
-			staffImportResult = await runStaffImport({
+			staffImportResult = await importState.runStaffImport({
 				schoolId,
-				client: getBrowserSchoolClient(),
 				rows: staffValidationResult.validRows,
 				onProgress: (current, total) => {
 					importProgress = { current, total };
@@ -1472,10 +1448,9 @@
 		changeStep('execute');
 
 		try {
-			teacherImportResult = await runTeacherImport({
+			teacherImportResult = await importState.runTeacherImport({
 				schoolId,
 				academicYearId,
-				client: getBrowserSchoolClient(),
 				rows: teacherValidationResult.validRows,
 				onProgress: (current, total) => {
 					importProgress = { current, total };
@@ -1514,9 +1489,8 @@
 		changeStep('execute');
 
 		try {
-			teacherAssignmentImportResult = await runTeacherAssignmentImport({
+			teacherAssignmentImportResult = await importState.runTeacherAssignmentImport({
 				academicYearId,
-				client: getBrowserSchoolClient(),
 				rows: teacherAssignmentValidationResult.validRows,
 				onProgress: (current, total) => {
 					importProgress = { current, total };
@@ -1555,10 +1529,9 @@
 		changeStep('execute');
 
 		try {
-			subjectImportResult = await runSubjectImport({
+			subjectImportResult = await importState.runSubjectImport({
 				schoolId,
 				academicYearId: academicContext.yearId ?? academicContext.year?.id ?? '',
-				client: getBrowserSchoolClient(),
 				rows: subjectValidationResult.validRows,
 				onProgress: (current, total) => {
 					importProgress = { current, total };
@@ -1592,8 +1565,7 @@
 		changeStep('execute');
 
 		try {
-			billingImportResult = await runBillingImport({
-				client: getBrowserSchoolClient(),
+			billingImportResult = await importState.runBillingImport({
 				rows: billingValidationResult.validRows,
 				onProgress: (current, total) => {
 					importProgress = { current, total };
@@ -1627,8 +1599,7 @@
 		changeStep('execute');
 
 		try {
-			paymentImportResult = await runPaymentImport({
-				client: getBrowserSchoolClient(),
+			paymentImportResult = await importState.runPaymentImport({
 				rows: paymentValidationResult.validRows,
 				onProgress: (current, total) => {
 					importProgress = { current, total };
@@ -1707,8 +1678,7 @@
 		changeStep('execute');
 
 		try {
-			chapterImportResult = await runChapterImport({
-				client: getBrowserSchoolClient(),
+			chapterImportResult = await importState.runChapterImport({
 				rows: chapterValidationResult.validRows,
 				onProgress: (current, total) => {
 					importProgress = { current, total };

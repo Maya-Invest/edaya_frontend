@@ -129,7 +129,7 @@
 		{/if}
 	{/each}
 
-	<ReportSectionComments result={live} onSaved={(sections, version) => reportCardsPage.patchResult(live.id, { commentSections: sections, version })} />
+	<ReportSectionComments onWriteReportSectionComments={reportCardsPage.performWriteReportSectionComments} result={live} onSaved={(sections, version) => reportCardsPage.patchResult(live.id, { commentSections: sections, version })} />
 	<ReportHomeroomComment result={live} onSaved={(homeroomComment, version) => reportCardsPage.patchResult(live.id, { homeroomComment, version })} />
 
 	{#if live.principalComment}

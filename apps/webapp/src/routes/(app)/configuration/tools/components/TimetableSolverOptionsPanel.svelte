@@ -1,10 +1,14 @@
 <script lang="ts">
 	import type { SchoolRaw } from '$lib/api/school-data';
-	import { updateSchoolTimetableDefaultsMutation } from '$lib/api/mutations/school-timetable.mutations';
+
 	import Button from '$lib/components/ui/button/button.svelte';
+
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
+	import { getToolsPageState } from '../tools-page.svelte';
+
+	const actionState = getToolsPageState();
 
 	let {
 		enforceWorkloadFulfillment = $bindable<boolean | undefined>(),
@@ -42,7 +46,7 @@
 		}
 		savingDefaults = true;
 		try {
-			const result = await updateSchoolTimetableDefaultsMutation({
+			const result = await actionState.performUpdateSchoolTimetableDefaults({
 				schoolId,
 				current: schoolRaw,
 				successMessage: $t('timetable.schoolDefaultsSaved'),

@@ -1,10 +1,7 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
 	import { page } from '$app/stores';
-	import {
-		downloadDocumentMutation,
-		retryDocumentIssuanceMutation,
-	} from '$lib/api/mutations/documents.mutations';
+
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -98,12 +95,12 @@
 					{/if}
 					<div class="mt-3 flex flex-wrap gap-2">
 						{#if isDownloadableStatus(issuance.status)}
-							<Button size="sm" variant="outline" class="rounded-full" data-testid={`document-download-${issuance.id}`} onclick={() => void downloadDocumentMutation({ id: issuance.id })}>
+							<Button size="sm" variant="outline" class="rounded-full" data-testid={`document-download-${issuance.id}`} onclick={() => void documentsTab.performDownloadDocument({ id: issuance.id })}>
 								{$t('documents.downloadNamed', { name: titleFor(issuance.templateKey) })}
 							</Button>
 						{/if}
 						{#if isRetryableStatus(issuance.status)}
-							<Button size="sm" variant="outline" class="rounded-full" onclick={() => void retryDocumentIssuanceMutation({ issuanceId: issuance.id, successMessage: $t('documents.toastRetrying') })}>
+							<Button size="sm" variant="outline" class="rounded-full" onclick={() => void documentsTab.performRetryDocumentIssuance({ issuanceId: issuance.id, successMessage: $t('documents.toastRetrying') })}>
 								<RotateCcw class="mr-1 h-3.5 w-3.5" />
 								{$t('documents.retry')}
 							</Button>

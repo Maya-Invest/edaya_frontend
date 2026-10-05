@@ -2,7 +2,7 @@
 	import type { Student } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { writeHomeroomReportCommentMutation } from '$lib/api/mutations/student-ops.mutations';
+
 	import DocumentPdfButton from '$lib/components/school/documents/DocumentPdfButton.svelte';
 	import ReportSectionComments from '$lib/components/school/report-cards/ReportSectionComments.svelte';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
@@ -67,7 +67,7 @@
 			return;
 		}
 		commentBusy = true;
-		const ok = await writeHomeroomReportCommentMutation({
+		const ok = await reportCardTab.performWriteHomeroomReportComment({
 			resultId: latest.id,
 			expectedVersion: latest.version ?? 0,
 			teacherComment: commentDraft,
@@ -166,7 +166,7 @@
 			{/if}
 		{/each}
 
-		<ReportSectionComments result={latest} onSaved={() => reportCardTab.refreshResults(s.id)} />
+		<ReportSectionComments onWriteReportSectionComments={reportCardTab.performWriteReportSectionComments} result={latest} onSaved={() => reportCardTab.refreshResults(s.id)} />
 		<div class="rounded-xl border border-border p-3 space-y-2">
 			<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">
 				{$t('reportCards.homeroomComment')}
@@ -188,7 +188,7 @@
 
 		<div class="flex justify-end gap-2">
 			{#if latest.status === 'published'}
-				<DocumentPdfButton
+				<DocumentPdfButton onRequestDocumentIssuance={reportCardTab.performRequestDocumentIssuance}
 					templateKey="report-card.v1"
 					sourceId={latest.id}
 					studentId={s.id}

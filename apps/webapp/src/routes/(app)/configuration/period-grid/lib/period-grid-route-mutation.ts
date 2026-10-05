@@ -10,6 +10,7 @@ export async function deletePeriodDefinitionMutation(
 	const result = await runMutation(
 		() => client.entities.periodDefinitions.delete({ id: periodDefinitionId }),
 		{
+			versionKeys: ['periodDefinitions', 'planning'],
 			successMessage: opts?.successMessage,
 			onSuccess: () => {
 				academicContext.removePeriodDefinition(periodDefinitionId);

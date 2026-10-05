@@ -3,12 +3,14 @@
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { drawerTabRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
+	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { getSubjectsPageState } from '../../../subjects-page.svelte';
 	import SubjectProgressionTab from './components/SubjectProgressionTab.svelte';
 	import { getSubjectProgressionTabState } from './subject-progression-tab.svelte';
 
 	const subjectsPage = getSubjectsPageState();
 	const progressionTab = getSubjectProgressionTabState();
+	registerVersionInvalidation(progressionTab);
 	const subject = $derived(subjectsPage.selected);
 	const query = $derived(subject ? progressionTab.query(subject) : null);
 </script>

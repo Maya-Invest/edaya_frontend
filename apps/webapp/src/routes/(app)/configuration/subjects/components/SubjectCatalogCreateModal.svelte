@@ -3,9 +3,8 @@
 	import type { Subject } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { sortGradeLevels } from '$lib/academic/grade-level-sort';
-	import { createSubjectForGradeLevelMutation } from '$lib/api/mutations/subject.mutations';
-	import { getBrowserSchoolClient } from '$lib/api/school-client';
-	import { defaultSubjectCategoryId, loadSubjectCategories } from '$lib/api/subject-categories-data';
+
+	import { defaultSubjectCategoryId } from '$lib/api/subject-categories-data';
 	import { authSession } from '$lib/auth/session.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -65,7 +64,7 @@
 			categoryId = '';
 			return;
 		}
-		categories = await loadSubjectCategories(getBrowserSchoolClient(), schoolId);
+		categories = await subjectsPage.loadSubjectCategoriesForForm(schoolId);
 		if (!categories.some(category => category.id === categoryId)) {
 			categoryId = defaultSubjectCategoryId(categories);
 		}
@@ -103,7 +102,7 @@
 		const academicYearId = academicContext.yearId ?? '';
 
 		busy = true;
-		const classSubjectId = await createSubjectForGradeLevelMutation({
+		const classSubjectId = await subjectsPage.performCreateSubjectForGradeLevel({
 			gradeLevelId,
 			academicYearId,
 			classGroupIds,

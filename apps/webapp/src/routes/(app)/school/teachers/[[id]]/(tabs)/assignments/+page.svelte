@@ -3,11 +3,13 @@
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { drawerTabRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
+	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { getTeachersPageState } from '../../../teachers-page.svelte';
 	import TeacherAssignmentsTab from './components/TeacherAssignmentsTab.svelte';
 	import { getTeacherAssignmentsTabState } from './teacher-assignments-tab.svelte';
 
 	const assignmentsTab = getTeacherAssignmentsTabState();
+	registerVersionInvalidation(assignmentsTab);
 	const query = assignmentsTab.query();
 	const teacher = $derived(getTeachersPageState().selected);
 </script>

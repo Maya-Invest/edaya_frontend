@@ -193,7 +193,7 @@ export async function saveSubjectMatterMutation(input: {
 			sequenceOrder: input.sequenceOrder,
 			estimatedHours: input.estimatedHours ?? null,
 		}),
-		{ successMessage: input.successMessage },
+		{ versionKeys: ['subjects'] },
 	);
 
 	if (!saved) {
@@ -221,7 +221,7 @@ export async function saveSubjectMatterMutation(input: {
 				subjectMatterId: matterId,
 				classSubjectMatterIdsByClassGroupId,
 			}),
-			{},
+			{ successMessage: input.successMessage, versionKeys: ['subjects'] },
 		);
 		if (!linked) {
 			return null;
@@ -234,7 +234,7 @@ export async function saveSubjectMatterMutation(input: {
 				classSubjectId: input.classSubjectId,
 				subjectMatterId: matterId,
 			}),
-			{},
+			{ successMessage: input.successMessage, versionKeys: ['subjects'] },
 		);
 		if (!linked) {
 			return null;
@@ -263,7 +263,7 @@ export async function deleteSubjectMatterMutation(
 			await client.entities.subjectMatters.delete({ id: matterId });
 			return true;
 		},
-		{ successMessage },
+		{ successMessage, versionKeys: ['subjects'] },
 	);
 	return result === true;
 }

@@ -1,12 +1,12 @@
 <script lang="ts">
 	import type { Teacher } from '$lib/types/school';
-	import AccountLinkingSection from '$lib/components/account/AccountLinkingSection.svelte';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
 	import { Mail, Phone } from '$lib/icons';
+	import AccountLinkingSection from '$lib/smart-components/account-linking/AccountLinkingSection.svelte';
 	import { get } from 'svelte/store';
 	import { getTeachersPageState } from '../../../../teachers-page.svelte';
 

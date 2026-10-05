@@ -1,9 +1,12 @@
 <script lang="ts">
-	import { voidDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
+
 	import Label from '$lib/components/ui/label/label.svelte';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
+	import { getStudentDocumentsTabState } from '../student-documents-tab.svelte';
+
+	const actionState = getStudentDocumentsTabState();
 
 	let {
 		open = $bindable(false),
@@ -29,7 +32,7 @@
 		}
 		busy = true;
 		try {
-			const ok = await voidDocumentIssuanceMutation({
+			const ok = await actionState.performVoidDocumentIssuance({
 				issuanceId,
 				reason: reason.trim(),
 				successMessage: $t('documents.toastVoided'),

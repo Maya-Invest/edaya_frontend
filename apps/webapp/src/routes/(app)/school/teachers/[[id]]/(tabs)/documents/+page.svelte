@@ -4,11 +4,13 @@
 	import { drawerTabRouteCacheKey } from '$lib/detail-route-patterns';
 	import { entityVersions } from '$lib/entity-versions.svelte';
 	import { t } from '$lib/i18n';
+	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { getTeachersPageState } from '../../../teachers-page.svelte';
 	import TeacherDocumentsTab from './components/TeacherDocumentsTab.svelte';
 	import { getTeacherDocumentsTabState } from './teacher-documents-tab.svelte';
 
 	const documentsTab = getTeacherDocumentsTabState();
+	registerVersionInvalidation(documentsTab);
 	const query = documentsTab.query();
 	const teacher = $derived(getTeachersPageState().selected);
 	const cacheKey = $derived((url: URL) => `${drawerTabRouteCacheKey(url)}:${entityVersions.documents}`);

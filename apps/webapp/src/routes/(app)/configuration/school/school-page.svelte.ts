@@ -2,6 +2,7 @@ import type { SchoolRaw } from '$lib/api/school-data';
 import type { School, SchoolType } from '$lib/types/school';
 import type { SchoolPageSlice } from './lib/school-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
+import { uploadSchoolIssuanceAssetMutation, clearSchoolIssuanceAssetMutation } from '$lib/api/mutations/issuance-asset.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { mapSchoolFromApi, schoolConfigurationIdentityFields } from '$lib/api/school-data';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
@@ -9,7 +10,7 @@ import { getContext, setContext } from 'svelte';
 import { loadSchoolSlice, querySchoolListPage } from './lib/school-queries';
 import { runSchoolRouteMutation } from './lib/school-route-mutation';
 
-const SCHOOL_VERSION_FAMILIES = [] as const;
+const SCHOOL_VERSION_FAMILIES = ['school', 'documents'] as const;
 
 const SCHOOL_PAGE_STATE_KEY = Symbol('school-page-state');
 
@@ -45,6 +46,10 @@ function optionalIdentityText(
 }
 
 export class SchoolPageState {
+	performUploadSchoolIssuanceAsset = (...args: Parameters<typeof uploadSchoolIssuanceAssetMutation>) => uploadSchoolIssuanceAssetMutation(...args);
+
+	performClearSchoolIssuanceAsset = (...args: Parameters<typeof clearSchoolIssuanceAssetMutation>) => clearSchoolIssuanceAssetMutation(...args);
+
 	slice = $state<SchoolPageSlice | null>(null);
 
 	private readonly versions = new RouteVersionSnapshot(SCHOOL_VERSION_FAMILIES);

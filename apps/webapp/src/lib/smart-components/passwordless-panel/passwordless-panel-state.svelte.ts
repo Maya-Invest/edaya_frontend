@@ -1,12 +1,42 @@
-import type { AuthFailure, AuthOutcome, OtpStart, PrimaryStatus } from './client';
+import type { AuthFailure, AuthOutcome, OtpStart, PrimaryStatus } from '$lib/auth/client';
+import { authClient } from '$lib/auth/client';
+import { completeAuthSignIn } from '$lib/auth/complete-sign-in';
+import { contactError, detectIdentifier } from '$lib/auth/detect-identifier';
+import { t } from '$lib/i18n';
 import { SvelteMap } from 'svelte/reactivity';
-import { authClient } from './client';
+import { get } from 'svelte/store';
 
 /**
- Component-owned credentials;
+ Smart workflow-owned credentials;
 only completed sessions are persisted.
  */
-export class PasswordlessFlow {
+export function completePasswordlessSignIn() {
+	return completeAuthSignIn('');
+}
+
+export class PasswordlessPanelState {
+	async submit(input: { email: string; locale: 'fr' | 'en'; recoveryEligible: boolean; enroll: boolean; link: boolean; onComplete: () => Promise<unknown> }) {
+		if (this.state === 'form' && !input.enroll) {
+			const identifier = detectIdentifier(input.email);
+			const error = contactError(identifier, this.phoneAvailable);
+			if (error || !identifier) {
+				this.error = get(t)(error ?? 'auth.invalidContact');
+				return;
+			}
+			await this.begin({ ...identifier, locale: input.locale, recoveryEligible: input.recoveryEligible }, input.link, input.onComplete);
+			return;
+		}
+		await this.run(() => {
+			if (this.state === 'form')
+return authClient.enroll();
+			if (this.state === 'primary_required')
+return authClient.verifyOtp(this.challenge, this.code);
+			if (this.state === 'enrollment_required')
+return authClient.confirmEnrollment(this.challenge, this.code);
+			return this.recovery ? authClient.recover(this.challenge, this.code) : authClient.verifyTotp(this.challenge, this.code);
+		}, input.onComplete);
+	}
+
 	state = $state<'form' | 'primary_required' | 'totp_required' | 'enrollment_required' | 'recovery_codes'>('form');
 	challenge = $state('');
 	code = $state('');

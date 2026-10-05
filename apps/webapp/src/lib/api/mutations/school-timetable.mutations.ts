@@ -68,7 +68,7 @@ export async function updateSchoolTimetableDefaultsMutation(input: {
 			timetableMaxPeriodSpan: defaults.timetableMaxPeriodSpan,
 			...schoolConfigurationIdentityFields(current),
 		}),
-		{ successMessage: input.successMessage },
+		{ successMessage: input.successMessage, versionKeys: ['school', 'planning'] },
 	);
 
 	if (!result) {

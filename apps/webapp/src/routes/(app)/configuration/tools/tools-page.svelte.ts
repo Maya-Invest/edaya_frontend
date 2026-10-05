@@ -6,6 +6,9 @@ import type {
 	ToolsWorkflowSurface,
 } from './lib/tools-workflow';
 import { academicContext } from '$lib/academic/context.svelte';
+import { updateSchoolTimetableDefaultsMutation } from '$lib/api/mutations/school-timetable.mutations';
+import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { fetchSchoolById } from '$lib/api/school-data';
 import { IMPORT_TYPE_DEFINITIONS } from '$lib/import/catalog/import-types';
 import { createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 import { readModal, writeModalSurface } from '$lib/modal/modal-url';
@@ -13,6 +16,7 @@ import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { hasPermission } from '$lib/permissions';
 import { getContext, setContext } from 'svelte';
+import { DataImportState } from './import-state.svelte';
 import { queryToolsListPage } from './lib/tools-queries';
 import {
 	TOOL_MODAL_NAMES,
@@ -30,6 +34,11 @@ const TOOLS_PAGE_STATE_KEY = Symbol('tools-page-state');
 export type { ImportPageSlice };
 
 export class ToolsPageState {
+	readonly importState = new DataImportState();
+	loadSchoolForForm = (...args: Parameters<typeof fetchSchoolById> extends [unknown, ...infer Rest] ? Rest : never) => fetchSchoolById(getBrowserSchoolClient(), ...args);
+
+	performUpdateSchoolTimetableDefaults = (...args: Parameters<typeof updateSchoolTimetableDefaultsMutation>) => updateSchoolTimetableDefaultsMutation(...args);
+
 	slice = $state<ImportPageSlice | null>(null);
 	readonly planningPage = new TimetablePlanningPageState();
 	readonly modals: UrlSyncedModalsState<ToolsModalName>;
@@ -66,6 +75,8 @@ export class ToolsPageState {
 	}
 
 	hydrateWorkflow() {
+		if (!academicContext.shellReady)
+			return;
 		this.modals.hydrate();
 		const canonical = canonicalToolsWorkflowSurface({
 			modal: this.modals.active,
@@ -134,6 +145,7 @@ export class ToolsPageState {
 	}
 
 	async invalidateIfStale() {
+		await this.planningPage.invalidateIfStale();
 		if (!this.versions.isStale()) {
 			return;
 		}

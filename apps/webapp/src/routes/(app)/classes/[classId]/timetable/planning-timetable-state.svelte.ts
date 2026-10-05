@@ -1,5 +1,8 @@
 import type { PlanningSlotFromDates } from '$lib/scheduling/planning-calendar';
 import type { PlanningEvent } from '$lib/types/school';
+import { createAssessmentMutation } from '$lib/api/mutations/evaluation.mutations';
+import { reschedulePlanningSlotMutation, updateSessionMutation, createSessionMutation } from '$lib/api/mutations/planning.mutations';
+import { updateScheduleMutation, createScheduleMutation } from '$lib/api/mutations/schedule.mutations';
 import { getContext, setContext } from 'svelte';
 
 export const PLANNING_TIMETABLE_CONTEXT_KEY = Symbol('planning-timetable');
@@ -9,6 +12,18 @@ export interface PlanningTimetableContext {
 }
 
 export class PlanningTimetableState {
+	performUpdateSchedule = (...args: Parameters<typeof updateScheduleMutation>) => updateScheduleMutation(...args);
+
+	performCreateSchedule = (...args: Parameters<typeof createScheduleMutation>) => createScheduleMutation(...args);
+
+	performCreateAssessment = (...args: Parameters<typeof createAssessmentMutation>) => createAssessmentMutation(...args);
+
+	performReschedulePlanningSlot = (...args: Parameters<typeof reschedulePlanningSlotMutation>) => reschedulePlanningSlotMutation(...args);
+
+	performUpdateSession = (...args: Parameters<typeof updateSessionMutation>) => updateSessionMutation(...args);
+
+	performCreateSession = (...args: Parameters<typeof createSessionMutation>) => createSessionMutation(...args);
+
 	confirmOpen = $state(false);
 	confirmBusy = $state(false);
 	pendingReschedule = $state<{

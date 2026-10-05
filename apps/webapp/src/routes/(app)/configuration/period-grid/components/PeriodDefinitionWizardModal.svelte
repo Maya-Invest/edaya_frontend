@@ -2,7 +2,7 @@
 	import type { PeriodDefinitionDayOfWeek } from '$lib/types/school';
 	import type { PeriodDefinitionPresetId, PeriodTemplateRow } from '../lib/period-definition-presets';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { savePeriodDefinitionsBatchMutation } from '$lib/api/mutations/period-definition.mutations';
+
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
@@ -176,7 +176,7 @@
 
 		busy = true;
 		try {
-			const ok = await savePeriodDefinitionsBatchMutation({
+			const ok = await periodGridPage.performSavePeriodDefinitionsBatch({
 				definitions: expanded.map(slot => ({
 					academicYearId,
 					label: slot.label,

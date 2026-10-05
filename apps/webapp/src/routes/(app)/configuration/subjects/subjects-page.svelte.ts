@@ -1,7 +1,11 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { Subject } from '$lib/types/school';
 import type { SubjectsPageSlice } from './lib/subjects-helpers';
+import { removeSubjectFromGradeLevelMutation } from '$lib/api/mutations/grade-level-subject.mutations';
+import { createScheduleMutation } from '$lib/api/mutations/schedule.mutations';
+import { updateSubjectMutation, createSubjectForClassMutation, createSubjectForGradeLevelMutation } from '$lib/api/mutations/subject.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { loadSubjectCategories } from '$lib/api/subject-categories-data';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
 import {
@@ -12,13 +16,27 @@ import {
 import { loadSubjectsSlice, querySubjectsListPage } from './lib/subjects-queries';
 import { runSubjectsRouteMutation } from './lib/subjects-route-mutation';
 
-const SUBJECTS_VERSION_FAMILIES = ['subjects'] as const satisfies readonly EntityVersionKey[];
+const SUBJECTS_VERSION_FAMILIES = ['subjects', 'planning', 'teachers', 'staff'] as const satisfies readonly EntityVersionKey[];
 
 const SUBJECTS_PAGE_STATE_KEY = Symbol('subjects-page-state');
 
 export type { SubjectsPageSlice };
 
 export class SubjectsPageState {
+	onLoadCategories = (schoolId: string) => loadSubjectCategories(getBrowserSchoolClient(), schoolId);
+
+	loadSubjectCategoriesForForm = (...args: Parameters<typeof loadSubjectCategories> extends [unknown, ...infer Rest] ? Rest : never) => loadSubjectCategories(getBrowserSchoolClient(), ...args);
+
+	performUpdateSubject = (...args: Parameters<typeof updateSubjectMutation>) => updateSubjectMutation(...args);
+
+	performCreateSubjectForClass = (...args: Parameters<typeof createSubjectForClassMutation>) => createSubjectForClassMutation(...args);
+
+	performCreateSchedule = (...args: Parameters<typeof createScheduleMutation>) => createScheduleMutation(...args);
+
+	performRemoveSubjectFromGradeLevel = (...args: Parameters<typeof removeSubjectFromGradeLevelMutation>) => removeSubjectFromGradeLevelMutation(...args);
+
+	performCreateSubjectForGradeLevel = (...args: Parameters<typeof createSubjectForGradeLevelMutation>) => createSubjectForGradeLevelMutation(...args);
+
 	slice = $state<SubjectsPageSlice | null>(null);
 
 	private readonly versions = new RouteVersionSnapshot(SUBJECTS_VERSION_FAMILIES);

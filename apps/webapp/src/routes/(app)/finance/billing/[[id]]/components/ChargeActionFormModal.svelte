@@ -1,10 +1,6 @@
 <script lang="ts">
 	import type { StudentBilling } from '$lib/types/school';
-	import {
-		adjustStudentChargeMutation,
-		cancelStudentChargeMutation,
-		waiveStudentChargeMutation,
-	} from '$lib/api/mutations/billing-ops.mutations';
+
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -59,7 +55,7 @@
 				const waiverAmount = parsedMajor === null
 					? undefined
 					: majorToMinor(parsedMajor, currency, $locale);
-				ok = await waiveStudentChargeMutation({
+				ok = await billingPage.performWaiveStudentCharge({
 					chargeId: billing.id,
 					reason: reason.trim(),
 					waiverAmount,
@@ -67,7 +63,7 @@
 				});
 			}
 			else if (kind === 'adjust') {
-				ok = await adjustStudentChargeMutation({
+				ok = await billingPage.performAdjustStudentCharge({
 					chargeId: billing.id,
 					adjustmentAmount: majorToMinor(parsedMajor ?? 0, currency, $locale),
 					reason: reason.trim(),
@@ -75,7 +71,7 @@
 				});
 			}
 			else {
-				ok = await cancelStudentChargeMutation({
+				ok = await billingPage.performCancelStudentCharge({
 					chargeId: billing.id,
 					reason: reason.trim(),
 					successMessage: get(t)('billing.cancelSuccess'),

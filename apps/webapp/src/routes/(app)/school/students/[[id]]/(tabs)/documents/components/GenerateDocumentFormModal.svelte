@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { DocumentTemplateKey } from '$lib/api/documents-types';
 	import { CONVOCATION_TEMPLATE } from '$lib/api/documents-types';
-	import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
+
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -47,7 +47,7 @@
 		}
 		busy = true;
 		try {
-			const result = await requestDocumentIssuanceMutation({
+			const result = await documentsTab.performRequestDocumentIssuance({
 				templateKey: selected?.templateKey ?? templateKey,
 				sourceId,
 				studentId,

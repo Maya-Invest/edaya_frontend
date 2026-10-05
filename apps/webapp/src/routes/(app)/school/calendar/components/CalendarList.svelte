@@ -28,7 +28,6 @@
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getCalendarPageState } from '../calendar-page.svelte';
-	import { deleteCalendarEventOnPage } from '../lib/calendar-mutations';
 	import CalendarEventFormModal from './CalendarEventFormModal.svelte';
 
 	const calendarPage = getCalendarPageState();
@@ -179,7 +178,7 @@
 		}
 		deleteBusy = true;
 		try {
-			const ok = await deleteCalendarEventOnPage(calendarPage, target, {
+			const ok = await calendarPage.deleteCalendarEvent(target, {
 				successMessage: get(t)('cal.toastDeleted', { title: target.title }),
 			});
 			if (ok) {

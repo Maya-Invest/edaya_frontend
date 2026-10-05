@@ -1,9 +1,12 @@
 import type { StudentEnrollmentHistoryItem } from '$lib/types/school';
 import type { StudentDetailHost } from '../../../lib/student-detail-host';
 import type { PageQueryRequest } from '../../../lib/student-page-status';
+import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { studentDetailIdFromPathname } from '$lib/api/student-detail-url';
 import { loadStudentEnrollmentHistory } from '$lib/api/student-drawer-data';
+import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { VersionedRouteQuery } from '$lib/navigation/versioned-route-query';
 import { getContext, setContext } from 'svelte';
 import { SvelteDate } from 'svelte/reactivity';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
@@ -23,11 +26,17 @@ function emptySlice(studentId: string): StudentEnrollmentsTabSlice {
 }
 
 export class StudentEnrollmentsTabState {
+	private readonly versionedQuery = new VersionedRouteQuery(new RouteVersionSnapshot(['students', 'enrollments']));
+	invalidateIfStale = () => this.versionedQuery.invalidateIfStale();
+
+	performRequestDocumentIssuance = (...args: Parameters<typeof requestDocumentIssuanceMutation>) => requestDocumentIssuanceMutation(...args);
+
 	slice = $state<StudentEnrollmentsTabSlice | null>(null);
 
 	constructor(private readonly getPage: () => StudentDetailHost) {}
 
 	clear() {
+		this.versionedQuery.clear();
 		this.slice = null;
 	}
 
@@ -48,7 +57,7 @@ export class StudentEnrollmentsTabState {
 	}
 
 	query() {
-		return (url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
+		return this.versionedQuery.track((url: URL, request?: PageQueryRequest) => resolveStudentPageLoad(url, {
 			empty: () => ({}),
 			load: async (signal) => {
 				const studentId = studentDetailIdFromPathname(url.pathname);
@@ -62,7 +71,7 @@ export class StudentEnrollmentsTabState {
 				return {};
 			},
 			hasItems: () => true,
-		}, request);
+		}, request));
 	}
 
 	async transferClass(input: {

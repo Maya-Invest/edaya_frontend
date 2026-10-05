@@ -16,6 +16,6 @@ export function runSchoolRouteMutation<T>(
 ): Promise<T | null> {
 	return runRouteMutation({
 		...options,
-		versionKeys: options.versionKeys ?? [],
+		versionKeys: options.versionKeys ?? ['school'],
 	});
 }

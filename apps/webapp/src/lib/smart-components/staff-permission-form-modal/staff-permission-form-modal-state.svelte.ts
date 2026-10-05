@@ -1,8 +1,12 @@
 import type { PermissionCatalogEntry } from '$lib/api/staff-permission-assignments-data';
+import { createStaffPermissionAssignmentPayload, saveStaffPermissionAssignmentMutation } from '$lib/api/mutations/staff-permission-assignments.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadPermissionCatalog } from '$lib/api/staff-permission-assignments-data';
 
 export class StaffPermissionFormModalState {
+	createStaffPermissionAssignmentPayload = (...args: Parameters<typeof createStaffPermissionAssignmentPayload>) => createStaffPermissionAssignmentPayload(...args);
+	saveStaffPermissionAssignmentMutation = (...args: Parameters<typeof saveStaffPermissionAssignmentMutation>) => saveStaffPermissionAssignmentMutation(...args);
+
 	catalog = $state<PermissionCatalogEntry[]>([]);
 	loading = $state(false);
 	loaded = $state(false);
