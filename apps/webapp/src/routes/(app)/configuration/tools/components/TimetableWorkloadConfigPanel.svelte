@@ -1,13 +1,13 @@
 <script lang="ts">
 	import type { components } from '$lib/api/schema';
 	import type { School } from '$lib/types/school';
-	import type { TimetableWorkloadClass } from './timetable-generation-ui';
+	import type { TimetableWorkloadClass } from '../lib/timetable-generation-ui';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
 	import { Search } from '$lib/icons';
+	import { resolvedPeriodSpanPlaceholder } from '$lib/scheduling/timetable-placement-parameters';
 	import { BADGE_WARN, ROW_ACTIVE } from '$lib/ui-tones';
 	import { cn } from '$lib/utils';
-	import { resolvedPeriodSpanPlaceholder } from './timetable-placement-parameters';
 
 	type ClassSubject = components['schemas']['ClassSubject'];
 

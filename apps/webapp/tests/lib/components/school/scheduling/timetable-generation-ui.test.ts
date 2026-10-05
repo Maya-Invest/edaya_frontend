@@ -7,7 +7,7 @@ import {
 	summarizeClassGeneration,
 	summarizePublish,
 	summarizeSchoolGeneration,
-} from '$lib/components/school/scheduling/timetable-generation-ui';
+} from '../../../../../src/routes/(app)/configuration/tools/lib/timetable-generation-ui';
 
 describe('timetable-generation-ui', () => {
 	test('builds trimester and full-year presets', () => {

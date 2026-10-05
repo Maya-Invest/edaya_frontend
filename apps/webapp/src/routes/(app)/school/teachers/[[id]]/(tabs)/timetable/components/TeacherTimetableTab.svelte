@@ -3,18 +3,18 @@
 	import type { Teacher } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import {
-		formatPlanningWeekRange,
-		formatWeekAnchor,
-		parseWeekAnchor,
-		shiftWeek,
-	} from '$lib/components/school/scheduling/planning-calendar';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { lang, t } from '$lib/i18n';
 	import { CalendarDays, ChevronLeft, ChevronRight } from '$lib/icons';
 	import { appGoto } from '$lib/navigation/app-navigation';
+	import {
+		formatPlanningWeekRange,
+		formatWeekAnchor,
+		parseWeekAnchor,
+		shiftWeek,
+	} from '$lib/scheduling/planning-calendar';
 	import { getTeacherTimetableTabState } from '../teacher-timetable-tab.svelte';
 
 	type TimetableEvent = components['schemas']['TimetableEvent'];

@@ -7,9 +7,9 @@
 	import BrandLogo from '$lib/components/ui/BrandLogo.svelte';
 	import { LoaderCircle } from '$lib/icons';
 	import { appGoto, appPath } from '$lib/navigation/app-navigation';
-	import { onboardingContext } from '$lib/onboarding/context.svelte';
 	import { shouldContinueOnboarding } from '$lib/onboarding/resume-onboarding';
 	import { isOnboardingSummaryHold } from '$lib/onboarding/wizard-completion-flag';
+	import { onboardingContext } from './context.svelte';
 
 	const { children }: { children: Snippet } = $props();
 

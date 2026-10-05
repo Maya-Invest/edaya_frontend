@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { ReportCardResult } from '$lib/types/report-cards';
-	import ReportHomeroomComment from '$lib/components/school/report-cards/ReportHomeroomComment.svelte';
 	import ReportSectionComments from '$lib/components/school/report-cards/ReportSectionComments.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -9,6 +8,7 @@
 	import { formatGrade } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
+	import ReportHomeroomComment from '../../components/ReportHomeroomComment.svelte';
 	import { getReportCardsPageState } from '../../report-cards-page.svelte';
 
 	const { result }: { result: ReportCardResult } = $props();

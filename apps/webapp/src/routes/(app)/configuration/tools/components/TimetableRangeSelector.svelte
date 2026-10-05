@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { TimetableRangePreset } from './timetable-generation-ui';
+	import type { TimetableRangePreset } from '../lib/timetable-generation-ui';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
 	import { cn } from '$lib/utils';
-	import { activeRangePresetId } from './timetable-generation-ui';
+	import { activeRangePresetId } from '../lib/timetable-generation-ui';
 	import TimetableGenerationModeSegment from './TimetableGenerationModeSegment.svelte';
 
 	let {

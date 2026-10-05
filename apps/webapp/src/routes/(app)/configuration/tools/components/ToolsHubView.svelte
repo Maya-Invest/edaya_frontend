@@ -5,7 +5,6 @@
 		TimetablePublishStep,
 	} from '../lib/tools-workflow';
 	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
-	import DataImportModal from '$lib/components/school/configuration/DataImportModal.svelte';
 	import Button, { buttonVariants } from '$lib/components/ui/button/button.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
@@ -21,6 +20,7 @@
 		TIMETABLE_SETUP_TABS,
 	} from '../lib/tools-workflow';
 	import { getToolsPageState } from '../tools-page.svelte';
+	import DataImportModal from './DataImportModal.svelte';
 	import SchoolTimetableGenerationModal from './SchoolTimetableGenerationModal.svelte';
 	import SchoolTimetablePublishModal from './SchoolTimetablePublishModal.svelte';
 

@@ -3,10 +3,10 @@
 	import type { School } from '$lib/types/school';
 	import { updateClassSubjectTimetableMutation } from '$lib/api/mutations/class-subject.mutations';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
-	import { resolvedPeriodSpanPlaceholder } from '$lib/components/school/scheduling/timetable-placement-parameters';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
+	import { resolvedPeriodSpanPlaceholder } from '$lib/scheduling/timetable-placement-parameters';
 
 	const {
 		classSubjectId,

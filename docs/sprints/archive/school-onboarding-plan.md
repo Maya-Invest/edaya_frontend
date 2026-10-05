@@ -359,7 +359,7 @@ Option B: chain existing commands from the client (more requests, more fragile).
 - `@edaya/fixtures/onboarding` (template definitions)
 - `apps/api/src/lib/onboarding/apply-structure-template.ts`
 - `apps/webapp/src/lib/onboarding/submit-structure-step.ts`, `structure-step-helpers.ts`
-- `apps/webapp/src/lib/components/onboarding/OnboardingStepStructureForm.svelte`
+- `apps/webapp/src/routes/onboarding/components/OnboardingStepStructureForm.svelte`
 
 ---
 

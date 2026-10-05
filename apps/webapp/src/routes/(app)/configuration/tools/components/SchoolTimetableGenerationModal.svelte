@@ -1,27 +1,27 @@
 <script lang="ts">
 	import type { GenerateSchoolResult } from '$lib/api/mutations/timetable-generation.mutations';
 	import type { SchoolRaw } from '$lib/api/school-data';
-	import type { TimetableGenerationError } from '$lib/components/school/scheduling/timetable-generation-errors';
-	import type { TimetableSetupTab } from '$lib/components/school/scheduling/TimetableGenerationSetupTabs.svelte';
+	import type { TimetableGenerationError } from '../lib/timetable-generation-errors';
 	import type { TimetableGenerationStep } from '../lib/tools-workflow';
 	import type { TimetableGenerationOptions, TimetablePlanningPageState } from '../timetable-planning-page.svelte';
+	import type { TimetableSetupTab } from './TimetableGenerationSetupTabs.svelte';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { fetchSchoolById } from '$lib/api/school-data';
-	import ImportProgressBar from '$lib/components/school/configuration/ImportProgressBar.svelte';
-	import { buildTimetableRangePresets, timetableGenerationModalContentClass, TIMETABLE_GENERATION_MODAL_SETUP_BODY_CLASS, TIMETABLE_GENERATION_MODAL_SETUP_LAYOUT_CLASS, TIMETABLE_GENERATION_MODAL_TAB_PANEL_CLASS } from '$lib/components/school/scheduling/timetable-generation-ui';
-	import TimetableGenerationErrorPanel from '$lib/components/school/scheduling/TimetableGenerationErrorPanel.svelte';
-	import TimetableGenerationResultPanel from '$lib/components/school/scheduling/TimetableGenerationResultPanel.svelte';
-	import TimetableGenerationSetupTabs from '$lib/components/school/scheduling/TimetableGenerationSetupTabs.svelte';
-	import TimetablePreferredPeriodsPanel from '$lib/components/school/scheduling/TimetablePreferredPeriodsPanel.svelte';
-	import TimetableRangeSelector from '$lib/components/school/scheduling/TimetableRangeSelector.svelte';
-	import TimetableSolverOptionsPanel from '$lib/components/school/scheduling/TimetableSolverOptionsPanel.svelte';
-	import TimetableWorkloadConfigPanel from '$lib/components/school/scheduling/TimetableWorkloadConfigPanel.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import { formatDateInput } from '$lib/date/format';
 	import { t } from '$lib/i18n';
 	import { untrack } from 'svelte';
+	import { buildTimetableRangePresets, timetableGenerationModalContentClass, TIMETABLE_GENERATION_MODAL_SETUP_BODY_CLASS, TIMETABLE_GENERATION_MODAL_SETUP_LAYOUT_CLASS, TIMETABLE_GENERATION_MODAL_TAB_PANEL_CLASS } from '../lib/timetable-generation-ui';
+	import ImportProgressBar from './ImportProgressBar.svelte';
+	import TimetableGenerationErrorPanel from './TimetableGenerationErrorPanel.svelte';
+	import TimetableGenerationResultPanel from './TimetableGenerationResultPanel.svelte';
+	import TimetableGenerationSetupTabs from './TimetableGenerationSetupTabs.svelte';
+	import TimetablePreferredPeriodsPanel from './TimetablePreferredPeriodsPanel.svelte';
+	import TimetableRangeSelector from './TimetableRangeSelector.svelte';
+	import TimetableSolverOptionsPanel from './TimetableSolverOptionsPanel.svelte';
+	import TimetableWorkloadConfigPanel from './TimetableWorkloadConfigPanel.svelte';
 
 	let {
 		open = $bindable(false),

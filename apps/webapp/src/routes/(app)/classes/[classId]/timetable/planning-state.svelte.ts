@@ -1,3 +1,4 @@
+import type { PlanningEvent } from '$lib/types/school';
 import type {
 	AttendanceStep,
 	NewSessionStep,
@@ -5,16 +6,7 @@ import type {
 	PlanningModalStep,
 	PlanningSurface,
 	PlanningSurfaceEvent,
-} from '$lib/scheduling/planning-surface';
-import type { PlanningEvent } from '$lib/types/school';
-import {
-	formatWeekAnchor,
-	isCurrentWeek,
-	mondayOfWeek,
-	parseWeekAnchor,
-	shiftWeek,
-	todayDate,
-} from '$lib/components/school/scheduling/planning-calendar';
+} from './planning-surface';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readPlanningListFilters, writePlanningListFilters } from '$lib/list/list-url-filters';
 import { createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
@@ -22,12 +14,20 @@ import { appGoto } from '$lib/navigation/app-navigation';
 import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
 import { hasPermission } from '$lib/permissions';
 import {
+	formatWeekAnchor,
+	isCurrentWeek,
+	mondayOfWeek,
+	parseWeekAnchor,
+	shiftWeek,
+	todayDate,
+} from '$lib/scheduling/planning-calendar';
+import { getContext, setContext } from 'svelte';
+import {
 	PLANNING_MODAL_KEYS,
 	canAccessPlanningModal,
 	planningSurfaceHref,
 	resolvePlanningSurface,
-} from '$lib/scheduling/planning-surface';
-import { getContext, setContext } from 'svelte';
+} from './planning-surface';
 
 const PLANNING_STATE_KEY = Symbol('planning-state');
 

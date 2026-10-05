@@ -4,17 +4,6 @@
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
 	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
-	import AttendanceFlow from '$lib/components/school/scheduling/AttendanceFlow.svelte';
-	import ClassTimetableCalendar from '$lib/components/school/scheduling/ClassTimetableCalendar.svelte';
-	import NewSessionWizard from '$lib/components/school/scheduling/NewSessionWizard.svelte';
-	import {
-		activePlanningEvents,
-		detectPlanningOverlaps,
-		filterPlanningEventsForWeek,
-		formatPlanningWeekRange,
-		parseWeekAnchor,
-	} from '$lib/components/school/scheduling/planning-calendar';
-	import ScheduleFormModal from '$lib/components/school/scheduling/ScheduleFormModal.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -28,9 +17,20 @@
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { canEditTimetable, hasPermission } from '$lib/permissions';
-	import { getPlanningState } from '$lib/scheduling/planning-state.svelte';
+	import {
+		activePlanningEvents,
+		detectPlanningOverlaps,
+		filterPlanningEventsForWeek,
+		formatPlanningWeekRange,
+		parseWeekAnchor,
+	} from '$lib/scheduling/planning-calendar';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
+	import { getPlanningState } from '../planning-state.svelte';
+	import AttendanceFlow from './AttendanceFlow.svelte';
+	import ClassTimetableCalendar from './ClassTimetableCalendar.svelte';
+	import NewSessionWizard from './NewSessionWizard.svelte';
+	import ScheduleFormModal from './ScheduleFormModal.svelte';
 
 	const {
 		classId,

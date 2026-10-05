@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { ApiError } from '@maya-invest/edaya-api-client';
 import { en } from '$lib/i18n/dictionaries/en';
-import { parseTimetableGenerationError } from '$lib/components/school/scheduling/timetable-generation-errors';
+import { parseTimetableGenerationError } from '../../../../../src/routes/(app)/configuration/tools/lib/timetable-generation-errors';
 
 const translate = (key: string) => (en as Record<string, string>)[key] ?? key;
 

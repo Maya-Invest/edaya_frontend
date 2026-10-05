@@ -3,14 +3,14 @@
 	import type { TimetablePublishStep } from '../lib/tools-workflow';
 	import type { TimetablePlanningPageState } from '../timetable-planning-page.svelte';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { buildTimetableRangePresets } from '$lib/components/school/scheduling/timetable-generation-ui';
-	import TimetablePublishResultPanel from '$lib/components/school/scheduling/TimetablePublishResultPanel.svelte';
-	import TimetableRangeSelector from '$lib/components/school/scheduling/TimetableRangeSelector.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import { formatDateInput } from '$lib/date/format';
 	import { t } from '$lib/i18n';
 	import { untrack } from 'svelte';
+	import { buildTimetableRangePresets } from '../lib/timetable-generation-ui';
+	import TimetablePublishResultPanel from './TimetablePublishResultPanel.svelte';
+	import TimetableRangeSelector from './TimetableRangeSelector.svelte';
 
 	let {
 		open = $bindable(false),

@@ -1,15 +1,15 @@
 <script lang="ts">
 	import type { CatalogSubject, StructureTemplateCatalog } from '$lib/onboarding/structure-template-catalog';
-	import OnboardingSubjectChaptersDrawer from '$lib/components/onboarding/OnboardingSubjectChaptersDrawer.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { formatLocaleDate } from '$lib/date/format';
 	import { lang, locale, t } from '$lib/i18n';
 	import { catalogClassName, catalogPeriodLabel, catalogSubjectName } from '$lib/i18n/catalog-label';
 	import { ChevronRight } from '$lib/icons';
 	import { buildCompleteStepSummary } from '$lib/onboarding/complete-step-summary';
-	import { onboardingContext } from '$lib/onboarding/context.svelte';
-	import { getOnboardingWizardState } from '$lib/onboarding/onboarding-wizard-state.svelte';
 	import { loadStructureTemplateCatalog } from '$lib/onboarding/structure-template-catalog';
+	import { onboardingContext } from '../context.svelte';
+	import { getOnboardingWizardState } from '../onboarding-wizard-state.svelte';
+	import OnboardingSubjectChaptersDrawer from './OnboardingSubjectChaptersDrawer.svelte';
 
 	const wizard = getOnboardingWizardState();
 

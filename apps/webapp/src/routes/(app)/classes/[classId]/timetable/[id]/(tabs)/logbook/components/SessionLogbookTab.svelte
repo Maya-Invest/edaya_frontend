@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { PlanningEvent } from '$lib/types/school';
-	import PlanningSessionLogbookModal from '$lib/components/school/scheduling/PlanningSessionLogbookModal.svelte';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -8,7 +7,8 @@
 	import { t } from '$lib/i18n';
 	import { FileText } from '$lib/icons';
 	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
-	import { getPlanningState } from '$lib/scheduling/planning-state.svelte';
+	import PlanningSessionLogbookModal from '../../../../components/PlanningSessionLogbookModal.svelte';
+	import { getPlanningState } from '../../../../planning-state.svelte';
 	import { getSessionLogbookTabState } from '../session-logbook-tab.svelte';
 
 	const { s }: { s: PlanningEvent } = $props();

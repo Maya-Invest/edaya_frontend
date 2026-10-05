@@ -2,7 +2,7 @@ import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { TimetableSchedule, TimetableScheduleDay } from '$lib/types/school';
 import { classGroupScope, listAllEntityPages, listAllEntityPagesByIds } from '$lib/api/entity-list-filters';
-import { SCHEDULE_DAY_TO_PLANNING } from '$lib/components/school/scheduling/planning-calendar';
+import { SCHEDULE_DAY_TO_PLANNING } from '$lib/scheduling/planning-calendar';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 type ScheduleRaw = components['schemas']['Schedule'];

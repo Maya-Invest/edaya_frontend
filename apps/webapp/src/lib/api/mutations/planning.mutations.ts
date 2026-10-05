@@ -1,15 +1,15 @@
 import type { components } from '$lib/api/schema';
-import type { ScheduleDayOfWeek } from '$lib/components/school/scheduling/planning-calendar';
+import type { ScheduleDayOfWeek } from '$lib/scheduling/planning-calendar';
 import type { PlanningEvent } from '$lib/types/school';
 import { buildLessonSessionSavePayload } from '$lib/api/lesson-session-save-payload';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
+import { t } from '$lib/i18n';
 import {
 	mondayOfWeekUtc,
 	sessionInstantsForSlot,
-} from '$lib/components/school/scheduling/planning-calendar';
-import { t } from '$lib/i18n';
+} from '$lib/scheduling/planning-calendar';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
 

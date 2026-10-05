@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { AttendanceStep } from '$lib/scheduling/planning-surface';
 	import type { Student } from '$lib/types/school';
+	import type { AttendanceStep } from '../planning-surface';
 	import { afterNavigate } from '$app/navigation';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { locale, t } from '$lib/i18n';

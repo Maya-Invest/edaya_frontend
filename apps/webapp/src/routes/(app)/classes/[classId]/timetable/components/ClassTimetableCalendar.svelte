@@ -6,12 +6,6 @@
 	import { reschedulePlanningSlotMutation } from '$lib/api/mutations/planning.mutations';
 	import { lang, t } from '$lib/i18n';
 	import {
-		PlanningTimetableState,
-		setPlanningTimetableState,
-	} from '$lib/scheduling/planning-timetable-state.svelte';
-	import { cn } from '$lib/utils';
-	import { Calendar, Willow } from '@svar-ui/svelte-calendar';
-	import {
 		calendarSlotFromDates,
 		formatPlanningSlotLabel,
 		isSchoolCalendarEventId,
@@ -23,7 +17,13 @@
 		subjectToneClass,
 		timetableExpandedUnitHeight,
 		timetableHours,
-	} from './planning-calendar';
+	} from '$lib/scheduling/planning-calendar';
+	import { cn } from '$lib/utils';
+	import { Calendar, Willow } from '@svar-ui/svelte-calendar';
+	import {
+		PlanningTimetableState,
+		setPlanningTimetableState,
+	} from '../planning-timetable-state.svelte';
 	import PlanningEventContent from './PlanningEventContent.svelte';
 	import PlanningRescheduleConfirmModal from './PlanningRescheduleConfirmModal.svelte';
 	import SvarCalendarLocale from './SvarCalendarLocale.svelte';

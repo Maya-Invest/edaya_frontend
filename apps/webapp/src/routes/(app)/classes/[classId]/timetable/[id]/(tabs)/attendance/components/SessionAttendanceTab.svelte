@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { PlanningEvent } from '$lib/types/school';
 	import type { SessionAttendanceStatus } from '$lib/types/session-detail';
-	import PlanningSessionAttendanceModal from '$lib/components/school/scheduling/PlanningSessionAttendanceModal.svelte';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -9,10 +8,11 @@
 	import { t } from '$lib/i18n';
 	import { Check, ClipboardCheck } from '$lib/icons';
 	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
-	import { getPlanningState } from '$lib/scheduling/planning-state.svelte';
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
+	import PlanningSessionAttendanceModal from '../../../../components/PlanningSessionAttendanceModal.svelte';
+	import { getPlanningState } from '../../../../planning-state.svelte';
 	import { getSessionAttendanceTabState } from '../session-attendance-tab.svelte';
 
 	const { s }: { s: PlanningEvent } = $props();

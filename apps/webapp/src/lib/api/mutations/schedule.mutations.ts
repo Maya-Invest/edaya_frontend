@@ -6,11 +6,11 @@ import { runMutation } from '$lib/api/mutations/run-mutation';
 import { loadClassPlanning } from '$lib/api/planning-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
+import { t } from '$lib/i18n';
 import {
 	filterPlanningEventsForWeek,
 	PLANNING_DAY_TO_SCHEDULE,
-} from '$lib/components/school/scheduling/planning-calendar';
-import { t } from '$lib/i18n';
+} from '$lib/scheduling/planning-calendar';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
 

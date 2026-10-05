@@ -1,11 +1,10 @@
 <script lang="ts">
-	import type { NewSessionStep } from '$lib/scheduling/planning-surface';
 	import type { Activity, PlanningEvent, Subject } from '$lib/types/school';
+	import type { NewSessionStep } from '../planning-surface';
 	import { afterNavigate } from '$app/navigation';
 	import { createAssessmentMutation } from '$lib/api/mutations/evaluation.mutations';
 	import { createSessionMutation } from '$lib/api/mutations/planning.mutations';
 	import { createScheduleMutation } from '$lib/api/mutations/schedule.mutations';
-	import { sessionInstantsForSlot } from '$lib/components/school/scheduling/planning-calendar';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -13,6 +12,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { lang, t } from '$lib/i18n';
 	import { catalogSubjectName } from '$lib/i18n/catalog-label';
+	import { sessionInstantsForSlot } from '$lib/scheduling/planning-calendar';
 	import { get } from 'svelte/store';
 
 	type SessionKind = 'lesson' | 'activity' | 'assessment';

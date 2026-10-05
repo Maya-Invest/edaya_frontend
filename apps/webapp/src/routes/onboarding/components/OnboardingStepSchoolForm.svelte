@@ -6,7 +6,6 @@
 	import { lang, t } from '$lib/i18n';
 	import { catalogPeriodLabel, toCanonicalCatalogText } from '$lib/i18n/catalog-label';
 	import { Plus, Trash2 } from '$lib/icons';
-	import { onboardingContext } from '$lib/onboarding/context.svelte';
 	import {
 		addPeriod,
 		canAddPeriod,
@@ -22,6 +21,7 @@
 		timezoneForCountry,
 	} from '$lib/onboarding/school-step-defaults';
 	import { periodFitsInAcademicYear } from '$lib/onboarding/school-step-validation';
+	import { onboardingContext } from '../context.svelte';
 
 	interface Props {
 		disabled?: boolean;

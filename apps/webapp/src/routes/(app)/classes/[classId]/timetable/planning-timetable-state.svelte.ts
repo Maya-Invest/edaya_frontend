@@ -1,4 +1,4 @@
-import type { PlanningSlotFromDates } from '$lib/components/school/scheduling/planning-calendar';
+import type { PlanningSlotFromDates } from '$lib/scheduling/planning-calendar';
 import type { PlanningEvent } from '$lib/types/school';
 import { getContext, setContext } from 'svelte';
 

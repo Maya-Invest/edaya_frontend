@@ -148,7 +148,7 @@ stubSvelteModule('$lib/academic/context.svelte', {
 	},
 });
 
-stubSvelteModule('$lib/onboarding/context.svelte', {
+stubSvelteModule('../../src/routes/onboarding/context.svelte', {
 	onboardingContext: {
 		draft: {},
 		initialized: false,

@@ -54,7 +54,7 @@ New [`complete-step-summary.ts`](../../../apps/webapp/src/lib/onboarding/complet
 
 #### 3. Step-4 UI (v1)
 
-Rewrite [`OnboardingStepCompleteForm.svelte`](../../../apps/webapp/src/lib/components/onboarding/OnboardingStepCompleteForm.svelte):
+Rewrite [`OnboardingStepCompleteForm.svelte`](../../../apps/webapp/src/routes/onboarding/components/OnboardingStepCompleteForm.svelte):
 
 - Four blocks: Levels / Classes / Subjects / Team; Edit disabled with `data-step` stubs.
 - Delete `complete-step-checklist.ts` if unused.

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
 	import { ClipboardCheck } from '$lib/icons';
-	import { planningEventCellContent } from './planning-calendar';
-	import { getPlanningTimetableContext } from './planning-timetable-context';
+	import { planningEventCellContent } from '$lib/scheduling/planning-calendar';
+	import { getPlanningTimetableContext } from '../planning-timetable-state.svelte';
 
 	const {
 		event,

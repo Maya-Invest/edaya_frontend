@@ -1,13 +1,13 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
-	import DirectorDashboardView from '$lib/components/school/dashboard/DirectorDashboardView.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { t } from '$lib/i18n';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
 	import DashboardSummaryHeader from './components/DashboardSummaryHeader.svelte';
+	import DirectorDashboardView from './components/DirectorDashboardView.svelte';
 	import {
 		DashboardPageState,
 		setDashboardPageState,

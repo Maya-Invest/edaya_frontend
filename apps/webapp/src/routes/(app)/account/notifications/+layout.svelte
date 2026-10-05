@@ -1,13 +1,13 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
-	import GuardianNotificationSettingsView from '$lib/components/account/GuardianNotificationSettingsView.svelte';
-	import StaffNotificationSettingsView from '$lib/components/account/StaffNotificationSettingsView.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { t } from '$lib/i18n';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
+	import GuardianNotificationSettingsView from './components/GuardianNotificationSettingsView.svelte';
+	import StaffNotificationSettingsView from './components/StaffNotificationSettingsView.svelte';
 	import {
 		NotificationSettingsPageState,
 		setNotificationSettingsPageState,

@@ -25,7 +25,7 @@ onSkip={wizard.skipStep}                        <!-- broken -->
 onStepSelect={wizard.navigateToStep}            <!-- broken -->
 ```
 
-`goBack` / `navigateToStep` / `skipStep` are class methods on `OnboardingWizardState`. Passing them unbound drops `this` when [`OnboardingShell`](../../../apps/webapp/src/lib/components/onboarding/OnboardingShell.svelte) calls `onclick={onBack}` → runtime error → button appears dead.
+`goBack` / `navigateToStep` / `skipStep` are class methods on `OnboardingWizardState`. Passing them unbound drops `this` when [`OnboardingShell`](../../../apps/webapp/src/routes/onboarding/components/OnboardingShell.svelte) calls `onclick={onBack}` → runtime error → button appears dead.
 
 ### Fix
 
@@ -54,7 +54,7 @@ Step-4 Edit buttons were `disabled` with `editSoon`. Wire each to its step via w
 - Structure → `navigateToStep(2)`
 - Team → `navigateToStep(3)`
 
-In [`OnboardingStepCompleteForm.svelte`](../../../apps/webapp/src/lib/components/onboarding/OnboardingStepCompleteForm.svelte): `getOnboardingWizardState()` + `goToStep(1|2|3)`.
+In [`OnboardingStepCompleteForm.svelte`](../../../apps/webapp/src/routes/onboarding/components/OnboardingStepCompleteForm.svelte): `getOnboardingWizardState()` + `goToStep(1|2|3)`.
 
 ### School panel enrichment
 

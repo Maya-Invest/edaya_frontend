@@ -12,7 +12,7 @@
 		summarizeClassGeneration,
 		summarizeRepublish,
 		summarizeSchoolGeneration,
-	} from './timetable-generation-ui';
+	} from '../lib/timetable-generation-ui';
 
 	const {
 		mode = 'generate',

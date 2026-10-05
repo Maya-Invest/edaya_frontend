@@ -25,7 +25,7 @@ import {
 	timetableExpandedUnitHeight,
 	timetableTimeSlotCount,
 	utcWallClockDate,
-} from '$lib/components/school/scheduling/planning-calendar';
+} from '$lib/scheduling/planning-calendar';
 
 describe('planning-calendar', () => {
 	test('calendarSlotFromDates maps UTC wall-clock times to weekday slot', () => {

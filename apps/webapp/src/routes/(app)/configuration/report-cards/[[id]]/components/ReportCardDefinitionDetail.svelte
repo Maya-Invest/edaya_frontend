@@ -2,7 +2,6 @@
 	import type { ReportCardDefinition } from '$lib/types/report-cards';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import ReportCardSectionTree from '$lib/components/school/configuration/ReportCardSectionTree.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
@@ -16,6 +15,7 @@
 	import { formatGrade } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
+	import ReportCardSectionTree from '../../components/ReportCardSectionTree.svelte';
 	import { getReportCardsPageState } from '../../report-cards-page.svelte';
 
 	const { definition }: { definition: ReportCardDefinition } = $props();

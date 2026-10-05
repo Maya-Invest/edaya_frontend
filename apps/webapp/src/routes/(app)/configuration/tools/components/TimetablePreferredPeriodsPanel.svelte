@@ -5,7 +5,7 @@
 	import {
 		buildPreferredPeriodWeekGrid,
 		preferredPeriodDayLabelKey,
-	} from './timetable-generation-ui';
+	} from '../lib/timetable-generation-ui';
 
 	let {
 		periods,

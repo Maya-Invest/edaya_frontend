@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { TimetableGenerationError } from './timetable-generation-errors';
+	import type { TimetableGenerationError } from '../lib/timetable-generation-errors';
 	import { t } from '$lib/i18n';
 	import { AlertCircle } from '$lib/icons';
 	import { SURFACE_WARN } from '$lib/ui-tones';

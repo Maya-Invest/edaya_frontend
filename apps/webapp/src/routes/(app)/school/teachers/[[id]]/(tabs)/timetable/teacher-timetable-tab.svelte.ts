@@ -6,7 +6,7 @@ import {
 	formatWeekAnchor,
 	parseWeekAnchor,
 	weekDateRange,
-} from '$lib/components/school/scheduling/planning-calendar';
+} from '$lib/scheduling/planning-calendar';
 import { getContext, setContext } from 'svelte';
 import { resolveTeacherPageLoad } from '../../../lib/teacher-page-status';
 import { teacherDetailIdFromUrl } from '../../../lib/teacher-selectors';

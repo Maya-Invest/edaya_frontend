@@ -4,7 +4,6 @@
 	import { page } from '$app/stores';
 	import { catalogEntriesForClassGroupStaffAssignment } from '$lib/api/staff-assignment-permissions';
 	import { formatPermissionLabel } from '$lib/api/staff-permission-assignments-data';
-	import PermissionCheckboxGroup from '$lib/components/school/configuration/PermissionCheckboxGroup.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
@@ -19,6 +18,7 @@
 	import { get } from 'svelte/store';
 	import { getClassGroupAssignmentsTabState } from '../[[id]]/(tabs)/assignments/class-group-assignments-tab.svelte';
 	import { getClassesPageState } from '../classes-page.svelte';
+	import PermissionCheckboxGroup from './PermissionCheckboxGroup.svelte';
 
 	type StaffAssignment = components['schemas']['StaffAssignment'];
 

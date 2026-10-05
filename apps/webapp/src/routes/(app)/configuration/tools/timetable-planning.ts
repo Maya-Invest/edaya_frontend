@@ -3,7 +3,7 @@ import type {
 	GenerateClassResult,
 	GenerateSchoolResult,
 } from '$lib/api/mutations/timetable-generation.mutations';
-import type { TimetablePlacementParameters } from '$lib/components/school/scheduling/timetable-placement-parameters';
+import type { TimetablePlacementParameters } from '$lib/scheduling/timetable-placement-parameters';
 import type { ClassNode, GradeLevel } from '$lib/types/school';
 
 export function sortTimetableClasses(classes: ClassNode[], gradeLevels: GradeLevel[]): ClassNode[] {

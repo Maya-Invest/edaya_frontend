@@ -6,7 +6,6 @@
 	import * as Select from '$lib/components/ui/select';
 	import { t } from '$lib/i18n';
 	import { Plus, Trash2 } from '$lib/icons';
-	import { onboardingContext } from '$lib/onboarding/context.svelte';
 	import { ONBOARDING_STAFF_INVITE_PROFILES } from '$lib/onboarding/staff-invite-profiles';
 	import {
 		addStaffInvite,
@@ -14,6 +13,7 @@
 		updateStaffInvite,
 	} from '$lib/onboarding/staff-step-helpers';
 	import { staffInviteCount } from '$lib/onboarding/staff-step-validation';
+	import { onboardingContext } from '../context.svelte';
 
 	interface Props {
 		disabled?: boolean;

@@ -1,11 +1,11 @@
 import type { ActionGrantsSnapshot } from '$lib/auth/types';
-import type { PlanningSurfacePermission } from '$lib/scheduling/planning-surface';
+import type { PlanningSurfacePermission } from '../../../src/routes/(app)/classes/[classId]/timetable/planning-surface';
 import { checkPermission } from '$lib/permission-check';
 import {
 	canAccessPlanningModal,
 	planningSurfaceHref,
 	resolvePlanningSurface,
-} from '$lib/scheduling/planning-surface';
+} from '../../../src/routes/(app)/classes/[classId]/timetable/planning-surface';
 import { describe, expect, it } from 'bun:test';
 
 function mockGrants(

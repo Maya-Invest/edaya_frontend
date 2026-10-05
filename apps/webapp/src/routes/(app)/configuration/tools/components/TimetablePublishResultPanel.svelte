@@ -4,7 +4,7 @@
 	import { CheckCircle2 } from '$lib/icons';
 	import { SURFACE_INFO, SURFACE_WARN } from '$lib/ui-tones';
 	import { cn } from '$lib/utils';
-	import { summarizePublish } from './timetable-generation-ui';
+	import { summarizePublish } from '../lib/timetable-generation-ui';
 
 	const {
 		result,

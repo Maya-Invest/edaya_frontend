@@ -9,7 +9,6 @@
 	import { lang, t } from '$lib/i18n';
 	import { catalogGradeShortLabel } from '$lib/i18n/catalog-label';
 	import { Minus, Plus } from '$lib/icons';
-	import { onboardingContext } from '$lib/onboarding/context.svelte';
 	import {
 		gradeLevelLabel,
 		structureSummary,
@@ -22,6 +21,7 @@
 		loadStructureTemplateCatalog,
 		previewClassNamesFromCatalog,
 	} from '$lib/onboarding/structure-template-catalog';
+	import { onboardingContext } from '../context.svelte';
 
 	interface Props {
 		disabled?: boolean;

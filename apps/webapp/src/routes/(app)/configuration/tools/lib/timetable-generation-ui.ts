@@ -6,12 +6,12 @@ import type {
 } from '$lib/api/mutations/timetable-generation.mutations';
 import type { components } from '$lib/api/schema';
 import type { ClassSubjectInstructorSources } from '$lib/api/teacher-display';
+import type { ScheduleDayOfWeek } from '$lib/scheduling/planning-calendar';
 import type { PeriodDefinition } from '$lib/types/school';
-import type { ScheduleDayOfWeek } from './planning-calendar';
 import { teacherNameForClassSubject } from '$lib/api/teacher-display';
 import { formatDateInput } from '$lib/date/format';
+import { SCHEDULE_DAY_TO_PLANNING } from '$lib/scheduling/planning-calendar';
 import { cn } from '$lib/utils';
-import { SCHEDULE_DAY_TO_PLANNING } from './planning-calendar';
 
 export function timetableGenerationModalContentClass(
 	phase: 'setup' | 'generating' | 'success' | 'error',

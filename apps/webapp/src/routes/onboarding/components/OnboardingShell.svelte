@@ -2,12 +2,12 @@
 	import type { OnboardingStep } from '$lib/onboarding/types';
 	import type { Snippet } from 'svelte';
 	import { authSession } from '$lib/auth/session.svelte';
-	import OnboardingProvisionProgress from '$lib/components/onboarding/OnboardingProvisionProgress.svelte';
-	import OnboardingStepper from '$lib/components/onboarding/OnboardingStepper.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { t } from '$lib/i18n';
 	import { ArrowLeft } from '$lib/icons';
 	import { onboardingFinishCtaKey } from '$lib/onboarding/steps';
+	import OnboardingProvisionProgress from './OnboardingProvisionProgress.svelte';
+	import OnboardingStepper from './OnboardingStepper.svelte';
 
 	interface ProvisionProgressStepProp {
 		id: string;

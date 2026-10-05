@@ -1,5 +1,5 @@
 import type { components } from '$lib/api/schema';
-import { utcWallClockDate } from '$lib/components/school/scheduling/planning-calendar';
+import { utcWallClockDate } from '$lib/scheduling/planning-calendar';
 
 export type TeacherUnavailability = components['schemas']['TeacherUnavailability'];
 

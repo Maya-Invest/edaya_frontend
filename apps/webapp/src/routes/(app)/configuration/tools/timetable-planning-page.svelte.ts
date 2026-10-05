@@ -1,8 +1,8 @@
 import type { GenerateSchoolResult } from '$lib/api/mutations/timetable-generation.mutations';
 import type { components } from '$lib/api/schema';
-import type { TimetableMutationResult } from '$lib/components/school/scheduling/timetable-generation-errors';
-import type { TimetablePlacementOverrides } from '$lib/components/school/scheduling/timetable-placement-parameters';
+import type { TimetablePlacementOverrides } from '$lib/scheduling/timetable-placement-parameters';
 import type { ClassNode } from '$lib/types/school';
+import type { TimetableMutationResult } from './lib/timetable-generation-errors';
 import type { TimetableGenerationProgress } from './timetable-planning';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
@@ -12,22 +12,22 @@ import {
 import { academicYearPlanningRange } from '$lib/api/planning-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { teacherNameForClassSubject } from '$lib/api/teacher-display';
-import {
-  parseTimetableGenerationError,
-  timetableErrorMessage,
-
-} from '$lib/components/school/scheduling/timetable-generation-errors';
-import {
-  buildTimetablePlacementParameters,
-
-} from '$lib/components/school/scheduling/timetable-placement-parameters';
 import { formatDateInput } from '$lib/date/format';
 import { entityVersions } from '$lib/entity-versions.svelte';
 import { lang, t } from '$lib/i18n';
 import { catalogSubjectName } from '$lib/i18n/catalog-label';
+import {
+  buildTimetablePlacementParameters,
+
+} from '$lib/scheduling/timetable-placement-parameters';
 import { toast } from '$lib/toast.svelte';
 import { SvelteSet } from 'svelte/reactivity';
 import { get } from 'svelte/store';
+import {
+  parseTimetableGenerationError,
+  timetableErrorMessage,
+
+} from './lib/timetable-generation-errors';
 import {
   generateSchoolTimetableSequentially,
   SequentialTimetableGenerationError,
@@ -41,7 +41,7 @@ function translateTimetable(key: string) {
 
 export type TimetableGenerationOptions = components['schemas']['TimetableGenerationOptions'];
 export type ClassSubject = components['schemas']['ClassSubject'];
-export type { TimetableGenerationError, TimetableMutationResult } from '$lib/components/school/scheduling/timetable-generation-errors';
+export type { TimetableGenerationError, TimetableMutationResult } from './lib/timetable-generation-errors';
 
 export interface TimetablePlanningRow {
   classGroup: ClassNode;

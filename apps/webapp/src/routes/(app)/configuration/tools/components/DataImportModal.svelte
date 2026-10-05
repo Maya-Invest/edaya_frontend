@@ -38,11 +38,6 @@
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { getBrowserSchoolClient } from '$lib/api/school-client';
 	import { authSession } from '$lib/auth/session.svelte';
-	import ImportFileDropzone from '$lib/components/school/configuration/ImportFileDropzone.svelte';
-	import ImportProgressBar from '$lib/components/school/configuration/ImportProgressBar.svelte';
-	import ImportReportDownload from '$lib/components/school/configuration/ImportReportDownload.svelte';
-	import ImportValidationSummary from '$lib/components/school/configuration/ImportValidationSummary.svelte';
-	import ImportValidationTable from '$lib/components/school/configuration/ImportValidationTable.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
@@ -152,6 +147,11 @@
 	import { notifyTeachersListChanged } from '$lib/teachers/notify-teachers-list-changed';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
+	import ImportFileDropzone from './ImportFileDropzone.svelte';
+	import ImportProgressBar from './ImportProgressBar.svelte';
+	import ImportReportDownload from './ImportReportDownload.svelte';
+	import ImportValidationSummary from './ImportValidationSummary.svelte';
+	import ImportValidationTable from './ImportValidationTable.svelte';
 
 	type ImportStep = 'download' | 'upload' | 'validate' | 'execute';
 

@@ -6,7 +6,6 @@ import { authSession } from '$lib/auth/session.svelte';
 import { isOnboardingSkipEnabled } from '$lib/env/app-env';
 import { t } from '$lib/i18n';
 import { appGoto, appPath, markWizardOnboardingNavigation } from '$lib/navigation/app-navigation';
-import { onboardingContext } from '$lib/onboarding/context.svelte';
 import {
   persistOnboardingFinalizeDebugSnapshot,
   shouldClearOnboardingDraftAfterFinalize,
@@ -50,6 +49,7 @@ import { toast } from '$lib/toast.svelte';
 import { flushSync, getContext, setContext } from 'svelte';
 import { SvelteURL } from 'svelte/reactivity';
 import { get } from 'svelte/store';
+import { onboardingContext } from './context.svelte';
 
 const ONBOARDING_WIZARD_STATE_KEY = Symbol('onboarding-wizard-state');
 

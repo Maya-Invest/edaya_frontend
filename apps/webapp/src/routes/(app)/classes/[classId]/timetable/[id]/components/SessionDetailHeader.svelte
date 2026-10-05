@@ -1,15 +1,15 @@
 <script lang="ts">
 	import type { PlanningEvent } from '$lib/types/school';
 	import { cancelPlanningEventMutation } from '$lib/api/mutations/planning.mutations';
-	import PlanningFormModal from '$lib/components/school/scheduling/PlanningFormModal.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
 	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
-	import { getPlanningState } from '$lib/scheduling/planning-state.svelte';
 	import { get } from 'svelte/store';
+	import PlanningFormModal from '../../components/PlanningFormModal.svelte';
+	import { getPlanningState } from '../../planning-state.svelte';
 	import { getTimetablePageState } from '../../timetable-page.svelte';
 
 	const {
