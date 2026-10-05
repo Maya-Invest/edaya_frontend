@@ -292,10 +292,14 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
   'web.scenario.0098': enrollments,
   'web.scenario.0100': async ctx => {
     const session = await entity(ctx,'lesson-sessions',ctx.entities.sessionId);
-    await shown(ctx,session.displayLabel);
+    const teaching = await entity(ctx,'class-subjects',session.classSubjectId);
+    const subject = await entity(ctx,'subjects',teaching.subjectId);
+    await shown(ctx,subject.name,'.edaya-timetable-calendar');
     const picker = ctx.page.locator('#planning-week-picker');
     await picker.waitFor();
-    assert(/\d{4}-\d{2}-\d{2}/.test(await picker.inputValue()));
+    const week = await picker.inputValue();
+    const sessionDate = Date.parse(String(session.startsAt).slice(0,10));
+    assert(sessionDate >= Date.parse(week) && sessionDate < Date.parse(week) + 7*86400000, 'Fixture session must be in the visible week');
   },
   'web.scenario.0101': async ctx => {
     const picker = ctx.page.locator('#planning-week-picker');

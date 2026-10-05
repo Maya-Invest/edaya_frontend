@@ -37,8 +37,9 @@ Repo hygiene: tracked env files, required `.env.example` files. Materializes `.e
 
 Repo hygiene only — **no Turbo**. Runs:
 
-1. `repo doctor`
-2. `@edaya/web-repo` unit tests
+1. Frontend import ownership and workspace reference checks
+2. `repo doctor`
+3. `@edaya/web-repo` unit tests
 
 **Not included:** `lint`, `check`, `build`, `test`, `quality` (root Turbo scripts), Playwright integration.
 
@@ -48,7 +49,7 @@ Full gate from repo root — repo hygiene first, then Turbo quality + build + un
 
 ```sh
 bun run verify
-# = bun repo verify && bun run quality && bun run build && turbo run test -- --dots
+# includes CI helper tests, release-contract and brand checks, repo hygiene, quality, build and tests
 ```
 
 CI uses `bun run verify`. Playwright integration runs in a separate PR job — see [ci-setup.md](./ci-setup.md).

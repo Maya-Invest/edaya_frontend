@@ -19,26 +19,16 @@ Unit checks install the committed vendored API client with a frozen lockfile. Fu
 
 ## Local install
 
-Clone the repos side by side, then symlink the backend into the web repo for the local `file:` API client:
+Install the committed vendored API client; no sibling checkout or symlink is needed for unit verification:
 
 ```sh
-ln -s ../edaya_backend edaya_web/edaya_backend
+bun install --frozen-lockfile
+bun run verify
 ```
 
-```
-edaya_web/
-  edaya_backend/   # symlink → ../edaya_backend
-  apps/
-  tooling/
-```
+The root override uses `vendor/edaya-api-client`; webapp and webadmin also declare app-local copies. Keep all three committed copies synchronized. A sibling `../edaya_backend` checkout with the matching release contract is required for local API development and browser qualification.
 
-After GitHub Packages publish:
-
-```sh
-bun add @maya-invest/edaya-api-client@staging
-```
-
-**Cloudflare deploy** runs from GitHub Actions ([`deploy_push.yml`](../../.github/workflows/deploy_push.yml)) — see [ci-setup.md](./ci-setup.md#deploy-to-cloudflare-github-actions). Cloudflare Workers Builds is optional for ad-hoc use via `bun run cloudflare:build:webapp`.
+Deployment qualification uses an exact published client version matching the selected backend commit. Moving registry tags are not a development install workflow. See [ci-setup.md](./ci-setup.md).
 
 ## When API routes change
 
@@ -49,10 +39,11 @@ bun add @maya-invest/edaya-api-client@staging
    bun repo openapi generate     # updates package/api-client/src/
    bun run verify
    ```
-2. **`edaya_web`** — refresh the linked client (or bump the published package version), then:
+2. **`edaya_frontend`** — copy the generated backend API-client package into the root and both app vendor folders, preserving generated sources and package metadata. Reinstall, check the installed artifacts, and repin the consumer release contract together with the backend/mobile contracts from the backend checkout. Then:
    ```sh
-   cd edaya_web
-   bun install                   # picks up file: link or new package version
+   cd edaya_frontend
+   bun install --frozen-lockfile  # installed artifacts must match the committed vendors
+   bun run contract:check
    bun run verify
    ```
 
@@ -69,7 +60,7 @@ Web apps import:
 
 ## Dev fixtures sync
 
-`edaya_web/packages/web-fixtures` mirrors seed IDs and demo login data from `edaya_backend/tooling/fixtures`. Update both when seed data changes.
+`edaya_frontend/tooling/web-fixtures` mirrors seed IDs and demo login data from `edaya_backend/tooling/fixtures`. Update both when seed data changes.
 
 ## Staging validation and rollout
 

@@ -1,16 +1,14 @@
 # Teacher Unavailability and Timetable Generation UI
 
-> **Lifecycle:** on-going  
+> **Lifecycle:** archived — implemented scope reconciled  
 > **Application:** `apps/webapp`  
 > **Prerequisite:** Backend entity, generation commands, publication commands, and generated API client contracts are available.
 
-## Summary
+## Delivered scope
 
-- Add an Availability tab under `/school/teachers/:teacherId` for staff-admin management of weekly and one-off unavailability.
-- Add generation, review, publication, and republishing to `/classes/:classId/timetable`.
-- Add a school orchestration workspace at `/configuration/tools`.
-- Default generation to the selected academic period while allowing a custom range inside the academic year.
-- Keep school publication class-by-class and follow `route-state-spec.md` without new `detailDataContext` dependencies.
+Availability lives under the teacher drawer with year-scoped tab state and permission-gated save/delete actions. School timetable generation, review and class-by-class publication live in Configuration Tools. Class calendar and session workflows remain under the class timetable route; reusable date and placement helpers stay shared.
+
+The original proposal below is historical. Its class generation toolbar and positive-availability ideas are superseded by the current Tools workflow and are not unfinished cleanup work. No new product controls, bulk publication or backend behavior are introduced by this cleanup.
 
 ## Teacher Unavailability
 

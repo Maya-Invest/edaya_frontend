@@ -6,6 +6,7 @@ import { DEMO_DRY_RUN_OUT_DIR, DEMO_WEBAPP_BASE } from './support/paths';
 import { beginExecution } from '../support/execution-metadata';
 import { DemoReporter } from './support/reporter';
 import type { DemoSummary } from './support/types';
+import { runCleanupLayouts } from './scenes/cleanup-layouts';
 import { runCoreDemoScenes } from './scenes/core-demo';
 import { runDemoAccountPicker } from './scenes/demo-account-picker';
 import { runFinanceDrawerScene } from './scenes/finance-drawer';
@@ -58,6 +59,7 @@ export async function runDemoDryRun(options: RunDemoDryRunOptions = {}): Promise
 		await context.close();
 	}
 
+	await runCleanupLayouts(browser, base, outDir, reporter, consoleErrors);
 	await runOwnerPermissionChecks(browser, base, reporter, consoleErrors);
 
 	const summary = reporter.summarize(consoleErrors);

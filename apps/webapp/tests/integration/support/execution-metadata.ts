@@ -13,7 +13,7 @@ export function sourceFingerprint(): string {
     }
   }
   const repository = resolve(web, '../..');
-  for (const file of ['package.json', 'apps/webapp/package.json', 'apps/webadmin/package.json', 'bun.lock', 'release-contract.json', '../edaya_backend/bun.lock', '../edaya_backend/release-contract.json']) {
+  for (const file of ['package.json', 'apps/webapp/package.json', 'apps/webadmin/package.json', 'apps/webapp/svelte.config.js', 'apps/webapp/vite.config.ts', 'apps/webadmin/svelte.config.js', 'apps/webadmin/vite.config.ts', 'bun.lock', 'release-contract.json', '../edaya_backend/bun.lock', '../edaya_backend/release-contract.json']) {
     const path = resolve(repository, file);
     if (existsSync(path)) { hash.update(file); hash.update(readFileSync(path)); }
   }

@@ -5,21 +5,21 @@ Monorepo for Edaya web frontends: **Bun** workspaces and **Turborepo** orchestra
 ## Layout
 
 ```text
-edaya_web/
+edaya_frontend/
 ├── apps/
 │   ├── webapp/              @edaya/webapp — school staff UI (Cloudflare Workers)
-│   ├── webadmin/            @edaya/webadmin — platform operator UI (Cloudflare Workers)
-│   └── website/             @edaya/website — marketing / coming soon (Astro, Cloudflare Workers)
-├── packages/
-│   └── web-fixtures/        @edaya/web-fixtures — dev test constants + demo login data
+│   └── webadmin/            @edaya/webadmin — platform operator UI (Cloudflare Workers)
+├── vendor/edaya-api-client/ Committed generated API client
 └── tooling/
+    ├── web-fixtures/        @edaya/web-fixtures — test constants + demo login data
     └── repo/                @edaya/web-repo — repo hygiene + smoke tests
 ```
 
 ## Prerequisites
 
 - [Bun](https://bun.sh) 1.3+ (see `packageManager` in root `package.json`)
-- [edaya_backend](https://github.com/Maya-Invest/edaya_backend) checked out as a sibling directory (`../edaya_backend`) for `@maya-invest/edaya-api-client` (file link) and local API proxy
+- The committed vendored API client supports standalone installation and unit verification.
+- [edaya_backend](https://github.com/Maya-Invest/edaya_backend) checked out as a sibling directory (`../edaya_backend`) is needed for a local API and full browser integration.
 
 See [docs/reference/cross-repo-workflow.md](./docs/reference/cross-repo-workflow.md) for API client updates, codegen in backend, and staging smoke.
 
@@ -28,7 +28,7 @@ See [docs/reference/demo-accounts.md](./docs/reference/demo-accounts.md) for loc
 ## First-time setup
 
 ```sh
-bun install
+bun install --frozen-lockfile
 bun repo doctor
 ```
 
@@ -48,14 +48,12 @@ bun dev
 |---------|-----|
 | Webapp | http://localhost:5173 |
 | Webadmin | http://localhost:5174 |
-| Website | http://localhost:4321 |
 
 Or run a single app:
 
 ```sh
 bun run dev:webapp
 bun run dev:webadmin
-bun run dev:website
 ```
 
 Dev servers proxy authentication, school requests and API docs to `API_URL` (default `http://localhost:9999`). Browser requests derive from the same `PUBLIC_API_URL`.
@@ -71,7 +69,7 @@ Dev servers proxy authentication, school requests and API docs to `API_URL` (def
 | `bun dev` | Start webapp + webadmin in watch mode |
 | `bun run dev:webapp` | School staff UI only |
 | `bun run dev:webadmin` | Webadmin only |
-| `bun run verify` | Pre-PR gate: `bun repo verify` + quality + build + test |
+| `bun run verify` | Pre-PR gate: CI helper tests, release contract, brand, repo hygiene, quality, build and tests |
 | `bun run lint` | ESLint across workspaces |
 | `bun run lint:fix` | ESLint with auto-fix |
 | `bun run check` | Type-check all apps |
@@ -81,8 +79,6 @@ Dev servers proxy authentication, school requests and API docs to `API_URL` (def
 | `bun repo smoke-test staging` | HTTP smoke against staging SPA shells |
 | `bun run deploy:webapp:staging` | Build + deploy webapp (staging) |
 | `bun run deploy:webadmin:staging` | Build + deploy webadmin (staging) |
-| `bun run dev:website` | Astro coming-soon site only |
-| `bun run deploy:website:staging` | Build + deploy website (staging) |
 
 ### Pre-PR verification
 
@@ -99,7 +95,6 @@ Apps are static sites on Cloudflare Workers (assets):
 
 | App | Production | Staging |
 |-----|------------|---------|
-| Website | `edayaplus.com`, `www.edayaplus.com` | `staging.edayaplus.com` |
 | Webapp | `app.edayaplus.com` | `staging.app.edayaplus.com` |
 | Webadmin | `admin.edayaplus.com` | `staging.admin.edayaplus.com` |
 
@@ -109,12 +104,8 @@ Set the required `PUBLIC_API_URL` at build time.
 
 Typed API runtime and schema types come from **`@maya-invest/edaya-api-client`** (generated in `edaya_backend/package/api-client/`).
 
-Web apps re-export schema types at `$lib/api/schema` for convenience. After backend API changes, regenerate the client in **edaya_backend** (`bun repo openapi generate`), then run `bun install` here to pick up the updated file link.
+Web apps re-export schema types at `$lib/api/schema`. Local development and CI install the committed copies in `vendor/edaya-api-client` and the two app vendor folders with `bun install --frozen-lockfile`. Backend generation alone does not update these copies. Refresh and validate the vendored artifacts and matching release contract together after a backend contract change.
 
 See [docs/reference/cross-repo-workflow.md](./docs/reference/cross-repo-workflow.md).
 
-## Roadmap
-
-1. **Webadmin** — platform operator auth, tenant directory, billing, support tooling.
-2. **Shared UI** — extract common Tailwind/Bits components into `packages/ui` where it makes sense.
-3. **Production cutover** — deploy web apps from `edaya_web` and retire legacy `edaya` webapp paths.
+Webadmin's tenant, user and billing routes remain placeholders; platform feature implementation is separate work.

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Point @maya-invest/edaya-api-client at GitHub Packages for CI.
- * Local dev keeps file: links; see docs/reference/cross-repo-workflow.md.
+ * Local dev installs committed vendored file: dependencies; see docs/reference/cross-repo-workflow.md.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";

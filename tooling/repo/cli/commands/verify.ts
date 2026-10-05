@@ -7,6 +7,7 @@ interface VerifyStep {
 }
 
 const VERIFY_STEPS: VerifyStep[] = [
+  { label: 'frontend architecture', run: () => runBunScript(paths.frontendArchitecture) },
   { label: 'repo doctor', run: () => runBunScript(paths.doctor) },
   {
     label: 'repo tests',

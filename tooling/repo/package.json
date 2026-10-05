@@ -4,12 +4,13 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "quality": "bun run lint",
+    "quality": "bun run lint && bun run check",
     "doctor": "bun ci/doctor.ts",
     "test": "bun test tests --dots",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "smoke:staging": "bun ci/smoke-staging.ts"
+    "smoke:staging": "bun ci/smoke-staging.ts",
+    "check": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",

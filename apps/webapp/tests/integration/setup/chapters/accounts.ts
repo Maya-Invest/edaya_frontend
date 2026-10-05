@@ -1,3 +1,4 @@
+import { createConversationFixture } from '../conversation-fixture';
 import { provisionSecondaryAccounts } from '../../support/secondary-accounts';
 import { logStep, type UiJourney } from '../journey-context';
 
@@ -10,6 +11,7 @@ export async function runAccountsChapter(journey: UiJourney): Promise<void> {
 		);
 	}
 	journey.entities.secondaryAccounts = accounts;
+	await createConversationFixture(journey);
 	logStep(journey, {
 		step: 'secondary-accounts',
 		ok: true,

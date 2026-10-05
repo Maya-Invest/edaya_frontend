@@ -386,7 +386,7 @@ export function resolveEndpoint(endpoint: string, base: string, entities: Matrix
 	const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
 	const modal = params.get('modal');
 
-	if (pathname.includes('/timetable/') && entities.sessionId) {
+	if (/\/timetable(?:\/|$)/.test(pathname) && entities.sessionId) {
 		const week = entities.timetableWeek ?? timetableWeekFromSessionId(entities.sessionId);
 		if (week && !params.has('week')) {
 			params.set('week', week);

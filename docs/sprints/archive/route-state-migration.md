@@ -1,6 +1,6 @@
 # Route State Migration
 
-> **Lifecycle:** on-going  
+> **Lifecycle:** archived — implementation complete  
 > **Normative spec:** [`docs/specs/route-state-spec.md`](../../specs/route-state-spec.md)  
 > **Reference route:** `/school/students`
 
@@ -125,7 +125,7 @@ Primary tracker. **Notes** hold the remaining gap for ⚠️ rows.
 | students, guardians, staff, teachers | `students` / `guardians` / `staff` / `teachers` |
 | activities | `activities` |
 | announcements | `announcements` |
-| timetable | `planning`, `teacherUnavailabilities` |
+| timetable | `planning`, `students`, `guardians`, `subjects`, `activities`, `schoolYearEvents`, `teachers`, `teacherUnavailabilities` |
 | evaluations | `evaluations` |
 | teaching | `subjects`, `planning` |
 | report-cards | `reportCards`, `students` |
@@ -278,13 +278,17 @@ Keep: `lib/components/school/shared/` (T2 chrome), `lib/api/mutations/` shared l
 
 ---
 
-## 8. Remaining optional work
+## 8. Cleanup completion (2026-10-04)
 
 1. ~~Foundation~~ ✅  
 2. ~~Route migration (30 routes + 6 smart components)~~ ✅  
 3. ~~Legacy deletion (§7)~~ ✅  
-4. **`/configuration/tools`** — timetable planning assistant colocated with import on tools hub.  
-5. **Shared mutation colocation** — scheduling modals still call `lib/api/mutations/`; optional future cleanup, not blocking.
+4. Tools owns the import stack, import execution and school generation/publication UI.
+5. Timetable UI/state and one-route helpers are colocated. Runtime API mutations are called by owner state; shared presentation receives typed callbacks.
+6. Loaded tab families participate in navigation invalidation. Messaging initial/identity loads have one query owner.
+7. The retired compatibility pickers, redundant mutation adapters and unreachable feature UI are removed. Account linking has one shared smart workflow, including student profiles.
+
+The historical route matrix records the original migration inventory, rather than a complete inventory of features added afterward. Local validation and remote CI evidence are tracked separately in the current cleanup validation tracker.
 
 ---
 

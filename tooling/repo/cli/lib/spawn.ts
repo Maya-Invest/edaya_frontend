@@ -17,7 +17,7 @@ export async function runRepoCommand(
   command: readonly string[],
   options?: { cwd?: string },
 ): Promise<number> {
-  const child = Bun.spawn(command, {
+  const child = Bun.spawn([...command], {
     cwd: options?.cwd ?? repoRoot,
     stdin: 'inherit',
     stdout: 'inherit',

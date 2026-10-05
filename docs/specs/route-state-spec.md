@@ -66,8 +66,8 @@ This document defines how the webapp loads server data, holds state, mutates rec
 
 **Addressability rule:** opening a modal, choosing an edit target, changing a wizard step,
 switching a substantive internal panel, or changing a shareable list view is navigation state —
-not Tier 4. Field drafts, credentials, focus, hover, popovers, busy flags, validation messages,
-and optimistic mutation state remain component-local and must not be encoded in the URL.
+not Tier 4. Field drafts, credentials, focus, hover, popovers, busy flags and validation messages remain component-local and must not be encoded in the URL.
+Entity optimistic updates and rollback belong to owner state.
 
 ---
 
@@ -691,3 +691,15 @@ Migrate existing routes incrementally; do not extend `detailDataContext` seed me
 ### Conversation route state
 
 The `/school/messages` layout owns its list, selected thread, read positions, paging and transient reply draft through MessagesPageState and PageQuery. View, status, order, selected conversation and reply-modal state are reconstructed from the URL. Immutable messages use command request identities; successful replies/resolution bump inbox versions and refresh the owning route. Identity switches clear content and drafts and discard stale completions. Refresh visible pages every 15 seconds and on visibility resume; stop when hidden or unmounted.
+
+## State ownership completion
+
+Route/tab state owns runtime API writes, import execution and auxiliary entity reads. Shared presentational controls receive typed action callbacks. Self-contained shared invitation and staff-permission workflows own I/O in smart-component state. Shell-wide profile-photo actions use the account state registered by the app layout.
+
+`VersionedRouteQuery` retains the last visited tab query and URL, while entity payloads stay on tab state. Register that state for navigation invalidation, snapshot every loaded entity family after a successful query, refresh only visited stale tabs, and abort/clear on drawer teardown. Failed or aborted background refreshes leave the snapshot stale for a later retry. Bump every affected family after confirmed writes, including import rows that persisted before a partial failure. School settings and period definitions use their own version families; they do not trigger unrelated entity reloads.
+
+Messaging has one initial/identity query owner: the identity-keyed `PageQuery`. Its query key tracks pathname and queue filters, excluding reply modal navigation. Polling and visibility refresh retain stale-response guards and reviewed-version reply conflicts.
+
+Authentication invitation acceptance uses route-owned I/O with its existing explicit committed-write/session-refresh handling; a failed session refresh must not repeat a confirmed acceptance. Credentials and form drafts remain local to the view.
+
+Repository verification rejects retired module imports, runtime mutation/client imports from Svelte presentation, and references to absent workspace applications. Type-only imports, API error values and pure payload/display helpers are permitted.

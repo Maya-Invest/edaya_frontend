@@ -86,7 +86,7 @@ export async function clearAcademicSelectionStorage(page: Page): Promise<void> {
 
 export async function waitForResolvedAcademicYearId(page: Page, timeout = 20_000): Promise<void> {
 	await page.waitForFunction(() => {
-		const trigger = document.querySelector('[data-testid="academic-year-trigger"]');
+		const trigger = document.querySelector('[data-testid="app-shell"]') ?? document.querySelector('[data-testid="academic-year-trigger"]');
 		const schoolId = trigger?.getAttribute('data-school-id');
 		const yearId = trigger?.getAttribute('data-year-id');
 		return Boolean(schoolId && yearId && sessionStorage.getItem(`edaya:yearId:${schoolId}`) === yearId);
@@ -970,12 +970,10 @@ export async function fillPersonCreateDialog(
 	await dialog.locator('input').nth(1).fill(options.lastName ?? `Person${Date.now()}`);
 
 	const invite = dialog.locator('#staff-send-invite, #teacher-send-invite, #guardian-send-invite, [id$="-send-invite"]');
-	const count = await invite.count();
-	for (let i = 0; i < count; i++) {
-		const box = invite.nth(i);
-		if (await box.isVisible().catch(() => false) && await box.isChecked().catch(() => false)) {
-			await box.click();
-		}
+	await invite.first().waitFor({ state: 'visible', timeout: 15_000 });
+	await invite.first().setChecked(false);
+	if (await invite.first().isChecked()) {
+		throw new Error('Person create invitation toggle did not become unchecked');
 	}
 
 	await submitDialog(page);

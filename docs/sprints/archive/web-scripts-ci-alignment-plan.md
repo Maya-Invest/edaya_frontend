@@ -1,7 +1,7 @@
 # Web scripts & CI alignment plan
 
-> **Status:** on-going  
-> **Model:** [`edaya_backend`](../../edaya_backend) — `bun repo` CLI, two-tier verify, `ci-bun-turbo`  
+> **Status:** archived — implemented alignment  
+> **Model:** [`edaya_backend`](../../../../edaya_backend) — `bun repo` CLI, two-tier verify, `ci-bun-turbo`  
 > **Scope:** Align `edaya_web` root scripts and CI with the backend monorepo pattern
 
 ## Goal
@@ -16,7 +16,7 @@ bun run verify
 - **Turbo** — quality graph (`lint`, `check`, `quality`, `test`, `build`) from root only
 - **`bun repo`** — repo hygiene, smoke tests (no Turbo)
 - **CI verify job** — `bun run verify` via `ci-bun-turbo`
-- **Integration** — separate PR job (Playwright + api-dev image); not part of verify
+- **Integration** — separate PR job (Playwright + pinned unified disposable API); not part of verify
 
 ## Gap (before)
 
@@ -67,8 +67,8 @@ Optional thin aliases were removed; use `bun repo` directly.
 ### Phase 3 — CI
 
 - [x] Copy `.github/actions/ci-bun-turbo/` with `cache-prefix: edaya-web-turbo-`
-- [x] `_verify.yml` — composite action + `checkout@v5`
-- [ ] `_integration.yml` — keep inline setup (Docker/GHCR/Playwright)
+- [x] `_verify.yml` — composite action + pinned checkout action
+- [x] `_integration.yml` — shared Bun setup and one pinned backend candidate; unified disposable API replaces the old Docker/GHCR path
 
 ### Phase 4 — Docs
 
@@ -91,9 +91,9 @@ bun run verify
 ```
 
 - [x] `bun run verify` idempotent twice locally
-- [ ] CI verify job green on PR
+Remote CI status is a per-revision merge gate; local evidence does not mark it green. Current qualification is tracked in `on-going/frontend-cleanup-validation.md`.
 
 ## References
 
-- [edaya_backend/docs/reference/repo-cli.md](../../edaya_backend/docs/reference/repo-cli.md)
-- [edaya_backend/docs/reference/ci-setup.md](../../edaya_backend/docs/reference/ci-setup.md)
+- [edaya_backend/docs/reference/repo-cli.md](../../../../edaya_backend/docs/reference/repo-cli.md)
+- [edaya_backend/docs/reference/ci-setup.md](../../../../edaya_backend/docs/reference/ci-setup.md)

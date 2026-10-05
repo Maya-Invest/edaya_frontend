@@ -41,6 +41,11 @@ describe('qa-matrix-support timetable paths', () => {
 		);
 	});
 
+	test('timetable list opens the persisted fixture week even when it differs from today', () => {
+		const entities = { ...emptyEntities(), classId: 'class', sessionId: 'session', timetableWeek: '2026-10-05' };
+		expect(resolveEndpoint('/classes/[classId]/timetable', 'http://local', entities)).toBe('http://local/classes/class/timetable?week=2026-10-05');
+	});
+
 	test('sidebarSmokeStartPath uses a class page for class-segment hrefs', () => {
 		expect(sidebarSmokeStartPath('/classes/c1/timetable', 'c1')).toBe('/classes/c1/students');
 		expect(sidebarSmokeStartPath('/school/students', 'c1')).toBe('/dashboard');

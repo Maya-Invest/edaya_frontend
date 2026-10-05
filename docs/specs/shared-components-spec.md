@@ -87,15 +87,18 @@ Smart components are shared, self-contained features with their own state class 
 | **ClassGroupPicker** | `smart-components/class-group-picker/` | Activity class timetable links, class multi-select on create |
 | **GuardianPicker** | `smart-components/guardian-picker/` | Guardian ↔ student linking |
 | **ScopeBuilder** | `smart-components/scope-builder/` | Staff permission typed `scopes` by catalog grain |
+| **AccountLinkingSection** | `smart-components/account-linking/` | Staff, guardian and student invitation workflow with actor-scoped state |
+| **PasswordlessPanel** | `smart-components/passwordless-panel/` | Login, signup, invitations and security; transient authentication state |
+| **TestOtpPanel** | `smart-components/test-otp-panel/` | Build-gated testing controls with stale-response and visibility guards |
 | **StaffPermissionFormModal** | `smart-components/staff-permission-form-modal/` | Add / edit `staffPermissionAssignments` |
 
 Do not build ad-hoc `<select>` lists for people — use pickers or **PickerModal**. New smart components follow `*-state.svelte.ts` + root `.svelte` + `components/` subfolder.
 
-### 2.6 T2 — Authorization UI (legacy paths)
+### 2.6 Route-owned authorization UI
 
 | Component | Path | Use for |
 |-----------|------|---------|
-| **PermissionCheckboxGroup** | `school/configuration/PermissionCheckboxGroup.svelte` | **Staff assignment** create/edit forms only — pick permission codes authorized directly by a class-level assignment; **not** the Permissions tab list |
+| **PermissionCheckboxGroup** | `routes/(app)/configuration/classes/components/PermissionCheckboxGroup.svelte` | **Staff assignment** create/edit forms only — pick permission codes authorized directly by a class-level assignment; **not** the Permissions tab list |
 
 **Do not** use `ScopeBuilder` outside staff permission and permission-profile apply flows. A same-grain **profile checklist catalog** at `/configuration/permission-profiles` is allowed. **Do not** restore a roles CRUD matrix screen.
 
@@ -252,7 +255,7 @@ When building or refactoring a screen:
 
 ## Passwordless authentication
 
-`PasswordlessPanel` is shared by login, signup, invitations and Account security. It owns one contact field with automatic email/international-phone detection and validation, user-triggered resend and SMS switching after server cooldown, OTP, authenticator verification/enrollment and one-time recovery-code display through `PasswordlessFlow`. Use existing Button/Input/Label primitives and ConfirmModal for identifier removal. No auth-provider SDK belongs in UI components.
+`PasswordlessPanel` is shared by login, signup, invitations and Account security. It owns one contact field with automatic email/international-phone detection and validation, user-triggered resend and SMS switching after server cooldown, OTP, authenticator verification/enrollment and one-time recovery-code display through its colocated `PasswordlessPanelState`. Authentication requests and completion belong to this smart workflow state. Use existing Button/Input/Label primitives and ConfirmModal for identifier removal. No auth-provider SDK belongs in UI components.
 
 `TestOtpPanel` is shared by login and contact linking through `PasswordlessPanel`. The `$testOtpPanel` build alias resolves to an empty component unless `PUBLIC_TEST_OTP_ACCESS=true`. The enabled component discovers server capabilities once, reveals only after an explicit **Show test code** action, labels the panel as testing, and offers **Copy** without filling or submitting the form. It clears transient codes and ignores late responses after replacement, expiry, completion, reset, unmount or backgrounding. Code content carries `data-sensitive` so integration captures mask it. Normal deploy commands explicitly disable the flag.
 
@@ -267,3 +270,11 @@ Correction lists use ListPageHeader, FilterSelect, FilterPanel, PageQuery and Da
 ### School conversation surfaces
 
 Route-local MessagesView composes ListPageHeader, DataState, DrawerEntityHeader, Dialog, FormModal, Button, Label and Textarea. Read-only teacher oversight uses the same thread presentation without school mutation actions. School queue status, unread state, author identity and conflict feedback are textual as well as visual.
+
+## Feature ownership and action contracts
+
+Shared subject editors, report section comments and document controls receive typed action callbacks from their route/tab state. Presentation components may import API types and pure payload/display helpers, but must not import runtime mutation adapters or API clients.
+
+Dashboard UI belongs to `/dashboard`; import and school timetable generation/publication UI belong to `/configuration/tools`; class calendars, session, attendance and logbook workflows belong to the class timetable subtree. `ReportCardSectionTree` belongs to Configuration report cards, and homeroom comments belong to class report cards. Shared scheduling helpers remain in `lib/scheduling/`.
+
+`StaffPicker` callers must set `active` deliberately. The removed compatibility wrapper always forced active loading, including callers that passed a false flag; its migrated class-assignment callers preserve that behavior with `active`.

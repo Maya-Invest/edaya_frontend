@@ -56,5 +56,6 @@ if (cd "$BACKEND_ROOT" && bun --no-env-file repo seed --skip-profile-photos --sk
       bun test tests/integration/demo-dry-run/demo-dry-run.test.ts
   else failed=1; fi
 else failed=1; fi
+run_suite env WEBAPP_URL="http://127.0.0.1:$demo_port" bun run test:integration:messaging-ui
 run_suite bun run test:integration:coverage
 exit "$failed"

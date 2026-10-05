@@ -99,7 +99,6 @@ jobs:
           filters: |
             webapp:
               - apps/webapp/**
-              - packages/**
               - vendor/**
               - tooling/**
               - scripts/**
@@ -112,7 +111,6 @@ jobs:
               - .github/scripts/**
             webadmin:
               - apps/webadmin/**
-              - packages/**
               - vendor/**
               - tooling/**
               - scripts/**
