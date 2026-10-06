@@ -11,6 +11,7 @@
 	import { get } from 'svelte/store';
 	import { getStaffPageState } from '../../../staff-page.svelte';
 	import ApplyStaffPermissionProfileModal from './components/ApplyStaffPermissionProfileModal.svelte';
+	import StaffDefaultScopesModal from './components/StaffDefaultScopesModal.svelte';
 	import StaffPermissionFormModal from './components/StaffPermissionFormModal.svelte';
 	import StaffPermissionsTab from './components/StaffPermissionsTab.svelte';
 	import { getStaffPermissionsTabState } from './staff-permissions-tab.svelte';
@@ -21,7 +22,7 @@
 	const staff = $derived(staffPage.selected);
 
 	const modals = createUrlSyncedModals({
-		allowed: ['add-permission', 'delete-permission', 'apply-profile', 'remove-profile'],
+		allowed: ['add-permission', 'delete-permission', 'apply-profile', 'remove-profile', 'default-scopes'],
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
@@ -31,6 +32,7 @@
 	const addPermissionOpen = bindUrlModal(modals, 'add-permission');
 	const deletePermissionOpen = bindUrlModal(modals, 'delete-permission');
 	const applyProfileOpen = bindUrlModal(modals, 'apply-profile');
+	const defaultScopesOpen = bindUrlModal(modals, 'default-scopes');
 	const removeProfileOpen = bindUrlModal(modals, 'remove-profile');
 
 	let deleteBusy = $state(false);
@@ -140,22 +142,30 @@
 					onEdit={row => modals.open('add-permission', { target: row.id })}
 					onDelete={row => modals.open('delete-permission', { target: row.id })}
 					onApply={() => modals.open('apply-profile')}
+					onEditProfile={profileId => modals.open('apply-profile', { target: profileId })}
+					onEditDefaults={() => modals.open('default-scopes')}
 					onRemove={profileId => modals.open('remove-profile', { target: profileId })}
 				/>
 			</DataState>
 		{/snippet}
 	</PageQuery>
 
-	<StaffPermissionFormModal
-		bind:open={addPermissionOpen.open}
-		staff={staff}
-		assignment={permissionEditing}
-	/>
+	{#if permissionsReady}
+		<StaffPermissionFormModal
+			bind:open={addPermissionOpen.open}
+			staff={staff}
+			assignment={permissionEditing}
+		/>
 
-	<ApplyStaffPermissionProfileModal
-		bind:open={applyProfileOpen.open}
-		staffId={staff.id}
-	/>
+		<ApplyStaffPermissionProfileModal
+			bind:open={applyProfileOpen.open}
+			staffId={staff.id}
+			initialProfileId={modals.active === 'apply-profile' ? modals.target ?? '' : ''}
+		/>
+
+		<StaffDefaultScopesModal bind:open={defaultScopesOpen.open} staffId={staff.id} />
+
+	{/if}
 
 	<ConfirmModal
 		bind:open={deletePermissionOpen.open}

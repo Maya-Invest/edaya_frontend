@@ -1563,6 +1563,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/core/commands/configure-staff-permission-scope-defaults": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** configure-staff-permission-scope-defaults */
+        post: operations["commands.configureStaffPermissionScopeDefaults"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/commands/remove-staff-permission": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** remove-staff-permission */
+        post: operations["commands.removeStaffPermission"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/core/commands/assign-staff-permission": {
         parameters: {
             query?: never;
@@ -6476,74 +6510,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/core/entities/staff-permission-assignments/save": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Save Staff Permission Assignments */
-        post: operations["entities.staffPermissionAssignments.save"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/core/entities/staff-permission-assignments/delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Delete Staff Permission Assignments */
-        post: operations["entities.staffPermissionAssignments.delete"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/core/entities/staff-permission-assignments/batch-save": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Batch save Staff Permission Assignments */
-        post: operations["entities.staffPermissionAssignments.batchSave"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/core/entities/staff-permission-assignments/batch-delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Batch delete Staff Permission Assignments */
-        post: operations["entities.staffPermissionAssignments.batchDelete"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/core/entities/staff-permission-profiles/list": {
         parameters: {
             query?: never;
@@ -6706,6 +6672,142 @@ export interface paths {
         };
         /** Get Staff Permission Profile Bindings */
         get: operations["entities.staffPermissionProfileBindings.get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/entities/staff-manual-permission-assignments/list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** List StaffManualPermissionAssignment */
+        post: operations["entities.staffManualPermissionAssignments.list"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/entities/staff-manual-permission-assignments/one": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Find one StaffManualPermissionAssignment */
+        post: operations["entities.staffManualPermissionAssignments.one"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/entities/staff-manual-permission-assignments/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Count StaffManualPermissionAssignment */
+        post: operations["entities.staffManualPermissionAssignments.count"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/entities/staff-manual-permission-assignments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get StaffManualPermissionAssignment */
+        get: operations["entities.staffManualPermissionAssignments.get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/entities/staff-permission-scope-defaults/list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** List StaffPermissionScopeDefaults */
+        post: operations["entities.staffPermissionScopeDefaults.list"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/entities/staff-permission-scope-defaults/one": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Find one StaffPermissionScopeDefaults */
+        post: operations["entities.staffPermissionScopeDefaults.one"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/entities/staff-permission-scope-defaults/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Count StaffPermissionScopeDefaults */
+        post: operations["entities.staffPermissionScopeDefaults.count"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/entities/staff-permission-scope-defaults/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get StaffPermissionScopeDefaults */
+        get: operations["entities.staffPermissionScopeDefaults.get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -13627,13 +13729,12 @@ export interface components {
             lessonSessionId: string;
             createdAt?: unknown;
         };
-        StaffPermissionAssignment: {
+        StaffPermissionScopeDefaults: {
             id: string;
-            staffId: string;
             schoolId: string;
+            staffId: string;
             academicYearId: string;
-            /** @enum {string} */
-            permission: "SCHOOL_STRUCTURE_READ" | "SCHOOL_STRUCTURE_CONFIGURE" | "SCHOOL_LIFECYCLE_MANAGE" | "STAFF_READ" | "STAFF_CREATE" | "STAFF_UPDATE" | "STAFF_ARCHIVE" | "ACCESS_CONTROL_READ" | "ACCESS_CONTROL_CONFIGURE" | "ACCESS_CONTROL_ASSIGN" | "SERVICE_ACCOUNT_READ" | "SERVICE_ACCOUNT_CREATE" | "SERVICE_ACCOUNT_UPDATE" | "SERVICE_ACCOUNT_REVOKE" | "SERVICE_ACCOUNT_ROTATE_KEY" | "ACADEMIC_PROGRAM_READ" | "ACADEMIC_PROGRAM_CREATE" | "ACADEMIC_PROGRAM_UPDATE" | "ACADEMIC_PROGRAM_DELETE" | "ACADEMIC_PROGRAM_ASSIGN" | "STUDENT_READ" | "STUDENT_CREATE" | "STUDENT_UPDATE" | "STUDENT_ARCHIVE" | "STUDENT_HEALTH_READ" | "STUDENT_HEALTH_UPDATE" | "PARENT_READ" | "PARENT_CREATE" | "PARENT_UPDATE" | "PARENT_ARCHIVE" | "ENROLLMENT_READ" | "ENROLLMENT_CREATE" | "ENROLLMENT_UPDATE" | "ENROLLMENT_ARCHIVE" | "DISCIPLINE_READ" | "DISCIPLINE_CREATE" | "DISCIPLINE_UPDATE" | "DISCIPLINE_VALIDATE" | "DISCIPLINE_ARCHIVE" | "ATTENDANCE_READ" | "ATTENDANCE_RECORD" | "ATTENDANCE_UPDATE" | "ATTENDANCE_JUSTIFY" | "ATTENDANCE_VALIDATE" | "EXAM_CONFIG_READ" | "EXAM_CONFIG_CREATE" | "EXAM_CONFIG_UPDATE" | "EXAM_CONFIG_CONFIGURE" | "EXAM_CONFIG_LOCK" | "EXAM_CONFIG_UNLOCK" | "GRADE_READ" | "GRADE_INPUT" | "GRADE_UPDATE" | "GRADE_VALIDATE" | "GRADE_LOCK" | "GRADE_UNLOCK" | "GRADE_PUBLISH" | "REPORT_CARD_READ" | "REPORT_CARD_CONFIGURE" | "REPORT_CARD_GENERATE" | "REPORT_CARD_LOCK" | "REPORT_CARD_UNLOCK" | "REPORT_CARD_SIGN" | "REPORT_CARD_PUBLISH" | "REPORT_CARD_EXPORT" | "CLASS_LOGBOOK_READ" | "CLASS_LOGBOOK_CREATE" | "CLASS_LOGBOOK_UPDATE" | "CLASS_LOGBOOK_VALIDATE" | "TIMETABLE_READ" | "TIMETABLE_CREATE" | "TIMETABLE_UPDATE" | "TIMETABLE_PUBLISH" | "TIMETABLE_LOCK" | "TIMETABLE_UNLOCK" | "FINANCIAL_CONFIG_READ" | "FINANCIAL_CONFIG_CONFIGURE" | "FINANCIAL_CONFIG_UPDATE" | "PAYMENT_READ" | "PAYMENT_RECORD" | "PAYMENT_ALLOCATE" | "PAYMENT_CANCEL" | "PAYMENT_REVERSE" | "PAYMENT_EXPORT" | "FINANCIAL_REPORT_READ" | "FINANCIAL_REPORT_EXPORT" | "DOCUMENT_VOID" | "FAMILY_FEEDBACK_CAMPAIGN_READ" | "FAMILY_FEEDBACK_CAMPAIGN_MANAGE" | "FAMILY_FEEDBACK_MODERATE" | "FAMILY_FEEDBACK_PUBLISH" | "SCHOOL_MESSAGES_READ" | "SCHOOL_MESSAGES_REPLY" | "TEACHER_MESSAGES_REVIEW" | "COMMUNICATION_READ" | "COMMUNICATION_CREATE" | "COMMUNICATION_UPDATE" | "COMMUNICATION_SEND" | "COMMUNICATION_APPROVE" | "COMMUNICATION_DELETE" | "RESOURCE_READ" | "RESOURCE_CONFIGURE" | "ATTACHMENT_READ" | "ATTACHMENT_CONFIGURE" | "QUERY_WORKSPACE_READ" | "QUERY_OVERVIEW_READ" | "QUERY_STUDENT_DIRECTORY_READ" | "QUERY_STUDENT_DETAIL_READ" | "QUERY_ENROLLMENT_HISTORY_READ" | "QUERY_REPORT_CARD_DETAIL_READ" | "QUERY_COMMUNICATIONS_READ" | "QUERY_CALENDAR_READ" | "QUERY_CURRICULUM_PROGRESS_READ" | "QUERY_CLASS_DIRECTORY_READ" | "QUERY_CLASS_CURRICULUM_READ" | "QUERY_TIMETABLE_READ" | "QUERY_ATTENDANCE_READ" | "QUERY_GUARDIAN_STUDENTS_ADMIN_READ" | "QUERY_GUARDIAN_SELF_READ" | "QUERY_OVERDUE_FEES_READ" | "PLATFORM_REGISTER_SCHOOL" | "PLATFORM_USER_READ" | "PLATFORM_USER_CREATE" | "PLATFORM_USER_DEACTIVATE" | "S2S_CLIENT_READ" | "S2S_CLIENT_CREATE" | "S2S_CLIENT_REVOKE" | "S2S_CLIENT_ROTATE_KEY";
+            /** @default [] */
             scopes: ({
                 /** @enum {string} */
                 kind: "school";
@@ -13670,24 +13771,110 @@ export interface components {
                 kind: "student";
                 studentId: string;
             })[];
-            /**
-             * @default active
-             * @enum {string}
-             */
-            status: "active" | "inactive" | "expired";
-            startsAt?: unknown;
-            endsAt?: unknown;
-            sourceProfileId?: string | null;
             createdAt?: unknown;
             updatedAt?: unknown;
         };
-        StaffPermissionAssignmentConfigCommand: {
-            id: string;
+        PermissionResolutionReport: {
+            changes: {
+                staffId: string;
+                staffName: string;
+                academicYearId: string;
+                /** @enum {string} */
+                permission: "SCHOOL_STRUCTURE_READ" | "SCHOOL_STRUCTURE_CONFIGURE" | "SCHOOL_LIFECYCLE_MANAGE" | "STAFF_READ" | "STAFF_CREATE" | "STAFF_UPDATE" | "STAFF_ARCHIVE" | "ACCESS_CONTROL_READ" | "ACCESS_CONTROL_CONFIGURE" | "ACCESS_CONTROL_ASSIGN" | "SERVICE_ACCOUNT_READ" | "SERVICE_ACCOUNT_CREATE" | "SERVICE_ACCOUNT_UPDATE" | "SERVICE_ACCOUNT_REVOKE" | "SERVICE_ACCOUNT_ROTATE_KEY" | "ACADEMIC_PROGRAM_READ" | "ACADEMIC_PROGRAM_CREATE" | "ACADEMIC_PROGRAM_UPDATE" | "ACADEMIC_PROGRAM_DELETE" | "ACADEMIC_PROGRAM_ASSIGN" | "STUDENT_READ" | "STUDENT_CREATE" | "STUDENT_UPDATE" | "STUDENT_ARCHIVE" | "STUDENT_HEALTH_READ" | "STUDENT_HEALTH_UPDATE" | "PARENT_READ" | "PARENT_CREATE" | "PARENT_UPDATE" | "PARENT_ARCHIVE" | "ENROLLMENT_READ" | "ENROLLMENT_CREATE" | "ENROLLMENT_UPDATE" | "ENROLLMENT_ARCHIVE" | "DISCIPLINE_READ" | "DISCIPLINE_CREATE" | "DISCIPLINE_UPDATE" | "DISCIPLINE_VALIDATE" | "DISCIPLINE_ARCHIVE" | "ATTENDANCE_READ" | "ATTENDANCE_RECORD" | "ATTENDANCE_UPDATE" | "ATTENDANCE_JUSTIFY" | "ATTENDANCE_VALIDATE" | "EXAM_CONFIG_READ" | "EXAM_CONFIG_CREATE" | "EXAM_CONFIG_UPDATE" | "EXAM_CONFIG_CONFIGURE" | "EXAM_CONFIG_LOCK" | "EXAM_CONFIG_UNLOCK" | "GRADE_READ" | "GRADE_INPUT" | "GRADE_UPDATE" | "GRADE_VALIDATE" | "GRADE_LOCK" | "GRADE_UNLOCK" | "GRADE_PUBLISH" | "REPORT_CARD_READ" | "REPORT_CARD_CONFIGURE" | "REPORT_CARD_GENERATE" | "REPORT_CARD_LOCK" | "REPORT_CARD_UNLOCK" | "REPORT_CARD_SIGN" | "REPORT_CARD_PUBLISH" | "REPORT_CARD_EXPORT" | "CLASS_LOGBOOK_READ" | "CLASS_LOGBOOK_CREATE" | "CLASS_LOGBOOK_UPDATE" | "CLASS_LOGBOOK_VALIDATE" | "TIMETABLE_READ" | "TIMETABLE_CREATE" | "TIMETABLE_UPDATE" | "TIMETABLE_PUBLISH" | "TIMETABLE_LOCK" | "TIMETABLE_UNLOCK" | "FINANCIAL_CONFIG_READ" | "FINANCIAL_CONFIG_CONFIGURE" | "FINANCIAL_CONFIG_UPDATE" | "PAYMENT_READ" | "PAYMENT_RECORD" | "PAYMENT_ALLOCATE" | "PAYMENT_CANCEL" | "PAYMENT_REVERSE" | "PAYMENT_EXPORT" | "FINANCIAL_REPORT_READ" | "FINANCIAL_REPORT_EXPORT" | "DOCUMENT_VOID" | "FAMILY_FEEDBACK_CAMPAIGN_READ" | "FAMILY_FEEDBACK_CAMPAIGN_MANAGE" | "FAMILY_FEEDBACK_MODERATE" | "FAMILY_FEEDBACK_PUBLISH" | "SCHOOL_MESSAGES_READ" | "SCHOOL_MESSAGES_REPLY" | "TEACHER_MESSAGES_REVIEW" | "COMMUNICATION_READ" | "COMMUNICATION_CREATE" | "COMMUNICATION_UPDATE" | "COMMUNICATION_SEND" | "COMMUNICATION_APPROVE" | "COMMUNICATION_DELETE" | "RESOURCE_READ" | "RESOURCE_CONFIGURE" | "ATTACHMENT_READ" | "ATTACHMENT_CONFIGURE" | "QUERY_WORKSPACE_READ" | "QUERY_OVERVIEW_READ" | "QUERY_STUDENT_DIRECTORY_READ" | "QUERY_STUDENT_DETAIL_READ" | "QUERY_ENROLLMENT_HISTORY_READ" | "QUERY_REPORT_CARD_DETAIL_READ" | "QUERY_COMMUNICATIONS_READ" | "QUERY_CALENDAR_READ" | "QUERY_CURRICULUM_PROGRESS_READ" | "QUERY_CLASS_DIRECTORY_READ" | "QUERY_CLASS_CURRICULUM_READ" | "QUERY_TIMETABLE_READ" | "QUERY_ATTENDANCE_READ" | "QUERY_GUARDIAN_STUDENTS_ADMIN_READ" | "QUERY_GUARDIAN_SELF_READ" | "QUERY_OVERDUE_FEES_READ" | "PLATFORM_REGISTER_SCHOOL" | "PLATFORM_USER_READ" | "PLATFORM_USER_CREATE" | "PLATFORM_USER_DEACTIVATE" | "S2S_CLIENT_READ" | "S2S_CLIENT_CREATE" | "S2S_CLIENT_REVOKE" | "S2S_CLIENT_ROTATE_KEY";
+                /** @enum {string} */
+                change: "added" | "changed" | "removed";
+                beforeScopes: ({
+                    /** @enum {string} */
+                    kind: "school";
+                } | {
+                    /** @enum {string} */
+                    kind: "all";
+                    /** @enum {string} */
+                    grain: "grade_level" | "grade_level_subject" | "class_group" | "class_subject" | "activity" | "student";
+                } | {
+                    /** @enum {string} */
+                    kind: "grade_level";
+                    gradeLevelId: string;
+                } | {
+                    /** @enum {string} */
+                    kind: "grade_level_subject";
+                    gradeLevelId: string;
+                    gradeLevelSubjectId?: string;
+                } | {
+                    /** @enum {string} */
+                    kind: "class_group";
+                    classGroupId: string;
+                } | {
+                    /** @enum {string} */
+                    kind: "class_subject";
+                    classGroupId: string;
+                    classSubjectId?: string;
+                } | {
+                    /** @enum {string} */
+                    kind: "activity";
+                    activityId?: string;
+                    classGroupId?: string;
+                } | {
+                    /** @enum {string} */
+                    kind: "student";
+                    studentId: string;
+                })[];
+                afterScopes: ({
+                    /** @enum {string} */
+                    kind: "school";
+                } | {
+                    /** @enum {string} */
+                    kind: "all";
+                    /** @enum {string} */
+                    grain: "grade_level" | "grade_level_subject" | "class_group" | "class_subject" | "activity" | "student";
+                } | {
+                    /** @enum {string} */
+                    kind: "grade_level";
+                    gradeLevelId: string;
+                } | {
+                    /** @enum {string} */
+                    kind: "grade_level_subject";
+                    gradeLevelId: string;
+                    gradeLevelSubjectId?: string;
+                } | {
+                    /** @enum {string} */
+                    kind: "class_group";
+                    classGroupId: string;
+                } | {
+                    /** @enum {string} */
+                    kind: "class_subject";
+                    classGroupId: string;
+                    classSubjectId?: string;
+                } | {
+                    /** @enum {string} */
+                    kind: "activity";
+                    activityId?: string;
+                    classGroupId?: string;
+                } | {
+                    /** @enum {string} */
+                    kind: "student";
+                    studentId: string;
+                })[];
+            }[];
+            warnings: {
+                /** @enum {string} */
+                permission: "SCHOOL_STRUCTURE_READ" | "SCHOOL_STRUCTURE_CONFIGURE" | "SCHOOL_LIFECYCLE_MANAGE" | "STAFF_READ" | "STAFF_CREATE" | "STAFF_UPDATE" | "STAFF_ARCHIVE" | "ACCESS_CONTROL_READ" | "ACCESS_CONTROL_CONFIGURE" | "ACCESS_CONTROL_ASSIGN" | "SERVICE_ACCOUNT_READ" | "SERVICE_ACCOUNT_CREATE" | "SERVICE_ACCOUNT_UPDATE" | "SERVICE_ACCOUNT_REVOKE" | "SERVICE_ACCOUNT_ROTATE_KEY" | "ACADEMIC_PROGRAM_READ" | "ACADEMIC_PROGRAM_CREATE" | "ACADEMIC_PROGRAM_UPDATE" | "ACADEMIC_PROGRAM_DELETE" | "ACADEMIC_PROGRAM_ASSIGN" | "STUDENT_READ" | "STUDENT_CREATE" | "STUDENT_UPDATE" | "STUDENT_ARCHIVE" | "STUDENT_HEALTH_READ" | "STUDENT_HEALTH_UPDATE" | "PARENT_READ" | "PARENT_CREATE" | "PARENT_UPDATE" | "PARENT_ARCHIVE" | "ENROLLMENT_READ" | "ENROLLMENT_CREATE" | "ENROLLMENT_UPDATE" | "ENROLLMENT_ARCHIVE" | "DISCIPLINE_READ" | "DISCIPLINE_CREATE" | "DISCIPLINE_UPDATE" | "DISCIPLINE_VALIDATE" | "DISCIPLINE_ARCHIVE" | "ATTENDANCE_READ" | "ATTENDANCE_RECORD" | "ATTENDANCE_UPDATE" | "ATTENDANCE_JUSTIFY" | "ATTENDANCE_VALIDATE" | "EXAM_CONFIG_READ" | "EXAM_CONFIG_CREATE" | "EXAM_CONFIG_UPDATE" | "EXAM_CONFIG_CONFIGURE" | "EXAM_CONFIG_LOCK" | "EXAM_CONFIG_UNLOCK" | "GRADE_READ" | "GRADE_INPUT" | "GRADE_UPDATE" | "GRADE_VALIDATE" | "GRADE_LOCK" | "GRADE_UNLOCK" | "GRADE_PUBLISH" | "REPORT_CARD_READ" | "REPORT_CARD_CONFIGURE" | "REPORT_CARD_GENERATE" | "REPORT_CARD_LOCK" | "REPORT_CARD_UNLOCK" | "REPORT_CARD_SIGN" | "REPORT_CARD_PUBLISH" | "REPORT_CARD_EXPORT" | "CLASS_LOGBOOK_READ" | "CLASS_LOGBOOK_CREATE" | "CLASS_LOGBOOK_UPDATE" | "CLASS_LOGBOOK_VALIDATE" | "TIMETABLE_READ" | "TIMETABLE_CREATE" | "TIMETABLE_UPDATE" | "TIMETABLE_PUBLISH" | "TIMETABLE_LOCK" | "TIMETABLE_UNLOCK" | "FINANCIAL_CONFIG_READ" | "FINANCIAL_CONFIG_CONFIGURE" | "FINANCIAL_CONFIG_UPDATE" | "PAYMENT_READ" | "PAYMENT_RECORD" | "PAYMENT_ALLOCATE" | "PAYMENT_CANCEL" | "PAYMENT_REVERSE" | "PAYMENT_EXPORT" | "FINANCIAL_REPORT_READ" | "FINANCIAL_REPORT_EXPORT" | "DOCUMENT_VOID" | "FAMILY_FEEDBACK_CAMPAIGN_READ" | "FAMILY_FEEDBACK_CAMPAIGN_MANAGE" | "FAMILY_FEEDBACK_MODERATE" | "FAMILY_FEEDBACK_PUBLISH" | "SCHOOL_MESSAGES_READ" | "SCHOOL_MESSAGES_REPLY" | "TEACHER_MESSAGES_REVIEW" | "COMMUNICATION_READ" | "COMMUNICATION_CREATE" | "COMMUNICATION_UPDATE" | "COMMUNICATION_SEND" | "COMMUNICATION_APPROVE" | "COMMUNICATION_DELETE" | "RESOURCE_READ" | "RESOURCE_CONFIGURE" | "ATTACHMENT_READ" | "ATTACHMENT_CONFIGURE" | "QUERY_WORKSPACE_READ" | "QUERY_OVERVIEW_READ" | "QUERY_STUDENT_DIRECTORY_READ" | "QUERY_STUDENT_DETAIL_READ" | "QUERY_ENROLLMENT_HISTORY_READ" | "QUERY_REPORT_CARD_DETAIL_READ" | "QUERY_COMMUNICATIONS_READ" | "QUERY_CALENDAR_READ" | "QUERY_CURRICULUM_PROGRESS_READ" | "QUERY_CLASS_DIRECTORY_READ" | "QUERY_CLASS_CURRICULUM_READ" | "QUERY_TIMETABLE_READ" | "QUERY_ATTENDANCE_READ" | "QUERY_GUARDIAN_STUDENTS_ADMIN_READ" | "QUERY_GUARDIAN_SELF_READ" | "QUERY_OVERDUE_FEES_READ" | "PLATFORM_REGISTER_SCHOOL" | "PLATFORM_USER_READ" | "PLATFORM_USER_CREATE" | "PLATFORM_USER_DEACTIVATE" | "S2S_CLIENT_READ" | "S2S_CLIENT_CREATE" | "S2S_CLIENT_REVOKE" | "S2S_CLIENT_ROTATE_KEY";
+                /** @enum {string} */
+                reason: "missing_scope" | "invalid_scope" | "shadowed";
+                ownerProfileId?: string;
+                staffId: string;
+                staffName: string;
+                academicYearId: string;
+                assignmentId: string;
+            }[];
+        };
+        ConfigureStaffPermissionScopeDefaultsResponse: components["schemas"]["StaffPermissionScopeDefaults"] & {
+            resolution: components["schemas"]["PermissionResolutionReport"];
+        };
+        ConfigureStaffPermissionScopeDefaultsCommand: {
             staffId: string;
-            schoolId: string;
             academicYearId: string;
-            /** @enum {string} */
-            permission: "SCHOOL_STRUCTURE_READ" | "SCHOOL_STRUCTURE_CONFIGURE" | "SCHOOL_LIFECYCLE_MANAGE" | "STAFF_READ" | "STAFF_CREATE" | "STAFF_UPDATE" | "STAFF_ARCHIVE" | "ACCESS_CONTROL_READ" | "ACCESS_CONTROL_CONFIGURE" | "ACCESS_CONTROL_ASSIGN" | "SERVICE_ACCOUNT_READ" | "SERVICE_ACCOUNT_CREATE" | "SERVICE_ACCOUNT_UPDATE" | "SERVICE_ACCOUNT_REVOKE" | "SERVICE_ACCOUNT_ROTATE_KEY" | "ACADEMIC_PROGRAM_READ" | "ACADEMIC_PROGRAM_CREATE" | "ACADEMIC_PROGRAM_UPDATE" | "ACADEMIC_PROGRAM_DELETE" | "ACADEMIC_PROGRAM_ASSIGN" | "STUDENT_READ" | "STUDENT_CREATE" | "STUDENT_UPDATE" | "STUDENT_ARCHIVE" | "STUDENT_HEALTH_READ" | "STUDENT_HEALTH_UPDATE" | "PARENT_READ" | "PARENT_CREATE" | "PARENT_UPDATE" | "PARENT_ARCHIVE" | "ENROLLMENT_READ" | "ENROLLMENT_CREATE" | "ENROLLMENT_UPDATE" | "ENROLLMENT_ARCHIVE" | "DISCIPLINE_READ" | "DISCIPLINE_CREATE" | "DISCIPLINE_UPDATE" | "DISCIPLINE_VALIDATE" | "DISCIPLINE_ARCHIVE" | "ATTENDANCE_READ" | "ATTENDANCE_RECORD" | "ATTENDANCE_UPDATE" | "ATTENDANCE_JUSTIFY" | "ATTENDANCE_VALIDATE" | "EXAM_CONFIG_READ" | "EXAM_CONFIG_CREATE" | "EXAM_CONFIG_UPDATE" | "EXAM_CONFIG_CONFIGURE" | "EXAM_CONFIG_LOCK" | "EXAM_CONFIG_UNLOCK" | "GRADE_READ" | "GRADE_INPUT" | "GRADE_UPDATE" | "GRADE_VALIDATE" | "GRADE_LOCK" | "GRADE_UNLOCK" | "GRADE_PUBLISH" | "REPORT_CARD_READ" | "REPORT_CARD_CONFIGURE" | "REPORT_CARD_GENERATE" | "REPORT_CARD_LOCK" | "REPORT_CARD_UNLOCK" | "REPORT_CARD_SIGN" | "REPORT_CARD_PUBLISH" | "REPORT_CARD_EXPORT" | "CLASS_LOGBOOK_READ" | "CLASS_LOGBOOK_CREATE" | "CLASS_LOGBOOK_UPDATE" | "CLASS_LOGBOOK_VALIDATE" | "TIMETABLE_READ" | "TIMETABLE_CREATE" | "TIMETABLE_UPDATE" | "TIMETABLE_PUBLISH" | "TIMETABLE_LOCK" | "TIMETABLE_UNLOCK" | "FINANCIAL_CONFIG_READ" | "FINANCIAL_CONFIG_CONFIGURE" | "FINANCIAL_CONFIG_UPDATE" | "PAYMENT_READ" | "PAYMENT_RECORD" | "PAYMENT_ALLOCATE" | "PAYMENT_CANCEL" | "PAYMENT_REVERSE" | "PAYMENT_EXPORT" | "FINANCIAL_REPORT_READ" | "FINANCIAL_REPORT_EXPORT" | "DOCUMENT_VOID" | "FAMILY_FEEDBACK_CAMPAIGN_READ" | "FAMILY_FEEDBACK_CAMPAIGN_MANAGE" | "FAMILY_FEEDBACK_MODERATE" | "FAMILY_FEEDBACK_PUBLISH" | "SCHOOL_MESSAGES_READ" | "SCHOOL_MESSAGES_REPLY" | "TEACHER_MESSAGES_REVIEW" | "COMMUNICATION_READ" | "COMMUNICATION_CREATE" | "COMMUNICATION_UPDATE" | "COMMUNICATION_SEND" | "COMMUNICATION_APPROVE" | "COMMUNICATION_DELETE" | "RESOURCE_READ" | "RESOURCE_CONFIGURE" | "ATTACHMENT_READ" | "ATTACHMENT_CONFIGURE" | "QUERY_WORKSPACE_READ" | "QUERY_OVERVIEW_READ" | "QUERY_STUDENT_DIRECTORY_READ" | "QUERY_STUDENT_DETAIL_READ" | "QUERY_ENROLLMENT_HISTORY_READ" | "QUERY_REPORT_CARD_DETAIL_READ" | "QUERY_COMMUNICATIONS_READ" | "QUERY_CALENDAR_READ" | "QUERY_CURRICULUM_PROGRESS_READ" | "QUERY_CLASS_DIRECTORY_READ" | "QUERY_CLASS_CURRICULUM_READ" | "QUERY_TIMETABLE_READ" | "QUERY_ATTENDANCE_READ" | "QUERY_GUARDIAN_STUDENTS_ADMIN_READ" | "QUERY_GUARDIAN_SELF_READ" | "QUERY_OVERDUE_FEES_READ" | "PLATFORM_REGISTER_SCHOOL" | "PLATFORM_USER_READ" | "PLATFORM_USER_CREATE" | "PLATFORM_USER_DEACTIVATE" | "S2S_CLIENT_READ" | "S2S_CLIENT_CREATE" | "S2S_CLIENT_REVOKE" | "S2S_CLIENT_ROTATE_KEY";
+            /** @default [] */
             scopes: ({
                 /** @enum {string} */
                 kind: "school";
@@ -13724,6 +13911,61 @@ export interface components {
                 kind: "student";
                 studentId: string;
             })[];
+            previewOnly?: boolean;
+        };
+        RemoveStaffPermissionResponse: {
+            assignmentId: string;
+            resolution: components["schemas"]["PermissionResolutionReport"];
+        };
+        RemoveStaffPermissionCommand: {
+            assignmentId: string;
+        };
+        StaffManualPermissionAssignment: {
+            id: string;
+            schoolId: string;
+            staffId: string;
+            academicYearId: string;
+            /** @enum {string} */
+            permission: "SCHOOL_STRUCTURE_READ" | "SCHOOL_STRUCTURE_CONFIGURE" | "SCHOOL_LIFECYCLE_MANAGE" | "STAFF_READ" | "STAFF_CREATE" | "STAFF_UPDATE" | "STAFF_ARCHIVE" | "ACCESS_CONTROL_READ" | "ACCESS_CONTROL_CONFIGURE" | "ACCESS_CONTROL_ASSIGN" | "SERVICE_ACCOUNT_READ" | "SERVICE_ACCOUNT_CREATE" | "SERVICE_ACCOUNT_UPDATE" | "SERVICE_ACCOUNT_REVOKE" | "SERVICE_ACCOUNT_ROTATE_KEY" | "ACADEMIC_PROGRAM_READ" | "ACADEMIC_PROGRAM_CREATE" | "ACADEMIC_PROGRAM_UPDATE" | "ACADEMIC_PROGRAM_DELETE" | "ACADEMIC_PROGRAM_ASSIGN" | "STUDENT_READ" | "STUDENT_CREATE" | "STUDENT_UPDATE" | "STUDENT_ARCHIVE" | "STUDENT_HEALTH_READ" | "STUDENT_HEALTH_UPDATE" | "PARENT_READ" | "PARENT_CREATE" | "PARENT_UPDATE" | "PARENT_ARCHIVE" | "ENROLLMENT_READ" | "ENROLLMENT_CREATE" | "ENROLLMENT_UPDATE" | "ENROLLMENT_ARCHIVE" | "DISCIPLINE_READ" | "DISCIPLINE_CREATE" | "DISCIPLINE_UPDATE" | "DISCIPLINE_VALIDATE" | "DISCIPLINE_ARCHIVE" | "ATTENDANCE_READ" | "ATTENDANCE_RECORD" | "ATTENDANCE_UPDATE" | "ATTENDANCE_JUSTIFY" | "ATTENDANCE_VALIDATE" | "EXAM_CONFIG_READ" | "EXAM_CONFIG_CREATE" | "EXAM_CONFIG_UPDATE" | "EXAM_CONFIG_CONFIGURE" | "EXAM_CONFIG_LOCK" | "EXAM_CONFIG_UNLOCK" | "GRADE_READ" | "GRADE_INPUT" | "GRADE_UPDATE" | "GRADE_VALIDATE" | "GRADE_LOCK" | "GRADE_UNLOCK" | "GRADE_PUBLISH" | "REPORT_CARD_READ" | "REPORT_CARD_CONFIGURE" | "REPORT_CARD_GENERATE" | "REPORT_CARD_LOCK" | "REPORT_CARD_UNLOCK" | "REPORT_CARD_SIGN" | "REPORT_CARD_PUBLISH" | "REPORT_CARD_EXPORT" | "CLASS_LOGBOOK_READ" | "CLASS_LOGBOOK_CREATE" | "CLASS_LOGBOOK_UPDATE" | "CLASS_LOGBOOK_VALIDATE" | "TIMETABLE_READ" | "TIMETABLE_CREATE" | "TIMETABLE_UPDATE" | "TIMETABLE_PUBLISH" | "TIMETABLE_LOCK" | "TIMETABLE_UNLOCK" | "FINANCIAL_CONFIG_READ" | "FINANCIAL_CONFIG_CONFIGURE" | "FINANCIAL_CONFIG_UPDATE" | "PAYMENT_READ" | "PAYMENT_RECORD" | "PAYMENT_ALLOCATE" | "PAYMENT_CANCEL" | "PAYMENT_REVERSE" | "PAYMENT_EXPORT" | "FINANCIAL_REPORT_READ" | "FINANCIAL_REPORT_EXPORT" | "DOCUMENT_VOID" | "FAMILY_FEEDBACK_CAMPAIGN_READ" | "FAMILY_FEEDBACK_CAMPAIGN_MANAGE" | "FAMILY_FEEDBACK_MODERATE" | "FAMILY_FEEDBACK_PUBLISH" | "SCHOOL_MESSAGES_READ" | "SCHOOL_MESSAGES_REPLY" | "TEACHER_MESSAGES_REVIEW" | "COMMUNICATION_READ" | "COMMUNICATION_CREATE" | "COMMUNICATION_UPDATE" | "COMMUNICATION_SEND" | "COMMUNICATION_APPROVE" | "COMMUNICATION_DELETE" | "RESOURCE_READ" | "RESOURCE_CONFIGURE" | "ATTACHMENT_READ" | "ATTACHMENT_CONFIGURE" | "QUERY_WORKSPACE_READ" | "QUERY_OVERVIEW_READ" | "QUERY_STUDENT_DIRECTORY_READ" | "QUERY_STUDENT_DETAIL_READ" | "QUERY_ENROLLMENT_HISTORY_READ" | "QUERY_REPORT_CARD_DETAIL_READ" | "QUERY_COMMUNICATIONS_READ" | "QUERY_CALENDAR_READ" | "QUERY_CURRICULUM_PROGRESS_READ" | "QUERY_CLASS_DIRECTORY_READ" | "QUERY_CLASS_CURRICULUM_READ" | "QUERY_TIMETABLE_READ" | "QUERY_ATTENDANCE_READ" | "QUERY_GUARDIAN_STUDENTS_ADMIN_READ" | "QUERY_GUARDIAN_SELF_READ" | "QUERY_OVERDUE_FEES_READ" | "PLATFORM_REGISTER_SCHOOL" | "PLATFORM_USER_READ" | "PLATFORM_USER_CREATE" | "PLATFORM_USER_DEACTIVATE" | "S2S_CLIENT_READ" | "S2S_CLIENT_CREATE" | "S2S_CLIENT_REVOKE" | "S2S_CLIENT_ROTATE_KEY";
+            /** @default [] */
+            customScopes: ({
+                /** @enum {string} */
+                kind: "school";
+            } | {
+                /** @enum {string} */
+                kind: "all";
+                /** @enum {string} */
+                grain: "grade_level" | "grade_level_subject" | "class_group" | "class_subject" | "activity" | "student";
+            } | {
+                /** @enum {string} */
+                kind: "grade_level";
+                gradeLevelId: string;
+            } | {
+                /** @enum {string} */
+                kind: "grade_level_subject";
+                gradeLevelId: string;
+                gradeLevelSubjectId?: string;
+            } | {
+                /** @enum {string} */
+                kind: "class_group";
+                classGroupId: string;
+            } | {
+                /** @enum {string} */
+                kind: "class_subject";
+                classGroupId: string;
+                classSubjectId?: string;
+            } | {
+                /** @enum {string} */
+                kind: "activity";
+                activityId?: string;
+                classGroupId?: string;
+            } | {
+                /** @enum {string} */
+                kind: "student";
+                studentId: string;
+            })[];
+            /** @default true */
+            useDefaultScopes: boolean;
             /**
              * @default active
              * @enum {string}
@@ -13731,32 +13973,97 @@ export interface components {
             status: "active" | "inactive" | "expired";
             startsAt?: unknown;
             endsAt?: unknown;
-            sourceProfileId?: string | null;
+            /** @default [] */
+            warnings: {
+                /** @enum {string} */
+                permission: "SCHOOL_STRUCTURE_READ" | "SCHOOL_STRUCTURE_CONFIGURE" | "SCHOOL_LIFECYCLE_MANAGE" | "STAFF_READ" | "STAFF_CREATE" | "STAFF_UPDATE" | "STAFF_ARCHIVE" | "ACCESS_CONTROL_READ" | "ACCESS_CONTROL_CONFIGURE" | "ACCESS_CONTROL_ASSIGN" | "SERVICE_ACCOUNT_READ" | "SERVICE_ACCOUNT_CREATE" | "SERVICE_ACCOUNT_UPDATE" | "SERVICE_ACCOUNT_REVOKE" | "SERVICE_ACCOUNT_ROTATE_KEY" | "ACADEMIC_PROGRAM_READ" | "ACADEMIC_PROGRAM_CREATE" | "ACADEMIC_PROGRAM_UPDATE" | "ACADEMIC_PROGRAM_DELETE" | "ACADEMIC_PROGRAM_ASSIGN" | "STUDENT_READ" | "STUDENT_CREATE" | "STUDENT_UPDATE" | "STUDENT_ARCHIVE" | "STUDENT_HEALTH_READ" | "STUDENT_HEALTH_UPDATE" | "PARENT_READ" | "PARENT_CREATE" | "PARENT_UPDATE" | "PARENT_ARCHIVE" | "ENROLLMENT_READ" | "ENROLLMENT_CREATE" | "ENROLLMENT_UPDATE" | "ENROLLMENT_ARCHIVE" | "DISCIPLINE_READ" | "DISCIPLINE_CREATE" | "DISCIPLINE_UPDATE" | "DISCIPLINE_VALIDATE" | "DISCIPLINE_ARCHIVE" | "ATTENDANCE_READ" | "ATTENDANCE_RECORD" | "ATTENDANCE_UPDATE" | "ATTENDANCE_JUSTIFY" | "ATTENDANCE_VALIDATE" | "EXAM_CONFIG_READ" | "EXAM_CONFIG_CREATE" | "EXAM_CONFIG_UPDATE" | "EXAM_CONFIG_CONFIGURE" | "EXAM_CONFIG_LOCK" | "EXAM_CONFIG_UNLOCK" | "GRADE_READ" | "GRADE_INPUT" | "GRADE_UPDATE" | "GRADE_VALIDATE" | "GRADE_LOCK" | "GRADE_UNLOCK" | "GRADE_PUBLISH" | "REPORT_CARD_READ" | "REPORT_CARD_CONFIGURE" | "REPORT_CARD_GENERATE" | "REPORT_CARD_LOCK" | "REPORT_CARD_UNLOCK" | "REPORT_CARD_SIGN" | "REPORT_CARD_PUBLISH" | "REPORT_CARD_EXPORT" | "CLASS_LOGBOOK_READ" | "CLASS_LOGBOOK_CREATE" | "CLASS_LOGBOOK_UPDATE" | "CLASS_LOGBOOK_VALIDATE" | "TIMETABLE_READ" | "TIMETABLE_CREATE" | "TIMETABLE_UPDATE" | "TIMETABLE_PUBLISH" | "TIMETABLE_LOCK" | "TIMETABLE_UNLOCK" | "FINANCIAL_CONFIG_READ" | "FINANCIAL_CONFIG_CONFIGURE" | "FINANCIAL_CONFIG_UPDATE" | "PAYMENT_READ" | "PAYMENT_RECORD" | "PAYMENT_ALLOCATE" | "PAYMENT_CANCEL" | "PAYMENT_REVERSE" | "PAYMENT_EXPORT" | "FINANCIAL_REPORT_READ" | "FINANCIAL_REPORT_EXPORT" | "DOCUMENT_VOID" | "FAMILY_FEEDBACK_CAMPAIGN_READ" | "FAMILY_FEEDBACK_CAMPAIGN_MANAGE" | "FAMILY_FEEDBACK_MODERATE" | "FAMILY_FEEDBACK_PUBLISH" | "SCHOOL_MESSAGES_READ" | "SCHOOL_MESSAGES_REPLY" | "TEACHER_MESSAGES_REVIEW" | "COMMUNICATION_READ" | "COMMUNICATION_CREATE" | "COMMUNICATION_UPDATE" | "COMMUNICATION_SEND" | "COMMUNICATION_APPROVE" | "COMMUNICATION_DELETE" | "RESOURCE_READ" | "RESOURCE_CONFIGURE" | "ATTACHMENT_READ" | "ATTACHMENT_CONFIGURE" | "QUERY_WORKSPACE_READ" | "QUERY_OVERVIEW_READ" | "QUERY_STUDENT_DIRECTORY_READ" | "QUERY_STUDENT_DETAIL_READ" | "QUERY_ENROLLMENT_HISTORY_READ" | "QUERY_REPORT_CARD_DETAIL_READ" | "QUERY_COMMUNICATIONS_READ" | "QUERY_CALENDAR_READ" | "QUERY_CURRICULUM_PROGRESS_READ" | "QUERY_CLASS_DIRECTORY_READ" | "QUERY_CLASS_CURRICULUM_READ" | "QUERY_TIMETABLE_READ" | "QUERY_ATTENDANCE_READ" | "QUERY_GUARDIAN_STUDENTS_ADMIN_READ" | "QUERY_GUARDIAN_SELF_READ" | "QUERY_OVERDUE_FEES_READ" | "PLATFORM_REGISTER_SCHOOL" | "PLATFORM_USER_READ" | "PLATFORM_USER_CREATE" | "PLATFORM_USER_DEACTIVATE" | "S2S_CLIENT_READ" | "S2S_CLIENT_CREATE" | "S2S_CLIENT_REVOKE" | "S2S_CLIENT_ROTATE_KEY";
+                /** @enum {string} */
+                reason: "missing_scope" | "invalid_scope" | "shadowed";
+                ownerProfileId?: string;
+            }[];
             createdAt?: unknown;
             updatedAt?: unknown;
+        };
+        AssignStaffPermissionResponse: components["schemas"]["StaffManualPermissionAssignment"] & {
+            resolution: components["schemas"]["PermissionResolutionReport"];
+        };
+        StaffPermissionAssignmentConfigCommand: {
+            id: string;
+            schoolId: string;
+            staffId: string;
+            academicYearId: string;
+            /** @enum {string} */
+            permission: "SCHOOL_STRUCTURE_READ" | "SCHOOL_STRUCTURE_CONFIGURE" | "SCHOOL_LIFECYCLE_MANAGE" | "STAFF_READ" | "STAFF_CREATE" | "STAFF_UPDATE" | "STAFF_ARCHIVE" | "ACCESS_CONTROL_READ" | "ACCESS_CONTROL_CONFIGURE" | "ACCESS_CONTROL_ASSIGN" | "SERVICE_ACCOUNT_READ" | "SERVICE_ACCOUNT_CREATE" | "SERVICE_ACCOUNT_UPDATE" | "SERVICE_ACCOUNT_REVOKE" | "SERVICE_ACCOUNT_ROTATE_KEY" | "ACADEMIC_PROGRAM_READ" | "ACADEMIC_PROGRAM_CREATE" | "ACADEMIC_PROGRAM_UPDATE" | "ACADEMIC_PROGRAM_DELETE" | "ACADEMIC_PROGRAM_ASSIGN" | "STUDENT_READ" | "STUDENT_CREATE" | "STUDENT_UPDATE" | "STUDENT_ARCHIVE" | "STUDENT_HEALTH_READ" | "STUDENT_HEALTH_UPDATE" | "PARENT_READ" | "PARENT_CREATE" | "PARENT_UPDATE" | "PARENT_ARCHIVE" | "ENROLLMENT_READ" | "ENROLLMENT_CREATE" | "ENROLLMENT_UPDATE" | "ENROLLMENT_ARCHIVE" | "DISCIPLINE_READ" | "DISCIPLINE_CREATE" | "DISCIPLINE_UPDATE" | "DISCIPLINE_VALIDATE" | "DISCIPLINE_ARCHIVE" | "ATTENDANCE_READ" | "ATTENDANCE_RECORD" | "ATTENDANCE_UPDATE" | "ATTENDANCE_JUSTIFY" | "ATTENDANCE_VALIDATE" | "EXAM_CONFIG_READ" | "EXAM_CONFIG_CREATE" | "EXAM_CONFIG_UPDATE" | "EXAM_CONFIG_CONFIGURE" | "EXAM_CONFIG_LOCK" | "EXAM_CONFIG_UNLOCK" | "GRADE_READ" | "GRADE_INPUT" | "GRADE_UPDATE" | "GRADE_VALIDATE" | "GRADE_LOCK" | "GRADE_UNLOCK" | "GRADE_PUBLISH" | "REPORT_CARD_READ" | "REPORT_CARD_CONFIGURE" | "REPORT_CARD_GENERATE" | "REPORT_CARD_LOCK" | "REPORT_CARD_UNLOCK" | "REPORT_CARD_SIGN" | "REPORT_CARD_PUBLISH" | "REPORT_CARD_EXPORT" | "CLASS_LOGBOOK_READ" | "CLASS_LOGBOOK_CREATE" | "CLASS_LOGBOOK_UPDATE" | "CLASS_LOGBOOK_VALIDATE" | "TIMETABLE_READ" | "TIMETABLE_CREATE" | "TIMETABLE_UPDATE" | "TIMETABLE_PUBLISH" | "TIMETABLE_LOCK" | "TIMETABLE_UNLOCK" | "FINANCIAL_CONFIG_READ" | "FINANCIAL_CONFIG_CONFIGURE" | "FINANCIAL_CONFIG_UPDATE" | "PAYMENT_READ" | "PAYMENT_RECORD" | "PAYMENT_ALLOCATE" | "PAYMENT_CANCEL" | "PAYMENT_REVERSE" | "PAYMENT_EXPORT" | "FINANCIAL_REPORT_READ" | "FINANCIAL_REPORT_EXPORT" | "DOCUMENT_VOID" | "FAMILY_FEEDBACK_CAMPAIGN_READ" | "FAMILY_FEEDBACK_CAMPAIGN_MANAGE" | "FAMILY_FEEDBACK_MODERATE" | "FAMILY_FEEDBACK_PUBLISH" | "SCHOOL_MESSAGES_READ" | "SCHOOL_MESSAGES_REPLY" | "TEACHER_MESSAGES_REVIEW" | "COMMUNICATION_READ" | "COMMUNICATION_CREATE" | "COMMUNICATION_UPDATE" | "COMMUNICATION_SEND" | "COMMUNICATION_APPROVE" | "COMMUNICATION_DELETE" | "RESOURCE_READ" | "RESOURCE_CONFIGURE" | "ATTACHMENT_READ" | "ATTACHMENT_CONFIGURE" | "QUERY_WORKSPACE_READ" | "QUERY_OVERVIEW_READ" | "QUERY_STUDENT_DIRECTORY_READ" | "QUERY_STUDENT_DETAIL_READ" | "QUERY_ENROLLMENT_HISTORY_READ" | "QUERY_REPORT_CARD_DETAIL_READ" | "QUERY_COMMUNICATIONS_READ" | "QUERY_CALENDAR_READ" | "QUERY_CURRICULUM_PROGRESS_READ" | "QUERY_CLASS_DIRECTORY_READ" | "QUERY_CLASS_CURRICULUM_READ" | "QUERY_TIMETABLE_READ" | "QUERY_ATTENDANCE_READ" | "QUERY_GUARDIAN_STUDENTS_ADMIN_READ" | "QUERY_GUARDIAN_SELF_READ" | "QUERY_OVERDUE_FEES_READ" | "PLATFORM_REGISTER_SCHOOL" | "PLATFORM_USER_READ" | "PLATFORM_USER_CREATE" | "PLATFORM_USER_DEACTIVATE" | "S2S_CLIENT_READ" | "S2S_CLIENT_CREATE" | "S2S_CLIENT_REVOKE" | "S2S_CLIENT_ROTATE_KEY";
+            /** @default [] */
+            customScopes: ({
+                /** @enum {string} */
+                kind: "school";
+            } | {
+                /** @enum {string} */
+                kind: "all";
+                /** @enum {string} */
+                grain: "grade_level" | "grade_level_subject" | "class_group" | "class_subject" | "activity" | "student";
+            } | {
+                /** @enum {string} */
+                kind: "grade_level";
+                gradeLevelId: string;
+            } | {
+                /** @enum {string} */
+                kind: "grade_level_subject";
+                gradeLevelId: string;
+                gradeLevelSubjectId?: string;
+            } | {
+                /** @enum {string} */
+                kind: "class_group";
+                classGroupId: string;
+            } | {
+                /** @enum {string} */
+                kind: "class_subject";
+                classGroupId: string;
+                classSubjectId?: string;
+            } | {
+                /** @enum {string} */
+                kind: "activity";
+                activityId?: string;
+                classGroupId?: string;
+            } | {
+                /** @enum {string} */
+                kind: "student";
+                studentId: string;
+            })[];
+            /** @default true */
+            useDefaultScopes: boolean;
+            /**
+             * @default active
+             * @enum {string}
+             */
+            status: "active" | "inactive" | "expired";
+            startsAt?: unknown;
+            endsAt?: unknown;
+            previewOnly?: boolean;
         };
         StaffPermissionProfile: {
             id: string;
             schoolId: string;
             name: string;
             description?: string | null;
-            /** @enum {string} */
-            scopeGrain: "school" | "grade_level" | "grade_level_subject" | "class_group" | "class_subject" | "activity" | "student";
             /** @default [] */
             permissions: ("SCHOOL_STRUCTURE_READ" | "SCHOOL_STRUCTURE_CONFIGURE" | "SCHOOL_LIFECYCLE_MANAGE" | "STAFF_READ" | "STAFF_CREATE" | "STAFF_UPDATE" | "STAFF_ARCHIVE" | "ACCESS_CONTROL_READ" | "ACCESS_CONTROL_CONFIGURE" | "ACCESS_CONTROL_ASSIGN" | "SERVICE_ACCOUNT_READ" | "SERVICE_ACCOUNT_CREATE" | "SERVICE_ACCOUNT_UPDATE" | "SERVICE_ACCOUNT_REVOKE" | "SERVICE_ACCOUNT_ROTATE_KEY" | "ACADEMIC_PROGRAM_READ" | "ACADEMIC_PROGRAM_CREATE" | "ACADEMIC_PROGRAM_UPDATE" | "ACADEMIC_PROGRAM_DELETE" | "ACADEMIC_PROGRAM_ASSIGN" | "STUDENT_READ" | "STUDENT_CREATE" | "STUDENT_UPDATE" | "STUDENT_ARCHIVE" | "STUDENT_HEALTH_READ" | "STUDENT_HEALTH_UPDATE" | "PARENT_READ" | "PARENT_CREATE" | "PARENT_UPDATE" | "PARENT_ARCHIVE" | "ENROLLMENT_READ" | "ENROLLMENT_CREATE" | "ENROLLMENT_UPDATE" | "ENROLLMENT_ARCHIVE" | "DISCIPLINE_READ" | "DISCIPLINE_CREATE" | "DISCIPLINE_UPDATE" | "DISCIPLINE_VALIDATE" | "DISCIPLINE_ARCHIVE" | "ATTENDANCE_READ" | "ATTENDANCE_RECORD" | "ATTENDANCE_UPDATE" | "ATTENDANCE_JUSTIFY" | "ATTENDANCE_VALIDATE" | "EXAM_CONFIG_READ" | "EXAM_CONFIG_CREATE" | "EXAM_CONFIG_UPDATE" | "EXAM_CONFIG_CONFIGURE" | "EXAM_CONFIG_LOCK" | "EXAM_CONFIG_UNLOCK" | "GRADE_READ" | "GRADE_INPUT" | "GRADE_UPDATE" | "GRADE_VALIDATE" | "GRADE_LOCK" | "GRADE_UNLOCK" | "GRADE_PUBLISH" | "REPORT_CARD_READ" | "REPORT_CARD_CONFIGURE" | "REPORT_CARD_GENERATE" | "REPORT_CARD_LOCK" | "REPORT_CARD_UNLOCK" | "REPORT_CARD_SIGN" | "REPORT_CARD_PUBLISH" | "REPORT_CARD_EXPORT" | "CLASS_LOGBOOK_READ" | "CLASS_LOGBOOK_CREATE" | "CLASS_LOGBOOK_UPDATE" | "CLASS_LOGBOOK_VALIDATE" | "TIMETABLE_READ" | "TIMETABLE_CREATE" | "TIMETABLE_UPDATE" | "TIMETABLE_PUBLISH" | "TIMETABLE_LOCK" | "TIMETABLE_UNLOCK" | "FINANCIAL_CONFIG_READ" | "FINANCIAL_CONFIG_CONFIGURE" | "FINANCIAL_CONFIG_UPDATE" | "PAYMENT_READ" | "PAYMENT_RECORD" | "PAYMENT_ALLOCATE" | "PAYMENT_CANCEL" | "PAYMENT_REVERSE" | "PAYMENT_EXPORT" | "FINANCIAL_REPORT_READ" | "FINANCIAL_REPORT_EXPORT" | "DOCUMENT_VOID" | "FAMILY_FEEDBACK_CAMPAIGN_READ" | "FAMILY_FEEDBACK_CAMPAIGN_MANAGE" | "FAMILY_FEEDBACK_MODERATE" | "FAMILY_FEEDBACK_PUBLISH" | "SCHOOL_MESSAGES_READ" | "SCHOOL_MESSAGES_REPLY" | "TEACHER_MESSAGES_REVIEW" | "COMMUNICATION_READ" | "COMMUNICATION_CREATE" | "COMMUNICATION_UPDATE" | "COMMUNICATION_SEND" | "COMMUNICATION_APPROVE" | "COMMUNICATION_DELETE" | "RESOURCE_READ" | "RESOURCE_CONFIGURE" | "ATTACHMENT_READ" | "ATTACHMENT_CONFIGURE" | "QUERY_WORKSPACE_READ" | "QUERY_OVERVIEW_READ" | "QUERY_STUDENT_DIRECTORY_READ" | "QUERY_STUDENT_DETAIL_READ" | "QUERY_ENROLLMENT_HISTORY_READ" | "QUERY_REPORT_CARD_DETAIL_READ" | "QUERY_COMMUNICATIONS_READ" | "QUERY_CALENDAR_READ" | "QUERY_CURRICULUM_PROGRESS_READ" | "QUERY_CLASS_DIRECTORY_READ" | "QUERY_CLASS_CURRICULUM_READ" | "QUERY_TIMETABLE_READ" | "QUERY_ATTENDANCE_READ" | "QUERY_GUARDIAN_STUDENTS_ADMIN_READ" | "QUERY_GUARDIAN_SELF_READ" | "QUERY_OVERDUE_FEES_READ" | "PLATFORM_REGISTER_SCHOOL" | "PLATFORM_USER_READ" | "PLATFORM_USER_CREATE" | "PLATFORM_USER_DEACTIVATE" | "S2S_CLIENT_READ" | "S2S_CLIENT_CREATE" | "S2S_CLIENT_REVOKE" | "S2S_CLIENT_ROTATE_KEY")[];
             sourceKey?: string | null;
             createdAt?: unknown;
             updatedAt?: unknown;
         };
+        ConfigurePermissionProfileResponse: components["schemas"]["StaffPermissionProfile"] & {
+            resolution: components["schemas"]["PermissionResolutionReport"];
+        };
         ConfigurePermissionProfileCommand: {
             id: string;
             schoolId: string;
             name: string;
             description?: string | null;
-            /** @enum {string} */
-            scopeGrain: "school" | "grade_level" | "grade_level_subject" | "class_group" | "class_subject" | "activity" | "student";
             /** @default [] */
             permissions: ("SCHOOL_STRUCTURE_READ" | "SCHOOL_STRUCTURE_CONFIGURE" | "SCHOOL_LIFECYCLE_MANAGE" | "STAFF_READ" | "STAFF_CREATE" | "STAFF_UPDATE" | "STAFF_ARCHIVE" | "ACCESS_CONTROL_READ" | "ACCESS_CONTROL_CONFIGURE" | "ACCESS_CONTROL_ASSIGN" | "SERVICE_ACCOUNT_READ" | "SERVICE_ACCOUNT_CREATE" | "SERVICE_ACCOUNT_UPDATE" | "SERVICE_ACCOUNT_REVOKE" | "SERVICE_ACCOUNT_ROTATE_KEY" | "ACADEMIC_PROGRAM_READ" | "ACADEMIC_PROGRAM_CREATE" | "ACADEMIC_PROGRAM_UPDATE" | "ACADEMIC_PROGRAM_DELETE" | "ACADEMIC_PROGRAM_ASSIGN" | "STUDENT_READ" | "STUDENT_CREATE" | "STUDENT_UPDATE" | "STUDENT_ARCHIVE" | "STUDENT_HEALTH_READ" | "STUDENT_HEALTH_UPDATE" | "PARENT_READ" | "PARENT_CREATE" | "PARENT_UPDATE" | "PARENT_ARCHIVE" | "ENROLLMENT_READ" | "ENROLLMENT_CREATE" | "ENROLLMENT_UPDATE" | "ENROLLMENT_ARCHIVE" | "DISCIPLINE_READ" | "DISCIPLINE_CREATE" | "DISCIPLINE_UPDATE" | "DISCIPLINE_VALIDATE" | "DISCIPLINE_ARCHIVE" | "ATTENDANCE_READ" | "ATTENDANCE_RECORD" | "ATTENDANCE_UPDATE" | "ATTENDANCE_JUSTIFY" | "ATTENDANCE_VALIDATE" | "EXAM_CONFIG_READ" | "EXAM_CONFIG_CREATE" | "EXAM_CONFIG_UPDATE" | "EXAM_CONFIG_CONFIGURE" | "EXAM_CONFIG_LOCK" | "EXAM_CONFIG_UNLOCK" | "GRADE_READ" | "GRADE_INPUT" | "GRADE_UPDATE" | "GRADE_VALIDATE" | "GRADE_LOCK" | "GRADE_UNLOCK" | "GRADE_PUBLISH" | "REPORT_CARD_READ" | "REPORT_CARD_CONFIGURE" | "REPORT_CARD_GENERATE" | "REPORT_CARD_LOCK" | "REPORT_CARD_UNLOCK" | "REPORT_CARD_SIGN" | "REPORT_CARD_PUBLISH" | "REPORT_CARD_EXPORT" | "CLASS_LOGBOOK_READ" | "CLASS_LOGBOOK_CREATE" | "CLASS_LOGBOOK_UPDATE" | "CLASS_LOGBOOK_VALIDATE" | "TIMETABLE_READ" | "TIMETABLE_CREATE" | "TIMETABLE_UPDATE" | "TIMETABLE_PUBLISH" | "TIMETABLE_LOCK" | "TIMETABLE_UNLOCK" | "FINANCIAL_CONFIG_READ" | "FINANCIAL_CONFIG_CONFIGURE" | "FINANCIAL_CONFIG_UPDATE" | "PAYMENT_READ" | "PAYMENT_RECORD" | "PAYMENT_ALLOCATE" | "PAYMENT_CANCEL" | "PAYMENT_REVERSE" | "PAYMENT_EXPORT" | "FINANCIAL_REPORT_READ" | "FINANCIAL_REPORT_EXPORT" | "DOCUMENT_VOID" | "FAMILY_FEEDBACK_CAMPAIGN_READ" | "FAMILY_FEEDBACK_CAMPAIGN_MANAGE" | "FAMILY_FEEDBACK_MODERATE" | "FAMILY_FEEDBACK_PUBLISH" | "SCHOOL_MESSAGES_READ" | "SCHOOL_MESSAGES_REPLY" | "TEACHER_MESSAGES_REVIEW" | "COMMUNICATION_READ" | "COMMUNICATION_CREATE" | "COMMUNICATION_UPDATE" | "COMMUNICATION_SEND" | "COMMUNICATION_APPROVE" | "COMMUNICATION_DELETE" | "RESOURCE_READ" | "RESOURCE_CONFIGURE" | "ATTACHMENT_READ" | "ATTACHMENT_CONFIGURE" | "QUERY_WORKSPACE_READ" | "QUERY_OVERVIEW_READ" | "QUERY_STUDENT_DIRECTORY_READ" | "QUERY_STUDENT_DETAIL_READ" | "QUERY_ENROLLMENT_HISTORY_READ" | "QUERY_REPORT_CARD_DETAIL_READ" | "QUERY_COMMUNICATIONS_READ" | "QUERY_CALENDAR_READ" | "QUERY_CURRICULUM_PROGRESS_READ" | "QUERY_CLASS_DIRECTORY_READ" | "QUERY_CLASS_CURRICULUM_READ" | "QUERY_TIMETABLE_READ" | "QUERY_ATTENDANCE_READ" | "QUERY_GUARDIAN_STUDENTS_ADMIN_READ" | "QUERY_GUARDIAN_SELF_READ" | "QUERY_OVERDUE_FEES_READ" | "PLATFORM_REGISTER_SCHOOL" | "PLATFORM_USER_READ" | "PLATFORM_USER_CREATE" | "PLATFORM_USER_DEACTIVATE" | "S2S_CLIENT_READ" | "S2S_CLIENT_CREATE" | "S2S_CLIENT_REVOKE" | "S2S_CLIENT_ROTATE_KEY")[];
+            previewOnly?: boolean;
         };
         StaffPermissionProfileBinding: {
             id: string;
@@ -13764,7 +14071,8 @@ export interface components {
             staffId: string;
             profileId: string;
             academicYearId: string;
-            scopes: ({
+            /** @default [] */
+            customScopes: ({
                 /** @enum {string} */
                 kind: "school";
             } | {
@@ -13800,15 +14108,29 @@ export interface components {
                 kind: "student";
                 studentId: string;
             })[];
+            /** @default true */
+            useDefaultScopes: boolean;
+            /** @default [] */
+            warnings: {
+                /** @enum {string} */
+                permission: "SCHOOL_STRUCTURE_READ" | "SCHOOL_STRUCTURE_CONFIGURE" | "SCHOOL_LIFECYCLE_MANAGE" | "STAFF_READ" | "STAFF_CREATE" | "STAFF_UPDATE" | "STAFF_ARCHIVE" | "ACCESS_CONTROL_READ" | "ACCESS_CONTROL_CONFIGURE" | "ACCESS_CONTROL_ASSIGN" | "SERVICE_ACCOUNT_READ" | "SERVICE_ACCOUNT_CREATE" | "SERVICE_ACCOUNT_UPDATE" | "SERVICE_ACCOUNT_REVOKE" | "SERVICE_ACCOUNT_ROTATE_KEY" | "ACADEMIC_PROGRAM_READ" | "ACADEMIC_PROGRAM_CREATE" | "ACADEMIC_PROGRAM_UPDATE" | "ACADEMIC_PROGRAM_DELETE" | "ACADEMIC_PROGRAM_ASSIGN" | "STUDENT_READ" | "STUDENT_CREATE" | "STUDENT_UPDATE" | "STUDENT_ARCHIVE" | "STUDENT_HEALTH_READ" | "STUDENT_HEALTH_UPDATE" | "PARENT_READ" | "PARENT_CREATE" | "PARENT_UPDATE" | "PARENT_ARCHIVE" | "ENROLLMENT_READ" | "ENROLLMENT_CREATE" | "ENROLLMENT_UPDATE" | "ENROLLMENT_ARCHIVE" | "DISCIPLINE_READ" | "DISCIPLINE_CREATE" | "DISCIPLINE_UPDATE" | "DISCIPLINE_VALIDATE" | "DISCIPLINE_ARCHIVE" | "ATTENDANCE_READ" | "ATTENDANCE_RECORD" | "ATTENDANCE_UPDATE" | "ATTENDANCE_JUSTIFY" | "ATTENDANCE_VALIDATE" | "EXAM_CONFIG_READ" | "EXAM_CONFIG_CREATE" | "EXAM_CONFIG_UPDATE" | "EXAM_CONFIG_CONFIGURE" | "EXAM_CONFIG_LOCK" | "EXAM_CONFIG_UNLOCK" | "GRADE_READ" | "GRADE_INPUT" | "GRADE_UPDATE" | "GRADE_VALIDATE" | "GRADE_LOCK" | "GRADE_UNLOCK" | "GRADE_PUBLISH" | "REPORT_CARD_READ" | "REPORT_CARD_CONFIGURE" | "REPORT_CARD_GENERATE" | "REPORT_CARD_LOCK" | "REPORT_CARD_UNLOCK" | "REPORT_CARD_SIGN" | "REPORT_CARD_PUBLISH" | "REPORT_CARD_EXPORT" | "CLASS_LOGBOOK_READ" | "CLASS_LOGBOOK_CREATE" | "CLASS_LOGBOOK_UPDATE" | "CLASS_LOGBOOK_VALIDATE" | "TIMETABLE_READ" | "TIMETABLE_CREATE" | "TIMETABLE_UPDATE" | "TIMETABLE_PUBLISH" | "TIMETABLE_LOCK" | "TIMETABLE_UNLOCK" | "FINANCIAL_CONFIG_READ" | "FINANCIAL_CONFIG_CONFIGURE" | "FINANCIAL_CONFIG_UPDATE" | "PAYMENT_READ" | "PAYMENT_RECORD" | "PAYMENT_ALLOCATE" | "PAYMENT_CANCEL" | "PAYMENT_REVERSE" | "PAYMENT_EXPORT" | "FINANCIAL_REPORT_READ" | "FINANCIAL_REPORT_EXPORT" | "DOCUMENT_VOID" | "FAMILY_FEEDBACK_CAMPAIGN_READ" | "FAMILY_FEEDBACK_CAMPAIGN_MANAGE" | "FAMILY_FEEDBACK_MODERATE" | "FAMILY_FEEDBACK_PUBLISH" | "SCHOOL_MESSAGES_READ" | "SCHOOL_MESSAGES_REPLY" | "TEACHER_MESSAGES_REVIEW" | "COMMUNICATION_READ" | "COMMUNICATION_CREATE" | "COMMUNICATION_UPDATE" | "COMMUNICATION_SEND" | "COMMUNICATION_APPROVE" | "COMMUNICATION_DELETE" | "RESOURCE_READ" | "RESOURCE_CONFIGURE" | "ATTACHMENT_READ" | "ATTACHMENT_CONFIGURE" | "QUERY_WORKSPACE_READ" | "QUERY_OVERVIEW_READ" | "QUERY_STUDENT_DIRECTORY_READ" | "QUERY_STUDENT_DETAIL_READ" | "QUERY_ENROLLMENT_HISTORY_READ" | "QUERY_REPORT_CARD_DETAIL_READ" | "QUERY_COMMUNICATIONS_READ" | "QUERY_CALENDAR_READ" | "QUERY_CURRICULUM_PROGRESS_READ" | "QUERY_CLASS_DIRECTORY_READ" | "QUERY_CLASS_CURRICULUM_READ" | "QUERY_TIMETABLE_READ" | "QUERY_ATTENDANCE_READ" | "QUERY_GUARDIAN_STUDENTS_ADMIN_READ" | "QUERY_GUARDIAN_SELF_READ" | "QUERY_OVERDUE_FEES_READ" | "PLATFORM_REGISTER_SCHOOL" | "PLATFORM_USER_READ" | "PLATFORM_USER_CREATE" | "PLATFORM_USER_DEACTIVATE" | "S2S_CLIENT_READ" | "S2S_CLIENT_CREATE" | "S2S_CLIENT_REVOKE" | "S2S_CLIENT_ROTATE_KEY";
+                /** @enum {string} */
+                reason: "missing_scope" | "invalid_scope" | "shadowed";
+                ownerProfileId?: string;
+            }[];
             sortOrder: number;
             createdAt?: unknown;
             updatedAt?: unknown;
+        };
+        ApplyStaffPermissionProfileResponse: components["schemas"]["StaffPermissionProfileBinding"] & {
+            resolution: components["schemas"]["PermissionResolutionReport"];
         };
         ApplyStaffPermissionProfileCommand: {
             staffId: string;
             profileId: string;
             academicYearId?: string;
-            scopes: ({
+            /** @default [] */
+            customScopes: ({
                 /** @enum {string} */
                 kind: "school";
             } | {
@@ -13844,17 +14166,25 @@ export interface components {
                 kind: "student";
                 studentId: string;
             })[];
+            useDefaultScopes: boolean;
+            previewOnly?: boolean;
         };
-        ReorderStaffPermissionProfilesResponse: components["schemas"]["StaffPermissionProfileBinding"][];
+        ReorderStaffPermissionProfilesResponse: {
+            bindings: components["schemas"]["StaffPermissionProfileBinding"][];
+            resolution: components["schemas"]["PermissionResolutionReport"];
+        };
         ReorderStaffPermissionProfilesCommand: {
+            academicYearId: string;
             staffId: string;
             profileIds: string[];
         };
         RemoveStaffPermissionProfileResponse: {
+            resolution: components["schemas"]["PermissionResolutionReport"];
             staffId: string;
             profileId: string;
         };
         RemoveStaffPermissionProfileCommand: {
+            academicYearId: string;
             staffId: string;
             profileId: string;
         };
@@ -18033,12 +18363,67 @@ export interface components {
             entities: components["schemas"]["TeacherUnavailability"][];
         };
         Filter_11: Record<string, never>;
-        Filter_12: Record<string, never>;
-        StaffPermissionAssignmentsBatchSave: {
-            entities: components["schemas"]["StaffPermissionAssignment"][];
+        StaffPermissionAssignment: {
+            id: string;
+            staffId: string;
+            schoolId: string;
+            academicYearId: string;
+            /** @enum {string} */
+            permission: "SCHOOL_STRUCTURE_READ" | "SCHOOL_STRUCTURE_CONFIGURE" | "SCHOOL_LIFECYCLE_MANAGE" | "STAFF_READ" | "STAFF_CREATE" | "STAFF_UPDATE" | "STAFF_ARCHIVE" | "ACCESS_CONTROL_READ" | "ACCESS_CONTROL_CONFIGURE" | "ACCESS_CONTROL_ASSIGN" | "SERVICE_ACCOUNT_READ" | "SERVICE_ACCOUNT_CREATE" | "SERVICE_ACCOUNT_UPDATE" | "SERVICE_ACCOUNT_REVOKE" | "SERVICE_ACCOUNT_ROTATE_KEY" | "ACADEMIC_PROGRAM_READ" | "ACADEMIC_PROGRAM_CREATE" | "ACADEMIC_PROGRAM_UPDATE" | "ACADEMIC_PROGRAM_DELETE" | "ACADEMIC_PROGRAM_ASSIGN" | "STUDENT_READ" | "STUDENT_CREATE" | "STUDENT_UPDATE" | "STUDENT_ARCHIVE" | "STUDENT_HEALTH_READ" | "STUDENT_HEALTH_UPDATE" | "PARENT_READ" | "PARENT_CREATE" | "PARENT_UPDATE" | "PARENT_ARCHIVE" | "ENROLLMENT_READ" | "ENROLLMENT_CREATE" | "ENROLLMENT_UPDATE" | "ENROLLMENT_ARCHIVE" | "DISCIPLINE_READ" | "DISCIPLINE_CREATE" | "DISCIPLINE_UPDATE" | "DISCIPLINE_VALIDATE" | "DISCIPLINE_ARCHIVE" | "ATTENDANCE_READ" | "ATTENDANCE_RECORD" | "ATTENDANCE_UPDATE" | "ATTENDANCE_JUSTIFY" | "ATTENDANCE_VALIDATE" | "EXAM_CONFIG_READ" | "EXAM_CONFIG_CREATE" | "EXAM_CONFIG_UPDATE" | "EXAM_CONFIG_CONFIGURE" | "EXAM_CONFIG_LOCK" | "EXAM_CONFIG_UNLOCK" | "GRADE_READ" | "GRADE_INPUT" | "GRADE_UPDATE" | "GRADE_VALIDATE" | "GRADE_LOCK" | "GRADE_UNLOCK" | "GRADE_PUBLISH" | "REPORT_CARD_READ" | "REPORT_CARD_CONFIGURE" | "REPORT_CARD_GENERATE" | "REPORT_CARD_LOCK" | "REPORT_CARD_UNLOCK" | "REPORT_CARD_SIGN" | "REPORT_CARD_PUBLISH" | "REPORT_CARD_EXPORT" | "CLASS_LOGBOOK_READ" | "CLASS_LOGBOOK_CREATE" | "CLASS_LOGBOOK_UPDATE" | "CLASS_LOGBOOK_VALIDATE" | "TIMETABLE_READ" | "TIMETABLE_CREATE" | "TIMETABLE_UPDATE" | "TIMETABLE_PUBLISH" | "TIMETABLE_LOCK" | "TIMETABLE_UNLOCK" | "FINANCIAL_CONFIG_READ" | "FINANCIAL_CONFIG_CONFIGURE" | "FINANCIAL_CONFIG_UPDATE" | "PAYMENT_READ" | "PAYMENT_RECORD" | "PAYMENT_ALLOCATE" | "PAYMENT_CANCEL" | "PAYMENT_REVERSE" | "PAYMENT_EXPORT" | "FINANCIAL_REPORT_READ" | "FINANCIAL_REPORT_EXPORT" | "DOCUMENT_VOID" | "FAMILY_FEEDBACK_CAMPAIGN_READ" | "FAMILY_FEEDBACK_CAMPAIGN_MANAGE" | "FAMILY_FEEDBACK_MODERATE" | "FAMILY_FEEDBACK_PUBLISH" | "SCHOOL_MESSAGES_READ" | "SCHOOL_MESSAGES_REPLY" | "TEACHER_MESSAGES_REVIEW" | "COMMUNICATION_READ" | "COMMUNICATION_CREATE" | "COMMUNICATION_UPDATE" | "COMMUNICATION_SEND" | "COMMUNICATION_APPROVE" | "COMMUNICATION_DELETE" | "RESOURCE_READ" | "RESOURCE_CONFIGURE" | "ATTACHMENT_READ" | "ATTACHMENT_CONFIGURE" | "QUERY_WORKSPACE_READ" | "QUERY_OVERVIEW_READ" | "QUERY_STUDENT_DIRECTORY_READ" | "QUERY_STUDENT_DETAIL_READ" | "QUERY_ENROLLMENT_HISTORY_READ" | "QUERY_REPORT_CARD_DETAIL_READ" | "QUERY_COMMUNICATIONS_READ" | "QUERY_CALENDAR_READ" | "QUERY_CURRICULUM_PROGRESS_READ" | "QUERY_CLASS_DIRECTORY_READ" | "QUERY_CLASS_CURRICULUM_READ" | "QUERY_TIMETABLE_READ" | "QUERY_ATTENDANCE_READ" | "QUERY_GUARDIAN_STUDENTS_ADMIN_READ" | "QUERY_GUARDIAN_SELF_READ" | "QUERY_OVERDUE_FEES_READ" | "PLATFORM_REGISTER_SCHOOL" | "PLATFORM_USER_READ" | "PLATFORM_USER_CREATE" | "PLATFORM_USER_DEACTIVATE" | "S2S_CLIENT_READ" | "S2S_CLIENT_CREATE" | "S2S_CLIENT_REVOKE" | "S2S_CLIENT_ROTATE_KEY";
+            scopes: ({
+                /** @enum {string} */
+                kind: "school";
+            } | {
+                /** @enum {string} */
+                kind: "all";
+                /** @enum {string} */
+                grain: "grade_level" | "grade_level_subject" | "class_group" | "class_subject" | "activity" | "student";
+            } | {
+                /** @enum {string} */
+                kind: "grade_level";
+                gradeLevelId: string;
+            } | {
+                /** @enum {string} */
+                kind: "grade_level_subject";
+                gradeLevelId: string;
+                gradeLevelSubjectId?: string;
+            } | {
+                /** @enum {string} */
+                kind: "class_group";
+                classGroupId: string;
+            } | {
+                /** @enum {string} */
+                kind: "class_subject";
+                classGroupId: string;
+                classSubjectId?: string;
+            } | {
+                /** @enum {string} */
+                kind: "activity";
+                activityId?: string;
+                classGroupId?: string;
+            } | {
+                /** @enum {string} */
+                kind: "student";
+                studentId: string;
+            })[];
+            /**
+             * @default active
+             * @enum {string}
+             */
+            status: "active" | "inactive" | "expired";
+            startsAt?: unknown;
+            endsAt?: unknown;
+            sourceManualAssignmentId?: string | null;
+            sourceProfileBindingId?: string | null;
+            sourceProfileId?: string | null;
+            createdAt?: unknown;
+            updatedAt?: unknown;
         };
+        Filter_12: Record<string, never>;
         Filter_13: Record<string, never>;
         Filter_14: Record<string, never>;
+        Filter_64: Record<string, never>;
+        Filter_63: Record<string, never>;
         Filter_15: Record<string, never>;
         Filter_16: Record<string, never>;
         ResourcesBatchSave: {
@@ -24076,6 +24461,162 @@ export interface operations {
             };
         };
     };
+    "commands.configureStaffPermissionScopeDefaults": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description configure-staff-permission-scope-defaults payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ConfigureStaffPermissionScopeDefaultsCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed configure-staff-permission-scope-defaults */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigureStaffPermissionScopeDefaultsResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "commands.removeStaffPermission": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description remove-staff-permission payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RemoveStaffPermissionCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed remove-staff-permission */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoveStaffPermissionResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
     "commands.assignStaffPermission": {
         parameters: {
             query?: never;
@@ -24096,7 +24637,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StaffPermissionAssignment"];
+                    "application/json": components["schemas"]["AssignStaffPermissionResponse"];
                 };
             };
             /** @description Invalid request payload */
@@ -24174,7 +24715,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StaffPermissionProfile"];
+                    "application/json": components["schemas"]["ConfigurePermissionProfileResponse"];
                 };
             };
             /** @description Invalid request payload */
@@ -24252,7 +24793,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StaffPermissionProfileBinding"];
+                    "application/json": components["schemas"]["ApplyStaffPermissionProfileResponse"];
                 };
             };
             /** @description Invalid request payload */
@@ -47438,346 +47979,6 @@ export interface operations {
             };
         };
     };
-    "entities.staffPermissionAssignments.save": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Staff Permission Assignments entity */
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["StaffPermissionAssignment"];
-            };
-        };
-        responses: {
-            /** @description Saved Staff Permission Assignments */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StaffPermissionAssignment"];
-                };
-            };
-            /** @description Invalid request payload */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-            /** @description Missing or invalid authorization session */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-            /** @description Access denied due to authorization policies */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-            /** @description Use a domain command for this entity */
-            405: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-            /** @description Business rule violation */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
-                };
-            };
-            /** @description Internal server error occurred */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-        };
-    };
-    "entities.staffPermissionAssignments.delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Staff Permission Assignments delete request */
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["CoreEntityDelete"];
-            };
-        };
-        responses: {
-            /** @description Deleted Staff Permission Assignments */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-            /** @description Invalid request payload */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-            /** @description Missing or invalid authorization session */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-            /** @description Access denied due to authorization policies */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-            /** @description Business rule violation */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
-                };
-            };
-            /** @description Internal server error occurred */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-        };
-    };
-    "entities.staffPermissionAssignments.batchSave": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Staff Permission Assignments batch save request */
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["StaffPermissionAssignmentsBatchSave"];
-            };
-        };
-        responses: {
-            /** @description Batch saved Staff Permission Assignments */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        ids: string[];
-                    };
-                };
-            };
-            /** @description Invalid request payload */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-            /** @description Missing or invalid authorization session */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-            /** @description Access denied due to authorization policies */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-            /** @description Use a domain command for this entity */
-            405: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-            /** @description Business rule violation */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
-                };
-            };
-            /** @description Internal server error occurred */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-        };
-    };
-    "entities.staffPermissionAssignments.batchDelete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Staff Permission Assignments batch delete request */
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["CoreEntityBatchDelete"];
-            };
-        };
-        responses: {
-            /** @description Batch deleted Staff Permission Assignments */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-            /** @description Invalid request payload */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-            /** @description Missing or invalid authorization session */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-            /** @description Access denied due to authorization policies */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-            /** @description Business rule violation */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
-                };
-            };
-            /** @description Internal server error occurred */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        message: string;
-                    };
-                };
-            };
-        };
-    };
     "entities.staffPermissionProfiles.list": {
         parameters: {
             query?: never;
@@ -48620,6 +48821,720 @@ export interface operations {
                 };
             };
             /** @description Staff Permission Profile Bindings not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "entities.staffManualPermissionAssignments.list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description StaffManualPermissionAssignment query */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Filter_64"] & {
+                    $orderBy?: {
+                        field: string;
+                        /** @enum {string} */
+                        direction: "asc" | "desc";
+                    }[];
+                    $limit?: number;
+                    $offset?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Listed StaffManualPermissionAssignment */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffManualPermissionAssignment"][];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "entities.staffManualPermissionAssignments.one": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description StaffManualPermissionAssignment query */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Filter_64"] & {
+                    $orderBy?: {
+                        field: string;
+                        /** @enum {string} */
+                        direction: "asc" | "desc";
+                    }[];
+                    $limit?: number;
+                    $offset?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Found StaffManualPermissionAssignment */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffManualPermissionAssignment"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description StaffManualPermissionAssignment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "entities.staffManualPermissionAssignments.count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description StaffManualPermissionAssignment query */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Filter_64"] & {
+                    $orderBy?: {
+                        field: string;
+                        /** @enum {string} */
+                        direction: "asc" | "desc";
+                    }[];
+                    $limit?: number;
+                    $offset?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Counted StaffManualPermissionAssignment */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                    };
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "entities.staffManualPermissionAssignments.get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fetched StaffManualPermissionAssignment */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffManualPermissionAssignment"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description StaffManualPermissionAssignment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "entities.staffPermissionScopeDefaults.list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description StaffPermissionScopeDefaults query */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Filter_63"] & {
+                    $orderBy?: {
+                        field: string;
+                        /** @enum {string} */
+                        direction: "asc" | "desc";
+                    }[];
+                    $limit?: number;
+                    $offset?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Listed StaffPermissionScopeDefaults */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffPermissionScopeDefaults"][];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "entities.staffPermissionScopeDefaults.one": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description StaffPermissionScopeDefaults query */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Filter_63"] & {
+                    $orderBy?: {
+                        field: string;
+                        /** @enum {string} */
+                        direction: "asc" | "desc";
+                    }[];
+                    $limit?: number;
+                    $offset?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Found StaffPermissionScopeDefaults */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffPermissionScopeDefaults"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description StaffPermissionScopeDefaults not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "entities.staffPermissionScopeDefaults.count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description StaffPermissionScopeDefaults query */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["Filter_63"] & {
+                    $orderBy?: {
+                        field: string;
+                        /** @enum {string} */
+                        direction: "asc" | "desc";
+                    }[];
+                    $limit?: number;
+                    $offset?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Counted StaffPermissionScopeDefaults */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                    };
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "entities.staffPermissionScopeDefaults.get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fetched StaffPermissionScopeDefaults */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffPermissionScopeDefaults"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description StaffPermissionScopeDefaults not found */
             404: {
                 headers: {
                     [name: string]: unknown;

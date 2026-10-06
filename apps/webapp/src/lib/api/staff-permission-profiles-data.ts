@@ -1,9 +1,8 @@
-import type { GrantScope, ProfileScopeGrain } from '$lib/api/grant-scopes';
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { PermissionCatalogEntry } from '$lib/api/staff-permission-assignments-data';
 import { listAllEntityPages, schoolWideEntityList } from '$lib/api/entity-list-filters';
-import { PROFILE_SCOPE_GRAINS } from '$lib/api/grant-scopes';
+import { loadPermissionCatalog } from '$lib/api/staff-permission-assignments-data';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -13,20 +12,6 @@ export type StaffPermissionCode = StaffPermissionProfile['permissions'][number];
 
 const PROFILE_CATALOG_SCOPE
 	= 'Permission profile catalog loads school-wide templates and bindings.';
-
-export function catalogGrainForEntry(entry: PermissionCatalogEntry): ProfileScopeGrain | null {
-	if (entry.scope === 'platform') {
-		return null;
-	}
-	return entry.scope ?? 'school';
-}
-
-export function permissionsForGrain(
-	catalog: readonly PermissionCatalogEntry[],
-	grain: ProfileScopeGrain,
-): PermissionCatalogEntry[] {
-	return catalog.filter(entry => catalogGrainForEntry(entry) === grain);
-}
 
 export function groupCatalogEntries(
 	entries: readonly PermissionCatalogEntry[],
@@ -39,10 +24,6 @@ export function groupCatalogEntries(
 		groups.set(key, list);
 	}
 	return [...groups.entries()].map(([key, groupEntries]) => ({ key, entries: groupEntries }));
-}
-
-export function isProfileScopeGrain(value: string): value is ProfileScopeGrain {
-	return (PROFILE_SCOPE_GRAINS as readonly string[]).includes(value);
 }
 
 export function boundStaffCount(
@@ -100,12 +81,6 @@ export function isProfileBoundGrant(sourceProfileId: string | null | undefined):
 	return Boolean(sourceProfileId);
 }
 
-export function tenantWideProfiles(
-	profiles: readonly StaffPermissionProfile[],
-): StaffPermissionProfile[] {
-	return profiles.filter(profile => profile.scopeGrain === 'school');
-}
-
 export function customAssignmentsForStaff<T extends { sourceProfileId?: string | null }>(
 	assignments: readonly T[],
 ): T[] {
@@ -150,24 +125,12 @@ export async function loadPermissionProfileCatalogData(
 	return { profiles, bindings };
 }
 
-export async function renderBindingScopeLabel(
-	client: SchoolClient,
-	input: {
-		academicYearId: string;
-		permission: StaffPermissionCode | undefined;
-		scopes: readonly GrantScope[];
-		translate?: (key: string) => string;
-	},
-): Promise<string> {
-	if (input.scopes.some(scope => scope.kind === 'school')) {
-		return input.translate?.('roles.wholeSchool') ?? 'Whole school';
-	}
-	if (!input.permission) {
-		return '—';
-	}
-	const rendered = await client.authorization.scopeRender({
-		academicYearId: input.academicYearId,
-		items: [{ permission: input.permission, scopes: [...input.scopes] }],
-	});
-	return rendered.items[0]?.scopes.map(scope => scope.label).join('; ') ?? '—';
+export interface StaffPermissionFormData {
+	profiles: StaffPermissionProfile[];
+	catalog: PermissionCatalogEntry[];
+}
+
+export async function loadStaffPermissionFormData(client: SchoolClient, schoolId: string): Promise<StaffPermissionFormData> {
+	const [profiles, catalog] = await Promise.all([loadStaffPermissionProfiles(client, schoolId), loadPermissionCatalog(client)]);
+	return { profiles, catalog };
 }

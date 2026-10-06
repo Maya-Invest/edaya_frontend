@@ -234,8 +234,8 @@ function describeFilterTest(row: QaTemplateRow): string {
 	if (ep === '/configuration/other/discipline' && /filtre kind/i.test(action)) {
 		return 'Assert discipline fixture entry visible; optional kind combobox.';
 	}
-	if (ep === '/configuration/permission-profiles' && /filtre grain/i.test(action)) {
-		return 'Permission profile grain filter select.';
+	if (ep === '/configuration/permission-profiles' && /recherche nom/i.test(action)) {
+		return 'Search permission profiles by name and verify matching and empty results.';
 	}
 	if (ep.includes('/activities') && /filtre/i.test(action)) {
 		return 'Activities category filter combobox.';

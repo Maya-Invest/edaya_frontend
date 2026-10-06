@@ -1,9 +1,9 @@
-import type { ProfileScopeGrain } from '$lib/api/grant-scopes';
 import type { components } from '$lib/api/schema';
 import type { StaffPermissionProfile } from '$lib/api/staff-permission-profiles-data';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { PermissionProfilesPageSlice } from './lib/permission-profiles-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
+import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { boundStaffCount } from '$lib/api/staff-permission-profiles-data';
 import { authSession } from '$lib/auth/session.svelte';
@@ -29,7 +29,7 @@ type ConfigurePermissionProfileCommand = components['schemas']['ConfigurePermiss
 export class PermissionProfilesPageState {
 	slice = $state<PermissionProfilesPageSlice | null>(null);
 
-	readonly filters: ListFiltersState<{ q: string; grain: string }>;
+	readonly filters: ListFiltersState<{ q: string }>;
 
 	private readonly versions = new RouteVersionSnapshot(PROFILE_VERSION_FAMILIES);
 
@@ -110,11 +110,14 @@ export class PermissionProfilesPageState {
 		return authSession.schoolId ?? academicContext.schools[0]?.id ?? null;
 	}
 
+  previewProfile(input: Omit<ConfigurePermissionProfileCommand, 'schoolId' | 'previewOnly'>) {
+    return runMutation(() => getBrowserSchoolClient().commands.configurePermissionProfile({ ...input, schoolId: this.schoolId() ?? '', previewOnly: true }));
+  }
+
 	async saveProfile(input: {
 		id?: string;
 		name: string;
 		description?: string;
-		scopeGrain: ProfileScopeGrain;
 		permissions: ConfigurePermissionProfileCommand['permissions'];
 		successMessage?: string;
 	}): Promise<boolean> {
@@ -130,7 +133,6 @@ export class PermissionProfilesPageState {
 			schoolId,
 			name: input.name.trim(),
 			description: input.description?.trim() || undefined,
-			scopeGrain: input.scopeGrain,
 			permissions: input.permissions,
 		};
 		const previous = input.id ? this.profiles.find(entry => entry.id === input.id) : undefined;
@@ -141,7 +143,6 @@ export class PermissionProfilesPageState {
 				schoolId,
 				name: entity.name,
 				description: entity.description ?? null,
-				scopeGrain: entity.scopeGrain,
 				permissions: entity.permissions,
 			}),
 			successMessage: input.successMessage,

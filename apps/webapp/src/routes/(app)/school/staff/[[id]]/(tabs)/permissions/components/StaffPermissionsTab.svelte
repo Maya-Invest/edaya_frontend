@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 	import type { StaffMember } from '$lib/types/school';
-	import { profileGrainLabelKey } from '$lib/api/grant-scopes';
 	import {
 		formatPermissionLabel,
 
@@ -21,6 +20,8 @@
 		onEdit,
 		onDelete,
 		onApply,
+		onEditProfile,
+		onEditDefaults,
 		onRemove,
 	}: {
 		s: StaffMember;
@@ -28,6 +29,8 @@
 		onEdit: (row: StaffPermissionAssignmentView) => void;
 		onDelete: (row: StaffPermissionAssignmentView) => void;
 		onApply: () => void;
+		onEditProfile: (profileId: string) => void;
+		onEditDefaults: () => void;
 		onRemove: (profileId: string) => void;
 	} = $props();
 
@@ -103,6 +106,14 @@
 		{$t('staff.permissionsHint')}
 	</p>
 
+	<div class="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4">
+		<div><p class="text-sm font-medium">{$t('staff.defaultScopes')}</p>
+			<p class="text-xs text-muted-foreground">{$t('staff.defaultScopesSummary', { n: staffPage.staffDefaultScopes(s.id).length })}</p>
+		</div>
+		<PermissionGate permission="ACCESS_CONTROL_ASSIGN" mode="disable">{#snippet children({ disabled })}
+			<Button variant="outline" size="sm" {disabled} onclick={onEditDefaults}>{$t('common.edit')}</Button>
+		{/snippet}</PermissionGate>
+	</div>
 	{#each bindings as binding, index (binding.id)}
 		{@const profile = staffPage.findPermissionProfile(binding.profileId)}
 		{#if profile}
@@ -112,14 +123,16 @@
 				<div class="flex items-start justify-between gap-3 border-b border-border/60 px-4 py-3">
 					<div class="min-w-0">
 						<p class="truncate text-sm font-medium">{profile.name}</p>
+						{#if binding.useDefaultScopes}<p class="text-xs text-muted-foreground">{$t('staff.includeDefaultScopes')}</p>{/if}
 						<p class="mt-0.5 text-xs text-muted-foreground">
-							{$t(profileGrainLabelKey(profile.scopeGrain))}
-							· {staffPage.bindingScopeLabels[binding.id] ?? '—'}
+							{staffPage.bindingScopeLabels[binding.id] ?? '—'}
 						</p>
 					</div>
 					<PermissionGate permission="ACCESS_CONTROL_ASSIGN" mode="disable">
 						{#snippet children({ disabled })}
 							<div class="flex shrink-0 items-center gap-1">
+								<Button variant="ghost" size="icon" class="h-8 w-8 rounded-full" {disabled}
+									aria-label={$t('common.edit')} onclick={() => onEditProfile(profile.id)}><Pencil class="h-4 w-4" /></Button>
 								<Button
 									variant="ghost"
 									size="icon"
@@ -160,6 +173,9 @@
 							<div class="text-sm font-medium {skippedIds.has(permission) ? 'text-muted-foreground' : ''}">
 								{formatPermissionLabel(permission, $t)}
 							</div>
+							{#each (binding.warnings ?? []).filter(row => row.permission === permission && row.reason !== 'shadowed') as warning, warningIndex (warningIndex)}
+								<p data-testid="permission-scope-warning" data-reason={warning.reason} class="mt-0.5 text-xs text-highlight">{$t(`staff.scopeWarning.${warning.reason}`)}</p>
+							{/each}
 							{#if skippedIds.has(permission)}
 								{@const owner = skipped.find(entry => entry.permission === permission)}
 								<p class="mt-0.5 text-xs text-muted-foreground">
@@ -194,6 +210,8 @@
 						<li class="flex items-start justify-between gap-3 px-4 py-3">
 							<div class="min-w-0 flex-1">
 								<div class="text-sm font-medium">{formatPermissionLabel(row.permission, $t)}</div>
+								{#if row.useDefaultScopes}<p class="text-xs text-muted-foreground">{$t('staff.includeDefaultScopes')}</p>{/if}
+								{#each row.warnings ?? [] as warning, warningIndex (warningIndex)}<p data-testid="permission-scope-warning" data-reason={warning.reason} class="text-xs text-highlight">{$t(`staff.scopeWarning.${warning.reason}`)}</p>{/each}
 								<div class="mt-1 text-xs text-muted-foreground">
 									{row.scopeLabel}
 									{#if row.hasMissingScope}

@@ -170,7 +170,7 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
   },
   'web.scenario.0174': async ctx => {
     const entry=(await list(ctx,'staff-permission-profiles',{}))[0]!;
-    await exerciseFilter(ctx,entry.scopeGrain,ctx.page.locator('main').getByText(entry.name,{exact:true}));
+    await searchFixture(ctx,entry.name,ctx.page.locator('main').getByText(entry.name,{exact:true}));
   },
 
   'web.scenario.0014': inbox,

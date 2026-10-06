@@ -86,7 +86,9 @@ Smart components are shared, self-contained features with their own state class 
 | **StudentPicker** | `smart-components/student-picker/` | Incidents, billing, enrollments |
 | **ClassGroupPicker** | `smart-components/class-group-picker/` | Activity class timetable links, class multi-select on create |
 | **GuardianPicker** | `smart-components/guardian-picker/` | Guardian ↔ student linking |
-| **ScopeBuilder** | `smart-components/scope-builder/` | Staff permission typed `scopes` by catalog grain |
+| **PermissionResolutionPreview** | `components/school/` | Added/changed/removed grant scopes and persistent resolution warnings before save. All four permission forms use shared `PermissionImpactPreviewState` to bind review to the complete current command and active session; outdated responses cannot publish a report or enable Save. |
+| **PermissionScopeSelections** | `smart-components/scope-builder/` | Mixed selection groups; no automatic broad selection |
+| **ScopeBuilder** | `smart-components/scope-builder/` | Typed scope selection groups for staff permissions, profile assignments and staff defaults |
 | **AccountLinkingSection** | `smart-components/account-linking/` | Staff, guardian and student invitation workflow with actor-scoped state |
 | **PasswordlessPanel** | `smart-components/passwordless-panel/` | Login, signup, invitations and security; transient authentication state |
 | **TestOtpPanel** | `smart-components/test-otp-panel/` | Build-gated testing controls with stale-response and visibility guards |
@@ -100,7 +102,7 @@ Do not build ad-hoc `<select>` lists for people — use pickers or **PickerModal
 |-----------|------|---------|
 | **PermissionCheckboxGroup** | `routes/(app)/configuration/classes/components/PermissionCheckboxGroup.svelte` | **Staff assignment** create/edit forms only — pick permission codes authorized directly by a class-level assignment; **not** the Permissions tab list |
 
-**Do not** use `ScopeBuilder` outside staff permission and permission-profile apply flows. A same-grain **profile checklist catalog** at `/configuration/permission-profiles` is allowed. **Do not** restore a roles CRUD matrix screen.
+**Do not** use `ScopeBuilder` outside staff permission, permission-profile assignment and staff default-scope flows. A mixed-permission **profile checklist catalog** at `/configuration/permission-profiles` is allowed. **Do not** restore a roles CRUD matrix screen.
 
 ### 2.7 T2 — Identity
 
@@ -200,7 +202,7 @@ Remaining chip-bar **main** filters should migrate to `FilterSelect` when touche
 | Chip bar or pill toggle as **main** filter | `FilterSelect` + `FilterPanel` |
 | Identity block + actions only in drawer body tabs | `DrawerEntityHeader` |
 | Open `*Form.svelte` as default drawer body | Read-only body + `FormModal` |
-| Custom permission matrix / inline CRUD grid | Staff drawer + `StaffPermissionFormModal`; profile catalog uses a same-grain checklist, not a roles matrix |
+| Custom permission matrix / inline CRUD grid | Staff drawer + `StaffPermissionFormModal`; profile catalog uses a mixed-permission checklist, not a roles matrix |
 | Raw `<select>` for staff/student/guardian | Smart `*Picker` or `PickerModal` |
 | Ad-hoc scope chip selectors | `ScopeBuilder` |
 | One-off badge colors | `ui-tones` / `drawer-constants` |
@@ -232,7 +234,7 @@ When building or refactoring a screen:
 - [ ] Route-local views in `routes/.../components/` — not `lib/components/school/{domain}/`
 - [ ] Drawer tabs use nested child routes — not `?tab=` query params
 - [ ] People selection uses smart `*Picker` family
-- [ ] Staff permissions use `ScopeBuilder` + `StaffPermissionFormModal` only
+- [ ] Staff permissions use `PermissionScopeSelections` + `ScopeBuilder` in the standard assignment/default modals
 - [ ] Status chips use `ui-tones` / `drawer-constants`
 - [ ] No new shared component without registry update (§2)
 

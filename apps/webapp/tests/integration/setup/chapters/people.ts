@@ -511,6 +511,8 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 				for (const value of values) {
 					await select.selectOption(value);
 					if (await waitForSubmitEnabled(current, 2_000)) {
+						await current.getByTestId('form-modal-submit').click();
+						await current.getByTestId('form-modal-submit').getByText(/save|enregistrer/i).waitFor();
 						return;
 					}
 				}

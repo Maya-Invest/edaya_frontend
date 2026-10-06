@@ -1,7 +1,26 @@
-import type { Dict } from '../dictionaries.ts';
+import type {
+	Dict,
+} from '../dictionaries.ts';
 import { permissionLabelsEn } from './permission-labels.ts';
 
 export const en: Dict = {
+	'staff.defaultScopes': 'Default scopes',
+	'staff.includeDefaultScopes': 'Include staff default scopes',
+	'staff.customScopes': 'Additional custom scopes',
+	'staff.defaultScopeAdditiveHint': 'Defaults are added to custom scopes. Changes to defaults keep your custom selections.',
+	'staff.defaultScopesYearHint': 'These defaults apply to this academic year. Review the generated permission changes before saving.',
+	'staff.noDefaultScopes': 'No default scopes have been configured for this staff member in this academic year.',
+	'staff.defaultScopesSaved': 'Default scopes saved',
+	'staff.reviewScopeChanges': 'Review permission changes',
+	'staff.scopeImpact': '{added} added · {changed} changed · {removed} removed',
+	'staff.scopeWarning.missing_scope': 'Not granted: no applicable scope. Update custom scopes or staff defaults.',
+	'staff.scopeWarning.invalid_scope': 'A saved scope is no longer valid and has been excluded.',
+	'staff.scopeWarning.shadowed': 'Already owned by an earlier profile.',
+	'staff.scopeChange.added': 'Added',
+	'staff.scopeChange.changed': 'Changed',
+	'staff.scopeChange.removed': 'Removed',
+	'staff.defaultScopesSummary': '{n} scope selections for the current academic year',
+
 	'messages.reviewActivity': 'Review conversation',
 	'messages.title': 'Messages',
 	'messages.school': 'School enquiries',
@@ -1304,13 +1323,11 @@ export const en: Dict = {
 	'disciplinaryCatalog.deleteConfirm': 'Delete disciplinary action “{name}”?',
 
 	'permissionProfiles.title': '{n} permission profiles',
-	'permissionProfiles.subtitle': 'Same-grain permission bundles',
+	'permissionProfiles.subtitle': 'Reusable permission bundles',
 	'permissionProfiles.add': 'Add profile',
 	'permissionProfiles.editTitle': 'Edit permission profile',
 	'permissionProfiles.name': 'Name',
 	'permissionProfiles.description': 'Description',
-	'permissionProfiles.grain': 'Scope type',
-	'permissionProfiles.grainLocked': 'Scope type is locked while this profile is assigned.',
 	'permissionProfiles.filterAllGrains': 'All scope types',
 	'permissionProfiles.permissions': 'Permissions',
 	'permissionProfiles.boundStaff': 'Staff',
@@ -1321,7 +1338,7 @@ export const en: Dict = {
 	'permissionProfiles.deleteConfirm': 'Delete permission profile “{name}”? Unique grants stay as additional permissions; remaining profiles re-resolve.',
 	'permissionProfiles.saveUpdatesStaff': 'This updates {n} staff bound to this profile.',
 	'permissionProfiles.empty': 'No permission profiles match your search.',
-	'permissionProfiles.checklistHint': 'Only permissions that share this scope type can be included.',
+	'permissionProfiles.checklistHint': 'Select permissions; choose their scopes when assigning the profile.',
 
 	'periodDefinitions.sectionTitle': 'Weekly period grid',
 	'periodDefinitions.subtitle': 'Timetable slots shared by all classes, one row per weekday',
@@ -2375,8 +2392,8 @@ export const en: Dict = {
 	'staff.profileRemoved': 'Profile {name} removed.',
 	'staff.profileReordered': 'Profile order updated.',
 	'staff.noProfiles': 'No permission profiles yet. Create one in Configuration.',
-	'staff.tenantWideProfileOptional': 'Permission profile (optional)',
-	'staff.noTenantWideProfile': 'None',
+	'staff.permissionProfileOptional': 'Permission profile (optional)',
+	'staff.noPermissionProfile': 'None',
 	'staff.permissionDuplicateBound': 'A profile already grants this permission with the same scope. Add a different scope, or edit the profile.',
 	'staff.scopeLabel': 'Scope',
 	'staff.scope.global': 'Global',

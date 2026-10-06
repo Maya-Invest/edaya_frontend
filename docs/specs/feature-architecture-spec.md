@@ -164,9 +164,9 @@ These are **fixed** for v1. Do not introduce alternate flows without updating th
 ### 5.3 Permissions
 
 - Runtime authority is `staffPermissionAssignments` grant rows. Policies never read a profile name.
-- School-owned **permission profiles** are same-grain templates at `/configuration/permission-profiles`. Bound grants are stamped with `sourceProfileId` and stay locked; custom grants (`sourceProfileId` null) stay add/edit/delete.
+- School-owned **permission profiles** are reusable permission bundles at `/configuration/permission-profiles`; they may mix permission scope types. Scope selections belong to staff assignments. Bound grants are stamped with `sourceProfileId` and `sourceProfileBindingId` and stay locked. Manual assignment sources stay add/edit/delete; their generated grants carry `sourceManualAssignmentId`.
 - Picker labels: `GET authorization/permission-catalog` + `POST authorization/scope/render`.
-- Client edits typed `scopes`; server validates the action, target, year and validity on save. Manual grants and staff assignments are separate facts; no permission rows are copied from assignments.
+- Client edits typed `customScopes` and `useDefaultScopes`. Each staff member has default scope selections for each academic year. Generation unions compatible custom selections with defaults when enabled; it never overwrites custom selections. Empty or incompatible selections produce no runtime grant. The saved assignment remains with persistent warnings and regenerates when repaired. The server validates the action, target, year and validity on save. Manual grants and staff assignments are separate facts; no permission rows are copied from assignments.
 
 #### 5.3.1 Staff permission assignment UI
 
@@ -198,14 +198,15 @@ Sub-collection tabs use a read-only list with header CTAs and row actions that o
 | Element | Behavior |
 |---------|----------|
 | **Locked profile groups** | Bindings in `sortOrder` (0 = highest). Each group shows profile name, rendered scope, permissions. Later profiles **skip** permissions already claimed by an earlier profile — muted hint “already granted by {profile}”. No row Edit/Delete on stamped grants. |
-| **Reorder** | Up/down rewrites `sortOrder` then re-resolves that staff (first-wins). |
+| **Reorder** | Up/down rewrites `sortOrder` then re-resolves that staff for the selected year (first-wins). An unresolved earlier profile still claims the permission; later profiles cannot silently broaden it. |
 | **Remove profile** | Confirm → drop binding, re-resolve remaining. Custom grants remain. |
-| **Apply profile** | Modal: profile picker + one `ScopeBuilder` for the bundle (tenant-wide profiles always `{ kind: "school" }`). Appends at lowest rank. Re-applying the same profile upserts scopes and keeps rank. |
-| **Additional permissions** | `sourceProfileId` null rows. Header `+ Add permission` → **StaffPermissionFormModal** (custom only). |
+| **Apply / edit profile** | Modal: profile picker, include-defaults checkbox (on initially), grouped scope selections relevant to the bundle. Review generated access changes before save. Appends at lowest rank for the selected year. Re-applying the same profile updates saved selections and keeps rank. |
+| **Default scopes** | Selected-year summary and Edit modal with grouped selections. Review added, changed and removed access before saving. Re-resolves profile and manual assignments that include defaults. |
+| **Additional permissions** | Manual assignment sources, including unresolved requests. Header `+ Add permission` → **StaffPermissionFormModal** (custom only). |
 | **Row** | Permission label (i18n `permission.{CODE}`) · **scope label** from `scope/render` |
 | **Stale scope** | When `scope/render` reports missing segments → warn badge (do not block read) |
-| **Custom row actions** | Edit → same modal (pre-filled); Delete → confirm → entity delete. Hidden on stamped rows. |
-| **Staff create** | Optional **tenant-wide** profile only (rank 0). Grain profiles are applied from the Permissions tab. |
+| **Custom row actions** | Edit → same modal (pre-filled); Delete → confirm → `removeStaffPermission`. Hidden on stamped rows. |
+| **Staff create** | Optional profile with relevant custom scope selections and include-defaults flag (rank 0). No implicit whole-school access. Defaults for a new staff member start empty. |
 | **Empty state** | Message + Apply profile / `+ Add permission` when the user can assign |
 
 **Add / edit modal** (`StaffPermissionFormModal`):
@@ -213,9 +214,9 @@ Sub-collection tabs use a read-only list with header CTAs and row actions that o
 | Field | Control | Rule |
 |-------|---------|------|
 | **Permission** | `<select>` from catalog | Required; options from `GET authorization/permission-catalog` |
-| **Scope** | `ScopeBuilder` | Shown only when catalog entry has `scope` ≠ `platform`; hidden for tenant-wide permissions |
-| **Tenant-wide** | — | `scopes: [{ kind: "school" }]`; show hint “whole school” |
-| **Submit** | Save | `staffPermissionAssignments` entity save; toast on success; refresh tab list |
+| **Include defaults** | Checkbox | On initially; adds compatible selected-year defaults to saved custom selections |
+| **Custom scopes** | `PermissionScopeSelections` + `ScopeBuilder` | Explicit selections compatible with the permission, including an explicit whole-school checkbox for school permissions |
+| **Submit** | Review changes → Save | `assignStaffPermission` preview then save; show added/changed/removed access and unresolved warnings; toast on success; refresh tab list |
 
 **ScopeBuilder** — one control set per catalog `scope` grain:
 
@@ -239,7 +240,7 @@ The session contains one typed action-grant display. UI checks use that action's
 
 - `querySchoolStaffPage` loads `permission-catalog` into the staff route state.
 - Assignments load via the Permissions tab child route `PageQuery` (or with staff list when colocated); views built via `buildStaffPermissionAssignmentViews`.
-- Mutations: `configurePermissionProfile` / `applyStaffPermissionProfile` / `reorderStaffPermissionProfiles` / `removeStaffPermissionProfile` for bound grants; `saveStaffPermissionAssignmentMutation` / `deleteStaffPermissionAssignmentMutation` for custom rows only. Optimistic patch + `entityVersions` bump (`staff`).
+- Mutations: `configurePermissionProfile` / `applyStaffPermissionProfile` / `reorderStaffPermissionProfiles` / `removeStaffPermissionProfile` for bound grants; `assignStaffPermission` / `removeStaffPermission` for manual sources and `configureStaffPermissionScopeDefaults` for defaults. Preview commands never write. Optimistic patch + `entityVersions` bump (`staff`).
 
 **Staff drawer → Assignments tab** (read-only): summary list of `staffAssignments` (class-level and other targets). Editing assignments happens in **Configuration → Classes** drawer (class-level tab) — not on this tab.
 
@@ -321,7 +322,7 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 - **List:** search name · main filter assigned class · filter active/inactive
 - **Drawer header:** Edit profile · Manage permissions
 - **Drawer tabs:** Profile · **Permissions** (locked profile groups + editable custom `staffPermissionAssignments`) · Assignments (read-only `staffAssignments` summary)
-- **Create:** optional tenant-wide permission profile (rank 0)
+- **Create:** optional permission bundle (rank 0) with scope selections for the current academic year. The form loads profiles and the permission catalog together without depending on a prior Permissions-tab visit. Disable the profile picker while loading; show an error and retry on failure. Staff creation without a profile remains available. A selected profile requires ready scope metadata before submission.
 
 ### 7.4.1 School — Teachers
 
@@ -521,8 +522,8 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 ### 7.26.1 Configuration — Permission profiles
 
 - **Entity:** `StaffPermissionProfile` · **Simple** list + row `···` menu at `/configuration/permission-profiles`
-- **List:** search name · main filter grain · bound-staff count; CTA Add profile (`ACCESS_CONTROL_CONFIGURE`)
-- **Editor:** name, description, grain select unless assigned (then locked badge), grouped checklist of that grain only. Changing grain on an unassigned profile deselects incompatible permissions. Save confirms “This updates N staff.”
+- **List:** search name/description · bound-staff count; CTA Add profile (`ACCESS_CONTROL_CONFIGURE`)
+- **Editor:** name, description, grouped checklist of all non-platform permissions. No profile scope field. Edits review each affected staff member’s generated access changes and unresolved warnings before saving. Saved custom selections remain available for repair.
 - **Commands:** `configurePermissionProfile`; catalog delete via entity delete (unique grants freeze as custom)
 
 ### 7.27 Account — Inbox
@@ -654,3 +655,5 @@ Production route, navigation, modal and action changes must update the integrati
 ### Guardian messaging
 
 `/school/messages` is a complex conversation collection with optional detail `/school/messages/{id}`. School enquiries and teacher oversight are URL-selected views (`view=teacher` for oversight). School status and order filters are URL-backed. Conversation details show immutable text history, captured family context and actual authors. School replies use `?modal=reply`; teacher oversight is read-only. Dedicated SCHOOL_MESSAGES_READ, SCHOOL_MESSAGES_REPLY and TEACHER_MESSAGES_REVIEW permissions govern these surfaces independently of announcements.
+
+Permission impact review in profile editing, profile assignment, manual assignment, and default-scope editing is tied to an immutable snapshot of the complete submitted command, including school, staff/profile/source identifiers, academic year, scopes, defaults inclusion, and validity. Inputs remain editable during review. Changes, closure/reset, or target replacement invalidate review; outdated responses cannot enable Save or replace newer reports/loading state. Save requires a successful review matching current inputs.

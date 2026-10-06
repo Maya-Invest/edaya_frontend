@@ -1215,7 +1215,7 @@
     "feature": "web.configuration.permission.profiles",
     "module": "Configuration",
     "endpoint": "http://localhost:5173/configuration/permission-profiles",
-    "action": "Filtre grain"
+    "action": "Recherche nom / description"
   },
   {
     "id": "web.scenario.0175",

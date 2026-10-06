@@ -48,7 +48,8 @@ export async function deletePermissionProfileMutation(input: {
 export async function applyStaffPermissionProfileMutation(input: {
 	staffId: string;
 	profileId: string;
-	scopes: GrantScope[];
+	customScopes: GrantScope[];
+	useDefaultScopes: boolean;
 	academicYearId?: string;
 	successMessage?: string;
 }): Promise<boolean> {
@@ -58,7 +59,8 @@ export async function applyStaffPermissionProfileMutation(input: {
 			staffId: input.staffId,
 			profileId: input.profileId,
 			academicYearId: input.academicYearId ?? academicYearId(),
-			scopes: input.scopes,
+			customScopes: input.customScopes,
+			useDefaultScopes: input.useDefaultScopes,
 		}),
 		{
 			successMessage: input.successMessage,
@@ -71,6 +73,7 @@ export async function applyStaffPermissionProfileMutation(input: {
 export async function reorderStaffPermissionProfilesMutation(input: {
 	staffId: string;
 	profileIds: string[];
+	academicYearId: string;
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
@@ -78,6 +81,7 @@ export async function reorderStaffPermissionProfilesMutation(input: {
 		() => client.commands.reorderStaffPermissionProfiles({
 			staffId: input.staffId,
 			profileIds: input.profileIds,
+			academicYearId: input.academicYearId,
 		}),
 		{
 			successMessage: input.successMessage,
@@ -88,6 +92,7 @@ export async function reorderStaffPermissionProfilesMutation(input: {
 }
 
 export async function removeStaffPermissionProfileMutation(input: {
+	academicYearId: string;
 	staffId: string;
 	profileId: string;
 	successMessage?: string;
@@ -97,6 +102,7 @@ export async function removeStaffPermissionProfileMutation(input: {
 		() => client.commands.removeStaffPermissionProfile({
 			staffId: input.staffId,
 			profileId: input.profileId,
+			academicYearId: input.academicYearId,
 		}),
 		{
 			successMessage: input.successMessage,

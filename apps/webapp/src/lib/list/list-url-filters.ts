@@ -118,7 +118,6 @@ const disciplineCatalogListFiltersCodec = defineUrlFilterCodec({
 
 const permissionProfileListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
-	grain: { type: 'string', default: 'all' },
 });
 
 const resourceListFiltersCodec = defineUrlFilterCodec({

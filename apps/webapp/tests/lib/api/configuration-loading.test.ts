@@ -3,6 +3,9 @@ import { describe, expect, it } from 'bun:test';
 import { fetchActivitySources } from '$lib/api/activities-data';
 import { listAllEntityPages, schoolScopedEntityList } from '$lib/api/entity-list-filters';
 import { fetchStaffMemberById, fetchStaffMembers, fetchStaffMembersPage } from '$lib/api/staff-data';
+import type { StaffPermissionProfile } from '$lib/api/staff-permission-profiles-data';
+import type { PermissionCatalogEntry } from '$lib/api/staff-permission-assignments-data';
+import { loadStaffPermissionFormData } from '$lib/api/staff-permission-profiles-data';
 import { loadStaffPermissionAssignments } from '$lib/api/staff-permission-assignments-data';
 import { loadSubjectCategories } from '$lib/api/subject-categories-data';
 import { fetchCatalogSubjectsSources } from '$lib/api/subjects-data';
@@ -15,6 +18,15 @@ function listEnvelope<T>(items: readonly T[]) {
 }
 
 describe('configuration and activity loading', () => {
+	it('loads creation profiles and their mixed scope metadata together on a cold page', async () => {
+		const profiles: StaffPermissionProfile[] = [{ id: 'mixed', schoolId: SEED_SCHOOL_ID, name: 'Mixed', permissions: ['PAYMENT_READ', 'GRADE_INPUT'] }];
+		const catalog: PermissionCatalogEntry[] = [{ permission: 'PAYMENT_READ' }, { permission: 'GRADE_INPUT', scope: 'class_group' }];
+		const { client, requests } = createRecordingSchoolClient([listEnvelope(profiles), { items: catalog }]);
+		const loaded = await loadStaffPermissionFormData(client, SEED_SCHOOL_ID);
+		expect(loaded.profiles).toEqual(profiles);
+		expect(loaded.catalog).toEqual(catalog);
+		expect(requests).toHaveLength(2);
+	});
 	for (const size of [51, 501]) {
 		it(`loads all ${size} subject categories through the generated client`, async () => {
 			const categories = Array.from({ length: size }, (_, index) => ({ id: `category-${index}`, schoolId: SEED_SCHOOL_ID, name: `Category ${index}` }));
@@ -31,7 +43,7 @@ describe('configuration and activity loading', () => {
 		});
 	}
 	it('keeps staff permission assignments school- and year-scoped', async () => {
-		const { client, requests } = createRecordingSchoolClient([listEnvelope([])]);
+		const { client, requests } = createRecordingSchoolClient([listEnvelope([]), listEnvelope([])]);
 
 		await loadStaffPermissionAssignments(client, {
 			schoolId: SEED_SCHOOL_ID,
@@ -42,7 +54,37 @@ describe('configuration and activity loading', () => {
 			schoolId: SEED_SCHOOL_ID,
 			academicYearId,
 			status: 'active',
+			$limit: 500,
+			$offset: 0,
 		});
+		expect(entityListRequests(requests, 'staff-manual-permission-assignments')[0]?.body).toEqual({
+			schoolId: SEED_SCHOOL_ID,
+			academicYearId,
+			$limit: 500,
+			$offset: 0,
+		});
+	});
+
+	it('loads manual permission sources beyond the first page, including unresolved selections', async () => {
+		const sources = Array.from({ length: 501 }, (_, index) => ({
+			id: `manual-${index}`,
+			staffId: 'staff-1',
+			schoolId: SEED_SCHOOL_ID,
+			academicYearId,
+			permission: 'GRADE_READ' as const,
+			customScopes: [],
+			useDefaultScopes: true,
+			warnings: [{ permission: 'GRADE_READ' as const, reason: 'missing_scope' as const }],
+		}));
+		const { client, requests } = createRecordingSchoolClient([
+			listEnvelope([]), listEnvelope(sources.slice(0, 500)), listEnvelope(sources.slice(500)),
+		]);
+		const loaded = await loadStaffPermissionAssignments(client, { schoolId: SEED_SCHOOL_ID, academicYearId });
+		expect(loaded).toHaveLength(501);
+		expect(loaded[500]?.id).toBe('manual-500');
+		expect(loaded[500]?.scopes).toEqual([]);
+		expect(loaded[500]?.warnings).toEqual(sources[500]?.warnings);
+		expect(entityListRequests(requests, 'staff-manual-permission-assignments').map(request => (request.body as Record<string, unknown>).$offset)).toEqual([0, 500]);
 	});
 
 	it('loads activity enrollments only for returned school activities', async () => {

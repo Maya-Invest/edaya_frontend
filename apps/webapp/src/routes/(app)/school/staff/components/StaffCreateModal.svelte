@@ -1,12 +1,9 @@
 <script lang="ts">
-	import type { StaffPermissionProfile } from '$lib/api/staff-permission-profiles-data';
+	import type { GrantScope } from '$lib/api/grant-scopes';
 	import type { StaffProfileRole } from '$lib/staff/staff-profile-roles';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import {
-		tenantWideProfiles,
-
-	} from '$lib/api/staff-permission-profiles-data';
+	import { permissionSelectionGrains, scopeSelectionsComplete } from '$lib/api/grant-scopes';
 	import { authSession } from '$lib/auth/session.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
@@ -16,6 +13,7 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
+	import PermissionScopeSelections from '$lib/smart-components/scope-builder/PermissionScopeSelections.svelte';
 	import {
 		DEFAULT_STAFF_PROFILE_ROLE,
 		isStaffProfileRole,
@@ -40,18 +38,14 @@
 	let code = $state('');
 	let email = $state('');
 	let sendAccountInvitation = $state(true);
-	let tenantProfiles = $state<StaffPermissionProfile[]>([]);
+	const formData = staffPage.creationPermissionData;
+	const schoolId = $derived(authSession.schoolId ?? academicContext.schools[0]?.id ?? '');
+	const permissionProfiles = $derived(formData.data?.profiles ?? []);
 	let permissionProfileId = $state('');
-
-	async function loadTenantProfiles() {
-		const schoolId = authSession.schoolId ?? academicContext.schools[0]?.id ?? '';
-		if (!schoolId) {
-			tenantProfiles = [];
-			return;
-		}
-		const profiles = await staffPage.loadStaffPermissionProfilesForForm(schoolId);
-		tenantProfiles = tenantWideProfiles(profiles);
-	}
+	let customScopes = $state<GrantScope[]>([]);
+	let useDefaultScopes = $state(true);
+	const selectedProfile = $derived(permissionProfiles.find(row => row.id === permissionProfileId));
+	const scopeGrains = $derived([...new Set((formData.data?.catalog ?? []).filter(entry => selectedProfile?.permissions.includes(entry.permission)).flatMap(permissionSelectionGrains))]);
 
 	function resetForm() {
 		firstName = '';
@@ -61,16 +55,20 @@
 		email = '';
 		sendAccountInvitation = true;
 		permissionProfileId = '';
+		customScopes = [];
+		useDefaultScopes = true;
 	}
 
 	$effect(() => {
-		if (open) {
-			void loadTenantProfiles();
-		}
+		resetForm();
+		if (open)
+			void formData.load(schoolId);
+		else formData.reset();
+		return () => formData.reset();
 	});
 
 	const canSubmit = $derived(
-		firstName.trim().length > 0 && lastName.trim().length > 0 && Boolean(profileRole),
+		firstName.trim().length > 0 && lastName.trim().length > 0 && Boolean(profileRole) && scopeSelectionsComplete(customScopes) && (!permissionProfileId || Boolean(formData.data && selectedProfile)),
 	);
 
 	async function submit() {
@@ -88,6 +86,8 @@
 			profileRole,
 			sendAccountInvitation,
 			permissionProfileId: permissionProfileId || undefined,
+			customScopes,
+			useDefaultScopes,
 			successMessage: get(t)('staff.createSuccess', { name: fullName }),
 		});
 		busy = false;
@@ -152,18 +152,32 @@
 	</div>
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			{$t('staff.tenantWideProfileOptional')}
+			{$t('staff.permissionProfileOptional')}
 		</Label>
 		<select
+			disabled={formData.loading || !formData.data}
 			bind:value={permissionProfileId}
+			onchange={() => customScopes = []}
 			class="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
 		>
-			<option value="">{$t('staff.noTenantWideProfile')}</option>
-			{#each tenantProfiles as profile (profile.id)}
+			<option value="">{$t('staff.noPermissionProfile')}</option>
+			{#each permissionProfiles as profile (profile.id)}
 				<option value={profile.id}>{profile.name}</option>
 			{/each}
 		</select>
 	</div>
+	{#if formData.loading}<p role="status" class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>{/if}
+	{#if formData.error}
+		<p role="alert" class="text-sm text-destructive">{$t('dataState.errorDefault')}</p>
+		<button type="button" class="text-sm text-primary" onclick={() => formData.load(schoolId)}>{$t('dataState.retry')}</button>
+	{/if}
+	{#if selectedProfile}
+		<label class="flex items-center gap-2 text-sm"><Checkbox bind:checked={useDefaultScopes} />{$t('staff.includeDefaultScopes')}</label>
+		<p class="text-xs text-muted-foreground">{$t('staff.defaultScopeAdditiveHint')}</p>
+		<p class="text-xs text-highlight">{$t('staff.noDefaultScopes')}</p>
+		<Label>{$t('staff.customScopes')}</Label>
+		<PermissionScopeSelections bind:scopes={customScopes} grains={scopeGrains} active={open} />
+	{/if}
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('common.code')}

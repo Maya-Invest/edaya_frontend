@@ -347,7 +347,7 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	]),
 	...rows('Configuration', `${B}/configuration/permission-profiles`, [
 		'Catalogue des profils',
-		'Filtre grain',
+		'Recherche nom / description',
 		'CRUD entrée',
 	]),
 	...rows('Configuration', `${B}/configuration/tools`, [

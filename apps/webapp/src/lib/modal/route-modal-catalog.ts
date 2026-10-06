@@ -89,7 +89,7 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'school-staff-permissions',
 		pathnamePattern: /^\/school\/staff\/[^/]+\/permissions\/?$/,
-		modalNames: ['add-permission', 'delete-permission', 'apply-profile', 'remove-profile'],
+		modalNames: ['add-permission', 'delete-permission', 'apply-profile', 'remove-profile', 'default-scopes'],
 	},
 	{
 		routeFamily: 'school-teachers-list',

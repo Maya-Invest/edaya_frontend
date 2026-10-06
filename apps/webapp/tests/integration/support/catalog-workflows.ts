@@ -148,6 +148,10 @@ export async function exerciseCatalogCrud(page: Page, base: string, scenarioId: 
   assert(await openUrlModal(page, contract.path, 'edit', { base, target: id }));
   const editedName = `${name} edited`;
   await page.getByRole('dialog').locator('input').first().fill(editedName);
+  if (contract.collection === 'staff-permission-profiles') {
+    const preview = await uiCommand(page, contract.edit, () => page.getByTestId('form-modal-submit').click());
+    assert.equal(preview.request().postDataJSON().previewOnly, true);
+  }
   await uiCommand(page, contract.edit, () => page.getByTestId('form-modal-submit').click());
   await waitForMutationDialog(page);
   await page.reload({ waitUntil: 'domcontentloaded' });

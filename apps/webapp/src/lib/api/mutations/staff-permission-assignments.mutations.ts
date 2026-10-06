@@ -1,10 +1,10 @@
 import type { components } from '$lib/api/schema';
+import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 
-type StaffPermissionAssignment = components['schemas']['StaffPermissionAssignment'];
 type StaffPermissionAssignmentConfigCommand = components['schemas']['StaffPermissionAssignmentConfigCommand'];
 
 function schoolId(): string {
@@ -16,7 +16,7 @@ function academicYearId(): string {
 }
 
 function toStaffPermissionConfigCommand(
-	assignment: StaffPermissionAssignment,
+	assignment: StaffPermissionAssignmentView,
 ): StaffPermissionAssignmentConfigCommand {
 	return {
 		id: assignment.id,
@@ -24,7 +24,8 @@ function toStaffPermissionConfigCommand(
 		schoolId: assignment.schoolId,
 		academicYearId: assignment.academicYearId,
 		permission: assignment.permission,
-		scopes: assignment.scopes,
+		customScopes: assignment.customScopes ?? assignment.scopes,
+		useDefaultScopes: assignment.useDefaultScopes ?? false,
 		startsAt: assignment.startsAt,
 		endsAt: assignment.endsAt,
 		status: assignment.status,
@@ -32,7 +33,7 @@ function toStaffPermissionConfigCommand(
 }
 
 export async function saveStaffPermissionAssignmentMutation(input: {
-	assignment: StaffPermissionAssignment;
+	assignment: StaffPermissionAssignmentView;
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
@@ -57,7 +58,7 @@ export async function deleteStaffPermissionAssignmentMutation(input: {
 	const client = getBrowserSchoolClient();
 
 	const result = await runMutation(
-		() => client.entities.staffPermissionAssignments.delete({ id: input.id }),
+		() => client.commands.removeStaffPermission({ assignmentId: input.id }),
 		{
 			successMessage: input.successMessage,
 			versionKeys: ['staff'],
@@ -70,9 +71,11 @@ export async function deleteStaffPermissionAssignmentMutation(input: {
 export function createStaffPermissionAssignmentPayload(input: {
 	id: string;
 	staffId: string;
-	permission: StaffPermissionAssignment['permission'];
-	scopes: StaffPermissionAssignment['scopes'];
-}): StaffPermissionAssignment {
+	permission: StaffPermissionAssignmentView['permission'];
+	scopes: StaffPermissionAssignmentView['scopes'];
+	customScopes?: StaffPermissionAssignmentView['scopes'];
+	useDefaultScopes?: boolean;
+}): StaffPermissionAssignmentView {
 	return {
 		id: input.id,
 		staffId: input.staffId,
@@ -80,6 +83,11 @@ export function createStaffPermissionAssignmentPayload(input: {
 		academicYearId: academicYearId(),
 		permission: input.permission,
 		scopes: input.scopes,
+		customScopes: input.customScopes ?? input.scopes,
+		useDefaultScopes: input.useDefaultScopes ?? true,
+		scopeLabel: '—',
+		tenantWide: false,
+		hasMissingScope: false,
 		status: 'active',
 	};
 }

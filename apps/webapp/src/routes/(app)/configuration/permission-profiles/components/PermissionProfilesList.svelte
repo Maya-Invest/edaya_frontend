@@ -1,10 +1,8 @@
 <script lang="ts">
 	import type { StaffPermissionProfile } from '$lib/api/staff-permission-profiles-data';
 	import { page } from '$app/stores';
-	import { PROFILE_SCOPE_GRAINS, profileGrainLabelKey } from '$lib/api/grant-scopes';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
-	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
@@ -43,22 +41,8 @@
 	const editingProfile = $derived(modals.active === 'edit' ? targetProfile : null);
 	const deleteTarget = $derived(modals.active === 'delete' ? targetProfile : null);
 
-	const grainOptions = $derived([
-		{ value: 'all', label: $t('permissionProfiles.filterAllGrains') },
-		...PROFILE_SCOPE_GRAINS.map(grain => ({
-			value: grain,
-			label: $t(profileGrainLabelKey(grain)),
-		})),
-	]);
-
 	const filteredProfiles = $derived(
 		permissionProfilesPage.profiles.filter((profile) => {
-			if (
-				permissionProfilesPage.filters.values.grain !== 'all'
-				&& profile.scopeGrain !== permissionProfilesPage.filters.values.grain
-			) {
-				return false;
-			}
 			const needle = permissionProfilesPage.filters.values.q.trim().toLowerCase();
 			if (!needle) {
 				return true;
@@ -67,14 +51,6 @@
 				|| (profile.description?.toLowerCase().includes(needle) ?? false);
 		}),
 	);
-
-	$effect(() => {
-		if (!permissionProfilesPage.filters.ready) {
-			return;
-		}
-		void permissionProfilesPage.filters.values.grain;
-		permissionProfilesPage.filters.scheduleSync();
-	});
 
 	$effect(() => {
 		if (!modals.ready) {
@@ -134,13 +110,6 @@
 				oninput={() => permissionProfilesPage.filters.scheduleSync()}
 			/>
 		{/snippet}
-		{#snippet filters()}
-			<FilterSelect
-				bind:value={permissionProfilesPage.filters.values.grain}
-				options={grainOptions}
-				class="h-9 min-w-[10rem]"
-			/>
-		{/snippet}
 		{#snippet primary()}
 			<PermissionGate permission="ACCESS_CONTROL_CONFIGURE">
 				{#snippet children({ disabled, title })}
@@ -162,10 +131,9 @@
 				exportOnly
 				onExport={() => void exportMatchingList({
 					filename: 'permission-profiles.csv',
-					headers: ['name', 'grain', 'permissions', 'boundStaff'],
+					headers: ['name', 'permissions', 'boundStaff'],
 					loadAll: async () => filteredProfiles.map(profile => [
 						profile.name,
-						profile.scopeGrain,
 						profile.permissions.length,
 						permissionProfilesPage.boundCount(profile.id),
 					]),
@@ -178,8 +146,7 @@
 		<div
 			class="grid grid-cols-12 gap-4 border-b border-border bg-secondary/40 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
 		>
-			<div class="col-span-4">{$t('permissionProfiles.name')}</div>
-			<div class="col-span-2">{$t('permissionProfiles.grain')}</div>
+			<div class="col-span-6">{$t('permissionProfiles.name')}</div>
 			<div class="col-span-3">{$t('permissionProfiles.permissions')}</div>
 			<div class="col-span-2">{$t('permissionProfiles.boundStaff')}</div>
 			<div class="col-span-1"></div>
@@ -192,16 +159,11 @@
 			{:else}
 				{#each filteredProfiles as profile (profile.id)}
 					<li class="grid grid-cols-12 items-center gap-4 border-b border-border px-5 py-4 last:border-b-0">
-						<div class="col-span-4 min-w-0">
+						<div class="col-span-6 min-w-0">
 							<p class="truncate text-sm font-medium">{profile.name}</p>
 							{#if profile.description}
 								<p class="truncate text-xs text-muted-foreground">{profile.description}</p>
 							{/if}
-						</div>
-						<div class="col-span-2">
-							<span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] uppercase text-muted-foreground">
-								{$t(profileGrainLabelKey(profile.scopeGrain))}
-							</span>
 						</div>
 						<div class="col-span-3 text-sm tabular-nums text-muted-foreground">
 							{profile.permissions.length}

@@ -146,14 +146,14 @@ export declare const clientBindings: {
         readonly staffPermissionAssignments: {
             readonly publicName: "staff-permission-assignments";
             readonly schemaName: "StaffPermissionAssignment";
-            readonly allowDirectSave: true;
+            readonly allowDirectSave: false;
             readonly publicOperations: {
-                readonly create: true;
-                readonly update: true;
-                readonly delete: true;
-                readonly batchCreate: true;
-                readonly batchUpdate: true;
-                readonly batchDelete: true;
+                readonly create: false;
+                readonly update: false;
+                readonly delete: false;
+                readonly batchCreate: false;
+                readonly batchUpdate: false;
+                readonly batchDelete: false;
             };
         };
         readonly staffPermissionProfiles: {
@@ -172,6 +172,32 @@ export declare const clientBindings: {
         readonly staffPermissionProfileBindings: {
             readonly publicName: "staff-permission-profile-bindings";
             readonly schemaName: "StaffPermissionProfileBinding";
+            readonly allowDirectSave: false;
+            readonly publicOperations: {
+                readonly create: false;
+                readonly update: false;
+                readonly delete: false;
+                readonly batchCreate: false;
+                readonly batchUpdate: false;
+                readonly batchDelete: false;
+            };
+        };
+        readonly staffManualPermissionAssignments: {
+            readonly publicName: "staff-manual-permission-assignments";
+            readonly schemaName: "StaffManualPermissionAssignment";
+            readonly allowDirectSave: false;
+            readonly publicOperations: {
+                readonly create: false;
+                readonly update: false;
+                readonly delete: false;
+                readonly batchCreate: false;
+                readonly batchUpdate: false;
+                readonly batchDelete: false;
+            };
+        };
+        readonly staffPermissionScopeDefaults: {
+            readonly publicName: "staff-permission-scope-defaults";
+            readonly schemaName: "StaffPermissionScopeDefaults";
             readonly allowDirectSave: false;
             readonly publicOperations: {
                 readonly create: false;
@@ -953,20 +979,30 @@ export declare const clientBindings: {
             readonly requestSchemaName: "AssignStaffToLessonSessionCommand";
             readonly responseSchemaName: "StaffAssignment";
         };
+        readonly configureStaffPermissionScopeDefaults: {
+            readonly publicName: "configure-staff-permission-scope-defaults";
+            readonly requestSchemaName: "ConfigureStaffPermissionScopeDefaultsCommand";
+            readonly responseSchemaName: "ConfigureStaffPermissionScopeDefaultsResponse";
+        };
+        readonly removeStaffPermission: {
+            readonly publicName: "remove-staff-permission";
+            readonly requestSchemaName: "RemoveStaffPermissionCommand";
+            readonly responseSchemaName: "RemoveStaffPermissionResponse";
+        };
         readonly assignStaffPermission: {
             readonly publicName: "assign-staff-permission";
             readonly requestSchemaName: "StaffPermissionAssignmentConfigCommand";
-            readonly responseSchemaName: "StaffPermissionAssignment";
+            readonly responseSchemaName: "AssignStaffPermissionResponse";
         };
         readonly configurePermissionProfile: {
             readonly publicName: "configure-permission-profile";
             readonly requestSchemaName: "ConfigurePermissionProfileCommand";
-            readonly responseSchemaName: "StaffPermissionProfile";
+            readonly responseSchemaName: "ConfigurePermissionProfileResponse";
         };
         readonly applyStaffPermissionProfile: {
             readonly publicName: "apply-staff-permission-profile";
             readonly requestSchemaName: "ApplyStaffPermissionProfileCommand";
-            readonly responseSchemaName: "StaffPermissionProfileBinding";
+            readonly responseSchemaName: "ApplyStaffPermissionProfileResponse";
         };
         readonly reorderStaffPermissionProfiles: {
             readonly publicName: "reorder-staff-permission-profiles";

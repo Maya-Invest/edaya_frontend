@@ -326,7 +326,7 @@ Search parameters own substantive overlays and workflow subviews:
 
 Rules:
 
-1. The route declares an allow-list for modal, step, tab, and view values.
+1. The route declares an allow-list for modal, step, tab, and view values. Staff permissions expose `default-scopes` for selected-year defaults and `apply-profile` with `modalTarget` for editing a saved profile assignment.
 2. A URL-backed edit modal resolves `modalTarget` from route state. It must not depend on a
    transient object retained from the click handler.
 3. Invalid or inaccessible values canonicalize to the nearest valid URL using `replaceState`.
@@ -703,3 +703,5 @@ Messaging has one initial/identity query owner: the identity-keyed `PageQuery`. 
 Authentication invitation acceptance uses route-owned I/O with its existing explicit committed-write/session-refresh handling; a failed session refresh must not repeat a confirmed acceptance. Credentials and form drafts remain local to the view.
 
 Repository verification rejects retired module imports, runtime mutation/client imports from Svelte presentation, and references to absent workspace applications. Type-only imports, API error values and pure payload/display helpers are permitted.
+
+Permission forms share a preview state owner that captures complete immutable command snapshots and checks payload, active form session, and request generation before publishing results. The staff page owns combined creation-form profile/catalog data, loading, errors, retry, and cancellation on school or form-session replacement.

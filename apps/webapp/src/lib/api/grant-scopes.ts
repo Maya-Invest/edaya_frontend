@@ -2,9 +2,9 @@ import type { components } from '$lib/api/schema';
 
 export type GrantScope = components['schemas']['StaffPermissionAssignment']['scopes'][number];
 export type ScopeGrain = Exclude<GrantScope['kind'], 'school' | 'all'>;
-export type ProfileScopeGrain = 'school' | ScopeGrain;
+export type PermissionScopeGrain = 'school' | ScopeGrain;
 
-export const PROFILE_SCOPE_GRAINS = [
+export const PERMISSION_SCOPE_GRAINS = [
 	'school',
 	'class_group',
 	'class_subject',
@@ -12,11 +12,7 @@ export const PROFILE_SCOPE_GRAINS = [
 	'grade_level',
 	'grade_level_subject',
 	'activity',
-] as const satisfies readonly ProfileScopeGrain[];
-
-export function defaultScopesForProfileGrain(grain: ProfileScopeGrain): GrantScope[] {
-	return grain === 'school' ? [{ kind: 'school' }] : [{ kind: 'all', grain }];
-}
+] as const satisfies readonly PermissionScopeGrain[];
 
 export function grantScopesEquivalent(left: readonly GrantScope[], right: readonly GrantScope[]): boolean {
 	if (left.length !== right.length) {
@@ -26,10 +22,6 @@ export function grantScopesEquivalent(left: readonly GrantScope[], right: readon
 	const a = keys(left);
 	const b = keys(right);
 	return a.every((key, index) => key === b[index]);
-}
-
-export function profileGrainLabelKey(grain: ProfileScopeGrain): string {
-	return `scope.grain.${grain}`;
 }
 
 export function emptyGrantScope(grain: ScopeGrain): GrantScope {
@@ -64,4 +56,19 @@ export function validGrantScopes(scopes: readonly GrantScope[], grain?: ScopeGra
 		}
 		return false;
 	});
+}
+
+export function scopeSelectionsComplete(scopes: readonly GrantScope[]): boolean {
+	return PERMISSION_SCOPE_GRAINS.every((grain) => {
+		const selected = scopes.filter(scope => (scope.kind === 'all' ? scope.grain : scope.kind) === grain);
+		return !selected.length || validGrantScopes(selected, grain === 'school' ? undefined : grain);
+	});
+}
+
+export function permissionSelectionGrains(entry: { permission: string; scope?: PermissionScopeGrain | 'platform' }): PermissionScopeGrain[] {
+	if (entry.scope === 'platform')
+		return [];
+	if (['ATTENDANCE_VALIDATE', 'CLASS_LOGBOOK_VALIDATE', 'DISCIPLINE_VALIDATE', 'REPORT_CARD_PUBLISH'].includes(entry.permission))
+		return ['school', 'class_group'];
+	return [entry.scope ?? 'school'];
 }

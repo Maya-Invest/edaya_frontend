@@ -1,19 +1,19 @@
 <script lang="ts">
-	import type { ProfileScopeGrain } from '$lib/api/grant-scopes';
 	import type { StaffPermissionCode, StaffPermissionProfile } from '$lib/api/staff-permission-profiles-data';
-	import { PROFILE_SCOPE_GRAINS, profileGrainLabelKey } from '$lib/api/grant-scopes';
+	import { academicContext } from '$lib/academic/context.svelte';
 	import { formatPermissionLabel } from '$lib/api/staff-permission-assignments-data';
 	import {
 		groupCatalogEntries,
-		permissionsForGrain,
 
 	} from '$lib/api/staff-permission-profiles-data';
+	import { authSession } from '$lib/auth/session.svelte';
+	import PermissionResolutionPreview from '$lib/components/school/PermissionResolutionPreview.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
-	import * as Select from '$lib/components/ui/select';
 	import { t } from '$lib/i18n';
-	import { Lock } from '$lib/icons';
+	import { PermissionImpactPreviewState } from '$lib/school/permission-impact-preview-state.svelte';
+	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getPermissionProfilesPageState } from '../permission-profiles-page.svelte';
 
@@ -27,36 +27,25 @@
 
 	const permissionProfilesPage = getPermissionProfilesPageState();
 
-	let busy = $state(false);
+	let saving = $state(false);
+	const preview = new PermissionImpactPreviewState();
+	const busy = $derived(saving || preview.loading);
 	let name = $state('');
 	let description = $state('');
-	let scopeGrain = $state<ProfileScopeGrain>('school');
 	let permissions = $state<StaffPermissionCode[]>([]);
 
 	const isEdit = $derived(profile !== null && profile !== undefined);
 	const boundCount = $derived(profile ? permissionProfilesPage.boundCount(profile.id) : 0);
-	const grainLocked = $derived(isEdit && boundCount > 0);
-	const grainEntries = $derived(permissionsForGrain(permissionProfilesPage.catalog, scopeGrain));
-	const groupedEntries = $derived(groupCatalogEntries(grainEntries));
+
+	const input = $derived({ id: profile?.id ?? '', name: name.trim(), description: description.trim() || undefined, permissions });
+	const snapshot = $derived({ schoolId: authSession.schoolId ?? academicContext.schools[0]?.id ?? '', ...input });
+	const reviewed = $derived(preview.reviewed(snapshot));
+	$effect(() => preview.synchronize(open, snapshot));
+	const groupedEntries = $derived(groupCatalogEntries(permissionProfilesPage.catalog.filter(entry => entry.scope !== 'platform')));
 	const canSubmit = $derived(name.trim().length > 0);
-	const saveDescription = $derived(
-		boundCount > 0
-			? $t('permissionProfiles.saveUpdatesStaff', { n: boundCount })
-			: $t('permissionProfiles.subtitle'),
-	);
-
-	function grainLabel(value: ProfileScopeGrain): string {
-		return get(t)(profileGrainLabelKey(value));
-	}
-
-	function setGrain(next: ProfileScopeGrain) {
-		if (grainLocked || next === scopeGrain) {
-			return;
-		}
-		const allowed = new Set(permissionsForGrain(permissionProfilesPage.catalog, next).map(entry => entry.permission));
-		scopeGrain = next;
-		permissions = permissions.filter(permission => allowed.has(permission));
-	}
+	const saveDescription = $derived(boundCount > 0
+		? $t('permissionProfiles.saveUpdatesStaff', { n: boundCount })
+		: $t('permissionProfiles.subtitle'));
 
 	function togglePermission(permission: StaffPermissionCode, checked: boolean) {
 		if (checked) {
@@ -69,23 +58,26 @@
 	}
 
 	function resetForm() {
+		preview.reset();
 		if (profile) {
 			name = profile.name;
 			description = profile.description ?? '';
-			scopeGrain = profile.scopeGrain;
 			permissions = [...profile.permissions];
 			return;
 		}
 		name = '';
 		description = '';
-		scopeGrain = 'school';
 		permissions = [];
 	}
 
 	$effect(() => {
-		if (open) {
-			resetForm();
-		}
+		const target = [open, profile, authSession.schoolId ?? academicContext.schools[0]?.id ?? ''];
+		untrack(() => {
+			preview.reset();
+			if (target[0])
+				resetForm();
+		});
+		return () => preview.reset();
 	});
 
 	async function submit() {
@@ -93,15 +85,14 @@
 			return;
 		}
 
-		busy = true;
+		if (!reviewed && profile) {
+			await preview.review(snapshot, command => permissionProfilesPage.previewProfile(command), () => snapshot, () => open);
+			return;
+		}
+		saving = true;
 		try {
-			const trimmedName = name.trim();
-			const payload = {
-				name: trimmedName,
-				description: description.trim() || undefined,
-				scopeGrain,
-				permissions,
-			};
+			const trimmedName = input.name;
+			const payload = { name: input.name, description: input.description, permissions: input.permissions };
 
 			const ok = isEdit && profile
 				? await permissionProfilesPage.saveProfile({
@@ -119,7 +110,7 @@
 			}
 		}
 		finally {
-			busy = false;
+			saving = false;
 		}
 	}
 </script>
@@ -128,7 +119,7 @@
 	bind:open
 	title={isEdit ? $t('permissionProfiles.editTitle') : $t('permissionProfiles.add')}
 	description={saveDescription}
-	submitLabel={$t('academic.save')}
+	submitLabel={isEdit && !reviewed ? $t('staff.reviewScopeChanges') : $t('academic.save')}
 	cancelLabel={$t('academic.cancel')}
 	contentClass="max-w-2xl"
 	{busy}
@@ -143,31 +134,6 @@
 		<span class="text-muted-foreground">{$t('permissionProfiles.description')}</span>
 		<Input bind:value={description} />
 	</label>
-	<div class="grid gap-1 text-sm">
-		<span class="text-muted-foreground">{$t('permissionProfiles.grain')}</span>
-		{#if grainLocked}
-			<div class="flex items-center gap-2 rounded-xl border border-border bg-secondary/40 px-3 py-2 text-sm">
-				<Lock class="h-3.5 w-3.5 text-muted-foreground" />
-				<span>{grainLabel(scopeGrain)}</span>
-			</div>
-			<p class="text-xs text-muted-foreground">{$t('permissionProfiles.grainLocked')}</p>
-		{:else}
-			<Select.Root type="single" value={scopeGrain} onValueChange={v => v && setGrain(v as ProfileScopeGrain)}>
-				<Select.Trigger class="w-full">
-					<Select.Value placeholder={$t('permissionProfiles.grain')}>
-						{grainLabel(scopeGrain)}
-					</Select.Value>
-				</Select.Trigger>
-				<Select.Content>
-					{#each PROFILE_SCOPE_GRAINS as grain (grain)}
-						<Select.Item value={grain} label={grainLabel(grain)}>
-							{grainLabel(grain)}
-						</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-		{/if}
-	</div>
 	<div class="space-y-3">
 		<p class="text-xs text-muted-foreground">{$t('permissionProfiles.checklistHint')}</p>
 		{#each groupedEntries as group (group.key)}
@@ -191,4 +157,5 @@
 			</div>
 		{/each}
 	</div>
+	{#if reviewed && preview.report}<PermissionResolutionPreview report={preview.report} />{/if}
 </FormModal>

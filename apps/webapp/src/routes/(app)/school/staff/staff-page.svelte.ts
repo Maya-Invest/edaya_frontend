@@ -5,14 +5,15 @@ import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { StaffListFilters } from '$lib/list/list-url-filters';
 import type { StaffMember } from '$lib/types/school';
 import { academicContext } from '$lib/academic/context.svelte';
-import { DEFAULT_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
+import { DEFAULT_LIST_PAGE_SIZE, listAllEntityPages } from '$lib/api/entity-list-filters';
+import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { fetchStaffMemberById, fetchStaffMembersPage } from '$lib/api/staff-data';
 import {
 	loadStaffPermissionPageData,
 
 } from '$lib/api/staff-permission-assignments-data';
-import { loadStaffPermissionProfiles,	bindingsForStaff,	customAssignmentsForStaff,	loadPermissionProfileCatalogData,	renderBindingScopeLabel } from '$lib/api/staff-permission-profiles-data';
+import { bindingsForStaff, customAssignmentsForStaff, loadPermissionProfileCatalogData, loadStaffPermissionFormData } from '$lib/api/staff-permission-profiles-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { mergeById } from '$lib/detail-data/seed-policies';
 import { t } from '$lib/i18n';
@@ -20,14 +21,15 @@ import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readStaffListFilters, writeStaffListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { StaffPermissionFormDataState } from '$lib/school/staff-permission-form-data-state.svelte';
 import { getContext, setContext } from 'svelte';
-import { SvelteMap } from 'svelte/reactivity';
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { get } from 'svelte/store';
 import {
+	applyStaffPermissionProfileOnPage,
 	createStaffOnPage,
 	deleteStaffOnPage,
 	deleteStaffPermissionOnPage,
-	applyStaffPermissionProfileOnPage,
 	removeStaffPermissionProfileOnPage,
 	reorderStaffPermissionProfilesOnPage,
 	saveStaffPermissionOnPage,
@@ -52,7 +54,7 @@ const STAFF_VERSION_FAMILIES = ['staff'] as const satisfies readonly EntityVersi
 const STAFF_PAGE_STATE_KEY = Symbol('staff-page-state');
 
 export class StaffPageState {
-	loadStaffPermissionProfilesForForm = (...args: Parameters<typeof loadStaffPermissionProfiles> extends [unknown, ...infer Rest] ? Rest : never) => loadStaffPermissionProfiles(getBrowserSchoolClient(), ...args);
+	readonly creationPermissionData = new StaffPermissionFormDataState(schoolId => loadStaffPermissionFormData(getBrowserSchoolClient(), schoolId));
 
 	staff = $state<StaffMember[]>([]);
 	fullRosterStaff = $state<StaffMember[]>([]);
@@ -62,6 +64,11 @@ export class StaffPageState {
 	permissionCatalog = $state<PermissionCatalogEntry[]>([]);
 	staffPermissionProfiles = $state<StaffPermissionProfile[]>([]);
 	staffPermissionProfileBindings = $state<StaffPermissionProfileBinding[]>([]);
+	staffPermissionScopeDefaults = $state<components['schemas']['StaffPermissionScopeDefaults'][]>([]);
+	staffDefaultScopes(staffId: string) {
+		return this.staffPermissionScopeDefaults.find(row => row.staffId === staffId && row.academicYearId === this.staffScope().academicYearId)?.scopes ?? [];
+	}
+
 	bindingScopeLabels = $state<Record<string, string>>({});
 	staffPermissionDataKey = $state<string | null>(null);
 	totalStaff = $state(0);
@@ -268,20 +275,16 @@ export class StaffPageState {
 		}
 		const client = getBrowserSchoolClient();
 		const translate = get(t);
-		const [assignmentData, catalogData] = await Promise.all([
+		const [assignmentData, catalogData, defaults] = await Promise.all([
 			loadStaffPermissionPageData(client, scope, translate),
 			loadPermissionProfileCatalogData(client, scope.schoolId),
+			listAllEntityPages(query => client.entities.staffPermissionScopeDefaults.list(query), { baseQuery: scope }),
 		]);
 		const bindingScopeLabels: Record<string, string> = {};
-		await Promise.all(catalogData.bindings.map(async (binding) => {
-			const profile = catalogData.profiles.find(entry => entry.id === binding.profileId);
-			bindingScopeLabels[binding.id] = await renderBindingScopeLabel(client, {
-				academicYearId: binding.academicYearId,
-				permission: profile?.permissions[0],
-				scopes: binding.scopes,
-				translate,
-			});
-		}));
+		for (const binding of catalogData.bindings) {
+			bindingScopeLabels[binding.id] = [...new SvelteSet(assignmentData.assignments.filter(row => row.sourceProfileBindingId === binding.id).map(row => row.scopeLabel))].join('; ') || '—';
+		}
+		this.staffPermissionScopeDefaults = defaults;
 		this.seedStaffPermissionData({
 			assignments: assignmentData.assignments,
 			catalog: assignmentData.catalog,
@@ -420,6 +423,21 @@ export class StaffPageState {
 
 	ensureDrawerSelection(staffId: string) {
 		return ensureStaffDrawerSelection(this, staffId);
+	}
+
+	previewProfileAssignment(input: components['schemas']['ApplyStaffPermissionProfileCommand']) {
+		return runMutation(() => getBrowserSchoolClient().commands.applyStaffPermissionProfile({ ...input, previewOnly: true }));
+	}
+
+	previewDefaultScopes(input: components['schemas']['ConfigureStaffPermissionScopeDefaultsCommand']) {
+		return runMutation(() => getBrowserSchoolClient().commands.configureStaffPermissionScopeDefaults({ ...input, previewOnly: true }));
+	}
+
+	async saveDefaultScopes(input: components['schemas']['ConfigureStaffPermissionScopeDefaultsCommand'], successMessage: string) {
+		const result = await runMutation(() => getBrowserSchoolClient().commands.configureStaffPermissionScopeDefaults(input), { successMessage, versionKeys: ['staff'] });
+		if (result)
+			await this.reloadPermissionData();
+		return result !== null;
 	}
 
 	createStaff(...args: Parameters<typeof createStaffOnPage> extends [StaffPageState, ...infer R] ? R : never) {

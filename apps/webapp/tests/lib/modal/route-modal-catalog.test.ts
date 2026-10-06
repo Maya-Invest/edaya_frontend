@@ -27,7 +27,7 @@ const routeCases = [
 	['school-guardians-detail', '/school/guardians/guardian-1', ['create', 'edit-profile', 'delete']],
 	['school-staff-list', '/school/staff', ['create']],
 	['school-staff-detail', '/school/staff/staff-1/profile', ['create', 'edit-profile', 'delete']],
-	['school-staff-permissions', '/school/staff/staff-1/permissions', ['add-permission', 'delete-permission', 'apply-profile', 'remove-profile']],
+	['school-staff-permissions', '/school/staff/staff-1/permissions', ['add-permission', 'delete-permission', 'apply-profile', 'remove-profile', 'default-scopes']],
 	['school-teachers-list', '/school/teachers', ['create']],
 	[
 		'school-teachers-detail',

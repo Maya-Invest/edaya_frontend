@@ -1,7 +1,26 @@
-import type { Dict } from '../dictionaries.ts';
+import type {
+	Dict,
+} from '../dictionaries.ts';
 import { permissionLabelsFr } from './permission-labels.ts';
 
 export const fr: Dict = {
+	'staff.defaultScopes': 'Périmètres par défaut',
+	'staff.includeDefaultScopes': 'Inclure les périmètres par défaut du personnel',
+	'staff.customScopes': 'Périmètres personnalisés supplémentaires',
+	'staff.defaultScopeAdditiveHint': 'Les périmètres par défaut s’ajoutent aux périmètres personnalisés. Leur modification conserve vos choix personnalisés.',
+	'staff.defaultScopesYearHint': 'Ces périmètres s’appliquent à cette année scolaire. Vérifiez les permissions générées avant d’enregistrer.',
+	'staff.noDefaultScopes': 'Aucun périmètre par défaut n’est défini pour ce membre du personnel pour cette année scolaire.',
+	'staff.defaultScopesSaved': 'Périmètres par défaut enregistrés',
+	'staff.reviewScopeChanges': 'Vérifier les changements de permissions',
+	'staff.scopeImpact': '{added} ajoutées · {changed} modifiées · {removed} retirées',
+	'staff.scopeWarning.missing_scope': 'Non accordée : aucun périmètre applicable. Modifiez les périmètres personnalisés ou par défaut.',
+	'staff.scopeWarning.invalid_scope': 'Un périmètre enregistré n’est plus valide et a été exclu.',
+	'staff.scopeWarning.shadowed': 'Déjà gérée par un profil prioritaire.',
+	'staff.scopeChange.added': 'Ajoutée',
+	'staff.scopeChange.changed': 'Modifiée',
+	'staff.scopeChange.removed': 'Retirée',
+	'staff.defaultScopesSummary': '{n} périmètres sélectionnés pour l’année scolaire actuelle',
+
 	'messages.reviewActivity': 'Consulter la conversation',
 	'messages.title': 'Messages',
 	'messages.school': 'Demandes à l’école',
@@ -1297,13 +1316,11 @@ export const fr: Dict = {
 	'disciplinaryCatalog.deleteConfirm': 'Supprimer l\'action disciplinaire « {name} » ?',
 
 	'permissionProfiles.title': '{n} profils de permissions',
-	'permissionProfiles.subtitle': 'Bundles de permissions d\'un même type de portée',
+	'permissionProfiles.subtitle': 'Ensembles de permissions réutilisables',
 	'permissionProfiles.add': 'Ajouter un profil',
 	'permissionProfiles.editTitle': 'Modifier le profil de permissions',
 	'permissionProfiles.name': 'Nom',
 	'permissionProfiles.description': 'Description',
-	'permissionProfiles.grain': 'Type de portée',
-	'permissionProfiles.grainLocked': 'Le type de portée est verrouillé tant que ce profil est attribué.',
 	'permissionProfiles.filterAllGrains': 'Tous les types de portée',
 	'permissionProfiles.permissions': 'Permissions',
 	'permissionProfiles.boundStaff': 'Personnel',
@@ -1314,7 +1331,7 @@ export const fr: Dict = {
 	'permissionProfiles.deleteConfirm': 'Supprimer le profil « {name} » ? Les permissions uniques restent en permissions supplémentaires ; les autres profils sont recalculés.',
 	'permissionProfiles.saveUpdatesStaff': 'Cela met à jour {n} membres du personnel liés à ce profil.',
 	'permissionProfiles.empty': 'Aucun profil ne correspond à votre recherche.',
-	'permissionProfiles.checklistHint': 'Seules les permissions de ce type de portée peuvent être incluses.',
+	'permissionProfiles.checklistHint': 'Sélectionnez les permissions ; définissez leurs périmètres lors de l’affectation du profil.',
 
 	'periodDefinitions.sectionTitle': 'Grille horaire hebdomadaire',
 	'periodDefinitions.subtitle': 'Créneaux partagés par toutes les classes, une ligne par jour',
@@ -2351,8 +2368,8 @@ export const fr: Dict = {
 	'staff.profileRemoved': 'Profil {name} retiré.',
 	'staff.profileReordered': 'Ordre des profils mis à jour.',
 	'staff.noProfiles': 'Aucun profil de permissions. Créez-en un dans Configuration.',
-	'staff.tenantWideProfileOptional': 'Profil de permissions (optionnel)',
-	'staff.noTenantWideProfile': 'Aucun',
+	'staff.permissionProfileOptional': 'Profil de permissions (optionnel)',
+	'staff.noPermissionProfile': 'Aucun',
 	'staff.permissionDuplicateBound': 'Un profil accorde déjà cette permission avec la même portée. Choisissez une autre portée, ou modifiez le profil.',
 	'staff.scopeLabel': 'Portée',
 	'staff.scope.global': 'Globale',
