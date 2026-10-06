@@ -15,6 +15,7 @@
 	import { buildTimetableRangePresets, timetableGenerationModalContentClass, TIMETABLE_GENERATION_MODAL_SETUP_BODY_CLASS, TIMETABLE_GENERATION_MODAL_SETUP_LAYOUT_CLASS, TIMETABLE_GENERATION_MODAL_TAB_PANEL_CLASS } from '../lib/timetable-generation-ui';
 	import { getToolsPageState } from '../tools-page.svelte';
 	import ImportProgressBar from './ImportProgressBar.svelte';
+	import TimetableClassSelection from './TimetableClassSelection.svelte';
 	import TimetableGenerationErrorPanel from './TimetableGenerationErrorPanel.svelte';
 	import TimetableGenerationResultPanel from './TimetableGenerationResultPanel.svelte';
 	import TimetableGenerationSetupTabs from './TimetableGenerationSetupTabs.svelte';
@@ -47,6 +48,7 @@
 	let startDate = $state('');
 	let endDate = $state('');
 	let selectedClassId = $state('');
+	let selectedClassGroupIds = $state<string[]>([]);
 	let enforceWorkloadFulfillment = $state<boolean | undefined>();
 	let generationMode = $state<'weekly' | 'free'>('weekly');
 	let excludeBreakSlots = $state<boolean | undefined>();
@@ -62,6 +64,7 @@
 	let maxSpanOverrides = $state<Record<string, number>>({});
 	let schoolResult = $state<GenerateSchoolResult | null>(null);
 	let generationError = $state<TimetableGenerationError | null>(null);
+	let formScope = $state('');
 
 	const periods = $derived(academicContext.periodDefinitionsForYear(academicContext.yearId));
 	const yearStart = $derived(formatDateInput(academicContext.year?.startDate));
@@ -74,7 +77,9 @@
 	const validRange = $derived(Boolean(startDate && endDate && startDate <= endDate
 		&& (!yearStart || startDate >= yearStart)
 		&& (!yearEnd || endDate <= yearEnd)));
-	const workloadClasses = $derived(planningPage.classes.map(row => ({ id: row.id, name: row.name })));
+	const selectedClasses = $derived(planningPage.classes.filter(row => selectedClassGroupIds.includes(row.id)));
+	const workloadClasses = $derived(selectedClasses.map(row => ({ id: row.id, name: row.name })));
+	const selectedClassSubjects = $derived(planningPage.classSubjects.filter(row => selectedClassGroupIds.includes(row.classGroupId)));
 	const classLabels = $derived(Object.fromEntries(planningPage.classes.map(row => [row.id, row.name])));
 	const rangeLabel = $derived(`${startDate} – ${endDate}`);
 	const progress = $derived(planningPage.generationProgress);
@@ -97,9 +102,11 @@
 	);
 
 	function initializeForm() {
+		formScope = `${academicContext.schools[0]?.id ?? ''}:${academicContext.yearId}`;
 		generating = false;
 		({ startDate, endDate } = planningPage.range);
 		selectedClassId = planningPage.classes[0]?.id ?? '';
+		selectedClassGroupIds = planningPage.classes.map(row => row.id);
 		overrides = {};
 		minSpanOverrides = {};
 		maxSpanOverrides = {};
@@ -125,7 +132,20 @@
 
 	$effect(() => {
 		const isOpen = open;
-		untrack(() => handleModalOpenChange(isOpen));
+		// Reset drafts when academic scope changes while the form is open.
+		const scope = `${academicContext.schools[0]?.id ?? ''}:${academicContext.yearId}`;
+		untrack(() => {
+			const changedScope = isOpen && formScope && scope !== formScope;
+			handleModalOpenChange(isOpen);
+			if (changedScope)
+				onPhaseChange('setup');
+		});
+	});
+
+	$effect(() => {
+		if (!selectedClasses.some(row => row.id === selectedClassId)) {
+			selectedClassId = selectedClasses[0]?.id ?? '';
+		}
 	});
 
 	function handleModalOpenChange(isOpen: boolean) {
@@ -159,12 +179,14 @@
 	}
 
 	async function submit() {
-		if (!validRange) {
+		if (!validRange || !selectedClasses.length || generating || planningPage.busy) {
 			return;
 		}
 		generating = true;
+		const runScope = formScope;
 		try {
 			const outcome = await planningPage.generate({
+				classGroupIds: [...selectedClassGroupIds],
 				startDate,
 				endDate,
 				options: buildOptions(),
@@ -172,6 +194,8 @@
 				minPeriodSpanByClassSubjectId: minSpanOverrides,
 				maxPeriodSpanByClassSubjectId: maxSpanOverrides,
 			});
+			if (formScope !== runScope)
+				return;
 			if (outcome.ok) {
 				schoolResult = outcome.value;
 				onPhaseChange('success');
@@ -182,7 +206,8 @@
 			}
 		}
 		finally {
-			generating = false;
+			if (formScope === runScope)
+				generating = false;
 		}
 	}
 
@@ -213,7 +238,7 @@
 	contentClass={timetableGenerationModalContentClass(viewPhase)}
 	bodyClass={viewPhase === 'setup' ? TIMETABLE_GENERATION_MODAL_SETUP_BODY_CLASS : undefined}
 	busy={planningPage.busy}
-	submitDisabled={!validRange || !planningPage.canGenerateSchoolInitial}
+	submitDisabled={!validRange || !selectedClasses.length || !planningPage.canGenerateSchoolInitial}
 	onSubmit={submit}
 >
 	{#if viewPhase === 'error' && generationError}
@@ -252,6 +277,8 @@
 					{validRange}
 				/>
 
+				<TimetableClassSelection classes={planningPage.classes} gradeLevels={academicContext.gradeLevels} bind:selectedIds={selectedClassGroupIds} disabled={planningPage.busy || generating} />
+
 				<TimetableGenerationSetupTabs
 					bind:activeTab={() => setupTab, onSetupTabChange}
 				/>
@@ -261,7 +288,7 @@
 				{#if setupTab === 'subjects'}
 					<TimetableWorkloadConfigPanel
 						classes={workloadClasses}
-						classSubjects={planningPage.classSubjects}
+						classSubjects={selectedClassSubjects}
 						subjectLabels={planningPage.subjectLabels}
 						teacherLabelsByClassSubjectId={planningPage.teacherLabelsByClassSubjectId}
 						school={academicContext.schools[0]}
@@ -297,7 +324,7 @@
 		{:else}
 			<Button variant="ghost" onclick={close} disabled={busy}>{$t('common.cancel')}</Button>
 			{#if viewPhase !== 'generating'}
-				<Button data-testid="timetable-generate-submit" onclick={submit} disabled={busy || submitDisabled}>{$t('timetable.generateSchool')}</Button>
+				<Button data-testid="timetable-generate-submit" onclick={submit} disabled={busy || submitDisabled}>{$t('timetable.generateSelectedClasses')}</Button>
 			{/if}
 		{/if}
 	{/snippet}

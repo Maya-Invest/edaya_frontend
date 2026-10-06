@@ -34,6 +34,7 @@
     "test:integration:webadmin": "bun scripts/webadmin-integration.ts",
     "test:integration:availability": "bun scripts/phone-availability-browser.ts",
     "test:integration:messaging-ui": "bun tests/integration/messaging-browser.ts",
+    "test:integration:timetable-selection": "bun tests/integration/timetable-selection-browser.ts",
     "screenshots": "bun scripts/screenshots.ts"
   },
   "dependencies": {

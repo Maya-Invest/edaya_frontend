@@ -24,13 +24,13 @@ export function timetableGenerationModalContentClass(
 }
 
 export const TIMETABLE_GENERATION_MODAL_SETUP_BODY_CLASS
-	= 'flex min-h-0 flex-1 flex-col overflow-hidden space-y-0';
+	= 'flex min-h-0 flex-1 flex-col overflow-y-auto space-y-0';
 
 export const TIMETABLE_GENERATION_MODAL_SETUP_LAYOUT_CLASS
 	= 'flex min-h-0 flex-1 flex-col gap-4';
 
 export const TIMETABLE_GENERATION_MODAL_TAB_PANEL_CLASS
-	= 'min-h-0 flex-1 overflow-hidden';
+	= 'min-h-64 flex-1 overflow-hidden';
 
 export type ClassSubject = components['schemas']['ClassSubject'];
 

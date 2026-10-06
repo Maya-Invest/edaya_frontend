@@ -533,6 +533,7 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 - **Surface:** Layout variant at `/configuration/tools`
 - **Tools:** Data import · teacher assignments · timetable generation · timetable publication
+- Timetable generation selects current-year classes with searchable grade-grouped checkboxes, all selected initially, plus select-all/clear controls. Search does not alter selection. Subject settings and submitted overrides cover selected classes only. Generate sequentially in grade/name/ID order with per-class saves, selected-class progress, and partial-failure reporting. Preserve selection and settings when running again; reset them on reopening or changing school/year.
 - Teacher assignments links to the canonical `/configuration/tools/teacher-assignments` hub;
   workflow tools open URL-backed modals whose steps and substantive internal panels are addressable.
 

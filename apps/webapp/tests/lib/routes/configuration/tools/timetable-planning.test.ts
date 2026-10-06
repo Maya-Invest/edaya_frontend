@@ -3,8 +3,10 @@ import type { ClassNode, GradeLevel } from '$lib/types/school';
 import { describe, expect, test } from 'bun:test';
 import {
 	generateSchoolTimetableSequentially,
+	selectedTimetableClasses,
 	SequentialTimetableGenerationError,
 	sortTimetableClasses,
+	timetableClassGroups,
 } from '../../../../../src/routes/(app)/configuration/tools/timetable-planning';
 
 function classNode(id: string, name: string, gradeLevelId: string): ClassNode {
@@ -30,6 +32,29 @@ function classResult(classGroupId: string): GenerateClassResult {
 }
 
 describe('tools timetable planning', () => {
+	test('validates, deduplicates and snapshots selected classes in generation order', () => {
+		const classes = [classNode('a', 'A', 'g1'), classNode('b', 'B', 'g1'), classNode('c', 'C', 'g2')];
+		const selected = selectedTimetableClasses(classes, ['b', 'a', 'b']);
+		expect(selected.map(row => row.id)).toEqual(['a', 'b']);
+		classes[0]!.name = 'Changed';
+		expect(selected[0]!.name).toBe('A');
+		expect(() => selectedTimetableClasses(classes, [])).toThrow();
+		expect(() => selectedTimetableClasses(classes, ['a', 'unknown-year-class'])).toThrow();
+	});
+
+	test('groups searchable class names by grade without changing the input or selection', () => {
+		const classes = [classNode('c', 'C', 'g2'), classNode('b', 'B', 'g1'), classNode('a', 'A', 'g1')];
+		const grades = [{ id: 'g1', label: 'Grade 1', order: 1 }, { id: 'g2', label: 'Grade 2', order: 2 }] as GradeLevel[];
+		expect(timetableClassGroups(classes, grades, '').map(group => group.classes.map(row => row.id))).toEqual([['a', 'b'], ['c']]);
+		expect(timetableClassGroups(classes, grades, 'grade 2')[0]?.classes.map(row => row.id)).toEqual(['c']);
+		expect(timetableClassGroups(classes, grades, ' B ')[0]?.classes.map(row => row.id)).toEqual(['b']);
+		expect(timetableClassGroups(classes, grades, 'missing')).toEqual([]);
+		expect(classes.map(row => row.id)).toEqual(['c', 'b', 'a']);
+	});
+
+	test('class ID breaks equal-grade and equal-name ties', () => {
+		expect(sortTimetableClasses([classNode('b', 'Same', 'g1'), classNode('a', 'Same', 'g1')], []).map(row => row.id)).toEqual(['a', 'b']);
+	});
 	test('orders classes by grade-level order and then class name', () => {
 		const levels = [
 			{ id: 'g2', order: 2 },

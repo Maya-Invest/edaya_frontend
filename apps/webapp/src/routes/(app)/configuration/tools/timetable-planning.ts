@@ -12,8 +12,31 @@ export function sortTimetableClasses(classes: ClassNode[], gradeLevels: GradeLev
 	};
 	return [...classes].sort((left, right) => {
 		const levelDifference = gradeOrder(left.gradeLevelId) - gradeOrder(right.gradeLevelId);
-		return levelDifference || left.name.localeCompare(right.name);
+		return levelDifference || left.name.localeCompare(right.name) || left.id.localeCompare(right.id);
 	});
+}
+
+export function selectedTimetableClasses<T extends { id: string }>(classes: T[], classGroupIds: string[]): T[] {
+	const ids = new Set(classGroupIds);
+	if (!ids.size || classGroupIds.some(id => !classes.some(row => row.id === id))) {
+		throw new Error('timetable.invalidClassSelection');
+	}
+	return classes.filter(row => ids.has(row.id)).map(row => ({ ...row }));
+}
+
+export function timetableClassGroups(classes: ClassNode[], gradeLevels: GradeLevel[], search: string) {
+	const query = search.trim().toLocaleLowerCase();
+	const grades = new Map(gradeLevels.map(grade => [grade.id, grade]));
+	const groups = new Map<string, { id: string; label: string; classes: ClassNode[] }>();
+	for (const row of sortTimetableClasses(classes, gradeLevels)) {
+		const label = grades.get(row.gradeLevelId)?.label || grades.get(row.gradeLevelId)?.name || '';
+		if (query && !`${row.name} ${label}`.toLocaleLowerCase().includes(query))
+			continue;
+		const group = groups.get(row.gradeLevelId) ?? { id: row.gradeLevelId, label, classes: [] };
+		group.classes.push(row);
+		groups.set(row.gradeLevelId, group);
+	}
+	return [...groups.values()];
 }
 
 function filterPlacementMap(
@@ -108,9 +131,17 @@ export async function generateSchoolTimetableSequentially(input: {
 }): Promise<GenerateSchoolResult> {
 	const completed: GenerateClassResult[] = [];
 	const total = input.classes.length;
+	// Snapshot the run so edits or refreshes cannot change the remaining work.
+	const classes = input.classes.map(row => ({ ...row }));
+	const subjectIdsByClass = new Map<string, Set<string>>();
+	for (const subject of input.classSubjects) {
+		const ids = subjectIdsByClass.get(subject.classGroupId) ?? new Set<string>();
+		ids.add(subject.id);
+		subjectIdsByClass.set(subject.classGroupId, ids);
+	}
 
-	for (let index = 0; index < input.classes.length; index++) {
-		const classGroup = input.classes[index]!;
+	for (let index = 0; index < classes.length; index++) {
+		const classGroup = classes[index]!;
 		input.onProgress?.({
 			current: index + 1,
 			total,
@@ -118,11 +149,7 @@ export async function generateSchoolTimetableSequentially(input: {
 			className: classGroup.name,
 		});
 
-		const classSubjectIds = new Set(
-			input.classSubjects
-				.filter(subject => subject.classGroupId === classGroup.id)
-				.map(subject => subject.id),
-		);
+		const classSubjectIds = subjectIdsByClass.get(classGroup.id) ?? new Set<string>();
 		const placementParameters = scopePlacementParametersForClass(
 			input.placementParameters,
 			classSubjectIds,

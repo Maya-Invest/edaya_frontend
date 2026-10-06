@@ -32,6 +32,7 @@ import {
 } from './lib/timetable-generation-errors';
 import {
   generateSchoolTimetableSequentially,
+  selectedTimetableClasses,
   SequentialTimetableGenerationError,
   sortTimetableClasses,
 
@@ -58,7 +59,7 @@ export class TimetablePlanningPageState {
 
   async invalidateIfStale() {
     if (!this.versions.hasLoaded() || !this.versions.isStale() || this.busy)
-return;
+      return;
     try {
       await this.load();
     }
@@ -153,10 +154,10 @@ return;
           : Promise.resolve([]),
         classSubjectIds.length
           ? client.entities.teacherAssignments.list({
-            classSubjectId: { $in: classSubjectIds },
-            academicYearId: academicContext.yearId,
-            status: 'active',
-          })
+              classSubjectId: { $in: classSubjectIds },
+              academicYearId: academicContext.yearId,
+              status: 'active',
+            })
           : Promise.resolve([]),
       ]);
       this.subjectLabels = Object.fromEntries(subjects.map(subject => [
@@ -219,8 +220,8 @@ return;
             if (error instanceof SequentialTimetableGenerationError && error.completed.length > 0) {
               entityVersions.bump('planning');
               try {
-      await this.load();
-    }
+                await this.load();
+              }
               catch { toast.error(translateTimetable('mutation.savedRefreshFailed')); }
             }
             throw error;
@@ -250,26 +251,39 @@ return;
   }
 
   async generate(input: {
+    classGroupIds: string[];
     startDate: string;
     endDate: string;
     options?: TimetableGenerationOptions;
   } & TimetablePlacementOverrides): Promise<TimetableMutationResult<GenerateSchoolResult>> {
+    const academicYearId = academicContext.yearId;
+    const schoolId = academicContext.schools[0]?.id;
     this.generationProgress = null;
     try {
       return await this.runMutation(async () => {
+        let classes: ClassNode[];
+        try {
+          classes = selectedTimetableClasses(this.classes, input.classGroupIds);
+        }
+        catch {
+          throw new Error(translateTimetable('timetable.invalidClassSelection'));
+        }
+        this.generationResult = null;
         const result = await generateSchoolTimetableSequentially({
-          academicYearId: academicContext.yearId,
+          academicYearId,
           startDate: input.startDate,
           endDate: input.endDate,
           options: input.options,
           placementParameters: buildTimetablePlacementParameters(input),
-          classes: this.classes,
+          classes,
           classSubjects: this.classSubjects,
           generateClass: generateClassTimetable,
           onProgress: (progress) => { this.generationProgress = progress; },
         });
-        this.generationResult = result;
-        this.activeRange = { startDate: input.startDate, endDate: input.endDate };
+        if (academicContext.yearId === academicYearId && academicContext.schools[0]?.id === schoolId) {
+          this.generationResult = result;
+          this.activeRange = { startDate: input.startDate, endDate: input.endDate };
+        }
         return result;
       }, { reportInModal: true });
     }

@@ -1257,7 +1257,8 @@
     "feature": "web.configuration.tools",
     "module": "Configuration",
     "endpoint": "http://localhost:5173/configuration/tools",
-    "action": "Planning EDT — générer brouillon"
+    "action": "Planning EDT — générer brouillon",
+    "acceptance": "Classes selected by searchable checkboxes; defaults and clear/select-all verified; only selected classes receive drafts; unselected timetable IDs remain unchanged after reload."
   },
   {
     "id": "web.scenario.0181",
