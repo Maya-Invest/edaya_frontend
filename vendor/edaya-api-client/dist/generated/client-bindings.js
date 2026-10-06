@@ -1556,6 +1556,21 @@ export const clientBindings = {
             "requestSchemaName": "RefundAvailableBalanceCommand",
             "responseSchemaName": "Payment"
         },
+        "createTeacherSignatureUpload": {
+            "publicName": "create-teacher-signature-upload",
+            "requestSchemaName": "CreateTeacherSignatureUploadCommand",
+            "responseSchemaName": "CreateTeacherSignatureUploadResponse"
+        },
+        "completeTeacherSignatureUpload": {
+            "publicName": "complete-teacher-signature-upload",
+            "requestSchemaName": "CompleteTeacherSignatureUploadCommand",
+            "responseSchemaName": "Teacher"
+        },
+        "clearTeacherSignature": {
+            "publicName": "clear-teacher-signature",
+            "requestSchemaName": "ClearTeacherSignatureCommand",
+            "responseSchemaName": "Teacher"
+        },
         "createProfilePhotoUpload": {
             "publicName": "create-profile-photo-upload",
             "requestSchemaName": "CreateProfilePhotoUploadCommand",

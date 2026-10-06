@@ -1554,6 +1554,21 @@ export declare const clientBindings: {
             readonly requestSchemaName: "RefundAvailableBalanceCommand";
             readonly responseSchemaName: "Payment";
         };
+        readonly createTeacherSignatureUpload: {
+            readonly publicName: "create-teacher-signature-upload";
+            readonly requestSchemaName: "CreateTeacherSignatureUploadCommand";
+            readonly responseSchemaName: "CreateTeacherSignatureUploadResponse";
+        };
+        readonly completeTeacherSignatureUpload: {
+            readonly publicName: "complete-teacher-signature-upload";
+            readonly requestSchemaName: "CompleteTeacherSignatureUploadCommand";
+            readonly responseSchemaName: "Teacher";
+        };
+        readonly clearTeacherSignature: {
+            readonly publicName: "clear-teacher-signature";
+            readonly requestSchemaName: "ClearTeacherSignatureCommand";
+            readonly responseSchemaName: "Teacher";
+        };
         readonly createProfilePhotoUpload: {
             readonly publicName: "create-profile-photo-upload";
             readonly requestSchemaName: "CreateProfilePhotoUploadCommand";

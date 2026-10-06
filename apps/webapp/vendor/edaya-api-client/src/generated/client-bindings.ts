@@ -149,14 +149,14 @@ export const clientBindings = {
       "staffPermissionAssignments": {
         "publicName": "staff-permission-assignments",
         "schemaName": "StaffPermissionAssignment",
-        "allowDirectSave": true,
+        "allowDirectSave": false,
         "publicOperations": {
-          "create": true,
-          "update": true,
-          "delete": true,
-          "batchCreate": true,
-          "batchUpdate": true,
-          "batchDelete": true
+          "create": false,
+          "update": false,
+          "delete": false,
+          "batchCreate": false,
+          "batchUpdate": false,
+          "batchDelete": false
         }
       },
       "staffPermissionProfiles": {
@@ -175,6 +175,32 @@ export const clientBindings = {
       "staffPermissionProfileBindings": {
         "publicName": "staff-permission-profile-bindings",
         "schemaName": "StaffPermissionProfileBinding",
+        "allowDirectSave": false,
+        "publicOperations": {
+          "create": false,
+          "update": false,
+          "delete": false,
+          "batchCreate": false,
+          "batchUpdate": false,
+          "batchDelete": false
+        }
+      },
+      "staffManualPermissionAssignments": {
+        "publicName": "staff-manual-permission-assignments",
+        "schemaName": "StaffManualPermissionAssignment",
+        "allowDirectSave": false,
+        "publicOperations": {
+          "create": false,
+          "update": false,
+          "delete": false,
+          "batchCreate": false,
+          "batchUpdate": false,
+          "batchDelete": false
+        }
+      },
+      "staffPermissionScopeDefaults": {
+        "publicName": "staff-permission-scope-defaults",
+        "schemaName": "StaffPermissionScopeDefaults",
         "allowDirectSave": false,
         "publicOperations": {
           "create": false,
@@ -956,20 +982,30 @@ export const clientBindings = {
         "requestSchemaName": "AssignStaffToLessonSessionCommand",
         "responseSchemaName": "StaffAssignment"
       },
+      "configureStaffPermissionScopeDefaults": {
+        "publicName": "configure-staff-permission-scope-defaults",
+        "requestSchemaName": "ConfigureStaffPermissionScopeDefaultsCommand",
+        "responseSchemaName": "ConfigureStaffPermissionScopeDefaultsResponse"
+      },
+      "removeStaffPermission": {
+        "publicName": "remove-staff-permission",
+        "requestSchemaName": "RemoveStaffPermissionCommand",
+        "responseSchemaName": "RemoveStaffPermissionResponse"
+      },
       "assignStaffPermission": {
         "publicName": "assign-staff-permission",
         "requestSchemaName": "StaffPermissionAssignmentConfigCommand",
-        "responseSchemaName": "StaffPermissionAssignment"
+        "responseSchemaName": "AssignStaffPermissionResponse"
       },
       "configurePermissionProfile": {
         "publicName": "configure-permission-profile",
         "requestSchemaName": "ConfigurePermissionProfileCommand",
-        "responseSchemaName": "StaffPermissionProfile"
+        "responseSchemaName": "ConfigurePermissionProfileResponse"
       },
       "applyStaffPermissionProfile": {
         "publicName": "apply-staff-permission-profile",
         "requestSchemaName": "ApplyStaffPermissionProfileCommand",
-        "responseSchemaName": "StaffPermissionProfileBinding"
+        "responseSchemaName": "ApplyStaffPermissionProfileResponse"
       },
       "reorderStaffPermissionProfiles": {
         "publicName": "reorder-staff-permission-profiles",
@@ -1520,6 +1556,21 @@ export const clientBindings = {
         "publicName": "refund-available-balance",
         "requestSchemaName": "RefundAvailableBalanceCommand",
         "responseSchemaName": "Payment"
+      },
+      "createTeacherSignatureUpload": {
+        "publicName": "create-teacher-signature-upload",
+        "requestSchemaName": "CreateTeacherSignatureUploadCommand",
+        "responseSchemaName": "CreateTeacherSignatureUploadResponse"
+      },
+      "completeTeacherSignatureUpload": {
+        "publicName": "complete-teacher-signature-upload",
+        "requestSchemaName": "CompleteTeacherSignatureUploadCommand",
+        "responseSchemaName": "Teacher"
+      },
+      "clearTeacherSignature": {
+        "publicName": "clear-teacher-signature",
+        "requestSchemaName": "ClearTeacherSignatureCommand",
+        "responseSchemaName": "Teacher"
       },
       "createProfilePhotoUpload": {
         "publicName": "create-profile-photo-upload",

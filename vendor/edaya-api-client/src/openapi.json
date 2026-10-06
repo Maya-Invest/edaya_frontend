@@ -5471,6 +5471,11 @@
             "nullable": true,
             "minLength": 1
           },
+          "signatureAttachmentId": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1
+          },
           "photoUrl": {
             "type": "string",
             "nullable": true,
@@ -5534,6 +5539,11 @@
             "minLength": 1
           },
           "code": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1
+          },
+          "signatureAttachmentId": {
             "type": "string",
             "nullable": true,
             "minLength": 1
@@ -19139,6 +19149,106 @@
           "method"
         ]
       },
+      "CreateTeacherSignatureUploadResponse": {
+        "type": "object",
+        "properties": {
+          "attachmentId": {
+            "type": "string"
+          },
+          "storageKey": {
+            "type": "string"
+          },
+          "uploadUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "expiresAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending_upload"
+            ]
+          }
+        },
+        "required": [
+          "attachmentId",
+          "storageKey",
+          "uploadUrl",
+          "expiresAt",
+          "status"
+        ]
+      },
+      "CreateTeacherSignatureUploadCommand": {
+        "type": "object",
+        "properties": {
+          "attachmentId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fileName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mimeType": {
+            "type": "string",
+            "enum": [
+              "image/png"
+            ]
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "maximum": 1048576
+          }
+        },
+        "required": [
+          "fileName",
+          "mimeType",
+          "sizeBytes"
+        ],
+        "additionalProperties": false
+      },
+      "CompleteTeacherSignatureUploadCommand": {
+        "type": "object",
+        "properties": {
+          "attachmentId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "attachmentId"
+        ],
+        "additionalProperties": false
+      },
+      "ClearTeacherSignatureCommand": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "attachmentId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "requestId",
+          "attachmentId"
+        ],
+        "additionalProperties": false
+      },
       "CreateProfilePhotoUploadResponse": {
         "type": "object",
         "properties": {
@@ -28949,6 +29059,26 @@
               "signatureAttachmentId": {
                 "type": "string",
                 "minLength": 1
+              },
+              "teacherSignatures": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "teacherId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "attachmentId": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "teacherId",
+                    "attachmentId"
+                  ]
+                }
               },
               "issuanceAssetVersion": {
                 "type": "integer",
@@ -53267,6 +53397,396 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/create-teacher-signature-upload": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "create-teacher-signature-upload",
+        "operationId": "commands.createTeacherSignatureUpload",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "createTeacherSignatureUpload",
+        "x-edaya-command-public-name": "create-teacher-signature-upload",
+        "x-edaya-request-schema": "CreateTeacherSignatureUploadCommand",
+        "x-edaya-response-schema": "CreateTeacherSignatureUploadResponse",
+        "requestBody": {
+          "description": "create-teacher-signature-upload payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTeacherSignatureUploadCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed create-teacher-signature-upload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateTeacherSignatureUploadResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/complete-teacher-signature-upload": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "complete-teacher-signature-upload",
+        "operationId": "commands.completeTeacherSignatureUpload",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "completeTeacherSignatureUpload",
+        "x-edaya-command-public-name": "complete-teacher-signature-upload",
+        "x-edaya-request-schema": "CompleteTeacherSignatureUploadCommand",
+        "x-edaya-response-schema": "Teacher",
+        "requestBody": {
+          "description": "complete-teacher-signature-upload payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteTeacherSignatureUploadCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed complete-teacher-signature-upload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Teacher"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authorization session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied due to authorization policies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Business rule violation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessRuleViolationResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ],
+                  "example": {
+                    "message": "Hello World"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core/commands/clear-teacher-signature": {
+      "post": {
+        "tags": [
+          "Core Commands"
+        ],
+        "summary": "clear-teacher-signature",
+        "operationId": "commands.clearTeacherSignature",
+        "x-edaya-kind": "command",
+        "x-edaya-command-key": "clearTeacherSignature",
+        "x-edaya-command-public-name": "clear-teacher-signature",
+        "x-edaya-request-schema": "ClearTeacherSignatureCommand",
+        "x-edaya-response-schema": "Teacher",
+        "requestBody": {
+          "description": "clear-teacher-signature payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClearTeacherSignatureCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Executed clear-teacher-signature",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Teacher"
                 }
               }
             }

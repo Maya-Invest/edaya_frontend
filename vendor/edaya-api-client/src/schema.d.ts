@@ -3518,6 +3518,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/core/commands/create-teacher-signature-upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** create-teacher-signature-upload */
+        post: operations["commands.createTeacherSignatureUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/commands/complete-teacher-signature-upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** complete-teacher-signature-upload */
+        post: operations["commands.completeTeacherSignatureUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/commands/clear-teacher-signature": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** clear-teacher-signature */
+        post: operations["commands.clearTeacherSignature"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/core/commands/create-profile-photo-upload": {
         parameters: {
             query?: never;
@@ -13454,6 +13505,7 @@ export interface components {
             firstName: string;
             lastName: string;
             code?: string | null;
+            signatureAttachmentId?: string | null;
             photoUrl?: string | null;
             email?: string | null;
             phone?: string | null;
@@ -13470,6 +13522,7 @@ export interface components {
             firstName: string;
             lastName: string;
             code?: string | null;
+            signatureAttachmentId?: string | null;
             photoUrl?: string | null;
             email?: string | null;
             phone?: string | null;
@@ -16317,6 +16370,32 @@ export interface components {
             reference?: string;
             notes?: string;
         };
+        CreateTeacherSignatureUploadResponse: {
+            attachmentId: string;
+            storageKey: string;
+            /** Format: uri */
+            uploadUrl: string;
+            expiresAt: string | null;
+            headers?: {
+                [key: string]: string;
+            };
+            /** @enum {string} */
+            status: "pending_upload";
+        };
+        CreateTeacherSignatureUploadCommand: {
+            attachmentId?: string;
+            fileName: string;
+            /** @enum {string} */
+            mimeType: "image/png";
+            sizeBytes: number;
+        };
+        CompleteTeacherSignatureUploadCommand: {
+            attachmentId: string;
+        };
+        ClearTeacherSignatureCommand: {
+            requestId: string;
+            attachmentId: string;
+        };
         CreateProfilePhotoUploadResponse: {
             attachmentId: string;
             storageKey: string;
@@ -18622,6 +18701,10 @@ export interface components {
                 crestAttachmentId?: string;
                 stampAttachmentId?: string;
                 signatureAttachmentId?: string;
+                teacherSignatures?: {
+                    teacherId: string;
+                    attachmentId: string;
+                }[];
                 issuanceAssetVersion?: number;
                 academicPeriodId?: string;
                 academicSources?: {
@@ -33374,6 +33457,240 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Payment"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "commands.createTeacherSignatureUpload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description create-teacher-signature-upload payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CreateTeacherSignatureUploadCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed create-teacher-signature-upload */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateTeacherSignatureUploadResponse"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "commands.completeTeacherSignatureUpload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description complete-teacher-signature-upload payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CompleteTeacherSignatureUploadCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed complete-teacher-signature-upload */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Teacher"];
+                };
+            };
+            /** @description Invalid request payload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Missing or invalid authorization session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Access denied due to authorization policies */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+            /** @description Business rule violation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessRuleViolationResponse"];
+                };
+            };
+            /** @description Internal server error occurred */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                    };
+                };
+            };
+        };
+    };
+    "commands.clearTeacherSignature": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description clear-teacher-signature payload */
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ClearTeacherSignatureCommand"];
+            };
+        };
+        responses: {
+            /** @description Executed clear-teacher-signature */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Teacher"];
                 };
             };
             /** @description Invalid request payload */

@@ -1,5 +1,5 @@
 {
-  "passed": 83,
+  "passed": 119,
   "failed": 0,
   "skipped": 0,
   "results": [
@@ -371,6 +371,186 @@
     {
       "scene": "DF",
       "step": "4 URL modal=payment",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "dashboard-fr-1440",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "imports-fr-1440",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "generation-fr-1440",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "subjects-fr-1440",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "class-assignments-fr-1440",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "report-definitions-fr-1440",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "timetable-fr-1440",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "finance-fr-1440",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "notifications-fr-1440",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "dashboard-fr-390",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "imports-fr-390",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "generation-fr-390",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "subjects-fr-390",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "class-assignments-fr-390",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "report-definitions-fr-390",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "timetable-fr-390",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "finance-fr-390",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "notifications-fr-390",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "dashboard-en-1440",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "imports-en-1440",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "generation-en-1440",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "subjects-en-1440",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "class-assignments-en-1440",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "report-definitions-en-1440",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "timetable-en-1440",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "finance-en-1440",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "notifications-en-1440",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "dashboard-en-390",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "imports-en-390",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "generation-en-390",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "subjects-en-390",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "class-assignments-en-390",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "report-definitions-en-390",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "timetable-en-390",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "finance-en-390",
+      "status": "pass"
+    },
+    {
+      "scene": "Cleanup",
+      "step": "notifications-en-390",
       "status": "pass"
     },
     {
