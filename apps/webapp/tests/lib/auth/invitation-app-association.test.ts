@@ -16,7 +16,7 @@ describe('invitation app association files', () => {
 			applinks: { details: Array<{ appIDs: string[]; components: Array<{ '/': string }> }> };
 		};
 		expect(aasa.applinks.details[0]?.appIDs).toContain(
-			'ZZRPX6RMZ7.com.softilab.edaya.guardian',
+			'ZZRPX6RMZ7.ca.mayainvest.edaya.guardian',
 		);
 		expect(aasa.applinks.details[0]?.components).toEqual([{ '/': '/invite/*' }]);
 	});
@@ -28,7 +28,7 @@ describe('invitation app association files', () => {
 			target: { package_name: string; sha256_cert_fingerprints: string[] };
 		}>;
 		const fingerprints = links[0]?.target.sha256_cert_fingerprints ?? [];
-		expect(links[0]?.target.package_name).toBe('com.softilab.edaya.guardian');
+		expect(links[0]?.target.package_name).toBe('ca.mayainvest.edaya.guardian');
 		// Play Store signing cert matches the upload `guardian` alias.
 		expect(fingerprints).toContain(
 			'C7:EF:EF:9F:FF:96:73:B6:AA:08:7E:AE:A5:77:F9:32:33:31:C9:A3:69:84:F2:B1:7E:E5:63:FF:1F:A0:0D:52',
