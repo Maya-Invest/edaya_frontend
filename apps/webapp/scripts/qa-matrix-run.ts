@@ -296,7 +296,7 @@ async function main(): Promise<void> {
 		const setupEntities = { ...journey.entities, ...(await loadSetupEntities()) };
 		Object.assign(entities, setupEntities);
 		entities.onboarded = true;
-		if (journey.steps.some(s => s.blocked)) {
+		if (journey.steps.some(s => s.step === 'student' && !s.ok)) {
 			entities.studentSetupBlocked = true;
 		}
 		if (!journey.structureOk) {

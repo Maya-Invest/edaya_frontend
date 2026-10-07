@@ -1,5 +1,6 @@
 """Regression checks for mandatory workflow gates and artifact boundaries."""
 from pathlib import Path
+import json
 import re
 import unittest
 
@@ -18,6 +19,14 @@ def dependencies(job):
 
 
 class WorkflowGates(unittest.TestCase):
+    def test_browser_runner_includes_every_declared_integration_suite(self):
+        scripts = json.loads((ROOT / 'apps/webapp/package.json').read_text())['scripts']
+        runner = (ROOT / '.github/scripts/run-browser-integration.sh').read_text()
+        for name in scripts:
+            if name.startswith('test:integration:'):
+                with self.subTest(suite=name):
+                    self.assertRegex(runner, r'\bbun run ' + re.escape(name) + r'(?=\s|$)')
+
     def test_full_pr_gate_requires_units_and_integration(self):
         file = ROOT / '.github/workflows/deploy_pr.yml'
         text = file.read_text()

@@ -5,10 +5,11 @@ import { describe, expect, test } from 'bun:test';
 import { compileModule } from 'svelte/compiler';
 
 plugin({ name: 'permission-form-runes', setup(builder) {
-	builder.onLoad({ filter: /(?:permission-impact-preview|staff-permission-form-data)-state\.svelte\.ts$/ }, async ({ path }) => ({ contents: compileModule(new Bun.Transpiler({ loader: 'ts' }).transformSync(await readFile(path, 'utf8')), { filename: path, generate: 'client' }).js.code, loader: 'js' }));
+	builder.onLoad({ filter: /(?:(?:permission-impact-preview|staff-permission-form-data)-state|permission-preview-probe)\.svelte\.ts$/ }, async ({ path }) => ({ contents: compileModule(new Bun.Transpiler({ loader: 'ts' }).transformSync(await readFile(path, 'utf8')), { filename: path, generate: 'client' }).js.code, loader: 'js' }));
 } });
 const { PermissionImpactPreviewState } = await import('../../src/lib/school/permission-impact-preview-state.svelte');
 const { StaffPermissionFormDataState } = await import('../../src/lib/school/staff-permission-form-data-state.svelte');
+const { PermissionPreviewProbe } = await import('../support/permission-preview-probe.svelte');
 const report = { changes: [], warnings: [] };
 function deferred<T>() {
 	let resolve!: (value: T) => void;
@@ -17,6 +18,14 @@ function deferred<T>() {
 	return { promise, resolve, reject };
 }
 describe('permission form state ownership', () => {
+	test('the derived Save gate updates after the first review and resets on close', async () => {
+		const form = new PermissionPreviewProbe();
+		expect(form.reviewed).toBe(false);
+		await form.preview.review(form.input, async () => ({ resolution: report }), () => form.input, () => true);
+		expect(form.reviewed).toBe(true);
+		form.preview.synchronize(false, form.input);
+		expect(form.reviewed).toBe(false);
+	});
 	for (const form of ['profile editing', 'profile assignment', 'manual assignment', 'default scopes']) {
 		for (const changed of ['schoolId', 'staffId', 'academicYearId', 'profileId', 'permission', 'customScopes', 'useDefaultScopes', 'startsAt', 'endsAt', 'status']) {
 			test(`${form} discards delayed review after ${changed} changes`, async () => {

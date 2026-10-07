@@ -2,7 +2,7 @@
  * Shared Playwright helpers for the owner UI journey.
  */
 import assert from 'node:assert/strict';
-import { runScenarios, type ScenarioStep } from '../support/scenario-registry';
+import { redactDiagnostic, runScenarios, type ScenarioStep } from '../support/scenario-registry';
 import { bindBrowserScenarioContext, type BrowserScenarioContext } from '../support/browser-scenario';
 import { captureIntegrationCheckpoint } from '../support/visual-artifacts';
 import { uiCommand, waitForMutationDialog } from '../support/ui-command';
@@ -296,7 +296,10 @@ export async function runModalMutation(journey: UiJourney, input: ModalMutationI
     onCheckpoint: captureIntegrationCheckpoint,
     onFailure: async () => { await journey.ctx.shot(`failure-mutation-${input.command}-${input.modal}`); },
   });
-  if (outcomes[0]?.status !== 'passed') state.postcondition = false;
+  if (outcomes[0]?.status !== 'passed') {
+    state.postcondition = false;
+    console.error(`Mutation ${input.command} failed: ${redactDiagnostic(outcomes[0]?.detail ?? 'Scenario did not complete')}`);
+  }
   coverCompletedModal(journey, input.parentRoute, input.modal, state, input.visibleAfter);
   if (input.actions && input.actionPath) coverMutationActions(journey, input.actionPath, input.actions,
     { exercised: state.submitted, postcondition: state.postcondition }, input.visibleAfter);

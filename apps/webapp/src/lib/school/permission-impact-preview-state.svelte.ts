@@ -7,8 +7,8 @@ export class PermissionImpactPreviewState {
 	report = $state<Report | null>(null);
 	loading = $state(false);
 	private version = 0;
-	private key = '';
-	private active = false;
+	private key = $state('');
+	private active = $state(false);
 
 	synchronize(active: boolean, payload: unknown) {
 		const key = JSON.stringify(payload);

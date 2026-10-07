@@ -6,7 +6,8 @@ import { apiFetch } from './setup/journey-api';
 import { uiCommand, waitForMutationDialog } from './support/ui-command';
 
 // This journey uses captured authentication and the freshly seeded local demo only.
-const base = 'http://localhost:5173';
+const base = (process.env.WEBAPP_URL ?? 'http://localhost:5173').replace(/\/+$/, '');
+assert(['localhost', '127.0.0.1'].includes(new URL(base).hostname), 'This journey must use a local fixture webapp');
 assert(['localhost', '127.0.0.1'].includes(new URL(process.env.API_URL ?? 'http://localhost:9999').hostname), 'This journey must use a local fixture API');
 const schoolId = 'sch-edaya-ci-cocody';
 const staffId = 'ci-st4';

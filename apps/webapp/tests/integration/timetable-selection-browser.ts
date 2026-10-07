@@ -12,6 +12,13 @@ async function main() {
 	const server = await createServer({
 		configFile: false,
 		root: appRoot,
+		// The full runner also serves the demo app from this root. Keep its
+		// dependency cache separate and avoid a reload during fixture interaction.
+		cacheDir: 'node_modules/.vite-timetable-selection',
+		optimizeDeps: {
+			entries: [`${fixture}/Harness.svelte`],
+			include: ['@maya-invest/edaya-api-client', 'bits-ui', 'lucide-svelte', 'tailwind-merge'],
+		},
 		plugins: [{
 			name: 'timetable-modal-fixture',
 			enforce: 'pre',
