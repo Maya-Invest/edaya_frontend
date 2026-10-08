@@ -24,7 +24,7 @@ tests/
 
 - **`tests/lib/**`** — mirror `src/lib/**` where practical (`api/`, `auth/`, `onboarding/`, …).
 - **`tests/support/**`** — OpenAPI fixtures, recording school client, SvelteKit mocks. Import via `$tests/support/...`.
-Use the dedicated backend `bun run dev:test` server for local captured email, WhatsApp and SMS. Enable web `PUBLIC_TEST_OTP_ACCESS=true` or Flutter debug `--dart-define=TEST_OTP_ACCESS=true` for explicit Show test code and Copy controls. CI uses that composition and a private captured mailbox; normal staging/production builds omit testing access.
+Use the backend `bun repo dev` server for local captured email, WhatsApp and SMS. Enable web `PUBLIC_TEST_OTP_ACCESS=true` or Flutter debug `--dart-define=TEST_OTP_ACCESS=true` for explicit Show test code and Copy controls. CI uses the separate internal testing composition and a private captured mailbox; normal staging/production builds omit testing access.
 - **`tests/integration/setup/**`** — `bun run test:integration:provisioned` (API-completes the wizard, then owner UI). Secondary teacher/educator invites must actually activate; a missing token or owner-link fallback fails the run.
 
 Local login + onboarding suite (unified API `:9999` with empty school storage, webapp `:5173`):
@@ -102,7 +102,7 @@ route/modal assertions share `openViewSurface`.
 
 Use a disposable local database and the dedicated backend testing entry point;
 never point these fixture-producing runs at staging or production. From
-`edaya_backend`, start `bun run dev:test` with the local database configuration and
+`edaya_backend`, start `bun repo dev` with the local database configuration and
 captured OTP mailbox, then run `bun repo seed --skip-attachments` against that
 same API. Keep the local file service available if the seed has image references.
 See the backend local development documentation for the database and mailbox
