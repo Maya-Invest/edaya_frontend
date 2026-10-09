@@ -19,6 +19,10 @@ def dependencies(job):
 
 
 class WorkflowGates(unittest.TestCase):
+    def test_disposable_api_disables_external_delivery(self):
+        script = (ROOT / ".github/scripts/ci-start-local-apis.sh").read_text()
+        self.assertIn("export EMAIL_TRANSPORT=log SMS_TRANSPORT=log PHONE_AUTH_MODE=disabled", script)
+
     def test_browser_runner_includes_every_declared_integration_suite(self):
         scripts = json.loads((ROOT / 'apps/webapp/package.json').read_text())['scripts']
         runner = (ROOT / '.github/scripts/run-browser-integration.sh').read_text()
