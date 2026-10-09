@@ -41,5 +41,7 @@ if (unexpectedTrackedEnvFiles.length > 0 || missingEnvExamples.length > 0) {
 }
 else {
   console.log('Repository environment file checks passed.')
-  expectedEnvExamples.forEach(materializeEnvFromExample)
+  const { CI } = process.env
+  if (!CI)
+    expectedEnvExamples.forEach(materializeEnvFromExample)
 }
