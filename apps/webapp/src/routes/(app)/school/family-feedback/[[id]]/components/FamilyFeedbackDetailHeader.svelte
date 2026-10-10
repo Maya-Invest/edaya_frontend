@@ -18,7 +18,7 @@
 		FAMILY_FEEDBACK_PUBLISH_PERMISSION,
 	} from '$lib/family-feedback/permissions';
 	import { FAMILY_FEEDBACK_STATUS_TONE } from '$lib/family-feedback/status';
-	import { t } from '$lib/i18n';
+	import { locale, t } from '$lib/i18n';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { writeModalSurface } from '$lib/modal/modal-url';
@@ -27,6 +27,7 @@
 	import { get } from 'svelte/store';
 	import FamilyFeedbackFormModal from '../../components/FamilyFeedbackFormModal.svelte';
 	import { getFamilyFeedbackPageState } from '../../family-feedback-page.svelte';
+	import { familyFeedbackActionAvailable, familyFeedbackActionBlocker } from '../../lib/family-feedback-actions';
 
 	const {
 		campaign,
@@ -77,6 +78,9 @@
 		return name ?? $t('familyFeedback.noModerator');
 	});
 
+	const openBlocker = $derived(familyFeedbackActionBlocker(live, 'open'));
+	const scheduleBlocker = $derived(familyFeedbackActionBlocker(live, 'schedule'));
+
 	let themeDraft = $state('');
 	let moderatorStaffId = $state('');
 	let actionBusy = $state(false);
@@ -96,7 +100,7 @@
 		if (!value) {
 			return '—';
 		}
-		return new Date(value).toLocaleDateString('fr-FR', {
+		return new Date(value).toLocaleDateString($locale, {
 			day: '2-digit',
 			month: 'short',
 			year: 'numeric',
@@ -106,10 +110,14 @@
 	}
 
 	async function runAction(work: () => Promise<boolean>, close: { open: boolean }) {
+		if (actionBusy)
+			return;
+		const campaignId = live.id;
+		const activeModal = modals.active;
 		actionBusy = true;
 		try {
 			const ok = await work();
-			if (ok) {
+			if (ok && live.id === campaignId && modals.active === activeModal) {
 				close.open = false;
 			}
 		}
@@ -151,8 +159,8 @@
 							variant="outline"
 							size="sm"
 							class="rounded-full"
-							disabled={disabled}
-							title={tooltipTitle}
+							disabled={disabled || actionBusy || Boolean(scheduleBlocker)}
+							title={tooltipTitle || (scheduleBlocker ? $t(scheduleBlocker) : undefined)}
 							onclick={() => (scheduleOpen.open = true)}
 						>
 							{$t('familyFeedback.schedule')}
@@ -161,8 +169,8 @@
 					<Button
 						size="sm"
 						class="rounded-full"
-						disabled={disabled}
-						title={tooltipTitle}
+						disabled={disabled || actionBusy || Boolean(openBlocker)}
+						title={tooltipTitle || (openBlocker ? $t(openBlocker) : undefined)}
 						onclick={() => (openOpen.open = true)}
 					>
 						{$t('familyFeedback.open')}
@@ -202,10 +210,12 @@
 						{$t('common.edit')}
 					</RowActionMenuItem>
 				{/if}
-				<RowActionMenuItem {disabled} title={tooltipTitle} onclick={() => (assignOpen.open = true)}>
-					{$t('familyFeedback.assignModerator')}
-				</RowActionMenuItem>
-				{#if live.status === 'open' || live.status === 'scheduled'}
+				{#if familyFeedbackActionAvailable(live, 'assign-moderator')}
+					<RowActionMenuItem {disabled} title={tooltipTitle} onclick={() => (assignOpen.open = true)}>
+						{$t('familyFeedback.assignModerator')}
+					</RowActionMenuItem>
+				{/if}
+				{#if familyFeedbackActionAvailable(live, 'close')}
 					<RowActionMenuItem {disabled} title={tooltipTitle} onclick={() => (closeOpen.open = true)}>
 						{$t('familyFeedback.close')}
 					</RowActionMenuItem>
@@ -215,14 +225,14 @@
 						{$t('familyFeedback.cancel')}
 					</RowActionMenuItem>
 				{/if}
-				{#if live.status === 'published'}
+				{#if familyFeedbackActionAvailable(live, 'archive')}
 					<RowActionMenuItem {disabled} title={tooltipTitle} onclick={() => (archiveOpen.open = true)}>
 						{$t('familyFeedback.archive')}
 					</RowActionMenuItem>
 				{/if}
 			{/snippet}
 		</PermissionGate>
-		{#if live.status === 'closed' || live.status === 'published'}
+		{#if familyFeedbackActionAvailable(live, 'theme') && !live.answersPurgedAt}
 			<PermissionGate
 				permission={FAMILY_FEEDBACK_MODERATE_PERMISSION}
 				mode="disable"
@@ -237,6 +247,9 @@
 		{/if}
 	{/snippet}
 </DrawerEntityHeader>
+{#if (live.status === 'draft' || live.status === 'scheduled') && (openBlocker || scheduleBlocker)}
+	<p role="status" class="mt-3 text-sm text-muted-foreground">{$t(openBlocker ?? scheduleBlocker!)}</p>
+{/if}
 
 <FamilyFeedbackFormModal campaign={live} bind:open={editOpen.open} />
 
@@ -263,7 +276,7 @@
 		<Select.Root type="single" value={moderatorStaffId} onValueChange={v => v && (moderatorStaffId = v)}>
 			<Select.Trigger>
 				<Select.Value placeholder={$t('familyFeedback.moderator')}>
-					{moderatorName}
+					{familyFeedbackPage.staff.find(staff => staff.id === moderatorStaffId)?.name ?? moderatorName}
 				</Select.Value>
 			</Select.Trigger>
 			<Select.Content class="z-[100]">
@@ -297,7 +310,8 @@
 <ConfirmModal
 	bind:open={scheduleOpen.open}
 	title={$t('familyFeedback.scheduleTitle')}
-	description={$t('familyFeedback.scheduleDescription')}
+	description={scheduleBlocker ? $t(scheduleBlocker) : $t('familyFeedback.scheduleDescription')}
+	confirmDisabled={Boolean(scheduleBlocker)}
 	confirmLabel={$t('familyFeedback.schedule')}
 	cancelLabel={$t('common.cancel')}
 	variant="default"
@@ -310,7 +324,8 @@
 <ConfirmModal
 	bind:open={openOpen.open}
 	title={$t('familyFeedback.openTitle')}
-	description={$t('familyFeedback.openDescription')}
+	description={openBlocker ? $t(openBlocker) : $t('familyFeedback.openDescription')}
+	confirmDisabled={Boolean(openBlocker)}
 	confirmLabel={$t('familyFeedback.open')}
 	cancelLabel={$t('common.cancel')}
 	variant="default"

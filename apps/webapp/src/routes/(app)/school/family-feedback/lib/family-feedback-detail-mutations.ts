@@ -1,15 +1,19 @@
 import type { FamilyFeedbackAudiencePreview } from '$lib/api/family-feedback-types';
 import type { FamilyFeedbackPageState } from '../family-feedback-page.svelte';
+import type { FamilyFeedbackAction } from './family-feedback-actions';
 import { academicContext } from '$lib/academic/context.svelte';
 import {
 	createFamilyFeedbackCampaign,
+	getFamilyFeedbackCampaign,
 	previewFamilyFeedbackAudience,
 	runFamilyFeedbackCampaignCommand,
 } from '$lib/api/family-feedback-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
+import { familyFeedbackActionBlocker } from './family-feedback-actions';
 import { runFamilyFeedbackRouteMutation } from './family-feedback-route-mutation';
 
 function client() {
@@ -123,11 +127,29 @@ async function runIdCommand(
 	id: string,
 	successMessage?: string,
 ): Promise<boolean> {
+	const action = publicName.split('-')[0] as FamilyFeedbackAction;
+	const scope = () => `${authSession.authUserId}:${authSession.userId}:${authSession.schoolId}:${academicContext.yearId}`;
+	const capturedScope = scope();
+	const selectedClient = client();
 	const result = await runFamilyFeedbackRouteMutation({
-		request: () => runFamilyFeedbackCampaignCommand(client(), method, publicName, { id }),
+		request: () => {
+			const campaign = state.findCampaign(id);
+			const blocker = campaign && familyFeedbackActionBlocker(campaign, action);
+			if (blocker)
+				throw new Error(get(t)(blocker));
+			return runFamilyFeedbackCampaignCommand(selectedClient, method, publicName, { id });
+		},
+		onConflict: async () => {
+			if (scope() !== capturedScope)
+				return;
+			const campaign = await getFamilyFeedbackCampaign(selectedClient, id);
+			if (campaign && scope() === capturedScope)
+				state.patchCampaign(id, campaign);
+		},
 		successMessage,
 		onSuccess: (campaign) => {
-			state.patchCampaign(campaign.id, campaign);
+			if (scope() === capturedScope)
+				state.patchCampaign(campaign.id, campaign);
 		},
 	});
 	return Boolean(result);

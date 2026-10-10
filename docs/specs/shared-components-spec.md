@@ -112,6 +112,8 @@ Do not build ad-hoc `<select>` lists for people — use pickers or **PickerModal
 | **StudentAvatar** | `school/shared/StudentAvatar.svelte` | Published student portrait only (headers, lists, switchers) |
 | **ProfilePhotoPicker** | `school/shared/ProfilePhotoPicker.svelte` | Crop/rotate JPEG export under 1 MiB. Staff and guardian self-photos publish immediately; student portraits use the Profile review card |
 
+Private portrait previews resolve an authorized download grant before fetching image bytes. Downloads served by the same API under `/core/files/` retain bearer authentication and reject redirects; external object-storage downloads omit account credentials. A denied grant or download must not fall back to an unauthenticated request.
+
 ### 2.8 Shared modules (not components)
 
 | Module | Path | Use for |
@@ -272,6 +274,10 @@ Correction lists use ListPageHeader, FilterSelect, FilterPanel, PageQuery and Da
 ### School conversation surfaces
 
 Route-local MessagesView composes ListPageHeader, DataState, DrawerEntityHeader, Dialog, FormModal, Button, Label and Textarea. Read-only teacher oversight uses the same thread presentation without school mutation actions. School queue status, unread state, author identity and conflict feedback are textual as well as visual.
+
+Route-local `ConversationMessageBubble` renders immutable history in chronological DOM order. School staff replies, including colleagues' replies, align right with `primary-container`; guardian messages align left on neutral `muted`. Teacher oversight puts teachers right and guardians left, describing participant roles rather than viewer ownership. Retain actual names, selectable multiline body text and smaller localized timestamps in browser timezone. Direction depends on author kind through the pure `messagePresentation` helper, never display names. Localized article labels identify direction/role, author and time without receipts. Bubbles wrap arbitrary words/URLs, use `radius-surface`, and cap width at 90% compact / 75% wide and 560px; compact enlarged text can use the available width. Header actions wrap at larger text sizes. Reply modal, drafts, pagination, polling and permissions retain their existing ownership.
+
+`tests/integration/messaging-browser.ts` contains isolated mocked conversation fixtures and FR/EN, compact/wide, 200% text visual checks. Set `EDAYA_MESSAGE_CAPTURES` to write captures. Dark web captures inject the manifest's existing dark palette for component compatibility review; the staff application remains light-only.
 
 ## Feature ownership and action contracts
 

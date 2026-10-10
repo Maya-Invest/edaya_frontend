@@ -83,3 +83,7 @@ A visual exception must identify its affected component, why existing variants c
 A design-system change updates the versioned manifest, generated outputs, font/asset inventory, this specification, component registry, human brief, and current visual evidence together. Run token/asset/literal checks and `bun run verify`. Validate FR/EN, responsive widths, keyboard focus, text enlargement, reduced motion and existing authentication journeys. Review diffs for any unintended logic or permission changes. Current galleries identify source revision, dirty source digest, token version, viewport, locale and theme; temporary before/after material stays outside durable galleries.
 
 The development-only demo account picker uses `AuthScreenShell`, the existing Button primitive, brand initials and localized staff roles. Selecting an account prefills the shared passwordless form and requires the usual explicit send and verification actions. Show a localized action to return to the picker.
+
+## Conversation history
+
+Use the route-local chat bubble contract in the component registry: right blue-container bubbles for school staff replies, left neutral guardian messages; oversight uses participant roles. Names precede selectable bodies and localized timestamps follow them. Width, position and localized accessible descriptions distinguish direction independently of color. Do not add read/delivery indicators or change messaging actions.

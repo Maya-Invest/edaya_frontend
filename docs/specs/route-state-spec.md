@@ -490,7 +490,7 @@ Execution order is mandatory:
 3. Run `onSuccess` after server success.
 4. Bump every `versionKeys` entry after `onSuccess` settles, including refresh failure, so stale views can refetch.
 5. Show `successMessage` after version bumps when refresh succeeds. If refresh fails after a confirmed write, retain the successful result and show localized saved-but-refresh-failed guidance; never roll back or repeat the write.
-6. Show `errorMessage` or the parsed server error after request rollback. HTTP 409 uses localized reload-and-review guidance. Generic mutation runners never retry requests automatically.
+6. Show `errorMessage` or the parsed server error after request rollback. HTTP 409 uses localized reload-and-review guidance. Family feedback maps recognized domain failure codes to specific localized prerequisite guidance and reloads the affected campaign once after a rejected lifecycle command; it never retries the command. Late lifecycle results must not patch another active profile, school or year. Generic mutation runners never retry requests automatically.
 
 ### Standard shape
 

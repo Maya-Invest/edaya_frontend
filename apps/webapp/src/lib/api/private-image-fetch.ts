@@ -1,3 +1,5 @@
+import { isAuthenticatedSchoolFileUrl } from '../documents/school-file-url';
+
 /**
  * Resolve the authenticated grant before fetching storage bytes. Following a
  * cross-origin redirect makes the browser send an opaque Origin to storage.
@@ -20,7 +22,9 @@ export async function fetchPrivateImageBlob(
 		if (!['http:', 'https:'].includes(destination.protocol) || destination.username || destination.password) {
 			throw new Error('Invalid image download destination');
 		}
-		response = await storageFetch(destination.href, { signal, credentials: 'omit' });
+		response = isAuthenticatedSchoolFileUrl(destination.href, url.origin)
+			? await authorizedFetch(destination.href, { signal, redirect: 'error' })
+			: await storageFetch(destination.href, { signal, credentials: 'omit' });
 	}
 	else {
 		response = await authorizedFetch(url.href, { signal });

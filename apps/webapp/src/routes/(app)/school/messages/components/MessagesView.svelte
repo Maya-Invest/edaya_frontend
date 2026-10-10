@@ -10,6 +10,7 @@
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
 	import { hasPermission } from '$lib/permissions';
+	import ConversationMessageBubble from './ConversationMessageBubble.svelte';
 
 	const { state, navigate }: { state: MessagesPageState; navigate: (id?: string, changes?: Record<string, string>) => void } = $props();
 	const detail = $derived(state.detail);
@@ -63,25 +64,25 @@
 			<div class="flex h-full flex-col">
 				<div class="flex items-center justify-between border-b border-border p-4"><Dialog.Title>{$t('messages.title')}</Dialog.Title><Button variant="ghost" aria-label={$t('common.close')} onclick={() => navigate(undefined, { modal: '' })}>{$t('common.close')}</Button></div>
 				<div class="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
-					<DrawerEntityHeader name={detail.conversation.subject} summary={`${detail.conversation.schoolName} · ${detail.conversation.guardianName}${detail.conversation.studentName ? ` · ${detail.conversation.studentName}` : ''}`}>
-						{#snippet actions()}
-							{#if detail.conversation.allowedActions.reply}<Button onclick={() => {
-								state.beginReply();
-								navigate(state.selectedId, { modal: 'reply' });
-							}}>{$t('messages.reply')}</Button>{/if}
-							{#if detail.conversation.allowedActions.resolve}<Button variant="outline" disabled={state.sending || detail.conversation.status === 'resolved'} onclick={() => state.mutate('resolve')}>{$t('messages.resolve')}</Button>{/if}
-						{/snippet}
-					</DrawerEntityHeader>
+					<div class="conversation-heading">
+						<DrawerEntityHeader name={detail.conversation.subject} summary={`${detail.conversation.schoolName} · ${detail.conversation.guardianName}${detail.conversation.studentName ? ` · ${detail.conversation.studentName}` : ''}`}>
+							{#snippet actions()}
+								{#if detail.conversation.allowedActions.reply}<Button class="h-auto min-h-10 whitespace-normal" onclick={() => {
+									state.beginReply();
+									navigate(state.selectedId, { modal: 'reply' });
+								}}>{$t('messages.reply')}</Button>{/if}
+								{#if detail.conversation.allowedActions.resolve}<Button class="h-auto min-h-10 whitespace-normal" variant="outline" disabled={state.sending || detail.conversation.status === 'resolved'} onclick={() => state.mutate('resolve')}>{$t('messages.resolve')}</Button>{/if}
+							{/snippet}
+						</DrawerEntityHeader>
+					</div>
 					<Dialog.Description>{detail.conversation.destination === 'teacher' ? `${detail.conversation.teacherName} · ${$t('messages.reviewOnly')}` : $t(`messages.${detail.conversation.status}`)}</Dialog.Description>
 					{#if !detail.conversation.allowedActions.reply && detail.conversation.destination === 'school'}<p>{$t('messages.unavailable')}</p>{/if}
 					{#if detail.hasMore}<Button variant="outline" onclick={() => state.older()}>{$t('messages.more')}</Button>{/if}
-					{#each detail.messages as message (message.id)}
-						<article class="space-y-2 border-b border-border py-4">
-							<h4 class="font-semibold">{message.authorKind === 'staff' ? `${$t('messages.schoolAuthor')} · ` : ''}{message.authorName}</h4>
-							<time class="text-sm text-muted-foreground" datetime={message.createdAt}>{new Date(message.createdAt).toLocaleString()}</time>
-							<p class="whitespace-pre-wrap break-words text-sm">{message.body}</p>
-						</article>
-					{/each}
+					<div class="conversation-thread space-y-3">
+						{#each detail.messages as message (message.id)}
+							<ConversationMessageBubble {message} destination={detail.conversation.destination} />
+						{/each}
+					</div>
 				</div>
 			</div>
 		{/if}
@@ -99,3 +100,9 @@
 	{#if state.error}<p role="alert">{state.error}</p>{/if}
 	{#if state.needsReview}<Button variant="outline" onclick={closeReply}>{$t('messages.reviewActivity')}</Button>{/if}
 </FormModal>
+
+<style>
+	.conversation-thread { container-type: inline-size; }
+	.conversation-heading :global(header > div > div:first-child) { flex-basis: 16rem; }
+	.conversation-heading :global(header > div > div:last-child) { max-width: 100%; }
+</style>

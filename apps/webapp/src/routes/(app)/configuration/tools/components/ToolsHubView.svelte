@@ -4,14 +4,12 @@
 		TimetableGenerationStep,
 		TimetablePublishStep,
 	} from '../lib/tools-workflow';
-	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
-	import Button, { buttonVariants } from '$lib/components/ui/button/button.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { CalendarRange, GraduationCap, Upload } from '$lib/icons';
+	import { CalendarRange, Upload } from '$lib/icons';
 	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
-	import { appPath } from '$lib/navigation/app-navigation';
 	import {
 		IMPORT_TYPE_TABS,
 		IMPORT_WORKFLOW_STEPS,
@@ -29,7 +27,6 @@
 	const importOpen = bindUrlModal(modals, 'import');
 	const generationOpen = bindUrlModal(modals, 'generate-timetable');
 	const publishOpen = bindUrlModal(modals, 'publish-timetable');
-	const teacherAssignmentsHref = appPath('/(app)/configuration/tools/teacher-assignments');
 
 	const importStep = $derived(
 		IMPORT_WORKFLOW_STEPS.includes(modals.step as ImportWorkflowStep)
@@ -99,37 +96,6 @@
 		</div>
 	</article>
 
-	<PermissionGate permission="STAFF_UPDATE" mode="hide">
-		<article
-			class="flex flex-col rounded-xl border border-border bg-card p-5 shadow-sm"
-			data-testid="teacher-assignments-tool"
-		>
-			<div class="mb-4 flex items-start gap-3">
-				<div class="rounded-lg bg-primary/10 p-2 text-primary">
-					<GraduationCap class="size-5" aria-hidden="true" />
-				</div>
-				<div class="min-w-0 flex-1">
-					<h3 class="font-display text-lg font-semibold">
-						{$t('tools.teacherAssignments.card.title')}
-					</h3>
-					<p class="mt-1 text-sm text-muted-foreground">
-						{$t('tools.teacherAssignments.card.description')}
-					</p>
-				</div>
-			</div>
-
-			<div class="mt-auto">
-				<a
-					href={teacherAssignmentsHref}
-					class={buttonVariants()}
-					data-testid="teacher-assignments-action"
-				>
-					{$t('tools.teacherAssignments.card.action')}
-				</a>
-			</div>
-		</article>
-	</PermissionGate>
-
 	<PermissionGate permission="TIMETABLE_UPDATE" mode="hide">
 		<article
 			class="flex flex-col rounded-xl border border-border bg-card p-5 shadow-sm"
@@ -145,7 +111,6 @@
 				</div>
 			</div>
 
-			<div class="mb-4"><AcademicPeriodSelector /></div>
 			<div class="mt-auto flex flex-wrap gap-2">
 				<Button
 					onclick={() => modals.open('generate-timetable', { step: 'setup', tab: 'subjects' })}

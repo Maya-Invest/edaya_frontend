@@ -45,7 +45,7 @@ User menu
 └── Account         → inbox, notification settings, profile
 ```
 
-Workspace context in the sidebar: **School** → **Academic year** → navigation. Global header: navigation toggle · **Language** · **User menu**. Shared academic term selection appears beside affected content/actions, not in the global header. Dashboard, evaluations, report cards, marks review, class assessment metrics, timetable/planning, relevant drawer tabs and logbook export expose this picker; unrelated finance, attendance and general configuration do not.
+Workspace context in the sidebar: **School** → **Academic year** → navigation. Global header: navigation toggle · **Language** · **User menu**. Shared academic term selection appears beside affected content/actions, not in the global header. Dashboard, evaluations, report cards, marks review, class assessment metrics, class timetable controls, relevant drawer tabs and logbook export expose this picker; unrelated finance, attendance and general configuration do not. Configuration Tools keeps term presets and date-range controls inside the generation and publication assistants, with no term picker on the timetable card.
 
 ### 2.2 Class context
 
@@ -370,7 +370,7 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 - **Entity:** family-feedback campaign (command/query only; not a generic Core entity) · **Complex drawer**
 - **List:** search assignment label · filter status · CTA New campaign (`FAMILY_FEEDBACK_CAMPAIGN_MANAGE`)
 - **Drawer tabs:** Setup · Audience · Moderation · Results
-- **Drawer header:** schedule · assign moderator · open/close/cancel · theme draft · publish/archive
+- **Drawer header:** schedule · assign moderator · open/close/cancel · theme draft · publish/archive. Opening and scheduling explain missing moderator/date prerequisites; confirmation cannot bypass them. Close is available only when open, theme editing only when closed with retained answers, moderator reassignment only before publication, and archive for published or cancelled campaigns. The moderator picker displays the selected draft value. Backend eligibility and permissions remain authoritative.
 - **API:** campaign commands plus `preview-family-feedback-audience`, `list-family-feedback-comments` (moderator), `get-family-feedback-aggregate-review`
 - **Copy:** “Family feedback” / “Retour des familles” — never mix with Assessments / Évaluations
 
@@ -533,10 +533,11 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 ### 7.28 Configuration — Tools
 
 - **Surface:** Layout variant at `/configuration/tools`
-- **Tools:** Data import · teacher assignments · timetable generation · timetable publication
+- **Tools:** Data import · timetable generation · timetable publication
+- The timetable card exposes Generate and Publish actions without a term picker. Generation and publication assistants retain their term presets, date-range controls and existing range defaults.
 - Timetable generation selects current-year classes with searchable grade-grouped checkboxes, all selected initially, plus select-all/clear controls. Search does not alter selection. Subject settings and submitted overrides cover selected classes only. Generate sequentially in grade/name/ID order with per-class saves, selected-class progress, and partial-failure reporting. Preserve selection and settings when running again; reset them on reopening or changing school/year.
-- Teacher assignments links to the canonical `/configuration/tools/teacher-assignments` hub;
-  workflow tools open URL-backed modals whose steps and substantive internal panels are addressable.
+- Workflow tools open URL-backed modals whose steps and substantive internal panels are addressable.
+- The teacher assignments hub remains available at `/configuration/tools/teacher-assignments` without a card on the Tools page.
 
 ### 7.29 Configuration — Teacher assignments hub
 

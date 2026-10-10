@@ -106,7 +106,7 @@ Global header controls:
 
 ### 1.2.1 Academic context placement
 
-Academic year is workspace context in the sidebar. The shared term selection remains session context, but its picker appears only beside affected content: dashboard summary; evaluations, report cards and marks-review toolbars; class roster assessment metrics; timetable controls; student report-card and teacher evaluations tabs; timetable-planning tool; logbook export. Grade-entry forms label their captured term; family-feedback forms retain their own period field. Finance, attendance and general configuration do not gain a term picker.
+Academic year is workspace context in the sidebar. The shared term selection remains session context, but its picker appears only beside affected content: dashboard summary; evaluations, report cards and marks-review toolbars; class roster assessment metrics; timetable controls; student report-card and teacher evaluations tabs; logbook export. Grade-entry forms label their captured term; family-feedback forms retain their own period field. Finance, attendance and general configuration do not gain a term picker. The Configuration Tools timetable card exposes Generate and Publish actions without a term picker; each assistant retains its own term presets and date-range controls.
 
 Use `AcademicPeriodSelector` with a persistent Term label and dates in its options. Keep selection shared and school-scoped. A year with no eligible terms clears the selected term, displays an explicit empty state and disables term-dependent actions; never reuse a term from another year. Pickers stay available in empty/error drawer tabs. Use existing keyboard/focus-managed primitives and wrapping controls on mobile.
 

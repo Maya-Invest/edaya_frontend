@@ -9,6 +9,7 @@
 		confirmLabel = 'Confirmer',
 		cancelLabel = 'Annuler',
 		busy = false,
+		confirmDisabled = false,
 		variant = 'destructive',
 		onCancel,
 		onOpenChange,
@@ -20,6 +21,7 @@
 		confirmLabel?: string;
 		cancelLabel?: string;
 		busy?: boolean;
+		confirmDisabled?: boolean;
 		variant?: 'default' | 'destructive';
 		onCancel?: () => void;
 		onOpenChange?: (open: boolean) => void;
@@ -50,7 +52,7 @@
 			</Dialog.Header>
 			<Dialog.Footer>
 				<Button variant="ghost" onclick={close} disabled={busy}>{cancelLabel}</Button>
-				<Button variant={variant} onclick={onConfirm} disabled={busy}>{confirmLabel}</Button>
+				<Button variant={variant} onclick={onConfirm} disabled={busy || confirmDisabled}>{confirmLabel}</Button>
 			</Dialog.Footer>
 		</Dialog.Content>
 	{/if}
