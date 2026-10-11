@@ -1,5 +1,5 @@
 /**
- * Human-readable test procedure + inputs for QA matrix Excel report.
+ * Human-readable test procedure + inputs for QA matrix CSV report.
  * Mirrors qa-matrix-scenarios.ts / filter-setup-registry.ts behaviour.
  */
 import type { QaTemplateRow } from './qa-template-matrix.manual';

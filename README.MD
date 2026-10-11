@@ -9,7 +9,7 @@ edaya_frontend/
 ├── apps/
 │   ├── webapp/              @edaya/webapp — school staff UI (Cloudflare Workers)
 │   └── webadmin/            @edaya/webadmin — platform operator UI (Cloudflare Workers)
-├── vendor/edaya-api-client/ Committed generated API client
+├── .generated/api-client/  Ignored client built from a resolved backend commit
 └── tooling/
     ├── web-fixtures/        @edaya/web-fixtures — test constants + demo login data
     └── repo/                @edaya/web-repo — repo hygiene + smoke tests
@@ -69,7 +69,7 @@ Dev servers proxy authentication, school requests and API docs to `API_URL` (def
 | `bun dev` | Start webapp + webadmin in watch mode |
 | `bun run dev:webapp` | School staff UI only |
 | `bun run dev:webadmin` | Webadmin only |
-| `bun run verify` | Pre-PR gate: CI helper tests, release contract, brand, repo hygiene, quality, build and tests |
+| `bun run verify` | Pre-PR gate: Typed tooling tests, prepared client, brand, repo hygiene, quality, build and tests |
 | `bun run lint` | ESLint across workspaces |
 | `bun run lint:fix` | ESLint with auto-fix |
 | `bun run check` | Type-check all apps |
@@ -104,7 +104,7 @@ Set the required `PUBLIC_API_URL` at build time.
 
 Typed API runtime and schema types come from **`@maya-invest/edaya-api-client`** (generated in `edaya_backend/package/api-client/`).
 
-Web apps re-export schema types at `$lib/api/schema`. Local development and CI install the committed copies in `vendor/edaya-api-client` and the two app vendor folders with `bun install --frozen-lockfile`. Backend generation alone does not update these copies. Refresh and validate the vendored artifacts and matching release contract together after a backend contract change.
+Web apps re-export schema types at `$lib/api/schema`. Run `bun run repo generate client staging`, `bun run repo generate dependencies`, then `bun run repo generate setup` before verification. Both apps consume the same locally built package in `.generated/api-client`; no vendor snapshots or package publication are required. See [CI setup](docs/reference/ci-setup.md).
 
 See [docs/reference/cross-repo-workflow.md](./docs/reference/cross-repo-workflow.md).
 

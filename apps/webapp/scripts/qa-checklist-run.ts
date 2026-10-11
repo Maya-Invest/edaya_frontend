@@ -7,7 +7,6 @@
  */
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 import type { Browser, Page } from 'playwright';
 import { ensurePlaywrightChromium } from './playwright-browsers';
 import {
@@ -29,8 +28,8 @@ import {
 } from './qa-harness-ui';
 import { waitForCommandPayload } from '../tests/integration/setup/journey-context';
 
-const OUT_DIR = path.join(import.meta.dirname, '../../../..', '.qa-checklist-run');
-const RESULTS_PATH = path.join(import.meta.dirname, '../../../..', 'qa-checklist-results.json');
+const OUT_DIR = path.join(import.meta.dirname, '../../..', '.qa-checklist-run');
+const RESULTS_PATH = path.join(import.meta.dirname, '../../..', 'qa-checklist-results.json');
 
 export interface QaRowResult {
 	page: string;
@@ -623,15 +622,6 @@ async function main(): Promise<void> {
 	console.log(`\n--- QA Summary ---`);
 	console.log(`OK: ${passed}  NOT OK: ${failed}  N/A: ${na}`);
 	console.log(`Results: ${RESULTS_PATH}`);
-
-	const xlsxScript = path.join(import.meta.dirname, 'update-qa-xlsx.py');
-	const py = spawnSync('python3', [xlsxScript], {
-		cwd: path.join(import.meta.dirname, '..'),
-		stdio: 'inherit',
-	});
-	if (py.status !== 0) {
-		console.warn('update-qa-xlsx.py failed — results JSON is still available');
-	}
 
 	await context.close();
 	await browser.close();

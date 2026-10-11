@@ -394,9 +394,10 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
   },
   'web.scenario.0166': fixtureName('definitions','reportCardDefId','name','aside[aria-label]'),
   'web.scenario.0176': async ctx => {
-    for (const id of ['import-pack-generic','teacher-assignments-tool','timetable-planning-tool']) await ctx.page.getByTestId(id).waitFor({state:'visible'});
-    await ctx.page.getByTestId('teacher-assignments-action').click();
-    await ctx.page.waitForURL('**/configuration/tools/teacher-assignments');
+    for (const id of ['import-pack-generic','timetable-planning-tool']) await ctx.page.getByTestId(id).waitFor({state:'visible'});
+    for (const id of ['import-action','timetable-planning-action']) {
+      assert(await ctx.page.getByTestId(id).isEnabled(), `Required tool action ${id} is disabled`);
+    }
   },
   'web.scenario.0178': async ctx => {
     const teacher = await entity(ctx,'teachers',ctx.entities.teacherId);

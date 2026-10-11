@@ -46,12 +46,9 @@ build/
 !.vscode/settings.json
 !.vscode/extensions.json
 !.vscode/launch.json
-# CI sibling checkout for edaya_backend (see _verify.yml); local dev may use a symlink
+# Local backend checkout
 edaya_backend
 apps/webapp/.onboarding-run
-# Pinned release artifact used for independent installs
-!vendor/edaya-api-client/dist/
-!vendor/edaya-api-client/dist/**
 
 apps/webapp/.webadmin-run/
 
@@ -62,3 +59,17 @@ __pycache__/
 
 # Local screenshot runs and diagnostic artifacts
 apps/webapp/.screenshots/
+
+# Prepared clients, isolated checkouts, and release evidence
+.generated/
+.ci/
+.release/
+.ci-evidence/
+.cache/repo-tools/
+
+.cache/clients/
+
+# Generated QA reports
+/qa-*.csv
+/qa-*-results.json
+/.qa-checklist-run/

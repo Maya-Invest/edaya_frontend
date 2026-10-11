@@ -1,0 +1,9 @@
+Usage: bun run repo <command>
+
+check         Repository hygiene and prepared client/brand integrity.
+test          unit | integration | tooling
+build         staging | production (no deployment)
+generate      client [staging|production] [--ref REF | --backend-root PATH] | dependencies | setup | brand | gallery | commands | reviewed-brand-baseline
+dev           Start webapp and webadmin.
+maintenance   emergency-deploy <staging|production> [--yes] [--dry-run]
+ci            verify | qualify <staging|production> | browser-suites | workflows | deploy <environment>

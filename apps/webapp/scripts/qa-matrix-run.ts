@@ -3,7 +3,7 @@ import { runScenarios } from '../tests/integration/support/scenario-registry';
 import { bindBrowserScenarioContext, type BrowserScenarioContext } from '../tests/integration/support/browser-scenario';
 /**
  * Exécute les scénarios de qa-template-matrix.ts via Playwright.
- * Écrit apps/webapp/.integration-run/qa-matrix-results.json puis régénère qa-test-matrix.xlsx.
+ * Écrit apps/webapp/.integration-run/qa-matrix-results.json puis régénère qa-test-matrix.csv.
  *
  * Policy: on NOT OK — log blocker, continue, exit 1. Fix confirmed defects while preserving intended behavior.
  *

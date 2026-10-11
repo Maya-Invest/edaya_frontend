@@ -56,9 +56,10 @@ export async function expectAppDashboard(page: Page): Promise<void> {
 			`Staff app chrome missing: ${page.url()} pending=${pending} body=${body.slice(0, 800)}`,
 		);
 	}
-	if (page.url().includes('/onboarding') || page.url().includes('/invite/') || page.url().includes('/login')) {
-		throw new Error(`Expected dashboard, landed on ${page.url()}`);
-	}
+	// Invitation membership refresh may still be navigating after the first shell appears.
+	// Require the completed dashboard landing; a persistent login redirect still fails.
+	await page.waitForURL(/\/dashboard(?:[/?#]|$)/, { timeout: 30_000 });
+	await chrome.waitFor({ state: 'visible', timeout: 30_000 });
 }
 
 export async function signUpThroughUi(

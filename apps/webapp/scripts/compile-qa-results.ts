@@ -4,9 +4,8 @@
  */
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 
-const ROOT = path.join(import.meta.dirname, '../../../..');
+const ROOT = path.join(import.meta.dirname, '../../..');
 const CSV_PATH = path.join(ROOT, 'qa-manual-checklist.csv');
 const RESULTS_PATH = path.join(ROOT, 'qa-checklist-results.json');
 
@@ -122,9 +121,4 @@ await writeFile(RESULTS_PATH, JSON.stringify(summary, null, 2));
 console.log(`Wrote ${RESULTS_PATH}`);
 console.log(`OK=${summary.passed} NOT OK=${summary.failed} N/A=${summary.na}`);
 
-const py = spawnSync('python', [path.join(import.meta.dirname, 'update-qa-xlsx.py')], {
-	cwd: path.join(import.meta.dirname, '..'),
-	stdio: 'inherit',
-	shell: true,
-});
-process.exit(py.status ?? 1);
+process.exit(summary.failed > 0 ? 1 : 0);

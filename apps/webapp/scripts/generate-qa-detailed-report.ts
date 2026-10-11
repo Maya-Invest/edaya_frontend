@@ -1,13 +1,12 @@
 #!/usr/bin/env bun
 /**
- * Detailed QA matrix Excel — all template rows with log-style trace, procedure, inputs, status, blockers.
+ * Detailed QA matrix CSV — all template rows with log-style trace, procedure, inputs, status, blockers.
  *
  * Usage: bun run qa:report:detailed
- * Output: qa-test-matrix-detailed.xlsx (+ CSV) at repo root
+ * Output: qa-test-matrix-detailed.csv at repo root
  */
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { QA_TEMPLATE_MATRIX, QA_TEMPLATE_MATRIX_RUNNABLE } from './qa-template-matrix';
 import { isExcludedMatrixRow } from './qa-matrix-exclusions';
 import {
@@ -19,10 +18,9 @@ import {
 import type { QaTemplateRow } from './qa-template-matrix.manual';
 
 const WEBAPP_DIR = path.join(import.meta.dirname, '..');
-const ROOT = path.join(import.meta.dirname, '../../../..');
+const ROOT = path.join(import.meta.dirname, '../../..');
 const MATRIX_RESULTS_PATH = path.join(WEBAPP_DIR, '.integration-run', 'qa-matrix-results.json');
 const CSV_PATH = path.join(ROOT, 'qa-test-matrix-detailed.csv');
-const XLSX_PATH = path.join(ROOT, 'qa-test-matrix-detailed.xlsx');
 
 interface MatrixResultRow {
 	module: string;
@@ -134,20 +132,14 @@ async function main(): Promise<void> {
 	const csv = lines.map(cols => cols.map(c => `"${c.replace(/"/g, '""')}"`).join(';')).join('\n');
 	await writeFile(CSV_PATH, `\uFEFF${csv}`, 'utf-8');
 
-	const py = spawnSync(
-		'python',
-		[path.join(import.meta.dirname, 'generate-qa-detailed-xlsx.py'), CSV_PATH, XLSX_PATH],
-		{ stdio: 'inherit', shell: true },
-	);
 
 	console.log(`\nRapport détaillé QA : ${QA_TEMPLATE_MATRIX.length} cas de test`);
 	console.log(`  Matrice complète: ${QA_TEMPLATE_MATRIX.length} | Runnable (dernier run): ${QA_TEMPLATE_MATRIX_RUNNABLE.length}`);
 	console.log(`  OK: ${stats.ok}  NOT OK: ${stats.notOk}  N/A: ${stats.na}  Manuel: ${stats.manual}  À faire: ${stats.todo}`);
 	console.log(`  CSV:  ${CSV_PATH}`);
-	console.log(`  XLSX: ${XLSX_PATH}`);
 	console.log(`  Source résultats: ${MATRIX_RESULTS_PATH}`);
 
-	process.exit(py.status === 0 ? 0 : 1);
+	process.exit(0);
 }
 
 main().catch(err => {

@@ -1,74 +1,36 @@
-# Repo CLI (`bun repo`)
+# Repository commands
 
-Canonical entry point for **repo hygiene and operations** in the `edaya_web` monorepo. **Turbo quality tasks** (`lint`, `check`, `test`, `build`, `quality`) run from the **repo root only** — never through `bun repo`.
+
+## Frontend commands
 
 ```sh
-bun repo --help
+bun run repo generate client staging
+bun run repo generate dependencies
+bun run repo generate setup
+bun run repo check
+bun run repo ci verify
+bun run repo test integration
+bun run repo build staging
 ```
 
-Implementation: `tooling/repo/cli/` — thin subprocess dispatch, no app imports.
+Preparation builds the backend TypeScript client and copies the package into ignored `.generated/api-client`. Both apps install that same local package. `generate setup` creates Svelte's framework inputs before checks. Checks do not create local environment files or rewrite generated sources. Repeat acquisition explicitly when changing backend input, then install and freeze dependencies.
 
-## Quick start
+The integration supervisor starts the same backend commit and local file service in temporary storage. Availability, onboarding, provisioned, webadmin and demo browser suites are mandatory, including the owned feature coverage gates. QA matrices retain JSON/CSV and browser reports; QA Excel workbook generation has been removed. Product spreadsheet imports/exports, onboarding templates and unrelated route inventories remain.
 
-| Task | Command |
-|------|---------|
-| Pre-PR check | `bun run verify` |
-| Repo hygiene only | `bun repo verify` |
-| Staging smoke | `bun repo smoke-test staging` |
+Environment secrets `CLOUDFLARE_API_TOKEN` and variable `CLOUDFLARE_ACCOUNT_ID` authorize deployment of webapp/webadmin. Deployment uploads their already built static directories without rebuilding. Emergency deployment is `bun run repo maintenance emergency-deploy staging --dry-run`, then explicit `--yes`, with evidence and no database operations.
 
-## Command tree
+<!-- repo-commands:start -->
 
 ```text
-bun repo
-├── doctor
-├── verify
-└── smoke-test staging
+Usage: bun run repo <command>
+
+check         Repository hygiene and prepared client/brand integrity.
+test          unit | integration | tooling
+build         staging | production (no deployment)
+generate      client [staging|production] [--ref REF | --backend-root PATH] | dependencies | setup | brand | gallery | commands | reviewed-brand-baseline
+dev           Start webapp and webadmin.
+maintenance   emergency-deploy <staging|production> [--yes] [--dry-run]
+ci            verify | qualify <staging|production> | browser-suites | workflows | deploy <environment>
 ```
 
-Deploy commands (`deploy:webapp:*`, `deploy:webadmin:*`) remain on the root `package.json` for now.
-
-## Validation
-
-### `bun repo doctor`
-
-Repo hygiene: tracked env files, required `.env.example` files. Materializes `.env` from examples when missing (for CI and first-time setup).
-
-### `bun repo verify`
-
-Repo hygiene only — **no Turbo**. Runs:
-
-1. Frontend import ownership and workspace reference checks
-2. `repo doctor`
-3. `@edaya/web-repo` unit tests
-
-**Not included:** `lint`, `check`, `build`, `test`, `quality` (root Turbo scripts), Playwright integration.
-
-### Pre-PR (`bun run verify`)
-
-Full gate from repo root — repo hygiene first, then Turbo quality + build + unit tests:
-
-```sh
-bun run verify
-# includes CI helper tests, release-contract and brand checks, repo hygiene, quality, build and tests
-```
-
-CI uses `bun run verify`. Playwright integration runs in a separate PR job — see [ci-setup.md](./ci-setup.md).
-
-## API client
-
-OpenAPI export and client generation live in **edaya_backend** (`bun repo openapi export` / `generate`). Web consumes `@maya-invest/edaya-api-client` — see [cross-repo-workflow.md](./cross-repo-workflow.md).
-
-## Operations
-
-```sh
-bun repo smoke-test staging
-```
-
-## Per-package iteration
-
-```sh
-bun --filter @edaya/webapp test
-bun --filter @edaya/webapp lint
-```
-
-Then `bun run verify` before opening a PR.
+<!-- repo-commands:end -->

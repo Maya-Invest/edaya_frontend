@@ -19,7 +19,7 @@
       "name": "@edaya/webadmin",
       "version": "0.0.1",
       "dependencies": {
-        "@maya-invest/edaya-api-client": "file:./vendor/edaya-api-client",
+        "@maya-invest/edaya-api-client": "file:../../.generated/api-client",
         "clsx": "^2.1.1",
         "lucide-svelte": "^1.0.1",
         "tailwind-merge": "^3.6.0",
@@ -48,7 +48,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@internationalized/date": "^3.12.2",
-        "@maya-invest/edaya-api-client": "file:./vendor/edaya-api-client",
+        "@maya-invest/edaya-api-client": "file:../../.generated/api-client",
         "@svar-ui/calendar-locales": "^2.6.0",
         "@svar-ui/core-locales": "^2.6.0",
         "@svar-ui/lib-dom": "^0.13.1",
@@ -106,7 +106,7 @@
     },
   },
   "overrides": {
-    "@maya-invest/edaya-api-client": "file:./vendor/edaya-api-client",
+    "@maya-invest/edaya-api-client": "file:./.generated/api-client",
     "@sveltejs/kit": "2.64.0",
     "svelte": "5.56.3",
     "vite": "8.0.16",
@@ -1500,9 +1500,9 @@
 
     "@cspotcode/source-map-support/@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.9", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.0.3", "@jridgewell/sourcemap-codec": "^1.4.10" } }, "sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ=="],
 
-    "@edaya/webadmin/@maya-invest/edaya-api-client": ["@maya-invest/edaya-api-client@file:vendor/edaya-api-client", {}],
+    "@edaya/webadmin/@maya-invest/edaya-api-client": ["@maya-invest/edaya-api-client@file:.generated/api-client", {}],
 
-    "@edaya/webapp/@maya-invest/edaya-api-client": ["@maya-invest/edaya-api-client@file:vendor/edaya-api-client", {}],
+    "@edaya/webapp/@maya-invest/edaya-api-client": ["@maya-invest/edaya-api-client@file:.generated/api-client", {}],
 
     "@es-joy/jsdoccomment/comment-parser": ["comment-parser@1.4.5", "", {}, "sha512-aRDkn3uyIlCFfk5NUA+VdwMmMsh8JGhc4hapfV4yxymHGQ3BVskMQfoXGpCo5IoBuQ9tS5iiVKhCpTcB4pW4qw=="],
 

@@ -37,7 +37,7 @@ Target WCAG AA: ordinary text 4.5:1, large text and essential control boundaries
 
 ## Tokens and implementation
 
-The canonical platform-neutral manifest is `design-system/tokens.json`. Generate local CSS with `python3 scripts/brand-tokens.py`; check it with `--check`. The generated `apps/webapp/src/lib/design-system/tokens.css` is imported through the existing `app.css` entry point and consumed by Tailwind. Builds read committed local assets and never need a mobile checkout. A coordinated version change supplies the identical JSON snapshot to mobile. Never edit generated files directly.
+The canonical platform-neutral manifest is `design-system/tokens.json`. Generate local CSS with `bun run repo generate brand`; check it with `--check`. The generated `apps/webapp/src/lib/design-system/tokens.css` is imported through the existing `app.css` entry point and consumed by Tailwind. Builds read committed local assets and never need a mobile checkout. A coordinated version change supplies the identical JSON snapshot to mobile. Never edit generated files directly.
 
 Semantic token names are stable. Brand sky and amber primitives are decorative; `success`, `highlight`, `destructive`, and `sky` express independent state meanings. Keep the webapp light-only. The neutral manifest's dark values support mobile and do not introduce a web theme switch.
 

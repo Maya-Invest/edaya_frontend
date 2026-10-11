@@ -36,7 +36,7 @@ One rule per spec. Auto-attached by glob when relevant files are edited:
 
 ## Operational commands
 
-Use `bun repo --help` for repository commands. Keep human-facing reference documents separate from normative agent instructions.
+Use `bun run repo --help` for repository commands. Prepare the backend client with `bun run repo generate client staging`, then run `bun run repo generate dependencies` and `bun run repo generate setup` before verification. Keep human-facing reference documents separate from normative agent instructions.
 
 - **EDAYA UI 1.0.0** — royal blue, sky canvas, bundled Poppins headings and Inter UI. Use supplied logos, generated tokens and existing primitives. Preserve logic and effective layouts. Update design specs, token version and current visual evidence together.
 
@@ -48,4 +48,4 @@ Before opening a PR:
 bun run verify        # repo hygiene, then quality + build + unit tests
 ```
 
-Ad-hoc Turbo iteration: `bun run lint`, `bun run check`, `bun run test`, etc. Repo hygiene only: `bun repo verify`.
+Ad-hoc Turbo iteration: `bun run lint`, `bun run check`, `bun run test`, etc. Repo hygiene only: `bun run repo check`.

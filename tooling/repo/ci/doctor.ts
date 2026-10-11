@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { copyFileSync, existsSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { basename, resolve } from 'node:path'
 import process from 'node:process'
 import { $ } from 'bun'
@@ -9,14 +9,6 @@ const expectedEnvExamples = [
   'apps/webapp/.env.example',
   'apps/webadmin/.env.example',
 ]
-
-function materializeEnvFromExample(examplePath: string): void {
-  const envPath = examplePath.replace(/\.example$/, '')
-  if (!existsSync(resolve(repoRoot, envPath)) && existsSync(resolve(repoRoot, examplePath))) {
-    copyFileSync(resolve(repoRoot, examplePath), resolve(repoRoot, envPath))
-    console.log(`Created ${envPath} from ${examplePath}`)
-  }
-}
 
 const trackedEnvOutput = await $`git -C ${repoRoot} ls-files -- ${'*.env*'}`.text()
 const trackedEnvFiles = trackedEnvOutput
@@ -41,7 +33,4 @@ if (unexpectedTrackedEnvFiles.length > 0 || missingEnvExamples.length > 0) {
 }
 else {
   console.log('Repository environment file checks passed.')
-  const { CI } = process.env
-  if (!CI)
-    expectedEnvExamples.forEach(materializeEnvFromExample)
 }
