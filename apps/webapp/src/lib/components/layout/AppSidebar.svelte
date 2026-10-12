@@ -22,6 +22,7 @@
 	} from '$lib/navigation';
 	import { filterNavItems, visibleNavModuleKeys } from '$lib/navigation/nav-permissions';
 	import { shellContext } from '$lib/shell/context.svelte';
+	import { getMessageCount } from '$lib/shell/message-count.svelte';
 	import { cn } from '$lib/utils';
 
 	const {
@@ -40,7 +41,9 @@
 		forceExpanded?: boolean;
 	} = $props();
 
+	const messageCount = getMessageCount();
 	const schoolBadges = $derived<Record<string, number>>({
+		...(messageCount?.count != null ? { messages: messageCount.count } : {}),
 		students: studentCount,
 		guardians: guardianCount,
 		staff: staffCount,

@@ -8,26 +8,31 @@
 	let {
 		value = $bindable(''),
 		class: className,
+		id,
+		'aria-label': ariaLabel = 'Filter',
 		options = [],
 		groups = [],
 		onchange,
 	}: {
-		value?: string;
-		class?: string;
-		options?: FilterSelectOption[];
-		groups?: FilterSelectGroup[];
-		onchange?: (value: string) => void;
+		'value'?: string;
+		'class'?: string;
+		'id'?: string;
+		'aria-label'?: string;
+		'options'?: FilterSelectOption[];
+		'groups'?: FilterSelectGroup[];
+		'onchange'?: (value: string) => void;
 	} = $props();
 
 	const selectClass
-		= 'control-focus h-full w-full appearance-none rounded-md border border-input bg-background py-2 pl-3 pr-8 text-sm disabled:cursor-not-allowed disabled:opacity-50';
+		= 'control-focus h-full w-full appearance-none border border-input bg-background py-2 pl-3 pr-8 text-sm disabled:cursor-not-allowed disabled:opacity-50';
 </script>
 
-<div class={cn('relative inline-flex items-center', className)}>
+<div class={cn('relative inline-flex items-center rounded-md', className)}>
 	<select
+		{id}
 		{value}
 		class={selectClass}
-		aria-label="Filter"
+		aria-label={ariaLabel}
 		data-testid="list-filter-select"
 		onchange={(event) => {
 			const next = event.currentTarget.value;
@@ -51,3 +56,9 @@
 		aria-hidden="true"
 	/>
 </div>
+
+<style>
+	select {
+		border-radius: inherit;
+	}
+</style>

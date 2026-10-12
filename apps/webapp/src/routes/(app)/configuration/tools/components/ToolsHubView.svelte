@@ -2,7 +2,6 @@
 	import type {
 		ImportWorkflowStep,
 		TimetableGenerationStep,
-		TimetablePublishStep,
 	} from '../lib/tools-workflow';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
@@ -14,19 +13,16 @@
 		IMPORT_TYPE_TABS,
 		IMPORT_WORKFLOW_STEPS,
 		TIMETABLE_GENERATION_STEPS,
-		TIMETABLE_PUBLISH_STEPS,
 		TIMETABLE_SETUP_TABS,
 	} from '../lib/tools-workflow';
 	import { getToolsPageState } from '../tools-page.svelte';
 	import DataImportModal from './DataImportModal.svelte';
 	import SchoolTimetableGenerationModal from './SchoolTimetableGenerationModal.svelte';
-	import SchoolTimetablePublishModal from './SchoolTimetablePublishModal.svelte';
 
 	const toolsPage = getToolsPageState();
 	const modals = toolsPage.modals;
 	const importOpen = bindUrlModal(modals, 'import');
 	const generationOpen = bindUrlModal(modals, 'generate-timetable');
-	const publishOpen = bindUrlModal(modals, 'publish-timetable');
 
 	const importStep = $derived(
 		IMPORT_WORKFLOW_STEPS.includes(modals.step as ImportWorkflowStep)
@@ -47,11 +43,6 @@
 		TIMETABLE_SETUP_TABS.includes(modals.tab as (typeof TIMETABLE_SETUP_TABS)[number])
 			? modals.tab as (typeof TIMETABLE_SETUP_TABS)[number]
 			: 'subjects',
-	);
-	const publishStep = $derived(
-		TIMETABLE_PUBLISH_STEPS.includes(modals.step as TimetablePublishStep)
-			? modals.step as TimetablePublishStep
-			: 'setup',
 	);
 </script>
 
@@ -96,7 +87,7 @@
 		</div>
 	</article>
 
-	<PermissionGate permission="TIMETABLE_UPDATE" mode="hide">
+	<PermissionGate permission="TIMETABLE_CREATE" mode="hide">
 		<article
 			class="flex flex-col rounded-xl border border-border bg-card p-5 shadow-sm"
 			data-testid="timetable-planning-tool"
@@ -117,14 +108,6 @@
 					data-testid="timetable-planning-action"
 				>
 					{$t('tools.timetablePlanning.card.action')}
-				</Button>
-				<Button
-					variant="outline"
-					disabled={!toolsPage.planningPage.classes[0]}
-					onclick={() => modals.open('publish-timetable', { step: 'setup' })}
-					data-testid="timetable-publish-action"
-				>
-					{$t('tools.timetablePlanning.publishAction')}
 				</Button>
 			</div>
 		</article>
@@ -148,14 +131,3 @@
 	onSetupTabChange={tab => modals.setTab(tab)}
 	onInvalidPhase={step => toolsPage.replaceWorkflowStep(step)}
 />
-{#if toolsPage.planningPage.classes[0]}
-	<SchoolTimetablePublishModal
-		bind:open={publishOpen.open}
-		state={toolsPage.planningPage}
-		classGroupId={toolsPage.planningPage.classes[0].id}
-		className={toolsPage.planningPage.classes[0].name}
-		phase={publishStep}
-		onPhaseChange={step => modals.setStep(step)}
-		onInvalidPhase={step => toolsPage.replaceWorkflowStep(step)}
-	/>
-{/if}

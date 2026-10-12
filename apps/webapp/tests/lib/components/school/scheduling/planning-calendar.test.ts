@@ -127,10 +127,10 @@ describe('planning-calendar', () => {
 			endsAt: '2026-05-11T09:00:00.000Z',
 			room: '',
 			teacher: 'Teacher',
-			timetableGenerated: 'draft',
+			timetableGenerated: true,
 		}]);
 
-		expect(mapped?.timetableGenerated).toBe('draft');
+		expect(mapped?.timetableGenerated).toBe(true);
 	});
 
 	test('sessionInstantsForSlot keeps reference week and uses UTC wall-clock', () => {

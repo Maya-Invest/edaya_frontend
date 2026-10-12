@@ -28,6 +28,11 @@
 	});
 	function navigate(id: string | undefined = undefined, changes: Record<string, string> = {}) {
 		const url = new SvelteURL($page.url);
+		url.searchParams.delete('offset');
+		// Preserve old links as an optional type filter, not a separate inbox.
+		if (!url.searchParams.has('type') && ['school', 'teacher'].includes(url.searchParams.get('view') ?? ''))
+			url.searchParams.set('type', url.searchParams.get('view')!);
+		url.searchParams.delete('view');
 		url.pathname = `/school/messages${id ? `/${encodeURIComponent(id)}` : ''}`;
 		for (const [key, value] of Object.entries(changes ?? {})) {
 			if (value)

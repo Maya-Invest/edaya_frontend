@@ -1,8 +1,6 @@
 import type {
 	GenerateClassResult,
 	GenerateSchoolResult,
-	PublishResult,
-	RepublishResult,
 } from '$lib/api/mutations/timetable-generation.mutations';
 import type { components } from '$lib/api/schema';
 import type { ClassSubjectInstructorSources } from '$lib/api/teacher-display';
@@ -30,14 +28,9 @@ export const TIMETABLE_GENERATION_MODAL_SETUP_LAYOUT_CLASS
 	= 'flex min-h-0 flex-1 flex-col gap-4';
 
 export const TIMETABLE_GENERATION_MODAL_TAB_PANEL_CLASS
-	= 'min-h-64 flex-1 overflow-hidden';
+	= 'min-h-64 flex-1 lg:overflow-hidden';
 
 export type ClassSubject = components['schemas']['ClassSubject'];
-
-export interface TimetableWorkloadClass {
-	id: string;
-	name: string;
-}
 
 export interface TimetableRangePreset {
 	id: string;
@@ -190,20 +183,6 @@ export function summarizeSchoolGeneration(result: GenerateSchoolResult) {
 		sessionCount,
 		isComplete: unmetCount === 0,
 	};
-}
-
-export function summarizePublish(result: PublishResult) {
-	return {
-		publishedCount: result.publishedSessionIds.length,
-		skippedCount: result.skippedSessionIds.length,
-		isComplete: result.skippedSessionIds.length === 0,
-	};
-}
-
-export function summarizeRepublish(result: RepublishResult) {
-	const generation = summarizeClassGeneration(result.generation);
-	const publication = summarizePublish(result.publication);
-	return { generation, publication };
 }
 
 export function activeRangePresetId(

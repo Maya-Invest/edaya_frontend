@@ -325,7 +325,7 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'configuration-tools',
 		pathnamePattern: /^\/configuration\/tools\/?$/,
-		modalNames: ['import', 'generate-timetable', 'publish-timetable'],
+		modalNames: ['import', 'generate-timetable'],
 	},
 	{
 		routeFamily: 'configuration-teacher-assignments',

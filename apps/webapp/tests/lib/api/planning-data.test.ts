@@ -73,6 +73,7 @@ describe('mapPlanningEvents', () => {
 				endsAt: '2026-06-02T09:00:00.000Z',
 				status: 'pending',
 				isException: false,
+				timetableGenerated: false,
 				timetableTeacherIds: [],
 			}]]),
 			activitySessionsById: new Map([['as-1', {

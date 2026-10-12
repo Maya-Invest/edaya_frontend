@@ -184,7 +184,7 @@ const routeCases = [
 	[
 		'configuration-tools',
 		'/configuration/tools',
-		['import', 'generate-timetable', 'publish-timetable'],
+		['import', 'generate-timetable'],
 	],
 	[
 		'configuration-teacher-assignments',

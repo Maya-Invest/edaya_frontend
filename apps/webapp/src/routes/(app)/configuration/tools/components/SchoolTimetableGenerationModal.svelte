@@ -9,13 +9,12 @@
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
-	import { formatDateInput } from '$lib/date/format';
-	import { t } from '$lib/i18n';
+	import { formatDateInput, parseCivilDate } from '$lib/date/format';
+	import { locale, t } from '$lib/i18n';
 	import { untrack } from 'svelte';
 	import { buildTimetableRangePresets, timetableGenerationModalContentClass, TIMETABLE_GENERATION_MODAL_SETUP_BODY_CLASS, TIMETABLE_GENERATION_MODAL_SETUP_LAYOUT_CLASS, TIMETABLE_GENERATION_MODAL_TAB_PANEL_CLASS } from '../lib/timetable-generation-ui';
+	import { activeTimetableClassId, sortTimetableClasses } from '../timetable-planning';
 	import { getToolsPageState } from '../tools-page.svelte';
-	import ImportProgressBar from './ImportProgressBar.svelte';
-	import TimetableClassSelection from './TimetableClassSelection.svelte';
 	import TimetableGenerationErrorPanel from './TimetableGenerationErrorPanel.svelte';
 	import TimetableGenerationResultPanel from './TimetableGenerationResultPanel.svelte';
 	import TimetableGenerationSetupTabs from './TimetableGenerationSetupTabs.svelte';
@@ -78,11 +77,12 @@
 		&& (!yearStart || startDate >= yearStart)
 		&& (!yearEnd || endDate <= yearEnd)));
 	const selectedClasses = $derived(planningPage.classes.filter(row => selectedClassGroupIds.includes(row.id)));
-	const workloadClasses = $derived(selectedClasses.map(row => ({ id: row.id, name: row.name })));
+	const orderedClasses = $derived(sortTimetableClasses(planningPage.classes, academicContext.gradeLevels));
 	const selectedClassSubjects = $derived(planningPage.classSubjects.filter(row => selectedClassGroupIds.includes(row.classGroupId)));
 	const classLabels = $derived(Object.fromEntries(planningPage.classes.map(row => [row.id, row.name])));
-	const rangeLabel = $derived(`${startDate} – ${endDate}`);
-	const progress = $derived(planningPage.generationProgress);
+	const rangeLabel = $derived(startDate && endDate
+		? `${new Intl.DateTimeFormat($locale, { dateStyle: 'medium' }).format(parseCivilDate(startDate))} – ${new Intl.DateTimeFormat($locale, { dateStyle: 'medium' }).format(parseCivilDate(endDate))}`
+		: '');
 	const viewPhase = $derived(generating && phase === 'setup' ? 'generating' as const : phase);
 	const modalTitle = $derived(
 		viewPhase === 'error'
@@ -105,7 +105,7 @@
 		formScope = `${academicContext.schools[0]?.id ?? ''}:${academicContext.yearId}`;
 		generating = false;
 		({ startDate, endDate } = planningPage.range);
-		selectedClassId = planningPage.classes[0]?.id ?? '';
+		selectedClassId = orderedClasses[0]?.id ?? '';
 		selectedClassGroupIds = planningPage.classes.map(row => row.id);
 		overrides = {};
 		minSpanOverrides = {};
@@ -143,9 +143,9 @@
 	});
 
 	$effect(() => {
-		if (!selectedClasses.some(row => row.id === selectedClassId)) {
-			selectedClassId = selectedClasses[0]?.id ?? '';
-		}
+		const nextId = activeTimetableClassId(orderedClasses, selectedClassGroupIds, selectedClassId);
+		if (nextId !== selectedClassId)
+			selectedClassId = nextId;
 	});
 
 	function handleModalOpenChange(isOpen: boolean) {
@@ -178,6 +178,11 @@
 		return value;
 	}
 
+	function includedOverrides(values: Record<string, number>): Record<string, number> {
+		const subjectIds = new Set(selectedClassSubjects.map(subject => subject.id));
+		return Object.fromEntries(Object.entries(values).filter(([id]) => subjectIds.has(id)));
+	}
+
 	async function submit() {
 		if (!validRange || !selectedClasses.length || generating || planningPage.busy) {
 			return;
@@ -190,9 +195,9 @@
 				startDate,
 				endDate,
 				options: buildOptions(),
-				periodsPerWeekByClassSubjectId: overrides,
-				minPeriodSpanByClassSubjectId: minSpanOverrides,
-				maxPeriodSpanByClassSubjectId: maxSpanOverrides,
+				periodsPerWeekByClassSubjectId: includedOverrides(overrides),
+				minPeriodSpanByClassSubjectId: includedOverrides(minSpanOverrides),
+				maxPeriodSpanByClassSubjectId: includedOverrides(maxSpanOverrides),
 			});
 			if (formScope !== runScope)
 				return;
@@ -245,25 +250,12 @@
 		<TimetableGenerationErrorPanel
 			error={generationError}
 			{rangeLabel}
-			titleKey="timetable.schoolGenerateErrorTitle"
 		/>
 	{:else if viewPhase === 'success' && schoolResult}
 		<TimetableGenerationResultPanel mode="school" {schoolResult} {classLabels} {rangeLabel} />
 	{:else if viewPhase === 'generating'}
 		<div class="space-y-4 py-2">
-			{#if progress}
-				<ImportProgressBar
-					current={progress.current}
-					total={progress.total}
-					label={$t('timetable.generatingProgress', {
-						className: progress.className,
-						current: progress.current,
-						total: progress.total,
-					})}
-				/>
-			{:else}
-				<p class="text-sm text-muted-foreground">{$t('timetable.schoolGenerateHint')}</p>
-			{/if}
+			<p class="text-sm text-muted-foreground">{$t('timetable.schoolGenerateHint')}</p>
 		</div>
 	{:else}
 		<div class={TIMETABLE_GENERATION_MODAL_SETUP_LAYOUT_CLASS}>
@@ -277,8 +269,6 @@
 					{validRange}
 				/>
 
-				<TimetableClassSelection classes={planningPage.classes} gradeLevels={academicContext.gradeLevels} bind:selectedIds={selectedClassGroupIds} disabled={planningPage.busy || generating} />
-
 				<TimetableGenerationSetupTabs
 					bind:activeTab={() => setupTab, onSetupTabChange}
 				/>
@@ -287,7 +277,9 @@
 			<div class={TIMETABLE_GENERATION_MODAL_TAB_PANEL_CLASS}>
 				{#if setupTab === 'subjects'}
 					<TimetableWorkloadConfigPanel
-						classes={workloadClasses}
+						classes={planningPage.classes}
+						gradeLevels={academicContext.gradeLevels}
+						bind:includedClassIds={selectedClassGroupIds}
 						classSubjects={selectedClassSubjects}
 						subjectLabels={planningPage.subjectLabels}
 						teacherLabelsByClassSubjectId={planningPage.teacherLabelsByClassSubjectId}
@@ -296,6 +288,7 @@
 						bind:overrides
 						bind:minSpanOverrides
 						bind:maxSpanOverrides
+						disabled={planningPage.busy || generating}
 					/>
 				{:else if setupTab === 'periods'}
 					<TimetablePreferredPeriodsPanel {periods} bind:preferredIds />
@@ -324,7 +317,7 @@
 		{:else}
 			<Button variant="ghost" onclick={close} disabled={busy}>{$t('common.cancel')}</Button>
 			{#if viewPhase !== 'generating'}
-				<Button data-testid="timetable-generate-submit" onclick={submit} disabled={busy || submitDisabled}>{$t('timetable.generateSelectedClasses')}</Button>
+				<Button class="h-auto min-h-10 whitespace-normal" data-testid="timetable-generate-submit" onclick={submit} disabled={busy || submitDisabled}>{$t(selectedClasses.length === 1 ? 'timetable.generateSelectedClass' : 'timetable.generateSelectedClasses', { count: selectedClasses.length })}</Button>
 			{/if}
 		{/if}
 	{/snippet}

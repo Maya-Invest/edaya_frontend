@@ -45,7 +45,7 @@ User menu
 └── Account         → inbox, notification settings, profile
 ```
 
-Workspace context in the sidebar: **School** → **Academic year** → navigation. Global header: navigation toggle · **Language** · **User menu**. Shared academic term selection appears beside affected content/actions, not in the global header. Dashboard, evaluations, report cards, marks review, class assessment metrics, class timetable controls, relevant drawer tabs and logbook export expose this picker; unrelated finance, attendance and general configuration do not. Configuration Tools keeps term presets and date-range controls inside the generation and publication assistants, with no term picker on the timetable card.
+Workspace context in the sidebar: **School** → **Academic year** → navigation. Global header: navigation toggle · **Language** · **User menu**. Shared academic term selection appears beside affected content/actions, not in the global header. Dashboard, evaluations, report cards, marks review, class assessment metrics, class timetable controls, relevant drawer tabs and logbook export expose this picker; unrelated finance, attendance and general configuration do not. Configuration Tools keeps term presets and date-range controls inside the generation assistant, with no term picker on the timetable card.
 
 ### 2.2 Class context
 
@@ -498,6 +498,7 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 - **Entity:** `GradeScale` · **Simple** (row `···` only)
 - Route: `/configuration/other/grade-scales` (left catalog picker on `/configuration/other`)
+- Users with `REPORT_CARD_CONFIGURE` can edit every school grade scale, including the default. Editing preserves its default status. The default scale has no Delete action, including via a modal deep link.
 
 ### 7.25 Configuration — Notification templates
 
@@ -533,9 +534,12 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 ### 7.28 Configuration — Tools
 
 - **Surface:** Layout variant at `/configuration/tools`
-- **Tools:** Data import · timetable generation · timetable publication
-- The timetable card exposes Generate and Publish actions without a term picker. Generation and publication assistants retain their term presets, date-range controls and existing range defaults.
-- Timetable generation selects current-year classes with searchable grade-grouped checkboxes, all selected initially, plus select-all/clear controls. Search does not alter selection. Subject settings and submitted overrides cover selected classes only. Generate sequentially in grade/name/ID order with per-class saves, selected-class progress, and partial-failure reporting. Preserve selection and settings when running again; reset them on reopening or changing school/year.
+- **Tools:** Data import · timetable generation
+- Generation requires scoped `TIMETABLE_CREATE` and updates the selected classes atomically. Generated sessions are immediately current for staff, teachers and families and printable; no publication lifecycle remains. Regeneration replaces only untouched pending generated sessions and preserves recorded work, linked records, manual exceptions and cancellations. Printing does not lock sessions.
+- Weekly generation retains available recurring placements and repairs missing workload in available teaching slots while respecting teacher occupancy and subject spacing. Failures show localized class/subject names, the affected week, and placed/required counts; do not display raw solver messages or technical IDs.
+- The timetable card exposes a Generate action without a term picker. The generation assistant retains its term presets, date-range controls and existing range defaults.
+- Timetable generation selects current-year classes with searchable grade-grouped checkboxes, all selected initially, plus select-all/clear controls. Search does not alter selection. Subject settings and submitted overrides cover selected classes only. Generate the selected classes in one atomic school request; a failure leaves their current timetables intact. Preserve selection and settings when running again; reset them on reopening or changing school/year.
+- The existing class list in the subject-settings panel is the sole inclusion and navigation surface; do not add a selector above the tabs. It shows every current-year class, grade headings and full-list selected/total counts, including excluded classes and single-class schools. Checkbox actions change inclusion only; included class names open their settings. Search never changes the displayed class. Excluding that class advances to the next included class in academic list order, wrapping when necessary; an empty selection clears the editor and disables generation. Preserve excluded drafts for re-inclusion, but omit them from the request. The generation button states the included class count on every setup tab.
 - Workflow tools open URL-backed modals whose steps and substantive internal panels are addressable.
 - The teacher assignments hub remains available at `/configuration/tools/teacher-assignments` without a card on the Tools page.
 
@@ -655,6 +659,6 @@ Production route, navigation, modal and action changes must update the integrati
 
 ### Guardian messaging
 
-`/school/messages` is a complex conversation collection with optional detail `/school/messages/{id}`. School enquiries and teacher oversight are URL-selected views (`view=teacher` for oversight). School status and order filters are URL-backed. Conversation details show immutable text history, captured family context and actual authors. School replies use `?modal=reply`; teacher oversight is read-only. Dedicated SCHOOL_MESSAGES_READ, SCHOOL_MESSAGES_REPLY and TEACHER_MESSAGES_REVIEW permissions govern these surfaces independently of announcements.
+`/school/messages` is a complex conversation collection with optional detail `/school/messages/{id}`. School enquiries and teacher conversations share one combined inbox by default, ordered and paged together by the server. Each row carries a School/Teacher tag; an optional `type=school|teacher` filter narrows the same list. Legacy `view` links map to that filter. Status and order filters are URL-backed. Conversation details show immutable text history, captured family context and actual authors. School replies use `?modal=reply`; teacher oversight is read-only. Dedicated SCHOOL_MESSAGES_READ, SCHOOL_MESSAGES_REPLY and TEACHER_MESSAGES_REVIEW permissions govern these surfaces independently of announcements.
 
 Permission impact review in profile editing, profile assignment, manual assignment, and default-scope editing is tied to an immutable snapshot of the complete submitted command, including school, staff/profile/source identifiers, academic year, scopes, defaults inclusion, and validity. Inputs remain editable during review. Changes, closure/reset, or target replacement invalidate review; outdated responses cannot enable Save or replace newer reports/loading state. Save requires a successful review matching current inputs.

@@ -20,8 +20,6 @@
 		timetableMaxPeriodSpan = $bindable(''),
 		schoolId = '',
 		schoolRaw = $bindable<SchoolRaw | null>(null),
-		policy = $bindable<'fail' | 'skip'>('fail'),
-		showRepublishPolicy = false,
 		showSchoolDefaults = false,
 	}: {
 		enforceWorkloadFulfillment?: boolean | undefined;
@@ -33,8 +31,6 @@
 		timetableMaxPeriodSpan?: string;
 		schoolId?: string;
 		schoolRaw?: SchoolRaw | null;
-		policy?: 'fail' | 'skip';
-		showRepublishPolicy?: boolean;
 		showSchoolDefaults?: boolean;
 	} = $props();
 
@@ -85,18 +81,6 @@
 	</div>
 
 	<div class="scrollbar-thin min-h-0 flex-1 space-y-4 overflow-y-auto p-3">
-		{#if showRepublishPolicy}
-			<label class="space-y-1.5 text-sm">
-				<span>{$t('timetable.conflictPolicy')}</span>
-				<select bind:value={policy} class="h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-					<option value="fail">{$t('timetable.policyFail')}</option>
-					<option value="skip">{$t('timetable.policySkip')}</option>
-				</select>
-			</label>
-			<p class="text-xs text-muted-foreground">
-				{policy === 'skip' ? $t('timetable.skipHint') : $t('timetable.failHint')}
-			</p>
-		{/if}
 
 		<div class="space-y-2.5">
 			<label class="flex items-center gap-2 text-sm"><Checkbox checked={enforceWorkloadFulfillment === true} onCheckedChange={value => (enforceWorkloadFulfillment = Boolean(value))} />{$t('timetable.enforceWorkload')}</label>

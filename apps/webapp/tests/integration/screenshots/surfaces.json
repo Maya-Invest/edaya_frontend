@@ -1265,14 +1265,6 @@
     "identity": "owner"
   },
   {
-    "id": "view.configuration.tools.modal.publish-timetable",
-    "feature": "configuration",
-    "path": "/configuration/tools?modal=publish-timetable",
-    "title": "publish-timetable \u00b7 /configuration/tools",
-    "kind": "modal",
-    "identity": "owner"
-  },
-  {
     "id": "view.configuration.academic.modal.create",
     "feature": "configuration",
     "path": "/configuration/academic?modal=create",

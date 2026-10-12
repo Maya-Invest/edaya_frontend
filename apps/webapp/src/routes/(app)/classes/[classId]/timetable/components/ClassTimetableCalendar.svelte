@@ -179,7 +179,6 @@
 			kind === 'homework-due' ? 'edaya-timetable-event--homework-due' : '',
 			kind === 'activity' ? 'edaya-timetable-event--activity' : '',
 			kind === 'assessment' ? 'edaya-timetable-event--assessment' : '',
-			event.timetableGenerated === 'draft' ? 'edaya-timetable-event--draft' : '',
 		].filter(Boolean).join(' ');
 	};
 
@@ -362,12 +361,6 @@
 	:global(.edaya-timetable-calendar .wx-box-event) {
 		border: 1px solid transparent;
 		box-shadow: var(--shadow-soft);
-	}
-
-	:global(.edaya-timetable-calendar .wx-box-event.edaya-timetable-event--draft) {
-		border-style: dashed;
-		border-width: 2px;
-		opacity: 0.82;
 	}
 
 	:global(.edaya-timetable-calendar .wx-box-event.edaya-subject-tone-a) {

@@ -98,7 +98,7 @@ export interface PlanningEvent {
 	room: string;
 	teacher: string;
 	status?: PlanningOccurrenceStatus;
-	timetableGenerated?: 'draft' | 'published' | null;
+	timetableGenerated?: boolean;
 }
 
 export type TimetableScheduleDay

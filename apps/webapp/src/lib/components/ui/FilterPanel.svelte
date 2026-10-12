@@ -44,7 +44,7 @@
 			</Button>
 		{/snippet}
 	</Popover.PopoverTrigger>
-	<Popover.PopoverContent class="w-72 space-y-4 p-4" align="end">
+	<Popover.PopoverContent class="max-h-[calc(100dvh-2rem)] w-72 space-y-4 overflow-y-auto p-4" align="end">
 		<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 			{title ?? $t('list.filters')}
 		</p>

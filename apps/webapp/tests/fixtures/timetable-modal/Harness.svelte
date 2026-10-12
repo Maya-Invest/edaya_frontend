@@ -3,6 +3,7 @@
 	import type { TimetableGenerationStep } from '../../../src/routes/(app)/configuration/tools/lib/tools-workflow';
 	import type { TimetablePlanningPageState } from '../../../src/routes/(app)/configuration/tools/timetable-planning-page.svelte';
 	import SchoolTimetableGenerationModal from '../../../src/routes/(app)/configuration/tools/components/SchoolTimetableGenerationModal.svelte';
+	import { setLang } from '../../../src/lib/i18n';
 	import { academicContext } from './academic-context.svelte';
 
 	let open = $state(true);
@@ -14,7 +15,7 @@
 		get classes() { return academicContext.classes; },
 		get range() { return { startDate: '2026-09-07', endDate: '2026-09-11' }; },
 		canGenerateSchoolInitial: true,
-		classSubjects: ['a', 'b', 'c'].map(id => ({ id: `subject-${id}`, classGroupId: id, subjectId: 'math', periodsPerWeek: 2, isOffered: true })),
+		get classSubjects() { return academicContext.classes.map(({ id }) => ({ id: `subject-${id}`, classGroupId: id, subjectId: 'math', periodsPerWeek: 2, isOffered: true })); },
 		subjectLabels: { math: 'Mathematics' },
 		teacherLabelsByClassSubjectId: {},
 		generationProgress: null,
@@ -41,6 +42,14 @@
 	academicContext.classes = [{ ...academicContext.classes[0]!, id: 'other-class', academicYearId: 'other-year' }];
 }}>Change year</button>
 <button data-testid="fixture-school" onclick={() => { academicContext.schools = [{ ...academicContext.schools[0]!, id: 'other-school' }]; }}>Change school</button>
+<button data-testid="fixture-empty" onclick={() => { academicContext.classes = []; }}>No classes</button>
+<button data-testid="fixture-many" onclick={() => {
+	const template = academicContext.classes[0]!;
+	academicContext.classes = Array.from({ length: 80 }, (_, index) => ({ ...template, id: `many-${index}`, name: index === 0 ? 'Classe internationale — parcours bilingue français et anglais' : `Classe ${String(index + 1).padStart(2, '0')}`, gradeLevelId: index < 40 ? 'grade-1' : 'grade-2', academicYearId: 'many-year' }));
+	academicContext.yearId = 'many-year';
+}}>Many classes</button>
+<button data-testid="fixture-fr" onclick={() => setLang('fr')}>French</button>
+<button data-testid="fixture-en" onclick={() => setLang('en')}>English</button>
 <pre data-testid="fixture-requests">{JSON.stringify(requests)}</pre>
 <SchoolTimetableGenerationModal bind:open state={planning as unknown as TimetablePlanningPageState} {phase} {setupTab}
 	onPhaseChange={(next) => { phase = next; }}

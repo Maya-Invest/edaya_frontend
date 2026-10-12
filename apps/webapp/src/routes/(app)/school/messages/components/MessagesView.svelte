@@ -4,62 +4,79 @@
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import FilterSelect from '$lib/components/ui/filter-select.svelte';
+	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
+	import ListEntityTable from '$lib/components/ui/ListEntityTable.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
-	import { t } from '$lib/i18n';
+	import { t, locale } from '$lib/i18n';
 	import { hasPermission } from '$lib/permissions';
+	import { BADGE_INFO, BADGE_SUCCESS, BADGE_WARN } from '$lib/ui-tones';
 	import ConversationMessageBubble from './ConversationMessageBubble.svelte';
 
 	const { state, navigate }: { state: MessagesPageState; navigate: (id?: string, changes?: Record<string, string>) => void } = $props();
+	const columns = $derived([
+		{ key: 'subject', label: $t('messages.subject'), span: 4 },
+		{ key: 'participants', label: $t('messages.participants'), span: 4 },
+		{ key: 'status', label: $t('common.status'), span: 2 },
+		{ key: 'activity', label: $t('messages.latest'), span: 2 },
+	]);
+	const destinations = $derived([
+		{ value: 'all', label: $t('messages.allConversations') },
+		...(hasPermission('SCHOOL_MESSAGES_READ') ? [{ value: 'school', label: $t('messages.type.school') }] : []),
+		...(hasPermission('TEACHER_MESSAGES_REVIEW') ? [{ value: 'teacher', label: $t('messages.type.teacher') }] : []),
+	]);
+	const status = $derived($page.url.searchParams.get('status') ?? '');
+	const order = $derived($page.url.searchParams.get('order') ?? 'latest');
+	const activeFilters = $derived(Number(Boolean(status)) + Number(order !== 'latest'));
 	const detail = $derived(state.detail);
 	const replyOpen = $derived($page.url.searchParams.get('modal') === 'reply' && Boolean(detail));
 	function closeReply() {
 		navigate(state.selectedId, { modal: '' });
 	}
 </script>
-<ListPageHeader title={$t('messages.title')}>
-	{#snippet filters()}
-		<div class="flex flex-wrap items-center gap-2">
-			{#if hasPermission('SCHOOL_MESSAGES_READ')}<Button variant={state.destination === 'school' ? 'default' : 'outline'} onclick={() => navigate(undefined, { view: '', offset: '', modal: '' })}>{$t('messages.school')}</Button>{/if}
-			{#if hasPermission('TEACHER_MESSAGES_REVIEW')}<Button variant={state.destination === 'teacher' ? 'default' : 'outline'} onclick={() => navigate(undefined, { view: 'teacher', status: '', offset: '', modal: '' })}>{$t('messages.review')}</Button>{/if}
-			{#if state.destination === 'school'}
-				<label class="sr-only" for="message-status">{$t('messages.all')}</label>
-				<select id="message-status" class="h-10 rounded-md border border-input bg-background px-3 text-sm" value={$page.url.searchParams.get('status') ?? ''} onchange={event => navigate(undefined, { status: event.currentTarget.value, offset: '' })}>
-					<option value="">{$t('messages.all')}</option><option value="awaiting_school">{$t('messages.awaiting_school')}</option><option value="awaiting_guardian">{$t('messages.awaiting_guardian')}</option><option value="resolved">{$t('messages.resolved')}</option>
-				</select>
-				<label class="sr-only" for="message-order">{$t('messages.latest')}</label>
-				<select id="message-order" class="h-10 rounded-md border border-input bg-background px-3 text-sm" value={$page.url.searchParams.get('order') ?? 'latest'} onchange={event => navigate(undefined, { order: event.currentTarget.value, offset: '' })}>
-					<option value="latest">{$t('messages.latest')}</option><option value="oldest_awaiting">{$t('messages.oldest')}</option>
-				</select>
-			{/if}
-			<Button variant="outline" disabled={state.busy} onclick={() => state.refresh()}>{$t('messages.refresh')}</Button>
-		</div>
-	{/snippet}
-</ListPageHeader>
-{#if state.error}<p role="alert" class="p-4 text-destructive">{state.error}</p>{/if}
-<div class="space-y-2 p-4">
-	{#if !state.items.length}<p>{$t('messages.empty')}</p>{/if}
-	{#each state.items as row (row.id)}
-		<button class="w-full rounded-xl border border-border bg-card p-4 text-left hover:bg-muted" onclick={() => navigate(row.id)}>
-			<div class="flex flex-wrap justify-between gap-2"><strong>{row.subject}</strong>{#if row.unread}<span>{$t('messages.unread')}</span>{/if}</div>
-			<p class="text-sm text-muted-foreground">{row.guardianName} · {row.studentName ?? row.schoolName}{row.teacherName ? ` · ${row.teacherName}` : ''}</p>
-			<p class="mt-2 line-clamp-2 text-sm">{row.lastMessage}</p>
-			{#if row.destination === 'school'}<p class="mt-2 text-sm">{$t(`messages.${row.status}`)}</p>{/if}
-		</button>
-	{/each}
-	<div class="flex items-center gap-3">
-		<Button variant="outline" disabled={state.offset === 0} onclick={() => navigate(undefined, { offset: String(Math.max(0, state.offset - 25)) })}>{$t('common.back')}</Button>
-		<span>{state.total ? state.offset + 1 : 0}–{Math.min(state.total, state.offset + 25)} / {state.total}</span>
-		<Button variant="outline" disabled={state.offset + 25 >= state.total} onclick={() => navigate(undefined, { offset: String(state.offset + 25) })}>{$t('common.next')}</Button>
-	</div>
+<div class="animate-fade-in">
+	<ListPageHeader eyebrow={$t('messages.title')} title={$t(state.total === 1 ? 'messages.countOne' : 'messages.count', { n: state.total })}>
+		{#snippet filters()}
+			<FilterSelect class="h-9 w-56 rounded-full" aria-label={$t('messages.typeLabel')} value={state.destination} options={destinations} onchange={value => navigate(undefined, { type: value === 'all' ? '' : value, modal: '' })} />
+			<FilterPanel activeCount={activeFilters} class="border-input bg-background">
+				<div class="space-y-2">
+					<Label for="message-status">{$t('common.status')}</Label>
+					<FilterSelect id="message-status" aria-label={$t('common.status')} class="h-9 w-full" value={status} options={['', 'awaiting_school', 'awaiting_guardian', 'resolved'].map(value => ({ value, label: $t(value ? `messages.${value}` : 'messages.all') }))} onchange={value => navigate(undefined, { status: value })} />
+				</div>
+				<div class="space-y-2">
+					<Label for="message-order">{$t('messages.sort')}</Label>
+					<FilterSelect id="message-order" aria-label={$t('messages.sort')} class="h-9 w-full" value={order} options={[{ value: 'latest', label: $t('messages.latest') }, { value: 'oldest_awaiting', label: $t('messages.oldest') }]} onchange={value => navigate(undefined, { order: value })} />
+				</div>
+			</FilterPanel>
+		{/snippet}
+		{#snippet more()}
+			<Button variant="outline" size="sm" class="rounded-full" disabled={state.busy || state.loadingMore} onclick={() => state.refresh()}>{$t('messages.refresh')}</Button>
+		{/snippet}
+	</ListPageHeader>
+	{#if state.error}<p role="alert" class="mb-4 text-sm text-destructive">{state.error}</p>{/if}
+	<ListEntityTable {columns} rows={state.items} highlightId={state.selectedId} hasMore={state.hasMore} loading={state.busy} loadingMore={state.loadingMore} total={state.total} visibleCount={state.items.length} onLoadMore={() => void state.loadMore()} onRowClick={row => navigate(row.id)} emptyLabel={$t('messages.empty')}>
+		{#snippet row(item)}
+			<div class="col-span-4 min-w-0">
+				<div class="flex flex-wrap items-center gap-2"><span class="break-words text-sm font-medium">{item.subject}</span><span class={`rounded-full px-2 py-0.5 text-xs font-medium ${BADGE_INFO}`}>{$t(`messages.type.${item.destination}`)}</span>{#if item.unread}<span class={`rounded-full px-2 py-0.5 text-xs font-medium ${BADGE_INFO}`}>{$t('messages.unread')}</span>{/if}</div>
+				<p class="mt-1 line-clamp-2 break-words text-sm text-muted-foreground">{item.lastMessage}</p>
+			</div>
+			<div class="col-span-4 min-w-0 text-sm"><p class="break-words font-medium">{item.guardianName}</p><p class="mt-1 break-words text-muted-foreground">{item.studentName ?? item.schoolName}{item.teacherName ? ` · ${item.teacherName}` : ''}</p></div>
+			<div class="col-span-2"><span class={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${item.destination === 'teacher' ? BADGE_INFO : item.status === 'resolved' ? BADGE_SUCCESS : BADGE_WARN}`}>{$t(item.destination === 'teacher' ? 'messages.reviewOnly' : `messages.${item.status}`)}</span></div>
+			<div class="col-span-2 text-sm text-muted-foreground tabular-nums">{new Date(item.updatedAt).toLocaleString($locale, { dateStyle: 'medium', timeStyle: 'short' })}</div>
+		{/snippet}
+	</ListEntityTable>
+	{#if state.loadMoreError}
+		<div class="mt-4 flex flex-wrap items-center gap-3"><p role="alert" class="text-sm text-destructive">{$t('messages.failed')}</p><Button variant="outline" disabled={state.busy || state.loadingMore} onclick={() => state.retryLoadMore()}>{$t('dataState.retry')}</Button></div>
+	{/if}
 </div>
 <Dialog.Root open={Boolean(detail)} onOpenChange={(open) => {
 	if (!open)
 		navigate(undefined, { modal: '' });
 }}>
-	<Dialog.Content class="fixed inset-y-0 right-0 left-auto top-0 h-dvh max-h-dvh w-full max-w-none translate-x-0 translate-y-0 rounded-none p-0 md:w-1/2">
+	<Dialog.Content class="fixed inset-y-0 right-0 left-auto top-0 flex h-dvh max-h-dvh w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none p-0 md:w-1/2">
 		{#if detail}
 			<div class="flex h-full flex-col">
 				<div class="flex items-center justify-between border-b border-border p-4"><Dialog.Title>{$t('messages.title')}</Dialog.Title><Button variant="ghost" aria-label={$t('common.close')} onclick={() => navigate(undefined, { modal: '' })}>{$t('common.close')}</Button></div>

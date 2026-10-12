@@ -3,11 +3,18 @@ import { describe, expect, it } from 'bun:test';
 import {
 	TOOL_MODAL_NAMES,
 	canonicalToolsWorkflowSurface,
-	shouldCloseUnavailablePublishWorkflow,
+	retiredTimetableModalHref,
 } from '../../../../../src/routes/(app)/configuration/tools/lib/tools-workflow';
 import { teacherAssignmentsCompatibilityHref } from '../../../../../src/routes/(app)/school/teacher-assignments/teacher-assignments-redirect';
 
 describe('tools route helpers', () => {
+	it('redirects obsolete publication links to Tools without their modal state', () => {
+		for (const modal of ['publish-timetable', 'republish-timetable']) {
+			expect(retiredTimetableModalHref(new URL(`https://school.test/configuration/tools?modal=${modal}&modalStep=success&modalTab=conflicts&modalTarget=class-1`))).toBe('/configuration/tools');
+		}
+		expect(retiredTimetableModalHref(new URL('https://school.test/configuration/tools?modal=generate-timetable'))).toBeNull();
+	});
+
 	it('canonicalizes each tool to its safe initial workflow view', () => {
 		expect(canonicalToolsWorkflowSurface({
 			modal: 'import',
@@ -27,15 +34,6 @@ describe('tools route helpers', () => {
 			step: 'setup',
 			tab: 'subjects',
 		});
-		expect(canonicalToolsWorkflowSurface({
-			modal: 'publish-timetable',
-			step: null,
-			tab: 'advanced',
-		})).toEqual({
-			modal: 'publish-timetable',
-			step: 'setup',
-			tab: null,
-		});
 	});
 
 	it('preserves allow-listed routed result views for local payload validation', () => {
@@ -47,15 +45,6 @@ describe('tools route helpers', () => {
 			modal: 'generate-timetable',
 			step: 'success',
 			tab: 'periods',
-		});
-		expect(canonicalToolsWorkflowSurface({
-			modal: 'publish-timetable',
-			step: 'result',
-			tab: null,
-		})).toEqual({
-			modal: 'publish-timetable',
-			step: 'result',
-			tab: null,
 		});
 	});
 
@@ -69,48 +58,6 @@ describe('tools route helpers', () => {
 			step: 'upload',
 			tab: 'staff',
 		});
-	});
-
-	it('keeps a publish deep link while shell or planning data is loading', () => {
-		expect(shouldCloseUnavailablePublishWorkflow({
-			modal: 'publish-timetable',
-			shellReady: false,
-			planningStatus: 'idle',
-			publishableClassCount: 0,
-		})).toBeFalse();
-		expect(shouldCloseUnavailablePublishWorkflow({
-			modal: 'publish-timetable',
-			shellReady: true,
-			planningStatus: 'loading',
-			publishableClassCount: 0,
-		})).toBeFalse();
-		expect(shouldCloseUnavailablePublishWorkflow({
-			modal: 'publish-timetable',
-			shellReady: true,
-			planningStatus: 'error',
-			publishableClassCount: 0,
-		})).toBeFalse();
-	});
-
-	it('closes publish only after loading settles without a publishable class', () => {
-		expect(shouldCloseUnavailablePublishWorkflow({
-			modal: 'publish-timetable',
-			shellReady: true,
-			planningStatus: 'ready',
-			publishableClassCount: 0,
-		})).toBeTrue();
-		expect(shouldCloseUnavailablePublishWorkflow({
-			modal: 'publish-timetable',
-			shellReady: true,
-			planningStatus: 'ready',
-			publishableClassCount: 1,
-		})).toBeFalse();
-		expect(shouldCloseUnavailablePublishWorkflow({
-			modal: 'generate-timetable',
-			shellReady: true,
-			planningStatus: 'ready',
-			publishableClassCount: 0,
-		})).toBeFalse();
 	});
 
 	it('classifies known denied tools modals as owned but not allowed', () => {
@@ -130,12 +77,6 @@ describe('tools route helpers', () => {
 		const toolsModal = readModal(url, TOOL_MODAL_NAMES);
 		expect(toolsModal).toBeNull();
 		expect(TOOL_MODAL_NAMES).not.toContain('account-profile');
-		expect(shouldCloseUnavailablePublishWorkflow({
-			modal: toolsModal,
-			shellReady: true,
-			planningStatus: 'ready',
-			publishableClassCount: 0,
-		})).toBeFalse();
 	});
 
 	it('redirects the legacy teacher assignments route with safe list filters only', () => {

@@ -1,56 +1,60 @@
 <script lang="ts">
 	import type { components } from '$lib/api/schema';
-	import type { School } from '$lib/types/school';
-	import type { TimetableWorkloadClass } from '../lib/timetable-generation-ui';
+	import type { ClassNode, GradeLevel, School } from '$lib/types/school';
+	import Button from '$lib/components/ui/button/button.svelte';
+	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
+	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import { t } from '$lib/i18n';
-	import { Search } from '$lib/icons';
 	import { resolvedPeriodSpanPlaceholder } from '$lib/scheduling/timetable-placement-parameters';
 	import { BADGE_WARN, ROW_ACTIVE } from '$lib/ui-tones';
 	import { cn } from '$lib/utils';
+	import { timetableClassGroups } from '../timetable-planning';
 
 	type ClassSubject = components['schemas']['ClassSubject'];
 
 	let {
 		classes = [],
+		gradeLevels = [],
+		includedClassIds = $bindable<string[]>([]),
 		classSubjects,
 		subjectLabels,
 		teacherLabelsByClassSubjectId = {},
 		school = null,
-		activeClassId: explicitActiveClassId = '',
 		selectedClassId = $bindable(''),
 		overrides = $bindable<Record<string, number>>({}),
 		minSpanOverrides = $bindable<Record<string, number>>({}),
 		maxSpanOverrides = $bindable<Record<string, number>>({}),
 		loading = false,
+		disabled = false,
 	}: {
-		classes?: TimetableWorkloadClass[];
+		classes?: ClassNode[];
+		gradeLevels?: GradeLevel[];
+		includedClassIds?: string[];
 		classSubjects: ClassSubject[];
 		subjectLabels: Record<string, string>;
 		teacherLabelsByClassSubjectId?: Record<string, string>;
 		school?: School | null;
-		activeClassId?: string;
 		selectedClassId?: string;
 		overrides?: Record<string, number>;
 		minSpanOverrides?: Record<string, number>;
 		maxSpanOverrides?: Record<string, number>;
 		loading?: boolean;
+		disabled?: boolean;
 	} = $props();
 
 	let search = $state('');
 
-	const showClassPicker = $derived(classes.length > 1);
-	const filteredClasses = $derived(
-		classes.filter(row => row.name.toLowerCase().includes(search.trim().toLowerCase())),
-	);
-	const activeClassId = $derived(
-		showClassPicker
-			? (selectedClassId || filteredClasses[0]?.id || '')
-			: (explicitActiveClassId || classes[0]?.id || classSubjects[0]?.classGroupId || ''),
-	);
+	const included = $derived(new Set(includedClassIds));
+	const includedCount = $derived(classes.filter(row => included.has(row.id)).length);
+	const groups = $derived(timetableClassGroups(classes, gradeLevels, search));
+	const groupCounts = $derived(new Map(timetableClassGroups(classes, gradeLevels, '').map(group => [group.id, {
+		selected: group.classes.filter(row => included.has(row.id)).length,
+		total: group.classes.length,
+	}])));
 	const subjectsForClass = $derived(
 		classSubjects
-			.filter(subject => subject.classGroupId === activeClassId && subject.isOffered !== false)
+			.filter(subject => included.has(selectedClassId) && subject.classGroupId === selectedClassId && subject.isOffered !== false)
 			.sort((left, right) => {
 				const leftLabel = subjectLabels[left.subjectId] ?? left.subjectId;
 				const rightLabel = subjectLabels[right.subjectId] ?? right.subjectId;
@@ -58,14 +62,11 @@
 			}),
 	);
 
-	$effect(() => {
-		if (!showClassPicker || !filteredClasses.length) {
+	function toggleClass(id: string, checked: boolean) {
+		if (disabled)
 			return;
-		}
-		if (!selectedClassId || !filteredClasses.some(row => row.id === selectedClassId)) {
-			selectedClassId = filteredClasses[0]!.id;
-		}
-	});
+		includedClassIds = checked ? [...new Set([...includedClassIds, id])] : includedClassIds.filter(value => value !== id);
+	}
 
 	function setOverride(
 		target: Record<string, number>,
@@ -91,46 +92,59 @@
 	}
 </script>
 
-<div class={cn('flex h-full min-h-0 gap-3', showClassPicker && 'lg:flex-row')}>
-	{#if showClassPicker}
-		<aside class="flex w-full shrink-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-muted/20 lg:w-48">
-			<div class="shrink-0 border-b border-border/60 p-2.5">
-				<p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{$t('common.class')}</p>
-				<div class="relative mt-2">
-					<Search class="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-					<Input bind:value={search} class="h-8 pl-7 text-xs" placeholder={$t('timetable.searchClasses')} />
-				</div>
+<div class="flex min-w-0 flex-col gap-3 lg:h-full lg:min-h-0 lg:flex-row">
+	<aside aria-label={$t('timetable.classesToGenerate')} class="flex w-full shrink-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-muted/20 lg:w-56" data-testid="timetable-class-selection">
+		<div class="shrink-0 space-y-2 border-b border-border/60 p-2.5">
+			<div>
+				<p class="text-sm font-medium">{$t('timetable.classListTitle')}</p>
+				<p class="text-xs text-muted-foreground" aria-live="polite" data-testid="timetable-selection-count">{$t('timetable.selectedClassCount', { selected: includedCount, total: classes.length })}</p>
 			</div>
-			<div class="min-h-0 flex-1 overflow-y-auto p-1.5">
-				{#each filteredClasses as classGroup (classGroup.id)}
-					<button
-						type="button"
-						data-testid="timetable-workload-class"
-						class={cn(
-							'mb-0.5 w-full rounded-lg px-2 py-1.5 text-left text-sm transition-colors',
-							activeClassId === classGroup.id ? ROW_ACTIVE : 'hover:bg-secondary/80',
-						)}
-						onclick={() => (selectedClassId = classGroup.id)}
-					>
-						{classGroup.name}
-					</button>
-				{/each}
+			<label class="block">
+				<span class="sr-only">{$t('timetable.searchClasses')}</span>
+				<ListSearchField bind:value={search} placeholder={$t('timetable.searchClasses')} />
+			</label>
+			<div class="flex flex-wrap gap-1">
+				<Button variant="ghost" size="sm" class="h-auto min-h-11 whitespace-normal px-1.5 py-2 text-xs" disabled={disabled || !classes.length} onclick={() => { includedClassIds = classes.map(row => row.id); }} data-testid="timetable-select-all">{$t('timetable.selectAllClasses')}</Button>
+				<Button variant="ghost" size="sm" class="h-auto min-h-11 whitespace-normal px-1.5 py-2 text-xs" disabled={disabled || !includedCount} onclick={() => { includedClassIds = []; }} data-testid="timetable-clear-selection">{$t('timetable.clearClassSelection')}</Button>
 			</div>
-		</aside>
-	{/if}
+		</div>
+		<div class="max-h-48 min-h-0 space-y-3 overflow-y-auto p-1.5 lg:max-h-none lg:flex-1" data-testid="timetable-class-options">
+			{#each groups as group (group.id)}
+				{@const counts = groupCounts.get(group.id)!}
+				<section aria-label={group.label || $t('timetable.unassignedGradeLevel')} data-testid="timetable-class-grade">
+					<h3 class="flex items-baseline justify-between gap-2 px-2 py-1 text-xs font-medium text-muted-foreground">
+						<span class="min-w-0 break-words">{group.label || $t('timetable.unassignedGradeLevel')}</span>
+						<span class="shrink-0 font-normal tabular-nums" aria-label={$t('timetable.selectedClassCount', counts)} data-testid="timetable-grade-count">{counts.selected}/{counts.total}</span>
+					</h3>
+					<ul>
+						{#each group.classes as classGroup (classGroup.id)}
+							<li class={cn('flex items-center rounded-lg', selectedClassId === classGroup.id && included.has(classGroup.id) && ROW_ACTIVE)}>
+								<label class="flex min-h-11 w-11 shrink-0 cursor-pointer items-center justify-center">
+									<Checkbox checked={included.has(classGroup.id)} onCheckedChange={checked => toggleClass(classGroup.id, checked)} {disabled} aria-label={$t('timetable.includeClass', { name: classGroup.name })} data-testid="timetable-class-checkbox" data-class-id={classGroup.id} />
+								</label>
+								<Button variant="ghost" class="h-auto min-h-11 min-w-0 flex-1 justify-start whitespace-normal break-words py-2 pl-0 pr-2 text-left" disabled={disabled || !included.has(classGroup.id)} aria-current={selectedClassId === classGroup.id ? 'true' : undefined} data-testid="timetable-workload-class" data-class-id={classGroup.id} onclick={() => (selectedClassId = classGroup.id)}>{classGroup.name}</Button>
+							</li>
+						{/each}
+					</ul>
+				</section>
+			{:else}
+				<p class="px-2 py-3 text-sm text-muted-foreground" role="status">{$t(classes.length ? 'picker.noResults' : 'timetable.noClassesForYear')}</p>
+			{/each}
+		</div>
+	</aside>
 
-	<section class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/70">
+	<section class="flex min-h-48 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/70 lg:min-h-0" data-testid="timetable-subject-editor">
 		<div class="shrink-0 border-b border-border/60 px-3 py-2">
-			<p class="text-sm font-medium">
-				{showClassPicker
-					? (classes.find(row => row.id === activeClassId)?.name ?? $t('timetable.workloadOverrides'))
-					: $t('timetable.workloadOverrides')}
+			<p class="break-words text-sm font-medium" aria-live="polite" data-testid="timetable-active-class">
+				{classes.find(row => row.id === selectedClassId)?.name ?? $t('timetable.workloadOverrides')}
 			</p>
 			<p class="text-xs text-muted-foreground">{$t('timetable.workloadOverridesHint')}</p>
 		</div>
-		<div class="min-h-0 flex-1 overflow-y-auto p-2">
+		<div class="min-h-0 flex-1 p-2 lg:overflow-y-auto">
 			{#if loading}
 				<p class="py-6 text-center text-sm text-muted-foreground">{$t('dataState.loading')}</p>
+			{:else if !includedCount}
+				<p class="py-6 text-center text-sm text-muted-foreground" role="status">{$t(classes.length ? 'timetable.selectAtLeastOneClass' : 'timetable.noClassesForYear')}</p>
 			{:else if subjectsForClass.length === 0}
 				<p class="py-6 text-center text-sm text-muted-foreground">{$t('timetable.noSubjectsForClass')}</p>
 			{:else}

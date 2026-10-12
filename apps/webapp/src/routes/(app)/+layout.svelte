@@ -15,6 +15,7 @@
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import { Dialog, DialogContent, DialogTitle, Close as DialogClose } from '$lib/components/ui/dialog';
+	import { entityVersions } from '$lib/entity-versions.svelte';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, PanelLeft, PanelLeftClose } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
@@ -29,11 +30,21 @@
 	import { canAccessPath } from '$lib/navigation/nav-permissions';
 	import { onboardingResumePath } from '$lib/onboarding/resume-onboarding';
 	import { shellContext } from '$lib/shell/context.svelte';
+	import { MessageCountState, provideMessageCount } from '$lib/shell/message-count.svelte';
 	import { cn } from '$lib/utils';
+	import { untrack } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { AccountState, setAccountState } from './account-state.svelte';
 	import AccountProfileModal from './components/AccountProfileModal.svelte';
 
+	const messageCount = new MessageCountState();
+	provideMessageCount(messageCount);
+	$effect(() => {
+		const scope = messageCount.scope;
+		void entityVersions.inbox;
+		if (scope && academicContext.shellReady)
+			return untrack(() => messageCount.start());
+	});
 	const accountState = new AccountState();
 	setAccountState(accountState);
 	const { children }: { children: Snippet } = $props();

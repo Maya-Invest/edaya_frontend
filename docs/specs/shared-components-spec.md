@@ -36,6 +36,7 @@ Status: **Built** = use as-is. No **Planned** registry entries at this time — 
 | **ListSearchField** | `ui/ListSearchField.svelte` | Built | Instant text filter pill — **do not** copy inline search markup |
 | **FilterSelect** | `ui/filter-select.svelte` | Built | **Main filter** — always `<select>` |
 | **FilterPanel** | `ui/FilterPanel.svelte` | Built | Secondary facets (status, date range) opened from Filter button |
+| **InfiniteList** | `ui/InfiniteList.svelte` | Built | Scroll-triggered batch loading and end-of-list feedback; route state owns requests and retry |
 | **ListEntityTable** | `ui/ListEntityTable.svelte` | Built | Sortable grid + selection checkboxes + infinite scroll shell |
 | **ListEntityCards** | `ui/ListEntityCards.svelte` · `ListEntityCard.svelte` | Built | Card grid + sort toolbar + labeled fields + column density |
 | **ListSelectionBar** | `ui/ListSelectionBar.svelte` | Built | Bulk selection bar — export + optional `actions` snippet + clear |
@@ -275,7 +276,7 @@ Correction lists use ListPageHeader, FilterSelect, FilterPanel, PageQuery and Da
 
 Route-local MessagesView composes ListPageHeader, DataState, DrawerEntityHeader, Dialog, FormModal, Button, Label and Textarea. Read-only teacher oversight uses the same thread presentation without school mutation actions. School queue status, unread state, author identity and conflict feedback are textual as well as visual.
 
-Route-local `ConversationMessageBubble` renders immutable history in chronological DOM order. School staff replies, including colleagues' replies, align right with `primary-container`; guardian messages align left on neutral `muted`. Teacher oversight puts teachers right and guardians left, describing participant roles rather than viewer ownership. Retain actual names, selectable multiline body text and smaller localized timestamps in browser timezone. Direction depends on author kind through the pure `messagePresentation` helper, never display names. Localized article labels identify direction/role, author and time without receipts. Bubbles wrap arbitrary words/URLs, use `radius-surface`, and cap width at 90% compact / 75% wide and 560px; compact enlarged text can use the available width. Header actions wrap at larger text sizes. Reply modal, drafts, pagination, polling and permissions retain their existing ownership.
+Route-local `ConversationMessageBubble` renders immutable history in chronological DOM order. School staff replies, including colleagues' replies, align right with `primary-container`; guardian messages align left on neutral `muted`. Teacher oversight puts teachers right and guardians left, describing participant roles rather than viewer ownership. Retain actual names, selectable multiline body text and smaller localized timestamps in browser timezone. Direction depends on author kind through the pure `messagePresentation` helper, never display names. Localized article labels identify direction/role, author and time without receipts. Bubbles wrap arbitrary words/URLs, use `radius-surface`, and cap width at 90% compact / 75% wide and 560px; compact enlarged text can use the available width. Header actions wrap at larger text sizes. Reply modal, drafts, infinite loading, polling and permissions retain their existing ownership.
 
 `tests/integration/messaging-browser.ts` contains isolated mocked conversation fixtures and FR/EN, compact/wide, 200% text visual checks. Set `EDAYA_MESSAGE_CAPTURES` to write captures. Dark web captures inject the manifest's existing dark palette for component compatibility review; the staff application remains light-only.
 
@@ -285,4 +286,10 @@ Shared subject editors, report section comments and document controls receive ty
 
 Dashboard UI belongs to `/dashboard`; import and school timetable generation/publication UI belong to `/configuration/tools`; class calendars, session, attendance and logbook workflows belong to the class timetable subtree. `ReportCardSectionTree` belongs to Configuration report cards, and homeroom comments belong to class report cards. Shared scheduling helpers remain in `lib/scheduling/`.
 
+The route-local timetable workload panel owns the single grade-grouped class list beside its subject editor. Reuse `ListSearchField`, `Checkbox` and `Button`; keep checkbox and class-navigation targets separate. Inclusion and active class drafts remain in the generation modal. On narrow screens stack the list above the editor and bound the list's scrolling area; keep the modal footer reachable without horizontal clipping. Do not recreate an additional class selector elsewhere in the modal.
+
 `StaffPicker` callers must set `active` deliberately. The removed compatibility wrapper always forced active loading, including callers that passed a false flag; its migrated class-assignment callers preserve that behavior with `active`.
+
+## Inbox and corrections presentation
+
+Messages and Corrections use `ListPageHeader`, pill `FilterSelect` controls, a single labeled `FilterPanel`, and `ListEntityTable` with semantic status chips and infinite loading. Corrections keeps its debounced `ListSearchField` in the header. Messages combines all authorized conversation types, with row tags and optional type, status and order filters; do not add a search that silently covers only loaded conversations. Detail drawers use a close-only shell header and a scrollable content region, full width on phones and half width on desktop.

@@ -36,11 +36,10 @@
 		if (!modals.target) {
 			return null;
 		}
-		const scale = gradeScalesPage.scaleFor(modals.target);
-		return scale && !scale.isDefault ? scale : null;
+		return gradeScalesPage.scaleFor(modals.target) ?? null;
 	});
 	const editingScale = $derived(modals.active === 'edit' ? targetScale : null);
-	const deleteTarget = $derived(modals.active === 'delete' ? targetScale : null);
+	const deleteTarget = $derived(modals.active === 'delete' && !targetScale?.isDefault ? targetScale : null);
 
 	const filteredScales = $derived(
 		gradeScalesPage.scales.filter((scale) => {
@@ -191,14 +190,14 @@
 							{/if}
 						</div>
 						<div class="col-span-1 flex justify-end">
-							{#if !scale.isDefault}
-								<PermissionGate permission="REPORT_CARD_CONFIGURE">
-									{#snippet children({ disabled, title })}
-										<RowActionMenu>
-											<RowActionMenuItem {disabled} {title} onclick={() => openEdit(scale)}>
-												<Pencil class="h-4 w-4" />
-												{$t('common.edit')}
-											</RowActionMenuItem>
+							<PermissionGate permission="REPORT_CARD_CONFIGURE">
+								{#snippet children({ disabled, title })}
+									<RowActionMenu>
+										<RowActionMenuItem {disabled} {title} onclick={() => openEdit(scale)}>
+											<Pencil class="h-4 w-4" />
+											{$t('common.edit')}
+										</RowActionMenuItem>
+										{#if !scale.isDefault}
 											<RowActionMenuItem
 												destructive
 												{disabled}
@@ -208,10 +207,10 @@
 												<Trash2 class="h-4 w-4" />
 												{$t('common.delete')}
 											</RowActionMenuItem>
-										</RowActionMenu>
-									{/snippet}
-								</PermissionGate>
-							{/if}
+										{/if}
+									</RowActionMenu>
+								{/snippet}
+							</PermissionGate>
 						</div>
 					</li>
 				{/each}

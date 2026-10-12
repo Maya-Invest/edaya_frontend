@@ -11,6 +11,7 @@ import { grantDocumentBundleDownload, grantDocumentDownload, loadDocumentIssuanc
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { openDocumentDownload, openDocumentDownloads } from '$lib/documents/open-download';
+import { documentRequestErrorMessage } from '$lib/documents/request-error';
 import { entityVersions } from '$lib/entity-versions.svelte';
 import { lang, t } from '$lib/i18n';
 import { toast } from '$lib/toast.svelte';
@@ -58,6 +59,7 @@ export async function requestDocumentIssuanceMutation(input: Omit<RequestDocumen
 	locale?: RequestDocumentIssuanceInput['locale'];
 	successMessage?: string;
 	openWhenReady?: boolean;
+	onError?: (message: string) => void;
 }): Promise<DocumentIssuance | null> {
 	const client = getBrowserSchoolClient();
 	const payload: RequestDocumentIssuanceInput = {
@@ -74,7 +76,16 @@ export async function requestDocumentIssuanceMutation(input: Omit<RequestDocumen
 		staffFields: input.staffFields,
 	};
 	const result = await runMutation(
-		() => documentCommand(client, 'requestDocumentIssuance', 'request-document-issuance', payload),
+		async () => {
+			try {
+				return await documentCommand(client, 'requestDocumentIssuance', 'request-document-issuance', payload);
+			}
+			catch (error) {
+				const message = documentRequestErrorMessage(error, input.templateKey, get(t));
+				input.onError?.(message);
+				throw new Error(message);
+			}
+		},
 		{
 			successMessage: input.successMessage,
 			versionKeys: [...DOCUMENT_VERSION_KEYS],

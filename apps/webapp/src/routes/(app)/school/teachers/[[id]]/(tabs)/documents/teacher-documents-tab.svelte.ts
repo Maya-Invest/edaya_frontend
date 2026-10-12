@@ -29,7 +29,15 @@ export class TeacherDocumentsTabState {
 
 	performDownloadDocument = (...args: Parameters<typeof downloadDocumentMutation>) => downloadDocumentMutation(...args);
 
-	performRequestDocumentIssuance = (...args: Parameters<typeof requestDocumentIssuanceMutation>) => requestDocumentIssuanceMutation(...args);
+	generationError = $state<string | null>(null);
+
+	performRequestDocumentIssuance = async (input: Parameters<typeof requestDocumentIssuanceMutation>[0]) => {
+		this.generationError = null;
+		return requestDocumentIssuanceMutation({
+			...input,
+			onError: (message) => { this.generationError = message; },
+		});
+	};
 
 	performVoidDocumentIssuance = (...args: Parameters<typeof voidDocumentIssuanceMutation>) => voidDocumentIssuanceMutation(...args);
 
@@ -39,6 +47,7 @@ export class TeacherDocumentsTabState {
 	constructor(private readonly getPage: () => TeachersPageState) {}
 
 	clear() {
+		this.generationError = null;
 		this.versionedQuery.clear();
 		this.slice = null;
 	}

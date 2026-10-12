@@ -298,10 +298,10 @@ Route query functions may use a shared or route-local page-load resolver, but th
 4. **Views read route state** — `PageQuery` owns loading / error / empty status only.
 5. **`+page.svelte` orchestrates** — query + `DataState` + thin wiring; no entity rendering logic.
 
-### URL filters and pagination
+### URL filters and infinite loading
 
-- **URL** → search, facet filters, page/offset keys (`q`, `class`, `status`, …)
-- **Route state** → loaded pages, `total`, `loadedVersion`
+- **URL** → search, facet filters and sorting (`q`, `class`, `status`, …); list offsets are not navigation state.
+- **Route state** → loaded batches, next offset/cursor, `total`, `loadedVersion`, load-more pending/error state. Preserve batches during detail navigation and refresh; reset on filter/scope changes and reject stale completions.
 - **List view** → reads state; never fetches
 
 Filter state uses `ListFiltersState` with `read*ListFilters` / `write*ListFilters` helpers from `lib/list/`.
@@ -690,7 +690,7 @@ Migrate existing routes incrementally; do not extend `detailDataContext` seed me
 
 ### Conversation route state
 
-The `/school/messages` layout owns its list, selected thread, read positions, paging and transient reply draft through MessagesPageState and PageQuery. View, status, order, selected conversation and reply-modal state are reconstructed from the URL. Immutable messages use command request identities; successful replies/resolution bump inbox versions and refresh the owning route. Identity switches clear content and drafts and discard stale completions. Refresh visible pages every 15 seconds and on visibility resume; stop when hidden or unmounted.
+The `/school/messages` layout owns its list, selected thread, read positions, infinite-loading batches and transient reply draft through MessagesPageState and PageQuery. Optional conversation type, status, order, selected conversation and reply-modal state are reconstructed from the URL. Immutable messages use command request identities; successful replies/resolution bump inbox versions and refresh the owning route. Identity switches clear content and drafts and discard stale completions. Refresh all loaded conversation batches every 15 seconds and on visibility resume; stop when hidden or unmounted.
 
 ## State ownership completion
 
@@ -705,3 +705,9 @@ Authentication invitation acceptance uses route-owned I/O with its existing expl
 Repository verification rejects retired module imports, runtime mutation/client imports from Svelte presentation, and references to absent workspace applications. Type-only imports, API error values and pure payload/display helpers are permitted.
 
 Permission forms share a preview state owner that captures complete immutable command snapshots and checks payload, active form session, and request generation before publishing results. The staff page owns combined creation-form profile/catalog data, loading, errors, retry, and cancellation on school or form-session replacement.
+
+The app shell owns a per-instance `MessageCountState` provided through Svelte context. Its Messages sidebar badge is numeric only and counts all authorized conversations in both `awaiting_school` and `awaiting_guardian` states, using server totals independently of inbox filters and loaded batches. Fetch only with school-inbox read or teacher-review permission; refresh on inbox version changes, every 15 seconds while visible, and visibility resume. Hide unavailable counts rather than showing zero. Scope changes invalidate pending results and hide the previous account's count. No badge is rendered in the page heading.
+
+### Timetable generation
+
+Configuration Tools owns the generation assistant and submits the selected class IDs in one `generateSchoolTimetable` request. The backend transaction preserves protected sessions and replaces only eligible slots. On success invalidate planning once and show generated-session results. On failure retain the previous timetable; there is no partial class-by-class success or publication phase. Legacy publish/republish modal URLs canonicalize to the Tools page. `timetableGenerated` is a boolean provenance marker, not a lifecycle state.

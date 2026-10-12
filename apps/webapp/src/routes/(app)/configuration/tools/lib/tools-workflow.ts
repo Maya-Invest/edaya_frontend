@@ -1,9 +1,9 @@
 import type { ImportTypeKey } from '$lib/import/catalog/types';
+import { writeModalSurface } from '$lib/modal/modal-url';
 
 export const TOOL_MODAL_NAMES = [
 	'import',
 	'generate-timetable',
-	'publish-timetable',
 ] as const;
 
 export type ToolsModalName = (typeof TOOL_MODAL_NAMES)[number];
@@ -29,13 +29,9 @@ export type TimetableGenerationStep = (typeof TIMETABLE_GENERATION_STEPS)[number
 
 export const TIMETABLE_SETUP_TABS = ['subjects', 'periods', 'advanced'] as const;
 
-export const TIMETABLE_PUBLISH_STEPS = ['setup', 'result'] as const;
-export type TimetablePublishStep = (typeof TIMETABLE_PUBLISH_STEPS)[number];
-
 export const TOOL_WORKFLOW_STEPS = [
 	...IMPORT_WORKFLOW_STEPS,
 	...TIMETABLE_GENERATION_STEPS,
-	...TIMETABLE_PUBLISH_STEPS,
 ] as const;
 
 export const TOOL_WORKFLOW_TABS = [
@@ -47,18 +43,6 @@ export interface ToolsWorkflowSurface {
 	modal: ToolsModalName | null;
 	step: string | null;
 	tab: string | null;
-}
-
-export function shouldCloseUnavailablePublishWorkflow(input: {
-	modal: ToolsModalName | null;
-	shellReady: boolean;
-	planningStatus: 'idle' | 'loading' | 'ready' | 'error';
-	publishableClassCount: number;
-}): boolean {
-	return input.modal === 'publish-timetable'
-		&& input.shellReady
-		&& input.planningStatus === 'ready'
-		&& input.publishableClassCount === 0;
 }
 
 export function canonicalToolsWorkflowSurface(
@@ -81,13 +65,6 @@ export function canonicalToolsWorkflowSurface(
 			tab: isValue(surface.tab, TIMETABLE_SETUP_TABS) ? surface.tab : 'subjects',
 		};
 	}
-	if (surface.modal === 'publish-timetable') {
-		return {
-			modal: surface.modal,
-			step: isValue(surface.step, TIMETABLE_PUBLISH_STEPS) ? surface.step : 'setup',
-			tab: null,
-		};
-	}
 	return { modal: null, step: null, tab: null };
 }
 
@@ -96,4 +73,11 @@ function isValue<T extends string>(
 	allowed: readonly T[],
 ): value is T {
 	return value !== null && (allowed as readonly string[]).includes(value);
+}
+
+export function retiredTimetableModalHref(url: URL): string | null {
+	const modal = url.searchParams.get('modal');
+	return modal === 'publish-timetable' || modal === 'republish-timetable'
+		? writeModalSurface(url, { modal: null })
+		: null;
 }

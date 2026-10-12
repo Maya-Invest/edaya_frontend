@@ -2,7 +2,6 @@
 	import type {
 		GenerateClassResult,
 		GenerateSchoolResult,
-		RepublishResult,
 	} from '$lib/api/mutations/timetable-generation.mutations';
 	import { t } from '$lib/i18n';
 	import { AlertTriangle, CheckCircle2 } from '$lib/icons';
@@ -10,7 +9,6 @@
 	import { cn } from '$lib/utils';
 	import {
 		summarizeClassGeneration,
-		summarizeRepublish,
 		summarizeSchoolGeneration,
 	} from '../lib/timetable-generation-ui';
 
@@ -18,15 +16,13 @@
 		mode = 'generate',
 		classResult = null,
 		schoolResult = null,
-		republishResult = null,
 		subjectLabels = {},
 		classLabels = {},
 		rangeLabel = '',
 	}: {
-		mode?: 'generate' | 'republish' | 'school';
+		mode?: 'generate' | 'school';
 		classResult?: GenerateClassResult | null;
 		schoolResult?: GenerateSchoolResult | null;
-		republishResult?: RepublishResult | null;
 		subjectLabels?: Record<string, string>;
 		classLabels?: Record<string, string>;
 		rangeLabel?: string;
@@ -34,23 +30,15 @@
 
 	const classSummary = $derived(classResult ? summarizeClassGeneration(classResult) : null);
 	const schoolSummary = $derived(schoolResult ? summarizeSchoolGeneration(schoolResult) : null);
-	const republishSummary = $derived(republishResult ? summarizeRepublish(republishResult) : null);
 	const headlineComplete = $derived(
 		mode === 'school'
 			? schoolSummary?.isComplete
-			: mode === 'republish'
-			? republishSummary?.generation.isComplete && republishSummary.publication.isComplete
 			: classSummary?.isComplete,
 	);
 	const warningUnmetCount = $derived(
 		mode === 'school'
 			? schoolSummary?.unmetCount ?? 0
-			: mode === 'republish'
-			? republishSummary?.generation.unmetCount ?? 0
 			: classSummary?.unmetCount ?? 0,
-	);
-	const warningSkippedCount = $derived(
-		mode === 'republish' ? republishSummary?.publication.skippedCount ?? 0 : 0,
 	);
 	const hasWarnings = $derived(!headlineComplete);
 </script>
@@ -72,11 +60,6 @@
 						? $t('timetable.resultSchoolDescription', {
 							classes: schoolSummary?.classCount ?? 0,
 							sessions: schoolSummary?.sessionCount ?? 0,
-						})
-						: mode === 'republish'
-						? $t('timetable.resultRepublishDescription', {
-							published: republishSummary?.publication.publishedCount ?? 0,
-							skipped: republishSummary?.publication.skippedCount ?? 0,
 						})
 						: $t('timetable.resultClassDescription', {
 							sessions: classSummary?.sessionCount ?? 0,
@@ -100,11 +83,6 @@
 						: $t('timetable.resultClassWarningsHint', { count: warningUnmetCount })}
 				</p>
 			{/if}
-			{#if warningSkippedCount > 0}
-				<p class="text-sm text-muted-foreground">
-					{$t('timetable.resultRepublishSkippedHint', { count: warningSkippedCount })}
-				</p>
-			{/if}
 		</div>
 	{/if}
 
@@ -115,7 +93,7 @@
 				<p class="text-lg font-semibold">{schoolSummary.classCount}</p>
 			</div>
 			<div class={SURFACE_INFO}>
-				<p class="text-xs text-muted-foreground">{$t('timetable.drafts')}</p>
+				<p class="text-xs text-muted-foreground">{$t('timetable.generatedSessions')}</p>
 				<p class="text-lg font-semibold">{schoolSummary.sessionCount}</p>
 			</div>
 			<div class={SURFACE_INFO}>
@@ -139,7 +117,7 @@
 				<thead class="sticky top-0 bg-muted/60 text-muted-foreground">
 					<tr>
 						<th class="px-3 py-2 font-medium">{$t('common.class')}</th>
-						<th class="px-3 py-2 font-medium">{$t('timetable.drafts')}</th>
+						<th class="px-3 py-2 font-medium">{$t('timetable.generatedSessions')}</th>
 						<th class="px-3 py-2 font-medium">{$t('timetable.unmetWorkload')}</th>
 					</tr>
 				</thead>
@@ -160,30 +138,10 @@
 				</tbody>
 			</table>
 		</div>
-	{:else if mode === 'republish' && republishSummary && republishResult}
-		<div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-			<div class={SURFACE_INFO}>
-				<p class="text-xs text-muted-foreground">{$t('timetable.drafts')}</p>
-				<p class="text-lg font-semibold">{republishSummary.generation.sessionCount}</p>
-			</div>
-			<div class={SURFACE_INFO}>
-				<p class="text-xs text-muted-foreground">{$t('timetable.lastResult')}</p>
-				<p class="text-lg font-semibold">{republishSummary.generation.placementCount}</p>
-			</div>
-			<div class={SURFACE_INFO}>
-				<p class="text-xs text-muted-foreground">{$t('timetable.published')}</p>
-				<p class="text-lg font-semibold">{republishSummary.publication.publishedCount}</p>
-			</div>
-			<div class={cn(SURFACE_INFO, republishSummary.publication.skippedCount > 0 && SURFACE_WARN)}>
-				<p class="text-xs text-muted-foreground">{$t('timetable.skippedConflicts')}</p>
-				<p class="text-lg font-semibold">{republishSummary.publication.skippedCount}</p>
-			</div>
-		</div>
-		{@render unmetList(republishResult.generation.unmetWorkloads)}
 	{:else if classSummary && classResult}
 		<div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
 			<div class={SURFACE_INFO}>
-				<p class="text-xs text-muted-foreground">{$t('timetable.drafts')}</p>
+				<p class="text-xs text-muted-foreground">{$t('timetable.generatedSessions')}</p>
 				<p class="text-lg font-semibold">{classSummary.sessionCount}</p>
 			</div>
 			<div class={SURFACE_INFO}>

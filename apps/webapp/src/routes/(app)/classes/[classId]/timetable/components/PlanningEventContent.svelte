@@ -51,7 +51,6 @@
 			&& event.allDay !== true,
 	);
 	const compactBar = $derived(mode === 'bars');
-	const isDraft = $derived(event.timetableGenerated === 'draft');
 </script>
 
 {#if compactBar}
@@ -63,9 +62,6 @@
 		{#if showTimes}
 			<p class="font-sans tabular-nums text-[9px] leading-none tracking-tight text-muted-foreground/90">
 				{formatTime(event.start)}–{formatTime(event.end)}
-				{#if isDraft}
-					<span class="ml-1 uppercase">· {$t('timetable.draft')}</span>
-				{/if}
 			</p>
 		{/if}
 		<p class="truncate text-xs font-semibold leading-tight">{cellContent.primary}</p>

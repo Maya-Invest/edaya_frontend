@@ -11,7 +11,7 @@ import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { fetchSchoolById } from '$lib/api/school-data';
 import { IMPORT_TYPE_DEFINITIONS } from '$lib/import/catalog/import-types';
 import { createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-import { readModal, writeModalSurface } from '$lib/modal/modal-url';
+import { writeModalSurface } from '$lib/modal/modal-url';
 import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { hasPermission } from '$lib/permissions';
@@ -23,7 +23,7 @@ import {
 	TOOL_WORKFLOW_STEPS,
 	TIMETABLE_SETUP_TABS,
 	canonicalToolsWorkflowSurface,
-	shouldCloseUnavailablePublishWorkflow,
+	retiredTimetableModalHref,
 } from './lib/tools-workflow';
 import { TimetablePlanningPageState } from './timetable-planning-page.svelte';
 
@@ -52,8 +52,8 @@ export class ToolsPageState {
 				if (this.allowedImportTabs.length > 0) {
 					allowed.push('import');
 				}
-				if (hasPermission('TIMETABLE_UPDATE')) {
-					allowed.push('generate-timetable', 'publish-timetable');
+				if (hasPermission('TIMETABLE_CREATE')) {
+					allowed.push('generate-timetable');
 				}
 				return allowed;
 			},
@@ -77,6 +77,11 @@ export class ToolsPageState {
 	hydrateWorkflow() {
 		if (!academicContext.shellReady)
 			return;
+		const retiredHref = retiredTimetableModalHref(this.getUrl());
+		if (retiredHref) {
+			replaceRouteSurface(retiredHref);
+			return;
+		}
 		this.modals.hydrate();
 		const canonical = canonicalToolsWorkflowSurface({
 			modal: this.modals.active,
@@ -91,19 +96,6 @@ export class ToolsPageState {
 		) {
 			this.replaceWorkflowSurface(canonical);
 		}
-		this.reconcilePublishAvailability();
-	}
-
-	reconcilePublishAvailability() {
-		if (!shouldCloseUnavailablePublishWorkflow({
-			modal: readModal(this.getUrl(), ['publish-timetable']),
-			shellReady: academicContext.shellReady,
-			planningStatus: this.planningPage.loadStatus,
-			publishableClassCount: this.planningPage.classes.length,
-		})) {
-			return;
-		}
-		this.modals.close();
 	}
 
 	replaceWorkflowStep(step: string) {

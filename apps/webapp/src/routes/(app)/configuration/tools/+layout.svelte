@@ -39,9 +39,6 @@
 			await toolsPage.planningPage.load();
 		}
 		catch { /* The planning state owns its load error; keep deep links until a load succeeds. */ }
-		finally {
-			toolsPage.reconcilePublishAvailability();
-		}
 	}
 
 	$effect(() => {

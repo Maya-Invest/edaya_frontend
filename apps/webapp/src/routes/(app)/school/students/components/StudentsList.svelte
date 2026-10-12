@@ -9,6 +9,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
+	import Label from '$lib/components/ui/label/label.svelte';
 	import ListEntityCards from '$lib/components/ui/ListEntityCards.svelte';
 	import ListEntityTable from '$lib/components/ui/ListEntityTable.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -312,25 +313,37 @@
 			<FilterSelect
 				value={studentsPage.filters.values.class}
 				class="h-9 w-48 rounded-full text-xs"
+				aria-label={$t('common.allClasses')}
 				options={[{ value: 'all', label: $t('common.allClasses') }]}
 				groups={classFilterGroups}
 				onchange={value => applyFacetFilter('class', value)}
 			/>
-			<FilterPanel activeCount={statusFilterActive} title={$t('students.statusFilter')}>
-				<FilterSelect
-					value={studentsPage.filters.values.status}
-					class="h-9 w-full rounded-md text-xs"
-					options={statusFilterOptions}
-					onchange={value => applyFacetFilter('status', value)}
-				/>
-			</FilterPanel>
-			<FilterPanel activeCount={photoReviewFilterActive} title={$t('students.photoReviewFilter')}>
-				<FilterSelect
-					value={studentsPage.filters.values.photoReview}
-					class="h-9 w-full rounded-md text-xs"
-					options={photoReviewFilterOptions}
-					onchange={value => applyFacetFilter('photoReview', value)}
-				/>
+			<FilterPanel
+				activeCount={statusFilterActive + photoReviewFilterActive}
+				class="border-input bg-background"
+			>
+				<div class="space-y-2">
+					<Label for="student-status-filter">{$t('students.statusFilter')}</Label>
+					<FilterSelect
+						id="student-status-filter"
+						aria-label={$t('students.statusFilter')}
+						value={studentsPage.filters.values.status}
+						class="h-9 w-full rounded-md text-xs"
+						options={statusFilterOptions}
+						onchange={value => applyFacetFilter('status', value)}
+					/>
+				</div>
+				<div class="space-y-2">
+					<Label for="student-photo-review-filter">{$t('students.photoReviewFilter')}</Label>
+					<FilterSelect
+						id="student-photo-review-filter"
+						aria-label={$t('students.photoReviewFilter')}
+						value={studentsPage.filters.values.photoReview}
+						class="h-9 w-full rounded-md text-xs"
+						options={photoReviewFilterOptions}
+						onchange={value => applyFacetFilter('photoReview', value)}
+					/>
+				</div>
 			</FilterPanel>
 		{/snippet}
 		{#snippet more()}

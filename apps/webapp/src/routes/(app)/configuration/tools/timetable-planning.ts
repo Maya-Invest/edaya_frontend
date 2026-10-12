@@ -1,9 +1,3 @@
-import type {
-	GenerateClassInput,
-	GenerateClassResult,
-	GenerateSchoolResult,
-} from '$lib/api/mutations/timetable-generation.mutations';
-import type { TimetablePlacementParameters } from '$lib/scheduling/timetable-placement-parameters';
 import type { ClassNode, GradeLevel } from '$lib/types/school';
 
 export function sortTimetableClasses(classes: ClassNode[], gradeLevels: GradeLevel[]): ClassNode[] {
@@ -24,6 +18,20 @@ export function selectedTimetableClasses<T extends { id: string }>(classes: T[],
 	return classes.filter(row => ids.has(row.id)).map(row => ({ ...row }));
 }
 
+/** Keep the displayed class stable; after exclusion, advance through the complete list. */
+export function activeTimetableClassId(classes: readonly { id: string }[], includedIds: readonly string[], activeId: string): string {
+	const included = new Set(includedIds);
+	const index = classes.findIndex(row => row.id === activeId);
+	if (index >= 0 && included.has(activeId))
+		return activeId;
+	for (let offset = 1; offset <= classes.length; offset++) {
+		const candidate = classes[(index + offset) % classes.length]!;
+		if (included.has(candidate.id))
+			return candidate.id;
+	}
+	return '';
+}
+
 export function timetableClassGroups(classes: ClassNode[], gradeLevels: GradeLevel[], search: string) {
 	const query = search.trim().toLocaleLowerCase();
 	const grades = new Map(gradeLevels.map(grade => [grade.id, grade]));
@@ -37,148 +45,4 @@ export function timetableClassGroups(classes: ClassNode[], gradeLevels: GradeLev
 		groups.set(row.gradeLevelId, group);
 	}
 	return [...groups.values()];
-}
-
-function filterPlacementMap(
-	map: Record<string, number> | undefined,
-	classSubjectIds: Set<string>,
-): Record<string, number> | undefined {
-	if (!map) {
-		return undefined;
-	}
-	const filtered: Record<string, number> = {};
-	for (const [id, value] of Object.entries(map)) {
-		if (classSubjectIds.has(id)) {
-			filtered[id] = value;
-		}
-	}
-	return Object.keys(filtered).length > 0 ? filtered : undefined;
-}
-
-export function scopePlacementParametersForClass(
-	params: TimetablePlacementParameters | undefined,
-	classSubjectIds: Set<string>,
-): TimetablePlacementParameters | undefined {
-	if (!params) {
-		return undefined;
-	}
-	const scoped: TimetablePlacementParameters = {};
-	const periodsPerWeekByClassSubjectId = filterPlacementMap(
-		params.periodsPerWeekByClassSubjectId,
-		classSubjectIds,
-	);
-	const minPeriodSpanByClassSubjectId = filterPlacementMap(
-		params.minPeriodSpanByClassSubjectId,
-		classSubjectIds,
-	);
-	const maxPeriodSpanByClassSubjectId = filterPlacementMap(
-		params.maxPeriodSpanByClassSubjectId,
-		classSubjectIds,
-	);
-	if (periodsPerWeekByClassSubjectId) {
-		scoped.periodsPerWeekByClassSubjectId = periodsPerWeekByClassSubjectId;
-	}
-	if (minPeriodSpanByClassSubjectId) {
-		scoped.minPeriodSpanByClassSubjectId = minPeriodSpanByClassSubjectId;
-	}
-	if (maxPeriodSpanByClassSubjectId) {
-		scoped.maxPeriodSpanByClassSubjectId = maxPeriodSpanByClassSubjectId;
-	}
-	return Object.keys(scoped).length > 0 ? scoped : undefined;
-}
-
-export interface TimetableGenerationProgress {
-	current: number;
-	total: number;
-	classGroupId: string;
-	className: string;
-}
-
-export class SequentialTimetableGenerationError extends Error {
-	override cause: unknown;
-	completed: GenerateClassResult[];
-	failedClass: { id: string; name: string };
-	total: number;
-
-	constructor(input: {
-		cause: unknown;
-		completed: GenerateClassResult[];
-		failedClass: { id: string; name: string };
-		total: number;
-	}) {
-		const message = input.cause instanceof Error
-			? input.cause.message
-			: 'Sequential timetable generation failed';
-		super(message, { cause: input.cause });
-		this.name = 'SequentialTimetableGenerationError';
-		this.cause = input.cause;
-		this.completed = input.completed;
-		this.failedClass = input.failedClass;
-		this.total = input.total;
-	}
-}
-
-export async function generateSchoolTimetableSequentially(input: {
-	academicYearId: string;
-	startDate: string;
-	endDate: string;
-	options?: GenerateClassInput['options'];
-	placementParameters?: TimetablePlacementParameters;
-	classes: Array<{ id: string; name: string }>;
-	classSubjects: Array<{ id: string; classGroupId: string }>;
-	generateClass: (command: GenerateClassInput) => Promise<GenerateClassResult>;
-	onProgress?: (progress: TimetableGenerationProgress) => void;
-}): Promise<GenerateSchoolResult> {
-	const completed: GenerateClassResult[] = [];
-	const total = input.classes.length;
-	// Snapshot the run so edits or refreshes cannot change the remaining work.
-	const classes = input.classes.map(row => ({ ...row }));
-	const subjectIdsByClass = new Map<string, Set<string>>();
-	for (const subject of input.classSubjects) {
-		const ids = subjectIdsByClass.get(subject.classGroupId) ?? new Set<string>();
-		ids.add(subject.id);
-		subjectIdsByClass.set(subject.classGroupId, ids);
-	}
-
-	for (let index = 0; index < classes.length; index++) {
-		const classGroup = classes[index]!;
-		input.onProgress?.({
-			current: index + 1,
-			total,
-			classGroupId: classGroup.id,
-			className: classGroup.name,
-		});
-
-		const classSubjectIds = subjectIdsByClass.get(classGroup.id) ?? new Set<string>();
-		const placementParameters = scopePlacementParametersForClass(
-			input.placementParameters,
-			classSubjectIds,
-		);
-
-		try {
-			const result = await input.generateClass({
-				classGroupId: classGroup.id,
-				academicYearId: input.academicYearId,
-				startDate: input.startDate,
-				endDate: input.endDate,
-				options: input.options,
-				placementParameters,
-			});
-			completed.push(result);
-		}
-		catch (cause) {
-			throw new SequentialTimetableGenerationError({
-				cause,
-				completed,
-				failedClass: { id: classGroup.id, name: classGroup.name },
-				total,
-			});
-		}
-	}
-
-	return {
-		academicYearId: input.academicYearId,
-		classGroups: completed,
-		skippedClassGroupIds: [],
-	};
 }

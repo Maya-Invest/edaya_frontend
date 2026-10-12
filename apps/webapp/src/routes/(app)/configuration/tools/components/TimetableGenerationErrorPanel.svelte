@@ -8,11 +8,9 @@
 	const {
 		error,
 		rangeLabel = '',
-		titleKey = 'timetable.generateErrorTitle',
 	}: {
 		error: TimetableGenerationError;
 		rangeLabel?: string;
-		titleKey?: string;
 	} = $props();
 </script>
 
@@ -21,10 +19,9 @@
 		<div class="flex items-start gap-3">
 			<AlertCircle class="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
 			<div class="min-w-0 space-y-1">
-				<p class="font-medium text-foreground">{$t(titleKey)}</p>
 				<p class="text-sm text-foreground">{error.summary}</p>
 				{#if error.detail}
-					<p class="rounded-lg border border-border/70 bg-background/80 px-3 py-2 font-sans tabular-nums text-xs text-muted-foreground">
+					<p class="text-sm font-medium text-foreground">
 						{error.detail}
 					</p>
 				{/if}

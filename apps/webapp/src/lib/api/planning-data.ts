@@ -342,7 +342,7 @@ function mapLessonPlanningEvent(
 				|| (classSubjectId ? entry.classSubjectId === classSubjectId : false),
 		}),
 		status: event.status ?? lessonSession?.status,
-		timetableGenerated: lessonSession?.timetableGenerated ?? null,
+		timetableGenerated: lessonSession?.timetableGenerated ?? false,
 	};
 }
 
