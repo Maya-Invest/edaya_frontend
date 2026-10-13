@@ -3,8 +3,8 @@ import type { GradeScale, ReportCardDefinition, ReportCardResult } from '$lib/ty
 import type { Student } from '$lib/types/school';
 import type { ReportCardsPageSlice } from './lib/report-cards-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
-import { requestDocumentIssuanceMutation, requestDocumentIssuanceBatchMutation } from '$lib/api/mutations/documents.mutations';
-import { writeReportSectionCommentsMutation, writeHomeroomReportCommentMutation } from '$lib/api/mutations/student-ops.mutations';
+import { requestDocumentIssuanceBatchMutation, requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
+import { writeHomeroomReportCommentMutation, writeReportSectionCommentsMutation } from '$lib/api/mutations/student-ops.mutations';
 import { loadClassReportCardResultsData } from '$lib/api/report-cards-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { nowIso } from '$lib/date/format';
@@ -253,6 +253,7 @@ export class ReportCardsPageState {
 	}
 
 	async publishResult(input: {
+		reviewedRevision?: boolean;
 		resultId: string;
 		successMessage?: string;
 	}): Promise<boolean> {
@@ -265,6 +266,8 @@ export class ReportCardsPageState {
 		const client = getBrowserSchoolClient();
 		const result = await runReportCardsRouteMutation({
 			request: () => client.commands.publishReportCardResult({
+				reviewedGradingRevision: input.reviewedRevision ? existing.revisedDraft?.gradingPolicyRevision : undefined,
+				reviewedDraftVersion: input.reviewedRevision ? existing.revisedDraft?.version : undefined,
 				id: existing.id,
 				studentId: existing.studentId,
 				periodId,

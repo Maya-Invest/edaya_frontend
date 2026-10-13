@@ -2,7 +2,6 @@ import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { GradeScale } from '$lib/types/report-cards';
 import type { GradeScalesPageSlice } from './lib/grade-scales-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
-import { buildGradeScaleRanges } from '$lib/api/grade-scale-ranges';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
@@ -107,6 +106,9 @@ export class GradeScalesPageState {
 		minScore: number;
 		maxScore: number;
 		passingScore: number;
+		ranges: NonNullable<GradeScale['ranges']>;
+		roundingMode: 'nearest' | 'truncate';
+		intervalConvention: 'legacy-closed' | 'continuous';
 		decimalPlaces?: number;
 		description?: string;
 		successMessage?: string;
@@ -125,6 +127,9 @@ export class GradeScalesPageState {
 			minScore: input.minScore,
 			maxScore: input.maxScore,
 			passingScore: input.passingScore,
+			ranges: input.ranges,
+			roundingMode: input.roundingMode,
+			intervalConvention: input.intervalConvention,
 			decimalPlaces: input.decimalPlaces ?? 2,
 			description: input.description,
 			isDefault: false,
@@ -132,6 +137,7 @@ export class GradeScalesPageState {
 
 		const result = await runGradeScalesRouteMutation({
 			request: () => client.commands.createGradeScale({
+				revision: 0,
 				id,
 				schoolId: sid,
 				name: input.name.trim(),
@@ -139,7 +145,10 @@ export class GradeScalesPageState {
 				maxScore: input.maxScore,
 				decimalPlaces: input.decimalPlaces ?? 2,
 				isDefault: false,
-				ranges: buildGradeScaleRanges(input.minScore, input.maxScore, input.passingScore),
+				ranges: input.ranges,
+				roundingMode: input.roundingMode,
+				intervalConvention: input.intervalConvention,
+				description: input.description,
 			}),
 			successMessage: input.successMessage,
 			apply: () => this.upsertScale(optimistic),
@@ -155,6 +164,9 @@ export class GradeScalesPageState {
 		minScore: number;
 		maxScore: number;
 		passingScore: number;
+		ranges: NonNullable<GradeScale['ranges']>;
+		roundingMode: 'nearest' | 'truncate';
+		intervalConvention: 'legacy-closed' | 'continuous';
 		decimalPlaces?: number;
 		description?: string;
 		successMessage?: string;
@@ -170,8 +182,11 @@ export class GradeScalesPageState {
 			minScore: input.minScore,
 			maxScore: input.maxScore,
 			passingScore: input.passingScore,
+			ranges: input.ranges,
+			roundingMode: input.roundingMode,
+			intervalConvention: input.intervalConvention,
 			decimalPlaces: input.decimalPlaces ?? existing.decimalPlaces,
-			description: input.description?.trim() || existing.description,
+			description: input.description?.trim() || undefined,
 		};
 
 		const result = await runGradeScalesRouteMutation({
@@ -184,7 +199,10 @@ export class GradeScalesPageState {
 				decimalPlaces: patch.decimalPlaces,
 				description: patch.description || null,
 				isDefault: existing.isDefault ?? false,
-				ranges: buildGradeScaleRanges(patch.minScore, patch.maxScore, patch.passingScore),
+				ranges: input.ranges,
+				roundingMode: input.roundingMode,
+				intervalConvention: input.intervalConvention,
+				revision: existing.revision ?? 0,
 			}),
 			successMessage: input.successMessage,
 			apply: () => this.upsertScale({ ...existing, ...patch }),

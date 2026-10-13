@@ -101,8 +101,13 @@ function buildDescriptionFromRanges(ranges: GradeScaleRangeRaw[]): string | unde
 		.join(' · ');
 }
 
-export function mapGradeScales(scalesRaw: GradeScaleRaw[]): GradeScale[] {
+export function mapGradeScales(scalesRaw: (Omit<GradeScaleRaw, 'revision' | 'roundingMode' | 'intervalConvention'> & Partial<Pick<GradeScaleRaw, 'revision' | 'roundingMode' | 'intervalConvention'>>)[]): GradeScale[] {
 	return scalesRaw.map(scale => ({
+		ranges: scale.ranges.map(row => ({ ...row })),
+		revision: scale.revision,
+		roundingMode: scale.roundingMode,
+		intervalConvention: scale.intervalConvention,
+		storedDescription: scale.description ?? undefined,
 		id: scale.id,
 		schoolId: scale.schoolId,
 		name: scale.name,
@@ -221,6 +226,7 @@ export function mapReportCardDefinitions(
 }
 
 interface ApiSectionResult {
+	grading?: ReportCardResultRaw['grading'];
 	sectionId?: string;
 	sectionKind?: string;
 	name?: string;
@@ -256,6 +262,7 @@ export function mapSubjectMark(
 			? catalogSubjectName(subject.name, get(lang), subject.code)
 			: subjectLabelForCatalogId(catalogSubjectId ?? classSubjectId, sources),
 		average: subjectResult.average,
+		grading: subjectResult.grading,
 		coefficient: subjectResult.weight ?? 1,
 		appreciation: subjectResult.comment ?? undefined,
 		teacherName: teacherNameForClassSubjectFromSources(classSubjectId, sources),
@@ -273,6 +280,7 @@ function mapSectionResults(
 	return sections.map(section => ({
 		sectionId: section.sectionId ?? '',
 		sectionAverage: section.average,
+		grading: section.grading,
 		marks: flattenSections([section])
 			.map(sub => mapSubjectMark(sub, sources))
 			.filter((mark): mark is ReportCardSubjectMark => mark !== null),
@@ -280,7 +288,7 @@ function mapSectionResults(
 }
 
 export function mapReportCardResults(
-	resultsRaw: ReportCardResultRaw[],
+	resultsRaw: (ReportCardResultRaw | NonNullable<ReportCardResultRaw['revisedDraft']>)[],
 	definitions: readonly Pick<
 		ReportCardDefinition,
 		'id' | 'schoolId' | 'academicYearId' | 'gradeScaleId'
@@ -300,8 +308,12 @@ export function mapReportCardResults(
 			definitionId: result.reportCardDefinitionId,
 			academicYearId: definition?.academicYearId ?? '2025',
 			academicPeriodId: result.periodId,
-			gradeScaleId: definition?.gradeScaleId ?? 'gs-20',
+			gradeScaleId: result.grading?.scaleId ?? definition?.gradeScaleId ?? 'gs-20',
 			status: mapResultStatus(result.status),
+			grading: result.grading,
+			aggregateLabel: result.aggregateLabel,
+			gradingPolicyRevision: result.gradingPolicyRevision,
+			revisedDraft: 'revisedDraft' in result && result.revisedDraft ? mapReportCardResults([result.revisedDraft], definitions, sources)[0] : undefined,
 			overallAverage: result.overallAverage ?? undefined,
 			classRank: result.rank ?? 0,
 			classSize: result.classSize ?? 0,

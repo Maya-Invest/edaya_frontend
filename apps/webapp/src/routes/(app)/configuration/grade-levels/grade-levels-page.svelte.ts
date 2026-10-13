@@ -1,7 +1,9 @@
-import type { GradeLevel } from '$lib/types/school';
+import type { GradeScale } from '$lib/types/report-cards';
+import type { GradeLevel, GradingPolicy } from '$lib/types/school';
 import type { GradeLevelsPageSlice } from './lib/grade-levels-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
 import { refreshAppShellData } from '$lib/api/mutations/run-mutation';
+import { loadGradeScalesCatalogData } from '$lib/api/report-cards-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
@@ -39,6 +41,10 @@ function nextGradeLevelId(name: string): string {
 }
 
 export class GradeLevelsPageState {
+	gradingScales = $state<GradeScale[]>([]);
+	gradingLevel = $state<GradeLevel | null>(null);
+	gradingLoading = $state(false);
+	gradingError = $state(false);
 	slice = $state<GradeLevelsPageSlice | null>(null);
 
 	readonly filters: ListFiltersState<{ q: string; cycle: string }>;
@@ -99,6 +105,40 @@ export class GradeLevelsPageState {
 			return;
 		}
 		await this.refreshSlice();
+	}
+
+	async loadGrading(levelId: string) {
+		this.gradingLoading = true;
+		this.gradingError = false;
+		try {
+			const client = getBrowserSchoolClient();
+			const [level, scales] = await Promise.all([client.entities.gradeLevels.get(levelId), loadGradeScalesCatalogData(client, schoolId())]);
+			if (level)
+				this.gradingLevel = { ...level, cycle: level.cycle ?? '' };
+			this.gradingScales = scales;
+		}
+		catch { this.gradingError = true; }
+		finally { this.gradingLoading = false; }
+	}
+
+	async configureGrading(input: { gradeLevelId: string; scaleId: string; expectedScaleRevision?: number; mode: GradingPolicy['mode']; aggregateLabel: string; numericEquivalents: Record<string, number>; expectedRevision: number; confirmed: boolean; successMessage: string }) {
+		const { successMessage, ...configuration } = input;
+		const result = await runGradeLevelsRouteMutation({
+			request: () => getBrowserSchoolClient().commands.configureGrading({ ...configuration, academicYearId: academicContext.yearId, requestId: crypto.randomUUID() }),
+			successMessage,
+			onSuccess: async () => {
+			await this.loadGrading(input.gradeLevelId);
+				await refreshAppShellData();
+			},
+		});
+		return result !== null;
+	}
+
+	async retryGrading(levelId: string, revision: number) {
+		await runGradeLevelsRouteMutation({
+			request: () => getBrowserSchoolClient().commands.retryGrading({ gradeLevelId: levelId, academicYearId: academicContext.yearId, expectedRevision: revision, requestId: crypto.randomUUID() }),
+			onSuccess: () => this.loadGrading(levelId),
+		});
 	}
 
 	async saveGradeLevel(input: {

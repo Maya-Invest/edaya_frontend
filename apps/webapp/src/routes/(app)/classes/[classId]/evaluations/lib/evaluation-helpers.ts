@@ -1,4 +1,5 @@
 import type { AssessmentResultRow, Evaluation, Student, Subject } from '$lib/types/school';
+import { assessmentStatistics } from '$lib/api/assessment-mapping';
 
 export interface EvaluationsPageSlice {
 	classId: string;
@@ -26,16 +27,8 @@ export function normalizedDescription(description?: string): string | undefined 
 export function evaluationStatsFromResults(
 	assessmentId: string,
 	results: readonly AssessmentResultRow[],
-): Pick<Evaluation, 'graded' | 'averageMark'> {
-	const scored = results.filter(
-		result => result.assessmentId === assessmentId && typeof result.score === 'number',
-	);
-	return {
-		graded: results.filter(result => result.assessmentId === assessmentId && (result.score !== null || result.designation === 'absent' || result.designation === 'exempt')).length,
-		averageMark: scored.length > 0
-			? scored.reduce((sum, result) => sum + (result.score ?? 0), 0) / scored.length
-			: 0,
-	};
+): Pick<Evaluation, 'graded' | 'averageMark' | 'averageOutOf' | 'averagePrecision' | 'gradingUpdating'> {
+	return assessmentStatistics(results.filter(result => result.assessmentId === assessmentId).map(row => ({ ...row, designation: row.designation ?? undefined })));
 }
 
 export function assessmentResultIdFor(assessmentId: string, studentId: string): string {

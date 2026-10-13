@@ -17,7 +17,7 @@
 	import { readClassReportCardListFilters, writeClassReportCardListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { toast } from '$lib/toast.svelte';
-	import { formatGrade } from '$lib/types/report-cards';
+	import { formatGrade, formatCalculatedGrade } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getReportCardsPageState } from '../report-cards-page.svelte';
@@ -239,7 +239,7 @@
 							</button>
 						</td>
 						<td class="px-4 py-3 font-sans tabular-nums">
-							{result && scale ? formatGrade(result.overallAverage, scale) : '—'}
+							{result?.grading ? formatCalculatedGrade(result.grading) : result && scale ? formatGrade(result.overallAverage, scale) : '—'}
 						</td>
 						<td class="px-4 py-3 font-sans tabular-nums">
 							{result ? `${result.classRank}/${result.classSize}` : '—'}

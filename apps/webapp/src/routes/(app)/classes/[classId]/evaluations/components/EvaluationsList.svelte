@@ -269,8 +269,8 @@
 							{$t('eval.average')}
 						</p>
 						<p class="font-sans text-2xl font-semibold tabular-nums">
-							{isDone ? evaluation.averageMark.toFixed(2) : '-'}
-							<span class="ml-1 text-xs font-normal text-muted-foreground">/ {evaluation.outOf}</span>
+							{isDone ? evaluation.gradingUpdating ? '—' : evaluation.averageMark.toFixed(evaluation.averagePrecision ?? 2) : '-'}
+							<span class="ml-1 text-xs font-normal text-muted-foreground">/ {evaluation.averageOutOf ?? evaluation.outOf}</span>
 						</p>
 					</div>
 					<div class="col-span-2">

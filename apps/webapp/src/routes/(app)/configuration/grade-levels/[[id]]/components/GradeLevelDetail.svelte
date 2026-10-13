@@ -1,8 +1,10 @@
 <script lang="ts">
 	import type { GradeLevel } from '$lib/types/school';
 	import { page } from '$app/stores';
+	import { academicContext } from '$lib/academic/context.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
@@ -10,6 +12,7 @@
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { get } from 'svelte/store';
 	import GradeLevelFormModal from '../../components/GradeLevelFormModal.svelte';
+	import GradingConfigurationModal from '../../components/GradingConfigurationModal.svelte';
 	import { getGradeLevelsPageState } from '../../grade-levels-page.svelte';
 
 	const { gradeLevel }: { gradeLevel: GradeLevel } = $props();
@@ -17,7 +20,8 @@
 	const gradeLevelsPage = getGradeLevelsPageState();
 
 	const modals = createUrlSyncedModals({
-		allowed: ['edit', 'delete'],
+		allowed: ['edit', 'delete', 'grading'],
+		allowedSteps: ['confirm'],
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
@@ -26,6 +30,19 @@
 	});
 	const editOpen = bindUrlModal(modals, 'edit');
 	const deleteOpen = bindUrlModal(modals, 'delete');
+	const gradingOpen = bindUrlModal(modals, 'grading');
+	const policy = $derived((gradeLevelsPage.gradingLevel?.id === gradeLevel.id ? gradeLevelsPage.gradingLevel : gradeLevel)?.gradingPolicies?.filter(row => row.academicYearId === academicContext.yearId).toSorted((a, b) => b.revision - a.revision)[0]);
+	$effect(() => {
+		void gradeLevelsPage.loadGrading(gradeLevel.id);
+	});
+	$effect(() => {
+		if (policy?.status !== 'updating')
+			return;
+		const timer = setInterval(() => {
+			void gradeLevelsPage.loadGrading(gradeLevel.id);
+		}, 5000);
+		return () => clearInterval(timer);
+	});
 
 	let deleteBusy = $state(false);
 
@@ -63,6 +80,12 @@
 			</span>
 		{/snippet}
 		{#snippet actions()}
+			<PermissionGate permission="REPORT_CARD_CONFIGURE" mode="disable">
+				{#snippet children({ disabled })}<Button variant="outline" {disabled} onclick={() => {
+					void gradeLevelsPage.loadGrading(live.id);
+					gradingOpen.open = true;
+				}}>{$t('grading.configure')}</Button>{/snippet}
+			</PermissionGate>
 			<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE" mode="disable">
 				{#snippet children({ disabled, title })}
 					<button
@@ -88,6 +111,14 @@
 		{/snippet}
 	</DrawerEntityHeader>
 
+	<div class="space-y-2 rounded-xl border border-border p-3">
+		<p class="font-medium">{policy?.aggregateLabel ?? $t('grading.legacy')}</p>
+		{#if policy}
+			<p class="text-sm text-muted-foreground">{policy.scale.name} · {policy.mode === 'mention-first' ? $t('grading.mention') : $t('grading.numeric')}</p>
+			<p role="status" class="text-sm">{$t(`grading.${policy.status}`)}</p>
+			{#if policy.status === 'failed'}<PermissionGate permission="REPORT_CARD_CONFIGURE"><Button variant="outline" onclick={() => gradeLevelsPage.retryGrading(live.id, policy.revision)}>{$t('common.retry')}</Button></PermissionGate>{/if}
+		{/if}
+	</div>
 	<div class="grid grid-cols-2 gap-3">
 		<DrawerField label={$t('gradeLevels.name')}>
 			<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{live.name}</div>
@@ -118,3 +149,5 @@
 	busy={deleteBusy}
 	onConfirm={confirmDelete}
 />
+
+<GradingConfigurationModal bind:open={gradingOpen.open} gradeLevel={live} confirm={modals.step === 'confirm'} onConfirmStep={value => modals.setStep(value ? 'confirm' : null)} />

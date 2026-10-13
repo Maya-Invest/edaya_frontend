@@ -221,6 +221,7 @@ async function fetchSupplementalShellForSchool(
 	});
 	const gradeLevels: GradeLevel[] = (gradeLevelsRaw ?? []).map(gl => ({
 		id: gl.id,
+		gradingPolicies: gl.gradingPolicies,
 		schoolId: gl.schoolId,
 		name: gl.name,
 		label: gl.label,
@@ -357,6 +358,7 @@ export async function fetchAppShellData(
 
 	const gradeLevels: GradeLevel[] = (gradeLevelsRaw ?? []).map(gl => ({
 		id: gl.id,
+		gradingPolicies: gl.gradingPolicies,
 		schoolId: gl.schoolId,
 		name: gl.name,
 		label: gl.label,

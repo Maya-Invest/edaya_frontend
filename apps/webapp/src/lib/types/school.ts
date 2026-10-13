@@ -1,3 +1,5 @@
+import type { components } from '@maya-invest/edaya-api-client/schema';
+
 export type ClassAttendanceMode = 'daily' | 'session';
 
 export interface ClassNode {
@@ -129,6 +131,8 @@ export interface TimetableSchedule {
 }
 
 export interface AssessmentResultRow {
+	mentionId?: string | null;
+	calculation?: components['schemas']['AssessmentResult']['calculation'];
 	designation?: 'scored' | 'absent' | 'exempt' | null;
 	id: string;
 	studentId: string;
@@ -146,6 +150,9 @@ export interface EvaluationSubmission {
 }
 
 export interface Evaluation {
+	averageOutOf?: number;
+	averagePrecision?: number;
+	gradingUpdating?: boolean;
 	marksRevision?: number;
 	marksStatus?: 'draft' | 'submitted';
 	id: string;
@@ -399,7 +406,10 @@ export interface PeriodDefinition {
 	isTeachingSlot: boolean;
 }
 
+export type GradingPolicy = NonNullable<components['schemas']['GradeLevel']['gradingPolicies']>[number];
+
 export interface GradeLevel {
+	gradingPolicies?: GradingPolicy[];
 	id: string;
 	schoolId: string;
 	name: string;

@@ -1,4 +1,21 @@
+import type { components } from '$lib/api/schema';
+
+export interface GradeScaleRange {
+	id?: string;
+	letter: string;
+	interpretation?: string | null;
+	minScore: number;
+	maxScore: number;
+	isPassing: boolean;
+	gpaValue?: number | null;
+}
+
 export interface GradeScale {
+	ranges?: GradeScaleRange[];
+	revision?: number;
+	roundingMode?: 'nearest' | 'truncate';
+	intervalConvention?: 'legacy-closed' | 'continuous';
+	storedDescription?: string;
 	id: string;
 	schoolId: string;
 	name: string;
@@ -47,6 +64,7 @@ export interface ReportCardDefinition {
 export type ReportCardResultStatus = 'draft' | 'generated' | 'published';
 
 export interface ReportCardSubjectMark {
+	grading?: components['schemas']['ReportCardResult']['grading'];
 	subjectId: string;
 	subjectName: string;
 	average?: number;
@@ -56,6 +74,7 @@ export interface ReportCardSubjectMark {
 }
 
 export interface ReportCardSectionResult {
+	grading?: components['schemas']['ReportCardResult']['grading'];
 	sectionId: string;
 	sectionAverage?: number;
 	marks: ReportCardSubjectMark[];
@@ -68,6 +87,10 @@ export interface ReportCommentSection {
 }
 
 export interface ReportCardResult {
+	grading?: components['schemas']['ReportCardResult']['grading'];
+	aggregateLabel?: string;
+	gradingPolicyRevision?: number;
+	revisedDraft?: ReportCardResult;
 	aggregation?: { source: 'assessments' | 'report_cards'; sourcePeriodIds: string[]; periodWeightsByPeriodId?: Record<string, number> } | null;
 	commentSections?: ReportCommentSection[];
 	version?: number;
@@ -95,4 +118,8 @@ export interface ReportCardResult {
 
 export function formatGrade(value: number | undefined, scale: { decimalPlaces: number }): string {
 	return value === undefined ? '—' : value.toFixed(Math.max(2, scale.decimalPlaces));
+}
+
+export function formatCalculatedGrade(grade: NonNullable<components['schemas']['ReportCardResult']['grading']>): string {
+	return `${grade.reportedValue.toFixed(grade.decimalPlaces)} / ${grade.maximum} · ${grade.mention.code}`;
 }

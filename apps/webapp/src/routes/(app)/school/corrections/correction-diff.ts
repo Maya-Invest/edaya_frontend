@@ -17,8 +17,10 @@ export function correctionDiff(detail: CorrectionDetail, translate: (key: string
 	};
 	const row = detail.correction;
 	const fieldNames = detail.original?.fieldNames as Record<string, string> | undefined;
+	const mentionLabels = detail.original?.mentionLabels as Record<string, string> | undefined;
+	const displayField = (key: string, value: unknown) => key === 'mentionId' && typeof value === 'string' ? mentionLabels?.[value] ?? value : display(value);
 	if (row.workflow === 'grades')
-		return row.changes.flatMap(change => (['score', 'designation', 'status', 'notes'] as const).filter(key => change.before[key] !== change.proposed[key]).map(key => ({ label: `${name(change.studentId)} · ${translate(`corrections.field.${key}`)}`, before: display(change.before[key]), proposed: display(change.proposed[key]) })));
+		return row.changes.flatMap(change => (['score', 'mentionId', 'designation', 'status', 'notes'] as const).filter(key => (change.before[key] ?? null) !== (change.proposed[key] ?? null)).map(key => ({ label: `${name(change.studentId)} · ${translate(`corrections.field.${key}`)}`, before: displayField(key, change.before[key]), proposed: displayField(key, change.proposed[key]) })));
 	const before = row.before as Record<string, unknown>;
 	const proposed = row.proposal as Record<string, unknown>;
 	const rows: CorrectionDiffRow[] = [];

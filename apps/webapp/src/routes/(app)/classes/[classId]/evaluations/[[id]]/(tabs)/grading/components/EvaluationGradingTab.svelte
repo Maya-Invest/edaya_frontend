@@ -110,6 +110,7 @@
 		<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
 			{#each classStudents as student, index (student.id)}
 				{@const score = evaluationsPage.scoreFor(evaluation.id, student.id)}
+				{@const mark = gradingTab.review?.results.find(row => row.studentId === student.id)}
 				<div
 					class={cn(
 						'flex items-center justify-between gap-3 px-4 py-3',
@@ -128,8 +129,8 @@
 					</div>
 					<div class="flex items-center gap-2">
 						<span class="min-w-[3rem] text-right font-sans text-sm tabular-nums">
-							{score !== null ? score.toFixed(2) : gradingTab.slice?.assessmentResults.find(result => result.studentId === student.id)?.designation === 'absent' ? $t('marks.absent') : gradingTab.slice?.assessmentResults.find(result => result.studentId === student.id)?.designation === 'exempt' ? $t('marks.exempt') : '—'}
-							<span class="font-sans tabular-nums text-[10px] text-muted-foreground">/{evaluation.outOf}</span>
+							{mark?.originalEntry?.kind === 'mention' ? `${mark.originalEntry.code} · ${mark.calculation?.reportedValue ?? mark.originalEntry.points}` : score !== null ? mark?.calculation ? String(score) : score.toFixed(2) : gradingTab.slice?.assessmentResults.find(result => result.studentId === student.id)?.designation === 'absent' ? $t('marks.absent') : gradingTab.slice?.assessmentResults.find(result => result.studentId === student.id)?.designation === 'exempt' ? $t('marks.exempt') : '—'}
+							{#if mark?.originalEntry?.kind !== 'mention'}<span class="font-sans tabular-nums text-[10px] text-muted-foreground">/{evaluation.outOf}</span>{/if}
 						</span>
 						<PermissionGate permission="GRADE_INPUT" mode="disable" tooltip={$t('eval.permissionInput')}>
 							{#snippet children({ disabled, title })}
@@ -141,7 +142,7 @@
 									{title}
 									onclick={() => modals.open('grade-entry', { target: student.id })}
 								>
-									{score !== null ? $t('eval.editGrade') : $t('eval.enterGrade')}
+									{score !== null || mark?.mentionId ? $t('eval.editGrade') : $t('eval.enterGrade')}
 								</Button>
 							{/snippet}
 						</PermissionGate>

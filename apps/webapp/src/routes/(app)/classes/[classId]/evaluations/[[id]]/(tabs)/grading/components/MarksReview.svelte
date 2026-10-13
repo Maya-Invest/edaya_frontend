@@ -2,6 +2,7 @@
 	import type { components } from '$lib/api/schema';
 	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
@@ -21,25 +22,28 @@
 	const reject = bindUrlModal(modals, 'reject-correction');
 	const withdraw = bindUrlModal(modals, 'withdraw-correction');
 	type Values = components['schemas']['RequestAssessmentMarksCorrectionCommand']['changes'][number]['proposed'];
-	let drafts = $state<Record<string, { selected: boolean; score: string; designation: Values['designation']; notes: string }>>({});
+	let drafts = $state<Record<string, { selected: boolean; score: string; mentionId: string; designation: Values['designation']; notes: string }>>({});
 	let reason = $state('');
 	let busy = $state(false);
 	const selectedCorrection = $derived(grading.review?.corrections.find(row => row.id === modals.target));
 	const rows = $derived(grading.review?.results.filter(row => !grading.review?.publishedResultIds.includes(row.id)) ?? []);
-	const changes = $derived(rows.filter(row => drafts[row.id]?.selected).map(row => ({ resultId: row.id, proposed: { score: drafts[row.id].designation === 'scored' ? Number(drafts[row.id].score) : null, designation: drafts[row.id].designation, notes: drafts[row.id].notes.trim() || null } })));
-	const valid = $derived(reason.trim().length > 0 && changes.length > 0 && changes.every(change => change.proposed.designation !== 'scored' || (drafts[change.resultId].score.trim() !== '' && Number.isFinite(change.proposed.score) && change.proposed.score! >= 0 && change.proposed.score! <= (grading.review?.assessment.maxScore ?? 0))));
+	const mentionFirst = $derived(grading.review?.gradingPolicy?.mode === 'mention-first');
+	const mentions = $derived(grading.review?.gradingPolicy?.scale.ranges ?? []);
+	const mentionOptions = $derived([{ value: '', label: $t('grading.mention') }, ...mentions.map(row => ({ value: row.id ?? '', label: `${row.letter} · ${row.interpretation ?? ''}` }))]);
+	const changes = $derived(rows.filter(row => drafts[row.id]?.selected).map(row => ({ resultId: row.id, proposed: { mentionId: mentionFirst && drafts[row.id].designation === 'scored' ? drafts[row.id].mentionId : null, score: !mentionFirst && drafts[row.id].designation === 'scored' ? Number(drafts[row.id].score) : null, designation: drafts[row.id].designation, notes: drafts[row.id].notes.trim() || null } })));
+	const valid = $derived(reason.trim().length > 0 && changes.length > 0 && changes.every(change => change.proposed.designation !== 'scored' || (mentionFirst ? !!change.proposed.mentionId : (drafts[change.resultId].score.trim() !== '' && Number.isFinite(change.proposed.score) && change.proposed.score! >= 0 && change.proposed.score! <= (grading.review?.assessment.maxScore ?? 0)))));
 	function name(studentId: string) {
 		const student = grading.review?.students.find(row => row.id === studentId);
 		return student ? `${student.firstName} ${student.lastName}` : studentId;
 	}
-	function display(value: { score?: number | null; designation?: string; notes?: string | null }) {
-		return `${value.designation === 'absent' || value.designation === 'exempt' ? $t(`marks.${value.designation}`) : value.score?.toFixed(2) ?? '—'}${value.notes ? ` · ${value.notes}` : ''}`;
+	function display(value: { mentionId?: string | null; score?: number | null; designation?: string; notes?: string | null }) {
+		return `${value.designation === 'absent' || value.designation === 'exempt' ? $t(`marks.${value.designation}`) : value.mentionId ? mentions.find(row => row.id === value.mentionId)?.letter ?? value.mentionId : (grading.review?.gradingPolicy ? value.score?.toString() : value.score?.toFixed(2)) ?? '—'}${value.notes ? ` · ${value.notes}` : ''}`;
 	}
 	$effect(() => {
 		if (request.open) {
 			for (const row of rows) {
 				if (!drafts[row.id])
-					drafts[row.id] = { selected: false, score: String(row.score ?? ''), designation: row.designation ?? 'scored', notes: row.notes ?? '' };
+					drafts[row.id] = { selected: false, score: String(row.score ?? ''), mentionId: row.mentionId ?? '', designation: row.designation ?? 'scored', notes: row.notes ?? '' };
 			}
 		}
 	});
@@ -92,7 +96,7 @@
 					<label class="flex gap-2"><input type="checkbox" bind:checked={drafts[row.id].selected} /> {name(row.studentId)} · {display(row)}</label>
 					{#if drafts[row.id].selected}
 						<label>{$t('marks.designation')}<select class="w-full rounded-md border p-2" bind:value={drafts[row.id].designation}>{#each ['scored', 'absent', 'exempt'] as designation (designation)}<option value={designation}>{$t(`marks.${designation}`)}</option>{/each}</select></label>
-						{#if drafts[row.id].designation === 'scored'}<label>{$t('marks.scored')}<input class="w-full rounded-md border p-2" type="text" inputmode="decimal" bind:value={drafts[row.id].score} /></label>{/if}
+						{#if drafts[row.id].designation === 'scored' && mentionFirst}<FilterSelect bind:value={drafts[row.id].mentionId} options={mentionOptions} aria-label={$t('grading.mention')} />{:else if drafts[row.id].designation === 'scored'}<label>{$t('marks.scored')}<input class="w-full rounded-md border p-2" type="text" inputmode="decimal" bind:value={drafts[row.id].score} /></label>{/if}
 						<label>{$t('marks.comment')}<Textarea bind:value={drafts[row.id].notes} /></label>
 					{/if}
 				</fieldset>

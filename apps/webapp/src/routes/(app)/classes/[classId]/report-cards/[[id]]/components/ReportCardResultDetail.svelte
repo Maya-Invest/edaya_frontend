@@ -5,7 +5,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { formatGrade } from '$lib/types/report-cards';
+	import { formatGrade, formatCalculatedGrade } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import ReportHomeroomComment from '../../components/ReportHomeroomComment.svelte';
@@ -14,7 +14,8 @@
 	const { result }: { result: ReportCardResult } = $props();
 
 	const reportCardsPage = getReportCardsPageState();
-	const live = $derived(reportCardsPage.selectedResult(result.classId, result.id) ?? result);
+	const stored = $derived(reportCardsPage.selectedResult(result.classId, result.id) ?? result);
+	const live = $derived(stored.revisedDraft ?? stored);
 	const student = $derived(reportCardsPage.studentFor(live.studentId));
 	const definition = $derived(
 		reportCardsPage.definitionsFor(live.classId).find(entry => entry.id === live.definitionId),
@@ -36,6 +37,7 @@
 	async function publish() {
 		await reportCardsPage.publishResult({
 			resultId: live.id,
+			reviewedRevision: !!stored.revisedDraft,
 			successMessage: get(t)('reportCards.toastPublished', { name: student?.name ?? '' }),
 		});
 	}
@@ -70,6 +72,7 @@
 		{/snippet}
 	</DrawerEntityHeader>
 
+	{#if stored.revisedDraft}<div role="status" class="rounded-xl border border-border bg-secondary p-3"><p class="font-semibold">{$t('grading.revisedDraft')}</p><p class="text-sm">{$t('grading.publishedPreserved')}</p></div>{/if}
 	{#if live.calculationStale}
 		<p role="status">{$t('reportCards.staleMarks')}</p>
 	{/if}
@@ -81,9 +84,10 @@
 	{/if}
 	<div class="grid grid-cols-3 gap-3">
 		<div class="rounded-xl border border-border bg-secondary/30 p-3 text-center">
-			<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">{$t('reportCards.overall')}</p>
+			<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">{live.aggregateLabel ?? $t('reportCards.overall')}</p>
 			<p class="font-display text-2xl font-semibold">
-				{scale ? formatGrade(live.overallAverage, scale) : live.overallAverage}
+				{live.grading ? formatCalculatedGrade(live.grading) : scale ? formatGrade(live.overallAverage, scale) : live.overallAverage}
+				{#if live.grading}<span class="block text-sm">{live.grading.mention.code} · {live.grading.mention.label}</span>{/if}
 			</p>
 		</div>
 		<div class="rounded-xl border border-border bg-secondary/30 p-3 text-center">
@@ -103,7 +107,7 @@
 					{definition?.sections.find(entry => entry.id === section.sectionId)?.name ?? 'Section'}
 					{#if section.sectionAverage !== undefined}
 						<span class="ml-2 font-sans tabular-nums text-xs text-muted-foreground">
-							(moy. {scale ? formatGrade(section.sectionAverage, scale) : section.sectionAverage})
+							(moy. {section.grading ? formatCalculatedGrade(section.grading) : scale ? formatGrade(section.sectionAverage, scale) : section.sectionAverage})
 						</span>
 					{/if}
 				</p>
@@ -116,7 +120,7 @@
 									<p class="text-xs text-muted-foreground">{mark.teacherName}</p>
 								</div>
 								<p class="font-sans tabular-nums font-semibold">
-									{scale ? formatGrade(mark.average, scale) : mark.average}
+									{mark.grading ? formatCalculatedGrade(mark.grading) : scale ? formatGrade(mark.average, scale) : mark.average}
 								</p>
 							</div>
 							{#if mark.appreciation}

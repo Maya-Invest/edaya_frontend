@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { correctionDiff } from '../../../../../src/routes/(app)/school/corrections/correction-diff';
+import { correctionDiff, correctionRevisionDiff } from '../../../../../src/routes/(app)/school/corrections/correction-diff';
 import type { CorrectionDetail } from '../../../../../src/routes/(app)/school/corrections/corrections-page.svelte';
 
 const t = (key: string) => key;
@@ -18,4 +18,19 @@ describe('typed correction comparison', () => {
   test('uses report subject labels and preserves unchanged fields', () => {
     expect(correctionDiff(detail({ workflow: 'report_comments', before: { workflow: 'report_comments', sections: [{ sectionId: 'subject', comment: 'Original' }] }, proposal: { workflow: 'report_comments', sections: [{ sectionId: 'subject', comment: 'Corrected' }] } }), t)).toEqual([{ label: 'Mathematics', before: 'Original', proposed: 'Corrected' }]);
   });
+});
+
+
+test('shows mention-only changes and historical proposals using readable codes', () => {
+  const change = { studentId: 'student', before: { mentionId: 'b', score: null, designation: 'scored', notes: null }, proposed: { mentionId: 'a', score: null, designation: 'scored', notes: null } };
+  const input = detail({ workflow: 'grades', changes: [change], revisions: [{ version: 0, changes: [change] }] });
+  input.original = { mentionLabels: { a: 'A · Excellent', b: 'B · Good' } };
+  const expected = [{ label: 'Grace · corrections.field.mentionId', before: 'B · Good', proposed: 'A · Excellent' }];
+  expect(correctionDiff(input, t)).toEqual(expected);
+  expect(correctionRevisionDiff(input, 0, t)).toEqual(expected);
+});
+
+test('null and omitted mention IDs do not create a false change on numeric corrections', () => {
+  const input = detail({ workflow: 'grades', changes: [{ studentId: 'student', before: { score: 12.345, designation: 'scored', notes: null }, proposed: { mentionId: null, score: 13.456, designation: 'scored', notes: null } }] });
+  expect(correctionDiff(input, t)).toEqual([{ label: 'Grace · corrections.field.score', before: '12.345', proposed: '13.456' }]);
 });

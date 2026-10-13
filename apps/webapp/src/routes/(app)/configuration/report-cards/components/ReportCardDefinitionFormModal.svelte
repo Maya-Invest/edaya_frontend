@@ -22,15 +22,12 @@
 	let wasOpen = false;
 	let name = $state('');
 	let gradeLevelId = $state('');
-	let gradeScaleId = $state('');
+	const policy = $derived(academicContext.gradeLevelById(gradeLevelId)?.gradingPolicies?.filter(row => row.academicYearId === academicContext.yearId).toSorted((a, b) => b.revision - a.revision)[0]);
+	const gradeScaleId = $derived(policy?.scale.id ?? defaultScaleId());
 
 	const gradeLevels = $derived(academicContext.gradeLevels);
-	const scales = $derived(reportCardsPage.scales);
 	const gradeLevelOptions = $derived(
 		gradeLevels.map(level => ({ value: level.id, label: level.name })),
-	);
-	const scaleOptions = $derived(
-		scales.map(scale => ({ value: scale.id, label: scale.name })),
 	);
 	const canSubmit = $derived(
 		name.trim().length > 0 && gradeLevelId !== '' && gradeScaleId !== '',
@@ -49,7 +46,6 @@
 	function resetForm() {
 		name = '';
 		gradeLevelId = defaultGradeLevelId();
-		gradeScaleId = defaultScaleId();
 	}
 
 	async function ensureCatalog() {
@@ -58,9 +54,6 @@
 		}
 		if (gradeLevelId === '') {
 			gradeLevelId = defaultGradeLevelId();
-		}
-		if (gradeScaleId === '') {
-			gradeScaleId = defaultScaleId();
 		}
 	}
 
@@ -121,11 +114,7 @@
 		</div>
 		<div class="space-y-1.5">
 			<Label>{$t('gradeScales.subtitle')}</Label>
-			<FilterSelect
-				bind:value={gradeScaleId}
-				class="h-10 w-full"
-				options={scaleOptions}
-			/>
+			<p class="text-sm">{policy?.scale.name ?? reportCardsPage.scales.find(row => row.id === gradeScaleId)?.name ?? '—'} · {$t('grading.inherit')}</p>
 		</div>
 	</div>
 </FormModal>

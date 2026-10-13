@@ -409,10 +409,10 @@ export class EvaluationsPageState {
     const key = JSON.stringify({ action, assessmentId: review.assessment.id, revision: review.assessment.marksRevision, ...details, version: correction?.version });
     let requestId = this.marksRequestIds.get(key);
     if (!requestId) {
- requestId = crypto.randomUUID();
- this.marksRequestIds.set(key, requestId);
-}
-    const input = { assessmentId: review.assessment.id, expectedRevision: review.assessment.marksRevision, requestId };
+      requestId = crypto.randomUUID();
+      this.marksRequestIds.set(key, requestId);
+    }
+    const input = { assessmentId: review.assessment.id, expectedRevision: review.assessment.marksRevision, expectedGradingRevision: review.gradingPolicy?.revision ?? 0, requestId };
     const decision = { correctionId: details.correctionId ?? '', expectedVersion: correction?.version ?? 0, requestId };
     const result = await runEvaluationRouteMutation({
       request: async () => {
@@ -441,6 +441,7 @@ export class EvaluationsPageState {
     studentId: string;
     assessmentId: string;
     score: number | null;
+    mentionId?: string | null;
     designation?: 'scored' | 'absent' | 'exempt';
     successMessage?: string;
   }): Promise<boolean> {
@@ -464,14 +465,20 @@ export class EvaluationsPageState {
       request: () => client.commands.recordAssessmentResult({
         requestId: crypto.randomUUID(),
         expectedRevision: grading!.review!.assessment.marksRevision,
+        expectedGradingRevision: grading!.review!.gradingPolicy?.revision ?? 0,
         id: applied.resultId,
         studentId: input.studentId,
         assessmentId: input.assessmentId,
         score: input.score,
+        mentionId: input.mentionId,
+        designation: input.designation,
       }),
       successMessage: input.successMessage,
       versionKeys: ['evaluations', 'students'],
-      onSuccess: async () => { grading.review = await client.queries.getAssessmentMarksReview({ assessmentId: input.assessmentId }); },
+      onSuccess: async () => {
+        grading.review = await client.queries.getAssessmentMarksReview({ assessmentId: input.assessmentId });
+        for (const mark of grading.review.results) grading.upsertAssessmentResult({ ...mark, score: mark.score ?? null });
+      },
       apply: () => {
         this.upsertAssessmentResult({
           id: applied.resultId,
