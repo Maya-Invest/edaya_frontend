@@ -88,6 +88,8 @@ async function main() {
     }
     await page.getByText('Detailed point scale', { exact: true }).waitFor()
     assert.equal(await page.getByRole('searchbox').count(), 1)
+    assert.equal(await page.getByRole('button', { name: 'Use continuous intervals', exact: true }).count(), 0)
+    assert.equal(await page.locator('main li').getByRole('button', { name: /^Edit / }).count(), 3)
     const sample = page.getByLabel('Test a value')
     await sample.fill('3.495')
     await page.getByText('A · Excellent', { exact: true }).last().waitFor()
@@ -118,8 +120,7 @@ async function main() {
     assert.equal((await saved())[1].interval.minScore, 3)
     assert(!('maxScore' in (await saved())[1].interval))
     const firstRow = page.locator('main section').first().locator('li').first()
-    await firstRow.getByRole('button', { name: 'Row actions' }).click()
-    await page.getByRole('button', { name: 'Edit', exact: true }).click()
+    await firstRow.getByRole('button', { name: 'Edit F', exact: true }).click()
     assert(await dialog.getByLabel('Minimum value', { exact: true }).isDisabled())
     await dialog.getByLabel('Mention label', { exact: true }).fill('Still failing')
     await submit.click()
@@ -191,6 +192,7 @@ async function main() {
     await checkDisabled()
     await close()
     assert.equal(await page.getByRole('button', { name: 'Add interval', exact: true }).count(), 0)
+    assert.equal(await page.locator('main li').getByRole('button', { name: /^Edit / }).count(), 0)
     await page.getByTestId('permissions').click()
     await page.getByTestId('failure').click()
     const output = join(appRoot, '../../.ci-evidence/grading-config')
@@ -201,13 +203,24 @@ async function main() {
         await page.setViewportSize({ width, height })
         await page.evaluate(value => document.documentElement.style.fontSize = `${16 * value}px`, zoom)
         for (const surface of ['scales', 'school', 'model']) {
+          console.log(`Checking ${surface}: ${locale}, ${width}px, ${zoom}x text`)
           await page.getByTestId(surface).click()
+          if (surface === 'scales') {
+            const valueInput = page.getByLabel(locale === 'en' ? 'Test a value' : 'Tester une valeur')
+            await valueInput.fill('3.495')
+            const result = page.locator('main section').first().getByRole('status')
+            assert.equal(await result.innerText(), 'A · Excellent')
+            if (width >= 1024) {
+              const inputBox = await valueInput.boundingBox()
+              const resultBox = await result.boundingBox()
+              assert(inputBox && resultBox && resultBox.x >= inputBox.x + inputBox.width, 'Sample mention must sit beside its input')
+              assert(resultBox.y < inputBox.y + inputBox.height && resultBox.y + resultBox.height > inputBox.y, 'Sample mention must share the input line')
+            }
+          }
           assert(await page.locator('main').evaluate(element => element.scrollWidth <= element.clientWidth + 1), `${surface} must fit viewport`)
-          await page.screenshot({ path: join(output, `${locale}-${width}-${zoom}-${surface}.png`), fullPage: true, animations: 'disabled' })
           const edit = locale === 'en' ? 'Edit' : 'Modifier'
           if (surface === 'scales') {
-            await page.locator('main section').first().getByRole('button', { name: locale === 'en' ? 'Row actions' : 'Actions de ligne' }).first().click()
-            await page.getByRole('button', { name: edit, exact: true }).click()
+            await page.getByRole('button', { name: locale === 'en' ? 'Edit F' : 'Modifier F', exact: true }).click()
           } else if (surface === 'school') {
             await page.locator('main section').nth(1).getByRole('button', { name: edit, exact: true }).click()
           } else {
@@ -223,6 +236,7 @@ async function main() {
           assert(await dialog.evaluate(element => element.contains(document.activeElement)), 'Keyboard focus remains inside dialog')
           await page.screenshot({ path: join(output, `${locale}-${width}-${zoom}-${surface}-editor.png`), animations: 'disabled' })
           await close()
+          await page.screenshot({ path: join(output, `${locale}-${width}-${zoom}-${surface}.png`), fullPage: true, animations: 'disabled' })
         }
       }
     }

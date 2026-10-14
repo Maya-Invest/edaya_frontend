@@ -171,7 +171,7 @@ const routeCases = [
 		'/configuration/report-cards/report-card-1',
 		['create', 'delete', 'edit', 'add-section', 'edit-section', 'delete-section'],
 	],
-	['configuration-grade-scales', '/configuration/grade-scales', ['create', 'edit', 'delete', 'add-interval', 'edit-interval', 'delete-interval', 'convert']],
+	['configuration-grade-scales', '/configuration/grade-scales', ['create', 'edit', 'delete', 'add-interval', 'edit-interval', 'delete-interval']],
 	['configuration-notifications-list', '/configuration/notifications', ['reset-all']],
 	[
 		'configuration-notifications-detail',

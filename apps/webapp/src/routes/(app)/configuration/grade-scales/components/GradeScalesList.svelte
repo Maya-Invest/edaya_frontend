@@ -11,7 +11,7 @@
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
-	import { ChevronDown, Plus } from '$lib/icons';
+	import { ChevronDown, Pencil, Plus } from '$lib/icons';
 	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
@@ -21,7 +21,7 @@
 	import GradeScaleFormModal from './GradeScaleFormModal.svelte';
 
 	const owner = getGradeScalesPageState();
-	const modals = createUrlSyncedModals({ allowed: ['create', 'edit', 'delete', 'add-interval', 'edit-interval', 'delete-interval', 'convert'], getUrl: () => $page.url });
+	const modals = createUrlSyncedModals({ allowed: ['create', 'edit', 'delete', 'add-interval', 'edit-interval', 'delete-interval'], getUrl: () => $page.url });
 	$effect(() => {
 		modals.hydrate();
 	});
@@ -31,7 +31,6 @@
 	const addInterval = bindUrlModal(modals, 'add-interval');
 	const editInterval = bindUrlModal(modals, 'edit-interval');
 	const deleteInterval = bindUrlModal(modals, 'delete-interval');
-	const convertOpen = bindUrlModal(modals, 'convert');
 	const target = $derived(owner.scaleFor(modals.target?.split('/')[0] ?? ''));
 	const interval = $derived(target?.ranges?.find(row => row.id === modals.target?.split('/')[1]));
 	const scales = $derived(owner.scales.filter(scale => `${scale.name} ${scale.description ?? ''}`.toLocaleLowerCase().includes(owner.filters.values.q.trim().toLocaleLowerCase())));
@@ -58,7 +57,7 @@
 		url.searchParams.set('scale', expanded === id ? 'none' : id);
 		await appGoto(`${url.pathname}${url.search}`, { keepFocus: true, noScroll: true });
 	}
-	async function confirm(action: 'delete' | 'remove-interval' | 'convert') {
+	async function confirm(action: 'delete' | 'remove-interval') {
 		if (!target || busy || !hasAnyPermission(['REPORT_CARD_CONFIGURE']) || (action === 'delete' && target.isDefault))
 			return;
 		busy = true;
@@ -94,19 +93,27 @@
 				{@const match = value?.trim() && Number(value) >= scale.minScore && Number(value) <= scale.maxScore ? lookupGradeInterval(scale.ranges ?? [], rounded, scale.intervalConvention === 'continuous') : undefined}
 				<div id={`intervals-${scale.id}`} class="space-y-4 border-t border-border p-5">
 					{#if scale.description}<p class="text-sm text-muted-foreground">{scale.description}</p>{/if}
-					<div class="flex flex-wrap items-center justify-between gap-3"><h3 class="font-medium">{$t('grading.intervals')}</h3><PermissionGate permission="REPORT_CARD_CONFIGURE">{#snippet children({ disabled, title })}<Button size="sm" variant="outline" disabled={disabled || scale.intervalConvention !== 'continuous'} {title} onclick={() => modals.open('add-interval', { target: scale.id })}>{$t('grading.addInterval')}</Button>{/snippet}</PermissionGate></div>
-					{#if scale.intervalConvention !== 'continuous'}<p class="text-sm text-muted-foreground">{$t('grading.legacyIntervals')}</p><PermissionGate permission="REPORT_CARD_CONFIGURE">{#snippet children({ disabled, title })}<Button variant="outline" {disabled} {title} onclick={() => modals.open('convert', { target: scale.id })}>{$t('grading.convertIntervals')}</Button>{/snippet}</PermissionGate>{:else}<p class="text-sm text-muted-foreground">{$t('grading.thresholdHelp')}</p>{/if}
+					<div class="flex flex-wrap items-center justify-between gap-3"><h3 class="font-medium">{$t('grading.intervals')}</h3><PermissionGate permission="REPORT_CARD_CONFIGURE">{#snippet children({ disabled, title })}<Button size="sm" variant="outline" {disabled} {title} onclick={() => modals.open('add-interval', { target: scale.id })}>{$t('grading.addInterval')}</Button>{/snippet}</PermissionGate></div>
+					<p class="text-sm text-muted-foreground">{$t('grading.thresholdHelp')}</p>
 					{#if !scale.ranges?.length}<p role="status" class="rounded-lg bg-secondary p-3 text-sm">{$t('grading.emptyHelp')}</p>{/if}
 					<ul class="space-y-2">
 						{#each scale.ranges ?? [] as row, index (row.id ?? index)}
 							<li class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border px-4 py-3">
-								<div class="min-w-0 flex-1"><p class="break-words text-sm font-medium">{row.letter} · {row.interpretation ?? row.letter}</p><p class="text-sm tabular-nums text-muted-foreground">{$t('grading.minimum')}: {row.minScore}{row.gpaValue != null ? ` · ${$t('grading.points')}: ${row.gpaValue}` : ''} · {row.isPassing ? $t('grading.passing') : $t('grading.failing')}</p></div>
-								{#if scale.intervalConvention === 'continuous'}<PermissionGate permission="REPORT_CARD_CONFIGURE">{#snippet children({ disabled, title })}<RowActionMenu><RowActionMenuItem {disabled} {title} onclick={() => modals.open('edit-interval', { target: `${scale.id}/${row.id}` })}>{$t('common.edit')}</RowActionMenuItem><RowActionMenuItem destructive disabled={disabled || (index === 0 && ((scale.ranges?.length ?? 0) > 1 || !!scale.isDefault))} onclick={() => modals.open('delete-interval', { target: `${scale.id}/${row.id}` })}>{$t('common.delete')}</RowActionMenuItem></RowActionMenu>{/snippet}</PermissionGate>{/if}
+								<div class="min-w-0 flex-1 basis-56"><p class="break-words text-sm font-medium">{row.letter} · {row.interpretation ?? row.letter}</p><p class="text-sm tabular-nums text-muted-foreground">{$t('grading.minimum')}: {row.minScore}{row.gpaValue != null ? ` · ${$t('grading.points')}: ${row.gpaValue}` : ''} · {row.isPassing ? $t('grading.passing') : $t('grading.failing')}</p></div>
+								<PermissionGate permission="REPORT_CARD_CONFIGURE">{#snippet children({ disabled, title })}
+									<div class="ml-auto flex shrink-0 items-center gap-2">
+										<Button size="sm" variant="outline" {disabled} {title} aria-label={`${$t('common.edit')} ${row.letter}`} onclick={() => modals.open('edit-interval', { target: `${scale.id}/${row.id}` })}><Pencil class="mr-2 h-4 w-4" />{$t('common.edit')}</Button>
+										<RowActionMenu><RowActionMenuItem destructive disabled={disabled || (index === 0 && ((scale.ranges?.length ?? 0) > 1 || !!scale.isDefault))} onclick={() => modals.open('delete-interval', { target: `${scale.id}/${row.id}` })}>{$t('common.delete')}</RowActionMenuItem></RowActionMenu>
+									</div>
+								{/snippet}</PermissionGate>
 							</li>
 						{/each}
 					</ul>
 
-					<label class="block max-w-sm space-y-1.5 text-sm"><span>{$t('grading.sample')}</span><Input type="number" step="any" bind:value={() => samples[scale.id] ?? '', value => samples[scale.id] = value} /><span class="block text-muted-foreground" aria-live="polite">{value ? match ? `${match.letter} · ${match.interpretation ?? ''}` : $t('grading.noMatch') : ''}</span></label>
+					<div class="flex flex-wrap items-end gap-x-4 gap-y-2">
+						<label class="block w-40 max-w-full space-y-1.5 text-sm"><span>{$t('grading.sample')}</span><Input type="number" step="any" bind:value={() => samples[scale.id] ?? '', value => samples[scale.id] = value} /></label>
+						<p class="min-w-0 basis-40 flex-1 break-words py-2 text-sm text-muted-foreground" role="status" aria-live="polite" aria-atomic="true">{value ? match ? `${match.letter} · ${match.interpretation ?? ''}` : $t('grading.noMatch') : ''}</p>
+					</div>
 				</div>
 			{/if}
 		</section>
@@ -119,5 +126,4 @@
 	{#if interval}<GradeIntervalFormModal bind:open={editInterval.open} scale={target} {interval} />{/if}
 	{#if !target.isDefault}<ConfirmModal bind:open={deleteOpen.open} title={$t('common.deleteConfirmTitle')} description={$t('gradeScales.deleteConfirm', { name: target.name })} {busy} onConfirm={() => confirm('delete')} />{/if}
 	{#if interval}<ConfirmModal bind:open={deleteInterval.open} title={$t('common.deleteConfirmTitle')} description={$t('grading.deleteIntervalHelp', { name: interval.letter })} {busy} onConfirm={() => confirm('remove-interval')} />{/if}
-	<ConfirmModal bind:open={convertOpen.open} title={$t('grading.convertIntervals')} description={$t('grading.convertHelp')} {busy} onConfirm={() => confirm('convert')} />
 {/if}

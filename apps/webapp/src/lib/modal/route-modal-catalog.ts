@@ -295,7 +295,7 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'configuration-grade-scales',
 		pathnamePattern: /^\/configuration\/grade-scales\/?$/,
-		modalNames: ['create', 'edit', 'delete', 'add-interval', 'edit-interval', 'delete-interval', 'convert'],
+		modalNames: ['create', 'edit', 'delete', 'add-interval', 'edit-interval', 'delete-interval'],
 	},
 	{
 		routeFamily: 'configuration-notifications-list',

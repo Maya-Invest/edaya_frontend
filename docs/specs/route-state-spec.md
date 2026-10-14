@@ -715,6 +715,6 @@ Configuration Tools owns the generation assistant and submits the selected class
 
 ### School, grading-scale and report-model editors
 
-School profile section modals are `identity`, `issuing`, `location`, and `assets`; there is no page-wide edit modal. The dedicated `/configuration/grade-scales` page owns `scale` for expansion plus `create`, `edit`, `delete`, `add-interval`, `edit-interval`, `delete-interval`, and `convert` modals. Interval targets include scale and interval IDs. Legacy scale URLs retain their search parameters when redirecting.
+School profile section modals are `identity`, `issuing`, `location`, and `assets`; there is no page-wide edit modal. The dedicated `/configuration/grade-scales` page owns `scale` for expansion plus `create`, `edit`, `delete`, `add-interval`, `edit-interval`, and `delete-interval` modals. Interval targets include scale and interval IDs. Legacy scale URLs retain their search parameters when redirecting.
 
 Report model drawers own metadata and section edit/add/delete modals. Editors capture their opening revision; a changed server revision rejects the save and requires reloading, without discarding the visible draft. Catalog/model mutations do not trigger report recalculation.

@@ -502,7 +502,7 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 ### 7.24 Configuration — Grade scales
 
-- **Entity:** `GradeScale` · accordion scales with nested interval rows, matching the academic-year layout.
+- **Entity:** `GradeScale` · accordion scales with nested interval rows, matching the academic-year layout. Each interval has a visible permission-gated Edit button and Delete in its overflow menu. Sample lookup displays its matching code/mention beside the input, wrapping only when space requires it.
 - Route: `/configuration/grade-scales`, beside Grade levels; legacy `/configuration/other/grade-scales` redirects with search/modal parameters preserved.
 - Scale metadata and intervals have separate URL modals. Headers show limits, interval count, default/incomplete status. Expanded content includes Add interval and a rounded sample lookup.
 - New scales have no intervals and are marked Incomplete; both server validation and pickers prevent their use. The first interval covers the whole scale; its minimum is anchored. Adding thresholds splits effective coverage. Only unused, non-default scales can lose their last interval.
@@ -674,7 +674,7 @@ Permission impact review in profile editing, profile assignment, manual assignme
 
 ## Configurable grading models
 
-Grade scales retain stable interval identifiers, codes, labels, minimum thresholds, pass/fail flags, and optional assigned points. Ordinary metadata edits preserve intervals. Each interval has its own form; upper bounds are derived on the server from the next minimum. Matching uses the greatest minimum at or below the rounded result, includes the final maximum, and rejects out-of-range values. Unique codes/thresholds and a first threshold equal to the scale minimum are required. Catalog saves use revisions and never recalculate marks; explicitly applying a scale to a grade level retains the confirmation/background-update flow. Continuous scale bounds must be representable at the selected precision so rounding cannot leave the scale. Legacy closed intervals require an explicit conversion before applying a level policy.
+Grade scales retain stable interval identifiers, codes, labels, minimum thresholds, pass/fail flags, and optional assigned points. Ordinary metadata edits preserve intervals. Each interval has its own form; upper bounds are derived on the server from the next minimum. Matching uses the greatest minimum at or below the rounded result, includes the final maximum, and rejects out-of-range values. Unique codes/thresholds and a first threshold equal to the scale minimum are required. Catalog saves use revisions and never recalculate marks; explicitly applying a scale to a grade level retains the confirmation/background-update flow. Continuous scale bounds must be representable at the selected precision so rounding cannot leave the scale. Seeded and onboarded scales use continuous intervals with stable IDs and derived upper bounds; there is no conversion step in the configuration page. Historical readers retain captured interval conventions.
 
 Grade-level drawers own a URL-addressed grading modal for the current academic year. Each policy selects one scale, mandatory numeric-first or mention-first entry, and an aggregate label. Report models inherit that scale; they do not offer an independent conflicting selector. The configuration form collects explicit numeric equivalents for previous mention revisions when switching to numeric-first.
 
