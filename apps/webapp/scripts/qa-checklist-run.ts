@@ -448,7 +448,7 @@ async function visitChecklistRoutes(ctx: DemoContext, studentId: string | null):
 		{ page: 'http://localhost:5173/configuration/grade-levels', probleme: 'Niveaux', path: '/configuration/grade-levels' },
 		{ page: 'http://localhost:5173/configuration/classes', probleme: 'Classes', path: '/configuration/classes' },
 		{ page: 'http://localhost:5173/configuration/subjects', probleme: 'Matières', path: '/configuration/subjects' },
-		{ page: 'http://localhost:5173/configuration/other/grade-scales', probleme: 'Barèmes', path: '/configuration/other/grade-scales' },
+		{ page: 'http://localhost:5173/configuration/grade-scales', probleme: 'Barèmes', path: '/configuration/grade-scales' },
 		{ page: 'http://localhost:5173/configuration/tools', probleme: 'Outils / imports', path: '/configuration/tools' },
 		{ page: 'http://localhost:5173/account/inbox', probleme: 'Boîte de réception', path: '/account/inbox' },
 		{ page: 'http://localhost:5173/account/notifications', probleme: 'Préférences notifications', path: '/account/notifications' },

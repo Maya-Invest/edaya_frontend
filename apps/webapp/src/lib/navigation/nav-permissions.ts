@@ -61,6 +61,8 @@ function pathnameMatchesItem(pathname: string, href: string): boolean {
 }
 
 export function findNavItemForPath(pathname: string, classId?: string): NavItemDefinition | null {
+	if (pathname.replace(/\/$/, '') === '/configuration/other/grade-scales')
+		pathname = '/configuration/grade-scales';
 	if (pathname === '/dashboard' || pathname.startsWith('/dashboard/') || pathname.startsWith('/account')) {
 		return null;
 	}

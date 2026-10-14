@@ -73,6 +73,7 @@ export function isNamespaceRootPath(matrixPath: string): boolean {
 
 /** Documented redirect targets (inventory + matrix redirect smoke). */
 export const ROUTE_REDIRECTS: Record<string, string> = {
+	'/configuration/other/grade-scales': '/configuration/grade-scales',
 	'/school/marks-review': '/school/corrections?workflow=grades',
 	'/': '/login',
 	'/login/demo': '/login',
@@ -99,6 +100,7 @@ export const ROUTE_REDIRECTS: Record<string, string> = {
 };
 
 export const LEGACY_ROUTES = new Set([
+	'/configuration/other/grade-scales',
 	'/classes/:classId/subjects/:id?',
 	'/classes/:classId/homework/:id?',
 	'/configuration/staff/:id?',
@@ -142,7 +144,7 @@ export const ROUTE_DESCRIPTIONS: Record<string, string> = {
 	'/configuration/classes': 'Groupes-classes',
 	'/configuration/subjects': 'Matières',
 	'/configuration/subjects/level/:level?': 'Compatibilité → filtre matières par niveau',
-	'/configuration/other/grade-scales': 'Barèmes de notes',
+	'/configuration/grade-scales': 'Barèmes de notes',
 	'/configuration/report-cards': 'Modèles de bulletins',
 	'/configuration/notifications': 'Templates notifications',
 	'/configuration/notifications/[id]': 'Template notification — détail',
@@ -272,7 +274,7 @@ export const MODAL_SURFACES: readonly ModalSurface[] = [
 	{ module: 'Finance', parentRoute: '/finance/billing/[id]', modal: 'unallocate' },
 	{ module: 'Finance', parentRoute: '/finance/payment', modal: 'reverse' },
 	{ module: 'Finance', parentRoute: '/finance/payment', modal: 'refund' },
-	{ module: 'Configuration', parentRoute: '/configuration/school', modal: 'edit' },
+	{ module: 'Configuration', parentRoute: '/configuration/school', modal: 'location' },
 	{ module: 'Configuration', parentRoute: '/configuration/grade-levels', modal: 'create' },
 	{ module: 'Configuration', parentRoute: '/configuration/grade-levels/[id]', modal: 'edit' },
 	{ module: 'Configuration', parentRoute: '/configuration/classes', modal: 'create' },
@@ -280,7 +282,7 @@ export const MODAL_SURFACES: readonly ModalSurface[] = [
 	{ module: 'Configuration', parentRoute: '/configuration/classes/[id]/assignments', modal: 'form' },
 	{ module: 'Configuration', parentRoute: '/configuration/subjects', modal: 'create-subject' },
 	{ module: 'Configuration', parentRoute: '/configuration/subjects/[id]/progression', modal: 'add-chapter' },
-	{ module: 'Configuration', parentRoute: '/configuration/other/grade-scales', modal: 'create' },
+	{ module: 'Configuration', parentRoute: '/configuration/grade-scales', modal: 'create' },
 	{ module: 'Configuration', parentRoute: '/configuration/report-cards', modal: 'create' },
 	{ module: 'Configuration', parentRoute: '/configuration/report-cards/[id]', modal: 'delete' },
 	{

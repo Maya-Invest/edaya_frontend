@@ -439,8 +439,6 @@ export interface AcademicPeriod {
 	status: AcademicYearStatus;
 }
 
-export type SchoolType = 'primary' | 'secondary' | 'k12' | 'vocational' | 'other';
-
 export type TimetableGenerationMode = 'weekly' | 'free';
 
 export interface School {
@@ -451,7 +449,6 @@ export interface School {
 	city: string;
 	country?: string;
 	timeZone: string;
-	type?: SchoolType | null;
 	timetableEnforceWorkloadFulfillment: boolean;
 	timetableExcludeBreakSlots: boolean;
 	timetableMinDayGapSameSubject: number;

@@ -176,6 +176,12 @@ export const CONFIG_NAV_DEFS: NavItemDefinition[] = [
 		permissions: ['SCHOOL_STRUCTURE_CONFIGURE', 'SCHOOL_STRUCTURE_READ'],
 	},
 	{
+		key: 'gradeScales',
+		labelKey: 'config.gradeScales',
+		href: '/configuration/grade-scales',
+		permissions: ['REPORT_CARD_CONFIGURE', 'EXAM_CONFIG_READ', 'EXAM_CONFIG_CONFIGURE'],
+	},
+	{
 		key: 'classGroups',
 		labelKey: 'config.classGroups',
 		href: '/configuration/classes',
@@ -204,9 +210,6 @@ export const CONFIG_NAV_DEFS: NavItemDefinition[] = [
 		labelKey: 'config.other',
 		href: '/configuration/other',
 		permissions: [
-			'REPORT_CARD_CONFIGURE',
-			'EXAM_CONFIG_READ',
-			'EXAM_CONFIG_CONFIGURE',
 			'DISCIPLINE_VALIDATE',
 			'ACADEMIC_PROGRAM_READ',
 			'ACADEMIC_PROGRAM_UPDATE',

@@ -163,5 +163,10 @@
     "surface": "/configuration/subjects/[id]/logbook",
     "kind": "legacy-alias",
     "reason": "Legacy class-subject logbook alias redirects to progression for the current grade-level catalog; capture class teaching logbooks instead."
+  },
+  {
+    "surface": "/configuration/other/grade-scales",
+    "kind": "redirect",
+    "reason": "Legacy scale route redirects to the dedicated grading-scale page; capture its destination."
   }
 ]

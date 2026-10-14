@@ -1,3 +1,4 @@
+import type { DemoContext } from '../support/types';
 import {
 	assertFilterSelectShell,
 	assertFilterSelectShellOrSkip,
@@ -5,7 +6,6 @@ import {
 	assertListShellOrSkip,
 } from '../support/assertions';
 import { ATTENDANCE_EXPORT_NAME, CLASS_6A, CLASS_6B } from '../support/constants';
-import type { DemoContext } from '../support/types';
 import { visit, visitOrSkip } from '../support/visit';
 
 export async function runListShellScenes(ctx: DemoContext): Promise<void> {
@@ -63,8 +63,8 @@ export async function runListShellScenes(ctx: DemoContext): Promise<void> {
 	});
 	await assertFilterSelectShell(ctx, 'DC11', 'Subjects FilterSelect + More menu');
 
-	await visitOrSkip(ctx, `${base}/configuration/other/grade-scales`, 'DC12', 'Grade scales list shell', {
-		pathPrefix: '/configuration/other/grade-scales',
+	await visitOrSkip(ctx, `${base}/configuration/grade-scales`, 'DC12', 'Grade scales list shell', {
+		pathPrefix: '/configuration/grade-scales',
 		skipOnFail: 'May require REPORT_CARD_CONFIGURE',
 	});
 	await assertListShellOrSkip(

@@ -280,7 +280,7 @@ The session contains one typed action-grant display. UI checks use that action's
 | Subjects catalog | `/configuration/subjects` | `/configuration/subjects/{id}` |
 | Report card models | `/configuration/report-cards` | `/configuration/report-cards/{id}` |
 | Other configurations | `/configuration/other` | — |
-| Grade scales | `/configuration/other/grade-scales` | — |
+| Grade scales | `/configuration/grade-scales` | — |
 | Notification templates | `/configuration/notifications` | `/configuration/notifications/{key}` |
 | Disciplinary catalog | `/configuration/other/discipline` | — |
 | Subject categories | `/configuration/other/subject-categories` | — |
@@ -457,7 +457,9 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 ### 7.18 Configuration — School profile
 
-- **Entity:** `School` · **Layout variant** — single page, edit modal
+- **Entity:** `School` · four read-only sections, each with one permission-gated Edit action: Identity (name, persisted short name), Issuing identity (issuing name, address, phone, email, school code), Location (city, country, time zone, financial currency), Official document assets.
+- Each section owns a URL modal (`identity`, `issuing`, `location`, `assets`). Saves include only that section’s fields. Short name is required and survives school renaming. School Type is absent.
+- The assets modal saves uploads, removals and public-branding choices immediately, states this behavior, and closes with Done. Stamp/signature remain private. Currency changes remain blocked after financial activity.
 
 ### 7.19 Configuration — Academic calendar
 
@@ -493,12 +495,17 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 ### 7.23 Configuration — Report card models
 
-- **Entities:** `ReportCardDefinition` · sections tree · **Complex drawer**
+- **Entities:** `ReportCardDefinition` · sections tree · **Complex drawer**.
+- `REPORT_CARD_CONFIGURE` enables name/description and section editing, including published models. Year, grade level, default/publication state and existing IDs remain fixed. Grading settings are inherited from the level/year policy, with no independent scale selector.
+- Section forms edit labels, group/subject role, subject mapping, parent, order and positive weight/coefficient. Descendant parents and deletion of nonempty groups are forbidden. Revision-checked saves reject stale editors.
+- Changes affect future explicit generation/regeneration only. Existing results, review decisions and published documents retain their captured content.
 
 ### 7.24 Configuration — Grade scales
 
-- **Entity:** `GradeScale` · **Simple** (row `···` only)
-- Route: `/configuration/other/grade-scales` (left catalog picker on `/configuration/other`)
+- **Entity:** `GradeScale` · accordion scales with nested interval rows, matching the academic-year layout.
+- Route: `/configuration/grade-scales`, beside Grade levels; legacy `/configuration/other/grade-scales` redirects with search/modal parameters preserved.
+- Scale metadata and intervals have separate URL modals. Headers show limits, interval count, default/incomplete status. Expanded content includes Add interval and a rounded sample lookup.
+- New scales have no intervals and are marked Incomplete; both server validation and pickers prevent their use. The first interval covers the whole scale; its minimum is anchored. Adding thresholds splits effective coverage. Only unused, non-default scales can lose their last interval.
 - Users with `REPORT_CARD_CONFIGURE` can edit every school grade scale, including the default. Editing preserves its default status. The default scale has no Delete action, including via a modal deep link.
 
 ### 7.25 Configuration — Notification templates
@@ -579,7 +586,7 @@ Authoritative surface per entity. §7 has per-feature drawer/tab detail.
 | `CatalogService` | Simple | `/finance/fees` |
 | `Payment` | Simple | `/finance/payment` |
 | Reconciliation | Simple page | `/finance/reconciliation` |
-| `GradeScale` | Simple | `/configuration/other/grade-scales` |
+| `GradeScale` | Accordion with interval editors | `/configuration/grade-scales` |
 | `DisciplinaryAction` | Simple | `/configuration/other/discipline` |
 | `SubjectCategory` | Simple | `/configuration/other/subject-categories` |
 | `PeriodDefinition` | Layout | `/configuration/period-grid` |
@@ -667,7 +674,7 @@ Permission impact review in profile editing, profile assignment, manual assignme
 
 ## Configurable grading models
 
-Grade scales retain authored intervals with stable identifiers, codes, labels, bounds, pass/fail flags, and optional assigned points. Ordinary edits preserve every interval. Add/remove/split actions, continuous coverage validation and a rounded sample lookup live in the existing scale form modal. Continuous scale bounds must be representable at the selected precision so rounding cannot leave the scale. Legacy closed intervals require an explicit conversion before applying a level policy.
+Grade scales retain stable interval identifiers, codes, labels, minimum thresholds, pass/fail flags, and optional assigned points. Ordinary metadata edits preserve intervals. Each interval has its own form; upper bounds are derived on the server from the next minimum. Matching uses the greatest minimum at or below the rounded result, includes the final maximum, and rejects out-of-range values. Unique codes/thresholds and a first threshold equal to the scale minimum are required. Catalog saves use revisions and never recalculate marks; explicitly applying a scale to a grade level retains the confirmation/background-update flow. Continuous scale bounds must be representable at the selected precision so rounding cannot leave the scale. Legacy closed intervals require an explicit conversion before applying a level policy.
 
 Grade-level drawers own a URL-addressed grading modal for the current academic year. Each policy selects one scale, mandatory numeric-first or mention-first entry, and an aggregate label. Report models inherit that scale; they do not offer an independent conflicting selector. The configuration form collects explicit numeric equivalents for previous mention revisions when switching to numeric-first.
 

@@ -1,3 +1,4 @@
+import type { UiJourney } from '../journey-context';
 import {
 	clickCreateButton,
 	fillGradeScaleCreateDialog,
@@ -15,6 +16,7 @@ import {
 	fillLabeledInput,
 } from '../../../../scripts/qa-harness-ui';
 import { configEntityIdByName, firstIdFromLinks } from '../../../../scripts/qa-matrix-support';
+import { ensureNotificationTemplatesViaApi } from '../journey-api';
 import {
 	coverActions,
 	coverCompletedModal,
@@ -25,9 +27,8 @@ import {
 	runModalMutation,
 	visitCovered,
 	waitForCommandPayload,
-	type UiJourney,
+
 } from '../journey-context';
-import { ensureNotificationTemplatesViaApi } from '../journey-api';
 
 export async function runConfigurationChapter(journey: UiJourney): Promise<void> {
 	const { ctx, entities } = journey;
@@ -38,7 +39,7 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 	const cityToken = `QA-City-${Date.now()}`;
 	await runModalMutation(journey, {
 		parentRoute: '/configuration/school',
-		modal: 'edit',
+		modal: 'location',
 		pathname: '/configuration/school',
 		command: 'update-school-configuration',
 		fill: async (current) => {
@@ -47,7 +48,7 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 		visibleAfter: cityToken,
 		listPath: '/configuration/school',
 		actionPath: 'http://localhost:5173/configuration/school',
-		actions: ['Éditer nom, timezone, ville, type école'],
+		actions: ['Éditer les sections du profil école'],
 	});
 	logStep(journey, { step: 'configuration-school', ok: true, detail: cityToken });
 
@@ -194,7 +195,6 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 	await visitCovered(journey, '/configuration/other', '/configuration/other');
 	const catalogNav = page.getByRole('navigation', { name: /autres configurations|other configurations/i });
 	const catalogLinks = [
-		catalogNav.getByRole('link', { name: /barèmes|grade scales/i }),
 		catalogNav.getByRole('link', { name: /catalogue disciplinaire|disciplinary catalog/i }),
 		catalogNav.getByRole('link', { name: /catégories de matières|subject categories/i }),
 	];
@@ -205,17 +205,17 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 		'http://localhost:5173/configuration/other',
 		['Liste des catalogues'],
 		catalogsVisible ? 'OK' : 'NOT OK',
-		catalogsVisible ? 'grade-scales, discipline, subject-categories' : 'Catalog list incomplete',
+		catalogsVisible ? 'discipline, subject-categories' : 'Catalog list incomplete',
 	);
 	logStep(journey, { step: 'other-config', ok: catalogsVisible, detail: 'catalog list' });
 
-	await visitCovered(journey, '/configuration/other/grade-scales', '/configuration/other/grade-scales');
+	await visitCovered(journey, '/configuration/grade-scales', '/configuration/grade-scales');
 	const scaleName = `E2E-Scale-${Date.now()}`;
-	const scaleOpened = await clickCreateButton(page, 'CRUD barème', '/configuration/other/grade-scales')
+	const scaleOpened = await clickCreateButton(page, 'CRUD barème', '/configuration/grade-scales')
 		|| await openDialogButton(page, /add scale|ajouter un barème/i);
 	if (scaleOpened) {
 		try {
-			const payloadPromise = waitForCommandPayload(page, 'create-grade-scale');
+			const payloadPromise = waitForCommandPayload(page, 'configure-grade-scale');
 			await fillGradeScaleCreateDialog(page, scaleName);
 			const closed = await waitForDialogClosed(page);
 			const payload = await payloadPromise;
@@ -240,7 +240,7 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 				}
 			}
 			entities.gradeScaleId = scaleId;
-			coverCompletedModal(journey, '/configuration/other/grade-scales', 'create', {
+			coverCompletedModal(journey, '/configuration/grade-scales', 'create', {
 				opened: true,
 				submitted: true,
 				closed,
@@ -248,7 +248,7 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 			}, scaleName);
 			coverActions(
 				journey,
-				'http://localhost:5173/configuration/other/grade-scales',
+				'http://localhost:5173/configuration/grade-scales',
 				['Liste barèmes', 'CRUD barème'],
 				closed && listed && scaleId ? 'OK' : 'NOT OK',
 				scaleName,
@@ -257,30 +257,28 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 		}
 		catch (err) {
 			const detail = err instanceof Error ? err.message : String(err);
-			coverCompletedModal(journey, '/configuration/other/grade-scales', 'create', {
+			coverCompletedModal(journey, '/configuration/grade-scales', 'create', {
 				opened: true,
 				submitted: false,
 				closed: false,
 			}, detail);
-			coverActions(journey, 'http://localhost:5173/configuration/other/grade-scales', ['CRUD barème'], 'NOT OK', detail);
+			coverActions(journey, 'http://localhost:5173/configuration/grade-scales', ['CRUD barème'], 'NOT OK', detail);
 			logStep(journey, { step: 'grade-scale', ok: false, detail });
 			await page.keyboard.press('Escape').catch(() => {});
 		}
 	}
 	else {
-		coverCompletedModal(journey, '/configuration/other/grade-scales', 'create', {
+		coverCompletedModal(journey, '/configuration/grade-scales', 'create', {
 			opened: false,
 			submitted: false,
 			closed: false,
 		}, 'Scale modal not found');
-		coverActions(journey, 'http://localhost:5173/configuration/other/grade-scales', ['CRUD barème'], 'NOT OK', 'Scale modal not found');
+		coverActions(journey, 'http://localhost:5173/configuration/grade-scales', ['CRUD barème'], 'NOT OK', 'Scale modal not found');
 		logStep(journey, { step: 'grade-scale', ok: false, detail: 'Scale modal not found' });
 	}
 
 	await visitCovered(journey, '/configuration/report-cards', '/configuration/report-cards');
-	await page.getByRole('button', { name: /add model|ajouter un modèle/i }).first()
-		.waitFor({ state: 'visible', timeout: 20_000 })
-		.catch(() => {});
+	await page.getByRole('button', { name: /add model|ajouter un modèle/i }).first().waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {});
 	if (!entities.gradeScaleId) {
 		logStep(journey, { step: 'report-card-def', ok: false, detail: 'No gradeScaleId to reference' });
 		coverCompletedModal(journey, '/configuration/report-cards', 'create', {

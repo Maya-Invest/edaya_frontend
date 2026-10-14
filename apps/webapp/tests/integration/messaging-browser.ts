@@ -46,7 +46,7 @@ try {
     if (url.endsWith('/staff-members/secretary')) body = { id: 'secretary', schoolId: 'school', firstName: 'School', lastName: 'Secretary', subjectId: 'login' };
     if (url.endsWith('/onboarding/account-status')) body = { wizardCompleted: true, maxReachedStep: 4, schoolStepSubmitted: true, structureStepSubmitted: true };
  if (url.includes('get-app-shell-counts')) body = { activeEnrollmentCountsByClass: {}, studentCount: 0, guardianCount: 0, staffCount: 0, teacherCount: 0 };
- if (url.endsWith('/schools/school')) body = { id: 'school', name: 'Oak School', shortName: 'Oak', timeZone: 'UTC', type: 'k12' };
+ if (url.endsWith('/schools/school')) body = { id: 'school', name: 'Oak School', shortName: 'Oak', timeZone: 'UTC' };
     if (url.includes('list-conversations')) body = { items: [summary()], total: 1, unreadCount: 1, offset: 0, limit: 25 };
     if (url.includes('get-conversation')) body = detail();
     if (url.includes('mark-conversation-read')) body = { success: true };

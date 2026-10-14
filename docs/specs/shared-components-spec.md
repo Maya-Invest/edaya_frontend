@@ -293,3 +293,6 @@ The route-local timetable workload panel owns the single grade-grouped class lis
 ## Inbox and corrections presentation
 
 Messages and Corrections use `ListPageHeader`, pill `FilterSelect` controls, a single labeled `FilterPanel`, and `ListEntityTable` with semantic status chips and infinite loading. Corrections keeps its debounced `ListSearchField` in the header. Messages combines all authorized conversation types, with row tags and optional type, status and order filters; do not add a search that silently covers only loaded conversations. Detail drawers use a close-only shell header and a scrollable content region, full width on phones and half width on desktop.
+
+
+Configuration editors reuse FormModal, PermissionGate, FilterSelect, Checkbox, Input and RowActionMenu. RowActionMenu closes after an enabled action is chosen so it cannot obscure the editor’s return destination. School asset slots support a read-only summary and an immediate-save editor. All configuration forms retain keyboard focus within the modal, wrap long labels, and scroll vertically at narrow widths or enlarged text.

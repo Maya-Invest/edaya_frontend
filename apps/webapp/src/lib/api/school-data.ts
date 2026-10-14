@@ -1,6 +1,6 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import type { School, SchoolType } from '$lib/types/school';
+import type { School } from '$lib/types/school';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 export type SchoolRaw = components['schemas']['School'];
@@ -33,12 +33,12 @@ export function mapSchoolFromApi(raw: SchoolRaw): School {
 	return {
 		id: raw.id,
 		name: raw.name,
-		shortName: deriveSchoolShortName(raw.name),
+		shortName: raw.shortName ?? deriveSchoolShortName(raw.name),
 		city: raw.city ?? '',
 		country: raw.country ?? undefined,
 		timeZone: raw.timeZone,
 		financeCurrency: raw.financeCurrency,
-		type: (raw.type ?? null) as SchoolType | null,
+
 		timetableEnforceWorkloadFulfillment: raw.timetableEnforceWorkloadFulfillment,
 		timetableExcludeBreakSlots: raw.timetableExcludeBreakSlots,
 		timetableMinDayGapSameSubject: raw.timetableMinDayGapSameSubject,

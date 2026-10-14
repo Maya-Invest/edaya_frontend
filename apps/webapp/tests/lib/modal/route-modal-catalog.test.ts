@@ -117,7 +117,7 @@ const routeCases = [
 		['add-chapter', 'edit-chapter', 'delete-chapter'],
 	],
 	['class-attendance-detail', '/classes/class-1/attendance/day-1', ['record-attendance']],
-	['configuration-school', '/configuration/school', ['edit']],
+	['configuration-school', '/configuration/school', ['identity', 'issuing', 'location', 'assets']],
 	[
 		'configuration-academic',
 		'/configuration/academic',
@@ -169,9 +169,9 @@ const routeCases = [
 	[
 		'configuration-report-cards-detail',
 		'/configuration/report-cards/report-card-1',
-		['create', 'delete'],
+		['create', 'delete', 'edit', 'add-section', 'edit-section', 'delete-section'],
 	],
-	['configuration-grade-scales', '/configuration/other/grade-scales', ['create', 'edit', 'delete']],
+	['configuration-grade-scales', '/configuration/grade-scales', ['create', 'edit', 'delete', 'add-interval', 'edit-interval', 'delete-interval', 'convert']],
 	['configuration-notifications-list', '/configuration/notifications', ['reset-all']],
 	[
 		'configuration-notifications-detail',

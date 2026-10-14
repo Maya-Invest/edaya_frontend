@@ -286,6 +286,9 @@ describe('report cards section role mapping', () => {
 });
 
 describe('report cards result mapping', () => {
+	it('uses the captured subject-row label after explicit generation', () => {
+		expect(mapSubjectMark({ classSubjectId: 'cs-6a-math', name: 'Applied mathematics', average: 18, weight: 1.5 }, classSubjectsSources)?.subjectName).toBe('Applied mathematics');
+	});
 	it('maps subject marks from API comment and weight', () => {
 		const mark = mapSubjectMark({
 			classSubjectId: 'cs-6a-math',

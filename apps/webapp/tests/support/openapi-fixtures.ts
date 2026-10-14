@@ -62,6 +62,7 @@ export function reportCardDefinition(
 	overrides: Partial<ReportCardDefinition> & Pick<ReportCardDefinition, 'id' | 'name'>,
 ): ReportCardDefinition {
 	return {
+		revision: 0,
 		schoolId: SEED_SCHOOL_ID,
 		academicYearId: '2025',
 		gradeLevelId: 'gl-6',

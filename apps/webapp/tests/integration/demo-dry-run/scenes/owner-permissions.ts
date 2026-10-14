@@ -1,12 +1,12 @@
 import type { Browser } from 'playwright';
-import { OWNER_EMAIL, STAFF_ID } from '../support/constants';
+import type { DemoReporter } from '../support/reporter';
+import { assertFilterSelectShell, assertListShell } from '../support/assertions';
 import { signIn } from '../support/auth';
+import { OWNER_EMAIL, STAFF_ID } from '../support/constants';
 import { createDemoContext } from '../support/context';
 import { waitForDrawerAside } from '../support/drawer';
-import { assertFilterSelectShell, assertListShell } from '../support/assertions';
 import { waitForFormModal, waitForUrlModal } from '../support/modal';
 import { DEMO_DRY_RUN_OUT_DIR, schoolStaffPath } from '../support/paths';
-import type { DemoReporter } from '../support/reporter';
 import { visit } from '../support/visit';
 
 /** School owner role: permission-gated routes that skip for deputy director. */
@@ -31,8 +31,8 @@ export async function runOwnerPermissionChecks(
 			await assertFilterSelectShell(ctx, scene, 'O.3 Report card definitions filter shell');
 		}
 
-		if (await visit(ctx, `${base}/configuration/other/grade-scales`, scene, 'O.4 Grade scales list', {
-			pathPrefix: '/configuration/other/grade-scales',
+		if (await visit(ctx, `${base}/configuration/grade-scales`, scene, 'O.4 Grade scales list', {
+			pathPrefix: '/configuration/grade-scales',
 			selector: 'main',
 		})) {
 			await assertListShell(ctx, scene, 'O.5 Grade scales list shell', { requireFilter: false });

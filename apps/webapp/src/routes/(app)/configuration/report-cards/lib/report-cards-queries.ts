@@ -18,6 +18,7 @@ export async function loadReportCardsSlice() {
 		return {
 			scales: data.gradeScales,
 			definitions: data.definitions,
+			subjects: data.subjects,
 		};
 	}
 	catch (error) {

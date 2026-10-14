@@ -991,7 +991,7 @@
     "feature": "web.configuration.school",
     "module": "Configuration",
     "endpoint": "http://localhost:5173/configuration/school",
-    "action": "Éditer nom, timezone, ville, type école"
+    "action": "Éditer les sections du profil école"
   },
   {
     "id": "web.scenario.0143",
@@ -1130,14 +1130,14 @@
     "id": "web.scenario.0162",
     "feature": "web.configuration.other.grade.scales",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/other/grade-scales",
+    "endpoint": "http://localhost:5173/configuration/grade-scales",
     "action": "Liste barèmes"
   },
   {
     "id": "web.scenario.0163",
     "feature": "web.configuration.other.grade.scales",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/other/grade-scales",
+    "endpoint": "http://localhost:5173/configuration/grade-scales",
     "action": "CRUD barème"
   },
   {
@@ -1425,7 +1425,7 @@
     "id": "web.scenario.0204",
     "feature": "web.configuration.other.grade.scales",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/other/grade-scales",
+    "endpoint": "http://localhost:5173/configuration/grade-scales",
     "action": "Navigation directe — contenu visible"
   },
   {
@@ -2426,8 +2426,8 @@
     "id": "web.scenario.0347",
     "feature": "web.configuration.school",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/school?modal=edit",
-    "action": "Modal deep-link ?modal=edit"
+    "endpoint": "http://localhost:5173/configuration/school?modal=location",
+    "action": "Modal deep-link ?modal=location"
   },
   {
     "id": "web.scenario.0348",
@@ -2482,7 +2482,7 @@
     "id": "web.scenario.0355",
     "feature": "web.configuration.other.grade.scales",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/other/grade-scales?modal=create",
+    "endpoint": "http://localhost:5173/configuration/grade-scales?modal=create",
     "action": "Modal deep-link ?modal=create"
   },
   {
@@ -2834,5 +2834,19 @@
     "module": "École",
     "endpoint": "/school/messages",
     "action": "Sidebar — lien messages.title accessible"
+  },
+  {
+    "id": "web.configuration.grade-scales.redirect",
+    "feature": "web.configuration",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other/grade-scales",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.configuration.grade-scales.navigation",
+    "feature": "web.configuration",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/grade-scales",
+    "action": "Sidebar — lien config.gradeScales accessible"
   }
 ]

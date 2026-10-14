@@ -10,6 +10,7 @@
 	import { cn } from '$lib/utils';
 
 	const {
+		readOnly = false,
 		purpose,
 		label,
 		attachmentId,
@@ -21,6 +22,7 @@
 		onClear,
 		onPublicChange,
 	}: {
+		readOnly?: boolean;
 		purpose: SchoolIssuanceAssetPurpose;
 		label: string;
 		attachmentId: string | null | undefined;
@@ -82,7 +84,7 @@
 </script>
 
 <div class="space-y-2" data-purpose={purpose}>
-	<div class="flex items-center gap-3">
+	<div class="flex flex-wrap items-center gap-3">
 		<div
 			class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted"
 			aria-hidden={imageSource ? undefined : 'true'}
@@ -103,7 +105,7 @@
 				{hasAsset ? $t('schoolSettings.assetUploaded') : $t('schoolSettings.assetMissing')}
 			</p>
 		</div>
-		<div class="flex shrink-0 items-center gap-2">
+		{#if !readOnly}<div class="flex flex-wrap items-center gap-2">
 			<label
 				class={cn(
 					buttonVariants({ size: 'sm', variant: 'outline', class: 'rounded-full' }),
@@ -131,9 +133,9 @@
 					{$t('schoolSettings.assetClear')}
 				</Button>
 			{/if}
-		</div>
+		</div>{/if}
 	</div>
-	{#if canPublish}
+	{#if canPublish && !readOnly}
 		<div class="flex items-center gap-2 pl-[4.75rem]">
 			<Checkbox
 				id="{uid}-public"

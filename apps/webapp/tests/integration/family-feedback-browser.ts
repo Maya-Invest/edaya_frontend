@@ -26,7 +26,7 @@ try {
 		if (path.endsWith('/authorization/effective-grants')) body = { kind: 'staff', actorId: 'staff', schoolId: 'school', grants };
 		if (path.endsWith('/staff-members/staff')) body = { id: 'staff', schoolId: 'school', firstName: 'Test', lastName: 'Staff', subjectId: 'login' };
 		if (path.endsWith('/onboarding/account-status')) body = { wizardCompleted: true, maxReachedStep: 4, schoolStepSubmitted: true, structureStepSubmitted: true };
-		if (path.endsWith('/schools/school')) body = { id: 'school', name: 'Test School', shortName: 'Test', timeZone: 'UTC', type: 'k12' };
+		if (path.endsWith('/schools/school')) body = { id: 'school', name: 'Test School', shortName: 'Test', timeZone: 'UTC' };
 		if (path.includes('get-app-shell-counts')) body = { activeEnrollmentCountsByClass: {}, studentCount: 0, guardianCount: 0, staffCount: 0, teacherCount: 0 };
 		if (path.endsWith('/list-family-feedback-campaigns')) body = [campaign];
 		if (path.endsWith('/get-family-feedback-campaign')) body = campaign;

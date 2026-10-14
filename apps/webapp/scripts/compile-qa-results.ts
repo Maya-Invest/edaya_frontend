@@ -75,7 +75,7 @@ const routeTestsOk: Array<{ page: string; probleme: string }> = [
 	{ page: 'http://localhost:5173/configuration/grade-levels', probleme: 'Niveaux' },
 	{ page: 'http://localhost:5173/configuration/classes', probleme: 'Classes' },
 	{ page: 'http://localhost:5173/configuration/subjects', probleme: 'Matières' },
-	{ page: 'http://localhost:5173/configuration/other/grade-scales', probleme: 'Barèmes' },
+	{ page: 'http://localhost:5173/configuration/grade-scales', probleme: 'Barèmes' },
 	{ page: 'http://localhost:5173/configuration/tools', probleme: 'Outils / imports' },
 	{ page: 'http://localhost:5173/finance/fees', probleme: 'Frais' },
 	{ page: 'http://localhost:5173/finance/billing', probleme: 'Facturation' },

@@ -219,7 +219,7 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'configuration-school',
 		pathnamePattern: /^\/configuration\/school\/?$/,
-		modalNames: ['edit'],
+		modalNames: ['identity', 'issuing', 'location', 'assets'],
 	},
 	{
 		routeFamily: 'configuration-academic',
@@ -290,12 +290,12 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'configuration-report-cards-detail',
 		pathnamePattern: /^\/configuration\/report-cards\/[^/]+\/?$/,
-		modalNames: ['create', 'delete'],
+		modalNames: ['create', 'delete', 'edit', 'add-section', 'edit-section', 'delete-section'],
 	},
 	{
 		routeFamily: 'configuration-grade-scales',
-		pathnamePattern: /^\/configuration\/other\/grade-scales\/?$/,
-		modalNames: ['create', 'edit', 'delete'],
+		pathnamePattern: /^\/configuration\/grade-scales\/?$/,
+		modalNames: ['create', 'edit', 'delete', 'add-interval', 'edit-interval', 'delete-interval', 'convert'],
 	},
 	{
 		routeFamily: 'configuration-notifications-list',

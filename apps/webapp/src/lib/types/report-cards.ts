@@ -34,6 +34,7 @@ export type ReportCardSectionKind = 'matieres' | 'synthese' | 'appreciation';
 export type ReportCardSectionType = 'group' | 'subject';
 
 export interface ReportCardSection {
+	source?: components['schemas']['ReportCardDefinitionSection'];
 	id: string;
 	definitionId: string;
 	name: string;
@@ -51,6 +52,8 @@ export interface ReportCardSection {
 }
 
 export interface ReportCardDefinition {
+	revision?: number;
+	description?: string | null;
 	id: string;
 	schoolId: string;
 	name: string;

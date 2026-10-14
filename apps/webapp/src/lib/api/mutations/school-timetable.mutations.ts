@@ -54,7 +54,6 @@ export async function updateSchoolTimetableDefaultsMutation(input: {
 			timeZone: current.timeZone,
 			city: current.city,
 			country: current.country,
-			type: current.type,
 			ownerSubjectId: current.ownerSubjectId,
 			enforceScheduleConflicts: current.enforceScheduleConflicts,
 			timetableEnforceWorkloadFulfillment: defaults.timetableEnforceWorkloadFulfillment,

@@ -437,7 +437,6 @@ async function registerSchool(
 			financeCurrency: 'XOF',
 			city: 'Abidjan',
 			country: 'Côte d\'Ivoire',
-			type: 'k12',
 		}),
 	});
 

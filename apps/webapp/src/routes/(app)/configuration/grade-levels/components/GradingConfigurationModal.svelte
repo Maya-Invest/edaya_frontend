@@ -27,9 +27,9 @@
 	const validEquivalents = $derived(conversions.every(row => equivalents[row.key]?.trim() && Number.isFinite(Number(equivalents[row.key])) && Number(equivalents[row.key]) >= 0 && Number(equivalents[row.key]) <= (selectedScale?.maxScore ?? 0)));
 	const pointsMissing = $derived(mode === 'mention-first' && selectedScale?.ranges?.some(row => row.gpaValue == null));
 	const currentYear = $derived(academicContext.year?.status === 'published' && new Date(academicContext.year.startDate) <= new Date() && new Date(academicContext.year.endDate) >= new Date());
-	const canSubmit = $derived(currentYear && editingYearId === academicContext.yearId && !!selectedScale && selectedScale.minScore === 0 && selectedScale.maxScore > 0 && selectedScale.intervalConvention === 'continuous' && !!aggregateLabel.trim() && !pointsMissing && validEquivalents && !owner.gradingLoading && !owner.gradingError);
+	const canSubmit = $derived(currentYear && editingYearId === academicContext.yearId && !!selectedScale?.ranges?.length && selectedScale.minScore === 0 && selectedScale.maxScore > 0 && selectedScale.intervalConvention === 'continuous' && !!aggregateLabel.trim() && !pointsMissing && validEquivalents && !owner.gradingLoading && !owner.gradingError);
 	const calculationChanged = $derived(!previous || previous.mode !== mode || previous.scale.id !== scaleId || previous.scale.revision !== selectedScale?.revision || conversions.some(row => Number(equivalents[row.key]) !== previous.numericEquivalents?.[row.key]));
-	const scaleOptions = $derived([{ value: '', label: $t('grading.chooseScale') }, ...owner.gradingScales.filter(row => row.intervalConvention === 'continuous').map(row => ({ value: row.id, label: `${row.name} · ${row.maxScore}` }))]);
+	const scaleOptions = $derived([{ value: '', label: $t('grading.chooseScale') }, ...owner.gradingScales.filter(row => row.intervalConvention === 'continuous' && row.ranges?.length).map(row => ({ value: row.id, label: `${row.name} · ${row.maxScore}` }))]);
 	const modeOptions = $derived([{ value: 'numeric-first', label: $t('grading.numeric') }, { value: 'mention-first', label: $t('grading.mention') }]);
 
 	$effect(() => {

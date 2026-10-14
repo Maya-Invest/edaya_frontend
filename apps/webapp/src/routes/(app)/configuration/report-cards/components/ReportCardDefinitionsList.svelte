@@ -156,40 +156,43 @@
 		{#each filteredDefinitions as def (def.id)}
 			{@const level = academicContext.gradeLevelById(def.gradeLevelId)}
 			{@const scale = reportCardsPage.scales.find(entry => entry.id === def.gradeScaleId)}
-			<a
-				href={detailHref.configReportCard(def.id)}
-				onclick={(event) => {
-					if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
-						return;
-					}
-					event.preventDefault();
-					onSelect?.(def);
-				}}
-				class={cn(
-					'flex w-full items-center justify-between gap-4 rounded-2xl border border-border bg-card px-5 py-4 text-left shadow-soft transition hover:bg-secondary/40',
-					selectedId === def.id && 'border-primary/40 bg-primary/5',
-				)}
-			>
-				<div class="min-w-0">
-					<div class="flex flex-wrap items-center gap-2">
-						<p class="font-display font-semibold">{def.name}</p>
-						<span
-							class={cn(
-								'rounded-full px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase',
-								def.status === 'published'
-									? 'bg-accent/15 text-accent-foreground'
-									: 'bg-secondary text-muted-foreground',
-							)}
-						>
-							{def.status === 'published' ? $t('academic.published') : $t('academic.draft')}
-						</span>
+			<div class="flex items-center gap-2">
+				<a
+					href={detailHref.configReportCard(def.id)}
+					onclick={(event) => {
+						if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+							return;
+						}
+						event.preventDefault();
+						onSelect?.(def);
+					}}
+					class={cn(
+						'flex w-full items-center justify-between gap-4 rounded-2xl border border-border bg-card px-5 py-4 text-left shadow-soft transition hover:bg-secondary/40',
+						selectedId === def.id && 'border-primary/40 bg-primary/5',
+					)}
+				>
+					<div class="min-w-0">
+						<div class="flex flex-wrap items-center gap-2">
+							<p class="font-display font-semibold">{def.name}</p>
+							<span
+								class={cn(
+									'rounded-full px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase',
+									def.status === 'published'
+										? 'bg-accent/15 text-accent-foreground'
+										: 'bg-secondary text-muted-foreground',
+								)}
+							>
+								{def.status === 'published' ? $t('academic.published') : $t('academic.draft')}
+							</span>
+						</div>
+						<p class="mt-1 text-sm text-muted-foreground">
+							{level?.name ?? '—'} · {scale?.name ?? '—'} · {$t('reportCards.sectionCount', { n: def.sections.length })}
+						</p>
 					</div>
-					<p class="mt-1 text-sm text-muted-foreground">
-						{level?.name ?? '—'} · {scale?.name ?? '—'} · {$t('reportCards.sectionCount', { n: def.sections.length })}
-					</p>
-				</div>
-				<ChevronRight class="h-4 w-4 shrink-0 text-muted-foreground" />
-			</a>
+					<ChevronRight class="h-4 w-4 shrink-0 text-muted-foreground" />
+				</a>
+				<PermissionGate permission="REPORT_CARD_CONFIGURE">{#snippet children({ disabled, title })}<Button size="sm" variant="outline" {disabled} {title} onclick={() => openDetailDrawer(`${detailHref.configReportCard(def.id)}?modal=edit`, currentRouteSurfaceHref($page.url))}>{$t('common.edit')}</Button>{/snippet}</PermissionGate>
+			</div>
 		{:else}
 			<p class="py-10 text-center text-sm text-muted-foreground">
 				{$t('dataState.emptyDescription')}

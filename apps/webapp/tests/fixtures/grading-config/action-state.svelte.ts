@@ -1,9 +1,20 @@
+import type { GradeScale, ReportCardDefinition } from '../../../src/lib/types/report-cards';
 export const scale = { id: 'points', schoolId: 'school', name: 'Detailed point scale', isDefault: false, minScore: 0, maxScore: 4, passingScore: 2, decimalPlaces: 2, roundingMode: 'nearest' as const, intervalConvention: 'continuous' as const, revision: 1, ranges: [
   { id: 'f', letter: 'F', interpretation: 'Needs improvement', minScore: 0, maxScore: 2, isPassing: false, gpaValue: 0 },
   { id: 'b', letter: 'B', interpretation: 'Good', minScore: 2, maxScore: 3.5, isPassing: true, gpaValue: 3 },
   { id: 'a', letter: 'A', interpretation: 'Excellent', minScore: 3.5, maxScore: 4, isPassing: true, gpaValue: 4 },
-] }
-export const level = { id: 'level', schoolId: 'school', name: 'International bilingual programme', label: 'Level', cycle: '', order: 1, gradingPolicies: [{ academicYearId: 'year', revision: 1, mode: 'numeric-first' as const, aggregateLabel: 'Moyenne générale', scale, numericEquivalents: {}, status: 'completed' as const }] }
-export const evidence = $state({ requests: [] as unknown[] })
-export const getGradeScalesPageState = () => ({ updateScale: async (input: unknown) => { evidence.requests.push(input); return true }, createScale: async (input: unknown) => { evidence.requests.push(input); return true } })
-export const getGradeLevelsPageState = () => ({ gradingLevel: level, gradingScales: [scale], gradingLoading: false, gradingError: '', configureGrading: async (input: unknown) => { evidence.requests.push(input); return true }, loadGrading: async () => {} })
+] };
+export const level = { id: 'level', schoolId: 'school', name: 'International bilingual programme', label: 'Level', cycle: '', order: 1, gradingPolicies: [{ academicYearId: 'year', revision: 1, mode: 'numeric-first' as const, aggregateLabel: 'Moyenne générale', scale, numericEquivalents: {}, status: 'completed' as const }] };
+export const evidence = $state({ requests: [] as any[], succeed: true });
+const record = async (input: unknown) => { evidence.requests.push(input); return evidence.succeed; };
+const scaleState = $state({ scales: [scale, { ...scale, id: 'empty', name: 'New empty scale', revision: 0, ranges: [] }], filters: { values: { q: '' }, ready: true, scheduleSync() {} } });
+export const getGradeScalesPageState = () => ({ ...scaleState, scaleFor: (id: string) => scaleState.scales.find(row => row.id === id), configureScale: record, deleteScale: record });
+export const getGradeLevelsPageState = () => ({ gradingLevel: level, gradingScales: scaleState.scales, gradingLoading: false, gradingError: '', configureGrading: record, loadGrading: async () => {} });
+export const definition: ReportCardDefinition = { id: 'model', schoolId: 'school', name: 'Published model with a detailed bilingual academic programme', description: 'Existing published model', status: 'published', academicYearId: 'year', gradeLevelId: 'level', gradeScaleId: scale.id, revision: 5, sections: [
+  { id: 'root', definitionId: 'model', name: 'Academic subjects', sectionType: 'group', kind: 'matieres', order: 1, source: { id: 'root', reportCardDefinitionId: 'model', name: 'Academic subjects', kind: 'group', role: 'matieres', order: 1, weight: 1 }, children: [
+    { id: 'math', definitionId: 'model', name: 'Mathematics and applied scientific reasoning', sectionType: 'subject', subjectId: 'math-subject', order: 1, coefficient: 2.5, source: { id: 'math', reportCardDefinitionId: 'model', parentSectionId: 'root', name: 'Mathematics and applied scientific reasoning', subjectId: 'math-subject', kind: 'subject', order: 1, weight: 1.5, coefficient: 2.5 } },
+  ] },
+] };
+export const getReportCardsPageState = () => ({ scales: [scale], subjects: [{ id: 'math-subject', name: 'Mathematics' }], selectedDefinition: () => definition, configureDefinition: record, createDefinition: async (input: unknown) => { await record(input); return 'new-model'; }, publishDefinition: record, deleteDefinition: record });
+const school = $state({ id: 'school', name: 'International bilingual school of science and humanities', shortName: 'IBS', issuingName: 'International School', postalAddress: '100 School Street', phone: '+1 555 123 4567', email: 'office@example.test', schoolCode: 'IBS-1', city: 'Toronto', country: 'Canada', timeZone: 'America/Toronto', financeCurrency: 'CAD', publicBrandingPurposes: [], logoAttachmentId: null, crestAttachmentId: null, stampAttachmentId: null, signatureAttachmentId: null });
+export const getSchoolPageState = () => ({ school, updateSettings: record, updatePublicBranding: record, performUploadSchoolIssuanceAsset: record, performClearSchoolIssuanceAsset: record, refreshSlice: async () => {} });

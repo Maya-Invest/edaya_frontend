@@ -325,7 +325,7 @@ export function resolveCreateButtonPatterns(action: string, endpoint: string): R
 	if (endpointLower.includes('/configuration/other/subject-categories')) {
 		push(/add category|ajouter une catégorie/i);
 	}
-	if (endpointLower.includes('/configuration/other/grade-scales')) {
+	if (endpointLower.includes('/configuration/grade-scales')) {
 		push(/add scale|ajouter un barème/i);
 	}
 	if (endpointLower.includes('/configuration/report-cards')) {
@@ -1175,7 +1175,7 @@ async function waitForSelectOptionCount(
 	return false;
 }
 
-/** Report-card model create — name + grade level + grade scale are all required. */
+/** Report-card model creation inherits the grade-level scale. */
 export async function fillReportCardDefinitionDialog(
 	page: Page,
 	options: {
@@ -1193,7 +1193,6 @@ export async function fillReportCardDefinitionDialog(
 
 	const nativeSelects = dialog.locator('select');
 	const gradeSelect = nativeSelects.nth(0);
-	const scaleSelect = nativeSelects.nth(1);
 
 	if (await gradeSelect.isVisible().catch(() => false)) {
 		if (!(await waitForSelectOptionCount(gradeSelect, 1))) {
@@ -1204,21 +1203,6 @@ export async function fillReportCardDefinitionDialog(
 		}
 		else {
 			await gradeSelect.selectOption({ index: 0 });
-		}
-	}
-
-	if (await scaleSelect.isVisible().catch(() => false)) {
-		if (!(await waitForSelectOptionCount(scaleSelect, 1))) {
-			throw new Error('Report-card scale select has no options — create a grade scale first');
-		}
-		if (options.gradeScaleId) {
-			await scaleSelect.selectOption(options.gradeScaleId).catch(() => scaleSelect.selectOption({ index: 0 }));
-		}
-		else if (options.gradeScaleName) {
-			await scaleSelect.selectOption({ label: options.gradeScaleName }).catch(() => scaleSelect.selectOption({ index: 0 }));
-		}
-		else {
-			await scaleSelect.selectOption({ index: 0 });
 		}
 	}
 

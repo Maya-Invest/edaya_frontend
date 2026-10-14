@@ -1,6 +1,7 @@
 import type { GradeScale, ReportCardDefinition } from '$lib/types/report-cards';
 
 export interface ReportCardsPageSlice {
+	subjects?: { id: string; name: string }[];
 	scales: GradeScale[];
 	definitions: ReportCardDefinition[];
 }

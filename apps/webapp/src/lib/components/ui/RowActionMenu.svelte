@@ -34,7 +34,11 @@
 		{/snippet}
 	</Popover.PopoverTrigger>
 	<Popover.PopoverContent class="w-44 p-1" align="end">
-		<div class="p-1">
+		<div class="p-1" role="presentation" onclick={(event) => {
+			const action = (event.target as Element).closest('button');
+			if (action && !action.disabled)
+				open = false;
+		}}>
 			{@render children()}
 		</div>
 	</Popover.PopoverContent>

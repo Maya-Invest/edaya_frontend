@@ -74,8 +74,8 @@
   {
     "id": "view.configuration.other.grade-scales",
     "feature": "configuration",
-    "path": "/configuration/other/grade-scales",
-    "title": "/configuration/other/grade-scales",
+    "path": "/configuration/grade-scales",
+    "title": "/configuration/grade-scales",
     "kind": "page",
     "identity": "owner"
   },
@@ -1099,8 +1099,8 @@
   {
     "id": "view.configuration.school.modal.edit",
     "feature": "configuration",
-    "path": "/configuration/school?modal=edit",
-    "title": "edit \u00b7 /configuration/school",
+    "path": "/configuration/school?modal=location",
+    "title": "location \u00b7 /configuration/school",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1163,8 +1163,8 @@
   {
     "id": "view.configuration.other.grade-scales.modal.create",
     "feature": "configuration",
-    "path": "/configuration/other/grade-scales?modal=create",
-    "title": "create \u00b7 /configuration/other/grade-scales",
+    "path": "/configuration/grade-scales?modal=create",
+    "title": "create \u00b7 /configuration/grade-scales",
     "kind": "modal",
     "identity": "owner"
   },

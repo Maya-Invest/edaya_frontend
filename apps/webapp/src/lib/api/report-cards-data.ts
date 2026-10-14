@@ -157,9 +157,10 @@ function mapDefinitionSection(
 		const subjectLabel = subjectLabelForCatalogId(subjectId, sources);
 
 		return {
+			source: section,
 			id: section.id,
 			definitionId,
-			name: subjectLabel,
+			name: section.name,
 			sectionType: 'subject',
 			order: section.order,
 			coefficient: section.coefficient ?? section.weight,
@@ -178,6 +179,7 @@ function mapDefinitionSection(
 	const kind = mapSectionRole(section, hasSubjectChildren);
 
 	return {
+		source: section,
 		id: section.id,
 		definitionId,
 		name: catalogBulletinSection(section.name, get(lang)),
@@ -214,6 +216,8 @@ export function mapReportCardDefinitions(
 	sources: Pick<ClassSubjectsSources, 'subjectsRaw'>,
 ): ReportCardDefinition[] {
 	return definitionsRaw.map(definition => ({
+		revision: definition.revision,
+		description: definition.description,
 		id: definition.id,
 		schoolId: definition.schoolId,
 		name: definition.name,
@@ -256,11 +260,15 @@ export function mapSubjectMark(
 		? sources.subjectsRaw.find(entry => entry.id === catalogSubjectId)
 		: undefined;
 
+	const capturedLabel = subjectResult.name && subjectResult.name !== catalogSubjectId && subjectResult.name !== classSubjectId ? subjectResult.name : undefined;
+
 	return {
 		subjectId: classSubjectId,
-		subjectName: subject
-			? catalogSubjectName(subject.name, get(lang), subject.code)
-			: subjectLabelForCatalogId(catalogSubjectId ?? classSubjectId, sources),
+		subjectName: capturedLabel
+			? catalogSubjectName(capturedLabel, get(lang))
+			: subject
+				? catalogSubjectName(subject.name, get(lang), subject.code)
+				: subjectLabelForCatalogId(catalogSubjectId ?? classSubjectId, sources),
 		average: subjectResult.average,
 		grading: subjectResult.grading,
 		coefficient: subjectResult.weight ?? 1,
@@ -358,10 +366,11 @@ export async function loadReportCardCatalogData(
 	schoolId: string,
 ): Promise<{
 	gradeScales: GradeScale[];
+	subjects: { id: string; name: string }[];
 	definitions: ReportCardDefinition[];
 }> {
 	if (!schoolId) {
-		return { gradeScales: [], definitions: [] };
+		return { gradeScales: [], definitions: [], subjects: [] };
 	}
 	const catalogQuery = schoolScopedEntityList(schoolId, REPORT_CARD_CATALOG_SCOPE);
 	const [gradeScales, definitionsRaw, subjectsRaw] = await Promise.all([
@@ -380,6 +389,7 @@ export async function loadReportCardCatalogData(
 
 	return {
 		gradeScales,
+		subjects: (subjectsRaw ?? []).map(subject => ({ id: subject.id, name: catalogSubjectName(subject.name, get(lang), subject.code) })),
 		definitions: mapReportCardDefinitions(
 			definitionsRaw,
 			sectionsRaw,

@@ -291,7 +291,7 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	// ─── Configuration ──────────────────────────────────────────────────
 	...rows('Configuration', `${B}/configuration`, ['Redirect vers /configuration/subjects']),
 	...rows('Configuration', `${B}/configuration/school`, [
-		'Éditer nom, timezone, ville, type école',
+		'Éditer les sections du profil école',
 	]),
 	...rows('Configuration', `${B}/configuration/academic`, [
 		'Créer année scolaire',
@@ -326,7 +326,7 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	...rows('Configuration', `${B}/configuration/subjects/level/[level]`, [
 		'Redirect vers /configuration/subjects?gradeLevel=[id]',
 	]),
-	...rows('Configuration', `${B}/configuration/other/grade-scales`, [
+	...rows('Configuration', `${B}/configuration/grade-scales`, [
 		'Liste barèmes',
 		'CRUD barème',
 	]),

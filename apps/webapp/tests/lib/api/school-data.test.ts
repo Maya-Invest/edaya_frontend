@@ -31,6 +31,9 @@ function school(overrides: Partial<SchoolRaw> = {}): SchoolRaw {
 }
 
 describe('school identity mapping', () => {
+	it('keeps the saved short name when the school is renamed', () => {
+		expect(mapSchoolFromApi(school({ name: 'Renamed campus', shortName: 'Saved name' })).shortName).toBe('Saved name');
+	});
 	it('maps issuing identity and public branding purposes from the API school', () => {
 		const mapped = mapSchoolFromApi(school({ financeCurrency: 'EUR' }));
 		expect(mapped.financeCurrency).toBe('EUR');

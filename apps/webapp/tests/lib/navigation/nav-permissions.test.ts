@@ -89,6 +89,7 @@ describe('nav-permissions — prof principal (phase 3.3)', () => {
 			'academic',
 			'periodGrid',
 			'gradeLevels',
+			'gradeScales',
 			'classGroups',
 			'subjects',
 			'reportCards',
@@ -157,4 +158,12 @@ describe('personal communications without administrative grants', () => {
 		expect(canAccessPath('/school/staff', [])).toBe(false);
 		expect(canAccessPath('/finance/billing', [])).toBe(false);
 	});
+});
+
+it('keeps grade-scale authority out of Other configuration and allows legacy redirects', () => {
+	const grants = mockGrants(['REPORT_CARD_CONFIGURE']);
+	expect(filterNavItems(CONFIG_NAV_DEFS, grants).map(row => row.key)).toContain('gradeScales');
+	expect(filterNavItems(CONFIG_NAV_DEFS, grants).map(row => row.key)).not.toContain('other');
+	expect(canAccessPath('/configuration/grade-scales', grants)).toBe(true);
+	expect(canAccessPath('/configuration/other/grade-scales', grants)).toBe(true);
 });
