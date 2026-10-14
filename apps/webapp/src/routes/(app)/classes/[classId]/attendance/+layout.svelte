@@ -6,6 +6,7 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { listRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
+	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
@@ -14,6 +15,7 @@
 		AttendancePageState,
 		setAttendancePageState,
 	} from './attendance-page.svelte';
+	import AttendanceCreateModal from './components/AttendanceCreateModal.svelte';
 	import AttendanceList from './components/AttendanceList.svelte';
 	import AttendancePageHydrator from './components/AttendancePageHydrator.svelte';
 
@@ -27,6 +29,14 @@
 	const classId = $derived($page.params.classId ?? '6a');
 	const selectedId = $derived(attendancePage.selectedId);
 	const query = $derived(attendancePage.queryListPage(classId));
+
+	const createOpen = bindUrlModal(attendancePage.modals, 'create-roll-call');
+	$effect(() => attendancePage.modals.hydrate());
+
+	function createdDay(day: import('$lib/types/school').AttendanceDay) {
+		attendancePage.modals.close();
+		selectDay(day);
+	}
 
 	function selectDay(day: import('$lib/types/school').AttendanceDay) {
 		const path = detailHref.classAttendanceDay(classId, day.id);
@@ -49,3 +59,9 @@
 		</DataState>
 	{/snippet}
 </PageQuery>
+
+{#if createOpen.open && attendancePage.canCreate}
+	{#key attendancePage.scope}
+		<AttendanceCreateModal bind:open={createOpen.open} onSaved={createdDay} />
+	{/key}
+{/if}

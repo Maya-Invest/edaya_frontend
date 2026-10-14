@@ -7,6 +7,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import { formatLocaleDate } from '$lib/date/format';
 	import { locale, t } from '$lib/i18n';
 	import { Check, ClipboardCheck } from '$lib/icons';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
@@ -80,7 +81,7 @@
 	}
 
 	const formattedDate = $derived(
-		new Date(day.date).toLocaleDateString($locale, {
+		formatLocaleDate(day.date, $locale, {
 			weekday: 'long',
 			day: 'numeric',
 			month: 'long',

@@ -3,12 +3,15 @@
 	import { page } from '$app/stores';
 	import { attendanceSheetSourceId } from '$lib/api/documents-data';
 
+	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import { formatLocaleDate } from '$lib/date/format';
 	import { locale, t } from '$lib/i18n';
-	import { CalendarDays, ClipboardCheck } from '$lib/icons';
+	import { CalendarDays, ClipboardCheck, Plus } from '$lib/icons';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readClassAttendanceListFilters, writeClassAttendanceListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
@@ -108,6 +111,17 @@
 		eyebrow={$t('attendanceDay.eyebrow')}
 		title={$t('attendanceDay.count', { n: filteredDays.length })}
 	>
+		{#snippet primary()}
+			{#if attendancePage.classNode?.attendanceMode === 'daily'}
+				<PermissionGate permission="ATTENDANCE_RECORD" {classId} mode="disable" tooltip={$t('attendanceDay.permissionRecord')}>
+					{#snippet children({ disabled, title })}
+						<Button {disabled} {title} onclick={() => attendancePage.modals.open('create-roll-call')}>
+							<Plus class="h-4 w-4" />{$t('attendanceDay.createTitle')}
+						</Button>
+					{/snippet}
+				</PermissionGate>
+			{/if}
+		{/snippet}
 		{#snippet filters()}
 			<FilterPanel activeCount={completionFilterActive} title={$t('attendanceDay.completionFilter')}>
 				<FilterSelect
@@ -145,7 +159,7 @@
 					<h3 class="mt-1 font-display text-lg font-semibold leading-tight">{day.label}</h3>
 					<p class="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
 						<CalendarDays class="h-3 w-3" />
-						{new Date(day.date).toLocaleDateString($locale, {
+						{formatLocaleDate(day.date, $locale, {
 							weekday: 'long',
 							day: 'numeric',
 							month: 'short',

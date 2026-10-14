@@ -421,7 +421,8 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 - **Entities:** `Attendance` · `AttendanceRecord`
 - **Nav:** only when `attendanceMode = daily`
-- **List:** rows = **days** (not student matrix)
+- **List:** rows = **days** (not student matrix). **New roll call** remains available on an empty list for daily-mode classes; class-scoped `ATTENDANCE_RECORD` gates the action, direct modal URL, and submission.
+- **Create:** `?modal=create-roll-call` opens a date and active-roster form. Default to today in the school timezone; allow today/past civil dates only. Students start unmarked; Present/Absent/Late are explicit choices. Mark all present fills only unmarked students. Save requires a nonempty, fully loaded, completely marked roster and uses one `record-class-daily-attendance` command. Existing dates link to their drawer instead of being overwritten through creation. Keep drafts on failure; success opens the saved day with list filters preserved.
 - **Drawer:** same pattern as timetable session drawer
 - **Commands:** `record-class-daily-attendance` · `record-daily-attendance`
 

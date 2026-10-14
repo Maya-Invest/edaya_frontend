@@ -1,15 +1,28 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { AttendanceDay } from '$lib/types/school';
+import type { SessionAttendanceRow, SessionAttendanceStatus } from '$lib/types/session-detail';
 import type { AttendancePageSlice } from './lib/attendance-helpers';
+import { academicContext } from '$lib/academic/context.svelte';
+import { findAttendanceDayForDate, loadAttendanceRoster } from '$lib/api/attendance-data';
 import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mutations';
+import { getBrowserSchoolClient } from '$lib/api/school-client';
+import { authSession } from '$lib/auth/session.svelte';
+import { isoToZonedDateAndTime, nowIso } from '$lib/date/format';
+import { t } from '$lib/i18n';
+import { createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { hasPermission } from '$lib/permissions';
+import { toast } from '$lib/toast.svelte';
 import { getContext, setContext } from 'svelte';
+import { get } from 'svelte/store';
 import {
 	attendanceClassIdFromUrl,
 	attendanceDayDetailIdFromUrl,
 	emptyAttendanceSlice,
 } from './lib/attendance-helpers';
 import { loadAttendanceSlice, queryAttendanceListPage } from './lib/attendance-queries';
+import { runAttendanceRouteMutation } from './lib/attendance-route-mutation';
+import { completeRollCall, validRollCallDate } from './lib/roll-call';
 
 const ATTENDANCE_VERSION_FAMILIES = ['attendance', 'students', 'guardians', 'enrollments'] as const satisfies readonly EntityVersionKey[];
 
@@ -24,7 +37,146 @@ export class AttendancePageState {
 
 	private readonly versions = new RouteVersionSnapshot(ATTENDANCE_VERSION_FAMILIES);
 
-	constructor(private readonly getUrl: () => URL) {}
+	readonly modals;
+	roster = $state<SessionAttendanceRow[]>([]);
+	rosterLoading = $state(false);
+	rosterError = $state(false);
+	creating = $state(false);
+	private rosterRequest = 0;
+	private rosterScope = '';
+
+	constructor(private readonly getUrl: () => URL) {
+		this.modals = createUrlSyncedModals({
+			allowed: () => this.canCreate ? ['create-roll-call'] as const : [],
+			owned: ['create-roll-call'],
+			getUrl,
+		});
+	}
+
+	get classId() {
+		return attendanceClassIdFromUrl(this.getUrl()) ?? '';
+	}
+
+	get scope() {
+		return `${authSession.userId}|${academicContext.schoolScopeId}|${academicContext.yearId}|${this.classId}`;
+	}
+
+	get classNode() {
+		return academicContext.classes.find(row => row.id === this.classId);
+	}
+
+	get canCreate() {
+		return this.classNode?.attendanceMode === 'daily'
+			&& hasPermission('ATTENDANCE_RECORD', { classId: this.classId });
+	}
+
+	get today() {
+		const school = academicContext.schools.find(row => row.id === this.classNode?.schoolId);
+		return isoToZonedDateAndTime(nowIso(), school?.timeZone ?? 'UTC').date;
+	}
+
+	cancelRosterLoad() {
+		this.rosterRequest += 1;
+		this.rosterScope = '';
+		this.roster = [];
+		this.rosterLoading = false;
+		this.rosterError = false;
+	}
+
+	async loadCreationRoster() {
+		const request = ++this.rosterRequest;
+		const scope = this.scope;
+		this.roster = [];
+		this.rosterScope = '';
+		this.rosterError = false;
+		if (!this.canCreate) {
+			return;
+		}
+		this.rosterLoading = true;
+		try {
+			const rows = await loadAttendanceRoster(getBrowserSchoolClient(), this.classId);
+			if (request === this.rosterRequest && scope === this.scope) {
+				this.roster = rows;
+				this.rosterScope = scope;
+			}
+		}
+		catch {
+			if (request === this.rosterRequest && scope === this.scope) {
+				this.rosterError = true;
+			}
+		}
+		finally {
+			if (request === this.rosterRequest && scope === this.scope) {
+				this.rosterLoading = false;
+			}
+		}
+	}
+
+	async createRollCall(date: string, marks: Record<string, SessionAttendanceStatus>): Promise<AttendanceDay | null> {
+		if (this.creating || !this.canCreate || this.rosterLoading || this.rosterError
+			|| this.rosterScope !== this.scope || !validRollCallDate(date, this.today)
+			|| !completeRollCall(this.roster, marks)) {
+			return null;
+		}
+		this.creating = true;
+		const scope = this.scope;
+		const rosterRequest = this.rosterRequest;
+		const classId = this.classId;
+		const client = getBrowserSchoolClient();
+		const attendanceByStudent = Object.fromEntries(this.roster.map(row => [row.studentId, marks[row.studentId]]));
+		try {
+			const existing = await findAttendanceDayForDate(client, classId, date);
+			if (scope !== this.scope || !this.canCreate) {
+				return null;
+			}
+			if (existing) {
+				await this.refreshSlice(classId);
+				toast.error(get(t)('attendanceDay.alreadyExists'));
+				return null;
+			}
+			const day: AttendanceDay = {
+				id: `${classId}:${date}`,
+				classId,
+				date,
+				label: get(t)('attendanceDay.dailyRollCall'),
+				totalStudents: this.roster.length,
+				recordedCount: this.roster.length,
+			};
+			const previous = this.slice;
+			const result = await runAttendanceRouteMutation({
+				request: () => client.commands.recordClassDailyAttendance({
+					classGroupId: classId,
+					date,
+					attendanceByStudent,
+					createdAt: nowIso(),
+				}),
+				apply: () => {
+					this.slice = { classId, attendanceDays: [day, ...this.daysFor(classId)].sort((a, b) => b.date.localeCompare(a.date)) };
+				},
+				rollback: () => {
+					if (scope === this.scope) {
+						this.slice = previous;
+					}
+				},
+				onSuccess: async () => {
+					if (scope === this.scope) {
+						await this.refreshSlice(classId);
+					}
+				},
+				successMessage: get(t)('attendanceDay.bulkSuccess'),
+			});
+			return result !== null && scope === this.scope && rosterRequest === this.rosterRequest ? day : null;
+		}
+		catch {
+			if (scope === this.scope) {
+				toast.error(get(t)('attendanceDay.createFailed'));
+			}
+			return null;
+		}
+		finally {
+			this.creating = false;
+		}
+	}
 
 	applySlice(classId: string, data: Partial<Omit<AttendancePageSlice, 'classId'>>) {
 		this.slice = { ...emptyAttendanceSlice(classId), ...data, classId };
@@ -79,8 +231,11 @@ export class AttendancePageState {
 	}
 
 	async refreshSlice(classId: string) {
+		const scope = this.scope;
 		const data = await loadAttendanceSlice(classId);
-		this.applySlice(classId, data);
+		if (scope === this.scope) {
+			this.applySlice(classId, data);
+		}
 	}
 
 	async invalidateIfStale() {

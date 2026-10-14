@@ -1,11 +1,12 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { AttendanceDay } from '$lib/types/school';
-import type { SessionDetail } from '$lib/types/session-detail';
+import type { SessionAttendanceRow, SessionDetail } from '$lib/types/session-detail';
 import {
 	activeEnrollmentsForClass,
 	attendancesForClass,
 	listAllEntityPages,
+	listAllEntityPagesByIds,
 	listAllEntityPagesForIdFilters,
 } from '$lib/api/entity-list-filters';
 import { mapStudents, fetchClassPeopleSources } from '$lib/api/people-data';
@@ -142,4 +143,32 @@ export async function loadAttendanceDayDetail(
 		attendanceRaw: attendanceRaw ?? [],
 		displayLabel: occurrence.displayLabel,
 	});
+}
+
+/** Attendance needs the complete active roster, without guardian read permissions. */
+export async function loadAttendanceRoster(client: SchoolClient, classGroupId: string): Promise<SessionAttendanceRow[]> {
+	const enrollments = await listAllEntityPages(
+		query => client.entities.enrollments.list(query),
+		{ baseQuery: activeEnrollmentsForClass(classGroupId) },
+	);
+	const ids = [...new Set(enrollments.map(row => row.studentId))];
+	const students = await listAllEntityPagesByIds(query => client.entities.students.list(query), ids);
+	if (ids.some(id => !students.some(student => student.id === id))) {
+		throw new Error('Incomplete attendance roster');
+	}
+	return students.map(student => ({
+		studentId: student.id,
+		studentName: `${student.firstName} ${student.lastName}`.trim(),
+		studentInitials: `${student.firstName[0] ?? ''}${student.lastName[0] ?? ''}`,
+	})).sort((a, b) => a.studentName.localeCompare(b.studentName));
+}
+
+/** Unlike display enrichment, the duplicate check must fail closed on read errors. */
+export async function findAttendanceDayForDate(client: SchoolClient, classGroupId: string, date: string): Promise<AttendanceDay | undefined> {
+	const occurrences = await listAllEntityPages(
+		query => client.entities.attendances.list(query),
+		{ baseQuery: attendancesForClass(classGroupId) },
+	);
+	const occurrence = occurrences.find(row => formatDate(row.startsAt) === date);
+	return occurrence ? mapAttendanceOccurrenceToDay(occurrence, 0, []) : undefined;
 }

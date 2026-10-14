@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { completeRollCall, markUnrecordedPresent, validRollCallDate } from '../../../../../src/routes/(app)/classes/[classId]/attendance/lib/roll-call';
 import {
 	attendanceClassIdFromUrl,
 	attendanceDayDetailIdFromUrl,
@@ -21,5 +22,25 @@ describe('attendance route helpers', () => {
 		const url = new URL('http://local/classes/6a/attendance');
 		expect(attendanceClassIdFromUrl(url)).toBe('6a');
 		expect(attendanceDayDetailIdFromUrl(url)).toBeUndefined();
+	});
+});
+
+
+describe('new roll call validation', () => {
+	const roster = [{ studentId: 'a', studentName: 'A', studentInitials: 'A' }, { studentId: 'b', studentName: 'B', studentInitials: 'B' }];
+	it('requires a nonempty roster and an explicit valid status for every student', () => {
+		expect(completeRollCall([], {})).toBe(false);
+		expect(completeRollCall(roster, { a: 'absent' })).toBe(false);
+		expect(completeRollCall(roster, { a: 'absent', b: 'late' })).toBe(true);
+	});
+	it('mark all present preserves explicit absences and lateness', () => {
+		expect(markUnrecordedPresent(roster, { a: 'absent' })).toEqual({ a: 'absent', b: 'present' });
+		expect(markUnrecordedPresent(roster, { a: 'late' })).toEqual({ a: 'late', b: 'present' });
+	});
+	it('accepts real past/today civil dates and rejects future or malformed dates', () => {
+		for (const date of ['2026-10-13', '2024-02-29'])
+			expect(validRollCallDate(date, '2026-10-13')).toBe(true);
+		for (const date of ['', '2026-10-14', '2026-02-30', '2025-02-29', '2026-1-01'])
+			expect(validRollCallDate(date, '2026-10-13')).toBe(false);
 	});
 });
