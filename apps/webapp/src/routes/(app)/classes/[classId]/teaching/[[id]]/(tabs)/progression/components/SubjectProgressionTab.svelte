@@ -3,9 +3,7 @@
 	import type { Subject } from '$lib/types/school';
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { academicContext } from '$lib/academic/context.svelte';
 
-	import ClassSubjectTimetableSection from '$lib/components/school/academics/ClassSubjectTimetableSection.svelte';
 	import SubjectMatterFormModal from '$lib/components/school/academics/SubjectMatterFormModal.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
@@ -108,8 +106,6 @@
 		}
 	}
 </script>
-
-<ClassSubjectTimetableSection onLoadClassSubject={progressionTab.onLoadClassSubject} onUpdateClassSubjectTimetable={progressionTab.performUpdateClassSubjectTimetable} classSubjectId={subject.id} school={academicContext.schools[0]} />
 
 <div class="space-y-4">
 	<section class="space-y-2">

@@ -83,7 +83,7 @@ export async function executeCommand(args: string[]): Promise<void> {
   }
   if (group === 'dev' && !name) {
     checkClient()
-    await run(['bun', 'run', 'dev'], { timeout: 0 })
+    await run(['bun', 'run', 'dev'], { timeout: 0, env: { PUBLIC_TEST_OTP_ACCESS: process.env.PUBLIC_TEST_OTP_ACCESS ?? 'true' } })
     return
   }
   if (group === 'ops' && name === 'smoke') {

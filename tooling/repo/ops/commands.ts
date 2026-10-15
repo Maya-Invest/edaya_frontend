@@ -27,7 +27,7 @@ const ci: Record<string, Command> = {
 }
 
 export const commands: Command = group('Frontend repository commands. Use <command> --help for details.', {
-  dev: leaf('dev', 'Start webapp and webadmin using the prepared API client.'),
+  dev: leaf('dev', 'Start webapp and webadmin using the prepared API client. Enable local OTP capture controls by default; set PUBLIC_TEST_OTP_ACCESS=false to opt out.'),
   check: checks({ doctor: 'Check configuration and repository layout.', commands: 'Check generated command documentation.', client: 'Check the prepared and installed API client.', brand: 'Check brand assets, tokens and visual literals.', architecture: 'Check frontend architecture.' }),
   test: tests,
   build: leaf('build', 'Build webapp and webadmin release artifacts without deployment.', { arguments: [env] }),

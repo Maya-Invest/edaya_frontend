@@ -3,7 +3,7 @@ Usage: bun repo <command>
 Frontend repository commands. Use <command> --help for details.
 
 Commands:
-  dev                      Start webapp and webadmin using the prepared API client.
+  dev                      Start webapp and webadmin using the prepared API client. Enable local OTP capture controls by default; set PUBLIC_TEST_OTP_ACCESS=false to opt out.
   check                    Run all repository checks.
   test                     Run test suites.
   build                    Build webapp and webadmin release artifacts without deployment.
@@ -19,7 +19,7 @@ Examples:
 
 Usage: bun repo dev
 
-Start webapp and webadmin using the prepared API client.
+Start webapp and webadmin using the prepared API client. Enable local OTP capture controls by default; set PUBLIC_TEST_OTP_ACCESS=false to opt out.
 
 Options:
   -h, --help               Show help for this command.

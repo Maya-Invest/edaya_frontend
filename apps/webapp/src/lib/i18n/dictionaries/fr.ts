@@ -2992,6 +2992,8 @@ export const fr: Dict = {
 	'timetable.saveSchoolDefaults': 'Enregistrer les défauts',
 	'timetable.schoolDefaultsSaved': 'Défauts d’emploi du temps de l’établissement enregistrés.',
 	'timetable.sameSubjectDayGapInvalid': 'Saisissez un nombre entier de jours (0 ou plus).',
+	'subjects.workload.sharedHint': 'Ces paramètres s’appliquent à toutes les classes de cette matière pour le niveau et l’année scolaire sélectionnés.',
+	'subjects.workload.defaultsHint': 'Laissez les champs vides pour utiliser les valeurs par défaut de l’emploi du temps.',
 	'timetable.classSubjectTimetableTitle': 'Charge horaire',
 	'timetable.classSubjectTimetableHint': 'Périodes hebdomadaires et bornes de séances consécutives pour la génération.',
 	'timetable.classSubjectTimetableSaved': 'Paramètres d’emploi du temps enregistrés pour cette matière.',

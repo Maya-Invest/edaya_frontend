@@ -1,8 +1,6 @@
 import type { SubjectMatterDrawerRow } from '$lib/api/mutations/subject-matter.mutations';
 import type { PageQueryRequest } from '$lib/queries/page-status';
-import { updateClassSubjectTimetableMutation } from '$lib/api/mutations/class-subject.mutations';
 import { saveSubjectMatterMutation, deleteSubjectMatterMutation, loadTeachingSubjectProgressionRows } from '$lib/api/mutations/subject-matter.mutations';
-import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { VersionedRouteQuery } from '$lib/navigation/versioned-route-query';
 import { resolvePageLoad } from '$lib/queries/page-status';
@@ -25,10 +23,6 @@ export interface SubjectProgressionTabSlice {
 export class SubjectProgressionTabState {
 	private readonly versionedQuery = new VersionedRouteQuery(new RouteVersionSnapshot(['subjects', 'planning']));
 	invalidateIfStale = () => this.versionedQuery.invalidateIfStale();
-
-	onLoadClassSubject = (id: string) => getBrowserSchoolClient().entities.classSubjects.get(id);
-
-	performUpdateClassSubjectTimetable = (...args: Parameters<typeof updateClassSubjectTimetableMutation>) => updateClassSubjectTimetableMutation(...args);
 
 	performSaveSubjectMatter = (...args: Parameters<typeof saveSubjectMatterMutation>) => saveSubjectMatterMutation(...args);
 

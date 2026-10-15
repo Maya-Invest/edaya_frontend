@@ -3021,6 +3021,8 @@ export const en: Dict = {
 	'timetable.saveSchoolDefaults': 'Save school defaults',
 	'timetable.schoolDefaultsSaved': 'School timetable defaults saved.',
 	'timetable.sameSubjectDayGapInvalid': 'Enter a whole number of days (0 or more).',
+	'subjects.workload.sharedHint': 'Applies to all classes for this subject in the selected grade level and academic year.',
+	'subjects.workload.defaultsHint': 'Leave fields blank to use the existing timetable defaults.',
 	'timetable.classSubjectTimetableTitle': 'Timetable workload',
 	'timetable.classSubjectTimetableHint': 'Weekly periods and consecutive-period bounds for generation.',
 	'timetable.classSubjectTimetableSaved': 'Timetable settings saved for this subject.',

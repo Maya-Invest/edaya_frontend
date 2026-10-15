@@ -13,6 +13,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { lang, t } from '$lib/i18n';
 	import { catalogCategory } from '$lib/i18n/catalog-label';
+	import { parseSubjectWorkload } from '$lib/subjects/subject-workload';
 	import { get } from 'svelte/store';
 
 	const PLANNING_DAYS: PlanningEvent['day'][] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -56,6 +57,10 @@
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let name = $state('');
+	let periodsPerWeek = $state('');
+	let minPeriodSpan = $state('');
+	let maxPeriodSpan = $state('');
+	let workloadError = $state('');
 	let categories = $state<SubjectCategoryOption[]>([]);
 	let categoryId = $state('');
 	let color = $state<Subject['color']>('mint');
@@ -65,6 +70,7 @@
 	let scheduleEnd = $state('09:00');
 
 	const isEdit = $derived(subject !== undefined);
+	const hasSharedWorkload = $derived(Boolean(subject?.gradeLevelId));
 	const colorLabel = $derived(COLOR_LABELS[color]);
 	const canSubmit = $derived.by(() => {
 		return name.trim().length > 0 && categoryId.length > 0 && (isEdit || (classId?.length ?? 0) > 0);
@@ -86,6 +92,10 @@
 	}
 
 	function resetForm() {
+		workloadError = '';
+		periodsPerWeek = subject?.periodsPerWeek != null ? String(subject.periodsPerWeek) : '';
+		minPeriodSpan = subject?.minPeriodSpan != null ? String(subject.minPeriodSpan) : '';
+		maxPeriodSpan = subject?.maxPeriodSpan != null ? String(subject.maxPeriodSpan) : '';
 		if (subject) {
 			name = subject.name;
 			categoryId = subject.categoryId;
@@ -111,51 +121,58 @@
 	});
 
 	async function submit() {
-		if (!canSubmit)
+		if (!canSubmit || busy)
+			return;
+
+		const workload = hasSharedWorkload ? parseSubjectWorkload({ periodsPerWeek, minPeriodSpan, maxPeriodSpan }) : undefined;
+		workloadError = workload?.error ? get(t)(workload.error) : '';
+		if (workloadError)
 			return;
 
 		busy = true;
-		if (subject) {
-			const ok = await onUpdateSubject({
-				classSubjectId: subject.id,
-				name,
-				categoryId,
-				color,
-				successMessage: get(t)('subjects.updateSuccess', { name: name.trim() }),
-			});
-			busy = false;
-			if (ok) {
-				open = false;
-			}
-		}
-		else if (classId) {
-			const classSubjectId = await onCreateSubjectForClass({
-				classGroupId: classId,
-				name,
-				categoryId,
-				color,
-				successMessage: get(t)('subjects.createSuccess', { name: name.trim() }),
-			});
-			busy = false;
-			if (classSubjectId) {
-				if (addToTimetable) {
-					await onCreateSchedule({
-						classGroupId: classId,
-						scheduleKind: 'lesson',
-						title: name.trim(),
-						classSubjectId,
-						day: scheduleDay,
-						startTime: scheduleStart,
-						endTime: scheduleEnd,
-						weekStart,
-					});
+		try {
+			if (subject) {
+				const ok = await onUpdateSubject({
+					classSubjectId: subject.id,
+					gradeLevelSubjectId: hasSharedWorkload ? subject.id : undefined,
+					...workload?.value,
+					name,
+					categoryId,
+					color,
+					successMessage: get(t)('subjects.updateSuccess', { name: name.trim() }),
+				});
+				if (ok) {
+					open = false;
 				}
-				open = false;
-				resetForm();
-				onCreated?.(classSubjectId);
+			}
+			else if (classId) {
+				const classSubjectId = await onCreateSubjectForClass({
+					classGroupId: classId,
+					name,
+					categoryId,
+					color,
+					successMessage: get(t)('subjects.createSuccess', { name: name.trim() }),
+				});
+				if (classSubjectId) {
+					if (addToTimetable) {
+						await onCreateSchedule({
+							classGroupId: classId,
+							scheduleKind: 'lesson',
+							title: name.trim(),
+							classSubjectId,
+							day: scheduleDay,
+							startTime: scheduleStart,
+							endTime: scheduleEnd,
+							weekStart,
+						});
+					}
+					open = false;
+					resetForm();
+					onCreated?.(classSubjectId);
+				}
 			}
 		}
-		else {
+		finally {
 			busy = false;
 		}
 	}
@@ -228,6 +245,30 @@
 			</Select.Root>
 		</div>
 	</div>
+	{#if hasSharedWorkload}
+		<fieldset class="space-y-3">
+			<legend class="text-sm font-medium">{$t('timetable.classSubjectTimetableTitle')}</legend>
+			<p class="text-xs text-muted-foreground">{$t('subjects.workload.sharedHint')}</p>
+			<div class="grid gap-3 sm:grid-cols-3">
+				<label class="space-y-1.5 text-xs">
+					<span>{$t('timetable.periodsPerWeek')}</span>
+					<Input type="number" min="1" step="1" bind:value={periodsPerWeek} placeholder="—" />
+				</label>
+				<label class="space-y-1.5 text-xs">
+					<span>{$t('timetable.minPeriodSpan')}</span>
+					<Input type="number" min="1" step="1" bind:value={minPeriodSpan} placeholder="—" />
+				</label>
+				<label class="space-y-1.5 text-xs">
+					<span>{$t('timetable.maxPeriodSpan')}</span>
+					<Input type="number" min="1" step="1" bind:value={maxPeriodSpan} placeholder="—" />
+				</label>
+			</div>
+			<p class="text-xs text-muted-foreground">{$t('subjects.workload.defaultsHint')}</p>
+			{#if workloadError}
+				<p class="text-xs text-destructive" role="alert">{workloadError}</p>
+			{/if}
+		</fieldset>
+	{/if}
 	{#if !isEdit && classId}
 		<div class="space-y-3 rounded-xl border border-border bg-secondary/20 p-4">
 			<label class="flex items-center gap-2 text-sm">

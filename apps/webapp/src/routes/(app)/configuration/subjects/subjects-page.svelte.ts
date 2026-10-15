@@ -27,7 +27,13 @@ export class SubjectsPageState {
 
 	loadSubjectCategoriesForForm = (...args: Parameters<typeof loadSubjectCategories> extends [unknown, ...infer Rest] ? Rest : never) => loadSubjectCategories(getBrowserSchoolClient(), ...args);
 
-	performUpdateSubject = (...args: Parameters<typeof updateSubjectMutation>) => updateSubjectMutation(...args);
+	performUpdateSubject = async (...args: Parameters<typeof updateSubjectMutation>) => {
+		const saved = await updateSubjectMutation(...args);
+		if (saved) {
+			await this.refreshSlice();
+		}
+		return saved;
+	};
 
 	performCreateSubjectForClass = (...args: Parameters<typeof createSubjectForClassMutation>) => createSubjectForClassMutation(...args);
 

@@ -1,7 +1,7 @@
+import type { UpdateSubjectInput } from '$lib/subjects/update-subject';
 import type { Subject } from '$lib/types/school';
 import { runMutation } from '$lib/api/mutations/run-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { buildSubjectConfigCommand } from '$lib/api/subject-save-payload';
 import { authSession } from '$lib/auth/session.svelte';
 import { t } from '$lib/i18n';
 import { toCanonicalCatalogText } from '$lib/i18n/catalog-label';
@@ -10,36 +10,16 @@ import {
 	createSubjectForGradeLevel,
 	createSubjectImportIdsForGradeLevel,
 } from '$lib/subjects/create-subject-for-grade-level';
+import { updateSubject } from '$lib/subjects/update-subject';
 import { toast } from '$lib/toast.svelte';
 import { get } from 'svelte/store';
 
-export async function updateSubjectMutation(input: {
-	classSubjectId: string;
-	name: string;
-	categoryId: string;
-	color: Subject['color'];
-	successMessage?: string;
-}): Promise<boolean> {
+export async function updateSubjectMutation(input: UpdateSubjectInput & { successMessage?: string }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	let classSubject;
-	let subject;
-	try {
-		classSubject = await client.entities.classSubjects.get(input.classSubjectId);
-		subject = await client.entities.subjects.get(classSubject.subjectId);
-	}
-	catch {
-		toast.error(get(t)('dataState.errorDescription'));
-		return false;
-	}
-
-	const result = await runMutation(() => client.commands.configureSubject(
-		buildSubjectConfigCommand(subject, {
-			id: subject.id,
-			name: toCanonicalCatalogText(input.name),
-			categoryId: input.categoryId,
-			color: input.color,
-		}),
-	), { successMessage: input.successMessage, versionKeys: ['subjects', 'planning'] });
+	const result = await runMutation(() => updateSubject(client, {
+		...input,
+		name: toCanonicalCatalogText(input.name),
+	}), { successMessage: input.successMessage, versionKeys: ['subjects', 'planning'] });
 	return result !== null;
 }
 

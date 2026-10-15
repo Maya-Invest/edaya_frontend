@@ -133,6 +133,7 @@ These are **fixed** for v1. Do not introduce alternate flows without updating th
 | **Activity on class timetable** | `ActivityEnrollment` (school roster) + **`ClassActivityEnrollment`** (activity ↔ class link for timetable). |
 | **Student Grades tab** | Read-only **links** to class assessment drawer (`/evaluations/{id}`). |
 | **Global Subject** | Inline create/edit in subjects catalog — **no** dedicated Subject admin route. |
+| **Subject workload** | Configuration → Subjects → existing Edit subject form includes weekly periods and session span bounds. Values belong to the grade-level subject for the selected academic year and mirror to its classes. Class progression and Chapters tabs contain no workload editor. |
 | **Student Attendance tab** | **Mode-agnostic history** — all `AttendanceRecord` rows (daily + session anchors). **Declare** uses the student's class `attendanceMode`: daily → date modal + `recordDailyAttendance`; session → hide Declare and link to `/classes/{classId}/timetable`. |
 | **`attendanceMode` on class** | Required on create; editable on class profile. Warn on mid-year mode switch if records exist for the other mode; never delete historical records. |
 
