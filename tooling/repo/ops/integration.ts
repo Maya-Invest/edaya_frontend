@@ -44,7 +44,7 @@ export async function browserSuites(): Promise<void> {
     await waitForUrl(`${env.WEBAPP_URL}/login`, 120, () => services.assertRunning())
     for (const name of ['availability', 'onboarding', 'provisioned', 'webadmin'])
       await suite(name, ['bun', 'run', `test:integration:${name}`])
-    await run(['bun', '--no-env-file', 'tooling/repo/ops/main.ts', 'maintenance', 'seed'], { cwd: process.env.BACKEND_ROOT, env })
+    await run(['bun', '--no-env-file', 'tooling/repo/ops/main.ts', 'ops', 'seed'], { cwd: process.env.BACKEND_ROOT, env })
     start(['bun', 'run', 'dev', '--host', '127.0.0.1', '--port', '14174', '--strictPort'], { PUBLIC_APP_ENV: 'development' })
     await waitForUrl('http://127.0.0.1:14174/login', 120, () => services.assertRunning())
     const demo = { WEBAPP_URL: 'http://127.0.0.1:14174', DEMO_DRY_RUN_OUT_DIR: resolve(cwd, '.demo-dry-run') }

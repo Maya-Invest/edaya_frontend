@@ -29,7 +29,7 @@ See [docs/reference/demo-accounts.md](./docs/reference/demo-accounts.md) for loc
 
 ```sh
 bun install --frozen-lockfile
-bun repo doctor
+bun repo check doctor
 ```
 
 ## Local development
@@ -60,7 +60,7 @@ Dev servers proxy authentication, school requests and API docs to `API_URL` (def
 
 ## Commands
 
-**Development and ops:** [`bun repo`](./docs/reference/repo-cli.md) — smoke tests, repo hygiene. **No Turbo in `bun repo`** — use root scripts below.
+**Development and ops:** [`bun repo`](./docs/reference/repo-cli.md) — smoke tests, repo hygiene. Repository commands coordinate checks and operations; root scripts below run workspace tasks.
 
 **Turbo quality** (root `package.json`):
 
@@ -76,15 +76,14 @@ Dev servers proxy authentication, school requests and API docs to `API_URL` (def
 | `bun run test` | Unit tests (Turbo) |
 | `bun run build` | Build all apps |
 | `bun run quality` | Lint + type-check per package |
-| `bun repo smoke-test staging` | HTTP smoke against staging SPA shells |
-| `bun run deploy:webapp:staging` | Build + deploy webapp (staging) |
-| `bun run deploy:webadmin:staging` | Build + deploy webadmin (staging) |
+| `bun repo ops smoke staging` | HTTP smoke against staging SPA shells |
+| `bun repo ci deploy staging` | Deploy qualified frontend release artifacts |
 
 ### Pre-PR verification
 
 ```sh
 bun run verify               # pre-PR gate (CI verify job)
-bun repo verify              # repo hygiene only
+bun repo check               # repo hygiene only
 ```
 
 Full command tree: **[docs/reference/repo-cli.md](./docs/reference/repo-cli.md)**. CI details: **[docs/reference/ci-setup.md](./docs/reference/ci-setup.md)**.

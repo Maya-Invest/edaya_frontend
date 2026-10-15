@@ -1,9 +1,406 @@
-Usage: bun run repo <command>
+Usage: bun repo <command>
 
-check         Repository hygiene and prepared client/brand integrity.
-test          unit | integration | tooling
-build         staging | production (no deployment)
-generate      client [staging|production] [--ref REF | --backend-root PATH] | dependencies | setup | brand | gallery | commands | reviewed-brand-baseline
-dev           Start webapp and webadmin.
-maintenance   emergency-deploy <staging|production> [--yes] [--dry-run]
-ci            verify | qualify <staging|production> | browser-suites | workflows | deploy <environment>
+Frontend repository commands. Use <command> --help for details.
+
+Commands:
+  dev                      Start webapp and webadmin using the prepared API client.
+  check                    Run all repository checks.
+  test                     Run test suites.
+  build                    Build webapp and webadmin release artifacts without deployment.
+  generate                 Prepare clients, dependencies and generated assets.
+  ops                      Run operational checks and emergency deployment.
+  ci                       Run CI verification and release operations.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo <command> --help
+
+Usage: bun repo dev
+
+Start webapp and webadmin using the prepared API client.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo dev
+
+Usage: bun repo check [command]
+
+Run all repository checks.
+
+Commands:
+  doctor                   Check configuration and repository layout.
+  commands                 Check generated command documentation.
+  client                   Check the prepared and installed API client.
+  brand                    Check brand assets, tokens and visual literals.
+  architecture             Check frontend architecture.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo check
+
+Usage: bun repo check doctor
+
+Check configuration and repository layout.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo check doctor
+
+Usage: bun repo check commands
+
+Check generated command documentation.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo check commands
+
+Usage: bun repo check client
+
+Check the prepared and installed API client.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo check client
+
+Usage: bun repo check brand
+
+Check brand assets, tokens and visual literals.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo check brand
+
+Usage: bun repo check architecture
+
+Check frontend architecture.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo check architecture
+
+Usage: bun repo test <command>
+
+Run test suites.
+
+Commands:
+  unit                     Run workspace unit tests.
+  tooling                  Run the complete tooling package test suite.
+  integration              Run supervised integration suites.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo test <command> --help
+
+Usage: bun repo test unit
+
+Run workspace unit tests.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo test unit
+
+Usage: bun repo test tooling
+
+Run the complete tooling package test suite.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo test tooling
+
+Usage: bun repo test integration
+
+Run supervised integration suites.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo test integration
+
+Usage: bun repo build <staging|production>
+
+Build webapp and webadmin release artifacts without deployment.
+
+Arguments:
+  environment              Values: staging, production.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo build staging
+
+Usage: bun repo generate <command>
+
+Prepare clients, dependencies and generated assets.
+
+Commands:
+  client                   Prepare an API client from a backend revision or checkout.
+  dependencies             Install and verify dependencies against the prepared client.
+  setup                    Generate SvelteKit setup files for both applications.
+  brand                    Generate brand CSS tokens.
+  gallery                  Build the review gallery and manifest from existing screenshots.
+  reviewed-brand-baseline  Record current assets and visual literals as the reviewed brand baseline.
+  commands                 Regenerate the full command reference and saved help.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo generate <command> --help
+
+Usage: bun repo generate client [staging|production] [options]
+
+Prepare an API client from a backend revision or checkout.
+
+Arguments:
+  environment              Values: staging, production. Default: staging.
+
+Options:
+  -h, --help               Show help for this command.
+  --ref <ref>
+      Backend revision; mutually exclusive with --backend-root. Not allowed in CI.
+  --backend-root <path>
+      Existing backend checkout; mutually exclusive with --ref.
+
+Examples:
+  bun repo generate client staging
+  bun repo generate client staging --backend-root ../edaya_backend
+
+Usage: bun repo generate dependencies
+
+Install and verify dependencies against the prepared client.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo generate dependencies
+
+Usage: bun repo generate setup
+
+Generate SvelteKit setup files for both applications.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo generate setup
+
+Usage: bun repo generate brand
+
+Generate brand CSS tokens.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo generate brand
+
+Usage: bun repo generate gallery
+
+Build the review gallery and manifest from existing screenshots.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo generate gallery
+
+Usage: bun repo generate reviewed-brand-baseline
+
+Record current assets and visual literals as the reviewed brand baseline.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo generate reviewed-brand-baseline
+
+Usage: bun repo generate commands
+
+Regenerate the full command reference and saved help.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo generate commands
+
+Usage: bun repo ops <command>
+
+Run operational checks and emergency deployment.
+
+Commands:
+  smoke                    Run HTTP smoke checks against staging frontend shells.
+  emergency-deploy         Build and deploy through the emergency qualification bypass; does not migrate or seed.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo ops <command> --help
+
+Usage: bun repo ops smoke <staging>
+
+Run HTTP smoke checks against staging frontend shells.
+
+Arguments:
+  environment              Values: staging.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo ops smoke staging
+
+Usage: bun repo ops emergency-deploy <staging|production> [options]
+
+Build and deploy through the emergency qualification bypass; does not migrate or seed.
+
+Arguments:
+  environment              Values: staging, production.
+
+Options:
+  -h, --help               Show help for this command.
+  --yes
+      Explicitly confirm the operation.
+  --dry-run
+      Preview without applying remote changes.
+
+Examples:
+  bun repo ops emergency-deploy staging --dry-run
+  bun repo ops emergency-deploy staging --yes
+
+Usage: bun repo ci <command>
+
+Run CI verification and release operations.
+
+Commands:
+  verify                   Run repository checks, workflow lint, tooling tests, quality, builds and unit tests.
+  qualify                  Verify, integrate, build and qualify a release.
+  deploy                   Deploy existing qualified release artifacts.
+  workflows                Validate workflow definitions.
+  setup                    Prepare CI tools and framework files where applicable.
+  archive-inputs           Copy lockfile inputs into release evidence.
+  browser-suites           Run browser suites against the configured services.
+  client-key               Emit the backend/client cache key.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo ci <command> --help
+
+Usage: bun repo ci verify
+
+Run repository checks, workflow lint, tooling tests, quality, builds and unit tests.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo ci verify
+
+Usage: bun repo ci qualify <staging|production>
+
+Verify, integrate, build and qualify a release.
+
+Arguments:
+  environment              Values: staging, production.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo ci qualify staging
+
+Usage: bun repo ci deploy <staging|production> [options]
+
+Deploy existing qualified release artifacts.
+
+Arguments:
+  environment              Values: staging, production.
+
+Options:
+  -h, --help               Show help for this command.
+  --dry-run
+      Preview without applying remote changes.
+
+Examples:
+  bun repo ci deploy staging
+
+Usage: bun repo ci workflows
+
+Validate workflow definitions.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo ci workflows
+
+Usage: bun repo ci setup
+
+Prepare CI tools and framework files where applicable.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo ci setup
+
+Usage: bun repo ci archive-inputs
+
+Copy lockfile inputs into release evidence.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo ci archive-inputs
+
+Usage: bun repo ci browser-suites
+
+Run browser suites against the configured services.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo ci browser-suites
+
+Usage: bun repo ci client-key <backend-path>
+
+Emit the backend/client cache key.
+
+Arguments:
+  backend-path             Required value.
+
+Options:
+  -h, --help               Show help for this command.
+
+Examples:
+  bun repo ci client-key <backend-path>

@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process'
 import { resolve } from 'node:path'
 import { createInterface } from 'node:readline'
 import { redact, root, writeJson } from './runtime'
-/** Services are process groups owned by one invocation; never stop a shared port. */
+/** Services are owned by one invocation (process groups on Unix); never stop a shared port. */
 export class Services {
   private children: ChildProcess[] = []
   private cancelled = false
@@ -29,7 +29,8 @@ export class Services {
     this.assertRunning()
     const lines: string[] = []
     this.diagnostics[name] = lines
-    const child = spawn(command[0]!, command.slice(1), { cwd, env, stdio: ['ignore', 'pipe', 'pipe'], detached: true })
+    // Detaching on Windows creates a separate console window.
+    const child = spawn(command[0]!, command.slice(1), { cwd, env, stdio: ['ignore', 'pipe', 'pipe'], detached: process.platform !== 'win32', windowsHide: true })
     this.children.push(child)
     const record = (line: string) => {
       lines.push(redact(line, env))
@@ -70,7 +71,10 @@ export class Services {
       for (const child of this.children) {
         if (child.pid) {
           try {
-            process.kill(-child.pid, signal)
+            if (process.platform === 'win32')
+              child.kill(signal)
+            else
+              process.kill(-child.pid, signal)
           }
           catch { /* already exited */
           }

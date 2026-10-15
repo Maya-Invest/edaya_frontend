@@ -51,7 +51,7 @@ export async function run(command: readonly string[], options: RunOptions = {}):
   if (!executable)
     throw new Error('Empty command')
   return new Promise((accept, reject) => {
-    const child = spawn(executable, args, { cwd: options.cwd ?? root, env: options.inheritEnv === false ? options.env : { ...process.env, ...options.env }, stdio: [options.input !== undefined ? 'pipe' : options.inheritInput ? 'inherit' : 'ignore', 'pipe', 'pipe'], detached: process.platform !== 'win32' })
+    const child = spawn(executable, args, { cwd: options.cwd ?? root, env: options.inheritEnv === false ? options.env : { ...process.env, ...options.env }, stdio: [options.input !== undefined ? 'pipe' : options.inheritInput ? 'inherit' : 'ignore', 'pipe', 'pipe'], detached: process.platform !== 'win32', windowsHide: true })
     let output = ''
     let interrupted = false
     const kill = () => {

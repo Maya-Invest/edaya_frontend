@@ -49,7 +49,7 @@ Preparation builds the backend TypeScript client and copies the package into ign
 
 The integration supervisor starts the same backend commit and local file service in temporary storage. Availability, onboarding, provisioned, webadmin and demo browser suites are mandatory, including the owned feature coverage gates. QA matrices retain JSON/CSV and browser reports; QA Excel workbook generation has been removed. Generated CSV files stay inside this repository. CI collects sanitized reports and masked scenario screenshots under `.ci-evidence/reports/`, with an HTML index, and excludes private provisioning/session fixtures. Each supervised integration run clears its prior report directories before execution. Product spreadsheet imports/exports, onboarding templates and unrelated route inventories remain.
 
-Environment secrets `CLOUDFLARE_API_TOKEN` and variable `CLOUDFLARE_ACCOUNT_ID` authorize deployment of webapp/webadmin. Deployment uploads their already built static directories without rebuilding. Emergency deployment is `bun run repo maintenance emergency-deploy staging --dry-run`, then explicit `--yes`, with evidence and no database operations.
+Environment secrets `CLOUDFLARE_API_TOKEN` and variable `CLOUDFLARE_ACCOUNT_ID` authorize deployment of webapp/webadmin. Deployment uploads their already built static directories without rebuilding. Emergency deployment is `bun repo ops emergency-deploy staging --dry-run`, then explicit `--yes`, with evidence and no database operations.
 
 ## Entrypoint migration inventory
 
