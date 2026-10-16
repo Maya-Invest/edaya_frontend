@@ -203,11 +203,11 @@ export async function runStructureChapter(journey: UiJourney): Promise<boolean> 
 	}
 
 	try {
-		await gotoApp(journey, '/configuration/grade-levels');
-		await visitCovered(journey, '/configuration/grade-levels', '/configuration/grade-levels');
+		await gotoApp(journey, '/configuration/structure/details');
+		await visitCovered(journey, '/configuration/structure/details', '/configuration/structure/details');
 		const opened = await openDialogButton(page, /ajouter un niveau|add grade level/i);
 		if (!opened) {
-			coverCompletedModal(journey, '/configuration/grade-levels', 'create', {
+			coverCompletedModal(journey, '/configuration/structure/details', 'create-level', {
 				opened: false,
 				submitted: false,
 				closed: false,
@@ -219,7 +219,7 @@ export async function runStructureChapter(journey: UiJourney): Promise<boolean> 
 		await fillGradeLevelCreateDialog(page, name);
 		const gradeClosed = await waitForDialogClosed(page);
 		if (!gradeClosed) {
-			coverCompletedModal(journey, '/configuration/grade-levels', 'create', {
+			coverCompletedModal(journey, '/configuration/structure/details', 'create-level', {
 				opened: true,
 				submitted: true,
 				closed: false,
@@ -229,32 +229,31 @@ export async function runStructureChapter(journey: UiJourney): Promise<boolean> 
 		}
 		await page.waitForTimeout(1_000);
 		await refreshAppShell(page, ctx.base);
-		await gotoApp(journey, '/configuration/grade-levels');
+		await gotoApp(journey, '/configuration/structure/details');
 		const entityId = await configEntityIdByName(page, name);
 		entities.gradeLevelId = entityId;
 		entities.level = entityId;
-		coverCompletedModal(journey, '/configuration/grade-levels', 'create', {
+		coverCompletedModal(journey, '/configuration/structure/details', 'create-level', {
 			opened: true,
 			submitted: true,
 			closed: gradeClosed,
 			postcondition: Boolean(entityId),
 		}, name);
-		coverActions(journey, 'http://localhost:5173/configuration/grade-levels', ['Liste niveaux', 'Créer niveau'], entityId ? 'OK' : 'NOT OK', name);
+		coverActions(journey, 'http://localhost:5173/configuration/structure/details', ['Liste niveaux', 'Créer niveau'], entityId ? 'OK' : 'NOT OK', name);
 		if (entityId) {
-			await gotoApp(journey, `/configuration/grade-levels/${entityId}`);
-			await visitCovered(journey, '/configuration/grade-levels/[id]', `/configuration/grade-levels/${entityId}`);
-			coverActions(journey, 'http://localhost:5173/configuration/grade-levels/[id]', ['Drawer — consultation'], 'OK');
+			await gotoApp(journey, `/configuration/structure/details?gradeLevel=${entityId}`);
+			await visitCovered(journey, '/configuration/structure/details', `/configuration/structure/details?gradeLevel=${entityId}`);
 			const cycleToken = `QA-cycle-${Date.now()}`;
 			await runModalMutation(journey, {
-				parentRoute: '/configuration/grade-levels/[id]',
-				modal: 'edit',
-				pathname: `/configuration/grade-levels/${entityId}`,
+				parentRoute: '/configuration/structure/details',
+				modal: 'edit-level',
+				pathname: `/configuration/structure/details?gradeLevel=${entityId}`,
 				command: 'configure-grade-level',
 				fill: async (current) => {
 					await fillLabeledInput(current, /cycle/i, cycleToken);
 				},
 				visibleAfter: cycleToken,
-				listPath: `/configuration/grade-levels/${entityId}`,
+				listPath: `/configuration/structure/details?gradeLevel=${entityId}`,
 			});
 		}
 		logStep(journey, { step: 'grade-level', ok: Boolean(entityId), detail: name, entityId: entityId ?? undefined });
@@ -270,12 +269,12 @@ export async function runStructureChapter(journey: UiJourney): Promise<boolean> 
 	try {
 		await refreshAppShell(page, ctx.base);
 		await waitForResolvedAcademicYearId(page);
-		await gotoApp(journey, '/configuration/classes');
-		await visitCovered(journey, '/configuration/classes', '/configuration/classes');
+		await gotoApp(journey, '/configuration/structure/classes');
+		await visitCovered(journey, '/configuration/structure/classes', '/configuration/structure/classes');
 		await dismissPageError(page);
 		const opened = await openDialogButton(page, /ajouter une classe|add class/i);
 		if (!opened) {
-			coverCompletedModal(journey, '/configuration/classes', 'create', {
+			coverCompletedModal(journey, '/configuration/structure/classes', 'create', {
 				opened: false,
 				submitted: false,
 				closed: false,
@@ -287,7 +286,7 @@ export async function runStructureChapter(journey: UiJourney): Promise<boolean> 
 		await fillClassCreateDialog(page, className);
 		const classClosed = await waitForDialogClosed(page);
 		if (!classClosed) {
-			coverCompletedModal(journey, '/configuration/classes', 'create', {
+			coverCompletedModal(journey, '/configuration/structure/classes', 'create', {
 				opened: true,
 				submitted: true,
 				closed: false,
@@ -297,34 +296,34 @@ export async function runStructureChapter(journey: UiJourney): Promise<boolean> 
 		}
 		await page.waitForTimeout(1_000);
 		await refreshAppShell(page, ctx.base);
-		await gotoApp(journey, '/configuration/classes');
+		await gotoApp(journey, '/configuration/structure/classes');
 		const entityId = await configEntityIdByName(page, className);
 		entities.configClassId = entityId;
 		entities.classId = entityId;
-		coverCompletedModal(journey, '/configuration/classes', 'create', {
+		coverCompletedModal(journey, '/configuration/structure/classes', 'create', {
 			opened: true,
 			submitted: true,
 			closed: classClosed,
 			postcondition: Boolean(entityId),
 		}, className);
-		coverActions(journey, 'http://localhost:5173/configuration/classes', ['Liste classes', 'Créer classe'], entityId ? 'OK' : 'NOT OK', className);
+		coverActions(journey, 'http://localhost:5173/configuration/structure/classes', ['Liste classes', 'Créer classe'], entityId ? 'OK' : 'NOT OK', className);
 		if (!entityId) {
 			logStep(journey, { step: 'class', ok: false, detail: `Class "${className}" not found after create` });
 			return false;
 		}
-		await gotoApp(journey, `/configuration/classes/${entityId}/profile`);
-		await visitCovered(journey, '/configuration/classes/[id]/profile', `/configuration/classes/${entityId}/profile`);
+		await gotoApp(journey, `/configuration/structure/classes/${entityId}/profile`);
+		await visitCovered(journey, '/configuration/structure/classes/[id]/profile', `/configuration/structure/classes/${entityId}/profile`);
 		await runModalMutation(journey, {
-			parentRoute: '/configuration/classes/[id]/profile',
+			parentRoute: '/configuration/structure/classes/[id]/profile',
 			modal: 'edit',
-			pathname: `/configuration/classes/${entityId}/profile`,
+			pathname: `/configuration/structure/classes/${entityId}/profile`,
 			command: 'update-class-group-configuration',
 			fill: async (current) => {
 				await fillLabeledInput(current, /capacity|capacité/i, '47');
 			},
 			visibleAfter: '47',
-			listPath: `/configuration/classes/${entityId}/profile`,
-			actionPath: 'http://localhost:5173/configuration/classes/[id]/profile',
+			listPath: `/configuration/structure/classes/${entityId}/profile`,
+			actionPath: 'http://localhost:5173/configuration/structure/classes/[id]/profile',
 			actions: ['Profil classe — éditer'],
 		});
 		const daily = await ensureDailyAttendanceMode(ctx, entityId, { force: true });

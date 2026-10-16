@@ -1,5 +1,4 @@
 import {
-	assertListContains,
 	fillLabeledInput,
 	searchAndSelectPerson,
 	selectNativeFilter,
@@ -31,35 +30,25 @@ export async function runTeachingChapter(journey: UiJourney): Promise<void> {
 	if (entities.configClassId) {
 		await visitCovered(
 			journey,
-			'/configuration/classes/[id]/assignments',
-			`/configuration/classes/${entities.configClassId}/assignments`,
+			'/configuration/structure/classes/[id]/assignments',
+			`/configuration/structure/classes/${entities.configClassId}/assignments`,
 		);
 		const responsibility = 'QA coordinator';
-		const assigned = await runModalMutation(journey, {
-			parentRoute: '/configuration/classes/[id]/assignments',
+		await runModalMutation(journey, {
+			parentRoute: '/configuration/structure/classes/[id]/assignments',
 			modal: 'form',
-			pathname: `/configuration/classes/${entities.configClassId}/assignments`,
+			pathname: `/configuration/structure/classes/${entities.configClassId}/assignments`,
 			command: 'staff-assignments/save',
 			fill: async (current) => {
 				await searchAndSelectPerson(current, 'E2E-Staff');
 				await fillLabeledInput(current, /responsabilité|responsibility/i, responsibility);
 			},
 			visibleAfter: responsibility,
-			listPath: `/configuration/classes/${entities.configClassId}/assignments`,
-			actionPath: 'http://localhost:5173/configuration/classes/[id]/assignments',
+			listPath: `/configuration/structure/classes/${entities.configClassId}/assignments`,
+			actionPath: 'http://localhost:5173/configuration/structure/classes/[id]/assignments',
 			actions: ['Affectations staff'],
 		});
-		if (entities.staffId && assigned.postcondition) {
-			await gotoApp(journey, `/school/staff/${entities.staffId}/assignments`);
-			const listed = await assertListContains(page, responsibility, true, 8_000);
-			coverMutationActions(
-				journey,
-				'http://localhost:5173/school/staff/[id]/assignments',
-				['Assignations classe/rôle'],
-				{ exercised: true, postcondition: listed || assigned.postcondition },
-				responsibility,
-			);
-		}
+
 	}
 
 	await visitCovered(journey, '/classes/[classId]/teaching', `/classes/${classId}/teaching`);

@@ -83,7 +83,7 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'school-staff-detail',
 		pathnamePattern:
-			/^\/school\/staff\/[^/]+(?:\/(?:profile|permissions|assignments))?\/?$/,
+			/^\/school\/staff\/[^/]+(?:\/(?:profile|permissions))?\/?$/,
 		modalNames: ['create', 'edit-profile', 'delete'],
 	},
 	{
@@ -241,45 +241,40 @@ export const ROUTE_MODAL_CATALOG = [
 		],
 	},
 	{
-		routeFamily: 'configuration-grade-levels-list',
-		pathnamePattern: /^\/configuration\/grade-levels\/?$/,
-		modalNames: ['create'],
-	},
-	{
-		routeFamily: 'configuration-grade-levels-detail',
-		pathnamePattern: /^\/configuration\/grade-levels\/[^/]+\/?$/,
-		modalNames: ['create', 'edit', 'delete'],
+		routeFamily: 'configuration-structure-levels',
+		pathnamePattern: /^\/configuration\/structure(?:\/|$)/,
+		modalNames: ['create-level', 'edit-level', 'delete-level', 'level-grading'],
 	},
 	{
 		routeFamily: 'configuration-classes-list',
-		pathnamePattern: /^\/configuration\/classes\/?$/,
+		pathnamePattern: /^\/configuration\/structure\/classes\/?$/,
 		modalNames: ['create'],
 	},
 	{
 		routeFamily: 'configuration-classes-detail',
 		pathnamePattern:
-			/^\/configuration\/classes\/[^/]+(?:\/(?:profile|assignments))?\/?$/,
+			/^\/configuration\/structure\/classes\/[^/]+(?:\/(?:profile|assignments))?\/?$/,
 		modalNames: ['create', 'edit'],
 	},
 	{
 		routeFamily: 'configuration-classes-assignments',
-		pathnamePattern: /^\/configuration\/classes\/[^/]+\/assignments\/?$/,
+		pathnamePattern: /^\/configuration\/structure\/classes\/[^/]+\/assignments\/?$/,
 		modalNames: ['form', 'delete-assignment'],
 	},
 	{
 		routeFamily: 'configuration-subjects-list',
-		pathnamePattern: /^\/configuration\/subjects\/?$/,
+		pathnamePattern: /^\/configuration\/structure\/subjects\/?$/,
 		modalNames: ['create-subject'],
 	},
 	{
 		routeFamily: 'configuration-subjects-detail',
 		pathnamePattern:
-			/^\/configuration\/subjects\/[^/]+(?:\/(?:progression|logbook))?\/?$/,
+			/^\/configuration\/structure\/subjects\/[^/]+(?:\/(?:progression|logbook))?\/?$/,
 		modalNames: ['create-subject', 'edit-subject', 'delete'],
 	},
 	{
 		routeFamily: 'configuration-subjects-progression',
-		pathnamePattern: /^\/configuration\/subjects\/[^/]+\/progression\/?$/,
+		pathnamePattern: /^\/configuration\/structure\/subjects\/[^/]+\/progression\/?$/,
 		modalNames: ['add-chapter', 'edit-chapter', 'delete-chapter'],
 	},
 	{

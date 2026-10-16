@@ -67,13 +67,13 @@ export const DRAWER_TAB_ROUTE_CASES: readonly DrawerTabRouteCase[] = [
 		name: 'configuration classes',
 		tabs: tabsFor('configuration classes'),
 		pathForTab: tab => configClassGroupPath(CLASS_6A, tab as 'profile' | 'assignments'),
-		drawerPathPrefix: `/configuration/classes/${CLASS_6A}`,
+		drawerPathPrefix: `/configuration/structure/classes/${CLASS_6A}`,
 	},
 	{
 		name: 'configuration subjects',
 		tabs: ['progression'],
 		pathForTab: tab => configSubjectPath(CATALOG_SUBJECT_ID, tab as 'progression' | 'logbook'),
-		drawerPathPrefix: `/configuration/subjects/${CATALOG_SUBJECT_ID}`,
+		drawerPathPrefix: `/configuration/structure/subjects/${CATALOG_SUBJECT_ID}`,
 	},
 	{
 		name: 'class teaching',

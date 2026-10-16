@@ -1,4 +1,5 @@
 import type { GrantScope } from '$lib/api/grant-scopes';
+import type { RenderedPermissionScope } from '$lib/api/permission-scope-labels';
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import { listAllEntityPages } from '$lib/api/entity-list-filters';
@@ -14,6 +15,7 @@ export interface StaffPermissionAssignmentView extends StaffPermissionAssignment
 	useDefaultScopes?: boolean;
 	warnings?: components['schemas']['StaffManualPermissionAssignment']['warnings'];
 	scopeLabel: string;
+	renderedScopes: RenderedPermissionScope[];
 	tenantWide: boolean;
 	hasMissingScope: boolean;
 }
@@ -71,19 +73,22 @@ export async function buildStaffPermissionAssignmentViews(
 	const views: StaffPermissionAssignmentView[] = [];
 	for (let offset = 0; offset < assignments.length; offset += 100) {
 		const batch = assignments.slice(offset, offset + 100);
-		const rendered = batch.some(row => row.scopes.length)
+		const scopedAssignments = batch.filter(row => row.scopes.length);
+		const rendered = scopedAssignments.length
 			? await client.authorization.scopeRender({
 					academicYearId,
-					items: batch.filter(row => row.scopes.length).map(({ permission, scopes }) => ({ permission, scopes })),
+					items: scopedAssignments.map(({ permission, scopes }) => ({ permission, scopes })),
 				})
 			: { items: [] };
+		const scopesById = new Map(scopedAssignments.map((row, index) => [row.id, rendered.items[index]?.scopes ?? []]));
 		views.push(...batch.map(assignment => ({
 			...assignment,
+			renderedScopes: scopesById.get(assignment.id) ?? [],
 			scopeLabel: assignment.scopes.some(scope => scope.kind === 'school')
 				? translate?.('roles.wholeSchool') ?? 'Whole school'
-				: rendered.items[batch.filter(row => row.scopes.length).findIndex(row => row.id === assignment.id)]?.scopes.map(scope => scope.label).join('; ') ?? '—',
+				: scopesById.get(assignment.id)?.map(scope => scope.label).join('; ') || '—',
 			tenantWide: assignment.scopes.some(scope => scope.kind === 'school'),
-			hasMissingScope: rendered.items[batch.filter(row => row.scopes.length).findIndex(row => row.id === assignment.id)]?.scopes.some(scope => scope.missing) ?? false,
+			hasMissingScope: scopesById.get(assignment.id)?.some(scope => scope.missing) ?? false,
 		})));
 	}
 	return views;

@@ -18,7 +18,7 @@
 		next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
 		const base = detailHref.schoolStaffTab(
 			staff.id,
-			segment as 'profile' | 'permissions' | 'assignments',
+			segment as 'profile' | 'permissions',
 		);
 		return `${base}${next.search}`;
 	}

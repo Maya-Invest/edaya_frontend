@@ -7,10 +7,9 @@ const DETAIL_PATH_PATTERNS = [
 	/^\/school\/(students|guardians|staff|teachers|activities|announcements|events|calendar)\/[^/]+$/,
 	/^\/classes\/[^/]+\/(students|subjects|timetable|teaching|evaluations|report-cards)\/[^/]+$/,
 	/^\/finance\/(billing|fees)\/[^/]+$/,
-	/^\/configuration\/subjects\/level\/[^/]+$/,
-	/^\/configuration\/subjects\/[^/]+$/,
-	/^\/configuration\/grade-levels\/[^/]+$/,
-	/^\/configuration\/classes\/[^/]+$/,
+	/^\/configuration\/structure\/subjects\/level\/[^/]+$/,
+	/^\/configuration\/structure\/subjects\/[^/]+$/,
+	/^\/configuration\/structure\/classes\/[^/]+$/,
 	/^\/configuration\/report-cards\/[^/]+$/,
 	/^\/configuration\/notifications\/[^/]+$/,
 ] as const;
@@ -29,9 +28,8 @@ const CLASS_REPORT_CARDS_DRAWER_PATH = /^\/classes\/[^/]+\/report-cards\/[^/]+(?
 const CLASS_ATTENDANCE_DRAWER_PATH = /^\/classes\/[^/]+\/attendance\/[^/]+(?:\/[^/]+)?$/;
 const FINANCE_BILLING_DRAWER_PATH = /^\/finance\/billing\/[^/]+(?:\/[^/]+)?$/;
 const CONFIG_REPORT_CARDS_DRAWER_PATH = /^\/configuration\/report-cards\/[^/]+(?:\/[^/]+)?$/;
-const CONFIG_GRADE_LEVELS_DRAWER_PATH = /^\/configuration\/grade-levels\/[^/]+(?:\/[^/]+)?$/;
-const CONFIG_CLASSES_DRAWER_PATH = /^\/configuration\/classes\/[^/]+(?:\/[^/]+)?$/;
-const CONFIG_SUBJECTS_DRAWER_PATH = /^\/configuration\/subjects\/[^/]+(?:\/[^/]+)?$/;
+const CONFIG_CLASSES_DRAWER_PATH = /^\/configuration\/structure\/classes\/[^/]+(?:\/[^/]+)?$/;
+const CONFIG_SUBJECTS_DRAWER_PATH = /^\/configuration\/structure\/subjects\/[^/]+(?:\/[^/]+)?$/;
 const CONFIG_NOTIFICATIONS_DRAWER_PATH = /^\/configuration\/notifications\/[^/]+$/;
 
 export function isLikelyDetailPath(pathname: string): boolean {
@@ -49,7 +47,6 @@ export function isLikelyDetailPath(pathname: string): boolean {
 		|| CLASS_ATTENDANCE_DRAWER_PATH.test(pathname)
 		|| FINANCE_BILLING_DRAWER_PATH.test(pathname)
 		|| CONFIG_REPORT_CARDS_DRAWER_PATH.test(pathname)
-		|| CONFIG_GRADE_LEVELS_DRAWER_PATH.test(pathname)
 		|| CONFIG_CLASSES_DRAWER_PATH.test(pathname)
 		|| CONFIG_SUBJECTS_DRAWER_PATH.test(pathname)
 		|| CONFIG_NOTIFICATIONS_DRAWER_PATH.test(pathname);
@@ -103,17 +100,13 @@ function normalizeListPathname(pathname: string): string {
 	if (configReportCardsMatch) {
 		return '/configuration/report-cards';
 	}
-	const configGradeLevelsMatch = pathname.match(/^\/configuration\/grade-levels\/[^/]+/);
-	if (configGradeLevelsMatch) {
-		return '/configuration/grade-levels';
-	}
-	const configClassesMatch = pathname.match(/^\/configuration\/classes\/[^/]+/);
+	const configClassesMatch = pathname.match(/^\/configuration\/structure\/classes\/[^/]+/);
 	if (configClassesMatch) {
-		return '/configuration/classes';
+		return '/configuration/structure/classes';
 	}
-	const configSubjectsMatch = pathname.match(/^\/configuration\/subjects\/[^/]+(?:\/[^/]+)?/);
+	const configSubjectsMatch = pathname.match(/^\/configuration\/structure\/subjects\/[^/]+(?:\/[^/]+)?/);
 	if (configSubjectsMatch) {
-		return '/configuration/subjects';
+		return '/configuration/structure/subjects';
 	}
 	if (CONFIG_NOTIFICATIONS_DRAWER_PATH.test(pathname)) {
 		return '/configuration/notifications';
@@ -149,7 +142,9 @@ function withAcademicScope(base: string): string {
 /** Stable key for list page data — ignores optional detail segments in the URL. */
 export function listRouteCacheKey(url: URL): string {
 	const pathname = url.pathname.replace(/\/$/, '') || '/';
-	return withAcademicScope(cacheKeyWithDemo(normalizeListPathname(pathname), url));
+	const base = cacheKeyWithDemo(normalizeListPathname(pathname), url);
+	const scope = pathname.startsWith('/configuration/structure/') ? `|level:${url.searchParams.get('gradeLevel') ?? ''}` : '';
+	return withAcademicScope(`${base}${scope}`);
 }
 
 /** Stable key for drawer tab PageQuery instances — pathname only, separate from the list cache. */

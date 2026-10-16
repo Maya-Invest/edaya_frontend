@@ -162,7 +162,8 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
   },
   'web.scenario.0157': async ctx => {
     assert(ctx.entities.configurationSubjectId,'Required catalog subject route missing');
-    await exerciseFilter(ctx,ctx.entities.gradeLevelId!,ctx.page.locator(`[data-entity-id="${ctx.entities.configurationSubjectId}"]`));
+    await ctx.page.locator(`a[href*="gradeLevel=${ctx.entities.gradeLevelId}"]`).filter({ visible: true }).first().click();
+    await ctx.page.locator(`[data-entity-id="${ctx.entities.configurationSubjectId}"]`).waitFor();
   },
   'web.scenario.0169': async ctx => {
     const entry=(await list(ctx,'disciplinary-actions',{}))[0]!;
@@ -347,7 +348,7 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
   },
   'web.scenario.0160': async ctx => {
     assert(ctx.entities.configurationSubjectId, 'Required catalog subject route ID missing');
-    await ctx.page.waitForURL(url => url.pathname.endsWith(`/configuration/subjects/${ctx.entities.configurationSubjectId}/progression`));
+    await ctx.page.waitForURL(url => url.pathname.endsWith(`/configuration/structure/subjects/${ctx.entities.configurationSubjectId}/progression`));
     await ctx.page.locator('aside[aria-label]').waitFor();
   },
   'web.scenario.0105': fixtureName('subjects','subjectId'),

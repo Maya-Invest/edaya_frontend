@@ -1,9 +1,11 @@
 <script lang="ts">
 	import type { Teacher } from '$lib/types/school';
 	import type { Snippet } from 'svelte';
+	import { page } from '$app/stores';
 	import { kindStyle, kindLabelKey } from '$lib/components/school/shared/drawer-constants';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle, X } from '$lib/icons';
+	import { activeTeacherDetailTab } from '../../lib/teacher-detail-tabs';
 	import TeacherDetailHeader from './TeacherDetailHeader.svelte';
 	import TeacherDetailTabBar from './TeacherDetailTabBar.svelte';
 
@@ -19,8 +21,10 @@
 		children: Snippet | undefined;
 	} = $props();
 
+	const fixedTabContent = $derived(activeTeacherDetailTab($page.url.pathname, teacher?.id ?? '') === 'timetable');
+
 	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape') {
+		if (event.key === 'Escape' && !event.defaultPrevented && !event.composedPath().some(node => node instanceof Element && node.matches('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]'))) {
 			onClose();
 		}
 	}
@@ -37,7 +41,7 @@
 	class="fixed right-0 top-0 z-50 flex h-full w-full flex-col overflow-hidden border-l border-border bg-card shadow-panel motion-safe:animate-slide-in-right md:w-1/2"
 	aria-label={$t(kindLabelKey.teacher)}
 >
-	<header class="flex items-center justify-between border-b border-border px-6 py-4">
+	<header class="flex shrink-0 items-center justify-between border-b border-border px-6 py-4">
 		<span
 			class="rounded-full px-3 py-1 text-[11px] font-medium uppercase tracking-wider {kindStyle.teacher}"
 		>
@@ -52,16 +56,18 @@
 		</button>
 	</header>
 
-	<div class="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-6 py-6">
+	<div data-teacher-drawer-scroll class={fixedTabContent ? 'flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-6' : 'scrollbar-thin min-h-0 flex-1 overflow-y-auto px-6 py-6'}>
 		{#if loading || !teacher}
 			<div class="flex min-h-[12rem] items-center justify-center" role="status" aria-live="polite">
 				<LoaderCircle class="h-6 w-6 animate-spin text-primary" />
 			</div>
 		{:else}
-			<div class="space-y-5">
-				<TeacherDetailHeader {teacher} onDeleted={onClose} />
-				<TeacherDetailTabBar {teacher} />
-				{@render children?.()}
+			<div class={fixedTabContent ? 'flex min-h-0 flex-1 flex-col gap-5' : 'space-y-5'}>
+				<div class="shrink-0" data-testid="teacher-detail-identity"><TeacherDetailHeader {teacher} onDeleted={onClose} /></div>
+				<div class="shrink-0"><TeacherDetailTabBar {teacher} /></div>
+				<div class={fixedTabContent ? 'min-h-0 flex-1 overflow-y-auto' : ''}>
+					{@render children?.()}
+				</div>
 			</div>
 		{/if}
 	</div>

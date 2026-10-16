@@ -52,14 +52,14 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 	});
 	logStep(journey, { step: 'configuration-school', ok: true, detail: cityToken });
 
-	await visitCovered(journey, '/configuration/subjects', '/configuration/subjects');
+	await visitCovered(journey, '/configuration/structure/subjects', '/configuration/structure/subjects');
 	const subjectName = `E2E-Subject-${Date.now()}`;
-	const subjectOpened = await clickCreateButton(page, 'Créer matière', '/configuration/subjects');
+	const subjectOpened = await clickCreateButton(page, 'Créer matière', '/configuration/structure/subjects');
 	if (subjectOpened) {
 		const dialog = page.getByRole('dialog');
 		await dialog.locator('input').first().fill(subjectName);
 		if (!(await waitForSubmitEnabled(page, 12_000))) {
-			coverCompletedModal(journey, '/configuration/subjects', 'create-subject', {
+			coverCompletedModal(journey, '/configuration/structure/subjects', 'create-subject', {
 				opened: true,
 				submitted: false,
 				closed: false,
@@ -77,18 +77,18 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 			: typeof payload?.id === 'string' ? payload.id : null;
 		await waitForPageQuery(page);
 		if (!subjectId) {
-			await gotoApp(journey, `/configuration/subjects${entities.gradeLevelId ? `?gradeLevel=${entities.gradeLevelId}` : ''}`);
+			await gotoApp(journey, `/configuration/structure/subjects${entities.gradeLevelId ? `?gradeLevel=${entities.gradeLevelId}` : ''}`);
 			const btn = page.locator('main button').filter({ hasText: subjectName }).first();
 			if (await btn.isVisible({ timeout: 8_000 }).catch(() => false)) {
 				await btn.click();
 				await page.waitForTimeout(800);
-				subjectId = idFromUrl(page, /\/configuration\/subjects\/([^/?]+)/);
+				subjectId = idFromUrl(page, /\/configuration\/structure\/subjects\/([^/?]+)/);
 			}
-			subjectId ??= await firstIdFromLinks(page, /\/configuration\/subjects\/([^/?]+)/);
+			subjectId ??= await firstIdFromLinks(page, /\/configuration\/structure\/subjects\/([^/?]+)/);
 		}
 		entities.subjectId = typeof payload?.id === 'string' ? payload.id : null;
 		entities.configurationSubjectId = subjectId;
-		coverCompletedModal(journey, '/configuration/subjects', 'create-subject', {
+		coverCompletedModal(journey, '/configuration/structure/subjects', 'create-subject', {
 			opened: true,
 			submitted: true,
 			closed,
@@ -98,23 +98,23 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 			entities.filterFixtures.subjectsByGradeLevel = {
 				[entities.gradeLevelId]: { id: subjectId, name: subjectName },
 			};
-			await gotoApp(journey, `/configuration/subjects?gradeLevel=${entities.gradeLevelId}`);
+			await gotoApp(journey, `/configuration/structure/subjects?gradeLevel=${entities.gradeLevelId}`);
 			const levelVisible = await assertListContains(page, subjectName, true, 20_000);
 			if (levelVisible) {
 				coverActions(
 					journey,
-					'http://localhost:5173/configuration/subjects',
+					'http://localhost:5173/configuration/structure/subjects',
 					['Filtre niveau'],
 					'OK',
 					subjectName,
 				);
 			}
 		}
-		coverActions(journey, 'http://localhost:5173/configuration/subjects', ['Liste matières', 'Créer matière'], closed && subjectId ? 'OK' : 'NOT OK', subjectName);
+		coverActions(journey, 'http://localhost:5173/configuration/structure/subjects', ['Liste matières', 'Créer matière'], closed && subjectId ? 'OK' : 'NOT OK', subjectName);
 		logStep(journey, { step: 'subject', ok: Boolean(subjectId), detail: subjectName, entityId: subjectId ?? undefined });
 
-		await gotoApp(journey, `/configuration/subjects${entities.gradeLevelId ? `?gradeLevel=${entities.gradeLevelId}` : ''}`);
-		const catalogOpened = await clickCreateButton(page, 'Créer matière', '/configuration/subjects');
+		await gotoApp(journey, `/configuration/structure/subjects${entities.gradeLevelId ? `?gradeLevel=${entities.gradeLevelId}` : ''}`);
+		const catalogOpened = await clickCreateButton(page, 'Créer matière', '/configuration/structure/subjects');
 		let catalogLocalized = false;
 		if (catalogOpened) {
 			const catalogDialog = page.getByRole('dialog');
@@ -123,7 +123,7 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 				await submitDialog(page);
 				await waitForDialogClosed(page);
 				await waitForPageQuery(page);
-				const listPath = `/configuration/subjects${entities.gradeLevelId ? `?gradeLevel=${entities.gradeLevelId}` : ''}`;
+				const listPath = `/configuration/structure/subjects${entities.gradeLevelId ? `?gradeLevel=${entities.gradeLevelId}` : ''}`;
 				await gotoApp(journey, listPath);
 				const enOk = await setAppLang(page, 'en');
 				const showsEnglish = enOk && await assertListContains(page, 'Mathematics', true, 12_000);
@@ -145,10 +145,10 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 		});
 
 		if (subjectId) {
-			await gotoApp(journey, `/configuration/subjects/${subjectId}/progression`);
-			await visitCovered(journey, '/configuration/subjects/[id]/progression', `/configuration/subjects/${subjectId}/progression`);
+			await gotoApp(journey, `/configuration/structure/subjects/${subjectId}/progression`);
+			await visitCovered(journey, '/configuration/structure/subjects/[id]/progression', `/configuration/structure/subjects/${subjectId}/progression`);
 			const chapterOpened = await openDialogButton(page, /add chapter|ajouter un chapitre|chapitre/i)
-				|| await clickCreateButton(page, 'Chapitres CRUD', `/configuration/subjects/${subjectId}/progression`);
+				|| await clickCreateButton(page, 'Chapitres CRUD', `/configuration/structure/subjects/${subjectId}/progression`);
 			const chapterName = `E2E-Chapter-${Date.now()}`;
 			let chapterListed = false;
 			if (chapterOpened) {
@@ -156,7 +156,7 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 				await submitDialog(page);
 				const chapterClosed = await waitForDialogClosed(page);
 				chapterListed = chapterClosed && await assertListContains(page, chapterName, true, 20_000);
-				coverCompletedModal(journey, '/configuration/subjects/[id]/progression', 'add-chapter', {
+				coverCompletedModal(journey, '/configuration/structure/subjects/[id]/progression', 'add-chapter', {
 					opened: true,
 					submitted: true,
 					closed: chapterClosed,
@@ -164,7 +164,7 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 				}, chapterName);
 			}
 			else {
-				coverCompletedModal(journey, '/configuration/subjects/[id]/progression', 'add-chapter', {
+				coverCompletedModal(journey, '/configuration/structure/subjects/[id]/progression', 'add-chapter', {
 					opened: false,
 					submitted: false,
 					closed: false,
@@ -172,23 +172,23 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 			}
 			coverMutationActions(
 				journey,
-				'http://localhost:5173/configuration/subjects/[id]/progression',
+				'http://localhost:5173/configuration/structure/subjects/[id]/progression',
 				['Chapitres CRUD'],
 				{ exercised: chapterOpened, postcondition: chapterListed },
 				chapterOpened ? chapterName : 'chapter modal not found',
 			);
-			await gotoApp(journey, `/configuration/subjects/${subjectId}/logbook`);
-			await visitCovered(journey, '/configuration/subjects/[id]/logbook', `/configuration/subjects/${subjectId}/logbook`);
-			coverActions(journey, 'http://localhost:5173/configuration/subjects/[id]/logbook', ['Redirection catalogue vers progression'], 'OK');
+			await gotoApp(journey, `/configuration/structure/subjects/${subjectId}/logbook`);
+			await visitCovered(journey, '/configuration/structure/subjects/[id]/logbook', `/configuration/structure/subjects/${subjectId}/logbook`);
+			coverActions(journey, 'http://localhost:5173/configuration/structure/subjects/[id]/logbook', ['Redirection catalogue vers progression'], 'OK');
 		}
 	}
 	else {
-		coverCompletedModal(journey, '/configuration/subjects', 'create-subject', {
+		coverCompletedModal(journey, '/configuration/structure/subjects', 'create-subject', {
 			opened: false,
 			submitted: false,
 			closed: false,
 		}, 'Create subject modal not found');
-		coverActions(journey, 'http://localhost:5173/configuration/subjects', ['Créer matière'], 'NOT OK', 'Create subject modal not found');
+		coverActions(journey, 'http://localhost:5173/configuration/structure/subjects', ['Créer matière'], 'NOT OK', 'Create subject modal not found');
 		logStep(journey, { step: 'subject', ok: false, detail: 'Create subject modal not found' });
 	}
 

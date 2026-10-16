@@ -97,7 +97,7 @@
 </script>
 
 <div class="space-y-3">
-	<div class="flex items-center justify-between gap-2">
+	<div class="flex flex-wrap items-center justify-between gap-2">
 		<div>
 			<h4 class="text-sm font-semibold">{$t('teacher.assignmentsTitle')}</h4>
 			<p class="text-xs text-muted-foreground">{$t('teacher.assignmentsHint')}</p>
@@ -112,51 +112,56 @@
 		</PermissionGate>
 	</div>
 
-	{#if rows.length === 0}
-		<p class="text-sm text-muted-foreground">{$t('teacher.noAssignments')}</p>
-	{:else}
-		<ul class="divide-y divide-border/60 overflow-hidden rounded-xl border border-border bg-card">
-			{#each rows as row (row.id)}
-				<li class="flex items-start justify-between gap-3 px-4 py-3">
-					<div class="min-w-0 flex-1">
-						<div class="text-sm font-medium">
-							{$t(`teacher.assignmentKind.${row.kind}`)}
-						</div>
-						<div class="mt-1 text-xs text-muted-foreground">{targetLabel(row)}</div>
-						{#if classIdFor(row)}
-							<a
-								href={detailHref.classPlanning(classIdFor(row) ?? '')}
-								class="mt-1 inline-block text-xs font-medium text-primary hover:underline"
-							>
-								{$t('teacher.openClassTimetable')}
-							</a>
-						{/if}
-					</div>
-					<PermissionGate permission="STAFF_UPDATE" mode="disable">
-						{#snippet children({ disabled })}
-							<RowActionMenu>
-								<RowActionMenuItem
-									{disabled}
-									onclick={() => modals.open('form', { target: row.id })}
-								>
-									<Pencil class="h-4 w-4 text-muted-foreground" />
-									{$t('common.edit')}
-								</RowActionMenuItem>
-								<RowActionMenuItem
-									{disabled}
-									destructive
-									onclick={() => modals.open('delete-assignment', { target: row.id })}
-								>
-									<Trash2 class="h-4 w-4" />
-									{$t('common.delete')}
-								</RowActionMenuItem>
-							</RowActionMenu>
-						{/snippet}
-					</PermissionGate>
-				</li>
-			{/each}
-		</ul>
-	{/if}
+	{#each ['homeroom', 'subject'] as kind (kind)}
+		{@const sectionRows = rows.filter(row => row.kind === kind)}
+		<section class="space-y-2" aria-labelledby={`teacher-assignments-${kind}`} data-testid={`teacher-assignments-${kind}`}>
+			<h4 id={`teacher-assignments-${kind}`} class="text-sm font-semibold">{$t(`teacher.assignmentSection.${kind}`)}</h4>
+			{#if sectionRows.length === 0}
+				<p class="text-sm text-muted-foreground">{$t(`teacher.assignmentSectionEmpty.${kind}`)}</p>
+			{:else}
+				<ul class="divide-y divide-border/60 overflow-hidden rounded-xl border border-border bg-card">
+					{#each sectionRows as row (row.id)}
+						<li class="flex items-start justify-between gap-3 px-4 py-3">
+							<div class="min-w-0 flex-1">
+								<div class="text-sm font-medium">
+									{targetLabel(row)}
+								</div>
+								{#if classIdFor(row)}
+									<a
+										href={detailHref.classPlanning(classIdFor(row) ?? '')}
+										class="mt-1 inline-block text-xs font-medium text-primary hover:underline"
+									>
+										{$t('teacher.openClassTimetable')}
+									</a>
+								{/if}
+							</div>
+							<PermissionGate permission="STAFF_UPDATE" mode="disable">
+								{#snippet children({ disabled })}
+									<RowActionMenu>
+										<RowActionMenuItem
+											{disabled}
+											onclick={() => modals.open('form', { target: row.id })}
+										>
+											<Pencil class="h-4 w-4 text-muted-foreground" />
+											{$t('common.edit')}
+										</RowActionMenuItem>
+										<RowActionMenuItem
+											{disabled}
+											destructive
+											onclick={() => modals.open('delete-assignment', { target: row.id })}
+										>
+											<Trash2 class="h-4 w-4" />
+											{$t('common.delete')}
+										</RowActionMenuItem>
+									</RowActionMenu>
+								{/snippet}
+							</PermissionGate>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</section>
+	{/each}
 </div>
 
 <TeacherAssignmentFormModal bind:open={formOpen.open} {teacher} assignment={editingAssignment} />

@@ -225,7 +225,7 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 	}
 
 	await visit(ctx, `${base}${configClassGroupPath(CLASS_6A, 'profile')}`, 'D11', '11.1 Class config drawer', {
-		pathPrefix: `/configuration/classes/${CLASS_6A}`,
+		pathPrefix: `/configuration/structure/classes/${CLASS_6A}`,
 		selector: 'main',
 	});
 	await visit(ctx, `${base}/configuration/grade-levels`, 'D11', '11.2 Grade levels', { selector: 'main' });

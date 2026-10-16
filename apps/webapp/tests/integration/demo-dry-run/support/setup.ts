@@ -37,7 +37,7 @@ export async function ensureDailyAttendanceMode(
 	const { page, base } = ctx;
 
 	await visit(ctx, `${base}${configClassGroupPath(classId, 'profile')}`, 'setup', `Open ${classId} config`, {
-		pathPrefix: `/configuration/classes/${classId}`,
+		pathPrefix: `/configuration/structure/classes/${classId}`,
 		selector: 'aside#app-sidebar',
 	});
 
@@ -59,7 +59,7 @@ export async function ensureDailyAttendanceMode(
 
 	const modalOpened = await openUrlModal(
 		page,
-		`/configuration/classes/${classId}/profile`,
+		`/configuration/structure/classes/${classId}/profile`,
 		'edit',
 		{ base, timeout: 12_000 },
 	);

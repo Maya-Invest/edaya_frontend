@@ -1,5 +1,47 @@
 [
   {
+    "id": "web.configuration.grade-scales.navigation",
+    "feature": "web.configuration",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/grade-scales",
+    "action": "Sidebar — lien config.gradeScales accessible"
+  },
+  {
+    "id": "web.configuration.grade-scales.redirect",
+    "feature": "web.configuration",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other/grade-scales",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.messaging.1",
+    "feature": "web.messaging",
+    "module": "École",
+    "endpoint": "/school/messages",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.messaging.2",
+    "feature": "web.messaging",
+    "module": "École",
+    "endpoint": "/school/messages/[id]",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.messaging.3",
+    "feature": "web.messaging",
+    "module": "École",
+    "endpoint": "/school/messages/[id]?modal=reply",
+    "action": "Modal deep-link ?modal=reply"
+  },
+  {
+    "id": "web.messaging.4",
+    "feature": "web.messaging",
+    "module": "École",
+    "endpoint": "/school/messages",
+    "action": "Sidebar — lien messages.title accessible"
+  },
+  {
     "id": "web.scenario.0001",
     "feature": "web.app",
     "module": "Shell",
@@ -341,13 +383,6 @@
     "module": "École",
     "endpoint": "http://localhost:5173/school/staff/[id]/permissions",
     "action": "Assigner permissions"
-  },
-  {
-    "id": "web.scenario.0050",
-    "feature": "web.school.staff.id.assignments",
-    "module": "École",
-    "endpoint": "http://localhost:5173/school/staff/[id]/assignments",
-    "action": "Assignations classe/rôle"
   },
   {
     "id": "web.scenario.0051",
@@ -980,13 +1015,6 @@
     "action": "Rapprochement financier"
   },
   {
-    "id": "web.scenario.0141",
-    "feature": "web.configuration",
-    "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration",
-    "action": "Redirect vers /configuration/subjects"
-  },
-  {
     "id": "web.scenario.0142",
     "feature": "web.configuration.school",
     "module": "Configuration",
@@ -1039,92 +1067,92 @@
     "id": "web.scenario.0149",
     "feature": "web.configuration.grade.levels",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/grade-levels",
+    "endpoint": "http://localhost:5173/configuration/structure/details",
     "action": "Liste niveaux"
   },
   {
     "id": "web.scenario.0150",
     "feature": "web.configuration.grade.levels",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/grade-levels",
+    "endpoint": "http://localhost:5173/configuration/structure/details",
     "action": "Créer niveau"
   },
   {
     "id": "web.scenario.0151",
     "feature": "web.configuration.grade.levels.id",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/grade-levels/[id]",
-    "action": "Drawer — éditer / supprimer"
+    "endpoint": "http://localhost:5173/configuration/structure/details?gradeLevel=[id]",
+    "action": "Niveau sélectionné — éditer / supprimer"
   },
   {
     "id": "web.scenario.0152",
     "feature": "web.configuration.classes",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/classes",
+    "endpoint": "http://localhost:5173/configuration/structure/classes",
     "action": "Liste classes"
   },
   {
     "id": "web.scenario.0153",
     "feature": "web.configuration.classes",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/classes",
+    "endpoint": "http://localhost:5173/configuration/structure/classes",
     "action": "Créer classe"
   },
   {
     "id": "web.scenario.0154",
     "feature": "web.configuration.classes.id.profile",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/classes/[id]/profile",
+    "endpoint": "http://localhost:5173/configuration/structure/classes/[id]/profile",
     "action": "Profil classe — éditer"
   },
   {
     "id": "web.scenario.0155",
     "feature": "web.configuration.classes.id.assignments",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/classes/[id]/assignments",
+    "endpoint": "http://localhost:5173/configuration/structure/classes/[id]/assignments",
     "action": "Affectations staff"
   },
   {
     "id": "web.scenario.0156",
     "feature": "web.configuration.subjects",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/subjects",
+    "endpoint": "http://localhost:5173/configuration/structure/subjects",
     "action": "Liste matières"
   },
   {
     "id": "web.scenario.0157",
     "feature": "web.configuration.subjects",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/subjects",
+    "endpoint": "http://localhost:5173/configuration/structure/subjects",
     "action": "Filtre niveau"
   },
   {
     "id": "web.scenario.0158",
     "feature": "web.configuration.subjects",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/subjects",
+    "endpoint": "http://localhost:5173/configuration/structure/subjects",
     "action": "Créer matière"
   },
   {
     "id": "web.scenario.0159",
     "feature": "web.configuration.subjects.id.progression",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/subjects/[id]/progression",
+    "endpoint": "http://localhost:5173/configuration/structure/subjects/[id]/progression",
     "action": "Chapitres CRUD"
   },
   {
     "id": "web.scenario.0160",
     "feature": "web.configuration.subjects.id.logbook",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/subjects/[id]/logbook",
+    "endpoint": "http://localhost:5173/configuration/structure/subjects/[id]/logbook",
     "action": "Redirection catalogue vers progression"
   },
   {
     "id": "web.scenario.0161",
     "feature": "web.configuration.subjects.level.level",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/subjects/level/[level]",
-    "action": "Redirect vers /configuration/subjects?gradeLevel=[id]"
+    "endpoint": "http://localhost:5173/configuration/structure/subjects/level/[level]",
+    "action": "Redirect vers /configuration/structure/subjects?gradeLevel=[id]"
   },
   {
     "id": "web.scenario.0162",
@@ -1390,21 +1418,21 @@
     "id": "web.scenario.0199",
     "feature": "web.configuration.classes",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/classes",
+    "endpoint": "http://localhost:5173/configuration/structure/classes",
     "action": "Navigation directe — contenu visible"
   },
   {
     "id": "web.scenario.0200",
     "feature": "web.configuration.classes.id.assignments",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/classes/[id]/assignments",
+    "endpoint": "http://localhost:5173/configuration/structure/classes/[id]/assignments",
     "action": "Navigation directe — contenu visible"
   },
   {
     "id": "web.scenario.0201",
     "feature": "web.configuration.classes.id.profile",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/classes/[id]/profile",
+    "endpoint": "http://localhost:5173/configuration/structure/classes/[id]/profile",
     "action": "Navigation directe — contenu visible"
   },
   {
@@ -1450,24 +1478,17 @@
     "action": "Navigation directe — contenu visible"
   },
   {
-    "id": "web.scenario.0208",
-    "feature": "web.configuration.subjects",
-    "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/subjects",
-    "action": "Navigation directe — contenu visible"
-  },
-  {
     "id": "web.scenario.0209",
     "feature": "web.configuration.subjects.id.logbook",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/subjects/[id]/logbook",
+    "endpoint": "http://localhost:5173/configuration/structure/subjects/[id]/logbook",
     "action": "Navigation directe — contenu visible"
   },
   {
     "id": "web.scenario.0210",
     "feature": "web.configuration.subjects.id.progression",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/subjects/[id]/progression",
+    "endpoint": "http://localhost:5173/configuration/structure/subjects/[id]/progression",
     "action": "Navigation directe — contenu visible"
   },
   {
@@ -1495,14 +1516,7 @@
     "id": "web.scenario.0214",
     "feature": "web.configuration.grade.levels",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/grade-levels",
-    "action": "Navigation directe — contenu visible"
-  },
-  {
-    "id": "web.scenario.0215",
-    "feature": "web.configuration.grade.levels.id",
-    "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/grade-levels/[id]",
+    "endpoint": "http://localhost:5173/configuration/structure/subjects",
     "action": "Navigation directe — contenu visible"
   },
   {
@@ -1961,13 +1975,6 @@
     "action": "Navigation directe — contenu visible"
   },
   {
-    "id": "web.scenario.0281",
-    "feature": "web.school.staff.id.assignments",
-    "module": "École",
-    "endpoint": "http://localhost:5173/school/staff/[id]/assignments",
-    "action": "Navigation directe — contenu visible"
-  },
-  {
     "id": "web.scenario.0282",
     "feature": "web.school.staff.id.permissions",
     "module": "École",
@@ -2034,14 +2041,14 @@
     "id": "web.scenario.0291",
     "feature": "web.configuration.classes.id",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/classes/[id]",
+    "endpoint": "http://localhost:5173/configuration/structure/classes/[id]",
     "action": "Redirect — cible attendue"
   },
   {
     "id": "web.scenario.0292",
     "feature": "web.configuration.subjects.id",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/subjects/[id]",
+    "endpoint": "http://localhost:5173/configuration/structure/subjects/[id]",
     "action": "Redirect — cible attendue"
   },
   {
@@ -2104,7 +2111,7 @@
     "id": "web.scenario.0301",
     "feature": "web.configuration.subjects.level.level",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/subjects/level/[level]",
+    "endpoint": "http://localhost:5173/configuration/structure/subjects/level/[level]",
     "action": "Redirect — cible attendue"
   },
   {
@@ -2433,49 +2440,49 @@
     "id": "web.scenario.0348",
     "feature": "web.configuration.grade.levels",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/grade-levels?modal=create",
-    "action": "Modal deep-link ?modal=create"
+    "endpoint": "http://localhost:5173/configuration/structure/details?modal=create-level",
+    "action": "Modal deep-link ?modal=create-level"
   },
   {
     "id": "web.scenario.0349",
     "feature": "web.configuration.grade.levels.id",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/grade-levels/[id]?modal=edit",
-    "action": "Modal deep-link ?modal=edit"
+    "endpoint": "/configuration/structure/details?modal=edit-level",
+    "action": "Modal deep-link ?modal=edit-level"
   },
   {
     "id": "web.scenario.0350",
     "feature": "web.configuration.classes",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/classes?modal=create",
+    "endpoint": "http://localhost:5173/configuration/structure/classes?modal=create",
     "action": "Modal deep-link ?modal=create"
   },
   {
     "id": "web.scenario.0351",
     "feature": "web.configuration.classes.id.profile",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/classes/[id]/profile?modal=edit",
+    "endpoint": "http://localhost:5173/configuration/structure/classes/[id]/profile?modal=edit",
     "action": "Modal deep-link ?modal=edit"
   },
   {
     "id": "web.scenario.0352",
     "feature": "web.configuration.classes.id.assignments",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/classes/[id]/assignments?modal=form",
+    "endpoint": "http://localhost:5173/configuration/structure/classes/[id]/assignments?modal=form",
     "action": "Modal deep-link ?modal=form"
   },
   {
     "id": "web.scenario.0353",
     "feature": "web.configuration.subjects",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/subjects?modal=create-subject",
+    "endpoint": "http://localhost:5173/configuration/structure/subjects?modal=create-subject",
     "action": "Modal deep-link ?modal=create-subject"
   },
   {
     "id": "web.scenario.0354",
     "feature": "web.configuration.subjects.id.progression",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/subjects/[id]/progression?modal=add-chapter",
+    "endpoint": "http://localhost:5173/configuration/structure/subjects/[id]/progression?modal=add-chapter",
     "action": "Modal deep-link ?modal=add-chapter"
   },
   {
@@ -2710,27 +2717,6 @@
     "action": "Sidebar — lien config.periodGrid accessible"
   },
   {
-    "id": "web.scenario.0388",
-    "feature": "web.configuration.grade.levels",
-    "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/grade-levels",
-    "action": "Sidebar — lien config.gradeLevels accessible"
-  },
-  {
-    "id": "web.scenario.0389",
-    "feature": "web.configuration.classes",
-    "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/classes",
-    "action": "Sidebar — lien config.classGroups accessible"
-  },
-  {
-    "id": "web.scenario.0390",
-    "feature": "web.configuration.subjects",
-    "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/subjects",
-    "action": "Sidebar — lien config.subjects accessible"
-  },
-  {
     "id": "web.scenario.0391",
     "feature": "web.configuration.report.cards",
     "module": "Configuration",
@@ -2801,6 +2787,62 @@
     "action": "Sidebar — lien config.tools accessible"
   },
   {
+    "id": "web.scenario.0401",
+    "feature": "web.app",
+    "module": "Configuration",
+    "endpoint": "/configuration/structure",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0402",
+    "feature": "web.app",
+    "module": "Configuration",
+    "endpoint": "/configuration/subjects",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0403",
+    "feature": "web.app",
+    "module": "Configuration",
+    "endpoint": "/configuration/classes",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0404",
+    "feature": "web.app",
+    "module": "Configuration",
+    "endpoint": "/configuration/grade-levels",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.scenario.0405",
+    "feature": "web.app",
+    "module": "Configuration",
+    "endpoint": "/configuration/structure/details?modal=level-grading",
+    "action": "Modal deep-link ?modal=level-grading"
+  },
+  {
+    "id": "web.scenario.0406",
+    "feature": "web.app",
+    "module": "Configuration",
+    "endpoint": "/configuration/structure",
+    "action": "Sidebar — lien config.structure accessible"
+  },
+  {
+    "id": "web.scenario.0407",
+    "feature": "web.app",
+    "module": "Configuration",
+    "endpoint": "/configuration",
+    "action": "Redirect vers /configuration/structure/details"
+  },
+  {
+    "id": "web.scenario.0408",
+    "feature": "web.app",
+    "module": "Configuration",
+    "endpoint": "/configuration/structure/details",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
     "id": "web.school.corrections.legacy-route",
     "feature": "web.school.corrections",
     "module": "École",
@@ -2808,45 +2850,10 @@
     "action": "Redirect — cible attendue"
   },
   {
-    "id": "web.messaging.1",
-    "feature": "web.messaging",
+    "id": "web.scenario.0050",
+    "feature": "web.school.staff.id.assignments",
     "module": "École",
-    "endpoint": "/school/messages",
-    "action": "Navigation directe — contenu visible"
-  },
-  {
-    "id": "web.messaging.2",
-    "feature": "web.messaging",
-    "module": "École",
-    "endpoint": "/school/messages/[id]",
-    "action": "Navigation directe — contenu visible"
-  },
-  {
-    "id": "web.messaging.3",
-    "feature": "web.messaging",
-    "module": "École",
-    "endpoint": "/school/messages/[id]?modal=reply",
-    "action": "Modal deep-link ?modal=reply"
-  },
-  {
-    "id": "web.messaging.4",
-    "feature": "web.messaging",
-    "module": "École",
-    "endpoint": "/school/messages",
-    "action": "Sidebar — lien messages.title accessible"
-  },
-  {
-    "id": "web.configuration.grade-scales.redirect",
-    "feature": "web.configuration",
-    "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/other/grade-scales",
+    "endpoint": "http://localhost:5173/school/staff/[id]/assignments",
     "action": "Redirect — cible attendue"
-  },
-  {
-    "id": "web.configuration.grade-scales.navigation",
-    "feature": "web.configuration",
-    "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/grade-scales",
-    "action": "Sidebar — lien config.gradeScales accessible"
   }
 ]

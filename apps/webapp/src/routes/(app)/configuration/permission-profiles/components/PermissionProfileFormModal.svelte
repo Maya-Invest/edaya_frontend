@@ -13,6 +13,7 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
 	import { PermissionImpactPreviewState } from '$lib/school/permission-impact-preview-state.svelte';
+	import PermissionScopeTypes from '$lib/smart-components/scope-builder/PermissionScopeTypes.svelte';
 	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getPermissionProfilesPageState } from '../permission-profiles-page.svelte';
@@ -150,7 +151,10 @@
 									}
 								}}
 							/>
-							<span>{formatPermissionLabel(entry.permission, $t)}</span>
+							<span class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+								<span>{formatPermissionLabel(entry.permission, $t)}</span>
+								<PermissionScopeTypes {entry} />
+							</span>
 						</label>
 					{/each}
 				</div>

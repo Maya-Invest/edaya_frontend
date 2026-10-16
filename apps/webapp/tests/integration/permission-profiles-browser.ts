@@ -12,6 +12,9 @@ assert(['localhost', '127.0.0.1'].includes(new URL(process.env.API_URL ?? 'http:
 const schoolId = 'sch-edaya-ci-cocody';
 const staffId = 'ci-st4';
 const profileId = `permission-browser-${crypto.randomUUID()}`;
+const secondProfileId = `${profileId}-second`;
+let secondProfileSaved = false;
+let secondBindingSaved = false;
 let manualId = '';
 let createdStaffId = '';
 let createdBinding = false;
@@ -21,6 +24,7 @@ const page = await browser.newPage();
 page.setDefaultTimeout(30_000);
 const errors: string[] = [];
 page.on('pageerror', error => errors.push(error.message));
+page.on('response', response => { if (response.status() >= 400) console.log('Permission UI request failed:', response.status(), new URL(response.url()).pathname); });
 let year = '';
 let originalDefaults: unknown[] = [];
 let bindingSaved = false;
@@ -124,6 +128,7 @@ try {
   const defaults = await save('configure-staff-permission-scope-defaults');
   defaultsChanged = true;
   assert.deepEqual(defaults.scopes.map((scope: unknown) => JSON.stringify(scope)).sort(), [JSON.stringify({ kind: 'school' }), JSON.stringify({ kind: 'all', grain: 'class_group' })].sort());
+  assert.equal(await page.getByTestId('staff-default-scopes').getByTestId('scope-tag').count(), 2, 'Default selections must be visible after saving');
 
   await open('apply-profile');
   await page.locator('#apply-profile-select').selectOption(profileId);
@@ -138,18 +143,81 @@ try {
   assert.deepEqual(binding.customScopes, []);
   assert.equal(binding.useDefaultScopes, true);
 
+  // Two independent disclosures; duplicate grants yield one tag per typed scope.
+  await request('commands/configure-permission-profile', { id: secondProfileId, schoolId, name: secondProfileId, permissions: ['PAYMENT_READ', 'GRADE_INPUT'] });
+  secondProfileSaved = true;
+  await request('commands/apply-staff-permission-profile', { staffId, profileId: secondProfileId, academicYearId: year, customScopes: [], useDefaultScopes: true });
+  secondBindingSaved = true;
+  await page.goto(`${base}/school/staff/${staffId}/assignments?q=permission`);
+  await page.waitForURL(url => url.pathname.endsWith('/permissions') && url.searchParams.get('q') === 'permission');
+  const card = page.locator(`[data-testid="staff-permission-profile"][data-profile-id="${profileId}"]`);
+  const second = page.locator(`[data-testid="staff-permission-profile"][data-profile-id="${secondProfileId}"]`);
+  const disclosure = card.locator('button[aria-expanded]');
+  await disclosure.waitFor();
+  assert.equal(await page.getByTestId('drawer-tab-bar').getByRole('link').count(), 2);
+  assert.equal(await page.getByRole('link', { name: /manage permissions|gérer les permissions/i }).count(), 0);
+  assert.equal(await disclosure.getAttribute('aria-expanded'), 'false');
+  assert.equal(await card.getByTestId('scope-tag').count(), 2);
+  assert.equal(await second.getByTestId('scope-tag').count(), 0, 'Fully shadowed profiles have no effective scopes');
+  await disclosure.focus();
+  await page.keyboard.press('Space');
+  assert.equal(await disclosure.getAttribute('aria-expanded'), 'true');
+  assert.equal(await card.locator('[data-permission="PAYMENT_READ"] [data-scope-type="school"]').count(), 1);
+  assert.equal(await card.locator('[data-permission="GRADE_INPUT"] [data-scope-type="class_group"]').count(), 1);
+  assert.equal(await second.locator('button[aria-expanded]').getAttribute('aria-expanded'), 'false');
+  await second.locator('button[aria-expanded]').click();
+  assert.equal(await disclosure.getAttribute('aria-expanded'), 'true', 'Opening another profile must preserve expansion');
+  await uiCommand(page, '/commands/reorder-staff-permission-profiles', () => second.getByRole('button', { name: /move.*up|monter/i }).click());
+  await second.getByTestId('scope-tag').first().waitFor();
+  assert.equal(await card.getByTestId('scope-tag').count(), 0);
+  assert.equal(await disclosure.getAttribute('aria-expanded'), 'true', 'Reordering preserves expansion by binding');
+  await uiCommand(page, '/commands/reorder-staff-permission-profiles', () => second.getByRole('button', { name: /move.*down|descendre/i }).click());
+  await card.getByTestId('scope-tag').first().waitFor();
+  await card.getByRole('button', { name: /^(edit|modifier)$/i }).click();
+  await page.getByRole('dialog').waitFor();
+  await page.keyboard.press('Escape');
+  await page.getByRole('dialog').waitFor({ state: 'hidden' });
+  assert.equal(await disclosure.getAttribute('aria-expanded'), 'true', 'Editing does not toggle disclosure');
+  await disclosure.click();
+  await second.locator('button[aria-expanded]').click();
+  await page.screenshot({ path: '/private/tmp/staff-permissions-desktop.png' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await disclosure.click();
+  await page.screenshot({ path: '/private/tmp/staff-permissions-mobile.png' });
+  assert(await card.evaluate(element => element.scrollWidth <= element.clientWidth), 'Profile content must wrap on mobile');
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.evaluate(() => localStorage.setItem('lang', 'en'));
+  await page.reload();
+  await card.getByTestId('scope-tag').first().waitFor();
+  assert.deepEqual((await card.getByTestId('scope-tag').allTextContents()).map(text => text.trim()).sort(), ['All classes', 'Whole school']);
+  await disclosure.click();
+  assert.equal((await card.locator('[data-permission="GRADE_INPUT"] [data-scope-type]').textContent())?.trim(), 'Class group');
+  await page.screenshot({ path: '/private/tmp/staff-permissions-desktop-en.png' });
+  await page.evaluate(() => localStorage.setItem('lang', 'fr'));
+  await page.reload();
+  await card.getByTestId('scope-tag').first().waitFor();
+  await request('commands/remove-staff-permission-profile', { staffId, profileId: secondProfileId, academicYearId: year });
+  secondBindingSaved = false;
+
+
   await open('default-scopes');
   await page.getByRole('dialog').locator('details').first().getByRole('checkbox').uncheck();
   const removedPreview = await review('configure-staff-permission-scope-defaults');
   assert(removedPreview.resolution.changes.some((row: any) => row.permission === 'GRADE_INPUT' && row.change === 'removed'));
   await save('configure-staff-permission-scope-defaults');
   await page.reload();
-  await page.locator('[data-testid="permission-scope-warning"][data-reason="missing_scope"]').first().waitFor();
+  await card.getByTestId('profile-scope-warning-summary').waitFor();
+  assert.equal(await disclosure.getAttribute('aria-expanded'), 'false');
+  assert.equal(await page.getByTestId('staff-default-scopes').getByTestId('scope-tag').count(), 1);
+  await disclosure.click();
+  await card.locator('[data-testid="permission-scope-warning"][data-reason="missing_scope"]').first().waitFor();
   const grants = await request('entities/staff-permission-assignments/list', { staffId, academicYearId: year, sourceProfileId: profileId });
   assert.deepEqual(grants.map((row: any) => row.permission), ['PAYMENT_READ']);
 
   await open('add-permission');
   await page.locator('#permission-select').selectOption('GRADE_READ');
+  assert.match(await page.locator('#permission-select option[value="GRADE_READ"]').textContent() ?? '', /Classe|Class group/);
+  assert.equal(await page.getByRole('dialog').locator('[data-permission="GRADE_READ"] [data-scope-type="class_group"]').count(), 1);
   assert(await page.getByRole('dialog').getByRole('checkbox').first().isChecked());
   await staleReview('assign-staff-permission', () => page.locator('#permission-select').selectOption('GRADE_INPUT'));
   await page.locator('#permission-select').selectOption('GRADE_READ');
@@ -168,6 +236,11 @@ try {
 
   await page.goto(`${base}/configuration/permission-profiles?modal=edit&modalTarget=${profileId}`);
   await page.getByRole('dialog').waitFor();
+  const profileEditor = page.getByRole('dialog');
+  assert.equal(await profileEditor.locator('[data-permission="PAYMENT_READ"] [data-scope-type="school"]').count(), 1);
+  assert.equal(await profileEditor.locator('[data-permission="GRADE_INPUT"] [data-scope-type="class_group"]').count(), 1);
+  assert.deepEqual(await profileEditor.locator('[data-permission="ATTENDANCE_VALIDATE"] [data-scope-type]').evaluateAll(elements => elements.map(element => element.getAttribute('data-scope-type'))), ['school', 'class_group']);
+  await page.screenshot({ path: '/private/tmp/permission-profile-scope-types.png' });
   await page.getByRole('dialog').getByRole('checkbox', { checked: true }).first().uncheck();
   await staleReview('configure-permission-profile', () => page.getByRole('dialog').locator('input').first().fill(`${profileId}-updated`));
   const profilePreview = await review('configure-permission-profile');
@@ -176,8 +249,17 @@ try {
   await page.reload();
   assert.equal((await request(`entities/staff-permission-profiles/${profileId}`, {}, 'GET')).permissions.length, 1);
   assert.deepEqual(errors, []);
-  console.log('Permission browser checks passed: URL-backed defaults, explicit selections, preview isolation, profile apply/edit, access withdrawal and restoration, and persisted warnings.');
+  console.log('Permission browser checks passed: collapsed disclosures, keyboard controls, scope tags, reorder persistence, legacy redirect, FR/EN and mobile layouts, defaults, previews, profile and manual mutations, and warnings.');
+} catch (error) {
+  console.log('Permission UI failure:', error);
+  console.log('Permission UI failure URL:', page.url());
+  console.log('Permission UI errors:', errors);
+  console.log('Permission UI dialog:', await page.getByRole('dialog').allTextContents().catch(() => []));
+  await page.screenshot({ path: '/private/tmp/staff-permissions-failure.png', timeout: 5000 }).catch(() => {});
+  throw error;
 } finally {
+  if (secondBindingSaved) await request('commands/remove-staff-permission-profile', { staffId, profileId: secondProfileId, academicYearId: year });
+  if (secondProfileSaved) await request('entities/staff-permission-profiles/delete', { id: secondProfileId });
   if (createdBinding) await request('commands/remove-staff-permission-profile', { staffId: createdStaffId, profileId, academicYearId: year });
   if (createdStaffId) await request('entities/staff-members/delete', { id: createdStaffId });
   if (manualSaved) await request('commands/remove-staff-permission', { assignmentId: manualId });

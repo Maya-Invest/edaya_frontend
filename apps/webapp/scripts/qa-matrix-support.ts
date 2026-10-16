@@ -216,6 +216,8 @@ export async function configEntityIdByName(page: Page, name: string): Promise<st
 	const link = page.locator('main a[href]').filter({ hasText: name }).first();
 	if (await link.isVisible().catch(() => false)) {
 		const href = await link.getAttribute('href');
+		const levelId = href ? new URL(href, page.url()).searchParams.get('gradeLevel') : null;
+		if (levelId) return levelId;
 		const match = href?.match(/\/configuration\/report-cards\/([^/?]+)/)
 			?? href?.match(/\/([^/?]+)\/?$/);
 		if (match?.[1] && match[1] !== 'report-cards') {
@@ -338,13 +340,13 @@ export function resolveEndpoint(endpoint: string, base: string, entities: Matrix
 	if (path.includes('/school/events/')) {
 		map['[id]'] = entities.eventId;
 	}
-	if (path.includes('/configuration/classes/')) {
+	if (path.includes('/configuration/structure/classes/')) {
 		map['[id]'] = entities.configClassId;
 	}
-	if (path.includes('/configuration/grade-levels/')) {
+	if (path.includes('/configuration/grade-levels/') || path.includes('gradeLevel=[id]')) {
 		map['[id]'] = entities.gradeLevelId;
 	}
-	if (path.includes('/configuration/subjects/') && !path.includes('/level/')) {
+	if (path.includes('/configuration/structure/subjects/') && !path.includes('/level/')) {
 		map['[id]'] = entities.configurationSubjectId ?? entities.subjectId;
 	}
 	if (path.includes('/configuration/report-cards/')) {
@@ -423,9 +425,9 @@ export async function discoverEntities(ctx: DemoContext): Promise<MatrixEntities
 
 	entities.onboarded = !page.url().includes('/onboarding');
 
-	await safeGoto(ctx, `${base}/configuration/classes`);
+	await safeGoto(ctx, `${base}/configuration/structure/classes`);
 	entities.configClassId = await firstIdFromConfigTable(page)
-		?? await firstIdFromLinks(page, /\/configuration\/classes\/([^/]+)/);
+		?? await firstIdFromLinks(page, /\/configuration\/structure\/classes\/([^/]+)/);
 	entities.classId = entities.configClassId ?? await firstIdFromLinks(page, /\/classes\/([^/]+)/);
 
 	await safeGoto(ctx, `${base}/school/students`);
@@ -500,13 +502,12 @@ export async function discoverEntities(ctx: DemoContext): Promise<MatrixEntities
 	await safeGoto(ctx, `${base}/finance/billing`);
 	entities.billingId = await firstIdFromLinks(page, /\/finance\/billing\/([^/]+)/);
 
-	await safeGoto(ctx, `${base}/configuration/grade-levels`);
-	entities.gradeLevelId = await firstIdFromConfigTable(page)
-		?? await firstIdFromLinks(page, /\/configuration\/grade-levels\/([^/]+)/);
+	await safeGoto(ctx, `${base}/configuration/structure/subjects`);
+	entities.gradeLevelId = new URL(page.url()).searchParams.get('gradeLevel');
 	entities.level = entities.gradeLevelId;
 
-	await safeGoto(ctx, `${base}/configuration/subjects`);
-	entities.subjectId = await firstIdFromLinks(page, /\/configuration\/subjects\/([^/]+)/);
+	await safeGoto(ctx, `${base}/configuration/structure/subjects`);
+	entities.subjectId = await firstIdFromLinks(page, /\/configuration\/structure\/subjects\/([^/]+)/);
 
 	await safeGoto(ctx, `${base}/configuration/report-cards`);
 	entities.reportCardDefId = await firstIdFromLinks(page, /\/configuration\/report-cards\/([^/]+)/);

@@ -16,13 +16,27 @@ export async function exerciseTeacherRead(page: Page, base: string, action: stri
     const event = data.events[0]!;
     await page.getByRole('complementary', { name: /enseignant|teacher/i }).getByRole('link').filter({ hasText: event.title }).first().waitFor();
     const initialRange = response.request().postDataJSON() as { startDate: string; endDate: string };
-    const [next] = await Promise.all([
-      page.waitForResponse(response => response.url().includes('/queries/get-teacher-timetable') && response.request().method() === 'POST'),
-      page.getByRole('button', { name: /semaine suivante|next week/i }).click(),
-    ]);
-    assert(next.ok());
-    assert.notEqual((next.request().postDataJSON() as { startDate: string }).startDate, initialRange.startDate);
-    return 'Rendered a published teacher session and changed the requested week through the timetable controls';
+    assert(new Date(initialRange.endDate).getTime() - new Date(initialRange.startDate).getTime() > 7 * 86400000, 'Teacher timetable loads the academic year');
+    let dateRequests = 0;
+    const onRequest = (request: import('playwright').Request) => { if (request.url().includes('/queries/get-teacher-timetable')) dateRequests += 1; };
+    page.on('request', onRequest);
+    try {
+      const picker = page.locator('#teacher-timetable-date');
+      const endDate = await picker.getAttribute('max');
+      assert(endDate);
+      await picker.fill(endDate);
+      await picker.dispatchEvent('change');
+      await page.waitForURL(url => url.searchParams.get('date') === endDate);
+      await page.locator(`[data-timetable-date="${endDate}"]`).waitFor();
+      const today = page.getByRole('button', { name: /^(today|aujourd’hui)$/i });
+      if (await today.isEnabled()) {
+        await today.click();
+        await page.waitForURL(url => url.searchParams.get('date') !== endDate);
+      }
+      assert.equal(dateRequests, 0, 'Date controls scroll without refetching the year');
+    }
+    finally { page.off('request', onRequest); }
+    return 'Rendered a teacher session in the year agenda and used date navigation without refetching';
   }
   if (action === 'Évaluations') {
     assert(entities.evaluationId, 'Required assessment fixture missing');

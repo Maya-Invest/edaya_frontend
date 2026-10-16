@@ -1,67 +1,81 @@
-import type { components } from '$lib/api/schema';
 import type { PageQueryRequest } from '../../../lib/teacher-page-status';
+import type { TeacherTimetableContext, TeacherTimetableEvent } from '../../../lib/teacher-timetable';
 import type { TeachersPageState } from '../../../teachers-page.svelte';
+import { academicContext } from '$lib/academic/context.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import {
-	formatWeekAnchor,
-	parseWeekAnchor,
-	weekDateRange,
-} from '$lib/scheduling/planning-calendar';
+import { formatDateInput } from '$lib/date/format';
+import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { VersionedRouteQuery } from '$lib/navigation/versioned-route-query';
 import { getContext, setContext } from 'svelte';
 import { resolveTeacherPageLoad } from '../../../lib/teacher-page-status';
 import { teacherDetailIdFromUrl } from '../../../lib/teacher-selectors';
-
-type TimetableEvent = components['schemas']['TimetableEvent'];
+import { teacherTimetableContextKey, teacherTimetableDays, teacherTimetableQueryRange, validTimetableDate } from '../../../lib/teacher-timetable';
 
 const TEACHER_TIMETABLE_TAB_KEY = Symbol('teacher-timetable-tab');
 
 export interface TeacherTimetableTabSlice {
 	teacherId: string;
-	week: string;
-	events: TimetableEvent[];
+	contextKey: string;
+	events: TeacherTimetableEvent[];
 }
 
 export class TeacherTimetableTabState {
 	slice = $state<TeacherTimetableTabSlice | null>(null);
+	private loadVersion = 0;
+	private readonly versionedQuery = new VersionedRouteQuery(new RouteVersionSnapshot(['planning', 'teachers', 'subjects']));
+	invalidateIfStale = () => this.versionedQuery.invalidateIfStale();
 
 	constructor(private readonly getPage: () => TeachersPageState) {}
 
+	context(): TeacherTimetableContext | null {
+		const scope = this.getPage().teacherScope();
+		const year = academicContext.years.find(row => row.id === scope.academicYearId && row.schoolId === scope.schoolId);
+		const school = academicContext.schools.find(row => row.id === scope.schoolId);
+		const startDate = formatDateInput(year?.startDate);
+		const endDate = formatDateInput(year?.endDate);
+		if (!validTimetableDate(startDate) || !validTimetableDate(endDate) || startDate > endDate)
+			return null;
+		return { ...scope, startDate, endDate, timeZone: school?.timeZone || 'UTC' };
+	}
+
 	clear() {
+		this.loadVersion += 1;
+		this.versionedQuery.clear();
 		this.slice = null;
 	}
 
-	eventsFor(teacherId: string, week: string): TimetableEvent[] {
-		return this.slice?.teacherId === teacherId && this.slice.week === week ? this.slice.events : [];
+	eventsFor(teacherId: string): TeacherTimetableEvent[] {
+		const context = this.context();
+		return context && this.slice?.teacherId === teacherId && this.slice.contextKey === teacherTimetableContextKey(context) ? this.slice.events : [];
 	}
 
 	query() {
-		return (url: URL, request?: PageQueryRequest) => resolveTeacherPageLoad(url, {
+		return this.versionedQuery.track((url: URL, request?: PageQueryRequest) => resolveTeacherPageLoad(url, {
 			empty: () => ({}),
 			load: async (signal) => {
+				const version = ++this.loadVersion;
 				const teacherId = teacherDetailIdFromUrl(url);
-				if (!teacherId) {
+				const context = this.context();
+				if (!teacherId || !context) {
+					this.slice = null;
 					return {};
 				}
-				this.getPage();
-				const weekStart = parseWeekAnchor(url.searchParams.get('week') ?? undefined);
-				const week = formatWeekAnchor(weekStart);
-				const range = weekDateRange(weekStart);
-				const timetable = await getBrowserSchoolClient().queries.getTeacherTimetable({
-					teacherId,
-					startDate: range.start,
-					endDate: range.end,
-				});
+				const contextKey = teacherTimetableContextKey(context);
+				const timetable = await getBrowserSchoolClient().queries.getTeacherTimetable({ teacherId, ...teacherTimetableQueryRange(context) });
 				signal.throwIfAborted();
+				const current = this.context();
+				if (version !== this.loadVersion || !current || contextKey !== teacherTimetableContextKey(current))
+					return {};
 				this.slice = {
 					teacherId,
-					week,
-					events: timetable.events ?? [],
+					contextKey,
+					events: teacherTimetableDays(timetable.events ?? [], context).flatMap(day => day.events),
 				};
 				return {};
 			},
 			hasItems: () => true,
 			errorMessage: 'Unable to load teacher timetable.',
-		}, request);
+		}, request));
 	}
 }
 

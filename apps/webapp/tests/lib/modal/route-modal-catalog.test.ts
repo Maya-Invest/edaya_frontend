@@ -137,32 +137,27 @@ const routeCases = [
 			'delete-period-def',
 		],
 	],
-	['configuration-grade-levels-list', '/configuration/grade-levels', ['create']],
-	[
-		'configuration-grade-levels-detail',
-		'/configuration/grade-levels/grade-1',
-		['create', 'edit', 'delete'],
-	],
-	['configuration-classes-list', '/configuration/classes', ['create']],
+	['configuration-structure-levels', '/configuration/structure/subjects', ['create-level', 'edit-level', 'delete-level', 'level-grading']],
+	['configuration-classes-list', '/configuration/structure/classes', ['create']],
 	[
 		'configuration-classes-detail',
-		'/configuration/classes/class-1/profile',
+		'/configuration/structure/classes/class-1/profile',
 		['create', 'edit'],
 	],
 	[
 		'configuration-classes-assignments',
-		'/configuration/classes/class-1/assignments',
+		'/configuration/structure/classes/class-1/assignments',
 		['form', 'delete-assignment'],
 	],
-	['configuration-subjects-list', '/configuration/subjects', ['create-subject']],
+	['configuration-subjects-list', '/configuration/structure/subjects', ['create-subject']],
 	[
 		'configuration-subjects-detail',
-		'/configuration/subjects/subject-1/logbook',
+		'/configuration/structure/subjects/subject-1/logbook',
 		['create-subject', 'edit-subject', 'delete'],
 	],
 	[
 		'configuration-subjects-progression',
-		'/configuration/subjects/subject-1/progression',
+		'/configuration/structure/subjects/subject-1/progression',
 		['add-chapter', 'edit-chapter', 'delete-chapter'],
 	],
 	['configuration-report-cards-list', '/configuration/report-cards', ['create']],
@@ -249,7 +244,7 @@ describe('route modal catalog', () => {
 
 	it('supports canonical direct-detail and trailing-slash paths', () => {
 		expect(isKnownModalForPathname('/school/students/student-1', 'edit-profile')).toBeTrue();
-		expect(isKnownModalForPathname('/configuration/classes/class-1/', 'edit')).toBeTrue();
+		expect(isKnownModalForPathname('/configuration/structure/classes/class-1/', 'edit')).toBeTrue();
 		expect(isKnownModalForPathname('/classes/class-1/timetable/session-1', 'edit-event')).toBeTrue();
 	});
 });

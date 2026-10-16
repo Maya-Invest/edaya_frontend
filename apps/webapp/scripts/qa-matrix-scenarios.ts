@@ -794,7 +794,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 		}
 		if (!nav.url && row.endpoint.includes('/configuration') && action.includes('subjects')) {
 			await page.goto(`${ctx.base}/configuration`, { waitUntil: 'domcontentloaded' });
-			return page.url().includes('/configuration/subjects') ? ok(row) : notOk(row, page.url());
+			return page.url().includes('/configuration/structure/subjects') ? ok(row) : notOk(row, page.url());
 		}
 		if (!nav.url) return na(row, nav.reason ?? 'URL non résolue');
 		await page.waitForTimeout(1_000);
@@ -865,7 +865,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
   if (action === 'Rapprochement financier') return ok(row, await exerciseReconciliation(page, ctx.base));
   if (action === 'Documents' && row.endpoint.endsWith('/documents')) return ok(row, await exerciseStudentDocument(page, ctx.base));
   if (row.endpoint.includes('/school/teachers/[id]/') && ['Emploi du temps', 'Évaluations', 'Retour des familles'].includes(action)) return ok(row, await exerciseTeacherRead(page, ctx.base, action, entities));
-  if (row.endpoint.endsWith('/configuration/grade-levels/[id]') && action === 'Drawer — éditer / supprimer') return ok(row, await exerciseGradeLevelEditDelete(page, ctx.base));
+  if (row.endpoint.endsWith('/configuration/structure/details?gradeLevel=[id]') && action === 'Niveau sélectionné — éditer / supprimer') return ok(row, await exerciseGradeLevelEditDelete(page, ctx.base));
   if (row.endpoint.includes('/evaluations') && action === 'Éditer / supprimer') {
     if (!entities.classId) return notOk(row, 'Required assessment classroom fixture missing');
     return ok(row, await exerciseEvaluationEditDelete(page, ctx.base, entities.classId));
@@ -976,11 +976,11 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 			return notOk(row, 'Incident creation was not submitted');
 		}
 
-		if (row.endpoint.includes('/configuration/classes') && /classe/i.test(action)) {
+		if (row.endpoint.includes('/configuration/structure/classes') && /classe/i.test(action)) {
 			await waitForPageQuery(page);
 			const opened = await openDialogButton(page, /ajouter une classe|add class/i);
 			if (!opened) {
-				return notOk(row, 'Bouton Add class introuvable sur /configuration/classes');
+				return notOk(row, 'Bouton Add class introuvable sur /configuration/structure/classes');
 			}
 			const className = `QA-Class-${Date.now()}`;
 			try {

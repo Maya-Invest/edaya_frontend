@@ -370,11 +370,11 @@
 	let importFatalError = $state('');
 
 	const studentsHref = appPath('/(app)/school/students/[[id]]');
-	const classesHref = appPath('/(app)/configuration/classes/[[id]]');
+	const classesHref = appPath('/(app)/configuration/structure/classes/[[id]]');
 	const guardiansHref = appPath('/(app)/school/guardians/[[id]]');
 	const staffHref = appPath('/(app)/school/staff/[[id]]');
 	const teachersHref = appPath('/(app)/school/teachers/[[id]]');
-	const subjectsHref = appPath('/(app)/configuration/subjects/[[id]]');
+	const subjectsHref = appPath('/(app)/configuration/structure/subjects/[[id]]');
 	const billingHref = appPath('/(app)/finance/billing/[[id]]');
 	const selectedDefinition = $derived(getImportTypeDefinition(selectedImportType));
 	const isStudentsImport = $derived(selectedImportType === 'students');

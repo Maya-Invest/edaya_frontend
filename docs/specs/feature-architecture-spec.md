@@ -178,7 +178,7 @@ Grant rows stay on **Staff drawer → Permissions**. Profile **templates** live 
 | **Catalog** | `/configuration/permission-profiles` — simple list (discipline analog). Read `ACCESS_CONTROL_READ`; create/edit/delete `ACCESS_CONTROL_CONFIGURE`. |
 | **Location (grants)** | Staff drawer → **Permissions** tab (`/school/staff/{id}`) |
 | **Mutation pattern** | **Modal-only** for custom grants and apply/remove; reorder via explicit up/down. No inline permission toggles, no CRUD matrix layout |
-| **Manage affordance** | Drawer header **Manage permissions** scrolls/focuses Permissions tab, or user switches tab manually |
+| **Navigation** | Staff drawer has Profile and Permissions tabs. Permission actions live inside Permissions; no redundant Manage permissions header button. Legacy staff Assignments URLs redirect to Permissions. |
 | **Gating** | Apply / remove / reorder / custom add-edit-delete require `ACCESS_CONTROL_ASSIGN` via `PermissionGate` (`hide` or `disable` + tooltip) |
 
 **Permissions tab anatomy** (drawer sub-collection pattern):
@@ -198,11 +198,12 @@ Sub-collection tabs use a read-only list with header CTAs and row actions that o
 
 | Element | Behavior |
 |---------|----------|
-| **Locked profile groups** | Bindings in `sortOrder` (0 = highest). Each group shows profile name, rendered scope, permissions. Later profiles **skip** permissions already claimed by an earlier profile — muted hint “already granted by {profile}”. No row Edit/Delete on stamped grants. |
+| **Locked profile groups** | Bindings in `sortOrder` (0 = highest). Each group starts collapsed and independently expands its permission list. The profile name, permission count, effective scope tags, warning summary and gated actions remain visible. Effective scope tags sit beside the profile name and wrap when needed. Tags deduplicate by typed scope identity and exclude unavailable or ineffective grants. Expansion follows binding identity through reordering and resets for a different staff member, school or year. Later profiles **skip** permissions already claimed by an earlier profile — muted hint “already granted by {profile}”. No row Edit/Delete on stamped grants. |
 | **Reorder** | Up/down rewrites `sortOrder` then re-resolves that staff for the selected year (first-wins). An unresolved earlier profile still claims the permission; later profiles cannot silently broaden it. |
 | **Remove profile** | Confirm → drop binding, re-resolve remaining. Custom grants remain. |
 | **Apply / edit profile** | Modal: profile picker, include-defaults checkbox (on initially), grouped scope selections relevant to the bundle. Review generated access changes before save. Appends at lowest rank for the selected year. Re-applying the same profile updates saved selections and keeps rank. |
-| **Default scopes** | Selected-year summary and Edit modal with grouped selections. Review added, changed and removed access before saving. Re-resolves profile and manual assignments that include defaults. |
+| **Allowed scope types** | Permission names in the profile checklist, applied profile rows and custom permission rows show wrapping scope-type tags from the same catalog and `permissionSelectionGrains` mapping used by the editor. These describe accepted types, independently of effective scope tags. Manual permission options include the types before selection; the selected permission shows tags. |
+| **Default scopes** | Selected-year summary with every saved scope rendered as a wrapping tag, an explicit empty state, and Edit modal with grouped selections. Review added, changed and removed access before saving. Re-resolves profile and manual assignments that include defaults. |
 | **Additional permissions** | Manual assignment sources, including unresolved requests. Header `+ Add permission` → **StaffPermissionFormModal** (custom only). |
 | **Row** | Permission label (i18n `permission.{CODE}`) · **scope label** from `scope/render` |
 | **Stale scope** | When `scope/render` reports missing segments → warn badge (do not block read) |
@@ -233,7 +234,7 @@ Sub-collection tabs use a read-only list with header CTAs and row actions that o
 
 Every entry carries its `kind`. Selecting all targets is explicit: `{ kind: "all", grain }`. Empty selections deny; they never mean whole school. Scope editing preserves all entries and the grant's validity dates.
 
-Scope labels use `POST authorization/scope/render` with `{ academicYearId, items: [{ permission, scopes }] }`. The web never creates or parses delimited authorization paths.
+Scope labels use `POST authorization/scope/render` with `{ academicYearId, items: [{ permission, scopes }] }`. Default selection labels use `POST authorization/scope-selections/render` with `{ academicYearId, scopes }`, returning `{ scopes: [{ scope, label, missing }] }`. It accepts mixed selection grains, requires access-control read authorization, and validates resource ownership and academic placement independently of any permission. The web never creates or parses delimited authorization paths.
 
 The session contains one typed action-grant display. UI checks use that action's scopes and validity; owner labels and preset names never bypass those checks. The server remains authoritative for resource policies.
 
@@ -243,7 +244,7 @@ The session contains one typed action-grant display. UI checks use that action's
 - Assignments load via the Permissions tab child route `PageQuery` (or with staff list when colocated); views built via `buildStaffPermissionAssignmentViews`.
 - Mutations: `configurePermissionProfile` / `applyStaffPermissionProfile` / `reorderStaffPermissionProfiles` / `removeStaffPermissionProfile` for bound grants; `assignStaffPermission` / `removeStaffPermission` for manual sources and `configureStaffPermissionScopeDefaults` for defaults. Preview commands never write. Optimistic patch + `entityVersions` bump (`staff`).
 
-**Staff drawer → Assignments tab** (read-only): summary list of `staffAssignments` (class-level and other targets). Editing assignments happens in **Configuration → Classes** drawer (class-level tab) — not on this tab.
+**Staff assignments:** managed in the Configuration → Levels, subjects & classes → Classes drawer. Staff drawers have no Assignments tab; old `/school/staff/{id}/assignments` links redirect to Permissions, preserving query parameters.
 
 **Removed:** `/configuration/roles` route, roles matrix, `StaffRoleAssignment` UI, inline CRUD matrix toggles for permissions. Do **not** treat `StaffMember.profileRole` as authority.
 
@@ -276,9 +277,10 @@ The session contains one typed action-grant display. UI checks use that action's
 | School profile | `/configuration/school` | — |
 | Academic calendar | `/configuration/academic` | — |
 | Weekly period grid | `/configuration/period-grid` | — |
-| Grade levels | `/configuration/grade-levels` | `/configuration/grade-levels/{id}` |
-| Classes config | `/configuration/classes` | `/configuration/classes/{id}` |
-| Subjects catalog | `/configuration/subjects` | `/configuration/subjects/{id}` |
+| Levels, subjects & classes | `/configuration/structure` | Selected level in `?gradeLevel=` |
+| Grade level details tab | `/configuration/structure/details` | Level fields and grading configuration |
+| Classes config tab | `/configuration/structure/classes` | `/configuration/structure/classes/{id}` |
+| Subjects config tab | `/configuration/structure/subjects` | `/configuration/structure/subjects/{id}` |
 | Report card models | `/configuration/report-cards` | `/configuration/report-cards/{id}` |
 | Other configurations | `/configuration/other` | — |
 | Grade scales | `/configuration/grade-scales` | — |
@@ -321,8 +323,8 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 - **Account scope:** human staff only. Apply `accountKind = human` to lists, counts and direct drawer lookup before pagination. Service-account lifecycle and permission changes use the dedicated service-account API, never ordinary staff forms.
 - **Entity:** `StaffMember` · **Complex drawer**
 - **List:** search name · main filter assigned class · filter active/inactive
-- **Drawer header:** Edit profile · Manage permissions
-- **Drawer tabs:** Profile · **Permissions** (locked profile groups + editable custom `staffPermissionAssignments`) · Assignments (read-only `staffAssignments` summary)
+- **Drawer header:** Edit profile
+- **Drawer tabs:** Profile · **Permissions** (locked profile groups + editable custom `staffPermissionAssignments`)
 - **Create:** optional permission bundle (rank 0) with scope selections for the current academic year. The form loads profiles and the permission catalog together without depending on a prior Permissions-tab visit. Disable the profile picker while loading; show an error and retry on failure. Staff creation without a profile remains available. A selected profile requires ready scope metadata before submission.
 
 ### 7.4.1 School — Teachers
@@ -333,9 +335,9 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 - **Drawer header:** photo (immediate publish, like guardian) · active/inactive chip · assignment-count summary · Edit profile · overflow Delete
 - **Drawer tabs** (hide a tab the caller cannot read):
   - **Profile** — identity including code, contact, active toggle, account linking
-  - **Assignments** (`teacherAssignments`; subject + homeroom kinds) — add/edit modal · delete confirm
+  - **Assignments** (`teacherAssignments`; subject + homeroom kinds) — Homeroom assignments first, then Teaching assignments, both always visible with localized empty states. Rows lead with class or class · subject; omit repeated assignment-kind labels. Retain one Add assignment CTA, class timetable links, add/edit modal and delete confirmation.
   - **Availability** (`teacherUnavailabilities`) — `ACCESS_CONTROL_ASSIGN` or `SCHOOL_STRUCTURE_CONFIGURE`
-  - **Timetable** — teacher-scoped week (`getTeacherTimetable`); `QUERY_TIMETABLE_READ`; rows link to class timetable occurrences
+  - **Timetable** — teacher-scoped academic-year agenda (`getTeacherTimetable`), gated by `QUERY_TIMETABLE_READ`; chronological day groups in the school time zone with fixed teacher identity, tabs and Today/date controls above an independently scrolling session list with bold date headings. Initially jump to today (clamped to year bounds), or the URL date; insert one empty day marker when the target has no sessions. Today is disabled outside the selected year. Rows retain links to class timetable occurrences.
   - **Evaluations** — assessments on assigned class subjects for the current period; `GRADE_READ` or `GRADE_INPUT`; rows link to `/classes/{classId}/evaluations/{id}`
   - **Family feedback** — campaigns for this teacher; `FAMILY_FEEDBACK_CAMPAIGN_READ`; rows link to `/school/family-feedback/{id}`
   - **Documents** — issuance history by year; generate/retry/void `teacher-timetable.v1`; `QUERY_TIMETABLE_READ`
@@ -477,8 +479,12 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 ### 7.20 Configuration — Grade levels
 
-- **Entity:** `GradeLevel` · **Complex drawer**
-- New route: `/configuration/grade-levels/[[id]]`
+- **Entity:** `GradeLevel` · **Layout selection** in the unified Class level screen.
+- `/configuration/structure` defaults to Details. A flat level rail selects `?gradeLevel=`; Details, Subjects and Classes are nested route tabs. Mobile uses a labeled level selector above the tabs. Keep empty levels visible and sort with the shared level ordering.
+- The Details tab owns level fields, grading summary, one Edit level form containing grading settings, and overflow Delete. Creation uses the same fields. Preserve separate structure/grading permissions and calculation-change confirmation. Level forms use `create-level`, `edit-level`, and `delete-level`; old `level-grading` links redirect to `edit-level`.
+- Classes and subjects are scoped to the selected level and workspace academic year. Creation defaults to that level. Workload stays in Edit subject and applies to matching classes; edit weekly workload in periods, never inferred chapter hours. Keep the subject list free of weekly-period labels. Class rows open the drawer, whose Edit action owns class changes; omit redundant grade-level columns and row edit menus.
+- Subject and class drawers remain read-only with their existing chapters / profile / staff-assignment surfaces. Old `/configuration/grade-levels`, `/configuration/classes` and `/configuration/subjects` URLs redirect, retaining valid entity, tab and modal context. Grade-scale catalog stays separate.
+- The sidebar exposes one combined entry with the union of the former entries’ read permissions; each tab and mutation retains its own permission gates.
 
 ### 7.21 Configuration — Classes
 
@@ -504,7 +510,7 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 ### 7.24 Configuration — Grade scales
 
 - **Entity:** `GradeScale` · accordion scales with nested interval rows, matching the academic-year layout. Each interval has a visible permission-gated Edit button and Delete in its overflow menu. Sample lookup displays its matching code/mention beside the input, wrapping only when space requires it.
-- Route: `/configuration/grade-scales`, beside Grade levels; legacy `/configuration/other/grade-scales` redirects with search/modal parameters preserved.
+- Route: `/configuration/grade-scales`, beside Levels, subjects & classes; legacy `/configuration/other/grade-scales` redirects with search/modal parameters preserved.
 - Scale metadata and intervals have separate URL modals. Headers show limits, interval count, default/incomplete status. Expanded content includes Add interval and a rounded sample lookup.
 - New scales have no intervals and are marked Incomplete; both server validation and pickers prevent their use. The first interval covers the whole scale; its minimum is anchored. Adding thresholds splits effective coverage. Only unused, non-default scales can lose their last interval.
 - Users with `REPORT_CARD_CONFIGURE` can edit every school grade scale, including the default. Editing preserves its default status. The default scale has no Delete action, including via a modal deep link.
@@ -576,12 +582,12 @@ Authoritative surface per entity. §7 has per-feature drawer/tab detail.
 | `Announcement` | Complex | `/school/announcements` |
 | Family feedback campaign | Complex | `/school/family-feedback` |
 | `Assessment` | Complex | `/classes/{id}/evaluations` |
-| `ClassSubject` / teaching | Complex | `/classes/{id}/teaching`, `/configuration/subjects` |
+| `ClassSubject` / teaching | Complex | `/classes/{id}/teaching`, `/configuration/structure/subjects` |
 | `ReportCardResult` | Complex | `/classes/{id}/report-cards` |
 | `ReportCardDefinition` | Complex | `/configuration/report-cards` |
 | `StudentCharge` | Complex | `/finance/billing` |
-| `ClassGroup` | Complex | `/configuration/classes` |
-| `GradeLevel` | Complex | `/configuration/grade-levels` |
+| `ClassGroup` | Complex | `/configuration/structure/classes` |
+| `GradeLevel` | Layout selection | `/configuration/structure` |
 | `CalendarEvent` | Simple | `/school/calendar` |
 | `MessageDelivery` | Thin | `/account/inbox` |
 | `CatalogService` | Simple | `/finance/fees` |

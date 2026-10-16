@@ -9,7 +9,7 @@ export async function exerciseDetailCrud(page: Page, base: string, id: string, e
   const contracts = {
     'web.scenario.0031': { path: `/school/students/${entities.studentId}/profile`, collection: 'student-notes', create: 'note', edit: 'edit-note', remove: null, command: '/commands/create-student-note', update: '/commands/update-student-note', field: 'body', input: 'textarea' },
     'web.scenario.0055': { path: `/school/teachers/${entities.teacherId}/availability`, collection: 'teacher-unavailabilities', create: 'add-unavailability', edit: 'edit-unavailability', remove: 'delete-unavailability', command: '/entities/teacher-unavailabilities/save', update: '/entities/teacher-unavailabilities/save', field: 'reason', input: 'input:not([type="time"]):not([type="date"]):not([type="datetime-local"])' },
-    'web.scenario.0159': { path: `/configuration/subjects/${entities.configurationSubjectId ?? entities.subjectId}/progression`, collection: 'subject-matters', create: 'add-chapter', edit: 'edit-chapter', remove: 'delete-chapter', command: '/commands/configure-subject-matter', update: '/commands/configure-subject-matter', field: 'name', input: 'input' },
+    'web.scenario.0159': { path: `/configuration/structure/subjects/${entities.configurationSubjectId ?? entities.subjectId}/progression`, collection: 'subject-matters', create: 'add-chapter', edit: 'edit-chapter', remove: 'delete-chapter', command: '/commands/configure-subject-matter', update: '/commands/configure-subject-matter', field: 'name', input: 'input' },
   };
   const contract = contracts[id as keyof typeof contracts];
   if (!contract) return null;

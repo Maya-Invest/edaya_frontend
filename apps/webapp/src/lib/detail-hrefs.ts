@@ -11,7 +11,7 @@ type SchoolStudentTabSegment
 		| 'enrollments'
 		| 'documents';
 
-type SchoolStaffTabSegment = 'profile' | 'permissions' | 'assignments';
+type SchoolStaffTabSegment = 'profile' | 'permissions';
 type SchoolTeacherTabSegment
 	= | 'profile'
 		| 'assignments'
@@ -51,7 +51,6 @@ const CLASS_STUDENT_TAB_ROUTES: Record<SchoolStudentTabSegment, RouteId> = {
 const STAFF_TAB_ROUTES: Record<SchoolStaffTabSegment, RouteId> = {
 	profile: '/(app)/school/staff/[[id]]/(tabs)/profile',
 	permissions: '/(app)/school/staff/[[id]]/(tabs)/permissions',
-	assignments: '/(app)/school/staff/[[id]]/(tabs)/assignments',
 };
 
 const TEACHER_TAB_ROUTES: Record<SchoolTeacherTabSegment, RouteId> = {
@@ -81,13 +80,13 @@ const TEACHING_TAB_ROUTES: Record<ClassTeachingTabSegment, RouteId> = {
 };
 
 const CONFIG_SUBJECT_TAB_ROUTES: Record<ConfigSubjectTabSegment, RouteId> = {
-	progression: '/(app)/configuration/subjects/[[id]]/(tabs)/progression',
-	logbook: '/(app)/configuration/subjects/[[id]]/(tabs)/logbook',
+	progression: '/(app)/configuration/structure/subjects/[[id]]/(tabs)/progression',
+	logbook: '/(app)/configuration/structure/subjects/[[id]]/(tabs)/logbook',
 };
 
 const CONFIG_CLASS_GROUP_TAB_ROUTES: Record<ConfigClassGroupTabSegment, RouteId> = {
-	profile: '/(app)/configuration/classes/[[id]]/(tabs)/profile',
-	assignments: '/(app)/configuration/classes/[[id]]/(tabs)/assignments',
+	profile: '/(app)/configuration/structure/classes/[[id]]/(tabs)/profile',
+	assignments: '/(app)/configuration/structure/classes/[[id]]/(tabs)/assignments',
 };
 
 type SchoolActivityTabSegment = 'profile' | 'students' | 'classes';
@@ -171,7 +170,7 @@ export const detailHref = {
 	configReportCard: (id: string): ResolvedPathname => appPath('/(app)/configuration/report-cards/[[id]]', { id }),
 	configNotificationTemplate: (id: string): ResolvedPathname =>
 		appPath('/(app)/configuration/notifications/[[id]]', { id }),
-	configGradeLevel: (id: string): ResolvedPathname => appPath('/(app)/configuration/grade-levels/[[id]]', { id }),
+	configGradeLevel: (id: string): string => `${appPath('/(app)/configuration/structure/subjects/[[id]]')}?gradeLevel=${encodeURIComponent(id)}`,
 	configClassGroup: (id: string): ResolvedPathname => appPath(CONFIG_CLASS_GROUP_TAB_ROUTES.profile, { id }),
 	configClassGroupTab: (
 		id: string,

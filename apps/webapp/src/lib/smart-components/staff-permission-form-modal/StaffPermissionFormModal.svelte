@@ -14,6 +14,7 @@
 	import { LoaderCircle } from '$lib/icons';
 	import { PermissionImpactPreviewState } from '$lib/school/permission-impact-preview-state.svelte';
 	import PermissionScopeSelections from '$lib/smart-components/scope-builder/PermissionScopeSelections.svelte';
+	import PermissionScopeTypes from '$lib/smart-components/scope-builder/PermissionScopeTypes.svelte';
 	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { StaffPermissionFormModalState } from './staff-permission-form-modal-state.svelte';
@@ -141,7 +142,10 @@
 			</div>
 		{:else}
 			<div class="space-y-2">
-				<Label for="permission-select">{$t('roles.permissionField')}</Label>
+				<div class="flex flex-wrap items-center gap-2">
+					<Label for="permission-select">{$t('roles.permissionField')}</Label>
+					<PermissionScopeTypes entry={selectedEntry} />
+				</div>
 				<select
 					id="permission-select"
 					bind:value={permission}
@@ -150,7 +154,7 @@
 				>
 					<option value="">{$t('roles.selectPermission')}</option>
 					{#each catalog.filter(entry => entry.scope !== 'platform') as entry (entry.permission)}
-						<option value={entry.permission}>{formatPermissionLabel(entry.permission, $t)}</option>
+						<option value={entry.permission}>{formatPermissionLabel(entry.permission, $t)} — {permissionSelectionGrains(entry).map(grain => $t(`scope.grain.${grain}`)).join(' / ')}</option>
 					{/each}
 				</select>
 			</div>

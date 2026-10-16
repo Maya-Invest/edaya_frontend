@@ -310,13 +310,13 @@ export function resolveCreateButtonPatterns(action: string, endpoint: string): R
 	if (endpointLower.includes('/finance/billing')) {
 		push(/add invoice|ajouter une facture/i);
 	}
-	if (endpointLower.includes('/configuration/subjects')) {
+	if (endpointLower.includes('/configuration/structure/subjects')) {
 		push(/add subject|ajouter une matière/i);
 	}
 	if (endpointLower.includes('/configuration/grade-levels')) {
 		push(/add grade level|ajouter un niveau/i);
 	}
-	if (endpointLower.includes('/configuration/classes')) {
+	if (endpointLower.includes('/configuration/structure/classes')) {
 		push(/add class|ajouter une classe/i);
 	}
 	if (endpointLower.includes('/configuration/academic')) {

@@ -86,6 +86,7 @@ export function createStaffPermissionAssignmentPayload(input: {
 		customScopes: input.customScopes ?? input.scopes,
 		useDefaultScopes: input.useDefaultScopes ?? true,
 		scopeLabel: '—',
+		renderedScopes: [],
 		tenantWide: false,
 		hasMissingScope: false,
 		status: 'active',

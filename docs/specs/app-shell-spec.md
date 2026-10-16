@@ -128,6 +128,7 @@ Variant layouts still use the same shell (sidebar + header). Only the body layou
 | **Dashboard** | `/dashboard` | No entity list toolbar; KPI cards + action queue |
 | **Calendar / timetable grid** | `/school/calendar`, `/classes/{classId}/timetable` | Grid-specific controls; search/main-filter optional |
 | **Accordion config** | `/configuration/academic` | Year accordion; year and term CRUD via modals. Weekly period grid is `/configuration/period-grid` |
+| **Level configuration** | `/configuration/structure` | Levels on the left; selected-level name and Details / Subjects / Classes route tabs on the right. Mobile uses a level selector. Details contains the level fields, edit/delete actions and grading configuration. Subjects and Classes keep their collection search and primary add action. |
 | **Split catalog** | `/configuration/other` | Left list picks a simple catalog; the table is on the right |
 
 All variants still use shell chrome, permissions, toasts, and mutation modals where applicable.
@@ -530,3 +531,12 @@ The queue lists oldest pending requests first. Workflow, status, class, teacher,
 ### School messaging interaction
 
 The Messages collection keeps its list behind a URL-backed drawer with the existing Dialog focus, Escape and backdrop handling, full-width mobile and half-width desktop presentation. Drawer content is read-only and uses DrawerEntityHeader. School reply actions open FormModal; resolution is an explicit single-state action. A reply draft captures the viewed conversation version; background refresh cannot silently authorize sending from an outdated draft. A conflict preserves the draft and requires reviewing newer activity before reopening the reply modal.
+
+### Staff permission inspection
+
+Applied permission profiles use independent, initially collapsed disclosure lists. Profile names, permission counts, effective scope tags, warning summaries and action buttons remain visible. Scope tags wrap without truncating essential values; disclosure controls are keyboard accessible and separate from mutation actions. The defaults card shows saved selections as tags. Staff drawers expose Profile and Permissions only, without a Manage permissions header action.
+
+
+### Teacher timetable date navigation
+
+Teacher Timetable keeps the teacher identity, tabs and date toolbar fixed; only its bounded session list scrolls. Date headings use bold text. Other teacher tabs retain their existing drawer scrolling. The wrapping toolbar provides a labeled date input bounded by the selected year and Today. Date navigation keeps focus on the control, announces its destination and respects reduced motion; initial positioning is instant. With no explicit target, use today or the nearest year boundary. A target without sessions gets a dated No sessions entry; a year without sessions also gets the year-wide empty message. Missing year bounds show an explicit empty state.

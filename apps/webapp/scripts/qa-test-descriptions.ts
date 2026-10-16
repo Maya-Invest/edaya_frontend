@@ -106,7 +106,7 @@ export function describeTestExactly(row: QaTemplateRow): string {
 			return 'Open Add academic year; fill start/end dates only (no name field); submit; assert heading is derived YYYY-YYYY.';
 		}
 		if (ep.includes('/school/events')) return 'Open Add incident dialog; fill fields; submit if enabled.';
-		if (ep.includes('/configuration/classes')) return 'Open Add class dialog; fillClassCreateDialog; assert modal closes.';
+		if (ep.includes('/configuration/structure/classes')) return 'Open Add class dialog; fillClassCreateDialog; assert modal closes.';
 		if (action.includes('élève') && ep.includes('/school/students')) {
 			return 'clickCreateButton; fillStudentCreateDialog; assert no lifecycle console error; modal closes.';
 		}
@@ -216,7 +216,7 @@ function describeFilterTest(row: QaTemplateRow): string {
 	if (ep === '/configuration/academic' && /filtres liste/i.test(action)) {
 		return 'Academic years list: interact with status filter combobox/select.';
 	}
-	if (ep === '/configuration/subjects' && /filtre niveau/i.test(action)) {
+	if (ep === '/configuration/structure/subjects' && /filtre niveau/i.test(action)) {
 		return 'goto ?gradeLevel={gradeLevelId}; assert subject fixture name in list.';
 	}
 	if (ep === '/configuration/period-grid' && /sélecteur année/i.test(action)) {
@@ -288,7 +288,7 @@ export function describeTestInputs(row: QaTemplateRow): string {
 	if (ep === '/school/calendar' && /filtre/i.test(action)) {
 		return 'filterFixtures.calendarByType[type].title; URL ?type= or list-filter';
 	}
-	if (ep === '/configuration/subjects' && /filtre niveau/i.test(action)) {
+	if (ep === '/configuration/structure/subjects' && /filtre niveau/i.test(action)) {
 		return 'URL ?gradeLevel={gradeLevelId}; filterFixtures.subjectsByGradeLevel[name]';
 	}
 	if (ep === '/finance/payment' && /filtre classe/i.test(action)) {

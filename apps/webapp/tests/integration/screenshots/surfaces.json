@@ -42,24 +42,24 @@
   {
     "id": "view.configuration.classes",
     "feature": "configuration",
-    "path": "/configuration/classes",
-    "title": "/configuration/classes",
+    "path": "/configuration/structure/classes",
+    "title": "/configuration/structure/classes",
     "kind": "page",
     "identity": "owner"
   },
   {
     "id": "view.configuration.classes.record.assignments",
     "feature": "configuration",
-    "path": "/configuration/classes/[id]/assignments",
-    "title": "/configuration/classes/[id]/assignments",
+    "path": "/configuration/structure/classes/[id]/assignments",
+    "title": "/configuration/structure/classes/[id]/assignments",
     "kind": "page",
     "identity": "owner"
   },
   {
     "id": "view.configuration.classes.record.profile",
     "feature": "configuration",
-    "path": "/configuration/classes/[id]/profile",
-    "title": "/configuration/classes/[id]/profile",
+    "path": "/configuration/structure/classes/[id]/profile",
+    "title": "/configuration/structure/classes/[id]/profile",
     "kind": "page",
     "identity": "owner"
   },
@@ -106,16 +106,16 @@
   {
     "id": "view.configuration.subjects",
     "feature": "configuration",
-    "path": "/configuration/subjects",
-    "title": "/configuration/subjects",
+    "path": "/configuration/structure/subjects",
+    "title": "/configuration/structure/subjects",
     "kind": "page",
     "identity": "owner"
   },
   {
     "id": "view.configuration.subjects.record.progression",
     "feature": "configuration",
-    "path": "/configuration/subjects/[id]/progression",
-    "title": "/configuration/subjects/[id]/progression",
+    "path": "/configuration/structure/subjects/[id]/progression",
+    "title": "/configuration/structure/subjects/[id]/progression",
     "kind": "page",
     "identity": "owner"
   },
@@ -140,22 +140,6 @@
     "feature": "configuration",
     "path": "/configuration/notifications/[id]",
     "title": "/configuration/notifications/[id]",
-    "kind": "page",
-    "identity": "owner"
-  },
-  {
-    "id": "view.configuration.grade-levels",
-    "feature": "configuration",
-    "path": "/configuration/grade-levels",
-    "title": "/configuration/grade-levels",
-    "kind": "page",
-    "identity": "owner"
-  },
-  {
-    "id": "view.configuration.grade-levels.record",
-    "feature": "configuration",
-    "path": "/configuration/grade-levels/[id]",
-    "title": "/configuration/grade-levels/[id]",
     "kind": "page",
     "identity": "owner"
   },
@@ -656,14 +640,6 @@
     "identity": "owner"
   },
   {
-    "id": "view.school.staff.record.assignments",
-    "feature": "school",
-    "path": "/school/staff/[id]/assignments",
-    "title": "/school/staff/[id]/assignments",
-    "kind": "page",
-    "identity": "owner"
-  },
-  {
     "id": "view.school.staff.record.permissions",
     "feature": "school",
     "path": "/school/staff/[id]/permissions",
@@ -731,7 +707,7 @@
     "id": "view.school.students.modal.create",
     "feature": "school",
     "path": "/school/students?modal=create",
-    "title": "create \u00b7 /school/students",
+    "title": "create · /school/students",
     "kind": "modal",
     "identity": "owner"
   },
@@ -739,7 +715,7 @@
     "id": "view.school.guardians.modal.create",
     "feature": "school",
     "path": "/school/guardians?modal=create",
-    "title": "create \u00b7 /school/guardians",
+    "title": "create · /school/guardians",
     "kind": "modal",
     "identity": "owner"
   },
@@ -747,7 +723,7 @@
     "id": "view.school.staff.modal.create",
     "feature": "school",
     "path": "/school/staff?modal=create",
-    "title": "create \u00b7 /school/staff",
+    "title": "create · /school/staff",
     "kind": "modal",
     "identity": "owner"
   },
@@ -755,7 +731,7 @@
     "id": "view.school.teachers.modal.create",
     "feature": "school",
     "path": "/school/teachers?modal=create",
-    "title": "create \u00b7 /school/teachers",
+    "title": "create · /school/teachers",
     "kind": "modal",
     "identity": "owner"
   },
@@ -763,7 +739,7 @@
     "id": "view.school.calendar.modal.create",
     "feature": "school",
     "path": "/school/calendar?modal=create",
-    "title": "create \u00b7 /school/calendar",
+    "title": "create · /school/calendar",
     "kind": "modal",
     "identity": "owner"
   },
@@ -771,7 +747,7 @@
     "id": "view.school.calendar.modal.edit",
     "feature": "school",
     "path": "/school/calendar?modal=edit",
-    "title": "edit \u00b7 /school/calendar",
+    "title": "edit · /school/calendar",
     "kind": "modal",
     "identity": "owner",
     "target": "calendarEventId"
@@ -780,7 +756,7 @@
     "id": "view.school.activities.modal.create",
     "feature": "school",
     "path": "/school/activities?modal=create",
-    "title": "create \u00b7 /school/activities",
+    "title": "create · /school/activities",
     "kind": "modal",
     "identity": "owner"
   },
@@ -788,7 +764,7 @@
     "id": "view.school.announcements.modal.create",
     "feature": "school",
     "path": "/school/announcements?modal=create",
-    "title": "create \u00b7 /school/announcements",
+    "title": "create · /school/announcements",
     "kind": "modal",
     "identity": "owner"
   },
@@ -796,7 +772,7 @@
     "id": "view.school.family-feedback.modal.create",
     "feature": "school",
     "path": "/school/family-feedback?modal=create",
-    "title": "create \u00b7 /school/family-feedback",
+    "title": "create · /school/family-feedback",
     "kind": "modal",
     "identity": "owner"
   },
@@ -804,7 +780,7 @@
     "id": "view.school.messages.record.modal.reply",
     "feature": "school",
     "path": "/school/messages/[id]?modal=reply",
-    "title": "reply \u00b7 /school/messages/[id]",
+    "title": "reply · /school/messages/[id]",
     "kind": "modal",
     "identity": "owner"
   },
@@ -812,7 +788,7 @@
     "id": "view.school.events.modal.create",
     "feature": "school",
     "path": "/school/events?modal=create",
-    "title": "create \u00b7 /school/events",
+    "title": "create · /school/events",
     "kind": "modal",
     "identity": "owner"
   },
@@ -820,7 +796,7 @@
     "id": "view.school.students.record.profile.modal.edit-profile",
     "feature": "school",
     "path": "/school/students/[id]/profile?modal=edit-profile",
-    "title": "edit-profile \u00b7 /school/students/[id]/profile",
+    "title": "edit-profile · /school/students/[id]/profile",
     "kind": "modal",
     "identity": "owner"
   },
@@ -828,7 +804,7 @@
     "id": "view.school.students.record.profile.modal.change-class",
     "feature": "school",
     "path": "/school/students/[id]/profile?modal=change-class",
-    "title": "change-class \u00b7 /school/students/[id]/profile",
+    "title": "change-class · /school/students/[id]/profile",
     "kind": "modal",
     "identity": "owner"
   },
@@ -836,7 +812,7 @@
     "id": "view.school.students.record.profile.modal.link-guardian",
     "feature": "school",
     "path": "/school/students/[id]/profile?modal=link-guardian",
-    "title": "link-guardian \u00b7 /school/students/[id]/profile",
+    "title": "link-guardian · /school/students/[id]/profile",
     "kind": "modal",
     "identity": "owner"
   },
@@ -844,7 +820,7 @@
     "id": "view.school.students.record.profile.modal.note",
     "feature": "school",
     "path": "/school/students/[id]/profile?modal=note",
-    "title": "note \u00b7 /school/students/[id]/profile",
+    "title": "note · /school/students/[id]/profile",
     "kind": "modal",
     "identity": "owner"
   },
@@ -852,7 +828,7 @@
     "id": "view.school.students.record.attendance.modal.add-absence",
     "feature": "school",
     "path": "/school/students/[id]/attendance?modal=add-absence",
-    "title": "add-absence \u00b7 /school/students/[id]/attendance",
+    "title": "add-absence · /school/students/[id]/attendance",
     "kind": "modal",
     "identity": "owner"
   },
@@ -860,7 +836,7 @@
     "id": "view.school.students.record.incidents.modal.add-incident",
     "feature": "school",
     "path": "/school/students/[id]/incidents?modal=add-incident",
-    "title": "add-incident \u00b7 /school/students/[id]/incidents",
+    "title": "add-incident · /school/students/[id]/incidents",
     "kind": "modal",
     "identity": "owner"
   },
@@ -868,7 +844,7 @@
     "id": "view.school.guardians.record.modal.edit-profile",
     "feature": "school",
     "path": "/school/guardians/[id]?modal=edit-profile",
-    "title": "edit-profile \u00b7 /school/guardians/[id]",
+    "title": "edit-profile · /school/guardians/[id]",
     "kind": "modal",
     "identity": "owner"
   },
@@ -876,7 +852,7 @@
     "id": "view.school.staff.record.profile.modal.edit-profile",
     "feature": "school",
     "path": "/school/staff/[id]/profile?modal=edit-profile",
-    "title": "edit-profile \u00b7 /school/staff/[id]/profile",
+    "title": "edit-profile · /school/staff/[id]/profile",
     "kind": "modal",
     "identity": "owner"
   },
@@ -884,7 +860,7 @@
     "id": "view.school.staff.record.permissions.modal.add-permission",
     "feature": "school",
     "path": "/school/staff/[id]/permissions?modal=add-permission",
-    "title": "add-permission \u00b7 /school/staff/[id]/permissions",
+    "title": "add-permission · /school/staff/[id]/permissions",
     "kind": "modal",
     "identity": "owner"
   },
@@ -892,7 +868,7 @@
     "id": "view.school.teachers.record.assignments.modal.form",
     "feature": "school",
     "path": "/school/teachers/[id]/assignments?modal=form",
-    "title": "form \u00b7 /school/teachers/[id]/assignments",
+    "title": "form · /school/teachers/[id]/assignments",
     "kind": "modal",
     "identity": "owner"
   },
@@ -900,7 +876,7 @@
     "id": "view.school.teachers.record.assignments.modal.delete-assignment",
     "feature": "school",
     "path": "/school/teachers/[id]/assignments?modal=delete-assignment",
-    "title": "delete-assignment \u00b7 /school/teachers/[id]/assignments",
+    "title": "delete-assignment · /school/teachers/[id]/assignments",
     "kind": "modal",
     "identity": "owner"
   },
@@ -908,7 +884,7 @@
     "id": "view.school.teachers.record.documents.modal.generate-document",
     "feature": "school",
     "path": "/school/teachers/[id]/documents?modal=generate-document",
-    "title": "generate-document \u00b7 /school/teachers/[id]/documents",
+    "title": "generate-document · /school/teachers/[id]/documents",
     "kind": "modal",
     "identity": "owner"
   },
@@ -916,7 +892,7 @@
     "id": "view.school.announcements.record.modal.edit",
     "feature": "school",
     "path": "/school/announcements/[id]?modal=edit",
-    "title": "edit \u00b7 /school/announcements/[id]",
+    "title": "edit · /school/announcements/[id]",
     "kind": "modal",
     "identity": "owner"
   },
@@ -924,7 +900,7 @@
     "id": "view.school.announcements.record.modal.add-target",
     "feature": "school",
     "path": "/school/announcements/[id]?modal=add-target",
-    "title": "add-target \u00b7 /school/announcements/[id]",
+    "title": "add-target · /school/announcements/[id]",
     "kind": "modal",
     "identity": "owner"
   },
@@ -932,7 +908,7 @@
     "id": "view.school.announcements.record.modal.publish",
     "feature": "school",
     "path": "/school/announcements/[id]?modal=publish",
-    "title": "publish \u00b7 /school/announcements/[id]",
+    "title": "publish · /school/announcements/[id]",
     "kind": "modal",
     "identity": "owner"
   },
@@ -940,7 +916,7 @@
     "id": "view.school.family-feedback.record.setup.modal.edit",
     "feature": "school",
     "path": "/school/family-feedback/[id]/setup?modal=edit",
-    "title": "edit \u00b7 /school/family-feedback/[id]/setup",
+    "title": "edit · /school/family-feedback/[id]/setup",
     "kind": "modal",
     "identity": "owner"
   },
@@ -948,7 +924,7 @@
     "id": "view.school.family-feedback.record.setup.modal.assign-moderator",
     "feature": "school",
     "path": "/school/family-feedback/[id]/setup?modal=assign-moderator",
-    "title": "assign-moderator \u00b7 /school/family-feedback/[id]/setup",
+    "title": "assign-moderator · /school/family-feedback/[id]/setup",
     "kind": "modal",
     "identity": "owner"
   },
@@ -956,7 +932,7 @@
     "id": "view.school.family-feedback.record.setup.modal.schedule",
     "feature": "school",
     "path": "/school/family-feedback/[id]/setup?modal=schedule",
-    "title": "schedule \u00b7 /school/family-feedback/[id]/setup",
+    "title": "schedule · /school/family-feedback/[id]/setup",
     "kind": "modal",
     "identity": "owner"
   },
@@ -964,7 +940,7 @@
     "id": "view.school.family-feedback.record.setup.modal.open",
     "feature": "school",
     "path": "/school/family-feedback/[id]/setup?modal=open",
-    "title": "open \u00b7 /school/family-feedback/[id]/setup",
+    "title": "open · /school/family-feedback/[id]/setup",
     "kind": "modal",
     "identity": "owner"
   },
@@ -972,7 +948,7 @@
     "id": "view.school.family-feedback.record.setup.modal.close",
     "feature": "school",
     "path": "/school/family-feedback/[id]/setup?modal=close",
-    "title": "close \u00b7 /school/family-feedback/[id]/setup",
+    "title": "close · /school/family-feedback/[id]/setup",
     "kind": "modal",
     "identity": "owner"
   },
@@ -980,7 +956,7 @@
     "id": "view.school.family-feedback.record.setup.modal.cancel",
     "feature": "school",
     "path": "/school/family-feedback/[id]/setup?modal=cancel",
-    "title": "cancel \u00b7 /school/family-feedback/[id]/setup",
+    "title": "cancel · /school/family-feedback/[id]/setup",
     "kind": "modal",
     "identity": "owner"
   },
@@ -988,7 +964,7 @@
     "id": "view.school.family-feedback.record.moderation.modal.theme",
     "feature": "school",
     "path": "/school/family-feedback/[id]/moderation?modal=theme",
-    "title": "theme \u00b7 /school/family-feedback/[id]/moderation",
+    "title": "theme · /school/family-feedback/[id]/moderation",
     "kind": "modal",
     "identity": "owner"
   },
@@ -996,7 +972,7 @@
     "id": "view.school.family-feedback.record.results.modal.publish",
     "feature": "school",
     "path": "/school/family-feedback/[id]/results?modal=publish",
-    "title": "publish \u00b7 /school/family-feedback/[id]/results",
+    "title": "publish · /school/family-feedback/[id]/results",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1004,7 +980,7 @@
     "id": "view.school.family-feedback.record.results.modal.archive",
     "feature": "school",
     "path": "/school/family-feedback/[id]/results?modal=archive",
-    "title": "archive \u00b7 /school/family-feedback/[id]/results",
+    "title": "archive · /school/family-feedback/[id]/results",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1012,7 +988,7 @@
     "id": "view.school.events.record.modal.edit",
     "feature": "school",
     "path": "/school/events/[id]?modal=edit",
-    "title": "edit \u00b7 /school/events/[id]",
+    "title": "edit · /school/events/[id]",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1020,7 +996,7 @@
     "id": "view.school.events.record.modal.resolve",
     "feature": "school",
     "path": "/school/events/[id]?modal=resolve",
-    "title": "resolve \u00b7 /school/events/[id]",
+    "title": "resolve · /school/events/[id]",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1028,7 +1004,7 @@
     "id": "view.classes.class.students.modal.create",
     "feature": "classes",
     "path": "/classes/[classId]/students?modal=create",
-    "title": "create \u00b7 /classes/[classId]/students",
+    "title": "create · /classes/[classId]/students",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1036,7 +1012,7 @@
     "id": "view.classes.class.teaching.record.progression.modal.edit-subject",
     "feature": "classes",
     "path": "/classes/[classId]/teaching/[id]/progression?modal=edit-subject",
-    "title": "edit-subject \u00b7 /classes/[classId]/teaching/[id]/progression",
+    "title": "edit-subject · /classes/[classId]/teaching/[id]/progression",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1044,7 +1020,7 @@
     "id": "view.finance.fees.modal.create",
     "feature": "finance",
     "path": "/finance/fees?modal=create",
-    "title": "create \u00b7 /finance/fees",
+    "title": "create · /finance/fees",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1052,7 +1028,7 @@
     "id": "view.finance.billing.modal.assign-fee",
     "feature": "finance",
     "path": "/finance/billing?modal=assign-fee",
-    "title": "assign-fee \u00b7 /finance/billing",
+    "title": "assign-fee · /finance/billing",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1060,7 +1036,7 @@
     "id": "view.finance.billing.record.modal.payment",
     "feature": "finance",
     "path": "/finance/billing/[id]?modal=payment",
-    "title": "payment \u00b7 /finance/billing/[id]",
+    "title": "payment · /finance/billing/[id]",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1068,7 +1044,7 @@
     "id": "view.finance.billing.record.modal.allocate",
     "feature": "finance",
     "path": "/finance/billing/[id]?modal=allocate",
-    "title": "allocate \u00b7 /finance/billing/[id]",
+    "title": "allocate · /finance/billing/[id]",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1076,7 +1052,7 @@
     "id": "view.finance.billing.record.modal.unallocate",
     "feature": "finance",
     "path": "/finance/billing/[id]?modal=unallocate",
-    "title": "unallocate \u00b7 /finance/billing/[id]",
+    "title": "unallocate · /finance/billing/[id]",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1084,7 +1060,7 @@
     "id": "view.finance.payment.modal.reverse",
     "feature": "finance",
     "path": "/finance/payment?modal=reverse",
-    "title": "reverse \u00b7 /finance/payment",
+    "title": "reverse · /finance/payment",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1092,7 +1068,7 @@
     "id": "view.finance.payment.modal.refund",
     "feature": "finance",
     "path": "/finance/payment?modal=refund",
-    "title": "refund \u00b7 /finance/payment",
+    "title": "refund · /finance/payment",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1100,63 +1076,63 @@
     "id": "view.configuration.school.modal.edit",
     "feature": "configuration",
     "path": "/configuration/school?modal=location",
-    "title": "location \u00b7 /configuration/school",
+    "title": "location · /configuration/school",
     "kind": "modal",
     "identity": "owner"
   },
   {
     "id": "view.configuration.grade-levels.modal.create",
     "feature": "configuration",
-    "path": "/configuration/grade-levels?modal=create",
-    "title": "create \u00b7 /configuration/grade-levels",
+    "path": "/configuration/structure/details?modal=create-level",
+    "title": "Create grade level",
     "kind": "modal",
     "identity": "owner"
   },
   {
     "id": "view.configuration.grade-levels.record.modal.edit",
     "feature": "configuration",
-    "path": "/configuration/grade-levels/[id]?modal=edit",
-    "title": "edit \u00b7 /configuration/grade-levels/[id]",
+    "path": "/configuration/structure/details?modal=edit-level",
+    "title": "Edit selected grade level",
     "kind": "modal",
     "identity": "owner"
   },
   {
     "id": "view.configuration.classes.modal.create",
     "feature": "configuration",
-    "path": "/configuration/classes?modal=create",
-    "title": "create \u00b7 /configuration/classes",
+    "path": "/configuration/structure/classes?modal=create",
+    "title": "create · /configuration/structure/classes",
     "kind": "modal",
     "identity": "owner"
   },
   {
     "id": "view.configuration.classes.record.profile.modal.edit",
     "feature": "configuration",
-    "path": "/configuration/classes/[id]/profile?modal=edit",
-    "title": "edit \u00b7 /configuration/classes/[id]/profile",
+    "path": "/configuration/structure/classes/[id]/profile?modal=edit",
+    "title": "edit · /configuration/structure/classes/[id]/profile",
     "kind": "modal",
     "identity": "owner"
   },
   {
     "id": "view.configuration.classes.record.assignments.modal.form",
     "feature": "configuration",
-    "path": "/configuration/classes/[id]/assignments?modal=form",
-    "title": "form \u00b7 /configuration/classes/[id]/assignments",
+    "path": "/configuration/structure/classes/[id]/assignments?modal=form",
+    "title": "form · /configuration/structure/classes/[id]/assignments",
     "kind": "modal",
     "identity": "owner"
   },
   {
     "id": "view.configuration.subjects.modal.create-subject",
     "feature": "configuration",
-    "path": "/configuration/subjects?modal=create-subject",
-    "title": "create-subject \u00b7 /configuration/subjects",
+    "path": "/configuration/structure/subjects?modal=create-subject",
+    "title": "create-subject · /configuration/structure/subjects",
     "kind": "modal",
     "identity": "owner"
   },
   {
     "id": "view.configuration.subjects.record.progression.modal.add-chapter",
     "feature": "configuration",
-    "path": "/configuration/subjects/[id]/progression?modal=add-chapter",
-    "title": "add-chapter \u00b7 /configuration/subjects/[id]/progression",
+    "path": "/configuration/structure/subjects/[id]/progression?modal=add-chapter",
+    "title": "add-chapter · /configuration/structure/subjects/[id]/progression",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1164,7 +1140,7 @@
     "id": "view.configuration.other.grade-scales.modal.create",
     "feature": "configuration",
     "path": "/configuration/grade-scales?modal=create",
-    "title": "create \u00b7 /configuration/grade-scales",
+    "title": "create · /configuration/grade-scales",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1172,7 +1148,7 @@
     "id": "view.configuration.report-cards.modal.create",
     "feature": "configuration",
     "path": "/configuration/report-cards?modal=create",
-    "title": "create \u00b7 /configuration/report-cards",
+    "title": "create · /configuration/report-cards",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1180,7 +1156,7 @@
     "id": "view.configuration.report-cards.record.modal.delete",
     "feature": "configuration",
     "path": "/configuration/report-cards/[id]?modal=delete",
-    "title": "delete \u00b7 /configuration/report-cards/[id]",
+    "title": "delete · /configuration/report-cards/[id]",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1188,7 +1164,7 @@
     "id": "view.configuration.notifications.modal.reset-all",
     "feature": "configuration",
     "path": "/configuration/notifications?modal=reset-all",
-    "title": "reset-all \u00b7 /configuration/notifications",
+    "title": "reset-all · /configuration/notifications",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1196,7 +1172,7 @@
     "id": "view.configuration.notifications.record.modal.edit",
     "feature": "configuration",
     "path": "/configuration/notifications/[id]?modal=edit",
-    "title": "edit \u00b7 /configuration/notifications/[id]",
+    "title": "edit · /configuration/notifications/[id]",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1204,7 +1180,7 @@
     "id": "view.configuration.notifications.record.modal.reset-key",
     "feature": "configuration",
     "path": "/configuration/notifications/[id]?modal=reset-key",
-    "title": "reset-key \u00b7 /configuration/notifications/[id]",
+    "title": "reset-key · /configuration/notifications/[id]",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1212,7 +1188,7 @@
     "id": "view.configuration.other.discipline.modal.create",
     "feature": "configuration",
     "path": "/configuration/other/discipline?modal=create",
-    "title": "create \u00b7 /configuration/other/discipline",
+    "title": "create · /configuration/other/discipline",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1220,7 +1196,7 @@
     "id": "view.configuration.other.subject-categories.modal.create",
     "feature": "configuration",
     "path": "/configuration/other/subject-categories?modal=create",
-    "title": "create \u00b7 /configuration/other/subject-categories",
+    "title": "create · /configuration/other/subject-categories",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1228,7 +1204,7 @@
     "id": "view.configuration.permission-profiles.modal.create",
     "feature": "configuration",
     "path": "/configuration/permission-profiles?modal=create",
-    "title": "create \u00b7 /configuration/permission-profiles",
+    "title": "create · /configuration/permission-profiles",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1236,7 +1212,7 @@
     "id": "view.configuration.tools.teacher-assignments.modal.create",
     "feature": "configuration",
     "path": "/configuration/tools/teacher-assignments?modal=create",
-    "title": "create \u00b7 /configuration/tools/teacher-assignments",
+    "title": "create · /configuration/tools/teacher-assignments",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1244,7 +1220,7 @@
     "id": "view.dashboard.modal.account-profile",
     "feature": "dashboard",
     "path": "/dashboard?modal=account-profile",
-    "title": "account-profile \u00b7 /dashboard",
+    "title": "account-profile · /dashboard",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1252,7 +1228,7 @@
     "id": "view.configuration.tools.modal.import",
     "feature": "configuration",
     "path": "/configuration/tools?modal=import&modalTab=students&modalStep=upload",
-    "title": "import \u00b7 /configuration/tools",
+    "title": "import · /configuration/tools",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1260,7 +1236,7 @@
     "id": "view.configuration.tools.modal.generate-timetable",
     "feature": "configuration",
     "path": "/configuration/tools?modal=generate-timetable",
-    "title": "generate-timetable \u00b7 /configuration/tools",
+    "title": "generate-timetable · /configuration/tools",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1268,7 +1244,7 @@
     "id": "view.configuration.academic.modal.create",
     "feature": "configuration",
     "path": "/configuration/academic?modal=create",
-    "title": "create \u00b7 /configuration/academic",
+    "title": "create · /configuration/academic",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1276,7 +1252,7 @@
     "id": "view.configuration.period-grid.modal.period-def",
     "feature": "configuration",
     "path": "/configuration/period-grid?modal=period-def",
-    "title": "period-def \u00b7 /configuration/period-grid",
+    "title": "period-def · /configuration/period-grid",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1284,7 +1260,7 @@
     "id": "view.configuration.period-grid.modal.period-def-wizard",
     "feature": "configuration",
     "path": "/configuration/period-grid?modal=period-def-wizard&modalStep=preset",
-    "title": "period-def-wizard \u00b7 /configuration/period-grid",
+    "title": "period-def-wizard · /configuration/period-grid",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1292,7 +1268,7 @@
     "id": "view.classes.class.timetable.modal.new-session",
     "feature": "classes",
     "path": "/classes/[classId]/timetable?modal=new-session&modalStep=type",
-    "title": "new-session \u00b7 /classes/[classId]/timetable",
+    "title": "new-session · /classes/[classId]/timetable",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1300,7 +1276,7 @@
     "id": "view.classes.class.evaluations.modal.create",
     "feature": "classes",
     "path": "/classes/[classId]/evaluations?modal=create",
-    "title": "create \u00b7 /classes/[classId]/evaluations",
+    "title": "create · /classes/[classId]/evaluations",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1324,7 +1300,7 @@
     "id": "view.configuration.tools.modal.generate-timetable.periods",
     "feature": "configuration",
     "path": "/configuration/tools?modal=generate-timetable&modalStep=setup&modalTab=periods",
-    "title": "Timetable generator \u00b7 periods",
+    "title": "Timetable generator · periods",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1332,7 +1308,7 @@
     "id": "view.configuration.tools.modal.generate-timetable.advanced",
     "feature": "configuration",
     "path": "/configuration/tools?modal=generate-timetable&modalStep=setup&modalTab=advanced",
-    "title": "Timetable generator \u00b7 advanced",
+    "title": "Timetable generator · advanced",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1340,7 +1316,7 @@
     "id": "view.configuration.tools.modal.import.students.template",
     "feature": "configuration",
     "path": "/configuration/tools?modal=import&modalTab=students&modalStep=download",
-    "title": "Import template \u00b7 students",
+    "title": "Import template · students",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1348,7 +1324,7 @@
     "id": "view.configuration.tools.modal.import.guardians.template",
     "feature": "configuration",
     "path": "/configuration/tools?modal=import&modalTab=guardians&modalStep=download",
-    "title": "Import template \u00b7 guardians",
+    "title": "Import template · guardians",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1356,7 +1332,7 @@
     "id": "view.configuration.tools.modal.import.staff.template",
     "feature": "configuration",
     "path": "/configuration/tools?modal=import&modalTab=staff&modalStep=download",
-    "title": "Import template \u00b7 staff",
+    "title": "Import template · staff",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1364,7 +1340,7 @@
     "id": "view.configuration.tools.modal.import.teachers.template",
     "feature": "configuration",
     "path": "/configuration/tools?modal=import&modalTab=teachers&modalStep=download",
-    "title": "Import template \u00b7 teachers",
+    "title": "Import template · teachers",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1372,7 +1348,7 @@
     "id": "view.configuration.tools.modal.import.teacher_assignments.template",
     "feature": "configuration",
     "path": "/configuration/tools?modal=import&modalTab=teacher_assignments&modalStep=download",
-    "title": "Import template \u00b7 teacher_assignments",
+    "title": "Import template · teacher_assignments",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1380,7 +1356,7 @@
     "id": "view.configuration.tools.modal.import.classes.template",
     "feature": "configuration",
     "path": "/configuration/tools?modal=import&modalTab=classes&modalStep=download",
-    "title": "Import template \u00b7 classes",
+    "title": "Import template · classes",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1388,7 +1364,7 @@
     "id": "view.configuration.tools.modal.import.subjects.template",
     "feature": "configuration",
     "path": "/configuration/tools?modal=import&modalTab=subjects&modalStep=download",
-    "title": "Import template \u00b7 subjects",
+    "title": "Import template · subjects",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1396,7 +1372,7 @@
     "id": "view.configuration.tools.modal.import.chapters.template",
     "feature": "configuration",
     "path": "/configuration/tools?modal=import&modalTab=chapters&modalStep=download",
-    "title": "Import template \u00b7 chapters",
+    "title": "Import template · chapters",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1404,7 +1380,7 @@
     "id": "view.configuration.tools.modal.import.billing.template",
     "feature": "configuration",
     "path": "/configuration/tools?modal=import&modalTab=billing&modalStep=download",
-    "title": "Import template \u00b7 billing",
+    "title": "Import template · billing",
     "kind": "modal",
     "identity": "owner"
   },
@@ -1412,8 +1388,24 @@
     "id": "view.configuration.tools.modal.import.payments.template",
     "feature": "configuration",
     "path": "/configuration/tools?modal=import&modalTab=payments&modalStep=download",
-    "title": "Import template \u00b7 payments",
+    "title": "Import template · payments",
     "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.structure.modal.level-grading",
+    "feature": "configuration",
+    "path": "/configuration/structure/details?modal=level-grading",
+    "title": "level-grading",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.structure.details",
+    "feature": "configuration",
+    "path": "/configuration/structure/details",
+    "title": "Grade level details",
+    "kind": "page",
     "identity": "owner"
   }
 ]

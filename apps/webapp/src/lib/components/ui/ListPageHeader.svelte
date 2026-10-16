@@ -4,6 +4,7 @@
 	const {
 		eyebrow,
 		title,
+		level = 'page',
 		description,
 		search,
 		filters,
@@ -12,6 +13,7 @@
 	}: {
 		eyebrow?: string;
 		title: string;
+		level?: 'page' | 'section';
 		description?: string;
 		search?: Snippet;
 		filters?: Snippet;
@@ -27,7 +29,11 @@
 				{eyebrow}
 			</p>
 		{/if}
-		<h2 class="font-display text-[28px] font-semibold leading-tight">{title}</h2>
+		{#if level === 'section'}
+			<h3 class="font-display text-base font-semibold leading-tight">{title}</h3>
+		{:else}
+			<h2 class="font-display text-[28px] font-semibold leading-tight">{title}</h2>
+		{/if}
 		{#if description}
 			<p class="mt-1 text-sm text-muted-foreground">{description}</p>
 		{/if}

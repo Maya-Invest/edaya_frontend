@@ -17,8 +17,8 @@ export async function runListShellScenes(ctx: DemoContext): Promise<void> {
 	await visit(ctx, `${base}/finance/payment`, 'DC2', 'Payments list shell', { pathPrefix: '/finance/payment' });
 	await assertListShell(ctx, 'DC2', 'Payments Filter + More menu');
 
-	await visit(ctx, `${base}/configuration/classes`, 'DC3', 'Class groups list shell', {
-		pathPrefix: '/configuration/classes',
+	await visit(ctx, `${base}/configuration/structure/classes`, 'DC3', 'Class groups list shell', {
+		pathPrefix: '/configuration/structure/classes',
 	});
 	await assertListShell(ctx, 'DC3', 'Class groups Filter + More menu');
 
@@ -58,8 +58,8 @@ export async function runListShellScenes(ctx: DemoContext): Promise<void> {
 		'Director role may lack REPORT_CARD_CONFIGURE',
 	);
 
-	await visit(ctx, `${base}/configuration/subjects`, 'DC11', 'Subjects list shell', {
-		pathPrefix: '/configuration/subjects',
+	await visit(ctx, `${base}/configuration/structure/subjects`, 'DC11', 'Subjects list shell', {
+		pathPrefix: '/configuration/structure/subjects',
 	});
 	await assertFilterSelectShell(ctx, 'DC11', 'Subjects FilterSelect + More menu');
 

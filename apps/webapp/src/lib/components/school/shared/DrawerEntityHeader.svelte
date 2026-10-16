@@ -47,7 +47,7 @@
 			</div>
 		</div>
 		{#if actions || overflow}
-			<div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
+			<div class="flex max-w-full shrink-0 flex-wrap items-center justify-end gap-2">
 				{@render actions?.()}
 				{#if overflow}
 					<Popover.Popover bind:open={overflowOpen}>

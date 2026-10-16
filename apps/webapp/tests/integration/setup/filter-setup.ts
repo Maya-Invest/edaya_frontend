@@ -393,7 +393,7 @@ export async function setupSecondClass(
 	const { page } = ctx;
 	try {
 		await waitForResolvedAcademicYearId(page);
-		await gotoAppPage(ctx, '/configuration/classes');
+		await gotoAppPage(ctx, '/configuration/structure/classes');
 		await waitForPageQuery(page);
 
 		const className = `E2E-6B-${Date.now()}`;
@@ -406,7 +406,7 @@ export async function setupSecondClass(
 			return { step: 'second-class', ok: false, detail: 'Second class modal still open' };
 		}
 
-		await gotoAppPage(ctx, '/configuration/classes');
+		await gotoAppPage(ctx, '/configuration/structure/classes');
 		const entityId = await configEntityIdByName(page, className);
 		if (entityId) {
 			entities.secondClassId = entityId;
@@ -470,11 +470,11 @@ export async function setupFilterSubjects(
 	}
 
 	try {
-		await gotoAppPage(ctx, '/configuration/subjects');
+		await gotoAppPage(ctx, '/configuration/structure/subjects');
 		await waitForPageQuery(page);
 
 		const subjectName = `E2E-Subject-${Date.now()}`;
-		const opened = await clickCreateButton(page, 'Créer matière', '/configuration/subjects');
+		const opened = await clickCreateButton(page, 'Créer matière', '/configuration/structure/subjects');
 		if (!opened) {
 			return { step: 'filter-subjects', ok: false, detail: 'Subject create modal not found' };
 		}
@@ -520,17 +520,17 @@ export async function setupFilterSubjects(
 		await waitForPageQuery(page);
 
 		if (!subjectId) {
-			await gotoAppPage(ctx, `/configuration/subjects?gradeLevel=${gradeLevelId}`);
+			await gotoAppPage(ctx, `/configuration/structure/subjects?gradeLevel=${gradeLevelId}`);
 			await waitForPageQuery(page);
 
 			const subjectButton = page.locator('main button').filter({ hasText: subjectName }).first();
 			if (await subjectButton.isVisible({ timeout: 10_000 }).catch(() => false)) {
 				await subjectButton.click();
 				await page.waitForTimeout(800);
-				subjectId = page.url().match(/\/configuration\/subjects\/([^/?]+)/)?.[1] ?? null;
+				subjectId = page.url().match(/\/configuration\/structure\/subjects\/([^/?]+)/)?.[1] ?? null;
 			}
 			if (!subjectId) {
-				subjectId = await firstIdFromLinks(page, /\/configuration\/subjects\/([^/?]+)/);
+				subjectId = await firstIdFromLinks(page, /\/configuration\/structure\/subjects\/([^/?]+)/);
 			}
 		}
 

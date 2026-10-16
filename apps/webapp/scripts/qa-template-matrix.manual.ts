@@ -147,7 +147,6 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	...rows('École', `${B}/school/staff`, ['Liste', 'Créer personnel']),
 	...rows('École', `${B}/school/staff/[id]/profile`, ['Éditer profil']),
 	...rows('École', `${B}/school/staff/[id]/permissions`, ['Assigner permissions']),
-	...rows('École', `${B}/school/staff/[id]/assignments`, ['Assignations classe/rôle']),
 
 	...rows('École', `${B}/school/teachers`, ['Liste', 'Créer enseignant']),
 	...rows('École', `${B}/school/teachers/[id]/profile`, ['Éditer profil']),
@@ -289,7 +288,7 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	]),
 
 	// ─── Configuration ──────────────────────────────────────────────────
-	...rows('Configuration', `${B}/configuration`, ['Redirect vers /configuration/subjects']),
+	...rows('Configuration', `${B}/configuration`, ['Redirect vers /configuration/structure/details']),
 	...rows('Configuration', `${B}/configuration/school`, [
 		'Éditer les sections du profil école',
 	]),
@@ -305,26 +304,26 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 	...rows('Configuration', `${B}/configuration/other`, [
 		'Liste des catalogues',
 	]),
-	...rows('Configuration', `${B}/configuration/grade-levels`, [
+	...rows('Configuration', `${B}/configuration/structure/details`, [
 		'Liste niveaux',
 		'Créer niveau',
 	]),
-	...rows('Configuration', `${B}/configuration/grade-levels/[id]`, ['Drawer — éditer / supprimer']),
-	...rows('Configuration', `${B}/configuration/classes`, [
+	...rows('Configuration', `${B}/configuration/structure/details?gradeLevel=[id]`, ['Niveau sélectionné — éditer / supprimer']),
+	...rows('Configuration', `${B}/configuration/structure/classes`, [
 		'Liste classes',
 		'Créer classe',
 	]),
-	...rows('Configuration', `${B}/configuration/classes/[id]/profile`, ['Profil classe — éditer']),
-	...rows('Configuration', `${B}/configuration/classes/[id]/assignments`, ['Affectations staff']),
-	...rows('Configuration', `${B}/configuration/subjects`, [
+	...rows('Configuration', `${B}/configuration/structure/classes/[id]/profile`, ['Profil classe — éditer']),
+	...rows('Configuration', `${B}/configuration/structure/classes/[id]/assignments`, ['Affectations staff']),
+	...rows('Configuration', `${B}/configuration/structure/subjects`, [
 		'Liste matières',
 		'Filtre niveau',
 		'Créer matière',
 	]),
-	...rows('Configuration', `${B}/configuration/subjects/[id]/progression`, ['Chapitres CRUD']),
-	...rows('Configuration', `${B}/configuration/subjects/[id]/logbook`, ['Redirection catalogue vers progression']),
-	...rows('Configuration', `${B}/configuration/subjects/level/[level]`, [
-		'Redirect vers /configuration/subjects?gradeLevel=[id]',
+	...rows('Configuration', `${B}/configuration/structure/subjects/[id]/progression`, ['Chapitres CRUD']),
+	...rows('Configuration', `${B}/configuration/structure/subjects/[id]/logbook`, ['Redirection catalogue vers progression']),
+	...rows('Configuration', `${B}/configuration/structure/subjects/level/[level]`, [
+		'Redirect vers /configuration/structure/subjects?gradeLevel=[id]',
 	]),
 	...rows('Configuration', `${B}/configuration/grade-scales`, [
 		'Liste barèmes',

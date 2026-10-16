@@ -62,14 +62,14 @@ export async function exerciseFeeEditArchive(page: Page, base: string) {
 
 export async function exerciseGradeLevelEditDelete(page: Page, base: string) {
 	const name = `Integration level ${crypto.randomUUID()}`;
-	assert(await openUrlModal(page, '/configuration/grade-levels', 'create', { base }));
+	assert(await openUrlModal(page, '/configuration/structure/details', 'create-level', { base }));
 	await page.getByRole('dialog').locator('input').first().fill(name);
 	const created = await uiCommand(page, '/commands/configure-grade-level', () => page.getByTestId('form-modal-submit').click());
 	const { id } = created.request().postDataJSON() as { id: string };
 	assert(id, 'Required disposable grade-level fixture missing');
 	await waitForMutationDialog(page);
-	const path = `/configuration/grade-levels/${id}`;
-	assert(await openUrlModal(page, path, 'edit', { base }));
+	const path = `/configuration/structure/details?gradeLevel=${id}`;
+	assert(await openUrlModal(page, path, 'edit-level', { base }));
 	const editedName = `${name} edited`;
 	await page.getByRole('dialog').locator('input').first().fill(editedName);
 	await uiCommand(page, '/commands/configure-grade-level', () => page.getByTestId('form-modal-submit').click());
@@ -77,10 +77,10 @@ export async function exerciseGradeLevelEditDelete(page: Page, base: string) {
 	await page.reload({ waitUntil: 'domcontentloaded' });
 	await waitForPageQuery(page);
 	assert(JSON.stringify((await readEntity(page, base, 'grade-levels', id)).name).includes(editedName));
-	assert(await openUrlModal(page, path, 'delete', { base }));
+	assert(await openUrlModal(page, path, 'delete-level', { base }));
 	await uiCommand(page, '/entities/grade-levels/delete', () => page.getByRole('dialog').getByRole('button', { name: /^(supprimer|delete)$/i }).click());
 	await waitForMutationDialog(page);
-	await navigateSpaPage(page, `${base}/configuration/grade-levels`);
+	await navigateSpaPage(page, `${base}/configuration/structure/details`);
 	await page.reload({ waitUntil: 'domcontentloaded' });
 	await waitForPageQuery(page);
 	const deleted = await apiFetch(page, base, `/core/entities/grade-levels/${id}`);

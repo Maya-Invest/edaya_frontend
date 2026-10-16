@@ -65,8 +65,8 @@ const SCHOOL_DRAWER_PREFIXES = [
 ] as const;
 
 const CONFIG_DRAWER_PREFIXES = [
-	'/configuration/classes/',
-	'/configuration/subjects/',
+	'/configuration/structure/classes/',
+	'/configuration/structure/subjects/',
 ] as const;
 
 export function schoolStudentPath(id: string, tab = 'profile'): string {
@@ -94,11 +94,11 @@ export function financeBillingPath(id: string): string {
 }
 
 export function configClassGroupPath(id: string, tab: 'profile' | 'assignments' = 'profile'): string {
-	return `/configuration/classes/${id}/${tab}`;
+	return `/configuration/structure/classes/${id}/${tab}`;
 }
 
 export function configSubjectPath(id: string, tab: 'progression' | 'logbook' = 'progression'): string {
-	return `/configuration/subjects/${id}/${tab}`;
+	return `/configuration/structure/subjects/${id}/${tab}`;
 }
 
 export function classStudentsPath(classId: string, studentId: string, tab = 'profile'): string {

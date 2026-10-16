@@ -521,7 +521,6 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 			actionPath: 'http://localhost:5173/school/staff/[id]/permissions',
 			actions: ['Assigner permissions'],
 		});
-		await visitCovered(journey, '/school/staff/[id]/assignments', `/school/staff/${staffId}/assignments`);
 	}
 
 	const teacherId = await createPerson(journey, {

@@ -32,7 +32,7 @@ Status: **Built** = use as-is. No **Planned** registry entries at this time — 
 | **BrandLogo** | `ui/BrandLogo.svelte` | Built | Official artwork, color/white tone and vertical/horizontal/symbol variants; minimum sizes and clear space |
 | **PageQuery** | `ui/PageQuery.svelte` | Built | Every list route — loading contract |
 | **DataState** | `ui/DataState.svelte` | Built | Loading · empty · error around collections |
-| **ListPageHeader** | `ui/ListPageHeader.svelte` | Built | Page title + toolbar slots |
+| **ListPageHeader** | `ui/ListPageHeader.svelte` | Built | Page title + toolbar slots; `level="section"` uses a compact h3 inside an existing page hierarchy |
 | **ListSearchField** | `ui/ListSearchField.svelte` | Built | Instant text filter pill — **do not** copy inline search markup |
 | **FilterSelect** | `ui/filter-select.svelte` | Built | **Main filter** — always `<select>` |
 | **FilterPanel** | `ui/FilterPanel.svelte` | Built | Secondary facets (status, date range) opened from Filter button |
@@ -88,6 +88,7 @@ Smart components are shared, self-contained features with their own state class 
 | **ClassGroupPicker** | `smart-components/class-group-picker/` | Activity class timetable links, class multi-select on create |
 | **GuardianPicker** | `smart-components/guardian-picker/` | Guardian ↔ student linking |
 | **PermissionResolutionPreview** | `components/school/` | Added/changed/removed grant scopes and persistent resolution warnings before save. All four permission forms use shared `PermissionImpactPreviewState` to bind review to the complete current command and active session; outdated responses cannot publish a report or enable Save. |
+| **PermissionScopeTypes** | `smart-components/scope-builder/` | Presentational scope-type badges reused by profile configuration, staff permission lists and manual permission editing. Uses catalog metadata and the scope picker mapping, existing neutral badge tokens, localized labels and wrapping layout. |
 | **PermissionScopeSelections** | `smart-components/scope-builder/` | Mixed selection groups; no automatic broad selection |
 | **ScopeBuilder** | `smart-components/scope-builder/` | Typed scope selection groups for staff permissions, profile assignments and staff defaults |
 | **AccountLinkingSection** | `smart-components/account-linking/` | Staff, guardian and student invitation workflow with actor-scoped state |
@@ -101,7 +102,7 @@ Do not build ad-hoc `<select>` lists for people — use pickers or **PickerModal
 
 | Component | Path | Use for |
 |-----------|------|---------|
-| **PermissionCheckboxGroup** | `routes/(app)/configuration/classes/components/PermissionCheckboxGroup.svelte` | **Staff assignment** create/edit forms only — pick permission codes authorized directly by a class-level assignment; **not** the Permissions tab list |
+| **PermissionCheckboxGroup** | `routes/(app)/configuration/structure/classes/components/PermissionCheckboxGroup.svelte` | **Staff assignment** create/edit forms only — pick permission codes authorized directly by a class-level assignment; **not** the Permissions tab list |
 
 **Do not** use `ScopeBuilder` outside staff permission, permission-profile assignment and staff default-scope flows. A mixed-permission **profile checklist catalog** at `/configuration/permission-profiles` is allowed. **Do not** restore a roles CRUD matrix screen.
 
@@ -296,3 +297,7 @@ Messages and Corrections use `ListPageHeader`, pill `FilterSelect` controls, a s
 
 
 Configuration editors reuse FormModal, PermissionGate, FilterSelect, Checkbox, Input and RowActionMenu. RowActionMenu closes after an enabled action is chosen so it cannot obscure the editor’s return destination. School asset slots support a read-only summary and an immediate-save editor. All configuration forms retain keyboard focus within the modal, wrap long labels, and scroll vertically at narrow widths or enlarged text.
+
+### Combined level configuration
+
+The route-local `/configuration/structure` layout owns the level rail, mobile selector, level name and nested Details / Subjects / Classes tab links. LevelDetails owns level fields, edit/delete actions and grading configuration within Details. Reuse `GradeLevelFormModal`, `GradingConfigurationModal`, `SubjectFormModal` and `ClassGroupFormModal`; no duplicate workload editor. Subject/class row menus open those same editors. Class tables use a focusable horizontal scroll region on narrow screens.
