@@ -36,3 +36,8 @@ describe('combined level configuration', () => {
 		}
 	});
 });
+
+
+it('switching levels closes the report template drawer and its modal', () => {
+	expect(structureHref(url('/configuration/structure/details/report-cards/template?gradeLevel=six&modal=edit-section&modalTarget=math&q=term&levelQ=college'), 'five')).toBe('/configuration/structure/details?gradeLevel=five&levelQ=college');
+});

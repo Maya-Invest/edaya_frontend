@@ -30,6 +30,10 @@ export async function assertViewSurface(page: Page, surface: Pick<ViewSurface, '
   }
   if (surface.kind === 'modal') {
     const expected = new URL(surface.path, 'http://localhost').searchParams;
+    // The old grading deep link now opens the combined level editor.
+    if (surface.path.startsWith('/configuration/structure/') && expected.get('modal') === 'level-grading') {
+      expected.set('modal', 'edit-level');
+    }
     for (const key of ['modal', 'modalStep', 'modalTab']) {
       if (expected.has(key)) assert.equal(new URL(page.url()).searchParams.get(key), expected.get(key), `Requested ${key} was rejected or changed`);
     }

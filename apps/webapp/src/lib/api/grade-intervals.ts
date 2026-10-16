@@ -2,10 +2,10 @@ import type { GradeScaleRange } from '$lib/types/report-cards';
 
 export function newGradeIntervals(): GradeScaleRange[] {
 	return [
-		{ id: crypto.randomUUID(), letter: 'D', interpretation: 'Insuffisant', minScore: 0, maxScore: 10, isPassing: false },
-		{ id: crypto.randomUUID(), letter: 'C', interpretation: 'Assez bien', minScore: 10, maxScore: 14, isPassing: true },
-		{ id: crypto.randomUUID(), letter: 'B', interpretation: 'Bien', minScore: 14, maxScore: 16, isPassing: true },
-		{ id: crypto.randomUUID(), letter: 'A', interpretation: 'Très bien', minScore: 16, maxScore: 20, isPassing: true },
+		{ id: crypto.randomUUID(), letter: 'D', interpretation: 'Insuffisant', minScore: 0, maxScore: 10 },
+		{ id: crypto.randomUUID(), letter: 'C', interpretation: 'Assez bien', minScore: 10, maxScore: 14 },
+		{ id: crypto.randomUUID(), letter: 'B', interpretation: 'Bien', minScore: 14, maxScore: 16 },
+		{ id: crypto.randomUUID(), letter: 'A', interpretation: 'Très bien', minScore: 16, maxScore: 20 },
 	];
 }
 

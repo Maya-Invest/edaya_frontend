@@ -3,7 +3,7 @@ import {
 	searchAndSelectPerson,
 	selectNativeFilter,
 } from '../../../../scripts/qa-harness-ui';
-import { apiFetch, resolveSchoolId, ensureClassSubjectForClass, ensurePublishedTeacherTimetableSession } from '../journey-api';
+import { apiFetch, resolveSchoolId, ensureClassSubjectForClass, ensureGeneratedTeacherTimetableSession } from '../journey-api';
 import {
 	coverActions,
 	coverModal,
@@ -132,7 +132,7 @@ export async function runTeachingChapter(journey: UiJourney): Promise<void> {
 			await gotoApp(journey, `/school/teachers/${entities.teacherId}/assignments`);
 		}
 		if (entities.classId) {
-			await ensurePublishedTeacherTimetableSession(page, journey.ctx.base, {
+			await ensureGeneratedTeacherTimetableSession(page, journey.ctx.base, {
 				classGroupId: entities.classId,
 				teacherId: entities.teacherId,
 				catalogSubjectId: entities.subjectId,

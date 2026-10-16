@@ -5,12 +5,6 @@ import type { ReportCardsPageSlice } from './lib/report-cards-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
-import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
-import {
-  readReportCardDefinitionListFilters,
-  writeReportCardDefinitionListFilters,
-} from '$lib/list/list-url-filters';
-import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { getContext, setContext } from 'svelte';
 import { reportCardDefinitionIdFromUrl } from './lib/report-cards-helpers';
@@ -30,20 +24,9 @@ function schoolId(): string {
 export class ReportCardsPageState {
   slice = $state<ReportCardsPageSlice | null>(null);
 
-  readonly filters: ListFiltersState<{ q: string; status: string }>;
-
   private readonly versions = new RouteVersionSnapshot(REPORT_CARDS_VERSION_FAMILIES);
 
-  constructor(private readonly getUrl: () => URL) {
-    this.filters = new ListFiltersState(
-      {
-        getUrl,
-        write: writeReportCardDefinitionListFilters,
-        goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
-      },
-      () => readReportCardDefinitionListFilters(getUrl()),
-    );
-  }
+  constructor(private readonly getUrl: () => URL) {}
 
   applySlice(data: ReportCardsPageSlice) {
     this.slice = data;
@@ -151,12 +134,14 @@ export class ReportCardsPageState {
     name: string;
     description?: string;
     gradeLevelId: string;
+    academicYearId: string;
     gradeScaleId: string;
+    passThreshold?: number | null;
     successMessage?: string;
   }): Promise<string | null> {
     const sid = schoolId();
-    const yearId = academicContext.yearId;
-    if (!sid || !yearId) {
+    const yearId = input.academicYearId;
+    if (!sid || !yearId || yearId !== academicContext.yearId) {
       return null;
     }
 
@@ -169,6 +154,7 @@ export class ReportCardsPageState {
       academicYearId: yearId,
       gradeLevelId: input.gradeLevelId,
       gradeScaleId: input.gradeScaleId,
+      passThreshold: input.passThreshold,
       status: 'draft',
       sections: [],
     };
@@ -181,6 +167,7 @@ export class ReportCardsPageState {
         academicYearId: yearId,
         gradeLevelId: input.gradeLevelId,
         gradeScaleId: input.gradeScaleId,
+      passThreshold: input.passThreshold,
         name: input.name.trim(),
         kind: 'default',
         status: 'draft',

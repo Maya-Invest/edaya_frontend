@@ -1,5 +1,6 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, extname, relative, resolve } from 'node:path'
+import { BROWSER_SUITE_DIRECTORIES, FOCUSED_BROWSER_SUITES } from './browser-suites'
 import { files, redact, root } from './runtime'
 
 export function sanitizeReport(value: unknown): unknown {
@@ -37,12 +38,14 @@ export function collectReports(repository = root): void {
       cpSync(source, destination)
     retained.push(name)
   }
-  for (const name of ['availability', 'onboarding', 'integration', 'webadmin', 'demo-dry-run']) {
-    const directory = resolve(repository, 'apps/webapp', name === 'demo-dry-run' ? '.demo-dry-run' : `.${name}-run`)
+  for (const [suite, path] of Object.entries(BROWSER_SUITE_DIRECTORIES)) {
+    const name = suite === 'provisioned' ? 'integration' : suite === 'demo' ? 'demo-dry-run' : suite
+    const directory = resolve(repository, 'apps/webapp', path)
     for (const source of files(directory)) {
       const path = relative(directory, source)
       const summary = ['summary.json', 'results.json', 'execution.json', 'qa-matrix-results.json'].includes(path)
-      const diagnostic = /^artifacts\/[\w.-]+\.(?:json|png)$/.test(path)
+      const diagnostic = (FOCUSED_BROWSER_SUITES.some(entry => entry.name === suite) && /^[\w.-]+\.png$/.test(path))
+        || /^artifacts\/[\w.-]+\.(?:json|png)$/.test(path)
         || (name === 'onboarding' && /^[\w.-]+\.(?:json|png)$/.test(path) && json(source.replace(/\.png$/, '.json')).scenarioId === path.replace(/\.(?:json|png)$/, ''))
         || (name === 'demo-dry-run' && /^(?:cleanup-[\w.-]+|D0-login)\.png$/.test(path))
       if (summary || diagnostic)

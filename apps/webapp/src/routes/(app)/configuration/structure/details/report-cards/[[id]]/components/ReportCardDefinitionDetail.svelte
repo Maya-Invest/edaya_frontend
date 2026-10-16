@@ -76,7 +76,7 @@
 				definitionId: live.id,
 				successMessage: get(t)('reportCards.toastModelDeleted', { name: live.name }),
 				onSuccess: () => {
-					closeDetailDrawer(listSurfaceHref(appPath('/(app)/configuration/report-cards/[[id]]'), $page.url));
+					closeDetailDrawer(listSurfaceHref(appPath('/(app)/configuration/structure/details'), $page.url));
 				},
 			});
 			if (ok) {
@@ -162,7 +162,7 @@
 			<p class="mt-1 font-display text-sm font-semibold">{policy?.scale.name ?? scale.name} · {$t('grading.inherit')}</p>
 			{#if policy}<p class="mt-1 text-sm text-muted-foreground">{policy.aggregateLabel} · {$t(policy.mode === 'mention-first' ? 'grading.mention' : 'grading.numeric')} · {policy.scale.maxScore}</p>{/if}
 			<p class="mt-1 text-sm text-muted-foreground">
-				{$t('gradeScales.passing')} : {formatGrade(scale.passingScore, scale)} / {scale.maxScore}
+				{$t('reportCards.passThreshold')} : {live.passThreshold == null ? $t('reportCards.noPassThreshold') : `${formatGrade(live.passThreshold, policy?.scale ?? scale)} / ${(policy?.scale ?? scale).maxScore}`}
 			</p>
 			{#if scale.description}
 				<p class="mt-2 text-xs text-muted-foreground">{scale.description}</p>

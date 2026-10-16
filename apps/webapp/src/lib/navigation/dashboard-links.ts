@@ -14,7 +14,7 @@ export function dashboardActionHref(
 		case 'overdue_fees':
 			return appPath('/(app)/finance/billing/[[id]]');
 		case 'unpublished_report_cards':
-			return appPath('/(app)/configuration/report-cards/[[id]]');
+			return appPath('/(app)/configuration/structure/details');
 		case 'pending_justifications':
 			return appPath('/(app)/school/students/[[id]]');
 		case 'pending_student_photos':

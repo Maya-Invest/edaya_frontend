@@ -4,14 +4,14 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { chromium } from 'playwright';
-import { createServer } from 'vite';
+import { createFixtureServer } from './support/fixture-server';
 import { ensurePlaywrightChromium } from '../../scripts/playwright-browsers';
 
 async function main() {
 	ensurePlaywrightChromium();
 	const appRoot = new URL('../..', import.meta.url).pathname;
 	const fixture = `${appRoot}/tests/fixtures/timetable-modal`;
-	const server = await createServer({
+	const server = await createFixtureServer({
 		configFile: false,
 		root: appRoot,
 		// The full runner also serves the demo app from this root. Keep its
@@ -46,13 +46,10 @@ async function main() {
 			},
 		}, svelte({ configFile: false })],
 		resolve: { alias: [{ find: '$lib/academic/context.svelte', replacement: `${fixture}/academic-context.svelte.ts` }, { find: '$lib', replacement: `${appRoot}/src/lib` }] },
-		server: { host: '127.0.0.1', port: 5197, strictPort: true, fs: { allow: [appRoot, `${appRoot}/../..`] } },
-	});
+		server: { fs: { allow: [appRoot, `${appRoot}/../..`] } },
+	}, 'timetable-selection', 14179, '/timetable-fixture');
 	let browser;
 	try {
-		await server.listen();
-		const address = server.httpServer!.address();
-		assert(address && typeof address !== 'string');
 		browser = await chromium.launch({ headless: true });
 		const page = await browser.newPage();
 		await page.addInitScript(() => localStorage.setItem('lang', 'en'));
@@ -62,7 +59,7 @@ async function main() {
 			pageErrors.push(error.message);
 			console.error(error.stack);
 		});
-		await page.goto(`http://127.0.0.1:${address.port}/timetable-fixture`);
+		await page.goto(server.url);
 		const boxes = page.getByTestId('timetable-class-checkbox');
 		const box = (id: string) => boxes.and(page.locator(`[data-class-id="${id}"]`));
 		const classButton = (id: string) => page.getByTestId('timetable-workload-class').and(page.locator(`[data-class-id="${id}"]`));
@@ -213,8 +210,7 @@ async function main() {
 		process.stdout.write('Timetable modal browser checks passed: consolidated grouping, independent inclusion/navigation, search, scoped overrides, empty/single/large lists, retries, scope reset, keyboard, FR/EN, responsive layouts and 200% text.\n');
 	}
 	finally {
-		await browser?.close();
-		await server.close();
+		try { await browser?.close(); } finally { await server.close(); }
 	}
 }
 

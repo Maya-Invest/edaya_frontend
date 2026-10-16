@@ -88,9 +88,8 @@ describe('nav-permissions — prof principal (phase 3.3)', () => {
 			'school',
 			'academic',
 			'periodGrid',
-			'structure',
 			'gradeScales',
-			'reportCards',
+			'structure',
 			'notificationTemplates',
 			'other',
 			'permissionProfiles',
@@ -164,4 +163,15 @@ it('keeps grade-scale authority out of Other configuration and allows legacy red
 	expect(filterNavItems(CONFIG_NAV_DEFS, grants).map(row => row.key)).not.toContain('other');
 	expect(canAccessPath('/configuration/grade-scales', grants)).toBe(true);
 	expect(canAccessPath('/configuration/other/grade-scales', grants)).toBe(true);
+});
+
+
+it('keeps report configuration accessible through Levels and Classes with its own permission', () => {
+	const reportGrants = mockGrants(['REPORT_CARD_CONFIGURE']);
+	expect(filterNavItems(CONFIG_NAV_DEFS, reportGrants).map(item => item.key)).toEqual(['gradeScales', 'structure']);
+	for (const path of ['/configuration/report-cards/template', '/configuration/structure/details/report-cards/template']) {
+		expect(canAccessPath(path, reportGrants)).toBe(true);
+		expect(canAccessPath(path, mockGrants(['SCHOOL_STRUCTURE_READ']))).toBe(false);
+	}
+	expect(canAccessPath('/configuration/structure/details', reportGrants)).toBe(true);
 });

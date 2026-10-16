@@ -251,7 +251,7 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 		await visitCovered(journey, '/classes/[classId]/report-cards', `/classes/${classId}/report-cards`);
 		coverActions(journey, 'http://localhost:5173/classes/[classId]/report-cards', ['Liste — filtre statut'], 'OK');
 		if (entities.reportCardDefId) {
-			await gotoApp(journey, `/configuration/report-cards/${entities.reportCardDefId}`);
+			await gotoApp(journey, `/configuration/structure/details/report-cards/${entities.reportCardDefId}`);
 			const publishModelBtn = page.getByRole('button', { name: /publish model|publier le modèle/i }).first();
 			if (await publishModelBtn.isVisible({ timeout: 8_000 }).catch(() => false)) {
 				const publication = page.waitForResponse(response => response.url().includes('/entities/definitions/save') && response.request().method() === 'POST', { timeout: 20000 });

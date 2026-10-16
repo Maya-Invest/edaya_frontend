@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { mkdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { ensurePlaywrightChromium } from '../../scripts/playwright-browsers';
 import { peekOtp, sendOtpThroughUi } from './support/passwordless';
@@ -6,6 +8,8 @@ import { apiFetch } from './setup/journey-api';
 import { exerciseTeacherRead } from './support/teacher-workflows';
 import type { MatrixEntities } from '../../scripts/qa-matrix-support';
 
+const artifacts = process.env.INTEGRATION_ARTIFACT_DIR ?? '/private/tmp';
+mkdirSync(artifacts, { recursive: true });
 const base = (process.env.WEBAPP_URL ?? 'http://localhost:5173').replace(/\/+$/, '');
 assert(['localhost', '127.0.0.1'].includes(new URL(base).hostname));
 const schoolId = 'sch-edaya-ci-cocody';
@@ -22,6 +26,26 @@ async function read(path: string, data: unknown) {
   return await response.json() as any;
 }
 async function chooseDate(date: string) {
+  // Viewport changes and font layout must finish before measuring navigation.
+  // Keep the strict before/after assertion below scoped to the date change.
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    let previous = '';
+    let stableFrames = 0;
+    const deadline = performance.now() + 5000;
+    while (performance.now() < deadline) {
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      const elements = [...document.querySelectorAll('[data-testid="teacher-detail-identity"], [data-testid="drawer-tab-bar"], [data-testid="teacher-timetable-controls"]')];
+      const current = JSON.stringify(elements.map(element => {
+        const { top, width, height } = element.getBoundingClientRect();
+        return { top, width, height };
+      }));
+      stableFrames = elements.length === 3 && current === previous ? stableFrames + 1 : 0;
+      if (stableFrames >= 3) return;
+      previous = current;
+    }
+    throw new Error('Teacher drawer layout did not settle before date navigation');
+  });
   const fixedPositions = await page.locator('[data-testid="teacher-detail-identity"], [data-testid="drawer-tab-bar"], [data-testid="teacher-timetable-controls"]').evaluateAll(elements => elements.map(element => element.getBoundingClientRect().top));
   const input = page.locator('#teacher-timetable-date');
   await input.focus(); await input.fill(date); await input.dispatchEvent('change');
@@ -77,7 +101,7 @@ try {
   await page.getByRole('dialog').waitFor({ state: 'hidden' });
   assert.equal(await homeroom.locator('li').count(), teacherAssignments.filter((row: any) => row.kind === 'homeroom').length, 'Closing the assignment modal must preserve the drawer data');
   assert.equal(await subject.locator('li').count(), teacherAssignments.filter((row: any) => row.kind === 'subject').length);
-  await page.screenshot({ path: '/private/tmp/teacher-assignments-fr.png' });
+  await page.screenshot({ path: resolve(artifacts, 'teacher-assignments-fr.png') });
 
   // Read-only response fixtures exercise the empty section variants without changing assignments.
   for (const kind of ['homeroom', 'subject', 'empty']) {
@@ -133,11 +157,11 @@ try {
   assert.equal(await page.locator(`[data-timetable-date="${emptyDate.toISOString().slice(0, 10)}"]`).count(), 0);
   assert.equal(requests, loadedRequests, 'Date changes must not refetch');
   await chooseDate(events[0]!.startsAt.slice(0, 10));
-  await page.screenshot({ path: '/private/tmp/teacher-timetable-fr.png' });
+  await page.screenshot({ path: resolve(artifacts, 'teacher-timetable-fr.png') });
   await page.setViewportSize({ width: 390, height: 844 });
   await chooseDate(lastDate);
   assert(await page.getByTestId('teacher-year-timetable').evaluate(element => element.scrollWidth <= element.clientWidth));
-  await page.screenshot({ path: '/private/tmp/teacher-timetable-mobile.png' });
+  await page.screenshot({ path: resolve(artifacts, 'teacher-timetable-mobile.png') });
   const sessionList = page.getByTestId('teacher-timetable-sessions');
   const identityTop = await page.getByTestId('teacher-detail-identity').evaluate(element => element.getBoundingClientRect().top);
   await sessionList.focus();
@@ -151,7 +175,7 @@ try {
   await page.goto(`${timetableUrl}?week=${year.startDate}`);
   await page.waitForURL(url => url.searchParams.get('date') === year.startDate && !url.searchParams.has('week'));
   await page.getByLabel('Go to date').waitFor();
-  await page.screenshot({ path: '/private/tmp/teacher-timetable-en.png' });
+  await page.screenshot({ path: resolve(artifacts, 'teacher-timetable-en.png') });
   empty = true;
   await page.reload();
   await page.getByText('No sessions in this academic year.', { exact: true }).waitFor();
@@ -178,7 +202,7 @@ try {
   await page.unroute('**/queries/get-teacher-timetable');
   await page.goto(assignmentUrl); await homeroom.waitFor();
   await page.getByRole('heading', { name: 'Homeroom assignments', exact: true }).waitFor();
-  await page.screenshot({ path: '/private/tmp/teacher-assignments-en.png' });
+  await page.screenshot({ path: resolve(artifacts, 'teacher-assignments-en.png') });
   assert.deepEqual(errors, []);
   console.log('Teacher tabs browser checks passed: assignment sections and empty states, real full-year API, date navigation without refetching, empty dates, progressive rendering, legacy links, FR/EN and mobile.');
 }
@@ -189,7 +213,7 @@ catch (error) {
     const date = new URL(location.href).searchParams.get('date');
     return [...document.querySelectorAll(`[data-teacher-drawer-scroll], [data-testid="teacher-timetable-controls"], [data-timetable-date="${date}"]`)].map(element => ({ rect: element.getBoundingClientRect().toJSON(), padding: getComputedStyle(element).paddingTop }));
   }).catch(() => []));
-  await page.screenshot({ path: '/private/tmp/teacher-tabs-failure.png' }).catch(() => {});
+  await page.screenshot({ path: resolve(artifacts, 'teacher-tabs-failure.png') }).catch(() => {});
   throw error;
 }
 finally { await browser.close(); }

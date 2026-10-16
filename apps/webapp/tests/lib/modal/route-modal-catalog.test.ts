@@ -160,10 +160,10 @@ const routeCases = [
 		'/configuration/structure/subjects/subject-1/progression',
 		['add-chapter', 'edit-chapter', 'delete-chapter'],
 	],
-	['configuration-report-cards-list', '/configuration/report-cards', ['create']],
+	['configuration-report-cards-list', '/configuration/structure/details', ['create']],
 	[
 		'configuration-report-cards-detail',
-		'/configuration/report-cards/report-card-1',
+		'/configuration/structure/details/report-cards/report-card-1',
 		['create', 'delete', 'edit', 'add-section', 'edit-section', 'delete-section'],
 	],
 	['configuration-grade-scales', '/configuration/grade-scales', ['create', 'edit', 'delete', 'add-interval', 'edit-interval', 'delete-interval']],

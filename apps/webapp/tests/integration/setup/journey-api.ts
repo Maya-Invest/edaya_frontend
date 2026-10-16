@@ -1,4 +1,5 @@
 import type { Page } from 'playwright';
+import assert from 'node:assert/strict';
 /**
  * Authenticated API helpers for the owner UI journey (Playwright request context).
  * Used as fallbacks when drawer/modal UI flows are flaky.
@@ -495,16 +496,17 @@ export async function ensureClassSubjectForClass(
 	},
 	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
 ): Promise<string | null> {
-	const existing = await listClassSubjects(page, appOrigin, options.classGroupId, apiUrl);
-	const offered = existing.find(entry => entry.isOffered !== false) ?? existing[0];
-	if (offered?.id) {
-		return offered.id;
-	}
-
 	let catalogSubjectId = options.catalogSubjectId ?? null;
 	if (!catalogSubjectId && options.gradeLevelSubjectId) {
 		catalogSubjectId = await resolveCatalogSubjectId(page, appOrigin, options.gradeLevelSubjectId, apiUrl);
 	}
+	const existing = await listClassSubjects(page, appOrigin, options.classGroupId, apiUrl);
+	const matching = catalogSubjectId ? existing.filter(entry => entry.subjectId === catalogSubjectId) : existing;
+	const offered = matching.find(entry => entry.isOffered !== false) ?? matching[0];
+	if (offered?.id) {
+		return offered.id;
+	}
+
 	if (!catalogSubjectId) {
 		integrationDebug('ensureClassSubjectForClass: no catalog subjectId');
 		return null;
@@ -524,7 +526,7 @@ export async function ensureClassSubjectForClass(
 	if (!offerResponse.ok()) {
 		integrationDebug('offer-subject-to-class failed', offerResponse.status(), await offerResponse.text().catch(() => ''));
 		const refreshed = await listClassSubjects(page, appOrigin, options.classGroupId, apiUrl);
-		return refreshed[0]?.id ?? null;
+		return refreshed.find(entry => entry.subjectId === catalogSubjectId)?.id ?? null;
 	}
 
 	try {
@@ -1630,7 +1632,7 @@ export async function publishAcademicPeriodsViaApi(
 	}
 }
 
-export async function ensurePublishedTeacherTimetableSession(
+export async function ensureGeneratedTeacherTimetableSession(
 	page: Page,
 	appOrigin: string,
 	options: {
@@ -1639,31 +1641,20 @@ export async function ensurePublishedTeacherTimetableSession(
 		catalogSubjectId?: string | null;
 	},
 	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
-): Promise<string | null> {
-	console.log(`teacher timetable publish for ${options.teacherId}`);
+): Promise<string> {
 	const schoolId = await resolveSchoolId(page, appOrigin, apiUrl);
-	if (!schoolId) {
-		console.log('teacher timetable session skipped: no school');
-		return null;
-	}
+	assert(schoolId, 'Teacher timetable requires the current school');
 	const classSubjectId = await ensureClassSubjectForClass(page, appOrigin, {
 		classGroupId: options.classGroupId,
 		catalogSubjectId: options.catalogSubjectId,
 	}, apiUrl);
-	if (!classSubjectId) {
-		console.log('teacher timetable session skipped: no class subject');
-		return null;
-	}
+	assert(classSubjectId, 'Teacher timetable requires an offered class subject');
 	const scheduleDate = new Date().toISOString().slice(0, 10);
 	const endDate = new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 	const classGroup = await getClassGroup(page, appOrigin, options.classGroupId, apiUrl);
 	const academicYearId = (typeof classGroup?.academicYearId === 'string' ? classGroup.academicYearId : null)
 		?? await readStoredAcademicYearId(page);
-	console.log(`teacher timetable year ${academicYearId ?? '(none)'}`);
-	if (!academicYearId) {
-		console.log('teacher timetable session skipped: no academic year');
-		return null;
-	}
+	assert(academicYearId, 'Teacher timetable requires the class academic year');
 	const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] as const;
 	for (const [index, day] of days.entries()) {
 		const saved = await apiFetch(page, appOrigin, '/core/entities/period-definitions/save', {
@@ -1682,9 +1673,7 @@ export async function ensurePublishedTeacherTimetableSession(
 			},
 			academicYearId,
 		}, apiUrl);
-		if (!saved.ok()) {
-			console.log(`period slot ${day} status=${saved.status()} body=${(await saved.text().catch(() => '')).slice(0, 180)}`);
-		}
+		assert(saved.ok(), `Teacher timetable period ${day}: HTTP ${saved.status()}`);
 	}
 	const classSubjects = await listClassSubjects(page, appOrigin, options.classGroupId, apiUrl);
 	const periodsPerWeekByClassSubjectId: Record<string, number> = {
@@ -1710,26 +1699,21 @@ export async function ensurePublishedTeacherTimetableSession(
 		},
 		academicYearId,
 	}, apiUrl);
-	const generatedBody = await generated.text().catch(() => '');
-	console.log(`generate timetable status=${generated.status()} body=${generatedBody.slice(0, 400)}`);
-	if (!generated.ok()) {
-		return null;
+	assert(generated.ok(), `Teacher timetable generation: HTTP ${generated.status()}: ${await generated.text()}`);
+	const result = await generated.json() as { sessions: Array<{ id: string }> };
+	assert(result.sessions.length > 0, 'Teacher timetable must generate sessions');
+	let teacherSessions = 0;
+	for (const session of result.sessions) {
+		const response = await apiFetch(page, appOrigin, `/core/entities/lesson-sessions/${session.id}`, { academicYearId }, apiUrl);
+		assert(response.ok(), `Generated teacher lesson ${session.id} must persist`);
+		const saved = await response.json() as { classGroupId: string; schoolId: string; classSubjectId: string; startsAt: string; timetableGenerated: boolean; timetableTeacherIds: string[] };
+		assert.equal(saved.classGroupId, options.classGroupId);
+		assert.equal(saved.schoolId, schoolId);
+		assert.equal(saved.timetableGenerated, true);
+		assert(saved.startsAt.slice(0, 10) >= scheduleDate && saved.startsAt.slice(0, 10) <= endDate);
+		if (saved.classSubjectId === classSubjectId && saved.timetableTeacherIds.includes(options.teacherId)) teacherSessions++;
 	}
-	const published = await apiFetch(page, appOrigin, '/core/commands/publish-class-group-timetable', {
-		method: 'POST',
-		data: {
-			classGroupId: options.classGroupId,
-			startDate: scheduleDate,
-			endDate,
-			sessionConflictPolicy: 'skip',
-		},
-		academicYearId,
-	}, apiUrl);
-	const publishedBody = await published.text().catch(() => '');
-	console.log(`publish timetable status=${published.status()} body=${publishedBody.slice(0, 400)}`);
-	if (!published.ok()) {
-		return null;
-	}
+	assert(teacherSessions > 0, 'Generated timetable must contain lessons assigned to the selected teacher');
 	return classSubjectId;
 }
 

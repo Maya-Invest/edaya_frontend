@@ -1144,7 +1144,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
     if (action === 'Générer / télécharger / annuler') return ok(row, await exerciseStudentDocument(page, ctx.base));
 
     if (action.startsWith('Planning EDT')) {
-        return ok(row, await exerciseTimetable(page, ctx.base, action.includes('publier')));
+        return ok(row, await exerciseTimetable(page, ctx.base, scenarioForSurface(row).id === 'web.scenario.0181'));
     }
 
 	// ── Publish / generate / payment / toggle — smoke only ──

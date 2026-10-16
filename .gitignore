@@ -73,3 +73,6 @@ apps/webapp/.screenshots/
 /qa-*.csv
 /qa-*-results.json
 /.qa-checklist-run/
+
+# Focused browser qualification evidence
+apps/webapp/.focused-run/

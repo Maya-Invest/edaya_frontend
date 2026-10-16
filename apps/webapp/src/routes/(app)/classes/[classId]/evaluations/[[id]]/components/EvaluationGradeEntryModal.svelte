@@ -97,7 +97,7 @@
 				type="number"
 				min="0"
 				max={evaluation.outOf}
-				step={policy ? "any" : "0.01"}
+				step={policy ? 'any' : '0.01'}
 				disabled={designation !== 'scored'}
 				bind:value={score}
 			/>

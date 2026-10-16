@@ -1172,21 +1172,21 @@
     "id": "web.scenario.0164",
     "feature": "web.configuration.report.cards",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/report-cards",
+    "endpoint": "http://localhost:5173/configuration/structure/details",
     "action": "Liste définitions bulletins"
   },
   {
     "id": "web.scenario.0165",
     "feature": "web.configuration.report.cards",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/report-cards",
+    "endpoint": "http://localhost:5173/configuration/structure/details",
     "action": "Créer / supprimer / publier"
   },
   {
     "id": "web.scenario.0166",
     "feature": "web.configuration.report.cards.id",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/report-cards/[id]",
+    "endpoint": "http://localhost:5173/configuration/structure/details/report-cards/[id]",
     "action": "Drawer définition"
   },
   {
@@ -1285,7 +1285,7 @@
     "feature": "web.configuration.tools",
     "module": "Configuration",
     "endpoint": "http://localhost:5173/configuration/tools",
-    "action": "Planning EDT — générer brouillon",
+    "action": "Planning EDT — générer les séances",
     "acceptance": "Classes selected by searchable checkboxes; defaults and clear/select-all verified; only selected classes receive drafts; unselected timetable IDs remain unchanged after reload."
   },
   {
@@ -1293,7 +1293,7 @@
     "feature": "web.configuration.tools",
     "module": "Configuration",
     "endpoint": "http://localhost:5173/configuration/tools",
-    "action": "Planning EDT — publier"
+    "action": "Planning EDT — régénérer sans doublons"
   },
   {
     "id": "web.scenario.0182",
@@ -1392,20 +1392,6 @@
     "module": "Permissions",
     "endpoint": "(multi-comptes)",
     "action": "Boutons CRUD masqués (PermissionGate)"
-  },
-  {
-    "id": "web.scenario.0196",
-    "feature": "web.configuration.report.cards",
-    "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/report-cards",
-    "action": "Navigation directe — contenu visible"
-  },
-  {
-    "id": "web.scenario.0197",
-    "feature": "web.configuration.report.cards.id",
-    "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/report-cards/[id]",
-    "action": "Navigation directe — contenu visible"
   },
   {
     "id": "web.scenario.0198",
@@ -2496,14 +2482,14 @@
     "id": "web.scenario.0356",
     "feature": "web.configuration.report.cards",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/report-cards?modal=create",
+    "endpoint": "http://localhost:5173/configuration/structure/details?modal=create",
     "action": "Modal deep-link ?modal=create"
   },
   {
     "id": "web.scenario.0357",
     "feature": "web.configuration.report.cards.id",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/report-cards/[id]?modal=delete",
+    "endpoint": "http://localhost:5173/configuration/structure/details/report-cards/[id]?modal=delete",
     "action": "Modal deep-link ?modal=delete"
   },
   {
@@ -2717,13 +2703,6 @@
     "action": "Sidebar — lien config.periodGrid accessible"
   },
   {
-    "id": "web.scenario.0391",
-    "feature": "web.configuration.report.cards",
-    "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/report-cards",
-    "action": "Sidebar — lien config.reportCards accessible"
-  },
-  {
     "id": "web.scenario.0392",
     "feature": "web.configuration.notifications",
     "module": "Configuration",
@@ -2854,6 +2833,13 @@
     "feature": "web.school.staff.id.assignments",
     "module": "École",
     "endpoint": "http://localhost:5173/school/staff/[id]/assignments",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.configuration.report-cards.redirect",
+    "feature": "web.configuration",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/report-cards/[id]",
     "action": "Redirect — cible attendue"
   }
 ]

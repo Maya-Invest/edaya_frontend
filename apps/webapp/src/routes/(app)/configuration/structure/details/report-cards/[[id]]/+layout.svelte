@@ -12,7 +12,7 @@
 	const definition = $derived(reportCardsPage.selected);
 
 	function closeDetail() {
-		closeDetailDrawer(listSurfaceHref(appPath('/(app)/configuration/report-cards/[[id]]'), $page.url));
+		closeDetailDrawer(listSurfaceHref(appPath('/(app)/configuration/structure/details'), $page.url));
 	}
 
 	$effect(() => {

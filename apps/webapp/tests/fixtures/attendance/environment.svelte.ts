@@ -30,7 +30,10 @@ const client = {
 	commands: { recordClassDailyAttendance: async (input: { date: string; attendanceByStudent: Record<string, string> }) => {
 		controls.requests.push(input);
 		await new Promise(resolve => setTimeout(resolve, 100));
-		if (controls.failWrite) throw new Error('Save unavailable');
+		if (controls.failWrite) {
+			controls.failWrite = false;
+			throw new Error('Save unavailable');
+		}
 		localStorage.setItem('attendance-fixture', JSON.stringify([...saved(), input]));
 		return records();
 	} },

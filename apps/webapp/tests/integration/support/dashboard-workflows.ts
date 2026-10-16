@@ -15,7 +15,7 @@ export async function exerciseDashboard(page: Page, base: string, id: string): P
   const data = await overview(page);
   if (id === 'web.scenario.0011') {
     assert(data.kpis.studentCount > 0, 'Required dashboard student fixture missing');
-    for (const [href,key] of [['/school/students','studentCount'],['/finance/billing','overdueFeeCount'],['/configuration/report-cards','unpublishedReportCardCount'],['/school/events','openIncidentCount']]) {
+    for (const [href,key] of [['/school/students','studentCount'],['/finance/billing','overdueFeeCount'],['/configuration/structure/details','unpublishedReportCardCount'],['/school/events','openIncidentCount']]) {
       const card = page.locator(`main a[href="${href}"]`).first();
       await card.waitFor();
       assert.equal(await card.locator('p').first().innerText(),String(data.kpis[key]),`Dashboard ${key} does not match API`);

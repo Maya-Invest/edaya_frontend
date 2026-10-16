@@ -159,7 +159,7 @@
 		</a>
 
 		<a
-			href={appPath('/(app)/configuration/report-cards/[[id]]')}
+			href={appPath('/(app)/configuration/structure/details')}
 			class="rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
 		>
 			<div class={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpis.unpublishedReportCardCount > 0 ? kpiToneClass.warn : kpiToneClass.sky)}>
@@ -289,7 +289,7 @@
 			</a>
 
 			<a
-				href={appPath('/(app)/configuration/report-cards/[[id]]')}
+				href={appPath('/(app)/configuration/structure/details')}
 				class="rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
 			>
 				<div class="mb-3 flex items-center gap-2 text-muted-foreground">

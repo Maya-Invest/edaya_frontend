@@ -1,4 +1,5 @@
 import type { UiJourney } from '../journey-context';
+import assert from 'node:assert/strict';
 import {
 	clickCreateButton,
 	fillGradeScaleCreateDialog,
@@ -16,7 +17,8 @@ import {
 	fillLabeledInput,
 } from '../../../../scripts/qa-harness-ui';
 import { configEntityIdByName, firstIdFromLinks } from '../../../../scripts/qa-matrix-support';
-import { ensureNotificationTemplatesViaApi } from '../journey-api';
+import { apiFetch, ensureNotificationTemplatesViaApi } from '../journey-api';
+import { uiCommand, waitForMutationDialog } from '../../support/ui-command';
 import {
 	coverActions,
 	coverCompletedModal,
@@ -240,6 +242,33 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 				}
 			}
 			entities.gradeScaleId = scaleId;
+			assert(scaleId, 'Created grading scale must have an identity');
+			// A new scale is empty until its intervals are configured. Complete it
+			// through the UI before creating a report model that inherits the scale.
+			for (const [code, label, minimum] of [['F', 'Needs improvement', 0], ['P', 'Passing', 10]] as const) {
+				assert(await openUrlModal(page, `/configuration/grade-scales?scale=${scaleId}`, 'add-interval', { base: ctx.base, target: scaleId }));
+				const intervalDialog = page.getByRole('dialog');
+				await intervalDialog.getByLabel('Code', { exact: true }).fill(code);
+				await intervalDialog.getByLabel(/libellé de la mention|mention label/i).fill(label);
+				const minimumInput = intervalDialog.getByLabel(/valeur minimale|minimum value/i);
+				if (minimum === 0) {
+					assert(await minimumInput.isDisabled());
+					assert.equal(await minimumInput.inputValue(), '0');
+				} else {
+					await minimumInput.fill(String(minimum));
+				}
+				await uiCommand(page, '/commands/configure-grade-scale', () => page.getByTestId('form-modal-submit').click());
+				await waitForMutationDialog(page);
+			}
+			await gotoApp(journey, `/configuration/grade-scales?scale=${scaleId}`);
+			await page.locator('main li').filter({ hasText: 'P ·' }).getByRole('button', { name: /^(Row actions|Actions de ligne)$/i }).waitFor();
+			const persistedScale = await apiFetch(page, ctx.base, `/core/entities/grade-scales/${scaleId}`);
+			assert(persistedScale.ok());
+			const scale = await persistedScale.json() as { ranges: { letter: string; minScore: number }[] };
+			assert.deepEqual(scale.ranges.map(({ letter, minScore }) => ({ letter, minScore })), [
+				{ letter: 'F', minScore: 0 },
+				{ letter: 'P', minScore: 10 },
+			]);
 			coverCompletedModal(journey, '/configuration/grade-scales', 'create', {
 				opened: true,
 				submitted: true,
@@ -277,21 +306,21 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 		logStep(journey, { step: 'grade-scale', ok: false, detail: 'Scale modal not found' });
 	}
 
-	await visitCovered(journey, '/configuration/report-cards', '/configuration/report-cards');
+	await visitCovered(journey, '/configuration/structure/details', `/configuration/structure/details?gradeLevel=${entities.gradeLevelId}`);
 	await page.getByRole('button', { name: /add model|ajouter un modèle/i }).first().waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {});
 	if (!entities.gradeScaleId) {
 		logStep(journey, { step: 'report-card-def', ok: false, detail: 'No gradeScaleId to reference' });
-		coverCompletedModal(journey, '/configuration/report-cards', 'create', {
+		coverCompletedModal(journey, '/configuration/structure/details', 'create', {
 			opened: false,
 			submitted: false,
 			closed: false,
 		}, 'No gradeScaleId to reference');
-		coverActions(journey, 'http://localhost:5173/configuration/report-cards', ['Créer / supprimer / publier'], 'NOT OK', 'No gradeScaleId to reference');
+		coverActions(journey, 'http://localhost:5173/configuration/structure/details', ['Créer / supprimer / publier'], 'NOT OK', 'No gradeScaleId to reference');
 	}
 	else {
-		const rcOpened = await clickCreateButton(page, 'Créer / supprimer / publier', '/configuration/report-cards')
+		const rcOpened = await clickCreateButton(page, 'Créer / supprimer / publier', '/configuration/structure/details')
 			|| await openDialogButton(page, /add model|ajouter un modèle|créer/i)
-			|| await openUrlModal(page, '/configuration/report-cards', 'create', { base: ctx.base, timeout: 15_000 });
+			|| await openUrlModal(page, '/configuration/structure/details', 'create', { base: ctx.base, timeout: 15_000 });
 		if (rcOpened) {
 			try {
 				const rcName = `E2E-RC-${Date.now()}`;
@@ -309,42 +338,42 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 				const closed = await waitForDialogClosed(page);
 				let defId = typeof payload?.id === 'string' ? payload.id : null;
 				if (!defId) {
-					const fromUrl = page.url().match(/\/configuration\/report-cards\/([^/?]+)/)?.[1];
+					const fromUrl = page.url().match(/\/configuration\/structure\/details\/report-cards\/([^/?]+)/)?.[1];
 					defId = fromUrl && fromUrl.length > 0 ? fromUrl : null;
 				}
-				await gotoApp(journey, '/configuration/report-cards');
+				await gotoApp(journey, '/configuration/structure/details');
 				defId = defId
 					?? await configEntityIdByName(page, 'E2E-RC-')
-					?? await firstIdFromLinks(page, /\/configuration\/report-cards\/([^/?]+)/);
+					?? await firstIdFromLinks(page, /\/configuration\/structure\/details\/report-cards\/([^/?]+)/);
 				entities.reportCardDefId = defId;
-				coverCompletedModal(journey, '/configuration/report-cards', 'create', {
+				coverCompletedModal(journey, '/configuration/structure/details', 'create', {
 					opened: true,
 					submitted: true,
 					closed,
 					postcondition: Boolean(defId),
 				}, rcName);
-				coverActions(journey, 'http://localhost:5173/configuration/report-cards', ['Liste définitions bulletins', 'Créer / supprimer / publier'], defId ? 'OK' : 'NOT OK', rcName);
+				coverActions(journey, 'http://localhost:5173/configuration/structure/details', ['Liste définitions bulletins', 'Créer / supprimer / publier'], defId ? 'OK' : 'NOT OK', rcName);
 				if (defId) {
-					await gotoApp(journey, `/configuration/report-cards/${defId}`);
-					await visitCovered(journey, '/configuration/report-cards/[id]', `/configuration/report-cards/${defId}`);
-					coverActions(journey, 'http://localhost:5173/configuration/report-cards/[id]', ['Drawer définition'], 'OK');
+					await gotoApp(journey, `/configuration/structure/details/report-cards/${defId}`);
+					await visitCovered(journey, '/configuration/structure/details/report-cards/[id]', `/configuration/structure/details/report-cards/${defId}`);
+					coverActions(journey, 'http://localhost:5173/configuration/structure/details/report-cards/[id]', ['Drawer définition'], 'OK');
 				}
 				logStep(journey, { step: 'report-card-def', ok: Boolean(defId), detail: rcName, entityId: defId ?? undefined });
 			}
 			catch (err) {
 				const detail = err instanceof Error ? err.message : String(err);
-				coverCompletedModal(journey, '/configuration/report-cards', 'create', {
+				coverCompletedModal(journey, '/configuration/structure/details', 'create', {
 					opened: true,
 					submitted: false,
 					closed: false,
 				}, detail);
 				logStep(journey, { step: 'report-card-def', ok: false, detail });
-				coverActions(journey, 'http://localhost:5173/configuration/report-cards', ['Créer / supprimer / publier'], 'NOT OK', detail);
+				coverActions(journey, 'http://localhost:5173/configuration/structure/details', ['Créer / supprimer / publier'], 'NOT OK', detail);
 				await page.keyboard.press('Escape').catch(() => {});
 			}
 		}
 		else {
-			coverCompletedModal(journey, '/configuration/report-cards', 'create', {
+			coverCompletedModal(journey, '/configuration/structure/details', 'create', {
 				opened: false,
 				submitted: false,
 				closed: false,

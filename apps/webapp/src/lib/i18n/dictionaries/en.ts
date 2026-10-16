@@ -17,6 +17,10 @@ export const en: Dict = {
 	'reportCards.sectionType': 'Section type',
 	'reportCards.editSection': 'Edit section',
 	'reportCards.addSection': 'Add section',
+	'reportCards.passThreshold': 'Passing threshold (optional)',
+	'reportCards.passThresholdHelp': 'The overall average passes at or above this value. Leave blank to disable pass/fail classification.',
+	'reportCards.noPassThreshold': 'Not configured',
+	'reportCards.invalidPassThreshold': 'Enter a threshold within the inherited scale bounds and decimal precision.',
 	'reportCards.modelEditHelp': 'Changes apply to the next explicit generation. Existing reports stay unchanged.',
 	'reportCards.editModel': 'Edit report-card model',
 	'grading.deleteIntervalHelp': 'Remove {name}? The preceding interval will cover its values. Existing grading policies remain unchanged.',
@@ -705,7 +709,7 @@ export const en: Dict = {
 	'list.nextPage': 'Next',
 
 	// Configuration sections
-	'config.structure': 'Class level',
+	'config.structure': 'Levels and Classes',
 	'structure.searchLevels': 'Search levels',
 	'structure.emptyLevels': 'Add a level to configure its subjects and classes.',
 	'structure.noLevels': 'No matching levels.',
@@ -1313,7 +1317,7 @@ export const en: Dict = {
 	'notificationTemplates.keys.account_invitation': 'Account invitation',
 
 	'gradeScales.title': '{n} grade scales',
-	'gradeScales.subtitle': 'Grading scales & passing thresholds',
+	'gradeScales.subtitle': 'Grading scales',
 	'gradeScales.add': 'Add scale',
 	'gradeScales.name': 'Name',
 	'gradeScales.min': 'Minimum',
@@ -1330,6 +1334,8 @@ export const en: Dict = {
 	'gradeScales.deleteConfirm': 'Delete grade scale “{name}”?',
 	'gradeScales.toastDeleted': 'Grade scale {name} deleted.',
 
+	'reportCards.templates': 'Report card templates',
+	'reportCards.academicYear': 'Academic year',
 	'reportCards.subtitle': 'Report card templates',
 	'reportCards.modelsTitle': '{n} models',
 	'reportCards.publishModel': 'Publish model',

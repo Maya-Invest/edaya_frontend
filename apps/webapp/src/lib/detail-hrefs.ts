@@ -167,7 +167,7 @@ export const detailHref = {
 	configStaffMember: (id: string): ResolvedPathname => appPath('/(app)/school/staff/[[id]]/(tabs)/profile', { id }),
 	schoolStaffTab: (id: string, tab: SchoolStaffTabSegment = 'profile'): ResolvedPathname =>
 		appPath(STAFF_TAB_ROUTES[tab], { id }),
-	configReportCard: (id: string): ResolvedPathname => appPath('/(app)/configuration/report-cards/[[id]]', { id }),
+	configReportCard: (id: string): ResolvedPathname => appPath('/(app)/configuration/structure/details/report-cards/[[id]]', { id }),
 	configNotificationTemplate: (id: string): ResolvedPathname =>
 		appPath('/(app)/configuration/notifications/[[id]]', { id }),
 	configGradeLevel: (id: string): string => `${appPath('/(app)/configuration/structure/subjects/[[id]]')}?gradeLevel=${encodeURIComponent(id)}`,

@@ -349,7 +349,7 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
   'web.scenario.0160': async ctx => {
     assert(ctx.entities.configurationSubjectId, 'Required catalog subject route ID missing');
     await ctx.page.waitForURL(url => url.pathname.endsWith(`/configuration/structure/subjects/${ctx.entities.configurationSubjectId}/progression`));
-    await ctx.page.locator('aside[aria-label]').waitFor();
+    await ctx.page.getByRole('complementary', { name: /catalogue des matières|subjects catalog/i }).waitFor();
   },
   'web.scenario.0105': fixtureName('subjects','subjectId'),
   'web.scenario.0113': fixtureName('assessments','evaluationId','title','aside[aria-label]'),

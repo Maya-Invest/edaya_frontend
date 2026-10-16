@@ -279,12 +279,12 @@ export const ROUTE_MODAL_CATALOG = [
 	},
 	{
 		routeFamily: 'configuration-report-cards-list',
-		pathnamePattern: /^\/configuration\/report-cards\/?$/,
+		pathnamePattern: /^\/configuration\/structure\/details\/?$/,
 		modalNames: ['create'],
 	},
 	{
 		routeFamily: 'configuration-report-cards-detail',
-		pathnamePattern: /^\/configuration\/report-cards\/[^/]+\/?$/,
+		pathnamePattern: /^\/configuration\/structure\/details\/report-cards\/[^/]+\/?$/,
 		modalNames: ['create', 'delete', 'edit', 'add-section', 'edit-section', 'delete-section'],
 	},
 	{

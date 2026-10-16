@@ -329,11 +329,11 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 		'Liste barèmes',
 		'CRUD barème',
 	]),
-	...rows('Configuration', `${B}/configuration/report-cards`, [
+	...rows('Configuration', `${B}/configuration/structure/details`, [
 		'Liste définitions bulletins',
 		'Créer / supprimer / publier',
 	]),
-	...rows('Configuration', `${B}/configuration/report-cards/[id]`, ['Drawer définition']),
+	...rows('Configuration', `${B}/configuration/structure/details/report-cards/[id]`, ['Drawer définition']),
 	...rows('Configuration', `${B}/configuration/notifications`, ['Templates notifications école']),
 	...rows('Configuration', `${B}/configuration/other/discipline`, [
 		'Catalogue disciplinaire',
@@ -358,8 +358,8 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 		'Créer / supprimer affectation',
 	]),
 	...rows('Configuration', `${B}/configuration/tools`, [
-		'Planning EDT — générer brouillon',
-		'Planning EDT — publier',
+		'Planning EDT — générer les séances',
+		'Planning EDT — régénérer sans doublons',
 	]),
 
 	// ─── Outils & imports ───────────────────────────────────────────────

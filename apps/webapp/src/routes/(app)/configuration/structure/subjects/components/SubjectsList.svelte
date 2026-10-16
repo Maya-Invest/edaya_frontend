@@ -89,7 +89,7 @@
 		title={$t('subjects.count', { n: visibleGroups.reduce((count, group) => count + group.items.length, 0) })}
 	>
 		{#snippet search()}
-			<ListSearchField bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
+			<ListSearchField value={listFilters.values.q} oninput={event => listFilters.setField('q', event.currentTarget.value)} />
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE" mode="disable">

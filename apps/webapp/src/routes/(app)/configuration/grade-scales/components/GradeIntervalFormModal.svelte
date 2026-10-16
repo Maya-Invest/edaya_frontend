@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { GradeScale, GradeScaleRange } from '$lib/types/report-cards';
-	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
@@ -13,7 +12,6 @@
 	let label = $state('');
 	let minimum = $state('');
 	let points = $state('');
-	let passing = $state(false);
 	let busy = $state(false);
 	let id = '';
 	let revision = 0;
@@ -28,7 +26,6 @@
 			label = interval?.interpretation ?? '';
 			minimum = String(interval?.minScore ?? (scale.ranges?.length ? '' : scale.minScore));
 			points = interval?.gpaValue == null ? '' : String(interval.gpaValue);
-			passing = interval?.isPassing ?? false;
 		}
 		wasOpen = open;
 	});
@@ -39,7 +36,7 @@
 			return;
 		busy = true;
 		try {
-			if (await owner.configureScale({ id: scale.id, expectedRevision: revision, action: 'interval', interval: { id, letter: code.trim(), interpretation: label.trim(), minScore: Number(minimum), isPassing: passing, gpaValue: points.trim() ? Number(points) : undefined } }))
+			if (await owner.configureScale({ id: scale.id, expectedRevision: revision, action: 'interval', interval: { id, letter: code.trim(), interpretation: label.trim(), minScore: Number(minimum), gpaValue: points.trim() ? Number(points) : undefined } }))
 				open = false;
 		}
 		finally {
@@ -52,6 +49,5 @@
 	<label class="block space-y-1.5 text-sm"><span>{$t('grading.label')}</span><Input bind:value={label} required /></label>
 	<label class="block space-y-1.5 text-sm"><span>{$t('grading.minimum')}</span><Input type="number" step="any" bind:value={minimum} disabled={anchored} required /></label>
 	<label class="block space-y-1.5 text-sm"><span>{$t('grading.points')}</span><Input type="number" step="any" bind:value={points} /></label>
-	<label class="flex items-center gap-2 text-sm"><Checkbox bind:checked={passing} />{$t('grading.passing')}</label>
 	{#if !valid && code.trim()}<p role="alert" class="text-sm text-destructive">{$t('grading.invalidThreshold')}</p>{/if}
 </FormModal>

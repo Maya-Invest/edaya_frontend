@@ -160,7 +160,7 @@ export async function exerciseCatalogCrud(page: Page, base: string, scenarioId: 
 	assert.equal((await readEntity(page, base, contract.collection, id)).name, editedName);
 	await page.locator('main').getByText(editedName, { exact: true }).waitFor();
 	assert(await openUrlModal(page, contract.path, 'delete', { base, target: id }));
-	await uiCommand(page, contract.collection === 'grade-scales' ? '/commands/configure-grade-scale' : `/entities/${contract.collection}/delete`, () => page.getByRole('dialog').getByRole('button', { name: /^(supprimer|delete)$/i }).click());
+	await uiCommand(page, contract.collection === 'grade-scales' ? '/commands/configure-grade-scale' : `/entities/${contract.collection}/delete`, () => page.getByRole('dialog').getByRole('button', { name: contract.collection === 'grade-scales' ? /^(confirmer|confirm)$/i : /^(supprimer|delete)$/i }).click());
 	await waitForMutationDialog(page);
 	await page.reload({ waitUntil: 'domcontentloaded' });
 	await waitForPageQuery(page);
@@ -173,7 +173,7 @@ export async function exerciseCatalogCrud(page: Page, base: string, scenarioId: 
 export async function exerciseReportDefinitionLifecycle(page: Page, base: string, gradeLevelId: string, gradeScaleId: string) {
 	const create = async () => {
 		const name = `Integration report model ${crypto.randomUUID()}`;
-		assert(await openUrlModal(page, '/configuration/report-cards', 'create', { base }));
+		assert(await openUrlModal(page, '/configuration/structure/details', 'create', { base }));
 		await page.getByRole('dialog').locator('input').first().fill(name);
 		await page.getByRole('dialog').locator('select').nth(0).selectOption(gradeLevelId);
 		const response = await uiCommand(page, '/commands/create-report-card-definition', () => page.getByTestId('form-modal-submit').click());
@@ -186,7 +186,7 @@ export async function exerciseReportDefinitionLifecycle(page: Page, base: string
 		return id;
 	};
 	const discarded = await create();
-	assert(await openUrlModal(page, `/configuration/report-cards/${discarded}`, 'delete', { base }));
+	assert(await openUrlModal(page, `/configuration/structure/details/report-cards/${discarded}`, 'delete', { base }));
 	await uiCommand(page, '/entities/definitions/delete', () => page.getByRole('dialog').getByRole('button', { name: /^(supprimer|delete)$/i }).click());
 	await waitForMutationDialog(page);
 	await page.reload({ waitUntil: 'domcontentloaded' });
@@ -194,7 +194,7 @@ export async function exerciseReportDefinitionLifecycle(page: Page, base: string
 	const deleted = await apiFetch(page, base, `/core/entities/definitions/${discarded}`);
 	assert(deleted.status() === 404 || (deleted.ok() && await deleted.json() === null));
 	const published = await create();
-	await navigateSpaPage(page, `${base}/configuration/report-cards/${published}`);
+	await navigateSpaPage(page, `${base}/configuration/structure/details/report-cards/${published}`);
 	await waitForPageQuery(page);
 	await uiCommand(page, '/entities/definitions/save', () => page.locator('aside[aria-label]').getByRole('button', { name: /publier le modèle|publish model/i }).click());
 	await page.reload({ waitUntil: 'domcontentloaded' });

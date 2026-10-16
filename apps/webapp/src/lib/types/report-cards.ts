@@ -6,7 +6,7 @@ export interface GradeScaleRange {
 	interpretation?: string | null;
 	minScore: number;
 	maxScore: number;
-	isPassing: boolean;
+
 	gpaValue?: number | null;
 }
 
@@ -21,7 +21,6 @@ export interface GradeScale {
 	name: string;
 	minScore: number;
 	maxScore: number;
-	passingScore: number;
 	decimalPlaces: number;
 	description?: string;
 	isDefault?: boolean;
@@ -52,6 +51,7 @@ export interface ReportCardSection {
 }
 
 export interface ReportCardDefinition {
+	passThreshold?: number | null;
 	revision?: number;
 	description?: string | null;
 	id: string;
@@ -90,6 +90,7 @@ export interface ReportCommentSection {
 }
 
 export interface ReportCardResult {
+	passThreshold?: number | null;
 	grading?: components['schemas']['ReportCardResult']['grading'];
 	aggregateLabel?: string;
 	gradingPolicyRevision?: number;

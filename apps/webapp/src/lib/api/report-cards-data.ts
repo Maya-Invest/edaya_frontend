@@ -83,14 +83,6 @@ function teacherNameForClassSubjectFromSources(
 	return name || undefined;
 }
 
-export function derivePassingScore(ranges: GradeScaleRangeRaw[]): number {
-	const passingRanges = ranges.filter(range => range.isPassing);
-	if (passingRanges.length === 0) {
-		return 0;
-	}
-	return Math.min(...passingRanges.map(range => range.minScore));
-}
-
 function buildDescriptionFromRanges(ranges: GradeScaleRangeRaw[]): string | undefined {
 	if (ranges.length === 0 || !ranges.every(range => range.interpretation)) {
 		return undefined;
@@ -114,7 +106,6 @@ export function mapGradeScales(scalesRaw: (Omit<GradeScaleRaw, 'revision' | 'rou
 		minScore: scale.minScore,
 		maxScore: scale.maxScore,
 		isDefault: scale.isDefault,
-		passingScore: derivePassingScore(scale.ranges),
 		decimalPlaces: scale.decimalPlaces ?? 1,
 		description: scale.description ?? buildDescriptionFromRanges(scale.ranges),
 	}));
@@ -217,6 +208,7 @@ export function mapReportCardDefinitions(
 ): ReportCardDefinition[] {
 	return definitionsRaw.map(definition => ({
 		revision: definition.revision,
+		passThreshold: definition.passThreshold,
 		description: definition.description,
 		id: definition.id,
 		schoolId: definition.schoolId,
@@ -316,6 +308,7 @@ export function mapReportCardResults(
 			definitionId: result.reportCardDefinitionId,
 			academicYearId: definition?.academicYearId ?? '2025',
 			academicPeriodId: result.periodId,
+			passThreshold: result.passThreshold,
 			gradeScaleId: result.grading?.scaleId ?? definition?.gradeScaleId ?? 'gs-20',
 			status: mapResultStatus(result.status),
 			grading: result.grading,

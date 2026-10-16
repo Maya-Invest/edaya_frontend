@@ -1,5 +1,60 @@
 import type { DemoContext } from './types';
+import assert from 'node:assert/strict';
+import { waitForPageQuery } from '../../../../scripts/qa-harness-ui';
 import { assertNoFatalError } from './visit';
+
+/** Structure lists are scoped by the level rail, with URL-backed text search. */
+export async function assertStructureListShell(ctx: DemoContext, scene: string, step: string): Promise<boolean> {
+	const { page, reporter, shot, pageErrors } = ctx;
+	const errorMark = pageErrors.snapshot();
+	if (!await assertListShell(ctx, scene, `${step} — export`, { requireFilter: false })) return false;
+	try {
+		await waitForPageQuery(page);
+		const originalUrl = page.url();
+		const originalLevel = new URL(originalUrl).searchParams.get('gradeLevel');
+		assert(originalLevel, 'Structure route must resolve a selected level');
+		const rail = page.locator('aside').filter({ has: page.locator('#structure-level') });
+		const links = rail.getByRole('link');
+		const levels = await links.evaluateAll(elements => elements.map(element => ({
+			href: element.getAttribute('href')!,
+			count: Number(element.lastElementChild?.textContent),
+		})));
+		const next = levels.findIndex(level => new URL(level.href, originalUrl).searchParams.get('gradeLevel') !== originalLevel && level.count > 0);
+		assert(next >= 0, 'Fixture must provide a second populated level');
+		const selectedLevel = new URL(levels[next]!.href, originalUrl).searchParams.get('gradeLevel');
+		await links.nth(next).click();
+		await page.waitForURL(url => url.searchParams.get('gradeLevel') === selectedLevel);
+		await waitForPageQuery(page);
+		const rows = page.locator('[data-entity-id]');
+		await rows.first().waitFor({ state: 'visible' });
+		const before = (await rows.evaluateAll(elements => elements.map(element => element.getAttribute('data-entity-id')))).sort();
+		const search = page.getByTestId('list-search');
+		const query = '__integration_no_matching_structure_row__';
+		await search.fill(query);
+		await page.waitForURL(url => url.searchParams.get('q') === query);
+		await page.waitForFunction(() => document.querySelectorAll('[data-entity-id]').length === 0);
+		await page.reload({ waitUntil: 'domcontentloaded' });
+		await waitForPageQuery(page);
+		assert.equal(new URL(page.url()).searchParams.get('gradeLevel'), selectedLevel);
+		assert.equal(await search.inputValue(), query, 'Search must survive reload');
+		assert.equal(await rows.count(), 0, 'Unmatched search must remain empty after reload');
+		await search.fill('');
+		await page.waitForURL(url => !url.searchParams.get('q'));
+		await rows.first().waitFor({ state: 'visible' });
+		assert.deepEqual((await rows.evaluateAll(elements => elements.map(element => element.getAttribute('data-entity-id')))).sort(), before, 'Clearing search must restore the selected level records');
+		await page.goto(originalUrl, { waitUntil: 'domcontentloaded' });
+		await waitForPageQuery(page);
+		assert(await assertNoFatalError(ctx, scene, step));
+		assert(pageErrors.assertCleanSince(errorMark, scene, step));
+		reporter.log(scene, step, 'pass');
+		return true;
+	} catch (error) {
+		console.error('Structure list failure:', { url: page.url(), search: await page.getByTestId('list-search').inputValue().catch(() => null), error: error instanceof Error ? error.stack : String(error) });
+		reporter.log(scene, step, 'fail', error instanceof Error ? error.message : String(error));
+		await shot(`${scene}-structure-list`).catch(() => {});
+		return false;
+	}
+}
 
 export async function assertListShell(
 	ctx: DemoContext,

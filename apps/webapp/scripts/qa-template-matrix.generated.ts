@@ -5,8 +5,6 @@
 import type { QaTemplateRow } from './qa-template-matrix.manual';
 
 export const QA_TEMPLATE_MATRIX_GENERATED: QaTemplateRow[] = [
-	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/report-cards', action: 'Navigation directe — contenu visible' },
-	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/report-cards/[id]', action: 'Navigation directe — contenu visible' },
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/permission-profiles', action: 'Navigation directe — contenu visible' },
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/tools', action: 'Navigation directe — contenu visible' },
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/tools/teacher-assignments', action: 'Navigation directe — contenu visible' },
@@ -98,6 +96,7 @@ export const QA_TEMPLATE_MATRIX_GENERATED: QaTemplateRow[] = [
 	{ module: 'École', endpoint: 'http://localhost:5173/school/events/[id]', action: 'Navigation directe — contenu visible' },
 	{ module: 'École', endpoint: 'http://localhost:5173/school/corrections', action: 'Navigation directe — contenu visible' },
 	{ module: 'Compte', endpoint: 'http://localhost:5173/account/security', action: 'Navigation directe — contenu visible' },
+	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/report-cards/[id]', action: 'Redirect — cible attendue' },
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/other/grade-scales', action: 'Redirect — cible attendue' },
 	{ module: 'École', endpoint: 'http://localhost:5173/school/marks-review', action: 'Redirect — cible attendue' },
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/structure', action: 'Redirect — cible attendue' },
@@ -177,8 +176,8 @@ export const QA_TEMPLATE_MATRIX_GENERATED: QaTemplateRow[] = [
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/structure/subjects?modal=create-subject', action: 'Modal deep-link ?modal=create-subject' },
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/structure/subjects/[id]/progression?modal=add-chapter', action: 'Modal deep-link ?modal=add-chapter' },
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/grade-scales?modal=create', action: 'Modal deep-link ?modal=create' },
-	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/report-cards?modal=create', action: 'Modal deep-link ?modal=create' },
-	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/report-cards/[id]?modal=delete', action: 'Modal deep-link ?modal=delete' },
+	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/structure/details?modal=create', action: 'Modal deep-link ?modal=create' },
+	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/structure/details/report-cards/[id]?modal=delete', action: 'Modal deep-link ?modal=delete' },
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/notifications?modal=reset-all', action: 'Modal deep-link ?modal=reset-all' },
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/notifications/[id]?modal=edit', action: 'Modal deep-link ?modal=edit' },
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/notifications/[id]?modal=reset-key', action: 'Modal deep-link ?modal=reset-key' },
@@ -211,9 +210,8 @@ export const QA_TEMPLATE_MATRIX_GENERATED: QaTemplateRow[] = [
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/school', action: 'Sidebar — lien config.school accessible' },
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/academic', action: 'Sidebar — lien config.academic accessible' },
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/period-grid', action: 'Sidebar — lien config.periodGrid accessible' },
-	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/structure', action: 'Sidebar — lien config.structure accessible' },
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/grade-scales', action: 'Sidebar — lien config.gradeScales accessible' },
-	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/report-cards', action: 'Sidebar — lien config.reportCards accessible' },
+	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/structure', action: 'Sidebar — lien config.structure accessible' },
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/notifications', action: 'Sidebar — lien config.notificationTemplates accessible' },
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/other', action: 'Sidebar — lien config.other accessible' },
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/permission-profiles', action: 'Sidebar — lien config.permissionProfiles accessible' },

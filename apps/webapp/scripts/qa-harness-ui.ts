@@ -328,7 +328,7 @@ export function resolveCreateButtonPatterns(action: string, endpoint: string): R
 	if (endpointLower.includes('/configuration/grade-scales')) {
 		push(/add scale|ajouter un barème/i);
 	}
-	if (endpointLower.includes('/configuration/report-cards')) {
+	if (endpointLower.includes('/configuration/structure/details')) {
 		push(/add model|ajouter un modèle/i);
 	}
 	if (endpointLower.includes('/school/family-feedback')) {
@@ -482,7 +482,14 @@ export async function waitForFormModal(page: Page, timeout = 12_000): Promise<bo
 	const dialog = page
 		.locator('[data-testid="form-modal"], [data-testid="confirm-modal"], [data-testid="picker-modal"]')
 		.or(page.getByRole('dialog'));
-	return dialog.first().isVisible({ timeout }).catch(() => false);
+	try {
+		await dialog.first().waitFor({ state: 'visible', timeout });
+		// Let the dialog's scheduled autofocus complete before filling controls.
+		await dialog.first().evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
+		return true;
+	} catch {
+		return false;
+	}
 }
 
 export async function confirmDialog(
@@ -861,11 +868,18 @@ export async function fillAcademicYearCreateDialog(
 export async function fillClassCreateDialog(
 	page: Page,
 	className: string,
+	expectedGradeLevelId?: string,
 ): Promise<void> {
 	const dialog = page.getByRole('dialog');
 	await dialog.locator('input').first().fill(className);
 	const gradeSelect = await waitForGradeLevelSelectOptions(dialog);
-	await gradeSelect.selectOption({ index: 0 });
+	if (await gradeSelect.isEnabled()) {
+		await gradeSelect.selectOption(expectedGradeLevelId ? { value: expectedGradeLevelId } : { index: 0 });
+	}
+	const selectedGradeLevelId = await gradeSelect.inputValue();
+	if (!selectedGradeLevelId || (expectedGradeLevelId && selectedGradeLevelId !== expectedGradeLevelId)) {
+		throw new Error('Class creation must retain the selected structure grade level');
+	}
 	const attendanceSelect = dialog.locator('select').filter({
 		has: page.locator('option[value="daily"]'),
 	}).last();

@@ -1,16 +1,19 @@
 import assert from 'node:assert/strict';
 import { mkdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { chromium } from 'playwright';
-import { createServer } from 'vite';
+import { createFixtureServer } from './support/fixture-server';
 import { ensurePlaywrightChromium } from '../../scripts/playwright-browsers';
 
 async function main() {
 	ensurePlaywrightChromium();
+	const artifacts = process.env.INTEGRATION_ARTIFACT_DIR ?? '/private/tmp/edaya-attendance-evidence';
+	mkdirSync(artifacts, { recursive: true });
 	const appRoot = new URL('../..', import.meta.url).pathname;
 	const fixture = `${appRoot}/tests/fixtures/attendance`;
 	const mocks = ['$app/stores', '$lib/academic/context.svelte', '$lib/auth/session.svelte', '$lib/permissions', '$lib/api/school-client', '$lib/api/documents-data', '$lib/api/mutations/documents.mutations', '$lib/navigation/app-navigation'];
-	const server = await createServer({ configFile: false, root: appRoot, cacheDir: 'node_modules/.vite-attendance',
+	const server = await createFixtureServer({ configFile: false, root: appRoot, cacheDir: 'node_modules/.vite-attendance',
 		optimizeDeps: { entries: [`${fixture}/Harness.svelte`], include: ['@maya-invest/edaya-api-client', 'bits-ui', 'lucide-svelte', 'tailwind-merge'] },
 		plugins: [{ name: 'attendance-fixture', enforce: 'pre',
 			resolveId(source) {
@@ -31,20 +34,17 @@ async function main() {
 			},
 		}, svelte({ configFile: false })],
 		resolve: { alias: [...mocks.map(find => ({ find, replacement: `${fixture}/environment.svelte.ts` })), { find: '$lib', replacement: `${appRoot}/src/lib` }] },
-		server: { host: '127.0.0.1', port: 5199, strictPort: false, fs: { allow: [appRoot, `${appRoot}/../..`] } },
-	});
+		server: { fs: { allow: [appRoot, `${appRoot}/../..`] } },
+	}, 'attendance', 14177, '/classes/a/attendance');
 	let browser;
 	try {
-		await server.listen();
 		browser = await chromium.launch({ headless: true });
 		const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 		await page.addInitScript(() => localStorage.setItem('lang', 'en'));
 		page.setDefaultTimeout(15000);
 		const errors: string[] = [];
 		page.on('pageerror', error => errors.push(error.message));
-		const address = server.httpServer!.address();
-		assert(address && typeof address !== 'string');
-		const base = `http://127.0.0.1:${address.port}/classes/a/attendance`;
+		const base = server.url;
 		await page.goto(base);
 		await page.getByTestId('ready').waitFor({ state: 'attached' });
 		await page.getByRole('button', { name: 'New roll call', exact: true }).click();
@@ -58,14 +58,15 @@ async function main() {
 		await page.getByRole('button', { name: 'Mark all present', exact: true }).click();
 		assert(await page.getByLabel('Attendance for Alice Tremblay', { exact: true }).innerText().then(text => text.includes('Absent')));
 		assert(await page.getByTestId('form-modal-submit').isEnabled());
-		mkdirSync('/private/tmp/edaya-attendance-evidence', { recursive: true });
 		await page.getByLabel('Date', { exact: true }).click();
-		await page.screenshot({ path: '/private/tmp/edaya-attendance-evidence/desktop.png' });
+		await page.screenshot({ path: resolve(artifacts, 'desktop.png') });
 		await page.getByTestId('form-modal-submit').click();
 		await page.getByRole('dialog').waitFor({ state: 'hidden' });
 		await page.waitForURL('**/attendance/a%3A2026-01-01');
 		const requests = JSON.parse(await page.getByTestId('requests').innerText());
 		assert.deepEqual(requests[0].attendanceByStudent, { s1: 'absent', s2: 'present', s3: 'present' });
+		assert.equal(requests[0].classGroupId, 'a');
+		assert.equal(requests[0].date, '2026-01-01');
 		await page.reload();
 		await page.getByTestId('ready').waitFor({ state: 'attached' });
 		assert.equal(await page.locator('[data-attendance-id="a:2026-01-01"]').count(), 1);
@@ -84,7 +85,20 @@ async function main() {
 		await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>('[data-testid="form-modal-submit"]')?.disabled);
 		assert.equal(await page.getByLabel('Date', { exact: true }).inputValue(), '2026-01-02');
 		assert.equal(await page.getByRole('dialog').count(), 1);
-		await page.getByTestId('form-modal-cancel').click();
+		assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('attendance-fixture') ?? '[]').length), 1);
+		await page.getByTestId('form-modal-submit').click();
+		await page.getByRole('dialog').waitFor({ state: 'hidden' });
+		await page.waitForURL('**/attendance/a%3A2026-01-02');
+		const retried = JSON.parse(await page.getByTestId('requests').innerText());
+		assert.equal(retried.length, 2);
+		for (const key of ['classGroupId', 'date', 'attendanceByStudent'])
+			assert.deepEqual(retried[0][key], retried[1][key]);
+		await page.reload();
+		await page.getByTestId('ready').waitFor({ state: 'attached' });
+		assert.equal(await page.locator('[data-attendance-id="a:2026-01-02"]').count(), 1);
+		const persisted = await page.evaluate(() => JSON.parse(localStorage.getItem('attendance-fixture') ?? '[]'));
+		assert.equal(persisted.length, 2);
+		assert.deepEqual(persisted[1].attendanceByStudent, { s1: 'present', s2: 'present', s3: 'present' });
 		await page.getByTestId('denied').click();
 		assert(await page.getByRole('button', { name: 'New roll call', exact: true }).isDisabled());
 		await page.getByTestId('denied').click();
@@ -105,7 +119,7 @@ async function main() {
 		await page.getByRole('button', { name: 'Nouvel appel', exact: true }).click();
 		await page.getByRole('dialog').waitFor();
 		await page.getByLabel('Présence de Alice Tremblay', { exact: true }).waitFor();
-		await page.screenshot({ path: '/private/tmp/edaya-attendance-evidence/mobile-fr.png' });
+		await page.screenshot({ path: resolve(artifacts, 'mobile-fr.png') });
 		assert(await page.getByTestId('form-modal-submit').isVisible());
 		assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
 		await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
@@ -122,6 +136,6 @@ async function main() {
 		assert.deepEqual(errors, []);
 		console.log('Attendance browser checks passed: creation, persistence, duplicates, failure drafts, permissions, roster errors, empty roster, FR/mobile and Escape.');
 	}
-	finally { await browser?.close(); await server.close(); }
+	finally { try { await browser?.close(); } finally { await server.close(); } }
 }
 await main();

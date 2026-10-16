@@ -2,16 +2,16 @@
   {
     "id": "view.configuration.report-cards",
     "feature": "configuration",
-    "path": "/configuration/report-cards",
-    "title": "/configuration/report-cards",
+    "path": "/configuration/structure/details",
+    "title": "/configuration/structure/details",
     "kind": "page",
     "identity": "owner"
   },
   {
     "id": "view.configuration.report-cards.record",
     "feature": "configuration",
-    "path": "/configuration/report-cards/[id]",
-    "title": "/configuration/report-cards/[id]",
+    "path": "/configuration/structure/details/report-cards/[id]",
+    "title": "/configuration/structure/details/report-cards/[id]",
     "kind": "page",
     "identity": "owner"
   },
@@ -1147,16 +1147,16 @@
   {
     "id": "view.configuration.report-cards.modal.create",
     "feature": "configuration",
-    "path": "/configuration/report-cards?modal=create",
-    "title": "create · /configuration/report-cards",
+    "path": "/configuration/structure/details?modal=create",
+    "title": "create · /configuration/structure/details",
     "kind": "modal",
     "identity": "owner"
   },
   {
     "id": "view.configuration.report-cards.record.modal.delete",
     "feature": "configuration",
-    "path": "/configuration/report-cards/[id]?modal=delete",
-    "title": "delete · /configuration/report-cards/[id]",
+    "path": "/configuration/structure/details/report-cards/[id]?modal=delete",
+    "title": "delete · /configuration/structure/details/report-cards/[id]",
     "kind": "modal",
     "identity": "owner"
   },

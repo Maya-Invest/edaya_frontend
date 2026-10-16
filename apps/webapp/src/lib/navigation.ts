@@ -139,7 +139,6 @@ const CONFIG_ROUTES: Record<string, RouteId> = {
 	periodGrid: '/(app)/configuration/period-grid',
 	structure: '/(app)/configuration/structure',
 	gradeScales: '/(app)/configuration/grade-scales',
-	reportCards: '/(app)/configuration/report-cards/[[id]]',
 	notificationTemplates: '/(app)/configuration/notifications',
 	other: '/(app)/configuration/other',
 	permissionProfiles: '/(app)/configuration/permission-profiles',

@@ -1,3 +1,4 @@
+import { BROWSER_SUITE_DIRECTORIES, FOCUSED_BROWSER_SUITES } from '../../../tooling/repo/ops/browser-suites';
 import { assertCurrentExecution } from '../tests/integration/support/execution-metadata';
 import webadmin from '../tests/integration/webadmin/scenarios.json';
 import { readFileSync } from 'node:fs';
@@ -10,7 +11,12 @@ import { assertAvailabilityResults, assertDemoResults } from '../tests/integrati
 const root = resolve(import.meta.dirname, '..');
 assertFeatureRegistration();
 if (!process.argv.includes('--registration-only')) {
-	for (const directory of ['.availability-run', '.onboarding-run', '.integration-run', '.webadmin-run', '.demo-dry-run']) assertCurrentExecution(resolve(root, directory));
+	for (const directory of Object.values(BROWSER_SUITE_DIRECTORIES)) assertCurrentExecution(resolve(root, directory));
+	for (const { name } of FOCUSED_BROWSER_SUITES) {
+		const summary = JSON.parse(readFileSync(resolve(root, BROWSER_SUITE_DIRECTORIES[name], 'summary.json'), 'utf8'));
+		if (summary.ok !== true || summary.exitCode !== 0) throw new Error(`Focused browser suite failed: ${name}`);
+		assertCompleteResults([{ id: `web.focused.${name}`, feature: name }], summary.outcomes ?? []);
+	}
 	assertAvailabilityResults(JSON.parse(readFileSync(resolve(root, '.availability-run/summary.json'), 'utf8')));
 	assertDemoResults(JSON.parse(readFileSync(resolve(root, '.demo-dry-run/results.json'), 'utf8')));
 	const onboarding = JSON.parse(readFileSync(resolve(root, '.onboarding-run/summary.json'), 'utf8'));

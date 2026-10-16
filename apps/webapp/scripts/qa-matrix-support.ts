@@ -205,6 +205,14 @@ export async function firstIdFromConfigTable(page: Page, timeout = 8_000): Promi
 
 export async function configEntityIdByName(page: Page, name: string): Promise<string | null> {
 	const row = page.locator('table tbody tr[data-entity-id]').filter({ hasText: name });
+	const link = page.locator('main a[href]').filter({ hasText: name }).first();
+	// The shell is visible before its structure data has finished loading after a reload.
+	// Wait for the saved record itself, including the level rail's URL-backed links.
+	try {
+		await row.or(link).first().waitFor({ state: 'visible', timeout: 20_000 });
+	} catch {
+		return null;
+	}
 	if (await row.first().isVisible().catch(() => false)) {
 		const id = await row.first().getAttribute('data-entity-id');
 		const trimmed = id?.trim();
@@ -213,12 +221,13 @@ export async function configEntityIdByName(page: Page, name: string): Promise<st
 		}
 	}
 
-	const link = page.locator('main a[href]').filter({ hasText: name }).first();
 	if (await link.isVisible().catch(() => false)) {
 		const href = await link.getAttribute('href');
+		const templateId = href?.match(/\/configuration\/structure\/details\/report-cards\/([^/?]+)/)?.[1];
+		if (templateId) return templateId;
 		const levelId = href ? new URL(href, page.url()).searchParams.get('gradeLevel') : null;
 		if (levelId) return levelId;
-		const match = href?.match(/\/configuration\/report-cards\/([^/?]+)/)
+		const match = href?.match(/\/configuration\/structure\/details\/report-cards\/([^/?]+)/)
 			?? href?.match(/\/([^/?]+)\/?$/);
 		if (match?.[1] && match[1] !== 'report-cards') {
 			return match[1];
@@ -349,7 +358,7 @@ export function resolveEndpoint(endpoint: string, base: string, entities: Matrix
 	if (path.includes('/configuration/structure/subjects/') && !path.includes('/level/')) {
 		map['[id]'] = entities.configurationSubjectId ?? entities.subjectId;
 	}
-	if (path.includes('/configuration/report-cards/')) {
+	if (path.includes('/configuration/structure/details/report-cards/') || path.includes('/configuration/report-cards/')) {
 		map['[id]'] = entities.reportCardDefId;
 	}
 	if (path.includes('/configuration/notifications/')) {
@@ -509,8 +518,8 @@ export async function discoverEntities(ctx: DemoContext): Promise<MatrixEntities
 	await safeGoto(ctx, `${base}/configuration/structure/subjects`);
 	entities.subjectId = await firstIdFromLinks(page, /\/configuration\/structure\/subjects\/([^/]+)/);
 
-	await safeGoto(ctx, `${base}/configuration/report-cards`);
-	entities.reportCardDefId = await firstIdFromLinks(page, /\/configuration\/report-cards\/([^/]+)/);
+	await safeGoto(ctx, `${base}/configuration/structure/details`);
+	entities.reportCardDefId = await firstIdFromLinks(page, /\/configuration\/structure\/details\/report-cards\/([^/]+)/);
 
 	await safeGoto(ctx, `${base}/account/inbox`);
 	entities.deliveryId = await firstIdFromLinks(page, /\/account\/inbox\/([^/]+)/);

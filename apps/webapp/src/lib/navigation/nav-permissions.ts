@@ -90,6 +90,10 @@ export function canAccessPath(
 		return true;
 	}
 
+	if (/^\/configuration\/(?:report-cards|structure\/details\/report-cards)(?:\/|$)/.test(pathname)) {
+		return canAccessNavItem({ permissions: ['REPORT_CARD_CONFIGURE'] }, grants, ctx);
+	}
+
 	const classId = ctx.classId ?? extractClassIdFromPath(pathname);
 	const item = findNavItemForPath(pathname, classId);
 	if (!item) {

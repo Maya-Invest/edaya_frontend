@@ -228,7 +228,7 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 		pathPrefix: `/configuration/structure/classes/${CLASS_6A}`,
 		selector: 'main',
 	});
-	await visit(ctx, `${base}/configuration/grade-levels`, 'D11', '11.2 Grade levels', { selector: 'main' });
+	await visit(ctx, `${base}/configuration/structure/details`, 'D11', '11.2 Grade levels', { selector: 'main' });
 	await visit(ctx, `${base}/configuration/academic`, 'D11', '11.3 Academic calendar', { selector: 'main' });
 	await visit(ctx, `${base}/configuration/other/discipline`, 'D11', '11.4 Disciplinary catalog', { selector: 'main' });
 	await visit(ctx, `${base}/configuration/permission-profiles`, 'D11', '11.5 Permission profiles', { selector: 'main' });

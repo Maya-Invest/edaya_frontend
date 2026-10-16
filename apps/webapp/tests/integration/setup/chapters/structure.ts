@@ -283,7 +283,7 @@ export async function runStructureChapter(journey: UiJourney): Promise<boolean> 
 			return false;
 		}
 		const className = `E2E-6A-${Date.now()}`;
-		await fillClassCreateDialog(page, className);
+		await fillClassCreateDialog(page, className, entities.gradeLevelId ?? undefined);
 		const classClosed = await waitForDialogClosed(page);
 		if (!classClosed) {
 			coverCompletedModal(journey, '/configuration/structure/classes', 'create', {

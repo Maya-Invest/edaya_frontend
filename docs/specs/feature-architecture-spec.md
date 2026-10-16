@@ -244,7 +244,7 @@ The session contains one typed action-grant display. UI checks use that action's
 - Assignments load via the Permissions tab child route `PageQuery` (or with staff list when colocated); views built via `buildStaffPermissionAssignmentViews`.
 - Mutations: `configurePermissionProfile` / `applyStaffPermissionProfile` / `reorderStaffPermissionProfiles` / `removeStaffPermissionProfile` for bound grants; `assignStaffPermission` / `removeStaffPermission` for manual sources and `configureStaffPermissionScopeDefaults` for defaults. Preview commands never write. Optimistic patch + `entityVersions` bump (`staff`).
 
-**Staff assignments:** managed in the Configuration → Levels, subjects & classes → Classes drawer. Staff drawers have no Assignments tab; old `/school/staff/{id}/assignments` links redirect to Permissions, preserving query parameters.
+**Staff assignments:** managed in the Configuration → Levels and Classes → Classes drawer. Staff drawers have no Assignments tab; old `/school/staff/{id}/assignments` links redirect to Permissions, preserving query parameters.
 
 **Removed:** `/configuration/roles` route, roles matrix, `StaffRoleAssignment` UI, inline CRUD matrix toggles for permissions. Do **not** treat `StaffMember.profileRole` as authority.
 
@@ -277,11 +277,11 @@ The session contains one typed action-grant display. UI checks use that action's
 | School profile | `/configuration/school` | — |
 | Academic calendar | `/configuration/academic` | — |
 | Weekly period grid | `/configuration/period-grid` | — |
-| Levels, subjects & classes | `/configuration/structure` | Selected level in `?gradeLevel=` |
+| Levels and Classes | `/configuration/structure` | Selected level in `?gradeLevel=` |
 | Grade level details tab | `/configuration/structure/details` | Level fields and grading configuration |
 | Classes config tab | `/configuration/structure/classes` | `/configuration/structure/classes/{id}` |
 | Subjects config tab | `/configuration/structure/subjects` | `/configuration/structure/subjects/{id}` |
-| Report card models | `/configuration/report-cards` | `/configuration/report-cards/{id}` |
+| Report card models | `/configuration/structure/details` | `/configuration/structure/details/report-cards/{id}` |
 | Other configurations | `/configuration/other` | — |
 | Grade scales | `/configuration/grade-scales` | — |
 | Notification templates | `/configuration/notifications` | `/configuration/notifications/{key}` |
@@ -479,7 +479,7 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 ### 7.20 Configuration — Grade levels
 
-- **Entity:** `GradeLevel` · **Layout selection** in the unified Class level screen.
+- **Entity:** `GradeLevel` · **Layout selection** in the unified Levels and Classes screen.
 - `/configuration/structure` defaults to Details. A flat level rail selects `?gradeLevel=`; Details, Subjects and Classes are nested route tabs. Mobile uses a labeled level selector above the tabs. Keep empty levels visible and sort with the shared level ordering.
 - The Details tab owns level fields, grading summary, one Edit level form containing grading settings, and overflow Delete. Creation uses the same fields. Preserve separate structure/grading permissions and calculation-change confirmation. Level forms use `create-level`, `edit-level`, and `delete-level`; old `level-grading` links redirect to `edit-level`.
 - Classes and subjects are scoped to the selected level and workspace academic year. Creation defaults to that level. Workload stays in Edit subject and applies to matching classes; edit weekly workload in periods, never inferred chapter hours. Keep the subject list free of weekly-period labels. Class rows open the drawer, whose Edit action owns class changes; omit redundant grade-level columns and row edit menus.
@@ -503,14 +503,14 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 ### 7.23 Configuration — Report card models
 
 - **Entities:** `ReportCardDefinition` · sections tree · **Complex drawer**.
-- `REPORT_CARD_CONFIGURE` enables name/description and section editing, including published models. Year, grade level, default/publication state and existing IDs remain fixed. Grading settings are inherited from the level/year policy, with no independent scale selector.
+- `REPORT_CARD_CONFIGURE` enables name/description, optional passing threshold and section editing, including published models. The threshold may be any value within the inherited scale bounds and precision, including inside an interval; blank disables classification. Overall averages at or above it pass. Year, grade level, default/publication state and existing IDs remain fixed. Grading settings are inherited from the level/year policy, with no independent scale selector.
 - Section forms edit labels, group/subject role, subject mapping, parent, order and positive weight/coefficient. Descendant parents and deletion of nonempty groups are forbidden. Revision-checked saves reject stale editors.
 - Changes affect future explicit generation/regeneration only. Existing results, review decisions and published documents retain their captured content.
 
 ### 7.24 Configuration — Grade scales
 
-- **Entity:** `GradeScale` · accordion scales with nested interval rows, matching the academic-year layout. Each interval has a visible permission-gated Edit button and Delete in its overflow menu. Sample lookup displays its matching code/mention beside the input, wrapping only when space requires it.
-- Route: `/configuration/grade-scales`, beside Levels, subjects & classes; legacy `/configuration/other/grade-scales` redirects with search/modal parameters preserved.
+- **Entity:** `GradeScale` · accordion scales with nested interval rows, matching the academic-year layout. Each interval has permission-gated Edit and Delete actions in its overflow menu. Sample lookup displays its matching code/mention beside the input, wrapping only when space requires it.
+- Route: `/configuration/grade-scales`, immediately above Levels and Classes in the configuration menu; legacy `/configuration/other/grade-scales` redirects with search/modal parameters preserved.
 - Scale metadata and intervals have separate URL modals. Headers show limits, interval count, default/incomplete status. Expanded content includes Add interval and a rounded sample lookup.
 - New scales have no intervals and are marked Incomplete; both server validation and pickers prevent their use. The first interval covers the whole scale; its minimum is anchored. Adding thresholds splits effective coverage. Only unused, non-default scales can lose their last interval.
 - Users with `REPORT_CARD_CONFIGURE` can edit every school grade scale, including the default. Editing preserves its default status. The default scale has no Delete action, including via a modal deep link.
@@ -584,7 +584,7 @@ Authoritative surface per entity. §7 has per-feature drawer/tab detail.
 | `Assessment` | Complex | `/classes/{id}/evaluations` |
 | `ClassSubject` / teaching | Complex | `/classes/{id}/teaching`, `/configuration/structure/subjects` |
 | `ReportCardResult` | Complex | `/classes/{id}/report-cards` |
-| `ReportCardDefinition` | Complex | `/configuration/report-cards` |
+| `ReportCardDefinition` | Complex | `/configuration/structure/details` |
 | `StudentCharge` | Complex | `/finance/billing` |
 | `ClassGroup` | Complex | `/configuration/structure/classes` |
 | `GradeLevel` | Layout selection | `/configuration/structure` |
@@ -681,10 +681,16 @@ Permission impact review in profile editing, profile assignment, manual assignme
 
 ## Configurable grading models
 
-Grade scales retain stable interval identifiers, codes, labels, minimum thresholds, pass/fail flags, and optional assigned points. Ordinary metadata edits preserve intervals. Each interval has its own form; upper bounds are derived on the server from the next minimum. Matching uses the greatest minimum at or below the rounded result, includes the final maximum, and rejects out-of-range values. Unique codes/thresholds and a first threshold equal to the scale minimum are required. Catalog saves use revisions and never recalculate marks; explicitly applying a scale to a grade level retains the confirmation/background-update flow. Continuous scale bounds must be representable at the selected precision so rounding cannot leave the scale. Seeded and onboarded scales use continuous intervals with stable IDs and derived upper bounds; there is no conversion step in the configuration page. Historical readers retain captured interval conventions.
+Grade scales retain stable interval identifiers, codes, labels, minimum thresholds and optional assigned points. Passing is an optional report-card model setting for the overall average only; it is never interval or scale metadata. Ordinary metadata edits preserve intervals. Each interval has its own form; upper bounds are derived on the server from the next minimum. Matching uses the greatest minimum at or below the rounded result, includes the final maximum, and rejects out-of-range values. Unique codes/thresholds and a first threshold equal to the scale minimum are required. Catalog saves use revisions and never recalculate marks; explicitly applying a scale to a grade level retains the confirmation/background-update flow. Continuous scale bounds must be representable at the selected precision so rounding cannot leave the scale. Seeded and onboarded scales use continuous intervals with stable IDs and derived upper bounds; there is no conversion step in the configuration page. Historical readers retain captured interval conventions.
 
 Grade-level drawers own a URL-addressed grading modal for the current academic year. Each policy selects one scale, mandatory numeric-first or mention-first entry, and an aggregate label. Report models inherit that scale; they do not offer an independent conflicting selector. The configuration form collects explicit numeric equivalents for previous mention revisions when switching to numeric-first.
 
 Calculation changes use exactly one confirmation before saving. The drawer displays Updating, Completed, or Failed with Retry. No impact dashboard or affected-record preview is provided. Drafts keep their opening revision and year so changes elsewhere cannot silently rebase an edit. Presentation labels do not recalculate marks.
 
 Entry and correction forms use numeric fields or configured mention choices according to the policy. Original entries remain visible independently of derived values. Report displays use captured units, precision, and matched mentions rather than the mutable scale catalogue. Published results remain visible while a revised draft is reviewed, and the publish command sends that draft's exact policy revision and version. Bulk publication must not implicitly approve grading revisions.
+
+### Report card templates in level Details
+
+Levels and Classes → Details contains Report card templates below the level's grading settings. The collection is scoped to the selected level and workspace academic year, with multiple templates supported. Show all templates in that scope without search or status-filter controls; legacy search/status parameters do not restrict the collection. The section header exposes only Add model; omit its export menu and standalone row Edit buttons. Clicking a template opens its drawer, which retains editing actions. Template cards keep the white card surface on hover and selection, using the border and focus ring for feedback. Creation captures and displays that level/year as read-only; scope changes discard the open create surface. Existing template mutations and REPORT_CARD_CONFIGURE gates remain in effect. The combined navigation entry includes REPORT_CARD_CONFIGURE and there is no separate templates entry.
+
+The Details layout owns ReportCardsPageState and its PageQuery. Template drawers use `/configuration/structure/details/report-cards/{id}`; closing returns to Details with the level selection and filters retained. Changing level or year closes the prior drawer/modal. Legacy `/configuration/report-cards` URLs redirect, retaining modal/filter context; a template deep link resolves its own level and academic year before editing. Grading scales stay separate. No persistence or report-generation behavior changes.

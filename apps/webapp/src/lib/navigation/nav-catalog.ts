@@ -170,22 +170,16 @@ export const CONFIG_NAV_DEFS: NavItemDefinition[] = [
 		permissions: ['ACADEMIC_PROGRAM_READ', 'ACADEMIC_PROGRAM_UPDATE', 'SCHOOL_STRUCTURE_READ'],
 	},
 	{
-		key: 'structure',
-		labelKey: 'config.structure',
-		href: '/configuration/structure',
-		permissions: ['SCHOOL_STRUCTURE_CONFIGURE', 'SCHOOL_STRUCTURE_READ', 'ACADEMIC_PROGRAM_READ', 'ACADEMIC_PROGRAM_UPDATE'],
-	},
-	{
 		key: 'gradeScales',
 		labelKey: 'config.gradeScales',
 		href: '/configuration/grade-scales',
 		permissions: ['REPORT_CARD_CONFIGURE', 'EXAM_CONFIG_READ', 'EXAM_CONFIG_CONFIGURE'],
 	},
 	{
-		key: 'reportCards',
-		labelKey: 'config.reportCards',
-		href: '/configuration/report-cards',
-		permissions: ['REPORT_CARD_CONFIGURE'],
+		key: 'structure',
+		labelKey: 'config.structure',
+		href: '/configuration/structure',
+		permissions: ['SCHOOL_STRUCTURE_CONFIGURE', 'SCHOOL_STRUCTURE_READ', 'ACADEMIC_PROGRAM_READ', 'ACADEMIC_PROGRAM_UPDATE', 'REPORT_CARD_CONFIGURE'],
 	},
 	{
 		key: 'notificationTemplates',

@@ -25,8 +25,8 @@ export async function runOwnerPermissionChecks(
 		await signIn(ctx, { namePattern: /Aminata Koné|Koné/i, email: OWNER_EMAIL });
 		reporter.log(scene, 'O.1 Login a.kone@', 'pass');
 
-		if (await visit(ctx, `${base}/configuration/report-cards`, scene, 'O.2 Report card definitions', {
-			pathPrefix: '/configuration/report-cards',
+		if (await visit(ctx, `${base}/configuration/structure/details`, scene, 'O.2 Report card definitions', {
+			pathPrefix: '/configuration/structure/details',
 		})) {
 			await assertFilterSelectShell(ctx, scene, 'O.3 Report card definitions filter shell');
 		}

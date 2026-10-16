@@ -11,7 +11,7 @@
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
-	import { ChevronDown, Pencil, Plus } from '$lib/icons';
+	import { ChevronDown, Plus } from '$lib/icons';
 	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
@@ -99,11 +99,10 @@
 					<ul class="space-y-2">
 						{#each scale.ranges ?? [] as row, index (row.id ?? index)}
 							<li class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border px-4 py-3">
-								<div class="min-w-0 flex-1 basis-56"><p class="break-words text-sm font-medium">{row.letter} · {row.interpretation ?? row.letter}</p><p class="text-sm tabular-nums text-muted-foreground">{$t('grading.minimum')}: {row.minScore}{row.gpaValue != null ? ` · ${$t('grading.points')}: ${row.gpaValue}` : ''} · {row.isPassing ? $t('grading.passing') : $t('grading.failing')}</p></div>
+								<div class="min-w-0 flex-1 basis-56"><p class="break-words text-sm font-medium">{row.letter} · {row.interpretation ?? row.letter}</p><p class="text-sm tabular-nums text-muted-foreground">{$t('grading.minimum')}: {row.minScore}{row.gpaValue != null ? ` · ${$t('grading.points')}: ${row.gpaValue}` : ''}</p></div>
 								<PermissionGate permission="REPORT_CARD_CONFIGURE">{#snippet children({ disabled, title })}
 									<div class="ml-auto flex shrink-0 items-center gap-2">
-										<Button size="sm" variant="outline" {disabled} {title} aria-label={`${$t('common.edit')} ${row.letter}`} onclick={() => modals.open('edit-interval', { target: `${scale.id}/${row.id}` })}><Pencil class="mr-2 h-4 w-4" />{$t('common.edit')}</Button>
-										<RowActionMenu><RowActionMenuItem destructive disabled={disabled || (index === 0 && ((scale.ranges?.length ?? 0) > 1 || !!scale.isDefault))} onclick={() => modals.open('delete-interval', { target: `${scale.id}/${row.id}` })}>{$t('common.delete')}</RowActionMenuItem></RowActionMenu>
+										<RowActionMenu><RowActionMenuItem {disabled} {title} onclick={() => modals.open('edit-interval', { target: `${scale.id}/${row.id}` })}>{$t('common.edit')}</RowActionMenuItem><RowActionMenuItem destructive disabled={disabled || (index === 0 && ((scale.ranges?.length ?? 0) > 1 || !!scale.isDefault))} onclick={() => modals.open('delete-interval', { target: `${scale.id}/${row.id}` })}>{$t('common.delete')}</RowActionMenuItem></RowActionMenu>
 									</div>
 								{/snippet}</PermissionGate>
 							</li>

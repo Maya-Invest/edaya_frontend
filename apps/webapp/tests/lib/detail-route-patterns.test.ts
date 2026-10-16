@@ -74,8 +74,8 @@ describe('isLikelyDetailPath', () => {
 	});
 
 	it('recognizes configuration report-cards drawer paths', () => {
-		expect(isLikelyDetailPath('/configuration/report-cards/rcd-1')).toBe(true);
-		expect(isLikelyDetailPath('/configuration/report-cards')).toBe(false);
+		expect(isLikelyDetailPath('/configuration/structure/details/report-cards/rcd-1')).toBe(true);
+		expect(isLikelyDetailPath('/configuration/structure/details/report-cards')).toBe(false);
 	});
 
 	it('recognizes configuration notification template drawer paths', () => {
@@ -154,8 +154,8 @@ describe('listRouteCacheKey', () => {
 	});
 
 	it('maps configuration report-cards drawer paths to the list route', () => {
-		expect(listRouteCacheKey(new URL('http://local/configuration/report-cards'))).toBe('/configuration/report-cards');
-		expect(listRouteCacheKey(new URL('http://local/configuration/report-cards/rcd-1'))).toBe('/configuration/report-cards');
+		expect(listRouteCacheKey(new URL('http://local/configuration/structure/details?gradeLevel=level-1'))).toBe('/configuration/structure/details|level:level-1');
+		expect(listRouteCacheKey(new URL('http://local/configuration/structure/details/report-cards/rcd-1?gradeLevel=level-1'))).toBe('/configuration/structure/details|level:level-1');
 	});
 
 	it('maps configuration notification template drawer paths to the list route', () => {

@@ -1,3 +1,6 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { BROWSER_SUITE_DIRECTORIES, FOCUSED_BROWSER_SUITES } from '../../../../tooling/repo/ops/browser-suites';
 import { assertVisualCoverage } from '../integration/screenshots/scenarios';
 import { describe, expect, it } from 'bun:test';
 import {
@@ -71,6 +74,17 @@ function hasRedirectSmoke(legacyPath: string): boolean {
 }
 
 describe('catalog drift', () => {
+	it('keeps focused browser suites executable and included in qualification evidence', () => {
+		const webapp = resolve(import.meta.dirname, '../..');
+		const { scripts } = JSON.parse(readFileSync(resolve(webapp, 'package.json'), 'utf8'));
+		expect(new Set(FOCUSED_BROWSER_SUITES.map(suite => suite.name)).size).toBe(FOCUSED_BROWSER_SUITES.length);
+		for (const suite of FOCUSED_BROWSER_SUITES) {
+			expect(existsSync(resolve(webapp, 'tests/integration', suite.script))).toBe(true);
+			expect(scripts[`test:integration:${suite.name}`]).toBe(`bun scripts/focused-integration-run.ts ${suite.name}`);
+			expect(BROWSER_SUITE_DIRECTORIES[suite.name]).toBe(`.focused-run/${suite.name}`);
+		}
+	});
+
 	it('registers every current navigation, modal, route and action', () => {
 		assertFeatureRegistration();
         assertVisualCoverage();

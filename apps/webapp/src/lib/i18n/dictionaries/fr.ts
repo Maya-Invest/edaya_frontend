@@ -17,6 +17,10 @@ export const fr: Dict = {
 	'reportCards.sectionType': 'Type de section',
 	'reportCards.editSection': 'Modifier la section',
 	'reportCards.addSection': 'Ajouter une section',
+	'reportCards.passThreshold': 'Seuil de réussite (facultatif)',
+	'reportCards.passThresholdHelp': 'La moyenne générale est réussie à partir de cette valeur. Laissez vide pour désactiver la classification réussite/échec.',
+	'reportCards.noPassThreshold': 'Non configuré',
+	'reportCards.invalidPassThreshold': 'Saisissez un seuil respectant les limites et la précision du barème hérité.',
 	'reportCards.modelEditHelp': 'Les changements s’appliquent à la prochaine génération explicite. Les bulletins existants restent inchangés.',
 	'reportCards.editModel': 'Modifier le modèle de bulletin',
 	'grading.deleteIntervalHelp': 'Supprimer {name} ? L’intervalle précédent couvrira ses valeurs. Les politiques de notation existantes restent inchangées.',
@@ -698,7 +702,7 @@ export const fr: Dict = {
 	'list.previousPage': 'Précédent',
 	'list.nextPage': 'Suivant',
 
-	'config.structure': 'Niveau de classe',
+	'config.structure': 'Niveaux et classes',
 	'structure.searchLevels': 'Rechercher un niveau',
 	'structure.emptyLevels': 'Ajoutez un niveau pour configurer ses matières et ses classes.',
 	'structure.noLevels': 'Aucun niveau correspondant.',
@@ -1306,7 +1310,7 @@ export const fr: Dict = {
 	'notificationTemplates.keys.account_invitation': 'Invitation de compte',
 
 	'gradeScales.title': '{n} barèmes',
-	'gradeScales.subtitle': 'Échelles de notation et seuils de réussite',
+	'gradeScales.subtitle': 'Échelles de notation',
 	'gradeScales.add': 'Ajouter un barème',
 	'gradeScales.name': 'Nom',
 	'gradeScales.min': 'Minimum',
@@ -1323,6 +1327,8 @@ export const fr: Dict = {
 	'gradeScales.deleteConfirm': 'Supprimer le barème « {name} » ?',
 	'gradeScales.toastDeleted': 'Barème {name} supprimé.',
 
+	'reportCards.templates': 'Modèles de bulletin',
+	'reportCards.academicYear': 'Année scolaire',
 	'reportCards.subtitle': 'Modèles de bulletin scolaire',
 	'reportCards.modelsTitle': '{n} modèles',
 	'reportCards.publishModel': 'Publier le modèle',

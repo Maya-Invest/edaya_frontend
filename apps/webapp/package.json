@@ -28,12 +28,14 @@
     "test:integration:coverage": "bun test tests/lib/catalog-drift.test.ts && bun scripts/integration-coverage.ts",
     "test:integration:webadmin": "bun scripts/webadmin-integration.ts",
     "test:integration:availability": "bun scripts/phone-availability-browser.ts",
-    "test:integration:attendance-ui": "bun tests/integration/attendance-browser.ts",
-    "test:integration:messaging-ui": "bun tests/integration/messaging-browser.ts",
-    "test:integration:family-feedback-ui": "bun tests/integration/family-feedback-browser.ts",
-    "test:integration:permission-profiles": "bun tests/integration/permission-profiles-browser.ts",
-    "test:integration:timetable-selection": "bun tests/integration/timetable-selection-browser.ts",
-    "screenshots": "bun scripts/screenshots.ts"
+    "test:integration:attendance-ui": "bun scripts/focused-integration-run.ts attendance-ui",
+    "test:integration:messaging-ui": "bun scripts/focused-integration-run.ts messaging-ui",
+    "test:integration:family-feedback-ui": "bun scripts/focused-integration-run.ts family-feedback-ui",
+    "test:integration:permission-profiles": "bun scripts/focused-integration-run.ts permission-profiles",
+    "test:integration:timetable-selection": "bun scripts/focused-integration-run.ts timetable-selection",
+    "screenshots": "bun scripts/screenshots.ts",
+    "test:integration:teacher-tabs": "bun scripts/focused-integration-run.ts teacher-tabs",
+    "test:integration:grading-configuration": "bun scripts/focused-integration-run.ts grading-configuration"
   },
   "dependencies": {
     "@internationalized/date": "^3.12.2",

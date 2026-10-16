@@ -10,7 +10,7 @@ const DETAIL_PATH_PATTERNS = [
 	/^\/configuration\/structure\/subjects\/level\/[^/]+$/,
 	/^\/configuration\/structure\/subjects\/[^/]+$/,
 	/^\/configuration\/structure\/classes\/[^/]+$/,
-	/^\/configuration\/report-cards\/[^/]+$/,
+	/^\/configuration\/structure\/details\/report-cards\/[^/]+$/,
 	/^\/configuration\/notifications\/[^/]+$/,
 ] as const;
 
@@ -27,7 +27,7 @@ const CLASS_TEACHING_DRAWER_PATH = /^\/classes\/[^/]+\/teaching\/[^/]+(?:\/[^/]+
 const CLASS_REPORT_CARDS_DRAWER_PATH = /^\/classes\/[^/]+\/report-cards\/[^/]+(?:\/[^/]+)?$/;
 const CLASS_ATTENDANCE_DRAWER_PATH = /^\/classes\/[^/]+\/attendance\/[^/]+(?:\/[^/]+)?$/;
 const FINANCE_BILLING_DRAWER_PATH = /^\/finance\/billing\/[^/]+(?:\/[^/]+)?$/;
-const CONFIG_REPORT_CARDS_DRAWER_PATH = /^\/configuration\/report-cards\/[^/]+(?:\/[^/]+)?$/;
+const CONFIG_REPORT_CARDS_DRAWER_PATH = /^\/configuration\/structure\/details\/report-cards\/[^/]+(?:\/[^/]+)?$/;
 const CONFIG_CLASSES_DRAWER_PATH = /^\/configuration\/structure\/classes\/[^/]+(?:\/[^/]+)?$/;
 const CONFIG_SUBJECTS_DRAWER_PATH = /^\/configuration\/structure\/subjects\/[^/]+(?:\/[^/]+)?$/;
 const CONFIG_NOTIFICATIONS_DRAWER_PATH = /^\/configuration\/notifications\/[^/]+$/;
@@ -96,9 +96,9 @@ function normalizeListPathname(pathname: string): string {
 	if (billingMatch) {
 		return '/finance/billing';
 	}
-	const configReportCardsMatch = pathname.match(/^\/configuration\/report-cards\/[^/]+/);
+	const configReportCardsMatch = pathname.match(/^\/configuration\/structure\/details\/report-cards\/[^/]+/);
 	if (configReportCardsMatch) {
-		return '/configuration/report-cards';
+		return '/configuration/structure/details';
 	}
 	const configClassesMatch = pathname.match(/^\/configuration\/structure\/classes\/[^/]+/);
 	if (configClassesMatch) {
