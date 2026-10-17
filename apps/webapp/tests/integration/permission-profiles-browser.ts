@@ -3,6 +3,7 @@ import { chromium } from 'playwright';
 import { ensurePlaywrightChromium } from '../../scripts/playwright-browsers';
 import { peekOtp, sendOtpThroughUi } from './support/passwordless';
 import { apiFetch } from './setup/journey-api';
+import { verifyPermissionProfileDrawer } from './support/permission-profile-drawer';
 import { uiCommand, waitForMutationDialog } from './support/ui-command';
 
 // This journey uses captured authentication and the freshly seeded local demo only.
@@ -91,6 +92,31 @@ try {
   originalDefaults = (await request('entities/staff-permission-scope-defaults/list', { staffId, academicYearId: year }))[0]?.scopes ?? [];
   await request('commands/configure-permission-profile', { id: profileId, schoolId, name: profileId, permissions: ['PAYMENT_READ', 'GRADE_INPUT'] });
   profileSaved = true;
+  await verifyPermissionProfileDrawer(page, base, profileId);
+  const emptyId = `${profileId}-empty`;
+  let emptyExists = false;
+  try {
+    await request('commands/configure-permission-profile', { id: emptyId, schoolId, name: emptyId, permissions: [] });
+    emptyExists = true;
+    await page.goto(`${base}/configuration/permission-profiles/${emptyId}?q=${emptyId}`);
+    const emptyDrawer = page.getByTestId('permission-profile-drawer');
+    await emptyDrawer.waitFor();
+    await emptyDrawer.getByText(/No permissions in this profile|Ce profil ne contient aucune permission/).waitFor();
+    await emptyDrawer.getByRole('button', { name: /more actions|plus d.actions/i }).click();
+    await page.getByRole('button', { name: /^(delete|supprimer)$/i }).click();
+    const confirm = page.getByTestId('confirm-modal');
+    await confirm.waitFor();
+    const deleted = page.waitForResponse(response => response.url().includes('/entities/staff-permission-profiles/delete'));
+    await confirm.getByRole('button', { name: /^(delete|supprimer)$/i }).click();
+    assert((await deleted).ok());
+    emptyExists = false;
+    await emptyDrawer.waitFor({ state: 'hidden' });
+    await page.waitForURL(url => url.pathname === '/configuration/permission-profiles' && !url.searchParams.has('modal'));
+    assert.equal(new URL(page.url()).searchParams.get('q'), emptyId);
+  } finally {
+    if (emptyExists) await request('entities/staff-permission-profiles/delete', { id: emptyId });
+  }
+
 
   // Start from the staff list before any Permissions tab has populated its catalog.
   await page.route('**/authorization/permission-catalog', route => route.abort(), { times: 1 });

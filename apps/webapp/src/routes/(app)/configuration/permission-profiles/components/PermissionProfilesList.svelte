@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { StaffPermissionProfile } from '$lib/api/staff-permission-profiles-data';
+	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
@@ -7,17 +8,25 @@
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
-	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
-	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
-	import { Pencil, Plus, Trash2 } from '$lib/icons';
+	import { ChevronRight, Plus } from '$lib/icons';
 	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { closeDetailDrawer, listSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
+	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getPermissionProfilesPageState } from '../permission-profiles-page.svelte';
+	import PermissionProfileDrawer from './PermissionProfileDrawer.svelte';
 	import PermissionProfileFormModal from './PermissionProfileFormModal.svelte';
 
 	const permissionProfilesPage = getPermissionProfilesPageState();
+
+	afterNavigate(({ from, to }) => {
+		if (from?.params?.id && to?.url.pathname === '/configuration/permission-profiles') {
+			const row = document.querySelector<HTMLAnchorElement>(`a[data-profile-id="${CSS.escape(from.params.id)}"]`);
+			(row ?? document.querySelector<HTMLElement>('[data-testid="permission-profiles-list"]'))?.focus({ preventScroll: true });
+		}
+	});
 
 	const modals = createUrlSyncedModals({
 		allowed: ['create', 'edit', 'delete'],
@@ -31,12 +40,36 @@
 	const deleteOpen = bindUrlModal(modals, 'delete');
 
 	let deleteBusy = $state(false);
+	let deletingProfile = $state<StaffPermissionProfile | null>(null);
+	const selectedId = $derived($page.params.id);
+	const selectedProfile = $derived(permissionProfilesPage.profiles.find(profile => profile.id === selectedId) ?? (deleteBusy && deletingProfile && deletingProfile.id === selectedId ? deletingProfile : undefined));
+	const listHref = $derived(listSurfaceHref('/configuration/permission-profiles', $page.url));
+
+	function detailHref(id: string) {
+		return listSurfaceHref(`/configuration/permission-profiles/${encodeURIComponent(id)}`, $page.url);
+	}
+
+	function openProfile(event: MouseEvent, id: string) {
+		if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+			return;
+		event.preventDefault();
+		openDetailDrawer(detailHref(id), listHref);
+	}
+
+	function closeProfile() {
+		closeDetailDrawer(listHref);
+	}
+
+	$effect(() => {
+		if (selectedId && permissionProfilesPage.slice && !selectedProfile && !deleteBusy)
+			closeProfile();
+	});
 
 	const targetProfile = $derived.by((): StaffPermissionProfile | null => {
 		if (!modals.target) {
 			return null;
 		}
-		return permissionProfilesPage.profiles.find(profile => profile.id === modals.target) ?? null;
+		return permissionProfilesPage.profiles.find(profile => profile.id === modals.target) ?? (deleteBusy ? deletingProfile : null);
 	});
 	const editingProfile = $derived(modals.active === 'edit' ? targetProfile : null);
 	const deleteTarget = $derived(modals.active === 'delete' ? targetProfile : null);
@@ -53,7 +86,7 @@
 	);
 
 	$effect(() => {
-		if (!modals.ready) {
+		if (!modals.ready || !permissionProfilesPage.slice || (selectedId && !selectedProfile)) {
 			return;
 		}
 		if (modals.active === 'create') {
@@ -83,6 +116,7 @@
 		if (!target) {
 			return;
 		}
+		deletingProfile = target;
 		deleteBusy = true;
 		try {
 			const ok = await permissionProfilesPage.deleteProfile({
@@ -90,16 +124,20 @@
 				successMessage: get(t)('permissionProfiles.toastDeleted', { name: target.name }),
 			});
 			if (ok) {
-				deleteOpen.open = false;
+				if (selectedId === target.id)
+					closeProfile();
+				else
+					deleteOpen.open = false;
 			}
 		}
 		finally {
 			deleteBusy = false;
+			deletingProfile = null;
 		}
 	}
 </script>
 
-<div class="animate-fade-in space-y-6">
+<div class="animate-fade-in space-y-6" data-testid="permission-profiles-list" tabindex="-1">
 	<ListPageHeader
 		eyebrow={$t('permissionProfiles.subtitle')}
 		title={$t('permissionProfiles.title', { n: filteredProfiles.length })}
@@ -158,46 +196,41 @@
 				</li>
 			{:else}
 				{#each filteredProfiles as profile (profile.id)}
-					<li class="grid grid-cols-12 items-center gap-4 border-b border-border px-5 py-4 last:border-b-0">
-						<div class="col-span-6 min-w-0">
-							<p class="truncate text-sm font-medium">{profile.name}</p>
-							{#if profile.description}
-								<p class="truncate text-xs text-muted-foreground">{profile.description}</p>
-							{/if}
-						</div>
-						<div class="col-span-3 text-sm tabular-nums text-muted-foreground">
-							{profile.permissions.length}
-						</div>
-						<div class="col-span-2 text-sm tabular-nums text-muted-foreground">
-							{$t('permissionProfiles.boundStaffCount', { n: permissionProfilesPage.boundCount(profile.id) })}
-						</div>
-						<div class="col-span-1 flex justify-end">
-							<PermissionGate permission="ACCESS_CONTROL_CONFIGURE">
-								{#snippet children({ disabled, title })}
-									<RowActionMenu>
-										<RowActionMenuItem {disabled} {title} onclick={() => openEdit(profile)}>
-											<Pencil class="h-4 w-4" />
-											{$t('common.edit')}
-										</RowActionMenuItem>
-										<RowActionMenuItem
-											destructive
-											{disabled}
-											{title}
-											onclick={() => openDelete(profile)}
-										>
-											<Trash2 class="h-4 w-4" />
-											{$t('common.delete')}
-										</RowActionMenuItem>
-									</RowActionMenu>
-								{/snippet}
-							</PermissionGate>
-						</div>
+					<li class="border-b border-border last:border-b-0">
+						<a
+							href={detailHref(profile.id)}
+							data-profile-id={profile.id}
+							aria-current={selectedId === profile.id ? 'page' : undefined}
+							onclick={event => openProfile(event, profile.id)}
+							class={cn('control-focus grid grid-cols-12 items-center gap-4 px-5 py-4 transition-colors hover:bg-secondary/60', selectedId === profile.id && 'bg-primary/10')}
+						>
+							<div class="col-span-6 min-w-0">
+								<p class="break-words text-sm font-medium">{profile.name}</p>
+								{#if profile.description}
+									<p class="break-words text-xs text-muted-foreground">{profile.description}</p>
+								{/if}
+							</div>
+							<div class="col-span-3 text-sm tabular-nums text-muted-foreground">{profile.permissions.length}</div>
+							<div class="col-span-2 break-words text-sm tabular-nums text-muted-foreground">
+								{$t('permissionProfiles.boundStaffCount', { n: permissionProfilesPage.boundCount(profile.id) })}
+							</div>
+							<div class="col-span-1 flex justify-end"><ChevronRight class="h-4 w-4 text-muted-foreground" aria-hidden="true" /></div>
+						</a>
 					</li>
 				{/each}
 			{/if}
 		</ul>
 	</div>
 </div>
+
+<PermissionProfileDrawer
+	profile={selectedProfile}
+	catalog={permissionProfilesPage.catalog}
+	boundCount={selectedProfile ? permissionProfilesPage.boundCount(selectedProfile.id) : 0}
+	onClose={closeProfile}
+	onEdit={() => selectedProfile && openEdit(selectedProfile)}
+	onDelete={() => selectedProfile && openDelete(selectedProfile)}
+/>
 
 <PermissionProfileFormModal bind:open={createOpen.open} />
 <PermissionProfileFormModal bind:open={editOpen.open} profile={editingProfile} />

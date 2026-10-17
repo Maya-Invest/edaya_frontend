@@ -314,7 +314,7 @@ export const ROUTE_MODAL_CATALOG = [
 	},
 	{
 		routeFamily: 'configuration-permission-profiles',
-		pathnamePattern: /^\/configuration\/permission-profiles\/?$/,
+		pathnamePattern: /^\/configuration\/permission-profiles(?:\/[^/]+)?\/?$/,
 		modalNames: ['create', 'edit', 'delete'],
 	},
 	{

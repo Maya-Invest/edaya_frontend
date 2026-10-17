@@ -73,7 +73,6 @@
 	<ListPageHeader
 		eyebrow={$t('config.subjectCategories')}
 		title={$t('subjectCategories.title', { n: String(filteredCategories.length) })}
-		description={$t('subjectCategories.subtitle')}
 	>
 		{#snippet search()}
 			<ListSearchField

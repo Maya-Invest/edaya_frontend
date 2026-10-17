@@ -193,6 +193,12 @@ const routeCases = [
 ] as const;
 
 describe('route modal catalog', () => {
+	it('matches permission profile detail URLs to the existing modal family', () => {
+		const family = ROUTE_MODAL_CATALOG.find(entry => entry.routeFamily === 'configuration-permission-profiles');
+		expect(family?.pathnamePattern.test('/configuration/permission-profiles/profile-1')).toBe(true);
+		expect(family?.modalNames).toEqual(['create', 'edit', 'delete']);
+	});
+
 	it('enumerates every audited route family and modal name', () => {
 		expect(ROUTE_MODAL_CATALOG.map(entry => entry.routeFamily)).toEqual(
 			routeCases.map(([routeFamily]) => routeFamily),

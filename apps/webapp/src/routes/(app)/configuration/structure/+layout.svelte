@@ -66,35 +66,37 @@
 	}
 </script>
 
-<div class="space-y-6">
-	<div class="grid min-w-0 gap-6 lg:grid-cols-[14rem_minmax(0,1fr)]">
-		<aside class="min-w-0 space-y-4 lg:sticky lg:top-0 lg:self-start" aria-label={$t('structure.levels')}>
-			<div class="flex items-center justify-between gap-2">
-				<h2 class="text-sm font-medium">{$t('structure.levels')}</h2>
-				<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE" mode="disable">
-					{#snippet children({ disabled, title })}
-						<Button variant="outline" size="sm" {disabled} {title} onclick={() => modals.open('create-level')} aria-label={$t('gradeLevels.add')}><Plus class="h-4 w-4" /></Button>
-					{/snippet}
-				</PermissionGate>
-			</div>
-			<div class="lg:hidden">
-				<label class="sr-only" for="structure-level">{$t('structure.levels')}</label>
-				<select id="structure-level" class="control-focus h-10 w-full rounded-xl border border-input bg-background px-3 text-sm" value={selected?.id ?? ''} onchange={event => appGoto(structureHref($page.url, event.currentTarget.value))}>
-					{#each levels as level (level.id)}<option value={level.id}>{level.name}</option>{/each}
-				</select>
-			</div>
-			<div class="hidden space-y-4 lg:block">
-				<Input value={search} oninput={event => searchLevels(event.currentTarget.value)} placeholder={$t('structure.searchLevels')} aria-label={$t('structure.searchLevels')} />
-				<nav class="max-h-[65vh] overflow-y-auto rounded-2xl border border-border bg-card shadow-soft" aria-label={$t('structure.levels')}>
-					{#each visibleLevels as level (level.id)}
-						<a href={structureHref($page.url, level.id)} aria-current={selected?.id === level.id ? 'page' : undefined} class={cn('control-focus flex items-center justify-between gap-3 px-4 py-3 text-sm transition-colors hover:bg-secondary/60', selected?.id === level.id && 'bg-primary/10 font-medium text-foreground')}>
-							<span>{level.name}</span><span class="text-xs tabular-nums text-muted-foreground">{levelsPage.classCountFor(level.id)}</span>
-						</a>
-					{:else}<p class="px-4 py-3 text-sm text-muted-foreground">{$t('structure.noLevels')}</p>{/each}
-				</nav>
+<div class="lg:h-full">
+	<div class="grid min-w-0 gap-6 lg:min-h-full lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-0">
+		<aside class="min-w-0 lg:border-r lg:border-border lg:bg-card lg:p-5" aria-label={$t('structure.levels')}>
+			<div class="space-y-4 lg:sticky lg:top-5">
+				<div class="flex items-center justify-between gap-2">
+					<h2 class="text-sm font-medium">{$t('structure.levels')}</h2>
+					<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE" mode="disable">
+						{#snippet children({ disabled, title })}
+							<Button variant="outline" size="sm" {disabled} {title} onclick={() => modals.open('create-level')} aria-label={$t('gradeLevels.add')}><Plus class="h-4 w-4" /></Button>
+						{/snippet}
+					</PermissionGate>
+				</div>
+				<div class="lg:hidden">
+					<label class="sr-only" for="structure-level">{$t('structure.levels')}</label>
+					<select id="structure-level" class="control-focus h-10 w-full rounded-xl border border-input bg-background px-3 text-sm" value={selected?.id ?? ''} onchange={event => appGoto(structureHref($page.url, event.currentTarget.value))}>
+						{#each levels as level (level.id)}<option value={level.id}>{level.name}</option>{/each}
+					</select>
+				</div>
+				<div class="hidden space-y-4 lg:block">
+					<Input value={search} oninput={event => searchLevels(event.currentTarget.value)} placeholder={$t('structure.searchLevels')} aria-label={$t('structure.searchLevels')} />
+					<nav class="max-h-[65vh] overflow-y-auto rounded-2xl border border-border bg-card shadow-soft" aria-label={$t('structure.levels')}>
+						{#each visibleLevels as level (level.id)}
+							<a href={structureHref($page.url, level.id)} aria-current={selected?.id === level.id ? 'page' : undefined} class={cn('control-focus flex items-center justify-between gap-3 px-4 py-3 text-sm transition-colors hover:bg-secondary/60', selected?.id === level.id && 'bg-primary/10 font-medium text-foreground')}>
+								<span>{level.name}</span><span class="text-xs tabular-nums text-muted-foreground">{levelsPage.classCountFor(level.id)}</span>
+							</a>
+						{:else}<p class="px-4 py-3 text-sm text-muted-foreground">{$t('structure.noLevels')}</p>{/each}
+					</nav>
+				</div>
 			</div>
 		</aside>
-		<section class="min-w-0 space-y-5" aria-label={selected?.name ?? $t('config.structure')}>
+		<section class="flex min-w-0 flex-col gap-5 lg:p-8" aria-label={selected?.name ?? $t('config.structure')}>
 			{#if selected}
 				<nav class="flex gap-1 border-b border-border" aria-label={$t('structure.tabs')}>
 					{#each availableTabs as item (item)}

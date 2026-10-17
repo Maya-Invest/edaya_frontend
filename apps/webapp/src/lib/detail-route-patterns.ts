@@ -3,6 +3,7 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { withAcademicScopeSegment } from '$lib/queries/page-query-runtime';
 
 const DETAIL_PATH_PATTERNS = [
+	/^\/configuration\/permission-profiles\/[^/]+$/,
 	/^\/account\/inbox\/[^/]+$/,
 	/^\/school\/(students|guardians|staff|teachers|activities|announcements|events|calendar)\/[^/]+$/,
 	/^\/classes\/[^/]+\/(students|subjects|timetable|teaching|evaluations|report-cards)\/[^/]+$/,

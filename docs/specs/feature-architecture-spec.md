@@ -537,8 +537,9 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 ### 7.26.1 Configuration — Permission profiles
 
-- **Entity:** `StaffPermissionProfile` · **Simple** list + row `···` menu at `/configuration/permission-profiles`
+- **Entity:** `StaffPermissionProfile` · **Complex** list + read-only drawer at `/configuration/permission-profiles/{id}`; rows open the drawer and have no action menu.
 - **List:** search name/description · bound-staff count; CTA Add profile (`ACCESS_CONTROL_CONFIGURE`)
+- **Drawer:** DrawerEntityHeader with Edit and overflow Delete, description, permission and assigned-staff counts, and expanded permission groups with localized labels and supported scope types. Show saved codes absent from the current catalog using the label fallback.
 - **Editor:** name, description, grouped checklist of all non-platform permissions. No profile scope field. Edits review each affected staff member’s generated access changes and unresolved warnings before saving. Saved custom selections remain available for repair.
 - **Commands:** `configurePermissionProfile`; catalog delete via entity delete (unique grants freeze as custom)
 
@@ -597,7 +598,7 @@ Authoritative surface per entity. §7 has per-feature drawer/tab detail.
 | `DisciplinaryAction` | Simple | `/configuration/other/discipline` |
 | `SubjectCategory` | Simple | `/configuration/other/subject-categories` |
 | `PeriodDefinition` | Layout | `/configuration/period-grid` |
-| `StaffPermissionProfile` | Simple | `/configuration/permission-profiles` |
+| `StaffPermissionProfile` | Complex | `/configuration/permission-profiles` |
 | Notification templates | Thin | `/configuration/notifications` |
 | `School` | Layout | `/configuration/school` |
 | Dashboard / academic admin | Layout | `/dashboard`, `/configuration/academic` |

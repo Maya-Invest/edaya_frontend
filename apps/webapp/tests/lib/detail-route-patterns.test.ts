@@ -6,6 +6,13 @@ import {
 } from '$lib/detail-route-patterns';
 
 describe('isLikelyDetailPath', () => {
+	it('recognizes permission profile drawers and shares their list cache', () => {
+		expect(isLikelyDetailPath('/configuration/permission-profiles/profile-1')).toBe(true);
+		expect(isLikelyDetailPath('/configuration/permission-profiles')).toBe(false);
+		expect(listRouteCacheKey(new URL('https://example.test/configuration/permission-profiles/profile-1?q=office&modal=edit&modalTarget=profile-1')))
+			.toBe(listRouteCacheKey(new URL('https://example.test/configuration/permission-profiles?q=office')));
+	});
+
 	it('recognizes school student drawer tabs', () => {
 		expect(isLikelyDetailPath('/school/students/stu-1')).toBe(true);
 		expect(isLikelyDetailPath('/school/students/stu-1/profile')).toBe(true);

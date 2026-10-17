@@ -1,0 +1,70 @@
+<script lang="ts">
+	import type { PermissionCatalogEntry } from '$lib/api/staff-permission-assignments-data';
+	import type { StaffPermissionProfile } from '$lib/api/staff-permission-profiles-data';
+	import { formatPermissionLabel } from '$lib/api/staff-permission-assignments-data';
+	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
+	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import { t } from '$lib/i18n';
+	import { Pencil, Trash2, X } from '$lib/icons';
+	import { hasPermission } from '$lib/permissions';
+	import PermissionScopeTypes from '$lib/smart-components/scope-builder/PermissionScopeTypes.svelte';
+	import { profilePermissionGroups } from '../lib/permission-profiles-helpers';
+
+	const { profile, catalog, boundCount, onClose, onEdit, onDelete }: {
+		profile?: StaffPermissionProfile;
+		catalog: PermissionCatalogEntry[];
+		boundCount: number;
+		onClose: () => void;
+		onEdit: () => void;
+		onDelete: () => void;
+	} = $props();
+
+	const groups = $derived(profilePermissionGroups(profile?.permissions ?? [], catalog));
+</script>
+
+<Dialog.Root open={Boolean(profile)} onOpenChange={open => !open && onClose()}>
+	<Dialog.Content
+		data-testid="permission-profile-drawer"
+		onCloseAutoFocus={event => event.preventDefault()}
+		class="fixed inset-y-0 right-0 left-auto top-0 flex h-dvh max-h-dvh w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none p-0 md:w-1/2"
+	>
+		<div class="flex shrink-0 items-center justify-between gap-3 border-b border-border px-6 py-4">
+			<Dialog.Title class="text-sm">{$t('config.permissionProfiles')}</Dialog.Title>
+			<Button variant="ghost" size="icon" aria-label={$t('common.close')} onclick={onClose}><X class="h-4 w-4" /></Button>
+		</div>
+		{#if profile}
+			<div class="scrollbar-thin min-h-0 flex-1 space-y-6 overflow-y-auto break-words p-6">
+				<DrawerEntityHeader name={profile.name} summary={profile.description ?? undefined} actions={hasPermission('ACCESS_CONTROL_CONFIGURE') ? actions : undefined} overflow={hasPermission('ACCESS_CONTROL_CONFIGURE') ? overflow : undefined} />
+				{#snippet actions()}
+					<Button variant="outline" onclick={onEdit}><Pencil class="mr-2 h-4 w-4" />{$t('common.edit')}</Button>
+				{/snippet}
+				{#snippet overflow()}
+					<Button variant="ghost" class="w-full justify-start text-destructive hover:text-destructive" onclick={onDelete}><Trash2 class="mr-2 h-4 w-4" />{$t('common.delete')}</Button>
+				{/snippet}
+				<div class="grid grid-cols-2 gap-4 text-sm">
+					<DrawerField label={$t('permissionProfiles.permissions')}><p class="tabular-nums">{profile.permissions.length}</p></DrawerField>
+					<DrawerField label={$t('permissionProfiles.boundStaff')}><p class="tabular-nums">{$t('permissionProfiles.boundStaffCount', { n: boundCount })}</p></DrawerField>
+				</div>
+				<section aria-label={$t('permissionProfiles.permissions')} class="space-y-5">
+					{#each groups as group (group.key)}
+						<div class="space-y-2">
+							<h4 class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{group.key}</h4>
+							<ul class="divide-y divide-border">
+								{#each group.entries as item (item.permission)}
+									<li class="flex flex-wrap items-center gap-x-2 gap-y-1 py-3 text-sm" data-permission={item.permission}>
+										<span>{formatPermissionLabel(item.permission, $t)}</span>
+										<PermissionScopeTypes entry={item.entry} />
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{:else}
+						<p class="text-sm text-muted-foreground">{$t('permissionProfiles.noPermissions')}</p>
+					{/each}
+				</section>
+			</div>
+		{/if}
+	</Dialog.Content>
+</Dialog.Root>
