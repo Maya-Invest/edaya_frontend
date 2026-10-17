@@ -53,7 +53,7 @@
 			{#if isLesson}
 				<PermissionGate permission="CLASS_LOGBOOK_VALIDATE" classId={s.classId}><Button variant="outline" size="sm" onclick={() => logbookTab.validateLogbook([s.id])}>{$t('corrections.validateLogbook')}</Button></PermissionGate>
 				<PermissionGate
-					permission={detail.logbook ? 'CLASS_LOGBOOK_UPDATE' : 'CLASS_LOGBOOK_CREATE'}
+					permission={detail.logbook ? 'CLASS_LOGBOOK_MANAGE' : 'CLASS_LOGBOOK_MANAGE'}
 					classId={s.classId}
 					mode="disable"
 					tooltip="Droit cahier de texte requis."
@@ -98,10 +98,10 @@
 			</DrawerEmptyState>
 			{#if isLesson}
 				<PermissionGate
-					permission="CLASS_LOGBOOK_CREATE"
+					permission="CLASS_LOGBOOK_MANAGE"
 					classId={s.classId}
 					mode="disable"
-					tooltip="Droit CLASS_LOGBOOK_CREATE requis."
+					tooltip="Droit CLASS_LOGBOOK_MANAGE requis."
 				>
 					{#snippet children({ disabled, title })}
 						<Button

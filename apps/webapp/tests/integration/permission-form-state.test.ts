@@ -30,7 +30,7 @@ describe('permission form state ownership', () => {
 		for (const changed of ['schoolId', 'staffId', 'academicYearId', 'profileId', 'permission', 'customScopes', 'useDefaultScopes', 'startsAt', 'endsAt', 'status']) {
 			test(`${form} discards delayed review after ${changed} changes`, async () => {
 				const state = new PermissionImpactPreviewState();
-				let input: Record<string, unknown> = { schoolId: 'school', staffId: 'staff', academicYearId: 'year', profileId: 'profile', permission: 'GRADE_INPUT', customScopes: [{ kind: 'school' }], useDefaultScopes: true, startsAt: '2026-01-01', endsAt: '2026-12-31', status: 'active' };
+				let input: Record<string, unknown> = { schoolId: 'school', staffId: 'staff', academicYearId: 'year', profileId: 'profile', permission: 'GRADE_MANAGE', customScopes: [{ kind: 'school' }], useDefaultScopes: true, startsAt: '2026-01-01', endsAt: '2026-12-31', status: 'active' };
 				const delayed = deferred<{ resolution: typeof report }>();
 				const pending = state.review(input, () => delayed.promise, () => input, () => true);
 				input = { ...input, [changed]: 'replacement' };
@@ -56,7 +56,7 @@ describe('permission form state ownership', () => {
 		const input = { scopes: [{ kind: 'school' }] };
 		const old = deferred<{ resolution: typeof report }>();
 		let snapshot: typeof input | undefined;
-		const first = state.review(input, command => { snapshot = command; return old.promise; }, () => input, () => true);
+		const first = state.review(input, (command) => { snapshot = command; return old.promise; }, () => input, () => true);
 		input.scopes[0]!.kind = 'student'; expect(snapshot?.scopes[0]?.kind).toBe('school');
 		state.reset(); state.synchronize(true, input);
 		const fresh = deferred<{ resolution: typeof report }>();

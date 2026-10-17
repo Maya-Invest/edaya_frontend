@@ -7,7 +7,6 @@ import {
 	mapAssessmentResults,
 } from '$lib/api/assessments-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
-import { loadClassSubjects } from '$lib/api/subjects-data';
 import { resolvePageLoad } from '$lib/queries/page-status';
 import { emptyEvaluationsSlice } from './evaluation-helpers';
 
@@ -18,7 +17,7 @@ export async function loadEvaluationGradingData(
 	classId: string,
 	periodId: string,
 ) {
-	const sources = await fetchClassAssessmentsSources(client, classId, periodId);
+	const sources = await fetchClassAssessmentsSources(client, classId, periodId, true);
 	return mapAssessmentResults(sources.resultsRaw);
 }
 
@@ -28,10 +27,7 @@ export async function loadEvaluationsSlice(classId: string): Promise<Evaluations
 		return emptyEvaluationsSlice(classId);
 	}
 	const client = getBrowserSchoolClient();
-	const [{ evaluations }, subjects] = await Promise.all([
-		loadClassEvaluationsPageData(client, classId, periodId).then(({ evaluations }) => ({ evaluations })),
-		loadClassSubjects(client, classId),
-	]);
+	const { evaluations, subjects } = await loadClassEvaluationsPageData(client, classId, periodId);
 	return {
 		classId,
 		evaluations,

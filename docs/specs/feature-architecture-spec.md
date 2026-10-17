@@ -175,11 +175,11 @@ Grant rows stay on **Staff drawer → Permissions**. Profile **templates** live 
 
 | Surface | Rule |
 |---------|------|
-| **Catalog** | `/configuration/permission-profiles` — simple list (discipline analog). Read `ACCESS_CONTROL_READ`; create/edit/delete `ACCESS_CONTROL_CONFIGURE`. |
+| **Catalog** | `/configuration/permission-profiles` — simple list (discipline analog). Read `ACCESS_CONTROL_READ`; create/edit/delete `ACCESS_CONTROL_MANAGE`. |
 | **Location (grants)** | Staff drawer → **Permissions** tab (`/school/staff/{id}`) |
 | **Mutation pattern** | **Modal-only** for custom grants and apply/remove; reorder via explicit up/down. No inline permission toggles, no CRUD matrix layout |
 | **Navigation** | Staff drawer has Profile and Permissions tabs. Permission actions live inside Permissions; no redundant Manage permissions header button. Legacy staff Assignments URLs redirect to Permissions. |
-| **Gating** | Apply / remove / reorder / custom add-edit-delete require `ACCESS_CONTROL_ASSIGN` via `PermissionGate` (`hide` or `disable` + tooltip) |
+| **Gating** | Apply / remove / reorder / custom add-edit-delete require `ACCESS_CONTROL_MANAGE` via `PermissionGate` (`hide` or `disable` + tooltip) |
 
 **Permissions tab anatomy** (drawer sub-collection pattern):
 
@@ -336,7 +336,7 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 - **Drawer tabs** (hide a tab the caller cannot read):
   - **Profile** — identity including code, contact, active toggle, account linking
   - **Assignments** (`teacherAssignments`; subject + homeroom kinds) — Homeroom assignments first, then Teaching assignments, both always visible with localized empty states. Rows lead with class or class · subject; omit repeated assignment-kind labels. Retain one Add assignment CTA, class timetable links, add/edit modal and delete confirmation.
-  - **Availability** (`teacherUnavailabilities`) — `ACCESS_CONTROL_ASSIGN` or `SCHOOL_STRUCTURE_CONFIGURE`
+  - **Availability** (`teacherUnavailabilities`) — `ACCESS_CONTROL_MANAGE` or `SCHOOL_STRUCTURE_CONFIGURE`
   - **Timetable** — teacher-scoped academic-year agenda (`getTeacherTimetable`), gated by `QUERY_TIMETABLE_READ`; chronological day groups in the school time zone with fixed teacher identity, tabs and Today/date controls above an independently scrolling session list with bold date headings. Initially jump to today (clamped to year bounds), or the URL date; insert one empty day marker when the target has no sessions. Today is disabled outside the selected year. Rows retain links to class timetable occurrences.
   - **Evaluations** — assessments on assigned class subjects for the current period; `GRADE_READ` or `GRADE_INPUT`; rows link to `/classes/{classId}/evaluations/{id}`
   - **Family feedback** — campaigns for this teacher; `FAMILY_FEEDBACK_CAMPAIGN_READ`; rows link to `/school/family-feedback/{id}`
@@ -401,6 +401,10 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 - Create/edit: optional **Schedule on timetable**
 
 ### 7.12 Classes — Assessments (evaluations)
+
+- Permission catalog grouping: **Assessments and marks** / **Évaluations et notes** contains `ASSESSMENT_READ`, `ASSESSMENT_MANAGE`, `GRADE_READ`, `GRADE_MANAGE`, and `GRADE_VALIDATE`. `GRADE_SCALE_CONFIGURE` belongs to Academic configuration. Retired exam identifiers have no compatibility aliases.
+- Assessment read or management authority admits the assessment workspace independently of marks. Create, edit, delete and direct edit/delete modal submission check `ASSESSMENT_MANAGE` for the relevant class/subject and assessment; edits check both old and proposed subjects. Grading controls retain their mark permissions.
+- The bounded assessment context supplies setup and optional authorized mark results. Mark-read scope is independent from assessment setup scope. List/detail statistics distinguish authorized zero progress from unavailable results; unavailable marks show no numeric progress or average. Setup-only users have no Grading tab. Editing reloads the definition through the bounded context without requiring a general assessment read grant.
 
 - **Entities:** `Assessment` · `AssessmentResult`
 - **List:** main filter **kind** (all / homework / quiz / project / other) · kind badge on row · timed items show schedule hint when on timetable
@@ -538,7 +542,7 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 ### 7.26.1 Configuration — Permission profiles
 
 - **Entity:** `StaffPermissionProfile` · **Complex** list + read-only drawer at `/configuration/permission-profiles/{id}`; rows open the drawer and have no action menu.
-- **List:** search name/description · bound-staff count; CTA Add profile (`ACCESS_CONTROL_CONFIGURE`)
+- **List:** search name/description · bound-staff count; CTA Add profile (`ACCESS_CONTROL_MANAGE`)
 - **Drawer:** DrawerEntityHeader with Edit and overflow Delete, description, permission and assigned-staff counts, and expanded permission groups with localized labels and supported scope types. Show saved codes absent from the current catalog using the label fallback.
 - **Editor:** name, description, grouped checklist of all non-platform permissions. No profile scope field. Edits review each affected staff member’s generated access changes and unresolved warnings before saving. Saved custom selections remain available for repair.
 - **Commands:** `configurePermissionProfile`; catalog delete via entity delete (unique grants freeze as custom)
@@ -695,3 +699,8 @@ Entry and correction forms use numeric fields or configured mention choices acco
 Levels and Classes → Details contains Report card templates below the level's grading settings. The collection is scoped to the selected level and workspace academic year, with multiple templates supported. Show all templates in that scope without search or status-filter controls; legacy search/status parameters do not restrict the collection. The section header exposes only Add model; omit its export menu and standalone row Edit buttons. Clicking a template opens its drawer, which retains editing actions. Template cards keep the white card surface on hover and selection, using the border and focus ring for feedback. Creation captures and displays that level/year as read-only; scope changes discard the open create surface. Existing template mutations and REPORT_CARD_CONFIGURE gates remain in effect. The combined navigation entry includes REPORT_CARD_CONFIGURE and there is no separate templates entry.
 
 The Details layout owns ReportCardsPageState and its PageQuery. Template drawers use `/configuration/structure/details/report-cards/{id}`; closing returns to Details with the level selection and filters retained. Changing level or year closes the prior drawer/modal. Legacy `/configuration/report-cards` URLs redirect, retaining modal/filter context; a template deep link resolves its own level and academic year before editing. Grading scales stay separate. No persistence or report-generation behavior changes.
+
+
+## Canonical permission catalog and resource selections
+
+The API catalog's `staffAssignable`, `serviceAccountAssignable`, `assignmentTargets` and `scopePolicy` determine picker availability. Do not infer eligibility from action names or maintain permission-specific scope exceptions. Unscoped actions have no scope/default controls, supported-scope badges, or effective-scope labels. Their internal `school` grant marker is never a user selection. Profiles automatically include their unscoped actions; mixed profiles expose resource selectors only for resource-scoped members. Default scopes contain resource selections only. Empty resource selections grant no access; broad access requires explicit All at a supported grain. Preserve preview/save identity, ordering, first-wins and unresolved/shadowed warnings.

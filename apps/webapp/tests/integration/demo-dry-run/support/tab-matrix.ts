@@ -1,3 +1,4 @@
+import { DRAWER_TAB_PATTERNS } from '../../../../scripts/qa-route-catalog';
 import {
 	ACTIVITY_ID,
 	CATALOG_SUBJECT_ID,
@@ -18,7 +19,6 @@ import {
 	schoolStudentPath,
 	schoolTeacherPath,
 } from './paths';
-import { DRAWER_TAB_PATTERNS } from '../../../../scripts/qa-route-catalog';
 
 export interface DrawerTabRouteCase {
 	/** Short label for step names */
@@ -49,7 +49,7 @@ export const DRAWER_TAB_ROUTE_CASES: readonly DrawerTabRouteCase[] = [
 		tabs: tabsFor('school staff'),
 		pathForTab: tab => schoolStaffPath(STAFF_ID, tab),
 		drawerPathPrefix: `/school/staff/${STAFF_ID}`,
-		skipReason: 'Permissions tab may require ACCESS_CONTROL_ASSIGN',
+		skipReason: 'Permissions tab may require ACCESS_CONTROL_MANAGE',
 	},
 	{
 		name: 'school teachers',

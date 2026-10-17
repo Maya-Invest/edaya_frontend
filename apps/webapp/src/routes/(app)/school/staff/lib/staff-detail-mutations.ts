@@ -1,4 +1,4 @@
-import type { GrantScope } from '$lib/api/grant-scopes';
+import type { UserScopeSelection } from '$lib/api/grant-scopes';
 import type { components } from '$lib/api/schema';
 import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 import type { StaffMemberProfileRolePatch, StaffProfileRole } from '$lib/staff/staff-profile-roles';
@@ -37,7 +37,7 @@ function toStaffPermissionConfigCommand(
 		schoolId: assignment.schoolId,
 		academicYearId: assignment.academicYearId,
 		permission: assignment.permission,
-		customScopes: assignment.customScopes ?? assignment.scopes,
+		customScopes: assignment.customScopes ?? assignment.scopes.filter(scope => scope.kind !== 'school'),
 		useDefaultScopes: assignment.useDefaultScopes ?? false,
 		startsAt: assignment.startsAt,
 		endsAt: assignment.endsAt,
@@ -77,7 +77,7 @@ export async function createStaffOnPage(
 		profileRole: StaffProfileRole;
 		sendAccountInvitation?: boolean;
 		permissionProfileId?: string;
-		customScopes?: GrantScope[];
+		customScopes?: UserScopeSelection[];
 		useDefaultScopes?: boolean;
 		successMessage?: string;
 	},
@@ -329,7 +329,7 @@ export async function applyStaffPermissionProfileOnPage(
 	input: {
 		staffId: string;
 		profileId: string;
-		customScopes: GrantScope[];
+		customScopes: UserScopeSelection[];
 		useDefaultScopes: boolean;
 		successMessage?: string;
 	},

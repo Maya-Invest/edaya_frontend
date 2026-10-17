@@ -93,7 +93,7 @@
 			<Label class="text-sm font-medium">{$t('staff.activeLabel')}</Label>
 			<p class="text-xs text-muted-foreground">{$t('staff.activeHint')}</p>
 		</div>
-		<PermissionGate permission="STAFF_UPDATE" mode="disable" tooltip={$t('staff.permissionUpdate')}>
+		<PermissionGate permission="STAFF_MANAGE" mode="disable" tooltip={$t('staff.permissionUpdate')}>
 			{#snippet children({ disabled })}
 				<Checkbox
 					checked={active}

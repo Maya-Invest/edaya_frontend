@@ -102,7 +102,7 @@
 			<h4 class="text-sm font-semibold">{$t('teacher.assignmentsTitle')}</h4>
 			<p class="text-xs text-muted-foreground">{$t('teacher.assignmentsHint')}</p>
 		</div>
-		<PermissionGate permission="STAFF_UPDATE" mode="disable">
+		<PermissionGate permission="STAFF_MANAGE" mode="disable">
 			{#snippet children({ disabled })}
 				<Button size="sm" class="rounded-full" {disabled} onclick={() => modals.open('form')}>
 					<Plus class="mr-1.5 h-3.5 w-3.5" />
@@ -135,7 +135,7 @@
 									</a>
 								{/if}
 							</div>
-							<PermissionGate permission="STAFF_UPDATE" mode="disable">
+							<PermissionGate permission="STAFF_MANAGE" mode="disable">
 								{#snippet children({ disabled })}
 									<RowActionMenu>
 										<RowActionMenuItem

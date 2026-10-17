@@ -110,7 +110,7 @@
 		</span>
 	{/snippet}
 	{#snippet actions()}
-		<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE" mode="disable">
+		<PermissionGate permission="ACADEMIC_CATALOG_MANAGE" mode="disable">
 			{#snippet children({ disabled, title })}
 				<Button {disabled} {title} variant="outline" size="sm" class="rounded-full" onclick={() => modals.open('edit-subject')}>
 					{$t('common.edit')}
@@ -119,7 +119,7 @@
 		</PermissionGate>
 	{/snippet}
 	{#snippet overflow()}
-		<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE">
+		<PermissionGate permission="ACADEMIC_CATALOG_MANAGE">
 			{#if isCatalogSubject}
 				<RowActionMenuItem destructive disabled={removeCatalogBusy} onclick={() => void removeFromCatalog()}>
 					{$t('subjects.removeFromCatalog')}

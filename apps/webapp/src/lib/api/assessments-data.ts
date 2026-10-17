@@ -1,19 +1,18 @@
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import type { AssessmentResultRow, Evaluation } from '$lib/types/school';
+import type { AssessmentResultRow, Evaluation, Subject } from '$lib/types/school';
 import {
 	mapAssessmentResultRow,
 	mapAssessmentToEvaluation,
 } from '$lib/api/assessment-mapping';
 import {
 	activeEnrollmentsForClass,
-	assessmentsForClassPeriod,
-	classGroupScope,
 	listAllEntityPages,
-	listAllEntityPagesByIds,
 	listAllEntityPagesForIdFilters,
 	uniqueIds,
 } from '$lib/api/entity-list-filters';
+
+import { mapClassSubjects } from '$lib/api/subjects-data';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -29,6 +28,8 @@ export interface AssessmentsSources {
 	classSubjectsRaw: ClassSubjectRaw[];
 	subjectsRaw: SubjectRaw[];
 	enrollmentsRaw: EnrollmentRaw[];
+	classSize?: number;
+	readableMarkAssessmentIds?: string[];
 }
 
 export function mapAssessmentResults(
@@ -41,48 +42,17 @@ export async function fetchClassAssessmentsSources(
 	client: SchoolClient,
 	classGroupId: string,
 	periodId: string,
+	includeMarks = false,
 ): Promise<AssessmentsSources> {
-	const [
-		assessmentsRaw,
-		classSubjectsRaw,
-		enrollmentsRaw,
-	] = await Promise.all([
-		listAllEntityPages(query => client.entities.assessments.list(query), {
-			baseQuery: assessmentsForClassPeriod(classGroupId, periodId),
-		}),
-		listAllEntityPages(query => client.entities.classSubjects.list(query), {
-			baseQuery: classGroupScope(classGroupId),
-		}),
-		listAllEntityPages(query => client.entities.enrollments.list(query), {
-			baseQuery: activeEnrollmentsForClass(classGroupId),
-		}),
-	]);
-
-	const assessmentIds = uniqueIds(assessmentsRaw.map(assessment => assessment.id));
-	const studentIds = uniqueIds(enrollmentsRaw.map(enrollment => enrollment.studentId));
-	const subjectIds = uniqueIds(classSubjectsRaw.map(classSubject => classSubject.subjectId));
-
-	const [
-		resultsRaw,
-		subjectsRaw,
-	] = await Promise.all([
-		listAllEntityPagesForIdFilters(
-			query => client.entities.assessmentResults.list(query),
-			[
-				{ field: 'assessmentId', ids: assessmentIds },
-				{ field: 'studentId', ids: studentIds },
-			],
-		),
-		listAllEntityPagesByIds(query => client.entities.subjects.list(query), subjectIds),
-	]);
-
-	return {
-		assessmentsRaw,
-		resultsRaw,
-		classSubjectsRaw,
-		subjectsRaw,
-		enrollmentsRaw,
-	};
+	const context = await client.queries.getAssessmentEditorContext({ classGroupId, periodId });
+	const enrollmentsRaw = includeMarks ? await listAllEntityPages(query => client.entities.enrollments.list(query), { baseQuery: activeEnrollmentsForClass(classGroupId) }) : [];
+	const resultsRaw = includeMarks
+		? await listAllEntityPagesForIdFilters(query => client.entities.assessmentResults.list(query), [
+				{ field: 'assessmentId', ids: uniqueIds(context.assessmentsRaw.map(row => row.id)) },
+				{ field: 'studentId', ids: uniqueIds(enrollmentsRaw.map(row => row.studentId)) },
+			])
+		: context.markResults.flatMap(entry => entry.results);
+	return { ...context, resultsRaw, enrollmentsRaw, readableMarkAssessmentIds: includeMarks ? context.assessmentsRaw.map(row => row.id) : context.markResults.map(entry => entry.assessmentId) };
 }
 
 export function mapClassEvaluations(
@@ -91,7 +61,7 @@ export function mapClassEvaluations(
 ): Evaluation[] {
 	const subjectById = new Map(sources.subjectsRaw.map(subject => [subject.id, subject]));
 	const classSubjectById = new Map(sources.classSubjectsRaw.map(entry => [entry.id, entry]));
-	const classSize = sources.enrollmentsRaw.filter(
+	const classSize = sources.classSize ?? sources.enrollmentsRaw.filter(
 		enrollment => enrollment.classGroupId === classGroupId && enrollment.status === 'active',
 	).length;
 
@@ -102,11 +72,11 @@ export function mapClassEvaluations(
 			const subject = classSubject ? subjectById.get(classSubject.subjectId) : undefined;
 			const assessmentResults = sources.resultsRaw.filter(result => result.assessmentId === assessment.id);
 
-			return mapAssessmentToEvaluation(assessment, {
+			return { ...mapAssessmentToEvaluation(assessment, {
 				subjectName: subject?.name ?? assessment.title,
 				classSize,
 				results: assessmentResults,
-			});
+			}), marksAvailable: sources.readableMarkAssessmentIds?.includes(assessment.id) ?? true };
 		})
 		.sort((left, right) => right.date.localeCompare(left.date));
 }
@@ -120,14 +90,23 @@ export async function loadClassEvaluations(
 	return evaluations;
 }
 
+export async function loadAssessmentForEdit(client: SchoolClient, classGroupId: string, periodId: string, assessmentId: string): Promise<AssessmentRaw> {
+	const context = await client.queries.getAssessmentEditorContext({ classGroupId, periodId });
+	const assessment = context.assessmentsRaw.find(row => row.id === assessmentId);
+	if (!assessment)
+		throw new Error('ASSESSMENT_NOT_AVAILABLE');
+	return assessment;
+}
+
 export async function loadClassEvaluationsPageData(
 	client: SchoolClient,
 	classGroupId: string,
 	periodId: string,
-): Promise<{ evaluations: Evaluation[]; assessmentResults: AssessmentResultRow[] }> {
+): Promise<{ evaluations: Evaluation[]; assessmentResults: AssessmentResultRow[]; subjects: Subject[] }> {
 	const sources = await fetchClassAssessmentsSources(client, classGroupId, periodId);
 	return {
 		evaluations: mapClassEvaluations(classGroupId, sources),
+		subjects: mapClassSubjects(classGroupId, { ...sources, subjectMattersRaw: [], teachersRaw: [], teacherAssignmentsRaw: [], staffMembersRaw: [], staffAssignmentsRaw: [] }),
 		assessmentResults: mapAssessmentResults(sources.resultsRaw),
 	};
 }

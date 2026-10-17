@@ -5,6 +5,7 @@
 	import { t } from '$lib/i18n';
 	import { MODAL_QUERY_KEY, MODAL_TARGET_QUERY_KEY } from '$lib/modal/modal-url';
 	import { followDrawerTabLink } from '$lib/navigation/route-surface-navigation';
+	import { hasAnyPermission } from '$lib/permissions';
 	import { cn } from '$lib/utils';
 	import {
 		activeEvaluationDetailTab,
@@ -12,6 +13,8 @@
 	} from '../../lib/evaluation-detail-tabs';
 
 	const { evaluation, classId }: { evaluation: Evaluation; classId: string } = $props();
+
+	const tabs = $derived(EVALUATION_DETAIL_TABS.filter(tab => tab.key !== 'grading' || hasAnyPermission(['GRADE_READ', 'GRADE_VALIDATE'], { classId, subject: evaluation.classSubjectId, assessmentId: evaluation.id })));
 
 	const activeTab = $derived(activeEvaluationDetailTab($page.url.pathname, classId, evaluation.id));
 
@@ -32,7 +35,7 @@
 	data-testid="drawer-tab-bar"
 	class="flex items-center gap-1 overflow-x-auto rounded-full border border-border bg-secondary/40 p-1 text-xs"
 >
-	{#each EVALUATION_DETAIL_TABS as tab (tab.key)}
+	{#each tabs as tab (tab.key)}
 		<a
 			href={tabHref(tab.segment)}
 			data-sveltekit-noscroll

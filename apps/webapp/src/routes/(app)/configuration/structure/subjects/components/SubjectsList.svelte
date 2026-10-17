@@ -92,7 +92,7 @@
 			<ListSearchField value={listFilters.values.q} oninput={event => listFilters.setField('q', event.currentTarget.value)} />
 		{/snippet}
 		{#snippet primary()}
-			<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE" mode="disable">
+			<PermissionGate permission="ACADEMIC_CATALOG_MANAGE" mode="disable">
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"
@@ -158,7 +158,7 @@
 						? $t('subjects.none')
 						: $t('subjects.noneForGradeLevel')}
 				</p>
-				<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE" mode="disable">
+				<PermissionGate permission="ACADEMIC_CATALOG_MANAGE" mode="disable">
 					{#snippet children({ disabled, title })}
 						<Button
 							variant="outline"

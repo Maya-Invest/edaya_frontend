@@ -1,4 +1,4 @@
-import type { GrantScope } from '$lib/api/grant-scopes';
+import type { UserScopeSelection } from '$lib/api/grant-scopes';
 import type { RenderedPermissionScope } from '$lib/api/permission-scope-labels';
 import type { components } from '$lib/api/schema';
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
@@ -11,7 +11,7 @@ type PermissionCatalogEntry = components['schemas']['PermissionCatalogEntry'];
 export type { PermissionCatalogEntry, StaffPermissionAssignment };
 
 export interface StaffPermissionAssignmentView extends StaffPermissionAssignment {
-	customScopes?: GrantScope[];
+	customScopes?: UserScopeSelection[];
 	useDefaultScopes?: boolean;
 	warnings?: components['schemas']['StaffManualPermissionAssignment']['warnings'];
 	scopeLabel: string;
@@ -48,7 +48,7 @@ export async function loadPermissionCatalog(client: SchoolClient): Promise<Permi
 export async function loadStaffPermissionAssignments(
 	client: SchoolClient,
 	scope: { schoolId: string; academicYearId: string },
-): Promise<(StaffPermissionAssignment & { customScopes?: GrantScope[]; useDefaultScopes?: boolean; warnings?: components['schemas']['StaffManualPermissionAssignment']['warnings'] })[]> {
+): Promise<(StaffPermissionAssignment & { customScopes?: UserScopeSelection[]; useDefaultScopes?: boolean; warnings?: components['schemas']['StaffManualPermissionAssignment']['warnings'] })[]> {
 	const [grants, manuals] = await Promise.all([
 		listAllEntityPages(query => client.entities.staffPermissionAssignments.list(query), { baseQuery: { ...scope, status: 'active' } }),
 		listAllEntityPages(query => client.entities.staffManualPermissionAssignments.list(query), { baseQuery: scope }),
@@ -61,9 +61,9 @@ export async function loadStaffPermissionAssignments(
 
 export async function buildStaffPermissionAssignmentViews(
 	client: SchoolClient,
-	assignments: readonly (StaffPermissionAssignment & { customScopes?: GrantScope[]; useDefaultScopes?: boolean; warnings?: components['schemas']['StaffManualPermissionAssignment']['warnings'] })[],
+	assignments: readonly (StaffPermissionAssignment & { customScopes?: UserScopeSelection[]; useDefaultScopes?: boolean; warnings?: components['schemas']['StaffManualPermissionAssignment']['warnings'] })[],
 	academicYearId: string,
-	translate?: (key: string) => string,
+	_translate?: (key: string) => string,
 ): Promise<StaffPermissionAssignmentView[]> {
 	if (assignments.length === 0) {
 		return [];
@@ -83,9 +83,9 @@ export async function buildStaffPermissionAssignmentViews(
 		const scopesById = new Map(scopedAssignments.map((row, index) => [row.id, rendered.items[index]?.scopes ?? []]));
 		views.push(...batch.map(assignment => ({
 			...assignment,
-			renderedScopes: scopesById.get(assignment.id) ?? [],
+			renderedScopes: (scopesById.get(assignment.id) ?? []).filter(scope => scope.scope.kind !== 'school'),
 			scopeLabel: assignment.scopes.some(scope => scope.kind === 'school')
-				? translate?.('roles.wholeSchool') ?? 'Whole school'
+				? ''
 				: scopesById.get(assignment.id)?.map(scope => scope.label).join('; ') || '—',
 			tenantWide: assignment.scopes.some(scope => scope.kind === 'school'),
 			hasMissingScope: scopesById.get(assignment.id)?.some(scope => scope.missing) ?? false,

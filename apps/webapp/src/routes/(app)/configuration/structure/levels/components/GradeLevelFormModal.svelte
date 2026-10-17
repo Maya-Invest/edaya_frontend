@@ -63,7 +63,7 @@
 	const scaleOptions = $derived([{ value: '', label: $t('grading.chooseScale') }, ...gradeLevelsPage.gradingScales.filter(row => row.intervalConvention === 'continuous' && row.ranges?.length).map(row => ({ value: row.id, label: `${row.name} · ${row.maxScore}` }))]);
 	const modeOptions = $derived([{ value: 'numeric-first', label: $t('grading.numeric') }, { value: 'mention-first', label: $t('grading.mention') }]);
 
-	const canEditDetails = $derived(hasPermission('SCHOOL_STRUCTURE_CONFIGURE'));
+	const canEditDetails = $derived(hasPermission('SCHOOL_CONFIGURE'));
 	const canEditGrading = $derived(hasPermission('REPORT_CARD_CONFIGURE'));
 	let initialized = $state(false);
 	let formId = $state('');

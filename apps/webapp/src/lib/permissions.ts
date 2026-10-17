@@ -5,23 +5,24 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { authSession } from '$lib/auth/session.svelte';
 import { checkAnyPermission, checkPermission } from '$lib/permission-check';
 
-interface Ctx { classId?: string; subject?: string }
+type Ctx = Omit<PermissionContext, 'schoolId' | 'academicYearId'>;
 
 const P = {
 	GRADE_READ: 'GRADE_READ',
-	GRADE_INPUT: 'GRADE_INPUT',
+	GRADE_MANAGE: 'GRADE_MANAGE',
 	DISCIPLINE_CREATE: 'DISCIPLINE_CREATE',
-	DISCIPLINE_UPDATE: 'DISCIPLINE_UPDATE',
+	DISCIPLINE_MANAGE: 'DISCIPLINE_MANAGE',
 	ATTENDANCE_RECORD: 'ATTENDANCE_RECORD',
-	CLASS_LOGBOOK_CREATE: 'CLASS_LOGBOOK_CREATE',
+	CLASS_LOGBOOK_MANAGE: 'CLASS_LOGBOOK_MANAGE',
 	REPORT_CARD_CONFIGURE: 'REPORT_CARD_CONFIGURE',
 	REPORT_CARD_GENERATE: 'REPORT_CARD_GENERATE',
-	TIMETABLE_UPDATE: 'TIMETABLE_UPDATE',
+	TIMETABLE_MANAGE: 'TIMETABLE_MANAGE',
 } as const satisfies Record<string, PermissionCode>;
 
 function sessionContext(ctx: Ctx = {}): PermissionContext {
 	return {
 		...ctx,
+		gradeLevelId: ctx.gradeLevelId ?? academicContext.classes.find(group => group.id === ctx.classId)?.gradeLevelId,
 		schoolId: authSession.schoolId ?? '',
 		academicYearId: academicContext.yearId,
 	};
@@ -48,7 +49,7 @@ export function getCurrentRole(): StaffRole {
 }
 
 export function canEditGrades(ctx: Ctx = {}): boolean {
-	return hasPermission(P.GRADE_INPUT, ctx);
+	return hasPermission(P.GRADE_MANAGE, ctx);
 }
 
 export function canViewGrades(_ctx: Ctx = {}): boolean {
@@ -58,9 +59,9 @@ export function canViewGrades(_ctx: Ctx = {}): boolean {
 export function canEditSchoolLife(_ctx: Ctx = {}): boolean {
 	return hasAnyPermission([
 		P.DISCIPLINE_CREATE,
-		P.DISCIPLINE_UPDATE,
+		P.DISCIPLINE_MANAGE,
 		P.ATTENDANCE_RECORD,
-		P.CLASS_LOGBOOK_CREATE,
+		P.CLASS_LOGBOOK_MANAGE,
 	]);
 }
 
@@ -69,7 +70,7 @@ export function canEditReportsAndOrientation(ctx: Ctx = {}): boolean {
 }
 
 export function canEditTimetable(ctx: Ctx = {}): boolean {
-	return hasPermission(P.TIMETABLE_UPDATE, ctx);
+	return hasPermission(P.TIMETABLE_MANAGE, ctx);
 }
 
 export const ROLE_LABEL_FR: Record<StaffRole, string> = {

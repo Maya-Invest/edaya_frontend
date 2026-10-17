@@ -7,7 +7,7 @@ import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
 import { emptyDashboardSlice } from './dashboard-helpers';
 
 export async function loadDashboardSlice() {
-	const overview = hasPermission('QUERY_OVERVIEW_READ')
+	const overview = hasPermission('WORKSPACE_ACCESS')
 		? await fetchSchoolOverview(queryClient())
 		: null;
 

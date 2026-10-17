@@ -13,12 +13,24 @@ export type StaffPermissionCode = StaffPermissionProfile['permissions'][number];
 const PROFILE_CATALOG_SCOPE
 	= 'Permission profile catalog loads school-wide templates and bindings.';
 
+export function permissionGroupKey(permission: string): string {
+	if (permission === 'GRADE_SCALE_CONFIGURE')
+		return 'ACADEMIC';
+	if (permission.startsWith('ASSESSMENT_') || permission.startsWith('GRADE_'))
+		return 'ASSESSMENT';
+	return permission.split('_')[0] ?? permission;
+}
+
+export function formatPermissionGroupLabel(key: string, translate: (key: string) => string): string {
+	return key === 'ASSESSMENT' || key === 'ACADEMIC' ? translate(`permissionGroup.${key}`) : key;
+}
+
 export function groupCatalogEntries(
 	entries: readonly PermissionCatalogEntry[],
 ): { key: string; entries: PermissionCatalogEntry[] }[] {
 	const groups = new Map<string, PermissionCatalogEntry[]>();
 	for (const entry of entries) {
-		const key = entry.permission.split('_')[0] ?? entry.permission;
+		const key = permissionGroupKey(entry.permission);
 		const list = groups.get(key) ?? [];
 		list.push(entry);
 		groups.set(key, list);

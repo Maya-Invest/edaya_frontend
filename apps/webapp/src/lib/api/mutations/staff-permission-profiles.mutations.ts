@@ -1,4 +1,4 @@
-import type { GrantScope } from '$lib/api/grant-scopes';
+import type { UserScopeSelection } from '$lib/api/grant-scopes';
 import type { components } from '$lib/api/schema';
 import { academicContext } from '$lib/academic/context.svelte';
 import { runMutation } from '$lib/api/mutations/run-mutation';
@@ -48,7 +48,7 @@ export async function deletePermissionProfileMutation(input: {
 export async function applyStaffPermissionProfileMutation(input: {
 	staffId: string;
 	profileId: string;
-	customScopes: GrantScope[];
+	customScopes: UserScopeSelection[];
 	useDefaultScopes: boolean;
 	academicYearId?: string;
 	successMessage?: string;

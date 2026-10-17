@@ -64,7 +64,7 @@
 	{/snippet}
 	{#snippet actions()}
 		{#if canEditLesson}
-			<PermissionGate permission="TIMETABLE_UPDATE" classId={s.classId}>
+			<PermissionGate permission="TIMETABLE_MANAGE" classId={s.classId}>
 				<PlanningFormModal event={s} subjects={timetablePage.subjects} bind:open={editEventOpen.open} />
 			</PermissionGate>
 		{/if}
@@ -72,7 +72,7 @@
 	{#snippet overflow()}
 		{#if canCancel}
 			<PermissionGate
-				permission="TIMETABLE_UPDATE"
+				permission="TIMETABLE_MANAGE"
 				classId={s.classId}
 				mode="disable"
 				tooltip={$t('calendar.permissionUpdate')}
@@ -95,7 +95,7 @@
 <p class="text-sm text-muted-foreground">{s.teacher}</p>
 
 {#if canCancel}
-	<PermissionGate permission="TIMETABLE_UPDATE" classId={s.classId}>
+	<PermissionGate permission="TIMETABLE_MANAGE" classId={s.classId}>
 		<ConfirmModal
 			bind:open={cancelOpen.open}
 			title={$t('planning.cancelConfirmTitle')}

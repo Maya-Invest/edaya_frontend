@@ -2,10 +2,7 @@
 	import type { StaffPermissionCode, StaffPermissionProfile } from '$lib/api/staff-permission-profiles-data';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { formatPermissionLabel } from '$lib/api/staff-permission-assignments-data';
-	import {
-		groupCatalogEntries,
-
-	} from '$lib/api/staff-permission-profiles-data';
+	import { formatPermissionGroupLabel, groupCatalogEntries } from '$lib/api/staff-permission-profiles-data';
 	import { authSession } from '$lib/auth/session.svelte';
 	import PermissionResolutionPreview from '$lib/components/school/PermissionResolutionPreview.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
@@ -42,7 +39,7 @@
 	const snapshot = $derived({ schoolId: authSession.schoolId ?? academicContext.schools[0]?.id ?? '', ...input });
 	const reviewed = $derived(preview.reviewed(snapshot));
 	$effect(() => preview.synchronize(open, snapshot));
-	const groupedEntries = $derived(groupCatalogEntries(permissionProfilesPage.catalog.filter(entry => entry.scope !== 'platform')));
+	const groupedEntries = $derived(groupCatalogEntries(permissionProfilesPage.catalog.filter(entry => entry.staffAssignable)));
 	const canSubmit = $derived(name.trim().length > 0);
 	const saveDescription = $derived(boundCount > 0
 		? $t('permissionProfiles.saveUpdatesStaff', { n: boundCount })
@@ -139,7 +136,7 @@
 		<p class="text-xs text-muted-foreground">{$t('permissionProfiles.checklistHint')}</p>
 		{#each groupedEntries as group (group.key)}
 			<div class="space-y-2">
-				<p class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{group.key}</p>
+				<p class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{formatPermissionGroupLabel(group.key, $t)}</p>
 				<div class="space-y-1.5">
 					{#each group.entries as entry (entry.permission)}
 						<label class="flex items-start gap-2 rounded-lg px-1 py-1 text-sm">

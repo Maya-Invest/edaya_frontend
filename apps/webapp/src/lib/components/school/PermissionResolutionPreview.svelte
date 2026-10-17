@@ -21,7 +21,7 @@
 	{#if report.changes.length}
 		<ul class="max-h-60 space-y-2 overflow-auto text-xs">
 			{#each report.changes as change, index (index)}
-				<li>{change.staffName} · {academicContext.years.find(year => year.id === change.academicYearId)?.label ?? change.academicYearId} · {formatPermissionLabel(change.permission, $t)} · {$t(`staff.scopeChange.${change.change}`)} · {preview.labels[index] ?? '…'}</li>
+				<li>{change.staffName} · {academicContext.years.find(year => year.id === change.academicYearId)?.label ?? change.academicYearId} · {formatPermissionLabel(change.permission, $t)} · {$t(`staff.scopeChange.${change.change}`)}{preview.labels[index] === '' ? '' : ` · ${preview.labels[index] ?? '…'}`}</li>
 			{/each}
 		</ul>
 	{/if}

@@ -35,7 +35,8 @@
     "test:integration:timetable-selection": "bun scripts/focused-integration-run.ts timetable-selection",
     "screenshots": "bun scripts/screenshots.ts",
     "test:integration:teacher-tabs": "bun scripts/focused-integration-run.ts teacher-tabs",
-    "test:integration:grading-configuration": "bun scripts/focused-integration-run.ts grading-configuration"
+    "test:integration:grading-configuration": "bun scripts/focused-integration-run.ts grading-configuration",
+    "test:integration:assessment-permissions": "bun scripts/focused-integration-run.ts assessment-permissions"
   },
   "dependencies": {
     "@internationalized/date": "^3.12.2",

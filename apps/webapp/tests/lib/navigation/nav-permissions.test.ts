@@ -165,7 +165,6 @@ it('keeps grade-scale authority out of Other configuration and allows legacy red
 	expect(canAccessPath('/configuration/other/grade-scales', grants)).toBe(true);
 });
 
-
 it('keeps report configuration accessible through Levels and Classes with its own permission', () => {
 	const reportGrants = mockGrants(['REPORT_CARD_CONFIGURE']);
 	expect(filterNavItems(CONFIG_NAV_DEFS, reportGrants).map(item => item.key)).toEqual(['gradeScales', 'structure']);
@@ -174,4 +173,16 @@ it('keeps report configuration accessible through Levels and Classes with its ow
 		expect(canAccessPath(path, mockGrants(['SCHOOL_STRUCTURE_READ']))).toBe(false);
 	}
 	expect(canAccessPath('/configuration/structure/details', reportGrants)).toBe(true);
+});
+
+describe('independent assessment and mark capabilities', () => {
+	it.each(['ASSESSMENT_READ', 'ASSESSMENT_MANAGE', 'GRADE_READ', 'GRADE_MANAGE'] as const)('lets %s reach the assessment workspace', (permission) => {
+		const grants: ActionGrantsSnapshot = [{ permission, source: 'manual', scopes: [{ kind: 'class_subject', classGroupId: '6a', classSubjectId: 'math' }] }];
+		expect(canAccessPath('/classes/6a/evaluations', grants)).toBe(true);
+		expect(canAccessPath('/classes/6a/evaluations/quiz/details', grants)).toBe(true);
+	});
+	it('does not grant assessment navigation through unrelated capabilities', () => {
+		expect(canAccessPath('/classes/6a/evaluations', mockGrants(['CLASS_READ']))).toBe(false);
+		expect(canAccessPath('/classes/6a/evaluations', [])).toBe(false);
+	});
 });

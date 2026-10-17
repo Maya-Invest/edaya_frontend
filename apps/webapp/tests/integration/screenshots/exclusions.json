@@ -213,5 +213,9 @@
     "surface": "/configuration/structure/details/report-cards/:id?",
     "kind": "redirect",
     "reason": "The bare optional-id route redirects to Details; the template drawer has its own visual checkpoint."
+  },
+  {
+    "surface": "/configuration/permission-profiles",
+    "reason": "Layout-only parent; the optional-id page contains the list and detail drawer."
   }
 ]

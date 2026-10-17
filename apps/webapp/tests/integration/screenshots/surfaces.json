@@ -18,7 +18,7 @@
   {
     "id": "view.configuration.permission-profiles",
     "feature": "configuration",
-    "path": "/configuration/permission-profiles",
+    "path": "/configuration/permission-profiles/[id]",
     "title": "/configuration/permission-profiles",
     "kind": "page",
     "identity": "owner"

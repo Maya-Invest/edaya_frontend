@@ -40,7 +40,7 @@
 		</span>
 	{/snippet}
 	{#snippet actions()}
-		<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE" mode="disable">
+		<PermissionGate permission="SCHOOL_CONFIGURE" mode="disable">
 			{#snippet children({ disabled, title })}
 				<button
 					type="button"

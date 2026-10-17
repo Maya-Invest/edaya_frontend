@@ -24,7 +24,7 @@ function matchesScope(scope: AuthorityScope, ctx: PermissionContext): boolean {
 		switch (scope.grain) {
 			case 'class_group': return Boolean(ctx.classId);
 			case 'class_subject': return Boolean(ctx.classId || ctx.subject);
-			case 'grade_level': return Boolean(ctx.gradeLevelId) && !ctx.gradeLevelSubjectId;
+			case 'grade_level': return Boolean(ctx.gradeLevelId);
 			case 'grade_level_subject': return Boolean(ctx.gradeLevelId || ctx.gradeLevelSubjectId);
 			case 'activity': return Boolean(ctx.activityId);
 			case 'student': return Boolean(ctx.studentId);
@@ -34,7 +34,7 @@ function matchesScope(scope: AuthorityScope, ctx: PermissionContext): boolean {
 		case 'class_group': return ctx.classId === scope.classGroupId;
 		case 'class_subject': return (!ctx.classId || ctx.classId === scope.classGroupId)
 			&& (ctx.subject ? scope.classSubjectId ? ctx.subject === scope.classSubjectId : ctx.classId === scope.classGroupId : Boolean(ctx.classId));
-		case 'grade_level': return ctx.gradeLevelId === scope.gradeLevelId && !ctx.gradeLevelSubjectId;
+		case 'grade_level': return ctx.gradeLevelId === scope.gradeLevelId;
 		case 'grade_level_subject': return (!ctx.gradeLevelId || ctx.gradeLevelId === scope.gradeLevelId)
 			&& (ctx.gradeLevelSubjectId ? scope.gradeLevelSubjectId ? ctx.gradeLevelSubjectId === scope.gradeLevelSubjectId : ctx.gradeLevelId === scope.gradeLevelId : Boolean(ctx.gradeLevelId));
 		case 'activity': return Boolean(ctx.activityId || ctx.classId)

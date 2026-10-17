@@ -44,7 +44,7 @@
 									<p class="min-w-0 flex-1 text-sm font-medium leading-snug">
 										{def.label}
 									</p>
-									<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE">
+									<PermissionGate permission="SCHOOL_CONFIGURE">
 										{#snippet children({ disabled, title })}
 											<RowActionMenu>
 												<RowActionMenuItem

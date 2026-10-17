@@ -34,7 +34,7 @@ test('scope identity deduplicates identical scopes, not identical resource label
 });
 
 test('profile tags use only current generated grants, including defaults, and exclude missing targets', () => {
-	const rows = [assignment(), assignment({ id: 'duplicate', permission: 'GRADE_INPUT', useDefaultScopes: true }), assignment({ id: 'foreign-binding', sourceProfileBindingId: 'another' }), assignment({ id: 'future', startsAt: '2030-01-01', renderedScopes: [rendered({ kind: 'school' })] }), assignment({ id: 'expired', endsAt: '2020-01-01', renderedScopes: [rendered({ kind: 'school' })] }), assignment({ id: 'missing', renderedScopes: [rendered({ kind: 'class_group', classGroupId: 'deleted' }, 'Unavailable', true)] })];
+	const rows = [assignment(), assignment({ id: 'duplicate', permission: 'GRADE_MANAGE', useDefaultScopes: true }), assignment({ id: 'foreign-binding', sourceProfileBindingId: 'another' }), assignment({ id: 'future', startsAt: '2030-01-01', renderedScopes: [rendered({ kind: 'school' })] }), assignment({ id: 'expired', endsAt: '2020-01-01', renderedScopes: [rendered({ kind: 'school' })] }), assignment({ id: 'missing', renderedScopes: [rendered({ kind: 'class_group', classGroupId: 'deleted' }, 'Unavailable', true)] })];
 	expect(effectiveProfileScopes(rows, 'binding', Date.parse('2026-10-15'))).toEqual([classScope]);
 	expect(effectiveProfileScopes(rows, 'shadowed')).toEqual([]);
 });
@@ -64,7 +64,7 @@ test('default labels include saved selections without grants and batch unique re
 
 test('generic labels localize from scope structure and preserve names with punctuation', () => {
 	const translate = (key: string) => `translated:${key}`;
-	expect(permissionScopeLabel(rendered({ kind: 'school' }), translate)).toBe('translated:roles.wholeSchool');
+	expect(permissionScopeLabel(rendered({ kind: 'school' }), translate)).toBe('');
 	expect(permissionScopeLabel(rendered({ kind: 'all', grain: 'student' }), translate)).toBe('translated:staff.scopeAll.student');
 	expect(permissionScopeLabel(rendered(classScope.scope, 'Class; A / B'), translate)).toBe('Class; A / B');
 	expect(permissionScopeLabel(rendered(classScope.scope, 'Hidden name', true), translate)).toBe('translated:staff.scopeUnavailable');

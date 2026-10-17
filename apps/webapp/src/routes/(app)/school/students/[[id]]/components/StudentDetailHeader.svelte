@@ -40,7 +40,7 @@
 		{/if}
 	{/snippet}
 	{#snippet actions()}
-		<PermissionGate permission="STUDENT_UPDATE" mode="disable" tooltip={$t('student.permissionUpdate')}>
+		<PermissionGate permission="STUDENT_MANAGE" mode="disable" tooltip={$t('student.permissionUpdate')}>
 			{#snippet children({ disabled, title })}
 				<StudentProfileEditModal s={student} {disabled} {title} bind:open={editProfileOpen.open} />
 			{/snippet}

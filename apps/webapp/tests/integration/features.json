@@ -2841,5 +2841,12 @@
     "module": "Configuration",
     "endpoint": "http://localhost:5173/configuration/report-cards/[id]",
     "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.configuration.permission-profiles.detail.navigation",
+    "feature": "web.configuration",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/permission-profiles/[id]",
+    "action": "Navigation directe — contenu visible"
   }
 ]

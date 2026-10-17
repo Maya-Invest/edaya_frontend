@@ -84,13 +84,13 @@
 		<div class="rounded-xl bg-primary/10 p-3">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('eval.average')}</p>
 			<p class="mt-1 font-sans text-xl tabular-nums">
-				{evaluation.graded > 0 ? evaluation.gradingUpdating ? '—' : evaluation.averageMark.toFixed(evaluation.averagePrecision ?? 2) : '-'}
+				{evaluation.marksAvailable !== false && evaluation.graded > 0 ? evaluation.gradingUpdating ? '—' : evaluation.averageMark.toFixed(evaluation.averagePrecision ?? 2) : '-'}
 				<span class="text-sm text-muted-foreground">/ {evaluation.averageOutOf ?? evaluation.outOf}</span>
 			</p>
 		</div>
 		<div class="rounded-xl bg-secondary/60 p-3">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('eval.graded')}</p>
-			<p class="mt-1 font-sans text-xl tabular-nums">{evaluation.graded}/{evaluation.total}</p>
+			<p class="mt-1 font-sans text-xl tabular-nums">{evaluation.marksAvailable !== false ? `${evaluation.graded}/${evaluation.total}` : '—'}</p>
 		</div>
 	</div>
 

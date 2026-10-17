@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 
-type Permission = 'STUDENT_READ' | 'STUDENT_UPDATE';
+type Permission = 'STUDENT_READ' | 'STUDENT_MANAGE';
 
 interface StaffPermissionAssignmentView {
 	id: string;
@@ -139,7 +139,7 @@ describe('runMutation store actions', () => {
 describe('staff permission mutation store actions', () => {
 	it('upserts a new assignment on successful save apply', async () => {
 		const store = createStore();
-		const assignment = permissionRow('spa-new', 'STUDENT_UPDATE');
+		const assignment = permissionRow('spa-new', 'STUDENT_MANAGE');
 
 		const result = await runStoreMutation(async () => assignment, {
 			apply: () => {
@@ -151,7 +151,7 @@ describe('staff permission mutation store actions', () => {
 		});
 
 		expect(result?.id).toBe('spa-new');
-		expect(store.find('spa-new')?.permission).toBe('STUDENT_UPDATE');
+		expect(store.find('spa-new')?.permission).toBe('STUDENT_MANAGE');
 	});
 
 	it('restores the previous assignment when save fails after apply', async () => {
@@ -159,7 +159,7 @@ describe('staff permission mutation store actions', () => {
 		const previous = permissionRow('spa-1', 'STUDENT_READ');
 		store.upsert(previous);
 
-		const assignment = permissionRow('spa-1', 'STUDENT_UPDATE');
+		const assignment = permissionRow('spa-1', 'STUDENT_MANAGE');
 
 		const result = await runStoreMutation(async () => {
 			throw new Error('failed');

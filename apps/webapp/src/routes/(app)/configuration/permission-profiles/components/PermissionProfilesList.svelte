@@ -149,7 +149,7 @@
 			/>
 		{/snippet}
 		{#snippet primary()}
-			<PermissionGate permission="ACCESS_CONTROL_CONFIGURE">
+			<PermissionGate permission="ACCESS_CONTROL_MANAGE">
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"

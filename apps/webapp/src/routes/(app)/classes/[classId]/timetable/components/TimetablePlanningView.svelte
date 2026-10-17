@@ -132,7 +132,7 @@
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
-				permission="TIMETABLE_UPDATE"
+				permission="TIMETABLE_MANAGE"
 				{classId}
 				mode="disable"
 				tooltip={$t('calendar.permissionUpdate')}

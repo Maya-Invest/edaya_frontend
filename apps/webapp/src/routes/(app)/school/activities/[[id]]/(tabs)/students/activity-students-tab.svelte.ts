@@ -1,5 +1,5 @@
 import type { PageQueryRequest } from '$lib/queries/page-status';
-import type { ActivityEnrollment } from '$lib/types/school';
+import type { ActivityEnrollment, Student } from '$lib/types/school';
 import type { ActivitiesPageState } from '../../../activities-page.svelte';
 import { fetchActivityById } from '$lib/api/activities-data';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
@@ -11,6 +11,8 @@ const ACTIVITY_STUDENTS_TAB_KEY = Symbol('activity-students-tab');
 export interface ActivityStudentsTabSlice {
 	activityId: string;
 	enrollments: ActivityEnrollment[];
+	students: Pick<Student, 'id' | 'name' | 'initials' | 'classId' | 'matricule' | 'email' | 'photoUrl'>[];
+	eligibleStudentIds: string[];
 }
 
 export class ActivityStudentsTabState {
@@ -31,7 +33,7 @@ export class ActivityStudentsTabState {
 		if (!activity) {
 			return;
 		}
-		this.slice = { activityId, enrollments: activity.enrollments };
+		this.slice = { activityId, enrollments: activity.enrollments, students: this.slice?.activityId === activityId ? this.slice.students : [], eligibleStudentIds: this.slice?.activityId === activityId ? this.slice.eligibleStudentIds : [] };
 	}
 
 	query() {
@@ -44,11 +46,11 @@ export class ActivityStudentsTabState {
 				}
 
 				const page = this.getPage();
-				const activity = await fetchActivityById(page.client(), activityId);
+				const [activity, roster] = await Promise.all([fetchActivityById(page.client(), activityId), page.client().queries.getActivityRoster({ activityId })]);
 				if (activity) {
 					page.mergeActivities([activity]);
 					signal.throwIfAborted();
-					this.slice = { activityId, enrollments: activity.enrollments };
+					this.slice = { activityId, enrollments: activity.enrollments, eligibleStudentIds: roster.eligibleStudentIds, students: roster.students.map(student => ({ id: student.id, name: `${student.firstName} ${student.lastName}`, initials: `${student.firstName[0] ?? ''}${student.lastName[0] ?? ''}`, classId: student.classGroupId ?? '', matricule: student.matricule ?? '', email: '' })) };
 				}
 				return {};
 			},

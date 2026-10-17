@@ -43,7 +43,7 @@
 	let resolutionNotes = $state('');
 	let classGroupId = $state<string | undefined>(undefined);
 	const canAddParticipant = $derived(hasPermission('DISCIPLINE_CREATE', { classId: classGroupId }));
-	const canEditParticipant = $derived(hasPermission('DISCIPLINE_UPDATE'));
+	const canEditParticipant = $derived(hasPermission('DISCIPLINE_MANAGE'));
 	let disciplinaryActions = $state<Array<{ id: string; name: string }>>([]);
 
 	const canSubmit = $derived(!loading && rows.length > 0 && rows.every(row => row.studentId.length > 0));

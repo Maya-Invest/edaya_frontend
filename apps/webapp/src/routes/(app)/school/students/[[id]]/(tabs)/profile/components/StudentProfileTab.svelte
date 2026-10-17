@@ -203,7 +203,7 @@
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('people.guardians')} · {linkedGuardians.length}
 			</Label>
-			<PermissionGate permission="STUDENT_UPDATE" mode="disable" tooltip={$t('student.permissionUpdate')}>
+			<PermissionGate permission="STUDENT_MANAGE" mode="disable" tooltip={$t('student.permissionUpdate')}>
 				{#snippet children({ disabled, title })}
 					<Button
 						variant="outline"
@@ -291,7 +291,7 @@
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 				{$t('student.pedagogicalNotes')} · {studentNotes.length}
 			</Label>
-			<PermissionGate permission="STUDENT_UPDATE" mode="disable" tooltip={$t('student.permissionUpdate')}>
+			<PermissionGate permission="STUDENT_MANAGE" mode="disable" tooltip={$t('student.permissionUpdate')}>
 				{#snippet children({ disabled, title })}
 					<Button
 						variant="outline"
@@ -330,7 +330,7 @@
 							<div class="flex items-center gap-2">
 								<span class="font-sans tabular-nums text-[10px] text-muted-foreground">{fmtDateFr(note.date, $locale)}</span>
 								<PermissionGate
-									permission="STUDENT_UPDATE"
+									permission="STUDENT_MANAGE"
 									mode="disable"
 									tooltip={$t('student.permissionUpdate')}
 								>

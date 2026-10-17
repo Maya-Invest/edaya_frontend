@@ -100,7 +100,7 @@
 				{documentsTab.generationError}
 			</p>
 		{/if}
-		<PermissionGate permission="TIMETABLE_CREATE">
+		<PermissionGate permission="TIMETABLE_MANAGE">
 			<a class="control-focus inline-flex rounded-md text-sm font-medium text-primary underline underline-offset-4" href={appPath('/(app)/configuration/tools')}>
 				{$t('documents.openTimetablePlanning')}
 			</a>

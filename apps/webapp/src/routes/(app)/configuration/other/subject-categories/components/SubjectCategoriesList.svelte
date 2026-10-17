@@ -81,7 +81,7 @@
 			/>
 		{/snippet}
 		{#snippet primary()}
-			<PermissionGate permission="ACADEMIC_PROGRAM_UPDATE">
+			<PermissionGate permission="ACADEMIC_CATALOG_MANAGE">
 				{#snippet children({ disabled, title })}
 					<Button size="sm" class="rounded-full" {disabled} {title} onclick={() => modals.open('create')}>
 						<Plus class="mr-1 h-4 w-4" />
@@ -105,7 +105,7 @@
 					<tr class="border-b border-border/70 last:border-0">
 						<td class="px-4 py-3">{catalogCategory(category.name, $lang)}</td>
 						<td class="px-4 py-3 text-right">
-							<PermissionGate permission="ACADEMIC_PROGRAM_UPDATE">
+							<PermissionGate permission="ACADEMIC_CATALOG_MANAGE">
 								{#snippet children({ disabled, title })}
 									<RowActionMenu>
 										<RowActionMenuItem {disabled} {title} onclick={() => modals.open('edit', { target: category.id })}>

@@ -49,7 +49,7 @@
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('drawer.tab.documents')} · {issuances.length}
 		</Label>
-		<PermissionGate permission="QUERY_TIMETABLE_READ" mode="disable" tooltip={$t('teacher.permissionTimetable')}>
+		<PermissionGate permission="TIMETABLE_READ" mode="disable" tooltip={$t('teacher.permissionTimetable')}>
 			{#snippet children({ disabled, title })}
 				<Button
 					size="sm"

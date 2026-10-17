@@ -8,7 +8,7 @@ describe('typed grant editor', () => {
 			expect(validGrantScopes([{ kind: 'all', grain }], grain)).toBe(true);
 			expect(validGrantScopes([{ kind: 'school' }], grain)).toBe(false);
 		}
-		expect(validGrantScopes([{ kind: 'school' }])).toBe(true);
+		expect(validGrantScopes([{ kind: 'school' }])).toBe(false);
 		expect(validGrantScopes([])).toBe(false);
 	});
 	it('preserves independent parent and subject identifiers', () => {

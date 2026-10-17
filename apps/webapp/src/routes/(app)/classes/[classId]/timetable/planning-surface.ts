@@ -22,10 +22,10 @@ export type NewSessionStep = 'type' | 'context' | 'schedule';
 export type AttendanceStep = 'mark' | 'review';
 export type PlanningModalStep = NewSessionStep | AttendanceStep;
 export type PlanningSurfacePermission
-	= 'TIMETABLE_UPDATE'
+	= 'TIMETABLE_MANAGE'
 		| 'ATTENDANCE_RECORD'
-		| 'CLASS_LOGBOOK_CREATE'
-		| 'CLASS_LOGBOOK_UPDATE';
+		| 'CLASS_LOGBOOK_MANAGE'
+		| 'CLASS_LOGBOOK_MANAGE';
 
 export interface PlanningSurfaceEvent {
 	id: string;
@@ -151,7 +151,7 @@ export function canAccessPlanningModal(
 		|| modal === 'edit-event'
 		|| modal === 'cancel'
 	) {
-		return options.hasPermission('TIMETABLE_UPDATE', options.classId);
+		return options.hasPermission('TIMETABLE_MANAGE', options.classId);
 	}
 	if (modal === 'attendance' || modal === 'session-attendance') {
 		return options.hasPermission('ATTENDANCE_RECORD', options.classId);
@@ -161,13 +161,13 @@ export function canAccessPlanningModal(
 			return false;
 		}
 		if (options.logbookExists === true) {
-			return options.hasPermission('CLASS_LOGBOOK_UPDATE', options.classId);
+			return options.hasPermission('CLASS_LOGBOOK_MANAGE', options.classId);
 		}
 		if (options.logbookExists === false) {
-			return options.hasPermission('CLASS_LOGBOOK_CREATE', options.classId);
+			return options.hasPermission('CLASS_LOGBOOK_MANAGE', options.classId);
 		}
-		return options.hasPermission('CLASS_LOGBOOK_CREATE', options.classId)
-			|| options.hasPermission('CLASS_LOGBOOK_UPDATE', options.classId);
+		return options.hasPermission('CLASS_LOGBOOK_MANAGE', options.classId)
+			|| options.hasPermission('CLASS_LOGBOOK_MANAGE', options.classId);
 	}
 	return true;
 }

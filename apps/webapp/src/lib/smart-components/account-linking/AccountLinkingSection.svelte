@@ -87,7 +87,7 @@
 	</div>
 
 	{#if linkStatus !== 'linked'}
-		<PermissionGate permission="ACCESS_CONTROL_ASSIGN" mode="disable" tooltip={$t('invitation.permissionRequired')}>
+		<PermissionGate permission="ACCESS_CONTROL_MANAGE" mode="disable" tooltip={$t('invitation.permissionRequired')}>
 			{#snippet children({ disabled, title })}
 				<div class="flex flex-wrap gap-2">
 					{#if linkStatus === 'not_linked'}

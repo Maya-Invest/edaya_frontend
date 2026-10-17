@@ -3,6 +3,7 @@
 	import { formatPermissionLabel } from '$lib/api/staff-permission-assignments-data';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import { t } from '$lib/i18n';
+	import PermissionScopeTypes from '$lib/smart-components/scope-builder/PermissionScopeTypes.svelte';
 
 	type Permission = PermissionCatalogEntry['permission'];
 
@@ -36,11 +37,7 @@
 			/>
 			<span>
 				<span class="font-medium">{formatPermissionLabel(entry.permission, $t)}</span>
-				{#if entry.scope}
-					<span class="ml-1 text-xs text-muted-foreground">
-						· {$t(`scope.grain.${entry.scope}`)}
-					</span>
-				{/if}
+				<PermissionScopeTypes {entry} />
 			</span>
 		</label>
 	{/each}

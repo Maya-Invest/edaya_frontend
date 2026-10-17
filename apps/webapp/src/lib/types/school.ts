@@ -150,6 +150,8 @@ export interface EvaluationSubmission {
 }
 
 export interface Evaluation {
+	/** False when marks were not authorized; an empty authorized result set is still available. */
+	marksAvailable?: boolean;
 	averageOutOf?: number;
 	averagePrecision?: number;
 	gradingUpdating?: boolean;

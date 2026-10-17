@@ -73,7 +73,7 @@
 			/>
 		{/snippet}
 		{#snippet primary()}
-			<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE" mode="disable">
+			<PermissionGate permission="SCHOOL_CONFIGURE" mode="disable">
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"

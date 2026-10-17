@@ -192,7 +192,7 @@
 					templateKey="report-card.v1"
 					sourceId={latest.id}
 					studentId={s.id}
-					permission="REPORT_CARD_PUBLISH"
+					permission="REPORT_CARD_EXPORT"
 					classId={s.classId}
 				/>
 			{/if}

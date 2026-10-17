@@ -211,7 +211,7 @@
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
-				permission="DISCIPLINE_CREATE"
+				permission="ACTIVITY_CREATE"
 				mode="disable"
 				tooltip={$t('activities.permissionCreate')}
 			>

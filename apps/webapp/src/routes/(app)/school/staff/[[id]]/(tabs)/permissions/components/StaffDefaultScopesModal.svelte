@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { GrantScope } from '$lib/api/grant-scopes';
+	import type { UserScopeSelection } from '$lib/api/grant-scopes';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { scopeSelectionsComplete } from '$lib/api/grant-scopes';
 	import { authSession } from '$lib/auth/session.svelte';
@@ -14,7 +14,7 @@
 
 	let { open = $bindable(false), staffId }: { open?: boolean; staffId: string } = $props();
 	const staffPage = getStaffPageState();
-	let scopes = $state<GrantScope[]>([]);
+	let scopes = $state<UserScopeSelection[]>([]);
 	let saving = $state(false);
 	const preview = new PermissionImpactPreviewState();
 	const busy = $derived(saving || preview.loading);

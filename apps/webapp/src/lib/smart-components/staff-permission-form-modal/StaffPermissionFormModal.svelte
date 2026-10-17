@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { GrantScope } from '$lib/api/grant-scopes';
+	import type { UserScopeSelection } from '$lib/api/grant-scopes';
 	import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 	import type { StaffMember } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
@@ -40,8 +40,11 @@
 	const preview = new PermissionImpactPreviewState();
 	const busy = $derived(saving || preview.loading);
 	let permission = $state<StaffPermissionAssignmentView['permission'] | ''>('');
-	let scopes = $state<GrantScope[]>([]);
+	let scopes = $state<UserScopeSelection[]>([]);
 	let useDefaultScopes = $state(true);
+
+	const catalog = $derived(modalState.catalog);
+	const selectedEntry = $derived(catalog.find(entry => entry.permission === permission));
 
 	let assignmentId = $state('');
 	const payload = $derived(permission
@@ -50,8 +53,8 @@
 			staffId: staff.id,
 			permission,
 			scopes,
-			customScopes: scopes,
-			useDefaultScopes,
+			customScopes: selectedEntry?.scopePolicy.mode === 'none' ? [] : scopes,
+			useDefaultScopes: selectedEntry?.scopePolicy.mode === 'resources' && useDefaultScopes,
 		}), startsAt: assignment?.startsAt, endsAt: assignment?.endsAt, status: assignment?.status ?? 'active' }
 		: null);
 	const snapshot = $derived(payload
@@ -61,8 +64,8 @@
 			staffId: payload.staffId,
 			academicYearId: payload.academicYearId,
 			permission: payload.permission,
-			customScopes: scopes,
-			useDefaultScopes,
+			customScopes: selectedEntry?.scopePolicy.mode === 'none' ? [] : scopes,
+			useDefaultScopes: selectedEntry?.scopePolicy.mode === 'resources' && useDefaultScopes,
 			status: payload.status,
 			startsAt: payload.startsAt,
 			endsAt: payload.endsAt,
@@ -70,9 +73,6 @@
 		: null);
 	const reviewed = $derived(preview.reviewed(snapshot));
 	$effect(() => preview.synchronize(open, snapshot));
-
-	const catalog = $derived(modalState.catalog);
-	const selectedEntry = $derived(catalog.find(entry => entry.permission === permission));
 
 	$effect(() => {
 		if (open) {
@@ -88,13 +88,13 @@
 				return;
 			assignmentId = assignment?.id ?? crypto.randomUUID();
 			permission = assignment?.permission ?? '';
-			scopes = [...(assignment?.customScopes ?? assignment?.scopes ?? [])];
+			scopes = [...(assignment?.customScopes ?? assignment?.scopes ?? [])].filter(scope => scope.kind !== 'school');
 			useDefaultScopes = assignment?.useDefaultScopes ?? true;
 		});
 		return () => preview.reset();
 	});
 
-	const canSubmit = $derived(Boolean(permission) && selectedEntry?.scope !== 'platform' && scopeSelectionsComplete(scopes) && !modalState.loading);
+	const canSubmit = $derived(Boolean(permission) && selectedEntry?.staffAssignable === true && scopeSelectionsComplete(scopes) && !modalState.loading);
 
 	async function submit() {
 		if (!canSubmit || !permission || busy || !payload || !snapshot) {
@@ -153,13 +153,13 @@
 					class="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
 				>
 					<option value="">{$t('roles.selectPermission')}</option>
-					{#each catalog.filter(entry => entry.scope !== 'platform') as entry (entry.permission)}
-						<option value={entry.permission}>{formatPermissionLabel(entry.permission, $t)} — {permissionSelectionGrains(entry).map(grain => $t(`scope.grain.${grain}`)).join(' / ')}</option>
+					{#each catalog.filter(entry => entry.staffAssignable) as entry (entry.permission)}
+						<option value={entry.permission}>{formatPermissionLabel(entry.permission, $t)}{permissionSelectionGrains(entry).length ? ` — ${permissionSelectionGrains(entry).map(grain => $t(`scope.grain.${grain}`)).join(' / ')}` : ''}</option>
 					{/each}
 				</select>
 			</div>
 
-			{#if permission}
+			{#if selectedEntry?.scopePolicy.mode === 'resources'}
 				<label class="flex items-center gap-2 text-sm"><Checkbox bind:checked={useDefaultScopes} />{$t('staff.includeDefaultScopes')}</label>
 				<p class="text-xs text-muted-foreground">{$t('staff.defaultScopeAdditiveHint')}</p>
 				<Label>{$t('staff.customScopes')}</Label>

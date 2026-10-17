@@ -1,5 +1,6 @@
 import type { PermissionCatalogEntry } from '$lib/api/staff-permission-assignments-data';
 import type { StaffPermissionProfile, StaffPermissionProfileBinding } from '$lib/api/staff-permission-profiles-data';
+import { permissionGroupKey } from '$lib/api/staff-permission-profiles-data';
 
 export interface PermissionProfilesPageSlice {
 	profiles: StaffPermissionProfile[];
@@ -20,7 +21,7 @@ export function profilePermissionGroups(permissions: readonly string[], catalog:
 	const byCode = new Map(catalog.map(entry => [entry.permission as string, entry]));
 	const groups = new Map<string, { permission: string; entry?: PermissionCatalogEntry }[]>();
 	for (const permission of permissions) {
-		const key = permission.split('_')[0];
+		const key = permissionGroupKey(permission);
 		const entries = groups.get(key) ?? [];
 		entries.push({ permission, entry: byCode.get(permission) });
 		groups.set(key, entries);

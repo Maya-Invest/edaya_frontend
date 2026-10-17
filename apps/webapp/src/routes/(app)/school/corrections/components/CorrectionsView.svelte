@@ -49,12 +49,12 @@
 		{ key: 'status', label: $t('common.status'), span: 2 },
 	]);
 	const activeFilters = $derived(Number(($page.url.searchParams.get('status') || 'pending') !== 'pending') + ['classGroupId', 'teacherSubjectId', 'studentId', 'from', 'to'].filter(key => $page.url.searchParams.get(key)).length);
-	const statusTone: Record<string, string> = { pending: BADGE_WARN, approved: BADGE_SUCCESS, rejected: BADGE_DANGER, withdrawn: BADGE };
+	const statusTone: Record<string, string> = { pending: BADGE_WARN, approved: BADGE_SUCCESS, approved_pending_publication: BADGE_INFO, published: BADGE_SUCCESS, rejected: BADGE_DANGER, withdrawn: BADGE };
 	const workflow = $derived($page.url.searchParams.get('workflow') || '');
 	const status = $derived($page.url.searchParams.get('status') || 'pending');
 	const action = $derived($page.url.searchParams.get('action') || '');
 	const workflows = $derived(['', 'grades', 'attendance', 'report_comments', 'logbook', 'discipline'].map(value => ({ value, label: $t(`corrections.workflow.${value || 'all'}`) })));
-	const statuses = $derived(['pending', 'approved', 'rejected', 'withdrawn'].map(value => ({ value, label: $t(`marks.${value}`) })));
+	const statuses = $derived(['pending', 'approved_pending_publication', 'published', 'approved', 'rejected', 'withdrawn'].map(value => ({ value, label: $t(`marks.${value}`) })));
 	const diffs = $derived(queue.detail ? correctionDiff(queue.detail, $t) : []);
 	const consequences = $derived(queue.detail?.correction.workflow === 'grades' ? [] : queue.detail?.correction.consequences ?? []);
 	function navigate(key: string, value: string, reset = true) {
@@ -71,7 +71,7 @@
 		}
 		void appGoto(url.pathname + url.search, { keepFocus: true, noScroll: true });
 	}
-	async function decide(decision: 'approve' | 'reject', confirmed = false) {
+	async function decide(decision: 'approve' | 'reject' | 'publish', confirmed = false) {
 		const detail = queue.detail;
 		if (!detail || busy)
 			return;
@@ -167,6 +167,7 @@
 				{#if queue.detail.correction.rejectionReason}<p>{$t('corrections.rejectionReason')}: {queue.detail.correction.rejectionReason}</p>{/if}
 				{#if queue.detail.correction.decidedAt}<p class="text-sm">{$t(`marks.${queue.detail.correction.status}`)} · {new Date(queue.detail.correction.decidedAt).toLocaleString()}</p>{/if}
 				<details><summary class="cursor-pointer font-medium">{$t('corrections.history')}</summary><ol class="mt-3 space-y-2">{#each queue.detail.correction.revisions as revision (revision.version)}<li class="border-l-2 pl-3">{new Date(revision.at).toLocaleString()} · {revision.reason}<ul class="mt-2 space-y-1">{#each correctionRevisionDiff(queue.detail, revision.version, $t) as previous, index (`${previous.label}-${index}`)}<li>{previous.label}: {previous.before} → {previous.proposed}</li>{/each}</ul></li>{/each}{#each queue.detail.history as event, index (`${event.at}-${index}`)}<li class="border-l-2 pl-3">{new Date(event.at).toLocaleString()} · {$t(`corrections.event.${event.action}`)}</li>{/each}</ol></details>
+				{#if queue.detail.allowedActions.publish}<Button disabled={busy} onclick={() => navigate('action', 'publish', false)}>{$t('marks.publish')}</Button>{/if}
 				{#if queue.detail.allowedActions.approve || queue.detail.allowedActions.reject}<label class="flex items-center gap-2 text-sm"><Checkbox checked={nextPending} onCheckedChange={value => nextPending = value === true} />{$t('corrections.nextPending')}</label><div class="flex flex-wrap gap-2"><Button disabled={busy || !queue.detail.allowedActions.approve} onclick={() => decide('approve')}>{$t('marks.approve')}</Button><Button variant="outline" disabled={busy || !queue.detail.allowedActions.reject} onclick={() => navigate('action', 'reject', false)}>{$t('marks.reject')}</Button></div>{/if}
 			</div>
 		{/if}
@@ -180,3 +181,8 @@
 	if (!open)
 		navigate('action', '', false);
 }} onSubmit={() => decide('approve', true)}>{#each consequences as consequence (consequence)}<p>{$t(`corrections.consequence.${consequence}`)}</p>{/each}</FormModal>
+
+<FormModal open={action === 'publish'} title={$t('marks.publish')} {busy} onOpenChange={(open) => {
+	if (!open)
+		navigate('action', '', false);
+}} onSubmit={() => decide('publish', true)}><p>{$t('marks.publishExplanation')}</p></FormModal>

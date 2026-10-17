@@ -6,6 +6,7 @@ import type { QaTemplateRow } from './qa-template-matrix.manual';
 
 export const QA_TEMPLATE_MATRIX_GENERATED: QaTemplateRow[] = [
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/permission-profiles', action: 'Navigation directe — contenu visible' },
+	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/permission-profiles/[id]', action: 'Navigation directe — contenu visible' },
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/tools', action: 'Navigation directe — contenu visible' },
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/tools/teacher-assignments', action: 'Navigation directe — contenu visible' },
 	{ module: 'Configuration', endpoint: 'http://localhost:5173/configuration/other', action: 'Navigation directe — contenu visible' },

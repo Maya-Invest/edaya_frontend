@@ -82,7 +82,7 @@
 			</Label>
 		</div>
 		<div class="flex flex-wrap items-center gap-2">
-			<PermissionGate permission="ACCESS_CONTROL_ASSIGN" mode="disable">
+			<PermissionGate permission="ACCESS_CONTROL_MANAGE" mode="disable">
 				{#snippet children({ disabled })}
 					<Button
 						size="sm"
@@ -95,7 +95,7 @@
 					</Button>
 				{/snippet}
 			</PermissionGate>
-			<PermissionGate permission="ACCESS_CONTROL_ASSIGN" mode="disable">
+			<PermissionGate permission="ACCESS_CONTROL_MANAGE" mode="disable">
 				{#snippet children({ disabled })}
 					<Button
 						size="sm"
@@ -119,7 +119,7 @@
 			<p class="text-xs text-muted-foreground">{$t('staff.defaultScopesSummary', { n: staffPage.staffDefaultScopes(s.id).length })}</p>
 			<StaffScopeTags scopes={staffPage.staffDefaultScopeViews(s.id)} emptyLabel={$t('staff.noDefaultScopes')} />
 		</div>
-		<PermissionGate permission="ACCESS_CONTROL_ASSIGN" mode="disable">{#snippet children({ disabled })}
+		<PermissionGate permission="ACCESS_CONTROL_MANAGE" mode="disable">{#snippet children({ disabled })}
 			<Button variant="outline" size="sm" {disabled} onclick={onEditDefaults}>{$t('common.edit')}</Button>
 		{/snippet}</PermissionGate>
 	</div>
@@ -140,12 +140,14 @@
 							<span class="min-w-0">
 								<span class="flex flex-wrap items-center gap-x-2 gap-y-1">
 									<span class="break-words text-sm font-medium">{profile.name}</span>
-									<StaffScopeTags inline scopes={staffPage.profileEffectiveScopes(binding.id)} emptyLabel={$t('staff.noEffectiveScopes')} />
+									{#if profile.permissions.some(permission => staffPage.permissionCatalog.some(entry => entry.permission === permission && entry.scopePolicy.mode === 'resources'))}
+										<StaffScopeTags inline scopes={staffPage.profileEffectiveScopes(binding.id)} emptyLabel={$t('staff.noEffectiveScopes')} />
+									{/if}
 								</span>
 								<span class="block text-xs text-muted-foreground">{$t('staff.profilePermissionCount', { n: profile.permissions.length })}</span>
 							</span>
 						</button>
-						<PermissionGate permission="ACCESS_CONTROL_ASSIGN" mode="disable">
+						<PermissionGate permission="ACCESS_CONTROL_MANAGE" mode="disable">
 							{#snippet children({ disabled })}
 								<div class="ml-auto flex shrink-0 items-center gap-1">
 									<Button variant="ghost" size="icon" class="h-11 w-11 rounded-full" {disabled}
@@ -247,7 +249,7 @@
 									{/if}
 								</div>
 							</div>
-							<PermissionGate permission="ACCESS_CONTROL_ASSIGN" mode="disable">
+							<PermissionGate permission="ACCESS_CONTROL_MANAGE" mode="disable">
 								{#snippet children({ disabled })}
 									<div class="flex shrink-0 items-center gap-1">
 										<Button

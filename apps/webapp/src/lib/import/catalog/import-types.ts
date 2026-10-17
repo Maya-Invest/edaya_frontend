@@ -1,4 +1,4 @@
-import type { ImportTypeDefinition, ImportTypeColumnDefinition, ImportTypeKey } from './types';
+import type { ImportTypeColumnDefinition, ImportTypeDefinition, ImportTypeKey } from './types';
 import {
 	BookOpen,
 	ClipboardCheck,
@@ -117,7 +117,7 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 			role: 'Secrétaire',
 			telephone: '+225 05 00 00 00 00',
 		},
-		permission: 'STAFF_CREATE',
+		permission: 'STAFF_MANAGE',
 	},
 	{
 		key: 'teachers',
@@ -143,7 +143,7 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 			email: 'kofi.mensah@example.com',
 			telephone: '+225 01 00 00 00 00',
 		},
-		permission: 'STAFF_CREATE',
+		permission: 'STAFF_MANAGE',
 	},
 	{
 		key: 'classes',
@@ -211,7 +211,7 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 			classe: '6ème A',
 			matiere: 'Mathématiques',
 		},
-		permission: 'STAFF_UPDATE',
+		permission: 'STAFF_MANAGE',
 	},
 	{
 		key: 'chapters',

@@ -25,8 +25,8 @@
 	const tab = $derived(structureTab($page.url.pathname));
 	const availableTabs: StructureTab[] = $derived(([
 		'details',
-		...(hasAnyPermission(['ACADEMIC_PROGRAM_READ', 'ACADEMIC_PROGRAM_UPDATE']) ? ['subjects'] as const : []),
-		...(hasAnyPermission(['SCHOOL_STRUCTURE_READ', 'SCHOOL_STRUCTURE_CONFIGURE']) ? ['classes'] as const : []),
+		...(hasAnyPermission(['ACADEMIC_CATALOG_READ', 'ACADEMIC_CATALOG_MANAGE']) ? ['subjects'] as const : []),
+		...(hasAnyPermission(['SCHOOL_STRUCTURE_READ', 'SCHOOL_CONFIGURE']) ? ['classes'] as const : []),
 	]));
 	$effect(() => {
 		if (selected && availableTabs.length && !availableTabs.includes(tab)) {
@@ -72,7 +72,7 @@
 			<div class="space-y-4 lg:sticky lg:top-5">
 				<div class="flex items-center justify-between gap-2">
 					<h2 class="text-sm font-medium">{$t('structure.levels')}</h2>
-					<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE" mode="disable">
+					<PermissionGate permission="SCHOOL_CONFIGURE" mode="disable">
 						{#snippet children({ disabled, title })}
 							<Button variant="outline" size="sm" {disabled} {title} onclick={() => modals.open('create-level')} aria-label={$t('gradeLevels.add')}><Plus class="h-4 w-4" /></Button>
 						{/snippet}

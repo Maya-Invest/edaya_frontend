@@ -74,14 +74,14 @@
 		</span>
 	{/snippet}
 	{#snippet actions()}
-		<PermissionGate permission="DISCIPLINE_CREATE" mode="disable" tooltip={$t('activities.permissionCreate')}>
+		<PermissionGate permission="ACTIVITY_MANAGE" activityId={live.id} mode="disable" tooltip={$t('activities.permissionCreate')}>
 			{#snippet children({ disabled, title })}
 				<ActivityFormModal activity={live} bind:open={editOpen.open} {disabled} {title} />
 			{/snippet}
 		</PermissionGate>
 	{/snippet}
 	{#snippet overflow()}
-		<PermissionGate permission="DISCIPLINE_CREATE" mode="disable" tooltip={$t('activities.permissionCreate')}>
+		<PermissionGate permission="ACTIVITY_MANAGE" activityId={live.id} mode="disable" tooltip={$t('activities.permissionCreate')}>
 			{#snippet children({ disabled, title })}
 				<RowActionMenuItem
 					destructive

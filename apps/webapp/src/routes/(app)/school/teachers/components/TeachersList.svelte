@@ -186,7 +186,7 @@
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
-				permission="STAFF_CREATE"
+				permission="STAFF_MANAGE"
 				mode="disable"
 				tooltip={$t('teacher.permissionCreate')}
 			>
@@ -284,7 +284,7 @@
 				role="presentation"
 				onclick={event => event.stopPropagation()}
 			>
-				<PermissionGate permission="STAFF_UPDATE" mode="disable" tooltip={$t('teacher.permissionUpdate')}>
+				<PermissionGate permission="STAFF_MANAGE" mode="disable" tooltip={$t('teacher.permissionUpdate')}>
 					{#snippet children({ disabled, title })}
 						<RowActionMenu>
 							<RowActionMenuItem

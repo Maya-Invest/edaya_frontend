@@ -156,7 +156,7 @@
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
-				permission="PARENT_CREATE"
+				permission="PARENT_MANAGE"
 				mode="disable"
 				tooltip={$t('guardian.permissionCreate')}
 			>

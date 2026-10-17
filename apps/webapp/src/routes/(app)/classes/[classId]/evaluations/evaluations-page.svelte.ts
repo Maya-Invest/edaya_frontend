@@ -7,6 +7,7 @@ import type {
 import type { EvaluationsPageSlice } from './lib/evaluation-helpers';
 import { kindCompleteAssessmentTiming, optionalAssessmentInstant } from '$lib/academic/assessment-timing';
 import { academicContext } from '$lib/academic/context.svelte';
+import { loadAssessmentForEdit } from '$lib/api/assessments-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { nowIso, todayDateInput } from '$lib/date/format';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
@@ -165,6 +166,7 @@ export class EvaluationsPageState {
       date: input.date,
       coefficient: input.coefficient,
       averageMark: 0,
+      marksAvailable: false,
       outOf: input.maxScore,
       graded: 0,
       total: students.length,
@@ -306,7 +308,9 @@ export class EvaluationsPageState {
 
     const result = await runEvaluationRouteMutation({
       request: async () => {
-        const existing = await client.entities.assessments.get(input.assessmentId);
+        if (!previous || !academicContext.periodId)
+throw new Error('ASSESSMENT_NOT_AVAILABLE');
+        const existing = await loadAssessmentForEdit(client, previous.classId, academicContext.periodId, input.assessmentId);
         const description = input.description !== undefined
           ? normalizedDescription(input.description)
           : normalizedDescription(existing.description ?? undefined);

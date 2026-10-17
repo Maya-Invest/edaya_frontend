@@ -51,7 +51,7 @@
 
 	<div class="pr-2">
 		<RowActionMenu label={`${$t('list.rowActions')} · ${catalogSubjectName(subject.name, $lang, subject.code)}`}>
-			<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE" mode="disable">
+			<PermissionGate permission="ACADEMIC_CATALOG_MANAGE" mode="disable">
 				{#snippet children({ disabled, title })}<RowActionMenuItem {disabled} {title} onclick={onEdit}>{$t('common.edit')}</RowActionMenuItem>{/snippet}
 			</PermissionGate>
 		</RowActionMenu>

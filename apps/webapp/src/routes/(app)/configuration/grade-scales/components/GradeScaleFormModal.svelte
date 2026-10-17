@@ -37,7 +37,7 @@
 	});
 	const valid = $derived(!!name.trim() && !!minimum.trim() && !!maximum.trim() && !!precision.trim() && Number(minimum) >= 0 && Number(maximum) > Number(minimum) && validGradeScalePrecision(Number(minimum), Number(maximum), Number(precision)) && (!scale?.ranges?.length || (Number(minimum) === scale.minScore && scale.ranges.every(row => (row.minScore < Number(maximum) && (row.gpaValue == null || row.gpaValue <= Number(maximum)))))));
 	async function save() {
-		if (!valid || busy || !hasAnyPermission(['REPORT_CARD_CONFIGURE']))
+		if (!valid || busy || !hasAnyPermission(['GRADE_SCALE_CONFIGURE']))
 			return;
 		busy = true;
 		try {
@@ -49,7 +49,7 @@
 		}
 	}
 </script>
-<FormModal bind:open title={scale ? $t('gradeScales.editTitle') : $t('gradeScales.add')} description={$t('grading.scaleHelp')} submitLabel={$t('common.save')} cancelLabel={$t('common.cancel')} {busy} submitDisabled={!valid || !hasAnyPermission(['REPORT_CARD_CONFIGURE'])} onSubmit={save}>
+<FormModal bind:open title={scale ? $t('gradeScales.editTitle') : $t('gradeScales.add')} description={$t('grading.scaleHelp')} submitLabel={$t('common.save')} cancelLabel={$t('common.cancel')} {busy} submitDisabled={!valid || !hasAnyPermission(['GRADE_SCALE_CONFIGURE'])} onSubmit={save}>
 	<label class="block space-y-1.5 text-sm"><span>{$t('gradeScales.name')}</span><Input bind:value={name} required /></label>
 	<label class="block space-y-1.5 text-sm"><span>{$t('gradeScales.description')}</span><Input bind:value={description} /></label>
 	<div class="grid gap-4 sm:grid-cols-2">

@@ -1,11 +1,11 @@
 import type { components } from '$lib/api/schema';
 
 export type GrantScope = components['schemas']['StaffPermissionAssignment']['scopes'][number];
+export type UserScopeSelection = Exclude<GrantScope, { kind: 'school' }>;
 export type ScopeGrain = Exclude<GrantScope['kind'], 'school' | 'all'>;
-export type PermissionScopeGrain = 'school' | ScopeGrain;
+export type PermissionScopeGrain = ScopeGrain;
 
 export const PERMISSION_SCOPE_GRAINS = [
-	'school',
 	'class_group',
 	'class_subject',
 	'student',
@@ -41,7 +41,7 @@ export function validGrantScopes(scopes: readonly GrantScope[], grain?: ScopeGra
 		return false;
 	return scopes.every((scope) => {
 		if (!grain)
-			return scope.kind === 'school' && scopes.length === 1;
+			return false;
 		if (scope.kind === 'all')
 			return scope.grain === grain && scopes.length === 1;
 		if (scope.kind !== grain)
@@ -59,16 +59,12 @@ export function validGrantScopes(scopes: readonly GrantScope[], grain?: ScopeGra
 }
 
 export function scopeSelectionsComplete(scopes: readonly GrantScope[]): boolean {
-	return PERMISSION_SCOPE_GRAINS.every((grain) => {
+	return scopes.every(scope => scope.kind !== 'school') && PERMISSION_SCOPE_GRAINS.every((grain) => {
 		const selected = scopes.filter(scope => (scope.kind === 'all' ? scope.grain : scope.kind) === grain);
-		return !selected.length || validGrantScopes(selected, grain === 'school' ? undefined : grain);
+		return !selected.length || validGrantScopes(selected, grain);
 	});
 }
 
-export function permissionSelectionGrains(entry: { permission: string; scope?: PermissionScopeGrain | 'platform' }): PermissionScopeGrain[] {
-	if (entry.scope === 'platform')
-		return [];
-	if (['ATTENDANCE_VALIDATE', 'CLASS_LOGBOOK_VALIDATE', 'DISCIPLINE_VALIDATE', 'REPORT_CARD_PUBLISH'].includes(entry.permission))
-		return ['school', 'class_group'];
-	return [entry.scope ?? 'school'];
+export function permissionSelectionGrains(entry: Pick<components['schemas']['PermissionCatalogEntry'], 'scopePolicy'>): PermissionScopeGrain[] {
+	return entry.scopePolicy.mode === 'resources' ? [...entry.scopePolicy.allowedKinds] : [];
 }

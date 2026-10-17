@@ -174,7 +174,7 @@
 			<h4 class="text-sm font-semibold">{$t('classGroups.assignmentsTab')}</h4>
 			<p class="text-xs text-muted-foreground">{$t('classGroups.assignmentsHint')}</p>
 		</div>
-		<PermissionGate permission="STAFF_UPDATE" mode="disable">
+		<PermissionGate permission="STAFF_MANAGE" mode="disable">
 			{#snippet children({ disabled })}
 				<Button size="sm" class="rounded-full" {disabled} onclick={openCreate}>
 					<Plus class="mr-1.5 h-3.5 w-3.5" />
@@ -207,7 +207,7 @@
 							</div>
 						{/if}
 					</button>
-					<PermissionGate permission="STAFF_UPDATE" mode="disable">
+					<PermissionGate permission="STAFF_MANAGE" mode="disable">
 						{#snippet children({ disabled })}
 							<Button
 								variant="ghost"

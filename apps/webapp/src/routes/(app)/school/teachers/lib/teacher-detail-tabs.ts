@@ -16,11 +16,11 @@ export type TeacherDetailTabSegment = (typeof TEACHER_DETAIL_TABS)[number]['segm
 export const TEACHER_DETAIL_TAB_PERMISSIONS: Partial<
 	Record<TeacherDetailTabKey, readonly PermissionCode[]>
 > = {
-	'availability': ['ACCESS_CONTROL_ASSIGN', 'SCHOOL_STRUCTURE_CONFIGURE'],
-	'timetable': ['QUERY_TIMETABLE_READ'],
-	'evaluations': ['GRADE_READ', 'GRADE_INPUT'],
+	'availability': ['ACCESS_CONTROL_MANAGE', 'SCHOOL_CONFIGURE'],
+	'timetable': ['TIMETABLE_READ'],
+	'evaluations': ['GRADE_READ', 'GRADE_MANAGE'],
 	'family-feedback': ['FAMILY_FEEDBACK_CAMPAIGN_READ'],
-	'documents': ['QUERY_TIMETABLE_READ'],
+	'documents': ['TIMETABLE_READ'],
 };
 
 export function visibleTeacherDetailTabs(

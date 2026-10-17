@@ -132,7 +132,7 @@
 							{mark?.originalEntry?.kind === 'mention' ? `${mark.originalEntry.code} · ${mark.calculation?.reportedValue ?? mark.originalEntry.points}` : score !== null ? mark?.calculation ? String(score) : score.toFixed(2) : gradingTab.slice?.assessmentResults.find(result => result.studentId === student.id)?.designation === 'absent' ? $t('marks.absent') : gradingTab.slice?.assessmentResults.find(result => result.studentId === student.id)?.designation === 'exempt' ? $t('marks.exempt') : '—'}
 							{#if mark?.originalEntry?.kind !== 'mention'}<span class="font-sans tabular-nums text-[10px] text-muted-foreground">/{evaluation.outOf}</span>{/if}
 						</span>
-						<PermissionGate permission="GRADE_INPUT" mode="disable" tooltip={$t('eval.permissionInput')}>
+						<PermissionGate permission="GRADE_MANAGE" mode="disable" tooltip={$t('eval.permissionInput')}>
 							{#snippet children({ disabled, title })}
 								<Button
 									variant="outline"

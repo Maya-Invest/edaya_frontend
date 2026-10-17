@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { GrantScope } from '$lib/api/grant-scopes';
+	import type { UserScopeSelection } from '$lib/api/grant-scopes';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { permissionSelectionGrains, scopeSelectionsComplete } from '$lib/api/grant-scopes';
 	import { authSession } from '$lib/auth/session.svelte';
@@ -20,18 +20,18 @@
 	const preview = new PermissionImpactPreviewState();
 	const busy = $derived(saving || preview.loading);
 	let profileId = $state('');
-	let customScopes = $state<GrantScope[]>([]);
+	let customScopes = $state<UserScopeSelection[]>([]);
 	let useDefaultScopes = $state(true);
 
-	const input = $derived({ staffId, profileId, academicYearId: academicContext.yearId, customScopes, useDefaultScopes });
-	const snapshot = $derived({ schoolId: authSession.schoolId ?? academicContext.schools[0]?.id ?? '', ...input });
-	const reviewed = $derived(preview.reviewed(snapshot));
-	$effect(() => preview.synchronize(open, snapshot));
 	const selected = $derived(staffPage.staffPermissionProfiles.find(row => row.id === profileId));
 	const grains = $derived([...new Set([
 		...staffPage.permissionCatalog.filter(entry => selected?.permissions.includes(entry.permission)).flatMap(permissionSelectionGrains),
-		...customScopes.map(scope => scope.kind === 'all' ? scope.grain : scope.kind),
 	])]);
+
+	const input = $derived({ staffId, profileId, academicYearId: academicContext.yearId, customScopes: grains.length > 0 ? customScopes : [], useDefaultScopes: grains.length > 0 && useDefaultScopes });
+	const snapshot = $derived({ schoolId: authSession.schoolId ?? academicContext.schools[0]?.id ?? '', ...input });
+	const reviewed = $derived(preview.reviewed(snapshot));
+	$effect(() => preview.synchronize(open, snapshot));
 	const canSubmit = $derived(Boolean(selected) && scopeSelectionsComplete(customScopes));
 	function selectProfile(id: string) {
 		profileId = id;
@@ -74,7 +74,7 @@
 				{#each staffPage.staffPermissionProfiles as profile (profile.id)}<option value={profile.id}>{profile.name}</option>{/each}
 			</select>
 		</div>
-		{#if selected}
+		{#if selected && grains.length}
 			<label class="flex items-center gap-2 text-sm"><Checkbox bind:checked={useDefaultScopes} />{$t('staff.includeDefaultScopes')}</label>
 			<p class="text-xs text-muted-foreground">{$t('staff.defaultScopeAdditiveHint')}</p>
 			{#if useDefaultScopes && !staffPage.staffDefaultScopes(staffId).length}<p class="text-xs text-highlight">{$t('staff.noDefaultScopes')}</p>{/if}

@@ -1,15 +1,15 @@
-import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
-import { describe, expect, it } from 'bun:test';
+import type { PermissionCatalogEntry } from '$lib/api/staff-permission-assignments-data';
+import type { StaffPermissionProfile } from '$lib/api/staff-permission-profiles-data';
 import { fetchActivitySources } from '$lib/api/activities-data';
 import { listAllEntityPages, schoolScopedEntityList } from '$lib/api/entity-list-filters';
 import { fetchStaffMemberById, fetchStaffMembers, fetchStaffMembersPage } from '$lib/api/staff-data';
-import type { StaffPermissionProfile } from '$lib/api/staff-permission-profiles-data';
-import type { PermissionCatalogEntry } from '$lib/api/staff-permission-assignments-data';
-import { loadStaffPermissionFormData } from '$lib/api/staff-permission-profiles-data';
 import { loadStaffPermissionAssignments } from '$lib/api/staff-permission-assignments-data';
+import { loadStaffPermissionFormData } from '$lib/api/staff-permission-profiles-data';
 import { loadSubjectCategories } from '$lib/api/subject-categories-data';
 import { fetchCatalogSubjectsSources } from '$lib/api/subjects-data';
 import { createRecordingSchoolClient, entityCountRequests, entityListRequests } from '$tests/support/recording-school-client';
+import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
+import { describe, expect, it } from 'bun:test';
 
 const academicYearId = 'year-1';
 
@@ -19,8 +19,9 @@ function listEnvelope<T>(items: readonly T[]) {
 
 describe('configuration and activity loading', () => {
 	it('loads creation profiles and their mixed scope metadata together on a cold page', async () => {
-		const profiles: StaffPermissionProfile[] = [{ id: 'mixed', schoolId: SEED_SCHOOL_ID, name: 'Mixed', permissions: ['PAYMENT_READ', 'GRADE_INPUT'] }];
-		const catalog: PermissionCatalogEntry[] = [{ permission: 'PAYMENT_READ' }, { permission: 'GRADE_INPUT', scope: 'class_group' }];
+		const profiles: StaffPermissionProfile[] = [{ id: 'mixed', schoolId: SEED_SCHOOL_ID, name: 'Mixed', permissions: ['PAYMENT_READ', 'GRADE_MANAGE'] }];
+		const base = { staffAssignable: true, serviceAccountAssignable: true, s2sAccess: 'read' as const, humanOnly: false, minimumAssurance: 'standard' as const, assignmentTargets: [] };
+		const catalog: PermissionCatalogEntry[] = [{ ...base, permission: 'PAYMENT_READ', scopePolicy: { mode: 'resources', allowedKinds: ['student'], allowAll: true } }, { ...base, permission: 'GRADE_MANAGE', scopePolicy: { mode: 'resources', allowedKinds: ['class_group'], allowAll: true } }];
 		const { client, requests } = createRecordingSchoolClient([listEnvelope(profiles), { items: catalog }]);
 		const loaded = await loadStaffPermissionFormData(client, SEED_SCHOOL_ID);
 		expect(loaded.profiles).toEqual(profiles);
@@ -77,7 +78,9 @@ describe('configuration and activity loading', () => {
 			warnings: [{ permission: 'GRADE_READ' as const, reason: 'missing_scope' as const }],
 		}));
 		const { client, requests } = createRecordingSchoolClient([
-			listEnvelope([]), listEnvelope(sources.slice(0, 500)), listEnvelope(sources.slice(500)),
+			listEnvelope([]),
+			listEnvelope(sources.slice(0, 500)),
+			listEnvelope(sources.slice(500)),
 		]);
 		const loaded = await loadStaffPermissionAssignments(client, { schoolId: SEED_SCHOOL_ID, academicYearId });
 		expect(loaded).toHaveLength(501);

@@ -58,7 +58,7 @@
 		await appGoto(`${url.pathname}${url.search}`, { keepFocus: true, noScroll: true });
 	}
 	async function confirm(action: 'delete' | 'remove-interval') {
-		if (!target || busy || !hasAnyPermission(['REPORT_CARD_CONFIGURE']) || (action === 'delete' && target.isDefault))
+		if (!target || busy || !hasAnyPermission(['GRADE_SCALE_CONFIGURE']) || (action === 'delete' && target.isDefault))
 			return;
 		busy = true;
 		try {
@@ -74,7 +74,7 @@
 <div class="animate-fade-in space-y-6">
 	<ListPageHeader eyebrow={$t('gradeScales.subtitle')} title={$t('gradeScales.title', { n: scales.length })}>
 		{#snippet search()}<ListSearchField bind:value={owner.filters.values.q} oninput={() => owner.filters.scheduleSync()} />{/snippet}
-		{#snippet primary()}<PermissionGate permission="REPORT_CARD_CONFIGURE">{#snippet children({ disabled, title })}<Button {disabled} {title} onclick={() => modals.open('create')}><Plus class="mr-2 h-4 w-4" />{$t('gradeScales.add')}</Button>{/snippet}</PermissionGate>{/snippet}
+		{#snippet primary()}<PermissionGate permission="GRADE_SCALE_CONFIGURE">{#snippet children({ disabled, title })}<Button {disabled} {title} onclick={() => modals.open('create')}><Plus class="mr-2 h-4 w-4" />{$t('gradeScales.add')}</Button>{/snippet}</PermissionGate>{/snippet}
 		{#snippet more()}<ListMoreMenu exportOnly onExport={() => void exportMatchingList({ filename: 'grade-scales.csv', headers: ['name', 'minScore', 'maxScore', 'intervals', 'default'], loadAll: async () => scales.map(scale => [scale.name, scale.minScore, scale.maxScore, scale.ranges?.length ?? 0, scale.isDefault ? 'default' : '']) })} />{/snippet}
 	</ListPageHeader>
 	{#if !scales.length}<p class="py-8 text-sm text-muted-foreground">{$t('dataState.emptyDescription')}</p>{/if}
@@ -85,7 +85,7 @@
 					<ChevronDown class={`h-5 w-5 shrink-0 transition-transform ${expanded === scale.id ? 'rotate-180' : ''}`} />
 					<div class="min-w-0"><h2 class="break-words font-display text-base font-semibold">{scale.name}</h2><p class="text-sm text-muted-foreground">{scale.minScore} → {scale.maxScore} · {$t('grading.intervalCount', { n: scale.ranges?.length ?? 0 })}{scale.isDefault ? ` · ${$t('gradeScales.default')}` : ''}{!scale.ranges?.length ? ` · ${$t('grading.incomplete')}` : ''}</p></div>
 				</button>
-				<PermissionGate permission="REPORT_CARD_CONFIGURE">{#snippet children({ disabled, title })}<RowActionMenu><RowActionMenuItem {disabled} {title} onclick={() => modals.open('edit', { target: scale.id })}>{$t('common.edit')}</RowActionMenuItem>{#if !scale.isDefault}<RowActionMenuItem destructive {disabled} {title} onclick={() => modals.open('delete', { target: scale.id })}>{$t('common.delete')}</RowActionMenuItem>{/if}</RowActionMenu>{/snippet}</PermissionGate>
+				<PermissionGate permission="GRADE_SCALE_CONFIGURE">{#snippet children({ disabled, title })}<RowActionMenu><RowActionMenuItem {disabled} {title} onclick={() => modals.open('edit', { target: scale.id })}>{$t('common.edit')}</RowActionMenuItem>{#if !scale.isDefault}<RowActionMenuItem destructive {disabled} {title} onclick={() => modals.open('delete', { target: scale.id })}>{$t('common.delete')}</RowActionMenuItem>{/if}</RowActionMenu>{/snippet}</PermissionGate>
 			</div>
 			{#if expanded === scale.id}
 				{@const value = samples[scale.id]}
@@ -93,14 +93,14 @@
 				{@const match = value?.trim() && Number(value) >= scale.minScore && Number(value) <= scale.maxScore ? lookupGradeInterval(scale.ranges ?? [], rounded, scale.intervalConvention === 'continuous') : undefined}
 				<div id={`intervals-${scale.id}`} class="space-y-4 border-t border-border p-5">
 					{#if scale.description}<p class="text-sm text-muted-foreground">{scale.description}</p>{/if}
-					<div class="flex flex-wrap items-center justify-between gap-3"><h3 class="font-medium">{$t('grading.intervals')}</h3><PermissionGate permission="REPORT_CARD_CONFIGURE">{#snippet children({ disabled, title })}<Button size="sm" variant="outline" {disabled} {title} onclick={() => modals.open('add-interval', { target: scale.id })}>{$t('grading.addInterval')}</Button>{/snippet}</PermissionGate></div>
+					<div class="flex flex-wrap items-center justify-between gap-3"><h3 class="font-medium">{$t('grading.intervals')}</h3><PermissionGate permission="GRADE_SCALE_CONFIGURE">{#snippet children({ disabled, title })}<Button size="sm" variant="outline" {disabled} {title} onclick={() => modals.open('add-interval', { target: scale.id })}>{$t('grading.addInterval')}</Button>{/snippet}</PermissionGate></div>
 					<p class="text-sm text-muted-foreground">{$t('grading.thresholdHelp')}</p>
 					{#if !scale.ranges?.length}<p role="status" class="rounded-lg bg-secondary p-3 text-sm">{$t('grading.emptyHelp')}</p>{/if}
 					<ul class="space-y-2">
 						{#each scale.ranges ?? [] as row, index (row.id ?? index)}
 							<li class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border px-4 py-3">
 								<div class="min-w-0 flex-1 basis-56"><p class="break-words text-sm font-medium">{row.letter} · {row.interpretation ?? row.letter}</p><p class="text-sm tabular-nums text-muted-foreground">{$t('grading.minimum')}: {row.minScore}{row.gpaValue != null ? ` · ${$t('grading.points')}: ${row.gpaValue}` : ''}</p></div>
-								<PermissionGate permission="REPORT_CARD_CONFIGURE">{#snippet children({ disabled, title })}
+								<PermissionGate permission="GRADE_SCALE_CONFIGURE">{#snippet children({ disabled, title })}
 									<div class="ml-auto flex shrink-0 items-center gap-2">
 										<RowActionMenu><RowActionMenuItem {disabled} {title} onclick={() => modals.open('edit-interval', { target: `${scale.id}/${row.id}` })}>{$t('common.edit')}</RowActionMenuItem><RowActionMenuItem destructive disabled={disabled || (index === 0 && ((scale.ranges?.length ?? 0) > 1 || !!scale.isDefault))} onclick={() => modals.open('delete-interval', { target: `${scale.id}/${row.id}` })}>{$t('common.delete')}</RowActionMenuItem></RowActionMenu>
 									</div>

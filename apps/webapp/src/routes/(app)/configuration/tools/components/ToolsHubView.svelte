@@ -87,7 +87,7 @@
 		</div>
 	</article>
 
-	<PermissionGate permission="TIMETABLE_CREATE" mode="hide">
+	<PermissionGate permission="TIMETABLE_MANAGE" mode="hide">
 		<article
 			class="flex flex-col rounded-xl border border-border bg-card p-5 shadow-sm"
 			data-testid="timetable-planning-tool"

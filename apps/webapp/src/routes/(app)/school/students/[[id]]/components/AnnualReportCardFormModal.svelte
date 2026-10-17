@@ -117,7 +117,7 @@
 	submitDisabled={!published || !canPublish} onSubmit={issue} contentClass="max-w-2xl">
 	{#snippet footer({ close })}
 		<Button variant="ghost" disabled={busy} onclick={close}>{$t('common.close')}</Button>
-		<PermissionGate permission="REPORT_CARD_PUBLISH" {classId} mode="disable" tooltip={$t('documents.permissionIssue')}>
+		<PermissionGate permission="REPORT_CARD_EXPORT" {classId} mode="disable" tooltip={$t('documents.permissionIssue')}>
 			{#snippet children({ disabled, title })}<Button {title} disabled={disabled || busy || !published || !canPublish} onclick={issue}>{$t('documents.generatePdf')}</Button>{/snippet}
 		</PermissionGate>
 	{/snippet}

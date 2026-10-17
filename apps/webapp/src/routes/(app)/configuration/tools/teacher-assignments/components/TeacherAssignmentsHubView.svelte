@@ -134,7 +134,7 @@
 		description={$t('tools.teacherAssignments.hint')}
 	>
 		{#snippet primary()}
-			<PermissionGate permission="STAFF_UPDATE" mode="disable">
+			<PermissionGate permission="STAFF_MANAGE" mode="disable">
 				{#snippet children({ disabled })}
 					<Button class="rounded-full" disabled={disabled} onclick={() => modals.open('create')}>
 						<Plus class="mr-1.5 h-4 w-4" />
@@ -185,7 +185,7 @@
 						</div>
 						<div class="mt-1 text-sm text-foreground/90">{targetLabel(row)}</div>
 					</div>
-					<PermissionGate permission="STAFF_UPDATE" mode="disable">
+					<PermissionGate permission="STAFF_MANAGE" mode="disable">
 						{#snippet children({ disabled })}
 							<Button
 								variant="ghost"

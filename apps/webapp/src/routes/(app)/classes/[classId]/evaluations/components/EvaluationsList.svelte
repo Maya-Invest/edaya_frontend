@@ -176,7 +176,8 @@
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
-				permission="GRADE_INPUT"
+				permission="ASSESSMENT_MANAGE"
+				{classId}
 				mode="disable"
 				tooltip={$t('eval.permissionCreate')}
 			>
@@ -201,6 +202,7 @@
 	<div class="space-y-3">
 		{#each filtered as evaluation (evaluation.id)}
 			{@const active = selectedId === evaluation.id}
+			{@const marksAvailable = evaluation.marksAvailable !== false}
 			{@const homework = isHomework(evaluation)}
 			{@const progress = evaluation.total
 				? ((homework ? evaluation.submittedCount : evaluation.graded) / evaluation.total) * 100
@@ -254,9 +256,9 @@
 					<div class="col-span-2">
 						<div class="flex items-center justify-between text-[11px] text-muted-foreground">
 							<span>{$t('drawer.submissions')}</span>
-							<span class="font-sans tabular-nums">{evaluation.submittedCount}/{evaluation.total}</span>
+							<span class="font-sans tabular-nums">{marksAvailable ? `${evaluation.submittedCount}/${evaluation.total}` : '—'}</span>
 						</div>
-						<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary">
+						<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary" class:invisible={!marksAvailable}>
 							<div
 								class={cn('h-full rounded-full', isDone ? 'bg-accent' : 'bg-highlight')}
 								style:width="{progress}%"
@@ -269,7 +271,7 @@
 							{$t('eval.average')}
 						</p>
 						<p class="font-sans text-2xl font-semibold tabular-nums">
-							{isDone ? evaluation.gradingUpdating ? '—' : evaluation.averageMark.toFixed(evaluation.averagePrecision ?? 2) : '-'}
+							{marksAvailable && isDone ? evaluation.gradingUpdating ? '—' : evaluation.averageMark.toFixed(evaluation.averagePrecision ?? 2) : '-'}
 							<span class="ml-1 text-xs font-normal text-muted-foreground">/ {evaluation.averageOutOf ?? evaluation.outOf}</span>
 						</p>
 					</div>
@@ -282,9 +284,9 @@
 					<div class="col-span-2">
 						<div class="flex items-center justify-between text-[11px] text-muted-foreground">
 							<span>{$t('eval.graded')}</span>
-							<span class="font-sans tabular-nums">{evaluation.graded}/{evaluation.total}</span>
+							<span class="font-sans tabular-nums">{marksAvailable ? `${evaluation.graded}/${evaluation.total}` : '—'}</span>
 						</div>
-						<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary">
+						<div class="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary" class:invisible={!marksAvailable}>
 							<div
 								class={cn('h-full rounded-full', isDone ? 'bg-accent' : 'bg-highlight')}
 								style:width="{progress}%"
@@ -298,10 +300,14 @@
 							<Eye class="h-4 w-4 text-muted-foreground" />
 							{$t('common.open')}
 						</RowActionMenuItem>
-						<RowActionMenuItem onclick={event => openEvaluationAction(event, evaluation, 'edit')}>
-							<Pencil class="h-4 w-4 text-muted-foreground" />
-							{$t('common.edit')}
-						</RowActionMenuItem>
+						<PermissionGate permission="ASSESSMENT_MANAGE" {classId} subject={evaluation.classSubjectId} assessmentId={evaluation.id} mode="disable" tooltip={$t('eval.permissionCreate')}>
+							{#snippet children({ disabled, title })}
+								<RowActionMenuItem {disabled} {title} onclick={event => openEvaluationAction(event, evaluation, 'edit')}>
+									<Pencil class="h-4 w-4 text-muted-foreground" />
+									{$t('common.edit')}
+								</RowActionMenuItem>
+							{/snippet}
+						</PermissionGate>
 					</RowActionMenu>
 				</div>
 			</div>

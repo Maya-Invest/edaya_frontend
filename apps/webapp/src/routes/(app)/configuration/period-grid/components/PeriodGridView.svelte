@@ -33,7 +33,7 @@
 	import PeriodDefinitionWizardModal from './PeriodDefinitionWizardModal.svelte';
 
 	const periodGridPage = getPeriodGridPageState();
-	const canConfigureSchoolStructure = $derived(hasPermission('SCHOOL_STRUCTURE_CONFIGURE'));
+	const canConfigureSchoolStructure = $derived(hasPermission('SCHOOL_CONFIGURE'));
 	const allowedModalNames = $derived(
 		allowedPeriodGridModalNames(canConfigureSchoolStructure),
 	);
@@ -200,7 +200,7 @@
 			{/if}
 		{/snippet}
 		{#snippet primary()}
-			<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE">
+			<PermissionGate permission="SCHOOL_CONFIGURE">
 				{#snippet children({ disabled, title })}
 					<div class="flex flex-wrap items-center gap-2">
 						<Button

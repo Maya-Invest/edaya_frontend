@@ -10,6 +10,7 @@
 	import { civilDateTimeInTimeZoneToIso, isoToZonedDateAndTime, todayDateInput } from '$lib/date/format';
 	import { lang, t } from '$lib/i18n';
 	import { catalogSubjectName } from '$lib/i18n/catalog-label';
+	import { hasPermission } from '$lib/permissions';
 	import { get } from 'svelte/store';
 	import { getEvaluationsPageState } from '../evaluations-page.svelte';
 
@@ -53,6 +54,10 @@
 	const numericMax = $derived(Number.parseFloat(maxScore));
 	const numericCoef = $derived(Number.parseFloat(coefficient));
 	const canSubmit = $derived.by(() => {
+		if (!hasPermission('ASSESSMENT_MANAGE', { classId, subject: classSubjectId, assessmentId: evaluation?.id })
+			|| (evaluation && !hasPermission('ASSESSMENT_MANAGE', { classId, subject: evaluation.classSubjectId, assessmentId: evaluation.id }))) {
+			return false;
+		}
 		if (!isEdit && !academicContext.periodId) {
 			return false;
 		}

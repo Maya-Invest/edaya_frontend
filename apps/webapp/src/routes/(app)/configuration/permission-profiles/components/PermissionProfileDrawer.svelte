@@ -2,6 +2,7 @@
 	import type { PermissionCatalogEntry } from '$lib/api/staff-permission-assignments-data';
 	import type { StaffPermissionProfile } from '$lib/api/staff-permission-profiles-data';
 	import { formatPermissionLabel } from '$lib/api/staff-permission-assignments-data';
+	import { formatPermissionGroupLabel } from '$lib/api/staff-permission-profiles-data';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -36,7 +37,7 @@
 		</div>
 		{#if profile}
 			<div class="scrollbar-thin min-h-0 flex-1 space-y-6 overflow-y-auto break-words p-6">
-				<DrawerEntityHeader name={profile.name} summary={profile.description ?? undefined} actions={hasPermission('ACCESS_CONTROL_CONFIGURE') ? actions : undefined} overflow={hasPermission('ACCESS_CONTROL_CONFIGURE') ? overflow : undefined} />
+				<DrawerEntityHeader name={profile.name} summary={profile.description ?? undefined} actions={hasPermission('ACCESS_CONTROL_MANAGE') ? actions : undefined} overflow={hasPermission('ACCESS_CONTROL_MANAGE') ? overflow : undefined} />
 				{#snippet actions()}
 					<Button variant="outline" onclick={onEdit}><Pencil class="mr-2 h-4 w-4" />{$t('common.edit')}</Button>
 				{/snippet}
@@ -50,7 +51,7 @@
 				<section aria-label={$t('permissionProfiles.permissions')} class="space-y-5">
 					{#each groups as group (group.key)}
 						<div class="space-y-2">
-							<h4 class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{group.key}</h4>
+							<h4 class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{formatPermissionGroupLabel(group.key, $t)}</h4>
 							<ul class="divide-y divide-border">
 								{#each group.entries as item (item.permission)}
 									<li class="flex flex-wrap items-center gap-x-2 gap-y-1 py-3 text-sm" data-permission={item.permission}>

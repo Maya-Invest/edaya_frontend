@@ -158,7 +158,7 @@
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
-				permission="FINANCIAL_CONFIG_CONFIGURE"
+				permission="FINANCIAL_CATALOG_MANAGE"
 				mode="disable"
 				tooltip={$t('fee.permissionConfigure')}
 			>
@@ -225,7 +225,7 @@
 							{formatMinorUnits(fee.amount, fee.currency, $locale)}
 						</div>
 						<div class="col-span-1 flex justify-end">
-							<PermissionGate permission="FINANCIAL_CONFIG_UPDATE">
+							<PermissionGate permission="FINANCIAL_CATALOG_MANAGE">
 								{#snippet children({ disabled, title })}
 									<RowActionMenu>
 										<RowActionMenuItem {disabled} {title} onclick={() => openEdit(fee)}>

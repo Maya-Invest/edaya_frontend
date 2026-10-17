@@ -22,6 +22,6 @@ export const OTHER_CONFIG_ENTRIES: readonly OtherConfigEntry[] = [
 		key: 'subjectCategories',
 		labelKey: 'config.subjectCategories',
 		href: '/configuration/other/subject-categories',
-		permissions: ['ACADEMIC_PROGRAM_READ', 'ACADEMIC_PROGRAM_UPDATE'],
+		permissions: ['ACADEMIC_PROGRAM_READ', 'ACADEMIC_PROGRAM_MANAGE'],
 	},
 ];

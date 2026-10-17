@@ -162,7 +162,7 @@
 		{#snippet actions()}
 			{#if isDraft}
 				<PermissionGate
-					permission="COMMUNICATION_CREATE"
+					permission="COMMUNICATION_DRAFT_MANAGE"
 					mode="disable"
 					tooltip={$t('announcements.permissionCreate')}
 				>
@@ -180,7 +180,7 @@
 					{/snippet}
 				</PermissionGate>
 				<PermissionGate
-					permission="COMMUNICATION_CREATE"
+					permission="COMMUNICATION_DRAFT_MANAGE"
 					mode="disable"
 					tooltip={$t('announcements.permissionCreate')}
 				>
@@ -201,7 +201,7 @@
 		{#snippet overflow()}
 			{#if isDraft}
 				<PermissionGate
-					permission="COMMUNICATION_CREATE"
+					permission="COMMUNICATION_DRAFT_MANAGE"
 					mode="disable"
 					tooltip={$t('announcements.permissionCreate')}
 				>
@@ -229,7 +229,7 @@
 			</p>
 			{#if isDraft}
 				<PermissionGate
-					permission="COMMUNICATION_CREATE"
+					permission="COMMUNICATION_DRAFT_MANAGE"
 					mode="disable"
 					tooltip={$t('announcements.permissionCreate')}
 				>
@@ -259,7 +259,7 @@
 						<span class="min-w-0 truncate">{targetLabel(target)}</span>
 						{#if isDraft}
 							<PermissionGate
-								permission="COMMUNICATION_CREATE"
+								permission="COMMUNICATION_DRAFT_MANAGE"
 								mode="disable"
 								tooltip={$t('announcements.permissionCreate')}
 							>

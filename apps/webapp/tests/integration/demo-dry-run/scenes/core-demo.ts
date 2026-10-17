@@ -1,8 +1,9 @@
-import { signIn } from '../support/auth';
+import type { DemoContext } from '../support/types';
 import { selectAcademicPeriod } from '../support/academic-period';
+import { signIn } from '../support/auth';
 import {
-	APP_SHELL_SELECTOR,
 	ACTIVITY_ID,
+	APP_SHELL_SELECTOR,
 	CLASS_6A,
 	CLASS_6B,
 	DEMO_ACTIVITY_NAME,
@@ -10,11 +11,10 @@ import {
 	SEEDED_TIMETABLE_WEEK,
 	STUDENT_NAME,
 } from '../support/constants';
+import { waitForDrawerAside } from '../support/drawer';
 import { configClassGroupPath, schoolStudentPath, schoolTeacherPath } from '../support/paths';
 import { assertClassAttendanceNav, ensureDailyAttendanceMode } from '../support/setup';
 import { pickTimetableSessionIdFromPage } from '../support/timetable-session';
-import { waitForDrawerAside } from '../support/drawer';
-import type { DemoContext } from '../support/types';
 import { assertNoFatalError, visit } from '../support/visit';
 
 export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
@@ -150,7 +150,7 @@ export async function runCoreDemoScenes(ctx: DemoContext): Promise<void> {
 			'D7',
 			'7.0 Ensure 6ème 2 daily mode',
 			'skip',
-			'Could not configure daily mode — check SCHOOL_STRUCTURE_CONFIGURE',
+			'Could not configure daily mode — check SCHOOL_CONFIGURE',
 		);
 	}
 	await assertClassAttendanceNav(ctx, CLASS_6B, 'D7', '7.1 Attendance nav on 6ème 2');

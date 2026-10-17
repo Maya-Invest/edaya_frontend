@@ -217,7 +217,7 @@
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
-				permission="TIMETABLE_UPDATE"
+				permission="SCHOOL_CONFIGURE"
 				mode="disable"
 				tooltip={$t('calendar.permissionUpdate')}
 			>
@@ -347,7 +347,7 @@
 								{/if}
 								<div class="mt-1">
 									<PermissionGate
-										permission="TIMETABLE_UPDATE"
+										permission="SCHOOL_CONFIGURE"
 										mode="disable"
 										tooltip={$t('calendar.permissionUpdate')}
 									>

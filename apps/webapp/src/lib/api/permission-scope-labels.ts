@@ -10,14 +10,14 @@ export function permissionScopeKey(scope: GrantScope): string {
 }
 
 export function uniqueRenderedScopes(scopes: readonly RenderedPermissionScope[]): RenderedPermissionScope[] {
-	return [...new Map(scopes.map(scope => [permissionScopeKey(scope.scope), scope])).values()];
+	return [...new Map(scopes.filter(scope => scope.scope.kind !== 'school').map(scope => [permissionScopeKey(scope.scope), scope])).values()];
 }
 
 export function permissionScopeLabel(scope: RenderedPermissionScope, translate: (key: string, vars?: Record<string, string | number>) => string): string {
 	if (scope.missing)
 		return translate('staff.scopeUnavailable');
 	if (scope.scope.kind === 'school')
-		return translate('roles.wholeSchool');
+		return '';
 	if (scope.scope.kind === 'all')
 		return translate(`staff.scopeAll.${scope.scope.grain}`);
 	return scope.label;
@@ -32,7 +32,7 @@ export async function loadDefaultScopeLabels(
 	const scopes = [...new Map(selections.map(scope => [permissionScopeKey(scope), scope])).values()];
 	const labels: Record<string, RenderedPermissionScope> = {};
 	for (let offset = 0; offset < scopes.length; offset += 100) {
-		const response = await client.authorization.scopeSelectionsRender({ academicYearId, scopes: scopes.slice(offset, offset + 100) });
+		const response = await client.authorization.scopeSelectionsRender({ academicYearId, scopes: scopes.slice(offset, offset + 100).filter(scope => scope.kind !== 'school') });
 		for (const scope of response.scopes)
 			labels[permissionScopeKey(scope.scope)] = scope;
 	}

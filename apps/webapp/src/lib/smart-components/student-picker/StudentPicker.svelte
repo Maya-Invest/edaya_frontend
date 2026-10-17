@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PersonPickerItem } from '$lib/smart-components/person-picker/person-picker-types';
+	import type { Student } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
@@ -13,6 +14,7 @@
 	import { StudentPickerState } from './student-picker-state.svelte';
 
 	let {
+		students,
 		value = $bindable(''),
 		values = $bindable<string[]>([]),
 		mode = 'single',
@@ -27,6 +29,8 @@
 		class: className,
 		onValueChange,
 	}: {
+		/** Optional bounded workflow projection; disables directory loading. */
+		students?: Pick<Student, 'id' | 'name' | 'initials' | 'classId' | 'matricule' | 'email' | 'photoUrl'>[];
 		value?: string;
 		values?: string[];
 		mode?: 'single' | 'multi';
@@ -48,10 +52,12 @@
 	let query = $state('');
 
 	$effect(() => {
-		if (active || variant === 'panel') {
+		if (students === undefined && (active || variant === 'panel')) {
 			void pickerState.ensureLoaded();
 		}
 	});
+
+	const sourceStudents = $derived(students ?? pickerState.students);
 
 	const restrictedClassIds = $derived.by(() => {
 		if (classGroupId) {
@@ -81,7 +87,7 @@
 	const classNameById = $derived(new Map(academicContext.classes.map(entry => [entry.id, entry.name])));
 
 	const availableStudents = $derived(
-		pickerState.students
+		sourceStudents
 			.filter(student => !excludeIds.includes(student.id))
 			.filter(student => !restrictedClassIds || restrictedClassIds.has(student.classId))
 			.filter(student => classFilter === 'all' || student.classId === classFilter)
@@ -166,7 +172,7 @@
 		{#if mode === 'multi' && values.length > 0}
 			<div class="flex flex-wrap gap-2">
 				{#each values as studentId (studentId)}
-					{@const student = pickerState.students.find(entry => entry.id === studentId)}
+					{@const student = sourceStudents.find(entry => entry.id === studentId)}
 					<button
 						type="button"
 						class="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2.5 py-1 text-xs"
@@ -200,7 +206,7 @@
 				</div>
 			</div>
 			<div class="scrollbar-thin min-h-0 flex-1 overflow-y-auto">
-				{#if pickerState.loading}
+				{#if students === undefined && pickerState.loading}
 					<div class="flex items-center justify-center py-10" role="status">
 						<LoaderCircle class="h-5 w-5 animate-spin text-primary" />
 					</div>

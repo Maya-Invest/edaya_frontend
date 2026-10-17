@@ -10,6 +10,7 @@
 	import { locale, t } from '$lib/i18n';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { hasPermission } from '$lib/permissions';
 	import { get } from 'svelte/store';
 	import EvaluationCreateModal from '../../components/EvaluationCreateModal.svelte';
 	import { getEvaluationsPageState } from '../../evaluations-page.svelte';
@@ -50,8 +51,11 @@
 	);
 
 	let deleteBusy = $state(false);
+	const canManage = $derived(hasPermission('ASSESSMENT_MANAGE', { classId, subject: evaluation.classSubjectId, assessmentId: evaluation.id }));
 
 	async function confirmDelete() {
+		if (!canManage)
+			return;
 		deleteBusy = true;
 		try {
 			const ok = await evaluationsPage.deleteEvaluation({
@@ -78,7 +82,7 @@
 		</span>
 	{/snippet}
 	{#snippet actions()}
-		<PermissionGate permission="GRADE_INPUT" mode="disable" tooltip={$t('eval.permissionCreate')}>
+		<PermissionGate permission="ASSESSMENT_MANAGE" {classId} subject={evaluation.classSubjectId} assessmentId={evaluation.id} mode="disable" tooltip={$t('eval.permissionCreate')}>
 			{#snippet children({ disabled, title })}
 				{#if isHomework}
 					<Button variant="outline" size="sm" class="rounded-full" {disabled} {title} onclick={() => (editOpen.open = true)}>
@@ -89,7 +93,7 @@
 		</PermissionGate>
 	{/snippet}
 	{#snippet overflow()}
-		<PermissionGate permission="GRADE_INPUT" mode="disable" tooltip={$t('eval.permissionCreate')}>
+		<PermissionGate permission="ASSESSMENT_MANAGE" {classId} subject={evaluation.classSubjectId} assessmentId={evaluation.id} mode="disable" tooltip={$t('eval.permissionCreate')}>
 			{#snippet children({ disabled, title })}
 				<RowActionMenuItem
 					{disabled}
@@ -120,5 +124,6 @@
 	confirmLabel={$t('common.delete')}
 	cancelLabel={$t('common.cancel')}
 	busy={deleteBusy}
+	confirmDisabled={!canManage}
 	onConfirm={confirmDelete}
 />

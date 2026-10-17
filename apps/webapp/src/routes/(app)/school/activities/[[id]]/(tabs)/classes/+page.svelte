@@ -139,7 +139,7 @@
 						<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 							{$t('activities.linkedClasses')}
 						</p>
-						<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
+						<PermissionGate permission="ACTIVITY_MANAGE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
 							{#snippet children({ disabled, title })}
 								<Button
 									size="sm"
@@ -170,7 +170,7 @@
 											{/if}
 										</p>
 									</div>
-									<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
+									<PermissionGate permission="ACTIVITY_MANAGE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
 										{#snippet children({ disabled, title })}
 											<Button
 												type="button"

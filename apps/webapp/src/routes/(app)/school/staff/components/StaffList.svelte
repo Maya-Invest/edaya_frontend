@@ -152,7 +152,7 @@
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
-				permission="STAFF_CREATE"
+				permission="STAFF_MANAGE"
 				mode="disable"
 				tooltip={$t('staff.permissionCreate')}
 			>

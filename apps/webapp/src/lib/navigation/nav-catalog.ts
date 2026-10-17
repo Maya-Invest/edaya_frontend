@@ -21,13 +21,13 @@ export const SCHOOL_NAV_DEFS: NavItemDefinition[] = [
 		key: 'students',
 		labelKey: 'school.students',
 		href: '/school/students',
-		permissions: ['QUERY_STUDENT_DIRECTORY_READ', 'STUDENT_READ'],
+		permissions: ['STUDENT_READ', 'STUDENT_READ'],
 	},
 	{
 		key: 'guardians',
 		labelKey: 'school.guardians',
 		href: '/school/guardians',
-		permissions: ['QUERY_GUARDIAN_STUDENTS_ADMIN_READ', 'PARENT_READ'],
+		permissions: ['PARENT_READ', 'PARENT_READ'],
 	},
 	{
 		key: 'staff',
@@ -45,13 +45,13 @@ export const SCHOOL_NAV_DEFS: NavItemDefinition[] = [
 		key: 'calendar',
 		labelKey: 'school.calendar',
 		href: '/school/calendar',
-		permissions: ['QUERY_CALENDAR_READ'],
+		permissions: ['TIMETABLE_READ'],
 	},
 	{
 		key: 'activities',
 		labelKey: 'school.activities',
 		href: '/school/activities',
-		permissions: ['QUERY_CALENDAR_READ'],
+		permissions: ['ACTIVITY_READ'],
 	},
 	{
 		key: 'announcements',
@@ -75,7 +75,7 @@ export const SCHOOL_NAV_DEFS: NavItemDefinition[] = [
 		href: '/school/events',
 		permissions: ['DISCIPLINE_READ'],
 	},
-	{ key: 'marksReview', labelKey: 'corrections.title', href: '/school/corrections', permissions: ['GRADE_VALIDATE', 'ATTENDANCE_VALIDATE', 'CLASS_LOGBOOK_VALIDATE', 'DISCIPLINE_VALIDATE', 'REPORT_CARD_PUBLISH'] },
+	{ key: 'marksReview', labelKey: 'corrections.title', href: '/school/corrections', permissions: ['GRADE_VALIDATE', 'ATTENDANCE_VALIDATE', 'CLASS_LOGBOOK_VALIDATE', 'DISCIPLINE_VALIDATE', 'REPORT_CARD_REVIEW_COMMENTS', 'REPORT_CARD_PUBLISH'] },
 ];
 
 export const CLASS_NAV_DEFS: NavItemDefinition[] = [
@@ -84,42 +84,42 @@ export const CLASS_NAV_DEFS: NavItemDefinition[] = [
 		labelKey: 'tab.students',
 		href: 'students',
 		classSegment: true,
-		permissions: ['QUERY_CLASS_DIRECTORY_READ', 'QUERY_STUDENT_DIRECTORY_READ'],
+		permissions: ['CLASS_READ', 'STUDENT_READ'],
 	},
 	{
 		key: 'timetable',
 		labelKey: 'tab.timetable',
 		href: 'timetable',
 		classSegment: true,
-		permissions: ['QUERY_TIMETABLE_READ'],
+		permissions: ['TIMETABLE_READ'],
 	},
 	{
 		key: 'teaching',
 		labelKey: 'tab.teaching',
 		href: 'teaching',
 		classSegment: true,
-		permissions: ['QUERY_CLASS_CURRICULUM_READ', 'QUERY_CURRICULUM_PROGRESS_READ'],
+		permissions: ['ACADEMIC_PROGRAM_READ', 'CLASS_LOGBOOK_READ'],
 	},
 	{
 		key: 'evaluations',
 		labelKey: 'tab.evaluations',
 		href: 'evaluations',
 		classSegment: true,
-		permissions: ['GRADE_READ', 'GRADE_INPUT'],
+		permissions: ['ASSESSMENT_READ', 'ASSESSMENT_MANAGE', 'GRADE_READ', 'GRADE_MANAGE'],
 	},
 	{
 		key: 'attendance',
 		labelKey: 'tab.attendance',
 		href: 'attendance',
 		classSegment: true,
-		permissions: ['QUERY_ATTENDANCE_READ', 'ATTENDANCE_READ'],
+		permissions: ['ATTENDANCE_READ', 'ATTENDANCE_READ'],
 	},
 	{
 		key: 'reportCards',
 		labelKey: 'tab.reportCards',
 		href: 'report-cards',
 		classSegment: true,
-		permissions: ['QUERY_REPORT_CARD_DETAIL_READ', 'REPORT_CARD_READ'],
+		permissions: ['REPORT_CARD_READ', 'REPORT_CARD_READ'],
 	},
 ];
 
@@ -161,25 +161,25 @@ export const CONFIG_NAV_DEFS: NavItemDefinition[] = [
 		key: 'academic',
 		labelKey: 'config.academic',
 		href: '/configuration/academic',
-		permissions: ['ACADEMIC_PROGRAM_READ', 'ACADEMIC_PROGRAM_UPDATE', 'SCHOOL_STRUCTURE_READ'],
+		permissions: ['ACADEMIC_CATALOG_READ', 'ACADEMIC_CATALOG_MANAGE'],
 	},
 	{
 		key: 'periodGrid',
 		labelKey: 'config.periodGrid',
 		href: '/configuration/period-grid',
-		permissions: ['ACADEMIC_PROGRAM_READ', 'ACADEMIC_PROGRAM_UPDATE', 'SCHOOL_STRUCTURE_READ'],
+		permissions: ['SCHOOL_STRUCTURE_READ', 'SCHOOL_CONFIGURE'],
 	},
 	{
 		key: 'gradeScales',
 		labelKey: 'config.gradeScales',
 		href: '/configuration/grade-scales',
-		permissions: ['REPORT_CARD_CONFIGURE', 'EXAM_CONFIG_READ', 'EXAM_CONFIG_CONFIGURE'],
+		permissions: ['GRADE_SCALE_CONFIGURE', 'REPORT_CARD_CONFIGURE'],
 	},
 	{
 		key: 'structure',
 		labelKey: 'config.structure',
 		href: '/configuration/structure',
-		permissions: ['SCHOOL_STRUCTURE_CONFIGURE', 'SCHOOL_STRUCTURE_READ', 'ACADEMIC_PROGRAM_READ', 'ACADEMIC_PROGRAM_UPDATE', 'REPORT_CARD_CONFIGURE'],
+		permissions: ['SCHOOL_CONFIGURE', 'SCHOOL_STRUCTURE_READ', 'ACADEMIC_CATALOG_READ', 'ACADEMIC_CATALOG_MANAGE', 'REPORT_CARD_CONFIGURE'],
 	},
 	{
 		key: 'notificationTemplates',
@@ -193,15 +193,15 @@ export const CONFIG_NAV_DEFS: NavItemDefinition[] = [
 		href: '/configuration/other',
 		permissions: [
 			'DISCIPLINE_VALIDATE',
-			'ACADEMIC_PROGRAM_READ',
-			'ACADEMIC_PROGRAM_UPDATE',
+			'ACADEMIC_CATALOG_READ',
+			'ACADEMIC_CATALOG_MANAGE',
 		],
 	},
 	{
 		key: 'permissionProfiles',
 		labelKey: 'config.permissionProfiles',
 		href: '/configuration/permission-profiles',
-		permissions: ['ACCESS_CONTROL_READ', 'ACCESS_CONTROL_CONFIGURE'],
+		permissions: ['ACCESS_CONTROL_READ', 'ACCESS_CONTROL_MANAGE'],
 	},
 	{
 		key: 'tools',

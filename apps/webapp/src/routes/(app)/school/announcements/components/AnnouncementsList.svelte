@@ -144,7 +144,7 @@
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
-				permission="COMMUNICATION_CREATE"
+				permission="COMMUNICATION_DRAFT_MANAGE"
 				mode="disable"
 				tooltip={$t('announcements.permissionCreate')}
 			>

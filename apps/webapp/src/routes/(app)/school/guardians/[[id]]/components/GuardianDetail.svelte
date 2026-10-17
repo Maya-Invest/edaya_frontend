@@ -43,7 +43,7 @@
 	const deleteOpen = bindUrlModal(modals, 'delete');
 
 	const linked = $derived(guardiansPage.linkedStudents(guardian));
-	const canChangePhoto = $derived(canUploadProfilePhoto('PARENT_UPDATE'));
+	const canChangePhoto = $derived(canUploadProfilePhoto('PARENT_MANAGE'));
 	let deleteBusy = $state(false);
 
 	async function handlePhotoChange(file: File) {
@@ -95,14 +95,14 @@
 			{/if}
 		{/snippet}
 		{#snippet actions()}
-			<PermissionGate permission="PARENT_UPDATE" mode="disable" tooltip={$t('guardian.permissionUpdate')}>
+			<PermissionGate permission="PARENT_MANAGE" mode="disable" tooltip={$t('guardian.permissionUpdate')}>
 				{#snippet children({ disabled, title })}
 					<GuardianEditModal {guardian} {disabled} {title} bind:open={editProfileOpen.open} />
 				{/snippet}
 			</PermissionGate>
 		{/snippet}
 		{#snippet overflow()}
-			<PermissionGate permission="PARENT_UPDATE" mode="disable" tooltip={$t('guardian.permissionUpdate')}>
+			<PermissionGate permission="PARENT_MANAGE" mode="disable" tooltip={$t('guardian.permissionUpdate')}>
 				{#snippet children({ disabled, title })}
 					<RowActionMenuItem
 						destructive

@@ -61,7 +61,7 @@
 	);
 	const removeStudentName = $derived(
 		removeTarget
-			? (activitiesPage.findStudent(removeTarget.studentId)?.name ?? studentDisplayFallback(removeTarget.studentId))
+			? (studentsTab.slice?.students.find(student => student.id === removeTarget.studentId)?.name ?? studentDisplayFallback(removeTarget.studentId))
 			: '—',
 	);
 
@@ -90,7 +90,6 @@
 
 	async function query(url: URL) {
 		const result = await loadTab(url);
-		void activitiesPage.ensureStudents();
 		validateModal();
 		return result;
 	}
@@ -181,7 +180,7 @@
 						<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 							{$t('activities.enrolledStudents')}
 						</p>
-						<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
+						<PermissionGate permission="ACTIVITY_ENROLLMENT_MANAGE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
 							{#snippet children({ disabled, title })}
 								<Button
 									size="sm"
@@ -201,7 +200,7 @@
 					{:else}
 						<ul class="divide-y divide-border">
 							{#each enrollments as enrollment (enrollment.id)}
-								{@const student = activitiesPage.findStudent(enrollment.studentId)}
+								{@const student = studentsTab.slice?.students.find(student => student.id === enrollment.studentId)}
 								{@const classGroup = student ? academicContext.classes.find(entry => entry.id === student.classId) : undefined}
 								<li class="flex items-center justify-between gap-3 px-4 py-2.5">
 									<div class="flex min-w-0 items-center gap-2">
@@ -217,7 +216,7 @@
 											<p class="truncate text-[11px] text-muted-foreground">{classGroup?.name ?? '—'}</p>
 										</div>
 									</div>
-									<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
+									<PermissionGate permission="ACTIVITY_ENROLLMENT_MANAGE" mode="disable" tooltip={$t('activities.permissionUpdate')}>
 										{#snippet children({ disabled, title })}
 											<div class="flex items-center gap-2">
 												<button
@@ -266,6 +265,7 @@
 	onConfirm={confirmAddStudents}
 >
 	<StudentPicker
+		students={(studentsTab.slice?.activityId === activityId ? studentsTab.slice.students : []).filter(student => studentsTab.slice?.eligibleStudentIds.includes(student.id))}
 		bind:values={studentIds}
 		mode="multi"
 		variant="panel"

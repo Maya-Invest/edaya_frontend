@@ -16,7 +16,7 @@
 	const studentsPage = profileTab.host;
 	const modals = getDrawerUrlModals();
 	const pending = $derived(studentsPage?.pendingPhotoFor(s.id));
-	const canReview = $derived(canUploadProfilePhoto('STUDENT_UPDATE'));
+	const canReview = $derived(canUploadProfilePhoto('STUDENT_MANAGE'));
 	const proposedUrl = $derived(pending ? buildProfilePhotoContentUrl(pending.attachmentId) : null);
 
 	async function handleReplace(file: File) {

@@ -73,11 +73,11 @@
 		title={$t('structure.details')}
 	>
 		{#snippet primary()}
-			<Button variant="outline" class="rounded-full" disabled={!hasAnyPermission(['SCHOOL_STRUCTURE_CONFIGURE', 'REPORT_CARD_CONFIGURE'])} onclick={() => (editOpen.open = true)}>{$t('gradeLevels.edit')}</Button>
+			<Button variant="outline" class="rounded-full" disabled={!hasAnyPermission(['SCHOOL_CONFIGURE', 'REPORT_CARD_CONFIGURE'])} onclick={() => (editOpen.open = true)}>{$t('gradeLevels.edit')}</Button>
 		{/snippet}
 		{#snippet more()}
 			<RowActionMenu label={$t('list.moreActions')}>
-				<PermissionGate permission="SCHOOL_STRUCTURE_CONFIGURE" mode="disable">
+				<PermissionGate permission="SCHOOL_CONFIGURE" mode="disable">
 					{#snippet children({ disabled, title })}
 						<RowActionMenuItem title={canDelete ? title : $t('gradeLevels.deleteBlockedClasses')} destructive disabled={disabled || !canDelete} onclick={() => modals.open('delete-level')}>
 							{$t('common.delete')}

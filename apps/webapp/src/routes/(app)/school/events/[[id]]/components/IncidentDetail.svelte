@@ -90,7 +90,7 @@
 			{/if}
 		{/snippet}
 		{#snippet actions()}
-			<PermissionGate permission="DISCIPLINE_UPDATE" mode="disable" tooltip={$t('events.permissionUpdate')}>
+			<PermissionGate permission="DISCIPLINE_MANAGE" mode="disable" tooltip={$t('events.permissionUpdate')}>
 				{#snippet children({ disabled, title })}
 					<IncidentFormModal
 						incident={live}
@@ -125,7 +125,7 @@
 			{/if}
 		{/snippet}
 		{#snippet overflow()}
-			<PermissionGate permission="DISCIPLINE_ARCHIVE" mode="disable" tooltip={$t('events.permissionArchive')}>
+			<PermissionGate permission="DISCIPLINE_MANAGE" mode="disable" tooltip={$t('events.permissionArchive')}>
 				{#snippet children({ disabled, title })}
 					<RowActionMenuItem
 						{disabled}

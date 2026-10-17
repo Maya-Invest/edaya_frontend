@@ -46,7 +46,7 @@
 	const editProfileOpen = bindUrlModal(modals, 'edit-profile');
 	const deleteOpen = bindUrlModal(modals, 'delete');
 
-	const canChangePhoto = $derived(canUploadProfilePhoto('STAFF_UPDATE'));
+	const canChangePhoto = $derived(canUploadProfilePhoto('STAFF_MANAGE'));
 	let deleteBusy = $state(false);
 	const assignmentCount = $derived(teachersPage.assignmentCount(teacher.id) ?? 0);
 
@@ -103,14 +103,14 @@
 		</span>
 	{/snippet}
 	{#snippet actions()}
-		<PermissionGate permission="STAFF_UPDATE" mode="disable" tooltip={$t('teacher.permissionUpdate')}>
+		<PermissionGate permission="STAFF_MANAGE" mode="disable" tooltip={$t('teacher.permissionUpdate')}>
 			{#snippet children({ disabled, title })}
 				<TeacherProfileEditModal {teacher} {disabled} {title} bind:open={editProfileOpen.open} />
 			{/snippet}
 		</PermissionGate>
 	{/snippet}
 	{#snippet overflow()}
-		<PermissionGate permission="STAFF_UPDATE" mode="disable" tooltip={$t('teacher.permissionUpdate')}>
+		<PermissionGate permission="STAFF_MANAGE" mode="disable" tooltip={$t('teacher.permissionUpdate')}>
 			{#snippet children({ disabled, title })}
 				<RowActionMenuItem
 					{disabled}

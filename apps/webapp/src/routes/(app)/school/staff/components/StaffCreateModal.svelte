@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { GrantScope } from '$lib/api/grant-scopes';
+	import type { UserScopeSelection } from '$lib/api/grant-scopes';
 	import type { StaffProfileRole } from '$lib/staff/staff-profile-roles';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
@@ -42,7 +42,7 @@
 	const schoolId = $derived(authSession.schoolId ?? academicContext.schools[0]?.id ?? '');
 	const permissionProfiles = $derived(formData.data?.profiles ?? []);
 	let permissionProfileId = $state('');
-	let customScopes = $state<GrantScope[]>([]);
+	let customScopes = $state<UserScopeSelection[]>([]);
 	let useDefaultScopes = $state(true);
 	const selectedProfile = $derived(permissionProfiles.find(row => row.id === permissionProfileId));
 	const scopeGrains = $derived([...new Set((formData.data?.catalog ?? []).filter(entry => selectedProfile?.permissions.includes(entry.permission)).flatMap(permissionSelectionGrains))]);
@@ -87,7 +87,7 @@
 			sendAccountInvitation,
 			permissionProfileId: permissionProfileId || undefined,
 			customScopes,
-			useDefaultScopes,
+			useDefaultScopes: scopeGrains.length > 0 && useDefaultScopes,
 			successMessage: get(t)('staff.createSuccess', { name: fullName }),
 		});
 		busy = false;
@@ -172,11 +172,13 @@
 		<button type="button" class="text-sm text-primary" onclick={() => formData.load(schoolId)}>{$t('dataState.retry')}</button>
 	{/if}
 	{#if selectedProfile}
-		<label class="flex items-center gap-2 text-sm"><Checkbox bind:checked={useDefaultScopes} />{$t('staff.includeDefaultScopes')}</label>
-		<p class="text-xs text-muted-foreground">{$t('staff.defaultScopeAdditiveHint')}</p>
-		<p class="text-xs text-highlight">{$t('staff.noDefaultScopes')}</p>
-		<Label>{$t('staff.customScopes')}</Label>
-		<PermissionScopeSelections bind:scopes={customScopes} grains={scopeGrains} active={open} />
+		{#if scopeGrains.length}
+			<label class="flex items-center gap-2 text-sm"><Checkbox bind:checked={useDefaultScopes} />{$t('staff.includeDefaultScopes')}</label>
+			<p class="text-xs text-muted-foreground">{$t('staff.defaultScopeAdditiveHint')}</p>
+			<p class="text-xs text-highlight">{$t('staff.noDefaultScopes')}</p>
+			<Label>{$t('staff.customScopes')}</Label>
+			<PermissionScopeSelections bind:scopes={customScopes} grains={scopeGrains} active={open} />
+		{/if}
 	{/if}
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
