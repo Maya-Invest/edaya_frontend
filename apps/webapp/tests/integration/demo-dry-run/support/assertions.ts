@@ -56,6 +56,51 @@ export async function assertStructureListShell(ctx: DemoContext, scene: string, 
 	}
 }
 
+/** Report models inherit their level/year from the structure workspace. */
+export async function assertReportCardWorkspace(ctx: DemoContext, scene: string, step: string, canConfigureReports: boolean): Promise<boolean> {
+	const { page, reporter, shot, pageErrors } = ctx;
+	const errorMark = pageErrors.snapshot();
+	try {
+		await waitForPageQuery(page);
+		const originalUrl = page.url();
+		const originalLevel = new URL(originalUrl).searchParams.get('gradeLevel');
+		assert(originalLevel, 'Report models must resolve a selected level');
+		const newModel = page.getByRole('button', { name: /ajouter un modèle|add model/i });
+		const assertCreateAccess = async () => {
+			if (canConfigureReports) {
+				await newModel.waitFor({ state: 'visible' });
+				assert(await newModel.isEnabled(), 'Report configuration grant must enable model creation');
+			} else {
+				assert.equal(await newModel.count(), 0, 'Model creation must be hidden without report configuration authority');
+			}
+		};
+		await assertCreateAccess();
+		const links = page.locator('aside').filter({ has: page.locator('#structure-level') }).getByRole('link');
+		const hrefs = await links.evaluateAll(elements => elements.map(element => element.getAttribute('href')!));
+		const next = hrefs.findIndex(href => new URL(href, originalUrl).searchParams.get('gradeLevel') !== originalLevel);
+		assert(next >= 0, 'Fixture must provide another level');
+		const selectedLevel = new URL(hrefs[next]!, originalUrl).searchParams.get('gradeLevel');
+		await links.nth(next).click();
+		await page.waitForURL(url => url.searchParams.get('gradeLevel') === selectedLevel);
+		await waitForPageQuery(page);
+		await assertCreateAccess();
+		await page.reload({ waitUntil: 'domcontentloaded' });
+		await waitForPageQuery(page);
+		assert.equal(new URL(page.url()).searchParams.get('gradeLevel'), selectedLevel, 'Selected level must survive reload');
+		await assertCreateAccess();
+		assert(await assertNoFatalError(ctx, scene, step));
+		assert(pageErrors.assertCleanSince(errorMark, scene, step));
+		await page.goto(originalUrl, { waitUntil: 'domcontentloaded' });
+		await waitForPageQuery(page);
+		reporter.log(scene, step, 'pass');
+		return true;
+	} catch (error) {
+		reporter.log(scene, step, 'fail', error instanceof Error ? error.message : String(error));
+		await shot(`${scene}-report-card-workspace`).catch(() => {});
+		return false;
+	}
+}
+
 export async function assertListShell(
 	ctx: DemoContext,
 	scene: string,

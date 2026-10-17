@@ -479,7 +479,9 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 - **Entity:** `PeriodDefinition` · layout page at `/configuration/period-grid`
 - Year `<select>` lists every year (draft, published, archived) in `?year=`, defaulting to the workspace year when that year is in the list
 - Slots are weekly (`dayOfWeek` + times); single-row form and optional **quick-setup wizard** (preset → tweak template/weekdays → batch create)
-- Mutations require `SCHOOL_STRUCTURE_CONFIGURE`
+- Mutations require `SCHOOL_CONFIGURE`
+
+- The resizable SVAR calendar is the sole weekly view, including empty years. Legacy `display` parameters have no effect. Dragging an empty range opens the existing slot creation modal with snapped times and weekday. Slot cards expose Edit and Delete on hover, focus or selection; deletion retains confirmation. Weekday/time data and existing mutation modals remain authoritative. Dragging changes start/end time and optionally weekday while preserving duration; resizing changes end time. Both use five-minute steps, same-day and destination-overlap checks.
 
 ### 7.20 Configuration — Grade levels
 

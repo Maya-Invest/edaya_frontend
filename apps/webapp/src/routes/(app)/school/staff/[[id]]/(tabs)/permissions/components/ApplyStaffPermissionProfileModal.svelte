@@ -67,19 +67,21 @@
 </script>
 <FormModal bind:open title={$t('staff.applyProfileTitle')} description={$t('staff.applyProfileHint')}
 	submitLabel={reviewed ? $t('common.save') : $t('staff.reviewScopeChanges')} {busy} submitDisabled={!canSubmit} onSubmit={submit}>
-	<div class="space-y-4">
-		<div class="space-y-2"><Label for="apply-profile-select">{$t('staff.selectProfile')}</Label>
+	<div class="space-y-8">
+		<div class="space-y-2"><Label for="apply-profile-select" class="font-display text-base font-bold text-foreground">{$t('staff.selectProfile')}</Label>
 			<select id="apply-profile-select" value={profileId} onchange={event => selectProfile(event.currentTarget.value)} class="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm">
 				<option value="">{$t('staff.selectProfile')}</option>
 				{#each staffPage.staffPermissionProfiles as profile (profile.id)}<option value={profile.id}>{profile.name}</option>{/each}
 			</select>
 		</div>
 		{#if selected && grains.length}
-			<label class="flex items-center gap-2 text-sm"><Checkbox bind:checked={useDefaultScopes} />{$t('staff.includeDefaultScopes')}</label>
-			<p class="text-xs text-muted-foreground">{$t('staff.defaultScopeAdditiveHint')}</p>
-			{#if useDefaultScopes && !staffPage.staffDefaultScopes(staffId).length}<p class="text-xs text-highlight">{$t('staff.noDefaultScopes')}</p>{/if}
-			<Label>{$t('staff.customScopes')}</Label>
-			<PermissionScopeSelections bind:scopes={customScopes} {grains} active={open} />
+			<div class="space-y-3">
+				<label class="flex items-center gap-2 text-sm"><Checkbox bind:checked={useDefaultScopes} />{$t('staff.includeDefaultScopes')}</label>
+				<p class="text-xs text-muted-foreground">{$t('staff.defaultScopeAdditiveHint')}</p>
+				{#if useDefaultScopes && !staffPage.staffDefaultScopes(staffId).length}<p class="text-xs text-highlight">{$t('staff.noDefaultScopes')}</p>{/if}
+				<h4 class="font-display text-base font-bold text-foreground">{$t('staff.customScopes')}</h4>
+				<PermissionScopeSelections bind:scopes={customScopes} {grains} active={open} />
+			</div>
 		{/if}
 		{#if reviewed && preview.report}<PermissionResolutionPreview report={preview.report} />{/if}
 	</div>

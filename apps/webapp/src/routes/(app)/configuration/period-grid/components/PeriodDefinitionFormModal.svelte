@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PeriodDefinition, PeriodDefinitionDayOfWeek } from '$lib/types/school';
+	import type { PeriodCalendarChanges, PeriodCalendarResult } from '../lib/period-calendar';
 	import { academicContext } from '$lib/academic/context.svelte';
 
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
@@ -7,7 +8,9 @@
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
+	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
+	import { periodCalendarCreation, periodCalendarDate } from '../lib/period-calendar';
 	import {
 		PERIOD_DEFINITION_WEEKDAY_LABEL_KEY,
 		PERIOD_DEFINITION_WEEKDAYS,
@@ -18,15 +21,18 @@
 		open = $bindable(false),
 		academicYearId,
 		periodDefinition = null,
+		initialValues,
 	}: {
 		open?: boolean;
 		academicYearId: string;
 		periodDefinition?: PeriodDefinition | null;
+		initialValues?: PeriodCalendarChanges;
 	} = $props();
 
 	const periodGridPage = getPeriodGridPageState();
 
 	let busy = $state(false);
+	let validation = $state<PeriodCalendarResult | null>(null);
 	let label = $state('');
 	let dayOfWeek = $state<PeriodDefinitionDayOfWeek>('monday');
 	let order = $state('1');
@@ -48,6 +54,7 @@
 	);
 
 	function resetForm() {
+		validation = null;
 		if (periodDefinition) {
 			label = periodDefinition.label;
 			dayOfWeek = periodDefinition.dayOfWeek;
@@ -61,17 +68,17 @@
 		const existing = academicContext.periodDefinitionsForYear(academicYearId);
 		const nextOrder = existing.length > 0 ? Math.max(...existing.map(entry => entry.order)) + 1 : 1;
 		label = '';
-		dayOfWeek = 'monday';
+		dayOfWeek = initialValues?.dayOfWeek ?? 'monday';
 		order = String(nextOrder);
-		startTime = '08:00';
-		endTime = '08:45';
+		startTime = initialValues?.startTime ?? '08:00';
+		endTime = initialValues?.endTime ?? '08:45';
 		isBreak = false;
 		isTeachingSlot = true;
 	}
 
 	$effect(() => {
 		if (open) {
-			resetForm();
+			untrack(resetForm);
 		}
 	});
 
@@ -80,6 +87,15 @@
 			return;
 		}
 
+		if (initialValues && !isEdit) {
+			const checked = periodCalendarCreation({ dayOfWeek, start: periodCalendarDate(startTime), end: periodCalendarDate(endTime) }, academicContext.periodDefinitionsForYear(academicYearId));
+			validation = checked;
+			if (!checked.ok)
+				return;
+			// Keep the form and persisted selection on the same five-minute boundaries.
+			startTime = checked.values.startTime;
+			endTime = checked.values.endTime;
+		}
 		busy = true;
 		try {
 			const trimmedLabel = label.trim();
@@ -126,6 +142,9 @@
 	submitDisabled={!canSubmit}
 	onSubmit={submit}
 >
+	{#if validation && !validation.ok}
+		<p role="alert" class="text-sm text-destructive">{$t(`periodDefinitions.resize.${validation.error}`, { label: validation.conflict ?? '' })}</p>
+	{/if}
 	<label class="grid gap-1 text-sm">
 		<span class="text-muted-foreground">{$t('periodDefinitions.label')}</span>
 		<Input bind:value={label} />

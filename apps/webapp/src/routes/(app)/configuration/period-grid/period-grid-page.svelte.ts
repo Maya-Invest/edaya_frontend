@@ -2,9 +2,14 @@ import type { PeriodDefinition } from '$lib/types/school';
 import type { PeriodGridPageSlice } from './lib/period-grid-helpers';
 import { academicContext } from '$lib/academic/context.svelte';
 import { savePeriodDefinitionMutation, savePeriodDefinitionsBatchMutation } from '$lib/api/mutations/period-definition.mutations';
+import { authSession } from '$lib/auth/session.svelte';
+import { t } from '$lib/i18n';
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { hasPermission } from '$lib/permissions';
 import { getContext, setContext } from 'svelte';
+import { get } from 'svelte/store';
+import { PeriodCalendarWriter } from './lib/period-calendar';
 import { loadPeriodGridSlice, queryPeriodGridPage } from './lib/period-grid-queries';
 import { deletePeriodDefinitionMutation } from './lib/period-grid-route-mutation';
 import { readPeriodGridYear, writePeriodGridYear } from './lib/period-grid-year';
@@ -20,6 +25,17 @@ export class PeriodGridPageState {
 
 	slice = $state<PeriodGridPageSlice | null>(null);
 	selectedYearId = $state<string | null>(academicContext.yearId || null);
+
+	readonly calendarWriter = new PeriodCalendarWriter({
+		canEdit: () => hasPermission('SCHOOL_CONFIGURE'),
+		definitions: () => academicContext.periodDefinitionsForYear(this.selectedYearId ?? '')
+			.filter(definition => definition.schoolId === authSession.schoolId),
+		save: (definition, changes) => this.performSavePeriodDefinition({
+			...definition,
+			...changes,
+			successMessage: get(t)('periodDefinitions.toastUpdated', { label: definition.label }),
+		}),
+	});
 
 	private readonly versions = new RouteVersionSnapshot(['periodDefinitions']);
 

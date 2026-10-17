@@ -48,10 +48,10 @@
 					<DrawerField label={$t('permissionProfiles.permissions')}><p class="tabular-nums">{profile.permissions.length}</p></DrawerField>
 					<DrawerField label={$t('permissionProfiles.boundStaff')}><p class="tabular-nums">{$t('permissionProfiles.boundStaffCount', { n: boundCount })}</p></DrawerField>
 				</div>
-				<section aria-label={$t('permissionProfiles.permissions')} class="space-y-5">
+				<section aria-label={$t('permissionProfiles.permissions')} class="space-y-8">
 					{#each groups as group (group.key)}
 						<div class="space-y-2">
-							<h4 class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{formatPermissionGroupLabel(group.key, $t)}</h4>
+							<h4 class="font-display text-base font-bold text-foreground">{formatPermissionGroupLabel(group.key, $t)}</h4>
 							<ul class="divide-y divide-border">
 								{#each group.entries as item (item.permission)}
 									<li class="flex flex-wrap items-center gap-x-2 gap-y-1 py-3 text-sm" data-permission={item.permission}>

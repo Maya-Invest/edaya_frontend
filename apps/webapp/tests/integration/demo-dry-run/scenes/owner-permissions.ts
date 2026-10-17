@@ -1,6 +1,6 @@
 import type { Browser } from 'playwright';
 import type { DemoReporter } from '../support/reporter';
-import { assertFilterSelectShell, assertListShell } from '../support/assertions';
+import { assertReportCardWorkspace, assertListShell } from '../support/assertions';
 import { signIn } from '../support/auth';
 import { OWNER_EMAIL, STAFF_ID } from '../support/constants';
 import { createDemoContext } from '../support/context';
@@ -28,7 +28,7 @@ export async function runOwnerPermissionChecks(
 		if (await visit(ctx, `${base}/configuration/structure/details`, scene, 'O.2 Report card definitions', {
 			pathPrefix: '/configuration/structure/details',
 		})) {
-			await assertFilterSelectShell(ctx, scene, 'O.3 Report card definitions filter shell');
+			await assertReportCardWorkspace(ctx, scene, 'O.3 Report models follow level navigation', true);
 		}
 
 		if (await visit(ctx, `${base}/configuration/grade-scales`, scene, 'O.4 Grade scales list', {

@@ -173,16 +173,17 @@ export async function exerciseCatalogCrud(page: Page, base: string, scenarioId: 
 export async function exerciseReportDefinitionLifecycle(page: Page, base: string, gradeLevelId: string, gradeScaleId: string) {
 	const create = async () => {
 		const name = `Integration report model ${crypto.randomUUID()}`;
-		assert(await openUrlModal(page, '/configuration/structure/details', 'create', { base }));
+		assert(await openUrlModal(page, `/configuration/structure/details?gradeLevel=${encodeURIComponent(gradeLevelId)}`, 'create', { base }));
 		await page.getByRole('dialog').locator('input').first().fill(name);
-		await page.getByRole('dialog').locator('select').nth(0).selectOption(gradeLevelId);
 		const response = await uiCommand(page, '/commands/create-report-card-definition', () => page.getByTestId('form-modal-submit').click());
 		const { id } = await response.json() as { id: string };
 		assert(id);
 		await waitForMutationDialog(page);
 		await page.reload({ waitUntil: 'domcontentloaded' });
 		await waitForPageQuery(page);
-		assert.equal((await readEntity(page, base, 'definitions', id)).name, name);
+		const saved = await readEntity(page, base, 'definitions', id);
+		assert.equal(saved.name, name);
+		assert.equal(saved.gradeLevelId, gradeLevelId, 'The model must retain the grade selected in the workspace');
 		return id;
 	};
 	const discarded = await create();

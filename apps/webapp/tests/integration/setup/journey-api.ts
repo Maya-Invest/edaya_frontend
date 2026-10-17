@@ -1754,12 +1754,12 @@ export async function grantFamilyFeedbackModerateViaApi(
 			academicYearId,
 			permission: 'FAMILY_FEEDBACK_MODERATE',
 			useDefaultScopes: false,
-			customScopes: [{ kind: 'school' }],
+			customScopes: [],
 			status: 'active',
 		},
 		academicYearId,
 	}, apiUrl);
-	console.log(`family-feedback moderate grant ${owner.id}: status=${granted.status()}`);
+	assert(granted.ok(), `Family-feedback moderator assignment failed: status=${granted.status()}`);
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {

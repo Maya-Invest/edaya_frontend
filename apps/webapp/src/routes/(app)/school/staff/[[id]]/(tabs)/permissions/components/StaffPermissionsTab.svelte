@@ -5,9 +5,8 @@
 		formatPermissionLabel,
 
 	} from '$lib/api/staff-permission-assignments-data';
-	import { skippedPermissionsByProfile } from '$lib/api/staff-permission-profiles-data';
+	import { formatPermissionGroupLabel, groupPermissionEntries, skippedPermissionsByProfile } from '$lib/api/staff-permission-profiles-data';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
 	import { ChevronDown, ChevronUp, Pencil, Plus, ShieldCheck, Trash2 } from '$lib/icons';
@@ -38,12 +37,18 @@
 
 	const staffPage = getStaffPageState();
 	const customRows = $derived(staffPage.customPermissionAssignmentsForStaff(s.id));
+	const customGroups = $derived(groupPermissionEntries(customRows));
+	const customWarningCount = $derived(customRows.filter(row => row.hasMissingScope || (row.warnings?.length ?? 0) > 0).length);
+	const additionalContentId = $props.id();
+	let additionalExpanded = $state(false);
 	const bindings = $derived(staffPage.permissionProfileBindingsForStaff(s.id));
 	const expansionScope = $derived(`${s.id}:${staffPage.staffScope().schoolId}:${staffPage.staffScope().academicYearId}`);
 	let expandedProfiles = $state<Record<string, boolean>>({});
 	$effect(() => {
-		if (expansionScope)
+		if (expansionScope) {
 			expandedProfiles = {};
+			additionalExpanded = false;
+		}
 	});
 	const skippedByProfile = $derived.by(() => {
 		const profiles = bindings
@@ -73,49 +78,51 @@
 	}
 </script>
 
-<div class="space-y-4">
-	<div class="flex flex-wrap items-center justify-between gap-2">
-		<div class="flex items-center gap-2">
-			<ShieldCheck class="h-4 w-4 text-muted-foreground" />
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				{$t('staff.permissionsTitle')}
-			</Label>
+<div class="space-y-8">
+	<div class="space-y-3">
+		<div class="flex flex-wrap items-center justify-between gap-2">
+			<div class="flex items-center gap-2">
+				<ShieldCheck class="h-4 w-4 text-muted-foreground" />
+				<h4 class="font-display text-base font-bold text-foreground">
+					{$t('staff.permissionsTitle')}
+				</h4>
+			</div>
+			<div class="flex flex-wrap items-center gap-2">
+				<PermissionGate permission="ACCESS_CONTROL_MANAGE" mode="disable">
+					{#snippet children({ disabled })}
+						<Button
+							size="sm"
+							variant="outline"
+							class="rounded-full"
+							disabled={disabled}
+							onclick={onApply}
+						>
+							{$t('staff.applyProfile')}
+						</Button>
+					{/snippet}
+				</PermissionGate>
+				<PermissionGate permission="ACCESS_CONTROL_MANAGE" mode="disable">
+					{#snippet children({ disabled })}
+						<Button
+							size="sm"
+							class="rounded-full"
+							disabled={disabled}
+							onclick={onCreate}
+						>
+							<Plus class="mr-1.5 h-3.5 w-3.5" />
+							{$t('roles.addPermission')}
+						</Button>
+					{/snippet}
+				</PermissionGate>
+			</div>
 		</div>
-		<div class="flex flex-wrap items-center gap-2">
-			<PermissionGate permission="ACCESS_CONTROL_MANAGE" mode="disable">
-				{#snippet children({ disabled })}
-					<Button
-						size="sm"
-						variant="outline"
-						class="rounded-full"
-						disabled={disabled}
-						onclick={onApply}
-					>
-						{$t('staff.applyProfile')}
-					</Button>
-				{/snippet}
-			</PermissionGate>
-			<PermissionGate permission="ACCESS_CONTROL_MANAGE" mode="disable">
-				{#snippet children({ disabled })}
-					<Button
-						size="sm"
-						class="rounded-full"
-						disabled={disabled}
-						onclick={onCreate}
-					>
-						<Plus class="mr-1.5 h-3.5 w-3.5" />
-						{$t('roles.addPermission')}
-					</Button>
-				{/snippet}
-			</PermissionGate>
-		</div>
+		<p class="text-[11px] text-muted-foreground">
+			{$t('staff.permissionsHint')}
+		</p>
 	</div>
-	<p class="text-[11px] text-muted-foreground">
-		{$t('staff.permissionsHint')}
-	</p>
 
 	<div data-testid="staff-default-scopes" class="flex items-start justify-between gap-3 rounded-xl border border-border bg-card p-4">
-		<div class="min-w-0 flex-1"><p class="text-sm font-medium">{$t('staff.defaultScopes')}</p>
+		<div class="min-w-0 flex-1"><h4 class="font-display text-base font-bold text-foreground">{$t('staff.defaultScopes')}</h4>
 			<p class="text-xs text-muted-foreground">{$t('staff.defaultScopesSummary', { n: staffPage.staffDefaultScopes(s.id).length })}</p>
 			<StaffScopeTags scopes={staffPage.staffDefaultScopeViews(s.id)} emptyLabel={$t('staff.noDefaultScopes')} />
 		</div>
@@ -139,7 +146,7 @@
 							<ChevronDown class={`h-4 w-4 shrink-0 transition-transform motion-reduce:transition-none ${expanded ? 'rotate-180' : ''}`} />
 							<span class="min-w-0">
 								<span class="flex flex-wrap items-center gap-x-2 gap-y-1">
-									<span class="break-words text-sm font-medium">{profile.name}</span>
+									<span class="break-words font-display text-base font-bold text-foreground">{profile.name}</span>
 									{#if profile.permissions.some(permission => staffPage.permissionCatalog.some(entry => entry.permission === permission && entry.scopePolicy.mode === 'resources'))}
 										<StaffScopeTags inline scopes={staffPage.profileEffectiveScopes(binding.id)} emptyLabel={$t('staff.noEffectiveScopes')} />
 									{/if}
@@ -193,7 +200,7 @@
 				<ul id={`profile-permissions-${binding.id}`} hidden={!expanded} class="divide-y divide-border/60 border-t border-border/60">
 					{#each profile.permissions as permission (permission)}
 						<li class="px-4 py-2.5">
-							<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium {skippedIds.has(permission) ? 'text-muted-foreground' : ''}">
+							<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm {skippedIds.has(permission) ? 'text-muted-foreground' : ''}">
 								<span>{formatPermissionLabel(permission, $t)}</span>
 								<PermissionScopeTypes entry={staffPage.permissionCatalog.find(entry => entry.permission === permission)} />
 							</div>
@@ -218,66 +225,78 @@
 		{/if}
 	{/each}
 
-	<div class="space-y-2">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			{$t('staff.additionalPermissions')}
-		</Label>
-		<div class="overflow-hidden rounded-xl border border-border bg-card">
-			{#if customRows.length === 0 && bindings.length === 0}
-				<p class="px-4 py-8 text-center text-sm text-muted-foreground">
-					{$t('roles.noPermissionsForStaff')}
-				</p>
-			{:else if customRows.length === 0}
-				<p class="px-4 py-6 text-center text-sm text-muted-foreground">
-					{$t('roles.noPermissionsForStaff')}
-				</p>
+	<div data-testid="staff-additional-permissions" class="overflow-hidden rounded-xl border border-border bg-card">
+		<div class="px-4 py-3">
+			<button type="button" class="flex min-h-11 w-full min-w-0 items-center gap-2 rounded-lg text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+				aria-expanded={additionalExpanded} aria-controls={additionalContentId}
+				onclick={() => additionalExpanded = !additionalExpanded}>
+				<ChevronDown class={`h-4 w-4 shrink-0 transition-transform motion-reduce:transition-none ${additionalExpanded ? 'rotate-180' : ''}`} />
+				<span class="min-w-0">
+					<span class="block break-words font-display text-base font-bold text-foreground">{$t('staff.additionalPermissions')}</span>
+					<span data-testid="additional-permission-count" class="block text-xs text-muted-foreground">{$t('staff.additionalAssignmentCount', { n: customRows.length })}</span>
+				</span>
+			</button>
+			{#if customWarningCount > 0}
+				<p data-testid="additional-permission-warning-summary" class="mt-2 text-xs text-highlight">{$t('staff.additionalAssignmentWarnings', { n: customWarningCount })}</p>
+			{/if}
+		</div>
+		<div id={additionalContentId} hidden={!additionalExpanded} class="border-t border-border/60">
+			{#if customRows.length === 0}
+				<p class="px-4 py-6 text-center text-sm text-muted-foreground">{$t('roles.noPermissionsForStaff')}</p>
 			{:else}
-				<ul class="divide-y divide-border/60">
-					{#each customRows as row (row.id)}
-						<li class="flex items-start justify-between gap-3 px-4 py-3">
-							<div class="min-w-0 flex-1">
-								<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
-									<span>{formatPermissionLabel(row.permission, $t)}</span>
-									<PermissionScopeTypes entry={staffPage.permissionCatalog.find(entry => entry.permission === row.permission)} />
-								</div>
-								{#if row.useDefaultScopes}<p class="text-xs text-muted-foreground">{$t('staff.includeDefaultScopes')}</p>{/if}
-								{#each row.warnings ?? [] as warning, warningIndex (warningIndex)}<p data-testid="permission-scope-warning" data-reason={warning.reason} class="text-xs text-highlight">{$t(`staff.scopeWarning.${warning.reason}`)}</p>{/each}
-								<div class="mt-1 text-xs text-muted-foreground">
-									{row.scopeLabel}
-									{#if row.hasMissingScope}
-										<span class="ml-1 text-highlight">{$t('roles.staleScopeWarning')}</span>
-									{/if}
-								</div>
-							</div>
-							<PermissionGate permission="ACCESS_CONTROL_MANAGE" mode="disable">
-								{#snippet children({ disabled })}
-									<div class="flex shrink-0 items-center gap-1">
-										<Button
-											variant="ghost"
-											size="icon"
-											class="h-8 w-8 rounded-full"
-											{disabled}
-											aria-label={$t('roles.editPermission')}
-											onclick={() => onEdit(row)}
-										>
-											<Pencil class="h-4 w-4" />
-										</Button>
-										<Button
-											variant="ghost"
-											size="icon"
-											class="h-8 w-8 rounded-full"
-											{disabled}
-											aria-label={$t('common.delete')}
-											onclick={() => onDelete(row)}
-										>
-											<Trash2 class="h-4 w-4" />
-										</Button>
-									</div>
-								{/snippet}
-							</PermissionGate>
-						</li>
+				<div class="space-y-8 p-4">
+					{#each customGroups as group (group.key)}
+						<section data-permission-category={group.key} class="space-y-2" aria-label={formatPermissionGroupLabel(group.key, $t)}>
+							<h4 class="font-display text-base font-bold text-foreground">{formatPermissionGroupLabel(group.key, $t)}</h4>
+							<ul class="divide-y divide-border/60">
+								{#each group.entries as row (row.id)}
+									<li data-assignment-id={row.id} data-permission={row.permission} class="flex items-start justify-between gap-3 py-3">
+										<div class="min-w-0 flex-1">
+											<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+												<span>{formatPermissionLabel(row.permission, $t)}</span>
+												<PermissionScopeTypes entry={staffPage.permissionCatalog.find(entry => entry.permission === row.permission)} />
+											</div>
+											{#if row.useDefaultScopes}<p class="text-xs text-muted-foreground">{$t('staff.includeDefaultScopes')}</p>{/if}
+											{#each row.warnings ?? [] as warning, warningIndex (warningIndex)}<p data-testid="permission-scope-warning" data-reason={warning.reason} class="text-xs text-highlight">{$t(`staff.scopeWarning.${warning.reason}`)}</p>{/each}
+											<div class="mt-1 text-xs text-muted-foreground">
+												{row.scopeLabel}
+												{#if row.hasMissingScope}
+													<span class="ml-1 text-highlight">{$t('roles.staleScopeWarning')}</span>
+												{/if}
+											</div>
+										</div>
+										<PermissionGate permission="ACCESS_CONTROL_MANAGE" mode="disable">
+											{#snippet children({ disabled })}
+												<div class="flex shrink-0 items-center gap-1">
+													<Button
+														variant="ghost"
+														size="icon"
+														class="h-8 w-8 rounded-full"
+														{disabled}
+														aria-label={$t('roles.editPermission')}
+														onclick={() => onEdit(row)}
+													>
+														<Pencil class="h-4 w-4" />
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon"
+														class="h-8 w-8 rounded-full"
+														{disabled}
+														aria-label={$t('common.delete')}
+														onclick={() => onDelete(row)}
+													>
+														<Trash2 class="h-4 w-4" />
+													</Button>
+												</div>
+											{/snippet}
+										</PermissionGate>
+									</li>
+								{/each}
+							</ul>
+						</section>
 					{/each}
-				</ul>
+				</div>
 			{/if}
 		</div>
 	</div>

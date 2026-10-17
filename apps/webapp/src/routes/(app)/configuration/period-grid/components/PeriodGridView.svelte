@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PeriodDefinition, PeriodDefinitionDayOfWeek } from '$lib/types/school';
+	import type { PeriodCalendarChanges } from '../lib/period-calendar';
 	import type {
 		PeriodDefinitionWizardStep,
 		PeriodGridModalName,
@@ -7,6 +8,7 @@
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
+	import { authSession } from '$lib/auth/session.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
@@ -28,7 +30,7 @@
 		resolvePeriodDefinitionModalTarget,
 	} from '../lib/period-grid-modal-surface';
 	import { getPeriodGridPageState } from '../period-grid-page.svelte';
-	import PeriodDefinitionBoard from './PeriodDefinitionBoard.svelte';
+	import PeriodDefinitionCalendar from './PeriodDefinitionCalendar.svelte';
 	import PeriodDefinitionFormModal from './PeriodDefinitionFormModal.svelte';
 	import PeriodDefinitionWizardModal from './PeriodDefinitionWizardModal.svelte';
 
@@ -48,6 +50,8 @@
 	const periodDefOpen = bindUrlModal(modals, 'period-def');
 	const wizardOpen = bindUrlModal(modals, 'period-def-wizard');
 	const deleteOpen = bindUrlModal(modals, 'delete-period-def');
+
+	let createDefaults = $state<{ schoolId: string; academicYearId: string; values: PeriodCalendarChanges } | null>(null);
 
 	let deleteBusy = $state(false);
 
@@ -94,13 +98,12 @@
 			label: `${year.label} · ${yearStatusLabel(year.status, $t)}`,
 		})),
 	);
-	const yearPeriodDefs = $derived(
-		selectedYear ? academicContext.periodDefinitionsForYear(selectedYear.id) : [],
-	);
 	const periodGroups = $derived(periodDefinitionGroups(selectedYear?.id ?? null));
 
 	afterNavigate(() => {
 		modals.hydrate();
+		if (!modals.isOpen('period-def'))
+			createDefaults = null;
 		periodGridPage.hydrateSelectedYear();
 		if (!periodGridPage.slice || !academicContext.shellReady) {
 			return;
@@ -141,10 +144,11 @@
 		}));
 	}
 
-	function openCreatePeriodDef() {
-		if (!selectedYear) {
+	function openCreatePeriodDef(values: PeriodCalendarChanges | undefined = undefined) {
+		if (!selectedYear || !authSession.schoolId) {
 			return;
 		}
+		createDefaults = values ? { schoolId: authSession.schoolId, academicYearId: selectedYear.id, values } : null;
 		modals.open('period-def', { target: selectedYear.id });
 	}
 
@@ -219,7 +223,7 @@
 							class="rounded-full"
 							disabled={disabled || !selectedYear}
 							{title}
-							onclick={openCreatePeriodDef}
+							onclick={() => openCreatePeriodDef()}
 						>
 							<Plus class="mr-1 h-4 w-4" />
 							{$t('periodDefinitions.add')}
@@ -234,16 +238,10 @@
 		<p class="rounded-2xl border border-dashed border-border/70 px-4 py-10 text-center text-sm text-muted-foreground">
 			{$t('periodDefinitions.empty')}
 		</p>
-	{:else if yearPeriodDefs.length === 0}
-		<p class="rounded-2xl border border-dashed border-border/70 px-4 py-10 text-center text-sm text-muted-foreground">
-			{$t('periodDefinitions.empty')}
-		</p>
 	{:else}
-		<PeriodDefinitionBoard
-			groups={periodGroups}
-			onEdit={openEditPeriodDef}
-			onDelete={openDeletePeriodDef}
-		/>
+		{#key `${authSession.schoolId}-${selectedYear.id}`}
+			<PeriodDefinitionCalendar groups={periodGroups} onEdit={openEditPeriodDef} onDelete={openDeletePeriodDef} onCreate={openCreatePeriodDef} />
+		{/key}
 	{/if}
 </div>
 
@@ -252,6 +250,7 @@
 		bind:open={periodDefOpen.open}
 		academicYearId={periodDefinitionModalTarget.academicYearId}
 		periodDefinition={editingPeriodDef}
+		initialValues={createDefaults?.schoolId === authSession.schoolId && createDefaults?.academicYearId === periodDefinitionModalTarget.academicYearId ? createDefaults.values : undefined}
 	/>
 {/if}
 

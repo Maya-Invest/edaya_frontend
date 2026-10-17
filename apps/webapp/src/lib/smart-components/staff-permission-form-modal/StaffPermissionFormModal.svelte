@@ -135,7 +135,7 @@
 	submitDisabled={!canSubmit}
 	onSubmit={submit}
 >
-	<div class="space-y-4">
+	<div class="space-y-8">
 		{#if modalState.loading && catalog.length === 0}
 			<div class="flex items-center justify-center py-8" role="status">
 				<LoaderCircle class="h-5 w-5 animate-spin text-primary" />
@@ -143,7 +143,7 @@
 		{:else}
 			<div class="space-y-2">
 				<div class="flex flex-wrap items-center gap-2">
-					<Label for="permission-select">{$t('roles.permissionField')}</Label>
+					<Label for="permission-select" class="font-display text-base font-bold text-foreground">{$t('roles.permissionField')}</Label>
 					<PermissionScopeTypes entry={selectedEntry} />
 				</div>
 				<select
@@ -160,10 +160,12 @@
 			</div>
 
 			{#if selectedEntry?.scopePolicy.mode === 'resources'}
-				<label class="flex items-center gap-2 text-sm"><Checkbox bind:checked={useDefaultScopes} />{$t('staff.includeDefaultScopes')}</label>
-				<p class="text-xs text-muted-foreground">{$t('staff.defaultScopeAdditiveHint')}</p>
-				<Label>{$t('staff.customScopes')}</Label>
-				<PermissionScopeSelections bind:scopes grains={selectedEntry ? permissionSelectionGrains(selectedEntry) : []} active={open} />
+				<div class="space-y-3">
+					<label class="flex items-center gap-2 text-sm"><Checkbox bind:checked={useDefaultScopes} />{$t('staff.includeDefaultScopes')}</label>
+					<p class="text-xs text-muted-foreground">{$t('staff.defaultScopeAdditiveHint')}</p>
+					<h4 class="font-display text-base font-bold text-foreground">{$t('staff.customScopes')}</h4>
+					<PermissionScopeSelections bind:scopes grains={selectedEntry ? permissionSelectionGrains(selectedEntry) : []} active={open} />
+				</div>
 			{/if}
 			{#if reviewed && preview.report}<PermissionResolutionPreview report={preview.report} />{/if}
 		{/if}

@@ -17,6 +17,7 @@ const secondProfileId = `${profileId}-second`;
 let secondProfileSaved = false;
 let secondBindingSaved = false;
 let manualId = '';
+const displayAssignmentIds: string[] = [];
 let createdStaffId = '';
 let createdBinding = false;
 ensurePlaywrightChromium();
@@ -144,6 +145,14 @@ try {
 	await waitForMutationDialog(page);
 	const createdGrants = await request('entities/staff-permission-assignments/list', { staffId: createdStaffId, academicYearId: year });
 	assert.deepEqual(createdGrants.map((row: any) => row.permission).sort(), ['GRADE_MANAGE', 'STAFF_READ']);
+	await page.goto(`${base}/school/staff/${createdStaffId}/permissions`);
+	const emptyAdditional = page.getByTestId('staff-additional-permissions');
+	await emptyAdditional.waitFor();
+	assert.match(await emptyAdditional.getByTestId('additional-permission-count').innerText(), /^0 /);
+	assert.equal(await emptyAdditional.locator('button[aria-expanded]').getAttribute('aria-expanded'), 'false');
+	await emptyAdditional.locator('button[aria-expanded]').press('Enter');
+	assert(await emptyAdditional.getByText(/no permissions|aucune permission/i).isVisible());
+
 
 	await open('default-scopes');
 	assert.equal(await page.getByRole('dialog').getByText(/Whole school|Toute l.école/i).count(), 0);
@@ -172,6 +181,12 @@ try {
 	assert.deepEqual(binding.customScopes, []);
 	assert.equal(binding.useDefaultScopes, true);
 
+	// Explicit display fixtures keep this journey independent of seeded manual grants.
+	for (const [permission, classGroupId] of [['GRADE_SCALE_CONFIGURE', ''], ['ASSESSMENT_READ', 'ci-3a'], ['ASSESSMENT_READ', 'ci-4a']]) {
+		const id = `permission-display-${crypto.randomUUID()}`;
+		await request('commands/assign-staff-permission', { id, staffId, schoolId, academicYearId: year, permission, status: 'active', useDefaultScopes: false, customScopes: classGroupId ? [{ kind: 'class_group', classGroupId }] : [] });
+		displayAssignmentIds.push(id);
+	}
 	// Two independent disclosures; duplicate grants yield one tag per typed scope.
 	await request('commands/configure-permission-profile', { id: secondProfileId, schoolId, name: secondProfileId, permissions: ['STAFF_READ', 'GRADE_MANAGE'] });
 	secondProfileSaved = true;
@@ -186,6 +201,17 @@ try {
 	assert.equal(await page.getByTestId('drawer-tab-bar').getByRole('link').count(), 2);
 	assert.equal(await page.getByRole('link', { name: /manage permissions|gérer les permissions/i }).count(), 0);
 	assert.equal(await disclosure.getAttribute('aria-expanded'), 'false');
+	const additional = page.getByTestId('staff-additional-permissions');
+	const additionalToggle = additional.locator('button[aria-expanded]');
+	assert.equal(await additionalToggle.getAttribute('aria-expanded'), 'false', 'Changing staff resets additional expansion');
+	assert.equal(await additional.locator('[data-permission-category]:visible').count(), 0);
+	await additionalToggle.press('Space');
+	assert.equal(await additionalToggle.getAttribute('aria-expanded'), 'true');
+	const assignmentIds = await additional.locator('[data-assignment-id]').evaluateAll(rows => rows.map(row => row.getAttribute('data-assignment-id')));
+	assert.equal(new Set(assignmentIds).size, assignmentIds.length, 'Every manual grant retains its own row');
+	assert.equal(await additional.locator('li[data-permission="ASSESSMENT_READ"]').count(), 2, 'Repeated permissions remain separate assignments');
+	assert.equal(await disclosure.getAttribute('aria-expanded'), 'false', 'Additional card must not open profiles');
+
 	assert.equal(await card.getByTestId('scope-tag').count(), 1);
 	assert.equal(await second.getByTestId('scope-tag').count(), 0, 'Fully shadowed profiles have no effective scopes');
 	await disclosure.focus();
@@ -200,6 +226,7 @@ try {
 	await second.getByTestId('scope-tag').first().waitFor();
 	assert.equal(await card.getByTestId('scope-tag').count(), 0);
 	assert.equal(await disclosure.getAttribute('aria-expanded'), 'true', 'Reordering preserves expansion by binding');
+	assert.equal(await additionalToggle.getAttribute('aria-expanded'), 'true', 'Same-context mutations preserve additional expansion');
 	await uiCommand(page, '/commands/reorder-staff-permission-profiles', () => second.getByRole('button', { name: /move.*down|descendre/i }).click());
 	await card.getByTestId('scope-tag').first().waitFor();
 	await card.getByRole('button', { name: /^(edit|modifier)$/i }).click();
@@ -214,6 +241,8 @@ try {
 	await disclosure.click();
 	await page.screenshot({ path: '/private/tmp/staff-permissions-mobile.png' });
 	assert(await card.evaluate(element => element.scrollWidth <= element.clientWidth), 'Profile content must wrap on mobile');
+	assert(await additional.evaluate(element => element.scrollWidth <= element.clientWidth), 'Grouped additional permissions must wrap on mobile');
+	assert.equal(await additionalToggle.getAttribute('aria-expanded'), 'true');
 	await page.setViewportSize({ width: 1280, height: 900 });
 	await page.evaluate(() => localStorage.setItem('lang', 'en'));
 	await page.reload();
@@ -221,10 +250,21 @@ try {
 	assert.deepEqual((await card.getByTestId('scope-tag').allTextContents()).map(text => text.trim()).sort(), ['All classes']);
 	await disclosure.click();
 	assert.equal((await card.locator('[data-permission="GRADE_MANAGE"] [data-scope-type="class_group"]').textContent())?.trim(), 'Class group');
+	await additionalToggle.click();
+	const englishCategories = await additional.locator('[data-permission-category] h4').allTextContents();
+	assert(englishCategories.length > 0);
+	assert(englishCategories.every(label => label !== label.toUpperCase()), 'Category headings use localized sentence case');
+	const enlarged = await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+	assert(await additional.evaluate(element => element.scrollWidth <= element.clientWidth), 'Additional permissions must wrap with enlarged text');
+	await page.screenshot({ path: '/private/tmp/staff-additional-permissions-enlarged.png' });
+	await enlarged.evaluate(element => element.parentNode?.removeChild(element));
 	await page.screenshot({ path: '/private/tmp/staff-permissions-desktop-en.png' });
 	await page.evaluate(() => localStorage.setItem('lang', 'fr'));
 	await page.reload();
 	await card.getByTestId('scope-tag').first().waitFor();
+	await additionalToggle.click();
+	const frenchCategories = await additional.locator('[data-permission-category] h4').allTextContents();
+	assert(frenchCategories.length === englishCategories.length && frenchCategories.some((label, index) => label !== englishCategories[index]), 'Categories translate in French without changing grouping');
 	await request('commands/remove-staff-permission-profile', { staffId, profileId: secondProfileId, academicYearId: year });
 	secondBindingSaved = false;
 
@@ -256,6 +296,26 @@ try {
 	assert(manualPreview.resolution.warnings.some((row: any) => row.permission === 'GRADE_READ' && row.reason === 'missing_scope'));
 	manualId = (await save('assign-staff-permission')).id;
 	manualSaved = true;
+	await additional.getByTestId('additional-permission-warning-summary').waitFor();
+	assert.equal(await additionalToggle.getAttribute('aria-expanded'), 'false');
+	await additionalToggle.press('Enter');
+	const manualRow = additional.locator(`[data-assignment-id="${manualId}"]`);
+	await manualRow.waitFor();
+	assert.equal(await manualRow.locator('..').locator('..').getAttribute('data-permission-category'), 'ASSESSMENT');
+	const warnedRows = additional.locator('[data-assignment-id]').filter({ has: page.getByTestId('permission-scope-warning') });
+	assert.match(await additional.getByTestId('additional-permission-warning-summary').innerText(), new RegExp(`^${await warnedRows.count()} `));
+	await manualRow.getByRole('button', { name: /edit permission|modifier la permission/i }).click();
+	await page.getByRole('dialog').waitFor();
+	assert.equal(new URL(page.url()).searchParams.get('modalTarget'), manualId);
+	await page.keyboard.press('Escape');
+	await page.getByRole('dialog').waitFor({ state: 'hidden' });
+	assert.equal(await additionalToggle.getAttribute('aria-expanded'), 'true');
+	await manualRow.getByRole('button', { name: /delete|supprimer/i }).click();
+	await page.getByRole('dialog').waitFor();
+	assert.equal(new URL(page.url()).searchParams.get('modalTarget'), manualId);
+	await page.keyboard.press('Escape');
+	await page.getByRole('dialog').waitFor({ state: 'hidden' });
+
 	await open('default-scopes');
 	const restored = page.getByRole('dialog').locator('[data-scope-grain="class_group"]');
 	await restored.locator('summary').click();
@@ -301,6 +361,8 @@ catch (error) {
 	throw error;
 }
 finally {
+	for (const assignmentId of displayAssignmentIds)
+		await request('commands/remove-staff-permission', { assignmentId });
 	if (secondBindingSaved)
 		await request('commands/remove-staff-permission-profile', { staffId, profileId: secondProfileId, academicYearId: year });
 	if (secondProfileSaved)

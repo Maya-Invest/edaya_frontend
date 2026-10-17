@@ -10,8 +10,9 @@
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
-	import { t } from '$lib/i18n';
-	import { CalendarRange, ChevronDown, Plus } from '$lib/icons';
+	import { formatDateInput, formatLocaleDate } from '$lib/date/format';
+	import { locale, t } from '$lib/i18n';
+	import { ChevronRight, Plus } from '$lib/icons';
 	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { toast } from '$lib/toast.svelte';
@@ -257,37 +258,54 @@
 			{@const open = academicPage.expandedYear === year.id}
 			{@const yearPeriods = periodsFor(year.id)}
 			<section class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-				<button
-					type="button"
-					class="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-secondary/40"
-					onclick={() => academicPage.setExpandedYear(open ? null : year.id)}
-				>
-					<CalendarRange class="h-4 w-4 shrink-0 text-muted-foreground" />
-					<div class="min-w-0 flex-1">
-						<div class="flex flex-wrap items-center gap-2">
-							<h3 class="font-display font-semibold">{year.label}</h3>
-							<span
-								class={cn(
-									'rounded-full px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase tracking-wide',
-									year.status === 'published'
-										? 'bg-accent/15 text-accent-foreground'
-										: year.status === 'archived'
-										? 'bg-muted text-muted-foreground'
-										: 'bg-secondary text-muted-foreground',
-								)}
-							>
-								{yearStatusLabel(year.status)}
-							</span>
+				<div class="flex flex-wrap items-center gap-x-3 px-3">
+					<button
+						type="button"
+						class="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-4 text-left transition hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+						aria-expanded={open}
+						aria-controls={open ? `academic-year-periods-${year.id}` : undefined}
+						onclick={() => academicPage.setExpandedYear(open ? null : year.id)}
+					>
+						<ChevronRight aria-hidden="true" class={cn('h-4 w-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none', open && 'rotate-90')} />
+						<div class="min-w-0 flex-1">
+							<div class="flex flex-wrap items-center gap-2">
+								<h3 class="font-display font-semibold">{year.label}</h3>
+								<span
+									class={cn(
+										'rounded-full px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase tracking-wide',
+										year.status === 'published'
+											? 'bg-accent/15 text-accent-foreground'
+											: year.status === 'archived'
+											? 'bg-muted text-muted-foreground'
+											: 'bg-secondary text-muted-foreground',
+									)}
+								>
+									{yearStatusLabel(year.status)}
+								</span>
+							</div>
+							<p class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-sans text-xs leading-relaxed text-muted-foreground">
+								<time class="whitespace-nowrap" datetime={formatDateInput(year.startDate)}>{formatLocaleDate(year.startDate, $locale, { dateStyle: 'medium' })}</time>
+								<span>–</span>
+								<time class="whitespace-nowrap" datetime={formatDateInput(year.endDate)}>{formatLocaleDate(year.endDate, $locale, { dateStyle: 'medium' })}</time>
+							</p>
 						</div>
-						<p class="mt-0.5 font-sans tabular-nums text-xs text-muted-foreground">
-							{year.startDate} → {year.endDate}
-						</p>
-					</div>
-					<ChevronDown class={cn('h-4 w-4 transition-transform', open && 'rotate-180')} />
-				</button>
+					</button>
+					{#if year.status === 'published'}
+						<div class="ml-auto py-2 pr-2">
+							<Button
+								size="sm"
+								variant="outline"
+								class="rounded-full"
+								onclick={() => openArchiveYear(year.id)}
+							>
+								{$t('academic.archiveYear')}
+							</Button>
+						</div>
+					{/if}
+				</div>
 
 				{#if open}
-					<div class="border-t border-border px-5 py-4">
+					<div id={`academic-year-periods-${year.id}`} class="border-t border-border px-5 py-4">
 						{#if year.status !== 'published'}
 							<div class="mb-4 flex justify-end">
 								<Button
@@ -298,17 +316,6 @@
 									onclick={() => modals.open('publish-year', { target: year.id })}
 								>
 									{$t('academic.publishYear')}
-								</Button>
-							</div>
-						{:else if year.status === 'published'}
-							<div class="mb-4 flex justify-end">
-								<Button
-									size="sm"
-									variant="outline"
-									class="rounded-full"
-									onclick={() => openArchiveYear(year.id)}
-								>
-									{$t('academic.archiveYear')}
 								</Button>
 							</div>
 						{/if}
@@ -323,8 +330,10 @@
 								>
 									<div>
 										<p class="text-sm font-medium">{period.label}</p>
-										<p class="font-sans tabular-nums text-[11px] text-muted-foreground">
-											{period.range} · {period.startDate} → {period.endDate}
+										<p class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-sans text-xs leading-relaxed text-muted-foreground">
+											<time class="whitespace-nowrap" datetime={formatDateInput(period.startDate)}>{formatLocaleDate(period.startDate, $locale, { dateStyle: 'medium' })}</time>
+											<span>–</span>
+											<time class="whitespace-nowrap" datetime={formatDateInput(period.endDate)}>{formatLocaleDate(period.endDate, $locale, { dateStyle: 'medium' })}</time>
 										</p>
 									</div>
 									<div class="flex items-center gap-2">

@@ -132,11 +132,11 @@
 		<span class="text-muted-foreground">{$t('permissionProfiles.description')}</span>
 		<Input bind:value={description} />
 	</label>
-	<div class="space-y-3">
+	<div class="space-y-8">
 		<p class="text-xs text-muted-foreground">{$t('permissionProfiles.checklistHint')}</p>
 		{#each groupedEntries as group (group.key)}
 			<div class="space-y-2">
-				<p class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{formatPermissionGroupLabel(group.key, $t)}</p>
+				<h3 class="font-display text-base font-bold text-foreground">{formatPermissionGroupLabel(group.key, $t)}</h3>
 				<div class="space-y-1.5">
 					{#each group.entries as entry (entry.permission)}
 						<label class="flex items-start gap-2 rounded-lg px-1 py-1 text-sm">

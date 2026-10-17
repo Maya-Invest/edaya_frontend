@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { formatPermissionGroupLabel, permissionGroupKey, skippedPermissionsByProfile } from '../../../../../src/lib/api/staff-permission-profiles-data';
+import { en } from '../../../../../src/lib/i18n/dictionaries/en';
 import { profilePermissionGroups } from '../../../../../src/routes/(app)/configuration/permission-profiles/lib/permission-profiles-helpers';
 
 describe('permission profile route helpers', () => {
@@ -65,5 +66,5 @@ it('groups assessments with marks while keeping shared grading configuration sep
 		['ACADEMIC', ['GRADE_SCALE_CONFIGURE']],
 	]);
 	expect(permissionGroupKey('ACADEMIC_CATALOG_READ')).toBe('ACADEMIC');
-	expect(formatPermissionGroupLabel('ASSESSMENT', key => key)).toBe('permissionGroup.ASSESSMENT');
+	expect(formatPermissionGroupLabel('ASSESSMENT', key => en[key] ?? key)).toBe('Assessments and marks');
 });

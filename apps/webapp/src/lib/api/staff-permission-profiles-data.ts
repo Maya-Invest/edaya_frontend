@@ -22,13 +22,16 @@ export function permissionGroupKey(permission: string): string {
 }
 
 export function formatPermissionGroupLabel(key: string, translate: (key: string) => string): string {
-	return key === 'ASSESSMENT' || key === 'ACADEMIC' ? translate(`permissionGroup.${key}`) : key;
+	const translationKey = `permissionGroup.${key}`;
+	const label = translate(translationKey);
+	return label === translationKey ? key.charAt(0).toUpperCase() + key.slice(1).toLowerCase().replaceAll('_', ' ') : label;
 }
 
-export function groupCatalogEntries(
-	entries: readonly PermissionCatalogEntry[],
-): { key: string; entries: PermissionCatalogEntry[] }[] {
-	const groups = new Map<string, PermissionCatalogEntry[]>();
+/** Preserve source order and individual assignments, including repeated or unknown codes. */
+export function groupPermissionEntries<T extends { permission: string }>(
+	entries: readonly T[],
+): { key: string; entries: T[] }[] {
+	const groups = new Map<string, T[]>();
 	for (const entry of entries) {
 		const key = permissionGroupKey(entry.permission);
 		const list = groups.get(key) ?? [];
@@ -36,6 +39,10 @@ export function groupCatalogEntries(
 		groups.set(key, list);
 	}
 	return [...groups.entries()].map(([key, groupEntries]) => ({ key, entries: groupEntries }));
+}
+
+export function groupCatalogEntries(entries: readonly PermissionCatalogEntry[]) {
+	return groupPermissionEntries(entries);
 }
 
 export function boundStaffCount(

@@ -4,6 +4,7 @@ import {
 	assertFilterSelectShellOrSkip,
 	assertListShell,
 	assertListShellOrSkip,
+	assertReportCardWorkspace,
 	assertStructureListShell,
 } from '../support/assertions';
 import { ATTENDANCE_EXPORT_NAME, CLASS_6A, CLASS_6B } from '../support/constants';
@@ -48,16 +49,11 @@ export async function runListShellScenes(ctx: DemoContext): Promise<void> {
 	});
 	await assertFilterSelectShell(ctx, 'DC8', 'Activities FilterSelect + More menu');
 
-	await visitOrSkip(ctx, `${base}/configuration/structure/details`, 'DC9', 'Report card defs filter select', {
+	await visit(ctx, `${base}/configuration/structure/details`, 'DC9', 'Report card models workspace', {
 		pathPrefix: '/configuration/structure/details',
-		skipOnFail: 'Director role may lack REPORT_CARD_CONFIGURE',
 	});
-	await assertFilterSelectShellOrSkip(
-		ctx,
-		'DC9',
-		'Report card definitions FilterSelect + More menu',
-		'Director role may lack REPORT_CARD_CONFIGURE',
-	);
+	// This seeded director has level access but no REPORT_CARD_CONFIGURE grant.
+	await assertReportCardWorkspace(ctx, 'DC9', 'Level navigation preserves report configuration restrictions', false);
 
 	await visit(ctx, `${base}/configuration/structure/subjects`, 'DC11', 'Subjects list shell', {
 		pathPrefix: '/configuration/structure/subjects',

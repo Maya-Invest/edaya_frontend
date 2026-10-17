@@ -25,6 +25,10 @@ Poppins Semibold is for headings; Inter Regular/Medium/Semibold/Bold is for body
 
 Use the 4/8/12/16/24/32/48 spacing scale. Retain established rounded primitives: 12 controls, 14 base, 16 cards, 24 overlays. Keep shadows restrained and neutral. Useful existing motion stays, with reduced-motion support; avoid decorative perpetual animation.
 
+## Expandable content
+
+Place the disclosure chevron at the leading (left in EN/FR) edge of an expandable header, before its label. Point right when collapsed and down when expanded. Use a keyboard-operable toggle with `aria-expanded`, visible focus and a minimum 44px target. Keep header actions as separate sibling controls on the right, outside the toggle, so actions do not expand or collapse content. Academic year cards keep Archive year visible in this fixed header when published.
+
 ## Artwork
 
 The supplied outlined EDAYA logos are authoritative artwork. Never reconstruct the wordmark using text or substitute an academic icon for the product logo. Use vertical artwork in spacious sign-in areas, horizontal artwork in headers/sidebar areas, and symbols only in compact contexts already identified as EDAYA. Minimum rendered artwork widths: vertical 88, horizontal 128, symbol 32. The wrapper reserves clear space; do not crop its padding. Favicons alone may use the symbol at platform-required 16/24/32px. No recoloring, stretching, shadows on the artwork, or text laid over it. White artwork belongs on a dark or royal-blue surface.

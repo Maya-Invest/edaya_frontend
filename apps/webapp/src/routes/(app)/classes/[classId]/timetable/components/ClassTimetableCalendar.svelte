@@ -4,8 +4,9 @@
 	import type { EventCss, CalendarInstanceApi } from '@svar-ui/svelte-calendar';
 	import { browser } from '$app/environment';
 	import { afterNavigate } from '$app/navigation';
-	import { lang, t } from '$lib/i18n';
+	import SvarCalendarLocale from '$lib/components/calendar/SvarCalendarLocale.svelte';
 
+	import { lang, t } from '$lib/i18n';
 	import {
 		calendarSlotFromDates,
 		formatPlanningSlotLabel,
@@ -24,7 +25,6 @@
 	import { getPlanningTimetableState, PlanningTimetableState, setPlanningTimetableState } from '../planning-timetable-state.svelte';
 	import PlanningEventContent from './PlanningEventContent.svelte';
 	import PlanningRescheduleConfirmModal from './PlanningRescheduleConfirmModal.svelte';
-	import SvarCalendarLocale from './SvarCalendarLocale.svelte';
 
 	const actionState = getPlanningTimetableState();
 
