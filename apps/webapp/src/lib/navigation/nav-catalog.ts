@@ -124,30 +124,9 @@ export const CLASS_NAV_DEFS: NavItemDefinition[] = [
 ];
 
 export const FINANCE_NAV_DEFS: NavItemDefinition[] = [
-	{
-		key: 'fees',
-		labelKey: 'finance.fees',
-		href: '/finance/fees',
-		permissions: ['FINANCIAL_CONFIG_READ'],
-	},
-	{
-		key: 'billing',
-		labelKey: 'finance.billing',
-		href: '/finance/billing',
-		permissions: ['FINANCIAL_CONFIG_READ', 'PAYMENT_READ'],
-	},
-	{
-		key: 'payment',
-		labelKey: 'finance.payment',
-		href: '/finance/payment',
-		permissions: ['PAYMENT_READ', 'FINANCIAL_CONFIG_READ'],
-	},
-	{
-		key: 'reconciliation',
-		labelKey: 'finance.reconciliation',
-		href: '/finance/reconciliation',
-		permissions: [FINANCIAL_REPORT_READ_PERMISSION],
-	},
+	{ key: 'fees', labelKey: 'finance.fees', href: '/finance/fees', permissions: ['FINANCIAL_CONFIG_READ', 'PAYMENT_READ'] },
+	{ key: 'billing', labelKey: 'finance.billing', href: '/finance/billing', permissions: ['PAYMENT_READ'] },
+	{ key: 'payment', labelKey: 'finance.payment', href: '/finance/payment', permissions: ['PAYMENT_READ'] },
 ];
 
 export const CONFIG_NAV_DEFS: NavItemDefinition[] = [
@@ -207,7 +186,7 @@ export const CONFIG_NAV_DEFS: NavItemDefinition[] = [
 		key: 'tools',
 		labelKey: 'config.tools',
 		href: '/configuration/tools',
-		permissions: ['STUDENT_CREATE', 'SCHOOL_STRUCTURE_READ'],
+		permissions: ['STUDENT_CREATE', 'SCHOOL_STRUCTURE_READ', FINANCIAL_REPORT_READ_PERMISSION],
 	},
 ];
 

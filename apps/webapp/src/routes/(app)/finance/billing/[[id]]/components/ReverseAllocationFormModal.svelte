@@ -9,6 +9,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { formatMinorUnits } from '$lib/finance/money';
 	import { locale, t } from '$lib/i18n';
+	import { hasPermission } from '$lib/permissions';
 	import { get } from 'svelte/store';
 	import { getBillingPageState } from '../../billing-page.svelte';
 
@@ -71,6 +72,8 @@
 	});
 
 	async function submit() {
+		if (busy || !hasPermission('PAYMENT_ALLOCATE', { studentId: billing.studentId, classId: billing.classId }) || billing.paid <= 0)
+			return;
 		if (!canSubmit || !selectedAllocation) {
 			return;
 		}

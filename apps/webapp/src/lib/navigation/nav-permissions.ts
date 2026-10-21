@@ -86,6 +86,10 @@ export function canAccessPath(
 	grants: ActionGrantsSnapshot | null,
 	ctx: NavPermissionContext = {},
 ): boolean {
+	if (pathname === '/configuration/tools/finance-checks' || pathname === '/finance/reconciliation') {
+		return canAccessNavItem({ permissions: ['FINANCIAL_REPORT_READ'] }, grants, ctx);
+	}
+
 	if (pathname === '/dashboard' || pathname.startsWith('/dashboard/') || pathname.startsWith('/account')) {
 		return true;
 	}

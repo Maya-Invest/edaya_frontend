@@ -1,13 +1,19 @@
 <script lang="ts">
+	import type { FeeListFilters } from '$lib/list/list-url-filters';
 	import type { Fee } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { CATALOG_CATEGORIES } from '$lib/api/finance-types';
+	import { financeReadKey } from '$lib/api/finance-workspace';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import DataState from '$lib/components/ui/DataState.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
+	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
+	import ListEntityTable from '$lib/components/ui/ListEntityTable.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
+	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
@@ -19,16 +25,30 @@
 	import { readFeeListFilters, writeFeeListFilters } from '$lib/list/list-url-filters';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appGoto } from '$lib/navigation/app-navigation';
+	import { openDetailDrawer } from '$lib/navigation/route-surface-navigation';
+	import { hasPermission } from '$lib/permissions';
+	import { SvelteURL } from 'svelte/reactivity';
 	import { get } from 'svelte/store';
-	import FinanceSubnav from '../../components/FinanceSubnav.svelte';
+	import FinanceOverview from '../../components/FinanceOverview.svelte';
 	import { getFeesPageState } from '../fees-page.svelte';
 	import FeeFormModal from './FeeFormModal.svelte';
 
 	const feesPage = getFeesPageState();
+	const catalogQuery = feesPage.queryListPage();
+	const overviewQuery = feesPage.queryOverview();
+	let visibleCount = $state(50);
+	function selectFee(id: string) {
+		const url = new SvelteURL($page.url);
+		url.pathname = `/finance/fees/${encodeURIComponent(id)}`;
+		url.searchParams.delete('modal');
+		url.searchParams.delete('modalTarget');
+		openDetailDrawer(url.pathname + url.search, $page.url.pathname + $page.url.search);
+	}
+
 	const fees = $derived(feesPage.fees);
 	const initialFilters = $derived(readFeeListFilters($page.url));
 
-	const listFilters = new ListFiltersState<{ q: string; category: string }>(
+	const listFilters = new ListFiltersState<FeeListFilters>(
 		{
 			getUrl: () => $page.url,
 			write: writeFeeListFilters,
@@ -37,8 +57,11 @@
 		() => readFeeListFilters($page.url),
 	);
 
+	const statusFilter = $derived(listFilters.values.status);
+
 	const modals = createUrlSyncedModals({
-		allowed: ['create', 'edit', 'archive'],
+		allowed: () => hasPermission('FINANCIAL_CATALOG_MANAGE') ? ['create', 'edit', 'archive', 'activate'] as const : [],
+		owned: ['create', 'edit', 'archive', 'activate'],
 		getUrl: () => $page.url,
 	});
 	$effect(() => {
@@ -46,6 +69,8 @@
 	});
 	const createOpen = bindUrlModal(modals, 'create');
 	const editOpen = bindUrlModal(modals, 'edit');
+	const activateOpen = bindUrlModal(modals, 'activate');
+	const activationTarget = $derived(modals.active === 'activate' && modals.target ? feesPage.feeFor(modals.target) : undefined);
 	const archiveOpen = bindUrlModal(modals, 'archive');
 
 	let archiveBusy = $state(false);
@@ -59,6 +84,8 @@
 
 	const filteredFees = $derived(
 		fees.filter((fee) => {
+			if (statusFilter !== 'all' && fee.status !== statusFilter)
+				return false;
 			if (listFilters.values.category !== 'all' && fee.category !== listFilters.values.category) {
 				return false;
 			}
@@ -80,42 +107,34 @@
 	});
 
 	$effect(() => {
-		if (!listFilters.ready) {
+		if (!modals.ready || !modals.target || !['edit', 'archive', 'activate'].includes(modals.active ?? ''))
 			return;
-		}
-		void listFilters.values.category;
-		listFilters.scheduleSync();
-	});
-
-	$effect(() => {
-		if (!modals.ready) {
-			return;
-		}
-		if (modals.active === 'create') {
-			if (modals.target !== null) {
-				modals.open('create');
-			}
-			return;
-		}
-		if (
-			(modals.active === 'edit' && !editingFee)
-			|| (modals.active === 'archive' && !archiveTarget)
-		) {
-			modals.close();
+		if (!$page.params.feeId) {
+			const url = new SvelteURL($page.url);
+			url.pathname = `/finance/fees/${encodeURIComponent(modals.target)}`;
+			appGoto(url.pathname + url.search, { replaceState: true });
 		}
 	});
 
 	function openEdit(fee: Fee) {
-		modals.open('edit', { target: fee.id });
+		const url = new SvelteURL($page.url);
+		url.pathname = `/finance/fees/${encodeURIComponent(fee.id)}`;
+		url.searchParams.set('modal', 'edit');
+		url.searchParams.set('modalTarget', fee.id);
+		openDetailDrawer(url.pathname + url.search, $page.url.pathname + $page.url.search);
 	}
 
 	function openArchive(fee: Fee) {
-		modals.open('archive', { target: fee.id });
+		const url = new SvelteURL($page.url);
+		url.pathname = `/finance/fees/${encodeURIComponent(fee.id)}`;
+		url.searchParams.set('modal', 'archive');
+		url.searchParams.set('modalTarget', fee.id);
+		openDetailDrawer(url.pathname + url.search, $page.url.pathname + $page.url.search);
 	}
 
 	async function confirmArchive() {
 		const target = archiveTarget;
-		if (!target) {
+		if (archiveBusy || !target || target.status !== 'active' || !hasPermission('FINANCIAL_CATALOG_MANAGE')) {
 			return;
 		}
 		archiveBusy = true;
@@ -133,12 +152,25 @@
 		}
 	}
 
-	async function activateFee(fee: Fee) {
-		await feesPage.activateFee({
-			feeId: fee.id,
-			successMessage: get(t)('fee.toastActivated', { name: fee.name }),
-		});
+	function activateFee(fee: Fee) {
+		const url = new SvelteURL($page.url);
+		url.pathname = `/finance/fees/${encodeURIComponent(fee.id)}`;
+		url.searchParams.set('modal', 'activate');
+		url.searchParams.set('modalTarget', fee.id);
+		openDetailDrawer(url.pathname + url.search, $page.url.pathname + $page.url.search);
 	}
+	async function confirmActivate() {
+		const fee = activationTarget;
+		if (archiveBusy || !fee || fee.status === 'active' || !hasPermission('FINANCIAL_CATALOG_MANAGE'))
+			return;
+		archiveBusy = true;
+		try {
+			if (await feesPage.activateFee({ feeId: fee.id, successMessage: $t('fee.toastActivated', { name: fee.name }) }))
+				activateOpen.open = false;
+		}
+		finally { archiveBusy = false; }
+	}
+
 </script>
 
 <div class="animate-fade-in space-y-6">
@@ -147,14 +179,16 @@
 			<ListSearchField bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
 		{/snippet}
 		{#snippet filters()}
-			<div class="flex flex-wrap items-center gap-2">
-				<FinanceSubnav active="fees" />
-				<FilterSelect
-					bind:value={listFilters.values.category}
-					options={categoryOptions}
-					class="h-9 min-w-[10rem]"
-				/>
-			</div>
+			<FilterPanel activeCount={Number(listFilters.values.category !== 'all') + Number(statusFilter !== 'all')}>
+				<label class="block space-y-2 text-sm">
+					<span>{$t('fee.category')}</span>
+					<FilterSelect aria-label={$t('fee.category')} value={listFilters.values.category} onchange={value => listFilters.patchImmediate({ category: value })} options={categoryOptions} class="w-full" />
+				</label>
+				<label class="block space-y-2 text-sm">
+					<span>{$t('fee.status')}</span>
+					<FilterSelect aria-label={$t('fee.status')} value={statusFilter} options={['all', 'active', 'draft', 'archived'].map(value => ({ value, label: value === 'all' ? $t('filter.all') : $t(`fee.status.${value}`) }))} class="w-full" onchange={value => listFilters.patchImmediate({ status: value })} />
+				</label>
+			</FilterPanel>
 		{/snippet}
 		{#snippet primary()}
 			<PermissionGate
@@ -194,24 +228,26 @@
 		{/snippet}
 	</ListPageHeader>
 
-	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-		<div
-			class="grid grid-cols-12 gap-4 border-b border-border bg-secondary/40 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
-		>
-			<div class="col-span-4">{$t('fee.name')}</div>
-			<div class="col-span-2">{$t('fee.category')}</div>
-			<div class="col-span-2">{$t('fee.status')}</div>
-			<div class="col-span-3 text-right">{$t('fee.amount')}</div>
-			<div class="col-span-1"></div>
-		</div>
-		<ul>
-			{#if filteredFees.length === 0}
-				<li class="px-5 py-12 text-center text-sm text-muted-foreground">
-					{$t('dataState.emptyDescription')}
-				</li>
-			{:else}
-				{#each filteredFees as fee (fee.id)}
-					<li class="grid grid-cols-12 items-center gap-4 border-b border-border px-5 py-4 last:border-b-0">
+	{#if hasPermission('PAYMENT_READ')}
+		<PageQuery query={overviewQuery} cacheKey={() => financeReadKey('overview')} cache={false}>
+			{#snippet children(data)}
+				<DataState status={data.status} errorMessage={data.errorMessage}>
+					{#if data.overview}<FinanceOverview overview={data.overview} />{/if}
+				</DataState>
+			{/snippet}
+		</PageQuery>
+	{/if}
+	<PageQuery query={catalogQuery} cache={false} cacheKey={() => financeReadKey('fee-catalog')}>
+		{#snippet children(data)}
+			<DataState status={data.status} errorMessage={data.errorMessage} preserveShell>
+				<ListEntityTable rows={filteredFees.slice(0, visibleCount)} columns={[
+					{ key: 'name', label: $t('fee.name'), span: 4 },
+					{ key: 'category', label: $t('fee.category'), span: 2 },
+					{ key: 'status', label: $t('fee.status'), span: 2 },
+					{ key: 'amount', label: $t('fee.amount'), span: 3 },
+					{ key: 'actions', label: '', span: 1 },
+				]} total={filteredFees.length} visibleCount={Math.min(visibleCount, filteredFees.length)} hasMore={visibleCount < filteredFees.length} onLoadMore={() => { visibleCount += 50; }} onRowClick={fee => selectFee(fee.id)}>
+					{#snippet row(fee)}
 						<div class="col-span-4 min-w-0">
 							<p class="truncate text-sm font-medium">{fee.name}</p>
 						</div>
@@ -224,7 +260,7 @@
 						<div class="col-span-3 text-right font-sans text-sm font-semibold tabular-nums">
 							{formatMinorUnits(fee.amount, fee.currency, $locale)}
 						</div>
-						<div class="col-span-1 flex justify-end">
+						<div class="col-span-1 flex justify-end" role="presentation" onclick={event => event.stopPropagation()} onkeydown={event => event.stopPropagation()}>
 							<PermissionGate permission="FINANCIAL_CATALOG_MANAGE">
 								{#snippet children({ disabled, title })}
 									<RowActionMenu>
@@ -248,15 +284,15 @@
 								{/snippet}
 							</PermissionGate>
 						</div>
-					</li>
-				{/each}
-			{/if}
-		</ul>
-	</div>
+					{/snippet}
+				</ListEntityTable>
+			</DataState>
+		{/snippet}
+	</PageQuery>
 </div>
 
-<FeeFormModal bind:open={createOpen.open} />
-<FeeFormModal bind:open={editOpen.open} fee={editingFee ?? undefined} />
+<FeeFormModal bind:open={createOpen.open} onCreated={selectFee} />
+{#if editingFee}<FeeFormModal bind:open={editOpen.open} fee={editingFee} />{/if}
 
 <ConfirmModal
 	bind:open={archiveOpen.open}
@@ -267,3 +303,5 @@
 	busy={archiveBusy}
 	onConfirm={confirmArchive}
 />
+
+<ConfirmModal bind:open={activateOpen.open} title={$t('fee.activate')} description={$t('finance.activateConfirm', { name: activationTarget?.name ?? '' })} confirmLabel={$t('fee.activate')} busy={archiveBusy} onConfirm={confirmActivate} />

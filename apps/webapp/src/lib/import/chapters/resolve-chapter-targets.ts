@@ -12,10 +12,12 @@ export function resolveChapterImportTarget(
 	niveau: string,
 	matiere: string,
 	context: ChapterImportValidationContext,
+	subjectId?: string,
 ): {
 	target?: ChapterImportCatalogTarget;
 	suggestions: string[];
 	levelSuggestions?: string[];
+	ambiguous?: boolean;
 } {
 	const gradeLevelLookup = buildImportGradeLevelLookup(
 		[...new Map(context.catalogTargets.map(entry => [entry.gradeLevelId, {
@@ -35,14 +37,12 @@ export function resolveChapterImportTarget(
 	}
 
 	const normalizedSubject = normalizeSubjectLookupName(matiere);
-	const match = context.catalogTargets.find(
-		entry => entry.gradeLevelId === levelResolution.gradeLevelId
-			&& normalizeSubjectLookupName(entry.subjectName) === normalizedSubject,
-	);
-
-	if (match) {
-		return { target: match, suggestions: [] };
-	}
+	const matches = context.catalogTargets.filter(entry => entry.gradeLevelId === levelResolution.gradeLevelId
+		&& (subjectId?.trim() ? entry.subjectId === subjectId.trim() : normalizeSubjectLookupName(entry.subjectName) === normalizedSubject));
+	if (matches.length === 1)
+		return { target: matches[0], suggestions: [] };
+	if (matches.length > 1)
+		return { ambiguous: true, suggestions: matches.map(entry => entry.subjectId) };
 
 	const uniqueNames = [...new Set(
 		context.catalogTargets

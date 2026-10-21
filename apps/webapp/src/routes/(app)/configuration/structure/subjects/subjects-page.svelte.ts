@@ -1,8 +1,8 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
 import type { Subject } from '$lib/types/school';
 import type { SubjectsPageSlice } from './lib/subjects-helpers';
-import { removeSubjectFromGradeLevelMutation } from '$lib/api/mutations/grade-level-subject.mutations';
 import { createScheduleMutation } from '$lib/api/mutations/schedule.mutations';
+import { removeSubjectMutation } from '$lib/api/mutations/subject-offerings.mutations';
 import { createSubjectForClassMutation, createSubjectForGradeLevelMutation, updateSubjectMutation } from '$lib/api/mutations/subject.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadSubjectCategories } from '$lib/api/subject-categories-data';
@@ -39,7 +39,7 @@ export class SubjectsPageState {
 
   performCreateSchedule = (...args: Parameters<typeof createScheduleMutation>) => createScheduleMutation(...args);
 
-  performRemoveSubjectFromGradeLevel = (...args: Parameters<typeof removeSubjectFromGradeLevelMutation>) => removeSubjectFromGradeLevelMutation(...args);
+  performRemoveSubjectFromGradeLevel = (...args: Parameters<typeof removeSubjectMutation>) => removeSubjectMutation(...args);
 
   performCreateSubjectForGradeLevel = (...args: Parameters<typeof createSubjectForGradeLevelMutation>) => createSubjectForGradeLevelMutation(...args);
 

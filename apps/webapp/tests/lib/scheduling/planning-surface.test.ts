@@ -12,12 +12,12 @@ function mockGrants(
 	permissions: readonly PlanningSurfacePermission[],
 	classIds: Partial<Record<PlanningSurfacePermission, string>> = {},
 ): ActionGrantsSnapshot {
-	return permissions.map(permission => ({ permission, source: 'manual', scopes: classIds[permission] ? [{ kind: 'class_subject', classGroupId: classIds[permission]! }] : []	}));
+	return permissions.map(permission => ({ permission, source: 'manual', scopes: classIds[permission] ? [{ kind: 'subject', gradeLevelId: 'grade', classGroupId: classIds[permission]! }] : []	}));
 }
 
 function permissionCheck(grants: ActionGrantsSnapshot) {
 	return (permission: PlanningSurfacePermission, classId: string) =>
-		checkPermission(grants, permission, { classId });
+		checkPermission(grants, permission, { classId, gradeLevelId: 'grade' });
 }
 
 describe('planning URL surface codec', () => {

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { UserScopeSelection } from '$lib/api/grant-scopes';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { permissionSelectionGrains, scopeSelectionsComplete } from '$lib/api/grant-scopes';
+	import { permissionSelectionGrains, requiresSubjectClass, scopeSelectionsComplete } from '$lib/api/grant-scopes';
 	import { authSession } from '$lib/auth/session.svelte';
 	import PermissionResolutionPreview from '$lib/components/school/PermissionResolutionPreview.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
@@ -24,6 +24,7 @@
 	let useDefaultScopes = $state(true);
 
 	const selected = $derived(staffPage.staffPermissionProfiles.find(row => row.id === profileId));
+	const subjectClassRequired = $derived(requiresSubjectClass(staffPage.permissionCatalog.filter(entry => selected?.permissions.includes(entry.permission))));
 	const grains = $derived([...new Set([
 		...staffPage.permissionCatalog.filter(entry => selected?.permissions.includes(entry.permission)).flatMap(permissionSelectionGrains),
 	])]);
@@ -32,7 +33,7 @@
 	const snapshot = $derived({ schoolId: authSession.schoolId ?? academicContext.schools[0]?.id ?? '', ...input });
 	const reviewed = $derived(preview.reviewed(snapshot));
 	$effect(() => preview.synchronize(open, snapshot));
-	const canSubmit = $derived(Boolean(selected) && scopeSelectionsComplete(customScopes));
+	const canSubmit = $derived(Boolean(selected) && scopeSelectionsComplete(customScopes, subjectClassRequired));
 	function selectProfile(id: string) {
 		profileId = id;
 		const binding = staffPage.permissionProfileBindingsForStaff(staffId).find(row => row.profileId === id);
@@ -80,7 +81,7 @@
 				<p class="text-xs text-muted-foreground">{$t('staff.defaultScopeAdditiveHint')}</p>
 				{#if useDefaultScopes && !staffPage.staffDefaultScopes(staffId).length}<p class="text-xs text-highlight">{$t('staff.noDefaultScopes')}</p>{/if}
 				<h4 class="font-display text-base font-bold text-foreground">{$t('staff.customScopes')}</h4>
-				<PermissionScopeSelections bind:scopes={customScopes} {grains} active={open} />
+				<PermissionScopeSelections {subjectClassRequired} bind:scopes={customScopes} {grains} active={open} />
 			</div>
 		{/if}
 		{#if reviewed && preview.report}<PermissionResolutionPreview report={preview.report} />{/if}

@@ -255,6 +255,7 @@
 		code: 'import.types.teacherAssignments.columns.code',
 		classe: 'import.types.teacherAssignments.columns.classe',
 		matiere: 'import.types.teacherAssignments.columns.matiere',
+		subjectId: 'import.types.teacherAssignments.columns.subjectId',
 	};
 
 	const SUBJECT_COLUMN_LABEL_KEYS: Record<string, string> = {
@@ -267,6 +268,7 @@
 	const CHAPTER_COLUMN_LABEL_KEYS: Record<string, string> = {
 		niveau: 'import.types.chapters.columns.niveau',
 		matiere: 'import.types.chapters.columns.matiere',
+		subjectId: 'import.types.chapters.columns.subjectId',
 		titre: 'import.types.chapters.columns.titre',
 		ordre: 'import.types.chapters.columns.ordre',
 		description: 'import.types.chapters.columns.description',
@@ -959,7 +961,7 @@
 			})), academicContext.gradeLevels.map(gradeLevel => ({
 				id: gradeLevel.id,
 				name: gradeLevel.name,
-			})));
+			})), academicContext.yearId ?? undefined);
 			chapterImportContext = loaded.targets;
 			existingChapterKeys = loaded.existingChapterKeys;
 		}
@@ -1557,7 +1559,7 @@
 			subjectImportResult = {
 				created: 0,
 				failed: [],
-				gradeLevelSubjectIds: [],
+				subjectIds: [],
 			};
 		}
 		finally {

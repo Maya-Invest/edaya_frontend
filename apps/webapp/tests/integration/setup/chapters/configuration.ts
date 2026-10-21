@@ -17,8 +17,8 @@ import {
 	fillLabeledInput,
 } from '../../../../scripts/qa-harness-ui';
 import { configEntityIdByName, firstIdFromLinks } from '../../../../scripts/qa-matrix-support';
-import { apiFetch, ensureNotificationTemplatesViaApi } from '../journey-api';
 import { uiCommand, waitForMutationDialog } from '../../support/ui-command';
+import { apiFetch, ensureNotificationTemplatesViaApi } from '../journey-api';
 import {
 	coverActions,
 	coverCompletedModal,
@@ -69,14 +69,10 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 			throw new Error('Subject Save stayed disabled — grade level or year missing');
 		}
 		const payloadPromise = waitForCommandPayload(page, 'configure-subject');
-		const offerPromise = waitForCommandPayload(page, 'offer-subject-to-grade-level', 20_000);
 		await submitDialog(page);
 		const closed = await waitForDialogClosed(page);
 		const payload = await payloadPromise;
-		const offeredSubject = await offerPromise;
-		let subjectId = typeof offeredSubject?.id === 'string'
-			? offeredSubject.id
-			: typeof payload?.id === 'string' ? payload.id : null;
+		let subjectId = typeof payload?.id === 'string' ? payload.id : null;
 		await waitForPageQuery(page);
 		if (!subjectId) {
 			await gotoApp(journey, `/configuration/structure/subjects${entities.gradeLevelId ? `?gradeLevel=${entities.gradeLevelId}` : ''}`);
@@ -254,7 +250,8 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 				if (minimum === 0) {
 					assert(await minimumInput.isDisabled());
 					assert.equal(await minimumInput.inputValue(), '0');
-				} else {
+				}
+				else {
 					await minimumInput.fill(String(minimum));
 				}
 				await uiCommand(page, '/commands/configure-grade-scale', () => page.getByTestId('form-modal-submit').click());

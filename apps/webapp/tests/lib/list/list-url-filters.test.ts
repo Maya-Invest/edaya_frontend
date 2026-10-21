@@ -8,6 +8,7 @@ import {
 	readClassStudentListFilters,
 	readConfigSubjectListFilters,
 	readEducatorDashboardListFilters,
+	readFeeListFilters,
 	readGradeScaleListFilters,
 	readPaymentListFilters,
 	readPlanningListFilters,
@@ -24,6 +25,7 @@ import {
 	writeClassStudentListFilters,
 	writeConfigSubjectListFilters,
 	writeEducatorDashboardListFilters,
+	writeFeeListFilters,
 	writeGradeScaleListFilters,
 	writePaymentListFilters,
 	writePlanningListFilters,
@@ -50,6 +52,13 @@ function writeWith<T extends Record<string, string>>(
 }
 
 const cases: FilterCase[] = [
+	{
+		name: 'fees',
+		read: readFeeListFilters,
+		write: writeWith(writeFeeListFilters),
+		defaults: { q: '', category: 'all', status: 'all' },
+		nonDefault: { q: 'tuition', category: 'tuition', status: 'active' },
+	},
 	{
 		name: 'calendar',
 		read: readCalendarListFilters,

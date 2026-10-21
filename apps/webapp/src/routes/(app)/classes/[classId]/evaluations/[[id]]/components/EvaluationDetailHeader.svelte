@@ -51,7 +51,7 @@
 	);
 
 	let deleteBusy = $state(false);
-	const canManage = $derived(hasPermission('ASSESSMENT_MANAGE', { classId, subject: evaluation.classSubjectId, assessmentId: evaluation.id }));
+	const canManage = $derived(hasPermission('ASSESSMENT_MANAGE', { classId, subject: evaluation.classSubjectId, subjectId: evaluationsPage.subjectsFor(classId).find(row => row.id === evaluation.classSubjectId)?.subjectId, assessmentId: evaluation.id }));
 
 	async function confirmDelete() {
 		if (!canManage)
@@ -82,7 +82,7 @@
 		</span>
 	{/snippet}
 	{#snippet actions()}
-		<PermissionGate permission="ASSESSMENT_MANAGE" {classId} subject={evaluation.classSubjectId} assessmentId={evaluation.id} mode="disable" tooltip={$t('eval.permissionCreate')}>
+		<PermissionGate permission="ASSESSMENT_MANAGE" {classId} subject={evaluation.classSubjectId} subjectId={evaluationsPage.subjectsFor(classId).find(row => row.id === evaluation.classSubjectId)?.subjectId} assessmentId={evaluation.id} mode="disable" tooltip={$t('eval.permissionCreate')}>
 			{#snippet children({ disabled, title })}
 				{#if isHomework}
 					<Button variant="outline" size="sm" class="rounded-full" {disabled} {title} onclick={() => (editOpen.open = true)}>
@@ -93,7 +93,7 @@
 		</PermissionGate>
 	{/snippet}
 	{#snippet overflow()}
-		<PermissionGate permission="ASSESSMENT_MANAGE" {classId} subject={evaluation.classSubjectId} assessmentId={evaluation.id} mode="disable" tooltip={$t('eval.permissionCreate')}>
+		<PermissionGate permission="ASSESSMENT_MANAGE" {classId} subject={evaluation.classSubjectId} subjectId={evaluationsPage.subjectsFor(classId).find(row => row.id === evaluation.classSubjectId)?.subjectId} assessmentId={evaluation.id} mode="disable" tooltip={$t('eval.permissionCreate')}>
 			{#snippet children({ disabled, title })}
 				<RowActionMenuItem
 					{disabled}

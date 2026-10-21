@@ -1,8 +1,9 @@
+import type { FilterFixtures, MatrixEntities } from '../../../scripts/qa-matrix-support';
 /**
  * Provisioned filter + modal entity setup — creates fixtures before matrix filter tests.
  */
 import type { DemoContext } from '../demo-dry-run/support/types';
-import { ensureDailyAttendanceMode } from '../demo-dry-run/support/setup';
+import type { SetupStepResult } from './journey-context';
 import {
 	assertListContains,
 	clickCreateButton,
@@ -22,10 +23,9 @@ import {
 	configEntityIdByName,
 	firstIdFromLinks,
 	waitForAppShell,
-	type FilterFixtures,
-	type MatrixEntities,
+
 } from '../../../scripts/qa-matrix-support';
-import type { SetupStepResult } from './journey-context';
+import { ensureDailyAttendanceMode } from '../demo-dry-run/support/setup';
 
 async function gotoAppPage(ctx: DemoContext, routePath: string): Promise<void> {
 	await ctx.page.goto(`${ctx.base}${routePath}`, { waitUntil: 'domcontentloaded' });
@@ -495,7 +495,7 @@ export async function setupFilterSubjects(
 		const subjectCommandResponse = page.waitForResponse(
 			res => res.request().method() === 'POST'
 				&& res.url().includes('/core/commands/')
-				&& (res.url().includes('configure-subject') || res.url().includes('offer-subject')),
+				&& res.url().includes('configure-subject'),
 			{ timeout: 45_000 },
 		);
 
@@ -509,8 +509,8 @@ export async function setupFilterSubjects(
 			const response = await subjectCommandResponse;
 			const postData = response.request().postData();
 			if (postData) {
-				const parsed = JSON.parse(postData) as { gradeLevelSubjectId?: string; id?: string };
-				subjectId = parsed.gradeLevelSubjectId ?? parsed.id ?? null;
+				const parsed = JSON.parse(postData) as { id?: string };
+				subjectId = parsed.id ?? null;
 			}
 		}
 		catch {
@@ -651,7 +651,9 @@ export async function runFilterEntitySetup(
 
 export function filterFixturesReady(fixtures: FilterFixtures, key: keyof FilterFixtures): boolean {
 	const value = fixtures[key];
-	if (!value) return false;
-	if (typeof value === 'string') return value.length > 0;
+	if (!value)
+		return false;
+	if (typeof value === 'string')
+		return value.length > 0;
 	return Object.keys(value).length > 0;
 }

@@ -235,7 +235,7 @@ export async function resolveFirstPeriodId(
 	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
 ): Promise<string | null> {
 	const schoolId = await page.getByTestId('academic-year-trigger').getAttribute('data-school-id').catch(() => null);
-	const fromSession = await page.evaluate((schoolId) =>
+	const fromSession = await page.evaluate(schoolId =>
 		(schoolId ? sessionStorage.getItem(`edaya:periodId:${schoolId}`) : null)
 		?? sessionStorage.getItem('edaya:periodId'), schoolId).catch(() => null);
 	if (fromSession) {
@@ -466,79 +466,29 @@ export async function listClassSubjects(
 	);
 }
 
-async function resolveCatalogSubjectId(
-	page: Page,
-	appOrigin: string,
-	gradeLevelSubjectId: string,
-	apiUrl: string,
-): Promise<string | null> {
-	const response = await apiFetch(
-		page,
-		appOrigin,
-		`/core/entities/grade-level-subjects/${encodeURIComponent(gradeLevelSubjectId)}`,
-		{},
-		apiUrl,
-	);
-	if (!response.ok()) {
-		return null;
-	}
-	const body = await readApiBody(response) as { subjectId?: string } | null;
-	return typeof body?.subjectId === 'string' ? body.subjectId : null;
-}
-
 export async function ensureClassSubjectForClass(
 	page: Page,
 	appOrigin: string,
 	options: {
 		classGroupId: string;
-		gradeLevelSubjectId?: string | null;
 		catalogSubjectId?: string | null;
 	},
 	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
 ): Promise<string | null> {
-	let catalogSubjectId = options.catalogSubjectId ?? null;
-	if (!catalogSubjectId && options.gradeLevelSubjectId) {
-		catalogSubjectId = await resolveCatalogSubjectId(page, appOrigin, options.gradeLevelSubjectId, apiUrl);
-	}
 	const existing = await listClassSubjects(page, appOrigin, options.classGroupId, apiUrl);
-	const matching = catalogSubjectId ? existing.filter(entry => entry.subjectId === catalogSubjectId) : existing;
-	const offered = matching.find(entry => entry.isOffered !== false) ?? matching[0];
-	if (offered?.id) {
-		return offered.id;
-	}
-
-	if (!catalogSubjectId) {
-		integrationDebug('ensureClassSubjectForClass: no catalog subjectId');
+	const matching = options.catalogSubjectId ? existing.filter(entry => entry.subjectId === options.catalogSubjectId) : existing;
+	const offering = matching.find(entry => entry.isOffered !== false) ?? matching[0];
+	if (!offering)
 		return null;
+	if (offering.isOffered === false) {
+		const response = await apiFetch(page, appOrigin, '/core/commands/set-class-subject-offered', {
+			method: 'POST',
+			data: { classSubjectId: offering.id, isOffered: true },
+		}, apiUrl);
+		if (!response.ok())
+			return null;
 	}
-
-	const classSubjectId = `cs-e2e-${Date.now().toString(36)}`;
-	const offerResponse = await apiFetch(page, appOrigin, '/core/commands/offer-subject-to-class', {
-		method: 'POST',
-		data: {
-			id: classSubjectId,
-			classGroupId: options.classGroupId,
-			subjectId: catalogSubjectId,
-			gradeLevelSubjectId: options.gradeLevelSubjectId ?? null,
-			isOffered: true,
-		},
-	}, apiUrl);
-	if (!offerResponse.ok()) {
-		integrationDebug('offer-subject-to-class failed', offerResponse.status(), await offerResponse.text().catch(() => ''));
-		const refreshed = await listClassSubjects(page, appOrigin, options.classGroupId, apiUrl);
-		return refreshed.find(entry => entry.subjectId === catalogSubjectId)?.id ?? null;
-	}
-
-	try {
-		const body = await readApiBody(offerResponse) as { id?: string };
-		if (typeof body?.id === 'string') {
-			return body.id;
-		}
-	}
-	catch {
-		// fall through
-	}
-	return classSubjectId;
+	return offering.id;
 }
 
 export async function lessonSessionExists(
@@ -734,7 +684,6 @@ export async function ensureTimetableSession(
 	options: {
 		classGroupId: string;
 		classSubjectId?: string | null;
-		gradeLevelSubjectId?: string | null;
 		catalogSubjectId?: string | null;
 		title?: string;
 		schoolId?: string | null;
@@ -753,7 +702,6 @@ export async function ensureTimetableSession(
 	const classSubjectId = options.classSubjectId
 		?? await ensureClassSubjectForClass(page, appOrigin, {
 			classGroupId: options.classGroupId,
-			gradeLevelSubjectId: options.gradeLevelSubjectId,
 			catalogSubjectId: options.catalogSubjectId,
 		}, apiUrl);
 	if (!classSubjectId) {
@@ -890,7 +838,6 @@ export async function createTimetableSessionViaApi(
 	options: {
 		classGroupId: string;
 		classSubjectId?: string | null;
-		gradeLevelSubjectId?: string | null;
 		title?: string;
 		schoolId?: string | null;
 	},
@@ -1711,7 +1658,8 @@ export async function ensureGeneratedTeacherTimetableSession(
 		assert.equal(saved.schoolId, schoolId);
 		assert.equal(saved.timetableGenerated, true);
 		assert(saved.startsAt.slice(0, 10) >= scheduleDate && saved.startsAt.slice(0, 10) <= endDate);
-		if (saved.classSubjectId === classSubjectId && saved.timetableTeacherIds.includes(options.teacherId)) teacherSessions++;
+		if (saved.classSubjectId === classSubjectId && saved.timetableTeacherIds.includes(options.teacherId))
+			teacherSessions++;
 	}
 	assert(teacherSessions > 0, 'Generated timetable must contain lessons assigned to the selected teacher');
 	return classSubjectId;

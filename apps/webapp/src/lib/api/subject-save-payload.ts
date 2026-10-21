@@ -10,6 +10,7 @@ export function buildSubjectSavePayload(
 	updates: { name: string; categoryId: string; color: Subject['color'] },
 ): SubjectEntity {
 	const payload: SubjectEntity = {
+		...existing,
 		id: existing.id,
 		schoolId: existing.schoolId,
 		name: updates.name.trim(),
@@ -17,17 +18,19 @@ export function buildSubjectSavePayload(
 		color: updates.color,
 	};
 
+	delete payload.code;
+	delete payload.coefficient;
 	const code = typeof existing.code === 'string' ? existing.code.trim() : '';
 	if (code.length > 0) {
 		payload.code = code;
 	}
 
 	if (
-		typeof existing.defaultCoefficient === 'number'
-		&& Number.isFinite(existing.defaultCoefficient)
-		&& existing.defaultCoefficient > 0
+		typeof existing.coefficient === 'number'
+		&& Number.isFinite(existing.coefficient)
+		&& existing.coefficient > 0
 	) {
-		payload.defaultCoefficient = existing.defaultCoefficient;
+		payload.coefficient = existing.coefficient;
 	}
 
 	if (existing.createdAt !== undefined && existing.createdAt !== null) {
@@ -38,7 +41,7 @@ export function buildSubjectSavePayload(
 }
 
 export function buildSubjectConfigCommand(
-	existing: SubjectEntity | null,
+	existing: SubjectEntity,
 	updates: {
 		id: string;
 		name: string;
@@ -46,10 +49,11 @@ export function buildSubjectConfigCommand(
 		color: Subject['color'];
 		createdAt?: string;
 		code?: string | null;
-		defaultCoefficient?: number | null;
+		coefficient?: number | null;
 	},
 ): SubjectConfigCommand {
 	const payload: SubjectConfigCommand = {
+		...existing,
 		id: updates.id,
 		name: updates.name.trim(),
 		categoryId: updates.categoryId,
@@ -66,13 +70,13 @@ export function buildSubjectConfigCommand(
 		payload.shortName = shortName;
 	}
 
-	const defaultCoefficient = updates.defaultCoefficient ?? existing?.defaultCoefficient;
+	const coefficient = updates.coefficient ?? existing?.coefficient;
 	if (
-		typeof defaultCoefficient === 'number'
-		&& Number.isFinite(defaultCoefficient)
-		&& defaultCoefficient > 0
+		typeof coefficient === 'number'
+		&& Number.isFinite(coefficient)
+		&& coefficient > 0
 	) {
-		payload.defaultCoefficient = defaultCoefficient;
+		payload.coefficient = coefficient;
 	}
 
 	const createdAt = updates.createdAt ?? existing?.createdAt;

@@ -177,7 +177,7 @@ it('keeps report configuration accessible through Levels and Classes with its ow
 
 describe('independent assessment and mark capabilities', () => {
 	it.each(['ASSESSMENT_READ', 'ASSESSMENT_MANAGE', 'GRADE_READ', 'GRADE_MANAGE'] as const)('lets %s reach the assessment workspace', (permission) => {
-		const grants: ActionGrantsSnapshot = [{ permission, source: 'manual', scopes: [{ kind: 'class_subject', classGroupId: '6a', classSubjectId: 'math' }] }];
+		const grants: ActionGrantsSnapshot = [{ permission, source: 'manual', scopes: [{ kind: 'subject', gradeLevelId: 'grade', classGroupId: '6a', subjectId: 'math' }] }];
 		expect(canAccessPath('/classes/6a/evaluations', grants)).toBe(true);
 		expect(canAccessPath('/classes/6a/evaluations/quiz/details', grants)).toBe(true);
 	});

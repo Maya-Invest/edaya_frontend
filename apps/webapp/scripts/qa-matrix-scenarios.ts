@@ -1063,14 +1063,14 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 
 		if (row.endpoint.includes('/finance/billing')) {
 			if (/assigner/i.test(action)) {
-				const assignBtn = page.getByRole('button', { name: /ajouter une facture|add invoice/i }).first();
+				const assignBtn = page.getByRole('button', { name: /attribuer un frais|assign fee/i }).first();
 				if (await assignBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
 					await assignBtn.click();
 					const dialog = page.getByRole('dialog');
 					const visible = await dialog.isVisible({ timeout: 5_000 }).catch(() => false);
 					return visible ? notOk(row, 'Invoice assignment opened without persisting an assignment') : notOk(row, 'Modal assignation facture non ouvert');
 				}
-				return notOk(row, 'Bouton Ajouter une facture introuvable');
+				return notOk(row, 'Bouton Attribuer un frais introuvable');
 			}
 			if (/drawer|ouvrir/i.test(action)) {
 				const rowBtn = page.locator('main ul button, [role="main"] ul button').first();

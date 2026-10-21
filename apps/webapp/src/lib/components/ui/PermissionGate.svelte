@@ -10,6 +10,7 @@
 		activityId,
 		studentId,
 		gradeLevelId,
+		subjectId,
 		assessmentId,
 		tooltip = 'Action non autorisée',
 		mode = 'hide',
@@ -21,13 +22,14 @@
 		activityId?: string;
 		studentId?: string;
 		gradeLevelId?: string;
+		subjectId?: string;
 		assessmentId?: string;
 		tooltip?: string;
 		mode?: 'hide' | 'disable';
 		children?: Snippet<[{ disabled: boolean; title?: string }]>;
 	} = $props();
 
-	const allowed = $derived(hasPermission(permission, { classId, subject, activityId, studentId, gradeLevelId, assessmentId }));
+	const allowed = $derived(hasPermission(permission, { classId, subject, activityId, studentId, gradeLevelId, subjectId, assessmentId }));
 </script>
 
 {#if allowed || mode === 'disable'}

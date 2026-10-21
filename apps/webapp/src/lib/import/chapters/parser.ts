@@ -33,7 +33,7 @@ function mapRecordToChapterImportRow(
 	rowIndex: number,
 ): ChapterImportRow | null {
 	const values = Object.fromEntries(
-		CHAPTER_IMPORT_COLUMNS.map(column => [column.key, cellToString(record[column.key])]),
+		CHAPTER_IMPORT_COLUMNS.map(column => [column.key, cellToString(record[normalizeHeader(column.key)])]),
 	) as Record<ChapterImportColumnKey, string>;
 
 	if (isBlankRow(values)) {
@@ -42,6 +42,7 @@ function mapRecordToChapterImportRow(
 
 	return {
 		rowIndex,
+		...(values.subjectId ? { subjectId: values.subjectId } : {}),
 		niveau: values.niveau,
 		matiere: values.matiere,
 		titre: values.titre,

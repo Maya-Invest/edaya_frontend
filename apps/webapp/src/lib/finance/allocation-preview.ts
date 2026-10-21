@@ -5,7 +5,7 @@ export function openChargesForAllocation(charges: readonly StudentBilling[]): St
 	return charges
 		.filter(charge => charge.remaining > 0 && charge.status !== 'cancelled' && charge.status !== 'waived')
 		.slice()
-		.sort((left, right) => left.dueDate.localeCompare(right.dueDate));
+		.sort((left, right) => (left.dueDate || '9999').localeCompare(right.dueDate || '9999') || (left.createdAt ?? '').localeCompare(right.createdAt ?? '') || (left.id < right.id ? -1 : left.id > right.id ? 1 : 0));
 }
 
 export function previewFifoAllocation(

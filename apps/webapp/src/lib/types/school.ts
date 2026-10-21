@@ -48,6 +48,7 @@ export interface Student {
 export type SubjectCategory = 'Scientifique' | 'Littéraire' | 'Langues' | 'Sciences humaines' | 'Sport' | 'Arts';
 
 export interface Subject {
+	subjectId?: string;
 	id: string;
 	classId: string;
 	/** Catalogue matières : regroupement par niveau (distinct des matières de classe). */
@@ -63,7 +64,7 @@ export interface Subject {
 	category: string;
 	code?: string | null;
 	shortName?: string | null;
-	defaultCoefficient?: number | null;
+	coefficient?: number | null;
 	isOffered?: boolean;
 	completedPercentage?: number | null;
 	periodsPerWeek?: number | null;
@@ -356,6 +357,10 @@ export type StudentChargeStatus
 		| 'waived';
 
 export interface Fee {
+	academicYearId?: string;
+	description?: string;
+	billingTerms?: import('$lib/api/finance-types').OneTimeBillingTerms;
+
 	id: string;
 	name: string;
 	category: FeeCategory;
@@ -367,6 +372,26 @@ export interface Fee {
 }
 
 export interface StudentBilling {
+	classId?: string;
+	studentName?: string;
+	netAmount?: number;
+	adjustmentAmount?: number;
+	waiverAmount?: number;
+	adjustmentReason?: string;
+	adjustedAt?: string;
+	adjustedById?: string;
+	waiverReason?: string;
+	waivedAt?: string;
+	waivedById?: string;
+	cancellationReason?: string;
+	cancelledAt?: string;
+	cancelledById?: string;
+	createdAt?: string;
+	accountId?: string;
+	availableCredit?: number;
+	accountHasOpenCharges?: boolean;
+	overdue?: number;
+
 	id: string;
 	studentId: string;
 	enrollmentId: string;
@@ -379,7 +404,7 @@ export interface StudentBilling {
 	status: StudentChargeStatus;
 	dueDate: string;
 	academicYearId: string;
-	installments: { id: string; date: string; amount: number; label: string; status: 'paid' | 'pending' }[];
+	installments: { id: string; date: string; amount: number; label: string; status: 'paid' | 'partial' | 'pending'; applied?: number; remaining?: number }[];
 }
 
 export type AcademicYearStatus = 'draft' | 'published' | 'archived';

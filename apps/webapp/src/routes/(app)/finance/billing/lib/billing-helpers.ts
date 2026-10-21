@@ -2,6 +2,7 @@ import type { StudentYearAccountView } from '$lib/api/finance-data';
 import type { Fee, Student, StudentBilling } from '$lib/types/school';
 
 export interface BillingPageSlice {
+	total?: number;
 	fees: Fee[];
 	billing: StudentBilling[];
 	students: Student[];

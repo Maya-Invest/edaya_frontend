@@ -1,7 +1,4 @@
 import type { components } from '$lib/api/schema';
-import { classSubject, reportCardDefinition, subject } from '$tests/support/openapi-fixtures';
-import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
-import { describe, expect, it } from 'bun:test';
 import {
 	mapDefinitionStatus,
 	mapGradeScales,
@@ -13,6 +10,9 @@ import {
 	subjectLabelForCatalogId,
 } from '$lib/api/report-cards-data';
 import { setLang } from '$lib/i18n';
+import { classSubject, reportCardDefinition, subject } from '$tests/support/openapi-fixtures';
+import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
+import { describe, expect, it } from 'bun:test';
 
 const seedGradeScalesRaw = [
 	{
@@ -66,7 +66,6 @@ const seedGradeScalesRaw = [
 ];
 
 describe('report cards grade scale mapping', () => {
-
 	it('maps grade scales from API fields without per-id tables', () => {
 		const scales = mapGradeScales([...seedGradeScalesRaw]);
 
@@ -167,8 +166,8 @@ const classSubjectsSources = {
 		classSubject({ id: 'cs-term-advmath', classGroupId: 'term-s', subjectId: 'subj-advmath' }),
 	],
 	subjectsRaw: [
-		subject({ id: 'subj-math', name: 'Mathematics', defaultCoefficient: 3 }),
-		subject({ id: 'subj-advmath', name: 'Advanced Mathematics', defaultCoefficient: 3 }),
+		subject({ id: 'subj-math', name: 'Mathematics', coefficient: 3 }),
+		subject({ id: 'subj-advmath', name: 'Advanced Mathematics', coefficient: 3 }),
 	],
 	subjectMattersRaw: [],
 	staffAssignmentsRaw: [],

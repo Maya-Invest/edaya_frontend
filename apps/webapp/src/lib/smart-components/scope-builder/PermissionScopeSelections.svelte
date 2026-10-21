@@ -4,10 +4,11 @@
 	import { t } from '$lib/i18n';
 	import ScopeBuilder from './ScopeBuilder.svelte';
 
-	let { scopes = $bindable([]), grains = PERMISSION_SCOPE_GRAINS, active = true }: {
+	let { scopes = $bindable([]), grains = PERMISSION_SCOPE_GRAINS, active = true, subjectClassRequired = false }: {
 		scopes?: UserScopeSelection[];
 		grains?: readonly PermissionScopeGrain[];
 		active?: boolean;
+		subjectClassRequired?: boolean;
 	} = $props();
 	let expanded = $state<Record<string, boolean>>({});
 	function forGrain(grain: PermissionScopeGrain) {
@@ -22,7 +23,7 @@
 		<details data-scope-grain={grain} class="rounded-xl border border-border p-3" open={expanded[grain] ?? forGrain(grain).length > 0}
 			ontoggle={event => expanded = { ...expanded, [grain]: event.currentTarget.open }}>
 			<summary class="cursor-pointer text-sm font-medium">{$t(`scope.grain.${grain}`)}</summary>
-			<div class="mt-3"><ScopeBuilder {grain} active={active && (expanded[grain] ?? forGrain(grain).length > 0)} bind:scopes={() => forGrain(grain), next => setGrain(grain, next)} /></div>
+			<div class="mt-3"><ScopeBuilder {grain} {subjectClassRequired} active={active && (expanded[grain] ?? forGrain(grain).length > 0)} bind:scopes={() => forGrain(grain), next => setGrain(grain, next)} /></div>
 		</details>
 	{/each}
 </div>

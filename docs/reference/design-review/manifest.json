@@ -510,6 +510,174 @@
       "fixtureSource": "isolated local Identity/School API with disposable seeded data",
       "capturedAt": "2026-09-14T02:49:48.342852+00:00",
       "sha256": "380daba9e8f5ebffa7624bd6f1fd95231141ccfbd84619c51979545107d0c1a5"
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "locale": "fr",
+      "theme": "light",
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "Local demo school fixtures; read-only browser verification, no financial mutations submitted",
+      "file": "current/finance-billing-history-desktop-fr.png",
+      "app": "webapp",
+      "sha256": "765a8d89c4343a434db69b8fcac26e1114db1f9e5d1abb61123cc4b9a8e606a3",
+      "sourceRevision": "5b80ef4b7313461691b5f562d39442e9f29dc913",
+      "sourceDigest": "8713567523fea02173a3232d7aed92360d4ba29ceaa74b19936e2eae29ad71bf",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "capturedAt": "2026-10-18T17:24:25.289Z",
+      "imagePixels": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "locale": "en",
+      "theme": "light",
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "Local demo school fixtures; read-only browser verification, no financial mutations submitted",
+      "file": "current/finance-checks-desktop-en.png",
+      "app": "webapp",
+      "sha256": "a50b10c8e5ff125fa6e4f2edb7c326a3dd1979329af12e255c7491a38d369a5f",
+      "sourceRevision": "5b80ef4b7313461691b5f562d39442e9f29dc913",
+      "sourceDigest": "8713567523fea02173a3232d7aed92360d4ba29ceaa74b19936e2eae29ad71bf",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "capturedAt": "2026-10-18T17:24:27.338Z",
+      "imagePixels": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "locale": "en",
+      "theme": "light",
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "Local demo school fixtures; read-only browser verification, no financial mutations submitted",
+      "file": "current/finance-fee-overview-desktop-en.png",
+      "app": "webapp",
+      "sha256": "c7d805cc97cc7bf62795b5d1cf68ee802c5a3605779633c47d6e0666aea669eb",
+      "sourceRevision": "5b80ef4b7313461691b5f562d39442e9f29dc913",
+      "sourceDigest": "9d145db1c9997c86c64ab395e923bc4ef9027469bfa135a435c30e8bb83871c3",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "capturedAt": "2026-10-18T22:39:25.720Z",
+      "imagePixels": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "locale": "fr",
+      "theme": "light",
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "Local demo school fixtures; read-only browser verification, no financial mutations submitted",
+      "file": "current/finance-fees-desktop-fr.png",
+      "app": "webapp",
+      "sha256": "f065ad2f5fb090e7e69330f08def860b221d11c2cc044ab034d29ec449f2d41c",
+      "sourceRevision": "5b80ef4b7313461691b5f562d39442e9f29dc913",
+      "sourceDigest": "2dae20747e4e9f708f326c2e748b99f3e0ced078959eb6b9f59da46cda95c3ee",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "capturedAt": "2026-10-18T21:36:22.720Z",
+      "imagePixels": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "locale": "fr",
+      "theme": "light",
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "Local demo school fixtures; read-only browser verification, no financial mutations submitted",
+      "file": "current/finance-fee-filters-desktop-fr.png",
+      "app": "webapp",
+      "sha256": "d9dd24ee2c58979cc003c3af0b7aa95cd93cbd21fb6ca5f1a45d5b6b0b46f79d",
+      "sourceRevision": "5b80ef4b7313461691b5f562d39442e9f29dc913",
+      "sourceDigest": "2dae20747e4e9f708f326c2e748b99f3e0ced078959eb6b9f59da46cda95c3ee",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "capturedAt": "2026-10-18T21:36:23.052Z",
+      "imagePixels": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "locale": "en",
+      "theme": "light",
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "Local demo school fixtures; read-only browser verification, no financial mutations submitted",
+      "file": "current/finance-fees-desktop-en.png",
+      "app": "webapp",
+      "sha256": "bb7c6909b88e82c689d1c1bc6b127dfbd4123516ce8bb322e3358e76c7161776",
+      "sourceRevision": "5b80ef4b7313461691b5f562d39442e9f29dc913",
+      "sourceDigest": "9d145db1c9997c86c64ab395e923bc4ef9027469bfa135a435c30e8bb83871c3",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "capturedAt": "2026-10-18T22:39:25.548Z",
+      "imagePixels": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "locale": "en",
+      "theme": "light",
+      "textScale": 1,
+      "keyboardInset": 0,
+      "captureKind": "production-page",
+      "fixtureSource": "Local demo school fixtures; read-only browser verification, no financial mutations submitted",
+      "file": "current/finance-fees-phone-en.png",
+      "app": "webapp",
+      "sha256": "07f240d35ae89069c4130f7e8088149421f09b63bfd22a675587c3a186892e26",
+      "sourceRevision": "5b80ef4b7313461691b5f562d39442e9f29dc913",
+      "sourceDigest": "9d145db1c9997c86c64ab395e923bc4ef9027469bfa135a435c30e8bb83871c3",
+      "sourceState": "working-tree",
+      "designSystemVersion": "1.0.0",
+      "capturedAt": "2026-10-18T22:39:25.860Z",
+      "imagePixels": {
+        "width": 390,
+        "height": 844
+      }
     }
   ]
 }

@@ -19,7 +19,7 @@ export async function loadSubjectsSlice(url: URL): Promise<SubjectsPageSlice> {
 	let levelId = selectedStructureLevel(sortGradeLevels(academicContext.gradeLevels), url.searchParams.get('gradeLevel'))?.id;
 	const selectedId = subjectIdFromUrl(url);
 	if (selectedId) {
-		const selected = await client.entities.gradeLevelSubjects.get(selectedId);
+		const selected = await client.entities.subjects.get(selectedId);
 		if (!selected || selected.academicYearId !== academicYearId || !academicContext.gradeLevels.some(level => level.id === selected.gradeLevelId))
 			return emptySubjectsSlice();
 		levelId = selected.gradeLevelId;

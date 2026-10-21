@@ -217,5 +217,10 @@
   {
     "surface": "/configuration/permission-profiles",
     "reason": "Layout-only parent; the optional-id page contains the list and detail drawer."
+  },
+  {
+    "surface": "/finance/reconciliation",
+    "kind": "redirect",
+    "reason": "Compatibility redirect to Configuration → Tools → Finance checks; capture its destination."
   }
 ]

@@ -134,7 +134,7 @@
 			if (subject) {
 				const ok = await onUpdateSubject({
 					classSubjectId: subject.id,
-					gradeLevelSubjectId: hasSharedWorkload ? subject.id : undefined,
+					subjectId: hasSharedWorkload ? subject.id : undefined,
 					...workload?.value,
 					name,
 					categoryId,

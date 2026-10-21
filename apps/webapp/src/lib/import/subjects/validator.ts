@@ -24,8 +24,6 @@ import {
 
 } from '$lib/import/shared/resolve-import-grade-level';
 
-import { subjectImportDuplicateKey } from '$lib/import/shared/subject-import-duplicate-key';
-
 import { parseSubjectCoefficient } from './parse-coefficient';
 
 function issue(
@@ -83,8 +81,6 @@ export function validateSubjectImportRows(
 
 	const validRows: ValidatedSubjectImportRow[] = [];
 
-	const subjectsInFile = new Map<string, number>();
-
 	const gradeLevelLookup = buildImportGradeLevelLookup(context.gradeLevels);
 
 	for (const row of rows) {
@@ -126,20 +122,6 @@ export function validateSubjectImportRows(
 
 			: [];
 
-		if (gradeLevelId && classGroupIds.length === 0) {
-			rowIssues.push(issue({
-
-				rowIndex: row.rowIndex,
-
-				column: 'niveau',
-
-				value: row.niveau,
-
-				messageKey: 'import.subjects.validation.noClassesForLevel',
-
-			}));
-		}
-
 		let coefficientValue: number | undefined;
 
 		if (row.coefficient?.trim()) {
@@ -164,46 +146,6 @@ export function validateSubjectImportRows(
 			}
 		}
 
-		if (hasNom && gradeLevelId) {
-			const duplicateKey = subjectImportDuplicateKey(gradeLevelId, row.nom);
-
-			const previousRow = subjectsInFile.get(duplicateKey);
-
-			if (previousRow != null) {
-				rowIssues.push(issue({
-
-					rowIndex: row.rowIndex,
-
-					column: 'nom',
-
-					value: row.nom,
-
-					messageKey: 'import.subjects.validation.duplicateInFile',
-
-					messageParams: { row: previousRow },
-
-				}));
-			}
-
-			else {
-				subjectsInFile.set(duplicateKey, row.rowIndex);
-			}
-
-			if (context.existingSubjectKeys?.has(duplicateKey)) {
-				rowIssues.push(issue({
-
-					rowIndex: row.rowIndex,
-
-					column: 'nom',
-
-					value: row.nom,
-
-					messageKey: 'import.subjects.validation.duplicateExisting',
-
-				}));
-			}
-		}
-
 		const blockingIssues = rowIssues.filter(entry => entry.severity === 'error');
 
 		for (const rowIssue of rowIssues) {
@@ -216,7 +158,7 @@ export function validateSubjectImportRows(
 			}
 		}
 
-		if (blockingIssues.length === 0 && hasNom && gradeLevelId && classGroupIds.length > 0) {
+		if (blockingIssues.length === 0 && hasNom && gradeLevelId) {
 			validRows.push({
 
 				...row,

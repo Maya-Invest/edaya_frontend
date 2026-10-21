@@ -107,10 +107,10 @@ Every feature **must** declare one surface type. Simple entities **must** use ro
 
 | Type | Drawer | Mutations | Examples |
 |------|--------|-----------|----------|
-| **Complex** | URL-backed read-only drawer | Entity-header actions → modals; sub-collections read-only, `+ Add` → modal | Student, Staff, Assessment, Incident, Billing |
-| **Simple** | None | Row `···` menu → modals | CatalogService (fees), Payment, Reconciliation, GradeScale, DisciplinaryAction, CalendarEvent |
+| **Complex** | URL-backed read-only drawer | Entity-header actions → modals; sub-collections read-only, `+ Add` → modal | Student, Staff, Assessment, Incident, CatalogService (fees), Billing |
+| **Simple** | None | Row `···` menu → modals | Payment, GradeScale, DisciplinaryAction, CalendarEvent |
 | **Thin drawer** | Sections only (no tabs) | Header actions → modals | Inbox delivery, Notification templates |
-| **Layout variant** | None | Page-level or inline modals | Dashboard, School profile, Academic calendar accordion |
+| **Layout variant** | None | Page-level or inline modals | Dashboard, School profile, Academic calendar accordion, Finance checks |
 
 **Drawer entity header** (complex + thin): identity block + **up to 2 primary actions** → modals. Destructive actions in overflow `···` only. Body = related content only — not a repeat of list columns.
 
@@ -132,8 +132,8 @@ These are **fixed** for v1. Do not introduce alternate flows without updating th
 | **Timetable ↔ Schedule** | **From timetable:** New session wizard (Lesson · Activity · Assessment) → creates `Schedule` + materialized occurrence. **From Lessons / Activities:** optional inline schedule on create/edit. Assessments require occurrence times; optional Add to timetable is deferred. |
 | **Activity on class timetable** | `ActivityEnrollment` (school roster) + **`ClassActivityEnrollment`** (activity ↔ class link for timetable). |
 | **Student Grades tab** | Read-only **links** to class assessment drawer (`/evaluations/{id}`). |
-| **Global Subject** | Inline create/edit in subjects catalog — **no** dedicated Subject admin route. |
-| **Subject workload** | Configuration → Subjects → existing Edit subject form includes weekly periods and session span bounds. Values belong to the grade-level subject for the selected academic year and mirror to its classes. Class progression and Chapters tabs contain no workload editor. |
+| **Subject** | Owned by the selected grade and academic year; create/edit in the Subjects tab, including before any class exists. |
+| **Subject workload** | Configuration → Subjects → existing Edit subject form includes weekly periods and session span bounds. Values belong to the subject for the selected academic year and mirror to its classes. Class progression and Chapters tabs contain no workload editor. |
 | **Student Attendance tab** | **Mode-agnostic history** — all `AttendanceRecord` rows (daily + session anchors). **Declare** uses the student's class `attendanceMode`: daily → date modal + `recordDailyAttendance`; session → hide Declare and link to `/classes/{classId}/timetable`. |
 | **`attendanceMode` on class** | Required on create; editable on class profile. Warn on mid-year mode switch if records exist for the other mode; never delete historical records. |
 
@@ -226,11 +226,12 @@ Sub-collection tabs use a read-only list with header CTAs and row actions that o
 |-------|----|--------------------|
 | `class_group` | Repeatable class selections | `classGroupId` |
 | `grade_level` | Repeatable grade selections | `gradeLevelId` |
-| `class_subject` | Class and optional subject | `classGroupId`, optional `classSubjectId` (all subjects within that class) |
-| `grade_level_subject` | Grade and optional grade subject | `gradeLevelId`, optional `gradeLevelSubjectId` |
+| `subject` | Grade → Subject / All subjects → All classes / Selected classes | `gradeLevelId`, optional `subjectId`, optional `classGroupId`; repeat entries for multiple classes |
 | `student` | Repeatable StudentPicker | `studentId` |
 | `activity` | Activity and/or class selection | `activityId` and/or `classGroupId` |
 | `platform` | Not assignable in school UI | — |
+
+Subject scope uses the grade-owned Subject identity. No class restriction includes matching classes created later in the grant’s academic year. `subjectClassRequired` in the permission catalog requires a selected class and disables the global All subjects wildcard; a profile uses this constraint when all its Subject-capable permissions require a class. Mixed profiles can also select unrestricted Subject scopes for compatible permissions; the preview reports the class-required permissions that remain unresolved. Defaults remain permission-independent and the existing preview reports permissions that cannot resolve. Changing the grade preserves restricted mode and requires selecting a compatible class again; changing the subject preserves the class. `ClassSubject` remains the teaching record, never a permission scope.
 
 Every entry carries its `kind`. Selecting all targets is explicit: `{ kind: "all", grain }`. Empty selections deny; they never mean whole school. Scope editing preserves all entries and the grant's validity dates.
 
@@ -270,10 +271,13 @@ The session contains one typed action-grant display. UI checks use that action's
 | Assessments | `/classes/{classId}/evaluations` | `…/evaluations/{id}` |
 | Report cards (class) | `/classes/{classId}/report-cards` | `…/report-cards/{id}` |
 | Daily attendance | `/classes/{classId}/attendance` | `…/attendance/{id}` *(nav if `daily`)* |
-| Fees | `/finance/fees` | — |
-| Billing | `/finance/billing` | `/finance/billing/{id}` |
+| Finance landing | `/finance` | Redirect to `/finance/fees` |
+| Fees | `/finance/fees` | `/finance/fees/{feeId}` |
+| Billing | `/finance/billing` | `/finance/billing/{chargeId}` (Overview) |
+| Billing payments applied | `/finance/billing/{chargeId}/payments` | Same persistent billing drawer |
+| Billing history | `/finance/billing/{chargeId}/history` | Same persistent billing drawer |
 | Payments | `/finance/payment` | — |
-| Reconciliation | `/finance/reconciliation` | — |
+| Legacy reconciliation | `/finance/reconciliation` | Redirect to `/configuration/tools/finance-checks` |
 | School profile | `/configuration/school` | — |
 | Academic calendar | `/configuration/academic` | — |
 | Weekly period grid | `/configuration/period-grid` | — |
@@ -289,6 +293,7 @@ The session contains one typed action-grant display. UI checks use that action's
 | Subject categories | `/configuration/other/subject-categories` | — |
 | Permission profiles | `/configuration/permission-profiles` | — |
 | Configuration tools | `/configuration/tools` | — |
+| Finance checks | `/configuration/tools/finance-checks` | — |
 | Teacher assignments hub | `/configuration/tools/teacher-assignments` | — |
 | Account inbox | `/account/inbox` | `/account/inbox/{id}` |
 
@@ -435,32 +440,36 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 ### 7.15 Finance — Fees
 
-- **Entity:** `CatalogService` · **Simple** (row `···` only — no drawer)
-- Human labels stay **fees / frais**. Route stays `/finance/fees`.
-- Row menu: Edit · Activate · Archive (no hard-delete)
-- Create as **active**. Amounts are integer minor units; currency from API (create form last-resort `XOF`)
+- **Entity:** `CatalogService` · **Complex drawer**, human label **fees / frais**.
+- Sidebar finance order is **Fees → Billing → Payments**; finance pages omit a duplicate local switcher. `/finance` redirects to `/finance/fees`.
+- `/finance/fees` is the financial overview above the searchable catalog with category and status controls inside one Filter button. Add fee is the primary action. Catalog filters never constrain financial totals.
+- Headline cards match fee details: **Billed**, **Payments**, **Outstanding**, **Overdue**. Billed shows the net amount after adjustments and waivers, with a top-right chip for distinct assigned students. Payments shows active allocations applied to charges. Overdue shows its amount in the dark-red destructive text token, with distinct overdue students in a top-right chip. Scope is the selected school/year and authorized `PAYMENT_READ` records; catalog filters never affect these totals. Omit Received/Refunded and scope captions. Cancelled charges contribute no obligation; overdue is bounded by remaining obligations. Errors and unavailable data never become zero.
+- `/finance/fees/{feeId}` opens the URL-backed drawer with an **Overview** tab. Header: name, category, status, academic year, default amount; **Edit fee** and **Assign fee**; overflow **Archive** / **Activate**. Assignment requires an active fee and authorization.
+- Overview shows Billed, Payments, Outstanding and Overdue cards. The Billed card has a top-right chip for distinct assigned students (excluding cancelled charges); there is no separate Students assigned card. The Overdue card places its student count in a top-right chip. Show description, enrollment mode, default amount and read-only original terms. Links open Billing filtered by fee, optionally outstanding/overdue. Account receipts, refunds and credit are not fee-level settlement measures.
+- Assign fee is a modal with the selected fee fixed, single/batch ≤100 students. Mutations preserve the current editor's unmodified fields. Catalog edits affect future assignments only; existing labels, amounts, schedules and archived history remain intact.
+- Fees navigation allows catalog-read or payment-read users. Catalog-only users see configuration without financial amounts. Use the configured currency and integer minor units; no fallback currency.
 
 ### 7.16 Finance — Billing
 
-- **Entity:** `StudentCharge` · **Complex drawer**
-- Enroll via assign modal (`?modal=assign-fee`), including bounded batch (≤100 students)
-- Preserve history: waive / adjust / cancel commands; do not offer generic hard deletion
-- **Drawer header (max 2 primary):** Record payment · Allocate. Waive / Adjust / Cancel in overflow `···`
-- Allocation preview is a **modal** on the billing drawer, not a sidebar item
-- Reverse allocation is a **modal** on the billing drawer (`?modal=unallocate`); it is not a cash refund
-- Record payment modal: deposit-only (`account_only`) / FIFO / targeted + preview
+- **Entity:** `StudentCharge` · **Complex drawer**, one assigned fee for one student. No grouped invoice entity.
+- List has no financial summary cards. **Assign fee** is the primary action. Student/fee search, class selector, secondary fee/status/due filters and server-side sorting/pagination apply before matching counts and export. Reminder exports deduplicate student/year accounts.
+- `/finance/billing/{chargeId}` = **Overview**; `/payments` = **Payments**; `/history` = **History**. Header persists across tabs, with assigned fee, student, status and remaining balance.
+- At most two visible header actions: **Record payment**, **Apply credit**. Overflow: adjustment, waiver, reverse allocation, cancellation, **Download account invoice** (clearly account-wide).
+- Action eligibility must guard controls, direct modal URLs and submissions. Hide missing permissions; disable state-blocked actions with explanations. Recording requires an open balance; applying credit requires `PAYMENT_ALLOCATE`, balance and credit; reverse allocation requires `PAYMENT_ALLOCATE` and active allocations, not payment-reversal permission. Adjustment/waiver require recording permission, balance, and no prior corresponding event. Cancellation requires recording plus cancellation permissions, no active allocations, and a reason. Waivers require reasons. Backend limits remain authoritative.
+- Overview preserves original amount, reduction amounts, net payable, applied, remaining, original schedule with partial attribution, and cancellation facts/zero current obligation. Charge-level reductions must not be silently redistributed across installments.
+- The Payments tab filters account history to this charge. Active totals exclude reversals; source-less allocations are **Account credit**. Receipt actions refer only to the linked eligible payment.
+- History derives only persisted creation, adjustment, waiver, cancellation, allocation and reversal facts, newest first with deterministic ties; unavailable actors are **Not recorded**. No new audit-log system.
 
 ### 7.17 Finance — Payments
 
-- **Entity:** `Payment` · **Simple** (row `···` only)
-- Receipt and disbursement history. Reverse via FormModal (`?modal=reverse`). Refund available balance via FormModal (`?modal=refund`)
-- Payment itself has no drawer
+- **Entity:** `Payment` · **Simple**, `/finance/payment`, no drawer and no collection-summary cards.
+- Primary **Record payment**; refunds in More; receipts and refunds remain distinct. Reverse only recorded receipts. Receipt/settlement documents require eligible source records.
+- Shared route-owned payment form: select student then explicitly select fees and allocation amounts. Billing entry preselects its student/fee. **Deposit only** and **Oldest due first** remain explicit alternatives, never silent fallbacks. Preview receipt, existing credit, allocations and resulting credit with submission semantics. Preserve method/date/reference/notes, failed drafts and duplicate-submission protection. Students without charges can select deposit-only.
 
-### 7.17.1 Finance — Reconciliation
+### 7.17.1 Configuration Tools — Finance checks
 
-- **Surface:** simple page `/finance/reconciliation`
-- Permission: `FINANCIAL_REPORT_READ`
-- Named query `getFinanceReconciliation` — not an extra allocation sidebar item
+- `/configuration/tools/finance-checks` contains the existing reconciliation report, loading state and export. `/finance/reconciliation` redirects compatibly.
+- Preserve `FINANCIAL_REPORT_READ` and `getFinanceReconciliation`. Report-only users can reach Tools without import/timetable authority. Unrelated planning data must not block this page. Finance checks is absent from Finance navigation.
 
 ### 7.18 Configuration — School profile
 
@@ -503,8 +512,10 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 
 ### 7.22 Configuration — Subjects catalog
 
-- **Entity:** `ClassSubject` / catalog entries · **Complex drawer**
-- Global `Subject`: inline in catalog flows
+- **Entity:** `Subject` · **Complex drawer**
+- Each Subject belongs to one grade and academic year. Same-name subjects remain distinct by ID. Subject chapters are shared with class offerings; class progress stays independent.
+- Create and edit use atomic subject/chapter commands with scoped `ACADEMIC_PROGRAM_MANAGE`. Categories keep catalogue permissions. No standalone class subject creation.
+- Chapter imports accept `subjectId` to resolve ambiguous names. Subjects and chapters may be created before classes.
 
 ### 7.23 Configuration — Report card models
 
@@ -597,9 +608,9 @@ Authoritative surface per entity. §7 has per-feature drawer/tab detail.
 | `GradeLevel` | Layout selection | `/configuration/structure` |
 | `CalendarEvent` | Simple | `/school/calendar` |
 | `MessageDelivery` | Thin | `/account/inbox` |
-| `CatalogService` | Simple | `/finance/fees` |
+| `CatalogService` | Complex | `/finance/fees` |
 | `Payment` | Simple | `/finance/payment` |
-| Reconciliation | Simple page | `/finance/reconciliation` |
+| Finance checks | Layout variant | `/configuration/tools/finance-checks` |
 | `GradeScale` | Accordion with interval editors | `/configuration/grade-scales` |
 | `DisciplinaryAction` | Simple | `/configuration/other/discipline` |
 | `SubjectCategory` | Simple | `/configuration/other/subject-categories` |

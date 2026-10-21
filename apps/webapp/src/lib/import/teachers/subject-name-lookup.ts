@@ -14,8 +14,8 @@ export function resolveSubjectCatalogId(
 	catalog: readonly SchoolSubjectCatalogEntry[],
 ): string | undefined {
 	const normalized = normalizeSubjectLookupName(value);
-	const match = catalog.find(entry => normalizeSubjectLookupName(entry.name) === normalized);
-	return match?.id;
+	const matches = catalog.filter(entry => normalizeSubjectLookupName(entry.name) === normalized);
+	return matches.length === 1 ? matches[0].id : undefined;
 }
 
 export function resolvePrimarySubjectId(

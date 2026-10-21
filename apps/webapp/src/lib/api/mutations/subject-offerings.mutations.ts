@@ -17,16 +17,16 @@ export async function setClassSubjectOfferedMutation(input: {
 	return result !== null;
 }
 
-export async function updateGradeLevelSubjectMutation(input: {
-	gradeLevelSubjectId: string;
+export async function updateSubjectSettingsMutation(input: {
+	subjectId: string;
 	coefficient?: number;
 	isOptional?: boolean;
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(
-		() => client.commands.updateGradeLevelSubject({
-			gradeLevelSubjectId: input.gradeLevelSubjectId,
+		() => client.commands.updateSubject({
+			subjectId: input.subjectId,
 			coefficient: input.coefficient,
 			isOptional: input.isOptional,
 		}),
@@ -35,14 +35,14 @@ export async function updateGradeLevelSubjectMutation(input: {
 	return result !== null;
 }
 
-export async function removeSubjectFromGradeLevelMutation(input: {
-	gradeLevelSubjectId: string;
+export async function removeSubjectMutation(input: {
+	subjectId: string;
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
 	const result = await runMutation(
-		() => client.commands.removeSubjectFromGradeLevel({
-			gradeLevelSubjectId: input.gradeLevelSubjectId,
+		() => client.commands.removeSubject({
+			subjectId: input.subjectId,
 		}),
 		{ successMessage: input.successMessage, versionKeys: ['subjects', 'planning', 'reportCards'] },
 	);

@@ -7,6 +7,7 @@
 	import { followDrawerTabLink } from '$lib/navigation/route-surface-navigation';
 	import { hasAnyPermission } from '$lib/permissions';
 	import { cn } from '$lib/utils';
+	import { getEvaluationsPageState } from '../../evaluations-page.svelte';
 	import {
 		activeEvaluationDetailTab,
 		EVALUATION_DETAIL_TABS,
@@ -14,7 +15,8 @@
 
 	const { evaluation, classId }: { evaluation: Evaluation; classId: string } = $props();
 
-	const tabs = $derived(EVALUATION_DETAIL_TABS.filter(tab => tab.key !== 'grading' || hasAnyPermission(['GRADE_READ', 'GRADE_VALIDATE'], { classId, subject: evaluation.classSubjectId, assessmentId: evaluation.id })));
+	const evaluationsPage = getEvaluationsPageState();
+	const tabs = $derived(EVALUATION_DETAIL_TABS.filter(tab => tab.key !== 'grading' || hasAnyPermission(['GRADE_READ', 'GRADE_VALIDATE'], { classId, subject: evaluation.classSubjectId, subjectId: evaluationsPage.subjectsFor(classId).find(row => row.id === evaluation.classSubjectId)?.subjectId, assessmentId: evaluation.id })));
 
 	const activeTab = $derived(activeEvaluationDetailTab($page.url.pathname, classId, evaluation.id));
 

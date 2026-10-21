@@ -1,5 +1,5 @@
 import { academicContext } from '$lib/academic/context.svelte';
-import { schoolSubjectsCatalogList } from '$lib/api/entity-list-filters';
+import { listAllEntityPages, schoolSubjectsCatalogList } from '$lib/api/entity-list-filters';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 
@@ -18,7 +18,7 @@ export async function loadSchoolSubjectCatalog(schoolId?: string): Promise<Schoo
 	}
 
 	const client = getBrowserSchoolClient();
-	const subjects = await client.entities.subjects.list(schoolSubjectsCatalogList(resolvedSchoolId));
+	const subjects = await listAllEntityPages(query => client.entities.subjects.list(query), { baseQuery: { ...schoolSubjectsCatalogList(resolvedSchoolId), academicYearId: academicContext.yearId ?? undefined } });
 	const entries: SchoolSubjectCatalogEntry[] = [];
 
 	for (const subject of subjects ?? []) {

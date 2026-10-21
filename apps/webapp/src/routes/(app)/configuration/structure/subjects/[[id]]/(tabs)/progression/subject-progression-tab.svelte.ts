@@ -13,7 +13,7 @@ export interface SubjectProgressionTabSlice {
   subjectKey: string;
   classSubjectId: string;
   catalogSubjectId: string;
-  gradeLevelSubjectId?: string;
+  subjectId?: string;
   classGroupId: string;
   rows: SubjectMatterDrawerRow[];
   isCatalogSubject: boolean;
@@ -47,7 +47,7 @@ export class SubjectProgressionTabState {
     }
     return {
       catalogSubjectId: this.slice.catalogSubjectId,
-      gradeLevelSubjectId: this.slice.gradeLevelSubjectId,
+      subjectId: this.slice.subjectId,
       classGroupId: this.slice.classGroupId,
       classSubjectId: this.slice.classSubjectId,
     };
@@ -90,7 +90,7 @@ export class SubjectProgressionTabState {
             subjectKey,
             classSubjectId: loaded.classSubjectId,
             catalogSubjectId: loaded.catalogSubjectId,
-            gradeLevelSubjectId: loaded.gradeLevelSubjectId,
+            subjectId: loaded.subjectId,
             classGroupId: loaded.classGroupId,
             rows: loaded.rows,
             isCatalogSubject: true,
@@ -104,7 +104,7 @@ export class SubjectProgressionTabState {
           subjectKey,
           classSubjectId: subjectKey,
           catalogSubjectId: loaded.catalogSubjectId,
-          gradeLevelSubjectId: loaded.gradeLevelSubjectId,
+          subjectId: loaded.subjectId,
           classGroupId: loaded.classGroupId,
           rows: loaded.rows,
           isCatalogSubject: false,

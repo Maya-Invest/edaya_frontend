@@ -189,7 +189,7 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 			abbreviation: 'MATH',
 			coefficient: '3',
 		},
-		permission: 'SCHOOL_STRUCTURE_READ',
+		permission: 'ACADEMIC_PROGRAM_MANAGE',
 	},
 	{
 		key: 'teacher_assignments',
@@ -205,6 +205,7 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 			{ key: 'code', required: true, labelKey: 'import.types.teacherAssignments.columns.code' },
 			{ key: 'classe', required: true, labelKey: 'import.types.teacherAssignments.columns.classe' },
 			{ key: 'matiere', required: true, labelKey: 'import.types.teacherAssignments.columns.matiere' },
+			{ key: 'subjectId', required: false, labelKey: 'import.types.teacherAssignments.columns.subjectId' },
 		]),
 		exampleRow: {
 			code: 'ENS-001',
@@ -226,6 +227,7 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 		columns: catalogColumns([
 			{ key: 'niveau', required: true, labelKey: 'import.types.chapters.columns.niveau' },
 			{ key: 'matiere', required: true, labelKey: 'import.types.chapters.columns.matiere' },
+			{ key: 'subjectId', required: false, labelKey: 'import.types.chapters.columns.subjectId' },
 			{ key: 'titre', required: true, labelKey: 'import.types.chapters.columns.titre' },
 			{ key: 'ordre', required: false, labelKey: 'import.types.chapters.columns.ordre' },
 			{ key: 'description', required: false, labelKey: 'import.types.chapters.columns.description' },
@@ -237,7 +239,7 @@ export const IMPORT_TYPE_DEFINITIONS: readonly ImportTypeDefinition[] = [
 			ordre: '1',
 			description: 'Introduction aux fractions simples',
 		},
-		permission: 'SCHOOL_STRUCTURE_READ',
+		permission: 'ACADEMIC_PROGRAM_MANAGE',
 	},
 	{
 		key: 'billing',

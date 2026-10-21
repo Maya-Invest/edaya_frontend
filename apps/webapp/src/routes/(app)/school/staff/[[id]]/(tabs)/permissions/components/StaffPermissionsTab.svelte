@@ -9,7 +9,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { ChevronDown, ChevronUp, Pencil, Plus, ShieldCheck, Trash2 } from '$lib/icons';
+	import { ChevronDown, ChevronRight, ChevronUp, Pencil, Plus, ShieldCheck, Trash2 } from '$lib/icons';
 	import PermissionScopeTypes from '$lib/smart-components/scope-builder/PermissionScopeTypes.svelte';
 	import { get } from 'svelte/store';
 	import { getStaffPageState } from '../../../../staff-page.svelte';
@@ -143,7 +143,7 @@
 						<button type="button" class="flex min-h-11 min-w-0 flex-1 basis-40 items-center gap-2 rounded-lg text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
 							aria-expanded={expanded} aria-controls={`profile-permissions-${binding.id}`}
 							onclick={() => expandedProfiles = { ...expandedProfiles, [binding.id]: !expanded }}>
-							<ChevronDown class={`h-4 w-4 shrink-0 transition-transform motion-reduce:transition-none ${expanded ? 'rotate-180' : ''}`} />
+							<ChevronRight aria-hidden="true" class={`h-4 w-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none ${expanded ? 'rotate-90' : ''}`} />
 							<span class="min-w-0">
 								<span class="flex flex-wrap items-center gap-x-2 gap-y-1">
 									<span class="break-words font-display text-base font-bold text-foreground">{profile.name}</span>
@@ -230,7 +230,7 @@
 			<button type="button" class="flex min-h-11 w-full min-w-0 items-center gap-2 rounded-lg text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
 				aria-expanded={additionalExpanded} aria-controls={additionalContentId}
 				onclick={() => additionalExpanded = !additionalExpanded}>
-				<ChevronDown class={`h-4 w-4 shrink-0 transition-transform motion-reduce:transition-none ${additionalExpanded ? 'rotate-180' : ''}`} />
+				<ChevronRight aria-hidden="true" class={`h-4 w-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none ${additionalExpanded ? 'rotate-90' : ''}`} />
 				<span class="min-w-0">
 					<span class="block break-words font-display text-base font-bold text-foreground">{$t('staff.additionalPermissions')}</span>
 					<span data-testid="additional-permission-count" class="block text-xs text-muted-foreground">{$t('staff.additionalAssignmentCount', { n: customRows.length })}</span>

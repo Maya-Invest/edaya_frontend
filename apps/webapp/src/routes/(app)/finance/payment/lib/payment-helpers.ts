@@ -3,6 +3,7 @@ import type { Student } from '$lib/types/school';
 import { formatLocaleDate } from '$lib/date/format';
 
 export interface PaymentPageSlice {
+	total?: number;
 	payments: FinancePayment[];
 	students: Student[];
 	accounts: StudentYearAccountView[];

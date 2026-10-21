@@ -55,6 +55,7 @@ export interface MatrixEntities {
 	dayId: string | null;
 	reportCardId: string | null;
 	billingId: string | null;
+ feeId?: string | null;
 	configClassId: string | null;
 	gradeLevelId: string | null;
 	secondGradeLevelId: string | null;
@@ -312,6 +313,7 @@ export function resolveEndpoint(endpoint: string, base: string, entities: Matrix
 
 	const map: Record<string, string | null> = {
 		'[classId]': entities.classId,
+ '[feeId]': entities.feeId ?? null,
 		'[id]': entities.studentId,
 		'[token]': 'qa-invalid-token',
 		'[deliveryId]': entities.deliveryId,
@@ -508,8 +510,10 @@ export async function discoverEntities(ctx: DemoContext): Promise<MatrixEntities
 		);
 	}
 
-	await safeGoto(ctx, `${base}/finance/billing`);
-	entities.billingId = await firstIdFromLinks(page, /\/finance\/billing\/([^/]+)/);
+	await safeGoto(ctx, `${base}/finance/fees`);
+ entities.feeId = await page.locator('[data-entity-id]').first().getAttribute('data-entity-id').catch(() => null);
+ await safeGoto(ctx, `${base}/finance/billing`);
+	entities.billingId = await page.locator('[data-entity-id]').first().getAttribute('data-entity-id').catch(() => null);
 
 	await safeGoto(ctx, `${base}/configuration/structure/subjects`);
 	entities.gradeLevelId = new URL(page.url()).searchParams.get('gradeLevel');

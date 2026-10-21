@@ -1,11 +1,11 @@
-import { describe, expect, it } from 'bun:test';
-import type { ChapterImportRow, ChapterImportCatalogTarget } from '$lib/import/chapters/types';
+import type { ChapterImportCatalogTarget, ChapterImportRow } from '$lib/import/chapters/types';
 import { chapterImportDuplicateKey } from '$lib/import/chapters/types';
 import {
 	canImportValidatedChapters,
 	countChapterImportOperations,
 	validateChapterImportRows,
 } from '$lib/import/chapters/validator';
+import { describe, expect, it } from 'bun:test';
 
 function row(overrides: Partial<ChapterImportRow> & Pick<ChapterImportRow, 'rowIndex'>): ChapterImportRow {
 	return {
@@ -17,7 +17,6 @@ function row(overrides: Partial<ChapterImportRow> & Pick<ChapterImportRow, 'rowI
 }
 
 const CATALOG_TARGET: ChapterImportCatalogTarget = {
-	gradeLevelSubjectId: 'gls-6-math',
 	subjectId: 'subj-math',
 	gradeLevelId: 'gl-6',
 	gradeLevelName: '6ème',
@@ -86,7 +85,7 @@ describe('chapter import validator', () => {
 
 	it('flags chapters that already exist via existingChapterKeys', () => {
 		const duplicateKey = chapterImportDuplicateKey(
-			CATALOG_TARGET.gradeLevelSubjectId,
+			CATALOG_TARGET.subjectId,
 			'Les fractions',
 		);
 		const result = validateChapterImportRows(
@@ -101,7 +100,7 @@ describe('chapter import validator', () => {
 		expect(result.errors[0]?.messageKey).toBe('import.chapters.validation.duplicateExisting');
 	});
 
-	it('flags catalog entries with no class assignments', () => {
+	it('accepts chapters before classes exist', () => {
 		const result = validateChapterImportRows([
 			row({ rowIndex: 2 }),
 		], {
@@ -111,7 +110,13 @@ describe('chapter import validator', () => {
 			}],
 		});
 
-		expect(result.validRows).toHaveLength(0);
-		expect(result.errors[0]?.messageKey).toBe('import.chapters.validation.noClassesForLevel');
+		expect(result.validRows).toHaveLength(1);
+		expect(result.errors).toEqual([]);
 	});
+});
+
+it('requires an explicit id for ambiguous names', () => {
+	const context = { catalogTargets: [CATALOG_TARGET, { ...CATALOG_TARGET, subjectId: 'other' }] };
+	expect(validateChapterImportRows([row({ rowIndex: 2 })], context).errors[0]?.messageKey).toBe('import.chapters.validation.ambiguousSubject');
+	expect(validateChapterImportRows([row({ rowIndex: 2, subjectId: 'other' })], context).validRows[0]?.target.subjectId).toBe('other');
 });

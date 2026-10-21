@@ -2,6 +2,7 @@
 	import type { StudentYearAccountView } from '$lib/api/finance-data';
 	import type { PaymentMethod } from '$lib/api/finance-types';
 
+	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -9,6 +10,7 @@
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { formatMinorUnits, majorToMinor, minorToMajor, parseMajorInput } from '$lib/finance/money';
 	import { locale, t } from '$lib/i18n';
+	import { hasPermission } from '$lib/permissions';
 	import { get } from 'svelte/store';
 	import { getPaymentPageState } from '../payment-page.svelte';
 
@@ -21,7 +23,7 @@
 	} = $props();
 
 	const paymentPage = getPaymentPageState();
-	const refundableAccounts = $derived(paymentPage.accounts.filter(account => account.availableBalance > 0));
+	const refundableAccounts = $derived(paymentPage.accounts.filter(account => account.availableBalance > 0 && hasPermission('PAYMENT_REVERSE', { studentId: account.studentId, classId: paymentPage.students.find(student => student.id === account.studentId)?.classId })));
 
 	let busy = $state(false);
 	let accountId = $state('');
@@ -75,7 +77,7 @@
 	});
 
 	async function submit() {
-		if (!canSubmit || !selectedAccount) {
+		if (busy || paymentPage.refundError || !canSubmit || !selectedAccount) {
 			return;
 		}
 		busy = true;
@@ -107,10 +109,11 @@
 	submitLabel={$t('payment.refund')}
 	cancelLabel={$t('common.cancel')}
 	{busy}
-	submitDisabled={!canSubmit}
+	submitDisabled={!canSubmit || paymentPage.refundError}
 	onCancel={resetForm}
 	onSubmit={submit}
 >
+	{#if paymentPage.refundError}<p role="alert" class="text-sm text-destructive">{$t('finance.paymentContextError')}</p><Button variant="outline" onclick={() => paymentPage.loadRefundContext()}>{$t('dataState.retry')}</Button>{/if}
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('events.student')}

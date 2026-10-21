@@ -283,8 +283,8 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 		'Filtre classe',
 		'Extourner un paiement',
 	]),
-	...rows('Finance', `${B}/finance/reconciliation`, [
-		'Rapprochement financier',
+	...rows('Configuration', `${B}/configuration/tools/finance-checks`, [
+		'Contrôles financiers',
 	]),
 
 	// ─── Configuration ──────────────────────────────────────────────────

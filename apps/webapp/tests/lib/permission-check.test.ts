@@ -5,21 +5,21 @@ import { describe, expect, it } from 'bun:test';
 describe('action grant display', () => {
 	it('keeps each action attached to its own scopes', () => {
 		const grants: ActionGrantsSnapshot = [
-			{ permission: 'GRADE_MANAGE', scopes: [{ kind: 'class_subject', classGroupId: 'a', classSubjectId: 'math' }], source: 'manual' },
+			{ permission: 'GRADE_MANAGE', scopes: [{ kind: 'subject', gradeLevelId: 'grade', classGroupId: 'a', subjectId: 'math' }], source: 'manual' },
 			{ permission: 'GRADE_READ', scopes: [{ kind: 'class_group', classGroupId: 'b' }], source: 'manual' },
 		];
-		expect(checkPermission(grants, 'GRADE_MANAGE', { classId: 'a', subject: 'math' })).toBe(true);
-		expect(checkPermission(grants, 'GRADE_MANAGE', { classId: 'b', subject: 'math' })).toBe(false);
-		expect(checkPermission(grants, 'GRADE_MANAGE', { classId: 'a', subject: 'english' })).toBe(false);
+		expect(checkPermission(grants, 'GRADE_MANAGE', { classId: 'a', gradeLevelId: 'grade', subjectId: 'math' })).toBe(true);
+		expect(checkPermission(grants, 'GRADE_MANAGE', { classId: 'b', gradeLevelId: 'grade', subjectId: 'math' })).toBe(false);
+		expect(checkPermission(grants, 'GRADE_MANAGE', { classId: 'a', gradeLevelId: 'grade', subjectId: 'english' })).toBe(false);
 		expect(checkPermission(grants, 'GRADE_READ', { classId: 'b' })).toBe(true);
 		expect(checkPermission(grants, 'GRADE_READ', { classId: 'a' })).toBe(false);
 	});
 
 	it('requires the parent class for an all-subjects scope', () => {
-		const grants: ActionGrantsSnapshot = [{ permission: 'GRADE_MANAGE', scopes: [{ kind: 'class_subject', classGroupId: 'a' }], source: 'assignment' }];
-		expect(checkPermission(grants, 'GRADE_MANAGE', { classId: 'a', subject: 'math' })).toBe(true);
-		expect(checkPermission(grants, 'GRADE_MANAGE', { classId: 'b', subject: 'math' })).toBe(false);
-		expect(checkPermission(grants, 'GRADE_MANAGE', { subject: 'math' })).toBe(false);
+		const grants: ActionGrantsSnapshot = [{ permission: 'GRADE_MANAGE', scopes: [{ kind: 'subject', gradeLevelId: 'grade', classGroupId: 'a' }], source: 'assignment' }];
+		expect(checkPermission(grants, 'GRADE_MANAGE', { classId: 'a', gradeLevelId: 'grade', subjectId: 'math' })).toBe(true);
+		expect(checkPermission(grants, 'GRADE_MANAGE', { classId: 'b', gradeLevelId: 'grade', subjectId: 'math' })).toBe(false);
+		expect(checkPermission(grants, 'GRADE_MANAGE', { gradeLevelId: 'grade', subjectId: 'math' })).toBe(false);
 	});
 
 	it('does not turn owner provenance into a blanket permission', () => {

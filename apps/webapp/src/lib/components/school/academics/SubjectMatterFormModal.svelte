@@ -12,7 +12,6 @@
 		subjectId,
 		classSubjectId,
 		classGroupId,
-		gradeLevelSubjectId,
 		defaultSequenceOrder = 1,
 		onSaved,
 	}: {
@@ -22,7 +21,6 @@
 		subjectId: string;
 		classSubjectId: string;
 		classGroupId: string;
-		gradeLevelSubjectId?: string;
 		defaultSequenceOrder?: number;
 		onSaved?: (row: SubjectMatterDrawerRow) => void;
 	} = $props();
@@ -77,7 +75,6 @@
 				subjectId,
 				classSubjectId,
 				classGroupId,
-				gradeLevelSubjectId,
 				name: trimmedName,
 				description: fieldText(description) || undefined,
 				sequenceOrder: Number(sequenceOrder),

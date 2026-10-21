@@ -54,6 +54,22 @@ export interface ChargeInstallmentRecord {
 }
 
 export interface StudentChargeRecord {
+	classId?: string;
+	studentName?: string;
+	accountId?: string;
+	availableCredit?: number;
+	overdue?: number;
+	adjustmentReason?: string;
+	adjustedAt?: string;
+	adjustedById?: string;
+	waiverReason?: string;
+	waivedAt?: string;
+	waivedById?: string;
+	cancellationReason?: string;
+	cancelledAt?: string;
+	cancelledById?: string;
+	createdAt?: string;
+
 	id: string;
 	schoolId?: string;
 	studentId: string;
@@ -239,3 +255,20 @@ export const CATALOG_CATEGORIES: CatalogServiceCategory[] = [
 ];
 
 export const FINANCE_BATCH_ENROLL_LIMIT = 100;
+
+export interface FinanceOverview {
+	schoolId: string;
+	academicYearId: string;
+	currency: string;
+	scope: 'authorized';
+	received: number;
+	refunded: number;
+	netCollected: number;
+	outstanding: number;
+	overdue: number;
+	overdueStudents: number;
+	availableCredit: number;
+	studentsAssigned: number;
+	netBilled: number;
+	applied: number;
+}

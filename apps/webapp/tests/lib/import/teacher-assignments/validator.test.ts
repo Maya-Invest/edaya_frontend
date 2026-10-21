@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import type { TeacherAssignmentImportRow } from '$lib/import/teacher-assignments/types';
 import {
 	parseTeacherAssignmentImportCsvText,
 } from '$lib/import/teacher-assignments/parser';
@@ -6,7 +6,7 @@ import {
 	canImportValidatedTeacherAssignments,
 	validateTeacherAssignmentImportRows,
 } from '$lib/import/teacher-assignments/validator';
-import type { TeacherAssignmentImportRow } from '$lib/import/teacher-assignments/types';
+import { describe, expect, it } from 'bun:test';
 
 const TEACHERS = [
 	{ id: 'tch-1', code: 'ENS-001', name: 'Kouadio Yao' },
@@ -152,4 +152,14 @@ describe('teacher assignment import validator', () => {
 		expect(result.validRows).toHaveLength(1);
 		expect(result.errors[0]?.messageKey).toBe('import.teacherAssignments.validation.duplicateInFile');
 	});
+});
+
+it('resolves the subject inside the selected class and requires an ID for duplicate names', () => {
+	const context = { teachers: TEACHERS, classes: CLASSES, subjectCatalog: [{ id: 'math-5', name: 'Mathématiques' }, { id: 'math-6', name: 'Mathématiques' }], classSubjects: [{ id: 'cs-5', classGroupId: 'class-5a', subjectId: 'math-5' }, { id: 'cs-6', classGroupId: 'class-6a', subjectId: 'math-6' }] };
+	expect(validateTeacherAssignmentImportRows([row({ rowIndex: 2 })], context).validRows[0]?.classSubjectId).toBe('cs-6');
+	context.subjectCatalog.push({ id: 'math-6-extra', name: 'Mathématiques' });
+	context.classSubjects.push({ id: 'cs-6-extra', classGroupId: 'class-6a', subjectId: 'math-6-extra' });
+	expect(validateTeacherAssignmentImportRows([row({ rowIndex: 2 })], context).errors[0]?.messageKey).toBe('import.teacherAssignments.validation.ambiguousSubject');
+	const parsed = parseTeacherAssignmentImportCsvText('code,classe,matiere,subjectId\nENS-001,6ème A,Mathématiques,math-6-extra');
+	expect(validateTeacherAssignmentImportRows(parsed.rows, context).validRows[0]?.classSubjectId).toBe('cs-6-extra');
 });

@@ -28,6 +28,7 @@
 		active = false,
 		class: className,
 		onValueChange,
+		isSelectable,
 	}: {
 		/** Optional bounded workflow projection; disables directory loading. */
 		students?: Pick<Student, 'id' | 'name' | 'initials' | 'classId' | 'matricule' | 'email' | 'photoUrl'>[];
@@ -44,7 +45,8 @@
 		variant?: 'popover' | 'panel';
 		active?: boolean;
 		class?: string;
-		onValueChange?: (next: string) => void;
+		isSelectable?: (student: Pick<Student, 'id' | 'classId'>) => boolean;
+		onValueChange?: (next: string, student?: Pick<Student, 'id' | 'classId'>) => void;
 	} = $props();
 
 	const pickerState = new StudentPickerState();
@@ -88,6 +90,7 @@
 
 	const availableStudents = $derived(
 		sourceStudents
+			.filter(student => !isSelectable || isSelectable(student))
 			.filter(student => !excludeIds.includes(student.id))
 			.filter(student => !restrictedClassIds || restrictedClassIds.has(student.classId))
 			.filter(student => classFilter === 'all' || student.classId === classFilter)
@@ -139,7 +142,7 @@
 			return;
 		}
 		value = studentId;
-		onValueChange?.(studentId);
+		onValueChange?.(studentId, sourceStudents.find(student => student.id === studentId));
 	}
 
 	function removeChip(studentId: string) {
@@ -155,7 +158,7 @@
 		class={className}
 		placeholder={placeholder ?? $t('events.selectStudent')}
 		searchPlaceholder={$t('common.searchStudent')}
-		onValueChange={onValueChange}
+		onValueChange={id => onValueChange?.(id, sourceStudents.find(student => student.id === id))}
 	>
 		{#snippet filters()}
 			{#if showFilters}

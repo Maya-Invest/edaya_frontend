@@ -7,10 +7,9 @@ export type PermissionScopeGrain = ScopeGrain;
 
 export const PERMISSION_SCOPE_GRAINS = [
 	'class_group',
-	'class_subject',
 	'student',
 	'grade_level',
-	'grade_level_subject',
+	'subject',
 	'activity',
 ] as const satisfies readonly PermissionScopeGrain[];
 
@@ -27,9 +26,8 @@ export function grantScopesEquivalent(left: readonly GrantScope[], right: readon
 export function emptyGrantScope(grain: ScopeGrain): GrantScope {
 	switch (grain) {
 		case 'class_group': return { kind: grain, classGroupId: '' };
-		case 'class_subject': return { kind: grain, classGroupId: '' };
 		case 'grade_level': return { kind: grain, gradeLevelId: '' };
-		case 'grade_level_subject': return { kind: grain, gradeLevelId: '' };
+		case 'subject': return { kind: grain, gradeLevelId: '' };
 		case 'activity': return { kind: grain };
 		case 'student': return { kind: grain, studentId: '' };
 	}
@@ -48,9 +46,8 @@ export function validGrantScopes(scopes: readonly GrantScope[], grain?: ScopeGra
 			return false;
 		switch (scope.kind) {
 			case 'class_group': return Boolean(scope.classGroupId);
-			case 'class_subject': return Boolean(scope.classGroupId) && scope.classSubjectId !== '';
 			case 'grade_level': return Boolean(scope.gradeLevelId);
-			case 'grade_level_subject': return Boolean(scope.gradeLevelId) && scope.gradeLevelSubjectId !== '';
+			case 'subject': return Boolean(scope.gradeLevelId) && scope.subjectId !== '' && scope.classGroupId !== '';
 			case 'activity': return Boolean(scope.activityId || scope.classGroupId);
 			case 'student': return Boolean(scope.studentId);
 		}
@@ -58,8 +55,8 @@ export function validGrantScopes(scopes: readonly GrantScope[], grain?: ScopeGra
 	});
 }
 
-export function scopeSelectionsComplete(scopes: readonly GrantScope[]): boolean {
-	return scopes.every(scope => scope.kind !== 'school') && PERMISSION_SCOPE_GRAINS.every((grain) => {
+export function scopeSelectionsComplete(scopes: readonly GrantScope[], subjectClassRequired = false): boolean {
+	return scopes.every(scope => scope.kind !== 'school' && (!subjectClassRequired || ((scope.kind !== 'subject' || Boolean(scope.classGroupId)) && !(scope.kind === 'all' && scope.grain === 'subject')))) && PERMISSION_SCOPE_GRAINS.every((grain) => {
 		const selected = scopes.filter(scope => (scope.kind === 'all' ? scope.grain : scope.kind) === grain);
 		return !selected.length || validGrantScopes(selected, grain);
 	});
@@ -67,4 +64,9 @@ export function scopeSelectionsComplete(scopes: readonly GrantScope[]): boolean 
 
 export function permissionSelectionGrains(entry: Pick<components['schemas']['PermissionCatalogEntry'], 'scopePolicy'>): PermissionScopeGrain[] {
 	return entry.scopePolicy.mode === 'resources' ? [...entry.scopePolicy.allowedKinds] : [];
+}
+
+export function requiresSubjectClass(entries: readonly Pick<components['schemas']['PermissionCatalogEntry'], 'scopePolicy'>[]): boolean {
+	const subjectPolicies = entries.map(entry => entry.scopePolicy).filter(policy => policy.mode === 'resources' && policy.allowedKinds.includes('subject'));
+	return subjectPolicies.length > 0 && subjectPolicies.every(policy => policy.mode === 'resources' && policy.subjectClassRequired === true);
 }

@@ -16,7 +16,7 @@ import {
 } from '$lib/import/shared/resolve-import-class-group';
 import {
 	isKnownSubjectName,
-	resolveSubjectCatalogId,
+	normalizeSubjectLookupName,
 	subjectNameSuggestions,
 } from '$lib/import/teachers/subject-name-lookup';
 
@@ -58,17 +58,15 @@ function resolveTeacher(
 
 function resolveClassSubjectId(
 	classGroupId: string,
-	subjectName: string,
+	row: TeacherAssignmentImportRow,
 	catalog: TeacherAssignmentImportValidationContext['subjectCatalog'],
 	classSubjects: readonly TeacherAssignmentImportClassSubjectOption[],
-): string | undefined {
-	const subjectId = resolveSubjectCatalogId(subjectName, catalog);
-	if (!subjectId) {
-		return undefined;
-	}
-	return classSubjects.find(
-		entry => entry.classGroupId === classGroupId && entry.subjectId === subjectId,
-	)?.id;
+): { id?: string; ambiguous: boolean } {
+	const ids = new Set(catalog.filter(subject => row.subjectId?.trim()
+		? subject.id === row.subjectId.trim()
+		: normalizeSubjectLookupName(subject.name) === normalizeSubjectLookupName(row.matiere)).map(subject => subject.id));
+	const matches = classSubjects.filter(entry => entry.classGroupId === classGroupId && ids.has(entry.subjectId));
+	return { id: matches.length === 1 ? matches[0].id : undefined, ambiguous: matches.length > 1 };
 }
 
 export function validateTeacherAssignmentImportRows(
@@ -133,18 +131,19 @@ export function validateTeacherAssignmentImportRows(
 				}));
 			}
 			else if (classGroupId) {
-				classSubjectId = resolveClassSubjectId(
+				const resolution = resolveClassSubjectId(
 					classGroupId,
-					row.matiere,
+					row,
 					subjectCatalog,
 					classSubjects,
 				);
+				classSubjectId = resolution.id;
 				if (!classSubjectId) {
 					rowIssues.push(issue({
 						rowIndex: row.rowIndex,
 						column: 'matiere',
 						value: row.matiere,
-						messageKey: 'import.teacherAssignments.validation.subjectNotInClass',
+						messageKey: resolution.ambiguous ? 'import.teacherAssignments.validation.ambiguousSubject' : 'import.teacherAssignments.validation.subjectNotInClass',
 						messageParams: { subject: row.matiere, class: row.classe },
 					}));
 				}

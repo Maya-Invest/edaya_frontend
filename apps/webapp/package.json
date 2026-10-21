@@ -13,7 +13,7 @@
     "check": "bun x --bun svelte-check --tsconfig ./tsconfig.json && bun x --bun tsc --project tsconfig.test.json --noEmit",
     "check:watch": "bun x --bun svelte-check --tsconfig ./tsconfig.json --watch",
     "quality": "bun run lint && bun run check",
-    "test": "bun test tests/lib tests/integration/setup/journey-ledger.test.ts && bun test tests/integration/messaging.test.ts && bun test tests/integration/family-feedback-mutations.test.ts && bun test tests/integration/account-linking.test.ts && bun test tests/integration/timetable-state.test.ts && bun test tests/integration/passwordless-state.test.ts && bun test tests/integration/permission-form-state.test.ts && bun test tests/integration/attendance-creation.test.ts && bun test tests/integration/teacher-timetable-state.test.ts",
+    "test": "bun test tests/lib tests/integration/setup/journey-ledger.test.ts && bun test tests/integration/messaging.test.ts && bun test tests/integration/family-feedback-mutations.test.ts && bun test tests/integration/account-linking.test.ts && bun test tests/integration/timetable-state.test.ts && bun test tests/integration/passwordless-state.test.ts && bun test tests/integration/permission-form-state.test.ts && bun test tests/integration/attendance-creation.test.ts && bun test tests/integration/teacher-timetable-state.test.ts && bun test tests/integration/finance-payment-draft.test.ts",
     "demo:e2e": "bun scripts/demo-dry-run.ts",
     "qa:checklist": "bun scripts/qa-checklist-run.ts",
     "qa:template": "bun scripts/generate-qa-template.ts",

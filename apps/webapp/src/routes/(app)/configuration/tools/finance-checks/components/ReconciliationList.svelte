@@ -6,7 +6,7 @@
 	import { locale, t } from '$lib/i18n';
 	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { cn } from '$lib/utils';
-	import FinanceSubnav from '../../components/FinanceSubnav.svelte';
+
 	import { getReconciliationPageState } from '../reconciliation-page.svelte';
 
 	const reconciliationPage = getReconciliationPageState();
@@ -22,9 +22,7 @@
 
 <div class="animate-fade-in space-y-6">
 	<ListPageHeader eyebrow={$t('finance.financeEyebrow')} title={$t('finance.reconciliation')}>
-		{#snippet filters()}
-			<FinanceSubnav active="reconciliation" />
-		{/snippet}
+
 		{#snippet more()}
 			<ListMoreMenu
 				exportOnly

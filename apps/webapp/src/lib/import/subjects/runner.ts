@@ -37,7 +37,7 @@ export interface SubjectImportRunResult {
 
 	failed: SubjectImportRunFailure[];
 
-	gradeLevelSubjectIds: string[];
+	subjectIds: string[];
 
 }
 
@@ -62,7 +62,7 @@ export async function runSubjectImport(options: SubjectImportRunOptions): Promis
 
 	const failed: SubjectImportRunFailure[] = [];
 
-	const gradeLevelSubjectIds: string[] = [];
+	const subjectIds: string[] = [];
 
 	const createdAt = new Date().toISOString();
 	const categories = await loadSubjectCategories(client, schoolId);
@@ -76,7 +76,7 @@ export async function runSubjectImport(options: SubjectImportRunOptions): Promis
 	for (const [index, row] of rows.entries()) {
 		onProgress?.(index, total);
 
-		const { subjectId, gradeLevelSubjectId, classSubjectIdsByClassGroupId } = createSubjectImportIdsForGradeLevel(
+		const { subjectId, classSubjectIdsByClassGroupId } = createSubjectImportIdsForGradeLevel(
 
 			index,
 
@@ -99,8 +99,6 @@ export async function runSubjectImport(options: SubjectImportRunOptions): Promis
 
 				subjectId,
 
-				gradeLevelSubjectId,
-
 				classSubjectIdsByClassGroupId,
 
 				name: row.nom,
@@ -115,7 +113,7 @@ export async function runSubjectImport(options: SubjectImportRunOptions): Promis
 
 			});
 
-			gradeLevelSubjectIds.push(result.gradeLevelSubjectId);
+			subjectIds.push(result.subjectId);
 		}
 
 		catch (error) {
@@ -139,15 +137,15 @@ export async function runSubjectImport(options: SubjectImportRunOptions): Promis
 
 	const result = {
 
-		created: gradeLevelSubjectIds.length,
+		created: subjectIds.length,
 
 		failed,
 
-		gradeLevelSubjectIds,
+		subjectIds,
 
 	};
 
-	if (gradeLevelSubjectIds.length > 0) {
+	if (subjectIds.length > 0) {
 		try {
 			notifySubjectsListChanged();
 		}

@@ -40,7 +40,10 @@ export function subject(
 	return {
 		schoolId: SEED_SCHOOL_ID,
 		code: null,
-		defaultCoefficient: 1,
+		coefficient: 1,
+		gradeLevelId: 'ci-gl-6',
+		academicYearId: 'ci-ay-2025-2026',
+		isOptional: false,
 		categoryId: `${SEED_SCHOOL_ID}:subject-category:${slug || 'scientifique'}`,
 		color: 'mint',
 		...rest,

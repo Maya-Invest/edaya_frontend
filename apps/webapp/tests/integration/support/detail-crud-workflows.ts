@@ -37,7 +37,10 @@ export async function exerciseDetailCrud(page: Page, base: string, id: string, e
   await persisted(`${text} edited`);
   if (contract.remove) {
     assert(await openUrlModal(page, contract.path, contract.remove, { base, target: entityId }));
-    await uiCommand(page, `/entities/${contract.collection}/delete`, () => page.getByRole('dialog').getByRole('button', { name: /^(supprimer|delete)$/i }).click());
+    const deleteCommand = contract.collection === 'subject-matters'
+      ? '/commands/remove-subject-matter'
+      : `/entities/${contract.collection}/delete`;
+    await uiCommand(page, deleteCommand, () => page.getByRole('dialog').getByRole('button', { name: /^(supprimer|delete)$/i }).click());
     await waitForMutationDialog(page);
     await page.reload({ waitUntil: 'domcontentloaded' });
     await waitForPageQuery(page);

@@ -37,6 +37,13 @@ import { formatDateInput } from '$lib/date/format';
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
 export interface FinancePayment {
+	classId?: string;
+	studentName?: string;
+	hasActiveAllocations?: boolean;
+	reversedAt?: string;
+	reversedById?: string;
+	recordedById?: string;
+
 	id: string;
 	accountId: string;
 	studentId: string;
@@ -165,6 +172,9 @@ export function mapFees(raw: readonly unknown[]): Fee[] {
 			const installments = Array.isArray(terms.installments) ? terms.installments : [];
 			return {
 				id: stringField(fee.id),
+				academicYearId: stringField(fee.academicYearId),
+				description: stringField(fee.description),
+				billingTerms: fee.billingTerms as CatalogServiceRecord['billingTerms'],
 				name: stringField(fee.name),
 				category: mapCategory(fee.category),
 				amount,
@@ -181,20 +191,12 @@ export function mapFees(raw: readonly unknown[]): Fee[] {
 function mapInstallments(charge: StudentChargeRecord): StudentBilling['installments'] {
 	let allocatedRemaining = moneyAmount(charge.allocatedAmount);
 	const installments = charge.installments ?? [];
-	return installments.map((installment) => {
+	return [...installments].sort((a, b) => (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999') || a.id.localeCompare(b.id)).map((installment) => {
 		const amount = moneyAmount(installment.expectedAmount);
-		let status: 'paid' | 'pending' = 'pending';
-		if (allocatedRemaining >= amount && amount > 0) {
-			status = 'paid';
-			allocatedRemaining -= amount;
-		}
-		return {
-			id: installment.id,
-			date: formatDateInput(installment.dueDate),
-			amount,
-			label: installment.label,
-			status,
-		};
+		const applied = Math.min(amount, allocatedRemaining);
+		allocatedRemaining -= applied;
+		const status = applied >= amount && amount > 0 ? 'paid' : applied > 0 ? 'partial' : 'pending';
+		return { id: installment.id, date: formatDateInput(installment.dueDate), amount, label: installment.label, status, applied, remaining: amount - applied };
 	});
 }
 
@@ -210,6 +212,25 @@ export function mapStudentBilling(raw: readonly unknown[]): StudentBilling[] {
 			const remaining = charge.status === 'cancelled' ? 0 : Math.max(0, net - allocated);
 			return {
 				id: stringField(charge.id),
+				studentName: charge.studentName,
+				classId: charge.classId ?? undefined,
+				netAmount: charge.status === 'cancelled' ? 0 : net,
+				adjustmentAmount: adjustment,
+				waiverAmount: waiver,
+				accountId: charge.accountId ?? undefined,
+				availableCredit: charge.availableCredit,
+				overdue: charge.overdue,
+				adjustmentReason: charge.adjustmentReason ?? undefined,
+				adjustedAt: charge.adjustedAt ?? undefined,
+				adjustedById: charge.adjustedById ?? undefined,
+				waiverReason: charge.waiverReason ?? undefined,
+				waivedAt: charge.waivedAt ?? undefined,
+				waivedById: charge.waivedById ?? undefined,
+				cancellationReason: charge.cancellationReason ?? undefined,
+				cancelledAt: charge.cancelledAt ?? undefined,
+				cancelledById: charge.cancelledById ?? undefined,
+				createdAt: charge.createdAt ?? undefined,
+
 				studentId: stringField(charge.studentId),
 				enrollmentId: stringField(charge.enrollmentId),
 				catalogServiceId: stringField(charge.catalogServiceId),
@@ -234,8 +255,14 @@ export function mapPayments(raw: readonly unknown[]): FinancePayment[] {
 			const payment = asRecord(entry) as unknown as PaymentRecord;
 			return {
 				id: stringField(payment.id),
+				studentName: stringField(asRecord(entry).studentName),
+				classId: stringField(asRecord(entry).classId) || undefined,
+				hasActiveAllocations: asRecord(entry).hasActiveAllocations === true,
+				reversedAt: stringField(asRecord(entry).reversedAt),
+				reversedById: stringField(asRecord(entry).reversedById),
+				recordedById: stringField(asRecord(entry).recordedById),
 				accountId: stringField(payment.accountId),
-				studentId: '',
+				studentId: stringField(asRecord(entry).studentId),
 				academicYearId: stringField(payment.academicYearId),
 				amount: moneyAmount(payment.amount),
 				currency: currencyOf(payment as unknown as Record<string, unknown>, 'amount'),
@@ -318,18 +345,18 @@ export async function listYearAccounts(
 	return mapYearAccounts(raw);
 }
 
-export async function listActiveServiceEnrollments(
+export async function listServiceEnrollments(
 	client: SchoolClient,
 	scope: { academicYearId: string },
 ): Promise<StudentServiceEnrollmentRecord[]> {
 	const raw = await safeOptionalEntityList(() => listAllEntityPages(
 		query => studentServiceEnrollmentsEntity(client).list(query),
-		{ baseQuery: { academicYearId: scope.academicYearId, status: 'active' } },
+		{ baseQuery: { academicYearId: scope.academicYearId } },
 	));
 	return raw as StudentServiceEnrollmentRecord[];
 }
 
-async function loadStudentsByIds(
+export async function loadStudentsByIds(
 	client: SchoolClient,
 	studentIds: readonly string[],
 	academicYearId: string,
@@ -379,7 +406,7 @@ export async function loadBillingPageData(
 		listCatalogServices(client, scope),
 		listStudentCharges(client, scope),
 		listYearAccounts(client, scope),
-		listActiveServiceEnrollments(client, scope),
+		listServiceEnrollments(client, scope),
 	]);
 	const hydratedBilling = hydrateChargeCatalogIds(billing, enrollments);
 	const students = await loadStudentsByIds(
@@ -403,7 +430,7 @@ export async function loadPaymentPageData(
 		listYearPayments(client, scope),
 		listYearAccounts(client, scope),
 		listStudentCharges(client, scope),
-		listActiveServiceEnrollments(client, scope),
+		listServiceEnrollments(client, scope),
 	]);
 	const accountById = new Map(accounts.map(account => [account.id, account]));
 	const hydrated = payments.map((payment) => {

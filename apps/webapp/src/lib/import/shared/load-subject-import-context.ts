@@ -10,7 +10,7 @@ export async function loadExistingSubjectImportKeys(
 ): Promise<Set<string>> {
 	const client = getBrowserSchoolClient();
 	const sources = await fetchCatalogSubjectsSources(client, schoolId);
-	const catalog = mapCatalogSubjects(sources, classGradeLevelById);
+	const catalog = mapCatalogSubjects(sources);
 	const keys = new Set<string>();
 
 	for (const entry of catalog) {

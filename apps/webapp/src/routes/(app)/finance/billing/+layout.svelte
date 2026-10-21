@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
+	import { billingFilters, financeReadKey } from '$lib/api/finance-workspace';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
@@ -32,7 +33,7 @@
 	}
 </script>
 
-<PageQuery {query} cacheKey={listRouteCacheKey} loadingTitle={$t('finance.title')}>
+<PageQuery {query} cacheKey={url => `${listRouteCacheKey(url)}|${JSON.stringify(billingFilters(url))}|${financeReadKey('billing-list')}`} cache={false} loadingTitle={$t('finance.title')}>
 	{#snippet children(data)}
 		<DataState
 			preserveShell
@@ -42,7 +43,8 @@
 			emptyDescription={$t('dataState.emptyDescription')}
 		>
 			<BillingList {selectedId} onSelectBilling={selectBilling} />
-			{@render pageChildren()}
 		</DataState>
 	{/snippet}
 </PageQuery>
+
+{@render pageChildren()}

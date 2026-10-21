@@ -37,7 +37,7 @@ test('inherited curriculum blocks class cleanup before any destructive operation
 		} },
 		classSubjects: { list: async () => {
 			calls.push('classSubjects.list');
-			return [{ id: 'inherited', gradeLevelSubjectId: 'grade-subject' }];
+			return [{ id: 'inherited', subjectId: 'grade-subject' }];
 		} },
 	} } as unknown as Parameters<typeof cleanupClassGroupDependencies>[0];
 	await expect(cleanupClassGroupDependencies(client, 'class')).rejects.toBeInstanceOf(ClassGroupDeleteBlockedError);

@@ -300,7 +300,7 @@
 							<Eye class="h-4 w-4 text-muted-foreground" />
 							{$t('common.open')}
 						</RowActionMenuItem>
-						<PermissionGate permission="ASSESSMENT_MANAGE" {classId} subject={evaluation.classSubjectId} assessmentId={evaluation.id} mode="disable" tooltip={$t('eval.permissionCreate')}>
+						<PermissionGate permission="ASSESSMENT_MANAGE" {classId} subject={evaluation.classSubjectId} subjectId={evaluationsPage.subjectsFor(classId).find(row => row.id === evaluation.classSubjectId)?.subjectId} assessmentId={evaluation.id} mode="disable" tooltip={$t('eval.permissionCreate')}>
 							{#snippet children({ disabled, title })}
 								<RowActionMenuItem {disabled} {title} onclick={event => openEvaluationAction(event, evaluation, 'edit')}>
 									<Pencil class="h-4 w-4 text-muted-foreground" />

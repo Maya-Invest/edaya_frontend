@@ -1,5 +1,5 @@
 {
-  "passed": 119,
+  "passed": 121,
   "failed": 0,
   "skipped": 0,
   "results": [
@@ -215,7 +215,12 @@
     },
     {
       "scene": "DC3",
-      "step": "Class groups Filter + More menu",
+      "step": "Class groups level navigation and search — export",
+      "status": "pass"
+    },
+    {
+      "scene": "DC3",
+      "step": "Class groups level navigation and search",
       "status": "pass"
     },
     {
@@ -270,12 +275,12 @@
     },
     {
       "scene": "DC9",
-      "step": "Report card defs filter select",
+      "step": "Report card models workspace",
       "status": "pass"
     },
     {
       "scene": "DC9",
-      "step": "Report card definitions FilterSelect + More menu",
+      "step": "Level navigation preserves report configuration restrictions",
       "status": "pass"
     },
     {
@@ -285,7 +290,12 @@
     },
     {
       "scene": "DC11",
-      "step": "Subjects FilterSelect + More menu",
+      "step": "Subjects level navigation and search — export",
+      "status": "pass"
+    },
+    {
+      "scene": "DC11",
+      "step": "Subjects level navigation and search",
       "status": "pass"
     },
     {
@@ -565,7 +575,7 @@
     },
     {
       "scene": "DO",
-      "step": "O.3 Report card definitions filter shell",
+      "step": "O.3 Report models follow level navigation",
       "status": "pass"
     },
     {

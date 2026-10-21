@@ -8,6 +8,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { formatMinorUnits, majorToMinor, parseMajorInput } from '$lib/finance/money';
 	import { locale, t } from '$lib/i18n';
+	import { hasPermission } from '$lib/permissions';
 	import { get } from 'svelte/store';
 	import { getBillingPageState } from '../../billing-page.svelte';
 
@@ -26,13 +27,13 @@
 	const currency = $derived(billing.currency);
 
 	let busy = $state(false);
-	let mode = $state<AllocationMode>('fifo');
+	let mode = $state<AllocationMode>('targeted');
 	let targetedAmount = $state('');
 	let preview = $state<AllocationPreview | null>(null);
 
 	const parsedMajor = $derived(parseMajorInput(targetedAmount));
 	const targetedMinor = $derived(
-		parsedMajor === null ? billing.remaining : majorToMinor(parsedMajor, currency, $locale),
+		parsedMajor === null ? Math.min(billing.remaining, account?.availableBalance ?? 0) : majorToMinor(parsedMajor, currency, $locale),
 	);
 
 	function allocationPlan(): AllocationPlan {
@@ -48,7 +49,7 @@
 	const canSubmit = $derived(Boolean(account) && (mode === 'fifo' || targetedMinor > 0));
 
 	function resetForm() {
-		mode = 'fifo';
+		mode = 'targeted';
 		targetedAmount = '';
 		preview = null;
 	}
@@ -80,7 +81,7 @@
 	});
 
 	async function submit() {
-		if (!canSubmit || !account) {
+		if (busy || !canSubmit || !account || !hasPermission('PAYMENT_ALLOCATE', { studentId: billing.studentId, classId: billing.classId }) || billing.remaining <= 0 || billing.status === 'cancelled') {
 			return;
 		}
 		busy = true;

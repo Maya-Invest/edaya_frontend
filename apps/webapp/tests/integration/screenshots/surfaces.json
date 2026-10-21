@@ -336,10 +336,10 @@
     "identity": "owner"
   },
   {
-    "id": "view.finance.reconciliation",
-    "feature": "finance",
-    "path": "/finance/reconciliation",
-    "title": "/finance/reconciliation",
+    "id": "view.configuration.tools.finance-checks",
+    "feature": "configuration",
+    "path": "/configuration/tools/finance-checks",
+    "title": "Finance checks",
     "kind": "page",
     "identity": "owner"
   },
@@ -1406,6 +1406,46 @@
     "path": "/configuration/structure/details",
     "title": "Grade level details",
     "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.fees.feeId",
+    "feature": "finance",
+    "path": "/finance/fees/[feeId]",
+    "title": "Fee Overview",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.billing.id.payments",
+    "feature": "finance",
+    "path": "/finance/billing/[id]/payments",
+    "title": "Payments",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.billing.id.history",
+    "feature": "finance",
+    "path": "/finance/billing/[id]/history",
+    "title": "Billing history",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.payment.modal.payment",
+    "feature": "finance",
+    "path": "/finance/payment?modal=payment",
+    "title": "Record payment",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.finance.fees.feeId.modal.assign-fee",
+    "feature": "finance",
+    "path": "/finance/fees/[feeId]?modal=assign-fee",
+    "title": "Assign selected fee",
+    "kind": "modal",
     "identity": "owner"
   }
 ]

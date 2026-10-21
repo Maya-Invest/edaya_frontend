@@ -54,7 +54,7 @@ export async function createCatalogServiceMutation(input: {
 		status: input.status ?? 'active',
 	}), {
 		successMessage: input.successMessage,
-		versionKeys: ['fees'],
+		versionKeys: ['fees', 'billing', 'payments'],
 	});
 	return result ? id : null;
 }
@@ -79,7 +79,7 @@ export async function updateCatalogServiceMutation(input: {
 		billingTerms: input.billingTerms,
 	}), {
 		successMessage: input.successMessage,
-		versionKeys: ['fees'],
+		versionKeys: ['fees', 'billing', 'payments'],
 	});
 	return result !== null;
 }
@@ -93,7 +93,7 @@ export async function activateCatalogServiceMutation(input: {
 		() => financeCommand(client, 'activateCatalogService', 'activate-catalog-service', { id: input.id, requestId: crypto.randomUUID() }),
 		{
 			successMessage: input.successMessage,
-			versionKeys: ['fees'],
+			versionKeys: ['fees', 'billing', 'payments'],
 		},
 	);
 	return result !== null;
@@ -108,7 +108,7 @@ export async function archiveCatalogServiceMutation(input: {
 		() => financeCommand(client, 'archiveCatalogService', 'archive-catalog-service', { id: input.id, requestId: crypto.randomUUID() }),
 		{
 			successMessage: input.successMessage,
-			versionKeys: ['fees', 'billing'],
+			versionKeys: ['fees', 'billing', 'payments'],
 		},
 	);
 	return result !== null;
@@ -132,7 +132,7 @@ export async function enrollStudentInServiceMutation(input: {
 		dueDate: input.dueDate ?? null,
 	}), {
 		successMessage: input.successMessage,
-		versionKeys: ['billing', 'fees'],
+		versionKeys: ['fees', 'billing', 'payments'],
 	});
 	return result ? id : null;
 }
@@ -154,7 +154,7 @@ export async function enrollStudentsInServiceMutation(input: {
 		dueDate: input.dueDate ?? null,
 	}), {
 		successMessage: input.successMessage,
-		versionKeys: ['billing', 'fees'],
+		versionKeys: ['fees', 'billing', 'payments'],
 	});
 	return result !== null;
 }
@@ -188,7 +188,7 @@ export async function recordPaymentMutation(input: {
 		allocation: input.allocation,
 	}), {
 		successMessage: input.successMessage,
-		versionKeys: ['payments', 'billing'],
+		versionKeys: ['fees', 'billing', 'payments'],
 	});
 	return result !== null;
 }

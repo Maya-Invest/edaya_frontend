@@ -8,6 +8,7 @@
 	import { t } from '$lib/i18n';
 	import { appPath } from '$lib/navigation/app-navigation';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
+	import { hasPermission } from '$lib/permissions';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
 	import { untrack } from 'svelte';
 	import {
@@ -42,22 +43,27 @@
 	}
 
 	$effect(() => {
-		if (!academicContext.shellReady) {
+		if (!academicContext.shellReady || $page.url.pathname !== toolsHref || !hasPermission('TIMETABLE_MANAGE')) {
 			return;
 		}
 		void loadPlanningData(academicSelectionKey);
 	});
 </script>
 
-<PageQuery {query} cacheKey={listRouteCacheKey} loadingTitle={$t('tools.title')}>
-	{#snippet children(data)}
-		<DataState
-			status={data.status}
-			errorMessage={data.errorMessage}
-			emptyTitle={$t('tools.title')}
-			emptyDescription={$t('dataState.emptyDescription')}
-		>
-			{@render pageChildren()}
-		</DataState>
-	{/snippet}
-</PageQuery>
+{#if $page.url.pathname.endsWith('/finance-checks')}
+	{@render pageChildren()}
+{:else}
+	<PageQuery {query} cacheKey={listRouteCacheKey} loadingTitle={$t('tools.title')}>
+		{#snippet children(data)}
+			<DataState
+				status={data.status}
+				errorMessage={data.errorMessage}
+				emptyTitle={$t('tools.title')}
+				emptyDescription={$t('dataState.emptyDescription')}
+			>
+				{@render pageChildren()}
+			</DataState>
+		{/snippet}
+	</PageQuery>
+
+{/if}

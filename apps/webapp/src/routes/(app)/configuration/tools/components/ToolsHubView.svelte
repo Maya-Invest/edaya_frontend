@@ -9,6 +9,7 @@
 	import { t } from '$lib/i18n';
 	import { CalendarRange, Upload } from '$lib/icons';
 	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
+	import { appGoto } from '$lib/navigation/app-navigation';
 	import {
 		IMPORT_TYPE_TABS,
 		IMPORT_WORKFLOW_STEPS,
@@ -53,39 +54,41 @@
 />
 
 <div class="grid gap-4 md:grid-cols-2 xl:max-w-4xl">
-	<article
-		class="flex flex-col rounded-xl border border-border bg-card p-5 shadow-sm"
-		data-testid="import-pack-generic"
-	>
-		<div class="mb-4 flex items-start gap-3">
-			<div class="rounded-lg bg-primary/10 p-2 text-primary">
-				<Upload class="size-5" aria-hidden="true" />
+	<PermissionGate permission="STUDENT_CREATE">
+		<article
+			class="flex flex-col rounded-xl border border-border bg-card p-5 shadow-sm"
+			data-testid="import-pack-generic"
+		>
+			<div class="mb-4 flex items-start gap-3">
+				<div class="rounded-lg bg-primary/10 p-2 text-primary">
+					<Upload class="size-5" aria-hidden="true" />
+				</div>
+				<div class="min-w-0 flex-1">
+					<h3 class="font-display text-lg font-semibold">{$t('import.card.title')}</h3>
+					<p class="mt-1 text-sm text-muted-foreground">{$t('import.card.description')}</p>
+					<p class="mt-2 text-sm text-muted-foreground">{$t('import.recommendedOrder')}</p>
+				</div>
 			</div>
-			<div class="min-w-0 flex-1">
-				<h3 class="font-display text-lg font-semibold">{$t('import.card.title')}</h3>
-				<p class="mt-1 text-sm text-muted-foreground">{$t('import.card.description')}</p>
-				<p class="mt-2 text-sm text-muted-foreground">{$t('import.recommendedOrder')}</p>
-			</div>
-		</div>
 
-		<dl class="mb-5 space-y-2 text-sm">
-			<div>
-				<dt class="font-medium text-foreground">{$t('import.formats')}</dt>
-			</div>
-		</dl>
+			<dl class="mb-5 space-y-2 text-sm">
+				<div>
+					<dt class="font-medium text-foreground">{$t('import.formats')}</dt>
+				</div>
+			</dl>
 
-		<div class="mt-auto">
-			<Button
-				onclick={() => modals.open('import', {
-					step: 'download',
-					tab: toolsPage.defaultImportTab,
-				})}
-				data-testid="import-action"
-			>
-				{$t('import.card.action')}
-			</Button>
-		</div>
-	</article>
+			<div class="mt-auto">
+				<Button
+					onclick={() => modals.open('import', {
+						step: 'download',
+						tab: toolsPage.defaultImportTab,
+					})}
+					data-testid="import-action"
+				>
+					{$t('import.card.action')}
+				</Button>
+			</div>
+		</article>
+	</PermissionGate>
 
 	<PermissionGate permission="TIMETABLE_MANAGE" mode="hide">
 		<article
@@ -110,6 +113,13 @@
 					{$t('tools.timetablePlanning.card.action')}
 				</Button>
 			</div>
+		</article>
+	</PermissionGate>
+	<PermissionGate permission="FINANCIAL_REPORT_READ">
+		<article class="rounded-xl border border-border bg-card p-5 shadow-sm">
+			<h3 class="font-display text-lg font-semibold">{$t('finance.reconciliation')}</h3>
+			<p class="my-3 text-sm text-muted-foreground">{$t('finance.checksDescription')}</p>
+			<Button onclick={() => appGoto('/configuration/tools/finance-checks')}>{$t('common.open')}</Button>
 		</article>
 	</PermissionGate>
 </div>

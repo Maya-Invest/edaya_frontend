@@ -74,7 +74,7 @@
 		removeCatalogBusy = true;
 		try {
 			const ok = await subjectsPage.performRemoveSubjectFromGradeLevel({
-				gradeLevelSubjectId: subject.id,
+				subjectId: subject.id,
 				successMessage: get(t)('subjects.removedFromCatalog'),
 			});
 			if (ok) {
@@ -110,7 +110,7 @@
 		</span>
 	{/snippet}
 	{#snippet actions()}
-		<PermissionGate permission="ACADEMIC_CATALOG_MANAGE" mode="disable">
+		<PermissionGate permission="ACADEMIC_PROGRAM_MANAGE" gradeLevelId={subject.gradeLevelId} subjectId={subject.id} mode="disable">
 			{#snippet children({ disabled, title })}
 				<Button {disabled} {title} variant="outline" size="sm" class="rounded-full" onclick={() => modals.open('edit-subject')}>
 					{$t('common.edit')}
@@ -119,7 +119,7 @@
 		</PermissionGate>
 	{/snippet}
 	{#snippet overflow()}
-		<PermissionGate permission="ACADEMIC_CATALOG_MANAGE">
+		<PermissionGate permission="ACADEMIC_PROGRAM_MANAGE" gradeLevelId={subject.gradeLevelId} subjectId={subject.id}>
 			{#if isCatalogSubject}
 				<RowActionMenuItem destructive disabled={removeCatalogBusy} onclick={() => void removeFromCatalog()}>
 					{$t('subjects.removeFromCatalog')}

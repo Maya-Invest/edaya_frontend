@@ -23,7 +23,7 @@ export async function adjustStudentChargeMutation(input: {
 		}),
 		{
 			successMessage: input.successMessage,
-			versionKeys: ['billing'],
+			versionKeys: ['fees', 'billing', 'payments'],
 		},
 	);
 	return result !== null;
@@ -45,7 +45,7 @@ export async function waiveStudentChargeMutation(input: {
 		}),
 		{
 			successMessage: input.successMessage,
-			versionKeys: ['billing'],
+			versionKeys: ['fees', 'billing', 'payments'],
 		},
 	);
 	return result !== null;
@@ -65,7 +65,7 @@ export async function cancelStudentChargeMutation(input: {
 		}),
 		{
 			successMessage: input.successMessage,
-			versionKeys: ['billing'],
+			versionKeys: ['fees', 'billing', 'payments'],
 		},
 	);
 	return result !== null;
@@ -84,7 +84,7 @@ export async function reversePaymentMutation(input: {
 		}),
 		{
 			successMessage: input.successMessage,
-			versionKeys: ['payments', 'billing'],
+			versionKeys: ['fees', 'billing', 'payments'],
 		},
 	);
 	return result !== null;
@@ -105,7 +105,7 @@ export async function allocateAccountBalanceMutation(input: {
 		}),
 		{
 			successMessage: input.successMessage,
-			versionKeys: ['billing', 'payments'],
+			versionKeys: ['fees', 'billing', 'payments'],
 		},
 	);
 	return result !== null;
@@ -122,7 +122,7 @@ export async function reverseAllocationMutation(input: {
 		}),
 		{
 			successMessage: input.successMessage,
-			versionKeys: ['billing', 'payments'],
+			versionKeys: ['fees', 'billing', 'payments'],
 		},
 	);
 	return result !== null;
@@ -151,7 +151,7 @@ export async function refundAvailableBalanceMutation(input: {
 		}),
 		{
 			successMessage: input.successMessage,
-			versionKeys: ['payments', 'billing'],
+			versionKeys: ['fees', 'billing', 'payments'],
 		},
 	);
 	return result !== null;

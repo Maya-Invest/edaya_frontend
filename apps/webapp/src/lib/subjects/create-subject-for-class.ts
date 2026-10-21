@@ -30,25 +30,17 @@ export async function createSubjectForClass(
 	client: SchoolClient,
 	input: CreateSubjectForClassInput,
 ): Promise<void> {
-	const createdAt = input.createdAt ?? new Date().toISOString();
-	const code = input.code?.trim() ?? '';
-
+	const classGroup = await client.entities.classGroups.get(input.classGroupId);
 	await client.commands.configureSubject({
 		id: input.subjectId,
+		gradeLevelId: classGroup.gradeLevelId,
+		academicYearId: classGroup.academicYearId,
 		name: input.name.trim(),
 		categoryId: input.categoryId,
 		color: input.color ?? 'mint',
-		...(code ? { code } : {}),
-		...(input.coefficient != null ? { defaultCoefficient: input.coefficient } : {}),
-		createdAt,
-	});
-
-	await client.commands.addCustomClassSubject({
-		id: input.classSubjectId,
-		classGroupId: input.classGroupId,
-		subjectId: input.subjectId,
-		isOffered: true,
-		createdAt,
-		...(input.coefficient != null ? { coefficient: input.coefficient } : {}),
+		code: input.code?.trim() || undefined,
+		coefficient: input.coefficient,
+		classSubjectIdsByClassGroupId: { [input.classGroupId]: input.classSubjectId },
+		createdAt: input.createdAt ?? new Date().toISOString(),
 	});
 }

@@ -96,6 +96,7 @@ const gradeScaleListFiltersCodec = defineUrlFilterCodec({
 const feeListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
 	category: { type: 'string', default: 'all' },
+	status: { type: 'string', default: 'all' },
 });
 
 const classGroupListFiltersCodec = defineUrlFilterCodec({

@@ -190,7 +190,6 @@
 		subjectId={matterContext.catalogSubjectId}
 		classSubjectId={matterContext.classSubjectId}
 		classGroupId={matterContext.classGroupId}
-		gradeLevelSubjectId={matterContext.gradeLevelSubjectId}
 		defaultSequenceOrder={matterRows.length + 1}
 		onSaved={handleMatterSaved}
 	/>
@@ -200,7 +199,6 @@
 		subjectId={matterContext.catalogSubjectId}
 		classSubjectId={matterContext.classSubjectId}
 		classGroupId={matterContext.classGroupId}
-		gradeLevelSubjectId={matterContext.gradeLevelSubjectId}
 		onSaved={handleMatterSaved}
 	/>
 {/if}

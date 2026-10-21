@@ -93,7 +93,7 @@ export async function runTeachingChapter(journey: UiJourney): Promise<void> {
 			parentRoute: '/classes/[classId]/teaching/[id]/progression',
 			modal: 'edit-subject',
 			pathname: `/classes/${classId}/teaching/${teachingId}/progression`,
-			command: 'configure-subject',
+			command: 'update-subject',
 			fill: async (current) => {
 				await current.getByRole('dialog').locator('input').first().fill(editedSubject);
 			},

@@ -302,7 +302,7 @@ When a record has **nothing meaningful to browse** beyond what the list already 
 | Primary CTA | Unchanged — **Add …** on the list toolbar → create modal |
 | Deep links | Optional `[[id]]` route only when shareable URLs are required; prefer opening an edit modal from the URL |
 
-Examples: grade scale (edit bands in modal). Borderline cases (e.g. fee definition) — prefer row menu unless usage/billing sub-data justifies a thin drawer.
+Examples: grade scale (edit bands in modal). Fee definitions are complex drawers because their Overview combines configuration, financial usage and assignment actions.
 
 ### 3.6 What must NOT appear in the drawer
 
@@ -561,3 +561,7 @@ Permission profile rows open `/configuration/permission-profiles/{id}` and have 
 ### Weekly period calendar
 
 On the default calendar at `/configuration/period-grid`, dragging a slot or resizing its bottom edge is a permitted inline edit. Moves preserve duration and may change weekday; resizing changes end time only. Keep configured order, validate five-minute steps and same-day non-overlap on the destination weekday, and use the existing route mutation with pending/success/failure feedback. General editing, creation and deletion retain the existing modal flows. Keep keyboard-accessible Edit/Delete actions on each slot card and the Add slot action for editing and creation without dragging. Do not duplicate card actions in a separate selector or toolbar. Dragging an empty time range opens a prefilled creation modal; selecting a slot’s Delete icon opens the existing confirmation modal.
+
+### Finance composition
+
+Fees combines an independently loaded financial summary and catalog. Finance page headers omit the redundant Fees/Billing/Payments switcher; use sidebar navigation. Omit the scope caption beneath financial overviews. One Filter button hosts the category and status controls; these and catalog search affect only catalog rows. Clicking a fee opens its read-only Overview drawer; row-menu interaction must not navigate. Billing has a persistent entity header above Overview, Payments and History pathname tabs. Fee and billing headers expose at most two visible actions; overflow contains secondary actions. Mutations use modals above the originating drawer/tab; closing restores that tab and its filters. Use full-width drawers on mobile, focus containment/restoration, Escape for the topmost surface and reachable scrollable modal footers.

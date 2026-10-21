@@ -1,7 +1,7 @@
+import { mapCatalogSubjects, mapClassSubjects } from '$lib/api/subjects-data';
 import { classSubject, staffMember, subject } from '$tests/support/openapi-fixtures';
 import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
-import { mapCatalogSubjects, mapClassSubjects } from '$lib/api/subjects-data';
 
 const sources = {
 	classSubjectsRaw: [
@@ -12,11 +12,11 @@ const sources = {
 		classSubject({ id: 'cs-6a-eps', classGroupId: '6a', subjectId: 'subj-eps' }),
 	],
 	subjectsRaw: [
-		subject({ id: 'subj-math', name: 'Mathematics', code: 'MATH', defaultCoefficient: 3 }),
-		subject({ id: 'subj-fr', name: 'French Literature', code: 'FR', defaultCoefficient: 2, category: 'Littéraire', color: 'warm' }),
-		subject({ id: 'subj-hist', name: 'History & Geography', code: 'HIST', defaultCoefficient: 2, category: 'Sciences humaines', color: 'sky' }),
-		subject({ id: 'subj-en', name: 'English', code: 'EN', defaultCoefficient: 2, category: 'Langues', color: 'sky' }),
-		subject({ id: 'subj-eps', name: 'Physical Education', code: 'EPS', defaultCoefficient: 1, category: 'Sport', color: 'mint' }),
+		subject({ id: 'subj-math', name: 'Mathematics', code: 'MATH', coefficient: 3 }),
+		subject({ id: 'subj-fr', name: 'French Literature', code: 'FR', coefficient: 2, category: 'Littéraire', color: 'warm' }),
+		subject({ id: 'subj-hist', name: 'History & Geography', code: 'HIST', coefficient: 2, category: 'Sciences humaines', color: 'sky' }),
+		subject({ id: 'subj-en', name: 'English', code: 'EN', coefficient: 2, category: 'Langues', color: 'sky' }),
+		subject({ id: 'subj-eps', name: 'Physical Education', code: 'EPS', coefficient: 1, category: 'Sport', color: 'mint' }),
 	],
 	subjectMattersRaw: [
 		{ id: 'sm-math', subjectId: 'subj-math', name: 'Core programme', description: 'Algebra fundamentals.', sequenceOrder: 1, estimatedHours: 5 },
@@ -36,110 +36,16 @@ const sources = {
 };
 
 describe('mapCatalogSubjects', () => {
-	it('lists chapters only for the matching grade-level subject when subjectId is shared', () => {
-		const sources = {
-			gradeLevelSubjectsRaw: [
-				{ id: 'gls-6-en', gradeLevelId: 'gl-6', subjectId: 'subj-en', academicYearId: 'ay-1', isOptional: false },
-				{ id: 'gls-3-en', gradeLevelId: 'gl-3', subjectId: 'subj-en', academicYearId: 'ay-1', isOptional: false },
-			],
-			classSubjectsRaw: [],
-			subjectsRaw: [
-				subject({ id: 'subj-en', name: 'Anglais', code: 'ANG' }),
-			],
-			subjectMattersRaw: [
-				{ id: 'sm-6-1', subjectId: 'subj-en', name: 'Unit 6ème A', sequenceOrder: 1 },
-				{ id: 'sm-3-1', subjectId: 'subj-en', name: 'Unit 3ème A', sequenceOrder: 1 },
-			],
-			gradeLevelSubjectMattersRaw: [
-				{ id: 'glsm-6', gradeLevelSubjectId: 'gls-6-en', subjectMatterId: 'sm-6-1' },
-				{ id: 'glsm-3', gradeLevelSubjectId: 'gls-3-en', subjectMatterId: 'sm-3-1' },
-			],
-		};
-
-		const entries = mapCatalogSubjects(sources, {});
-
-		const sixieme = entries.find(entry => entry.id === 'gls-6-en');
-		const troisieme = entries.find(entry => entry.id === 'gls-3-en');
-
-		expect(sixieme?.catalogChapters).toEqual(
-			expect.arrayContaining([expect.objectContaining({ name: 'Unit 6ème A' })]),
-		);
-		expect(troisieme?.catalogChapters).toEqual(
-			expect.arrayContaining([expect.objectContaining({ name: 'Unit 3ème A' })]),
-		);
+	it('keeps same-name subjects separate and loads only their own chapters', () => {
+		const entries = mapCatalogSubjects({ classSubjectsRaw: [], subjectsRaw: [subject({ id: 'math-6', name: 'Math', gradeLevelId: '6' }), subject({ id: 'math-5', name: 'Math', gradeLevelId: '5' }), subject({ id: 'math-6b', name: 'Math', gradeLevelId: '6' })], subjectMattersRaw: [{ id: 'fractions', subjectId: 'math-6', name: 'Fractions', sequenceOrder: 1 }, { id: 'algebra', subjectId: 'math-5', name: 'Algebra', sequenceOrder: 1 }] });
+		expect(entries).toHaveLength(3);
+		expect(entries.find(row => row.id === 'math-6')?.catalogChapters?.map(chapter => chapter.name)).toEqual(['Fractions']);
+		expect(entries.find(row => row.id === 'math-5')?.catalogChapters?.map(chapter => chapter.name)).toEqual(['Algebra']);
+		expect(entries.find(row => row.id === 'math-6b')?.catalogChapters).toEqual([]);
 	});
-
-	it('keeps late 3ème / lycée subjects and chapters when sources exceed the default list page', () => {
-		const gradeLevelSubjectsRaw = Array.from({ length: 52 }, (_, index) => ({
-			id: `gls-${index}`,
-			gradeLevelId: index < 50 ? 'gl-3' : 'gl-1era',
-			subjectId: index < 50 ? `subj-${index}` : 'subj-tech',
-			academicYearId: 'ay-1',
-			isOptional: false,
-		}));
-		gradeLevelSubjectsRaw[49] = {
-			id: 'gls-49',
-			gradeLevelId: 'gl-3',
-			subjectId: 'subj-svt',
-			academicYearId: 'ay-1',
-			isOptional: false,
-		};
-		gradeLevelSubjectsRaw[50] = {
-			id: 'gls-50',
-			gradeLevelId: 'gl-3',
-			subjectId: 'subj-tech',
-			academicYearId: 'ay-1',
-			isOptional: false,
-		};
-		gradeLevelSubjectsRaw[51] = {
-			id: 'gls-51',
-			gradeLevelId: 'gl-1era',
-			subjectId: 'subj-fr',
-			academicYearId: 'ay-1',
-			isOptional: false,
-		};
-
-		const subjectsRaw = [
-			...Array.from({ length: 49 }, (_, index) => subject({
-				id: `subj-${index}`,
-				name: `Subject ${index}`,
-				code: `S${index}`,
-			})),
-			subject({ id: 'subj-svt', name: 'Sciences de la Vie et de la Terre', code: 'SVT' }),
-			subject({ id: 'subj-tech', name: 'Technologie', code: 'TECH' }),
-			subject({ id: 'subj-fr', name: 'Français', code: 'FR' }),
-		];
-
-		const sources = {
-			gradeLevelSubjectsRaw,
-			classSubjectsRaw: [],
-			subjectsRaw,
-			subjectMattersRaw: [
-				{ id: 'sm-svt', subjectId: 'subj-svt', name: 'Génétique', sequenceOrder: 1 },
-				{ id: 'sm-tech', subjectId: 'subj-tech', name: 'Automatismes', sequenceOrder: 1 },
-				{ id: 'sm-fr', subjectId: 'subj-fr', name: 'Dissertation', sequenceOrder: 1 },
-			],
-			gradeLevelSubjectMattersRaw: [
-				{ id: 'glsm-svt', gradeLevelSubjectId: 'gls-49', subjectMatterId: 'sm-svt' },
-				{ id: 'glsm-tech', gradeLevelSubjectId: 'gls-50', subjectMatterId: 'sm-tech' },
-				{ id: 'glsm-fr', gradeLevelSubjectId: 'gls-51', subjectMatterId: 'sm-fr' },
-			],
-		};
-
-		const entries = mapCatalogSubjects(sources, {});
-		expect(entries.length).toBeGreaterThan(50);
-
-		const tech = entries.find(entry => entry.id === 'gls-50');
-		const lyceeFr = entries.find(entry => entry.id === 'gls-51');
-
-		expect(tech?.name).toBe('Technologie');
-		expect(tech?.catalogChapters).toEqual(
-			expect.arrayContaining([expect.objectContaining({ name: 'Automatismes' })]),
-		);
-		expect(lyceeFr?.name).toBe('Français');
-		expect(lyceeFr?.catalogChapters).toEqual(
-			expect.arrayContaining([expect.objectContaining({ name: 'Dissertation' })]),
-		);
+	it('keeps more than one page of subjects', () => {
+		const entries = mapCatalogSubjects({ classSubjectsRaw: [], subjectMattersRaw: [], subjectsRaw: Array.from({ length: 52 }, (_, index) => subject({ id: `subject-${index}`, name: 'Math' })) });
+		expect(entries).toHaveLength(52);
 	});
 });
 
@@ -173,7 +79,7 @@ describe('mapClassSubjects', () => {
 				classSubject({ id: 'cs-6b-math', classGroupId: '6b', subjectId: 'subj-math' }),
 			],
 			subjectsRaw: [
-				{ id: 'subj-math', schoolId: SEED_SCHOOL_ID, name: 'Mathematics', code: 'MATH', defaultCoefficient: 3, categoryId: `${SEED_SCHOOL_ID}:subject-category:scientifique`, color: 'mint' },
+				{ id: 'subj-math', schoolId: SEED_SCHOOL_ID, gradeLevelId: 'grade-6', academicYearId: 'year-1', isOptional: false, name: 'Mathematics', code: 'MATH', coefficient: 3, categoryId: `${SEED_SCHOOL_ID}:subject-category:scientifique`, color: 'mint' },
 			],
 			subjectMattersRaw: [],
 			staffMembersRaw: [],
@@ -192,7 +98,7 @@ describe('mapClassSubjects', () => {
 				classSubject({ id: 'cs-6a-sci', classGroupId: '6a', subjectId: 'subj-sci' }),
 			],
 			subjectsRaw: [
-				subject({ id: 'subj-sci', name: 'Natural Sciences', code: 'SCI', defaultCoefficient: 2 }),
+				subject({ id: 'subj-sci', name: 'Natural Sciences', code: 'SCI', coefficient: 2 }),
 			],
 			subjectMattersRaw: [],
 			staffMembersRaw: [],
@@ -210,7 +116,7 @@ describe('mapClassSubjects', () => {
 				classSubject({ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math' }),
 			],
 			subjectsRaw: [
-				subject({ id: 'subj-math', name: 'Mathematics', code: 'MATH', defaultCoefficient: 3 }),
+				subject({ id: 'subj-math', name: 'Mathematics', code: 'MATH', coefficient: 3 }),
 			],
 			subjectMattersRaw: [],
 			staffMembersRaw: [],

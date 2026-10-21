@@ -110,7 +110,7 @@ describe('mapPlanningEvents', () => {
 			} satisfies ClassSubjectRaw],
 			subjectsRaw: [{
 				id: 'subj-math',
-				schoolId: 'school-1',
+				schoolId: 'school-1', gradeLevelId: 'grade-6', academicYearId: 'year-1', isOptional: false,
 				name: 'Mathematics',
 				categoryId: 'school-1:subject-category:scientifique',
 				color: 'mint',

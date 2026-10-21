@@ -54,8 +54,8 @@
 	const numericMax = $derived(Number.parseFloat(maxScore));
 	const numericCoef = $derived(Number.parseFloat(coefficient));
 	const canSubmit = $derived.by(() => {
-		if (!hasPermission('ASSESSMENT_MANAGE', { classId, subject: classSubjectId, assessmentId: evaluation?.id })
-			|| (evaluation && !hasPermission('ASSESSMENT_MANAGE', { classId, subject: evaluation.classSubjectId, assessmentId: evaluation.id }))) {
+		if (!hasPermission('ASSESSMENT_MANAGE', { classId, subject: classSubjectId, subjectId: evaluationsPage.subjectsFor(classId).find(row => row.id === classSubjectId)?.subjectId, assessmentId: evaluation?.id })
+			|| (evaluation && !hasPermission('ASSESSMENT_MANAGE', { classId, subject: evaluation.classSubjectId, subjectId: evaluationsPage.subjectsFor(classId).find(row => row.id === evaluation.classSubjectId)?.subjectId, assessmentId: evaluation.id }))) {
 			return false;
 		}
 		if (!isEdit && !academicContext.periodId) {

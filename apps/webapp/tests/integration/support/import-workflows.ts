@@ -59,9 +59,8 @@ export async function exerciseImport(page: Page, base: string, type: keyof typeo
     csv = { code: unique, classe: klass.name, matiere: subject.name };
     collection = 'teacher-assignments'; matches = row => row.teacherId === teacherId && row.classSubjectId === teaching.id;
   } else if (type === 'chapters') {
-    const offering = (await list('grade-level-subjects', { gradeLevelId: level.id }))[0];
-    assert(offering, 'Required grade-level subject fixture missing');
-    const subject = await get('subjects', String(offering.subjectId));
+    const subject = (await list('subjects', { gradeLevelId: level.id, academicYearId: year }))[0];
+    assert(subject, 'Required subject fixture missing for the selected grade and academic year');
     csv = { niveau: level.name, matiere: subject.name, titre: unique, description: 'Integration chapter' };
     collection = 'subject-matters'; matches = row => row.name === unique;
   } else {

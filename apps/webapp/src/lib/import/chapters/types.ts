@@ -1,4 +1,4 @@
-export type ChapterImportColumnKey = 'niveau' | 'matiere' | 'titre' | 'ordre' | 'description';
+export type ChapterImportColumnKey = 'niveau' | 'matiere' | 'titre' | 'ordre' | 'description' | 'subjectId';
 
 export interface ChapterImportColumnDefinition {
 	key: ChapterImportColumnKey;
@@ -11,10 +11,12 @@ export const CHAPTER_IMPORT_COLUMNS = [
 	{ key: 'titre', required: true },
 	{ key: 'ordre', required: false },
 	{ key: 'description', required: false },
+	{ key: 'subjectId', required: false },
 ] as const satisfies readonly ChapterImportColumnDefinition[];
 
 export interface ChapterImportRow {
 	rowIndex: number;
+	subjectId?: string;
 	niveau: string;
 	matiere: string;
 	titre: string;
@@ -24,7 +26,6 @@ export interface ChapterImportRow {
 
 /** Catalogue niveau + matière (une entrée par couple, pas par classe). */
 export interface ChapterImportCatalogTarget {
-	gradeLevelSubjectId: string;
 	subjectId: string;
 	gradeLevelId: string;
 	gradeLevelName: string;
@@ -65,6 +66,6 @@ export interface ChapterImportValidationContext {
 	existingChapterKeys?: ReadonlySet<string>;
 }
 
-export function chapterImportDuplicateKey(gradeLevelSubjectId: string, titre: string): string {
-	return `${gradeLevelSubjectId}::${titre.trim().toLowerCase()}`;
+export function chapterImportDuplicateKey(subjectId: string, titre: string): string {
+	return `${subjectId}::${titre.trim().toLowerCase()}`;
 }

@@ -1,15 +1,15 @@
-import { describe, expect, it } from 'bun:test';
 import { buildSubjectSavePayload } from '$lib/api/subject-save-payload';
+import { describe, expect, it } from 'bun:test';
 
 describe('buildSubjectSavePayload', () => {
-	it('omits blank code and non-positive defaultCoefficient', () => {
+	it('omits blank code and non-positive coefficient', () => {
 		const payload = buildSubjectSavePayload(
 			{
 				id: 'subj-golf',
-				schoolId: 'school-1',
+				schoolId: 'school-1', gradeLevelId: 'grade-6', academicYearId: 'year-1', isOptional: false,
 				name: 'GOLF',
 				code: '',
-				defaultCoefficient: 0,
+				coefficient: 0,
 				categoryId: 'school-1:subject-category:scientifique',
 				color: 'mint',
 			},
@@ -18,7 +18,7 @@ describe('buildSubjectSavePayload', () => {
 
 		expect(payload).toEqual({
 			id: 'subj-golf',
-			schoolId: 'school-1',
+			schoolId: 'school-1', gradeLevelId: 'grade-6', academicYearId: 'year-1', isOptional: false,
 			name: 'GOLF',
 			categoryId: 'school-1:subject-category:scientifique',
 			color: 'warm',
@@ -29,10 +29,10 @@ describe('buildSubjectSavePayload', () => {
 		const payload = buildSubjectSavePayload(
 			{
 				id: 'subj-math',
-				schoolId: 'school-1',
+				schoolId: 'school-1', gradeLevelId: 'grade-6', academicYearId: 'year-1', isOptional: false,
 				name: 'Mathematics',
 				code: 'MATH',
-				defaultCoefficient: 3,
+				coefficient: 3,
 				categoryId: 'school-1:subject-category:scientifique',
 				color: 'mint',
 				createdAt: '2024-01-01T00:00:00.000Z',
@@ -42,7 +42,7 @@ describe('buildSubjectSavePayload', () => {
 
 		expect(payload).toMatchObject({
 			code: 'MATH',
-			defaultCoefficient: 3,
+			coefficient: 3,
 			color: 'sky',
 			name: 'Maths',
 		});

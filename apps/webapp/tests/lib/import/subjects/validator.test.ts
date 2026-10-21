@@ -1,16 +1,13 @@
-import { describe, expect, it } from 'bun:test';
-
 import type { SubjectImportRow } from '$lib/import/subjects/types';
+
 import { subjectImportDuplicateKey } from '$lib/import/shared/subject-import-duplicate-key';
 import {
 	canImportValidatedSubjects,
 	validateSubjectImportRows,
 } from '$lib/import/subjects/validator';
-
-
+import { describe, expect, it } from 'bun:test';
 
 function row(overrides: Partial<SubjectImportRow> & Pick<SubjectImportRow, 'rowIndex'>): SubjectImportRow {
-
 	return {
 
 		nom: 'Mathématiques',
@@ -20,14 +17,9 @@ function row(overrides: Partial<SubjectImportRow> & Pick<SubjectImportRow, 'rowI
 		...overrides,
 
 	};
-
 }
 
-
-
 const GRADE_LEVELS = [{ id: 'gl-6', name: '6ème' }];
-
-
 
 const CLASS_GROUPS = [
 
@@ -37,19 +29,13 @@ const CLASS_GROUPS = [
 
 ];
 
-
-
 describe('subject import validator', () => {
-
 	it('accepts valid rows and resolves grade level ids', () => {
-
 		const result = validateSubjectImportRows([
 
 			row({ rowIndex: 2, coefficient: '3' }),
 
 		], { gradeLevels: GRADE_LEVELS, classGroups: CLASS_GROUPS });
-
-
 
 		expect(result.errors).toEqual([]);
 
@@ -60,69 +46,47 @@ describe('subject import validator', () => {
 		expect(result.validRows[0]?.coefficientValue).toBe(3);
 
 		expect(canImportValidatedSubjects(result)).toBe(true);
-
 	});
 
-
-
 	it('flags missing required fields', () => {
-
 		const result = validateSubjectImportRows([
 
 			row({ rowIndex: 2, nom: '' }),
 
 		], { gradeLevels: GRADE_LEVELS, classGroups: CLASS_GROUPS });
 
-
-
 		expect(result.validRows).toHaveLength(0);
 
 		expect(result.errors[0]?.messageKey).toBe('import.subjects.validation.required');
-
 	});
 
-
-
 	it('flags unknown grade levels with suggestions', () => {
-
 		const result = validateSubjectImportRows([
 
 			row({ rowIndex: 2, niveau: '7ème' }),
 
 		], { gradeLevels: GRADE_LEVELS, classGroups: CLASS_GROUPS });
 
-
-
 		expect(result.validRows).toHaveLength(0);
 
 		expect(result.errors[0]?.messageKey).toBe('import.subjects.validation.levelNotFound');
 
 		expect(result.errors[0]?.suggestions).toContain('6ème');
-
 	});
 
-
-
 	it('flags invalid coefficients', () => {
-
 		const result = validateSubjectImportRows([
 
 			row({ rowIndex: 2, coefficient: 'abc' }),
 
 		], { gradeLevels: GRADE_LEVELS, classGroups: CLASS_GROUPS });
 
-
-
 		expect(result.validRows).toHaveLength(0);
 
 		expect(result.errors[0]?.messageKey).toBe('import.subjects.validation.invalidCoefficient');
-
 	});
 
-
-
-	it('flags duplicate subjects for the same level in the file', () => {
-
+	it('allows duplicate subjects for the same level in the file', () => {
 		const result = validateSubjectImportRows([
 
 			row({ rowIndex: 2 }),
@@ -131,15 +95,12 @@ describe('subject import validator', () => {
 
 		], { gradeLevels: GRADE_LEVELS, classGroups: CLASS_GROUPS });
 
+		expect(result.errors).toEqual([]);
 
-
-		expect(result.errors[0]?.messageKey).toBe('import.subjects.validation.duplicateInFile');
-
-		expect(result.validRows).toHaveLength(1);
-
+		expect(result.validRows).toHaveLength(2);
 	});
 
-	it('flags subjects that already exist for the grade level', () => {
+	it('allows subjects that already exist for the grade level', () => {
 		const existing = new Set([subjectImportDuplicateKey('gl-6', 'Mathématiques')]);
 		const result = validateSubjectImportRows([
 			row({ rowIndex: 2 }),
@@ -149,9 +110,7 @@ describe('subject import validator', () => {
 			existingSubjectKeys: existing,
 		});
 
-		expect(result.validRows).toHaveLength(0);
-		expect(result.errors[0]?.messageKey).toBe('import.subjects.validation.duplicateExisting');
+		expect(result.validRows).toHaveLength(1);
+		expect(result.errors).toEqual([]);
 	});
-
 });
-

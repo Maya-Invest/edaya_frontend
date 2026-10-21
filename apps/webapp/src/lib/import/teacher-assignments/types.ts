@@ -1,7 +1,7 @@
 import type { SchoolSubjectCatalogEntry } from '$lib/import/shared/load-school-subject-names';
 import type { ImportClassOption } from '$lib/import/shared/resolve-import-class-group';
 
-export type TeacherAssignmentImportColumnKey = 'code' | 'classe' | 'matiere';
+export type TeacherAssignmentImportColumnKey = 'code' | 'classe' | 'matiere' | 'subjectId';
 
 export interface TeacherAssignmentImportColumnDefinition {
 	key: TeacherAssignmentImportColumnKey;
@@ -12,6 +12,7 @@ export const TEACHER_ASSIGNMENT_IMPORT_COLUMNS = [
 	{ key: 'code', required: true },
 	{ key: 'classe', required: true },
 	{ key: 'matiere', required: true },
+	{ key: 'subjectId', required: false },
 ] as const satisfies readonly TeacherAssignmentImportColumnDefinition[];
 
 export interface TeacherAssignmentImportRow {
@@ -19,6 +20,7 @@ export interface TeacherAssignmentImportRow {
 	code: string;
 	classe: string;
 	matiere: string;
+	subjectId?: string;
 }
 
 export interface TeacherAssignmentImportTeacherOption {

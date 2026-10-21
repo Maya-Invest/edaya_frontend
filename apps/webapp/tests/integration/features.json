@@ -1008,13 +1008,6 @@
     "action": "Extourner un paiement"
   },
   {
-    "id": "web.scenario.0140",
-    "feature": "web.finance.reconciliation",
-    "module": "Finance",
-    "endpoint": "http://localhost:5173/finance/reconciliation",
-    "action": "Rapprochement financier"
-  },
-  {
     "id": "web.scenario.0142",
     "feature": "web.configuration.school",
     "module": "Configuration",
@@ -1671,13 +1664,6 @@
     "feature": "web.dashboard",
     "module": "Dashboard",
     "endpoint": "http://localhost:5173/dashboard",
-    "action": "Navigation directe — contenu visible"
-  },
-  {
-    "id": "web.scenario.0240",
-    "feature": "web.finance.reconciliation",
-    "module": "Finance",
-    "endpoint": "http://localhost:5173/finance/reconciliation",
     "action": "Navigation directe — contenu visible"
   },
   {
@@ -2675,13 +2661,6 @@
     "action": "Sidebar — lien finance.payment accessible"
   },
   {
-    "id": "web.scenario.0384",
-    "feature": "web.finance.reconciliation",
-    "module": "Finance",
-    "endpoint": "http://localhost:5173/finance/reconciliation",
-    "action": "Sidebar — lien finance.reconciliation accessible"
-  },
-  {
     "id": "web.scenario.0385",
     "feature": "web.configuration.school",
     "module": "Configuration",
@@ -2848,5 +2827,61 @@
     "module": "Configuration",
     "endpoint": "http://localhost:5173/configuration/permission-profiles/[id]",
     "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.finance.restructure.1",
+    "feature": "web.finance",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/tools/finance-checks",
+    "action": "Contrôles financiers"
+  },
+  {
+    "id": "web.finance.restructure.2",
+    "feature": "web.finance",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/tools/finance-checks",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.finance.restructure.3",
+    "feature": "web.finance",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/fees/[feeId]",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.finance.restructure.4",
+    "feature": "web.finance",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/billing/[id]/payments",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.finance.restructure.5",
+    "feature": "web.finance",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/billing/[id]/history",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.finance.restructure.6",
+    "feature": "web.finance",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/reconciliation",
+    "action": "Redirect — cible attendue"
+  },
+  {
+    "id": "web.finance.restructure.7",
+    "feature": "web.finance",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/payment?modal=payment",
+    "action": "Modal deep-link ?modal=payment"
+  },
+  {
+    "id": "web.finance.restructure.8",
+    "feature": "web.finance",
+    "module": "Finance",
+    "endpoint": "http://localhost:5173/finance/fees/[feeId]?modal=assign-fee",
+    "action": "Modal deep-link ?modal=assign-fee"
   }
 ]

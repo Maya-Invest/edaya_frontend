@@ -76,13 +76,9 @@ export async function createSubjectForGradeLevelMutation(input: {
 		toast.error(get(t)('subjects.noAcademicYear'));
 		return null;
 	}
-	if (input.classGroupIds.length === 0) {
-		toast.error(get(t)('subjects.noClassesForGradeLevel'));
-		return null;
-	}
 
 	const seed = Date.now().toString(36);
-	const { subjectId, gradeLevelSubjectId, classSubjectIdsByClassGroupId } = createSubjectImportIdsForGradeLevel(
+	const { subjectId, classSubjectIdsByClassGroupId } = createSubjectImportIdsForGradeLevel(
 		0,
 		input.gradeLevelId,
 		input.classGroupIds,
@@ -96,14 +92,13 @@ export async function createSubjectForGradeLevelMutation(input: {
 			academicYearId: input.academicYearId,
 			gradeLevelId: input.gradeLevelId,
 			subjectId,
-			gradeLevelSubjectId,
 			classSubjectIdsByClassGroupId,
 			name: toCanonicalCatalogText(input.name),
 			categoryId: input.categoryId,
 			color: input.color,
 			createdAt,
 		});
-		return Object.values(classSubjectIdsByClassGroupId)[0] ?? gradeLevelSubjectId;
+		return subjectId;
 	}, {
 		successMessage: input.successMessage,
 		versionKeys: ['subjects'],

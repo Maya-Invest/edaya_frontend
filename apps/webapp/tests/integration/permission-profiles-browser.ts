@@ -156,6 +156,27 @@ try {
 
 	await open('default-scopes');
 	assert.equal(await page.getByRole('dialog').getByText(/Whole school|Toute l.école/i).count(), 0);
+	assert.equal(await page.locator('[data-scope-grain="class_subject"]').count(), 0);
+	const subjectSection = page.getByRole('dialog').locator('[data-scope-grain="subject"]');
+	await subjectSection.locator('summary').click();
+	await subjectSection.getByRole('button', { name: /add.*scope|ajouter.*périmètre/i }).click();
+	const classes = await request('entities/class-groups/list', { academicYearId: year });
+	const firstClass = classes[0];
+	const otherGrade = classes.find((row: any) => row.gradeLevelId !== firstClass.gradeLevelId);
+	assert(firstClass && otherGrade);
+	await subjectSection.locator('select').nth(0).selectOption(firstClass.gradeLevelId);
+	await subjectSection.locator('select').nth(2).selectOption('selected');
+	await subjectSection.locator('select').nth(3).selectOption(firstClass.id);
+	const subjectOptions = await subjectSection.locator('select').nth(1).locator('option').evaluateAll(options => options.map(option => (option as HTMLOptionElement).value).filter(Boolean));
+	assert(subjectOptions.length);
+	await subjectSection.locator('select').nth(1).selectOption(subjectOptions[0]);
+	assert.equal(await subjectSection.locator('select').nth(3).inputValue(), firstClass.id, 'Changing Subject preserves the class restriction');
+	await page.screenshot({ path: '/private/tmp/unified-subject-picker.png' });
+	await subjectSection.locator('select').nth(0).selectOption(otherGrade.gradeLevelId);
+	assert.equal(await subjectSection.locator('select').nth(2).inputValue(), 'selected', 'Changing grade never broadens to all classes');
+	assert.equal(await subjectSection.locator('select').nth(3).inputValue(), '');
+	assert(await page.getByTestId('form-modal-submit').isDisabled());
+	await subjectSection.getByRole('button', { name: /^(remove|retirer)$/i }).click();
 	const group = page.getByRole('dialog').locator('[data-scope-grain="class_group"]');
 	await group.locator('summary').click();
 	await group.getByRole('checkbox').check();

@@ -36,7 +36,7 @@ function mapRecordToRow(
 	rowIndex: number,
 ): TeacherAssignmentImportRow | null {
 	const values = Object.fromEntries(
-		TEACHER_ASSIGNMENT_IMPORT_COLUMNS.map(column => [column.key, cellToString(record[column.key])]),
+		TEACHER_ASSIGNMENT_IMPORT_COLUMNS.map(column => [column.key, cellToString(record[normalizeHeader(column.key)])]),
 	) as Record<TeacherAssignmentImportColumnKey, string>;
 
 	if (isBlankRow(values)) {
@@ -48,6 +48,7 @@ function mapRecordToRow(
 		code: values.code,
 		classe: values.classe,
 		matiere: values.matiere,
+		...(values.subjectId ? { subjectId: values.subjectId } : {}),
 	};
 }
 

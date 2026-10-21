@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { BillingPageState } from '../billing-page.svelte';
 	import { FINANCE_BATCH_ENROLL_LIMIT } from '$lib/api/finance-types';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
@@ -6,6 +7,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { formatMinorUnits, majorToMinor, parseMajorInput } from '$lib/finance/money';
 	import { locale, t } from '$lib/i18n';
+	import { hasPermission } from '$lib/permissions';
 	import StudentPicker from '$lib/smart-components/student-picker/StudentPicker.svelte';
 	import { get } from 'svelte/store';
 	import { getBillingPageState } from '../billing-page.svelte';
@@ -13,12 +15,19 @@
 	let {
 		open = $bindable(false),
 		onCreated,
+		onBatchCreated,
+		owner,
+		fixedFeeId,
 	}: {
 		open?: boolean;
+		owner?: Pick<BillingPageState, 'fees' | 'billing' | 'studentFor' | 'enrollStudent' | 'enrollStudents'>;
+		fixedFeeId?: string;
+		onBatchCreated?: (feeId: string) => void;
 		onCreated?: (chargeId: string) => void;
 	} = $props();
 
-	const billingPage = getBillingPageState();
+	const contextState = getBillingPageState();
+	const billingPage = $derived(owner ?? contextState);
 	const fees = $derived(billingPage.fees.filter(fee => fee.status === 'active'));
 	const billing = $derived(billingPage.billing);
 
@@ -51,7 +60,7 @@
 	});
 
 	function firstAvailableService() {
-		return fees[0]?.id ?? '';
+		return fixedFeeId ?? fees[0]?.id ?? '';
 	}
 
 	function resetForm() {
@@ -71,7 +80,7 @@
 	});
 
 	async function submit() {
-		if (!canSubmit || !selectedFee) {
+		if (busy || !canSubmit || !selectedFee || !hasPermission('PAYMENT_RECORD') || selectedFee.status !== 'active' || (fixedFeeId && catalogServiceId !== fixedFeeId)) {
 			return;
 		}
 
@@ -91,6 +100,7 @@
 				});
 				if (ok) {
 					open = false;
+					onBatchCreated?.(catalogServiceId);
 				}
 			}
 			else {
@@ -134,7 +144,7 @@
 			{$t('events.student')}
 		</Label>
 		{#if batch}
-			<StudentPicker
+			<StudentPicker isSelectable={student => hasPermission('PAYMENT_RECORD', { studentId: student.id, classId: student.classId })}
 				bind:values={studentIds}
 				mode="multi"
 				active={open}
@@ -144,7 +154,7 @@
 				{$t('invoice.batchLimit', { n: selectedCount, max: FINANCE_BATCH_ENROLL_LIMIT })}
 			</p>
 		{:else}
-			<StudentPicker bind:value={studentId} active={open} />
+			<StudentPicker isSelectable={student => hasPermission('PAYMENT_RECORD', { studentId: student.id, classId: student.classId })} bind:value={studentId} active={open} />
 		{/if}
 	</div>
 	<div class="space-y-1.5">
@@ -157,7 +167,7 @@
 			</p>
 		{:else}
 			<Select.Root type="single" value={catalogServiceId} onValueChange={value => value && (catalogServiceId = value)}>
-				<Select.Trigger>
+				<Select.Trigger disabled={Boolean(fixedFeeId)}>
 					<Select.Value placeholder={$t('invoice.selectFee')}>
 						{selectedFeeLabel}
 					</Select.Value>

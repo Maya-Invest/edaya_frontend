@@ -79,7 +79,8 @@ export const ROUTE_REDIRECTS: Record<string, string> = {
 	'/': '/login',
 	'/login/demo': '/login',
 	'/onboarding': '/onboarding?step=1',
-	'/finance': '/finance/billing',
+	'/finance': '/finance/fees',
+ '/finance/reconciliation': '/configuration/tools/finance-checks',
 	'/configuration': '/configuration/structure/details',
 	'/configuration/structure': '/configuration/structure/details',
 	'/configuration/subjects': '/configuration/structure/subjects',
@@ -142,7 +143,11 @@ export const ROUTE_DESCRIPTIONS: Record<string, string> = {
  '/school/messages/:id?': 'Conversation',
 	'/school/events': 'Incidents discipline',
 	'/school/teacher-assignments': 'Compatibilité → hub affectations enseignants',
-	'/finance/fees': 'Configuration des frais',
+	'/finance/fees': 'Vue financière et catalogue des frais',
+ '/finance/fees/:feeId': 'Détail du frais',
+ '/finance/billing/:id?/payments': 'Paiements appliqués',
+ '/finance/billing/:id?/history': 'Historique de facturation',
+ '/configuration/tools/finance-checks': 'Contrôles financiers',
 	'/finance/billing': 'Facturation — liste',
 	'/finance/billing/:id?': 'Facturation — détail élève',
 	'/finance/payment': 'Paiements enregistrés',
@@ -285,6 +290,8 @@ export const MODAL_SURFACES: readonly ModalSurface[] = [
 	{ module: 'Finance', parentRoute: '/finance/billing/[id]', modal: 'unallocate' },
 	{ module: 'Finance', parentRoute: '/finance/payment', modal: 'reverse' },
 	{ module: 'Finance', parentRoute: '/finance/payment', modal: 'refund' },
+ { module: 'Finance', parentRoute: '/finance/payment', modal: 'payment' },
+ { module: 'Finance', parentRoute: '/finance/fees/[feeId]', modal: 'assign-fee' },
 	{ module: 'Configuration', parentRoute: '/configuration/school', modal: 'location' },
 	{ module: 'Configuration', parentRoute: '/configuration/structure/details', modal: 'create-level' },
 	{ module: 'Configuration', parentRoute: '/configuration/structure/details', modal: 'edit-level' },
@@ -388,6 +395,7 @@ export function getWebadminFilesystemRoutes(): FilesystemRoute[] {
 export function inventoryRouteToMatrixPath(url: string): string {
 	return url
 		.replace(/:classId/g, '[classId]')
+ .replace(/:feeId/g, '[feeId]')
 		.replace(/:sessionId/g, '[sessionId]')
 		.replace(/:dayId/g, '[dayId]')
 		.replace(/:level\?/g, '[level]')
@@ -403,6 +411,7 @@ export function normalizeRoutePattern(endpoint: string): string {
 		.replace(/^https?:\/\/[^/]+/i, '')
 		.replace(/\?.*$/, '')
 		.replace(/\[classId\]/g, ':classId')
+ .replace(/\[feeId\]/g, ':feeId')
 		.replace(/\[sessionId\]/g, ':id')
 		.replace(/\[dayId\]/g, ':id')
 		.replace(/\[deliveryId\]/g, ':id')

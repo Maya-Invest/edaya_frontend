@@ -139,7 +139,6 @@ describe('finance data loading', () => {
 		});
 		expect(entityListRequests(requests, 'student-service-enrollments')[0]?.body).toEqual({
 			academicYearId,
-			status: 'active',
 			$limit: 500,
 			$offset: 0,
 		});
@@ -180,7 +179,6 @@ describe('finance data loading', () => {
 		});
 		expect(entityListRequests(requests, 'student-service-enrollments')[0]?.body).toEqual({
 			academicYearId,
-			status: 'active',
 			$limit: 500,
 			$offset: 0,
 		});

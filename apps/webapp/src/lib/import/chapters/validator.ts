@@ -72,18 +72,10 @@ export function validateChapterImportRows(
 		let target: ValidatedChapterImportRow['target'] | undefined;
 
 		if (hasNiveau && hasMatiere) {
-			const resolution = resolveChapterImportTarget(row.niveau, row.matiere, context);
+			const resolution = resolveChapterImportTarget(row.niveau, row.matiere, context, row.subjectId);
 
 			if (resolution.target) {
 				target = resolution.target;
-				if (target.classAssignments.length === 0) {
-					rowIssues.push(issue({
-						rowIndex: row.rowIndex,
-						column: 'niveau',
-						value: row.niveau,
-						messageKey: 'import.chapters.validation.noClassesForLevel',
-					}));
-				}
 			}
 			else if (resolution.levelSuggestions?.length) {
 				rowIssues.push(issue({
@@ -99,14 +91,14 @@ export function validateChapterImportRows(
 					rowIndex: row.rowIndex,
 					column: 'matiere',
 					value: row.matiere,
-					messageKey: 'import.chapters.validation.subjectNotFound',
+					messageKey: resolution.ambiguous ? 'import.chapters.validation.ambiguousSubject' : 'import.chapters.validation.subjectNotFound',
 					suggestions: resolution.suggestions,
 				}));
 			}
 		}
 
 		if (hasTitre && target) {
-			const duplicateKey = chapterImportDuplicateKey(target.gradeLevelSubjectId, row.titre);
+			const duplicateKey = chapterImportDuplicateKey(target.subjectId, row.titre);
 			const previousRow = chaptersInFile.get(duplicateKey);
 			if (previousRow != null) {
 				rowIssues.push(issue({

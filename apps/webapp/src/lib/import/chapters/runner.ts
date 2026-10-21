@@ -2,7 +2,7 @@ import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { ValidatedChapterImportRow } from './types';
 import {
 	createChapterImportMatterId,
-	saveChapterForGradeLevelSubject,
+	saveChapterForSubject,
 } from '$lib/chapters/save-chapter-for-class-subject';
 import { t } from '$lib/i18n';
 import { formatImportRunErrorMessage } from '$lib/import/shared/format-import-run-error';
@@ -42,10 +42,9 @@ export async function runChapterImport(options: ChapterImportRunOptions): Promis
 		const matterId = createChapterImportMatterId(index, seed);
 
 		try {
-			await saveChapterForGradeLevelSubject(client, {
+			await saveChapterForSubject(client, {
 				matterId,
 				subjectId: row.target.subjectId,
-				gradeLevelSubjectId: row.target.gradeLevelSubjectId,
 				name: row.titre,
 				description: row.description,
 				sequenceOrder: row.sequenceOrder,

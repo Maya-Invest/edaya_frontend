@@ -3,7 +3,7 @@
 	import type { StaffProfileRole } from '$lib/staff/staff-profile-roles';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { permissionSelectionGrains, scopeSelectionsComplete } from '$lib/api/grant-scopes';
+	import { permissionSelectionGrains, requiresSubjectClass, scopeSelectionsComplete } from '$lib/api/grant-scopes';
 	import { authSession } from '$lib/auth/session.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
@@ -45,6 +45,7 @@
 	let customScopes = $state<UserScopeSelection[]>([]);
 	let useDefaultScopes = $state(true);
 	const selectedProfile = $derived(permissionProfiles.find(row => row.id === permissionProfileId));
+	const subjectClassRequired = $derived(requiresSubjectClass((formData.data?.catalog ?? []).filter(entry => selectedProfile?.permissions.includes(entry.permission))));
 	const scopeGrains = $derived([...new Set((formData.data?.catalog ?? []).filter(entry => selectedProfile?.permissions.includes(entry.permission)).flatMap(permissionSelectionGrains))]);
 
 	function resetForm() {
@@ -68,7 +69,7 @@
 	});
 
 	const canSubmit = $derived(
-		firstName.trim().length > 0 && lastName.trim().length > 0 && Boolean(profileRole) && scopeSelectionsComplete(customScopes) && (!permissionProfileId || Boolean(formData.data && selectedProfile)),
+		firstName.trim().length > 0 && lastName.trim().length > 0 && Boolean(profileRole) && scopeSelectionsComplete(customScopes, subjectClassRequired) && (!permissionProfileId || Boolean(formData.data && selectedProfile)),
 	);
 
 	async function submit() {
@@ -177,7 +178,7 @@
 			<p class="text-xs text-muted-foreground">{$t('staff.defaultScopeAdditiveHint')}</p>
 			<p class="text-xs text-highlight">{$t('staff.noDefaultScopes')}</p>
 			<Label>{$t('staff.customScopes')}</Label>
-			<PermissionScopeSelections bind:scopes={customScopes} grains={scopeGrains} active={open} />
+			<PermissionScopeSelections {subjectClassRequired} bind:scopes={customScopes} grains={scopeGrains} active={open} />
 		{/if}
 	{/if}
 	<div class="space-y-1.5">

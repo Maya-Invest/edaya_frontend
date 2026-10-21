@@ -386,8 +386,9 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 			catch {
 				submitted = false;
 			}
-			const closed = submitted ? await waitForDialogClosed(page).catch(() => false) : false;
+			const closed = submitted ? await page.getByTestId('form-modal-submit').waitFor({ state: 'hidden' }).then(() => true).catch(() => false) : false;
 			const result = submitted ? await resultPromise : null;
+			if (typeof result?.id === 'string') entities.feeId = result.id;
 			const listed = await assertListContains(page, feeName, true, 20_000);
 			const created = submitted && closed && listed && result !== null;
 			if (created) {
@@ -420,14 +421,14 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 
 		await visitCovered(journey, '/finance/billing', '/finance/billing');
 		const assignOpened = await openUrlModal(page, '/finance/billing', 'assign-fee', { base: journey.ctx.base })
-			|| await openDialogButton(page, /ajouter une facture|add invoice/i);
+			|| await openDialogButton(page, /attribuer un frais|assign fee/i);
 		if (assignOpened) {
 			const resultPromise = waitForCommandResult(page, 'enroll-student-in-service');
 			const billingStudent = await apiFetch(page, journey.ctx.base, `/core/entities/students/${entities.studentId}`);
 			assert(billingStudent.ok(), 'Required billing student missing');
 			if (await fillAssignFeeDialog(page, (await billingStudent.json() as { lastName: string }).lastName)) {
 				await trySubmitDialog(page);
-				const closed = await waitForDialogClosed(page).catch(() => false);
+				const closed = await page.getByTestId('form-modal-submit').waitFor({ state: 'hidden' }).then(() => true).catch(() => false);
 				const result = await resultPromise;
 				const responseId = typeof result?.id === 'string' ? result.id : null;
 				if (responseId) {
@@ -505,7 +506,7 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 						paySubmitted = false;
 					}
 				}
-				payClosed = paySubmitted ? await waitForDialogClosed(page).catch(() => false) : false;
+				payClosed = paySubmitted ? await page.getByTestId('form-modal-submit').waitFor({ state: 'hidden' }).then(() => true).catch(() => false) : false;
 				const response = paySubmitted ? await resultPromise : null;
 				if (response && !response.ok()) {
 					console.log(`record-payment status=${response.status()} body=${(await response.text().catch(() => '')).slice(0, 300)}`);

@@ -7,6 +7,7 @@
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { formatMinorUnits, majorToMinor, parseMajorInput } from '$lib/finance/money';
 	import { locale, t } from '$lib/i18n';
+	import { hasPermission } from '$lib/permissions';
 	import { get } from 'svelte/store';
 	import { getBillingPageState } from '../../billing-page.svelte';
 
@@ -45,7 +46,7 @@
 	});
 
 	async function submit() {
-		if (!canSubmit) {
+		if (busy || !canSubmit || !hasPermission('PAYMENT_RECORD', { studentId: billing.studentId, classId: billing.classId }) || billing.status === 'cancelled' || (kind === 'cancel' ? !hasPermission('PAYMENT_CANCEL', { studentId: billing.studentId, classId: billing.classId }) || billing.paid > 0 : billing.remaining <= 0 || (kind === 'adjust' ? Boolean(billing.adjustedAt) : Boolean(billing.waivedAt))) || (parsedMajor !== null && majorToMinor(parsedMajor, currency, $locale) > billing.remaining)) {
 			return;
 		}
 		busy = true;

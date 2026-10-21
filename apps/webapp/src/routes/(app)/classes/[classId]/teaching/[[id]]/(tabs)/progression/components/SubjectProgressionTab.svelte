@@ -25,7 +25,6 @@
 	const matterRows = $derived(progressionTab.rowsFor(subject.id));
 	const matterContext = $derived(progressionTab.matterContextFor(subject.id));
 	const chaptersReadOnly = $derived(progressionTab.chaptersReadOnlyFor(subject.id));
-	const addPropagatesToGradeLevel = $derived(!chaptersReadOnly);
 	const canEditChapter = (row: SubjectMatterDrawerRow) =>
 		!progressionTab.isCatalogChapter(subject.id, row.id);
 	const entries = $derived(teachingPage.logEntriesForSubject(subject));
@@ -197,7 +196,6 @@
 		subjectId={matterContext.catalogSubjectId}
 		classSubjectId={subject.id}
 		classGroupId={matterContext.classGroupId}
-		gradeLevelSubjectId={addPropagatesToGradeLevel ? matterContext.gradeLevelSubjectId : undefined}
 		defaultSequenceOrder={matterRows.length + 1}
 		onSaved={handleMatterSaved}
 	/>
@@ -207,7 +205,6 @@
 		subjectId={matterContext.catalogSubjectId}
 		classSubjectId={subject.id}
 		classGroupId={matterContext.classGroupId}
-		gradeLevelSubjectId={addPropagatesToGradeLevel ? matterContext.gradeLevelSubjectId : undefined}
 		onSaved={handleMatterSaved}
 	/>
 {/if}

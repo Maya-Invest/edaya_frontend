@@ -3,7 +3,7 @@
 	import type { StaffPermissionAssignmentView } from '$lib/api/staff-permission-assignments-data';
 	import type { StaffMember } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
-	import { permissionSelectionGrains, scopeSelectionsComplete } from '$lib/api/grant-scopes';
+	import { permissionSelectionGrains, requiresSubjectClass, scopeSelectionsComplete } from '$lib/api/grant-scopes';
 	import { formatPermissionLabel } from '$lib/api/staff-permission-assignments-data';
 	import { authSession } from '$lib/auth/session.svelte';
 	import PermissionResolutionPreview from '$lib/components/school/PermissionResolutionPreview.svelte';
@@ -47,6 +47,7 @@
 	const selectedEntry = $derived(catalog.find(entry => entry.permission === permission));
 
 	let assignmentId = $state('');
+	const subjectClassRequired = $derived(requiresSubjectClass(selectedEntry ? [selectedEntry] : []));
 	const payload = $derived(permission
 		? { ...(assignment ?? {}), ...modalState.createStaffPermissionAssignmentPayload({
 			id: assignmentId,
@@ -94,7 +95,7 @@
 		return () => preview.reset();
 	});
 
-	const canSubmit = $derived(Boolean(permission) && selectedEntry?.staffAssignable === true && scopeSelectionsComplete(scopes) && !modalState.loading);
+	const canSubmit = $derived(Boolean(permission) && selectedEntry?.staffAssignable === true && scopeSelectionsComplete(scopes, subjectClassRequired) && !modalState.loading);
 
 	async function submit() {
 		if (!canSubmit || !permission || busy || !payload || !snapshot) {
@@ -164,7 +165,7 @@
 					<label class="flex items-center gap-2 text-sm"><Checkbox bind:checked={useDefaultScopes} />{$t('staff.includeDefaultScopes')}</label>
 					<p class="text-xs text-muted-foreground">{$t('staff.defaultScopeAdditiveHint')}</p>
 					<h4 class="font-display text-base font-bold text-foreground">{$t('staff.customScopes')}</h4>
-					<PermissionScopeSelections bind:scopes grains={selectedEntry ? permissionSelectionGrains(selectedEntry) : []} active={open} />
+					<PermissionScopeSelections {subjectClassRequired} bind:scopes grains={selectedEntry ? permissionSelectionGrains(selectedEntry) : []} active={open} />
 				</div>
 			{/if}
 			{#if reviewed && preview.report}<PermissionResolutionPreview report={preview.report} />{/if}

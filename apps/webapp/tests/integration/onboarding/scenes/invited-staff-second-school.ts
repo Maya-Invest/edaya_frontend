@@ -51,15 +51,23 @@ export async function runInvitedStaffSecondSchool(
 				throw new Error(`Expected two staff schools in the sidebar popup, found ${await options.count()}`);
 			}
 
-			const currentName = (await page.getByTestId('school-selector').locator('p').innerText()).trim();
 			const other = page.locator('[data-testid="school-selector-option"]:not([aria-current="true"])').first();
+			const targetSchoolId = await other.getAttribute('data-school-id');
+			if (!targetSchoolId) throw new Error('School switch option has no school identity');
+			const grants = page.waitForResponse(response =>
+				response.url().endsWith('/core/authorization/effective-grants')
+				&& response.request().headers()['x-school-id'] === targetSchoolId
+				&& response.ok(), { timeout: 30_000 });
 			await other.click();
-			await page.waitForFunction((previous) => {
-				const label = document.querySelector('[data-testid="school-selector"] p');
-				const next = label?.textContent?.trim() ?? '';
-				return next.length > 0 && next !== previous;
-			}, currentName, { timeout: 30_000 });
+			await grants;
+			await page.waitForFunction(schoolId =>
+				document.querySelector('[data-testid="academic-year-trigger"]')?.getAttribute('data-school-id') === schoolId,
+				targetSchoolId, { timeout: 30_000 });
+			await page.reload({ waitUntil: 'domcontentloaded' });
 			await expectAppDashboard(page);
+			await page.waitForFunction(schoolId =>
+				document.querySelector('[data-testid="academic-year-trigger"]')?.getAttribute('data-school-id') === schoolId,
+				targetSchoolId, { timeout: 30_000 });
 		});
 	});
 }

@@ -1,8 +1,6 @@
-import { describe, expect, it, mock } from 'bun:test';
-
 import type { ValidatedSubjectImportRow } from '$lib/import/subjects/types';
 
-
+import { describe, expect, it, mock } from 'bun:test';
 
 mock.module('$lib/subjects/notify-subjects-list-changed', () => ({
 
@@ -10,14 +8,9 @@ mock.module('$lib/subjects/notify-subjects-list-changed', () => ({
 
 }));
 
-
-
 const { runSubjectImport } = await import('$lib/import/subjects/runner');
 
-
-
 function row(overrides: Partial<ValidatedSubjectImportRow> & Pick<ValidatedSubjectImportRow, 'rowIndex'>): ValidatedSubjectImportRow {
-
 	return {
 
 		nom: 'Mathématiques',
@@ -31,16 +24,11 @@ function row(overrides: Partial<ValidatedSubjectImportRow> & Pick<ValidatedSubje
 		...overrides,
 
 	};
-
 }
 
-
-
 describe('subject import runner', () => {
-
-	it('creates each valid row via configureSubject and offerSubjectToGradeLevel', async () => {
+	it('creates each valid row with one atomic configureSubject command', async () => {
 		const configureSubject = mock(async () => ({}));
-		const offerSubjectToGradeLevel = mock(async () => ({}));
 
 		const result = await runSubjectImport({
 			schoolId: 'school-1',
@@ -50,7 +38,6 @@ describe('subject import runner', () => {
 				entities: { subjectCategories: { list: async () => [{ id: 'science', schoolId: 'school-1', name: 'Scientifique' }] } },
 				commands: {
 					configureSubject,
-					offerSubjectToGradeLevel,
 				},
 			} as never,
 			rows: [
@@ -62,9 +49,9 @@ describe('subject import runner', () => {
 		expect(configureSubject).toHaveBeenCalledWith(expect.objectContaining({
 			name: 'Mathématiques',
 			code: 'MATH',
-			defaultCoefficient: 3,
+			coefficient: 3,
 		}));
-		expect(offerSubjectToGradeLevel).toHaveBeenCalledWith(expect.objectContaining({
+		expect(configureSubject).toHaveBeenCalledWith(expect.objectContaining({
 			gradeLevelId: 'gl-6',
 			academicYearId: 'ay-1',
 			coefficient: 3,
@@ -74,6 +61,4 @@ describe('subject import runner', () => {
 			}),
 		}));
 	});
-
 });
-
