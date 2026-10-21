@@ -334,6 +334,7 @@ export function mapReportCardResults(
 			principalComment: result.principalComment ?? undefined,
 			generatedAt: formatDate(result.generatedAt),
 			publishedAt: formatDate(result.publishedAt),
+			publicationHistory: 'publicationHistory' in result ? result.publicationHistory : [],
 		};
 	});
 }

@@ -1,43 +1,39 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
-
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
+	import { formatDateInput } from '$lib/date/format';
 	import { t } from '$lib/i18n';
 	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getStudentProfileTabState } from '../student-profile-tab.svelte';
 
-	let {
-		s,
-		open = $bindable(false),
-	}: {
+	let { s, open = $bindable(false) }: {
 		s: Student;
 		open?: boolean;
 	} = $props();
-
 	const profileTab = getStudentProfileTabState();
 	const health = $derived(profileTab.healthFor(s.id));
-
 	let busy = $state(false);
 	let bloodType = $state('');
 	let allergiesText = $state('');
 	let medicationsText = $state('');
 	let conditionsText = $state('');
 	let notesText = $state('');
-
+	let emergencyProtocols = $state('');
+	let lastVisit = $state('');
 	function resetForm() {
 		bloodType = health?.bloodType === '—' ? '' : (health?.bloodType ?? '');
-		allergiesText = health?.allergies?.join(', ') ?? '';
-		medicationsText = health?.medications?.join(', ') ?? '';
-		conditionsText = health?.chronicConditions?.join(', ') ?? '';
+		allergiesText = health?.allergiesText ?? health?.allergies?.join(', ') ?? '';
+		medicationsText = health?.medicationsText ?? health?.medications?.join(', ') ?? '';
+		conditionsText = health?.medicalConditionsText ?? health?.chronicConditions?.join(', ') ?? '';
 		notesText = health?.notes ?? '';
+		emergencyProtocols = health?.emergencyProtocols ?? '';
+		lastVisit = health?.lastVisit?.slice(0, 10) ?? '';
 	}
-
 	onMount(resetForm);
-
 	async function submit() {
 		if (busy) {
 			return;
@@ -52,7 +48,8 @@
 				medications: medicationsText.trim() || null,
 				medicalConditions: conditionsText.trim() || null,
 				clinicalNotes: notesText.trim() || null,
-				lastVisit: health?.lastVisit || null,
+				lastVisit: lastVisit || null,
+				emergencyProtocols: emergencyProtocols.trim() || null,
 				successMessage: get(t)('student.healthSaved'),
 			});
 			if (!saved) {
@@ -61,6 +58,9 @@
 			profileTab.seed(s.id, {
 				health: {
 					id: saved.id,
+					medicalConditionsText: saved.medicalConditions ?? '',
+					allergiesText: saved.allergies ?? '',
+					medicationsText: saved.medications ?? '',
 					studentId: s.id,
 					bloodType: (saved.bloodType ?? bloodType.trim()) || '—',
 					allergies: allergiesText.split(',').map(value => value.trim()).filter(Boolean),
@@ -68,9 +68,9 @@
 					chronicConditions: conditionsText
 						.split(',')
 						.map(value => value.trim())
-						.filter((value): value is 'Asthme' | 'Epilepsie' | 'Diabete' =>
-							value === 'Asthme' || value === 'Epilepsie' || value === 'Diabete'),
-					lastVisit: health?.lastVisit ?? '',
+						.filter(Boolean),
+					lastVisit: formatDateInput(saved.lastVisit),
+					emergencyProtocols: saved.emergencyProtocols ?? '',
 					notes: notesText.trim(),
 				},
 			});
@@ -113,4 +113,6 @@
 		<Label>{$t('student.healthNotes')}</Label>
 		<Textarea bind:value={notesText} rows={3} />
 	</div>
+	<div class="space-y-1.5"><Label>{$t('profile.emergencyProtocols')}</Label><Textarea bind:value={emergencyProtocols} rows={3} /></div>
+	<div class="space-y-1.5"><Label>{$t('profile.lastVisit')}</Label><Input type="date" bind:value={lastVisit} /></div>
 </FormModal>

@@ -8,6 +8,10 @@ export interface RouteModalCatalogEntry {
 
 const STUDENT_DETAIL_MODALS = [
 	'edit-profile',
+	'edit-annual-profile',
+	'remove-annual-profile',
+	'guardian-relationship',
+	'enrollment-progression',
 	'edit-health',
 	'change-class',
 	'link-guardian',
@@ -25,6 +29,7 @@ const TIMETABLE_MODALS = [
 	'edit-event',
 	'cancel',
 	'session-attendance',
+	'attendance-review',
 	'session-logbook',
 ] as const;
 
@@ -73,7 +78,7 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'school-guardians-detail',
 		pathnamePattern: /^\/school\/guardians\/[^/]+\/?$/,
-		modalNames: ['create', 'edit-profile', 'delete'],
+		modalNames: ['create', 'edit-profile', 'guardian-relationship', 'delete'],
 	},
 	{
 		routeFamily: 'school-staff-list',
@@ -103,6 +108,8 @@ export const ROUTE_MODAL_CATALOG = [
 		modalNames: [
 			'create',
 			'edit-profile',
+			'edit-annual-profile',
+			'remove-annual-profile',
 			'delete',
 			'add-unavailability',
 			'edit-unavailability',
@@ -214,12 +221,12 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'class-attendance-detail',
 		pathnamePattern: /^\/classes\/[^/]+\/attendance\/[^/]+\/?$/,
-		modalNames: ['record-attendance'],
+		modalNames: ['record-attendance', 'attendance-review'],
 	},
 	{
 		routeFamily: 'configuration-school',
 		pathnamePattern: /^\/configuration\/school\/?$/,
-		modalNames: ['identity', 'issuing', 'location', 'assets'],
+		modalNames: ['identity', 'issuing', 'location', 'assets', 'timetable-settings'],
 	},
 	{
 		routeFamily: 'configuration-academic',
@@ -309,7 +316,7 @@ export const ROUTE_MODAL_CATALOG = [
 	},
 	{
 		routeFamily: 'configuration-subject-categories',
-		pathnamePattern: /^\/configuration\/other\/subject-categories\/?$/,
+		pathnamePattern: /^\/configuration\/other\/(?:subject-categories|academic-disciplines|placement-statuses)\/?$/,
 		modalNames: ['create', 'edit', 'delete'],
 	},
 	{

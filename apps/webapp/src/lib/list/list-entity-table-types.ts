@@ -10,6 +10,11 @@ export interface ListEntityCardFieldConfig {
 
 export interface ListEntityTableColumn {
 	key: string;
+	defaultVisible?: boolean;
+	required?: boolean;
+	available?: boolean;
+	group?: string;
+	minWidth?: number;
 	label: string;
 	span: number;
 	spanInSelectionMode?: number;

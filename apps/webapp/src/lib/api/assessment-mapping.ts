@@ -71,6 +71,7 @@ export function mapAssessmentToEvaluation(
 		marksRevision: assessment.marksRevision,
 		marksStatus: assessment.marksStatus,
 		id: assessment.id,
+		completedAt: assessment.completedAt ? String(assessment.completedAt) : undefined,
 		classId: assessment.classGroupId,
 		classSubjectId: assessment.classSubjectId,
 		title: assessment.title,

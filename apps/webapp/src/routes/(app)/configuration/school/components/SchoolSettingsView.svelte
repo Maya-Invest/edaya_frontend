@@ -15,6 +15,7 @@
 	import { get } from 'svelte/store';
 	import { getSchoolPageState } from '../school-page.svelte';
 	import IssuanceAssetSlot from './IssuanceAssetSlot.svelte';
+	import SchoolTimetableSettings from './SchoolTimetableSettings.svelte';
 
 	const owner = getSchoolPageState();
 	const school = $derived(owner.school);
@@ -113,6 +114,7 @@
 					</dl>
 				</section>
 			{/each}
+			<SchoolTimetableSettings />
 			<section class="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-soft">
 				<div class="flex flex-wrap items-center justify-between gap-3"><h2 class="font-display text-lg font-semibold">{$t('schoolSettings.sectionIssuanceAssets')}</h2><PermissionGate permission="SCHOOL_LIFECYCLE_MANAGE" mode="disable">{#snippet children({ disabled, title })}<Button variant="outline" size="sm" {disabled} {title} onclick={() => modals.open('assets')}><Pencil class="mr-2 h-4 w-4" />{$t('common.edit')}</Button>{/snippet}</PermissionGate></div>
 				{#each assetSlots as asset (asset.purpose)}<IssuanceAssetSlot readOnly purpose={asset.purpose} label={$t(`schoolSettings.asset.${asset.key}`)} attachmentId={school[asset.slot]} publicAllowed={(school.publicBrandingPurposes ?? []).includes(asset.purpose as 'school.logo' | 'school.crest')} canPublish={asset.public} canManage={false} busy={false} onUpload={() => {}} onClear={() => {}} onPublicChange={() => {}} />{/each}

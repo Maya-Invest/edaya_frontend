@@ -190,7 +190,7 @@ function mapStudentAcademicBadge(average: number): Student['academicBadge'] {
 }
 
 function mapStudentApiStatus(status: StudentRaw['status']): Student['status'] {
-	if (status === 'inactive' || status === 'archived') {
+	if (status === 'inactive' || status === 'archived' || status === 'graduated') {
 		return status;
 	}
 	return 'active';
@@ -657,6 +657,14 @@ export function mapStudents(
 
 		return {
 			id: student.id,
+			firstName: student.firstName ?? null,
+			lastName: student.lastName ?? null,
+			sourceFullName: student.sourceFullName ?? null,
+			nationalMatricule: student.nationalMatricule ?? null,
+			placeOfBirth: student.placeOfBirth ?? null,
+			nationality: student.nationality ?? null,
+			enrollmentDate: formatDateInput(student.enrollmentDate) || null,
+
 			classId,
 			enrollmentId: activeEnrollment?.id,
 			name: `${student.firstName} ${student.lastName}`,
@@ -693,6 +701,14 @@ export function mapGuardians(
 
 		return {
 			id: guardian.id,
+			firstName: guardian.firstName ?? null,
+			lastName: guardian.lastName ?? null,
+			sourceFullName: guardian.sourceFullName ?? null,
+			occupation: guardian.occupation ?? null,
+			code: guardian.code ?? null,
+			contactMethods: guardian.contactMethods,
+			hasAccess: guardian.hasAccess,
+			links: guardianLinks,
 			name: `${guardian.firstName} ${guardian.lastName}`,
 			initials: initialsFor(guardian.firstName, guardian.lastName),
 			photoUrl: guardian.photoUrl ?? null,

@@ -2,6 +2,7 @@
 	import type { PedagogicalNote, Student } from '$lib/types/school';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
+	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
@@ -10,14 +11,7 @@
 	import { get } from 'svelte/store';
 	import { getStudentProfileTabState } from '../student-profile-tab.svelte';
 
-	let {
-		s,
-		note,
-		disabled = false,
-		title,
-		open = $bindable(false),
-		showTrigger = true,
-	}: {
+	let { s, note, disabled = false, title, open = $bindable(false), showTrigger = true }: {
 		s: Student;
 		note?: PedagogicalNote;
 		disabled?: boolean;
@@ -25,43 +19,37 @@
 		open?: boolean;
 		showTrigger?: boolean;
 	} = $props();
-
 	type Category = 'behavior' | 'work' | 'progress' | 'encouragement';
-
 	const CATEGORIES: Category[] = ['work', 'behavior', 'progress', 'encouragement'];
-
 	const uiToApiCategory: Record<PedagogicalNote['category'], Category> = {
 		Comportement: 'behavior',
 		Travail: 'work',
 		Progression: 'progress',
 		Encouragement: 'encouragement',
 	};
-
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let category = $state<Category>('work');
 	let body = $state('');
-
+	let noteTitle = $state('');
+	let visibility = $state<'staff' | 'admin_only' | 'guardian_visible'>('staff');
 	const categoryLabel = $derived($t(`note.category.${category}`));
 	const canSubmit = $derived(body.trim().length > 0);
-
 	function resetForm() {
 		category = note ? uiToApiCategory[note.category] : 'work';
 		body = note?.content ?? '';
+		noteTitle = note?.title ?? '';
+		visibility = note?.visibility ?? 'staff';
 	}
-
 	$effect(() => {
 		if (open && !wasOpen)
 			resetForm();
 		wasOpen = open;
 	});
-
 	const profileTab = getStudentProfileTabState();
-
 	async function submit() {
 		if (!canSubmit)
 			return;
-
 		busy = true;
 		const ok = note
 			? await profileTab.updateNote({
@@ -69,12 +57,16 @@
 				studentId: s.id,
 				category,
 				body,
+				title: noteTitle.trim() || null,
+				visibility,
 				successMessage: get(t)('note.updateSuccess', { name: s.name }),
 			})
 			: await profileTab.createNote({
 				studentId: s.id,
 				category,
 				body,
+				title: noteTitle.trim() || null,
+				visibility,
 				successMessage: get(t)('note.createSuccess', { name: s.name }),
 			});
 		busy = false;
@@ -111,6 +103,9 @@
 	onCancel={resetForm}
 	onSubmit={submit}
 >
+	<label class="block space-y-1.5"><span>{$t('profile.noteTitle')}</span><Input bind:value={noteTitle} /></label>
+	<label class="block space-y-1.5"><span>{$t('profile.visibility')}</span><select bind:value={visibility} class="h-10 w-full rounded-lg border bg-background px-3">{#each ['staff', 'admin_only', 'guardian_visible'] as value (value)}<option {value}>{$t(`profile.noteVisibility.${value}`)}</option>{/each}</select></label>
+
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('note.categoryLabel')}

@@ -19,18 +19,12 @@
 	import IncidentResolveModal from './IncidentResolveModal.svelte';
 
 	type IncidentDrawerModal = 'edit' | 'resolve' | 'delete';
-
-	const {
-		incident,
-		onDeleted,
-	}: {
+	const { incident, onDeleted }: {
 		incident: Incident;
 		onDeleted?: () => void;
 	} = $props();
-
 	const eventsPage = getEventsPageState();
 	const students = $derived(eventsPage.students);
-
 	const modals = createUrlSyncedModals<IncidentDrawerModal>({
 		allowed: ['edit', 'resolve', 'delete'],
 		getUrl: () => $page.url,
@@ -42,18 +36,15 @@
 	const editOpen = bindUrlModal(modals, 'edit');
 	const resolveOpen = bindUrlModal(modals, 'resolve');
 	const deleteOpen = bindUrlModal(modals, 'delete');
-
 	let deleteBusy = $state(false);
 	const involvements = $derived(eventsPage.involvements);
 	const sanctions = $derived(eventsPage.sanctions);
 	const detailLoading = $derived(eventsPage.detailLoading);
 	const live = $derived(eventsPage.findIncident(incident.id) ?? incident);
 	const isResolved = $derived(live.status === 'resolved');
-
 	function studentFor(studentId: string) {
 		return students.find(student => student.id === studentId);
 	}
-
 	async function confirmDelete() {
 		deleteBusy = true;
 		try {
@@ -69,9 +60,7 @@
 			deleteBusy = false;
 		}
 	}
-
 	const refreshDetail = () => eventsPage.refreshDetail(live.id);
-
 </script>
 
 <div class="space-y-5">
@@ -153,6 +142,7 @@
 						<div class="min-w-0">
 							<p class="truncate text-sm font-medium">{student?.name ?? involvement.studentId}</p>
 							<p class="text-xs text-muted-foreground">{$t(`events.role.${involvement.role}`)}</p>
+							{#if involvement.notes}<p class="mt-1 text-xs">{involvement.notes}</p>{/if}
 						</div>
 					</li>
 				{/each}
@@ -191,9 +181,15 @@
 
 	<DrawerField label={$t('events.summary')}>
 		<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm whitespace-pre-wrap">
-			{live.summary}
+			{live.description ?? live.summary}
 		</div>
 	</DrawerField>
+	<details class="space-y-2 rounded-xl border p-3"><summary>{$t('profile.audit')}</summary>
+		<p class="text-sm">{$t('profile.reporter')}: {live.reporterId ?? $t('profile.notProvided')}</p>
+		{#if live.lessonSessionId}<p class="text-sm">{$t('profile.lessonOccurrence')}: {live.lessonSessionId}</p>{/if}
+		{#if live.resolvedAt}<p class="text-sm">{$t('profile.resolved')}: {live.resolvedAt} · {live.resolvedByStaffId ?? '—'}</p>{/if}
+		{#if live.resolutionNotes}<p class="whitespace-pre-wrap text-sm">{live.resolutionNotes}</p>{/if}
+	</details>
 	<div class="grid grid-cols-2 gap-3">
 		<DrawerField label={$t('events.date')}>
 			<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{live.date}</div>

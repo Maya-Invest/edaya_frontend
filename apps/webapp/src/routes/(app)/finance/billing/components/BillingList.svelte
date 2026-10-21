@@ -27,7 +27,10 @@
 	import { getBillingPageState } from '../billing-page.svelte';
 	import AssignFeeFormModal from './AssignFeeFormModal.svelte';
 
-	const { onSelectBilling, selectedId }: { onSelectBilling?: (billing: StudentBilling) => void; selectedId?: string } = $props();
+	const { onSelectBilling, selectedId }: {
+		onSelectBilling?: (billing: StudentBilling) => void;
+		selectedId?: string;
+	} = $props();
 	const billingPage = getBillingPageState();
 	const listFilters = $derived(billingFilters($page.url));
 	let searchText = $derived($page.url.searchParams.get('q') ?? '');
@@ -76,7 +79,7 @@
 		{#snippet primary()}<PermissionGate permission="PAYMENT_RECORD"><Button size="sm" onclick={() => modals.open('assign-fee')}>{$t('finance.newInvoice')}</Button></PermissionGate>{/snippet}
 		{#snippet more()}<RowActionMenu><RowActionMenuItem onclick={() => void exportRows()}>{$t('list.export')}</RowActionMenuItem><RowActionMenuItem onclick={() => void reminders()}>{$t('documents.exportReminders')}</RowActionMenuItem></RowActionMenu>{/snippet}
 	</ListPageHeader>
-	<ListEntityTable rows={billingPage.billing} highlightId={selectedId} columns={[
+	<ListEntityTable listKey="BillingList" rows={billingPage.billing} highlightId={selectedId} columns={[
 		{ key: 'student', label: $t('events.student'), span: 2, sortable: true },
 		{ key: 'label', label: $t('billing.fee'), span: 2, sortable: true },
 		{ key: 'net', label: $t('finance.netBilled'), span: 1, sortable: true },
@@ -91,12 +94,25 @@
 		url.searchParams.set('direction', listFilters.sort === column && listFilters.direction === 'asc' ? 'desc' : 'asc');
 		appGoto(url.pathname + url.search, { replaceState: true });
 	}} onRowClick={row => onSelectBilling?.(row)} total={billingPage.slice?.total ?? 0} visibleCount={billingPage.billing.length} hasMore={billingPage.billing.length < (billingPage.slice?.total ?? 0)} loadingMore={billingPage.loadingMore} onLoadMore={() => void billingPage.loadMore()}>
-		{#snippet row(row)}
-			<div class="col-span-2 min-w-0 truncate text-sm font-medium">{row.studentName ?? row.studentId}</div><div class="col-span-2 min-w-0 truncate text-sm">{row.label}</div>
-			<div class="col-span-1 break-words text-xs tabular-nums">{formatMinorUnits(row.netAmount ?? row.total, row.currency, $locale)}</div><div class="col-span-1 break-words text-xs tabular-nums">{formatMinorUnits(row.paid, row.currency, $locale)}</div>
-			<div class="col-span-2 break-words text-sm font-medium tabular-nums">{formatMinorUnits(row.remaining, row.currency, $locale)}</div><div class="col-span-2 text-xs">{row.dueDate || '—'}</div>
-			<div class="col-span-1"><span class={`rounded-full px-2 py-1 text-xs ${billingStatusTone[row.status]}`}>{$t(`billing.status.${row.status}`)}</span></div>
-			<div class="col-span-1" role="presentation" onclick={event => event.stopPropagation()} onkeydown={event => event.stopPropagation()}><RowActionMenu><RowActionMenuItem onclick={() => onSelectBilling?.(row)}>{$t('common.open')}</RowActionMenuItem></RowActionMenu></div>
+		{#snippet cell(row, column, _ctx)}
+
+			{#if column.key === 'student'}
+				<div class="col-span-2 min-w-0 truncate text-sm font-medium">{row.studentName ?? row.studentId}</div>
+			{:else if column.key === 'label'}
+				<div class="col-span-2 min-w-0 truncate text-sm">{row.label}</div>
+			{:else if column.key === 'net'}
+				<div class="col-span-1 break-words text-xs tabular-nums">{formatMinorUnits(row.netAmount ?? row.total, row.currency, $locale)}</div>
+			{:else if column.key === 'applied'}
+				<div class="col-span-1 break-words text-xs tabular-nums">{formatMinorUnits(row.paid, row.currency, $locale)}</div>
+			{:else if column.key === 'remaining'}
+				<div class="col-span-2 break-words text-sm font-medium tabular-nums">{formatMinorUnits(row.remaining, row.currency, $locale)}</div>
+			{:else if column.key === 'dueDate'}
+				<div class="col-span-2 text-xs">{row.dueDate || '—'}</div>
+			{:else if column.key === 'status'}
+				<div class="col-span-1"><span class={`rounded-full px-2 py-1 text-xs ${billingStatusTone[row.status]}`}>{$t(`billing.status.${row.status}`)}</span></div>
+			{:else if column.key === 'actions'}
+				<div class="col-span-1" role="presentation" onclick={event => event.stopPropagation()} onkeydown={event => event.stopPropagation()}><RowActionMenu><RowActionMenuItem onclick={() => onSelectBilling?.(row)}>{$t('common.open')}</RowActionMenuItem></RowActionMenu></div>
+			{/if}
 		{/snippet}
 	</ListEntityTable>
 	{#if billingPage.moreError}<Button variant="outline" onclick={() => billingPage.loadMore()}>{$t('dataState.retry')}</Button>{/if}

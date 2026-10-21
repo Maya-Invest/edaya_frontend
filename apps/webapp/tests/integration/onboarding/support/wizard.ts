@@ -139,6 +139,10 @@ export async function selectCollegeAndOneClass(page: Page): Promise<void> {
 	const plus = firstRow.getByRole('button').nth(1);
 	await waitForEnabled(plus);
 	await plus.click();
+    const codes = page.locator('[data-testid^="discipline-code-"]');
+    await codes.first().waitFor({ state: 'visible' });
+    for (const input of await codes.all()) await input.fill('TEST');
+    for (const input of await page.locator('[data-testid^="discipline-name-"]').all()) await input.fill('Reviewed test discipline');
 }
 
 async function waitForOnboardingShell(page: Page): Promise<void> {

@@ -34,7 +34,7 @@ function sessionInstantsForExistingWeek(
 function specificDateForWeek(weekStart: Date, day: PlanningEvent['day']): string {
 	const weekAnchor = mondayOfWeekUtc(weekStart);
 	const date = new Date(weekAnchor);
-	const offset = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4 }[day] ?? 0;
+	const offset = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 }[day] ?? 0;
 	date.setUTCDate(date.getUTCDate() + offset);
 	return date.toISOString().slice(0, 10);
 }

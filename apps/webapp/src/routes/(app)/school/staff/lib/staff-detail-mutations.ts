@@ -47,6 +47,7 @@ function toStaffPermissionConfigCommand(
 
 function buildOptimisticStaff(input: {
 	id: string;
+	code?: string;
 	firstName: string;
 	lastName: string;
 	email?: string;
@@ -54,7 +55,10 @@ function buildOptimisticStaff(input: {
 }): StaffMember {
 	const email = input.email?.trim() ?? '';
 	return {
+		code: input.code?.trim() || null,
 		id: input.id,
+		firstName: input.firstName.trim(),
+		lastName: input.lastName.trim(),
 		name: `${input.firstName.trim()} ${input.lastName.trim()}`,
 		initials: staffInitials(input.firstName, input.lastName),
 		role: input.profileRole,
@@ -135,6 +139,7 @@ export async function updateStaffProfileOnPage(
 	state: StaffPageState,
 	input: {
 		staffId: string;
+		profile?: Record<string, string>;
 		firstName: string;
 		lastName: string;
 		email?: string;
@@ -149,6 +154,7 @@ export async function updateStaffProfileOnPage(
 
 	const payload: components['schemas']['UpdateStaffMemberProfileCommand'] & StaffMemberProfileRolePatch = {
 		staffId: input.staffId,
+		...(input.profile && 'code' in input.profile ? { code: input.profile.code?.trim() || null } : {}),
 		firstName: input.firstName.trim(),
 		lastName: input.lastName.trim(),
 		email: email || null,
@@ -159,6 +165,9 @@ export async function updateStaffProfileOnPage(
 		request: () => client.commands.updateStaffMemberProfile(payload),
 		apply: () => {
 			state.patchStaff(input.staffId, {
+				firstName: input.firstName.trim(),
+				lastName: input.lastName.trim(),
+				...(input.profile && 'code' in input.profile ? { code: input.profile.code?.trim() || null } : {}),
 				name: nextName,
 				initials: staffInitials(input.firstName, input.lastName),
 				email,

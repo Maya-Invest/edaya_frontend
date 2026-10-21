@@ -14,8 +14,9 @@ function deferred<T>() {
 let load = async (_kind: string, _id: string): Promise<{ id: string } | null> => null;
 let mutation = async (): Promise<{ invitationId: string; inviteUrl: string } | null> => ({ invitationId: 'invite', inviteUrl: 'http://local/invite' });
 mock.module('$lib/api/invitation-cache', () => ({ readPendingInvitation: () => null }));
-mock.module('$lib/api/invitation-data', () => ({ fetchPendingAccountInvitation: (kind: string, id: string) => load(kind, id) }));
+mock.module('$lib/api/invitation-data', () => ({ fetchPendingAccountInvitation: (kind: string, id: string) => load(kind, id), fetchAccountInvitationHistory: async () => [] }));
 mock.module('$lib/api/mutations/invitation.mutations', () => ({ sendAccountInvitationMutation: () => mutation(), resendAccountInvitationMutation: () => mutation(), revokeAccountInvitationMutation: async () => true }));
+mock.module('$lib/permissions', () => ({ hasPermission: () => true }));
 mock.module('$lib/i18n', () => ({ t: { subscribe: (fn: (value: unknown) => void) => { fn((key: string) => key); return () => {}; } } }));
 const { AccountLinkingState } = await import('../../src/lib/smart-components/account-linking/account-linking-state.svelte');
 const target = (id: string) => ({ kind: 'staff' as const, targetId: id, subjectId: null, contactEmail: '', displayName: id });

@@ -61,7 +61,7 @@ export function mapTimetableSchedules(
 				title: schedule.title,
 				isRecurring: schedule.isRecurring,
 				dayOfWeek,
-				day: scheduleDayLabel(dayOfWeek),
+				day: !schedule.isRecurring && schedule.specificDate ? (['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const)[new Date(String(schedule.specificDate)).getUTCDay()]! : scheduleDayLabel(dayOfWeek),
 				startTime: schedule.startTime,
 				endTime: schedule.endTime,
 				subject: label,

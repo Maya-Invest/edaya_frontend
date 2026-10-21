@@ -2,6 +2,7 @@
 	import type { StaffMember } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
+	import PersonProfileDetails from '$lib/components/school/shared/PersonProfileDetails.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
@@ -11,33 +12,24 @@
 	import { get } from 'svelte/store';
 	import { getStaffPageState } from '../../../../staff-page.svelte';
 
-	const { s }: { s: StaffMember } = $props();
-
+	const { s }: {
+		s: StaffMember;
+	} = $props();
 	const staffPage = getStaffPageState();
-
 	let optimisticActive = $state<boolean | null>(null);
 	let statusBusy = $state(false);
-
 	const active = $derived(optimisticActive ?? s.isActive);
-
-	const classLabels = $derived(
-		s.classes.map(id => academicContext.classes.find(c => c.id === id)?.name ?? id),
-	);
-
+	const classLabels = $derived(s.classes.map(id => academicContext.classes.find(c => c.id === id)?.name ?? id));
 	async function handleActiveChange(checked: boolean | 'indeterminate') {
 		if (checked === 'indeterminate' || statusBusy)
 			return;
-
 		const previous = active;
 		optimisticActive = checked;
 		statusBusy = true;
 		const ok = await staffPage.updateStatus({
 			staffId: s.id,
 			isActive: checked,
-			successMessage: get(t)(
-				checked ? 'staff.activateSuccess' : 'staff.deactivateSuccess',
-				{ name: s.name },
-			),
+			successMessage: get(t)(checked ? 'staff.activateSuccess' : 'staff.deactivateSuccess', { name: s.name }),
 		});
 		statusBusy = false;
 		if (ok) {
@@ -48,6 +40,7 @@
 		}
 	}
 </script>
+<PersonProfileDetails kind="staff" person={s} />
 
 <div class="space-y-4">
 	<DrawerField label={$t('guardian.fullName')}>

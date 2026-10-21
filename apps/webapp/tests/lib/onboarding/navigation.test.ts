@@ -54,6 +54,7 @@ describe('canAdvanceFromStep', () => {
 		const draft = createEmptyDraft();
 		expect(canAdvanceFromStep(2, draft)).toBe(false);
 		draft.structure.models = ['college'];
+		draft.structure.disciplineMappings = [{ subjectCode: 'FR', disciplineCode: 'TEST', disciplineName: 'Reviewed test discipline' }];
 		draft.structure.levels = [{ gradeLevelId: 'ci-college:6EME', classCount: 1, capacity: 30, classNamingMode: 'numerical' }];
 		expect(canAdvanceFromStep(2, draft)).toBe(true);
 	});
@@ -69,6 +70,7 @@ describe('canFinishOnboarding', () => {
 		draft.structureStepSubmitted = true;
 		expect(canFinishOnboarding(draft)).toBe(false);
 		draft.structure.models = ['college'];
+		draft.structure.disciplineMappings = [{ subjectCode: 'FR', disciplineCode: 'TEST', disciplineName: 'Reviewed test discipline' }];
 		draft.structure.levels = [{
 			gradeLevelId: 'ci-college:6EME',
 			classCount: 1,
@@ -86,6 +88,7 @@ describe('canFinishOnboarding', () => {
 		draft.schoolStepSubmitted = true;
 		draft.structureStepSubmitted = true;
 		draft.structure.models = ['college'];
+		draft.structure.disciplineMappings = [{ subjectCode: 'FR', disciplineCode: 'TEST', disciplineName: 'Reviewed test discipline' }];
 		draft.structure.levels = [{
 			gradeLevelId: 'ci-college:6EME',
 			classCount: 1,

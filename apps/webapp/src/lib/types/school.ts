@@ -18,10 +18,18 @@ export interface ClassNode {
 
 export interface HierarchyGroup { level: string; classes: ClassNode[] }
 
-export type StudentApiStatus = 'active' | 'inactive' | 'archived';
+export type StudentApiStatus = 'active' | 'inactive' | 'graduated' | 'archived';
 export type StudentAcademicBadge = 'honor' | 'warning';
 
 export interface Student {
+	firstName?: string | null;
+	lastName?: string | null;
+	sourceFullName?: string | null;
+	nationalMatricule?: string | null;
+	placeOfBirth?: string | null;
+	nationality?: string | null;
+	enrollmentDate?: string | null;
+
 	id: string;
 	classId: string;
 	enrollmentId?: string;
@@ -48,6 +56,8 @@ export interface Student {
 export type SubjectCategory = 'Scientifique' | 'Littéraire' | 'Langues' | 'Sciences humaines' | 'Sport' | 'Arts';
 
 export interface Subject {
+	disciplineId?: string | null;
+	isOptional?: boolean;
 	subjectId?: string;
 	id: string;
 	classId: string;
@@ -93,7 +103,7 @@ export interface PlanningEvent {
 	kind: PlanningEventKind;
 	title: string;
 	subject: string;
-	day: 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri';
+	day: 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
 	start: string;
 	end: string;
 	startsAt: string;
@@ -151,6 +161,7 @@ export interface EvaluationSubmission {
 }
 
 export interface Evaluation {
+	completedAt?: string;
 	/** False when marks were not authorized; an empty authorized result set is still available. */
 	marksAvailable?: boolean;
 	averageOutOf?: number;
@@ -182,6 +193,15 @@ export interface Evaluation {
 }
 
 export interface Guardian {
+	contactMethods?: components['schemas']['Guardian']['contactMethods'];
+	hasAccess?: boolean;
+	links?: components['schemas']['GuardianStudentLink'][];
+	firstName?: string | null;
+	lastName?: string | null;
+	sourceFullName?: string | null;
+	occupation?: string | null;
+	code?: string | null;
+
 	id: string;
 	name: string;
 	initials: string;
@@ -208,6 +228,10 @@ export type StaffRole
 		| 'staff';
 
 export interface StaffMember {
+	firstName?: string | null;
+	lastName?: string | null;
+	code?: string | null;
+
 	id: string;
 	name: string;
 	initials: string;
@@ -224,6 +248,10 @@ export interface StaffMember {
 }
 
 export interface Teacher {
+	firstName?: string | null;
+	lastName?: string | null;
+	sourceFullName?: string | null;
+
 	id: string;
 	name: string;
 	initials: string;
@@ -235,9 +263,13 @@ export interface Teacher {
 	subjectId?: string | null;
 }
 
-export type ChronicCondition = 'Asthme' | 'Epilepsie' | 'Diabete';
+export type ChronicCondition = string;
 
 export interface HealthRecord {
+	medicalConditionsText?: string;
+	allergiesText?: string;
+	medicationsText?: string;
+	emergencyProtocols?: string;
 	id?: string;
 	studentId: string;
 	bloodType: string;
@@ -251,6 +283,14 @@ export interface HealthRecord {
 export type IncidentKind = 'positive' | 'minor_infraction' | 'major_infraction' | 'emergency';
 
 export interface Incident {
+	title?: string;
+	description?: string;
+	classGroupId?: string | null;
+	lessonSessionId?: string | null;
+	reporterId?: string | null;
+	resolvedAt?: string | null;
+	resolvedByStaffId?: string | null;
+	resolutionNotes?: string | null;
 	id: string;
 	studentId: string;
 	involvedStudentIds: string[];
@@ -266,6 +306,13 @@ export interface Incident {
 }
 
 export interface StudentEnrollmentHistoryItem {
+	progressionDecision?: 'promoted' | 'retained' | 'graduated' | null;
+	progressionDecidedAt?: string;
+	progressionDecidedBy?: string | null;
+	progressionNotes?: string | null;
+	previousEnrollmentId?: string | null;
+	closedBy?: string | null;
+	enrollmentIndex?: number;
 	id: string;
 	classGroupId: string;
 	className: string;
@@ -513,6 +560,8 @@ export interface SchoolYearEvent {
 }
 
 export interface PedagogicalNote {
+	title?: string | null;
+	visibility?: 'staff' | 'admin_only' | 'guardian_visible';
 	id: string;
 	studentId: string;
 	date: string;

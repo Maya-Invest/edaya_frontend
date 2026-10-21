@@ -190,6 +190,14 @@ export function mapIncidents(
 
 			return {
 				id: incident.id,
+				title: incident.title,
+				description: incident.description,
+				classGroupId: incident.classGroupId,
+				lessonSessionId: incident.lessonSessionId,
+				reporterId: incident.reporterId,
+				resolvedAt: incident.resolvedAt instanceof Date ? incident.resolvedAt.toISOString() : typeof incident.resolvedAt === 'string' ? incident.resolvedAt : null,
+				resolvedByStaffId: incident.resolvedByStaffId,
+				resolutionNotes: incident.resolutionNotes,
 				studentId: primary?.studentId ?? '',
 				involvedStudentIds,
 				involvedCount: involvedStudentIds.length,

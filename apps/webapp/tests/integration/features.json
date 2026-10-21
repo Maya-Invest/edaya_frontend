@@ -2883,5 +2883,19 @@
     "module": "Finance",
     "endpoint": "http://localhost:5173/finance/fees/[feeId]?modal=assign-fee",
     "action": "Modal deep-link ?modal=assign-fee"
+  },
+  {
+    "id": "web.configuration.academic-disciplines.page",
+    "feature": "web.configuration",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other/academic-disciplines",
+    "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.configuration.placement-statuses.page",
+    "feature": "web.configuration",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/other/placement-statuses",
+    "action": "Navigation directe — contenu visible"
   }
 ]

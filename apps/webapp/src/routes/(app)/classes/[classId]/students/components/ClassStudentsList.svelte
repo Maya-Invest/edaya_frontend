@@ -3,7 +3,6 @@
 	import type { Student } from '$lib/types/school';
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
-
 	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -30,43 +29,32 @@
 	import StudentCreateModal from '../../../../school/students/components/StudentCreateModal.svelte';
 	import { getClassStudentsPageState } from '../class-students-page.svelte';
 
-	const {
-		classId,
-		onSelect,
-		selectedId,
-	}: {
+	const { classId, onSelect, selectedId }: {
 		classId: string;
 		onSelect?: (student: Student) => void;
 		selectedId?: string;
 	} = $props();
-
 	const classStudentsPage = getClassStudentsPageState();
 	const currentClass = $derived(classStudentsPage.currentClass);
 	const filtered = $derived(classStudentsPage.visibleStudents);
 	const infinite = useInfiniteList(() => filtered, 30);
-
 	const statusStyle: Record<Student['status'], string> = {
+		graduated: 'bg-secondary text-foreground/70',
 		active: 'bg-secondary text-foreground/70',
 		inactive: 'bg-muted text-muted-foreground',
 		archived: 'bg-muted text-muted-foreground',
 	};
-
 	const badgeStyle: Record<NonNullable<Student['academicBadge']>, string> = {
 		honor: 'bg-secondary text-foreground/80',
 		warning: 'bg-highlight-soft text-highlight',
 	};
-
 	const statusKeys = ['all', 'active', 'inactive', 'archived'] as const;
 	const statusFilterActive = $derived(classStudentsPage.filters.values.status !== 'all' ? 1 : 0);
-	const statusFilterOptions = $derived(
-		statusKeys.map(key => ({
-			value: key,
-			label: key === 'all' ? $t('filter.all') : $t(`studentStatus.${key}`),
-		})),
-	);
-
+	const statusFilterOptions = $derived(statusKeys.map(key => ({
+		value: key,
+		label: key === 'all' ? $t('filter.all') : $t(`studentStatus.${key}`),
+	})));
 	const view = $derived(readListView($page.url));
-
 	async function exportRosterAndIdCards() {
 		await classStudentsPage.performRequestDocumentIssuance({
 			templateKey: 'class-roster.v1',
@@ -90,7 +78,6 @@
 			successMessage: get(t)('documents.toastRequested'),
 		});
 	}
-
 	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
 	$effect(() => {
 		modals.hydrate();
@@ -109,13 +96,10 @@
 		}
 	});
 	const createOpen = bindUrlModal(modals, 'create');
-
 	const initialFilters = $derived(readClassStudentListFilters($page.url));
-
 	$effect(() => {
 		classStudentsPage.filters.hydrate(initialFilters);
 	});
-
 	$effect(() => {
 		if (!classStudentsPage.filters.ready) {
 			return;
@@ -124,12 +108,10 @@
 		void classStudentsPage.filters.values.q;
 		classStudentsPage.filters.scheduleSync();
 	});
-
 	function handleCreated(studentId: string) {
 		const path = detailHref.classStudent(classId, studentId);
 		openDetailDrawer(`${path}${detailNavigationSearch($page.url)}`, currentRouteSurfaceHref($page.url));
 	}
-
 	function setView(next: ListView) {
 		void appGoto(writeListView($page.url, next), {
 			replaceState: true,

@@ -13,33 +13,18 @@
 	import * as Select from '$lib/components/ui/select';
 	import { lang, t } from '$lib/i18n';
 	import { catalogCategory } from '$lib/i18n/catalog-label';
+	import AcademicDisciplinePicker from '$lib/smart-components/reference-catalog/AcademicDisciplinePicker.svelte';
 	import { parseSubjectWorkload } from '$lib/subjects/subject-workload';
 	import { get } from 'svelte/store';
 
 	const PLANNING_DAYS: PlanningEvent['day'][] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-
 	const COLORS: Subject['color'][] = ['mint', 'sky', 'warm'];
-
 	const COLOR_LABELS: Record<Subject['color'], string> = {
 		mint: 'Mint',
 		sky: 'Sky',
 		warm: 'Warm',
 	};
-
-	let {
-		onLoadCategories,
-		onCreateSchedule,
-		onCreateSubjectForClass,
-		onUpdateSubject,
-		subject,
-		classId,
-		weekStart = new Date(),
-		open = $bindable(false),
-		onCreated,
-		disabled = false,
-		title,
-		showTrigger = true,
-	}: {
+	let { onLoadCategories, onCreateSchedule, onCreateSubjectForClass, onUpdateSubject, subject, classId, weekStart = new Date(), open = $bindable(false), onCreated, disabled = false, title, showTrigger = true }: {
 		onLoadCategories: (schoolId: string) => Promise<SubjectCategoryOption[]>;
 		onCreateSchedule: typeof createScheduleMutation;
 		onCreateSubjectForClass: typeof createSubjectForClassMutation;
@@ -53,10 +38,14 @@
 		title?: string;
 		showTrigger?: boolean;
 	} = $props();
-
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let name = $state('');
+	let disciplineId = $state('');
+	let code = $state('');
+	let shortName = $state('');
+	let coefficient = $state('');
+	let isOptional = $state(false);
 	let periodsPerWeek = $state('');
 	let minPeriodSpan = $state('');
 	let maxPeriodSpan = $state('');
@@ -68,17 +57,13 @@
 	let scheduleDay = $state<PlanningEvent['day']>('Mon');
 	let scheduleStart = $state('08:00');
 	let scheduleEnd = $state('09:00');
-
 	const isEdit = $derived(subject !== undefined);
 	const hasSharedWorkload = $derived(Boolean(subject?.gradeLevelId));
 	const colorLabel = $derived(COLOR_LABELS[color]);
 	const canSubmit = $derived.by(() => {
-		return name.trim().length > 0 && categoryId.length > 0 && (isEdit || (classId?.length ?? 0) > 0);
+		return ((isEdit && !subject?.disciplineId) || disciplineId.length > 0) && (coefficient === '' || (Number.isFinite(Number(coefficient)) && Number(coefficient) > 0)) && name.trim().length > 0 && categoryId.length > 0 && (isEdit || (classId?.length ?? 0) > 0);
 	});
-	const selectedCategoryName = $derived(
-		categories.find(category => category.id === categoryId)?.name ?? '',
-	);
-
+	const selectedCategoryName = $derived(categories.find(category => category.id === categoryId)?.name ?? '');
 	async function loadCategories() {
 		const schoolId = authSession.schoolId;
 		if (!schoolId) {
@@ -90,9 +75,13 @@
 			categoryId = subject?.categoryId || defaultSubjectCategoryId(categories);
 		}
 	}
-
 	function resetForm() {
 		workloadError = '';
+		disciplineId = subject?.disciplineId ?? '';
+		code = subject?.code ?? '';
+		shortName = subject?.shortName ?? '';
+		coefficient = subject?.coefficient == null ? '' : String(subject.coefficient);
+		isOptional = subject?.isOptional ?? false;
 		periodsPerWeek = subject?.periodsPerWeek != null ? String(subject.periodsPerWeek) : '';
 		minPeriodSpan = subject?.minPeriodSpan != null ? String(subject.minPeriodSpan) : '';
 		maxPeriodSpan = subject?.maxPeriodSpan != null ? String(subject.maxPeriodSpan) : '';
@@ -111,7 +100,6 @@
 			scheduleEnd = '09:00';
 		}
 	}
-
 	$effect(() => {
 		if (open && !wasOpen) {
 			resetForm();
@@ -119,16 +107,13 @@
 		}
 		wasOpen = open;
 	});
-
 	async function submit() {
 		if (!canSubmit || busy)
 			return;
-
 		const workload = hasSharedWorkload ? parseSubjectWorkload({ periodsPerWeek, minPeriodSpan, maxPeriodSpan }) : undefined;
 		workloadError = workload?.error ? get(t)(workload.error) : '';
 		if (workloadError)
 			return;
-
 		busy = true;
 		try {
 			if (subject) {
@@ -137,6 +122,11 @@
 					subjectId: hasSharedWorkload ? subject.id : undefined,
 					...workload?.value,
 					name,
+					disciplineId: disciplineId || null,
+					code: code.trim() || null,
+					shortName: shortName.trim() || null,
+					coefficient: coefficient ? Number(coefficient) : null,
+					isOptional,
 					categoryId,
 					color,
 					successMessage: get(t)('subjects.updateSuccess', { name: name.trim() }),
@@ -149,6 +139,11 @@
 				const classSubjectId = await onCreateSubjectForClass({
 					classGroupId: classId,
 					name,
+					disciplineId: disciplineId || null,
+					code: code.trim() || null,
+					shortName: shortName.trim() || null,
+					coefficient: coefficient ? Number(coefficient) : null,
+					isOptional,
 					categoryId,
 					color,
 					successMessage: get(t)('subjects.createSuccess', { name: name.trim() }),
@@ -310,4 +305,9 @@
 			{/if}
 		</div>
 	{/if}
+	<Label class="block space-y-2"><span>{$t('profile.discipline')}</span><AcademicDisciplinePicker bind:value={disciplineId} active={open} /></Label>
+	<Label class="block space-y-2"><span>{$t('common.code')}</span><Input bind:value={code} /></Label>
+	<Label class="block space-y-2"><span>{$t('profile.shortName')}</span><Input bind:value={shortName} /></Label>
+	<Label class="block space-y-2"><span>{$t('eval.coefficient')}</span><Input type="number" min="0" step="any" bind:value={coefficient} /></Label>
+	<Label class="flex items-center gap-2"><Checkbox bind:checked={isOptional} />{$t('profile.isOptional')}</Label>
 </FormModal>

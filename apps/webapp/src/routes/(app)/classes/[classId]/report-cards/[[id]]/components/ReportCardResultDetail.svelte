@@ -11,19 +11,15 @@
 	import ReportHomeroomComment from '../../components/ReportHomeroomComment.svelte';
 	import { getReportCardsPageState } from '../../report-cards-page.svelte';
 
-	const { result }: { result: ReportCardResult } = $props();
-
+	const { result }: {
+		result: ReportCardResult;
+	} = $props();
 	const reportCardsPage = getReportCardsPageState();
 	const stored = $derived(reportCardsPage.selectedResult(result.classId, result.id) ?? result);
 	const live = $derived(stored.revisedDraft ?? stored);
 	const student = $derived(reportCardsPage.studentFor(live.studentId));
-	const definition = $derived(
-		reportCardsPage.definitionsFor(live.classId).find(entry => entry.id === live.definitionId),
-	);
-	const scale = $derived(
-		reportCardsPage.scalesFor(live.classId).find(entry => entry.id === live.gradeScaleId),
-	);
-
+	const definition = $derived(reportCardsPage.definitionsFor(live.classId).find(entry => entry.id === live.definitionId));
+	const scale = $derived(reportCardsPage.scalesFor(live.classId).find(entry => entry.id === live.gradeScaleId));
 	function resultStatusLabel(status: ReportCardResult['status']) {
 		if (status === 'published') {
 			return $t('reportCards.statusPublished');
@@ -33,7 +29,6 @@
 		}
 		return $t('reportCards.statusDraft');
 	}
-
 	async function publish() {
 		await reportCardsPage.publishResult({
 			resultId: live.id,
@@ -41,7 +36,6 @@
 			successMessage: get(t)('reportCards.toastPublished', { name: student?.name ?? '' }),
 		});
 	}
-
 </script>
 
 <div class="space-y-5">
@@ -133,6 +127,7 @@
 		{/if}
 	{/each}
 
+	<details class="rounded-xl border p-4 text-sm"><summary>{$t('profile.publicationHistory')}</summary><p>{$t('profile.generatedAt')}: {live.generatedAt || $t('profile.notProvided')}</p><p>{$t('profile.publishedAt')}: {live.publishedAt || $t('profile.notProvided')}</p><p>{$t('profile.version')}: {live.version ?? 0}</p>{#each live.publicationHistory ?? [] as snapshot (snapshot.version)}<p class="mt-2">{$t('profile.version')} {snapshot.version} · {String(snapshot.publishedAt ?? '')} · {snapshot.overallAverage ?? '—'} · {snapshot.teacherComment ?? ''} {snapshot.principalComment ?? ''}</p>{/each}</details>
 	<ReportSectionComments onWriteReportSectionComments={reportCardsPage.performWriteReportSectionComments} result={live} onSaved={(sections, version) => reportCardsPage.patchResult(live.id, { commentSections: sections, version })} />
 	<ReportHomeroomComment result={live} onSaved={(homeroomComment, version) => reportCardsPage.patchResult(live.id, { homeroomComment, version })} />
 

@@ -1,20 +1,23 @@
 <script lang="ts">
 	import type { Student } from '$lib/types/school';
 	import { page } from '$app/stores';
-
 	import { relationKey, fmtDateFr } from '$lib/components/school/shared/drawer-constants';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
+	import PersonProfileDetails from '$lib/components/school/shared/PersonProfileDetails.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import { formatLocaleDate } from '$lib/date/format';
 	import { locale, t } from '$lib/i18n';
 	import { FileText, Mail, Phone, Users, Plus } from '$lib/icons';
 	import { getDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
 	import { hasPermission } from '$lib/permissions';
 	import AccountLinkingSection from '$lib/smart-components/account-linking/AccountLinkingSection.svelte';
+	import AnnualProfile from '$lib/smart-components/annual-profile/AnnualProfile.svelte';
+	import GuardianRelationship from '$lib/smart-components/guardian-relationship/GuardianRelationship.svelte';
 	import { studentGenderLabelKey } from '$lib/students/format-student-gender';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
@@ -22,27 +25,23 @@
 	import StudentHealthEditModal from './StudentHealthEditModal.svelte';
 	import StudentPortraitReviewCard from './StudentPortraitReviewCard.svelte';
 
-	const { s }: { s: Student } = $props();
-
+	const { s }: {
+		s: Student;
+	} = $props();
 	const profileTab = getStudentProfileTabState();
 	const studentsPage = profileTab.host;
 	const health = $derived(profileTab.healthFor(s.id));
 	const linkedGuardians = $derived(profileTab.linkedGuardians(s.id));
 	const studentNotes = $derived(profileTab.notesFor(s.id));
 	const staff = $derived(profileTab.staffFor(s.id));
-	const healthPermissionClassId = $derived($page.params.classId);
-	const canUpdateHealth = $derived(
-		hasPermission('STUDENT_HEALTH_UPDATE', { classId: healthPermissionClassId }),
-	);
-
+	const healthPermissionClassId = $derived($page.params.classId ?? s.classId);
+	const canUpdateHealth = $derived(hasPermission('STUDENT_HEALTH_UPDATE', { classId: healthPermissionClassId, studentId: s.id }));
 	const modals = getDrawerUrlModals();
 	const healthOpen = modals ? bindUrlModal(modals, 'edit-health') : null;
 	const genderLabelKey = $derived(studentGenderLabelKey(s.gender));
-
 	let statusBusy = $state(false);
-
 	async function updateStatus(status: Student['status']) {
-		if (status === s.status) {
+		if (status === s.status || !hasPermission('STUDENT_MANAGE', { classId: s.classId, studentId: s.id })) {
 			return;
 		}
 		statusBusy = true;
@@ -59,6 +58,9 @@
 		}
 	}
 </script>
+<AnnualProfile kind="student" personId={s.id} name={s.name} classId={s.classId} />
+
+<PersonProfileDetails kind="student" person={s} />
 
 <div class="space-y-4">
 	<StudentPortraitReviewCard {s} />
@@ -98,13 +100,14 @@
 			{/if}
 		</div>
 	</div>
-	{#if health?.medications?.length || health?.lastVisit || health?.notes}
+	{#if health?.medications?.length || health?.lastVisit || health?.notes || health?.emergencyProtocols}
 		<div class="grid gap-2 rounded-xl bg-secondary/40 p-3 text-xs sm:grid-cols-2">
 			{#if health?.medications?.length}
 				<div>
 					<span class="text-muted-foreground">{$t('student.medications')} :</span> {health.medications.join(', ')}
 				</div>
 			{/if}
+			{#if health?.emergencyProtocols}<div><span class="text-muted-foreground">{$t('profile.emergencyProtocols')} :</span> {health.emergencyProtocols}</div>{/if}
 			{#if health?.lastVisit}
 				<div><span class="text-muted-foreground">{$t('drawer.lastNurse')} :</span> {fmtDateFr(health.lastVisit, $locale)}</div>
 			{/if}
@@ -146,7 +149,7 @@
 	<div class="grid grid-cols-2 gap-3">
 		<DrawerField label={$t('drawer.birthDate')}>
 			<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">
-				{fmtDateFr(s.birthdate, $locale)}
+				{s.birthdate ? formatLocaleDate(s.birthdate, $locale, { day: 'numeric', month: 'long', year: 'numeric' }) : $t('profile.notProvided')}
 			</div>
 		</DrawerField>
 		<DrawerField label={$t('drawer.guardianLabel')}>
@@ -173,11 +176,13 @@
 			<select
 				class="rounded-md border border-input bg-background px-2 py-1 text-xs"
 				value={s.status}
+				disabled={statusBusy || !hasPermission('STUDENT_MANAGE', { classId: s.classId, studentId: s.id })}
 				onchange={event => void updateStatus((event.currentTarget as HTMLSelectElement).value as Student['status'])}
 			>
 				<option value="active">{$t('studentStatus.active')}</option>
 				<option value="inactive">{$t('studentStatus.inactive')}</option>
 				<option value="archived">{$t('studentStatus.archived')}</option>
+				<option value="graduated" disabled>{$t('studentStatus.graduated')}</option>
 			</select>
 			{#if statusBusy}
 				<span class="text-muted-foreground">…</span>
@@ -237,6 +242,7 @@
 				</div>
 				<ul>
 					{#each linkedGuardians as guardian (guardian.id)}
+						<GuardianRelationship guardianId={guardian.id} studentId={s.id} classId={s.classId} link={guardian.links?.find(link => link.studentId === s.id)} onSaved={() => profileTab.invalidateIfStale()} />
 						<li class="border-b border-border last:border-b-0">
 							<div class="grid w-full grid-cols-12 items-center gap-4 px-5 py-3.5">
 								<div class="col-span-5 flex items-center gap-3">
@@ -348,7 +354,7 @@
 								</PermissionGate>
 							</div>
 						</div>
-						<p class="mt-1.5 text-sm">{note.content}</p>
+						<p class="mt-1.5 text-sm">{#if note.title}<strong class="block">{note.title}</strong>{/if}<span class="block text-xs text-muted-foreground">{$t(`profile.noteVisibility.${note.visibility ?? 'staff'}`)}</span>{note.content}</p>
 						<p class="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
 							{#if author}
 								<PersonAvatar

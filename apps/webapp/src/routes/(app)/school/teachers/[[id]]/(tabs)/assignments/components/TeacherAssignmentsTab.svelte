@@ -17,32 +17,25 @@
 	import { getTeacherAssignmentsTabState } from '../teacher-assignments-tab.svelte';
 	import TeacherAssignmentFormModal from './TeacherAssignmentFormModal.svelte';
 
-	const { teacher }: { teacher: Teacher } = $props();
-
+	const { teacher }: {
+		teacher: Teacher;
+	} = $props();
 	const teachersPage = getTeachersPageState();
 	const assignmentsTab = getTeacherAssignmentsTabState();
-
 	const modals = createUrlSyncedModals({ allowed: ['form', 'delete-assignment'], getUrl: () => $page.url });
 	$effect(() => {
 		modals.hydrate();
 	});
 	const formOpen = bindUrlModal(modals, 'form');
 	const deleteOpen = bindUrlModal(modals, 'delete-assignment');
-
 	let deleteBusy = $state(false);
-
 	const rows = $derived(assignmentsTab.assignmentsFor(teacher.id));
-	const editingAssignment = $derived(
-		formOpen.open && modals.target
-			? rows.find(row => row.id === modals.target) ?? null
-			: null,
-	);
-	const deletingAssignment = $derived(
-		deleteOpen.open && modals.target
-			? rows.find(row => row.id === modals.target) ?? null
-			: null,
-	);
-
+	const editingAssignment = $derived(formOpen.open && modals.target
+		? rows.find(row => row.id === modals.target) ?? null
+		: null);
+	const deletingAssignment = $derived(deleteOpen.open && modals.target
+		? rows.find(row => row.id === modals.target) ?? null
+		: null);
 	$effect(() => {
 		const classSubjectIds = rows
 			.map(row => row.classSubjectId)
@@ -52,14 +45,12 @@
 		}
 		void teachersPage.ensureClassSubjectsCached(classSubjectIds);
 	});
-
 	function classLabel(classGroupId: string | null | undefined): string {
 		if (!classGroupId) {
 			return '—';
 		}
 		return academicContext.classes.find(entry => entry.id === classGroupId)?.name ?? classGroupId;
 	}
-
 	function classIdFor(row: components['schemas']['TeacherAssignment']): string | null {
 		if (row.kind === 'subject' && row.classSubjectId) {
 			return teachersPage.subjects.find(entry => entry.id === row.classSubjectId)?.classId
@@ -68,7 +59,6 @@
 		}
 		return row.classGroupId ?? null;
 	}
-
 	function targetLabel(row: components['schemas']['TeacherAssignment']): string {
 		if (row.kind === 'subject' && row.classSubjectId) {
 			const className = classLabel(classIdFor(row));
@@ -76,7 +66,6 @@
 		}
 		return classLabel(row.classGroupId);
 	}
-
 	async function confirmDelete() {
 		if (!deletingAssignment || deleteBusy) {
 			return;
@@ -126,6 +115,7 @@
 								<div class="text-sm font-medium">
 									{targetLabel(row)}
 								</div>
+								<p class="mt-1 text-xs text-muted-foreground">{$t(row.status === 'ended' ? 'profile.assignmentEnded' : 'teacher.statusActive')} · {row.responsibility ?? $t('profile.notProvided')} · {String(row.startsAt ?? '—').slice(0, 10)} – {String(row.endsAt ?? '—').slice(0, 10)}</p>
 								{#if classIdFor(row)}
 									<a
 										href={detailHref.classPlanning(classIdFor(row) ?? '')}

@@ -37,6 +37,9 @@ import { formatDateInput } from '$lib/date/format';
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
 export interface FinancePayment {
+	notes?: string;
+	reversesPaymentId?: string;
+	reversedByPaymentId?: string;
 	classId?: string;
 	studentName?: string;
 	hasActiveAllocations?: boolean;
@@ -271,6 +274,9 @@ export function mapPayments(raw: readonly unknown[]): FinancePayment[] {
 				kind: mapPaymentKind(payment.kind),
 				method: stringField(payment.method, 'other'),
 				reference: payment.reference ?? undefined,
+				notes: payment.notes ?? undefined,
+				reversesPaymentId: stringField(asRecord(entry).reversesPaymentId) || undefined,
+				reversedByPaymentId: stringField(asRecord(entry).reversedByPaymentId) || undefined,
 			} satisfies FinancePayment;
 		})
 		.filter(payment => payment.id.length > 0)

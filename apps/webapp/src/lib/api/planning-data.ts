@@ -42,6 +42,8 @@ const TIMETABLE_DAY_OFFSET: Record<PlanningEvent['day'], number> = {
 	Wed: 2,
 	Thu: 3,
 	Fri: 4,
+	Sat: 5,
+	Sun: 6,
 };
 
 const TIMETABLE_EVENT_KINDS = new Set<TimetableEventRaw['kind']>(['lesson', 'activity', 'assessment']);

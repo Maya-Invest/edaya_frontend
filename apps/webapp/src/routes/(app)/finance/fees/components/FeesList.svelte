@@ -44,21 +44,14 @@
 		url.searchParams.delete('modalTarget');
 		openDetailDrawer(url.pathname + url.search, $page.url.pathname + $page.url.search);
 	}
-
 	const fees = $derived(feesPage.fees);
 	const initialFilters = $derived(readFeeListFilters($page.url));
-
-	const listFilters = new ListFiltersState<FeeListFilters>(
-		{
-			getUrl: () => $page.url,
-			write: writeFeeListFilters,
-			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
-		},
-		() => readFeeListFilters($page.url),
-	);
-
+	const listFilters = new ListFiltersState<FeeListFilters>({
+		getUrl: () => $page.url,
+		write: writeFeeListFilters,
+		goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+	}, () => readFeeListFilters($page.url));
 	const statusFilter = $derived(listFilters.values.status);
-
 	const modals = createUrlSyncedModals({
 		allowed: () => hasPermission('FINANCIAL_CATALOG_MANAGE') ? ['create', 'edit', 'archive', 'activate'] as const : [],
 		owned: ['create', 'edit', 'archive', 'activate'],
@@ -72,40 +65,28 @@
 	const activateOpen = bindUrlModal(modals, 'activate');
 	const activationTarget = $derived(modals.active === 'activate' && modals.target ? feesPage.feeFor(modals.target) : undefined);
 	const archiveOpen = bindUrlModal(modals, 'archive');
-
 	let archiveBusy = $state(false);
-
-	const editingFee = $derived(
-		modals.active === 'edit' && modals.target ? feesPage.feeFor(modals.target) ?? null : null,
-	);
-	const archiveTarget = $derived(
-		modals.active === 'archive' && modals.target ? feesPage.feeFor(modals.target) ?? null : null,
-	);
-
-	const filteredFees = $derived(
-		fees.filter((fee) => {
-			if (statusFilter !== 'all' && fee.status !== statusFilter)
-				return false;
-			if (listFilters.values.category !== 'all' && fee.category !== listFilters.values.category) {
-				return false;
-			}
-			const needle = listFilters.values.q.trim().toLowerCase();
-			if (!needle) {
-				return true;
-			}
-			return fee.name.toLowerCase().includes(needle);
-		}),
-	);
-
+	const editingFee = $derived(modals.active === 'edit' && modals.target ? feesPage.feeFor(modals.target) ?? null : null);
+	const archiveTarget = $derived(modals.active === 'archive' && modals.target ? feesPage.feeFor(modals.target) ?? null : null);
+	const filteredFees = $derived(fees.filter((fee) => {
+		if (statusFilter !== 'all' && fee.status !== statusFilter)
+			return false;
+		if (listFilters.values.category !== 'all' && fee.category !== listFilters.values.category) {
+			return false;
+		}
+		const needle = listFilters.values.q.trim().toLowerCase();
+		if (!needle) {
+			return true;
+		}
+		return fee.name.toLowerCase().includes(needle);
+	}));
 	const categoryOptions = $derived([
 		{ value: 'all', label: $t('filter.all') },
 		...CATALOG_CATEGORIES.map(cat => ({ value: cat, label: $t(`feeCat.${cat}`) })),
 	]);
-
 	$effect(() => {
 		listFilters.hydrate(initialFilters);
 	});
-
 	$effect(() => {
 		if (!modals.ready || !modals.target || !['edit', 'archive', 'activate'].includes(modals.active ?? ''))
 			return;
@@ -115,7 +96,6 @@
 			appGoto(url.pathname + url.search, { replaceState: true });
 		}
 	});
-
 	function openEdit(fee: Fee) {
 		const url = new SvelteURL($page.url);
 		url.pathname = `/finance/fees/${encodeURIComponent(fee.id)}`;
@@ -123,7 +103,6 @@
 		url.searchParams.set('modalTarget', fee.id);
 		openDetailDrawer(url.pathname + url.search, $page.url.pathname + $page.url.search);
 	}
-
 	function openArchive(fee: Fee) {
 		const url = new SvelteURL($page.url);
 		url.pathname = `/finance/fees/${encodeURIComponent(fee.id)}`;
@@ -131,7 +110,6 @@
 		url.searchParams.set('modalTarget', fee.id);
 		openDetailDrawer(url.pathname + url.search, $page.url.pathname + $page.url.search);
 	}
-
 	async function confirmArchive() {
 		const target = archiveTarget;
 		if (archiveBusy || !target || target.status !== 'active' || !hasPermission('FINANCIAL_CATALOG_MANAGE')) {
@@ -151,7 +129,6 @@
 			archiveBusy = false;
 		}
 	}
-
 	function activateFee(fee: Fee) {
 		const url = new SvelteURL($page.url);
 		url.pathname = `/finance/fees/${encodeURIComponent(fee.id)}`;
@@ -168,9 +145,10 @@
 			if (await feesPage.activateFee({ feeId: fee.id, successMessage: $t('fee.toastActivated', { name: fee.name }) }))
 				activateOpen.open = false;
 		}
-		finally { archiveBusy = false; }
+		finally {
+			archiveBusy = false;
+		}
 	}
-
 </script>
 
 <div class="animate-fade-in space-y-6">
@@ -240,50 +218,57 @@
 	<PageQuery query={catalogQuery} cache={false} cacheKey={() => financeReadKey('fee-catalog')}>
 		{#snippet children(data)}
 			<DataState status={data.status} errorMessage={data.errorMessage} preserveShell>
-				<ListEntityTable rows={filteredFees.slice(0, visibleCount)} columns={[
+				<ListEntityTable listKey="FeesList" rows={filteredFees.slice(0, visibleCount)} columns={[
 					{ key: 'name', label: $t('fee.name'), span: 4 },
 					{ key: 'category', label: $t('fee.category'), span: 2 },
 					{ key: 'status', label: $t('fee.status'), span: 2 },
 					{ key: 'amount', label: $t('fee.amount'), span: 3 },
 					{ key: 'actions', label: '', span: 1 },
 				]} total={filteredFees.length} visibleCount={Math.min(visibleCount, filteredFees.length)} hasMore={visibleCount < filteredFees.length} onLoadMore={() => { visibleCount += 50; }} onRowClick={fee => selectFee(fee.id)}>
-					{#snippet row(fee)}
-						<div class="col-span-4 min-w-0">
-							<p class="truncate text-sm font-medium">{fee.name}</p>
-						</div>
-						<div class="col-span-2 text-sm text-foreground/70">
-							{$t(`feeCat.${fee.category}`)}
-						</div>
-						<div class="col-span-2 text-sm text-foreground/70">
-							{$t(`fee.status.${fee.status}`)}
-						</div>
-						<div class="col-span-3 text-right font-sans text-sm font-semibold tabular-nums">
-							{formatMinorUnits(fee.amount, fee.currency, $locale)}
-						</div>
-						<div class="col-span-1 flex justify-end" role="presentation" onclick={event => event.stopPropagation()} onkeydown={event => event.stopPropagation()}>
-							<PermissionGate permission="FINANCIAL_CATALOG_MANAGE">
-								{#snippet children({ disabled, title })}
-									<RowActionMenu>
-										<RowActionMenuItem {disabled} {title} onclick={() => openEdit(fee)}>
-											<Pencil class="h-4 w-4" />
-											{$t('common.edit')}
-										</RowActionMenuItem>
-										{#if fee.status !== 'active'}
-											<RowActionMenuItem {disabled} {title} onclick={() => void activateFee(fee)}>
-												<Check class="h-4 w-4" />
-												{$t('fee.activate')}
+					{#snippet cell(fee, column, _ctx)}
+
+						{#if column.key === 'name'}
+							<div class="col-span-4 min-w-0">
+								<p class="truncate text-sm font-medium">{fee.name}</p>
+							</div>
+						{:else if column.key === 'category'}
+							<div class="col-span-2 text-sm text-foreground/70">
+								{$t(`feeCat.${fee.category}`)}
+							</div>
+						{:else if column.key === 'status'}
+							<div class="col-span-2 text-sm text-foreground/70">
+								{$t(`fee.status.${fee.status}`)}
+							</div>
+						{:else if column.key === 'amount'}
+							<div class="col-span-3 text-right font-sans text-sm font-semibold tabular-nums">
+								{formatMinorUnits(fee.amount, fee.currency, $locale)}
+							</div>
+						{:else if column.key === 'actions'}
+							<div class="col-span-1 flex justify-end" role="presentation" onclick={event => event.stopPropagation()} onkeydown={event => event.stopPropagation()}>
+								<PermissionGate permission="FINANCIAL_CATALOG_MANAGE">
+									{#snippet children({ disabled, title })}
+										<RowActionMenu>
+											<RowActionMenuItem {disabled} {title} onclick={() => openEdit(fee)}>
+												<Pencil class="h-4 w-4" />
+												{$t('common.edit')}
 											</RowActionMenuItem>
-										{/if}
-										{#if fee.status === 'active'}
-											<RowActionMenuItem destructive {disabled} {title} onclick={() => openArchive(fee)}>
-												<XCircle class="h-4 w-4" />
-												{$t('fee.archive')}
-											</RowActionMenuItem>
-										{/if}
-									</RowActionMenu>
-								{/snippet}
-							</PermissionGate>
-						</div>
+											{#if fee.status !== 'active'}
+												<RowActionMenuItem {disabled} {title} onclick={() => void activateFee(fee)}>
+													<Check class="h-4 w-4" />
+													{$t('fee.activate')}
+												</RowActionMenuItem>
+											{/if}
+											{#if fee.status === 'active'}
+												<RowActionMenuItem destructive {disabled} {title} onclick={() => openArchive(fee)}>
+													<XCircle class="h-4 w-4" />
+													{$t('fee.archive')}
+												</RowActionMenuItem>
+											{/if}
+										</RowActionMenu>
+									{/snippet}
+								</PermissionGate>
+							</div>
+						{/if}
 					{/snippet}
 				</ListEntityTable>
 			</DataState>

@@ -26,6 +26,12 @@ export async function updateSubjectMutation(input: UpdateSubjectInput & { succes
 export async function createSubjectForClassMutation(input: {
 	classGroupId: string;
 	name: string;
+	disciplineId?: string | null;
+	code?: string | null;
+	coefficient?: number | null;
+	shortName?: string | null;
+	isOptional?: boolean;
+
 	categoryId: string;
 	color: Subject['color'];
 	successMessage?: string;
@@ -62,6 +68,12 @@ export async function createSubjectForGradeLevelMutation(input: {
 	academicYearId: string;
 	classGroupIds: string[];
 	name: string;
+	disciplineId?: string | null;
+	code?: string | null;
+	coefficient?: number | null;
+	shortName?: string | null;
+	isOptional?: boolean;
+
 	categoryId: string;
 	color: Subject['color'];
 	successMessage?: string;

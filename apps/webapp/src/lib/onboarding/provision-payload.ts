@@ -26,6 +26,7 @@ export function buildProvisionPayload(draft: OnboardingDraft) {
 			})),
 		},
 		structure: {
+			disciplineMappings: draft.structure.disciplineMappings ?? [],
 			templates: toApiStructureTemplateIds(draft.structure.models),
 			levels: draft.structure.levels
 				.filter(level => level.classCount >= 1 && level.gradeLevelId.trim())

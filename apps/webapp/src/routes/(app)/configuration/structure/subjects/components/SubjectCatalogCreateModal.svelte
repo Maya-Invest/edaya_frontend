@@ -3,60 +3,52 @@
 	import type { Subject } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { sortGradeLevels } from '$lib/academic/grade-level-sort';
-
 	import { defaultSubjectCategoryId } from '$lib/api/subject-categories-data';
 	import { authSession } from '$lib/auth/session.svelte';
+	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import { lang, t } from '$lib/i18n';
 	import { catalogCategory } from '$lib/i18n/catalog-label';
+	import AcademicDisciplinePicker from '$lib/smart-components/reference-catalog/AcademicDisciplinePicker.svelte';
 	import { get } from 'svelte/store';
 	import { getSubjectsPageState } from '../subjects-page.svelte';
 
 	const COLORS: Subject['color'][] = ['mint', 'sky', 'warm'];
-
 	const COLOR_LABELS: Record<Subject['color'], string> = {
 		mint: 'Mint',
 		sky: 'Sky',
 		warm: 'Warm',
 	};
-
-	let {
-		open = $bindable(false),
-		defaultGradeLevelId = 'all',
-		onCreated,
-	}: {
+	let { open = $bindable(false), defaultGradeLevelId = 'all', onCreated }: {
 		open?: boolean;
 		defaultGradeLevelId?: string;
 		onCreated?: () => void;
 	} = $props();
-
 	const subjectsPage = getSubjectsPageState();
-
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let name = $state('');
+	let disciplineId = $state('');
+	let code = $state('');
+	let shortName = $state('');
+	let coefficient = $state('');
+	let isOptional = $state(false);
 	let gradeLevelId = $state('');
 	let categories = $state<SubjectCategoryOption[]>([]);
 	let categoryId = $state('');
 	let color = $state<Subject['color']>('mint');
-
-	const gradeLevelOptions = $derived(
-		sortGradeLevels(academicContext.gradeLevels).map(level => ({
-			value: level.id,
-			label: level.name,
-		})),
-	);
+	const gradeLevelOptions = $derived(sortGradeLevels(academicContext.gradeLevels).map(level => ({
+		value: level.id,
+		label: level.name,
+	})));
 	const colorLabel = $derived(COLOR_LABELS[color]);
 	const canSubmit = $derived.by(() => {
-		return name.trim().length > 0 && categoryId.length > 0 && gradeLevelId.length > 0 && (academicContext.yearId?.length ?? 0) > 0;
+		return disciplineId.length > 0 && (coefficient === '' || (Number.isFinite(Number(coefficient)) && Number(coefficient) > 0)) && name.trim().length > 0 && categoryId.length > 0 && gradeLevelId.length > 0 && (academicContext.yearId?.length ?? 0) > 0;
 	});
-	const selectedCategoryName = $derived(
-		categories.find(category => category.id === categoryId)?.name ?? '',
-	);
-
+	const selectedCategoryName = $derived(categories.find(category => category.id === categoryId)?.name ?? '');
 	async function loadCategories() {
 		const schoolId = authSession.schoolId;
 		if (!schoolId) {
@@ -69,9 +61,13 @@
 			categoryId = defaultSubjectCategoryId(categories);
 		}
 	}
-
 	function resetForm() {
 		name = '';
+		disciplineId = '';
+		code = '';
+		shortName = '';
+		coefficient = '';
+		isOptional = false;
 		categoryId = defaultSubjectCategoryId(categories);
 		color = 'mint';
 		const levels = sortGradeLevels(academicContext.gradeLevels);
@@ -82,7 +78,6 @@
 			gradeLevelId = levels[0]?.id ?? '';
 		}
 	}
-
 	$effect(() => {
 		if (open && !wasOpen) {
 			resetForm();
@@ -90,29 +85,30 @@
 		}
 		wasOpen = open;
 	});
-
 	async function submit() {
 		if (!canSubmit) {
 			return;
 		}
-
 		const classGroupIds = academicContext.classes
 			.filter(classGroup => classGroup.gradeLevelId === gradeLevelId)
 			.map(classGroup => classGroup.id);
 		const academicYearId = academicContext.yearId ?? '';
-
 		busy = true;
 		const classSubjectId = await subjectsPage.performCreateSubjectForGradeLevel({
 			gradeLevelId,
 			academicYearId,
 			classGroupIds,
 			name: name.trim(),
+			disciplineId,
+			code: code.trim() || undefined,
+			shortName: shortName.trim() || null,
+			coefficient: coefficient ? Number(coefficient) : undefined,
+			isOptional,
 			categoryId,
 			color,
 			successMessage: get(t)('subjects.createSuccess', { name: name.trim() }),
 		});
 		busy = false;
-
 		if (classSubjectId) {
 			open = false;
 			await subjectsPage.refreshSlice();
@@ -197,4 +193,9 @@
 			</Select.Root>
 		</div>
 	</div>
+	<Label class="block space-y-2"><span>{$t('profile.discipline')}</span><AcademicDisciplinePicker bind:value={disciplineId} active={open} /></Label>
+	<Label class="block space-y-2"><span>{$t('common.code')}</span><Input bind:value={code} /></Label>
+	<Label class="block space-y-2"><span>{$t('profile.shortName')}</span><Input bind:value={shortName} /></Label>
+	<Label class="block space-y-2"><span>{$t('eval.coefficient')}</span><Input type="number" min="0" step="any" bind:value={coefficient} /></Label>
+	<Label class="flex items-center gap-2"><Checkbox bind:checked={isOptional} />{$t('profile.isOptional')}</Label>
 </FormModal>

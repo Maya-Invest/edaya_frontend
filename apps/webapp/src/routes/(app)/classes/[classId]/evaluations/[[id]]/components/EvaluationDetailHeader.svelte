@@ -15,18 +15,12 @@
 	import EvaluationCreateModal from '../../components/EvaluationCreateModal.svelte';
 	import { getEvaluationsPageState } from '../../evaluations-page.svelte';
 
-	const {
-		classId,
-		evaluation,
-		onDeleted,
-	}: {
+	const { classId, evaluation, onDeleted }: {
 		classId: string;
 		evaluation: Evaluation;
 		onDeleted?: () => void;
 	} = $props();
-
 	type EvaluationDrawerModal = 'edit' | 'delete' | 'submit-marks' | 'approve-marks' | 'return-marks';
-
 	const evaluationsPage = getEvaluationsPageState();
 	const modals = createUrlSyncedModals<EvaluationDrawerModal>({
 		allowed: ['edit', 'delete', 'submit-marks', 'approve-marks', 'return-marks'],
@@ -38,21 +32,28 @@
 	});
 	const editOpen = bindUrlModal(modals, 'edit');
 	const deleteOpen = bindUrlModal(modals, 'delete');
-
 	const isHomework = $derived(evaluation.kind === 'homework');
-	const formattedDate = $derived(
-		evaluation.date
-			? formatLocaleDate(evaluation.date, $locale, {
-				day: 'numeric',
-				month: 'long',
-				year: 'numeric',
-			})
-			: '-',
-	);
-
+	const formattedDate = $derived(evaluation.date
+		? formatLocaleDate(evaluation.date, $locale, {
+			day: 'numeric',
+			month: 'long',
+			year: 'numeric',
+		})
+		: '-');
 	let deleteBusy = $state(false);
 	const canManage = $derived(hasPermission('ASSESSMENT_MANAGE', { classId, subject: evaluation.classSubjectId, subjectId: evaluationsPage.subjectsFor(classId).find(row => row.id === evaluation.classSubjectId)?.subjectId, assessmentId: evaluation.id }));
-
+	let completeBusy = $state(false);
+	async function complete() {
+		if (!canManage || completeBusy)
+			return;
+		completeBusy = true;
+		try {
+			await evaluationsPage.completeEvaluation(evaluation.id);
+		}
+		finally {
+			completeBusy = false;
+		}
+	}
 	async function confirmDelete() {
 		if (!canManage)
 			return;
@@ -102,6 +103,7 @@
 				>
 					{$t('common.edit')}
 				</RowActionMenuItem>
+				{#if !evaluation.completedAt}<RowActionMenuItem disabled={disabled || completeBusy} onclick={complete}>{$t('profile.completeAssessment')}</RowActionMenuItem>{/if}
 				<RowActionMenuItem
 					destructive
 					{disabled}
@@ -114,6 +116,7 @@
 		</PermissionGate>
 	{/snippet}
 </DrawerEntityHeader>
+{#if evaluation.completedAt}<p class="mb-3 text-xs text-muted-foreground">{$t('profile.completedAt')}: {formatLocaleDate(evaluation.completedAt, $locale, { year: 'numeric', month: 'short', day: 'numeric' })}</p>{/if}
 
 <EvaluationCreateModal evaluation={evaluation} {classId} bind:open={editOpen.open} />
 

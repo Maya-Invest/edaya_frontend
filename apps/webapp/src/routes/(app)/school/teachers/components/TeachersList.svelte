@@ -16,81 +16,59 @@
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
-	import { Mail, Pencil, Phone, Plus, Trash2 } from '$lib/icons';
-	import { downloadCsv, exportMatchingList, loadMatchingCollection } from '$lib/list/list-csv-export';
+	import { Mail, Pencil, Plus, Trash2 } from '$lib/icons';
+	import { loadMatchingCollection } from '$lib/list/list-csv-export';
 	import { ListSelectionState } from '$lib/list/list-selection-state.svelte';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { appendModal } from '$lib/modal/modal-url';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
-	import { toast } from '$lib/toast.svelte';
+	import { DirectoryColumnsState } from '$lib/smart-components/directory-columns/directory-columns-state.svelte';
+	import DirectoryColumnData from '$lib/smart-components/directory-columns/DirectoryColumnData.svelte';
 	import { cn } from '$lib/utils';
-	import {
-		cycleTeacherListSort,
-		teacherListUsesFullRoster,
-
-	} from '../lib/teacher-list-filters';
+	import { cycleTeacherListSort, teacherListUsesFullRoster } from '../lib/teacher-list-filters';
 	import { getTeachersPageState, SCHOOL_TEACHERS_PAGE_SIZE } from '../teachers-page.svelte';
 	import TeacherCreateModal from './TeacherCreateModal.svelte';
 
-	const {
-		onSelect,
-		selectedId,
-	}: {
+	const { onSelect, selectedId }: {
 		onSelect?: (teacher: Teacher) => void;
 		selectedId?: string;
 	} = $props();
-
 	const teachersPage = getTeachersPageState();
 	const selection = new ListSelectionState<Teacher>();
-
 	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
 	$effect(() => {
 		modals.hydrate();
 	});
 	const createOpen = bindUrlModal(modals, 'create');
-
 	const usesFullRoster = $derived(teacherListUsesFullRoster(teachersPage.filters.values));
-
-	const filtered = $derived(teachersPage.filterVisible(
-		usesFullRoster
-			? (teachersPage.fullRosterTeachers.length > 0
-				? teachersPage.fullRosterTeachers
-				: teachersPage.teachers)
-			: teachersPage.teachers,
-	));
+	const filtered = $derived(teachersPage.filterVisible(usesFullRoster
+		? (teachersPage.fullRosterTeachers.length > 0
+			? teachersPage.fullRosterTeachers
+			: teachersPage.teachers)
+		: teachersPage.teachers));
 	const windowed = useInfiniteList(() => filtered, SCHOOL_TEACHERS_PAGE_SIZE);
-
-	const listTotal = $derived(
-		usesFullRoster ? filtered.length : teachersPage.totalTeachers,
-	);
-	const listLoading = $derived(
-		usesFullRoster ? teachersPage.loadingFullRoster : teachersPage.listLoading,
-	);
+	const listTotal = $derived(usesFullRoster ? filtered.length : teachersPage.totalTeachers);
+	const listLoading = $derived(usesFullRoster ? teachersPage.loadingFullRoster : teachersPage.listLoading);
 	const listLoadingMore = $derived(usesFullRoster ? false : teachersPage.listLoadingMore);
-	const listHasMore = $derived(
-		usesFullRoster ? windowed.hasMore : teachersPage.teachers.length < teachersPage.totalTeachers,
-	);
-	const listVisible = $derived(
-		usesFullRoster ? windowed.visible : filtered,
-	);
+	const listHasMore = $derived(usesFullRoster ? windowed.hasMore : teachersPage.teachers.length < teachersPage.totalTeachers);
+	const listVisible = $derived(usesFullRoster ? windowed.visible : filtered);
 	const listVisibleCount = $derived(listVisible.length);
 	const selectionPool = $derived([...teachersPage.teachers, ...teachersPage.fullRosterTeachers]);
-
+	const directoryColumns = new DirectoryColumnsState('teacher');
 	const columns = $derived<ListEntityTableColumn[]>([
 		{ key: 'name', label: $t('people.name'), span: 5, spanInSelectionMode: 4, sortable: true },
 		{ key: 'assignments', label: $t('teacher.assignmentsColumn'), span: 3, sortable: true },
 		{ key: 'status', label: $t('common.status'), span: 3, sortable: true },
 		{ key: 'actions', label: '', span: 1, spanInSelectionMode: 1 },
+		...directoryColumns.columns(listVisible).filter(extra => !['name', 'assignments', 'status', 'actions'].includes(extra.key)),
 	]);
-
 	const statusFilterOptions = $derived([
 		{ value: 'all', label: $t('filter.all') },
 		{ value: 'active', label: $t('teacher.statusActive') },
 		{ value: 'inactive', label: $t('teacher.statusInactive') },
 	]);
-
 	function loadMoreTeachers() {
 		if (usesFullRoster) {
 			windowed.loadMore();
@@ -98,66 +76,39 @@
 		}
 		void teachersPage.loadMore();
 	}
-
 	function applyStatusFilter(value: string) {
 		teachersPage.filters.patch({ status: value });
 		teachersPage.filters.syncNow();
 	}
-
 	function cycleSort(column: TeacherSortColumn) {
 		const next = cycleTeacherListSort(teachersPage.filters.values, column);
 		teachersPage.filters.patch(next);
 		teachersPage.filters.syncNow();
 	}
-
-	function exportSelected() {
-		const selectedTeachers = selection.resolveSelected(selectionPool);
-		if (selectedTeachers.length === 0) {
+	function exportValue(row: Teacher, key: string) {
+		return key === 'assignments' ? teachersPage.assignmentCount(row.id) ?? '' : key === 'status' ? (row.isActive ? $t('teacher.statusActive') : $t('teacher.statusInactive')) : undefined;
+	}
+	async function exportSelected() {
+		const rows = selection.resolveSelected(selectionPool);
+		if (!rows.length)
 			return;
-		}
-		downloadCsv('teachers-selected.csv', [
-			['name', 'email', 'phone', 'assignments', 'status'],
-			...selectedTeachers.map(teacher => [
-				teacher.name,
-				teacher.email,
-				teacher.phone,
-				teachersPage.assignmentCount(teacher.id) ?? '',
-				teacher.isActive ? 'active' : 'inactive',
-			]),
-		]);
-		toast.success($t('list.exportedCount', { n: selectedTeachers.length }));
+		await directoryColumns.exportCsv('teachers-selected.csv', rows, columns, exportValue);
 	}
-
-	function exportMatching() {
-		return exportMatchingList({
-			filename: 'teachers.csv',
-			headers: ['name', 'email', 'assignments', 'status'],
-			loadAll: async () => {
-				const teachers = await loadMatchingCollection({
-					isComplete: () => teachersPage.fullRosterTeachers.length >= teachersPage.totalTeachers
-						|| teachersPage.teachers.length >= teachersPage.totalTeachers,
-					ensureComplete: () => teachersPage.loadFullRoster(),
-					current: () => teachersPage.filterVisible(
-						teachersPage.fullRosterTeachers.length > 0
-							? teachersPage.fullRosterTeachers
-							: teachersPage.teachers,
-					),
-				});
-				return teachers.map(teacher => [
-					teacher.name,
-					teacher.email,
-					teachersPage.assignmentCount(teacher.id) ?? '',
-					teacher.isActive ? 'active' : 'inactive',
-				]);
-			},
+	async function exportMatching() {
+		const matching = await loadMatchingCollection({
+			isComplete: () => teachersPage.fullRosterTeachers.length >= teachersPage.totalTeachers
+				|| teachersPage.teachers.length >= teachersPage.totalTeachers,
+			ensureComplete: () => teachersPage.loadFullRoster(),
+			current: () => teachersPage.filterVisible(teachersPage.fullRosterTeachers.length > 0
+				? teachersPage.fullRosterTeachers
+				: teachersPage.teachers),
 		});
+		await directoryColumns.exportCsv('teachers.csv', matching, columns, exportValue);
 	}
-
 	function teacherHref(teacher: Teacher, modal: 'edit-profile' | 'delete' | undefined) {
 		const href = `${detailHref.schoolTeacherTab(teacher.id)}${detailNavigationSearch($page.url)}`;
 		return modal ? appendModal(href, modal) : href;
 	}
-
 	function openTeacherAction(event: MouseEvent, teacher: Teacher, modal: 'edit-profile' | 'delete' | undefined) {
 		event.stopPropagation();
 		openDetailDrawer(teacherHref(teacher, modal), currentRouteSurfaceHref($page.url));
@@ -223,7 +174,8 @@
 		/>
 	{/if}
 
-	<ListEntityTable
+	<DirectoryColumnData owner={directoryColumns} rows={listVisible} />
+	<ListEntityTable onVisibleColumnsChange={keys => directoryColumns.keys = keys} listKey="TeachersList"
 		{columns}
 		rows={listVisible}
 		highlightId={selectedId}
@@ -244,70 +196,65 @@
 		onRowClick={teacher => selection.handleRowClick(teacher, onSelect)}
 		rowClass={teacher => !teacher.isActive && 'opacity-60'}
 	>
-		{#snippet row(teacher, ctx)}
-			<div class={cn('flex items-center gap-3', ctx.selectionMode ? 'col-span-4' : 'col-span-5')}>
-				<PersonAvatar
-					name={teacher.name}
-					initials={teacher.initials}
-					photoUrl={teacher.photoUrl}
-					size="list"
-				/>
-				<div class="min-w-0">
-					<p class="truncate text-sm font-medium">{teacher.name}</p>
-					<p class="flex items-center gap-1 truncate text-xs text-muted-foreground">
-						<Mail class="h-3 w-3" />
-						{teacher.email || '—'}
-					</p>
+		{#snippet cell(teacher, column, ctx)}
+
+			{#if column.key === 'name'}
+				<div class={cn('flex items-center gap-3', ctx.selectionMode ? 'col-span-4' : 'col-span-5')}>
+					<PersonAvatar
+						name={teacher.name}
+						initials={teacher.initials}
+						photoUrl={teacher.photoUrl}
+						size="list"
+					/>
+					<div class="min-w-0">
+						<p class="truncate text-sm font-medium">{teacher.name}</p>
+						<p class="flex items-center gap-1 truncate text-xs text-muted-foreground">
+							<Mail class="h-3 w-3" />
+							{teacher.email || '—'}
+						</p>
+					</div>
 				</div>
-			</div>
-			<div class="col-span-3 text-sm text-muted-foreground">
-				{#if teachersPage.assignmentCount(teacher.id) === null}
-					—
-				{:else}
-					{$t('teacher.assignmentCount', { n: teachersPage.assignmentCount(teacher.id) ?? 0 })}
-				{/if}
-			</div>
-			<div class="col-span-3">
-				{#if teacher.phone}
-					<p class="flex items-center gap-1 text-xs text-muted-foreground">
-						<Phone class="h-3 w-3" />
-						{teacher.phone}
-					</p>
-				{:else}
-					<span class="text-xs text-muted-foreground">
-						{teacher.isActive ? $t('teacher.statusActive') : $t('teacher.statusInactive')}
-					</span>
-				{/if}
-			</div>
-			<div
-				class="col-span-1 flex justify-end"
-				role="presentation"
-				onclick={event => event.stopPropagation()}
-			>
-				<PermissionGate permission="STAFF_MANAGE" mode="disable" tooltip={$t('teacher.permissionUpdate')}>
-					{#snippet children({ disabled, title })}
-						<RowActionMenu>
-							<RowActionMenuItem
-								{disabled}
-								{title}
-								onclick={event => openTeacherAction(event, teacher, 'edit-profile')}
-							>
-								<Pencil class="h-4 w-4 text-muted-foreground" />
-								{$t('common.edit')}
-							</RowActionMenuItem>
-							<RowActionMenuItem
-								{disabled}
-								{title}
-								destructive
-								onclick={event => openTeacherAction(event, teacher, 'delete')}
-							>
-								<Trash2 class="h-4 w-4" />
-								{$t('common.delete')}
-							</RowActionMenuItem>
-						</RowActionMenu>
-					{/snippet}
-				</PermissionGate>
-			</div>
+			{:else if column.key === 'assignments'}
+				<div class="col-span-3 text-sm text-muted-foreground">
+					{#if teachersPage.assignmentCount(teacher.id) === null}
+						—
+					{:else}
+						{$t('teacher.assignmentCount', { n: teachersPage.assignmentCount(teacher.id) ?? 0 })}
+					{/if}
+				</div>
+			{:else if column.key === 'status'}
+				<span class="text-xs text-muted-foreground">{teacher.isActive ? $t('teacher.statusActive') : $t('teacher.statusInactive')}</span>
+			{:else if column.key === 'actions'}
+				<div
+					class="col-span-1 flex justify-end"
+					role="presentation"
+					onclick={event => event.stopPropagation()}
+				>
+					<PermissionGate permission="STAFF_MANAGE" mode="disable" tooltip={$t('teacher.permissionUpdate')}>
+						{#snippet children({ disabled, title })}
+							<RowActionMenu>
+								<RowActionMenuItem
+									{disabled}
+									{title}
+									onclick={event => openTeacherAction(event, teacher, 'edit-profile')}
+								>
+									<Pencil class="h-4 w-4 text-muted-foreground" />
+									{$t('common.edit')}
+								</RowActionMenuItem>
+								<RowActionMenuItem
+									{disabled}
+									{title}
+									destructive
+									onclick={event => openTeacherAction(event, teacher, 'delete')}
+								>
+									<Trash2 class="h-4 w-4" />
+									{$t('common.delete')}
+								</RowActionMenuItem>
+							</RowActionMenu>
+						{/snippet}
+					</PermissionGate>
+				</div>
+			{:else}{#if directoryColumns.value(teacher, column.key).includes('; ')}<details><summary class="cursor-pointer truncate text-sm">{directoryColumns.value(teacher, column.key).split('; ')[0]}…</summary><p class="whitespace-pre-wrap break-words text-sm">{directoryColumns.value(teacher, column.key)}</p></details>{:else}<span class="whitespace-pre-wrap break-words text-sm">{directoryColumns.value(teacher, column.key)}</span>{/if}{/if}
 		{/snippet}
 	</ListEntityTable>
 </div>

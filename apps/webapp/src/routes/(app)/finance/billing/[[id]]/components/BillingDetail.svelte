@@ -24,9 +24,12 @@
 	import PaymentFormModal from './PaymentFormModal.svelte';
 	import ReverseAllocationFormModal from './ReverseAllocationFormModal.svelte';
 
-	const { billing }: { billing: StudentBilling } = $props();
+	const { billing }: {
+		billing: StudentBilling;
+	} = $props();
 	const state = getBillingPageState();
 	const live = $derived(state.selectedBilling(billing.id) ?? billing);
+	const enrollment = $derived(state.enrollmentFor(live.enrollmentId));
 	const studentName = $derived(live.studentName ?? state.studentFor(live.studentId)?.name ?? live.studentId);
 	const tab = $derived($page.url.pathname.split('/')[4] ?? 'overview');
 	const ctx = $derived({ studentId: live.studentId, classId: live.classId ?? state.studentFor(live.studentId)?.classId });
@@ -59,7 +62,8 @@
 		url.pathname = `/finance/billing/${encodeURIComponent(live.id)}${next === 'overview' ? '' : `/${next}`}`;
 		if ($page.state.routeSurfaceParent)
 			navigateWithinRouteSurface(url.pathname + url.search);
-		else void appGoto(url.pathname + url.search, { state: $page.state, keepFocus: true, noScroll: true });
+		else
+			void appGoto(url.pathname + url.search, { state: $page.state, keepFocus: true, noScroll: true });
 	}
 	async function invoice() {
 		if (!authSession.schoolId || !hasPermission('PAYMENT_READ', ctx) || !live.accountHasOpenCharges)
@@ -93,7 +97,18 @@
 				<div><dt class="text-xs uppercase tracking-wider text-muted-foreground">{$t(String(label))}</dt><dd class="mt-1 font-sans text-xl font-semibold tabular-nums">{formatMinorUnits(Number(amount), live.currency, $locale)}</dd></div>
 			{/each}
 		</dl>
+		{#if live.adjustedAt}<DrawerField label={$t('finance.adjustment')}><p>{live.adjustmentReason ?? $t('profile.notProvided')}</p><p class="text-xs text-muted-foreground">{live.adjustedAt} · {live.adjustedById}</p></DrawerField>{/if}
+		{#if live.waivedAt}<DrawerField label={$t('finance.waiver')}><p>{live.waiverReason ?? $t('profile.notProvided')}</p><p class="text-xs text-muted-foreground">{live.waivedAt} · {live.waivedById}</p></DrawerField>{/if}
 		{#if live.status === 'cancelled'}<DrawerField label={$t('finance.event.cancelled')}><p>{live.cancellationReason ?? '—'}</p><p class="text-xs text-muted-foreground">{live.cancelledAt ? new Date(live.cancelledAt).toLocaleString($locale) : $t('finance.notRecorded')}</p></DrawerField>{/if}
+		{#if enrollment}
+			<details class="space-y-2 rounded-xl border p-3 text-sm"><summary>{$t('profile.acceptedTerms')}</summary>
+				<p>{enrollment.acceptedTerms.name} · {formatMinorUnits(enrollment.acceptedTerms.price, enrollment.acceptedTerms.currency, $locale)}</p>
+				<p>{$t('profile.enrolledAt')}: {String(enrollment.enrolledAt)}</p>
+				{#if enrollment.acceptedTerms.billingTerms.singleDueDate}<p>{$t('common.endDate')}: {String(enrollment.acceptedTerms.billingTerms.singleDueDate).slice(0, 10)}</p>{/if}
+				{#each enrollment.acceptedTerms.installmentTemplates ?? [] as installment, index (index)}<p>{installment.label} · {installment.percentage}% · {installment.dueDate ? String(installment.dueDate).slice(0, 10) : '—'}</p>{/each}
+				{#if enrollment.cancelledAt}<p>{$t('finance.event.cancelled')}: {String(enrollment.cancelledAt)} · {enrollment.cancelledById}</p><p>{enrollment.cancellationReason}</p>{/if}
+			</details>
+		{/if}
 		<DrawerField label={$t('finance.installments')}>
 			<div class="space-y-2">
 				{#each live.installments as installment (installment.id)}

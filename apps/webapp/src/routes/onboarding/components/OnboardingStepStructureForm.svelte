@@ -9,47 +9,40 @@
 	import { lang, t } from '$lib/i18n';
 	import { catalogGradeShortLabel } from '$lib/i18n/catalog-label';
 	import { Minus, Plus } from '$lib/icons';
-	import {
-		gradeLevelLabel,
-		structureSummary,
-		syncStructureLevels,
-		toggleStructureModel,
-		updateStructureLevel,
-	} from '$lib/onboarding/structure-step-helpers';
-	import {
-		gradeLevelsForModels,
-		loadStructureTemplateCatalog,
-		previewClassNamesFromCatalog,
-	} from '$lib/onboarding/structure-template-catalog';
+	import { gradeLevelLabel, structureSummary, syncStructureLevels, toggleStructureModel, updateStructureLevel } from '$lib/onboarding/structure-step-helpers';
+	import { gradeLevelsForModels, loadStructureTemplateCatalog, previewClassNamesFromCatalog, subjectsForGradeLevelIds } from '$lib/onboarding/structure-template-catalog';
 	import { onboardingContext } from '../context.svelte';
 
 	interface Props {
 		disabled?: boolean;
 	}
-
 	const { disabled = false }: Props = $props();
-
-	const structureModels: Array<{ value: StructureModel; labelKey: 'onboarding.structure.modelCollege' | 'onboarding.structure.modelLycee' }> = [
+	const structureModels: Array<{
+		value: StructureModel;
+		labelKey: 'onboarding.structure.modelCollege' | 'onboarding.structure.modelLycee';
+	}> = [
 		{ value: 'college', labelKey: 'onboarding.structure.modelCollege' },
 		{ value: 'lycee', labelKey: 'onboarding.structure.modelLycee' },
 	];
-
 	let catalog = $state<StructureTemplateCatalog | null>(null);
 	let catalogStatus = $state<'idle' | 'loading' | 'ready' | 'error'>('idle');
 	let loadToken = 0;
-
 	const catalogHasLevels = $derived((catalog?.gradeLevels.length ?? 0) > 0);
 	const summary = $derived(structureSummary(onboardingContext.draft.structure));
-
 	const collegeLevels = $derived.by(() => levelsForModel('college'));
 	const lyceeLevels = $derived.by(() => levelsForModel('lycee'));
-
-	function levelsForModel(model: StructureModel): Array<{ catalogLevel: CatalogGradeLevel; draft: OnboardingStructureLevelDraft }> {
+	function levelsForModel(model: StructureModel): Array<{
+		catalogLevel: CatalogGradeLevel;
+		draft: OnboardingStructureLevelDraft;
+	}> {
 		if (!catalog || !onboardingContext.draft.structure.models.includes(model)) {
 			return [];
 		}
 		const byId = new Map(onboardingContext.draft.structure.levels.map(level => [level.gradeLevelId, level]));
-		const rows: Array<{ catalogLevel: CatalogGradeLevel; draft: OnboardingStructureLevelDraft }> = [];
+		const rows: Array<{
+			catalogLevel: CatalogGradeLevel;
+			draft: OnboardingStructureLevelDraft;
+		}> = [];
 		for (const catalogLevel of gradeLevelsForModels(catalog, [model])) {
 			const draft = byId.get(catalogLevel.id);
 			if (draft) {
@@ -58,7 +51,6 @@
 		}
 		return rows;
 	}
-
 	async function ensureCatalog(country: string) {
 		const token = ++loadToken;
 		catalogStatus = 'loading';
@@ -70,10 +62,7 @@
 			catalog = next;
 			catalogStatus = 'ready';
 			if (onboardingContext.draft.structure.models.length > 0) {
-				onboardingContext.draft.structure = syncStructureLevels(
-					onboardingContext.draft.structure,
-					next,
-				);
+				onboardingContext.draft.structure = syncStructureLevels(onboardingContext.draft.structure, next);
 				onboardingContext.persist();
 			}
 		}
@@ -85,66 +74,51 @@
 			catalogStatus = 'error';
 		}
 	}
-
 	$effect(() => {
 		const country = onboardingContext.draft.school.country;
 		void ensureCatalog(country);
 	});
-
+	const selectedSubjects = $derived(catalog ? subjectsForGradeLevelIds(catalog, onboardingContext.draft.structure.levels.filter(level => level.classCount > 0).map(level => level.gradeLevelId)) : []);
+	function setDiscipline(subjectCode: string, field: 'disciplineCode' | 'disciplineName', value: string) {
+		const previous = onboardingContext.draft.structure.disciplineMappings ?? [];
+		const mapping = previous.find(row => row.subjectCode === subjectCode) ?? { subjectCode, disciplineCode: '', disciplineName: '' };
+		onboardingContext.draft.structure.disciplineMappings = [...previous.filter(row => row.subjectCode !== subjectCode), { ...mapping, [field]: value }];
+		persistDraft();
+	}
 	function persistDraft() {
 		onboardingContext.persist();
 	}
-
 	function isModelSelected(model: StructureModel): boolean {
 		return onboardingContext.draft.structure.models.includes(model);
 	}
-
 	function setModelEnabled(model: StructureModel, enabled: boolean) {
 		if (!catalog || catalog.gradeLevels.length === 0) {
 			return;
 		}
-		onboardingContext.draft.structure = toggleStructureModel(
-			onboardingContext.draft.structure,
-			model,
-			enabled,
-			catalog,
-		);
+		onboardingContext.draft.structure = toggleStructureModel(onboardingContext.draft.structure, model, enabled, catalog);
 		persistDraft();
 	}
-
 	function adjustClassCount(gradeLevelId: string, delta: number) {
 		const current = onboardingContext.draft.structure.levels.find(level => level.gradeLevelId === gradeLevelId);
 		if (!current) {
 			return;
 		}
 		const nextCount = Math.min(10, Math.max(0, current.classCount + delta));
-		onboardingContext.draft.structure = updateStructureLevel(
-			onboardingContext.draft.structure,
-			gradeLevelId,
-			{ classCount: nextCount },
-		);
+		onboardingContext.draft.structure = updateStructureLevel(onboardingContext.draft.structure, gradeLevelId, { classCount: nextCount });
+		if (catalog)
+			onboardingContext.draft.structure = syncStructureLevels(onboardingContext.draft.structure, catalog);
 		persistDraft();
 	}
-
 	function updateCapacity(gradeLevelId: string, value: string) {
 		const capacity = Number.parseInt(value, 10);
 		if (!Number.isFinite(capacity)) {
 			return;
 		}
-		onboardingContext.draft.structure = updateStructureLevel(
-			onboardingContext.draft.structure,
-			gradeLevelId,
-			{ capacity: Math.max(1, capacity) },
-		);
+		onboardingContext.draft.structure = updateStructureLevel(onboardingContext.draft.structure, gradeLevelId, { capacity: Math.max(1, capacity) });
 		persistDraft();
 	}
-
 	function setClassNamingMode(gradeLevelId: string, mode: OnboardingClassNamingMode) {
-		onboardingContext.draft.structure = updateStructureLevel(
-			onboardingContext.draft.structure,
-			gradeLevelId,
-			{ classNamingMode: mode },
-		);
+		onboardingContext.draft.structure = updateStructureLevel(onboardingContext.draft.structure, gradeLevelId, { classNamingMode: mode });
 		persistDraft();
 	}
 </script>
@@ -278,6 +252,19 @@
 			{@render levelRows($t('onboarding.structure.modelCollege'), collegeLevels)}
 			{@render levelRows($t('onboarding.structure.modelLycee'), lyceeLevels)}
 
+			{#if selectedSubjects.length > 0}
+				<section class="space-y-3 rounded-xl border p-3">
+					<h3 class="text-sm font-medium">{$t('profile.academicDisciplines')}</h3>
+					<p class="text-xs text-muted-foreground">{$t('profile.reviewOnboardingDisciplines')}</p>
+					{#each selectedSubjects as subject (subject.code)}
+						{@const mapping = onboardingContext.draft.structure.disciplineMappings?.find(row => row.subjectCode === subject.code)}
+						<fieldset class="grid gap-2 rounded-lg border p-3 sm:grid-cols-2"><legend class="px-1 text-sm">{subject.code} · {subject.name}</legend>
+							<Label class="space-y-1"><span>{$t('common.code')}</span><Input data-testid={`discipline-code-${subject.code}`} value={mapping?.disciplineCode ?? ''} {disabled} oninput={event => setDiscipline(subject.code, 'disciplineCode', event.currentTarget.value)} /></Label>
+							<Label class="space-y-1"><span>{$t('common.name')}</span><Input data-testid={`discipline-name-${subject.code}`} value={mapping?.disciplineName ?? ''} {disabled} oninput={event => setDiscipline(subject.code, 'disciplineName', event.currentTarget.value)} /></Label>
+						</fieldset>
+					{/each}
+				</section>
+			{/if}
 			<section class="rounded-lg border border-border bg-card px-3 py-2 text-sm">
 				<p class="font-medium text-foreground">{$t('onboarding.structure.summaryTitle')}</p>
 				<p class="mt-0.5 text-xs text-muted-foreground">

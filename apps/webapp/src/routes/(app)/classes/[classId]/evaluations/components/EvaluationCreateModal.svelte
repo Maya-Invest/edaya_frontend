@@ -2,6 +2,7 @@
 	import type { Evaluation } from '$lib/types/school';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { DEFAULT_SCHOOL_TIMEZONE } from '$lib/api/school-data';
+	import AssessmentAttachmentsFields from '$lib/components/school/academics/AssessmentAttachmentsFields.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -15,24 +16,21 @@
 	import { getEvaluationsPageState } from '../evaluations-page.svelte';
 
 	const ASSESSMENT_KINDS = ['quiz', 'homework', 'project', 'other'] as const;
-
-	let {
-		classId,
-		evaluation = null,
-		open = $bindable(false),
-		onCreated,
-	}: {
+	let { classId, evaluation = null, open = $bindable(false), onCreated }: {
 		classId: string;
 		evaluation?: Evaluation | null;
 		open?: boolean;
 		onCreated?: (assessmentId: string) => void;
 	} = $props();
-
 	const evaluationsPage = getEvaluationsPageState();
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let title = $state('');
 	let description = $state('');
+	let attachments = $state<{
+		name: string;
+		size: string;
+	}[]>([]);
 	let classSubjectId = $state('');
 	let maxScore = $state('20');
 	let coefficient = $state('1');
@@ -41,7 +39,6 @@
 	let occurrenceDate = $state('');
 	let startTime = $state('09:00');
 	let endTime = $state('10:00');
-
 	const isEdit = $derived(evaluation !== null);
 	const isHomework = $derived(kind === 'homework');
 	const timeZone = $derived(academicContext.schools[0]?.timeZone?.trim() || DEFAULT_SCHOOL_TIMEZONE);
@@ -78,11 +75,11 @@
 			&& endTime.length > 0
 			&& endTime > startTime;
 	});
-
 	function resetForm() {
 		if (evaluation) {
 			title = evaluation.title;
 			description = evaluation.description ?? '';
+			attachments = evaluation.attachments.map(row => ({ ...row }));
 			classSubjectId = evaluation.classSubjectId;
 			maxScore = String(evaluation.outOf);
 			coefficient = String(evaluation.coefficient);
@@ -105,9 +102,9 @@
 			}
 			return;
 		}
-
 		title = '';
 		description = '';
+		attachments = [];
 		classSubjectId = classSubjects[0]?.id ?? '';
 		maxScore = '20';
 		coefficient = '1';
@@ -117,25 +114,21 @@
 		startTime = '09:00';
 		endTime = '10:00';
 	}
-
 	$effect(() => {
 		if (open && !wasOpen) {
 			resetForm();
 		}
 		wasOpen = open;
 	});
-
 	$effect(() => {
 		if (open && !classSubjectId && classSubjects[0]) {
 			classSubjectId = classSubjects[0].id;
 		}
 	});
-
 	async function submit() {
 		if (!canSubmit) {
 			return;
 		}
-
 		busy = true;
 		try {
 			if (evaluation) {
@@ -144,6 +137,7 @@
 					classSubjectId,
 					title,
 					description,
+					attachments,
 					dueDate: isHomework ? dueDate : undefined,
 					startsAt: isHomework ? null : civilDateTimeInTimeZoneToIso(occurrenceDate, startTime, timeZone),
 					endsAt: isHomework ? null : civilDateTimeInTimeZoneToIso(occurrenceDate, endTime, timeZone),
@@ -157,12 +151,12 @@
 				}
 				return;
 			}
-
 			const assessmentId = await evaluationsPage.createEvaluation({
 				classGroupId: classId,
 				classSubjectId,
 				title,
 				description,
+				attachments,
 				maxScore: numericMax,
 				coefficient: numericCoef,
 				kind,
@@ -171,7 +165,6 @@
 				endsAt: isHomework ? undefined : civilDateTimeInTimeZoneToIso(occurrenceDate, endTime, timeZone),
 				successMessage: get(t)('eval.createSuccess', { title: title.trim() }),
 			});
-
 			if (assessmentId) {
 				open = false;
 				resetForm();
@@ -190,7 +183,7 @@
 	description={isEdit ? evaluation?.title : $t('eval.createDescription')}
 	submitLabel={$t('common.save')}
 	busy={busy}
-	submitDisabled={!canSubmit}
+	submitDisabled={!canSubmit || attachments.some(row => !row.name.trim() || !row.size.trim())}
 	onCancel={resetForm}
 	onSubmit={submit}
 >
@@ -306,4 +299,6 @@
 			</div>
 		</div>
 	{/if}
+
+	<details><summary>{$t('profile.attachments')}</summary><AssessmentAttachmentsFields bind:attachments /></details>
 </FormModal>

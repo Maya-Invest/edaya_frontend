@@ -83,6 +83,8 @@ describe('structure onboarding', () => {
 		expect(isStructureStepValid(next, catalog)).toBe(false);
 
 		const configured = updateStructureLevel(next, 'ci-college:6EME', { classCount: 1 });
+		expect(isStructureStepValid(configured, catalog)).toBe(false);
+		configured.disciplineMappings = [{ subjectCode: 'FR', disciplineCode: 'TEST', disciplineName: 'Reviewed test discipline' }];
 		expect(isStructureStepValid(configured, catalog)).toBe(true);
 	});
 

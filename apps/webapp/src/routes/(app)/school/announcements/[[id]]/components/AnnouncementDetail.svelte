@@ -6,7 +6,9 @@
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import DataState from '$lib/components/ui/DataState.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
+	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
@@ -22,16 +24,11 @@
 	import { resolveAnnouncementTargetLabel } from '../../lib/announcement-target-label';
 	import AnnouncementTargetFormModal from './AnnouncementTargetFormModal.svelte';
 
-	const {
-		announcement,
-		onDeleted,
-	}: {
+	const { announcement, onDeleted }: {
 		announcement: Announcement;
 		onDeleted?: () => void;
 	} = $props();
-
 	type AnnouncementDrawerModal = 'edit' | 'add-target' | 'publish' | 'delete';
-
 	const announcementsPage = getAnnouncementsPageState();
 	const modals = createUrlSyncedModals<AnnouncementDrawerModal>({
 		allowed: ['edit', 'add-target', 'publish', 'delete'],
@@ -51,17 +48,13 @@
 	const addTargetOpen = bindUrlModal(modals, 'add-target');
 	const publishOpen = bindUrlModal(modals, 'publish');
 	const deleteOpen = bindUrlModal(modals, 'delete');
-
-	const live = $derived(
-		announcementsPage.findAnnouncement(announcement.id) ?? announcement,
-	);
+	const live = $derived(announcementsPage.findAnnouncement(announcement.id) ?? announcement);
 	const isDraft = $derived(live.status === 'draft');
-
 	let deleteBusy = $state(false);
+	let deliveryOpen = $state(false);
 	let removeTargetBusy = $state(false);
 	let pendingRemoveTarget = $state<Announcement['targets'][number] | null>(null);
 	let removeTargetOpen = $state(false);
-
 	function fmtDate(value: string | undefined) {
 		if (!value) {
 			return '—';
@@ -74,7 +67,6 @@
 			minute: '2-digit',
 		});
 	}
-
 	function targetLabel(target: Announcement['targets'][number]) {
 		return resolveAnnouncementTargetLabel(target, {
 			academic: academicContext,
@@ -82,7 +74,6 @@
 			labelForKind: kind => get(t)(`announcements.targetKind.${kind}`),
 		});
 	}
-
 	function confirmPublish() {
 		publishOpen.open = false;
 		void announcementsPage.publishAnnouncement({
@@ -90,7 +81,6 @@
 			successMessage: get(t)('announcements.publishSuccess', { title: live.title }),
 		});
 	}
-
 	async function confirmDelete() {
 		deleteBusy = true;
 		try {
@@ -106,7 +96,6 @@
 			deleteBusy = false;
 		}
 	}
-
 	async function confirmRemoveTarget() {
 		if (!pendingRemoveTarget || removeTargetBusy) {
 			return;
@@ -127,7 +116,6 @@
 			removeTargetBusy = false;
 		}
 	}
-
 	const dateSummary = $derived.by(() => {
 		const parts = [`${$t('announcements.createdAt')}: ${fmtDate(live.createdAt)}`];
 		if (live.publishedAt) {
@@ -291,6 +279,29 @@
 
 <AnnouncementFormModal announcement={live} bind:open={editOpen.open} />
 <AnnouncementTargetFormModal announcementId={live.id} bind:open={addTargetOpen.open} />
+
+<PermissionGate permission="COMMUNICATION_READ">
+	<details class="my-3 space-y-2 rounded-xl border p-3" bind:open={deliveryOpen}>
+		<summary class="cursor-pointer text-sm font-medium">{$t('profile.deliveryHistory')}</summary>
+		{#if deliveryOpen}
+			<PageQuery cache={false} query={(url, request) => announcementsPage.queryDeliveries(live.id, url, request)} cacheKey={() => `announcement-deliveries:${live.id}`}>
+				{#snippet children(data)}
+					<DataState status={data.status} errorMessage={data.errorMessage} preserveShell>
+						{#each data.deliveries as delivery (delivery.id)}
+							<details class="my-2 space-y-1 rounded-lg border p-2 text-xs"><summary>{delivery.title} · {$t(`profile.deliveryStatus.${delivery.status}`)}</summary>
+								<p class="whitespace-pre-wrap">{delivery.body}</p>
+								<p>{$t('profile.recipient')}: {announcementsPage.guardians.find(row => row.id === delivery.recipientId)?.name ?? announcementsPage.students.find(row => row.id === delivery.recipientId)?.name ?? announcementsPage.staff.find(row => row.id === delivery.recipientId)?.name ?? $t('profile.restricted')}</p>
+								{#if delivery.failureReason}<p>{$t('profile.failureReason')}: {delivery.failureReason}</p>{/if}
+								{#if delivery.sentAt}<p>{$t('profile.lastSentAt')}: {String(delivery.sentAt)}</p>{/if}
+								{#if delivery.readAt}<p>{$t('profile.readAt')}: {String(delivery.readAt)}</p>{/if}
+							</details>
+						{:else}<p class="text-xs">{$t('profile.notProvided')}</p>{/each}
+					</DataState>
+				{/snippet}
+			</PageQuery>
+		{/if}
+	</details>
+</PermissionGate>
 
 <FormModal
 	bind:open={publishOpen.open}

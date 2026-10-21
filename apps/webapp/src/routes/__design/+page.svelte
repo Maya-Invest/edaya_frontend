@@ -30,9 +30,18 @@
 		{#snippet primary()}<Button onclick={() => open = true}>Ajouter un élève</Button>{/snippet}
 	</ListPageHeader>
 	<div class="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-		<div class="space-y-6">
-			<ListEntityTable columns={[{ key: 'name', label: 'Élève', span: 6 }, { key: 'class', label: 'Classe', span: 2 }, { key: 'amount', label: 'Montant', span: 4, class: 'justify-end' }]} {rows} highlightId={selected} onRowClick={item => selected = item.id}>
-				{#snippet row(item)}<span class="col-span-6 min-w-0 font-medium">{item.name}</span><span class="col-span-2">{item.className}</span><span class="col-span-4 text-right tabular-nums">{item.amount}</span>{/snippet}
+		<div class="min-w-0 space-y-6">
+			<ListEntityTable listKey="design-preview" columns={[{ key: 'name', label: 'Élève', span: 6 }, { key: 'class', label: 'Classe', span: 2 }, { key: 'amount', label: 'Montant', span: 4, class: 'justify-end' }]} {rows} highlightId={selected} onRowClick={item => selected = item.id}>
+				{#snippet cell(item, column, _ctx)}
+
+					{#if column.key === 'name'}
+						<span class="col-span-6 min-w-0 font-medium">{item.name}</span>
+					{:else if column.key === 'class'}
+						<span class="col-span-2">{item.className}</span>
+					{:else if column.key === 'amount'}
+						<span class="col-span-4 text-right tabular-nums">{item.amount}</span>
+					{/if}
+				{/snippet}
 			</ListEntityTable>
 			<section class="space-y-4 rounded-2xl border border-border bg-card p-6">
 				<h3 class="font-display text-xl font-semibold">Actions & états</h3>

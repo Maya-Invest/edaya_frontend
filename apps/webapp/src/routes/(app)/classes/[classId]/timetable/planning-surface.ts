@@ -14,6 +14,7 @@ export const PLANNING_MODAL_KEYS = [
 	'edit-event',
 	'cancel',
 	'session-attendance',
+	'attendance-review',
 	'session-logbook',
 ] as const;
 

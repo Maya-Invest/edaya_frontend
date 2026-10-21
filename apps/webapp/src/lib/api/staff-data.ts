@@ -167,6 +167,10 @@ export function mapStaffMembers(
 
 		return {
 			id: member.id,
+			firstName: member.firstName ?? null,
+			lastName: member.lastName ?? null,
+			code: member.code ?? null,
+
 			name: `${member.firstName} ${member.lastName}`,
 			initials: `${member.firstName[0] ?? ''}${member.lastName[0] ?? ''}`,
 			photoUrl: member.photoUrl ?? null,
@@ -319,6 +323,10 @@ export async function fetchSessionStaffProfile(
 		return {
 			profile: {
 				id: staff.id,
+				firstName: staff.firstName ?? null,
+				lastName: staff.lastName ?? null,
+				code: staff.code ?? null,
+
 				name: `${staff.firstName} ${staff.lastName}`,
 				initials: `${staff.firstName[0] ?? ''}${staff.lastName[0] ?? ''}`,
 				photoUrl: staff.photoUrl ?? null,

@@ -19,13 +19,7 @@
 	import { CalendarRange, Plus, Users } from '$lib/icons';
 	import { loadCardColumnsPreference, saveCardColumnsPreference } from '$lib/list/list-card-columns-preference';
 	import { exportMatchingList } from '$lib/list/list-csv-export';
-	import {
-		isListCardColumns,
-		readListCardColumns,
-		readListView,
-		writeListCardColumns,
-		writeListView,
-	} from '$lib/list/list-view-url';
+	import { isListCardColumns, readListCardColumns, readListView, writeListCardColumns, writeListView } from '$lib/list/list-view-url';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { MODAL_QUERY_KEY } from '$lib/modal/modal-url';
@@ -37,14 +31,10 @@
 	import { cycleActivityListSort, filterActivityList } from '../lib/activity-list-filters';
 	import ActivityFormModal from './ActivityFormModal.svelte';
 
-	const {
-		onSelect,
-		selectedId,
-	}: {
+	const { onSelect, selectedId }: {
 		onSelect?: (activity: Activity) => void;
 		selectedId?: string;
 	} = $props();
-
 	const activitiesPage = getActivitiesPageState();
 	const view = $derived(readListView($page.url));
 	const storedCardColumns = loadCardColumnsPreference('school-activities-card-columns', 3);
@@ -52,7 +42,6 @@
 		? storedCardColumns
 		: 3;
 	const cardColumns = $derived(readListCardColumns($page.url, defaultCardColumns));
-
 	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
 	$effect(() => {
 		modals.hydrate();
@@ -62,10 +51,7 @@
 			return;
 		}
 		const viewHref = writeListView($page.url, view);
-		const canonicalHref = writeListCardColumns(
-			new URL(viewHref, $page.url),
-			cardColumns,
-		);
+		const canonicalHref = writeListCardColumns(new URL(viewHref, $page.url), cardColumns);
 		if (canonicalHref !== `${$page.url.pathname}${$page.url.search}`) {
 			void appGoto(canonicalHref, {
 				replaceState: true,
@@ -75,7 +61,6 @@
 		}
 	});
 	const createOpen = bindUrlModal(modals, 'create');
-
 	const categoryKeys = ['all', 'Sport', 'Arts', 'Science', 'Language', 'Wellbeing'] as const;
 	const catTone: Record<Activity['category'], string> = {
 		Sport: 'bg-secondary text-foreground/80',
@@ -84,18 +69,13 @@
 		Language: 'bg-secondary text-foreground/80',
 		Wellbeing: 'bg-secondary text-foreground/80',
 	};
-
 	const listFilters = $derived.by(() => ({ ...activitiesPage.filters.values }));
 	const filtered = $derived(filterActivityList(activitiesPage.activities, listFilters));
 	const windowed = useInfiniteList(() => filtered, 30);
-
-	const categoryFilterOptions = $derived(
-		categoryKeys.map(key => ({
-			value: key,
-			label: key === 'all' ? $t('filter.all') : $t(`activities.cat.${key}`),
-		})),
-	);
-
+	const categoryFilterOptions = $derived(categoryKeys.map(key => ({
+		value: key,
+		label: key === 'all' ? $t('filter.all') : $t(`activities.cat.${key}`),
+	})));
 	const columns = $derived<ListEntityTableColumn[]>([
 		{
 			key: 'name',
@@ -139,7 +119,6 @@
 			card: { zone: 'body', defaultVisible: false, showLabel: true },
 		},
 	]);
-
 	function setCardColumns(next: number) {
 		if (!isListCardColumns(next)) {
 			return;
@@ -151,7 +130,6 @@
 			noScroll: true,
 		});
 	}
-
 	function setView(next: ListView) {
 		void appGoto(writeListView($page.url, next), {
 			replaceState: true,
@@ -159,21 +137,17 @@
 			noScroll: true,
 		});
 	}
-
 	function applyCategoryFilter(value: string) {
 		activitiesPage.filters.patchImmediate({ category: value });
 	}
-
 	function cycleSort(column: ActivitySortColumn) {
 		const next = cycleActivityListSort(listFilters, column);
 		activitiesPage.filters.patchImmediate(next);
 	}
-
 	function handleCreated(activityId: string) {
 		const path = detailHref.schoolActivityTab(activityId, 'classes');
 		openDetailDrawer(`${path}${detailNavigationSearch($page.url)}`, currentRouteSurfaceHref($page.url));
 	}
-
 	function exportActivities() {
 		return exportMatchingList({
 			filename: 'activities.csv',
@@ -237,7 +211,7 @@
 	<ActivityFormModal bind:open={createOpen.open} onCreated={handleCreated} />
 
 	{#if view === 'table'}
-		<ListEntityTable
+		<ListEntityTable listKey="ActivitiesList"
 			columns={columns.filter(column => column.key !== 'description')}
 			rows={windowed.visible}
 			highlightId={selectedId}
@@ -251,24 +225,31 @@
 			onRowClick={activity => onSelect?.(activity)}
 			emptyLabel={$t('activities.none')}
 		>
-			{#snippet row(activity)}
-				<div class="col-span-3 min-w-0">
-					<p class="truncate font-display text-sm font-semibold">{activity.name}</p>
-				</div>
-				<div class="col-span-2">
-					<span class={cn('rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider', catTone[activity.category])}>
-						{$t(`activities.cat.${activity.category}`)}
-					</span>
-				</div>
-				<div class="col-span-2 truncate text-sm text-foreground/80">{activity.coach}</div>
-				<div class="col-span-3 flex items-center gap-1.5 text-xs text-foreground/80">
-					<CalendarRange class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-					<span class="font-sans tabular-nums">{fmtActivityDate(activity.startDate, $locale)} → {fmtActivityDate(activity.endDate, $locale)}</span>
-				</div>
-				<div class="col-span-2 flex items-center justify-end gap-1 text-xs">
-					<Users class="h-3.5 w-3.5 text-muted-foreground" />
-					<span class="font-sans tabular-nums">{activity.enrollments.length}/{activity.capacity}</span>
-				</div>
+			{#snippet cell(activity, column, _ctx)}
+
+				{#if column.key === 'name'}
+					<div class="col-span-3 min-w-0">
+						<p class="truncate font-display text-sm font-semibold">{activity.name}</p>
+					</div>
+				{:else if column.key === 'category'}
+					<div class="col-span-2">
+						<span class={cn('rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider', catTone[activity.category])}>
+							{$t(`activities.cat.${activity.category}`)}
+						</span>
+					</div>
+				{:else if column.key === 'coach'}
+					<div class="col-span-2 truncate text-sm text-foreground/80">{activity.coach}</div>
+				{:else if column.key === 'period'}
+					<div class="col-span-3 flex items-center gap-1.5 text-xs text-foreground/80">
+						<CalendarRange class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+						<span class="font-sans tabular-nums">{fmtActivityDate(activity.startDate, $locale)} → {fmtActivityDate(activity.endDate, $locale)}</span>
+					</div>
+				{:else if column.key === 'enrolled'}
+					<div class="col-span-2 flex items-center justify-end gap-1 text-xs">
+						<Users class="h-3.5 w-3.5 text-muted-foreground" />
+						<span class="font-sans tabular-nums">{activity.enrollments.length}/{activity.capacity}</span>
+					</div>
+				{/if}
 			{/snippet}
 		</ListEntityTable>
 	{:else}

@@ -24,6 +24,10 @@ function teacherInitials(firstName: string, lastName: string): string {
 export function mapTeacher(member: TeacherRaw): Teacher {
 	return {
 		id: member.id,
+		firstName: member.firstName ?? null,
+		lastName: member.lastName ?? null,
+		sourceFullName: member.sourceFullName ?? null,
+
 		name: formatPersonName(member.firstName, member.lastName),
 		initials: teacherInitials(member.firstName, member.lastName),
 		photoUrl: member.photoUrl ?? null,

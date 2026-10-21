@@ -10,6 +10,7 @@ import { catalogGradeName } from '$lib/i18n/catalog-label';
 import {
 	getCatalogGradeLevel,
 	gradeLevelsForModels,
+	subjectsForGradeLevelIds,
 } from '$lib/onboarding/structure-template-model';
 
 const DEFAULT_CLASS_COUNT = 0;
@@ -53,6 +54,7 @@ export function syncStructureLevels(
 	return {
 		models: [...structure.models],
 		levels,
+		disciplineMappings: subjectsForGradeLevelIds(catalog, levels.filter(level => level.classCount > 0).map(level => level.gradeLevelId)).map(subject => structure.disciplineMappings?.find(mapping => mapping.subjectCode === subject.code) ?? { subjectCode: subject.code, disciplineCode: '', disciplineName: '' }),
 	};
 }
 

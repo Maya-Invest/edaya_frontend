@@ -7,6 +7,8 @@ export const TIMETABLE_DAY_OFFSET: Record<PlanningEvent['day'], number> = {
 	Wed: 2,
 	Thu: 3,
 	Fri: 4,
+	Sat: 5,
+	Sun: 6,
 };
 
 export const TIMETABLE_DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
@@ -26,8 +28,8 @@ export const SCHEDULE_DAY_TO_PLANNING: Record<ScheduleDayOfWeek, PlanningEvent['
 	wednesday: 'Wed',
 	thursday: 'Thu',
 	friday: 'Fri',
-	saturday: 'Mon',
-	sunday: 'Mon',
+	saturday: 'Sat',
+	sunday: 'Sun',
 };
 
 export const PLANNING_DAY_TO_SCHEDULE: Record<PlanningEvent['day'], ScheduleDayOfWeek> = {
@@ -36,6 +38,8 @@ export const PLANNING_DAY_TO_SCHEDULE: Record<PlanningEvent['day'], ScheduleDayO
 	Wed: 'wednesday',
 	Thu: 'thursday',
 	Fri: 'friday',
+	Sat: 'saturday',
+	Sun: 'sunday',
 };
 
 const DAY_LABEL_TO_SCHEDULE: Record<PlanningEvent['day'], ScheduleDayOfWeek> = PLANNING_DAY_TO_SCHEDULE;
@@ -452,7 +456,7 @@ function planningEventsOverlap(left: PlanningEvent, right: PlanningEvent): boole
 	return leftStart < rightEnd && rightStart < leftEnd;
 }
 
-const WEEKDAY_LABELS: PlanningEvent['day'][] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+const WEEKDAY_LABELS: PlanningEvent['day'][] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export function schoolYearEventEndDate(event: SchoolYearEvent): string {
 	return event.endDate ?? event.date;

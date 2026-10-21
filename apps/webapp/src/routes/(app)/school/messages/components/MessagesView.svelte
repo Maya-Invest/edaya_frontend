@@ -16,7 +16,10 @@
 	import { BADGE_INFO, BADGE_SUCCESS, BADGE_WARN } from '$lib/ui-tones';
 	import ConversationMessageBubble from './ConversationMessageBubble.svelte';
 
-	const { state, navigate }: { state: MessagesPageState; navigate: (id?: string, changes?: Record<string, string>) => void } = $props();
+	const { state, navigate }: {
+		state: MessagesPageState;
+		navigate: (id?: string, changes?: Record<string, string>) => void;
+	} = $props();
 	const columns = $derived([
 		{ key: 'subject', label: $t('messages.subject'), span: 4 },
 		{ key: 'participants', label: $t('messages.participants'), span: 4 },
@@ -57,15 +60,21 @@
 		{/snippet}
 	</ListPageHeader>
 	{#if state.error}<p role="alert" class="mb-4 text-sm text-destructive">{state.error}</p>{/if}
-	<ListEntityTable {columns} rows={state.items} highlightId={state.selectedId} hasMore={state.hasMore} loading={state.busy} loadingMore={state.loadingMore} total={state.total} visibleCount={state.items.length} onLoadMore={() => void state.loadMore()} onRowClick={row => navigate(row.id)} emptyLabel={$t('messages.empty')}>
-		{#snippet row(item)}
-			<div class="col-span-4 min-w-0">
-				<div class="flex flex-wrap items-center gap-2"><span class="break-words text-sm font-medium">{item.subject}</span><span class={`rounded-full px-2 py-0.5 text-xs font-medium ${BADGE_INFO}`}>{$t(`messages.type.${item.destination}`)}</span>{#if item.unread}<span class={`rounded-full px-2 py-0.5 text-xs font-medium ${BADGE_INFO}`}>{$t('messages.unread')}</span>{/if}</div>
-				<p class="mt-1 line-clamp-2 break-words text-sm text-muted-foreground">{item.lastMessage}</p>
-			</div>
-			<div class="col-span-4 min-w-0 text-sm"><p class="break-words font-medium">{item.guardianName}</p><p class="mt-1 break-words text-muted-foreground">{item.studentName ?? item.schoolName}{item.teacherName ? ` · ${item.teacherName}` : ''}</p></div>
-			<div class="col-span-2"><span class={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${item.destination === 'teacher' ? BADGE_INFO : item.status === 'resolved' ? BADGE_SUCCESS : BADGE_WARN}`}>{$t(item.destination === 'teacher' ? 'messages.reviewOnly' : `messages.${item.status}`)}</span></div>
-			<div class="col-span-2 text-sm text-muted-foreground tabular-nums">{new Date(item.updatedAt).toLocaleString($locale, { dateStyle: 'medium', timeStyle: 'short' })}</div>
+	<ListEntityTable listKey="MessagesView" {columns} rows={state.items} highlightId={state.selectedId} hasMore={state.hasMore} loading={state.busy} loadingMore={state.loadingMore} total={state.total} visibleCount={state.items.length} onLoadMore={() => void state.loadMore()} onRowClick={row => navigate(row.id)} emptyLabel={$t('messages.empty')}>
+		{#snippet cell(item, column, _ctx)}
+
+			{#if column.key === 'subject'}
+				<div class="col-span-4 min-w-0">
+					<div class="flex flex-wrap items-center gap-2"><span class="break-words text-sm font-medium">{item.subject}</span><span class={`rounded-full px-2 py-0.5 text-xs font-medium ${BADGE_INFO}`}>{$t(`messages.type.${item.destination}`)}</span>{#if item.unread}<span class={`rounded-full px-2 py-0.5 text-xs font-medium ${BADGE_INFO}`}>{$t('messages.unread')}</span>{/if}</div>
+					<p class="mt-1 line-clamp-2 break-words text-sm text-muted-foreground">{item.lastMessage}</p>
+				</div>
+			{:else if column.key === 'participants'}
+				<div class="col-span-4 min-w-0 text-sm"><p class="break-words font-medium">{item.guardianName}</p><p class="mt-1 break-words text-muted-foreground">{item.studentName ?? item.schoolName}{item.teacherName ? ` · ${item.teacherName}` : ''}</p></div>
+			{:else if column.key === 'status'}
+				<div class="col-span-2"><span class={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${item.destination === 'teacher' ? BADGE_INFO : item.status === 'resolved' ? BADGE_SUCCESS : BADGE_WARN}`}>{$t(item.destination === 'teacher' ? 'messages.reviewOnly' : `messages.${item.status}`)}</span></div>
+			{:else if column.key === 'activity'}
+				<div class="col-span-2 text-sm text-muted-foreground tabular-nums">{new Date(item.updatedAt).toLocaleString($locale, { dateStyle: 'medium', timeStyle: 'short' })}</div>
+			{/if}
 		{/snippet}
 	</ListEntityTable>
 	{#if state.loadMoreError}

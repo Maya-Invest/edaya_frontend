@@ -1,9 +1,11 @@
+import type { components } from '$lib/api/schema';
 import type { Guardian } from '$lib/types/school';
 import type { GuardiansPageState } from '../guardians-page.svelte';
 import { academicContext } from '$lib/academic/context.svelte';
 import { displayProfilePhotoUrl, uploadProfilePhoto } from '$lib/api/profile-photo-upload';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
+import { guardianIdentityPayload } from '$lib/people-profile-fields';
 import { runGuardianRouteMutation } from './guardian-route-mutation';
 
 function schoolId(): string {
@@ -39,18 +41,28 @@ function buildContactMethods(email: string, phone: string) {
 
 function buildOptimisticGuardian(input: {
 	id: string;
+	profile?: Record<string, string>;
+	code?: string;
 	firstName: string;
 	lastName: string;
+	hasAccess?: boolean;
+	contactMethods?: components['schemas']['Guardian']['contactMethods'];
 	email?: string;
 	phone?: string;
 }): Guardian {
 	const email = input.email?.trim() ?? '';
 	const phone = input.phone?.trim() ?? '';
 	return {
+		...guardianIdentityPayload(input.profile),
+		code: input.code?.trim() || null,
 		id: input.id,
+		firstName: input.firstName.trim(),
+		lastName: input.lastName.trim(),
 		name: `${input.firstName.trim()} ${input.lastName.trim()}`,
 		initials: guardianInitials(input.firstName, input.lastName),
 		relation: 'Legal guardian',
+		hasAccess: input.hasAccess ?? true,
+		contactMethods: input.contactMethods ?? buildContactMethods(email, phone),
 		email,
 		phone,
 		studentIds: [],
@@ -64,10 +76,13 @@ export async function createGuardianOnPage(
 	state: GuardiansPageState,
 	input: {
 		firstName: string;
+		profile?: Record<string, string>;
 		lastName: string;
 		code?: string;
 		email?: string;
 		phone?: string;
+		contactMethods?: components['schemas']['Guardian']['contactMethods'];
+		hasAccess?: boolean;
 		sendAccountInvitation?: boolean;
 		successMessage?: string;
 	},
@@ -83,13 +98,14 @@ export async function createGuardianOnPage(
 		request: () => client.commands.registerGuardian({
 			id,
 			schoolId: schoolId(),
+			...guardianIdentityPayload(input.profile),
 			firstName: input.firstName.trim(),
 			lastName: input.lastName.trim(),
 			...(code ? { code } : {}),
 			email: email || null,
 			phone: phone || null,
-			contactMethods: buildContactMethods(email, phone),
-			hasAccess: true,
+			contactMethods: input.contactMethods ?? buildContactMethods(email, phone),
+			hasAccess: input.hasAccess ?? true,
 			sendAccountInvitation: input.sendAccountInvitation ?? true,
 			createdAt: new Date().toISOString(),
 		}),
@@ -110,10 +126,13 @@ export async function updateGuardianContactOnPage(
 	state: GuardiansPageState,
 	input: {
 		guardianId: string;
+		profile?: Record<string, string>;
 		firstName: string;
 		lastName: string;
 		email?: string;
 		phone?: string;
+		contactMethods?: components['schemas']['Guardian']['contactMethods'];
+		hasAccess?: boolean;
 		successMessage?: string;
 	},
 ): Promise<boolean> {
@@ -127,20 +146,26 @@ export async function updateGuardianContactOnPage(
 			const existing = await client.entities.guardians.get(input.guardianId);
 			return client.commands.updateGuardianContactMethods({
 				guardianId: input.guardianId,
+				...guardianIdentityPayload(input.profile),
 				firstName: input.firstName.trim(),
 				lastName: input.lastName.trim(),
 				email: email || null,
 				phone: phone || null,
-				contactMethods: buildContactMethods(email, phone),
-				hasAccess: existing.hasAccess,
+				contactMethods: input.contactMethods ?? existing.contactMethods,
+				hasAccess: input.hasAccess ?? existing.hasAccess,
 			});
 		},
 		apply: () => {
 			state.patchGuardian(input.guardianId, {
+				...guardianIdentityPayload(input.profile),
+				firstName: input.firstName.trim(),
+				lastName: input.lastName.trim(),
 				name: `${input.firstName.trim()} ${input.lastName.trim()}`,
 				initials: guardianInitials(input.firstName, input.lastName),
 				email,
 				phone,
+				...(input.contactMethods ? { contactMethods: input.contactMethods } : {}),
+				...(input.hasAccess !== undefined ? { hasAccess: input.hasAccess } : {}),
 				preferredContact: email ? 'email' : phone ? 'phone' : 'email',
 			});
 		},

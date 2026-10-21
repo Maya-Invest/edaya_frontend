@@ -70,6 +70,13 @@ export function mapStudentEnrollmentHistory(
 			enrolledAt: formatDate(enrollment.enrolledAt ?? enrollment.createdAt),
 			endedAt: enrollment.endedAt ? formatDate(enrollment.endedAt) : undefined,
 			endReason: enrollment.endReason ?? null,
+			progressionDecision: enrollment.progressionDecision,
+			progressionDecidedAt: enrollment.progressionDecidedAt ? formatDate(enrollment.progressionDecidedAt) : undefined,
+			progressionDecidedBy: enrollment.progressionDecidedBy,
+			progressionNotes: enrollment.progressionNotes,
+			previousEnrollmentId: enrollment.previousEnrollmentId,
+			closedBy: enrollment.closedBy,
+			enrollmentIndex: enrollment.enrollmentIndex,
 		}))
 		.sort((left, right) => right.enrolledAt.localeCompare(left.enrolledAt));
 }

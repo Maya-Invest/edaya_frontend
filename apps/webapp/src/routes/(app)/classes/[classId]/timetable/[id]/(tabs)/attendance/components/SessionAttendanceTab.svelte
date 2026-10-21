@@ -8,6 +8,7 @@
 	import { t } from '$lib/i18n';
 	import { Check, ClipboardCheck } from '$lib/icons';
 	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
+	import AttendanceReview from '$lib/smart-components/attendance-review/AttendanceReview.svelte';
 	import { toast } from '$lib/toast.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
@@ -15,30 +16,24 @@
 	import { getPlanningState } from '../../../../planning-state.svelte';
 	import { getSessionAttendanceTabState } from '../session-attendance-tab.svelte';
 
-	const { s }: { s: PlanningEvent } = $props();
-
+	const { s }: {
+		s: PlanningEvent;
+	} = $props();
 	const attendanceTab = getSessionAttendanceTabState();
 	const planning = getPlanningState();
 	const isLesson = $derived(s.kind === 'lesson');
 	const attendanceRows = $derived(attendanceTab.attendanceFor(s.id));
 	const recordedCount = $derived(attendanceRows.filter(row => row.status).length);
 	const unrecordedRows = $derived(attendanceRows.filter(row => !row.status));
-
 	let bulkBusy = $state(false);
-
 	const modals = planning.modals;
 	const sessionAttendanceOpen = bindUrlModal(modals, 'session-attendance');
-
-	const attendanceTargetRow = $derived(
-		modals.target ? attendanceRows.find(row => row.studentId === modals.target) : undefined,
-	);
-
+	const attendanceTargetRow = $derived(modals.target ? attendanceRows.find(row => row.studentId === modals.target) : undefined);
 	const statusTone: Record<SessionAttendanceStatus, string> = {
 		present: 'bg-secondary text-foreground/80',
 		absent: 'bg-highlight-soft text-destructive',
 		late: 'bg-highlight-soft text-highlight',
 	};
-
 	async function markAllPresent() {
 		if (unrecordedRows.length === 0) {
 			return;
@@ -47,9 +42,7 @@
 		if (isLesson) {
 			await attendanceTab.recordBulkAttendance({
 				sessionId: s.id,
-				attendanceByStudent: Object.fromEntries(
-					unrecordedRows.map(row => [row.studentId, 'present' as const]),
-				),
+				attendanceByStudent: Object.fromEntries(unrecordedRows.map(row => [row.studentId, 'present' as const])),
 				successMessage: get(t)('planning.session.bulkAttendanceSuccess'),
 			});
 		}
@@ -67,7 +60,6 @@
 		}
 		bulkBusy = false;
 	}
-
 	async function recordAttendance(input: {
 		sessionId: string;
 		kind?: PlanningEvent['kind'];
@@ -132,6 +124,7 @@
 							<p class="text-sm font-medium">{row.studentName}</p>
 						</div>
 						<div class="flex items-center gap-2">
+							{#if row.attendanceId}<AttendanceReview recordId={row.attendanceId} classId={s.classId} />{/if}
 							{#if row.status}
 								<span
 									class={cn(

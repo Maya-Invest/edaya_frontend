@@ -20,6 +20,7 @@ function newId(prefix: string): string {
 
 export async function createCatalogServiceMutation(input: {
 	name: string;
+	description?: string | null;
 	category: CatalogServiceCategory;
 	amount: number;
 	currency?: string;
@@ -46,6 +47,7 @@ export async function createCatalogServiceMutation(input: {
 		id,
 		academicYearId,
 		name: input.name.trim(),
+		description: input.description,
 		category: input.category,
 		enrollmentMode: input.enrollmentMode ?? 'mandatory',
 		defaultPrice: input.amount,
@@ -62,6 +64,7 @@ export async function createCatalogServiceMutation(input: {
 export async function updateCatalogServiceMutation(input: {
 	id: string;
 	name?: string;
+	description?: string | null;
 	category?: CatalogServiceCategory;
 	amount?: number;
 	enrollmentMode?: CatalogEnrollmentMode;
@@ -73,6 +76,7 @@ export async function updateCatalogServiceMutation(input: {
 		requestId: crypto.randomUUID(),
 		id: input.id,
 		name: input.name?.trim(),
+		description: input.description,
 		category: input.category,
 		defaultPrice: input.amount,
 		enrollmentMode: input.enrollmentMode,

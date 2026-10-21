@@ -55,6 +55,7 @@ export function createEmptyDraft(): OnboardingDraft {
 			periods: createInitialPeriods('trimester', yearPreset.start, yearPreset.end),
 		},
 		structure: {
+			disciplineMappings: [],
 			models: [],
 			levels: [],
 		},
@@ -201,6 +202,7 @@ function normalizeDraft(raw: unknown): OnboardingDraft | null {
 			: empty.registeredSchoolId,
 		school: normalizeSchoolDraft(candidate.school ?? {}, empty.school),
 		structure: {
+			disciplineMappings: Array.isArray(candidate.structure?.disciplineMappings) ? candidate.structure.disciplineMappings.filter(mapping => mapping && typeof mapping.subjectCode === 'string').map(mapping => ({ subjectCode: mapping.subjectCode, disciplineCode: typeof mapping.disciplineCode === 'string' ? mapping.disciplineCode : '', disciplineName: typeof mapping.disciplineName === 'string' ? mapping.disciplineName : '' })) : [],
 			models: Array.isArray(candidate.structure?.models)
 				? candidate.structure.models.filter((entry): entry is 'college' | 'lycee' => entry === 'college' || entry === 'lycee')
 				: empty.structure.models,

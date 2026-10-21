@@ -37,6 +37,8 @@ export function buildSubjectSavePayload(
 		payload.createdAt = existing.createdAt;
 	}
 
+	if ('shortName' in updates)
+		payload.shortName = (updates as { shortName?: string | null }).shortName?.trim() || null;
 	return payload;
 }
 
@@ -50,6 +52,9 @@ export function buildSubjectConfigCommand(
 		createdAt?: string;
 		code?: string | null;
 		coefficient?: number | null;
+		disciplineId?: string | null;
+		shortName?: string | null;
+		isOptional?: boolean;
 	},
 ): SubjectConfigCommand {
 	const payload: SubjectConfigCommand = {
@@ -60,29 +65,20 @@ export function buildSubjectConfigCommand(
 		color: updates.color,
 	};
 
-	const code = (updates.code ?? existing?.code)?.trim() ?? '';
-	if (code.length > 0) {
-		payload.code = code;
-	}
-
-	const shortName = typeof existing?.shortName === 'string' ? existing.shortName.trim() : '';
-	if (shortName.length > 0) {
-		payload.shortName = shortName;
-	}
-
-	const coefficient = updates.coefficient ?? existing?.coefficient;
-	if (
-		typeof coefficient === 'number'
-		&& Number.isFinite(coefficient)
-		&& coefficient > 0
-	) {
-		payload.coefficient = coefficient;
-	}
-
+	if (updates.disciplineId !== undefined)
+		payload.disciplineId = updates.disciplineId;
+	if (updates.isOptional !== undefined)
+		payload.isOptional = updates.isOptional;
+	if (updates.code !== undefined)
+		payload.code = updates.code?.trim() || null;
+	if (updates.coefficient !== undefined)
+		payload.coefficient = updates.coefficient;
 	const createdAt = updates.createdAt ?? existing?.createdAt;
 	if (createdAt !== undefined && createdAt !== null) {
 		payload.createdAt = createdAt;
 	}
 
+	if ('shortName' in updates)
+		payload.shortName = (updates as { shortName?: string | null }).shortName?.trim() || null;
 	return payload;
 }

@@ -6,11 +6,9 @@
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import ListEntityTable from '$lib/components/ui/ListEntityTable.svelte';
-
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
-
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { downloadDocumentLabel } from '$lib/documents/titles';
@@ -34,36 +32,27 @@
 	const students = $derived(paymentPage.students);
 	const payments = $derived(paymentPage.payments);
 	const classes = $derived(academicContext.classes);
-
 	const initialFilters = $derived(readPaymentListFilters($page.url));
-
-	const listFilters = new ListFiltersState<{ q: string; status: string; class: string }>(
-		{
-			getUrl: () => $page.url,
-			write: writePaymentListFilters,
-			goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
-		},
-		() => readPaymentListFilters($page.url),
-	);
-
+	const listFilters = new ListFiltersState<{
+		q: string;
+		status: string;
+		class: string;
+	}>({
+		getUrl: () => $page.url,
+		write: writePaymentListFilters,
+		goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+	}, () => readPaymentListFilters($page.url));
 	const list = $derived(payments);
-
 	const statusKeys = ['all', 'recorded', 'reversed'] as const;
-
 	const classFilterOptions = $derived([
 		{ value: 'all', label: $t('common.allClasses') },
 		...classes.map(c => ({ value: c.id, label: c.name })),
 	]);
-
 	const statusFilterActive = $derived(listFilters.values.status !== 'all' ? 1 : 0);
-
-	const statusFilterOptions = $derived(
-		statusKeys.map(k => ({
-			value: k,
-			label: k === 'all' ? $t('filter.all') : $t(`payment.status.${k}`),
-		})),
-	);
-
+	const statusFilterOptions = $derived(statusKeys.map(k => ({
+		value: k,
+		label: k === 'all' ? $t('filter.all') : $t(`payment.status.${k}`),
+	})));
 	const modals = createUrlSyncedModals({
 		allowed: () => [...(hasPermission('PAYMENT_RECORD') ? ['payment'] as const : []), ...(hasPermission('PAYMENT_REVERSE') ? ['reverse', 'refund'] as const : [])],
 		owned: ['payment', 'reverse', 'refund'],
@@ -80,7 +69,6 @@
 			untrack(() => void paymentPage.loadRefundContext());
 	});
 	const reverseTarget = $derived(modals.active === 'reverse' ? modals.target : null);
-
 	$effect(() => {
 		const next = initialFilters;
 		listFilters.hydrate({
@@ -91,7 +79,6 @@
 			class: next.class,
 		});
 	});
-
 	$effect(() => {
 		if (!listFilters.ready) {
 			return;
@@ -133,40 +120,49 @@
 		{/snippet}
 	</ListPageHeader>
 
-	<ListEntityTable rows={list} columns={[{ key: 'date', label: $t('events.date'), span: 2 }, { key: 'student', label: $t('events.student'), span: 4 }, { key: 'kind', label: $t('payment.kindLabel'), span: 2 }, { key: 'amount', label: $t('payment.amount'), span: 2 }, { key: 'status', label: $t('students.status'), span: 2 }]} total={paymentPage.slice?.total ?? 0} visibleCount={list.length} hasMore={list.length < (paymentPage.slice?.total ?? 0)} loadingMore={paymentPage.loadingMore} onLoadMore={() => void paymentPage.loadMore()}>
-		{#snippet row(payment)}
+	<ListEntityTable listKey="PaymentsList" rows={list} columns={[{ key: 'date', label: $t('events.date'), span: 2 }, { key: 'student', label: $t('events.student'), span: 4 }, { key: 'kind', label: $t('payment.kindLabel'), span: 2 }, { key: 'amount', label: $t('payment.amount'), span: 2 }, { key: 'status', label: $t('students.status'), span: 2 }, { key: 'details', label: $t('profile.additionalFields'), span: 3, defaultVisible: false }, { key: 'actions', label: '', span: 1 }]} total={paymentPage.slice?.total ?? 0} visibleCount={list.length} hasMore={list.length < (paymentPage.slice?.total ?? 0)} loadingMore={paymentPage.loadingMore} onLoadMore={() => void paymentPage.loadMore()}>
+		{#snippet cell(payment, column, _ctx)}
 			{@const student = students.find(entry => entry.id === payment.studentId)}
-			<div class="col-span-2 font-sans tabular-nums text-xs text-muted-foreground">
-				{formatPaymentCivilDate(payment.paymentDate, $locale)}
-			</div>
-			<div class="col-span-4 text-sm font-medium">{payment.studentName || student?.name || payment.studentId}</div>
-			<div class="col-span-2 min-w-0">
-				<p class="truncate text-sm text-foreground/70">
-					{$t(`payment.kind.${payment.kind}`)}
-				</p>
-				<p class="truncate font-sans text-[10px] uppercase tracking-wider text-muted-foreground">
-					{$t(`payment.method.${payment.method}`)}
-				</p>
-			</div>
-			<div class="col-span-2 text-right font-sans text-sm font-semibold tabular-nums">
-				{formatMinorUnits(payment.amount, payment.currency, $locale)}
-			</div>
-			<div class="col-span-2 flex items-center justify-end gap-1">
-				{#if payment.status === 'reversed'}
-					<span
-						class="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
-					>
-						<Clock class="h-3 w-3" />
-						{$t('payment.status.reversed')}
-					</span>
-				{:else}
-					<span
-						class="flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-medium text-accent-foreground"
-					>
-						<Check class="h-3 w-3" />
-						{$t('payment.status.recorded')}
-					</span>
-				{/if}
+			{#if column.key === 'date'}
+				<div class="col-span-2 font-sans tabular-nums text-xs text-muted-foreground">
+					{formatPaymentCivilDate(payment.paymentDate, $locale)}
+				</div>
+			{:else if column.key === 'student'}
+				<div class="col-span-4 text-sm font-medium">{payment.studentName || student?.name || payment.studentId}</div>
+			{:else if column.key === 'kind'}
+				<div class="col-span-2 min-w-0">
+					<p class="truncate text-sm text-foreground/70">
+						{$t(`payment.kind.${payment.kind}`)}
+					</p>
+					<p class="truncate font-sans text-[10px] uppercase tracking-wider text-muted-foreground">
+						{$t(`payment.method.${payment.method}`)}
+					</p>
+				</div>
+			{:else if column.key === 'amount'}
+				<div class="col-span-2 text-right font-sans text-sm font-semibold tabular-nums">
+					{formatMinorUnits(payment.amount, payment.currency, $locale)}
+				</div>
+			{:else if column.key === 'status'}
+				<div class="col-span-2 flex items-center justify-end gap-1">
+					{#if payment.status === 'reversed'}
+						<span
+							class="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+						>
+							<Clock class="h-3 w-3" />
+							{$t('payment.status.reversed')}
+						</span>
+					{:else}
+						<span
+							class="flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-medium text-accent-foreground"
+						>
+							<Check class="h-3 w-3" />
+							{$t('payment.status.recorded')}
+						</span>
+					{/if}
+				</div>
+			{:else if column.key === 'details'}
+				<dl class="space-y-1 text-xs">{#each [['profile.reference', payment.reference], ['profile.notes', payment.notes], ['profile.reversesPayment', payment.reversesPaymentId], ['profile.reversedByPayment', payment.reversedByPaymentId], ['profile.reversedAt', payment.reversedAt], ['profile.recordedBy', payment.recordedById], ['profile.reversedBy', payment.reversedById]] as [label, value] (label)}<div><dt class="text-muted-foreground">{$t(label ?? '')}</dt><dd>{value || $t('profile.notProvided')}</dd></div>{/each}</dl>
+			{:else if column.key === 'actions'}<div class="flex justify-end">
 				{#if payment.status === 'recorded'}
 					<RowActionMenu>
 						<PermissionGate permission="PAYMENT_READ">
@@ -215,6 +211,7 @@
 					</RowActionMenu>
 				{/if}
 			</div>
+			{/if}
 		{/snippet}
 	</ListEntityTable>
 	{#if paymentPage.moreError}<Button variant="outline" onclick={() => paymentPage.loadMore()}>{$t('dataState.retry')}</Button>{/if}

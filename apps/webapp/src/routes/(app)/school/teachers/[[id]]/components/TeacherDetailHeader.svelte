@@ -16,19 +16,16 @@
 	import { getTeachersPageState } from '../../teachers-page.svelte';
 	import TeacherProfileEditModal from './TeacherProfileEditModal.svelte';
 
-	const {
-		teacher,
-		onDeleted,
-	}: {
+	const { teacher, onDeleted }: {
 		teacher: Teacher;
 		onDeleted?: () => void;
 	} = $props();
-
 	const teachersPage = getTeachersPageState();
-
 	const modals = createUrlSyncedModals({
 		allowed: [
 			'edit-profile',
+			'edit-annual-profile',
+			'remove-annual-profile',
 			'delete',
 			'add-unavailability',
 			'edit-unavailability',
@@ -45,11 +42,9 @@
 	});
 	const editProfileOpen = bindUrlModal(modals, 'edit-profile');
 	const deleteOpen = bindUrlModal(modals, 'delete');
-
 	const canChangePhoto = $derived(canUploadProfilePhoto('STAFF_MANAGE'));
 	let deleteBusy = $state(false);
 	const assignmentCount = $derived(teachersPage.assignmentCount(teacher.id) ?? 0);
-
 	async function handlePhotoChange(file: File) {
 		return teachersPage.updateProfilePhoto({
 			teacherId: teacher.id,
@@ -57,7 +52,6 @@
 			successMessage: get(t)('profilePhoto.updateSuccess'),
 		});
 	}
-
 	async function confirmDelete() {
 		deleteBusy = true;
 		try {

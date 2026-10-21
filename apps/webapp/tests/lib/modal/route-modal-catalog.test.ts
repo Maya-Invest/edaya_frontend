@@ -6,7 +6,7 @@ import { describe, expect, it } from 'bun:test';
 
 const STUDENT_DETAIL_MODALS = [
 	'create',
-	'edit-profile',
+	'edit-profile', 'edit-annual-profile', 'remove-annual-profile', 'guardian-relationship', 'enrollment-progression',
 	'edit-health',
 	'change-class',
 	'link-guardian',
@@ -24,7 +24,7 @@ const routeCases = [
 	['class-students-list', '/classes/class-1/students', ['create']],
 	['class-students-detail', '/classes/class-1/students/student-1/profile', [...STUDENT_DETAIL_MODALS, 'generate-document', 'void-document', 'annual-report-card']],
 	['school-guardians-list', '/school/guardians', ['create']],
-	['school-guardians-detail', '/school/guardians/guardian-1', ['create', 'edit-profile', 'delete']],
+	['school-guardians-detail', '/school/guardians/guardian-1', ['create', 'edit-profile', 'guardian-relationship', 'delete']],
 	['school-staff-list', '/school/staff', ['create']],
 	['school-staff-detail', '/school/staff/staff-1/profile', ['create', 'edit-profile', 'delete']],
 	['school-staff-permissions', '/school/staff/staff-1/permissions', ['add-permission', 'delete-permission', 'apply-profile', 'remove-profile', 'default-scopes']],
@@ -34,7 +34,7 @@ const routeCases = [
 		'/school/teachers/teacher-1/availability',
 		[
 			'create',
-			'edit-profile',
+			'edit-profile', 'edit-annual-profile', 'remove-annual-profile',
 			'delete',
 			'add-unavailability',
 			'edit-unavailability',
@@ -96,7 +96,7 @@ const routeCases = [
 			'reschedule',
 			'edit-event',
 			'cancel',
-			'session-attendance',
+			'session-attendance', 'attendance-review',
 			'session-logbook',
 		],
 	],
@@ -116,8 +116,8 @@ const routeCases = [
 		'/classes/class-1/teaching/subject-1/progression',
 		['add-chapter', 'edit-chapter', 'delete-chapter'],
 	],
-	['class-attendance-detail', '/classes/class-1/attendance/day-1', ['record-attendance']],
-	['configuration-school', '/configuration/school', ['identity', 'issuing', 'location', 'assets']],
+	['class-attendance-detail', '/classes/class-1/attendance/day-1', ['record-attendance', 'attendance-review']],
+	['configuration-school', '/configuration/school', ['identity', 'issuing', 'location', 'assets', 'timetable-settings']],
 	[
 		'configuration-academic',
 		'/configuration/academic',

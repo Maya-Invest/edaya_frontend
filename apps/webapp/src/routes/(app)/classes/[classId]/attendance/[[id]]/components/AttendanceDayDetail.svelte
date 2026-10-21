@@ -12,18 +12,19 @@
 	import { Check, ClipboardCheck } from '$lib/icons';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import AttendanceReview from '$lib/smart-components/attendance-review/AttendanceReview.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getAttendanceDayDetailState } from '../attendance-day-detail.svelte';
 	import AttendanceDayRecordModal from './AttendanceDayRecordModal.svelte';
 
-	const { day }: { day: AttendanceDay } = $props();
-
-	type AttendanceDayDrawerModal = 'record-attendance';
-
+	const { day }: {
+		day: AttendanceDay;
+	} = $props();
+	type AttendanceDayDrawerModal = 'record-attendance' | 'attendance-review';
 	const detailState = getAttendanceDayDetailState();
 	const modals = createUrlSyncedModals<AttendanceDayDrawerModal>({
-		allowed: ['record-attendance'],
+		allowed: ['record-attendance', 'attendance-review'],
 		getUrl: () => $page.url,
 	});
 	setDrawerUrlModals(modals);
@@ -31,22 +32,15 @@
 		modals.hydrate();
 	});
 	const recordAttendanceOpen = bindUrlModal(modals, 'record-attendance');
-
 	const statusTone: Record<SessionAttendanceStatus, string> = {
 		present: 'bg-secondary text-foreground/80',
 		absent: 'bg-highlight-soft text-destructive',
 		late: 'bg-highlight-soft text-highlight',
 	};
-
 	const attendanceRows = $derived(detailState.attendanceFor(day.id));
 	const recordedCount = $derived(attendanceRows.filter(row => row.status).length);
-	const unrecordedStudentIds = $derived(
-		attendanceRows.filter(row => !row.status).map(row => row.studentId),
-	);
-
-	const recordTargetRow = $derived(
-		modals.target ? attendanceRows.find(row => row.studentId === modals.target) : undefined,
-	);
+	const unrecordedStudentIds = $derived(attendanceRows.filter(row => !row.status).map(row => row.studentId));
+	const recordTargetRow = $derived(modals.target ? attendanceRows.find(row => row.studentId === modals.target) : undefined);
 	$effect(() => {
 		if (!modals.ready || modals.active !== 'record-attendance') {
 			return;
@@ -59,19 +53,13 @@
 			modals.close();
 		}
 	});
-
 	let bulkBusy = $state(false);
-
 	async function markAllPresent() {
 		if (unrecordedStudentIds.length === 0) {
 			return;
 		}
-
 		bulkBusy = true;
-		const attendanceByStudent = Object.fromEntries(
-			unrecordedStudentIds.map(studentId => [studentId, 'present' as const]),
-		) satisfies Record<string, SessionAttendanceStatus>;
-
+		const attendanceByStudent = Object.fromEntries(unrecordedStudentIds.map(studentId => [studentId, 'present' as const])) satisfies Record<string, SessionAttendanceStatus>;
 		await detailState.recordBulkAttendance({
 			day,
 			attendanceByStudent,
@@ -79,15 +67,12 @@
 		});
 		bulkBusy = false;
 	}
-
-	const formattedDate = $derived(
-		formatLocaleDate(day.date, $locale, {
-			weekday: 'long',
-			day: 'numeric',
-			month: 'long',
-			year: 'numeric',
-		}),
-	);
+	const formattedDate = $derived(formatLocaleDate(day.date, $locale, {
+		weekday: 'long',
+		day: 'numeric',
+		month: 'long',
+		year: 'numeric',
+	}));
 </script>
 
 <div class="flex min-h-0 flex-col">
@@ -155,6 +140,7 @@
 								<p class="text-sm font-medium">{row.studentName}</p>
 							</div>
 							<div class="flex items-center gap-2">
+								{#if row.attendanceId}<AttendanceReview recordId={row.attendanceId} classId={day.classId} />{/if}
 								{#if row.status}
 									<span
 										class={cn(

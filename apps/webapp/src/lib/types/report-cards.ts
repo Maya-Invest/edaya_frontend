@@ -90,6 +90,7 @@ export interface ReportCommentSection {
 }
 
 export interface ReportCardResult {
+	publicationHistory?: components['schemas']['ReportCardResult']['publicationHistory'];
 	passThreshold?: number | null;
 	grading?: components['schemas']['ReportCardResult']['grading'];
 	aggregateLabel?: string;

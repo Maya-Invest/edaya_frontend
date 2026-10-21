@@ -20,6 +20,7 @@ export async function createAssessmentMutation(input: {
 	classSubjectId: string;
 	title: string;
 	description?: string;
+	attachments?: Evaluation['attachments'];
 	maxScore: number;
 	coefficient?: number;
 	kind?: Evaluation['kind'];
@@ -62,7 +63,7 @@ export async function createAssessmentMutation(input: {
 		kind,
 		maxScore: input.maxScore,
 		coefficient: input.coefficient ?? 1,
-		attachments: [],
+		attachments: input.attachments ?? [],
 		createdAt: new Date().toISOString(),
 		dueAt: timing.dueAt,
 		startsAt: timing.startsAt,
@@ -79,6 +80,7 @@ export async function updateAssessmentMutation(input: {
 	assessmentId: string;
 	title: string;
 	description?: string;
+	attachments?: Evaluation['attachments'];
 	dueDate?: string;
 	startsAt?: string | null;
 	endsAt?: string | null;
@@ -114,6 +116,7 @@ export async function updateAssessmentMutation(input: {
 			kind: existing.kind,
 			maxScore: input.maxScore ?? existing.maxScore,
 			coefficient: input.coefficient ?? existing.coefficient,
+			attachments: input.attachments ?? existing.attachments,
 			dueAt: timing.dueAt,
 			startsAt: timing.startsAt,
 			endsAt: timing.endsAt,

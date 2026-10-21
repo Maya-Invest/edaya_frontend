@@ -4,6 +4,7 @@
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
+	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
@@ -16,45 +17,41 @@
 
 	const INVOLVEMENT_ROLES: IncidentInvolvementRole[] = ['subject', 'witness', 'victim'];
 	const NO_SANCTION = '__none__';
-
 	type ResolveRow = {
 		key: string;
 		studentId: string;
 		role: IncidentInvolvementRole;
 		involvementId?: string;
+		notes?: string;
 		disciplinaryActionId: string;
+		sanctionStartsAt?: string;
+		sanctionEndsAt?: string;
+		sanctionNotes?: string;
 	};
-
-	let {
-		incident,
-		open = $bindable(false),
-		onResolved,
-	}: {
+	let { incident, open = $bindable(false), onResolved }: {
 		incident: Incident;
 		open?: boolean;
 		onResolved?: () => void;
 	} = $props();
-
 	const eventsPage = getEventsPageState();
-
 	let busy = $state(false);
 	let loading = $state(false);
 	let rows = $state<ResolveRow[]>([]);
 	let resolutionNotes = $state('');
 	let classGroupId = $state<string | undefined>(undefined);
 	const canAddParticipant = $derived(hasPermission('DISCIPLINE_CREATE', { classId: classGroupId }));
-	const canEditParticipant = $derived(hasPermission('DISCIPLINE_MANAGE'));
-	let disciplinaryActions = $state<Array<{ id: string; name: string }>>([]);
-
-	const canSubmit = $derived(!loading && rows.length > 0 && rows.every(row => row.studentId.length > 0));
-
+	const canEditParticipant = $derived(hasPermission('DISCIPLINE_MANAGE', { classId: classGroupId }));
+	let disciplinaryActions = $state<Array<{
+		id: string;
+		name: string;
+	}>>([]);
+	const canSubmit = $derived(!loading && rows.length > 0 && rows.every(row => row.studentId.length > 0 && (!row.sanctionStartsAt || !row.sanctionEndsAt || row.sanctionStartsAt <= row.sanctionEndsAt)));
 	function excludeStudentIds(currentKey: string) {
 		return rows
 			.filter(row => row.key !== currentKey)
 			.map(row => row.studentId)
 			.filter(Boolean);
 	}
-
 	function resetRows() {
 		rows = [{
 			key: `row-${incident.studentId}`,
@@ -65,7 +62,6 @@
 		resolutionNotes = '';
 		disciplinaryActions = [];
 	}
-
 	async function loadModalData() {
 		loading = true;
 		try {
@@ -81,6 +77,7 @@
 					studentId: involvement.studentId,
 					role: involvement.role,
 					involvementId: involvement.id,
+					notes: involvement.notes ?? '',
 					disciplinaryActionId: NO_SANCTION,
 				}))
 				: [{
@@ -100,13 +97,11 @@
 			loading = false;
 		}
 	}
-
 	$effect(() => {
 		if (open) {
 			void loadModalData();
 		}
 	});
-
 	function addRow() {
 		rows = [...rows, {
 			key: `row-${Date.now()}`,
@@ -115,23 +110,19 @@
 			disciplinaryActionId: NO_SANCTION,
 		}];
 	}
-
 	function removeRow(key: string) {
 		if (rows.length <= 1) {
 			return;
 		}
 		rows = rows.filter(row => row.key !== key);
 	}
-
 	function updateRow(key: string, patch: Partial<ResolveRow>) {
 		rows = rows.map(row => row.key === key ? { ...row, ...patch } : row);
 	}
-
 	async function submit() {
 		if (!canSubmit) {
 			return;
 		}
-
 		busy = true;
 		try {
 			const ok = await eventsPage.resolveIncidentWithOutcomes({
@@ -141,6 +132,10 @@
 					studentId: row.studentId,
 					role: row.role,
 					involvementId: row.involvementId,
+					notes: row.notes,
+					sanctionStartsAt: row.sanctionStartsAt,
+					sanctionEndsAt: row.sanctionEndsAt,
+					sanctionNotes: row.sanctionNotes,
 					disciplinaryActionId: row.disciplinaryActionId === NO_SANCTION
 						? undefined
 						: row.disciplinaryActionId,
@@ -241,6 +236,7 @@
 										</Select.Content>
 									</Select.Root>
 								</div>
+								<label class="block">{$t('profile.notes')}<Textarea value={row.notes ?? ''} disabled={row.involvementId ? !canEditParticipant : !canAddParticipant} oninput={event => updateRow(row.key, { notes: event.currentTarget.value })} /></label>
 								<div class="space-y-1.5">
 									<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 										{$t('events.disciplinaryAction')}
@@ -269,6 +265,8 @@
 										</Select.Content>
 									</Select.Root>
 								</div>
+								{#if row.disciplinaryActionId !== NO_SANCTION}<div class="grid gap-2 sm:grid-cols-2"><label>{$t('profile.startsAt')}<Input type="date" value={row.sanctionStartsAt ?? ''} oninput={event => updateRow(row.key, { sanctionStartsAt: event.currentTarget.value })} /></label><label>{$t('profile.endsAt')}<Input type="date" value={row.sanctionEndsAt ?? ''} oninput={event => updateRow(row.key, { sanctionEndsAt: event.currentTarget.value })} /></label><label class="sm:col-span-2">{$t('profile.sanctionNotes')}<Textarea value={row.sanctionNotes ?? ''} oninput={event => updateRow(row.key, { sanctionNotes: event.currentTarget.value })} /></label></div>{/if}
+
 							</div>
 						</div>
 					{/each}

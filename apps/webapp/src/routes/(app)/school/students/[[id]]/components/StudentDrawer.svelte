@@ -21,36 +21,22 @@
 	import StudentDetailHeader from './StudentDetailHeader.svelte';
 	import StudentDetailTabBar from './StudentDetailTabBar.svelte';
 
-	type StudentDrawerModal
-		= | 'edit-profile'
-			| 'edit-health'
-			| 'change-class'
-			| 'link-guardian'
-			| 'note'
-			| 'edit-note'
-			| 'add-absence'
-			| 'add-incident'
-			| 'approve-photo'
-			| 'reject-photo';
-
-	const {
-		student,
-		loading = false,
-		onClose,
-		children,
-	}: {
+	type StudentDrawerModal = 'edit-profile' | 'edit-annual-profile' | 'remove-annual-profile' | 'guardian-relationship' | 'enrollment-progression' | 'edit-health' | 'change-class' | 'link-guardian' | 'note' | 'edit-note' | 'add-absence' | 'add-incident' | 'approve-photo' | 'reject-photo';
+	const { student, loading = false, onClose, children }: {
 		student?: Student;
 		loading?: boolean;
 		onClose: () => void;
 		children: Snippet;
 	} = $props();
-
 	const profileTab = getStudentProfileTabState();
 	const studentsPage = getStudentsPageState();
-
 	const modals = createUrlSyncedModals<StudentDrawerModal>({
 		allowed: [
 			'edit-profile',
+			'edit-annual-profile',
+			'remove-annual-profile',
+			'guardian-relationship',
+			'enrollment-progression',
 			'edit-health',
 			'change-class',
 			'link-guardian',
@@ -76,19 +62,13 @@
 	const addIncidentOpen = bindUrlModal(modals, 'add-incident');
 	const approvePhotoOpen = bindUrlModal(modals, 'approve-photo');
 	const rejectPhotoOpen = bindUrlModal(modals, 'reject-photo');
-
-	const editingNote = $derived(
-		student && modals.active === 'edit-note' && modals.target
-			? profileTab.notesFor(student.id).find(note => note.id === modals.target)
-			: undefined,
-	);
+	const editingNote = $derived(student && modals.active === 'edit-note' && modals.target
+		? profileTab.notesFor(student.id).find(note => note.id === modals.target)
+		: undefined);
 	const canUpdateHealth = $derived(hasPermission('STUDENT_HEALTH_UPDATE'));
 	const pendingPhoto = $derived(student ? studentsPage.pendingPhotoFor(student.id) : undefined);
 	let photoReviewBusy = $state(false);
-	const closeHealthModal = $derived(
-		shouldCloseStudentHealthModal(modals.active, $page.route.id, canUpdateHealth),
-	);
-
+	const closeHealthModal = $derived(shouldCloseStudentHealthModal(modals.active, $page.route.id, canUpdateHealth));
 	$effect(() => {
 		if (!modals.ready || !student) {
 			return;
@@ -118,13 +98,11 @@
 			modals.close();
 		}
 	});
-
 	function handleKeydown(event: KeyboardEvent) {
 		if (event.key === 'Escape') {
 			onClose();
 		}
 	}
-
 	async function approvePendingPhoto() {
 		if (!student || photoReviewBusy) {
 			return;
@@ -143,7 +121,6 @@
 			photoReviewBusy = false;
 		}
 	}
-
 	async function rejectPendingPhoto(reason: string) {
 		if (!student || photoReviewBusy) {
 			return;

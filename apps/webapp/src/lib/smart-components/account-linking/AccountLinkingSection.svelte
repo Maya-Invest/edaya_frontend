@@ -11,21 +11,13 @@
 	import { AccountLinkingState } from './account-linking-state.svelte';
 
 	type InvitationKind = components['schemas']['SendAccountInvitationCommand']['kind'];
-
-	const {
-		kind,
-		targetId,
-		subjectId = null,
-		contactEmail = '',
-		displayName,
-	}: {
+	const { kind, targetId, subjectId = null, contactEmail = '', displayName }: {
 		kind: InvitationKind;
 		targetId: string;
 		subjectId?: string | null;
 		contactEmail?: string;
 		displayName: string;
 	} = $props();
-
 	const state = new AccountLinkingState(() => ({ kind, targetId, subjectId, contactEmail, displayName }));
 	const linkStatus = $derived(state.linkStatus);
 	$effect(() => {
@@ -35,23 +27,16 @@
 		void state.loadPending();
 		return () => state.cancelPending();
 	});
-
-	const statusLabel = $derived(
-		linkStatus === 'linked'
-			? $t('invitation.status.linked')
-			: linkStatus === 'pending'
-			? $t('invitation.status.pending')
-			: $t('invitation.status.notLinked'),
-	);
-
-	const statusTone = $derived(
-		linkStatus === 'linked'
-			? 'text-emerald-700 bg-emerald-500/10 border-emerald-500/20'
-			: linkStatus === 'pending'
-			? 'text-amber-800 bg-amber-500/10 border-amber-500/20'
-			: 'text-muted-foreground bg-secondary/50 border-border',
-	);
-
+	const statusLabel = $derived(linkStatus === 'linked'
+		? $t('invitation.status.linked')
+		: linkStatus === 'pending'
+		? $t('invitation.status.pending')
+		: $t('invitation.status.notLinked'));
+	const statusTone = $derived(linkStatus === 'linked'
+		? 'text-emerald-700 bg-emerald-500/10 border-emerald-500/20'
+		: linkStatus === 'pending'
+		? 'text-amber-800 bg-amber-500/10 border-amber-500/20'
+		: 'text-muted-foreground bg-secondary/50 border-border');
 	async function copyInviteLink() {
 		if (!state.lastInviteUrl) {
 			return;
@@ -142,4 +127,24 @@
 			</div>
 		{/if}
 	{/if}
+	<PermissionGate permission="ACCESS_CONTROL_MANAGE">
+		<details class="space-y-2 rounded-lg border p-3" ontoggle={(event) => {
+			if (event.currentTarget.open)
+				void state.loadHistory();
+		}}>
+			<summary class="cursor-pointer text-sm font-medium">{$t('profile.invitationHistory')}</summary>
+			{#if state.historyLoading}<p class="text-xs">{$t('dataState.loading')}</p>{:else if state.historyError}<p class="text-xs" role="alert">{$t('dataState.error')}</p>{:else if !state.history.length}<p class="text-xs">{$t('profile.notProvided')}</p>{:else}
+				{#each state.history as invitation (invitation.id)}
+					<dl class="space-y-1 rounded-lg border p-2 text-xs">
+						<div><dt class="text-muted-foreground">{$t('common.status')}</dt><dd>{$t(`profile.invitationStatus.${invitation.status}`)}</dd></div>
+						<div><dt class="text-muted-foreground">{$t('profile.contactMethods')}</dt><dd>{invitation.contactChannel} · {invitation.contactValue}</dd></div>
+						<div><dt class="text-muted-foreground">{$t('profile.createdAt')}</dt><dd>{String(invitation.createdAt)} · {invitation.createdByStaffId}</dd></div>
+						<div><dt class="text-muted-foreground">{$t('profile.invitationExpiry')}</dt><dd>{String(invitation.expiresAt)}</dd></div>
+						{#if invitation.lastSentAt}<div><dt class="text-muted-foreground">{$t('profile.lastSentAt')}</dt><dd>{String(invitation.lastSentAt)}</dd></div>{/if}
+						{#if invitation.acceptedAt}<div><dt class="text-muted-foreground">{$t('profile.acceptedAt')}</dt><dd>{String(invitation.acceptedAt)}</dd></div>{/if}
+					</dl>
+				{/each}
+			{/if}
+		</details>
+	</PermissionGate>
 </div>

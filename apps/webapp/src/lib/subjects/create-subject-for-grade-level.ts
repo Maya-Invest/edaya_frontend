@@ -10,6 +10,10 @@ export interface CreateSubjectForGradeLevelInput {
 	subjectId: string;
 	classSubjectIdsByClassGroupId: Record<string, string>;
 	name: string;
+	disciplineId?: string | null;
+	shortName?: string | null;
+	isOptional?: boolean;
+
 	code?: string;
 	coefficient?: number;
 	categoryId: string;
@@ -53,6 +57,9 @@ export async function createSubjectForGradeLevel(
 		academicYearId: input.academicYearId,
 		classSubjectIdsByClassGroupId: input.classSubjectIdsByClassGroupId,
 		name: input.name.trim(),
+		disciplineId: input.disciplineId,
+		shortName: input.shortName,
+		isOptional: input.isOptional,
 		categoryId: input.categoryId,
 		color: input.color ?? 'mint',
 		...(code ? { code } : {}),

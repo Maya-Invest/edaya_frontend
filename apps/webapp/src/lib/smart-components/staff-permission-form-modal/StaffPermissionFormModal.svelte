@@ -10,6 +10,7 @@
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
+	import { localDateTimeInput, localDateTimeValue } from '$lib/date/temporal-inputs';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle } from '$lib/icons';
 	import { PermissionImpactPreviewState } from '$lib/school/permission-impact-preview-state.svelte';
@@ -19,12 +20,7 @@
 	import { get } from 'svelte/store';
 	import { StaffPermissionFormModalState } from './staff-permission-form-modal-state.svelte';
 
-	let {
-		open = $bindable(false),
-		staff,
-		assignment = null,
-		onSave,
-	}: {
+	let { open = $bindable(false), staff, assignment = null, onSave }: {
 		open?: boolean;
 		staff: StaffMember;
 		assignment?: StaffPermissionAssignmentView | null;
@@ -33,19 +29,18 @@
 			successMessage: string;
 		}) => Promise<boolean>;
 	} = $props();
-
 	const modalState = new StaffPermissionFormModalState();
-
 	let saving = $state(false);
 	const preview = new PermissionImpactPreviewState();
 	const busy = $derived(saving || preview.loading);
 	let permission = $state<StaffPermissionAssignmentView['permission'] | ''>('');
 	let scopes = $state<UserScopeSelection[]>([]);
 	let useDefaultScopes = $state(true);
-
+	let startsAt = $state('');
+	let endsAt = $state('');
+	let status = $state<StaffPermissionAssignmentView['status']>('active');
 	const catalog = $derived(modalState.catalog);
 	const selectedEntry = $derived(catalog.find(entry => entry.permission === permission));
-
 	let assignmentId = $state('');
 	const subjectClassRequired = $derived(requiresSubjectClass(selectedEntry ? [selectedEntry] : []));
 	const payload = $derived(permission
@@ -56,7 +51,7 @@
 			scopes,
 			customScopes: selectedEntry?.scopePolicy.mode === 'none' ? [] : scopes,
 			useDefaultScopes: selectedEntry?.scopePolicy.mode === 'resources' && useDefaultScopes,
-		}), startsAt: assignment?.startsAt, endsAt: assignment?.endsAt, status: assignment?.status ?? 'active' }
+		}), startsAt: localDateTimeValue(startsAt, assignment?.startsAt), endsAt: localDateTimeValue(endsAt, assignment?.endsAt), status }
 		: null);
 	const snapshot = $derived(payload
 		? {
@@ -74,13 +69,11 @@
 		: null);
 	const reviewed = $derived(preview.reviewed(snapshot));
 	$effect(() => preview.synchronize(open, snapshot));
-
 	$effect(() => {
 		if (open) {
 			void modalState.ensureLoaded();
 		}
 	});
-
 	$effect(() => {
 		const target = [open, staff.id, assignment, academicContext.yearId, authSession.schoolId];
 		untrack(() => {
@@ -89,19 +82,19 @@
 				return;
 			assignmentId = assignment?.id ?? crypto.randomUUID();
 			permission = assignment?.permission ?? '';
+			startsAt = localDateTimeInput(assignment?.startsAt);
+			endsAt = localDateTimeInput(assignment?.endsAt);
+			status = assignment?.status ?? 'active';
 			scopes = [...(assignment?.customScopes ?? assignment?.scopes ?? [])].filter(scope => scope.kind !== 'school');
 			useDefaultScopes = assignment?.useDefaultScopes ?? true;
 		});
 		return () => preview.reset();
 	});
-
-	const canSubmit = $derived(Boolean(permission) && selectedEntry?.staffAssignable === true && scopeSelectionsComplete(scopes, subjectClassRequired) && !modalState.loading);
-
+	const canSubmit = $derived(Boolean(permission) && selectedEntry?.staffAssignable === true && scopeSelectionsComplete(scopes, subjectClassRequired) && !modalState.loading && (!startsAt || !endsAt || startsAt <= endsAt));
 	async function submit() {
 		if (!canSubmit || !permission || busy || !payload || !snapshot) {
 			return;
 		}
-
 		if (!reviewed) {
 			await preview.review(snapshot, command => modalState.previewAssignment(command), () => snapshot!, () => open);
 			return;
@@ -111,19 +104,19 @@
 			const successMessage = get(t)('roles.permissionSaved', {
 				permission: formatPermissionLabel(permission, get(t)),
 			});
-
 			const ok = onSave
 				? await onSave({ assignment: payload, successMessage })
 				: await modalState.saveStaffPermissionAssignmentMutation({
 					assignment: payload,
 					successMessage,
 				});
-
 			if (ok) {
 				open = false;
 			}
 		}
-		finally { saving = false; }
+		finally {
+			saving = false;
+		}
 	}
 </script>
 
@@ -168,6 +161,12 @@
 					<PermissionScopeSelections {subjectClassRequired} bind:scopes grains={selectedEntry ? permissionSelectionGrains(selectedEntry) : []} active={open} />
 				</div>
 			{/if}
+			<div class="grid gap-3 sm:grid-cols-2">
+				<label>{$t('profile.startsAt')}<input type="datetime-local" step="1" bind:value={startsAt} class="h-10 w-full rounded-lg border bg-background px-3" /></label>
+				<label>{$t('profile.endsAt')}<input type="datetime-local" step="1" bind:value={endsAt} class="h-10 w-full rounded-lg border bg-background px-3" /></label>
+				<label>{$t('common.status')}<select bind:value={status} class="h-10 w-full rounded-lg border bg-background px-3">{#each ['active', 'inactive', 'expired'] as value (value)}<option {value}>{$t(`profile.assignmentStatus.${value}`)}</option>{/each}</select></label>
+			</div>
+
 			{#if reviewed && preview.report}<PermissionResolutionPreview report={preview.report} />{/if}
 		{/if}
 	</div>

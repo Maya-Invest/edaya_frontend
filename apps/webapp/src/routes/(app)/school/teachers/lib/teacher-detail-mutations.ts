@@ -7,6 +7,7 @@ import { updateTeacherProfilePhotoMutation } from '$lib/api/mutations/profile-ph
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { mapTeacher } from '$lib/api/teachers-data';
 import { authSession } from '$lib/auth/session.svelte';
+import { teacherIdentityPayload } from '$lib/people-profile-fields';
 import { runTeacherRouteMutation } from './teacher-route-mutation';
 import { buildTeacherUnavailabilityPayload } from './teacher-unavailability';
 
@@ -29,6 +30,7 @@ function teacherInitials(firstName: string, lastName: string): string {
 
 function buildOptimisticTeacher(input: {
 	id: string;
+	profile?: Record<string, string>;
 	firstName: string;
 	lastName: string;
 	code?: string;
@@ -38,7 +40,10 @@ function buildOptimisticTeacher(input: {
 	const email = input.email?.trim() ?? '';
 	const phone = input.phone?.trim() ?? '';
 	return {
+		...teacherIdentityPayload(input.profile),
 		id: input.id,
+		firstName: input.firstName.trim(),
+		lastName: input.lastName.trim(),
 		name: `${input.firstName.trim()} ${input.lastName.trim()}`,
 		initials: teacherInitials(input.firstName, input.lastName),
 		photoUrl: null,
@@ -54,6 +59,7 @@ export async function createTeacherOnPage(
 	state: TeachersPageState,
 	input: {
 		firstName: string;
+		profile?: Record<string, string>;
 		lastName: string;
 		code?: string;
 		email?: string;
@@ -72,6 +78,7 @@ export async function createTeacherOnPage(
 		request: () => client.commands.registerTeacher({
 			id,
 			schoolId: schoolId(),
+			...teacherIdentityPayload(input.profile),
 			firstName: input.firstName.trim(),
 			lastName: input.lastName.trim(),
 			...(code ? { code } : {}),
@@ -111,6 +118,7 @@ export async function updateTeacherProfileOnPage(
 	state: TeachersPageState,
 	input: {
 		teacherId: string;
+		profile?: Record<string, string>;
 		firstName: string;
 		lastName: string;
 		email?: string;
@@ -129,6 +137,7 @@ export async function updateTeacherProfileOnPage(
 	}
 
 	const patch = {
+		...teacherIdentityPayload(input.profile),
 		firstName: input.firstName.trim(),
 		lastName: input.lastName.trim(),
 		email: input.email?.trim() || null,
@@ -242,16 +251,24 @@ export function createTeacherAssignmentPayload(input: {
 	kind: TeacherAssignment['kind'];
 	classSubjectId?: string | null;
 	classGroupId?: string | null;
+	responsibility?: string | null;
+	startsAt?: string | null;
+	endsAt?: string | null;
+	status?: TeacherAssignment['status'];
+	original?: TeacherAssignment;
 }): TeacherAssignment {
 	return {
+		...input.original,
 		id: input.id,
 		teacherId: input.teacherId,
 		academicYearId: academicYearId(),
 		kind: input.kind,
 		classSubjectId: input.kind === 'subject' ? (input.classSubjectId ?? null) : null,
 		classGroupId: input.classGroupId ?? null,
-		responsibility: null,
-		status: 'active',
+		responsibility: input.responsibility ?? null,
+		startsAt: input.startsAt ?? null,
+		endsAt: input.endsAt ?? null,
+		status: input.status ?? 'active',
 	};
 }
 

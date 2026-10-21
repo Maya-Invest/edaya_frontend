@@ -13,11 +13,14 @@
 	import { createTeacherAssignmentPayload } from '../../../../school/teachers/lib/teacher-detail-mutations';
 	import { getTeacherAssignmentsPageState } from '../teacher-assignments-page.svelte';
 
-	let { open = $bindable(false) }: { open?: boolean } = $props();
-
+	let { open = $bindable(false) }: {
+		open?: boolean;
+	} = $props();
 	const hubPage = getTeacherAssignmentsPageState();
-
 	let busy = $state(false);
+	let responsibility = $state('');
+	let startsAt = $state('');
+	let endsAt = $state('');
 	let teacherId = $state('');
 	let kind = $state<components['schemas']['TeacherAssignment']['kind']>('subject');
 	let classGroupId = $state('');
@@ -25,30 +28,15 @@
 	let classSubjects = $state<components['schemas']['ClassSubject'][]>([]);
 	let subjectLabels = $state<Record<string, string>>({});
 	let classSubjectsLoadId = 0;
-
-	const teacherOptions = $derived(
-		hubPage.teachers.map(teacher => ({ value: teacher.id, label: teacher.name })),
-	);
-
-	const classOptions = $derived(
-		academicContext.classes.map(entry => ({ value: entry.id, label: entry.name })),
-	);
-
-	const subjectOptions = $derived(
-		classSubjects.map(entry => ({
-			value: entry.id,
-			label: subjectLabels[entry.id] ?? entry.id,
-		})),
-	);
-
+	const teacherOptions = $derived(hubPage.teachers.map(teacher => ({ value: teacher.id, label: teacher.name })));
+	const classOptions = $derived(academicContext.classes.map(entry => ({ value: entry.id, label: entry.name })));
+	const subjectOptions = $derived(classSubjects.map(entry => ({
+		value: entry.id,
+		label: subjectLabels[entry.id] ?? entry.id,
+	})));
 	const selectedTeacher = $derived(hubPage.findTeacher(teacherId));
-
 	const selectedSubjectIds = $derived(classSubjectIds.filter(entry => entry.trim().length > 0));
-
-	const canSubmit = $derived(
-		Boolean(teacherId) && Boolean(classGroupId) && (kind === 'homeroom' || selectedSubjectIds.length > 0),
-	);
-
+	const canSubmit = $derived((!startsAt || !endsAt || startsAt <= endsAt) && Boolean(teacherId) && Boolean(classGroupId) && (kind === 'homeroom' || selectedSubjectIds.length > 0));
 	async function loadClassSubjects(nextClassGroupId: string) {
 		const loadId = ++classSubjectsLoadId;
 		classSubjectIds = [''];
@@ -84,23 +72,22 @@
 		const defaultSubjectId = pickClassSubjectIdForTeacherSubject(nextClassSubjects, teacher.subjectId);
 		classSubjectIds = defaultSubjectId ? [defaultSubjectId] : [''];
 	}
-
 	function addSubjectRow() {
 		classSubjectIds = [...classSubjectIds, ''];
 	}
-
 	function updateSubjectSelection(index: number, value: string) {
 		classSubjectIds = classSubjectIds.map((entry, entryIndex) => entryIndex === index ? value : entry);
 	}
-
 	$effect(() => {
 		if (open) {
 			void hubPage.ensureTeachersLoaded();
 		}
 	});
-
 	$effect(() => {
 		if (!open) {
+			responsibility = '';
+			startsAt = '';
+			endsAt = '';
 			teacherId = '';
 			kind = 'subject';
 			classGroupId = '';
@@ -109,18 +96,15 @@
 			subjectLabels = {};
 		}
 	});
-
 	$effect(() => {
 		if (open && classGroupId && kind === 'subject') {
 			void loadClassSubjects(classGroupId);
 		}
 	});
-
 	async function submit() {
 		if (!canSubmit || !teacherId) {
 			return;
 		}
-
 		busy = true;
 		try {
 			if (kind === 'homeroom') {
@@ -128,6 +112,9 @@
 				const assignment = createTeacherAssignmentPayload({
 					id,
 					teacherId,
+					responsibility: responsibility.trim() || null,
+					startsAt: startsAt ? new Date(startsAt).toISOString() : null,
+					endsAt: endsAt ? new Date(endsAt).toISOString() : null,
 					kind,
 					classGroupId,
 					classSubjectId: null,
@@ -141,13 +128,15 @@
 				}
 				return;
 			}
-
 			let saved = 0;
 			for (const classSubjectId of [...new Set(selectedSubjectIds)]) {
 				const id = `ta-${Date.now().toString(36)}-${saved}`;
 				const assignment = createTeacherAssignmentPayload({
 					id,
 					teacherId,
+					responsibility: responsibility.trim() || null,
+					startsAt: startsAt ? new Date(startsAt).toISOString() : null,
+					endsAt: endsAt ? new Date(endsAt).toISOString() : null,
 					kind: 'subject',
 					classGroupId,
 					classSubjectId,
@@ -161,7 +150,6 @@
 					saved += 1;
 				}
 			}
-
 			if (saved > 0) {
 				open = false;
 			}
@@ -181,6 +169,7 @@
 	submitDisabled={!canSubmit}
 	onSubmit={submit}
 >
+	<div class="grid gap-3 sm:grid-cols-2"><label>{$t('profile.responsibility')}<input bind:value={responsibility} class="h-10 w-full rounded-lg border bg-background px-3" /></label><label>{$t('profile.startsAt')}<input type="date" bind:value={startsAt} class="h-10 w-full rounded-lg border bg-background px-3" /></label><label>{$t('profile.endsAt')}<input type="date" bind:value={endsAt} class="h-10 w-full rounded-lg border bg-background px-3" /></label></div>
 	<div class="space-y-4">
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">

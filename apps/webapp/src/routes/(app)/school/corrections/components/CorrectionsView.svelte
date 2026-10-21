@@ -26,7 +26,11 @@
 
 	const queue = new CorrectionsPageState();
 	let busy = $state(false);
-	const documentOutcome = $derived(queue.detail?.original?.documentOutcome as { issuanceId: string; status: string; failureCode?: string } | undefined);
+	const documentOutcome = $derived(queue.detail?.original?.documentOutcome as {
+		issuanceId: string;
+		status: string;
+		failureCode?: string;
+	} | undefined);
 	let rejectionReason = $state('');
 	let nextPending = $state(false);
 	const searchFilter = new ListFiltersState({
@@ -35,8 +39,10 @@
 			const next = new URL(url);
 			if (values.search.trim())
 				next.searchParams.set('search', values.search.trim());
-			else next.searchParams.delete('search');
-			for (const key of ['offset', 'correction', 'action']) next.searchParams.delete(key);
+			else
+				next.searchParams.delete('search');
+			for (const key of ['offset', 'correction', 'action'])
+				next.searchParams.delete(key);
 			return next.pathname + next.search;
 		},
 		goto: href => void appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
@@ -61,7 +67,8 @@
 		const url = new URL($page.url);
 		if (value)
 			url.searchParams.set(key, value);
-		else url.searchParams.delete(key);
+		else
+			url.searchParams.delete(key);
 		if (key === 'correction' && !value)
 			url.searchParams.delete('action');
 		if (reset) {
@@ -123,12 +130,18 @@
 	<PageQuery query={queue.query} cacheKey={url => url.pathname + url.search} cache={false} preserveWhileLoading loadingTitle={$t('corrections.title')}>
 		{#snippet children(data)}
 			<DataState status={queue.listLoading ? 'ready' : data.status} errorMessage={data.errorMessage}>
-				<ListEntityTable {columns} rows={queue.items} highlightId={$page.url.searchParams.get('correction') ?? undefined} hasMore={queue.hasMore} loading={queue.listLoading} loadingMore={queue.loadingMore} total={queue.total} visibleCount={queue.items.length} onLoadMore={() => void queue.loadMore()} onRowClick={item => navigate('correction', item.id, false)} emptyLabel={$t('dataState.emptyTitle')}>
-					{#snippet row(item)}
-						<div class="col-span-5 min-w-0"><p class="break-words text-sm font-medium">{item.title || item.className}</p><p class="mt-1 break-words whitespace-pre-wrap text-sm text-muted-foreground">{item.reason}</p>{#if item.students.length}<p class="mt-2 break-words text-sm">{item.students.map(student => student.name).join(', ')}</p>{/if}</div>
-						<div class="col-span-3 min-w-0 text-sm"><p class="break-words font-medium">{item.teacherName || $t('corrections.teacher')}</p><p class="mt-1 break-words text-muted-foreground">{item.className}</p><p class="mt-1 text-xs text-muted-foreground tabular-nums">{new Date(item.createdAt).toLocaleString($locale, { dateStyle: 'medium', timeStyle: 'short' })}</p></div>
-						<div class="col-span-2"><span class={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${BADGE_INFO}`}>{$t(`corrections.workflow.${item.workflow}`)}</span></div>
-						<div class="col-span-2"><span class={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusTone[item.status] ?? BADGE}`}>{$t(`marks.${item.status}`)}</span></div>
+				<ListEntityTable listKey="CorrectionsView" {columns} rows={queue.items} highlightId={$page.url.searchParams.get('correction') ?? undefined} hasMore={queue.hasMore} loading={queue.listLoading} loadingMore={queue.loadingMore} total={queue.total} visibleCount={queue.items.length} onLoadMore={() => void queue.loadMore()} onRowClick={item => navigate('correction', item.id, false)} emptyLabel={$t('dataState.emptyTitle')}>
+					{#snippet cell(item, column, _ctx)}
+
+						{#if column.key === 'request'}
+							<div class="col-span-5 min-w-0"><p class="break-words text-sm font-medium">{item.title || item.className}</p><p class="mt-1 break-words whitespace-pre-wrap text-sm text-muted-foreground">{item.reason}</p>{#if item.students.length}<p class="mt-2 break-words text-sm">{item.students.map(student => student.name).join(', ')}</p>{/if}</div>
+						{:else if column.key === 'context'}
+							<div class="col-span-3 min-w-0 text-sm"><p class="break-words font-medium">{item.teacherName || $t('corrections.teacher')}</p><p class="mt-1 break-words text-muted-foreground">{item.className}</p><p class="mt-1 text-xs text-muted-foreground tabular-nums">{new Date(item.createdAt).toLocaleString($locale, { dateStyle: 'medium', timeStyle: 'short' })}</p></div>
+						{:else if column.key === 'workflow'}
+							<div class="col-span-2"><span class={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${BADGE_INFO}`}>{$t(`corrections.workflow.${item.workflow}`)}</span></div>
+						{:else if column.key === 'status'}
+							<div class="col-span-2"><span class={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusTone[item.status] ?? BADGE}`}>{$t(`marks.${item.status}`)}</span></div>
+						{/if}
 					{/snippet}
 				</ListEntityTable>
 				{#if queue.loadMoreError}<Button variant="outline" onclick={() => {

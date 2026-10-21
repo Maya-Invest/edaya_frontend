@@ -32,7 +32,14 @@ export interface OnboardingStructureLevelDraft {
 	classNamingMode: OnboardingClassNamingMode;
 }
 
+export interface OnboardingDisciplineMapping {
+	subjectCode: string;
+	disciplineCode: string;
+	disciplineName: string;
+}
+
 export interface OnboardingStructureDraft {
+	disciplineMappings?: OnboardingDisciplineMapping[];
 	models: Array<'college' | 'lycee'>;
 	levels: OnboardingStructureLevelDraft[];
 }

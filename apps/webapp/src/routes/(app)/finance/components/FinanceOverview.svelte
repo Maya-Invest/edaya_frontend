@@ -18,9 +18,9 @@
 				<div class="flex min-h-7 flex-wrap items-center justify-between gap-2">
 					<p class="text-xs uppercase tracking-wider text-muted-foreground">{$t(label)}</p>
 					{#if label === 'finance.netBilled'}
-						<span class="ml-auto rounded-full bg-secondary px-2 py-1 text-[11px] font-medium text-muted-foreground">{$t(overview.studentsAssigned === 1 ? 'finance.studentAssigned' : 'finance.studentsAssigned', { n: overview.studentsAssigned })}</span>
+						<span class="ml-auto rounded-full bg-secondary px-2 py-1 text-xs font-medium text-muted-foreground">{$t(overview.studentsAssigned === 1 ? 'finance.studentAssigned' : 'finance.studentsAssigned', { n: overview.studentsAssigned })}</span>
 					{:else if label === 'finance.overdue'}
-						<span class="ml-auto rounded-full bg-secondary px-2 py-1 text-[11px] font-medium text-muted-foreground">{$t(overview.overdueStudents === 1 ? 'finance.overdueStudent' : 'finance.overdueStudents', { n: overview.overdueStudents })}</span>
+						<span class="ml-auto rounded-full bg-secondary px-2 py-1 text-xs font-medium text-muted-foreground">{$t(overview.overdueStudents === 1 ? 'finance.overdueStudent' : 'finance.overdueStudents', { n: overview.overdueStudents })}</span>
 					{/if}
 				</div>
 				<p class:text-destructive={label === 'finance.overdue'} class={fee ? 'mt-2 break-words font-sans text-2xl font-semibold tabular-nums' : 'mt-2 break-words font-sans text-xl font-semibold tabular-nums 2xl:text-2xl'}>{formatMinorUnits(value, overview.currency, $locale)}</p>

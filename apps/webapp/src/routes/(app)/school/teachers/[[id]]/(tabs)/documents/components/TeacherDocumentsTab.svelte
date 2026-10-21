@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Teacher } from '$lib/types/school';
 	import { page } from '$app/stores';
-
+	import DocumentIssuanceDetails from '$lib/components/school/documents/DocumentIssuanceDetails.svelte';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -16,12 +16,12 @@
 	import GenerateTeacherDocumentFormModal from './GenerateTeacherDocumentFormModal.svelte';
 	import VoidDocumentFormModal from './VoidDocumentFormModal.svelte';
 
-	const { teacher }: { teacher: Teacher } = $props();
-
+	const { teacher }: {
+		teacher: Teacher;
+	} = $props();
 	const documentsTab = getTeacherDocumentsTabState();
 	const issuances = $derived(documentsTab.issuancesFor(teacher.id));
 	const templates = $derived(documentsTab.templatesFor(teacher.id));
-
 	const modals = createUrlSyncedModals({ allowed: ['generate-document', 'void-document'], getUrl: () => $page.url });
 	$effect(() => {
 		modals.hydrate();
@@ -29,7 +29,6 @@
 	const generateOpen = bindUrlModal(modals, 'generate-document');
 	const voidOpen = bindUrlModal(modals, 'void-document');
 	let voidTargetId = $state<string | null>(null);
-
 	function titleFor(templateKey: string): string {
 		const template = templates.find(entry => entry.templateKey === templateKey);
 		if (!template) {
@@ -37,7 +36,6 @@
 		}
 		return $lang === 'en' ? template.titles.en : template.titles.fr;
 	}
-
 	function openVoid(id: string) {
 		voidTargetId = id;
 		voidOpen.open = true;
@@ -87,6 +85,7 @@
 							{$t(`documents.status.${issuance.status}`)}
 						</span>
 					</div>
+					<DocumentIssuanceDetails {issuance} />
 					{#if issuance.failureCode}
 						<p class="mt-1 text-xs text-destructive">{issuance.failureCode}</p>
 					{/if}
