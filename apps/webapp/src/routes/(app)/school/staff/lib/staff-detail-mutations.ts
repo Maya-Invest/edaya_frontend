@@ -51,6 +51,7 @@ function buildOptimisticStaff(input: {
 	firstName: string;
 	lastName: string;
 	email?: string;
+	phone?: string;
 	profileRole: StaffProfileRole;
 }): StaffMember {
 	const email = input.email?.trim() ?? '';
@@ -64,6 +65,7 @@ function buildOptimisticStaff(input: {
 		role: input.profileRole,
 		department: '—',
 		email,
+		phone: input.phone?.trim() || null,
 		classes: [],
 		isActive: true,
 		subjectId: null,
@@ -78,6 +80,7 @@ export async function createStaffOnPage(
 		lastName: string;
 		code?: string;
 		email?: string;
+		phone?: string;
 		profileRole: StaffProfileRole;
 		sendAccountInvitation?: boolean;
 		permissionProfileId?: string;
@@ -99,6 +102,7 @@ export async function createStaffOnPage(
 		lastName: input.lastName.trim(),
 		...(code ? { code } : {}),
 		email: email || null,
+		...(input.phone !== undefined ? { phone: input.phone.trim() || null } : {}),
 		accountKind: 'human',
 		isActive: true,
 		serviceElevated: false,
@@ -143,6 +147,7 @@ export async function updateStaffProfileOnPage(
 		firstName: string;
 		lastName: string;
 		email?: string;
+		phone?: string;
 		profileRole?: StaffProfileRole | null;
 		successMessage?: string;
 	},
@@ -158,6 +163,8 @@ export async function updateStaffProfileOnPage(
 		firstName: input.firstName.trim(),
 		lastName: input.lastName.trim(),
 		email: email || null,
+		...(input.profile && 'phone' in input.profile ? { phone: input.profile.phone?.trim() || null } : {}),
+		...(input.phone !== undefined ? { phone: input.phone.trim() || null } : {}),
 		profileRole: input.profileRole ?? null,
 	};
 
@@ -171,6 +178,7 @@ export async function updateStaffProfileOnPage(
 				name: nextName,
 				initials: staffInitials(input.firstName, input.lastName),
 				email,
+				...(input.profile && 'phone' in input.profile ? { phone: input.profile.phone?.trim() || null } : {}),
 				...(input.profileRole ? { role: input.profileRole } : {}),
 			});
 		},

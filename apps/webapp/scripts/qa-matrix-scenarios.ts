@@ -13,7 +13,7 @@ import { scenarioForSurface } from '../tests/integration/support/coverage-contra
 import { exerciseStudentDocument } from '../tests/integration/support/document-workflows';
 import { exerciseStudentPhoto, exerciseStudentStatus, exerciseStudentTransfer } from '../tests/integration/support/student-workflows';
 import { exerciseActivityCreateEdit, exerciseReportDefinitionLifecycle, exerciseCatalogCrud, exerciseEvaluationEditDelete, exerciseFeeEditArchive, exerciseGradeLevelEditDelete } from '../tests/integration/support/catalog-workflows';
-import { exerciseFinanceMutation, exerciseReconciliation } from '../tests/integration/support/finance-workflows';
+import { exerciseFinanceMutation, exerciseReconciliation, financeFixture } from '../tests/integration/support/finance-workflows';
 import { exerciseTeacherRead } from '../tests/integration/support/teacher-workflows';
 import { exerciseTimetable } from '../tests/integration/support/timetable-workflows';
 import { IMPORT_SCENARIOS, exerciseImport } from '../tests/integration/support/import-workflows';
@@ -813,7 +813,10 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
     const surface = { id: definition.id, feature: definition.feature, path, title: row.action,
       kind: modal ? 'modal' as const : 'page' as const, identity: 'owner' as const,
       target: registered?.targetEntityKey as keyof MatrixEntities | undefined };
-    await openViewSurface(page, ctx.base, surface, entities);
+    const viewEntities = path.startsWith('/finance/billing/') && modal === 'allocate'
+      ? { ...entities, billingId: (await financeFixture(page, ctx.base, entities.classId!)).chargeId }
+      : entities;
+    await openViewSurface(page, ctx.base, surface, viewEntities);
     const locale = await page.locator('html').getAttribute('lang') === 'en' ? 'en' as const : 'fr' as const;
     await captureIntegrationCheckpoint({ id: modal ? 'dialog' : 'loaded', title: row.action, surface: path, ready: async () => {} },
       bindBrowserScenarioContext({ browser, base: ctx.base, outDir: ctx.outDir, locale }, page, () => {}), definition);
@@ -862,7 +865,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
     if (!entities.classId) return notOk(row, 'Required finance classroom fixture missing');
     return ok(row, await exerciseFinanceMutation(page, ctx.base, entities.classId, action === 'Imputer le solde' ? 'allocate' : 'reverse'));
   }
-  if (action === 'Rapprochement financier') return ok(row, await exerciseReconciliation(page, ctx.base));
+  if (action === 'Rapprochement financier' || action === 'Contrôles financiers') return ok(row, await exerciseReconciliation(page, ctx.base));
   if (action === 'Documents' && row.endpoint.endsWith('/documents')) return ok(row, await exerciseStudentDocument(page, ctx.base));
   if (row.endpoint.includes('/school/teachers/[id]/') && ['Emploi du temps', 'Évaluations', 'Retour des familles'].includes(action)) return ok(row, await exerciseTeacherRead(page, ctx.base, action, entities));
   if (row.endpoint.endsWith('/configuration/structure/details?gradeLevel=[id]') && action === 'Niveau sélectionné — éditer / supprimer') return ok(row, await exerciseGradeLevelEditDelete(page, ctx.base));

@@ -29,7 +29,8 @@ Companion to [ui-architecture-reference.md](./ui-architecture-reference.md) §6 
 | Catalog | behavior | catalog chapter sync to all classes of level | subject-matter.mutations | done |
 | Migrate | migrate | schools/subjects/staffAssignments/schedules → commands | mutations + create helpers | done |
 | Import | authz | modal per-type permission gates | DataImportModal | done |
-| Import | behavior | classes attendanceMode documented default | classes/runner.ts | done |
+| Import | behavior | Durable backend validation/execution, session S/M/O, current templates and correction reports | `import-state.svelte.ts`, generated `imports` API | done |
+| People | field | Optional human-staff phone, including import and directory columns | staff forms, profile fields and data mapping | done |
 | Authz | authz | `X-School-Id` multi-school | `browser-transport.ts` | deferred |
 | Resources | surface | resource CRUD / assign | planning | deferred |
 | Notifications | command | push devices / delivery materialize | — | deferred |

@@ -54,19 +54,30 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 	});
 	logStep(journey, { step: 'configuration-school', ok: true, detail: cityToken });
 
+	await gotoApp(journey, '/configuration/other/academic-disciplines?modal=create');
+	const disciplineDialog = page.getByRole('dialog');
+	await disciplineDialog.waitFor({ state: 'visible' });
+	const disciplineCode = `QA-${Date.now()}`;
+	await disciplineDialog.getByLabel(/^code$/i).fill(disciplineCode);
+	await disciplineDialog.getByLabel(/^(name|nom)$/i).fill('QA academic discipline');
+	await submitDialog(page);
+	assert.ok(await waitForDialogClosed(page), 'Academic discipline creation must succeed');
+	assert.ok(await assertListContains(page, disciplineCode, true, 20_000));
+
 	await visitCovered(journey, '/configuration/structure/subjects', '/configuration/structure/subjects');
 	const subjectName = `E2E-Subject-${Date.now()}`;
 	const subjectOpened = await clickCreateButton(page, 'Créer matière', '/configuration/structure/subjects');
 	if (subjectOpened) {
 		const dialog = page.getByRole('dialog');
 		await dialog.locator('input').first().fill(subjectName);
+		await dialog.getByRole('combobox', { name: /discipline/i }).selectOption({ label: `${disciplineCode} · QA academic discipline` });
 		if (!(await waitForSubmitEnabled(page, 12_000))) {
 			coverCompletedModal(journey, '/configuration/structure/subjects', 'create-subject', {
 				opened: true,
 				submitted: false,
 				closed: false,
-			}, 'Subject Save stayed disabled — grade level or year missing');
-			throw new Error('Subject Save stayed disabled — grade level or year missing');
+			}, 'Subject Save stayed disabled — required catalogue, grade level or year missing');
+			throw new Error('Subject Save stayed disabled — required catalogue, grade level or year missing');
 		}
 		const payloadPromise = waitForCommandPayload(page, 'configure-subject');
 		await submitDialog(page);
@@ -117,6 +128,7 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 		if (catalogOpened) {
 			const catalogDialog = page.getByRole('dialog');
 			await catalogDialog.locator('input').first().fill('Mathématiques');
+			await catalogDialog.getByRole('combobox', { name: /discipline/i }).selectOption({ label: `${disciplineCode} · QA academic discipline` });
 			if (await waitForSubmitEnabled(page, 12_000)) {
 				await submitDialog(page);
 				await waitForDialogClosed(page);
@@ -397,8 +409,8 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 		drawerVisible && renderedEmail ? 'OK' : 'NOT OK',
 	);
 
-	const notifDialog = await openDialogButton(page, /edit|modifier|éditer/i)
-		|| await openUrlModal(page, detailPath, 'edit', { base: ctx.base, timeout: 12_000 });
+	const notifDialog = await openDialogButton(page, /edit|modifier|éditer/i);
+	assert.ok(notifDialog, 'The notification drawer Edit action must open its modal');
 	coverActions(journey, 'http://localhost:5173/configuration/notifications', ['Templates notifications école'], drawerVisible ? 'OK' : 'NOT OK');
 
 	let saved = false;

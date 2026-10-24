@@ -105,6 +105,7 @@ async function verifyVisitExpectations(
 	if (expectText) {
 		const found = await page
 			.getByText(expectText, { exact: false })
+			.filter({ visible: true })
 			.first()
 			.waitFor({ state: 'visible', timeout: 10_000 })
 			.then(() => true)

@@ -12,7 +12,18 @@ const complete = beginExecution(directory);
 const started = Date.now();
 let exitCode = 1;
 try {
-  const child = Bun.spawn([process.execPath, resolve(root, 'tests/integration', suite.script)], {
+  const entry = resolve(root, 'tests/integration', suite.script);
+  let command = [process.execPath, entry];
+  if ('runtime' in suite && suite.runtime === 'node') {
+    // Playwright's response URL handling requires Node for this upload/download suite.
+    const compiled = resolve(root, '.svelte-kit', `${suite.name}.mjs`);
+    const build = Bun.spawn([process.execPath, 'build', entry, '--target=node', '--packages=external', `--outfile=${compiled}`], {
+      cwd: root, stdout: 'inherit', stderr: 'inherit',
+    });
+    if (await build.exited !== 0) throw new Error(`Could not compile focused suite ${suite.name}`);
+    command = ['node', compiled];
+  }
+  const child = Bun.spawn(command, {
     cwd: root, stdout: 'inherit', stderr: 'inherit',
     env: { ...process.env, INTEGRATION_ARTIFACT_DIR: directory },
   });

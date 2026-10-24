@@ -179,6 +179,7 @@
 				<p class="text-sm text-muted-foreground">{$t('tools.teacherAssignments.noTeachers')}</p>
 			{:else}
 				<FilterSelect
+					aria-label={$t('tools.teacherAssignments.teacherLabel')}
 					bind:value={teacherId}
 					options={[{ value: '', label: $t('tools.teacherAssignments.selectTeacher') }, ...teacherOptions]}
 				/>
@@ -189,6 +190,7 @@
 				{$t('teacher.assignmentKindLabel')}
 			</Label>
 			<FilterSelect
+				aria-label={$t('teacher.assignmentKindLabel')}
 				bind:value={kind}
 				options={[
 					{ value: 'subject', label: $t('teacher.assignmentKind.subject') },
@@ -201,6 +203,7 @@
 				{$t('teacher.classGroupLabel')}
 			</Label>
 			<FilterSelect
+				aria-label={$t('teacher.classGroupLabel')}
 				bind:value={classGroupId}
 				options={[{ value: '', label: $t('teacher.selectClassGroup') }, ...classOptions]}
 			/>
@@ -214,6 +217,7 @@
 								{$t('teacher.classSubjectLabel')}
 							</Label>
 							<FilterSelect
+								aria-label={$t('teacher.classSubjectLabel')}
 								value={classSubjectId}
 								onchange={value => updateSubjectSelection(index, value)}
 								options={[{ value: '', label: $t('teacher.selectClassSubject') }, ...subjectOptions]}

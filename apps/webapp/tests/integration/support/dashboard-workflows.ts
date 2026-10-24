@@ -2,17 +2,17 @@ import assert from 'node:assert/strict';
 import type { Page } from 'playwright';
 
 const overviewPath = '**/core/queries/get-school-overview';
-async function overview(page: Page) {
+async function overview(page: Page, base: string) {
   const [response] = await Promise.all([
-    page.waitForResponse(response => response.url().endsWith('/queries/get-school-overview') && response.request().method() === 'POST'),
-    page.reload({waitUntil:'domcontentloaded'}),
+    // The first overview also waits for authenticated school/year bootstrap.
+    page.waitForResponse(response => response.url().endsWith('/queries/get-school-overview') && response.request().method() === 'POST', { timeout: 30_000 }),
+    page.goto(`${base}/dashboard`, {waitUntil:'domcontentloaded'}),
   ]);
   assert(response.ok(), `Dashboard overview HTTP ${response.status()}`);
   return await response.json();
 }
 export async function exerciseDashboard(page: Page, base: string, id: string): Promise<string> {
-  await page.goto(`${base}/dashboard`,{waitUntil:'domcontentloaded'});
-  const data = await overview(page);
+  const data = await overview(page, base);
   if (id === 'web.scenario.0011') {
     assert(data.kpis.studentCount > 0, 'Required dashboard student fixture missing');
     for (const [href,key] of [['/school/students','studentCount'],['/finance/billing','overdueFeeCount'],['/configuration/structure/details','unpublishedReportCardCount'],['/school/events','openIncidentCount']]) {

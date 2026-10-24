@@ -337,7 +337,12 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'finance-fees',
 		pathnamePattern: /^\/finance\/fees\/?$/,
-		modalNames: ['create', 'edit', 'archive'],
+		modalNames: ['create', 'edit', 'archive', 'activate'],
+	},
+	{
+		routeFamily: 'finance-fee-detail',
+		pathnamePattern: /^\/finance\/fees\/[^/]+\/?$/,
+		modalNames: ['edit', 'archive', 'activate', 'assign-fee'],
 	},
 	{
 		routeFamily: 'finance-billing-list',
@@ -346,13 +351,13 @@ export const ROUTE_MODAL_CATALOG = [
 	},
 	{
 		routeFamily: 'finance-billing-detail',
-		pathnamePattern: /^\/finance\/billing\/[^/]+\/?$/,
+		pathnamePattern: /^\/finance\/billing\/[^/]+(?:\/(?:payments|history))?\/?$/,
 		modalNames: ['assign-fee', 'payment', 'allocate', 'unallocate', 'waive', 'adjust', 'cancel'],
 	},
 	{
 		routeFamily: 'finance-payments',
 		pathnamePattern: /^\/finance\/payment\/?$/,
-		modalNames: ['reverse', 'refund'],
+		modalNames: ['payment', 'reverse', 'refund'],
 	},
 ] as const satisfies readonly RouteModalCatalogEntry[];
 

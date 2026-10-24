@@ -23,13 +23,15 @@ export async function exerciseAssignmentCrud(page: Page, base: string, scenarioI
   await page.goto(`${base}${path}`, { waitUntil: 'domcontentloaded' });
   await waitForPageQuery(page);
   assert(await openUrlModal(page, path, hub ? 'create' : 'form', { base }));
-  const selects = page.getByRole('dialog').locator('select');
+  const dialog = page.getByRole('dialog');
+  const kind = dialog.getByRole('combobox', { name: /assignment type|type d.affectation/i });
+  const classroomSelect = dialog.getByRole('combobox', { name: /^(class|classe)$/i });
   if (hub) {
-    await selects.nth(0).locator(`option[value="${teacherId}"]`).waitFor({ state: 'attached' });
-    await selects.nth(0).selectOption(teacherId);
+    await dialog.getByRole('combobox', { name: /^(teacher|enseignant)$/i }).locator(`option[value="${teacherId}"]`).waitFor({ state: 'attached' });
+    await dialog.getByRole('combobox', { name: /^(teacher|enseignant)$/i }).selectOption(teacherId);
   }
-  await selects.nth(hub ? 1 : 0).selectOption('homeroom');
-  await selects.nth(hub ? 2 : 1).selectOption(classId);
+  await kind.selectOption('homeroom');
+  await classroomSelect.selectOption(classId);
   const created = await uiCommand(page, '/entities/teacher-assignments/save', () => page.getByTestId('form-modal-submit').click());
   const id = (created.request().postDataJSON() as { id: string }).id;
   assert(id);
@@ -48,8 +50,8 @@ export async function exerciseAssignmentCrud(page: Page, base: string, scenarioI
   await persisted('homeroom');
   if (!hub) {
     assert(await openUrlModal(page, path, 'form', { base, target: id }));
-    await selects.nth(0).selectOption('subject');
-    const subject = selects.nth(2);
+    await kind.selectOption('subject');
+    const subject = dialog.getByRole('combobox', { name: /subject offering|matière dans la classe/i });
     await subject.locator('option:not([value=""])').first().waitFor({ state: 'attached' });
     await subject.selectOption({ index: 1 });
     await uiCommand(page, '/entities/teacher-assignments/save', () => page.getByTestId('form-modal-submit').click());

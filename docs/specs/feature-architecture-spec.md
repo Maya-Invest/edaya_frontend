@@ -319,6 +319,7 @@ Each subsection: **entity** · **surface** · **list** · **drawer / row menu** 
 ### 7.3 School — Guardians
 
 - **Entity:** `Guardian` · **Complex drawer**
+- **Names:** Create/edit accepts an empty first name with a required last name. Display names omit surrounding whitespace; no placeholder or inferred name component is added.
 - **List:** search name · main filter relation type
 - **Drawer header:** Edit · Link student
 - **Drawer body:** Contact · account linking · linked students
@@ -727,3 +728,15 @@ Student and teacher annual information belongs to the explicitly selected academ
 All staff-facing business fields must have a contextual editor, established command/workflow or read-only display. The field-coverage reference records list availability, detail/editor surfaces, permissions and deliberate exclusions. Platform/service-account administration, credentials, internal processing metadata and deferred resource booking are excluded from ordinary staff forms. Teacher signatures and self-service notification contacts remain owner-controlled. Health, financial and family-feedback restrictions continue to apply.
 
 Onboarding template subjects require explicit review of each discipline code and name before provisioning. The initial inputs are blank. Staff may deliberately reuse a code/name across template subjects to share a discipline. Provisioning validates the reviewed catalogue inside its transaction and rejects missing, conflicting or inactive mappings; it cannot create unlinked subjects.
+
+### Durable school imports
+
+Configuration → Tools → Import owns a durable, school/year-scoped batch. `modalTarget` retains the batch identity across reloads. The route state calls generated `imports` APIs; components only present settings, file selection, read-only preview, history, correction downloads and progress. No browser parser, matcher, validator or execution loop is authoritative.
+
+The single session setting is `S | M | O`, initially `M`. File metadata has no conflict option. The optional `on_existing` column overrides individual rows; the preview displays the effective code. Saving settings invalidates the preview. Confirmation uses the exact validated revision and digest. Failed mutations retain drafts.
+
+Templates and correction reports come from the server's versioned contracts. Correct files externally, retain row IDs and re-upload as a new file revision. Table preview shows source references, current/imported/resulting values, authorized targets and issue codes. Blocked rows remain visible while independent ready rows run. Closing the modal stops polling only; scheduled work continues. UI refreshes use scoped domain version families. History and download access remain subject to current business permissions.
+
+Human-staff phone is optional in create/edit, detail and configurable directory columns. Profile roles remain descriptive and never grant authority.
+
+Phone import previews normalize a leading `#` to `+` only for phone fields, retaining original source cells. Guardian imports accept a last name with an empty first name. Blank first names preserve existing values in M and clear in O; missing columns preserve.

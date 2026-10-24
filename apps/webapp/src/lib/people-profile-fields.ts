@@ -11,7 +11,7 @@ const code: PersonField = { key: 'code', labelKey: 'common.code' };
 export const PERSON_PROFILE_FIELDS: Record<PersonKind, PersonField[]> = {
 	student: [original, { key: 'matricule', labelKey: 'profile.matricule' }, { key: 'nationalMatricule', labelKey: 'profile.nationalMatricule' }, { key: 'gender', labelKey: 'profile.gender' }, { key: 'placeOfBirth', labelKey: 'profile.placeOfBirth' }, { key: 'nationality', labelKey: 'profile.nationality' }, { key: 'enrollmentDate', labelKey: 'profile.enrollmentDate', type: 'date' }],
 	teacher: [code, original],
-	staff: [code],
+	staff: [code, { key: 'phone', labelKey: 'common.phone' }],
 	guardian: [code, original, { key: 'occupation', labelKey: 'profile.occupation' }],
 };
 export function personFieldDraft(kind: PersonKind, person: object = {}): Record<string, string> {

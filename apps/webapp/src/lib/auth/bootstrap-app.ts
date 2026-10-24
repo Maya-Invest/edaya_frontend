@@ -8,6 +8,7 @@ import { getAppShellData } from '$lib/queries/shell.queries';
 
 let bootstrapPromise: Promise<void> | null = null;
 let bootstrapShellKey = '';
+let bootstrapGeneration = 0;
 
 function shellBootstrapKey(): string {
 	return `${authSession.sessionKind ?? ''}:${authSession.schoolId ?? ''}:${authSession.userId ?? ''}`;
@@ -30,11 +31,12 @@ export function bootstrapAppShell(): Promise<void> {
 		return bootstrapPromise;
 	}
 	bootstrapShellKey = key;
-	bootstrapPromise = runBootstrapAppShell();
+	bootstrapPromise = runBootstrapAppShell(key, ++bootstrapGeneration);
 	return bootstrapPromise;
 }
 
 export function resetAppShellBootstrap() {
+	bootstrapGeneration += 1;
 	bootstrapPromise = null;
 	bootstrapShellKey = '';
 	resetBootstrapSession();
@@ -43,24 +45,33 @@ export function resetAppShellBootstrap() {
 }
 
 export function invalidateAppShellBootstrapCache() {
+	bootstrapGeneration += 1;
 	bootstrapPromise = null;
 	bootstrapShellKey = '';
 }
 
-async function runBootstrapAppShell() {
+async function runBootstrapAppShell(key: string, generation: number) {
+	const isCurrent = () => generation === bootstrapGeneration && key === shellBootstrapKey();
 	configureBrowserSchoolClient({
 		getYearId: () => (academicContext.shellReady ? academicContext.yearId : undefined),
 	});
 
 	try {
 		let shell = await getAppShellData();
+		if (!isCurrent())
+			return;
 		if (shellLooksEmpty(shell)) {
 			await delay(400);
+			if (!isCurrent())
+				return;
 			shell = await getAppShellData();
 		}
-		academicContext.initFromShell(shell);
+		if (isCurrent())
+			academicContext.initFromShell(shell);
 	}
 	catch (error) {
+		if (!isCurrent())
+			return;
 		console.error('[bootstrapAppShell] failed to load shell data', error);
 		academicContext.initFromShell({
 			schools: [],

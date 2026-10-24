@@ -7,6 +7,7 @@
 	import { detailHref } from '$lib/detail-hrefs';
 	import { listRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
+	import { createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
@@ -14,6 +15,7 @@
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
 	import NotificationRouteModals from './components/NotificationRouteModals.svelte';
 	import NotificationTemplatesList from './components/NotificationTemplatesList.svelte';
+	import { setNotificationModals } from './notifications-modals.svelte';
 	import {
 		NotificationsPageState,
 		setNotificationsPageState,
@@ -23,6 +25,11 @@
 
 	const notificationsPage = new NotificationsPageState();
 	setNotificationsPageState(notificationsPage);
+	const modals = createUrlSyncedModals({
+		allowed: ['edit', 'reset-all', 'reset-key'],
+		getUrl: () => $page.url,
+	});
+	setNotificationModals(modals);
 	registerVersionInvalidation(notificationsPage);
 	releaseRoutePageQueryOnDestroy(() => $page.url);
 

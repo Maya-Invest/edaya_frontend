@@ -480,6 +480,7 @@ export async function setupFilterSubjects(
 		}
 		const dialog = page.getByRole('dialog');
 		await dialog.locator('input').first().fill(subjectName);
+		await dialog.getByRole('combobox', { name: /discipline/i }).selectOption({ index: 1 });
 
 		const gradeCombobox = dialog.getByRole('combobox').first();
 		if (await gradeCombobox.isVisible().catch(() => false)) {

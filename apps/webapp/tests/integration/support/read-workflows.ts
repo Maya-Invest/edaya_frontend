@@ -79,20 +79,30 @@ const attendance: ReadScenario = async ctx => {
   await ctx.page.locator('aside[aria-label]').getByText(/présent|absent|retard|justifié|present|late|excused/i).first().waitFor();
 };
 
-async function exerciseFilter(ctx: ReadContext, positive: string, row: Locator) {
+async function exerciseFilter(ctx: ReadContext, positive: string, row: Locator, urlField?: string) {
   assert(positive, 'Required filter fixture value missing');
   const select = ctx.page.locator('select[data-testid="list-filter-select"]').filter({has:ctx.page.locator(`option[value="${positive}"]`)}).first();
-  if (!await select.isVisible()) await ctx.page.getByTestId('list-filter').first().click();
-  await select.waitFor();
+  const openFilter = async () => {
+    if (!await select.isVisible()) await ctx.page.getByTestId('list-filter').first().click();
+    await select.waitFor();
+  };
+  const choose = async (value: string) => {
+    // Server-filtered lists can remount the header and close its popover.
+    await openFilter();
+    await select.selectOption(value);
+    if (urlField) await ctx.page.waitForURL(url => (url.searchParams.get(urlField) ?? 'all') === value);
+    await waitForPageQuery(ctx.page);
+  };
+  await openFilter();
   const other = await select.locator('option').evaluateAll((options,positive)=>options.map(option=>(option as HTMLOptionElement).value).find(value=>value && value!=='all' && value!==positive),positive);
   assert(other, 'Required contrasting filter option missing');
-  await select.selectOption(positive);
+  await choose(positive);
   await row.waitFor({state:'visible'});
-  await select.selectOption(other);
+  await choose(other);
   await row.waitFor({state:'hidden'});
-  await select.selectOption(positive);
+  await choose(positive);
   await row.waitFor({state:'visible'});
-  await select.selectOption('all');
+  await choose('all');
 }
 
 
@@ -149,11 +159,11 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
   },
   'web.scenario.0137': async ctx => {
     const payment=await paymentFixture(ctx);
-    await exerciseFilter(ctx,payment.status,ctx.page.locator(`[data-payment-id="${payment.id}"]`));
+    await exerciseFilter(ctx,payment.status,ctx.page.locator(`[data-entity-id="${payment.id}"]`),'status');
   },
   'web.scenario.0138': async ctx => {
     const payment=await paymentFixture(ctx);
-    await exerciseFilter(ctx,ctx.entities.classId!,ctx.page.locator(`[data-payment-id="${payment.id}"]`));
+    await exerciseFilter(ctx,ctx.entities.classId!,ctx.page.locator(`[data-entity-id="${payment.id}"]`));
   },
   'web.scenario.0145': async ctx => {
     const yearId=await ctx.page.getByTestId('academic-year-trigger').getAttribute('data-year-id');
@@ -376,7 +386,7 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
     const account = (await list(ctx,'student-year-accounts',{studentId:ctx.entities.studentId}))[0]!;
     const payments = await list(ctx,'payments',{accountId:account.id});
     const payment = payments[0]!;
-    const row = ctx.page.locator(`[data-payment-id="${payment.id}"]`);
+    const row = ctx.page.locator(`[data-entity-id="${payment.id}"]`);
     await row.waitFor();
     const student = await entity(ctx,'students',account.studentId);
     assert((await row.innerText()).includes(student.lastName));
@@ -388,9 +398,9 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
     const payments = await list(ctx,'payments',{accountId:account.id});
     const search = listSearchInput(ctx.page);
     await search.fill(student.lastName);
-    for(const payment of payments) await ctx.page.locator(`[data-payment-id="${payment.id}"]`).waitFor();
+    for(const payment of payments) await ctx.page.locator(`[data-entity-id="${payment.id}"]`).waitFor();
     await search.fill(`no-payment-${crypto.randomUUID()}`);
-    for(const payment of payments) await ctx.page.locator(`[data-payment-id="${payment.id}"]`).waitFor({state:'hidden'});
+    for(const payment of payments) await ctx.page.locator(`[data-entity-id="${payment.id}"]`).waitFor({state:'hidden'});
     await search.fill('');
   },
   'web.scenario.0166': fixtureName('definitions','reportCardDefId','name','aside[aria-label]'),

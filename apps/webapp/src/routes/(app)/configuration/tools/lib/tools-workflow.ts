@@ -22,6 +22,11 @@ export const IMPORT_TYPE_TABS = [
 	'chapters',
 	'billing',
 	'payments',
+	'academic_disciplines',
+	'placement_statuses',
+	'guardian_contacts',
+	'guardian_relationships',
+	'class_offerings',
 ] as const satisfies readonly ImportTypeKey[];
 
 export const TIMETABLE_GENERATION_STEPS = ['setup', 'success', 'error'] as const;

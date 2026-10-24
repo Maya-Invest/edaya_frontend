@@ -1,6 +1,16 @@
 ﻿# Jeux de données QA — Import de masse
 
-Fixtures Excel pour la QA manuelle (**Configuration → Outils → Importer**).
+## Contrat actuel : imports durables, version 1
+
+Les modèles CSV/XLSX actuels se téléchargent depuis **Configuration → Outils → Importer**. Le backend partage leurs définitions avec la validation, l'exécution et les fichiers de correction. La session utilise **M** par défaut ; **S** et **O** sont disponibles, avec une surcharge par ligne `on_existing`. Il n'existe plus de choix par fichier.
+
+La suite [import-browser.ts](../../../apps/webapp/tests/integration/import-browser.ts) et ses [fixtures générées sur une école isolée](../../../apps/webapp/tests/integration/support/import-workflows.ts) couvrent les quinze types : les dix historiques, disciplines académiques, statuts de placement, contacts tuteurs, relations tuteurs–élèves et offres de matières par classe. Elle vérifie le rejet d'une surcharge invalide, l'exécution, la relecture après rechargement, les téléchargements XLSX et le téléphone du personnel. Exécution avec le lanceur de suites navigateur `imports-ui` du dépôt.
+
+Le backend conserve le jeu dé-identifié de réconciliation dans `edaya_backend/package/domain-service/tests/capabilities/imports/fixtures/school-submission.ts` : 1 144 élèves, 27 classes, 34 enseignants, 231 redoublants, 913 non-redoublants, 32 volumes totalisant 649 heures et deux volumes inconnus. Les décisions de préparation encore ouvertes restent des preuves à traiter, sans être comptées comme des imports opérationnels.
+
+## Packs historiques de compatibilité
+
+Les classeurs et générateurs ci-dessous documentent l'ancien parcours. Ils servent à vérifier les alias compatibles ; leurs anciennes attentes d'erreur ou de saut ne définissent plus le résultat du mode **M**. Avant une exécution, ajoutez la discipline aux matières, la date effective aux inscriptions et les montant/date/méthode explicites aux paiements. Téléchargez ensuite une correction du backend pour conserver les identifiants de lignes et les références de cibles. N'utilisez pas ces packs comme modèles actuels.
 
 Les générateurs lisent la **PGlite locale** (`edaya_backend/.data/school`) via [`_shared/school-db.ts`](./_shared/school-db.ts) : classes, niveaux, matières, offres `class_subjects`, élèves, enseignants, frais, chapitres. Les libellés des fichiers matchent donc l’école courante.
 
@@ -59,7 +69,7 @@ Les packs sont **chaînés** : chaque étape suppose les données créées par l
 | Pack | Clé métier | Colonne(s) |
 |------|------------|------------|
 | Élèves | Matricule | `matricule` |
-| Tuteurs / Personnel / Enseignants | Code | `code` (requis à l’import) |
+| Tuteurs / Personnel / Enseignants | Code | `code` ; généré une seule fois pendant la préparation pour les nouveaux tuteurs/enseignants sans code |
 | Affectations | Lien | `code` + `classe` + `matiere` |
 | Paiements | Référence | `reference` (unique école) |
 | Chapitres | Composite | `titre` + `matiere` + `niveau` |

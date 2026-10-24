@@ -146,7 +146,9 @@
 	{/if}
 
 	<DirectoryColumnData owner={directoryColumns} rows={listVisible} />
-	<ListEntityTable onVisibleColumnsChange={keys => directoryColumns.keys = keys} listKey="StaffList"
+	<ListEntityTable onVisibleColumnsChange={(keys) => {
+		directoryColumns.keys = keys;
+	}} listKey="StaffList"
 		{columns}
 		rows={listVisible}
 		highlightId={selectedId}

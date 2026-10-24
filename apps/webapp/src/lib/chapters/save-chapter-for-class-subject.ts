@@ -1,5 +1,6 @@
 import type { getBrowserSchoolClient } from '$lib/api/school-client';
-import type { ChapterImportClassAssignment } from '$lib/import/chapters/types';
+
+interface ChapterImportClassAssignment { classGroupId: string; classSubjectId: string }
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 export interface SaveChapterForSubjectInput {

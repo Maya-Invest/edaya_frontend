@@ -3,21 +3,17 @@
 	import { page } from '$app/stores';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import { t } from '$lib/i18n';
-	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
 	import { templateKeyFromPathname } from '$lib/notification-templates/catalog';
 	import { get } from 'svelte/store';
-	import { setNotificationModals } from '../notifications-modals.svelte';
+	import { getNotificationModals } from '../notifications-modals.svelte';
 	import { getNotificationsPageState } from '../notifications-page.svelte';
 	import NotificationTemplateEditModal from './NotificationTemplateEditModal.svelte';
 
 	const notificationsPage = getNotificationsPageState();
 	const document = $derived(notificationsPage.document);
 
-	const modals = createUrlSyncedModals({
-		allowed: ['edit', 'reset-all', 'reset-key'],
-		getUrl: () => $page.url,
-	});
-	setNotificationModals(modals);
+	const modals = getNotificationModals();
 
 	$effect.pre(() => {
 		void $page.url.search;

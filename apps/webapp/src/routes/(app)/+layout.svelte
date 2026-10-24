@@ -32,7 +32,7 @@
 	import { shellContext } from '$lib/shell/context.svelte';
 	import { MessageCountState, provideMessageCount } from '$lib/shell/message-count.svelte';
 	import { cn } from '$lib/utils';
-	import { untrack } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { AccountState, setAccountState } from './account-state.svelte';
 	import AccountProfileModal from './components/AccountProfileModal.svelte';
@@ -72,8 +72,12 @@
 		MODAL_TAB_QUERY_KEY,
 	] as const;
 
-	$effect.pre(() => {
-		if (!browser) {
+	let routerMounted = $state(false);
+	onMount(() => {
+		routerMounted = true;
+	});
+	$effect(() => {
+		if (!browser || !routerMounted) {
 			return;
 		}
 		const url = $page.url;

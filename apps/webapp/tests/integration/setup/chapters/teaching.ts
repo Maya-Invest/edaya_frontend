@@ -1,7 +1,6 @@
 import {
 	fillLabeledInput,
 	searchAndSelectPerson,
-	selectNativeFilter,
 } from '../../../../scripts/qa-harness-ui';
 import { apiFetch, resolveSchoolId, ensureClassSubjectForClass, ensureGeneratedTeacherTimetableSession } from '../journey-api';
 import {
@@ -120,8 +119,8 @@ export async function runTeachingChapter(journey: UiJourney): Promise<void> {
 			pathname: `/school/teachers/${entities.teacherId}/assignments`,
 			command: 'teacher-assignments',
 			fill: async (current) => {
-				await selectNativeFilter(current, 1, { value: classId });
-				const subjectSelect = current.getByRole('dialog').locator('select').nth(2);
+				await current.getByRole('dialog').getByRole('combobox', { name: /^(class|classe)$/i }).selectOption(classId);
+				const subjectSelect = current.getByRole('dialog').getByRole('combobox', { name: /subject offering|matière dans la classe/i });
 				await subjectSelect.locator(`option[value="${teachingId}"]`).waitFor({ state: 'attached' });
 				await subjectSelect.selectOption(teachingId);
 			},
@@ -161,11 +160,11 @@ export async function runTeachingChapter(journey: UiJourney): Promise<void> {
             parentRoute: '/configuration/tools/teacher-assignments', modal: 'create',
             pathname: '/configuration/tools/teacher-assignments', command: 'teacher-assignments',
             fill: async current => {
-                const selects = current.getByRole('dialog').locator('select');
+                const dialog = current.getByRole('dialog');
                 await current.getByRole('dialog').locator(`option[value="${hubTeacherId}"]`).waitFor({ state: 'attached', timeout: 15000 });
-                await selects.nth(0).selectOption(hubTeacherId);
-                await selects.nth(1).selectOption('homeroom');
-                await selects.nth(2).selectOption(entities.classId!);
+                await dialog.getByRole('combobox', { name: /^(teacher|enseignant)$/i }).selectOption(hubTeacherId);
+                await dialog.getByRole('combobox', { name: /assignment type|type d.affectation/i }).selectOption('homeroom');
+                await dialog.getByRole('combobox', { name: /^(class|classe)$/i }).selectOption(entities.classId!);
             },
             listPath: '/configuration/tools/teacher-assignments',
             actionPath: 'http://localhost:5173/configuration/tools/teacher-assignments',

@@ -13,6 +13,6 @@ export async function uiCommand(page: Page, path: string, action: () => Promise<
 
 /** Dialog closure and URL history settle separately; reloading between them reopens the modal. */
 export async function waitForMutationDialog(page: Page): Promise<void> {
-  await page.getByRole('dialog').waitFor({ state: 'hidden', timeout: 20000 });
+  await page.locator('[data-testid="form-modal"], [data-testid="confirm-modal"], [data-testid="picker-modal"]').waitFor({ state: 'hidden', timeout: 20000 });
   await page.waitForURL(url => !url.searchParams.has('modal'), { timeout: 20000, waitUntil: 'domcontentloaded' });
 }

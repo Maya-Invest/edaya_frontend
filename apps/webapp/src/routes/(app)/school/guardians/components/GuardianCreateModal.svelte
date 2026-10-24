@@ -35,13 +35,13 @@
 		hasAccess = true;
 		sendAccountInvitation = true;
 	}
-	const canSubmit = $derived(firstName.trim().length > 0 && lastName.trim().length > 0 && contacts.every(method => method.value.trim().length > 0));
+	const canSubmit = $derived(lastName.trim().length > 0 && contacts.every(method => method.value.trim().length > 0));
 	async function submit() {
 		if (!canSubmit) {
 			return;
 		}
 		busy = true;
-		const fullName = `${firstName.trim()} ${lastName.trim()}`;
+		const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
 		const guardianId = await guardiansPage.createGuardian({
 			profile: additional,
 			firstName,

@@ -66,7 +66,7 @@ export class ToolsPageState {
 
   get allowedImportTabs(): ImportTypeKey[] {
     return IMPORT_TYPE_DEFINITIONS
-      .filter(definition => !definition.permission || hasPermission(definition.permission))
+      .filter(definition => !definition.permission || hasPermission(definition.permission) || (definition.key === 'students' && hasPermission('STUDENT_MANAGE')))
       .map(definition => definition.key);
   }
 
@@ -89,7 +89,7 @@ export class ToolsPageState {
       tab: this.modals.tab,
     }, this.allowedImportTabs);
     if (
-      this.modals.target !== null
+      (this.modals.target !== null && this.modals.active !== 'import')
       || canonical.modal !== this.modals.active
       || canonical.step !== this.modals.step
       || canonical.tab !== this.modals.tab
@@ -113,14 +113,21 @@ export class ToolsPageState {
       modal: canonical.modal,
       step: canonical.step,
       tab: canonical.tab,
+      target: canonical.modal === 'import' ? this.modals.target : null,
     });
     this.modals.active = canonical.modal;
-    this.modals.target = null;
+    if (canonical.modal !== 'import')
+this.modals.target = null;
     this.modals.step = canonical.step;
     this.modals.tab = canonical.tab;
     if (href !== `${currentUrl.pathname}${currentUrl.search}`) {
       replaceRouteSurface(href);
     }
+  }
+
+  selectImportBatch(id: string | null) {
+    this.modals.target = id;
+    this.replaceWorkflowSurface({ modal: 'import', step: this.modals.step, tab: this.modals.tab });
   }
 
   applySlice(data: ImportPageSlice) {
@@ -129,6 +136,7 @@ export class ToolsPageState {
   }
 
   clear() {
+    this.importState.clear();
     this.slice = null;
   }
 

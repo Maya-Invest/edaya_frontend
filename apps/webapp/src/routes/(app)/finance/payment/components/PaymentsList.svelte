@@ -6,6 +6,7 @@
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import FilterPanel from '$lib/components/ui/FilterPanel.svelte';
 	import ListEntityTable from '$lib/components/ui/ListEntityTable.svelte';
+	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
@@ -71,13 +72,14 @@
 	const reverseTarget = $derived(modals.active === 'reverse' ? modals.target : null);
 	$effect(() => {
 		const next = initialFilters;
-		listFilters.hydrate({
+		// URL hydration must not subscribe to local edits before their debounce flushes.
+		untrack(() => listFilters.hydrate({
 			q: next.q,
 			status: (statusKeys.includes(next.status as (typeof statusKeys)[number])
 				? next.status
 				: 'all'),
 			class: next.class,
-		});
+		}));
 	});
 	$effect(() => {
 		if (!listFilters.ready) {
@@ -111,12 +113,9 @@
 			</div>
 		{/snippet}
 
-		{#snippet primary()}<PermissionGate permission="PAYMENT_RECORD"><Button size="sm" onclick={() => modals.open('payment')}>{$t('finance.recordPayment')}</Button></PermissionGate>{/snippet}
+		{#snippet primary()}<PermissionGate permission="PAYMENT_REVERSE"><Button size="sm" variant="outline" onclick={() => modals.open('refund')}>{$t('payment.refund')}</Button></PermissionGate><PermissionGate permission="PAYMENT_RECORD"><Button size="sm" onclick={() => modals.open('payment')}>{$t('finance.recordPayment')}</Button></PermissionGate>{/snippet}
 		{#snippet more()}
-			<RowActionMenu>
-				<RowActionMenuItem onclick={() => void exportMatchingList({ filename: 'payments.csv', headers: ['date', 'student', 'kind', 'method', 'amount', 'currency', 'status'], loadAll: async () => (await readAllPayments(billingFilters($page.url))).map(row => [row.paymentDate, row.studentName ?? row.studentId, row.kind, row.method, row.amount, row.currency, row.status]) })}>{$t('list.export')}</RowActionMenuItem>
-				<PermissionGate permission="PAYMENT_REVERSE"><RowActionMenuItem onclick={() => modals.open('refund')}>{$t('payment.refund')}</RowActionMenuItem></PermissionGate>
-			</RowActionMenu>
+			<ListMoreMenu exportOnly onExport={() => void exportMatchingList({ filename: 'payments.csv', headers: ['date', 'student', 'kind', 'method', 'amount', 'currency', 'status'], loadAll: async () => (await readAllPayments(billingFilters($page.url))).map(row => [row.paymentDate, row.studentName ?? row.studentId, row.kind, row.method, row.amount, row.currency, row.status]) })} />
 		{/snippet}
 	</ListPageHeader>
 

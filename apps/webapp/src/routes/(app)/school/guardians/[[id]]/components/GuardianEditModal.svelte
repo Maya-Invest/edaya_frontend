@@ -36,13 +36,13 @@
 	$effect(() => {
 		resetForm();
 	});
-	const canSubmit = $derived(firstName.trim().length > 0 && lastName.trim().length > 0 && contactMethods.every(method => method.value.trim()));
+	const canSubmit = $derived(lastName.trim().length > 0 && contactMethods.every(method => method.value.trim()));
 	async function submit() {
 		if (!canSubmit) {
 			return;
 		}
 		busy = true;
-		const fullName = `${firstName.trim()} ${lastName.trim()}`;
+		const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
 		const ok = await guardiansPage.updateContact({
 			guardianId: guardian.id,
 			profile: additional,

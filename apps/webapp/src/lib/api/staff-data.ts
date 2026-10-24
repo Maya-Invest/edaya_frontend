@@ -183,6 +183,7 @@ export function mapStaffMembers(
 				subjectsRaw,
 			),
 			email: member.email ?? '',
+			phone: member.phone ?? null,
 			classes: classesTaught,
 			mainClassId,
 			subjectsTaught: catalogSubjectIds,

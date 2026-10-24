@@ -309,7 +309,9 @@
 
 	{#if view === 'table'}
 		<DirectoryColumnData owner={directoryColumns} rows={listVisible} />
-		<ListEntityTable onVisibleColumnsChange={keys => directoryColumns.keys = keys} listKey="StudentsList"
+		<ListEntityTable onVisibleColumnsChange={(keys) => {
+			directoryColumns.keys = keys;
+		}} listKey="StudentsList"
 			{columns}
 			rows={listVisible}
 			highlightId={selectedId}

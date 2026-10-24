@@ -216,3 +216,5 @@ describe('configuration and activity loading', () => {
 		});
 	});
 });
+
+

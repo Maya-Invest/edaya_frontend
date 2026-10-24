@@ -228,6 +228,7 @@ export type StaffRole
 		| 'staff';
 
 export interface StaffMember {
+	phone?: string | null;
 	firstName?: string | null;
 	lastName?: string | null;
 	code?: string | null;

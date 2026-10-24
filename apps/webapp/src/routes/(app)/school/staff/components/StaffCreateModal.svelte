@@ -37,6 +37,7 @@
 	let profileRole = $state<StaffProfileRole>(DEFAULT_STAFF_PROFILE_ROLE);
 	let code = $state('');
 	let email = $state('');
+	let phone = $state('');
 	let sendAccountInvitation = $state(true);
 	const formData = staffPage.creationPermissionData;
 	const schoolId = $derived(authSession.schoolId ?? academicContext.schools[0]?.id ?? '');
@@ -54,6 +55,7 @@
 		profileRole = DEFAULT_STAFF_PROFILE_ROLE;
 		code = '';
 		email = '';
+		phone = '';
 		sendAccountInvitation = true;
 		permissionProfileId = '';
 		customScopes = [];
@@ -84,6 +86,7 @@
 			lastName,
 			code,
 			email,
+			phone,
 			profileRole,
 			sendAccountInvitation,
 			permissionProfileId: permissionProfileId || undefined,
@@ -192,6 +195,8 @@
 			{$t('common.email')}
 		</Label>
 		<Input type="email" bind:value={email} autocomplete="email" aria-label={$t('common.email')} />
+		<Label>{$t('common.phone')}</Label>
+		<Input type="tel" bind:value={phone} autocomplete="tel" aria-label={$t('common.phone')} />
 	</div>
 	<div class="flex items-start gap-3 rounded-xl border border-border bg-secondary/30 px-3 py-2.5">
 		<Checkbox bind:checked={sendAccountInvitation} id="staff-send-invite" />

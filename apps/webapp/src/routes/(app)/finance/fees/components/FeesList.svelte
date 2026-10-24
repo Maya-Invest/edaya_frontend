@@ -27,6 +27,7 @@
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { hasPermission } from '$lib/permissions';
+	import { untrack } from 'svelte';
 	import { SvelteURL } from 'svelte/reactivity';
 	import { get } from 'svelte/store';
 	import FinanceOverview from '../../components/FinanceOverview.svelte';
@@ -91,9 +92,13 @@
 		if (!modals.ready || !modals.target || !['edit', 'archive', 'activate'].includes(modals.active ?? ''))
 			return;
 		if (!$page.params.feeId) {
-			const url = new SvelteURL($page.url);
-			url.pathname = `/finance/fees/${encodeURIComponent(modals.target)}`;
-			appGoto(url.pathname + url.search, { replaceState: true });
+			const currentUrl = $page.url;
+			const target = modals.target;
+			untrack(() => {
+				const url = new SvelteURL(currentUrl);
+				url.pathname = `/finance/fees/${encodeURIComponent(target)}`;
+				void appGoto(url.pathname + url.search, { replaceState: true });
+			});
 		}
 	});
 	function openEdit(fee: Fee) {

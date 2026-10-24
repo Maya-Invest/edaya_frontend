@@ -186,13 +186,20 @@ const routeCases = [
 		'/configuration/tools/teacher-assignments',
 		['create'],
 	],
-	['finance-fees', '/finance/fees', ['create', 'edit', 'archive']],
+	['finance-fees', '/finance/fees', ['create', 'edit', 'archive', 'activate']],
+	['finance-fee-detail', '/finance/fees/fee-1', ['edit', 'archive', 'activate', 'assign-fee']],
 	['finance-billing-list', '/finance/billing', ['assign-fee']],
 	['finance-billing-detail', '/finance/billing/billing-1', ['assign-fee', 'payment', 'allocate', 'unallocate', 'waive', 'adjust', 'cancel']],
-	['finance-payments', '/finance/payment', ['reverse', 'refund']],
+	['finance-payments', '/finance/payment', ['payment', 'reverse', 'refund']],
 ] as const;
 
 describe('route modal catalog', () => {
+	it('retains billing actions on payment and history tabs', () => {
+		for (const tab of ['payments', 'history']) {
+			for (const action of ['payment', 'allocate', 'unallocate', 'waive', 'adjust', 'cancel'])
+				expect(isKnownModalForPathname(`/finance/billing/charge-1/${tab}`, action)).toBeTrue();
+		}
+	});
 	it('matches permission profile detail URLs to the existing modal family', () => {
 		const family = ROUTE_MODAL_CATALOG.find(entry => entry.routeFamily === 'configuration-permission-profiles');
 		expect(family?.pathnamePattern.test('/configuration/permission-profiles/profile-1')).toBe(true);

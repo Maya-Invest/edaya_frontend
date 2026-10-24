@@ -16,7 +16,7 @@ async function command(page: Page, base: string, name: string, data: Row): Promi
   assert(response.ok(), `Required finance fixture ${name}: HTTP ${response.status()}: ${await response.text()}`);
   return await response.json() as Row;
 }
-async function financeFixture(page: Page, base: string, classId: string) {
+export async function financeFixture(page: Page, base: string, classId: string) {
   const classroom = await read(page, base, 'class-groups', classId);
   const school = await read(page, base, 'schools', classroom.schoolId);
   const year = classroom.academicYearId;

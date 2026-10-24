@@ -54,7 +54,7 @@
 />
 
 <div class="grid gap-4 md:grid-cols-2 xl:max-w-4xl">
-	<PermissionGate permission="STUDENT_CREATE">
+	{#if toolsPage.allowedImportTabs.length > 0}
 		<article
 			class="flex flex-col rounded-xl border border-border bg-card p-5 shadow-sm"
 			data-testid="import-pack-generic"
@@ -88,7 +88,7 @@
 				</Button>
 			</div>
 		</article>
-	</PermissionGate>
+	{/if}
 
 	<PermissionGate permission="TIMETABLE_MANAGE" mode="hide">
 		<article

@@ -1011,17 +1011,14 @@ export async function fillPersonCreateDialogWithInvite(
 		}
 	}
 
-	const emailInput = dialog.locator('input[type="email"]').first();
-	if (await emailInput.isVisible().catch(() => false)) {
-		await emailInput.fill(options.email);
+	// Guardians use a collection editor; create an explicit email contact.
+	// Never infer contact fields from their position among identity inputs.
+	if (await dialog.locator('#guardian-send-invite').count()) {
+		const contacts = dialog.getByRole('group', { name: /contact methods|coordonnées/i });
+		await contacts.getByRole('button', { name: /^(add|ajouter)$/i }).click();
+		await contacts.locator('select').last().selectOption('email');
 	}
-	else {
-		const inputs = dialog.locator('input:not([type="checkbox"])');
-		const inputCount = await inputs.count();
-		if (inputCount >= 3) {
-			await inputs.nth(2).fill(options.email);
-		}
-	}
+	await dialog.locator('input[type="email"]').first().fill(options.email);
 
 	const submit = dialog.getByTestId('form-modal-submit')
 		.or(dialog.getByRole('button', { name: /save|enregistrer|add teacher|ajouter|créer|create/i }))

@@ -47,7 +47,7 @@ export async function createCatalogServiceMutation(input: {
 		id,
 		academicYearId,
 		name: input.name.trim(),
-		description: input.description,
+		description: input.description ?? undefined,
 		category: input.category,
 		enrollmentMode: input.enrollmentMode ?? 'mandatory',
 		defaultPrice: input.amount,

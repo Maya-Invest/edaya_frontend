@@ -11,6 +11,7 @@ export interface RegisterStaffMemberInput {
 	lastName: string;
 	code?: string;
 	email?: string;
+	phone?: string;
 	profileRole?: StaffProfileRole;
 	sendAccountInvitation?: boolean;
 	createdAt?: string;
@@ -31,6 +32,7 @@ export async function registerStaffMember(
 		lastName: input.lastName.trim(),
 		...(code ? { code } : {}),
 		email: email || null,
+		phone: input.phone?.trim() || null,
 		accountKind: 'human',
 		isActive: true,
 		serviceElevated: false,
