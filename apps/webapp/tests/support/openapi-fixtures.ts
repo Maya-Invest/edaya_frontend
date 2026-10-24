@@ -85,6 +85,7 @@ export function classSubject(
 	overrides: Partial<ClassSubject> & Pick<ClassSubject, 'id' | 'classGroupId' | 'subjectId'>,
 ): ClassSubject {
 	return {
+		participationRevision: 0,
 		completedPercentage: 0,
 		isOffered: true,
 		...overrides,

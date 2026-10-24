@@ -76,6 +76,7 @@ export interface Subject {
 	shortName?: string | null;
 	coefficient?: number | null;
 	isOffered?: boolean;
+	participationRevision?: number;
 	completedPercentage?: number | null;
 	periodsPerWeek?: number | null;
 	minPeriodSpan?: number | null;

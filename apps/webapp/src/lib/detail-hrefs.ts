@@ -22,7 +22,7 @@ type SchoolTeacherTabSegment
 		| 'documents';
 type ClassPlanningTabSegment = 'details' | 'attendance' | 'logbook';
 type ClassEvaluationTabSegment = 'details' | 'grading';
-type ClassTeachingTabSegment = 'progression' | 'logbook';
+type ClassTeachingTabSegment = 'progression' | 'logbook' | 'students';
 type ConfigSubjectTabSegment = 'progression' | 'logbook';
 type ConfigClassGroupTabSegment = 'profile' | 'assignments';
 
@@ -75,6 +75,7 @@ const EVALUATION_TAB_ROUTES: Record<ClassEvaluationTabSegment, RouteId> = {
 };
 
 const TEACHING_TAB_ROUTES: Record<ClassTeachingTabSegment, RouteId> = {
+	students: '/(app)/classes/[classId]/teaching/[[id]]/(tabs)/students',
 	progression: '/(app)/classes/[classId]/teaching/[[id]]/(tabs)/progression',
 	logbook: '/(app)/classes/[classId]/teaching/[[id]]/(tabs)/logbook',
 };

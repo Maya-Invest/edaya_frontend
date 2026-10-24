@@ -37,7 +37,8 @@
     "test:integration:teacher-tabs": "bun scripts/focused-integration-run.ts teacher-tabs",
     "test:integration:grading-configuration": "bun scripts/focused-integration-run.ts grading-configuration",
     "test:integration:assessment-permissions": "bun scripts/focused-integration-run.ts assessment-permissions",
-    "test:integration:imports-ui": "bun scripts/focused-integration-run.ts imports-ui"
+    "test:integration:imports-ui": "bun scripts/focused-integration-run.ts imports-ui",
+    "test:integration:subject-enrollment": "bun scripts/focused-integration-run.ts subject-enrollment"
   },
   "dependencies": {
     "@internationalized/date": "^3.12.2",

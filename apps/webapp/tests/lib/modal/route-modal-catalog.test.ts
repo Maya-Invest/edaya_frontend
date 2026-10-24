@@ -6,7 +6,12 @@ import { describe, expect, it } from 'bun:test';
 
 const STUDENT_DETAIL_MODALS = [
 	'create',
-	'edit-profile', 'edit-annual-profile', 'remove-annual-profile', 'guardian-relationship', 'enrollment-progression',
+	'edit-profile',
+	'edit-annual-profile',
+	'remove-annual-profile',
+	'guardian-relationship',
+	'enrollment-progression',
+	'subject-selection',
 	'edit-health',
 	'change-class',
 	'link-guardian',
@@ -34,7 +39,9 @@ const routeCases = [
 		'/school/teachers/teacher-1/availability',
 		[
 			'create',
-			'edit-profile', 'edit-annual-profile', 'remove-annual-profile',
+			'edit-profile',
+			'edit-annual-profile',
+			'remove-annual-profile',
 			'delete',
 			'add-unavailability',
 			'edit-unavailability',
@@ -96,7 +103,8 @@ const routeCases = [
 			'reschedule',
 			'edit-event',
 			'cancel',
-			'session-attendance', 'attendance-review',
+			'session-attendance',
+			'attendance-review',
 			'session-logbook',
 		],
 	],
@@ -109,7 +117,7 @@ const routeCases = [
 	[
 		'class-teaching-detail',
 		'/classes/class-1/teaching/subject-1/logbook',
-		['edit-subject', 'delete'],
+		['edit-subject', 'delete', 'subject-roster'],
 	],
 	[
 		'class-teaching-progression',

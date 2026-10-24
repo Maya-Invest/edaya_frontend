@@ -24,7 +24,8 @@
 		sky: 'Sky',
 		warm: 'Warm',
 	};
-	let { onLoadCategories, onCreateSchedule, onCreateSubjectForClass, onUpdateSubject, subject, classId, weekStart = new Date(), open = $bindable(false), onCreated, disabled = false, title, showTrigger = true }: {
+	let { onLoadParticipationRevisions, onLoadCategories, onCreateSchedule, onCreateSubjectForClass, onUpdateSubject, subject, classId, weekStart = new Date(), open = $bindable(false), onCreated, disabled = false, title, showTrigger = true }: {
+		onLoadParticipationRevisions: (subjectId: string) => Promise<Record<string, number>>;
 		onLoadCategories: (schoolId: string) => Promise<SubjectCategoryOption[]>;
 		onCreateSchedule: typeof createScheduleMutation;
 		onCreateSubjectForClass: typeof createSubjectForClassMutation;
@@ -38,6 +39,8 @@
 		title?: string;
 		showTrigger?: boolean;
 	} = $props();
+	let expectedParticipationRevisions = $state<Record<string, number> | undefined>();
+	let policyLoadError = $state('');
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let name = $state('');
@@ -61,7 +64,7 @@
 	const hasSharedWorkload = $derived(Boolean(subject?.gradeLevelId));
 	const colorLabel = $derived(COLOR_LABELS[color]);
 	const canSubmit = $derived.by(() => {
-		return ((isEdit && !subject?.disciplineId) || disciplineId.length > 0) && (coefficient === '' || (Number.isFinite(Number(coefficient)) && Number(coefficient) > 0)) && name.trim().length > 0 && categoryId.length > 0 && (isEdit || (classId?.length ?? 0) > 0);
+		return (!isEdit || expectedParticipationRevisions !== undefined) && ((isEdit && !subject?.disciplineId) || disciplineId.length > 0) && (coefficient === '' || (Number.isFinite(Number(coefficient)) && Number(coefficient) > 0)) && name.trim().length > 0 && categoryId.length > 0 && (isEdit || (classId?.length ?? 0) > 0);
 	});
 	const selectedCategoryName = $derived(categories.find(category => category.id === categoryId)?.name ?? '');
 	async function loadCategories() {
@@ -104,6 +107,15 @@
 		if (open && !wasOpen) {
 			resetForm();
 			void loadCategories();
+			expectedParticipationRevisions = undefined;
+			policyLoadError = '';
+			if (subject) {
+				void onLoadParticipationRevisions(subject.subjectId ?? subject.id).then((value) => {
+					expectedParticipationRevisions = value;
+				}).catch((error) => {
+					policyLoadError = error instanceof Error ? error.message : String(error);
+				});
+			}
 		}
 		wasOpen = open;
 	});
@@ -119,6 +131,7 @@
 			if (subject) {
 				const ok = await onUpdateSubject({
 					classSubjectId: subject.id,
+					expectedParticipationRevisions,
 					subjectId: hasSharedWorkload ? subject.id : undefined,
 					...workload?.value,
 					name,
@@ -196,6 +209,7 @@
 	onCancel={resetForm}
 	onSubmit={submit}
 >
+	{#if policyLoadError}<p class="text-destructive">{policyLoadError}</p>{/if}
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('subjects.name')}

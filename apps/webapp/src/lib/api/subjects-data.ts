@@ -317,6 +317,7 @@ export function mapClassSubjects(
 			shortName: subject.shortName ?? null,
 			coefficient: classSubject.coefficient ?? subject.coefficient ?? null,
 			isOffered: classSubject.isOffered,
+			participationRevision: classSubject.participationRevision,
 			completedPercentage: classSubject.completedPercentage ?? null,
 			periodsPerWeek: classSubject.periodsPerWeek ?? null,
 			minPeriodSpan: classSubject.minPeriodSpan ?? null,

@@ -4,6 +4,7 @@ import { getBrowserSchoolClient } from '$lib/api/school-client';
 export async function setClassSubjectOfferedMutation(input: {
 	classSubjectId: string;
 	isOffered: boolean;
+	expectedParticipationRevision: number;
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
@@ -11,8 +12,9 @@ export async function setClassSubjectOfferedMutation(input: {
 		() => client.commands.setClassSubjectOffered({
 			classSubjectId: input.classSubjectId,
 			isOffered: input.isOffered,
+			expectedParticipationRevision: input.expectedParticipationRevision,
 		}),
-		{ successMessage: input.successMessage, versionKeys: ['subjects', 'planning', 'reportCards'] },
+		{ successMessage: input.successMessage, versionKeys: ['subjects', 'subjectEnrollments', 'attendance', 'evaluations', 'planning', 'reportCards'] },
 	);
 	return result !== null;
 }
@@ -21,6 +23,7 @@ export async function updateSubjectSettingsMutation(input: {
 	subjectId: string;
 	coefficient?: number;
 	isOptional?: boolean;
+	expectedParticipationRevisions?: Record<string, number>;
 	successMessage?: string;
 }): Promise<boolean> {
 	const client = getBrowserSchoolClient();
@@ -29,8 +32,9 @@ export async function updateSubjectSettingsMutation(input: {
 			subjectId: input.subjectId,
 			coefficient: input.coefficient,
 			isOptional: input.isOptional,
+			expectedParticipationRevisions: input.expectedParticipationRevisions,
 		}),
-		{ successMessage: input.successMessage, versionKeys: ['subjects', 'planning', 'reportCards'] },
+		{ successMessage: input.successMessage, versionKeys: ['subjects', 'subjectEnrollments', 'attendance', 'evaluations', 'planning', 'reportCards'] },
 	);
 	return result !== null;
 }
@@ -44,7 +48,7 @@ export async function removeSubjectMutation(input: {
 		() => client.commands.removeSubject({
 			subjectId: input.subjectId,
 		}),
-		{ successMessage: input.successMessage, versionKeys: ['subjects', 'planning', 'reportCards'] },
+		{ successMessage: input.successMessage, versionKeys: ['subjects', 'subjectEnrollments', 'attendance', 'evaluations', 'planning', 'reportCards'] },
 	);
 	return result !== null;
 }

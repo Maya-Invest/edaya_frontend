@@ -46,6 +46,7 @@ export const QA_TEMPLATE_MATRIX_GENERATED: QaTemplateRow[] = [
 	{ module: 'Classes', endpoint: 'http://localhost:5173/classes/[classId]/students/[id]/incidents', action: 'Navigation directe — contenu visible' },
 	{ module: 'Classes', endpoint: 'http://localhost:5173/classes/[classId]/teaching', action: 'Navigation directe — contenu visible' },
 	{ module: 'Classes', endpoint: 'http://localhost:5173/classes/[classId]/teaching/[id]/logbook', action: 'Navigation directe — contenu visible' },
+	{ module: 'Classes', endpoint: 'http://localhost:5173/classes/[classId]/teaching/[id]/students', action: 'Navigation directe — contenu visible' },
 	{ module: 'Classes', endpoint: 'http://localhost:5173/classes/[classId]/teaching/[id]/progression', action: 'Navigation directe — contenu visible' },
 	{ module: 'Classes', endpoint: 'http://localhost:5173/classes/[classId]/timetable', action: 'Navigation directe — contenu visible' },
 	{ module: 'Classes', endpoint: 'http://localhost:5173/classes/[classId]/timetable/[id]/attendance', action: 'Navigation directe — contenu visible' },

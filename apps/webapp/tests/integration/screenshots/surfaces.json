@@ -296,6 +296,14 @@
     "identity": "owner"
   },
   {
+    "id": "view.classes.class.teaching.record.students",
+    "feature": "classes",
+    "path": "/classes/[classId]/teaching/[id]/students",
+    "title": "Dated subject roster",
+    "kind": "page",
+    "identity": "owner"
+  },
+  {
     "id": "view.classes.class.timetable",
     "feature": "classes",
     "path": "/classes/[classId]/timetable",

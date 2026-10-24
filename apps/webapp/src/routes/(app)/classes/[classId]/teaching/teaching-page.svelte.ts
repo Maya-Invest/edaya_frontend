@@ -9,6 +9,7 @@ import { createSubjectForClassMutation, updateSubjectMutation } from '$lib/api/m
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadSubjectCategories } from '$lib/api/subject-categories-data';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { loadSubjectParticipationRevisions } from '$lib/subjects/update-subject';
 import { getContext, setContext } from 'svelte';
 import {
   emptyTeachingSlice,
@@ -29,6 +30,7 @@ const TEACHING_PAGE_STATE_KEY = Symbol('teaching-page-state');
 export type { TeachingPageSlice };
 
 export class TeachingPageState {
+  onLoadParticipationRevisions = (subjectId: string) => loadSubjectParticipationRevisions(getBrowserSchoolClient(), subjectId);
   onLoadCategories = (schoolId: string) => loadSubjectCategories(getBrowserSchoolClient(), schoolId);
 
   performUpdateSubject = (...args: Parameters<typeof updateSubjectMutation>) => updateSubjectMutation(...args);

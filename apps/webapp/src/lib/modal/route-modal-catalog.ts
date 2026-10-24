@@ -12,6 +12,7 @@ const STUDENT_DETAIL_MODALS = [
 	'remove-annual-profile',
 	'guardian-relationship',
 	'enrollment-progression',
+	'subject-selection',
 	'edit-health',
 	'change-class',
 	'link-guardian',
@@ -210,8 +211,8 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'class-teaching-detail',
 		pathnamePattern:
-			/^\/classes\/[^/]+\/teaching\/[^/]+(?:\/(?:progression|logbook))?\/?$/,
-		modalNames: ['edit-subject', 'delete'],
+			/^\/classes\/[^/]+\/teaching\/[^/]+(?:\/(?:progression|logbook|students))?\/?$/,
+		modalNames: ['edit-subject', 'delete', 'subject-roster'],
 	},
 	{
 		routeFamily: 'class-teaching-progression',

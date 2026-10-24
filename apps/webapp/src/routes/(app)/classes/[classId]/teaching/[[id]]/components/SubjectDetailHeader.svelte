@@ -94,7 +94,7 @@
 	{/snippet}
 </DrawerEntityHeader>
 
-<SubjectFormModal onLoadCategories={teachingPage.onLoadCategories} onCreateSchedule={teachingPage.performCreateSchedule} onCreateSubjectForClass={teachingPage.performCreateSubjectForClass} onUpdateSubject={teachingPage.performUpdateSubject} subject={subject} bind:open={editSubjectOpen.open} showTrigger={false} />
+<SubjectFormModal onLoadParticipationRevisions={teachingPage.onLoadParticipationRevisions} onLoadCategories={teachingPage.onLoadCategories} onCreateSchedule={teachingPage.performCreateSchedule} onCreateSubjectForClass={teachingPage.performCreateSubjectForClass} onUpdateSubject={teachingPage.performUpdateSubject} subject={subject} bind:open={editSubjectOpen.open} showTrigger={false} />
 
 <ConfirmModal
 	bind:open={deleteOpen.open}

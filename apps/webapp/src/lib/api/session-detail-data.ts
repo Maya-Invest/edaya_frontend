@@ -11,6 +11,7 @@ import type {
 } from '$lib/types/session-detail';
 import {
 	entitiesByIds,
+	listAllEntityPages,
 	progressForLessonSessions,
 	recordsForFieldIds,
 } from '$lib/api/entity-list-filters';
@@ -148,7 +149,8 @@ export async function loadSessionDetail(
 		return null;
 	}
 
-	const classStudents = mapStudents(await fetchClassPeopleSources(client, session.classGroupId));
+	const roster = await client.queries.getClassSubjectRoster({ classSubjectId: session.classSubjectId, at: String(session.startsAt) });
+	const classStudents = mapStudents({ studentsRaw: await listAllEntityPages(query => client.entities.students.list(query), { baseQuery: entitiesByIds(roster.students.map(row => row.id)) }), enrollmentsRaw: [], guardiansRaw: [], linksRaw: [] });
 	const classSubjectId = session.classSubjectId;
 	const [attendanceRaw, classSubjectMattersRaw, progressRaw] = await Promise.all([
 		client.entities.attendance.list(recordsForFieldIds('lessonSessionId', [lessonSessionId])),
@@ -254,7 +256,11 @@ async function loadAssessmentOccurrenceDetail(
 		return null;
 	}
 
-	const classStudents = mapStudents(await fetchClassPeopleSources(client, assessment.classGroupId));
+	const at = assessment.dueAt ?? assessment.startsAt ?? (assessment.lessonSessionId ? (await client.entities.lessonSessions.get(assessment.lessonSessionId)).startsAt : undefined);
+	if (!at)
+		throw new Error('Assessment date is required');
+	const roster = await client.queries.getClassSubjectRoster({ classSubjectId: assessment.classSubjectId, at: String(at) });
+	const classStudents = mapStudents({ studentsRaw: await listAllEntityPages(query => client.entities.students.list(query), { baseQuery: entitiesByIds(roster.students.map(row => row.id)) }), enrollmentsRaw: [], guardiansRaw: [], linksRaw: [] });
 	const attendanceRaw = await client.entities.attendance.list(
 		recordsForFieldIds('assessmentId', [assessmentId]),
 	);

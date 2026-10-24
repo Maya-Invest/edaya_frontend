@@ -20,6 +20,10 @@
 	} = $props();
 
 	let target = $state('');
+	let unsupported = $state<{ subjectId: string; name: string }[]>([]);
+	let acknowledged = $state(false);
+	let previewReady = $state(false);
+	let previewError = $state('');
 	let busy = $state(false);
 	let wasOpen = $state(false);
 
@@ -40,6 +44,29 @@
 	});
 
 	const enrollmentsTab = getStudentEnrollmentsTabState();
+	$effect(() => {
+		const destination = target;
+		const studentId = s.id;
+		const enrollmentId = s.enrollmentId;
+		previewReady = false;
+		acknowledged = false;
+		previewError = '';
+		let cancelled = false;
+		if (open && enrollmentId && destination !== s.classId) {
+			void enrollmentsTab.previewTransfer(studentId, enrollmentId, destination).then((rows) => {
+				if (!cancelled) {
+					unsupported = rows;
+					previewReady = true;
+				}
+			}).catch((error) => {
+				if (!cancelled)
+					previewError = error instanceof Error ? error.message : String(error);
+			});
+		}
+		return () => {
+			cancelled = true;
+		};
+	});
 
 	async function confirmTransfer() {
 		if (target === s.classId || !s.enrollmentId) {
@@ -54,6 +81,7 @@
 			enrollmentId: s.enrollmentId,
 			studentId: s.id,
 			nextClassGroupId: target,
+			acknowledgedDroppedSubjectIds: acknowledged ? unsupported.map(row => row.subjectId) : [],
 			successMessage: get(t)('student.transferSuccess', {
 				name: s.name,
 				class: targetClass?.name ?? get(t)('student.newClass'),
@@ -80,7 +108,7 @@
 	})}
 	submitLabel={$t('common.confirm')}
 	busy={busy}
-	submitDisabled={target === s.classId || !s.enrollmentId}
+	submitDisabled={target === s.classId || !s.enrollmentId || !previewReady || (unsupported.length > 0 && !acknowledged)}
 	onSubmit={confirmTransfer}
 >
 	<div class="space-y-2 py-2">
@@ -102,6 +130,14 @@
 				{/each}
 			</Select.Content>
 		</Select.Root>
+		{#if previewError}<p role="alert" class="text-sm text-destructive">{previewError}</p>{/if}
+		{#if previewReady && unsupported.length}
+			<div class="space-y-2 rounded-lg border p-3">
+				<p>{$t('participation.unsupported')}</p>
+				{#each unsupported as subject (subject.subjectId)}<p class="text-sm">{subject.name}</p>{/each}
+				<label class="flex gap-2"><input type="checkbox" bind:checked={acknowledged} />{$t('participation.acknowledge')}</label>
+			</div>
+		{/if}
 		{#if targetClass && target !== s.classId}
 			<p class="text-xs text-muted-foreground">
 				{$t('student.transferPreview', { name: s.name, class: targetClass.name })}

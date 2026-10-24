@@ -12,6 +12,7 @@
 	import { createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { hasPermission } from '$lib/permissions';
 	import { getStudentEnrollmentsTabState } from './student-enrollments-tab.svelte';
+	import SubjectParticipation from './SubjectParticipation.svelte';
 
 	const { s }: {
 		s: Student;
@@ -64,7 +65,7 @@
 <div class="space-y-4">
 	<div>
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-			{$t('drawer.tab.enrollments')} · {enrollments.length}
+			{$t('student.class')} · {enrollments.length}
 		</Label>
 		<div class="mt-2 space-y-2">
 			{#if enrollments.length === 0}
@@ -136,6 +137,7 @@
 			{/if}
 		</div>
 	</div>
+	<SubjectParticipation studentId={s.id} />
 </div>
 
 <FormModal {open} onOpenChange={(value) => {

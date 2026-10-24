@@ -1,5 +1,5 @@
-import type { components } from '$lib/api/schema';
 import type { PlanningSources } from '$lib/api/planning-data';
+import type { components } from '$lib/api/schema';
 import { academicYearPlanningRange, mapPlanningEvents } from '$lib/api/planning-data';
 import { describe, expect, test } from 'bun:test';
 
@@ -106,11 +106,15 @@ describe('mapPlanningEvents', () => {
 				classGroupId: 'cg-1',
 				subjectId: 'subj-math',
 				completedPercentage: null,
+				participationRevision: 0,
 				isOffered: true,
 			} satisfies ClassSubjectRaw],
 			subjectsRaw: [{
 				id: 'subj-math',
-				schoolId: 'school-1', gradeLevelId: 'grade-6', academicYearId: 'year-1', isOptional: false,
+				schoolId: 'school-1',
+				gradeLevelId: 'grade-6',
+				academicYearId: 'year-1',
+				isOptional: false,
 				name: 'Mathematics',
 				categoryId: 'school-1:subject-category:scientifique',
 				color: 'mint',

@@ -22,7 +22,7 @@
 		const base = detailHref.classTeachingSubjectTab(
 			classId,
 			subject.id,
-			segment as 'progression' | 'logbook',
+			segment as 'progression' | 'logbook' | 'students',
 		);
 		return `${base}${next.search}`;
 	}

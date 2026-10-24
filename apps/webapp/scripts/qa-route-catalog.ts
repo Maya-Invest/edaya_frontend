@@ -216,7 +216,7 @@ export const DRAWER_TAB_PATTERNS: readonly DrawerTabPattern[] = [
 	{
 		name: 'class teaching',
 		routePattern: '/classes/[classId]/teaching/[id]',
-		tabs: ['progression', 'logbook'],
+		tabs: ['progression', 'logbook', 'students'],
 	},
 	{
 		name: 'class students',

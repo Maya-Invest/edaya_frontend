@@ -751,3 +751,9 @@ Query identities include school, year, selected entity, relevant filters and aut
 Annual-profile query identities include authenticated subject, school, person and academic year. Directory sidecar identities additionally include the loaded person IDs and selected column keys. Abort/stale-context guards prevent earlier requests from populating a later context. State-owned widget queries which cannot restore their state from a cached payload disable PageQuery caching. Queries batch selected optional groups and never issue a request per row. Column visibility cannot authorize a read.
 
 Profile edits preserve omitted values and clear only explicit nulls. They must retain canonical name components, full guardian contact collections, arbitrary medical text, graduated lifecycle state and exact unmodified validity instants. Failed saves preserve the draft. Audit actors, revision/sequence counters and calculated results are server-controlled.
+
+### Subject participation routes
+
+The shared student Enrollments owner loads `getStudentSubjectEnrollments`; the class-subject Students route loads `getClassSubjectRoster`. Optional writes use `manageStudentSubjectEnrollments`, a stable retry request identity and expected offering revisions. The `subjectEnrollments` version key invalidates both owners. Subject mutations use URL-backed modals (`subject-selection`, `subject-roster`); the roster date is persisted as `rosterAt` in the URL.
+
+Participation forms initialize only after their URL target has loaded, preserve unchanged timestamp boundaries when editing date-only controls, and retain drafts on roster conflicts. Bulk actions resolve eligible placements and intervals at the mutation date independently of the displayed roster date. Refresh both the roster revision and interval history after conflicts.

@@ -29,6 +29,7 @@ export interface AssessmentsSources {
 	subjectsRaw: SubjectRaw[];
 	enrollmentsRaw: EnrollmentRaw[];
 	classSize?: number;
+	markResults?: { assessmentId: string; rosterCount: number }[];
 	readableMarkAssessmentIds?: string[];
 }
 
@@ -74,7 +75,7 @@ export function mapClassEvaluations(
 
 			return { ...mapAssessmentToEvaluation(assessment, {
 				subjectName: subject?.name ?? assessment.title,
-				classSize,
+				classSize: sources.markResults?.find(row => row.assessmentId === assessment.id)?.rosterCount ?? classSize,
 				results: assessmentResults,
 			}), marksAvailable: sources.readableMarkAssessmentIds?.includes(assessment.id) ?? true };
 		})

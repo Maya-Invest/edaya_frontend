@@ -7,6 +7,7 @@ import { createSubjectForClassMutation, createSubjectForGradeLevelMutation, upda
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { loadSubjectCategories } from '$lib/api/subject-categories-data';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
+import { loadSubjectParticipationRevisions } from '$lib/subjects/update-subject';
 import { getContext, setContext } from 'svelte';
 import {
   emptySubjectsSlice,
@@ -23,6 +24,7 @@ const SUBJECTS_PAGE_STATE_KEY = Symbol('subjects-page-state');
 export type { SubjectsPageSlice };
 
 export class SubjectsPageState {
+  onLoadParticipationRevisions = (subjectId: string) => loadSubjectParticipationRevisions(getBrowserSchoolClient(), subjectId);
   onLoadCategories = (schoolId: string) => loadSubjectCategories(getBrowserSchoolClient(), schoolId);
 
   loadSubjectCategoriesForForm = (...args: Parameters<typeof loadSubjectCategories> extends [unknown, ...infer Rest] ? Rest : never) => loadSubjectCategories(getBrowserSchoolClient(), ...args);

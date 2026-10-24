@@ -2897,5 +2897,12 @@
     "module": "Configuration",
     "endpoint": "http://localhost:5173/configuration/other/placement-statuses",
     "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.subject-enrollment.roster.navigation",
+    "feature": "web.classes.classId.teaching.id.students",
+    "module": "Classes",
+    "endpoint": "http://localhost:5173/classes/[classId]/teaching/[id]/students",
+    "action": "Navigation directe — contenu visible"
   }
 ]

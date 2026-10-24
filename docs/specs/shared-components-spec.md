@@ -344,3 +344,7 @@ Use ListEntityTable and InfiniteList for fees, assigned fees and payment records
 The Columns control sits above horizontal scrolling. Versioned browser preferences contain keys only, scoped by authenticated subject, school and stable list identifier. Restoration discards obsolete and unavailable keys. Disabled or corrupt browser storage falls back to defaults. Student card layout settings are separate. People-list CSV exports use selected authorized columns across the current matching dataset; document-generation contracts remain separate. Optional relationship and annual groups load in batches; sensitive health groups load only when selected and authorized. Partially authorized rows display Restricted, separately from Not provided.
 
 Shared person identity fields retain canonical first and last names, original supplied names, both student matricules and guardian occupation. Shared guardian contact and relationship editors preserve all unmodified values. Relationship flags always remain attached to their respective student. Unknown annual boolean/number values remain distinct from false and zero.
+
+### Optional subject selection fields
+
+`$lib/subjects/SubjectSelectionFields.svelte` is shared by the School student drawer and Class teaching drawer. It presents Annual, multiple period checkboxes, completed read-only labels and Clear selection. It receives periods, timezone and a bound desired selection; route state owns API calls, revision checks and replay. Clearing selections uses the existing FormModal confirmation action labelled Withdraw.

@@ -58,6 +58,7 @@
 		const ok = await teachingPage.performSetClassSubjectOffered({
 			classSubjectId: subject.id,
 			isOffered: next,
+			expectedParticipationRevision: subject.participationRevision ?? 0,
 			successMessage: get(t)('subjects.offeredUpdated'),
 		});
 		if (ok) {

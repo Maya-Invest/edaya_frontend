@@ -49,6 +49,12 @@ function messageFromApiError(error: ApiError): string | undefined {
 
 export function mutationErrorMessage(error: unknown, fallback: string | undefined, translate: MutationFeedback['translate']): string {
 	if (error instanceof ApiError) {
+		const body = error.body as { code?: string; message?: string; details?: { conflicts?: { kind: string; id: string }[]; assessmentIds?: string[]; lessonSessionIds?: string[]; classSubjectId?: string; actualRevision?: number } } | undefined;
+		if (body?.code?.startsWith('SUBJECT_')) {
+			const details = body.details;
+			const ids = [...(details?.conflicts?.map(row => `${row.kind}: ${row.id}`) ?? []), ...(details?.assessmentIds ?? []), ...(details?.lessonSessionIds ?? [])];
+			return [body.message ?? translate('mutation.conflict'), ids.join(', ')].filter(Boolean).join(' — ');
+		}
 		if (error.status === 409) {
 			return translate('mutation.conflict');
 		}

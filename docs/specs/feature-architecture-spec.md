@@ -740,3 +740,11 @@ Templates and correction reports come from the server's versioned contracts. Cor
 Human-staff phone is optional in create/edit, detail and configurable directory columns. Profile roles remain descriptive and never grant authority.
 
 Phone import previews normalize a leading `#` to `+` only for phone fields, retaining original source cells. Guardian imports accept a last name with an empty first name. Blank first names preserve existing values in M and clear in O; missing columns preserve.
+
+### Subject participation
+
+The Enrollments tab has Class and Optional Subjects sections. Class placement history remains visible. Optional Subjects lists every available optional offering with Annual, selected period labels or Not enrolled and an Enroll/Update action. Scoped ENROLLMENT_MANAGE enables the shared URL-backed selection popup. Annual and period choices are mutually exclusive; empty selection means Withdraw. Current/upcoming periods are selectable, completed selected periods are read-only labels. There are no enrollment date, reason, correction, history or restore controls.
+
+The same selection fields serve teaching drawer bulk management. Mixed student choices require an explicit replacement choice. Failed mutations preserve drafts and replay identity; stale revisions refresh before retry. Confirmation activates current choices immediately; future periods activate at their start. Unchanged choices preserve activation. The backend chooses hard or soft deletion without a separate staff action. Saved attendance and marks remain, and marks continue contributing until manually deleted or exempted through existing permissions and publication protections.
+
+Compulsory enrollment is automatic. Availability and optional status remain independent. Transfers carry remaining compatible choices and disclose unsupported choices for acknowledgment. New years require fresh optional choices. Live rosters, assessment/attendance revisions, draft reports and timetables refresh after changes. Past rosters without saved evidence explicitly show unavailable; no enrollment edit history is inferred. Class scheduling and offering disablement protections remain unchanged.

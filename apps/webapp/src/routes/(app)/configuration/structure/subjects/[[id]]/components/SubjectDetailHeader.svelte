@@ -133,7 +133,7 @@
 	{/snippet}
 </DrawerEntityHeader>
 
-<SubjectFormModal onLoadCategories={subjectsPage.onLoadCategories} onCreateSchedule={subjectsPage.performCreateSchedule} onCreateSubjectForClass={subjectsPage.performCreateSubjectForClass} onUpdateSubject={subjectsPage.performUpdateSubject} subject={subject} bind:open={editSubjectOpen.open} showTrigger={false} />
+<SubjectFormModal onLoadParticipationRevisions={subjectsPage.onLoadParticipationRevisions} onLoadCategories={subjectsPage.onLoadCategories} onCreateSchedule={subjectsPage.performCreateSchedule} onCreateSubjectForClass={subjectsPage.performCreateSubjectForClass} onUpdateSubject={subjectsPage.performUpdateSubject} subject={subject} bind:open={editSubjectOpen.open} showTrigger={false} />
 
 <ConfirmModal
 	bind:open={deleteOpen.open}
