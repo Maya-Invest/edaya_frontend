@@ -1,97 +1,195 @@
-# EDAYA webapp design language
+# EDAYA design language and writing standard
 
-Normative. Applies only to the staff `apps/webapp`. Website, webadmin, services, and generated documents are outside this specification. Source: supplied EDAYA brand guide and outlined logo assets; current source code defines available workflows. Historical proposals and galleries do not authorize feature or navigation changes.
+Normative for the staff `apps/webapp`. The desired UI must use the EDAYA palette, bundled fonts and official artwork. Domain meaning belongs to the feature contract; visual and language choices belong here. This spec must not authorize new business operations or reinterpret a calculation.
 
-## Visual foundations — version 1.0.0
+## 1. Foundations
 
-EDAYA should feel calm, trustworthy, and carefully finished. Staff, teachers, and families should recognize one brand while retaining interfaces suited to their daily tasks. Improve clarity through hierarchy, typography, spacing, and consistent feedback; preserve familiar workflows and effective components.
+| Role | Value | Required use |
+| --- | --- | --- |
+| Primary | `#2563EB`; hover `#1D4ED8`; pressed `#1E40AF` | Primary action, links, selected state |
+| Supporting sky | `#60A5FA` | Decoration; never small text on white |
+| Amber | `#FBBF24` | Decoration under 10% of visible surface, navy foreground |
+| Canvas / surface | `#F0F7FF` / `#FFFFFF` | Page canvas / chrome and content |
+| Text / secondary text | `#1E293B` / `#5B6B82` | Essential information / supporting information |
+| Base slate / separator | `#64748B` / `#E2E8F0` | Input outline / noninteractive divider |
+| Success | `#15803D` on `#F0FDF4` | Confirmed success with text |
+| Warning | `#92400E` on `#FEF3C7` | Caution or pending attention with text |
+| Danger | `#B91C1C` on `#FEF2F2` | Failure, overdue and destructive meaning |
+| Information | `#1D4ED8` on `#E0F2FE` | Informational state with text |
 
-| Role | Light value | Application |
-|---|---|---|
-| Primary | `#2563EB` | Actions, links, selection; hover `#1D4ED8` |
-| Supporting sky | `#60A5FA` | Decoration, never small text on white |
-| Amber | `#FBBF24` | Restrained decoration, under 10% of visible surface; navy foreground |
-| Canvas / surface | `#F0F7FF` / `#FFFFFF` | Sky canvas, white cards and chrome |
-| Text / secondary | `#1E293B` / `#64748B` | Titles/data and supporting labels |
-| Separator / control outline | `#E2E8F0` / `#64748B` | Subtle structure; identifiable inputs |
-| Success | `#15803D` on `#F0FDF4` | Confirmed success, with a label/icon |
-| Warning | `#92400E` on `#FEF3C7` | Pending or caution, with a label/icon |
-| Danger | `#B91C1C` on `#FEF2F2` | Error, overdue, destructive actions |
-| Information | `#1D4ED8` on `#E0F2FE` | Informational states |
+Poppins Semibold must be used for page/section headings. Inter Regular/Medium/Semibold/Bold must be used for body, controls, collection identities and numbers. Fonts must load from bundled files with their OFL licenses; no runtime third-party font requests. Actual code samples may use system monospace. Webapp surfaces are light-only.
 
-The base slate remains `#64748B`; the shared secondary-text role uses `#5B6B82` so small text also meets contrast on the sky canvas (the base slate measures only 4.41:1 there).
+The platform-neutral token manifest is `design-system/tokens.json`; generated local CSS is `apps/webapp/src/lib/design-system/tokens.css`, imported through `app.css`. Semantic tokens must own the values in this spec. Components must not introduce raw color literals, additional font dependencies or per-feature token forks. Generated files must not be edited directly. Shared mobile snapshots may include dark values without introducing a staff-webapp theme switch. Calendar vendor styling must use scoped semantic tokens, not patches to vendor CSS.
 
-Poppins Semibold is for headings; Inter Regular/Medium/Semibold/Bold is for body, labels, buttons, tables, and all numerical data. Load fonts from bundled files with their OFL licenses. Never request fonts from a third-party server at runtime. Use tabular figures for aligned amounts and scores. Use 28px web page titles, 24 logical pixels mobile page titles, 20 section titles, 16 card titles, 14–16 body, and 12 supporting labels. Heading line-height is about 1.3; body 1.5–1.6. Support wrapping and enlargement; do not shrink important values to fit.
+## 2. Measurable composition
 
-Use the 4/8/12/16/24/32/48 spacing scale. Retain established rounded primitives: 12 controls, 14 base, 16 cards, 24 overlays. Keep shadows restrained and neutral. Useful existing motion stays, with reduced-motion support; avoid decorative perpetual animation.
+All dimensions below are CSS pixels at the default text size. Text sizes must use scalable units, respect user enlargement and never become fixed-height clipping constraints. Breakpoints use viewport width; fact-grid columns use available content width.
 
-## Expandable content
+| Element | Required dimension |
+| --- | --- |
+| Page title | 28px, 1.3 line height; 24px below 768px |
+| Section title / record drawer identity | 20px semibold, 1.3 line height |
+| Collection identity | 14px Inter semibold, 1.5 line height |
+| Body / controls | 14px, 1.5 line height |
+| Supporting metadata | 12px, 1.5 line height; never the sole essential identity/value |
+| Page padding | 24px; 16px below 768px |
+| Section / internal / related-control gaps | 24px / 16px / 8px |
+| Interaction target / action icon | At least 44 × 44px / 16 × 16px |
+| List row | 16px padding on every side, content-driven height |
+| Table row | 16px horizontal padding, 48px minimum height, grows for wrapping |
+| Drawer | 50vw from 1024px; full viewport width below 1024px |
+| Form | Maximum 32rem; 48rem only for the wide forms assigned by the app-shell spec; viewport bounded |
+| Control shape | Pill radius; multiline textareas use 16px radius |
+| Collection surface / overlay | 16px / 24px radius; full-screen surfaces have no artificial outer gutter/radius |
 
-Place the disclosure chevron at the leading (left in EN/FR) edge of an expandable header, before its label. Point right when collapsed and down when expanded. Use a keyboard-operable toggle with `aria-expanded`, visible focus and a minimum 44px target. Keep header actions as separate sibling controls on the right, outside the toggle, so actions do not expand or collapse content. Academic year cards keep Archive year visible in this fixed header when published.
+The spacing vocabulary is 4/8/12/16/24/32/48; the required gaps above must not vary by feature. Shadows are restrained and neutral. Motion must communicate a state transition, honor reduced motion and never animate decoratively forever.
 
-## Artwork
+The standard page header must place title/count left and Search, Filter, `···` right. Below 768px the title occupies row one; the toolbar occupies row two with flexible search and two 44px actions. At enlarged text or exceptionally narrow widths, controls may wrap in the same order; labels and targets must not be clipped. A compact Filter has the same interaction target as other controls. The collection primary action belongs first in `···`.
 
-The supplied outlined EDAYA logos are authoritative artwork. Never reconstruct the wordmark using text or substitute an academic icon for the product logo. Use vertical artwork in spacious sign-in areas, horizontal artwork in headers/sidebar areas, and symbols only in compact contexts already identified as EDAYA. Minimum rendered artwork widths: vertical 88, horizontal 128, symbol 32. The wrapper reserves clear space; do not crop its padding. Favicons alone may use the symbol at platform-required 16/24/32px. No recoloring, stretching, shadows on the artwork, or text laid over it. White artwork belongs on a dark or royal-blue surface.
+## 3. Control treatments
 
-## Accessibility and preserved behavior
+All controls must use the shared Button/Input/Select/Checkbox/Dialog primitives. Button labels are Inter medium 14px. Text buttons have 16px horizontal padding, at least 44px height, and 8px icon-label spacing. Icon-only buttons are at least 44px square. Input and select outlines use base slate; focus is a 2px primary outline with a 2px surface-colored gap. Focus must be visible on every interactive surface, including menus and keyboard-operated rows.
 
-Preserve every existing destination, field, data item, control, permission condition, validation rule, loading signal, and action result. UI-only work must not change authentication clients, controllers, API payloads, redirects, route contracts, session handling, grants, business rules, or calculations. A visual limitation is not authorization for a new feature. Keep recognizable operational icons and native platform behaviors.
+| Variant | Rest | Hover / pressed | Assignment |
+| --- | --- | --- | --- |
+| Primary | Primary background, white text, matching border | Primary hover / pressed values above | Form/task submit; first non-destructive drawer action |
+| Secondary | White background, primary text and 1px primary border | Information background / sky canvas with primary border | Second visible drawer action, Cancel, explicit secondary task action |
+| Quiet | Transparent, text foreground; no visible border | Sky canvas / information background | Filter, `···`, icon actions, disclosure, inline navigation |
+| Destructive | White, danger text and 1px danger border | Danger background tint / white with 2px danger inset | Destructive action trigger where explicitly visible |
+| Destructive confirmation | Danger background, white text | `#991B1B` / `#7F1D1D` | Final Delete, Void, Reverse or other destructive confirmation only |
 
-Target WCAG AA: ordinary text 4.5:1, large text and essential control boundaries 3:1; inactive controls remain recognizable. Pair semantic colors with text/icons. Provide persistent labels, visible keyboard focus, logical reading order, meaningful icon-button labels, 44–48px touch targets, FR/EN copy, and 200% text support. Test long names, large amounts, phone/tablet/desktop widths, landscape and keyboard-open forms. Do not hide essential information to fix an overflow.
+Menu entries must be neutral full-width rows with text labels, minimum 44px targets and a sky-canvas hover/focus background. Destructive entries use danger text and are separated at the end. A primary collection action is first in the menu; it is not a filled button embedded in the menu. Selected menu options show a check and text, not color alone.
 
-## Tokens and implementation
+Disabled controls must use the separator fill, secondary text and separator border, with no hover/pressed change. They must remain recognizable and expose the reason in adjacent text or a focus-accessible description. Unauthorized actions must be omitted, not represented as disabled. Busy controls must retain their role colors and measured width, show a 16px spinner plus the localized ongoing-action label, expose busy state and prevent duplicate submission. They must not look like an unexplained disabled control. Icons must come from the shared Lucide exports; no feature-specific substitutes for the same action.
 
-The canonical platform-neutral manifest is `design-system/tokens.json`. Generate local CSS with `bun run repo generate brand`; check it with `--check`. The generated `apps/webapp/src/lib/design-system/tokens.css` is imported through the existing `app.css` entry point and consumed by Tailwind. Builds read committed local assets and never need a mobile checkout. A coordinated version change supplies the identical JSON snapshot to mobile. Never edit generated files directly.
+Input errors use a danger outline and adjacent localized error text. Selected rows use the information tint plus a primary leading marker/border; keyboard focus is a separate outline. Bulk checkboxes remain a different signal. Link text uses primary color and an underline on hover/focus; meaning must not depend solely on color.
 
-Semantic token names are stable. Brand sky and amber primitives are decorative; `success`, `highlight`, `destructive`, and `sky` express independent state meanings. Keep the webapp light-only. The neutral manifest's dark values support mobile and do not introduce a web theme switch.
+## 4. Data and content hierarchy
 
-Use `font-display` for headings, `font-sans tabular-nums` for numbers. Metadata consumers use Inter directly. `font-mono` is reserved for actual code samples using the system monospace font. No additional font dependencies or raw visual colors in components. Scoped third-party calendar overrides consume the same semantic variables; never patch vendor CSS.
+Essential names, identities, values and action labels must wrap. Secondary descriptions may use at most two lines of truncation only with an adjacent keyboard-accessible Read full text disclosure or an accessible full-content destination. A hover-only tooltip or `title` attribute is insufficient. Numeric amounts and scores must use Inter tabular numerals, right alignment in comparison columns, domain precision and units/currency. Formatting must not round away domain precision or invent a fallback currency.
 
-## Approved authentication composition
+Dates must use the active FR/EN locale and an unambiguous day/month/year presentation. Civil dates must not shift through UTC conversion. Academic sessions and deadlines use the school timezone, identified beside the date/time group or in its heading whenever the viewer could interpret another zone. Message/audit instants use the viewer timezone with a visible timezone label. Relative dates must have an accessible absolute date/time. Ranges include both endpoints and the applicable zone. Saved result precision, units and mentions come from captured results, not mutable grading configuration.
 
-At widths of at least 1024px, `AuthSplitShell` presents an approximately 1040px composition: 40% quiet sky brand panel, 60% white form area. The brand panel contains the vertical EDAYA logo and localized school-workspace copy. Below 1024px, use a compact horizontal branded header above the form. Keep form content at most 420px wide, persistent labels, 48px inputs and submit controls, and a visible language selector. Content grows and the page scrolls; no fixed-height clipping.
+| Meaning | EN | FR | Rule |
+| --- | --- | --- | --- |
+| Numeric zero | `0` with unit | `0` with unit | Only a known measured/calculated zero |
+| Boolean false | No | Non | Known negative; never a missing value |
+| Boolean true | Yes | Oui | Known affirmative |
+| Absent optional value | Not provided | Non renseigné | No supplied value |
+| Missing required configuration | Not configured | Non configuré | Configuration is absent |
+| Data cannot be obtained | Unavailable | Indisponible | Availability unknown/unsupported, not permission denial |
+| Denied field within authorized content | Restricted | Accès restreint | Do not expose hidden values/counts |
+| Missing persisted audit actor | Not recorded | Non enregistré | Do not infer an actor |
 
-Default to the shared passwordless sign-in form. `PasswordlessPanel` detects email or international phone input and uses the existing OTP, authenticator and recovery steps. Registration is a secondary link under the existing flag. Exactly one active form is visible; inactive signup/signin sections stay mounted, hidden and inert to retain drafts. The `panel`, `method`, and `stage` URL contract, navigation callbacks, browser history, refresh canonicalization and redirects remain unchanged. Do not introduce recovery or alternative authentication flows.
+Statuses must include meaningful text and a semantic tone. A dot, badge color or icon alone is insufficient. Essential facts are expanded. Secondary technical identifiers, processing metadata and audit detail belong in labeled, initially collapsed disclosures. Persisted business history required by a feature remains directly available in its History section/tab; it must not be replaced by raw technical logs.
 
-Password visibility is local presentation state with an accessible show/hide button. Preserve autofill, Enter submission, validation, field bindings and current disabled/busy conditions. Pending submission uses a spinner and localized action label without width jumps. Show errors adjacent to the form with `role=alert`. OTP stays a single paste-friendly field, with recipient confirmation, resend and change-email actions. Keep all signup fields, email verification stages, shared email binding, environment-controlled demo access, teacher-portal guidance and verified-email feedback.
+Disclosures put the chevron before the label, right when closed and down when open, with `aria-expanded`, keyboard activation and a 44px target. Scoped actions are separate siblings at the right; activating an action must not toggle the disclosure. White content surfaces on the sky canvas establish hierarchy; do not wrap every field in a card.
 
-Connection presentation has three states around the existing health check: neutral checking, available (no warning), unavailable (localized warning). Checking must never be displayed as failure and never enables authentication before the existing checks pass.
+## 5. FR/EN language contract
 
-## Reuse and operational presentation
+Every visible string, accessible name, validation message and state must have FR and EN translations. Each screen must use one active locale; backend error codes must map to localized domain messages. User-entered names and content must not be translated. Use sentence case, a direct verb and the object when context is insufficient. Avoid jargon, internal IDs, unexplained acronyms, celebratory copy and generic Success/Error/Confirm labels.
 
-Preserve sidebar groups, school/year context selectors, list/card modes, filters, calendars, selection tools, URL drawers, and mutation modals. Sidebar uses white chrome and the horizontal logo; compact rail uses the symbol. Student/class and school context take precedence over decorative branding. Below 1024px, the same sidebar opens in a focus-managed modal sheet over full-width content; it starts closed, dismisses on navigation/Escape, and does not overwrite the desktop expansion preference. School and academic year controls live beneath the sidebar logo, including a keyboard-accessible year trigger in the compact rail and the mobile sheet. Labeled term controls wrap beside affected page content, drawer tabs or export/planning actions; dates appear in their options. Language and account remain in the global header. Preserve shared school-scoped selection and provide an explicit empty-year state without a stale term.
+### 5.1 Domain glossary
 
-| Surface | Required reuse / presentation |
-|---|---|
-| List route | `PageQuery`, `DataState`, `ListPageHeader`; heading → toolbar → collection hierarchy |
-| Main/secondary filters | `FilterSelect` / `FilterPanel`; wrapping pill controls and search |
-| Table/cards | `ListEntityTable`, `ListEntityCards`; white, bordered, rounded surfaces; readable rows; numbers aligned right and tabular |
-| Selection | Existing row selection and `ListSelectionBar`; preserve exports and bulk actions |
-| Drawer | Existing URL-driven detail shell and shared drawer chrome; full width on phone; read-only content, clear sections |
-| Mutation | `FormModal`, `ConfirmModal`, `PickerModal`, permission gates; keep all fields and actions |
-| Feedback | `DataState`, `ToastHost`, `BADGE_*` tone presets and existing status maps; success has its own tone |
-| Brand | `BrandLogo`; official horizontal/vertical/symbol variants and color/white tones |
+| EN | FR | Meaning |
+| --- | --- | --- |
+| Student / Students | Élève / Élèves | School pupil |
+| Teacher / Teachers | Enseignant / Enseignants | Teaching actor, distinct from staff |
+| Staff member / Staff | Membre du personnel / Personnel | Human staff workspace actor |
+| Guardian / Guardians | Responsable légal / Responsables légaux | Student-associated adult |
+| Class / Classes | Classe / Classes | Class group |
+| Grade level / Grade levels | Niveau / Niveaux | Academic level, never a mark |
+| Subject / Subjects | Matière / Matières | Grade/year-owned subject |
+| Chapter / Chapters | Chapitre / Chapitres | Subject curriculum section |
+| Academic discipline / Academic disciplines | Discipline académique / Disciplines académiques | Reference catalog, not sanctions |
+| Placement status / Placement statuses | Statut de scolarisation / Statuts de scolarisation | Annual student declaration |
+| Activity / Activities | Activité / Activités | School activity |
+| Assessment / Assessments | Évaluation / Évaluations | Assessment definition |
+| Mark / Marks | Note / Notes | Recorded grading value |
+| Family feedback | Retour des familles | Campaign feedback, never assessments |
+| Attendance | Présences | Daily/session attendance records |
+| Logbook | Cahier de textes | Lesson record |
+| Report card / Report cards | Bulletin / Bulletins | Captured academic result document |
+| Report card model / Models | Modèle de bulletin / Modèles de bulletin | Report structure, not issued result |
+| Fee / Fees | Frais / Frais | Configured charge offering |
+| Billing | Facturation | Assigned student fees |
+| Payment / Payments | Paiement / Paiements | Receipt or active allocation, labeled by context |
+| Account credit | Crédit disponible | Unallocated account balance |
+| Refund / Reversal | Remboursement / Annulation de paiement | Return of funds / reversal of a receipt; distinct commands |
+| Incident / Incidents | Incident / Incidents | Recorded discipline event |
+| Disciplinary action / Actions | Sanction disciplinaire / Sanctions disciplinaires | Sanction catalog/outcome |
+| Permission profile / Profiles | Profil d’autorisations / Profils d’autorisations | Reusable permission bundle, not runtime authority |
+| Announcement / Announcements | Annonce / Annonces | Published audience message |
+| Inbox | Boîte de réception | Sidebar group for personal deliveries, school conversations and corrections |
+| My inbox | Ma boîte de réception | Signed-in profile’s personal deliveries |
+| School messages | Messages de l’école | School conversations and authorized teacher oversight |
+| Conversation | Conversation | Immutable message thread |
+| Account / Profile | Compte / Profil | Account container / identity section |
+| Notifications / Security | Notifications / Sécurité | Personal settings / verified identity and authentication sections |
+| Activity log | Journal d’activité | Read-only recorded business history, distinct from school activities and technical logs |
+| Correction / Corrections | Correction / Corrections | Reviewed proposed change |
+| Academic year / Term | Année scolaire / Période | Workspace year / academic period |
 
-Use the existing Bits UI primitives (Button, Input, Label, Textarea, Select, Checkbox, Dialog, Popover) and Lucide exports from `$lib/icons`. Tables retain readable columns in a keyboard-focusable horizontal scroll region at narrow widths; never squeeze names and labels into overlapping columns. Lists retain their information density; improve grouping with space and borders, not extra cards around each label. Keep main filters as selects, drawer tabs as existing route links, drawers read-only, and create/edit/delete in existing modals. Simple entities retain their row action menus. Primary actions remain in the entity header, subcollection additions in section headers. Never move these actions solely for a visual preference.
+### 5.2 Status vocabulary
 
-Neutral card → subtly tinted section → neutral overlay forms the surface hierarchy. Field boundaries use the stronger input token, dividers the border token. Toolbars wrap; dialogs and drawers scroll; popovers retain keyboard and dismissal behavior. Disabled and busy styles use the existing signals. Avoid fixed text heights, truncated important values, and purely color-based statuses.
+| EN | FR | Meaning |
+| --- | --- | --- |
+| Active / Inactive | Actif / Inactif | Explicit record availability, with grammatical agreement |
+| Draft / Submitted | Brouillon / Soumis | Unsubmitted work / official submitted work |
+| Published / Archived | Publié / Archivé | Released result/content / archived lifecycle |
+| Pending review / Approved / Rejected | En attente de validation / Approuvé / Rejeté | Review workflow states |
+| Present / Absent / Late / Unmarked | Présent / Absent / En retard / Non renseigné | Explicit attendance values; Unmarked is not Absent |
+| Resolved / Cancelled | Résolu / Annulé | Resolution / cancellation, not deletion |
+| Unpaid / Partially paid / Paid | Impayé / Partiellement payé / Payé | Obligation settlement states |
+| Read / Unread | Lu / Non lu | Personal delivery read state |
+| Loading… / Refreshing… | Chargement… / Actualisation… | Initial read / same-scope refresh |
+| Updating / Completed / Failed | Mise à jour en cours / Terminé / Échec | Background calculation/job outcome |
 
-For dialogs with a persistent header and footer, use a bounded flex column with a scrollable middle region. Never combine a clipped outer dialog with unscrollable content that pushes actions outside the viewport. Verify the account dialog at short desktop and phone heights as well as with enlarged text.
+Status labels must reflect the specific domain state, not collapse draft, submitted, published and approved into one generic Done. Translations must agree with the named entity and preserve distinctions between cancelled obligations, reversed receipts and refunded money.
 
-## Future UI review contract
+### 5.3 Actions and reusable copy
 
-Before adding UI: inventory existing T0/T1/T2/Smart components, extend their variants where needed, and keep single-feature markup route-local. New shared components require demonstrated reuse across at least three features. Review component states (default, hover, focus, pressed/selected, disabled, busy, error, empty) in the component gallery.
+| EN | FR |
+| --- | --- |
+| Add {entity} / Edit {entity} / Delete {entity} | Ajouter {entity} / Modifier {entity} / Supprimer {entity} |
+| Save / Saving… / Cancel | Enregistrer / Enregistrement… / Annuler |
+| Close / Back / Done | Fermer / Retour / Terminé |
+| Filter / Reset filters / Clear search | Filtrer / Réinitialiser les filtres / Effacer la recherche |
+| View / List / Table / Sort / Columns | Affichage / Liste / Tableau / Trier / Colonnes |
+| Export matching / Export selected | Exporter les résultats / Exporter la sélection |
+| Select loaded rows / Clear selection | Sélectionner les lignes chargées / Effacer la sélection |
+| Retry / Refresh / Read full text | Réessayer / Actualiser / Lire le texte complet |
+| Assign fee / Apply credit / Record payment | Attribuer des frais / Utiliser le crédit / Enregistrer un paiement |
+| Download account invoice / Finance checks | Télécharger la facture du compte / Contrôles financiers |
+| Publish / Archive / Activate | Publier / Archiver / Activer |
+| Approve / Reject / Withdraw | Approuver / Rejeter / Retirer |
+| Discard changes / Keep editing | Abandonner les modifications / Continuer la modification |
+| Optional / Required | Facultatif / Obligatoire |
 
-A visual exception must identify its affected component, why existing variants cannot serve it, accessibility evidence, owner, and intended lifetime. Obtain design review of the concrete proposal before adding the exception to the manifest or literal allowlist. No silent per-screen palette or typography forks.
+Entity placeholders in this table designate complete localized messages, not English-word concatenation: translations must supply articles, gender, elision and plural forms. Use locale-aware plurals for counts, including zero; never append `(s)`. A collection count must name its unit and scope, for example “1 student” / “1 élève”, “2 students” / “2 élèves”, and “No students” / “Aucun élève”.
 
-A design-system change updates the versioned manifest, generated outputs, font/asset inventory, this specification, component registry, human brief, and current visual evidence together. Run token/asset/literal checks and `bun run verify`. Validate FR/EN, responsive widths, keyboard focus, text enlargement, reduced motion and existing authentication journeys. Review diffs for any unintended logic or permission changes. Current galleries identify source revision, dirty source digest, token version, viewport, locale and theme; temporary before/after material stays outside durable galleries.
+Empty copy must name the scoped collection: “No students in this class” / “Aucun élève dans cette classe”. No-match copy: “No results match your search and filters” / “Aucun résultat ne correspond à votre recherche et à vos filtres”. Access denial: “You do not have access to this content” / “Vous n’avez pas accès à ce contenu”. A failure names the operation and recovery, such as “Could not load payments. Try again.” / “Impossible de charger les paiements. Réessayez.”
 
-The development-only demo account picker uses `AuthScreenShell`, the existing Button primitive, brand initials and localized staff roles. Selecting an account prefills the shared passwordless form and requires the usual explicit send and verification actions. Show a localized action to return to the picker.
+Confirmations must name the record and actual consequence, then use the action verb: “Delete {name}?” / “Supprimer {name} ?”. Permanent deletion must explicitly say it cannot be undone only when that is true. Reversible archive, cancellation, reversal and refund must use their own terms. A saved-write/read-failure message must say “Saved. Could not refresh the display.” / “Enregistré. Impossible d’actualiser l’affichage.” and offer Refresh without resubmitting. Validation must name the field and remedy; errors must not expose raw solver messages, payloads or stack traces.
 
-## Conversation history
+## 6. Brand and specialized presentation
 
-Use the route-local chat bubble contract in the component registry: right blue-container bubbles for school staff replies, left neutral guardian messages; oversight uses participant roles. Names precede selectable bodies and localized timestamps follow them. Width, position and localized accessible descriptions distinguish direction independently of color. Do not add read/delivery indicators or change messaging actions.
+Official outlined EDAYA artwork is authoritative. Use vertical artwork for spacious authentication, horizontal in headers/sidebar, symbol only in compact contexts already identified as EDAYA. Minimum widths are 88/128/32px respectively; favicon sizes may use 16/24/32px. Preserve clear space and aspect ratio; no reconstructed wordmarks, recoloring, stretching, shadow or text overlay. White artwork requires a dark or royal-blue surface.
 
-### Finance information hierarchy
+Under X-ACCOUNT, the account settings dialog must use a maximum 64rem container from 1024px with 24px outer gutters, content on the left and a 14rem navigation rail on the right. Navigation labels are Profile / Profil, Notifications / Notifications, Security / Sécurité in that order, with a clear current-section indicator and at least 44px targets. Below 1024px use a full-screen surface with navigation above content. Inner forms retain their assigned 32rem/48rem maximum widths and must fit the content region. Close stays persistently visible; Sign out / Se déconnecter is separate from section Save/Cancel actions, and there is no global Save. Long labels, short heights and 200% text must preserve reading order, vertical scrolling, section focus and access to every action. This account container must not reuse the authentication brand/form split.
 
-Fees is the finance landing page. Use sidebar navigation between Fees, Billing and Payments; omit the repeated page-header switcher and financial-overview scope caption. Place the authorized school/year financial overview above the catalog; use the same four cards as fee details: Billed, Payments, Outstanding and Overdue. Omit Received/Refunded captions. Billed represents net billed obligations and Payments represents active charge allocations. Style Overdue amounts with the existing dark-red destructive text token. Billing and Payments omit global summaries. Fee Overview shows fee-specific configuration and allocation-based amounts. Label net billed amounts “Billed” and applied allocation totals “Payments”. Both overviews place the assigned student count in a top-right chip on Billed, without a separate count card. Overdue student counts appear in top-right chips rather than bottom captions. The Fees header uses one Filter button containing category and status. Billing uses a compact persistent header and Overview, Payments, History tabs. Prefer “Assign fee”, “Apply credit”, “Account credit”, “Download account invoice” and “Finance checks”; distinguish refunds from reversals. Reuse current font, color, status, spacing and responsive tokens; this composition introduces no palette or token-version change. Amounts wrap safely with tabular numerals; EN/FR labels, long names, narrow screens and enlarged text remain usable.
+Under X-ACCOUNT, authentication uses an approximately 1040px-wide composition from 1024px: 40% quiet sky brand panel and 60% white form area. Below that use a compact horizontal branded header above the form. Authentication form content is capped at 420px, with 48px inputs/submit targets and a visible language selector. One active form is visible; inactive sign-in/sign-up panels remain hidden and inert to retain drafts. OTP is one paste-friendly field; recipient confirmation, resend, change-contact and existing authenticator/recovery steps remain explicit. Connection checking is neutral; unavailable is a localized warning; available is not a warning. Neither styling nor demo account selection may bypass explicit authentication actions.
+
+Inbox labels and child counts must remain consistent in desktop and mobile navigation; no aggregate group badge may imply that unread deliveries, conversations and correction requests share one measure. Report card models and notification templates both use their assigned standard List presentation and detail drawers; no template-specific toolbar treatment is permitted.
+
+Activity-log rows must identify the viewer timezone and use localized action/outcome labels with meaningful text. Actor, action, time, affected record and outcome are primary historical facts. Event context, reason and recorded changes are read-only, with missing values labeled Not recorded / Non enregistré and denied values Restricted / Accès restreint. Only ancillary technical identifiers belong in a collapsed disclosure. Empty copy must say No recorded events / Aucun événement enregistré and identify the current scope; it must not claim that no business activity occurred.
+
+Message history must use right-aligned blue-container staff replies and left-aligned neutral guardian messages, with actual author before selectable content and localized time after it. Position, participant label and accessible description distinguish direction without color. Teacher oversight identifies participant roles; no invented delivery/read indicators.
+
+Finance summaries must label net obligations Billed / Montant facturé, active charge allocations Payments / Paiements, remaining obligations Outstanding / Solde restant, and overdue obligations Overdue / En retard. The assigned-student count is a chip on Billed; overdue-student count is a chip on Overdue. Overdue uses the danger text token. No Received/Refunded captions or duplicate summary cards on Billing/Payments. Financial scope and calculation rules remain in the feature contract.
+
+## 7. Accessibility and conformance
+
+Text must meet 4.5:1 contrast for ordinary text and 3:1 for large text; essential active control boundaries need 3:1. Shared typography, control treatment and status tones must be evaluated on their actual backgrounds. Focus must follow reading order, icon controls must have contextual names, and modal/task dismissal and focus restoration must obey the app-shell contract.
+
+At narrow widths, short heights, 200% text, long FR/EN labels and large values, essentials must wrap and every action must remain reachable. No hidden essential columns, overlapping content, clipped modal actions or hover-only access. Tables retain accessible horizontal scrolling; the page itself must not acquire accidental horizontal scrolling. Reduced motion must preserve state meaning. Every variation must have a named exception in the app-shell spec and a bounded surface assignment; no local styling exception is implicit.

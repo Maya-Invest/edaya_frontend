@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { root } from './runtime'
 
 export function commandDocs(help: string, write = false, directory = root): void {
-  const file = resolve(directory, 'docs/reference/repo-cli.md')
+  const file = resolve(directory, 'tooling/repo/README.md')
   const text = readFileSync(file, 'utf8')
   const start = '<!-- repo-commands:start -->'
   const end = '<!-- repo-commands:end -->'

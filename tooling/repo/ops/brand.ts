@@ -95,8 +95,11 @@ export function brandCheck(recordReviewedBaseline = false): void {
     writeJson(resolve(design, 'visual-literals.json'), literals)
   }
 }
-export async function brandGallery(): Promise<void> {
-  const directory = resolve(root, 'docs/reference/design-review')
+export async function brandGallery(repository = root): Promise<void> {
+  const directory = resolve(repository, 'apps/webapp/.screenshots/design-review')
+  const screenshots = files(resolve(directory, 'current')).filter(file => file.endsWith('.png'))
+  if (!screenshots.length)
+    throw new Error('No review screenshots; place PNG captures in apps/webapp/.screenshots/design-review/current before running generate gallery')
   const manifest = resolve(directory, 'manifest.json')
   const previous = existsSync(manifest)
     ? JSON.parse(readFileSync(manifest, 'utf8')) as {
@@ -106,17 +109,17 @@ export async function brandGallery(): Promise<void> {
   const sourceInputs = ['apps/webapp/src', 'apps/webapp/static', 'design-system/tokens.json']
   const hash = createHash('sha256')
   for (const source of sourceInputs) {
-    for (const file of statSync(resolve(root, source)).isFile() ? [resolve(root, source)] : files(resolve(root, source)))
-      hash.update(`${relative(root, file)}\0`).update(readFileSync(file))
+    for (const file of statSync(resolve(repository, source)).isFile() ? [resolve(repository, source)] : files(resolve(repository, source)))
+      hash.update(`${relative(repository, file)}\0`).update(readFileSync(file))
   }
   const sourceDigest = hash.digest('hex')
-  const revision = await run(['git', 'rev-parse', 'HEAD'], { quiet: true })
-  const version = (JSON.parse(readFileSync(resolve(design, 'tokens.json'), 'utf8')) as Tokens).version
-  const captures = files(resolve(directory, 'current')).filter(file => file.endsWith('.png')).map((file) => {
+  const revision = await run(['git', 'rev-parse', 'HEAD'], { cwd: repository, quiet: true })
+  const version = (JSON.parse(readFileSync(resolve(repository, 'design-system/tokens.json'), 'utf8')) as Tokens).version
+  const captures = screenshots.map((file) => {
     const data = readFileSync(file)
     const name = file.split('/').at(-1)!
-    const path = `current/${name}`
-    if (!data.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])))
+    const path = relative(directory, file)
+    if (data.length < 24 || !data.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])))
       throw new Error('Invalid PNG')
     const checksum = digest(data)
     const old = previous.captures.find(entry => entry.file === path && entry.sha256 === checksum)

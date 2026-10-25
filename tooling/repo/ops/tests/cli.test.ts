@@ -76,11 +76,14 @@ test('documentation uses the complete command tree and detects drift', () => {
   expect(() => commandDocs(reference())).not.toThrow()
   const directory = mkdtempSync(resolve(tmpdir(), 'edaya-cli-docs-'))
   try {
-    mkdirSync(resolve(directory, 'docs/reference'), { recursive: true })
-    writeFileSync(resolve(directory, 'docs/reference/repo-cli.md'), '<!-- repo-commands:start -->\nstale\n<!-- repo-commands:end -->')
+    mkdirSync(resolve(directory, 'tooling/repo'), { recursive: true })
+    writeFileSync(resolve(directory, 'tooling/repo/README.md'), '# Tooling\n\nKeep this introduction.\n<!-- repo-commands:start -->\nstale\n<!-- repo-commands:end -->\nKeep this footer.\n')
     expect(() => commandDocs(reference(), false, directory)).toThrow('drift')
     commandDocs(reference(), true, directory)
     expect(() => commandDocs(reference(), false, directory)).not.toThrow()
+    const updated = readFileSync(resolve(directory, 'tooling/repo/README.md'), 'utf8')
+    expect(updated).toStartWith('# Tooling\n\nKeep this introduction.\n')
+    expect(updated).toEndWith('Keep this footer.\n')
   }
   finally { rmSync(directory, { recursive: true, force: true }) }
 })

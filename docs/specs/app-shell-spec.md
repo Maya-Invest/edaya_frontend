@@ -1,567 +1,192 @@
 # App Shell Architecture Spec
 
-> **Applies to:** `apps/webapp` UI (layouts, list pages, drawers, modals)
-
-This document defines the standard layout and interaction patterns for the EDAYA school management webapp. All new screens and refactors should conform to these rules.
-
----
-
-## UX rationale
-
-This architecture optimizes for **clarity, safety, and consistency** over raw speed and data density. That trade-off fits a school product: users are often non-technical, work in interrupted sessions, and mistakes (wrong class, fee, or guardian link) have real consequences.
-
-### What users gain
+Normative for the staff webapp. This contract defines composition and interaction. Domain actions retain their permission, validation, calculation and transaction semantics. Each feature must assign a surface and ordered content; shared presentation rules apply unless a named exception states a replacement.
 
-| Benefit | Why it matters |
-|---------|----------------|
-| **Look vs change is obvious** | Read-only drawer + modals removes "am I editing?" ambiguity when returning after an interruption |
-| **List stays in context** | The collection remains visible behind the drawer — useful when comparing similar records |
-| **Shareable detail URLs** | `/module/entity/[id]` links let staff send a colleague directly to a record |
-| **One rhythm everywhere** | List → inspect drawer → act via modal is learned once and reused across modules |
-| **Grouped entity context** | Tabs with sub-collections match how staff think: "I'm working on *this student*" |
-| **Identity + action together** | Main entity summary and top actions live in the drawer header — no hunting in the footer |
-| **Pragmatic toggles** | Boolean flips (permissions, status) avoid modal fatigue for high-frequency micro-edits |
-| **No empty drawers** | Simple records use a row action menu instead of a detail surface that adds no context |
+## 1. Shell and workspace context
 
-### Trade-offs we accept
+The application shell consists of navigation, global header, main content, one inspection drawer, at most one foreground form/confirmation, task workspaces and feedback. School and academic year belong beneath the sidebar logo. Class context belongs to the class navigation. Language and account controls belong in the global header.
 
-- **Extra click per edit** — list → drawer → action → modal is slower than inline/spreadsheet editing. Acceptable for most school workflows; power users doing bulk updates may feel friction.
-- **No "edit everything, save once"** — each mutation is explicit (one modal, one save). Clearer for validation and audit trails; different from legacy school software habits.
-- **Overlay stacking** — drawer + modal can feel heavy on small screens. Mitigate with full-screen drawer/modal on mobile (see §6.5).
-- **Drawer width** — 50% overlay is fine for profiles; data-heavy tabs (finance, timetable) may need a future "expand drawer" or full-page variant.
+Term selection must appear beside the academic content it scopes, with dates in its options; it is not a collection facet. A missing year or term must have an explicit state and must not display the previous scope's data. Workspace changes must invalidate affected reads and drafts without silently transferring them to another school, person or year.
 
-### Who this serves best
+At 1024px and above, navigation is a desktop sidebar. Below 1024px it is a focus-managed sheet, initially closed, dismissed by navigation, Escape or outside activation. Its state must not overwrite the desktop expansion preference. Main content uses the remaining viewport width.
 
-| User | Fit |
-|------|-----|
-| Coordinator / secretary | Strong — predictable, hard to misuse |
-| Teacher (occasional use) | Strong — low memorization burden |
-| Power admin (daily bulk ops) | Moderate — may need batch actions and export-first flows later |
-| Mobile / on-the-go | Weaker on small screens unless responsive rules in §6.5 are applied |
+### 1.1 Named specialized compositions
 
-### UX risks if implementation drifts
+These exceptions replace only the named composition; authorization, state, copy and accessibility rules still apply.
 
-1. **Mixed patterns on one screen** — forms in some drawers and modals in others destroys trust in the pattern. Complex entities use read-only drawer + modal mutations; simple entities use row `···` menus (§3.5).
-2. **Stale drawer after save** — modal success must patch route state (or re-run the active tab `PageQuery`); otherwise users doubt whether the action worked.
-3. **Silent permission denial** — hide or disable edit actions by role, but disabled actions need a tooltip (e.g. "Requires director role").
-4. **Dead empty tabs** — sub-collection tabs with no items must show an empty state **and** a `+ Add` CTA when the user can create.
-5. **Empty drawer** — opening a drawer that only repeats what the list row already shows wastes a click. Use a row `···` action menu for simple entities (see §3.5).
+| ID | Surface and replacement | Justification |
+| --- | --- | --- |
+| X-DASHBOARD | `/dashboard`: scoped summaries and work queues; no entity collection toolbar for the whole page | Overview across domains |
+| X-CALENDAR | School calendar and class timetable: date/week navigation, time grid and contextual occurrence actions instead of a List/Table body; collection actions remain in `···` | Time and duration are primary coordinates |
+| X-PERIOD-GRID | `/configuration/period-grid`: weekly slot grid with direct move/resize, empty-range creation and in-slot Edit/Delete | Spatial schedule editing; keyboard form alternative is mandatory |
+| X-ACADEMIC | Academic years and grade scales: disclosure groups with nested periods/intervals and scoped menus | Ordered hierarchy must remain visible |
+| X-CONFIG-RAIL | Levels and Classes / Other configurations: desktop 17rem selection rail plus content; compact selector below 1024px | Structural navigation, not a collection filter |
+| X-SCHOOL-SETTINGS | School profile: ordered read-only configuration sections with scoped Edit; asset editor saves each slot independently | Singleton configuration and asset ownership |
+| X-ACCOUNT | Account dialog: Profile, Notifications, Security in a maximum 64rem container from 1024px, content left and 14rem navigation right; full-screen with navigation above content below 1024px. Login/onboarding retain their dedicated identity forms and steps | Account settings need one sectioned container; authentication, verification and recovery retain task-specific controls |
+| X-TOOLS | Tools, teacher assignments hub and finance checks: named task entries, previews/results and existing scoped controls | Operational tasks rather than generic entity inspection |
+| X-CONVERSATION-COLLECTION | School Messages: no free-text search until a complete authorized search capability exists; type/status/order stay in Filter | Loaded-only search would misrepresent the inbox |
+| X-TEACHER-AGENDA | Teacher Timetable tab: fixed record context and Today/date controls over a bounded chronological session scroller | Date navigation must retain its controls |
+| X-REVIEW-DECISION | Review surfaces: named approval, validation, takeover, resolution and read-status commands may run directly from actions; rejection/reason/changed data uses a form. Corrections chrome includes Next pending navigation within the same queue | A single authorized lifecycle command is not inline field editing |
+| X-PERMISSION-ORDER | Staff Permissions binding-row menu: Move up/Move down immediately reorders and re-resolves, with pending/error feedback; first/last boundaries disable the impossible direction | Explicit ordering command without editable drawer fields |
+| X-GRADE-LOOKUP | Grade-scale disclosure: labeled sample input with read-only matched mention/code; no save or mutation | A calculation preview, not an editor |
+| X-DATE-COLLECTION | Daily attendance day collection: omit free-text search, keep date-range/status facets in Filter and the collection menu | Civil date is the row identity |
+| X-DESIGN-SPECIMEN | Development-only `/__design`: side-by-side component variants and state selectors without production navigation/mutations | Visual inspection requires multiple simultaneous specimens |
 
-### Future enhancements (without breaking the core)
+Specialized body composition must not authorize extra colors, button variants, permission shortcuts or unsupported actions.
 
-- Keyboard navigation on lists (arrow keys, `E` to edit selected row)
-- Bulk actions on the list toolbar, not inside the drawer
-- Expandable drawer (full width) for data-heavy tabs
-- Inline filters for common facets → **main filter `<select>`**; advanced facets behind the filter button
+### 1.2 Inbox navigation
 
----
+Sidebar order must be Dashboard, Inbox, School, Classes, Finance, Configuration. Inbox / Boîte de réception contains, in order, My inbox / Ma boîte de réception, School messages / Messages de l’école, and Corrections / Corrections. Their existing routes remain `/account/inbox`, `/school/messages` and `/school/corrections`; their names and group placement must not merge their data or permissions.
 
-## 1. Shell layout
+The Inbox group is the authoritative navigation location for these queues; School and the account dialog must not repeat them as competing navigation entries. My inbox belongs to the signed-in account and selected recipient profile. School messages keeps school conversations and independently authorized teacher oversight. Corrections keeps each workflow's authorization. A child without read authority is omitted; an empty group is omitted. A temporary query failure must not remove an authorized destination. Each existing child count must retain its own scope and meaning; there is no aggregate Inbox badge combining unread deliveries, conversations and corrections.
 
-The authenticated app uses a persistent four-layer frame:
+Activity log belongs under Configuration → Tools, not Inbox. Tools navigation must be available to a caller with dedicated school-scoped audit-read authority independently of import, timetable or finance-check authority. The log page uses the standard Table/detail composition; the Tools landing-page exception does not authorize a specialized log layout.
 
-```
-┌─────────────┬──────────────────────────────────────────────────────────┐
-│  Sidebar    │  Header: [Lang] [User menu ▾]                           │
-│  Logo       ├──────────────────────────────────────────────────────────┤
-│  School ··· │                                                          │
-│  Modules    │                                                          │
-│  └ items    │  Main content (list / dashboard / special view)          │
-│             │                                                          │
-│             │                              ┌─────────────────────────┐ │
-│             │                              │ Detail drawer (overlay) │ │
-│             │                              └─────────────────────────┘ │
-└─────────────┴──────────────────────────────────────────────────────────┘
-                                    +
-                          Mutation modal (centered overlay)
-                          Toast layer (global feedback)
-```
+### 1.3 Account dialog
 
-| Zone | Responsibility |
-|------|----------------|
-| **Sidebar** | Logo, school selector, academic year beneath school, module navigation and contextual class picker |
-| **Header** | Navigation toggle, language, and user identity |
-| **Body** | One primary entity-collection view per route; shared term selector beside affected content/actions |
-| **Detail drawer** | Read-only inspection of a selected entity |
-| **Mutation modal** | All create, edit, and destructive operations |
-| **Toast** | Success / error feedback after mutations |
+The account trigger must open one account dialog, with Profile, Notifications and Security sections in that order. From 1024px its container is at most 64rem wide and fits the viewport with 24px outer gutters; content occupies the left region and a 14rem section-navigation rail occupies the right. Below 1024px it is full-screen with section navigation above content. This container width is an X-ACCOUNT exception, not a wider default form: inner forms retain their assigned 32rem/48rem maximum widths, bounded by the content region.
 
-### 1.1 Sidebar
+The dialog header contains account identity and a persistent Close. The content region scrolls vertically; section navigation and Close remain reachable at short heights and 200% text, without fixed text heights or clipped labels. At enlarged text, navigation may wrap within its region. Reading and keyboard order must follow the displayed layout; navigation uses contextual labels and a current-section indicator. Selecting a section focuses its heading after any dirty-work guard succeeds. Close restores the invoking control and underlying route/collection state.
 
-- Logo + product name at top
-- Current school name under the logo; when the staff account belongs to more than one school, a three-dot button beside the name opens a popup to pick another school
-- Academic year selector beneath school; keyboard-accessible calendar trigger in the collapsed rail and the same selector in mobile navigation
-- Module groups (e.g. School, Classes, Finance, Configuration)
-- Active module expanded; sub-items with optional badges (counts). School people items **Students**, **Guardians**, **Staff**, and **Teachers** each show a count chip from `getAppShellCounts`
-- Contextual selector inside a module when needed (e.g. class picker in Classes)
+Profile presents existing identity, descriptive role, contacts and photo; administrative fields are read-only unless an existing authorized editor owns them. Notifications presents personal settings, and Security presents verified identifiers, contact linking, authenticator and recovery workflows. These are sections of one account surface, not shortcuts to unrelated pages. Each editable section or verification step owns its Save/Cancel or action-specific controls. There is no global Save. Sign out is a separate persistent account action, outside section actions, and retains its session semantics.
 
-### 1.2 Header
+Section changes, Close, Escape, browser Back and Sign out must guard unsaved edits. Closing a completed step must not repeat its command; a confirmed save followed by failed refresh remains saved. Pending or sensitive authentication flows retain their verification rules and transient challenge state. No section may grant profile editing or credential operations merely because the account dialog is open.
 
-Global header controls:
+The address is `modal=account-profile` with `modalTab=profile|notifications|security`, default Profile. Existing account URLs remain valid entry points to the corresponding content. Security must work without a selected school. Direct-entry return and the independent account-content state follow the route-state contract.
 
-| Selector | Purpose |
-|----------|---------|
-| Language | i18n locale |
-| User menu | Avatar, name, role; dropdown with profile/preferences and sign out |
+## 2. Standard collection
 
-### 1.2.1 Academic context placement
+### 2.1 Header
 
-Academic year is workspace context in the sidebar. The shared term selection remains session context, but its picker appears only beside affected content: dashboard summary; evaluations, report cards and marks-review toolbars; class roster assessment metrics; timetable controls; student report-card and teacher evaluations tabs; logbook export. Grade-entry forms label their captured term; family-feedback forms retain their own period field. Finance, attendance and general configuration do not gain a term picker. The Configuration Tools timetable card exposes a Generate action without a term picker; the generation assistant retains its term presets and date-range controls.
+Every standard collection must use this order:
 
-Use `AcademicPeriodSelector` with a persistent Term label and dates in its options. Keep selection shared and school-scoped. A year with no eligible terms clears the selected term, displays an explicit empty state and disables term-dependent actions; never reuse a term from another year. Pickers stay available in empty/error drawer tabs. Use existing keyboard/focus-managed primitives and wrapping controls on mobile.
+`Title · count                         Search   Filter   ···`
 
-### 1.3 Layout variants
+Title/count is left aligned. Search, a compact Filter button and the collection menu are right aligned with 8px gaps. Below 768px, the title is the first row; the toolbar is the second, with search filling remaining space beside the two action targets. A description, when required to explain scope, appears once beneath the title. Counts must distinguish matching total, loaded rows and selected rows; an unknown total must not be fabricated.
 
-Most routes use the **list + drawer** pattern. Non-list screens may use approved variants:
+The primary collection action must be the first eligible item in `···`; it must not appear as a separate header button. Menu groups, in order, are: primary action; selection actions; View, Sort and Columns; Import/Export; other secondary actions. Omit unsupported entries and empty groups. Omit the menu if no entries remain. A permitted but state-blocked primary action remains first, disabled with its reason.
 
-- **Dashboard** — KPIs + summary cards above or instead of a collection
-- **Calendar** — time-grid layout
-- **Timetable grid** — schedule cells
-- **Accordion** — hierarchical config (e.g. academic calendar by year)
+All facets belong in one Filter panel, including any former highest-frequency facet. Controls apply immediately; the panel stays open until dismissed. The trigger counts non-default facet fields, excluding search, sort and workspace context. Reset filters restores facet defaults while preserving search and context. The panel must not have Apply/Cancel. Sorting belongs to Sort or sortable table headers; conversation order is an explicitly named domain facet under X-CONVERSATION-COLLECTION. Omit Filter when the feature declares no facets. No empty placeholder controls.
 
-Variant layouts still use the same shell (sidebar + header). Only the body layout differs.
+Search must cover the feature's declared matching dataset, not silently just loaded rows. Enter and the clear control must flush a pending search. Search changes are debounced by 250ms; discrete facet changes apply immediately.
 
-**Layout-variant exceptions** — these routes do **not** use the full list toolbar from §2.1:
+### 2.2 List
 
-| Variant | Routes (examples) | Toolbar rule |
-|---------|-------------------|--------------|
-| **Dashboard** | `/dashboard` | No entity list toolbar; KPI cards + action queue |
-| **Calendar / timetable grid** | `/school/calendar`, `/classes/{classId}/timetable` | Grid-specific controls; search/main-filter optional |
-| **Accordion config** | `/configuration/academic` | Year accordion; year and term CRUD via modals. Weekly period grid is `/configuration/period-grid` |
-| **Level configuration** | `/configuration/structure` | Levels on the left; selected-level name and Details / Subjects / Classes route tabs on the right. Mobile uses a level selector. Details contains the level fields, edit/delete actions and grading configuration. Subjects and Classes keep their collection search and primary add action. |
-| **Split catalog** | `/configuration/other` | Left list picks a simple catalog; the table is on the right |
+List must use the Subject-list anatomy: one rounded bordered surface, separated full-width rows, a primary identity, optional supporting information and meaningful status/category labels. It must not be a multi-column card grid.
 
-All variants still use shell chrome, permissions, toasts, and mutation modals where applicable.
+Each row has 16px padding; height grows with content. Primary identity uses 14px semibold text. Essential values wrap. A leading avatar or subject marker is permitted only when it conveys identity/category; it must not create a new per-feature layout. Supporting metadata uses 12px text. Dividers appear between rows, not after the last row.
 
-> **Removed in v1:** CRUD permission matrix (`/configuration/roles`). Staff permissions use the standard drawer sub-collection + modal pattern: Staff drawer → Permissions tab (manual permission sources and profile assignments add/edit/remove via modals; `PermissionScopeSelections` for custom and default scope selections).
+A navigable row has one primary activation region and a trailing chevron. Its checkbox and action menu are independent sibling controls. A collection-only record has no navigation chevron, pointer styling or no-op button. A labeled disclosure may show compact ancillary facts; it must not hide a form or nested workflow.
 
----
+### 2.3 Table
 
-## 2. List page template
+Table must use one ordered column definition for headers, cells, sorting and authorized export. Identity is required; selection and actions are structural columns. Rows have 16px horizontal padding and a minimum height of 48px, growing for wrapped values. Numeric columns align right with tabular figures; text aligns left.
 
-Every entity list route shares this anatomy:
+Available optional columns, default order and sort capability must be declared per collection. Columns offers a searchable grouped checklist, Show all available and Reset to defaults. A field is sortable only when the complete matching dataset can be sorted. An active hidden sort field remains identified above the table. Columns and menus stay outside the horizontal scroll region.
 
-```
-┌ Title                   [Search] [Main filter ▾] [Filter ▾] [More ▾] [Primary CTA] ┐
-│ Description / subtitle                                                           │
-├──────────────────────────────────────────────────────────────────────────────────┤
-│  Collection: table OR cards                                              │
-│  - complex entity: row/card click → detail drawer (URL updates)          │
-│  - simple entity: row `···` menu → mutations (no drawer)                 │
-│  - selected item highlighted while drawer is open                        │
-└──────────────────────────────────────────────────────────────────────────┘
-```
+At narrow widths, the table remains a keyboard-focusable horizontal scroll region. Essential columns must not disappear automatically and the view must not silently change to List.
 
-### 2.1 Page header
+### 2.4 Collection behavior
 
-| Element | Rule |
-|---------|------|
-| **Title** | Entity name; optional live count (`Students · 142`) |
-| **Description** | One line of context; do not duplicate filter labels |
-| **Primary CTA** | Exactly one main action (e.g. "Add student") → opens **create modal** |
-| **Search** | Always on **standard list pages** (§2). Optional on layout variants (§1.3). Instant text filter on primary label fields. Placed **alongside** the main filter when both are present. |
-| **Main filter** | Always a **`<select>`** — one highest-frequency facet (class, status, category…). No chip bars or pill toggles. |
-| **Filter button** | Secondary / advanced facets (extra statuses, date range, scope, enrollment band…) |
-| **More menu** | Secondary actions: export, import, bulk ops, view toggle, column settings |
+List and Table are the only entity collection types. Students, Class Students and Activities offer both and default to Table; other features use their assigned view. Switching view preserves scope, search, facets, sort, selection and equivalent information/actions.
 
-### 2.2 Collection
+An opened record uses a selection highlight distinct from selection checkboxes. Row activation opens inspection; a checkbox changes bulk selection only. Row actions must not trigger either. A header checkbox means Select loaded rows and must say so; all-matching selection is available only when the underlying operation supports it and identifies the full count.
 
-| View | When to use |
-|------|-------------|
-| **Cards** | People, entities with rich identity (avatar, status chips) |
-| **Table** | Dense data, sortable columns, bulk selection |
-| **Hybrid** | User-toggleable via More menu |
+Selection actions belong to a selection bar immediately above the collection, naming the selected count. Scope/search/facet changes clear selection. Opening/closing inspection or changing view does not. Loss of permission removes affected selection. Export matching and Export selected must have distinct labels and scopes.
 
-### 2.3 List behaviors
+Scalable collections must append batches with infinite loading, retain existing content during refresh/detail navigation, and offer Retry for a failed next batch. Filter/scope changes reset the result generation and discard late responses. There are no numbered pagination controls.
 
-- **Infinite loading** — required for scalable collections. Append batches as the user scrolls with the shared `InfiniteList` shell; do not show numbered pages or Previous/Next pagination controls. Preserve loaded rows during detail navigation and refreshes; reset on filter/scope changes, discard stale responses, and offer explicit retry after a load-more failure.
-- **Sort** — column header or sort dropdown
-- **Bulk selection** — checkbox column + floating action bar when rows selected
-- **Row action menu** (`···`) — required on every row/card except permission-profile rows, which open their drawer and omit this menu; holds edit/delete and other mutations. For **simple entities** (§3.5), this is the primary mutation surface instead of the drawer.
-- **Filter persistence** — prefer URL query params (`?class=6a&status=active`)
-- **States** — wrap content in a loading / empty / error wrapper; empty state may include a CTA
+## 3. Inspection drawers
 
-### 2.4 Routing convention
+### 3.1 Qualification and anatomy
 
-```
-/{module}/{entity}              → list
-/{module}/{entity}/[id]         → list + detail drawer (complex entities — default tab)
-/{module}/{entity}/[id]/{tab}   → list + drawer on named tab (lazy-loaded tab route)
-```
+A drawer must provide useful inspection beyond the collection: substantial record facts, preview, relationships, results or history. Edit/Delete actions, technical entity boundaries and content height do not justify a drawer. Each feature must name its inspection purpose and content.
 
-Detail selection must be URL-backed for deep linking and browser back/forward when a drawer is used. Drawer **tabs are nested child routes** under `[id]/` — not `?tab=` query params. Simple entities (§3.5) may omit the `[id]` segment; use a detail modal with URL only when deep links are explicitly required.
+The drawer contains, in order:
 
----
+1. Chrome with record type, contextual Back when available, and Close.
+2. Identity header with name, meaningful status and concise identifying context.
+3. Up to two visible non-destructive record actions; remaining actions in overflow.
+4. Ordered inspection sections or domain tabs.
 
-## 3. Detail drawer
+The identity summary must make a direct-linked record understandable without its collection. Repeating essential identity is permitted; repeating list columns as the entire drawer is forbidden. No duplicate hero/header inside tabs, global Save/Cancel, or redundant Close footer.
 
-The drawer is a **read-only inspection surface** for **complex entities** — records with related content worth browsing beyond what the list row shows. It does not host open forms or editable fields by default. Simple entities skip the drawer entirely (see §3.5).
+Desktop drawers occupy half the viewport from 1024px; below that they fill the viewport. Chrome, identity/actions and tab navigation form one accessible fixed region; the main content is one vertical scroller. At short heights or 200% text, the identity/actions may scroll within that same body while Chrome/Close remains reachable. Independent body scrollers require X-TEACHER-AGENDA; tables retain horizontal scrolling.
 
-### 3.1 Anatomy
+### 3.2 Content grammar
 
-The drawer has three layers: shell chrome, entity header, and body.
+| Pattern | Required composition |
+| --- | --- |
+| Facts | Section title, optional scope/help, labeled values; no disabled input controls |
+| Related collection | Scoped title/count and standard Search/Filter/`···`; List or Table as assigned |
+| Long-form content / preview | Readable selectable text, preserved meaningful paragraphs, accessible attachments or preview |
+| History | Chronological events with actor, localized time and outcome; missing audit data must not be invented |
+| Review | Current and proposed typed values, reason, affected records, consequences and decision state |
+| Summary | Clearly scoped figures with labels, units and consistent precision |
 
-```
-┌─ [Entity type chip] ──────────────────────────────────────── [×] ┐
-│  SHELL HEADER (chrome only)                                      │
-├──────────────────────────────────────────────────────────────────┤
-│  [Avatar]  Name · status chips · one-line summary                │
-│            [Primary action]  [Secondary action]  [··· overflow]    │
-│  ENTITY HEADER (identity + up to 2 visible actions)            │
-├──────────────────────────────────────────────────────────────────┤
-│  [Tab 1] [Tab 2] [Tab 3] …        ← when tabs are justified     │
-├──────────────────────────────────────────────────────────────────┤
-│  Sections and/or tab bodies (related content only)               │
-│  DRAWER BODY                                                     │
-└──────────────────────────────────────────────────────────────────┘
-```
+Essentials must be expanded first. Secondary technical/audit facts belong in a labeled disclosure, collapsed initially. Section order is the feature contract's order. Do not place a separate card around every fact. A fact grid uses two columns only at content width of at least 480px, otherwise one column; long descriptions and addresses span the full width.
 
-| Part | Rule |
-|------|------|
-| **Shell header** | Entity type badge + close button only |
-| **Entity header** | Identity block (avatar/photo, name, 1–3 status chips, one-line summary) + up to **2 primary entity actions** (each opens a modal). Additional actions go in a `···` overflow menu. Destructive actions (delete, archive) never appear in the top 2 — overflow + confirm modal only. Implement with **`DrawerEntityHeader`** (`lib/components/school/shared/DrawerEntityHeader.svelte`). Primary entity actions belong here — not in tab body footers. |
-| **Body** | **Related content only** — not a repeat of list-row columns. Organized by **sections**, **tabs**, or **both** (see §3.2). |
-| **Footer** | Omit when Close lives in the shell header. If present: Close only — **no global Save**, no duplicate of entity-header actions. |
+An essential missing value must display Not provided, Not configured, Unavailable or Restricted according to meaning. Optional empty decorative sections may be omitted; authorized empty related collections remain visible with their count and explicit empty state. Denied sections must not show a false zero. Entire unauthorized domains/tabs are omitted; partially authorized content uses Restricted without leaking hidden totals.
 
-### 3.2 Body organization: sections, tabs, or both
+### 3.3 Sections and tabs
 
-The drawer body holds content that adds context beyond the list. Choose the lightest structure that fits:
+Sections are required when content forms one reading context. Tabs are required only for independently visited domains named in the feature contract. Height, field count and permission count must not create tabs. A single available domain has no tab strip; its canonical address and content remain reconstructable.
 
-| Structure | When to use |
-|-----------|-------------|
-| **Sections only** | Single context, no sub-collections, content fits in ~1 viewport (e.g. incident summary, calendar event details) |
-| **Tabs** | 2+ distinct related domains or sub-collections (e.g. student attendance vs finances vs incidents) |
-| **Tabs + sections** | Tabs split major domains; sections group fields within a tab (e.g. Student **Profile** tab: identity, health, linked guardians) |
+Tabs use human domain labels and child routes. Each tab owns its loading and error state. A failed optional tab must not blank the identity or other domains. Tabs must not depend on visiting another tab first. Unavailable tabs must not turn into empty authorized data.
 
-**Tab threshold** — use tabs when any of these is true:
+### 3.4 Read-only content and actions
 
-- 2+ sub-collections scoped to the parent entity
-- 2+ domains staff think about separately ("this student's grades" vs "this student's fees")
-- Ungrouped content would exceed ~1 viewport height
+Drawer bodies must not contain editable fields, field toggles or open forms. Bounded changes open a form; substantial entry opens a task workspace. X-REVIEW-DECISION permits explicit single-step lifecycle actions, not arbitrary inline field editing.
 
-**Do not** add tabs to pad a thin record. Prefer sections or skip the drawer (§3.5).
+Record actions belong to the identity header. Section/related-collection actions belong in their scoped `···`, with the primary action first. Sub-record actions belong in that row's menu. A row shortcut may duplicate a record action only with the same label, scope, eligibility and outcome; do not repeat it in unrelated sections.
 
-Canonical examples: **Student 360** — entity header (photo, class, Change class) → tabs (Profile, Grades, Attendance, …) → sections inside Profile. **Teacher 360** — entity header (photo, active chip, assignment summary) → tabs (Profile, Assignments, Availability, Timetable, Evaluations, Family feedback, Documents).
+## 4. Forms, tasks and return navigation
 
-### 3.3 Opening and closing
+### 4.1 Bounded forms and confirmations
 
-- Open: click row/card in list → navigate to `…/[id]` (or `…/[id]/{tab}`) → drawer syncs from URL (complex entities only)
-- Tab switch: navigate to child route under `…/[id]/{tab}` — each tab route loads its own data via `PageQuery`
-- Close: Close button or backdrop → navigate back to list URL (strip `[id]` and tab segments)
-- Close must not push a second list entry. Use Back when the drawer was opened from that list in the
-  current history chain; otherwise replace to the canonical list URL.
-- Drawer overlays the list; list remains visible underneath (desktop)
+Create/edit forms, relationship pickers, single mark entry/correction, single-record attendance changes, and reason/confirmation steps use modals. The default maximum width is 32rem. Profile forms, permission forms with impact review, incident resolution, subject/chapter configuration and report-model structure forms use the explicitly assigned 48rem wide form. Other forms must use 32rem.
 
-### 3.4 Edit affordances in the drawer
+Modal content is a bounded flex column with persistent header and footer and a scrolling middle region. At narrow widths it fits the viewport with 16px gutters; at short heights/200% text the middle scrolls and all actions remain reachable. Labels are persistent; optional editable fields say Optional. Requiredness and constraints derive from the domain contract. Help precedes errors; errors are adjacent to their field and summarized for non-field failures.
 
-Editing inside the drawer is **not allowed by default**. Two patterns are permitted:
+Validate touched fields on blur, revalidate failed fields on change, and validate all fields on submit. Focus the first invalid field. Server rejection preserves editable values. Cancel precedes the action-specific submit button; confirmations name the action and consequence rather than using a generic Confirm label. Duplicate submission is disabled while pending; field values must not silently rebase during review.
 
-#### Pattern A — Action button → modal (default for all multi-field edits)
+### 4.2 Focused task workspace
 
-```
-Entity header:  [Edit profile]  [Change class]
-Section header: [+ Add note]    (sub-collection CTA)
+Imports, timetable generation, grade-entry sessions across students and class/session attendance recording use a URL-addressable full-screen task surface. It replaces ordinary inspection while active; it must not stack another drawer. It has context/name, Return/Close, a step or progress region when the task requires one, a flexible working region and persistent task actions. No unrelated navigation or competing primary action appears inside it.
 
-Click → edit modal opens
-On save → modal closes, drawer data refreshes, toast shown
-```
+The task must declare its unit of save, validation, pending work and completion. Presentation must not imply atomic batch save where commands are per-record, or create new batch APIs. Partial completion must identify saved versus unsaved work. Bulk archive/delete confirmation and a bounded selection applied to several records remain confirmations/forms, not workspaces merely due to record count.
 
-Use for: create/edit forms, multi-field changes, sub-entity add/edit. Primary entity actions belong in the **entity header**; sub-collection CTAs belong on the **section or tab header**.
+Import closure stops UI polling, not scheduled server work; reopening resolves the batch and current state. Cancellation is a separate permission-gated domain command only where supported. Timetable generation retains its atomic selected-class contract. A grading/attendance entry session retains existing record/batch command and publication protections.
 
-#### Pattern B — Pragmatic inline toggle (boolean / single-value only)
+### 4.3 One drawer and return context
 
-For **simple boolean or single-value toggles** (status chip, attendance checkbox, enrollment flag):
+Only one drawer may be visible. Following a related record replaces its content, captures the originating record/tab and provides contextual Back. Back returns one inspection step; Close returns directly to the underlying collection, retaining its filters, sort, view, loaded position and focus target. A task/form above inspection returns to that same record/tab on completion or dismissal.
 
-- Toggle flips immediately
-- Persist on change (optimistic or await server)
-- Toast on success/error
-- No multi-field form in the drawer
+A direct-linked drawer/task has a canonical owning collection or specialized page as its return destination. Local return metadata must not be required to resolve the record. If an origin is deleted, inaccessible or in another invalid scope, return to the nearest authorized collection and explain the change.
 
-**Excluded:** `staffPermissionAssignments` on Staff → Permissions tab — **modal-only** (add/edit/delete via `StaffPermissionFormModal`). Do not use inline toggles or matrix layouts for permission grants.
+Dirty dismissal, including Close, Back, backdrop and Escape, must ask Discard changes / Keep editing before navigation commits. A clean surface dismisses directly. After a confirmed save, failure to refresh must not revive a discard prompt for already saved values. An in-flight confirmed/indeterminate command must never be described as cancelled by closing UI.
 
-**Do not** use inline toggle for forms with more than one field or across multiple sections — use a modal.
+## 5. States, permissions and accessibility
 
-### 3.5 Simple entities (no drawer)
+| State | Required presentation/action |
+| --- | --- |
+| Initial load | Skeleton for the assigned structure and accessible loading status; no fake counts |
+| Background refresh | Keep valid same-scope content and indicate refresh without resetting selection/position |
+| Loading more | Keep rows; trailing loading indicator |
+| Load-more failure | Keep rows; localized failure and Retry for the next batch |
+| No records | State the scoped entity collection is empty; name the available create action in its menu |
+| No matches | State that search/filters found no matches; offer Clear search / Reset filters as applicable |
+| No access | Explicit access state; no misleading empty collection or unauthorized mutation control |
+| Load failure | Localized explanation and Retry; no fabricated empty success |
+| Mutation failure | Inline form/task error plus feedback; preserve drafts and permit safe retry |
+| Saved, refresh failed | Confirm saved outcome, explain stale display and offer read retry; never replay the write automatically |
 
-When a record has **nothing meaningful to browse** beyond what the list already shows, **do not open a drawer**.
+Unauthorized actions must be hidden. Authorized actions prevented by current business state remain disabled with a visible/focus-accessible reason. Empty menus are omitted. Server eligibility remains authoritative, including direct-linked forms and changed contexts.
 
-**Authoritative surface type** per entity is fixed by product routes and entity tables (complex · simple · thin · layout). Use the heuristics below only when classifying a **new** entity — they do not override an existing assignment.
+Each interactive target is at least 44px. Every icon-only control has an accessible contextual name. Record activation is a real link (Enter); checkboxes toggle with Space; neither is nested inside another interactive target. Table row navigation must not replace native table semantics. Tab links follow document order, identify the current page, and wrap or scroll with keyboard access; the Filter trigger restores focus on dismissal. Menu triggers support Enter/Space and menu items support arrow navigation, Home/End and Escape. Keyboard order follows visual order. Menus use menu semantics, keyboard navigation, Escape and focus restoration; selection does not depend on hover. Dialogs contain focus and Escape affects only the topmost surface. Announce meaningful load/save/error changes without repeatedly reading the whole collection.
 
-**Qualifies as simple** when all are true:
+At 200% text and narrow/short viewports, essential content must wrap, controls must remain reachable, and no fixed text height may clip information. Use reduced-motion alternatives. Long tables, tabs and previews must provide keyboard-accessible overflow without hiding essential content.
 
-1. No sub-collections to inspect
-2. No cross-entity context the list row does not already convey
-3. At most a few mutations, all reachable via modal
+## 6. Conformance
 
-**List behavior for simple entities:**
-
-| Element | Rule |
-|---------|------|
-| Row/card click | No-op, or select for bulk — **never** open an empty drawer |
-| Row `···` menu | Edit, Delete, and other mutations → modals / confirm dialogs |
-| Primary CTA | Unchanged — **Add …** on the list toolbar → create modal |
-| Deep links | Optional `[[id]]` route only when shareable URLs are required; prefer opening an edit modal from the URL |
-
-Examples: grade scale (edit bands in modal). Fee definitions are complex drawers because their Overview combines configuration, financial usage and assignment actions.
-
-### 3.6 What must NOT appear in the drawer
-
-- Open form fields on load (no form component as default drawer body)
-- Global Save / Cancel pair on the drawer shell
-- List-row columns repeated as the sole drawer content
-- Sub-collection add/edit inline — always modal (see §4)
-
----
-
-## 4. Complex entities: tabs and sub-collections
-
-Complex entities (e.g. Student) use the body patterns in §3.2. **Tabs are nested routes** under `[[id]]/` (e.g. `/school/students/{id}/guardians`). Each tab route owns its own `PageQuery` and writes into the parent route state. A tab is either:
-
-1. **Read-only profile** — labeled field sections, no inputs
-2. **Sub-collection** — a mini list page scoped to the parent entity
-
-### 4.1 Sub-collection tab anatomy
-
-```
-┌ Sub-collection: Pedagogical notes ──────────────── [+ Add note] ┐
-│  • Note 1 — 12 Mar                    [Edit] [Delete]           │
-│  • Note 2 — 05 Feb                    [Edit] [Delete]           │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-**Sub-collection header row:** title + count on the left; **`+ Add …`** button on the right (inline section header — not `DrawerActionBar`).
-
-| Element | Behavior |
-|---------|----------|
-| **Header row** | Sub-entity name + count on the left; `+ Add …` on the right |
-| **Primary CTA** (`+ Add …`) | Opens **create modal** for the sub-entity |
-| **Row actions** | Edit → **edit modal**; Delete → **confirm modal** |
-| **Row click** | Expand read-only detail inline, or no-op — never inline edit form |
-| **Search / filter** | Optional; same toolbar pattern as main list, scoped to tab |
-
-**Hard rule:** all sub-collection **add** and **edit** operations open a modal. The tab renders read-only lists only.
-
-### 4.2 Drawer body footer (`DrawerActionBar`)
-
-Optional **footer action bar** inside a drawer tab or section — `border-t`, right-aligned secondary actions (e.g. legacy Edit/Delete clusters). **Not** the sub-collection `+ Add` header.
-
-- **Prefer** primary entity actions in **`DrawerEntityHeader`** (§3.1).
-- Use **`DrawerActionBar`** only for supplementary actions that do not fit the two header slots.
-- New screens: put entity-level Edit/Delete in the entity header overflow, not a body footer.
-
-### 4.3 Known legacy drift (align when touching)
-
-No tracked drift for drawer entity headers. When you find a screen still using a custom identity block + `DrawerActionBar` for Edit/Delete, migrate to `DrawerEntityHeader` + overflow menu in the same PR.
-
-Refactor legacy screens in the same PR when you materially edit them; no standalone migration sprint required.
-
----
-
-## 5. Mutation modals
-
-All mutations use modal dialogs — **centered overlay on desktop**; **full-screen or near-full sheet on mobile** (§6.5).
-
-### 5.1 Modal types
-
-| Type | Use | Footer |
-|------|-----|--------|
-| **Form modal** | Create / edit | Cancel + Save |
-| **Confirm modal** | Delete, archive, irreversible | Cancel + Confirm (destructive style) |
-| **Picker modal** | Link/assign related entity | Cancel + Select |
-
-### 5.2 Modal rules
-
-- Validate before submit; show field errors inline
-- Toast on success and on server error
-- On success: close modal, patch route state optimistically, bump every affected entity-family version for cross-route sync, and refresh active tab query if server returns derived data
-- Do not navigate away from the current list+detail URL
-- The active modal/form/confirmation is URL-backed with `?modal=…`; add `modalTarget` when the
-  pathname does not identify the record.
-- Multi-step flows expose stable `modalStep` and substantive internal panels expose `modalTab`.
-- Opening a modal pushes a history entry. Back closes an in-session modal; direct-link/reload close
-  replaces to the canonical parent URL.
-- The URL identifies the surface, target, and safe workflow step — never credentials, OTPs,
-  uploaded payloads, or unsaved field values.
-- Focus trap; Escape closes; return focus to trigger on close
-
-### 5.3 Decision matrix
-
-| User intent | Surface |
-|-------------|---------|
-| Browse entity list | Main body |
-| Inspect complex entity | Detail drawer (entity header + body) |
-| Inspect simple entity | List row only — no drawer |
-| Inspect tab sub-collection | Drawer tab (read-only list) |
-| Create main entity | Modal (from list primary CTA) |
-| Create sub-entity (tab) | Modal (from tab `+ Add`) |
-| Edit main entity (complex) | Modal (from drawer entity-header action or `···` overflow) |
-| Edit main entity (simple) | Modal (from list row `···` menu) |
-| Edit sub-entity | Modal (from row action) |
-| Delete / archive | Confirm modal (from drawer overflow or row `···` menu) |
-| Boolean / single-value toggle | Pragmatic inline toggle + immediate save + toast |
-| Multi-field edit | Always modal |
-
----
-
-## 6. Cross-cutting concerns
-
-### 6.1 Feedback
-
-| Event | UX |
-|-------|-----|
-| Mutation success | Toast (success) |
-| Validation failure | Inline in modal |
-| Server error | Toast (error) + retry where applicable |
-| Destructive action | Confirm modal before submit |
-
-### 6.2 Data states
-
-Every list route wraps its collection in explicit loading, empty, error, and ready states via **`PageQuery`** (route load) and **`DataState`** (status display):
-
-- **Loading** — spinner or skeleton
-- **Error** — message + retry
-- **Empty** — message + optional CTA
-- **Ready** — render collection
-
-### 6.3 Permissions
-
-Actions are gated by **effective permission grants** from the session (`authSession.grants`), not by a legacy roles matrix.
-
-| Mechanism | Usage |
-|-----------|--------|
-| **`PermissionGate`** | Wrap action buttons: `permission="PERMISSION_CODE"` · `mode="hide"` (default) or `mode="disable"` + tooltip |
-| **Scoped checks** | Pass `classId` / `subject` when the grant is class- or subject-scoped |
-| **Helpers** | `hasPermission` / `hasAnyPermission` in `lib/permissions.ts` |
-
-| Denied | UX |
-|--------|-----|
-| Not allowed | Hide button (`mode="hide"`), or show disabled with tooltip (`mode="disable"`) |
-| Read-only entity | Drawer opens; edit actions hidden or disabled |
-
-The user's **staff role label** (e.g. director, teacher) is shown in the header for identity only — it does **not** replace permission checks. Permission assignment UI lives on Staff drawer → Permissions tab (`staffPermissionAssignments` via modals); assign actions require `ACCESS_CONTROL_ASSIGN`.
-
-### 6.4 Global context
-
-Changing school, academic year, or period must invalidate/refetch list data for the active route. The app shell owns this central invalidation mechanism: selector changes clear affected `PageQuery` cache entries, notify the active route state to refresh, and preserve the current URL unless the new scope makes it inaccessible. Screen logic must derive scope from the shell's global context selectors, not hard-coded values.
-
-### 6.5 Responsive
-
-| Breakpoint | Behavior |
-|------------|----------|
-| Desktop | Sidebar fixed; drawer 50% width overlay |
-| Mobile | Sidebar → hamburger; drawer → full-screen sheet; modals → full-screen or near-full |
-
-Respect `prefers-reduced-motion` for drawer/modal animations.
-
-### 6.6 Accessibility
-
-- Escape closes drawer and modals
-- Focus trap in modals
-- `aria-live` for loading states
-- Keyboard-navigable list rows and tab strips
-
----
-
-## 7. Entity implementation checklist
-
-Use this template when adding or refactoring an entity screen.
-
-```markdown
-### Entity: <Name>
-
-#### Complexity
-- [ ] Complex → detail drawer
-- [ ] Simple → row `···` menu only (§3.5)
-
-#### Routes
-- List: `/<module>/<entity>`
-- Detail (complex only): `/<module>/<entity>/[id]` (+ optional `/[id]/{tab}` child routes)
-
-#### List page
-- Title:
-- Description:
-- Primary CTA: → <CreateModal>
-- Search fields:
-- Filters:
-- More menu items:
-- View: cards | table
-- Row `···` menu items:
-- Empty state CTA:
-
-#### Detail drawer (complex only)
-- Entity header: identity fields + up to 2 primary actions → <Modal>
-- Overflow (`···`): <additional actions, including delete>
-- Body structure: sections | tabs | tabs + sections
-- Tabs (if justified):
-  - <Tab A>: read-only sections
-  - <Tab B>: sub-collection → read-only list + `+ Add` → modal
-- Inline toggles (pragmatic only): <list or "none">
-
-#### Modals
-- Create modal
-- Edit modal
-- Delete confirm modal
-- (sub-entity modals as needed)
-
-#### States & permissions
-- Loading / empty / error on list route
-- Toast on all mutations
-- Role gates: <which actions require which permission codes via PermissionGate>
-```
-
-### Naming conventions
-
-| Artifact | Pattern | Location |
-|----------|---------|----------|
-| List view | `<Entity>View` | `routes/.../components/` |
-| Read-only drawer body | `<Entity>Detail` or tab `+page.svelte` | `routes/.../components/` or `[[id]]/{tab}/` |
-| Sub-collection list (in tab) | `<Entity><Sub>List` | Tab route `components/` |
-| Create / edit modal | `<Entity>FormModal` | `routes/.../components/` |
-| Confirm modal | `<Entity>DeleteModal` | `routes/.../components/` |
-| Route | optional `[[id]]` segment + `[[id]]/{tab}` child routes for URL-backed drawer |
-
-## Small-screen presentation
-
-Below 1024px, present the existing AppSidebar in a modal sheet using shared Dialog primitives. Keep the same groups, destinations, permission filters and active states. Start mobile navigation closed, close it after navigation, support Escape/outside dismissal and focus restoration, and retain the desktop expansion preference separately. The main page uses the full viewport width; language and account controls wrap in the header. School and academic year switching stay in the sidebar under the logo; term controls wrap beside their affected content. This is a presentation adaptation and must not change routing, permissions or bootstrap behavior.
-
-## Correction queue interaction
-
-The queue lists oldest pending requests first. Workflow, status, class, teacher, student, search, dates and selected request are URL state. Use the shared infinite-loading collection shell: append batches on scroll, retain loaded rows while opening/closing the drawer, and reset the collection when filters or academic scope change. Do not show Previous/Next pagination controls. Show Term only in Grades and Report comments views. Detail is a read-only drawer with named students/teacher/class, Official → Proposed typed fields, reason, revisions, history and consequences. Approve is one action; Reject asks for one reason. Extra approval confirmation is reserved for superseding reviewed attendance justification or replacing a published report document. The optional Next pending control keeps review moving without resetting filters. Closing a drawer also closes its action modal.
-
-### School messaging interaction
-
-The Messages collection keeps its list behind a URL-backed drawer with the existing Dialog focus, Escape and backdrop handling, full-width mobile and half-width desktop presentation. Drawer content is read-only and uses DrawerEntityHeader. School reply actions open FormModal; resolution is an explicit single-state action. A reply draft captures the viewed conversation version; background refresh cannot silently authorize sending from an outdated draft. A conflict preserves the draft and requires reviewing newer activity before reopening the reply modal.
-
-### Staff permission inspection
-
-Applied permission profiles use independent, initially collapsed disclosure lists. Profile names, permission counts, effective scope tags, warning summaries and action buttons remain visible. Scope tags wrap without truncating essential values; disclosure controls are keyboard accessible and separate from mutation actions. The defaults card shows saved selections as tags. Staff drawers expose Profile and Permissions only, without a Manage permissions header action.
-
-
-### Teacher timetable date navigation
-
-Teacher Timetable keeps the teacher identity, tabs and date toolbar fixed; only its bounded session list scrolls. Date headings use bold text. Other teacher tabs retain their existing drawer scrolling. The wrapping toolbar provides a labeled date input bounded by the selected year and Today. Date navigation keeps focus on the control, announces its destination and respects reduced motion; initial positioning is instant. With no explicit target, use today or the nearest year boundary. A target without sessions gets a dated No sessions entry; a year without sessions also gets the year-wide empty message. Missing year bounds show an explicit empty state.
-
-### Report card templates in level Details
-
-Levels and Classes → Details contains Report card templates below the level's grading settings. The collection is scoped to the selected level and workspace academic year, with multiple templates supported. Show all templates in that scope without search or status-filter controls; legacy search/status parameters do not restrict the collection. The section header exposes only Add model; omit its export menu and standalone row Edit buttons. Clicking a template opens its drawer, which retains editing actions. Template cards keep the white card surface on hover and selection, using the border and focus ring for feedback. Creation captures and displays that level/year as read-only; scope changes discard the open create surface. Existing template mutations and REPORT_CARD_CONFIGURE gates remain in effect. The combined navigation entry includes REPORT_CARD_CONFIGURE and there is no separate templates entry.
-
-The Details layout owns ReportCardsPageState and its PageQuery. Template drawers use `/configuration/structure/details/report-cards/{id}`; closing returns to Details with the level selection and filters retained. Changing level or year closes the prior drawer/modal. Legacy `/configuration/report-cards` URLs redirect, retaining modal/filter context; a template deep link resolves its own level and academic year before editing. Grading scales stay separate. No persistence or report-generation behavior changes.
-
-The Levels and Classes tab-content container uses flex gap for spacing, never sibling margins: its URL-backed subject, class and template drawers and backdrops are fixed to the viewport and must remain at top zero without inherited layout margins.
-
-At desktop widths, the Levels and Classes level rail uses a full-height white card background flush with the configuration area’s left, top and bottom edges, and a border-color vertical divider on its right edge. Desktop outer padding belongs to the main content column rather than the enclosing configuration surface. Its heading, add action, search and level list stay sticky inside the padded rail. Small screens retain the compact selector without a vertical divider.
-
-Other configurations uses the same desktop rail treatment: a 17rem white panel flush with the configuration area’s left, top and bottom edges, a right border-color divider, and padding in the main content column. Its sticky navigation is headed “Configurations” in both English and French. Small screens stack the labeled navigation above the content with normal page padding. Preserve permission-filtered destinations and selected and keyboard-focus states.
-
-### Permission profile inspection
-
-Permission profile rows open `/configuration/permission-profiles/{id}` and have no row action menu. Keep the list, search and page export behind a focus-managed Dialog drawer. Use DrawerEntityHeader with Edit as a primary action and Delete in its overflow, opening the existing mutation/confirmation modals with ACCESS_CONTROL_CONFIGURE gates and impact review. Show name, optional description, permission and bound-staff counts, and initially expanded groups containing only included permissions; use localized labels, catalog scope-type badges and a label fallback for uncatalogued codes. Scope badges describe supported types, not staff-specific assignments. Empty profiles have an explicit empty message. Preserve modal deep links, search, history, focus restoration and mobile wrapping. Closing clears the drawer modal; edits refresh its content and successful deletion returns to the list.
-
-
-### Weekly period calendar
-
-On the default calendar at `/configuration/period-grid`, dragging a slot or resizing its bottom edge is a permitted inline edit. Moves preserve duration and may change weekday; resizing changes end time only. Keep configured order, validate five-minute steps and same-day non-overlap on the destination weekday, and use the existing route mutation with pending/success/failure feedback. General editing, creation and deletion retain the existing modal flows. Keep keyboard-accessible Edit/Delete actions on each slot card and the Add slot action for editing and creation without dragging. Do not duplicate card actions in a separate selector or toolbar. Dragging an empty time range opens a prefilled creation modal; selecting a slot’s Delete icon opens the existing confirmation modal.
-
-### Finance composition
-
-Fees combines an independently loaded financial summary and catalog. Finance page headers omit the redundant Fees/Billing/Payments switcher; use sidebar navigation. Omit the scope caption beneath financial overviews. One Filter button hosts the category and status controls; these and catalog search affect only catalog rows. Clicking a fee opens its read-only Overview drawer; row-menu interaction must not navigate. Billing has a persistent entity header above Overview, Payments and History pathname tabs. Fee and billing headers expose at most two visible actions; overflow contains secondary actions. Mutations use modals above the originating drawer/tab; closing restores that tab and its filters. Use full-width drawers on mobile, focus containment/restoration, Escape for the topmost surface and reachable scrollable modal footers.
+A feature must declare its collection and inspection purpose, required content, action scopes, editing/task surface, permissions, states and return behavior. Shared defaults in this contract apply without local restyling. Every specialized departure must use its named exception and preserve the remaining rules. A conforming screen must satisfy both its complete domain content contract and these presentation/interaction requirements.

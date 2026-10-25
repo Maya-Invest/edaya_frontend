@@ -5,7 +5,7 @@ Unit tests and Playwright integration suites for the staff webapp. Run from `app
 ## Unit
 
 ```sh
-bun test tests/lib
+bun run test
 ```
 
 ## Layout
@@ -14,7 +14,7 @@ bun test tests/lib
 tests/
 ├── fixtures/         # In-repo data (Ivory Coast catalog JSON) — not edaya_backend
 ├── lib/              # Pure helpers, mutations, queries, navigation
-├── integration/      # Playwright library runners (not bun:test, not bun run verify)
+├── integration/      # Browser runners plus isolated Bun state tests
 │   ├── onboarding/   # Login + onboarding Playwright suite
 │   ├── setup/        # Provisioned owner journey
 │   └── demo-dry-run/ # Seeded demo-ci walkthrough (`demo:e2e`). Keeps seeded drawers and permissions; it does not re-walk the route catalog.
@@ -39,7 +39,7 @@ CI-shaped (Wrangler preview):
 WEBAPP_URL=http://127.0.0.1:4173 WEBAPP_READINESS_PATH=/login bun run test:integration:onboarding
 ```
 
-Scenes (fail-the-process): public gates, login/signup validation + verification UI, unknown invite token, wizard step interactions, owner wizard resume (reload / second tab / post-provision lock), happy-path provision with a valid staff invite, invited staff (new account + existing account), wrong-account / revoked / already-accepted invites, invited teacher, invited guardian, owner relogin. Expired 7-day invite TTL is a documented gap (no expire command).
+Scenes (fail-the-process): public gates, login/signup validation + verification UI, unknown invite token, wizard step interactions, owner wizard resume (reload / second tab / post-provision lock), happy-path provision with a valid staff invite, invited staff (new account + existing account), wrong-account / revoked / already-accepted invites, invited teacher, invited guardian, owner relogin.
 
 Artifacts: `apps/webapp/.onboarding-run/` (screenshots + `summary.json` on failure).
 
@@ -51,24 +51,15 @@ Artifacts: `apps/webapp/.onboarding-run/` (screenshots + `summary.json` on failu
 |-------|-------------|
 | `$lib/*` | `src/lib/*` |
 | `$tests/*` | `tests/*` |
-| `$api-client` | `src/generated/api-client` |
+| `@maya-invest/edaya-api-client` | Prepared package in the repository-root `.generated/api-client` |
 
-## `.svelte.ts` and entity store
+## Svelte state tests and API inputs
 
-GitHub Actions checks out **only** `edaya_web` and runs bun test on Linux. Do **not** import `DetailDataContext` or other `$state` singletons in tests — Linux bun does not compile runes outside a component.
+CI and local verification install the same API package prepared from an immutable backend SHA. CI also checks out that backend for generation and supervised integration; application unit fixtures do not read a sibling checkout. See [client preparation](../../../tooling/repo/README.md#backend-inputs-and-setup).
 
-[`tests/support/sveltekit-mocks.ts`](./support/sveltekit-mocks.ts) (bun preload) stubs toast, session, entity-versions, and academic/onboarding context so those files never execute.
+[`support/sveltekit-mocks.ts`](support/sveltekit-mocks.ts), loaded by Bun's app-level configuration, stubs SvelteKit/session/toast dependencies for pure tests. `tests/lib/ci-parity-guard.test.ts` rejects eager rune-state and mutation-runner imports and sibling-backend reads in the pure unit suite.
 
-Prefer:
-
-1. **Pure helpers** — test mapping/codec functions with fixtures (`tests/lib/api/*-data.test.ts`).
-2. **Mutation apply/rollback** — extract the patch logic or mirror it with a small in-memory store (`tests/lib/api/mutations/mutation-store-actions.test.ts`). Do not import `run-mutation.ts`.
-3. **Mocks before dynamic import** — do not `await import` mutation files that pull `run-mutation.ts` (toast/session). Test payload helpers instead (`student-ops.payload.ts`). When a test must load a mutation module, mock `$lib/api/school-client` first.
-4. **In-repo fixtures** — catalog coverage reads `tests/fixtures/ivory-coast/`, not a sibling `edaya_backend` tree.
-
-`tests/lib/ci-parity-guard.test.ts` fails locally if a new test reintroduces a backend path or a static `$state` / `run-mutation` import.
-
-CI still installs the **published** `@maya-invest/edaya-api-client`; local `bun run verify` keeps the `file:` sibling. Quality/build would fail first if that client were wrong.
+Use pure mapping, payload and mutation helpers in `tests/lib/`. Exercise the actual implementation with mocks rather than copying its algorithm into a test. For rune-backed route/smart state, follow the isolated `tests/integration/*.test.ts` suites: register a Bun plugin using Svelte's `compileModule`, install mocks before dynamic imports, and run each suite separately as listed in the app's `test` script. Browser runners exercise navigation and persisted behavior separately.
 
 ## Adding tests
 
@@ -78,7 +69,7 @@ Keep a unit test when it locks a branch a developer can get wrong, it is the che
 - Use `@edaya/web-fixtures` / `tests/support/openapi-fixtures.ts` for stable IDs.
 - Keep component tests rare; favor stateless modules and mutation store actions.
 - Do not add `empty*Slice()` tests. TypeScript already types those literals.
-- New import packs add validator and runner tests. Add a parser test only for a branch the shared parser harness misses (Excel serial dates, optional columns, header aliases).
+- Durable import behavior is tested through the generated backend API and browser workflow; parsing, matching and validation are backend responsibilities.
 - Catalog drift belongs in `tests/lib/catalog-drift.test.ts`. Do not add a second journey, matrix, or scene-id coverage file.
 
 ## Shared scenarios and screenshot gallery
@@ -151,7 +142,7 @@ Failed or blocked captures remain visible and exit unsuccessfully. Partial
 results are saved after each capture. Normal fictional form values remain visible;
 passwords, OTPs and marked secrets are masked. Fonts/images/layout settle before
 capture and animations are disabled. Long forms have explicitly named scrolled
-checkpoints. Previous runs and curated design-review galleries are preserved.
+checkpoints. Previous dated runs remain separate from the ignored curated design-review directory.
 
 To capture declared checkpoints while completing integration assertions:
 
@@ -196,3 +187,11 @@ Validation: `bun test tests/lib/shared-scenario-runner.test.ts`, the existing
 registry/catalog tests, all three integration commands, the complete six-variant
 `bun run screenshots`, and frontend-root `bun run verify`. Inspect representative
 sign-in, list, drawer, form and navigation PNGs after capturing.
+
+## Durable imports and integration coverage
+
+`integration/import-browser.ts` and `integration/support/import-workflows.ts` create current import fixtures on an isolated school. They cover the fifteen server-defined import kinds, session S/M/O behavior, validation, execution, reload and correction/template downloads. Run the registered `imports-ui` suite through supervised integration or the app's `test:integration:imports-ui` command with its configured local services. Download current templates from Configuration → Tools → Import; archived compatibility workbooks are not current templates.
+
+`integration/features.json` and route/sidebar/modal catalogs identify required surfaces. New production routes, tabs and actions update both registration and executable assertions. Navigation-only checks do not cover mutations: submit, reload and inspect persisted results, including relevant denied operations. Missing fixtures, blocked required scenarios, unexpected skips, stale source fingerprints and interrupted runs fail qualification. Independent scenarios continue after another scenario fails.
+
+Source-fresh execution metadata accompanies each suite. Sanitized reports are collected under repository-root `.ci-evidence/reports/`; private session/provisioning fixtures and OTP/recovery secrets are excluded. Never reuse success summaries from an older source revision. Real provider delivery, native platform behavior and future support-assisted recovery remain outside frontend browser qualification. Webadmin coverage is limited to its registered placeholder/navigation behavior.

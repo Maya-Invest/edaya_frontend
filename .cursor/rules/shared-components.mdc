@@ -10,7 +10,7 @@ alwaysApply: false
 
 [`docs/specs/shared-components-spec.md`](../../docs/specs/shared-components-spec.md)
 
-## Must use (when built)
+## Must use
 
 | Area | Components |
 |------|------------|
@@ -18,7 +18,7 @@ alwaysApply: false
 | Search / filters | `ListSearchField` · `FilterPanel` |
 | Modals | `FormModal` · `ConfirmModal` · `PickerModal` |
 | Gating | `PermissionGate` |
-| Drawer | `DetailDrawer` · `DrawerEntityHeader` · `DrawerField` · `DrawerEmptyState` · `DrawerActionBar` (body footer only) |
+| Drawer | `DetailDrawer` · `DrawerEntityHeader` · `DrawerField` · `DrawerEmptyState` |
 | People | Smart `StaffPicker` · `StudentPicker` · `GuardianPicker` (`lib/smart-components/`) |
 | Permissions | `ScopeBuilder` · `StaffPermissionFormModal`; profile catalog may use a same-grain checklist |
 
@@ -27,7 +27,7 @@ alwaysApply: false
 - Copy inline search pill markup — use `ListSearchField`
 - Chip-bar main filters — `FilterSelect` + `FilterPanel`
 - Duplicate drawer identity blocks — `DrawerEntityHeader`
-- Use `DrawerActionBar` for sub-collection `+ Add` — use inline section header instead
+- Restore removed drawer action footers — use entity-header actions and inline sub-collection headers
 - Ad-hoc person `<select>` lists — smart picker family
 - Feature views in `lib/components/school/` — colocate under `routes/.../components/`
 - `?tab=` for drawer tabs — use nested routes under `[[id]]/`
