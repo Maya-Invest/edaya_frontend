@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'bun:test';
 import {
 	readAcademicAdminListFilters,
 	readActivityListFilters,
@@ -35,6 +34,7 @@ import {
 	writeStudentListFilters,
 	writeTeachingListFilters,
 } from '$lib/list/list-url-filters';
+import { describe, expect, it } from 'bun:test';
 
 interface FilterCase {
 	name: string;
@@ -126,8 +126,8 @@ const cases: FilterCase[] = [
 		name: 'report card definitions',
 		read: readReportCardDefinitionListFilters,
 		write: writeWith(writeReportCardDefinitionListFilters),
-		defaults: { q: '', status: 'all' },
-		nonDefault: { q: 'trimester', status: 'draft' },
+		defaults: { q: '', status: 'all', defaultModel: 'all' },
+		nonDefault: { q: 'trimester', status: 'draft', defaultModel: 'yes' },
 	},
 	{
 		name: 'roles',

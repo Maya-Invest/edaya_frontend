@@ -137,7 +137,7 @@
 			{/if}
 		</div>
 	</div>
-	<SubjectParticipation studentId={s.id} />
+	<SubjectParticipation studentId={s.id} studentName={s.name} />
 </div>
 
 <FormModal {open} onOpenChange={(value) => {

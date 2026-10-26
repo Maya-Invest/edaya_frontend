@@ -1,52 +1,22 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import * as Dialog from '$lib/components/ui/dialog';
+	import { t } from '$lib/i18n';
+	import FormModal from './FormModal.svelte';
 
-	let {
-		open = $bindable(false),
-		title,
-		description,
-		confirmLabel = 'Ajouter',
-		cancelLabel = 'Annuler',
-		busy = false,
-		confirmDisabled = false,
-		children,
-		onCancel,
-		onConfirm,
-	}: {
+	let { open = $bindable(false), title, description, confirmLabel = $t('common.add'), cancelLabel = $t('common.cancel'), busy = false, dirty, confirmDisabled = false, children, onCancel, onConfirm }: {
 		open?: boolean;
 		title: string;
 		description?: string;
 		confirmLabel?: string;
 		cancelLabel?: string;
 		busy?: boolean;
+		dirty?: boolean;
 		confirmDisabled?: boolean;
 		children?: Snippet;
 		onCancel?: () => void;
 		onConfirm: () => void | Promise<void>;
 	} = $props();
-
-	function close() {
-		onCancel?.();
-		open = false;
-	}
 </script>
-
-<Dialog.Root bind:open>
-	<Dialog.Content data-testid="picker-modal">
-		<Dialog.Header>
-			<Dialog.Title>{title}</Dialog.Title>
-			{#if description}
-				<Dialog.Description>{description}</Dialog.Description>
-			{/if}
-		</Dialog.Header>
-		<div class="space-y-4 px-1 py-2">
-			{@render children?.()}
-		</div>
-		<Dialog.Footer>
-			<Button variant="ghost" onclick={close} disabled={busy}>{cancelLabel}</Button>
-			<Button onclick={onConfirm} disabled={busy || confirmDisabled}>{confirmLabel}</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
-</Dialog.Root>
+<FormModal bind:open {title} {description} {busy} {dirty} submitDisabled={confirmDisabled} submitLabel={confirmLabel} {cancelLabel} {onCancel} onSubmit={onConfirm}>
+	<div data-testid="picker-modal">{@render children?.()}</div>
+</FormModal>

@@ -1,13 +1,13 @@
 <script lang="ts">
-	import type { NotificationGatedChannel, NotificationTemplateKey } from '$lib/notification-templates/catalog';
+	import type { NotificationSendChannel, NotificationTemplateKey } from '$lib/notification-templates/catalog';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
-	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
 	import {
-		copyTypesForTemplateKey,
-		gatedChannelsForTemplateKey,
+		enabledChannelsForTemplateKey,
+		listChannelsForTemplateKey,
 		isInvitationTemplateKey,
 		NOTIFICATION_TEMPLATE_SAMPLE_VALUES,
 		NOTIFICATION_TEMPLATE_VARIABLES,
@@ -27,8 +27,8 @@
 	const invitation = $derived(isInvitationTemplateKey(templateKey));
 	const eventEntry = $derived(readEventTemplateEntry(document, templateKey));
 	const invitationEntry = $derived(readInvitationTemplateEntry(document));
-	const gatedChannels = $derived(gatedChannelsForTemplateKey(templateKey));
-	const copyTypes = $derived(copyTypesForTemplateKey(templateKey));
+	const channels = $derived(listChannelsForTemplateKey(templateKey));
+	const enabledChannels = $derived(enabledChannelsForTemplateKey(document, templateKey));
 	const variables = $derived(NOTIFICATION_TEMPLATE_VARIABLES[templateKey]);
 
 	const baseTitle = $derived(eventEntry?.base_message.title ?? '');
@@ -50,19 +50,12 @@
 		renderTemplatePreview(richSubject, NOTIFICATION_TEMPLATE_SAMPLE_VALUES),
 	);
 
-	function flagLabel(enabled: boolean) {
-		return enabled ? $t('notificationTemplates.flagOn') : $t('notificationTemplates.flagOff');
+	function channelState(channel: NotificationSendChannel) {
+		if (!enabledChannels)
+			return $t('dataState.unavailable');
+		return $t(enabledChannels.includes(channel) ? 'notificationTemplates.flagOn' : 'notificationTemplates.flagOff');
 	}
 
-	function channelEnabled(channel: NotificationGatedChannel): boolean {
-		if (channel === 'email') {
-			return eventEntry?.enable_email ?? false;
-		}
-		if (channel === 'push') {
-			return eventEntry?.enable_push ?? false;
-		}
-		return eventEntry?.enable_sms ?? false;
-	}
 </script>
 
 <div class="space-y-6">
@@ -73,15 +66,13 @@
 		{#snippet actions()}
 			<PermissionGate permission="SCHOOL_LIFECYCLE_MANAGE" mode="disable">
 				{#snippet children({ disabled, title })}
-					<button
-						type="button"
-						class="inline-flex h-9 items-center rounded-full border border-input bg-background px-4 text-sm font-medium transition hover:bg-secondary disabled:opacity-50"
-						{disabled}
+					<Button variant="outline"
+						disabled={disabled || !document}
 						{title}
 						onclick={() => modals.open('edit')}
 					>
 						{$t('common.edit')}
-					</button>
+					</Button>
 				{/snippet}
 			</PermissionGate>
 		{/snippet}
@@ -89,7 +80,7 @@
 			<PermissionGate permission="SCHOOL_LIFECYCLE_MANAGE" mode="disable">
 				{#snippet children({ disabled })}
 					<RowActionMenuItem
-						{disabled}
+						disabled={disabled || !document}
 						onclick={() => modals.open('reset-key')}
 					>
 						{$t('notificationTemplates.resetKey')}
@@ -99,65 +90,57 @@
 		{/snippet}
 	</DrawerEntityHeader>
 
-	{#if gatedChannels.length > 0}
-		<DrawerField label={$t('notificationTemplates.channels')}>
-			<div class="flex flex-wrap gap-2">
-				<span class="rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium">
-					{$t('notificationTemplates.channel.in_app')} · {$t('notificationTemplates.flagOn')}
-				</span>
-				{#each gatedChannels as channel (channel)}
-					<span class="rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium">
-						{$t(`notificationTemplates.channel.${channel}`)} · {flagLabel(channelEnabled(channel))}
-					</span>
-				{/each}
-			</div>
-		</DrawerField>
-	{/if}
-
-	{#if !invitation}
-		<DrawerField label={$t('notificationTemplates.copyType.base_message')}>
-			<div class="space-y-2 rounded-md border border-input bg-secondary/30 px-3 py-2">
-				<p class="text-sm font-semibold">{renderTemplatePreview(baseTitle, NOTIFICATION_TEMPLATE_SAMPLE_VALUES)}</p>
-				<p class="whitespace-pre-wrap text-sm text-foreground/90">
-					{renderTemplatePreview(baseBody, NOTIFICATION_TEMPLATE_SAMPLE_VALUES)}
-				</p>
-			</div>
-		</DrawerField>
-	{/if}
-
-	<DrawerField label={$t('notificationTemplates.copyType.rich_message')}>
-		<div class="space-y-2 rounded-md border border-input bg-secondary/30 px-3 py-2">
-			{#if emailSubjectPreview}
-				<p class="text-sm font-semibold">{emailSubjectPreview}</p>
-			{/if}
-			<div
-				data-testid="notification-email-preview"
-				class="notification-html-preview text-sm text-foreground/90"
-			>
-				<!-- Sanitized to p/br/strong/em/a/ul/ol/li before render. -->
-				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-				{@html emailPreview}
-			</div>
-		</div>
-	</DrawerField>
-
-	{#if copyTypes.includes('simple_message')}
-		<DrawerField label={$t('notificationTemplates.copyType.simple_message')}>
-			<div class="min-h-10 whitespace-pre-wrap rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">
-				{renderTemplatePreview(simpleBody, NOTIFICATION_TEMPLATE_SAMPLE_VALUES)}
-			</div>
-		</DrawerField>
-	{/if}
-
-	<DrawerField label={$t('notificationTemplates.variables')}>
-		<div class="flex flex-wrap gap-2">
-			{#each variables as variable (variable)}
-				<code class="rounded-md bg-secondary px-2 py-0.5 font-mono text-[11px]">
-					{`{{${variable}}}`}
-				</code>
+	<section class="space-y-4">
+		<h2 class="text-xl font-semibold">{$t('notificationTemplates.channelSettings')}</h2>
+		<p class="text-sm">{$t('notificationTemplates.trigger')}: {$t(`notificationTemplates.keys.${templateKey}`)}</p>
+		<dl class="grid gap-4 text-sm sm:grid-cols-2">
+			{#each channels as channel (channel)}
+				<div><dt class="text-xs text-muted-foreground">{$t(`notificationTemplates.channel.${channel}`)}</dt><dd>{channelState(channel)}</dd></div>
 			{/each}
-		</div>
-	</DrawerField>
+		</dl>
+	</section>
+
+	<section class="space-y-4">
+		<h2 class="text-xl font-semibold">{$t('notificationTemplates.messagePreviews')}</h2>
+		<p class="text-xs text-muted-foreground">{$t('notificationTemplates.sampleNotice')}</p>
+		{#each (['in_app', 'push', 'email', 'sms'] as const).filter(channel => channels.includes(channel)) as channel (channel)}
+			<div class="space-y-4 rounded-xl border border-border p-4">
+				<h3 class="text-sm font-semibold">{$t(`notificationTemplates.channel.${channel}`)} · {channelState(channel)}</h3>
+				{#if channel === 'email'}
+					{#if richSubject}<p class="break-words text-sm font-semibold">{emailSubjectPreview}</p>{:else}<p class="text-sm">{$t('notificationTemplates.subject')}: {$t('value.notProvided')}</p>{/if}
+					{#if richBody}
+						<div data-testid="notification-email-preview" class="notification-html-preview break-words text-sm">
+							<!-- Semantic sanitized markup provides the same content to screen readers. -->
+							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+							{@html emailPreview}
+						</div>
+					{:else}<p class="text-sm">{$t('notificationTemplates.body')}: {$t('dataState.unavailable')}</p>{/if}
+				{:else if channel === 'sms'}
+					<p class="whitespace-pre-wrap break-words text-sm">{simpleBody ? renderTemplatePreview(simpleBody, NOTIFICATION_TEMPLATE_SAMPLE_VALUES) : $t('dataState.unavailable')}</p>
+				{:else}
+					<p class="break-words text-sm font-semibold">{baseTitle ? renderTemplatePreview(baseTitle, NOTIFICATION_TEMPLATE_SAMPLE_VALUES) : $t('value.notProvided')}</p>
+					<p class="whitespace-pre-wrap break-words text-sm">{baseBody ? renderTemplatePreview(baseBody, NOTIFICATION_TEMPLATE_SAMPLE_VALUES) : $t('dataState.unavailable')}</p>
+				{/if}
+			</div>
+		{/each}
+	</section>
+
+	<section class="space-y-4">
+		<h2 class="text-xl font-semibold">{$t('notificationTemplates.variables')}</h2>
+		<dl class="divide-y divide-border">
+			{#each variables as variable (variable)}
+				<div class="space-y-2 py-4">
+					<dt class="text-sm font-medium">{$t(`notificationTemplates.variable.${variable}`)}</dt>
+					<dd class="space-y-2 text-sm">
+						<code class="break-all rounded bg-secondary px-2 py-1 text-xs">{`{{${variable}}}`}</code>
+						{#if NOTIFICATION_TEMPLATE_SAMPLE_VALUES[variable]}
+							<p class="break-words text-xs text-muted-foreground">{$t('notificationTemplates.example')}: {NOTIFICATION_TEMPLATE_SAMPLE_VALUES[variable]}</p>
+						{/if}
+					</dd>
+				</div>
+			{/each}
+		</dl>
+	</section>
 </div>
 
 <style>

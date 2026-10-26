@@ -1,7 +1,7 @@
 export const LIST_VIEW_QUERY_KEY = 'view';
 export const LIST_CARD_COLUMNS_QUERY_KEY = 'cardColumns';
 
-export type ListView = 'table' | 'cards';
+export type ListView = 'table' | 'list';
 export type ListCardColumns = 1 | 2 | 3 | 4 | 5;
 
 const ALLOWED_CARD_COLUMNS = [1, 2, 3, 4, 5] as const;
@@ -12,7 +12,9 @@ export function isListCardColumns(value: number): value is ListCardColumns {
 
 export function readListView(url: URL, fallback: ListView = 'table'): ListView {
 	const value = url.searchParams.get(LIST_VIEW_QUERY_KEY);
-	return value === 'table' || value === 'cards' ? value : fallback;
+	if (value === 'cards')
+		return 'list';
+	return value === 'table' || value === 'list' ? value : fallback;
 }
 
 export function writeListView(url: URL, view: ListView): string {

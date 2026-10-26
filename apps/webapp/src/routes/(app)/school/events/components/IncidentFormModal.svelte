@@ -84,7 +84,7 @@
 			lessonSessionId = incident.lessonSessionId ?? '';
 		}
 		else {
-			studentId = eventsPage.students[0]?.id ?? '';
+			studentId = '';
 			incidentTitle = '';
 			description = '';
 			kind = 'minor_infraction';

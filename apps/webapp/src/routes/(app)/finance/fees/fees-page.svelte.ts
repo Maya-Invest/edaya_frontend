@@ -13,12 +13,15 @@ import { authSession } from '$lib/auth/session.svelte';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { resolvePageLoad } from '$lib/queries/page-status';
 import { getContext, setContext } from 'svelte';
+import { FeeAutoBillingState } from './lib/auto-billing-state.svelte';
 import { loadFeesSlice, queryFeesListPage } from './lib/fees-queries';
 
 const FEES_VERSION_FAMILIES = ['fees', 'billing', 'payments'] as const satisfies readonly EntityVersionKey[];
 const FEES_PAGE_STATE_KEY = Symbol('fees-page-state');
 export type { FeesPageSlice };
 export class FeesPageState {
+    readonly autoBilling = new FeeAutoBillingState();
+    autoBillingFeeId = $state<string | null>(null);
     slice = $state<FeesPageSlice | null>(null);
     detail = $state<Fee | null>(null);
     get billing() {
@@ -63,6 +66,7 @@ export class FeesPageState {
     clear() {
         this.slice = null;
         this.detail = null;
+        this.autoBillingFeeId = null;
     }
 
     get fees() {
@@ -143,7 +147,7 @@ export class FeesPageState {
         category: Fee['category'];
         amount: number;
         currency?: string;
-        enrollmentMode?: Fee['enrollmentMode'];
+        autoBilling?: Fee['autoBilling'];
         successMessage?: string;
     }): Promise<string | null> {
         const id = await createCatalogServiceMutation({
@@ -153,11 +157,13 @@ export class FeesPageState {
             category: input.category,
             amount: input.amount,
             currency: input.currency,
-            enrollmentMode: input.enrollmentMode,
+            autoBilling: input.autoBilling,
             status: 'active',
             successMessage: input.successMessage,
         });
         if (id) {
+            if (input.autoBilling && input.autoBilling.mode !== 'off')
+                this.autoBillingFeeId = id;
             this.appendFee({
                 id,
                 name: input.name.trim(),
@@ -167,7 +173,7 @@ export class FeesPageState {
                 amount: input.amount,
                 currency: input.currency?.trim() || authSession.school?.financeCurrency || '',
                 status: 'active',
-                enrollmentMode: input.enrollmentMode ?? 'mandatory',
+                autoBilling: input.autoBilling ?? { mode: 'off' },
                 installmentCount: input.billingTerms?.installments?.length ?? 0,
             });
         }
@@ -181,7 +187,7 @@ export class FeesPageState {
         billingTerms?: Fee['billingTerms'];
         category: Fee['category'];
         amount: number;
-        enrollmentMode?: Fee['enrollmentMode'];
+        autoBilling?: Fee['autoBilling'];
         successMessage?: string;
     }): Promise<boolean> {
         const previous = this.feeFor(input.feeId);
@@ -192,17 +198,19 @@ export class FeesPageState {
             billingTerms: input.billingTerms,
             category: input.category,
             amount: input.amount,
-            enrollmentMode: input.enrollmentMode,
+            autoBilling: input.autoBilling,
             successMessage: input.successMessage,
         });
         if (ok) {
+            if ((input.autoBilling ?? previous?.autoBilling)?.mode !== 'off')
+                this.autoBillingFeeId = input.feeId;
             this.patchFee(input.feeId, {
                 name: input.name.trim(),
                 description: input.description ?? undefined,
                 billingTerms: input.billingTerms,
                 category: input.category,
                 amount: input.amount,
-                enrollmentMode: input.enrollmentMode ?? previous?.enrollmentMode,
+                autoBilling: input.autoBilling ?? previous?.autoBilling,
             });
         }
         return ok;
@@ -218,6 +226,8 @@ export class FeesPageState {
         });
         if (ok) {
             this.patchFee(input.feeId, { status: 'active' });
+            if (this.feeFor(input.feeId)?.autoBilling.mode !== 'off')
+                this.autoBillingFeeId = input.feeId;
         }
         return ok;
     }

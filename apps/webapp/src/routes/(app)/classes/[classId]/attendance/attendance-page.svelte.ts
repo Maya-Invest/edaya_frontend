@@ -1,4 +1,5 @@
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
+import type { PageLoadState } from '$lib/page/load-state';
 import type { AttendanceDay } from '$lib/types/school';
 import type { SessionAttendanceRow, SessionAttendanceStatus } from '$lib/types/session-detail';
 import type { AttendancePageSlice } from './lib/attendance-helpers';
@@ -10,9 +11,12 @@ import { authSession } from '$lib/auth/session.svelte';
 import { isoToZonedDateAndTime, nowIso } from '$lib/date/format';
 import { t } from '$lib/i18n';
 import { createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+import { TASK_QUERY_KEYS } from '$lib/modal/modal-url';
+import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { hasPermission } from '$lib/permissions';
 import { toast } from '$lib/toast.svelte';
+import { ApiError } from '@maya-invest/edaya-api-client';
 import { getContext, setContext } from 'svelte';
 import { get } from 'svelte/store';
 import {
@@ -22,6 +26,7 @@ import {
 } from './lib/attendance-helpers';
 import { loadAttendanceSlice, queryAttendanceListPage } from './lib/attendance-queries';
 import { runAttendanceRouteMutation } from './lib/attendance-route-mutation';
+import { canonicalAttendanceTaskHref } from './lib/attendance-task';
 import { completeRollCall, validRollCallDate } from './lib/roll-call';
 
 const ATTENDANCE_VERSION_FAMILIES = ['attendance', 'students', 'guardians', 'enrollments'] as const satisfies readonly EntityVersionKey[];
@@ -41,16 +46,38 @@ export class AttendancePageState {
 	roster = $state<SessionAttendanceRow[]>([]);
 	rosterLoading = $state(false);
 	rosterError = $state(false);
+	rosterStatus = $state<PageLoadState>('loading');
+	creationOutcome = $state<'failed' | 'saved' | 'saved-refresh-failed' | 'duplicate' | null>(null);
+	existingCreationDay = $state<AttendanceDay | null>(null);
 	creating = $state(false);
 	private rosterRequest = 0;
 	private rosterScope = '';
 
 	constructor(private readonly getUrl: () => URL) {
 		this.modals = createUrlSyncedModals({
-			allowed: () => this.canCreate ? ['create-roll-call'] as const : [],
-			owned: ['create-roll-call'],
+			allowed: ['attendance-roll-call'],
+			owned: ['attendance-roll-call'],
+			allowedTabs: ['create'],
+			queryKeys: TASK_QUERY_KEYS,
 			getUrl,
 		});
+	}
+
+	hydrateTask() {
+		const href = canonicalAttendanceTaskHref(this.getUrl());
+		if (href) {
+			replaceRouteSurface(href);
+			return;
+		}
+		this.modals.hydrate();
+	}
+
+	openCreationTask() {
+		this.modals.open('attendance-roll-call', { tab: 'create' });
+	}
+
+	get timeZone() {
+		return academicContext.schools.find(row => row.id === this.classNode?.schoolId)?.timeZone ?? 'UTC';
 	}
 
 	get classId() {
@@ -71,8 +98,7 @@ export class AttendancePageState {
 	}
 
 	get today() {
-		const school = academicContext.schools.find(row => row.id === this.classNode?.schoolId);
-		return isoToZonedDateAndTime(nowIso(), school?.timeZone ?? 'UTC').date;
+		return isoToZonedDateAndTime(nowIso(), this.timeZone).date;
 	}
 
 	cancelRosterLoad() {
@@ -81,6 +107,7 @@ export class AttendancePageState {
 		this.roster = [];
 		this.rosterLoading = false;
 		this.rosterError = false;
+		this.rosterStatus = 'loading';
 	}
 
 	async loadCreationRoster() {
@@ -90,19 +117,24 @@ export class AttendancePageState {
 		this.rosterScope = '';
 		this.rosterError = false;
 		if (!this.canCreate) {
+			this.rosterLoading = false;
+			this.rosterStatus = this.classNode?.attendanceMode === 'daily' ? 'denied' : 'unavailable';
 			return;
 		}
+		this.rosterStatus = 'loading';
 		this.rosterLoading = true;
 		try {
 			const rows = await loadAttendanceRoster(getBrowserSchoolClient(), this.classId);
 			if (request === this.rosterRequest && scope === this.scope) {
 				this.roster = rows;
 				this.rosterScope = scope;
+				this.rosterStatus = rows.length ? 'ready' : 'empty';
 			}
 		}
-		catch {
+		catch (error) {
 			if (request === this.rosterRequest && scope === this.scope) {
 				this.rosterError = true;
+				this.rosterStatus = error instanceof ApiError && error.status === 403 ? 'denied' : error instanceof ApiError && error.status === 404 ? 'unavailable' : 'error';
 			}
 		}
 		finally {
@@ -119,6 +151,8 @@ export class AttendancePageState {
 			return null;
 		}
 		this.creating = true;
+		this.creationOutcome = null;
+		this.existingCreationDay = null;
 		const scope = this.scope;
 		const rosterRequest = this.rosterRequest;
 		const classId = this.classId;
@@ -126,11 +160,16 @@ export class AttendancePageState {
 		const attendanceByStudent = Object.fromEntries(this.roster.map(row => [row.studentId, marks[row.studentId]]));
 		try {
 			const existing = await findAttendanceDayForDate(client, classId, date);
-			if (scope !== this.scope || !this.canCreate) {
+			if (scope !== this.scope || rosterRequest !== this.rosterRequest || !this.canCreate) {
 				return null;
 			}
 			if (existing) {
-				await this.refreshSlice(classId);
+				this.existingCreationDay = existing;
+				this.creationOutcome = 'duplicate';
+				try {
+ await this.refreshSlice(classId);
+ }
+				catch { /* The exact duplicate remains available even if the list refresh fails. */ }
 				toast.error(get(t)('attendanceDay.alreadyExists'));
 				return null;
 			}
@@ -159,16 +198,27 @@ export class AttendancePageState {
 					}
 				},
 				onSuccess: async () => {
-					if (scope === this.scope) {
-						await this.refreshSlice(classId);
+					if (scope === this.scope && rosterRequest === this.rosterRequest) {
+						this.creationOutcome = 'saved';
+						try {
+ await this.refreshSlice(classId);
+ }
+						catch (error) {
+							if (scope === this.scope && rosterRequest === this.rosterRequest)
+								this.creationOutcome = 'saved-refresh-failed';
+							throw error;
+						}
 					}
 				},
 				successMessage: get(t)('attendanceDay.bulkSuccess'),
 			});
+			if (result === null && scope === this.scope && rosterRequest === this.rosterRequest)
+				this.creationOutcome = 'failed';
 			return result !== null && scope === this.scope && rosterRequest === this.rosterRequest ? day : null;
 		}
 		catch {
-			if (scope === this.scope) {
+			if (scope === this.scope && rosterRequest === this.rosterRequest) {
+				this.creationOutcome = 'failed';
 				toast.error(get(t)('attendanceDay.createFailed'));
 			}
 			return null;

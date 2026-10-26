@@ -11,6 +11,7 @@
 	import { drawerTabRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
 	import { Plus, Trash2 } from '$lib/icons';
+	import { runSelectionOperation } from '$lib/interaction/selection-operation';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { writeModalSurface } from '$lib/modal/modal-url';
 	import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
@@ -39,6 +40,16 @@
 	const addOpen = bindUrlModal(modals, 'link-classes');
 	const removeOpen = bindUrlModal(modals, 'unlink-class');
 	let classGroupIds = $state<string[]>([]);
+	let pickerSession = 0;
+	$effect(() => {
+		void addOpen.open;
+		void activityId;
+		void academicContext.scopeGeneration;
+		pickerSession += 1;
+		return () => {
+			pickerSession += 1;
+		};
+	});
 	let busy = $state(false);
 	let removeBusy = $state(false);
 
@@ -84,27 +95,31 @@
 	}
 
 	async function confirmAddClasses() {
-		if (!activity || classGroupIds.length === 0 || busy) {
+		if (!activity || classGroupIds.length === 0 || busy)
 			return;
-		}
-
+		const targetId = activity.id;
+		const generation = academicContext.scopeGeneration;
+		const session = pickerSession;
+		const current = () => session === pickerSession && addOpen.open && activityId === targetId && academicContext.scopeGeneration === generation;
 		busy = true;
-		let linked = 0;
-		for (const classGroupId of classGroupIds) {
-			const ok = await activitiesPage.ensureClassEnrollment({
-				activityId: activity.id,
+		try {
+			const result = await runSelectionOperation(classGroupIds, classGroupId => activitiesPage.ensureClassEnrollment({
+				activityId: targetId,
 				classGroupId,
-			});
-			if (ok) {
-				linked += 1;
+			}), current);
+			if (!current())
+				return;
+			classGroupIds = result.remaining;
+			if (result.succeeded.length > 0) {
+				toast.success(get(t)('activities.linkClassesSuccess', { n: result.succeeded.length }));
+				classesTab.syncFromPage(targetId);
 			}
+			if (result.remaining.length === 0)
+				modals.close();
+			else toast.error(get(t)('common.partialSelection', { n: result.remaining.length }));
 		}
-		busy = false;
-		if (linked > 0) {
-			toast.success(get(t)('activities.linkClassesSuccess', { n: linked }));
-			classesTab.syncFromPage(activity.id);
-			modals.close();
-			classGroupIds = [];
+		finally {
+			busy = false;
 		}
 	}
 
@@ -196,6 +211,7 @@
 {/if}
 
 <PickerModal
+	dirty={classGroupIds.length > 0}
 	bind:open={addOpen.open}
 	title={activity ? $t('activities.linkClassesTitle', { name: activity.name }) : $t('activities.linkClasses')}
 	description={$t('activities.linkClassesDescription')}

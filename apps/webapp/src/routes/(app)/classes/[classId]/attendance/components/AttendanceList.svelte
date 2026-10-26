@@ -108,6 +108,8 @@
 
 <div class="animate-fade-in">
 	<ListPageHeader
+		filterCount={[listFilters.values.completion].filter(value => value !== 'all').length}
+		onResetFilters={() => listFilters.patchImmediate({ completion: 'all' })}
 		eyebrow={$t('attendanceDay.eyebrow')}
 		title={$t('attendanceDay.count', { n: filteredDays.length })}
 	>
@@ -115,7 +117,7 @@
 			{#if attendancePage.classNode?.attendanceMode === 'daily'}
 				<PermissionGate permission="ATTENDANCE_RECORD" {classId} mode="disable" tooltip={$t('attendanceDay.permissionRecord')}>
 					{#snippet children({ disabled, title })}
-						<Button {disabled} {title} onclick={() => attendancePage.modals.open('create-roll-call')}>
+						<Button {disabled} {title} onclick={() => attendancePage.openCreationTask()}>
 							<Plus class="h-4 w-4" />{$t('attendanceDay.createTitle')}
 						</Button>
 					{/snippet}

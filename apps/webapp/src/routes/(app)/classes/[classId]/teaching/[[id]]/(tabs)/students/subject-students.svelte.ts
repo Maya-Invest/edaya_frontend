@@ -1,12 +1,10 @@
 import type { components } from '$lib/api/schema';
 import type { PageQueryRequest } from '$lib/queries/page-status';
 import { listAllEntityPages } from '$lib/api/entity-list-filters';
-import { runRouteMutation } from '$lib/api/mutations/route-mutation';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { VersionedRouteQuery } from '$lib/navigation/versioned-route-query';
 import { resolvePageLoad } from '$lib/queries/page-status';
-import { EnrollmentRequest, isParticipationConflict } from '$lib/subjects/enrollment-request';
 import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 
 export class SubjectStudentsState {
@@ -41,36 +39,5 @@ export class SubjectStudentsState {
       },
       hasItems: () => true,
     }, request));
-  }
-
-  private readonly participationRequest = new EnrollmentRequest();
-  private expectedRevision = 0;
-  captureRevision() { this.expectedRevision = this.roster?.revision ?? 0; }
-  async save(operations: components['schemas']['ManageStudentSubjectEnrollmentsCommand']['operations']) {
-    if (!this.roster || !operations.length)
-      return false;
-    const result = await runRouteMutation({ request: async () => {
-      const client = getBrowserSchoolClient();
-      try {
-          return await client.commands.manageStudentSubjectEnrollments(this.participationRequest.prepare({ requestId: crypto.randomUUID(), expectedRevisions: { [this.roster!.classSubjectId]: this.expectedRevision }, operations }));
-      }
-      catch (error) {
-        if (isParticipationConflict(error) && this.roster) {
-          const [roster, intervals] = await Promise.all([
-            client.queries.getClassSubjectRoster({ classSubjectId: this.roster.classSubjectId, at: String(this.roster.at) }),
-            listAllEntityPages(query => client.entities.subjectEnrollments.list(query), { baseQuery: { classSubjectId: this.roster.classSubjectId } }),
-          ]);
-          this.roster = roster;
-          this.intervals = intervals;
-          this.captureRevision();
-        }
-        throw error;
-      }
-    }, versionKeys: ['subjectEnrollments', 'enrollments', 'attendance', 'evaluations', 'reportCards', 'planning', 'subjects'] });
-    if (!result)
-      return false;
-    this.participationRequest.complete();
-    await this.invalidateIfStale();
-    return true;
   }
 }

@@ -26,12 +26,12 @@
 	registerVersionInvalidation(attendancePage);
 	releaseRoutePageQueryOnDestroy(() => $page.url);
 
-	const classId = $derived($page.params.classId ?? '6a');
+	const classId = $derived($page.params.classId ?? '');
 	const selectedId = $derived(attendancePage.selectedId);
 	const query = $derived(attendancePage.queryListPage(classId));
 
-	const createOpen = bindUrlModal(attendancePage.modals, 'create-roll-call');
-	$effect(() => attendancePage.modals.hydrate());
+	const createOpen = bindUrlModal(attendancePage.modals, 'attendance-roll-call');
+	$effect(() => attendancePage.hydrateTask());
 
 	function createdDay(day: import('$lib/types/school').AttendanceDay) {
 		attendancePage.modals.close();
@@ -55,12 +55,12 @@
 			emptyDescription={$t('dataState.emptyDescription')}
 		>
 			<AttendanceList {classId} {selectedId} onSelect={selectDay} />
-			{@render pageChildren()}
+			{#if !createOpen.open}{@render pageChildren()}{/if}
 		</DataState>
 	{/snippet}
 </PageQuery>
 
-{#if createOpen.open && attendancePage.canCreate}
+{#if createOpen.open}
 	{#key attendancePage.scope}
 		<AttendanceCreateModal bind:open={createOpen.open} onSaved={createdDay} />
 	{/key}

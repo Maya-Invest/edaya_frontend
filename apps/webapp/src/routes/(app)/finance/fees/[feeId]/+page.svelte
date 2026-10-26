@@ -21,7 +21,7 @@
 </script>
 <svelte:window onkeydown={handleKeydown} />
 <div role="presentation" onclick={close} class="fixed inset-0 z-40 bg-primary/5 motion-safe:animate-fade-in"></div>
-<aside aria-label={$t('billing.fee')} class="fixed right-0 top-0 z-50 flex h-full w-full flex-col overflow-hidden border-l border-border bg-card shadow-panel motion-safe:animate-slide-in-right md:w-1/2">
+<aside aria-label={$t('billing.fee')} class="fixed right-0 top-0 z-50 flex h-full w-full flex-col overflow-hidden border-l border-border bg-card shadow-panel motion-safe:animate-slide-in-right lg:w-1/2">
 	<div class="flex min-h-0 flex-1 flex-col">
 		<header class="flex items-center justify-between border-b border-border px-6 py-4">
 			<h2>{$t('billing.fee')}</h2>

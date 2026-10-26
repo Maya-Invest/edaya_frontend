@@ -38,7 +38,7 @@
 				</nav>
 			</div>
 		</aside>
-		<div class="min-w-0 lg:p-8">
+		<div class="min-w-0 lg:p-6">
 			{@render children()}
 		</div>
 	</div>

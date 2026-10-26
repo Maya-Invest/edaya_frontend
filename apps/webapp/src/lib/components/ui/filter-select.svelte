@@ -24,10 +24,10 @@
 	} = $props();
 
 	const selectClass
-		= 'control-focus h-full w-full appearance-none border border-input bg-background py-2 pl-3 pr-8 text-sm disabled:cursor-not-allowed disabled:opacity-50';
+		= 'control-focus min-h-11 h-full w-full appearance-none border border-input bg-background py-2 pl-3 pr-8 text-sm disabled:cursor-not-allowed disabled:opacity-50';
 </script>
 
-<div class={cn('relative inline-flex items-center rounded-md', className)}>
+<div class={cn('relative inline-flex min-h-11 items-center rounded-full', className)}>
 	<select
 		{id}
 		{value}

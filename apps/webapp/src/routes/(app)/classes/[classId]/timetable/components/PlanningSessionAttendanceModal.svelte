@@ -6,6 +6,7 @@
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import { t } from '$lib/i18n';
+	import { onDestroy } from 'svelte';
 	import { get } from 'svelte/store';
 
 	let {
@@ -40,21 +41,33 @@
 	let busy = $state(false);
 	let wasOpen = $state(false);
 	let status = $state<SessionAttendanceStatus>('present');
+	let baseline = $state<SessionAttendanceStatus>('present');
+	let lifetime = 0;
+	let mounted = true;
+	onDestroy(() => {
+		mounted = false;
+	});
 
 	const statusLabel = $derived($t(`attendance.${status}`));
 	const isEdit = $derived(row.status !== undefined);
 
 	function resetForm() {
 		status = row.status ?? 'present';
+		baseline = status;
 	}
 
 	$effect(() => {
 		if (open && !wasOpen)
 			resetForm();
+		if (open !== wasOpen)
+			lifetime += 1;
 		wasOpen = open;
 	});
 
 	async function submit() {
+		if (busy || disabled)
+			return;
+		const requestLifetime = lifetime;
 		busy = true;
 		const input = {
 			sessionId,
@@ -66,7 +79,8 @@
 		};
 		const ok = await onRecord(input);
 		busy = false;
-		if (ok) {
+		if (ok && mounted && open && lifetime === requestLifetime) {
+			baseline = status;
 			open = false;
 		}
 	}
@@ -76,7 +90,7 @@
 	<Button
 		variant="ghost"
 		size="sm"
-		class="h-7 rounded-full px-2.5 text-[11px]"
+		class="min-h-11"
 		{disabled}
 		{title}
 		onclick={() => (open = true)}
@@ -91,15 +105,17 @@
 	description={$t('planning.session.attendanceDescription')}
 	submitLabel={$t('common.save')}
 	{busy}
+	dirty={status !== baseline}
+	submitDisabled={disabled}
 	onCancel={resetForm}
 	onSubmit={submit}
 >
 	<div class="space-y-1.5">
-		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+		<Label for="session-attendance-status" class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('students.status')}
 		</Label>
-		<Select.Root type="single" value={status} onValueChange={v => v && (status = v as SessionAttendanceStatus)}>
-			<Select.Trigger>
+		<Select.Root disabled={busy} type="single" value={status} onValueChange={v => v && (status = v as SessionAttendanceStatus)}>
+			<Select.Trigger id="session-attendance-status">
 				<Select.Value placeholder={$t('students.status')}>
 					{statusLabel}
 				</Select.Value>

@@ -14,7 +14,6 @@
 	import { locale, t } from '$lib/i18n';
 	import { ChevronLeft, ChevronRight, Plus } from '$lib/icons';
 	import { bindUrlModal } from '$lib/modal/modal-state.svelte';
-	import { appGoto } from '$lib/navigation/app-navigation';
 	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { canEditTimetable, hasPermission } from '$lib/permissions';
 	import {
@@ -27,7 +26,6 @@
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getPlanningState } from '../planning-state.svelte';
-	import AttendanceFlow from './AttendanceFlow.svelte';
 	import ClassTimetableCalendar from './ClassTimetableCalendar.svelte';
 	import NewSessionWizard from './NewSessionWizard.svelte';
 	import ScheduleFormModal from './ScheduleFormModal.svelte';
@@ -35,7 +33,6 @@
 	const {
 		classId,
 		events: routeEvents,
-		students: routeStudents,
 		subjects,
 		activities,
 		schoolYearEvents = [],
@@ -59,8 +56,6 @@
 	} = $props();
 
 	const events = $derived(routeEvents);
-	const classes = $derived(academicContext.classes);
-	const students = $derived(routeStudents);
 
 	const planning = getPlanningState();
 	const newSessionOpen = bindUrlModal(planning.modals, 'new-session');
@@ -71,23 +66,13 @@
 	const viewingCurrentWeek = $derived(planning.viewingCurrentWeek());
 
 	const editable = $derived(canEditTimetable({ classId }));
-	const canRecordAttendance = $derived(hasPermission('ATTENDANCE_RECORD', { classId }));
+	const canRecordAttendance = $derived(academicContext.classes.find(row => row.id === classId)?.attendanceMode === 'session' && hasPermission('ATTENDANCE_RECORD', { classId }));
 
 	const filteredEvents = $derived(planning.filterEvents(events));
 	const weekEvents = $derived(
 		activePlanningEvents(filterPlanningEventsForWeek(filteredEvents, weekStart)),
 	);
 	const planningOverlaps = $derived(detectPlanningOverlaps(weekEvents));
-
-	const attendanceSession = $derived(planning.attendanceSession(events));
-	const attendanceClass = $derived(
-		attendanceSession ? classes.find(c => c.id === attendanceSession.classId) : null,
-	);
-	const attendanceStudents = $derived(
-		attendanceSession
-			? students.filter(s => s.classId === attendanceSession.classId)
-			: [],
-	);
 
 	function handleWeekPickerChange(event: Event) {
 		const value = (event.currentTarget as HTMLInputElement).value;
@@ -107,16 +92,6 @@
 		planning.navigateWeek(new Date(`${focusDate}T12:00:00`));
 	});
 
-	$effect(() => {
-		if (!planning.filters.ready || !selectedId) {
-			return;
-		}
-		if (weekEvents.some(event => event.id === selectedId)) {
-			return;
-		}
-		const href = `${detailHref.classPlanning(classId)}${$page.url.search}`;
-		appGoto(href, { replaceState: true, keepFocus: true, noScroll: true });
-	});
 </script>
 
 <div class={cn('animate-fade-in', expandCalendar && 'flex min-h-0 flex-1 flex-col')}>
@@ -127,7 +102,7 @@
 		{#snippet search()}
 			<ListSearchField bind:value={planning.filters.values.q} oninput={() => planning.filters.scheduleSync()} />
 		{/snippet}
-		{#snippet filters()}
+		{#snippet context()}
 			<AcademicPeriodSelector />
 		{/snippet}
 		{#snippet primary()}
@@ -286,18 +261,4 @@
 		/>
 	</div>
 
-	{#if attendanceSession && attendanceClass}
-		{#key attendanceSession.id}
-			<AttendanceFlow
-				open={true}
-				step={planning.attendanceStep}
-				onStepChange={(step, replace) =>
-					replace ? planning.replaceStep(step) : planning.setStep(step)}
-				onClose={() => planning.modals.close()}
-				students={attendanceStudents}
-				className="{attendanceClass.name} · {attendanceSession.subject}"
-				classLevel="{$t(`day.${attendanceSession.day}`)} {attendanceSession.start}–{attendanceSession.end}"
-			/>
-		{/key}
-	{/if}
 </div>

@@ -11,7 +11,7 @@ export interface NavPermissionContext {
 	schoolId?: string;
 }
 
-const MODULE_ORDER: NavModuleKey[] = ['school', 'classes', 'finance', 'configuration'];
+const MODULE_ORDER: NavModuleKey[] = ['inbox', 'school', 'classes', 'finance', 'configuration'];
 
 function resolveNavContext(ctx: NavPermissionContext = {}) {
 	return {

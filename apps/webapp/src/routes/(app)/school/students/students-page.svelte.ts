@@ -7,6 +7,7 @@ import { fetchStudentById, loadClassPeopleData, loadPeopleData, loadPeopleDataPa
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
+import { ListSelectionState } from '$lib/list/list-selection-state.svelte';
 import { readStudentListFilters, writeStudentListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
@@ -32,6 +33,8 @@ const STUDENTS_VERSION_FAMILIES = ['students'] as const satisfies readonly Entit
 const STUDENTS_PAGE_STATE_KEY = Symbol('students-page-state');
 
 export class StudentsPageState {
+	readonly selection = new ListSelectionState<Student>();
+
 	students = $state<Student[]>([]);
 	totalStudents = $state(0);
 	listLoading = $state(false);

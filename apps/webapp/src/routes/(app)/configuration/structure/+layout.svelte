@@ -96,7 +96,7 @@
 				</div>
 			</div>
 		</aside>
-		<section class="flex min-w-0 flex-col gap-5 lg:p-8" aria-label={selected?.name ?? $t('config.structure')}>
+		<section class="flex min-w-0 flex-col gap-5 lg:p-6" aria-label={selected?.name ?? $t('config.structure')}>
 			{#if selected}
 				<nav class="flex gap-1 border-b border-border" aria-label={$t('structure.tabs')}>
 					{#each availableTabs as item (item)}

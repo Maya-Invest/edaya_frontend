@@ -10,6 +10,6 @@
 	}: HTMLAttributes<HTMLDivElement> & { children?: Snippet } = $props();
 </script>
 
-<div class={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2', className)} {...restProps}>
+<div class={cn('flex flex-col-reverse gap-2 [&>button]:shrink-0 sm:flex-row sm:flex-wrap sm:justify-end', className)} {...restProps}>
 	{@render children?.()}
 </div>

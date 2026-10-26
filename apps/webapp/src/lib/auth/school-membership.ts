@@ -1,4 +1,5 @@
 import type { AuthorizationProfile, StaffSchoolMembership } from '$lib/auth/types';
+import { readPreference, writePreference } from '$lib/preferences/storage';
 
 export const SCHOOL_ID_STORAGE_PREFIX = 'edaya:schoolId:';
 
@@ -13,17 +14,17 @@ export function schoolIdStorageKey(authUserId: string): string {
 }
 
 export function readPersistedSchoolId(authUserId: string | null | undefined): string | null {
-	if (!authUserId || typeof sessionStorage === 'undefined') {
+	if (!authUserId) {
 		return null;
 	}
-	return sessionStorage.getItem(schoolIdStorageKey(authUserId));
+	return readPreference('session', schoolIdStorageKey(authUserId));
 }
 
 export function persistSelectedSchoolId(authUserId: string | null | undefined, schoolId: string): void {
-	if (!authUserId || !schoolId || typeof sessionStorage === 'undefined') {
+	if (!authUserId || !schoolId) {
 		return;
 	}
-	sessionStorage.setItem(schoolIdStorageKey(authUserId), schoolId);
+	writePreference('session', schoolIdStorageKey(authUserId), schoolId);
 }
 
 export function pickStaffMembership(

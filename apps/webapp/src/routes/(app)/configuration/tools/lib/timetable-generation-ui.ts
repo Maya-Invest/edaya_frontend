@@ -9,17 +9,6 @@ import type { PeriodDefinition } from '$lib/types/school';
 import { teacherNameForClassSubject } from '$lib/api/teacher-display';
 import { formatDateInput } from '$lib/date/format';
 import { SCHEDULE_DAY_TO_PLANNING } from '$lib/scheduling/planning-calendar';
-import { cn } from '$lib/utils';
-
-export function timetableGenerationModalContentClass(
-	phase: 'setup' | 'generating' | 'success' | 'error',
-): string {
-	return cn(
-		phase === 'setup'
-			? 'h-[min(90dvh,52.8rem)] max-h-[min(90dvh,52.8rem)] max-w-3xl'
-			: 'max-w-2xl',
-	);
-}
 
 export const TIMETABLE_GENERATION_MODAL_SETUP_BODY_CLASS
 	= 'flex min-h-0 flex-1 flex-col overflow-y-auto space-y-0';

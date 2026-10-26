@@ -1,6 +1,7 @@
+import type { SurfaceQueryKeys, ModalSurfaceValue } from '$lib/modal/modal-url';
 import { listHref } from '$lib/list/list-filters-state.svelte';
 import {
-	MODAL_QUERY_KEY,
+	MODAL_QUERY_KEYS,
 	readModal,
 	readModalStep,
 	readModalTab,
@@ -21,6 +22,7 @@ export interface UrlSyncedModalsConfig<T extends string> {
 	allowedSteps: () => readonly string[];
 	allowedTabs: () => readonly string[];
 	getUrl: () => URL;
+	queryKeys?: SurfaceQueryKeys;
 }
 
 export class UrlSyncedModalsState<T extends string> {
@@ -31,6 +33,8 @@ export class UrlSyncedModalsState<T extends string> {
 	ready = $state(false);
 
 	constructor(private readonly config: UrlSyncedModalsConfig<T>) {}
+	private get keys() { return this.config.queryKeys ?? MODAL_QUERY_KEYS; }
+	private writeSurface(url: URL, value: ModalSurfaceValue) { return writeModalSurface(url, value, this.keys); }
 
 	hydrate() {
 		const url = this.config.getUrl();
@@ -40,14 +44,14 @@ export class UrlSyncedModalsState<T extends string> {
 		const tabs = this.config.allowedTabs();
 		// Hydration follows URL/config changes, not optimistic local open/close state.
 		untrack(() => {
-			const rawModal = url.searchParams.get(MODAL_QUERY_KEY);
-			const next = readModal(url, allowed);
+			const rawModal = url.searchParams.get(this.keys.kind);
+			const next = readModal(url, allowed, this.keys);
 			const ownsCurrentSurface = rawModal === null
 				|| owned.includes(rawModal as T);
-			const nextTarget = next ? readModalTarget(url) : null;
-			const nextStep = next ? readModalStep(url, steps) : null;
-			const nextTab = next ? readModalTab(url, tabs) : null;
-			const canonicalHref = writeModalSurface(url, {
+			const nextTarget = next ? readModalTarget(url, this.keys) : null;
+			const nextStep = next ? readModalStep(url, steps, this.keys) : null;
+			const nextTab = next ? readModalTab(url, tabs, this.keys) : null;
+			const canonicalHref = this.writeSurface(url, {
 				modal: next,
 				target: nextTarget,
 				step: nextStep,
@@ -89,8 +93,8 @@ export class UrlSyncedModalsState<T extends string> {
 		const nextStep = this.allowedValue(options?.step, this.config.allowedSteps());
 		const nextTab = this.allowedValue(options?.tab, this.config.allowedTabs());
 		const currentUrl = this.config.getUrl();
-		const parentHref = writeModalSurface(currentUrl, { modal: null });
-		const href = writeModalSurface(currentUrl, {
+		const parentHref = this.writeSurface(currentUrl, { modal: null });
+		const href = this.writeSurface(currentUrl, {
 			modal: key,
 			target: nextTarget,
 			step: nextStep,
@@ -126,7 +130,7 @@ export class UrlSyncedModalsState<T extends string> {
 			return;
 		}
 		const currentUrl = this.config.getUrl();
-		const href = writeModalSurface(currentUrl, { modal: null });
+		const href = this.writeSurface(currentUrl, { modal: null });
 		this.active = null;
 		this.target = null;
 		this.step = null;
@@ -184,7 +188,7 @@ export class UrlSyncedModalsState<T extends string> {
 			return;
 		}
 		const currentUrl = this.config.getUrl();
-		const href = writeModalSurface(currentUrl, {
+		const href = this.writeSurface(currentUrl, {
 			modal: this.active,
 			target: this.target,
 			step: value.step,
@@ -210,6 +214,7 @@ export function createUrlSyncedModals<T extends string>(config: {
 	allowedSteps?: readonly string[] | (() => readonly string[]);
 	allowedTabs?: readonly string[] | (() => readonly string[]);
 	getUrl: () => URL;
+	queryKeys?: SurfaceQueryKeys;
 }): UrlSyncedModalsState<T> {
 	let allowedFn: () => readonly T[];
 	if (typeof config.allowed === 'function') {
@@ -226,6 +231,7 @@ export function createUrlSyncedModals<T extends string>(config: {
 		allowedSteps: normalizeAllowed(config.allowedSteps),
 		allowedTabs: normalizeAllowed(config.allowedTabs),
 		getUrl: config.getUrl,
+		queryKeys: config.queryKeys,
 	});
 }
 

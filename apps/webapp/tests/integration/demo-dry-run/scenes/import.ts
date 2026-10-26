@@ -28,10 +28,11 @@ export async function runImportScene(ctx: DemoContext): Promise<void> {
 		return;
 	}
 
-  await ctx.page.getByTestId('data-import-type-select').selectOption('students');
   await ctx.page.getByTestId('import-create').click();
+  await ctx.page.getByTestId('data-import-type-select').selectOption('students');
   await ctx.page.getByTestId('import-file-input').waitFor({ state: 'visible' });
   if (!await uploadStudentImportFile(ctx)) throw new Error('Server upload failed');
+  await ctx.page.getByTestId('task-step-preview').click();
   await ctx.page.getByTestId('import-validate').click();
   await ctx.page.locator('[data-testid="import-progress"][data-state="validated"]').waitFor({ state: 'visible', timeout: 30000 });
   reporter.log(scene, '5 Server preview available; no live execution', 'pass');

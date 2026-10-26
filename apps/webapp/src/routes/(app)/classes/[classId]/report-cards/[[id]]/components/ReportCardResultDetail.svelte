@@ -1,11 +1,12 @@
 <script lang="ts">
 	import type { ReportCardResult } from '$lib/types/report-cards';
+	import ReportCardAvailabilityNotice from '$lib/components/school/report-cards/ReportCardAvailabilityNotice.svelte';
 	import ReportSectionComments from '$lib/components/school/report-cards/ReportSectionComments.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { t } from '$lib/i18n';
-	import { formatGrade, formatCalculatedGrade } from '$lib/types/report-cards';
+	import { formatPersistedGrade, formatReportRank } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import ReportHomeroomComment from '../../components/ReportHomeroomComment.svelte';
@@ -19,7 +20,6 @@
 	const live = $derived(stored.revisedDraft ?? stored);
 	const student = $derived(reportCardsPage.studentFor(live.studentId));
 	const definition = $derived(reportCardsPage.definitionsFor(live.classId).find(entry => entry.id === live.definitionId));
-	const scale = $derived(reportCardsPage.scalesFor(live.classId).find(entry => entry.id === live.gradeScaleId));
 	function resultStatusLabel(status: ReportCardResult['status']) {
 		if (status === 'published') {
 			return $t('reportCards.statusPublished');
@@ -76,17 +76,19 @@
 	{#if live.pendingCorrectionIds?.length}
 		<p role="status">{$t('reportCards.pendingCorrections', { count: String(live.pendingCorrectionIds.length) })} <PermissionGate permission="GRADE_VALIDATE" classId={live.classId}><a href="/school/marks-review">{$t('marks.reviewQueue')}</a></PermissionGate></p>
 	{/if}
+	<ReportCardAvailabilityNotice results={[live]} />
+
 	<div class="grid grid-cols-3 gap-3">
 		<div class="rounded-xl border border-border bg-secondary/30 p-3 text-center">
 			<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">{live.aggregateLabel ?? $t('reportCards.overall')}</p>
 			<p class="font-display text-2xl font-semibold">
-				{live.grading ? formatCalculatedGrade(live.grading) : scale ? formatGrade(live.overallAverage, scale) : live.overallAverage}
+				{formatPersistedGrade(live.grading, live.overallAverage)}
 				{#if live.grading}<span class="block text-sm">{live.grading.mention.code} · {live.grading.mention.label}</span>{/if}
 			</p>
 		</div>
 		<div class="rounded-xl border border-border bg-secondary/30 p-3 text-center">
 			<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">{$t('reportCards.rank')}</p>
-			<p class="font-display text-2xl font-semibold">{live.classRank}/{live.classSize}</p>
+			<p class="font-display text-2xl font-semibold">{formatReportRank(live)}</p>
 		</div>
 		<div class="rounded-xl border border-border bg-secondary/30 p-3 text-center">
 			<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">{$t('reportCards.period')}</p>
@@ -101,7 +103,7 @@
 					{definition?.sections.find(entry => entry.id === section.sectionId)?.name ?? 'Section'}
 					{#if section.sectionAverage !== undefined}
 						<span class="ml-2 font-sans tabular-nums text-xs text-muted-foreground">
-							(moy. {section.grading ? formatCalculatedGrade(section.grading) : scale ? formatGrade(section.sectionAverage, scale) : section.sectionAverage})
+							(moy. {formatPersistedGrade(section.grading, section.sectionAverage)})
 						</span>
 					{/if}
 				</p>
@@ -114,7 +116,7 @@
 									<p class="text-xs text-muted-foreground">{mark.teacherName}</p>
 								</div>
 								<p class="font-sans tabular-nums font-semibold">
-									{mark.grading ? formatCalculatedGrade(mark.grading) : scale ? formatGrade(mark.average, scale) : mark.average}
+									{formatPersistedGrade(mark.grading, mark.average)}
 								</p>
 							</div>
 							{#if mark.appreciation}

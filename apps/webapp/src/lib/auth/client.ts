@@ -7,6 +7,7 @@ export interface AccountIdentifier { id: string; kind: 'email' | 'phone'; value:
 export interface AccountUser { id: string; accountId: string; email: string | null; phone: string | null; name: string; emailVerified: boolean }
 export interface AuthSnapshot { user: AccountUser; account: { id: string; identifiers: AccountIdentifier[] }; session: { id: string; expiresAt: string; createdAt: string } }
 export type PrimaryStatus = components['schemas']['AuthPrimaryStatus'];
+export type AuthTerms = components['schemas']['AuthTerms'];
 export type OtpStart = components['schemas']['AuthStart'];
 export type AuthOutcome = PrimaryStatus | (AuthSnapshot & { state: 'complete'; recoveryCodes?: string[] }) | { state: 'linked'; account: AuthSnapshot['account'] } | { state: 'totp_required' | 'enrollment_required'; challenge: string; secret?: string; uri?: string };
 export interface AuthFailure { code?: string; message: string; status?: number; nextResendAt?: number; serverNow?: number }
@@ -31,6 +32,7 @@ export function authRequest<T>(path: string, body: object = {}, method = 'POST')
 	return result(() => authTransport.request<T>(method, `/auth/edaya/${path}`, method === 'GET' ? undefined : { body }));
 }
 export const authClient = {
+	terms: (locale: 'fr' | 'en') => result(() => authTransport.request<AuthTerms>('GET', `/auth/edaya/terms?locale=${locale}`)),
 	security: () => result(() => generated.security({})),
 	disableTotp: () => result(() => generated.disableTotp({})),
 	getSession: () => result(() => generated.getSession({})),

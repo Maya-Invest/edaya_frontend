@@ -7,6 +7,7 @@ import { requestDocumentIssuanceMutation, requestDocumentIssuanceBatchMutation }
 import { fetchStudentById } from '$lib/api/people-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
+import { ListSelectionState } from '$lib/list/list-selection-state.svelte';
 import { readClassStudentListFilters, writeClassStudentListFilters } from '$lib/list/list-url-filters';
 import { appGoto } from '$lib/navigation/app-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
@@ -35,6 +36,8 @@ const CLASS_STUDENTS_PAGE_STATE_KEY = Symbol('class-students-page-state');
 export type { ClassStudentsPageSlice };
 
 export class ClassStudentsPageState {
+	readonly selection = new ListSelectionState<Student>();
+
 	performRequestDocumentIssuance = (...args: Parameters<typeof requestDocumentIssuanceMutation>) => requestDocumentIssuanceMutation(...args);
 
 	performRequestDocumentIssuanceBatch = (...args: Parameters<typeof requestDocumentIssuanceBatchMutation>) => requestDocumentIssuanceBatchMutation(...args);

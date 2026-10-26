@@ -5,6 +5,7 @@ import {
 	isPageQueryAbortError,
 	resolvePageQuerySignal,
 } from '$lib/queries/page-query-runtime';
+import { ApiError } from '@maya-invest/edaya-api-client';
 
 export type { PageQueryRequest } from '$lib/queries/page-query-runtime';
 
@@ -61,7 +62,7 @@ export async function resolvePageLoad<T>(
 		}
 		return {
 			...options.empty(),
-			status: 'error',
+			status: error instanceof ApiError && (error.status === 401 || error.status === 403) ? 'denied' : 'error',
 			errorMessage: options.errorMessage ?? 'Unable to load this page.',
 		};
 	}

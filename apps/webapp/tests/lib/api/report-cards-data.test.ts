@@ -177,6 +177,14 @@ const classSubjectsSources = {
 };
 
 describe('report cards definition mapping', () => {
+	it('preserves default-model identity for scoped filtering', () => {
+		const definitions = mapReportCardDefinitions([
+			reportCardDefinition({ id: 'default', name: 'Default', isDefault: true }),
+			reportCardDefinition({ id: 'alternate', name: 'Alternate', isDefault: false }),
+		], [], { subjectsRaw: [] });
+		expect(definitions.map(row => row.isDefault)).toEqual([true, false]);
+	});
+
 	it('maps definition status from API enum', () => {
 		expect(mapDefinitionStatus('published')).toBe('published');
 		expect(mapDefinitionStatus('draft')).toBe('draft');
@@ -291,6 +299,13 @@ describe('report cards result mapping', () => {
 			coefficient: 2,
 			appreciation: 'Excellent — maîtrise remarquable de l\'algèbre.',
 		});
+	});
+
+	it('preserves unavailable report rank and class size instead of inventing zeros', () => {
+		const results = mapReportCardResults([{ id: 'report', studentId: 'student', classGroupId: 'class', reportCardDefinitionId: 'definition', periodId: 'period', rank: null, classSize: null, overallAverage: 0, sectionResults: [] } as unknown as components['schemas']['ReportCardResult']], [], classSubjectsSources);
+		expect(results[0]?.classRank).toBeUndefined();
+		expect(results[0]?.classSize).toBeUndefined();
+		expect(results[0]?.overallAverage).toBe(0);
 	});
 
 	it('maps report card results without per-id appreciation tables', () => {

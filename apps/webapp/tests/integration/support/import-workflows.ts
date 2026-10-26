@@ -126,6 +126,8 @@ export async function exerciseImport(page: Page, base: string, type: keyof typeo
     await page.getByTestId('import-action').click();
     const modal = page.getByTestId('data-import-modal');
     await modal.waitFor({ state: 'visible', timeout: 15000 });
+    assert.equal(await page.getByTestId('import-mode').inputValue(), 'M');
+    await page.getByTestId('import-create').click();
     await page.getByTestId('data-import-type-select').selectOption(type);
     if (type === 'students') {
       const downloaded = page.waitForEvent('download');
@@ -134,31 +136,33 @@ export async function exerciseImport(page: Page, base: string, type: keyof typeo
       assert.equal(template.suggestedFilename(), 'students-v1.xlsx');
       assert.equal(await template.failure(), null);
     }
-    assert.equal(await page.getByTestId('import-mode').inputValue(), 'M');
-    await page.getByTestId('import-create').click();
     await page.getByTestId('import-file-input').waitFor({ state: 'visible' });
     await page.getByTestId('import-file-input').setInputFiles({ name: `${type}.csv`, mimeType: 'text/csv', buffer: Buffer.from(encode(row)) });
     const uploaded = page.waitForResponse(response => response.url().includes('/imports/submit') && response.request().method() === 'POST');
     await page.getByTestId('import-upload').click();
     assert((await uploaded).ok());
+    await page.getByTestId('task-step-preview').click();
     await page.getByTestId('import-validate').click();
     await page.locator('[data-testid="import-progress"][data-state="validated"]').waitFor({ state: 'visible', timeout: 30000 });
     return modal;
   }
   const invalid = { ...csv, on_existing: 'invalid' };
   await upload(invalid);
+  await page.getByTestId('task-step-execution').click();
   assert.equal(await page.getByTestId('import-confirm').isDisabled(), true, `${type}: invalid row must prevent execution`);
   assert(Number(await page.getByTestId('import-progress').getAttribute('data-blocked')) > 0);
   await page.keyboard.press('Escape');
   const modal = await upload(csv);
   assert.equal(await page.getByTestId('import-progress').getAttribute('data-blocked'), '0', `${type}: valid fixture rejected: ${await modal.innerText()}`);
   if (type === 'students') {
+    await page.getByTestId('task-step-history').click();
     const downloaded = page.waitForEvent('download');
     await page.getByTestId('import-corrections-xlsx').click();
     const corrections = await downloaded;
     assert.match(corrections.suggestedFilename(), /^corrections-.+\.xlsx$/);
     assert.equal(await corrections.failure(), null);
   }
+  await page.getByTestId('task-step-execution').click();
   await page.getByTestId('import-confirm').click();
   await page.locator('[data-testid="import-progress"][data-state="completed"]').waitFor({ state: 'visible', timeout: 60000 });
   assert.equal(await page.getByTestId('import-progress').getAttribute('data-created'), expectedCreated, `${type}: import did not create the row: ${await modal.innerText()}`);

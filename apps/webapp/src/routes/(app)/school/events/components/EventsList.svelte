@@ -148,11 +148,13 @@
 
 <div class="animate-fade-in">
 	<ListPageHeader
+		filterCount={[eventsPage.filters.values.class, eventsPage.filters.values.category, eventsPage.filters.values.severity, eventsPage.filters.values.status].filter(value => value !== 'all').length}
+		onResetFilters={() => eventsPage.filters.patchImmediate({ class: 'all', category: 'all', severity: 'all', status: 'all' })}
 		eyebrow={$t('events.schoolLife')}
 		title={$t('events.count', { n: list.length })}
 	>
 		{#snippet search()}
-			<ListSearchField
+			<ListSearchField onCommit={() => eventsPage.filters.syncNow()}
 				value={eventsPage.filters.values.q}
 				placeholder={$t('common.searchStudent')}
 				class="min-w-[200px] max-w-sm"

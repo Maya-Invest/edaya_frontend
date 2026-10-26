@@ -51,6 +51,7 @@ export interface ReportCardSection {
 }
 
 export interface ReportCardDefinition {
+	isDefault?: boolean;
 	passThreshold?: number | null;
 	revision?: number;
 	description?: string | null;
@@ -112,8 +113,8 @@ export interface ReportCardResult {
 	gradeScaleId: string;
 	status: ReportCardResultStatus;
 	overallAverage?: number;
-	classRank: number;
-	classSize: number;
+	classRank?: number;
+	classSize?: number;
 	sectionResults: ReportCardSectionResult[];
 	homeroomComment?: string;
 	principalComment?: string;
@@ -127,4 +128,34 @@ export function formatGrade(value: number | undefined, scale: { decimalPlaces: n
 
 export function formatCalculatedGrade(grade: NonNullable<components['schemas']['ReportCardResult']['grading']>): string {
 	return `${grade.reportedValue.toFixed(grade.decimalPlaces)} / ${grade.maximum} · ${grade.mention.code}`;
+}
+
+/** Published historical results never borrow precision or mentions from today's scale. */
+export function formatPersistedGrade(
+	grading: ReportCardResult['grading'],
+	value: number | undefined,
+): string {
+	if (grading)
+		return formatCalculatedGrade(grading);
+	return value === undefined ? '—' : String(value);
+}
+
+export function formatReportRank(result: Pick<ReportCardResult, 'classRank' | 'classSize'> | undefined): string {
+	const rank = result?.classRank;
+	const size = result?.classSize;
+	return rank && size && rank > 0 && size >= rank ? `${rank}/${size}` : '—';
+}
+
+export function reportCardAvailability(result: ReportCardResult): { missingValues: boolean; missingGrading: boolean } {
+	const grades = [
+		{ grading: result.grading, value: result.overallAverage },
+		...result.sectionResults.filter(section => section.marks.length > 0).flatMap(section => [
+			{ grading: section.grading, value: section.sectionAverage },
+			...section.marks.map(mark => ({ grading: mark.grading, value: mark.average })),
+		]),
+	];
+	return {
+		missingValues: formatReportRank(result) === '—' || grades.some(grade => !grade.grading && grade.value === undefined),
+		missingGrading: grades.some(grade => !grade.grading && grade.value !== undefined),
+	};
 }

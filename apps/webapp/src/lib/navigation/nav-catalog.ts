@@ -15,8 +15,13 @@ export interface NavItemDefinition {
 	permissions?: PermissionCode[];
 }
 
+export const INBOX_NAV_DEFS: NavItemDefinition[] = [
+	{ key: 'personal', labelKey: 'inbox.personal', href: '/account/inbox' },
+	{ key: 'messages', labelKey: 'inbox.school', href: '/school/messages', permissions: ['SCHOOL_MESSAGES_READ', 'TEACHER_MESSAGES_REVIEW'] },
+	{ key: 'marksReview', labelKey: 'corrections.title', href: '/school/corrections', permissions: ['GRADE_VALIDATE', 'ATTENDANCE_VALIDATE', 'CLASS_LOGBOOK_VALIDATE', 'DISCIPLINE_VALIDATE', 'REPORT_CARD_REVIEW_COMMENTS', 'REPORT_CARD_PUBLISH'] },
+];
+
 export const SCHOOL_NAV_DEFS: NavItemDefinition[] = [
-	{ key: 'messages', labelKey: 'messages.title', href: '/school/messages', permissions: ['SCHOOL_MESSAGES_READ', 'TEACHER_MESSAGES_REVIEW'] },
 	{
 		key: 'students',
 		labelKey: 'school.students',
@@ -75,7 +80,6 @@ export const SCHOOL_NAV_DEFS: NavItemDefinition[] = [
 		href: '/school/events',
 		permissions: ['DISCIPLINE_READ'],
 	},
-	{ key: 'marksReview', labelKey: 'corrections.title', href: '/school/corrections', permissions: ['GRADE_VALIDATE', 'ATTENDANCE_VALIDATE', 'CLASS_LOGBOOK_VALIDATE', 'DISCIPLINE_VALIDATE', 'REPORT_CARD_REVIEW_COMMENTS', 'REPORT_CARD_PUBLISH'] },
 ];
 
 export const CLASS_NAV_DEFS: NavItemDefinition[] = [
@@ -190,9 +194,10 @@ export const CONFIG_NAV_DEFS: NavItemDefinition[] = [
 	},
 ];
 
-export type NavModuleKey = 'school' | 'classes' | 'finance' | 'configuration';
+export type NavModuleKey = 'inbox' | 'school' | 'classes' | 'finance' | 'configuration';
 
 export const NAV_MODULE_DEFS: Record<NavModuleKey, NavItemDefinition[]> = {
+	inbox: INBOX_NAV_DEFS,
 	school: SCHOOL_NAV_DEFS,
 	classes: CLASS_NAV_DEFS,
 	finance: FINANCE_NAV_DEFS,

@@ -15,7 +15,6 @@
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
-	import ListSelectionBar from '$lib/components/ui/ListSelectionBar.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
@@ -24,7 +23,6 @@
 	import { Eye, GraduationCap, Pencil, Plus } from '$lib/icons';
 	import { loadCardColumnsPreference, saveCardColumnsPreference } from '$lib/list/list-card-columns-preference';
 	import { loadMatchingCollection } from '$lib/list/list-csv-export';
-	import { ListSelectionState } from '$lib/list/list-selection-state.svelte';
 	import { isListCardColumns, readListCardColumns, readListView, writeListCardColumns, writeListView } from '$lib/list/list-view-url';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
 	import { appendModal, MODAL_QUERY_KEY } from '$lib/modal/modal-url';
@@ -33,6 +31,7 @@
 	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { DirectoryColumnsState } from '$lib/smart-components/directory-columns/directory-columns-state.svelte';
 	import DirectoryColumnData from '$lib/smart-components/directory-columns/DirectoryColumnData.svelte';
+	import StudentSubjectEnrollmentActions from '$lib/smart-components/subject-enrollment/StudentSubjectEnrollmentActions.svelte';
 	import { cn } from '$lib/utils';
 	import { studentListUsesFullRoster, cycleStudentListSort } from '../lib/student-list-filters';
 	import { getStudentsPageState, SCHOOL_STUDENTS_PAGE_SIZE } from '../students-page.svelte';
@@ -45,7 +44,7 @@
 	const studentsPage = getStudentsPageState();
 	const classes = $derived(studentsPage.classes);
 	const hierarchy = $derived(studentsPage.hierarchy);
-	const selection = new ListSelectionState<Student>();
+	const selection = studentsPage.selection;
 	const view = $derived(readListView($page.url));
 	const storedCardColumns = loadCardColumnsPreference('school-students-card-columns', 3);
 	const defaultCardColumns: ListCardColumns = isListCardColumns(storedCardColumns)
@@ -222,11 +221,13 @@
 
 <div class="animate-fade-in">
 	<ListPageHeader
+		filterCount={[studentsPage.filters.values.class, studentsPage.filters.values.status, studentsPage.filters.values.photoReview].filter(value => value !== 'all').length}
+		onResetFilters={() => studentsPage.filters.patchImmediate({ class: 'all', status: 'all', photoReview: 'all' })}
 		eyebrow={$t('students.schoolRoster')}
 		title={$t('students.countLabel', { n: listTotal })}
 	>
 		{#snippet search()}
-			<ListSearchField
+			<ListSearchField onCommit={() => studentsPage.filters.syncNow()}
 				value={studentsPage.filters.values.q}
 				oninput={event => studentsPage.filters.patch({ q: event.currentTarget.value })}
 				placeholder={$t('common.searchStudent')}
@@ -299,13 +300,7 @@
 		{/snippet}
 	</ListPageHeader>
 
-	{#if selection.selectionMode}
-		<ListSelectionBar
-			selectedCount={selection.selectedIds.length}
-			onExport={exportSelected}
-			onClear={() => selection.exitSelectionMode()}
-		/>
-	{/if}
+	<StudentSubjectEnrollmentActions {selection} students={selectionPool} onExport={exportSelected} onSaved={() => studentsPage.invalidateIfStale()} />
 
 	{#if view === 'table'}
 		<DirectoryColumnData owner={directoryColumns} rows={listVisible} />

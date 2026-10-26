@@ -92,9 +92,11 @@
 </script>
 
 <div class="animate-fade-in space-y-6">
-	<ListPageHeader eyebrow={$t('finance.treasury')} title={$t('finance.payments')}>
+	<ListPageHeader
+		filterCount={[listFilters.values.class, listFilters.values.status].filter(value => value !== 'all').length}
+		onResetFilters={() => listFilters.patchImmediate({ class: 'all', status: 'all' })} eyebrow={$t('finance.treasury')} title={$t('finance.payments')}>
 		{#snippet search()}
-			<ListSearchField bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
+			<ListSearchField onCommit={() => listFilters.syncNow()} bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
 		{/snippet}
 		{#snippet filters()}
 			<div class="flex flex-wrap items-center gap-2">

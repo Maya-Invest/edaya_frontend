@@ -70,3 +70,8 @@ it('preserves known parent history and never invents a Back entry for direct lin
 		routeSurfaceDepth: 2,
 	})).toEqual({ routeSurfaceParent: '/school/staff', routeSurfaceDepth: 2 });
 });
+
+ it('closing tasks preserves filters and originating inspection tab', () => {
+	const url = new URL('https://local/classes/a/attendance?task=attendance-roll-call&taskTarget=a&taskStep=save&taskPanel=create&q=ada&tab=attendance');
+	expect(stripModalSearch(url)).toBe('?q=ada&tab=attendance');
+ });

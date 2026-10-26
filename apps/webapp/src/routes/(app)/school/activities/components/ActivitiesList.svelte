@@ -167,16 +167,20 @@
 	<ListPageHeader
 		eyebrow={$t('activities.eyebrow')}
 		title={$t('activities.count', { n: filtered.length })}
+		filterCount={Number(listFilters.category !== 'all')}
+		onResetFilters={() => activitiesPage.filters.patchImmediate({ category: 'all' })}
 	>
 		{#snippet search()}
 			<ListSearchField
 				value={activitiesPage.filters.values.q}
 				oninput={event => activitiesPage.filters.patch({ q: event.currentTarget.value })}
+				onCommit={() => activitiesPage.filters.syncNow()}
 				placeholder={$t('common.search')}
 			/>
 		{/snippet}
 		{#snippet filters()}
 			<FilterSelect
+				aria-label={$t('activities.category')}
 				value={listFilters.category}
 				class="h-9 min-w-[10rem] rounded-full text-xs"
 				options={categoryFilterOptions}

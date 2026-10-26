@@ -1,5 +1,8 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    ".generated/client.json"
+  ],
   "tasks": {
     "dev": {
       "persistent": true,

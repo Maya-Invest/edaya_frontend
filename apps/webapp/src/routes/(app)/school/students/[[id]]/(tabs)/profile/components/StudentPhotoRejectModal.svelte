@@ -49,7 +49,7 @@
 			<Button variant="ghost" onclick={() => handleOpenChange(false)} disabled={busy}>
 				{$t('common.cancel')}
 			</Button>
-			<Button variant="destructive" onclick={() => void confirm()} disabled={busy}>
+			<Button variant="destructive-confirm" onclick={() => void confirm()} disabled={busy}>
 				{$t('student.photo.reject')}
 			</Button>
 		</Dialog.Footer>

@@ -16,6 +16,7 @@ import {
 	recordsForFieldIds,
 } from '$lib/api/entity-list-filters';
 import { fetchClassPeopleSources, mapStudents } from '$lib/api/people-data';
+import { ApiError } from '@maya-invest/edaya-api-client';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 type LessonSessionRaw = components['schemas']['LessonSession'];
@@ -140,13 +141,16 @@ export function buildSessionDetail(input: {
 export async function loadSessionDetail(
 	client: SchoolClient,
 	lessonSessionId: string,
+	options: { attendanceOnly?: boolean } = {},
 ): Promise<SessionDetail | null> {
 	let session: LessonSessionRaw;
 	try {
 		session = await client.entities.lessonSessions.get(lessonSessionId);
 	}
-	catch {
-		return null;
+	catch (error) {
+		if (error instanceof ApiError && error.status === 404)
+			return null;
+		throw error;
 	}
 
 	const roster = await client.queries.getClassSubjectRoster({ classSubjectId: session.classSubjectId, at: String(session.startsAt) });
@@ -154,8 +158,8 @@ export async function loadSessionDetail(
 	const classSubjectId = session.classSubjectId;
 	const [attendanceRaw, classSubjectMattersRaw, progressRaw] = await Promise.all([
 		client.entities.attendance.list(recordsForFieldIds('lessonSessionId', [lessonSessionId])),
-		client.entities.classSubjectMatters.list(recordsForFieldIds('classSubjectId', [classSubjectId])),
-		client.entities.classSubjectProgress.list(progressForLessonSessions([lessonSessionId])),
+		options.attendanceOnly ? [] : client.entities.classSubjectMatters.list(recordsForFieldIds('classSubjectId', [classSubjectId])),
+		options.attendanceOnly ? [] : client.entities.classSubjectProgress.list(progressForLessonSessions([lessonSessionId])),
 	]);
 	const subjectMatterIds = [...new Set((classSubjectMattersRaw ?? []).map(entry => entry.subjectMatterId))];
 	const subjectMattersRaw = subjectMatterIds.length > 0
@@ -223,8 +227,10 @@ async function loadActivitySessionDetail(
 	try {
 		session = await client.entities.activitySessions.get(activitySessionId);
 	}
-	catch {
-		return null;
+	catch (error) {
+		if (error instanceof ApiError && error.status === 404)
+			return null;
+		throw error;
 	}
 
 	const classStudents = mapStudents(await fetchClassPeopleSources(client, session.classGroupId));
@@ -252,8 +258,10 @@ async function loadAssessmentOccurrenceDetail(
 	try {
 		assessment = await client.entities.assessments.get(assessmentId);
 	}
-	catch {
-		return null;
+	catch (error) {
+		if (error instanceof ApiError && error.status === 404)
+			return null;
+		throw error;
 	}
 
 	const at = assessment.dueAt ?? assessment.startsAt ?? (assessment.lessonSessionId ? (await client.entities.lessonSessions.get(assessment.lessonSessionId)).startsAt : undefined);
@@ -280,6 +288,7 @@ async function loadAssessmentOccurrenceDetail(
 export async function loadPlanningOccurrenceDetail(
 	client: SchoolClient,
 	event: Pick<PlanningEvent, 'id' | 'kind'>,
+	options: { attendanceOnly?: boolean } = {},
 ): Promise<SessionDetail | null> {
 	switch (event.kind) {
 		case 'activity':
@@ -288,7 +297,7 @@ export async function loadPlanningOccurrenceDetail(
 			return loadAssessmentOccurrenceDetail(client, event.id);
 		case 'lesson':
 		default:
-			return loadSessionDetail(client, event.id);
+			return loadSessionDetail(client, event.id, options);
 	}
 }
 

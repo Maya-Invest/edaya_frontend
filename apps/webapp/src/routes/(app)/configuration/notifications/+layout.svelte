@@ -4,6 +4,7 @@
 	import { page } from '$app/stores';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
+	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { listRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
@@ -42,7 +43,7 @@
 	}
 </script>
 
-<NotificationRouteModals />
+<PermissionGate permission="SCHOOL_LIFECYCLE_MANAGE"><NotificationRouteModals /></PermissionGate>
 
 <PageQuery {query} cacheKey={listRouteCacheKey} loadingTitle={$t('config.notificationTemplates')}>
 	{#snippet children(data)}

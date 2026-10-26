@@ -11,7 +11,6 @@ import { loadStudentEnrollmentHistory } from '$lib/api/student-drawer-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { VersionedRouteQuery } from '$lib/navigation/versioned-route-query';
-import { EnrollmentRequest, isParticipationConflict } from '$lib/subjects/enrollment-request';
 import { getContext, setContext } from 'svelte';
 import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 import { resolveStudentPageLoad } from '../../../lib/student-page-status';
@@ -71,31 +70,6 @@ export class StudentEnrollmentsTabState {
       },
       hasItems: () => true,
     }, request));
-  }
-
-  private readonly participationRequest = new EnrollmentRequest();
-  async manageParticipation(input: components['schemas']['ManageStudentSubjectEnrollmentsCommand']) {
-    const result = await runStudentRouteMutation({
-      request: async () => {
-        const client = getBrowserSchoolClient();
-        try {
-          return await client.commands.manageStudentSubjectEnrollments(this.participationRequest.prepare(input));
-        }
-        catch (error) {
-          if (isParticipationConflict(error) && this.slice) {
-            const participation = await client.queries.getStudentSubjectEnrollments({ studentId: this.slice.studentId, academicYearId: academicContext.yearId || undefined });
-            this.slice = { ...this.slice, participation };
-          }
-          throw error;
-        }
-      },
-      versionKeys: ['subjectEnrollments', 'enrollments', 'evaluations', 'attendance', 'reportCards', 'planning', 'subjects'],
-    });
-    if (!result)
-      return false;
-    this.participationRequest.complete();
-    await this.invalidateIfStale();
-    return true;
   }
 
   progressionClasses = $state<components['schemas']['ClassGroup'][]>([]);

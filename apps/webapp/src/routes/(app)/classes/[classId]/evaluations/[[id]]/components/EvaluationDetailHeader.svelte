@@ -10,10 +10,12 @@
 	import { locale, t } from '$lib/i18n';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { openRouteSurface } from '$lib/navigation/route-surface-navigation';
 	import { hasPermission } from '$lib/permissions';
 	import { get } from 'svelte/store';
 	import EvaluationCreateModal from '../../components/EvaluationCreateModal.svelte';
 	import { getEvaluationsPageState } from '../../evaluations-page.svelte';
+	import { gradingTaskHref } from '../../lib/grading-task';
 
 	const { classId, evaluation, onDeleted }: {
 		classId: string;
@@ -83,6 +85,9 @@
 		</span>
 	{/snippet}
 	{#snippet actions()}
+		{#if evaluationsPage.canEnterMarks(evaluation.id)}
+			<Button variant="outline" disabled={evaluation.marksStatus !== 'draft'} title={evaluation.marksStatus === 'submitted' ? $t('gradeTask.frozen') : evaluation.marksStatus !== 'draft' ? $t('dataState.unavailable') : undefined} onclick={() => openRouteSurface(gradingTaskHref($page.url, classId, evaluation.id, 'entry'), `${$page.url.pathname}${$page.url.search}`)}>{$t('gradeTask.title')}</Button>
+		{/if}
 		<PermissionGate permission="ASSESSMENT_MANAGE" {classId} subject={evaluation.classSubjectId} subjectId={evaluationsPage.subjectsFor(classId).find(row => row.id === evaluation.classSubjectId)?.subjectId} assessmentId={evaluation.id} mode="disable" tooltip={$t('eval.permissionCreate')}>
 			{#snippet children({ disabled, title })}
 				{#if isHomework}

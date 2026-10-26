@@ -16,7 +16,7 @@ export type TeacherDetailTabSegment = (typeof TEACHER_DETAIL_TABS)[number]['segm
 export const TEACHER_DETAIL_TAB_PERMISSIONS: Partial<
 	Record<TeacherDetailTabKey, readonly PermissionCode[]>
 > = {
-	'availability': ['ACCESS_CONTROL_MANAGE', 'SCHOOL_CONFIGURE'],
+	'availability': ['STAFF_READ', 'ACCESS_CONTROL_READ'],
 	'timetable': ['TIMETABLE_READ'],
 	'evaluations': ['GRADE_READ', 'GRADE_MANAGE'],
 	'family-feedback': ['FAMILY_FEEDBACK_CAMPAIGN_READ'],

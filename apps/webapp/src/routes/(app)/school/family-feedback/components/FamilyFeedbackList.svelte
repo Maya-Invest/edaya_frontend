@@ -99,11 +99,13 @@
 
 <div class="animate-fade-in">
 	<ListPageHeader
+		filterCount={[familyFeedbackPage.filters.values.status].filter(value => value !== 'all').length}
+		onResetFilters={() => familyFeedbackPage.filters.patchImmediate({ status: 'all' })}
 		eyebrow={$t('familyFeedback.eyebrow')}
 		title={$t('familyFeedback.count', { n: filtered.length })}
 	>
 		{#snippet search()}
-			<ListSearchField
+			<ListSearchField onCommit={() => familyFeedbackPage.filters.syncNow()}
 				bind:value={familyFeedbackPage.filters.values.q}
 				oninput={() => familyFeedbackPage.filters.scheduleSync()}
 			/>

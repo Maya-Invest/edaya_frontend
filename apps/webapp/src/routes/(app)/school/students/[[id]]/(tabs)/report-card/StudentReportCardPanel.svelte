@@ -2,8 +2,9 @@
 	import type { Student } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-
 	import DocumentPdfButton from '$lib/components/school/documents/DocumentPdfButton.svelte';
+
+	import ReportCardAvailabilityNotice from '$lib/components/school/report-cards/ReportCardAvailabilityNotice.svelte';
 	import ReportSectionComments from '$lib/components/school/report-cards/ReportSectionComments.svelte';
 	import DrawerEmptyState from '$lib/components/school/shared/DrawerEmptyState.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -12,7 +13,7 @@
 	import { FileSpreadsheet } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { toast } from '$lib/toast.svelte';
-	import { formatGrade } from '$lib/types/report-cards';
+	import { formatPersistedGrade, formatReportRank } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import AnnualReportCardFormModal from '../../components/AnnualReportCardFormModal.svelte';
@@ -29,9 +30,6 @@
 	const results = $derived(reportCardTab.reportCardResultsFor(s.id));
 	const latest = $derived(
 		[...results].sort((a, b) => b.academicPeriodId.localeCompare(a.academicPeriodId))[0],
-	);
-	const scale = $derived(
-		latest ? reportCardTab.reportCardScalesFor(s.id).find(entry => entry.id === latest.gradeScaleId) : null,
 	);
 	const period = $derived(
 		latest ? academicContext.periods.find(p => p.id === latest.academicPeriodId) : null,
@@ -118,16 +116,18 @@
 			</span>
 		</div>
 
+		<ReportCardAvailabilityNotice results={[latest]} />
+
 		<div class="grid grid-cols-2 gap-3">
 			<div class="rounded-xl border border-border bg-secondary/30 p-4 text-center">
 				<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">{$t('reportCards.overall')}</p>
 				<p class="font-display text-3xl font-semibold">
-					{scale ? formatGrade(latest.overallAverage, scale) : latest.overallAverage}
+					{formatPersistedGrade(latest.grading, latest.overallAverage)}
 				</p>
 			</div>
 			<div class="rounded-xl border border-border bg-secondary/30 p-4 text-center">
 				<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">{$t('reportCards.rank')}</p>
-				<p class="font-display text-3xl font-semibold">{latest.classRank}/{latest.classSize}</p>
+				<p class="font-display text-3xl font-semibold">{formatReportRank(latest)}</p>
 			</div>
 		</div>
 
@@ -136,9 +136,9 @@
 				<div>
 					<p class="mb-2 text-sm font-semibold">
 						{$t('reportCards.marks')}
-						{#if section.sectionAverage !== undefined && scale}
+						{#if section.sectionAverage !== undefined}
 							<span class="ml-1 font-sans tabular-nums text-xs font-normal text-muted-foreground">
-								({formatGrade(section.sectionAverage, scale)})
+								({formatPersistedGrade(section.grading, section.sectionAverage)})
 							</span>
 						{/if}
 					</p>
@@ -153,7 +153,7 @@
 										{/if}
 									</div>
 									<p class="font-sans tabular-nums font-medium">
-										{scale ? formatGrade(mark.average, scale) : mark.average}
+										{formatPersistedGrade(mark.grading, mark.average)}
 									</p>
 								</div>
 								{#if mark.appreciation}

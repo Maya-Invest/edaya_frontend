@@ -24,6 +24,7 @@
 	import { renderTemplatePreview } from '$lib/notification-templates/render-preview';
 	import { sanitizeNotificationHtml } from '$lib/notification-templates/sanitize-html';
 	import { cn } from '$lib/utils';
+	import { onDestroy, untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getNotificationsPageState } from '../notifications-page.svelte';
 	import NotificationRichTextEditor from './NotificationRichTextEditor.svelte';
@@ -40,6 +41,11 @@
 	const document = $derived(notificationsPage.document);
 
 	let busy = $state(false);
+	let session = Symbol('template-editor-session');
+	let baseline = $state('');
+	onDestroy(() => {
+		session = Symbol('template-editor-session');
+	});
 	let copyType = $state<NotificationCopyType>('rich_message');
 	let previewChannel = $state<NotificationSendChannel>('email');
 	let enableEmail = $state(true);
@@ -50,23 +56,28 @@
 	let richSubject = $state('');
 	let richBody = $state('');
 	let simpleBody = $state('');
+	let openingRevision = $state<string | null>(null);
 	let hydratedFromDocument = $state<string | null>(null);
 	let focusedField = $state<'richSubject' | 'richBody' | 'baseTitle' | 'baseBody' | 'simpleBody'>('richBody');
 	let insertRichPlaceholder = $state<(text: string) => void>(() => {});
 	let lastTextField = $state<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
 	$effect(() => {
-		if (!templateKey) {
+		if (!open || !templateKey) {
+			session = Symbol('template-editor-session');
 			hydratedFromDocument = null;
 			return;
 		}
 		if (!document) {
 			return;
 		}
-		const signature = `${templateKey}:${document.updatedAt ?? ''}`;
+		const signature = `${document.schoolId}:${templateKey}`;
 		if (hydratedFromDocument === signature) {
 			return;
 		}
+		session = Symbol('template-editor-session');
+		busy = false;
+		openingRevision = typeof document.updatedAt === 'string' ? document.updatedAt : null;
 		copyType = copyTypesForTemplateKey(templateKey)[0] ?? 'rich_message';
 		previewChannel = previewChannelsForTemplateKey(templateKey)[0] ?? 'email';
 		if (isInvitationTemplateKey(templateKey)) {
@@ -86,8 +97,14 @@
 			richBody = entry?.rich_message.body ?? '';
 			simpleBody = entry?.simple_message.body ?? '';
 		}
+		baseline = untrack(draftSignature);
 		hydratedFromDocument = signature;
 	});
+
+	function draftSignature() {
+		return JSON.stringify([enableEmail, enablePush, enableSms, baseTitle, baseBody, richSubject, richBody, simpleBody]);
+	}
+	const dirty = $derived(Boolean(hydratedFromDocument) && draftSignature() !== baseline);
 
 	const copyTypes = $derived.by((): NotificationCopyType[] =>
 		templateKey ? copyTypesForTemplateKey(templateKey) : ['rich_message'],
@@ -124,7 +141,7 @@
 	});
 
 	const canSubmit = $derived.by(() => {
-		if (!templateKey) {
+		if (!templateKey || !document) {
 			return false;
 		}
 		if (copyType === 'rich_message') {
@@ -209,6 +226,7 @@
 			return;
 		}
 
+		const submittedSession = session;
 		busy = true;
 		try {
 			const patch = invitation
@@ -245,16 +263,17 @@
 			const result = await notificationsPage.updateTemplates({
 				templates: patch,
 				invitationSmsEnabled: invitation ? false : undefined,
-				expectedUpdatedAt: typeof document.updatedAt === 'string' ? document.updatedAt : null,
+				expectedUpdatedAt: openingRevision,
 				successMessage: get(t)('notificationTemplates.toastSaved'),
 			});
 
-			if (result) {
+			if (result && session === submittedSession) {
 				open = false;
 			}
 		}
 		finally {
-			busy = false;
+			if (session === submittedSession)
+				busy = false;
 		}
 	}
 </script>
@@ -267,14 +286,16 @@
 	cancelLabel={$t('common.cancel')}
 	busy={busy}
 	submitDisabled={!canSubmit}
-	contentClass="max-w-3xl"
+	{dirty}
 	onSubmit={submit}
 >
-	{#if templateKey}
-		<div class="space-y-4">
+	{#if !document}
+		<p role="status">{$t('dataState.unavailableDescription')}</p>
+	{:else if templateKey}
+		<fieldset disabled={busy} class="space-y-4">
 			{#if gatedChannels.length > 0}
 				<div class="space-y-2">
-					<p class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+					<p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
 						{$t('notificationTemplates.channels')}
 					</p>
 					<div class="flex flex-wrap gap-3">
@@ -297,7 +318,7 @@
 						<button
 							type="button"
 							class={cn(
-								'flex-1 rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
+								'flex-1 min-h-11 rounded-full px-3 py-2 text-sm font-medium transition-colors',
 								copyType === item
 									? 'bg-background text-foreground shadow-soft'
 									: 'text-muted-foreground hover:text-foreground',
@@ -386,7 +407,7 @@
 
 			<div class="rounded-xl border border-border bg-secondary/40 p-4">
 				<div class="mb-2 flex items-center justify-between gap-2">
-					<p class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+					<p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
 						{$t('notificationTemplates.preview')}
 					</p>
 					{#if previewChannels.length > 1}
@@ -415,14 +436,14 @@
 			</div>
 
 			<div class="rounded-xl border border-dashed border-border p-3">
-				<p class="mb-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+				<p class="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
 					{$t('notificationTemplates.variables')}
 				</p>
 				<div class="flex flex-wrap gap-2">
 					{#each variables as variable (variable)}
 						<button
 							type="button"
-							class="rounded-md bg-secondary px-2 py-0.5 font-mono text-[11px] hover:bg-secondary/80"
+							class="min-h-11 rounded-full bg-secondary px-3 py-2 font-mono text-xs hover:bg-secondary/80"
 							onclick={() => insertPlaceholder(variable)}
 						>
 							{`{{${variable}}}`}
@@ -430,7 +451,7 @@
 					{/each}
 				</div>
 			</div>
-		</div>
+		</fieldset>
 	{/if}
 </FormModal>
 

@@ -193,7 +193,7 @@
 		title={$t('periodDefinitions.sectionTitle')}
 		description={$t('periodDefinitions.subtitle')}
 	>
-		{#snippet filters()}
+		{#snippet context()}
 			{#if yearOptions.length > 0}
 				<FilterSelect
 					value={periodGridPage.selectedYearId ?? ''}

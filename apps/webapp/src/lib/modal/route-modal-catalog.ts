@@ -52,7 +52,7 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'school-students-list',
 		pathnamePattern: /^\/school\/students\/?$/,
-		modalNames: ['create'],
+		modalNames: ['create', 'subject-selection'],
 	},
 	{
 		routeFamily: 'school-students-detail',
@@ -63,7 +63,7 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'class-students-list',
 		pathnamePattern: /^\/classes\/[^/]+\/students\/?$/,
-		modalNames: ['create'],
+		modalNames: ['create', 'subject-selection'],
 	},
 	{
 		routeFamily: 'class-students-detail',
@@ -206,7 +206,7 @@ export const ROUTE_MODAL_CATALOG = [
 		routeFamily: 'class-evaluations-detail',
 		pathnamePattern:
 			/^\/classes\/[^/]+\/evaluations\/[^/]+(?:\/(?:details|grading))?\/?$/,
-		modalNames: ['edit', 'delete', 'attach', 'grade-entry'],
+		modalNames: ['edit', 'delete', 'attach', 'grade-entry', 'correct-mark', 'submit-marks', 'request-correction', 'approve-correction', 'reject-correction', 'withdraw-correction'],
 	},
 	{
 		routeFamily: 'class-teaching-detail',
@@ -343,7 +343,7 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'finance-fee-detail',
 		pathnamePattern: /^\/finance\/fees\/[^/]+\/?$/,
-		modalNames: ['edit', 'archive', 'activate', 'assign-fee'],
+		modalNames: ['edit', 'archive', 'activate', 'assign-fee', 'retry-billing'],
 	},
 	{
 		routeFamily: 'finance-billing-list',

@@ -99,6 +99,7 @@
 
 	const accountModals = createUrlSyncedModals({
 		allowed: [ACCOUNT_PROFILE_MODAL],
+		allowedTabs: ['profile', 'notifications', 'security'],
 		getUrl: () => $page.url,
 	});
 	$effect(() => {
@@ -262,7 +263,7 @@
 		</div>
 	</div>
 
-	<AccountProfileModal bind:open={profileOpen.open} actor={me} onLogout={() => accountState.logout()} />
+	<AccountProfileModal bind:open={profileOpen.open} actor={me} section={accountModals.tab ?? 'profile'} onSectionChange={section => accountModals.setTab(section)} onLogout={() => accountState.logout()} />
 {:else}
 	<div
 		class="flex h-screen w-full items-center justify-center bg-background text-foreground"

@@ -1,5 +1,6 @@
 import {
 	MODAL_QUERY_KEY,
+	TASK_QUERY_KEYS,
 	MODAL_STEP_QUERY_KEY,
 	MODAL_TAB_QUERY_KEY,
 	MODAL_TARGET_QUERY_KEY,
@@ -12,6 +13,8 @@ export function detailNavigationSearch(url: URL): string {
 	next.searchParams.delete(MODAL_TARGET_QUERY_KEY);
 	next.searchParams.delete(MODAL_STEP_QUERY_KEY);
 	next.searchParams.delete(MODAL_TAB_QUERY_KEY);
+	for (const key of Object.values(TASK_QUERY_KEYS))
+		next.searchParams.delete(key);
 	next.searchParams.delete('tab');
 	return next.search;
 }

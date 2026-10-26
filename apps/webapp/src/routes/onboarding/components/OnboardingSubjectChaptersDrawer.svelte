@@ -43,7 +43,7 @@
 		class="fixed inset-0 z-40 bg-primary/5 motion-safe:animate-fade-in"
 	></div>
 	<aside
-		class="fixed right-0 top-0 z-50 flex h-full w-full flex-col overflow-hidden border-l border-border bg-card shadow-panel motion-safe:animate-slide-in-right md:w-1/2"
+		class="fixed right-0 top-0 z-50 flex h-full w-full flex-col overflow-hidden border-l border-border bg-card shadow-panel motion-safe:animate-slide-in-right lg:w-1/2"
 		aria-label={$t('config.subjects')}
 	>
 		<header class="flex items-center justify-between border-b border-border px-6 py-4">

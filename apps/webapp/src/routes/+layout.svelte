@@ -6,15 +6,16 @@
 	import { bootstrapAuthOnly, bootstrapSession } from '$lib/auth/bootstrap';
 	import { shouldBootstrapAuthOnly } from '$lib/auth/bootstrap-route';
 	import ApiDevBanner from '$lib/components/dev/ApiDevBanner.svelte';
+	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
 	import ToastHost from '$lib/components/ui/ToastHost.svelte';
-	import {
-		isWizardOnboardingNavigation,
-		shouldBlockStaleOnboardingNavigation,
-	} from '$lib/navigation/app-navigation';
+	import { t } from '$lib/i18n';
+	import { provideDirtyWork } from '$lib/interaction/dirty-work.svelte';
+	import { appGoto, isWizardOnboardingNavigation, shouldBlockStaleOnboardingNavigation } from '$lib/navigation/app-navigation';
 	import { onMount } from 'svelte';
 	import '../app.css';
 
 	const { children } = $props();
+	const dirtyWork = provideDirtyWork();
 
 	function blockStaleOnboardingIfNeeded(to: URL | null | undefined): boolean {
 		return shouldBlockStaleOnboardingNavigation({
@@ -30,6 +31,18 @@
 		}
 		if (blockStaleOnboardingIfNeeded(navigation.to?.url)) {
 			navigation.cancel();
+			return;
+		}
+		if (dirtyWork.hasDirtyWork(navigation.to?.url)) {
+			navigation.cancel();
+			if (navigation.type === 'leave')
+				return; // Kit uses the browser unload confirmation.
+			dirtyWork.request(() => {
+				if (navigation.type === 'popstate')
+					window.history.go(navigation.delta);
+				else if (navigation.to)
+					void appGoto(navigation.to.url.href);
+			}, navigation.to?.url);
 		}
 	});
 
@@ -104,3 +117,10 @@
 {@render children()}
 
 <ToastHost />
+
+<ConfirmModal open={dirtyWork.pending !== null} title={$t('form.discardTitle')} description={$t('form.discardDescription')}
+	confirmLabel={$t('form.discard')} cancelLabel={$t('form.keepEditing')}
+	onOpenChange={(open) => {
+		if (!open)
+			dirtyWork.cancel();
+	}} onConfirm={() => dirtyWork.discard()} onCancel={() => dirtyWork.cancel()} />

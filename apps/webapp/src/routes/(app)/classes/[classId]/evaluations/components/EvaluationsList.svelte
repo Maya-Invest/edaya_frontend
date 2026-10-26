@@ -147,6 +147,8 @@
 
 <div class="animate-fade-in">
 	<ListPageHeader
+		filterCount={[listFilters.values.kind].filter(value => value !== 'all').length}
+		onResetFilters={() => listFilters.patchImmediate({ kind: 'all' })}
 		eyebrow={$t('eval.marksBook')}
 		title={$t('eval.count', { n: filtered.length })}
 	>

@@ -83,14 +83,7 @@
 	function toggleColumn(key: string, checked: boolean) {
 		updateKeys(checked ? [...resolvedKeys, key] : resolvedKeys.filter(value => value !== key));
 	}
-	function openRow(event: KeyboardEvent, item: TRow) {
-		if (event.target !== event.currentTarget)
-			return;
-		if (event.key === 'Enter' || event.key === ' ') {
-			event.preventDefault();
-			onRowClick?.(item);
-		}
-	}
+
 </script>
 
 <div class="min-w-0 w-full max-w-full overflow-hidden rounded-2xl border border-border bg-card shadow-soft" aria-busy={loading}>
@@ -117,9 +110,9 @@
 	</div>
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 	<div class="overflow-x-auto control-focus" role="region" aria-label={$t('list.tableRegion')} tabindex="0">
-		<div style:min-width="{Math.max(768, minimumWidth)}px">
-			<div class="grid gap-4 border-b border-border bg-secondary/60 px-5 py-3 text-xs font-semibold text-muted-foreground" style:grid-template-columns={template}>
-				{#if selectionMode}<div><Checkbox checked={allVisibleSelected} onCheckedChange={checked => onToggleAllVisible?.(checked === true)} aria-label={$t('list.selectAll')} /></div>{/if}
+		<div role="table" style:min-width="{Math.max(768, minimumWidth)}px">
+			<div role="row" class="grid gap-4 border-b border-border bg-secondary/60 px-5 py-3 text-xs font-semibold text-muted-foreground" style:grid-template-columns={template}>
+				{#if selectionMode}<div role="columnheader"><Checkbox checked={allVisibleSelected} onCheckedChange={checked => onToggleAllVisible?.(checked === true)} aria-label={$t('list.selectAll')} /></div>{/if}
 				{#each visibleColumns as column (column.key)}
 					<div class={cn('flex items-center', column.class)} role="columnheader" aria-sort={column.sortable && sort ? listSortAriaValue(sort.column, sort.dir, column.key) : undefined}>
 						{#if column.sortable && onSort && sort}<button type="button" data-testid="list-sort" class="flex items-center gap-1 hover:text-foreground" aria-label={listSortButtonLabel(sort.column, sort.dir, column.key, column.label)} onclick={() => onSort(column.key)}>{column.label}{#if sort.column === column.key}{#if sort.dir === 'asc'}<ChevronUp class="h-3 w-3" />{:else}<ChevronDown class="h-3 w-3" />{/if}{/if}</button>{:else}{column.label}{/if}
@@ -127,19 +120,22 @@
 				{/each}
 			</div>
 			<InfiniteList {hasMore} {total} {visibleCount} loading={loading || loadingMore} {onLoadMore}>
-				<ul class={cn(loading && 'opacity-60')}>
+				<div role="rowgroup" class={cn(loading && 'opacity-60')}>
 					{#each rows as item (item.id)}
 						{@const ctx = { selectionMode, selected: selectedSet.has(item.id), active: highlightId === item.id }}
-						<li><div role="button" data-entity-id={item.id} tabindex="0" onclick={(event) => {
-							if (!(event.target instanceof Element) || !event.target.closest('button, a, input, summary, details, [role="checkbox"]'))
-								onRowClick?.(item);
-						}} onkeydown={event => openRow(event, item)} class={cn('grid items-center gap-4 border-b border-border px-5 text-left last:border-b-0', rowPaddingClass, ctx.active ? 'bg-primary/10' : 'hover:bg-secondary', selectionMode && ctx.selected && 'bg-primary/5', rowClass?.(item, ctx))} style:grid-template-columns={template}>
-							{#if selectionMode}<div role="presentation" onclick={event => event.stopPropagation()}><Checkbox checked={ctx.selected} onCheckedChange={checked => onToggleSelected?.(item.id, checked === true)} aria-label={$t('list.selectRow')} /></div>{/if}
-							{#each visibleColumns as column (column.key)}<div class="min-w-0" data-column={column.key}>{@render cell(item, column, ctx)}</div>{/each}
-						</div></li>
+						<div role="row" data-entity-id={item.id} class={cn('grid min-h-12 items-center gap-4 border-b border-border px-4 text-left last:border-b-0', rowPaddingClass, ctx.active ? 'bg-primary/10' : onRowClick ? 'cursor-pointer hover:bg-secondary' : '', selectionMode && ctx.selected && 'bg-primary/5', rowClass?.(item, ctx))} style:grid-template-columns={template}>
+							{#if selectionMode}<div role="cell"><Checkbox checked={ctx.selected} onCheckedChange={checked => onToggleSelected?.(item.id, checked === true)} aria-label={$t('list.selectRow')} /></div>{/if}
+							{#each visibleColumns as column, columnIndex (column.key)}
+								<div role="cell" class="min-w-0 break-words" data-column={column.key}>
+									{#if onRowClick && columnIndex === 0 && column.key !== 'actions'}
+										<button type="button" class="control-focus min-h-11 w-full rounded-lg text-left font-semibold" onclick={() => onRowClick(item)}>{@render cell(item, column, ctx)}</button>
+									{:else}{@render cell(item, column, ctx)}{/if}
+								</div>
+							{/each}
+						</div>
 					{/each}
-					{#if rows.length === 0 && !loading}<li class="px-5 py-12 text-center text-sm text-muted-foreground">{resolvedEmptyLabel}</li>{/if}
-				</ul>
+					{#if rows.length === 0 && !loading}<div role="row"><div role="cell" class="px-4 py-12 text-center text-sm text-muted-foreground">{resolvedEmptyLabel}</div></div>{/if}
+				</div>
 			</InfiniteList>
 		</div>
 	</div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { AnnouncementListFilters } from '$lib/list/list-url-filters';
 	import type { Announcement, AnnouncementPriority, AnnouncementStatus } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -10,7 +11,7 @@
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
-	import { t } from '$lib/i18n';
+	import { locale, t } from '$lib/i18n';
 	import { Mail, Plus } from '$lib/icons';
 	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { useInfiniteList } from '$lib/list/use-infinite-list.svelte';
@@ -47,7 +48,7 @@
 	const statusKeys = ['all', 'draft', 'published', 'archived'] as const;
 	const priorityKeys = ['all', 'normal', 'important', 'urgent'] as const;
 
-	let priority = $state<string>('all');
+	const priority = $derived(announcementsPage.filters.values.priority);
 
 	const modals = createUrlSyncedModals({ allowed: ['create'], getUrl: () => $page.url });
 	$effect(() => {
@@ -72,7 +73,7 @@
 		if (!value) {
 			return '—';
 		}
-		return new Date(value).toLocaleDateString('fr-FR', {
+		return new Date(value).toLocaleDateString($locale, {
 			day: '2-digit',
 			month: 'short',
 			year: 'numeric',
@@ -119,24 +120,28 @@
 
 <div class="animate-fade-in">
 	<ListPageHeader
+		filterCount={[announcementsPage.filters.values.status, priority].filter(value => value !== 'all').length}
+		onResetFilters={() => announcementsPage.filters.patchImmediate({ status: 'all', priority: 'all' })}
 		eyebrow={$t('announcements.eyebrow')}
 		title={$t('announcements.count', { n: filtered.length })}
 	>
 		{#snippet search()}
-			<ListSearchField
+			<ListSearchField onCommit={() => announcementsPage.filters.syncNow()}
 				bind:value={announcementsPage.filters.values.q}
 				oninput={() => announcementsPage.filters.scheduleSync()}
 			/>
 		{/snippet}
 		{#snippet filters()}
 			<FilterSelect
-				bind:value={announcementsPage.filters.values.status}
+				value={announcementsPage.filters.values.status}
+				onchange={value => announcementsPage.filters.patchImmediate({ status: value })}
 				class="h-9 w-44 rounded-full text-xs"
 				options={statusFilterOptions}
 			/>
 			<FilterPanel activeCount={priorityFilterActive} title={$t('announcements.priorityFilter')}>
 				<FilterSelect
-					bind:value={priority}
+					value={priority}
+					onchange={value => announcementsPage.filters.patchImmediate({ priority: value as AnnouncementListFilters['priority'] })}
 					class="h-9 w-full rounded-md text-xs"
 					options={priorityFilterOptions}
 				/>

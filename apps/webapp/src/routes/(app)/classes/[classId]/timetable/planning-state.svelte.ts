@@ -1,6 +1,5 @@
 import type { PlanningEvent } from '$lib/types/school';
 import type {
-	AttendanceStep,
 	NewSessionStep,
 	PlanningModal,
 	PlanningModalStep,
@@ -12,8 +11,9 @@ import { requestDocumentIssuanceMutation } from '$lib/api/mutations/documents.mu
 import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 import { readPlanningListFilters, writePlanningListFilters } from '$lib/list/list-url-filters';
 import { createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-import { appGoto } from '$lib/navigation/app-navigation';
-import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
+import { appGoto, appPath } from '$lib/navigation/app-navigation';
+import { detailNavigationSearch } from '$lib/navigation/detail-navigation';
+import { currentRouteSurfaceHref, openRouteSurface, replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
 import { hasPermission } from '$lib/permissions';
 import {
 	formatWeekAnchor,
@@ -24,6 +24,7 @@ import {
 	todayDate,
 } from '$lib/scheduling/planning-calendar';
 import { getContext, setContext } from 'svelte';
+import { sessionAttendanceTaskHref } from './lib/attendance-task';
 import {
 	PLANNING_MODAL_KEYS,
 	canAccessPlanningModal,
@@ -103,6 +104,11 @@ export class PlanningState {
 			hasPermission: (permission, scopedClassId) =>
 				hasPermission(permission, { classId: scopedClassId }),
 		});
+		if (surface.modal === 'attendance' && surface.target && options.validateEventTargets && academicContext.shellReady) {
+			const daily = academicContext.classes.find(row => row.id === classId)?.attendanceMode === 'daily';
+			replaceRouteSurface(daily ? `${appPath('/(app)/classes/[classId]/attendance', { classId })}${detailNavigationSearch(url)}` : sessionAttendanceTaskHref(url, classId, surface.target));
+			return;
+		}
 		const openingWorkflow = this.modals.active !== surface.modal;
 		if (openingWorkflow && surface.modal === 'new-session' && surface.step !== 'type') {
 			surface.step = 'type';
@@ -145,7 +151,9 @@ export class PlanningState {
 	}
 
 	openAttendance = (event: PlanningEvent) => {
-		this.modals.open('attendance', { target: event.id, step: 'mark' });
+		if (event.classId !== this.getClassId() || academicContext.classes.find(row => row.id === event.classId)?.attendanceMode !== 'session' || !hasPermission('ATTENDANCE_RECORD', { classId: event.classId }))
+return;
+		openRouteSurface(sessionAttendanceTaskHref(this.getUrl(), event.classId, event.id), currentRouteSurfaceHref(this.getUrl()));
 	};
 
 	openScheduleCreate() {
@@ -156,20 +164,9 @@ export class PlanningState {
 		this.modals.open('reschedule', { target: eventId });
 	}
 
-	attendanceSession(events: readonly PlanningEvent[]): PlanningEvent | null {
-		if (!this.modals.isOpen('attendance') || !this.modals.target) {
-			return null;
-		}
-		return events.find(event => event.id === this.modals.target) ?? null;
-	}
-
 	get newSessionStep(): NewSessionStep {
 		const step = this.modals.step;
 		return step === 'context' || step === 'schedule' ? step : 'type';
-	}
-
-	get attendanceStep(): AttendanceStep {
-		return this.modals.step === 'review' ? 'review' : 'mark';
 	}
 
 	canOpenSessionLogbook(event: PlanningSurfaceEvent, logbookExists: boolean): boolean {

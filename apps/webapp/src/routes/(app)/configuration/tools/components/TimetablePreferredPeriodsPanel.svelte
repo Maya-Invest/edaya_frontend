@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PeriodDefinition } from '$lib/types/school';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import { t } from '$lib/i18n';
 	import { cn } from '$lib/utils';
 	import {
@@ -60,7 +61,7 @@
 								<tr>
 									<td
 										colspan={weekGrid.weekDays.length + 1}
-										class="border-b border-border/40 bg-muted/25 px-2 py-1.5 text-center text-[11px] text-muted-foreground"
+										class="border-b border-border/40 bg-muted/25 px-2 py-1.5 text-center text-xs text-muted-foreground"
 									>
 										{entry.label} · {entry.startTime}–{entry.endTime}
 									</td>
@@ -69,18 +70,18 @@
 								<tr>
 									<td class="sticky left-0 z-10 border-b border-border/40 bg-card px-2 py-2 align-middle">
 										<p class="font-medium leading-tight text-foreground">{entry.label}</p>
-										<p class="mt-0.5 font-sans tabular-nums text-[10px] text-muted-foreground">{entry.startTime}–{entry.endTime}</p>
+										<p class="mt-0.5 font-sans tabular-nums text-xs text-muted-foreground">{entry.startTime}–{entry.endTime}</p>
 									</td>
 									{#each weekGrid.weekDays as day (day)}
 										{@const cell = entry.cells[day]}
 										<td class="border-b border-border/40 px-1 py-1.5 text-center align-middle">
 											{#if cell}
-												<button
+												<Button variant="outline"
 													type="button"
 													aria-pressed={preferredIds.includes(cell.id)}
 													aria-label={`${entry.label} · ${$t(preferredPeriodDayLabelKey(day))}`}
 													class={cn(
-														'mx-auto flex h-9 w-9 items-center justify-center rounded-lg border transition-colors',
+														'mx-auto min-h-11 min-w-11 p-2',
 														preferredIds.includes(cell.id)
 															? 'border-primary bg-primary/15 text-primary'
 															: 'border-border/50 bg-secondary/25 text-transparent hover:border-border hover:bg-secondary/60',
@@ -88,7 +89,7 @@
 													onclick={() => togglePreferred(cell.id)}
 												>
 													<span aria-hidden="true" class={preferredIds.includes(cell.id) ? 'text-xs font-semibold' : ''}>✓</span>
-												</button>
+												</Button>
 											{:else}
 												<span class="text-muted-foreground/40">—</span>
 											{/if}
@@ -103,11 +104,11 @@
 		{:else}
 			<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 				{#each listPeriods as period (period.id)}
-					<button
+					<Button variant="outline"
 						type="button"
 						aria-pressed={preferredIds.includes(period.id)}
 						class={cn(
-							'rounded-lg border px-2.5 py-2 text-left text-sm transition-colors',
+							'flex h-auto min-h-11 flex-col items-start whitespace-normal p-4 text-left text-sm',
 							preferredIds.includes(period.id)
 								? 'border-primary bg-primary/10 text-primary'
 								: 'border-border/50 bg-secondary/30 text-foreground hover:bg-secondary/60',
@@ -115,8 +116,8 @@
 						onclick={() => togglePreferred(period.id)}
 					>
 						<span class="block font-medium">{period.label}</span>
-						<span class="mt-0.5 block font-sans tabular-nums text-[11px] text-muted-foreground">{period.startTime}–{period.endTime}</span>
-					</button>
+						<span class="mt-0.5 block font-sans tabular-nums text-xs text-muted-foreground">{period.startTime}–{period.endTime}</span>
+					</Button>
 				{/each}
 			</div>
 		{/if}

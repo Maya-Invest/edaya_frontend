@@ -59,6 +59,7 @@ jobs:
       - name: Prepare client from checked-out backend
         env:
           TARGET: ${{ inputs.target }}
+          IDENTITY_CHECKOUT_TOKEN: ${{ secrets.IDENTITY_CHECKOUT_TOKEN }}
         run: bun run repo generate client "$TARGET" --backend-root .ci/edaya_backend
       - run: bun run repo generate dependencies
       - run: bun run repo ci setup

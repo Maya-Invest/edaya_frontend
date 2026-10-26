@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { TimetableRangePreset } from '../lib/timetable-generation-ui';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
 	import { cn } from '$lib/utils';
@@ -61,10 +62,10 @@
 			{#if presets.length > 0}
 				<div class="flex flex-wrap gap-2">
 					{#each presets as preset (preset.id)}
-						<button
+						<Button variant="outline"
 							type="button"
 							class={cn(
-								'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+								'text-sm',
 								activePresetId === preset.id
 									? 'border-primary bg-primary/10 text-primary'
 									: 'border-border bg-background text-foreground/80 hover:bg-secondary',
@@ -72,7 +73,7 @@
 							onclick={() => applyPreset(preset)}
 						>
 							{preset.id === 'full-year' ? $t('timetable.fullAcademicYear') : preset.label}
-						</button>
+						</Button>
 					{/each}
 				</div>
 			{/if}

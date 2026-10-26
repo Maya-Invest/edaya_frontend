@@ -12,6 +12,8 @@ export async function integration(): Promise<void> {
   const client = checkClient()
   const backend = resolve(process.env.BACKEND_ROOT ?? resolve(root, '.ci/edaya_backend'))
   await verifyBackend(backend, client.backendCommit)
+  if (client.identityCommit)
+    await verifyBackend(resolve(backend, '../edaya_identity'), client.identityCommit)
   let processPassed = false
   let evidencePassed = false
   try {

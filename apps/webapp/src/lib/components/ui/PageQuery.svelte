@@ -18,7 +18,8 @@
 		isPageQueryAbortError,
 	} from '$lib/queries/page-query-runtime';
 	import { pageQueryStatus } from '$lib/queries/page-query-status.svelte';
-	import { onDestroy, untrack } from 'svelte';
+	import { PAGE_QUERY_RETRY } from '$lib/queries/retry-context';
+	import { onDestroy, untrack, setContext } from 'svelte';
 
 	const {
 		query,
@@ -42,6 +43,11 @@
 	let instanceCacheKey: string | null = null;
 	let loadVersion = 0;
 	let loadedSurface: string | null = null;
+	setContext(PAGE_QUERY_RETRY, () => {
+		if (instanceCacheKey)
+			invalidatePageQueryCache(instanceCacheKey);
+		loadedKey = null;
+	});
 
 	$effect(() => {
 		const url = $page.url;

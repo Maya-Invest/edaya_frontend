@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { AccountActor } from '$lib/auth/account-actor';
 
-	import { accountHrefWithReturn } from '$lib/account/profile-navigation';
 	import { authSession } from '$lib/auth/session.svelte';
 
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
@@ -9,10 +8,12 @@
 	import ProfilePhotoPicker from '$lib/components/school/shared/ProfilePhotoPicker.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
-	import { ChevronRight, Inbox, LogOut, Mail, Settings2 } from '$lib/icons';
+	import { LogOut, Mail } from '$lib/icons';
+	import { getDirtyWork } from '$lib/interaction/dirty-work.svelte';
 	import { canUploadProfilePhoto } from '$lib/permissions';
+	import NotificationSettings from '$lib/smart-components/account-notifications/NotificationSettings.svelte';
+	import SecuritySettings from '$lib/smart-components/account-security/SecuritySettings.svelte';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getAccountState } from '../account-state.svelte';
@@ -23,9 +24,13 @@
 		open = $bindable(false),
 		actor,
 		onLogout,
+		section = 'profile',
+		onSectionChange,
 	}: {
 		open?: boolean;
 		actor: AccountActor;
+		section?: string;
+		onSectionChange: (section: 'profile' | 'notifications' | 'security') => void;
 		onLogout: () => void | Promise<void>;
 	} = $props();
 
@@ -67,20 +72,40 @@
 		});
 	}
 
-	const readOnlyFieldClass = 'min-h-10 rounded-md border border-input bg-card px-3 py-2 text-sm';
+	const readOnlyFieldClass = 'break-words text-sm';
 	const loginEmailFieldClass = cn(
 		readOnlyFieldClass,
 		'bg-secondary/30 text-muted-foreground',
 	);
 
-	async function handleLogout() {
-		open = false;
-		await onLogout();
+	const dirtyWork = getDirtyWork();
+	function guarded(proceed: () => void) {
+		if (dirtyWork)
+			dirtyWork.request(proceed);
+		else proceed();
 	}
+	function close() {
+		guarded(() => {
+			open = false;
+		});
+	}
+	function handleLogout() {
+		guarded(() => {
+			open = false;
+			void onLogout();
+		});
+	}
+	const sections = ['profile', 'notifications', 'security'] as const;
+	const sectionKeys = { profile: 'account.profile.sectionProfile', notifications: 'account.notifications.title', security: 'auth.accountSecurity' };
+
 </script>
 
-<Dialog.Root bind:open>
-	<Dialog.Content class="flex max-w-md flex-col gap-0 overflow-hidden rounded-2xl p-0 shadow-panel">
+<Dialog.Root {open} onOpenChange={(next) => {
+	if (!next)
+		close();
+	else open = true;
+}}>
+	<Dialog.Content class="flex h-dvh max-h-dvh w-screen max-w-none flex-col gap-0 overflow-hidden rounded-none p-0 shadow-panel lg:h-[min(48rem,calc(100dvh-2rem))] lg:max-h-[calc(100dvh-2rem)] lg:w-[calc(100%-2rem)] lg:max-w-5xl lg:rounded-2xl">
 		<div class="shrink-0 border-b border-border bg-secondary/30 px-6 py-5">
 			<div class="flex items-center gap-4">
 				{#if canChangePhoto}
@@ -110,78 +135,66 @@
 			</div>
 		</div>
 
-		<div class="min-h-0 space-y-6 overflow-y-auto px-6 py-5">
-			<section class="space-y-4">
-				<a href="/account/security" onclick={() => (open = false)} class="text-sm text-primary">{$t('auth.accountSecurity')}</a>
-				<h3 class="font-sans text-xs uppercase tracking-widest text-muted-foreground">
-					{$t('account.profile.sectionProfile')}
-				</h3>
+		<div class="flex min-h-0 flex-1 flex-col lg:flex-row-reverse">
+			<nav aria-label={$t('account.profile.sectionProfile')} class="flex shrink-0 flex-wrap gap-2 border-b border-border p-4 lg:w-56 lg:flex-col lg:justify-start lg:border-b-0 lg:border-l">
+				{#each sections as item (item)}
+					<Button variant={section === item ? 'secondary' : 'ghost'} aria-current={section === item ? 'page' : undefined} class="justify-start" onclick={() => {
+						if (item !== section)
+							guarded(() => onSectionChange(item));
+					}}>{$t(sectionKeys[item])}</Button>
+				{/each}
+			</nav>
+			<div class="min-h-0 min-w-0 flex-1 overflow-y-auto">
+				{#if section === 'notifications'}<NotificationSettings />
+				{:else if section === 'security'}<SecuritySettings />
+				{:else}
 
-				{#if actor.kind === 'staff' && staffProfile}
-					<DrawerField label={$t('guardian.fullName')}>
-						<div class={readOnlyFieldClass}>{staffProfile.name}</div>
-					</DrawerField>
-					<DrawerField label={$t('people.role')}>
-						<div class={readOnlyFieldClass}>{$t(`staff.role.${staffProfile.role}`)}</div>
-					</DrawerField>
-					<DrawerField label={$t('people.department')}>
-						<div class={readOnlyFieldClass}>{staffProfile.department || '—'}</div>
-					</DrawerField>
-				{/if}
+					<div class="mx-auto w-full max-w-lg space-y-6 p-4 md:p-6">
+						<section class="space-y-4">
+							<h3 class="font-sans text-xs uppercase tracking-widest text-muted-foreground">
+								{$t('account.profile.sectionProfile')}
+							</h3>
 
-				<DrawerField label={$t('account.notifications.loginEmail')}>
-					<div class={loginEmailFieldClass}>
-						<span class="flex items-center gap-2">
-							<Mail class="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-							{loginEmail}
-						</span>
+							{#if actor.kind === 'staff' && staffProfile}
+								<DrawerField label={$t('guardian.fullName')}>
+									<div class={readOnlyFieldClass}>{staffProfile.name}</div>
+								</DrawerField>
+								<DrawerField label={$t('people.role')}>
+									<div class={readOnlyFieldClass}>{$t(`staff.role.${staffProfile.role}`)}</div>
+								</DrawerField>
+								<DrawerField label={$t('people.department')}>
+									<div class={readOnlyFieldClass}>{staffProfile.department || '—'}</div>
+								</DrawerField>
+							{/if}
+
+							<DrawerField label={$t('account.notifications.loginEmail')}>
+								<div class={loginEmailFieldClass}>
+									<span class="flex items-center gap-2">
+										<Mail class="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+										{loginEmail}
+									</span>
+								</div>
+							</DrawerField>
+
+							{#if showWorkEmail}
+								<DrawerField label={$t('account.profile.workEmail')}>
+									<div class={readOnlyFieldClass}>
+										<span class="flex items-center gap-2">
+											<Mail class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+											{workEmail}
+										</span>
+									</div>
+								</DrawerField>
+							{/if}
+						</section>
+
 					</div>
-				</DrawerField>
-
-				{#if showWorkEmail}
-					<DrawerField label={$t('account.profile.workEmail')}>
-						<div class={readOnlyFieldClass}>
-							<span class="flex items-center gap-2">
-								<Mail class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-								{workEmail}
-							</span>
-						</div>
-					</DrawerField>
 				{/if}
-			</section>
-
-			<section class="space-y-2">
-				<a href="/account/security" onclick={() => (open = false)} class="text-sm text-primary">{$t('auth.accountSecurity')}</a>
-				<h3 class="font-sans text-xs uppercase tracking-widest text-muted-foreground">
-					{$t('account.profile.sectionShortcuts')}
-				</h3>
-				<a
-					href={accountHrefWithReturn(detailHref.accountInbox())}
-					class="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm transition hover:bg-secondary"
-					onclick={() => (open = false)}
-				>
-					<span class="flex items-center gap-2">
-						<Inbox class="h-4 w-4 text-muted-foreground" />
-						{$t('account.inbox.title')}
-					</span>
-					<ChevronRight class="h-4 w-4 text-muted-foreground" />
-				</a>
-				<a
-					href={accountHrefWithReturn(detailHref.accountNotifications())}
-					class="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm transition hover:bg-secondary"
-					onclick={() => (open = false)}
-				>
-					<span class="flex items-center gap-2">
-						<Settings2 class="h-4 w-4 text-muted-foreground" />
-						{$t('account.notifications.title')}
-					</span>
-					<ChevronRight class="h-4 w-4 text-muted-foreground" />
-				</a>
-			</section>
+			</div>
 		</div>
 
 		<Dialog.Footer class="shrink-0 border-t border-border bg-secondary/20 px-6 py-4 sm:justify-between">
-			<Button variant="ghost" class="rounded-full" onclick={() => (open = false)}>
+			<Button variant="ghost" class="rounded-full" onclick={close}>
 				{$t('common.close')}
 			</Button>
 			<Button variant="outline" class="rounded-full" onclick={handleLogout}>

@@ -2,12 +2,15 @@
 	import type { TimetableSetupTab } from '../../../src/routes/(app)/configuration/tools/components/TimetableGenerationSetupTabs.svelte';
 	import type { TimetableGenerationStep } from '../../../src/routes/(app)/configuration/tools/lib/tools-workflow';
 	import type { TimetablePlanningPageState } from '../../../src/routes/(app)/configuration/tools/timetable-planning-page.svelte';
+	import ConfirmModal from '../../../src/lib/components/ui/ConfirmModal.svelte';
+	import { setLang, t } from '../../../src/lib/i18n';
+	import { provideDirtyWork } from '../../../src/lib/interaction/dirty-work.svelte';
 	import SchoolTimetableGenerationModal from '../../../src/routes/(app)/configuration/tools/components/SchoolTimetableGenerationModal.svelte';
-	import { setLang } from '../../../src/lib/i18n';
 	import { academicContext } from './academic-context.svelte';
 
+	const dirtyWork = provideDirtyWork();
 	let open = $state(true);
-	let phase = $state<TimetableGenerationStep>('setup');
+	let phase = $state<TimetableGenerationStep>('selection');
 	let setupTab = $state<TimetableSetupTab>('subjects');
 	const requests = $state<unknown[]>([]);
 	let finish = () => {};
@@ -34,8 +37,13 @@
 
 <button data-testid="fixture-open" onclick={() => {
 	open = true;
-	phase = 'setup';
+	phase = 'selection';
 }}>Open</button>
+<button data-testid="fixture-finish-later" onclick={() => { setTimeout(finish, 1500); }}>Finish in 1.5 seconds</button>
+<button data-testid="fixture-result" onclick={() => {
+	open = true;
+	phase = 'success';
+}}>Open result address</button>
 <button data-testid="fixture-finish" onclick={() => finish()}>Finish</button>
 <button data-testid="fixture-year" onclick={() => {
 	academicContext.yearId = 'other-year';
@@ -55,3 +63,10 @@
 	onPhaseChange={(next) => { phase = next; }}
 	onSetupTabChange={(next) => { setupTab = next; }}
 	onInvalidPhase={(next) => { phase = next; }} />
+
+<ConfirmModal open={dirtyWork.pending !== null} title={$t('form.discardTitle')} description={$t('form.discardDescription')}
+	confirmLabel={$t('form.discard')} cancelLabel={$t('form.keepEditing')} variant="destructive"
+	onOpenChange={(value) => {
+		if (!value)
+			dirtyWork.cancel();
+	}} onConfirm={() => dirtyWork.discard()} onCancel={() => dirtyWork.cancel()} />

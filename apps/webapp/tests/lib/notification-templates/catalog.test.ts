@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'bun:test';
+import { en } from '$lib/i18n/dictionaries/en';
+import { fr } from '$lib/i18n/dictionaries/fr';
 import {
 	copyTypesForTemplateKey,
 	isNotificationTemplateKey,
@@ -8,6 +9,7 @@ import {
 	previewChannelsForTemplateKey,
 	templateKeyFromPathname,
 } from '$lib/notification-templates/catalog';
+import { describe, expect, it } from 'bun:test';
 
 const BACKEND_VARIABLES: Record<string, readonly string[]> = {
 	'announcement.published': [
@@ -109,6 +111,16 @@ const BACKEND_VARIABLES: Record<string, readonly string[]> = {
 };
 
 describe('notification template catalog', () => {
+	it('explains every supported variable in both locales', () => {
+		for (const variables of Object.values(NOTIFICATION_TEMPLATE_VARIABLES)) {
+			for (const variable of variables) {
+				const key = `notificationTemplates.variable.${variable}`;
+				expect((en as Record<string, string>)[key]?.trim().length).toBeGreaterThan(0);
+				expect((fr as Record<string, string>)[key]?.trim().length).toBeGreaterThan(0);
+			}
+		}
+	});
+
 	it('matches backend placeholder names per template key', () => {
 		expect(Object.keys(BACKEND_VARIABLES).sort()).toEqual([...NOTIFICATION_TEMPLATE_KEYS].sort());
 		for (const key of NOTIFICATION_TEMPLATE_KEYS) {

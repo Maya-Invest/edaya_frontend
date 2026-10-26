@@ -25,8 +25,8 @@ const elevatedGrants = mockGrants(Object.values(NAV_MODULE_DEFS).flatMap(items =
 const schoolCtx = { schoolId: 'sch1', classId: '6a' };
 
 describe('nav-permissions — professeur (phase 3.2)', () => {
-	it('shows school and classes modules only', () => {
-		expect(visibleNavModuleKeys(teacherGrants, schoolCtx)).toEqual(['school', 'classes']);
+	it('shows Inbox, school and classes modules', () => {
+		expect(visibleNavModuleKeys(teacherGrants, schoolCtx)).toEqual(['inbox', 'school', 'classes']);
 	});
 
 	it('keeps personal announcements visible while hiding administrative entries', () => {
@@ -59,8 +59,9 @@ describe('nav-permissions — professeur (phase 3.2)', () => {
 });
 
 describe('nav-permissions — prof principal (phase 3.3)', () => {
-	it('shows school, classes and configuration modules', () => {
+	it('shows Inbox, school, classes and configuration modules', () => {
 		expect(visibleNavModuleKeys(coordinatorGrants, schoolCtx)).toEqual([
+			'inbox',
 			'school',
 			'classes',
 			'configuration',
@@ -78,7 +79,6 @@ describe('nav-permissions — prof principal (phase 3.3)', () => {
 			'activities',
 			'announcements',
 			'events',
-			'marksReview',
 		]);
 	});
 
@@ -104,8 +104,8 @@ describe('nav-permissions — prof principal (phase 3.3)', () => {
 });
 
 describe('nav-permissions — éducateur (phase 3.4)', () => {
-	it('shows school and classes only', () => {
-		expect(visibleNavModuleKeys(educatorGrants, schoolCtx)).toEqual(['school', 'classes']);
+	it('shows Inbox, school and classes', () => {
+		expect(visibleNavModuleKeys(educatorGrants, schoolCtx)).toEqual(['inbox', 'school', 'classes']);
 	});
 
 	it('shows personal announcements alongside permitted school entries', () => {
@@ -124,7 +124,7 @@ describe('nav-permissions — éducateur (phase 3.4)', () => {
 
 describe('nav-permissions — directeur (phase 3.1)', () => {
 	it('shows every module when those actions are granted', () => {
-		expect(visibleNavModuleKeys(elevatedGrants, schoolCtx)).toHaveLength(4);
+		expect(visibleNavModuleKeys(elevatedGrants, schoolCtx)).toHaveLength(5);
 		expect(filterNavItems(SCHOOL_NAV_DEFS, elevatedGrants)).toHaveLength(SCHOOL_NAV_DEFS.length);
 	});
 
@@ -152,6 +152,7 @@ describe('personal communications without administrative grants', () => {
 		expect(filterNavItems(SCHOOL_NAV_DEFS, []).map(item => item.key)).toEqual(['announcements']);
 		expect(canAccessPath('/school/announcements', [])).toBe(true);
 		expect(canAccessPath('/account/inbox', [])).toBe(true);
+		expect(filterNavItems(NAV_MODULE_DEFS.inbox, []).map(item => item.key)).toEqual(['personal']);
 		expect(canAccessPath('/school/staff', [])).toBe(false);
 		expect(canAccessPath('/finance/billing', [])).toBe(false);
 	});

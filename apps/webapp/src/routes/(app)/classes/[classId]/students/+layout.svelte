@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import { authSession } from '$lib/auth/session.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
@@ -11,6 +13,7 @@
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
+	import { untrack } from 'svelte';
 	import {
 		ClassStudentsPageState,
 		setClassStudentsPageState,
@@ -33,6 +36,11 @@
 
 	$effect(() => {
 		classStudentsPage.filters.hydrate(urlFilters);
+	});
+
+	$effect(() => {
+		const scope = JSON.stringify([authSession.subjectId, authSession.schoolId, academicContext.yearId, authSession.grants, classId, classStudentsPage.filters.values.q, classStudentsPage.filters.values.status]);
+		untrack(() => classStudentsPage.selection.syncScope(scope));
 	});
 
 	function selectStudent(student: import('$lib/types/school').Student) {

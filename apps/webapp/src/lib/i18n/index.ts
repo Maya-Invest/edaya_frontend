@@ -1,5 +1,6 @@
 import type { Lang } from './dictionaries';
 import { browser } from '$app/environment';
+import { readPreference, writePreference } from '$lib/preferences/storage';
 import { derived, writable } from 'svelte/store';
 import { dictionaries } from './dictionaries';
 
@@ -8,7 +9,7 @@ export type { Lang } from './dictionaries';
 function initialLang(): Lang {
 	if (!browser)
 		return 'fr';
-	const stored = localStorage.getItem('lang');
+	const stored = readPreference('local', 'lang');
 	return stored === 'fr' || stored === 'en' ? stored : 'fr';
 }
 
@@ -16,7 +17,7 @@ export const lang = writable<Lang>(initialLang());
 
 lang.subscribe((l) => {
 	if (browser) {
-		localStorage.setItem('lang', l);
+		writePreference('local', 'lang', l);
 		document.documentElement.lang = l;
 	}
 });

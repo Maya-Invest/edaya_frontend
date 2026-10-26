@@ -2,6 +2,8 @@
 	import type { AllocationMode, AllocationPlan, AllocationPreview } from '$lib/api/finance-types';
 	import type { StudentBilling } from '$lib/types/school';
 
+	import { academicContext } from '$lib/academic/context.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -29,6 +31,9 @@
 	let busy = $state(false);
 	let mode = $state<AllocationMode>('targeted');
 	let targetedAmount = $state('');
+	let previewGeneration = 0;
+	let previewLoading = $state(false);
+	let previewFailed = $state(false);
 	let preview = $state<AllocationPreview | null>(null);
 
 	const parsedMajor = $derived(parseMajorInput(targetedAmount));
@@ -46,7 +51,7 @@
 		return { mode: 'fifo' };
 	}
 
-	const canSubmit = $derived(Boolean(account) && (mode === 'fifo' || targetedMinor > 0));
+	const canSubmit = $derived(Boolean(account) && !!preview && !previewLoading && !previewFailed && (mode === 'fifo' || targetedMinor > 0));
 
 	function resetForm() {
 		mode = 'targeted';
@@ -61,23 +66,36 @@
 	});
 
 	async function refreshPreview() {
-		if (!account) {
-			preview = null;
+		const generation = ++previewGeneration;
+		preview = null;
+		previewFailed = false;
+		if (!open || !account)
 			return;
+		previewLoading = true;
+		try {
+			const result = await billingPage.performPreviewAccountAllocationQuery({
+				accountId: account.id,
+				allocation: allocationPlan(),
+			});
+			if (generation === previewGeneration && open)
+				preview = result;
 		}
-		preview = await billingPage.performPreviewAccountAllocationQuery({
-			accountId: account.id,
-			allocation: allocationPlan(),
-		});
+		catch {
+			if (generation === previewGeneration && open)
+				previewFailed = true;
+		}
+		finally {
+			if (generation === previewGeneration)
+				previewLoading = false;
+		}
 	}
 
 	$effect(() => {
-		if (!open || !account) {
-			return;
-		}
-		void mode;
-		void targetedMinor;
+		void academicContext.scopeGeneration;
 		void refreshPreview();
+		return () => {
+			previewGeneration += 1;
+		};
 	});
 
 	async function submit() {
@@ -142,6 +160,11 @@
 			</Label>
 			<Input type="number" min="0" step="any" bind:value={targetedAmount} />
 		</div>
+	{/if}
+	{#if previewLoading}
+		<p role="status">{$t('dataState.loading')}</p>
+	{:else if previewFailed}
+		<div role="alert"><p>{$t('dataState.error')}</p><Button variant="outline" onclick={refreshPreview}>{$t('dataState.retry')}</Button></div>
 	{/if}
 	{#if preview}
 		<div class="rounded-xl border border-border px-3 py-2 text-sm">

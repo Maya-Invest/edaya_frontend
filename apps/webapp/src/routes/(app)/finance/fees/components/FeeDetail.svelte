@@ -19,6 +19,7 @@
 	import AssignFeeFormModal from '../../billing/components/AssignFeeFormModal.svelte';
 	import FinanceOverview from '../../components/FinanceOverview.svelte';
 	import { getFeesPageState } from '../fees-page.svelte';
+	import FeeAutoBilling from './FeeAutoBilling.svelte';
 
 	const { fee }: { fee: Fee } = $props();
 	const state = getFeesPageState();
@@ -70,8 +71,9 @@
 	<DrawerField label={$t('finance.description')}><p class="whitespace-pre-wrap text-sm">{fee.description || '—'}</p></DrawerField>
 	<div class="grid gap-4 sm:grid-cols-2">
 		<DrawerField label={$t('fee.amount')}><p>{formatMinorUnits(fee.amount, fee.currency, $locale)}</p></DrawerField>
-		<DrawerField label={$t('fee.enrollmentMode')}><p>{$t(`fee.enrollmentMode.${fee.enrollmentMode}`)}</p></DrawerField>
+
 	</div>
+	<FeeAutoBilling {fee} />
 	<DrawerField label={$t('finance.installments')}>
 		{#each fee.billingTerms?.installments ?? [] as installment, i (i)}
 			<p class="flex justify-between gap-3 border-b border-border py-3 text-sm"><span>{installment.label}</span><span>{installment.percentage}% · {installment.dueDate?.slice(0, 10) ?? '—'}</span></p>

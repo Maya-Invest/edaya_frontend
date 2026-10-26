@@ -1,11 +1,11 @@
-import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
-import { describe, expect, it } from 'bun:test';
 import {
 	loadBillingPageData,
 	loadFeesPageData,
 	loadPaymentPageData,
 } from '$lib/api/finance-data';
 import { createRecordingSchoolClient, entityListRequests } from '$tests/support/recording-school-client';
+import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
+import { describe, expect, it } from 'bun:test';
 
 const academicYearId = 'year-1';
 
@@ -22,7 +22,7 @@ const catalogService = {
 	defaultPrice: 1000,
 	currency: 'XOF',
 	status: 'active',
-	enrollmentMode: 'mandatory',
+	autoBilling: { mode: 'off' },
 	billingTerms: { kind: 'one_time', installments: [] },
 };
 

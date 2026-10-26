@@ -5,10 +5,37 @@ import { backendBranch, digest, environment, gitEnvironment, hashes, root, run, 
 export interface ClientRecord {
   formatVersion: 1
   backendCommit: string
+  identityCommit?: string
   schemaFingerprint: string
   artifacts: Record<string, string>
   generator: string
   cacheKey: string
+}
+/** Older backend revisions resolve this package from a sibling repository. */
+export async function prepareIdentityClient(backend: string, target: string, managed: boolean, execute = run): Promise<string | undefined> {
+  const manifest = JSON.parse(readFileSync(resolve(backend, 'package.json'), 'utf8')) as { overrides?: Record<string, string> }
+  const dependency = manifest.overrides?.['@maya-invest/edaya-identity-client']
+  if (!dependency?.startsWith('file:'))
+    return undefined
+  if (dependency !== 'file:../edaya_identity/package/identity-client')
+    throw new Error('Unsupported backend identity-client path')
+  const identity = resolve(backend, '../edaya_identity')
+  if (managed) {
+    const env = gitEnvironment(process.env.IDENTITY_CHECKOUT_TOKEN)
+    if (!existsSync(resolve(identity, '.git')))
+      await execute(['git', 'clone', '--no-checkout', 'https://github.com/Maya-Invest/edaya_identity.git', identity], { quiet: true, env })
+    else if (await execute(['git', 'status', '--porcelain'], { cwd: identity, quiet: true }))
+      throw new Error('Identity checkout has modified source; preserve changes before preparing the client')
+    await execute(['git', 'fetch', 'origin', backendBranch(target)], { cwd: identity, quiet: true, env })
+    const commit = sha(await execute(['git', 'rev-parse', 'FETCH_HEAD'], { cwd: identity, quiet: true }))
+    await execute(['git', 'checkout', '--detach', commit], { cwd: identity, quiet: true })
+  }
+  if (!existsSync(resolve(identity, '.git')) || !existsSync(resolve(identity, 'package/identity-client/package.json')))
+    throw new Error('This backend requires a clean sibling edaya_identity checkout containing package/identity-client; use managed client preparation or provide that checkout')
+  const commit = sha(await execute(['git', 'rev-parse', 'HEAD'], { cwd: identity, quiet: true }))
+  if (await execute(['git', 'status', '--porcelain'], { cwd: identity, quiet: true }))
+    throw new Error('Identity checkout has modified source; preserve changes before preparing the client')
+  return commit
 }
 export function clientOptions(args: string[]): {
   target: string
@@ -52,8 +79,9 @@ export async function acquireClient(target = 'staging', backendRoot?: string, ov
   }
   const commit = sha(await run(['git', 'rev-parse', 'HEAD'], { cwd: backend, quiet: true }))
   await verifyBackend(backend, process.env.CI_BACKEND_SHA ?? commit)
+  const identityCommit = await prepareIdentityClient(backend, target, backend === resolve(root, '.ci/edaya_backend'))
   const generator = digest(readFileSync(import.meta.filename))
-  const cacheKey = digest(JSON.stringify([commit, generator, Bun.version, digest(readFileSync(resolve(backend, 'bun.lock'))), digest(readFileSync(resolve(root, 'bun.lock')))]))
+  const cacheKey = digest(JSON.stringify([commit, identityCommit, generator, Bun.version, digest(readFileSync(resolve(backend, 'bun.lock'))), digest(readFileSync(resolve(root, 'bun.lock')))]))
   const cache = resolve(root, '.cache/clients', cacheKey)
   const output = resolve(root, '.generated/api-client')
   const restore = (directory: string, record: ClientRecord) => {
@@ -64,7 +92,7 @@ export async function acquireClient(target = 'staging', backendRoot?: string, ov
   }
   if (existsSync(resolve(cache, 'record.json'))) {
     const record = JSON.parse(readFileSync(resolve(cache, 'record.json'), 'utf8')) as ClientRecord
-    if (record.cacheKey === cacheKey && record.backendCommit === commit && JSON.stringify(record.artifacts) === JSON.stringify(hashes(resolve(cache, 'client'))))
+    if (record.cacheKey === cacheKey && record.backendCommit === commit && record.identityCommit === identityCommit && JSON.stringify(record.artifacts) === JSON.stringify(hashes(resolve(cache, 'client'))))
       return restore(resolve(cache, 'client'), record)
   }
   await run(['bun', 'install', '--frozen-lockfile', '--ignore-scripts'], { cwd: backend })
@@ -74,13 +102,15 @@ export async function acquireClient(target = 'staging', backendRoot?: string, ov
   mkdirSync(resolve(cache, 'client'), { recursive: true })
   for (const name of ['src', 'dist', 'package.json'])
     cpSync(resolve(backend, 'package/api-client', name), resolve(cache, 'client', name), { recursive: true })
-  const record: ClientRecord = { formatVersion: 1, backendCommit: commit, schemaFingerprint: digest(readFileSync(resolve(backend, 'tooling/repo/fixtures/openapi.json'))), artifacts: hashes(resolve(cache, 'client')), generator, cacheKey }
+  const record: ClientRecord = { formatVersion: 1, backendCommit: commit, identityCommit, schemaFingerprint: digest(readFileSync(resolve(backend, 'tooling/repo/fixtures/openapi.json'))), artifacts: hashes(resolve(cache, 'client')), generator, cacheKey }
   writeJson(resolve(cache, 'record.json'), record)
   return restore(resolve(cache, 'client'), record)
 }
 export function checkClient(installed = true): ClientRecord {
   const record = JSON.parse(readFileSync(resolve(root, '.generated/client.json'), 'utf8')) as ClientRecord
   sha(record.backendCommit)
+  if (record.identityCommit !== undefined)
+    sha(record.identityCommit)
   if (record.generator !== digest(readFileSync(import.meta.filename)))
     throw new Error('Client preparation changed; run generate client')
   if (record.formatVersion !== 1 || JSON.stringify(hashes(resolve(root, '.generated/api-client'))) !== JSON.stringify(record.artifacts))

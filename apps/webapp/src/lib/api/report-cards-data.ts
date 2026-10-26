@@ -207,6 +207,7 @@ export function mapReportCardDefinitions(
 	sources: Pick<ClassSubjectsSources, 'subjectsRaw'>,
 ): ReportCardDefinition[] {
 	return definitionsRaw.map(definition => ({
+		isDefault: definition.isDefault,
 		revision: definition.revision,
 		passThreshold: definition.passThreshold,
 		description: definition.description,
@@ -316,8 +317,8 @@ export function mapReportCardResults(
 			gradingPolicyRevision: result.gradingPolicyRevision,
 			revisedDraft: 'revisedDraft' in result && result.revisedDraft ? mapReportCardResults([result.revisedDraft], definitions, sources)[0] : undefined,
 			overallAverage: result.overallAverage ?? undefined,
-			classRank: result.rank ?? 0,
-			classSize: result.classSize ?? 0,
+			classRank: result.rank ?? undefined,
+			classSize: result.classSize ?? undefined,
 			sectionResults: mapSectionResults(
 				(result.sectionResults ?? []) as ApiSectionResult[],
 				sources,

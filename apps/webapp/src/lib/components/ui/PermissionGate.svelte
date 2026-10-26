@@ -12,8 +12,6 @@
 		gradeLevelId,
 		subjectId,
 		assessmentId,
-		tooltip = 'Action non autorisée',
-		mode = 'hide',
 		children,
 	}: {
 		permission: PermissionCode;
@@ -32,6 +30,6 @@
 	const allowed = $derived(hasPermission(permission, { classId, subject, activityId, studentId, gradeLevelId, subjectId, assessmentId }));
 </script>
 
-{#if allowed || mode === 'disable'}
-	{@render children?.({ disabled: !allowed, title: allowed ? undefined : tooltip })}
+{#if allowed}
+	{@render children?.({ disabled: false, title: undefined })}
 {/if}

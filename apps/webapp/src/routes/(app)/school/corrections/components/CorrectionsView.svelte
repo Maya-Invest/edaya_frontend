@@ -110,7 +110,13 @@
 </script>
 
 <div class="animate-fade-in">
-	<ListPageHeader eyebrow={$t('corrections.title')} title={$t(queue.total === 1 ? 'corrections.countOne' : 'corrections.count', { n: queue.total })}>
+	<ListPageHeader
+		filterCount={activeFilters + Number(Boolean(workflow))}
+		onResetFilters={() => {
+			const url = new URL($page.url);
+			for (const key of ['workflow', 'status', 'classGroupId', 'teacherSubjectId', 'studentId', 'from', 'to', 'offset', 'correction', 'action']) url.searchParams.delete(key);
+			void appGoto(url.pathname + url.search, { replaceState: true, keepFocus: true, noScroll: true });
+		}} eyebrow={$t('corrections.title')} title={$t(queue.total === 1 ? 'corrections.countOne' : 'corrections.count', { n: queue.total })}>
 		{#snippet search()}
 			<ListSearchField value={searchFilter.values.search} oninput={event => searchFilter.patch({ search: event.currentTarget.value })} placeholder={$t('corrections.search')} class="w-full sm:w-64" />
 		{/snippet}
@@ -124,6 +130,8 @@
 				<div class="space-y-2"><Label for="correction-from">{$t('corrections.from')}</Label><Input id="correction-from" type="date" value={$page.url.searchParams.get('from') || ''} onchange={event => navigate('from', event.currentTarget.value)} /></div>
 				<div class="space-y-2"><Label for="correction-to">{$t('corrections.to')}</Label><Input id="correction-to" type="date" value={$page.url.searchParams.get('to') || ''} onchange={event => navigate('to', event.currentTarget.value)} /></div>
 			</FilterPanel>
+		{/snippet}
+		{#snippet context()}
 			{#if workflow === 'grades' || workflow === 'report_comments'}<AcademicPeriodSelector />{/if}
 		{/snippet}
 	</ListPageHeader>
@@ -156,7 +164,7 @@
 	if (!open && !busy)
 		navigate('correction', '', false);
 }}>
-	<Dialog.Content class="fixed inset-y-0 left-auto right-0 top-0 flex h-dvh max-h-dvh w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none p-0 md:w-1/2">
+	<Dialog.Content class="fixed inset-y-0 left-auto right-0 top-0 flex h-dvh max-h-dvh w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none p-0 lg:w-1/2">
 		{#if queue.detail}
 			<div class="flex shrink-0 items-center justify-between gap-3 border-b border-border p-4"><Dialog.Title class="text-sm font-medium">{$t('corrections.title')}</Dialog.Title><Button variant="ghost" onclick={() => navigate('correction', '', false)} disabled={busy}>{$t('common.close')}</Button></div>
 			<div class="min-h-0 flex-1 space-y-5 overflow-y-auto break-words p-5">

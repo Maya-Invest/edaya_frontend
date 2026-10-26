@@ -1,10 +1,10 @@
-import { describe, expect, it } from 'bun:test';
+import { CONFIG_ITEMS, FINANCE_ITEMS, NAV_MODULE_ITEMS, SCHOOL_ITEMS } from '$lib/navigation';
 import { isOnboardingStepRegression, shouldBlockStaleOnboardingNavigation } from '$lib/navigation/app-navigation';
-import { CONFIG_ITEMS, FINANCE_ITEMS, SCHOOL_ITEMS } from '$lib/navigation';
+import { describe, expect, it } from 'bun:test';
 
 describe('navigation route map', () => {
 	it('resolves every school, finance, and configuration entry', () => {
-		expect(SCHOOL_ITEMS.find(item => item.key === 'marksReview')?.href).toBe('/school/corrections');
+		expect(NAV_MODULE_ITEMS.inbox.find(item => item.key === 'marksReview')?.href).toBe('/school/corrections');
 		expect(SCHOOL_ITEMS.every(item => item.href.startsWith('/'))).toBe(true);
 		expect(FINANCE_ITEMS.every(item => item.href.startsWith('/'))).toBe(true);
 		expect(CONFIG_ITEMS.every(item => item.href.startsWith('/'))).toBe(true);

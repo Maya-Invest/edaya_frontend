@@ -367,7 +367,7 @@
 			<div class="grid gap-3 sm:grid-cols-2">
 				<div class="space-y-1.5">
 					<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-						{$t('eval.outOf')}
+						{$t('eval.maxScore')}
 					</Label>
 					<Input type="number" min="1" step="0.5" bind:value={maxScore} />
 				</div>

@@ -291,6 +291,18 @@ export function listChannelsForTemplateKey(key: NotificationTemplateKey): Notifi
 	return isInvitationTemplateKey(key) ? ['email'] : ['in_app', 'email', 'push', 'sms'];
 }
 
+/** Effective channels only; absence of a document must not imply default settings. */
+export function enabledChannelsForTemplateKey(document: SchoolNotificationTemplatesRow | null | undefined, key: NotificationTemplateKey): NotificationSendChannel[] | null {
+	if (!document)
+		return null;
+	if (isInvitationTemplateKey(key))
+		return readInvitationTemplateEntry(document) ? ['email'] : null;
+	const entry = readEventTemplateEntry(document, key);
+	if (!entry)
+		return null;
+	return ['in_app' as const, ...(['email', 'push', 'sms'] as const).filter(channel => entry[NOTIFICATION_CHANNEL_CATALOG[channel].flag])];
+}
+
 export function copyTypeForChannel(channel: NotificationSendChannel): NotificationCopyType {
 	return NOTIFICATION_CHANNEL_CATALOG[channel].type;
 }

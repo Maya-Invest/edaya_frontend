@@ -8,7 +8,7 @@ The application shell consists of navigation, global header, main content, one i
 
 Term selection must appear beside the academic content it scopes, with dates in its options; it is not a collection facet. A missing year or term must have an explicit state and must not display the previous scope's data. Workspace changes must invalidate affected reads and drafts without silently transferring them to another school, person or year.
 
-At 1024px and above, navigation is a desktop sidebar. Below 1024px it is a focus-managed sheet, initially closed, dismissed by navigation, Escape or outside activation. Its state must not overwrite the desktop expansion preference. Main content uses the remaining viewport width.
+At the desktop viewport breakpoint in [design-language §2](design-language-spec.md#2-measurable-composition), navigation is a sidebar. Below it, navigation is a focus-managed sheet, initially closed, dismissed by navigation, Escape or outside activation. Its state must not overwrite the desktop expansion preference. Main content uses the remaining viewport width.
 
 ### 1.1 Named specialized compositions
 
@@ -30,6 +30,7 @@ These exceptions replace only the named composition; authorization, state, copy 
 | X-PERMISSION-ORDER | Staff Permissions binding-row menu: Move up/Move down immediately reorders and re-resolves, with pending/error feedback; first/last boundaries disable the impossible direction | Explicit ordering command without editable drawer fields |
 | X-GRADE-LOOKUP | Grade-scale disclosure: labeled sample input with read-only matched mention/code; no save or mutation | A calculation preview, not an editor |
 | X-DATE-COLLECTION | Daily attendance day collection: omit free-text search, keep date-range/status facets in Filter and the collection menu | Civil date is the row identity |
+| X-TEMPLATE-RESET-REVIEW | Notification-template collection menu: neutral Reset all templates first opens consequence review, before Export CSV; the final reset confirmation alone is destructive | Retains the primary collection action while separating review from execution; all other destructive entries remain last |
 | X-DESIGN-SPECIMEN | Development-only `/__design`: side-by-side component variants and state selectors without production navigation/mutations | Visual inspection requires multiple simultaneous specimens |
 
 Specialized body composition must not authorize extra colors, button variants, permission shortcuts or unsupported actions.
@@ -44,7 +45,7 @@ Activity log belongs under Configuration → Tools, not Inbox. Tools navigation 
 
 ### 1.3 Account dialog
 
-The account trigger must open one account dialog, with Profile, Notifications and Security sections in that order. From 1024px its container is at most 64rem wide and fits the viewport with 24px outer gutters; content occupies the left region and a 14rem section-navigation rail occupies the right. Below 1024px it is full-screen with section navigation above content. This container width is an X-ACCOUNT exception, not a wider default form: inner forms retain their assigned 32rem/48rem maximum widths, bounded by the content region.
+The account trigger must open one account dialog, with Profile, Notifications and Security sections in that order. From 1024px its container is at most 64rem wide and fits the viewport with 24px outer gutters; content occupies the left region and a 14rem section-navigation rail occupies the right. Below 1024px it is full-screen with section navigation above content. This container width is an X-ACCOUNT exception, not a wider default form: inner forms retain their default/wide maximum widths from [design-language §2](design-language-spec.md#2-measurable-composition), bounded by the content region.
 
 The dialog header contains account identity and a persistent Close. The content region scrolls vertically; section navigation and Close remain reachable at short heights and 200% text, without fixed text heights or clipped labels. At enlarged text, navigation may wrap within its region. Reading and keyboard order must follow the displayed layout; navigation uses contextual labels and a current-section indicator. Selecting a section focuses its heading after any dirty-work guard succeeds. Close restores the invoking control and underlying route/collection state.
 
@@ -62,9 +63,9 @@ Every standard collection must use this order:
 
 `Title · count                         Search   Filter   ···`
 
-Title/count is left aligned. Search, a compact Filter button and the collection menu are right aligned with 8px gaps. Below 768px, the title is the first row; the toolbar is the second, with search filling remaining space beside the two action targets. A description, when required to explain scope, appears once beneath the title. Counts must distinguish matching total, loaded rows and selected rows; an unknown total must not be fabricated.
+Title/count is left aligned. Search, a compact Filter button and the collection menu are right aligned. Header spacing, search sizing and wrapping must follow [design-language §2](design-language-spec.md#2-measurable-composition), using the collection’s available content width rather than the viewport, including inside drawers. A description, when required to explain scope, appears once beneath the title. Counts must distinguish matching total, loaded rows and bulk-selected records; an unknown total must not be fabricated.
 
-The primary collection action must be the first eligible item in `···`; it must not appear as a separate header button. Menu groups, in order, are: primary action; selection actions; View, Sort and Columns; Import/Export; other secondary actions. Omit unsupported entries and empty groups. Omit the menu if no entries remain. A permitted but state-blocked primary action remains first, disabled with its reason.
+The primary collection action must be the first eligible item in `···`; it must not appear as a separate header button. Menu groups, in order, are: primary action; selection actions; View and Sort; Import/Export; other secondary actions. Omit unsupported entries and empty groups. Omit the menu if no entries remain. A permitted but state-blocked primary action remains first, disabled with its reason.
 
 All facets belong in one Filter panel, including any former highest-frequency facet. Controls apply immediately; the panel stays open until dismissed. The trigger counts non-default facet fields, excluding search, sort and workspace context. Reset filters restores facet defaults while preserving search and context. The panel must not have Apply/Cancel. Sorting belongs to Sort or sortable table headers; conversation order is an explicitly named domain facet under X-CONVERSATION-COLLECTION. Omit Filter when the feature declares no facets. No empty placeholder controls.
 
@@ -72,27 +73,33 @@ Search must cover the feature's declared matching dataset, not silently just loa
 
 ### 2.2 List
 
-List must use the Subject-list anatomy: one rounded bordered surface, separated full-width rows, a primary identity, optional supporting information and meaningful status/category labels. It must not be a multi-column card grid.
+List must use the Subject-list anatomy: one flat bordered surface with outer corners defined by [design-language §2](design-language-spec.md#2-measurable-composition), separated full-width rows, a primary identity, optional supporting information and meaningful status/category labels. It must not be a multi-column card grid.
 
-Each row has 16px padding; height grows with content. Primary identity uses 14px semibold text. Essential values wrap. A leading avatar or subject marker is permitted only when it conveys identity/category; it must not create a new per-feature layout. Supporting metadata uses 12px text. Dividers appear between rows, not after the last row.
+Row padding and identity typography follow [design-language §2](design-language-spec.md#2-measurable-composition); height grows with content. Essential values wrap. A leading avatar or subject marker is permitted only when it conveys identity/category; it must not create a new per-feature layout. Supporting metadata follows the same typography contract. Dividers appear between rows, not after the last row.
 
 A navigable row has one primary activation region and a trailing chevron. Its checkbox and action menu are independent sibling controls. A collection-only record has no navigation chevron, pointer styling or no-op button. A labeled disclosure may show compact ancillary facts; it must not hide a form or nested workflow.
 
 ### 2.3 Table
 
-Table must use one ordered column definition for headers, cells, sorting and authorized export. Identity is required; selection and actions are structural columns. Rows have 16px horizontal padding and a minimum height of 48px, growing for wrapped values. Numeric columns align right with tabular figures; text aligns left.
+Table must use one ordered column definition for headers, cells, sorting and authorized export. Identity is required. Table actions and selection share one structural rightmost column; entering selection must not insert a leading checkbox column or shift data columns. Header/body geometry, centered targets and utility-column width must follow [design-language §2](design-language-spec.md#2-measurable-composition). Cells must not stack padding around controls. Headers and body rows grow for wrapped or enlarged content. Numeric columns align right with tabular figures; text aligns left.
 
-Available optional columns, default order and sort capability must be declared per collection. Columns offers a searchable grouped checklist, Show all available and Reset to defaults. A field is sortable only when the complete matching dataset can be sorted. An active hidden sort field remains identified above the table. Columns and menus stay outside the horizontal scroll region.
+Available optional columns, default order and sort capability must be declared per collection. In normal mode, the rightmost header contains a `···` trigger with accessible name Customize / Personnaliser; row cells contain record action menus only when the feature permits them and authorized actions remain. Otherwise the utility cell is empty; do not render placeholder ellipses or an inspection-only menu. The cell remains aligned when the column is needed for customization or selection. Customize opens a viewport-bounded portaled panel whose Columns / Colonnes section contains the searchable grouped checklist, Show all available and Reset to defaults. Required columns remain visible. Column customization has no duplicate collection-menu entry or dedicated toolbar above the table. No speculative customization sections are displayed.
+
+In selection mode, the same header cell contains Select loaded rows and the same row cells contain individual checkboxes; customization and record menus are hidden. The header is unchecked, mixed or checked according to selectable loaded rows and is disabled when none exist. Record inspection remains an independent identity target. Exiting selection restores the menus. The rightmost column remains pinned at the visible right edge during horizontal scrolling, with an opaque background matching header/row state and a subtle left divider. It must not obscure the final data column at the scroll endpoint. Menus remain outside the scroll clipping region.
+
+A field is sortable only when the complete matching dataset can be sorted. An active hidden sort field and direction remain identified inline beside the collection title/count, without reinstating a table toolbar. Collections without customization, selection or row actions omit the structural column; otherwise its position and width remain stable. If customization is unavailable, the normal header is labeled Actions without a no-op menu.
 
 At narrow widths, the table remains a keyboard-focusable horizontal scroll region. Essential columns must not disappear automatically and the view must not silently change to List.
 
 ### 2.4 Collection behavior
 
+List and Table must use flat surfaces with the outer corners defined by [design-language §2](design-language-spec.md#2-measurable-composition), row separators and no decorative shadow. Rows and their activation regions must remain square; only the outer container clips the first and last rows to its corners. Individual rows must not be separate rounded cards. Section grouping must use headings and spacing rather than nested card frames. Search retains the action/search capsule; field controls in Filter use the rectangular field treatment.
+
 List and Table are the only entity collection types. Students, Class Students and Activities offer both and default to Table; other features use their assigned view. Switching view preserves scope, search, facets, sort, selection and equivalent information/actions.
 
-An opened record uses a selection highlight distinct from selection checkboxes. Row activation opens inspection; a checkbox changes bulk selection only. Row actions must not trigger either. A header checkbox means Select loaded rows and must say so; all-matching selection is available only when the underlying operation supports it and identifies the full count.
+Open record, bulk selected and keyboard focus are independent states with the treatments in [design-language §3.1](design-language-spec.md#31-collection-row-states). The identity target must identify the open record accessibly. Row activation opens inspection; a checkbox changes bulk selection only. Row actions must not trigger either. A header checkbox means Select loaded rows and must say so; all-matching selection is available only when the underlying operation supports it and identifies the full count.
 
-Selection actions belong to a selection bar immediately above the collection, naming the selected count. Scope/search/facet changes clear selection. Opening/closing inspection or changing view does not. Loss of permission removes affected selection. Export matching and Export selected must have distinct labels and scopes.
+Selection actions belong to a selection bar immediately above the collection, present only in selection mode even when its count is zero. It names the selected count and offers eligible bulk actions, Clear selection and Exit selection. Clear selection retains the mode; Exit selection clears selected IDs and restores normal controls. Entry into selection mode belongs to the collection menu. Scope/search/facet changes clear selection. Opening/closing inspection or changing view does not. Loss of permission removes affected selection. Export matching and Export selected must have distinct labels and scopes.
 
 Scalable collections must append batches with infinite loading, retain existing content during refresh/detail navigation, and offer Retry for a failed next batch. Filter/scope changes reset the result generation and discard late responses. There are no numbered pagination controls.
 
@@ -111,7 +118,7 @@ The drawer contains, in order:
 
 The identity summary must make a direct-linked record understandable without its collection. Repeating essential identity is permitted; repeating list columns as the entire drawer is forbidden. No duplicate hero/header inside tabs, global Save/Cancel, or redundant Close footer.
 
-Desktop drawers occupy half the viewport from 1024px; below that they fill the viewport. Chrome, identity/actions and tab navigation form one accessible fixed region; the main content is one vertical scroller. At short heights or 200% text, the identity/actions may scroll within that same body while Chrome/Close remains reachable. Independent body scrollers require X-TEACHER-AGENDA; tables retain horizontal scrolling.
+Drawer width and viewport breakpoint follow [design-language §2](design-language-spec.md#2-measurable-composition). Chrome, identity/actions and tab navigation form one accessible fixed region; the main content is one vertical scroller. At short heights or 200% text, the identity/actions may scroll within that same body while Chrome/Close remains reachable. Independent body scrollers require X-TEACHER-AGENDA; tables retain horizontal scrolling.
 
 ### 3.2 Content grammar
 
@@ -124,7 +131,7 @@ Desktop drawers occupy half the viewport from 1024px; below that they fill the v
 | Review | Current and proposed typed values, reason, affected records, consequences and decision state |
 | Summary | Clearly scoped figures with labels, units and consistent precision |
 
-Essentials must be expanded first. Secondary technical/audit facts belong in a labeled disclosure, collapsed initially. Section order is the feature contract's order. Do not place a separate card around every fact. A fact grid uses two columns only at content width of at least 480px, otherwise one column; long descriptions and addresses span the full width.
+Essentials must be expanded first. Secondary technical/audit facts belong in a labeled disclosure, collapsed initially. Section order is the feature contract's order. Do not place a separate card around every fact. A fact grid follows the content-width threshold in [design-language §2](design-language-spec.md#2-measurable-composition); long descriptions and addresses span the full width.
 
 An essential missing value must display Not provided, Not configured, Unavailable or Restricted according to meaning. Optional empty decorative sections may be omitted; authorized empty related collections remain visible with their count and explicit empty state. Denied sections must not show a false zero. Entire unauthorized domains/tabs are omitted; partially authorized content uses Restricted without leaking hidden totals.
 
@@ -136,7 +143,7 @@ Tabs use human domain labels and child routes. Each tab owns its loading and err
 
 ### 3.4 Read-only content and actions
 
-Drawer bodies must not contain editable fields, field toggles or open forms. Bounded changes open a form; substantial entry opens a task workspace. X-REVIEW-DECISION permits explicit single-step lifecycle actions, not arbitrary inline field editing.
+Drawer bodies must not contain editable fields, field toggles or open forms. Bounded changes open a form; substantial entry opens a task workspace. X-REVIEW-DECISION permits only its named single-step lifecycle decisions. X-PERMISSION-ORDER permits only Move up / Move down on Staff → Permissions profile-binding rows, preserving the feature’s authorization, ordering, pending/error and revision semantics. Neither exception permits general inline field editing.
 
 Record actions belong to the identity header. Section/related-collection actions belong in their scoped `···`, with the primary action first. Sub-record actions belong in that row's menu. A row shortcut may duplicate a record action only with the same label, scope, eligibility and outcome; do not repeat it in unrelated sections.
 
@@ -144,11 +151,15 @@ Record actions belong to the identity header. Section/related-collection actions
 
 ### 4.1 Bounded forms and confirmations
 
-Create/edit forms, relationship pickers, single mark entry/correction, single-record attendance changes, and reason/confirmation steps use modals. The default maximum width is 32rem. Profile forms, permission forms with impact review, incident resolution, subject/chapter configuration and report-model structure forms use the explicitly assigned 48rem wide form. Other forms must use 32rem.
+Create/edit forms, relationship pickers, single mark entry/correction, single-record attendance changes, and reason/confirmation steps use modals. Widths follow [design-language §2](design-language-spec.md#2-measurable-composition). Profile forms, permission forms with impact review, incident resolution, subject/chapter configuration and report-model structure forms are assigned the wide variant. All other bounded forms use the default variant.
 
-Modal content is a bounded flex column with persistent header and footer and a scrolling middle region. At narrow widths it fits the viewport with 16px gutters; at short heights/200% text the middle scrolls and all actions remain reachable. Labels are persistent; optional editable fields say Optional. Requiredness and constraints derive from the domain contract. Help precedes errors; errors are adjacent to their field and summarized for non-field failures.
+Modal content is a bounded flex column with persistent header and footer and a scrolling middle region. Dialog corners, viewport gutters and controls follow [design-language §2](design-language-spec.md#2-measurable-composition) and [§3](design-language-spec.md#3-control-treatments); drawers and full-screen tasks remain square. Pending submits retain their label and geometry with the reserved spinner slot; ongoing-action text belongs in the announced form/task status area. At narrow widths it fits the viewport with the shared gutters; at short heights/200% text the middle scrolls and all actions remain reachable. Labels are persistent; optional editable fields say Optional. Requiredness and constraints derive from the domain contract. Help precedes errors; errors are adjacent to their field and summarized for non-field failures.
 
 Validate touched fields on blur, revalidate failed fields on change, and validate all fields on submit. Focus the first invalid field. Server rejection preserves editable values. Cancel precedes the action-specific submit button; confirmations name the action and consequence rather than using a generic Confirm label. Duplicate submission is disabled while pending; field values must not silently rebase during review.
+
+Ordinary create/edit forms initially focus the first enabled editable field. While content loads, focus the heading; move to the first enabled editable field after loading only if focus has remained on that heading. Destructive confirmations initially focus Cancel. Their destructive command requires explicit activation of its confirmation button; Enter in a text field must not confirm implicitly.
+
+Enter in an ordinary single-line field submits through the same validation path as the submit button. Multiline editors retain newline behavior; an open picker/select consumes Enter for its own operation. IME composition must not submit. Grading retains its feature-owned Enter/Shift+Enter navigation. Initial-focus rules do not replace first-invalid focus, pending-submit protection, dirty dismissal, topmost Escape handling or restoration to the invoking target.
 
 ### 4.2 Focused task workspace
 
@@ -177,13 +188,14 @@ Dirty dismissal, including Close, Back, backdrop and Escape, must ask Discard ch
 | No records | State the scoped entity collection is empty; name the available create action in its menu |
 | No matches | State that search/filters found no matches; offer Clear search / Reset filters as applicable |
 | No access | Explicit access state; no misleading empty collection or unauthorized mutation control |
+| Unavailable | Unsupported or missing capability/historical data, distinct from denied access, failed requests and successful empty results; Retry only when a meaningful read or capability recheck exists |
 | Load failure | Localized explanation and Retry; no fabricated empty success |
 | Mutation failure | Inline form/task error plus feedback; preserve drafts and permit safe retry |
 | Saved, refresh failed | Confirm saved outcome, explain stale display and offer read retry; never replay the write automatically |
 
 Unauthorized actions must be hidden. Authorized actions prevented by current business state remain disabled with a visible/focus-accessible reason. Empty menus are omitted. Server eligibility remains authoritative, including direct-linked forms and changed contexts.
 
-Each interactive target is at least 44px. Every icon-only control has an accessible contextual name. Record activation is a real link (Enter); checkboxes toggle with Space; neither is nested inside another interactive target. Table row navigation must not replace native table semantics. Tab links follow document order, identify the current page, and wrap or scroll with keyboard access; the Filter trigger restores focus on dismissal. Menu triggers support Enter/Space and menu items support arrow navigation, Home/End and Escape. Keyboard order follows visual order. Menus use menu semantics, keyboard navigation, Escape and focus restoration; selection does not depend on hover. Dialogs contain focus and Escape affects only the topmost surface. Announce meaningful load/save/error changes without repeatedly reading the whole collection.
+Every interactive target must meet [design-language §2](design-language-spec.md#2-measurable-composition). Every icon-only control has an accessible contextual name. Record activation is a real link (Enter); checkboxes toggle with Space; neither is nested inside another interactive target. Table row navigation must not replace native table semantics. Tab links follow document order, identify the current page, and wrap or scroll with keyboard access; the Filter trigger restores focus on dismissal. Menu triggers support Enter/Space and menu items support arrow navigation, Home/End and Escape. Keyboard order follows visual order. Menus use menu semantics, keyboard navigation, Escape and focus restoration; selection does not depend on hover. Dialogs contain focus and Escape affects only the topmost surface. Announce meaningful load/save/error changes without repeatedly reading the whole collection.
 
 At 200% text and narrow/short viewports, essential content must wrap, controls must remain reachable, and no fixed text height may clip information. Use reduced-motion alternatives. Long tables, tabs and previews must provide keyboard-accessible overflow without hiding essential content.
 

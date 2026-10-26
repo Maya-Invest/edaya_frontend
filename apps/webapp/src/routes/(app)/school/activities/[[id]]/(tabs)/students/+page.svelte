@@ -13,6 +13,7 @@
 	import { drawerTabRouteCacheKey } from '$lib/detail-route-patterns';
 	import { t } from '$lib/i18n';
 	import { Plus, Trash2 } from '$lib/icons';
+	import { runSelectionOperation } from '$lib/interaction/selection-operation';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { writeModalSurface } from '$lib/modal/modal-url';
 	import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
@@ -43,6 +44,16 @@
 	const addOpen = bindUrlModal(modals, 'add-students');
 	const removeOpen = bindUrlModal(modals, 'remove-enrollment');
 	let studentIds = $state<string[]>([]);
+	let pickerSession = 0;
+	$effect(() => {
+		void addOpen.open;
+		void activityId;
+		void academicContext.scopeGeneration;
+		pickerSession += 1;
+		return () => {
+			pickerSession += 1;
+		};
+	});
 	let busy = $state(false);
 	let removeBusy = $state(false);
 
@@ -126,28 +137,32 @@
 	}
 
 	async function confirmAddStudents() {
-		if (!activity || studentIds.length === 0 || busy) {
+		if (!activity || studentIds.length === 0 || busy)
 			return;
-		}
-
+		const targetId = activity.id;
+		const generation = academicContext.scopeGeneration;
+		const session = pickerSession;
+		const current = () => session === pickerSession && addOpen.open && activityId === targetId && academicContext.scopeGeneration === generation;
 		busy = true;
-		let added = 0;
-		for (const studentId of studentIds) {
-			const ok = await activitiesPage.enrollStudent({
-				activityId: activity.id,
+		try {
+			const result = await runSelectionOperation(studentIds, studentId => activitiesPage.enrollStudent({
+				activityId: targetId,
 				studentId,
 				status: 'pending',
-			});
-			if (ok) {
-				added += 1;
+			}), current);
+			if (!current())
+				return;
+			studentIds = result.remaining;
+			if (result.succeeded.length > 0) {
+				toast.success(get(t)('activities.enrollStudentsSuccess', { n: result.succeeded.length }));
+				studentsTab.syncFromPage(targetId);
 			}
+			if (result.remaining.length === 0)
+				modals.close();
+			else toast.error(get(t)('common.partialSelection', { n: result.remaining.length }));
 		}
-		busy = false;
-		if (added > 0) {
-			toast.success(get(t)('activities.enrollStudentsSuccess', { n: added }));
-			studentsTab.syncFromPage(activity.id);
-			modals.close();
-			studentIds = [];
+		finally {
+			busy = false;
 		}
 	}
 
@@ -253,6 +268,7 @@
 {/if}
 
 <PickerModal
+	dirty={studentIds.length > 0}
 	bind:open={addOpen.open}
 	title={activity ? $t('activities.addStudentTitle', { name: activity.name }) : $t('activities.addStudent')}
 	description={addStudentsDescription}

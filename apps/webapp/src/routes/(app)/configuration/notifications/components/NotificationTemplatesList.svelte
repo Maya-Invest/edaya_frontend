@@ -3,8 +3,11 @@
 	import type { NotificationSendChannel, NotificationTemplateKey } from '$lib/notification-templates/catalog';
 	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import FilterSelect from '$lib/components/ui/filter-select.svelte';
+	import ListEntityCards from '$lib/components/ui/ListEntityCards.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
+	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
@@ -12,15 +15,17 @@
 	import { t } from '$lib/i18n';
 	import { Pencil, RotateCcw } from '$lib/icons';
 	import { exportMatchingList } from '$lib/list/list-csv-export';
+	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { writeModalSurface } from '$lib/modal/modal-url';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import {
 		listChannelsForTemplateKey,
+		enabledChannelsForTemplateKey,
 		NOTIFICATION_TEMPLATE_CATEGORIES,
 	} from '$lib/notification-templates/catalog';
-	import { cn } from '$lib/utils';
 	import { SvelteURL } from 'svelte/reactivity';
 	import { get } from 'svelte/store';
+	import { matchesNotificationTemplate, notificationListFilters } from '../lib/notifications-list-filters';
 	import { getNotificationModals } from '../notifications-modals.svelte';
 	import { getNotificationsPageState } from '../notifications-page.svelte';
 
@@ -35,6 +40,23 @@
 	const notificationsPage = getNotificationsPageState();
 	const modals = getNotificationModals();
 	const document = $derived(notificationsPage.document);
+
+	const collectionFilters = new ListFiltersState({
+		getUrl: () => $page.url,
+		write: notificationListFilters.write,
+		goto: href => appGoto(href, { replaceState: true, keepFocus: true, noScroll: true }),
+	}, () => notificationListFilters.read($page.url));
+	$effect(() => collectionFilters.hydrate(notificationListFilters.read($page.url)));
+	const groups = $derived(NOTIFICATION_TEMPLATE_CATEGORIES.map(category => ({
+		...category,
+		keys: category.keys.filter(key => matchesNotificationTemplate(key, $t(`notificationTemplates.keys.${key}`), document, collectionFilters.values)),
+	})));
+	const matchingCount = $derived(groups.reduce((count, group) => count + group.keys.length, 0));
+	const columns = $derived([
+		{ key: 'name', label: $t('common.name'), span: 1, card: { zone: 'header' as const, showLabel: false } },
+		{ key: 'channels', label: $t('notificationTemplates.channels'), span: 1, card: { zone: 'body' as const, showLabel: true } },
+		{ key: 'configuration', label: $t('notificationTemplates.configurationState'), span: 1, card: { zone: 'footer' as const, showLabel: true } },
+	]);
 
 	function openEdit(key: NotificationTemplateKey) {
 		const next = new SvelteURL($page.url);
@@ -52,8 +74,23 @@
 <div class="animate-fade-in">
 	<ListPageHeader
 		eyebrow={$t('notificationTemplates.eyebrow')}
-		title={$t('notificationTemplates.title')}
+		title={`${$t('notificationTemplates.title')} (${matchingCount})`}
+		filterCount={Number(collectionFilters.values.channel !== 'all')}
+		onResetFilters={() => collectionFilters.patchImmediate({ channel: 'all' })}
 	>
+		{#snippet search()}
+			<ListSearchField value={collectionFilters.values.q} placeholder={$t('common.search')} oninput={event => collectionFilters.patch({ q: event.currentTarget.value })} onCommit={() => collectionFilters.syncNow()} />
+		{/snippet}
+		{#snippet filters()}
+			<label class="flex flex-col gap-2 text-sm">
+				<span>{$t('notificationTemplates.channels')}</span>
+				<FilterSelect aria-label={$t('notificationTemplates.channels')} value={collectionFilters.values.channel} options={[
+					{ value: 'all', label: $t('filter.all') },
+					...(['in_app', 'email', 'push', 'sms'] as const).map(channel => ({ value: channel, label: $t(`notificationTemplates.channel.${channel}`) })),
+				]} onchange={channel => collectionFilters.patchImmediate({ channel })} />
+			</label>
+			<p class="text-xs text-muted-foreground">{$t('notificationTemplates.configurationUnavailable')}</p>
+		{/snippet}
 		{#snippet primary()}
 			<PermissionGate permission="SCHOOL_LIFECYCLE_MANAGE">
 				{#snippet children({ disabled })}
@@ -71,81 +108,55 @@
 			</PermissionGate>
 		{/snippet}
 		{#snippet more()}
-			<ListMoreMenu
-				exportOnly
-				onExport={() => void exportMatchingList({
-					filename: 'notification-templates.csv',
-					headers: ['category', 'name', 'key', 'channels'],
-					loadAll: async () => NOTIFICATION_TEMPLATE_CATEGORIES.flatMap(category => category.keys.map(key => [
-						get(t)(`notificationTemplates.categories.${category.key}`),
-						get(t)(`notificationTemplates.keys.${key}`),
-						key,
-						channelLabel(key),
-					])),
-				})}
-			/>
+			<PermissionGate permission="SCHOOL_LIFECYCLE_MANAGE">
+				<ListMoreMenu
+					exportOnly
+					onExport={() => void exportMatchingList({
+						filename: 'notification-templates.csv',
+						headers: ['category', 'name', 'key', 'channels'],
+						loadAll: async () => groups.flatMap(category => category.keys.map(key => [
+							get(t)(`notificationTemplates.categories.${category.key}`),
+							get(t)(`notificationTemplates.keys.${key}`),
+							key,
+							channelLabel(key),
+						])),
+					})}
+				/>
+			</PermissionGate>
 		{/snippet}
 	</ListPageHeader>
 
-	<PermissionGate permission="SCHOOL_LIFECYCLE_MANAGE" mode="disable">
-		{#snippet children({ disabled })}
-			<div class="space-y-8">
-				<p class="max-w-3xl text-sm text-muted-foreground">
-					{$t('notificationTemplates.intro')}
-				</p>
-
-				{#each NOTIFICATION_TEMPLATE_CATEGORIES as category (category.key)}
-					<section class="space-y-3">
-						<h2 class="font-display text-lg font-semibold">
-							{$t(`notificationTemplates.categories.${category.key}`)}
-						</h2>
-						<div class="grid gap-3 lg:grid-cols-2">
-							{#each category.keys as key (key)}
-								{@const isSelected = key === selectedKey}
-								<article
-									data-testid="notification-template-card"
-									data-template-key={key}
-									class={cn(
-										'rounded-2xl border bg-card p-5 shadow-soft transition-colors',
-										isSelected ? 'border-primary/40 bg-primary/5' : 'border-border',
-									)}
-								>
-									<div class="mb-3 flex items-start justify-between gap-3">
-										<button
-											type="button"
-											class="min-w-0 flex-1 text-left"
-											onclick={() => onSelect?.(key)}
-										>
-											<h3 class={cn('font-display font-semibold', isSelected && 'text-primary')}>
-												{$t(`notificationTemplates.keys.${key}`)}
-											</h3>
-											<p class="mt-1 font-sans tabular-nums text-[11px] text-muted-foreground">
-												{key}
-											</p>
-										</button>
-										<RowActionMenu>
-											<RowActionMenuItem
-												disabled={disabled}
-												onclick={() => openEdit(key)}
-											>
-												<Pencil class="h-4 w-4" />
-												{$t('common.edit')}
-											</RowActionMenuItem>
-										</RowActionMenu>
-									</div>
-									<button
-										type="button"
-										class="w-full text-left text-xs text-muted-foreground"
-										onclick={() => onSelect?.(key)}
-									>
-										{$t('notificationTemplates.channels')}: {channelLabel(key)}
-									</button>
-								</article>
-							{/each}
-						</div>
+	<PermissionGate permission="SCHOOL_LIFECYCLE_MANAGE">
+		<p class="mb-6 max-w-3xl text-sm text-muted-foreground">{$t('notificationTemplates.intro')}</p>
+		<div class="space-y-6">
+			{#each groups as category (category.key)}
+				{#if category.keys.length}
+					<section class="space-y-4">
+						<h3 class="text-xl font-semibold">{$t(`notificationTemplates.categories.${category.key}`)} ({category.keys.length})</h3>
+						<ListEntityCards {columns} rows={category.keys.map(key => ({ id: key, key }))} highlightId={selectedKey ?? undefined}
+							onRowClick={onSelect ? row => onSelect(row.key) : undefined}>
+							{#snippet field(row, fieldKey)}
+								{#if fieldKey === 'name'}
+									<p class="break-words text-sm font-semibold">{$t(`notificationTemplates.keys.${row.key}`)}</p>
+								{:else if fieldKey === 'channels'}
+									{@const channels = enabledChannelsForTemplateKey(document, row.key)}
+									<span>{channels ? channels.map(channel => $t(`notificationTemplates.channel.${channel}`)).join(' · ') : $t('dataState.unavailable')}</span>
+								{:else}
+									<span>{$t('dataState.unavailable')}</span>
+								{/if}
+							{/snippet}
+							{#snippet actions(row)}
+								<RowActionMenu>
+									<RowActionMenuItem disabled={!document} onclick={() => openEdit(row.key)}>
+										<Pencil class="h-4 w-4" />{$t('common.edit')}
+									</RowActionMenuItem>
+								</RowActionMenu>
+							{/snippet}
+						</ListEntityCards>
 					</section>
-				{/each}
-			</div>
-		{/snippet}
+				{/if}
+			{/each}
+			{#if matchingCount === 0}<p role="status" class="p-4 text-sm">{$t('collection.noMatches')}</p>{/if}
+		</div>
 	</PermissionGate>
 </div>

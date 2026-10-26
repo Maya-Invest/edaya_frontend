@@ -396,7 +396,7 @@ export type FeeCategory
 		| 'other';
 
 export type CatalogServiceStatus = 'draft' | 'active' | 'archived';
-export type CatalogEnrollmentMode = 'mandatory' | 'opt_in';
+export type AutoBillingConfiguration = { mode: 'off' | 'all' } | { mode: 'matching'; gradeLevelIds: string[] | null; placementStatusIds: string[] | null };
 export type StudentChargeStatus
 	= | 'pending'
 		| 'partial'
@@ -416,7 +416,7 @@ export interface Fee {
 	amount: number;
 	currency: string;
 	status: CatalogServiceStatus;
-	enrollmentMode: CatalogEnrollmentMode;
+	autoBilling: AutoBillingConfiguration;
 	installmentCount?: number;
 }
 

@@ -55,7 +55,7 @@
 		<div class="rounded-xl bg-primary/10 p-4">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('student.average')}</p>
 			<p class="mt-1 font-display text-2xl">
-				{gradesData.overall ? gradesData.overall.toFixed(1) : '—'}<span class="text-sm text-muted-foreground">
+				{gradesData.overall != null ? gradesData.overall.toFixed(1) : $t('dataState.unavailable')}<span class="text-sm text-muted-foreground">
 					/ 20</span
 				>
 			</p>

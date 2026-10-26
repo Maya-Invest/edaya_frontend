@@ -2,6 +2,8 @@
 	import type { Student } from '$lib/types/school';
 	import type { Snippet } from 'svelte';
 	import { page } from '$app/stores';
+	import { academicContext } from '$lib/academic/context.svelte';
+	import { authSession } from '$lib/auth/session.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
@@ -12,6 +14,7 @@
 	import { registerVersionInvalidation } from '$lib/navigation/invalidate-on-navigate';
 	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { releaseRoutePageQueryOnDestroy } from '$lib/queries/route-page-query-lifecycle.svelte';
+	import { untrack } from 'svelte';
 	import StudentCreateModal from './components/StudentCreateModal.svelte';
 	import StudentsList from './components/StudentsList.svelte';
 	import { studentListUsesFullRoster } from './lib/student-list-filters';
@@ -83,6 +86,11 @@
 			void studentsPage.refreshList();
 		}
 		lastPagedFilterKey = key;
+	});
+
+	$effect(() => {
+		const scope = JSON.stringify([authSession.subjectId, authSession.schoolId, academicContext.yearId, authSession.grants, studentsPage.filters.values.q, studentsPage.filters.values.class, studentsPage.filters.values.status, studentsPage.filters.values.photoReview]);
+		untrack(() => studentsPage.selection.syncScope(scope));
 	});
 
 	function selectStudent(student: Student) {

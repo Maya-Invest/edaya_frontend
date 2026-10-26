@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { attendanceFixtureConfig } from '../fixtures/attendance/config';
 import { chromium } from 'playwright';
 import { createFixtureServer } from './support/fixture-server';
 import { ensurePlaywrightChromium } from '../../scripts/playwright-browsers';
@@ -11,31 +11,7 @@ async function main() {
 	const artifacts = process.env.INTEGRATION_ARTIFACT_DIR ?? '/private/tmp/edaya-attendance-evidence';
 	mkdirSync(artifacts, { recursive: true });
 	const appRoot = new URL('../..', import.meta.url).pathname;
-	const fixture = `${appRoot}/tests/fixtures/attendance`;
-	const mocks = ['$app/stores', '$lib/academic/context.svelte', '$lib/auth/session.svelte', '$lib/permissions', '$lib/api/school-client', '$lib/api/documents-data', '$lib/api/mutations/documents.mutations', '$lib/navigation/app-navigation'];
-	const server = await createFixtureServer({ configFile: false, root: appRoot, cacheDir: 'node_modules/.vite-attendance',
-		optimizeDeps: { entries: [`${fixture}/Harness.svelte`], include: ['@maya-invest/edaya-api-client', 'bits-ui', 'lucide-svelte', 'tailwind-merge'] },
-		plugins: [{ name: 'attendance-fixture', enforce: 'pre',
-			resolveId(source) {
-				if (mocks.includes(source) || source === './app-navigation') return `${fixture}/environment.svelte.ts`;
-				if (source === '$app/environment') return '\0fixture-environment';
-				if (source === 'virtual:attendance-entry') return '\0fixture-entry';
-			},
-			load(id) {
-				if (id === '\0fixture-environment') return 'export const browser = true;';
-				if (id === '\0fixture-entry') return `import '/src/app.css'; import {mount} from 'svelte'; import Harness from '/tests/fixtures/attendance/Harness.svelte'; mount(Harness,{target:document.getElementById('app')});`;
-			},
-			configureServer(vite) {
-				vite.middlewares.use((request, response, next) => {
-					if (!request.url?.startsWith('/classes/')) return next();
-					response.setHeader('Content-Type', 'text/html');
-					response.end('<!doctype html><html><meta name="viewport" content="width=device-width, initial-scale=1"><body><div id="app"></div><script type="module" src="/@id/virtual:attendance-entry"></script></body></html>');
-				});
-			},
-		}, svelte({ configFile: false })],
-		resolve: { alias: [...mocks.map(find => ({ find, replacement: `${fixture}/environment.svelte.ts` })), { find: '$lib', replacement: `${appRoot}/src/lib` }] },
-		server: { fs: { allow: [appRoot, `${appRoot}/../..`] } },
-	}, 'attendance', 14177, '/classes/a/attendance');
+	const server = await createFixtureServer(attendanceFixtureConfig(appRoot), 'attendance', 14177, '/classes/a/attendance');
 	let browser;
 	try {
 		browser = await chromium.launch({ headless: true });
@@ -47,9 +23,11 @@ async function main() {
 		const base = server.url;
 		await page.goto(base);
 		await page.getByTestId('ready').waitFor({ state: 'attached' });
+		await page.getByRole('button', { name: 'More actions', exact: true }).click();
 		await page.getByRole('button', { name: 'New roll call', exact: true }).click();
 		await page.getByRole('dialog').waitFor();
-		assert(page.url().includes('modal=create-roll-call'));
+		assert(page.url().includes('task=attendance-roll-call'));
+		assert(page.url().includes('taskPanel=create'));
 		await page.getByLabel('Attendance for Alice Tremblay', { exact: true }).waitFor();
 		assert(await page.getByTestId('form-modal-submit').isDisabled());
 		await page.getByLabel('Date', { exact: true }).fill('2026-01-01');
@@ -75,9 +53,11 @@ async function main() {
 		await page.getByLabel('Date', { exact: true }).fill('2026-01-01');
 		assert(await page.getByTestId('form-modal-submit').isDisabled());
 		await page.getByRole('button', { name: 'Open existing roll call' }).click();
+		await page.getByRole('button', { name: 'Discard changes', exact: true }).click();
 		await page.getByRole('dialog').waitFor({ state: 'hidden' });
 		await page.goto(base);
 		await page.getByTestId('fail-write').click();
+		await page.getByRole('button', { name: 'More actions', exact: true }).click();
 		await page.getByRole('button', { name: 'New roll call', exact: true }).click();
 		await page.getByLabel('Date', { exact: true }).fill('2026-01-02');
 		await page.getByRole('button', { name: 'Mark all present', exact: true }).click();
@@ -100,15 +80,17 @@ async function main() {
 		assert.equal(persisted.length, 2);
 		assert.deepEqual(persisted[1].attendanceByStudent, { s1: 'present', s2: 'present', s3: 'present' });
 		await page.getByTestId('denied').click();
-		assert(await page.getByRole('button', { name: 'New roll call', exact: true }).isDisabled());
+		assert.equal(await page.getByRole('button', { name: 'New roll call', exact: true }).count(), 0);
 		await page.getByTestId('denied').click();
 		await page.getByTestId('fail-roster').click();
+		await page.getByRole('button', { name: 'More actions', exact: true }).click();
 		await page.getByRole('button', { name: 'New roll call', exact: true }).click();
 		await page.getByRole('alert').filter({ hasText: 'Unable to load the complete' }).waitFor();
 		assert(await page.getByTestId('form-modal-submit').isDisabled());
 		await page.getByTestId('form-modal-cancel').click();
 		await page.getByTestId('fail-roster').click();
 		await page.getByTestId('empty').click();
+		await page.getByRole('button', { name: 'More actions', exact: true }).click();
 		await page.getByRole('button', { name: 'New roll call', exact: true }).click();
 		await page.getByText('No students', { exact: false }).waitFor();
 		assert(await page.getByTestId('form-modal-submit').isDisabled());
@@ -116,6 +98,7 @@ async function main() {
 		await page.getByTestId('empty').click();
 		await page.getByTestId('fr').click();
 		await page.setViewportSize({ width: 390, height: 700 });
+		await page.getByRole('button', { name: 'Plus d’actions', exact: true }).click();
 		await page.getByRole('button', { name: 'Nouvel appel', exact: true }).click();
 		await page.getByRole('dialog').waitFor();
 		await page.getByLabel('Présence de Alice Tremblay', { exact: true }).waitFor();
@@ -131,8 +114,9 @@ async function main() {
 		await page.getByRole('dialog').waitFor({ state: 'hidden' });
 		await page.goto(`${base}?denied=1&modal=create-roll-call`);
 		await page.getByTestId('ready').waitFor({ state: 'attached' });
-		assert(await page.getByRole('button', { name: 'New roll call', exact: true }).isDisabled());
-		assert.equal(await page.getByRole('dialog').count(), 0);
+		assert.equal(await page.getByRole('button', { name: 'New roll call', exact: true }).count(), 0);
+		await page.getByRole('heading', { name: 'Accès refusé', exact: true }).waitFor();
+		assert(await page.getByTestId('form-modal-submit').isDisabled());
 		assert.deepEqual(errors, []);
 		console.log('Attendance browser checks passed: creation, persistence, duplicates, failure drafts, permissions, roster errors, empty roster, FR/mobile and Escape.');
 	}

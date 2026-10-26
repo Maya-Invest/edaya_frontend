@@ -120,11 +120,13 @@
 
 <div class="animate-fade-in space-y-6">
 	<ListPageHeader
+		filterCount={[disciplinePage.filters.values.kind].filter(value => value !== 'all').length}
+		onResetFilters={() => disciplinePage.filters.patchImmediate({ kind: 'all' })}
 		eyebrow={$t('disciplinaryCatalog.subtitle')}
 		title={$t('disciplinaryCatalog.title', { n: filteredActions.length })}
 	>
 		{#snippet search()}
-			<ListSearchField
+			<ListSearchField onCommit={() => disciplinePage.filters.syncNow()}
 				bind:value={disciplinePage.filters.values.q}
 				oninput={() => disciplinePage.filters.scheduleSync()}
 			/>

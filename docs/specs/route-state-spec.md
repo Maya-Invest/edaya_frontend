@@ -12,6 +12,8 @@ Normative for `apps/webapp`. Route/layout state must own entity data, reads and 
 | Smart workflow state | Explicit shared picker/authentication/permission workflow I/O and orchestration | Workflow instance |
 | Presentation | Local field drafts, hover, focus, disclosure and other transient visual state | Mounted component |
 
+Terms acceptance and dialog-open state belong to the authentication workflow instance, never URL parameters or browser persistence. The identity service owns immutable versions and durable account/version receipts. Existing session restoration and token renewal preserve access without a new acceptance prompt.
+
 There must be no session-wide entity hydration or global `detailDataContext`. URL-derived query keys and the version ledger are metadata, not another entity store. I/O, multi-component orchestration and testable business logic must not live in presentation scripts/effects. Entity optimistic patches and rollback belong to the owning state.
 
 The shell must bootstrap schools, years, periods, grade levels, class groups, authorized navigation counts and authentication only. Students, staff, guardians, subjects, permissions, planning, assessments, finance, school life, report results and logbooks load on demand. A full shell refresh is limited to changed shell-shaped school/year/period/class data, never a name, contact, financial or lesson-record edit.
@@ -44,7 +46,7 @@ Only Students, Class Students and Activities accept both collection views, with 
 
 Offsets/cursors, loaded batches, total/unknown-total, load-more status and request generations live in route state, not URLs. Infinite loading appends within the same query generation and deduplicates stable IDs. A failed next batch retains rows and retries that batch. Search/facet/scope changes clear batches, cursor and selection. Same-scope refresh retains valid rows and position until replacement; late previous-query pages must not append.
 
-Bulk selected IDs are transient state, not the drawer's selected record. The header checkbox selects loaded eligible rows and labels that scope. All-matching selection requires explicit server support/count; no unseen selection may be implied. Opening inspection and switching view preserve selection; query/scope changes clear it, permission loss removes ineligible IDs. Mutation effects reconcile deleted/changed rows and counts from authoritative responses.
+Bulk selected IDs are transient state, not the drawer’s open record. Selection mode is transient collection state. Entering it swaps the pinned rightmost table header/menu cells for checkboxes without changing column widths, sort or scroll position. Clear selection empties IDs while retaining the mode; Exit selection empties IDs and exits the mode. Header checked/mixed state derives only from currently selectable loaded rows; zero such rows disables the control. Customization changes preserve selected IDs, query, sorting and scroll position; opening or closing Customize has no query effect. The hidden active sort field/direction remains described beside title/count. Popup dismissal restores focus to its header trigger; exiting selection through its bar restores focus to that trigger when present, otherwise to the collection menu. The header checkbox selects loaded eligible rows and labels that scope. All-matching selection requires explicit server support/count; no unseen selection may be implied. Opening inspection and switching view preserve selection; query/scope changes clear it, permission loss removes ineligible IDs. Mutation effects reconcile deleted/changed rows and counts from authoritative responses.
 
 ## 4. Addressability and history
 
@@ -81,6 +83,8 @@ Loaded position is an anchor record plus offset, not a promise to reuse stale da
 Close, Escape, backdrop, contextual/browser Back, route/tab/scope change and task Return must guard unsaved changes before committing navigation. Discard changes / Keep editing must identify the pending work; secrets must not be serialized to support the guard. Native unload protection may supplement in-app guards. Clean forms dismiss directly. A confirmed save marks its saved values clean even if refresh fails.
 
 Each task must declare its save unit and persisted/unsaved work. Leaving a durable import/server job stops local polling, not server work. An explicit cancel command is available only when the domain supports it and the caller is authorized. Indeterminate in-flight writes must not be labeled cancelled or automatically replayed. Reopening a durable task resolves current server state before enabling further action.
+
+Import progress polling uses the same scope and response-generation guards as detail reads. Permission loss clears private detail. A failed final-detail read remains retryable without replaying the import command.
 
 ## 5. Inspection and independent tabs
 
@@ -124,11 +128,12 @@ Drawers are read-only. Boolean/status toggles are not a general mutation excepti
 | Loading more / failed append | Retain rows, trailing status or Retry; do not replace with empty |
 | No records / no matches | Successful authorized query; distinguish truly empty scope from search/facets, name applicable recovery |
 | Denied | Explicit access state; no empty-success message or forbidden data |
+| Unavailable | Unsupported/missing capability or absent persisted detail; distinct from denied, failed and successful empty reads. Retry only for a meaningful read or capability recheck; never invent a write or fabricate historical values |
 | Failed read | Local error and safe read Retry; unknown values do not become zero |
 | Failed write | Retain draft, restore any optimistic snapshot, explain safe next step |
 | Confirmed write, failed refresh | Saved outcome retained; retry reads only |
 
-Announce relevant outcomes in the active locale without repeatedly announcing the full list. Focus and scroll restoration are state responsibilities shared with the shell, not incidental DOM timing. Server data is authoritative; “Not provided”, “Unavailable”, “Restricted”, zero and false must remain distinguishable through selectors and renderers.
+Announce relevant outcomes in the active locale without repeatedly announcing the full list. Focus and scroll restoration are state responsibilities shared with the shell, not incidental DOM timing. Open record derives from the active inspection target; bulk selected derives from the selection set; keyboard focus belongs to the focused target. They must remain independent through view changes, inspection and return, with presentation from [design-language §3.1](design-language-spec.md#31-collection-row-states). Form opening/loading must use app-shell §4.1 focus rules without stealing focus after user navigation. Keyboard submission must use the existing guarded validation/mutation path; destructive confirmation requires explicit activation and IME composition must never submit. Server data is authoritative; “Not provided”, “Unavailable”, “Restricted”, zero and false must remain distinguishable through selectors and renderers.
 
 ## 9. Browser and authentication boundaries
 
@@ -226,6 +231,8 @@ Participation forms initialize only after their URL target has loaded, retain an
 
 Tools import state must retain `task=import`, `taskTarget` batch identity and allow-listed task step/panel in the URL. State owns settings, server validation revision/digest, polling, file revisions, preview and execution. Closing stops polling only; reopening queries persisted batch state. Settings/file changes invalidate preview. Confirm sends the exact validated revision/digest. Blocked rows remain visible while ready rows run; partial saved outcomes invalidate their domains and never become an all-or-nothing fiction.
 
+Assessment entry must use `task=grade-entry&taskTarget={assessmentId}&taskPanel=entry`; substantive correction entry must use the same task kind with `taskPanel=correction`. The assessment and class must match the authorized detail route. These panels have no task steps. Legacy `modal=request-correction` links must canonicalize to the correction workspace without executing a command. Single-student `modal=grade-entry&modalTarget={studentId}` links must remain bounded forms and must resolve an exact authorized roster member. Individual corrections must use `modal=correct-mark&modalTarget={resultId}` and resolve the exact authorized result in that assessment; unknown or ineligible targets must not fall back to another result.
+
 Grade-entry and class/session-attendance workspaces capture assessment/day/session, school/class/year, roster revision and return context. Separate draft/confirmed/failed units must be visible. Submission, correction, published-result and roster locks remain domain-owned. One daily class command remains one save; per-record operations remain per-record unless the existing command already accepts a batch. A single-record mark/attendance action uses its bounded URL form and the same eligibility.
 
 ### Action and filter consistency
@@ -235,3 +242,9 @@ An action descriptor's key, target, permission, state reason, label and request 
 ## 11. Conformance evidence
 
 State behavior must be verifiable through owner-state/query tests with mocked APIs and focused navigation scenarios. Required cases are: direct links outside loaded batches; reload and Back/Forward; related-record replacement and Back versus Close; dirty form/task exits; stale/aborted scope responses; Filter reset and view/selection continuity; each empty/denied/failure state; confirmed write followed by failed refresh; partial task completion and durable-job reopening; auth/permission changes; account section reload/history/dirty exits with Security independent of school; separate Inbox recipient/count scopes; report-model search/facet reset; activity-log range persistence, school isolation, missing historical values and independently denied related records. Query tests must verify payload scope and request counts, version tests every affected family, and mutation tests no duplicate committed write. Pure helpers and compiled rune-state suites need no UI mount; keyboard/focus/narrow-screen/200% text acceptance requires surface-level verification. Evidence and implementation findings belong outside specs.
+
+### Subject enrolment editor
+
+The existing subject-enrolment Smart workflow serves every entry point. Student drawer `subject-selection` URLs retain their offering target; teaching `subject-roster` URLs retain their subject path. On School/Class student collection paths, `modal=subject-selection` uses the shared class ID as `modalTarget`. Selected student IDs remain transient page state and are validated against the URL class, active year and authorization. Reload without that selection displays reselection guidance and cannot submit. The list modal manager does not own student-detail modal targets.
+
+Reads are bounded to four concurrent student participation queries and reject stale actor/school/year/form responses. Any missing or invalid recipient blocks the full save. Changed pairs use one existing command with captured per-offering revisions and a 500-operation limit. A failed response preserves the exact command identity; an edited command or refreshed revision gets a new identity. Conflicts reload current choices, retain drafts and require an explicit new submission. Confirmed saves invalidate affected families even if a subsequent read fails. Filter/scope changes clear list selection; inspection and view changes retain it. The common editor guards dirty dismissal and pending submissions.

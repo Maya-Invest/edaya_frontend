@@ -1,6 +1,6 @@
 import type {
 	AllocationPlan,
-	CatalogEnrollmentMode,
+	AutoBillingConfiguration,
 	CatalogServiceCategory,
 	OneTimeBillingTerms,
 	PaymentMethod,
@@ -24,7 +24,7 @@ export async function createCatalogServiceMutation(input: {
 	category: CatalogServiceCategory;
 	amount: number;
 	currency?: string;
-	enrollmentMode?: CatalogEnrollmentMode;
+	autoBilling?: AutoBillingConfiguration;
 	billingTerms?: OneTimeBillingTerms;
 	status?: 'draft' | 'active';
 	successMessage?: string;
@@ -49,7 +49,7 @@ export async function createCatalogServiceMutation(input: {
 		name: input.name.trim(),
 		description: input.description ?? undefined,
 		category: input.category,
-		enrollmentMode: input.enrollmentMode ?? 'mandatory',
+		autoBilling: input.autoBilling ?? { mode: 'off' },
 		defaultPrice: input.amount,
 		currency: input.currency?.trim() || currency,
 		billingTerms: input.billingTerms ?? { kind: 'one_time', installments: [] },
@@ -67,7 +67,7 @@ export async function updateCatalogServiceMutation(input: {
 	description?: string | null;
 	category?: CatalogServiceCategory;
 	amount?: number;
-	enrollmentMode?: CatalogEnrollmentMode;
+	autoBilling?: AutoBillingConfiguration;
 	billingTerms?: OneTimeBillingTerms;
 	successMessage?: string;
 }): Promise<boolean> {
@@ -79,7 +79,7 @@ export async function updateCatalogServiceMutation(input: {
 		description: input.description,
 		category: input.category,
 		defaultPrice: input.amount,
-		enrollmentMode: input.enrollmentMode,
+		autoBilling: input.autoBilling,
 		billingTerms: input.billingTerms,
 	}), {
 		successMessage: input.successMessage,

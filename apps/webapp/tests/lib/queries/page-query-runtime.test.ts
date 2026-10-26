@@ -1,16 +1,19 @@
-import { describe, expect, it } from 'bun:test';
 import {
 	composePageQueryIdentity,
 	isCacheablePageQueryResult,
 	isPageQueryAbortError,
 	withAcademicScopeSegment,
 } from '$lib/queries/page-query-runtime';
+import { describe, expect, it } from 'bun:test';
 
 describe('page query runtime', () => {
 	it('treats status-only objects as uncacheable', () => {
 		expect(isCacheablePageQueryResult({ status: 'ready' })).toBe(false);
 		expect(isCacheablePageQueryResult({ status: 'error', errorMessage: 'nope' })).toBe(false);
 		expect(isCacheablePageQueryResult({ status: 'ready', evaluations: [] })).toBe(true);
+		for (const status of ['denied', 'unavailable', 'error', 'loading']) {
+			expect(isCacheablePageQueryResult({ status, evaluations: [] })).toBe(false);
+		}
 	});
 
 	it('includes academic generation in the loaded identity', () => {

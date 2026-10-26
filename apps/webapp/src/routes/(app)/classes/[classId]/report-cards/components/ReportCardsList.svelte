@@ -2,8 +2,9 @@
 	import type { ReportCardResult } from '$lib/types/report-cards';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
-
 	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
+
+	import ReportCardAvailabilityNotice from '$lib/components/school/report-cards/ReportCardAvailabilityNotice.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
@@ -17,7 +18,7 @@
 	import { readClassReportCardListFilters, writeClassReportCardListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
 	import { toast } from '$lib/toast.svelte';
-	import { formatGrade, formatCalculatedGrade } from '$lib/types/report-cards';
+	import { formatPersistedGrade, formatReportRank } from '$lib/types/report-cards';
 	import { cn } from '$lib/utils';
 	import { get } from 'svelte/store';
 	import { getReportCardsPageState } from '../report-cards-page.svelte';
@@ -35,7 +36,6 @@
 	const reportCardsPage = getReportCardsPageState();
 	const initialFilters = $derived(readClassReportCardListFilters($page.url));
 	const results = $derived(reportCardsPage.resultsFor(classId));
-	const scales = $derived(reportCardsPage.scalesFor(classId));
 	const classStudents = $derived(reportCardsPage.studentsFor(classId));
 	const period = $derived(academicContext.period);
 
@@ -175,11 +175,13 @@
 
 <div class="animate-fade-in">
 	<ListPageHeader
+		filterCount={[listFilters.values.status].filter(value => value !== 'all').length}
+		onResetFilters={() => listFilters.patchImmediate({ status: 'all' })}
 		eyebrow="{$t('reportCards.classSubtitle')} · {period?.label ?? '—'}"
 		title={$t('reportCards.studentsCount', { n: filteredStudents.length })}
 	>
 		{#snippet search()}
-			<ListSearchField bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
+			<ListSearchField onCommit={() => listFilters.syncNow()} bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
 		{/snippet}
 		{#snippet filters()}
 			<AcademicPeriodSelector />
@@ -208,6 +210,8 @@
 		{/snippet}
 	</ListPageHeader>
 
+	<ReportCardAvailabilityNotice results={results.filter(result => filteredStudents.some(student => student.id === result.studentId))} />
+
 	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
 		<table class="w-full text-sm">
 			<thead class="border-b border-border bg-secondary/30 text-left">
@@ -222,7 +226,6 @@
 			<tbody>
 				{#each filteredStudents as student (student.id)}
 					{@const result = resultForStudent(student.id)}
-					{@const scale = result ? scales.find(entry => entry.id === result.gradeScaleId) : null}
 					<tr
 						class={cn(
 							'border-b border-border/60 last:border-0',
@@ -239,10 +242,10 @@
 							</button>
 						</td>
 						<td class="px-4 py-3 font-sans tabular-nums">
-							{result?.grading ? formatCalculatedGrade(result.grading) : result && scale ? formatGrade(result.overallAverage, scale) : '—'}
+							{formatPersistedGrade(result?.grading, result?.overallAverage)}
 						</td>
 						<td class="px-4 py-3 font-sans tabular-nums">
-							{result ? `${result.classRank}/${result.classSize}` : '—'}
+							{formatReportRank(result)}
 						</td>
 						<td class="px-4 py-3">
 							{#if result}

@@ -1,5 +1,7 @@
 # Brand inputs and maintenance
 
+Frontend token revision **1.0.2** adds action, field, collection, dialog, menu, badge and message geometry roles alongside the existing interaction colors. Destructive triggers remain outlined; final destructive confirmations use the filled danger role. Busy buttons retain role colors and prevent duplicate activation.
+
 The frontend `tokens.json` is the canonical platform-neutral manifest. Mobile keeps a reviewed local snapshot; frontend verification/builds never read a mobile checkout. The staff webapp is light-only. Dark manifest values support mobile and component compatibility checks; they do not enable a web theme switch.
 
 ## Tokens and assets
@@ -18,6 +20,11 @@ Edit the manifest rather than generated `apps/webapp/src/lib/design-system/token
 Use supplied outlined EDAYA SVG artwork, bundled Poppins headings and Inter UI, existing semantic tokens and reusable components. Full visual requirements live in the [design-language spec](../docs/specs/design-language-spec.md); the [component registry](../docs/specs/shared-components-spec.md) identifies the production building blocks. Styling preserves product behavior, permissions, data and effective layouts.
 
 ## Visual review
+
+The development-only `/__design` page previews the revised geometry through `reference-geometry.css`, scoped to the reference document and its portaled overlays. Its `ReferenceButton` composes the production Button with the proposed fixed status slot. Application routes retain their current styling until this visual review is accepted and the shared primitives adopt the norm. The older `control`, `base`, `surface` and `overlay` radius tokens remain compatibility values; new roles are additive and must be used for the revised geometry. Do not change compatibility values to roll out this preview implicitly.
+
+Review the FR/EN controls, busy toggle, List/Table, Filter, record drawer, short/wide form and focused task examples. The viewport and text-size controls exercise the same reference, including overlays. Text-only enlargement must not multiply fixed spacing; browser zoom remains independent.
+
 
 Use the [screenshot runner](../apps/webapp/tests/README.md#capture-commands) for dated, source-identified runs under ignored `apps/webapp/.screenshots/<run-id>/`. Review relevant FR/EN, compact/wide, focus, error/empty/busy and enlarged-text states. Captures are evidence, not normative requirements or proof that a mutation succeeded.
 

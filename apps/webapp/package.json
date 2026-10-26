@@ -13,7 +13,7 @@
     "check": "bun x --bun svelte-check --tsconfig ./tsconfig.json && bun x --bun tsc --project tsconfig.test.json --noEmit",
     "check:watch": "bun x --bun svelte-check --tsconfig ./tsconfig.json --watch",
     "quality": "bun run lint && bun run check",
-    "test": "bun test tests/lib tests/integration/setup/journey-ledger.test.ts && bun test tests/integration/messaging.test.ts && bun test tests/integration/family-feedback-mutations.test.ts && bun test tests/integration/account-linking.test.ts && bun test tests/integration/timetable-state.test.ts && bun test tests/integration/passwordless-state.test.ts && bun test tests/integration/permission-form-state.test.ts && bun test tests/integration/attendance-creation.test.ts && bun test tests/integration/teacher-timetable-state.test.ts && bun test tests/integration/finance-payment-draft.test.ts && bun test tests/integration/directory-columns.test.ts && bun test tests/integration/shell-bootstrap.test.ts && bun test tests/integration/catalog-mutations.test.ts",
+    "test": "bun test tests/lib tests/integration/setup/journey-ledger.test.ts && bun test tests/integration/messaging.test.ts && bun test tests/integration/family-feedback-mutations.test.ts && bun test tests/integration/account-linking.test.ts && bun test tests/integration/timetable-state.test.ts && bun test tests/integration/passwordless-state.test.ts && bun test tests/integration/permission-form-state.test.ts && bun test tests/integration/attendance-creation.test.ts && bun test tests/integration/session-attendance.test.ts && bun test tests/integration/grading-state.test.ts && bun test tests/integration/teacher-timetable-state.test.ts && bun test tests/integration/finance-payment-draft.test.ts && bun test tests/integration/directory-columns.test.ts && bun test tests/integration/shell-bootstrap.test.ts && bun test tests/integration/catalog-mutations.test.ts && bun test tests/integration/subject-enrollment-state.test.ts",
     "demo:e2e": "bun scripts/demo-dry-run.ts",
     "qa:checklist": "bun scripts/qa-checklist-run.ts",
     "qa:template": "bun scripts/generate-qa-template.ts",
@@ -54,11 +54,8 @@
     "@tiptap/starter-kit": "^3.31.3",
     "bits-ui": "^2.18.1",
     "clsx": "^2.1.1",
-    "exceljs": "^4.4.0",
     "lucide-svelte": "^1.0.1",
-    "papaparse": "^5.5.4",
-    "tailwind-merge": "^3.6.0",
-    "xlsx": "^0.18.5"
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250617.0",
@@ -69,7 +66,6 @@
     "@tailwindcss/typography": "^0.5.19",
     "@types/bun": "^1.3.14",
     "@types/node": "^25.9.2",
-    "@types/papaparse": "^5.5.2",
     "autoprefixer": "^10.5.0",
     "playwright": "1.52.0",
     "postcss": "^8.5.15",

@@ -17,11 +17,11 @@
 </script>
 
 {#if evaluation}
-	<PageQuery {query} cacheKey={drawerTabRouteCacheKey} loadingTitle={$t('eval.tab.grading')}>
+	<PageQuery preserveWhileLoading {query} cacheKey={drawerTabRouteCacheKey} loadingTitle={$t('eval.tab.grading')}>
 		{#snippet children(data)}
 			<DataState status={data.status} errorMessage={data.errorMessage}>
-				<MarksReview />
 				<EvaluationGradingTab {evaluation} {classId} />
+				{#if evaluation.kind !== 'homework'}<MarksReview />{/if}
 			</DataState>
 		{/snippet}
 	</PageQuery>

@@ -3,6 +3,13 @@ import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 export class ListSelectionState<T extends { id: string }> {
 	selectionMode = $state(false);
 	selectedIds = $state<string[]>([]);
+	private scopeKey: string | undefined;
+
+	syncScope(key: string) {
+		if (this.scopeKey !== undefined && this.scopeKey !== key)
+			this.clearSelection();
+		this.scopeKey = key;
+	}
 
 	get selectedSet() {
 		return new SvelteSet(this.selectedIds);

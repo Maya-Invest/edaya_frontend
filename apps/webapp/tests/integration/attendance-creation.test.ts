@@ -1,5 +1,6 @@
 import type { AttendanceDay } from '../../src/lib/types/school';
 import type { SessionAttendanceRow } from '../../src/lib/types/session-detail';
+import { ApiError } from '@maya-invest/edaya-api-client';
 import { plugin } from 'bun';
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import { compileModule } from 'svelte/compiler';
@@ -15,6 +16,8 @@ let allowed = true;
 let failWrite = false;
 let failRefresh = false;
 let failRead = false;
+let readError: Error | undefined;
+let waitForDuplicate: Promise<AttendanceDay | undefined> | undefined;
 let duplicate: AttendanceDay | undefined;
 let persisted: AttendanceDay[] = [];
 let roster: SessionAttendanceRow[] = [];
@@ -29,8 +32,8 @@ mock.module('$lib/permissions', () => ({ hasPermission: () => allowed }));
 mock.module('$lib/modal/modal-state.svelte', () => ({ createUrlSyncedModals: () => ({}) }));
 mock.module('$lib/api/mutations/documents.mutations', () => ({ requestDocumentIssuanceMutation: async () => {} }));
 mock.module('$lib/api/attendance-data', () => ({
-	loadAttendanceRoster: async () => { if (failRead) throw new Error('Unavailable'); return waitForRoster ?? roster; },
-	findAttendanceDayForDate: async () => { if (failRead) throw new Error('Unavailable'); return duplicate; },
+	loadAttendanceRoster: async () => { if (readError) throw readError; if (failRead) throw new Error('Unavailable'); return waitForRoster ?? roster; },
+	findAttendanceDayForDate: async () => { if (failRead) throw new Error('Unavailable'); return waitForDuplicate ?? duplicate; },
 }));
 mock.module('../../src/routes/(app)/classes/[classId]/attendance/lib/attendance-queries', () => ({
 	queryAttendanceListPage: () => {},
@@ -61,6 +64,8 @@ beforeEach(() => {
 	allowed = true;
 	failWrite = failRead = failRefresh = false;
 	duplicate = undefined;
+	readError = undefined;
+	waitForDuplicate = undefined;
 	persisted = [];
 	waitForRoster = undefined;
 	waitForWrite = undefined;
@@ -126,6 +131,7 @@ describe('new daily roll call', () => {
 		expect(requests).toHaveLength(1);
 		expect(versions).toEqual(['attendance']);
 		expect(errors).toEqual(['mutation.savedRefreshFailed']);
+		expect(state.creationOutcome).toBe('saved-refresh-failed');
 	});
 	test('stale roster responses cannot enable submission in another scope', async () => {
 		const state = await page();
@@ -154,3 +160,42 @@ describe('new daily roll call', () => {
 		expect(state.daysFor('a')).toEqual([]);
 	});
 });
+
+ test('close/reopen during duplicate lookup cannot send a stale write', async () => {
+	const state = await page();
+	let resolve!: (value: AttendanceDay | undefined) => void;
+	waitForDuplicate = new Promise(done => { resolve = done; });
+	const saving = state.createRollCall(date, marks);
+	state.cancelRosterLoad();
+	await state.loadCreationRoster();
+	resolve(undefined);
+	expect(await saving).toBeNull();
+	expect(requests).toHaveLength(0);
+	expect(state.creationOutcome).toBeNull();
+ });
+ test('duplicate identity remains available when collection refresh fails', async () => {
+	const state = await page();
+	duplicate = day;
+	failRefresh = true;
+	expect(await state.createRollCall(date, marks)).toBeNull();
+	expect(state.existingCreationDay).toEqual(day);
+	expect(state.creationOutcome).toBe('duplicate');
+	expect(requests).toHaveLength(0);
+ });
+ test('roster states preserve authorization, absence and read failure', async () => {
+	const state = await page();
+	for (const [code, status] of [[403, 'denied'], [404, 'unavailable'], [503, 'error']] as const) {
+		readError = new ApiError(code, {});
+		await state.loadCreationRoster();
+		expect(state.rosterStatus).toBe(status);
+		expect(await state.createRollCall(date, marks)).toBeNull();
+	}
+	readError = undefined;
+	roster = [];
+	await state.loadCreationRoster();
+	expect(state.rosterStatus).toBe('empty');
+	allowed = false;
+	await state.loadCreationRoster();
+	expect(state.rosterStatus).toBe('denied');
+	expect(requests).toHaveLength(0);
+ });

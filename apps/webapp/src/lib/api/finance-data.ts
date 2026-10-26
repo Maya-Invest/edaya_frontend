@@ -33,6 +33,7 @@ import {
 import { mapPeopleData } from '$lib/api/people-data';
 import { safeOptionalEntityList, safeOptionalFetch } from '$lib/api/safe-entity-access';
 import { formatDateInput } from '$lib/date/format';
+import { parseAutoBilling } from '$lib/finance/auto-billing';
 
 type SchoolClient = ReturnType<typeof getBrowserSchoolClient>;
 
@@ -183,7 +184,7 @@ export function mapFees(raw: readonly unknown[]): Fee[] {
 				amount,
 				currency,
 				status: mapCatalogStatus(fee.status),
-				enrollmentMode: fee.enrollmentMode === 'opt_in' ? 'opt_in' : 'mandatory',
+				autoBilling: parseAutoBilling(fee.autoBilling),
 				installmentCount: installments.length,
 			} satisfies Fee;
 		})

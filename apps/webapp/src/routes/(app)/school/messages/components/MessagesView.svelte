@@ -41,7 +41,9 @@
 	}
 </script>
 <div class="animate-fade-in">
-	<ListPageHeader eyebrow={$t('messages.title')} title={$t(state.total === 1 ? 'messages.countOne' : 'messages.count', { n: state.total })}>
+	<ListPageHeader
+		filterCount={activeFilters + Number(state.destination !== 'all')}
+		onResetFilters={() => navigate(undefined, { type: '', status: '', order: '', modal: '' })} eyebrow={$t('messages.title')} title={$t(state.total === 1 ? 'messages.countOne' : 'messages.count', { n: state.total })}>
 		{#snippet filters()}
 			<FilterSelect class="h-9 w-56 rounded-full" aria-label={$t('messages.typeLabel')} value={state.destination} options={destinations} onchange={value => navigate(undefined, { type: value === 'all' ? '' : value, modal: '' })} />
 			<FilterPanel activeCount={activeFilters} class="border-input bg-background">
@@ -85,7 +87,7 @@
 	if (!open)
 		navigate(undefined, { modal: '' });
 }}>
-	<Dialog.Content class="fixed inset-y-0 right-0 left-auto top-0 flex h-dvh max-h-dvh w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none p-0 md:w-1/2">
+	<Dialog.Content class="fixed inset-y-0 right-0 left-auto top-0 flex h-dvh max-h-dvh w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none p-0 lg:w-1/2">
 		{#if detail}
 			<div class="flex h-full flex-col">
 				<div class="flex items-center justify-between border-b border-border p-4"><Dialog.Title>{$t('messages.title')}</Dialog.Title><Button variant="ghost" aria-label={$t('common.close')} onclick={() => navigate(undefined, { modal: '' })}>{$t('common.close')}</Button></div>

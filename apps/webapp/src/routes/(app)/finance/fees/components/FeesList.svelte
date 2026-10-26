@@ -157,9 +157,11 @@
 </script>
 
 <div class="animate-fade-in space-y-6">
-	<ListPageHeader eyebrow={$t('finance.feesCatalog')} title={$t('finance.fees')}>
+	<ListPageHeader
+		filterCount={[listFilters.values.category, listFilters.values.status].filter(value => value !== 'all').length}
+		onResetFilters={() => listFilters.patchImmediate({ category: 'all', status: 'all' })} eyebrow={$t('finance.feesCatalog')} title={$t('finance.fees')}>
 		{#snippet search()}
-			<ListSearchField bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
+			<ListSearchField onCommit={() => listFilters.syncNow()} bind:value={listFilters.values.q} oninput={() => listFilters.scheduleSync()} />
 		{/snippet}
 		{#snippet filters()}
 			<FilterPanel activeCount={Number(listFilters.values.category !== 'all') + Number(statusFilter !== 'all')}>
@@ -224,18 +226,21 @@
 		{#snippet children(data)}
 			<DataState status={data.status} errorMessage={data.errorMessage} preserveShell>
 				<ListEntityTable listKey="FeesList" rows={filteredFees.slice(0, visibleCount)} columns={[
-					{ key: 'name', label: $t('fee.name'), span: 4 },
+					{ key: 'name', label: $t('fee.name'), span: 3 },
 					{ key: 'category', label: $t('fee.category'), span: 2 },
 					{ key: 'status', label: $t('fee.status'), span: 2 },
-					{ key: 'amount', label: $t('fee.amount'), span: 3 },
+					{ key: 'amount', label: $t('fee.amount'), span: 2 },
+					{ key: 'autoBilling', label: $t('fee.autoBilling'), span: 2 },
 					{ key: 'actions', label: '', span: 1 },
 				]} total={filteredFees.length} visibleCount={Math.min(visibleCount, filteredFees.length)} hasMore={visibleCount < filteredFees.length} onLoadMore={() => { visibleCount += 50; }} onRowClick={fee => selectFee(fee.id)}>
 					{#snippet cell(fee, column, _ctx)}
 
 						{#if column.key === 'name'}
-							<div class="col-span-4 min-w-0">
+							<div class="col-span-3 min-w-0">
 								<p class="truncate text-sm font-medium">{fee.name}</p>
 							</div>
+						{:else if column.key === 'autoBilling'}
+							<div class="col-span-2 text-sm">{$t(`fee.autoBilling.${fee.autoBilling.mode}`)}</div>
 						{:else if column.key === 'category'}
 							<div class="col-span-2 text-sm text-foreground/70">
 								{$t(`feeCat.${fee.category}`)}
@@ -245,7 +250,7 @@
 								{$t(`fee.status.${fee.status}`)}
 							</div>
 						{:else if column.key === 'amount'}
-							<div class="col-span-3 text-right font-sans text-sm font-semibold tabular-nums">
+							<div class="col-span-2 text-right font-sans text-sm font-semibold tabular-nums">
 								{formatMinorUnits(fee.amount, fee.currency, $locale)}
 							</div>
 						{:else if column.key === 'actions'}

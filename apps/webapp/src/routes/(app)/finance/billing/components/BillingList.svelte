@@ -62,7 +62,13 @@
 	}
 </script>
 <div class="space-y-6">
-	<ListPageHeader eyebrow={$t('finance.financeEyebrow')} title={$t('finance.billing')}>
+	<ListPageHeader
+		filterCount={[listFilters.classGroupId, listFilters.feeId, listFilters.status, listFilters.due, listFilters.dueFrom, listFilters.dueTo].filter(Boolean).length}
+		onResetFilters={() => {
+			const url = new URL($page.url);
+			for (const key of ['class', 'fee', 'status', 'due', 'dueFrom', 'dueTo']) url.searchParams.delete(key);
+			void appGoto(url.pathname + url.search, { replaceState: true, keepFocus: true, noScroll: true });
+		}} eyebrow={$t('finance.financeEyebrow')} title={$t('finance.billing')}>
 		{#snippet search()}<ListSearchField bind:value={searchText} oninput={() => filter('q', searchText)} />{/snippet}
 		{#snippet filters()}
 			<div class="flex flex-wrap gap-2">

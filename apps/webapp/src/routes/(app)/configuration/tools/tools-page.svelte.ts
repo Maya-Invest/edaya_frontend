@@ -6,16 +6,18 @@ import type {
   ToolsWorkflowSurface,
 } from './lib/tools-workflow';
 import { academicContext } from '$lib/academic/context.svelte';
+import { runMutation } from '$lib/api/mutations/run-mutation';
 import { updateSchoolTimetableDefaultsMutation } from '$lib/api/mutations/school-timetable.mutations';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { fetchSchoolById } from '$lib/api/school-data';
 import { IMPORT_TYPE_DEFINITIONS } from '$lib/import/catalog/import-types';
 import { createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-import { writeModalSurface } from '$lib/modal/modal-url';
+import { writeModalSurface, TASK_QUERY_KEYS } from '$lib/modal/modal-url';
 import { replaceRouteSurface } from '$lib/navigation/route-surface-navigation';
 import { RouteVersionSnapshot } from '$lib/navigation/route-version-snapshot';
 import { hasPermission } from '$lib/permissions';
 import { getContext, setContext } from 'svelte';
+import { SvelteURL } from 'svelte/reactivity';
 import { DataImportState } from './import-state.svelte';
 import { queryToolsListPage } from './lib/tools-queries';
 import {
@@ -34,7 +36,7 @@ const TOOLS_PAGE_STATE_KEY = Symbol('tools-page-state');
 export type { ImportPageSlice };
 
 export class ToolsPageState {
-  readonly importState = new DataImportState();
+  readonly importState = new DataImportState({ runMutation });
   loadSchoolForForm = (...args: Parameters<typeof fetchSchoolById> extends [unknown, ...infer Rest] ? Rest : never) => fetchSchoolById(getBrowserSchoolClient(), ...args);
 
   performUpdateSchoolTimetableDefaults = (...args: Parameters<typeof updateSchoolTimetableDefaultsMutation>) => updateSchoolTimetableDefaultsMutation(...args);
@@ -58,6 +60,7 @@ export class ToolsPageState {
         return allowed;
       },
       owned: TOOL_MODAL_NAMES,
+      queryKeys: TASK_QUERY_KEYS,
       allowedSteps: TOOL_WORKFLOW_STEPS,
       allowedTabs: () => [...this.allowedImportTabs, ...TIMETABLE_SETUP_TABS],
       getUrl,
@@ -80,6 +83,18 @@ export class ToolsPageState {
     const retiredHref = retiredTimetableModalHref(this.getUrl());
     if (retiredHref) {
       replaceRouteSurface(retiredHref);
+      return;
+    }
+    const url = this.getUrl();
+    const legacy = url.searchParams.get('modal');
+    if (legacy === 'import' || legacy === 'generate-timetable') {
+      const clean = new SvelteURL(writeModalSurface(url, { modal: null }), url);
+      replaceRouteSurface(writeModalSurface(clean, {
+        modal: legacy,
+target: url.searchParams.get('modalTarget'),
+        step: url.searchParams.get('modalStep'),
+tab: url.searchParams.get('modalTab'),
+      }, TASK_QUERY_KEYS));
       return;
     }
     this.modals.hydrate();
@@ -114,7 +129,7 @@ export class ToolsPageState {
       step: canonical.step,
       tab: canonical.tab,
       target: canonical.modal === 'import' ? this.modals.target : null,
-    });
+    }, TASK_QUERY_KEYS);
     this.modals.active = canonical.modal;
     if (canonical.modal !== 'import')
 this.modals.target = null;
@@ -125,9 +140,9 @@ this.modals.target = null;
     }
   }
 
-  selectImportBatch(id: string | null) {
+  selectImportBatch(id: string | null, step: string | null = this.modals.step) {
     this.modals.target = id;
-    this.replaceWorkflowSurface({ modal: 'import', step: this.modals.step, tab: this.modals.tab });
+    this.replaceWorkflowSurface({ modal: 'import', step, tab: this.modals.tab });
   }
 
   applySlice(data: ImportPageSlice) {

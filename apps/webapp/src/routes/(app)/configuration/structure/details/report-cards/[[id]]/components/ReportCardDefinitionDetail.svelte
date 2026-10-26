@@ -5,6 +5,7 @@
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { t } from '$lib/i18n';
@@ -96,7 +97,7 @@
 	}
 </script>
 
-<div class="space-y-5">
+<div class="space-y-6">
 	<DrawerEntityHeader
 		name={live.name}
 		summary="{level?.name ?? '—'} · {scale?.name ?? '—'}"
@@ -104,7 +105,7 @@
 		{#snippet chips()}
 			<span
 				class={cn(
-					'rounded-full px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase',
+					'rounded-full px-2 py-0.5 font-sans tabular-nums text-xs uppercase',
 					live.status === 'published'
 						? 'bg-accent/15 text-accent-foreground'
 						: 'bg-secondary text-muted-foreground',
@@ -139,36 +140,50 @@
 		{/snippet}
 	</DrawerEntityHeader>
 
-	<div>
-		<div class="mb-3 flex items-end justify-between gap-3">
-			<p class="font-sans tabular-nums text-[10px] uppercase tracking-widest text-muted-foreground">
-				{$t('reportCards.sections')}
-			</p>
-			<p class="font-sans tabular-nums text-[10px] uppercase tracking-widest text-muted-foreground">
-				{$t('reportCards.coefficient')}
-			</p>
-		</div>
-		<PermissionGate permission="REPORT_CARD_CONFIGURE">{#snippet children({ disabled, title })}<Button class="mb-3" size="sm" variant="outline" {disabled} {title} onclick={() => modals.open('add-section')}>{$t('reportCards.addSection')}</Button>{/snippet}</PermissionGate>
+	<section class="space-y-4">
+		<h2 class="text-xl font-semibold">{$t('reportCards.modelSummary')}</h2>
+		<dl class="grid gap-4 text-sm sm:grid-cols-2">
+			<div><dt class="text-xs text-muted-foreground">{$t('common.name')}</dt><dd class="break-words">{live.name}</dd></div>
+			<div><dt class="text-xs text-muted-foreground">{$t('gradeScales.description')}</dt><dd class="whitespace-pre-wrap break-words">{live.description || $t('value.notProvided')}</dd></div>
+			<div><dt class="text-xs text-muted-foreground">{$t('classGroups.gradeLevel')}</dt><dd>{level?.name ?? $t('dataState.unavailable')}</dd></div>
+			<div><dt class="text-xs text-muted-foreground">{$t('reportCards.academicYear')}</dt><dd>{academicContext.years.find(year => year.id === live.academicYearId)?.label ?? $t('dataState.unavailable')}</dd></div>
+			<div><dt class="text-xs text-muted-foreground">{$t('reportCards.publicationStatus')}</dt><dd>{live.status === 'published' ? $t('academic.published') : $t('academic.draft')}</dd></div>
+			<div><dt class="text-xs text-muted-foreground">{$t('reportCards.defaultModel')}</dt><dd>{live.isDefault === undefined ? $t('dataState.unavailable') : live.isDefault ? $t('reportCards.defaultModel') : $t('reportCards.otherModel')}</dd></div>
+		</dl>
+	</section>
+
+	<section class="space-y-4">
+		<ListPageHeader level="section" title={$t('reportCards.sections')}>
+			{#snippet primary()}
+				<PermissionGate permission="REPORT_CARD_CONFIGURE"><Button variant="outline" onclick={() => modals.open('add-section')}>{$t('reportCards.addSection')}</Button></PermissionGate>
+			{/snippet}
+		</ListPageHeader>
 		<div class="overflow-hidden rounded-2xl border border-border p-3">
 			<ReportCardSectionTree sections={live.sections} onAction={(action, id) => modals.open(action, { target: id })} />
 		</div>
-	</div>
+	</section>
 
-	{#if scale}
-		<div class="rounded-2xl border border-border bg-secondary/20 px-4 py-3">
-			<p class="font-sans tabular-nums text-[10px] uppercase tracking-widest text-muted-foreground">
-				{$t('reportCards.gradeScaleSummary')}
-			</p>
-			<p class="mt-1 font-display text-sm font-semibold">{policy?.scale.name ?? scale.name} · {$t('grading.inherit')}</p>
-			{#if policy}<p class="mt-1 text-sm text-muted-foreground">{policy.aggregateLabel} · {$t(policy.mode === 'mention-first' ? 'grading.mention' : 'grading.numeric')} · {policy.scale.maxScore}</p>{/if}
-			<p class="mt-1 text-sm text-muted-foreground">
-				{$t('reportCards.passThreshold')} : {live.passThreshold == null ? $t('reportCards.noPassThreshold') : `${formatGrade(live.passThreshold, policy?.scale ?? scale)} / ${(policy?.scale ?? scale).maxScore}`}
-			</p>
-			{#if scale.description}
-				<p class="mt-2 text-xs text-muted-foreground">{scale.description}</p>
-			{/if}
-		</div>
-	{/if}
+	<section class="space-y-4">
+		<h2 class="text-xl font-semibold">{$t('reportCards.gradingContext')}</h2>
+		{#if scale}
+			<div class="rounded-2xl border border-border bg-secondary/20 px-4 py-3">
+				<p class="font-sans tabular-nums text-xs uppercase tracking-widest text-muted-foreground">
+					{$t('reportCards.gradeScaleSummary')}
+				</p>
+				<p class="mt-1 font-display text-sm font-semibold">{policy?.scale.name ?? scale.name} · {$t('grading.inherit')}</p>
+				{#if policy}<p class="mt-1 text-sm text-muted-foreground">{policy.aggregateLabel} · {$t(policy.mode === 'mention-first' ? 'grading.mention' : 'grading.numeric')} · {policy.scale.maxScore}</p>{/if}
+				<p class="mt-1 text-sm text-muted-foreground">
+					{$t('reportCards.passThreshold')} : {live.passThreshold == null ? $t('reportCards.noPassThreshold') : `${formatGrade(live.passThreshold, policy?.scale ?? scale)} / ${(policy?.scale ?? scale).maxScore}`}
+				</p>
+				{#if scale.description}
+					<p class="mt-2 text-xs text-muted-foreground">{scale.description}</p>
+				{/if}
+			</div>
+		{:else}
+			<p class="text-sm">{$t('dataState.unavailable')}</p>
+		{/if}
+		<p class="text-xs text-muted-foreground">{$t('reportCards.revision')}: <span class="tabular-nums">{live.revision ?? $t('dataState.unavailable')}</span></p>
+	</section>
 </div>
 
 <ConfirmModal

@@ -35,6 +35,9 @@
 	--brand-sky: 213.1169 93.9024% 67.8431%;
 	--brand-amber: 43.2558 96.4126% 56.2745%;
 	--brand-slate: 215.3846 16.3180% 46.8627%;
+	--primary-pressed: 225.9310 70.7317% 40.1961%;
+	--destructive-hover: 0.0000 70.0000% 35.2941%;
+	--destructive-pressed: 0.0000 62.8205% 30.5882%;
 	--space-xs: 4px;
 	--space-sm: 8px;
 	--space-md: 12px;
@@ -46,6 +49,13 @@
 	--radius-base: 14px;
 	--radius-surface: 16px;
 	--radius-overlay: 24px;
+	--radius-action: 22px;
+	--radius-field: 8px;
+	--radius-collection: 0px;
+	--radius-dialog: 12px;
+	--radius-menu: 8px;
+	--radius-badge: 4px;
+	--radius-message: 12px;
 	--motion-fast: 150ms;
 	--motion-normal: 200ms;
 	--motion-enter: 250ms;

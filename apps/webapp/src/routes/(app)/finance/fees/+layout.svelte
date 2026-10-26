@@ -27,6 +27,12 @@
 			});
 		}
 	});
+	$effect(() => {
+		const feeId = $page.params.feeId || feesPage.autoBillingFeeId;
+		const scopeKey = feesPage.autoBilling.scopeKey;
+		if (feeId && scopeKey)
+			return untrack(() => feesPage.autoBilling.watch(feeId));
+	});
 	registerVersionInvalidation(feesPage);
 	releaseRoutePageQueryOnDestroy(() => $page.url);
 

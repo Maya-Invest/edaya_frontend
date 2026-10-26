@@ -1,10 +1,8 @@
 import { clampCardColumnsPerRow } from '$lib/list/list-entity-card-layout';
+import { readPreference, writePreference } from '$lib/preferences/storage';
 
 export function loadCardColumnsPreference(key: string, fallback = 3): number {
-	if (typeof localStorage === 'undefined') {
-		return fallback;
-	}
-	const raw = localStorage.getItem(key);
+	const raw = readPreference('local', key);
 	if (!raw) {
 		return fallback;
 	}
@@ -16,8 +14,5 @@ export function loadCardColumnsPreference(key: string, fallback = 3): number {
 }
 
 export function saveCardColumnsPreference(key: string, columnsPerRow: number) {
-	if (typeof localStorage === 'undefined') {
-		return;
-	}
-	localStorage.setItem(key, String(clampCardColumnsPerRow(columnsPerRow)));
+	writePreference('local', key, String(clampCardColumnsPerRow(columnsPerRow)));
 }

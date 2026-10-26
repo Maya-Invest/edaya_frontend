@@ -7,7 +7,7 @@ export type CatalogServiceCategory
 		| 'other';
 
 export type CatalogServiceStatus = 'draft' | 'active' | 'archived';
-export type CatalogEnrollmentMode = 'mandatory' | 'opt_in';
+export type AutoBillingConfiguration = { mode: 'off' | 'all' } | { mode: 'matching'; gradeLevelIds: string[] | null; placementStatusIds: string[] | null };
 export type ChargeStatus = 'pending' | 'partial' | 'paid' | 'overdue' | 'cancelled' | 'waived';
 export type PaymentKind = 'receipt' | 'disbursement';
 export type PaymentStatus = 'recorded' | 'reversed';
@@ -38,7 +38,7 @@ export interface CatalogServiceRecord {
 	name: string;
 	description?: string | null;
 	category: CatalogServiceCategory;
-	enrollmentMode: CatalogEnrollmentMode;
+	autoBilling: AutoBillingConfiguration;
 	billingKind?: 'one_time';
 	defaultPrice: number | MoneyValue;
 	currency: string;

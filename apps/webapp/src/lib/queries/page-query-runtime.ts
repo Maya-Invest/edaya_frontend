@@ -34,6 +34,8 @@ export function isPageQueryAbortError(error: unknown): boolean {
 }
 
 export function isCacheablePageQueryResult(data: object): boolean {
+	if ('status' in data && data.status !== 'ready' && data.status !== 'empty')
+		return false;
 	return Object.keys(data).some(key => key !== 'status' && key !== 'errorMessage');
 }
 

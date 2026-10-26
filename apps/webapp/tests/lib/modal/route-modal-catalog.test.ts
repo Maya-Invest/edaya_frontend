@@ -24,9 +24,9 @@ const STUDENT_DETAIL_MODALS = [
 const routeCases = [
 	['school-messages-detail', '/school/messages/thread', ['reply']],
 	['authenticated-app', '/dashboard', ['account-profile']],
-	['school-students-list', '/school/students', ['create']],
+	['school-students-list', '/school/students', ['create', 'subject-selection']],
 	['school-students-detail', '/school/students/student-1/grades', [...STUDENT_DETAIL_MODALS, 'generate-document', 'void-document', 'annual-report-card']],
-	['class-students-list', '/classes/class-1/students', ['create']],
+	['class-students-list', '/classes/class-1/students', ['create', 'subject-selection']],
 	['class-students-detail', '/classes/class-1/students/student-1/profile', [...STUDENT_DETAIL_MODALS, 'generate-document', 'void-document', 'annual-report-card']],
 	['school-guardians-list', '/school/guardians', ['create']],
 	['school-guardians-detail', '/school/guardians/guardian-1', ['create', 'edit-profile', 'guardian-relationship', 'delete']],
@@ -112,7 +112,7 @@ const routeCases = [
 	[
 		'class-evaluations-detail',
 		'/classes/class-1/evaluations/evaluation-1/grading',
-		['edit', 'delete', 'attach', 'grade-entry'],
+		['edit', 'delete', 'attach', 'grade-entry', 'correct-mark', 'submit-marks', 'request-correction', 'approve-correction', 'reject-correction', 'withdraw-correction'],
 	],
 	[
 		'class-teaching-detail',
@@ -195,7 +195,7 @@ const routeCases = [
 		['create'],
 	],
 	['finance-fees', '/finance/fees', ['create', 'edit', 'archive', 'activate']],
-	['finance-fee-detail', '/finance/fees/fee-1', ['edit', 'archive', 'activate', 'assign-fee']],
+	['finance-fee-detail', '/finance/fees/fee-1', ['edit', 'archive', 'activate', 'assign-fee', 'retry-billing']],
 	['finance-billing-list', '/finance/billing', ['assign-fee']],
 	['finance-billing-detail', '/finance/billing/billing-1', ['assign-fee', 'payment', 'allocate', 'unallocate', 'waive', 'adjust', 'cancel']],
 	['finance-payments', '/finance/payment', ['payment', 'reverse', 'refund']],

@@ -33,6 +33,7 @@ import {
 	CLASS_NAV_DEFS,
 	CONFIG_NAV_DEFS,
 	FINANCE_NAV_DEFS,
+	INBOX_NAV_DEFS,
 	SCHOOL_NAV_DEFS,
 
 } from '$lib/navigation/nav-catalog';
@@ -41,7 +42,7 @@ export type { LucideIcon };
 
 export const DASHBOARD_HREF = appPath('/(app)/dashboard');
 
-export type ModuleKey = 'dashboard' | 'school' | 'classes' | 'finance' | 'configuration';
+export type ModuleKey = 'dashboard' | 'inbox' | 'school' | 'classes' | 'finance' | 'configuration';
 
 export const MODULES: {
 	key: Exclude<ModuleKey, 'dashboard'>;
@@ -49,6 +50,7 @@ export const MODULES: {
 	icon: LucideIcon;
 	href: ResolvedPathname;
 }[] = [
+	{ key: 'inbox', tKey: 'module.inbox', icon: Mail, href: appPath('/(app)/account/inbox/[[id]]') },
 	{ key: 'school', tKey: 'module.school', icon: Building2, href: appPath('/(app)/school/students/[[id]]') },
 	// Placeholder only — AppSidebar resolve the real class id at click time.
 	{ key: 'classes', tKey: 'module.classes', icon: LayoutGrid, href: DASHBOARD_HREF },
@@ -69,6 +71,8 @@ export interface ContextItem {
 type RouteId = Parameters<typeof appPath>[0];
 
 const SCHOOL_ICONS: Record<string, LucideIcon> = {
+	personal: Mail,
+	marksReview: ClipboardCheck,
 	messages: Mail,
 	students: Users,
 	guardians: Shield,
@@ -113,6 +117,7 @@ const CONFIG_ICONS: Record<string, LucideIcon> = {
 };
 
 const SCHOOL_ROUTES: Record<string, RouteId> = {
+	personal: '/(app)/account/inbox/[[id]]',
 	messages: '/(app)/school/messages/[[id]]',
 	marksReview: '/(app)/school/corrections',
 	students: '/(app)/school/students/[[id]]',
@@ -202,6 +207,7 @@ export function visibleClassNavItems(classId: string): ContextItem[] {
 }
 
 export const NAV_MODULE_ITEMS: Record<Exclude<ModuleKey, 'dashboard'>, ContextItem[]> = {
+	inbox: buildSchoolItems(INBOX_NAV_DEFS),
 	school: SCHOOL_ITEMS,
 	classes: CLASS_ITEMS,
 	finance: FINANCE_ITEMS,
@@ -213,6 +219,8 @@ export function isDashboardPath(pathname: string): boolean {
 }
 
 export function getModuleFromPath(pathname: string): ModuleKey {
+	if (/^\/(?:account\/inbox|school\/(?:messages|corrections))(?:\/|$)/.test(pathname))
+		return 'inbox';
 	if (isDashboardPath(pathname))
 		return 'dashboard';
 	if (pathname.startsWith('/classes'))

@@ -13,6 +13,7 @@ import {
 	localizeGradeLevel,
 	localizePeriodDefinition,
 } from '$lib/i18n/catalog-view';
+import { readPreference, writePreference } from '$lib/preferences/storage';
 import { invalidatePageQueryCache } from '$lib/queries/page-query-cache';
 import { get } from 'svelte/store';
 
@@ -60,10 +61,10 @@ class AcademicContext {
 	}
 
 	private hydrateSelection() {
-		const storedYear = sessionStorage.getItem(this.yearStorageKey())
-			?? (this.schoolScopeId ? sessionStorage.getItem(STORAGE_YEAR) : null);
-		const storedPeriod = sessionStorage.getItem(this.periodStorageKey())
-			?? (this.schoolScopeId ? sessionStorage.getItem(STORAGE_PERIOD) : null);
+		const storedYear = readPreference('session', this.yearStorageKey())
+			?? (this.schoolScopeId ? readPreference('session', STORAGE_YEAR) : null);
+		const storedPeriod = readPreference('session', this.periodStorageKey())
+			?? (this.schoolScopeId ? readPreference('session', STORAGE_PERIOD) : null);
 		if (storedYear) {
 			this.yearId = storedYear;
 		}
@@ -76,8 +77,8 @@ class AcademicContext {
 		if (!browser) {
 			return;
 		}
-		sessionStorage.setItem(this.yearStorageKey(), this.yearId);
-		sessionStorage.setItem(this.periodStorageKey(), this.periodId);
+		writePreference('session', this.yearStorageKey(), this.yearId);
+		writePreference('session', this.periodStorageKey(), this.periodId);
 	}
 
 	private yearStorageKey(): string {

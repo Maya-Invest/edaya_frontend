@@ -1,9 +1,10 @@
 <script lang="ts">
-	import type { CatalogInstallmentTemplate } from '$lib/api/finance-types';
+	import type { AutoBillingConfiguration, CatalogInstallmentTemplate } from '$lib/api/finance-types';
 	import type { Fee } from '$lib/types/school';
 	import { CATALOG_CATEGORIES } from '$lib/api/finance-types';
 	import { authSession } from '$lib/auth/session.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -27,12 +28,24 @@
 	let installments = $state<CatalogInstallmentTemplate[]>([]);
 	let category = $state<Fee['category']>('tuition');
 	let amount = $state('0');
-	let enrollmentMode = $state<Fee['enrollmentMode']>('mandatory');
+	let autoBillingMode = $state<AutoBillingConfiguration['mode']>('off');
+	let allGrades = $state(true);
+	let allStatuses = $state(true);
+	let gradeLevelIds = $state<string[]>([]);
+	let placementStatusIds = $state<string[]>([]);
+	const autoBilling = $derived<AutoBillingConfiguration>(autoBillingMode === 'matching'
+		? { mode: 'matching', gradeLevelIds: allGrades ? null : gradeLevelIds, placementStatusIds: allStatuses ? null : placementStatusIds }
+		: { mode: autoBillingMode });
+	const billingValid = $derived(autoBillingMode !== 'matching' || ((allGrades || gradeLevelIds.length > 0) && (allStatuses || placementStatusIds.length > 0)));
+	const billingAllowed = $derived((autoBillingMode === 'off' && (!fee || fee.autoBilling.mode === 'off')) || feesPage.autoBilling.options?.canConfigureAutomatic === true);
+	function toggleSelection(values: string[], id: string, checked: boolean) {
+		return checked ? [...new Set([...values, id])] : values.filter(value => value !== id);
+	}
 	let wasOpen = $state(false);
 	const isEdit = $derived(fee !== undefined);
 	const currency = $derived(authSession.school?.financeCurrency ?? '');
 	const parsedMajor = $derived(parseMajorInput(amount));
-	const canSubmit = $derived(currency.length > 0 && name.trim().length > 0 && parsedMajor !== null && parsedMajor >= 0 && (installments.length === 0 || (installments.every(row => row.label.trim() && row.percentage > 0) && Math.abs(installments.reduce((sum, row) => sum + row.percentage, 0) - 100) < 0.001)));
+	const canSubmit = $derived(billingValid && billingAllowed && currency.length > 0 && name.trim().length > 0 && parsedMajor !== null && parsedMajor >= 0 && (installments.length === 0 || (installments.every(row => row.label.trim() && row.percentage > 0) && Math.abs(installments.reduce((sum, row) => sum + row.percentage, 0) - 100) < 0.001)));
 	function resetForm() {
 		if (fee) {
 			name = fee.name;
@@ -41,7 +54,11 @@
 			installments = (fee.billingTerms?.installments ?? []).map(row => ({ ...row }));
 			category = fee.category;
 			amount = String(minorToMajor(fee.amount, fee.currency, $locale));
-			enrollmentMode = fee.enrollmentMode;
+			autoBillingMode = fee.autoBilling.mode;
+			allGrades = fee.autoBilling.mode !== 'matching' || fee.autoBilling.gradeLevelIds === null;
+			allStatuses = fee.autoBilling.mode !== 'matching' || fee.autoBilling.placementStatusIds === null;
+			gradeLevelIds = fee.autoBilling.mode === 'matching' ? [...fee.autoBilling.gradeLevelIds ?? []] : [];
+			placementStatusIds = fee.autoBilling.mode === 'matching' ? [...fee.autoBilling.placementStatusIds ?? []] : [];
 		}
 		else {
 			name = '';
@@ -50,12 +67,16 @@
 			installments = [];
 			category = 'tuition';
 			amount = '0';
-			enrollmentMode = 'mandatory';
+			autoBillingMode = 'off';
+			allGrades = allStatuses = true;
+			gradeLevelIds = [];
+			placementStatusIds = [];
 		}
 	}
 	$effect(() => {
 		if (open && !wasOpen) {
 			resetForm();
+			void feesPage.autoBilling.loadOptions();
 		}
 		wasOpen = open;
 	});
@@ -74,7 +95,7 @@
 					billingTerms: { kind: 'one_time', singleDueDate: singleDueDate || null, installments },
 					category,
 					amount: amountMinor,
-					enrollmentMode,
+					autoBilling,
 					successMessage: get(t)('fee.updateSuccess', { name: name.trim() }),
 				});
 				if (ok) {
@@ -89,7 +110,7 @@
 					category,
 					amount: amountMinor,
 					currency,
-					enrollmentMode,
+					autoBilling,
 					successMessage: get(t)('fee.createSuccess', { name: name.trim() }),
 				});
 				if (feeId) {
@@ -141,30 +162,43 @@
 			</Select.Root>
 		</div>
 		<div class="space-y-1.5">
-			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				{$t('fee.enrollmentMode')}
-			</Label>
-			<Select.Root
-				type="single"
-				value={enrollmentMode}
-				onValueChange={v => v && (enrollmentMode = v as Fee['enrollmentMode'])}
-			>
-				<Select.Trigger>
-					<Select.Value>
-						{$t(`fee.enrollmentMode.${enrollmentMode}`)}
-					</Select.Value>
-				</Select.Trigger>
+			<Label for="fee-auto-billing">{$t('fee.autoBilling')}</Label>
+			<Select.Root type="single" value={autoBillingMode} onValueChange={value => value && (autoBillingMode = value as AutoBillingConfiguration['mode'])} disabled={!feesPage.autoBilling.options?.canConfigureAutomatic}>
+				<Select.Trigger id="fee-auto-billing"><Select.Value>{$t(`fee.autoBilling.${autoBillingMode}`)}</Select.Value></Select.Trigger>
 				<Select.Content>
-					<Select.Item value="mandatory" label={$t('fee.enrollmentMode.mandatory')}>
-						{$t('fee.enrollmentMode.mandatory')}
-					</Select.Item>
-					<Select.Item value="opt_in" label={$t('fee.enrollmentMode.opt_in')}>
-						{$t('fee.enrollmentMode.opt_in')}
-					</Select.Item>
+					{#each ['off', 'all', 'matching'] as mode (mode)}
+						<Select.Item value={mode} label={$t(`fee.autoBilling.${mode}`)}>{$t(`fee.autoBilling.${mode}`)}</Select.Item>
+					{/each}
 				</Select.Content>
 			</Select.Root>
 		</div>
 	</div>
+	<p class="text-xs text-muted-foreground">{$t('fee.autoBilling.hint')}</p>
+	{#if feesPage.autoBilling.optionsStatus === 'loading'}<p role="status">{$t('dataState.loading')}</p>
+	{:else if feesPage.autoBilling.optionsStatus === 'error'}<p role="alert">{$t('fee.autoBilling.loadError')}</p><Button variant="outline" onclick={() => feesPage.autoBilling.loadOptions()}>{$t('dataState.retry')}</Button>
+	{:else if !feesPage.autoBilling.options?.canConfigureAutomatic}<p>{$t('fee.autoBilling.permissionHint')}</p>{/if}
+	{#if autoBillingMode === 'matching'}
+		<fieldset class="space-y-3" disabled={!feesPage.autoBilling.options?.canConfigureAutomatic}>
+			<legend>{$t('fee.autoBilling.grades')}</legend>
+			<label class="flex min-h-11 items-center gap-2"><Checkbox bind:checked={allGrades} />{$t('fee.autoBilling.allGrades')}</label>
+			{#if !allGrades}
+				{#each feesPage.autoBilling.options?.gradeLevels ?? [] as grade (grade.id)}
+					<label class="flex min-h-11 items-center gap-2"><Checkbox checked={gradeLevelIds.includes(grade.id)} onCheckedChange={checked => gradeLevelIds = toggleSelection(gradeLevelIds, grade.id, checked === true)} />{grade.label}</label>
+				{/each}
+			{/if}
+		</fieldset>
+		<fieldset class="space-y-3" disabled={!feesPage.autoBilling.options?.canConfigureAutomatic}>
+			<legend>{$t('fee.autoBilling.statuses')}</legend>
+			<label class="flex min-h-11 items-center gap-2"><Checkbox bind:checked={allStatuses} />{$t('fee.autoBilling.allStatuses')}</label>
+			{#if !allStatuses}
+				{#each feesPage.autoBilling.options?.placementStatuses ?? [] as status (status.id)}
+					<label class="flex min-h-11 items-center gap-2"><Checkbox checked={placementStatusIds.includes(status.id)} onCheckedChange={checked => placementStatusIds = toggleSelection(placementStatusIds, status.id, checked === true)} />{status.label}</label>
+				{/each}
+			{/if}
+		</fieldset>
+		{#if !billingValid}<p role="alert">{$t('fee.autoBilling.selectionRequired')}</p>{/if}
+	{/if}
+
 	<div class="space-y-1.5">
 		<Label for={isEdit ? 'fee-edit-amount' : 'fee-create-amount'} class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('fee.amount')}

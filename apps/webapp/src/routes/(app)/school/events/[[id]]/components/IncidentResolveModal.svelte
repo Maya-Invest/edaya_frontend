@@ -12,6 +12,7 @@
 	import { LoaderCircle, Plus, Trash2 } from '$lib/icons';
 	import { hasPermission } from '$lib/permissions';
 	import StudentPicker from '$lib/smart-components/student-picker/StudentPicker.svelte';
+	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getEventsPageState } from '../../events-page.svelte';
 
@@ -36,6 +37,8 @@
 	const eventsPage = getEventsPageState();
 	let busy = $state(false);
 	let loading = $state(false);
+	let loadFailed = $state(false);
+	let loadGeneration = 0;
 	let rows = $state<ResolveRow[]>([]);
 	let resolutionNotes = $state('');
 	let classGroupId = $state<string | undefined>(undefined);
@@ -45,27 +48,26 @@
 		id: string;
 		name: string;
 	}>>([]);
-	const canSubmit = $derived(!loading && rows.length > 0 && rows.every(row => row.studentId.length > 0 && (!row.sanctionStartsAt || !row.sanctionEndsAt || row.sanctionStartsAt <= row.sanctionEndsAt)));
+	const canSubmit = $derived(!busy && !loading && !loadFailed && rows.length > 0 && rows.every(row => row.studentId.length > 0 && (!row.sanctionStartsAt || !row.sanctionEndsAt || row.sanctionStartsAt <= row.sanctionEndsAt)));
 	function excludeStudentIds(currentKey: string) {
 		return rows
 			.filter(row => row.key !== currentKey)
 			.map(row => row.studentId)
 			.filter(Boolean);
 	}
-	function resetRows() {
-		rows = [{
-			key: `row-${incident.studentId}`,
-			studentId: incident.studentId,
-			role: 'subject',
-			disciplinaryActionId: NO_SANCTION,
-		}];
-		resolutionNotes = '';
-		disciplinaryActions = [];
-	}
 	async function loadModalData() {
+		const generation = ++loadGeneration;
+		const incidentId = incident.id;
+		const studentId = incident.studentId;
 		loading = true;
+		loadFailed = false;
+		rows = [];
+		classGroupId = undefined;
+		disciplinaryActions = [];
 		try {
-			const data = await eventsPage.loadIncidentResolution(incident.id, academicContext.periodId);
+			const data = await eventsPage.loadIncidentResolution(incidentId, academicContext.periodId);
+			if (generation !== loadGeneration || !open)
+				return;
 			classGroupId = data.incident.classGroupId ?? undefined;
 			disciplinaryActions = data.disciplinaryActions.map(action => ({
 				id: action.id,
@@ -81,8 +83,8 @@
 					disciplinaryActionId: NO_SANCTION,
 				}))
 				: [{
-					key: `row-${incident.studentId}`,
-					studentId: incident.studentId,
+					key: `row-${studentId}`,
+					studentId,
 					role: 'subject',
 					disciplinaryActionId: NO_SANCTION,
 				}];
@@ -91,16 +93,24 @@
 				: '';
 		}
 		catch {
-			resetRows();
+			if (generation === loadGeneration && open) {
+				loadFailed = true;
+				rows = [];
+			}
 		}
 		finally {
-			loading = false;
+			if (generation === loadGeneration)
+				loading = false;
 		}
 	}
 	$effect(() => {
-		if (open) {
-			void loadModalData();
-		}
+		// Data refreshes must not replace a draft; identity/scope changes must.
+		const identity = [open, incident.id, academicContext.scopeGeneration, academicContext.periodId];
+		if (identity[0])
+			untrack(() => void loadModalData());
+		return () => {
+			loadGeneration += 1;
+		};
 	});
 	function addRow() {
 		rows = [...rows, {
@@ -124,6 +134,7 @@
 			return;
 		}
 		busy = true;
+		const generation = loadGeneration;
 		try {
 			const ok = await eventsPage.resolveIncidentWithOutcomes({
 				incidentId: incident.id,
@@ -142,7 +153,7 @@
 				})),
 				successMessage: get(t)('events.resolveSuccess'),
 			});
-			if (ok) {
+			if (ok && generation === loadGeneration && open) {
 				open = false;
 				onResolved?.();
 			}
@@ -161,11 +172,17 @@
 	busy={busy || loading}
 	submitDisabled={!canSubmit}
 	onSubmit={submit}
+	contentClass="max-w-3xl"
 >
 	{#if loading}
 		<div class="flex items-center justify-center py-10 text-sm text-muted-foreground">
 			<LoaderCircle class="mr-2 h-4 w-4 animate-spin" />
 			{$t('dataState.loading')}
+		</div>
+	{:else if loadFailed}
+		<div role="alert" class="space-y-4">
+			<p>{$t('dataState.error')}</p>
+			<Button variant="outline" onclick={loadModalData}>{$t('dataState.retry')}</Button>
 		</div>
 	{:else}
 		<div class="space-y-4">

@@ -6,6 +6,9 @@
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import { t } from '$lib/i18n';
+	import { hasPermission } from '$lib/permissions';
+	import { onDestroy } from 'svelte';
+	import { validTimetableTaskNumbers } from '../lib/timetable-task';
 	import { getToolsPageState } from '../tools-page.svelte';
 
 	const actionState = getToolsPageState();
@@ -21,6 +24,7 @@
 		schoolId = '',
 		schoolRaw = $bindable<SchoolRaw | null>(null),
 		showSchoolDefaults = false,
+		savingDefaults = $bindable(false),
 	}: {
 		enforceWorkloadFulfillment?: boolean | undefined;
 		excludeBreakSlots?: boolean | undefined;
@@ -32,15 +36,23 @@
 		schoolId?: string;
 		schoolRaw?: SchoolRaw | null;
 		showSchoolDefaults?: boolean;
+		savingDefaults?: boolean;
 	} = $props();
 
-	let savingDefaults = $state(false);
+	let disposed = false;
+	onDestroy(() => {
+		disposed = true;
+		savingDefaults = false;
+	});
+	const canSaveDefaults = $derived(hasPermission('SCHOOL_CONFIGURE'));
+	const validDefaults = $derived(validTimetableTaskNumbers(minDayGapSameSubject, {}, { school: Number(timetableMinPeriodSpan) }, { school: Number(timetableMaxPeriodSpan) }));
 
 	async function saveSchoolDefaults() {
-		if (!schoolId || !schoolRaw) {
+		if (!schoolId || !schoolRaw || !canSaveDefaults || savingDefaults || !validDefaults) {
 			return;
 		}
 		savingDefaults = true;
+		const submittedSchool = schoolId;
 		try {
 			const result = await actionState.performUpdateSchoolTimetableDefaults({
 				schoolId,
@@ -57,7 +69,7 @@
 					timetableMaxPeriodSpan: Number(timetableMaxPeriodSpan),
 				},
 			});
-			if (result) {
+			if (result && !disposed && schoolId === submittedSchool) {
 				schoolRaw = result.raw;
 				enforceWorkloadFulfillment = result.school.timetableEnforceWorkloadFulfillment;
 				excludeBreakSlots = result.school.timetableExcludeBreakSlots;
@@ -69,7 +81,8 @@
 			}
 		}
 		finally {
-			savingDefaults = false;
+			if (!disposed)
+				savingDefaults = false;
 		}
 	}
 </script>
@@ -83,65 +96,66 @@
 	<div class="scrollbar-thin min-h-0 flex-1 space-y-4 overflow-y-auto p-3">
 
 		<div class="space-y-2.5">
-			<label class="flex items-center gap-2 text-sm"><Checkbox checked={enforceWorkloadFulfillment === true} onCheckedChange={value => (enforceWorkloadFulfillment = Boolean(value))} />{$t('timetable.enforceWorkload')}</label>
-			<label class="flex items-center gap-2 text-sm"><Checkbox checked={excludeBreakSlots === true} onCheckedChange={value => (excludeBreakSlots = Boolean(value))} />{$t('timetable.excludeBreaks')}</label>
-			<label class="flex items-start gap-2 text-sm"><Checkbox class="mt-0.5" checked={allowUnassignedTeacherPlacements === true} onCheckedChange={value => (allowUnassignedTeacherPlacements = Boolean(value))} /><span><span class="block">{$t('timetable.allowUnassignedTeachers')}</span><span class="block text-xs text-muted-foreground">{$t('timetable.allowUnassignedTeachersHint')}</span></span></label>
-			<label class="flex items-start gap-2 text-sm"><Checkbox class="mt-0.5" checked={useHomeroomTeacherFallback === true} onCheckedChange={value => (useHomeroomTeacherFallback = Boolean(value))} /><span><span class="block">{$t('timetable.homeroomTeacherFallback')}</span><span class="block text-xs text-muted-foreground">{$t('timetable.homeroomTeacherFallbackHint')}</span></span></label>
+			<label class="flex items-center gap-2 text-sm"><Checkbox disabled={savingDefaults} checked={enforceWorkloadFulfillment === true} onCheckedChange={value => (enforceWorkloadFulfillment = Boolean(value))} />{$t('timetable.enforceWorkload')}</label>
+			<label class="flex items-center gap-2 text-sm"><Checkbox disabled={savingDefaults} checked={excludeBreakSlots === true} onCheckedChange={value => (excludeBreakSlots = Boolean(value))} />{$t('timetable.excludeBreaks')}</label>
+			<label class="flex items-start gap-2 text-sm"><Checkbox disabled={savingDefaults} class="mt-0.5" checked={allowUnassignedTeacherPlacements === true} onCheckedChange={value => (allowUnassignedTeacherPlacements = Boolean(value))} /><span><span class="block">{$t('timetable.allowUnassignedTeachers')}</span><span class="block text-xs text-muted-foreground">{$t('timetable.allowUnassignedTeachersHint')}</span></span></label>
+			<label class="flex items-start gap-2 text-sm"><Checkbox disabled={savingDefaults} class="mt-0.5" checked={useHomeroomTeacherFallback === true} onCheckedChange={value => (useHomeroomTeacherFallback = Boolean(value))} /><span><span class="block">{$t('timetable.homeroomTeacherFallback')}</span><span class="block text-xs text-muted-foreground">{$t('timetable.homeroomTeacherFallbackHint')}</span></span></label>
 		</div>
 
 		{#if showSchoolDefaults}
-			<div class="flex items-start justify-between gap-3 text-sm">
+			<div class="flex flex-wrap items-start justify-between gap-4 text-sm">
 				<div class="min-w-0 flex-1 space-y-1.5">
 					<span>{$t('timetable.sameSubjectDayGap')}</span>
 					<p class="text-xs text-muted-foreground">{$t('timetable.sameSubjectDayGapHint')}</p>
 				</div>
 				<label class="flex shrink-0 flex-col items-center gap-0.5">
-					<span class="text-[10px] leading-none text-muted-foreground">{$t('timetable.schoolDefaultDaysShort')}</span>
+					<span class="text-xs leading-none text-muted-foreground">{$t('timetable.schoolDefaultDaysShort')}</span>
 					<Input
 						type="number"
 						min="0"
-						class="h-8 w-12 px-1 text-center text-sm"
-						bind:value={minDayGapSameSubject}
+						class="min-h-11 w-16 px-2 text-center text-sm"
+						bind:value={minDayGapSameSubject} disabled={savingDefaults}
 					/>
 				</label>
 			</div>
 
-			<div class="flex items-start justify-between gap-3 text-sm">
+			<div class="flex flex-wrap items-start justify-between gap-4 text-sm">
 				<div class="min-w-0 flex-1 space-y-1.5">
 					<span>{$t('timetable.periodsPerSessionRange')}</span>
 					<p class="text-xs text-muted-foreground">{$t('timetable.periodsPerSessionRangeHint')}</p>
 				</div>
-				<div class="flex shrink-0 items-start gap-1.5">
+				<div class="flex shrink-0 flex-wrap items-start gap-2">
 					<label class="flex flex-col items-center gap-0.5">
-						<span class="text-[10px] leading-none text-muted-foreground">{$t('timetable.minPeriodSpanShort')}</span>
+						<span class="text-xs leading-none text-muted-foreground">{$t('timetable.minPeriodSpanShort')}</span>
 						<Input
 							type="number"
 							min="1"
-							class="h-8 w-12 px-1 text-center text-sm"
-							bind:value={timetableMinPeriodSpan}
+							class="min-h-11 w-16 px-2 text-center text-sm"
+							bind:value={timetableMinPeriodSpan} disabled={!canSaveDefaults || !schoolRaw || savingDefaults}
 						/>
 					</label>
 					<label class="flex flex-col items-center gap-0.5">
-						<span class="text-[10px] leading-none text-muted-foreground">{$t('timetable.maxPeriodSpanShort')}</span>
+						<span class="text-xs leading-none text-muted-foreground">{$t('timetable.maxPeriodSpanShort')}</span>
 						<Input
 							type="number"
 							min="1"
-							class="h-8 w-12 px-1 text-center text-sm"
-							bind:value={timetableMaxPeriodSpan}
+							class="min-h-11 w-16 px-2 text-center text-sm"
+							bind:value={timetableMaxPeriodSpan} disabled={!canSaveDefaults || !schoolRaw || savingDefaults}
 						/>
 					</label>
 				</div>
 			</div>
 
-			<Button
+			{#if !validDefaults}<p role="alert" class="text-sm text-destructive">{$t('timetable.invalidTaskNumbers')}</p>{/if}
+			{#if canSaveDefaults}<Button
 				variant="outline"
 				size="sm"
 				class="rounded-full"
-				disabled={savingDefaults || !schoolId}
+				disabled={savingDefaults || !schoolId || !schoolRaw || !validDefaults}
 				onclick={saveSchoolDefaults}
 			>
 				{$t('timetable.saveSchoolDefaults')}
-			</Button>
+			</Button>{/if}
 		{/if}
 	</div>
 </section>

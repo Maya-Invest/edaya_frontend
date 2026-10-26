@@ -100,7 +100,7 @@
 		{#if policy}
 			<p class="text-sm text-muted-foreground">{policy.scale.name} · {policy.mode === 'mention-first' ? $t('grading.mention') : $t('grading.numeric')}</p>
 			<p role="status" class="text-sm">{$t(`grading.${policy.status}`)}</p>
-			{#if policy.status === 'failed'}<PermissionGate permission="REPORT_CARD_CONFIGURE"><Button variant="outline" onclick={() => gradeLevelsPage.retryGrading(live.id, policy.revision)}>{$t('common.retry')}</Button></PermissionGate>{/if}
+			{#if policy.status === 'failed'}<PermissionGate permission="REPORT_CARD_CONFIGURE"><Button variant="outline" onclick={() => gradeLevelsPage.retryGrading(live.id, policy.revision)}>{$t('dataState.retry')}</Button></PermissionGate>{/if}
 		{/if}
 	</div>
 </div>

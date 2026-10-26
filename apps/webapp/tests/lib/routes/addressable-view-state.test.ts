@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'bun:test';
 import {
 	readListCardColumns,
 	readListView,
@@ -6,6 +5,7 @@ import {
 	writeListView,
 } from '$lib/list/list-view-url';
 import { readModal, writeModal } from '$lib/modal/modal-url';
+import { describe, expect, it } from 'bun:test';
 import {
 	readExpandedAcademicYear,
 	writeExpandedAcademicYear,
@@ -37,9 +37,10 @@ function url(path: string): URL {
 
 describe('addressable non-modal view URL state', () => {
 	it('round-trips list view while preserving filters and modal state', () => {
-		const href = writeListView(url('/school/students?q=ada&modal=create'), 'cards');
-		expect(href).toBe('/school/students?q=ada&modal=create&view=cards');
-		expect(readListView(url(href))).toBe('cards');
+		const href = writeListView(url('/school/students?q=ada&modal=create'), 'list');
+		expect(href).toBe('/school/students?q=ada&modal=create&view=list');
+		expect(readListView(url(href))).toBe('list');
+		expect(readListView(url('/school/students?view=cards'))).toBe('list');
 		expect(readListView(url('/school/students?view=unknown'))).toBe('table');
 	});
 

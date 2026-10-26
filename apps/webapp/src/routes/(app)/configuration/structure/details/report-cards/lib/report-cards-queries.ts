@@ -5,7 +5,6 @@ import { loadReportCardCatalogData } from '$lib/api/report-cards-data';
 import { getBrowserSchoolClient } from '$lib/api/school-client';
 import { authSession } from '$lib/auth/session.svelte';
 import { listPageHasItems, resolvePageLoad } from '$lib/queries/page-status';
-import { ApiError } from '@maya-invest/edaya-api-client';
 import { emptyReportCardsSlice } from './report-cards-helpers';
 
 export async function loadReportCardsSlice() {
@@ -13,20 +12,12 @@ export async function loadReportCardsSlice() {
 	if (!schoolId) {
 		return emptyReportCardsSlice();
 	}
-	try {
-		const data = await loadReportCardCatalogData(getBrowserSchoolClient(), schoolId);
-		return {
-			scales: data.gradeScales,
-			definitions: data.definitions,
-			subjects: data.subjects,
-		};
-	}
-	catch (error) {
-		if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-			return emptyReportCardsSlice();
-		}
-		throw error;
-	}
+	const data = await loadReportCardCatalogData(getBrowserSchoolClient(), schoolId);
+	return {
+		scales: data.gradeScales,
+		definitions: data.definitions,
+		subjects: data.subjects,
+	};
 }
 
 export function queryReportCardsListPage(state: ReportCardsPageState) {

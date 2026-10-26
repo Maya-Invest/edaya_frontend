@@ -225,7 +225,7 @@
 				<h3 class="font-display text-base font-semibold">{$t('grading.configure')}</h3>
 				<p class="text-sm text-muted-foreground">{$t('grading.yearScope', { year: academicContext.year?.label ?? '' })}</p>
 				{#if gradeLevelsPage.gradingLoading}<p role="status">{$t('dataState.loading')}</p>{/if}
-				{#if gradeLevelsPage.gradingError}<Button variant="outline" onclick={() => gradeLevelsPage.loadGrading(gradeLevel?.id)}>{$t('common.retry')}</Button>{/if}
+				{#if gradeLevelsPage.gradingError}<Button variant="outline" onclick={() => gradeLevelsPage.loadGrading(gradeLevel?.id)}>{$t('dataState.retry')}</Button>{/if}
 				{#if !currentYear}<p role="alert">{$t('grading.currentYearOnly')}</p>{/if}
 				<fieldset disabled={!currentYear || busy || gradeLevelsPage.gradingLoading || gradeLevelsPage.gradingError}>
 					<div class="space-y-4">

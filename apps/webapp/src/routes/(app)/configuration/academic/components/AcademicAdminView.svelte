@@ -214,11 +214,13 @@
 
 <div class="animate-fade-in">
 	<ListPageHeader
+		filterCount={[academicPage.filters.values.status].filter(value => value !== 'all').length}
+		onResetFilters={() => academicPage.filters.patchImmediate({ status: 'all' })}
 		eyebrow={$t('academic.subtitle')}
 		title={$t('academic.title')}
 	>
 		{#snippet search()}
-			<ListSearchField bind:value={academicPage.filters.values.q} oninput={() => academicPage.filters.scheduleSync()} />
+			<ListSearchField onCommit={() => academicPage.filters.syncNow()} bind:value={academicPage.filters.values.q} oninput={() => academicPage.filters.scheduleSync()} />
 		{/snippet}
 		{#snippet filters()}
 			<FilterPanel activeCount={statusFilterActive} title={$t('academic.filterAllStatuses')}>

@@ -89,7 +89,7 @@
 			label: $t(it.labelKey),
 			icon: it.icon,
 			href: key === 'classes' ? classItemHref(classId, it.href) : it.href,
-			badge: key === 'school' ? schoolBadges[it.key] : it.badge,
+			badge: key === 'school' ? schoolBadges[it.key] : key === 'inbox' && it.key === 'messages' ? messageCount?.count ?? undefined : it.badge,
 		}));
 	}
 

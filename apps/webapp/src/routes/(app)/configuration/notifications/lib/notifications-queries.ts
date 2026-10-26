@@ -4,7 +4,6 @@ import { academicContext } from '$lib/academic/context.svelte';
 import { fetchSchoolNotificationTemplates } from '$lib/api/notification-templates-data';
 import { authSession } from '$lib/auth/session.svelte';
 import { resolvePageLoad } from '$lib/queries/page-status';
-import { ApiError } from '@maya-invest/edaya-api-client';
 import { emptyNotificationsSlice } from './notifications-helpers';
 
 function resolveSchoolId(): string | null {
@@ -17,16 +16,8 @@ export async function loadNotificationsSlice() {
 		return emptyNotificationsSlice();
 	}
 
-	try {
-		const document = await fetchSchoolNotificationTemplates(schoolId);
-		return { schoolId, document };
-	}
-	catch (error) {
-		if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-			return { schoolId, document: null };
-		}
-		throw error;
-	}
+	const document = await fetchSchoolNotificationTemplates(schoolId);
+	return { schoolId, document };
 }
 
 export function queryNotificationsListPage(state: NotificationsPageState) {

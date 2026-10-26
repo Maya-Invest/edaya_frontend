@@ -33,7 +33,8 @@
 {#if $page.params.id}
 	<NotificationTemplateDrawer
 		{templateKey}
-		loading={!templateKey || !notificationsPage.document}
+		loading={!templateKey}
+		unavailable={!notificationsPage.document}
 		onClose={closeDetail}
 	>
 		{@render children()}

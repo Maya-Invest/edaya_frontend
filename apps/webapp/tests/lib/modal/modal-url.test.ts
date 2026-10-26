@@ -1,13 +1,14 @@
-import { describe, expect, it } from 'bun:test';
 import {
 	appendModal,
 	MODAL_QUERY_KEY,
 	readModal,
+	TASK_QUERY_KEYS,
 	readModalStep,
 	readModalTab,
 	writeModal,
 	writeModalSurface,
 } from '$lib/modal/modal-url';
+import { describe, expect, it } from 'bun:test';
 
 const allowed = ['create', 'edit', 'edit-profile'] as const;
 
@@ -105,5 +106,22 @@ describe('appendModal', () => {
 
 	it('appends the modal query param', () => {
 		expect(appendModal('/school/students', 'create')).toBe('/school/students?modal=create');
+	});
+});
+
+describe('task addresses', () => {
+	it('keeps task and bounded modal addresses independent', () => {
+		const url = new URL('https://school.test/configuration/tools?q=ada&modal=confirm');
+		const href = writeModalSurface(url, { modal: 'import', target: 'batch-1', step: 'validate', tab: 'students' }, TASK_QUERY_KEYS);
+		const task = new URL(href, url);
+		expect(readModal(task, ['import'], TASK_QUERY_KEYS)).toBe('import');
+		expect(readModalStep(task, ['validate'], TASK_QUERY_KEYS)).toBe('validate');
+		expect(readModalTab(task, ['students'], TASK_QUERY_KEYS)).toBe('students');
+		expect(readModalTab(task, ['staff'], TASK_QUERY_KEYS)).toBeNull();
+		expect(readModal(task, ['confirm'])).toBe('confirm');
+		expect(writeModalSurface(task, { modal: null }, TASK_QUERY_KEYS)).toBe('/configuration/tools?q=ada&modal=confirm');
+	});
+	it('rejects a task outside the feature allow-list', () => {
+		expect(readModal(new URL('https://school.test/configuration/tools?task=grade-entry'), ['import', 'generate-timetable'], TASK_QUERY_KEYS)).toBeNull();
 	});
 });

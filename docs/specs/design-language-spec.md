@@ -6,7 +6,7 @@ Normative for the staff `apps/webapp`. The desired UI must use the EDAYA palette
 
 | Role | Value | Required use |
 | --- | --- | --- |
-| Primary | `#2563EB`; hover `#1D4ED8`; pressed `#1E40AF` | Primary action, links, selected state |
+| Primary | `#2563EB`; hover `#1D4ED8`; pressed `#1E40AF` | Primary action, links, open-record marker and keyboard focus |
 | Supporting sky | `#60A5FA` | Decoration; never small text on white |
 | Amber | `#FBBF24` | Decoration under 10% of visible surface, navy foreground |
 | Canvas / surface | `#F0F7FF` / `#FFFFFF` | Page canvas / chrome and content |
@@ -19,11 +19,11 @@ Normative for the staff `apps/webapp`. The desired UI must use the EDAYA palette
 
 Poppins Semibold must be used for page/section headings. Inter Regular/Medium/Semibold/Bold must be used for body, controls, collection identities and numbers. Fonts must load from bundled files with their OFL licenses; no runtime third-party font requests. Actual code samples may use system monospace. Webapp surfaces are light-only.
 
-The platform-neutral token manifest is `design-system/tokens.json`; generated local CSS is `apps/webapp/src/lib/design-system/tokens.css`, imported through `app.css`. Semantic tokens must own the values in this spec. Components must not introduce raw color literals, additional font dependencies or per-feature token forks. Generated files must not be edited directly. Shared mobile snapshots may include dark values without introducing a staff-webapp theme switch. Calendar vendor styling must use scoped semantic tokens, not patches to vendor CSS.
+The frontend token revision is **1.0.2**, including role-specific geometry and the prescribed primary pressed and destructive confirmation hover/pressed roles. The platform-neutral token manifest is `design-system/tokens.json`; generated local CSS is `apps/webapp/src/lib/design-system/tokens.css`, imported through `app.css`. Semantic tokens must own the values in this spec. Components must not introduce raw color literals, additional font dependencies or per-feature token forks. Generated files must not be edited directly. Shared mobile snapshots may include dark values without introducing a staff-webapp theme switch. Calendar vendor styling must use scoped semantic tokens, not patches to vendor CSS.
 
 ## 2. Measurable composition
 
-All dimensions below are CSS pixels at the default text size. Text sizes must use scalable units, respect user enlargement and never become fixed-height clipping constraints. Breakpoints use viewport width; fact-grid columns use available content width.
+All dimensions below are CSS pixels at the default text size. Text sizes must use scalable units, respect user enlargement and never become fixed-height clipping constraints. Spacing, corner radii and minimum interaction targets must use CSS-pixel tokens: enlarging text alone must not proportionally double them. Controls must grow naturally for enlarged or wrapped text; browser zoom must remain supported. Page, navigation and drawer breakpoints use viewport width. Collection headers and fact grids use available content width, including inside drawers.
 
 | Element | Required dimension |
 | --- | --- |
@@ -36,19 +36,30 @@ All dimensions below are CSS pixels at the default text size. Text sizes must us
 | Section / internal / related-control gaps | 24px / 16px / 8px |
 | Interaction target / action icon | At least 44 × 44px / 16 × 16px |
 | List row | 16px padding on every side, content-driven height |
-| Table row | 16px horizontal padding, 48px minimum height, grows for wrapping |
+| Table header | 44px minimum height; 16px horizontal and zero vertical cell/control padding; grows for wrapped or enlarged text |
+| Table row | 48px minimum outer height including its divider; 16px horizontal and zero vertical cell padding; vertically centered targets without nested padding; grows for wrapping |
+| Table utility column | Stable 64px width; centered 44px targets; pinned right with an opaque row-matching background and subtle left divider |
+| Fact grid | Two columns from 480px available content width, otherwise one; long values span both |
+| Bounded dialog gutters | At least 16px on each viewport edge |
+| Navigation | Desktop sidebar from 1024px viewport width; focus-managed sheet below |
 | Drawer | 50vw from 1024px; full viewport width below 1024px |
 | Form | Maximum 32rem; 48rem only for the wide forms assigned by the app-shell spec; viewport bounded |
-| Control shape | Pill radius; multiline textareas use 16px radius |
-| Collection surface / overlay | 16px / 24px radius; full-screen surfaces have no artificial outer gutter/radius |
+| Action buttons / search | 22px radius: compact button face within a 44px target; search remains 44px; bounded corners when content grows |
+| Form inputs / selects / textareas | 8px radius; rectangular fields, distinct from search |
+| Collection containers / cards | 8px outer corners; square rows and row activation regions within the shared outline |
+| Dialog / menu or popover | 12px / 8px radius |
+| Drawer / full-screen workspace | Square corners; no artificial outer gutter |
+| Menu items / tabs / record activation regions | Square corners; full-width row or tab treatment, not action capsules |
+| Status badges / conversation bubbles | 4px / 12px radius; never styled as action buttons |
+| Avatars / binary controls | Circular avatars and radio controls; 4px checkbox corners; capsule switch track |
 
-The spacing vocabulary is 4/8/12/16/24/32/48; the required gaps above must not vary by feature. Shadows are restrained and neutral. Motion must communicate a state transition, honor reduced motion and never animate decoratively forever.
+The spacing vocabulary is 4/8/12/16/24/32/48; the required gaps above must not vary by feature. Collections must use one flat white surface with 8px outer corners and separators between square rows. The container must clip row backgrounds to its outer outline without rounding individual rows. Content sections must use headings, whitespace and dividers rather than nested bordered cards. A separately scoped summary may have a white card with 8px outer corners; it must not add a decorative shadow. Shadows are reserved for floating dialogs and menus and must remain restrained and neutral. Motion must communicate a state transition, honor reduced motion and never animate decoratively forever.
 
-The standard page header must place title/count left and Search, Filter, `···` right. Below 768px the title occupies row one; the toolbar occupies row two with flexible search and two 44px actions. At enlarged text or exceptionally narrow widths, controls may wrap in the same order; labels and targets must not be clipped. A compact Filter has the same interaction target as other controls. The collection primary action belongs first in `···`.
+The standard collection header must place title/count left and Search, Filter, `···` right. From 768px of available content width they share a row when their content fits; below that width title/count occupies the first row and the toolbar follows. Search has a preferred minimum width of 12rem, constrained by its container. When search and actions cannot fit together, search occupies its own row and Filter then collection menu wrap beneath it. This rule applies to related collections inside drawers, independently of viewport width. Labels and targets must not be clipped at enlarged text or narrow widths. A compact Filter has the same interaction target as other controls. The collection primary action belongs first in `···`.
 
 ## 3. Control treatments
 
-All controls must use the shared Button/Input/Select/Checkbox/Dialog primitives. Button labels are Inter medium 14px. Text buttons have 16px horizontal padding, at least 44px height, and 8px icon-label spacing. Icon-only buttons are at least 44px square. Input and select outlines use base slate; focus is a 2px primary outline with a 2px surface-colored gap. Focus must be visible on every interactive surface, including menus and keyboard-operated rows.
+All controls must use the shared Button/Input/Select/Checkbox/Dialog primitives. Button labels are Inter medium 14px with 1.5 line height. Text buttons must have a 36px minimum visible face with 12px horizontal and 6px vertical padding, inside a non-overlapping interaction area at least 44px high. The extra 4px above and below the face belongs to the hit area, not the visible fill or border. Icon-label spacing is 8px. At 200% text or with wrapped labels, face and hit area grow with content; text must not be clipped. Table header cells and sortable header controls must have zero vertical padding and a 44px minimum height, without stacking cell padding on top of the control target. Width follows the visible label and declared icon slot; arbitrary minimum widths, hidden translated labels and stretched full-width buttons must not add idle bulk. Modal footers may stack full-width actions below 768px to preserve readable labels. Icon-only buttons have a 44px square target with a centered 16px icon. Labels must wrap without clipping; taller buttons retain the 22px corner radius. Search keeps its 22px corners and a 16px search icon; other editable fields use 8px corners and 12px horizontal padding. Input and select outlines use base slate; focus is a 2px primary outline with a 2px surface-colored gap. Focus must be visible on every interactive surface, including menus and keyboard-operated rows.
 
 | Variant | Rest | Hover / pressed | Assignment |
 | --- | --- | --- | --- |
@@ -58,11 +69,26 @@ All controls must use the shared Button/Input/Select/Checkbox/Dialog primitives.
 | Destructive | White, danger text and 1px danger border | Danger background tint / white with 2px danger inset | Destructive action trigger where explicitly visible |
 | Destructive confirmation | Danger background, white text | `#991B1B` / `#7F1D1D` | Final Delete, Void, Reverse or other destructive confirmation only |
 
-Menu entries must be neutral full-width rows with text labels, minimum 44px targets and a sky-canvas hover/focus background. Destructive entries use danger text and are separated at the end. A primary collection action is first in the menu; it is not a filled button embedded in the menu. Selected menu options show a check and text, not color alone.
+Menu entries must be neutral square-cornered full-width rows with text labels, minimum 44px targets and a sky-canvas hover/focus background. Destructive entries use danger text and are separated at the end. A primary collection action is first in the menu; it is not a filled button embedded in the menu. X-TEMPLATE-RESET-REVIEW is bounded to notification templates: the neutral first Reset all templates entry opens consequence review before Export CSV; only its final confirmation is destructive. Selected menu options show a check and text, not color alone.
 
-Disabled controls must use the separator fill, secondary text and separator border, with no hover/pressed change. They must remain recognizable and expose the reason in adjacent text or a focus-accessible description. Unauthorized actions must be omitted, not represented as disabled. Busy controls must retain their role colors and measured width, show a 16px spinner plus the localized ongoing-action label, expose busy state and prevent duplicate submission. They must not look like an unexplained disabled control. Icons must come from the shared Lucide exports; no feature-specific substitutes for the same action.
+Disabled controls must use the separator fill, secondary text and separator border, with no hover/pressed change. They must remain recognizable and expose the reason in adjacent text or a focus-accessible description. Unauthorized actions must be omitted, not represented as disabled. Busy controls must retain their role colors, visible action label and measured dimensions, expose busy state and prevent duplicate submission. A submit button must reserve one 16px trailing status slot with an 8px gap; it shows a spinner while busy. The localized ongoing-action message must be announced through a live status and shown in the form/task status area, outside the button. Hidden pending labels must not participate in button sizing. A button with a persistent action icon keeps that icon separate from its status slot. Busy controls must not look like an unexplained disabled control. Icons must come from the shared Lucide exports; no feature-specific substitutes for the same action.
 
-Input errors use a danger outline and adjacent localized error text. Selected rows use the information tint plus a primary leading marker/border; keyboard focus is a separate outline. Bulk checkboxes remain a different signal. Link text uses primary color and an underline on hover/focus; meaning must not depend solely on color.
+Input errors use a danger outline and adjacent localized error text. Link text uses primary color and an underline on hover/focus; meaning must not depend solely on color.
+
+### 3.1 Collection row states
+
+List and Table must render these independent states with the same meaning:
+
+| State | Required treatment |
+| --- | --- |
+| Rest | White surface |
+| Hover | Sky-canvas background; pointer styling only on actual interactive targets |
+| Open record | Sky-canvas background and a 2px inset primary leading marker; the identity target identifies the current record accessibly |
+| Bulk selected | Information-tint background and checked checkbox |
+| Open record and bulk selected | Information tint, open-record marker and checked checkbox |
+| Keyboard focus | Separate primary focus indicator on the focused target |
+
+Bulk-selection tint takes precedence over hover. The marker must not change column positions or row dimensions. Focus indicators must remain visible within clipped collection boundaries, using an inset treatment where an outer indicator would be clipped. Pinned cells must use the same opaque background as their row. Open-record state must not imply bulk selection, and focus must not imply either state. Single-line table rows must reach the §2 minimum without stacking cell padding around interaction targets; wrapped or enlarged essential content must increase height, never truncate to preserve density.
 
 ## 4. Data and content hierarchy
 
@@ -77,7 +103,7 @@ Dates must use the active FR/EN locale and an unambiguous day/month/year present
 | Boolean true | Yes | Oui | Known affirmative |
 | Absent optional value | Not provided | Non renseigné | No supplied value |
 | Missing required configuration | Not configured | Non configuré | Configuration is absent |
-| Data cannot be obtained | Unavailable | Indisponible | Availability unknown/unsupported, not permission denial |
+| Data cannot be obtained | Unavailable | Indisponible | Required capability or persisted detail is missing/unsupported; not denial, failed request or successful empty result |
 | Denied field within authorized content | Restricted | Accès restreint | Do not expose hidden values/counts |
 | Missing persisted audit actor | Not recorded | Non enregistré | Do not infer an actor |
 
@@ -156,8 +182,9 @@ Status labels must reflect the specific domain state, not collapse draft, submit
 | Close / Back / Done | Fermer / Retour / Terminé |
 | Filter / Reset filters / Clear search | Filtrer / Réinitialiser les filtres / Effacer la recherche |
 | View / List / Table / Sort / Columns | Affichage / Liste / Tableau / Trier / Colonnes |
+| Customize | Personnaliser |
 | Export matching / Export selected | Exporter les résultats / Exporter la sélection |
-| Select loaded rows / Clear selection | Sélectionner les lignes chargées / Effacer la sélection |
+| Select loaded rows / Clear selection / Exit selection | Sélectionner les lignes chargées / Effacer la sélection / Quitter la sélection |
 | Retry / Refresh / Read full text | Réessayer / Actualiser / Lire le texte complet |
 | Assign fee / Apply credit / Record payment | Attribuer des frais / Utiliser le crédit / Enregistrer un paiement |
 | Download account invoice / Finance checks | Télécharger la facture du compte / Contrôles financiers |
@@ -184,7 +211,7 @@ Inbox labels and child counts must remain consistent in desktop and mobile navig
 
 Activity-log rows must identify the viewer timezone and use localized action/outcome labels with meaningful text. Actor, action, time, affected record and outcome are primary historical facts. Event context, reason and recorded changes are read-only, with missing values labeled Not recorded / Non enregistré and denied values Restricted / Accès restreint. Only ancillary technical identifiers belong in a collapsed disclosure. Empty copy must say No recorded events / Aucun événement enregistré and identify the current scope; it must not claim that no business activity occurred.
 
-Message history must use right-aligned blue-container staff replies and left-aligned neutral guardian messages, with actual author before selectable content and localized time after it. Position, participant label and accessible description distinguish direction without color. Teacher oversight identifies participant roles; no invented delivery/read indicators.
+Message history must use right-aligned blue-container staff replies and left-aligned neutral guardian messages, with actual author before selectable content and localized time after it. Position, participant label and accessible description distinguish direction without color. Teacher oversight identifies participant roles; no invented delivery/read indicators. Conversation bubbles cap width at 90% compact / 75% wide and 560px; compact enlarged text can use the available width.
 
 Finance summaries must label net obligations Billed / Montant facturé, active charge allocations Payments / Paiements, remaining obligations Outstanding / Solde restant, and overdue obligations Overdue / En retard. The assigned-student count is a chip on Billed; overdue-student count is a chip on Overdue. Overdue uses the danger text token. No Received/Refunded captions or duplicate summary cards on Billing/Payments. Financial scope and calculation rules remain in the feature contract.
 

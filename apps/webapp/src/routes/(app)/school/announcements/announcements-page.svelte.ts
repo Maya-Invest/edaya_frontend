@@ -1,5 +1,6 @@
 import type { components } from '$lib/api/schema';
 import type { EntityVersionKey } from '$lib/entity-versions.svelte';
+import type { AnnouncementListFilters } from '$lib/list/list-url-filters';
 import type { PageQueryRequest } from '$lib/queries/page-status';
 import type { Announcement, AnnouncementTarget, Guardian, StaffMember, Student } from '$lib/types/school';
 import { listAllEntityPages } from '$lib/api/entity-list-filters';
@@ -31,10 +32,7 @@ export class AnnouncementsPageState {
     guardians = $state<Guardian[]>([]);
     staff = $state<StaffMember[]>([]);
     students = $state<Student[]>([]);
-    readonly filters: ListFiltersState<{
-        q: string;
-        status: string;
-    }>;
+    readonly filters: ListFiltersState<AnnouncementListFilters>;
 
     private readonly versions = new RouteVersionSnapshot(ANNOUNCEMENTS_VERSION_FAMILIES);
     constructor(private readonly getUrl: () => URL) {

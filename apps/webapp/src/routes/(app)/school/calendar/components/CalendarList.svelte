@@ -194,11 +194,13 @@
 
 <div class="animate-fade-in space-y-6">
 	<ListPageHeader
+		filterCount={[calendarPage.filters.values.type].filter(value => value !== 'all').length}
+		onResetFilters={() => calendarPage.filters.patchImmediate({ type: 'all' })}
 		eyebrow={$t('calendar.year')}
 		title={$t('calendar.eventCount', { n: filtered.length })}
 	>
 		{#snippet search()}
-			<ListSearchField
+			<ListSearchField onCommit={() => calendarPage.filters.syncNow()}
 				value={calendarPage.filters.values.q}
 				oninput={(event) => {
 					calendarPage.filters.patch({ q: event.currentTarget.value });

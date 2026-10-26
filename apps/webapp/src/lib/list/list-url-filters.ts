@@ -34,6 +34,7 @@ const activityListFiltersCodec = defineUrlFilterCodec({
 const announcementListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
 	status: { type: 'string', default: 'all' },
+	priority: { type: 'enum', default: 'all', values: ['all', 'normal', 'important', 'urgent'] as const },
 });
 
 const familyFeedbackListFiltersCodec = defineUrlFilterCodec({
@@ -82,7 +83,8 @@ const paymentListFiltersCodec = defineUrlFilterCodec({
 
 const reportCardDefinitionListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
-	status: { type: 'string', default: 'all' },
+	status: { type: 'enum', default: 'all', values: ['all', 'draft', 'published'] as const },
+	defaultModel: { type: 'enum', default: 'all', values: ['all', 'yes', 'no'] as const },
 });
 
 const roleListFiltersCodec = defineUrlFilterCodec({

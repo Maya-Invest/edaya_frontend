@@ -20,6 +20,9 @@ export async function peekOtp(email: string, channel = 'email', challenge?: stri
 
 export async function sendOtpThroughUi(page: Page, email: string): Promise<void> {
   await page.locator('[data-testid="auth-identifier"]:visible').fill(email);
+  await page.locator('[data-testid="auth-terms"]:visible [role="status"]').filter({ hasText: /Loading|Chargement/ }).waitFor({ state: 'hidden' });
+  const acceptance = page.locator('[data-testid="auth-terms-accept"]:visible');
+  if (await acceptance.count()) await acceptance.check();
   const sent = page.waitForResponse(response => response.url().endsWith('/auth/edaya/otp/start'));
   await page.locator('[data-testid="auth-submit"]:visible').click();
   const response = await sent;

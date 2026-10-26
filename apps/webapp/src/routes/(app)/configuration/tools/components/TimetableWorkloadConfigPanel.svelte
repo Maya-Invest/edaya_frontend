@@ -104,8 +104,8 @@
 				<ListSearchField bind:value={search} placeholder={$t('timetable.searchClasses')} />
 			</label>
 			<div class="flex flex-wrap gap-1">
-				<Button variant="ghost" size="sm" class="h-auto min-h-11 whitespace-normal px-1.5 py-2 text-xs" disabled={disabled || !classes.length} onclick={() => { includedClassIds = classes.map(row => row.id); }} data-testid="timetable-select-all">{$t('timetable.selectAllClasses')}</Button>
-				<Button variant="ghost" size="sm" class="h-auto min-h-11 whitespace-normal px-1.5 py-2 text-xs" disabled={disabled || !includedCount} onclick={() => { includedClassIds = []; }} data-testid="timetable-clear-selection">{$t('timetable.clearClassSelection')}</Button>
+				<Button variant="ghost" size="sm" class="h-auto min-h-11 whitespace-normal px-1.5 py-2 text-sm" disabled={disabled || !classes.length} onclick={() => { includedClassIds = classes.map(row => row.id); }} data-testid="timetable-select-all">{$t('timetable.selectAllClasses')}</Button>
+				<Button variant="ghost" size="sm" class="h-auto min-h-11 whitespace-normal px-1.5 py-2 text-sm" disabled={disabled || !includedCount} onclick={() => { includedClassIds = []; }} data-testid="timetable-clear-selection">{$t('timetable.clearClassSelection')}</Button>
 			</div>
 		</div>
 		<div class="max-h-48 min-h-0 space-y-3 overflow-y-auto p-1.5 lg:max-h-none lg:flex-1" data-testid="timetable-class-options">
@@ -152,37 +152,40 @@
 					{#each subjectsForClass as subject (subject.id)}
 						{@const teacher = teacherLabel(subject.id)}
 						{@const spanDefaults = spanPlaceholder(subject)}
-						<li class="flex items-center gap-2 rounded-lg border border-border/50 bg-secondary/30 px-2.5 py-2">
-							<div class="flex shrink-0 items-center gap-1.5">
+						<li class="flex flex-col-reverse items-stretch gap-4 rounded-lg border border-border/50 bg-secondary/30 p-4 sm:flex-row sm:items-center">
+							<div class="flex shrink-0 flex-wrap items-center gap-2">
 								<label class="flex flex-col items-center gap-0.5">
-									<span class="text-[10px] leading-none text-muted-foreground">{$t('timetable.periodsPerWeekShort')}</span>
+									<span class="text-xs leading-none text-muted-foreground">{$t('timetable.periodsPerWeekShort')}</span>
 									<Input
 										type="number"
+										{disabled}
 										data-testid="timetable-workload-periods"
 										min="0"
-										class="h-8 w-12 px-1 text-center text-sm"
+										class="min-h-11 w-16 px-2 text-center text-sm"
 										value={String(overrides[subject.id] ?? '')}
 										placeholder={String(subject.periodsPerWeek ?? '')}
 										oninput={event => (overrides = setOverride(overrides, subject.id, event.currentTarget.value))}
 									/>
 								</label>
 								<label class="flex flex-col items-center gap-0.5">
-									<span class="text-[10px] leading-none text-muted-foreground">{$t('timetable.minPeriodSpanShort')}</span>
+									<span class="text-xs leading-none text-muted-foreground">{$t('timetable.minPeriodSpanShort')}</span>
 									<Input
 										type="number"
+										{disabled}
 										min="1"
-										class="h-8 w-12 px-1 text-center text-sm"
+										class="min-h-11 w-16 px-2 text-center text-sm"
 										value={String(minSpanOverrides[subject.id] ?? '')}
 										placeholder={String(spanDefaults.min)}
 										oninput={event => (minSpanOverrides = setOverride(minSpanOverrides, subject.id, event.currentTarget.value))}
 									/>
 								</label>
 								<label class="flex flex-col items-center gap-0.5">
-									<span class="text-[10px] leading-none text-muted-foreground">{$t('timetable.maxPeriodSpanShort')}</span>
+									<span class="text-xs leading-none text-muted-foreground">{$t('timetable.maxPeriodSpanShort')}</span>
 									<Input
 										type="number"
+										{disabled}
 										min="1"
-										class="h-8 w-12 px-1 text-center text-sm"
+										class="min-h-11 w-16 px-2 text-center text-sm"
 										value={String(maxSpanOverrides[subject.id] ?? '')}
 										placeholder={String(spanDefaults.max)}
 										oninput={event => (maxSpanOverrides = setOverride(maxSpanOverrides, subject.id, event.currentTarget.value))}
@@ -190,8 +193,8 @@
 								</label>
 							</div>
 							<div class="min-w-0 flex-1">
-								<p class="truncate text-sm font-medium leading-tight">{subjectLabels[subject.subjectId] ?? subject.subjectId}</p>
-								<p class={cn('mt-0.5 truncate text-xs leading-tight', teacher ? 'text-muted-foreground' : BADGE_WARN)}>
+								<p class="break-words text-sm font-medium leading-tight">{subjectLabels[subject.subjectId] ?? subject.subjectId}</p>
+								<p class={cn('mt-0.5 break-words text-xs leading-tight', teacher ? 'text-muted-foreground' : BADGE_WARN)}>
 									{teacher || $t('timetable.noTeacherAssigned')}
 								</p>
 							</div>

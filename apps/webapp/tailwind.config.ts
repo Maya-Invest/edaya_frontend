@@ -13,6 +13,7 @@ export default {
 			colors: {
 				border: 'hsl(var(--border))',
 				'primary-hover': 'hsl(var(--primary-hover))',
+				'primary-pressed': 'hsl(var(--primary-pressed))',
 				success: { DEFAULT: 'hsl(var(--success))', soft: 'hsl(var(--success-soft))' },
 				'brand-sky': 'hsl(var(--brand-sky))',
 				'brand-amber': 'hsl(var(--brand-amber))',
@@ -30,7 +31,10 @@ export default {
 				},
 				destructive: {
 					DEFAULT: 'hsl(var(--destructive))',
-					foreground: 'hsl(var(--destructive-foreground))'
+					foreground: 'hsl(var(--destructive-foreground))',
+					soft: 'hsl(var(--destructive-soft))',
+					hover: 'hsl(var(--destructive-hover))',
+					pressed: 'hsl(var(--destructive-pressed))'
 				},
 				muted: {
 					DEFAULT: 'hsl(var(--muted))',

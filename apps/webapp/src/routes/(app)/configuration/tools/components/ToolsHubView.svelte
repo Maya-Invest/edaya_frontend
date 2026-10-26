@@ -3,6 +3,7 @@
 		ImportWorkflowStep,
 		TimetableGenerationStep,
 	} from '../lib/tools-workflow';
+	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
@@ -15,6 +16,7 @@
 		IMPORT_WORKFLOW_STEPS,
 		TIMETABLE_GENERATION_STEPS,
 		TIMETABLE_SETUP_TABS,
+		retainsGenerationDraft,
 	} from '../lib/tools-workflow';
 	import { getToolsPageState } from '../tools-page.svelte';
 	import DataImportModal from './DataImportModal.svelte';
@@ -28,7 +30,7 @@
 	const importStep = $derived(
 		IMPORT_WORKFLOW_STEPS.includes(modals.step as ImportWorkflowStep)
 			? modals.step as ImportWorkflowStep
-			: 'download',
+			: 'settings',
 	);
 	const importType = $derived(
 		IMPORT_TYPE_TABS.includes(modals.tab as (typeof IMPORT_TYPE_TABS)[number])
@@ -38,7 +40,7 @@
 	const generationStep = $derived(
 		TIMETABLE_GENERATION_STEPS.includes(modals.step as TimetableGenerationStep)
 			? modals.step as TimetableGenerationStep
-			: 'setup',
+			: 'range',
 	);
 	const generationTab = $derived(
 		TIMETABLE_SETUP_TABS.includes(modals.tab as (typeof TIMETABLE_SETUP_TABS)[number])
@@ -79,7 +81,7 @@
 			<div class="mt-auto">
 				<Button
 					onclick={() => modals.open('import', {
-						step: 'download',
+						step: 'settings',
 						tab: toolsPage.defaultImportTab,
 					})}
 					data-testid="import-action"
@@ -107,7 +109,7 @@
 
 			<div class="mt-auto flex flex-wrap gap-2">
 				<Button
-					onclick={() => modals.open('generate-timetable', { step: 'setup', tab: 'subjects' })}
+					onclick={() => modals.open('generate-timetable', { step: 'range', tab: 'subjects' })}
 					data-testid="timetable-planning-action"
 				>
 					{$t('tools.timetablePlanning.card.action')}
@@ -135,6 +137,7 @@
 <SchoolTimetableGenerationModal
 	bind:open={generationOpen.open}
 	state={toolsPage.planningPage}
+	retainsDraft={destination => retainsGenerationDraft($page.url, destination)}
 	phase={generationStep}
 	setupTab={generationTab}
 	onPhaseChange={step => modals.setStep(step)}

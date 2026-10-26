@@ -117,11 +117,13 @@
 
 <div class="animate-fade-in">
 	<ListPageHeader
+		filterCount={[teachersPage.filters.values.status].filter(value => value !== 'all').length}
+		onResetFilters={() => teachersPage.filters.patchImmediate({ status: 'all' })}
 		eyebrow={$t('school.teachersDirectory')}
 		title={$t('people.teachersCount', { n: listTotal })}
 	>
 		{#snippet search()}
-			<ListSearchField
+			<ListSearchField onCommit={() => teachersPage.filters.syncNow()}
 				value={teachersPage.filters.values.q}
 				oninput={event => teachersPage.filters.patch({ q: event.currentTarget.value })}
 				placeholder={$t('common.search')}
