@@ -12,10 +12,9 @@ bun run repo check
 bun run verify
 ```
 
-Production resolves backend `main`; staging resolves backend `staging`. Preparation resolves once and builds the TypeScript client from that immutable SHA into ignored `.generated/api-client`. Both apps consume that package. A moving backend branch cannot alter an already prepared client. The selected branch identifies tested source, not necessarily the deployed backend.
+Local preparation defaults to backend `main` for production and `staging` for staging. CI selection follows the event rules below. Preparation resolves once and builds the TypeScript client from that immutable SHA into ignored `.generated/api-client`. Both apps consume that package. A moving backend branch cannot alter an already prepared client. The selected branch identifies tested source, not necessarily the deployed backend.
 
-
-For local preparation, `--ref <branch-or-commit>` overrides the backend input, or `--backend-root <clean-checkout>` uses an existing resolved checkout. They are mutually exclusive. Integration verifies the checkout still matches the prepared client and has no tracked edits. CI normally selects the destination branch; the Manual validation workflow exposes a deliberate backend override.
+For local preparation, `--ref <branch-or-commit>` overrides the backend input, or `--backend-root <clean-checkout>` uses an existing resolved checkout. They are mutually exclusive. Integration verifies the checkout still matches the prepared client and has no tracked edits. Development CI matches source branches with a `dev` fallback; release CI selects the destination branch. Manual validation exposes an explicit backend override.
 
 `generate dependencies` installs and verifies dependencies against the prepared client. `generate setup` prepares SvelteKit inputs. Checks do not create local environment files or rewrite generated sources. Repeat preparation explicitly when changing backend input. Client cache identities include backend SHA, generator/runtime inputs and lockfiles; invalid checksum entries are rebuilt. Turbo task caches include the prepared client record so a regenerated contract invalidates previous verification and build results. Package-registry credentials are unnecessary.
 
@@ -46,7 +45,9 @@ Configuration required in GitHub:
 - `ENABLE_INDEPENDENT_RELEASES=true`: repository adoption gate. Enable only after local verification, both environment builds, integration, artifact handoff and non-deploying GitHub rehearsals have passed.
 - Branch protection: require the PR workflow's `qualification / Full validation` check, confirming its exact displayed name in GitHub. Replace obsolete coordinator/publication requirements only after the replacement succeeds.
 
-Backend destination branches must contain the typed fixture command used by consumer integration. Backend API compatibility is checked through the resolved client; repository source changes do not require synchronized consumer releases.
+Development pushes use the matching backend branch; PRs use their source branch while testing the frontend merge commit. If that backend branch is absent, CI selects backend `dev`. Authentication and network errors never trigger fallback. Missing `dev` fails. Manual validation overrides never fall back. Staging and production releases always use backend `staging` and `main`, respectively. The job summary records the requested ref, selected ref, fallback reason and immutable commit. Every selected backend must have completed the in-repository identity migration; retired sibling identity dependencies fail before installation or cache restoration.
+
+Backend branches used for full qualification must contain the typed fixture command used by consumer integration. Backend API compatibility is checked through the resolved client; repository source changes do not require synchronized consumer releases.
 
 ```sh
 bun repo ci qualify staging

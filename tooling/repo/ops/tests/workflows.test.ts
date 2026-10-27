@@ -35,3 +35,18 @@ test('artifact handoff cannot resolve a backend branch or regenerate a client at
   expect(qualification.on.workflow_call.inputs.full.default).toBe(true)
   expect(qualification.jobs.qualification.steps.some((step: any) => step.run?.includes('ci qualify') && step.if === 'inputs.full')).toBe(true)
 })
+
+// GitHub expression strings are literal workflow values.
+/* eslint-disable no-template-curly-in-string */
+test('development matches source branches while releases and manual overrides remain fixed', () => {
+  expect(workflow('push.yml').jobs.verification.with.backend_ref).toBe('${{ github.ref_name }}')
+  const pr = workflow('deploy_pr.yml').jobs.qualification.with
+  expect(pr.backend_ref).toBe('${{ github.head_ref }}')
+  expect(pr.source_ref).toBe('${{ github.sha }}')
+  expect(pr.match_backend_branch).toBe(true)
+  for (const name of ['deploy-staging.yml', 'deploy-production.yml', 'validate.yml'])
+    expect(workflow(name).jobs.qualify.with.match_backend_branch).toBeUndefined()
+  const steps = workflow('_qualify.yml').jobs.qualification.steps
+  expect(steps.find((step: any) => step.name === 'Checkout backend input').with.ref).toBe('${{ steps.backend-input.outputs.commit }}')
+  expect(steps.findIndex((step: any) => step.id === 'client-cache')).toBeLessThan(steps.findIndex((step: any) => step.uses?.startsWith('actions/cache@')))
+})

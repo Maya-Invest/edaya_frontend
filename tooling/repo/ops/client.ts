@@ -1,5 +1,6 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { assertBackendCompatible } from './backend-input'
 import { backendBranch, digest, environment, gitEnvironment, hashes, root, run, sha, verifyBackend, writeJson } from './runtime'
 
 export interface ClientRecord {
@@ -52,6 +53,7 @@ export async function acquireClient(target = 'staging', backendRoot?: string, ov
   }
   const commit = sha(await run(['git', 'rev-parse', 'HEAD'], { cwd: backend, quiet: true }))
   await verifyBackend(backend, process.env.CI_BACKEND_SHA ?? commit)
+  assertBackendCompatible(backend)
   const generator = digest(readFileSync(import.meta.filename))
   const cacheKey = digest(JSON.stringify([commit, generator, Bun.version, digest(readFileSync(resolve(backend, 'bun.lock'))), digest(readFileSync(resolve(root, 'bun.lock')))]))
   const cache = resolve(root, '.cache/clients', cacheKey)

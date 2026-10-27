@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { assertBackendCompatible } from './backend-input'
 import { brandCheck, brandGallery, brandTokens } from './brand'
 import { acquireClient, checkClient, clientOptions, installPreparedDependencies } from './client'
 import { commandDocs } from './command-docs'
@@ -118,6 +119,7 @@ export async function executeCommand(args: string[]): Promise<void> {
       if (rest.length !== 1)
         throw new Error('Expected one resolved backend checkout')
       const backend = resolve(root, rest[0]!)
+      assertBackendCompatible(backend)
       const key = digest(JSON.stringify([sha(await run(['git', 'rev-parse', 'HEAD'], { cwd: backend, quiet: true })), Bun.version, hashes(resolve(root, 'tooling/repo/ops')), digest(readFileSync(resolve(backend, 'bun.lock'))), digest(readFileSync(resolve(root, 'bun.lock')))]))
       githubOutput('client_key', key)
       return
