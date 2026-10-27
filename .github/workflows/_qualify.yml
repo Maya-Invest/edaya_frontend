@@ -18,8 +18,9 @@ on:
         type: string
         default: ''
     secrets:
-      IDENTITY_CHECKOUT_TOKEN:
-        required: false
+      BACKEND_CHECKOUT_TOKEN:
+        description: Read-only contents access to the private backend repository
+        required: true
 permissions:
   contents: read
   deployments: read
@@ -47,7 +48,7 @@ jobs:
           repository: Maya-Invest/edaya_backend
           ref: ${{ inputs.backend_ref || (inputs.target == 'production' && 'main' || 'staging') }}
           path: .ci/edaya_backend
-          token: ${{ secrets.IDENTITY_CHECKOUT_TOKEN }}
+          token: ${{ secrets.BACKEND_CHECKOUT_TOKEN }}
           persist-credentials: false
       - name: Identify immutable client cache
         id: client-cache
@@ -59,7 +60,7 @@ jobs:
       - name: Prepare client from checked-out backend
         env:
           TARGET: ${{ inputs.target }}
-          IDENTITY_CHECKOUT_TOKEN: ${{ secrets.IDENTITY_CHECKOUT_TOKEN }}
+          BACKEND_CHECKOUT_TOKEN: ${{ secrets.BACKEND_CHECKOUT_TOKEN }}
         run: bun run repo generate client "$TARGET" --backend-root .ci/edaya_backend
       - run: bun run repo generate dependencies
       - run: bun run repo ci setup

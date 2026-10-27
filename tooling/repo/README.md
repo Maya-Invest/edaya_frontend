@@ -14,7 +14,6 @@ bun run verify
 
 Production resolves backend `main`; staging resolves backend `staging`. Preparation resolves once and builds the TypeScript client from that immutable SHA into ignored `.generated/api-client`. Both apps consume that package. A moving backend branch cannot alter an already prepared client. The selected branch identifies tested source, not necessarily the deployed backend.
 
-Backend revisions with a sibling `edaya_identity` file dependency also require that repository. Managed preparation checks it out under `.ci/edaya_identity` from the same destination branch, detaches at the resolved commit, and includes that commit in client evidence and cache identity. Backends with in-repository identity need no extra checkout. An external `--backend-root` must already have a clean sibling identity checkout when required; preparation preserves existing local source changes.
 
 For local preparation, `--ref <branch-or-commit>` overrides the backend input, or `--backend-root <clean-checkout>` uses an existing resolved checkout. They are mutually exclusive. Integration verifies the checkout still matches the prepared client and has no tracked edits. CI normally selects the destination branch; the Manual validation workflow exposes a deliberate backend override.
 
@@ -42,7 +41,7 @@ Deployment is serialized per environment without cancelling active deployments. 
 
 Configuration required in GitHub:
 
-- `IDENTITY_CHECKOUT_TOKEN`: read-only contents access to `Maya-Invest/edaya_backend` and, for backend revisions with a sibling identity dependency, `Maya-Invest/edaya_identity`; used solely for checkout.
+- `BACKEND_CHECKOUT_TOKEN`: required repository or organization Actions secret with read-only contents access to `Maya-Invest/edaya_backend`; used solely for checkout.
 - `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`: environment deployment credentials/configuration.
 - `ENABLE_INDEPENDENT_RELEASES=true`: repository adoption gate. Enable only after local verification, both environment builds, integration, artifact handoff and non-deploying GitHub rehearsals have passed.
 - Branch protection: require the PR workflow's `qualification / Full validation` check, confirming its exact displayed name in GitHub. Replace obsolete coordinator/publication requirements only after the replacement succeeds.
