@@ -1,5 +1,8 @@
 /** Executable browser contracts required by full qualification. */
 export const FOCUSED_BROWSER_SUITES = [
+  { name: 'grading-entry', script: 'grading-entry-browser.ts', seeded: false },
+  { name: 'shared-design', script: 'shared-design-browser.ts', seeded: false },
+  { name: 'guardian-profile', script: 'guardian-profile-browser.ts', seeded: false },
   { name: 'subject-enrollment', script: 'subject-enrollment-browser.ts', seeded: false },
   { name: 'imports-ui', script: 'import-browser.ts', seeded: true, runtime: 'node' },
   { name: 'messaging-ui', script: 'messaging-browser.ts', seeded: true },

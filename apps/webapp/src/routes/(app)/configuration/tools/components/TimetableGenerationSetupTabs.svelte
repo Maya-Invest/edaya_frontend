@@ -32,7 +32,7 @@
 </script>
 
 <div
-	class="flex flex-wrap gap-2 rounded-xl bg-secondary/50 p-2"
+	class="flex flex-wrap gap-2 rounded-collection bg-secondary/50 p-2"
 	role="tablist"
 	aria-label={$t('timetable.setupTabsLabel')}
 >

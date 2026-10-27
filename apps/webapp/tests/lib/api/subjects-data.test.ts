@@ -79,7 +79,7 @@ describe('mapClassSubjects', () => {
 				classSubject({ id: 'cs-6b-math', classGroupId: '6b', subjectId: 'subj-math' }),
 			],
 			subjectsRaw: [
-				{ id: 'subj-math', schoolId: SEED_SCHOOL_ID, gradeLevelId: 'grade-6', academicYearId: 'year-1', isOptional: false, name: 'Mathematics', code: 'MATH', coefficient: 3, categoryId: `${SEED_SCHOOL_ID}:subject-category:scientifique`, color: 'mint' },
+				{ id: 'subj-math', schoolId: SEED_SCHOOL_ID, gradeLevelId: 'grade-6', academicYearId: 'year-1', isOptional: false, reportOrder: 0, name: 'Mathematics', code: 'MATH', coefficient: 3, categoryId: `${SEED_SCHOOL_ID}:subject-category:scientifique`, color: 'mint' },
 			],
 			subjectMattersRaw: [],
 			staffMembersRaw: [],

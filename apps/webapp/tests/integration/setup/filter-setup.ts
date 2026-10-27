@@ -1,3 +1,4 @@
+import { selectTrigger, chooseOption, selectControl } from '../support/custom-select';
 import type { FilterFixtures, MatrixEntities } from '../../../scripts/qa-matrix-support';
 /**
  * Provisioned filter + modal entity setup — creates fixtures before matrix filter tests.
@@ -78,8 +79,8 @@ export async function setupCalendarEvent(
 		await dialog.locator('input').first().fill(eventTitle);
 		await fillDateInputsInRange(dialog);
 		const typeSelect = dialog.locator('select').first();
-		if (await typeSelect.isVisible().catch(() => false)) {
-			await typeSelect.selectOption(type).catch(() => {});
+		if (await selectTrigger(typeSelect).isVisible().catch(() => false)) {
+			await chooseOption(typeSelect, type).catch(() => {});
 		}
 		await submitDialog(page);
 		if (!(await waitForDialogClosed(page))) {
@@ -194,7 +195,7 @@ export async function setupSchoolEvent(
 		}
 
 		const dialog = page.getByRole('dialog');
-		const studentCombo = dialog.getByRole('combobox').first();
+		const studentCombo = selectControl(dialog).first();
 		if (await studentCombo.isVisible().catch(() => false)) {
 			await studentCombo.click();
 			await page.getByRole('option').first().click({ timeout: 5_000 }).catch(() => {});
@@ -250,21 +251,13 @@ export async function setStudentStatus(
 
 	const select = page.locator('select').filter({ has: page.locator('option[value="inactive"]') }).last();
 	await select.waitFor({ state: 'attached', timeout: 20_000 }).catch(() => {});
-	await select.scrollIntoViewIfNeeded().catch(() => {});
+	await selectTrigger(select).scrollIntoViewIfNeeded().catch(() => {});
 	const mutation = page.waitForResponse(
 		res => res.request().method() === 'POST' && res.url().includes('/core/commands/update-student-status'),
 		{ timeout: 20_000 },
 	).catch(() => null);
 	try {
-		await select.selectOption(status);
-		await select.evaluate((el, next) => {
-			if (!(el instanceof HTMLSelectElement)) {
-				return;
-			}
-			el.value = next;
-			el.dispatchEvent(new Event('input', { bubbles: true }));
-			el.dispatchEvent(new Event('change', { bubbles: true }));
-		}, status);
+		await chooseOption(select, status);
 	}
 	catch {
 		return false;
@@ -480,16 +473,16 @@ export async function setupFilterSubjects(
 		}
 		const dialog = page.getByRole('dialog');
 		await dialog.locator('input').first().fill(subjectName);
-		await dialog.getByRole('combobox', { name: /discipline/i }).selectOption({ index: 1 });
+		await chooseOption(selectControl(dialog, { name: /discipline/i }), { index: 1 });
 
-		const gradeCombobox = dialog.getByRole('combobox').first();
+		const gradeCombobox = selectControl(dialog).first();
 		if (await gradeCombobox.isVisible().catch(() => false)) {
 			await selectComboboxOption(page, gradeCombobox, { value: gradeLevelId });
 		}
 		else {
 			const gradeSelect = dialog.locator('select').first();
-			if (await gradeSelect.isVisible().catch(() => false)) {
-				await gradeSelect.selectOption(gradeLevelId).catch(() => gradeSelect.selectOption({ index: 0 }));
+			if (await selectTrigger(gradeSelect).isVisible().catch(() => false)) {
+				await chooseOption(gradeSelect, gradeLevelId).catch(() => chooseOption(gradeSelect, { index: 0 }));
 			}
 		}
 

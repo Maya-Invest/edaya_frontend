@@ -71,7 +71,7 @@
 		{#each workflow.offerings as offering (offering.id)}
 			{@const draft = workflow.drafts[offering.id]}
 			{#if draft}
-				<fieldset disabled={workflow.busy || workflow.selectedIds.length === 0} class="space-y-3 rounded-xl border border-border p-3">
+				<fieldset disabled={workflow.busy || workflow.selectedIds.length === 0} class="space-y-3 rounded-collection border border-border p-3">
 					<legend class="px-1 font-medium">{offering.name}</legend>
 					<p class="text-sm text-muted-foreground">{currentLabel(offering.id)}</p>
 					{#if !context?.classSubjectId}

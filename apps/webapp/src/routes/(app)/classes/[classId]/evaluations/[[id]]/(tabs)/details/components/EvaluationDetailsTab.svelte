@@ -79,14 +79,14 @@
 
 {:else}
 	<div class="grid grid-cols-2 gap-3">
-		<div class="rounded-xl bg-primary/10 p-3">
+		<div class="rounded-collection bg-primary/10 p-3">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('eval.average')}</p>
 			<p class="mt-1 font-sans text-xl tabular-nums">
 				{evaluation.marksAvailable !== false && evaluation.graded > 0 ? evaluation.gradingUpdating ? '—' : evaluation.averageMark.toFixed(evaluation.averagePrecision ?? 2) : '-'}
 				<span class="text-sm text-muted-foreground">/ {evaluation.averageOutOf ?? evaluation.outOf}</span>
 			</p>
 		</div>
-		<div class="rounded-xl bg-secondary/60 p-3">
+		<div class="rounded-collection bg-secondary/60 p-3">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('eval.graded')}</p>
 			<p class="mt-1 font-sans text-xl tabular-nums">{evaluation.marksAvailable !== false ? `${evaluation.graded}/${evaluation.total}` : '—'}</p>
 		</div>
@@ -112,8 +112,8 @@
 	</p>
 	<div class="mt-2 space-y-2">
 		{#each evaluation.attachments as attachment (attachment.name)}
-			<div class="flex items-center gap-3 rounded-xl border border-border bg-secondary/30 px-3 py-2.5">
-				<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-card">
+			<div class="flex items-center gap-3 rounded-collection border border-border bg-secondary/30 px-3 py-2.5">
+				<div class="flex h-8 w-8 items-center justify-center rounded-collection bg-card">
 					<FileText class="h-4 w-4 text-muted-foreground" />
 				</div>
 				<div class="min-w-0 flex-1">
@@ -125,7 +125,7 @@
 		{#if canManage}<Button
 			variant="ghost"
 			size="sm"
-			class="w-full rounded-full border border-dashed border-border"
+			class="w-full border border-dashed border-border"
 			onclick={() => (attachOpen.open = true)}
 		>
 			<Paperclip class="mr-1 h-3 w-3" />

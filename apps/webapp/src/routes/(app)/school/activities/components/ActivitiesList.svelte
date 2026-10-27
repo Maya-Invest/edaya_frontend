@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { provideCollectionPresentation } from '$lib/list/collection-presentation.svelte';
+
+	provideCollectionPresentation();
 	import type { ListEntityTableColumn } from '$lib/list/list-entity-table-types';
 	import type { ListCardColumns, ListView } from '$lib/list/list-view-url';
 	import type { Activity } from '$lib/types/school';
@@ -196,7 +199,7 @@
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
 						onclick={() => modals.open('create')}

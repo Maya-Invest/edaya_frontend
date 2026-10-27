@@ -1,12 +1,18 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { collectionPresentation } from '$lib/list/collection-presentation.svelte';
+	import Button from './button/button.svelte';
+
+	const presentation = collectionPresentation();
 	import CollectionFilters from './collection/CollectionFilters.svelte';
 	import CollectionMenu from './collection/CollectionMenu.svelte';
 
 	const {
 		eyebrow,
+		hiddenSort,
 		title,
 		level = 'page',
+		surface = 'page',
 		description,
 		search,
 		filters,
@@ -17,8 +23,10 @@
 		onResetFilters,
 	}: {
 		eyebrow?: string;
+		hiddenSort?: string;
 		title: string;
 		level?: 'page' | 'section';
+		surface?: 'page' | 'related';
 		description?: string;
 		search?: Snippet;
 		filters?: Snippet;
@@ -30,7 +38,7 @@
 	} = $props();
 </script>
 
-<header class="mb-6 flex flex-col gap-4 md:flex-row md:flex-wrap md:items-end md:justify-between">
+<header class="ui-collection-header mb-6"><div class="ui-collection-header-layout">
 	<div class="min-w-0">
 		{#if eyebrow}
 			<p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -45,11 +53,13 @@
 		{#if description}
 			<p class="mt-1 text-sm text-muted-foreground">{description}</p>
 		{/if}
+		{#if hiddenSort || presentation?.hiddenSort}<p class="text-xs text-muted-foreground" role="status">{hiddenSort || presentation?.hiddenSort}</p>{/if}
 	</div>
-	<div class="flex min-w-0 items-center gap-2">
-		{#if search}<div class="min-w-0 flex-1">{@render search()}</div>{/if}
-		{#if filters}<CollectionFilters activeCount={filterCount} onReset={onResetFilters}>{@render filters()}</CollectionFilters>{/if}
-		{#if primary || more}<CollectionMenu>{@render primary?.()}{@render more?.()}</CollectionMenu>{/if}
+	<div class="ui-collection-toolbar">
+		{#if search}<div class="ui-collection-search">{@render search()}</div>{/if}
+		{#if filters}<CollectionFilters iconTreatment={surface === 'page' ? 'circle' : 'quiet'} activeCount={filterCount} onReset={onResetFilters}>{@render filters()}</CollectionFilters>{/if}
+		{#if primary || more || presentation?.sorts.length}<CollectionMenu iconTreatment={surface === 'page' ? 'circle' : 'quiet'}>{@render primary?.()}{@render more?.()}{#each presentation?.sorts ?? [] as entry (entry.key)}<Button variant="ghost" aria-pressed={entry.active} onclick={entry.run}>{entry.label}</Button>{/each}</CollectionMenu>{/if}
 	</div>
+</div>
 	{#if context}<div class="w-full min-w-0">{@render context()}</div>{/if}
 </header>

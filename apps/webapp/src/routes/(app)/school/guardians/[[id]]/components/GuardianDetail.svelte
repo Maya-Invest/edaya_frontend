@@ -112,7 +112,16 @@
 		{/snippet}
 	</DrawerEntityHeader>
 	<PersonProfileDetails kind="guardian" person={guardian} />
-	<section class="space-y-2"><h3 class="text-sm font-semibold">{$t('profile.contactMethods')}</h3><dl class="space-y-2">{#each guardian.contactMethods ?? [] as method, index (index)}<div class="rounded-lg border p-3 text-sm"><dt class="text-xs text-muted-foreground">{$t(`profile.contact.${method.type}`)} {method.label ?? ''}</dt><dd>{method.value}</dd><dd class="mt-1 text-xs">{$t('profile.primaryContact')}: {$t(method.isPrimary ? 'common.yes' : 'common.no')} · {$t('profile.allowsNotifications')}: {$t(method.allowsNotifications ? 'common.yes' : 'common.no')}</dd></div>{/each}</dl><p class="text-xs">{$t('profile.portalAccess')}: {$t(guardian.hasAccess ? 'common.yes' : 'common.no')}</p></section>
+	<section class="space-y-2"><h3 class="text-sm font-semibold">{$t('profile.contactMethods')}</h3>
+		<dl class="space-y-2">
+			{#each (['phone', 'alternativePhone', 'email'] as const) as field (field)}
+				<div><dt class="text-xs text-muted-foreground">{$t(`guardian.contacts.${field}`)}</dt><dd>{guardian[field] || '—'}</dd></div>
+			{/each}
+			{#each (['email', 'sms', 'push'] as const) as channel (channel)}
+				<div><dt class="text-xs text-muted-foreground">{$t(`account.notifications.${channel}`)}</dt><dd>{$t(guardian[`${channel}NotificationsEnabled`] ? 'common.yes' : 'common.no')}</dd></div>
+			{/each}
+		</dl><p class="text-xs">{$t('profile.portalAccess')}: {$t(guardian.hasAccess ? 'common.yes' : 'common.no')}</p>
+	</section>
 
 	<DrawerField label={$t('guardian.fullName')}>
 		<div class="min-h-10 rounded-md border border-input bg-secondary/30 px-3 py-2 text-sm">{guardian.name}</div>
@@ -154,7 +163,7 @@
 		{:else}
 			<div class="space-y-2">
 				{#each linked as student (student.id)}
-					<div class="flex items-center gap-2 rounded-lg bg-primary/5 px-3 py-2">
+					<div class="flex items-center gap-2 rounded-collection bg-primary/5 px-3 py-2">
 						<PersonAvatar
 							name={student.name}
 							initials={student.initials}

@@ -126,7 +126,7 @@
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
 						onclick={() => modals.open('create')}
@@ -156,7 +156,7 @@
 
 	<FamilyFeedbackFormModal bind:open={createOpen.open} onCreated={handleCreated} />
 
-	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+	<div class="overflow-hidden rounded-collection border border-border bg-card shadow-soft">
 		<div
 			class="grid grid-cols-[1.8fr_1fr_1fr_0.9fr] gap-4 border-b border-border bg-secondary/40 px-4 py-2.5 font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground"
 		>

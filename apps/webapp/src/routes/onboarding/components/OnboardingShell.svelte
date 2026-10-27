@@ -88,7 +88,7 @@
 	data-onboarding-step={currentStep}
 	data-onboarding-max-step={maxReachedStep}
 >
-	<section class="rounded-2xl border border-border bg-card p-5 shadow-soft sm:p-6">
+	<section class="rounded-collection border border-border bg-card p-5 shadow-soft sm:p-6">
 		<div class="mb-4">
 			<OnboardingStepper {currentStep} {maxReachedStep} locked={stepsLocked} {onStepSelect} />
 		</div>

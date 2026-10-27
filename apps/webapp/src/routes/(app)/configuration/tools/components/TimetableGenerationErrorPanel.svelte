@@ -15,7 +15,7 @@
 </script>
 
 <section class="space-y-4" aria-live="polite">
-	<div class={cn('rounded-xl border border-destructive/30 bg-destructive/5 p-4')}>
+	<div class={cn('rounded-collection border border-destructive/30 bg-destructive/5 p-4')}>
 		<div class="flex items-start gap-3">
 			<AlertCircle class="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
 			<div class="min-w-0 space-y-1">

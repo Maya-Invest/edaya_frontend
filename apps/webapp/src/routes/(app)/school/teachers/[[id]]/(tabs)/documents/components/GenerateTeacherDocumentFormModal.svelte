@@ -96,7 +96,7 @@
 			</Select.Root>
 		</div>
 		{#if documentsTab.generationError}
-			<p role="alert" class="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+			<p role="alert" class="rounded-collection border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
 				{documentsTab.generationError}
 			</p>
 		{/if}

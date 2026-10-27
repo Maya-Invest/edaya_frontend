@@ -3,17 +3,20 @@
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
-
 	import ReportCardAvailabilityNotice from '$lib/components/school/report-cards/ReportCardAvailabilityNotice.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
+
+	import ListEntityTable from '$lib/components/ui/ListEntityTable.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
+	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { downloadDocumentLabel } from '$lib/documents/titles';
 	import { t } from '$lib/i18n';
-	import { FileSpreadsheet, Sparkles } from '$lib/icons';
+	import { Sparkles } from '$lib/icons';
 	import { ListFiltersState } from '$lib/list/list-filters-state.svelte';
 	import { readClassReportCardListFilters, writeClassReportCardListFilters } from '$lib/list/list-url-filters';
 	import { appGoto } from '$lib/navigation/app-navigation';
@@ -198,7 +201,7 @@
 				tooltip={$t('reportCards.generateAll')}
 			>
 				{#snippet children({ disabled, title })}
-					<Button class="rounded-full" disabled={disabled || !academicContext.periodId} {title} onclick={generateAll}>
+					<Button disabled={disabled || !academicContext.periodId} {title} onclick={generateAll}>
 						<Sparkles class="h-4 w-4" />
 						{$t('reportCards.generateAll')}
 					</Button>
@@ -212,103 +215,20 @@
 
 	<ReportCardAvailabilityNotice results={results.filter(result => filteredStudents.some(student => student.id === result.studentId))} />
 
-	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-		<table class="w-full text-sm">
-			<thead class="border-b border-border bg-secondary/30 text-left">
-				<tr>
-					<th class="px-4 py-3 font-medium">{$t('tab.students')}</th>
-					<th class="px-4 py-3 font-medium">{$t('reportCards.overall')}</th>
-					<th class="px-4 py-3 font-medium">{$t('reportCards.rank')}</th>
-					<th class="px-4 py-3 font-medium">{$t('reportCards.status')}</th>
-					<th class="px-4 py-3 text-right font-medium">{$t('classGroups.actions')}</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each filteredStudents as student (student.id)}
-					{@const result = resultForStudent(student.id)}
-					<tr
-						class={cn(
-							'border-b border-border/60 last:border-0',
-							selectedId === result?.id && 'bg-primary/5',
-						)}
-					>
-						<td class="px-4 py-3">
-							<button
-								type="button"
-								class="text-left font-medium hover:text-primary"
-								onclick={() => result && onSelect?.(result)}
-							>
-								{student.name}
-							</button>
-						</td>
-						<td class="px-4 py-3 font-sans tabular-nums">
-							{formatPersistedGrade(result?.grading, result?.overallAverage)}
-						</td>
-						<td class="px-4 py-3 font-sans tabular-nums">
-							{formatReportRank(result)}
-						</td>
-						<td class="px-4 py-3">
-							{#if result}
-								<span
-									class={cn(
-										'rounded-full px-2 py-0.5 font-sans tabular-nums text-[10px] uppercase',
-										result.status === 'published'
-											? 'bg-accent/15'
-											: result.status === 'generated'
-											? 'bg-highlight-soft text-highlight'
-											: 'bg-secondary text-muted-foreground',
-									)}
-								>
-									{resultStatusLabel(result)}
-								</span>
-							{:else}
-								<span class="text-muted-foreground">—</span>
-							{/if}
-						</td>
-						<td class="px-4 py-3">
-							<div class="flex justify-end gap-1">
-								{#if !result}
-									<Button size="sm" variant="outline" class="rounded-full" onclick={() => generateOne(student.id)}>
-										<FileSpreadsheet class="h-3.5 w-3.5" />
-										{$t('reportCards.generate')}
-									</Button>
-								{:else if result.status === 'generated'}
-									<Button size="sm" class="rounded-full" onclick={() => publishOne(result.id)}>
-										{$t('reportCards.publish')}
-									</Button>
-								{/if}
-								{#if result?.status === 'published'}
-									<Button
-										size="sm"
-										variant="outline"
-										class="rounded-full"
-										onclick={() => void reportCardsPage.performRequestDocumentIssuance({
-											templateKey: 'report-card.v1',
-											sourceId: result.id,
-											studentId: result.studentId,
-											classGroupId: classId,
-											successMessage: get(t)('documents.toastRequested'),
-										})}
-									>
-										{downloadDocumentLabel($t, 'report-card.v1')}
-									</Button>
-								{/if}
-								{#if result}
-									<Button size="sm" variant="ghost" class="rounded-full" onclick={() => onSelect?.(result)}>
-										{$t('reportCards.view')}
-									</Button>
-								{/if}
-							</div>
-						</td>
-					</tr>
-				{:else}
-					<tr>
-						<td colspan="5" class="px-4 py-10 text-center text-sm text-muted-foreground">
-							{$t('dataState.emptyDescription')}
-						</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-	</div>
+	<ListEntityTable listKey="ReportCardsList" rows={filteredStudents} highlightId={selectedId ? filteredStudents.find(student => resultForStudent(student.id)?.id === selectedId)?.id : undefined} canInspect={student => Boolean(resultForStudent(student.id))} onRowClick={(student) => {
+		const result = resultForStudent(student.id);
+		if (result)
+			onSelect?.(result);
+	}} emptyLabel={$t('dataState.emptyDescription')} columns={[{ key: 'name', label: $t('tab.students'), span: 4, required: true }, { key: 'overall', label: $t('reportCards.overall'), span: 2 }, { key: 'rank', label: $t('reportCards.rank'), span: 2 }, { key: 'status', label: $t('reportCards.status'), span: 2 }, { key: 'actions', label: '', span: 1 }]}>
+		{#snippet cell(student, column)}{@const result = resultForStudent(student.id)}
+			{#if column.key === 'name'}{student.name}
+			{:else if column.key === 'overall'}<span class="tabular-nums">{formatPersistedGrade(result?.grading, result?.overallAverage)}</span>
+			{:else if column.key === 'rank'}<span class="tabular-nums">{formatReportRank(result)}</span>
+			{:else if column.key === 'status'}{#if result}<span class={cn('text-xs', result.status === 'published' ? 'text-accent' : result.status === 'generated' ? 'text-highlight' : 'text-muted-foreground')}>{resultStatusLabel(result)}</span>{:else}<span class="text-muted-foreground">—</span>{/if}
+			{:else if !result || result.status === 'generated' || result.status === 'published'}<RowActionMenu label={`${$t('list.rowActions')} · ${student.name}`}>
+				{#if !result}<RowActionMenuItem onclick={() => generateOne(student.id)}>{$t('reportCards.generate')}</RowActionMenuItem>
+				{:else if result.status === 'generated'}<RowActionMenuItem onclick={() => publishOne(result.id)}>{$t('reportCards.publish')}</RowActionMenuItem>
+				{:else if result.status === 'published'}<RowActionMenuItem onclick={() => void reportCardsPage.performRequestDocumentIssuance({ templateKey: 'report-card.v1', sourceId: result.id, studentId: result.studentId, classGroupId: classId, successMessage: get(t)('documents.toastRequested') })}>{downloadDocumentLabel($t, 'report-card.v1')}</RowActionMenuItem>{/if}
+			</RowActionMenu>{/if}{/snippet}
+	</ListEntityTable>
 </div>

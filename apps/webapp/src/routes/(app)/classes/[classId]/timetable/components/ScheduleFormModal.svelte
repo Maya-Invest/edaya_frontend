@@ -146,7 +146,7 @@
 	<Button
 		variant="outline"
 		size="sm"
-		class="h-7 rounded-full text-xs"
+		class="text-xs"
 		{disabled}
 		{title}
 		onclick={() => (open = true)}

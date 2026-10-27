@@ -65,7 +65,7 @@
 							<button
 								type="button"
 								class={cn(
-									'w-full rounded-xl border px-4 py-3 text-left transition',
+									'w-full rounded-collection border px-4 py-3 text-left transition',
 									selectedId === delivery.id
 										? 'border-primary bg-primary/5'
 										: 'border-border bg-card hover:bg-secondary/40',

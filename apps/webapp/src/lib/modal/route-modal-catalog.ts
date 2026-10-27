@@ -272,7 +272,7 @@ export const ROUTE_MODAL_CATALOG = [
 	{
 		routeFamily: 'configuration-subjects-list',
 		pathnamePattern: /^\/configuration\/structure\/subjects\/?$/,
-		modalNames: ['create-subject'],
+		modalNames: ['create-subject', 'module-create', 'module-edit', 'module-members', 'module-delete', 'report-settings'],
 	},
 	{
 		routeFamily: 'configuration-subjects-detail',
@@ -284,16 +284,6 @@ export const ROUTE_MODAL_CATALOG = [
 		routeFamily: 'configuration-subjects-progression',
 		pathnamePattern: /^\/configuration\/structure\/subjects\/[^/]+\/progression\/?$/,
 		modalNames: ['add-chapter', 'edit-chapter', 'delete-chapter'],
-	},
-	{
-		routeFamily: 'configuration-report-cards-list',
-		pathnamePattern: /^\/configuration\/structure\/details\/?$/,
-		modalNames: ['create'],
-	},
-	{
-		routeFamily: 'configuration-report-cards-detail',
-		pathnamePattern: /^\/configuration\/structure\/details\/report-cards\/[^/]+\/?$/,
-		modalNames: ['create', 'delete', 'edit', 'add-section', 'edit-section', 'delete-section'],
 	},
 	{
 		routeFamily: 'configuration-grade-scales',

@@ -8,14 +8,6 @@
     "identity": "owner"
   },
   {
-    "id": "view.configuration.report-cards.record",
-    "feature": "configuration",
-    "path": "/configuration/structure/details/report-cards/[id]",
-    "title": "/configuration/structure/details/report-cards/[id]",
-    "kind": "page",
-    "identity": "owner"
-  },
-  {
     "id": "view.configuration.permission-profiles",
     "feature": "configuration",
     "path": "/configuration/permission-profiles/[id]",
@@ -1161,14 +1153,6 @@
     "identity": "owner"
   },
   {
-    "id": "view.configuration.report-cards.record.modal.delete",
-    "feature": "configuration",
-    "path": "/configuration/structure/details/report-cards/[id]?modal=delete",
-    "title": "delete · /configuration/structure/details/report-cards/[id]",
-    "kind": "modal",
-    "identity": "owner"
-  },
-  {
     "id": "view.configuration.notifications.modal.reset-all",
     "feature": "configuration",
     "path": "/configuration/notifications?modal=reset-all",
@@ -1489,14 +1473,6 @@
     "identity": "owner"
   },
   {
-    "id": "view.configuration.tools.modal.import.guardian_contacts.template",
-    "feature": "configuration",
-    "path": "/configuration/tools?modal=import&modalTab=guardian_contacts&modalStep=download",
-    "title": "Import session · guardian_contacts",
-    "kind": "modal",
-    "identity": "owner"
-  },
-  {
     "id": "view.configuration.tools.modal.import.guardian_relationships.template",
     "feature": "configuration",
     "path": "/configuration/tools?modal=import&modalTab=guardian_relationships&modalStep=download",
@@ -1509,6 +1485,49 @@
     "feature": "configuration",
     "path": "/configuration/tools?modal=import&modalTab=class_offerings&modalStep=download",
     "title": "Import session · class_offerings",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.subjects.modal.module-create",
+    "feature": "configuration",
+    "path": "/configuration/structure/subjects?modal=module-create",
+    "title": "module-create",
+    "kind": "modal",
+    "identity": "owner"
+  },
+  {
+    "id": "view.configuration.subjects.modal.module-edit",
+    "feature": "configuration",
+    "path": "/configuration/structure/subjects?modal=module-edit",
+    "title": "module-edit",
+    "kind": "modal",
+    "identity": "owner",
+    "target": "reportModuleId"
+  },
+  {
+    "id": "view.configuration.subjects.modal.module-members",
+    "feature": "configuration",
+    "path": "/configuration/structure/subjects?modal=module-members",
+    "title": "module-members",
+    "kind": "modal",
+    "identity": "owner",
+    "target": "reportModuleId"
+  },
+  {
+    "id": "view.configuration.subjects.modal.module-delete",
+    "feature": "configuration",
+    "path": "/configuration/structure/subjects?modal=module-delete",
+    "title": "module-delete",
+    "kind": "modal",
+    "identity": "owner",
+    "target": "reportModuleId"
+  },
+  {
+    "id": "view.configuration.subjects.modal.report-settings",
+    "feature": "configuration",
+    "path": "/configuration/structure/subjects?modal=report-settings",
+    "title": "report-settings",
     "kind": "modal",
     "identity": "owner"
   }

@@ -50,7 +50,7 @@
 		finally { busy = false; }
 	}
 </script>
-<section class="rounded-xl border border-border bg-card p-4 space-y-2">
+<section class="rounded-collection border border-border bg-card p-4 space-y-2">
 	<p class="text-sm font-semibold">{$t('reportCards.homeroomComment')}</p>
 	<p class="whitespace-pre-wrap text-sm">{result.homeroomComment || '—'}</p>
 	{#if result.status !== 'published'}

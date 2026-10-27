@@ -14,7 +14,7 @@
 	<PopoverPrimitive.Content
 		{align}
 		class={cn(
-			'z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out',
+			'ui-popover z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out',
 			className,
 		)}
 		{...restProps}

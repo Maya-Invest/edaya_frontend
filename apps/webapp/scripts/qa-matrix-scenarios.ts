@@ -1,3 +1,4 @@
+import { selectControl } from '../tests/integration/support/custom-select';
 import { openViewSurface } from '../tests/integration/support/view-workflow';
 import { bindBrowserScenarioContext } from '../tests/integration/support/browser-scenario';
 import { captureIntegrationCheckpoint } from '../tests/integration/support/visual-artifacts';
@@ -12,7 +13,7 @@ import { exerciseDashboard } from '../tests/integration/support/dashboard-workfl
 import { scenarioForSurface } from '../tests/integration/support/coverage-contract';
 import { exerciseStudentDocument } from '../tests/integration/support/document-workflows';
 import { exerciseStudentPhoto, exerciseStudentStatus, exerciseStudentTransfer } from '../tests/integration/support/student-workflows';
-import { exerciseActivityCreateEdit, exerciseReportDefinitionLifecycle, exerciseCatalogCrud, exerciseEvaluationEditDelete, exerciseFeeEditArchive, exerciseGradeLevelEditDelete } from '../tests/integration/support/catalog-workflows';
+import { exerciseActivityCreateEdit, exerciseReportModuleLifecycle, exerciseCatalogCrud, exerciseEvaluationEditDelete, exerciseFeeEditArchive, exerciseGradeLevelEditDelete } from '../tests/integration/support/catalog-workflows';
 import { exerciseFinanceMutation, exerciseReconciliation, financeFixture } from '../tests/integration/support/finance-workflows';
 import { exerciseTeacherRead } from '../tests/integration/support/teacher-workflows';
 import { exerciseTimetable } from '../tests/integration/support/timetable-workflows';
@@ -846,8 +847,8 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 	const assignmentResult = await exerciseAssignmentCrud(page, ctx.base, scenarioId, entities);
 	if (assignmentResult) return ok(row, assignmentResult);
 	if (scenarioId === 'web.scenario.0165') {
-		if (!entities.gradeLevelId || !entities.gradeScaleId) return na(row, 'Required report model fixtures missing');
-		return ok(row, await exerciseReportDefinitionLifecycle(page, ctx.base, entities.gradeLevelId, entities.gradeScaleId));
+		if (!entities.gradeLevelId) return na(row, 'Required grade-level fixture missing');
+		return ok(row, await exerciseReportModuleLifecycle(page, ctx.base, entities.gradeLevelId));
 	}
 	const catalogResult = await exerciseCatalogCrud(page, ctx.base, scenarioId);
 	if (catalogResult) return ok(row, catalogResult);
@@ -956,7 +957,7 @@ async function runPageScenario(row: QaTemplateRow, ctx: DemoContext, browser: Br
 				return notOk(row, 'Bouton Add incident introuvable sur /school/events');
 			}
 			const dialog = page.getByRole('dialog');
-			const studentCombo = dialog.getByRole('combobox').first();
+			const studentCombo = selectControl(dialog).first();
 			if (await studentCombo.isVisible().catch(() => false)) {
 				await studentCombo.click();
 				await page.getByRole('option').first().click({ timeout: 5_000 }).catch(() => {});

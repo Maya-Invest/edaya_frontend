@@ -22,14 +22,15 @@
 	} = $props();
 </script>
 
-<div class="flex items-center border-b border-border last:border-0">
+<div class="ui-collection-row flex items-center border-b border-border last:border-0" data-open-record={active}>
 	<button
 		data-entity-id={subject.id}
 		type="button"
+		disabled={!onSelect}
 		onclick={() => onSelect?.()}
+		aria-current={active ? 'true' : undefined}
 		class={cn(
-			'flex min-w-0 flex-1 items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-secondary',
-			active && 'bg-primary/10',
+			'control-focus flex min-w-0 flex-1 items-center gap-4 p-4 text-left',
 		)}
 	>
 		<div class={cn('h-8 w-1.5 shrink-0 rounded-full', dotByColor[subject.color])}></div>
@@ -42,18 +43,21 @@
 					{catalogCategory(subject.category, $lang)}
 				</span>
 			</div>
-			<p class="mt-0.5 truncate text-xs text-muted-foreground">{subject.description}</p>
+			<p class="text-xs text-muted-foreground">{$t('eval.coefficient')}: {subject.coefficient ?? $t('modules.notConfigured')}</p>
+			<p class="mt-0.5 break-words text-xs text-muted-foreground">{subject.description}</p>
 		</div>
 		<div class="flex max-w-[40%] shrink-0 items-center gap-2 text-right text-xs text-muted-foreground">
-			<ChevronRight class="h-4 w-4 text-muted-foreground" />
+			{#if onSelect}<ChevronRight class="h-4 w-4 text-muted-foreground" />{/if}
 		</div>
 	</button>
 
-	<div class="pr-2">
-		<RowActionMenu label={`${$t('list.rowActions')} · ${catalogSubjectName(subject.name, $lang, subject.code)}`}>
-			<PermissionGate permission="ACADEMIC_PROGRAM_MANAGE" gradeLevelId={subject.gradeLevelId} subjectId={subject.id} mode="disable">
-				{#snippet children({ disabled, title })}<RowActionMenuItem {disabled} {title} onclick={onEdit}>{$t('common.edit')}</RowActionMenuItem>{/snippet}
-			</PermissionGate>
-		</RowActionMenu>
-	</div>
+	{#if onEdit}
+		<div class="pr-2">
+			<RowActionMenu label={`${$t('list.rowActions')} · ${catalogSubjectName(subject.name, $lang, subject.code)}`}>
+				<PermissionGate permission="ACADEMIC_PROGRAM_MANAGE" gradeLevelId={subject.gradeLevelId} subjectId={subject.id} mode="disable">
+					{#snippet children({ disabled, title })}<RowActionMenuItem {disabled} {title} onclick={onEdit}>{$t('common.edit')}</RowActionMenuItem>{/snippet}
+				</PermissionGate>
+			</RowActionMenu>
+		</div>
+	{/if}
 </div>

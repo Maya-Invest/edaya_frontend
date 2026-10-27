@@ -12,7 +12,7 @@
 </script>
 
 {#if state.available && state.pending && state.visible}
-	<div class="space-y-2 rounded-xl border border-dashed p-3" data-testid="auth-testing-panel">
+	<div class="space-y-2 rounded-collection border border-dashed p-3" data-testid="auth-testing-panel">
 		<p class="text-xs text-muted-foreground">{$t('auth.testingOnly')}</p>
 		<Button type="button" variant="outline" data-testid="auth-test-reveal" disabled={busy || state.loading} onclick={() => void state.reveal()}>{$t('auth.showTestCode')}</Button>
 		{#if state.otp}

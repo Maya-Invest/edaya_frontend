@@ -22,15 +22,15 @@
 
 <div class="space-y-4">
 	<div class="grid grid-cols-3 gap-3">
-		<div class="rounded-xl bg-destructive/10 p-4">
+		<div class="rounded-collection bg-destructive/10 p-4">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('events.severity.high')}</p>
 			<p class="mt-1 font-display text-2xl text-destructive">{incidentsData.high}</p>
 		</div>
-		<div class="rounded-xl bg-secondary/60 p-4">
+		<div class="rounded-collection bg-secondary/60 p-4">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('events.severity.medium')}</p>
 			<p class="mt-1 font-display text-2xl">{incidentsData.med}</p>
 		</div>
-		<div class="rounded-xl bg-secondary p-4">
+		<div class="rounded-collection bg-secondary p-4">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('events.severity.low')}</p>
 			<p class="mt-1 font-display text-2xl">{incidentsData.low}</p>
 		</div>
@@ -50,7 +50,7 @@
 					<Button
 						variant="outline"
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
 						onclick={() => modals?.open('add-incident')}
@@ -70,7 +70,7 @@
 				</DrawerEmptyState>
 			{:else}
 				{#each incidentsData.sorted as incident (incident.id)}
-					<div class="rounded-xl border border-border bg-card p-4">
+					<div class="rounded-collection border border-border bg-card p-4">
 						<div class="flex items-center justify-between">
 							<span
 								class={cn(

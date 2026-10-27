@@ -20,7 +20,7 @@
 <button
 	type="button"
 	class={cn(
-		'control-focus flex min-h-11 w-full items-center gap-2 rounded-full px-2 py-1.5 text-left text-sm hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50',
+		'control-focus ui-menu-row flex min-h-11 w-full items-center gap-2 rounded-none px-2 py-1.5 text-left text-sm hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50',
 		destructive && 'text-destructive hover:text-destructive',
 	)}
 	{disabled}

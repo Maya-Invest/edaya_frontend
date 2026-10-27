@@ -6,7 +6,7 @@ describe('buildSubjectSavePayload', () => {
 		const payload = buildSubjectSavePayload(
 			{
 				id: 'subj-golf',
-				schoolId: 'school-1', gradeLevelId: 'grade-6', academicYearId: 'year-1', isOptional: false,
+				schoolId: 'school-1', gradeLevelId: 'grade-6', academicYearId: 'year-1', isOptional: false, reportOrder: 0,
 				name: 'GOLF',
 				code: '',
 				coefficient: 0,
@@ -18,7 +18,7 @@ describe('buildSubjectSavePayload', () => {
 
 		expect(payload).toEqual({
 			id: 'subj-golf',
-			schoolId: 'school-1', gradeLevelId: 'grade-6', academicYearId: 'year-1', isOptional: false,
+			schoolId: 'school-1', gradeLevelId: 'grade-6', academicYearId: 'year-1', isOptional: false, reportOrder: 0,
 			name: 'GOLF',
 			categoryId: 'school-1:subject-category:scientifique',
 			color: 'warm',
@@ -29,7 +29,7 @@ describe('buildSubjectSavePayload', () => {
 		const payload = buildSubjectSavePayload(
 			{
 				id: 'subj-math',
-				schoolId: 'school-1', gradeLevelId: 'grade-6', academicYearId: 'year-1', isOptional: false,
+				schoolId: 'school-1', gradeLevelId: 'grade-6', academicYearId: 'year-1', isOptional: false, reportOrder: 0,
 				name: 'Mathematics',
 				code: 'MATH',
 				coefficient: 3,

@@ -5,7 +5,7 @@
 	import { t } from '$lib/i18n';
 	import { X } from '$lib/icons';
 	import { getDirtyWork } from '$lib/interaction/dirty-work.svelte';
-	import { formValues } from '$lib/interaction/form-values';
+	import { focusInvalidField, formValues } from '$lib/interaction/form-values';
 	import { cn } from '$lib/utils';
 	import { onDestroy, tick } from 'svelte';
 
@@ -56,20 +56,42 @@
 
 	const dirtyWork = getDirtyWork();
 	let form = $state<HTMLFormElement>();
+	const headingId = $props.id();
+	function focusEditable() {
+		const field = form?.querySelector<HTMLElement>('input:not([type=hidden]):not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly]), button[aria-haspopup=listbox]:not([disabled]), [contenteditable=true]');
+		if (field && field.getClientRects().length)
+			field.focus();
+		else document.getElementById(headingId)?.focus();
+	}
+	$effect(() => {
+		if (!form)
+			return;
+		const observer = new MutationObserver(() => {
+			if (document.activeElement?.id === headingId)
+				focusEditable();
+		});
+		observer.observe(form, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled', 'readonly'] });
+		return () => observer.disconnect();
+	});
 	let changed = $state(false);
 	let ignoredDraft = $state(false);
 	let submitting = $state(false);
 	let baseline = '';
+	let baselineReady = false;
+	let composing = false;
 	let validationMessage = $state('');
 	const pending = $derived(busy || submitting);
 	$effect(() => {
 		if (open) {
 			changed = false;
+			baselineReady = false;
 			ignoredDraft = false;
 			validationMessage = '';
 			void tick().then(() => {
-				if (form)
+				if (form) {
 					baseline = formValues(form);
+					baselineReady = Boolean(form.querySelector('input:not([type=hidden]),textarea,[aria-haspopup=listbox]'));
+				}
 			});
 		}
 	});
@@ -83,8 +105,10 @@
 	});
 	onDestroy(() => unregister?.());
 	function recordBaseline() {
-		if (form && !changed)
+		if (form && !changed && !baselineReady) {
 			baseline = formValues(form);
+			baselineReady = true;
+		}
 	}
 	function recordChange() {
 		void tick().then(() => {
@@ -124,41 +148,61 @@
 			return;
 		validationMessage = '';
 		if (form && !form.checkValidity()) {
-			const invalid = form.querySelector<HTMLInputElement>('input:invalid, select:invalid, textarea:invalid, [tabindex]:invalid');
 			validationMessage = $t('form.invalid');
-			invalid?.setAttribute('aria-invalid', 'true');
-			invalid?.focus();
+			focusInvalidField(form);
 			return;
 		}
 		submitting = true;
 		try {
 			await onSubmit();
 		}
-		finally { submitting = false; }
+		finally {
+			submitting = false;
+		}
 	}
 
 </script>
 
-<Dialog.Root {open} onOpenChange={handleOpenChange}>
+<Dialog.Root bind:open={() => open, handleOpenChange}>
 	{#if open}
 		<Dialog.Content
 			data-testid="form-modal"
+			onOpenAutoFocus={async (event) => {
+				event.preventDefault();
+				await tick();
+				focusEditable();
+			}}
+			onEscapeKeydown={(event) => {
+				event.preventDefault();
+				close();
+			}}
+			onInteractOutside={(event) => {
+				event.preventDefault();
+				close();
+			}}
 			class={cn('flex max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg flex-col gap-4 p-4', contentClass, presentation === 'task' && 'inset-0 h-dvh max-h-dvh w-screen max-w-none translate-x-0 translate-y-0 rounded-none')}
 		>
 			<div class="max-h-[35dvh] shrink-0 space-y-4 overflow-y-auto">
 				<Dialog.Header>
-					<div class="flex items-start justify-between gap-4 text-left"><Dialog.Title class="min-w-0 flex-1 break-words">{title}</Dialog.Title>
+					<div class="flex items-start justify-between gap-4 text-left"><Dialog.Title id={headingId} tabindex={-1} class="min-w-0 flex-1 break-words">{title}</Dialog.Title>
 						{#if presentation === 'task'}<Button class="shrink-0" variant="ghost" size="icon" aria-label={$t('common.close')} onclick={close}><X aria-hidden="true" /></Button>{/if}
 					</div>
 				</Dialog.Header>
 				{#if navigation}<div>{@render navigation()}</div>{/if}
 			</div>
+			<!-- IME Enter must never trigger an implicit form submit. -->
+			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 			<form bind:this={form} class="flex min-h-0 flex-1 flex-col gap-4" novalidate
 				onsubmit={(event) => {
 					event.preventDefault();
 					void submit();
 				}}
-				onfocusin={recordBaseline} oninput={recordChange} onchange={recordChange}>
+				onkeydown={(event) => {
+					if (event.key === 'Enter' && (event.isComposing || composing || event.keyCode === 229))
+						event.preventDefault();
+				}}
+				oncompositionstart={() => composing = true} oncompositionend={() => composing = false}
+				onfocusin={recordBaseline} oninput={recordChange} onchange={recordChange} onreset={recordChange}>
 				<div class={cn('scrollbar-thin min-h-0 flex-1 space-y-4 overflow-y-auto px-1 py-2', bodyClass)}>
 					{#if description}<Dialog.Description class="break-words">{description}</Dialog.Description>{/if}
 					{@render children?.()}

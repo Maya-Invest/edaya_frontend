@@ -21,7 +21,7 @@
 				<h2 class="text-sm font-medium">{$t('config.configurations')}</h2>
 				<nav
 					aria-label={$t('config.other')}
-					class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft"
+					class="overflow-hidden rounded-collection border border-border bg-card shadow-soft"
 				>
 					{#each visibleEntries as entry (entry.key)}
 						<a

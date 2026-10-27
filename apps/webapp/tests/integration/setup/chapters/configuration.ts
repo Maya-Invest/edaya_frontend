@@ -1,9 +1,9 @@
+import { chooseOption, selectControl } from '../../support/custom-select';
 import type { UiJourney } from '../journey-context';
 import assert from 'node:assert/strict';
 import {
 	clickCreateButton,
 	fillGradeScaleCreateDialog,
-	fillReportCardDefinitionDialog,
 	openDialogButton,
 	openUrlModal,
 	submitDialog,
@@ -70,7 +70,7 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 	if (subjectOpened) {
 		const dialog = page.getByRole('dialog');
 		await dialog.locator('input').first().fill(subjectName);
-		await dialog.getByRole('combobox', { name: /discipline/i }).selectOption({ label: `${disciplineCode} · QA academic discipline` });
+		await chooseOption(selectControl(dialog, { name: /discipline/i }), { label: `${disciplineCode} · QA academic discipline` });
 		if (!(await waitForSubmitEnabled(page, 12_000))) {
 			coverCompletedModal(journey, '/configuration/structure/subjects', 'create-subject', {
 				opened: true,
@@ -128,7 +128,7 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 		if (catalogOpened) {
 			const catalogDialog = page.getByRole('dialog');
 			await catalogDialog.locator('input').first().fill('Mathématiques');
-			await catalogDialog.getByRole('combobox', { name: /discipline/i }).selectOption({ label: `${disciplineCode} · QA academic discipline` });
+			await chooseOption(selectControl(catalogDialog, { name: /discipline/i }), { label: `${disciplineCode} · QA academic discipline` });
 			if (await waitForSubmitEnabled(page, 12_000)) {
 				await submitDialog(page);
 				await waitForDialogClosed(page);
@@ -315,81 +315,19 @@ export async function runConfigurationChapter(journey: UiJourney): Promise<void>
 		logStep(journey, { step: 'grade-scale', ok: false, detail: 'Scale modal not found' });
 	}
 
-	await visitCovered(journey, '/configuration/structure/details', `/configuration/structure/details?gradeLevel=${entities.gradeLevelId}`);
-	await page.getByRole('button', { name: /add model|ajouter un modèle/i }).first().waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {});
-	if (!entities.gradeScaleId) {
-		logStep(journey, { step: 'report-card-def', ok: false, detail: 'No gradeScaleId to reference' });
-		coverCompletedModal(journey, '/configuration/structure/details', 'create', {
-			opened: false,
-			submitted: false,
-			closed: false,
-		}, 'No gradeScaleId to reference');
-		coverActions(journey, 'http://localhost:5173/configuration/structure/details', ['Créer / supprimer / publier'], 'NOT OK', 'No gradeScaleId to reference');
-	}
-	else {
-		const rcOpened = await clickCreateButton(page, 'Créer / supprimer / publier', '/configuration/structure/details')
-			|| await openDialogButton(page, /add model|ajouter un modèle|créer/i)
-			|| await openUrlModal(page, '/configuration/structure/details', 'create', { base: ctx.base, timeout: 15_000 });
-		if (rcOpened) {
-			try {
-				const rcName = `E2E-RC-${Date.now()}`;
-				const payloadPromise = waitForCommandPayload(page, 'create-report-card-definition');
-				await fillReportCardDefinitionDialog(page, {
-					name: rcName,
-					gradeLevelId: entities.gradeLevelId,
-					gradeScaleId: entities.gradeScaleId,
-					gradeScaleName: scaleName,
-				});
-				if (!(await trySubmitDialog(page))) {
-					throw new Error('Report-card Save stayed disabled');
-				}
-				const payload = await payloadPromise;
-				const closed = await waitForDialogClosed(page);
-				let defId = typeof payload?.id === 'string' ? payload.id : null;
-				if (!defId) {
-					const fromUrl = page.url().match(/\/configuration\/structure\/details\/report-cards\/([^/?]+)/)?.[1];
-					defId = fromUrl && fromUrl.length > 0 ? fromUrl : null;
-				}
-				await gotoApp(journey, '/configuration/structure/details');
-				defId = defId
-					?? await configEntityIdByName(page, 'E2E-RC-')
-					?? await firstIdFromLinks(page, /\/configuration\/structure\/details\/report-cards\/([^/?]+)/);
-				entities.reportCardDefId = defId;
-				coverCompletedModal(journey, '/configuration/structure/details', 'create', {
-					opened: true,
-					submitted: true,
-					closed,
-					postcondition: Boolean(defId),
-				}, rcName);
-				coverActions(journey, 'http://localhost:5173/configuration/structure/details', ['Liste définitions bulletins', 'Créer / supprimer / publier'], defId ? 'OK' : 'NOT OK', rcName);
-				if (defId) {
-					await gotoApp(journey, `/configuration/structure/details/report-cards/${defId}`);
-					await visitCovered(journey, '/configuration/structure/details/report-cards/[id]', `/configuration/structure/details/report-cards/${defId}`);
-					coverActions(journey, 'http://localhost:5173/configuration/structure/details/report-cards/[id]', ['Drawer définition'], 'OK');
-				}
-				logStep(journey, { step: 'report-card-def', ok: Boolean(defId), detail: rcName, entityId: defId ?? undefined });
-			}
-			catch (err) {
-				const detail = err instanceof Error ? err.message : String(err);
-				coverCompletedModal(journey, '/configuration/structure/details', 'create', {
-					opened: true,
-					submitted: false,
-					closed: false,
-				}, detail);
-				logStep(journey, { step: 'report-card-def', ok: false, detail });
-				coverActions(journey, 'http://localhost:5173/configuration/structure/details', ['Créer / supprimer / publier'], 'NOT OK', detail);
-				await page.keyboard.press('Escape').catch(() => {});
-			}
-		}
-		else {
-			coverCompletedModal(journey, '/configuration/structure/details', 'create', {
-				opened: false,
-				submitted: false,
-				closed: false,
-			}, 'Create definition modal not found');
-			logStep(journey, { step: 'report-card-def', ok: false, detail: 'Create definition modal not found' });
-		}
-	}
+	await visitCovered(journey, '/configuration/structure/subjects', `/configuration/structure/subjects?gradeLevel=${entities.gradeLevelId}`);
+	const opened = await openUrlModal(page, `/configuration/structure/subjects?gradeLevel=${entities.gradeLevelId}`, 'module-create', { base: ctx.base, timeout: 15000 });
+	if (!opened) throw new Error('Module creation form did not open');
+	const moduleName = `E2E-Module-${Date.now()}`;
+	const payloadPromise = waitForCommandPayload(page, 'configure-report-modules');
+	await page.getByRole('dialog').getByRole('textbox').first().fill(moduleName);
+	if (!(await trySubmitDialog(page))) throw new Error('Module Save stayed disabled');
+	const modulePayload = await payloadPromise;
+	const module = modulePayload?.module as { id?: string } | undefined;
+	entities.reportModuleId = module?.id ?? null;
+	const closed = await waitForDialogClosed(page);
+	coverCompletedModal(journey, '/configuration/structure/subjects', 'module-create', { opened, submitted: true, closed, postcondition: Boolean(module?.id) }, moduleName);
+	logStep(journey, { step: 'report-module', ok: Boolean(module?.id), detail: moduleName, entityId: module?.id });
 
 	entities.notificationTemplateKey = 'report_card.published';
 	await ensureNotificationTemplatesViaApi(page, ctx.base, { classGroupId: entities.classId });

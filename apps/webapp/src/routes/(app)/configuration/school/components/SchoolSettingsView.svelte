@@ -104,7 +104,7 @@
 	{#if school}
 		<div class="mx-auto w-full max-w-3xl space-y-5">
 			{#each sections as section (section.id)}
-				<section class="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-soft">
+				<section class="space-y-4 rounded-collection border border-border bg-card p-5 shadow-soft">
 					<div class="flex flex-wrap items-center justify-between gap-3">
 						<h2 class="font-display text-lg font-semibold">{$t(section.title)}</h2>
 						<PermissionGate permission="SCHOOL_LIFECYCLE_MANAGE" mode="disable">{#snippet children({ disabled, title })}<Button variant="outline" size="sm" {disabled} {title} onclick={() => modals.open(section.id)}><Pencil class="mr-2 h-4 w-4" />{$t('common.edit')}</Button>{/snippet}</PermissionGate>
@@ -115,7 +115,7 @@
 				</section>
 			{/each}
 			<SchoolTimetableSettings />
-			<section class="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-soft">
+			<section class="space-y-4 rounded-collection border border-border bg-card p-5 shadow-soft">
 				<div class="flex flex-wrap items-center justify-between gap-3"><h2 class="font-display text-lg font-semibold">{$t('schoolSettings.sectionIssuanceAssets')}</h2><PermissionGate permission="SCHOOL_LIFECYCLE_MANAGE" mode="disable">{#snippet children({ disabled, title })}<Button variant="outline" size="sm" {disabled} {title} onclick={() => modals.open('assets')}><Pencil class="mr-2 h-4 w-4" />{$t('common.edit')}</Button>{/snippet}</PermissionGate></div>
 				{#each assetSlots as asset (asset.purpose)}<IssuanceAssetSlot readOnly purpose={asset.purpose} label={$t(`schoolSettings.asset.${asset.key}`)} attachmentId={school[asset.slot]} publicAllowed={(school.publicBrandingPurposes ?? []).includes(asset.purpose as 'school.logo' | 'school.crest')} canPublish={asset.public} canManage={false} busy={false} onUpload={() => {}} onClear={() => {}} onPublicChange={() => {}} />{/each}
 			</section>
@@ -130,7 +130,7 @@
 		</fieldset>{/snippet}</PermissionGate>
 	</FormModal>
 {/each}
-<FormModal bind:open={assets.open} title={$t('schoolSettings.sectionIssuanceAssets')} description={$t('schoolSettings.assetsImmediate')} onSubmit={() => modals.close()} contentClass="max-w-2xl">
+<FormModal bind:open={assets.open} title={$t('schoolSettings.sectionIssuanceAssets')} description={$t('schoolSettings.assetsImmediate')} onSubmit={() => modals.close()}>
 	{#if school}<PermissionGate permission="SCHOOL_LIFECYCLE_MANAGE" mode="disable">{#snippet children({ disabled })}<div class="space-y-5">
 		<p class="text-sm text-muted-foreground">{$t('schoolSettings.assetPublicHint')}</p>
 		{#each assetSlots as asset (asset.purpose)}<IssuanceAssetSlot purpose={asset.purpose} label={$t(`schoolSettings.asset.${asset.key}`)} attachmentId={school[asset.slot]} publicAllowed={(school.publicBrandingPurposes ?? []).includes(asset.purpose as 'school.logo' | 'school.crest')} canPublish={asset.public} canManage={!disabled} busy={assetBusy !== null} onUpload={file => upload(asset.purpose, file)} onClear={() => clear(asset.purpose)} onPublicChange={next => publishAsset(asset.purpose, next)} />{/each}

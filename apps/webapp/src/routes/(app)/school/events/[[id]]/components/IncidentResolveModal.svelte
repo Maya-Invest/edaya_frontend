@@ -191,7 +191,7 @@
 					<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 						{$t('events.involvedStudents')}
 					</Label>
-					<Button type="button" variant="outline" size="sm" class="rounded-full" disabled={!canAddParticipant} title={!canAddParticipant ? $t('events.permissionCreate') : undefined} onclick={addRow}>
+					<Button type="button" variant="outline" size="sm" disabled={!canAddParticipant} title={!canAddParticipant ? $t('events.permissionCreate') : undefined} onclick={addRow}>
 						<Plus class="mr-1 h-3.5 w-3.5" />
 						{$t('events.addInvolvedStudent')}
 					</Button>
@@ -199,7 +199,7 @@
 
 				<div class="space-y-3">
 					{#each rows as row (row.key)}
-						<div class="rounded-2xl border border-border bg-secondary/20 p-3 space-y-3">
+						<div class="rounded-collection border border-border bg-secondary/20 p-3 space-y-3">
 							<div class="flex items-start justify-between gap-2">
 								<p class="text-xs font-medium text-muted-foreground">
 									{$t('events.involvedStudentRow')}
@@ -209,7 +209,7 @@
 										type="button"
 										variant="ghost"
 										size="icon"
-										class="h-7 w-7 shrink-0 text-muted-foreground"
+										class="w-7 shrink-0 text-muted-foreground"
 										onclick={() => removeRow(row.key)}
 									>
 										<Trash2 class="h-3.5 w-3.5" />

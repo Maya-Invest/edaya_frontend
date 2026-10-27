@@ -36,7 +36,7 @@
 			<div class="mb-4 flex justify-center lg:hidden">
 				<BrandLogo variant="horizontal" width={144} />
 			</div>
-			<div class="overflow-hidden rounded-3xl border border-border bg-card shadow-panel lg:grid lg:grid-cols-[40%_60%]">
+			<div class="overflow-hidden rounded-collection border border-border bg-card shadow-panel lg:grid lg:grid-cols-[40%_60%]">
 				<aside class="hidden flex-col justify-center border-r border-border bg-background px-10 py-12 lg:flex">
 					<div class="-ml-7 mb-8"><BrandLogo variant="vertical" width={144} /></div>
 					<p class="mb-3 text-xs font-semibold uppercase tracking-widest text-primary">{$t('auth.brandEyebrow')}</p>

@@ -232,7 +232,7 @@
 
 <Button
 	size="sm"
-	class="rounded-full"
+
 	{disabled}
 	{title}
 	onclick={handleOpen}

@@ -1,3 +1,4 @@
+import { chooseOption } from '../../support/custom-select';
 import {
 	closeImportModal,
 	openImportModal,
@@ -29,7 +30,7 @@ export async function runImportScene(ctx: DemoContext): Promise<void> {
 	}
 
   await ctx.page.getByTestId('import-create').click();
-  await ctx.page.getByTestId('data-import-type-select').selectOption('students');
+  await chooseOption(ctx.page.getByTestId('data-import-type-select'), 'students');
   await ctx.page.getByTestId('import-file-input').waitFor({ state: 'visible' });
   if (!await uploadStudentImportFile(ctx)) throw new Error('Server upload failed');
   await ctx.page.getByTestId('task-step-preview').click();

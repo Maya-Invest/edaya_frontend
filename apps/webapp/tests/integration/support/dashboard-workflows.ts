@@ -50,6 +50,25 @@ export async function exerciseDashboard(page: Page, base: string, id: string): P
     await page.route(overviewPath,route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({...data,actionItems:[],upcoming:[],classRiskRows:[]})}));
     await page.reload({waitUntil:'domcontentloaded'});
     for(const text of ['Rien à signaler pour le moment.','Aucun événement cette semaine.','Aucune classe configurée pour cette année.']) await page.locator('main').getByText(text,{exact:true}).waitFor();
-    return 'Displayed an injected transport failure, recovered through retry, and rendered empty overview sections';
+    await page.unroute(overviewPath);
+    await page.route(overviewPath,route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
+      ...data, academicPeriodId: null,
+      kpis: {...data.kpis, publishedReportCardCount:null, unpublishedReportCardCount:null, incompleteGradingClassCount:null},
+      areaHealth:{...data.areaHealth, academics:{gradingCompletionPercent:null,publishedReportCards:null,totalReportCards:null,incompleteGradingClassCount:null}},
+      actionItems:data.actionItems.filter((item: {key:string})=>!['unpublished_report_cards','incomplete_grading'].includes(item.key)),
+      classRiskRows:data.classRiskRows.map((row: Record<string,unknown>)=>({...row,gradingCompletionPercent:null})),
+    })}));
+    await page.reload({waitUntil:'domcontentloaded'});
+    await page.locator('main [role="status"]').filter({hasText:'Aucune période scolaire'}).waitFor();
+    assert.equal(await page.locator('main a[href="/school/students"]').first().locator('p').first().innerText(),String(data.kpis.studentCount));
+    assert.equal(await page.locator('main a[href="/configuration/structure/details"]').first().locator('p').first().innerText(),'—');
+    for(const status of [403,422]) {
+      await page.unroute(overviewPath);
+      await page.route(overviewPath,route=>route.fulfill({status,contentType:'application/json',body:JSON.stringify({error:'Dashboard unavailable'})}));
+      await page.reload({waitUntil:'domcontentloaded'});
+      await page.locator(status === 403 ? 'main [role="status"]' : 'main [role="alert"]').waitFor();
+      assert.equal(await page.locator('main a[href="/school/students"]').count(),0,'Previous dashboard metrics must not remain visible after denial/error');
+    }
+    return 'Verified year-only summaries, unavailable period metrics, denied/validation/transport errors, retry and empty sections';
   } finally {await page.unroute(overviewPath); await page.reload({waitUntil:'domcontentloaded'});}
 }

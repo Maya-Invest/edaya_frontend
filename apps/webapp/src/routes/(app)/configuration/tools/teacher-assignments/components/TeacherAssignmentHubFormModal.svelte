@@ -169,7 +169,7 @@
 	submitDisabled={!canSubmit}
 	onSubmit={submit}
 >
-	<div class="grid gap-3 sm:grid-cols-2"><label>{$t('profile.responsibility')}<input bind:value={responsibility} class="h-10 w-full rounded-lg border bg-background px-3" /></label><label>{$t('profile.startsAt')}<input type="date" bind:value={startsAt} class="h-10 w-full rounded-lg border bg-background px-3" /></label><label>{$t('profile.endsAt')}<input type="date" bind:value={endsAt} class="h-10 w-full rounded-lg border bg-background px-3" /></label></div>
+	<div class="grid gap-3 sm:grid-cols-2"><label>{$t('profile.responsibility')}<input bind:value={responsibility} class="ui-field h-10 w-full rounded-collection border bg-background px-3" /></label><label>{$t('profile.startsAt')}<input type="date" bind:value={startsAt} class="ui-field h-10 w-full rounded-collection border bg-background px-3" /></label><label>{$t('profile.endsAt')}<input type="date" bind:value={endsAt} class="ui-field h-10 w-full rounded-collection border bg-background px-3" /></label></div>
 	<div class="space-y-4">
 		<div class="space-y-1.5">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -224,7 +224,7 @@
 							/>
 						</div>
 						{#if index === classSubjectIds.length - 1}
-							<Button type="button" variant="outline" class="shrink-0 rounded-full" onclick={addSubjectRow}>
+							<Button type="button" variant="outline" class="shrink-0" onclick={addSubjectRow}>
 								{$t('teacher.addSubject')}
 							</Button>
 						{/if}

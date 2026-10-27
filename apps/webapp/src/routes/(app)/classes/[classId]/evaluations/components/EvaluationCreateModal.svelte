@@ -188,7 +188,7 @@
 	onSubmit={submit}
 >
 	{#if classSubjects.length === 0}
-		<p class="rounded-xl bg-secondary/40 p-3 text-sm text-muted-foreground">
+		<p class="rounded-collection bg-secondary/40 p-3 text-sm text-muted-foreground">
 			{$t('dataState.emptyDescription')}
 		</p>
 	{:else}

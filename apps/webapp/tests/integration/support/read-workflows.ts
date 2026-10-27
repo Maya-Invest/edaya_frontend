@@ -1,3 +1,4 @@
+import { chooseOption, selectTrigger } from './custom-select';
 import assert from 'node:assert/strict';
 import type { Locator, Page } from 'playwright';
 import type { MatrixEntities } from '../../../scripts/qa-matrix-support';
@@ -81,15 +82,15 @@ const attendance: ReadScenario = async ctx => {
 
 async function exerciseFilter(ctx: ReadContext, positive: string, row: Locator, urlField?: string) {
   assert(positive, 'Required filter fixture value missing');
-  const select = ctx.page.locator('select[data-testid="list-filter-select"]').filter({has:ctx.page.locator(`option[value="${positive}"]`)}).first();
+  const select = ctx.page.locator('[data-select-field]:has([data-testid="list-filter-select"]) select[data-select-value]').filter({has:ctx.page.locator(`option[value="${positive}"]`)}).first();
   const openFilter = async () => {
-    if (!await select.isVisible()) await ctx.page.getByTestId('list-filter').first().click();
-    await select.waitFor();
+    if (!await selectTrigger(select).isVisible()) await ctx.page.getByTestId('list-filter').first().click();
+    await selectTrigger(select).waitFor();
   };
   const choose = async (value: string) => {
     // Server-filtered lists can remount the header and close its popover.
     await openFilter();
-    await select.selectOption(value);
+    await chooseOption(select, value);
     if (urlField) await ctx.page.waitForURL(url => (url.searchParams.get(urlField) ?? 'all') === value);
     await waitForPageQuery(ctx.page);
   };
@@ -403,7 +404,8 @@ export const READ_SCENARIOS: Record<string, ReadScenario> = {
     for(const payment of payments) await ctx.page.locator(`[data-entity-id="${payment.id}"]`).waitFor({state:'hidden'});
     await search.fill('');
   },
-  'web.scenario.0166': fixtureName('definitions','reportCardDefId','name','aside[aria-label]'),
+  'web.scenario.0164': fixtureName('report-modules','reportModuleId'),
+  'web.scenario.0166': fixtureName('report-modules','reportModuleId'),
   'web.scenario.0176': async ctx => {
     for (const id of ['import-pack-generic','timetable-planning-tool']) await ctx.page.getByTestId(id).waitFor({state:'visible'});
     for (const id of ['import-action','timetable-planning-action']) {

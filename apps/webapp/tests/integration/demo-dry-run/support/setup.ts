@@ -1,3 +1,4 @@
+import { chooseOption } from '../../support/custom-select';
 import { openUrlModal } from '../../../../scripts/qa-harness-ui';
 import { configClassGroupPath } from './paths';
 import type { DemoContext, EnsureDailyAttendanceOptions } from './types';
@@ -78,15 +79,7 @@ export async function ensureDailyAttendanceMode(
 		}).last();
 		const currentMode = await modeSelect.inputValue().catch(() => 'session');
 		if (currentMode !== 'daily') {
-			await modeSelect.selectOption('daily');
-			await modeSelect.evaluate((el) => {
-				if (!(el instanceof HTMLSelectElement)) {
-					return;
-				}
-				el.value = 'daily';
-				el.dispatchEvent(new Event('input', { bubbles: true }));
-				el.dispatchEvent(new Event('change', { bubbles: true }));
-			});
+			await chooseOption(modeSelect, 'daily');
 		}
 	}
 

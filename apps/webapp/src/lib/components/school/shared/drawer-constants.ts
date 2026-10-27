@@ -1,4 +1,4 @@
-import type { Subject, StaffRole, ActivityEnrollmentStatus, Incident } from '$lib/types/school';
+import type { ActivityEnrollmentStatus, Incident, StaffRole, Subject } from '$lib/types/school';
 import type { DrawerItem } from './drawer-types.ts';
 import { BADGE, BADGE_DANGER, BADGE_INFO, BADGE_WARN } from '$lib/ui-tones';
 
@@ -24,7 +24,6 @@ export const kindStyle: Record<NonNullable<DrawerItem>['kind'], string> = {
 	activity: drawerBadge,
 	announcement: drawerBadge,
 	familyFeedback: drawerBadge,
-	reportCardDefinition: drawerBadge,
 	reportCardResult: drawerBadge,
 	gradeLevel: drawerBadge,
 	classGroup: drawerBadge,
@@ -47,7 +46,6 @@ export const kindLabelKey: Record<NonNullable<DrawerItem>['kind'], string> = {
 	activity: 'drawer.activity',
 	announcement: 'drawer.announcement',
 	familyFeedback: 'drawer.familyFeedback',
-	reportCardDefinition: 'drawer.reportCardDefinition',
 	reportCardResult: 'drawer.reportCardResult',
 	gradeLevel: 'drawer.gradeLevel',
 	classGroup: 'drawer.classGroup',

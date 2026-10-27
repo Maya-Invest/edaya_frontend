@@ -77,13 +77,13 @@
 	{/snippet}
 	{#snippet avatar()}
 		<span
-			class="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary font-display text-sm font-semibold text-primary-foreground"
+			class="flex h-14 w-14 items-center justify-center rounded-collection bg-primary font-display text-sm font-semibold text-primary-foreground"
 		>
 			{teacherInitials}
 		</span>
 	{/snippet}
 	{#snippet actions()}
-		<Button variant="outline" size="sm" class="rounded-full" onclick={() => modals.open('edit-subject')}>
+		<Button variant="outline" size="sm" onclick={() => modals.open('edit-subject')}>
 			{$t('common.edit')}
 		</Button>
 	{/snippet}

@@ -53,7 +53,7 @@
 </script>
 
 <div class="flex flex-col items-center gap-4">
-	<div class="flex h-56 w-56 items-center justify-center overflow-hidden rounded-2xl bg-secondary">
+	<div class="flex h-56 w-56 items-center justify-center overflow-hidden rounded-collection bg-secondary">
 		{#if previewUrl}
 			<img
 				src={previewUrl}

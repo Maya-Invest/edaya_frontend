@@ -10,3 +10,16 @@ export function formValues(form: HTMLFormElement): string {
 		return (field as HTMLInputElement).value;
 	}));
 }
+
+/** Validation proxies preserve native validity while focus belongs to the custom control. */
+export function focusInvalidField(form: HTMLFormElement): HTMLElement | null {
+	const invalid = form.querySelector<HTMLElement>(':invalid');
+	if (!invalid)
+		return null;
+	const target = invalid.matches('[data-select-value]')
+		? invalid.closest('[data-select-field]')?.querySelector<HTMLElement>('[aria-haspopup="listbox"]') ?? invalid
+		: invalid;
+	target.setAttribute('aria-invalid', 'true');
+	target.focus();
+	return target;
+}

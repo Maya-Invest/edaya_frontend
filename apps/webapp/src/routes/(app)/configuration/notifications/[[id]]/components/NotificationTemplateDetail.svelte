@@ -104,7 +104,7 @@
 		<h2 class="text-xl font-semibold">{$t('notificationTemplates.messagePreviews')}</h2>
 		<p class="text-xs text-muted-foreground">{$t('notificationTemplates.sampleNotice')}</p>
 		{#each (['in_app', 'push', 'email', 'sms'] as const).filter(channel => channels.includes(channel)) as channel (channel)}
-			<div class="space-y-4 rounded-xl border border-border p-4">
+			<div class="space-y-4 rounded-collection border border-border p-4">
 				<h3 class="text-sm font-semibold">{$t(`notificationTemplates.channel.${channel}`)} · {channelState(channel)}</h3>
 				{#if channel === 'email'}
 					{#if richSubject}<p class="break-words text-sm font-semibold">{emailSubjectPreview}</p>{:else}<p class="text-sm">{$t('notificationTemplates.subject')}: {$t('value.notProvided')}</p>{/if}

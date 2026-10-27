@@ -1,19 +1,22 @@
 <script lang="ts">
 	import type { ReferenceCopy } from '../reference-copy';
 	import DrawerField from '$lib/components/school/shared/DrawerField.svelte';
-	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
-	import CollectionFilters from '$lib/components/ui/collection/CollectionFilters.svelte';
-	import CollectionMenu from '$lib/components/ui/collection/CollectionMenu.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import DrawerFrame from '$lib/components/ui/DrawerFrame.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
+	import ListEntityCard from '$lib/components/ui/ListEntityCard.svelte';
+	import ListEntityCards from '$lib/components/ui/ListEntityCards.svelte';
+	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
+	import ListSelectionBar from '$lib/components/ui/ListSelectionBar.svelte';
 	import RowActionMenu from '$lib/components/ui/RowActionMenu.svelte';
 	import RowActionMenuItem from '$lib/components/ui/RowActionMenuItem.svelte';
 	import { locale } from '$lib/i18n';
+	import { ArrowLeft, X } from '$lib/icons';
 	import { resolveTableColumnKeys } from '$lib/list/table-column-preferences';
 	import { tick } from 'svelte';
-	import Button from './ReferenceButton.svelte';
+	import ReferenceSelect from './ReferenceSelect.svelte';
 	import ReferenceTable from './ReferenceTable.svelte';
 
 	const { copy }: { copy: ReferenceCopy } = $props();
@@ -80,7 +83,7 @@
 		selection = [];
 		selecting = false;
 		await tick();
-		const target = document.querySelector('#collections [data-testid=reference-customize]') ?? document.querySelector('#collections [data-testid=collection-menu]');
+		const target = document.querySelector('#collections [data-testid=table-columns]') ?? document.querySelector('#collections [data-testid=collection-menu]');
 		if (target instanceof HTMLElement)
 			target.focus();
 	}
@@ -105,22 +108,13 @@
 	<h2 class="font-display text-xl font-semibold">{copy.collections}</h2>
 	<p class="text-sm">{copy.collectionHint}</p>
 	<p class="text-sm">{copy.rowStatesHint}</p>
-	<label class="block max-w-lg space-y-2 text-sm"><span>{copy.openRecordPreview}</span><select data-testid="reference-open-record" class="w-full border border-input bg-card" bind:value={previewOpen}><option value="">{copy.none}</option>{#each rows as row (row.id)}<option value={row.id}>{row.name}</option>{/each}</select></label>
-	<div class="reference-collection-container"><header class="reference-collection-header">
-		<div class="flex min-w-0 flex-wrap items-baseline gap-2"><h3 class="font-display text-2xl font-semibold">{copy.students} · {visible.length}</h3>{#if hiddenSort}<p class="text-sm text-muted-foreground" role="status">{copy.sortBy} {hiddenSort} · {sort.direction === 'ascending' ? copy.ascending : copy.descending} · {copy.hiddenColumn}</p>{/if}</div>
-		<div class="reference-collection-toolbar">
-			<div data-reference-search class="min-w-0 flex-1"><ListSearchField placeholder={copy.search} bind:value={query} /></div>
-			<div class="reference-collection-actions"><CollectionFilters activeCount={className ? 1 : 0} onReset={() => className = ''}><label class="block space-y-2 text-sm"><span>{copy.className}</span><select class="min-h-11 w-full border border-input bg-background px-4" bind:value={className}><option value="">{copy.all}</option><option>6e A</option><option>6e B</option></select></label></CollectionFilters>
-				<CollectionMenu>
-					<Button variant="ghost" aria-pressed={view === 'table'} onclick={() => view = 'table'}>{copy.table}</Button>
-					<Button variant="ghost" aria-pressed={view === 'list'} onclick={() => view = 'list'}>{copy.list}</Button>
-					<Button variant="ghost" aria-pressed={selecting} onclick={() => selecting ? void exitSelection() : selecting = true}>{selecting ? copy.exitSelection : copy.select}</Button>
-					<Button variant="ghost" onclick={() => changeSort('name')}>{copy.sortBy} {copy.student}</Button>
-					<Button variant="ghost" onclick={() => changeSort('amount')}>{copy.sortBy} {copy.amount}</Button>
-				</CollectionMenu></div>
-		</div>
-	</header></div>
-	{#if selecting}<div class="flex flex-wrap items-center justify-between gap-2 border bg-card p-4" data-testid="reference-selection-bar"><span class="text-sm" role="status">{copy.selected}: {selection.length}</span><div class="flex flex-wrap gap-2"><Button variant="outline" onclick={() => selection = []}>{copy.clearSelection}</Button><Button variant="ghost" onclick={exitSelection}>{copy.exitSelection}</Button></div></div>{/if}
+	<div class="max-w-lg"><ReferenceSelect label={copy.openRecordPreview} data-testid="reference-open-record" bind:value={previewOpen} options={[{ value: '', label: copy.none }, ...rows.map(row => ({ value: row.id, label: row.name }))]} /></div>
+	<ListPageHeader title={`${copy.students} · ${visible.length}`} hiddenSort={hiddenSort ? `${copy.sortBy} ${hiddenSort} · ${sort.direction === 'ascending' ? copy.ascending : copy.descending}` : undefined} filterCount={className ? 1 : 0} onResetFilters={() => className = ''}>
+		{#snippet search()}<ListSearchField placeholder={copy.search} bind:value={query} />{/snippet}
+		{#snippet filters()}<ReferenceSelect label={copy.className} bind:value={className} options={[{ value: '', label: copy.all }, { value: '6e A', label: '6e A' }, { value: '6e B', label: '6e B' }]} />{/snippet}
+		{#snippet more()}<Button variant="ghost" aria-pressed={view === 'table'} onclick={() => view = 'table'}>{copy.table}</Button><Button variant="ghost" aria-pressed={view === 'list'} onclick={() => view = 'list'}>{copy.list}</Button><Button variant="ghost" onclick={() => selecting ? void exitSelection() : selecting = true}>{selecting ? copy.exitSelection : copy.select}</Button><Button variant="ghost" onclick={() => changeSort('name')}>{copy.sortBy} {copy.student}</Button><Button variant="ghost" onclick={() => changeSort('amount')}>{copy.sortBy} {copy.amount}</Button>{/snippet}
+	</ListPageHeader>
+	{#if selecting}<ListSelectionBar selectedCount={selection.length} onClear={() => selection = []} onExit={exitSelection} />{/if}
 	{#if view === 'table'}
 		<ReferenceTable {copy} {columns} {actions} openRecordId={record ?? previewOpen} rows={visible} {visibleKeys} onColumnsChange={keys => savedColumns = keys} {selecting} selectedIds={selection} onToggle={toggle} onToggleLoaded={checked => selection = checked ? [...new Set([...selection, ...visible.map(row => row.id)])] : selection.filter(id => !visible.some(row => row.id === id))} onInspect={row => inspect(row.id)} {sort} onSort={changeSort}>
 			{#snippet cell(row, column)}
@@ -131,16 +125,11 @@
 			{/snippet}
 		</ReferenceTable>
 	{:else}
-		<ul class="reference-list border bg-card" aria-label={copy.students}>
-			{#each visible as row (row.id)}
-				<li class="reference-list-row" data-row={row.id} data-open={(record ?? previewOpen) === row.id} data-selected={selecting && selection.includes(row.id)}>
-					<button class="reference-list-identity control-focus" type="button" aria-current={(record ?? previewOpen) === row.id ? 'true' : undefined} aria-haspopup="dialog" onclick={() => inspect(row.id)}><span class="font-semibold">{row.name}</span><span class="text-xs text-muted-foreground">{row.className}</span><span class="tabular-nums">{amount(row.amount)}</span><span class="reference-list-chevron" aria-hidden="true">›</span></button>
-					<div class="reference-list-utility">{#if selecting}<Checkbox class="reference-checkbox" checked={selection.includes(row.id)} onCheckedChange={checked => toggle(row.id, checked)} aria-label={`${copy.selectRecord} ${row.name}`} />{:else}{@render actions(row)}{/if}</div>
-				</li>
-			{:else}<li class="p-4 text-sm">{copy.noMatch}</li>{/each}
-		</ul>
+		<ListEntityCards columns={columns.map(c => ({ ...c, card: c.key === 'name' ? { zone: 'header' as const } : c.key === 'actions' ? undefined : { zone: 'body' as const } }))} rows={visible} highlightId={record ?? previewOpen} selectionMode={selecting} selectedIds={selection} onToggleSelected={toggle} onRowClick={row => inspect(row.id)} {actions}>
+			{#snippet field(row, key)}{#if key === 'name'}{row.name}{:else if key === 'class'}{row.className}{:else if key === 'amount'}<span class="tabular-nums">{amount(row.amount)}</span>{/if}{/snippet}
+		</ListEntityCards>
 	{/if}
-	<div class="reference-list border bg-card"><div class="reference-list-row"><div class="min-w-0 flex-1 space-y-2 text-sm"><p class="font-semibold">{copy.collectionOnly}</p><p>{copy.relatedHint}</p></div><div class="reference-list-utility"><RowActionMenu label={copy.collectionOnly}><RowActionMenuItem disabled title={copy.disabledReason}>{copy.edit}</RowActionMenuItem></RowActionMenu></div></div></div>
+	<div class="ui-collection"><ListEntityCard layout="row" showHeader showBody showActions>{#snippet header()}<p>{copy.collectionOnly}</p>{/snippet}{#snippet body()}<p>{copy.relatedHint}</p>{/snippet}{#snippet actions()}<RowActionMenu label={copy.collectionOnly}><RowActionMenuItem disabled title={copy.disabledReason}>{copy.edit}</RowActionMenuItem></RowActionMenu>{/snippet}</ListEntityCard></div>
 </section>
 {#snippet actions(row: typeof rows[number])}
 	{#if row.id !== '2'}<RowActionMenu label={`${copy.actions} · ${row.name}`}><RowActionMenuItem onclick={() => edit(row)}>{copy.edit}</RowActionMenuItem></RowActionMenu>{/if}
@@ -154,10 +143,10 @@
 </FormModal>
 {#if current}
 	<DrawerFrame label={current.name} testId="gallery-drawer" onClose={close}>
-		<header class="flex shrink-0 flex-wrap items-start justify-between gap-4 border-b p-4 md:p-6"><h2 class="min-w-0 break-words font-display text-xl font-semibold">{current.name}</h2><div class="flex gap-2">{#if previous}<Button variant="ghost" onclick={() => {
+		<header class="flex shrink-0 flex-wrap items-start justify-between gap-4 border-b p-4 md:p-6"><h2 class="min-w-0 break-words font-display text-xl font-semibold">{current.name}</h2><div class="flex gap-2">{#if previous}<Button size="icon" variant="ghost" iconTreatment="circle" aria-label={copy.back} data-testid="reference-drawer-back" onclick={() => {
 			record = previous;
 			previous = null;
-		}}>{copy.back}</Button>{/if}<Button variant="outline" onclick={close}>{copy.close}</Button></div></header>
+		}}><ArrowLeft aria-hidden="true" /></Button>{/if}<Button size="icon" variant="ghost" iconTreatment="circle" aria-label={copy.close} data-testid="reference-drawer-close" onclick={close}><X aria-hidden="true" /></Button></div></header>
 		<div class="min-h-0 flex-1 space-y-6 overflow-y-auto p-4 md:p-6">
 			<section class="space-y-4"><h3 class="font-display text-xl font-semibold">{copy.details}</h3><DrawerField label={copy.className}>{current.className}</DrawerField><DrawerField label={copy.amount}><span class="tabular-nums">{amount(current.amount)}</span></DrawerField></section>
 			<section class="space-y-4"><h3 class="font-display text-xl font-semibold">{copy.related}</h3><p class="text-sm">{copy.relatedHint}</p><Button variant="ghost" onclick={() => {
@@ -166,13 +155,7 @@
 			}}>{rows.find(row => row.id === (record === '1' ? '2' : '1'))?.name}</Button></section>
 			<section class="space-y-4" data-testid="reference-drawer-collection">
 				<p class="text-sm">{copy.drawerCollectionHint}</p>
-				<div class="reference-collection-container"><header class="reference-collection-header">
-					<div><h3 class="font-display text-xl font-semibold">{copy.students} · {relatedRows.length}</h3>{#if relatedHiddenSort}<p class="text-sm text-muted-foreground" role="status">{copy.sortBy} {relatedHiddenSort} · {relatedSort.direction === 'ascending' ? copy.ascending : copy.descending} · {copy.hiddenColumn}</p>{/if}</div>
-					<div class="reference-collection-toolbar"><div data-reference-search><ListSearchField placeholder={copy.search} bind:value={relatedQuery} /></div><div class="reference-collection-actions">
-						<CollectionFilters activeCount={relatedClass ? 1 : 0} onReset={() => relatedClass = ''}><label class="block space-y-2 text-sm"><span>{copy.className}</span><select class="w-full border border-input bg-card" bind:value={relatedClass}><option value="">{copy.all}</option><option>6e A</option><option>6e B</option></select></label></CollectionFilters>
-						<CollectionMenu><Button variant="ghost" onclick={() => sortRelated('name')}>{copy.sortBy} {copy.student}</Button></CollectionMenu>
-					</div></div>
-				</header></div>
+				<ListPageHeader surface="related" level="section" title={`${copy.students} · ${relatedRows.length}`} hiddenSort={relatedHiddenSort ? `${copy.sortBy} ${relatedHiddenSort}` : undefined} filterCount={relatedClass ? 1 : 0} onResetFilters={() => relatedClass = ''}>{#snippet search()}<ListSearchField placeholder={copy.search} bind:value={relatedQuery} />{/snippet}{#snippet filters()}<ReferenceSelect label={copy.className} bind:value={relatedClass} options={[{ value: '', label: copy.all }, { value: '6e A', label: '6e A' }, { value: '6e B', label: '6e B' }]} />{/snippet}{#snippet more()}<Button variant="ghost" onclick={() => sortRelated('name')}>{copy.sortBy} {copy.student}</Button>{/snippet}</ListPageHeader>
 				<ReferenceTable {copy} {columns} rows={relatedRows.toSorted((a, b) => (relatedSort.direction === 'ascending' ? 1 : -1) * (relatedSort.key === 'amount' ? a.amount - b.amount : (relatedSort.key === 'class' ? a.className : a.name).localeCompare(relatedSort.key === 'class' ? b.className : b.name, $locale)))} visibleKeys={resolveTableColumnKeys(columns, relatedColumns)} onColumnsChange={keys => relatedColumns = keys} selecting={false} selectedIds={[]} onToggle={() => {}} onToggleLoaded={() => {}} onInspect={(row) => {
 					previous = record;
 					record = row.id;

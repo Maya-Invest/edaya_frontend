@@ -84,10 +84,10 @@
 </script>
 
 <div class="flex h-full flex-col overflow-hidden">
-	<ListPageHeader level="section" title={$t('account.notifications.title')} />
+	<ListPageHeader surface="related" level="section" title={$t('account.notifications.title')} />
 
 	<div class="flex-1 overflow-y-auto p-6">
-		<div class="mx-auto max-w-lg space-y-6 rounded-xl border border-border bg-card p-5">
+		<div class="mx-auto max-w-lg space-y-6 rounded-collection border border-border bg-card p-5">
 			<p class="text-sm text-muted-foreground">{$t('account.notifications.staffIntro')}</p>
 
 			<section class="space-y-4">

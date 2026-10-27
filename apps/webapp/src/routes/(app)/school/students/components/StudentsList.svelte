@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { provideCollectionPresentation } from '$lib/list/collection-presentation.svelte';
+
+	provideCollectionPresentation();
 	import type { ListEntityTableColumn } from '$lib/list/list-entity-table-types';
 	import type { ListCardColumns, ListView } from '$lib/list/list-view-url';
 	import type { Student } from '$lib/types/school';
@@ -287,7 +290,7 @@
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
 						onclick={onCreate}
@@ -323,7 +326,7 @@
 			total={listTotal}
 			visibleCount={listVisibleCount}
 			onLoadMore={loadMoreStudents}
-			onRowClick={student => selection.handleRowClick(student, onSelect)}
+			onRowClick={onSelect}
 		>
 
 			{#snippet cell(student, column, ctx)}
@@ -382,7 +385,7 @@
 					</div>
 				{:else if column.key === 'actions'}
 					<div class="col-span-1 flex justify-end" role="presentation" onclick={event => event.stopPropagation()}>
-						<RowActionMenu>
+						<RowActionMenu label={`${$t('list.rowActions')} · ${student.name}`}>
 							<RowActionMenuItem onclick={event => openStudentAction(event, student)}>
 								<Eye class="h-4 w-4 text-muted-foreground" />
 								{$t('common.open')}
@@ -418,7 +421,7 @@
 			total={listTotal}
 			visibleCount={listVisibleCount}
 			onLoadMore={loadMoreStudents}
-			onRowClick={student => selection.handleRowClick(student, onSelect)}
+			onRowClick={onSelect}
 		>
 			{#snippet field(student, columnKey)}
 				{@const classGroup = classes.find(entry => entry.id === student.classId)}
@@ -475,7 +478,7 @@
 				{/if}
 			{/snippet}
 			{#snippet actions(student)}
-				<RowActionMenu>
+				<RowActionMenu label={`${$t('list.rowActions')} · ${student.name}`}>
 					<RowActionMenuItem onclick={event => openStudentAction(event, student)}>
 						<Eye class="h-4 w-4 text-muted-foreground" />
 						{$t('common.open')}

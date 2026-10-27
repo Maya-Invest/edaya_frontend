@@ -5,6 +5,7 @@
 
 	let {
 		value = $bindable(''),
+		disabled = false,
 		placeholder,
 		class: className,
 		inputClass,
@@ -12,6 +13,7 @@
 		onCommit,
 	}: {
 		value?: string;
+		disabled?: boolean;
 		placeholder?: string;
 		class?: string;
 		inputClass?: string;
@@ -20,13 +22,14 @@
 	} = $props();
 </script>
 
-<div class={cn('relative', className)}>
+<label class={cn('ui-search relative block', className)}>
 	<Search
 		class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
 		aria-hidden="true"
 	/>
 	<input
 		type="search"
+		{disabled}
 		data-testid="list-search"
 		bind:value
 		oninput={(event) => {
@@ -45,4 +48,4 @@
 			inputClass,
 		)}
 	/>
-</div>
+</label>

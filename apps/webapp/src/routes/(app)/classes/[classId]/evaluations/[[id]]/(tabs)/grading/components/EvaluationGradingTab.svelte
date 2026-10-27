@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { provideCollectionPresentation } from '$lib/list/collection-presentation.svelte';
+
+	provideCollectionPresentation();
 	import type { Evaluation } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
@@ -71,14 +74,14 @@
 		<h3 class="text-xl font-semibold">
 			{$t('drawer.submissions')} - {evaluation.submittedCount}/{evaluation.total}
 		</h3>
-		<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+		<div class="overflow-hidden rounded-collection border border-border bg-card shadow-soft">
 			{#each classStudents as student, index (student.id)}
 				{@const submission = submissionsByStudent[student.id]}
 				{@const status = submission?.status ?? 'missing'}
 				{@const meta = subStatusStyle[status]}
 				<div class={cn('flex items-center gap-3 px-4 py-3', index % 2 === 1 && 'bg-secondary/30')}>
 					<div
-						class="flex h-8 w-8 items-center justify-center rounded-xl bg-primary font-display text-xs font-semibold text-primary-foreground"
+						class="flex h-8 w-8 items-center justify-center rounded-collection bg-primary font-display text-xs font-semibold text-primary-foreground"
 					>
 						{student.initials}
 					</div>

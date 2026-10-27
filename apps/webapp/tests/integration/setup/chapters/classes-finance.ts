@@ -28,7 +28,6 @@ import {
 	generateReportCardViaApi,
 	lessonSessionExists,
 	publishAcademicPeriodsViaApi,
-	publishReportCardDefinitionViaApi,
 	apiFetch,
 	submitAssessmentMarksViaApi,
 } from '../journey-api';
@@ -250,22 +249,6 @@ export async function runClassesFinanceChapter(journey: UiJourney): Promise<void
 	await runRequiredGroup(journey, 'report-cards', async () => {
 		await visitCovered(journey, '/classes/[classId]/report-cards', `/classes/${classId}/report-cards`);
 		coverActions(journey, 'http://localhost:5173/classes/[classId]/report-cards', ['Liste — filtre statut'], 'OK');
-		if (entities.reportCardDefId) {
-			await gotoApp(journey, `/configuration/structure/details/report-cards/${entities.reportCardDefId}`);
-			const publishModelBtn = page.getByRole('button', { name: /publish model|publier le modèle/i }).first();
-			if (await publishModelBtn.isVisible({ timeout: 8_000 }).catch(() => false)) {
-				const publication = page.waitForResponse(response => response.url().includes('/entities/definitions/save') && response.request().method() === 'POST', { timeout: 20000 });
-				await publishModelBtn.click();
-				const published = await publication;
-				if (!published.ok()) throw new Error(`Report template publication failed: HTTP ${published.status()}`);
-				const saved = await apiFetch(page, journey.ctx.base, `/core/entities/definitions/${entities.reportCardDefId}`);
-				if ((await saved.json() as { status: string }).status !== 'published') throw new Error('Required published report template did not persist');
-			}
-			else {
-				await publishReportCardDefinitionViaApi(page, journey.ctx.base, entities.reportCardDefId);
-			}
-			await gotoApp(journey, `/classes/${classId}/report-cards`);
-		}
 		const generateBtn = page.getByRole('button', { name: /générer|generate|publier|publish/i }).first();
 		const generateVisible = await generateBtn.isVisible({ timeout: 5_000 }).catch(() => false);
 		const reportStudentResponse = await apiFetch(page,journey.ctx.base,`/core/entities/students/${entities.studentId}`);

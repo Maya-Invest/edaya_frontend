@@ -61,11 +61,11 @@
 	}
 </script>
 
-<Button variant="outline" size="sm" class="rounded-full" {disabled} {title} onclick={() => (open = true)}>
+<Button variant="outline" size="sm" {disabled} {title} onclick={() => (open = true)}>
 	{$t('teacher.editProfile')}
 </Button>
 
-<FormModal
+<FormModal contentClass="max-w-3xl"
 	bind:open
 	title={$t('teacher.editProfileTitle', { name: teacher.name })}
 	description={$t('teacher.editProfileDescription')}

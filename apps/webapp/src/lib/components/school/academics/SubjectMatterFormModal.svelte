@@ -94,7 +94,7 @@
 	}
 </script>
 
-<FormModal
+<FormModal contentClass="max-w-3xl"
 	bind:open
 	title={isEdit ? $t('subjects.chapters.editTitle') : $t('subjects.chapters.createTitle')}
 	description={$t('subjects.chapters.formDescription')}

@@ -17,7 +17,7 @@
 
 {#if live}
 	{#if familyFeedbackPage.aggregate && familyFeedbackPage.reviewCampaignId === live.id}
-		<div class="rounded-2xl border border-border bg-card p-4 space-y-3">
+		<div class="rounded-collection border border-border bg-card p-4 space-y-3">
 			<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 				{$t('familyFeedback.aggregates')}
 			</p>
@@ -27,7 +27,7 @@
 			{/if}
 			<ul class="space-y-2">
 				{#each familyFeedbackPage.aggregate.questions as question (question.questionId)}
-					<li class="rounded-xl bg-secondary/40 px-3 py-2 text-sm">
+					<li class="rounded-collection bg-secondary/40 px-3 py-2 text-sm">
 						<p class="font-medium">{$t(`familyFeedback.question.${question.questionId}`)}</p>
 						{#if question.suppressed}
 							<p class="text-muted-foreground">{$t('familyFeedback.suppressed')}</p>

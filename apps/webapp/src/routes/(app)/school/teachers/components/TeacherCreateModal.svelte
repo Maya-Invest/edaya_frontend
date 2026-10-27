@@ -101,7 +101,7 @@
 		</Label>
 		<Input type="tel" bind:value={phone} autocomplete="tel" aria-label={$t('common.phone')} />
 	</div>
-	<div class="flex items-start gap-3 rounded-xl border border-border bg-secondary/30 px-3 py-2.5">
+	<div class="flex items-start gap-3 rounded-collection border border-border bg-secondary/30 px-3 py-2.5">
 		<Checkbox bind:checked={sendAccountInvitation} id="teacher-send-invite" />
 		<div class="space-y-1">
 			<Label for="teacher-send-invite" class="text-sm font-medium">

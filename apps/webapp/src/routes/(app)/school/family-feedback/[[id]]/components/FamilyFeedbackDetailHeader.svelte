@@ -158,7 +158,7 @@
 						<Button
 							variant="outline"
 							size="sm"
-							class="rounded-full"
+
 							disabled={disabled || actionBusy || Boolean(scheduleBlocker)}
 							title={tooltipTitle || (scheduleBlocker ? $t(scheduleBlocker) : undefined)}
 							onclick={() => (scheduleOpen.open = true)}
@@ -168,7 +168,7 @@
 					{/if}
 					<Button
 						size="sm"
-						class="rounded-full"
+
 						disabled={disabled || actionBusy || Boolean(openBlocker)}
 						title={tooltipTitle || (openBlocker ? $t(openBlocker) : undefined)}
 						onclick={() => (openOpen.open = true)}
@@ -187,7 +187,7 @@
 				{#snippet children({ disabled, title: tooltipTitle })}
 					<Button
 						size="sm"
-						class="rounded-full"
+
 						disabled={disabled}
 						title={tooltipTitle}
 						onclick={() => (publishOpen.open = true)}

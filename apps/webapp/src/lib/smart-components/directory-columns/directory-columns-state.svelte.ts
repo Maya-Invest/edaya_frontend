@@ -49,9 +49,9 @@ export class DirectoryColumnsState {
         if (this.kind === 'staff')
             fields.push({ key: 'isActive', labelKey: 'common.status' }, { key: 'responsibilitySummary', labelKey: 'profile.responsibilities' }, { key: 'permissionValiditySummary', labelKey: 'profile.permissionValidity' });
         if (this.kind === 'guardian')
-            fields.push({ key: 'contactMethods', labelKey: 'profile.contactMethods' }, { key: 'primaryContact', labelKey: 'profile.primaryContact' }, { key: 'notificationEligibility', labelKey: 'profile.allowsNotifications' }, { key: 'hasAccess', labelKey: 'profile.portalAccess' }, { key: 'relationshipSummary', labelKey: 'profile.relationships' });
+            fields.push({ key: 'alternativePhone', labelKey: 'guardian.contacts.alternativePhone' }, { key: 'emailNotificationsEnabled', labelKey: 'account.notifications.email' }, { key: 'smsNotificationsEnabled', labelKey: 'account.notifications.sms' }, { key: 'pushNotificationsEnabled', labelKey: 'account.notifications.push' }, { key: 'hasAccess', labelKey: 'profile.portalAccess' }, { key: 'relationshipSummary', labelKey: 'profile.relationships' });
         const seen = new SvelteSet<string>();
-        const columns: ListEntityTableColumn[] = fields.filter(field => !seen.has(field.key) && Boolean(seen.add(field.key))).map(field => ({ key: field.key, label: get(t)(field.labelKey), span: 2, minWidth: 160, defaultVisible: false, group: get(t)(['academicYear', 'placementStatusLabel', 'isRepeating', 'declaredDisciplines', 'declaredHours', 'hoursPeriod', 'assignmentSummary', 'availabilitySummary', 'responsibilitySummary', 'permissionValiditySummary'].includes(field.key) ? 'profile.yearInformation' : ['email', 'phone', 'guardian', 'guardianContacts', 'contactMethods', 'primaryContact', 'notificationEligibility', 'relationshipSummary'].includes(field.key) ? 'profile.contactsRelationships' : ['accountState', 'hasAccess', 'isActive'].includes(field.key) ? 'profile.accountAccess' : 'profile.identityFields') }));
+        const columns: ListEntityTableColumn[] = fields.filter(field => !seen.has(field.key) && Boolean(seen.add(field.key))).map(field => ({ key: field.key, label: get(t)(field.labelKey), span: 2, minWidth: 160, defaultVisible: false, group: get(t)(['academicYear', 'placementStatusLabel', 'isRepeating', 'declaredDisciplines', 'declaredHours', 'hoursPeriod', 'assignmentSummary', 'availabilitySummary', 'responsibilitySummary', 'permissionValiditySummary'].includes(field.key) ? 'profile.yearInformation' : ['email', 'phone', 'guardian', 'guardianContacts', 'alternativePhone', 'emailNotificationsEnabled', 'smsNotificationsEnabled', 'pushNotificationsEnabled', 'relationshipSummary'].includes(field.key) ? 'profile.contactsRelationships' : ['accountState', 'hasAccess', 'isActive'].includes(field.key) ? 'profile.accountAccess' : 'profile.identityFields') }));
         if (this.kind === 'student' && hasPermission('STUDENT_HEALTH_READ')) {
             columns.push(...HEALTH_FIELDS.map(field => ({ key: `health.${field}`, label: get(t)(`profile.health.${field}`), span: 2, minWidth: 180, defaultVisible: false, group: get(t)('student.health') })));
         }
@@ -104,7 +104,7 @@ export class DirectoryColumnsState {
                 for (const id of allowedIds) {
                     values[id]!.guardianContacts = links.filter(link => link.studentId === id).map((link) => {
                         const guardian = guardians.find(row => row.id === link.guardianId);
-                        return guardian ? `${guardian.firstName} ${guardian.lastName}: ${guardian.contactMethods.map(method => method.value).join(', ')}` : get(t)('profile.restricted');
+                        return guardian ? `${guardian.firstName} ${guardian.lastName}: ${[guardian.phone, guardian.alternativePhone, guardian.email].filter(Boolean).join(', ')}` : get(t)('profile.restricted');
                     }).filter(Boolean);
                 }
             })());
@@ -185,14 +185,6 @@ export class DirectoryColumnsState {
             value = academicContext.year?.label;
         if (key === 'accountState')
             value = data.subjectId ? get(t)('profile.accountLinked') : get(t)('profile.notLinked');
-        if (key === 'primaryContact' || key === 'notificationEligibility') {
-            const methods = data.contactMethods as {
-                value: string;
-                isPrimary: boolean;
-                allowsNotifications: boolean;
-            }[] | undefined;
-            value = methods?.filter(method => key === 'primaryContact' ? method.isPrimary : method.allowsNotifications).map(method => method.value);
-        }
         if (this.kind === 'student' && ['guardian', 'guardianContacts'].includes(key) && !hasPermission('PARENT_READ', { classId: row.classId, studentId: row.id }))
             return get(t)('profile.restricted');
         if (this.kind === 'student' && ['placementStatusLabel', 'isRepeating'].includes(key) && !hasPermission('STUDENT_READ', { classId: row.classId, studentId: row.id }))
@@ -219,13 +211,6 @@ export class DirectoryColumnsState {
                 contactRestrictions?: string;
                 notes?: string;
             }[] | undefined)?.map(link => `${(data.studentNames as Record<string, string> | undefined)?.[link.studentId] ?? get(t)('profile.restricted')}: ${link.relationship} · ${get(t)('profile.isPrimary')}: ${this.format(link.isPrimary)} · ${get(t)('profile.legalGuardian')}: ${this.format(link.legalGuardian)} · ${get(t)('profile.canPickup')}: ${this.format(link.canPickup)} · ${get(t)('profile.isBillingContact')}: ${this.format(link.isBillingContact)} · ${get(t)('profile.emergencyPriority')}: ${link.emergencyContactPriority ?? '—'} · ${get(t)('profile.receivesAcademicReports')}: ${this.format(link.receivesAcademicReports)} · ${get(t)('profile.receivesAttendanceAlerts')}: ${this.format(link.receivesAttendanceAlerts)} ${link.contactRestrictions ?? ''} ${link.notes ?? ''}`);
-        }
-        if (key === 'contactMethods') {
-            value = (data.contactMethods as {
-                type: string;
-                value: string;
-                label?: string;
-            }[] | undefined)?.map(method => `${get(t)(`profile.contact.${method.type}`)}: ${method.value}${method.label ? ` (${method.label})` : ''}`);
         }
         return this.format(value);
     }

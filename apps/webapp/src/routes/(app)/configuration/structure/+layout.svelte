@@ -7,6 +7,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import { t } from '$lib/i18n';
 	import { Plus } from '$lib/icons';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
@@ -25,7 +26,7 @@
 	const tab = $derived(structureTab($page.url.pathname));
 	const availableTabs: StructureTab[] = $derived(([
 		'details',
-		...(hasAnyPermission(['ACADEMIC_CATALOG_READ', 'ACADEMIC_CATALOG_MANAGE']) ? ['subjects'] as const : []),
+		...(hasAnyPermission(['ACADEMIC_CATALOG_READ', 'ACADEMIC_CATALOG_MANAGE', 'REPORT_CARD_CONFIGURE']) ? ['subjects'] as const : []),
 		...(hasAnyPermission(['SCHOOL_STRUCTURE_READ', 'SCHOOL_CONFIGURE']) ? ['classes'] as const : []),
 	]));
 	$effect(() => {
@@ -80,13 +81,13 @@
 				</div>
 				<div class="lg:hidden">
 					<label class="sr-only" for="structure-level">{$t('structure.levels')}</label>
-					<select id="structure-level" class="control-focus h-10 w-full rounded-xl border border-input bg-background px-3 text-sm" value={selected?.id ?? ''} onchange={event => appGoto(structureHref($page.url, event.currentTarget.value))}>
+					<SelectField id="structure-level" class="control-focus w-full border border-input bg-background text-sm" value={selected?.id ?? ''} onchange={event => appGoto(structureHref($page.url, event.currentTarget.value))}>
 						{#each levels as level (level.id)}<option value={level.id}>{level.name}</option>{/each}
-					</select>
+					</SelectField>
 				</div>
 				<div class="hidden space-y-4 lg:block">
 					<Input value={search} oninput={event => searchLevels(event.currentTarget.value)} placeholder={$t('structure.searchLevels')} aria-label={$t('structure.searchLevels')} />
-					<nav class="max-h-[65vh] overflow-y-auto rounded-2xl border border-border bg-card shadow-soft" aria-label={$t('structure.levels')}>
+					<nav class="max-h-[65vh] overflow-y-auto rounded-collection border border-border bg-card shadow-soft" aria-label={$t('structure.levels')}>
 						{#each visibleLevels as level (level.id)}
 							<a href={structureHref($page.url, level.id)} aria-current={selected?.id === level.id ? 'page' : undefined} class={cn('control-focus flex items-center justify-between gap-3 px-4 py-3 text-sm transition-colors hover:bg-secondary/60', selected?.id === level.id && 'bg-primary/10 font-medium text-foreground')}>
 								<span>{level.name}</span><span class="text-xs tabular-nums text-muted-foreground">{levelsPage.classCountFor(level.id)}</span>
@@ -107,7 +108,7 @@
 				</nav>
 				{#if availableTabs.includes(tab)}{@render children()}{/if}
 			{:else}
-				<div class="rounded-2xl border border-dashed border-border p-10 text-center text-muted-foreground">{$t('structure.emptyLevels')}</div>
+				<div class="rounded-collection border border-dashed border-border p-10 text-center text-muted-foreground">{$t('structure.emptyLevels')}</div>
 			{/if}
 		</section>
 	</div>

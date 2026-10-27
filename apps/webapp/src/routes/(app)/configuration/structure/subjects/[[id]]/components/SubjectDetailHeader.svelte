@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { Subject } from '$lib/types/school';
 	import { page } from '$app/stores';
-
 	import SubjectFormModal from '$lib/components/school/academics/SubjectFormModal.svelte';
+
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
@@ -12,6 +12,7 @@
 	import { catalogSubjectName } from '$lib/i18n/catalog-label';
 	import { setDrawerUrlModals } from '$lib/modal/drawer-url-modals.svelte';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
+	import { hasPermission } from '$lib/permissions';
 	import { get } from 'svelte/store';
 	import { getSubjectsPageState } from '../../subjects-page.svelte';
 
@@ -104,7 +105,7 @@
 	{/snippet}
 	{#snippet avatar()}
 		<span
-			class="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary font-display text-sm font-semibold text-primary-foreground"
+			class="flex h-14 w-14 items-center justify-center rounded-collection bg-primary font-display text-sm font-semibold text-primary-foreground"
 		>
 			{teacherInitials}
 		</span>
@@ -112,7 +113,7 @@
 	{#snippet actions()}
 		<PermissionGate permission="ACADEMIC_PROGRAM_MANAGE" gradeLevelId={subject.gradeLevelId} subjectId={subject.id} mode="disable">
 			{#snippet children({ disabled, title })}
-				<Button {disabled} {title} variant="outline" size="sm" class="rounded-full" onclick={() => modals.open('edit-subject')}>
+				<Button {disabled} {title} variant="outline" size="sm" onclick={() => modals.open('edit-subject')}>
 					{$t('common.edit')}
 				</Button>
 			{/snippet}
@@ -133,7 +134,7 @@
 	{/snippet}
 </DrawerEntityHeader>
 
-<SubjectFormModal onLoadParticipationRevisions={subjectsPage.onLoadParticipationRevisions} onLoadCategories={subjectsPage.onLoadCategories} onCreateSchedule={subjectsPage.performCreateSchedule} onCreateSubjectForClass={subjectsPage.performCreateSubjectForClass} onUpdateSubject={subjectsPage.performUpdateSubject} subject={subject} bind:open={editSubjectOpen.open} showTrigger={false} />
+<SubjectFormModal reportModules={subjectsPage.slice?.configuration?.modules ?? []} reportConfigurationRevision={subjectsPage.slice?.configuration?.settings.revision} canConfigureModule={hasPermission('REPORT_CARD_CONFIGURE', { gradeLevelId: subject.gradeLevelId })} onLoadParticipationRevisions={subjectsPage.onLoadParticipationRevisions} onLoadCategories={subjectsPage.onLoadCategories} onCreateSchedule={subjectsPage.performCreateSchedule} onCreateSubjectForClass={subjectsPage.performCreateSubjectForClass} onUpdateSubject={subjectsPage.performUpdateSubject} subject={subject} bind:open={editSubjectOpen.open} showTrigger={false} />
 
 <ConfirmModal
 	bind:open={deleteOpen.open}

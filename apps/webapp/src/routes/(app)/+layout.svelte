@@ -197,7 +197,7 @@
 				<DialogContent class="left-0 top-0 flex h-dvh max-h-none w-[min(85vw,320px)] translate-x-0 translate-y-0 flex-col gap-0 rounded-none p-0">
 					<div class="flex shrink-0 items-center justify-between border-b border-border px-4 py-2">
 						<DialogTitle class="text-base">{$t('sidebar.navigationTitle')}</DialogTitle>
-						<DialogClose class="control-focus flex h-11 w-11 items-center justify-center rounded-xl hover:bg-secondary" aria-label={$t('sidebar.hide')}><PanelLeftClose class="h-5 w-5" /></DialogClose>
+						<DialogClose class="control-focus flex h-11 w-11 items-center justify-center rounded-collection hover:bg-secondary" aria-label={$t('sidebar.hide')}><PanelLeftClose class="h-5 w-5" /></DialogClose>
 					</div>
 					<div class="min-h-0 flex-1">
 						<AppSidebar forceExpanded hierarchy={academicContext.hierarchy} studentCount={academicContext.studentCount} guardianCount={academicContext.guardianCount} staffCount={academicContext.staffCount} teacherCount={academicContext.teacherCount} />

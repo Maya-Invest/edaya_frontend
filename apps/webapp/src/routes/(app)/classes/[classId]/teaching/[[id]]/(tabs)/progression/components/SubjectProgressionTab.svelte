@@ -119,13 +119,13 @@
 					</p>
 				{/if}
 			</div>
-			<Button size="sm" class="rounded-full" onclick={() => modals.open('add-chapter')}>
+			<Button size="sm" onclick={() => modals.open('add-chapter')}>
 				<Plus class="mr-1 h-3.5 w-3.5" />
 				{$t('subjects.chapters.add')}
 			</Button>
 		</div>
 		{#each matterRows as row (row.id)}
-			<div class="rounded-2xl border border-border bg-card px-4 py-3 shadow-soft">
+			<div class="rounded-collection border border-border bg-card px-4 py-3 shadow-soft">
 				<div class="flex items-start justify-between gap-3">
 					<div class="min-w-0">
 						<p class="text-sm font-semibold">{row.name}</p>
@@ -138,7 +138,7 @@
 							<Button
 								variant="ghost"
 								size="sm"
-								class="h-8 rounded-full"
+
 								onclick={() => modals.open('edit-chapter', { target: row.id })}
 							>
 								{$t('common.edit')}
@@ -146,7 +146,7 @@
 							<Button
 								variant="outline"
 								size="sm"
-								class="rounded-full text-destructive hover:text-destructive"
+								class="text-destructive hover:text-destructive"
 								onclick={() => modals.open('delete-chapter', { target: row.id })}
 							>
 								<Trash2 class="mr-1 h-3.5 w-3.5" />
@@ -157,13 +157,13 @@
 				</div>
 			</div>
 		{:else}
-			<p class="rounded-2xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
+			<p class="rounded-collection border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
 				{$t(chaptersReadOnly ? 'subjects.chapters.emptyCatalog' : 'subjects.chapters.empty')}
 			</p>
 		{/each}
 	</section>
 
-	<div class="rounded-2xl border border-border bg-secondary/40 p-4">
+	<div class="rounded-collection border border-border bg-secondary/40 p-4">
 		<div class="flex items-center justify-between">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">
 				{$t('teaching.overallProgress')}
@@ -177,7 +177,7 @@
 
 	<div class="space-y-2">
 		{#each chaptersData.chapters as [chapter, progress] (chapter)}
-			<div class="rounded-2xl border border-border bg-card px-4 py-3 shadow-soft">
+			<div class="rounded-collection border border-border bg-card px-4 py-3 shadow-soft">
 				<div class="flex items-center justify-between gap-3">
 					<p class="text-sm font-semibold">{chapter}</p>
 					<span class="font-sans tabular-nums text-xs text-muted-foreground">{progress}%</span>

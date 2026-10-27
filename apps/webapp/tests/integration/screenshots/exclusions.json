@@ -222,5 +222,10 @@
     "surface": "/finance/reconciliation",
     "kind": "redirect",
     "reason": "Compatibility redirect to Configuration → Tools → Finance checks; capture its destination."
+  },
+  {
+    "surface": "/configuration/structure/details/report-cards/:...rest",
+    "kind": "redirect",
+    "reason": "Retired configuration template links redirect to grade-level Subjects."
   }
 ]

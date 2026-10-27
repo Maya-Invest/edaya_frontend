@@ -58,7 +58,7 @@ async function uploadAndPublishSelfPhoto(input: {
 		}
 		else {
 			const existing = await client.entities.guardians.get(input.ownerId);
-			await client.commands.updateGuardianContactMethods({
+			await client.commands.updateGuardianProfile({
 				guardianId: input.ownerId,
 				photoUrl: uploaded.photoUrl,
 				hasAccess: existing.hasAccess,

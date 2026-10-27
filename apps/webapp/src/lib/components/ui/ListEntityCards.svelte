@@ -4,7 +4,9 @@
 	import InfiniteList from '$lib/components/ui/InfiniteList.svelte';
 	import ListEntityCard from '$lib/components/ui/ListEntityCard.svelte';
 	import { t } from '$lib/i18n';
-	import { ChevronDown, ChevronUp } from '$lib/icons';
+	import { collectionPresentation } from '$lib/list/collection-presentation.svelte';
+
+	const presentation = collectionPresentation();
 	import { cardFieldShowsLabel, cardFieldsByZone } from '$lib/list/list-card-fields';
 
 	import { listSortButtonLabel } from '$lib/list/list-sort-label';
@@ -67,41 +69,15 @@
 			active: highlightId === row.id,
 		};
 	}
+	$effect(() => {
+		if (presentation) {
+			presentation.hiddenSort = '';
+			presentation.sorts = onSort && sort ? sortableColumns.map(c => ({ key: c.key, label: listSortButtonLabel(sort.column, sort.dir, c.key, c.label), active: sort.column === c.key, run: () => onSort(c.key) })) : [];
+		}
+	});
 </script>
 
-<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft" aria-busy={loading}>
-	{#if sortableColumns.length > 0 && onSort && sort}
-		<div
-			class="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-secondary/40 px-5 py-3"
-		>
-			<div class="flex flex-wrap items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-				{#each sortableColumns as column (column.key)}
-					{#if onSort && sort}
-						<button
-							type="button"
-							class={cn(
-								'flex items-center gap-1 rounded-full min-h-11 px-4 py-2 transition-colors hover:bg-secondary hover:text-foreground',
-								sort.column === column.key && 'bg-secondary text-foreground',
-							)}
-							aria-label={listSortButtonLabel(sort.column, sort.dir, column.key, column.label)}
-							onclick={() => onSort(column.key)}
-						>
-							{column.label}
-							{#if sort.column === column.key}
-								{#if sort.dir === 'asc'}
-									<ChevronUp class="h-3 w-3" />
-								{:else}
-									<ChevronDown class="h-3 w-3" />
-								{/if}
-							{/if}
-						</button>
-					{/if}
-				{/each}
-			</div>
-
-		</div>
-
-	{/if}
+<div class="ui-collection" aria-busy={loading}>
 
 	<InfiniteList
 		{hasMore}
@@ -122,7 +98,7 @@
 					showHeader={zoneFields.header.length > 0}
 					showBody={zoneFields.body.length > 0}
 					showFooter={zoneFields.footer.length > 0}
-					showActions={Boolean(renderActions)}
+					showActions={!selectionMode && Boolean(renderActions)}
 					onToggleSelected={checked => onToggleSelected?.(row.id, checked)}
 					onClick={onRowClick ? () => onRowClick(row) : undefined}
 					cardClass={cardClass?.(row, ctx)}

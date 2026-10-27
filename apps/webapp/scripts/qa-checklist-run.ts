@@ -1,10 +1,4 @@
-#!/usr/bin/env bun
-/**
- * QA checklist runner — login, seed QA entities, smoke flows, reproduce known bugs.
- * Requires: webapp on :5173, API reachable, Playwright chromium.
- *
- * Env: WEBAPP_URL, QA_LOGIN_EMAIL, QA_LOGIN_PASSWORD
- */
+import { selectTrigger, chooseOption, selectControl } from '../tests/integration/support/custom-select';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Browser, Page } from 'playwright';
@@ -242,10 +236,10 @@ async function setStudentStatus(ctx: DemoContext, studentId: string, status: 'in
 	await waitForAppShell(page);
 
 	const select = page.locator('select').filter({ has: page.locator('option[value="inactive"]') }).first();
-	if (!(await select.isVisible({ timeout: 8_000 }).catch(() => false))) {
+	if (!(await selectTrigger(select).isVisible({ timeout: 8_000 }).catch(() => false))) {
 		return false;
 	}
-	await select.selectOption(status);
+	await chooseOption(select, status);
 	await page.waitForTimeout(1_500);
 	return true;
 }
@@ -255,7 +249,7 @@ async function testStudentStatusFilter(ctx: DemoContext, inactiveStudentName: st
 	await page.goto(`${base}/school/students`, { waitUntil: 'domcontentloaded' });
 	await waitForAppShell(page);
 
-	const statusFilter = page.getByRole('combobox').filter({ hasText: /statut|status|tous|all/i }).first();
+	const statusFilter = selectControl(page).filter({ hasText: /statut|status|tous|all/i }).first();
 	if (!(await statusFilter.isVisible({ timeout: 5_000 }).catch(() => false))) {
 		const filterBtn = page.getByRole('button', { name: /statut|status/i }).first();
 		if (await filterBtn.isVisible().catch(() => false)) {

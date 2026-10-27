@@ -1,3 +1,4 @@
+import { selectControl } from '../../support/custom-select';
 import type { Page } from 'playwright';
 import { selectComboboxOption } from '../../../../scripts/qa-harness-ui';
 import { waitForEnabled } from './auth';
@@ -94,7 +95,7 @@ export async function addValidStaffInviteRow(page: Page, email: string): Promise
 	await emailInput.fill(email);
 	await emailInput.blur();
 	const row = page.locator('article').filter({ has: emailInput }).first();
-	const roleTrigger = row.getByRole('combobox')
+	const roleTrigger = selectControl(row)
 		.or(row.getByRole('button').filter({
 			hasText: /secretary|secrétaire|choose a profile|choisir un profil/i,
 		}));

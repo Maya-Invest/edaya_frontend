@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { provideCollectionPresentation } from '$lib/list/collection-presentation.svelte';
+
+	provideCollectionPresentation();
 	import type { ListEntityTableColumn } from '$lib/list/list-entity-table-types';
 	import type { Guardian } from '$lib/types/school';
 	import type { GuardianSortColumn } from '../lib/guardian-list-filters';
@@ -115,7 +118,7 @@
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
 						onclick={() => modals.open('create')}
@@ -141,7 +144,7 @@
 		<ListSelectionBar
 			selectedCount={selection.selectedIds.length}
 			onExport={exportSelected}
-			onClear={() => selection.exitSelectionMode()}
+			onClear={() => selection.clearSelection()} onExit={() => selection.exitSelectionMode()}
 		/>
 	{/if}
 
@@ -165,7 +168,7 @@
 		total={listTotal}
 		visibleCount={listVisibleCount}
 		onLoadMore={loadMoreGuardians}
-		onRowClick={guardian => selection.handleRowClick(guardian, onSelect)}
+		onRowClick={onSelect}
 	>
 
 		{#snippet cell(guardian, column, ctx)}
@@ -173,7 +176,7 @@
 			{#if column.key === 'name'}
 				<div class="col-span-4 flex items-center gap-3">
 					<div
-						class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary font-display text-xs font-semibold text-primary-foreground"
+						class="flex h-9 w-9 items-center justify-center rounded-collection bg-primary font-display text-xs font-semibold text-primary-foreground"
 					>
 						{guardian.initials}
 					</div>

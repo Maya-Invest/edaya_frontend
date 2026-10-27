@@ -49,7 +49,6 @@ export const IMPORT_TYPE_TABS = [
 	'payments',
 	'academic_disciplines',
 	'placement_statuses',
-	'guardian_contacts',
 	'guardian_relationships',
 	'class_offerings',
 ] as const satisfies readonly ImportTypeKey[];

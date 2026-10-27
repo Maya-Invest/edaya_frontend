@@ -72,7 +72,7 @@
 	<Button
 		variant="ghost"
 		size="sm"
-		class="h-7 rounded-full px-2.5 text-[11px]"
+		class="text-[11px]"
 		{disabled}
 		{title}
 		onclick={() => (open = true)}

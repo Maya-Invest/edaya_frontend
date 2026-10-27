@@ -329,11 +329,11 @@ export const QA_TEMPLATE_MATRIX_MANUAL: QaTemplateRow[] = [
 		'Liste barèmes',
 		'CRUD barème',
 	]),
-	...rows('Configuration', `${B}/configuration/structure/details`, [
-		'Liste définitions bulletins',
-		'Créer / supprimer / publier',
+	...rows('Configuration', `${B}/configuration/structure/subjects`, [
+		'Liste modules de résultats',
+		'Créer / supprimer un module',
+		'Groupement des matières',
 	]),
-	...rows('Configuration', `${B}/configuration/structure/details/report-cards/[id]`, ['Drawer définition']),
 	...rows('Configuration', `${B}/configuration/notifications`, ['Templates notifications école']),
 	...rows('Configuration', `${B}/configuration/other/discipline`, [
 		'Catalogue disciplinaire',

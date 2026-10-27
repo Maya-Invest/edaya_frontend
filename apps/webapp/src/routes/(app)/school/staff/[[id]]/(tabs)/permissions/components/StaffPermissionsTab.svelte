@@ -93,7 +93,7 @@
 						<Button
 							size="sm"
 							variant="outline"
-							class="rounded-full"
+
 							disabled={disabled}
 							onclick={onApply}
 						>
@@ -105,7 +105,7 @@
 					{#snippet children({ disabled })}
 						<Button
 							size="sm"
-							class="rounded-full"
+
 							disabled={disabled}
 							onclick={onCreate}
 						>
@@ -121,7 +121,7 @@
 		</p>
 	</div>
 
-	<div data-testid="staff-default-scopes" class="flex items-start justify-between gap-3 rounded-xl border border-border bg-card p-4">
+	<div data-testid="staff-default-scopes" class="flex items-start justify-between gap-3 rounded-collection border border-border bg-card p-4">
 		<div class="min-w-0 flex-1"><h4 class="font-display text-base font-bold text-foreground">{$t('staff.defaultScopes')}</h4>
 			<p class="text-xs text-muted-foreground">{$t('staff.defaultScopesSummary', { n: staffPage.staffDefaultScopes(s.id).length })}</p>
 			<StaffScopeTags scopes={staffPage.staffDefaultScopeViews(s.id)} emptyLabel={$t('staff.noDefaultScopes')} />
@@ -137,10 +137,10 @@
 			{@const skippedIds = new Set(skipped.map(entry => entry.permission))}
 			{@const expanded = expandedProfiles[binding.id] ?? false}
 			{@const warningCount = new Set([...(binding.warnings ?? []).filter(warning => warning.reason !== 'shadowed').map(warning => warning.permission), ...staffPage.permissionAssignmentsForStaff(s.id).filter(row => row.sourceProfileBindingId === binding.id && row.hasMissingScope).map(row => row.permission)]).size}
-			<div data-testid="staff-permission-profile" data-profile-id={profile.id} class="overflow-hidden rounded-xl border border-border bg-card">
+			<div data-testid="staff-permission-profile" data-profile-id={profile.id} class="overflow-hidden rounded-collection border border-border bg-card">
 				<div class="px-4 py-3">
 					<div class="flex flex-wrap items-start justify-between gap-2">
-						<button type="button" class="flex min-h-11 min-w-0 flex-1 basis-40 items-center gap-2 rounded-lg text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+						<button type="button" class="flex min-h-11 min-w-0 flex-1 basis-40 items-center gap-2 rounded-collection text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
 							aria-expanded={expanded} aria-controls={`profile-permissions-${binding.id}`}
 							onclick={() => expandedProfiles = { ...expandedProfiles, [binding.id]: !expanded }}>
 							<ChevronRight aria-hidden="true" class={`h-4 w-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none ${expanded ? 'rotate-90' : ''}`} />
@@ -157,12 +157,12 @@
 						<PermissionGate permission="ACCESS_CONTROL_MANAGE" mode="disable">
 							{#snippet children({ disabled })}
 								<div class="ml-auto flex shrink-0 items-center gap-1">
-									<Button variant="ghost" size="icon" class="h-11 w-11 rounded-full" {disabled}
+									<Button variant="ghost" size="icon" class="w-11" {disabled}
 										aria-label={$t('common.edit')} onclick={() => onEditProfile(profile.id)}><Pencil class="h-4 w-4" /></Button>
 									<Button
 										variant="ghost"
 										size="icon"
-										class="h-11 w-11 rounded-full"
+										class="w-11"
 										disabled={disabled || index === 0}
 										aria-label={$t('staff.reorderProfileUp')}
 										onclick={() => move(index, -1)}
@@ -172,7 +172,7 @@
 									<Button
 										variant="ghost"
 										size="icon"
-										class="h-11 w-11 rounded-full"
+										class="w-11"
 										disabled={disabled || index === bindings.length - 1}
 										aria-label={$t('staff.reorderProfileDown')}
 										onclick={() => move(index, 1)}
@@ -182,7 +182,7 @@
 									<Button
 										variant="ghost"
 										size="icon"
-										class="h-11 w-11 rounded-full"
+										class="w-11"
 										{disabled}
 										aria-label={$t('staff.removeProfile')}
 										onclick={() => onRemove(profile.id)}
@@ -225,9 +225,9 @@
 		{/if}
 	{/each}
 
-	<div data-testid="staff-additional-permissions" class="overflow-hidden rounded-xl border border-border bg-card">
+	<div data-testid="staff-additional-permissions" class="overflow-hidden rounded-collection border border-border bg-card">
 		<div class="px-4 py-3">
-			<button type="button" class="flex min-h-11 w-full min-w-0 items-center gap-2 rounded-lg text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+			<button type="button" class="flex min-h-11 w-full min-w-0 items-center gap-2 rounded-collection text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
 				aria-expanded={additionalExpanded} aria-controls={additionalContentId}
 				onclick={() => additionalExpanded = !additionalExpanded}>
 				<ChevronRight aria-hidden="true" class={`h-4 w-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none ${additionalExpanded ? 'rotate-90' : ''}`} />
@@ -271,7 +271,7 @@
 													<Button
 														variant="ghost"
 														size="icon"
-														class="h-8 w-8 rounded-full"
+														class="w-8"
 														{disabled}
 														aria-label={$t('roles.editPermission')}
 														onclick={() => onEdit(row)}
@@ -281,7 +281,7 @@
 													<Button
 														variant="ghost"
 														size="icon"
-														class="h-8 w-8 rounded-full"
+														class="w-8"
 														{disabled}
 														aria-label={$t('common.delete')}
 														onclick={() => onDelete(row)}

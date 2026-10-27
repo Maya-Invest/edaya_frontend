@@ -4,6 +4,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import { t } from '$lib/i18n';
 	import { createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { hasPermission } from '$lib/permissions';
@@ -50,9 +51,9 @@
 	{#if open}<PageQuery cache={false} {query} cacheKey={() => recordId} loadingTitle={$t('profile.justification')}>
 		{#snippet children(data)}{#if data.status === 'error'}<p role="alert">{data.errorMessage}</p>{:else if review.record?.id === recordId}
 			<div class="space-y-2 text-sm"><p>{$t('common.status')}: {$t(`profile.justificationStatus.${review.record.justificationStatus}`)}</p><p>{$t('profile.reviewedAt')}: {String(review.record.justifiedAt ?? $t('profile.notProvided'))}</p><p>{$t('profile.reviewedBy')}: {review.record.justifiedByStaffId ?? $t('profile.notProvided')}</p>{#if review.record.correctedAt}<p>{$t('profile.correctedAt')}: {String(review.record.correctedAt)} · {review.record.correctedByStaffId}</p>{/if}</div>
-			<label>{$t('profile.decision')}<select bind:value={decision} disabled={!canValidate || reviewed} class="h-10 w-full rounded-lg border bg-background px-3"><option value="excused">{$t('profile.justificationStatus.excused')}</option><option value="rejected">{$t('profile.justificationStatus.rejected')}</option></select></label>
-			<label>{$t('profile.reason')}<textarea bind:value={reason} disabled={!canValidate || reviewed} class="min-h-20 w-full rounded-lg border bg-background p-3"></textarea></label>
-			<label>{$t('profile.notes')}<textarea bind:value={notes} disabled={!canValidate || reviewed} class="min-h-20 w-full rounded-lg border bg-background p-3"></textarea></label>
+			<label>{$t('profile.decision')}<SelectField bind:value={decision} disabled={!canValidate || reviewed} class="w-full border bg-background"><option value="excused">{$t('profile.justificationStatus.excused')}</option><option value="rejected">{$t('profile.justificationStatus.rejected')}</option></SelectField></label>
+			<label>{$t('profile.reason')}<textarea bind:value={reason} disabled={!canValidate || reviewed} class="min-h-20 w-full rounded-collection border bg-background p-3"></textarea></label>
+			<label>{$t('profile.notes')}<textarea bind:value={notes} disabled={!canValidate || reviewed} class="min-h-20 w-full rounded-collection border bg-background p-3"></textarea></label>
 		{/if}{/snippet}
 	</PageQuery>{/if}
 </FormModal>

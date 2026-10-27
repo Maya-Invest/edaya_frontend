@@ -23,7 +23,7 @@
 </script>
 
 <div class="space-y-3">
-	<label class="flex min-h-11 items-center gap-3 rounded-lg border p-3">
+	<label class="flex min-h-11 items-center gap-3 rounded-collection border p-3">
 		<Checkbox checked={selection.scope === 'annual'} onCheckedChange={(checked) => {
 			selection = { scope: checked ? 'annual' : 'none' };
 			onChange?.();
@@ -35,9 +35,9 @@
 		{#each visiblePeriods as period (period.id)}
 			{@const completed = String(period.endDate).slice(0, 10) < today}
 			{#if completed}
-				<p class="rounded-lg border p-3 text-sm text-muted-foreground">{period.name} · {$t('participation.completed')}</p>
+				<p class="rounded-collection border p-3 text-sm text-muted-foreground">{period.name} · {$t('participation.completed')}</p>
 			{:else}
-				<label class="flex min-h-11 items-center gap-3 rounded-lg border p-3">
+				<label class="flex min-h-11 items-center gap-3 rounded-collection border p-3">
 					<Checkbox checked={selectedIds.includes(period.id)} disabled={completed} onCheckedChange={checked => togglePeriod(period.id, checked)} />
 					<span>{period.name}{#if completed}<span class="ml-2 text-xs text-muted-foreground">{$t('participation.completed')}</span>{/if}</span>
 				</label>

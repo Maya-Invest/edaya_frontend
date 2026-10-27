@@ -1,12 +1,12 @@
 <script lang="ts">
 	import type { GradeDraft, GradeEntryPolicy, GradeResult, MarksReview } from '../../(app)/classes/[classId]/evaluations/lib/grading-task';
 	import type { ReferenceCopy } from '../reference-copy';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import { t } from '$lib/i18n';
 	import GradeEntryGrid from '../../(app)/classes/[classId]/evaluations/[[id]]/components/GradeEntryGrid.svelte';
 	import GradeResultValue from '../../(app)/classes/[classId]/evaluations/[[id]]/components/GradeResultValue.svelte';
 	import { gradeValues } from '../../(app)/classes/[classId]/evaluations/lib/grading-task';
-	import Button from './ReferenceButton.svelte';
 
 	const captured: GradeResult = { id: 'reference', studentId: 'reference', assessmentId: 'reference', revision: 1, score: 15.25, designation: 'scored', originalEntry: { kind: 'numeric', value: 15.25, maximum: 20 }, calculation: { policyRevision: 1, scaleId: 'reference', scaleRevision: 1, mode: 'numeric-first', maximum: 20, decimalPlaces: 2, roundingMode: 'nearest', units: 'numeric', value: 15.25, reportedValue: 15.25, mention: { id: 'a', code: 'A', label: 'Excellent' }, provenance: 'numeric-normalization' } };
 	const { copy }: { copy: ReferenceCopy } = $props();

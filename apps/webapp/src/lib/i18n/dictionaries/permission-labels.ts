@@ -41,7 +41,7 @@ export const permissionLabelsEn = {
 	'permission.GRADE_MANAGE': 'Enter and submit marks',
 	'permission.GRADE_VALIDATE': 'Review mark corrections',
 	'permission.REPORT_CARD_READ': 'View report cards',
-	'permission.REPORT_CARD_CONFIGURE': 'Configure report templates',
+	'permission.REPORT_CARD_CONFIGURE': 'Configure report modules',
 	'permission.REPORT_CARD_GENERATE': 'Prepare report results',
 	'permission.REPORT_CARD_PUBLISH': 'Publish report cards',
 	'permission.REPORT_CARD_EXPORT': 'Issue official report cards',

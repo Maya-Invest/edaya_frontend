@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import ListEntityTable from '$lib/components/ui/ListEntityTable.svelte';
 	import ListMoreMenu from '$lib/components/ui/ListMoreMenu.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
@@ -11,7 +12,6 @@
 	import { Plus } from '$lib/icons';
 	import { exportMatchingList } from '$lib/list/list-csv-export';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
-	import { cn } from '$lib/utils';
 	import { getClassesPageState } from '../classes-page.svelte';
 	import ClassGroupFormModal from './ClassGroupFormModal.svelte';
 
@@ -77,7 +77,7 @@
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
 						onclick={() => modals.open('create')}
@@ -108,43 +108,9 @@
 		{/snippet}
 	</ListPageHeader>
 
-	{#if filteredClasses.length}
-		<!-- svelte-ignore a11y_no_noninteractive_tabindex (keyboard scrolling for the class table) -->
-		<div role="region" aria-label={$t('structure.classes')} tabindex="0" class="overflow-x-auto rounded-2xl border border-border bg-card shadow-soft">
-			<table class="w-full min-w-[24rem] text-sm">
-				<thead class="border-b border-border bg-secondary/30 text-left">
-					<tr>
-						<th class="px-4 py-3 font-medium">{$t('classGroups.name')}</th>
-						<th class="px-4 py-3 font-medium">{$t('classGroups.studentCount')}</th>
-						<th class="px-4 py-3 font-medium">{$t('classGroups.attendanceMode')}</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each filteredClasses as cls (cls.id)}
-						{@const isSelected = cls.id === selectedId}
-						<tr data-entity-id={cls.id} class="border-b border-border/60 last:border-0">
-							<td class="px-4 py-3">
-								<button
-									type="button"
-									class={cn('w-full text-left transition-colors', isSelected && 'text-primary')}
-									onclick={() => onSelect?.(cls)}
-								>
-									<p class="font-medium">{cls.name}</p>
-									<p class="font-sans tabular-nums text-xs text-muted-foreground">{cls.id}</p>
-								</button>
-							</td>
-							<td class="px-4 py-3 font-sans tabular-nums">{cls.studentCount}</td>
-							<td class="px-4 py-3 text-muted-foreground">
-								{$t(`classGroups.attendanceMode.${cls.attendanceMode}`)}
-							</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</div>
-	{:else}
-		<p class="py-10 text-center text-sm text-muted-foreground">{$t('structure.emptyClasses')}</p>
-	{/if}
+	<ListEntityTable listKey="ClassGroupsList" rows={filteredClasses} highlightId={selectedId} onRowClick={onSelect} emptyLabel={$t('structure.emptyClasses')} columns={[{ key: 'name', label: $t('classGroups.name'), span: 4, required: true }, { key: 'count', label: $t('classGroups.studentCount'), span: 2 }, { key: 'attendance', label: $t('classGroups.attendanceMode'), span: 3 }]}>
+		{#snippet cell(cls, column)}{#if column.key === 'name'}<div><p class="font-semibold">{cls.name}</p><p class="text-xs text-muted-foreground">{cls.id}</p></div>{:else if column.key === 'count'}<span class="tabular-nums">{cls.studentCount}</span>{:else}{$t(`classGroups.attendanceMode.${cls.attendanceMode}`)}{/if}{/snippet}
+	</ListEntityTable>
 </div>
 
 <ClassGroupFormModal bind:open={createOpen.open} defaultGradeLevelId={classesPage.filters.values.gradeLevel} />

@@ -210,7 +210,7 @@
 						<Button
 							size="sm"
 							variant="outline"
-							class="rounded-full"
+
 							disabled={disabled || !selectedYear}
 							{title}
 							onclick={openPeriodDefWizard}
@@ -220,7 +220,7 @@
 						</Button>
 						<Button
 							size="sm"
-							class="rounded-full"
+
 							disabled={disabled || !selectedYear}
 							{title}
 							onclick={() => openCreatePeriodDef()}
@@ -235,7 +235,7 @@
 	</ListPageHeader>
 
 	{#if !selectedYear}
-		<p class="rounded-2xl border border-dashed border-border/70 px-4 py-10 text-center text-sm text-muted-foreground">
+		<p class="rounded-collection border border-dashed border-border/70 px-4 py-10 text-center text-sm text-muted-foreground">
 			{$t('periodDefinitions.empty')}
 		</p>
 	{:else}

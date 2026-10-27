@@ -4,10 +4,11 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import { t } from '$lib/i18n';
 	import { MoreHorizontal } from '$lib/icons';
+	import { actionMenu } from '$lib/interaction/action-menu';
 	import { setContext } from 'svelte';
 	import { COLLECTION_MENU } from './context';
 
-	const { children }: { children: Snippet } = $props();
+	const { children, iconTreatment = 'circle' }: { children: Snippet; iconTreatment?: 'circle' | 'quiet' } = $props();
 	let open = $state(false);
 	setContext(COLLECTION_MENU, {
 		close: () => {
@@ -19,13 +20,15 @@
 <Popover.Popover bind:open>
 	<Popover.PopoverTrigger>
 		{#snippet child({ props })}
-			<Button {...props} variant="ghost" size="icon" aria-label={$t('list.moreActions')} data-testid="collection-menu">
+			<Button {...props} variant="ghost" size="icon" {iconTreatment} aria-label={$t('list.moreActions')} data-testid="collection-menu">
 				<MoreHorizontal />
 			</Button>
 		{/snippet}
 	</Popover.PopoverTrigger>
 	<Popover.PopoverContent align="end" class="max-h-[70dvh] w-72 max-w-[calc(100vw-2rem)] overflow-y-auto p-2">
-		<div class="collection-actions" role="presentation" onclick={(event) => {
+		<!-- Keyboard activation bubbles from action buttons; arrow navigation is installed by actionMenu. -->
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<div class="collection-actions" role="menu" tabindex="-1" use:actionMenu onclick={(event) => {
 			const button = (event.target as Element).closest('button');
 			if (button && !button.disabled && !button.hasAttribute('aria-expanded'))
 				open = false;

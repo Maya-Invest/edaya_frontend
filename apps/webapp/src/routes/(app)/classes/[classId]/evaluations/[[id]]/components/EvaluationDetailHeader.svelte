@@ -91,7 +91,7 @@
 		<PermissionGate permission="ASSESSMENT_MANAGE" {classId} subject={evaluation.classSubjectId} subjectId={evaluationsPage.subjectsFor(classId).find(row => row.id === evaluation.classSubjectId)?.subjectId} assessmentId={evaluation.id} mode="disable" tooltip={$t('eval.permissionCreate')}>
 			{#snippet children({ disabled, title })}
 				{#if isHomework}
-					<Button variant="outline" size="sm" class="rounded-full" {disabled} {title} onclick={() => (editOpen.open = true)}>
+					<Button variant="outline" size="sm" {disabled} {title} onclick={() => (editOpen.open = true)}>
 						{$t('common.edit')}
 					</Button>
 				{/if}

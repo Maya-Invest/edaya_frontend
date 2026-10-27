@@ -14,7 +14,7 @@
 <section aria-label={$t('finance.overview')} class="space-y-2">
 	<div class={fee ? 'grid gap-3 sm:grid-cols-2' : 'grid gap-3 sm:grid-cols-2 xl:grid-cols-4'}>
 		{#each metrics as [label, value] (label)}
-			<div class="min-w-0 rounded-2xl border border-border bg-card p-5 shadow-soft">
+			<div class="min-w-0 rounded-collection border border-border bg-card p-5 shadow-soft">
 				<div class="flex min-h-7 flex-wrap items-center justify-between gap-2">
 					<p class="text-xs uppercase tracking-wider text-muted-foreground">{$t(label)}</p>
 					{#if label === 'finance.netBilled'}

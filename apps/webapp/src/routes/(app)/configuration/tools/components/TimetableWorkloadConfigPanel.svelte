@@ -93,7 +93,7 @@
 </script>
 
 <div class="flex min-w-0 flex-col gap-3 lg:h-full lg:min-h-0 lg:flex-row">
-	<aside aria-label={$t('timetable.classesToGenerate')} class="flex w-full shrink-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-muted/20 lg:w-56" data-testid="timetable-class-selection">
+	<aside aria-label={$t('timetable.classesToGenerate')} class="flex w-full shrink-0 flex-col overflow-hidden rounded-collection border border-border/70 bg-muted/20 lg:w-56" data-testid="timetable-class-selection">
 		<div class="shrink-0 space-y-2 border-b border-border/60 p-2.5">
 			<div>
 				<p class="text-sm font-medium">{$t('timetable.classListTitle')}</p>
@@ -104,8 +104,8 @@
 				<ListSearchField bind:value={search} placeholder={$t('timetable.searchClasses')} />
 			</label>
 			<div class="flex flex-wrap gap-1">
-				<Button variant="ghost" size="sm" class="h-auto min-h-11 whitespace-normal px-1.5 py-2 text-sm" disabled={disabled || !classes.length} onclick={() => { includedClassIds = classes.map(row => row.id); }} data-testid="timetable-select-all">{$t('timetable.selectAllClasses')}</Button>
-				<Button variant="ghost" size="sm" class="h-auto min-h-11 whitespace-normal px-1.5 py-2 text-sm" disabled={disabled || !includedCount} onclick={() => { includedClassIds = []; }} data-testid="timetable-clear-selection">{$t('timetable.clearClassSelection')}</Button>
+				<Button variant="ghost" size="sm" class="h-auto whitespace-normal text-sm" disabled={disabled || !classes.length} onclick={() => { includedClassIds = classes.map(row => row.id); }} data-testid="timetable-select-all">{$t('timetable.selectAllClasses')}</Button>
+				<Button variant="ghost" size="sm" class="h-auto whitespace-normal text-sm" disabled={disabled || !includedCount} onclick={() => { includedClassIds = []; }} data-testid="timetable-clear-selection">{$t('timetable.clearClassSelection')}</Button>
 			</div>
 		</div>
 		<div class="max-h-48 min-h-0 space-y-3 overflow-y-auto p-1.5 lg:max-h-none lg:flex-1" data-testid="timetable-class-options">
@@ -118,11 +118,11 @@
 					</h3>
 					<ul>
 						{#each group.classes as classGroup (classGroup.id)}
-							<li class={cn('flex items-center rounded-lg', selectedClassId === classGroup.id && included.has(classGroup.id) && ROW_ACTIVE)}>
+							<li class={cn('flex items-center rounded-collection', selectedClassId === classGroup.id && included.has(classGroup.id) && ROW_ACTIVE)}>
 								<label class="flex min-h-11 w-11 shrink-0 cursor-pointer items-center justify-center">
 									<Checkbox checked={included.has(classGroup.id)} onCheckedChange={checked => toggleClass(classGroup.id, checked)} {disabled} aria-label={$t('timetable.includeClass', { name: classGroup.name })} data-testid="timetable-class-checkbox" data-class-id={classGroup.id} />
 								</label>
-								<Button variant="ghost" class="h-auto min-h-11 min-w-0 flex-1 justify-start whitespace-normal break-words py-2 pl-0 pr-2 text-left" disabled={disabled || !included.has(classGroup.id)} aria-current={selectedClassId === classGroup.id ? 'true' : undefined} data-testid="timetable-workload-class" data-class-id={classGroup.id} onclick={() => (selectedClassId = classGroup.id)}>{classGroup.name}</Button>
+								<Button variant="ghost" class="h-auto min-w-0 flex-1 justify-start whitespace-normal break-words pl-0 pr-2 text-left" disabled={disabled || !included.has(classGroup.id)} aria-current={selectedClassId === classGroup.id ? 'true' : undefined} data-testid="timetable-workload-class" data-class-id={classGroup.id} onclick={() => (selectedClassId = classGroup.id)}>{classGroup.name}</Button>
 							</li>
 						{/each}
 					</ul>
@@ -133,7 +133,7 @@
 		</div>
 	</aside>
 
-	<section class="flex min-h-48 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/70 lg:min-h-0" data-testid="timetable-subject-editor">
+	<section class="flex min-h-48 min-w-0 flex-1 flex-col overflow-hidden rounded-collection border border-border/70 lg:min-h-0" data-testid="timetable-subject-editor">
 		<div class="shrink-0 border-b border-border/60 px-3 py-2">
 			<p class="break-words text-sm font-medium" aria-live="polite" data-testid="timetable-active-class">
 				{classes.find(row => row.id === selectedClassId)?.name ?? $t('timetable.workloadOverrides')}
@@ -152,7 +152,7 @@
 					{#each subjectsForClass as subject (subject.id)}
 						{@const teacher = teacherLabel(subject.id)}
 						{@const spanDefaults = spanPlaceholder(subject)}
-						<li class="flex flex-col-reverse items-stretch gap-4 rounded-lg border border-border/50 bg-secondary/30 p-4 sm:flex-row sm:items-center">
+						<li class="flex flex-col-reverse items-stretch gap-4 rounded-collection border border-border/50 bg-secondary/30 p-4 sm:flex-row sm:items-center">
 							<div class="flex shrink-0 flex-wrap items-center gap-2">
 								<label class="flex flex-col items-center gap-0.5">
 									<span class="text-xs leading-none text-muted-foreground">{$t('timetable.periodsPerWeekShort')}</span>
@@ -161,7 +161,7 @@
 										{disabled}
 										data-testid="timetable-workload-periods"
 										min="0"
-										class="min-h-11 w-16 px-2 text-center text-sm"
+										class="w-16 text-center text-sm"
 										value={String(overrides[subject.id] ?? '')}
 										placeholder={String(subject.periodsPerWeek ?? '')}
 										oninput={event => (overrides = setOverride(overrides, subject.id, event.currentTarget.value))}
@@ -173,7 +173,7 @@
 										type="number"
 										{disabled}
 										min="1"
-										class="min-h-11 w-16 px-2 text-center text-sm"
+										class="w-16 text-center text-sm"
 										value={String(minSpanOverrides[subject.id] ?? '')}
 										placeholder={String(spanDefaults.min)}
 										oninput={event => (minSpanOverrides = setOverride(minSpanOverrides, subject.id, event.currentTarget.value))}
@@ -185,7 +185,7 @@
 										type="number"
 										{disabled}
 										min="1"
-										class="min-h-11 w-16 px-2 text-center text-sm"
+										class="w-16 text-center text-sm"
 										value={String(maxSpanOverrides[subject.id] ?? '')}
 										placeholder={String(spanDefaults.max)}
 										oninput={event => (maxSpanOverrides = setOverride(maxSpanOverrides, subject.id, event.currentTarget.value))}

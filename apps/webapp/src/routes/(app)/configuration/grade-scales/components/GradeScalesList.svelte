@@ -79,9 +79,9 @@
 	</ListPageHeader>
 	{#if !scales.length}<p class="py-8 text-sm text-muted-foreground">{$t('dataState.emptyDescription')}</p>{/if}
 	{#each scales as scale (scale.id)}
-		<section class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+		<section class="overflow-hidden rounded-collection border border-border bg-card shadow-soft">
 			<div class="flex items-center gap-2 p-4">
-				<button type="button" class="flex min-w-0 flex-1 items-center gap-3 rounded-lg p-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" aria-expanded={expanded === scale.id} aria-controls={`intervals-${scale.id}`} onclick={() => toggle(scale.id)}>
+				<button type="button" class="flex min-w-0 flex-1 items-center gap-3 rounded-collection p-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" aria-expanded={expanded === scale.id} aria-controls={`intervals-${scale.id}`} onclick={() => toggle(scale.id)}>
 					<ChevronDown class={`h-5 w-5 shrink-0 transition-transform ${expanded === scale.id ? 'rotate-180' : ''}`} />
 					<div class="min-w-0"><h2 class="break-words font-display text-base font-semibold">{scale.name}</h2><p class="text-sm text-muted-foreground">{scale.minScore} → {scale.maxScore} · {$t('grading.intervalCount', { n: scale.ranges?.length ?? 0 })}{scale.isDefault ? ` · ${$t('gradeScales.default')}` : ''}{!scale.ranges?.length ? ` · ${$t('grading.incomplete')}` : ''}</p></div>
 				</button>
@@ -95,10 +95,10 @@
 					{#if scale.description}<p class="text-sm text-muted-foreground">{scale.description}</p>{/if}
 					<div class="flex flex-wrap items-center justify-between gap-3"><h3 class="font-medium">{$t('grading.intervals')}</h3><PermissionGate permission="GRADE_SCALE_CONFIGURE">{#snippet children({ disabled, title })}<Button size="sm" variant="outline" {disabled} {title} onclick={() => modals.open('add-interval', { target: scale.id })}>{$t('grading.addInterval')}</Button>{/snippet}</PermissionGate></div>
 					<p class="text-sm text-muted-foreground">{$t('grading.thresholdHelp')}</p>
-					{#if !scale.ranges?.length}<p role="status" class="rounded-lg bg-secondary p-3 text-sm">{$t('grading.emptyHelp')}</p>{/if}
+					{#if !scale.ranges?.length}<p role="status" class="rounded-collection bg-secondary p-3 text-sm">{$t('grading.emptyHelp')}</p>{/if}
 					<ul class="space-y-2">
 						{#each scale.ranges ?? [] as row, index (row.id ?? index)}
-							<li class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border px-4 py-3">
+							<li class="flex flex-wrap items-center justify-between gap-3 rounded-collection border border-border px-4 py-3">
 								<div class="min-w-0 flex-1 basis-56"><p class="break-words text-sm font-medium">{row.letter} · {row.interpretation ?? row.letter}</p><p class="text-sm tabular-nums text-muted-foreground">{$t('grading.minimum')}: {row.minScore}{row.gpaValue != null ? ` · ${$t('grading.points')}: ${row.gpaValue}` : ''}</p></div>
 								<PermissionGate permission="GRADE_SCALE_CONFIGURE">{#snippet children({ disabled, title })}
 									<div class="ml-auto flex shrink-0 items-center gap-2">

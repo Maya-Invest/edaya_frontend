@@ -1,1 +1,1 @@
-<!-- The Details layout owns level settings and report card templates. -->
+<!-- The Details layout owns level metadata and grading policy. -->

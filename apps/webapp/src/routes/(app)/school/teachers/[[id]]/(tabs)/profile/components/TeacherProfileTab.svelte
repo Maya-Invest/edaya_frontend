@@ -67,7 +67,7 @@
 	</DrawerField>
 	<PermissionGate permission="STAFF_MANAGE" mode="disable">
 		{#snippet children({ disabled })}
-			<div class="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3">
+			<div class="flex items-center gap-2 rounded-collection border border-border bg-card px-4 py-3">
 				<Checkbox
 					checked={active}
 					disabled={disabled || statusBusy}

@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ConfirmModal from '$lib/components/ui/ConfirmModal.svelte';
+	import ListEntityTable from '$lib/components/ui/ListEntityTable.svelte';
 	import ListPageHeader from '$lib/components/ui/ListPageHeader.svelte';
 	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
@@ -83,7 +84,7 @@
 		{#snippet primary()}
 			<PermissionGate permission="ACADEMIC_CATALOG_MANAGE">
 				{#snippet children({ disabled, title })}
-					<Button size="sm" class="rounded-full" {disabled} {title} onclick={() => modals.open('create')}>
+					<Button size="sm" {disabled} {title} onclick={() => modals.open('create')}>
 						<Plus class="mr-1 h-4 w-4" />
 						{$t('subjectCategories.add')}
 					</Button>
@@ -92,50 +93,27 @@
 		{/snippet}
 	</ListPageHeader>
 
-	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-		<table class="w-full text-sm">
-			<thead class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-				<tr>
-					<th class="px-4 py-3 font-medium">{$t('subjectCategories.name')}</th>
-					<th class="w-12 px-4 py-3"></th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each filteredCategories as category (category.id)}
-					<tr class="border-b border-border/70 last:border-0">
-						<td class="px-4 py-3">{catalogCategory(category.name, $lang)}</td>
-						<td class="px-4 py-3 text-right">
-							<PermissionGate permission="ACADEMIC_CATALOG_MANAGE">
-								{#snippet children({ disabled, title })}
-									<RowActionMenu>
-										<RowActionMenuItem {disabled} {title} onclick={() => modals.open('edit', { target: category.id })}>
-											<Pencil class="h-4 w-4" />
-											{$t('common.edit')}
-										</RowActionMenuItem>
-										<RowActionMenuItem
-											destructive
-											{disabled}
-											{title}
-											onclick={() => modals.open('delete', { target: category.id })}
-										>
-											<Trash2 class="h-4 w-4" />
-											{$t('common.delete')}
-										</RowActionMenuItem>
-									</RowActionMenu>
-								{/snippet}
-							</PermissionGate>
-						</td>
-					</tr>
-				{:else}
-					<tr>
-						<td colspan="2" class="px-4 py-8 text-center text-muted-foreground">
-							{$t('subjectCategories.subtitle')}
-						</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-	</div>
+	<ListEntityTable listKey="SubjectCategoriesList" rows={filteredCategories} columns={[{ key: 'name', label: $t('subjectCategories.name'), span: 6, required: true }, { key: 'actions', label: '', span: 1 }]} emptyLabel={$t('subjectCategories.subtitle')}>
+		{#snippet cell(category, column)}{#if column.key === 'name'}{catalogCategory(category.name, $lang)}{:else}<PermissionGate permission="ACADEMIC_CATALOG_MANAGE">
+			{#snippet children({ disabled, title })}
+				<RowActionMenu label={`${$t('list.rowActions')} · ${catalogCategory(category.name, $lang)}`}>
+					<RowActionMenuItem {disabled} {title} onclick={() => modals.open('edit', { target: category.id })}>
+						<Pencil class="h-4 w-4" />
+						{$t('common.edit')}
+					</RowActionMenuItem>
+					<RowActionMenuItem
+						destructive
+						{disabled}
+						{title}
+						onclick={() => modals.open('delete', { target: category.id })}
+					>
+						<Trash2 class="h-4 w-4" />
+						{$t('common.delete')}
+					</RowActionMenuItem>
+				</RowActionMenu>
+			{/snippet}
+		</PermissionGate>{/if}{/snippet}
+	</ListEntityTable>
 </div>
 
 {#if createOpen.open}

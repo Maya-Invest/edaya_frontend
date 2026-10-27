@@ -899,42 +899,10 @@ export async function publishAnnouncementViaApi(
 	return publishAnnouncementCommandViaApi(page, appOrigin, announcementId, apiUrl);
 }
 
-export async function publishReportCardDefinitionViaApi(
-	page: Page,
-	appOrigin: string,
-	definitionId: string,
-	apiUrl = process.env.API_URL ?? DEFAULT_API_URL,
-): Promise<boolean> {
-	const getResponse = await apiFetch(
-		page,
-		appOrigin,
-		`/core/entities/definitions/${encodeURIComponent(definitionId)}`,
-		{},
-		apiUrl,
-	);
-	if (!getResponse.ok()) {
-		return false;
-	}
-	let definition: Record<string, unknown>;
-	try {
-		definition = await getResponse.json() as Record<string, unknown>;
-	}
-	catch {
-		return false;
-	}
-
-	const saveResponse = await apiFetch(page, appOrigin, '/core/entities/definitions/save', {
-		method: 'POST',
-		data: { ...definition, status: 'published' },
-	}, apiUrl);
-	return saveResponse.ok();
-}
-
 export async function generateReportCardViaApi(
 	page: Page,
 	appOrigin: string,
 	options: {
-		reportCardDefinitionId: string;
 		studentId: string;
 		periodId?: string | null;
 	},
@@ -949,7 +917,6 @@ export async function generateReportCardViaApi(
 		method: 'POST',
 		data: {
 			id,
-			reportCardDefinitionId: options.reportCardDefinitionId,
 			studentId: options.studentId,
 			periodId,
 		},

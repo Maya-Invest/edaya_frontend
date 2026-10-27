@@ -25,7 +25,7 @@
 	const shown = $derived(collapsible ? open : true);
 </script>
 
-<div class="overflow-hidden rounded-xl border border-border bg-card">
+<div class="overflow-hidden rounded-collection border border-border bg-card">
 	<button
 		type="button"
 		onclick={() => collapsible && onOpenChange?.(!open)}

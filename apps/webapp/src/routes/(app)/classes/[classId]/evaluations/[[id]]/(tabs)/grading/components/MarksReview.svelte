@@ -98,7 +98,7 @@
 				{#if grading.review.allowedActions.requestCorrection && pageState.canEnterMarks(grading.review.assessment.id)}<Button variant="ghost" class="w-full justify-start" onclick={() => openRouteSurface(gradingTaskHref($page.url, grading.review!.assessment.classGroupId, grading.review!.assessment.id, 'correction'), `${$page.url.pathname}${$page.url.search}`)}>{$t('marks.requestCorrection')}</Button>{/if}
 			</RowActionMenu>
 		{/if}
-		<details class="space-y-3 rounded-xl border border-border p-4">
+		<details class="space-y-3 rounded-collection border border-border p-4">
 			<summary class="control-focus cursor-pointer text-sm font-semibold">{$t('gradeInspection.submissionHistory')}</summary>
 			{#each grading.review.assessment.marksReview.history.toSorted((a, b) => a.revision - b.revision) as event, index (index)}
 				<p class="break-words text-sm">{$t('marks.submitted')} · {$t('gradeInspection.revision', { revision: event.revision })} · {event.subjectId} · {formatLocaleTimestamp(event.at, $locale) ?? $t('dataState.unavailable')}{event.reason ? ` · ${event.reason}` : ''}</p>
@@ -107,7 +107,7 @@
 		<h3 class="text-xl font-semibold">{$t('corrections.title')}</h3>
 		{#if !grading.review.corrections.length}<p class="text-sm">{$t('gradeInspection.noCorrections')}</p>{/if}
 		{#each grading.review.corrections as correction (correction.id)}
-			<div class="space-y-2 rounded-xl bg-secondary p-3">
+			<div class="space-y-2 rounded-collection bg-secondary p-3">
 				<p><strong>{$t(`marks.${correction.status}`)}</strong> · {correction.reason}</p>
 				<p>{$t('marks.author')}: {correction.authorSubjectId} · {formatLocaleTimestamp(correction.createdAt, $locale) ?? $t('dataState.unavailable')}</p>
 				{#each correction.changes as change (change.resultId)}<p>{name(change.studentId)}: {display(change.before)} → {display(change.proposed)}</p>{/each}

@@ -139,7 +139,7 @@ export function describeTestExactly(row: QaTemplateRow): string {
 	}
 
 	if (/export/i.test(action)) {
-		return 'Open list-more-menu; click Sélectionner/Select (not stub Exporter); check first row; click enabled Exporter on selection bar. Empty list → N/A.';
+		return 'Open collection-menu; click Sélectionner/Select (not stub Exporter); check first row; click enabled Exporter on selection bar. Empty list → N/A.';
 	}
 
 	if (/import/i.test(action)) {

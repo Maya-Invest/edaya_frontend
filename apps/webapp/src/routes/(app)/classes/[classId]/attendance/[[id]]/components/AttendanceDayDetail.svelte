@@ -98,7 +98,7 @@
 							<Button
 								size="sm"
 								variant="outline"
-								class="rounded-full"
+
 								disabled={disabled || bulkBusy}
 								{title}
 								onclick={markAllPresent}
@@ -126,14 +126,14 @@
 			</DrawerEmptyState>
 		{:else}
 			<ul
-				class="scrollbar-thin mt-2 max-h-[min(32rem,calc(100dvh-16rem))] overflow-y-auto rounded-2xl border border-border bg-card shadow-soft"
+				class="scrollbar-thin mt-2 max-h-[min(32rem,calc(100dvh-16rem))] overflow-y-auto rounded-collection border border-border bg-card shadow-soft"
 			>
 				{#each attendanceRows as row (row.studentId)}
 					<li class="border-b border-border px-4 py-3 last:border-b-0">
 						<div class="flex items-center justify-between gap-3">
 							<div class="flex items-center gap-3">
 								<div
-									class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary font-display text-xs font-semibold text-primary-foreground"
+									class="flex h-9 w-9 items-center justify-center rounded-collection bg-primary font-display text-xs font-semibold text-primary-foreground"
 								>
 									{row.studentInitials}
 								</div>
@@ -165,7 +165,7 @@
 										<Button
 											variant="ghost"
 											size="sm"
-											class="h-7 rounded-full px-2.5 text-[11px]"
+											class="text-[11px]"
 											{disabled}
 											{title}
 											onclick={() => modals.open('record-attendance', { target: row.studentId })}

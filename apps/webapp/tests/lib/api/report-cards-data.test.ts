@@ -1,16 +1,13 @@
 import type { components } from '$lib/api/schema';
 import {
-	mapDefinitionStatus,
 	mapGradeScales,
-	mapReportCardDefinitions,
 	mapReportCardResults,
-	mapSectionRole,
 	mapSubjectMark,
 	resolveClassSubjectId,
 	subjectLabelForCatalogId,
 } from '$lib/api/report-cards-data';
 import { setLang } from '$lib/i18n';
-import { classSubject, reportCardDefinition, subject } from '$tests/support/openapi-fixtures';
+import { classSubject, subject } from '$tests/support/openapi-fixtures';
 import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
 
@@ -85,80 +82,6 @@ describe('report cards grade scale mapping', () => {
 	});
 });
 
-const seedDefinitionsRaw = [
-	reportCardDefinition({
-		id: 'rcd-ms-6',
-		name: 'Bulletin trimestriel — Collège (6ème)',
-		isDefault: true,
-	}),
-	reportCardDefinition({
-		id: 'rcd-ms-draft',
-		name: 'Bulletin trimestriel — Collège (modèle brouillon)',
-		status: 'draft',
-	}),
-];
-
-const seedDefinitionSectionsRaw = [
-	{
-		id: 'rcs-ms-fond',
-		reportCardDefinitionId: 'rcd-ms-6',
-		name: 'Matières fondamentales',
-		kind: 'group' as const,
-		role: 'matieres' as const,
-		coefficient: 2,
-		order: 1,
-		weight: 2,
-	},
-	{
-		id: 'rcs-ms-sci',
-		reportCardDefinitionId: 'rcd-ms-6',
-		name: 'Sciences & langues',
-		kind: 'group' as const,
-		role: 'matieres' as const,
-		coefficient: 1.5,
-		order: 2,
-		weight: 2,
-	},
-	{
-		id: 'rcs-ms-sport',
-		reportCardDefinitionId: 'rcd-ms-6',
-		name: 'EPS & arts',
-		kind: 'group' as const,
-		role: 'matieres' as const,
-		coefficient: 1,
-		order: 3,
-		weight: 1,
-	},
-	{
-		id: 'rcs-ms-synth',
-		reportCardDefinitionId: 'rcd-ms-6',
-		name: 'Synthèse trimestrielle',
-		kind: 'group' as const,
-		role: 'synthese' as const,
-		order: 4,
-		weight: 1,
-	},
-	{
-		id: 'rcs-ms-appr',
-		reportCardDefinitionId: 'rcd-ms-6',
-		name: 'Appréciations',
-		kind: 'group' as const,
-		role: 'appreciation' as const,
-		order: 5,
-		weight: 1,
-	},
-	{
-		id: 'rcs-ms-fond-subj-math',
-		reportCardDefinitionId: 'rcd-ms-6',
-		name: 'subj-math',
-		kind: 'subject' as const,
-		order: 1,
-		weight: 1,
-		parentSectionId: 'rcs-ms-fond',
-		subjectId: 'subj-math',
-	},
-];
-
 const classSubjectsSources = {
 	classSubjectsRaw: [
 		classSubject({ id: 'cs-6a-math', classGroupId: '6a', subjectId: 'subj-math' }),
@@ -175,69 +98,6 @@ const classSubjectsSources = {
 	teachersRaw: [],
 	teacherAssignmentsRaw: [],
 };
-
-describe('report cards definition mapping', () => {
-	it('preserves default-model identity for scoped filtering', () => {
-		const definitions = mapReportCardDefinitions([
-			reportCardDefinition({ id: 'default', name: 'Default', isDefault: true }),
-			reportCardDefinition({ id: 'alternate', name: 'Alternate', isDefault: false }),
-		], [], { subjectsRaw: [] });
-		expect(definitions.map(row => row.isDefault)).toEqual([true, false]);
-	});
-
-	it('maps definition status from API enum', () => {
-		expect(mapDefinitionStatus('published')).toBe('published');
-		expect(mapDefinitionStatus('draft')).toBe('draft');
-		expect(mapDefinitionStatus(undefined)).toBe('draft');
-	});
-
-	it('maps report card definitions from API fields without per-id tables', () => {
-		const definitions = mapReportCardDefinitions(
-			[...seedDefinitionsRaw],
-			[...seedDefinitionSectionsRaw],
-			classSubjectsSources,
-		);
-
-		expect(definitions.find(definition => definition.id === 'rcd-ms-6')).toMatchObject({
-			gradeScaleId: 'gs-20',
-			status: 'published',
-		});
-		expect(definitions.find(definition => definition.id === 'rcd-ms-draft')).toMatchObject({
-			gradeScaleId: 'gs-20',
-			status: 'draft',
-		});
-		const ms6 = definitions.find(definition => definition.id === 'rcd-ms-6');
-		expect(ms6?.sections).toHaveLength(5);
-		expect(ms6?.sections.find(section => section.id === 'rcs-ms-fond')).toMatchObject({
-			sectionType: 'group',
-			kind: 'matieres',
-			coefficient: 2,
-			children: [{
-				sectionType: 'subject',
-				subjectId: 'subj-math',
-				subjectLabel: 'Mathématiques',
-			}],
-		});
-		expect(ms6?.sections.find(section => section.id === 'rcs-ms-sci')).toMatchObject({
-			sectionType: 'group',
-			kind: 'matieres',
-			coefficient: 1.5,
-		});
-		expect(ms6?.sections.find(section => section.id === 'rcs-ms-sport')).toMatchObject({
-			sectionType: 'group',
-			kind: 'matieres',
-			coefficient: 1,
-		});
-		expect(ms6?.sections.find(section => section.id === 'rcs-ms-synth')).toMatchObject({
-			sectionType: 'group',
-			kind: 'synthese',
-		});
-		expect(ms6?.sections.find(section => section.id === 'rcs-ms-appr')).toMatchObject({
-			sectionType: 'group',
-			kind: 'appreciation',
-		});
-	});
-});
 
 describe('report cards subject resolution', () => {
 	it('resolves class subject ids dynamically by class group', () => {
@@ -264,22 +124,6 @@ describe('report cards subject resolution', () => {
 	});
 });
 
-describe('report cards section role mapping', () => {
-	it('maps API role to UI kind', () => {
-		expect(mapSectionRole({ role: 'matieres', name: 'Matières' }, false)).toBe('matieres');
-		expect(mapSectionRole({ role: 'synthese', name: 'Synthèse' }, false)).toBe('synthese');
-	});
-
-	it('derives matieres from subject children when role is absent', () => {
-		expect(mapSectionRole({ name: 'Groupe' }, true)).toBe('matieres');
-	});
-
-	it('derives synthese and appreciation from section names', () => {
-		expect(mapSectionRole({ name: 'Synthèse trimestrielle' }, false)).toBe('synthese');
-		expect(mapSectionRole({ name: 'Appréciations' }, false)).toBe('appreciation');
-	});
-});
-
 describe('report cards result mapping', () => {
 	it('uses the captured subject-row label after explicit generation', () => {
 		expect(mapSubjectMark({ classSubjectId: 'cs-6a-math', name: 'Applied mathematics', average: 18, weight: 1.5 }, classSubjectsSources)?.subjectName).toBe('Applied mathematics');
@@ -289,7 +133,7 @@ describe('report cards result mapping', () => {
 			classSubjectId: 'cs-6a-math',
 			name: 'subj-math',
 			average: 18.5,
-			weight: 2,
+			weight: 2, coefficient: 2,
 			comment: 'Excellent — maîtrise remarquable de l\'algèbre.',
 		}, classSubjectsSources);
 
@@ -302,7 +146,7 @@ describe('report cards result mapping', () => {
 	});
 
 	it('preserves unavailable report rank and class size instead of inventing zeros', () => {
-		const results = mapReportCardResults([{ id: 'report', studentId: 'student', classGroupId: 'class', reportCardDefinitionId: 'definition', periodId: 'period', rank: null, classSize: null, overallAverage: 0, sectionResults: [] } as unknown as components['schemas']['ReportCardResult']], [], classSubjectsSources);
+		const results = mapReportCardResults([{ id: 'report', studentId: 'student', classGroupId: 'class', gradeLevelId: 'grade', academicYearId: 'year', reportConfigurationRevision: 1, periodId: 'period', rank: null, classSize: null, overallAverage: 0, sectionResults: [] } as unknown as components['schemas']['ReportCardResult']], classSubjectsSources);
 		expect(results[0]?.classRank).toBeUndefined();
 		expect(results[0]?.classSize).toBeUndefined();
 		expect(results[0]?.overallAverage).toBe(0);
@@ -315,7 +159,7 @@ describe('report cards result mapping', () => {
 				studentId: 's1',
 				classGroupId: '6a',
 				periodId: '2025-t3',
-				reportCardDefinitionId: 'rcd-ms-6',
+				gradeLevelId: 'grade', academicYearId: 'year', reportConfigurationRevision: 1,
 				status: 'published',
 				overallAverage: 17.2,
 				rank: 1,
@@ -331,27 +175,22 @@ describe('report cards result mapping', () => {
 				assessmentResultCount: 1,
 				sectionResults: [{
 					sectionId: 'rcs-ms-fond',
-					sectionKind: 'group',
+					sectionKind: 'module',
 					name: 'Matières fondamentales',
 					average: 17.17,
-					weight: 2,
+					weight: 2, coefficient: 2,
 					subResults: [{
 						sectionId: 'rcs-ms-fond-subj-math',
 						sectionKind: 'subject',
 						name: 'subj-math',
 						average: 18.5,
-						weight: 2,
+						weight: 2, coefficient: 2,
 						comment: 'Excellent — maîtrise remarquable de l\'algèbre.',
 						classSubjectId: 'cs-6a-math',
 						subResults: [],
 					}],
 				}],
 			} as unknown as components['schemas']['ReportCardResult']],
-			[reportCardDefinition({
-				id: 'rcd-ms-6',
-				name: 'Bulletin trimestriel — Collège (6ème)',
-				isDefault: true,
-			})],
 			classSubjectsSources,
 		);
 

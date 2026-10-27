@@ -186,7 +186,7 @@
 		</div>
 	</div>
 	{#if preview}
-		<div class="rounded-xl border border-border bg-secondary/40 px-3 py-2 text-sm">
+		<div class="rounded-collection border border-border bg-secondary/40 px-3 py-2 text-sm">
 			<p class="font-medium">{$t('familyFeedback.audience')}</p>
 			<p>{$t('familyFeedback.eligible', { n: preview.eligibleCount })}</p>
 			<p>{$t('familyFeedback.completed', { n: preview.completedCount })}</p>

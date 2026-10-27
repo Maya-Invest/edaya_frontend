@@ -24,7 +24,10 @@
 		sky: 'Sky',
 		warm: 'Warm',
 	};
-	let { onLoadParticipationRevisions, onLoadCategories, onCreateSchedule, onCreateSubjectForClass, onUpdateSubject, subject, classId, weekStart = new Date(), open = $bindable(false), onCreated, disabled = false, title, showTrigger = true }: {
+	let { reportModules = [], canConfigureModule = false, reportConfigurationRevision, onLoadParticipationRevisions, onLoadCategories, onCreateSchedule, onCreateSubjectForClass, onUpdateSubject, subject, classId, weekStart = new Date(), open = $bindable(false), onCreated, disabled = false, title, showTrigger = true }: {
+		reportModules?: { id: string; name: string }[];
+		canConfigureModule?: boolean;
+		reportConfigurationRevision?: number;
 		onLoadParticipationRevisions: (subjectId: string) => Promise<Record<string, number>>;
 		onLoadCategories: (schoolId: string) => Promise<SubjectCategoryOption[]>;
 		onCreateSchedule: typeof createScheduleMutation;
@@ -48,6 +51,8 @@
 	let code = $state('');
 	let shortName = $state('');
 	let coefficient = $state('');
+	let reportModuleId = $state('ungrouped');
+	let capturedReportRevision: number | undefined;
 	let isOptional = $state(false);
 	let periodsPerWeek = $state('');
 	let minPeriodSpan = $state('');
@@ -84,6 +89,8 @@
 		code = subject?.code ?? '';
 		shortName = subject?.shortName ?? '';
 		coefficient = subject?.coefficient == null ? '' : String(subject.coefficient);
+		reportModuleId = subject?.reportModuleId ?? 'ungrouped';
+		capturedReportRevision = reportConfigurationRevision;
 		isOptional = subject?.isOptional ?? false;
 		periodsPerWeek = subject?.periodsPerWeek != null ? String(subject.periodsPerWeek) : '';
 		minPeriodSpan = subject?.minPeriodSpan != null ? String(subject.minPeriodSpan) : '';
@@ -132,6 +139,7 @@
 				const ok = await onUpdateSubject({
 					classSubjectId: subject.id,
 					expectedParticipationRevisions,
+					...(canConfigureModule ? { reportModuleId: reportModuleId === 'ungrouped' ? null : reportModuleId, expectedReportConfigurationRevision: capturedReportRevision } : {}),
 					subjectId: hasSharedWorkload ? subject.id : undefined,
 					...workload?.value,
 					name,
@@ -190,7 +198,7 @@
 	<Button
 		variant="outline"
 		size="sm"
-		class="rounded-full"
+
 		{disabled}
 		{title}
 		onclick={() => (open = true)}
@@ -199,7 +207,7 @@
 	</Button>
 {/if}
 
-<FormModal
+<FormModal contentClass="max-w-3xl"
 	bind:open
 	title={isEdit ? $t('subjects.editTitle') : $t('subjects.createTitle')}
 	description={isEdit ? subject?.name : $t('subjects.createDescription')}
@@ -279,7 +287,7 @@
 		</fieldset>
 	{/if}
 	{#if !isEdit && classId}
-		<div class="space-y-3 rounded-xl border border-border bg-secondary/20 p-4">
+		<div class="space-y-3 rounded-collection border border-border bg-secondary/20 p-4">
 			<label class="flex items-center gap-2 text-sm">
 				<Checkbox bind:checked={addToTimetable} />
 				{$t('eval.addToTimetable')}
@@ -322,6 +330,8 @@
 	<Label class="block space-y-2"><span>{$t('profile.discipline')}</span><AcademicDisciplinePicker bind:value={disciplineId} active={open} /></Label>
 	<Label class="block space-y-2"><span>{$t('common.code')}</span><Input bind:value={code} /></Label>
 	<Label class="block space-y-2"><span>{$t('profile.shortName')}</span><Input bind:value={shortName} /></Label>
+	{#if canConfigureModule}<Label class="block space-y-2"><span>{$t('modules.module')}</span><Select.Root type="single" bind:value={reportModuleId}><Select.Trigger><Select.Value>{reportModules.find(module => module.id === reportModuleId)?.name ?? $t('modules.ungrouped')}</Select.Value></Select.Trigger><Select.Content><Select.Item value="ungrouped">{$t('modules.ungrouped')}</Select.Item>{#each reportModules as module (module.id)}<Select.Item value={module.id}>{module.name}</Select.Item>{/each}</Select.Content></Select.Root></Label>{/if}
+
 	<Label class="block space-y-2"><span>{$t('eval.coefficient')}</span><Input type="number" min="0" step="any" bind:value={coefficient} /></Label>
 	<Label class="flex items-center gap-2"><Checkbox bind:checked={isOptional} />{$t('profile.isOptional')}</Label>
 </FormModal>

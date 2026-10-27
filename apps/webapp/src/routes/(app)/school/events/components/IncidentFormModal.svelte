@@ -6,6 +6,7 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
 	import StudentPicker from '$lib/smart-components/student-picker/StudentPicker.svelte';
@@ -149,7 +150,7 @@
 	<Button
 		variant="outline"
 		size="sm"
-		class="rounded-full"
+
 		{disabled}
 		title={triggerTitle}
 		onclick={() => (open = true)}
@@ -188,8 +189,8 @@
 		</Label>
 		<Input id="incident-title" data-testid="incident-title-input" bind:value={incidentTitle} />
 	</div>
-	<details class="space-y-3 rounded-xl border p-3"><summary>{$t('profile.additionalFields')}</summary>
-		<Label class="block space-y-2"><span>{$t('profile.lessonOccurrence')}</span><select class="h-10 w-full rounded-xl border bg-card px-3" bind:value={lessonSessionId} disabled={lessonsLoading || lessonError}><option value="">{$t('profile.notProvided')}</option>{#if lessonSessionId && !lessons.some(lesson => lesson.id === lessonSessionId)}<option value={lessonSessionId}>{$t('profile.restricted')}</option>{/if}{#each lessons as lesson (lesson.id)}<option value={lesson.id}>{lesson.displayLabel ?? $t('profile.lessonOccurrence')} · {lesson.startsAt}</option>{/each}</select></Label>
+	<details class="space-y-3 rounded-collection border p-3"><summary>{$t('profile.additionalFields')}</summary>
+		<Label class="block space-y-2"><span>{$t('profile.lessonOccurrence')}</span><SelectField class="w-full border bg-card" bind:value={lessonSessionId} disabled={lessonsLoading || lessonError}><option value="">{$t('profile.notProvided')}</option>{#if lessonSessionId && !lessons.some(lesson => lesson.id === lessonSessionId)}<option value={lessonSessionId}>{$t('profile.restricted')}</option>{/if}{#each lessons as lesson (lesson.id)}<option value={lesson.id}>{lesson.displayLabel ?? $t('profile.lessonOccurrence')} · {lesson.startsAt}</option>{/each}</SelectField></Label>
 		{#if lessonError}<p role="alert">{$t('dataState.error')}</p>{/if}
 	</details>
 	<div class="grid gap-3 sm:grid-cols-2">

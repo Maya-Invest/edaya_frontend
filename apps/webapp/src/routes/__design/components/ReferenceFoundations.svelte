@@ -2,12 +2,13 @@
 	import type { PageLoadState } from '$lib/page/load-state';
 	import type { ReferenceCopy } from '../reference-copy';
 	import BrandLogo from '$lib/components/ui/BrandLogo.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import { locale } from '$lib/i18n';
 	import { PAGE_QUERY_RETRY } from '$lib/queries/retry-context';
 	import { BADGE_DANGER, BADGE_INFO, BADGE_SUCCESS, BADGE_WARN } from '$lib/ui-tones';
 	import { setContext } from 'svelte';
-	import Button from './ReferenceButton.svelte';
+	import ReferenceSelect from './ReferenceSelect.svelte';
 
 	const { copy }: { copy: ReferenceCopy } = $props();
 	setContext(PAGE_QUERY_RETRY, undefined);
@@ -60,7 +61,7 @@
 </section>
 <section id="read-states" class="reference-section space-y-4 bg-card p-4 md:p-6">
 	<h2 class="font-display text-xl font-semibold">{copy.states}</h2>
-	<label class="block max-w-lg space-y-2 text-sm"><span>{copy.states}</span><select data-testid="reference-read-state" class="min-h-11 w-full rounded-full border border-input bg-background px-4" bind:value={readState}>{#each states as [value, label] (value)}<option {value}>{label}</option>{/each}</select></label>
+	<div class="max-w-lg"><ReferenceSelect label={copy.states} data-testid="reference-read-state" bind:value={readState} options={states.map(([value, label]) => ({ value, label }))} /></div>
 	{#if readState === 'unavailable' || readState === 'denied' || readState === 'empty' || readState === 'error'}
 		<div class="space-y-4 border-t pt-4" role={readState === 'error' ? 'alert' : 'status'}>
 			<h3 class="font-display text-xl font-semibold">{readState === 'unavailable' ? copy.unavailable : readState === 'denied' ? copy.denied : readState === 'empty' ? copy.empty : copy.failed}</h3>

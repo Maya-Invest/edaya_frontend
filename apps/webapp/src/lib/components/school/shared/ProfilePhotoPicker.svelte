@@ -31,8 +31,8 @@
 			xs: 'rounded-full',
 			sm: 'rounded-full',
 			md: 'rounded-full',
-			list: 'rounded-xl',
-			lg: 'rounded-2xl',
+			list: 'rounded-lg',
+			lg: 'rounded-lg',
 		}[size],
 	);
 

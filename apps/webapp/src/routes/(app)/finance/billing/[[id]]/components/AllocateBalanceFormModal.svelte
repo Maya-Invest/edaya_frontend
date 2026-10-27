@@ -130,7 +130,7 @@
 	onCancel={resetForm}
 	onSubmit={submit}
 >
-	<div class="rounded-xl border border-border bg-secondary/40 px-3 py-2 text-sm">
+	<div class="rounded-collection border border-border bg-secondary/40 px-3 py-2 text-sm">
 		<p class="text-[11px] uppercase tracking-wider text-muted-foreground">{$t('finance.available')}</p>
 		<p class="font-sans text-xl font-semibold tabular-nums">
 			{formatMinorUnits(account?.availableBalance ?? 0, currency, $locale)}
@@ -167,7 +167,7 @@
 		<div role="alert"><p>{$t('dataState.error')}</p><Button variant="outline" onclick={refreshPreview}>{$t('dataState.retry')}</Button></div>
 	{/if}
 	{#if preview}
-		<div class="rounded-xl border border-border px-3 py-2 text-sm">
+		<div class="rounded-collection border border-border px-3 py-2 text-sm">
 			<p class="text-[11px] uppercase tracking-wider text-muted-foreground">{$t('payment.preview')}</p>
 			{#if preview.allocations.length === 0}
 				<p class="mt-1 text-xs text-muted-foreground">{$t('billing.allocateEmptyPreview')}</p>

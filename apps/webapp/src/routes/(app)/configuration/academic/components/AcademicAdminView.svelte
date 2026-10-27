@@ -233,7 +233,7 @@
 			</FilterPanel>
 		{/snippet}
 		{#snippet primary()}
-			<Button size="sm" class="rounded-full" onclick={() => modals.open('create')}>
+			<Button size="sm" onclick={() => modals.open('create')}>
 				<Plus class="mr-1 h-4 w-4" />
 				{$t('academic.createYear')}
 			</Button>
@@ -259,11 +259,11 @@
 		{#each filteredYears as year (year.id)}
 			{@const open = academicPage.expandedYear === year.id}
 			{@const yearPeriods = periodsFor(year.id)}
-			<section class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+			<section class="overflow-hidden rounded-collection border border-border bg-card shadow-soft">
 				<div class="flex flex-wrap items-center gap-x-3 px-3">
 					<button
 						type="button"
-						class="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-4 text-left transition hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+						class="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-collection px-2 py-4 text-left transition hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 						aria-expanded={open}
 						aria-controls={open ? `academic-year-periods-${year.id}` : undefined}
 						onclick={() => academicPage.setExpandedYear(open ? null : year.id)}
@@ -297,7 +297,7 @@
 							<Button
 								size="sm"
 								variant="outline"
-								class="rounded-full"
+
 								onclick={() => openArchiveYear(year.id)}
 							>
 								{$t('academic.archiveYear')}
@@ -312,7 +312,7 @@
 							<div class="mb-4 flex justify-end">
 								<Button
 									size="sm"
-									class="rounded-full"
+
 									disabled={publishedYearId !== null}
 									title={publishedYearId !== null ? $t('academic.publishBlocked') : undefined}
 									onclick={() => modals.open('publish-year', { target: year.id })}
@@ -328,7 +328,7 @@
 						<ul class="space-y-2">
 							{#each yearPeriods as period (period.id)}
 								<li
-									class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/60 px-4 py-3"
+									class="flex flex-wrap items-center justify-between gap-3 rounded-collection border border-border/70 bg-background/60 px-4 py-3"
 								>
 									<div>
 										<p class="text-sm font-medium">{period.label}</p>
@@ -355,7 +355,7 @@
 											<Button
 												size="sm"
 												variant="outline"
-												class="rounded-full"
+
 												onclick={() => modals.open('publish-period', { target: period.id })}
 											>
 												{$t('academic.publishPeriod')}

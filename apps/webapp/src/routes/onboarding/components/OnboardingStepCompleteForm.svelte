@@ -135,7 +135,7 @@
 				{$t('onboarding.complete.edit')}
 			</Button>
 		</div>
-		<table class="w-full text-xs">
+		<table class="ui-entry-table w-full text-xs">
 			<tbody>
 				<tr class="border-b border-border/60">
 					<td class="px-1.5 py-1.5 text-muted-foreground">{$t('onboarding.schoolNameLabel')}</td>
@@ -158,7 +158,7 @@
 		</table>
 		{#if summary.periods.length > 0}
 			<p class="mt-1.5 text-xs font-medium text-foreground">{$t('onboarding.complete.periodsHeading')}</p>
-			<table class="w-full text-xs">
+			<table class="ui-entry-table w-full text-xs">
 				<thead>
 					<tr class="border-b border-border text-left text-muted-foreground">
 						<th class="px-1.5 py-1 font-medium">{$t('onboarding.periodLabel')}</th>
@@ -210,7 +210,7 @@
 								? level.classNames.map(name => catalogClassName(name, $lang)).join(' · ')
 								: '—'}
 						</p>
-						<table class="w-full text-xs">
+						<table class="ui-entry-table w-full text-xs">
 							<thead>
 								<tr class="border-b border-border text-left text-muted-foreground">
 									<th class="px-1.5 py-1 font-medium">{$t('onboarding.complete.colCode')}</th>
@@ -268,7 +268,7 @@
 			<p class="text-xs text-muted-foreground">{$t('onboarding.complete.emptyTeam')}</p>
 		{:else}
 			<div class="max-h-[min(28vh,12rem)] overflow-y-auto">
-				<table class="w-full text-xs">
+				<table class="ui-entry-table w-full text-xs">
 					<thead>
 						<tr class="border-b border-border text-left text-muted-foreground">
 							<th class="px-1.5 py-1 font-medium">{$t('onboarding.staff.emailLabel')}</th>

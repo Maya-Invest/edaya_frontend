@@ -65,7 +65,7 @@
 	{#if flow.retryRequest}<div class="flex flex-wrap gap-2"><Button data-testid="auth-retry" variant="outline" disabled={flow.busy || !apiConnected} onclick={() => void flow.retry(completed)}>{$t('auth.retryRequest')}</Button><Button data-testid="auth-change-contact" variant="link" disabled={flow.busy} onclick={() => flow.reset()}>{$t('auth.changeContact')}</Button></div>{/if}
 	{#if flow.state === 'recovery_codes'}
 		<p>{$t('auth.saveRecoveryCodes')}</p>
-		<pre data-sensitive data-testid="auth-recovery-codes" class="overflow-x-auto rounded-xl bg-secondary p-3 text-xs">{flow.recoveryCodes.join('\n')}</pre>
+		<pre data-sensitive data-testid="auth-recovery-codes" class="overflow-x-auto rounded-collection bg-secondary p-3 text-xs">{flow.recoveryCodes.join('\n')}</pre>
 		<Button onclick={() => void flow.finish()}>{$t('auth.savedRecoveryCodes')}</Button>
 	{:else}
 		<form class="space-y-4" onsubmit={(event) => {

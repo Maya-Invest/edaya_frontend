@@ -81,7 +81,7 @@ async function main() {
         await page.setViewportSize({ width: 1280, height: 900 });
         await page.goto(`${origin}${path}?view=${view}`);
         await page.getByTestId('collection-menu').click();
-        await page.getByRole('button', { name: 'Select', exact: true }).click();
+        await page.getByRole('menuitem', { name: 'Select', exact: true }).click();
         const rows = page.getByRole('checkbox', { name: 'Select row', exact: true });
         await rows.nth(0).focus();
         await page.keyboard.press('Space');
@@ -112,13 +112,13 @@ async function main() {
         assert.equal(await page.getByRole('checkbox', { name: 'Select row', exact: true }).nth(0).isChecked(), true);
         // Switching the collection view keeps exactly the selected recipients.
         await page.getByTestId('collection-menu').click();
-        await page.getByRole('button', { name: view === 'table' ? 'Card view' : 'Table view', exact: false }).click();
+        await page.getByRole('menuitem', { name: view === 'table' ? 'List view' : 'Table view', exact: false }).click();
         assert.equal(await page.getByRole('checkbox', { name: 'Select row', exact: true }).nth(1).isChecked(), true);
         await page.getByTestId('conflict').click();
         await page.getByRole('button', { name: 'Batch actions', exact: true }).click();
         await page.getByRole('button', { name: 'Subject enrolments', exact: true }).click();
         await page.getByRole('checkbox', { name: 'Change enrolment for Music' }).click();
-        await page.getByRole('button', { name: 'Clear selection', exact: true }).click();
+        await page.getByRole('dialog').getByRole('button', { name: 'Clear selection', exact: true }).click();
         await page.getByTestId('form-modal-submit').click();
         await page.getByText('Enrolments changed. Current selections have been refreshed; review your changes before saving again.').waitFor();
         assert.equal(await page.getByTestId('form-modal-submit').isDisabled(), false);
@@ -147,7 +147,7 @@ async function main() {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.getByTestId('fr').click();
     await page.getByTestId('collection-menu').click();
-    await page.getByRole('button', { name: 'Sélectionner', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Sélectionner', exact: true }).click();
     await page.getByRole('checkbox', { name: 'Sélectionner la ligne', exact: true }).nth(0).click();
     await page.getByRole('checkbox', { name: 'Sélectionner la ligne', exact: true }).nth(1).click();
     await page.getByRole('button', { name: 'Actions groupées', exact: true }).click();

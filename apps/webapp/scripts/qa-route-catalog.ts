@@ -73,7 +73,7 @@ export function isNamespaceRootPath(matrixPath: string): boolean {
 
 /** Documented redirect targets (inventory + matrix redirect smoke). */
 export const ROUTE_REDIRECTS: Record<string, string> = {
-	'/configuration/report-cards/:id?': '/configuration/structure/details/report-cards/:id',
+	'/configuration/report-cards/:id?': '/configuration/structure/subjects',
 	'/configuration/other/grade-scales': '/configuration/grade-scales',
 	'/school/marks-review': '/school/corrections?workflow=grades',
 	'/': '/login',
@@ -300,10 +300,14 @@ export const MODAL_SURFACES: readonly ModalSurface[] = [
 	{ module: 'Configuration', parentRoute: '/configuration/structure/classes/[id]/profile', modal: 'edit' },
 	{ module: 'Configuration', parentRoute: '/configuration/structure/classes/[id]/assignments', modal: 'form' },
 	{ module: 'Configuration', parentRoute: '/configuration/structure/subjects', modal: 'create-subject' },
+	{ module: 'Configuration', parentRoute: '/configuration/structure/subjects', modal: 'module-create' },
+	{ module: 'Configuration', parentRoute: '/configuration/structure/subjects', modal: 'module-edit', requiresTarget: true, targetEntityKey: 'reportModuleId' },
+	{ module: 'Configuration', parentRoute: '/configuration/structure/subjects', modal: 'module-members', requiresTarget: true, targetEntityKey: 'reportModuleId' },
+	{ module: 'Configuration', parentRoute: '/configuration/structure/subjects', modal: 'module-delete', requiresTarget: true, targetEntityKey: 'reportModuleId' },
+	{ module: 'Configuration', parentRoute: '/configuration/structure/subjects', modal: 'report-settings' },
 	{ module: 'Configuration', parentRoute: '/configuration/structure/subjects/[id]/progression', modal: 'add-chapter' },
 	{ module: 'Configuration', parentRoute: '/configuration/grade-scales', modal: 'create' },
 	{ module: 'Configuration', parentRoute: '/configuration/structure/details', modal: 'create' },
-	{ module: 'Configuration', parentRoute: '/configuration/structure/details/report-cards/[id]', modal: 'delete' },
 	{
 		module: 'Configuration',
 		parentRoute: '/configuration/notifications',

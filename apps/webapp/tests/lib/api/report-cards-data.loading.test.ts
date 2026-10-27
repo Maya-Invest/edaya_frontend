@@ -1,11 +1,9 @@
-import type { ReportCardDefinition } from '$lib/types/report-cards';
 import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 import { describe, expect, it } from 'bun:test';
 import { CATALOG_LIST_PAGE_SIZE } from '$lib/api/entity-list-filters';
 import {
 	loadClassReportCardResultsData,
 	loadGradeScalesCatalogData,
-	loadReportCardCatalogData,
 } from '$lib/api/report-cards-data';
 import { createRecordingSchoolClient, entityListRequests } from '$tests/support/recording-school-client';
 
@@ -25,48 +23,6 @@ function listEnvelope<T>(items: readonly T[]) {
 }
 
 describe('report-card data loading', () => {
-	it('keeps the small catalog explicit and scopes sections to returned definitions', async () => {
-		const { client, requests } = createRecordingSchoolClient([
-			listEnvelope([{
-				id: 'scale-1',
-				schoolId: SEED_SCHOOL_ID,
-				name: 'Scale 20',
-				minScore: 0,
-				maxScore: 20,
-				decimalPlaces: 1,
-				isDefault: true,
-				ranges: [],
-			}]),
-			listEnvelope([{
-				id: 'definition-1',
-				schoolId: SEED_SCHOOL_ID,
-				name: 'Term report',
-				academicYearId: 'year-1',
-				gradeLevelId: 'grade-6',
-				gradeScaleId: 'scale-1',
-				status: 'published',
-			}]),
-			listEnvelope([]),
-			listEnvelope([]),
-		]);
-
-		await loadReportCardCatalogData(client, SEED_SCHOOL_ID);
-
-		expect(entityListRequests(requests, 'grade-scales')[0]?.body).toEqual(paged({
-			schoolId: SEED_SCHOOL_ID,
-		}));
-		expect(entityListRequests(requests, 'definitions')[0]?.body).toEqual(paged({
-			schoolId: SEED_SCHOOL_ID,
-		}));
-		expect(entityListRequests(requests, 'subjects')[0]?.body).toEqual(paged({
-			schoolId: SEED_SCHOOL_ID,
-		}));
-		expect(entityListRequests(requests, 'sections')[0]?.body).toEqual(paged({
-			reportCardDefinitionId: { $in: ['definition-1'] },
-		}));
-		expect(entityListRequests(requests, 'results')).toHaveLength(0);
-	});
-
 	it('lists grade scales for the current school without loading subjects', async () => {
 		const { client, requests } = createRecordingSchoolClient([
 			listEnvelope([{
@@ -92,20 +48,10 @@ describe('report-card data loading', () => {
 	});
 
 	it('loads report-card results only for the selected class and period', async () => {
-		const definition: ReportCardDefinition = {
-			id: 'definition-1',
-			schoolId: SEED_SCHOOL_ID,
-			name: 'Term report',
-			academicYearId: 'year-1',
-			gradeLevelId: 'grade-6',
-			gradeScaleId: 'scale-1',
-			status: 'published',
-			sections: [],
-		};
 		const { client, requests } = createRecordingSchoolClient([
 			listEnvelope([{
 				id: 'result-1',
-				reportCardDefinitionId: definition.id,
+				gradeLevelId: 'grade', academicYearId: 'year', reportConfigurationRevision: 1,
 				studentId: 'student-1',
 				classGroupId,
 				periodId,
@@ -122,7 +68,6 @@ describe('report-card data loading', () => {
 			client,
 			classGroupId,
 			periodId,
-			[definition],
 		);
 
 		expect(results.map(result => result.id)).toEqual(['result-1']);

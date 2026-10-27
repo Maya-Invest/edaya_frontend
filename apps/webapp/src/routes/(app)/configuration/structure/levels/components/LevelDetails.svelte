@@ -73,7 +73,7 @@
 		title={$t('structure.details')}
 	>
 		{#snippet primary()}
-			<Button variant="outline" class="rounded-full" disabled={!hasAnyPermission(['SCHOOL_CONFIGURE', 'REPORT_CARD_CONFIGURE'])} onclick={() => (editOpen.open = true)}>{$t('gradeLevels.edit')}</Button>
+			<Button variant="outline" disabled={!hasAnyPermission(['SCHOOL_CONFIGURE', 'REPORT_CARD_CONFIGURE'])} onclick={() => (editOpen.open = true)}>{$t('gradeLevels.edit')}</Button>
 		{/snippet}
 		{#snippet more()}
 			<RowActionMenu label={$t('list.moreActions')}>
@@ -88,14 +88,14 @@
 		{/snippet}
 	</ListPageHeader>
 
-	<dl class="grid gap-6 rounded-2xl border border-border bg-card p-5 shadow-soft sm:grid-cols-2">
+	<dl class="grid gap-6 rounded-collection border border-border bg-card p-5 shadow-soft sm:grid-cols-2">
 		<div><dt class="text-sm text-muted-foreground">{$t('gradeLevels.name')}</dt><dd class="mt-1 text-sm font-medium">{live.name}</dd></div>
 		<div><dt class="text-sm text-muted-foreground">{$t('gradeLevels.label')}</dt><dd class="mt-1 text-sm font-medium">{live.label || '—'}</dd></div>
 		<div><dt class="text-sm text-muted-foreground">{$t('gradeLevels.cycle')}</dt><dd class="mt-1 text-sm font-medium">{live.cycle || '—'}</dd></div>
 		<div><dt class="text-sm text-muted-foreground">{$t('gradeLevels.order')}</dt><dd class="mt-1 text-sm font-medium">{live.order}</dd></div>
 	</dl>
 
-	<div class="space-y-2 rounded-2xl border border-border bg-card p-5 shadow-soft">
+	<div class="space-y-2 rounded-collection border border-border bg-card p-5 shadow-soft">
 		<p class="text-sm font-medium">{policy?.aggregateLabel ?? $t('grading.legacy')}</p>
 		{#if policy}
 			<p class="text-sm text-muted-foreground">{policy.scale.name} · {policy.mode === 'mention-first' ? $t('grading.mention') : $t('grading.numeric')}</p>

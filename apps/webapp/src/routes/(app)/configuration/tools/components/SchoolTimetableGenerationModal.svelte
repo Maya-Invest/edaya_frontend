@@ -277,7 +277,7 @@
 	onSubmit={submit}
 >
 	{#snippet navigation()}<TaskSteps label={$t('timetable.schoolGenerateTitle')} {steps} current={viewPhase === 'generating' ? 'review' : viewPhase} onSelect={choosePhase} />{/snippet}
-	{#if unavailableResult}<p role="status" class="rounded-lg border p-4">{$t('timetable.resultUnavailable')}</p>{/if}
+	{#if unavailableResult}<p role="status" class="rounded-collection border p-4">{$t('timetable.resultUnavailable')}</p>{/if}
 	{#if viewPhase === 'error' && generationError}
 		<TimetableGenerationErrorPanel
 			error={generationError}

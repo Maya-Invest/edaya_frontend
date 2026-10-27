@@ -110,7 +110,7 @@
 			{$t('billing.unallocateSelect')}
 		</Label>
 		{#if allocations.length === 0}
-			<p class="rounded-xl border border-border bg-secondary/30 px-3 py-2 text-sm text-muted-foreground">
+			<p class="rounded-collection border border-border bg-secondary/30 px-3 py-2 text-sm text-muted-foreground">
 				{$t('billing.unallocateEmpty')}
 			</p>
 		{:else}

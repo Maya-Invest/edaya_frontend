@@ -5,7 +5,6 @@ import { SEED_SCHOOL_ID } from '@edaya/web-fixtures';
 type StaffMember = components['schemas']['StaffMember'];
 type Subject = components['schemas']['Subject'];
 type StudentNote = components['schemas']['StudentNote'];
-type ReportCardDefinition = components['schemas']['ReportCardDefinition'];
 type ClassSubject = components['schemas']['ClassSubject'];
 type LessonSession = components['schemas']['LessonSession'];
 type Assessment = components['schemas']['Assessment'];
@@ -41,6 +40,7 @@ export function subject(
 		schoolId: SEED_SCHOOL_ID,
 		code: null,
 		coefficient: 1,
+		reportOrder: 0,
 		gradeLevelId: 'ci-gl-6',
 		academicYearId: 'ci-ay-2025-2026',
 		isOptional: false,
@@ -57,22 +57,6 @@ export function studentNote(
 		schoolId: SEED_SCHOOL_ID,
 		category: 'progress',
 		visibility: 'staff',
-		...overrides,
-	};
-}
-
-export function reportCardDefinition(
-	overrides: Partial<ReportCardDefinition> & Pick<ReportCardDefinition, 'id' | 'name'>,
-): ReportCardDefinition {
-	return {
-		revision: 0,
-		schoolId: SEED_SCHOOL_ID,
-		academicYearId: '2025',
-		gradeLevelId: 'gl-6',
-		gradeScaleId: 'gs-20',
-		kind: 'custom',
-		status: 'published',
-		isDefault: false,
 		...overrides,
 	};
 }

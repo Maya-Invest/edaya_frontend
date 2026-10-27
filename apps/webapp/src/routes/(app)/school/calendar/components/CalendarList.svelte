@@ -226,7 +226,7 @@
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
 						onclick={() => modals.open('create')}
@@ -285,10 +285,10 @@
 						{@const cfg = typeConfig[ev.type]}
 						{@const multiDay = isMultiDayEvent(ev)}
 						<div
-							class="group flex w-full items-start gap-4 rounded-2xl border border-border bg-card p-4 text-left shadow-soft"
+							class="group flex w-full items-start gap-4 rounded-collection border border-border bg-card p-4 text-left shadow-soft"
 						>
 							<div
-								class="flex w-28 shrink-0 flex-col items-center justify-center rounded-xl bg-secondary/50 py-2 text-center"
+								class="flex w-28 shrink-0 flex-col items-center justify-center rounded-collection bg-secondary/50 py-2 text-center"
 							>
 								{#if multiDay}
 									<span class="mb-1 font-sans tabular-nums text-[9px] uppercase tracking-wider text-muted-foreground">
@@ -334,7 +334,7 @@
 								{#if multiDay}
 									{@const endDate = eventEndDate(ev)}
 									<div
-										class="flex w-28 flex-col items-center justify-center rounded-xl bg-secondary/50 py-2 text-center"
+										class="flex w-28 flex-col items-center justify-center rounded-collection bg-secondary/50 py-2 text-center"
 									>
 										<span class="mb-1 font-sans tabular-nums text-[9px] uppercase tracking-wider text-muted-foreground">
 											{$t('drawer.end')}
@@ -354,7 +354,7 @@
 										tooltip={$t('calendar.permissionUpdate')}
 									>
 										{#snippet children({ disabled, title })}
-											<RowActionMenu>
+											<RowActionMenu label={`${$t('list.rowActions')} · ${ev.title}`}>
 												<RowActionMenuItem
 													{disabled}
 													{title}

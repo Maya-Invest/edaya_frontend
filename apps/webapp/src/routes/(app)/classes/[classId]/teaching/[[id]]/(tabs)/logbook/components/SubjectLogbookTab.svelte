@@ -30,7 +30,7 @@
 		/>
 	</div>
 	{#each entries as entry (entry.id)}
-		<article class="rounded-2xl border border-border bg-card p-4 shadow-soft">
+		<article class="rounded-collection border border-border bg-card p-4 shadow-soft">
 			<header class="mb-2 flex items-start justify-between gap-2">
 				<div>
 					<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -66,7 +66,7 @@
 			{/if}
 		</article>
 	{:else}
-		<p class="rounded-2xl border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
+		<p class="rounded-collection border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
 			{$t('teaching.empty')}
 		</p>
 	{/each}

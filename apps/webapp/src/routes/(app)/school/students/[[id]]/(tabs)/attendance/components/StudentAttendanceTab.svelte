@@ -33,15 +33,15 @@
 
 <div class="space-y-4">
 	<div class="grid grid-cols-3 gap-3">
-		<div class="rounded-xl bg-primary/10 p-4">
+		<div class="rounded-collection bg-primary/10 p-4">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('student.attendancePresent')}</p>
 			<p class="mt-1 font-display text-2xl">{attendanceData.present}</p>
 		</div>
-		<div class="rounded-xl bg-secondary/60 p-4">
+		<div class="rounded-collection bg-secondary/60 p-4">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('student.attendanceAbsent')}</p>
 			<p class="mt-1 font-display text-2xl">{attendanceData.absent}</p>
 		</div>
-		<div class="rounded-xl bg-secondary p-4">
+		<div class="rounded-collection bg-secondary p-4">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('student.attendanceLate')}</p>
 			<p class="mt-1 font-display text-2xl">{attendanceData.late}</p>
 		</div>
@@ -62,7 +62,7 @@
 						<Button
 							variant="outline"
 							size="sm"
-							class="rounded-full"
+
 							{disabled}
 							{title}
 							onclick={() => modals?.open('add-absence')}
@@ -92,7 +92,7 @@
 				</DrawerEmptyState>
 			{:else}
 				{#each attendanceData.records as record (record.id)}
-					<div class="rounded-xl border border-border bg-card p-3">
+					<div class="rounded-collection border border-border bg-card p-3">
 						<div class="flex items-center justify-between gap-2">
 							<span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
 								{$t(`student.attendanceKind.${record.kind}`)}

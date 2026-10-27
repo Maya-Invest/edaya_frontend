@@ -67,13 +67,13 @@
 		<p class="text-xs text-muted-foreground">{$t('onboarding.staff.ownerEmailHint')}</p>
 
 		{#if onboardingContext.draft.staffInvites.length === 0}
-			<div class="rounded-xl border border-dashed border-border bg-secondary/20 px-4 py-6 text-center text-sm text-muted-foreground">
+			<div class="rounded-collection border border-dashed border-border bg-secondary/20 px-4 py-6 text-center text-sm text-muted-foreground">
 				{$t('onboarding.staff.empty')}
 			</div>
 		{:else}
 			<div class="space-y-3">
 				{#each onboardingContext.draft.staffInvites as invite (invite.id)}
-					<article class="rounded-xl border border-border bg-secondary/20 p-4">
+					<article class="rounded-collection border border-border bg-secondary/20 p-4">
 						<div class="grid gap-3 sm:grid-cols-[1fr_minmax(10rem,12rem)_auto] sm:items-end">
 							<div class="space-y-1.5">
 								<Label for={`staff-email-${invite.id}`}>{$t('onboarding.staff.emailLabel')}</Label>
@@ -116,7 +116,7 @@
 								type="button"
 								variant="ghost"
 								size="icon"
-								class="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+								class="w-9 shrink-0 text-muted-foreground hover:text-destructive"
 								{disabled}
 								onclick={() => removeInviteRow(invite.id)}
 								aria-label={$t('onboarding.staff.removeRow')}
@@ -136,7 +136,7 @@
 	</section>
 
 	{#if inviteCount > 0}
-		<section class="rounded-xl border border-border bg-card px-4 py-3 text-sm">
+		<section class="rounded-collection border border-border bg-card px-4 py-3 text-sm">
 			<p class="font-medium text-foreground">{$t('onboarding.staff.summaryTitle')}</p>
 			<p class="mt-1 text-muted-foreground">
 				{$t('onboarding.staff.summaryBody', { count: inviteCount })}
@@ -145,7 +145,7 @@
 	{/if}
 
 	{#if onboardingContext.draft.staffStepSubmitted}
-		<p class="rounded-xl bg-secondary/60 px-3 py-2 text-xs text-muted-foreground">
+		<p class="rounded-collection bg-secondary/60 px-3 py-2 text-xs text-muted-foreground">
 			{$t('onboarding.staffStep.alreadySubmitted')}
 		</p>
 	{/if}

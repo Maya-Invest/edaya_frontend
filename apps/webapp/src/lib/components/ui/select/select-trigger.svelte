@@ -12,7 +12,7 @@
 			{...props}
 			type="button"
 			class={cn(
-				'control-focus flex min-h-11 w-full appearance-none items-center justify-between rounded-full border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 [&>span]:whitespace-normal',
+				'control-focus ui-field ui-select-trigger flex min-h-11 w-full appearance-none items-center justify-between rounded-full border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 [&>span]:whitespace-normal',
 				className,
 			)}
 		>

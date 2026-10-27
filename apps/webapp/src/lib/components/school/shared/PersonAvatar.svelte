@@ -43,8 +43,8 @@
 			xs: 'h-5 w-5 rounded-full text-[9px]',
 			sm: 'h-6 w-6 rounded-full text-[10px]',
 			md: 'h-7 w-7 rounded-full text-[11px]',
-			list: 'h-10 w-10 rounded-xl text-sm',
-			lg: 'h-14 w-14 rounded-2xl text-lg',
+			list: 'h-10 w-10 rounded-lg text-sm',
+			lg: 'h-14 w-14 rounded-lg text-lg',
 		}[size],
 	);
 </script>

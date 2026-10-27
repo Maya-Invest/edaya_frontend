@@ -158,7 +158,7 @@
 						<Button
 							variant="outline"
 							size="sm"
-							class="rounded-full"
+
 							{disabled}
 							{title}
 							onclick={() => modals.open('edit')}
@@ -175,7 +175,7 @@
 					{#snippet children({ disabled, title })}
 						<Button
 							size="sm"
-							class="rounded-full"
+
 							disabled={disabled || live.targets.length === 0}
 							{title}
 							onclick={() => (publishOpen.open = true)}
@@ -210,7 +210,7 @@
 
 	<p class="whitespace-pre-wrap text-sm text-foreground/80">{live.content}</p>
 
-	<div class="rounded-2xl border border-border bg-card">
+	<div class="rounded-collection border border-border bg-card">
 		<div class="flex items-center justify-between border-b border-border px-4 py-2.5">
 			<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 				{$t('announcements.targetsLabel')} ({live.targets.length})
@@ -225,7 +225,7 @@
 						<Button
 							size="sm"
 							variant="outline"
-							class="h-7 rounded-full text-xs"
+							class="text-xs"
 							{disabled}
 							{title}
 							onclick={() => modals.open('add-target')}
@@ -256,7 +256,7 @@
 										type="button"
 										variant="ghost"
 										size="icon"
-										class="h-8 w-8 text-muted-foreground hover:text-destructive"
+										class="w-8 text-muted-foreground hover:text-destructive"
 										disabled={disabled || removeTargetBusy}
 										title={title ?? $t('announcements.removeTarget')}
 										aria-label={$t('announcements.removeTarget')}
@@ -281,14 +281,14 @@
 <AnnouncementTargetFormModal announcementId={live.id} bind:open={addTargetOpen.open} />
 
 <PermissionGate permission="COMMUNICATION_READ">
-	<details class="my-3 space-y-2 rounded-xl border p-3" bind:open={deliveryOpen}>
+	<details class="my-3 space-y-2 rounded-collection border p-3" bind:open={deliveryOpen}>
 		<summary class="cursor-pointer text-sm font-medium">{$t('profile.deliveryHistory')}</summary>
 		{#if deliveryOpen}
 			<PageQuery cache={false} query={(url, request) => announcementsPage.queryDeliveries(live.id, url, request)} cacheKey={() => `announcement-deliveries:${live.id}`}>
 				{#snippet children(data)}
 					<DataState status={data.status} errorMessage={data.errorMessage} preserveShell>
 						{#each data.deliveries as delivery (delivery.id)}
-							<details class="my-2 space-y-1 rounded-lg border p-2 text-xs"><summary>{delivery.title} · {$t(`profile.deliveryStatus.${delivery.status}`)}</summary>
+							<details class="my-2 space-y-1 rounded-collection border p-2 text-xs"><summary>{delivery.title} · {$t(`profile.deliveryStatus.${delivery.status}`)}</summary>
 								<p class="whitespace-pre-wrap">{delivery.body}</p>
 								<p>{$t('profile.recipient')}: {announcementsPage.guardians.find(row => row.id === delivery.recipientId)?.name ?? announcementsPage.students.find(row => row.id === delivery.recipientId)?.name ?? announcementsPage.staff.find(row => row.id === delivery.recipientId)?.name ?? $t('profile.restricted')}</p>
 								{#if delivery.failureReason}<p>{$t('profile.failureReason')}: {delivery.failureReason}</p>{/if}

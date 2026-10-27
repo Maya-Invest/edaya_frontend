@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { provideCollectionPresentation } from '$lib/list/collection-presentation.svelte';
+
+	provideCollectionPresentation();
 	import type { ListEntityTableColumn } from '$lib/list/list-entity-table-types';
 	import type { Teacher } from '$lib/types/school';
 	import type { TeacherSortColumn } from '../lib/teacher-list-filters';
@@ -146,7 +149,7 @@
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
 						onclick={() => modals.open('create')}
@@ -172,7 +175,7 @@
 		<ListSelectionBar
 			selectedCount={selection.selectedIds.length}
 			onExport={exportSelected}
-			onClear={() => selection.exitSelectionMode()}
+			onClear={() => selection.clearSelection()} onExit={() => selection.exitSelectionMode()}
 		/>
 	{/if}
 
@@ -197,7 +200,7 @@
 		visibleCount={listVisibleCount}
 		onLoadMore={loadMoreTeachers}
 		rowPaddingClass="py-4"
-		onRowClick={teacher => selection.handleRowClick(teacher, onSelect)}
+		onRowClick={onSelect}
 		rowClass={teacher => !teacher.isActive && 'opacity-60'}
 	>
 		{#snippet cell(teacher, column, ctx)}
@@ -236,7 +239,7 @@
 				>
 					<PermissionGate permission="STAFF_MANAGE" mode="disable" tooltip={$t('teacher.permissionUpdate')}>
 						{#snippet children({ disabled, title })}
-							<RowActionMenu>
+							<RowActionMenu label={`${$t('list.rowActions')} · ${teacher.name}`}>
 								<RowActionMenuItem
 									{disabled}
 									{title}

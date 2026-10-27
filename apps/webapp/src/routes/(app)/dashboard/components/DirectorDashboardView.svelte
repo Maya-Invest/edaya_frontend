@@ -106,7 +106,7 @@
 		return dashboardClassStudentsHref(classGroupId, academicContext.classes);
 	}
 
-	function healthMetric(value: string | number, warn = false): string {
+	function healthMetric(value: string | number | null, warn = false): string {
 		return cn('font-sans text-xl font-semibold tabular-nums', warn && 'text-highlight');
 	}
 </script>
@@ -116,9 +116,9 @@
 	<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
 		<a
 			href={appPath('/(app)/school/students/[[id]]')}
-			class="rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
+			class="rounded-collection border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
 		>
-			<div class={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpiToneClass.primary)}>
+			<div class={cn('flex h-9 w-9 items-center justify-center rounded-collection', kpiToneClass.primary)}>
 				<Users class="h-4 w-4" />
 			</div>
 			<p class="mt-3 font-sans text-2xl font-semibold tabular-nums">{kpis.studentCount}</p>
@@ -126,7 +126,7 @@
 		</a>
 
 		{#snippet attendanceTodayBody()}
-			<div class={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpiToneClass.sky)}>
+			<div class={cn('flex h-9 w-9 items-center justify-center rounded-collection', kpiToneClass.sky)}>
 				<CalendarX2 class="h-4 w-4" />
 			</div>
 			<p class="mt-3 font-sans text-2xl font-semibold tabular-nums">
@@ -137,21 +137,21 @@
 		{#if attendanceTodayHref}
 			<a
 				href={attendanceTodayHref}
-				class="rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
+				class="rounded-collection border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
 			>
 				{@render attendanceTodayBody()}
 			</a>
 		{:else}
-			<div class="rounded-2xl border border-border bg-card p-4 shadow-soft">
+			<div class="rounded-collection border border-border bg-card p-4 shadow-soft">
 				{@render attendanceTodayBody()}
 			</div>
 		{/if}
 
 		<a
 			href={appPath('/(app)/finance/billing/[[id]]')}
-			class="rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
+			class="rounded-collection border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
 		>
-			<div class={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpis.overdueFeeCount > 0 ? kpiToneClass.warn : kpiToneClass.sky)}>
+			<div class={cn('flex h-9 w-9 items-center justify-center rounded-collection', kpis.overdueFeeCount > 0 ? kpiToneClass.warn : kpiToneClass.sky)}>
 				<Wallet class="h-4 w-4" />
 			</div>
 			<p class="mt-3 font-sans text-2xl font-semibold tabular-nums">{kpis.overdueFeeCount}</p>
@@ -160,20 +160,20 @@
 
 		<a
 			href={appPath('/(app)/configuration/structure/details')}
-			class="rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
+			class="rounded-collection border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
 		>
-			<div class={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpis.unpublishedReportCardCount > 0 ? kpiToneClass.warn : kpiToneClass.sky)}>
+			<div class={cn('flex h-9 w-9 items-center justify-center rounded-collection', (kpis.unpublishedReportCardCount ?? 0) > 0 ? kpiToneClass.warn : kpiToneClass.sky)}>
 				<FileSpreadsheet class="h-4 w-4" />
 			</div>
-			<p class="mt-3 font-sans text-2xl font-semibold tabular-nums">{kpis.unpublishedReportCardCount}</p>
+			<p class="mt-3 font-sans text-2xl font-semibold tabular-nums">{kpis.unpublishedReportCardCount ?? '—'}</p>
 			<p class="mt-0.5 text-xs text-muted-foreground">{$t('dashboard.kpi.reportCards')}</p>
 		</a>
 
 		<a
 			href={appPath('/(app)/school/events/[[id]]')}
-			class="rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
+			class="rounded-collection border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
 		>
-			<div class={cn('flex h-9 w-9 items-center justify-center rounded-xl', kpis.openIncidentCount > 0 ? kpiToneClass.destructive : kpiToneClass.sky)}>
+			<div class={cn('flex h-9 w-9 items-center justify-center rounded-collection', kpis.openIncidentCount > 0 ? kpiToneClass.destructive : kpiToneClass.sky)}>
 				<AlertTriangle class="h-4 w-4" />
 			</div>
 			<p class="mt-3 font-sans text-2xl font-semibold tabular-nums">{kpis.openIncidentCount}</p>
@@ -190,12 +190,12 @@
 
 	<!-- Priority actions + Next 7 days -->
 	<div class="grid gap-4 lg:grid-cols-12">
-		<section class="rounded-2xl border border-border bg-card p-5 shadow-soft lg:col-span-7">
+		<section class="rounded-collection border border-border bg-card p-5 shadow-soft lg:col-span-7">
 			<header class="mb-4">
 				<h2 class="font-display text-base font-semibold">{$t('dashboard.actions.title')}</h2>
 			</header>
 			{#if overview.actionItems.length === 0}
-				<div class="rounded-xl bg-secondary/40 px-4 py-6 text-sm text-muted-foreground">
+				<div class="rounded-collection bg-secondary/40 px-4 py-6 text-sm text-muted-foreground">
 					{$t('dashboard.actions.empty')}
 				</div>
 			{:else}
@@ -218,7 +218,7 @@
 			{/if}
 		</section>
 
-		<section class="rounded-2xl border border-border bg-card p-5 shadow-soft lg:col-span-5">
+		<section class="rounded-collection border border-border bg-card p-5 shadow-soft lg:col-span-5">
 			<header class="mb-4 flex items-center justify-between gap-3">
 				<h2 class="font-display text-base font-semibold">{$t('dashboard.upcoming.title')}</h2>
 				<a
@@ -246,7 +246,7 @@
 						></span>
 					</li>
 				{:else}
-					<li class="rounded-xl bg-secondary/40 px-4 py-5 text-sm text-muted-foreground">
+					<li class="rounded-collection bg-secondary/40 px-4 py-5 text-sm text-muted-foreground">
 						{$t('dashboard.upcoming.empty')}
 					</li>
 				{/each}
@@ -260,7 +260,7 @@
 		<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 			<a
 				href={appPath('/(app)/school/students/[[id]]')}
-				class="rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
+				class="rounded-collection border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
 			>
 				<div class="mb-3 flex items-center gap-2 text-muted-foreground">
 					<Users class="h-4 w-4" />
@@ -290,7 +290,7 @@
 
 			<a
 				href={appPath('/(app)/configuration/structure/details')}
-				class="rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
+				class="rounded-collection border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
 			>
 				<div class="mb-3 flex items-center gap-2 text-muted-foreground">
 					<BookOpen class="h-4 w-4" />
@@ -306,13 +306,17 @@
 					<div class="flex items-baseline justify-between gap-2">
 						<dt class="text-muted-foreground">{$t('dashboard.health.reportCardsPublished')}</dt>
 						<dd class={healthMetric(`${areaHealth.academics.publishedReportCards}/${areaHealth.academics.totalReportCards}`)}>
-							{areaHealth.academics.publishedReportCards}/{areaHealth.academics.totalReportCards}
+							{#if areaHealth.academics.publishedReportCards !== null && areaHealth.academics.totalReportCards !== null}
+								{areaHealth.academics.publishedReportCards}/{areaHealth.academics.totalReportCards}
+							{:else}
+								—
+							{/if}
 						</dd>
 					</div>
 					<div class="flex items-baseline justify-between gap-2">
 						<dt class="text-muted-foreground">{$t('dashboard.health.incompleteClasses')}</dt>
-						<dd class={healthMetric(areaHealth.academics.incompleteGradingClassCount, areaHealth.academics.incompleteGradingClassCount > 0)}>
-							{areaHealth.academics.incompleteGradingClassCount}
+						<dd class={healthMetric(areaHealth.academics.incompleteGradingClassCount, (areaHealth.academics.incompleteGradingClassCount ?? 0) > 0)}>
+							{areaHealth.academics.incompleteGradingClassCount ?? '—'}
 						</dd>
 					</div>
 				</dl>
@@ -320,7 +324,7 @@
 
 			<a
 				href={appPath('/(app)/finance/billing/[[id]]')}
-				class="rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
+				class="rounded-collection border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
 			>
 				<div class="mb-3 flex items-center gap-2 text-muted-foreground">
 					<Wallet class="h-4 w-4" />
@@ -350,7 +354,7 @@
 
 			<a
 				href={appPath('/(app)/school/events/[[id]]')}
-				class="rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
+				class="rounded-collection border border-border bg-card p-4 shadow-soft transition hover:border-primary/30"
 			>
 				<div class="mb-3 flex items-center gap-2 text-muted-foreground">
 					<Sparkle class="h-4 w-4" />
@@ -387,7 +391,7 @@
 	</section>
 
 	<!-- Class risk table -->
-	<section class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+	<section class="overflow-hidden rounded-collection border border-border bg-card shadow-soft">
 		<header class="border-b border-border px-5 py-4">
 			<h2 class="font-display text-base font-semibold">{$t('dashboard.classRisk.title')}</h2>
 		</header>
@@ -395,7 +399,7 @@
 			<p class="px-5 py-8 text-sm text-muted-foreground">{$t('dashboard.classRisk.empty')}</p>
 		{:else}
 			<div class="overflow-x-auto">
-				<table class="w-full min-w-[800px] text-sm">
+				<table class="ui-entry-table w-full min-w-[800px] text-sm">
 					<thead class="border-b border-border bg-secondary/30 text-left">
 						<tr>
 							<th class="px-4 py-3 font-medium">{$t('dashboard.classRisk.class')}</th>

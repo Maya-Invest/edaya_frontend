@@ -69,7 +69,7 @@
 					{/snippet}
 					{#snippet avatar()}
 						<span
-							class="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary font-display text-sm font-semibold text-primary-foreground"
+							class="flex h-14 w-14 items-center justify-center rounded-collection bg-primary font-display text-sm font-semibold text-primary-foreground"
 						>
 							{codeInitials}
 						</span>
@@ -81,11 +81,11 @@
 						{$t('subjects.chapters.configured')}
 					</p>
 					{#each matters as matter, index (`${index}-${matter}`)}
-						<div class="rounded-2xl border border-border bg-card px-4 py-3 shadow-soft">
+						<div class="rounded-collection border border-border bg-card px-4 py-3 shadow-soft">
 							<p class="text-sm font-semibold">{catalogMatter(matter, $lang)}</p>
 						</div>
 					{:else}
-						<p class="rounded-2xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
+						<p class="rounded-collection border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
 							{$t('subjects.chapters.emptyCatalog')}
 						</p>
 					{/each}

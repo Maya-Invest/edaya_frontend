@@ -12,7 +12,7 @@
 	<label for={id} class="text-xs font-medium text-muted-foreground">{$t('academic.term')}</label>
 	{#if periods.length > 0}
 		<Select.Root type="single" value={academicContext.periodId} onValueChange={value => value && academicContext.setPeriod(value)}>
-			<Select.Trigger {id} disabled={disabled || !academicContext.shellReady} data-testid="academic-period-trigger" data-period-id={academicContext.periodId} aria-label={$t('academic.selectPeriod')} class="h-11 w-auto min-w-36 max-w-full gap-2 rounded-xl text-xs lg:h-9">
+			<Select.Trigger {id} disabled={disabled || !academicContext.shellReady} data-testid="academic-period-trigger" data-period-id={academicContext.periodId} aria-label={$t('academic.selectPeriod')} class="w-auto min-w-36 max-w-full gap-2 text-xs">
 				<span>{academicContext.period?.label ?? '—'}</span>
 			</Select.Trigger>
 			<Select.Content class="z-[100] max-h-72 max-w-[calc(100vw-2rem)] overflow-y-auto" align="start">

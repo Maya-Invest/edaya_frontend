@@ -157,7 +157,7 @@ const routeCases = [
 		'/configuration/structure/classes/class-1/assignments',
 		['form', 'delete-assignment'],
 	],
-	['configuration-subjects-list', '/configuration/structure/subjects', ['create-subject']],
+	['configuration-subjects-list', '/configuration/structure/subjects', ['create-subject', 'module-create', 'module-edit', 'module-members', 'module-delete', 'report-settings']],
 	[
 		'configuration-subjects-detail',
 		'/configuration/structure/subjects/subject-1/logbook',
@@ -167,12 +167,6 @@ const routeCases = [
 		'configuration-subjects-progression',
 		'/configuration/structure/subjects/subject-1/progression',
 		['add-chapter', 'edit-chapter', 'delete-chapter'],
-	],
-	['configuration-report-cards-list', '/configuration/structure/details', ['create']],
-	[
-		'configuration-report-cards-detail',
-		'/configuration/structure/details/report-cards/report-card-1',
-		['create', 'delete', 'edit', 'add-section', 'edit-section', 'delete-section'],
 	],
 	['configuration-grade-scales', '/configuration/grade-scales', ['create', 'edit', 'delete', 'add-interval', 'edit-interval', 'delete-interval']],
 	['configuration-notifications-list', '/configuration/notifications', ['reset-all']],

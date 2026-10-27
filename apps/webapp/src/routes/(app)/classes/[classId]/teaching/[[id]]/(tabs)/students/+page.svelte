@@ -54,7 +54,7 @@
 					<p class="text-sm text-muted-foreground">{$t('participation.historicalUnavailable')}</p>
 				{:else}
 					<p class="font-semibold">{$t('participation.students')} · {participationState.roster?.count ?? 0}</p>
-					{#each participationState.roster?.students ?? [] as student (student.id)}<p class="rounded-lg border p-3">{student.lastName} {student.firstName}</p>{/each}
+					{#each participationState.roster?.students ?? [] as student (student.id)}<p class="rounded-collection border p-3">{student.lastName} {student.firstName}</p>{/each}
 				{/if}
 				{#if participationState.optional && hasPermission('ENROLLMENT_MANAGE', { classId: $page.params.classId })}<Button onclick={() => modals.open('subject-roster')}>{$t('participation.bulk')}</Button>{/if}
 			</div>

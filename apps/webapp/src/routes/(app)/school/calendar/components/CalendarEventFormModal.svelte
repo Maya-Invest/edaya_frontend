@@ -244,7 +244,7 @@
 	</div>
 
 	{#if showBlocksTimetable}
-		<div class="space-y-3 rounded-xl border border-border bg-secondary/30 p-3">
+		<div class="space-y-3 rounded-collection border border-border bg-secondary/30 p-3">
 			<label class="flex cursor-pointer items-center gap-2 text-sm font-medium">
 				<Checkbox
 					checked={blocksTimetable}
@@ -262,7 +262,7 @@
 		</p>
 	{/if}
 
-	<div class="space-y-3 rounded-xl border border-border bg-secondary/30 p-3">
+	<div class="space-y-3 rounded-collection border border-border bg-secondary/30 p-3">
 		<label class="flex cursor-pointer items-center gap-2 text-sm font-medium">
 			<Checkbox checked={scoped} onCheckedChange={v => (scoped = v === true)} />
 			{$t('calendar.scopedLabel')}
@@ -274,7 +274,7 @@
 			<div class="grid grid-cols-2 gap-2 pt-1">
 				{#each academicContext.classes as c (c.id)}
 					<label
-						class="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs"
+						class="flex cursor-pointer items-center gap-2 rounded-collection border border-border bg-card px-2.5 py-1.5 text-xs"
 					>
 						<Checkbox
 							checked={selectedClasses.includes(c.id)}

@@ -53,7 +53,7 @@
 			{#snippet children({ disabled, title })}
 				<Button
 					size="sm"
-					class="rounded-full"
+
 					{disabled}
 					{title}
 					data-testid="document-generate"
@@ -76,7 +76,7 @@
 			</DrawerEmptyState>
 		{:else}
 			{#each issuances as issuance (issuance.id)}
-				<div data-issuance-id={issuance.id} class="rounded-xl border border-border bg-card p-3">
+				<div data-issuance-id={issuance.id} class="rounded-collection border border-border bg-card p-3">
 					<div class="flex items-start justify-between gap-3">
 						<div>
 							<p class="text-sm font-semibold">{titleFor(issuance.templateKey)}</p>
@@ -94,12 +94,12 @@
 					{/if}
 					<div class="mt-3 flex flex-wrap gap-2">
 						{#if isDownloadableStatus(issuance.status)}
-							<Button size="sm" variant="outline" class="rounded-full" data-testid={`document-download-${issuance.id}`} onclick={() => void documentsTab.performDownloadDocument({ id: issuance.id })}>
+							<Button size="sm" variant="outline" data-testid={`document-download-${issuance.id}`} onclick={() => void documentsTab.performDownloadDocument({ id: issuance.id })}>
 								{$t('documents.downloadNamed', { name: titleFor(issuance.templateKey) })}
 							</Button>
 						{/if}
 						{#if isRetryableStatus(issuance.status)}
-							<Button size="sm" variant="outline" class="rounded-full" onclick={() => void documentsTab.performRetryDocumentIssuance({ issuanceId: issuance.id, successMessage: $t('documents.toastRetrying') })}>
+							<Button size="sm" variant="outline" onclick={() => void documentsTab.performRetryDocumentIssuance({ issuanceId: issuance.id, successMessage: $t('documents.toastRetrying') })}>
 								<RotateCcw class="mr-1 h-3.5 w-3.5" />
 								{$t('documents.retry')}
 							</Button>
@@ -107,7 +107,7 @@
 						{#if issuance.status === 'ready' || issuance.status === 'failed'}
 							<PermissionGate permission={DOCUMENT_VOID_PERMISSION} mode="disable" tooltip={$t('documents.permissionVoid')}>
 								{#snippet children({ disabled, title })}
-									<Button size="sm" variant="ghost" class="rounded-full" {disabled} {title} data-testid="document-void" onclick={() => openVoid(issuance.id)}>
+									<Button size="sm" variant="ghost" {disabled} {title} data-testid="document-void" onclick={() => openVoid(issuance.id)}>
 										{$t('documents.void')}
 									</Button>
 								{/snippet}

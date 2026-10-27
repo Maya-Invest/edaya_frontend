@@ -49,7 +49,7 @@
 		<p class="text-sm">{$t('attendanceTask.dailyMode')}</p>
 		<a class={buttonVariants({ variant: 'outline', class: 'hover:bg-sky-soft active:bg-background' })} href={`${appPath('/(app)/classes/[classId]/attendance', { classId: s.classId })}${detailNavigationSearch($page.url)}`}>{$t('tab.attendance')}</a>
 	{/if}
-	<div class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-secondary/40 px-4 py-3 text-sm">
+	<div class="flex flex-wrap items-center justify-between gap-3 rounded-collection bg-secondary/40 px-4 py-3 text-sm">
 		<span>
 			<span class="text-muted-foreground">{$t('planning.session.attendanceSummary')} :</span>
 			{recordedCount} / {attendanceRows.length}
@@ -65,7 +65,7 @@
 					<Button
 						size="sm"
 						variant="outline"
-						class="min-h-11"
+
 						{disabled}
 						{title}
 						onclick={() => planning.openAttendance(s)}
@@ -87,13 +87,13 @@
 			{/snippet}
 		</DrawerEmptyState>
 	{:else}
-		<ul class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+		<ul class="overflow-hidden rounded-collection border border-border bg-card shadow-soft">
 			{#each attendanceRows as row (row.studentId)}
 				<li class="border-b border-border px-4 py-3 last:border-b-0">
 					<div class="flex flex-wrap items-center justify-between gap-4">
 						<div class="flex min-w-0 flex-1 items-center gap-3">
 							<div
-								class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary font-display text-xs font-semibold text-primary-foreground"
+								class="flex h-9 w-9 items-center justify-center rounded-collection bg-primary font-display text-xs font-semibold text-primary-foreground"
 							>
 								{row.studentInitials}
 							</div>
@@ -126,7 +126,7 @@
 										<Button
 											variant="ghost"
 											size="sm"
-											class="min-h-11"
+
 											{disabled}
 											{title}
 											onclick={() => modals.open('session-attendance', { target: row.studentId })}

@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { provideCollectionPresentation } from '$lib/list/collection-presentation.svelte';
+
+	provideCollectionPresentation();
 	import type { FeeListFilters } from '$lib/list/list-url-filters';
 	import type { Fee } from '$lib/types/school';
 	import { page } from '$app/stores';
@@ -184,7 +187,7 @@
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
 						onclick={() => modals.open('create')}
@@ -257,7 +260,7 @@
 							<div class="col-span-1 flex justify-end" role="presentation" onclick={event => event.stopPropagation()} onkeydown={event => event.stopPropagation()}>
 								<PermissionGate permission="FINANCIAL_CATALOG_MANAGE">
 									{#snippet children({ disabled, title })}
-										<RowActionMenu>
+										<RowActionMenu label={`${$t('list.rowActions')} · ${fee.name}`}>
 											<RowActionMenuItem {disabled} {title} onclick={() => openEdit(fee)}>
 												<Pencil class="h-4 w-4" />
 												{$t('common.edit')}

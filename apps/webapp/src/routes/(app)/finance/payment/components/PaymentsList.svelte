@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { provideCollectionPresentation } from '$lib/list/collection-presentation.svelte';
+
+	provideCollectionPresentation();
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { billingFilters, readAllPayments } from '$lib/api/finance-workspace';
@@ -165,7 +168,7 @@
 				<dl class="space-y-1 text-xs">{#each [['profile.reference', payment.reference], ['profile.notes', payment.notes], ['profile.reversesPayment', payment.reversesPaymentId], ['profile.reversedByPayment', payment.reversedByPaymentId], ['profile.reversedAt', payment.reversedAt], ['profile.recordedBy', payment.recordedById], ['profile.reversedBy', payment.reversedById]] as [label, value] (label)}<div><dt class="text-muted-foreground">{$t(label ?? '')}</dt><dd>{value || $t('profile.notProvided')}</dd></div>{/each}</dl>
 			{:else if column.key === 'actions'}<div class="flex justify-end">
 				{#if payment.status === 'recorded'}
-					<RowActionMenu>
+					<RowActionMenu label={`${$t('list.rowActions')} · ${payment.studentName || payment.studentId}`}>
 						<PermissionGate permission="PAYMENT_READ">
 							{#snippet children({ disabled, title })}
 								{#if payment.kind === 'receipt'}

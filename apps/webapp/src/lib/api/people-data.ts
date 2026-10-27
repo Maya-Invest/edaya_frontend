@@ -108,23 +108,7 @@ function mapGuardianRelation(link: GuardianLinkRaw | undefined): string {
 }
 
 function mapPreferredContact(guardian: GuardianRaw): Guardian['preferredContact'] {
-	const primary = guardian.contactMethods.find(method => method.isPrimary)
-		?? guardian.contactMethods[0];
-
-	if (primary?.type === 'sms') {
-		return 'sms';
-	}
-	if (primary?.type === 'phone' || primary?.type === 'whatsapp') {
-		return 'phone';
-	}
-	if (guardian.email || primary?.type === 'email') {
-		return 'email';
-	}
-	if (guardian.phone) {
-		return 'phone';
-	}
-
-	return 'phone';
+	return guardian.phone ? 'phone' : 'email';
 }
 
 function guardianDisplayName(
@@ -693,10 +677,8 @@ export function mapGuardians(
 		const guardianLinks = linksRaw.filter(link => link.guardianId === guardian.id);
 		const primaryLink = guardianLinks.find(link => link.isPrimary) ?? guardianLinks[0];
 		const email = guardian.email
-			?? guardian.contactMethods.find(method => method.type === 'email')?.value
 			?? '';
 		const phone = guardian.phone
-			?? guardian.contactMethods.find(method => method.type === 'phone' || method.type === 'whatsapp')?.value
 			?? '';
 
 		return {
@@ -706,7 +688,10 @@ export function mapGuardians(
 			sourceFullName: guardian.sourceFullName ?? null,
 			occupation: guardian.occupation ?? null,
 			code: guardian.code ?? null,
-			contactMethods: guardian.contactMethods,
+			alternativePhone: guardian.alternativePhone,
+			emailNotificationsEnabled: guardian.emailNotificationsEnabled,
+			smsNotificationsEnabled: guardian.smsNotificationsEnabled,
+			pushNotificationsEnabled: guardian.pushNotificationsEnabled,
 			hasAccess: guardian.hasAccess,
 			links: guardianLinks,
 			name: `${guardian.firstName} ${guardian.lastName}`,

@@ -52,7 +52,7 @@
 		{/snippet}
 	</ListPageHeader>
 
-	<div class="rounded-2xl border border-border bg-card p-5 shadow-soft">
+	<div class="rounded-collection border border-border bg-card p-5 shadow-soft">
 		<p class="text-[11px] uppercase tracking-wider text-muted-foreground">
 			{$t('finance.reconciliationStatus')}
 		</p>
@@ -69,11 +69,11 @@
 	</div>
 
 	{#if showEmpty}
-		<div class="rounded-2xl border border-border bg-card px-5 py-12 text-center text-sm text-muted-foreground shadow-soft">
+		<div class="rounded-collection border border-border bg-card px-5 py-12 text-center text-sm text-muted-foreground shadow-soft">
 			{$t('finance.reconciliationEmpty')}
 		</div>
 	{:else}
-		<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+		<div class="overflow-hidden rounded-collection border border-border bg-card shadow-soft">
 			<div
 				class="border-b border-border bg-secondary/40 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
 			>
@@ -112,7 +112,7 @@
 			</ul>
 		</div>
 
-		<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+		<div class="overflow-hidden rounded-collection border border-border bg-card shadow-soft">
 			<div
 				class="border-b border-border bg-secondary/40 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
 			>

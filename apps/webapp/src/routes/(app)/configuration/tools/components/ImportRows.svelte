@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { components } from '$lib/api/schema';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import { t } from '$lib/i18n';
 	import { IMPORT_TYPE_DEFINITIONS } from '$lib/import/catalog/import-types';
 
@@ -21,11 +22,11 @@
 		{#each Object.entries(detail.counts) as [key, count] (key)}<span class="rounded-full bg-muted px-3 py-1 text-xs">{$t(`durableImport.outcome.${key}`)}: {count}</span>{/each}
 	</div>
 	<label class="block max-w-xs space-y-1 text-sm"><span>{$t('durableImport.filter')}</span>
-		<select class="min-h-11 w-full rounded-full border border-input bg-background px-4" bind:value={outcomeFilter} onchange={() => { pageIndex = 0; }}><option value="">{$t('durableImport.all')}</option>{#each ['pending', 'created', 'updated', 'unchanged', 'skipped', 'blocked', 'dependency_blocked', 'failed', 'cancelled'] as outcome (outcome)}<option value={outcome}>{$t(`durableImport.outcome.${outcome}`)}</option>{/each}</select>
+		<SelectField class="w-full border border-input bg-background" bind:value={outcomeFilter} onchange={() => { pageIndex = 0; }}><option value="">{$t('durableImport.all')}</option>{#each ['pending', 'created', 'updated', 'unchanged', 'skipped', 'blocked', 'dependency_blocked', 'failed', 'cancelled'] as outcome (outcome)}<option value={outcome}>{$t(`durableImport.outcome.${outcome}`)}</option>{/each}</SelectField>
 	</label>
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard users must be able to scroll the wide data table.) -->
-	<div class="overflow-x-auto rounded-2xl border" tabindex="0" role="region" aria-label={$t('durableImport.preview')}>
-		<table class="w-full min-w-[800px] text-left text-sm">
+	<div class="overflow-x-auto rounded-collection border" tabindex="0" role="region" aria-label={$t('durableImport.preview')}>
+		<table class="ui-entry-table w-full min-w-[800px] text-left text-sm">
 			<thead class="bg-muted"><tr><th class="px-4 py-3">{$t('durableImport.source')}</th><th class="px-4 py-3">{$t('durableImport.mode')}</th><th class="px-4 py-3">{$t('durableImport.result')}</th><th class="px-4 py-3">{$t('durableImport.changes')}</th></tr></thead>
 			<tbody>{#each visibleRows as row (row.id)}
 				<tr class="border-t align-top">
@@ -33,7 +34,7 @@
 					<td class="px-4 py-3">{row.effectiveMode}</td>
 					<td class="max-w-sm p-3"><span>{$t(`durableImport.outcome.${row.outcome}`)}</span>{#each row.issues as issue, index (`${issue.code}:${index}`)}<p class="mt-1 break-words text-xs text-destructive">{issue.code}{issue.column ? ` (${issue.column})` : ''}{issue.candidates?.length ? `: ${issue.candidates.join(', ')}` : ''}</p>{/each}</td>
 					<td class="px-4 py-3"><details><summary class="cursor-pointer">{$t('durableImport.inspect')}</summary><p class="my-2 break-all text-xs">{$t('durableImport.target')}: {row.current ? row.targetId : $t('durableImport.newRecord')}</p>
-						<table class="my-2 w-full text-xs"><thead><tr><th class="p-1">{$t('durableImport.field')}</th><th class="p-1">{$t('durableImport.current')}</th><th class="p-1">{$t('durableImport.resulting')}</th></tr></thead><tbody>{#each [...new Set([...Object.keys(row.current ?? {}), ...Object.keys(row.proposed ?? {})])] as key (key)}<tr class="border-t"><th class="p-1 font-normal">{key}</th><td class="max-w-56 break-words p-1">{display(row.current?.[key])}</td><td class="max-w-56 break-words p-1">{display(row.proposed?.[key])}</td></tr>{/each}</tbody></table>
+						<table class="ui-entry-table my-2 w-full text-xs"><thead><tr><th class="p-1">{$t('durableImport.field')}</th><th class="p-1">{$t('durableImport.current')}</th><th class="p-1">{$t('durableImport.resulting')}</th></tr></thead><tbody>{#each [...new Set([...Object.keys(row.current ?? {}), ...Object.keys(row.proposed ?? {})])] as key (key)}<tr class="border-t"><th class="p-1 font-normal">{key}</th><td class="max-w-56 break-words p-1">{display(row.current?.[key])}</td><td class="max-w-56 break-words p-1">{display(row.proposed?.[key])}</td></tr>{/each}</tbody></table>
 						<details><summary class="cursor-pointer">{$t('durableImport.imported')}</summary><dl>{#each Object.entries(row.raw) as [key, value] (key)}<dt class="mt-2 text-xs font-semibold">{key}</dt><dd class="max-w-80 break-words text-xs">{display(value)}</dd>{/each}</dl></details>
 					</details></td>
 				</tr>

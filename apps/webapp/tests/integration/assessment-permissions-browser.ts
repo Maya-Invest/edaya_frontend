@@ -71,7 +71,8 @@ async function main() {
 			});
 			await page.addInitScript(lang => localStorage.setItem('lang', lang), locale);
 			await page.goto(server.url);
-			const create = page.getByRole('button', { name: locale === 'en' ? /Add evaluation/i : /Ajouter une évaluation/i });
+			await page.getByTestId('collection-menu').click();
+			const create = page.getByRole('menuitem', { name: locale === 'en' ? /Add evaluation/i : /Ajouter une évaluation/i });
 			try {
 				await create.waitFor({ timeout: 60_000 });
 			}
@@ -81,12 +82,15 @@ async function main() {
 				throw error;
 			}
 			assert.equal(await create.isDisabled(), false, 'Setup authority can create assessments');
+			await page.keyboard.press('Escape');
 			assert.equal(await page.getByText('2/2', { exact: true }).count(), 0, 'Unreadable marks do not show numeric progress');
 			assert.equal(await page.getByTestId('group').textContent(), locale === 'en' ? 'Assessments and marks' : 'Évaluations et notes');
 			await page.getByTestId('marker').click();
 			await page.getByText('2/2', { exact: true }).waitFor();
 			await page.getByText('16.00', { exact: false }).waitFor();
-			assert.equal(await create.isDisabled(), true, 'Mark entry alone cannot create assessments');
+			await page.getByTestId('collection-menu').click();
+			assert.equal(await create.count(), 0, 'Unauthorized collection action must be hidden; direct URL guards are checked below');
+			await page.keyboard.press('Escape');
 			await page.getByTestId('edit').click();
 			const submit = page.getByTestId('form-modal-submit');
 			await submit.waitFor();

@@ -132,13 +132,13 @@
 	}
 </script>
 
-<div class="overflow-hidden rounded-xl border border-border bg-card" data-testid="notification-rich-text-editor">
+<div class="overflow-hidden rounded-collection border border-border bg-card" data-testid="notification-rich-text-editor">
 	<div class="flex flex-wrap gap-1 border-b border-border bg-secondary/40 p-1">
 		<Button
 			type="button"
 			size="sm"
 			variant={boldActive ? 'secondary' : 'ghost'}
-			class="h-8 w-8 rounded-lg p-0"
+			class="w-8"
 			disabled={disabled}
 			aria-label={$t('notificationTemplates.toolbar.bold')}
 			onclick={() => editor?.chain().focus().toggleBold().run()}
@@ -149,7 +149,7 @@
 			type="button"
 			size="sm"
 			variant={italicActive ? 'secondary' : 'ghost'}
-			class="h-8 w-8 rounded-lg p-0"
+			class="w-8"
 			disabled={disabled}
 			aria-label={$t('notificationTemplates.toolbar.italic')}
 			onclick={() => editor?.chain().focus().toggleItalic().run()}
@@ -160,7 +160,7 @@
 			type="button"
 			size="sm"
 			variant={linkActive ? 'secondary' : 'ghost'}
-			class="h-8 w-8 rounded-lg p-0"
+			class="w-8"
 			disabled={disabled}
 			aria-label={$t('notificationTemplates.toolbar.link')}
 			onclick={toggleLink}
@@ -171,7 +171,7 @@
 			type="button"
 			size="sm"
 			variant={bulletActive ? 'secondary' : 'ghost'}
-			class="h-8 w-8 rounded-lg p-0"
+			class="w-8"
 			disabled={disabled}
 			aria-label={$t('notificationTemplates.toolbar.bulletList')}
 			onclick={() => editor?.chain().focus().toggleBulletList().run()}
@@ -182,7 +182,7 @@
 			type="button"
 			size="sm"
 			variant={orderedActive ? 'secondary' : 'ghost'}
-			class="h-8 w-8 rounded-lg p-0"
+			class="w-8"
 			disabled={disabled}
 			aria-label={$t('notificationTemplates.toolbar.orderedList')}
 			onclick={() => editor?.chain().focus().toggleOrderedList().run()}

@@ -1,3 +1,4 @@
+import { selectTrigger, chooseOption, selectControl } from '../tests/integration/support/custom-select';
 import type { Locator, Page } from 'playwright';
 import {
 	academicYearLabelFromDates,
@@ -156,12 +157,12 @@ async function ensureTableViewForSort(page: Page): Promise<void> {
 	if (await page.getByTestId(LIST_SORT_TEST_ID).first().isVisible().catch(() => false)) {
 		return;
 	}
-	const more = page.getByTestId('list-more-menu');
+	const more = page.getByTestId('collection-menu');
 	if (!(await more.isVisible().catch(() => false))) {
 		return;
 	}
 	await more.click({ timeout: 3_000 }).catch(() => {});
-	const tableView = page.getByRole('button', { name: /vue tableau|table view/i });
+	const tableView = page.getByRole('menuitem', { name: /vue tableau|table view/i });
 	if (await tableView.isVisible({ timeout: 2_000 }).catch(() => false)) {
 		await tableView.click();
 		return;
@@ -223,14 +224,14 @@ export type ListSelectionExportResult =
  * Product export lives on ListSelectionBar; the More-menu Exporter is list.exportSoon.
  */
 export async function exportSelectedListRows(page: Page): Promise<ListSelectionExportResult> {
-	const more = page.getByTestId('list-more-menu');
+	const more = page.getByTestId('collection-menu');
 	if (!(await more.isVisible({ timeout: 5_000 }).catch(() => false))) {
 		return { status: 'na', detail: 'Menu Plus absent' };
 	}
 
 	await more.click({ timeout: 3_000 });
 
-	const enterSelect = page.getByRole('button', { name: /^(sélectionner|select)$/i });
+	const enterSelect = page.getByRole('menuitem', { name: /^(sélectionner|select)$/i });
 	if (!(await enterSelect.isVisible({ timeout: 3_000 }).catch(() => false))) {
 		await page.keyboard.press('Escape').catch(() => {});
 		return { status: 'na', detail: 'Action Sélectionner absente' };
@@ -399,8 +400,12 @@ export async function openDialogButton(
 	scope?: Locator,
 ): Promise<boolean> {
 	const root = scope ?? page;
-	const btn = root.getByRole('button', { name }).first();
+	const btn = root.getByRole('button', { name }).or(page.getByRole('menuitem', { name })).first();
 	try {
+		if (!await btn.isVisible()) {
+			const menu = root.getByTestId('collection-menu').first();
+			if (await menu.isVisible()) await menu.click();
+		}
 		await btn.waitFor({ state: 'visible', timeout });
 		await waitForEnabled(btn);
 		await btn.click();
@@ -599,13 +604,12 @@ export async function selectNativeFilter(
 	nth: number,
 	option: { value?: string; label?: RegExp } = {},
 ): Promise<boolean> {
-	const select = page.getByRole('dialog').locator('select').nth(nth)
-		.or(page.getByRole('dialog').getByTestId('list-filter-select').nth(nth));
-	if (!(await select.isVisible({ timeout: 8_000 }).catch(() => false))) {
+	const select = page.getByRole('dialog').locator('select[data-select-value]').nth(nth);
+	if (!(await selectTrigger(select).isVisible({ timeout: 8_000 }).catch(() => false))) {
 		return false;
 	}
 	if (option.value) {
-		await select.selectOption(option.value);
+		await chooseOption(select, option.value);
 		return true;
 	}
 	const values = await select.locator('option').evaluateAll((nodes) => (
@@ -622,7 +626,7 @@ export async function selectNativeFilter(
 	if (!match) {
 		return false;
 	}
-	await select.selectOption(match.value);
+	await chooseOption(select, match.value);
 	return true;
 }
 
@@ -673,7 +677,7 @@ export async function pickFirstPerson(page: Page): Promise<boolean> {
 /** Click every combobox in the open dialog and pick an option (last = newest list item). */
 export async function pickDialogComboboxes(page: Page, preferLast = false): Promise<number> {
 	const dialog = page.getByRole('dialog');
-	const combos = dialog.getByRole('combobox');
+	const combos = selectControl(dialog);
 	const count = await combos.count();
 	let picked = 0;
 	for (let i = 0; i < count; i++) {
@@ -728,17 +732,18 @@ export async function pickDialogComboboxOption(
 	return true;
 }
 
-/** Native `<select>` filter. Do not include `[data-testid="list-filter"]` — that is the FilterPanel button. */
+/** Serialization proxies for custom filter controls; interaction uses their visible triggers. */
 export const LIST_FILTER_NATIVE_LOCATOR
-	= 'select[data-testid="list-filter-select"], select[aria-label="Filter"]';
+	= '[data-select-field]:has([data-testid="list-filter-select"]) select[data-select-value]';
 
 export async function selectListFilter(page: Page, value: string): Promise<boolean> {
 	const native = page.locator(LIST_FILTER_NATIVE_LOCATOR).first();
-	if (await native.isVisible({ timeout: 4_000 }).catch(() => false)) {
-		await native.selectOption(value);
+	if (!await selectTrigger(native).isVisible()) await page.getByTestId('list-filter').first().click();
+	if (await selectTrigger(native).isVisible({ timeout: 4_000 }).catch(() => false)) {
+		await chooseOption(native, value);
 		return true;
 	}
-	const combobox = page.getByRole('combobox').first();
+	const combobox = selectControl(page).first();
 	if (await combobox.isVisible({ timeout: 4_000 }).catch(() => false)) {
 		await combobox.click();
 		const option = page.getByRole('option', { name: new RegExp(value, 'i') }).first();
@@ -796,7 +801,7 @@ export async function waitForGradeLevelSelectOptions(
 	timeout = 20_000,
 ): Promise<Locator> {
 	const gradeSelect = dialog.locator('select').first();
-	await gradeSelect.waitFor({ state: 'visible', timeout });
+	await selectTrigger(gradeSelect).waitFor({ state: 'visible', timeout });
 	const started = Date.now();
 	while (Date.now() - started < timeout) {
 		const count = await gradeSelect.locator('option').count();
@@ -874,7 +879,7 @@ export async function fillClassCreateDialog(
 	await dialog.locator('input').first().fill(className);
 	const gradeSelect = await waitForGradeLevelSelectOptions(dialog);
 	if (await gradeSelect.isEnabled()) {
-		await gradeSelect.selectOption(expectedGradeLevelId ? { value: expectedGradeLevelId } : { index: 0 });
+		await chooseOption(gradeSelect, expectedGradeLevelId ? { value: expectedGradeLevelId } : { index: 0 });
 	}
 	const selectedGradeLevelId = await gradeSelect.inputValue();
 	if (!selectedGradeLevelId || (expectedGradeLevelId && selectedGradeLevelId !== expectedGradeLevelId)) {
@@ -883,8 +888,8 @@ export async function fillClassCreateDialog(
 	const attendanceSelect = dialog.locator('select').filter({
 		has: page.locator('option[value="daily"]'),
 	}).last();
-	if (await attendanceSelect.isVisible().catch(() => false)) {
-		await attendanceSelect.selectOption('daily');
+	if (await selectTrigger(attendanceSelect).isVisible().catch(() => false)) {
+		await chooseOption(attendanceSelect, 'daily');
 		await attendanceSelect.evaluate((el) => {
 			if (!(el instanceof HTMLSelectElement)) {
 				return;
@@ -951,7 +956,7 @@ export async function fillStudentCreateDialog(
 		throw new Error('No classes in academicContext.hierarchy — create a class before adding a student');
 	}
 
-	const classTrigger = dialog.getByRole('combobox').first();
+	const classTrigger = selectControl(dialog).first();
 	if (await classTrigger.isVisible().catch(() => false)) {
 		if (options.className) {
 			await selectComboboxOption(page, classTrigger, { name: options.className });
@@ -1016,7 +1021,7 @@ export async function fillPersonCreateDialogWithInvite(
 	if (await dialog.locator('#guardian-send-invite').count()) {
 		const contacts = dialog.getByRole('group', { name: /contact methods|coordonnées/i });
 		await contacts.getByRole('button', { name: /^(add|ajouter)$/i }).click();
-		await contacts.locator('select').last().selectOption('email');
+		await chooseOption(contacts.locator('select').last(), 'email');
 	}
 	await dialog.locator('input[type="email"]').first().fill(options.email);
 
@@ -1076,7 +1081,7 @@ export async function fillNewSessionWizard(
 		if (noSubjects) {
 			return null;
 		}
-		const subjectTrigger = dialog.getByRole('combobox').first()
+		const subjectTrigger = selectControl(dialog).first()
 			.or(dialog.locator('button').filter({ hasText: /subject|matière/i }).first());
 		if (await subjectTrigger.isVisible().catch(() => false)) {
 			await selectComboboxOption(page, subjectTrigger);
@@ -1205,15 +1210,15 @@ export async function fillReportCardDefinitionDialog(
 	const nativeSelects = dialog.locator('select');
 	const gradeSelect = nativeSelects.nth(0);
 
-	if (await gradeSelect.isVisible().catch(() => false)) {
+	if (await selectTrigger(gradeSelect).isVisible().catch(() => false)) {
 		if (!(await waitForSelectOptionCount(gradeSelect, 1))) {
 			throw new Error('Report-card grade level select has no options');
 		}
 		if (options.gradeLevelId) {
-			await gradeSelect.selectOption(options.gradeLevelId).catch(() => gradeSelect.selectOption({ index: 0 }));
+			await chooseOption(gradeSelect, options.gradeLevelId).catch(() => chooseOption(gradeSelect, { index: 0 }));
 		}
 		else {
-			await gradeSelect.selectOption({ index: 0 });
+			await chooseOption(gradeSelect, { index: 0 });
 		}
 	}
 
@@ -1318,7 +1323,7 @@ export async function fillAssignFeeDialog(page: Page, studentName?: string): Pro
 		return true;
 	}
 	await pickFirstPerson(page);
-	const feeCombo = page.getByRole('dialog').getByRole('combobox').first();
+	const feeCombo = selectControl(page.getByRole('dialog')).first();
 	if (await feeCombo.isVisible().catch(() => false)) {
 		await selectComboboxOption(page, feeCombo);
 	}
@@ -1349,7 +1354,7 @@ export async function fillEvaluationCreateDialog(page: Page, title: string, clas
 		}
 		await page.waitForTimeout(250);
 	}
-	const subjectCombo = dialog.getByRole('combobox').nth(1);
+	const subjectCombo = selectControl(dialog).nth(1);
 	if (await subjectCombo.isVisible().catch(() => false)) {
 		await selectComboboxOption(page, subjectCombo);
 	}

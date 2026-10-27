@@ -1,3 +1,4 @@
+import { chooseOption, selectControl, selectOptions } from '../../support/custom-select';
 import {
 	fillLabeledInput,
 	searchAndSelectPerson,
@@ -119,10 +120,10 @@ export async function runTeachingChapter(journey: UiJourney): Promise<void> {
 			pathname: `/school/teachers/${entities.teacherId}/assignments`,
 			command: 'teacher-assignments',
 			fill: async (current) => {
-				await current.getByRole('dialog').getByRole('combobox', { name: /^(class|classe)$/i }).selectOption(classId);
-				const subjectSelect = current.getByRole('dialog').getByRole('combobox', { name: /subject offering|matière dans la classe/i });
-				await subjectSelect.locator(`option[value="${teachingId}"]`).waitFor({ state: 'attached' });
-				await subjectSelect.selectOption(teachingId);
+				await chooseOption(selectControl(current.getByRole('dialog'), { name: /^(class|classe)$/i }), classId);
+				const subjectSelect = selectControl(current.getByRole('dialog'), { name: /subject offering|matière dans la classe/i });
+				await selectOptions(subjectSelect).and(subjectSelect.page().locator(`option[value="${teachingId}"]`)).waitFor({ state: 'attached' });
+				await chooseOption(subjectSelect, teachingId);
 			},
 			actionPath: 'http://localhost:5173/school/teachers/[id]/assignments',
 			actions: ['CRUD affectations matière/classe'],
@@ -162,9 +163,9 @@ export async function runTeachingChapter(journey: UiJourney): Promise<void> {
             fill: async current => {
                 const dialog = current.getByRole('dialog');
                 await current.getByRole('dialog').locator(`option[value="${hubTeacherId}"]`).waitFor({ state: 'attached', timeout: 15000 });
-                await dialog.getByRole('combobox', { name: /^(teacher|enseignant)$/i }).selectOption(hubTeacherId);
-                await dialog.getByRole('combobox', { name: /assignment type|type d.affectation/i }).selectOption('homeroom');
-                await dialog.getByRole('combobox', { name: /^(class|classe)$/i }).selectOption(entities.classId!);
+                await chooseOption(selectControl(dialog, { name: /^(teacher|enseignant)$/i }), hubTeacherId);
+                await chooseOption(selectControl(dialog, { name: /assignment type|type d.affectation/i }), 'homeroom');
+                await chooseOption(selectControl(dialog, { name: /^(class|classe)$/i }), entities.classId!);
             },
             listPath: '/configuration/tools/teacher-assignments',
             actionPath: 'http://localhost:5173/configuration/tools/teacher-assignments',

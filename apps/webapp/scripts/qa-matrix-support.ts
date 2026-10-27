@@ -62,7 +62,7 @@ export interface MatrixEntities {
 	subjectId: string | null;
 	configurationSubjectId?: string | null;
 	gradeScaleId: string | null;
-	reportCardDefId: string | null;
+	reportModuleId: string | null;
 	deliveryId: string | null;
 	familyFeedbackCampaignId: string | null;
 	teachingId: string | null;
@@ -101,7 +101,7 @@ export function emptyEntities(): MatrixEntities {
 		secondGradeLevelId: null,
 		subjectId: null,
 		gradeScaleId: null,
-		reportCardDefId: null,
+		reportModuleId: null,
 		deliveryId: null,
 		familyFeedbackCampaignId: null,
 		teachingId: null,
@@ -360,9 +360,6 @@ export function resolveEndpoint(endpoint: string, base: string, entities: Matrix
 	if (path.includes('/configuration/structure/subjects/') && !path.includes('/level/')) {
 		map['[id]'] = entities.configurationSubjectId ?? entities.subjectId;
 	}
-	if (path.includes('/configuration/structure/details/report-cards/') || path.includes('/configuration/report-cards/')) {
-		map['[id]'] = entities.reportCardDefId;
-	}
 	if (path.includes('/configuration/notifications/')) {
 		map['[id]'] = entities.notificationTemplateKey;
 	}
@@ -522,8 +519,8 @@ export async function discoverEntities(ctx: DemoContext): Promise<MatrixEntities
 	await safeGoto(ctx, `${base}/configuration/structure/subjects`);
 	entities.subjectId = await firstIdFromLinks(page, /\/configuration\/structure\/subjects\/([^/]+)/);
 
-	await safeGoto(ctx, `${base}/configuration/structure/details`);
-	entities.reportCardDefId = await firstIdFromLinks(page, /\/configuration\/structure\/details\/report-cards\/([^/]+)/);
+	await safeGoto(ctx, `${base}/configuration/structure/subjects`);
+	entities.reportModuleId = await page.locator('[data-module-id]').first().getAttribute('data-module-id').catch(() => null);
 
 	await safeGoto(ctx, `${base}/account/inbox`);
 	entities.deliveryId = await firstIdFromLinks(page, /\/account\/inbox\/([^/]+)/);

@@ -26,7 +26,7 @@
 			{#if document.status === 'draft'}<p role="status" class="text-muted-foreground">{$t('auth.termsDraft')}</p>{/if}
 			<Dialog.Root bind:open={flow.termsDialogOpen}>
 				<Dialog.Trigger type="button" data-testid="auth-terms-read" class={buttonVariants({ variant: 'link', class: 'px-0 text-left' })} {disabled}>{$t('auth.termsRead')}</Dialog.Trigger>
-				<Dialog.Content data-testid="auth-terms-dialog" class="flex flex-col overflow-hidden rounded-xl" aria-describedby={undefined}>
+				<Dialog.Content data-testid="auth-terms-dialog" class="flex flex-col overflow-hidden rounded-collection" aria-describedby={undefined}>
 					<Dialog.Header class="shrink-0 text-left">
 						<Dialog.Title class="min-w-0 break-words">{document.title}</Dialog.Title>
 					</Dialog.Header>

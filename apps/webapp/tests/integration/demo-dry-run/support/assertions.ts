@@ -115,7 +115,7 @@ export async function assertListShell(
 		if (await loading.isVisible({ timeout: 500 }).catch(() => false)) {
 			await loading.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {});
 		}
-		const moreBtn = page.getByTestId('list-more-menu');
+		const moreBtn = page.getByTestId('collection-menu');
 		if (!(await moreBtn.waitFor({ state: 'visible', timeout: 15_000 }).then(() => true).catch(() => false))) {
 			reporter.log(scene, step, 'fail', 'Missing list more menu');
 			await shot(`${scene}-${step.replace(/\s+/g, '-')}`);
@@ -179,10 +179,10 @@ export async function assertFilterSelectShell(
 		if (await loading.isVisible({ timeout: 500 }).catch(() => false)) {
 			await loading.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {});
 		}
-		const filterSelect = page.locator('select[aria-label="Filter"]');
-		const moreBtn = page.getByTestId('list-more-menu');
+		const filterSelect = page.getByTestId('list-filter');
+		const moreBtn = page.getByTestId('collection-menu');
 		if (!(await filterSelect.first().waitFor({ state: 'visible', timeout: 15_000 }).then(() => true).catch(() => false))) {
-			reporter.log(scene, step, 'fail', 'Missing filter select');
+			reporter.log(scene, step, 'fail', 'Missing unified Filter action');
 			await shot(`${scene}-${step.replace(/\s+/g, '-')}`);
 			return false;
 		}

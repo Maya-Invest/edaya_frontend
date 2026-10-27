@@ -199,3 +199,11 @@ Source-fresh execution metadata accompanies each suite. Sanitized reports are co
 ## Authentication terms browser checks
 
 Start the local webapp with `PUBLIC_API_URL=http://localhost:9999 PUBLIC_ALLOW_SCHOOL_REGISTRATION=true bun x --bun vite --host 127.0.0.1 --port 52781 --strictPort`, then run `TERMS_TEST_BASE=http://127.0.0.1:52781 bun scripts/terms-browser.ts` from the webapp directory. The script intercepts identity requests with local fixture responses; it sends no real OTP. It covers both login panels in FR/EN, keyboard dialog dismissal and acceptance, unchecked/checked submission, identity and version changes, loading retries and narrow 200% text. Screenshots are written to ignored `.focused-run/terms/`. Backend and Flutter tests separately verify persisted consent and the shared native form.
+
+## Shared-design browser qualification
+
+Run `bun run test:integration:shared-design` for production controls in the development reference: FR/EN, 360/768/1024/1280px, 100%/200% text, table customization/selection, drawer focus, required selectors, dirty/reset behavior and confirmations. Run `bun run test:integration:grading-entry` for the 30-student paper-entry workflow, picker isolation, explicit saves and per-record revisions. Both are registered focused suites with source-fresh metadata and captures under `.focused-run/`.
+
+Use `selectControl`, `chooseOption` and `selectOptions` from `integration/support/custom-select.ts`. Selection uses the visible trigger and portaled listbox. Hidden form proxies may be read for option IDs or serialized values; never use native `selectOption`, synthetic change dispatches or value mutation to bypass the custom UI. Scope menu actions as `menuitem`, and scope form actions to their dialog when labels also exist in the underlying collection.
+
+Run the shared-design suite separately from Vite fixture suites: starting the full SvelteKit development server regenerates its configuration and can reload other fixtures. To avoid an occupied local port, set `EDAYA_FIXTURE_PORT` to an available port (1024–65535); the suite and its owned worker use that origin. Never stop an unrelated server to free a fixture port. Finish source edits before final qualification runs; source changes invalidate execution metadata. Seeded API journeys remain separate from these disposable local component fixtures.

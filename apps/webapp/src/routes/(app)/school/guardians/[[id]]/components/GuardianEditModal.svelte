@@ -1,14 +1,16 @@
 <script lang="ts">
-	import type { components } from '$lib/api/schema';
 	import type { Guardian } from '$lib/types/school';
-	import GuardianContactMethodsEditor from '$lib/components/school/shared/GuardianContactMethodsEditor.svelte';
+	import { authSession } from '$lib/auth/session.svelte';
+	import GuardianContactFields from '$lib/components/school/shared/GuardianContactFields.svelte';
 	import PersonProfileFields from '$lib/components/school/shared/PersonProfileFields.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
+	import { guardianContactDraft, guardianContactPayload } from '$lib/guardians/contact-fields';
 	import { t } from '$lib/i18n';
 	import { personFieldDraft } from '$lib/people-profile-fields';
+	import { onDestroy, untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getGuardiansPageState } from '../../guardians-page.svelte';
 
@@ -25,22 +27,36 @@
 	let additional = $state<Record<string, string>>({});
 	let firstName = $state('');
 	let lastName = $state('');
-	let contactMethods = $state<components['schemas']['Guardian']['contactMethods']>([]);
+	let contacts = $state(guardianContactDraft());
 	function resetForm() {
 		additional = personFieldDraft('guardian', guardian);
 		hasAccess = guardian.hasAccess ?? false;
 		firstName = guardian.firstName ?? '';
 		lastName = guardian.lastName ?? '';
-		contactMethods = (guardian.contactMethods ?? []).map(method => ({ ...method }));
+		contacts = guardianContactDraft(guardian);
 	}
-	$effect(() => {
-		resetForm();
+	let mounted = true;
+	onDestroy(() => {
+		mounted = false;
 	});
-	const canSubmit = $derived(lastName.trim().length > 0 && contactMethods.every(method => method.value.trim()));
+	let hydratedKey = '';
+	function identity() {
+		return JSON.stringify([authSession.authUserId, authSession.schoolId, authSession.subjectId, guardian.id]);
+	}
+	$effect.pre(() => {
+		const key = open ? identity() : '';
+		if (key && key !== hydratedKey)
+			untrack(resetForm);
+		hydratedKey = key;
+	});
+	const canSubmit = $derived(lastName.trim().length > 0);
 	async function submit() {
 		if (!canSubmit) {
 			return;
 		}
+		if (busy)
+			return;
+		const submittedIdentity = identity();
 		busy = true;
 		const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
 		const ok = await guardiansPage.updateContact({
@@ -48,26 +64,24 @@
 			profile: additional,
 			firstName,
 			lastName,
-			contactMethods,
+			...guardianContactPayload(contacts),
 			hasAccess,
-			email: contactMethods.find(method => method.type === 'email')?.value ?? '',
-			phone: contactMethods.find(method => method.type === 'phone')?.value ?? '',
 			successMessage: get(t)('guardian.updateSuccess', { name: fullName }),
 		});
 		busy = false;
-		if (ok) {
+		if (ok && mounted && identity() === submittedIdentity) {
 			open = false;
 		}
 	}
 </script>
 
 {#if showTrigger}
-	<Button variant="outline" size="sm" class="rounded-full" {disabled} {title} onclick={() => (open = true)}>
+	<Button variant="outline" size="sm" {disabled} {title} onclick={() => (open = true)}>
 		{$t('guardian.editContact')}
 	</Button>
 {/if}
 
-<FormModal
+<FormModal contentClass="max-w-3xl"
 	bind:open
 	title={$t('guardian.editTitle', { name: guardian.name })}
 	description={$t('guardian.editDescription')}
@@ -91,7 +105,7 @@
 			<Input bind:value={lastName} aria-label={$t('common.lastName')} />
 		</div>
 	</div>
-	<GuardianContactMethodsEditor bind:methods={contactMethods} />
+	<GuardianContactFields bind:contacts disabled={busy} />
 	<label class="flex items-center gap-2"><input type="checkbox" bind:checked={hasAccess} />{$t('profile.portalAccess')}</label>
 
 	<PersonProfileFields kind="guardian" bind:values={additional} />

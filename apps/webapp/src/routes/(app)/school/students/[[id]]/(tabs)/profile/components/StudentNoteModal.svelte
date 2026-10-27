@@ -5,6 +5,7 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
 	import { Plus } from '$lib/icons';
@@ -104,7 +105,7 @@
 	onSubmit={submit}
 >
 	<label class="block space-y-1.5"><span>{$t('profile.noteTitle')}</span><Input bind:value={noteTitle} /></label>
-	<label class="block space-y-1.5"><span>{$t('profile.visibility')}</span><select bind:value={visibility} class="h-10 w-full rounded-lg border bg-background px-3">{#each ['staff', 'admin_only', 'guardian_visible'] as value (value)}<option {value}>{$t(`profile.noteVisibility.${value}`)}</option>{/each}</select></label>
+	<label class="block space-y-1.5"><span>{$t('profile.visibility')}</span><SelectField bind:value={visibility} class="w-full border bg-background">{#each ['staff', 'admin_only', 'guardian_visible'] as value (value)}<option {value}>{$t(`profile.noteVisibility.${value}`)}</option>{/each}</SelectField></label>
 
 	<div class="space-y-1.5">
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">

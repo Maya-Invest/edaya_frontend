@@ -153,7 +153,7 @@
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
 						onclick={() => modals.open('create')}
@@ -180,7 +180,7 @@
 		{/snippet}
 	</ListPageHeader>
 
-	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+	<div class="overflow-hidden rounded-collection border border-border bg-card shadow-soft">
 		<div
 			class="grid grid-cols-12 gap-4 border-b border-border bg-secondary/40 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
 		>

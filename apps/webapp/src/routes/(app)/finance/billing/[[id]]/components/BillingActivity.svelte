@@ -23,7 +23,7 @@
 				<div class="mt-4 space-y-3">
 					{#each allocations as allocation (allocation.id)}
 						{@const payment = data.history?.payments.find(row => row.id === allocation.causedByPaymentId)}
-						<article class="space-y-2 rounded-2xl border border-border p-4">
+						<article class="space-y-2 rounded-collection border border-border p-4">
 							<div class="flex flex-wrap justify-between gap-2"><strong>{formatMinorUnits(allocation.amount, billing.currency, $locale)}</strong><span class="rounded-full bg-secondary px-2 py-1 text-xs">{$t(reversed.has(allocation.id) ? 'finance.reversed' : 'finance.active')}</span></div>
 							<p class="text-sm">{payment ? `${$t(`payment.method.${payment.method}`)} · ${payment.reference ?? '—'}` : $t('finance.accountCredit')}</p>
 							<p class="text-xs text-muted-foreground">{new Date(allocation.recordedAt).toLocaleString($locale)}</p>
@@ -36,7 +36,7 @@
 			{:else}
 				<ol class="space-y-3">
 					{#each billingHistory(billing, data.history) as event (event.id)}
-						<li class="rounded-2xl border border-border p-4">
+						<li class="rounded-collection border border-border p-4">
 							<div class="flex flex-wrap justify-between gap-2"><strong class="text-sm">{$t(`finance.event.${event.kind}`)}</strong>{#if event.amount !== undefined}<span class="text-sm tabular-nums">{formatMinorUnits(event.amount, billing.currency, $locale)}</span>{/if}</div>
 							<p class="mt-1 text-xs text-muted-foreground">{new Date(event.at).toLocaleString($locale)} · {event.actor ?? $t('finance.notRecorded')}</p>
 							{#if event.reason}<p class="mt-2 whitespace-pre-wrap text-sm">{event.reason}</p>{/if}

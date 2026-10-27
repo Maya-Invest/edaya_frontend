@@ -119,7 +119,7 @@
 	description={saveDescription}
 	submitLabel={isEdit && !reviewed ? $t('staff.reviewScopeChanges') : $t('academic.save')}
 	cancelLabel={$t('academic.cancel')}
-	contentClass="max-w-2xl"
+	contentClass="max-w-3xl"
 	{busy}
 	submitDisabled={!canSubmit}
 	onSubmit={submit}
@@ -139,7 +139,7 @@
 				<h3 class="font-display text-base font-bold text-foreground">{formatPermissionGroupLabel(group.key, $t)}</h3>
 				<div class="space-y-1.5">
 					{#each group.entries as entry (entry.permission)}
-						<label class="flex items-start gap-2 rounded-lg px-1 py-1 text-sm">
+						<label class="flex items-start gap-2 rounded-collection px-1 py-1 text-sm">
 							<Checkbox
 								checked={permissions.includes(entry.permission)}
 								onCheckedChange={(checked) => {

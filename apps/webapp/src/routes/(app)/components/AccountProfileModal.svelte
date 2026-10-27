@@ -9,7 +9,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { t } from '$lib/i18n';
-	import { LogOut, Mail } from '$lib/icons';
+	import { LogOut, Mail, X } from '$lib/icons';
 	import { getDirtyWork } from '$lib/interaction/dirty-work.svelte';
 	import { canUploadProfilePhoto } from '$lib/permissions';
 	import NotificationSettings from '$lib/smart-components/account-notifications/NotificationSettings.svelte';
@@ -105,9 +105,10 @@
 		close();
 	else open = true;
 }}>
-	<Dialog.Content class="flex h-dvh max-h-dvh w-screen max-w-none flex-col gap-0 overflow-hidden rounded-none p-0 shadow-panel lg:h-[min(48rem,calc(100dvh-2rem))] lg:max-h-[calc(100dvh-2rem)] lg:w-[calc(100%-2rem)] lg:max-w-5xl lg:rounded-2xl">
+	<Dialog.Content class="ui-account-dialog flex h-dvh max-h-dvh w-screen max-w-none flex-col gap-0 overflow-hidden rounded-none p-0 shadow-panel lg:h-[min(48rem,calc(100dvh-2rem))] lg:max-h-[calc(100dvh-2rem)] lg:w-[calc(100%-3rem)] lg:max-w-5xl lg:rounded-collection">
 		<div class="shrink-0 border-b border-border bg-secondary/30 px-6 py-5">
 			<div class="flex items-center gap-4">
+				<Button class="ml-auto order-last shrink-0" variant="ghost" size="icon" aria-label={$t('common.close')} onclick={close}><X /></Button>
 				{#if canChangePhoto}
 					<ProfilePhotoPicker
 						name={actor.name}
@@ -138,10 +139,10 @@
 		<div class="flex min-h-0 flex-1 flex-col lg:flex-row-reverse">
 			<nav aria-label={$t('account.profile.sectionProfile')} class="flex shrink-0 flex-wrap gap-2 border-b border-border p-4 lg:w-56 lg:flex-col lg:justify-start lg:border-b-0 lg:border-l">
 				{#each sections as item (item)}
-					<Button variant={section === item ? 'secondary' : 'ghost'} aria-current={section === item ? 'page' : undefined} class="justify-start" onclick={() => {
+					<button type="button" aria-current={section === item ? 'page' : undefined} class={cn('ui-nav-target', section === item && 'bg-sky-soft text-primary')} onclick={() => {
 						if (item !== section)
 							guarded(() => onSectionChange(item));
-					}}>{$t(sectionKeys[item])}</Button>
+					}}>{$t(sectionKeys[item])}</button>
 				{/each}
 			</nav>
 			<div class="min-h-0 min-w-0 flex-1 overflow-y-auto">
@@ -194,10 +195,8 @@
 		</div>
 
 		<Dialog.Footer class="shrink-0 border-t border-border bg-secondary/20 px-6 py-4 sm:justify-between">
-			<Button variant="ghost" class="rounded-full" onclick={close}>
-				{$t('common.close')}
-			</Button>
-			<Button variant="outline" class="rounded-full" onclick={handleLogout}>
+
+			<Button variant="outline" onclick={handleLogout}>
 				<LogOut class="mr-2 h-4 w-4" />
 				{$t('auth.signOut')}
 			</Button>

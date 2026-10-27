@@ -186,7 +186,7 @@
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"
-						class="rounded-full"
+
 						disabled={disabled || !academicContext.periodId}
 						{title}
 						onclick={() => modals.open('create')}
@@ -216,7 +216,7 @@
 				onclick={() => openEvaluation(evaluation)}
 				onkeydown={event => handleRowKeydown(event, evaluation)}
 				class={cn(
-					'group grid w-full grid-cols-12 items-center gap-4 rounded-2xl border border-border bg-card p-5 text-left shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-panel',
+					'group grid w-full grid-cols-12 items-center gap-4 rounded-collection border border-border bg-card p-5 text-left shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-panel',
 					active && 'border-primary/40 bg-primary/5',
 				)}
 			>
@@ -316,7 +316,7 @@
 		{/each}
 		{#if filtered.length === 0}
 			<p
-				class="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground"
+				class="rounded-collection border border-dashed border-border p-10 text-center text-sm text-muted-foreground"
 			>
 				{$t('eval.none')}
 			</p>

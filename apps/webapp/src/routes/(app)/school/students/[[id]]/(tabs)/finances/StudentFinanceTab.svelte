@@ -44,7 +44,7 @@
 
 <div class="space-y-4">
 	<div class="grid grid-cols-3 gap-3">
-		<div class="rounded-2xl border border-border bg-card p-4 shadow-soft">
+		<div class="rounded-collection border border-border bg-card p-4 shadow-soft">
 			<p class="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
 				<Wallet class="h-3.5 w-3.5" />
 				{$t('finance.available')}
@@ -53,7 +53,7 @@
 				{formatMinorUnits(summary?.available.amount ?? 0, currency, $locale)}
 			</p>
 		</div>
-		<div class="rounded-2xl border border-border bg-card p-4 shadow-soft">
+		<div class="rounded-collection border border-border bg-card p-4 shadow-soft">
 			<p class="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
 				<Check class="h-3.5 w-3.5" />
 				{$t('finance.outstandingAmount')}
@@ -62,7 +62,7 @@
 				{formatMinorUnits(summary?.outstanding.amount ?? 0, currency, $locale)}
 			</p>
 		</div>
-		<div class="rounded-2xl border border-border bg-card p-4 shadow-soft">
+		<div class="rounded-collection border border-border bg-card p-4 shadow-soft">
 			<p class="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
 				<Clock class="h-3.5 w-3.5" />
 				{$t('finance.overdueAmount')}
@@ -108,7 +108,7 @@
 				</DrawerEmptyState>
 			{:else}
 				{#each charges as charge (charge.id)}
-					<div class="rounded-2xl border border-border bg-card p-4 shadow-soft">
+					<div class="rounded-collection border border-border bg-card p-4 shadow-soft">
 						<div class="flex items-center justify-between">
 							<span
 								class={cn(
@@ -142,7 +142,7 @@
 				</DrawerEmptyState>
 			{:else}
 				{#each entries as entry (entry.id)}
-					<div class="flex items-center justify-between rounded-2xl border border-border bg-card px-3 py-2 text-xs shadow-soft">
+					<div class="flex items-center justify-between rounded-collection border border-border bg-card px-3 py-2 text-xs shadow-soft">
 						<div>
 							<p class="font-medium">{entry.sourceKind}</p>
 							<p class="font-sans tabular-nums text-[10px] text-muted-foreground">

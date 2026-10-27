@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { provideCollectionPresentation } from '$lib/list/collection-presentation.svelte';
+
+	provideCollectionPresentation();
 	import type { StudentBilling } from '$lib/types/school';
 	import { page } from '$app/stores';
 	import { academicContext } from '$lib/academic/context.svelte';
@@ -116,8 +119,6 @@
 				<div class="col-span-2 text-xs">{row.dueDate || '—'}</div>
 			{:else if column.key === 'status'}
 				<div class="col-span-1"><span class={`rounded-full px-2 py-1 text-xs ${billingStatusTone[row.status]}`}>{$t(`billing.status.${row.status}`)}</span></div>
-			{:else if column.key === 'actions'}
-				<div class="col-span-1" role="presentation" onclick={event => event.stopPropagation()} onkeydown={event => event.stopPropagation()}><RowActionMenu><RowActionMenuItem onclick={() => onSelectBilling?.(row)}>{$t('common.open')}</RowActionMenuItem></RowActionMenu></div>
 			{/if}
 		{/snippet}
 	</ListEntityTable>

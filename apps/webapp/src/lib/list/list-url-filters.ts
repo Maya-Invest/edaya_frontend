@@ -81,12 +81,6 @@ const paymentListFiltersCodec = defineUrlFilterCodec({
 	class: { type: 'string', default: 'all' },
 });
 
-const reportCardDefinitionListFiltersCodec = defineUrlFilterCodec({
-	q: { type: 'search', default: '' },
-	status: { type: 'enum', default: 'all', values: ['all', 'draft', 'published'] as const },
-	defaultModel: { type: 'enum', default: 'all', values: ['all', 'yes', 'no'] as const },
-});
-
 const roleListFiltersCodec = defineUrlFilterCodec({
 	q: { type: 'search', default: '' },
 });
@@ -155,7 +149,6 @@ export type StaffListFilters = ReturnType<typeof staffListFiltersCodec.read>;
 export type TeacherListFilters = ReturnType<typeof teacherListFiltersCodec.read>;
 export type ClassReportCardListFilters = ReturnType<typeof classReportCardListFiltersCodec.read>;
 export type PaymentListFilters = ReturnType<typeof paymentListFiltersCodec.read>;
-export type ReportCardDefinitionListFilters = ReturnType<typeof reportCardDefinitionListFiltersCodec.read>;
 export type RoleListFilters = ReturnType<typeof roleListFiltersCodec.read>;
 export type GradeScaleListFilters = ReturnType<typeof gradeScaleListFiltersCodec.read>;
 export type FeeListFilters = ReturnType<typeof feeListFiltersCodec.read>;
@@ -279,17 +272,6 @@ export function readPaymentListFilters(url: URL): PaymentListFilters {
 
 export function writePaymentListFilters(url: URL, filters: PaymentListFilters): string {
 	return paymentListFiltersCodec.write(url, filters);
-}
-
-export function readReportCardDefinitionListFilters(url: URL): ReportCardDefinitionListFilters {
-	return reportCardDefinitionListFiltersCodec.read(url);
-}
-
-export function writeReportCardDefinitionListFilters(
-	url: URL,
-	filters: ReportCardDefinitionListFilters,
-): string {
-	return reportCardDefinitionListFiltersCodec.write(url, filters);
 }
 
 export function readRoleListFilters(url: URL): RoleListFilters {

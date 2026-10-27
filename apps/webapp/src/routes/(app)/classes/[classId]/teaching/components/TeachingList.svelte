@@ -133,7 +133,7 @@
 		</p>
 	</div>
 
-	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+	<div class="overflow-hidden rounded-collection border border-border bg-card shadow-soft">
 		{#each filteredSubjects as subject, idx (subject.id)}
 			{@const active = selectedId === subject.id}
 			{@const progress = teachingPage.subjectProgress(subject)}

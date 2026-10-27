@@ -1,3 +1,4 @@
+@import './lib/design-system/shared-controls.css';
 @import './lib/design-system/tokens.css';
 
 @font-face {

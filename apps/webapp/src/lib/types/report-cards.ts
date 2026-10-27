@@ -26,44 +26,7 @@ export interface GradeScale {
 	isDefault?: boolean;
 }
 
-export type ReportCardPublishStatus = 'draft' | 'published';
-
-export type ReportCardSectionKind = 'matieres' | 'synthese' | 'appreciation';
-
-export type ReportCardSectionType = 'group' | 'subject';
-
-export interface ReportCardSection {
-	source?: components['schemas']['ReportCardDefinitionSection'];
-	id: string;
-	definitionId: string;
-	name: string;
-	sectionType: ReportCardSectionType;
-	/** Semantic role for group sections. */
-	kind?: ReportCardSectionKind;
-	order: number;
-	coefficient?: number;
-	/** Nested group or subject sections. */
-	children?: ReportCardSection[];
-	/** Catalog subject id for subject sections. */
-	subjectId?: string;
-	/** Human-readable subject name for subject sections. */
-	subjectLabel?: string;
-}
-
-export interface ReportCardDefinition {
-	isDefault?: boolean;
-	passThreshold?: number | null;
-	revision?: number;
-	description?: string | null;
-	id: string;
-	schoolId: string;
-	name: string;
-	academicYearId: string;
-	gradeLevelId: string;
-	gradeScaleId: string;
-	status: ReportCardPublishStatus;
-	sections: ReportCardSection[];
-}
+export type ReportModule = components['schemas']['ReportModule'];
 
 export type ReportCardResultStatus = 'draft' | 'generated' | 'published';
 
@@ -72,12 +35,18 @@ export interface ReportCardSubjectMark {
 	subjectId: string;
 	subjectName: string;
 	average?: number;
-	coefficient: number;
+	coefficient?: number;
+	effectiveWeight?: number;
 	appreciation?: string;
 	teacherName?: string;
 }
 
 export interface ReportCardSectionResult {
+	name: string;
+	sectionKind: 'module' | 'subject';
+	weight: number;
+	weightingMode?: 'subject_coefficients' | 'explicit';
+	explicitWeight?: number;
 	grading?: components['schemas']['ReportCardResult']['grading'];
 	sectionId: string;
 	sectionAverage?: number;
@@ -107,7 +76,8 @@ export interface ReportCardResult {
 	schoolId: string;
 	studentId: string;
 	classId: string;
-	definitionId: string;
+	gradeLevelId: string;
+	reportConfigurationRevision: number;
 	academicYearId: string;
 	academicPeriodId: string;
 	gradeScaleId: string;

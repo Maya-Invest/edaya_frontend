@@ -35,13 +35,6 @@
     "action": "Modal deep-link ?modal=reply"
   },
   {
-    "id": "web.messaging.4",
-    "feature": "web.messaging",
-    "module": "École",
-    "endpoint": "/school/messages",
-    "action": "Sidebar — lien messages.title accessible"
-  },
-  {
     "id": "web.scenario.0001",
     "feature": "web.app",
     "module": "Shell",
@@ -1163,24 +1156,24 @@
   },
   {
     "id": "web.scenario.0164",
-    "feature": "web.configuration.report.cards",
+    "feature": "web.configuration.subjects",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/structure/details",
-    "action": "Liste définitions bulletins"
+    "endpoint": "http://localhost:5173/configuration/structure/subjects",
+    "action": "Liste modules de résultats"
   },
   {
     "id": "web.scenario.0165",
-    "feature": "web.configuration.report.cards",
+    "feature": "web.configuration.subjects",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/structure/details",
-    "action": "Créer / supprimer / publier"
+    "endpoint": "http://localhost:5173/configuration/structure/subjects",
+    "action": "Créer / supprimer un module"
   },
   {
     "id": "web.scenario.0166",
-    "feature": "web.configuration.report.cards.id",
+    "feature": "web.configuration.subjects",
     "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/structure/details/report-cards/[id]",
-    "action": "Drawer définition"
+    "endpoint": "http://localhost:5173/configuration/structure/subjects",
+    "action": "Groupement des matières"
   },
   {
     "id": "web.scenario.0167",
@@ -2472,13 +2465,6 @@
     "action": "Modal deep-link ?modal=create"
   },
   {
-    "id": "web.scenario.0357",
-    "feature": "web.configuration.report.cards.id",
-    "module": "Configuration",
-    "endpoint": "http://localhost:5173/configuration/structure/details/report-cards/[id]?modal=delete",
-    "action": "Modal deep-link ?modal=delete"
-  },
-  {
     "id": "web.scenario.0358",
     "feature": "web.configuration.notifications",
     "module": "Configuration",
@@ -2526,13 +2512,6 @@
     "module": "Shell",
     "endpoint": "http://localhost:5173/dashboard?modal=account-profile",
     "action": "Modal deep-link ?modal=account-profile"
-  },
-  {
-    "id": "web.scenario.0365",
-    "feature": "web.school.corrections",
-    "module": "École",
-    "endpoint": "http://localhost:5173/school/corrections",
-    "action": "Sidebar — lien corrections.title accessible"
   },
   {
     "id": "web.scenario.0366",
@@ -2904,5 +2883,40 @@
     "module": "Classes",
     "endpoint": "http://localhost:5173/classes/[classId]/teaching/[id]/students",
     "action": "Navigation directe — contenu visible"
+  },
+  {
+    "id": "web.report.modules.module-create",
+    "feature": "web.configuration.subjects",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/structure/subjects?modal=module-create",
+    "action": "Modal deep-link ?modal=module-create"
+  },
+  {
+    "id": "web.report.modules.module-edit",
+    "feature": "web.configuration.subjects",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/structure/subjects?modal=module-edit",
+    "action": "Modal deep-link ?modal=module-edit"
+  },
+  {
+    "id": "web.report.modules.module-members",
+    "feature": "web.configuration.subjects",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/structure/subjects?modal=module-members",
+    "action": "Modal deep-link ?modal=module-members"
+  },
+  {
+    "id": "web.report.modules.module-delete",
+    "feature": "web.configuration.subjects",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/structure/subjects?modal=module-delete",
+    "action": "Modal deep-link ?modal=module-delete"
+  },
+  {
+    "id": "web.report.modules.report-settings",
+    "feature": "web.configuration.subjects",
+    "module": "Configuration",
+    "endpoint": "http://localhost:5173/configuration/structure/subjects?modal=report-settings",
+    "action": "Modal deep-link ?modal=report-settings"
   }
 ]

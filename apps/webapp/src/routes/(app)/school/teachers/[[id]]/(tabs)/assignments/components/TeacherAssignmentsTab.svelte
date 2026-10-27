@@ -93,7 +93,7 @@
 		</div>
 		<PermissionGate permission="STAFF_MANAGE" mode="disable">
 			{#snippet children({ disabled })}
-				<Button size="sm" class="rounded-full" {disabled} onclick={() => modals.open('form')}>
+				<Button size="sm" {disabled} onclick={() => modals.open('form')}>
 					<Plus class="mr-1.5 h-3.5 w-3.5" />
 					{$t('teacher.addAssignment')}
 				</Button>
@@ -108,7 +108,7 @@
 			{#if sectionRows.length === 0}
 				<p class="text-sm text-muted-foreground">{$t(`teacher.assignmentSectionEmpty.${kind}`)}</p>
 			{:else}
-				<ul class="divide-y divide-border/60 overflow-hidden rounded-xl border border-border bg-card">
+				<ul class="divide-y divide-border/60 overflow-hidden rounded-collection border border-border bg-card">
 					{#each sectionRows as row (row.id)}
 						<li class="flex items-start justify-between gap-3 px-4 py-3">
 							<div class="min-w-0 flex-1">
@@ -127,7 +127,7 @@
 							</div>
 							<PermissionGate permission="STAFF_MANAGE" mode="disable">
 								{#snippet children({ disabled })}
-									<RowActionMenu>
+									<RowActionMenu label={`${$t('list.rowActions')} · ${targetLabel(row)}`}>
 										<RowActionMenuItem
 											{disabled}
 											onclick={() => modals.open('form', { target: row.id })}

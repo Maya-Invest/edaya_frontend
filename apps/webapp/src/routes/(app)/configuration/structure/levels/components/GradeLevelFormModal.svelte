@@ -182,26 +182,25 @@
 	cancelLabel={$t('academic.cancel')}
 	busy={busy}
 	submitDisabled={!canSubmit}
-	contentClass="max-w-2xl"
 	onSubmit={submit}
 >
 	{#if partialSave}<p role="status" class="text-sm text-muted-foreground">{$t('grading.detailsSaved')}</p>{/if}
 	{#if confirm}
-		<p role="alert" class="rounded-xl border border-border bg-secondary p-4 text-sm">{$t('grading.warning')}</p>
+		<p role="alert" class="rounded-collection border border-border bg-secondary p-4 text-sm">{$t('grading.warning')}</p>
 		<Button variant="ghost" onclick={() => onConfirmStep(false)}>{$t('common.edit')}</Button>
 	{/if}
 	<div class:hidden={confirm} class="space-y-6">
 		<fieldset disabled={!canEditDetails || busy} class="grid gap-4 sm:grid-cols-2">
 			<label class="space-y-1.5 text-sm">
 				<span class="text-muted-foreground">{$t('gradeLevels.name')}</span>
-				<Input bind:value={name} oninput={onNameInput} class="rounded-xl" required />
+				<Input bind:value={name} oninput={onNameInput} required />
 			</label>
 			<label class="space-y-1.5 text-sm">
 				<span class="text-muted-foreground">{$t('gradeLevels.label')}</span>
 				<Input
 					bind:value={label}
 					oninput={() => (labelEdited = true)}
-					class="rounded-xl"
+					class="rounded-collection"
 					required
 				/>
 				<span class="block text-xs text-muted-foreground">{$t('gradeLevels.labelHint')}</span>
@@ -213,11 +212,11 @@
 			</label>
 			<label class="space-y-1.5 text-sm">
 				<span class="text-muted-foreground">{$t('gradeLevels.cycle')}</span>
-				<Input bind:value={cycle} placeholder="Middle School" class="rounded-xl" />
+				<Input bind:value={cycle} placeholder="Middle School" />
 			</label>
 			<label class="space-y-1.5 text-sm">
 				<span class="text-muted-foreground">{$t('gradeLevels.order')}</span>
-				<Input type="number" min="1" bind:value={order} class="rounded-xl" />
+				<Input type="number" min="1" bind:value={order} />
 			</label>
 		</fieldset>
 		{#if canEditGrading}

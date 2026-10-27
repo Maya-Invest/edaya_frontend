@@ -72,8 +72,8 @@
 			<ul class="space-y-2" data-testid="demo-account-list">
 				{#each accounts as account (account.staffId)}
 					<li>
-						<Button data-testid="demo-account" data-account-id={account.staffId} variant="outline" class="h-auto w-full gap-3 rounded-xl py-3 text-left" onclick={() => choose(account)}>
-							<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary font-display text-sm font-semibold text-primary-foreground" aria-hidden="true">{account.initials}</span>
+						<Button data-testid="demo-account" data-account-id={account.staffId} variant="outline" class="h-auto w-full gap-3 text-left" onclick={() => choose(account)}>
+							<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-collection bg-primary font-display text-sm font-semibold text-primary-foreground" aria-hidden="true">{account.initials}</span>
 							<span class="min-w-0 flex-1">
 								<span class="block truncate text-sm font-medium">{account.name}</span>
 								<span class="block text-xs text-muted-foreground">{$t(`staff.role.${account.role}`)}</span>

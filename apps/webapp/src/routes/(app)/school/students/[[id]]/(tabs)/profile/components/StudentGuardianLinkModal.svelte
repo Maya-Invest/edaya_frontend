@@ -52,7 +52,7 @@
 {#if showTrigger}
 	<Button
 		variant="ghost"
-		class="w-full rounded-full border border-dashed border-border"
+		class="w-full border border-dashed border-border"
 		{disabled}
 		{title}
 		onclick={() => (open = true)}

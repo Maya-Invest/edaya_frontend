@@ -1,7 +1,9 @@
+import type { components } from '$lib/api/schema';
 import type { Subject } from '$lib/types/school';
 import type { LogEntry } from '$lib/types/teaching-log';
 
 export interface SubjectsPageSlice {
+	configuration?: components['schemas']['ReportConfigurationResponse'];
 	subjects: Subject[];
 	logEntries: LogEntry[];
 }

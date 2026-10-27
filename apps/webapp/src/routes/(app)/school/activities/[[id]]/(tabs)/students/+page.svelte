@@ -190,7 +190,7 @@
 	<PageQuery {query} cacheKey={drawerTabRouteCacheKey} loadingTitle={$t('activities.enrolledStudents')}>
 		{#snippet children(data)}
 			<DataState status={data.status} errorMessage={data.errorMessage}>
-				<div class="rounded-2xl border border-border bg-card">
+				<div class="rounded-collection border border-border bg-card">
 					<div class="flex items-center justify-between border-b border-border px-4 py-2.5">
 						<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 							{$t('activities.enrolledStudents')}
@@ -200,7 +200,7 @@
 								<Button
 									size="sm"
 									variant="outline"
-									class="h-7 rounded-full text-xs"
+									class="text-xs"
 									disabled={disabled || busy || !canAddStudents}
 									title={!canAddStudents ? $t('activities.addStudentsRequiresLinkedClasses') : title}
 									onclick={() => modals.open('add-students')}
@@ -247,7 +247,7 @@
 													type="button"
 													variant="ghost"
 													size="icon"
-													class="h-8 w-8 text-muted-foreground hover:text-destructive"
+													class="w-8 text-muted-foreground hover:text-destructive"
 													disabled={disabled || busy}
 													title={$t('activities.removeEnrollment')}
 													onclick={() => modals.open('remove-enrollment', { target: enrollment.id })}

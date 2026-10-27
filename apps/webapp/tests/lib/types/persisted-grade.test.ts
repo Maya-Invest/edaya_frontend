@@ -26,6 +26,6 @@ it('summarizes missing values and missing grading independently for one notice',
 	expect(reportCardAvailability(report)).toEqual({ missingValues: false, missingGrading: false });
 	expect(reportCardAvailability({ ...report, classRank: undefined })).toEqual({ missingValues: true, missingGrading: false });
 	expect(reportCardAvailability({ ...report, grading: undefined })).toEqual({ missingValues: false, missingGrading: true });
-	const missing = { ...report, sectionResults: [{ sectionId: 'group', sectionAverage: 12, marks: [{ subjectId: 'math', subjectName: 'Math', coefficient: 1 }] }] };
+	const missing = { ...report, sectionResults: [{ sectionId: 'group', name: 'Module', sectionKind: 'module' as const, weight: 1, sectionAverage: 12, marks: [{ subjectId: 'math', subjectName: 'Math', coefficient: 1 }] }] };
 	expect(reportCardAvailability(missing)).toEqual({ missingValues: true, missingGrading: true });
 });

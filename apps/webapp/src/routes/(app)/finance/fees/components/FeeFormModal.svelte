@@ -213,9 +213,9 @@
 		<label class="block">{$t('profile.description')}<Textarea bind:value={description} /></label>
 		<label class="block">{$t('profile.singleDueDate')}<Input type="date" bind:value={singleDueDate} /></label>
 		<fieldset class="space-y-3"><legend>{$t('profile.installments')}</legend>
-			{#each installments as installment, index (index)}<div class="grid gap-2 rounded-lg border p-3 sm:grid-cols-3">
+			{#each installments as installment, index (index)}<div class="grid gap-2 rounded-collection border p-3 sm:grid-cols-3">
 				<label>{$t('profile.installmentLabel')}<Input bind:value={installment.label} /></label>
-				<label>{$t('profile.percentage')}<input type="number" min="0.01" max="100" step="any" bind:value={installment.percentage} class="h-10 w-full rounded-lg border bg-background px-3" /></label>
+				<label>{$t('profile.percentage')}<input type="number" min="0.01" max="100" step="any" bind:value={installment.percentage} class="ui-field h-10 w-full rounded-collection border bg-background px-3" /></label>
 				<label>{$t('profile.dueDate')}<Input type="date" value={installment.dueDate ?? ''} oninput={event => installment.dueDate = event.currentTarget.value || null} /></label>
 				<Button variant="ghost" onclick={() => installments = installments.filter((_, i) => i !== index)}>{$t('common.delete')}</Button>
 			</div>{/each}

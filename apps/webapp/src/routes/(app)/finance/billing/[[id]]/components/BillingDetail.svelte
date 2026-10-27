@@ -92,7 +92,7 @@
 		{/each}
 	</nav>
 	{#if tab === 'overview'}
-		<dl class="grid gap-4 rounded-2xl border border-border p-5 sm:grid-cols-2">
+		<dl class="grid gap-4 rounded-collection border border-border p-5 sm:grid-cols-2">
 			{#each [['finance.originalAmount', live.total], ['finance.adjustment', live.adjustmentAmount ?? 0], ['finance.waiver', live.waiverAmount ?? 0], ['finance.netBilled', live.netAmount ?? live.total], ['finance.applied', live.paid], ['finance.remaining', live.remaining]] as [label, amount] (label)}
 				<div><dt class="text-xs uppercase tracking-wider text-muted-foreground">{$t(String(label))}</dt><dd class="mt-1 font-sans text-xl font-semibold tabular-nums">{formatMinorUnits(Number(amount), live.currency, $locale)}</dd></div>
 			{/each}
@@ -101,7 +101,7 @@
 		{#if live.waivedAt}<DrawerField label={$t('finance.waiver')}><p>{live.waiverReason ?? $t('profile.notProvided')}</p><p class="text-xs text-muted-foreground">{live.waivedAt} · {live.waivedById}</p></DrawerField>{/if}
 		{#if live.status === 'cancelled'}<DrawerField label={$t('finance.event.cancelled')}><p>{live.cancellationReason ?? '—'}</p><p class="text-xs text-muted-foreground">{live.cancelledAt ? new Date(live.cancelledAt).toLocaleString($locale) : $t('finance.notRecorded')}</p></DrawerField>{/if}
 		{#if enrollment}
-			<details class="space-y-2 rounded-xl border p-3 text-sm"><summary>{$t('profile.acceptedTerms')}</summary>
+			<details class="space-y-2 rounded-collection border p-3 text-sm"><summary>{$t('profile.acceptedTerms')}</summary>
 				<p>{enrollment.acceptedTerms.name} · {formatMinorUnits(enrollment.acceptedTerms.price, enrollment.acceptedTerms.currency, $locale)}</p>
 				<p>{$t('profile.enrolledAt')}: {String(enrollment.enrolledAt)}</p>
 				{#if enrollment.acceptedTerms.billingTerms.singleDueDate}<p>{$t('common.endDate')}: {String(enrollment.acceptedTerms.billingTerms.singleDueDate).slice(0, 10)}</p>{/if}
@@ -112,7 +112,7 @@
 		<DrawerField label={$t('finance.installments')}>
 			<div class="space-y-2">
 				{#each live.installments as installment (installment.id)}
-					<article class="rounded-xl border border-border p-3">
+					<article class="rounded-collection border border-border p-3">
 						<div class="flex justify-between gap-3"><p class="text-sm font-medium">{installment.label}</p><span class="rounded-full bg-secondary px-2 py-1 text-xs">{$t(`installment.${installment.status}`)}</span></div>
 						<p class="mt-1 text-sm">{formatMinorUnits(installment.amount, live.currency, $locale)} · {installment.date || $t('finance.noDueDate')}</p>
 						<p class="mt-1 text-xs text-muted-foreground">{$t('finance.applied')}: {formatMinorUnits(installment.applied ?? 0, live.currency, $locale)}</p>

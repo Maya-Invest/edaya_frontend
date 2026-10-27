@@ -166,7 +166,7 @@
 				<FilterSelect
 					value={eventsPage.filters.values.class}
 					onchange={value => eventsPage.filters.patchImmediate({ class: value })}
-					class="h-9 w-[220px] rounded-lg text-sm"
+					class="h-9 w-[220px] rounded-collection text-sm"
 					options={classFilterOptions}
 				/>
 			{/if}
@@ -202,7 +202,7 @@
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
 						onclick={() => modals.open('create')}
@@ -236,7 +236,7 @@
 		onCreated={handleCreated}
 	/>
 
-	<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+	<div class="overflow-hidden rounded-collection border border-border bg-card shadow-soft">
 		<div
 			class="grid grid-cols-12 gap-4 border-b border-border bg-secondary/40 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
 		>
@@ -268,7 +268,7 @@
 						</div>
 						<div class="col-span-3 flex items-center gap-2">
 							<div
-								class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary font-display text-xs font-semibold text-primary-foreground"
+								class="flex h-8 w-8 items-center justify-center rounded-collection bg-primary font-display text-xs font-semibold text-primary-foreground"
 							>
 								{st?.initials ?? '?'}
 							</div>

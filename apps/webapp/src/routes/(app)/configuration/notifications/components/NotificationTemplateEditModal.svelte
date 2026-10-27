@@ -8,6 +8,7 @@
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import Textarea from '$lib/components/ui/textarea/textarea.svelte';
 	import { t } from '$lib/i18n';
 	import {
@@ -348,7 +349,7 @@
 					<span class="text-muted-foreground">{$t('notificationTemplates.subject')}</span>
 					<Input
 						bind:value={richSubject}
-						class="rounded-xl"
+
 						onfocus={(event) => {
 							focusedField = 'richSubject';
 							rememberTextField(event);
@@ -371,7 +372,7 @@
 					<span class="text-muted-foreground">{$t('notificationTemplates.titleLabel')}</span>
 					<Input
 						bind:value={baseTitle}
-						class="rounded-xl"
+
 						onfocus={(event) => {
 							focusedField = 'baseTitle';
 							rememberTextField(event);
@@ -383,7 +384,7 @@
 					<Textarea
 						bind:value={baseBody}
 						rows={6}
-						class="rounded-xl"
+
 						onfocus={(event) => {
 							focusedField = 'baseBody';
 							rememberTextField(event);
@@ -396,7 +397,7 @@
 					<Textarea
 						bind:value={simpleBody}
 						rows={4}
-						class="rounded-xl"
+
 						onfocus={(event) => {
 							focusedField = 'simpleBody';
 							rememberTextField(event);
@@ -405,20 +406,20 @@
 				</label>
 			{/if}
 
-			<div class="rounded-xl border border-border bg-secondary/40 p-4">
+			<div class="rounded-collection border border-border bg-secondary/40 p-4">
 				<div class="mb-2 flex items-center justify-between gap-2">
 					<p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">
 						{$t('notificationTemplates.preview')}
 					</p>
 					{#if previewChannels.length > 1}
-						<select
-							class="rounded-md border border-border bg-background px-2 py-1 text-xs"
+						<SelectField
+							class="border border-border bg-background text-xs"
 							bind:value={previewChannel}
 						>
 							{#each previewChannels as channel (channel)}
 								<option value={channel}>{$t(`notificationTemplates.channel.${channel}`)}</option>
 							{/each}
-						</select>
+						</SelectField>
 					{/if}
 				</div>
 				{#if previewSubject}
@@ -435,7 +436,7 @@
 				{/if}
 			</div>
 
-			<div class="rounded-xl border border-dashed border-border p-3">
+			<div class="rounded-collection border border-dashed border-border p-3">
 				<p class="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
 					{$t('notificationTemplates.variables')}
 				</p>

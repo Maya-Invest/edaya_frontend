@@ -10,7 +10,7 @@
 </script>
 
 {#if missingValues || missingGrading}
-	<div role="status" data-testid="report-card-availability-notice" class="rounded-xl border border-border bg-secondary/30 p-3 text-sm text-muted-foreground">
+	<div role="status" data-testid="report-card-availability-notice" class="rounded-collection border border-border bg-secondary/30 p-3 text-sm text-muted-foreground">
 		{#if missingValues}<p>{$t('reportCards.missingValuesNotice')}</p>{/if}
 		{#if missingGrading}<p>{$t('reportCards.missingGradingNotice')}</p>{/if}
 	</div>

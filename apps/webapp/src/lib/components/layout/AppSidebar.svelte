@@ -134,7 +134,7 @@
 					href={DASHBOARD_HREF}
 					title={$t('dashboard.nav')}
 					class={cn(
-						'group flex w-full items-center rounded-lg py-2 text-sm font-medium transition-colors',
+						'group flex w-full items-center rounded-collection py-2 text-sm font-medium transition-colors',
 						showExpanded ? 'gap-2.5 px-3' : 'justify-center px-2',
 						isDashboardPath($page.url.pathname)
 							? 'bg-primary/10 text-primary'
@@ -165,7 +165,7 @@
 							aria-expanded={open}
 							onclick={() => toggleModule(mod.key)}
 							class={cn(
-								'group flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+								'group flex w-full items-center gap-2.5 rounded-collection px-3 py-2 text-sm font-medium transition-colors',
 								moduleActive
 									? 'bg-primary/10 text-primary'
 									: 'text-foreground/80 hover:bg-secondary',
@@ -201,7 +201,7 @@
 										<a
 											href={it.href}
 											class={cn(
-												'group flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-sm transition-colors',
+												'group flex w-full items-center justify-between rounded-collection px-3 py-1.5 text-sm transition-colors',
 												active
 													? 'bg-primary text-primary-foreground'
 													: 'text-foreground/75 hover:bg-secondary',
@@ -249,7 +249,7 @@
 							href={moduleHref(mod.key)}
 							title={$t(mod.tKey)}
 							class={cn(
-								'group flex w-full items-center justify-center rounded-lg px-2 py-2 text-sm font-medium transition-colors',
+								'group flex w-full items-center justify-center rounded-collection px-2 py-2 text-sm font-medium transition-colors',
 								moduleActive
 									? 'bg-primary/10 text-primary'
 									: 'text-foreground/80 hover:bg-secondary',

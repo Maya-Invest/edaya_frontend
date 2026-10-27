@@ -86,7 +86,7 @@
 <div class="space-y-2" data-purpose={purpose}>
 	<div class="flex flex-wrap items-center gap-3">
 		<div
-			class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted"
+			class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-collection bg-muted"
 			aria-hidden={imageSource ? undefined : 'true'}
 		>
 			{#if imageSource}
@@ -126,7 +126,7 @@
 				<Button
 					size="sm"
 					variant="outline"
-					class="rounded-full"
+
 					disabled={busy}
 					onclick={() => (clearOpen = true)}
 				>

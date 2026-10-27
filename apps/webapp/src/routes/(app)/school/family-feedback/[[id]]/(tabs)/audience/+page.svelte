@@ -36,7 +36,7 @@
 </script>
 
 {#if live}
-	<div class="rounded-2xl border border-border bg-card p-4 space-y-2">
+	<div class="rounded-collection border border-border bg-card p-4 space-y-2">
 		<p class="font-sans tabular-nums text-[10px] uppercase tracking-wider text-muted-foreground">
 			{$t('familyFeedback.audience')}
 		</p>

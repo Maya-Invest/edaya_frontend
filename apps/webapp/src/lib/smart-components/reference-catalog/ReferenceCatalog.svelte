@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { provideCollectionPresentation } from '$lib/list/collection-presentation.svelte';
+
+	provideCollectionPresentation();
 	import type { ReferenceCatalogueKind } from './reference-catalog-state.svelte';
 	import { page } from '$app/stores';
 	import { authSession } from '$lib/auth/session.svelte';
@@ -71,7 +74,7 @@
 			</ListPageHeader>
 			<ListEntityTable listKey={kind} rows={rows} columns={[{ key: 'code', label: $t('common.code'), span: 2 }, { key: 'label', label: $t('people.name'), span: 5 }, { key: 'status', label: $t('common.status'), span: 2 }, { key: 'actions', label: '', span: 1 }]}>
 				{#snippet cell(row, column)}
-					{#if column.key === 'code'}<span class="font-medium">{row.code}</span>{:else if column.key === 'label'}{row.label}{:else if column.key === 'status'}{$t(row.isActive ? 'teacher.statusActive' : 'teacher.statusInactive')}{:else if canManage}<RowActionMenu><RowActionMenuItem onclick={() => modals.open('edit', { target: row.id })}>{$t('common.edit')}</RowActionMenuItem><RowActionMenuItem onclick={() => modals.open('delete', { target: row.id })}>{$t('common.delete')}</RowActionMenuItem></RowActionMenu>{/if}
+					{#if column.key === 'code'}<span class="font-medium">{row.code}</span>{:else if column.key === 'label'}{row.label}{:else if column.key === 'status'}{$t(row.isActive ? 'teacher.statusActive' : 'teacher.statusInactive')}{:else if canManage}<RowActionMenu label={`${$t('list.rowActions')} · ${row.label}`}><RowActionMenuItem onclick={() => modals.open('edit', { target: row.id })}>{$t('common.edit')}</RowActionMenuItem><RowActionMenuItem onclick={() => modals.open('delete', { target: row.id })}>{$t('common.delete')}</RowActionMenuItem></RowActionMenu>{/if}
 				{/snippet}
 			</ListEntityTable>
 		</DataState>{/snippet}

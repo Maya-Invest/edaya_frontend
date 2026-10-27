@@ -3,38 +3,24 @@ import type { getBrowserSchoolClient } from '$lib/api/school-client';
 import type { ClassSubjectsSources } from '$lib/api/subjects-data';
 import type {
 	GradeScale,
-	ReportCardDefinition,
-	ReportCardPublishStatus,
 	ReportCardResult,
 	ReportCardResultStatus,
-	ReportCardSection,
-	ReportCardSectionKind,
 	ReportCardSectionResult,
 	ReportCardSubjectMark,
 } from '$lib/types/report-cards';
 import {
 	listAllEntityPages,
-	listAllEntityPagesByIds,
-	listAllEntityPagesForIdFilters,
 	reportCardResultsForClassPeriod,
 	schoolScopedEntityList,
-	schoolSubjectsCatalogList,
-	uniqueIds,
 } from '$lib/api/entity-list-filters';
-import { safeOptionalEntityList } from '$lib/api/safe-entity-access';
 import { fetchClassSubjectsSources } from '$lib/api/subjects-data';
 import { teacherNameForClassSubject } from '$lib/api/teacher-display';
 import { lang } from '$lib/i18n';
-import { catalogBulletinSection, catalogSubjectName } from '$lib/i18n/catalog-label';
+import { catalogSubjectName } from '$lib/i18n/catalog-label';
 import { get } from 'svelte/store';
 
 type GradeScaleRaw = components['schemas']['GradeScale'];
-type ReportCardDefinitionRaw = components['schemas']['ReportCardDefinition'];
-type ReportCardDefinitionSectionRaw = components['schemas']['ReportCardDefinitionSection'];
 type ReportCardResultRaw = components['schemas']['ReportCardResult'];
-
-const REPORT_CARD_CATALOG_SCOPE
-	= 'Report-card definitions and grade scales are small configuration catalogs cached in the report-card domain store.';
 
 const GRADE_SCALES_CATALOG_SCOPE
 	= 'Grade-scale configuration lists only the current school catalog after create/update.';
@@ -111,121 +97,15 @@ export function mapGradeScales(scalesRaw: (Omit<GradeScaleRaw, 'revision' | 'rou
 	}));
 }
 
-const SECTION_ROLE_VALUES = new Set<ReportCardSectionKind>(['matieres', 'synthese', 'appreciation']);
-
-export function mapSectionRole(
-	section: Pick<ReportCardDefinitionSectionRaw, 'role' | 'name'>,
-	hasSubjectChildren: boolean,
-): ReportCardSectionKind {
-	if (section.role && SECTION_ROLE_VALUES.has(section.role as ReportCardSectionKind)) {
-		return section.role as ReportCardSectionKind;
-	}
-	if (hasSubjectChildren) {
-		return 'matieres';
-	}
-	const normalizedName = section.name.toLowerCase();
-	if (normalizedName.includes('appréciation')) {
-		return 'appreciation';
-	}
-	if (normalizedName.includes('synthèse') || normalizedName.includes('moyennes')) {
-		return 'synthese';
-	}
-	return 'matieres';
-}
-
-function isSubjectSection(section: Pick<ReportCardDefinitionSectionRaw, 'kind' | 'subjectId'>): boolean {
-	return section.kind === 'subject' || Boolean(section.subjectId);
-}
-
-function mapDefinitionSection(
-	section: ReportCardDefinitionSectionRaw,
-	definitionId: string,
-	allSections: ReportCardDefinitionSectionRaw[],
-	sources: Pick<ClassSubjectsSources, 'subjectsRaw'>,
-): ReportCardSection {
-	if (isSubjectSection(section)) {
-		const subjectId = section.subjectId ?? '';
-		const subjectLabel = subjectLabelForCatalogId(subjectId, sources);
-
-		return {
-			source: section,
-			id: section.id,
-			definitionId,
-			name: section.name,
-			sectionType: 'subject',
-			order: section.order,
-			coefficient: section.coefficient ?? section.weight,
-			subjectId,
-			subjectLabel,
-		};
-	}
-
-	const childSections = allSections
-		.filter(child => child.parentSectionId === section.id)
-		.sort((left, right) => left.order - right.order);
-	const children = childSections.map(child =>
-		mapDefinitionSection(child, definitionId, allSections, sources),
-	);
-	const hasSubjectChildren = childSections.some(isSubjectSection);
-	const kind = mapSectionRole(section, hasSubjectChildren);
-
-	return {
-		source: section,
-		id: section.id,
-		definitionId,
-		name: catalogBulletinSection(section.name, get(lang)),
-		sectionType: 'group',
-		kind,
-		order: section.order,
-		coefficient: section.coefficient ?? (kind === 'matieres' ? section.weight : undefined),
-		children: children.length > 0 ? children : undefined,
-	};
-}
-
-function mapDefinitionSections(
-	definitionId: string,
-	sectionsRaw: ReportCardDefinitionSectionRaw[],
-	sources: Pick<ClassSubjectsSources, 'subjectsRaw'>,
-): ReportCardSection[] {
-	const definitionSections = sectionsRaw.filter(section => section.reportCardDefinitionId === definitionId);
-
-	return definitionSections
-		.filter(section => !section.parentSectionId)
-		.sort((left, right) => left.order - right.order)
-		.map(section => mapDefinitionSection(section, definitionId, definitionSections, sources));
-}
-
-export function mapDefinitionStatus(
-	status?: string | null,
-): ReportCardPublishStatus {
-	return status === 'published' ? 'published' : 'draft';
-}
-
-export function mapReportCardDefinitions(
-	definitionsRaw: ReportCardDefinitionRaw[],
-	sectionsRaw: ReportCardDefinitionSectionRaw[],
-	sources: Pick<ClassSubjectsSources, 'subjectsRaw'>,
-): ReportCardDefinition[] {
-	return definitionsRaw.map(definition => ({
-		isDefault: definition.isDefault,
-		revision: definition.revision,
-		passThreshold: definition.passThreshold,
-		description: definition.description,
-		id: definition.id,
-		schoolId: definition.schoolId,
-		name: definition.name,
-		academicYearId: definition.academicYearId,
-		gradeLevelId: definition.gradeLevelId,
-		gradeScaleId: definition.gradeScaleId,
-		status: mapDefinitionStatus(definition.status),
-		sections: mapDefinitionSections(definition.id, sectionsRaw, sources),
-	}));
-}
-
 interface ApiSectionResult {
+	subjectId?: string;
+	moduleId?: string;
+	coefficient?: number;
+	weightingMode?: 'subject_coefficients' | 'explicit';
+	explicitWeight?: number;
 	grading?: ReportCardResultRaw['grading'];
 	sectionId?: string;
-	sectionKind?: string;
+	sectionKind?: 'module' | 'subject';
 	name?: string;
 	average?: number;
 	weight?: number;
@@ -264,7 +144,8 @@ export function mapSubjectMark(
 				: subjectLabelForCatalogId(catalogSubjectId ?? classSubjectId, sources),
 		average: subjectResult.average,
 		grading: subjectResult.grading,
-		coefficient: subjectResult.weight ?? 1,
+		coefficient: subjectResult.coefficient,
+		effectiveWeight: subjectResult.weight,
 		appreciation: subjectResult.comment ?? undefined,
 		teacherName: teacherNameForClassSubjectFromSources(classSubjectId, sources),
 	};
@@ -280,6 +161,11 @@ function mapSectionResults(
 ): ReportCardSectionResult[] {
 	return sections.map(section => ({
 		sectionId: section.sectionId ?? '',
+		name: section.name ?? '',
+		sectionKind: section.sectionKind ?? 'subject',
+		weight: section.weight ?? 0,
+		weightingMode: section.weightingMode,
+		explicitWeight: section.explicitWeight,
 		sectionAverage: section.average,
 		grading: section.grading,
 		marks: flattenSections([section])
@@ -290,32 +176,25 @@ function mapSectionResults(
 
 export function mapReportCardResults(
 	resultsRaw: (ReportCardResultRaw | NonNullable<ReportCardResultRaw['revisedDraft']>)[],
-	definitions: readonly Pick<
-		ReportCardDefinition,
-		'id' | 'schoolId' | 'academicYearId' | 'gradeScaleId'
-	>[],
 	sources: ClassSubjectsSources,
 ): ReportCardResult[] {
-	const definitionById = new Map(definitions.map(definition => [definition.id, definition]));
-
 	return resultsRaw.map((result) => {
-		const definition = definitionById.get(result.reportCardDefinitionId);
-
 		return {
 			id: result.id,
-			schoolId: definition?.schoolId ?? '',
+			schoolId: '',
 			studentId: result.studentId,
 			classId: result.classGroupId,
-			definitionId: result.reportCardDefinitionId,
-			academicYearId: definition?.academicYearId ?? '2025',
+			gradeLevelId: result.gradeLevelId,
+			reportConfigurationRevision: result.reportConfigurationRevision,
+			academicYearId: result.academicYearId,
 			academicPeriodId: result.periodId,
 			passThreshold: result.passThreshold,
-			gradeScaleId: result.grading?.scaleId ?? definition?.gradeScaleId ?? 'gs-20',
+			gradeScaleId: result.grading?.scaleId ?? '',
 			status: mapResultStatus(result.status),
 			grading: result.grading,
 			aggregateLabel: result.aggregateLabel,
 			gradingPolicyRevision: result.gradingPolicyRevision,
-			revisedDraft: 'revisedDraft' in result && result.revisedDraft ? mapReportCardResults([result.revisedDraft], definitions, sources)[0] : undefined,
+			revisedDraft: 'revisedDraft' in result && result.revisedDraft ? mapReportCardResults([result.revisedDraft], sources)[0] : undefined,
 			overallAverage: result.overallAverage ?? undefined,
 			classRank: result.rank ?? undefined,
 			classSize: result.classSize ?? undefined,
@@ -356,48 +235,10 @@ export async function loadGradeScalesCatalogData(
 	return mapGradeScales(gradeScalesRaw);
 }
 
-export async function loadReportCardCatalogData(
-	client: SchoolClient,
-	schoolId: string,
-): Promise<{
-	gradeScales: GradeScale[];
-	subjects: { id: string; name: string }[];
-	definitions: ReportCardDefinition[];
-}> {
-	if (!schoolId) {
-		return { gradeScales: [], definitions: [], subjects: [] };
-	}
-	const catalogQuery = schoolScopedEntityList(schoolId, REPORT_CARD_CATALOG_SCOPE);
-	const [gradeScales, definitionsRaw, subjectsRaw] = await Promise.all([
-		loadGradeScalesCatalogData(client, schoolId),
-		listAllEntityPages(query => client.entities.definitions.list(query), { baseQuery: catalogQuery }),
-		safeOptionalEntityList(() => listAllEntityPages(
-			query => client.entities.subjects.list(query),
-			{ baseQuery: schoolSubjectsCatalogList(schoolId) },
-		)),
-	]);
-	const definitionIds = uniqueIds(definitionsRaw.map(definition => definition.id));
-	const sectionsRaw = await listAllEntityPagesForIdFilters(
-		query => client.entities.sections.list(query),
-		[{ field: 'reportCardDefinitionId', ids: definitionIds }],
-	);
-
-	return {
-		gradeScales,
-		subjects: (subjectsRaw ?? []).map(subject => ({ id: subject.id, name: catalogSubjectName(subject.name, get(lang), subject.code) })),
-		definitions: mapReportCardDefinitions(
-			definitionsRaw,
-			sectionsRaw,
-			{ subjectsRaw: subjectsRaw ?? [] },
-		),
-	};
-}
-
 export async function loadClassReportCardResultsData(
 	client: SchoolClient,
 	classGroupId: string,
 	periodId: string,
-	definitions: readonly ReportCardDefinition[],
 ): Promise<ReportCardResult[]> {
 	const [resultsRaw, subjectsSources] = await Promise.all([
 		listAllEntityPages(
@@ -406,24 +247,5 @@ export async function loadClassReportCardResultsData(
 		),
 		fetchClassSubjectsSources(client, classGroupId),
 	]);
-	const referencedDefinitionIds = uniqueIds(
-		resultsRaw.map(result => result.reportCardDefinitionId),
-	);
-	const missingDefinitionIds = referencedDefinitionIds.filter(
-		id => !definitions.some(definition => definition.id === id),
-	);
-	const missingDefinitionsRaw = await safeOptionalEntityList(() =>
-		listAllEntityPagesByIds(query => client.entities.definitions.list(query), missingDefinitionIds),
-	);
-	const definitionReferences = [
-		...definitions,
-		...(missingDefinitionsRaw ?? []).map(definition => ({
-			id: definition.id,
-			schoolId: definition.schoolId,
-			academicYearId: definition.academicYearId,
-			gradeScaleId: definition.gradeScaleId,
-		})),
-	];
-
-	return mapReportCardResults(resultsRaw ?? [], definitionReferences, subjectsSources);
+	return mapReportCardResults(resultsRaw ?? [], subjectsSources);
 }

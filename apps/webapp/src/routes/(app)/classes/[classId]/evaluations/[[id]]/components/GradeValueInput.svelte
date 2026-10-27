@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { GradeDraft, GradeEntryPolicy } from '../../lib/grading-task';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import { t } from '$lib/i18n';
 	import { gradeValues } from '../../lib/grading-task';
 
@@ -26,12 +27,12 @@
 	<label class="block min-w-0 text-sm" class:space-y-2={!compact}>
 		<span class:sr-only={compact}>{label ?? (review.gradingPolicy?.mode === 'mention-first' ? $t('grading.mention') : `${$t('marks.scored')} · ${$t('eval.maxScore')} ${review.assessment.maxScore}`)}</span>
 		{#if review.gradingPolicy?.mode === 'mention-first'}
-			<select class={control} bind:value={draft.mentionId} {disabled} {required} data-grade-input>
+			<SelectField class={control} bind:value={draft.mentionId} {disabled} {required} data-grade-input>
 				<option value="">{$t('grading.mention')}</option>
 				{#each review.gradingPolicy.scale.ranges.filter(row => row.id) as mention (mention.id)}<option value={mention.id}>{mention.letter}{mention.interpretation ? ` · ${mention.interpretation}` : ''}</option>{/each}
-			</select>
+			</SelectField>
 		{:else}
-			<input class={`${control} tabular-nums`} bind:this={scoreInput} type="text" inputmode="decimal" bind:value={draft.score} {disabled} {required} pattern="(?:[0-9]+(?:[.,][0-9]*)?|[.,][0-9]+)" data-grade-input
+			<input class={`ui-field ${control} tabular-nums`} bind:this={scoreInput} type="text" inputmode="decimal" bind:value={draft.score} {disabled} {required} pattern="(?:[0-9]+(?:[.,][0-9]*)?|[.,][0-9]+)" data-grade-input
 				onfocus={(event) => {
 					if (onAdvance)
 						event.currentTarget.select();

@@ -152,6 +152,8 @@ export function mapCatalogSubjects(sources: CatalogSubjectsSources): Subject[] {
 		isOptional: subject.isOptional,
 		shortName: subject.shortName ?? null,
 		coefficient: subject.coefficient ?? null,
+		reportModuleId: subject.reportModuleId,
+		reportOrder: subject.reportOrder,
 		periodsPerWeek: subject.periodsPerWeek ?? null,
 		minPeriodSpan: subject.minPeriodSpan ?? null,
 		maxPeriodSpan: subject.maxPeriodSpan ?? null,

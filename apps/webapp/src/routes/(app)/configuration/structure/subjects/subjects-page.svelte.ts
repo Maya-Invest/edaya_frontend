@@ -17,7 +17,7 @@ import {
 import { loadSubjectsSlice, querySubjectsListPage } from './lib/subjects-queries';
 import { runSubjectsRouteMutation } from './lib/subjects-route-mutation';
 
-const SUBJECTS_VERSION_FAMILIES = ['subjects', 'planning', 'teachers', 'staff'] as const satisfies readonly EntityVersionKey[];
+const SUBJECTS_VERSION_FAMILIES = ['subjects', 'planning', 'teachers', 'staff', 'reportCards'] as const satisfies readonly EntityVersionKey[];
 
 const SUBJECTS_PAGE_STATE_KEY = Symbol('subjects-page-state');
 
@@ -44,6 +44,16 @@ export class SubjectsPageState {
   performRemoveSubjectFromGradeLevel = (...args: Parameters<typeof removeSubjectMutation>) => removeSubjectMutation(...args);
 
   performCreateSubjectForGradeLevel = (...args: Parameters<typeof createSubjectForGradeLevelMutation>) => createSubjectForGradeLevelMutation(...args);
+
+  async configureModules(input: Parameters<ReturnType<typeof getBrowserSchoolClient>['commands']['configureReportModules']>[0]) {
+    const result = await runSubjectsRouteMutation({ request: () => getBrowserSchoolClient().commands.configureReportModules(input), versionKeys: ['subjects', 'reportCards'], onSuccess: () => this.refreshSlice() });
+    return result !== null;
+  }
+
+  async configureSettings(input: Parameters<ReturnType<typeof getBrowserSchoolClient>['commands']['configureReportSettings']>[0]) {
+    const result = await runSubjectsRouteMutation({ request: () => getBrowserSchoolClient().commands.configureReportSettings(input), versionKeys: ['reportCards'], onSuccess: () => this.refreshSlice() });
+    return result !== null;
+  }
 
   slice = $state<SubjectsPageSlice | null>(null);
 

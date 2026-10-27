@@ -75,6 +75,8 @@ export interface Subject {
 	code?: string | null;
 	shortName?: string | null;
 	coefficient?: number | null;
+	reportModuleId?: string | null;
+	reportOrder?: number;
 	isOffered?: boolean;
 	participationRevision?: number;
 	completedPercentage?: number | null;
@@ -194,7 +196,10 @@ export interface Evaluation {
 }
 
 export interface Guardian {
-	contactMethods?: components['schemas']['Guardian']['contactMethods'];
+	alternativePhone?: string | null;
+	emailNotificationsEnabled?: boolean;
+	smsNotificationsEnabled?: boolean;
+	pushNotificationsEnabled?: boolean;
 	hasAccess?: boolean;
 	links?: components['schemas']['GuardianStudentLink'][];
 	firstName?: string | null;

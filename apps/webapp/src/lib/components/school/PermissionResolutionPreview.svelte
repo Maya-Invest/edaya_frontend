@@ -12,7 +12,7 @@
 		return () => preview.cancel();
 	});
 </script>
-<div class="space-y-3 rounded-xl border border-border bg-secondary/30 p-4" aria-live="polite">
+<div class="space-y-3 rounded-collection border border-border bg-secondary/30 p-4" aria-live="polite">
 	<p class="text-sm font-medium">{$t('staff.scopeImpact', {
 		added: report.changes.filter(row => row.change === 'added').length,
 		changed: report.changes.filter(row => row.change === 'changed').length,

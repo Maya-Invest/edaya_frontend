@@ -9,6 +9,6 @@
 	} = $props();
 </script>
 <fieldset class="space-y-3"><legend>{$t('profile.attachments')}</legend>
-	{#each attachments as attachment, index (index)}<div class="grid gap-2 rounded-lg border p-3 sm:grid-cols-2"><label>{$t('profile.attachmentName')}<Input bind:value={attachment.name} /></label><label>{$t('profile.attachmentSize')}<Input bind:value={attachment.size} /></label><Button type="button" variant="ghost" onclick={() => attachments = attachments.filter((_, i) => i !== index)}>{$t('common.delete')}</Button></div>{/each}
+	{#each attachments as attachment, index (index)}<div class="grid gap-2 rounded-collection border p-3 sm:grid-cols-2"><label>{$t('profile.attachmentName')}<Input bind:value={attachment.name} /></label><label>{$t('profile.attachmentSize')}<Input bind:value={attachment.size} /></label><Button type="button" variant="ghost" onclick={() => attachments = attachments.filter((_, i) => i !== index)}>{$t('common.delete')}</Button></div>{/each}
 	<Button type="button" variant="outline" onclick={() => attachments = [...attachments, { name: '', size: '' }]}>{$t('common.add')}</Button>
 </fieldset>

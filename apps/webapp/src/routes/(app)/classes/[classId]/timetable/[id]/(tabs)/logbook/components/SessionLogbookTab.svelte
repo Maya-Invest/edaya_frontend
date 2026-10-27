@@ -62,7 +62,7 @@
 						<Button
 							variant="outline"
 							size="sm"
-							class="h-7 rounded-full text-xs"
+							class="text-xs"
 							{disabled}
 							{title}
 							data-testid="session-logbook-edit"
@@ -75,7 +75,7 @@
 			{/if}
 		</div>
 		{#if detail.logbook}
-			<article class="rounded-2xl border border-border bg-card p-4 shadow-soft">
+			<article class="rounded-collection border border-border bg-card p-4 shadow-soft">
 				<div class="flex items-start justify-between gap-2">
 					<h4 class="font-display text-sm font-semibold">{detail.logbook.chapter}</h4>
 					{#if isLesson}
@@ -107,7 +107,7 @@
 						<Button
 							variant="outline"
 							size="sm"
-							class="rounded-full"
+
 							{disabled}
 							{title}
 							data-testid="session-logbook-edit"

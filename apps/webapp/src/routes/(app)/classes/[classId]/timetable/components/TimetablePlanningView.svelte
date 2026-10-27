@@ -139,7 +139,7 @@
 						<Button
 							size="sm"
 							variant="outline"
-							class="rounded-full"
+
 							{disabled}
 							{title}
 							onclick={() => planning.openScheduleCreate()}
@@ -170,7 +170,7 @@
 			<Button
 				variant="ghost"
 				size="icon"
-				class="h-8 w-8 rounded-full"
+				class="w-8"
 				onclick={() => planning.goToPreviousWeek()}
 				aria-label={$t('planning.prevWeek')}
 			>
@@ -186,14 +186,14 @@
 					type="date"
 					value={planning.weekPickerValue}
 					onchange={handleWeekPickerChange}
-					class="h-8 w-[10.5rem] rounded-full px-3 text-xs"
+					class="w-[10.5rem] text-xs"
 					aria-label={$t('planning.goToWeek')}
 				/>
 			</div>
 			<Button
 				variant="ghost"
 				size="icon"
-				class="h-8 w-8 rounded-full"
+				class="w-8"
 				onclick={() => planning.goToNextWeek()}
 				aria-label={$t('planning.nextWeek')}
 			>
@@ -204,7 +204,7 @@
 			<Button
 				variant="outline"
 				size="sm"
-				class="rounded-full"
+
 				onclick={() => planning.goToThisWeek()}
 			>
 				{$t('planning.thisWeek')}
@@ -214,7 +214,7 @@
 
 	{#if planningOverlaps.length > 0}
 		<div
-			class="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-foreground"
+			class="mb-4 rounded-collection border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-foreground"
 			role="status"
 		>
 			<p class="font-medium">{$t('planning.overlapWarning', { count: planningOverlaps.length })}</p>

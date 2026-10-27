@@ -7,6 +7,7 @@
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import { t } from '$lib/i18n';
 	import { PermissionImpactPreviewState } from '$lib/school/permission-impact-preview-state.svelte';
 	import PermissionScopeSelections from '$lib/smart-components/scope-builder/PermissionScopeSelections.svelte';
@@ -70,10 +71,10 @@
 	submitLabel={reviewed ? $t('common.save') : $t('staff.reviewScopeChanges')} {busy} submitDisabled={!canSubmit} onSubmit={submit}>
 	<div class="space-y-8">
 		<div class="space-y-2"><Label for="apply-profile-select" class="font-display text-base font-bold text-foreground">{$t('staff.selectProfile')}</Label>
-			<select id="apply-profile-select" value={profileId} onchange={event => selectProfile(event.currentTarget.value)} class="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm">
+			<SelectField id="apply-profile-select" value={profileId} onchange={event => selectProfile(event.currentTarget.value)} class="h-10 w-full rounded-collection border border-border bg-background px-3 text-sm">
 				<option value="">{$t('staff.selectProfile')}</option>
 				{#each staffPage.staffPermissionProfiles as profile (profile.id)}<option value={profile.id}>{profile.name}</option>{/each}
-			</select>
+			</SelectField>
 		</div>
 		{#if selected && grains.length}
 			<div class="space-y-3">

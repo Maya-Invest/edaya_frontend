@@ -6,7 +6,7 @@ import { describe, expect, test } from 'bun:test';
 
 const periods: AcademicPeriod[] = ['s1', 's2', 'annual'].map(id => ({ id, schoolId: 'school', academicYearId: 'year', label: id, range: id, startDate: id === 's2' ? '2026-04-01' : '2026-01-01', endDate: id === 's1' ? '2026-03-31' : '2026-06-30', status: 'published' }));
 function report(periodId: string, patch: Partial<AnnualReportResult> = {}): AnnualReportResult {
-	return { id: `report-${periodId}`, version: 1, sourceMarks: [], sourceAssessments: [], pendingCorrectionIds: [], pendingAssessmentIds: [], calculationStale: false, studentId: 'student', periodId, classGroupId: 'class', reportCardDefinitionId: 'definition', status: 'published', generatedAt: '2026-06-30', publishedAt: '2026-06-30', sectionResults: [], attendanceSummary: { presentCount: 0, absenceCount: 0, excusedAbsenceCount: 0, lateCount: 0, total: 0, attendanceRate: 0 }, assessmentResultCount: 0, ...patch };
+	return { id: `report-${periodId}`, version: 1, sourceMarks: [], sourceAssessments: [], pendingCorrectionIds: [], pendingAssessmentIds: [], calculationStale: false, studentId: 'student', periodId, classGroupId: 'class', gradeLevelId: 'grade', academicYearId: 'year', reportConfigurationRevision: 1, status: 'published', generatedAt: '2026-06-30', publishedAt: '2026-06-30', sectionResults: [], attendanceSummary: { presentCount: 0, absenceCount: 0, excusedAbsenceCount: 0, lateCount: 0, total: 0, attendanceRate: 0 }, assessmentResultCount: 0, ...patch };
 }
 
 describe('annual report-card sources', () => {

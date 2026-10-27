@@ -42,7 +42,7 @@
 </script>
 
 {#if selection.selectionMode}
-	<ListSelectionBar selectedCount={selection.selectedIds.length} {onExport} onClear={() => selection.exitSelectionMode()}>
+	<ListSelectionBar selectedCount={selection.selectedIds.length} {onExport} onClear={() => selection.clearSelection()} onExit={() => selection.exitSelectionMode()}>
 		{#snippet actions()}
 			{#if visible}
 				<Popover.Popover bind:open={menuOpen}>

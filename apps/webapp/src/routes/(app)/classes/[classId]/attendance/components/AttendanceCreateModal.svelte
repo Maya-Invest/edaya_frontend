@@ -82,7 +82,7 @@
 	{#if !attendancePage.canCreate}
 		<DataState status={attendancePage.rosterStatus === 'unavailable' ? 'unavailable' : 'denied'} />
 	{:else if existing && !attendancePage.creating}
-		<div class="space-y-2 rounded-xl border border-border p-3">
+		<div class="space-y-2 rounded-collection border border-border p-3">
 			<p role="status" class="text-sm">{$t('attendanceDay.alreadyExists')}</p>
 			<Button variant="outline" onclick={() => { openExisting(existing); }}>{$t('attendanceDay.openExisting')}</Button>
 		</div>

@@ -53,7 +53,6 @@
 			resultId: latest.id,
 			studentId: latest.studentId,
 			periodId: latest.academicPeriodId,
-			definitionId: latest.definitionId,
 		});
 		if (ok) {
 			toast.success(get(t)('reportCards.toastPublished', { name: s.name }));
@@ -88,7 +87,7 @@
 		</DrawerEmptyState>
 		<p class="text-center text-xs text-muted-foreground">{$t('reportCards.emptyStudentHint')}</p>
 		<div class="flex justify-center">
-			<Button class="rounded-full" disabled={!academicContext.periodId} onclick={generate}>
+			<Button disabled={!academicContext.periodId} onclick={generate}>
 				<FileSpreadsheet class="h-4 w-4" />
 				{$t('reportCards.generate')}
 			</Button>
@@ -119,13 +118,13 @@
 		<ReportCardAvailabilityNotice results={[latest]} />
 
 		<div class="grid grid-cols-2 gap-3">
-			<div class="rounded-xl border border-border bg-secondary/30 p-4 text-center">
+			<div class="rounded-collection border border-border bg-secondary/30 p-4 text-center">
 				<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">{$t('reportCards.overall')}</p>
 				<p class="font-display text-3xl font-semibold">
 					{formatPersistedGrade(latest.grading, latest.overallAverage)}
 				</p>
 			</div>
-			<div class="rounded-xl border border-border bg-secondary/30 p-4 text-center">
+			<div class="rounded-collection border border-border bg-secondary/30 p-4 text-center">
 				<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">{$t('reportCards.rank')}</p>
 				<p class="font-display text-3xl font-semibold">{formatReportRank(latest)}</p>
 			</div>
@@ -144,10 +143,11 @@
 					</p>
 					<ul class="space-y-2">
 						{#each section.marks as mark (mark.subjectId)}
-							<li class="rounded-lg border border-border/60 px-3 py-2 text-sm">
+							<li class="rounded-collection border border-border/60 px-3 py-2 text-sm">
 								<div class="flex items-start justify-between gap-2">
 									<div>
 										<p class="font-medium">{mark.subjectName}</p>
+										{#if mark.coefficient != null}<p class="text-xs text-muted-foreground">{$t('reportCards.coefficient')}: {mark.coefficient}</p>{/if}
 										{#if mark.teacherName}
 											<p class="text-xs text-muted-foreground">{mark.teacherName}</p>
 										{/if}
@@ -167,18 +167,18 @@
 		{/each}
 
 		<ReportSectionComments onWriteReportSectionComments={reportCardTab.performWriteReportSectionComments} result={latest} onSaved={() => reportCardTab.refreshResults(s.id)} />
-		<div class="rounded-xl border border-border p-3 space-y-2">
+		<div class="rounded-collection border border-border p-3 space-y-2">
 			<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">
 				{$t('reportCards.homeroomComment')}
 			</p>
 			<Textarea bind:value={commentDraft} rows={3} readonly={latest.status === 'published'} />
-			<Button size="sm" class="rounded-full" disabled={commentBusy || latest.status === 'published'} onclick={() => void saveHomeroomComment()}>
+			<Button size="sm" disabled={commentBusy || latest.status === 'published'} onclick={() => void saveHomeroomComment()}>
 				{$t('reportCards.saveHomeroomComment')}
 			</Button>
 		</div>
 
 		{#if latest.principalComment}
-			<div class="rounded-xl border border-border p-3">
+			<div class="rounded-collection border border-border p-3">
 				<p class="font-sans tabular-nums text-[10px] uppercase text-muted-foreground">
 					{$t('reportCards.principalComment')}
 				</p>
@@ -197,7 +197,7 @@
 				/>
 			{/if}
 			{#if latest.status === 'generated'}
-				<Button class="rounded-full" disabled={Boolean(latest.pendingAssessmentIds?.length)} onclick={publish}>{$t('reportCards.publish')}</Button>
+				<Button disabled={Boolean(latest.pendingAssessmentIds?.length)} onclick={publish}>{$t('reportCards.publish')}</Button>
 			{/if}
 		</div>
 	{/if}

@@ -10,6 +10,7 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import { t } from '$lib/i18n';
 	import { bindUrlModal, createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
 	import { hasAnyPermission } from '$lib/permissions';
@@ -79,7 +80,7 @@
 	}
 </script>
 {#if canRead && academicContext.yearId}
-	<section class="space-y-3 rounded-2xl border border-border p-4">
+	<section class="space-y-3 rounded-collection border border-border p-4">
 		<div class="flex flex-wrap items-center justify-between gap-2"><h3 class="text-sm font-semibold">{$t('profile.yearInformation')} · {yearLabel}</h3>{#if canManage}<div class="flex gap-2"><Button variant="outline" size="sm" onclick={() => modals.open('edit-annual-profile')}>{$t('common.edit')}</Button>{#if profileState.student || profileState.teacher}<Button variant="ghost" size="sm" onclick={() => modals.open('remove-annual-profile')}>{$t('common.delete')}</Button>{/if}</div>{/if}</div>
 		<PageQuery cache={false} query={profileState.query} cacheKey={() => profileState.identity()} loadingTitle={$t('profile.yearInformation')}>
 			{#snippet children(data)}<DataState status={data.status} errorMessage={data.errorMessage} preserveShell>
@@ -96,12 +97,12 @@
 	<FormModal bind:open={edit.open} title={`${$t('profile.yearInformation')} · ${name} · ${yearLabel}`} submitLabel={$t('common.save')} busy={profileState.busy} submitDisabled={!canManage || stale || profileState.loadedIdentity !== profileState.identity() || (kind === 'teacher' && ((hours !== '' && (!Number.isFinite(Number(hours)) || Number(hours) < 0)) || (hoursPeriod === 'other' && !periodLabel.trim())))} onSubmit={save}>
 		{#if stale}<p role="alert">{$t('profile.contextChanged')}</p>{/if}
 		{#if kind === 'student'}
-			<Label class="block space-y-2"><span>{$t('profile.placementStatuses')}</span><select class="h-10 w-full rounded-xl border border-border bg-card px-3" bind:value={placementStatusId}><option value="">{$t('profile.notProvided')}</option>{#each profileState.options.filter(option => option.isActive || option.id === profileState.student?.placementStatusId) as option (option.id)}<option value={option.id}>{option.code} · {option.label}{option.isActive ? '' : ` (${$t('teacher.statusInactive')})`}</option>{/each}</select></Label>
-			<Label class="block space-y-2"><span>{$t('profile.repeating')}</span><select class="h-10 w-full rounded-xl border border-border bg-card px-3" bind:value={repeating}><option value="unknown">{$t('profile.notProvided')}</option><option value="true">{$t('common.yes')}</option><option value="false">{$t('common.no')}</option></select></Label>
+			<Label class="block space-y-2"><span>{$t('profile.placementStatuses')}</span><SelectField class="w-full border border-border bg-card" bind:value={placementStatusId}><option value="">{$t('profile.notProvided')}</option>{#each profileState.options.filter(option => option.isActive || option.id === profileState.student?.placementStatusId) as option (option.id)}<option value={option.id}>{option.code} · {option.label}{option.isActive ? '' : ` (${$t('teacher.statusInactive')})`}</option>{/each}</SelectField></Label>
+			<Label class="block space-y-2"><span>{$t('profile.repeating')}</span><SelectField class="w-full border border-border bg-card" bind:value={repeating}><option value="unknown">{$t('profile.notProvided')}</option><option value="true">{$t('common.yes')}</option><option value="false">{$t('common.no')}</option></SelectField></Label>
 		{:else}
 			<fieldset class="space-y-2"><legend class="mb-2 text-sm font-medium">{$t('profile.academicDisciplines')}</legend>{#each profileState.options.filter(option => option.isActive || profileState.teacher?.disciplineIds.includes(option.id)) as option (option.id)}<Label class="flex items-center gap-2"><Checkbox checked={disciplineIds.includes(option.id)} onCheckedChange={checked => disciplineIds = checked ? [...disciplineIds, option.id] : disciplineIds.filter(id => id !== option.id)} />{option.code} · {option.label}</Label>{/each}</fieldset>
 			<Label class="block space-y-2"><span>{$t('profile.declaredHours')}</span><Input type="number" min="0" step="any" bind:value={hours} /></Label>
-			<Label class="block space-y-2"><span>{$t('profile.hoursPeriod')}</span><select class="h-10 w-full rounded-xl border border-border bg-card px-3" bind:value={hoursPeriod}>{#each periodOptions as option (option)}<option value={option}>{$t(`profile.period.${option}`)}</option>{/each}</select></Label>
+			<Label class="block space-y-2"><span>{$t('profile.hoursPeriod')}</span><SelectField class="w-full border border-border bg-card" bind:value={hoursPeriod}>{#each periodOptions as option (option)}<option value={option}>{$t(`profile.period.${option}`)}</option>{/each}</SelectField></Label>
 			{#if hoursPeriod === 'other'}<Label class="block space-y-2"><span>{$t('profile.periodLabel')}</span><Input bind:value={periodLabel} /></Label>{/if}
 		{/if}
 	</FormModal>

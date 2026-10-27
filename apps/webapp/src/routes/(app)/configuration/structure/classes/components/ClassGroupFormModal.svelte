@@ -5,6 +5,7 @@
 	import { suggestNextClassName } from '$lib/academic/next-class-name';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import { t } from '$lib/i18n';
 	import StaffPicker from '$lib/smart-components/staff-picker/StaffPicker.svelte';
 	import { get } from 'svelte/store';
@@ -145,36 +146,36 @@
 			<Input
 				bind:value={name}
 				oninput={() => (nameEdited = true)}
-				class="rounded-xl"
+				class="rounded-collection"
 				required
 			/>
 		</label>
 		<label class="space-y-1.5 text-sm">
 			<span class="text-muted-foreground">{$t('classGroups.gradeLevel')}</span>
-			<select
+			<SelectField
 				value={gradeLevelId}
 				onchange={onGradeLevelChange}
 				disabled={isEdit || Boolean(defaultGradeLevelId)}
-				class="control-focus flex h-10 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+				class="control-focus flex w-full border border-input bg-background text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
 			>
 				{#each sortedLevels as level (level.id)}
 					<option value={level.id}>{level.name} · {level.cycle}</option>
 				{/each}
-			</select>
+			</SelectField>
 		</label>
 		<label class="space-y-1.5 text-sm">
 			<span class="text-muted-foreground">{$t('classGroups.capacity')}</span>
-			<Input type="number" min="1" bind:value={capacity} class="rounded-xl" />
+			<Input type="number" min="1" bind:value={capacity} />
 		</label>
 		<label class="space-y-1.5 text-sm sm:col-span-2">
 			<span class="text-muted-foreground">{$t('classGroups.attendanceMode')}</span>
-			<select
+			<SelectField
 				bind:value={attendanceMode}
-				class="control-focus flex h-10 w-full rounded-xl border border-input bg-background px-3 text-sm shadow-sm"
+				class="control-focus flex w-full border border-input bg-background text-sm shadow-sm"
 			>
 				<option value="session">{$t('classGroups.attendanceMode.session')}</option>
 				<option value="daily">{$t('classGroups.attendanceMode.daily')}</option>
-			</select>
+			</SelectField>
 		</label>
 		<div class="space-y-1.5 text-sm sm:col-span-2">
 			<span class="text-muted-foreground">{$t('classGroups.staffCoordinator')}</span>

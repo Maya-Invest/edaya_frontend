@@ -20,7 +20,7 @@
 </script>
 <div class="space-y-3">
 	{#each grains as grain (grain)}
-		<details data-scope-grain={grain} class="rounded-xl border border-border p-3" open={expanded[grain] ?? forGrain(grain).length > 0}
+		<details data-scope-grain={grain} class="rounded-collection border border-border p-3" open={expanded[grain] ?? forGrain(grain).length > 0}
 			ontoggle={event => expanded = { ...expanded, [grain]: event.currentTarget.open }}>
 			<summary class="cursor-pointer text-sm font-medium">{$t(`scope.grain.${grain}`)}</summary>
 			<div class="mt-3"><ScopeBuilder {grain} {subjectClassRequired} active={active && (expanded[grain] ?? forGrain(grain).length > 0)} bind:scopes={() => forGrain(grain), next => setGrain(grain, next)} /></div>

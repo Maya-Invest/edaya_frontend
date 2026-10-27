@@ -293,7 +293,7 @@
 	<div
 		bind:this={calendarContainer}
 		class={cn(
-			'edaya-timetable-calendar overflow-hidden rounded-2xl border border-border bg-card shadow-soft',
+			'edaya-timetable-calendar overflow-hidden rounded-collection border border-border bg-card shadow-soft',
 			expandCalendar ? 'min-h-[520px]' : 'h-[min(780px,calc(100vh-13rem))] min-h-[520px]',
 		)}
 		style:height={expandCalendar && expandedLayoutHeight ? `${expandedLayoutHeight}px` : undefined}
@@ -329,7 +329,7 @@
 {:else}
 	<div
 		class={cn(
-			'flex items-center justify-center rounded-2xl border border-border bg-card/50',
+			'flex items-center justify-center rounded-collection border border-border bg-card/50',
 			expandCalendar ? 'min-h-[520px]' : 'h-[min(780px,calc(100vh-13rem))] min-h-[520px]',
 		)}
 		style:height={expandCalendar && expandedLayoutHeight ? `${expandedLayoutHeight}px` : undefined}

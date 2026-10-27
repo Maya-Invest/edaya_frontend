@@ -10,6 +10,7 @@
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import * as Select from '$lib/components/ui/select';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
 	import { t } from '$lib/i18n';
 	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
@@ -158,17 +159,17 @@
 		<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 			{$t('staff.permissionProfileOptional')}
 		</Label>
-		<select
+		<SelectField
 			disabled={formData.loading || !formData.data}
 			bind:value={permissionProfileId}
 			onchange={() => customScopes = []}
-			class="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
+			class="h-10 w-full rounded-collection border border-border bg-background px-3 text-sm"
 		>
 			<option value="">{$t('staff.noPermissionProfile')}</option>
 			{#each permissionProfiles as profile (profile.id)}
 				<option value={profile.id}>{profile.name}</option>
 			{/each}
-		</select>
+		</SelectField>
 	</div>
 	{#if formData.loading}<p role="status" class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>{/if}
 	{#if formData.error}
@@ -198,7 +199,7 @@
 		<Label>{$t('common.phone')}</Label>
 		<Input type="tel" bind:value={phone} autocomplete="tel" aria-label={$t('common.phone')} />
 	</div>
-	<div class="flex items-start gap-3 rounded-xl border border-border bg-secondary/30 px-3 py-2.5">
+	<div class="flex items-start gap-3 rounded-collection border border-border bg-secondary/30 px-3 py-2.5">
 		<Checkbox bind:checked={sendAccountInvitation} id="staff-send-invite" />
 		<div class="space-y-1">
 			<Label for="staff-send-invite" class="text-sm font-medium">

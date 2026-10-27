@@ -7,6 +7,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import { locale, t } from '$lib/i18n';
 	import { GraduationCap } from '$lib/icons';
 	import { createUrlSyncedModals } from '$lib/modal/modal-state.svelte';
@@ -76,7 +77,7 @@
 				</DrawerEmptyState>
 			{:else}
 				{#each enrollments as enrollment (enrollment.id)}
-					<div class="rounded-xl border border-border bg-card p-3">
+					<div class="rounded-collection border border-border bg-card p-3">
 						<div class="flex items-start justify-between gap-3">
 							<div>
 								<p class="text-sm font-semibold">{enrollment.className}</p>
@@ -144,9 +145,9 @@
 	if (!value)
 		modals.close();
 }} title={$t('profile.progression')} submitLabel={$t('common.save')} {busy} submitDisabled={!effectiveAt || (action === 'promote' && !nextClassGroupId)} onSubmit={save}>
-	<label>{$t('profile.action')}<select bind:value={action} class="h-10 w-full rounded-lg border bg-background px-3">{#each selected?.status === 'active' ? ['complete', 'withdraw', 'graduate', 'promote'] : ['decision'] as value (value)}<option {value}>{$t(`profile.enrollmentAction.${value}`)}</option>{/each}</select></label>
-	{#if action === 'decision'}<label>{$t('profile.progressionDecision')}<select bind:value={decision} class="h-10 w-full rounded-lg border bg-background px-3">{#each ['promoted', 'retained', 'graduated'] as value (value)}<option {value}>{$t(`profile.progression.${value}`)}</option>{/each}</select></label>{/if}
-	{#if action === 'promote'}<label>{$t('student.class')}<select bind:value={nextClassGroupId} class="h-10 w-full rounded-lg border bg-background px-3"><option value="">{$t('profile.notConfigured')}</option>{#each enrollmentsTab.progressionClasses.filter(row => row.academicYearId !== selected?.academicYearId) as row (row)}<option value={row.id}>{row.name} · {row.academicYearId}</option>{/each}</select></label>{/if}
-	<label>{$t('profile.effectiveAt')}<input type="date" bind:value={effectiveAt} class="h-10 w-full rounded-lg border bg-background px-3" /></label>
-	<label>{$t('profile.notes')}<textarea bind:value={notes} class="min-h-24 w-full rounded-lg border bg-background p-3"></textarea></label>
+	<label>{$t('profile.action')}<SelectField bind:value={action} class="w-full border bg-background">{#each selected?.status === 'active' ? ['complete', 'withdraw', 'graduate', 'promote'] : ['decision'] as value (value)}<option {value}>{$t(`profile.enrollmentAction.${value}`)}</option>{/each}</SelectField></label>
+	{#if action === 'decision'}<label>{$t('profile.progressionDecision')}<SelectField bind:value={decision} class="w-full border bg-background">{#each ['promoted', 'retained', 'graduated'] as value (value)}<option {value}>{$t(`profile.progression.${value}`)}</option>{/each}</SelectField></label>{/if}
+	{#if action === 'promote'}<label>{$t('student.class')}<SelectField bind:value={nextClassGroupId} class="w-full border bg-background"><option value="">{$t('profile.notConfigured')}</option>{#each enrollmentsTab.progressionClasses.filter(row => row.academicYearId !== selected?.academicYearId) as row (row)}<option value={row.id}>{row.name} · {row.academicYearId}</option>{/each}</SelectField></label>{/if}
+	<label>{$t('profile.effectiveAt')}<input type="date" bind:value={effectiveAt} class="ui-field h-10 w-full rounded-collection border bg-background px-3" /></label>
+	<label>{$t('profile.notes')}<textarea bind:value={notes} class="min-h-24 w-full rounded-collection border bg-background p-3"></textarea></label>
 </FormModal>

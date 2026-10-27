@@ -94,7 +94,7 @@
 	}
 </script>
 
-<Button variant="outline" size="sm" class="gap-2 rounded-full" onclick={() => (open = true)}>
+<Button variant="outline" size="sm" class="gap-2" onclick={() => (open = true)}>
 	<Users class="h-3.5 w-3.5" />
 	{$t('student.changeClass')}
 </Button>
@@ -132,7 +132,7 @@
 		</Select.Root>
 		{#if previewError}<p role="alert" class="text-sm text-destructive">{previewError}</p>{/if}
 		{#if previewReady && unsupported.length}
-			<div class="space-y-2 rounded-lg border p-3">
+			<div class="space-y-2 rounded-collection border p-3">
 				<p>{$t('participation.unsupported')}</p>
 				{#each unsupported as subject (subject.subjectId)}<p class="text-sm">{subject.name}</p>{/each}
 				<label class="flex gap-2"><input type="checkbox" bind:checked={acknowledged} />{$t('participation.acknowledge')}</label>

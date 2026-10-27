@@ -19,7 +19,7 @@ export async function updateSubjectMutation(input: UpdateSubjectInput & { succes
 	const result = await runMutation(() => updateSubject(client, {
 		...input,
 		name: toCanonicalCatalogText(input.name),
-	}), { successMessage: input.successMessage, versionKeys: ['subjects', 'planning'] });
+	}), { successMessage: input.successMessage, versionKeys: ['subjects', 'planning', 'reportCards'] });
 	return result !== null;
 }
 
@@ -29,6 +29,8 @@ export async function createSubjectForClassMutation(input: {
 	disciplineId?: string | null;
 	code?: string | null;
 	coefficient?: number | null;
+	reportModuleId?: string | null;
+	expectedReportConfigurationRevision?: number;
 	shortName?: string | null;
 	isOptional?: boolean;
 
@@ -64,7 +66,7 @@ export async function createSubjectForClassMutation(input: {
 			createdAt,
 		});
 		return classSubjectId;
-	}, { successMessage: input.successMessage, versionKeys: ['subjects', 'planning'] });
+	}, { successMessage: input.successMessage, versionKeys: ['subjects', 'planning', 'reportCards'] });
 	return result ? classSubjectId : null;
 }
 
@@ -76,6 +78,8 @@ export async function createSubjectForGradeLevelMutation(input: {
 	disciplineId?: string | null;
 	code?: string | null;
 	coefficient?: number | null;
+	reportModuleId?: string | null;
+	expectedReportConfigurationRevision?: number;
 	shortName?: string | null;
 	isOptional?: boolean;
 
@@ -111,6 +115,8 @@ export async function createSubjectForGradeLevelMutation(input: {
 			subjectId,
 			classSubjectIdsByClassGroupId,
 			name: toCanonicalCatalogText(input.name),
+			reportModuleId: input.reportModuleId,
+			expectedReportConfigurationRevision: input.expectedReportConfigurationRevision,
 			disciplineId: input.disciplineId,
 			code: input.code ?? undefined,
 			coefficient: input.coefficient ?? undefined,
@@ -123,7 +129,7 @@ export async function createSubjectForGradeLevelMutation(input: {
 		return subjectId;
 	}, {
 		successMessage: input.successMessage,
-		versionKeys: ['subjects'],
+		versionKeys: ['subjects', 'reportCards'],
 	});
 	return result;
 }

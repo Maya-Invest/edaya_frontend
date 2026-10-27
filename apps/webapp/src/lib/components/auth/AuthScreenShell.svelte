@@ -28,7 +28,7 @@
 				{/if}
 			</div>
 
-			<section class="rounded-2xl border border-border bg-card p-5 shadow-soft">
+			<section class="rounded-collection border border-border bg-card p-5 shadow-soft">
 				{@render children()}
 			</section>
 

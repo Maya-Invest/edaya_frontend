@@ -202,7 +202,7 @@ describe('people data loading', () => {
 			firstName: 'Grace',
 			lastName: 'Hopper',
 			email: 'grace@school.edu',
-			contactMethods: [],
+			emailNotificationsEnabled: true, smsNotificationsEnabled: true, pushNotificationsEnabled: true,
 		};
 		const link = {
 			id: 'link-1',

@@ -50,7 +50,7 @@
 	}
 </script>
 
-<div class={cn('flex items-center gap-2 p-4 text-left', active && 'border-l-2 border-primary bg-primary/5', selectionMode && selected && 'bg-primary/5', cardClass)}>
+<div data-open-record={active} data-bulk-selected={selectionMode && selected} class={cn('ui-collection-row relative flex items-center gap-2 p-4 text-left', cardClass)}>
 	{#if selectionMode}
 		<div class="flex min-h-11 min-w-11 items-center justify-center">
 			<Checkbox checked={selected} onCheckedChange={checked => onToggleSelected?.(checked === true)} aria-label={$t('list.selectRow')} />
@@ -59,6 +59,7 @@
 	<!-- Only navigable records receive the button role and tab stop. -->
 	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 	<div
+		aria-current={active && onClick ? 'true' : undefined}
 		role={onClick ? 'button' : 'presentation'}
 		tabindex={onClick ? 0 : undefined}
 		onclick={(event) => {
@@ -67,7 +68,7 @@
 			onClick?.();
 		}}
 		onkeydown={handleKeydown}
-		class={cn('control-focus flex min-w-0 flex-1 items-center gap-4 rounded-lg', onClick && 'cursor-pointer hover:bg-secondary')}
+		class={cn('control-focus flex min-w-0 flex-1 items-center gap-4 min-h-11', onClick && 'cursor-pointer')}
 	>
 		<div class="flex min-w-0 flex-1 flex-wrap items-center gap-4">
 			{#if showHeader && header}<div class="min-w-0 text-sm font-semibold">{@render header(ctx)}</div>{/if}

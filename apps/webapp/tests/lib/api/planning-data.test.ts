@@ -114,7 +114,7 @@ describe('mapPlanningEvents', () => {
 				schoolId: 'school-1',
 				gradeLevelId: 'grade-6',
 				academicYearId: 'year-1',
-				isOptional: false,
+				isOptional: false, reportOrder: 0,
 				name: 'Mathematics',
 				categoryId: 'school-1:subject-category:scientifique',
 				color: 'mint',

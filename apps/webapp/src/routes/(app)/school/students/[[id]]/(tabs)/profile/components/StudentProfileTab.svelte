@@ -9,6 +9,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import PermissionGate from '$lib/components/ui/PermissionGate.svelte';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import { formatLocaleDate } from '$lib/date/format';
 	import { locale, t } from '$lib/i18n';
 	import { FileText, Mail, Phone, Users, Plus } from '$lib/icons';
@@ -65,13 +66,13 @@
 <div class="space-y-4">
 	<StudentPortraitReviewCard {s} />
 	<div class="grid grid-cols-3 gap-3">
-		<div class="rounded-xl bg-primary/10 p-3">
+		<div class="rounded-collection bg-primary/10 p-3">
 			<p class="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
 				{$t('student.bloodType')}
 			</p>
 			<p class="mt-1 font-display text-xl">{health?.bloodType ?? '—'}</p>
 		</div>
-		<div class="rounded-xl bg-secondary/60 p-3">
+		<div class="rounded-collection bg-secondary/60 p-3">
 			<p class="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
 				{$t('student.allergies')}
 			</p>
@@ -85,7 +86,7 @@
 				<p class="mt-1 text-xs text-muted-foreground">{$t('common.none')}</p>
 			{/if}
 		</div>
-		<div class="rounded-xl bg-secondary/60 p-3">
+		<div class="rounded-collection bg-secondary/60 p-3">
 			<p class="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
 				{$t('student.conditions')}
 			</p>
@@ -101,7 +102,7 @@
 		</div>
 	</div>
 	{#if health?.medications?.length || health?.lastVisit || health?.notes || health?.emergencyProtocols}
-		<div class="grid gap-2 rounded-xl bg-secondary/40 p-3 text-xs sm:grid-cols-2">
+		<div class="grid gap-2 rounded-collection bg-secondary/40 p-3 text-xs sm:grid-cols-2">
 			{#if health?.medications?.length}
 				<div>
 					<span class="text-muted-foreground">{$t('student.medications')} :</span> {health.medications.join(', ')}
@@ -128,7 +129,7 @@
 			<Button
 				size="sm"
 				variant="outline"
-				class="rounded-full"
+
 				{disabled}
 				{title}
 				onclick={() => modals?.open('edit-health')}
@@ -170,11 +171,11 @@
 			</div>
 		</DrawerField>
 	</div>
-	<div class="rounded-xl bg-secondary/40 px-3 py-2 text-xs space-y-2">
+	<div class="rounded-collection bg-secondary/40 px-3 py-2 text-xs space-y-2">
 		<div class="flex flex-wrap items-center gap-2">
 			<span class="text-muted-foreground">{$t('students.status')} :</span>
-			<select
-				class="rounded-md border border-input bg-background px-2 py-1 text-xs"
+			<SelectField
+				class="border border-input bg-background text-xs"
 				value={s.status}
 				disabled={statusBusy || !hasPermission('STUDENT_MANAGE', { classId: s.classId, studentId: s.id })}
 				onchange={event => void updateStatus((event.currentTarget as HTMLSelectElement).value as Student['status'])}
@@ -183,7 +184,7 @@
 				<option value="inactive">{$t('studentStatus.inactive')}</option>
 				<option value="archived">{$t('studentStatus.archived')}</option>
 				<option value="graduated" disabled>{$t('studentStatus.graduated')}</option>
-			</select>
+			</SelectField>
 			{#if statusBusy}
 				<span class="text-muted-foreground">…</span>
 			{/if}
@@ -213,7 +214,7 @@
 					<Button
 						variant="outline"
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
 						onclick={() => modals?.open('link-guardian')}
@@ -231,7 +232,7 @@
 				{/snippet}
 			</DrawerEmptyState>
 		{:else}
-			<div class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+			<div class="overflow-hidden rounded-collection border border-border bg-card shadow-soft">
 				<div
 					class="grid grid-cols-12 gap-4 border-b border-border bg-secondary/40 px-5 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
 				>
@@ -247,7 +248,7 @@
 							<div class="grid w-full grid-cols-12 items-center gap-4 px-5 py-3.5">
 								<div class="col-span-5 flex items-center gap-3">
 									<div
-										class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary font-display text-xs font-semibold text-primary-foreground"
+										class="flex h-9 w-9 items-center justify-center rounded-collection bg-primary font-display text-xs font-semibold text-primary-foreground"
 									>
 										{guardian.initials}
 									</div>
@@ -302,7 +303,7 @@
 					<Button
 						variant="outline"
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
 						onclick={() => modals?.open('note')}
@@ -320,7 +321,7 @@
 				{/snippet}
 			</DrawerEmptyState>
 		{:else}
-			<ul class="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+			<ul class="overflow-hidden rounded-collection border border-border bg-card shadow-soft">
 				{#each studentNotes as note (note.id)}
 					{@const author = staff.find(member => member.id === note.authorId)}
 					<li class="border-b border-border px-4 py-3 last:border-b-0">
@@ -343,7 +344,7 @@
 									{#snippet children({ disabled, title })}
 										<Button
 											variant="ghost"
-											class="h-7 rounded-full px-2 text-[11px]"
+											class="text-[11px]"
 											{disabled}
 											{title}
 											onclick={() => modals?.open('edit-note', { target: note.id })}

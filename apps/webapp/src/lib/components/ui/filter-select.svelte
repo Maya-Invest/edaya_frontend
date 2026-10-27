@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ChevronDown } from '$lib/icons';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import { cn } from '$lib/utils';
 
 	export type FilterSelectOption = { value: string; label: string };
@@ -28,7 +28,7 @@
 </script>
 
 <div class={cn('relative inline-flex min-h-11 items-center rounded-full', className)}>
-	<select
+	<SelectField
 		{id}
 		{value}
 		class={selectClass}
@@ -50,15 +50,5 @@
 				{/each}
 			</optgroup>
 		{/each}
-	</select>
-	<ChevronDown
-		class="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 opacity-50"
-		aria-hidden="true"
-	/>
+	</SelectField>
 </div>
-
-<style>
-	select {
-		border-radius: inherit;
-	}
-</style>

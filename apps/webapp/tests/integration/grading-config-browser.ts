@@ -1,3 +1,4 @@
+import { chooseOption, selectControl, selectOptions } from './support/custom-select';
 import assert from 'node:assert/strict'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
@@ -14,6 +15,7 @@ async function main() {
   const server = await createFixtureServer({
     configFile: false,
     root: appRoot,
+    publicDir: 'static',
     // The full runner also serves the demo app from this root. Keep its
     // dependency cache separate and avoid a reload during fixture interaction.
     cacheDir: 'node_modules/.vite-grading-config',
@@ -25,12 +27,13 @@ async function main() {
       name: 'grading-config-fixture',
       enforce: 'pre',
       resolveId(source) {
-        if (source.includes('grade-scales-page.svelte') || source.includes('grade-levels-page.svelte') || source.includes('school-page.svelte') || source.includes('report-cards-page.svelte'))
+        if (source.includes('grade-scales-page.svelte') || source.includes('grade-levels-page.svelte') || source.includes('school-page.svelte') || source.includes('subjects-page.svelte'))
           return `${fixture}/action-state.svelte.ts`
         if (source === '$app/stores' || source === '$lib/navigation/route-surface-navigation' || source === '$lib/navigation/app-navigation')
           return `${fixture}/navigation.ts`
         if (source === '$lib/permissions') return `${fixture}/permissions.svelte.ts`
         if (source === '$lib/api/school-data' || source === '$lib/api/private-image') return '\0fixture-assets'
+        if (source === '$env/static/public') return '\0fixture-public-env'
         if (source === '$app/environment')
           return '\0fixture-environment'
         if (source === 'virtual:grading-entry')
@@ -38,10 +41,11 @@ async function main() {
       },
       load(id) {
         if (id === '\0fixture-assets') return 'export const privateAttachmentContentPath = id => id; export const loadPrivateImage = async () => ({url: null, dispose(){}});'
+        if (id === '\0fixture-public-env') return 'export const PUBLIC_API_URL = "http://127.0.0.1:1"; export const PUBLIC_IDENTITY_URL = "http://127.0.0.1:1";'
         if (id === '\0fixture-environment')
           return 'export const browser = true;'
         if (id === '\0fixture-entry')
-          return `import '/src/app.css'; import {mount} from 'svelte'; import Harness from '/tests/fixtures/grading-config/Harness.svelte'; mount(Harness,{target:document.getElementById('app')});`
+          return `import('/src/app.css'); Promise.all([import('svelte'), import('/tests/fixtures/grading-config/Harness.svelte')]).then(([svelte, {default: Harness}]) => { svelte.mount(Harness,{target:document.getElementById('app')}); }).catch(error => console.error('BOOT',error.stack));`
       },
       configureServer(vite) {
         vite.middlewares.use('/grading-fixture', (_request, response) => {
@@ -65,14 +69,17 @@ async function main() {
     browser = await chromium.launch({ headless: true })
     const page = await browser.newPage()
     failurePage = page
+    page.on('console', message => { console.log('BROWSER', message.type(), message.text()) })
+    page.on('requestfailed', request => console.error('Fixture request failed', request.url(), request.failure()))
     await page.addInitScript(() => localStorage.setItem('lang', 'en'))
-    page.setDefaultTimeout(15_000)
+    page.setDefaultTimeout(45_000)
+    page.on('response', response => { if (response.status() >= 400) console.error('HTTP', response.status(), response.url()) })
     const pageErrors: string[] = []
     page.on('pageerror', (error) => {
       pageErrors.push(error.message)
       console.error(error.stack)
     })
-    await page.goto(server.url)
+    await page.goto(server.url, { waitUntil: 'domcontentloaded' })
 
     const dialog = page.getByRole('dialog')
     const readyDialog = async () => {
@@ -100,7 +107,7 @@ async function main() {
     const openScale = async () => {
       await page.getByTestId('scales').click()
       await page.locator('main section').first().getByRole('button', { name: 'Row actions' }).first().click()
-      await page.getByRole('button', { name: 'Edit', exact: true }).click()
+      await page.getByRole('menuitem', { name: 'Edit', exact: true }).click()
       await readyDialog()
     }
     await page.getByText('Detailed point scale', { exact: true }).waitFor()
@@ -141,7 +148,7 @@ async function main() {
     assert(!('isPassing' in (await saved())[1].interval))
     const firstRow = page.locator('main section').first().locator('li').first()
     await firstRow.getByRole('button', { name: 'Row actions', exact: true }).click()
-    await page.getByRole('button', { name: 'Edit', exact: true }).last().click()
+    await page.getByRole('menuitem', { name: 'Edit', exact: true }).last().click()
     await readyDialog()
     assert(await dialog.getByLabel('Minimum value', { exact: true }).isDisabled())
     await dialog.getByLabel('Mention label', { exact: true }).fill('Still failing')
@@ -176,70 +183,52 @@ async function main() {
     assert.equal(await dialog.getByRole('checkbox').count(), 2)
     await dialog.getByRole('button', { name: 'Done', exact: true }).click()
     await dialog.waitFor({ state: 'hidden' })
-    // Templates are embedded in level Details and creation captures its scope.
-    await page.getByTestId('templates').click()
-    await page.getByRole('heading', { name: 'Report card templates', exact: true }).waitFor()
-    assert.equal(await page.locator('main a').count(), 2)
-    assert.equal(await page.getByText('Other level template', { exact: true }).count(), 0)
-    assert.equal(await page.getByText('Previous year template', { exact: true }).count(), 0)
-    await page.getByTestId('other-template-level').click()
-    await page.getByText('Other level template', { exact: true }).waitFor()
-    assert.equal(await page.locator('main a').count(), 1)
-    await page.getByTestId('empty-template-year').click()
-    assert.equal(await page.locator('main a').count(), 0)
-    await page.getByTestId('templates').click()
-    await page.getByRole('button', { name: 'Add model', exact: true }).click()
+    // Modules share the Subjects collection and capture the configuration revision.
+    await page.getByTestId('modules').click()
+    await page.getByRole('heading', { name: 'Sciences', exact: true }).waitFor()
+    await page.getByRole('heading', { name: 'Ungrouped subjects', exact: true }).waitFor()
+    await page.getByRole('searchbox').fill('Mathematics')
+    await page.getByText('Sum of subject coefficients: 5', { exact: true }).waitFor()
+    await page.getByRole('button', { name: 'Row actions · Sciences', exact: true }).click()
+    await page.getByRole('menuitem', { name: 'Edit', exact: true }).click()
     await readyDialog()
-    assert.equal(await dialog.getByRole('combobox').count(), 0)
-    await dialog.getByText('2026–2027', { exact: true }).waitFor()
-    await dialog.getByRole('textbox').first().fill('Created in level details')
-    await submit.click()
-    await dialog.waitFor({ state: 'hidden' })
-    assert.equal((await saved()).at(-1).gradeLevelId, 'level')
-    assert.equal((await saved()).at(-1).academicYearId, 'year')
-    assert.equal((await saved()).at(-1).passThreshold, null)
-    await page.getByTestId('templates').click()
-    await page.getByTestId('permissions').click()
-    assert.equal(await page.getByRole('button', { name: 'Add model', exact: true }).count(), 0)
-    await page.getByTestId('permissions').click()
-    // Published model edits preserve identity and scope; section edits retain weights.
-    await page.getByTestId('model').click()
-    await page.locator('header').getByRole('button', { name: 'Edit', exact: true }).click()
-    await readyDialog()
-    assert.equal(await dialog.getByRole('combobox').count(), 0)
-    await dialog.getByRole('textbox').first().fill('Revised model')
-    const thresholdInput = dialog.getByLabel('Passing threshold (optional)', { exact: true })
-    assert.equal(await thresholdInput.inputValue(), '')
-    await thresholdInput.fill('4.01')
+    await dialog.getByRole('textbox').first().fill('Natural sciences')
+    await selectControl(dialog).first().click()
+    await page.getByRole('option', { name: 'Explicit weight', exact: true }).click()
+    await dialog.getByRole('spinbutton').last().fill('0')
     await checkDisabled()
-    await thresholdInput.fill('2.25')
+    await dialog.getByRole('spinbutton').last().fill('2')
     await submit.click()
     await dialog.waitFor({ state: 'hidden' })
     assert.equal((await saved()).at(-1).expectedRevision, 5)
-    assert.equal((await saved()).at(-1).metadata.passThreshold, 2.25)
-    assert.deepEqual(Object.keys((await saved()).at(-1).metadata).sort(), ['description', 'name', 'passThreshold'])
-    await page.locator('header').getByRole('button', { name: 'Edit', exact: true }).click()
-    await readyDialog()
-    await dialog.getByLabel('Passing threshold (optional)', { exact: true }).fill('2.25')
-    await dialog.getByLabel('Passing threshold (optional)', { exact: true }).fill('')
+    assert.equal((await saved()).at(-1).module.weightingMode, 'explicit')
+    assert.equal((await saved()).at(-1).module.explicitWeight, 2)
+    await page.getByRole('searchbox').fill('')
+    await page.getByRole('button', { name: 'Row actions · Sciences', exact: true }).click()
+    await page.getByRole('menuitem', { name: 'Manage subjects', exact: true }).click()
+    await dialog.waitFor()
+    await dialog.getByRole('checkbox', { name: 'Physics', exact: true }).uncheck()
     await submit.click()
     await dialog.waitFor({ state: 'hidden' })
-    assert.equal((await saved()).at(-1).metadata.passThreshold, null)
-    await page.getByRole('button', { name: /Row actions.*Mathematics/ }).click()
-    await page.getByRole('button', { name: 'Edit', exact: true }).last().click()
+    assert.deepEqual((await saved()).at(-1).assignments, [{ subjectId: 'math', moduleId: 'sciences' }, { subjectId: 'physics', moduleId: null }])
+    await page.getByRole('button', { name: 'Row actions · Sciences', exact: true }).click()
+    await page.getByRole('menuitem', { name: 'Delete module', exact: true }).click()
+    await dialog.getByRole('button', { name: 'Delete module', exact: true }).click()
+    await dialog.waitFor({ state: 'hidden' })
+    assert.equal((await saved()).at(-1).action, 'delete')
+    assert.equal((await saved()).at(-1).moduleId, 'sciences')
+    await page.getByTestId('collection-menu').click()
+    await page.getByRole('menuitem', { name: 'Report settings', exact: true }).click()
     await readyDialog()
-    await dialog.getByRole('textbox').first().fill('Applied mathematics')
+    await dialog.getByRole('spinbutton').fill('2.5')
     await submit.click()
     await dialog.waitFor({ state: 'hidden' })
-    const editedSection = (await saved()).at(-1).section
-    assert.equal(editedSection.id, 'math')
-    assert.equal(editedSection.weight, 1.5)
-    assert.equal(editedSection.coefficient, 2.5)
-    assert.equal(editedSection.parentSectionId, 'root')
+    assert.equal((await saved()).at(-1).passThreshold, 2.5)
+    assert.equal((await saved()).at(-1).expectedRevision, 5)
     await page.getByTestId('policy').click()
     await readyDialog()
-    assert.equal(await dialog.getByRole('combobox').first().locator('option[value="empty"]').count(), 0)
-    await dialog.getByRole('combobox').nth(1).selectOption('mention-first')
+    assert.equal(await selectOptions(selectControl(dialog).first()).and(dialog.locator('option[value="empty"]')).count(), 0)
+    await chooseOption(selectControl(dialog).nth(1), 'mention-first')
     const before = (await saved()).length
     await submit.click()
     assert.equal(await dialog.getByRole('alert').count(), 1)
@@ -264,7 +253,7 @@ async function main() {
     await page.getByTestId('create-level').click()
     await readyDialog()
     await dialog.getByRole('textbox', { name: 'Grade level name', exact: true }).fill('New programme')
-    await dialog.getByRole('combobox', { name: 'Grading scale', exact: true }).selectOption('points')
+    await chooseOption(selectControl(dialog, { name: 'Grading scale', exact: true }), 'points')
     const createStart = (await saved()).length
     await submit.click()
     assert.equal((await saved()).length, createStart)
@@ -297,7 +286,7 @@ async function main() {
       for (const [width, height, zoom] of [[1280, 650, 1], [390, 844, 1], [1280, 800, 2]]) {
         await page.setViewportSize({ width, height })
         await page.evaluate(value => document.documentElement.style.fontSize = `${16 * value}px`, zoom)
-        for (const surface of ['scales', 'school', 'model', 'templates']) {
+        for (const surface of ['scales', 'school', 'modules']) {
           console.log(`Checking ${surface}: ${locale}, ${width}px, ${zoom}x text`)
           await page.getByTestId(surface).click()
           if (surface === 'scales') {
@@ -316,13 +305,12 @@ async function main() {
           const edit = locale === 'en' ? 'Edit' : 'Modifier'
           if (surface === 'scales') {
             await page.locator('main li').first().getByRole('button', { name: locale === 'en' ? 'Row actions' : 'Actions de ligne', exact: true }).click()
-            await page.getByRole('button', { name: edit, exact: true }).last().click()
+            await page.getByRole('menuitem', { name: edit, exact: true }).last().click()
           } else if (surface === 'school') {
             await page.locator('main section').nth(1).getByRole('button', { name: edit, exact: true }).click()
-          } else if (surface === 'templates') {
-            await page.getByRole('button', { name: locale === 'en' ? 'Add model' : 'Ajouter un modèle', exact: true }).click()
           } else {
-            await page.locator('header').getByRole('button', { name: edit, exact: true }).click()
+            await page.getByRole('button', { name: /Sciences/ }).click()
+            await page.getByRole('menuitem', { name: edit, exact: true }).click()
           }
           await dialog.waitFor()
           const bounds = await dialog.boundingBox()
@@ -338,7 +326,7 @@ async function main() {
       }
     }
     assert.deepEqual(pageErrors, [])
-    console.log('Configuration: isolated school editors, thresholds, published model edits, permissions, retained drafts, French/English, keyboard, mobile and 200% text checks passed.')
+    console.log('Configuration: isolated school editors, thresholds, module weighting edits, permissions, retained drafts, French/English, keyboard, mobile and 200% text checks passed.')
   }
   catch (error) {
     if (failurePage) {

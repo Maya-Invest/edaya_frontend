@@ -48,7 +48,7 @@
 	}
 </script>
 <FormModal bind:open title={$t('payment.recordTitle')} submitLabel={$t('finance.recordPayment')} busy={draft.busy} submitDisabled={!draft.canSubmit} onSubmit={submit}>
-	{#if charge}<p class="rounded-xl bg-secondary/40 p-3 text-sm">{charge.studentName ?? charge.studentId} · {charge.label}</p>
+	{#if charge}<p class="rounded-collection bg-secondary/40 p-3 text-sm">{charge.studentName ?? charge.studentId} · {charge.label}</p>
 	{:else}<Label>{$t('events.student')}</Label><StudentPicker isSelectable={student => hasPermission('PAYMENT_RECORD', { studentId: student.id, classId: student.classId })} bind:value={draft.studentId} active={open} onValueChange={(_id, student) => draft.selectedClassId = student?.classId} />{/if}
 	{#if draft.loading}<p role="status" class="text-sm text-muted-foreground">{$t('dataState.loading')}</p>{/if}
 	{#if draft.error}<p role="alert" class="text-sm text-destructive">{$t('finance.paymentContextError')}</p><Button variant="outline" onclick={() => draft.loadStudent()}>{$t('dataState.retry')}</Button>{/if}
@@ -59,7 +59,7 @@
 	{#if draft.mode === 'targeted'}
 		<div class="space-y-3">
 			{#each draft.charges as row (row.id)}
-				<div class="rounded-xl border border-border p-3">
+				<div class="rounded-collection border border-border p-3">
 					<label class="flex items-center gap-2 text-sm"><input type="checkbox" checked={row.id in draft.targets} onchange={e => draft.toggle(row, e.currentTarget.checked)} />{row.label} · {formatMinorUnits(row.remaining, draft.currency, $locale)}</label>
 					{#if row.id in draft.targets}<Input class="mt-2" type="number" min="0" step="any" aria-label={`${$t('finance.applied')} · ${row.label}`} value={draft.targets[row.id]} oninput={e => draft.targets = { ...draft.targets, [row.id]: e.currentTarget.value }} />{/if}
 				</div>
@@ -67,7 +67,7 @@
 		</div>
 	{/if}
 	{#if draft.loadedStudent && !draft.loading && !draft.error}
-		<div class="space-y-2 rounded-xl border border-border p-3 text-sm">
+		<div class="space-y-2 rounded-collection border border-border p-3 text-sm">
 			<p class="flex justify-between gap-2"><span>{$t('finance.received')}</span><span>{formatMinorUnits(draft.received, draft.currency, $locale)}</span></p>
 			<p class="flex justify-between gap-2"><span>{$t('finance.availableCredit')}</span><span>{formatMinorUnits(draft.available, draft.currency, $locale)}</span></p>
 			{#each draft.allocations as row (row.chargeId)}<p class="flex justify-between gap-2"><span>{row.label}</span><span>− {formatMinorUnits(row.amount, draft.currency, $locale)}</span></p>{/each}

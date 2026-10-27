@@ -1,3 +1,4 @@
+import { chooseOption } from './custom-select';
 import assert from 'node:assert/strict';
 import type { Page } from 'playwright';
 import { apiFetch, resolveSchoolId } from '../setup/journey-api';
@@ -12,7 +13,7 @@ export const IMPORT_SCENARIOS = {
   chapters: 'Import chapitres', billing: 'Import facturation (prérequis: frais créés)',
   payments: 'Import paiements (prérequis: facturation élève)',
   academic_disciplines: 'Import disciplines académiques', placement_statuses: 'Import statuts de placement',
-  guardian_contacts: 'Import contacts tuteurs', guardian_relationships: 'Import liens tuteurs-élèves',
+  guardian_relationships: 'Import liens tuteurs-élèves',
   class_offerings: 'Import offres de matières',
 } as const;
 
@@ -68,11 +69,6 @@ export async function exerciseImport(page: Page, base: string, type: keyof typeo
     csv = { classe: klass.id, subject_id: teaching.subjectId, is_offered: !teaching.isOffered };
     collection = 'class-subjects'; matches = row => row.id === teaching.id && row.isOffered === !teaching.isOffered;
     expectedCreated = '0';
-  } else if (type === 'guardian_contacts') {
-    const guardianId = crypto.randomUUID();
-    await request('/core/commands/register-guardian', { id: guardianId, schoolId, code: unique, firstName: 'Integration', lastName: unique, contactMethods: [], sendAccountInvitation: false });
-    csv = { guardian: unique, type: 'phone', value: '00001234', allows_notifications: false };
-    collection = 'guardians'; matches = row => row.id === guardianId && (row.contactMethods as Row[]).some(contact => ((contact.data ?? contact) as Row).value === '00001234');
   } else if (type === 'subjects') {
     const disciplineId = crypto.randomUUID();
     await request('/core/commands/configure-academic-discipline', { id: disciplineId, schoolId, code: unique, name: unique, isActive: true });
@@ -105,7 +101,7 @@ export async function exerciseImport(page: Page, base: string, type: keyof typeo
       collection = 'guardians'; matches = row => row.code === unique;
     } else if (type === 'guardian_relationships') {
       const guardianId = crypto.randomUUID();
-      await request('/core/commands/register-guardian', { id: guardianId, schoolId, code: unique, firstName: 'Integration', lastName: unique, contactMethods: [], sendAccountInvitation: false });
+      await request('/core/commands/register-guardian', { id: guardianId, schoolId, code: unique, firstName: 'Integration', lastName: unique, sendAccountInvitation: false });
       csv = { guardian: unique, student: unique, legal_guardian: false, can_pickup: true, notes: 'Per-child rights' };
       collection = 'guardian-links'; matches = row => row.guardianId === guardianId && row.studentId === studentId && row.legalGuardian === false;
     } else if (type === 'billing') {
@@ -128,7 +124,7 @@ export async function exerciseImport(page: Page, base: string, type: keyof typeo
     await modal.waitFor({ state: 'visible', timeout: 15000 });
     assert.equal(await page.getByTestId('import-mode').inputValue(), 'M');
     await page.getByTestId('import-create').click();
-    await page.getByTestId('data-import-type-select').selectOption(type);
+    await chooseOption(page.getByTestId('data-import-type-select'), type);
     if (type === 'students') {
       const downloaded = page.waitForEvent('download');
       await page.getByTestId('import-template-xlsx').click();

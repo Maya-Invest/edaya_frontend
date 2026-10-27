@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { provideCollectionPresentation } from '$lib/list/collection-presentation.svelte';
+
+	provideCollectionPresentation();
 	import type { ListEntityTableColumn } from '$lib/list/list-entity-table-types';
 	import type { StaffMember } from '$lib/types/school';
 	import type { StaffSortColumn } from '../lib/staff-list-filters';
@@ -115,7 +118,7 @@
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
 						onclick={() => modals.open('create')}
@@ -141,7 +144,7 @@
 		<ListSelectionBar
 			selectedCount={selection.selectedIds.length}
 			onExport={exportSelected}
-			onClear={() => selection.exitSelectionMode()}
+			onClear={() => selection.clearSelection()} onExit={() => selection.exitSelectionMode()}
 		/>
 	{/if}
 
@@ -165,7 +168,7 @@
 		total={listTotal}
 		visibleCount={listVisibleCount}
 		onLoadMore={loadMoreStaff}
-		onRowClick={member => selection.handleRowClick(member, onSelect)}
+		onRowClick={onSelect}
 		rowClass={member => !member.isActive && 'opacity-60'}
 	>
 		{#snippet cell(member, column, ctx)}

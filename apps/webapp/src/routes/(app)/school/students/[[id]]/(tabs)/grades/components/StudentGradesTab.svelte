@@ -52,7 +52,7 @@
 
 <div class="space-y-4">
 	<div class="grid grid-cols-3 gap-3">
-		<div class="rounded-xl bg-primary/10 p-4">
+		<div class="rounded-collection bg-primary/10 p-4">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('student.average')}</p>
 			<p class="mt-1 font-display text-2xl">
 				{gradesData.overall != null ? gradesData.overall.toFixed(1) : $t('dataState.unavailable')}<span class="text-sm text-muted-foreground">
@@ -60,11 +60,11 @@
 				>
 			</p>
 		</div>
-		<div class="rounded-xl bg-secondary/60 p-4">
+		<div class="rounded-collection bg-secondary/60 p-4">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('student.gradedAssessments')}</p>
 			<p class="mt-1 font-display text-2xl">{gradesData.valid.length}</p>
 		</div>
-		<div class="rounded-xl bg-secondary p-4">
+		<div class="rounded-collection bg-secondary p-4">
 			<p class="text-[10px] uppercase tracking-wider text-muted-foreground">{$t('student.pendingAssessments')}</p>
 			<p class="mt-1 font-display text-2xl">
 				{gradesData.studentEvals.length - gradesData.valid.length}

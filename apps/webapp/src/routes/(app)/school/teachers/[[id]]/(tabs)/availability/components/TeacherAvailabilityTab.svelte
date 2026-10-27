@@ -133,7 +133,7 @@
 		</div>
 		<PermissionGate permission="ACCESS_CONTROL_MANAGE" mode="disable">
 			{#snippet children({ disabled })}
-				<Button size="sm" class="rounded-full" {disabled} onclick={() => modals.open('add-unavailability')}>
+				<Button size="sm" {disabled} onclick={() => modals.open('add-unavailability')}>
 					<Plus class="mr-1.5 h-3.5 w-3.5" />{$t('teacher.availabilityAdd')}
 				</Button>
 			{/snippet}
@@ -161,8 +161,8 @@
 							<PermissionGate permission="ACCESS_CONTROL_MANAGE" mode="disable">
 								{#snippet children({ disabled })}
 									<Button size="sm" variant="ghost" disabled={disabled || busyId === rule.id} onclick={() => toggle(rule)}>{rule.isActive ? $t('common.disable') : $t('common.enable')}</Button>
-									<Button size="icon" variant="ghost" class="h-8 w-8" {disabled} onclick={() => modals.open('edit-unavailability', { target: rule.id })}><Pencil class="h-4 w-4" /></Button>
-									<Button size="icon" variant="ghost" class="h-8 w-8 text-destructive" {disabled} onclick={() => modals.open('delete-unavailability', { target: rule.id })}><Trash2 class="h-4 w-4" /></Button>
+									<Button size="icon" variant="ghost" class="w-8" {disabled} onclick={() => modals.open('edit-unavailability', { target: rule.id })}><Pencil class="h-4 w-4" /></Button>
+									<Button size="icon" variant="ghost" class="w-8 text-destructive" {disabled} onclick={() => modals.open('delete-unavailability', { target: rule.id })}><Trash2 class="h-4 w-4" /></Button>
 								{/snippet}
 							</PermissionGate>
 						</li>

@@ -1,3 +1,4 @@
+import { selectTrigger, chooseOption, selectControl } from './custom-select';
 import {
 	clickCreateButton,
 	fillPersonCreateDialogWithInvite,
@@ -168,25 +169,25 @@ async function assignTeacherToClass(
 
 	const dialog = page.getByRole('dialog');
 	const classSelect = dialog.locator('select').first();
-	if (await classSelect.isVisible().catch(() => false)) {
-		await classSelect.selectOption(classId).catch(async () => {
+	if (await selectTrigger(classSelect).isVisible().catch(() => false)) {
+		await chooseOption(classSelect, classId).catch(async () => {
 			const options = classSelect.locator('option');
 			if (await options.count() > 1) {
-				await classSelect.selectOption({ index: 1 });
+				await chooseOption(classSelect, { index: 1 });
 			}
 		});
 		await page.waitForTimeout(1_000);
 	}
 
 	const subjectSelect = dialog.locator('select').nth(1);
-	if (await subjectSelect.isVisible().catch(() => false)) {
+	if (await selectTrigger(subjectSelect).isVisible().catch(() => false)) {
 		const optionCount = await subjectSelect.locator('option').count();
 		if (optionCount > 1) {
-			await subjectSelect.selectOption({ index: 1 });
+			await chooseOption(subjectSelect, { index: 1 });
 		}
 	}
 	else {
-		const combo = dialog.getByRole('combobox').first();
+		const combo = selectControl(dialog).first();
 		if (await combo.isVisible().catch(() => false)) {
 			await selectComboboxOption(page, combo);
 		}

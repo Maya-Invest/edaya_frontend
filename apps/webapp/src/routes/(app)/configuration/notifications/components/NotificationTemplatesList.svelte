@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { provideCollectionPresentation } from '$lib/list/collection-presentation.svelte';
+
+	provideCollectionPresentation();
 	import type { ResolvedPathname } from '$app/types';
 	import type { NotificationSendChannel, NotificationTemplateKey } from '$lib/notification-templates/catalog';
 	import { page } from '$app/stores';
@@ -97,7 +100,7 @@
 					<Button
 						size="sm"
 						variant="outline"
-						class="rounded-full"
+
 						disabled={disabled || !document}
 						onclick={() => modals.open('reset-all')}
 					>
@@ -146,7 +149,7 @@
 								{/if}
 							{/snippet}
 							{#snippet actions(row)}
-								<RowActionMenu>
+								<RowActionMenu label={`${$t('list.rowActions')} · ${$t(`notificationTemplates.keys.${row.key}`)}`}>
 									<RowActionMenuItem disabled={!document} onclick={() => openEdit(row.key)}>
 										<Pencil class="h-4 w-4" />{$t('common.edit')}
 									</RowActionMenuItem>

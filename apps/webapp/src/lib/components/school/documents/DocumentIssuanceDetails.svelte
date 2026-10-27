@@ -6,7 +6,7 @@
 		issuance: DocumentIssuance;
 	} = $props();
 </script>
-<details class="mt-3 space-y-2 rounded-lg border border-border p-3 text-xs">
+<details class="mt-3 space-y-2 rounded-collection border border-border p-3 text-xs">
 	<summary class="cursor-pointer font-medium">{$t('profile.additionalFields')}</summary>
 	<dl class="grid gap-2 sm:grid-cols-2">
 		<div><dt class="text-muted-foreground">{$t('profile.createdAt')}</dt><dd>{issuance.createdAt}</dd></div>

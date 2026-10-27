@@ -44,7 +44,7 @@
 </script>
 
 <section class="space-y-4" aria-live="polite">
-	<div class={cn('rounded-xl border p-4', headlineComplete ? 'border-accent/40 bg-accent/5' : 'border-highlight/40 bg-highlight-soft/40')}>
+	<div class={cn('rounded-collection border p-4', headlineComplete ? 'border-accent/40 bg-accent/5' : 'border-highlight/40 bg-highlight-soft/40')}>
 		<div class="flex items-start gap-3">
 			{#if headlineComplete}
 				<CheckCircle2 class="mt-0.5 h-5 w-5 shrink-0 text-accent" />
@@ -112,8 +112,8 @@
 			</p>
 		{/if}
 
-		<div class="max-h-56 overflow-y-auto rounded-xl border border-border/70">
-			<table class="w-full text-left text-xs">
+		<div class="max-h-56 overflow-y-auto rounded-collection border border-border/70">
+			<table class="ui-entry-table w-full text-left text-xs">
 				<thead class="sticky top-0 bg-muted/60 text-muted-foreground">
 					<tr>
 						<th class="px-3 py-2 font-medium">{$t('common.class')}</th>
@@ -163,7 +163,7 @@
 	{#if unmetWorkloads.length > 0}
 		<div class="space-y-2">
 			<p class="text-sm font-medium">{$t('timetable.unmetWorkloadDetails')}</p>
-			<ul class="max-h-40 space-y-2 overflow-y-auto rounded-xl border border-border/70 p-3 text-xs">
+			<ul class="max-h-40 space-y-2 overflow-y-auto rounded-collection border border-border/70 p-3 text-xs">
 				{#each unmetWorkloads as workload (`${workload.classSubjectId}-${workload.weekKey}`)}
 					<li class="flex items-center justify-between gap-3">
 						<span class="font-medium">{subjectLabels[workload.classSubjectId] ?? workload.classSubjectId}</span>

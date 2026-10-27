@@ -71,7 +71,7 @@ export function filterGuardianList(
 		if (!needle) {
 			return true;
 		}
-		const haystack = `${guardian.name} ${guardian.email} ${guardian.phone}`.toLowerCase();
+		const haystack = `${guardian.name} ${guardian.email} ${guardian.phone} ${guardian.alternativePhone ?? ''}`.toLowerCase();
 		return haystack.includes(needle);
 	});
 	return sortGuardianList(filtered, filters.sort, filters.sortDir, students);

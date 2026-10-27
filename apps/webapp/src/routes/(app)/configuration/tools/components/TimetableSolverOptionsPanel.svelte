@@ -87,7 +87,7 @@
 	}
 </script>
 
-<section class="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border/70 bg-muted/15">
+<section class="flex h-full min-h-0 flex-col overflow-hidden rounded-collection border border-border/70 bg-muted/15">
 	<div class="shrink-0 border-b border-border/60 px-3 py-2">
 		<p class="text-sm font-medium">{$t('timetable.solverOptions')}</p>
 		<p class="text-xs text-muted-foreground">{$t('timetable.solverOptionsHint')}</p>
@@ -113,7 +113,7 @@
 					<Input
 						type="number"
 						min="0"
-						class="min-h-11 w-16 px-2 text-center text-sm"
+						class="w-16 text-center text-sm"
 						bind:value={minDayGapSameSubject} disabled={savingDefaults}
 					/>
 				</label>
@@ -130,7 +130,7 @@
 						<Input
 							type="number"
 							min="1"
-							class="min-h-11 w-16 px-2 text-center text-sm"
+							class="w-16 text-center text-sm"
 							bind:value={timetableMinPeriodSpan} disabled={!canSaveDefaults || !schoolRaw || savingDefaults}
 						/>
 					</label>
@@ -139,7 +139,7 @@
 						<Input
 							type="number"
 							min="1"
-							class="min-h-11 w-16 px-2 text-center text-sm"
+							class="w-16 text-center text-sm"
 							bind:value={timetableMaxPeriodSpan} disabled={!canSaveDefaults || !schoolRaw || savingDefaults}
 						/>
 					</label>
@@ -150,7 +150,7 @@
 			{#if canSaveDefaults}<Button
 				variant="outline"
 				size="sm"
-				class="rounded-full"
+
 				disabled={savingDefaults || !schoolId || !schoolRaw || !validDefaults}
 				onclick={saveSchoolDefaults}
 			>

@@ -5,8 +5,8 @@ import { apiFetch } from './journey-api';
 /** Explicit persisted prerequisites for behavior reads; never credits a UI scenario. */
 export async function createRequiredReadFixtures(journey: UiJourney): Promise<void> {
 	const { page, base } = journey.ctx;
-	const { activityId, classId, studentId, teachingId, subjectId, reportCardDefId } = journey.entities;
-	assert(activityId && classId && studentId && teachingId && subjectId && reportCardDefId, 'Required activity/curriculum fixture dependencies missing');
+	const { activityId, classId, studentId, teachingId, subjectId } = journey.entities;
+	assert(activityId && classId && studentId && teachingId && subjectId, 'Required activity/curriculum fixture dependencies missing');
 	const post = async (path: string, data: Record<string, unknown>) => {
 		const response = await apiFetch(page, base, `/core/${path}`, { method: 'POST', data });
 		assert(response.ok(), `Required ${path} fixture HTTP ${response.status()}`);
@@ -21,10 +21,10 @@ export async function createRequiredReadFixtures(journey: UiJourney): Promise<vo
 	assert(teaching, 'Required fixture subject is not assigned to the class');
 	journey.entities.teachingId = teaching.id;
 	journey.entities.configurationSubjectId = teaching.subjectId;
-	for (const [index, subject] of subjects.entries()) {
+	for (const subject of subjects) {
+		await post('commands/update-subject', { subjectId: subject.subjectId, coefficient: 1 });
 		const subjectMatterId = crypto.randomUUID();
 		await post('commands/configure-subject-matter', { id: subjectMatterId, subjectId: subject.subjectId, name: `Integration curriculum ${subjectMatterId}`, sequenceOrder: 2 });
-		await post('commands/create-report-card-definition-section', { id: crypto.randomUUID(), reportCardDefinitionId: reportCardDefId, name: `Integration marks ${index}`, kind: 'subject', role: 'matieres', subjectId: subject.subjectId, order: 10 + index, weight: 1, coefficient: 1 });
 	}
 	const classResponse = await apiFetch(page, base, `/core/entities/class-groups/${classId}`);
 	assert(classResponse.ok());
@@ -38,6 +38,6 @@ export async function createRequiredReadFixtures(journey: UiJourney): Promise<vo
 	const offerResponse = await apiFetch(page, base, `/core/entities/subjects/${teaching.subjectId}`);
 	assert(offerResponse.ok(), 'Required subject missing');
 	const offer = await offerResponse.json() as Record<string, unknown>;
-	await post('commands/configure-subject', { ...offer, id: crypto.randomUUID(), gradeLevelId: contrastLevelId });
+	await post('commands/configure-subject', { ...offer, reportModuleId: null, id: crypto.randomUUID(), gradeLevelId: contrastLevelId });
 	journey.steps.push({ step: 'activity-and-curriculum-fixtures', ok: true });
 }

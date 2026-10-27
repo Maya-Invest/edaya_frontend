@@ -170,36 +170,25 @@ export async function exerciseCatalogCrud(page: Page, base: string, scenarioId: 
 	return 'Created, edited, and deleted an isolated catalog record through the UI; verified persisted state after each reload';
 }
 
-export async function exerciseReportDefinitionLifecycle(page: Page, base: string, gradeLevelId: string, gradeScaleId: string) {
-	const create = async () => {
-		const name = `Integration report model ${crypto.randomUUID()}`;
-		assert(await openUrlModal(page, `/configuration/structure/details?gradeLevel=${encodeURIComponent(gradeLevelId)}`, 'create', { base }));
-		await page.getByRole('dialog').locator('input').first().fill(name);
-		const response = await uiCommand(page, '/commands/create-report-card-definition', () => page.getByTestId('form-modal-submit').click());
-		const { id } = await response.json() as { id: string };
-		assert(id);
-		await waitForMutationDialog(page);
-		await page.reload({ waitUntil: 'domcontentloaded' });
-		await waitForPageQuery(page);
-		const saved = await readEntity(page, base, 'definitions', id);
-		assert.equal(saved.name, name);
-		assert.equal(saved.gradeLevelId, gradeLevelId, 'The model must retain the grade selected in the workspace');
-		return id;
-	};
-	const discarded = await create();
-	assert(await openUrlModal(page, `/configuration/structure/details/report-cards/${discarded}`, 'delete', { base }));
-	await uiCommand(page, '/entities/definitions/delete', () => page.getByRole('dialog').getByRole('button', { name: /^(supprimer|delete)$/i }).click());
-	await waitForMutationDialog(page);
-	await page.reload({ waitUntil: 'domcontentloaded' });
-	await waitForPageQuery(page);
-	const deleted = await apiFetch(page, base, `/core/entities/definitions/${discarded}`);
-	assert(deleted.status() === 404 || (deleted.ok() && await deleted.json() === null));
-	const published = await create();
-	await navigateSpaPage(page, `${base}/configuration/structure/details/report-cards/${published}`);
-	await waitForPageQuery(page);
-	await uiCommand(page, '/entities/definitions/save', () => page.locator('aside[aria-label]').getByRole('button', { name: /publier le modèle|publish model/i }).click());
-	await page.reload({ waitUntil: 'domcontentloaded' });
-	await waitForPageQuery(page);
-	assert.equal((await readEntity(page, base, 'definitions', published)).status, 'published');
-	return 'Created and deleted an isolated draft model; created and published another, with persisted readback after reload';
+export async function exerciseReportModuleLifecycle(page: Page, base: string, gradeLevelId: string) {
+ const path = `/configuration/structure/subjects?gradeLevel=${encodeURIComponent(gradeLevelId)}`;
+ const name = `Integration module ${crypto.randomUUID()}`;
+ assert(await openUrlModal(page, path, 'module-create', { base }));
+ await page.getByRole('dialog').getByRole('textbox').first().fill(name);
+ const response = await uiCommand(page, '/commands/configure-report-modules', () => page.getByTestId('form-modal-submit').click());
+ const input = response.request().postDataJSON() as { module: { id: string } };
+ const id = input.module.id;
+ await waitForMutationDialog(page);
+ await page.reload({ waitUntil: 'domcontentloaded' });
+ await waitForPageQuery(page);
+ const saved = await readEntity(page, base, 'report-modules', id);
+ assert.equal(saved.name, name);
+ assert.equal(saved.gradeLevelId, gradeLevelId);
+ assert.equal(saved.weightingMode, 'subject_coefficients');
+ assert(await openUrlModal(page, path, 'module-delete', { base, target: id }));
+ await uiCommand(page, '/commands/configure-report-modules', () => page.getByRole('dialog').getByRole('button', { name: /^(supprimer le module|delete module)$/i }).click());
+ await waitForMutationDialog(page);
+ const deleted = await apiFetch(page, base, `/core/entities/report-modules/${id}`);
+ assert(deleted.status() === 404 || (deleted.ok() && await deleted.json() === null));
+ return 'Created and deleted a flat module in the grade-level Subjects tab, with persisted scope and weighting readback';
 }

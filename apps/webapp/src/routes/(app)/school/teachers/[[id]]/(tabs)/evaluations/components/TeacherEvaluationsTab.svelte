@@ -55,7 +55,7 @@
 				<h4 class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 					{group.label}
 				</h4>
-				<ul class="divide-y divide-border/60 overflow-hidden rounded-xl border border-border bg-card">
+				<ul class="divide-y divide-border/60 overflow-hidden rounded-collection border border-border bg-card">
 					{#each group.evaluations as evaluation (evaluation.id)}
 						<li>
 							<a

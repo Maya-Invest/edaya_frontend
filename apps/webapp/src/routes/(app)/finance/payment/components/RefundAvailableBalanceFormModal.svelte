@@ -119,7 +119,7 @@
 			{$t('events.student')}
 		</Label>
 		{#if refundableAccounts.length === 0}
-			<p class="rounded-xl border border-border bg-secondary/30 px-3 py-2 text-sm text-muted-foreground">
+			<p class="rounded-collection border border-border bg-secondary/30 px-3 py-2 text-sm text-muted-foreground">
 				{$t('payment.refundEmpty')}
 			</p>
 		{:else}
@@ -138,7 +138,7 @@
 		{/if}
 	</div>
 	{#if selectedAccount}
-		<div class="rounded-xl border border-border bg-secondary/40 px-3 py-2 text-sm">
+		<div class="rounded-collection border border-border bg-secondary/40 px-3 py-2 text-sm">
 			<p class="text-[11px] uppercase tracking-wider text-muted-foreground">{$t('finance.available')}</p>
 			<p class="font-sans text-xl font-semibold tabular-nums">
 				{formatMinorUnits(selectedAccount.availableBalance, currency, $locale)}

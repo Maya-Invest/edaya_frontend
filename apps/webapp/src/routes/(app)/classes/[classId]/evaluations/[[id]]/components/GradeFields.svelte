@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { GradeDraft, GradeEntryPolicy } from '../../lib/grading-task';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import { t } from '$lib/i18n';
 	import GradeValueInput from './GradeValueInput.svelte';
 
@@ -8,9 +9,9 @@
 </script>
 <div class="grid gap-4 sm:grid-cols-2">
 	<label class="space-y-2 text-sm"><span>{$t('marks.designation')}</span>
-		<select class={control} bind:value={draft.designation} {disabled}>
+		<SelectField class={control} bind:value={draft.designation} {disabled}>
 			{#each ['scored', 'absent', 'exempt'] as designation (designation)}<option value={designation}>{$t(designation === 'scored' ? 'gradeTask.scored' : `marks.${designation}`)}</option>{/each}
-		</select>
+		</SelectField>
 	</label>
 	{#if draft.designation === 'scored'}<GradeValueInput bind:draft {review} {disabled} {required} />{/if}
 </div>

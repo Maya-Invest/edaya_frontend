@@ -24,7 +24,7 @@ export const hasPermission = (permission: PermissionCode, ctx?: PermissionContex
 export const hasAnyPermission = (permissions: readonly PermissionCode[], ctx?: PermissionContext) => checkAnyPermission(grants(), permissions, { ...ctx, gradeLevelId: ctx?.classId === 'class-a' ? 'grade-a' : undefined });
 export const academicContext = $state({ schools: [{ id: 'school-a', timeZone: 'UTC' }], yearId: 'year-a', periodId: 'period-a', selectablePeriodsForYear: [], shellReady: true, period: null, setPeriod() {} });
 export function getEvaluationsPageState() {
-return { evaluationsFor: () => [state.evaluation], subjectsFor: () => [subject], async deleteEvaluation() {
+return { canEnterMarks: () => hasPermission('GRADE_MANAGE', { classId: 'class-a', subject: 'math-a', subjectId: 'math', assessmentId: 'assessment-a' }), evaluationsFor: () => [state.evaluation], subjectsFor: () => [subject], async deleteEvaluation() {
 state.requests.push('delete');
 return true;
 }, async updateEvaluation() {

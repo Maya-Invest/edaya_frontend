@@ -1,3 +1,4 @@
+import { chooseOption } from './custom-select';
 import assert from 'node:assert/strict';
 import type { Page } from 'playwright';
 import { apiFetch } from '../setup/journey-api';
@@ -15,13 +16,13 @@ export async function exerciseStudentStatus(page: Page, base: string, id: string
   const status = before.status === 'active' ? 'inactive' : 'active';
   const select = page.locator('select').filter({ has: page.locator('option[value="inactive"]') }).last();
   try {
-    await uiCommand(page, '/commands/update-student-status', () => select.selectOption(status));
+    await uiCommand(page, '/commands/update-student-status', () => chooseOption(select, status));
     await page.reload({ waitUntil: 'domcontentloaded' });
     await waitForPageQuery(page);
     assert.equal((await student(page, base, id)).status, status);
     assert.equal(await select.inputValue(), status, 'Reloaded profile must display saved status');
   } finally {
-    await uiCommand(page, '/commands/update-student-status', () => select.selectOption(before.status));
+    await uiCommand(page, '/commands/update-student-status', () => chooseOption(select, before.status));
     assert.equal((await student(page, base, id)).status, before.status);
   }
   return 'Changed student status through the UI, verified after reload, and restored the fixture';

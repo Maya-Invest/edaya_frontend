@@ -1,3 +1,4 @@
+import { selectControl, chooseOption, selectOptions } from './custom-select';
 import assert from 'node:assert/strict';
 import type { Page } from 'playwright';
 import type { MatrixEntities } from '../../../scripts/qa-matrix-support';
@@ -24,14 +25,14 @@ export async function exerciseAssignmentCrud(page: Page, base: string, scenarioI
   await waitForPageQuery(page);
   assert(await openUrlModal(page, path, hub ? 'create' : 'form', { base }));
   const dialog = page.getByRole('dialog');
-  const kind = dialog.getByRole('combobox', { name: /assignment type|type d.affectation/i });
-  const classroomSelect = dialog.getByRole('combobox', { name: /^(class|classe)$/i });
+  const kind = selectControl(dialog, { name: /assignment type|type d.affectation/i });
+  const classroomSelect = selectControl(dialog, { name: /^(class|classe)$/i });
   if (hub) {
-    await dialog.getByRole('combobox', { name: /^(teacher|enseignant)$/i }).locator(`option[value="${teacherId}"]`).waitFor({ state: 'attached' });
-    await dialog.getByRole('combobox', { name: /^(teacher|enseignant)$/i }).selectOption(teacherId);
+    await selectOptions(selectControl(dialog, { name: /^(teacher|enseignant)$/i })).and(page.locator(`option[value="${teacherId}"]`)).waitFor({ state: 'attached' });
+    await chooseOption(selectControl(dialog, { name: /^(teacher|enseignant)$/i }), teacherId);
   }
-  await kind.selectOption('homeroom');
-  await classroomSelect.selectOption(classId);
+  await chooseOption(kind, 'homeroom');
+  await chooseOption(classroomSelect, classId);
   const created = await uiCommand(page, '/entities/teacher-assignments/save', () => page.getByTestId('form-modal-submit').click());
   const id = (created.request().postDataJSON() as { id: string }).id;
   assert(id);
@@ -50,10 +51,10 @@ export async function exerciseAssignmentCrud(page: Page, base: string, scenarioI
   await persisted('homeroom');
   if (!hub) {
     assert(await openUrlModal(page, path, 'form', { base, target: id }));
-    await kind.selectOption('subject');
-    const subject = dialog.getByRole('combobox', { name: /subject offering|matière dans la classe/i });
-    await subject.locator('option:not([value=""])').first().waitFor({ state: 'attached' });
-    await subject.selectOption({ index: 1 });
+    await chooseOption(kind, 'subject');
+    const subject = selectControl(dialog, { name: /subject offering|matière dans la classe/i });
+    await selectOptions(subject).and(subject.page().locator('option:not([value=""])')).first().waitFor({ state: 'attached' });
+    await chooseOption(subject, { index: 1 });
     await uiCommand(page, '/entities/teacher-assignments/save', () => page.getByTestId('form-modal-submit').click());
     await waitForMutationDialog(page);
     await persisted('subject');

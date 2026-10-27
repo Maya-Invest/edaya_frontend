@@ -253,7 +253,7 @@
 
 		<div class="space-y-2">
 			{#each onboardingContext.draft.school.periods as period, index (period.id)}
-				<article class="rounded-lg border border-border bg-secondary/20 p-3">
+				<article class="rounded-collection border border-border bg-secondary/20 p-3">
 					<div class="mb-2 flex items-center justify-between gap-2">
 						<p class="text-sm font-medium text-foreground">
 							{$t('onboarding.periods.itemTitle', { index: index + 1 })}
@@ -263,7 +263,7 @@
 								type="button"
 								variant="ghost"
 								size="sm"
-								class="h-8 text-destructive hover:text-destructive"
+								class="text-destructive hover:text-destructive"
 								{disabled}
 								onclick={() => handleRemovePeriod(period.id)}
 							>
@@ -326,7 +326,7 @@
 	</section>
 
 	{#if onboardingContext.draft.schoolStepSubmitted}
-		<p class="rounded-lg bg-secondary/60 px-3 py-1.5 text-xs text-muted-foreground">
+		<p class="rounded-collection bg-secondary/60 px-3 py-1.5 text-xs text-muted-foreground">
 			{$t('onboarding.schoolStep.alreadySubmitted')}
 		</p>
 	{/if}

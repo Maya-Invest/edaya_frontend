@@ -12,7 +12,7 @@
 <textarea
 	bind:value
 	class={cn(
-		'control-focus flex min-h-[80px] w-full rounded-md border border-input bg-card px-3 py-2 text-sm placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50',
+		'control-focus ui-field flex min-h-[80px] w-full rounded-md border border-input bg-card px-3 py-2 text-sm placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50',
 		className,
 	)}
 	{...restProps}

@@ -339,7 +339,7 @@
 				<h1 class="font-display text-3xl font-semibold">{$t('invitation.accept.title')}</h1>
 			</div>
 
-			<section class="rounded-2xl border border-border bg-card p-5 shadow-soft">
+			<section class="rounded-collection border border-border bg-card p-5 shadow-soft">
 				{#if pageState === 'loading' || pageState === 'accepting'}
 					<div class="flex flex-col items-center gap-3 py-8 text-sm text-muted-foreground">
 						<LoaderCircle class="h-6 w-6 animate-spin" />
@@ -502,7 +502,7 @@
 				{:else if preview}
 					<div class="space-y-4">
 						{#if wrongAccount || acceptedIssue === 'contactMismatch'}
-							<div class="space-y-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
+							<div class="space-y-3 rounded-collection border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
 								<p class="font-medium">
 									{$t(acceptedIssue === 'contactMismatch'
 										? 'invitation.accept.contactMismatchTitle'
@@ -517,7 +517,7 @@
 									type="button"
 									variant="outline"
 									size="sm"
-									class="rounded-full"
+
 									onclick={async () => {
 										await invitationPage.logout();
 										acceptedIssue = 'none';
@@ -528,7 +528,7 @@
 							</div>
 						{/if}
 
-						<div class="rounded-xl bg-secondary/40 px-4 py-3 text-sm">
+						<div class="rounded-collection bg-secondary/40 px-4 py-3 text-sm">
 							<p class="font-medium">{preview.schoolName}</p>
 							<p class="mt-1 text-muted-foreground">
 								{$t('invitation.accept.summary', {
@@ -546,7 +546,7 @@
 						</div>
 
 						{#if isGuardianInvitation(preview.kind)}
-							<div class="space-y-3 rounded-xl border border-border bg-secondary/40 px-4 py-3 text-sm">
+							<div class="space-y-3 rounded-collection border border-border bg-secondary/40 px-4 py-3 text-sm">
 								<p class="font-medium">{$t('invitation.accept.guardianGetAppTitle')}</p>
 								<p class="text-muted-foreground">{$t('invitation.accept.guardianGetAppHint')}</p>
 								<a

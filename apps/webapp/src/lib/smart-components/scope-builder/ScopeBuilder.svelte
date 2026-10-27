@@ -3,6 +3,7 @@
 	import { academicContext } from '$lib/academic/context.svelte';
 	import { emptyGrantScope } from '$lib/api/grant-scopes';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import { lang, t } from '$lib/i18n';
 	import { catalogSubjectName } from '$lib/i18n/catalog-label';
 	import { LoaderCircle } from '$lib/icons';
@@ -99,38 +100,38 @@
 		<div class="flex justify-center py-8" role="status"><LoaderCircle class="h-5 w-5 animate-spin text-primary" /></div>
 	{:else if !allSelected || (grain === 'subject' && subjectClassRequired)}
 		{#each scopes as scope, index (index)}
-			<div class="space-y-3 rounded-xl border border-border p-3">
+			<div class="space-y-3 rounded-collection border border-border p-3">
 				<label class="block space-y-1 text-xs">
 					<span>{$t(`scope.grain.${grain === 'subject' ? 'grade_level' : grain}`)}</span>
 					{#if scope.kind === 'student'}
 						<StudentPicker value={scope.studentId} {active} onValueChange={value => setParent(index, value)} />
 					{:else}
-						<select class="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
+						<SelectField class="w-full border border-border bg-background text-sm"
 							value={parentId(scope)} onchange={event => setParent(index, event.currentTarget.value)}>
 							<option value="">{grain === 'activity' ? $t('roles.scopeAllActivities') : $t('roles.selectScopeTarget')}</option>
 							{#each parentOptions as option (option.id)}
 								<option value={option.id}>{option.name}</option>
 							{/each}
-						</select>
+						</SelectField>
 					{/if}
 				</label>
 				{#if scope.kind === 'subject'}
 					{@const subjects = data.subjectsForGrade(scope.gradeLevelId)}
 					<label class="block space-y-1 text-xs">
 						<span>{$t('scope.grain.subject')}</span>
-						<select class="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
+						<SelectField class="w-full border border-border bg-background text-sm"
 							value={scope.subjectId ?? ''}
 							onchange={event => setSubject(index, event.currentTarget.value)}>
 							<option value="">{$t('roles.scopeAllSubjects')}</option>
 							{#each subjects as subject (subject.id)}
 								<option value={subject.id}>{catalogSubjectName(subject.name, $lang, subject.code)}</option>
 							{/each}
-						</select>
+						</SelectField>
 					</label>
 
 					<label class="block space-y-1 text-xs">
 						<span>{$t('scope.grain.class_group')}</span>
-						<select class="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
+						<SelectField class="w-full border border-border bg-background text-sm"
 							value={scope.classGroupId === undefined ? 'all' : 'selected'}
 							onchange={(event) => {
 								const { classGroupId: _, ...subject } = scope;
@@ -138,27 +139,27 @@
 							}}>
 							<option value="all" disabled={subjectClassRequired}>{$t('roles.scopeAllClasses')}</option>
 							<option value="selected">{$t('roles.scopeSelectedClasses')}</option>
-						</select>
+						</SelectField>
 					</label>
 					{#if scope.classGroupId !== undefined}
-						<select aria-label={$t('roles.scopeSelectedClasses')} class="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
+						<SelectField aria-label={$t('roles.scopeSelectedClasses')} class="w-full border border-border bg-background text-sm"
 							value={scope.classGroupId} onchange={event => replace(index, { ...scope, classGroupId: event.currentTarget.value })}>
 							<option value="">{$t('roles.selectScopeTarget')}</option>
 							{#each academicContext.classes.filter(group => group.gradeLevelId === scope.gradeLevelId) as group (group.id)}
 								<option value={group.id}>{group.name}</option>
 							{/each}
-						</select>
+						</SelectField>
 					{/if}
 				{:else if scope.kind === 'activity'}
 					<label class="block space-y-1 text-xs">
 						<span>{$t('roles.scopeActivityClassOptional')}</span>
-						<select class="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
+						<SelectField class="w-full border border-border bg-background text-sm"
 							value={scope.classGroupId ?? ''} onchange={event => setActivityClass(index, event.currentTarget.value)}>
 							<option value="">{$t('roles.scopeSchoolWideActivity')}</option>
 							{#each academicContext.classes as group (group.id)}
 								<option value={group.id}>{group.name}</option>
 							{/each}
-						</select>
+						</SelectField>
 					</label>
 				{/if}
 				<button type="button" class="text-xs font-medium text-muted-foreground hover:text-foreground"

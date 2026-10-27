@@ -203,37 +203,3 @@ export async function recordAssessmentResultComplianceMutation(input: {
 	});
 	return result !== null;
 }
-
-export async function createReportCardDefinitionSectionMutation(input: {
-	id?: string;
-	reportCardDefinitionId: string;
-	name: string;
-	kind: 'group' | 'subject';
-	order: number;
-	weight: number;
-	role?: 'matieres' | 'synthese' | 'appreciation' | null;
-	coefficient?: number | null;
-	parentSectionId?: string | null;
-	subjectId?: string | null;
-	successMessage?: string;
-}): Promise<string | null> {
-	const client = getBrowserSchoolClient();
-	const id = input.id ?? `rcs-${Date.now().toString(36)}`;
-	const result = await runMutation(() => client.commands.createReportCardDefinitionSection({
-		id,
-		reportCardDefinitionId: input.reportCardDefinitionId,
-		name: input.name.trim(),
-		kind: input.kind,
-		order: input.order,
-		weight: input.weight,
-		role: input.role ?? null,
-		coefficient: input.coefficient ?? null,
-		parentSectionId: input.parentSectionId ?? null,
-		subjectId: input.subjectId ?? null,
-		createdAt: new Date().toISOString(),
-	}), {
-		successMessage: input.successMessage,
-		versionKeys: ['reportCards'],
-	});
-	return result ? id : null;
-}

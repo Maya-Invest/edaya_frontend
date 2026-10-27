@@ -127,7 +127,7 @@
 	{#if rows.length > 0 && catalog}
 		<div class="space-y-1.5">
 			<h3 class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</h3>
-			<div class="divide-y divide-border rounded-lg border border-border">
+			<div class="divide-y divide-border rounded-collection border border-border">
 				{#each rows as entry (entry.catalogLevel.id)}
 					{@const draft = entry.draft}
 					{@const gradeLevelId = entry.catalogLevel.id}
@@ -155,7 +155,7 @@
 									type="button"
 									variant="outline"
 									size="icon"
-									class="h-7 w-7"
+									class="w-7"
 									{disabled}
 									onclick={() => adjustClassCount(gradeLevelId, -1)}
 								>
@@ -166,7 +166,7 @@
 									type="button"
 									variant="outline"
 									size="icon"
-									class="h-7 w-7"
+									class="w-7"
 									{disabled}
 									onclick={() => adjustClassCount(gradeLevelId, 1)}
 								>
@@ -179,7 +179,7 @@
 										type="button"
 										variant={draft.classNamingMode === 'alphabetical' ? 'secondary' : 'outline'}
 										size="sm"
-										class="h-7 px-2 text-[11px]"
+										class="text-[11px]"
 										{disabled}
 										onclick={() => setClassNamingMode(gradeLevelId, 'alphabetical')}
 									>
@@ -189,7 +189,7 @@
 										type="button"
 										variant={draft.classNamingMode === 'numerical' ? 'secondary' : 'outline'}
 										size="sm"
-										class="h-7 px-2 text-[11px]"
+										class="text-[11px]"
 										{disabled}
 										onclick={() => setClassNamingMode(gradeLevelId, 'numerical')}
 									>
@@ -205,7 +205,7 @@
 									id={`structure-capacity-${gradeLevelId}`}
 									type="number"
 									min="1"
-									class="h-7 w-16"
+									class="w-16"
 									value={String(draft.capacity)}
 									{disabled}
 									oninput={event => updateCapacity(gradeLevelId, event.currentTarget.value)}
@@ -239,11 +239,11 @@
 	{#if catalogStatus === 'loading'}
 		<p class="text-xs text-muted-foreground">{$t('onboarding.structure.catalogLoading')}</p>
 	{:else if catalogStatus === 'error'}
-		<p class="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
+		<p class="rounded-collection bg-destructive/10 px-3 py-2 text-xs text-destructive">
 			{$t('onboarding.structure.catalogError')}
 		</p>
 	{:else if catalogStatus === 'ready' && catalog && catalog.gradeLevels.length === 0}
-		<p class="rounded-lg bg-secondary/60 px-3 py-2 text-xs text-muted-foreground">
+		<p class="rounded-collection bg-secondary/60 px-3 py-2 text-xs text-muted-foreground">
 			{$t('onboarding.structure.catalogEmpty')}
 		</p>
 	{:else if collegeLevels.length > 0 || lyceeLevels.length > 0}
@@ -253,19 +253,19 @@
 			{@render levelRows($t('onboarding.structure.modelLycee'), lyceeLevels)}
 
 			{#if selectedSubjects.length > 0}
-				<section class="space-y-3 rounded-xl border p-3">
+				<section class="space-y-3 rounded-collection border p-3">
 					<h3 class="text-sm font-medium">{$t('profile.academicDisciplines')}</h3>
 					<p class="text-xs text-muted-foreground">{$t('profile.reviewOnboardingDisciplines')}</p>
 					{#each selectedSubjects as subject (subject.code)}
 						{@const mapping = onboardingContext.draft.structure.disciplineMappings?.find(row => row.subjectCode === subject.code)}
-						<fieldset class="grid gap-2 rounded-lg border p-3 sm:grid-cols-2"><legend class="px-1 text-sm">{subject.code} · {subject.name}</legend>
+						<fieldset class="grid gap-2 rounded-collection border p-3 sm:grid-cols-2"><legend class="px-1 text-sm">{subject.code} · {subject.name}</legend>
 							<Label class="space-y-1"><span>{$t('common.code')}</span><Input data-testid={`discipline-code-${subject.code}`} value={mapping?.disciplineCode ?? ''} {disabled} oninput={event => setDiscipline(subject.code, 'disciplineCode', event.currentTarget.value)} /></Label>
 							<Label class="space-y-1"><span>{$t('common.name')}</span><Input data-testid={`discipline-name-${subject.code}`} value={mapping?.disciplineName ?? ''} {disabled} oninput={event => setDiscipline(subject.code, 'disciplineName', event.currentTarget.value)} /></Label>
 						</fieldset>
 					{/each}
 				</section>
 			{/if}
-			<section class="rounded-lg border border-border bg-card px-3 py-2 text-sm">
+			<section class="rounded-collection border border-border bg-card px-3 py-2 text-sm">
 				<p class="font-medium text-foreground">{$t('onboarding.structure.summaryTitle')}</p>
 				<p class="mt-0.5 text-xs text-muted-foreground">
 					{$t('onboarding.structure.summaryBody', summary)}
@@ -275,7 +275,7 @@
 	{/if}
 
 	{#if onboardingContext.draft.structureStepSubmitted}
-		<p class="rounded-lg bg-secondary/60 px-3 py-2 text-xs text-muted-foreground">
+		<p class="rounded-collection bg-secondary/60 px-3 py-2 text-xs text-muted-foreground">
 			{$t('onboarding.structureStep.alreadySubmitted')}
 		</p>
 	{/if}

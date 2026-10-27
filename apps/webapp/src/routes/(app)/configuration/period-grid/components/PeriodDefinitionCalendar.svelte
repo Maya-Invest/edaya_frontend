@@ -135,7 +135,7 @@
 	<p role="status" aria-live="polite" class={failed ? 'text-sm text-destructive' : 'sr-only'}>{message}</p>
 	{#if browser}
 		<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard focus enables horizontal scrolling on narrow screens.) -->
-		<div role="region" aria-label={$t('periodDefinitions.sectionTitle')} tabindex="0" class="overflow-x-auto rounded-xl border border-border bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
+		<div role="region" aria-label={$t('periodDefinitions.sectionTitle')} tabindex="0" class="overflow-x-auto rounded-collection border border-border bg-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
 			<div class="period-calendar h-[640px] min-w-[760px]" data-testid="period-calendar" aria-busy={busy}>
 				{#key `${$lang}-${visibleGroups.map(group => group.dayOfWeek).join(',')}`}
 					<SvarCalendarLocale lang={$lang} weekStart={1}>

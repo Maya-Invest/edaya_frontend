@@ -5,11 +5,23 @@ import { Services } from '../../../../../tooling/repo/ops/services';
 
 /** Run Vite in an owned worker so native watcher shutdown cannot hang the test. */
 export async function createFixtureServer(config: InlineConfig, name: string, port: number, path: string) {
+  const override = process.env.EDAYA_FIXTURE_PORT;
+  if (override) {
+    const parsed = Number(override);
+    if (!Number.isInteger(parsed) || parsed < 1024 || parsed > 65535) throw new Error('EDAYA_FIXTURE_PORT must be an unprivileged TCP port');
+    port = parsed;
+  }
   const url = `http://127.0.0.1:${port}${path}`;
   if (process.argv.includes('--edaya-fixture-server')) {
     const { createServer } = await import('vite');
     const server = await createServer({ ...config, server: { ...config.server, host: '127.0.0.1', port, strictPort: true } });
-    await server.listen();
+    try { await server.listen(); }
+    catch (error) {
+      // A failed Vite listener can leave watcher handles alive. This owned worker
+      // must exit so the parent reports the startup error instead of timing out.
+      console.error(error);
+      process.exit(1);
+    }
     // The parent owns termination, including the process group and a bounded
     // SIGKILL fallback. It never relies on Vite's in-process close promise.
     return await new Promise<never>(() => {});

@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { provideCollectionPresentation } from '$lib/list/collection-presentation.svelte';
+
+	provideCollectionPresentation();
 	import type { MessagesPageState } from '../messages-page.svelte';
 	import { page } from '$app/stores';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
@@ -58,7 +61,7 @@
 			</FilterPanel>
 		{/snippet}
 		{#snippet more()}
-			<Button variant="outline" size="sm" class="rounded-full" disabled={state.busy || state.loadingMore} onclick={() => state.refresh()}>{$t('messages.refresh')}</Button>
+			<Button variant="outline" size="sm" disabled={state.busy || state.loadingMore} onclick={() => state.refresh()}>{$t('messages.refresh')}</Button>
 		{/snippet}
 	</ListPageHeader>
 	{#if state.error}<p role="alert" class="mb-4 text-sm text-destructive">{state.error}</p>{/if}
@@ -95,11 +98,11 @@
 					<div class="conversation-heading">
 						<DrawerEntityHeader name={detail.conversation.subject} summary={`${detail.conversation.schoolName} · ${detail.conversation.guardianName}${detail.conversation.studentName ? ` · ${detail.conversation.studentName}` : ''}`}>
 							{#snippet actions()}
-								{#if detail.conversation.allowedActions.reply}<Button class="h-auto min-h-10 whitespace-normal" onclick={() => {
+								{#if detail.conversation.allowedActions.reply}<Button class="h-auto whitespace-normal" onclick={() => {
 									state.beginReply();
 									navigate(state.selectedId, { modal: 'reply' });
 								}}>{$t('messages.reply')}</Button>{/if}
-								{#if detail.conversation.allowedActions.resolve}<Button class="h-auto min-h-10 whitespace-normal" variant="outline" disabled={state.sending || detail.conversation.status === 'resolved'} onclick={() => state.mutate('resolve')}>{$t('messages.resolve')}</Button>{/if}
+								{#if detail.conversation.allowedActions.resolve}<Button class="h-auto whitespace-normal" variant="outline" disabled={state.sending || detail.conversation.status === 'resolved'} onclick={() => state.mutate('resolve')}>{$t('messages.resolve')}</Button>{/if}
 							{/snippet}
 						</DrawerEntityHeader>
 					</div>

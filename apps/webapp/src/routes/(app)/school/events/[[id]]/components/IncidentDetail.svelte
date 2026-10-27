@@ -102,7 +102,7 @@
 						<Button
 							variant="outline"
 							size="sm"
-							class="rounded-full"
+
 							{disabled}
 							{title}
 							onclick={() => modals.open('resolve')}
@@ -138,7 +138,7 @@
 			<ul class="space-y-2">
 				{#each involvements as involvement (involvement.id)}
 					{@const student = studentFor(involvement.studentId)}
-					<li class="flex items-center justify-between gap-3 rounded-xl border border-border bg-secondary/20 px-3 py-2">
+					<li class="flex items-center justify-between gap-3 rounded-collection border border-border bg-secondary/20 px-3 py-2">
 						<div class="min-w-0">
 							<p class="truncate text-sm font-medium">{student?.name ?? involvement.studentId}</p>
 							<p class="text-xs text-muted-foreground">{$t(`events.role.${involvement.role}`)}</p>
@@ -159,7 +159,7 @@
 			{:else}
 				<ul class="space-y-2">
 					{#each sanctions as sanction (sanction.id)}
-						<li class="rounded-xl border border-border bg-secondary/20 px-3 py-2.5">
+						<li class="rounded-collection border border-border bg-secondary/20 px-3 py-2.5">
 							<div class="flex items-start justify-between gap-3">
 								<div>
 									<p class="text-sm font-medium">{sanction.actionName}</p>
@@ -184,7 +184,7 @@
 			{live.description ?? live.summary}
 		</div>
 	</DrawerField>
-	<details class="space-y-2 rounded-xl border p-3"><summary>{$t('profile.audit')}</summary>
+	<details class="space-y-2 rounded-collection border p-3"><summary>{$t('profile.audit')}</summary>
 		<p class="text-sm">{$t('profile.reporter')}: {live.reporterId ?? $t('profile.notProvided')}</p>
 		{#if live.lessonSessionId}<p class="text-sm">{$t('profile.lessonOccurrence')}: {live.lessonSessionId}</p>{/if}
 		{#if live.resolvedAt}<p class="text-sm">{$t('profile.resolved')}: {live.resolvedAt} · {live.resolvedByStaffId ?? '—'}</p>{/if}

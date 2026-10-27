@@ -1,3 +1,4 @@
+import { chooseOption, selectOptions } from './support/custom-select';
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 import { ensurePlaywrightChromium } from '../../scripts/playwright-browsers';
@@ -107,7 +108,7 @@ try {
 		await emptyDrawer.waitFor();
 		await emptyDrawer.getByText(/No permissions in this profile|Ce profil ne contient aucune permission/).waitFor();
 		await emptyDrawer.getByRole('button', { name: /more actions|plus d.actions/i }).click();
-		await page.getByRole('button', { name: /^(delete|supprimer)$/i }).click();
+		await page.getByRole('menuitem', { name: /^(delete|supprimer)$/i }).click();
 		const confirm = page.getByTestId('confirm-modal');
 		await confirm.waitFor();
 		const deleted = page.waitForResponse(response => response.url().includes('/entities/staff-permission-profiles/delete'));
@@ -130,7 +131,7 @@ try {
 	await creation.getByRole('alert').waitFor();
 	assert(await creation.locator('select').isDisabled());
 	await creation.getByRole('button', { name: /try again|réessayer/i }).click();
-	await creation.locator('select').selectOption(profileId);
+	await chooseOption(creation.locator('select'), profileId);
 	assert.equal(await creation.locator('[data-scope-grain="class_group"]').count(), 1, 'Mixed profile must offer class scope on a cold page');
 	await creation.locator('input').nth(0).fill('Permission');
 	await creation.locator('input').nth(1).fill('Regression');
@@ -164,15 +165,15 @@ try {
 	const firstClass = classes[0];
 	const otherGrade = classes.find((row: any) => row.gradeLevelId !== firstClass.gradeLevelId);
 	assert(firstClass && otherGrade);
-	await subjectSection.locator('select').nth(0).selectOption(firstClass.gradeLevelId);
-	await subjectSection.locator('select').nth(2).selectOption('selected');
-	await subjectSection.locator('select').nth(3).selectOption(firstClass.id);
+	await chooseOption(subjectSection.locator('select').nth(0), firstClass.gradeLevelId);
+	await chooseOption(subjectSection.locator('select').nth(2), 'selected');
+	await chooseOption(subjectSection.locator('select').nth(3), firstClass.id);
 	const subjectOptions = await subjectSection.locator('select').nth(1).locator('option').evaluateAll(options => options.map(option => (option as HTMLOptionElement).value).filter(Boolean));
 	assert(subjectOptions.length);
-	await subjectSection.locator('select').nth(1).selectOption(subjectOptions[0]);
+	await chooseOption(subjectSection.locator('select').nth(1), subjectOptions[0]);
 	assert.equal(await subjectSection.locator('select').nth(3).inputValue(), firstClass.id, 'Changing Subject preserves the class restriction');
 	await page.screenshot({ path: '/private/tmp/unified-subject-picker.png' });
-	await subjectSection.locator('select').nth(0).selectOption(otherGrade.gradeLevelId);
+	await chooseOption(subjectSection.locator('select').nth(0), otherGrade.gradeLevelId);
 	assert.equal(await subjectSection.locator('select').nth(2).inputValue(), 'selected', 'Changing grade never broadens to all classes');
 	assert.equal(await subjectSection.locator('select').nth(3).inputValue(), '');
 	assert(await page.getByTestId('form-modal-submit').isDisabled());
@@ -190,7 +191,7 @@ try {
 	assert.equal(await page.getByTestId('staff-default-scopes').getByTestId('scope-tag').count(), 1, 'Default selections must be visible after saving');
 
 	await open('apply-profile');
-	await page.locator('#apply-profile-select').selectOption(profileId);
+	await chooseOption(page.locator('#apply-profile-select'), profileId);
 	assert(await page.getByRole('dialog').getByRole('checkbox').first().isChecked());
 	await staleReview('apply-staff-permission-profile', () => page.getByRole('dialog').getByRole('checkbox').first().uncheck());
 	await page.getByRole('dialog').getByRole('checkbox').first().check();
@@ -304,15 +305,15 @@ try {
 	assert.deepEqual(grants.map((row: any) => row.permission), ['STAFF_READ']);
 
 	await open('add-permission');
-	await page.locator('#permission-select').selectOption('STAFF_READ');
+	await chooseOption(page.locator('#permission-select'), 'STAFF_READ');
 	assert.equal(await page.getByRole('dialog').locator('details').count(), 0);
 	assert.equal(await page.getByRole('dialog').getByRole('checkbox').count(), 0);
-	await page.locator('#permission-select').selectOption('GRADE_READ');
-	assert.match(await page.locator('#permission-select option[value="GRADE_READ"]').textContent() ?? '', /Classe|Class group/);
+	await chooseOption(page.locator('#permission-select'), 'GRADE_READ');
+	assert.match(await selectOptions(page.locator('#permission-select')).and(page.locator('option[value="GRADE_READ"]')).textContent() ?? '', /Classe|Class group/);
 	assert.equal(await page.getByRole('dialog').locator('[data-permission="GRADE_READ"] [data-scope-type="class_group"]').count(), 1);
 	assert(await page.getByRole('dialog').getByRole('checkbox').first().isChecked());
-	await staleReview('assign-staff-permission', () => page.locator('#permission-select').selectOption('GRADE_MANAGE'));
-	await page.locator('#permission-select').selectOption('GRADE_READ');
+	await staleReview('assign-staff-permission', () => chooseOption(page.locator('#permission-select'), 'GRADE_MANAGE'));
+	await chooseOption(page.locator('#permission-select'), 'GRADE_READ');
 	const manualPreview = await review('assign-staff-permission');
 	assert(manualPreview.resolution.warnings.some((row: any) => row.permission === 'GRADE_READ' && row.reason === 'missing_scope'));
 	manualId = (await save('assign-staff-permission')).id;

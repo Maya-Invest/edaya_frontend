@@ -171,11 +171,10 @@ Messaging has one initial/identity query owner: the identity-keyed `PageQuery`. 
 
 Configuration Tools owns the generation workspace and submits the selected class IDs in one `generateSchoolTimetable` request. The backend transaction preserves protected sessions and replaces only eligible slots. On success invalidate planning once and show generated-session results. On failure retain the previous timetable; there is no partial class-by-class success or publication phase. Unsupported publish/republish URLs canonicalize to Tools because generation has no publication phase. `timetableGenerated` is a boolean provenance marker, not a lifecycle state.
 
-### School, grading-scale and report-model editors
+### School and grading-scale editors
 
-School profile section modals are `identity`, `issuing`, `location`, and `assets`; there is no page-wide edit modal. The dedicated `/configuration/grade-scales` page owns `scale` for expansion plus `create`, `edit`, `delete`, `add-interval`, `edit-interval`, and `delete-interval` modals. Interval targets include scale and interval IDs. Report-model metadata mutations carry optional passThreshold; omitted values preserve it, and null clears it. Generation captures it without updating existing results. Legacy scale URLs retain their search parameters when redirecting.
+School profile section modals are `identity`, `issuing`, `location`, and `assets`; there is no page-wide edit modal. The dedicated `/configuration/grade-scales` page owns `scale` for expansion plus `create`, `edit`, `delete`, `add-interval`, `edit-interval`, and `delete-interval` modals. Interval targets include scale and interval IDs. Level/year report-settings mutations carry optional passThreshold; null clears it. Generation captures it without updating existing results. Legacy scale URLs retain their search parameters when redirecting.
 
-Report model drawers own metadata and section edit/add/delete modals. Editors capture their opening revision; a changed server revision rejects the save and requires reloading, without discarding the visible draft. Catalog/model mutations do not trigger report recalculation.
 
 ### Level configuration scope
 
@@ -191,11 +190,11 @@ Permission forms share a preview state owner that captures complete immutable co
 
 The teacher timetable tab owns the full-year event collection keyed by teacher, school, selected academic year, year bounds and school time zone. Use the existing date-range query with UTC bounds covering the school's civil year, then trim and group by local start date. Reject late responses after identity changes. Date controls use `?date=YYYY-MM-DD`; legacy `week` values become date targets. Date-only navigation never invalidates the data cache. Render day groups in batches of 30 through `InfiniteList`, reveal the target before scrolling the timetable session container, and preserve all earlier groups. Keep at most one temporary empty target day. Register planning/teacher/subject invalidation and preserve existing authorization and occurrence membership.
 
-### Report card templates in level Details
+### Modules in the grade-level Subjects tab
 
-Levels and Classes → Details contains the standard report-model List below the level's grading settings. The collection is scoped to the selected level and workspace academic year, with multiple models supported. Name/description search, publication status and default-model status are URL-backed collection state; both facets default to All, and Reset filters preserves search and level/year. Matching/counts must cover the full authorized scoped collection, not just loaded models. Creation captures and displays level/year as read-only; scope changes guard dirty creation before closing the old surface. Existing model mutations and REPORT_CARD_CONFIGURE gates remain in effect, with no export, bulk actions or view alternate. The combined navigation entry includes REPORT_CARD_CONFIGURE; there is no separate models entry.
+SubjectsPageState and its PageQuery load the authorized level/year report configuration, including modules, subject summaries and the configuration revision. Chapter details load only with curriculum-read authority. Scope identity includes school, academic year and grade level. Changes invalidate subjects and reportCards version families.
 
-The Details layout owns ReportCardsPageState and its PageQuery. Template drawers use `/configuration/structure/details/report-cards/{id}`; closing returns to Details with the level selection and filters retained. Changing level or year closes the prior drawer/modal. Legacy `/configuration/report-cards` URLs redirect, retaining modal/filter context; a template deep link resolves its own level and academic year before editing. Grading scales stay separate. Preserve persistence and report-generation contracts.
+Module modals are `module-create`, `module-edit`, `module-members`, `module-delete`, and `report-settings`; the target is a module ID. Capture scope/revision when opening and submit expectedRevision with each command. Keep user input after a failed or stale save. Existing subject modal and drawer navigation remains unchanged. Module grouping uses the entire authorized result set before search/category filtering. Legacy template links redirect to Subjects with the grade-level selection and no retired modal target.
 
 ### Activity-log reads and inspection
 

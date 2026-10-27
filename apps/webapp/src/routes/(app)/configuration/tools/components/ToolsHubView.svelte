@@ -58,11 +58,11 @@
 <div class="grid gap-4 md:grid-cols-2 xl:max-w-4xl">
 	{#if toolsPage.allowedImportTabs.length > 0}
 		<article
-			class="flex flex-col rounded-xl border border-border bg-card p-5 shadow-sm"
+			class="flex flex-col rounded-collection border border-border bg-card p-5 shadow-sm"
 			data-testid="import-pack-generic"
 		>
 			<div class="mb-4 flex items-start gap-3">
-				<div class="rounded-lg bg-primary/10 p-2 text-primary">
+				<div class="rounded-collection bg-primary/10 p-2 text-primary">
 					<Upload class="size-5" aria-hidden="true" />
 				</div>
 				<div class="min-w-0 flex-1">
@@ -94,11 +94,11 @@
 
 	<PermissionGate permission="TIMETABLE_MANAGE" mode="hide">
 		<article
-			class="flex flex-col rounded-xl border border-border bg-card p-5 shadow-sm"
+			class="flex flex-col rounded-collection border border-border bg-card p-5 shadow-sm"
 			data-testid="timetable-planning-tool"
 		>
 			<div class="mb-4 flex items-start gap-3">
-				<div class="rounded-lg bg-primary/10 p-2 text-primary">
+				<div class="rounded-collection bg-primary/10 p-2 text-primary">
 					<CalendarRange class="size-5" aria-hidden="true" />
 				</div>
 				<div class="min-w-0 flex-1">
@@ -118,7 +118,7 @@
 		</article>
 	</PermissionGate>
 	<PermissionGate permission="FINANCIAL_REPORT_READ">
-		<article class="rounded-xl border border-border bg-card p-5 shadow-sm">
+		<article class="rounded-collection border border-border bg-card p-5 shadow-sm">
 			<h3 class="font-display text-lg font-semibold">{$t('finance.reconciliation')}</h3>
 			<p class="my-3 text-sm text-muted-foreground">{$t('finance.checksDescription')}</p>
 			<Button onclick={() => appGoto('/configuration/tools/finance-checks')}>{$t('common.open')}</Button>

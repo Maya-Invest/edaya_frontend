@@ -152,7 +152,7 @@
 	{#snippet signin()}
 		{#if showTeacherPortalGate}
 			<div
-				class="mb-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground"
+				class="mb-4 rounded-collection border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground"
 				role="status"
 				data-testid={TEACHER_PORTAL_GATE_BANNER_TEST_ID}
 			>
@@ -161,7 +161,7 @@
 		{/if}
 		{#if showGuardianPortalGate}
 			<div
-				class="mb-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground"
+				class="mb-4 rounded-collection border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground"
 				role="status"
 				data-testid={GUARDIAN_PORTAL_GATE_BANNER_TEST_ID}
 			>
@@ -170,7 +170,7 @@
 		{/if}
 		{#if showStudentPortalGate}
 			<div
-				class="mb-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground"
+				class="mb-4 rounded-collection border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground"
 				role="status"
 				data-testid={STUDENT_PORTAL_GATE_BANNER_TEST_ID}
 			>

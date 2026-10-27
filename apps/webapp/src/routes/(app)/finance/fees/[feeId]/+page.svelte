@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { financeReadKey } from '$lib/api/finance-workspace';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import PageQuery from '$lib/components/ui/PageQuery.svelte';
 	import { t } from '$lib/i18n';
@@ -25,7 +26,7 @@
 	<div class="flex min-h-0 flex-1 flex-col">
 		<header class="flex items-center justify-between border-b border-border px-6 py-4">
 			<h2>{$t('billing.fee')}</h2>
-			<button type="button" aria-label={$t('common.close')} onclick={close} class="rounded-full p-2 hover:bg-secondary"><X class="size-4" /></button>
+			<Button size="icon" variant="ghost" aria-label={$t('common.close')} onclick={close} class="rounded-full p-2 hover:bg-secondary"><X class="size-4" /></Button>
 		</header>
 		<div class="min-h-0 flex-1 overflow-y-auto p-6">
 			<PageQuery {query} cache={false} cacheKey={() => financeReadKey(`fee:${$page.params.feeId}`)}>

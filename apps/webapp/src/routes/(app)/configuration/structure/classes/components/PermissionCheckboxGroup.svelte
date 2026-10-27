@@ -27,7 +27,7 @@
 	}
 </script>
 
-<div class="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-border p-3">
+<div class="max-h-56 space-y-2 overflow-y-auto rounded-collection border border-border p-3">
 	{#each entries as entry (entry.permission)}
 		<label class="flex items-start gap-2 text-sm">
 			<Checkbox

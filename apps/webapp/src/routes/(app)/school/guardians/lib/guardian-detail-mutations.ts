@@ -8,6 +8,11 @@ import { authSession } from '$lib/auth/session.svelte';
 import { guardianIdentityPayload } from '$lib/people-profile-fields';
 import { runGuardianRouteMutation } from './guardian-route-mutation';
 
+type ContactInput = Partial<Pick<components['schemas']['Guardian'], 'phone' | 'alternativePhone' | 'email' | 'emailNotificationsEnabled' | 'smsNotificationsEnabled' | 'pushNotificationsEnabled'>>;
+function contactPatch(input: ContactInput): ContactInput {
+	return Object.fromEntries(['phone', 'alternativePhone', 'email', 'emailNotificationsEnabled', 'smsNotificationsEnabled', 'pushNotificationsEnabled'].filter(key => input[key as keyof ContactInput] !== undefined).map(key => [key, input[key as keyof ContactInput]]));
+}
+
 function schoolId(): string {
 	return authSession.schoolId ?? academicContext.schools[0]?.id ?? 'sch-edaya-ci-cocody';
 }
@@ -16,39 +21,13 @@ function guardianInitials(firstName: string, lastName: string): string {
 	return `${firstName.trim()[0] ?? ''}${lastName.trim()[0] ?? ''}`;
 }
 
-function buildContactMethods(email: string, phone: string) {
-	return [
-		email
-			? {
-					type: 'email' as const,
-					value: email,
-					label: 'Email',
-					isPrimary: true,
-					allowsNotifications: true,
-				}
-			: null,
-		phone
-			? {
-					type: 'phone' as const,
-					value: phone,
-					label: 'Téléphone',
-					isPrimary: !email,
-					allowsNotifications: true,
-				}
-			: null,
-	].filter((method): method is NonNullable<typeof method> => method !== null);
-}
-
-function buildOptimisticGuardian(input: {
+function buildOptimisticGuardian(input: ContactInput & {
 	id: string;
 	profile?: Record<string, string>;
 	code?: string;
 	firstName: string;
 	lastName: string;
 	hasAccess?: boolean;
-	contactMethods?: components['schemas']['Guardian']['contactMethods'];
-	email?: string;
-	phone?: string;
 }): Guardian {
 	const email = input.email?.trim() ?? '';
 	const phone = input.phone?.trim() ?? '';
@@ -62,7 +41,7 @@ function buildOptimisticGuardian(input: {
 		initials: guardianInitials(input.firstName, input.lastName),
 		relation: 'Legal guardian',
 		hasAccess: input.hasAccess ?? true,
-		contactMethods: input.contactMethods ?? buildContactMethods(email, phone),
+		...contactPatch(input),
 		email,
 		phone,
 		studentIds: [],
@@ -74,14 +53,11 @@ function buildOptimisticGuardian(input: {
 
 export async function createGuardianOnPage(
 	state: GuardiansPageState,
-	input: {
+	input: ContactInput & {
 		firstName: string;
 		profile?: Record<string, string>;
 		lastName: string;
 		code?: string;
-		email?: string;
-		phone?: string;
-		contactMethods?: components['schemas']['Guardian']['contactMethods'];
 		hasAccess?: boolean;
 		sendAccountInvitation?: boolean;
 		successMessage?: string;
@@ -104,7 +80,7 @@ export async function createGuardianOnPage(
 			...(code ? { code } : {}),
 			email: email || null,
 			phone: phone || null,
-			contactMethods: input.contactMethods ?? buildContactMethods(email, phone),
+			...contactPatch(input),
 			hasAccess: input.hasAccess ?? true,
 			sendAccountInvitation: input.sendAccountInvitation ?? true,
 			createdAt: new Date().toISOString(),
@@ -124,55 +100,48 @@ export async function createGuardianOnPage(
 
 export async function updateGuardianContactOnPage(
 	state: GuardiansPageState,
-	input: {
+	input: ContactInput & {
 		guardianId: string;
 		profile?: Record<string, string>;
 		firstName: string;
 		lastName: string;
-		email?: string;
-		phone?: string;
-		contactMethods?: components['schemas']['Guardian']['contactMethods'];
 		hasAccess?: boolean;
 		successMessage?: string;
 	},
 ): Promise<boolean> {
 	const client = getBrowserSchoolClient();
-	const previous = state.findGuardian(input.guardianId);
+	const scope = JSON.stringify([authSession.authUserId, authSession.schoolId, authSession.subjectId]);
 	const email = input.email?.trim() ?? '';
 	const phone = input.phone?.trim() ?? '';
 
 	const result = await runGuardianRouteMutation({
-		request: async () => {
-			const existing = await client.entities.guardians.get(input.guardianId);
-			return client.commands.updateGuardianContactMethods({
-				guardianId: input.guardianId,
-				...guardianIdentityPayload(input.profile),
-				firstName: input.firstName.trim(),
-				lastName: input.lastName.trim(),
-				email: email || null,
-				phone: phone || null,
-				contactMethods: input.contactMethods ?? existing.contactMethods,
-				hasAccess: input.hasAccess ?? existing.hasAccess,
-			});
-		},
-		apply: () => {
+		request: () => client.commands.updateGuardianProfile({
+			guardianId: input.guardianId,
+			...guardianIdentityPayload(input.profile),
+			firstName: input.firstName.trim(),
+			lastName: input.lastName.trim(),
+			...contactPatch(input),
+			...(input.hasAccess !== undefined ? { hasAccess: input.hasAccess } : {}),
+		}),
+		onSuccess: (saved) => {
+			if (scope !== JSON.stringify([authSession.authUserId, authSession.schoolId, authSession.subjectId]))
+				return;
 			state.patchGuardian(input.guardianId, {
 				...guardianIdentityPayload(input.profile),
 				firstName: input.firstName.trim(),
 				lastName: input.lastName.trim(),
 				name: `${input.firstName.trim()} ${input.lastName.trim()}`.trim(),
 				initials: guardianInitials(input.firstName, input.lastName),
-				email,
-				phone,
-				...(input.contactMethods ? { contactMethods: input.contactMethods } : {}),
+				...contactPatch(input),
+				email: saved.email ?? '',
+				phone: saved.phone ?? '',
+				alternativePhone: saved.alternativePhone,
+				emailNotificationsEnabled: saved.emailNotificationsEnabled,
+				smsNotificationsEnabled: saved.smsNotificationsEnabled,
+				pushNotificationsEnabled: saved.pushNotificationsEnabled,
 				...(input.hasAccess !== undefined ? { hasAccess: input.hasAccess } : {}),
 				preferredContact: email ? 'email' : phone ? 'phone' : 'email',
 			});
-		},
-		rollback: () => {
-			if (previous) {
-				state.patchGuardian(input.guardianId, previous);
-			}
 		},
 		successMessage: input.successMessage,
 		versionKeys: ['guardians'],
@@ -230,17 +199,7 @@ export async function updateGuardianProfilePhotoOnPage(
 				schoolId: resolvedSchoolId,
 			});
 			const client = getBrowserSchoolClient();
-			const existing = await client.entities.guardians.get(input.guardianId);
-			await client.commands.updateGuardianContactMethods({
-				guardianId: input.guardianId,
-				firstName: existing.firstName,
-				lastName: existing.lastName,
-				email: existing.email,
-				phone: existing.phone,
-				contactMethods: existing.contactMethods,
-				hasAccess: existing.hasAccess,
-				photoUrl: uploaded.photoUrl,
-			});
+			await client.commands.updateGuardianProfile({ guardianId: input.guardianId, photoUrl: uploaded.photoUrl });
 			return displayProfilePhotoUrl(uploaded.attachmentId);
 		},
 		apply: () => {},

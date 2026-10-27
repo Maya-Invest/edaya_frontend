@@ -81,7 +81,7 @@
 		</DrawerField>
 	{/if}
 
-	<div class="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3">
+	<div class="flex items-center justify-between rounded-collection border border-border bg-card px-4 py-3">
 		<div>
 			<Label class="text-sm font-medium">{$t('staff.activeLabel')}</Label>
 			<p class="text-xs text-muted-foreground">{$t('staff.activeHint')}</p>

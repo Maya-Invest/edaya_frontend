@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Button from '$lib/components/ui/button/button.svelte';
 	import { cn } from '$lib/utils';
 
 	const { label, steps, current, onSelect }: {
@@ -15,12 +14,12 @@
 	<ol class="flex flex-wrap gap-2">
 		{#each steps as step, index (step.key)}
 			<li class="min-w-0">
-				<Button variant="ghost" disabled={step.disabled} aria-current={current === step.key ? 'step' : undefined}
+				<button type="button" disabled={step.disabled} aria-current={current === step.key ? 'step' : undefined}
 					aria-describedby={step.disabled && step.reason ? `${id}-${step.key}-reason` : undefined}
-					class={cn('text-left', current === step.key && 'bg-primary/10 text-primary ring-1 ring-primary')}
+					class={cn('ui-nav-target text-left', current === step.key && 'bg-primary/10 text-primary ring-1 ring-primary')}
 					data-testid={`task-step-${step.key}`} onclick={() => onSelect(step.key)}>
 					<span class="tabular-nums" aria-hidden="true">{index + 1}.</span>{step.label}
-				</Button>
+				</button>
 				{#if step.disabled && step.reason}<p id={`${id}-${step.key}-reason`} class="max-w-64 px-4 text-xs text-muted-foreground">{step.reason}</p>{/if}
 			</li>
 		{/each}

@@ -64,6 +64,10 @@ export default {
 				}
 			},
 			borderRadius: {
+ collection: 'var(--radius-collection)',
+ field: 'var(--radius-field)',
+ menu: 'var(--radius-menu)',
+ dialog: 'var(--radius-dialog)',
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'

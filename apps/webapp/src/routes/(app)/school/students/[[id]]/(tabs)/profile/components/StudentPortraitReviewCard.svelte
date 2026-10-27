@@ -29,7 +29,7 @@
 </script>
 
 <div class="grid gap-3 sm:grid-cols-2">
-	<div class="rounded-xl border border-border bg-secondary/30 p-3">
+	<div class="rounded-collection border border-border bg-secondary/30 p-3">
 		<p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">{$t('student.photo.current')}</p>
 		<div class="mt-3 flex items-center gap-3">
 			{#if canReview}
@@ -51,7 +51,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="rounded-xl border border-border bg-secondary/30 p-3">
+	<div class="rounded-collection border border-border bg-secondary/30 p-3">
 		<p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">{$t('student.photo.proposed')}</p>
 		{#if pending && proposedUrl}
 			<div class="mt-3 flex items-center gap-3">

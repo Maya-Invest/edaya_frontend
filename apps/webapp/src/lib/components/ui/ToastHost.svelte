@@ -25,7 +25,7 @@
 		{@const ItemIcon = Icon[item.kind]}
 		<div
 			class={cn(
-				'pointer-events-auto flex items-start gap-3 rounded-2xl border px-4 py-3 shadow-panel animate-fade-in',
+				'pointer-events-auto flex items-start gap-3 rounded-collection border px-4 py-3 shadow-panel animate-fade-in',
 				tone[item.kind],
 			)}
 			role="status"

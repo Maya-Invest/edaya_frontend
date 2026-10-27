@@ -30,7 +30,7 @@
 					if (value)
 						marks = { ...marks, [row.studentId]: value as SessionAttendanceStatus };
 				}}>
-					<Select.Trigger id={`roll-call-${row.studentId}`} class="min-h-11 w-40 max-w-full" aria-label={$t('attendanceDay.studentStatus', { name: row.studentName })}>
+					<Select.Trigger id={`roll-call-${row.studentId}`} class="w-40 max-w-full" aria-label={$t('attendanceDay.studentStatus', { name: row.studentName })}>
 						<Select.Value placeholder={$t('planning.session.notRecorded')}>
 							{marks[row.studentId] ? $t(`attendance.${marks[row.studentId]}`) : $t('planning.session.notRecorded')}
 						</Select.Value>

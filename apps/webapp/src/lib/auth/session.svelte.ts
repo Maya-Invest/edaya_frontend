@@ -192,10 +192,8 @@ class AuthSession {
 		this.subjectId = options?.subjectId ?? null;
 		this.loginEmail = options?.loginEmail ?? null;
 		this.notificationEmail = options?.notificationEmail
-			?? options?.guardianSettings?.notificationEmail
 			?? null;
 		this.notificationPhone = options?.notificationPhone
-			?? options?.guardianSettings?.notificationPhone
 			?? null;
 		this.ready = true;
 	}
@@ -221,13 +219,6 @@ class AuthSession {
 		}
 		if (contact.notificationPhone !== undefined) {
 			this.notificationPhone = contact.notificationPhone;
-		}
-		if (this.guardianSettings) {
-			this.guardianSettings = {
-				...this.guardianSettings,
-				notificationEmail: this.notificationEmail,
-				notificationPhone: this.notificationPhone,
-			};
 		}
 	}
 

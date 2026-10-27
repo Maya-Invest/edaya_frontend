@@ -103,7 +103,7 @@
 		<div class="flex shrink-0 flex-wrap items-end gap-3 border-b border-border bg-card py-2" data-testid="teacher-timetable-controls">
 			<div class="space-y-1">
 				<Label for="teacher-timetable-date">{$t('teacher.timetableGoToDate')}</Label>
-				<Input id="teacher-timetable-date" type="date" min={context.startDate} max={context.endDate} value={targetDate} onchange={event => navigateDate(event.currentTarget.value)} />
+				<Input class="ui-query-control" id="teacher-timetable-date" type="date" min={context.startDate} max={context.endDate} value={targetDate} onchange={event => navigateDate(event.currentTarget.value)} />
 			</div>
 			<Button variant="outline" disabled={!todayInYear} title={todayInYear ? undefined : $t('teacher.timetableTodayOutsideYear')} onclick={() => navigateDate(today)}>
 				{$t('teacher.timetableToday')}
@@ -122,9 +122,9 @@
 						<section class="space-y-2" aria-labelledby={`teacher-timetable-${group.date}`}>
 							<h4 id={`teacher-timetable-${group.date}`} data-timetable-date={group.date} class="text-[11px] font-bold uppercase tracking-wider text-black">{formatDay(group.date)}</h4>
 							{#if group.events.length === 0}
-								<p data-testid="teacher-timetable-empty-date" class="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">{$t('teacher.timetableNoSessions')}</p>
+								<p data-testid="teacher-timetable-empty-date" class="rounded-collection border border-border bg-card px-4 py-3 text-sm text-muted-foreground">{$t('teacher.timetableNoSessions')}</p>
 							{:else}
-								<ul class="divide-y divide-border/60 overflow-hidden rounded-xl border border-border bg-card">
+								<ul class="divide-y divide-border/60 overflow-hidden rounded-collection border border-border bg-card">
 									{#each group.events as event (`${event.kind}:${event.id}`)}
 										<li>
 											<a href={eventHref(event)} data-testid="teacher-timetable-session" class="flex flex-wrap items-start justify-between gap-3 px-4 py-3 hover:bg-secondary/40">

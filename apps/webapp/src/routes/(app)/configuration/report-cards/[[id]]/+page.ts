@@ -1,6 +1,9 @@
 import { redirect } from '@sveltejs/kit';
-import { legacyReportCardsHref } from '../../structure/details/report-cards/lib/report-cards-helpers';
 
 export function load({ url }: { url: URL }) {
-	redirect(307, legacyReportCardsHref(url));
+	const query = new URLSearchParams();
+	const level = url.searchParams.get('gradeLevel');
+	if (level)
+		query.set('gradeLevel', level);
+	redirect(307, `/configuration/structure/subjects?${query}`);
 }

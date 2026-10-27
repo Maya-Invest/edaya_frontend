@@ -25,15 +25,14 @@
 
 <main class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
 	<section class="scrollbar-thin flex-1 overflow-y-auto p-4 md:p-6">
-		<DashboardSummaryHeader generatedAt={dashboardPage.overview?.generatedAt} />
-		<PageQuery {query} loadingTitle={$t('dashboard.title')}>
+		<DashboardSummaryHeader generatedAt={dashboardPage.overview?.generatedAt} noPeriod={dashboardPage.overview?.academicPeriodId === null} />
+		<PageQuery {query} cache={false} loadingTitle={$t('dashboard.title')}>
 			{#snippet children(data)}
 				<DataState
-					preserveShell
 					status={data.status}
 					errorMessage={data.errorMessage}
-					emptyTitle={$t('dashboard.title')}
-					emptyDescription={$t('dataState.emptyDescription')}
+					emptyTitle={$t('dashboard.noYearTitle')}
+					emptyDescription={$t('dashboard.noYearDescription')}
 				>
 					{#if dashboardPage.overview}
 						<DirectorDashboardView overview={dashboardPage.overview} />

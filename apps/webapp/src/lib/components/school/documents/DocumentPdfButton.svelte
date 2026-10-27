@@ -67,7 +67,7 @@
 		<Button
 			size="sm"
 			variant="outline"
-			class="rounded-full"
+
 			disabled={disabled || gated || busy || !sourceId}
 			{title}
 			onclick={() => void generate()}

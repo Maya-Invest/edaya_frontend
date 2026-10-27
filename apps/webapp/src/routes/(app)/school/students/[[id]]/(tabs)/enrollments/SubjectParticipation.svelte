@@ -36,7 +36,7 @@
 	<h3 class="font-semibold">{$t('participation.title')}</h3>
 	{#each offerings as subject (subject.id)}
 		{@const enrolled = data?.enrollments.find(row => row.classSubjectId === subject.id && placements.some(placement => placement.id === row.studentClassEnrollmentId))}
-		<div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-3">
+		<div class="flex flex-wrap items-center justify-between gap-3 rounded-collection border bg-card p-3">
 			<div class="min-w-0 space-y-1">
 				<p class="font-medium">{subject.name}</p>
 				<p class="text-sm text-muted-foreground">{!enrolled ? $t('participation.notEnrolled') : enrolled.scope === 'annual' ? $t('participation.annual') : enrolled.periods.map(period => data?.periods.find(row => row.id === period.periodId)?.name ?? period.periodId).join(', ')}</p>

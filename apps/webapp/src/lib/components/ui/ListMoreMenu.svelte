@@ -108,7 +108,7 @@
 					{...props}
 					variant="outline"
 					size="sm"
-					class="h-9 rounded-full px-3"
+
 					aria-label={$t('list.moreActions')}
 					data-testid="list-more-menu"
 				>

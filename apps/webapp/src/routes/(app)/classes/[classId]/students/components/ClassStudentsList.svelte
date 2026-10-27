@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { provideCollectionPresentation } from '$lib/list/collection-presentation.svelte';
+
+	provideCollectionPresentation();
 	import type { ListEntityTableColumn } from '$lib/list/list-entity-table-types';
 	import type { ListView } from '$lib/list/list-view-url';
 	import type { Student } from '$lib/types/school';
@@ -168,7 +171,7 @@
 				{#snippet children({ disabled, title })}
 					<Button
 						size="sm"
-						class="rounded-full"
+
 						{disabled}
 						{title}
 						onclick={() => modals.open('create')}
@@ -218,14 +221,14 @@
 			onToggleSelected={(id, checked) => selection.toggleSelected(id, checked)}
 			onToggleAllVisible={checked => selection.toggleVisible(infinite.visible, checked)} allVisibleSelected={selection.allVisibleSelected(infinite.visible)}
 			hasMore={infinite.hasMore} total={infinite.total} visibleCount={infinite.visible.length} onLoadMore={infinite.loadMore}
-			onRowClick={student => selection.handleRowClick(student, onSelect)}>
+			onRowClick={onSelect}>
 			{#snippet cell(student, column)}{@render studentField(student, column.key)}{/snippet}
 		</ListEntityTable>
 	{:else}
 		<ListEntityCards {columns} rows={infinite.visible} highlightId={selectedId}
 			selectionMode={selection.selectionMode} selectedIds={selection.selectedIds} onToggleSelected={(id, checked) => selection.toggleSelected(id, checked)}
 			hasMore={infinite.hasMore} total={infinite.total} visibleCount={infinite.visible.length} onLoadMore={infinite.loadMore}
-			onRowClick={student => selection.handleRowClick(student, onSelect)}>
+			onRowClick={onSelect}>
 			{#snippet field(student, key)}{@render studentField(student, key)}{/snippet}
 		</ListEntityCards>
 	{/if}

@@ -12,6 +12,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { lang, t } from '$lib/i18n';
 	import { catalogCategory } from '$lib/i18n/catalog-label';
+	import { hasPermission } from '$lib/permissions';
 	import AcademicDisciplinePicker from '$lib/smart-components/reference-catalog/AcademicDisciplinePicker.svelte';
 	import { get } from 'svelte/store';
 	import { getSubjectsPageState } from '../subjects-page.svelte';
@@ -22,8 +23,9 @@
 		sky: 'Sky',
 		warm: 'Warm',
 	};
-	let { open = $bindable(false), defaultGradeLevelId = 'all', onCreated }: {
+	let { defaultModuleId, open = $bindable(false), defaultGradeLevelId = 'all', onCreated }: {
 		open?: boolean;
+		defaultModuleId?: string;
 		defaultGradeLevelId?: string;
 		onCreated?: () => void;
 	} = $props();
@@ -35,8 +37,13 @@
 	let code = $state('');
 	let shortName = $state('');
 	let coefficient = $state('');
+	let reportModuleId = $state('ungrouped');
+	let capturedRevision = 0;
+	const reportModules = $derived(subjectsPage.slice?.configuration?.modules ?? []);
 	let isOptional = $state(false);
 	let gradeLevelId = $state('');
+	const canConfigureModule = $derived(hasPermission('REPORT_CARD_CONFIGURE', { gradeLevelId }));
+
 	let categories = $state<SubjectCategoryOption[]>([]);
 	let categoryId = $state('');
 	let color = $state<Subject['color']>('mint');
@@ -67,6 +74,8 @@
 		code = '';
 		shortName = '';
 		coefficient = '';
+		reportModuleId = defaultModuleId ?? 'ungrouped';
+		capturedRevision = subjectsPage.slice?.configuration?.settings.revision ?? 0;
 		isOptional = false;
 		categoryId = defaultSubjectCategoryId(categories);
 		color = 'mint';
@@ -103,6 +112,7 @@
 			code: code.trim() || undefined,
 			shortName: shortName.trim() || null,
 			coefficient: coefficient ? Number(coefficient) : undefined,
+			...(canConfigureModule ? { reportModuleId: reportModuleId === 'ungrouped' ? null : reportModuleId, expectedReportConfigurationRevision: capturedRevision } : {}),
 			isOptional,
 			categoryId,
 			color,
@@ -198,4 +208,6 @@
 	<Label class="block space-y-2"><span>{$t('profile.shortName')}</span><Input bind:value={shortName} /></Label>
 	<Label class="block space-y-2"><span>{$t('eval.coefficient')}</span><Input type="number" min="0" step="any" bind:value={coefficient} /></Label>
 	<Label class="flex items-center gap-2"><Checkbox bind:checked={isOptional} />{$t('profile.isOptional')}</Label>
+	{#if canConfigureModule}<Label class="block space-y-2"><span>{$t('modules.module')}</span><Select.Root type="single" bind:value={reportModuleId}><Select.Trigger><Select.Value>{reportModules.find(module => module.id === reportModuleId)?.name ?? $t('modules.ungrouped')}</Select.Value></Select.Trigger><Select.Content><Select.Item value="ungrouped">{$t('modules.ungrouped')}</Select.Item>{#each reportModules as module (module.id)}<Select.Item value={module.id}>{module.name}</Select.Item>{/each}</Select.Content></Select.Root></Label>{/if}
+
 </FormModal>

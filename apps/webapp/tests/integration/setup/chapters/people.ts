@@ -1,3 +1,4 @@
+import { chooseOption, selectOptions } from '../../support/custom-select';
 import {
 	assertListContains,
 	confirmDialog,
@@ -503,13 +504,13 @@ export async function runPeopleChapter(journey: UiJourney): Promise<void> {
 			fill: async (current) => {
 				const select = current.locator('#permission-select');
 				await select.waitFor({ state: 'visible', timeout: 12_000 });
-				const values = await select.locator('option').evaluateAll((nodes) => (
+				const values = await selectOptions(select).evaluateAll((nodes) => (
 					nodes
 						.map(node => (node as HTMLOptionElement).value)
 						.filter(entry => entry.length > 0)
 				));
 				for (const value of values) {
-					await select.selectOption(value);
+					await chooseOption(select, value);
 					if (await waitForSubmitEnabled(current, 2_000)) {
 						await current.getByTestId('form-modal-submit').click();
 						await current.getByTestId('form-modal-submit').getByText(/save|enregistrer/i).waitFor();

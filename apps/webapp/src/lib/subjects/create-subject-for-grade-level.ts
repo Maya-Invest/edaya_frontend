@@ -16,6 +16,8 @@ export interface CreateSubjectForGradeLevelInput {
 
 	code?: string;
 	coefficient?: number;
+	reportModuleId?: string | null;
+	expectedReportConfigurationRevision?: number;
 	categoryId: string;
 	color?: Subject['color'];
 	createdAt?: string;
@@ -57,6 +59,8 @@ export async function createSubjectForGradeLevel(
 		academicYearId: input.academicYearId,
 		classSubjectIdsByClassGroupId: input.classSubjectIdsByClassGroupId,
 		name: input.name.trim(),
+		reportModuleId: input.reportModuleId,
+		expectedReportConfigurationRevision: input.expectedReportConfigurationRevision,
 		disciplineId: input.disciplineId,
 		shortName: input.shortName,
 		isOptional: input.isOptional,

@@ -51,7 +51,7 @@
 	}
 </script>
 
-<div class="space-y-3 rounded-xl border border-border bg-card px-4 py-3">
+<div class="space-y-3 rounded-collection border border-border bg-card px-4 py-3">
 	<div class="flex items-start justify-between gap-3">
 		<div class="space-y-1">
 			<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -114,7 +114,7 @@
 		</PermissionGate>
 
 		{#if linkStatus === 'pending' && state.lastInviteUrl}
-			<div class="space-y-2 rounded-lg border border-border bg-secondary/30 px-3 py-2.5">
+			<div class="space-y-2 rounded-collection border border-border bg-secondary/30 px-3 py-2.5">
 				<Label class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
 					{$t('invitation.inviteLinkLabel')}
 				</Label>
@@ -128,14 +128,14 @@
 		{/if}
 	{/if}
 	<PermissionGate permission="ACCESS_CONTROL_MANAGE">
-		<details class="space-y-2 rounded-lg border p-3" ontoggle={(event) => {
+		<details class="space-y-2 rounded-collection border p-3" ontoggle={(event) => {
 			if (event.currentTarget.open)
 				void state.loadHistory();
 		}}>
 			<summary class="cursor-pointer text-sm font-medium">{$t('profile.invitationHistory')}</summary>
 			{#if state.historyLoading}<p class="text-xs">{$t('dataState.loading')}</p>{:else if state.historyError}<p class="text-xs" role="alert">{$t('dataState.error')}</p>{:else if !state.history.length}<p class="text-xs">{$t('profile.notProvided')}</p>{:else}
 				{#each state.history as invitation (invitation.id)}
-					<dl class="space-y-1 rounded-lg border p-2 text-xs">
+					<dl class="space-y-1 rounded-collection border p-2 text-xs">
 						<div><dt class="text-muted-foreground">{$t('common.status')}</dt><dd>{$t(`profile.invitationStatus.${invitation.status}`)}</dd></div>
 						<div><dt class="text-muted-foreground">{$t('profile.contactMethods')}</dt><dd>{invitation.contactChannel} · {invitation.contactValue}</dd></div>
 						<div><dt class="text-muted-foreground">{$t('profile.createdAt')}</dt><dd>{String(invitation.createdAt)} · {invitation.createdByStaffId}</dd></div>

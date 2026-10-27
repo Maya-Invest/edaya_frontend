@@ -8,6 +8,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import DataState from '$lib/components/ui/DataState.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import TaskSteps from '$lib/components/ui/TaskSteps.svelte';
 	import { locale, t } from '$lib/i18n';
 	import { IMPORT_TYPE_DEFINITIONS } from '$lib/import/catalog/import-types';
@@ -188,36 +189,36 @@
 			{#if stage === 'settings'}
 				<section class="max-w-lg space-y-4" aria-label={$t('durableImport.settings')}>
 					<label class="block space-y-2 text-sm"><span>{$t('durableImport.year')}</span>
-						<select class="min-h-11 w-full rounded-full border border-input bg-background px-4" bind:value={yearId} disabled={Boolean(importState.detail) || importState.busy}>
+						<SelectField class="w-full border border-input bg-background" bind:value={yearId} disabled={Boolean(importState.detail) || importState.busy}>
 							{#each academicContext.years as year (year.id)}<option value={year.id}>{year.label}</option>{/each}
-						</select>
+						</SelectField>
 					</label>
 					<label class="block space-y-2 text-sm"><span>{$t('durableImport.mode')}</span>
-						<select class="min-h-11 w-full rounded-full border border-input bg-background px-4" data-testid="import-mode" bind:value={mode} disabled={running || importState.busy}>
+						<SelectField class="w-full border border-input bg-background" data-testid="import-mode" bind:value={mode} disabled={running || importState.busy}>
 							<option value="M">M — {$t('durableImport.merge')}</option><option value="S">S — {$t('durableImport.skip')}</option><option value="O">O — {$t('durableImport.overwrite')}</option>
-						</select>
+						</SelectField>
 					</label>
 					<label class="block space-y-2 text-sm"><span>{$t('durableImport.effectiveDate')}</span>
-						<input data-testid="import-enrollment-date" type="date" class="min-h-11 w-full rounded-full border border-input bg-background px-4" bind:value={effectiveDate} disabled={running || importState.busy} />
+						<input data-testid="import-enrollment-date" type="date" class="ui-field min-h-11 w-full rounded-full border border-input bg-background px-4" bind:value={effectiveDate} disabled={running || importState.busy} />
 					</label>
 					<p class="text-sm text-muted-foreground">{$t(`durableImport.modeHelp.${mode}`)} {$t('durableImport.rowOverride')}</p>
 				</section>
 			{:else if stage === 'files'}
 				<section class="space-y-4" aria-label={$t('durableImport.files')}>
 					<label class="block max-w-lg space-y-2 text-sm"><span>{$t('durableImport.type')}</span>
-						<select class="min-h-11 w-full rounded-full border border-input bg-background px-4" data-testid="data-import-type-select" value={importType} onchange={event => onImportTypeChange?.(event.currentTarget.value as ImportTypeKey)} disabled={importState.busy || Boolean(replacementId) || pendingUploads.length > 0}>
+						<SelectField class="w-full border border-input bg-background" data-testid="data-import-type-select" value={importType} onchange={event => onImportTypeChange?.(event.currentTarget.value as ImportTypeKey)} disabled={importState.busy || Boolean(replacementId) || pendingUploads.length > 0}>
 							{#each definitions as definition (definition.key)}<option value={definition.key}>{$t(definition.labelKey)}</option>{/each}
-						</select>
+						</SelectField>
 					</label>
 					<div class="flex flex-wrap gap-2"><Button data-testid="import-template-xlsx" variant="outline" onclick={() => importState.template(importType, 'xlsx')}>{$t('durableImport.template')} XLSX</Button><Button variant="outline" onclick={() => importState.template(importType, 'csv')}>{$t('durableImport.template')} CSV</Button></div>
 					{#if importState.detail}
 						<label class="block max-w-lg space-y-2 text-sm"><span>{$t('durableImport.destination')}</span>
-							<select class="min-h-11 w-full rounded-full border border-input bg-background px-4" bind:value={replacementId} disabled={running || importState.busy || pendingUploads.length > 0}>
+							<SelectField class="w-full border border-input bg-background" bind:value={replacementId} disabled={running || importState.busy || pendingUploads.length > 0}>
 								<option value="">{$t('durableImport.addFile')}</option>
 								{#each files as file (file.fileId)}<option value={file.fileId}>{$t('durableImport.replace')} {file.fileName} · {typeLabel(file.type)}</option>{/each}
-							</select>
+							</SelectField>
 						</label>
-						<label class="block space-y-2 text-sm"><span>{$t('durableImport.chooseFile')}</span><input data-testid="import-file-input" type="file" accept=".csv,.xlsx" multiple={!replacementId} bind:files={selectedFiles} onchange={event => pendingUploads = Array.from(event.currentTarget.files ?? [])} disabled={running || importState.busy} class="block min-h-11 w-full rounded-xl border border-input p-2" /></label>
+						<label class="block space-y-2 text-sm"><span>{$t('durableImport.chooseFile')}</span><input data-testid="import-file-input" type="file" accept=".csv,.xlsx" multiple={!replacementId} bind:files={selectedFiles} onchange={event => pendingUploads = Array.from(event.currentTarget.files ?? [])} disabled={running || importState.busy} class="block min-h-11 w-full rounded-collection border border-input p-2" /></label>
 						{#if pendingUploads.length}<div class="space-y-2 text-sm"><p>{$t('durableImport.unsavedFiles', { count: pendingUploads.length })}</p><ul>{#each pendingUploads as file, index (`${file.name}:${index}`)}<li class="break-words">{file.name}</li>{/each}</ul><Button variant="outline" disabled={importState.busy} onclick={discardFiles}>{$t('durableImport.discardFiles')}</Button></div>{/if}
 						<p class="text-xs text-muted-foreground">{$t('durableImport.fileLimit')} {$t('durableImport.correctionHelp')}</p>
 						<ul class="space-y-2">{#each files as file (file.fileId)}<li class="break-words text-sm">{file.fileName} · {typeLabel(file.type)} · {$t('durableImport.fileRevision', { revision: file.revision })}</li>{/each}</ul>
@@ -228,7 +229,7 @@
 					<section data-testid="import-progress" data-state={importState.detail.batch.state} data-created={importState.detail.counts.created ?? 0} data-blocked={(importState.detail.counts.blocked ?? 0) + (importState.detail.counts.dependency_blocked ?? 0)} class="space-y-4" aria-label={$t(`durableImport.stage.${stage}`)}>
 						<h2 class="text-xl font-semibold">{$t(`durableImport.stage.${stage}`)} · {$t(`durableImport.status.${importState.detail.batch.state}`)}</h2>
 						<p class="text-sm">{$t('durableImport.saveUnit')}</p>
-						{#if running}<p role="status" class="rounded-xl bg-primary/10 p-4 text-sm">{$t('durableImport.background')}</p>{/if}
+						{#if running}<p role="status" class="rounded-collection bg-primary/10 p-4 text-sm">{$t('durableImport.background')}</p>{/if}
 						{#if importState.previewStale}<p role="status" class="text-sm">{$t('durableImport.previewStale')}</p>{/if}
 						{#key importState.detail.batch.id}<ImportRows detail={importState.detail} />{/key}
 					</section>
@@ -238,10 +239,10 @@
 					<h2 class="text-xl font-semibold">{$t('durableImport.history')}</h2>
 					<p class="text-xs text-muted-foreground">{timezone}</p>
 					<label class="block space-y-2 text-sm"><span>{$t('durableImport.history')}</span>
-						<select class="min-h-11 w-full rounded-full border border-input bg-background px-4" value={page.modals.target ?? ''} onchange={event => chooseBatch(event.currentTarget.value || null)} disabled={importState.busy}>
+						<SelectField class="w-full border border-input bg-background" value={page.modals.target ?? ''} onchange={event => chooseBatch(event.currentTarget.value || null)} disabled={importState.busy}>
 							<option value="">{$t('durableImport.new')}</option>
 							{#each importState.history as batch (batch.id)}<option value={batch.id}>{dateLabel(batch.createdAt)} · {academicContext.years.find(year => year.id === batch.academicYearId)?.label ?? batch.academicYearId} · {$t(`durableImport.status.${batch.state}`)}</option>{/each}
-						</select>
+						</SelectField>
 					</label>
 					{#if importState.loading}<p role="status" class="text-sm">{$t('durableImport.loading')}</p>{/if}
 					{#if importState.historyError}<p role="alert" class="text-sm text-destructive">{importState.historyError}</p><Button variant="outline" onclick={() => importState.loadHistory()}>{$t('dataState.retry')}</Button>{/if}

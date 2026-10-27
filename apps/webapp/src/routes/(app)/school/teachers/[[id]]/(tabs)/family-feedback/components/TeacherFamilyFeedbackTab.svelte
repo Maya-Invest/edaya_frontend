@@ -33,7 +33,7 @@
 			{/snippet}
 		</DrawerEmptyState>
 	{:else}
-		<ul class="divide-y divide-border/60 overflow-hidden rounded-xl border border-border bg-card">
+		<ul class="divide-y divide-border/60 overflow-hidden rounded-collection border border-border bg-card">
 			{#each campaigns as campaign (campaign.id)}
 				<li>
 					<a

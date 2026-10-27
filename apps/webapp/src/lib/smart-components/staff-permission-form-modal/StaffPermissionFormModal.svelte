@@ -10,6 +10,7 @@
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
+	import SelectField from '$lib/components/ui/SelectField.svelte';
 	import { localDateTimeInput, localDateTimeValue } from '$lib/date/temporal-inputs';
 	import { t } from '$lib/i18n';
 	import { LoaderCircle } from '$lib/icons';
@@ -120,7 +121,7 @@
 	}
 </script>
 
-<FormModal
+<FormModal contentClass="max-w-3xl"
 	bind:open
 	title={assignment ? $t('roles.editPermission') : $t('roles.addPermission')}
 	description={$t('roles.permissionFormHint')}
@@ -140,17 +141,17 @@
 					<Label for="permission-select" class="font-display text-base font-bold text-foreground">{$t('roles.permissionField')}</Label>
 					<PermissionScopeTypes entry={selectedEntry} />
 				</div>
-				<select
+				<SelectField
 					id="permission-select"
 					bind:value={permission}
 					onchange={() => scopes = []}
-					class="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm"
+					class="h-10 w-full rounded-collection border border-border bg-background px-3 text-sm"
 				>
 					<option value="">{$t('roles.selectPermission')}</option>
 					{#each catalog.filter(entry => entry.staffAssignable) as entry (entry.permission)}
 						<option value={entry.permission}>{formatPermissionLabel(entry.permission, $t)}{permissionSelectionGrains(entry).length ? ` — ${permissionSelectionGrains(entry).map(grain => $t(`scope.grain.${grain}`)).join(' / ')}` : ''}</option>
 					{/each}
-				</select>
+				</SelectField>
 			</div>
 
 			{#if selectedEntry?.scopePolicy.mode === 'resources'}
@@ -162,9 +163,9 @@
 				</div>
 			{/if}
 			<div class="grid gap-3 sm:grid-cols-2">
-				<label>{$t('profile.startsAt')}<input type="datetime-local" step="1" bind:value={startsAt} class="h-10 w-full rounded-lg border bg-background px-3" /></label>
-				<label>{$t('profile.endsAt')}<input type="datetime-local" step="1" bind:value={endsAt} class="h-10 w-full rounded-lg border bg-background px-3" /></label>
-				<label>{$t('common.status')}<select bind:value={status} class="h-10 w-full rounded-lg border bg-background px-3">{#each ['active', 'inactive', 'expired'] as value (value)}<option {value}>{$t(`profile.assignmentStatus.${value}`)}</option>{/each}</select></label>
+				<label>{$t('profile.startsAt')}<input type="datetime-local" step="1" bind:value={startsAt} class="ui-field h-10 w-full rounded-collection border bg-background px-3" /></label>
+				<label>{$t('profile.endsAt')}<input type="datetime-local" step="1" bind:value={endsAt} class="ui-field h-10 w-full rounded-collection border bg-background px-3" /></label>
+				<label>{$t('common.status')}<SelectField bind:value={status} class="w-full border bg-background">{#each ['active', 'inactive', 'expired'] as value (value)}<option {value}>{$t(`profile.assignmentStatus.${value}`)}</option>{/each}</SelectField></label>
 			</div>
 
 			{#if reviewed && preview.report}<PermissionResolutionPreview report={preview.report} />{/if}

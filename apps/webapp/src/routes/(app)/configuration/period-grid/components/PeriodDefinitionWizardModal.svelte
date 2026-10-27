@@ -212,7 +212,6 @@
 	cancelLabel={$t('academic.cancel')}
 	{busy}
 	submitDisabled={step === 'preview' ? !canSubmit : step === 'tweak' ? !canAdvanceTweak : false}
-	contentClass="max-w-2xl"
 	onCancel={resetForm}
 	onSubmit={step === 'preview' ? submit : handleNext}
 >
@@ -232,7 +231,7 @@
 				<button
 					type="button"
 					class={cn(
-						'rounded-xl border px-4 py-3 text-left transition-colors',
+						'rounded-collection border px-4 py-3 text-left transition-colors',
 						selectedPresetId === presetId
 							? 'border-primary bg-primary/10'
 							: 'border-border/70 bg-background/60 hover:bg-muted/40',
@@ -289,13 +288,13 @@
 					<p class="font-sans tabular-nums text-xs uppercase tracking-widest text-muted-foreground">
 						{$t('periodDefinitions.wizard.template')}
 					</p>
-					<Button type="button" size="sm" variant="outline" class="rounded-full" onclick={addTemplateRow}>
+					<Button type="button" size="sm" variant="outline" onclick={addTemplateRow}>
 						{$t('periodDefinitions.wizard.addRow')}
 					</Button>
 				</div>
 				<div class="space-y-3">
 					{#each template as row, index (index)}
-						<div class="rounded-xl border border-border/70 bg-background/60 p-3 space-y-3">
+						<div class="rounded-collection border border-border/70 bg-background/60 p-3 space-y-3">
 							<div class="grid gap-3 sm:grid-cols-[1fr_5rem]">
 								<label class="grid gap-1 text-sm">
 									<span class="text-muted-foreground">{$t('periodDefinitions.label')}</span>
@@ -374,13 +373,13 @@
 				{$t('periodDefinitions.wizard.previewCount', { count: String(expanded.length) })}
 			</p>
 			{#if existingCount > 0}
-				<p class="rounded-xl border border-border/70 bg-secondary/40 px-3 py-2 text-xs text-muted-foreground">
+				<p class="rounded-collection border border-border/70 bg-secondary/40 px-3 py-2 text-xs text-muted-foreground">
 					{$t('periodDefinitions.wizard.additiveWarning', { existing: String(existingCount) })}
 				</p>
 			{/if}
 			<ul class="max-h-64 space-y-2 overflow-y-auto">
 				{#each expanded.slice(0, 12) as slot, index (`${slot.dayOfWeek}-${slot.order}-${index}`)}
-					<li class="rounded-xl border border-border/70 px-3 py-2 text-sm">
+					<li class="rounded-collection border border-border/70 px-3 py-2 text-sm">
 						<p class="font-medium">
 							{catalogSlotLabel(slot.label, $lang)}
 							{#if slot.isBreak}

@@ -4,9 +4,9 @@
 	import { academicContext } from '$lib/academic/context.svelte';
 	import PersonAvatar from '$lib/components/school/shared/PersonAvatar.svelte';
 	import FilterSelect from '$lib/components/ui/filter-select.svelte';
-	import Input from '$lib/components/ui/input/input.svelte';
+	import ListSearchField from '$lib/components/ui/ListSearchField.svelte';
 	import { t } from '$lib/i18n';
-	import { Check, LoaderCircle, Search } from '$lib/icons';
+	import { Check, LoaderCircle } from '$lib/icons';
 	import { filterPersonPickerItems } from '$lib/smart-components/person-picker/filter-person-picker-items';
 	import PersonPicker from '$lib/smart-components/person-picker/PersonPicker.svelte';
 	import { studentPickerSearchText, studentPickerSubtitle } from '$lib/students/format-student-picker-subtitle';
@@ -189,7 +189,7 @@
 			</div>
 		{/if}
 
-		<div class={cn('flex h-[min(55vh,28rem)] flex-col overflow-hidden rounded-xl border border-border')}>
+		<div class={cn('flex h-[min(55vh,28rem)] flex-col overflow-hidden rounded-collection border border-border')}>
 			<div class="space-y-2 border-b border-border p-3">
 				{#if showFilters}
 					<FilterSelect
@@ -199,11 +199,10 @@
 					/>
 				{/if}
 				<div class="relative">
-					<Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-					<Input
+					<ListSearchField
 						bind:value={query}
 						placeholder={placeholder ?? $t('activities.searchStudent')}
-						class="h-9 rounded-full pl-8 text-sm"
+
 						{disabled}
 					/>
 				</div>

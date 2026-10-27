@@ -158,7 +158,7 @@
 			</Select.Root>
 		{/if}
 	</div>
-	<div class="flex items-start gap-3 rounded-xl border border-border bg-secondary/30 px-3 py-2.5">
+	<div class="flex items-start gap-3 rounded-collection border border-border bg-secondary/30 px-3 py-2.5">
 		<Checkbox bind:checked={sendAccountInvitation} id="student-send-invite" />
 		<div class="space-y-1">
 			<Label for="student-send-invite" class="text-sm font-medium">

@@ -31,6 +31,7 @@ These exceptions replace only the named composition; authorization, state, copy 
 | X-GRADE-LOOKUP | Grade-scale disclosure: labeled sample input with read-only matched mention/code; no save or mutation | A calculation preview, not an editor |
 | X-DATE-COLLECTION | Daily attendance day collection: omit free-text search, keep date-range/status facets in Filter and the collection menu | Civil date is the row identity |
 | X-TEMPLATE-RESET-REVIEW | Notification-template collection menu: neutral Reset all templates first opens consequence review, before Export CSV; the final reset confirmation alone is destructive | Retains the primary collection action while separating review from execution; all other destructive entries remain last |
+| X-LANGUAGE-SWITCHER | Shell language control: original compact icon/EN–FR/chevron pill and local flagged-option popup; replaces generic form-selector/button geometry only as specified in design-language §3 | Frequent shell preference, not record editing |
 | X-DESIGN-SPECIMEN | Development-only `/__design`: side-by-side component variants and state selectors without production navigation/mutations | Visual inspection requires multiple simultaneous specimens |
 
 Specialized body composition must not authorize extra colors, button variants, permission shortcuts or unsupported actions.
@@ -63,7 +64,7 @@ Every standard collection must use this order:
 
 `Title · count                         Search   Filter   ···`
 
-Title/count is left aligned. Search, a compact Filter button and the collection menu are right aligned. Header spacing, search sizing and wrapping must follow [design-language §2](design-language-spec.md#2-measurable-composition), using the collection’s available content width rather than the viewport, including inside drawers. A description, when required to explain scope, appears once beneath the title. Counts must distinguish matching total, loaded rows and bulk-selected records; an unknown total must not be fabricated.
+Title/count is left aligned. Search, an icon-only Filter button and the collection menu are right aligned. Header spacing, search sizing and wrapping must follow [design-language §2](design-language-spec.md#2-measurable-composition), using the collection’s available content width rather than the viewport, including inside drawers. A description, when required to explain scope, appears once beneath the title. Counts must distinguish matching total, loaded rows and bulk-selected records; an unknown total must not be fabricated.
 
 The primary collection action must be the first eligible item in `···`; it must not appear as a separate header button. Menu groups, in order, are: primary action; selection actions; View and Sort; Import/Export; other secondary actions. Omit unsupported entries and empty groups. Omit the menu if no entries remain. A permitted but state-blocked primary action remains first, disabled with its reason.
 
@@ -93,7 +94,7 @@ At narrow widths, the table remains a keyboard-focusable horizontal scroll regio
 
 ### 2.4 Collection behavior
 
-List and Table must use flat surfaces with the outer corners defined by [design-language §2](design-language-spec.md#2-measurable-composition), row separators and no decorative shadow. Rows and their activation regions must remain square; only the outer container clips the first and last rows to its corners. Individual rows must not be separate rounded cards. Section grouping must use headings and spacing rather than nested card frames. Search retains the action/search capsule; field controls in Filter use the rectangular field treatment.
+List and Table must use flat surfaces with the outer corners defined by [design-language §2](design-language-spec.md#2-measurable-composition), row separators and no decorative shadow. Rows and their activation regions must remain square; only the outer container clips the first and last rows to its corners. Individual rows must not be separate rounded cards. Section grouping must use headings and spacing rather than nested card frames. Search and field controls in Filter, including date and interval pickers, must use the query-control capsule defined by design-language §2–3. Ordinary create/edit fields retain their field treatment.
 
 List and Table are the only entity collection types. Students, Class Students and Activities offer both and default to Table; other features use their assigned view. Switching view preserves scope, search, facets, sort, selection and equivalent information/actions.
 
@@ -145,7 +146,7 @@ Tabs use human domain labels and child routes. Each tab owns its loading and err
 
 Drawer bodies must not contain editable fields, field toggles or open forms. Bounded changes open a form; substantial entry opens a task workspace. X-REVIEW-DECISION permits only its named single-step lifecycle decisions. X-PERMISSION-ORDER permits only Move up / Move down on Staff → Permissions profile-binding rows, preserving the feature’s authorization, ordering, pending/error and revision semantics. Neither exception permits general inline field editing.
 
-Record actions belong to the identity header. Section/related-collection actions belong in their scoped `···`, with the primary action first. Sub-record actions belong in that row's menu. A row shortcut may duplicate a record action only with the same label, scope, eligibility and outcome; do not repeat it in unrelated sections.
+Record actions belong to the identity header. All icon-only buttons outside table headers, related-collection headers and rows, including record-header Back, Close and overflow, use the circular icon treatment from [design-language §3](design-language-spec.md#3-control-treatments); table-header, related-collection-header and row overflow retain their quiet treatment. Section/related-collection actions belong in their scoped `···`, with the primary action first. Sub-record actions belong in that row's menu. A row shortcut may duplicate a record action only with the same label, scope, eligibility and outcome; do not repeat it in unrelated sections.
 
 ## 4. Forms, tasks and return navigation
 
@@ -160,6 +161,14 @@ Validate touched fields on blur, revalidate failed fields on change, and validat
 Ordinary create/edit forms initially focus the first enabled editable field. While content loads, focus the heading; move to the first enabled editable field after loading only if focus has remained on that heading. Destructive confirmations initially focus Cancel. Their destructive command requires explicit activation of its confirmation button; Enter in a text field must not confirm implicitly.
 
 Enter in an ordinary single-line field submits through the same validation path as the submit button. Multiline editors retain newline behavior; an open picker/select consumes Enter for its own operation. IME composition must not submit. Grading retains its feature-owned Enter/Shift+Enter navigation. Initial-focus rules do not replace first-invalid focus, pending-submit protection, dirty dismissal, topmost Escape handling or restoration to the invoking target.
+
+#### Confirmation dialog contract
+
+A confirmation reviews an existing operation and must not introduce a new command, permission or save unit. It must use a modal dialog, not a transient popover or native browser confirm. In order, it contains: an action-specific title; the affected record identity or explicit selection count/scope; a concise consequence and any irreversible effect; required prerequisites/reasons only when the feature contract requires them; persistent error or pending feedback; then Cancel and the action-specific final button. Missing or inaccessible target/consequence data must block confirmation and explain why; it must not be replaced with guessed values or an empty success.
+
+Non-destructive and destructive confirmations both initially focus the cancellation control: Cancel, or Keep editing for a discard-changes review. Opening, focusing, pressing Enter in a reason field, dismissing or restoring a URL must never execute the command. Only explicit activation of the final button submits through validation and the existing authorization/revision checks. Ordinary create/edit forms retain their separate Enter-to-submit behavior. Confirmations must not add typed-name challenges or redundant confirmations unless the feature contract requires them. Bulk scope alone does not require a task workspace or imply atomic execution.
+
+The cancellation control remains persistently reachable; confirmations must not duplicate it with a separate Close button. Before submission, Cancel (or Keep editing), Escape and outside dismissal all cancel the review without executing it and restore focus to the invoking control. Editable reasons follow the existing dirty-dismissal rule. During a bounded command awaiting its outcome, disable duplicate confirmation and dismissal, announce the pending action and retain the review. This rule does not change the separately defined ability to leave durable server jobs. A failed command retains the target, reasons and error with a safe explicit retry where supported; changed identity, permissions or revision requires fresh review. Confirmed success closes the confirmation and announces the outcome. A later refresh failure stays a saved outcome and offers a read retry, never a replay of the command. Existing partial-operation progress must remain explicit.
 
 ### 4.2 Focused task workspace
 
@@ -202,3 +211,7 @@ At 200% text and narrow/short viewports, essential content must wrap, controls m
 ## 6. Conformance
 
 A feature must declare its collection and inspection purpose, required content, action scopes, editing/task surface, permissions, states and return behavior. Shared defaults in this contract apply without local restyling. Every specialized departure must use its named exception and preserve the remaining rules. A conforming screen must satisfy both its complete domain content contract and these presentation/interaction requirements.
+
+### Flat module forms
+
+Grade-level Subjects owns both module grouping and subject configuration. Module records use header actions and bounded URL-backed forms, without a detail drawer. Category filters remain independent. Subject inspection keeps its established drawer; report results keep their current inspection/publication workflow.

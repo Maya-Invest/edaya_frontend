@@ -39,7 +39,7 @@
 					</div>
 				{/if}
 				{#if name}
-					<h3 class="font-display text-2xl font-semibold leading-tight">{name}</h3>
+					<h3 class="font-display text-xl font-semibold leading-tight">{name}</h3>
 				{/if}
 				{#if summary}
 					<p class={['text-sm text-muted-foreground', name ? 'mt-1' : '']}>{summary}</p>
@@ -56,8 +56,8 @@
 								<Button
 									{...props}
 									variant="outline"
-									size="sm"
-									class="h-9 w-9 rounded-full p-0"
+									size="icon"
+
 									aria-label={$t('list.moreActions')}
 								>
 									<MoreHorizontal class="h-4 w-4" />

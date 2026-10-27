@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { provideCollectionPresentation } from '$lib/list/collection-presentation.svelte';
+
+	provideCollectionPresentation();
 	import { page } from '$app/stores';
 	import AcademicPeriodSelector from '$lib/components/layout/AcademicPeriodSelector.svelte';
 	import DrawerEntityHeader from '$lib/components/school/shared/DrawerEntityHeader.svelte';
@@ -172,10 +175,10 @@
 					{#snippet chips()}{#if queue.detail}<span class={`rounded-full px-2.5 py-1 text-xs font-medium ${statusTone[queue.detail.correction.status] ?? BADGE}`}>{$t(`marks.${queue.detail.correction.status}`)}</span>{/if}{/snippet}
 				</DrawerEntityHeader>
 				<Dialog.Description>{queue.detail.context.students.map(student => student.name).join(', ') || queue.detail.context.className}</Dialog.Description>
-				<p class="whitespace-pre-wrap rounded-lg bg-secondary p-3">{queue.detail.correction.reason}</p>
-				<div class="space-y-4">{#each diffs as diff, index (`${diff.label}-${index}`)}<section><h3 class="mb-2 text-sm font-semibold">{diff.label}</h3><div class="grid grid-cols-1 gap-3 sm:grid-cols-2"><div class="rounded-lg border p-3"><p class="mb-1 text-xs text-muted-foreground">{$t('corrections.official')}</p><p class="whitespace-pre-wrap">{diff.before}</p></div><div class="rounded-lg border border-primary/30 bg-primary/5 p-3"><p class="mb-1 text-xs text-primary">{$t('corrections.proposed')}</p><p class="whitespace-pre-wrap">{diff.proposed}</p></div></div></section>{/each}</div>
-				{#each consequences as consequence (consequence)}<p class="rounded-lg border bg-secondary p-3 text-sm">{$t(`corrections.consequence.${consequence}`)}</p>{/each}
-				{#if documentOutcome}<p class="rounded-lg border p-3" role="status">{$t(`corrections.document.${documentOutcome.status}`)}</p>{#if documentOutcome.status === 'failed'}<Button disabled={busy} onclick={async () => {
+				<p class="whitespace-pre-wrap rounded-collection bg-secondary p-3">{queue.detail.correction.reason}</p>
+				<div class="space-y-4">{#each diffs as diff, index (`${diff.label}-${index}`)}<section><h3 class="mb-2 text-sm font-semibold">{diff.label}</h3><div class="grid grid-cols-1 gap-3 sm:grid-cols-2"><div class="rounded-collection border p-3"><p class="mb-1 text-xs text-muted-foreground">{$t('corrections.official')}</p><p class="whitespace-pre-wrap">{diff.before}</p></div><div class="rounded-collection border border-primary/30 bg-primary/5 p-3"><p class="mb-1 text-xs text-primary">{$t('corrections.proposed')}</p><p class="whitespace-pre-wrap">{diff.proposed}</p></div></div></section>{/each}</div>
+				{#each consequences as consequence (consequence)}<p class="rounded-collection border bg-secondary p-3 text-sm">{$t(`corrections.consequence.${consequence}`)}</p>{/each}
+				{#if documentOutcome}<p class="rounded-collection border p-3" role="status">{$t(`corrections.document.${documentOutcome.status}`)}</p>{#if documentOutcome.status === 'failed'}<Button disabled={busy} onclick={async () => {
 					busy = true;
 					try {
 						if (await queue.retryDocument(documentOutcome!.issuanceId))

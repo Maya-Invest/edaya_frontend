@@ -190,7 +190,7 @@
 		{:else}
 			<div class="space-y-6">
 				{#each rows as student (student.id)}
-					<fieldset disabled={busy || halted || completed} class="space-y-4 rounded-2xl border p-4">
+					<fieldset disabled={busy || halted || completed} class="space-y-4 rounded-collection border p-4">
 						<legend class="break-words px-2 text-sm font-semibold">{student.firstName} {student.lastName}</legend>
 						<p class="text-sm tabular-nums">{$t('gradeTask.recorded')}: {recorded(student.id)}</p>
 						{#if correction}<label class="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" bind:checked={selected[student.id]} />{$t('gradeTask.include')}</label>{/if}

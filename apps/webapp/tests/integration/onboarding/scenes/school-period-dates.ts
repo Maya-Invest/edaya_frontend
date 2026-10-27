@@ -1,3 +1,4 @@
+import { selectControl } from '../../support/custom-select';
 import type { Page } from 'playwright';
 import { selectComboboxOption } from '../../../../scripts/qa-harness-ui';
 import { expectOnboardingStep, signUpThroughUi, waitForEnabled } from '../support/auth';
@@ -55,7 +56,7 @@ export async function runSchoolPeriodDates(ctx: OnboardingRunContext): Promise<v
 	await expectPeriodDateCount(page, 2);
 
 	const periodSection = page.locator('section').filter({ hasText: /active period|période active/i });
-	const periodTypeTrigger = periodSection.getByRole('combobox').or(
+	const periodTypeTrigger = selectControl(periodSection).or(
 		periodSection.getByRole('button').filter({ hasText: /trimester|trimestre|semester|semestre/i }),
 	).first();
 	await selectComboboxOption(page, periodTypeTrigger, {

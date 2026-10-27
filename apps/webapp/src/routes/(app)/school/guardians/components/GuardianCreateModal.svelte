@@ -1,13 +1,13 @@
 <script lang="ts">
-	import type { components } from '$lib/api/schema';
 	import { page } from '$app/stores';
-	import GuardianContactMethodsEditor from '$lib/components/school/shared/GuardianContactMethodsEditor.svelte';
+	import GuardianContactFields from '$lib/components/school/shared/GuardianContactFields.svelte';
 	import PersonProfileFields from '$lib/components/school/shared/PersonProfileFields.svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import FormModal from '$lib/components/ui/FormModal.svelte';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import { detailHref } from '$lib/detail-hrefs';
+	import { guardianContactDraft, guardianContactPayload } from '$lib/guardians/contact-fields';
 	import { t } from '$lib/i18n';
 	import { currentRouteSurfaceHref, openDetailDrawer } from '$lib/navigation/route-surface-navigation';
 	import { personFieldDraft } from '$lib/people-profile-fields';
@@ -23,7 +23,7 @@
 	let firstName = $state('');
 	let lastName = $state('');
 	let code = $state('');
-	let contacts = $state<components['schemas']['Guardian']['contactMethods']>([]);
+	let contacts = $state(guardianContactDraft());
 	let hasAccess = $state(true);
 	let sendAccountInvitation = $state(true);
 	function resetForm() {
@@ -31,11 +31,11 @@
 		firstName = '';
 		lastName = '';
 		code = '';
-		contacts = [];
+		contacts = guardianContactDraft();
 		hasAccess = true;
 		sendAccountInvitation = true;
 	}
-	const canSubmit = $derived(lastName.trim().length > 0 && contacts.every(method => method.value.trim().length > 0));
+	const canSubmit = $derived(lastName.trim().length > 0);
 	async function submit() {
 		if (!canSubmit) {
 			return;
@@ -47,9 +47,7 @@
 			firstName,
 			lastName,
 			code,
-			email: contacts.find(method => method.type === 'email')?.value ?? '',
-			phone: contacts.find(method => method.type === 'phone')?.value ?? '',
-			contactMethods: contacts,
+			...guardianContactPayload(contacts),
 			hasAccess,
 			sendAccountInvitation,
 			successMessage: get(t)('guardian.createSuccess', { name: fullName }),
@@ -93,10 +91,10 @@
 		</Label>
 		<Input bind:value={code} aria-label={$t('common.code')} />
 	</div>
-	<GuardianContactMethodsEditor bind:methods={contacts} />
+	<GuardianContactFields bind:contacts />
 	<label class="flex items-center gap-2"><Checkbox bind:checked={hasAccess} />{$t('profile.portalAccess')}</label>
 
-	<div class="flex items-start gap-3 rounded-xl border border-border bg-secondary/30 px-3 py-2.5">
+	<div class="flex items-start gap-3 rounded-collection border border-border bg-secondary/30 px-3 py-2.5">
 		<Checkbox bind:checked={sendAccountInvitation} id="guardian-send-invite" />
 		<div class="space-y-1">
 			<Label for="guardian-send-invite" class="text-sm font-medium">
